@@ -159,8 +159,7 @@ main (int argc, char **argv)
 
   /* Launch.  */
   ports_manage_port_operations_multithread (port_bucket, exec_demuxer,
-					    2 * 60 * 1000, 0,
-					    0, MACH_PORT_NULL);
+					    2 * 60 * 1000, 0, 0);
 
   return 0;
 }

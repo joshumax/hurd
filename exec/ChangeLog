@@ -1,3 +1,8 @@
+Wed Aug 20 14:02:11 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (main): New args for
+	ports_manage_port_operations_multithread. 
+
 1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (main): Arg parsing added.
