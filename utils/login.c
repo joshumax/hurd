@@ -48,7 +48,7 @@
 /* Defaults for various login parameters.  */
 char *default_args[] = {
   "SHELL=" _PATH_BSHELL,
-  "HOME=/u/login",
+  "HOME=/etc/login",
   "USER=login",
   "NAME=Not logged in",
   "HUSHLOGIN=.hushlogin",	/* Looked up relative new home dir.  */
@@ -79,11 +79,14 @@ static struct argp_option options[] =
   {"avail-group",'G',"GROUP", 0, "Add GROUP to the available groups"},
   {"umask",	'm', "MASK",  0, "Use a umask of MASK"},
   {"nobody",	'n', "USER",  0, "Use USER's passwd entry to fetch the default"
-     "login params if there are no uids (default `" DEFAULT_NOBODY "')"}, 
+     " login params if there are no uids (default `" DEFAULT_NOBODY "')"}, 
   {"inherit-environ", 'p', 0, 0, "Inherit the parent's environment"},
   {"via",	'h',  "HOST", 0, "This login is from HOST"},
   {"no-passwd", 'f', 0,       0, "Don't ask for passwords"},
   {"no-utmp",   'z', 0,       0, "Don't put an entry in utmp"},
+  {"paranoid",  'P', 0,       0, "Don't admit that a user doesn't exist"},
+  {"retry",     'R', "SHELL", OPTION_ARG_OPTIONAL,
+     "Re-exec SHELL (default login) with no users after non-fatal errors"}, 
   {0, 0}
 };
 static char *args_doc = "[USER [ARG...]]";
@@ -166,6 +169,9 @@ main(int argc, char *argv[])
   int saw_user_arg = 0;		/* True if we've seen the USER argument.  */
   int no_passwd = 0;		/* Don't bother verifying what we're doing.  */
   int no_utmp = 0;		/* Don't put an entry in utmp.  */
+  int retry = 0;		/* For some failures, exec a login shell.  */
+  int paranoid = 0;		/* Admit no knowledge.  */
+  char *retry_shell = 0;	/* Optionally use this shell for retries.  */
   struct idvec *uids = make_idvec (); /* The UIDs of the new shell.  */
   struct idvec *gids = make_idvec (); /* The GIDs.  */
   struct idvec *aux_uids = make_idvec (); /* The aux UIDs of the new shell.  */
@@ -227,6 +233,26 @@ main(int argc, char *argv[])
 	return port;
       }
 
+  /* Print an error message with FMT, STR and ERR.  Then, if RETRY is on,
+     exec a default login shell, otherwise exit with CODE (must be non-0).  */
+  void fail (int code, error_t err, char *fmt, const char *str)
+    {
+      /* Two 0's at end, so we can fill in the first with the shell arg.  */
+      char *retry_argv[] =
+	{argv[0], "-aMOTD", "-aHOME", "-e_LOGIN_RETRY=yes", "-p", 0, 0};
+      int retry_argc = (sizeof retry_argv / sizeof retry_argv[0]) - 1;
+
+      error (retry ? 0 : code, err, fmt, str); /* May exit... */
+
+      if (retry_shell)
+	asprintf (&retry_argv[retry_argc++ - 1], "-aSHELL=%s", retry_shell);
+
+      /* Reinvoke ourselves with no userids or anything; shouldn't return.  */
+      _argp_unlock_xxx ();	/* Hack to get around problems with getopt. */
+      main (retry_argc, retry_argv);
+      exit (code);		/* But if it does... */
+    }
+
   /* Add the `=' separated environment entry ENTRY to ENV & ENV_LEN, exiting
      with an error message if we can't.  */
   void add_entry (char **env, unsigned *env_len, char *entry)
@@ -245,14 +271,21 @@ main(int argc, char *argv[])
 	  extern char *crypt (const char salt[2], const char *string);
 	  char *prompt, *unencrypted, *encrypted;
 
-	  asprintf (&prompt, "Password for %s:", name);
+	  if (name)
+	    asprintf (&prompt, "Password for %s:", name);
+	  else
+	    prompt = "Password:";
+
 	  unencrypted = getpass (prompt);
 	  encrypted = crypt (unencrypted, password);
 	  /* Paranoia may destroya.  */
 	  memset (unencrypted, 0, strlen (unencrypted));
 
+	  if (name)
+	    free (prompt);
+
 	  if (strcmp (encrypted, password) != 0)
-	    error (50, 0, "%s: Invalid password", name);
+	    fail (50, 0, "Incorrect password", 0);
 	}
     }
 
@@ -273,6 +306,8 @@ main(int argc, char *argv[])
 	case '0': sh_arg0 = arg; break;
 	case 'h': envz_add (&args, &args_len, "VIA", arg); break;
 	case 'z': no_utmp = 1; break;
+	case 'R': retry = 1; retry_shell = arg; break;
+	case 'P': paranoid = 1; break;
 	case 'f':
 	  /* Don't ask for a password, but also remove the effect of any 
 	     setuid/gid bits on this executable.  There ought to be a way to
@@ -306,20 +341,30 @@ main(int argc, char *argv[])
 	    char *user = arg ?: nobody;
 	    struct passwd *pw =
 	      isdigit (*user) ? getpwuid (atoi (user)) : getpwnam (user);
+	    /* True if this is the user arg and there were no user options. */
+	    int only_user =
+	      (key == ARGP_KEY_ARG
+	       && uids->num == 0 && aux_uids->num == 0
+	       && gids->num == 0 && aux_gids->num == 0);
 
 	    if (! pw)
 	      if (! arg)
 		/* It was nobody anyway.  Just use the defaults.  */
 		break;
+	      else if (paranoid)
+		/* In paranoid mode, we don't admit we don't know about a
+		   user, so we just ask for a password we we know the user
+		   can't supply.  */
+		verify_passwd (only_user ? 0 : user, "*");
 	      else
-		error (10, 0, "%s: Unknown user", user);
+		fail (10, 0, "%s: Unknown user", user);
 
 	    if (arg
 		&& ! idvec_contains (uids, pw->pw_uid)
 		&& ! idvec_contains (aux_uids, pw->pw_uid))
 	      /* Check for a password, but only if we haven't already, and
 		 it's not nobody.  */
-	      verify_passwd (pw->pw_name, pw->pw_passwd);
+	      verify_passwd (only_user ? 0 : pw->pw_name, pw->pw_passwd);
 
 	    if (key == 'U')
 	      /* Add aux-ids instead of real ones.  */
@@ -362,7 +407,7 @@ main(int argc, char *argv[])
 	    struct group *gr =
 	      isdigit (*arg) ? getgrgid (atoi (arg)) : getgrnam (arg);
 	    if (! gr)
-	      error (11, 0, "%s: Unknown group", arg);
+	      fail (11, 0, "%s: Unknown group", arg);
 
 	    if (! idvec_contains (gids, gr->gr_gid)
 		&& ! idvec_contains (aux_gids, gr->gr_gid))
@@ -442,7 +487,10 @@ main(int argc, char *argv[])
 	exec_node = file_name_lookup (FAILURE_SHELL, O_EXEC, 0);
 
       /* Give the error message, but only exit if we couldn't default. */
-      error (exec_node == MACH_PORT_NULL ? 1 : 0, err, "%s", shell);
+      if (exec_node == MACH_PORT_NULL)
+	fail (1, err, "%s", shell);
+      else
+	error (0, err, "%s", shell);
 
       /* If we get here, we looked up the default shell ok.  */
       shell = FAILURE_SHELL;
@@ -468,7 +516,7 @@ main(int argc, char *argv[])
     {
       root_node = file_name_lookup (root, O_RDONLY, 0);
       if (root_node == MACH_PORT_NULL)
-	error (40, errno, "%s", root);
+	fail (40, errno, "%s", root);
     }
   else
     root_node = getcrdir ();
@@ -533,7 +581,7 @@ main(int argc, char *argv[])
 		   gids->ids, gids->num, aux_gids->ids, aux_gids->num,
 		   &auth);
   if (err)
-    error (3, err, "Can't authenticate");
+    fail (3, err, "Authentication failure", 0);
 
   proc_make_login_coll (proc_server);
   if (uids->num > 0)
