@@ -40,7 +40,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       storeio ufs-utils ext2fs benchmarks pflocal defpager \
-	       login nfs pfinet daemons nfsd serverboot
+	       login nfs pfinet daemons nfsd serverboot hostmux
 
 # Other directories
 other-subdirs = hurd doc config release include
