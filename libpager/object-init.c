@@ -19,8 +19,8 @@
 #include "memory_object.h"
 #include <stdio.h>
 
-/* This is called by a kernel to initialize the memory object;
-   this routine is a dual of seqnos_memory_object_terminate.  */
+/* Implement the object initialiation call as described in
+   <mach/memory_object.defs>.  */
 kern_return_t
 _pager_seqnos_memory_object_init (mach_port_t object, 
 				  mach_port_seqno_t seqno,
