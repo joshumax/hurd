@@ -58,7 +58,8 @@ diskfs_truncate (struct node *np,
     {
       error_t err;
 
-      if (err = diskfs_catch_exception ())
+      err = diskfs_catch_exception ();
+      if (err)
 	return err;
       bzero (di->di_shortlink + length, np->dn_stat.st_size - length);
       diskfs_end_catch_exception ();
