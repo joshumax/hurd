@@ -34,9 +34,11 @@ working-prog-subdirs := $(filter-out \
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
-	     README NEWS tasks INSTALL README-binary hurd.boot
+	     hurd.boot.in build.mk.in \
+	     README NEWS tasks INSTALL README-binary 
 
-all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
+all: hurd.boot \
+     $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
 %-all: 
 	$(MAKE) -C $* all
@@ -65,7 +67,7 @@ dist: hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs)))
 	tar cfz hurd-snap-$(date).tar.gz hurd-snap-$(date)
 	rm -rf hurd-snap-$(date)
 
-clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs))
+clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
@@ -77,3 +79,17 @@ lndist-cthreads-h:
 	ln -s libthreads/cthreads.h $(srcdir)/hurd-snap/cthreads.h
 	
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
+
+hurd.boot: ${srcdir}/hurd.boot.in config.make
+	sed 's%@exec_prefix@%${exec_prefix}%g' $< > $@.new
+	mv -f $@.new $@
+
+.PHONY: clean-misc distclean
+clean-misc:
+	rm -f hurd.boot 
+
+distclean: clean
+	rm -f config.make config.log config.status
+ifneq (.,${srcdir})
+	rm -f Makefile
+endif
