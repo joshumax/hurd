@@ -1,6 +1,6 @@
 /* Show process information.
 
-   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -173,7 +173,7 @@ main(int argc, char *argv[])
   char *arg_hack_buf = 0;
   struct idvec *only_uids = make_idvec (), *not_uids = make_idvec ();
   char *tty_names = 0;
-  unsigned num_tty_names = 0;
+  size_t num_tty_names = 0;
   struct proc_stat_list *procset;
   struct ps_context *context;
   const char *fmt_string = "default", *sort_key_name = NULL;

@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 
   /* The translator's arg vector, in '\0' separated format.  */
   char *argz = 0;
-  int argz_len = 0;
+  size_t argz_len = 0;
 
   /* The control port for any active translator we start up.  */
   fsys_t active_control = MACH_PORT_NULL;

@@ -1,8 +1,8 @@
 /* Hurdish login
 
-   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -210,7 +210,7 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 /* Lookup the host HOST, and add entries for VIA (the host name), and
    VIA_ADDR (the dotted decimal address) to ARGS & ARGS_LEN.  */
 static error_t
-add_canonical_host (char **args, unsigned *args_len, char *host)
+add_canonical_host (char **args, size_t *args_len, char *host)
 {
   struct hostent *he = gethostbyname (host);
 
@@ -247,7 +247,7 @@ add_canonical_host (char **args, unsigned *args_len, char *host)
 /* Add the `=' separated environment entry ENTRY to ENV & ENV_LEN, exiting
    with an error message if we can't.  */
 static void
-add_entry (char **env, unsigned *env_len, char *entry)
+add_entry (char **env, size_t *env_len, char *entry)
 {
   char *name = strsep (&entry, "=");
   error_t err = envz_add (env, env_len, name, entry);
@@ -377,15 +377,15 @@ main(int argc, char *argv[])
   char *path;
   error_t err = 0;
   char *args = 0;		/* The login parameters */
-  unsigned args_len = 0;
+  size_t args_len = 0;
   char *args_defs = 0;		/* Defaults for login parameters.  */
-  unsigned args_defs_len = 0;
+  size_t args_defs_len = 0;
   char *env = 0;		/* The new environment.  */
-  unsigned env_len = 0;
+  size_t env_len = 0;
   char *env_defs = 0;		/* Defaults for the environment.  */
-  unsigned env_defs_len = 0;
+  size_t env_defs_len = 0;
   char *parent_env = 0;		/* The environment we got from our parent */
-  unsigned parent_env_len = 0;
+  size_t parent_env_len = 0;
   int no_environ = 0;		/* If false, use the env as default params. */
   int no_args = 0;		/* If false, put login params in the env. */
   int inherit_environ = 0;	/* True if we shouldn't clear our env.  */
@@ -394,11 +394,11 @@ main(int argc, char *argv[])
   int paranoid = 0;		/* Admit no knowledge.  */
   int retry = 0;		/* For some failures, exec a login shell.  */
   char *retry_args = 0;		/* Args passed when retrying.  */
-  unsigned retry_args_len = 0;
+  size_t retry_args_len = 0;
   char *shell = 0;		/* The shell program to run.  */
   char *sh_arg0 = 0;		/* The shell's argv[0].  */
   char *sh_args = 0;		/* The args to the shell.  */
-  unsigned sh_args_len = 0;
+  size_t sh_args_len = 0;
   int shell_arg = 0;		/* If there are shell args, use the first as
 				   the shell name. */
   struct ugids ugids = UGIDS_INIT; /* Authorization of the new shell.  */
@@ -616,7 +616,7 @@ main(int argc, char *argv[])
   {
     struct passwd *pw;
     char *passwd = 0;		/* Login parameters from /etc/passwd */
-    unsigned passwd_len = 0;
+    size_t passwd_len = 0;
 
     /* Decide which password entry to get parameters from.  */
     if (ugids.eff_uids.num > 0)

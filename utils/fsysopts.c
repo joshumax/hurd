@@ -1,8 +1,8 @@
 /* Set options in a running filesystem
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2002 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -60,7 +60,7 @@ main(int argc, char *argv[])
 
   /* The filesystem options vector, in '\0' separated format.  */
   char *argz = 0;
-  int argz_len = 0;
+  size_t argz_len = 0;
 
   int deref = 0, recursive = 0;
 

@@ -1,6 +1,6 @@
 /* Hurdish w
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -306,7 +306,7 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
   else
     {
       struct proc_stat **pgrp_procs;
-      unsigned num_procs;
+      size_t num_procs;
 
       err = proc_stat_list_add_pgrp (procs, -pid, &pgrp_procs, &num_procs);
       if (! err)

@@ -1,8 +1,7 @@
 /* Pid parsing/frobbing
 
-   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -46,7 +45,7 @@ proc_server ()
 error_t
 add_fn_pids (pid_t **pids, size_t *num_pids, unsigned id,
 	     error_t (*pids_fn)(process_t proc, pid_t id,
-				pid_t **pids, unsigned *num_pids))
+				pid_t **pids, size_t *num_pids))
 {
   size_t num_new_pids = 25;
   pid_t _new_pids[num_new_pids], *new_pids = _new_pids;

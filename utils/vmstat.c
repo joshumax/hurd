@@ -490,7 +490,7 @@ main (int argc, char **argv)
       do
 	{
 	  int num;
-	  size_t fwidths[num_fields];
+	  int fwidths[num_fields];
 
 	  if (first_hdr)
 	    first_hdr = 0;

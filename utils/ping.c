@@ -40,7 +40,7 @@ char copyright[] =
 /*
  * From: @(#)ping.c	5.9 (Berkeley) 5/12/91
  */
-char rcsid[] = "$Id: ping.c,v 1.3 1998/10/20 09:42:49 roland Exp $";
+char rcsid[] = "$Id: ping.c,v 1.4 2002/05/28 23:56:34 roland Exp $";
 char pkg[] = "netkit-base-0.10";
 
 /*
@@ -468,7 +468,7 @@ main(int argc, char *argv[])
 	for (;;) {
 		struct sockaddr_in from;
 		register int cc;
-		size_t fromlen;
+		socklen_t fromlen;
 
 		if (options & F_FLOOD) {
 			pinger();

@@ -1,6 +1,6 @@
 /* Show files' passive translators.
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -67,7 +67,7 @@ main (int argc, char *argv[])
       else
 	{
 	  char buf[1024], *trans = buf;
-	  int trans_len = sizeof (buf);
+	  size_t trans_len = sizeof (buf);
 	  error_t err = file_get_translator (node, &trans, &trans_len);
 
 	  switch (err)
@@ -79,9 +79,9 @@ main (int argc, char *argv[])
 	      if (!silent)
 		{
 		  if (print_prefix)
-		    printf ("%s: %.*s\n", name, trans_len, trans);
+		    printf ("%s: %.*s\n", name, (int) trans_len, trans);
 		  else
-		    printf ("%.*s\n", trans_len, trans);
+		    printf ("%.*s\n", (int) trans_len, trans);
 		}
 
 	      if (trans != buf)
