@@ -26,6 +26,16 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.9  1995/08/30 15:51:41  mib
+ * (condition_implies, condition_unimplies): New functions.
+ * (struct condition): New member `implications'.
+ * (cond_imp): New structure.
+ * (cond_signal): Return int now.
+ * (condition_broadcast): Always call cond_broadcast if this condition
+ * has implications.
+ * (condition_signal): Always call cond_signal if this condition has
+ * implications.
+ *
  * Revision 1.8  1995/08/30 15:10:23  mib
  * (hurd_condition_wait): Provide declaration.
  *
@@ -386,13 +396,15 @@ struct cond_imp
   struct cond_imp *next;
 };
 
-#define	CONDITION_INITIALIZER		{ SPIN_LOCK_INITIALIZER, QUEUE_INITIALIZER, 0 }
+#define	CONDITION_INITIALIZER		{ SPIN_LOCK_INITIALIZER, QUEUE_INITIALIZER, 0, 0 }
 
 #define	condition_alloc()		((condition_t) calloc(1, sizeof(struct condition)))
 #define	condition_init(c) \
 	MACRO_BEGIN \
 	spin_lock_init(&(c)->lock); \
 	cthread_queue_init(&(c)->queue); \
+	(c)->name = 0; \
+	(c)->implications = 0; \
 	MACRO_END
 #define	condition_set_name(c, x)	((c)->name = (x))
 #define	condition_name(c)		((c)->name != 0 ? (c)->name : "?")
