@@ -26,6 +26,8 @@
 # Types `servers' and `utilities' should define
 # targets (the names of all the programs built)
 # foo-HURDLIBS (for each target FOO)
+# special-targets (targets which should not be built the normal way
+# and have their own rules)
 
 # Type `library' should define
 # libname (the name of the library, without .a.)
@@ -168,7 +170,7 @@ $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
 endif
 
 ifeq ($(doinst),many)
-$(targets): %:
+$(filter-out $(special-targets),$(targets)): %:
 	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) \
 	-o $@ '-Wl,-(' $(filter-out $(HURDLIBS-files),$+) \
 	$(HURDLIBS-libs) $($@-OTHERLIBS) $(libc) '-Wl,-)'
