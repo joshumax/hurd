@@ -110,10 +110,9 @@ struct login
 
 struct ids
 {
-  int i_nuids, i_ngids;
-  uid_t *i_uids;
-  gid_t *i_gids;
   int i_refcnt;
+  int i_nuids;
+  uid_t i_uids[0];
 };
 
 /* Structure for an exception port we are listening on.  */
