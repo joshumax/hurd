@@ -102,6 +102,7 @@ dirscanblock (vm_address_t blockoff, struct node *dp, int idx,
 	      struct dirstat *ds, ino_t *inum);
 
 
+#if 0				/* XXX unused for now */
 static const unsigned char ext2_file_type[EXT2_FT_MAX] =
 {
   [EXT2_FT_UNKNOWN]	= DT_UNKNOWN,
@@ -113,7 +114,7 @@ static const unsigned char ext2_file_type[EXT2_FT_MAX] =
   [EXT2_FT_SOCK]	= DT_SOCK,
   [EXT2_FT_SYMLINK]	= DT_LNK,
 };
-#if 0
+
 static const unsigned char file_type_ext2[] =
 {
   [DT_UNKNOWN]	= EXT2_FT_UNKNOWN,
@@ -1013,6 +1014,7 @@ diskfs_get_directs (struct node *dp,
 	  userp->d_reclen = rec_len;
 	  userp->d_namlen = name_len;
 
+#if 0
 	  /* We don't bother to check the EXT2_FEATURE_INCOMPAT_FILETYPE
 	     flag in the superblock, because in old filesystems the
 	     file_type field is the high byte of the length field and is
@@ -1028,6 +1030,12 @@ diskfs_get_directs (struct node *dp,
 			    blkno * DIRBLKSIZ + bufp - buf);
 	      userp->d_type = DT_UNKNOWN;
 	    }
+#else
+	  /* XXX
+	     For complex reasons it might not be correct to return
+	     the filesystem's d_type value to the user.  */
+	  userp->d_type = DT_UNKNOWN;
+#endif
 	  memcpy (userp->d_name, entryp->name, name_len);
 	  userp->d_name[name_len] = '\0';
 
