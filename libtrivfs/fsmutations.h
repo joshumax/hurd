@@ -15,14 +15,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/* Only CPP macro definitions should go int his file. */
+/* Only CPP macro definitions should go in this file. */
 
-#define FILE_INTRAN protid_t convert_port_to_protid (file_t)
+#define FILE_INTRAN trivfs_protid_t convert_port_to_protid (file_t)
 
-#define IO_INTRAN protid_t convert_port_to_protid (io_t)
+#define IO_INTRAN trivfs_protid_t convert_port_to_protid (io_t)
 
 #define SERVERPREFIX trivfs_S_
 
-#define FILE_IMPORTS import "trivfs.h";
-#define IO_IMPORTS import "trivfs.h";
-#define FSYS_IMPORTS import "trvifs.h";
+#define FILE_IMPORTS import "priv.h";
+#define IO_IMPORTS import "priv.h";
+#define FSYS_IMPORTS import "priv.h";
