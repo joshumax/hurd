@@ -645,8 +645,8 @@ diskfs_idhasgid (uid_t grp, struct userid *id)
 {
   int i;
 
-  for (i = 0; i < cred->ngids; i++)
-    if (cred->gids[i] == grp)
+  for (i = 0; i < id->ngids; i++)
+    if (id->gids[i] == grp)
       return 1;
   return 0;
 }
@@ -706,7 +706,7 @@ _diskfs_idcheckdirmod (struct node *dp, struct node *np,
   return (_diskfs_idaccess (dp, S_IWRITE, id)
 	  && (!(dp->dn_stat.st_mode & S_ISVTX) || !np
 	      || diskfs_hasuid (0, id) || _diskfs_idisowner (dp, id)
-	      || _diskfs_idisowner (np, cred)));
+	      || _diskfs_idisowner (np, id)));
 }
 
 /* Return if the calling user CRED should be permitted to do an owner
