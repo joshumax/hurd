@@ -908,6 +908,11 @@ mutex_unlock_solid(m)
 	}
 }
 
+/* The GNU C library's internal locking functions use these variables.  */
+void (*_cthread_mutex_lock_routine) (struct mutex *) = mutex_lock_solid;
+void (*_cthread_mutex_unlock_routine) (struct mutex *) = mutex_unlock_solid;
+
+
 /*
  * Use instead of mach_msg in a multi-threaded server so as not
  * to tie up excessive kernel threads.  This uses a simple linked list for
