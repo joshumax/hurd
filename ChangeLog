@@ -1,3 +1,9 @@
+Thu Jul 18 00:40:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makeconf (install): Depend on $(includedir)/$(installhdrsubdir).
+	(install-headers): Likewise.
+	($(includedir)/$(installhdrsubdir)): New rule.
+
 Wed Jul 17 14:28:29 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makeconf: gs/install-hdrs/install-headers/g

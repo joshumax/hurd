@@ -145,9 +145,12 @@ ifeq ($(makemode),library)
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(libdir) $(includedir)
+install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(libdir) $(includedir) $(includedir)/$(installhdrsubdir)
 
-install-headers:$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(includedir)
+install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(includedir)
+
+$(includedir)/$(installhdrsubdir):
+	$(MKINSTALLDIRS) $@
 
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
