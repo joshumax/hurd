@@ -21,6 +21,7 @@ dir := daemons
 makemode := utilities
 
 targets = rc getty
+special-targets = rc
 SRCS = rc.sh getty.c
 installationdir = $(libexecdir)
 
