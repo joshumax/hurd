@@ -31,7 +31,7 @@ init: $(OBJS)
 init.o: startup_S.h startup_reply.h notify_S.h
 
 install: init $(hurdroot)
-	cp init $(hurdroot)/hurd/init
+	$(INSTALL_BIN) init $(hurdroot)/hurd/init
 
 
 startup_S.h startupServer.c: $(includedir)/hurd/startup.defs $(includedir)/hurd/hurd_types.defs
