@@ -1,9 +1,7 @@
 /* Store I/O
 
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,13 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
+
+/* A `store' is a fixed-size block of storage, which can be read and perhaps
+   written to.  This library implements many different backends which allow
+   the abstract store interface to be used with common types of storage --
+   devices, files, memory, tasks, etc.  It also allows stores to be combined
+   and filtered in various ways.  */
 
 #ifndef __STORE_H__
 #define __STORE_H__
@@ -69,9 +73,9 @@ struct store
   size_t block_size;
 
   /* The number of blocks (of size BLOCK_SIZE) in this storage.  */
-  size_t blocks;
+  off_t blocks;
   /* The number of bytes in this storage, including holes.  */
-  size_t size;
+  off_t size;
 
   /* Log_2 (BLOCK_SIZE) or 0 if not a power of 2. */
   unsigned log2_block_size;
@@ -193,7 +197,6 @@ struct store_class
 			    const struct store_class *const *classes);
 };
 
-
 /* Return a new store in STORE, which refers to the storage underlying SOURCE.
    CLASSES is used to select classes specified by the provider; if it is 0,
    STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags, with the
@@ -217,12 +220,13 @@ error_t store_open (const char *name, int flags,
 		    const struct store_class *const *classes,
 		    struct store **store);
 
-/* Allocate a new store structure with class CLASS, and the various other
-   fields initialized to the given parameters.  */
-struct store *
-_make_store (const struct store_class *class, mach_port_t port, int flags,
-	     size_t block_size, const struct store_run *runs, size_t num_runs,
-	     off_t end);
+/* Allocate a new store structure, returned in STORE, with class CLASS and
+   the various other fields initialized to the given parameters.  */
+error_t
+_store_create (const struct store_class *class, mach_port_t port,
+	       int flags, size_t block_size,
+	       const struct store_run *runs, size_t num_runs,
+	       off_t end, struct store **store);
 
 /* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
 error_t store_set_runs (struct store *store,
@@ -232,6 +236,12 @@ error_t store_set_runs (struct store *store,
    (note that just the vector CHILDREN is copied, not the actual children).  */
 error_t store_set_children (struct store *store,
 			    struct store *const *children, size_t num_children);
+
+/* Try to come up with a name for the children in STORE, combining the names
+   of each child in a way that could be used to parse them with
+   store_open_children.  This is done heuristically, and so may not succeed.
+   If a child doesn't have a  name, EINVAL is returned.  */
+error_t store_children_name (const struct store *store, char **name);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t store_set_name (struct store *store, const char *name);
@@ -316,6 +326,9 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 
 /* Creating specific types of stores.  */
 
+/* Return a new zero store SIZE bytes long in STORE.  */
+error_t store_zero_create (off_t size, int flags, struct store **store);
+
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
    the send right DEVICE.  */
 error_t store_device_create (device_t device, int flags, struct store **store);
@@ -354,6 +367,24 @@ error_t _store_task_create (task_t task, int flags, size_t block_size,
    corresponding store in STORE.  */
 error_t store_task_open (const char *name, int flags, struct store **store);
 
+/* Parse multiple store names in NAME, and open each individually, returning
+   all in the vector STORES, and the number in NUM_STORES.  The syntax is
+   simply a single character, followed by each individual store name (which
+   are in the store_typed_open syntax -- the type name, a ':', and the store
+   name) separated by that same character, with the whole list optionally
+   terminated by the same. */
+error_t store_open_children (const char *name, int flags,
+			     const struct store_class *const *classes,
+			     struct store ***stores, size_t *num_stores);
+
+/* Open the store indicated by NAME, which should consist of a store type
+   name followed by a ':' and any type-specific name, returning the new store
+   in STORE.  CLASSES is used to select classes specified by the type name;
+   if it is 0, STORE_STD_CLASSES is used.  */
+error_t store_typed_open (const char *name, int flags,
+			  const struct store_class *const *classes,
+			  struct store **store);
+
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
    integer multiple of each stripe's block size.  The stores in STRIPES are
@@ -369,6 +400,13 @@ error_t store_ileave_create (struct store * const *stripes, size_t num_stripes,
 error_t store_concat_create (struct store * const *stores, size_t num_stores,
 			     int flags, struct store **store);
 
+/* Return a new store that concatenates the stores created by opening all the
+   individual stores described in NAME; for the syntax of NAME, see
+   store_open_children.  */
+error_t store_concat_open (const char *name, int flags,
+			   const struct store_class *const *classes,
+			   struct store **store);
+
 /* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
    from SOURCE; SOURCE is consumed, but RUNS is not.  Unlike the store_remap
    function, this function always operates by creating a new store of type
@@ -377,9 +415,37 @@ error_t store_concat_create (struct store * const *stores, size_t num_stores,
 error_t store_remap_create (struct store *source,
 			    const struct store_run *runs, size_t num_runs,
 			    int flags, struct store **store);
+
+/* Return a new store in STORE which contains a snapshot of the contents of
+   the store FROM; FROM is consumed.  */
+error_t store_copy_create (struct store *from, int flags, struct store **store);
 
-/* Return a new zero store SIZE bytes long in STORE.  */
-error_t store_zero_create (size_t size, int flags, struct store **store);
+/* Open the copy store NAME -- which consists of another store-class name, a
+   ':', and a name for that store class to open -- and return the
+   corresponding store in STORE.  CLASSES is used to select classes specified
+   by the type name; if it is 0, STORE_STD_CLASSES is used.  */
+error_t store_copy_open (const char *name, int flags,
+			 const struct store_class *const *classes,
+			 struct store **store);
+
+/* Return a new store in STORE which contains the memory buffer BUF, of
+   length BUF_LEN.  BUF must be vm_allocated, and will be consumed.  */
+error_t store_buffer_create (void *buf, size_t buf_len, int flags,
+			     struct store **store);
+
+/* Return a new store in STORE which contains a snapshot of the uncompressed
+   contents of the store FROM; FROM is consumed.  BLOCK_SIZE is the desired
+   block size of the result.  */
+error_t store_gunzip_create (struct store *from, int flags,
+			     struct store **store);
+
+/* Open the gunzip NAME -- which consists of another store-class name, a ':',
+   and a name for that store class to open -- and return the corresponding
+   store in STORE.  CLASSES is used to select classes specified by the type
+   name; if it is 0, STORE_STD_CLASSES is used.  */
+error_t store_gunzip_open (const char *name, int flags,
+			   const struct store_class *const *classes,
+			   struct store **store);
 
 /* Standard store classes implemented by libstore.  */
 extern const struct store_class *const store_std_classes[];
@@ -392,6 +458,9 @@ extern const struct store_class store_ileave_class;
 extern const struct store_class store_concat_class;
 extern const struct store_class store_remap_class;
 extern const struct store_class store_query_class;
+extern const struct store_class store_copy_class;
+extern const struct store_class store_gunzip_class;
+extern const struct store_class store_typed_open_class;
 
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
@@ -545,13 +614,18 @@ error_t store_parsed_name (const struct store_parsed *parsed, char **name);
 /* XXX Hacks to avoid touching hurd/hurd_types.h; these should be merged into
    that file the next time it is updated (in enum storage_types). XXX  */
 #define STORAGE_REMAP (STORAGE_LAYER + 1) /* new type */
+#define STORAGE_COPY  (STORAGE_REMAP + 1) /* " */
 #define STORAGE_ZERO  STORAGE_NULL        /* renaming of STORAGE_NULL  */
 
-/* Doc for STORAGE_REMAP:
+/* Doc for STORAGE_REMAP & STORAGE_COPY:
    STORAGE_REMAP is a layer on top of another store that remaps its blocks
+   STORAGE_COPY is a memory snapshot of another store
    ...
     remap  - 	     TY, FL, NR      	     NR * (OFFS, LEN)  -	 1
       (BS and SIZE are that of the child)
+    copy   -         TY, FL, SIZE	     -		       DATA	 -
+      (DATA is preceeded by padding to the next page boundary, and is
+       SIZE bytes long itself)
 */
 
 #endif /* __STORE_H__ */
