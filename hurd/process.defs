@@ -150,6 +150,7 @@ routine proc_setprocargs (
 /* INTR */
 routine proc_getmsgport (
 	process: process_t;
+	sreplyport reply_port: reply_port_t;
 	pid: pid_t;
 	out msgport: mach_port_t);
 
