@@ -50,7 +50,7 @@ netfs_S_io_read (struct protid *user,
   if (amount > *datalen)
     {
       alloced = 1;
-      vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
+      *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
     }
   *datalen = amount;
 

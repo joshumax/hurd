@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -41,10 +41,9 @@ netfs_S_file_get_storage_info (struct protid *user,
   if (*num_ints == 0)
     /* Argh */
     {
-      error_t err =
-	vm_allocate (mach_task_self (), (vm_address_t *)ints, sizeof (int), 1);
-      if (err)
-	return err;
+      *ints = mmap (0, sizeof (int), PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*ints == (int *) -1)
+	return errno;
     }
 
   *num_ints = 1;

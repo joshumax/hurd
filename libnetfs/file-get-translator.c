@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -50,7 +50,7 @@ netfs_S_file_get_translator (struct protid *user,
       unsigned int len = sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1;
 
       if (len  > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
 
       err = netfs_attempt_readlink (user->user, np,
@@ -75,7 +75,7 @@ netfs_S_file_get_translator (struct protid *user,
       buflen++;			/* terminating nul */
 
       if (buflen > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
+	*trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (buf, *trans, buflen);
       free (buf);
       *translen = buflen;
@@ -87,7 +87,7 @@ netfs_S_file_get_translator (struct protid *user,
 
       len = sizeof _HURD_FIFO;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
       *translen = len;
       err = 0;
@@ -98,7 +98,7 @@ netfs_S_file_get_translator (struct protid *user,
 
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
+        *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
       *translen = len;
       err = 0;
