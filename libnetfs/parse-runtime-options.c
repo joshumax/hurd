@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "priv.h"
+#include "netfs.h"
 
 error_t
 netfs_parse_runtime_options (int argc, char **argv,
