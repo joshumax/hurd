@@ -1,3 +1,7 @@
+1999-02-05  Mark Kettenis  <kettenis@gnu.org>
+
+	* open.c (trivfs_open): Correctly initialize NEW->isroot.
+
 Sun Jan 31 18:29:22 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* times.c (trivfs_set_atime, trivefs_set_mtime): Take advantage of

@@ -1,6 +1,6 @@
 /* Make a new trivfs peropen/protid
 
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -56,8 +56,7 @@ trivfs_open (struct trivfs_control *cntl,
       if (! err)
 	{
 	  new->user = user;
-	  if (idvec_contains (user->uids, 0))
-	    new->isroot = 1;
+	  new->isroot idvec_contains (user->uids, 0);
 
 	  new->po = po;
 	  new->hook = 0;
