@@ -20,6 +20,10 @@
 
 #include <options.h>
 #include <assert.h>
+#include <unistd.h>
+#include <hurd/ports.h>
+#include <hurd/fshelp.h>
+#include <hurd/ioserver.h>
 
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library. */
@@ -432,7 +436,7 @@ int diskfs_pager_users ();
    NP is locked.  */
 struct pager *diskfs_get_filemap_pager_struct (struct node *np);
 
-/* The user must define this function if she calls diskfs_start_bootstrap.
+/* The user may define this function if she calls diskfs_start_bootstrap.
    It is called by the library after the filesystem has a normal 
    environment (complete with auth and proc ports). */
 void diskfs_init_completed ();
