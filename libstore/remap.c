@@ -215,6 +215,7 @@ store_remap (struct store *source,
 	  source->num_runs = num_xruns;
 	  source->flags &= ~STORE_ENFORCED;
 	  source->end = 0;	/* Needed to make _store_derive work.  */
+	  store_close_source (source);
 	  _store_derive (source);
 	  *store = source;
 	}
