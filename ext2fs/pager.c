@@ -19,10 +19,10 @@
 #include <strings.h>
 #include "ext2fs.h"
 
-spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
-struct user_pager_info *filepagerlist;
+spin_lock_t pager_list_lock = SPIN_LOCK_INITIALIZER;
+struct user_pager_info *file_pager_list;
 
-spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
+spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -39,14 +39,14 @@ static error_t
 find_address (struct user_pager_info *upi,
 	      vm_address_t offset,
 	      daddr_t *addr,
-	      int *disksize,
+	      int *length,
 	      struct rwlock **nplock)
 {
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
   if (upi->type == DISK)
     {
-      *disksize = vm_page_size;
+      *length = vm_page_size;
       *addr = offset / DEV_BSIZE;
       *nplock = 0;
       return 0;
@@ -66,9 +66,9 @@ find_address (struct user_pager_info *upi,
 	}
       
       if (offset + vm_page_size > np->allocsize)
-	*disksize = np->allocsize - offset;
+	*length = np->allocsize - offset;
       else
-	*disksize = vm_page_size;
+	*length = vm_page_size;
 
       err = ext2_getblk(np, offset / block_size, 0, addr);
       if (err == EINVAL)
@@ -93,17 +93,17 @@ pager_read_page (struct user_pager_info *pager,
   error_t err;
   struct rwlock *nplock;
   daddr_t addr;
-  int disksize;
+  int length;
   
-  err = find_address (pager, page, &addr, &disksize, &nplock);
+  err = find_address (pager, page, &addr, &length, &nplock);
   if (err)
     return err;
   
   if (addr)
     {
-      err = dev_read_sync (addr, (void *)buf, disksize);
-      if (!err && disksize != vm_page_size)
-	bzero ((void *)(*buf + disksize), vm_page_size - disksize);
+      err = dev_read_sync (addr, (void *)buf, length);
+      if (!err && length != vm_page_size)
+	bzero ((void *)(*buf + length), vm_page_size - length);
       *writelock = 0;
     }
   else
@@ -126,16 +126,16 @@ pager_write_page (struct user_pager_info *pager,
 		  vm_address_t buf)
 {
   daddr_t addr;
-  int disksize;
+  int length;
   struct rwlock *nplock;
   error_t err;
   
-  err = find_address (pager, page, &addr, &disksize, &nplock);
+  err = find_address (pager, page, &addr, &length, &nplock);
   if (err)
     return err;
   
   if (addr)
-    err = dev_write_sync (addr, buf, disksize);
+    err = dev_write_sync (addr, buf, length);
   else
     {
       ext2_error("pager_write_page",
@@ -204,9 +204,9 @@ void
 pager_clear_user_data (struct user_pager_info *upi)
 {
   assert (upi->type == FILE_DATA);
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi->np->dn->fileinfo = 0;
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
   diskfs_nrele_light (upi->np);
   *upi->prevp = upi->next;
   if (upi->next)
@@ -236,11 +236,11 @@ diskfs_file_update (struct node *np, int wait)
 {
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi = np->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
   
   if (upi)
     {
@@ -265,7 +265,7 @@ diskfs_get_filemap (struct node *np)
 	  || S_ISREG (np->dn_stat.st_mode)
 	  || (S_ISLNK (np->dn_stat.st_mode)));
 
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   if (!np->dn->fileinfo)
     {
       upi = malloc (sizeof (struct user_pager_info));
@@ -275,16 +275,16 @@ diskfs_get_filemap (struct node *np)
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
 
-      spin_lock (&pagerlistlock);
-      upi->next = filepagerlist;
-      upi->prevp = &filepagerlist;
+      spin_lock (&pager_list_lock);
+      upi->next = file_pager_list;
+      upi->prevp = &file_pager_list;
       if (upi->next)
 	upi->next->prevp = &upi->next;
-      filepagerlist = upi;
-      spin_unlock (&pagerlistlock);
+      file_pager_list = upi;
+      spin_unlock (&pager_list_lock);
     }
   right = pager_get_port (np->dn->fileinfo->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
   
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -299,11 +299,11 @@ drop_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
   
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi = np->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
 
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
@@ -318,11 +318,11 @@ allow_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
   
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi = np->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
   
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
@@ -352,8 +352,8 @@ pager_traverse (void (*func)(struct user_pager_info *))
   struct item {struct item *next; struct user_pager_info *p;} *list = 0;
   struct item *i;
   
-  spin_lock (&pagerlistlock);
-  for (p = filepagerlist; p; p = p->next)
+  spin_lock (&pager_list_lock);
+  for (p = file_pager_list; p; p = p->next)
     {
       i = alloca (sizeof (struct item));
       i->next = list;
@@ -361,7 +361,7 @@ pager_traverse (void (*func)(struct user_pager_info *))
       pager_reference (p->p);
       i->p = p;
     }
-  spin_unlock (&pagerlistlock);
+  spin_unlock (&pager_list_lock);
   
   for (i = list; i; i = i->next)
     {
