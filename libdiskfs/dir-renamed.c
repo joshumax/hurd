@@ -140,7 +140,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
       goto out;
     }
 
-  err = diskfs_dirrewrite (fnp, tdp, tmpds);
+  err = diskfs_dirrewrite (fnp, fdp, tdp, "..", tmpds);
   if (diskfs_synchronous)
     diskfs_file_update (fnp, 1);
   if (err)
@@ -169,7 +169,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   
   if (tnp)
     {
-      err = diskfs_dirrewrite (tdp, fnp, ds);
+      err = diskfs_dirrewrite (tdp, tnp, fnp, toname, ds);
       ds = 0;
       if (!err)
 	{
@@ -199,7 +199,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   if (err)
     goto out;
   
-  diskfs_dirremove (fdp, ds);
+  diskfs_dirremove (fdp, fnp, fromname, ds);
   ds = 0;
   fnp->dn_stat.st_nlink--;
   fnp->dn_set_ctime = 1;
