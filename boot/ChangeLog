@@ -1,3 +1,8 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (S_io_reauthenticate): Check mach_port_insert_right result
+	with assert_perror.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* boot.c (S_io_reauthenticate): Don't use MACH_MSG_TYPE_MAKE_SEND
