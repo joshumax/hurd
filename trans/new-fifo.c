@@ -165,7 +165,7 @@ fifo_trans_parse_args (struct fifo_trans *trans, int argc, char **argv,
       return 0;
     }
   struct argp argp = {options, parse_opt};
-  return argp_parse (&argp, argc, argv, print_errs ? 0 : ARGP_SILENT, 0);
+  return argp_parse (&argp, argc, argv, print_errs ? 0 : ARGP_SILENT, 0, 0);
 }
 
 /* ---------------------------------------------------------------- */
