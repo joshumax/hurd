@@ -1,3 +1,7 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* main.c (main): Cast int to intptr_t before any_t.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* loop.c (server_loop): size_t -> socklen_t

@@ -1,3 +1,8 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* io.c (S_io_reauthenticate): unsigned -> size_t
+	(S_io_restrict_auth): Likewise.
+
 2002-04-24  Ognyan Kulev <ogi@fmi.uni-sofia.bg>
 
 	* sock.c (sock_shutdown): When both SHUTDOWN_READ and

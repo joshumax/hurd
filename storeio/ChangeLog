@@ -1,3 +1,7 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* pager.c (pager_read_page, pager_write_page): int -> size_t
+
 2002-03-10  Roland McGrath  <roland@frob.com>
 
 	* dev.c (dev_read): Return success with *LEN = 0 when reading
