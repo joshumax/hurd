@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <argp.h>
+#include <argz.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -153,13 +154,13 @@ void main (int argc, char *argv[])
 
 error_t
 trivfs_append_args (struct trivfs_control *trivfs_control,
-		    char **argz, size_t argz_len)
+		    char **argz, size_t *argz_len)
 {
   error_t err = 0;
-  char buf[40];
 
   if (rdev)
     {
+      char buf[40];
       snprintf (buf, sizeof buf, "--rdev=%d,%d", (rdev >> 8), rdev & 0xFF);
       err = argz_add (argz, argz_len, buf);
     }
