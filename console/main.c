@@ -21,9 +21,10 @@
 #include <hurd.h>
 #include <fcntl.h>
 #include <hurd/trivfs.h>
+#include <hurd/fsys.h>
 #include <stdio.h>
 #include <argp.h>
-#include <hurd/fsys.h>
+#include <error.h>
 #include <string.h>
 
 #include <version.h>
@@ -45,9 +46,9 @@ int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ|O_WRITE;
 
 /* Properties of the underlying node.  */
-int console_mode;
-int console_owner;
-int console_group;
+mode_t console_mode;
+uid_t console_owner;
+gid_t console_group;
 
 /* The argument line options.  */
 struct
@@ -125,7 +126,7 @@ main (int argc, char **argv)
   struct stat st;
 
   argp_parse (&main_argp, argc, argv, 0, 0, 0);
-  
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     {
@@ -137,10 +138,7 @@ main (int argc, char **argv)
   err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
-    {
-      perror ("Starting translator");
-      exit (1);
-    }
+    error (1, err, "Starting translator");
 
   /* Initialize status from underlying node.  */
   err = io_stat (fsys->underlying, &st);
@@ -164,8 +162,7 @@ main (int argc, char **argv)
 					    0, 0, 0);
 
   return 0;
-}  
-
+}
 
 kern_return_t
 S_tioctl_tiocflush (struct trivfs_protid *cred, int queue_selector)
@@ -183,7 +180,7 @@ S_tioctl_tiocflush (struct trivfs_protid *cred, int queue_selector)
 
   if (queue_selector & O_READ)
     vcons_flush_input (vcons);
-  if (queue_selector & O_WRITE)
+   if (queue_selector & O_WRITE)
     vcons_discard_output (vcons);
 
   return 0;
