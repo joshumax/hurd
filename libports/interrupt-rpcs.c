@@ -32,8 +32,7 @@ ports_interrupt_rpc (void *portstruct)
   mutex_lock (&_ports_lock);
   
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-    if (rpc->thread != mach_thread_self ())
-      hurd_thread_cancel (rpc->thread);
+    hurd_thread_cancel (rpc->thread);
 
   mutex_unlock (&_ports_lock);
 }
