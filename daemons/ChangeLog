@@ -1,3 +1,9 @@
+2002-09-15  Marcus Brinkmann  <marcus@gnu.org>
+
+	* getty.c: Include <termios.h>.
+	(set_speed): New function.
+	(main): Take linespec from argc[1], not argc[2].  Call set_speed.
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* console-run.c (open_console): Use ERR, not errno.

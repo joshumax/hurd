@@ -31,11 +31,32 @@
 #include <string.h>
 #include <utmp.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 
 /* XXX */
 extern char *localhost ();
 
 #define _PATH_LOGIN "/bin/login"
+
+/* Parse the terminal speed.  */
+static void
+set_speed (int tty, char *speedstr)
+{
+  error_t err;
+  struct termios ttystat;
+  speed_t speed;
+  char *tail;
+
+  errno = 0;
+  speed = strtoul (speedstr, &tail, 0);
+  if (errno || *tail)
+    return;
+
+  err = tcgetattr (tty, &ttystat);
+  if (!err && !cfsetspeed (&ttystat, speed))
+    tcsetattr (tty, TCSAFLUSH, &ttystat);
+}
+
 
 /* Print a suitable welcome banner */
 static void
@@ -73,7 +94,7 @@ main (int argc, char **argv)
     }
 
   /* Don't do anything with this for now. */
-  linespec = argv[2];
+  linespec = argv[1];
 
   tt = getttynam (argv[2]);
   asprintf (&ttyname, "%s/%s", _PATH_DEV, argv[2]);
@@ -94,6 +115,8 @@ main (int argc, char **argv)
 	}
     }
   while (tty == -1);
+
+  set_speed (tty, linespec);
 
   print_banner (tty, ttyname);
 
