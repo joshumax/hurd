@@ -30,7 +30,7 @@ mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
 mach_port_t diskfs_fsys_identity;
 
-int nosuid = 0, noexec = 0;
+int _diskfs_nosuid = 0, _diskfs_noexec = 0;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
