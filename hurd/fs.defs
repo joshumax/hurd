@@ -94,8 +94,10 @@ routine file_utimes (
 	new_atime: time_value_t;
 	new_mtime: time_value_t);
 
-/* Truncate file */
-routine file_truncate (
+/* Change the size of the file.  If the size increases, new blocks are
+   zero-filled.  After successful return, it is safe to reference mapped
+   areas of the file up to NEW_SIZE.  */
+routine file_set_size (
 	trunc_file: file_t;
 	new_size: off_t);
 
