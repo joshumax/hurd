@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 /* To avoid races in checkpath, and to prevent a directory from being
    simultaneously renamed by two processes, we serialize all renames of
