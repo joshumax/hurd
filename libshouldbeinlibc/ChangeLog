@@ -1,3 +1,8 @@
+2001-02-20  Marcus Brinkmann  <marcus@gnu.org>
+
+	* timefmt.c: Include <time.h>.  Reported by Arkadi E. Shishlov
+	<arkadi@it.lv>.
+
 2000-10-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* wire.c: Include <error.h>.
