@@ -1,8 +1,8 @@
 /* Access, formatting, & comparison routines for printing process info.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -41,7 +41,7 @@ static char *get_rpc_name (mach_msg_id_t it) { return 0; }
 
 typedef void (*vf)();
 
-static int 
+static int
 ps_get_pid (struct proc_stat *ps)
 {
   return proc_stat_pid (ps);
@@ -49,7 +49,7 @@ ps_get_pid (struct proc_stat *ps)
 const struct ps_getter ps_pid_getter =
 {"pid", PSTAT_PID, (vf) ps_get_pid};
 
-static int 
+static int
 ps_get_thread_index (struct proc_stat *ps)
 {
   return proc_stat_thread_index (ps);
@@ -73,7 +73,7 @@ ps_get_owner_uid (struct proc_stat *ps)
 const struct ps_getter ps_owner_uid_getter =
 {"uid", PSTAT_OWNER_UID, (vf) ps_get_owner_uid};
 
-static int 
+static int
 ps_get_ppid (struct proc_stat *ps)
 {
   return proc_stat_proc_info (ps)->ppid;
@@ -81,7 +81,7 @@ ps_get_ppid (struct proc_stat *ps)
 const struct ps_getter ps_ppid_getter =
 {"ppid", PSTAT_PROC_INFO, (vf) ps_get_ppid};
 
-static int 
+static int
 ps_get_pgrp (struct proc_stat *ps)
 {
   return proc_stat_proc_info (ps)->pgrp;
@@ -89,7 +89,7 @@ ps_get_pgrp (struct proc_stat *ps)
 const struct ps_getter ps_pgrp_getter =
 {"pgrp", PSTAT_PROC_INFO, (vf) ps_get_pgrp};
 
-static int 
+static int
 ps_get_session (struct proc_stat *ps)
 {
   return proc_stat_proc_info (ps)->session;
@@ -97,7 +97,7 @@ ps_get_session (struct proc_stat *ps)
 const struct ps_getter ps_session_getter =
 {"session", PSTAT_PROC_INFO, (vf) ps_get_session};
 
-static int 
+static int
 ps_get_login_col (struct proc_stat *ps)
 {
   return proc_stat_proc_info (ps)->logincollection;
@@ -105,7 +105,7 @@ ps_get_login_col (struct proc_stat *ps)
 const struct ps_getter ps_login_col_getter =
 {"login_col", PSTAT_PROC_INFO, (vf) ps_get_login_col};
 
-static int 
+static int
 ps_get_num_threads (struct proc_stat *ps)
 {
   return proc_stat_num_threads (ps);
@@ -113,7 +113,7 @@ ps_get_num_threads (struct proc_stat *ps)
 const struct ps_getter ps_num_threads_getter =
 {"num_threads", PSTAT_NUM_THREADS, (vf)ps_get_num_threads};
 
-static void 
+static void
 ps_get_args (struct proc_stat *ps, char **args_p, int *args_len_p)
 {
   *args_p = proc_stat_args (ps);
@@ -122,7 +122,7 @@ ps_get_args (struct proc_stat *ps, char **args_p, int *args_len_p)
 const struct ps_getter ps_args_getter =
 {"args", PSTAT_ARGS, ps_get_args};
 
-static int 
+static int
 ps_get_state (struct proc_stat *ps)
 {
   return proc_stat_state (ps);
@@ -139,7 +139,7 @@ ps_get_wait (struct proc_stat *ps, char **wait, int *rpc)
 const struct ps_getter ps_wait_getter =
 {"wait", PSTAT_THREAD_WAIT, ps_get_wait};
 
-static int 
+static int
 ps_get_vsize (struct proc_stat *ps)
 {
   return proc_stat_task_basic_info (ps)->virtual_size;
@@ -147,7 +147,7 @@ ps_get_vsize (struct proc_stat *ps)
 const struct ps_getter ps_vsize_getter =
 {"vsize", PSTAT_TASK_BASIC, (vf) ps_get_vsize};
 
-static int 
+static int
 ps_get_rsize (struct proc_stat *ps)
 {
   return proc_stat_task_basic_info (ps)->resident_size;
@@ -155,7 +155,7 @@ ps_get_rsize (struct proc_stat *ps)
 const struct ps_getter ps_rsize_getter =
 {"rsize", PSTAT_TASK_BASIC, (vf) ps_get_rsize};
 
-static int 
+static int
 ps_get_cur_priority (struct proc_stat *ps)
 {
   return proc_stat_thread_basic_info (ps)->cur_priority;
@@ -163,7 +163,7 @@ ps_get_cur_priority (struct proc_stat *ps)
 const struct ps_getter ps_cur_priority_getter =
 {"cur_priority", PSTAT_THREAD_BASIC, (vf) ps_get_cur_priority};
 
-static int 
+static int
 ps_get_base_priority (struct proc_stat *ps)
 {
   return proc_stat_thread_basic_info (ps)->base_priority;
@@ -171,7 +171,7 @@ ps_get_base_priority (struct proc_stat *ps)
 const struct ps_getter ps_base_priority_getter =
 {"base_priority", PSTAT_THREAD_BASIC, (vf) ps_get_base_priority};
 
-static int 
+static int
 ps_get_max_priority (struct proc_stat *ps)
 {
   return proc_stat_thread_sched_info (ps)->max_priority;
@@ -179,7 +179,7 @@ ps_get_max_priority (struct proc_stat *ps)
 const struct ps_getter ps_max_priority_getter =
 {"max_priority", PSTAT_THREAD_SCHED, (vf) ps_get_max_priority};
 
-static void 
+static void
 ps_get_usr_time (struct proc_stat *ps, struct timeval *tv)
 {
   time_value_t tvt = proc_stat_thread_basic_info (ps)->user_time;
@@ -189,7 +189,7 @@ ps_get_usr_time (struct proc_stat *ps, struct timeval *tv)
 const struct ps_getter ps_usr_time_getter =
 {"usr_time", PSTAT_THREAD_BASIC, ps_get_usr_time};
 
-static void 
+static void
 ps_get_sys_time (struct proc_stat *ps, struct timeval *tv)
 {
   time_value_t tvt = proc_stat_thread_basic_info (ps)->system_time;
@@ -199,7 +199,7 @@ ps_get_sys_time (struct proc_stat *ps, struct timeval *tv)
 const struct ps_getter ps_sys_time_getter =
 {"sys_time", PSTAT_THREAD_BASIC, ps_get_sys_time};
 
-static void 
+static void
 ps_get_tot_time (struct proc_stat *ps, struct timeval *tv)
 {
   time_value_t tvt = proc_stat_thread_basic_info (ps)->user_time;
@@ -210,7 +210,17 @@ ps_get_tot_time (struct proc_stat *ps, struct timeval *tv)
 const struct ps_getter ps_tot_time_getter =
 {"tot_time", PSTAT_THREAD_BASIC, ps_get_tot_time};
 
-static float 
+static void
+ps_get_start_time (struct proc_stat *ps, struct timeval *tv)
+{
+  time_value_t *const tvt = &proc_stat_task_basic_info (ps)->creation_time;
+  tv->tv_sec = tvt->seconds;
+  tv->tv_usec = tvt->microseconds;
+}
+const struct ps_getter ps_start_time_getter =
+{"start_time", PSTAT_TASK_BASIC, ps_get_start_time};
+
+static float
 ps_get_rmem_frac (struct proc_stat *ps)
 {
   static int mem_size = 0;
@@ -222,7 +232,7 @@ ps_get_rmem_frac (struct proc_stat *ps)
       if (err == 0)
 	mem_size = info->memory_size;
     }
-  
+
   if (mem_size > 0)
     return
       (float)proc_stat_task_basic_info (ps)->resident_size
@@ -233,7 +243,7 @@ ps_get_rmem_frac (struct proc_stat *ps)
 const struct ps_getter ps_rmem_frac_getter =
 {"rmem_frac", PSTAT_TASK_BASIC, (vf) ps_get_rmem_frac};
 
-static float 
+static float
 ps_get_cpu_frac (struct proc_stat *ps)
 {
   return (float) proc_stat_thread_basic_info (ps)->cpu_usage
@@ -242,7 +252,7 @@ ps_get_cpu_frac (struct proc_stat *ps)
 const struct ps_getter ps_cpu_frac_getter =
 {"cpu_frac", PSTAT_THREAD_BASIC, (vf) ps_get_cpu_frac};
 
-static int 
+static int
 ps_get_sleep (struct proc_stat *ps)
 {
   return proc_stat_thread_basic_info (ps)->sleep_time;
@@ -250,7 +260,7 @@ ps_get_sleep (struct proc_stat *ps)
 const struct ps_getter ps_sleep_getter =
 {"sleep", PSTAT_THREAD_BASIC, (vf) ps_get_sleep};
 
-static int 
+static int
 ps_get_susp_count (struct proc_stat *ps)
 {
   return proc_stat_suspend_count (ps);
@@ -258,7 +268,7 @@ ps_get_susp_count (struct proc_stat *ps)
 const struct ps_getter ps_susp_count_getter =
 {"susp_count", PSTAT_SUSPEND_COUNT, (vf) ps_get_susp_count};
 
-static int 
+static int
 ps_get_proc_susp_count (struct proc_stat *ps)
 {
   return proc_stat_task_basic_info (ps)->suspend_count;
@@ -266,7 +276,7 @@ ps_get_proc_susp_count (struct proc_stat *ps)
 const struct ps_getter ps_proc_susp_count_getter =
 {"proc_susp_count", PSTAT_TASK_BASIC, (vf) ps_get_proc_susp_count};
 
-static int 
+static int
 ps_get_thread_susp_count (struct proc_stat *ps)
 {
   return proc_stat_thread_basic_info (ps)->suspend_count;
@@ -282,7 +292,7 @@ ps_get_tty (struct proc_stat *ps)
 const struct ps_getter ps_tty_getter =
 {"tty", PSTAT_TTY, (vf)ps_get_tty};
 
-static int 
+static int
 ps_get_page_faults (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->faults;
@@ -290,7 +300,7 @@ ps_get_page_faults (struct proc_stat *ps)
 const struct ps_getter ps_page_faults_getter =
 {"page_faults", PSTAT_TASK_EVENTS, (vf) ps_get_page_faults};
 
-static int 
+static int
 ps_get_cow_faults (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->cow_faults;
@@ -298,7 +308,7 @@ ps_get_cow_faults (struct proc_stat *ps)
 const struct ps_getter ps_cow_faults_getter =
 {"cow_faults", PSTAT_TASK_EVENTS, (vf) ps_get_cow_faults};
 
-static int 
+static int
 ps_get_pageins (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->pageins;
@@ -306,7 +316,7 @@ ps_get_pageins (struct proc_stat *ps)
 const struct ps_getter ps_pageins_getter =
 {"pageins", PSTAT_TASK_EVENTS, (vf) ps_get_pageins};
 
-static int 
+static int
 ps_get_msgs_sent (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->messages_sent;
@@ -314,7 +324,7 @@ ps_get_msgs_sent (struct proc_stat *ps)
 const struct ps_getter ps_msgs_sent_getter =
 {"msgs_sent", PSTAT_TASK_EVENTS, (vf) ps_get_msgs_sent};
 
-static int 
+static int
 ps_get_msgs_rcvd (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->messages_received;
@@ -322,7 +332,7 @@ ps_get_msgs_rcvd (struct proc_stat *ps)
 const struct ps_getter ps_msgs_rcvd_getter =
 {"msgs_rcvd", PSTAT_TASK_EVENTS, (vf) ps_get_msgs_rcvd};
 
-static int 
+static int
 ps_get_zero_fills (struct proc_stat *ps)
 {
   return proc_stat_task_events_info (ps)->zero_fills;
@@ -378,7 +388,7 @@ ps_emit_num_blocks (struct proc_stat *ps, struct ps_fmt_field *field,
   return ps_stream_write_field (stream, buf, field->width);
 }
 
-int 
+int
 sprint_frac_value (char *buf,
 		  int value, int min_value_len,
 		  int frac, int frac_scale,
@@ -479,7 +489,7 @@ ps_emit_minutes (struct proc_stat *ps, struct ps_fmt_field *field,
   struct timeval tv;
   int width = field->width;
 
-  FG (field, int)(ps, &tv);
+  FG (field, void)(ps, &tv);
 
   if ((field->flags & PS_FMT_FIELD_COLON_MOD) && tv.tv_sec < 60)
     strcpy (buf, "-");
@@ -499,7 +509,7 @@ ps_emit_past_time (struct proc_stat *ps, struct ps_fmt_field *field,
   struct timeval tv;
   int width = field->width;
 
-  FG (field, int)(ps, &tv);
+  FG (field, void)(ps, &tv);
 
   if (now.tv_sec == 0 && gettimeofday (&now, 0) < 0)
     return errno;
@@ -777,7 +787,7 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
 #define GUARDED_CMP(s1, s2, call) \
   ((s1) == NULL ? (((s2) == NULL) ? 0 : -1) : ((s2) == NULL ? 1 : (call)))
 
-int 
+int
 ps_cmp_ints (struct proc_stat *ps1, struct proc_stat *ps2,
 	     const struct ps_getter *getter)
 {
@@ -786,7 +796,7 @@ ps_cmp_ints (struct proc_stat *ps1, struct proc_stat *ps2,
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
 }
 
-int 
+int
 ps_cmp_floats (struct proc_stat *ps1, struct proc_stat *ps2,
 	       const struct ps_getter *getter)
 {
@@ -795,7 +805,7 @@ ps_cmp_floats (struct proc_stat *ps1, struct proc_stat *ps2,
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
 }
 
-int 
+int
 ps_cmp_uids (struct proc_stat *ps1, struct proc_stat *ps2,
 	     const struct ps_getter *getter)
 {
@@ -804,7 +814,7 @@ ps_cmp_uids (struct proc_stat *ps1, struct proc_stat *ps2,
   return (u1 ? ps_user_uid (u1) : -1) - (u2 ? ps_user_uid (u2) : -1);
 }
 
-int 
+int
 ps_cmp_unames (struct proc_stat *ps1, struct proc_stat *ps2,
 	       const struct ps_getter *getter)
 {
@@ -815,7 +825,7 @@ ps_cmp_unames (struct proc_stat *ps1, struct proc_stat *ps2,
   return GUARDED_CMP (pw1, pw2, strcmp (pw1->pw_name, pw2->pw_name));
 }
 
-int 
+int
 ps_cmp_strings (struct proc_stat *ps1, struct proc_stat *ps2,
 		const struct ps_getter *getter)
 {
@@ -887,7 +897,7 @@ ps_nominal_nth (struct proc_stat *ps, const struct ps_getter *getter)
 static int own_uid = -2;	/* -1 means no uid at all.  */
 
 /* A user is nominal if it's the current user.  */
-int 
+int
 ps_nominal_user (struct proc_stat *ps, const struct ps_getter *getter)
 {
   struct ps_user *u = G (getter, struct ps_user *)(ps);
@@ -897,7 +907,7 @@ ps_nominal_user (struct proc_stat *ps, const struct ps_getter *getter)
 }
 
 /* A uid is nominal if it's that of the current user.  */
-int 
+int
 ps_nominal_uid (struct proc_stat *ps, const struct ps_getter *getter)
 {
   uid_t uid = G (getter, uid_t)(ps);
@@ -939,7 +949,7 @@ specv_find (const struct ps_fmt_spec *specs, const char *name,
   return 0;
 }
 
-/* Number of specs allocated in each block of expansions.  */ 
+/* Number of specs allocated in each block of expansions.  */
 #define EXP_BLOCK_SIZE  20
 
 /* A node in a linked list of spec vectors.  */
@@ -1077,6 +1087,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Arg0",	0,	0, -1, 0,
    &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
+  {"Start",	0,	-7, 1, 0,
+   &ps_start_time_getter,  ps_emit_past_time, ps_cmp_times,0},
   {"Time",	0,	-8, 2, 0,
    &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
   {"UTime",	0,	-8, 2, 0,
