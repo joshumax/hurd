@@ -29,6 +29,7 @@
 #include <hurd/ihash.h>
 #include <assert.h>
 #include "auth_S.h"
+#include "auth_reply_U.h"
 
 char *auth_version = "0.0 pre-alpha";
 
@@ -82,6 +83,8 @@ inline void idvec_copyout (struct idvec *idvec, uid_t **ids, uid_t *nids)
 {
   if (idvec->num > *nids)
     *ids = idvec->ids;
+  else
+    memcpy (*ids, idvec->ids, idvec->num * sizeof *ids);
   *nids = idvec->num;
 }
 
@@ -288,6 +291,9 @@ S_auth_user_authenticate (struct authhandle *userauth,
 {
   struct pending *s;
 
+  if (! userauth)
+    return EOPNOTSUPP;
+
   mutex_lock (&pending_lock);
 
   /* Look for this port in the server list.  */
@@ -301,11 +307,16 @@ S_auth_user_authenticate (struct authhandle *userauth,
       /* Remove it from the pending list.  */
       ihash_locp_remove (pending_servers, s->locp);
 
-      /* Give the server the auth port and wake the RPC up.  */
+      /* Give the server the auth port and wake the RPC up.
+	 We need to add a ref in case the port dies.  */
       s->user = userauth;
-      mutex_unlock (&pending_lock);
-      condition_signal (&s->wakeup);
+      ports_port_ref (userauth);
 
+      condition_signal (&s->wakeup);
+      mutex_unlock (&pending_lock);
+
+      mach_port_deallocate (mach_task_self (), ignored);
+      mach_port_deallocate (mach_task_self (), rendezvous);
       return 0;
     }
   else
@@ -324,6 +335,9 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	  condition_init (&u.wakeup);
 	  cancel_on_dead_name (userauth, rendezvous);
 	  err = hurd_condition_wait (&u.wakeup, &pending_lock);
+	  if (err)
+	    /* We were interrupted; remove our record.  */
+	    ihash_locp_remove (pending_users, u.locp);
 	}
       /* The server side has already removed U from the ihash table.  */
       mutex_unlock (&pending_lock);
@@ -333,6 +347,8 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	  /* The server RPC has set the port and signalled U.wakeup.  */
 	  *newport = u.passthrough;
 	  *newporttype = u.passthrough_type;
+	  mach_port_deallocate (mach_task_self (), ignored);
+	  mach_port_deallocate (mach_task_self (), rendezvous);
 	}
       return err;
     }
@@ -341,10 +357,12 @@ S_auth_user_authenticate (struct authhandle *userauth,
 /* Implement auth_server_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_server_authenticate (struct authhandle *serverauth,
+			    mach_port_t reply,
+			    mach_msg_type_name_t reply_type,
 			    mach_port_t ignored,
 			    mach_port_t rendezvous,
 			    mach_port_t newport,
-			    mach_port_t newport_type,
+			    mach_msg_type_name_t newport_type,
 			    uid_t **euids,
 			    u_int *neuids,
 			    uid_t **auids,
@@ -355,6 +373,10 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 			    u_int *nagids)
 {
   struct pending *u;
+  struct authhandle *user;
+
+  if (! serverauth)
+    return EOPNOTSUPP;
 
   mutex_lock (&pending_lock);
 
@@ -362,19 +384,20 @@ S_auth_server_authenticate (struct authhandle *serverauth,
   u = ihash_find (pending_users, rendezvous);
   if (u)
     {
-      /* Found it!  Extract the ids.  */
-      OUTIDS (u->user);
-
       /* Remove it from the pending list.  */
       ihash_locp_remove (pending_users, u->locp);
+
+      /* Found it!  We must add a ref because the one held by the
+	 user RPC might die as soon as we unlock pending_lock.  */
+      user = u->user;
+      ports_port_ref (user);
 
       /* Give the user the new port and wake the RPC up.  */
       u->passthrough = newport;
       u->passthrough_type = newport_type;
-      mutex_unlock (&pending_lock);
-      condition_signal (&u->wakeup);
 
-      return 0;
+      condition_signal (&u->wakeup);
+      mutex_unlock (&pending_lock);
     }
   else
     {
@@ -392,16 +415,32 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 	  condition_init (&s.wakeup);
 	  cancel_on_dead_name (serverauth, rendezvous);
 	  err = hurd_condition_wait (&s.wakeup, &pending_lock);
+	  if (err)
+	    /* We were interrupted; remove our record.  */
+	    ihash_locp_remove (pending_servers, s.locp);
 	}
       /* The user side has already removed S from the ihash table.  */
       mutex_unlock (&pending_lock);
 
-      if (! err)
-	/* The user RPC has set the port and signalled S.wakeup.  */
-	OUTIDS (s.user);
+      if (err)
+	return err;
 
-      return err;
+      /* The user RPC has set the port (with a ref) and signalled S.wakeup.  */
+      user = s.user;
     }
+
+  /* Extract the ids.  We must use a separate reply stub so
+     we can deref the user auth handle after the reply uses its
+     contents.  */
+  auth_server_authenticate_reply (reply, reply_type, 0,
+				  user->euids.ids, user->euids.num,
+				  user->auids.ids, user->auids.num,
+				  user->egids.ids, user->egids.num,
+				  user->agids.ids, user->agids.num);
+  ports_port_deref (user);
+  mach_port_deallocate (mach_task_self (), ignored);
+  mach_port_deallocate (mach_task_self (), rendezvous);
+  return MIG_NO_REPLY;
 }
 
 
