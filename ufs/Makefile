@@ -40,6 +40,7 @@ ufs: $(OBJS) $(LIBS)
 	$(link)
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
+	rsh $(mighost) cd `pwd` \; \
 	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
 
 clean:
