@@ -982,13 +982,16 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   ps->failed |= (need & ~PSTAT_USER_MASK) & ~have;
   ps->flags = have;
 
-  need &= PSTAT_USER_MASK;	/* Only consider user bits now.  */
+  need &= ~have;
   if (need && ps->context->user_hooks && ps->context->user_hooks->fetch)
     /* There is some user state we need to fetch.  */
     {
       have |= (*ps->context->user_hooks->fetch) (ps, need, have);
-      /* Update the flag state again having tried the user bits.  */
-      ps->failed |= need & ~have;
+      /* Update the flag state again having tried the user bits.  We allow
+	 the user hook to turn on non-user bits, in which case we remove them
+	 from the failed set; the user hook may know some way of getting the
+	 info that we don't.  */
+      ps->failed = (ps->failed | need) & ~have;
       ps->flags = have;
     }
 
