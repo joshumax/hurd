@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -24,7 +24,7 @@
 #include <hurd/ihash.h>
 
 void
-inhibit_all_rpcs ()
+ports_inhibit_all_rpcs ()
 {
   struct port_bucket *bucket;
   error_t interruptor (void *portstruct)
@@ -41,17 +41,17 @@ inhibit_all_rpcs ()
 
   for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
     ihash_iterate (bucket->htable, interruptor);
-  
+
   while (_ports_total_rpcs)
     {
       _ports_flags |= _PORTS_INHIBIT_WAIT;
       condition_wait (&_ports_block, &_ports_lock);
     }
-  
+
   _ports_flags |= _PORTS_INHIBITED;
   _ports_flags &= ~_PORTS_INHIBIT_WAIT;
-  
+
   mutex_unlock (&_ports_lock);
 }
 
-    
+
