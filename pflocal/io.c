@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For bzero() */
-#include <unistd.h>		/* For getpid() */
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
@@ -415,6 +415,25 @@ S_io_restrict_auth (struct sock_user *user,
     return EOPNOTSUPP;
   *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
   return sock_create_port (user->sock, new_port);
+}
+
+error_t
+S_io_pathconf (struct sock_user *user, int name, int *value)
+{
+  if (user == NULL)
+    return EOPNOTSUPP;
+  else if (name == _PC_PIPE_BUF)
+    {
+      mutex_lock (&user->sock->lock);
+      if (user->sock->write_pipe == NULL)
+	*value = 0;
+      else
+	*value = user->sock->write_pipe->write_atomic;
+      mutex_unlock (&user->sock->lock);
+      return 0;
+    }
+  else
+    return EINVAL;
 }
 
 /* Stubs for currently unsupported rpcs.  */
