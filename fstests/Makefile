@@ -23,6 +23,8 @@ DIST_FILES = fstests.c Makefile fdtests.c
 
 OBJS=fstests.o
 
+all: fstests
+
 fstests: $(OBJS); $(link)
 
 install: fstests $(hurdroot)
