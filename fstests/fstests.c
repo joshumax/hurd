@@ -30,6 +30,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* mach_port_t _hurd_msgport = MACH_PORT_NULL; */
 
+int check_refs (mach_port_t port) /* To call from gdb */
+{
+  int err;
+  mach_port_urefs_t refs;
+  err = mach_port_get_refs (mach_task_self (),
+			    port, MACH_PORT_RIGHT_SEND, &refs);
+  return err ? -err : refs;
+}
+
 void
 main ()
 {
