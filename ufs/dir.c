@@ -330,7 +330,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || memchr (entry->d_name, '\0', DIRECT_NAMLEN (entry)))
 	{
 	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
-		  dp->dn->number, currentoff - blockaddr);
+		  dp->dn->number, currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
 	}
       
