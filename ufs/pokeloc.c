@@ -47,6 +47,25 @@ record_poke (void *loc, vm_size_t length)
   spin_unlock (&pokelistlock);
 }
 
+/* Get rid of any outstanding pokes.  */
+void
+flush_pokes ()
+{
+  struct pokeloc *pl;
+
+  spin_lock (&pokelistlock);
+  pl = pokelist;
+  pokelist = 0;
+  spin_unlock (&pokelistlock);
+
+  while (pl)
+    {
+      struct pokeloc *next = pl->next;
+      free (pl);
+      pl = next;
+    }
+}
+
 /* Sync all the modified pieces of disk */
 void
 sync_disk (int wait)
