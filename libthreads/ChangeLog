@@ -1,3 +1,9 @@
+2000-03-30  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* libthreads.map: Define HURD_CTHREADS_0.3 version set,
+	putting all symbols there except the lockfile symbols.
+	* lockfile.c: Nit fixes.
+
 2000-03-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	Locking support for stdio streams with glibc-2.2 libio.  EXPERIMENTAL!
