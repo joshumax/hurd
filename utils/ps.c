@@ -123,9 +123,9 @@ struct output_fmt output_fmts[] =
   { "default", "pid",
     "%^%?user %pid %th %tt %sc %stat %time %command" },
   { "user", "-cpu",
-    "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %command" },
+    "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %start %time %command" },
   { "vmem", "-mem",
-    "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem  %command"
+    "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem %command"
   },
   { "long", "pid",
     "%^%uid %pid %th %ppid %pri %ni %nth %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command" },
