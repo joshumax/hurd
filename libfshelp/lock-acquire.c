@@ -42,9 +42,11 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
   if (flags & LOCK_UN)
     {
       if (*user & LOCK_UN)
-	return EBADF;
+	return 0;
+
       assert (*user == box->type);
       assert (*user == LOCK_SH || *user == LOCK_EX);
+
       if (*user == LOCK_SH)
 	{
 	  if (!--box->shcount)
