@@ -76,7 +76,7 @@ diskfs_create_node (struct node *dir,
   np->dn_set_ctime = 1;
 
   if (S_ISDIR (mode))
-    err = diskfs_init_dir (np, dir);
+    err = diskfs_init_dir (np, dir, cred);
   
   diskfs_node_update (np, 1);
 
