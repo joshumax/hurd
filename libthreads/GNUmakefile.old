@@ -1,0 +1,38 @@
+CPPFLAGS = -nostdinc -I. -I/home/gd3/hurdinst/include
+CFLAGS = -g -O
+CPP=/usr1/gnu/DIST/lib/gcc-lib/i386-compaq-mach/2.4.5/cpp
+AS = as
+AR = ar
+RANLIB = ranlib
+CC = gcc
+
+VPATH=.:i386
+
+OBJS = cprocs.o cthreads.o malloc.o \
+	mig_support.o stack.o sync.o \
+	thread.o lock.o csw.o cthread_data.o
+
+all: libthreads.a
+
+install: all
+	cp libthreads.a /home/gd3/hurdinst/lib/libthreads.a
+	ranlib /home/gd3/hurdinst/lib/libthreads.a
+	cp cthreads.h /home/gd3/hurdinst/include/cthreads.h
+	cp i386/cthreads.h /home/gd3/hurdinst/include/i386/cthreads.h
+
+clean:
+	rm -f lib*.a Makedep* a.out core errs \
+	 *.d *.s *.S *.o *.BAK *.CKP */*.BAK */*.CKP
+
+libthreads.a: $(OBJS)
+	rm -f $@
+	$(AR) crv $@ $(OBJS)
+	$(RANLIB) $@
+
+%.o: %.s
+	$(CPP) $(CPPFLAGS) $< > $*.as
+	$(AS) -o $@ $*.as
+	rm -f $*.as
+
+TAGS: *.c *.h
+	etags *.c *.h
