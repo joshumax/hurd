@@ -105,7 +105,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   cred->po = malloc (sizeof (struct trivfs_peropen));
   cred->po->refcnt = 1;
   cred->po->cntl = cntl;
-  cred->po->openmodes = (flags & ~O_NONBLOCK);
+  cred->po->openmodes = flags;
   cred->po->hook = 0;
   ports_port_ref (cntl);
   if (trivfs_peropen_create_hook)
