@@ -1,3 +1,18 @@
+2004-02-10  Roland McGrath  <roland@frob.com>
+
+	* elfcore.c (dump_core): Include null terminator in note name size,
+	and round up to four byte alignment.
+	(dump_core: write_note): Don't round OFFSET after each partial write.
+	(dump_core): Don't round up to page size before writing notes.
+	Do round up to page size for offset of each PT_LOAD region.
+
+2004-01-15  Roland McGrath  <roland@frob.com>
+
+	* priv.h (struct execdata.info.elf): Add `execstack' flag.
+	* exec.c (check_elf_phdr): Set it according to PT_GNU_STACK's PF_X
+	flag bit.  If no PT_GNU_STACK, default to set.
+	(do_exec): If flag is clear, remove execute permission from stack.
+
 2002-09-17  Roland McGrath  <roland@frob.com>
 
 	* elfcore.c [i386_THREAD_STATE] (fetch_thread_regset): The two types
