@@ -29,16 +29,19 @@ trivfs_S_io_restrict_auth (struct protid *cred,
 			   uid_t *gids, u_int ngids)
 {
   struct protid *newcred;
+  int i;
   
   if (!cred)
     return EOPNOTSUPP;
   
   newcred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
-  spin_lock (&trivfs_refcnt_lock);
-  newcred->po = cred->po;
-  newcred->po->refcnt++;
-  spin_unlock (&trivfs_refcnt_lock);
-  
+  newcred->isroot = 0;
+  if (cred->isroot)
+    {
+      for (i = 0; i < nuids; i++)
+	if (uids[i] == 0)
+	  newcred->isroot = 1;
+    }
   io_restrict_auth (cred->realnode, &newcred->realnode, 
 		    uids, nuids, gids, ngids);
   
