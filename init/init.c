@@ -274,13 +274,13 @@ run (char *server, mach_port_t *ports, task_t *task)
 	    ++progname;
 	  else
 	    progname = prog;
-	  errno = file_exec (file, *task, 0,
-			     progname, strlen (progname) + 1, /* Args.  */
-			     "", 1, /* No env.  */
-			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			     NULL, 0, /* No info in init ints.  */
-			     NULL, 0, NULL, 0);
+	  errno = file_exec (file, *task, MACH_MSG_TYPE_COPY_SEND, 0,
+			     progname, strlen (progname) + 1, 0, /* Args.  */
+			     "", 1, 0, /* No env.  */
+			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3, 0,
+			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX, 0,
+			     NULL, 0, 0, /* No info in init ints.  */
+			     NULL, 0, 0, NULL, 0, 0);
 	  if (!errno)
 	    break;
 
@@ -355,14 +355,13 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
     ++progname;
   else
     progname = filename;
-  err = file_exec (file, task, 0,
-		   args, arglen,
-		   NULL, 0, /* No env.  */
-		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-		   default_ports, MACH_MSG_TYPE_COPY_SEND,
-		   INIT_PORT_MAX,
-		   NULL, 0, /* No info in init ints.  */
-		   NULL, 0, NULL, 0);
+  err = file_exec (file, task, MACH_MSG_TYPE_COPY_SEND, 0,
+		   args, arglen, 0,
+		   NULL, 0, 0, /* No env.  */
+		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3, 0,
+		   default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX, 0,
+		   NULL, 0, 0, /* No info in init ints.  */
+		   NULL, 0, 0, NULL, 0, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   if (ctty != MACH_PORT_NULL)
     {
