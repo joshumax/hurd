@@ -60,30 +60,26 @@ routine io_readable (
 	io_object: io_t;
 	out amount: int);
 
-/* This manipulates a descriptor flag (per open) controlling
-   nonblocking mode.  If this flag is set, all further requests that
-   might block for a "long time" will return EWOULDBLOCK instead.  */
-routine io_mod_nonblock (
+/* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
+   O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
+   will tell you which of O_READ, O_WRITE, and O_EXEC the object can
+   be used for.  The O_ASYNC bit affects icky async I/O; good async 
+   I/O is done through io_async which is orthogonal to these calls. */
+routine io_set_all_openmodes (
 	io_object: io_t;
-	on_or_off: int);
+	newbits: int);
 
-routine io_get_nonblock (
+routine io_get_openmodes (
 	io_object: io_t;
-	out on_or_off: int);
+	out bits: int);
 
-/* This manipulates a descriptor flag (per open) controlling append
-   mode.  If this flag is set, all further calls to io_write with an
-   offset of -1 will append to the IO object, and move the file
-   pointer accordingly.  The append_mode flag in the shared page
-   structure is a copy of this flag.  This flag is meaningful only for
-   seekable objects.  */
-routine io_mod_append (
+routine io_set_some_openmodes (
 	io_object: io_t;
-	on_or_off: int);
+	bits_to_set: int);
 
-routine io_get_append (
+routine io_clear_some_openmodes (
 	io_object: io_t;
-	out on_or_off: int);
+	bits_to_clear: int);
 
 /* This requests that the IO object send SIGIO and SIGURG signals,
    when appropriate, to the designated port using sig_post.  A
@@ -113,37 +109,20 @@ routine io_get_owner (
 
 /* This provides "old style" async IO.  This is deprecated, and
    provided only for backward compatibility with 4.3 BSD.  This
-   manipulates a per-object (not per-open) flag controlling old-style
-   async mode.  If the bit is on, then the IO object will send SIGIO
-   ande SIGURG signals (in precisely the same circumstances as
-   io_async) to the current owner (pid or pgrp) as set by io_set_own.
-   The reference port for the signal sends is the async_id_port
-   returned by this call; it is up to the caller to communicate this
-   to potential recipients of the signal.  (Such communication needs
-   to be done both by the caller of the call and the caller of
-   io_set_owner, in order to get the BSD functionality.)  One
-   async_id_port is shared by all users of io_mod_async_icky and
-   io_get_icky_async_id.  If on_or_off is 0, then the current
-   old-style async port is deleted.  */
-routine io_mod_async_icky (
-	io_object: io_t;
-	on_or_off: int;
-	out icky_async_id_port: mach_port_t);
-
+   implements a per-object (not per-open) flag controlling old-style
+   async mode (O_ASYNC).  If the flag is set, then the IO object will
+   send SIGIO ande SIGURG signals (in precisely the same circumstances
+   as io_async) to the current owner (pid or pgrp) as set by
+   io_set_own.  The reference port for the signal sends is the
+   icky_async_id_port returned by this call; it is up to the caller to
+   communicate this to potential recipients of the signal.  (Such
+   communication needs to be done both by the caller of the call and
+   the caller of io_mod_owner, in order to get the BSD functionality.)
+   One async_id_port is shared by all users of io_get_icky_async_id. */
 /* Fetch the current old-style async ID port.  */
 routine io_get_icky_async_id (
 	io_object: io_t;
 	out icky_async_id_port: mach_port_t);
-
-routine io_get_async_icky (
-	io_object: io_t;
-	out on_or_off: int);
-
-/* Return the open status of the IO object.  This is a set of bits
-   including FS_LOOKUP_READ, _WRITE, and _EXEC.  */
-routine io_get_openstat (
-	io_object: io_t;
-	out open_stat: int);
 
 /* Select_type is the or of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    If any of the requested types of IO are immediately possible, the
