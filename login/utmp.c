@@ -378,12 +378,12 @@ int trivfs_protid_nporttypes = 1;
 int trivfs_cntl_nporttypes = 1;
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
+trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   die(0);
 }

@@ -139,15 +139,13 @@ void main(int argc, char *argv[])
 }
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
   st->st_fstype = FSTYPE_MISC;
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode,
-	       struct port_class *fsys_port_class,
-	       struct port_class *file_port_class)
+trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   error_t err;
 
