@@ -1,3 +1,11 @@
+Sun Sep  8 13:57:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh: New file.
+	* Makefile (DIST_FILES): New variable.
+	(install): Depend on $(prefix)/dev/MAKEDEV.	
+	(all): Depend on MAKEDEV.
+	($(prefix)/dev/MAKEDEV): New rule.
+
 Thu Sep  5 11:40:00 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile: Use $(top_srcdir)/sh-version.sed to make executables
