@@ -1,6 +1,6 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -97,6 +97,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	 The default_type member is our input parameter to it.  */
       bzero (&params->store_params, sizeof params->store_params);
       params->store_params.default_type = "device";
+      params->store_params.store_optional = 1;
       state->child_inputs[0] = &params->store_params;
       break;
 
@@ -113,12 +114,13 @@ parse_opt (int key, char *arg, struct argp_state *state)
 static const struct argp_child argp_kids[] = { { &store_argp }, {0} };
 static const struct argp argp = { options, parse_opt, 0, doc, argp_kids };
 
+struct trivfs_control *storeio_fsys;
+
 int
 main (int argc, char *argv[])
 {
   error_t err;
   mach_port_t bootstrap;
-  struct trivfs_control *fsys;
   struct dev device;
   struct storeio_argp_params params;
 
@@ -133,14 +135,15 @@ main (int argc, char *argv[])
     error (2, 0, "Must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
+  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &storeio_fsys);
   if (err)
     error (3, err, "trivfs_startup");
 
-  fsys->hook = &device;
+  storeio_fsys->hook = &device;
 
   /* Launch. */
-  ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
+  ports_manage_port_operations_multithread (storeio_fsys->pi.bucket,
+					    trivfs_demuxer,
 					    30*1000, 5*60*1000, 0);
 
   return 0;

@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -24,6 +24,8 @@
 #include <device/device.h>
 #include <rwlock.h>
 #include <hurd/store.h>
+
+extern struct trivfs_control *storeio_fsys;
 
 /* Information about backend store, which we presumptively call a "device".  */
 struct dev

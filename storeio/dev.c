@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -140,9 +140,20 @@ dev_open (struct dev *dev)
 
   assert (dev->store == 0);
 
-  err = store_parsed_open (dev->store_name,
-			   dev->readonly ? STORE_READONLY : 0,
-			   &dev->store);
+  if (dev->store_name == 0)
+    {
+      /* This means we had no store arguments.
+	 We are to operate on our underlying node. */
+      err = store_create (storeio_fsys->underlying,
+			  dev->readonly ? STORE_READONLY : 0,
+			  &dev->store);
+
+    }
+  else
+    /* Open based on the previously parsed store arguments.  */
+    err = store_parsed_open (dev->store_name,
+			     dev->readonly ? STORE_READONLY : 0,
+			     &dev->store);
   if (err)
     return err;
 
