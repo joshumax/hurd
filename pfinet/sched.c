@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <linux/system.h>
+#include <asm/system.h>
 
 struct mutex global_interrupt_lock = MUTEX_INITIALIZER;
 
