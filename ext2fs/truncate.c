@@ -14,24 +14,6 @@
  */
 
 /*
- * Real random numbers for secure rm added 94/02/18
- * Idea from Pierre del Perugia <delperug@gla.ecoledoc.ibp.fr>
- */
-
-#include <linux/errno.h>
-#include <linux/fs.h>
-#include <linux/ext2_fs.h>
-#include <linux/fcntl.h>
-#include <linux/sched.h>
-#include <linux/stat.h>
-#include <linux/locks.h>
-#include <linux/string.h>
-
-static int ext2_secrm_seed = 152;	/* Random generator base */
-
-#define RANDOM_INT (ext2_secrm_seed = ext2_secrm_seed * 69069l +1)
-
-/*
  * Truncate has the most races in the whole filesystem: coding it is
  * a pain in the a**. Especially as I don't do any locking...
  *
@@ -44,327 +26,332 @@ static int ext2_secrm_seed = 152;	/* Random generator base */
  * general case (size = XXX). I hope.
  */
 
-static int trunc_direct (struct inode * inode)
-{
-	u32 * p;
-	int i, tmp;
-	char * bh;
-	unsigned long block_to_free = 0;
-	unsigned long free_count = 0;
-	int retry = 0;
-	int blocks = inode->i_sb->s_blocksize / 512;
-#define DIRECT_BLOCK ((inode->i_size + inode->i_sb->s_blocksize - 1) / \
-			inode->i_sb->s_blocksize)
-	int direct_block = DIRECT_BLOCK;
+#define DIRECT_BLOCK(length) \
+  ((length + block_size - 1) / block_size)
+#define INDIRECT_BLOCK(length, offset) \
+  ((int)DIRECT_BLOCK(length) - offset)
+#define DINDIRECT_BLOCK(length, offset) \
+  (((int)DIRECT_BLOCK(length) - offset) / addr_per_block)
+#define TINDIRECT_BLOCK(length) \
+  (((int)DIRECT_BLOCK(length) \
+    - (addr_per_block * addr_per_block + addr_per_block + EXT2_NDIR_BLOCKS)) \
+   / (addr_per_block * addr_per_block))
 
-repeat:
-	for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++) {
-		p = inode->u.ext2_i.i_data + i;
-		tmp = *p;
-		if (!tmp)
-			continue;
-		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL)
-			bh = getblk (inode->i_dev, tmp,
-				     inode->i_sb->s_blocksize);
-		else
-			bh = get_hash_table (inode->i_dev, tmp,
-					     inode->i_sb->s_blocksize);
-		if (i < direct_block) {
-			brelse (bh);
-			goto repeat;
-		}
-		if ((bh && bh->b_count != 1) || tmp != *p) {
-			retry = 1;
-			brelse (bh);
-			continue;
-		}
-		*p = 0;
-		inode->i_blocks -= blocks;
-		inode->i_dirt = 1;
-		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL) {
-			memset(bh, RANDOM_INT, inode->i_sb->s_blocksize);
-			mark_buffer_dirty(bh, 1);
-		}
-		brelse (bh);
-		if (free_count == 0) {
-			block_to_free = tmp;
-			free_count++;
-		} else if (free_count > 0 && block_to_free == tmp - free_count)
-			free_count++;
-		else {
-			ext2_free_blocks (inode->i_sb, block_to_free, free_count);
-			block_to_free = tmp;
-			free_count = 1;
-		}
-/*		ext2_free_blocks (inode->i_sb, tmp, 1); */
+static int trunc_direct (struct node * node, unsigned long length)
+{
+  u32 * p;
+  int i, tmp;
+  char * bh;
+  unsigned long block_to_free = 0;
+  unsigned long free_count = 0;
+  int retry = 0;
+  int blocks = block_size / 512;
+  int direct_block = DIRECT_BLOCK(length);
+
+ repeat:
+  for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++)
+    {
+      p = node->dn.info.i_data + i;
+      tmp = *p;
+      if (!tmp)
+	continue;
+
+      bh = baddr(tmp);
+
+      if (i < direct_block)
+	goto repeat;
+
+      if ((bh && bh->b_count != 1) || tmp != *p)
+	{
+	  retry = 1;
+	  continue;
 	}
-	if (free_count > 0)
-		ext2_free_blocks (inode->i_sb, block_to_free, free_count);
-	return retry;
+
+      *p = 0;
+      node->dn_stat.st_blocks -= blocks;
+      node->dirty = 1;
+
+      if (free_count == 0) {
+	block_to_free = tmp;
+	free_count++;
+      } else if (free_count > 0 && block_to_free == tmp - free_count)
+	free_count++;
+      else {
+	ext2_free_blocks (block_to_free, free_count);
+	block_to_free = tmp;
+	free_count = 1;
+      }
+      /*		ext2f_free_blocks (tmp, 1); */
+    }
+
+  if (free_count > 0)
+    ext2_free_blocks (block_to_free, free_count);
+
+  return retry;
 }
 
-static int trunc_indirect (struct inode * inode, int offset, u32 * p)
+static int trunc_indirect (struct node * node, unsigned long length,
+			   int offset, u32 * p)
 {
-	int i, tmp;
-	char * bh;
-	char * ind_bh;
-	u32 * ind;
-	unsigned long block_to_free = 0;
-	unsigned long free_count = 0;
-	int retry = 0;
-	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
-	int blocks = inode->i_sb->s_blocksize / 512;
-#define INDIRECT_BLOCK ((int)DIRECT_BLOCK - offset)
-	int indirect_block = INDIRECT_BLOCK;
+  int i, tmp;
+  char * bh;
+  char * ind_bh;
+  u32 * ind;
+  unsigned long block_to_free = 0;
+  unsigned long free_count = 0;
+  int retry = 0;
+  int blocks = block_size / 512;
+  int indirect_block = INDIRECT_BLOCK (length, offset);
 
+  tmp = *p;
+  if (!tmp)
+    return 0;
+  ind_bh = baddr (tmp);
+  if (tmp != *p)
+    return 1;
+  if (!ind_bh) {
+    *p = 0;
+    return 0;
+  }
+
+ repeat:
+  for (i = indirect_block ; i < addr_per_block ; i++)
+    {
+      if (i < 0)
+	i = 0;
+      if (i < indirect_block)
+	goto repeat;
+
+      ind = i + (u32 *) ind_bh;
+      tmp = *ind;
+      if (!tmp)
+	continue;
+
+      bh = baddr (tmp);
+      if (i < indirect_block)
+	goto repeat;
+      if ((bh && bh->b_count != 1) || tmp != *ind)
+	{
+	  retry = 1;
+	  continue;
+	}
+
+      *ind = 0;
+      poke_loc (ind, sizeof *ind);
+
+      if (free_count == 0)
+	{
+	  block_to_free = tmp;
+	  free_count++;
+	}
+      else if (free_count > 0 && block_to_free == tmp - free_count)
+	free_count++;
+      else
+	{
+	  ext2_free_blocks (block_to_free, free_count);
+	  block_to_free = tmp;
+	  free_count = 1;
+	}
+      /*		ext2_free_blocks (tmp, 1); */
+      node->dn_stat.st_blocks -= blocks;
+      node->dirty = 1;
+    }
+
+  if (free_count > 0)
+    ext2_free_blocks (block_to_free, free_count);
+
+  ind = (u32 *) ind_bh;
+  for (i = 0; i < addr_per_block; i++)
+    if (*(ind++))
+      break;
+  if (i >= addr_per_block)
+    if (ind_bh->b_count != 1)
+      retry = 1;
+    else
+      {
 	tmp = *p;
-	if (!tmp)
-		return 0;
-	ind_bh = bread (inode->i_dev, tmp, inode->i_sb->s_blocksize);
-if (tmp != *p) {
-		brelse (ind_bh);
-		return 1;
-	}
-	if (!ind_bh) {
-		*p = 0;
-		return 0;
-	}
-repeat:
-	for (i = indirect_block ; i < addr_per_block ; i++) {
-		if (i < 0)
-			i = 0;
-		if (i < indirect_block)
-			goto repeat;
-		ind = i + (u32 *) ind_bh;
-		tmp = *ind;
-		if (!tmp)
-			continue;
-		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL)
-			bh = getblk (inode->i_dev, tmp,
-				     inode->i_sb->s_blocksize);
-		else
-			bh = get_hash_table (inode->i_dev, tmp,
-					     inode->i_sb->s_blocksize);
-		if (i < indirect_block) {
-			brelse (bh);
-			goto repeat;
-		}
-		if ((bh && bh->b_count != 1) || tmp != *ind) {
-			retry = 1;
-			brelse (bh);
-			continue;
-		}
-		*ind = 0;
-		mark_buffer_dirty(ind_bh, 1);
-		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL) {
-			memset(bh, RANDOM_INT, inode->i_sb->s_blocksize);
-			mark_buffer_dirty(bh, 1);
-		}
-		brelse (bh);
-		if (free_count == 0) {
-			block_to_free = tmp;
-			free_count++;
-		} else if (free_count > 0 && block_to_free == tmp - free_count)
-			free_count++;
-		else {
-			ext2_free_blocks (inode->i_sb, block_to_free, free_count);
-			block_to_free = tmp;
-			free_count = 1;
-		}
-/*		ext2_free_blocks (inode->i_sb, tmp, 1); */
-		inode->i_blocks -= blocks;
-		inode->i_dirt = 1;
-	}
-	if (free_count > 0)
-		ext2_free_blocks (inode->i_sb, block_to_free, free_count);
-	ind = (u32 *) ind_bh;
-	for (i = 0; i < addr_per_block; i++)
-		if (*(ind++))
-			break;
-	if (i >= addr_per_block)
-		if (ind_bh->b_count != 1)
-			retry = 1;
-		else {
-			tmp = *p;
-			*p = 0;
-			inode->i_blocks -= blocks;
-			inode->i_dirt = 1;
-			ext2_free_blocks (inode->i_sb, tmp, 1);
-		}
-	if (IS_SYNC(inode) && ind_bh->b_dirt) {
-		ll_rw_block (WRITE, 1, &ind_bh);
-		wait_on_buffer (ind_bh);
-	}
-	brelse (ind_bh);
-	return retry;
+	*p = 0;
+	node->dn_stat.st_blocks -= blocks;
+	node->dirty = 1;
+	ext2_free_blocks (tmp, 1);
+      }
+
+  return retry;
 }
 
-static int trunc_dindirect (struct inode * inode, int offset,
-			    u32 * p)
+static int trunc_dindirect (struct node * node, unsigned long length,
+			    int offset, u32 * p)
 {
-	int i, tmp;
-	char * dind_bh;
-	u32 * dind;
-	int retry = 0;
-	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
-	int blocks = inode->i_sb->s_blocksize / 512;
-#define DINDIRECT_BLOCK (((int)DIRECT_BLOCK - offset) / addr_per_block)
-	int dindirect_block = DINDIRECT_BLOCK;
+  int i, tmp;
+  char * dind_bh;
+  u32 * dind;
+  int retry = 0;
+  int blocks = block_size / 512;
+  int dindirect_block = DINDIRECT_BLOCK (length, offset);
 
+  tmp = *p;
+  if (!tmp)
+    return 0;
+
+  dind_bh = baddr (tmp);
+  if (tmp != *p)
+    return 1;
+
+  if (!dind_bh)
+    {
+      *p = 0;
+      return 0;
+    }
+
+ repeat:
+  for (i = dindirect_block ; i < addr_per_block ; i++) {
+    if (i < 0)
+      i = 0;
+    if (i < dindirect_block)
+      goto repeat;
+
+    dind = i + (u32 *) dind_bh;
+    tmp = *dind;
+    if (!tmp)
+      continue;
+
+    retry |= trunc_indirect (node, offset + (i * addr_per_block), dind);
+
+    poke_loc (dind_bh, block_size);
+  }
+
+  dind = (u32 *) dind_bh;
+  for (i = 0; i < addr_per_block; i++)
+    if (*(dind++))
+      break;
+
+  if (i >= addr_per_block)
+    if (dind_bh->b_count != 1)
+      retry = 1;
+    else
+      {
 	tmp = *p;
-	if (!tmp)
-		return 0;
-	dind_bh = bread (inode->i_dev, tmp, inode->i_sb->s_blocksize);
-	if (tmp != *p) {
-		brelse (dind_bh);
-		return 1;
-	}
-	if (!dind_bh) {
-		*p = 0;
-		return 0;
-	}
-repeat:
-	for (i = dindirect_block ; i < addr_per_block ; i++) {
-		if (i < 0)
-			i = 0;
-		if (i < dindirect_block)
-			goto repeat;
-		dind = i + (u32 *) dind_bh;
-		tmp = *dind;
-		if (!tmp)
-			continue;
-		retry |= trunc_indirect (inode, offset + (i * addr_per_block),
-					  dind);
-		mark_buffer_dirty(dind_bh, 1);
-	}
-	dind = (u32 *) dind_bh;
-	for (i = 0; i < addr_per_block; i++)
-		if (*(dind++))
-			break;
-	if (i >= addr_per_block)
-		if (dind_bh->b_count != 1)
-			retry = 1;
-		else {
-			tmp = *p;
-			*p = 0;
-			inode->i_blocks -= blocks;
-			inode->i_dirt = 1;
-			ext2_free_blocks (inode->i_sb, tmp, 1);
-		}
-	if (IS_SYNC(inode) && dind_bh->b_dirt) {
-		ll_rw_block (WRITE, 1, &dind_bh);
-		wait_on_buffer (dind_bh);
-	}
-	brelse (dind_bh);
-	return retry;
+	*p = 0;
+	node->dn_stat.st_blocks -= blocks;
+	node->dirty = 1;
+	ext2_free_blocks (tmp, 1);
+      }
+
+  return retry;
 }
 
-static int trunc_tindirect (struct inode * inode)
+static int trunc_tindirect (struct node * node, unsigned long length)
 {
-	int i, tmp;
-	char * tind_bh;
-	u32 * tind, * p;
-	int retry = 0;
-	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
-	int blocks = inode->i_sb->s_blocksize / 512;
-#define TINDIRECT_BLOCK (((int)DIRECT_BLOCK - (addr_per_block * addr_per_block + \
-			  addr_per_block + EXT2_NDIR_BLOCKS)) / \
-			  (addr_per_block * addr_per_block))
-	int tindirect_block = TINDIRECT_BLOCK;
+  int i, tmp;
+  char * tind_bh;
+  u32 * tind, * p;
+  int retry = 0;
+  int blocks = block_size / 512;
+  int tindirect_block = TINDIRECT_BLOCK (length);
 
-	p = inode->u.ext2_i.i_data + EXT2_TIND_BLOCK;
-	if (!(tmp = *p))
-		return 0;
-	tind_bh = bread (inode->i_dev, tmp, inode->i_sb->s_blocksize);
-	if (tmp != *p) {
-		brelse (tind_bh);
-		return 1;
-	}
-	if (!tind_bh) {
-		*p = 0;
-		return 0;
-	}
+  p = node->dn.info.i_data + EXT2_TIND_BLOCK;
+  if (!(tmp = *p))
+    return 0;
+
+  tind_bh = baddr (tmp);
+  if (tmp != *p)
+    return 1;
+
+  if (!tind_bh)
+    {
+      *p = 0;
+      return 0;
+    }
+
 repeat:
-	for (i = tindirect_block ; i < addr_per_block ; i++) {
-		if (i < 0)
-			i = 0;
-		if (i < tindirect_block)
-			goto repeat;
-		tind = i + (u32 *) tind_bh;
-		retry |= trunc_dindirect(inode, EXT2_NDIR_BLOCKS +
-			addr_per_block + (i + 1) * addr_per_block * addr_per_block,
+  for (i = tindirect_block ; i < addr_per_block ; i++)
+    {
+      if (i < 0)
+	i = 0;
+      if (i < tindirect_block)
+	goto repeat;
+
+      tind = i + (u32 *) tind_bh;
+      retry |=
+	trunc_dindirect(node,
+			(EXT2_NDIR_BLOCKS
+			 + addr_per_block
+			 + (i + 1) * addr_per_block * addr_per_block),
 			tind);
-		mark_buffer_dirty(tind_bh, 1);
-	}
-	tind = (u32 *) tind_bh;
-	for (i = 0; i < addr_per_block; i++)
-		if (*(tind++))
-			break;
-	if (i >= addr_per_block)
-		if (tind_bh->b_count != 1)
-			retry = 1;
-		else {
-			tmp = *p;
-			*p = 0;
-			inode->i_blocks -= blocks;
-			inode->i_dirt = 1;
-			ext2_free_blocks (inode->i_sb, tmp, 1);
-		}
-	if (IS_SYNC(inode) && tind_bh->b_dirt) {
-		ll_rw_block (WRITE, 1, &tind_bh);
-		wait_on_buffer (tind_bh);
-	}
-	brelse (tind_bh);
-	return retry;
+      poke_loc (tind_bh, block_size);
+    }
+
+  tind = (u32 *) tind_bh;
+  for (i = 0; i < addr_per_block; i++)
+    if (*(tind++))
+      break;
+
+  if (i >= addr_per_block)
+    if (tind_bh->b_count != 1)
+      retry = 1;
+    else
+      {
+	tmp = *p;
+	*p = 0;
+	node->dn_stat.st_blocks -= blocks;
+	node->dirty = 1;
+	ext2_free_blocks (tmp, 1);
+      }
+
+  return retry;
 }
 		
-void ext2_truncate (struct inode * inode)
+void ext2_truncate (struct node * node)
 {
-	int retry;
-	char * bh;
-	int err;
-	int offset;
+  int retry;
+  int offset;
+  mode_t mode = node->dn_state.st_mode;
 
-	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-	    S_ISLNK(inode->i_mode)))
-		return;
-	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-		return;
-	ext2_discard_prealloc(inode);
-	while (1) {
-		down(&inode->i_sem);
-		retry = trunc_direct(inode);
-		retry |= trunc_indirect (inode, EXT2_IND_BLOCK,
-			(u32 *) &inode->u.ext2_i.i_data[EXT2_IND_BLOCK]);
-		retry |= trunc_dindirect (inode, EXT2_IND_BLOCK +
-			EXT2_ADDR_PER_BLOCK(inode->i_sb),
-			(u32 *) &inode->u.ext2_i.i_data[EXT2_DIND_BLOCK]);
-		retry |= trunc_tindirect (inode);
-		up(&inode->i_sem);
-		if (!retry)
-			break;
-		if (IS_SYNC(inode) && inode->i_dirt)
-			ext2_sync_inode (inode);
-		current->counter = 0;
-		schedule ();
-	}
-	/*
-	 * If the file is not being truncated to a block boundary, the
-	 * contents of the partial block following the end of the file must be
-	 * zeroed in case it ever becomes accessible again because of
-	 * subsequent file growth.
-	 */
-	offset = inode->i_size % inode->i_sb->s_blocksize;
-	if (offset) {
-		bh = ext2_bread (inode, inode->i_size / inode->i_sb->s_blocksize,
-				 0, &err);
-		if (bh) {
-			memset (bh + offset, 0,
-				inode->i_sb->s_blocksize - offset);
-			mark_buffer_dirty (bh, 0);
-			brelse (bh);
-		}
-	}
-	inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-	inode->i_dirt = 1;
+  if (!(S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+    return;
+  if (IS_APPEND(node) || IS_IMMUTABLE(node))
+    return;
+
+  ext2_discard_prealloc(node);
+
+  while (1)
+    {
+      down(&node->i_sem);
+      retry = trunc_direct(node, length);
+      retry |=
+	trunc_indirect (node, length, EXT2_IND_BLOCK,
+			(u32 *) &node->dn.info.i_data[EXT2_IND_BLOCK]);
+      retry |=
+	trunc_dindirect (node, length, EXT2_IND_BLOCK +
+			 EXT2_ADDR_PER_BLOCK(sblock),
+			 (u32 *) &node->dn.info.i_data[EXT2_DIND_BLOCK]);
+      retry |= trunc_tindirect (node, length);
+      up(&node->i_sem);
+
+      if (!retry)
+	break;
+
+      if (IS_SYNC(node) && node->dirty)
+	ext2_sync_inode (node);
+      current->counter = 0;
+      schedule ();
+    }
+
+  /*
+   * If the file is not being truncated to a block boundary, the
+   * contents of the partial block following the end of the file must be
+   * zeroed in case it ever becomes accessible again because of
+   * subsequent file growth.
+   */
+  offset = node->allocsize % block_size;
+  if (offset)
+    {
+      char * bh = baddr (node->allocsize / block_size);
+      memset (bh + offset, 0, block_size - offset);
+      poke_loc (bh + offset, block_size - offset);
+    }
+
+  node->dn_set_mtime = 1;
+  node->dn_set_ctime = 1;
+  node->dirty = 1;
 }
