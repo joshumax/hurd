@@ -57,6 +57,9 @@ int write_size = DEFAULT_WRITE_SIZE;
 #define OPT_NFS_PORT    -8
 #define OPT_NFS_PORT_D  -9
 #define OPT_HOLD	-10
+#define OPT_MNT_PROG    -11
+#define OPT_NFS_PROG    -12
+#define OPT_PMAP_PORT	-13
 
 /* Return a string corresponding to the printed rep of DEFAULT_what */
 #define ___D(what) #what
@@ -66,7 +69,7 @@ int write_size = DEFAULT_WRITE_SIZE;
 static struct argp_option options[] = {
   {0,0,0,0,0,1},
   {"soft",		    OPT_SOFT,	   "RETRIES", OPTION_ARG_OPTIONAL,
-     "File system requests will eventually fail, after RETRIES times, if"
+     "File system requests will eventually fail, after RETRIES tries if"
      " specified, otherwise " _D(SOFT_RETRIES)},
   {"hard",		    OPT_HARD, 0, 0,
      "Retry file systems requests until they succeed"},
@@ -92,11 +95,15 @@ static struct argp_option options[] = {
      "Port for mount server"},
   {"default-mount-port",    OPT_MNT_PORT_D,"PORT", 0,
      "Port for mount server, if none can be found automatically"},
+  {"mount-program",	    OPT_MNT_PROG,  "ID[.VERS]"},
 
   {"nfs-port",	            OPT_NFS_PORT,  "PORT", 0,
      "Port for nfs operations"},
   {"default-nfs-port",      OPT_NFS_PORT_D,"PORT", 0,
      "Port for nfs operations, if none can be found automatically"},
+  {"nfs-program",           OPT_NFS_PROG,  "ID[.VERS]"},
+
+  {"pmap-port",             OPT_PMAP_PORT,  "SVC|PORT"},
 
   {"hold", OPT_HOLD, 0, OPTION_HIDDEN}, /*  */
   { 0 }
