@@ -18,7 +18,7 @@ libc := $(hurdinst)/lib/libc.a
 libthreads := $(hurdinst)/lib/libthreads.a
 libports := $(hurdinst)/lib/libports.a
 libioserver := $(hurdinst)/lib/libioserver.a
-gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/include
+gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/include
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
@@ -37,7 +37,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 # $(link) uses threads to get malloc until the one in the library is fixed.
 
 define link
-$(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $^ $(libthreads) $(libc) -lgcc
 endef
 
