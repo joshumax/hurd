@@ -24,6 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int
 main ()
@@ -35,7 +36,7 @@ main ()
   
   stderr = stdout = mach_open_devstream (getdport (1), "w");
 
-  if (unlink (root, "CREATED") < 0 && errno != ENOENT)
+  if (unlink ("CREATED") < 0 && errno != ENOENT)
     printf ("Error on unlink: %d\n", errno);
 
   fd = open ("CREATED", O_WRITE | O_CREAT, 0666);
@@ -61,7 +62,7 @@ main ()
       if (n < 0)
 	perror ("getline");
       else
-	printf ("Read %d bytes: %.*s", n, line);
+	printf ("Read %d bytes: %.*s", n, n, line);
       free (line);
     }
   
