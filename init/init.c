@@ -521,8 +521,10 @@ main (int argc, char **argv, char **envp)
   mach_port_t consdev;
   struct argp argp = { options, parse_opt, 0, doc };
 
-  /* Parse the arguments */
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  /* Parse the arguments.  We don't want the vector reordered,
+     we should pass on to our child the exact arguments we got
+     and just ignore any arguments that aren't flags for us.  */
+  argp_parse (&argp, argc, argv, ARGP_NO_ERRS|ARGP_IN_ORDER, 0, 0);
 
   if (getpid () > 0)
     error (2, 0, "can only be run by bootstrap filesystem");
