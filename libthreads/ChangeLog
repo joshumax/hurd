@@ -1,3 +1,8 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* cthreads.h (mutex_clear): Change from syntax error to no-op (with
+	warning avoidance).
+
 1998-11-12  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* cthreads.c (cthread_init): Move cthread_alloc call before
