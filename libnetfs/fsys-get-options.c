@@ -35,7 +35,8 @@ netfs_S_fsys_get_options (fsys_t fsys,
 			  char **data, mach_msg_type_number_t *data_len)
 {
   error_t err;
-  char *argz = 0;
+  char *argz;
+  size_t argz_len;
   struct port_info *port =
     ports_lookup_port (netfs_port_bucket, fsys, netfs_control_class);
 
@@ -45,20 +46,14 @@ netfs_S_fsys_get_options (fsys_t fsys,
 #if NOT_YET
   rwlock_reader_lock (&netfs_fsys_lock);
 #endif
-  err = netfs_get_options (&argz, data_len);
+  err = netfs_get_options (&argz, &argz_len);
 #if NOT_YET
   rwlock_reader_unlock (&netfs_fsys_lock);
 #endif
 
-  if (!err && *data_len > 0)
+  if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
-    {
-      err =
-	vm_allocate (mach_task_self (), (vm_address_t *)data, *data_len, 1);
-      if (!err)
-	bcopy (argz, *data, *data_len);
-      free (argz);
-    }
+    err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
 
   ports_port_deref (port);
 
