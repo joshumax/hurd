@@ -1,5 +1,5 @@
 /* MiG protocol for handling program crashes.
-   Copyright (C) 1992, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -23,16 +23,23 @@ subsystem crash 32000;
 
 #include <hurd/hurd_types.defs>
 
-/* Dump a core file for TASK in FILE.  SIGNO, SIGCODE, and SIGERROR
-   indicate the signal that caused the process to dump core.  For the
-   standard core server, TARGET specifies the flavor of object file to
-   write, and is normally taken from the `GNUTARGET' environment variable
-   in the caller.  */
+/* Handle a crashing task, whose task control port is TASK.
+
+   FILE is a file port open for writing.  The caller will link it to "core"
+   (or whatever name) if the RPC returns success.
+
+   SIGNO, SIGCODE, and SIGERROR indicate the signal that killed the
+   process.  EXC is zero for a software signal; otherwise EXC, CODE, and
+   SUBCODE are the original Mach exception codes.
+
+   CTTYID_PORT is the process's ctty's identification port, for use
+   in sending stop signals to the process group.  */
 
 routine crash_dump_task (
 	crashserver: mach_port_t;
 	sreplyport reply: sreply_port_t;
 	task: task_t;
 	file: file_t;
-	target: string_t;
-	signo: int; sigcode: int; sigerror: int);
+	signo: int; sigcode: integer_t; sigerror: int;
+	exc: natural_t; code: natural_t; subcode: natural_t;
+	cttyid_port: mach_port_send_t);
