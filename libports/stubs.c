@@ -23,11 +23,13 @@
 
 #include <cthreads.h>
 
+__attribute__ ((weak)) 
 void
 condition_wait (condition_t c, mutex_t m)
 {
 }
 
+__attribute__ ((weak)) 
 void
 cond_broadcast (condition_t c)
 {
