@@ -79,7 +79,7 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 /* This is not an option at all, but rather a command line argument.  If a
    parser receiving this key returns success, the fact is recorded, and the
    ARGP_KEY_NO_ARGS case won't be used.  HOWEVER, if while processing the
-   argument, a parser function decrements the INDEX field of the state it's
+   argument, a parser function decrements the NEXT field of the state it's
    passed, the option won't be considered processed; this is to allow you to
    actually modify the argument (perhaps into an option), and have it
    processed again.  */
@@ -141,8 +141,8 @@ struct argp_state
   int argc;
   char **argv;
 
-  /* The current index into ARGV.  May be modified.  */
-  int index;
+  /* The index in ARGV of the next arg that to be parsed.  May be modified. */
+  int next;
 
   /* The flags supplied to argp_parse.  May be modified.  */
   unsigned flags;
