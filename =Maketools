@@ -35,3 +35,5 @@ MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(ccdir)/ld -L$(ccdir)
+
+machine := i386
