@@ -1,5 +1,5 @@
 /* Implement ifsock inteface
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -56,6 +56,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
     {
       mach_port_t server;
       mach_port_t sockaddr;
+      mach_port_t old;
 
       mutex_unlock (&np->lock);
 
@@ -111,7 +112,20 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	/* Someone beat us */
 	mach_port_deallocate (mach_task_self (), sockaddr);
       else
-	np->sockaddr = sockaddr;
+	{
+	  /* The receive right of the sockaddr holds a reference;
+	     when we get a dead name on that right we drop our
+	     reference. */
+	  mach_port_request_notification (mach_task_self (), sockaddr,
+					  MACH_NOTIFY_DEAD_NAME, 1,
+					  np->pi.port_right, 
+					  MACH_PORT_MAKE_SEND_ONCE,
+					  &old);
+	  if (old != MACH_PORT_NULL)
+	    mach_port_deallocate (mach_task_self (), old);
+	  np->sockaddr = sockaddr;
+	  diskfs_nref (np);
+	}
     }      
   
   *address = np->sockaddr;
