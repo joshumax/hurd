@@ -168,7 +168,6 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nrele (fnp);
       return err;
     }
-  diskfs_enter_cache (tdp, fnp, toname);
 
   /* We now hold no locks */
 
