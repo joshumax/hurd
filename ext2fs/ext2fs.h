@@ -161,7 +161,7 @@ unsigned long groups_count;	/* Number of groups in the fs */
 
 /* ---------------------------------------------------------------- */
 
-spin_lock_t node2pagelock;
+spin_lock_t node_to_page_lock;
 
 spin_lock_t gennumberlock;
 unsigned long nextgennumber;
