@@ -131,7 +131,7 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 		{
 		  if (rtn_len > 0 && retry_name[rtn_len - 1] != '/')
 		    retry_name[rtn_len++] = '/';
-		  strcat (retry_name, tail);
+		  strcpy (retry_name + rtn_len, tail);
 		}
 	    }
 
