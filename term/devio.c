@@ -468,7 +468,10 @@ device_open_reply (mach_port_t replyport,
 			     sizeof (struct port_info),
 			     &phys_reply_writes_pi);
   if (errno)
-    return errno;
+    {
+      mutex_unlock (&global_lock);
+      return errno;
+    }
   phys_reply_writes = ports_get_right (phys_reply_writes_pi);
   mach_port_insert_right (mach_task_self (), phys_reply_writes,
 			  phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);

@@ -795,7 +795,10 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 
   mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_READ) == 0)
-    return EBADF;
+    {
+      mutex_unlock (&global_lock);
+      return EBADF;
+    }
   *amt = qsize (inputq);
   if (remote_input_mode && *amt)
     --*amt;

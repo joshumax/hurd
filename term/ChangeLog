@@ -1,3 +1,10 @@
+Thu Aug 29 17:26:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* devio.c (device_open_reply): After error from ports_create_port,
+	unlock global_lock before returning.
+	* users.c (trivfs_S_io_readable): Likewise before returning
+	EBADF. 
+
 Thu Aug 15 16:07:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* users.c (trivfs_S_io_pathconf): Implement function.
