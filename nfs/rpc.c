@@ -194,6 +194,7 @@ conduct_rpc (void **rpcbuf, int **pp)
       cc = write (main_udp_socket, *rpcbuf + sizeof (struct rpc_list), nc);
       if (cc == -1)
 	{
+	  mutex_unlock (&outstanding_lock);
 	  unlink_rpc (hdr);
 	  return errno;
 	}
@@ -384,7 +385,3 @@ rpc_receive_thread ()
       while (!r);
     }
 }
-
-  
-	    
-		  
