@@ -4,7 +4,9 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 
-int verify_area (int, const void *, u_long);
+/* All memory addresses are presumptively valid, because they are
+   all internal. */
+#define verify_area(a,b,c) 0
 
 #define VERIFY_READ 0
 #define VERIFY_WRITE 0
