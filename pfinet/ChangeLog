@@ -1,3 +1,9 @@
+2001-10-14  Marcus Brinkmann  <marcus@gnu.org>
+
+	* glue-include/linux/sched.h (process_schedule_timeout): New
+	function used as timer callback for schedule_timeout.
+	(schedule_timeout): Implement it.
+
 2001-07-25  Mark Kettenis  <kettenis@gnu.org>
 
 	* glue-include/linux/socket.h (SOMAXCONN): Only define if it

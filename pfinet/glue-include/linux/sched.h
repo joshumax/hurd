@@ -149,11 +149,38 @@ schedule (void)
   interruptible_sleep_on (current->next_wait);
 }
 
+static inline void
+process_schedule_timeout (unsigned long data)
+{
+  struct wait_queue **sleep = (struct wait_queue **) data;
+
+  wake_up_interruptible (sleep);
+}
+
 static inline long
 schedule_timeout (long timeout)
 {
-  /* XXX this is only ever called to do SO_LINGER, which we don't support */
-  assert (!"schedule_timeout");
+  long expire = timeout + jiffies;
+  struct timer_list timer;
+  struct wait_queue *sleep = 0;  /* See comment in wait.h why this suffices.  */
+
+  init_timer (&timer);
+  timer.expires = expire;
+  timer.data = (unsigned long) &sleep;
+  timer.function = process_schedule_timeout;
+  add_timer (&timer);
+
+  interruptible_sleep_on (&sleep);
+  if (signal_pending (current))
+    {
+      /* We were canceled.  */
+      del_timer (&timer);
+      expire -= jiffies;
+      if (expire >= 0)
+	return expire;
+      else
+	return 0;
+    }
   return 0;
 }
 
