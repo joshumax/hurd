@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2001,2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -106,8 +106,15 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       return 0;
     }
 
-  /* Now we can safely lock fnp */
-  mutex_lock (&fnp->lock);
+  /* Check permissions to remove FROMNAME and lock FNP.  */
+  tmpds = alloca (diskfs_dirstat_size);
+  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, tmpds, fromcred);
+  assert (!tmpnp || tmpnp == fnp);
+  if (tmpnp)
+    diskfs_nrele (tmpnp);
+  diskfs_drop_dirstat (fdp, tmpds);
+  if (err)
+    goto out;
 
   if (tnp)
     {
@@ -199,8 +206,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   ds = buf;
   mutex_unlock (&fnp->lock);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
-  assert (tmpnp == fnp);
-  diskfs_nrele (tmpnp);
+  assert (!tmpnp || tmpnp == fnp);
+  if (tmpnp)
+    diskfs_nrele (tmpnp);
   if (err)
     goto out;
 

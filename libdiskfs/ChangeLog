@@ -1,3 +1,9 @@
+2003-06-11  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+	
+	* dir-renamed.c (diskfs_rename_dir): Check permissions to remove
+	FROMNAME before any modification could take place.  Check result
+	of removing the from node.
+
 2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (DIST_FILES): Variable removed.
