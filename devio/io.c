@@ -127,36 +127,12 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t replytype,
-		  off_t offset, int whence, off_t *new_offset)
+		  off_t offs, int whence, off_t *new_offs)
 {
   if (!cred)
     return EOPNOTSUPP;
   else
-    {
-      error_t err = 0;
-      struct open *open = (struct open *)cred->po->hook;
-      struct io_state *io_state = open_get_io_state(open);
-
-      if (!dev_is(open->dev, DEV_SEEKABLE))
-	return ESPIPE;
-
-      io_state_lock(io_state);
-      switch(whence)
-	{
-	case SEEK_SET:
-	  io_state->location = offset; break;
-	case SEEK_CUR:
-	  io_state->location += offset; break;
-	case SEEK_END:
-	  io_state->location = open->dev->size - offset; break;
-	default:
-	  err = EINVAL;
-	}
-      *new_offset = io_state->location;
-      io_state_unlock(io_state);
-
-      return err;
-    }
+    return open_seek ((struct open *)cred->po->hook, offs, whence, new_offs);
 }
 
 /* ---------------------------------------------------------------- */
