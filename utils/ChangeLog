@@ -1,3 +1,7 @@
+Fri Jul 19 21:09:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (options): Rearrange slightly.
+
 Tue Jul 16 21:38:01 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* login.c (main): If chown fails, print error message using errno,
