@@ -1047,6 +1047,208 @@ frob_kernel_process (void)
     error (0, err, "proc_set_arg_locations for kernel task");
 }
 
+#ifdef SPLIT_INIT
+
+/** Running userland.  **/
+
+/* In the "split-init" setup, we just run a single program (usually
+   /libexec/runsystem) that is not expected to ever exit (or stop).
+   If it does exit (or can't be started), we go to an emergency single-user
+   shell as a fallback.  */
+
+
+pid_t child_pid;		/* PID of the child we run */
+task_t child_task;		/* and its (original) task port */
+
+error_t send_signal (mach_port_t msgport, int signal, mach_port_t refport);
+
+static void launch_something (const char *why);
+
+
+/* SIGNO has arrived and has been validated.  Do whatever work it
+   implies. */
+void
+process_signal (int signo)
+{
+  if (signo == SIGCHLD)
+    {
+      /* A child died.  Find its status.  */
+      int status;
+      pid_t pid;
+
+      while (1)
+	{
+	  pid = waitpid (WAIT_ANY, &status, WNOHANG | WUNTRACED);
+	  if (pid <= 0)
+	    break;		/* No more children.  */
+
+	  /* Since we are init, orphaned processes get reparented to us and
+	     alas, all our adopted children eventually die.  Woe is us.  We
+	     just need to reap the zombies to relieve the proc server of
+	     its burden, and then we can forget about the little varmints.  */
+
+	  if (pid == child_pid)
+	    {
+	      /* The big magilla bit the dust.  */
+
+	      char *desc = 0;
+
+	      mach_port_deallocate (mach_task_self (), child_task);
+	      child_task = MACH_PORT_NULL;
+	      child_pid = -1;
+
+	      if (WIFSIGNALED (status))
+		asprintf (&desc, "terminated abnormally (%s)",
+			  strsignal (WTERMSIG (status)));
+	      else if (WIFSTOPPED (status))
+		asprintf (&desc, "stopped abnormally (%s)",
+			  strsignal (WTERMSIG (status)));
+	      else if (WEXITSTATUS (status) == 0)
+		desc = strdup ("finished");
+	      else
+		asprintf (&desc, "exited with status %d",
+			  WEXITSTATUS (status));
+
+	      {
+		char buf[40];
+		snprintf (buf, sizeof buf, "%d", status);
+		setenv ("STATUS", buf, 1);
+	      }
+
+	      launch_something (desc);
+	    }
+	}
+    }
+  else
+    {
+      /* Pass the signal on to the child.  */
+      task_t task;
+      error_t err;
+
+      err = proc_pid2task (procserver, child_pid, &task);
+      if (err)
+	{
+	  error (0, err, "proc_pid2task on %d", child_pid);
+	  task = child_task;
+	}
+      else
+	{
+	  mach_port_deallocate (mach_task_self (), child_task);
+	  child_task = task;
+	}
+
+      if (signo == SIGKILL)
+	{
+	  err = task_terminate (task);
+	  if (err != MACH_SEND_INVALID_DEST)
+	    error (0, err, "task_terminate");
+	}
+      else
+	{
+	  mach_port_t msgport;
+	  err = proc_getmsgport (procserver, child_pid, &msgport);
+	  if (err)
+	    error (0, err, "proc_getmsgport");
+	  else
+	    {
+	      err = send_signal (msgport, signo, task); /* Avoids blocking.  */
+	      mach_port_deallocate (mach_task_self (), msgport);
+	      if (err)
+		{
+		  error (0, err, "cannot send %s to child %d",
+			 strsignal (signo), child_pid);
+		  err = task_terminate (task);
+		  if (err != MACH_SEND_INVALID_DEST)
+		    error (0, err, "task_terminate");
+		}
+	    }
+	}
+    }
+}
+
+/* Start the child program PROG.  It is run via /libexec/console-run,
+   and we pass it no arguments to pass on to PROG.  */
+static int
+start_child (const char *prog)
+{
+  file_t file;
+  error_t err;
+  char *args;
+  size_t arglen;
+  const char *argv[] = { "/libexec/console-run", prog, 0 };
+
+  err = argz_create ((char **) argv, &args, &arglen);
+  assert_perror (err);
+
+  file = file_name_lookup (args, O_EXEC, 0);
+  if (!file)
+    {
+      error (0, errno, "%s", args);
+      free (args);
+      return -1;
+    }
+
+  task_create (mach_task_self (), 0, &child_task);
+  proc_child (procserver, child_task);
+  proc_task2pid (procserver, child_task, &child_pid);
+  proc_task2proc (procserver, child_task, &default_ports[INIT_PORT_PROC]);
+
+  if (bootstrap_args & RB_KDB)
+    {
+      printf ("Pausing for %s\n", args);
+      getchar ();
+    }
+
+  err = file_exec (file, child_task, 0,
+		   args, arglen,
+		   startup_envz, startup_envz_len,
+		   NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
+		   default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+		   default_ints, INIT_INT_MAX,
+		   NULL, 0, NULL, 0);
+  mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
+  mach_port_deallocate (mach_task_self (), file);
+  free (args);
+  if (err)
+    {
+      error (0, err, "Cannot execute %s", args);
+      free (args);
+      return -1;
+    }
+
+  return 0;
+}
+
+static void
+launch_something (const char *why)
+{
+  static unsigned int try;
+  static const char *const tries[] =
+  {
+    "/libexec/runsystem",
+    _PATH_BSHELL,
+    "/bin/shd",			/* XXX */
+  };
+
+  if (why)
+    error (0, 0, "%s %s", tries[try - 1], why);
+
+  while (try < sizeof tries / sizeof tries[0])
+    if (start_child (tries[try++]) == 0)
+      return;
+
+  crash_system ();
+}
+
+void
+launch_system (void)
+{
+  launch_something (0);
+}
+
+
+#else
+
 /** Single and multi user transitions **/
 
 /* Current state of the system. */
@@ -1353,6 +1555,7 @@ killing it and going to single user mode",
     }
 }
 
+#endif	/* SPLIT_INIT */
 
 /** RPC servers **/
 

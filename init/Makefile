@@ -18,7 +18,9 @@
 dir := init
 makemode := server
 
-SRCS = init.c ttys.c
+split-init=yes
+
+SRCS = init.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
        startup_notifyUser.o
@@ -26,7 +28,13 @@ LCLHDRS = ttys.h
 target = init
 HURDLIBS=ports fshelp shouldbeinlibc
 
-LDLIBS=-lutil
+ifeq (yes,$(split-init))
+init-CPPFLAGS = -DSPLIT_INIT
+SRCS += stubs.c
+else
+SRCS += ttys.c
+LDLIBS = -lutil
+endif
 
 include ../Makeconf
 
