@@ -90,8 +90,9 @@ struct	directory_entry {
 /* Return the namlen from a struct direct, paying attention to whether
    this filesystem supports the type extension */
 #if (BYTE_ORDER == LITTLE_ENDIAN)
-#define DIRECT_NAMLEN(dp) (direct_symlink_extension ? (dp)->d_namlen : \
-			   (dp)->d_type)
+#define DIRECT_NAMLEN(dp) (direct_symlink_extension || swab_disk	    \
+			   ? (dp)->d_namlen 				    \
+			   : (dp)->(dp)->d_type)
 #else
 #define DIRECT_NAMLEN(dp) ((dp)->d_namlen)
 #endif
