@@ -20,6 +20,7 @@ bindir = $(exec_prefix)/bin
 sbindir = $(exec_prefix)/sbin
 includedir = $(exec_prefix)/include
 libexecdir = $(exec_prefix)/libexec
+bootdir = $(exec_prefix)/boot
 infodir = $(prefix)/info
 sysconfdir = $(prefix)/etc
 localstatedir = $(prefix)/var
@@ -27,7 +28,7 @@ sharedstatedir = $(prefix)/com
 
 # All of those directories together:
 installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \
-	$(includedir) $(libexecdir) $(infodir) $(sysconfdir) \
+	$(includedir) $(libexecdir) $(bootdir) $(infodir) $(sysconfdir) \
 	$(localstatedir) $(sharedstatedir)
 
 
