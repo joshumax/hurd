@@ -61,7 +61,7 @@ diskfs_start_bootstrap (void)
   mach_port_t con;		/* XXX */
   task_t newt;
   error_t err;
-  char *initname;
+  char *initname, *initnamebuf;
   char *argv;
   int argvlen;
 
@@ -78,13 +78,14 @@ diskfs_start_bootstrap (void)
   err = fsys_getroot (diskfs_exec_ctl, idlist, 3, idlist, 3, 0, 
 		      &retry, retry_name, &diskfs_exec);
   assert (!err);
-  assert (retry == FS_RETRY_NONE); /* XXX */
+  assert (retry == FS_RETRY_NONE);
   assert (diskfs_exec);
   
   /* Create the port for current and root directory */
   root_pt = (ports_get_right
 	     (diskfs_make_protid
-	      (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC),
+	      (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC,
+				    MACH_PORT_NULL),
 	       0,0,0,0)));
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -95,7 +96,8 @@ diskfs_start_bootstrap (void)
     {
       printf ("Init name [%s]: ", default_init);
       fflush (stdout);
-      scanf ("%as\n", &initname);
+      scanf ("%as\n", &initnamebuf);
+      initname = initnamebuf;
       if (*initname)
 	while (*initname == '/')
 	  initname++;
@@ -103,7 +105,7 @@ diskfs_start_bootstrap (void)
 	initname = default_init;
     }
   else
-    initname = default_init;
+    initnamebuf = initname = default_init;
   
   err = dir_pathtrans (root_pt, initname, O_READ, 0,
 		       &retry, pathbuf, &startup_pt);
@@ -148,8 +150,8 @@ diskfs_start_bootstrap (void)
   mach_port_deallocate (mach_task_self (), root_pt);
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
-  if (initname != default_init)
-    free (initname);		/* XXX BUG -- might have been incremented */
+  if (initnamebuf != default_init)
+    free (initnamebuf);
   assert (!err);
 }
 
@@ -214,7 +216,8 @@ diskfs_S_exec_startup (mach_port_t port,
 
   rootport = (ports_get_right 
 	      (diskfs_make_protid
-	       (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC),
+	       (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC,
+				     MACH_PORT_NULL),
 		0,0,0,0)));
 
   portarray[INIT_PORT_CWDIR] = rootport;
