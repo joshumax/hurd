@@ -27,6 +27,7 @@ fshelp_transbox_init (struct transbox *transbox,
 		      void *cookie)
 {
   transbox->active = MACH_PORT_NULL;
+  transbox->flags = 0;
   transbox->lock = lock;
   condition_init (&transbox->wakeup);
   transbox->cookie = cookie;
