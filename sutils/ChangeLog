@@ -1,3 +1,15 @@
+Tue Aug 27 12:06:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* reboot.c, halt.c (main): Add argument parsing.
+	(argp_program_version): New variable.
+	<argp.h>, <hurd.h>: New includes.
+	* Makefile (fsck): Remove dependency on libshouldbeinlibc.a.
+	(reboot halt fsck): Add dependency on libshouldbeinlibc.a.
+
+Mon Aug 19 15:17:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (doc): Supply a useful value.
+
 Wed Aug 14 13:32:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* e2os.sh: Add `;' before last commands inside { } pairs.
