@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For bzero() */
+#include <assert.h>
 
 #include <mach/time_value.h>
 #include <mach/mach_host.h>
@@ -114,11 +115,16 @@ pipe_send (struct pipe *pipe, void *source,
   if (pipe->flags & PIPE_BROKEN)
     return EPIPE;
 
-  if (control || ports)
+  if (control_len > 0 || num_ports > 0)
     /* Write a control packet.  */
     {
+      /* Note that we don't record the source address in control packets, as
+	 it's recorded in the following data packet anyway, and this prevents
+	 it from being dealloc'd twice; this depends on the fact that we
+	 always write a data packet.  */
       struct packet *control_packet =
-	pq_queue (pipe->queue, PACKET_TYPE_CONTROL, source);
+	pq_queue (pipe->queue, PACKET_TYPE_CONTROL, NULL);
+
       if (control_packet == NULL)
 	err = ENOBUFS;
       else
@@ -206,13 +212,19 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
 	packet_read_ports (packet, ports, num_ports);
 
       packet_read_source (packet, &control_source);
+
       packet = pq_next (pq, PACKET_TYPE_DATA, control_source);
-      if (!packet && source)
-	/* Since there is no data, say where the control data came from.  */
-	*source = control_source;
-      else if (control_source)
-	/* Otherwise be sure to get rid of our reference to the address. */
-	pipe_dealloc_addr (control_source);
+
+      /* Control packets should only have a source address if they're not
+	 followed by a data packet.  */
+      assert (!!packet == !control_source);
+
+      if (!packet)
+	if (source)
+	  /* Since there is no data, say where the control data came from.  */
+	  *source = control_source;
+	else
+	  pipe_dealloc_addr (control_source);
     }
   else
     /* No control data... */
