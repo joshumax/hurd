@@ -1,4 +1,9 @@
-2004-04-02  Marco Gerards  <metgerards@student.han.nl>
+2004-04-21  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ihash.h (HURD_IHASH_ITERATE): Don't use increment operator in
+	assignment, but just add one.  Reported by Ognyan Kulev.
+
+2004-04-01  Marco Gerards  <metgerards@student.han.nl>
 
 	* ihash.c (hurd_ihash_remove): Don't look for the index when the
 	hashtable is empty.

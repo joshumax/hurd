@@ -215,7 +215,7 @@ hurd_ihash_value_t hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key);
             < (ht)->size						\
          && (val = *_hurd_ihash_valuep, 1);				\
        _hurd_ihash_valuep = (hurd_ihash_value_t *)			\
-	 (((_hurd_ihash_item_t) _hurd_ihash_valuep)++))			\
+	 (((_hurd_ihash_item_t) _hurd_ihash_valuep) + 1))		\
     if (val != _HURD_IHASH_EMPTY && val != _HURD_IHASH_DELETED)
 
 /* Remove the entry with the key KEY from the hash table HT.  If such
