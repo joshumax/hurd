@@ -21,13 +21,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "fsys_S.h"
+#include "fsys_reply.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
 
 struct pending_open 
 {
-  mach_port_t users_port;
+  struct trivfs_protid *cred;
   mach_port_t reply_port;
   mach_msg_type_name_t reply_port_type;
   struct pending_open *next;
@@ -35,6 +36,8 @@ struct pending_open
 
 kern_return_t
 trivfs_S_fsys_getroot (struct trivfs_control *cntl,
+		       mach_port_t reply_port,
+		       mach_msg_type_name_t reply_port_type,
 		       uid_t *uids, u_int nuids,
 		       uid_t *gids, u_int ngids,
 		       int flags,
@@ -113,11 +116,11 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 
   if (err == EWOULDBLOCK)
     {
-#if 0
       /* This open request must block. */
       struct pending_open *pendo;
       pendo = malloc (sizeof (struct pending_open));
-      pendo->users_port = ports_get_right (cred);
+      ports_port_ref (cred);
+      pendo->cred = cred;
       pendo->reply_port = reply_port;
       pendo->reply_port_type = reply_port_type;
       pendo->next = 0;
@@ -128,7 +131,6 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       cntl->openstail = pendo;
       
       ports_done_with_port (cntl);
-#endif
       return MIG_NO_REPLY;
     }
   else
@@ -141,7 +143,6 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
     }
 }
 
-#if 0
 void
 trivfs_complete_open (struct trivfs_control *cntl,
 		      int multi,
@@ -149,8 +150,6 @@ trivfs_complete_open (struct trivfs_control *cntl,
 {
   struct pending_open *pendo, *nxt;
 
-#error CHECK ERR HERE.  
-  
   if (!multi)
     {
       pendo = cntl->openshead;
@@ -158,22 +157,34 @@ trivfs_complete_open (struct trivfs_control *cntl,
       if (!cntl->openshead)
 	cntl->openstail = 0;
       
-      fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-			  FS_RETRY_NONE, "", pendo->users_port, 
-			  MACH_MSG_TYPE_MAKE_SEND);
+      if (!err)
+	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
+			    FS_RETRY_NONE, "", ports_get_right (pendo->cred),
+			    MACH_MSG_TYPE_MAKE_SEND);
+      else
+	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
+			    FS_RETRY_NONE, "", MACH_PORT_NULL,
+			    MACH_MSG_TYPE_COPY_SEND);
+      ports_done_with_port (pendo->cred);
       free (pendo);
     }
   else
     {
       for (pendo = cntl->openshead; pendo; pendo = nxt)
 	{
-	  fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-			      FS_RETRY_NONE, "", pendo->users_port, 
-			      MACH_MSG_TYPE_MAKE_SEND);
+	  if (!err)
+	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
+				FS_RETRY_NONE, "", 
+				ports_get_right (pendo->cred),
+				MACH_MSG_TYPE_MAKE_SEND);
+	  else
+	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
+				FS_RETRY_NONE, "", MACH_PORT_NULL,
+				MACH_MSG_TYPE_COPY_SEND);
 	  nxt = pendo->next;
+	  ports_done_with_port (pendo->cred);
 	  free (pendo);
 	}
       cntl->openshead = cntl->openstail = 0;
     }
 }
-#endif
