@@ -18,19 +18,17 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-
 #include "ufs.h"
-#include "dinode.h"
 
 /* For logical block number LBN of file NP, look it the block address,
    giving the "path" of indirect blocks to the file, starting 
    with the least indirect.  Fill *INDIRS with information for
    the block.  */
 error_t
-fetch_indir_spec (struct node *np, daddr_t lbn, struct iblock_spec *indirs)
+fetch_indir_spec (struct node *np, volatile daddr_t lbn,
+		  struct iblock_spec *indirs)
 {
   struct dinode *di = dino (np->dn->number);
-  int boff;
   error_t err;
   daddr_t *siblock;
   
@@ -48,9 +46,9 @@ fetch_indir_spec (struct node *np, daddr_t lbn, struct iblock_spec *indirs)
 
   lbn -= NDADDR;
 
-  indirs[0].offset = lbn % NINDIR (sblock)
+  indirs[0].offset = lbn % NINDIR (sblock);
   
-  if (lbn / NINBIR (sblock))
+  if (lbn / NINDIR (sblock))
     {
       /* We will use the double indirect block */
       int ibn;
