@@ -399,6 +399,8 @@ error_t
 diskfs_set_translator (struct node *np, char *name, u_int namelen,
 		       struct protid *cred)
 {
+  if (diskfs_readonly)
+    return EROFS;
 #ifdef XXX
   daddr_t blkno;
   error_t err;
