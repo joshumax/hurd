@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1996, 98 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -18,14 +18,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-typedef int bool_t;
-typedef int enum_t;
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <cthreads.h>
+#include <rpc/types.h>
 #include "../nfs/nfs-spec.h" /* XXX */
 #include <hurd/fs.h>
 
@@ -35,7 +33,7 @@ typedef int enum_t;
 #define REPLY_KEEP_TIMEOUT 120	/* two minutes */
 #define MAXIOSIZE 10240
 
-struct idspec 
+struct idspec
 {
   struct idspec *next, **prevp;
   int nuids, ngids;
@@ -74,7 +72,7 @@ struct procedure
   int process_error;
 };
 
-struct proctable 
+struct proctable
 {
   int min;
   int max;
