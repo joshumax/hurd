@@ -1,8 +1,8 @@
 /* Hurd-aware fsck wrapper
 
-   Copyright (C) 1996, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1996, 97, 98, 99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -112,7 +112,7 @@ struct fsck
 {
   struct fs *fs;		/* Filesystem being fscked.  */
   int pid;			/* Pid for process.  */
-  int make_writable :1;		/* Make writable after fscking if possible.  */
+  int make_writable;		/* Make writable after fscking if possible.  */
   struct fsck *next, **self;
 };
 
