@@ -70,7 +70,7 @@ setup_loopback_device (char *name)
   
   loopback_dev.type = 0;
   loopback_dev.addr_len = 0;
-  loopback_dev.flags = IFF_LOOPBACK | IFF_BROADCAST;
+  loopback_dev.flags = IFF_LOOPBACK | IFF_BROADCAST | IFF_UP;
   loopback_dev.family = AF_INET;
 
   loopback_dev.mtu = 2000;
