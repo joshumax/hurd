@@ -15,4 +15,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "tnivfs.h"
+#ifndef TRIVFS_PRIV_H_INCLUDED
+
+#include <mach.h>
+#include <hurd.h>
+#include <hurd/ports.h>
+#include "trivfs.h"
+
+/* For the sake of MiG. */
+typedef struct trivfs_protid *trivfs_protid_t;
+
+#define TRIVFS_PRIV_H_INCLUDED
+#endif
