@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,7 +35,7 @@ diskfs_S_io_readable (struct protid *cred,
   np = cred->po->np;
   
   mutex_lock (&np->lock);
-  ioserver_get_conch (&np->conch);
+  iohelp_get_conch (&np->conch);
   if (np->dn_stat.st_size > cred->po->filepointer)
     *amount = np->dn_stat.st_size - cred->po->filepointer;
   else
