@@ -1,3 +1,7 @@
+1999-10-12  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* opts-std-runtime.c (parse_opt: ARGP_KEY_INIT): Initialize H->noatime.
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-readdir.c (diskfs_S_dir_readdir): Take new DATA_DEALLOC param.
