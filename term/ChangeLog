@@ -1,3 +1,16 @@
+2001-05-30  Roland McGrath  <roland@frob.com>
+
+	* users.c (trivfs_S_io_select): Mask out SELECT_READ and/or
+	SELECT_WRITE if those accesses are not allowed by the peropen.
+	Don't keep old bits in AVAILABLE across waits, return only
+	what is true at the moment we return.
+
+2001-05-27  Roland McGrath  <roland@frob.com>
+
+	* users.c (trivfs_S_io_select): Don't mask out SELECT_URG bit.
+	Just let it never be set in the eventual result.  Yes, this
+	can mean blocking forever when SELECT_URG is the only bit set.
+
 2001-05-26  Roland McGrath  <roland@frob.com>
 
 	* users.c (trivfs_S_io_select): Don't diagnose an error for *TYPE
