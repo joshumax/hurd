@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,40 +18,54 @@
 #include "priv.h"
 
 error_t
-diskfs_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
-				    mach_port_t name)
+diskfs_do_seqnos_mach_notify_port_deleted (mach_port_t notify 
+					     __attribute__ ((unused)),
+					   mach_port_seqno_t seqno
+					     __attribute__ ((unused)),
+					   mach_port_t name
+					   __attribute__ ((unused)))
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
-				    mach_port_t name)
+diskfs_do_seqnos_mach_notify_msg_accepted (mach_port_t notify
+					     __attribute__ ((unused)),
+					   mach_port_seqno_t seqno
+					     __attribute__ ((unused)),
+					   mach_port_t name
+					     __attribute__ ((unused)))
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
-				      mach_port_seqno_t seqno,
-				      mach_port_t name)
+diskfs_do_seqnos_mach_notify_port_destroyed (mach_port_t notify
+					       __attribute__ ((unused)),
+					     mach_port_seqno_t seqno
+					       __attribute__ ((unused)),
+					     mach_port_t name
+					       __attribute__ ((unused)))
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_send_once (mach_port_t notify,
-				 mach_port_seqno_t seqno)
+diskfs_do_seqnos_mach_notify_send_once (mach_port_t notify 
+					  __attribute__ ((unused)),
+					mach_port_seqno_t seqno
+					  __attribute__ ((unused)))
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_dead_name (mach_port_t notify,
-				 mach_port_seqno_t seqno,
-				 mach_port_t name)
+diskfs_do_seqnos_mach_notify_dead_name (mach_port_t notify 
+					  __attribute__ ((unused)),
+					mach_port_seqno_t seqno
+					  __attribute__ ((unused)),
+					mach_port_t name
+					  __atribute__ ((unused)))
 {
   return 0;
 }
