@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>
-#include <netinet/in.h>			     /* htonl */
 #include <hurd/store.h>
 
 #include "ext2fs.h"
