@@ -25,7 +25,7 @@ SRCS = handle-startup.c init-trans.c start-trans.c transboot-clean.c \
 OBJS = handle-startup.o init-trans.o start-trans.o transboot-clean.o \
 	kill-trans.o trans-iter.o lock-acquire.o lock-init.o 
 
-DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h
+DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h ChangeLog
 
 all: libfshelp.a
 
