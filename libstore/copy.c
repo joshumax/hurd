@@ -1,8 +1,8 @@
 /* Copy store backend
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This task is part of the GNU Hurd.
 
@@ -31,15 +31,26 @@ static error_t
 copy_read (struct store *store,
 	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
+  char *data = store->hook + (addr * store->block_size);
+
+  if (page_aligned (data) && page_aligned (amount))
+    {
+      /* When reading whole pages, we can avoid any real copying.  */
+      error_t err = vm_read (mach_task_self (),
+			     (vm_address_t) data, amount, (pointer_t *) buf);
+      *len = amount;
+      return err;
+    }
+
   if (*len < amount)
     /* Have to allocate memory for the return value.  */
     {
       *buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (*buf == (void *)-1)
+      if (*buf == MAP_FAILED)
 	return errno;
     }
 
-  bcopy (store->hook + (addr * store->block_size), *buf, amount);
+  memcpy (*buf, data, amount);
   *len = amount;
   return 0;
 }
@@ -48,7 +59,18 @@ static error_t
 copy_write (struct store *store,
 	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
 {
-  bcopy (buf, store->hook + (addr * store->block_size), len);
+  char *data = store->hook + (addr * store->block_size);
+
+  if (page_aligned (data) && page_aligned (len))
+    {
+      /* When reading whole pages, we can avoid any real copying.  */
+      error_t err = vm_write (mach_task_self (),
+			      (vm_address_t) data, buf, len);
+      *amount = len;
+      return err;
+    }
+
+  memcpy (data, buf, amount);
   *amount = len;
   return 0;
 }
