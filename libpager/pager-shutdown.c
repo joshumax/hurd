@@ -22,8 +22,6 @@
 void
 pager_shutdown (struct pager *p)
 {
-  mach_port_t port;
-  
   /* Sync and flush pager */
   pager_sync (p, 1);
   pager_flush (p, 1);
