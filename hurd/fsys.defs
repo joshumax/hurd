@@ -40,9 +40,7 @@ routine fsys_goaway (
 	flags: int);
 
 /* Return a file to the root of the filesystem.
-   FLAGS are as for dir_pathtrans.
-   AUTH_REALNODE is an authenticated node for the user doing the
-   lookup to the real node underlying the port.  */
+   FLAGS are as for dir_pathtrans. */
 routine fsys_getroot (
 	fsys: fsys_t;
 #ifdef	FSYS_GETROOT_UREPLY
@@ -51,7 +49,6 @@ routine fsys_getroot (
 	flags: int;
 	uids: idarray_t;
 	gids: idarray_t;
-	auth_realnode: mach_port_move_send_t;
 	out file: mach_port_move_send_t);
 
 /* Get a file given a file handle (see file_getfh).  */
