@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -363,6 +363,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
   /* Authenticate USERPORT so that we can call file_getfh on it. */
   ref = mach_reply_port ();
+  /* MAKE_SEND is safe becaue we destroy REF ourselves. */
   if (io_reauthenticate (userport, ref, MACH_MSG_TYPE_MAKE_SEND)
       || auth_user_authenticate (authserver, ref, MACH_MSG_TYPE_MAKE_SEND,
 				 &newport))
