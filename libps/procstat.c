@@ -1,8 +1,7 @@
 /* The proc_stat type, which holds information about a hurd process.
 
-   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -90,14 +89,15 @@ thread_state (thread_basic_info_t bi)
 /* The set of things we get from procinfo that are per-task (note that this
    includes thread fields, because tasks use them for thread summaries).  */
 #define PSTAT_PROCINFO_TASK \
- (PSTAT_PROCINFO_TASK_THREAD_DEP | PSTAT_PROC_INFO | PSTAT_TASK_BASIC)
+ (PSTAT_PROCINFO_TASK_THREAD_DEP | PSTAT_PROC_INFO \
+  | PSTAT_TASK_BASIC | PSTAT_TASK_EVENTS)
 
 /* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
 #define PSTAT_PROCINFO PSTAT_PROCINFO_TASK
 
 /* The set of things in PSTAT_PROCINFO that we will not attempt to refetch on
    subsequent getprocinfo calls.  */
-#define PSTAT_PROCINFO_MERGE    PSTAT_TASK_BASIC
+#define PSTAT_PROCINFO_MERGE    (PSTAT_TASK_BASIC | PSTAT_TASK_EVENTS)
 #define PSTAT_PROCINFO_REFETCH  (PSTAT_PROCINFO - PSTAT_PROCINFO_MERGE)
 
 /* Fetches process information from the set in PSTAT_PROCINFO, returning it
@@ -113,6 +113,8 @@ fetch_procinfo (process_t server, pid_t pid,
 
   if ((need & PSTAT_TASK_BASIC) && !(*have & PSTAT_TASK_BASIC))
     pi_flags |= PI_FETCH_TASKINFO;
+  if ((need & PSTAT_TASK_EVENTS) && !(*have & PSTAT_TASK_EVENTS))
+    pi_flags |= PI_FETCH_TASKEVENTS;
   if ((need & PSTAT_NUM_THREADS) && !(*have & PSTAT_NUM_THREADS))
     pi_flags |= PI_FETCH_THREADS;
   if ((need & PSTAT_THREAD_BASIC) && !(*have & PSTAT_THREAD_BASIC))
@@ -299,8 +301,6 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
     }
-  if (flags & PSTAT_TASK_EVENTS)
-    flags |= PSTAT_TASK;
 
   return flags;
 }
@@ -856,18 +856,6 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc (server, ps->pid, &ps->process));
   /* The process's task port.  */
   MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task (server, ps->pid, &ps->task));
-
-  /* VM statistics for the task.  See <mach/task_info.h>.  */
-  if (NEED (PSTAT_TASK_EVENTS, PSTAT_TASK))
-    {
-      ps->task_events_info = &ps->task_events_info_buf;
-      ps->task_events_info_size = TASK_EVENTS_INFO_COUNT;
-      if (task_info (ps->task, TASK_EVENTS_INFO,
-		    (task_info_t)ps->task_events_info,
-		    &ps->task_events_info_size)
-	  == 0)
-	have |= PSTAT_TASK_EVENTS;
-    }
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & (PSTAT_PROC_INFO | PSTAT_THREAD_BASIC)))
