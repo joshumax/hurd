@@ -585,7 +585,7 @@ diskfs_direnter_hard(struct node *dp,
       assert (needed <= DIRBLKSIZ);
 
       oldsize = dp->dn_stat.st_size;
-      if ((off_t)(oldsize + DIRBLKSIZ) != dp->dn_stat.st_size)
+      if ((off_t)(oldsize + DIRBLKSIZ) != dp->dn_stat.st_size + DIRBLKSIZ)
 	{
 	  /* We can't possibly map the whole directory in.  */
 	  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
