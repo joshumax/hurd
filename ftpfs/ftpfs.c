@@ -81,12 +81,11 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
 }
 
 /* Various default parameters.  */
-#define DEFAULT_DIR_TIMEOUT	300
-#define DEFAULT_DIRENT_TIMEOUT  300
+#define DEFAULT_NAME_TIMEOUT	300
 #define DEFAULT_STAT_TIMEOUT	120
 
-#define DEFAULT_BULK_STAT_PERIOD 10
-#define DEFAULT_BULK_STAT_LIMIT  10
+#define DEFAULT_BULK_STAT_PERIOD     10
+#define DEFAULT_BULK_STAT_THRESHOLD  5
 
 #define DEFAULT_NODE_CACHE_MAX	50
 
@@ -97,12 +96,13 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
 
 /* Common (runtime & startup) options.  */
 
-#define OPT_NO_DEBUG	   1
+#define OPT_NO_DEBUG	        1
 
-#define OPT_DIR_TIMEOUT    5
-#define OPT_DIRENT_TIMEOUT 6
-#define OPT_STAT_TIMEOUT   7
-#define OPT_NODE_CACHE_MAX 8
+#define OPT_NAME_TIMEOUT        5
+#define OPT_STAT_TIMEOUT        7
+#define OPT_NODE_CACHE_MAX      8
+#define OPT_BULK_STAT_PERIOD    9
+#define OPT_BULK_STAT_THRESHOLD 10
 
 /* Options usable both at startup and at runtime.  */
 static const struct argp_option common_options[] =
@@ -111,16 +111,19 @@ static const struct argp_option common_options[] =
   {"no-debug", OPT_NO_DEBUG, 0, OPTION_HIDDEN },
 
   {0,0,0,0, "Parameters:"},
-  {"dir-timeout",     OPT_DIR_TIMEOUT,     "SECS", 0,
-   "Amount of time directories are cached (default " _D(DIR_TIMEOUT) ")"},
-  {"dirent-timeout",  OPT_DIRENT_TIMEOUT,  "SECS", 0,
-   "Amount of time individual directory entries are cached (default "
-   _D(DIRENT_TIMEOUT) ")"},
-  {"stat-timeout",    OPT_STAT_TIMEOUT,    "SECS", 0,
-   "Amount of time stat information is cached (default " _D(STAT_TIMEOUT) ")"},
-  {"node-cache-size", OPT_NODE_CACHE_MAX,  "ENTRIES", 0,
+  {"name-timeout",  OPT_NAME_TIMEOUT,     "SECS", 0,
+   "Time directory names are cached (default " _D(NAME_TIMEOUT) ")"},
+  {"stat-timeout",    OPT_STAT_TIMEOUT,   "SECS", 0,
+   "Time stat information is cached (default " _D(STAT_TIMEOUT) ")"},
+  {"node-cache-size", OPT_NODE_CACHE_MAX, "ENTRIES", 0,
    "Number of recently used filesystem nodes that are cached (default "
    _D(NODE_CACHE_MAX) ")"},
+
+  {"bulk-stat-period",    OPT_BULK_STAT_PERIOD,    "SECS", 0,
+   "Period for detecting bulk stats (default " _D(BULK_STAT_PERIOD) ")"},
+  {"bulk-stat-threshold", OPT_BULK_STAT_THRESHOLD, "SECS", 0,
+   "Number of stats within the bulk-stat-period that trigger a bulk stat"
+   " (default " _D(BULK_STAT_THRESHOLD) ")"}, 
 
   {0, 0}
 };
@@ -139,10 +142,8 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
 
     case OPT_NODE_CACHE_MAX:
       params->node_cache_max = atoi (arg); break;
-    case OPT_DIR_TIMEOUT:
-      params->dir_timeout = atoi (arg); break;
-    case OPT_DIRENT_TIMEOUT:
-      params->dirent_timeout = atoi (arg); break;
+    case OPT_NAME_TIMEOUT:
+      params->name_timeout = atoi (arg); break;
     case OPT_STAT_TIMEOUT:
       params->stat_timeout = atoi (arg); break;
     default:
@@ -259,14 +260,19 @@ netfs_append_args (char **argz, size_t *argz_len)
       } \
   } while (0)
 
-  if (ftpfs->params.dir_timeout != DEFAULT_DIR_TIMEOUT)
-    FOPT ("--dir-timeout=%d", ftpfs->params.dir_timeout);
-  if (ftpfs->params.dirent_timeout != DEFAULT_DIRENT_TIMEOUT)
-    FOPT ("--dirent-timeout=%d", ftpfs->params.dirent_timeout);
+  if (ftpfs_ftp_hooks.cntl_debug)
+    err = argz_add (argz, argz_len, "--debug");
+
+  if (ftpfs->params.name_timeout != DEFAULT_NAME_TIMEOUT)
+    FOPT ("--name-timeout=%d", ftpfs->params.name_timeout);
   if (ftpfs->params.stat_timeout != DEFAULT_STAT_TIMEOUT)
     FOPT ("--stat-timeout=%d", ftpfs->params.stat_timeout);
   if (ftpfs->params.node_cache_max != DEFAULT_NODE_CACHE_MAX)
     FOPT ("--node-cache-max=%d", ftpfs->params.node_cache_max);
+  if (ftpfs->params.bulk_stat_period != DEFAULT_BULK_STAT_PERIOD)
+    FOPT ("--bulk-stat-period=%d", ftpfs->params.bulk_stat_period);
+  if (ftpfs->params.bulk_stat_threshold != DEFAULT_BULK_STAT_THRESHOLD)
+    FOPT ("--bulk-stat-threshold=%d", ftpfs->params.bulk_stat_threshold);
 
   return argz_add (argz, argz_len, ftpfs_remote_fs);
 }
@@ -282,12 +288,11 @@ main (int argc, char **argv)
   struct argp argp =
     { startup_options, parse_startup_opt, args_doc, doc, argp_children };
 
-  ftpfs_params.dir_timeout = DEFAULT_DIR_TIMEOUT;
-  ftpfs_params.dirent_timeout = DEFAULT_DIRENT_TIMEOUT;
+  ftpfs_params.name_timeout = DEFAULT_NAME_TIMEOUT;
   ftpfs_params.stat_timeout = DEFAULT_STAT_TIMEOUT;
   ftpfs_params.node_cache_max = DEFAULT_NODE_CACHE_MAX;
   ftpfs_params.bulk_stat_period = DEFAULT_BULK_STAT_PERIOD;
-  ftpfs_params.bulk_stat_limit = DEFAULT_BULK_STAT_LIMIT;
+  ftpfs_params.bulk_stat_threshold = DEFAULT_BULK_STAT_THRESHOLD;
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
