@@ -35,6 +35,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/msg.h>
 #include <hurd/term.h>
 #include <paths.h>
+#include <sys/wait.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -97,7 +98,8 @@ mach_port_t default_dtable[3];
 
 char **global_argv;
 
-
+pid_t shell_pid;		/* PID of single-user shell.  */
+
 /* Read a string from stdin into BUF.  */
 static int
 getstring (char *buf, size_t bufsize)
@@ -366,16 +368,22 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
       default_ports[INIT_PORT_CTTYID] = MACH_PORT_NULL;
     }
   mach_port_deallocate (mach_task_self (), file);
-  return err ? MACH_PORT_NULL : task;
+  if (err)
+    {
+      fprintf (stderr, "Cannot execute %s: %s.\n", filename, strerror (err));
+      return MACH_PORT_NULL;
+    }
+  return task;
 }
 
 static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
-  extern int notify_server (), startup_server ();
+  extern int notify_server (), startup_server (), msg_server ();
   
   return (notify_server (inp, outp) ||
+	  msg_server (inp, outp) ||
 	  startup_server (inp, outp));
 }
 
@@ -601,7 +609,7 @@ launch_single_user ()
 {
   char shell[1024];
   char terminal[] = "/hurd/term\0console\0/tmp/console";
-  mach_port_t term, foo;
+  mach_port_t term, shelltask;
   char *termname;
   task_t termtask;
   int fd;
@@ -673,17 +681,13 @@ launch_single_user ()
      Otherwise, open fd's 0, 1, and 2. */
   if (term != MACH_PORT_NULL)
     {
-      fd = open (termname, O_READ);
+      fd = open (termname, O_RDWR);
       assert (fd != -1);
       dup2 (fd, 0);
       close (fd);
-      
-      fd = open (termname, O_WRITE);
-      assert (fd != -1);
-      dup2 (fd, 1);
-      dup2 (fd, 2);
-      close (fd);
-      
+      dup2 (0, 1);
+      dup2 (0, 2);
+
       fclose (stdin);
       stdin = fdopen (0, "r");
       
@@ -705,10 +709,13 @@ launch_single_user ()
     strcpy (shell, _PATH_BSHELL);
 
   /* The shell needs a real controlling terminal, so set that up here. */
-  foo = run_for_real (shell, shell, strlen (shell) + 1, term);
+  shelltask = run_for_real (shell, shell, strlen (shell) + 1, term);
   mach_port_deallocate (mach_task_self (), term);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
+  if (shelltask != MACH_PORT_NULL)
+    {
+      shell_pid = task2pid (shelltask);
+      mach_port_deallocate (mach_task_self (), shelltask);
+    }
   printf (" shell.\n");
   fflush (stdout);
 }
@@ -900,6 +907,8 @@ S_startup_reboot (mach_port_t server,
   for (;;);
 }
 
+/* Stubs for unused notification RPCs.  */
+
 kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
 			       mach_port_t rights)
@@ -932,3 +941,234 @@ do_mach_notify_msg_accepted (mach_port_t notify,
 {
   return EOPNOTSUPP;
 }
+
+/* msg server */
+
+kern_return_t
+S_sig_post (mach_port_t msgport,
+	    mach_port_t reply, mach_msg_type_name_t reply_type,
+	    int signo, mach_port_t refport)
+{
+  if (refport != mach_task_self ())
+    return EPERM;
+
+  switch (signo)
+    {
+    case SIGCHLD:
+      {
+	/* A child died.  Find its status.  */
+	int status;
+	pid_t pid = waitpid (WAIT_ANY, &status, WNOHANG);
+	if (pid < 0)
+	  perror ("init: waitpid");
+	else if (pid == 0)
+	  fprintf (stderr, "init: Spurious SIGCHLD.\n");
+	else if (pid == shell_pid)
+	  {
+	    fprintf (stderr,
+		     "init: Single-user shell PID %d died (%d), restarting.\n",
+		     pid, status);
+	    launch_single_user ();
+	  }
+	else
+	  fprintf (stderr, "init: Random child PID %d died (%d).\n",
+		   pid, status);
+	break;
+      }
+
+    default:
+      break;
+    }
+
+  mach_port_deallocate (mach_task_self (), refport);
+  return 0;
+}
+
+
+/* For the rest of the msg functions, just call the C library's
+   internal server stubs usually run in the signal thread.  */
+
+kern_return_t
+S_proc_newids (mach_port_t process,
+	mach_port_t task,
+	pid_t ppid,
+	pid_t pgrp,
+	int orphaned)
+{ return _S_proc_newids (process, task, ppid, pgrp, orphaned); }
+
+
+kern_return_t
+S_add_auth (mach_port_t process,
+	auth_t auth)
+{ return _S_add_auth (process, auth); }
+
+
+kern_return_t
+S_del_auth (mach_port_t process,
+	mach_port_t task,
+	intarray_t uids,
+	mach_msg_type_number_t uidsCnt,
+	intarray_t gids,
+	mach_msg_type_number_t gidsCnt)
+{ return _S_del_auth (process, task, uids, uidsCnt, gids, gidsCnt); }
+
+
+kern_return_t
+S_get_init_port (mach_port_t process,
+	mach_port_t refport,
+	int which,
+	mach_port_t *port,
+	mach_msg_type_name_t *portPoly)
+{ return _S_get_init_port (process, refport, which, port, portPoly); }
+
+
+kern_return_t
+S_set_init_port (mach_port_t process,
+	mach_port_t refport,
+	int which,
+	mach_port_t port)
+{ return _S_set_init_port (process, refport, which, port); }
+
+
+kern_return_t
+S_get_init_ports (mach_port_t process,
+	mach_port_t refport,
+	portarray_t *ports,
+	mach_msg_type_name_t *portsPoly,
+	mach_msg_type_number_t *portsCnt)
+{ return _S_get_init_ports (process, refport, ports, portsPoly, portsCnt); }
+
+
+kern_return_t
+S_set_init_ports (mach_port_t process,
+	mach_port_t refport,
+	portarray_t ports,
+	mach_msg_type_number_t portsCnt)
+{ return _S_set_init_ports (process, refport, ports, portsCnt); }
+
+
+kern_return_t
+S_get_init_int (mach_port_t process,
+	mach_port_t refport,
+	int which,
+	int *value)
+{ return _S_get_init_int (process, refport, which, value); }
+
+
+kern_return_t
+S_set_init_int (mach_port_t process,
+	mach_port_t refport,
+	int which,
+	int value)
+{ return _S_set_init_int (process, refport, which, value); }
+
+
+kern_return_t
+S_get_init_ints (mach_port_t process,
+	mach_port_t refport,
+	intarray_t *values,
+	mach_msg_type_number_t *valuesCnt)
+{ return _S_get_init_ints (process, refport, values, valuesCnt); }
+
+
+kern_return_t
+S_set_init_ints (mach_port_t process,
+	mach_port_t refport,
+	intarray_t values,
+	mach_msg_type_number_t valuesCnt)
+{ return _S_set_init_ints (process, refport, values, valuesCnt); }
+
+
+kern_return_t
+S_get_dtable (mach_port_t process,
+	mach_port_t refport,
+	portarray_t *dtable,
+	mach_msg_type_name_t *dtablePoly,
+	mach_msg_type_number_t *dtableCnt)
+{ return _S_get_dtable (process, refport, dtable, dtablePoly, dtableCnt); }
+
+
+kern_return_t
+S_set_dtable (mach_port_t process,
+	mach_port_t refport,
+	portarray_t dtable,
+	mach_msg_type_number_t dtableCnt)
+{ return _S_set_dtable (process, refport, dtable, dtableCnt); }
+
+
+kern_return_t
+S_get_fd (mach_port_t process,
+	mach_port_t refport,
+	int fd,
+	mach_port_t *port,
+	mach_msg_type_name_t *portPoly)
+{ return _S_get_fd (process, refport, fd, port, portPoly); }
+
+
+kern_return_t
+S_set_fd (mach_port_t process,
+	mach_port_t refport,
+	int fd,
+	mach_port_t port)
+{ return _S_set_fd (process, refport, fd, port); }
+
+
+kern_return_t
+S_get_environment (mach_port_t process,
+	data_t *value,
+	mach_msg_type_number_t *valueCnt)
+{ return _S_get_environment (process, value, valueCnt); }
+
+
+kern_return_t
+S_set_environment (mach_port_t process,
+	mach_port_t refport,
+	data_t value,
+	mach_msg_type_number_t valueCnt)
+{ return _S_set_environment (process, refport, value, valueCnt); }
+
+
+kern_return_t
+S_get_env_variable (mach_port_t process,
+	string_t variable,
+	data_t *value,
+	mach_msg_type_number_t *valueCnt)
+{ return _S_get_env_variable (process, variable, value, valueCnt); }
+
+
+kern_return_t
+S_set_env_variable (mach_port_t process,
+	mach_port_t refport,
+	string_t variable,
+	string_t value,
+	boolean_t replace)
+{ return _S_set_env_variable (process, refport, variable, value, replace); }
+
+
+kern_return_t
+S_io_select_done (mach_port_t notify_port,
+	mach_msg_type_name_t notify_portPoly,
+	int select_result,
+	int id_tag)
+{ return _S_io_select_done (notify_port, notify_portPoly, select_result, id_tag); }
+
+
+kern_return_t
+S_startup_dosync (mach_port_t process)
+{ return _S_startup_dosync (process); }
+
+
+kern_return_t
+S_dir_changed (mach_port_t notify_port,
+	dir_changed_type_t change,
+	string_t name)
+{ return _S_dir_changed (notify_port, change, name); }
+
+
+kern_return_t
+S_file_changed (mach_port_t notify_port,
+	file_changed_type_t change,
+	off_t start,
+	off_t end)
+{ return _S_file_changed (notify_port, change, start, end); }
+
