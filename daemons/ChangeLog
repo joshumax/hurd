@@ -1,3 +1,7 @@
+1999-09-23  Mark Kettenis  <kettenis@gnu.org>
+
+	* getty.c (main): Report an error if login_tty failed.
+
 1999-09-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* getty.c: Undo last change.

@@ -97,7 +97,8 @@ main (int argc, char **argv)
 
   print_banner (tty, ttyname);
 
-  login_tty (tty);
+  if (login_tty (tty) == -1)
+    syslog (LOG_ERR, "cannot set controlling terminal to %s: %m", ttyname);
 
   asprintf (&arg, "TERM=%s", tt ? tt->ty_type : "unknown");
 
