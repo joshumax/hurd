@@ -1,3 +1,7 @@
+Sun Jul 28 21:13:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (main): Correctly parse the -w/--width option.
+
 Fri Jul 26 12:34:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (enum val_display_type): Add `PAGESZ'.
