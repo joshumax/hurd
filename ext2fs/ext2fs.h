@@ -37,6 +37,9 @@
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
 
 int printf (const char *fmt, ...);
+
+/* A block number.  */
+typedef unsigned long block_t;
 
 /* ---------------------------------------------------------------- */
 
@@ -317,7 +320,7 @@ dino (ino_t inum)
   unsigned long group_inum = (inum - 1) % inodes_per_group;
   struct ext2_group_desc *bg = group_desc(bg_num);
   unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
-  unsigned long block = bg->bg_inode_table + (group_inum / inodes_per_block);
+  block_t block = bg->bg_inode_table + (group_inum / inodes_per_block);
   return ((struct ext2_inode *)bptr(block)) + group_inum % inodes_per_block;
 }
 
@@ -357,7 +360,7 @@ spin_lock_t modified_global_blocks_lock;
    this isn't enough to cause the block to be synced; you must call
    record_global_poke to do that.  */
 extern inline int
-global_block_modified (daddr_t block)
+global_block_modified (block_t block)
 {
   if (modified_global_blocks)
     {
@@ -379,10 +382,11 @@ record_global_poke (void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
   if (global_block_modified (boffs_block (boffs)))
- {
- printf ("Adding block %u to global_pokel (%p)\n", boffs_block (boffs), &global_pokel);
-    pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
-  }
+    {
+      printf ("Adding block %u to global_pokel (%p)\n",
+	      boffs_block (boffs), &global_pokel);
+      pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
+    }
 }
 
 /* This syncs a modification to a non-file block.  */
@@ -395,17 +399,22 @@ sync_global_ptr (void *bptr, int wait)
   pager_sync_some (disk_pager->p, trunc_page (boffs), vm_page_size, wait);
 }
 
-/* This records a modification to one of a file's indirect blocks.  */
+/* This records a modification to one of a file's indirect blocks.  It's
+   added to both the file-specific pokel, so a file sync will sync that
+   file's blocks, and the global one, so a global sync will as well.  */
 extern inline void
 record_indir_poke (struct node *node, void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
   if (global_block_modified (boffs_block (boffs)))
- {
- printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
-	 (boffs), node->dn->number, &node->dn->indir_pokel);
-    pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
-  }
+    {
+      printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
+	      (boffs), node->dn->number, &node->dn->indir_pokel);
+      pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
+      printf ("Adding block %u to global_pokel (%p)\n",
+	      boffs_block (boffs), &global_pokel);
+      pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
+    }
 }
 
 /* ---------------------------------------------------------------- */
@@ -448,24 +457,27 @@ else  printf ("Alloc sync 0\n");
 
 void ext2_discard_prealloc (struct node *node);
 
-error_t ext2_getblk (struct node *node, long block, int create, char **buf);
+/* Returns in DISK_BLOCK the disk block correspding to BLOCK in NODE.  If
+   there is no such block yet, but CREATE is true, then it is created,
+   otherwise EINVAL is returned.  */
+error_t ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block);
 
-int ext2_new_block (unsigned long goal, u32 * prealloc_count, u32 * prealloc_block);
+block_t ext2_new_block (block_t goal, u32 * prealloc_count, u32 * prealloc_block);
 
-void ext2_free_blocks (unsigned long block, unsigned long count);
+void ext2_free_blocks (block_t block, unsigned long count);
 
 /* ---------------------------------------------------------------- */
 
 /* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
-error_t dev_write_sync (daddr_t addr, vm_address_t data, long len);
+error_t dev_write_sync (block_t addr, vm_address_t data, long len);
 
 /* Write diskblock ADDR with DATA of LEN bytes; don't bother waiting
    for completion. */
-error_t dev_write (daddr_t addr, vm_address_t data, long len);
+error_t dev_write (block_t addr, vm_address_t data, long len);
 
 /* Read disk block ADDR; put the address of the data in DATA; read LEN
    bytes.  Always *DATA should be a full page no matter what.   */
-error_t dev_read_sync (daddr_t addr, vm_address_t *data, long len);
+error_t dev_read_sync (block_t addr, vm_address_t *data, long len);
 
 /* ---------------------------------------------------------------- */
 
