@@ -375,22 +375,21 @@ pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
     
 
 
+static void
+thread_function (any_t foo __attribute__ ((unused)))
+{
+  for (;;)
+    ports_manage_port_operations_multithread (pager_bucket,
+					      pager_demuxer,
+					      1000 * 60 * 2,
+					      1000 * 60 * 10,
+					      1, MACH_PORT_NULL);
+}
 
 /* Create a the DISK pager, initializing DISKPAGER, and DISKPAGERPORT */
 void
 create_disk_pager ()
 {
-  void
-    thread_function (any_t foo __attribute__ ((unused)))
-      {
-	for (;;)
-	  ports_manage_port_operations_multithread (pager_bucket,
-						    pager_demuxer,
-						    1000 * 60 * 2,
-						    1000 * 60 * 10,
-						    1, MACH_PORT_NULL);
-      }
-
   pager_bucket = ports_create_bucket ();
 
   cthread_detach (cthread_fork ((cthread_fn_t) thread_function, (any_t) 0));
