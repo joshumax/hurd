@@ -1,3 +1,7 @@
+Thu Feb  6 01:56:27 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	(diskfs_S_file_getfh, diskfs_S_fsys_getfile): Functions removed.
+
 Tue Nov 19 18:28:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (read_disknode): If SBLOCK->fs_inodefmt < FS_44INODEFMT,

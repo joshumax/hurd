@@ -104,7 +104,6 @@ See `tasks', the exported task list.
     (syslog, but takes special care when the root file system?). !!
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
     routines. !
-*** Move file_getfh and fsys_getfile here (from ufs). !!!
 
 
 ** libfshelp
@@ -206,7 +205,6 @@ See `tasks', the exported task list.
 
 ** fsck:
 *** fsck should use fsys_get_options returned device instead of /etc/fstab !!
-*** If fstab mentions a bad type, fsck gets as assert failure !!
 
 ** settrans:
 *** needs an option to make the active go away without using goaway. !
@@ -215,7 +213,7 @@ See `tasks', the exported task list.
 ** ps:
 *** ps should timeout quickly (one second?) on non-responsive message ports. !
 *** help displays for: stat letters, format specs.
-*** Add head/tail options; --match?
+*** --match option?
 
 ** gdb:
 *** Add various mach convenience features (vminfo, &c). !!
