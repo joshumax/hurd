@@ -1,3 +1,8 @@
+2001-10-11  Roland McGrath  <roland@frob.com>
+
+	* dir-renamed.c (diskfs_rename_dir): Fix bogus assert.
+	From Moritz Schulte <moritz@chaosdorf.de>.
+
 2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
 
 	* file-getfh.c (diskfs_S_file_getfh): Fix tag of diskfs_fhandle.
