@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <mach.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <errno.h>
 #include <hurd/hurd_types.h>
 #include <stdlib.h>
