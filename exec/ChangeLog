@@ -1,3 +1,12 @@
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* core.c: File removed.
+	* Makefile (DIST_FILES): Remove core.c from the list.
+
+	* elfcore.c: New file, used by crash server (../trans) to write
+	ELF core dump files.  Thanks to Jon Arney <jarney1@cox.net> for
+	spurring me to write this, and for helping to test and debug it.
+
 2002-01-02  Roland McGrath  <roland@frob.com>
 
 	* exec.c (do_exec) [KERN_INVALID_LEDGER]:
