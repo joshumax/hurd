@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "ufs.h"
 #include "fs.h"
 #include "dinode.h"
+#include <string.h>
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -69,14 +70,16 @@ diskfs_truncate (struct node *np,
     }
 
   /* Calculate block number of last block */
-  lastblock = lblkno (length + sblock->fs_bsize - 1) - 1;
-  olastblock = lblkno (osize + sblock->fs_bsize - 1) - 1;
+  lastblock = lblkno (sblock, length + sblock->fs_bsize - 1) - 1;
+  olastblock = lblkno (sblock, osize + sblock->fs_bsize - 1) - 1;
 
   /* If the prune is not to a block boundary, zero the bit upto the
      next block boundary. */
-  if (blkoff (length))
+  if (blkoff (sblock, length))
     diskfs_node_rdwr (np, (void *) zeroblock, length, 
-		      blksize (np, lastblock) - blkoff (length), 1, 0, 0);
+		      (blksize (sblock, np, lastblock) 
+		       - blkoff (sblock, length)), 
+		      1, 0, 0);
 
   /* We are going to throw away the block pointers for the blocks
      olastblock+1 through lastblock.  This will cause the underlying
@@ -137,8 +140,9 @@ diskfs_truncate (struct node *np,
 
       /* Prune the block pointers handled by the sindir pager.  This will
 	 free all the indirect blocks and such as necessary.  */
-      sindir_drop (np, lblkno((first2free - NDADDR) * sizeof (daddr_t)),
-		   lblkno ((olastblock - NDADDR) * sizeof (daddr_t)));
+      sindir_drop (np, lblkno(sblock, 
+			      (first2free - NDADDR) * sizeof (daddr_t)),
+		   lblkno (sblock, (olastblock - NDADDR) * sizeof (daddr_t)));
 
       if (!np->dn->fileinfo)
 	sin_unmap (np);
@@ -154,7 +158,7 @@ diskfs_truncate (struct node *np,
 	  dinodes[np->dn->number].di_db[idx] = 0;
 	  assert (idx <= olastblock);
 	  if (idx == olastblock)
-	    bsize = blksize (np, idx);
+	    bsize = blksize (sblock, np, idx);
 	  else
 	    bsize = sblock->fs_bsize;
 	  ffs_blkfree (np, bn, bsize);
@@ -171,12 +175,12 @@ diskfs_truncate (struct node *np,
 	{
 	  off_t oldspace, newspace;
 	  
-	  oldspace = blksize (np, lastblock);
-	  newspace = fragroundup (blkoff (length));;
+	  oldspace = blksize (sblock, np, lastblock);
+	  newspace = fragroundup (sblock, blkoff (sblock, length));;
 	  assert (newspace);
 	  if (oldspace - newspace)
 	    {
-	      bn += numfrags (newspace);
+	      bn += numfrags (sblock, newspace);
 	      ffs_blkfree (np, bn, oldspace - newspace);
 	      np->dn_stat.st_blocks -= (oldspace - newspace) / DEV_BSIZE;
 	      np->dn_stat_dirty = 1;
@@ -185,9 +189,9 @@ diskfs_truncate (struct node *np,
     }
 
   if (lastblock < NDADDR)
-    np->allocsize = fragroundup (length);
+    np->allocsize = fragroundup (sblock, length);
   else
-    np->allocsize = blkroundup (length);
+    np->allocsize = blkroundup (sblock, length);
 
   rwlock_writer_unlock (&np->dn->datalock, np->dn);
 
@@ -338,20 +342,20 @@ diskfs_grow (struct node *np,
     }
 
   /* This is the logical block number of what will be the last block. */
-  lbn = lblkno (end + sblock->fs_bsize - 1) - 1;
+  lbn = lblkno (sblock, end + sblock->fs_bsize - 1) - 1;
 
   /* This is the size to be of that block if it is in the NDADDR array.  */
-  size = fragroundup (blkoff (end));
+  size = fragroundup (sblock, blkoff (sblock, end));
   if (size == 0)
     size = sblock->fs_bsize;
   
   /* if we are writing a new block, then an old one may need to be
      reallocated into a full block. */
 
-  nb = lblkno (np->allocsize + sblock->fs_bsize - 1) - 1;
+  nb = lblkno (sblock, np->allocsize + sblock->fs_bsize - 1) - 1;
   if (np->allocsize && nb < NDADDR && nb < lbn)
     {
-      osize = blksize (np, nb);
+      osize = blksize (sblock, np, nb);
       if (osize < sblock->fs_bsize && osize > 0)
 	{
 	  daddr_t old_pbn;
@@ -388,7 +392,7 @@ diskfs_grow (struct node *np,
       if (nb != 0)
 	{
 	  /* consider need to reallocate a fragment. */
-	  osize = blkoff (np->allocsize);
+	  osize = blkoff (sblock, np->allocsize);
 	  if (osize == 0)
 	    osize = sblock->fs_bsize;
 	  if (size > osize)
@@ -427,7 +431,7 @@ diskfs_grow (struct node *np,
 	  dealloc_size = size;
 	  dinodes[np->dn->number].di_db[lbn] = pbn;
 	}
-      np->allocsize = fragroundup (end);
+      np->allocsize = fragroundup (sblock, end);
     }
   else
     {
@@ -436,11 +440,11 @@ diskfs_grow (struct node *np,
       if (np->dn->sinloc)
 	{
 	  sin_remap (np, end);
-	  np->allocsize = blkroundup (end);
+	  np->allocsize = blkroundup (sblock, end);
 	}
       else
 	{
-	  np->allocsize = blkroundup (end);
+	  np->allocsize = blkroundup (sblock, end);
 	  sin_map (np);
 	}
       
