@@ -30,7 +30,7 @@ diskfs_S_io_sigio (struct protid *cred)
   
   mutex_lock (&cred->po->np->lock);
   if (cred->po->openstat & O_FSYNC)
-    diskfs_file_update (1);
+    diskfs_file_update (cred->po->np, 1);
   mutex_unlock (&cred->po->np->lock);
   return 0;
 }
