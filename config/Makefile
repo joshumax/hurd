@@ -26,11 +26,11 @@ makemode := misc
 # If override_conf is set to `t' then install even on top of existing
 # files.
 SYSCONFFILES = protocols services shells motd ttys
-installed_conf = $(addprefix $(sysconfdir)/$(SYSCONFFILES))
+installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 # Mere symlinks are installed for these
 LINKEDCONFFILES = rc
-installed_links = $(addprefix $(sysconfdir)/$(LINKEDCONFFILES))
+installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
 
 ifeq ($(override_conf),t)
 foo=$(shell touch /dev/null)
@@ -41,7 +41,7 @@ endif
 
 install: $(installed_conf) $(installed_links)
 $(installed_conf): $(sysconfdir)/%: %
-	$(INSTALL_DATA) $< $@
+	$(INSTALL_DATA) $< $(sysconfdir)/$*
 
 $(sysconfdir)/rc:
 	ln -s ../libexec/rc $(sysconfdir)/rc
