@@ -49,7 +49,6 @@ endif
 
 include ../Makeconf
 
-
 install: $(installed_conf) $(installed_links) $(installed_logins) \
 	$(installed_rootdots)
 
