@@ -26,10 +26,4 @@ target = fsck
 
 include ../Makeconf
 
-all: fsck.native
-
-fsck.native: $(addprefix native-,$(OBJS))
-	rsh $(mighost) -n cd `pwd` \; gcc $^ -o $@
-
-native-%.o: %.c
-	rsh $(mighost) -n cd `pwd` \; gcc -c $^ -o $@
+$(OBJS): fsck.h
