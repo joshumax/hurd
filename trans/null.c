@@ -99,11 +99,12 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
    mapping; they will set none of the ports and return an error.  Such
    objects can still be accessed by io_read and io_write.  */
 kern_return_t
-trivfs_S_io_map(struct trivfs_protid *cred,
-		memory_object_t *rdobj,
-		mach_msg_type_name_t *rdtype,
-		memory_object_t *wrobj,
-		mach_msg_type_name_t *wrtype)
+trivfs_S_io_map_segment(struct trivfs_protid *cred,
+			int index,
+			memory_object_t *rdobj,
+			mach_msg_type_name_t *rdtype,
+			memory_object_t *wrobj,
+			mach_msg_type_name_t *wrtype)
 {
   return EINVAL;		/* XXX should work! */
 }
