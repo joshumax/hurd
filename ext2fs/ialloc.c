@@ -1,8 +1,25 @@
 /* Inode allocation routines.
- *
- * Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
- *
- * Largely stolen from linux/fs/ext2/ialloc.c
+
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
+/* 
+ *  linux/fs/ext2/ialloc.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -28,14 +45,17 @@
 
 /* ---------------------------------------------------------------- */
 
-void 
-ext2_free_inode (struct node *node, mode_t old_mode)
+/* Free node NP; the on disk copy has already been synced with 
+   diskfs_node_update (where NP->dn_stat.st_mode was 0).  It's
+   mode used to be OLD_MODE.  */
+void
+diskfs_free_node (struct node *np, mode_t old_mode)
 {
   char *bh;
   unsigned long block_group;
   unsigned long bit;
   struct ext2_group_desc *gdp;
-  ino_t inum = node->dn->number;
+  ino_t inum = np->dn->number;
 
   ext2_debug ("freeing inode %lu\n", inum);
 
@@ -51,19 +71,19 @@ ext2_free_inode (struct node *node, mode_t old_mode)
   block_group = (inum - 1) / sblock->s_inodes_per_group;
   bit = (inum - 1) % sblock->s_inodes_per_group;
 
-  gdp = group_desc (glock_group);
-  bh = baddr (gdb->bg_inode_bitmap);
+  gdp = group_desc (block_group);
+  bh = baddr (gdp->bg_inode_bitmap);
 
   if (!clear_bit (bit, bh))
     ext2_warning ("ext2_free_inode", "bit already cleared for inode %u", inum);
   else
     {
-      record_poke (bh, block_size);
+      pokel_add (&sblock_pokel, bh, block_size);
 
       gdp->bg_free_inodes_count++;
       if (S_ISDIR (old_mode))
 	gdp->bg_used_dirs_count--;
-      record_poke (gdp, sizeof *gdp);
+      pokel_add (&sblock_pokel, gdp, sizeof *gdp);
 
       sblock->s_free_inodes_count++;
     }
@@ -190,7 +210,7 @@ repeat:
       return 0;
     }
 
-  bh = gdp->bg_inode_bitmap;
+  bh = baddr (gdp->bg_inode_bitmap);
   if ((inum =
        find_first_zero_bit ((unsigned long *) bh, sblock->s_inodes_per_group))
       < sblock->s_inodes_per_group)
@@ -201,7 +221,7 @@ repeat:
 			"bit already set for inode %d", inum);
 	  goto repeat;
 	}
-      record_poke (bh, block_size);
+      pokel_add (&sblock_pokel, bh, block_size);
     }
   else
     {
@@ -228,7 +248,7 @@ repeat:
   gdp->bg_free_inodes_count--;
   if (S_ISDIR (mode))
     gdp->bg_used_dirs_count++;
-  record_poke (gdp, sizeof *gdp);
+  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
 
   sblock->s_free_inodes_count--;
   sblock_dirty = 1;
@@ -242,9 +262,15 @@ repeat:
 
 /* ---------------------------------------------------------------- */
 
+/* The user must define this function.  Allocate a new node to be of
+   mode MODE in locked directory DP (don't actually set the mode or
+   modify the dir, that will be done by the caller); the user
+   responsible for the request can be identified with CRED.  Set *NP
+   to be the newly allocated node.  */
 error_t
-diskfs_alloc_node (const struct node *dir, int mode, struct node **node)
+diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 {
+  error_t err;
   int sex;
   struct node *np;
   ino_t inum = ext2_alloc_inode (dir->dn->number, mode);
@@ -257,11 +283,12 @@ diskfs_alloc_node (const struct node *dir, int mode, struct node **node)
     return err;
 
   if (np->dn_stat.st_mode)
-    ext2_panic("Duplicate inode: %d", inum);
+    ext2_panic("diskfs_alloc_node", "Duplicate inode: %d", inum);
 
   if (np->dn_stat.st_blocks)
     {
-      ext2_warning("Free inode %d had %d blocks", inum, np->dn_stat.st_blocks);
+      ext2_warning("diskfs_alloc_node",
+		   "Free inode %d had %d blocks", inum, np->dn_stat.st_blocks);
       np->dn_stat.st_blocks = 0;
       np->dn_set_ctime = 1;
     }
@@ -287,7 +314,7 @@ diskfs_alloc_node (const struct node *dir, int mode, struct node **node)
 /* ---------------------------------------------------------------- */
 
 unsigned long 
-ext2_count_free_inodes (struct super_block *sb)
+ext2_count_free_inodes ()
 {
 #ifdef EXT2FS_DEBUG
   struct ext2_super_block *es;
@@ -305,7 +332,7 @@ ext2_count_free_inodes (struct super_block *sb)
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = ext2_count_free (gdp->bg_inode_bitmap, sblock->s_inodes_per_group / 8);
+      x = count_free (gdp->bg_inode_bitmap, sblock->s_inodes_per_group / 8);
       printf ("group %d: stored = %d, counted = %lu\n", i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
     }
@@ -321,7 +348,7 @@ ext2_count_free_inodes (struct super_block *sb)
 /* ---------------------------------------------------------------- */
 
 void 
-ext2_check_inodes_bitmap (struct super_block *sb)
+ext2_check_inodes_bitmap ()
 {
   int i;
   struct ext2_group_desc *gdp;
@@ -334,9 +361,10 @@ ext2_check_inodes_bitmap (struct super_block *sb)
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
-      gdp = get_group_desc (sb, i, NULL);
+      gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = ext2_count_free (gdp->bg_inode_bitmap, sblock->s_inodes_per_group / 8);
+      x = count_free (baddr (gdp->bg_inode_bitmap),
+		      sblock->s_inodes_per_group / 8);
       if (gdp->bg_free_inodes_count != x)
 	ext2_error ("ext2_check_inodes_bitmap",
 		    "Wrong free inodes count in group %d, "
