@@ -138,7 +138,6 @@ char bootstrap_args[100] = "-";
 char *bootdevice = 0;
 char *bootscript = 0;
 
-void set_mach_stack_args (task_t, thread_t, char *, ...);
 
 void safe_gets (char *buf, int buf_len)
 {
@@ -275,7 +274,7 @@ load_image (task_t t,
       lseek (fd, sizeof hdr.a - headercruft, SEEK_SET);
       read (fd, buf, amount);
       vm_allocate (t, &base, rndamount, 0);
-      vm_write (t, base, (u_int) buf, rndamount);
+      vm_write (t, base, (vm_address_t) buf, rndamount);
       if (magic != OMAGIC)
 	vm_protect (t, base, trunc_page (headercruft + hdr.a.a_text),
 		    0, VM_PROT_READ | VM_PROT_EXECUTE);
@@ -343,12 +342,11 @@ boot_script_exec_cmd (void *hook,
 {
   char *args, *p;
   int arg_len, i;
-  unsigned reg_size;
+  size_t reg_size;
   void *arg_pos;
   vm_offset_t stack_start, stack_end;
   vm_address_t startpc, str_start;
   thread_t thread;
-  struct i386_thread_state regs;
 
   write (2, path, strlen (path));
   for (i = 1; i < argc; ++i)
@@ -359,20 +357,12 @@ boot_script_exec_cmd (void *hook,
   write (2, "\r\n", 2);
 
   startpc = load_image (task, path);
-  thread_create (task, &thread);
   arg_len = stringlen + (argc + 2) * sizeof (char *) + sizeof (integer_t);
   arg_len += 5 * sizeof (int);
   stack_end = VM_MAX_ADDRESS;
   stack_start = VM_MAX_ADDRESS - 16 * 1024 * 1024;
   vm_allocate (task, &stack_start, stack_end - stack_start, FALSE);
-  reg_size = i386_THREAD_STATE_COUNT;
-  thread_get_state (thread, i386_THREAD_STATE,
-		    (thread_state_t) &regs, &reg_size);
-  regs.eip = (int) startpc;
-  regs.uesp = (int) ((stack_end - arg_len) & ~(sizeof (int) - 1));
-  thread_set_state (thread, i386_THREAD_STATE,
-		    (thread_state_t) &regs, reg_size);
-  arg_pos = (void *) regs.uesp;
+  arg_pos = (void *) ((stack_end - arg_len) & ~(sizeof (natural_t) - 1));
   args = mmap (0, stack_end - trunc_page ((vm_offset_t) arg_pos),
 	       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   str_start = ((vm_address_t) arg_pos
@@ -389,6 +379,34 @@ boot_script_exec_cmd (void *hook,
 	    stack_end - trunc_page ((vm_offset_t) arg_pos));
   munmap ((caddr_t) args,
 	  stack_end - trunc_page ((vm_offset_t) arg_pos));
+
+  thread_create (task, &thread);
+#ifdef I386_THREAD_STATE
+  {
+    struct i386_thread_state regs;
+    reg_size = i386_THREAD_STATE_COUNT;
+    thread_get_state (thread, i386_THREAD_STATE,
+		      (thread_state_t) &regs, &reg_size);
+    regs.eip = (int) startpc;
+    regs.uesp = (int) arg_pos;
+    thread_set_state (thread, i386_THREAD_STATE,
+		      (thread_state_t) &regs, reg_size);
+  }
+#elif ALPHA_THREAD_STATE
+  {
+    struct alpha_thread_state regs;
+    reg_size = ALPHA_THREAD_STATE_COUNT;
+    thread_get_state (thread, ALPHA_THREAD_STATE,
+		      (thread_state_t) &regs, &reg_size);
+    regs.r30 = (natural_t) arg_pos;
+    regs.pc = (natural_t) startpc;
+    thread_set_state (thread, ALPHA_THREAD_STATE,
+		      (thread_state_t) &regs, reg_size);
+  }
+#else
+# error needs to be ported
+#endif
+
   thread_resume (thread);
   mach_port_deallocate (mach_task_self (), thread);
   return 0;
@@ -527,11 +545,13 @@ main (int argc, char **argv, char **envp)
   if (boot_script_set_variable ("host-port", VAL_PORT,
 				(int) privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
-				   (int) pseudo_master_device_port)
+				   (integer_t) pseudo_master_device_port)
       || boot_script_set_variable ("kernel-command-line", VAL_STR,
-				   (int) kernel_command_line)
-      || boot_script_set_variable ("root-device", VAL_STR, (int) bootdevice)
-      || boot_script_set_variable ("boot-args", VAL_STR, (int) bootstrap_args))
+				   (integer_t) kernel_command_line)
+      || boot_script_set_variable ("root-device",
+				   VAL_STR, (integer_t) bootdevice)
+      || boot_script_set_variable ("boot-args",
+				   VAL_STR, (integer_t) bootstrap_args))
     {
       static const char msg[] = "error setting variable";
 
@@ -552,7 +572,7 @@ main (int argc, char **argv, char **envp)
        if (eq == 0)
          continue;
        *eq++ = '\0';
-       err = boot_script_set_variable (word, VAL_STR, (int) eq);
+       err = boot_script_set_variable (word, VAL_STR, (integer_t) eq);
        if (err)
          {
            char *msg;
@@ -679,189 +699,6 @@ main (int argc, char **argv, char **envp)
 
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
 }
-
-/* Set up stack args the Mach way */
-void
-set_mach_stack_args (task_t user_task,
-		     thread_t user_thread,
-		     char *startpc, ...)
-{
-  /* This code is lifted from .../mk/bootstrap/load.c. */
-  va_list			argv_ptr;
-  char *			arg_ptr;
-
-  int			arg_len;
-  int			arg_count;
-  char *			arg_pos;
-  unsigned int		arg_item_len;
-
-	/*
-	 * Calculate the size of the argument list.
-	 */
-	va_start(argv_ptr, startpc);
-	arg_len = 0;
-	arg_count = 0;
-	for (;;) {
-	    arg_ptr = va_arg(argv_ptr, char *);
-	    if (arg_ptr == (char *)0)
-		break;
-	    arg_count++;
-	    arg_len += strlen(arg_ptr) + 1;	/* space for '\0' */
-	}
-	va_end(argv_ptr);
-	/*
-	 * Add space for:
-	 *    arg_count
-	 *    pointers to arguments
-	 *    trailing 0 pointer
-	 *    dummy 0 pointer to environment variables
-	 *    and align to integer boundary
-	 */
-	arg_len += sizeof(integer_t) + (2 + arg_count) * sizeof(char *);
-	arg_len = (arg_len + (sizeof(integer_t) - 1)) & ~(sizeof(integer_t)-1);
-
-
-  /* This small piece is from .../mk/bootstrap/i386/exec.c. */
-  {
-	vm_offset_t	stack_start;
-	vm_offset_t	stack_end;
-	struct i386_thread_state	regs;
-	unsigned int		reg_size;
-
-#define STACK_SIZE (1024 * 1024 * 16)
-
-	/*
-	 * Add space for 5 ints to arguments, for
-	 * PS program. XXX
-	 */
-	arg_len += 5 * sizeof(int);
-
-	/*
-	 * Allocate stack.
-	 */
-	stack_end = VM_MAX_ADDRESS;
-	stack_start = VM_MAX_ADDRESS - STACK_SIZE;
-	(void)vm_allocate(user_task,
-			  &stack_start,
-			  (vm_size_t)(stack_end - stack_start),
-			  FALSE);
-
-	reg_size = i386_THREAD_STATE_COUNT;
-	(void)thread_get_state(user_thread,
-				i386_THREAD_STATE,
-				(thread_state_t)&regs,
-				&reg_size);
-
-	regs.eip = (int) startpc;
-	regs.uesp = (int)((stack_end - arg_len) & ~(sizeof(int)-1));
-
-	(void)thread_set_state(user_thread,
-				i386_THREAD_STATE,
-				(thread_state_t)&regs,
-				reg_size);
-
-	arg_pos = (void *) regs.uesp;
-      }
-
-	/*
-	 * Copy out the arguments.
-	 */
-	{
-	    vm_offset_t	u_arg_start;
-				/* user start of argument list block */
-	    vm_offset_t	k_arg_start;
-				/* kernel start of argument list block */
-	    vm_offset_t u_arg_page_start;
-				/* user start of args, page-aligned */
-	    vm_size_t	arg_page_size;
-				/* page_aligned size of args */
-	    vm_offset_t	k_arg_page_start;
-				/* kernel start of args, page-aligned */
-
-	    register
-	    char **	k_ap;	/* kernel arglist address */
-	    char *	u_cp;	/* user argument string address */
-	    register
-	    char *	k_cp;	/* kernel argument string address */
-	    register
-	    int		i;
-
-	    /*
-	     * Get address of argument list in user space
-	     */
-	    u_arg_start = (vm_offset_t)arg_pos;
-
-	    /*
-	     * Round to page boundaries, and allocate kernel copy
-	     */
-	    u_arg_page_start = trunc_page(u_arg_start);
-	    arg_page_size = (vm_size_t)(round_page(u_arg_start + arg_len)
-					- u_arg_page_start);
-
-	    k_arg_page_start = (vm_address_t) mmap (0, arg_page_size,
-						    PROT_READ|PROT_WRITE,
-						    MAP_ANON, 0, 0);
-
-	    /*
-	     * Set up addresses corresponding to user pointers
-	     * in the kernel block
-	     */
-	    k_arg_start = k_arg_page_start + (u_arg_start - u_arg_page_start);
-
-	    k_ap = (char **)k_arg_start;
-
-	    /*
-	     * Start the strings after the arg-count and pointers
-	     */
-	    u_cp = (char *)u_arg_start + arg_count * sizeof(char *)
-					+ 2 * sizeof(char *)
-					+ sizeof(integer_t);
-	    k_cp = (char *)k_arg_start + arg_count * sizeof(char *)
-					+ 2 * sizeof(char *)
-					+ sizeof(integer_t);
-
-	    /*
-	     * first the argument count
-	     */
-	    *k_ap++ = (char *)(natural_t)arg_count;
-
-	    /*
-	     * Then the strings and string pointers for each argument
-	     */
-	    va_start(argv_ptr, startpc);
-	    for (i = 0; i < arg_count; i++) {
-		arg_ptr = va_arg(argv_ptr, char *);
-		arg_item_len = strlen(arg_ptr) + 1; /* include trailing 0 */
-
-		/* set string pointer */
-		*k_ap++ = u_cp;
-
-		/* copy string */
-		bcopy(arg_ptr, k_cp, arg_item_len);
-		k_cp += arg_item_len;
-		u_cp += arg_item_len;
-	    }
-	    va_end(argv_ptr);
-
-	    /*
-	     * last, the trailing 0 argument and a null environment pointer.
-	     */
-	    *k_ap++ = (char *)0;
-	    *k_ap   = (char *)0;
-
-	    /*
-	     * Now write all of this to user space.
-	     */
-	    (void) vm_write(user_task,
-			    u_arg_page_start,
-			    k_arg_page_start,
-			    arg_page_size);
-
-	    (void) munmap ((caddr_t) k_arg_page_start,
-			   arg_page_size);
-	}
-}
-
 
 void
 msg_thread()
@@ -1141,7 +978,7 @@ ds_device_write (device_t device,
 		 dev_mode_t mode,
 		 recnum_t recnum,
 		 io_buf_ptr_t data,
-		 unsigned int datalen,
+		 size_t datalen,
 		 int *bytes_written)
 {
   if (device == pseudo_console)
@@ -1175,7 +1012,7 @@ ds_device_write_inband (device_t device,
 			dev_mode_t mode,
 			recnum_t recnum,
 			io_buf_ptr_inband_t data,
-			unsigned int datalen,
+			size_t datalen,
 			int *bytes_written)
 {
   if (device == pseudo_console)
@@ -1210,7 +1047,7 @@ ds_device_read (device_t device,
 		recnum_t recnum,
 		int bytes_wanted,
 		io_buf_ptr_t *data,
-		unsigned int *datalen)
+		size_t *datalen)
 {
   if (device == pseudo_console)
     {
@@ -1265,7 +1102,7 @@ ds_device_read_inband (device_t device,
 		       recnum_t recnum,
 		       int bytes_wanted,
 		       io_buf_ptr_inband_t data,
-		       unsigned int *datalen)
+		       size_t *datalen)
 {
   if (device == pseudo_console)
     {
@@ -1328,7 +1165,7 @@ kern_return_t
 ds_xxx_device_set_status (device_t device,
 			  dev_flavor_t flavor,
 			  dev_status_t status,
-			  u_int statu_cnt)
+			  size_t statu_cnt)
 {
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
@@ -1339,7 +1176,7 @@ kern_return_t
 ds_xxx_device_get_status (device_t device,
 			  dev_flavor_t flavor,
 			  dev_status_t status,
-			  u_int *statuscnt)
+			  size_t *statuscnt)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1351,7 +1188,7 @@ ds_xxx_device_set_filter (device_t device,
 			  mach_port_t rec,
 			  int pri,
 			  filter_array_t filt,
-			  unsigned int len)
+			  size_t len)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1375,7 +1212,7 @@ kern_return_t
 ds_device_set_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
-		      unsigned int statuslen)
+		      size_t statuslen)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1386,7 +1223,7 @@ kern_return_t
 ds_device_get_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
-		      unsigned int *statuslen)
+		      size_t *statuslen)
 {
   if (device == pseudo_console)
     return D_INVALID_OPERATION;
@@ -1412,7 +1249,7 @@ ds_device_set_filter (device_t device,
 		      mach_port_t receive_port,
 		      int priority,
 		      filter_array_t filter,
-		      unsigned int filterlen)
+		      size_t filterlen)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1732,7 +1569,7 @@ S_io_reauthenticate (mach_port_t object,
 {
   uid_t *gu, *au;
   gid_t *gg, *ag;
-  unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
+  size_t gulen = 0, aulen = 0, gglen = 0, aglen = 0;
   error_t err;
 
   err = mach_port_insert_right (mach_task_self (), object, object,
@@ -1765,9 +1602,9 @@ S_io_restrict_auth (mach_port_t object,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobjtype,
 		    uid_t *uids,
-		    u_int nuids,
+		    size_t nuids,
 		    uid_t *gids,
-		    u_int ngids)
+		    size_t ngids)
 {
   if (object != pseudo_console)
     return EOPNOTSUPP;
