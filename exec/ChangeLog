@@ -1,3 +1,15 @@
+2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (prepare_stream): New function, broken out of prepare.
+	(prepare): Call it.
+	[_STDIO_USES_IOSTREAM]: Do #error if this is defined.
+	(map, input_room, close_exec_stream, fake_seek, prepare_stream):
+	Conditionalize all these definitions on [! _STDIO_USES_IOSTREAM].
+	Only map and prepare_stream are called from elsewhere in the code.
+	(check_gzip): Don't reinitialize E->stream, since it will in fact not
+	be used again.
+	(check_bzip2): Likewise.
+
 2000-03-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hostarch.c (elf_machine_matches_host): Don't recognize EM_486,
