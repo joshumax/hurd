@@ -18,7 +18,7 @@
 dir := libdiskfs
 makemode := library
 
-FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c dir-rename.c    \
+FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c    \
 	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
 	file-get-trans.c file-get-transcntl.c file-getfh.c file-getlinknode.c \
 	file-pathconf.c file-set-trans.c file-statfs.c file-sync.c 	    \
