@@ -1,5 +1,8 @@
 Thu Jul 18 13:23:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
+	* mgt.c (S_proc_handle_exceptions): Release newly created referenc
+ 	on E when we are done with it.
+
 	* main.c (main): Don't wire proc anymore.  It's not necessary or
 	useful. 
 

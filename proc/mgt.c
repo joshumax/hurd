@@ -382,6 +382,7 @@ S_proc_handle_exceptions (struct proc *p,
   e->flavor = flavor;
   e->statecnt = statecnt;
   bcopy (new_state, e->thread_state, statecnt * sizeof (natural_t));
+  ports_port_deref (e);
   return 0;
 }
 
