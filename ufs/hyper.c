@@ -112,13 +112,31 @@ get_hypermetadata (void)
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
+  vm_address_t buf;
+  vm_size_t bufsize;
+  error_t err;
+
   spin_lock (&alloclock);
-  if (csum_dirty)
-    (wait ? dev_write_sync : dev_write) (fsbtodb (sblock, sblock->fs_csaddr),
-					 (vm_address_t) csum,
-					 fragroundup (sblock, 
-						      sblock->fs_cssize));
-  csum_dirty = 0;
+
+  if (!csum_dirty)
+    {
+      spin_unlock (&alloclock);
+      return;
+    }
+
+  /* Copy into a page-aligned buffer to avoid bugs in kernel device code. */
+  
+  bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
+
+  err = dev_read_sync (fsbtodb (sblock, sblock->fs_csaddr), &buf, bufsize);
+  if (!err)
+    {  
+      bcopy (csum, (void *) buf, sblock->fs_cssize);
+      (wait ? dev_write_sync : dev_write) (fsbtodb (sblock, sblock->fs_csaddr),
+					   buf, bufsize);
+      csum_dirty = 0;
+    }
+  
   spin_unlock (&alloclock);
 }
 
