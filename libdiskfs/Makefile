@@ -39,7 +39,7 @@ IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
-	init-init.c init-startup.c init-first.c init-completed.c \
+	init-init.c init-startup.c init-first.c  \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-runtime-parse.c \
