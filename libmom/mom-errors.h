@@ -42,4 +42,6 @@ enum __momerrors_error_codes
   EMOM_SERVER_DIED	= _MOM_ERRNO (3)
 };
 
+typedef enum __momerrors_error_codes mom_error_t;
+
 
