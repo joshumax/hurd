@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -179,31 +179,27 @@ routine io_server_version (
 
 /* Definitions for mapped io */
 
-/* Return object mapping the data underlying this memory object.  If
-   the read-data and the write-data are the same (as for files)
-   memobjxx will be set and both memobjrd and memobjwt will be
-   MACH_PORT_NULL.  If the read-object and the write-object are
-   distinct (as for TCP streams) memobjxx is MACH_PORT_NULL and the
-   either or both of memobjrd and memobjwr will be set.  If memobjxx
-   is returned, the the memory object will be readable, and writable
-   iff the object is O_RDWR or O_WRONLY.  If memobjxx is not returned,
-   memobjrd will be returned if the object is O_RDWR or O_RDONLY, and
-   will not be writable; memobjwr will be returned if the object is
-   O_RDWR or O_WRONLY, and will be readable and writable.  Some
-   objects do not provide mapping; they will set none of the ports and
-   return an error.  Such objects can still be accessed by io_read and
-   io_write.  */
+/* Return objects mapping the data underlying this memory object.  If
+   the object can be read then memobjrd will be provided; if the
+   object can be written then memobjwr will be provided.  For objects
+   where read data and write data are the same, these objects will be
+   equal, otherwise they will be disjoint.  Servers are permitted to
+   implement io_map but not io_map_cntl.  Some objects do not provide
+   mapping; they will set none of the ports and return an error.  Such
+   objects can still be accessed by io_read and io_write.  */
 routine io_map (
 	io_object: io_t;
 	out memobjrd: mach_port_send_t;
 	out memobjwt: mach_port_send_t);
 
 /* This call can only be made once per request port.  If it returns
-   POSIX_EBUSY, then the user should duplicate the port (using
-   io_duplicate) and try again.  This maps the shared page data
-   structures corresponding to the data maps in io_map.  The format
-   and meaning of the shared page is described in shared.h and the
-   calls below.  */
+   EBUSY, then the user should duplicate the port (using io_duplicate)
+   and try again.  This maps the shared page data structures
+   corresponding to the data maps in io_map.  The format and meaning
+   of the shared page is described in shared.h and the calls below.
+   This call may be unimplemented by some servers; they will return
+   EOPNOTSUPP.
+   */
 routine io_map_cntl (
 	io_object: io_t;
 	out memobj: memory_object_t);
