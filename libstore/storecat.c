@@ -13,10 +13,12 @@ main (int argc, char **argv)
   struct store *s;
   char buf[4096], *data = buf;
   size_t data_len = sizeof (buf);
-  struct store_argp_params params = { 0, 0, 0 };
+  struct store_parsed *parsed;
 
-  argp_parse (&store_argp, argc, argv, 0, 0, &params);
-  s = params.result;
+  argp_parse (&store_argp, argc, argv, 0, 0, &parsed);
+  err = store_parsed_open (parsed, STORE_READONLY, 0, &s);
+  if (err)
+    error (4, err, "store_parsed_open");
 
   err = store_read (s, 0, s->size, &data, &data_len);
   if (err)
