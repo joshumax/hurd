@@ -183,14 +183,14 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
     {
       if (namelen != 2 || name[0] != '.' || name[1] != '.')
 	{
-	  if (inum == dp->dn->number)
+	  if (inum == dp->cache_id)
 	    {
 	      np = dp;
 	      diskfs_nref (np);
 	    }
 	  else
 	    {
-	      err = iget (inum, &np);
+	      err = diskfs_cached_lookup (inum, &np);
 	      if (err)
 		goto out;
 	    }
@@ -198,13 +198,13 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  
       /* We are looking up .. */
       /* Check to see if this is the root of the filesystem. */
-      else if (dp->dn->number == 2)
+      else if (dp->cache_id == 2)
 	{
 	  err = EAGAIN;
 	  goto out;
 	}
 	  
-      /* We can't just do iget, because we would then deadlock.
+      /* We can't just do diskfs_cached_lookup, because we would then deadlock.
 	 So we do this.  Ick.  */
       else if (retry_dotdot)
 	{
@@ -215,7 +215,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 		 try *again*. */
 	      diskfs_nput (np);
 	      mutex_unlock (&dp->lock);
-	      err = iget (inum, &np);
+	      err = diskfs_cached_lookup (inum, &np);
 	      mutex_lock (&dp->lock);
 	      if (err)
 		goto out;
@@ -230,7 +230,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	     repeat the directory scan to see if this is still
 	     right.  */
 	  mutex_unlock (&dp->lock);
-	  err = iget (inum, &np);
+	  err = diskfs_cached_lookup (inum, &np);
 	  mutex_lock (&dp->lock);
 	  if (err)
 	    goto out;
@@ -245,7 +245,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       else if (type == LOOKUP)
 	{
 	  diskfs_nput (dp);
-	  err = iget (inum, &np);
+	  err = diskfs_cached_lookup (inum, &np);
 	  if (err)
 	    goto out;
 	}
@@ -297,7 +297,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	       no new references, so we don't have anything to do */
 	    ;
 	  else if (type == LOOKUP)
-	    /* We did iget */
+	    /* We did diskfs_cached_lookup */
 	    diskfs_nput (np);
 	}
       else
@@ -348,7 +348,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
 	  ext2_warning ("bad directory entry: inode: %d offset: %ld",
-			dp->dn->number,
+			dp->cache_id,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
 	}
@@ -479,7 +479,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       /* We are supposed to consume this slot. */
       assert (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
       
-      ds->entry->inode = np->dn->number;
+      ds->entry->inode = np->cache_id;
       ds->entry->name_len = namelen;
       bcopy (name, ds->entry->name, namelen);
 
@@ -493,7 +493,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       
       new = (struct ext2_dir_entry *) ((vm_address_t) ds->entry + oldneeded);
 
-      new->inode = np->dn->number;
+      new->inode = np->cache_id;
       new->rec_len = ds->entry->rec_len - oldneeded;
       new->name_len = namelen;
       bcopy (name, new->name, namelen);
@@ -531,7 +531,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       assert (totfreed >= needed);
       
       new = (struct ext2_dir_entry *) tooff;
-      new->inode = np->dn->number;
+      new->inode = np->cache_id;
       new->rec_len = totfreed;
       new->name_len = namelen;
       bcopy (name, new->name, namelen);
@@ -557,7 +557,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
 
-      new->inode = np->dn->number;
+      new->inode = np->cache_id;
       new->rec_len = DIRBLKSIZ;
       new->name_len = namelen;
       bcopy (name, new->name, namelen);
@@ -650,7 +650,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   
   assert (!diskfs_readonly);
 
-  ds->entry->inode = np->dn->number;
+  ds->entry->inode = np->cache_id;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
@@ -923,7 +923,7 @@ diskfs_get_directs (struct node *dp,
       if (entryp->rec_len == 0)
 	{
 	  ext2_warning ("zero length directory entry: inode: %d offset: %d",
-			dp->dn->number,
+			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
 	}
@@ -937,7 +937,7 @@ diskfs_get_directs (struct node *dp,
       else if (bufp - buf > DIRBLKSIZ)
 	{
 	  ext2_warning ("directory entry too long: inode: %d offset: %d",
-			dp->dn->number,
+			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
 	  return EIO;
 	}
