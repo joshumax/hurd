@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -32,6 +32,6 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 		 mach_port_t *wrobj,
 		 mach_msg_type_name_t *wrtype)
 {
-  assert (!trivfs_support_read && !trivfs_support_write);
-  return EOPNOTSUPP;
+  return trivfs_S_io_map_segment (cred, 0, reply, replytype,
+				  rdobj, rdtype, wrobj, wrtype);
 }
