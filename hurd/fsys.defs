@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -123,4 +123,5 @@ routine fsys_forward (
    filesystem (sutiable for fsys_set_options).  */
 routine fsys_get_options (
 	server: fsys_t;
+	RPT
 	out options: data_t);
