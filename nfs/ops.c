@@ -258,7 +258,7 @@ netfs_attempt_set_size (struct netcred *cred, struct node *np,
    <hurd/netfs.h>. */
 error_t
 netfs_attempt_statfs (struct netcred *cred, struct node *np,
-		      struct fsys_statfsbuf *st)
+		      struct statfs *st)
 {
   int *p;
   void *rpcbuf;
@@ -273,16 +273,19 @@ netfs_attempt_statfs (struct netcred *cred, struct node *np,
   
   if (!err)
     {
-      st->fsys_stb_iosize = *p++;
-      st->fsys_stb_bsize = *p++;
-      st->fsys_stb_blocks = *p++;
-      st->fsys_stb_bfree = *p++;
-      st->fsys_stb_bavail = *p++;
+      long iosize, bsize;
+      iosize = *p++;
+      bsize = *p++;
+      st->f_bsize = iosize;
+      st->f_blocks = ((*p++) * bsize) / iosize;
+      st->f_bfree = ((*p++) * bsize) / iosize;
+      st->f_bavail = ((*p++) * bsize) / iosize;
       
-      st->fsys_stb_type = FSTYPE_NFS;
-      st->fsys_stb_files = 0;
-      st->fsys_stb_ffree = 0;
-      st->fsys_stb_fsid = 0;	/* XXX wrong  */
+      st->f_type = FSTYPE_NFS;
+      st->f_files = 0;
+      st->f_ffree = 0;
+      st->f_fsid = 0;	/* XXX wrong  */
+      st->f_namelen = 0;
     }
   
   free (rpcbuf);
