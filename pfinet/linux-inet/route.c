@@ -637,6 +637,7 @@ static int ip_get_old_rtent(struct old_rtentry * src, struct rtentry * rt)
 	return 0;
 }
 
+#ifndef _HURD_
 /*
  *	Handle IP routing ioctl calls. These are used to manipulate the routing tables
  */
@@ -670,3 +671,4 @@ int ip_rt_ioctl(unsigned int cmd, void *arg)
 
 	return -EINVAL;
 }
+#endif
