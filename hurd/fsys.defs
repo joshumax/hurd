@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992, 1993 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -66,8 +66,6 @@ routine fsys_getpriv (
 	out host_priv: mach_port_t;
 	out device_master: mach_port_t);
 
-/* The filesystem must do a proc_reassign with the specified procserver
-   port to identify itself before otherwise using the port.  */
 routine fsys_init (
 	fsys: fsys_t;
 	proc_server: mach_port_move_send_t;
