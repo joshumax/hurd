@@ -48,7 +48,7 @@ static int trunc_direct (struct inode * inode)
 {
 	u32 * p;
 	int i, tmp;
-	struct buffer_head * bh;
+	char * bh;
 	unsigned long block_to_free = 0;
 	unsigned long free_count = 0;
 	int retry = 0;
@@ -106,8 +106,8 @@ repeat:
 static int trunc_indirect (struct inode * inode, int offset, u32 * p)
 {
 	int i, tmp;
-	struct buffer_head * bh;
-	struct buffer_head * ind_bh;
+	char * bh;
+	char * ind_bh;
 	u32 * ind;
 	unsigned long block_to_free = 0;
 	unsigned long free_count = 0;
@@ -203,7 +203,7 @@ static int trunc_dindirect (struct inode * inode, int offset,
 			    u32 * p)
 {
 	int i, tmp;
-	struct buffer_head * dind_bh;
+	char * dind_bh;
 	u32 * dind;
 	int retry = 0;
 	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
@@ -262,7 +262,7 @@ repeat:
 static int trunc_tindirect (struct inode * inode)
 {
 	int i, tmp;
-	struct buffer_head * tind_bh;
+	char * tind_bh;
 	u32 * tind, * p;
 	int retry = 0;
 	int addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
@@ -321,7 +321,7 @@ repeat:
 void ext2_truncate (struct inode * inode)
 {
 	int retry;
-	struct buffer_head * bh;
+	char * bh;
 	int err;
 	int offset;
 
