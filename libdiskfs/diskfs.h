@@ -449,11 +449,6 @@ vm_prot_t diskfs_max_user_pager_prot ();
    NP is locked.  */
 struct pager *diskfs_get_filemap_pager_struct (struct node *np);
 
-/* The user may define this function if she calls diskfs_start_bootstrap.
-   It is called by the library after the filesystem has a normal
-   environment (complete with auth and proc ports). */
-void diskfs_init_completed ();
-
 /* The user may define this function.  It is called when the disk has been
    changed from read-only to read-write mode or vice-versa.  READONLY is the
    new state (which is also reflected in DISKFS_READONLY).  This function is
