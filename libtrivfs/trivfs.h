@@ -74,23 +74,13 @@ void trivfs_modify_stat (struct stat *);
 /* If this variable is set, it is called every time an open happens.
    UIDS, GIDS, and FLAGS are from the open; CNTL identifies the
    node being opened.  This call need not check permissions on the underlying
-   node.  If the open call should block, then return EWOULDBLOCK.  Other
-   errors are immediately reflected to the user.  If O_NONBLOCK 
-   is not set in FLAGS and EWOULDBLOCK is returned, then call 
-   trivfs_complete_open when all pending open requests for this 
-   file can complete. */
+   node.  This call can block as necessary, unless O_NONBLOCK is set
+   in FLAGS.  Any desired error can be returned, which will be reflected
+   to the user and prevent the open from succeeding.  */
 error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
 				   uid_t *uids, u_int nuids,
 				   gid_t *gids, u_int ngids,
 				   int flags);
-
-/* Call this after *trivfs_check_open_hook returns EWOULDBLOCK when
-   FLAGS did not include O_NONBLOCK.  CNTL identifies the node now
-   openable.  If MULTI is nonzero, then return all pending opens,
-   otherwise, return only one.  ERR is whether this open should
-   return an error, and what error to return. */
-void trivfs_complete_open (struct trivfs_control *cntl, 
-			   int multi, error_t err);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
