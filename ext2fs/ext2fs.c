@@ -26,8 +26,24 @@
 #include <getopt.h>
 #include "ext2fs.h"
 #include "error.h"
+
+/* ---------------------------------------------------------------- */
 
-char *ext2fs_version = "0.0 pre-alpha";
+int diskfs_link_max = LINK_MAX;
+int diskfs_maxsymlinks = 8;
+int diskfs_shortcut_symlink = 1;
+int diskfs_shortcut_chrdev = 1;
+int diskfs_shortcut_blkdev = 1;
+int diskfs_shortcut_fifo = 1;
+int diskfs_shortcut_ifsock = 1;
+
+char *diskfs_server_name = "ext2fs";
+int diskfs_major_version = 0;
+int diskfs_minor_version = 0;
+int diskfs_edit_version = 0;
+
+int diskfs_synchronous = 0;
+int diskfs_readonly = 0;
 
 /* ---------------------------------------------------------------- */
 
@@ -140,8 +156,6 @@ static struct option options[] =
 
 /* ---------------------------------------------------------------- */
 
-int diskfs_readonly;
-
 int check_string = 1;
 
 void
@@ -174,7 +188,9 @@ main (int argc, char **argv)
 	  case 's':
 	    diskfs_synchronous = 1; break;
 	  case 'V':
-	    printf("ext2fs %s", ext2fs_version); exit(0);
+	    printf("%s %s.%d.%d", diskfs_server_name, diskfs_major_version,
+		   diskfs_minor_version, diskfs_edit_version);
+	    exit(0);
 	  case '?':
 	    usage(0);
 	  default:
@@ -279,17 +295,22 @@ main (int argc, char **argv)
 void
 diskfs_init_completed ()
 {
+  string_t version;
   mach_port_t proc, startup;
   error_t err;
 
+  sprintf(version, "%s %s.%d.%d",
+	  diskfs_server_name, diskfs_major_version,
+	  diskfs_minor_version, diskfs_edit_version);
+
   proc = getproc ();
-  proc_register_version (proc, diskfs_host_priv, "ext2fs", HURD_RELEASE,
-			 ext2fs_version);
+  proc_register_version (proc, diskfs_host_priv, diskfs_server_name,
+			 HURD_RELEASE, version);
   err = proc_getmsgport (proc, 1, &startup);
   if (!err)
     {
       startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      "ext2fs", diskfs_host_priv);
+			      diskfs_server_name, diskfs_host_priv);
       mach_port_deallocate (mach_task_self (), startup);
     }
   mach_port_deallocate (mach_task_self (), proc);
