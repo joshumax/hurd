@@ -163,6 +163,11 @@ struct argp_state
      such call returns.  At all other times, this is the number of such
      arguments that have been processed.  */
   unsigned arg_num;
+
+  /* If non-zero, the index in ARGV of the first argument following a special
+     `--' argument (which prevents anything following being interpreted as an
+     option).  Only set once argument parsing has proceeded past this point. */
+  int quoted;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
