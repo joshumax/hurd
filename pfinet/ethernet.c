@@ -27,7 +27,7 @@
 
 #include "pfinet.h"
 
-#define ethername "ul0"
+static char *ethername;
 
 device_t ether_port;
 
@@ -141,13 +141,15 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 }
 
 void
-setup_ethernet_device (void)
+setup_ethernet_device (char *name)
 {
   struct net_status netstat;
   u_int count;
   int net_address[2];
   int i;
   
+  ethername = name;
+
   /* Interface buffers. */
   ether_dev.name = ethername;
   for (i = 0; i < DEV_NUMBUFFS; i++)
