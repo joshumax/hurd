@@ -1,3 +1,10 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* pq.c (free_packets): Add braces to silence gcc warning.
+	(packet_realloc): Likewise.
+	* pipe.c (pipe_send): Likewise.
+	(pipe_recv): Likewise.
+
 Mon Oct 21 21:58:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* pipe.h: Add extern inline protection.
@@ -38,7 +45,7 @@ Sat Jan 13 13:56:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	(packet_new_size): New declaration.
 	* pq.c (packet_size_adjust): Function removed.
 	(packet_new_size): New function.
-	
+
 	* pq.c (packet_read): Re-arrange to be slightly less confusing.
 	Reverse start-past-buf-beginning test that may have leaked memory.
 
@@ -96,7 +103,7 @@ Tue Aug 29 14:37:49 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
 
 	* pipe.c (pipe_send): Use condition_broadcast, not condition_signal.
 	* pipe.h (pipe_select): New function.
-	
+
 	* pipe.h (struct pipe): Remove interrupt_seq_num field.
 	(pipe_wait): Use hurd_condition_wait to detect interrupts instead
 	of previous ad-hoc mechanism.
@@ -144,6 +151,6 @@ Mon Jul 31 14:50:00 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
 
 Fri Jul 28 23:03:27 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
 
-	* pipe.h (stream_pipe_class, dgram_pipe_class, seqpack_pipe_class): 
+	* pipe.h (stream_pipe_class, dgram_pipe_class, seqpack_pipe_class):
 	Make these declarations extern so they don't fuck up initialization.
 	(seqpacket_pipe_class): Renamed to `seqpack_pipe_class'.

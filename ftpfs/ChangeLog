@@ -1,3 +1,11 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ftpfs.c (netfs_append_args): Add braces to silence gcc warning.
+	* netfs.c (get_dirents): Likewise.
+	(netfs_get_dirents): Likewise.
+	* dir.c (ftpfs_refresh_node): Likewise.
+	(ftpfs_dir_lookup): Likewise.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ftpfs.c (netfs_append_args): Use %ld for time_t and %Zu for size_t.

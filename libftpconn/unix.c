@@ -1,6 +1,6 @@
 /* Unix-specific ftpconn hooks
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -347,7 +347,7 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
     p = e;								      \
     u;									      \
   })
- 
+
   /* Link count.  */
   SKIP_WS ();
   stat->st_nlink = PARSE_INT ();
@@ -595,20 +595,23 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 	    }
 
 	  if (strchr (name, '/'))
-	    if (s->contents)
-	      /* We know that the name originally request had a slash in it
-		 (because we added one if necessary), so if a name in the
-		 listing has one too, it can't be the contents of a
-		 directory; if this is the case and we wanted the contents,
-		 this must not be a directory.  */
-	      {
-		err = ENOTDIR;
-		goto finished;
-	      }
-	    else if (s->added_slash)
-	      /* S->name must be the same name we passed; if we added a `./'
-		 prefix, removed it so the client gets back what it passed.  */
-	      name += 2;
+	    {
+	      if (s->contents)
+		/* We know that the name originally request had a slash in
+		   it (because we added one if necessary), so if a name in
+		   the listing has one too, it can't be the contents of a
+		   directory; if this is the case and we wanted the
+		   contents, this must not be a directory.  */
+		{
+		  err = ENOTDIR;
+		  goto finished;
+		}
+	      else if (s->added_slash)
+		/* S->name must be the same name we passed; if we added a
+		   `./' prefix, removed it so the client gets back what it
+		   passed.  */
+		name += 2;
+	    }
 
 	  /* Pass only directory-relative names to the callback function.  */
 	  name = basename (name);

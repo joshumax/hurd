@@ -1,6 +1,6 @@
 /* Generic one-way pipes
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -66,7 +66,7 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
   condition_init (&new->pending_write_selects);
   mutex_init (&new->lock);
 
-  pq_create (&new->queue);  
+  pq_create (&new->queue);
 
   if (! pipe_is_connless (new))
     new->flags |= PIPE_BROKEN;
@@ -76,7 +76,7 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
 }
 
 /* Free PIPE and any resources it holds.  */
-void 
+void
 pipe_free (struct pipe *pipe)
 {
   pq_free (pipe->queue);
@@ -149,7 +149,7 @@ void _pipe_no_writers (struct pipe *pipe)
    this function (unlike most pipe functions).  */
 error_t
 pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
-		  int *select_type, int data_only) 
+		  int *select_type, int data_only)
 {
   error_t err = 0;
 
@@ -214,7 +214,7 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 	    ! ((wpipe->flags & PIPE_BROKEN)
 	       || pipe_readable (wpipe, 1) < wlimit);
 	}
-      
+
       if (!err)
 	{
 	  if (rpipe_blocked)
@@ -260,10 +260,12 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
     {
       size_t left = pipe->write_limit - pipe_readable (pipe, 1);
       if (left < data_len)
-	if (data_len <= pipe->write_atomic)
-	  return EWOULDBLOCK;
-	else
-	  data_len = left;
+	{
+	  if (data_len <= pipe->write_atomic)
+	    return EWOULDBLOCK;
+	  else
+	    data_len = left;
+	}
     }
 
   if (control_len > 0 || num_ports > 0)
@@ -294,7 +296,7 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
   if (!err)
     {
       timestamp (&pipe->write_time);
-      
+
       /* And wakeup anyone that might be interested in it.  */
       condition_broadcast (&pipe->pending_reads);
       mutex_unlock (&pipe->lock);
@@ -373,26 +375,29 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
     }
 
   if (!err)
-    if (packet)
-      /* Read some data (PACKET must be a data packet at this point).  */
-      {
-	int dq = 1;	/* True if we should dequeue this packet.  */
+    {
+      if (packet)
+	/* Read some data (PACKET must be a data packet at this point).  */
+	{
+	  int dq = 1;	/* True if we should dequeue this packet.  */
 
- 	if (source)
-	  packet_read_source (packet, source);
+	  if (source)
+	    packet_read_source (packet, source);
 
-	err = (*pipe->class->read)(packet, &dq, flags, data, data_len, amount);
-	if (dq)
-	  pq_dequeue (pq);
-      }
-    else
-      /* Return EOF.  */
-      *data_len = 0;
+	  err = (*pipe->class->read)(packet, &dq, flags,
+				     data, data_len, amount);
+	  if (dq)
+	    pq_dequeue (pq);
+	}
+      else
+	/* Return EOF.  */
+	*data_len = 0;
+    }
 
   if (!err && packet)
     {
       timestamp (&pipe->read_time);
-      
+
       /* And wakeup anyone that might be interested in it.  */
       condition_broadcast (&pipe->pending_writes);
       mutex_unlock (&pipe->lock);

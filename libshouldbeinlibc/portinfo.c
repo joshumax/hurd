@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -112,17 +112,19 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 	  error_t err =
 	    mach_port_get_set_status (task, name, &members, &members_len);
 	  if (! err)
-	    if (members_len == 0)
-	      fprintf (stream, " (empty)");
-	    else
-	      {
-		fprintf (stream, hex_names ? " (%#x" : " (%u", members[0]);
-		for (i = 1; i < members_len; i++)
-		  fprintf (stream, hex_names ? ", %#x" : ", %u", members[i]);
-		fprintf (stream, ")");
-		vm_deallocate (mach_task_self (), (vm_address_t)members,
-			       members_len * sizeof *members);
-	      }
+	    {
+	      if (members_len == 0)
+		fprintf (stream, " (empty)");
+	      else
+		{
+		  fprintf (stream, hex_names ? " (%#x" : " (%u", members[0]);
+		  for (i = 1; i < members_len; i++)
+		    fprintf (stream, hex_names ? ", %#x" : ", %u", members[i]);
+		  fprintf (stream, ")");
+		  vm_deallocate (mach_task_self (), (vm_address_t)members,
+				 members_len * sizeof *members);
+		}
+	    }
 	  }
     }
   putc ('\n', stream);

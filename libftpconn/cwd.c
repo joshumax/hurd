@@ -1,6 +1,6 @@
 /* Get/set connection current working directory
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -34,22 +34,24 @@ _cache_cwd (struct ftp_conn *conn, int reopen)
     (reopen ? ftp_conn_cmd_reopen : ftp_conn_cmd) (conn, "pwd", 0, &reply, &txt);
 
   if (! err)
-    if (reply == REPLY_DIR_NAME)
-      {
-	char *cwd = malloc (strlen (txt));
-	if (! cwd)
-	  err = ENOMEM;
-	else if (sscanf (txt, "\"%[^\"]\"", cwd) != 1)
-	  err = EGRATUITOUS;
-	else
-	  {
-	    if (conn->cwd)
-	      free (conn->cwd);
-	    conn->cwd = cwd;
-	  }
-      }
-    else
-      err = unexpected_reply (conn, reply, txt, 0);
+    {
+      if (reply == REPLY_DIR_NAME)
+	{
+	  char *cwd = malloc (strlen (txt));
+	  if (! cwd)
+	    err = ENOMEM;
+	  else if (sscanf (txt, "\"%[^\"]\"", cwd) != 1)
+	    err = EGRATUITOUS;
+	  else
+	    {
+	      if (conn->cwd)
+		free (conn->cwd);
+	      conn->cwd = cwd;
+	    }
+	}
+      else
+	err = unexpected_reply (conn, reply, txt, 0);
+    }
 
   return err;
 }
@@ -83,10 +85,12 @@ ftp_conn_cwd (struct ftp_conn *conn, const char *cwd)
       const char *txt;
       err = ftp_conn_cmd_reopen (conn, "cwd", cwd, &reply, &txt);
       if (! err)
-	if (reply == REPLY_FCMD_OK)
-	  err = _cache_cwd (conn, 0);
-	else
-	  err = unexpected_reply (conn, reply, txt, ftp_conn_poss_file_errs);
+	{
+	  if (reply == REPLY_FCMD_OK)
+	    err = _cache_cwd (conn, 0);
+	  else
+	    err = unexpected_reply (conn, reply, txt, ftp_conn_poss_file_errs);
+	}
     }
   return err;
 }
@@ -99,9 +103,11 @@ ftp_conn_cdup (struct ftp_conn *conn)
   const char *txt;
   error_t err = ftp_conn_cmd_reopen (conn, "cdup", 0, &reply, &txt);
   if (! err)
-    if (reply == REPLY_OK)
-      err = _cache_cwd (conn, 0);
-    else
-      err = unexpected_reply (conn, reply, txt, ftp_conn_poss_file_errs);
+    {
+      if (reply == REPLY_OK)
+	err = _cache_cwd (conn, 0);
+      else
+	err = unexpected_reply (conn, reply, txt, ftp_conn_poss_file_errs);
+    }
   return err;
 }

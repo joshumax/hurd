@@ -1,3 +1,22 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* flags.c (store_clear_flags): Add braces to silence gcc warning.
+
+1998-10-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr.c (store_read): Add braces to silence gcc warning.
+	* flags.c (store_set_flags): Likewise.
+	* typed.c (store_typed_open): Likewise.
+	* decode.c (store_decode): Likewise.
+	* argp.c (store_parsed_append_args): Likewise.
+	(store_parsed_name): Likewise.
+	(store_parsed_open): Likewise.
+
+1998-09-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* argp.c (store_parsed_append_args): Use %d for layer, which is int.
+	Cast to int for %* field width arg.
+
 1997-09-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* encode.c (store_encode): Allocate the correct amount of memory
@@ -110,7 +129,7 @@
 	* Makefile (SRCS): Remove storeread.c & storecat.c.
 	(storeread, storecat): Rules removed.
 	* storeread.c, storecat.c: Moved to ../utils.
-	
+
 1997-06-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* store.h (struct store): BLOCKS & SIZE are off_t, not size_t.
@@ -128,7 +147,7 @@
 	* derive.c: Include <assert.h>
 	(_store_derive): Assert that block_size & blocks_per_page are
 	powers of two (which should be enforced elsewhere).
-	
+
 	* make.c (_store_create): Renamed from _make_store.
 	Return an error_t code, and add an additional argument STORE to
 	return the new store; all uses changed.
@@ -155,7 +174,7 @@
 	* store.h (store_copy_class): New declaration.
 	(store_copy_create, store_copy_open, store_buffer_create,
 	store_gunzip_create, store_gunzip_open): New declarations.
-	
+
 	* decode.c (store_decode): Pass the original value of CLASSES to
 	any decode method, not our search tail.
 
@@ -333,7 +352,7 @@ Wed Sep 11 12:38:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* decode.c (store_with_decoded_runs): New function.
 	(store_std_leaf_decode): Call it.
 	* store.h (store_with_decoded_runs): New declaration.
-	
+
 	* stripe.c (ileave_class, concat_class): Initialize the REMAP field.
 	(stripe_remap): New function.
 	* store.h (store_remap_create): New declaration.
@@ -402,7 +421,7 @@ Wed Sep  3 11:00:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	(store_parsed_Free, store_parsed_open, store_parsed_append_args):
 	New declarations.
 	(struct store_parsed): New incomplete type.
-	
+
 Mon Sep  2 18:56:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* store.h (store_open): New declaration.
@@ -496,7 +515,7 @@ Tue May 21 00:01:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
  	store_decode_children): New declarations
 	(store_decode, store_create, store_device_create, _store_device_create,
  	store_file_create, _store_file_create, store_ileave_create,
-	store_concat_create, _make_store): Declarations updated. 
+	store_concat_create, _make_store): Declarations updated.
 	* make.c (_make_store): CLASS param removed, METHS param renamed
 	CLASS; all callers changed.  FLAGS param added.
 	* stripe.c (store_ileave_create, store_concat_create): Likewise.
@@ -576,4 +595,3 @@ Mon May  6 15:20:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* store.h: Move big comment describing file_get_storage_info
 	encoding to <hurd/hurd_types.h>.
-

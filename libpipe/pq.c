@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -52,11 +52,13 @@ free_packets (struct packet *head)
       if (head->ports)
 	free (head->ports);
       if (head->buf_len > 0)
-	if (head->buf_vm_alloced)
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t)head->buf, head->buf_len);
-	else
-	  free (head->buf);
+	{
+	  if (head->buf_vm_alloced)
+	    vm_deallocate (mach_task_self (),
+			   (vm_address_t)head->buf, head->buf_len);
+	  else
+	    free (head->buf);
+	}
       free (head);
       free_packets (next);
     }
@@ -203,7 +205,7 @@ packet_extend (struct packet *packet, size_t new_len)
       packet->buf_start = new_buf + (packet->buf_start  - old_buf);
       packet->buf_end = new_buf + (packet->buf_end  - old_buf);
     }
-  
+
   packet->buf_len = new_len;
 
   return 1;
@@ -249,10 +251,12 @@ packet_realloc (struct packet *packet, size_t new_len)
 
       /* And get rid of the old buffer.  */
       if (old_len > 0)
-	if (packet->buf_vm_alloced)
-	  vm_deallocate (mach_task_self (), (vm_address_t)old_buf, old_len);
-	else
-	  free (old_buf);
+	{
+	  if (packet->buf_vm_alloced)
+	    vm_deallocate (mach_task_self (), (vm_address_t)old_buf, old_len);
+	  else
+	    free (old_buf);
+	}
 
       packet->buf = new_buf;
       packet->buf_len = new_len;
@@ -267,7 +271,7 @@ packet_realloc (struct packet *packet, size_t new_len)
 /* ---------------------------------------------------------------- */
 
 /* If PACKET has any ports, deallocates them.  */
-void 
+void
 packet_dealloc_ports (struct packet *packet)
 {
   unsigned i;
@@ -322,7 +326,7 @@ packet_read_ports (struct packet *packet,
 
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
    and return the amount appended in AMOUNT.  */
-error_t 
+error_t
 packet_write (struct packet *packet,
 	      char *data, size_t data_len, size_t *amount)
 {

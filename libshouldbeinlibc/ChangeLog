@@ -1,3 +1,15 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* idvec-verify.c (verify_id): Add braces to silence gcc warning.
+
+1998-10-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec-reauth.c (exec_reauth): Add braces to silence gcc warning.
+	* idvec-rep.c (idvec_rep): Likewise.
+	* idvec-verify.c (verify_id): Likewise.
+	* portinfo.c (print_port_info): Likewise.
+	* ugids-verify-auth.c (ugids_verify_make_auth): Likewise.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ugids-verify-auth.c (ugids_verify_make_auth): Fix typos in

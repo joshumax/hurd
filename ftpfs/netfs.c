@@ -1,6 +1,6 @@
 /* ftpfs interface to libnetfs
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -171,7 +171,7 @@ get_dirents (struct ftpfs_dir *dir,
       if (! err)
 	{
 	  char *p = *data;
-	  int count = 0; 
+	  int count = 0;
 
 	  /* See how much space we need for the result.  */
 	  while ((max_entries == -1 || count < max_entries) && e)
@@ -183,18 +183,20 @@ get_dirents (struct ftpfs_dir *dir,
 		e->stat_timestamp ? IFTODT (e->stat.st_mode) : DT_UNKNOWN;
 
 	      if ((p - *data) + sz > size)
-		if (max_data_len > 0)
-		  break;
-		else
-		  /* Try to grow our return buffer.  */
-		  {
-		    vm_address_t extension = (vm_address_t)(*data + size);
-		    err = vm_allocate (mach_task_self (), &extension,
-				       DIRENTS_CHUNK_SIZE, 0);
-		    if (err)
-		      break;
-		    size += DIRENTS_CHUNK_SIZE;
-		  }
+		{
+		  if (max_data_len > 0)
+		    break;
+		  else
+		    /* Try to grow our return buffer.  */
+		    {
+		      vm_address_t extension = (vm_address_t)(*data + size);
+		      err = vm_allocate (mach_task_self (), &extension,
+					 DIRENTS_CHUNK_SIZE, 0);
+		      if (err)
+			break;
+		      size += DIRENTS_CHUNK_SIZE;
+		    }
+		}
 
 	      hdr.d_namlen = name_len;
 	      hdr.d_fileno = e->stat.st_ino;
@@ -241,15 +243,17 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   error_t err = ftpfs_refresh_node (dir);
 
   if (! err)
-    if (dir->nn->dir)
-      {
-	err = ftpfs_dir_refresh (dir->nn->dir);
-	if (! err)
-	  err = get_dirents (dir->nn->dir, first_entry, max_entries,
-			     data, data_len, max_entries, data_entries);
-      }
-    else
-      err = ENOTDIR;
+    {
+      if (dir->nn->dir)
+	{
+	  err = ftpfs_dir_refresh (dir->nn->dir);
+	  if (! err)
+	    err = get_dirents (dir->nn->dir, first_entry, max_entries,
+			       data, data_len, max_entries, data_entries);
+	}
+      else
+	err = ENOTDIR;
+    }
 
   return err;
 }
@@ -258,7 +262,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
    the name was not found, then return ENOENT.  On any error, clear *NODE.
    (*NODE, if found, should be locked, this call should unlock DIR no matter
    what.) */
-error_t netfs_attempt_lookup (struct iouser *user, struct node *dir, 
+error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
 			      char *name, struct node **node)
 {
   error_t err = ftpfs_refresh_node (dir);
@@ -276,7 +280,7 @@ error_t netfs_attempt_unlink (struct iouser *user, struct node *dir,
 
 /* Note that in this one call, neither of the specific nodes are locked. */
 error_t netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-			      char *fromname, struct node *todir, 
+			      char *fromname, struct node *todir,
 			      char *toname, int excl)
 {
   return EROFS;
@@ -291,7 +295,7 @@ error_t netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 }
 
 /* Attempt to remove directory named NAME in DIR for USER. */
-error_t netfs_attempt_rmdir (struct iouser *user, 
+error_t netfs_attempt_rmdir (struct iouser *user,
 			     struct node *dir, char *name)
 {
   return EROFS;

@@ -1,11 +1,25 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* unix.c (ftp_conn_unix_cont_get_stats): Add braces to silence gcc
+	warning.
+	* open.c (ftp_conn_sysify): Likewise.
+	(ftp_conn_login): Likewise.
+	* cwd.c (ftp_conn_cdup): Likewise.
+	(ftp_conn_cwd): Likewise.
+	(_cache_cwd): Likewise.
+	* addr.c (ftp_conn_send_actv_addr): Likewise.
+	(ftp_conn_get_pasv_addr): Likewise.
+
 1997-09-04  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpconn.h [!FTP_CONN_EI] (FTP_CONN_EI): New macro.
-	(ftp_conn_validate_syshooks): Use FTP_CONN_EI instead of `static inline'.
+	(ftp_conn_validate_syshooks): Use FTP_CONN_EI instead of
+	`static inline'.
 	Protect with __OPTIMIZE__.
 
 	* ftpconn.h (struct ftp_conn): Remove ACTV_DATA_CONN_QUEUE field.
-	* create.c (ftp_conn_create): Don't initialize CONN->actv_data_conn_queue.
+	* create.c (ftp_conn_create): Don't initialize
+	CONN->actv_data_conn_queue.
 	* open.c (ftp_conn_close): Don't cleanup CONN->actv_data_conn_queue.
 	* xfer.c (ftp_conn_start_open_actv_data): Always generate a new data
 	connection (it doesn't work to always listen on a single address).
@@ -238,4 +252,3 @@ Wed May  7 12:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	Update comment to say they should be copied if retained.
 
 	* Makefile (installhdrsubdir): New variable.
-

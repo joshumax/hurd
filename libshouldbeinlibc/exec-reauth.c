@@ -1,6 +1,6 @@
 /* Re-authentication in preparation for an exec
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 98 Free Software Foundation, Inc.
 
    Stolen by Miles Bader <miles@gnu.ai.mit.edu>, but really
      written by Michael I. Bushnell p/BSG  <mib@gnu.ai.mit.edu>
@@ -77,18 +77,20 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 	}
       return 0;
     }
-      
+
   /* Re-authenticate all the ports we are handing to the user
      with this new port, and install the new auth port in ports. */
   for (i = 0; i < num_fds && !err; ++i)
     err = reauth (&fds[i], 0);
 
   if (!err)
-    if (secure)
-      /* Not worth doing; the exec server will just do it again.  */
-      ports[INIT_PORT_CRDIR] = MACH_PORT_NULL;
-    else
-      err = reauth (&ports[INIT_PORT_CRDIR], 0);
+    {
+      if (secure)
+	/* Not worth doing; the exec server will just do it again.  */
+	ports[INIT_PORT_CRDIR] = MACH_PORT_NULL;
+      else
+	err = reauth (&ports[INIT_PORT_CRDIR], 0);
+    }
   if (!err)
     err = reauth (&ports[INIT_PORT_PROC], 1);
   if (!err)

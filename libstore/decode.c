@@ -1,6 +1,6 @@
 /* Store wire decoding
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -43,7 +43,7 @@ store_std_leaf_decode (struct store_enc *enc,
     {
       return (*create)(port, flags, block_size, runs, num_runs, store);
     }
-  
+
   /* Make sure there are enough encoded ints and ports.  */
   if (enc->cur_int + 6 > enc->num_ints || enc->cur_port + 1 > enc->num_ports)
     return EINVAL;
@@ -169,10 +169,12 @@ store_decode (struct store_enc *enc, const struct store_class *const *classes,
 
   for (cl = classes; *classes; cl ++)
     if ((*cl)->id == enc->ints[enc->cur_int])
-      if ((*cl)->decode)
-	return (*(*cl)->decode) (enc, classes, store);
-      else
-	return EOPNOTSUPP;
+      {
+	if ((*cl)->decode)
+	  return (*(*cl)->decode) (enc, classes, store);
+	else
+	  return EOPNOTSUPP;
+      }
 
   return EINVAL;
 }

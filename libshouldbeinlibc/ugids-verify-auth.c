@@ -150,38 +150,40 @@ ugids_verify_make_auth (const struct ugids *ugids,
 		      getpass_fn, getpass_hook, verify_fn, verify_hook);
 
   if (! err)
-    /* The user apparently has access to all the ids, try to grant the
-       corresponding authentication.  */
-    if (verify_fn)
-      /* Merge the authentication we got from the password server into our
-	 result.  */
-      {
-	if (num_from > 0)
-	  /* Use FROM as well as the passwords to get authentication.  */
-	  err = svma_state_add_auths (&svma_state, from, num_from);
+    {
+      /* The user apparently has access to all the ids, try to grant the
+	 corresponding authentication.  */
+      if (verify_fn)
+	/* Merge the authentication we got from the password server into our
+	   result.  */
+	{
+	  if (num_from > 0)
+	    /* Use FROM as well as the passwords to get authentication.  */
+	    err = svma_state_add_auths (&svma_state, from, num_from);
 
-	if (! err)
-	  {
-	    auth_t cur_auth = getauth ();
+	  if (! err)
+	    {
+	      auth_t cur_auth = getauth ();
 
-	    err =
-	      auth_makeauth (cur_auth,
-			     svma_state.auths, MACH_MSG_TYPE_COPY_SEND,
-			     svma_state.num_auths,
-			     ugids->eff_uids.ids, ugids->eff_uids.num,
-			     ugids->avail_uids.ids, ugids->avail_uids.num,
-			     ugids->eff_gids.ids, ugids->eff_gids.num,
-			     ugids->avail_gids.ids, ugids->avail_gids.num,
-			     auth);
-	    mach_port_deallocate (mach_task_self (), cur_auth);
+	      err =
+		auth_makeauth (cur_auth,
+			       svma_state.auths, MACH_MSG_TYPE_COPY_SEND,
+			       svma_state.num_auths,
+			       ugids->eff_uids.ids, ugids->eff_uids.num,
+			       ugids->avail_uids.ids, ugids->avail_uids.num,
+			       ugids->eff_gids.ids, ugids->eff_gids.num,
+			       ugids->avail_gids.ids, ugids->avail_gids.num,
+			       auth);
+	      mach_port_deallocate (mach_task_self (), cur_auth);
 
-	    /* Avoid deallocating FROM when we clean up SVMA_STATE.  */
-	    svma_state.num_auths -= num_from;
-	  }
-      }
-    else
-      /* Try to authenticate the old fashioned way...  */
-      err = ugids_make_auth (ugids, from, num_from, auth);
+	      /* Avoid deallocating FROM when we clean up SVMA_STATE.  */
+	      svma_state.num_auths -= num_from;
+	    }
+	}
+      else
+	/* Try to authenticate the old fashioned way...  */
+	err = ugids_make_auth (ugids, from, num_from, auth);
+    }
 
   if (verify_fn)
     /* Clean up any left over state.  */

@@ -1,6 +1,6 @@
 /* Store argument parsing
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -87,28 +87,30 @@ store_parsed_append_args (const struct store_parsed *parsed,
       if (parsed->interleave)
 	snprintf (buf, sizeof buf, "--interleave=%ld", parsed->interleave);
       else
-	snprintf (buf, sizeof buf, "--layer=%ld", parsed->layer);
+	snprintf (buf, sizeof buf, "--layer=%d", parsed->layer);
       err = argz_add (args, args_len, buf);
     }
 
   if (!err && parsed->type != parsed->default_type)
-    if (parsed->name_prefix)
-      /* A name prefix of "PFX" is equivalent to appending ":PFX" to the
-	 type name.  */
-      {
-	size_t npfx_len = strlen (parsed->name_prefix);
-	char tname[strlen ("--store-type=")
- 		   + strlen (parsed->type->name) + 1 + npfx_len + 1];
-	snprintf (tname, sizeof tname, "--store-type=%s:%.*s",
-		  parsed->type->name, npfx_len, parsed->name_prefix);
-	err = argz_add (args, args_len, tname);
-      }
-    else
-      /* A simple type name.  */
-      {
-	snprintf (buf, sizeof buf, "--store-type=%s", parsed->type->name);
-	err = argz_add (args, args_len, buf);
-      }
+    {
+      if (parsed->name_prefix)
+	/* A name prefix of "PFX" is equivalent to appending ":PFX" to the
+	   type name.  */
+	{
+	  size_t npfx_len = strlen (parsed->name_prefix);
+	  char tname[strlen ("--store-type=")
+		    + strlen (parsed->type->name) + 1 + npfx_len + 1];
+	  snprintf (tname, sizeof tname, "--store-type=%s:%.*s",
+		    parsed->type->name, (int) npfx_len, parsed->name_prefix);
+	  err = argz_add (args, args_len, tname);
+	}
+      else
+	/* A simple type name.  */
+	{
+	  snprintf (buf, sizeof buf, "--store-type=%s", parsed->type->name);
+	  err = argz_add (args, args_len, buf);
+	}
+    }
 
   if (! err)
     err = argz_append (args, args_len, parsed->names, parsed->names_len);
@@ -123,13 +125,15 @@ store_parsed_name (const struct store_parsed *parsed, char **name)
   char *pfx = 0;
 
   if (argz_count (parsed->names, parsed->names_len) > 1)
-    if (parsed->interleave)
-      {
-	snprintf (buf, sizeof buf, "interleave(%ld,", parsed->interleave);
-	pfx = buf;
-      }
-    else if (parsed->layer)
-      pfx = "layer(";
+    {
+      if (parsed->interleave)
+	{
+	  snprintf (buf, sizeof buf, "interleave(%ld,", parsed->interleave);
+	  pfx = buf;
+	}
+      else if (parsed->layer)
+	pfx = "layer(";
+    }
 
   if (pfx)
     *name = malloc (strlen (pfx) + parsed->names_len + 1);
@@ -203,14 +207,16 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
 	err = open (name, &stores[i]);
 
       if (! err)
-	if (parsed->interleave)
-	  err =
-	    store_ileave_create (stores, num, parsed->interleave,
-				 flags, store);
-	else if (parsed->layer)
-	  assert (! parsed->layer);
-	else
-	  err = store_concat_create (stores, num, flags, store);
+	{
+	  if (parsed->interleave)
+	    err =
+	      store_ileave_create (stores, num, parsed->interleave,
+				   flags, store);
+	  else if (parsed->layer)
+	    assert (! parsed->layer);
+	  else
+	    err = store_concat_create (stores, num, flags, store);
+	}
 
       if (err)
 	{
@@ -283,7 +289,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       /* fall through */
     case 'T':
       return parse_type (arg, state, parsed);
-   
+
     case 'I':
       if (parsed->layer)
 	PERR (EINVAL, "--layer and --interleave are exclusive");

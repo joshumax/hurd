@@ -1,6 +1,6 @@
 /* idvec string representation
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -95,13 +95,15 @@ idvec_rep (const struct idvec *idvec, int show_values, int show_names,
 	  uid_t val = idvec->ids[i];
 
 	  if (i > 0)
-	    if (ensure_room (sep_len))
-	      {
-		strcpy (rep + rep_len, sep);
-		rep_len += sep_len;
-	      }
-	    else
-	      break;
+	    {
+	      if (ensure_room (sep_len))
+		{
+		  strcpy (rep + rep_len, sep);
+		  rep_len += sep_len;
+		}
+	      else
+		break;
+	    }
 
 	  if (show_names || !show_values)
 	    name = (*id_name_fn) (val);

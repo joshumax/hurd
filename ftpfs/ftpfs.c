@@ -328,15 +328,17 @@ netfs_append_args (char **argz, size_t *argz_len)
 
   mutex_lock (&debug_lock);
   if (ftpfs_ftp_hooks.cntl_debug && debug_stream)
-    if (debug_stream != stderr)
-      {
-	char *rep;
-	asprintf (&rep, "--debug=%s", debug_stream_name);
-	err = argz_add (argz, argz_len, rep);
-	free (rep);
-      }
-    else
-      err = argz_add (argz, argz_len, "--debug");
+    {
+      if (debug_stream != stderr)
+	{
+	  char *rep;
+	  asprintf (&rep, "--debug=%s", debug_stream_name);
+	  err = argz_add (argz, argz_len, rep);
+	  free (rep);
+	}
+      else
+	err = argz_add (argz, argz_len, "--debug");
+    }
   mutex_unlock (&debug_lock);
 
   if (ftpfs->params.name_timeout != DEFAULT_NAME_TIMEOUT)

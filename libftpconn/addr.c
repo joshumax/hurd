@@ -1,6 +1,6 @@
 /* Send/receive data-connection addresses
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,10 +33,13 @@ ftp_conn_get_pasv_addr (struct ftp_conn *conn, struct sockaddr **addr)
   error_t err = ftp_conn_cmd_reopen (conn, "pasv", 0, &reply, &txt);
 
   if (! err)
-    if (reply == REPLY_PASV_OK)
-      err = (*(conn->syshooks.pasv_addr ?: ftp_conn_unix_pasv_addr)) (conn, txt, addr);
-    else
-      err = unexpected_reply (conn, reply, txt, 0);
+    {
+      if (reply == REPLY_PASV_OK)
+	err = (*(conn->syshooks.pasv_addr ?: ftp_conn_unix_pasv_addr))
+	  (conn, txt, addr);
+      else
+	err = unexpected_reply (conn, reply, txt, 0);
+    }
 
   return err;
 }
@@ -59,15 +62,17 @@ ftp_conn_send_actv_addr (struct ftp_conn *conn, struct sockaddr *addr)
       unsigned char *p =
 	(unsigned char *)&((struct sockaddr_in *)addr)->sin_port;
 
-      snprintf (buf, sizeof buf, "%d,%d,%d,%d,%d,%d", 
+      snprintf (buf, sizeof buf, "%d,%d,%d,%d,%d,%d",
 		a[0], a[1], a[2], a[3], p[0], p[1]);
       err = ftp_conn_cmd_reopen (conn, "port", buf, &reply, 0);
 
       if (! err)
-	if (reply == REPLY_OK)
-	  err = 0;
-	else
-	  err = unexpected_reply (conn, reply, 0, 0);
+	{
+	  if (reply == REPLY_OK)
+	    err = 0;
+	  else
+	    err = unexpected_reply (conn, reply, 0, 0);
+	}
     }
 
   return err;

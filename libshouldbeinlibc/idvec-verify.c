@@ -1,6 +1,6 @@
 /* Verify user passwords
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -260,19 +260,21 @@ verify_id (uid_t id, int is_group, int multiple,
 	      }
 	  }
 	if (! name)
-	  /* [ug]id lookup failed!  */
-	  if (id != 0 || is_group)
-	    /* If ID != 0, then it's probably just an unknown id, so ask for
-	       the root password instead -- root should be able to do
-	       anything.  */
-	    {
-	      id = 0;		/* Root */
-	      is_group = 0;	/* uid */
-	      multiple = 1;	/* Explicitly ask for root's password.  */
-	    }
-	  else
-	    /* No password entry for root.  */
-	    name = "root";
+	  {
+	    /* [ug]id lookup failed!  */
+	    if (id != 0 || is_group)
+	      /* If ID != 0, then it's probably just an unknown id, so ask for
+		 the root password instead -- root should be able to do
+	      anything.  */
+	      {
+		id = 0;		/* Root */
+		is_group = 0;	/* uid */
+		multiple = 1;	/* Explicitly ask for root's password.  */
+	      }
+	    else
+	      /* No password entry for root.  */
+	      name = "root";
+	  }
       }
     while (! name);
 
@@ -284,12 +286,14 @@ verify_id (uid_t id, int is_group, int multiple,
   assert (verify_fn);
 
   if (multiple)
-    if (name)
-      asprintf (&prompt, "Password for %s%s:",
-		is_group ? "group " : "", name);
-    else
-      asprintf (&prompt, "Password for %s %d:",
-		is_group ? "group" : "user", id);
+    {
+      if (name)
+	asprintf (&prompt, "Password for %s%s:",
+		  is_group ? "group " : "", name);
+      else
+	asprintf (&prompt, "Password for %s %d:",
+		  is_group ? "group" : "user", id);
+    }
 
   /* Prompt the user for the password.  */
   if (prompt)
@@ -298,7 +302,7 @@ verify_id (uid_t id, int is_group, int multiple,
 	(*getpass_fn) (prompt, id, is_group, pwd_or_grp, getpass_hook);
       free (prompt);
     }
-  else 
+  else
     password =
       (*getpass_fn) ("Password:", id, is_group, pwd_or_grp, getpass_hook);
 

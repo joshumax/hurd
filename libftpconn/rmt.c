@@ -1,6 +1,6 @@
 /* Remote (server-to-server) transfer
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -50,21 +50,23 @@ ftp_conn_rmt_transfer (struct ftp_conn *src_conn,
 	      err = ftp_conn_cmd (dst_conn, "stor", dst_name, &reply, &txt);
 
 	      if (! err)
-		if (REPLY_IS_PRELIM (reply))
-		  {
-		    err = ftp_conn_get_reply (src_conn, &reply, &txt);
-		    if (!err && !REPLY_IS_PRELIM (reply))
-		      err = unexpected_reply (src_conn, reply, txt, src_poss_errs);
+		{
+		  if (REPLY_IS_PRELIM (reply))
+		    {
+		      err = ftp_conn_get_reply (src_conn, &reply, &txt);
+		      if (!err && !REPLY_IS_PRELIM (reply))
+			err = unexpected_reply (src_conn, reply, txt,
+						src_poss_errs);
 
-		    if (err)
-		      ftp_conn_abort (dst_conn);
-		    else
-		      err = ftp_conn_finish_transfer (dst_conn);
-		  }
-		else
-		  err = unexpected_reply (dst_conn, reply, txt,
-					  ftp_conn_poss_file_errs);
-
+		      if (err)
+			ftp_conn_abort (dst_conn);
+		      else
+			err = ftp_conn_finish_transfer (dst_conn);
+		    }
+		  else
+		    err = unexpected_reply (dst_conn, reply, txt,
+					    ftp_conn_poss_file_errs);
+		}
 	      if (err)
 		/* Ftp servers seem to hang trying to abort at this point, so
 		   just close the connection entirely.  */

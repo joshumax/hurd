@@ -1,6 +1,6 @@
 /* Connection initiation
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -35,7 +35,7 @@ ftp_conn_login (struct ftp_conn *conn)
   int reply;
   error_t err = 0;
   const struct ftp_conn_params *p = conn->params;
-  
+
   err = ftp_conn_cmd (conn, "user", p->user ?: "anonymous", &reply, 0);
 
   if (!err && reply == REPLY_NEED_ACCT)
@@ -59,40 +59,44 @@ ftp_conn_login (struct ftp_conn *conn)
 						FTP_CONN_GET_LOGIN_PARAM_PASS,
 						&pass);
       if (! err)
-	if (pass)
-	  err = ftp_conn_cmd (conn, "pass", pass, &reply, 0);
-	else
-	  {
-	    pass = getenv ("USER");
-	    if (! pass)
-	      pass = getenv ("LOGNAME");
-	    if (! pass)
-	      {
-		struct passwd *pe = getpwuid (getuid ());
-		pass = pe ? pe->pw_name : "?";
-	      }
+	{
+	  if (pass)
+	    err = ftp_conn_cmd (conn, "pass", pass, &reply, 0);
+	  else
+	    {
+	      pass = getenv ("USER");
+	      if (! pass)
+		pass = getenv ("LOGNAME");
+	      if (! pass)
+		{
+		  struct passwd *pe = getpwuid (getuid ());
+		  pass = pe ? pe->pw_name : "?";
+		}
 
-	    /* Append a '@' */
-	    pass = strdup (pass);
-	    if (pass)
-	      pass = realloc (pass, strlen (pass) + 1);
-	    if (pass)
-	      {
-		strcat (pass, "@");
-		err = ftp_conn_cmd (conn, "pass", pass, &reply, 0);
-	      }
-	    else
-	      err = ENOMEM;
-	  }
+	      /* Append a '@' */
+	      pass = strdup (pass);
+	      if (pass)
+		pass = realloc (pass, strlen (pass) + 1);
+	      if (pass)
+		{
+		  strcat (pass, "@");
+		  err = ftp_conn_cmd (conn, "pass", pass, &reply, 0);
+		}
+	      else
+		err = ENOMEM;
+	    }
+	}
       if (pass && !p->pass)
 	free (pass);
     }
 
   if (!err && reply != REPLY_LOGIN_OK)
-    if (REPLY_IS_FAILURE (reply))
-      err = EACCES;
-    else
-      err = unexpected_reply (conn, reply, 0, 0);
+    {
+      if (REPLY_IS_FAILURE (reply))
+	err = EACCES;
+      else
+	err = unexpected_reply (conn, reply, 0, 0);
+    }
 
   return err;
 }
@@ -141,18 +145,21 @@ ftp_conn_sysify (struct ftp_conn *conn)
   error_t err = ftp_conn_cmd (conn, "syst", 0, &reply, &txt);
 
   if (! err)
-    if (reply == REPLY_SYSTYPE || reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
-      {
-	if (reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
-	  txt = 0;
-	if (conn->hooks && conn->hooks->choose_syshooks)
-	  (*conn->hooks->choose_syshooks) (conn, txt);
-	else
-	  ftp_conn_choose_syshooks (conn, txt);
-	conn->syshooks_valid = 1;
-      }
-    else
-      err = unexpected_reply (conn, reply, txt, 0);
+    {
+      if (reply == REPLY_SYSTYPE ||
+	  reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
+	{
+	  if (reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
+	    txt = 0;
+	  if (conn->hooks && conn->hooks->choose_syshooks)
+	    (*conn->hooks->choose_syshooks) (conn, txt);
+	  else
+	    ftp_conn_choose_syshooks (conn, txt);
+	  conn->syshooks_valid = 1;
+	}
+      else
+	err = unexpected_reply (conn, reply, txt, 0);
+    }
 
   return err;
 }

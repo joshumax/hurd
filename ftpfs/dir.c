@@ -1,6 +1,6 @@
 /* Directory operations
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -392,7 +392,7 @@ refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp,
   else
     /* Just fetch names.  */
     err = ftp_conn_get_names (conn, dir->rmt_path, update_ordered_name, &dfs);
-  
+
   if (! err)
     /* GC any directory entries that weren't seen this time.  */
     {
@@ -474,49 +474,51 @@ ftpfs_refresh_node (struct node *node)
 	       && entry->noent)
 	err = ENOENT;
       else if (entry->stat_timestamp + dir->fs->params.stat_timeout < timestamp)
-	/* Stat information needs updating.  */
-	if (need_bulk_stat (timestamp, dir))
-	  /* Refetch the whole directory from the server.  */
-	  {
-	    err =  refresh_dir (entry->dir, 1, timestamp, entry);
-	    if (!err && entry->noent)
-	      err = ENOENT;
-	  }
-	else
-	  {
-	    struct ftp_conn *conn;
+	{
+	  /* Stat information needs updating.  */
+	  if (need_bulk_stat (timestamp, dir))
+	    /* Refetch the whole directory from the server.  */
+	    {
+	      err =  refresh_dir (entry->dir, 1, timestamp, entry);
+	      if (!err && entry->noent)
+		err = ENOENT;
+	    }
+	  else
+	    {
+	      struct ftp_conn *conn;
 
-	    err = ftpfs_get_ftp_conn (dir->fs, &conn);
+	      err = ftpfs_get_ftp_conn (dir->fs, &conn);
 
-	    if (! err)
-	      {
-		char *rmt_path;
+	      if (! err)
+		{
+		  char *rmt_path;
 
-		err = ftp_conn_append_name (conn, dir->rmt_path, entry->name,
-					    &rmt_path);
-		if (! err)
-		  {
-		    struct refresh_entry_state res;
+		  err = ftp_conn_append_name (conn, dir->rmt_path, entry->name,
+					      &rmt_path);
+		  if (! err)
+		    {
+		      struct refresh_entry_state res;
 
-		    res.entry = entry;
-		    res.timestamp = timestamp;
+		      res.entry = entry;
+		      res.timestamp = timestamp;
 
-		    if (! err)
-		      err = ftp_conn_get_stats (conn, rmt_path, 0,
-						update_old_entry, &res);
+		      if (! err)
+			err = ftp_conn_get_stats (conn, rmt_path, 0,
+						  update_old_entry, &res);
 
-		    free (rmt_path);
-		  }
+		      free (rmt_path);
+		    }
 
-		ftpfs_release_ftp_conn (dir->fs, conn);
-	      }
+		  ftpfs_release_ftp_conn (dir->fs, conn);
+		}
 
-	    if (err == ENOENT)
-	      {
-		entry->noent = 1; /* A negative entry.  */
-		entry->name_timestamp = timestamp;
-	      }
-	  }
+	      if (err == ENOENT)
+		{
+		  entry->noent = 1; /* A negative entry.  */
+		  entry->name_timestamp = timestamp;
+		}
+	    }
+	}
 
       if ((entry->stat.st_mtime < node->nn_stat.st_mtime
 	   || entry->stat.st_size != node->nn_stat.st_size)
@@ -613,7 +615,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 
   if (*name == '\0' || strcmp (name, ".") == 0)
     /* Current directory -- just add an additional reference to DIR's node
-       and return it.  */ 
+       and return it.  */
     {
       netfs_nref (dir->node);
       *node = dir->node;
@@ -687,59 +689,62 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
     }
 
   if (! err)
-    if (e && !e->noent)
-      /* We've got a dir entry, get a node for it.  */
-      {
-	/* If there's already a node, add a ref so that it doesn't go away.  */
-	spin_lock (&netfs_node_refcnt_lock);
-	if (e->node)
-	  e->node->references++;
-	spin_unlock (&netfs_node_refcnt_lock);
+    {
+      if (e && !e->noent)
+	/* We've got a dir entry, get a node for it.  */
+	{
+	  /* If there's already a node, add a ref so that it doesn't go
+             away.  */
+	  spin_lock (&netfs_node_refcnt_lock);
+	  if (e->node)
+	    e->node->references++;
+	  spin_unlock (&netfs_node_refcnt_lock);
 
-	if (! e->node)
-	  /* No node; make one and install it into E.  */
-	  {
-	    if (! rmt_path)
-	      /* We have to cons up the absolute path.  We need the
-		 connection just for the pathname frobbing functions.  */
-	      {
-		err = ftpfs_get_ftp_conn (dir->fs, &conn);
-		if (! err)
-		  {
-		    err = ftp_conn_append_name (conn, dir->rmt_path, name,
-						&rmt_path);
-		    ftpfs_release_ftp_conn (dir->fs, conn);
-		  }
-	      }
+	  if (! e->node)
+	    /* No node; make one and install it into E.  */
+	    {
+	      if (! rmt_path)
+		/* We have to cons up the absolute path.  We need the
+		   connection just for the pathname frobbing functions.  */
+		{
+		  err = ftpfs_get_ftp_conn (dir->fs, &conn);
+		  if (! err)
+		    {
+		      err = ftp_conn_append_name (conn, dir->rmt_path, name,
+						  &rmt_path);
+		      ftpfs_release_ftp_conn (dir->fs, conn);
+		    }
+		}
 
-	    if (! err)
-	      {
-		err = ftpfs_create_node (e, rmt_path, &e->node);
+	      if (! err)
+		{
+		  err = ftpfs_create_node (e, rmt_path, &e->node);
 
-		if (!err && dir->num_live_entries++ == 0)
-		  /* Keep a reference to dir's node corresponding to
-                     children.  */
-		  {
-		    spin_lock (&netfs_node_refcnt_lock);
-		    dir->node->references++;
-		    spin_unlock (&netfs_node_refcnt_lock);
-		  }
-	      }
-	  }
+		  if (!err && dir->num_live_entries++ == 0)
+		    /* Keep a reference to dir's node corresponding to
+		       children.  */
+		    {
+		      spin_lock (&netfs_node_refcnt_lock);
+		      dir->node->references++;
+		      spin_unlock (&netfs_node_refcnt_lock);
+		    }
+		}
+	    }
 
-	if (! err)
-	  {
-	    *node = e->node;
-	    /* We have to unlock DIR's node before locking the child node
-	       because the locking order is always child-parent.  We know the
-	       child node won't go away because we already hold the
-	       additional reference to it.  */
-	    mutex_unlock (&dir->node->lock);
-	    mutex_lock (&e->node->lock);
-	  }
-      }
-    else
-      err = ENOENT;
+	  if (! err)
+	    {
+	      *node = e->node;
+	      /* We have to unlock DIR's node before locking the child node
+		 because the locking order is always child-parent.  We know
+		 the child node won't go away because we already hold the
+		 additional reference to it.  */
+	      mutex_unlock (&dir->node->lock);
+	      mutex_lock (&e->node->lock);
+	    }
+	}
+      else
+	err = ENOENT;
+    }
 
   if (err)
     {

@@ -1,6 +1,6 @@
 /* Setting various store flags
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -31,10 +31,12 @@ store_set_flags (struct store *store, int flags)
   int orig = store->flags, new = flags & ~orig;
 
   if (new & STORE_BACKEND_FLAGS)
-    if (store->class->set_flags)
-      err = (*store->class->set_flags) (store, new);
-    else
-      err = EINVAL;
+    {
+      if (store->class->set_flags)
+	err = (*store->class->set_flags) (store, new);
+      else
+	err = EINVAL;
+    }
 
   if (! err)
     store->flags |= (new & ~STORE_BACKEND_FLAGS);
@@ -50,10 +52,12 @@ store_clear_flags (struct store *store, int flags)
   int orig = store->flags, kill = flags & orig;
 
   if (kill & STORE_BACKEND_FLAGS)
-    if (store->class->clear_flags)
-      err = (*store->class->clear_flags) (store, kill);
-    else
-      err = EINVAL;
+    {
+      if (store->class->clear_flags)
+	err = (*store->class->clear_flags) (store, kill);
+      else
+	err = EINVAL;
+    }
 
   if (! err)
     store->flags &= ~(kill & ~STORE_BACKEND_FLAGS);
