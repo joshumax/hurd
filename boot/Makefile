@@ -21,9 +21,10 @@ include ../Makeconf
 
 VPATH=.:../machine
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
+	io_replUser.o device_replyUser.o sigvec.o
 
-DIST_FILES = boot.c Makefile
+DIST_FILES = boot.c Makefile mungio io_repl.defs
 
 all: boot
 
@@ -58,6 +59,16 @@ device_S.h deviceServer.c: device.defs
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
 
-io_S.h ioServer.c: $(headers)/hurd/io.defs
+device_replyUser.c: $(headers)/device/device_reply.defs
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -server /dev/null
+
+io.defs: $(headers)/hurd/io.defs mungio
+	sed -f mungio $< > $@
+io_S.h ioServer.c: io.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null -sheader io_S.h
+
+io_repl.h io_replUser.c: io_repl.defs
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -server /dev/null
