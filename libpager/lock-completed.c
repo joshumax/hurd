@@ -15,26 +15,30 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
 
 /* A lock_request has finished.  Do our part of the wakeup
    process.  */
+error_t
 _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 					    mach_port_seqno_t seqno,
 					    mach_port_t control,
 					    vm_offset_t offset,
 					    vm_size_t length)
 {
-  struct controlinfo *ci;
+  struct pager *p;
   struct lock_request *lr;
   int wakeup;
 
-  if (!(ci = check_port_type (object, pager_port_type)))
+  if (!(p = check_port_type (object, pager_port_type)))
     {
       printf ("Bad lock completed\n");
       return EOPNOTSUPP;
     }
 
-  if (control != ci->memobjcntl)
+  if (control != p->memobjcntl)
     {
       printf ("lock_completed: bad control port\n");
       return EPERM;
@@ -42,18 +46,18 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 
   mach_port_deallocate (mach_task_self (), control);
 
-  mutex_lock (&ci->interlock);
-  _pager_wait_for_seqno (ci, seqno);
+  mutex_lock (&p->interlock);
+  _pager_wait_for_seqno (p, seqno);
 
   wakeup = 0;
-  for (lr = ci->lock_requests; lr; lr = lr->next)
+  for (lr = p->lock_requests; lr; lr = lr->next)
     if (lr->start == offset && lr->end == offset + length
 	&& !--lr->locks_pending && !lr->pending_writes)
       wakeup = 1;
-  condition_broadcast (&ci->wakeup);
+  condition_broadcast (&p->wakeup);
 
-  _pager_release_seqno (ci);
-  mutex_unlock (&ci->interlock);
+  _pager_release_seqno (p);
+  mutex_unlock (&p->interlock);
 
   return 0;
 }
