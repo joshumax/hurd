@@ -48,7 +48,6 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
       dp->dn_set_ctime = 1;
       return err;
     }
-  /* Don't bother adding this to the name cache. */
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
@@ -61,7 +60,6 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
       pdp->dn_set_ctime = 1;
       return err;
     }
-  /* Don't bother adding this to the name cache. */
 
   diskfs_node_update (dp, 1);
   return 0;
