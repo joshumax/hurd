@@ -45,7 +45,7 @@ ioserver_get_conch (struct conch *c)
 	case USER_COULD_HAVE_CONCH:
 	  user_sh->conch_status = USER_HAS_NOT_CONCH;
 	  spin_unlock (&user_sh->lock);
-	  error = fetch_shared_data (c->holder);
+	  error = ioserver_fetch_shared_data (c->holder);
 	  break;
 	  
 	case USER_HAS_NOT_CONCH:
