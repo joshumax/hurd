@@ -64,9 +64,9 @@ ftp_conn_login (struct ftp_conn *conn)
 	else
 	  {
 	    pass = getenv ("USER");
-	    if (pass)
+	    if (! pass)
 	      pass = getenv ("LOGNAME");
-	    if (pass)
+	    if (! pass)
 	      {
 		struct passwd *pe = getpwuid (getuid ());
 		pass = pe ? pe->pw_name : "?";
