@@ -29,9 +29,9 @@
 #include "store.h"
 
 static const struct argp_option options[] = {
-  {"device",	'D', 0,        0, "DEVICE is a mach device, not a file"},
-  {"interleave",'i', "BLOCKS", 0, "Interleave in runs of length BLOCKS"},
-  {"layer",   	'l', 0,        0, "Layer multiple devices for redundancy"},
+  {"device",	'd', 0,        0, "DEVICE is a mach device, not a file"},
+  {"interleave",'I', "BLOCKS", 0, "Interleave in runs of length BLOCKS"},
+  {"layer",   	'L', 0,        0, "Layer multiple devices for redundancy"},
   {0}
 };
 
@@ -149,10 +149,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
   switch (opt)
     {
-    case 'm':
+    case 'd':
       parsed->machdev = 1; break;
 
-    case 'i':
+    case 'I':
       if (parsed->layer)
 	PERR (EINVAL, "--layer and --interleave are exclusive");
       if (parsed->interleave)
@@ -164,7 +164,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	PERR (EINVAL, "%s: Bad value for --interleave", arg);
       break;
 
-    case 'l':
+    case 'L':
 #if 1
       argp_failure (state, 5, 0, "--layer not implemented");
       return EINVAL;
