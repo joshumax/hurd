@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,14 +16,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include <hurd/ioserver.h>
+#include <hurd/iohelp.h>
 
 /* Update our copy of the relevant fields from a shared page.  Callers
    must have the share lock on the shared page as well as the inode
    toplock.  This is called by the conch management facilities of 
    libioserver as well as by us.  */
 void
-ioserver_fetch_shared_data (void *arg)
+iohelp_fetch_shared_data (void *arg)
 {
   struct protid *cred = arg;
   int mod = 0;
