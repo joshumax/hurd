@@ -109,7 +109,7 @@ function mkdev {
 	st $I root 666 /hurd/storeio time ;;
 
       # ptys
-      [pt]ty[pqPQ]?)
+      [pt]ty[pqrstuvwxyzPQRST]?)
 	# Make one pty, both the master and slave halves
 	local id="${B:3}"
         local dir="`dirname $I`"
@@ -125,7 +125,7 @@ function mkdev {
 	st $dir/pty$id root 640 /hurd/term $dd/pty$id pty-master $dd/tty$id
 	st $dir/tty$id root 640 /hurd/term $dd/tty$id pty-slave $dd/pty$id
 	;;
-      [pt]ty[pqPQ])
+      [pt]ty[pqrstuvwxyzPQRST])
 	# Make a bunch of ptys
 	mkdev ${I}0 ${I}1 ${I}2 ${I}3 ${I}4 ${I}5 ${I}6 ${I}7
 	mkdev ${I}8 ${I}9 ${I}a ${I}b ${I}c ${I}d ${I}e ${I}f
