@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.8  1995/08/30 15:10:23  mib
+ * (hurd_condition_wait): Provide declaration.
+ *
  * Revision 1.7  1995/07/18 17:15:51  mib
  * Reverse previous change.
  *
@@ -374,7 +377,14 @@ typedef struct condition {
 	spin_lock_t lock;
 	struct cthread_queue queue;
 	char *name;
+	struct cond_imp *implications;
 } *condition_t;
+
+struct cond_imp
+{
+  struct condition *implicatand;
+  struct cond_imp *next;
+};
 
 #define	CONDITION_INITIALIZER		{ SPIN_LOCK_INITIALIZER, QUEUE_INITIALIZER, 0 }
 
@@ -399,19 +409,19 @@ typedef struct condition {
 
 #define	condition_signal(c) \
 	MACRO_BEGIN \
-	if ((c)->queue.head) { \
+	if ((c)->queue.head || (c)->implications) { \
 		cond_signal(c); \
 	} \
 	MACRO_END
 
 #define	condition_broadcast(c) \
 	MACRO_BEGIN \
-	if ((c)->queue.head) { \
+	if ((c)->queue.head || (c)->implications) { \
 		cond_broadcast(c); \
 	} \
 	MACRO_END
 
-extern void
+extern int
 cond_signal C_ARG_DECLS((condition_t c));
 
 extern void
@@ -422,6 +432,12 @@ condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
 
 extern int
 hurd_condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
+
+extern void
+condition_implies C_ARG_DECLS((condition_t implicator, condition_t implicatand));
+
+extern void
+condition_unimplies C_ARG_DECLS((condition_t implicator, condition_t implicatand));
 
 /*
  * Threads.
