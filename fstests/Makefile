@@ -28,5 +28,3 @@ fstests: fstests.o
 opendisk: opendisk.o
 fdtests: fdtests.o
 
-wuzzy:
-	echo $(targets)
