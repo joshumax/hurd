@@ -20,22 +20,35 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "treefs.h"
+#include "sock.h"
 
 /* For mig */
-typedef struct treefs_handle *treefs_handle_t;
+
+typedef struct sock_user *sock_user_t;
+typedef struct addr *addr_t;
 
 extern inline
-treefs_handle_t treefs_begin_using_handle_port(mach_port_t port)
+sock_user_t begin_using_sock_user_port(mach_port_t port)
 {
-  return 
-    (struct treefs_handle *)
-      ports_lookup_port (0, port, treefs_fsys_port_class);
+  return (sock_user_t)ports_lookup_port (0, port, fsys_port_class);
 }
 
 extern inline void
-treefs_end_using_handle_port (treefs_handle_t handle)
+end_using_sock_user_port (sock_user_t sock_user)
 {
-  if (handle != NULL)
-    ports_port_deref (&handle->pi);
+  if (sock_user != NULL)
+    ports_port_deref (sock_user);
+}
+
+extern inline
+addr_t begin_using_addr_port(mach_port_t port)
+{
+  return (addr_t)ports_lookup_port (0, port, fsys_port_class);
+}
+
+extern inline void
+end_using_addr_port (addr_t addr)
+{
+  if (addr != NULL)
+    ports_port_deref (addr);
 }
