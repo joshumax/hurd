@@ -54,4 +54,10 @@ if [ $# -eq 0 ]; then
   set -- ${SHELL:-/bin/sh}
 fi
 
-exec /bin/settrans --chroot /bin/fakeauth "$@" -- / /hurd/fakeroot
+# We exec settrans, which execs the "fakeauth" command in the chroot context.
+# The `pwd` is evaluated here and now, and that result interpreted inside
+# the shell running under fakeauth to chdir there inside the chroot world.
+# That shell then execs our arguments as a command line.
+exec /bin/settrans --chroot \
+     /bin/fakeauth /bin/sh -c "cd `pwd`; exec $*" \
+     -- / /hurd/fakeroot
