@@ -127,8 +127,9 @@ struct store_meths
 };
 
 /* Return a new store in STORE, which refers to the storage underlying
-   SOURCE.  A reference to SOURCE is created (but may be destroyed with
-   store_close_source).  */
+   SOURCE.  Consumes a send-right to SOURCE (which is simply stored
+   STORE->source; you can steal it back if you like (replacing it with
+   MACH_PORT_NULL, or destroy it with store_close_source).  */
 error_t store_create (file_t source, struct store **store);
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
@@ -296,5 +297,25 @@ error_t store_default_leaf_decode (struct store_enc *enc,
 						     size_t num_runs,
 						     struct store **store),
 				   struct store **store);
+
+/* An argument parser that may be used for parsing a simple command line
+   specification for stores.  The accompanying input parameter must be a
+   pointer to a structure of type struct store_argp_param.  */
+extern struct argp store_argp;
+
+/* Structure used to pass in arguments and return the result from
+   STORE_ARGP.  */
+struct store_argp_params
+{
+  /* If true, open the underlying file/device readonly.  */
+  int readonly : 1;
+
+  /* If true, don't attempt use store_file_create to create a store on files
+     upon which store_create has failed.  */
+  int no_file_io : 1;
+
+  /* Parsed store returned here.  */
+  struct store *result;
+};
 
 #endif /* __STORE_H__ */
