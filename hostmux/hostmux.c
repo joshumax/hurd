@@ -33,7 +33,7 @@ volatile struct mapped_time_value *hostmux_mapped_time;
 /* Startup options.  */
 static const struct argp_option options[] =
 {
-  { "host-pattern", 'H', "PAT", OPTION_ARG_OPTIONAL,
+  { "host-pattern", 'H', "PAT", 0,
     "The string to replace in the translator specification with the hostname;"
     " if empty, or doesn't occur, the hostname is appended as additional"
     " argument instead (default `${host}')" },
@@ -45,7 +45,6 @@ static const char doc[] =
   "\vThis translator appears like a directory in which hostnames can be"
   " looked up, and will start TRANSLATOR to service each resulting node.";
 
-/* NFS client main program */
 int
 main (int argc, char **argv)
 {
@@ -85,7 +84,7 @@ main (int argc, char **argv)
   if (! netfs_root_node)
     error (5, ENOMEM, "Cannot create root node");
 
-  err = maptime_map (0, 0, &hostmux_mapped_time);
+  err = maptime_map (0, 0, &hostmux_maptime);
   if (err)
     error (6, err, "Cannot map time");
 
@@ -111,7 +110,9 @@ main (int argc, char **argv)
   netfs_root_node->nn_stat.st_ino = 2;
   netfs_root_node->nn_stat.st_mode =
     S_IFDIR | (ul_stat.st_mode & ~S_IFMT & ~S_ITRANS);
-  touch (netfs_root_node, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME);
+
+  fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
+		hostmux_maptime);
   
   for (;;)			/* ?? */
     netfs_server_loop ();
