@@ -180,7 +180,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && (np->istranslated
+	  && ((np->dn_stat.st_mode & S_IPTRANS)
 	      || S_ISFIFO (np->dn_stat.st_mode)
 	      || S_ISCHR (np->dn_stat.st_mode)
 	      || S_ISBLK (np->dn_stat.st_mode)
@@ -244,7 +244,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
 				     dirport, dircred->user,
 				     lastcomp ? flags : 0,
-				     (np->istranslated
+				     ((np->dn_stat.st_mode & S_IPTRANS)
 				      ? _diskfs_translator_callback1
 				      : short_circuited_callback1),
 				     _diskfs_translator_callback2,
