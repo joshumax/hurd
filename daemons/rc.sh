@@ -38,7 +38,7 @@ then
 		;;
 	# Oh dear.
 	*)
-		echo "Unknown error during fsck"
+		echo "Unknown error during fsck (exit status $?)"
 		exit 1
 		;;
 	esac
