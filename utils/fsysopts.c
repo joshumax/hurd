@@ -67,7 +67,8 @@ main(int argc, char *argv[])
 	{
 	case ARGP_KEY_ARG:
 	  node_name = arg;
-	  err = argz_create (state->argv + state->next, &argz, &argz_len);
+	  err = argz_create ((char *const **)(state->argv + state->next),
+			     &argz, &argz_len);
 	  if (err)
 	    error(3, err, "Can't create options vector");
 	  state->next = state->argc; /* stop parsing */
