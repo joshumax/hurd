@@ -72,9 +72,14 @@ touch /var/run/mtab
 chmod 664 /etc/motd
 
 echo -n starting daemons:
-/sbin/syslogd;		echo -n ' syslogd'
-/sbin/inetd;		echo -n ' inet'
-echo .	
 
+/sbin/syslogd	&& echo -n ' syslogd'
+/sbin/inetd	&& echo -n ' inetd'
+
+if test -x /sbin/sendmail -a -r /etc/sendmail.cf; then
+  /sbin/sendmail -bd -q30m	&& echo -n ' sendmail'
+fi
+
+echo .	
 
 date
