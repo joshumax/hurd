@@ -96,16 +96,13 @@ S_proc_getmsgport (struct proc *callerp,
 		   pid_t pid,
 		   mach_port_t *msgport)
 {
-  struct proc *p = pid_find_allow_zombie (pid);
   int cancel;
+  struct proc *p = pid_find_allow_zombie (pid);
 
   if (!callerp)
     return EOPNOTSUPP;
-
-  if (!p)
-    return ESRCH;
   
-  while (p->p_deadmsg)
+  while (p && p->p_deadmsg && !p->p_dead)
     {
       callerp->p_msgportwait = 1;
       p->p_checkmsghangs = 1;
@@ -114,7 +111,13 @@ S_proc_getmsgport (struct proc *callerp,
 	return EOPNOTSUPP;
       if (cancel)
 	return EINTR;
+
+      /* Refetch P in case it went away while we were waiting.  */
+      p = pid_find_allow_zombie (pid);
     }
+
+  if (!p)
+    return ESRCH;
 
   *msgport = p->p_msgport;
   return 0;
