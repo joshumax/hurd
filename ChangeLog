@@ -1,5 +1,6 @@
 Wed May  7 12:28:58 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	(libftpconn, ftpfs): New directories.
 	* Makefile (lib-subdirs): Add libftpconn.
 	(prog-subdirs): Add ftpfs.
 

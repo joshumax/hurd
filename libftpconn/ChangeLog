@@ -1,0 +1,4 @@
+Wed May  7 12:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (installhdrsubdir): New variable.
+
