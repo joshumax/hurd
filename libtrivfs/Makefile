@@ -43,7 +43,7 @@ MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
-MIGSFLAGS=-imacros fsmutations.h
+MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix trivfs_
 libname = libtrivfs
 installhdrs = trivfs.h
