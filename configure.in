@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.30 2002/03/15 09:51:54 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.31 2002/05/03 22:58:09 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -20,10 +20,13 @@ none) AC_MSG_ERROR([
 esac
 
 case "$host_cpu" in
+alpha*)
+  asm_syntax=alpha
+  ;;
 i?86)
   asm_syntax=i386
   ;;
-powerpc)
+powerpc*)
   asm_syntax=ppc
   ;;
 *)
