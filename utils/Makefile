@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -21,13 +21,13 @@ makemode := utilities
 targets = shd ps settrans showtrans sync su mount fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread ping
+	storeread ping msgport
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c addauth.c rmauth.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
-	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c
+	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
@@ -52,7 +52,7 @@ INSTALL-ping-ops = -o root -m 4755
 
 include ../Makeconf
 
-ps addauth rmauth setauth su unsu: parse.o pids.o
+ps addauth rmauth setauth su unsu msgport: parse.o pids.o
 login addauth setauth su: nonsugid.o
 addauth rmauth setauth su unsu: frobauth.o
 rmauth setauth su unsu: frobauth-mod.o
