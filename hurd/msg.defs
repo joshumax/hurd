@@ -1,0 +1,66 @@
+/* Miscellaneous callbacks from Hurd servers to their clients
+   Copyright (C) 1991, 1992 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 1, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem msg 23000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef SIGNAL_IMPORTS
+SIGNAL_IMPORTS
+#endif
+
+/* Post a signal to the process.  The refport indicates some
+   permission attribute that the caller provides in the hope that the
+   receiver will honor the signal.  Conventional values include:
+
+Port				Signals honored
+
+task port			all
+session ID (see proc_getsidport) CONT
+ctty port (see term_getctty)	INT, QUIT, TSTP, HUP
+async IO ID (see io_async)	URG, IO
+*/
+routine sig_post (
+	process: mach_port_t;
+	sreplyport reply_port: mach_port_t;
+	signal: int;
+	refport: mach_port_t);
+
+/* The parent or the process group of a process has been changed, or
+   the orphaned status has changed.  The task port is sent so that the
+   recipient can know it's OK to honor the call.  */
+routine proc_newids (
+	process: mach_port_t;
+	task: task_t;
+	ppid: pid_t;
+	pgrp: pid_t;
+	orphaned: int);
+
+/* Do a reauth after or-ing in new id's. */
+routine add_auth (
+	process: mach_port_t;
+	auth: auth_t);
+
+/* Do a reauth after removing auth information.  The task port is
+   provided as an attempt at security.  */
+routine del_auth (
+	process: mach_port_t;
+	task: task_t;
+	uids: intarray_t;
+	gids: intarray_t);
