@@ -5,12 +5,10 @@
 
 PATH=/bin
 
-USAGE="Usage: $0 [OPTION...] DEVNAME..."
-
 while :; do
   case "$1" in
     --help|"-?")
-      echo "$USAGE"
+      echo "Usage: $0 [OPTION...] DEVNAME..."
       echo "Make filesystem nodes for accessing standard system devices"
       echo ""
       echo "  -?, --help                 Give this help list"
@@ -18,27 +16,24 @@ while :; do
       echo "  -V, --version              Print program version"
       exit 0;;
     --usage)
-      echo "Usage: $0 [-V?] [--help] [--usage] [--version] DEVNODE..."
+      echo "Usage: $0 [-V?] [--help] [--usage] [--version] DEVNAME..."
       exit 0;;
     --version|-V)
       echo "STANDARD_HURD_VERSION_MAKEDEV_"; exit 0;;
     -*)
       echo 1>&2 "$0: unrecognized option \`$1'"
-      echo 1>&2 "Try \`$0 --help' for more information";
+      echo 1>&2 "Try \`$0 --help' or \`$0 --usage' for more information";
       exit 1;;
     *)
       break;;
   esac
 done
 
-case  "$#" in 1 | 2) ;; # ok
-  *) echo 1>&2 "$USAGE"
-     echo 1>&2 "Try \`--help' for more information";
-     exit 1;;
+case  "$#" in 0)
+  echo 1>&2 "Usage: $0 [OPTION...] DEVNAME..."
+  echo 1>&2 "Try \`$0 --help' or \`$0 --usage' for more information"
+  exit 1;;
 esac
-
-DEVICE="$1"; shift
-OS="$1"
 
 function st {
   NODE="$1"
@@ -113,3 +108,5 @@ function mkdev {
     esac
   done
 }
+
+mkdev "$@"
