@@ -52,8 +52,9 @@ S_proc_pid2task (struct proc *callerp,
       return 0;
     }
 
-  if (!check_uid (callerp, p->p_owner))
+  if (! check_owner (callerp, p))
     return EPERM;
+
   *t = p->p_task;
 
   return 0;
@@ -126,7 +127,7 @@ S_proc_pid2proc (struct proc *callerp,
       return 0;
     }
 
-  if (!check_uid (callerp, p->p_owner))
+  if (! check_owner (callerp, p))
     return EPERM;
 
   *outproc = ports_get_right (p);
