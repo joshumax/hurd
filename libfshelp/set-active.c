@@ -24,39 +24,10 @@
 error_t
 fshelp_set_active (struct transbox *box,
 		   mach_port_t active,
-		   int excl, int goaway, int flags)
+		   int excl)
 {
-  error_t error;
-  
- start_over:
   if (excl && box->active != MACH_PORT_NULL)
     return EBUSY;
-  
-  if (goaway && box->active != MACH_PORT_NULL)
-    {
-      fsys_t control;
-
-      error = fshelp_fetch_control (box, &control);
-      if (error)
-	return error;
-      
-      mutex_unlock (box->lock);
-      error = fsys_goaway (control, flags);
-      mutex_lock (box->lock);
-      if (error)
-	{
-	  mach_port_deallocate (mach_task_self (), control);
-	  return error;
-	}
-            
-      /* If it changed while we were unlocked, better start over. */
-      if (box->active != control)
-	{
-	  mach_port_deallocate (mach_task_self (), control);
-	  goto start_over;
-	}
-      mach_port_deallocate (mach_task_self (), control);
-    }
   
   if (box->active != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), box->active);
