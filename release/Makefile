@@ -23,11 +23,15 @@ makemode := misc
 
 # Files that go into the root of binary distributions
 dist-files = INSTALL-binary dist-README SETUP servers.boot bfloppy.boot \
-	menu.lst COPYING.LIB SOURCES.0.2 \
-	bfloppy.copy bfloppy-special.copy rfloppy.copy \
-	mkfsimage.sh mksmallso.sh mkemptyso.sh
+	menu.lst COPYING.LIB SOURCES.0.2
 
-DIST_FILES = README $(dist-files)
+# Files describing the contents of boot floppies
+floppy-copy = bfloppy.copy bfloppy-special.copy rfloppy.copy rfloppy-special.copy \
+	bfloppy1.copy bfloppy1-special.copy bfloppy2.copy bfloppy2-special.copy
+
+scripts = mkfsimage.sh mksmallso.sh mkemptyso.sh
+
+DIST_FILES = README $(dist-files) $(floppy-copy) $(scripts)
 
 include ../Makeconf
 
@@ -56,22 +60,26 @@ endif
 # Where to get files for the floppies from.
 bfloppy-src=$(firstword $(dist-root) /)
 
-bfloppy.ext2: mkfsimage bfloppy.copy bfloppy-special.copy
-	./mkfsimage $@ --owner=root.wheel				\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy.copy		\
-	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy-special.copy
+# Boot floppies we generate
+boot-floppies = bfloppy1.ext2 bfloppy2.ext2 bfloppy.ext2 rfloppy.ext2.gz
 
-# Temporarily use two boot floppies until we add compression in appropriate places.
-bfloppy1.ext2: mkfsimage bfloppy1.copy bfloppy1-special.copy
-	./mkfsimage $@ --owner=root.wheel				\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy1.copy		\
-	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy1-special.copy
-bfloppy2.ext2: mkfsimage bfloppy2.copy bfloppy2-special.copy
-	./mkfsimage $@ --owner=root.wheel				\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy2.copy		\
-	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy2-special.copy
+boot-floppies: $(boot-floppies)
 
-rfloppy.ext2.gz: mkfsimage rfloppy.copy rfloppy-special.copy
+%.ext2.gz:
 	./mkfsimage $@ --compress --owner=root.wheel			\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/rfloppy.copy		\
-	  $(srcdir)      --copy-rules=$(srcdir)/rfloppy-special.copy
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
+%.ext2:
+	./mkfsimage $@ --owner=root.wheel				\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
+
+# floppy dependencies
+ifneq ($(no_deps),t)
+-include $(patsubst %,%.f_d, $(boot-floppies))
+
+%.ext2.f_d %.ext2.gz.f_d: mkfsimage
+	./mkfsimage $(patsubst %.f_d,%,$@) --dependencies=$@		\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
+endif
