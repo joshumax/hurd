@@ -1,4 +1,23 @@
+1999-06-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (booted): New variable.
+	(open_console): Use that instead of system_state.
+	(S_startup_essential_task): Likewise.
+	(do_mach_notify_dead_name): Likewise.
+	(launch_system): New function.
+	(S_startup_essential_task): Call it.
+
+	* init.c (global_argv): Make static.
+
+	* init.c (startup_envz, startup_envz_len): New variables.
+	(run, run_for_real): Use those for child environment.
+	(main): Set them up from our ENVP argument.
+
 1999-06-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (main): Barf if run in a normal Hurd environment (not boot).
+
+	* init.c (record_essential_task): Add missing return.
 
 	* ttys.c: Include "ttys.h".
 
