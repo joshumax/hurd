@@ -1,6 +1,6 @@
 /* Hierarchial argument parsing, layered over getopt
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -406,42 +406,47 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 		    /* OPT isn't an alias, so we can use values from it.  */
 		    real = opt;
 
-		  if (_option_is_short (opt))
-		    /* OPT can be used as a short option.  */
+		  if (! (real->flags & OPTION_DOC))
+		    /* A real option (not just documentation).  */
 		    {
-		      *short_end++ = opt->key;
-		      if (real->arg)
+		      if (_option_is_short (opt))
+			/* OPT can be used as a short option.  */
 			{
-			  *short_end++ = ':';
-			  if (real->flags & OPTION_ARG_OPTIONAL)
-			    *short_end++ = ':';
+			  *short_end++ = opt->key;
+			  if (real->arg)
+			    {
+			      *short_end++ = ':';
+			      if (real->flags & OPTION_ARG_OPTIONAL)
+				*short_end++ = ':';
+			    }
+			  *short_end = '\0'; /* keep 0 terminated */
 			}
-		      *short_end = '\0'; /* keep 0 terminated */
-		    }
 
-		  if (opt->name && find_long_option (long_opts, opt->name) < 0)
-		    /* OPT can be used as a long option.  */
-		    {
-		      long_end->name = opt->name;
-		      long_end->has_arg =
-			(real->arg
-			 ? (real->flags & OPTION_ARG_OPTIONAL
-			    ? optional_argument
-			    : required_argument)
-			 : no_argument);
-		      long_end->flag = 0;
-		      /* we add a disambiguating code to all the user's
-			 values (which is removed before we actually call
-			 the function to parse the value); this means that
-			 the user loses use of the high 8 bits in all his
-			 values (the sign of the lower bits is preserved
-			 however)...  */
-		      long_end->val =
-			((opt->key | real->key) & USER_MASK)
-			  + (((group - groups) + 1) << USER_BITS);
+		      if (opt->name
+			  && find_long_option (long_opts, opt->name) < 0)
+			/* OPT can be used as a long option.  */
+			{
+			  long_end->name = opt->name;
+			  long_end->has_arg =
+			    (real->arg
+			     ? (real->flags & OPTION_ARG_OPTIONAL
+				? optional_argument
+				: required_argument)
+			     : no_argument);
+			  long_end->flag = 0;
+			  /* we add a disambiguating code to all the user's
+			     values (which is removed before we actually call
+			     the function to parse the value); this means that
+			     the user loses use of the high 8 bits in all his
+			     values (the sign of the lower bits is preserved
+			     however)...  */
+			  long_end->val =
+			    ((opt->key | real->key) & USER_MASK)
+			    + (((group - groups) + 1) << USER_BITS);
 
-		      /* Keep the LONG_OPTS list terminated.  */
-		      (++long_end)->name = NULL;
+			  /* Keep the LONG_OPTS list terminated.  */
+			  (++long_end)->name = NULL;
+			}
 		    }
 		  }
 
@@ -558,7 +563,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	{
 	  optind = state.next;	/* Put it back in OPTIND for getopt.  */
 	  optopt = KEY_END;	/* Distinguish KEY_ERR from a real option.  */
-	  opt = getopt_long (state.argc, state.argv, short_opts, long_opts, 0);
+	  if (state.flags & ARGP_LONG_ONLY)
+	    opt = getopt_long_only (state.argc, state.argv,
+				    short_opts, long_opts, 0);
+	  else
+	    opt = getopt_long (state.argc, state.argv,
+			       short_opts, long_opts, 0);
 	  state.next = optind;	/* And see what getopt did.  */
 
 	  if (opt == KEY_END)
