@@ -54,7 +54,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
   unsigned long i;
   struct ext2_group_desc *gdp;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   if (block < sblock->s_first_data_block ||
       (block + count) > sblock->s_blocks_count)
@@ -62,7 +62,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
       ext2_error ("ext2_free_blocks",
 		  "Freeing blocks not in datazone - "
 		  "block = %lu, count = %lu", block, count);
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return;
     }
 
@@ -105,7 +105,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
   pokel_add (&sblock_pokel, gdp, sizeof *gdp);
 
   sblock_dirty = 1;
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
 
   alloc_sync (0);
 }
@@ -131,7 +131,7 @@ ext2_new_block (unsigned long goal,
   static int goal_hits = 0, goal_attempts = 0;
 #endif
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
 #ifdef XXX /* Auth check to use reserved blocks  */
   if (sblock->s_free_blocks_count <= sblock->s_r_blocks_count &&
@@ -139,7 +139,7 @@ ext2_new_block (unsigned long goal,
        (sb->u.ext2_sb.s_resgid == 0 ||
 	!in_group_p (sb->u.ext2_sb.s_resgid))))
     {
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return 0;
     }
 #endif
@@ -243,7 +243,7 @@ repeat:
     }
   if (k >= groups_count)
     {
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return 0;
     }
   bh = bptr (gdp->bg_block_bitmap);
@@ -258,7 +258,7 @@ repeat:
     {
       ext2_error ("ext2_new_block",
 		  "Free blocks count corrupted for block group %d", i);
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return 0;
     }
 
@@ -340,7 +340,7 @@ got_block:
   sblock_dirty = 1;
 
  sync_out:
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
   alloc_sync (0);
 
   return j;
@@ -354,7 +354,7 @@ ext2_count_free_blocks ()
   struct ext2_group_desc *gdp;
   int i;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -370,7 +370,7 @@ ext2_count_free_blocks ()
     }
   printk ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
 	  sblock->s_free_blocks_count, desc_count, bitmap_count);
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
   return bitmap_count;
 #else
   return sblock->s_free_blocks_count;
@@ -393,7 +393,7 @@ ext2_check_blocks_bitmap ()
   struct ext2_group_desc *gdp;
   int i, j;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -444,5 +444,5 @@ ext2_check_blocks_bitmap ()
 		"Wrong free blocks count in super block, "
 		"stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_blocks_count, bitmap_count);
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
 }
