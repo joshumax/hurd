@@ -1,6 +1,6 @@
 /* Routines to gather and print process information.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -479,7 +479,7 @@ struct ps_user_hooks
 	NULL, and an int *, which is filled in with the length of the string.
 */
 
-typedef struct ps_getter *ps_getter_t;
+typedef const struct ps_getter *ps_getter_t;
 
 struct ps_getter
   {
@@ -503,7 +503,7 @@ struct ps_getter
 /* ---------------------------------------------------------------- */
 /* A PS_FILTER_T describes how to select some subset of a PROC_STAT_LIST_T */
 
-typedef struct ps_filter *ps_filter_t;
+typedef const struct ps_filter *ps_filter_t;
 
 struct ps_filter
   {
@@ -530,17 +530,17 @@ struct ps_filter
    operator to get a ps_filter_t from them */
 
 /* A filter that retains only process's owned by getuid() */
-extern struct ps_filter ps_own_filter;
+extern const struct ps_filter ps_own_filter;
 /* A filter that retains only process's that aren't session or login leaders */
-extern struct ps_filter ps_not_leader_filter;
+extern const struct ps_filter ps_not_leader_filter;
 /* A filter that retains only process's with a controlling terminal */
-extern struct ps_filter ps_ctty_filter;
+extern const struct ps_filter ps_ctty_filter;
 /* A filter that retains only `unorphaned' process.  A process is unorphaned
    if it's a session leader, or the process's process group is not orphaned */
-extern struct ps_filter ps_unorphaned_filter;
+extern const struct ps_filter ps_unorphaned_filter;
 /* A filter that retains only `parented' process.  Typically only hurd
    processes have parents.  */
-extern struct ps_filter ps_parent_filter;
+extern const struct ps_filter ps_parent_filter;
 
 /* ---------------------------------------------------------------- */
 /* A PS_STREAM_T describes an output stream for libps to use.  */
@@ -656,7 +656,7 @@ struct ps_fmt_specs
 
 /* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find, 
    containing specs for most values in a proc_stat_t.  */
-extern struct ps_fmt_specs ps_std_fmt_specs;
+extern const struct ps_fmt_specs ps_std_fmt_specs;
 
 /* Searches for a spec called NAME in SPECS and returns it if found,
    otherwise NULL.  */
