@@ -18,7 +18,6 @@
 /* This library manages directories for users who want to
    write filesystem servers. */
 
-
 /* Search directory DIR for name NAME.  If NODEP is nonzero, then
    set *NODEP to the node found.  If TYPE is nonzero, then
    set *TYPE to the type of the node found.  */
@@ -33,9 +32,22 @@ error_t
 dirmgt_enter (struct directory *dir, char *name, struct node *node,
 	      int type);
 
+/* Add SUBDIR to DIR under name NAME.  If NAME is already present in
+   the directory, then EBUSY is returned.  */
+error_t
+dirmgt_enter_dir (struct directory *dir, char *name, struct directory *subdir);
+
 /* Return directory contents to a user; args are exactly as for
    the fs.defs:dir_readdir RPC. */
 error_t
 dirmgt_readdir (struct directory *dir, char **data, u_int *datacnt,
 		int entry, int nentries, vm_size_t bufsiz, int *amt);
+
+/* If this routine is defined, then it will be called when a lookup on
+   a directory fails.  If this routine returns success, the lookup will
+   then be repeated.  If it returns an error, then the lookup will fail
+   with the reported error. */
+error_t
+(*dirmgt_find_entry)(struct directory *dir, char *name);
+
 
