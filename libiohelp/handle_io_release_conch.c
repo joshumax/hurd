@@ -28,7 +28,7 @@ ioserver_handle_io_release_conch (struct conch *c, void *user)
   if (c->holder_shared_page->conch_status != USER_HAS_NOT_CONCH)
     {
       c->holder_shared_page->conch_status = USER_HAS_NOT_CONCH;
-      error = fetch_shared_data (c->holder);
+      error = ioserver_fetch_shared_data (c->holder);
     }
   
   if (c->holder == user)
