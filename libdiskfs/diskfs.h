@@ -57,10 +57,13 @@ struct peropen
 
   struct node *np;
 
-  mach_port_t dotdotport;	/* dotdot from ROOT through this peropen */
-  unsigned depth;		/* How many levels there are between
-				   DOTDOTPORT and us; if DEPTH == 0,
-				   DOTDOTPORT is our parent.  */
+  /* The parent of the translator's root node.  */
+  mach_port_t root_parent;
+
+  /* If this node is in a shadow tree, the parent of its root.  */
+  mach_port_t shadow_root_parent;
+  /* If in a shadow tree, its root node in this translator.  */
+  struct node *shadow_root;
 };
 
 /* A unique one of these exists for each node currently in use (and
@@ -785,10 +788,6 @@ struct node *diskfs_make_node (struct disknode *dn);
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
 
-   DEPTH is the number of nodes between DP and the filesystem root.
-   If NEW_DEPTH is non-zero, then for a non-error return, the depth of the
-   resulting node NP is returned in it.
-
    Return ENOTDIR if DP is not a directory.
    Return EACCES if CRED isn't allowed to search DP.
    Return EACCES if completing the operation will require writing
@@ -801,8 +800,7 @@ struct node *diskfs_make_node (struct disknode *dn);
 */
 error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 		       struct node **np, struct dirstat *ds,
-		       struct protid *cred,
-		       unsigned depth, unsigned *new_depth);
+		       struct protid *cred);
 
 /* Add NP to directory DP under the name NAME.  This will only be
    called after an unsuccessful call to diskfs_lookup of type CREATE
@@ -864,9 +862,11 @@ error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 /* Create and return a new peropen structure on node NP with open
-   flags FLAGS.  */
+   flags FLAGS.  The initial values for the root_parent, shadow_root, and
+   shadow_root_parent fields are copied from CONTEXT if it's non-zero,
+   otherwise zerod.  */
 struct peropen *diskfs_make_peropen (struct node *np, int flags,
-				     mach_port_t dotdotnode, unsigned depth);
+				     struct peropen *context);
 
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is
