@@ -18,9 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <socket.h>
+#include <cthreads.h>
 
-#include "pflocal.h"
+#include "connq.h"
 
 /* A queue for queueing incoming connections.  */
 struct connq
@@ -31,22 +31,24 @@ struct connq
   /* The connection request queue.  */
   unsigned length;
   unsigned head, tail;
-  struct connq_request *queue;
+  struct connq_request **queue;
 
   /* Threads that have done an accept on this queue wait on this condition.  */
   struct condition listeners;
   unsigned num_listeners;
   struct mutex lock;
+};
+
+static inline unsigned
+qnext (struct connq *cq, unsigned pos)
+{
+  return (pos + 1 == cq->length) ? 0 : pos + 1;
 }
 
-extern inline qnext (struct connq *ca, unsigned pos)
+static inline unsigned
+qprev (struct connq *cq, unsigned pos)
 {
-  return (pos + 1 == cq->length ? 0 : pos + 1);
-}
-
-extern inline qprev (struct connq *ca, unsigned pos)
-{
-  return (pos == 0 ? cq->length - 1 : pos - 1);
+  return (pos == 0) ? cq->length - 1 : pos - 1;
 }
 
 /* ---------------------------------------------------------------- */
@@ -119,8 +121,6 @@ error_t
 connq_listen (struct connq *cq, int noblock,
 	      struct connq_request **req, struct sock **sock)
 {
-  error_t err = 0;
-
   mutex_lock (&cq->lock);
 
   if (noblock && cq->head == cq->tail)
@@ -153,9 +153,11 @@ connq_listen (struct connq *cq, int noblock,
 void
 connq_request_complete (struct connq_request *req, error_t err)
 {
+  mutex_lock (&req->lock);
   req->err = err;
-  req->complete = 1;
-  condition_signal (&req->signal, &req->lock);
+  req->completed = 1;
+  condition_signal (&req->signal);
+  mutex_unlock (&req->lock);
 }
 
 /* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is true,
@@ -180,17 +182,23 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
     {
       cq->queue[cq->head] = &req;
       cq->head = next;
+
+      /* Hold REQ.LOCK before we signal the condition so that we're sure to be
+	 woken up.  */
+      mutex_lock (&req.lock);
+
+      condition_signal (&cq->listeners);
+      mutex_unlock (&cq->lock);
+
+      while (!req.completed)
+	condition_wait (&req.signal, &req.lock);
+
+      err = req.err;
+
+      mutex_unlock (&req.lock);
     }
-    
-  /* Hold REQ.LOCK before we signal the condition so that we're sure to be
-     woken up.  */
-  mutex_lock (&req.lock);
-  condition_signal (&cq->listeners, &cq->lock);
 
-  while (!req.completed)
-    condition_wait (&req.signal, &req.lock);
-
-  return req.err;
+  return err;
 }
 
 /* Set CQ's queue length to LENGTH.  Any sockets already waiting for a
@@ -207,22 +215,24 @@ connq_set_length (struct connq *cq, int length)
     /* Shrinking it less so.  */
     {
       int i;
-      struct connq_request *new_queue =
+      struct connq_request **new_queue =
 	malloc (sizeof (struct connq_request *) * length);
 
       for (i = 0; i < cq->length && cq->head != cq->tail;)
 	{
-	  cq->head = qprev (cq, cq->head)
-	    if (i < length)
-	      /* Keep this connect request in the queue.  */
-	      new_queue[length - i] = cq->queue[cq->head];
-	    else
-	      /* Punt this one.  */
-	      connq_request_complete (cq->queue[cq->head], ECONNREFUSED);
+	  cq->head = qprev (cq, cq->head);
+	  if (i < length)
+	    /* Keep this connect request in the queue.  */
+	    new_queue[length - i] = cq->queue[cq->head];
+	  else
+	    /* Punt this one.  */
+	    connq_request_complete (cq->queue[cq->head], ECONNREFUSED);
 	}
     }
 
   cq->noqueue = 0;		/* Turn on queueing.  */
 
   mutex_unlock (&cq->lock);
+
+  return 0;
 }
