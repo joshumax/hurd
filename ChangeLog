@@ -1,3 +1,10 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (TAGS): Create a TAGS file that specifies the subdir TAGS
+	files as includes.
+
+	* Makeconf (TAGS): Make rules cope with having no source files to tag.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf (objs): Don't build PIC objects unless $(makemode) library.
