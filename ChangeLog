@@ -4,6 +4,10 @@ Thu Jul 18 00:40:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(install-headers): Likewise.
 	($(includedir)/$(installhdrsubdir)): New rule.
 
+Wed Jul 17 22:49:50 1996  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* build.mkcf.in: Use top_srcdir instead of srcdir.
+
 Wed Jul 17 14:28:29 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makeconf: gs/install-hdrs/install-headers/g
@@ -38,7 +42,7 @@ Mon Jul  8 00:54:56 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (DIST_FILES): Removed INSTALL-binary; now in
  	./release/.
-	(other-subdirs): Add `release'. 
+	(other-subdirs): Add `release'.
 	* release: New directory.
 
 	* Makeconf: disable excessive cleverness for now...
@@ -83,7 +87,7 @@ Thu Jun 20 14:33:01 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* Makefile (prog-subdirs): Add `daemons'.
 	* daemons: New directory.
 	* config.make.in (libexecdir): New variable.
-	
+
 Mon Jun 17 11:24:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makeconf ($(target)): Add bletcherous hack to deal with undefined
@@ -92,7 +96,7 @@ Mon Jun 17 11:24:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* Makefile (prog-subdirs): init.trim -> init.
 	(other-subdirs): Delete init; add config.
 	* init.trim: Renamed to be init.
-	* init: Sluffed into olds. 
+	* init: Sluffed into olds.
 
 	* config: New directory.
 
