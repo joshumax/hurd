@@ -1,5 +1,5 @@
 /* Pager creation
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -42,6 +42,7 @@ pager_create (struct user_pager_info *upi,
   p->noterm = 0;
   p->termwaiting = 0;
   p->waitingforseqno = 0;
+  p->anticipations = 0;
   p->pagemap = 0;
   p->pagemapsize = 0;
 
