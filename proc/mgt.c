@@ -35,6 +35,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc.h"
 #include "proc_S.h"
 #include "msg.h"
+#include "proc_exc_S.h"
+#include "proc_exc.h"
+#include "proc_excrepl.h"
+#include "proc_excrepl_S.h"
 
 /* Create a new id structure with the given genuine uids and gids. */
 static inline struct ids *
@@ -170,8 +174,6 @@ S_proc_child (struct proc *parentp,
   childp->p_pgrp = parentp->p_pgrp;
   join_pgrp (childp);
 
-  inherit_process_collections (childp);
-
   childp->p_parentset = 1;
   if (childp->p_msgport)
     nowait_proc_newids (childp->p_msgport, childp->p_task, 
@@ -292,11 +294,84 @@ S_proc_dostop (struct proc *p,
   return 0;
 }
 
+/* Implement proc_handle_exceptions as described in <hurd/process.defs>. */
+error_t
+S_proc_handle_exceptions (struct proc *p,
+			  mach_port_t msgport,
+			  mach_port_t forwardport,
+			  int flavor,
+			  thread_state_t new_state,
+			  mach_msg_type_number_t statecnt)
+{
+  struct exc *e = malloc (sizeof (struct exc)
+			  + (statecnt * sizeof (natural_t)));
+  mach_port_t foo;
+  
+  mach_port_request_notification (mach_task_self (), msgport,
+				  MACH_NOTIFY_NO_SENDERS, 1, msgport,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo)
+    mach_port_deallocate (mach_task_self (), foo);
+
+  mach_port_move_member (mach_task_self (), msgport, request_portset);
+  e->excport = msgport;
+  e->forwardport = forwardport;
+  e->replyport = MACH_PORT_NULL;
+  e->flavor = flavor;
+  e->statecnt = statecnt;
+  bcopy (new_state, e->thread_state, statecnt * sizeof (natural_t));
+  add_exc_to_hash (e);
+  return 0;
+}
+
+/* Called on provided exception ports.  Do the thread_set_state
+   requested by proc_handle_exceptions and then send an
+   exception_raise message as requested. */
+error_t
+S_proc_exception_raise (mach_port_t excport,
+			mach_port_t reply,
+			mach_msg_type_name_t replyname,
+			mach_port_t thread,
+			mach_port_t task,
+			int exception,
+			int code,
+			int subcode)
+{
+  struct exc *e = exc_find (excport);
+  if (!e)
+    return EOPNOTSUPP;
+  if (e->replyport != MACH_PORT_NULL)
+    return EBUSY;
+  thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
+  proc_exception_raise (e->forwardport, e->excport, 
+			MACH_MSG_TYPE_MAKE_SEND_ONCE,
+			thread, task, exception, code, subcode);
+  mach_port_deallocate (mach_task_self (), thread);
+  mach_port_deallocate (mach_task_self (), task);
+  return MIG_NO_REPLY;
+}
+
+/* Called by proc_handle_exception clients after they have received
+   the exception_raise we send in S_exception_raise.  Reply to the
+   agent that generated the exception raise. */
+error_t
+S_proc_exception_raise_reply (mach_port_t excport,
+			      int replycode)
+{
+  struct exc *e = exc_find (excport);
+  if (!e)
+    return EOPNOTSUPP;
+  if (e->replyport == MACH_PORT_NULL)
+    return 0;
+  proc_exception_raise_reply (e->replyport, e->replyporttype, replycode);
+  return MIG_NO_REPLY;
+}
+
 /* Implement proc_getallpids as described in <hurd/proc.defs>. */
 error_t
 S_proc_getallpids (struct proc *p,
-		 pid_t **pids,
-		 u_int *pidslen)
+		   pid_t **pids,
+		   u_int *pidslen)
 {
   int nprocs;
   pid_t *loc;
@@ -391,6 +466,7 @@ new_proc (task_t task)
       p->p_id = make_ids (&foo, 1, &foo, 1);
       p->p_parent = 0;
       p->p_sib = 0;
+      p->p_loginleader = 1;
     }
 
   else
@@ -406,6 +482,7 @@ new_proc (task_t task)
       if (p->p_sib)
 	p->p_sib->p_prevsib = &p->p_sib;
       startup_proc->p_ochild = p;
+      p->p_loginleader = 0;
     }
   
   p->p_ochild = 0;
@@ -415,8 +492,6 @@ new_proc (task_t task)
   else
     p->p_pgrp = startup_proc->p_pgrp;
  
-  p->p_colls = 0;		/* should add to allcolls XXX */
-
   p->p_msgport = MACH_PORT_NULL;
   
   p->p_argv = p->p_envp = p->p_status = 0;
@@ -450,10 +525,7 @@ process_has_exited (struct proc *p)
 {
   alert_parent (p);
 
-  leave_all_process_collections (p);
-
-  if (p->p_checkmsghangs)
-    prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
+  prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
   
   mach_port_mod_refs (mach_task_self (), p->p_reqport, 
 		      MACH_PORT_RIGHT_RECEIVE, -1);
