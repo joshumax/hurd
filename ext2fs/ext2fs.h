@@ -1,5 +1,4 @@
-/* Common definitions, declarations & inline routines for the ext2 filesystem
-   translator.
+/* Common definitions for the ext2 filesystem translator
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
@@ -38,7 +37,7 @@
    Normally, don't define it, but defining it causes a much greater rate
    of paging requests, which may be helpful in catching bugs. */
 
-#define DONT_CACHE_MEMORY_OBJECTS
+#undef DONT_CACHE_MEMORY_OBJECTS
 
 int printf (const char *fmt, ...);
 

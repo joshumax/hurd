@@ -1,4 +1,4 @@
-/* Block allocation routines.
+/* Block allocation routines
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 

@@ -1,4 +1,4 @@
-/* Main entry point for the ext2 file system translator.
+/* Main entry point for the ext2 file system translator
 
    Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 

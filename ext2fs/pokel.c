@@ -1,4 +1,4 @@
-/* A data structure to remember modifications to a memory region.
+/* A data structure to remember modifications to a memory region
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 

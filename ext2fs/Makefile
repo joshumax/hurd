@@ -1,3 +1,4 @@
+# Makefile for ext2fs
 #
 #   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 #
