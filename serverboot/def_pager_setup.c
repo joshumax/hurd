@@ -92,6 +92,7 @@ remove_paging_file(file_name)
 	return kr;
 }
 
+#if 0				/* no longer used */
 /*
  * Set up default pager
  */
@@ -135,3 +136,4 @@ default_pager_setup(master_device_port, server_dir_name)
 
 	return TRUE;
 }
+#endif
