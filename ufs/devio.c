@@ -19,6 +19,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "ufs.h"
+#include <device/device.h>
+#include <device/device_request.h>
+
 /* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
 error_t
 dev_write_sync (daddr_t addr,
@@ -26,7 +30,7 @@ dev_write_sync (daddr_t addr,
 		long len)
 {
   int foo;
-  assert (!readonly);
+  assert (!diskfs_readonly);
   if (device_write (ufs_device, 0, addr, (io_buf_ptr_t) data, len, &foo)
       || foo != len)
     return EIO;
@@ -40,11 +44,9 @@ dev_write (daddr_t addr,
 	   vm_address_t data,
 	   long len)
 {
-  int foo;
-  assert (!readonly);
+  assert (!diskfs_readonly);
   if (device_write_request (ufs_device, MACH_PORT_NULL, 0, addr,
-			    (io_buf_ptr_t) data, len, &foo)
-      || foo != len)
+			    (io_buf_ptr_t) data, len))
     return EIO;
   return 0;
 }
