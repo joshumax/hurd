@@ -43,7 +43,7 @@ enum ps_user_passwd_state
 struct ps_user
 {
   /* Which user this refers to.  */
-  int uid;
+  uid_t uid;
 
   /* The status */
      enum ps_user_passwd_state passwd_state;
@@ -60,7 +60,7 @@ struct ps_user
 
 /* Create a ps_user_t for the user referred to by UID, returning it in U.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t ps_user_create(int uid, ps_user_t *u);
+error_t ps_user_create(uid_t uid, ps_user_t *u);
 
 /* Free U and any resources it consumes.  */
 void ps_user_free(ps_user_t u);
@@ -91,6 +91,10 @@ struct ps_tty {
   char *name;
   /* What state the name is in.  */
   enum ps_tty_name_state name_state;
+
+  /* A more abbreviated name for the tty, or NULL if no name at all.  */
+  char *short_name;
+  bool short_name_alloced : 1;
 };
 
 #define ps_tty_port(tty) ((tty)->port)
@@ -104,6 +108,10 @@ void ps_tty_free(ps_tty_t tty);
 
 /* Returns the name of the tty, or NULL if it can't be figured out.  */
 char *ps_tty_name(ps_tty_t tty);
+
+/* Returns the standard abbreviated name of the tty, the whole name if there
+   is no standard abbreviation, or NULL if it can't be figured out.  */
+char *ps_tty_short_name(ps_tty_t tty);
 
 /* ---------------------------------------------------------------- */
 /* A ps_contex_t holds various information resulting from querying a
@@ -144,20 +152,20 @@ void ps_context_free(ps_context_t pc);
 
 /* Find a proc_stat_t for the process referred to by PID, and return it in
    PS.  If an error occurs, it is returned, otherwise 0.  */
-error_t ps_context_find_proc_stat(ps_context_t pc, int pid, proc_stat_t *ps);
+error_t ps_context_find_proc_stat(ps_context_t pc, pid_t pid, proc_stat_t *ps);
 
 /* Find a ps_tty_t for the terminal referred to by the port TTY_PORT, and
    return it in TTY.  If an error occurs, it is returned, otherwise 0.  */
-error_t ps_context_find_tty(ps_context_t pc, int tty_port, ps_tty_t *tty);
+error_t ps_context_find_tty(ps_context_t pc, mach_port_t tty_port, ps_tty_t *tty);
 
 /* Find a ps_tty_t for the terminal referred to by the ctty id port
    CTTYID_PORT, and return it in TTY.  If an error occurs, it is returned,
    otherwise 0.  */
 error_t ps_context_find_tty_by_cttyid(ps_context_t pc,
-				      int cttyid_port, ps_tty_t *tty);
+				      mach_port_t cttyid_port, ps_tty_t *tty);
 
 /* Find a ps_user_t for the user referred to by UID, and return it in U.  */
-error_t ps_context_find_user(ps_context_t pc, int uid, ps_user_t *u);
+error_t ps_context_find_user(ps_context_t pc, uid_t uid, ps_user_t *u);
 
 /* ---------------------------------------------------------------- */
 /*
@@ -165,20 +173,23 @@ error_t ps_context_find_user(ps_context_t pc, int uid, ps_user_t *u);
    which info is dependent on its FLAGS field.
  */
 
+typedef unsigned ps_flags_t;
+typedef unsigned ps_state_t;
+
 struct proc_stat
   {
     /* Which process server this is from.  */
     ps_context_t context;
 
     /* The proc's process id; if <0 then this is a thread, not a process.  */
-    int pid;
+    pid_t pid;
 
     /* Flags describing which fields in this structure are valid.  */
-    int flags;
+    ps_flags_t flags;
 
     /* Thread fields -- these are valid if PID < 0.  */
     proc_stat_t thread_origin;	/* A proc_stat_t for the task we're in.  */
-    int thread_index;		/* Which thread in our proc we are.  */
+    unsigned thread_index;		/* Which thread in our proc we are.  */
 
     /* A process_t port for the process.  */
     process_t process;
@@ -197,7 +208,7 @@ struct proc_stat
        proc_getinfo; see <hurd/hurd_types.h>).  */
     struct procinfo *info;
     /* The size of the info structure for deallocation purposes.  */
-    int info_size;
+    unsigned info_size;
 
     /* Summaries of the proc's thread_{basic,sched}_info_t structures: sizes
        and cumulative times are summed, prioritys and delta time are
@@ -208,11 +219,11 @@ struct proc_stat
     thread_sched_info_data_t thread_sched_info;
 
     /* Exec flags (see EXEC_* in <hurd/hurd_types.h>).  */
-    int exec_flags;
+    unsigned exec_flags;
 
     /* A bitmask summarizing the scheduling state of this process and all its
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
-    int state;
+    ps_state_t state;
 
     /* A ps_user_t object for the owner of this process.  */
     ps_user_t owner;
@@ -220,13 +231,13 @@ struct proc_stat
     /* The process's argv, as a string with each element separated by '\0'.  */
     char *args;
     /* The length of ARGS.  */
-    int args_len;
+    unsigned args_len;
 
     /* Virtual memory statistics for the process, as returned by task_info;
        see <mach/task_info.h> for a description of task_events_info_t.  */
     task_events_info_t task_events_info;
     task_events_info_data_t task_events_info_buf;
-    int task_events_info_size;
+    unsigned task_events_info_size;
 
     /* Various libc ports:  */
 
@@ -245,7 +256,7 @@ struct proc_stat
 
     /* The process's umask, which controls which protection bits won't be set
        when creating a file.  */
-    int umask;
+    unsigned umask;
 
     /* A ps_tty_t object for the process's controlling terminal.  */
     ps_tty_t tty;
@@ -346,7 +357,7 @@ char *proc_stat_state_tags;
 /* Returns in PS a new proc_stat_t for the process PID in the ps context PC.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.
    Users shouldn't use this routine, use pc_context_find_proc_stat instead.  */
-error_t _proc_stat_create(int pid, ps_context_t context, proc_stat_t *ps);
+error_t _proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps);
 
 /* Frees PS and any memory/ports it references.  Users shouldn't use this
    routine; proc_stat_ts are normally freed only when their ps_context goes
@@ -357,14 +368,14 @@ void _proc_stat_free(proc_stat_t ps);
    the corresponding fields in PS.  Afterwards you must still check the flags
    field before using new fields, as something might have failed.  Returns
    a system error code if a fatal error occurred, and 0 otherwise.  */
-error_t proc_stat_set_flags(proc_stat_t ps, int flags);
+error_t proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags);
 
 /* Returns in THREAD_PS a proc_stat_t for the Nth thread in the proc_stat_t
    PS (N should be between 0 and the number of threads in the process).  The
    resulting proc_stat_t isn't fully functional -- most flags can't be set in
    it.  If N was out of range, EINVAL is returned.  If a memory allocation
    error occured, ENOMEM is returned.  Otherwise, 0 is returned.  */
-error_t proc_stat_thread_create(proc_stat_t ps, int n, proc_stat_t *thread_ps);
+error_t proc_stat_thread_create(proc_stat_t ps, unsigned n, proc_stat_t *thread_ps);
 
 /* ---------------------------------------------------------------- */
 /*
@@ -392,7 +403,7 @@ struct ps_getter
 
     /* What proc_stat flags need to be set as a precondition to calling this
        getter's function.  */
-    int needs;
+    ps_flags_t needs;
 
     /* A function that will get the value; the protocol between this function
        and its caller is type-dependent.  */ 
@@ -418,7 +429,7 @@ struct ps_filter
        call the filter's predicate function; if these flags can't be set in a
        particular proc_stat_t, the function is not called, and it isn't deleted
        from the list.  */
-    int needs;
+    ps_flags_t needs;
 
     /* A function that returns true if called on a proc_stat_t that the
        filter accepts, or false if the filter rejects it.  */
@@ -469,7 +480,7 @@ struct ps_fmt_spec
        will output what the getter gets in some format */
     error_t
       (*output_fn)(proc_stat_t ps, ps_getter_t getter,
-		   int width, FILE *str, int *count);
+		   int width, FILE *str, unsigned *count);
 
     /* A function that, given two pses and a getter, will compare what
        the getter gets for each ps, and return an integer ala qsort */
@@ -517,7 +528,7 @@ struct ps_fmt_field
        between the previous field and this one.  */
     char *pfx;
     /* The number of characters from PFX that should be output.  */
-    int pfx_len;
+    unsigned pfx_len;
 
     /* Returns the number of characters that the value portion of this field
        should consume.  If this field is negative, then the absolute value is
@@ -544,11 +555,11 @@ struct ps_fmt
        fields to be formatted.  */
     ps_fmt_field_t fields;
     /* The (valid) length of the fields array.  */
-    int num_fields;
+    unsigned num_fields;
 
     /* A set of proc_stat flags describing what a proc_stat_t needs to hold in 
        order to print out every field in the fmt.  */
-    int needs;
+    ps_flags_t needs;
 
     /* Storage for various strings pointed to by the fields.  */
     char *src;
@@ -589,20 +600,20 @@ void ps_fmt_free(ps_fmt_t fmt);
    STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
-error_t ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, int *count);
+error_t ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count);
 
 /* Format a description as instructed by FMT, of the process described by PS
    to STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t ps_fmt_write_proc_stat(ps_fmt_t fmt,
-			       proc_stat_t ps, FILE *stream, int *count);
+			       proc_stat_t ps, FILE *stream, unsigned *count);
 
 /* Remove those fields from FMT which would need the proc_stat flags FLAGS.
    Appropiate inter-field characters are also removed: those *following*
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning.  */
-void ps_fmt_squash(ps_fmt_t fmt, int flags);
+void ps_fmt_squash(ps_fmt_t fmt, ps_flags_t flags);
 
 /* ---------------------------------------------------------------- */
 /* A PROC_STAT_LIST_T represents a list of proc_stat_t's */
@@ -615,11 +626,11 @@ struct proc_stat_list
     proc_stat_t *proc_stats;
 
     /* The number of processes in the list.  */
-    int num_procs;
+    unsigned num_procs;
 
     /* The actual allocated length of PROC_STATS (in case we want to add more
        processes).  */
-    int alloced;
+    unsigned alloced;
 
     /* Returns the proc context that these processes are from.  */
     ps_context_t context;
@@ -639,19 +650,19 @@ void proc_stat_list_free(proc_stat_list_t pp);
 
 /* Returns the proc_stat_t in PP with a process-id of PID, if there's one,
    otherwise, NULL.  */
-proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, int pid);
+proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid);
 
 /* Add proc_stat_t entries to PP for each process with a process id in the
    array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
    added for processes not already in PP.  ENOMEM is returned if a memory
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
    resulting proc_stat_list_t, and so may be subsequently freed.  */
-error_t proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs);
+error_t proc_stat_list_add_pids(proc_stat_list_t pp, pid_t *pids, unsigned num_procs);
 
 /* Add a proc_stat_t for the process designated by PID at PP's proc context to
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t proc_stat_list_add_pid(proc_stat_list_t pp, int pid);
+error_t proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid);
 
 /* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
    already in PP; the resulting order of proc_stat_t's in PP is undefined.
@@ -667,17 +678,22 @@ error_t proc_stat_list_add_all(proc_stat_list_t pp);
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
    otherwise 0.  */
-error_t proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id);
+error_t proc_stat_list_add_login_coll(proc_stat_list_t pp, pid_t login_id);
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
    0.  */
-error_t proc_stat_list_add_session(proc_stat_list_t pp, int session_id);
+error_t proc_stat_list_add_session(proc_stat_list_t pp, pid_t session_id);
+
+/* Add to PP entries for all processes in the process group PGRP at
+   its context.  If an error occurs, the system error code is returned,
+   otherwise 0.  */
+error_t proc_stat_list_add_pgrp(proc_stat_list_t pp, pid_t pgrp);
 
 /* Try to set FLAGS in each proc_stat_t in PP (but they may still not be set
    -- you have to check).  If a fatal error occurs, the error code is
    returned, otherwise 0.  */
-error_t proc_stat_list_set_flags(proc_stat_list_t pp, int flags);
+error_t proc_stat_list_set_flags(proc_stat_list_t pp, ps_flags_t flags);
 
 /* Destructively modify PP to only include proc_stat_t's for which the
    function PREDICATE returns true; if INVERT is true, only proc_stat_t's for
@@ -687,7 +703,7 @@ error_t proc_stat_list_set_flags(proc_stat_list_t pp, int flags);
    be satisfied are kept.  If a fatal error occurs, the error code is
    returned, it returns 0.  */
 error_t proc_stat_list_filter1(proc_stat_list_t pp,
-			       int (*predicate)(proc_stat_t ps), int flags,
+			       bool (*predicate)(proc_stat_t ps), ps_flags_t flags,
 			       bool invert);
 
 /* Destructively modify PP to only include proc_stat_t's for which the
@@ -722,13 +738,13 @@ error_t proc_stat_list_sort(proc_stat_list_t pp,
    characters output.  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
 error_t proc_stat_list_fmt(proc_stat_list_t pp,
-			   ps_fmt_t fmt, FILE *stream, int *count);
+			   ps_fmt_t fmt, FILE *stream, unsigned *count);
 
 /* Modifies FLAGS to be the subset which can't be set in any proc_stat_t in
    PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat_t
    as possible).  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
-error_t proc_stat_list_find_bogus_flags(proc_stat_list_t pp, int *flags);
+error_t proc_stat_list_find_bogus_flags(proc_stat_list_t pp, ps_flags_t *flags);
 
 /* Add thread entries for for every process in PP, located immediately after
    the containing process in sequence.  Subsequent sorting of PP will leave
@@ -775,33 +791,33 @@ error_t ps_host_load_info(host_load_info_t *host_info);
    of STRING regardless).  If COUNT is non-NULL, the number of characters
    written is added to the integer it points to.  If an error occurs, the
    error code is returned, otherwise 0.  */
-error_t ps_write_string(char *string, int max_len, FILE *stream, int *count);
+error_t ps_write_string(char *string, int max_len, FILE *stream, unsigned *count);
 
 /* Write NUM spaces to STREAM.  If COUNT is non-NULL, the number of spaces
    written is added to the integer it points to.  If an error occurs, the
    error code is returned, otherwise 0.  */
-error_t ps_write_spaces(int num, FILE *stream, int *count);
+error_t ps_write_spaces(int num, FILE *stream, unsigned *count);
 
 /* Write as many spaces to STREAM as required to make a field of width SOFAR
    be at least WIDTH characters wide (the absolute value of WIDTH is used).
    If COUNT is non-NULL, the number of spaces written is added to the integer
    it points to.  If an error occurs, the error code is returned, otherwise
    0.  */
-error_t ps_write_padding(int sofar, int width, FILE *stream, int *count);
+error_t ps_write_padding(int sofar, int width, FILE *stream, unsigned *count);
 
 /* Write the string BUF to STREAM, padded on one side with spaces to be at
    least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
    side, otherwise on the right side.  If COUNT is non-NULL, the number of
    characters written is added to the integer it points to.  If an error
    occurs, the error code is returned, otherwise 0.  */
-error_t ps_write_field(char *buf, int width, FILE *stream, int *count);
+error_t ps_write_field(char *buf, int width, FILE *stream, unsigned *count);
 
 /* Write the decimal representation of VALUE to STREAM, padded on one side
    with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
    0, then on the left side, otherwise on the right side.  If COUNT is
    non-NULL, the number of characters written is added to the integer it
    points to.  If an error occurs, the error code is returned, otherwise 0.  */
-error_t ps_write_int_field(int value, int width, FILE *stream, int *count);
+error_t ps_write_int_field(int value, int width, FILE *stream, unsigned *count);
 
 
 #endif /* __PS_H__ */
