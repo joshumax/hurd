@@ -45,7 +45,7 @@ netfs_S_io_identity (struct protid *cred,
       return err;
     }
 
-  err = fshelp_get_identity (netfs_port_bucket, np->nn_stat.st_ino, &id);
+  err = fshelp_get_identity (netfs_port_bucket, np->nn_stat.st_ino, id);
   if (err)
     {
       mutex_unlock (&np->lock);
