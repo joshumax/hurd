@@ -31,8 +31,9 @@ _print_version (FILE *stream, struct argp_state *state)
     fprintf (stream, "%s\n", argp_program_version);
   else
     /* Construct a version using the standard diskfs variables.  */
-    fprintf (stream, "%s %d.%d\n",
-	     diskfs_server_name, diskfs_major_version, diskfs_minor_version);
+    fprintf (stream, "%s %d.%d (GNU %s)\n",
+	     diskfs_server_name, diskfs_major_version, diskfs_minor_version,
+	     HURD_RELEASE);
   return 0;
 }
 
