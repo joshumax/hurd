@@ -1,3 +1,32 @@
+2002-06-14  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (struct changes): New structure to temporarily hold
+	changes to the display.
+	(struct display): New member CHANGES.
+	(display_flush_filechange): New function.
+	(display_record_filechange): Likewise.
+	(screen_fill): Use display_record_filechange instead
+	display_notice_filechange.
+	(display_output_one): Likewise.
+	(screen_shift_left): Flush pending filechanges before scrolling.
+	(screen_shift_right): Likewise.
+	(display_output_one): Don't notice changes here ...
+	(display_output_some): ... but here.
+	
+	* display.c (struct user_pager_info): Add members MEMOBJ_NPAGES
+	and MEMOBJ_PAGES to hold the allocated and returned pages.
+	(struct display): Remove member MEMOBJ_SIZE.
+	(pager_clear_user_data): Deallocate returned pages for this pager
+	object.
+	(pager_read_page): Add an assertion to check that we don't create
+	new pages for already allocated and returned pages.
+	(pager_write_page): Implement by just holding to the page and
+	storing its address in the pager object for later deallocation.
+	(pager_report_extent): Implement using new member MEMOBJ_NPAGES
+	rather than MEMOBJ_SIZE.
+	(user_create): Allocate extra storage for the returned pages in
+	UPI.
+
 2002-06-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (DIST_FILES): New target.

@@ -47,6 +47,30 @@
 #include "display.h"
 
 
+struct changes
+{
+  struct
+  {
+    uint32_t col;
+    uint32_t row;
+    uint32_t status;
+  } cursor;
+  struct
+  {
+    uint32_t cur_line;
+    uint32_t scr_lines;
+  } screen;
+  off_t start;
+  off_t end;
+
+#define DISPLAY_CHANGE_CURSOR_POS 1
+#define DISPLAY_CHANGE_CURSOR_STATUS 2
+#define DISPLAY_CHANGE_SCREEN_CUR_LINE 4
+#define DISPLAY_CHANGE_SCREEN_SCR_LINES 8
+#define DISPLAY_CHANGE_MATRIX 16
+  int which;
+};
+
 struct cursor
 {
   uint32_t saved_x;
@@ -115,6 +139,8 @@ struct user_pager_info
 {
   display_t display;
   struct pager *p;
+  size_t memobj_npages;
+  vm_address_t memobj_pages[0];
 };
 
 /* Pending directory and file modification requests.  */
@@ -135,6 +161,8 @@ struct display
      signal for this virtual console.  */
   int owner_id;
 
+  struct changes changes;
+
   struct cursor cursor;
   struct output output;
   struct attr attr;
@@ -142,7 +170,6 @@ struct display
 
   struct user_pager_info *upi;  
   memory_object_t memobj;
-  size_t memobj_size;
 
   /* A list of ports to send file change notifications to.  */
   struct modreq *filemod_reqs;
@@ -169,29 +196,35 @@ display_get_filemap (display_t display, vm_prot_t prot)
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
+  int idx;
+
+  for (idx = 0; idx < upi->memobj_npages; idx++)
+    if (upi->memobj_pages[idx])
+      vm_deallocate (mach_task_self (), upi->memobj_pages[idx], vm_page_size);
   free (upi);
 }
 
 error_t
-pager_read_page (struct user_pager_info *pager, vm_offset_t page,
+pager_read_page (struct user_pager_info *upi, vm_offset_t page,
                  vm_address_t *buf, int *writelock)
 {
+  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
+
   /* This is a read-only medium */
   *writelock = 1;
-
+  
   *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
 			      MAP_ANON, 0, 0);
   return 0;
 }
 
 error_t
-pager_write_page (struct user_pager_info *pager,
-                  vm_offset_t page,
+pager_write_page (struct user_pager_info *upi, vm_offset_t page,
                   vm_address_t buf)
 {
-  /* XXX Implement me.  Just store away the page, and release it when
-     releasing the pager.  */
-  assert (0);
+  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
+  upi->memobj_pages[page / vm_page_size] = buf;
+  return 0;
 }
 
 error_t
@@ -209,7 +242,7 @@ pager_report_extent (struct user_pager_info *upi,
 {
   display_t display = upi->display;
   *offset = 0;
-  *size = display->memobj_size;
+  *size = display->upi->memobj_npages * vm_page_size;
   return 0;
 }
 
@@ -296,6 +329,151 @@ display_notice_filechange (display_t display, enum file_changed_type type,
     }
 }
 
+static void
+display_flush_filechange (display_t display, int type)
+{
+  struct cons_display *user = display->user;
+
+  if (type & DISPLAY_CHANGE_CURSOR_POS
+      || type & DISPLAY_CHANGE_CURSOR_STATUS)
+    {
+      off_t start = -1;
+      off_t end = -1;
+
+      if (type & DISPLAY_CHANGE_CURSOR_POS
+	  || display->changes.cursor.col != user->cursor.col
+	  || display->changes.cursor.row != user->cursor.row)
+	{
+	  start = offsetof (struct cons_display, cursor.col);
+	  end = start + 2 * sizeof (wchar_t) - 1;
+	}
+      if (type & DISPLAY_CHANGE_CURSOR_STATUS
+	  || display->changes.cursor.status != user->cursor.status)
+	{
+	  if (start == -1)
+	    start = offsetof (struct cons_display, cursor.status);
+	  end = start + 1 * sizeof (wchar_t) - 1;
+	}
+      if (start != -1)
+	display_notice_filechange (display, FILE_CHANGED_WRITE, start, end);
+    }
+
+  if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
+      || type & DISPLAY_CHANGE_SCREEN_SCR_LINES)
+    {
+      off_t start = -1;
+      off_t end = -1;
+
+      if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
+	  || display->changes.screen.cur_line != user->screen.cur_line)
+	{
+	  start = offsetof (struct cons_display, screen.cur_line);
+	  end = start + 1 * sizeof (wchar_t) - 1;
+	}
+      if (type & DISPLAY_CHANGE_SCREEN_SCR_LINES
+	  || display->changes.screen.scr_lines != user->screen.scr_lines)
+	{
+	  if (start == -1)
+	    start = offsetof (struct cons_display, screen.scr_lines);
+	  end = start + 1 * sizeof (wchar_t) - 1;
+	}
+      if (start != -1)
+	display_notice_filechange (display, FILE_CHANGED_WRITE, start, end);
+    }
+
+  if (type & DISPLAY_CHANGE_MATRIX)
+    {
+      display_notice_filechange (display, FILE_CHANGED_WRITE,
+				 sizeof (struct cons_display)
+				 + display->changes.start * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (display->changes.end + 1)
+				 * sizeof (wchar_t) - 1);
+      type &= ~DISPLAY_CHANGE_MATRIX;
+    }
+}
+
+
+/* Record a change in the matrix ringbuffer.  */
+static void
+display_record_filechange (display_t display, off_t start, off_t end)
+{
+  if (!display->changes.which & DISPLAY_CHANGE_MATRIX)
+    {
+      display->changes.start = start;
+      display->changes.end = end;
+      display->changes.which |= DISPLAY_CHANGE_MATRIX;
+    }
+  else
+    {
+      off_t size = display->user->screen.width * display->user->screen.lines;
+      off_t rotate = display->changes.start;
+      off_t old_end = display->changes.end;
+      int disjunct = 0;
+
+      /* First rotate the buffer to reduce the number of cases.  */
+      old_end -= rotate;
+      if (old_end < 0)
+	old_end += size;
+      start -= rotate;
+      if (start < 0)
+	start += size;
+      end -= rotate;
+      if (end < 0)
+	end += size;
+
+      /* Now the old region starts at 0 and ends at OLD_END.  Try to
+	 merge in the new region if it overlaps or touches the old
+	 one.  */
+      if (start <= end)
+	{
+	  if (start <= old_end + 1)
+	    {
+	      start = 0;
+	      if (old_end > end)
+		end = old_end;
+	    }
+	  else
+	    {
+	      if (end == size - 1)
+		end = old_end;
+	      else
+		disjunct = 1;
+	    }
+	}
+      else
+	{
+	  if (start <= old_end + 1)
+	    {
+	      start = 0;
+	      end = size - 1;
+	    }
+	  else
+	    {
+	      if (old_end > end)
+		end = old_end;
+	    }
+	}
+      /* Now reverse the rotation.  */
+      start += rotate;
+      if (start > size)
+	start -= size;
+      end += rotate;
+      if (end > size)
+	end -= size;
+
+      if (disjunct)
+	{
+	  /* The regions are disjunct, so we have to flush the old
+	   changes.  */
+	  display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
+	}
+      display->changes.start = start;
+      display->changes.end = end;
+    }
+}
+      
+	    
 
 static error_t
 user_create (display_t display, uint32_t width, uint32_t height,
@@ -303,13 +481,15 @@ user_create (display_t display, uint32_t width, uint32_t height,
 {
   error_t err;
   struct cons_display *user;
-  display->memobj_size = round_page (sizeof (struct cons_display) +
-				   sizeof (uint32_t) * width * lines);
+  int npages = (round_page (sizeof (struct cons_display) +
+			   sizeof (uint32_t) * width * lines)) / vm_page_size;
 
-  display->upi = malloc (sizeof (struct user_pager_info));
+  display->upi = calloc (1, sizeof (struct user_pager_info)
+			 + sizeof (vm_address_t) * npages);
   if (!display->upi)
     return MACH_PORT_NULL;
   display->upi->display = display;
+  display->upi->memobj_npages = npages;
   /* 1 & MOCD correct? */
   display->upi->p = pager_create (display->upi, pager_bucket,
 				  1, MEMORY_OBJECT_COPY_DELAY);
@@ -325,7 +505,8 @@ user_create (display_t display, uint32_t width, uint32_t height,
                           MACH_MSG_TYPE_MAKE_SEND);
 
   err = vm_map (mach_task_self (),
-		(vm_address_t *) &user, (vm_size_t) display->memobj_size,
+		(vm_address_t *) &user,
+		(vm_size_t) display->upi->memobj_npages * vm_page_size,
 		(vm_address_t) 0,
 		1 /* ! (flags & MAP_FIXED) */,
 		display->memobj, 0 /* (vm_offset_t) offset */,
@@ -384,21 +565,13 @@ screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
   if (end < size)
     {
       wmemset (user->_matrix + start, chr, end - start + 1);
-      display_notice_filechange (display, FILE_CHANGED_WRITE,
-				 sizeof (struct cons_display)
-				 + start * sizeof (wchar_t),
-				 sizeof (struct cons_display)
-				 + (end + 1) * sizeof (wchar_t) - 1);
+      display_record_filechange (display, start, end);
     }
   else
     {
       wmemset (user->_matrix + start, chr, size - start);
       wmemset (user->_matrix, chr, end - size + 1);
-      display_notice_filechange (display, FILE_CHANGED_WRITE,
-				 sizeof (struct cons_display)
-				 + start * sizeof (wchar_t),
-				 sizeof (struct cons_display)
-				 + (end - size + 1) * sizeof (wchar_t) - 1);
+      display_record_filechange (display, start, end - size);
     }
 }
 
@@ -429,6 +602,7 @@ screen_shift_left (display_t display, size_t row1, size_t col1, size_t row2,
       while (dst <= end)
 	user->_matrix[dst++ % size] = chr;
 
+      display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
 				 sizeof (struct cons_display)
 				 + start * sizeof (wchar_t),
@@ -471,6 +645,7 @@ screen_shift_right (display_t display, size_t row1, size_t col1, size_t row2,
       while (dst >= start)
 	user->_matrix[dst-- % size] = chr;
 
+      display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_EXTEND,
 				 sizeof (struct cons_display)
 				 + start * sizeof (wchar_t),
@@ -842,12 +1017,6 @@ display_output_one (display_t display, wchar_t chr)
   struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
 
-  uint32_t old_cursor_col = user->cursor.col;
-  uint32_t old_cursor_row = user->cursor.row;
-  uint32_t old_cursor_status = user->cursor.status;
-  uint32_t old_cur_line = user->screen.cur_line;
-  uint32_t old_scr_lines = user->screen.scr_lines;
-
   void newline (void)
     {
       if (user->cursor.row < user->screen.height - 1)
@@ -929,12 +1098,7 @@ display_output_one (display_t display, wchar_t chr)
 	    /* XXX Set attribute flags.  */
 	    user->_matrix[idx] = chr;
 
-	    display_notice_filechange (display, FILE_CHANGED_WRITE,
-				       sizeof (struct cons_display)
-				       + idx * sizeof (wchar_t),
-				       sizeof (struct cons_display)
-				       + (idx + 1) * sizeof (wchar_t) - 1);
-
+	    display_record_filechange (display, idx, idx);
 	    user->cursor.col++;
 	    if (user->cursor.col == user->screen.width)
 	      {
@@ -1002,35 +1166,6 @@ display_output_one (display_t display, wchar_t chr)
     default:
       abort ();
     }
-
-  if (old_cursor_col != user->cursor.col || old_cursor_row != user->cursor.row)
-    display_notice_filechange (display, FILE_CHANGED_WRITE,
-			       offsetof (struct cons_display, cursor.col),
-			       (old_cursor_status == user->cursor.status
-			       ? offsetof (struct cons_display, cursor.row)
-			       : offsetof (struct cons_display, cursor.row))
-			       + sizeof (wchar_t) - 1);
-  else if (old_cursor_status != user->cursor.status)
-    display_notice_filechange (display, FILE_CHANGED_WRITE,
-			       offsetof (struct cons_display, cursor.status),
-			       offsetof (struct cons_display, cursor.status)
-			       + sizeof (wchar_t) - 1);
-  if (old_cur_line != user->screen.cur_line)
-    display_notice_filechange (display, FILE_CHANGED_WRITE,
-			       offsetof (struct cons_display, screen.cur_line),
-			       (old_scr_lines == user->screen.scr_lines
-				? offsetof (struct cons_display,
-					    screen.cur_line)
-				: offsetof (struct cons_display,
-					    screen.scr_lines))
-			       + sizeof (wchar_t) - 1);
-  else if (old_scr_lines != user->screen.scr_lines)
-    display_notice_filechange (display, FILE_CHANGED_WRITE,
-			       offsetof (struct cons_display,
-					 screen.scr_lines),
-			       offsetof (struct cons_display,
-					 screen.scr_lines)
-			       + sizeof (wchar_t) - 1);
 }
 
 /* Output LENGTH bytes starting from BUFFER in the system encoding.
@@ -1041,6 +1176,13 @@ display_output_some (display_t display, char **buffer, size_t *length)
 {
 #define CONV_OUTBUF_SIZE 256
   error_t err = 0;
+
+  display->changes.cursor.col = display->user->cursor.col;
+  display->changes.cursor.row = display->user->cursor.row;
+  display->changes.cursor.status = display->user->cursor.status;
+  display->changes.screen.cur_line = display->user->screen.cur_line;
+  display->changes.screen.scr_lines = display->user->screen.scr_lines;
+  display->changes.which = ~DISPLAY_CHANGE_MATRIX;
 
   while (!err && *length > 0)
     {
@@ -1069,6 +1211,8 @@ display_output_some (display_t display, char **buffer, size_t *length)
 	    err = saved_err;
 	}
     }
+
+  display_flush_filechange (display, ~0);
   return err;
 }
 
