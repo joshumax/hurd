@@ -42,7 +42,7 @@ static struct argp_option options[] =
   {"blocks",      'b', 0, 0, "Print the number of blocks in FILE"},
   {"block-size",  'B', 0, 0, "Print the block size of FILE's store"},
   {"size",        's', 0, 0, "Print the size, in bytes, of FILE"},
-  {"runs",        'r', 0, 0, "Print the runs of blocks in FILE"},
+  {"block-list",  'l', 0, 0, "Print the blocks that are in FILE"},
   {"children",	  'c', 0, 0, "If the store has children, show them too"},
   {"dereference", 'L', 0, 0, "If FILE is a symbolic link, follow it"},
   {"prefix",      'p', 0, 0, "Always print `FILE: ' before info"},
@@ -53,7 +53,7 @@ static char *args_doc = "FILE...";
 static char *doc = "Show information about storage used by FILE..."
 "\vWith no FILE arguments, the file attached to standard"
 " input is used.  The fields to be printed are separated by colons, in this"
-" order: PREFIX: TYPE (FLAGS): NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS."
+" order: PREFIX: TYPE (FLAGS): NAME: BLOCK-SIZE: BLOCKS: SIZE: BLOCK-LIST."
 "  If the store is a composite one and --children is specified, children"
 " are printed on lines following the main store, indented accordingly."
 "  By default, all fields, and children, are printed.";
@@ -144,12 +144,12 @@ print_store (struct store *store, int level, unsigned what)
       pf (STORE_ENFORCED, "enf");
       pf (STORAGE_MUTATED, "mut");
 
-      if (store->flags & ~t)
+      if (store->flags & ~(t | STORE_INACTIVE))
 	/* Leftover flags. */
 	{
 	  if (! f)
 	    putchar (';');
-	  printf ("0x%x", store->flags);
+	  printf ("0x%x", store->flags & ~(t | STORE_INACTIVE));
 	}
       putchar (')');
     }
@@ -167,9 +167,10 @@ print_store (struct store *store, int level, unsigned what)
 	  if (i > 0)
 	    putchar (',');
 	  if (store->runs[i].start < 0)
-	    printf ("[%ld]", store->runs[i].length);
+	    /* A hole */
+	    printf ("@+%ld", store->runs[i].length);
 	  else
-	    printf ("%ld[%ld]", store->runs[i].start, store->runs[i].length);
+	    printf ("%ld+%ld", store->runs[i].start, store->runs[i].length);
 	}
     }
 
@@ -204,7 +205,7 @@ main(int argc, char *argv[])
 	  if (what == 0)
 	    what = W_ALL;
 
-	  err = store_create (file, 0, 0, &store);
+	  err = store_create (file, STORE_INACTIVE, 0, &store);
 	  if (err)
 	    error (4, err, source);
 
@@ -224,7 +225,7 @@ main(int argc, char *argv[])
 	case 'b': what |= W_BLOCKS; break;
 	case 'B': what |= W_BLOCK_SIZE; break;
 	case 's': what |= W_SIZE; break;
-	case 'r': what |= W_RUNS; break;
+	case 'l': what |= W_RUNS; break;
 	case 'c': what |= W_CHILDREN; break;
 
 	case ARGP_KEY_NO_ARGS:
