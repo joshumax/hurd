@@ -1,5 +1,8 @@
 2002-03-17  Roland McGrath  <roland@frob.com>
 
+	* mutations.h (TIOCTL_IMPORTS): New macro.
+	* priv.h: Protect from multiple inclusion.
+
 	* vga.c (vga_init): io_perm -> ioperm.
 	(vga_deinit): Likewise.
 
@@ -11,9 +14,6 @@
 	* main.c: Include <error.h>.
 	(main): Use `error' instead of perror + exit.
 	(console_mode, console_owner, console_group): Use *_t, not int.
-
-	* console/mutations.h (TIOCTL_IMPORTS): New macro.
-	* priv.h: Protect from multiple inclusion.
 
 2002-03-17  Marcus Brinkmann  <marcus@gnu.org>
 
