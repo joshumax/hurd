@@ -4,6 +4,11 @@ Thu Oct 10 10:53:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
  	release any user lock it's holding.
 	<sys/file.h>: New include.
 	
+Tue Oct  8 15:01:32 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Write permission governs
+	access to sockets, not read permission.
+
 Mon Oct  7 14:50:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-rmdir.c (diskfs_S_dir_rmdir): Return ENOTDIR if NP isn't a dir.
