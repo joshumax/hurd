@@ -54,11 +54,11 @@ SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = netfs.h callbacks.h misc.h modes.h mutations.h priv.h execserver.h
 installhdrs=netfs.h
 
-MIGSTUBS= ioServer.o fsServer.o fsysServer.o ifsockServer.o
+MIGSTUBS= ioServer.o fsServer.o fsysServer.o fsys_replyUser.o ifsockServer.o
 
 OBJS=$(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-fsys-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+fsys-MIGSFLAGS = -imacros $(srcdir)/mutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 ifsock-MIGSFLAGS = -imacros $(srcdir)/mutations.h
