@@ -1,5 +1,14 @@
 2001-08-20  Roland McGrath  <roland@frob.com>
 
+	* init.c [! SPLIT_INIT]: All this code removed.
+	[SPLIT_INIT]: This code no longer conditional.
+	(_PATH_RUNCOM, mapped_time, do_fastboot): Removed.
+	* Makefile (split-init): Variable removed.
+	(SRCS): Add stubs.c here unconditionally.
+	[$(split-init) = no]: Conditional defns removed.
+	(LCLHDRS): Variable removed.
+	* ttys.c, ttys.h: Files removed.
+
 	* init.c (kernel_command_line): Variable removed.
 	(options, parse_opt): Remove -K option.
 	(frob_kernel_process): Collect arguments from &global_argv[1]
