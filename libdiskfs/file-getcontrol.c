@@ -33,7 +33,11 @@ diskfs_S_file_getcontrol (struct protid *cred,
     error = EPERM;
   else
     {
-      *control = ports_get_right (diskfs_control_port);
+      spin_lock (&_diskfs_control_lock);
+      _diskfs_ncontrol_ports++;
+      spin_lock (&_diskfs_control_lock);
+      *control = ports_get_right (ports_allocate_port
+				  (sizeof (struct port_info), PT_CTL));
       *controltype = MACH_MSG_TYPE_MAKE_SEND;
     }
 
