@@ -263,7 +263,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      mutex_unlock (&np->translator.lock);
 	      
 	      mutex_lock (&np->lock);
-	      if (diskfs_node_translated (np))
+	      if (np->istranslated)
 		{
 		  /* Start the translator. */
 		  if (dirfile == MACH_PORT_NULL)

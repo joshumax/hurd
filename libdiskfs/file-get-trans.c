@@ -110,7 +110,7 @@ diskfs_S_file_get_translator (struct protid *cred,
     }
   else
     {
-      if (!diskfs_node_translated (np))
+      if (!np->istranslated)
 	error = EINVAL;
       else
 	error = diskfs_get_translator (np, trans, translen);
