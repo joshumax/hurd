@@ -47,6 +47,12 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context)
 	mach_port_mod_refs (mach_task_self (), po->shadow_root_parent, 
 			    MACH_PORT_RIGHT_SEND, 1);
     }
+  else
+    {
+      po->root_parent = MACH_PORT_NULL;
+      po->shadow_root = 0;
+      po->shadow_root_parent = MACH_PORT_NULL;
+    }
 
   diskfs_nref (np);
 
