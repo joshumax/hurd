@@ -331,36 +331,52 @@ struct pokel global_pokel;
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
 char *modified_global_blocks;
+spin_lock_t modified_global_blocks_lock;
 
-/* Records the global block BLOCK as being modified, and returns true if we
-   think it may have been clean before (but we may not be sure).  */
-#define global_block_modified(block) \
-   (!modified_global_blocks || !set_bit((block), modified_global_blocks))
+/* Marks the global block BLOCK as being modified, and returns true if we
+   think it may have been clean before (but we may not be sure).  Note that
+   this isn't enough to cause the block to be synced; you must call
+   record_global_poke to do that.  */
+extern inline int
+global_block_modified (daddr_t block)
+{
+  if (modified_global_blocks)
+    {
+      int was_clean;
+      spin_lock (&modified_global_blocks_lock);
+      was_clean = !set_bit(block, modified_global_blocks);
+      spin_unlock (&modified_global_blocks_lock);
+      return was_clean;
+    }
+  else
+    return 0;
+}
 
 /* This records a modification to a non-file block.  */
 extern inline void
 record_global_poke (void *bptr)
 {
-  int boffs = trunc_block(bptr_offs(bptr));
+  int boffs = trunc_block (bptr_offs (bptr));
   if (global_block_modified (boffs_block (boffs)))
     pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
 }
+
+/* This syncs a modification to a non-file block.  */
+extern inline void
+sync_global_ptr (void *bptr, int wait)
+{
+  int boffs = trunc_block (bptr_offs (bptr));
+  global_block_modified (boffs_block (boffs));
+  pager_sync_some (disk_pager->p, boffs_ptr (boffs), block_size, wait);
+}
 
 /* ---------------------------------------------------------------- */
-
-/* Sync part of the disk */
-extern inline void
-sync_disk_image (void *place, size_t nbytes, int wait)
-{
-  pager_sync_some (disk_pager->p, bptr_offs (place), nbytes, wait);
-}
 
 extern inline void
 sync_super_block ()
 {
   sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
-  (void)global_block_modified(boffs_block(trunc_block(SBLOCK_OFFS)));
-  sync_disk_image (sblock, SBLOCK_SIZE, 1);
+  sync_global_ptr (sblock, 1);
 }
 
 extern inline void
