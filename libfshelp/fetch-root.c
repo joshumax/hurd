@@ -26,13 +26,15 @@ fshelp_fetch_root (struct trans_link *link, mach_port_t *cntl,
 		   int passive, error_t (*passive_fn) (char **, u_int *),
 		    void *dirpt, void *nodept, 
 		    mach_port_t (*genpt_fn) (mach_port_t),
-		    struct mutex *unlock)
+		    struct mutex *unlock, uid_t uid, gid_t gid)
 {
   mach_port_t cwdirpt, nodept;
   char buf[1000];
   char *bufp = buf;
   u_int buflen = 1000;
+
   mutex_lock (&link->lock);
+
   if (!passive && link->control == MACH_PORT_NULL)
     {
       mutex_unlock (&link->lock);
@@ -45,9 +47,25 @@ fshelp_fetch_root (struct trans_link *link, mach_port_t *cntl,
     {  
       /* Start passive translator */
       nodept = (*genpt_fn)(nodept);
-  
+      error = (*passive_fn) (&bufp, buflen);
+
+      if (error)
+	{
+	  mutex_unlock (&link->lock);
+	  return error;
+	}
+      
       mutex_unlock (unlock);
   
-      error = fshelp_start_translator (link, 
+      error = fshelp_start_translator (link, bufp, buflen, cwdirpt,
+				       nodept, uid, gid);
+      
+      if (bufp != buf)
+	vm_deallocate (mach_task_self (), (vm_address_t) bufp, buflen);
+
+      if (error)
+	return error;
+    }
+  
 
 		   
