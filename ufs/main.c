@@ -112,6 +112,9 @@ main (int argc, char **argv)
   char *devname;
   mach_port_t bootstrap;
   error_t err;
+  int sizes[DEV_GET_SIZE_COUNT];
+  u_int sizescnt = 2;
+
  
   save_argv = argv;
 
@@ -133,8 +136,30 @@ main (int argc, char **argv)
 		     (diskfs_readonly ? 0 : D_WRITE) | D_READ,
 		     devname, &ufs_device);
   assert (!err);
+
+  /* Check to make sure device sector size is reasonable. */
+  err = device_get_status (ufs_device, DEV_GET_SIZE, sizes, &sizescnt);
+  assert (sizescnt == DEV_GET_SIZE_COUNT);
+  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
+    {
+      fprintf (stderr, "Bad device record size %d (should be %d)\n",
+	       sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
+      exit (1);
+    }
   
   get_hypermetadata ();
+
+  /* Check to make sure device size is big enough.  */
+  if (sizes[DEV_GET_SIZE_DEVICE_SIZE] != 0)
+    if (sizes[DEV_GET_SIZE_DEVICE_SIZE] < sblock->fs_size * sblock->fs_fsize)
+      {
+	fprintf (stderr, 
+		 "Disk size %d less than necessary "
+		 "(superblock says we need %ld)\n",
+		 sizes[DEV_GET_SIZE_DEVICE_SIZE],
+		 sblock->fs_size * sblock->fs_fsize);
+	exit (1);
+      }
 
   if (!diskfs_readonly)
     {
