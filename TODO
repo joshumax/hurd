@@ -2,6 +2,16 @@
 
 Things to be done on Hurd, that we should probably not punt to a volunteer.
 
+Priorities:
+  Check the end of this file for a task list referring to the next
+  public release.
+
+  Reported bugs generally have top priority.
+  Non-reported and non-encountered bugs (things we know don't work,
+    but don't really impede things) have lower priority.
+  Things in this file are ranked with one to three !; the more, the
+  higher priority.
+
 See `tasks', the exported task list.
 
 * RMS dictates:
@@ -10,21 +20,21 @@ See `tasks', the exported task list.
 
 * Settle termcap v. curses with rms et. al.
 * Contents of =pending-changes.
-* Make sure all the pieces of the Hurd have adequate version stuff.
-* syslogify everything
-* fix root dependencies in filesystem, network, etc.
-* Profile things
-* Make for easier installation
+* Make sure all the pieces of the Hurd have adequate version stuff. !
+* syslogify everything !
+* fix root dependencies in filesystem, network, etc. !
+* Profile things !!
+* Make for easier installation !
 * Write coding standards suggestions for Hurd
 * Implement file_fetch_dir
 * Conform to coding standards (esp. CFLAGS setting)
 
-* Fix emacs/src/unexelf.c to deal with occasional lack of mmap
+* Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 
 * Libraries
 
 ** general:
-*** expunge special cthreads malloc finally.
+*** expunge special cthreads malloc finally !!
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
@@ -33,16 +43,16 @@ See `tasks', the exported task list.
 
 ** libc:
 *** Version of tmpfile that takes a directory
-*** Hurd versions of tmpfile that don't create transient files
+*** Hurd versions of tmpfile that don't create transient files !
 *** flink
-*** make sure profiling works
-*** implement revoke once io_revoke is added.
+*** make sure profiling works !!
+*** implement revoke once io_revoke is added. !!
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
-    special-case interrupt_operation.
+    special-case interrupt_operation. !
 *** Drop wire parms to manage-operations; instead have a new-thread hook
-    function.
+    function.  !
 
 ** libstore:
 *** Add lock protocol for mutable stores.
@@ -51,14 +61,18 @@ See `tasks', the exported task list.
 *** convert libnetfs to libfsserver
 
 ** libnetfs
-*** Support --readonly, --writable, and --update
+*** Support --readonly, --writable, and --update !
 
 ** libpager:
-*** Put user-defined fns into a callback struct passed to pager_create.
+*** Put user-defined fns into a callback struct passed to pager_create. !
 *** Make libpager paging interface able to read/write multiple pages at once.
 *** Check all users of pager-create.c to make sure they DTRT when it returns
     null.  (requires changing libdiskfs to deal with null
-    returns from diskfs_get_filemap).
+    returns from diskfs_get_filemap). !!
+*** Remove pagers from portset if there are too many incoming requests to
+    avoid forking too many threads. !
+*** flush functions don't actually force pending delayed copies. (and in
+    fact, they seem to block if a delayed copy is wired down) !
 
 ** libshouldbeinlibc:
 *** Merge contents of libshouldbeinlibc that belong there into libc.
@@ -73,55 +87,48 @@ See `tasks', the exported task list.
 ** libdiskfs
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
-    routines and then share common code.
-*** Handle dead name notifications on execserver ports.
+    routines and then share common code. !!
+*** Handle dead name notifications on execserver ports. !
 *** Deal correctly with setting the translators on /servers/exec.
 *** Implement file_notice_changes.
-*** Implement async I/O.
+*** Implement async I/O. !
 *** Think of a way to have when-to-sync-nodes be more flexible so it can
     be done right for each format.
-*** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation.
-*** Provide for MNT_SYNCHRONOUS, MNT_NOEXEC, MNT_NOSUID, MNT_NODEV, etc.
-*** Implement io_restrict_auth correctly.
-*** Use off_t correctly.
+*** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation. !
+*** Provide for MNT_SYNCHRONOUS, MNT_NOEXEC, MNT_NOSUID, MNT_NODEV, etc. !
+*** Implement io_restrict_auth correctly. !
+*** Use off_t correctly. !!
 *** Add a consistent message printing facility for filesystems to use
-    (syslog, but takes special care when the root file system?).
+    (syslog, but takes special care when the root file system?). !!
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
-    routines. 
+    routines. !
 *** fsys_get_options should return the disk name.
 *** Add `author_tracks_uid' flag to struct node, and use it in places 
-    that modify author/uid.  Initialized to 0.
-*** Use idvecs.
+    that modify author/uid.  Initialized to 0. !!
+*** Use idvecs. !!!
 
 ** libfshelp
-*** Put functions here to deal with directory and file change notifications?
-*** Translator startup should provide a more useful stdin/stdout than nothing?
+*** Put functions here to deal with directory and file change notifications !!!
+*** Translator startup should provide a more useful stdin/stdout than nothing !
 *** Add functions to do permission checking and change libdiskfs et. al.
-    to use them.
-
-** libpager
-*** Change interface to be more efficient with multi-page data-return calls.
-*** Remove pagers from portset if there are too many incoming requests to
-    avoid forking too many threads.
-*** flush functions don't actually force pending delayed copies. (and in
-    fact, they seem to block if a delayed copy is wired down)
+    to use them. !!!
 
 ** libtrivfs
 *** Allow for read/write/exec to be passed down.
-*** Implement file_exec when appropriate.
+*** Implement file_exec when appropriate. !!
 *** Provide for the visible owner, etc., to be held in command-line args
-    instead of the underlying node, when it's important.
+    instead of the underlying node, when it's important. !!
 
 ** libps
 *** Whizzier columnation (autosizing?)
 *** Make getters more robust.
 
 * Servers
-** write default pager
-** Implement goaway in all the servers that don't already have it.
-** (init) sleep on spinning gettys
+** write default pager !!
+** Implement goaway in all the servers that don't already have it. !!
+** (init) sleep on spinning gettys !
 ** Add calls to various servers to return interesting statistical information.
-** Test new-fifo & make it fifo.
+** Test new-fifo & make it fifo. !
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
@@ -129,41 +136,41 @@ See `tasks', the exported task list.
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
     gdb; maybe just a flag WNOREAP to proc_wait that doesn't reap and allows
-   anyone to use it.
+   anyone to use it.  !!
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
-    non-suid.
+    non-suid. !
 *** Remove hostname/hostid functions
-*** add timeouts to all the msg_* calls proc makes.
+*** add timeouts to all the msg_* calls proc makes. !
 
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
-    IP addresses.
-*** Diagnose why shutdown doesn't close TCP channels properly or reliably.
-*** select for read on a UDP socket seems never to return.
-*** Undefined functions at the end of pfinet/io-ops.c.
+    IP addresses. !!
+*** Diagnose why shutdown doesn't close TCP channels properly or reliably. !
+*** select for read on a UDP socket seems never to return. !!!
+*** Undefined functions at the end of pfinet/io-ops.c. !!
 
 ** nfs
-*** Implement async I/O
-*** Finish work to turn on paging.
-*** Finish excl arg work in link and rename.
-*** Implement TCP nfs.
-*** Implement V3 nfs.
-*** Implement nqnfs.
-*** Add Hurd-specific calls.
-*** emacs M-x server doesn't work if ~ is on nfs.
+*** Implement async I/O !!
+*** Finish work to turn on paging. !!
+*** Finish excl arg work in link and rename. !!
+*** Implement TCP nfs. !
+*** Implement V3 nfs. 
+*** Implement nqnfs. !
+*** Add Hurd-specific calls. !!
+*** emacs M-x server doesn't work if ~ is on nfs. !!!
 
 ** storeio:
-*** Make a server (/servers/storeio?) to share multiple storeio nodes?
-*** Get rid of global DEVICE variable and use the trivfs control hack.
+*** Make a server (/servers/storeio?) to share multiple storeio nodes
+*** Get rid of global DEVICE variable and use the trivfs control hack
 *** Serverify, ala new-fifo.
 
 ** ufs:
 *** Implement clustering, a la 4.4-lite sys/kern/vfs_cluster.c.
-*** Make file_get_storage_info work for files with indirect blocks.
+*** Make file_get_storage_info work for files with indirect blocks. !!
 *** Optimizations:
     pager.c/inode.c/libdiskfs count pager refs separately and then save
-      mappings in _diskfs_rdwr_internal and dir.c
-*** Problems with DT_* hack:
+      mappings in _diskfs_rdwr_internal and dir.c  !
+*** Problems with DT_* hack: !
 ****   Fix multiple-links DT_* bug.
 ****   Deal with change of type which should update directory.
 ****   Type is also wrong for translated nodes...
@@ -172,64 +179,64 @@ See `tasks', the exported task list.
     round_page (write size).
 
 ** ext2fs
-*** Support chflags/st_flags and convert to/from ext2 flags on disk.
-*** Try to write directories with 512-byte record boundaries.
-*** Maybe file_pager_write_page should be able to accurately reproduce holes...
-*** Add byte-swapping.
-*** Implement file_getfh and fsys_getfile.
+*** Support chflags/st_flags and convert to/from ext2 flags on disk. !!!
+*** Try to write directories with 512-byte record boundaries. !!
+*** Maybe file_pager_write_page should be able to accurately reproduce holes
+*** Add byte-swapping. !!
+*** Implement file_getfh and fsys_getfile. !!!
 
 ** crash
-*** Write core files.
+*** Write core files. !!
 
 
 * Utilities
-** Write a real mount program.
-** Make id, et. al. work with no/multiple uids.
-** Make things work with the `nobody' mode bits: chmod, ls, ...
-** Make things work better with translators, e.g., tar...
+** Write a real mount program. !!
+** Make id, et. al. work with no/multiple uids. !!!
+** Make things work with the `nobody' mode bits: chmod, ls, ... !!!
+** Make things work better with translators, e.g., tar, ls... !!!
 ** Fix bash to turn on interrupts around syscalls more generally,
-    especially chdir.
-** Make su work.
-** talk doesn't work
+    especially chdir. !!
+** Make su work. !
+** talk doesn't work !!
 ** login: Make --retry work correctly when invoked via a suid shell
     script by other than root (it doesn't now if the script specifies
     --retry="$0" because the exec server will use /dev/fd/N for name,
-    and child_lookup() doesn't supply more than fds 0-2).
-** Serverboot doesn't deal with symlinks properly.
-** Grub doesn't deal with symlinks properly.
+    and child_lookup() doesn't supply more than fds 0-2). !!
+** Serverboot doesn't deal with symlinks properly. !!!
+** Grub doesn't deal with symlinks properly. !!!
 
 ** fsck:
-*** fsck should use fsys_get_options returned device instead of /etc/fstab.
-*** If fstab mentions a bad type, fsck gets as assert failure.
+*** fsck should use fsys_get_options returned device instead of /etc/fstab !!
+*** If fstab mentions a bad type, fsck gets as assert failure !!
 
 ** settrans:
-*** needs an option to make the active go away without using goaway.
-*** -P should print the pid of the translator before pausing
+*** needs an option to make the active go away without using goaway. !
+*** -P should print the pid of the translator before pausing !
 
 ** ps:
-*** ps should timeout quickly (one second?) on non-responsive message ports.
+*** ps should timeout quickly (one second?) on non-responsive message ports. !
 *** help displays for: stat letters, format specs.
 *** Add head/tail options; --match?
 
 ** gdb:
-*** Add various mach convenience features (vminfo, &c).
+*** Add various mach convenience features (vminfo, &c). !!
 *** Be even more vigilant about noticing new threads.  In particular:
 **** For mach-indep thread commands, before validating against 
-     internal thread list.
-*** read core files
+     internal thread list. !!!
+*** read core files !!
 
 ** nfsd
-*** Implement TCP nfs.
-*** Implement V3 nfs.
-*** Implement nqnfs.
-*** Add Hurd-specific calls.
-*** writes don't seem to work properly
+*** Implement TCP nfs. !
+*** Implement V3 nfs. !
+*** Implement nqnfs. !
+*** Add Hurd-specific calls. !!
+*** writes don't seem to work properly !!!
 
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from
     (maybe there is already?); the boot file system, and other people deeming
-    it too risk to attempt to contact syslogd can use it too?
-** Add a startup timestamp to tasks, and have some way of fetching it.
+    it too risk to attempt to contact syslogd can use it too? !
+** Add a startup timestamp to tasks, and have some way of fetching it. !!
 
 ======
 
