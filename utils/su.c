@@ -454,8 +454,8 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
 int
 check_password (const char *name, const char *password)
 {
-  extern char *crypt (const char *string, const char salt[2])
-    __attribute__ ((weak));
+  extern char *crypt (const char *string, const char salt[2]);
+#pragma weak crypt
   char *unencrypted, *encrypted;
   static char *prompt = NULL;
 
