@@ -22,8 +22,13 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "interrupt_S.h"
 
-kern_return_t
-trivfs_S_interrupt_operation (mach_port_t handle)
+error_t
+trivfs_S_interrupt_operation (mach_port_t port)
 {
+  struct port_info *pi = ports_lookup_port (0, port, 0);
+  if (!pi)
+    return EOPNOTSUPP;
+  ports_interrupt_rpc (pi);
+  ports_port_deref (pi);
   return 0;
 }
