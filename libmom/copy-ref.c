@@ -26,18 +26,9 @@ mom_copy_ref (struct mom_port_ref *new,
 {
   error_t err;
   
-  new->lock = SPIN_LOCK_INITIALIZER;
-
-  spin_lock (&obj->lock);
-  assert (obj->refcnt);
   err = mach_port_mod_refs (mach_task_self (), 
 			    obj->port, MACH_PORT_RIGHT_SEND, 1);
-  new->port = obj->port;
-  spin_unlock (&obj->lock);
-
-  if (err)
-    return err;
-  
-  new->refcnt = 1;
-  return 0;
+  if (!err)
+    new->port = obj->port;
+  return err;
 }
