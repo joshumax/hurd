@@ -390,7 +390,7 @@ read_disknode (struct node *np, struct dirrect *dr,
     }
   
   st->st_blksize = logical_block_size;
-  st->st_blocks = (st->st_size - 1) / logical_block_size  + 1;
+  st->st_blocks = (st->st_size - 1) / 512 + 1;
   st->st_flags = 0;
   
   if (S_ISLNK (st->st_mode))

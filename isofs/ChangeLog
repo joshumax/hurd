@@ -1,3 +1,8 @@
+Thu Aug  7 16:01:29 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* inode.c (read_disknode): Units of st_blocks are 512 byte chunks,
+	not logical_block_size chunks.
+
 1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (dir): Is isofs, not ufs.
