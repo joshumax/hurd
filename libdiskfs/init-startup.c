@@ -29,6 +29,10 @@ diskfs_startup_diskfs (mach_port_t bootstrap)
   mach_port_t realnode;
   struct port_info *newpi;
   
+  if (! diskfs_readonly)
+    /* Change to writable mode.  */
+    diskfs_readonly_changed (0);
+
   if (bootstrap != MACH_PORT_NULL)
     {
       _diskfs_ncontrol_ports++;
