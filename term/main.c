@@ -1,4 +1,4 @@
-/* 
+/* main.c - A translator that emulates a terminal.
    Copyright (C) 1995, 1996, 1997, 2000, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -84,8 +84,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	
         rdev = strtoul (start, &end, 0);
         if (*end == ',')
-          /* MAJOR,MINOR form */
           {
+	    /* MAJOR,MINOR form.  */
             start = end;
             rdev = (rdev << 8) + strtoul (start, &end, 0);
           }
@@ -206,7 +206,7 @@ main (int argc, char **argv)
 
     default:
       /* Should not happen.  */
-      fprintf (stderr, "Unknown terminal type is unknown.\n");
+      fprintf (stderr, "Unknown terminal type\n");
       exit (1);
     }
   
@@ -218,7 +218,7 @@ main (int argc, char **argv)
       exit (1);
     }
 
-  /* Set our node */
+  /* Set our node.  */
   errno = trivfs_startup (bootstrap, 0,
 			  ourcntlclass, term_bucket, ourclass, term_bucket,
 			  ourcntl);
@@ -232,7 +232,7 @@ main (int argc, char **argv)
      the hook to store the nodename.  */
   (*ourcntl)->hook = tty_name;
 
-  /* Set peer */
+  /* Set peer.  */
   if (peerclass)
     {
       char *peer_name = tty_arg;
@@ -262,7 +262,7 @@ main (int argc, char **argv)
       ports_port_deref (*peercntl);
     }
 
-  bzero (&termstate, sizeof (termstate));
+  memset (&termstate, 0, sizeof (termstate));
   termflags = NO_CARRIER | NO_OWNER;
   mutex_init (&global_lock);
 
@@ -301,7 +301,7 @@ main (int argc, char **argv)
   condition_implies (inputq->wait, &select_alert);
   condition_implies (outputq->wait, &select_alert);
 
-  /* Launch */
+  /* Launch.  */
   ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0, 0);
 
   return 0;

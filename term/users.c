@@ -47,10 +47,10 @@
 #define TTYDEFCHARS
 #include <sys/ttydefaults.h>
 
-/* Count of active opens */
+/* Count of active opens.  */
 int nperopens;
 
-/* io_async requests */
+/* io_async requests.  */
 struct async_req
 {
   mach_port_t notify;
@@ -74,7 +74,7 @@ static int input_sig_wakeup;
 
 static error_t carrier_error;
 
-/* Attach this on the hook of any protid that is a ctty. */
+/* Attach this on the hook of any protid that is a ctty.  */
 struct protid_hook
 {
   int refcnt;
@@ -318,7 +318,7 @@ po_destroy_hook (struct trivfs_peropen *po)
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *)
      = po_destroy_hook;
 
-/* Tell if CRED can do foreground terminal operations */
+/* Tell if CRED can do foreground terminal operations.  */
 static inline int
 fg_p (struct trivfs_protid *cred)
 {
@@ -347,7 +347,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_gid = term_group;
 }
 
-/* Implement term_getctty as described in <hurd/term.defs>. */
+/* Implement term_getctty as described in <hurd/term.defs>.  */
 kern_return_t
 S_term_getctty (mach_port_t arg,
 		mach_port_t *id,
@@ -375,7 +375,7 @@ S_term_getctty (mach_port_t arg,
   return err;
 }
 
-/* Implement termctty_open_terminal as described in <hurd/term.defs>. */
+/* Implement termctty_open_terminal as described in <hurd/term.defs>.  */
 kern_return_t
 S_termctty_open_terminal (mach_port_t arg,
 			  int flags,
@@ -412,7 +412,7 @@ S_termctty_open_terminal (mach_port_t arg,
   return err;
 }
 
-/* Implement term_become_ctty as described in <hurd/term.defs>. */
+/* Implement term_become_ctty as described in <hurd/term.defs>.  */
 kern_return_t
 S_term_open_ctty (mach_port_t arg,
 		    pid_t pid,
@@ -448,7 +448,7 @@ S_term_open_ctty (mach_port_t arg,
 	  hook->refcnt = 1;
 
 	  if (newcred->hook)
-	    /* We inherited CRED's hook, get rid of our ref to it. */
+	    /* We inherited CRED's hook, get rid of our ref to it.  */
 	    pi_destroy_hook (newcred);
 	  newcred->hook = hook;
 
@@ -465,7 +465,7 @@ S_term_open_ctty (mach_port_t arg,
 }
 
 /* Implement chown locally; don't pass the value down to the
-   underlying node. */
+   underlying node.  */
 error_t
 trivfs_S_file_chown (struct trivfs_protid *cred,
 		     mach_port_t reply,
@@ -511,7 +511,7 @@ out:
   return err;
 }
 
-/* Implement chmod locally */
+/* Implement chmod locally.  */
 error_t
 trivfs_S_file_chmod (struct trivfs_protid *cred,
 		     mach_port_t reply,
@@ -553,8 +553,8 @@ out:
 }
 
 
-/* Called for user writes to the terminal as described
-   in <hurd/io.defs>. */
+/* Called for user writes to the terminal as described in
+   <hurd/io.defs>.  */
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
@@ -631,7 +631,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   return ((cancel && datalen && !*amt) ? (err ?: EINTR) : 0);
 }
 
-/* Called for user reads from the terminal. */
+/* Called for user reads from the terminal.  */
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply,
@@ -749,7 +749,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	    {
 	      /* The CANCEL flag is being used here to tell the return
 		 below to make sure we don't signal EOF on a VDUSP that
-		 happens at the front of a line. */
+		 happens at the front of a line.  */
 	      send_signal (SIGTSTP);
 	      cancel = 1;
 	      break;
@@ -762,7 +762,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
-  /* If we really read something, set atime */
+  /* If we really read something, set atime.  */
   if (*datalen || !cancel)
     trivfs_set_atime (termctl);
 
@@ -1036,9 +1036,8 @@ S_tioctl_tiocflush (io_t port,
 
       if (flags & O_READ)
 	{
-	  err = (*bottom->notice_input_flushed) ();
-	  if (!err)
-	    clear_queue (inputq);
+	  (*bottom->notice_input_flushed) ();
+	  clear_queue (inputq);
 	}
 
       if (!err && (flags & O_WRITE))
@@ -1094,7 +1093,6 @@ set_state (io_t port,
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
-  int oldlflag;
   struct termios state;
 
   if (!cred)
@@ -1110,7 +1108,7 @@ set_state (io_t port,
   mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
-    err =  EBADF;
+    err = EBADF;
   else if (!fg_p (cred))
     err = EBACKGROUND;
   else
@@ -1132,9 +1130,7 @@ set_state (io_t port,
 
       if (flushi)
 	{
-	  err = (*bottom->notice_input_flushed) ();
-	  if (err)
-	    goto leave;
+	  (*bottom->notice_input_flushed) ();
 	  clear_queue (inputq);
 	}
 
@@ -1153,22 +1149,23 @@ set_state (io_t port,
 	state.c_lflag &= ~EXTPROC;
 
       err = (*bottom->set_bits) (&state);
-      if (err)
-	goto leave;
-
-      oldlflag = termstate.c_lflag;
-      termstate = state;
-
-      if (oldlflag & ICANON)
+      if (!err)
 	{
-	  if (!(termstate.c_lflag & ICANON))
-	    copy_rawq ();
+	  int oldlflag = termstate.c_lflag;
+
+	  termstate = state;
+	  if (oldlflag & ICANON)
+	    {
+	      if (!(termstate.c_lflag & ICANON))
+		copy_rawq ();
+	    }
+	  else
+	    {
+	      if (termstate.c_lflag & ICANON)
+		rescan_inputq ();
+	    }
 	}
-      else
-	{
-	  if (termstate.c_lflag & ICANON)
-	    rescan_inputq ();
-	}
+      err = 0;
     }
 
  leave:

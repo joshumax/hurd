@@ -1,3 +1,15 @@
+2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* main.c (main): Use memset instead bzero.
+	Fix error message, and formatting of some comments.
+	* ptyio.c (pty_io_read): Use memcpy instead bcopy.
+
+	* users.c (S_tioctl_tiocflush): Ignore error by bottom handler's
+	notice_input_flushed.
+	* users.c (set_state): Likewise.
+	If bottom handler's set_bits fails, don't adjust terminal state
+	but return success anyway.
+
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
 	* term.h: Declare rdev.

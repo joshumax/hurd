@@ -352,7 +352,7 @@ pty_io_read (struct trivfs_protid *cred,
     {
       **data = control_byte;
       if (packet_mode && (control_byte & TIOCPKT_IOCTL))
-	bcopy (&termstate, *data + 1, size - 1);
+	memcpy (*data + 1, &termstate, size - 1);
       control_byte = 0;
     }
   else
