@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_readable as described in <hurd/io.defs>. */
 error_t
@@ -34,7 +35,7 @@ diskfs_S_io_readable (struct protid *cred,
   np = cred->po->np;
   
   mutex_lock (&np->lock);
-  err = ioserver_get_conch (&np->i_conch);
+  err = ioserver_get_conch (&np->conch);
   if (!err)
     *amount = np->dn_stat.st_size - cred->po->filepointer;
 
