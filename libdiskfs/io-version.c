@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "io_S.h"
 
+error_t
 diskfs_S_io_server_version (struct protid *cred,
 			    char *server_name,
 			    int *major,
