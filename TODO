@@ -43,17 +43,12 @@ See `tasks', the exported task list.
 *** implement all the pathconf things from Posix.1 right.
 *** implement an soversion and symbol-versioning scheme similar to libc's.
 
-** libmom work:
-*** Hack interface definitions so that args are mom-ish
-*** Change libports and libpager to be mom-ish
-*** Change servers to be mom-ish
-
 ** libc:
 *** (once vm_remap exists) implement mremap
 *** when a session leader _exits, it should SIGHUP, TIOCDRAIN, and revoke. !!!
     [it is still under discussion exactly where to address this,
      so don't do it in libc yet]
-*** convert to use libio (note exec needs conversion too) !!!
+*** convert to use libio !!!
 *** Version of tmpfile that takes a directory
 *** Hurd versions of tmpfile that don't create transient files !
 *** flink
@@ -163,7 +158,7 @@ See `tasks', the exported task list.
 *** Make getters more robust.
 
 * Servers
-** write default pager !!
+** finish default pager in defpager !!
 ** Implement goaway in all the servers that don't already have it. !!
 ** (init) sleep on spinning gettys !
 ** Add calls to various servers to return interesting statistical information.

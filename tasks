@@ -1,6 +1,6 @@
-GNU Hurd Task List Version 1.21.  Last updated 29 June 1999.
+GNU Hurd Task List Version 1.22.  Last updated 21 March 2000.
 
-If you would like to work on one of these, please contact tb@mit.edu.
+If you would like to work on one of these, please contact thomas@gnu.org.
 It's important that you let me know what's being worked on, because
 someone else might also be interested, and you should coordinate work.
 
@@ -21,63 +21,61 @@ General system work
   time instead of UCT.  Linux deals already; we should too.
 
 
-Mach 3.0 Work
+GNU Mach Work
 
-We now have our own distribution of the microkernel.  Please discuss
-proposed microkernel work there as well as with thomas@gnu.ai.mit.edu.
+Please discuss proposed microkernel work with thomas@gnu.org.
+
+  * Integrate stream device support so that the X server works
+  out-of-the-box. 
 
 !!!
- * Mach 3.0 serial drivers support only a small subset of the
+ * Mach serial drivers support only a small subset of the
    available possibilities in the Posix c_cflag termios field.  Fix
    this, by adding a new device_set_status call that sets the whole
    thing and not just the old limited possibilities.
 
 !!!
-  * Mach 3.0 needs many new device drivers for popular PC devices.
-  Shantanu Goel is doing work in this area; coordinate with him.
-
-!!!
   * A replacement for MiG that understands C .h files.
 
 !!!
-  * Mach 3.0 needs to provide support for task virtual timers similar
+  * Mach needs to provide support for task virtual timers similar
   in functionality to the Unix ITIMER_PROF and ITIMER_VIRTUAL timers.
 
 !!!
-  * Mach 3.0 needs to make switches from MEMORY_OBJECT_COPY_DELAY to
+  * Mach needs to make switches from MEMORY_OBJECT_COPY_DELAY to
   MEMORY_OBJECT_COPY_NONE have the effect of immediately completing any
   delayed copies.
 
-  * Mach 3.0 needs a facility to automatically send task and thread
+  * Mach needs a facility to automatically send task and thread
   status on task/thread exit to a port that can only be changed by
   a privileged user; this would be used to implement process
   accounting.
 
-  * Mach 3.0 needs a facility to find out what task is the parent of
+  * Mach needs a facility to find out what task is the parent of
   a given task.
 
-  * Mach 3.0 needs a facility to find out which pages of a task's
+  * Mach needs a facility to find out which pages of a task's
   address space are in core to implement Unix's mincore call.
 
-  * Mach 3.0 needs a facility to do msync.
+  * Mach needs a facility to do msync.
 
-  * Utah Mach needs the OSF vm_remap call.
+  * GNU Mach needs the OSF Mach vm_remap call.
 
-  * Mach 3.0 needs a replacement for MEMORY_OBJECT_COPY_CALL that
+  * Mach needs a replacement for MEMORY_OBJECT_COPY_CALL that
   works at least for the cases needed in ordinary files.  (Write
   thomas if you want to know what the problem is and some ideas about
   how to solve it.)
 
 !!!
-  * Mach 3.0 needs proxy memory objects.  (thomas can tell you what
+  * Mach needs proxy memory objects.  (thomas can tell you what
   these are and why they are important.)
 
-  * Mach 3.0 needs a way to do per-task resource counters that are
+  * Mach needs a way to do per-task resource counters that are
   accessible to servers called by the task.
 
-  * Mach 3.0 needs facilities to implement resource limits of various sorts.
+  * Mach needs facilities to implement resource limits of various sorts.
 
-  * Mach 3.0 needs a way to have a thread's CPU time statistics
+  * Mach needs a way to have a thread's CPU time statistics
   include time spent by servers on its behalf.  [This has been done
   for the migrating-threads version of Mach; talk to thomas before starting
   work on it.]
@@ -88,7 +86,7 @@ proposed microkernel work there as well as with thomas@gnu.ai.mit.edu.
   * Much work can be done doing research in how to improve Mach VM
   performance and timesharing scheduling policy.
 
-  * Mach 3.0 needs facilities to get a list of all the devices which
+  * Mach needs facilities to get a list of all the devices which
   can be device_open'd, as well as to get the type of a device.
 
   * A way to have the kernel send a message on some designated port
@@ -114,7 +112,8 @@ Hurd work (these are brief descriptions; thomas can give more information):
   * Make thread death in C threads really free resources.
 
 !!!
-  * An RPC trace program to aid debugging.  Ask roland for more info.
+  * An RPC trace program to aid debugging.  Look at utils/rpctrace.c
+  for starters and ask roland for more info.
 
   * Programs that use utmp need to be changed to use /utmp and utmp.defs.
 
@@ -145,15 +144,19 @@ Hurd work (these are brief descriptions; thomas can give more information):
   * Filesystem implementations (using libdiskfs) for other popular
   formats.  Importantly, MSDOS FAT format.
 
-  * A fancy terminal driver that uses readline and supports detach/attach.
+  * A fancy terminal driver that uses readline and supports
+  detach/attach, color, and virtual consoles.
+
+!!!
+  * A PPP interface.  This will require some restructuring of pfinet.
 
   * A notepad program to hold and keep track of ports for shell scripts.
 
 
 
-C library work.  See roland@gnu.ai.mit.edu if you are interested in working
+C library work.  See roland@gnu.org if you are interested in working
 on anything in the C library.
 
   * Useful response to SIGINFO.
 
-  * Better integration with cthreads.
+  * Get pthreads working and integrated.
