@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -33,8 +33,8 @@ trivfs_S_fsys_goaway (struct trivfs_control *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  err = trivfs_goaway (flags, cred->underlying, cred->pi.type,
-		       cred->protidtypes);
+  err = trivfs_goaway (flags, cred->underlying, cred->pi.class,
+		       cred->protid_class);
 
   return err;
 }
