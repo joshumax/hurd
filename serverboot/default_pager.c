@@ -56,6 +56,12 @@ extern void *kalloc();
 
 static char my_name[] = "(default pager):";
 
+static struct mutex printf_lock = MUTEX_INITIALIZER;
+
+#define dprintf(f, x...) \
+  ({ mutex_lock (&printf_lock); printf (f , ##x); mutex_unlock (&printf_lock); })
+#define ddprintf(f, x...) ((void)0)
+
 /*
  * parallel vs serial switch
  */
@@ -221,7 +227,7 @@ create_paging_partition(const char *name,
 	mutex_unlock(&all_partitions.lock);
 
 #if 0
-	printf("%s Added paging %s %s\n", my_name,
+	dprintf("%s Added paging %s %s\n", my_name,
 		(isa_file) ? "file" : "device",  name);
 #endif
 	overcommitted(TRUE, part->free);
@@ -249,6 +255,7 @@ choose_partition(size, cur_part)
 		if (i == cur_part)
 			continue;
 
+dprintf ("choose_partition(%x,%d,%d)\n",size,cur_part,i);
 		/* one that was removed ? */
 		if ((part = partition_of(i)) == 0)
 			continue;
@@ -291,6 +298,7 @@ pager_alloc_page(pindex, lock_it)
 
 	if (no_partition(pindex))
 	    return (NO_BLOCK);
+dprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 	part = partition_of(pindex);
 
 	/* unlikely, but possible deadlock against destroy_partition */
@@ -351,6 +359,7 @@ pager_dealloc_page(pindex, page, lock_it)
 	/* be paranoid */
 	if (no_partition(pindex))
 	    panic("%sdealloc_page",my_name);
+dprintf ("pager_dealloc_page(%d,%x,%d)\n",pindex,page,lock_it);
 	part = partition_of(pindex);
 
 	if (page >= part->total_size)
@@ -797,7 +806,7 @@ pager_read_offset(pager, offset)
 #endif
 	if (f_page >= pager->size)
 	  {
-	    printf ("%spager_read_offset pager %x: bad page %d >= size %d",
+	    dprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
 		    my_name, pager, f_page, pager->size);
 	    return (union dp_map *) NO_BLOCK;
 #if 0
@@ -890,6 +899,7 @@ pager_move_page(block)
 	/*
 	 * Got the resources, now move the data
 	 */
+dprintf ("pager_move_page(%x,%d,%d)\n",block.block.p_offset,old_pindex,new_pindex);
 	old_part = partition_of(old_pindex);
 	offset = ptoa(block.block.p_offset);
 	rc = page_read_file_direct (old_part->file,
@@ -1140,8 +1150,8 @@ pager_write_offset(pager, offset)
 		if ( ! no_partition(new_part) ) {
 
 #if debug
-printf("%s partition %x filled,", my_name, pager->cur_partition);
-printf("extending object %x (size %x) to %x.\n",
+dprintf("%s partition %x filled,", my_name, pager->cur_partition);
+dprintf("extending object %x (size %x) to %x.\n",
 	pager, pager->size, new_part);
 #endif
 
@@ -1332,6 +1342,7 @@ default_read(ds, addr, size, offset, out_addr, deallocate)
 	 * Read it, trying for the entire page.
 	 */
 	offset = ptoa(block.block.p_offset);
+dprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 	first_time = TRUE;
 	*out_addr = addr;
@@ -1417,6 +1428,7 @@ default_write(ds, addr, size, offset)
 	}
 #endif	CHECKSUM
 	offset = ptoa(block.block.p_offset);
+dprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 
 	/*
@@ -1431,8 +1443,8 @@ default_write(ds, addr, size, offset)
 					size,
 					&wsize);
 	    if (rc != 0) {
-		printf("*** PAGER ERROR: default_write: ");
-		printf("ds=0x%x addr=0x%x size=0x%x offset=0x%x resid=0x%x\n",
+		dprintf("*** PAGER ERROR: default_write: ");
+		dprintf("ds=0x%x addr=0x%x size=0x%x offset=0x%x resid=0x%x\n",
 			ds, addr, size, offset, wsize);
 		return (PAGER_ERROR);
 	    }
@@ -1582,7 +1594,7 @@ destroy_paging_partition(name, pp_private)
 	 */
 all_over_again:
 #if debug
-printf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
+dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 #endif
 	all_ok = TRUE;
 	mutex_lock(&part->p_lock);
@@ -1627,7 +1639,7 @@ printf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 		*pp_private = part->file;
 		kfree(part->bitmap, howmany(part->total_size, NB_BM) * sizeof(bm_entry_t));
 		kfree(part, sizeof(struct part));
-		printf("%s Removed paging partition %s\n", my_name, name);
+		dprintf("%s Removed paging partition %s\n", my_name, name);
 		return KERN_SUCCESS;
 	}
 
@@ -1665,10 +1677,14 @@ void pager_port_lock(ds, seqno)
 	mach_port_seqno_t seqno;
 {
 	default_pager_total++;
+ddprintf ("pager_port_lock <%p>: <%p>: %d: 1\n", &ds, ds, seqno);
 	dstruct_lock(ds);
+ddprintf ("pager_port_lock <%p>: <%p>: %d: 2\n", &ds, ds, seqno);
 	while (ds->seqno != seqno) {
+ddprintf ("pager_port_lock <%p>: <%p>: %d: 3\n", &ds, ds, seqno);
 		default_pager_wait_seqno++;
 		condition_wait(&ds->waiting_seqno, &ds->lock);
+ddprintf ("pager_port_lock <%p>: <%p>: %d: 4\n", &ds, ds, seqno);
 	}
 }
 
@@ -1679,8 +1695,11 @@ void pager_port_unlock(ds)
 	default_pager_t ds;
 {
 	ds->seqno++;
+ddprintf ("pager_port_unlock <%p>: <%p>: seqno => %d\n", &ds, ds, ds->seqno);
 	dstruct_unlock(ds);
+ddprintf ("pager_port_unlock <%p>: <%p>: 2\n", &ds, ds);
 	condition_broadcast(&ds->waiting_seqno);
+ddprintf ("pager_port_unlock <%p>: <%p>: 3\n", &ds, ds);
 }
 
 /*
@@ -1858,7 +1877,7 @@ default_pager_t pager_port_alloc(size)
 		part = choose_partition(0,P_INDEX_INVALID);
 #if debug
 		if (no_partition(part))
-			printf("%s No paging space at all !!\n", my_name);
+			dprintf("%s No paging space at all !!\n", my_name);
 #endif
 	}
 	pager_alloc(&ds->dpager, part, size);
@@ -2083,6 +2102,8 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
 		panic(here, my_name);
+ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
+	&kr, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2112,6 +2133,8 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	ds->pager_name = MACH_PORT_NULL;
 	name_refs = ds->name_refs;
 	ds->name_refs = 0;
+ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
+	&kr, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
 	/*
@@ -2242,6 +2265,8 @@ seqnos_memory_object_data_request(pager, seqno, reply_to, offset,
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
+ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, reply_to);
 	pager_port_wait_for_writers(ds);
@@ -2252,10 +2277,12 @@ seqnos_memory_object_data_request(pager, seqno, reply_to, offset,
 	 */
 	errors = ds->errors;
 
+ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
 	if (errors) {
-	    printf("%s %s\n", my_name,
+	    dprintf("%s %s\n", my_name,
 		   "dropping data_request because of previous paging errors");
 	    (void) memory_object_data_error(reply_to,
 				offset, vm_page_size,
@@ -2337,9 +2364,13 @@ seqnos_memory_object_data_initialize(pager, seqno, pager_request,
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
+ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, pager_request);
 	pager_port_start_write(ds);
+ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
 	for (amount_sent = 0;
@@ -2352,7 +2383,7 @@ seqnos_memory_object_data_initialize(pager, seqno, pager_request,
 				  vm_page_size,
 				  offset + amount_sent)
 			 != PAGER_SUCCESS) {
-		    printf("%s%s write error\n", my_name, here);
+		    dprintf("%s%s write error\n", my_name, here);
 		    dstruct_lock(ds);
 		    ds->errors++;
 		    dstruct_unlock(ds);
@@ -2394,39 +2425,54 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	pager_request++;
 #endif	lint
 
+dprintf ("seqnos_memory_object_data_write <%p>: 1\n", &err);
 	if ((data_cnt % vm_page_size) != 0)
 	  {
-	    printf ("fail 1: %d %d\n", data_cnt, vm_page_size);
+	    dprintf ("fail 1: %d %d\n", data_cnt, vm_page_size);
 	    panic(here,my_name);
 	  }
 	
 
+ddprintf ("seqnos_memory_object_data_write <%p>: 2\n", &err);
 	ds = pager_port_lookup(pager);
+ddprintf ("seqnos_memory_object_data_write <%p>: 3\n", &err);
 	if (ds == DEFAULT_PAGER_NULL)
 	  {
-	    printf ("fail 2: %d %d\n", pager, ds);
+	    dprintf ("fail 2: %d %d\n", pager, ds);
 	    panic(here,my_name);
 	  }
 	
+ddprintf ("seqnos_memory_object_data_write <%p>: 4\n", &err);
+ddprintf ("seqnos_memory_object_data_write <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
+	&err, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
+ddprintf ("seqnos_memory_object_data_write <%p>: 5\n", &err);
 	pager_port_check_request(ds, pager_request);
+ddprintf ("seqnos_memory_object_data_write <%p>: 6\n", &err);
 	pager_port_start_write(ds);
+ddprintf ("seqnos_memory_object_data_write <%p>: 7\n", &err);
+ddprintf ("seqnos_memory_object_data_write <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
+	&err, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
+ddprintf ("seqnos_memory_object_data_write <%p>: 8\n", &err);
 	for (amount_sent = 0;
 	     amount_sent < data_cnt;
 	     amount_sent += vm_page_size) {
 
 	    register int result;
 
+ddprintf ("seqnos_memory_object_data_write <%p>: 9\n", &err);
 	    result = default_write(&ds->dpager,
 			      addr + amount_sent,
 			      vm_page_size,
 			      offset + amount_sent);
+ddprintf ("seqnos_memory_object_data_write <%p>: 10\n", &err);
 	    if (result != KERN_SUCCESS) {
+ddprintf ("seqnos_memory_object_data_write <%p>: 11\n", &err);
 #if debug
-		printf("%s WRITE ERROR on default_pageout:", my_name);
-		printf(" pager=%x, offset=0x%x, length=0x%x, result=%d\n",
+		dprintf("%s WRITE ERROR on default_pageout:", my_name);
+		dprintf(" pager=%x, offset=0x%x, length=0x%x, result=%d\n",
 			pager, offset+amount_sent, vm_page_size, result);
 #endif
 		dstruct_lock(ds);
@@ -2436,16 +2482,20 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	    default_pager_pageout_count++;
 	}
 
+ddprintf ("seqnos_memory_object_data_write <%p>: 12\n", &err);
 	pager_port_finish_write(ds);
+ddprintf ("seqnos_memory_object_data_write <%p>: 13\n", &err);
 	err = vm_deallocate(default_pager_self, addr, data_cnt);
+ddprintf ("seqnos_memory_object_data_write <%p>: 14\n", &err);
 	if (err != KERN_SUCCESS)
 	  {
-	    printf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, err);
+	    dprintf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, &err);
 	    
 	      panic(here,my_name);
 	  }
 	
 
+ddprintf ("seqnos_memory_object_data_write <%p>: 15\n", &err);
 	return(KERN_SUCCESS);
 }
 
@@ -2595,9 +2645,14 @@ default_pager_demux_object(in, out)
 	 *	the memory_object_default interface.
 	 */
 
-	return (seqnos_memory_object_server(in, out) ||
+int rval;
+dprintf ("DPAGER DEMUX OBJECT <%p>: %d\n", in, in->msgh_id);
+rval =
+ (seqnos_memory_object_server(in, out) ||
 		seqnos_memory_object_default_server(in, out) ||
 		default_pager_notify_server(in, out));
+dprintf ("DPAGER DEMUX OBJECT DONE <%p>: %d\n", in, in->msgh_id);
+return rval;
 }
 
 mach_msg_size_t default_pager_msg_size_default = 8 * 1024;
@@ -2613,8 +2668,13 @@ default_pager_demux_default(in, out)
 		 *	the memory_object_default interface.
 		 */
 
-		return (seqnos_memory_object_default_server(in, out) ||
+int rval;
+dprintf ("DPAGER DEMUX DEFAULT <%p>: %d\n", in, in->msgh_id);
+rval =
+		 (seqnos_memory_object_default_server(in, out) ||
 			default_pager_server(in, out));
+dprintf ("DPAGER DEMUX DEFAULT DONE <%p>: %d\n", in, in->msgh_id);
+return rval;
 	} else if (in->msgh_local_port == default_pager_exception_port) {
 		/*
 		 *	We receive exception messages for
@@ -2879,7 +2939,8 @@ default_pager()
 		start_default_pager_thread(FALSE);
 
 	cthread_fork (default_pager_default_thread, 0);
-	cthread_exit (cthread_self ());
+	/*	cthread_exit (cthread_self ()); */
+	thread_suspend (mach_thread_self ());
 }
 
 /*
@@ -3308,7 +3369,7 @@ default_pager_paging_file(pager, mdport, file_name, add)
 		return KERN_INVALID_ARGUMENT;
 
 #if 0
-printf("bmd %x md %x\n", bootstrap_master_device_port, mdport);
+dprintf("bmd %x md %x\n", bootstrap_master_device_port, mdport);
 #endif
 	if (add) {
 		kr = add_paging_file(bootstrap_master_device_port,
@@ -3346,7 +3407,7 @@ no_paging_space(out_of_memory)
 	static char		here[] = "%s *** NOT ENOUGH PAGING SPACE ***";
 
 	if (out_of_memory)
-		printf("*** OUT OF MEMORY *** ");
+		dprintf("*** OUT OF MEMORY *** ");
 	panic(here, my_name);
 }
 
@@ -3369,7 +3430,7 @@ overcommitted(got_more_space, space)
 		if (pages_free > 0) {
 			pages_shortage = 0;
 			if (user_warned)
-				printf("%s paging space ok now.\n", my_name);
+				dprintf("%s paging space ok now.\n", my_name);
 		} else
 			pages_shortage = pages_free;
 		user_warned = FALSE;
@@ -3382,11 +3443,11 @@ overcommitted(got_more_space, space)
 	pages_shortage = (pages_free > 0) ? 0 : -pages_free;
 	if (!user_warned && pages_shortage) {
 		user_warned = TRUE;
-		printf("%s paging space over-committed.\n", my_name);
+		dprintf("%s paging space over-committed.\n", my_name);
 	}
 #if debug
 	user_warned = FALSE;
-	printf("%s paging space over-committed [+%d (%d) pages].\n",
+	dprintf("%s paging space over-committed [+%d (%d) pages].\n",
 			my_name, space, pages_shortage);
 #endif
 }
@@ -3409,7 +3470,7 @@ paging_space_info(totp, freep)
 		total += part->total_size;
 		free += part->free;
 #if debug
-		printf("Partition %d: x%x total, x%x free\n",
+		dprintf("Partition %d: x%x total, x%x free\n",
 		       i, part->total_size, part->free);
 #endif
 	}
@@ -3427,7 +3488,7 @@ catch_exception_raise(exception_port, thread, task, exception, code, subcode)
 	mach_port_t thread, task;
 	int exception, code, subcode;
 {
-	printf("(default_pager)catch_exception_raise(%d,%d,%d)\n",
+	dprintf ("(default_pager)catch_exception_raise(%d,%d,%d)\n",
 	       exception, code, subcode);
 	panic(my_name);
 
