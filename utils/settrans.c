@@ -1,6 +1,6 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -49,15 +49,18 @@ static struct argp_option options[] =
      " wait for a newline on stdin before completing the startup handshake"},
   {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
      " (default " STRINGIFY (DEFAULT_TIMEOUT) "); 0 means no timeout"},
-  {"exclusive",   'x', 0, 0, "Only set the translator if there is none already"},
+  {"exclusive",   'x', 0, 0, "Only set the translator if there is not one already"},
+  {"orphan",      'o', 0, 0, "Disconnect the translator from the filesystem "
+			     "(do not ask it to go away)"},
 
   {0,0,0,0, "When setting the passive translator, if there's an active translator:"},
-  {"goaway",      'g', 0, 0, "Make the active translator go away"},
-  {"keep-active", 'k', 0, 0, "Leave the existing active translator running"},
+  {"goaway",      'g', 0, 0, "Ask the active translator to go away"},
+  {"keep-active", 'k', 0, 0, "Leave any existing active translator running"},
 
   {0,0,0,0, "When an active translator is told to go away:"},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
-  {"force",       'f', 0, 0, "If it doesn't want to die, force it"},
+  {"force",       'f', 0, 0, "Ask it to ignore current users and shutdown "
+			     "anyway." },
   {"nosync",      'S', 0, 0, "Don't sync it before killing it"},
 
   {0, 0}
@@ -91,7 +94,8 @@ main(int argc, char *argv[])
   int goaway_flags = 0;
 
   /* Various option flags.  */
-  int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0;
+  int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0,
+      orphan = 0;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
 
@@ -123,6 +127,7 @@ main(int argc, char *argv[])
 	case 'g': kill_active = 1; break;
 	case 'x': excl = 1; break;
 	case 'P': pause = 1; break;
+	case 'o': orphan = 1; break;
 
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
@@ -149,7 +154,8 @@ main(int argc, char *argv[])
   if (passive)
     passive_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0);
   if (active)
-    active_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0);
+    active_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0)
+		   | (orphan ? FS_TRANS_ORPHAN : 0);
 
   if (passive && !active)
     {
