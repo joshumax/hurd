@@ -1,8 +1,8 @@
 /* Show where a file exists
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -91,7 +91,7 @@ print_store (struct store *store, int level, unsigned what)
 	  putchar (' ');
 	}
     }
-  void pstr (char *str, unsigned mask)
+  void pstr (const char *str, unsigned mask)
     {
       if ((what & mask) == mask)
 	{
