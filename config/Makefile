@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -50,7 +50,7 @@ $(installed_logins): FORCE
 
 include ../Makeconf
 
-install: $(prefix)/root $(sysconfdir) $(sysconfdir/login $(installed_conf) $(installed_logins) $(installed_rootdots)
+install: $(prefix)/root $(sysconfdir) $(sysconfdir)/login $(installed_conf) $(installed_logins) $(installed_rootdots)
 
 $(prefix)/root $(sysconfdir)/login: %:
 	mkdir -p $@

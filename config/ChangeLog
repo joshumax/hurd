@@ -1,3 +1,7 @@
+Tue Jun 10 18:41:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (install): Repair typo.
+
 Mon May 26 23:11:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* login-.bashrc (sush): Alias renamed from su.
