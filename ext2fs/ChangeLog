@@ -1,3 +1,10 @@
+2002-10-08  Roland McGrath  <roland@frob.com>
+
+	* ext2fs.h (struct disknode): New member `info_i_translator'.
+	* inode.c (diskfs_set_translator): Update NP->dn->info_i_translator.
+	* ialloc.c (diskfs_alloc_node): Clear a nonzero translator block in
+	the on-disk inode just as we do for data blocks.
+
 2002-07-31  Roland McGrath  <roland@frob.com>
 
 	* dir.c (diskfs_direnter_hard): Fix test in last change.
