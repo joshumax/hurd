@@ -38,7 +38,7 @@ record_directory (struct dinode *dp, ino_t number)
   dnp->i_number = number;
   dnp->i_parent = dnp->i_dotdot = 0;
   dnp->i_isize = dp->di_size;
-  dnp->i_numblks = blks * sizeof (daddr_t);
+  dnp->i_numblks = blks;
   bcopy (dp->di_db, dnp->i_blks, blks);
   
   if (dirarrayused ==  dirarraysize)
@@ -392,7 +392,7 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
     return 0;
   if (!makeentry (ino, ino, "."))
     goto bad;
-  if (!makeentry (ino, ino, ".."))
+  if (!makeentry (ino, parent, ".."))
     goto bad;
   
   linkfound[ino]++;
