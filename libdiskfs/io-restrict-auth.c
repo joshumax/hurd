@@ -56,8 +56,9 @@ diskfs_S_io_restrict_auth (struct protid *cred,
       newgids[newngids++] = cred->gids[i];
       
   mutex_lock (&cred->po->np->lock);
-  *newport = (diskfs_make_protid (cred->po, newuids, newnuids, newgids,
-				  newngids))->pi.port;
+  *newport = (ports_get_right 
+	      (diskfs_make_protid (cred->po, newuids, newnuids, newgids,
+				  newngids)));
   mutex_unlock (&cred->po->np->lock);
   *newportpoly = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
