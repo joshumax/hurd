@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,98,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -212,11 +212,11 @@ scan_creds ()
       for (n = 0; n < IDHASH_TABLE_SIZE && nfreeids; n++)
 	{
 	  struct idspec *i = idhashtable[n];
-	  
+
 	  while (i && nfreeids)
 	    {
 	      struct idspec *next_i = i->next;
-	      
+
 	      if (!i->references
 		  && mapped_time->seconds - i->lastuse > ID_KEEP_TIMEOUT)
 		{
@@ -256,7 +256,7 @@ fh_hash (char *fhandle, struct idspec *i)
 
   for (n = 0; n < NFS2_FHSIZE; n++)
     hash += fhandle[n];
-  hash += (int) i >> 6;
+  hash += (intptr_t) i >> 6;
   return hash % FHHASH_TABLE_SIZE;
 }
 
@@ -540,7 +540,7 @@ scan_replies ()
 	  while (cr && nfreereplies)
 	    {
 	      struct cached_reply *next_cr = cr->next;
-	  
+
 	      if (!cr->references
 		  && mapped_time->seconds - cr->lastuse > REPLY_KEEP_TIMEOUT)
 		{

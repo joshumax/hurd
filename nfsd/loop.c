@@ -1,5 +1,5 @@
 /* Main server loop for nfs server.
-   Copyright (C) 1996, 98 Free Software Foundation, Inc.
+   Copyright (C) 1996,98,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -52,7 +52,7 @@ server_loop (int fd)
   struct idspec *cred;
   struct cache_handle *c, fakec;
   error_t err;
-  size_t addrlen;
+  socklen_t addrlen;
   int cc;
 
   bzero (&fakec, sizeof (struct cache_handle));
