@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -15,16 +15,16 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := libioserver
+dir := libiohelp
 makemode := library
 
 SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	initialize_conch.c verify_user_conch.c
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
-LCLHDRS = ioserver.h 
-libname = libioserver
-installhdrs = ioserver.h
+LCLHDRS = iohelp.h 
+libname = libiohelp
+installhdrs = iohelp.h
 
 include ../Makeconf
 
