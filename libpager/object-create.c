@@ -1,5 +1,5 @@
 /* Create a new memory object (Default pager only)
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -66,6 +66,7 @@ _pager_seqnos_memory_object_create (mach_port_t master,
   
   p->upi = pager_create_upi (p);
 
+  ports_port_deref (p);
   return 0;
 }
 
