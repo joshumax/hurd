@@ -266,6 +266,7 @@ pass2 ()
       datablocks_iterate (&dino, checkdirblock);
     }
   
+
   /* At this point for each directory:
      If this directory is an entry in another directory, then i_parent is
        set to that node's number.
@@ -277,6 +278,11 @@ pass2 ()
       if (dnp->i_isize == 0)
 	continue;
       
+      /* Root is considered to be its own parent even though it isn't
+	 listed. */
+      if (dnp->i_number == ROOTINO && !dnp->i_parent)
+	dnp->i_parent = ROOTINO;
+	  
       /* Check `..' to make sure it exists and is correct */
       if (dnp->i_parent && dnp->i_dotdot == 0)
 	{
