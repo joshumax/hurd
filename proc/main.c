@@ -117,6 +117,19 @@ main (int argc, char **argv, char **envp)
   mach_port_deallocate (mach_task_self (), pset);
   mach_port_deallocate (mach_task_self (), psetcntl);
 
+  {
+    /* Get our stderr set up to print on the console, in case we have
+       to panic or something.  */
+    mach_port_t cons;
+    error_t err;
+    err = device_open (master_device_port, D_READ|D_WRITE, "console", &cons);
+    assert_perror (err);
+    stdin = mach_open_devstream (cons, "r");
+    stdout = stderr = mach_open_devstream (cons, "w");
+    mach_port_deallocate (mach_task_self (), cons);
+  }
+
+
 /*  wire_task_self (); */
 
   while (1)
