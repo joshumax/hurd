@@ -1,3 +1,9 @@
+Wed Aug 14 16:23:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* tool-Makefile (INSTALL, IMAGE): New variables.
+	Change all rules &c to use these variables instead of
+	`../hurdinst' and `hurd-image'.
+
 Mon Aug  5 11:44:30 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* SETUP: Put `r' before BOOT_DEV in call to INSTALL-GRUB-MBR.
