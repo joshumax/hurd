@@ -1,3 +1,10 @@
+2003-07-14  Marco Gerards  <metgerards@student.han.nl>
+
+	* vga.c: New global variable vga_display_max_glyphs.
+	(parse_startup_args): New macro PARSE_FONT_OPT_NOARGS.
+	(parse_startup_args): Parse "--max-colors" and "--max-glyphs".
+	(vga_display_init): Set disp->df_size to match the color setting.
+
 2003-02-24  Marco Gerards <metgerards@student.han.nl>
 
 	* pc-kbd.c (sc_set1_to_set2): Map the set2 scancodes for F11 and

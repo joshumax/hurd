@@ -1,5 +1,5 @@
 /* vga.c - The VGA device display driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -61,6 +61,9 @@ static char *vga_display_font_bold;
 #define DEFAULT_VGA_FONT_BOLD_ITALIC \
 	"/lib/hurd/fonts/vga-system-bold-italic.bdf"
 static char *vga_display_font_bold_italic;
+
+/* If false use all colors, else use double font slots.  */
+static int vga_display_max_glyphs;
 
 /* The timer used for flashing the screen.  */
 static struct timer_list vga_display_timer;
@@ -171,12 +174,24 @@ parse_startup_args (int no_exit, int argc, char *argv[], int *next)
 	}						\
       } while (0)
 
+#define PARSE_FONT_OPT_NOARGS(x,y,z)           \
+  {                                            \
+    if (!strcmp (argv[*next], x))              \
+      {                                        \
+       (*next)++;                              \
+       vga_display_##y = z;                    \
+      }                                        \
+  }
+
   while (*next < argc)
     {
       PARSE_FONT_OPT ("--font", font);
       PARSE_FONT_OPT ("--font-italic", font_italic);
       PARSE_FONT_OPT ("--font-bold", font_bold);
       PARSE_FONT_OPT ("--font-bold-italic", font_bold_italic);
+      PARSE_FONT_OPT_NOARGS ("--max-colors", max_glyphs, 1);
+      PARSE_FONT_OPT_NOARGS ("--max-glyphs", max_glyphs, 0);
+
 
       break;
     }
@@ -206,8 +221,7 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[], int *next)
   if (!disp)
     return ENOMEM;
 
-  /* Set this to 256 for full color support.  */
-  disp->df_size = 512;
+  disp->df_size = vga_display_max_glyphs ? 512 : 256;
   disp->width = VGA_DISP_WIDTH;
   disp->height = VGA_DISP_HEIGHT;
 
