@@ -307,7 +307,7 @@ check_hashbang (struct execdata *e,
 
 	  new_argvlen
 	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */
-	    + interplen + len + namelen; /* New args */
+	    + interp_len + len + namelen; /* New args */
 
 	  e->error = vm_allocate (mach_task_self (),
 				  (vm_address_t *) &new_argv,
