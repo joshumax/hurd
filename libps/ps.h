@@ -298,8 +298,8 @@ struct proc_stat
 #define PSTAT_MSGPORT	       0x00010 /* The process's msgport */
 #define PSTAT_PROC_INFO	       0x00020 /* Basic process info. */
 #define PSTAT_TASK_BASIC       0x00040 /* The task's struct task_basic_info. */
-#define PSTAT_TASK_EVENTS      0x01000 /* A task_events_info_t for the proc. */
-#define PSTAT_NUM_THREADS      0x00080 /* The number of threads in the task. */
+#define PSTAT_TASK_EVENTS      0x00080 /* A task_events_info_t for the proc. */
+#define PSTAT_NUM_THREADS      0x00100 /* The number of threads in the task. */
 /* Note that for a process-procstat, the thread information fields generally
    are a summary of the process's threads, and imply that the corresponding
    information has been fetched for all its threads.  The exception is
@@ -307,21 +307,21 @@ struct proc_stat
    for processes with lots of threads, and not terrible useful.  In this
    case, the thread waits vector containing per-thread information is only
    guaranteed to be valid if PSTAT_THREAD_WAITS is true as well.  */
-#define PSTAT_THREAD_BASIC     0x00100 /* A struct thread_basic_info. */
-#define PSTAT_THREAD_SCHED     0x00200 /* A struct thread_sched_info. */
-#define PSTAT_THREAD_WAIT      0x00400 /* The rpc the thread is waiting on. */
-#define PSTAT_THREAD_WAITS     0x00800 /* Thread waits for this PS's threads */
-#define PSTAT_ARGS	       0x01000 /* The process's args */
-#define PSTAT_STATE	       0x02000 /* A bitmask describing the process's
+#define PSTAT_THREAD_BASIC     0x00200 /* A struct thread_basic_info. */
+#define PSTAT_THREAD_SCHED     0x00400 /* A struct thread_sched_info. */
+#define PSTAT_THREAD_WAIT      0x00800 /* The rpc the thread is waiting on. */
+#define PSTAT_THREAD_WAITS     0x01000 /* Thread waits for this PS's threads */
+#define PSTAT_ARGS	       0x02000 /* The process's args */
+#define PSTAT_STATE	       0x04000 /* A bitmask describing the process's
 					  state (see below) */
-#define PSTAT_SUSPEND_COUNT    0x04000 /* Task/thread suspend count */
-#define PSTAT_CTTYID	       0x08000 /* The process's CTTYID port */
-#define PSTAT_CWDIR	       0x10000 /* A file_t for the proc's CWD */
-#define PSTAT_AUTH	       0x20000 /* The proc's auth port */
-#define PSTAT_TTY	       0x40000 /* A ps_tty for the proc's terminal.*/
-#define PSTAT_OWNER	       0x80000 /* A ps_user for the proc's owner */
-#define PSTAT_OWNER_UID	      0x100000 /* The uid of the the proc's owner */
-#define PSTAT_UMASK	      0x200000 /* The proc's current umask */
+#define PSTAT_SUSPEND_COUNT    0x08000 /* Task/thread suspend count */
+#define PSTAT_CTTYID	       0x10000 /* The process's CTTYID port */
+#define PSTAT_CWDIR	       0x20000 /* A file_t for the proc's CWD */
+#define PSTAT_AUTH	       0x40000 /* The proc's auth port */
+#define PSTAT_TTY	       0x80000 /* A ps_tty for the proc's terminal.*/
+#define PSTAT_OWNER	      0x100000 /* A ps_user for the proc's owner */
+#define PSTAT_OWNER_UID	      0x200000 /* The uid of the the proc's owner */
+#define PSTAT_UMASK	      0x400000 /* The proc's current umask */
 #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
 
 /* Flag bits that don't correspond precisely to any field.  */
