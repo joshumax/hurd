@@ -1,3 +1,8 @@
+Mon Jun 30 17:38:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (main): If the store cannot be made writable, then set
+	diskfs_hard_readonly and diskfs_readonly.
+
 1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* hyper.c (diskfs_set_hypermetadata): Adjust device addresses for

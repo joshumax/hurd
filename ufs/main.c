@@ -205,6 +205,9 @@ main (int argc, char **argv)
     log2_dev_blocks_per_dev_bsize++;
   log2_dev_blocks_per_dev_bsize -= store->log2_block_size;
 
+  if (store->flags & STORE_HARD_READONLY)
+    diskfs_readonly = diskfs_hard_readonly = 1;
+
   /* Map the entire disk. */
   create_disk_pager ();
 
