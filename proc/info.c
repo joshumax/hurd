@@ -29,7 +29,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <assert.h>
 
 #include "proc.h"
-#include "proc_S.h"
+#include "process_S.h"
 
 /* Implement S_proc_pid2task as described in <hurd/proc.defs>. */
 kern_return_t
