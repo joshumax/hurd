@@ -1,3 +1,38 @@
+Thu Feb 20 15:56:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-fmtstream.c (__argp_fmtstream_update): Account for case
+	where NEXTLINE points one past the end of the active buffer.
+
+	* argp-help.c <stddef.h>: New include.
+	(__argp_failure): Only exit if STATE says it's ok.
+	(print_header, hol_entry_help): Use UPARAMS fields rather than
+	constants.
+	(_help): Call fill_in_uparams if necessary.
+	(struct hol_help_state): New type.
+	(struct pentry_state): Add hhstate field.  Remove prev_entry &
+	sep_groups fields.
+	(hol_entry_help): Add HHSTATE parameter.  Remove prev_entry &
+	sep_groups parameters.
+	Suppress duplicate arguments if requested, and note the fact.
+	(print_header, comma): Use PEST->hhstate fields.
+	(hol_help): Add HHSTATE variable & pass to hol_entry_help.
+	Remove LAST_ENTRY & SEP_GROUPS variables.
+	If any suplicate arguments were suppressed, print explanatory note.
+	(filter_doc): Replace PEST parameter with STATE.
+	(struct uparams): New type.
+	(uparams): New variable.
+	(struct uparam_name): New type.
+	(uparam_names): New variable.
+	(fill_in_uparams): New function.
+	(__argp_failure, __argp_error, __argp_state_help): Make STATE
+	parameter const.
+	* argp.h (argp_state_help, __argp_state_help, argp_usage,
+	__argp_usage, argp_error, __argp_error, argp_failure,
+	__argp_failure): Make STATE parameter const.
+	(ARGP_KEY_HELP_DUP_ARGS_NOTE): New macro.
+
+	* argp.h (argp_program_bug_address): Make const.
+
 Wed Feb 19 18:48:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-pv.c (argp_program_version): Make const.
