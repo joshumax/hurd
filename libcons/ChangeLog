@@ -1,3 +1,18 @@
+2003-08-01  Marco Gerards  <metgerards@student.han.nl>
+
+	* opts-std-startup.c: Include <string.h>.
+	(OPT_VISUAL_BELL): New macro.
+	(OPT_AUDIBLE_BELL): Likewise.
+	(_cons_visual_bell): New variable.
+	(_cons_audible_bell): Likewise.
+	(startup_options): Added options "--visual-bell" and
+	"--audible-bell" ...
+	(parse_startup_opt): ...and parse those new options here.
+	* priv.h (bell_type_t): New enumeration.
+	(_cons_visual_bell): New external variable.
+	(_cons_audible_bell): Likewise.
+	* file-changed.c (cons_S_file_changed): Use the right bell.
+
 2002-10-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* vcons-open.c (cons_vcons_open): Add casts to silence gcc

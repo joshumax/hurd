@@ -1,5 +1,5 @@
 /* opts-std-startup.c - Standard startup-time command line parser.
-   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02,2003 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org> and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <argp.h>
+#include <string.h>
 
 #include "priv.h"
 
@@ -30,6 +31,8 @@
 #define OPT_NO_JUMP_DOWN_ON_INPUT	602	/* --no-jump-down-on-input */
 #define OPT_JUMP_DOWN_ON_OUTPUT		603	/* --jump-down-on-output */
 #define OPT_NO_JUMP_DOWN_ON_OUTPUT	604	/* --no-jump-down-on-output */
+#define OPT_VISUAL_BELL			605	/* --visual-bell */
+#define OPT_AUDIBLE_BELL		606	/* --audible-bell */
 
 /* Common value for diskfs_common_options and diskfs_default_sync_interval. */
 #define DEFAULT_SLACK 100
@@ -50,6 +53,12 @@ int _cons_jump_down_on_output;
 /* The filename of the console server.  */
 char *_cons_file;
 
+/* The type of bell used for the visual bell.  */
+bell_type_t _cons_visual_bell = BELL_VISUAL;
+
+/* The type of bell used for the audible bell.  */
+bell_type_t _cons_audible_bell = BELL_AUDIBLE;
+
 static const struct argp_option
 startup_options[] =
 {
@@ -63,6 +72,10 @@ startup_options[] =
     "End scrollback when something is printed" },
   { "no-jump-down-on-output", OPT_NO_JUMP_DOWN_ON_OUTPUT, NULL, 0,
     "End scrollback when something is printed (default)" },
+  { "visual-bell", OPT_VISUAL_BELL, "BELL", 0, "Visual bell: on (default), "
+    "off, visual, audible" },
+  { "audible-bell", OPT_AUDIBLE_BELL, "BELL", 0, "Audible bell: on (default), "
+    "off, visual, audible" },
   { 0, 0 }
 };
 
@@ -95,6 +108,30 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       _cons_jump_down_on_output = 0;
       break;
 
+    case OPT_AUDIBLE_BELL:
+      if (!strcasecmp ("on", arg) || !strcasecmp ("audible", arg))
+	_cons_audible_bell = BELL_AUDIBLE;
+      else if (!strcasecmp ("off", arg))
+	_cons_audible_bell = BELL_OFF;
+      else if (!strcasecmp ("visual", arg))
+	_cons_audible_bell = BELL_VISUAL;
+      else
+	argp_error (state, "The audible bell can be one of: on, off, visual, "
+		    "audible");
+      break;
+
+    case OPT_VISUAL_BELL:
+      if (!strcasecmp ("on", arg) || !strcasecmp ("visual", arg))
+	_cons_visual_bell = BELL_VISUAL;
+      else if (!strcasecmp ("off", arg))
+	_cons_visual_bell = BELL_OFF;
+      else if (!strcasecmp ("audible", arg))
+	_cons_visual_bell = BELL_AUDIBLE;
+      else
+	argp_error (state, "The visual bell can be one of: on, off, visual, "
+		    "audible");
+      break;
+      
     case ARGP_KEY_ARG:
       if (state->arg_num > 0)
 	/* Too many arguments.  */

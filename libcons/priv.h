@@ -1,5 +1,5 @@
 /* Private declarations for cons library
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,6 +21,15 @@
 #include "cons.h"
 
 
+/* The kind of bells available.  */
+typedef enum
+  {
+    BELL_OFF,
+    BELL_VISUAL,
+    BELL_AUDIBLE
+  } bell_type_t;
+
+
 /* Number of records the client is allowed to lag behind the
    server.  */
 extern int _cons_slack;
@@ -33,6 +42,12 @@ extern int _cons_jump_down_on_output;
 
 /* The filename of the console server.  */
 extern char *_cons_file;
+
+/* The type of bell used for the visual bell.  */
+extern bell_type_t _cons_visual_bell;
+
+/* The type of bell used for the audible bell.  */
+extern bell_type_t _cons_audible_bell;
 
 
 /* Non-locking version of cons_vcons_scrollback.  Does also not update

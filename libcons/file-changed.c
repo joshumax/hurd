@@ -1,5 +1,5 @@
 /* file-changed.c - Handling file changed notifications.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -202,7 +202,10 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		  while (vcons->state.bell.audible
 			 < vcons->display->bell.audible)
 		    {
-		      cons_vcons_beep (vcons);
+		      if (_cons_audible_bell == BELL_AUDIBLE)
+			cons_vcons_beep (vcons);
+		      else if (_cons_audible_bell == BELL_VISUAL)
+			cons_vcons_flash (vcons);
 		      vcons->state.bell.audible++;
 		    }
 		}
@@ -211,7 +214,10 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		  while (vcons->state.bell.visible
 			 < vcons->display->bell.visible)
 		    {
-		      cons_vcons_flash (vcons);
+		      if (_cons_visual_bell == BELL_VISUAL)
+			cons_vcons_flash (vcons);
+		      else if (_cons_visual_bell == BELL_AUDIBLE)
+			cons_vcons_beep (vcons);
 		      vcons->state.bell.visible++;
 		    }
 		}
