@@ -63,10 +63,15 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	}
 
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
-      ports_begin_rpc (pi, &link);
-      status = demuxer (inp, outp);
-      ports_end_rpc (pi, &link);
-      ports_port_deref (pi);
+      if (pi)
+	{
+	  ports_begin_rpc (pi, &link);
+	  status = demuxer (inp, outp);
+	  ports_end_rpc (pi, &link);
+	  ports_port_deref (pi);
+	}
+      else
+	status = 0;
 
       spin_lock (&lock);
       nreqthreads++;
