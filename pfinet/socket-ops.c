@@ -35,7 +35,7 @@ S_socket_create (struct trivfs_protid *master,
   struct sock_user *user;
   struct socket *sock;
   error_t err;
-  
+
   if (!master)
     return EOPNOTSUPP;
 
@@ -47,16 +47,16 @@ S_socket_create (struct trivfs_protid *master,
        && sock_type != SOCK_RAW)
       || protocol < 0)
     return EINVAL;
-  
+
   mutex_lock (&global_lock);
 
   become_task_protid (master);
 
   sock = sock_alloc ();
-  
+
   sock->type = sock_type;
   sock->ops = proto_ops;
-  
+
   err = - (*sock->ops->create) (sock, protocol);
   if (err)
     sock_release (sock);
@@ -67,7 +67,7 @@ S_socket_create (struct trivfs_protid *master,
       *porttype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (user);
     }
-  
+
   mutex_unlock (&global_lock);
 
   return err;
@@ -80,11 +80,11 @@ S_socket_listen (struct sock_user *user, int queue_limit)
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   become_task (user);
-  
+
   if (user->sock->state == SS_UNCONNECTED)
     {
       if (user->sock->ops && user->sock->ops->listen)
@@ -113,11 +113,11 @@ S_socket_accept (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   become_task (user);
-  
+
   sock = user->sock;
   newsock = 0;
   err = 0;
@@ -127,25 +127,25 @@ S_socket_accept (struct sock_user *user,
     err = EINVAL;
   else if (!(newsock = sock_alloc ()))
     err = ENOMEM;
-  
+
   if (err)
     goto out;
 
   newsock->type = sock->type;
   newsock->ops = sock->ops;
-  
+
   err = - (*sock->ops->dup) (newsock, sock);
   if (err)
     goto out;
-  
+
   err = - (*sock->ops->accept) (sock, newsock, sock->userflags);
   if (err)
     goto out;
-  
+
   err = make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
   if (err)
     goto out;
-  
+
   newuser = make_sock_user (newsock, user->isroot, 0);
   *new_port = ports_get_right (newuser);
   *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
@@ -167,15 +167,15 @@ S_socket_connect (struct sock_user *user,
 
   if (!user || !addr)
     return EOPNOTSUPP;
-  
+
   sock = user->sock;
-  
+
   mutex_lock (&global_lock);
 
   become_task (user);
 
   err = 0;
-  
+
   if (sock->state == SS_CONNECTED
       && sock->type != SOCK_DGRAM)
     err = EISCONN;
@@ -183,13 +183,13 @@ S_socket_connect (struct sock_user *user,
 	   && sock->state != SS_CONNECTING
 	   && sock->state != SS_CONNECTED)
     err = EINVAL;
-  
+
   if (!err)
-    err = - (*sock->ops->connect) (sock, addr->address, addr->len, 
+    err = - (*sock->ops->connect) (sock, addr->address, addr->len,
 				   sock->userflags);
-  
+
   mutex_unlock (&global_lock);
-  
+
   /* MiG should do this for us, but it doesn't. */
   if (!err)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
@@ -202,7 +202,7 @@ S_socket_bind (struct sock_user *user,
 	       struct sock_addr *addr)
 {
   error_t err;
-  
+
   if (!user)
     return EOPNOTSUPP;
   if (! addr)
@@ -212,7 +212,7 @@ S_socket_bind (struct sock_user *user,
   become_task (user);
   err = - (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
   mutex_unlock (&global_lock);
-  
+
   /* MiG should do this for us, but it doesn't. */
   if (!err)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
@@ -227,7 +227,7 @@ S_socket_name (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   become_task (user);
   make_sockaddr_port (user->sock, 0, addr_port, addr_port_name);
@@ -244,12 +244,12 @@ S_socket_peername (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   become_task (user);
   err = make_sockaddr_port (user->sock, 1, addr_port, addr_port_name);
   mutex_unlock (&global_lock);
-  
+
   return err;
 }
 
@@ -258,10 +258,10 @@ S_socket_connect2 (struct sock_user *user1,
 		   struct sock_user *user2)
 {
   error_t err;
-  
+
   if (!user1 || !user2)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   become_task (user1);
@@ -273,7 +273,7 @@ S_socket_connect2 (struct sock_user *user1,
     err = EISCONN;
   else
     err = - (*user1->sock->ops->socketpair) (user1->sock, user2->sock);
-  
+
   if (!err)
     {
       user1->sock->conn = user2->sock;
@@ -281,7 +281,7 @@ S_socket_connect2 (struct sock_user *user1,
       user1->sock->state = SS_CONNECTED;
       user2->sock->state = SS_CONNECTED;
     }
-  
+
   mutex_unlock (&global_lock);
 
   /* MiG should do this for us, but it doesn't. */
@@ -301,18 +301,18 @@ S_socket_create_address (mach_port_t server,
 {
   struct sock_addr *addr;
   error_t err;
-  
+
   if (sockaddr_type != AF_INET)
     return EAFNOSUPPORT;
-  
-  err = ports_create_port (addrport_class, pfinet_bucket, 
+
+  err = ports_create_port (addrport_class, pfinet_bucket,
 			   sizeof (struct sock_addr) + data_len, &addr);
   if (err)
     return err;
-  
+
   addr->len = data_len;
   bcopy (data, addr->address, data_len);
-  
+
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (addr);
@@ -336,7 +336,7 @@ S_socket_whatis_address (struct sock_addr *addr,
 {
   if (!addr)
     return EOPNOTSUPP;
-  
+
   *type = AF_INET;
   if (*datalen < addr->len)
     *data = mmap (0, addr->len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
@@ -351,15 +351,15 @@ S_socket_shutdown (struct sock_user *user,
 		   int direction)
 {
   error_t err;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   become_task (user);
   err = - (*user->sock->ops->shutdown) (user->sock, direction);
   mutex_unlock (&global_lock);
-  
+
   return err;
 }
 
@@ -370,7 +370,25 @@ S_socket_getopt (struct sock_user *user,
 		 char **data,
 		 u_int *datalen)
 {
-  return EOPNOTSUPP;
+  error_t err;
+
+  if (! user)
+    return EOPNOTSUPP;
+
+  /* XXX all options supported in the linux code are in fact ints.  */
+  *datalen = sizeof (int);
+
+  mutex_lock (&global_lock);
+  become_task (user);
+
+  err =
+    - (user->sock->ops->getsockopt)(user->sock, level, option, *data, datalen);
+
+  assert (*datalen == sizeof (int));
+
+  mutex_unlock (&global_lock);
+
+  return err;
 }
 
 error_t
@@ -384,7 +402,7 @@ S_socket_setopt (struct sock_user *user,
 
   if (! user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   become_task (user);
 
@@ -409,28 +427,28 @@ S_socket_send (struct sock_user *user,
 	       mach_msg_type_number_t *amount)
 {
   int sent;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   /* Don't do this yet, it's too bizarre to think about right now. */
   if (nports != 0 || controllen != 0)
     return EINVAL;
-  
+
   mutex_lock (&global_lock);
 
   become_task (user);
-  
+
   if (addr)
-    sent = (*user->sock->ops->sendto) (user->sock, data, datalen, 
+    sent = (*user->sock->ops->sendto) (user->sock, data, datalen,
 				       user->sock->userflags, flags,
 				       addr->address, addr->len);
   else
-    sent = (*user->sock->ops->send) (user->sock, data, datalen, 
+    sent = (*user->sock->ops->send) (user->sock, data, datalen,
 				     user->sock->userflags, flags);
-  
+
   mutex_unlock (&global_lock);
-  
+
   /* MiG should do this for us, but it doesn't. */
   if (addr && sent >= 0)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
@@ -466,7 +484,7 @@ S_socket_recv (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   /* For unused recvmsg interface */
   *nports = 0;
   *portstype = MACH_MSG_TYPE_COPY_SEND;
@@ -480,14 +498,14 @@ S_socket_recv (struct sock_user *user,
       vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
       didalloc = 1;
     }
-  
+
   mutex_lock (&global_lock);
   become_task (user);
 
-  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount, 
+  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount,
 					 user->sock->userflags, flags,
 					 (struct sockaddr *)addr, &addrlen);
-  
+
   mutex_unlock (&global_lock);
 
   if (recvd < 0)
@@ -496,13 +514,13 @@ S_socket_recv (struct sock_user *user,
   *datalen = recvd;
 
   if (didalloc && round_page (*datalen) < round_page (amount))
-    vm_deallocate (mach_task_self (), 
+    vm_deallocate (mach_task_self (),
 		   (vm_address_t) (*data + round_page (*datalen)),
 		   round_page (amount) - round_page (*datalen));
 
-  
-  S_socket_create_address (0, AF_INET, addr, addrlen, addrport, 
+
+  S_socket_create_address (0, AF_INET, addr, addrlen, addrport,
 			   addrporttype);
-  
+
   return 0;
 }
