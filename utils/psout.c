@@ -31,7 +31,8 @@ psout (struct proc_stat_list *procs,
        char *fmt_string, int posix_fmt, struct ps_fmt_specs *specs,
        char *sort_key_name, int sort_reverse,
        int output_width, int print_heading,
-       int squash_bogus_fields, int squash_nominal_fields)
+       int squash_bogus_fields, int squash_nominal_fields,
+       int top)
 {
   error_t err;
   struct ps_stream *output;
@@ -96,7 +97,7 @@ psout (struct proc_stat_list *procs,
     error (5, err, "Can't make output stream");
 
   if (print_heading)
-    if (proc_stat_list_num_procs (procs) > 0)
+    if (procs->num_procs > 0)
       {
 	err = ps_fmt_write_titles (fmt, output);
 	if (err)
@@ -115,6 +116,17 @@ psout (struct proc_stat_list *procs,
 	if (! deduce_term_size (1, getenv ("TERM"), &output_width, 0))
 	  output_width = 80;	/* common default */
       ps_fmt_set_output_width (fmt, output_width);
+    }
+
+  if (top)
+    /* Restrict output to the top TOP entries.  */
+    {
+      int remove = 0;
+      int filter (struct proc_stat *ps)
+	{
+	  return --top >= 0;
+	}
+      proc_stat_list_filter1 (procs, filter, 0, 0);
     }
 
   /* Finally, output all the processes!  */

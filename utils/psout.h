@@ -27,6 +27,7 @@ void psout (struct proc_stat_list *procs,
 	    char *fmt_string, int posix_fmt, struct ps_fmt_specs *specs,
 	    char *sort_key_name, int sort_reverse,
 	    int output_width, int print_heading,
-	    int squash_bogus_fields, int squash_nominal_fields);
+	    int squash_bogus_fields, int squash_nominal_fields,
+	    int top);
 
 #endif /* __PSOUT_H__ */
