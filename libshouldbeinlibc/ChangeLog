@@ -1,8 +1,14 @@
 Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-parse.c (parser_parse_next): Decrement PARSER->state.next
+ 	if we consumed an arg we didn't end up parsing.
+	Set ARG_EBADKEY ourselves in all cases.
+	(parser_parse_arg, parser_parse_opt): Get rid of ARG_EBADKEY param.
+	
 	* argp-parse.c (__progname, __progname_full): Decls removed.
   	(argp_default_parser): Use PROGRAM_INVOCATION_NAME &
  	PROGRAM_INVOCATION_SHORT_NAME, not __PROGNAME_FULL & __PROGNAME.
+
 	* argp-help.c (__progname, __progname_full): Decls removed.
 	(__argp_failure, __argp_error, __argp_state_help): Use
 	PROGRAM_INVOCATION_NAME instead of __PROGNAME_FULL.
