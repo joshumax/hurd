@@ -270,10 +270,13 @@ struct proc_stat
 #define PSTAT_AUTH		0x2000 /* The proc's auth port.  */
 #define PSTAT_TTY		0x4000 /* A ps_tty_t for the proc's terminal.*/
 #define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner.  */
-#define PSTAT_UMASK		0x10000 /* The proc's current umask.  */
-#define PSTAT_EXEC_FLAGS	0x20000	/* The process's exec flags.  */
+#define PSTAT_UMASK	       0x10000 /* The proc's current umask.  */
+#define PSTAT_EXEC_FLAGS       0x20000	/* The process's exec flags.  */
 
 #define PSTAT_NUM_THREADS PSTAT_INFO
+
+/* Flag bits that don't correspond precisely to any field.  */
+#define PSTAT_NO_MSGPORT      0x100000 /* Don't use the msgport at all.  */
 
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
    bitmask of the following bits, describing the process's run state.  */
@@ -300,7 +303,6 @@ struct proc_stat
    in a proc_stat's STATE field, in order from bit zero.  These are intended
    for printint a user-readable summary of a process's state. */
 char *proc_stat_state_tags;
-
 
 /*
    Process info accessor functions.
