@@ -42,7 +42,6 @@ error_t diskfs_dirrewrite (struct node *dp,
   err = diskfs_dirrewrite_hard (dp, np, ds);
   if (err)
     return err;
-  dp->dn_set_mtime = 1;
   
   if (dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, name);
