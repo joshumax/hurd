@@ -1,6 +1,6 @@
 /* Show where a file exists
 
-   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -191,7 +191,7 @@ print_store (struct store *store, int level, unsigned what)
 }
 
 int
-main(int argc, char *argv[])
+main (int argc, char *argv[])
 {
   int deref = 0, print_prefix = -1;
   unsigned what = 0;
@@ -213,7 +213,12 @@ main(int argc, char *argv[])
 	  if (what == 0)
 	    what = W_ALL;
 
-	  err = store_create (file, STORE_INACTIVE, 0, &store);
+	  /* The STORE_NO_FILEIO flag tells it to give us the special
+	     "unknown" class instead of an error if it cannot parse the
+	     file_get_storage_info results.  That will allow us to display
+	     what we can from them, i.e. the name that shows at least some
+	     of what the unknown data looked like.  */
+	  err = store_create (file, STORE_INACTIVE|STORE_NO_FILEIO, 0, &store);
 	  if (err)
 	    error (4, err, source);
 
