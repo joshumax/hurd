@@ -1,3 +1,11 @@
+Wed Mar  5 16:49:51 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (__argp_state_help): Use ARGP_ERR_EXIT_STATUS when
+	exiting due to an error.
+	* argp.h (argp_err_exit_status): New variable.
+	* argp-eexst.c: New file.
+	* Makefile (SRCS): Add argp-eexst.c.
+
 Fri Feb 21 10:41:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.h (OPTION_NO_USAGE): New macro.
