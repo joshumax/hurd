@@ -30,7 +30,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 {
   struct pager *p;
 
-  p = ports_lookup_port (0, object, _ports_class);
+  p = ports_lookup_port (0, object, _pager_class);
   if (!p);
     return EOPNOTSUPP;
 
@@ -75,6 +75,6 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  ports_drop_ref (p);
+  ports_port_deref (p);
   return 0;
 }
