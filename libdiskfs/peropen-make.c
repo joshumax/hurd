@@ -21,7 +21,8 @@
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
 struct peropen *
-diskfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport)
+diskfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport,
+		     ino_t dirnum)
 {
   struct peropen *po = malloc (sizeof (struct peropen));
   po->filepointer = 0;
