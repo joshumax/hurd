@@ -123,22 +123,29 @@ dclose (struct store *store)
 static error_t
 enforced (struct store *store)
 {
-  size_t sizes[DEV_GET_SIZE_COUNT];
-  size_t sizes_len = DEV_GET_SIZE_COUNT;
-  error_t err =
-    device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
-
-  if (err)
-    return err;
-
-  assert (sizes_len == DEV_GET_SIZE_COUNT);
-
-  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
-      || (store->runs[0].length !=
-	  sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
+  if (store->num_runs != 1 || store->runs[0].start != 0)
+    /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
     return EINVAL;
+  else
+    /* See if the the current (one) range is that the kernel is enforcing. */
+    {
+      size_t sizes[DEV_GET_SIZE_COUNT];
+      size_t sizes_len = DEV_GET_SIZE_COUNT;
+      error_t err =
+	device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
 
-  return 0;
+      if (err)
+	return err;
+
+      assert (sizes_len == DEV_GET_SIZE_COUNT);
+
+      if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
+	  || (store->runs[0].length !=
+	      sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
+	return EINVAL;
+
+      return 0;
+    }
 }
 
 static error_t
@@ -151,16 +158,11 @@ dev_set_flags (struct store *store, int flags)
   if (! ((store->flags | flags) & STORE_INACTIVE))
     /* Currently active and staying that way, so we must be trying to set the
        STORE_ENFORCED flag.  */
-    if (store->num_runs > 0 || store->runs[0].start != 0)
-      /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
-      return EINVAL;
-    else
-      /* See if the the current (one) range is that the kernel is enforcing. */
-      {
-	error_t err = enforced (store);
-	if (err)
-	  return err;
-      }
+    {
+      error_t err = enforced (store);
+      if (err)
+	return err;
+    }
 
   if (flags & STORE_INACTIVE)
     dclose (store);
