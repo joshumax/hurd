@@ -10,8 +10,8 @@
 #include "mapped-time.h"
 #include <assert.h>
 #include <mach.h>
+#include <asm/system.h>
 
-extern unsigned long intr_count;
 #define jiffies (fetch_jiffies ())
 extern struct task_struct *current;
 
