@@ -185,7 +185,7 @@ Say `./MAKEDEV dev1 dev2 dev3 ...'.
 
 Supported devices are:
   o any hard disk device you have; you must specify both unit number *and*
-    partition.  Something like `sd0a' or `rd1f' is called for.  Unit
+    partition.  Something like `sd0a' or `hd1f' is called for.  Unit
     number without any partition names the entire disk.  (SETUP has
     already created a device for the entire disk holding your boot
     block, if you gave it that information.)
@@ -223,25 +223,20 @@ nameserver to work properly.
 
 You can mount a partition (say hd0a) by saying:
 
-     settrans /mnt /hurd/ufs /dev/rhd0a
+     settrans /mnt /hurd/ufs /dev/hd0a
 
-The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a' in
+The name `/dev/hd0a' must have been created using `./MAKEDEV hd0a' in
 the /dev directory.
 
 (This is equivalent to Unixy `mount /dev/hd0a /mnt'.)
-
-(Note that you are using the *RAW* device here.  In theory, it's
-irrelevant [and this is really only being used to get a name in a
-clever but strange way], but there are minor bugs in the non-raw
-versions, so don't try and use them.)
    
 If it's a Linux ext2 format disk, just do
 
-  settrans /mnt /hurd/ext2fs /dev/rhd0a
+  settrans /mnt /hurd/ext2fs /dev/hd0a
 
 You can make it readonly thus:
 
-  settrans /mnt /hurd/ufs -r /dev/rhd0a
+  settrans /mnt /hurd/ufs -r /dev/hd0a
 
 For more information on settrans, see the end of this file.
 
@@ -261,7 +256,7 @@ automatically fscked, you'll have to make entries in /etc/fstab (see
 
 A temporary mount (which lasts only until the filesystem program is
 killed or the system is rebooted) can be accomplished by giving the -a
-option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
+option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/sd0a'.
 (Note the placement of this option, as an arg to settrans, is
 different from the -r options you might give to the filesystem.)
 `showtrans' does not display these temporary mounts.
