@@ -2,6 +2,11 @@
 
 	* mux.c: Add #include <sys/mman.h> for munmap decl.
 
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* mux.c (get_dirents): Use mmap instead of vm_allocate.
+	(netfs_get_dirents): Likewise.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* mux.c (get_dirents): Use munmap instead of vm_deallocate.

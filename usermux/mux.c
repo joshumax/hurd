@@ -101,7 +101,8 @@ get_dirents (struct node *dir,
     {
       size_t size = (max_data_len == 0 ? DIRENTS_CHUNK_SIZE : max_data_len);
 
-      err = vm_allocate (mach_task_self (), (vm_address_t *) data, size, 1);
+      *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = (data != (void *) -1) ? errno : 0;
 
       if (! err)
 	{
@@ -257,7 +258,8 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   *data_len = bytes_left;
   *data_entries = entries_left;
 
-  err = vm_allocate (mach_task_self (), (vm_address_t *)data, bytes_left, 1);
+  *data = mmap (0, bytes_left, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  err = (*data == (void *) -1) ? errno : 0;
   if (! err)
     bcopy (cached_data, *data, bytes_left);
 
