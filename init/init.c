@@ -367,10 +367,10 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_WRITE, "console", &consdev))
     crash_mach ();
 
-  stdin = mach_open_devstream (consdev, "w+");
-  if (stdin == NULL)
+  stderr = stdout = mach_open_devstream (consdev, "w");
+  stdin = mach_open_devstream (consdev, "r");
+  if (stdout == NULL || stdin == NULL)
     crash_mach ();
-  stdout = stderr = stdin;
   setbuf (stdout, NULL);
   
   /* At this point we can use assert to check for errors.  */
@@ -493,6 +493,9 @@ launch_system (void)
 	      dup2 (fd, 1);
 	      dup2 (fd, 2);
 	      close (fd);
+
+	      fclose (stdin);
+	      stdin = fdopen (0, "r");
 
 	      /* Set ports in init_dtable for programs we start */
 	      mach_port_deallocate (mach_task_self (), default_dtable[0]);
