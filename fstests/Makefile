@@ -33,9 +33,9 @@ timertest: $(OBJS) $(libc); $(link)
 
 
 install:  $(hurdroot) timertest #fstests fdtests
-#	cp fdtests $(hurdroot)/bin/fdtests
-#	cp fstests $(hurdroot)/bin/fstests
-	cp timertest $(hurdroot)/bin/timertest
+#	$(INSTALL_BIN) fdtests $(hurdroot)/bin/fdtests
+#	$(INSTALL_BIN) fstests $(hurdroot)/bin/fstests
+	$(INSTALL_BIN) timertest $(hurdroot)/bin/timertest
 
 clean: 
 	rm -f fstests fdtests timertest *.o
