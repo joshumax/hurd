@@ -54,7 +54,7 @@ hurd_file_name_path_lookup (error_t (*use_init_port)
 			    file_t (*get_dtable_port) (int fd),
 			    const char *file_name, const char *path,
 			    int flags, mode_t mode,
-			    file_t *result);
+			    file_t *result, char **prefixed_name);
 
 /* Defaults for various login parameters.  */
 char *default_args[] = {
@@ -324,7 +324,7 @@ main(int argc, char *argv[])
       mach_port_t port = MACH_PORT_NULL;
       errno =
 	hurd_file_name_path_lookup (use_child_init_port, get_child_fd_port,
-				    name, path, flags, 0, &port);
+				    name, path, flags, 0, &port, 0);
       return port;
     }
 
