@@ -1,8 +1,12 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeio.c (check_open_hook): Translate D_NO_SUCH_DEVICE to ENXIO.
+
 1999-05-09  Mark Kettenis  <kettenis@gnu.org>
 
 	* pager.c (dev_stop_paging): Do not try to count ports in
 	PAGER_PORT_BUCKET if it has not been created.
-	
+
 1999-04-30  Mark Kettenis  <kettenis@gnu.org>
 
 	* storeio.c (trivfs_modify_stat): Do not assume that we have the

@@ -1,5 +1,13 @@
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* MAKEDEV.sh (ECHO, EXEC): Do not export.
+	(DEVDIR): Initialize to `pwd` before argument parsing.
+	(_CWD): Don't set this.
+	(lose): New function.  Use it for all miscellaneous fatal errors.
+	(mkdev): Disallow directory names.  Always use ${DEVDIR} for name to
+	embed in translator settings.
+	Rewrite syntax checking for disk device names.
+
 	* fstab.c, fstab.h: Add numerous `const' qualifiers.
 
 	* fstab.c (fstab_find_mount): Don't count "none" or "-" as matching
