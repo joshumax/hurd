@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "barf.h"
 
 /* Request a lock from the kernel on pager P.  Parameters OFFSET,
    SIZE, SHOULD_RETURN, SHOULD_FLUSH, and LOCK_VALUE are as for
@@ -64,11 +63,6 @@ _pager_lock_object (struct pager *p,
 	  p->lock_requests = lr;
 	}
     }
-  
-  /* XXX */
-  if (sync)
-    barf ("Issuing lock request: p %#x <port = %d>; offset %#x; length %#x\n", 
-	  (int) p, p->port.port_right, offset, size);
 
   memory_object_lock_request (p->memobjcntl, offset, size, should_return,
 			      should_flush, lock_value, 
