@@ -71,4 +71,4 @@ routine startup_authinit (
 
 routine startup_authinit2 (
 	server: startup_t;
-	out proc: process_t);
+	out proc: mach_port_move_send_t);
