@@ -45,6 +45,8 @@ static int user_ioctl_mode = 0;
 static char control_byte = 0;
 
 static int output_stopped;
+
+static int pktnostop;
 
 
 static void
@@ -136,9 +138,28 @@ ptyio_desert_dtr ()
 static void 
 ptyio_set_bits ()
 {
+  int stop;
+  
   if (packet_mode && external_processing)
     {
       control_byte |= TIOCPKT_IOCTL;
+
+      stop = ((termstate.c_iflag & IXON) 
+	      && CCEQ (termstate.c_cc[VSTOP], CHAR_DC3)
+	      && CCEQ (termstate.c_cc[VSTART], CHAR_DC1));
+      if (pktnostop && stop)
+	{
+	  pktnostop = 0;
+	  control_byte |= TIOCPKT_DOSTOP;
+	  control_byte &= ~TIOCPKT_NOSTOP;
+	}
+      else if (!pktnostop && !stop)
+	{
+	  pktnostop = 1;
+	  control_byte |= TIOCPKT_NOSTOP;
+	  control_byte &= ~TIOCPKT_DOSTOP;
+	}
+
       wake_reader ();
     }
 }
