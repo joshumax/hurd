@@ -1,3 +1,15 @@
+2001-10-14  Roland McGrath  <roland@frob.com>
+
+	* url.c: New file.
+	(store_url_open): New function.
+	(store_url_open_class): New const variable.
+	* store.h: Declare them.
+	* std.c (store_std_classes): Add &store_url_open_class to the list,
+	move &store_nbd_class after it.
+
+	* nbd.c (nbd_validate_name): Accept an optional "nbd://" prefix.
+	(nbdopen): Likewise.
+
 2001-10-06  Neal H Walfield  <neal@cs.uml.edu>
 
         * memobj.c: Include "store.h", not <hurd/store.h>.
