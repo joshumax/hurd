@@ -113,8 +113,9 @@ libfshelp := $(hurdsource)/libfshelp/libfshelp.a
 libdiskfs := $(hurdsource)/libdiskfs/libdiskfs.a
 libtrivfs := $(hurdsource)/libtrivfs/libtrivfs.a
 libnetserv := $(hurdsource)/libnetserv/libnetserv.a
+libps := $(hurdsource)/libps/libps.a
 alllibs := libthreads libports libioserver libpager libfshelp libdiskfs\
-	libtrivfs libnetserv
+	libtrivfs libnetserv libps
 
 # Finding binaries
 include $(hurdsource)/Maketools
