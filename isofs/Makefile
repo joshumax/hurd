@@ -15,7 +15,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := ufs
+dir := isofs
 makemode := server
 
 target = isofs
@@ -26,4 +26,3 @@ OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
 
 include ../Makeconf
-
