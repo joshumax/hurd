@@ -44,9 +44,17 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
           newpi = netfs_make_protid (netfs_make_peropen (np, flags,
 							 diruser->po),
 				     user);
-          *newfile = ports_get_right (newpi);
-          *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
-          ports_port_deref (newpi);
+	  if (newpi)
+	    {
+	      *newfile = ports_get_right (newpi);
+	      *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
+	      ports_port_deref (newpi);
+	    }
+	  else
+	    {
+	      err = errno;
+	      iohelp_free_iouser (user);
+	    }
 	}
       netfs_nput (np);
     }

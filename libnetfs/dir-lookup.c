@@ -209,17 +209,19 @@ netfs_S_dir_lookup (struct protid *diruser,
 		{
 		case S_IFCHR:
 		case S_IFBLK:
-		  asprintf (argz, "%s%c%d%c%d",
-			    (S_ISCHR (np->nn_stat.st_mode)
-			     ? _HURD_CHRDEV : _HURD_BLKDEV),
-			    0, major (np->nn_stat.st_rdev),
-			    0, minor (np->nn_stat.st_rdev));
+		  if (asprintf (argz, "%s%c%d%c%d",
+				(S_ISCHR (np->nn_stat.st_mode)
+				 ? _HURD_CHRDEV : _HURD_BLKDEV),
+				0, major (np->nn_stat.st_rdev),
+				0, minor (np->nn_stat.st_rdev)) < 0)
+		    return ENOMEM;
 		  *argz_len = strlen (*argz) + 1;
 		  *argz_len += strlen (*argz + *argz_len) + 1;
 		  *argz_len += strlen (*argz + *argz_len) + 1;
 		  break;
 		case S_IFIFO:
-		  asprintf (argz, "%s", _HURD_FIFO);
+		  if (asprintf (argz, "%s", _HURD_FIFO) < 0)
+		    return ENOMEM;
 		  *argz_len = strlen (*argz) + 1;
 		  break;
 		default:
@@ -242,8 +244,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 					 user);
 	      if (! newpi)
 	        {
+		  error = errno;
 		  iohelp_free_iouser (user);
-		  error = ENOMEM;
 		}
 	    }
 
@@ -381,6 +383,13 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
 			     user);
+  if (! newpi)
+    {
+      iohelp_free_iouser (user);
+      error = errno;
+      goto out;
+    }
+
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
 

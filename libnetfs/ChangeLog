@@ -1,3 +1,15 @@
+2001-08-31  Marcus Brinkmann  <marcus@gnu.org>
+
+	* file-get-translator.c (netfs_S_file_get_translator): If
+	asprintf() fails, set ERR to errno.
+	* dir-lookup.c (netfs_S_dir_lookup): Catch if asprintf() fails and
+	return ENOMEM.  If netfs_make_protid() fails, set ERROR to errno,
+	not ENOMEM.  Do this before freeing USER.
+	* dir-mkfile.c (netfs_S_dir_mkfile): If netfs_make_protid() fails,
+	set ERROR to errno and free USER.
+	* file-exec.c (netfs_S_file_exec): Likewise.
+	Reported by Igor Khavkine <i_khavki@alcor.concordia.ca>.
+
 2001-06-21  Neal H Walfield  <neal@cs.uml.edu>
 
 	* file-getcontrol.c (netfs_S_file_getcontrol): When checking if

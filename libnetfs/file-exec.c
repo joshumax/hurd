@@ -130,16 +130,25 @@ netfs_S_file_exec (struct protid *cred,
         {
 	  newpi = netfs_make_protid (netfs_make_peropen (np, O_READ, cred->po),
 				     user);
-          right = ports_get_send_right (newpi);
-          err = exec_exec (_netfs_exec,
-		           right, MACH_MSG_TYPE_COPY_SEND,
-		           task, flags, argv, argvlen, envp, envplen,
-		           fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-		           portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
-		           intarray, intarraylen, deallocnames, deallocnameslen,
-		           destroynames, destroynameslen);
-          mach_port_deallocate (mach_task_self (), right);
-          ports_port_deref (newpi);
+	  if (newpi)
+	    {
+	      right = ports_get_send_right (newpi);
+	      err = exec_exec (_netfs_exec,
+			       right, MACH_MSG_TYPE_COPY_SEND,
+			       task, flags, argv, argvlen, envp, envplen,
+			       fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+			       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
+			       intarray, intarraylen,
+			       deallocnames, deallocnameslen,
+			       destroynames, destroynameslen);
+	      mach_port_deallocate (mach_task_self (), right);
+	      ports_port_deref (newpi);
+	    }
+	  else
+	    {
+	      err = errno;
+	      iohelp_free_iouser (user);
+	    }
 	}
     }
 

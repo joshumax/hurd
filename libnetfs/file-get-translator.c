@@ -73,14 +73,19 @@ netfs_S_file_get_translator (struct protid *user,
 			  : _HURD_BLKDEV),
 			 '\0', (np->nn_stat.st_rdev >> 8) & 0377,
 			 '\0', (np->nn_stat.st_rdev) & 0377);
-      buflen++;			/* terminating nul */
+      if (buflen < 0)
+	err = ENOMEM;
+      else
+	{
+	  buflen++;			/* terminating nul */
 
-      if (buflen > *translen)
-	*trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      memcpy (*trans, buf, buflen);
-      free (buf);
-      *translen = buflen;
-      err = 0;
+	  if (buflen > *translen)
+	    *trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  memcpy (*trans, buf, buflen);
+	  free (buf);
+	  *translen = buflen;
+	  err = 0;
+	}
     }
   else if (S_ISFIFO (np->nn_stat.st_mode))
     {
