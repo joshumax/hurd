@@ -413,7 +413,8 @@ static const struct argp_option options[] =
   {0,0,0,0,"These options specify the disposition of a crashing process:", 1},
   {"suspend",	's', 0,		0, "Suspend the process", 1},
   {"kill",	'k', 0,		0, "Kill the process", 1},
-  {"core-file", 'c', 0,		0, "Generate a core file", 1},
+  {"core-file", 'c', 0,		0, "Dump a core file", 1},
+  {"dump-core",   0, 0,		OPTION_ALIAS },
   {0}
 };
 
