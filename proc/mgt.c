@@ -129,7 +129,7 @@ S_proc_reauthenticate (struct proc *p, int id)
 /* Implement proc_child as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_child (struct proc *parentp,
-	    task_t childt)
+	      task_t childt)
 {
   struct proc *childp = task_find (childt);
 
@@ -175,6 +175,13 @@ S_proc_child (struct proc *parentp,
   leave_pgrp (childp);
   childp->p_pgrp = parentp->p_pgrp;
   join_pgrp (childp);
+
+  if (childp->p_argv == 0 && childp->p_envp == 0)
+    {
+      /* Inherit the argv and envp values from the parent.  */
+      childp->p_argv = parentp->p_argv;
+      childp->p_envp = parentp->p_envp;
+    }
 
   childp->p_parentset = 1;
   if (childp->p_msgport)
