@@ -1,6 +1,7 @@
 2001-12-29  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (nbdopen): Fix in last change.
+	(nbd_read): Let LEN receive the result count from io_read.
 
 	* nbd.c (NBD_IO_MAX): New macro.
 	(nbd_write): Write in chunks no larger than NBD_IO_MAX.
