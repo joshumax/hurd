@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.5 1994/08/25 15:17:16 mib Exp $
+ *	$Id: fsck.h,v 1.6 1994/08/26 16:04:42 mib Exp $
  */
 
 /* Begin GNU Hurd */
@@ -98,6 +98,18 @@ struct odirtemplate {
 #undef fs_cs
 #define fs_cs(fs, indx) \
 	fs_csp[(indx) >> (fs)->fs_csshift][(indx) & ~(fs)->fs_csmask]
+
+#define dblksize(fs, dip, lbn) \
+	(((lbn) >= NDADDR || (dip)->di_size >= ((lbn) + 1) << (fs)->fs_bshift) \
+	    ? (fs)->fs_bsize \
+	    : (fragroundup(fs, blkoff(fs, (dip)->di_size))))
+
+/* missing macros */
+
+/* Convert bytes to disk blocks */
+#define btodb(bytes) ((bytes) / DEV_BSIZE)
+
+
 
 /* End GNU Hurd additions */	
 
