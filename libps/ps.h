@@ -228,9 +228,21 @@ struct proc_stat
     thread_basic_info_t thread_basic_info;
     thread_sched_info_t thread_sched_info;
 
-    /* For a blocked thread, the rpc that it's blocked on.  For a process the
-       rpc blocking the first blocked thread (if any).  0 means no block. */
-    int thread_rpc;
+    /* For a blocked thread, these next fields describe how it's blocked.  */
+    
+    /* A string (pointing into the thread_waits field of the parent
+       procstat), describing what's being blocked on.  If "KERNEL", a system
+       call (not mach_msg), and thread_rpc is the system call number.
+       Otherwise if thread_rpc isn't zero, this string describes the port the
+       rpc is on; if thread_rpc is 0, this string describes a non-rpc event. */
+    char *thread_wait;
+    /* The rpc that it's blocked on.  For a process the rpc blocking the
+       first blocked thread (if any).  0 means no block. */
+    mach_msg_id_t thread_rpc;
+
+    /* Storage for child-thread waits.  */
+    char *thread_waits;
+    size_t thread_waits_len;
 
     /* The task or thread suspend count (whatever this proc_stat refers to). */
     int suspend_count;
@@ -296,7 +308,7 @@ struct proc_stat
 #define PSTAT_NUM_THREADS      0x00080 /* The number of threads in the task. */
 #define PSTAT_THREAD_BASIC     0x00100 /* A struct thread_basic_info. */
 #define PSTAT_THREAD_SCHED     0x00200 /* A struct thread_sched_info. */
-#define PSTAT_THREAD_RPC       0x00400 /* The rpc the thread is waiting on. */
+#define PSTAT_THREAD_WAIT       0x00400 /* The rpc the thread is waiting on. */
 #define PSTAT_ARGS	       0x00800 /* The process's args */
 #define PSTAT_STATE	       0x02000 /* A bitmask describing the process's
 					  state (see below) */
@@ -400,6 +412,7 @@ char *proc_stat_state_tags;
 #define proc_stat_thread_basic_info(ps) ((ps)->thread_basic_info)
 #define proc_stat_thread_sched_info(ps) ((ps)->thread_sched_info)
 #define proc_stat_thread_rpc(ps) ((ps)->thread_rpc)
+#define proc_stat_thread_wait(ps) ((ps)->thread_rpc)
 #define proc_stat_suspend_count(ps) ((ps)->suspend_count)
 #define proc_stat_args(ps) ((ps)->args)
 #define proc_stat_args_len(ps) ((ps)->args_len)
@@ -583,6 +596,9 @@ error_t ps_stream_newline (ps_stream_t stream);
    side, otherwise on the right side.  If an error occurs, the error code is
    returned, otherwise 0.  */
 error_t ps_stream_write_field (ps_stream_t stream, char *buf, int width);
+
+/* Like ps_stream_write_field, but truncates BUF to make it fit into WIDTH.  */
+error_t ps_stream_write_trunc_field (ps_stream_t stream, char *buf, int width);
 
 /* Write the decimal representation of VALUE to STREAM, padded on one side
    with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
