@@ -1,3 +1,7 @@
+2003-02-15  Roland McGrath  <roland@frob.com>
+
+	* Makefile (installhdrs): Add generated headers only ifndef no_deps.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* dir-chg.c: Don't include stub header, trivfs.h now gets those decls.
