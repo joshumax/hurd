@@ -21,13 +21,13 @@ makemode := utilities
 targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread ping msgport rpctrace mount gcore fakeauth fakeroot
+	storeread msgport rpctrace mount gcore fakeauth fakeroot
 special-targets = loginpr sush uptime fakeroot
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
-	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c \
+	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
@@ -37,13 +37,10 @@ login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
 
-ping-CPPFLAGS = -I$(srcdir)/../pfinet/
-
 INSTALL-login-ops = -o root -m 4755
 INSTALL-ids-ops = -o root -m 4755
 INSTALL-ps-ops = -o root -m 4755
 INSTALL-w-ops = -o root -m 4755
-INSTALL-ping-ops = -o root -m 4755
 
 include ../Makeconf
 
@@ -55,8 +52,6 @@ ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 
 storeinfo storecat storeread: ../libstore/libstore.a
 ftpcp ftpdir: ../libftpconn/libftpconn.a
-
-ping: ../libthreads/libthreads.a
 
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
