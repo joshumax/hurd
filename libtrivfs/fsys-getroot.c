@@ -21,7 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "fsys_S.h"
-#include "fsys_reply.h"
+#include "fsys_reply_U.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
