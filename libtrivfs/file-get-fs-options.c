@@ -18,6 +18,8 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <hurd/fshelp.h>
+
 #include "priv.h"
 #include "fsys_S.h"
 
@@ -27,5 +29,17 @@ trivfs_S_file_get_fs_options (struct trivfs_protid *cred,
 			      mach_msg_type_name_t reply_type,
 			      char **data, mach_msg_type_number_t *len)
 {
-  return EOPNOTSUPP;
+  error_t err;
+  char *argz;
+  size_t argz_len;
+
+  if (! cred)
+    return EOPNOTSUPP;
+
+  err = trivfs_get_options (cred->po->cntl, &argz, &argz_len);
+  if (! err)
+    /* Put ARGZ into vm_alloced memory for the return trip.  */
+    err = fshelp_return_malloced_buffer (argz, argz_len, data, len);
+
+  return err;
 }
