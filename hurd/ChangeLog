@@ -1,6 +1,10 @@
 2002-01-01  Roland McGrath  <roland@frob.com>
 
-	* fsys_reply.defs: retcode -> RetCode
+	* auth_reply.defs: RetCode -> RETCODE
+	* crash_reply.defs: Likewise.
+	* fsys_reply.defs: Likewise.
+	* io_reply.defs: Likewise.
+	* msg_reply.defs: Likewise.
 	* process_reply.defs: Likewise.
 	* startup_reply.defs: Likewise.
 
