@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -342,6 +342,18 @@ error_t _store_file_create (file_t file, int flags, size_t block_size,
 /* Open the file NAME, and return the corresponding store in STORE.  */
 error_t store_file_open (const char *name, int flags, struct store **store);
 
+/* Return a new store in STORE referring to the task TASK, consuming TASK.  */
+error_t store_task_create (task_t task, int flags, struct store **store);
+
+/* Like store_task_create, but doesn't query the task for information.  */
+error_t _store_task_create (task_t task, int flags, size_t block_size,
+			    const struct store_run *runs, size_t num_runs,
+			    struct store **store);
+
+/* Open the task NAME (NAME should be the task's pid), and return the
+   corresponding store in STORE.  */
+error_t store_task_open (const char *name, int flags, struct store **store);
+
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
    integer multiple of each stripe's block size.  The stores in STRIPES are
@@ -374,6 +386,7 @@ extern const struct store_class *const store_std_classes[];
 
 extern const struct store_class store_device_class;
 extern const struct store_class store_file_class;
+extern const struct store_class store_task_class;
 extern const struct store_class store_zero_class;
 extern const struct store_class store_ileave_class;
 extern const struct store_class store_concat_class;
