@@ -187,19 +187,32 @@ swab_long (long arg)
 	  | ((arg & 0xff000000) >> 24));
 }
 
-/* Return *ENTRYP, after byteswapping it if necessary */
-#define read_disk_entry(entryp)						    \
+/* Return ENTRY, after byteswapping it if necessary */
+#define read_disk_entry(entry)						    \
 ({ 									    \
-  if (!swab_disk || sizeof (*entryp) == 1)				    \
-    *entryp;								    \
-  else if (sizeof (*entryp) == 2)					    \
-    swab_short (*entryp);						    \
-  else if (sizeof (*entry) == 4)					    \
-    swab_long (*entryp);						    \
+  if (!swab_disk || sizeof (entry) == 1)				    \
+    (entry);								    \
+  else if (sizeof (entry) == 2)					            \
+    swab_short (entry);						            \
+  else if (sizeof (entry) == 4)					            \
+    swab_long (entry);						            \
   else									    \
-    abort;								    \
+    abort ();								    \
 })
     
+/* Execute A = B, but byteswap it along the way if necessary */
+#define write_disk_entry(a,b)						    \
+({									    \
+  if (!swab_disk || sizeof (a) == 1)					    \
+    ((a) = (b));							    \
+  else if (sizeof (a) == 2)						    \
+    ((a) = (swab_short (b)));						    \
+  else if (sizeof (a) == 4)						    \
+    ((a) = (swab_long (b)));						    \
+  else									    \
+    abort ();								    \
+})
+
 
 
 
