@@ -1,6 +1,6 @@
 /* File block to disk block mapping routines
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -53,7 +53,7 @@ ext2_discard_prealloc (struct node *node)
     {
       int i = node->dn->info.i_prealloc_count;
       ext2_debug ("discarding %d prealloced blocks for inode %d",
-		  i, node->dn->number);
+		  i, node->cache_id);
       node->dn->info.i_prealloc_count = 0;
       ext2_free_blocks (node->dn->info.i_prealloc_block, i);
     }

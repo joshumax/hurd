@@ -273,7 +273,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   else if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
-  ext2_debug ("writing inode %d page %d[%d]", node->dn->number, offset, left);
+  ext2_debug ("writing inode %d page %d[%d]", node->cache_id, offset, left);
 
   while (left > 0)
     {
@@ -450,10 +450,10 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 #ifdef EXT2FS_DEBUG
       if (dn->last_page_partially_writable)
 	ext2_debug ("made page %u[%lu] in inode %d partially writable",
-		    page, node->allocsize - page, dn->number);
+		    page, node->allocsize - page, node->cache_id);
       else
 	ext2_debug ("made page %u[%u] in inode %d writable",
-		    page, vm_page_size, dn->number);
+		    page, vm_page_size, node->cache_id);
 #endif
 
       rwlock_writer_unlock (&dn->alloc_lock);
@@ -462,7 +462,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
       else if (err)
 	ext2_warning ("inode=%d, page=0x%x: %s",
-		      dn->number, page, strerror (err));
+		      node->cache_id, page, strerror (err));
 
       return err;
     }
@@ -509,7 +509,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	  block_t old_page_end_block =
 	    round_page (old_size) >> log2_block_size;
 
-	  ext2_debug ("growing inode %d to %u bytes (from %u)", dn->number,
+	  ext2_debug ("growing inode %d to %u bytes (from %u)", node->cache_id,
 		      new_size, old_size);
 
 	  if (dn->last_page_partially_writable
@@ -549,7 +549,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		  ? " (last page writable)": "");
       if (err)
 	ext2_warning ("inode=%d, target=%ld: %s",
-		      dn->number, new_size, strerror (err));
+		      node->cache_id, new_size, strerror (err));
 
       node->allocsize = new_size;
 

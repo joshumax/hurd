@@ -1,6 +1,6 @@
 /* Access to file layout information
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -115,8 +115,8 @@ diskfs_S_file_get_storage_info (struct protid *cred, int *class,
   else
     *runs_len = 0;
 
-  ((long *)*misc)[0] = htonl (node->dn->number);
-  ((long *)*misc)[1] = htonl (dino (node->dn->number)->i_translator);
+  ((long *)*misc)[0] = htonl (node->cache_id);
+  ((long *)*misc)[1] = htonl (dino (node->cache_id)->i_translator);
 
   *class = STORAGE_DEVICE;
   *flags = 0;

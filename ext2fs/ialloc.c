@@ -1,6 +1,6 @@
 /* Inode allocation routines.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -55,7 +55,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   unsigned long block_group;
   unsigned long bit;
   struct ext2_group_desc *gdp;
-  ino_t inum = np->dn->number;
+  ino_t inum = np->cache_id;
 
   assert (!diskfs_readonly);
 
@@ -277,12 +277,12 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 
   assert (!diskfs_readonly);
 
-  inum = ext2_alloc_inode (dir->dn->number, mode);
+  inum = ext2_alloc_inode (dir->cache_id, mode);
 
   if (inum == 0)
     return ENOSPC;
 
-  err = iget (inum, &np);
+  err = diskfs_cached_lookup (inum, &np);
   if (err)
     return err;
 
