@@ -19,6 +19,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "priv.h"
+#include <device/device.h>
+
 /* Call this after arguments have been parsed to initialize the
    library.  */ 
 void 
@@ -26,7 +29,7 @@ diskfs_init_diskfs (void)
 {
   mach_port_t host, dev;
   memory_object_t obj;
-  device_t dev;
+  device_t timedev;
   
   _libports_initialize ();	/* XXX */
 
@@ -54,11 +57,11 @@ diskfs_init_diskfs (void)
   diskfs_default_pager = MACH_PORT_NULL;
   vm_set_default_memory_manager (diskfs_host_priv, &diskfs_default_pager);
   
-  device_open (diskfs_master_device, 0, "time", &dev);
-  device_map (dev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
+  device_open (diskfs_master_device, 0, "time", &timedev);
+  device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
   vm_map (mach_task_self (), (vm_address_t *)diskfs_mtime,
 	  sizeof (mapped_time_value_t), 0, 1, obj, 0, 0, VM_PROT_READ,
 	  VM_PROT_READ, VM_INHERIT_NONE);
-  mach_port_deallocate (mach_task_self (), dev);
+  mach_port_deallocate (mach_task_self (), timedev);
   mach_port_deallocate (mach_task_self (), obj);
 }
