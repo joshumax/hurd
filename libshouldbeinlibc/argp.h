@@ -120,12 +120,21 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 /* Special values for the KEY argument to an argument parsing function.
    ARGP_ERR_UNKNOWN should be returned if they aren't understood.
 
-   The sequence of keys to parser calls is either (where opt is a user key):
-       ARGP_KEY_INIT (opt | ARGP_KEY_ARG)... ARGP_KEY_END
-   or  ARGP_KEY_INIT opt... ARGP_KEY_NO_ARGS ARGP_KEY_END
+   The sequence of keys to a parsing function is either (where each
+   uppercased word should be prefixed by `ARGP_KEY_' and opt is a user key):
 
-   If an error occurs, then the parser is called with ARGP_KEY_ERR, and no
-   other calls are made.  */
+       INIT opt... NO_ARGS END SUCCESS  -- No non-option arguments at all
+   or  INIT (opt | ARG)... END SUCCESS  -- All non-option args parsed
+   or  INIT (opt | ARG)... SUCCESS      -- Some non-option arg unrecognized
+
+   The third case is where every parser returned ARGP_KEY_UNKNOWN for an
+   argument, in which case parsing stops at that argument (returning the
+   unparsed arguments to the caller of argp_parse if requested, or stopping
+   with an error message if not).
+
+   If an error occurs (either detected by argp, or because the parsing
+   function returned an error value), then the parser is called with
+   ARGP_KEY_ERROR, and no further calls are made.  */
 
 /* This is not an option at all, but rather a command line argument.  If a
    parser receiving this key returns success, the fact is recorded, and the
@@ -154,12 +163,12 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
    never made, so any cleanup must be done here).  */
 #define ARGP_KEY_ERROR		0x1000005
 
-/* An argp structure contains a set of getopt options declarations, a
-   function to deal with getting one, and an optional pointer to another
-   argp structure.  When actually parsing options, getopt is called with
-   the union of all the argp structures chained together through their
-   CHILD pointers, with conflicts being resolved in favor of the first
-   occurance in the chain.  */
+/* An argp structure contains a set of options declarations, a function to
+   deal with parsing one, documentation string, a possible vector of child
+   argp's, and perhaps a function to filter help output.  When actually
+   parsing options, getopt is called with the union of all the argp
+   structures chained together through their CHILD pointers, with conflicts
+   being resolved in favor of the first occurance in the chain.  */
 struct argp
 {
   /* An array of argp_option structures, terminated by an entry with both
