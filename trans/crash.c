@@ -82,7 +82,9 @@ kern_return_t
 S_crash_dump_task (mach_port_t port,
 		   mach_port_t reply_port, mach_msg_type_name_t reply_type,
 		   task_t task, file_t core_file, char *target,
-		   int signo, int sigcode, int sigerror)
+		   int signo, int sigcode, int sigerror,
+		   natural_t exc, natural_t code, natural_t subcode,
+		   mach_port_t ctty_id)
 
 {
   error_t err;
@@ -122,7 +124,7 @@ S_crash_dump_task (mach_port_t port,
 	      c->proc = user_proc;
 
 	      /* Tell the proc server the crasher stopped.  */
-	      proc_mark_stop (user_proc, signo);
+	      proc_mark_stop (user_proc, signo, sigcode);
 
 	      c->task = task;
 	      c->core_file = core_file;
@@ -147,7 +149,7 @@ S_crash_dump_task (mach_port_t port,
 /* Handle an attempt to send a signal to crashing task C.  */
 
 static error_t
-signal_crasher (struct crasher *c, int signo, mach_port_t refport)
+signal_crasher (struct crasher *c, int signo, int sigcode, mach_port_t refport)
 {
   error_t err;
 
@@ -159,7 +161,7 @@ signal_crasher (struct crasher *c, int signo, mach_port_t refport)
       case SIGTERM:
       case SIGKILL:
 	/* Kill it as asked.  */
-	proc_mark_exit (c->proc, W_EXITCODE (0, signo));
+	proc_mark_exit (c->proc, W_EXITCODE (0, signo), sigcode);
 	err = task_terminate (c->task);
 	break;
 
@@ -205,7 +207,7 @@ S_msg_sig_post (mach_port_t port,
   if (! c)
     return EOPNOTSUPP;
 
-  return signal_crasher (c, signo, refport);
+  return signal_crasher (c, signo, sigcode, refport);
 }
 
 kern_return_t
@@ -221,7 +223,7 @@ S_msg_sig_post_untraced (mach_port_t port,
     return EOPNOTSUPP;
 
   if (signo != 0 && signo != c->signo)
-    return signal_crasher (c, signo, refport);
+    return signal_crasher (c, signo, sigcode, refport);
 
   if (refport != c->task)
     err = EPERM;
@@ -241,7 +243,7 @@ S_msg_sig_post_untraced (mach_port_t port,
 
 	  /* Tell the proc server it has stopped (again)
 	     with the original crash signal.  */
-	  proc_mark_stop (c->proc, c->signo);
+	  proc_mark_stop (c->proc, c->signo, c->sigcode);
 
 	  /* We don't need to listen on this msgport any more.  */
 	  ports_destroy_right (c);
