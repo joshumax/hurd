@@ -42,12 +42,19 @@ S_socket_create (mach_port_t pf,
      the file type of the socket.  The primary application is to make
      sockets that pretend to be a FIFO, for the implementations of
      pipes.  */
-  if (protocol == 0)
-    mode = S_IFSOCK;
-  else if ((protocol & ~S_IFMT) == 0)
-    mode = protocol & S_IFMT;
-  else
-    return EPROTONOSUPPORT;
+  switch (protocol)
+    {
+    case 0:
+      mode = S_IFSOCK;
+      break;
+    case S_IFCHR:
+    case S_IFSOCK:
+    case S_IFIFO:
+      mode = protocol;
+      break;
+    default:
+      return EPROTONOSUPPORT;
+    }
 
   switch (sock_type)
     {
