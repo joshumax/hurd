@@ -101,6 +101,30 @@ dirscanblock (vm_address_t blockoff, struct node *dp, int idx,
 	      const char *name, int namelen, enum lookup_type type,
 	      struct dirstat *ds, ino_t *inum);
 
+
+static const unsigned char ext2_file_type[EXT2_FT_MAX] =
+{
+  [EXT2_FT_UNKNOWN]	= DT_UNKNOWN,
+  [EXT2_FT_REG_FILE]	= DT_REG,
+  [EXT2_FT_DIR]		= DT_DIR,
+  [EXT2_FT_CHRDEV]	= DT_CHR,
+  [EXT2_FT_BLKDEV]	= DT_BLK,
+  [EXT2_FT_FIFO]	= DT_FIFO,
+  [EXT2_FT_SOCK]	= DT_SOCK,
+  [EXT2_FT_SYMLINK]	= DT_LNK,
+};
+static const unsigned char file_type_ext2[] =
+{
+  [DT_UNKNOWN]	= EXT2_FT_UNKNOWN,
+  [DT_REG]	= EXT2_FT_REG_FILE,
+  [DT_DIR]	= EXT2_FT_DIR,
+  [DT_CHR]	= EXT2_FT_CHRDEV,
+  [DT_BLK]	= EXT2_FT_BLKDEV,
+  [DT_FIFO]	= EXT2_FT_FIFO,
+  [DT_SOCK]	= EXT2_FT_SOCK,
+  [DT_LNK]	= EXT2_FT_SYMLINK,
+};
+
 /* Implement the diskfs_lookup from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification.  */
 error_t
@@ -509,16 +533,17 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
   dp->dn_set_mtime = 1;
 
+  /* Select a location for the new directory entry.  Each branch of this
+     switch is responsible for setting NEW to point to the on-disk
+     directory entry being written, and setting NEW->rec_len appropriately.  */
+
   switch (ds->stat)
     {
     case TAKE:
       /* We are supposed to consume this slot. */
       assert (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
 
-      ds->entry->inode = np->cache_id;
-      ds->entry->name_len = namelen;
-      bcopy (name, ds->entry->name, namelen);
-
+      new = ds->entry;
       break;
 
     case SHRINK:
@@ -529,13 +554,8 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
       new = (struct ext2_dir_entry_2 *) ((vm_address_t) ds->entry + oldneeded);
 
-      new->inode = np->cache_id;
       new->rec_len = ds->entry->rec_len - oldneeded;
-      new->name_len = namelen;
-      bcopy (name, new->name, namelen);
-
       ds->entry->rec_len = oldneeded;
-
       break;
 
     case COMPRESS:
@@ -555,7 +575,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	    {
 	      assert (fromoff >= tooff);
 
-	      bcopy (from, to, fromreclen);
+	      memmove (to, from, fromreclen);
 	      to->rec_len = EXT2_DIR_REC_LEN (to->name_len);
 
 	      tooff += to->rec_len;
@@ -567,10 +587,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       assert (totfreed >= needed);
 
       new = (struct ext2_dir_entry_2 *) tooff;
-      new->inode = np->cache_id;
       new->rec_len = totfreed;
-      new->name_len = namelen;
-      bcopy (name, new->name, namelen);
       break;
 
     case EXTEND:
@@ -593,18 +610,28 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
 
-      new->inode = np->cache_id;
       new->rec_len = DIRBLKSIZ;
-      new->name_len = namelen;
-      bcopy (name, new->name, namelen);
       break;
 
     default:
-      assert (0);
+      new = 0;
+      assert (! "impossible: bogus status field in dirstat");
     }
 
-  dp->dn_set_mtime = 1;
+  /* NEW points to the directory entry being written, and its
+     rec_len field is already filled in.  Now fill in the rest.  */
+
+  new->inode = np->cache_id;
+  new->file_type = (EXT2_HAS_INCOMPAT_FEATURE (sblock,
+					       EXT2_FEATURE_INCOMPAT_FILETYPE)
+		    ? file_type_ext2[IFTODT (np->dn_stat.st_mode & S_IFMT)]
+		    : 0);
+  new->name_len = namelen;
+  memcpy (new->name, name, namelen);
+
+  /* Mark the directory inode has having been written.  */
   dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
+  dp->dn_set_mtime = 1;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
@@ -810,19 +837,6 @@ count_dirents (struct node *dp, int nb, char *buf)
 /* Returned directory entries are aligned to blocks this many bytes long.
    Must be a power of two.  */
 #define DIRENT_ALIGN 4
-
-static const unsigned char ext2_file_type[EXT2_FT_MAX] =
-{
-  [EXT2_FT_UNKNOWN] = DT_UNKNOWN,
-  [EXT2_FT_REG_FILE] = DT_REG,
-  [EXT2_FT_DIR] = DT_DIR,
-  [EXT2_FT_CHRDEV] = DT_CHR,
-  [EXT2_FT_BLKDEV] = DT_BLK,
-  [EXT2_FT_FIFO] = DT_FIFO,
-  [EXT2_FT_SOCK] = DT_SOCK,
-  [EXT2_FT_SYMLINK] = DT_LNK,
-};
-
 
 /* Implement the disikfs_get_directs callback as described in
    <hurd/diskfs.h>. */
