@@ -72,8 +72,6 @@ struct node
   int references;
   
   mach_port_t sockaddr;
-
-  mach_port_t identity;
   
   int owner;
   
