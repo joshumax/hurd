@@ -25,33 +25,37 @@
 #include <device/device.h>
 #include <mach/sa/sys/ioctl.h>	/* Ick */
 #include <device/disk_status.h>
+#include <hurd/store.h>
 
 static error_t
 fd_get_device (int fd, device_t *device)
 {
   error_t err;
-  string_t name;
-  int class, flags = 0;
-  size_t block_size;
-  off_t *runs = 0;
-  char *misc = 0;
-  size_t runs_len = 0, misc_len = 0;
+  struct store *store;
   file_t node = getdport (fd);
 
   if (node == MACH_PORT_NULL)
     return errno;
 
-  err = file_get_storage_info (node, &class, &runs, &runs_len, &block_size,
-			       name, device, &misc, &misc_len, &flags);
-  if (!err)
+  err = store_create (node, &store);
+  if (! err)
     {
-      if (runs_len != 2 || runs[0] != 0 || class != STORAGE_DEVICE)
-	/* This doesn't seem to be a handle on the whole device; be picky.  */
+      if (store->class != STORAGE_DEVICE
+	  /* In addition to requiring a device, we also want the *whole*
+	     device -- one contiguous run starting at 0.  */
+	  || store->num_runs != 1
+	  || store->runs[0].start != 0)
 	err = ENODEV;
-      if (runs_len)
-	vm_deallocate (mach_task_self (), (vm_address_t)runs, runs_len);
-      if (misc_len)
-	vm_deallocate (mach_task_self (), (vm_address_t)misc, misc_len);
+      else if (store->port == MACH_PORT_NULL)
+	/* Usually getting a null port back means we didn't have sufficient
+	   privileges.  */
+	err = EPERM;
+      else
+	{
+	  *device = store->port;
+	  store->port = MACH_PORT_NULL;	/* Steal the port from STORE!  */
+	}
+      store_free (store);
     }
 
   mach_port_deallocate (mach_task_self (), node);
