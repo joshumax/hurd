@@ -138,6 +138,10 @@ void *memscan(void *buf, unsigned char ch, unsigned len);
 
 /* ---------------------------------------------------------------- */
 
+/* XXX debugging */
+enum last_act { LAST_UNLOCK, LAST_TRUNCATE, LAST_READ, LAST_WRITE, LAST_GROW };
+#define LAST_BUFSZ 32
+
 /* ext2fs specific per-file data.  */
 struct disknode
 {
@@ -163,7 +167,22 @@ struct disknode
   /* True if the last page of the file has been made writable, but is only
      partially allocated.  */
   int last_page_partially_writable;
+
+  /* XXX debugging */
+  enum last_act last_acts[LAST_BUFSZ];
+  vm_offset_t last_addrs[LAST_BUFSZ];
+  int last_offs;
 };
+
+extern inline void
+RECORD_LAST (struct disknode *dn, enum last_act act, vm_offset_t addr)
+{
+  if (dn->last_offs == LAST_BUFSZ)
+    dn->last_offs = 0;
+  dn->last_acts[dn->last_offs] = act;
+  dn->last_addrs[dn->last_offs] = addr;
+  dn->last_offs++;
+}
 
 struct user_pager_info
 {
