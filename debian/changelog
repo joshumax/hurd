@@ -1,5 +1,21 @@
+hurd (20021118-1) unstable; urgency=low
 
-  * debian/control: Add libncursesw5-dev as build-dependency.
+  * New snapshot from CVS.
+    kbd, mouse as usual, with bug fixes from David Walter.
+    Change terminal type to mach-color.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue, 18 Nov 2002 21:32:22 +0200
+
+hurd (20021011-1) unstable; urgency=low
+
+  * New snapshot from CVS.
+    kbd, mouse as usual.
+    Build libpthread.
+    debian/control: Add libncursesw5-dev as build-dependency.
+    debian/shlibs: Add libpthread
+    debian/control: Add myself as an uploader.
+
+ -- Neal H. Walfield <neal@desdemona>  Fri, 11 Oct 2002 21:42:21 -0400
 
 hurd (20020918-1) unstable; urgency=low
 

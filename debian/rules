@@ -187,6 +187,7 @@ binary-arch: build
 				`file debian/tmp/bin/* \
 				      debian/tmp/hurd/* \
 				      debian/tmp/lib/* \
+				      debian/tmp/lib/hurd/console/* \
 				      debian/tmp/libexec/* \
 				      debian/tmp/sbin/* \
 				| egrep '(executable.*dynamic)|(shared object)' \

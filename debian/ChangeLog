@@ -1,3 +1,11 @@
+2002-11-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* control (Uploader): Add Neal.
+	* shlibs: Add pthreads.
+	* rules: Add debian/tmp/lib/hurd/console/* to search path for
+	shared objects.
+	* changelog: Add Neal's last release and my upcoming.
+
 2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* control (Build-Depends): Add libncursesw5-dev.
