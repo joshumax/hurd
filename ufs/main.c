@@ -189,9 +189,7 @@ main (int argc, char **argv)
       diskfs_set_hypermetadata (1, 0);
     }
 
-  /* Initiialize our pagers so we can begin using them.  */
   inode_init ();
-  pager_init ();
 
   /* Find our root node.  */
   warp_root ();
