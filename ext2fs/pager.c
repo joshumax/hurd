@@ -2,6 +2,8 @@
 
    Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
+   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
@@ -317,13 +319,20 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 
       while (length > 0 && !err)
 	{
+	  int modified;
 	  daddr_t block = boffs_block (offs);
-	  if (clear_bit (block, modified_global_blocks))
+
+	  spin_lock (&modified_global_blocks_lock);
+	  modified = clear_bit (block, modified_global_blocks);
+	  spin_unlock (&modified_global_blocks_lock);
+
+	  if (modified)
 	    /* This block's been modified, so write it out.  */
 	    err = pending_blocks_add (&pb, block);
 	  else
 	    /* Otherwise just skip it.  */
 	    err = pending_blocks_skip (&pb);
+
 	  offs += block_size;
 	}
 
