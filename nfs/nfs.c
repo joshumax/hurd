@@ -162,10 +162,10 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
   *p++ = -1;			/* uid */
   *p++ = -1;			/* gid */
   *p++ = -1;			/* size */
-  *p++ = htonl (atime->ts_sec);
-  *p++ = htonl (atime->ts_nsec * 1000);
-  *p++ = htonl (mtime->ts_sec);
-  *p++ = htonl (mtime->ts_nsec * 1000);
+  *p++ = htonl (atime->tv_sec);
+  *p++ = htonl (atime->tv_nsec * 1000);
+  *p++ = htonl (mtime->tv_sec);
+  *p++ = htonl (mtime->tv_nsec * 1000);
   return p;
 }
 
