@@ -1,3 +1,33 @@
+2001-08-16  Roland McGrath  <roland@frob.com>
+
+	* boot_script.h (struct cmd): Change `task' member type to `task_t'.
+	(boot_script_task_create, boot_script_task_resume,
+	boot_script_prompt_task_resume, boot_script_free_task): Declare new
+	functions that callers must define.
+	* userland-boot.c: Define those.
+	* boot_script.c (create_task, resume_task, prompt_resume_task): Use
+	those instead of direct Mach calls.
+	(free_cmd): Likewise.
+	(read_file): Function removed.
+	(builtin_symbols): Remove the "read-file" element.
+
+	* boot_script.h (boot_script_malloc, boot_script_free): Declare new
+	functions that callers must define.
+	* boot_script.c: All uses of malloc/free changed to use those instead.
+	* userland-boot.c: New file.  Defines them using malloc/free.
+	* Makefile (SRCS, OBJS): Add it.
+	* boot.c (boot_script_malloc, boot_script_free): Old cruft functions
+	removed.
+
+	* boot_script.c (boot_script_parse_line): Take new first argument HOOK.
+	Store it in CMD->hook.
+	(main): Update caller.
+	(boot_script_exec): Pass CMD->hook as 1st arg to boot_script_exec_cmd.
+	(boot_script_exec_cmd): Take new first argument HOOK.
+	* boot.c (boot_script_exec_cmd): Likewise.
+	* boot_script.h (struct cmd): New member `void *hook'.
+	Update decls for HOOK arguments added.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* Makefile (ourdevice.defs): Loosen up regexp since some whitespace in

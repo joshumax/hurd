@@ -1,3 +1,10 @@
+2001-08-16  Roland McGrath  <roland@frob.com>
+
+	* Makefile (OBJS): Add userland-boot.o here.
+	Add a vpath to find userland-boot.c in boot/ too.
+	* bootstrap.c (parse_script): Pass new arg to boot_script_parse_line.
+	* load.c: Include <stddef.h> before "boot_script.h".
+
 2001-07-20  Roland McGrath  <roland@frob.com>
 
 	* panic.c: Fix obsolescent #endif syntax.
