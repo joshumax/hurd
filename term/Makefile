@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -26,6 +26,6 @@ SRCS = devio.c munge.c users.c main.c ptyio.c
 LCLHDRS = term.h
 DIST_FILES = ourmsg.defs
 
-OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
+OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
 
 include ../Makeconf
