@@ -1,3 +1,7 @@
+2004-07-27  Roland McGrath  <roland@frob.com>
+
+	* misc.h (OPENONLY_STATE_MODES): Remove O_NONBLOCK.
+
 2004-02-10  Roland McGrath  <roland@frob.com>
 
 	* runtime-argp.c (netfs_runtime_argp): Include <argp.h>.
