@@ -24,22 +24,8 @@ makemode := server
 target = term
 SRCS = devio.c munge.c users.c main.c
 LCLHDRS = term.h
+DIST_FILES = ourmsg.defs
 
 OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
 
 include ../Makeconf
-
-# The reason for -Dout= is to prevent errors for get_init_port,
-# get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
-# We don't use those, so we're safe in breaking them.
-ourmsg_U.h ourmsgUser.c: ourmsg.defs ../hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $< \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null \
-		    -user ourmsgUser.c -header ourmsg_U.h
-	mv ourmsg_U.h tmp.h
-	sed -e 's/_msg_user_/_ourmsg_user/' < tmp.h > ourmsg_U.h
-	rm -f tmp.h
-
-ourmsg.defs: $(includedir)/hurd/msg.defs
-	rm -f $@
-	ln -s $< $@
