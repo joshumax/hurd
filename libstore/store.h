@@ -382,6 +382,13 @@ error_t _store_task_create (task_t task, int flags, size_t block_size,
    corresponding store in STORE.  */
 error_t store_task_open (const char *name, int flags, struct store **store);
 
+/* Return a new store in STORE referring to the memory object MEMOBJ.
+   Consumes the send right MEMOBJ.  */
+error_t store_memobj_create (memory_object_t memobj, int flags,
+			     size_t block_size,
+			     const struct store_run *runs, size_t num_runs,
+			     struct store **store);
+
 /* Open the network block device NAME (parsed as "HOSTNAME:PORT[/BLOCKSIZE]"),
    and return the corresponding store in STORE.  This opens a socket and
    initial connection handshake, which determine the size of the device,
@@ -509,6 +516,7 @@ extern const struct store_class store_part_class;
 extern const struct store_class store_file_class;
 extern const struct store_class store_task_class;
 extern const struct store_class store_nbd_class;
+extern const struct store_class store_memobj_class;
 extern const struct store_class store_zero_class;
 extern const struct store_class store_ileave_class;
 extern const struct store_class store_concat_class;
