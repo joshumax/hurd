@@ -1,5 +1,5 @@
 /* Main program for GNU fsck
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -58,7 +58,7 @@ main (int argc, char **argv)
 	    }
 	  /* Fall through */
 	case ARGP_KEY_NO_ARGS:
-	  argp_help (state->argp, stderr, ARGP_HELP_STD_USAGE);	/* exits */
+	  argp_usage (state);
 	default:  return EINVAL;
 	}
       return 0;
@@ -66,7 +66,7 @@ main (int argc, char **argv)
   struct argp argp = {options, parse_opt, args_doc};
 
   preen = nowrite = noquery = 0;
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   if (!setup (device))
     exit (1);
