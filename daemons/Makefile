@@ -32,7 +32,7 @@ libutil-libsubst = -lutil
 include ../Makeconf
 
 %: %.sh
-	cp $< $@
+	cp $< $@ && chmod +w $@
 
 getty: -lutil
 
