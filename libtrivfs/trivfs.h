@@ -130,3 +130,9 @@ int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    call which creade this filesystem. */
 error_t trivfs_goaway (int flags, mach_port_t realnode, int cntltype,
 		       int protidtype);
+
+/* Call this to set atime for the node to the current time.  */
+error_t trivfs_set_atime (struct trivfs_control *cntl);
+
+/* Call this to set mtime for the node to the current time. */
+error_t trivfs_set_mtime (struct trivfs_control *cntl);
