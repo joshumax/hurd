@@ -43,7 +43,8 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
   if (new == NULL)
     return ENOMEM;
 
-  new->refs = 0;
+  new->readers = 0;
+  new->writers = 0;
   new->flags = 0;
   new->class = class;
 
@@ -68,7 +69,7 @@ pipe_free (struct pipe *pipe)
   pq_free (pipe->queue);
   free (pipe);
 }
-
+
 /* Wake up all threads waiting on PIPE, which should be locked.  */
 inline void
 pipe_kick (struct pipe *pipe)
@@ -80,23 +81,40 @@ pipe_kick (struct pipe *pipe)
   mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
 }
 
-/* Discard a reference to PIPE, which should be unlocked, being sure to make
-   users aware of this.  */
-void
-pipe_break (struct pipe *pipe)
+/* Take any actions necessary when PIPE aquires its first writer.  */
+void _pipe_first_writer (struct pipe *pipe)
 {
-  mutex_lock (&pipe->lock);
-
-  /* As there may be multiple writers on a connectionless socket, we
-     never allow EOF to be signaled on the reader.  */
   if (! (pipe->class->flags & PIPE_CLASS_CONNECTIONLESS))
-    pipe->flags |= PIPE_BROKEN;
+    pipe->flags &= ~PIPE_BROKEN;
+}
 
-  if (pipe->refs > 1)
-    /* Other references to PIPE besides ours?  Wake 'em up.  */
-    pipe_kick (pipe);
+/* Take any actions necessary when PIPE's last reader has gone away.  PIPE
+   should be locked.  */
+void _pipe_no_readers (struct pipe *pipe)
+{
+  if (pipe->writers == 0)
+    pipe_free (pipe);
+  else
+    mutex_unlock (&pipe->lock);
+}
 
-  pipe_release (pipe);
+/* Take any actions necessary when PIPE's last writer has gone away.  PIPE
+   should be locked.  */
+void _pipe_no_writers (struct pipe *pipe)
+{
+  if (pipe->readers == 0)
+    pipe_free (pipe);
+  else
+    {
+      if (! (pipe->class->flags & PIPE_CLASS_CONNECTIONLESS))
+	{
+	  pipe->flags |= PIPE_BROKEN;
+	  if (pipe->readers)
+	    /* Wake up readers who might want to know about our new state.  */
+	    pipe_kick (pipe);
+	}
+      mutex_unlock (&pipe->lock);
+    }
 }
 
 /* Writes up to LEN bytes of DATA, to PIPE, which should be locked, and
