@@ -15,6 +15,21 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
+#define EXC_TABLE_SIZE 1024	/* Ack!XXX -- should be dynamically sized!  */
+/* This is the table of addresses for which we should report faults
+   back to the faulting thread. */
+static struct 
+{
+  struct pager *p;
+  vm_offset_t pager_offset;
+  void *offset;
+  long length;
+} memory_fault_table[EXC_TABLE_SIZE];
+
+static spin_lock_t memory_fault_lock;
+
 /* Mark the memory at ADDR continuing for LEN bytes as mapped from pager P
    at offset OFF.  Call when vm_map-ing part of the disk. 
    CAVEAT: addr must not be zero. */
