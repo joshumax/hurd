@@ -27,8 +27,7 @@
 error_t
 fshelp_fetch_root (struct transbox *box, void *cookie,
 		   file_t dotdot,
-		   uid_t *uids, int uids_len,
-		   uid_t *gids, int gids_len,
+		   struct iouser *user,
 		   int flags,
 		   fshelp_fetch_root_callback1_t callback1,
 		   fshelp_fetch_root_callback2_t callback2,
@@ -170,8 +169,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
   
   /* Cancellation point XXX */
   err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
-		      uids, uids_len, gids, gids_len, flags,
-		      retry, retryname, root);
+		      user->uids->ids, user->uids->len, 
+		      user->gids->ids, user->gids->len,
+		      flags, retry, retryname, root);
   
   mutex_lock (box->lock);
   

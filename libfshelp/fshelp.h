@@ -27,6 +27,7 @@
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <cthreads.h>
+#include <iohelp.h>
 
 #ifndef FSHELP_EI
 #define FSHELP_EI extern inline
@@ -117,18 +118,16 @@ typedef error_t (*fshelp_fetch_root_callback2_t) (void *cookie1, void *cookie2,
 						  *underlying_type);
 
 /* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
-   for the directory in which we are looking; UIDS (length UIDS_LEN)
-   and GIDS (length GIDS_LEN) are the ids of the user responsible for
-   the call.  FLAGS are as for dir_pathtrans (but O_CREAT and O_EXCL
-   are not meaningful and are ignored).  The trasnbox lock (as
-   set by fshelp_transbox_init) must be held before the call, and will
-   be held upon return, but may be released during the operation of
-   the call.  */
+   for the directory in which we are looking; USER specifies the ids
+   of the user responsible for the call.  FLAGS are as for
+   dir_pathtrans (but O_CREAT and O_EXCL are not meaningful and are
+   ignored).  The trasnbox lock (as set by fshelp_transbox_init) must
+   be held before the call, and will be held upon return, but may be
+   released during the operation of the call.  */
 error_t
 fshelp_fetch_root (struct transbox *transbox, void *cookie,
 		   file_t dotdot, 
-		   uid_t *uids, int uids_len,
-		   uid_t *gids, int gids_len,
+		   struct iouser *user,
 		   int flags,
 		   fshelp_fetch_root_callback1_t callback1,
 		   fshelp_fetch_root_callback2_t callback2,
@@ -239,5 +238,70 @@ error_t fshelp_set_options (struct argp *argp, int flags,
 error_t fshelp_return_malloced_buffer (char *buf, size_t len,
 				       char **rbuf,
 				       mach_msg_type_number_t *rlen);
+
+
+
+/*  Standardized filesystem permission checking */
+
+/* Check to see whether USER should be considered the owner of the
+   file identified by ST.  If so, return zero; otherwise return an
+   appropriate error code. */
+FSHELP_EI error_t
+fshelp_isowner (struct stat *st, struct iouser *user)
+{
+  /* Permitted if the user has the owner UID, the superuser UID, or if
+     the user is in the group of the file and has the group ID as
+     their user ID.  */
+  if (idvec_contains (user->uids, st->st_uid)
+      || idvec_contains (user->uids, 0)
+      || (idvec_contains (user->gids, st->st_gid)
+	  && idvec_contains (user->uids, st->st_gid)))
+    return 0;
+  else 
+    return EPERM;
+}
+
+
+/* Check to see whether the user USER can operate on a file identified
+   by ST.  OP is one of S_IREAD, S_IWRITE, and S_IEXEC.  If the access
+   is permitted, return zero; otherwise return an appropriate error
+   code.  */
+FSHELP_EI error_t
+fshelp_access (struct stat *st, int op, struct iouser *user)
+{
+  if (idvec_contains (user->uids, 0))
+    gotit = 1;
+  else if (user->uids->num == 0 && (st->st_mode & S_IUSEUNK))
+    gotit = st->st_mode & (op << S_IUSEUNKSHIFT);
+  else if (!fshelp_isowner (st, user))
+    gotit = st->st_mode & op;
+  else if (idvec_contains (user->gids, st->st_gid))
+    gotit = st->st_mode & (op >> 3);
+  else
+    gotit = st->st_mode & (op >> 6);
+  return gotit ? 0 : EACCES;
+}
+
+/* Check to see whether USER is allowed to modify DIR with respect to
+   existing file ST.  (If there is no existing file, pass 0 for ST.)
+   If the access is permissable return 0; otherwise return an
+   appropriate error code.  */
+FSHELP_EI error_t
+fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)
+{
+  error_t err;
+  
+  /* The user must be able to write the directory. */
+  err = fshelp_access (dir, S_IWRITE, user);
+  if (err)
+    return err;
+
+  /* If the directory is sticky, the user must own either it or the file.  */
+  if ((dir->st_mode & S_ISVTX) && st
+      && fshelp_isowner (dir, user) && fshelp_isowner (st, user))
+    return EACCES;
+
+  return 0;
+}
 
 #endif

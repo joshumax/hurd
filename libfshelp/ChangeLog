@@ -1,3 +1,13 @@
+Wed Nov  6 17:49:33 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* fshelp.h (fshelp_fetch_root): Delete args `uids', `gids',
+ 	`uids_len', and `gids_len'.  New arg `user'.
+	* fetch-root.c (fshelp_fetch_root): Ditto.
+
+	* fshelp.h: Include <iohelp.h>.
+	(fshelp_access, fshelp_isowner, fshelp_checkdirmod): New
+ 	functions.
+
 Mon Oct 21 21:55:21 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* fshelp.h: Add extern inline protection.
