@@ -133,8 +133,12 @@ See `tasks', the exported task list.
 ** Test new-fifo & make it fifo. !
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
-** pflocal: make peer addresses work?
 ** magic: `ls -ld /dev/fd' and `test -d /dev/fd' should work.
+** implement io_revoke for things in trans/ that need it. !
+
+** pflocal
+*** make peer addresses work?
+*** implement io_revoke on sockets !
 
 ** term:
 *** find a way to reduce duplicate signals from repeated VINTR input
@@ -160,6 +164,7 @@ See `tasks', the exported task list.
 *** Diagnose why shutdown doesn't close TCP channels properly or reliably. !
 *** select for read on a UDP socket seems never to return. !!!
 *** Undefined functions at the end of pfinet/io-ops.c. !!
+*** Implement io_revoke on sockets. !
 
 ** nfs
 *** Implement async I/O !!
@@ -174,6 +179,7 @@ See `tasks', the exported task list.
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
 *** Get rid of global DEVICE variable and use the trivfs control hack
 *** Serverify, ala new-fifo.
+*** implement io_revoke !
 
 ** ufs:
 *** Implement clustering, a la 4.4-lite sys/kern/vfs_cluster.c.
