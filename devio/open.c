@@ -49,7 +49,7 @@ open_create(struct dev *dev, struct open **open)
       err = dev_get_memory_object(dev, &memobj);
       if (!err)
 	err =
-	  window_create(memobj, 0, 0, dev_is(dev, DEV_READONLY),
+	  window_create(memobj, dev->size, 0, 0, dev_is(dev, DEV_READONLY),
 			&(*open)->window); /* XXX sizes */
       if (err)
 	{
