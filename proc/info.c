@@ -129,6 +129,8 @@ get_string (task_t t,
   err = vm_read (t, readaddr, vm_page_size * 2, &data, &readlen);
   if (err == KERN_INVALID_ADDRESS)
     err = vm_read (t, readaddr, vm_page_size, &data, &readlen);
+  if (err == MACH_SEND_INVALID_DEST)
+    err = ESRCH;
   if (err)
     return err;
 
@@ -170,6 +172,8 @@ get_vector (task_t task,
   err = vm_read (task, readaddr, vm_page_size * 2, &data, &readlen);
   if (err == KERN_INVALID_ADDRESS)
     err = vm_read (task, readaddr, vm_page_size, &data, &readlen);
+  if (err == MACH_SEND_INVALID_DEST)
+    err = ESRCH;
   if (err)
     return err;
 
@@ -311,7 +315,7 @@ S_proc_getprocinfo (struct proc *callerp,
   thread_t *thds;
   error_t err;
   size_t structsize;
-  int i;
+  int i, j;
   int didalloc = 0;
   u_int tkcount, thcount;
 
@@ -319,6 +323,8 @@ S_proc_getprocinfo (struct proc *callerp,
     return ESRCH;
   
   err = task_threads (p->p_task, &thds, &nthreads);
+  if (err == MACH_SEND_INVALID_DEST)
+    err = ESRCH;
   if (err)
     return err;
 
@@ -352,19 +358,57 @@ S_proc_getprocinfo (struct proc *callerp,
   err = task_info (p->p_task, TASK_BASIC_INFO, (int *)&pi->taskinfo,
 		   &tkcount);
   
-  for (i = 0; i < nthreads; i++)
-    {
-      thcount = THREAD_BASIC_INFO_COUNT;
-      if (!err)
-	err = thread_info (thds[i], THREAD_BASIC_INFO,
-			   (int *)&pi->threadinfos[i].pis_bi, 
-			   &thcount);
-      thcount = THREAD_SCHED_INFO_COUNT;
-      if (!err)
-	err = thread_info (thds[i], THREAD_SCHED_INFO,
-			   (int *)&pi->threadinfos[i].pis_si,
-			   &thcount);
+  if (err == MACH_SEND_INVALID_DEST)
+    err = ESRCH;
+  if (err)
+    for (i = 0; i < nthreads; i++)
       mach_port_deallocate (mach_task_self (), thds[i]);
+  else
+    {
+      j = 0;
+      for (i = 0; i < nthreads; i++)
+	{
+	  thcount = THREAD_BASIC_INFO_COUNT;
+	  err = thread_info (thds[i], THREAD_BASIC_INFO,
+			     (int *)&pi->threadinfos[j].pis_bi, 
+			     &thcount);
+	  if (err == MACH_SEND_INVALID_DEST)
+	    err = ESRCH;
+	  if (err && err != ESRCH)
+	    break;
+
+	  thcount = THREAD_SCHED_INFO_COUNT;
+	  if (!err)
+	    err = thread_info (thds[i], THREAD_SCHED_INFO,
+			       (int *)&pi->threadinfos[j].pis_si,
+			       &thcount);
+	  if (err == MACH_SEND_INVALID_DEST)
+	    err = ESRCH;
+	  if (err && err != ESRCH)
+	    break;
+
+	  if (!err)
+	    j++;
+	  else
+	    {
+	      /* Don't count this one */
+	      /* XXX This is buggy if *piarraylen drops enough to
+		 reduce the number of pages in structsize, because
+		 the message send won't deallocate all that we allocated. */
+	      *piarraylen -= sizeof pi->threadinfos[j] / sizeof (int);
+	      pi->nthreads--;
+	    }
+	      
+	  /* XXX If a thread has died, then its stats are now in
+	     the TASK_BASIC_INFO struct, but our copy might have been fetched
+	     from before the thread's death. */
+
+	  mach_port_deallocate (mach_task_self (), thds[i]);
+	}
+      /* If we got an error (other than ESRCH); clean the rest
+	 of the thds */
+      for (; i < nthreads; i++)
+	mach_port_deallocate (mach_task_self (), thds[i]);
     }
   
   vm_deallocate (mach_task_self (), (u_int )thds,
