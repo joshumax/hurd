@@ -43,7 +43,7 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   if (! err)
     {
       /* Remove old shadow root state.  */
-      if (new_cred->po->shadow_root)
+      if (new_cred->po->shadow_root && new_cred->po->shadow_root != node)
 	{
 	  mutex_lock (&new_cred->po->shadow_root->lock);
 	  diskfs_nput (new_cred->po->shadow_root);
@@ -53,7 +53,6 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
 
       /* And install PARENT instead.  */
       new_cred->po->shadow_root = node;
-      diskfs_nref (node);
       new_cred->po->shadow_root_parent = parent;
 
       *new = ports_get_right (new_cred);
