@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -817,7 +817,8 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
       && !diskfs_check_readonly ())
     flags |= O_WRITE;
   
-  err = diskfs_create_protid (diskfs_make_peropen (np, flags, MACH_PORT_NULL),
+  err = diskfs_create_protid (diskfs_make_peropen (np, flags,
+						   MACH_PORT_NULL, 0),
 			      user, &newpi);
   
   iohelp_free_iouser (user);
