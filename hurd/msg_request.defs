@@ -1,5 +1,5 @@
-/* Reply side of miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1994 Free Software Foundation
+/* Reply side of canonical Hurd process message port RPCs.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -24,10 +24,35 @@ subsystem msg_request 23000;		/* must match msg.defs */
 type reply_port_t = polymorphic | polymorphic
 	ctype: mach_port_t;
 
-simpleroutine sig_post_request (
+simpleroutine msg_sig_post_request (
 	process: mach_port_t;
 	replyport reply_port: reply_port_t;
 	signal: int;
 	refport: mach_port_t);
 
-/* Add the others as necessary.  */
+skip; /* msg_proc_newids */
+skip; /* msg_add_auth */
+skip; /* msg_del_auth */
+skip; /* msg_get_init_port */
+skip; /* msg_set_init_port */
+skip; /* msg_get_init_ports */
+skip; /* msg_set_init_ports */
+skip; /* msg_get_init_int */
+skip; /* msg_set_init_int */
+skip; /* msg_get_init_ints */
+skip; /* msg_set_init_ints */
+skip; /* msg_get_dtable */
+skip; /* msg_set_dtable */
+skip; /* msg_get_fd */
+skip; /* msg_set_fd */
+skip; /* msg_get_environment */
+skip; /* msg_set_environment */
+skip; /* msg_get_env_variable */
+skip; /* msg_set_env_variable */
+skip; /* msg_startup_dosync */
+
+simpleroutine msg_sig_post_untraced_reply (
+	process: mach_port_t;
+	replyport reply_port: reply_port_t;
+	signal: int;
+	refport: mach_port_t);
