@@ -309,8 +309,18 @@ endif
 ifneq ($(dir),.)
 DEP_SRCS = sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| \
 	   sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -ur
+ifeq ($(OBJS),)
+TAGS: $(OTHERTAGS)
+ifeq ($(OTHERTAGS),)
+# no tags, but parent will include this file, so make empty one.
+	> $@
+else
+	etags -o $@ $^
+endif
+else
 TAGS: $(OBJS:.o=.d) $(OTHERTAGS)
 	cat $(OBJS:.o=.d) | $(DEP_SRCS) | etags -o $@ - $(OTHERTAGS)
+endif
 endif
 
 # Cleaning
