@@ -61,14 +61,16 @@ int exec_load(exec_read_func_t *read, exec_read_exec_func_t *read_exec,
 #endif
 
 	if ((x.h.e_ident[EI_CLASS] != MY_CLASS) ||
-	    (x.h.e_ident[EI_DATA] != MY_DATA) ||
-	    (x.h.e_machine != MY_MACHINE))
+	    (x.h.e_ident[EI_DATA] != MY_DATA))
 		return EX_WRONG_ARCH;
 
 	if (MY_CLASS == ELFCLASS64)
 	  {
 	    Elf64_Phdr *phdr, *ph;
 	    vm_size_t phsize;
+
+	    if (x.h64.e_machine != MY_MACHINE)
+	      return EX_WRONG_ARCH;
 
 	    /* XXX others */
 	    out_info->entry = (vm_offset_t) x.h64.e_entry;
@@ -103,6 +105,9 @@ int exec_load(exec_read_func_t *read, exec_read_exec_func_t *read_exec,
 	  {
 	    Elf32_Phdr *phdr, *ph;
 	    vm_size_t phsize;
+
+	    if (x.h.e_machine != MY_MACHINE)
+	      return EX_WRONG_ARCH;
 
 	    /* XXX others */
 	    out_info->entry = (vm_offset_t) x.h.e_entry;
