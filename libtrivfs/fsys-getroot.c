@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -25,14 +25,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
-
-struct pending_open 
-{
-  struct trivfs_protid *cred;
-  mach_port_t reply_port;
-  mach_msg_type_name_t reply_port_type;
-  struct pending_open *next;
-};
 
 kern_return_t
 trivfs_S_fsys_getroot (struct trivfs_control *cntl,
@@ -79,9 +71,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (trivfs_check_open_hook)
     {
       err = (*trivfs_check_open_hook) (cntl, uids, nuids, gids, ngids, flags);
-      assert (err != EWOULDBLOCK);
-      if (err && (err != EWOULDBLOCK 
-		  || (err == EWOULDBLOCK && (flags & O_NONBLOCK))))
+      if (err)
 	{
 	  mach_port_deallocate (mach_task_self (), new_realnode);
 	  return err;
@@ -115,79 +105,11 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (cred);
 
-  if (err == EWOULDBLOCK)
-    {
-      /* This open request must block. */
-      struct pending_open *pendo;
-      pendo = malloc (sizeof (struct pending_open));
-      ports_port_ref (cred);
-      pendo->cred = cred;
-      pendo->reply_port = reply_port;
-      pendo->reply_port_type = reply_port_type;
-      pendo->next = 0;
-      if (cntl->openstail)
-	cntl->openstail->next = pendo;
-      else
-	cntl->openshead = pendo;
-      cntl->openstail = pendo;
-      
-      ports_done_with_port (cntl);
-      mach_port_deallocate (mach_task_self (), dotdot);
-      return MIG_NO_REPLY;
-    }
-  else
-    {
-      *do_retry = FS_RETRY_NORMAL;
-      *retry_name = '\0';
-      *newpt = ports_get_right (cred);
-      *newpttype = MACH_MSG_TYPE_MAKE_SEND;
-      mach_port_deallocate (mach_task_self (), dotdot);
-      return 0;
-    }
+  *do_retry = FS_RETRY_NORMAL;
+  *retry_name = '\0';
+  *newpt = ports_get_right (cred);
+  *newpttype = MACH_MSG_TYPE_MAKE_SEND;
+  mach_port_deallocate (mach_task_self (), dotdot);
+  return 0;
 }
 
-void
-trivfs_complete_open (struct trivfs_control *cntl,
-		      int multi,
-		      error_t err)
-{
-  struct pending_open *pendo, *nxt;
-
-  if (!multi)
-    {
-      pendo = cntl->openshead;
-      cntl->openshead = pendo->next;
-      if (!cntl->openshead)
-	cntl->openstail = 0;
-      
-      if (!err)
-	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-			    FS_RETRY_NORMAL, "", ports_get_right (pendo->cred),
-			    MACH_MSG_TYPE_MAKE_SEND);
-      else
-	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
-			    FS_RETRY_NORMAL, "", MACH_PORT_NULL,
-			    MACH_MSG_TYPE_COPY_SEND);
-      ports_done_with_port (pendo->cred);
-      free (pendo);
-    }
-  else
-    {
-      for (pendo = cntl->openshead; pendo; pendo = nxt)
-	{
-	  if (!err)
-	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-				FS_RETRY_NORMAL, "", 
-				ports_get_right (pendo->cred),
-				MACH_MSG_TYPE_MAKE_SEND);
-	  else
-	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
-				FS_RETRY_NORMAL, "", MACH_PORT_NULL,
-				MACH_MSG_TYPE_COPY_SEND);
-	  nxt = pendo->next;
-	  ports_done_with_port (pendo->cred);
-	  free (pendo);
-	}
-      cntl->openshead = cntl->openstail = 0;
-    }
-}
