@@ -1,9 +1,5 @@
 User visible:
 
-Change fsys_set_options interface to allow returning data & err+data.
-  fsys: fsys_t; options: data_t; do_children: int; err: error_t; result: data_t
-Add error_t to hurd_types.defs.
-
 Add notification calls to process.defs (and create process_notify.defs). 
 (not yet)
 

@@ -28,9 +28,7 @@ SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c \
 LCLHDRS = psout.h
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
-
-# This hack to get around ickiness in Makeconf
-libutil-libsubst = -lutil
+login-LDLIBS = -lutil
 
 INSTALL-login-ops = -o root -m 4755
 INSTALL-ps-ops = -o root -m 4755
@@ -39,7 +37,6 @@ INSTALL-vmstat-ops = -o root -m 4755
 
 include ../Makeconf
 
-login: -lutil     # /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 storeinfo: ../libstore/libstore.a
 # We must include libthreads because of a bug in the way shared libraries
