@@ -170,9 +170,6 @@ char *fmts[] =
   "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS=rsize ~%CPU ~User=utime ~System=stime ~Args"
 };
 
-/* Required by `error' functions. */
-char *program_name;
-
 void 
 main(int argc, char *argv[])
 {
@@ -200,9 +197,14 @@ main(int argc, char *argv[])
       err = proc_stat_list_add_pid(procset, pid);
       if (err)
 	error(3, err, "%d: can't add process id", pid);
-    }
 
-  program_name = program_invocation_short_name;
+      /* If explicit processes are specified, we probably don't want to
+	 filter them out later.  This implicit turning off of filtering might
+	 be confusing in the case where a login-collection or session is
+	 specified along with some pids, but it's probably not worth worrying
+	 about.  */
+      filter_mask = 0;
+    }
 
   err = ps_context_create(cur_proc, &context);
   if (err)
