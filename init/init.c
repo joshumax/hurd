@@ -1,5 +1,5 @@
 /* Init that only bootstraps the hurd and runs sh.
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -152,8 +152,9 @@ reboot_system (int flags)
       error_t err;
       printf ("init: notifying %p\n", (void *) n->notify_port);
       fflush (stdout);
-      /* XXX need to time out on reply */
-      err = startup_dosync (n->notify_port);
+      /* XXX Need to time out on reply.
+	 Add "waittime timeout: integer_t" param in msg.defs.  */
+      err = msg_startup_dosync (n->notify_port);
       if (err && err != MACH_SEND_INVALID_DEST)
 	{
 	  printf ("init: %p complained: %s\n",
@@ -989,186 +990,161 @@ S_sig_post (mach_port_t msgport,
    internal server stubs usually run in the signal thread.  */
 
 kern_return_t
-S_proc_newids (mach_port_t process,
+S_msg_proc_newids (mach_port_t process,
 	mach_port_t task,
 	pid_t ppid,
 	pid_t pgrp,
 	int orphaned)
-{ return _S_proc_newids (process, task, ppid, pgrp, orphaned); }
+{ return _S_msg_proc_newids (process, task, ppid, pgrp, orphaned); }
 
 
 kern_return_t
-S_add_auth (mach_port_t process,
+S_msg_add_auth (mach_port_t process,
 	auth_t auth)
-{ return _S_add_auth (process, auth); }
+{ return _S_msg_add_auth (process, auth); }
 
 
 kern_return_t
-S_del_auth (mach_port_t process,
+S_msg_del_auth (mach_port_t process,
 	mach_port_t task,
 	intarray_t uids,
 	mach_msg_type_number_t uidsCnt,
 	intarray_t gids,
 	mach_msg_type_number_t gidsCnt)
-{ return _S_del_auth (process, task, uids, uidsCnt, gids, gidsCnt); }
+{ return _S_msg_del_auth (process, task, uids, uidsCnt, gids, gidsCnt); }
 
 
 kern_return_t
-S_get_init_port (mach_port_t process,
+S_msg_get_init_port (mach_port_t process,
 	mach_port_t refport,
 	int which,
 	mach_port_t *port,
 	mach_msg_type_name_t *portPoly)
-{ return _S_get_init_port (process, refport, which, port, portPoly); }
+{ return _S_msg_get_init_port (process, refport, which, port, portPoly); }
 
 
 kern_return_t
-S_set_init_port (mach_port_t process,
+S_msg_set_init_port (mach_port_t process,
 	mach_port_t refport,
 	int which,
 	mach_port_t port)
-{ return _S_set_init_port (process, refport, which, port); }
+{ return _S_msg_set_init_port (process, refport, which, port); }
 
 
 kern_return_t
-S_get_init_ports (mach_port_t process,
+S_msg_get_init_ports (mach_port_t process,
 	mach_port_t refport,
 	portarray_t *ports,
 	mach_msg_type_name_t *portsPoly,
 	mach_msg_type_number_t *portsCnt)
-{ return _S_get_init_ports (process, refport, ports, portsPoly, portsCnt); }
+{ return _S_msg_get_init_ports (process, refport, ports, portsPoly, portsCnt); }
 
 
 kern_return_t
-S_set_init_ports (mach_port_t process,
+S_msg_set_init_ports (mach_port_t process,
 	mach_port_t refport,
 	portarray_t ports,
 	mach_msg_type_number_t portsCnt)
-{ return _S_set_init_ports (process, refport, ports, portsCnt); }
+{ return _S_msg_set_init_ports (process, refport, ports, portsCnt); }
 
 
 kern_return_t
-S_get_init_int (mach_port_t process,
+S_msg_get_init_int (mach_port_t process,
 	mach_port_t refport,
 	int which,
 	int *value)
-{ return _S_get_init_int (process, refport, which, value); }
+{ return _S_msg_get_init_int (process, refport, which, value); }
 
 
 kern_return_t
-S_set_init_int (mach_port_t process,
+S_msg_set_init_int (mach_port_t process,
 	mach_port_t refport,
 	int which,
 	int value)
-{ return _S_set_init_int (process, refport, which, value); }
+{ return _S_msg_set_init_int (process, refport, which, value); }
 
 
 kern_return_t
-S_get_init_ints (mach_port_t process,
+S_msg_get_init_ints (mach_port_t process,
 	mach_port_t refport,
 	intarray_t *values,
 	mach_msg_type_number_t *valuesCnt)
-{ return _S_get_init_ints (process, refport, values, valuesCnt); }
+{ return _S_msg_get_init_ints (process, refport, values, valuesCnt); }
 
 
 kern_return_t
-S_set_init_ints (mach_port_t process,
+S_msg_set_init_ints (mach_port_t process,
 	mach_port_t refport,
 	intarray_t values,
 	mach_msg_type_number_t valuesCnt)
-{ return _S_set_init_ints (process, refport, values, valuesCnt); }
+{ return _S_msg_set_init_ints (process, refport, values, valuesCnt); }
 
 
 kern_return_t
-S_get_dtable (mach_port_t process,
+S_msg_get_dtable (mach_port_t process,
 	mach_port_t refport,
 	portarray_t *dtable,
 	mach_msg_type_name_t *dtablePoly,
 	mach_msg_type_number_t *dtableCnt)
-{ return _S_get_dtable (process, refport, dtable, dtablePoly, dtableCnt); }
+{ return _S_msg_get_dtable (process, refport, dtable, dtablePoly, dtableCnt); }
 
 
 kern_return_t
-S_set_dtable (mach_port_t process,
+S_msg_set_dtable (mach_port_t process,
 	mach_port_t refport,
 	portarray_t dtable,
 	mach_msg_type_number_t dtableCnt)
-{ return _S_set_dtable (process, refport, dtable, dtableCnt); }
+{ return _S_msg_set_dtable (process, refport, dtable, dtableCnt); }
 
 
 kern_return_t
-S_get_fd (mach_port_t process,
+S_msg_get_fd (mach_port_t process,
 	mach_port_t refport,
 	int fd,
 	mach_port_t *port,
 	mach_msg_type_name_t *portPoly)
-{ return _S_get_fd (process, refport, fd, port, portPoly); }
+{ return _S_msg_get_fd (process, refport, fd, port, portPoly); }
 
 
 kern_return_t
-S_set_fd (mach_port_t process,
+S_msg_set_fd (mach_port_t process,
 	mach_port_t refport,
 	int fd,
 	mach_port_t port)
-{ return _S_set_fd (process, refport, fd, port); }
+{ return _S_msg_set_fd (process, refport, fd, port); }
 
 
 kern_return_t
-S_get_environment (mach_port_t process,
+S_msg_get_environment (mach_port_t process,
 	data_t *value,
 	mach_msg_type_number_t *valueCnt)
-{ return _S_get_environment (process, value, valueCnt); }
+{ return _S_msg_get_environment (process, value, valueCnt); }
 
 
 kern_return_t
-S_set_environment (mach_port_t process,
+S_msg_set_environment (mach_port_t process,
 	mach_port_t refport,
 	data_t value,
 	mach_msg_type_number_t valueCnt)
-{ return _S_set_environment (process, refport, value, valueCnt); }
+{ return _S_msg_set_environment (process, refport, value, valueCnt); }
 
 
 kern_return_t
-S_get_env_variable (mach_port_t process,
+S_msg_get_env_variable (mach_port_t process,
 	string_t variable,
 	data_t *value,
 	mach_msg_type_number_t *valueCnt)
-{ return _S_get_env_variable (process, variable, value, valueCnt); }
+{ return _S_msg_get_env_variable (process, variable, value, valueCnt); }
 
 
 kern_return_t
-S_set_env_variable (mach_port_t process,
+S_msg_set_env_variable (mach_port_t process,
 	mach_port_t refport,
 	string_t variable,
 	string_t value,
 	boolean_t replace)
-{ return _S_set_env_variable (process, refport, variable, value, replace); }
-
-
-kern_return_t
-S_io_select_done (mach_port_t notify_port,
-	mach_msg_type_name_t notify_portPoly,
-	int select_result,
-	int id_tag)
-{ return _S_io_select_done (notify_port, notify_portPoly, select_result, id_tag); }
-
+{ return _S_msg_set_env_variable (process, refport, variable, value, replace); }
 
 kern_return_t
-S_startup_dosync (mach_port_t process)
-{ return _S_startup_dosync (process); }
-
-
-kern_return_t
-S_dir_changed (mach_port_t notify_port,
-	dir_changed_type_t change,
-	string_t name)
-{ return _S_dir_changed (notify_port, change, name); }
-
-
-kern_return_t
-S_file_changed (mach_port_t notify_port,
-	file_changed_type_t change,
-	off_t start,
-	off_t end)
-{ return _S_file_changed (notify_port, change, start, end); }
-
+S_msg_startup_dosync (mach_port_t process)
+{ return _S_msg_startup_dosync (process); }
