@@ -214,7 +214,9 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
   /* Execute the open */
 
   dotdot = (mach_port_t) cred->po->hook;
-  user = iohelp_dup_iouser (cred->user);
+  err = iohelp_dup_iouser (&user, cred->user);
+  if (err)
+    return err;
   err = magic_open (cred->po->cntl, user, dotdot, flags,
 		    cred->realnode, &newcred);
   if (err)
