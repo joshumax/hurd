@@ -1745,18 +1745,26 @@ S_exec_exec (struct trivfs_protid *protid,
 		      ports_port_deref (protid);
 		    }
 		  else
-		    err = exec_exec (server,
-				     file, MACH_MSG_TYPE_MOVE_SEND,
-				     oldtask, 0,
-				     argv, argvlen,
-				     envp, envplen,
-				     dtable, MACH_MSG_TYPE_MOVE_SEND,
-				     dtablesize,
-				     portarray, MACH_MSG_TYPE_MOVE_SEND,
-				     nports,
-				     intarray, nints,
-				     deallocnames, ndeallocnames,
-				     destroynames, ndestroynames);
+		    {
+		      int n;
+		      err = exec_exec (server,
+				       file, MACH_MSG_TYPE_COPY_SEND,
+				       oldtask, 0,
+				       argv, argvlen,
+				       envp, envplen,
+				       dtable, MACH_MSG_TYPE_COPY_SEND,
+				       dtablesize,
+				       portarray, MACH_MSG_TYPE_COPY_SEND,
+				       nports,
+				       intarray, nints,
+				       deallocnames, ndeallocnames,
+				       destroynames, ndestroynames);
+		      mach_port_deallocate (mach_task_self (), file);
+		      for (n = 0; n < dtablesize; n++)
+			mach_port_deallocate (mach_task_self (), dtable[n]);
+		      for (n = 0; n < nports; n++)
+			mach_port_deallocate (mach_task_self (), portarray[n]);
+		    }
 		  mach_port_deallocate (mach_task_self (), server);
 		  if (err != ENOEXEC)
 		    return err;
