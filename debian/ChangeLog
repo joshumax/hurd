@@ -1,3 +1,7 @@
+1999-04-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* control (Depends): Change shlibs to hurd cause Marcus says so.
+
 1999-04-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rules (binary-arch): Fix $ -> $$ and \\ -> \.
