@@ -1,3 +1,10 @@
+2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fs.defs: Refer to dir_lookup, not dir_pathtrans, in comments.
+	* fsys.defs: Likewise.
+	* hurd_types.h (enum retry_type): Likewise.
+	Reported by James A Morrison <ja2morri@student.math.uwaterloo.ca>.
+
 2002-01-01  Roland McGrath  <roland@frob.com>
 
 	* exec.defs (exec_exec, exec_setexecdata): Use SCP macro

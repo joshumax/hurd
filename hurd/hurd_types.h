@@ -83,7 +83,7 @@ typedef struct statfs fsys_statfsbuf_t;
 #define FS_TRANS_SET	   0x00000004 /* Set or clear translator */
 #define FS_TRANS_ORPHAN    0x00000008 /* Orphan the active translator.  */
 
-/* Values for retry field in fs.defs:dir_pathtrans call: */
+/* Values for retry field in fs.defs:dir_lookup call: */
 enum retry_type
 {
   FS_RETRY_NORMAL = 1,		/* Retry normally if retry_name is not null. */

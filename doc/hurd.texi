@@ -98,7 +98,7 @@
 @end direntry
 
 @ifinfo
-Copyright @copyright{} 1994-2000 Free Software Foundation, Inc.
+Copyright @copyright{} 1994-2002  Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -131,7 +131,7 @@ into another language, under the above conditions for modified versions.
 @page
 
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1994--2000 Free Software Foundation, Inc.
+Copyright @copyright{} 1994--2002 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -2516,7 +2516,7 @@ call to @code{fshelp_fetch_root}.
 Fetch the root from @var{transbox}.  @var{dotdot} is an unauthenticated
 port for the directory in which we are looking; @var{user} specifies the
 ids of the user responsible for the call.  @var{flags} are as for
-@code{dir_pathtrans} (but @code{O_CREAT} and @code{O_EXCL} are not
+@code{dir_lookup} (but @code{O_CREAT} and @code{O_EXCL} are not
 meaningful and are ignored).  The transbox lock (as set by
 @code{fshelp_transbox_init}) must be held before the call, and will be
 held upon return, but may be released during the operation of the call.
@@ -3956,7 +3956,7 @@ need to reimplement @code{dir_rename} yourself.
 @deftypevar int diskfs_maxsymlinks
 This variable is a positive integer which is the maximum number of
 symbolic links which can be traversed within a single call to
-@code{dir_pathtrans}.  If this is exceeded, @code{dir_pathtrans} will
+@code{dir_lookup}.  If this is exceeded, @code{dir_lookup} will
 return @code{ELOOP}.
 @end deftypevar
 

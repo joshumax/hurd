@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994,95,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2001, 2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,7 +47,7 @@ struct protid
   struct shared_io *mapped;
 };
 
-/* One of these is created for each node opened by dir_pathtrans. */
+/* One of these is created for each node opened by dir_lookup. */
 struct peropen
 {
   int filepointer;
@@ -220,8 +220,8 @@ extern int diskfs_link_max;
 extern int diskfs_name_max;
 
 /* The user must define this variable; it is the maximum number of
-   symlinks to be traversed within a single call to dir_pathtrans.
-   If this is exceeded, dir_pathtrans will return ELOOP.  */
+   symlinks to be traversed within a single call to dir_lookup.
+   If this is exceeded, dir_lookup will return ELOOP.  */
 extern int diskfs_maxsymlinks;
 
 /* This variable is defined by diskfs; the user should set it if

@@ -1,3 +1,8 @@
+2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fstests.c (main): Call dir_lookup, not dir_pathtrans.
+	Reported by James A Morrison <ja2morri@student.math.uwaterloo.ca>.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* fstests.c (main): sync now returns void.

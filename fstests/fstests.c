@@ -1,5 +1,5 @@
 /* Test filesystem behavior
-   Copyright (C) 1993,94,2000, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -59,9 +59,9 @@ main ()
 #if 0
   if ((err = dir_unlink (root, "CREATED")) && err != ENOENT)
     printf ("Error on unlink: %d\n", err);
-  else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
-				&retry, pathbuf, &filetowrite))
-    printf ("Error on pathtrans: %d\n", err);
+  else if (err = dir_lookup (root, "CREATED", O_WRITE | O_CREAT, 0666,
+			     &retry, pathbuf, &filetowrite))
+    printf ("Error on lookup: %d\n", err);
   else if (err = io_write (filetowrite, string, strlen (string), -1, &written))
     printf ("Error on write: %d\n", err);
   else if (written != strlen (string))

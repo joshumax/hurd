@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+   Copyright (C) 1993,94,95,96,97,98, 2002 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -68,7 +68,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   mutex_lock (&diskfs_root_node->lock);
 
   /* This code is similar (but not the same as) the code in
-     dir-pathtrans.c that does the same thing.  Perhaps a way should
+     dir-lookup.c that does the same thing.  Perhaps a way should
      be found to share the logic.  */
 
   type = diskfs_root_node->dn_stat.st_mode & S_IFMT;

@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97, 2002 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -51,9 +51,9 @@ routine fsys_goaway (
 	flags: int);
 
 /* Return a file to the root of the filesystem.
-   FLAGS are as for dir_pathtrans (but O_CREAT and O_EXCL are not
+   FLAGS are as for dir_lookup (but O_CREAT and O_EXCL are not
    meaningful).  DO_RETRY, RETRY_NAME, and RESULT are as
-   for dir_pathtrans.  The port should be authenticated with GEN_UIDS
+   for dir_lookup.  The port should be authenticated with GEN_UIDS
    and GEN_GIDS (except, of course, for FS_RETRY_REAUTH and 
    FS_RETRY_MAGICAL).  DOTDOT_NODE is an unauthenticated port for the
    directory in which this root is located.  */ 

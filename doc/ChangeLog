@@ -1,3 +1,8 @@
+2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd.texi (Diskfs Callbacks): Refer to dir_lookup, not dir_pathtrans.
+	Reported by James A Morrison <ja2morri@student.math.uwaterloo.ca>.
+
 2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.texi (Store Management): Replace off_t with store_offset_t.

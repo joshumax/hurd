@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -121,11 +121,11 @@ typedef error_t (*fshelp_fetch_root_callback2_t) (void *cookie1, void *cookie2,
 
 /* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
    for the directory in which we are looking; USER specifies the ids
-   of the user responsible for the call.  FLAGS are as for
-   dir_pathtrans (but O_CREAT and O_EXCL are not meaningful and are
-   ignored).  The trasnbox lock (as set by fshelp_transbox_init) must
-   be held before the call, and will be held upon return, but may be
-   released during the operation of the call.  */
+   of the user responsible for the call.  FLAGS are as for dir_lookup
+   (but O_CREAT and O_EXCL are not meaningful and are ignored).  The
+   transbox lock (as set by fshelp_transbox_init) must be held before
+   the call, and will be held upon return, but may be released during
+   the operation of the call.  */
 error_t
 fshelp_fetch_root (struct transbox *transbox, void *cookie,
 		   file_t dotdot,
