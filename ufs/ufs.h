@@ -190,14 +190,16 @@ swab_long (long arg)
 /* Return ENTRY, after byteswapping it if necessary */
 #define read_disk_entry(entry)						    \
 ({ 									    \
+  typeof (entry) ret;							    \
   if (!swab_disk || sizeof (entry) == 1)				    \
-    (entry);								    \
+    ret = (entry);							    \
   else if (sizeof (entry) == 2)					            \
-    swab_short (entry);						            \
+    ret = swab_short (entry);						    \
   else if (sizeof (entry) == 4)					            \
-    swab_long (entry);						            \
+    ret = swab_long (entry);						    \
   else									    \
     abort ();								    \
+  ret;									    \
 })
     
 /* Execute A = B, but byteswap it along the way if necessary */
