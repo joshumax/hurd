@@ -76,15 +76,15 @@ static daddr_t ffs_mapsearch (struct fs *, struct cg *, daddr_t, int);
 static void ffs_clusteracct (struct fs *, struct cg *, daddr_t, int);
 
 /* Sync all allocation information and nod eNP if diskfs_synchronous. */
-inline
+inline void
 alloc_sync (struct node *np)
 {
-  if (diskfs_syncronous)
+  if (diskfs_synchronous)
     {
       if (np)
 	diskfs_node_update (np, 1);
       copy_sblock ();
-      diskfs_set_dypermetadata (1, 0);
+      diskfs_set_hypermetadata (1, 0);
       sync_disk (1);
     }
 }
@@ -1382,7 +1382,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	csum_dirty = 1;
 	sblock_dirty = 1;
 	fs->fs_fmod = 1;
-	alloc_sync (np, 1);
+	alloc_sync (np);
 /* 	bdwrite(bp); */
 }
 
