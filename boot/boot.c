@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -34,6 +34,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <elf.h>
 #include <mach/mig_support.h>
 #include <mach/default_pager.h>
+#include <argp.h>
+#include <hurd/store.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -48,6 +50,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "boot_script.h"
 
 #include <hurd/auth.h>
+
+#ifdef UX
+#undef STORE			/* We can't use libstore when under UX.  */
+#else
+#define STORE
+#endif
 
 #ifdef UX
 
@@ -96,8 +104,10 @@ typedef struct stat host_stat_t;
 mach_port_t privileged_host_port, master_device_port, defpager;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
-mach_port_t pseudo_console;
+mach_port_t pseudo_console, pseudo_root;
 auth_t authserver;
+
+struct store *root_store;
 
 spin_lock_t queuelock = SPIN_LOCK_INITIALIZER;
 spin_lock_t readlock = SPIN_LOCK_INITIALIZER;
@@ -117,8 +127,9 @@ void restore_termstate ();
 
 char *fsname;
 
-char *bootstrap_args;
-char *bootdevice = "sd0a";
+char bootstrap_args[100] = "-";
+char *bootdevice = 0;
+char *bootscript = 0;
 
 void set_mach_stack_args (task_t, thread_t, char *, ...);
 
@@ -381,57 +392,94 @@ boot_script_exec_cmd (mach_port_t task, char *path, int argc,
   return 0;
 }
 
+static struct argp_option options[] =
+{
+  { "boot-root",   'D', "DIR", 0,
+    "Root of a directory tree in which to find files specified in BOOT-SCRIPT" },
+  { "single-user", 's', 0, 0,
+    "Boot in single user mode" },
+  { "pause" ,      'd', 0, 0,
+    "Pause for user confirmation at various times during booting" },
+  { 0 }
+};
+static char args_doc[] = "BOOT-SCRIPT";
+static char doc[] = "Boot a second hurd";
+
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+      size_t len;
+
+    case 'D':  useropen_dir = arg; break;
+
+    case 's': case 'd':
+      len = strlen (bootstrap_args);
+      if (len >= sizeof bootstrap_args - 1)
+	argp_error (state, "Too many bootstrap args");
+      bootstrap_args[len++] = key;
+      bootstrap_args[len] = '\0';
+      break;
+
+    case ARGP_KEY_ARG:
+      if (state->arg_num == 0)
+	bootscript = arg;
+      else
+	return ARGP_ERR_UNKNOWN;
+      break;
+
+    case ARGP_KEY_INIT:
+      state->child_inputs[0] = state->input; break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
+  error_t err;
   mach_port_t foo;
-  static const char usagemsg[]
-    = "Usage: boot [-D dir] [SWITCHES] SCRIPT ROOT-DEVICE\n";
   char *buf = 0;
-  char *bootscript;
   int i, len;
-  char *newargs;
+  char *root_store_name;
+  const struct argp_child kids[] = { { &store_argp }, { 0 }};
+  struct argp argp = { options, parse_opt, args_doc, doc, kids };
+  struct store_argp_params store_argp_params = { 0 };
+
+  argp_parse (&argp, argc, argv, 0, 0, &store_argp_params);
+  err = store_parsed_name (store_argp_params.result, &root_store_name);
+  if (err)
+    error (2, err, "store_parsed_name");
+
+  err = store_parsed_open (store_argp_params.result, 0, &root_store);
+  if (err)
+    error (4, err, "%s", root_store_name);
 
   get_privileged_ports (&privileged_host_port, &master_device_port);
 
   defpager = MACH_PORT_NULL;
   vm_set_default_memory_manager (privileged_host_port, &defpager);
 
-  if (argc < 2 || (argv[1][0] == '-' && argc < 3))
-    {
-    usage:
-      write (2, usagemsg, sizeof usagemsg);
-      host_exit (1);
-    }
-
-  if (!strcmp (argv[1], "-D"))
-    {
-      if (argc < 4)
-	goto usage;
-      useropen_dir = argv[2];
-      argv += 2;
-    }
-
-  if (argv[1][0] != '-')
-    {
-      bootstrap_args = "-x";
-      bootscript = argv[1];
-      bootdevice = argv[2];
-    }
-  else
-    {
-      bootstrap_args = argv[1];
-      bootscript = argv[2];
-      bootdevice = argv[3];
-    }
-
-  newargs = malloc (strlen (bootstrap_args) + 2);
-  strcpy (newargs, bootstrap_args);
-  strcat (newargs, "f");
-  bootstrap_args = newargs;
+  strcat (bootstrap_args, "f");
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
+
+  if (root_store->class == &store_device_class && root_store->name)
+    /* Let known device nodes pass through directly.  */
+    bootdevice = root_store->name;
+  else
+    /* Pass a magic value that we can use to do I/O to ROOT_STORE.  */
+    {
+      bootdevice = "pseudo-root";
+      mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			  &pseudo_root);
+      mach_port_move_member (mach_task_self (), pseudo_root, receive_set);
+    }
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &pseudo_master_device_port);
@@ -1009,6 +1057,13 @@ ds_device_open (mach_port_t master_port,
       *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
     }
+  else if (strcmp (name, "pseudo-root") == 0)
+    /* Magic root device.  */
+    {
+      *device = pseudo_root;
+      *devicetype = MACH_MSG_TYPE_MAKE_SEND;
+      return 0;
+    }
 
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
   return device_open (master_device_port, mode, name, device);
@@ -1017,7 +1072,7 @@ ds_device_open (mach_port_t master_port,
 kern_return_t
 ds_device_close (device_t device)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return 0;
 }
@@ -1032,21 +1087,28 @@ ds_device_write (device_t device,
 		 unsigned int datalen,
 		 int *bytes_written)
 {
-  if (device != pseudo_console)
-    return D_NO_SUCH_DEVICE;
-
-#if 0
-  if (console_send_rights)
+  if (device == pseudo_console)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console,
-			  MACH_PORT_TYPE_SEND, -console_send_rights);
-      console_send_rights = 0;
-    }
+#if 0
+      if (console_send_rights)
+	{
+	  mach_port_mod_refs (mach_task_self (), pseudo_console,
+			      MACH_PORT_TYPE_SEND, -console_send_rights);
+	  console_send_rights = 0;
+	}
 #endif
 
-  *bytes_written = write (1, data, datalen);
+      *bytes_written = write (1, data, datalen);
 
-  return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+      return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+    }
+  else if (device == pseudo_root)
+    return
+      (store_write (root_store, recnum, data, datalen, bytes_written) == 0
+       ? D_SUCCESS
+       : D_IO_ERROR);
+  else
+    return D_NO_SUCH_DEVICE;
 }
 
 kern_return_t
@@ -1059,21 +1121,28 @@ ds_device_write_inband (device_t device,
 			unsigned int datalen,
 			int *bytes_written)
 {
-  if (device != pseudo_console)
-    return D_NO_SUCH_DEVICE;
-
-#if 0
-  if (console_send_rights)
+  if (device == pseudo_console)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console,
-			  MACH_PORT_TYPE_SEND, -console_send_rights);
-      console_send_rights = 0;
-    }
+#if 0
+      if (console_send_rights)
+	{
+	  mach_port_mod_refs (mach_task_self (), pseudo_console,
+			      MACH_PORT_TYPE_SEND, -console_send_rights);
+	  console_send_rights = 0;
+	}
 #endif
 
-  *bytes_written = write (1, data, datalen);
+      *bytes_written = write (1, data, datalen);
 
-  return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+      return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+    }
+  else if (device == pseudo_root)
+    return
+      (store_write (root_store, recnum, data, datalen, bytes_written) == 0
+       ? D_SUCCESS
+       : D_IO_ERROR);
+  else
+    return D_NO_SUCH_DEVICE;
 }
 
 kern_return_t
@@ -1086,35 +1155,45 @@ ds_device_read (device_t device,
 		io_buf_ptr_t *data,
 		unsigned int *datalen)
 {
-  int avail;
-
-  if (device != pseudo_console)
-    return D_NO_SUCH_DEVICE;
+  if (device == pseudo_console)
+    {
+      int avail;
 
 #if 0
-  if (console_send_rights)
-    {
-      mach_port_mod_refs (mach_task_self (), pseudo_console,
-			  MACH_PORT_TYPE_SEND, -console_send_rights);
-      console_send_rights = 0;
-    }
+      if (console_send_rights)
+	{
+	  mach_port_mod_refs (mach_task_self (), pseudo_console,
+			      MACH_PORT_TYPE_SEND, -console_send_rights);
+	  console_send_rights = 0;
+	}
 #endif
 
-  spin_lock (&readlock);
-  ioctl (0, FIONREAD, &avail);
-  if (avail)
+      spin_lock (&readlock);
+      ioctl (0, FIONREAD, &avail);
+      if (avail)
+	{
+	  vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
+	  *datalen = read (0, *data, bytes_wanted);
+	  unlock_readlock ();
+	  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+	}
+      else
+	{
+	  unlock_readlock ();
+	  queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
+	  return MIG_NO_REPLY;
+	}
+    }
+  else if (device == pseudo_root)
     {
-      vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
-      *datalen = read (0, *data, bytes_wanted);
-      unlock_readlock ();
-      return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+      *datalen = 0;
+      return
+	(store_read (root_store, recnum, bytes_wanted, (void **)data, datalen) == 0
+	 ? D_SUCCESS
+	 : D_IO_ERROR);
     }
   else
-    {
-      unlock_readlock ();
-      queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
-      return MIG_NO_REPLY;
-    }
+    return D_NO_SUCH_DEVICE;
 }
 
 kern_return_t
@@ -1127,34 +1206,58 @@ ds_device_read_inband (device_t device,
 		       io_buf_ptr_inband_t data,
 		       unsigned int *datalen)
 {
-  int avail;
-
-  if (device != pseudo_console)
-    return D_NO_SUCH_DEVICE;
+  if (device == pseudo_console)
+    {
+      int avail;
 
 #if 0
-  if (console_send_rights)
-    {
-      mach_port_mod_refs (mach_task_self (), pseudo_console,
-			  MACH_PORT_TYPE_SEND, -console_send_rights);
-      console_send_rights = 0;
-    }
+      if (console_send_rights)
+	{
+	  mach_port_mod_refs (mach_task_self (), pseudo_console,
+			      MACH_PORT_TYPE_SEND, -console_send_rights);
+	  console_send_rights = 0;
+	}
 #endif
 
-  spin_lock (&readlock);
-  ioctl (0, FIONREAD, &avail);
-  if (avail)
+      spin_lock (&readlock);
+      ioctl (0, FIONREAD, &avail);
+      if (avail)
+	{
+	  *datalen = read (0, data, bytes_wanted);
+	  unlock_readlock ();
+	  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+	}
+      else
+	{
+	  unlock_readlock ();
+	  queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
+	  return MIG_NO_REPLY;
+	}
+    }
+  else if (device == pseudo_root)
     {
-      *datalen = read (0, data, bytes_wanted);
-      unlock_readlock ();
-      return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+      error_t err;
+      void *returned = data;
+
+      *datalen = bytes_wanted;
+      err =
+	store_read (root_store, recnum, bytes_wanted, (void **)&returned, datalen);
+
+      if (! err)
+	{
+	  if (returned != data)
+	    {
+	      bcopy (returned, (void *)data, *datalen);
+	      vm_deallocate (mach_task_self (),
+			     (vm_address_t)returned, *datalen);
+	    }
+	  return D_SUCCESS;
+	}
+      else
+	return D_IO_ERROR;
     }
   else
-    {
-      unlock_readlock ();
-      queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
-      return MIG_NO_REPLY;
-    }
+    return D_NO_SUCH_DEVICE;
 }
 
 kern_return_t
@@ -1174,7 +1277,7 @@ ds_xxx_device_get_status (device_t device,
 			  dev_status_t status,
 			  u_int *statuscnt)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return D_INVALID_OPERATION;
 }
@@ -1186,7 +1289,7 @@ ds_xxx_device_set_filter (device_t device,
 			  filter_array_t filt,
 			  unsigned int len)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return D_INVALID_OPERATION;
 }
@@ -1199,7 +1302,7 @@ ds_device_map (device_t device,
 	       memory_object_t *pager,
 	       int unmap)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return D_INVALID_OPERATION;
 }
@@ -1210,7 +1313,7 @@ ds_device_set_status (device_t device,
 		      dev_status_t status,
 		      unsigned int statuslen)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return D_INVALID_OPERATION;
 }
@@ -1221,9 +1324,22 @@ ds_device_get_status (device_t device,
 		      dev_status_t status,
 		      unsigned int *statuslen)
 {
-  if (device != pseudo_console)
+  if (device == pseudo_console)
+    return D_INVALID_OPERATION;
+  else if (device == pseudo_root)
+    if (flavor == DEV_GET_SIZE)
+      if (*statuslen != DEV_GET_SIZE_COUNT)
+	return D_INVALID_SIZE;
+      else
+	{
+	  status[DEV_GET_SIZE_DEVICE_SIZE] = root_store->size;
+	  status[DEV_GET_SIZE_RECORD_SIZE] = root_store->block_size;
+	  return D_SUCCESS;
+	}
+    else
+      return D_INVALID_OPERATION;
+  else
     return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
 }
 
 kern_return_t
@@ -1233,7 +1349,7 @@ ds_device_set_filter (device_t device,
 		      filter_array_t filter,
 		      unsigned int filterlen)
 {
-  if (device != pseudo_console)
+  if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
   return D_INVALID_OPERATION;
 }
