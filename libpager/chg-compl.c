@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
 /* The kernel calls this (as described in <mach/memory_object.defs>)
    when a memory_object_change_attributes call has completed.  Read this
    in combination with pager-attr.c.  */
@@ -26,7 +28,6 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
 {
   struct pager *p;
   struct attribute_request *ar;
-  int wakeup;
   
 
   if (!(p = ports_check_port_type (obj, pager_port_type)))
