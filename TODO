@@ -229,5 +229,7 @@ See `tasks', the exported task list.
 ** Make serverboot source tar and build instructions.
 ** Deal with crypt
 ** Relink everything after version numbered libc is installed
-** Debug ext2fs
+** ext2fs: shutdown doesn't sync properly?
+    [Create a file, then (settrans -a) won't write it, but if you do sync
+     first, everything's fine; the code doesn't look too different...]
 ** Find fsck system hang

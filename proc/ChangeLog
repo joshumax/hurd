@@ -1,3 +1,8 @@
+Sun Jul 28 22:57:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* info.c (get_string_array): Correctly adjust NEWSIZE when
+	reallocating to add very long strings.
+
 Sat Jul 20 10:08:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* msg.c (S_proc_getmsgport): Deal with PID dying while we're waiting.
