@@ -1,9 +1,7 @@
 /* Zero store backend
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -119,7 +117,7 @@ zero_open (const char *name, int flags,
   if (name)
     {
       char *end;
-      size_t size = strtoul (name, &end, 0);
+      off_t size = strtoul (name, &end, 0);
       if (end == name)
 	return EINVAL;
       return store_zero_create (size, flags, store);
@@ -154,11 +152,10 @@ store_zero_class =
 
 /* Return a new zero store SIZE bytes long in STORE.  */
 error_t
-store_zero_create (size_t size, int flags, struct store **store)
+store_zero_create (off_t size, int flags, struct store **store)
 {
   struct store_run run = { 0, size };
-  *store =
-    _make_store (&store_zero_class, MACH_PORT_NULL,
-		 flags | STORE_INNOCUOUS, 1, &run, 1, 0);
-  return *store ? 0 : ENOMEM;
+  return
+    _store_create (&store_zero_class, MACH_PORT_NULL,
+		   flags | STORE_INNOCUOUS, 1, &run, 1, 0, store);
 }
