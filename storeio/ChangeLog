@@ -1,0 +1,14 @@
+Fri Sep 13 11:05:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (argp_program_version): New variable.
+	<version.h>: New include.
+
+Tue Sep 10 17:13:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dev.c (dev_rw): Return EINVAL instead of EIO for too-large offsets.
+
+	* dev.c (dev_open, dev_close): Remove ifdef'd-out code for allocating
+	DEV's buffer with valloc; other things depend on it being vm_allocated.
+
+	* io.c (trivfs_S_file_get_storage_info): Use store_return.
+
