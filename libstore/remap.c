@@ -109,20 +109,20 @@ remap_open (const char *name, int flags,
   do
     {
       char *endp;
-      runs[nruns].start = strtoul (p, &endp, 0) * 512; /* ? */
+      runs[nruns].start = strtoul (p, &endp, 0);
       if (*endp == '+')
 	{
 	  if (endp == p)	/* Syntax "+5,+7" means "0+5,0+7".  */
 	    runs[nruns].start = 0;
 	  p = endp + 1;
-	  runs[nruns].length = strtoul (p, &endp, 0) * 512;
+	  runs[nruns].length = strtoul (p, &endp, 0);
 	  if (endp == p)
 	    return EINVAL;
 	}
       else if (endp == p)	/* Must have a number unless starts with +. */
 	return EINVAL;
       else
-	runs[nruns].length = 512;
+	runs[nruns].length = 1;
       ++nruns;
       p = endp;
       if (*p == ',')
