@@ -56,6 +56,7 @@ void
 main (int argc, char *argv[])
 {
   error_t err;
+  auth_t auth;			/* Authority to make changes.  */
   int save = 0, keep = 0;
   struct idvec have_uids = IDVEC_INIT, have_gids = IDVEC_INIT;
   struct frobauth frobauth = FROBAUTH_INIT;
@@ -119,13 +120,14 @@ main (int argc, char *argv[])
     error (52, err, "Cannot get invoking authentication");
 
   /* Check passwords.  */
-  err = ugids_verify (&frobauth.ugids, &have_uids, &have_gids, 0);
-  if (err == EINVAL)
+  err = ugids_verify_make_auth (&frobauth.ugids, &have_uids, &have_gids, 0, 0,
+				0, 0, &auth);
+  if (err == EACCES)
     error (15, 0, "Invalid password");
   else if (err)
-    error (16, err, "Cannot verify authentication");
+    error (16, err, "Authentication failure");
 
-  if (frobauth_modify (&frobauth, modify, print_info, 0))
+  if (frobauth_modify (&frobauth, &auth, 1, modify, print_info, 0))
     exit (0);
   else
     exit (1);
