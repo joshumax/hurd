@@ -59,12 +59,17 @@ routine fsys_getfile (
 	filehandle: data_t;
 	out file: mach_port_send_t);
 
-/* Bootstrap filesystems should first arrange to have an execserver
-   running, by whatever mechanism they prefer.  Using that execserver,
-   they should then exec the startup server.  The startup server will
-   start the authentication server, and then file_getcontrol on its
-   current directory, and then this call on the resulting control
-   port, giving that information to the fileserver.  */
-routine fsys_here_is_auth (
+/* The following two calls are only implemented by bootstrap filesystems. */
+
+routine fsys_getpriv (
 	fsys: fsys_t;
+	out host_priv: mach_port_t;
+	out device_master: mach_port_t);
+
+/* The filesystem must do a proc_reassign with the specified procserver
+   port to identify itself before otherwise using the port.  */
+routine fsys_init (
+	fsys: fsys_t;
+	proc_server: proc_t;
 	auth_handle: auth_t);
+
