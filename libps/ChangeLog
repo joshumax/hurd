@@ -1,5 +1,11 @@
 Tue Oct  8 13:21:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* procstat.c (proc_stat_set_flags): Get rid of INAPP macro.
+	Fix preconditions of PSTAT_SUSPEND_COUNT.
+
+	* spec.c (ps_emit_seconds, ps_emit_minutes): Interpret
+	PS_FMT_FIELD_COLON_MOD flag to mean `print zero as "-"'.
+
 	* procstat.c (set_procinfo_flags): Set bits in PS->inapp as appropriate.
 	(PSTAT_PROCINFO_THREAD, PSTAT_PROCINFO_TASK): New macro.
 	(PSTAT_PROCINFO_TASK_THREAD_DEP): Renamed from PSTAT_PROCINFO_THREAD.
