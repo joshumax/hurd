@@ -1,3 +1,11 @@
+2001-10-13  Roland McGrath  <roland@frob.com>
+
+	* storage-info.c: New file.
+	* Makefile (SRCS): Add it.
+	* mount.c (mounted_hostname, mounted_nfs_port): New global variables.
+	(mount_root): Set them.
+	* nfs.h: Declare them.
+
 2000-12-26  Neal H Walfield <neal@cs.uml.edu>
 
 	* cache.c: Change cache/hash table size to 509, a prime.  Use
