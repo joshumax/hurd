@@ -53,9 +53,7 @@ do_mach_notify_dead_name (mach_port_t notify,
   p = ports_lookup_port (proc_bucket, notify, proc_class);
 
   if (!p)
-    {
-      return EOPNOTSUPP;
-    }
+    return EOPNOTSUPP;
 
   if (p->p_task == deadport)
     {

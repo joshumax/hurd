@@ -219,7 +219,7 @@ S_proc_reassign (struct proc *p,
   remove_proc_from_hash (p);
 
   task_terminate (p->p_task);
-  mach_port_deallocate (mach_task_self (), p->p_task);
+  mach_port_destroy (mach_task_self (), p->p_task);
   p->p_task = stubp->p_task;
 
   /* For security, we need use the request port from STUBP */

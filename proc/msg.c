@@ -50,7 +50,6 @@ S_proc_setmsgport (struct proc *p,
 		   mach_port_t *oldmsgport,
 		   mach_msg_type_name_t *oldmsgport_type)
 {
-  mach_port_t foo;
   if (!p)
     return EOPNOTSUPP;
 
@@ -92,8 +91,6 @@ S_proc_getmsgport (struct proc *callerp,
 {
   int cancel;
   struct proc *p = pid_find_allow_zombie (pid);
-  error_t err;
-  mach_port_urefs_t refs;
 
   if (!callerp)
     return EOPNOTSUPP;
@@ -116,19 +113,25 @@ restart:
   if (!p)
     return ESRCH;
 
-  err = mach_port_get_refs (mach_task_self (), p->p_msgport, 
-			    MACH_PORT_RIGHT_SEND, &refs);
-  if (err || !refs)
+  /* Only check if the message port passed away, if we know that it
+     was ever alive.  */
+  if (p->p_msgport != MACH_PORT_NULL)
     {
-      /* The port appears to be dead; throw it away. */
-      mach_port_deallocate (mach_task_self (), p->p_msgport);
-      p->p_msgport = MACH_PORT_NULL;
-      p->p_deadmsg = 1;
-      goto restart;
+      mach_port_type_t type;
+      error_t err;
+      
+      err = mach_port_type (mach_task_self (), p->p_msgport, &type);
+      if (err || (type & MACH_PORT_TYPE_DEAD_NAME))
+	{
+	  /* The port appears to be dead; throw it away. */
+	  mach_port_deallocate (mach_task_self (), p->p_msgport);
+	  p->p_msgport = MACH_PORT_NULL;
+	  p->p_deadmsg = 1;
+	  goto restart;
+	}
     }
-
+  
   *msgport = p->p_msgport;
 
   return 0;
 }
-
