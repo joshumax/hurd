@@ -45,11 +45,11 @@ INTSRCS=interrupt.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c     \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c	    \
-	rdwr-internal.c trans-destroy.c trans-start.c init-init.c	    \
+	rdwr-internal.c init-init.c	    \
 	init-startup.c init-first.c				    \
 	boot-parse.c boot-start.c				    \
 	demuxer.c exc.c node-times.c    \
-	trans-sync.c shutdown.c    \
+	shutdown.c    \
 	sync-interval.c sync-default.c					    \
 	opts-set.c opts-std-startup.c opts-runtime-def.c
 
