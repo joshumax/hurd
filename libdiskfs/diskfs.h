@@ -209,7 +209,6 @@ extern char *diskfs_server_name;
    and edit version numbers.  */
 extern int diskfs_major_version;
 extern int diskfs_minor_version;
-extern int diskfs_edit_version;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting symlink translation.
