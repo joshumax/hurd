@@ -55,6 +55,12 @@ top_srcdir = ..
 endif
 endif
 
+# Generic compiler options, appended to whatever the particular makefile set.
+# The config.make file will append the values chosed by configure.
+CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include \
+	    -D_GNU_SOURCE $($*-CPPFLAGS)
+CFLAGS += -Wall -g -O3
+
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.
 include $(..)config.make
@@ -79,8 +85,6 @@ top_srcdirinc=
 else
 top_srcdirinc=-I$(top_srcdir)
 endif
-CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE $($*-CPPFLAGS)
-CFLAGS += -Wall -g -O3
 
 # More useful version of HURDLIBS
 library_deps=$(foreach lib,$(HURDLIBS),$(..)lib$(lib)/lib$(lib).so)
