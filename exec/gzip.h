@@ -1,5 +1,5 @@
 /* gzip.h -- common declarations for all gzip modules
- * Copyright (C) 1992-1993 Jean-loup Gailly.
+ * Copyright (C) 1992-1993, 1996 Jean-loup Gailly.
  * This is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License, see the file COPYING.
  */
@@ -301,7 +301,7 @@ extern void flush_outbuf  OF((void));
 extern void flush_window  OF((void));
 extern void write_buf     OF((int fd, voidp buf, unsigned cnt));
 extern char *strlwr       OF((char *s));
-extern char *basename     OF((char *fname));
+/* extern char *basename     OF((char *fname));*/
 extern void make_simple_name OF((char *name));
 extern char *add_envopt   OF((int *argcp, char ***argvp, char *env));
 extern void error         OF((char *m));
