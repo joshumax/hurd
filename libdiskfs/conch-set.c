@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include <hurd/ioserver.h>
+#include <hurd/iohelp.h>
 #include <fcntl.h>
 
 /* Write current values into the shared page.  Callers must have the
@@ -24,7 +24,7 @@
    This is called by the conch management facilities of libioserver
    as well as by us. */
 void
-ioserver_put_shared_data (void *arg)
+iohelp_put_shared_data (void *arg)
 {
   struct protid *cred = arg;
   
