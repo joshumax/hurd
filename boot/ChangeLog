@@ -1,3 +1,30 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* boot_script.c (boot_script_set_variable): Values int -> integer_t.
+	(boot_script_define_function): Likewise.
+	(boot_script_parse_line): Likewise.
+	(struct sym, struct arg): Likewise.
+	(boot_script_exec): Likewise.
+	(builtin_symbols): Likewise.
+	* boot.c (main): Likewise.
+	* boot_script.h: Update decls.
+
+	* boot.c (boot_script_exec_cmd)
+	[I386_THREAD_STATE]: Conditionalize i386 thread setup code on this.
+	[ALPHA_THREAD_STATE]: Add Alpha thread setup code.
+	(set_mach_stack_args): Obsolete function removed.
+
+	* boot.c (load_image): u_int -> vm_address_t
+	(ds_xxx_device_get_status, ds_xxx_device_set_status): u_int -> size_t
+	(S_io_restrict_auth, S_io_reauthenticate): Likewise.
+	(ds_device_write, ds_device_read_inband): Likewise.
+	(ds_device_get_status): Likewise.
+	(ds_device_set_status): Likewise.
+	(boot_script_exec_cmd): Likewise.
+	(ds_device_read, ds_device_write_inband): Likewise.
+	(ds_xxx_device_set_filter): Likewise.
+	(ds_device_set_filter): Likewise.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* boot.c: Include <version.h>
