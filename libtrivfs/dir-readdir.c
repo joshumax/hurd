@@ -22,9 +22,10 @@ kern_return_t
 trivfs_S_dir_readdir (struct trivfs_protid *cred,
 		      char **data,
 		      u_int *datalen,
-		      off_t offset,
-		      off_t *nextoff,
-		      int amt)
+		      int entry,
+		      int nentries,
+		      vm_size_t bufsiz,
+		      int *amount)
 {
   return cred ? ENOTDIR : EOPNOTSUPP;
 }
