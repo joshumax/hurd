@@ -119,7 +119,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
      all the groups of options.  */
   struct option *long_opts;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags };
+  struct argp_state state = { argp, argc, argv, 0, flags, 0 };
   error_t err = 0;
 
   if (! (flags & ARGP_NO_HELP))
@@ -299,6 +299,11 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		err = 0;
 	      break;
 	    }
+	  else if (state.index >= optind)
+	    /* Remember that we successfully processed a non-option
+	       argument -- but only if the user hasn't gotten tricky and set
+	       the clock back.  */
+	    state.processed_arg = 1;
 	}
       else if (group == 0)
 	/* A short option.  */
@@ -331,9 +336,12 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 
   if (!err && !state.argv[state.index])
     /* We successfully parsed all arguments!  Call all the parsers again,
-       just one last time... */
+       just a few more times... */
     {
       int group;
+      if (!state.processed_arg)
+	for (group = 0; group < num_groups && (!err || err == EINVAL); group++)
+	  err = (*group_parsers[group])(ARGP_KEY_NO_ARGS, 0, &state);
       for (group = 0; group < num_groups && (!err || err == EINVAL); group++)
 	err = (*group_parsers[group])(ARGP_KEY_END, 0, &state);
       if (err == EINVAL)
