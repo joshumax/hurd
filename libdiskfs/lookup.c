@@ -66,10 +66,6 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
 
-   DEPTH is the number of nodes between DP and the filesystem root.
-   If NEW_DEPTH is non-zero, then for a non-error return, the depth of the
-   resulting node NP is returned in it.
-
    Return ENOTDIR if DP is not a directory.
    Return EACCES if CRED isn't allowed to search DP.
    Return EACCES if completing the operation will require writing
@@ -82,8 +78,7 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
 */
 error_t 
 diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
-	       struct node **np, struct dirstat *ds,
-	       struct protid *cred, unsigned depth, unsigned *new_depth)
+	       struct node **np, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
   struct node *cached;
@@ -106,7 +101,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       return err;
     }
 
-  if (depth == 0 && name[0] == '.' && name[1] == '.' && name[2] == '\0')
+  if (dp == cred->po->shadow_root
+      && name[0] == '.' && name[1] == '.' && name[2] == '\0')
     /* Ran into the root.  */
     {
       if (ds)
@@ -145,8 +141,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   else
     {  
       err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
-      assert (err != EAGAIN);	/* We should never get EAGAIN now that we're
-				   detecting the root ourselves.  */
 
       spin_lock (&cm_lock);
       if (type == LOOKUP)
@@ -190,17 +184,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       else if (type == LOOKUP && err == ENOENT)
 	diskfs_enter_lookup_cache (dp, 0, name);
     }    
-
-  if (!err && new_depth)
-    if (name[0] == '.')
-      if (name[1] == '\0')
-	*new_depth = depth;
-      else if (name[1] == '.' && name[2] == '\0')
-	*new_depth = depth - 1;
-      else
-	*new_depth = depth + 1;
-    else
-      *new_depth = depth + 1;
 
   return err;
 }
