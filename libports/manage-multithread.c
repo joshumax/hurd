@@ -31,8 +31,8 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  int wire_cthreads,
 					  mach_port_t wire_threads)
 {
-  int nreqthreads = 0;
-  int totalthreads = 0;
+  volatile int nreqthreads = 0;
+  volatile int totalthreads = 0;
   spin_lock_t lock = SPIN_LOCK_INITIALIZER;
 
   auto void thread_function (int);
