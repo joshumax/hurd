@@ -1,3 +1,10 @@
+Thu Oct 24 16:07:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (startup_children, runtime_children): New variables.
+	(startup_parents, runtime_parents): Variables removed.
+	(startup_argp, runtime_argp): Use new *_CHILDREN variables instead of
+	corresponding *_PARENT ones.
+
 Thu Sep 19 18:02:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add store.
