@@ -10,7 +10,7 @@ mighost := ernst
 
 # Set these options to the GCC compiler spec (the correct value
 # can be found in /usr/local/lib/lib-gcc).
-CCTARGET=i386-gnu
+CCTARGET=i386-mach
 CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.5.8)
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
