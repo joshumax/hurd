@@ -298,13 +298,16 @@ S_socket_create_address (mach_port_t server,
 			 mach_msg_type_name_t *addr_port_type)
 {
   struct sock_addr *addr;
+  error_t err;
   
   if (sockaddr_type != AF_INET)
     return EAFNOSUPPORT;
   
-  addr = ports_allocate_port (pfinet_bucket, 
-			      sizeof (struct sock_addr) + data_len,
-			      addrport_class);
+  err = ports_create_port (addrport_class, pfinet_bucket, 
+			   sizeof (struct sock_addr) + data_len, &addr);
+  if (err)
+    return err;
+  
   addr->len = data_len;
   bcopy (data, addr->address, data_len);
   
