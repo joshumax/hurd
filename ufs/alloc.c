@@ -1,5 +1,5 @@
 /* Disk allocation routines
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -73,7 +73,21 @@ static ino_t ffs_dirpref (struct fs *);
 static u_long ffs_nodealloccg (struct node *, int, daddr_t, int);
 static daddr_t ffs_alloccgblk (struct fs *, struct cg *, daddr_t);
 static daddr_t ffs_mapsearch (struct fs *, struct cg *, daddr_t, int);
-void ffs_clusteracct (struct fs *, struct cg *, daddr_t, int);
+static void ffs_clusteracct (struct fs *, struct cg *, daddr_t, int);
+
+/* Sync all allocation information and nod eNP if diskfs_synchronous. */
+inline
+alloc_sync (struct diskfs_node *np)
+{
+  if (diskfs_syncronous)
+    {
+      if (np)
+	diskfs_node_update (np, 1);
+      copy_sblock ();
+      diskfs_set_dypermetadata (1, 0);
+      sync_disk (1);
+    }
+}
 
 /*
  * Allocate a block in the file system.
@@ -140,6 +154,7 @@ ffs_alloc(register struct node *np,
 		np->dn_set_ctime = 1;
 		np->dn_set_mtime = 1;
 		*bnp = bno;
+		alloc_sync (np);
 		return (0);
 	}
 #ifdef QUOTA
@@ -235,6 +250,7 @@ ffs_realloccg(register struct node *np,
 		bzero((char *)bp->b_data + osize, (u_int)nsize - osize);
 		*bpp = bp;
 #endif
+		alloc_sync (np);
 		return (0);
 	}
 	/*
@@ -305,6 +321,7 @@ ffs_realloccg(register struct node *np,
 		bzero((char *)bp->b_data + osize, (u_int)nsize - osize);
 		*bpp = bp;
 #endif /* 0 */
+		alloc_sync (np);
 		return (0);
 	}
 #ifdef QUOTA
@@ -565,6 +582,7 @@ diskfs_alloc_node (struct node *dir,
 	spin_unlock (&gennumberlock);
 	
 	*npp = np;
+	alloc_sync (np);
 	return (0);
 noinodes:
 	printf ("out of inodes");
@@ -1305,6 +1323,7 @@ ffs_blkfree(register struct node *np,
 	csum_dirty = 1;
 	sblock_dirty = 1;
 	fs->fs_fmod = 1;
+	alloc_sync (np);
 /* 	bdwrite(bp); */
 }
 
@@ -1363,6 +1382,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	csum_dirty = 1;
 	sblock_dirty = 1;
 	fs->fs_fmod = 1;
+	alloc_sync (np, 1);
 /* 	bdwrite(bp); */
 }
 
@@ -1430,7 +1450,7 @@ ffs_mapsearch(register struct fs *fs,
  *
  * Cnt == 1 means free; cnt == -1 means allocating.
  */
-void
+static void
 ffs_clusteracct(struct fs *fs,
 		struct cg *cgp,
 		daddr_t blkno,
