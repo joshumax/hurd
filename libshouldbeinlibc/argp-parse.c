@@ -101,6 +101,7 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
       _argp_hang = atoi (arg ?: "3600");
       while (_argp_hang-- > 0)
 	sleep (1);
+      break;
 
     default:
       return EBADKEY;
