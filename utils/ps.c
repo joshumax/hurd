@@ -48,13 +48,15 @@ usage(status)
 \n\
   -a, --all-users            List other users' processes\n\
       --fmt=FMT              Use the output-format FMT\n\
-			     FMT may be `default', `user', `vmem', `long',\n\
+                             FMT may be `default', `user', `vmem', `long',\n\
                              `hurd', `hurd-long', or a format-string\n\
   -g                         Include session leaders\n\
   -H, --no-header            Don't print a descriptive header line\n\
   -l                         Use the `long' output-format'\n\
       --login[=LID]	     Add the processes from the login collection LID\n\
-                             (which defaults that of the current process)\n
+                             (which defaults that of the current process)\n\
+  -M, --no-msg-port          Don't show info that uses a process's msg port\n\
+  -o, --owner=USER           Show processes owned by USER\n\
   -P, --no-parent	     Include processes without parents\n\
   -Q, --all-fields	     Don't elide unusable fields (normally if there's\n\
                              some reason ps can't print a field for any\n\
@@ -128,7 +130,7 @@ char *procset_names[] =
 #define OPT_FMT		-5
 #define OPT_HELP	-6
 
-#define SHORT_OPTIONS "agHlPQrtuvx"
+#define SHORT_OPTIONS "agHlMPQrtuvx"
 
 static struct option options[] =
 {
@@ -138,6 +140,7 @@ static struct option options[] =
   {"help", no_argument, 0, OPT_HELP},
   {"login", optional_argument, 0, OPT_LOGIN},
   {"no-header", no_argument, 0, 'H'},
+  {"no-msg-port", no_argument, 0, 'M'},
   {"no-squash", no_argument, 0, 'Q'},
   {"no-parent", no_argument, 0, 'P'},
   {"session", optional_argument, 0, OPT_SESSION},
@@ -184,7 +187,7 @@ main(int argc, char *argv[])
   int filter_mask =
     FILTER_OWN | FILTER_NSESSLDR | FILTER_UNORPHANED | FILTER_PARENTED;
   bool sort_reverse = FALSE, print_heading = TRUE, squash_bogus_fields = TRUE;
-  bool show_threads = FALSE;
+  bool show_threads = FALSE, no_msg_port = FALSE;
 
   /* Handle an argument that is a process ID.  */
   void pid_arg (const char *arg)
@@ -228,7 +231,7 @@ main(int argc, char *argv[])
 	break;
 
       case 'a':
-	filter_mask &= ~FILTER_OWN; break;
+	filter_mask &= ~(FILTER_OWN | FILTER_NSESSLDR); break;
       case 'g':
 	filter_mask &= ~FILTER_NSESSLDR; break;
       case 'x':
@@ -241,8 +244,10 @@ main(int argc, char *argv[])
 	fmt_string = "vmem"; break;
       case 'l':
 	fmt_string = "long"; break;
+      case 'M':
+	no_msg_port = TRUE; break;
       case 'H':
-	print_heading = 0; break;
+	print_heading = FALSE; break;
       case 'Q':
 	squash_bogus_fields = FALSE; break;
       case 't':
@@ -306,13 +311,15 @@ main(int argc, char *argv[])
   while (argv[optind] != NULL)
     pid_arg (argv[optind++]);
 
-
   if (proc_stat_list_num_procs(procset) == 0)
     {
       err = proc_stat_list_add_all(procset);
       if (err)
 	error(2, err, "Couldn't get process list");
     }
+
+  if (no_msg_port)
+    proc_stat_list_set_flags(procset, PSTAT_NO_MSGPORT);
 
   if (filter_mask & FILTER_OWN)
     proc_stat_list_filter(procset, &ps_own_filter, FALSE);
