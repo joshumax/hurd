@@ -1,6 +1,6 @@
 /* A server for local sockets, of type PF_LOCAL
 
-   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -55,7 +55,9 @@ pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   return socket_server (inp, outp) || trivfs_demuxer (inp, outp);
 }
 
-void main(int argc, char *argv[])
+
+int
+main(int argc, char *argv[])
 {
   error_t err;
   mach_port_t bootstrap;
@@ -69,7 +71,7 @@ void main(int argc, char *argv[])
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error(2, 0, "Must be started as a translator");
-  
+
   pf_port_bucket = ports_create_bucket ();
 
   trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
@@ -96,7 +98,7 @@ void main(int argc, char *argv[])
 					      30*1000, 5*60*1000, 0);
   while (sock_global_shutdown () != 0);
 
-  exit(0);
+  return 0;
 }
 
 void
