@@ -3,9 +3,17 @@
 
 set -v
 
+# Make sure the filesystem is writable
+fsysopts / --writable 
+
 # Set up the PFLOCAL server so we can do pipes
 /bin/settrans -c /servers/socket/1 /hurd/pflocal
 
 # Setup crucial devices
 cd /dev
 /bin/sh ./MAKEDEV std
+
+echo 'Hit ^C now for shell prompt or RET to reboot'
+read response
+sync
+reboot
