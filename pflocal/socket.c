@@ -288,11 +288,11 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
   if (!err)
     {
       /* Grab the destination socket's read pipe directly, and stuff data
-	 into it.  This is not quite the usage sock_aquire_read_pipe was
+	 into it.  This is not quite the usage sock_acquire_read_pipe was
 	 intended for, but it will work, as the only inappropiate errors
 	 occur on a broken pipe, which shouldn't be possible with the sort of
 	 sockets with which we can use socket_send...  XXXX */
-      err = sock_aquire_read_pipe (dest_sock, &pipe);
+      err = sock_acquire_read_pipe (dest_sock, &pipe);
       if (!err)
 	{
 	  err = pipe_send (pipe, source_addr, data, data_len,
@@ -341,7 +341,7 @@ S_socket_recv (struct sock_user *user,
   flags =
     0;
 
-  err = sock_aquire_read_pipe (user->sock, &pipe);
+  err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
     /* EOF */
     {
