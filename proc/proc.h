@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -75,7 +75,7 @@ struct proc
     } p_continuation;
   
   /* Miscellaneous information */
-  int p_argv, p_envp;
+  vm_address_t p_argv, p_envp;
   int p_status;			/* to return via wait */
 
   int p_exec:1;			/* has called proc_mark_exec */
