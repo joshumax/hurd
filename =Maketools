@@ -14,9 +14,13 @@ CCTARGET=i386-mach
 CCVERSION=2.5.8
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 
+HOST_CC := $(CC)
 CC=gcc $(CCTYPE) -O6 -pipe
-MIGCOM=rsh $(mighost) cd $(hurdsource)/$(dir) \; /usr/local/lib/migcom 
+MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
 CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
-MIG=rsh $(mighost) cd $(hurdsource)/$(dir) \; mig
+export CPP
+# I put a /usr/local/bin/mig on the hp300s that will run $CPP locally and
+# rsh to ernst to run migcom. --roland
+MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
