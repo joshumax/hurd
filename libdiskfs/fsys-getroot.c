@@ -165,6 +165,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   newpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
 						   flags, dotdot),
 			      uids, nuids, gids, ngids);
+  mach_port_deallocate (mach_task_self (), dotdot);
   *retry = FS_RETRY_NORMAL;
   *retryname = '\0';
   *returned_port = ports_get_right (newpi);
