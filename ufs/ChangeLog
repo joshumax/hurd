@@ -1,3 +1,7 @@
+2002-10-03  Roland McGrath  <roland@frob.com>
+
+	* dir.h (MAXNAMLEN): #undef before defining.
+
 2002-07-31  Roland McGrath  <roland@frob.com>
 
 	* dir.c (diskfs_direnter_hard): Fix test in last change.
