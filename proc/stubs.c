@@ -15,14 +15,54 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+/* Standard MiG goop */
+#define EXPORT_BOOLEAN
+#include <mach/boolean.h>
+#include <mach/kern_return.h>
+#include <mach/message.h>
+#include <mach/notify.h>
+#include <mach/mach_types.h>
+#include <mach/mig_errors.h>
+#include <mach/mig_support.h>
+#include <mach/msg_type.h>
+#include <mach/std_types.h>
+#define msgh_request_port	msgh_remote_port
+#define msgh_reply_port		msgh_local_port
+
+
+#include "proc.h"
+#include <cthreads.h>
+#include <stdlib.h>
+#include <hurd/hurd_types.h>
+
+
 #ifndef __i386__
 #error This code is i386 dependent
 #else
 
+struct msg_spec
+{
+  int len;
+  void *contents;
+};
+
+/* Send the Mach message indicated by msg_spec; call cthread_exit
+   when it has been delivered. */
+static void
+blocking_message_send (struct msg_spec *message)
+{
+  cthread_wire ();
+  mach_msg ((mach_msg_header_t *)message->contents, MACH_SEND_MSG, 
+	    message->len, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, 
+	    MACH_PORT_NULL);
+  cthread_exit (0);
+}
+
 /* Send signal SIGNO to MSGPORT with REFPORT as reference.  Don't
    block in any fashion.  */
+void
 send_signal (mach_port_t msgport,
-	     int signo,
+	     int signal,
 	     mach_port_t refport)
 {
   error_t err;
@@ -74,7 +114,7 @@ send_signal (mach_port_t msgport,
   InP->Head.msgh_bits = MACH_MSGH_BITS_COMPLEX|
     MACH_MSGH_BITS(19, 21);
   /* msgh_size passed as argument */
-  InP->Head.msgh_request_port = process;
+  InP->Head.msgh_request_port = msgport;
   InP->Head.msgh_reply_port = MACH_PORT_NULL;
   InP->Head.msgh_seqno = 0;
   InP->Head.msgh_id = 23000;
@@ -84,17 +124,18 @@ send_signal (mach_port_t msgport,
   err = mach_msg(&InP->Head, MACH_SEND_MSG|MACH_SEND_TIMEOUT, 40, 0, 
 		 MACH_PORT_NULL, 0, MACH_PORT_NULL);
 
-  if (err)
+  if (err == MACH_SEND_TIMEOUT)
     {
-      void *message = malloc (40);
-      bcopy (&InP->Head, message, 40);
+      struct msg_spec *msg_spec = malloc (sizeof (struct msg_spec));
+      
+      msg_spec->len = 40;
+      msg_spec->contents = malloc (40);
+      bcopy (&InP->Head, msg_spec->contents, 40);
       
       cthread_detach (cthread_fork ((cthread_fn_t) blocking_message_send,
-				    message));
+				    msg_spec));
     }
 }
 
-
-      
   
 #endif /* __i386__ */
