@@ -111,6 +111,7 @@ add_timer (struct timer_list *timer)
 	  
       thread_suspend (timer_thread);
       thread_abort (timer_thread);
+      thread_resume (timer_thread);
     }
 }
 
