@@ -93,15 +93,15 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
 /* Suck in the common arguments.  */
 static const struct argp startup_common_argp =
   { diskfs_common_options, parse_startup_opt };
+static const struct argp_child startup_argp_children[] =
+  { {&startup_common_argp}, {0} };
 
 /* This may be used with argp_parse to parse standard diskfs startup
    options, possible chained onto the end of a user argp structure.  */
-static const struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
-
 const struct argp
 diskfs_startup_argp =
 {
-  startup_options, parse_startup_opt, 0, 0, startup_argp_parents
+  startup_options, parse_startup_opt, 0, 0, startup_argp_children
 };
 
 static error_t
@@ -120,8 +120,8 @@ parse_store_startup_opt (int opt, char *arg, struct argp_state *state)
   return 0;
 }
 
-static const struct argp *store_argp_parents[] =
-  { &diskfs_startup_argp, &store_argp, 0 };
+static const struct argp_child store_argp_children[] =
+  { {&diskfs_startup_argp}, {&store_argp}, {0} };
 
 /* An argp structure for the standard diskfs command line arguments plus a
    store specification.  The address of a location in which to return the
@@ -131,5 +131,5 @@ static const struct argp *store_argp_parents[] =
 const struct argp
 diskfs_store_startup_argp =
 {
-  0, parse_store_startup_opt, 0, 0, store_argp_parents
+  0, parse_store_startup_opt, 0, 0, store_argp_children
 };
