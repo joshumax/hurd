@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -167,7 +167,8 @@ idvec_merge_ids (struct idvec *idvec, id_t *ids, unsigned num)
 	if (idvec->ids[i] == *ids)
 	  break;
       if (i == num_old)
-	err = idvec_add (idvec, *ids++);
+	err = idvec_add (idvec, *ids);
+      ids++;
     }
   return err;
 }
