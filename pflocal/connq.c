@@ -1,8 +1,8 @@
 /* Listen queue functions
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -132,7 +132,7 @@ connq_destroy (struct connq *cq)
    to allow the requesting thread to continue.  If NOBLOCK is true,
    EWOULDBLOCK is returned when there are no immediate connections
    available. */
-error_t 
+error_t
 connq_listen (struct connq *cq, int noblock,
 	      struct connq_request **req, struct sock **sock)
 {
@@ -140,7 +140,7 @@ connq_listen (struct connq *cq, int noblock,
 
   if (noblock && cq->head == cq->tail)
     {
-      mutex_unlock (&cq->lock);	  
+      mutex_unlock (&cq->lock);
       return EWOULDBLOCK;
     }
 
@@ -150,7 +150,7 @@ connq_listen (struct connq *cq, int noblock,
     if (hurd_condition_wait (&cq->listeners, &cq->lock))
       {
 	cq->num_listeners--;
-	mutex_unlock (&cq->lock);	  
+	mutex_unlock (&cq->lock);
 	return EINTR;
       }
 
@@ -167,7 +167,7 @@ connq_listen (struct connq *cq, int noblock,
 
   mutex_unlock (&cq->lock);
 
-  return 0;    
+  return 0;
 }
 
 /* Return the error code ERR to the thread that made the listen request REQ,
@@ -229,6 +229,7 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
   return err;
 }
 
+#if 0
 /* `Compresses' CQ, by removing any NULL entries.  CQ should be locked.  */
 static void
 connq_compress (struct connq *cq)
@@ -249,10 +250,11 @@ connq_compress (struct connq *cq)
   /* Move back tail to only include what we kept in the queue.  */
   cq->tail = comp_tail;
 }
+#endif
 
 /* Set CQ's queue length to LENGTH.  Any sockets already waiting for a
    connections that are past the new length will fail with ECONNREFUSED.  */
-error_t 
+error_t
 connq_set_length (struct connq *cq, int length)
 {
   mutex_lock (&cq->lock);
