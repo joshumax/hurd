@@ -251,7 +251,7 @@ read_disknode (struct node *np)
   st->st_ctime_usec = di->i_ctime.ts_nsec / 1000;
 #endif
 
-  st->st_blocks = di->i_blocks;
+  st->st_blocks = di->i_blocks << log2_stat_blocks_per_fs_block;
   st->st_flags = di->i_flags;
   
   st->st_uid = di->i_uid | (di->i_uid_high << 16);
@@ -334,7 +334,7 @@ write_node (struct node *np)
       di->i_ctime.ts_nsec = st->st_ctime_usec * 1000;
 #endif
 
-      di->i_blocks = st->st_blocks;
+      di->i_blocks = st->st_blocks >> log2_stat_blocks_per_fs_block;
       di->i_flags = st->st_flags;
 
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
@@ -396,21 +396,17 @@ diskfs_set_statfs (struct fsys_statfsbuf *st)
 /* Implement the diskfs_set_translator callback from the diskfs
    library; see <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_set_translator (struct node *np, char *name, u_int namelen,
+diskfs_set_translator (struct node *np, char *name, unsigned namelen,
 		       struct protid *cred)
 {
-  if (diskfs_readonly)
-    return EROFS;
-#ifdef XXX
   daddr_t blkno;
   error_t err;
-  char buf[sblock->fs_bsize];
+  char buf[block_size];
   struct ext2_inode *di;
 
-  if (compat_mode != COMPAT_GNU)
-    return EOPNOTSUPP;
+  assert (!diskfs_readonly);
 
-  if (namelen + sizeof (u_int) > sblock->fs_bsize)
+  if (namelen + 2 > block_size)
     return ENAMETOOLONG;
 
   err = diskfs_catch_exception ();
@@ -418,39 +414,46 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
     return err;
   
   di = dino (np->dn->number);
-  blkno = di->i_trans;
+  blkno = di->i_translator;
   
   if (namelen && !blkno)
     {
       /* Allocate block for translator */
-      err = ffs_alloc (np, 0, 0, sblock->fs_bsize, &blkno, cred);
-      if (err)
+      blkno =
+	ext2_new_block ((np->dn->info.i_block_group
+			 * EXT2_BLOCKS_PER_GROUP (sblock))
+			+ sblock->s_first_data_block,
+			0, 0);
+      if (blkno == 0)
 	{
 	  diskfs_end_catch_exception ();
-	  return err;
+	  return ENOSPC;
 	}
-      di->i_trans = blkno;
-      pokel_add (&np->dn.pokel, di, sizeof (struct ext2_inode));
+      
+      di->i_translator = blkno;
+      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
+      np->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
     {
       /* Clear block for translator going away. */
-      ffs_blkfree (np, blkno, sblock->fs_bsize);
-      di->i_trans = 0;
-      pokel_add (&np->dn.pokel, di, sizeof (struct ext2_inode));
-      np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
+      ext2_free_blocks (blkno, 1);
+      di->i_translator = 0;
+      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
+      np->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       np->istranslated = 0;
       np->dn_set_ctime = 1;
     }
   
   if (namelen)
     {
-      bcopy (&namelen, buf, sizeof (u_int));
-      bcopy (name, buf + sizeof (u_int), namelen);
+      buf[0] = namelen & 0xFF;
+      buf[1] = (namelen >> 8) & 0xFF;
+      bcopy (name, buf + 2, namelen);
 
-      bcopy (buf, disk_image + fsaddr (sblock, blkno), sblock->fs_bsize);
-      sync_disk_blocks (blkno, sblock->fs_bsize, 1);
+      bcopy (buf, bptr (blkno), block_size);
+      record_global_poke (bptr (blkno));
 
       np->istranslated = 1;
       np->dn_set_ctime = 1;
@@ -458,42 +461,36 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   
   diskfs_end_catch_exception ();
   return err;
-#else
-  return EOPNOTSUPP;
-#endif
 }
 
 /* Implement the diskfs_get_translator callback from the diskfs library.
    See <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
+diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 {
-#ifdef XXX
   error_t err;
   daddr_t blkno;
-  u_int datalen;
+  unsigned datalen;
   void *transloc;
 
   err = diskfs_catch_exception ();
   if (err)
     return err;
 
-  blkno = (dino (np->dn->number))->i_trans;
+  blkno = (dino (np->dn->number))->i_translator;
   assert (blkno);
-  transloc = disk_image + fsaddr (sblock, blkno);
+  transloc = bptr (blkno);
   
-  datalen = *(u_int *)transloc;
+  datalen =
+    ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
   if (datalen > *namelen)
     vm_allocate (mach_task_self (), (vm_address_t *) namep, datalen, 1);
-  bcopy (transloc + sizeof (u_int), *namep, datalen);
+  bcopy (transloc + 2, *namep, datalen);
 
   diskfs_end_catch_exception ();
 
   *namelen = datalen;
   return 0;
-#else
-  return EOPNOTSUPP;
-#endif
 }
 
 /* Called when all hard ports have gone away. */
