@@ -334,7 +334,8 @@ ps_fmt_squash(ps_fmt_t fmt, int flags)
 
 	      /* Shift down all following fields over this one.  */
 	      if (nfields > 0)
-		bcopy(field + 1, field, nfields * sizeof *field);
+		bcopy(field + 1, field,
+		      (nfields - (field - fields)) * sizeof *field);
 
 	      if (field == fields)
 		/* This is the first field, so move its prefix to the
@@ -378,6 +379,8 @@ ps_fmt_squash(ps_fmt_t fmt, int flags)
 	    /* don't squash this field, just move to the next one */
 	    field++;
 	}
+      else
+	field++;
     }
 
   fmt->needs &= ~flags;		/* we don't need any of them anymore */
