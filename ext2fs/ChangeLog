@@ -1,3 +1,9 @@
+2004-11-08  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Cast -1 to
+	store_offset_t in conditional operator, instead of implicitly cast
+	to uint32_t.
+
 2004-01-10  Roberto Reale  <rreale@iol.it>
 
 	* ext2fs.h (ext2_getblk): Fix typo in comment.

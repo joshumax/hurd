@@ -93,8 +93,10 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 	    }
 
 	  run = runs + num_runs++;
-	  run->start = block ?: -1;	     /* -1 means a hole in OFFSETS */
-	  run->length = 0;		     /* will get extended just below */
+	  /* -1 means a hole in OFFSETS.  */
+	  run->start = block ?: (store_offset_t) -1;
+	  /* The length will get extended just below.  */
+	  run->length = 0;
 	}
 
       /* Increase the size of the current run by one filesystem block.  */
