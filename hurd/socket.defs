@@ -78,7 +78,7 @@ routine socket_connect2 (
 routine socket_create_address (
 	server: mach_port_t;	/* Can be either pf_t or socket_t.  */
 	sockaddr_type: int;
-	sockaddr: data_t;
+	sockaddr: data_t SCP;
 	out addr: mach_port_send_t);
 
 /* Create an address without any sockaddr.  */
@@ -112,16 +112,16 @@ routine socket_setopt (
 	sock: socket_t;
 	level: int;
 	option: int;
-	optval: data_t);
+	optval: data_t SCP);
 
 /* Send data over a socket, possibly including Mach ports.  */
 routine socket_send (
 	sock: socket_t;
 	addr: addr_port_t;
 	flags: int;
-	data: data_t;
-	ports: portarray_t;
-	control: data_t;
+	data: data_t SCP;
+	ports: portarray_t SCP;
+	control: data_t SCP;
 	out amount: mach_msg_type_number_t);
 
 /* Receive data from a socket, possibly including Mach ports.  */
