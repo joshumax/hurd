@@ -54,7 +54,52 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  *translen = len;
 	}
     }
-  /* XXX should also do IFCHR, IFBLK, IFIFO, and IFSOCK here. */
+  else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
+    {
+      char *buf;
+      int buflen;
+
+      if (S_ISCHR (np->dn_stat.st_mode))
+	assert (diskfs_shortcut_chrdev);
+      else
+	assert (diskfs_shortcut_blkdev);
+
+      buflen = asprintf (&buf, "%s%c%d%c%d", 
+			 (S_ISCHR (np->dn_stat.st_mode) 
+			  ? _HURD_CHRDEV
+			  : _HURD_BLKDEV),
+			 '\0', (np->dn_stat.st_rdev >> 8) & 0377,
+			 '\0', (np->dn_stat.st_rdev) & 0377);
+      buflen++;			/* terminating nul */
+      
+      if (buflen > *translen)
+	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+      bcopy (buf, *trans, buflen);
+      *translen = buflen;
+      error = 0;
+    }
+  else if (S_ISFIFO (np->dn_stat.st_mode))
+    {
+      int len;
+      
+      len = sizeof _HURD_FIFO;
+      if (len > *translen)
+	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+      bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
+      *translen = len;
+      error = 0;
+    }
+  else if (S_ISSOCK (np->dn_stat.st_mode))
+    {
+      int len;
+      
+      len = sizeof _HURD_IFSOCK;
+      if (len > *translen)
+	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+      bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
+      *translen = len;
+      error = 0;
+    }
   else
     {
       if (!diskfs_node_translated (np))
