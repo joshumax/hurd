@@ -67,6 +67,12 @@ top_srcdirinc=-I$(top_srcdir)
 endif
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE
 CFLAGS += -Wall -g -O3
+
+
+# Local programs:
+MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
+
+
 
 # Decode makemode:
 
@@ -123,14 +129,14 @@ endif
 # Installation
 ifeq ($(doinst),one)
 all: $(target)
-install: $(installationdir)/$(target)
+install: $(installationdir)/$(target) $(installationdir)
 $(installationdir)/$(target): $(target)
 	$(INSTALL_PROGRAM) $< $@
 endif
 
 ifeq ($(doinst),many)
 all: $(targets)
-install: $(addprefix $(installationdir)/,$(targets))
+install: $(addprefix $(installationdir)/,$(targets)) $(installationdir)
 $(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
 	$(INSTALL_PROGRAM) $< $@
 endif
@@ -138,7 +144,7 @@ endif
 ifeq ($(makemode),library)
 all: libs
 libs: $(targets)
-install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(libdir) $(includedir)
 
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
@@ -164,8 +170,13 @@ $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(
 	$(INSTALL_DATA) $< $@
 
 endif
+
 # Provide default.
 install:
+
+# Making installation directories
+$(installationdirlist): %:
+	$(MKINSTALLDIRS) $@
 
 # Building the target
 ifeq ($(OBJS),)
