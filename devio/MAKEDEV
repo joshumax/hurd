@@ -5,7 +5,16 @@
 
 PATH=/bin
 
-ST="settrans -cg"
+function st {
+  NODE="$1"
+  OWNER="$2"
+  PERM="$3"
+  shift 3
+  settrans -cg "$NODE"
+  chown "$OWNER" "$NODE"
+  chmod "$PERM" "$NODE"
+  settrans "$NODE" "$@"
+}
 
 _CWD=${_CWD:-`pwd`}
 export _CWD
@@ -16,38 +25,28 @@ for I; do
       $0 console tty null zero fd time
       ;;
     console|tty[0-9]?|tty[0-9a-f])
-      $ST $I /hurd/term $_CWD/$I device $I;;
+      st $I root 666 /hurd/term $_CWD/$I device $I;;
     null)
-      $ST $I /hurd/null 
-      chmod 666 $I
-      ;;
+      st $I root 666 /hurd/null;;
     zero)
-      $ST $I /hurd/null -z
-      chmod 666 $I
-      ;;
+      st $I root 666 /hurd/null -z;;
     tty)
-      $ST $I /hurd/magic tty
-      chmod 666 $I
-      ;;
+      st $I root 666 /hurd/magic tty;;
     fd)
-      $ST $I /hurd/magic fd
-      chmod 666 $I
+      st $I root 666 /hurd/magic fd
       ln -f -s fd/0 stdin
       ln -f -s fd/1 stdout
       ln -f -s fd/2 stderr
       ;;
     time)
-      $ST $I /hurd/devport time
-      chmod 666 $I
-      ;;
+      st $I root 666 /hurd/devport time ;;
 
     # ptys
     [pt]ty[pqPQ]?)
       # Make one pty, both the master and slave halves
       ID="`expr substr $I 4 99`"
-      $ST pty$ID /hurd/term $_CWD/pty$ID pty-master $_CWD/tty$ID
-      $ST tty$ID /hurd/term $_CWD/tty$ID pty-slave $_CWD/pty$ID
-      chmod 666 pty$ID tty$ID
+      st pty$ID root 640 /hurd/term $_CWD/pty$ID pty-master $_CWD/tty$ID
+      st tty$ID root 640 /hurd/term $_CWD/tty$ID pty-slave $_CWD/pty$ID
       ;;
     [pt]ty[pqPQ])
       # Make a bunch of ptys
@@ -56,18 +55,18 @@ for I; do
       ;;
 
     fd*|mt*)
-      $ST r$I /hurd/devio $I
-      $ST $I /hurd/devio -b $I
+      st r$I root 640 /hurd/devio $I
+      st $I root 640 /hurd/devio -b $I
       ;;
 
     [hrs]d*)
       case "$I" in
-      [a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9])
-        $ST r$I /hurd/devio $I
-        $ST $I /hurd/devio -b $I
+      [a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9] | [a-z][a-z][0-9]s[1-9][a-z] | [a-z][a-z][0-9])
+        st r$I root 640 /hurd/devio $I
+        st $I root 640 /hurd/devio -b $I
 	;;
       *)
-	echo 1>&2 $0: $I: Must supply a device number and partition or slice
+	echo 1>&2 $0: $I: Illegal device name: must supply a device number
 	exit 1
 	;;
       esac
