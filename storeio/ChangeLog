@@ -1,3 +1,31 @@
+2000-03-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dev.h (struct dev): New members store_name, readonly, rdev.
+	(dev_is_readonly): New inline function.
+	* dev.c (dev_open): Take just one arg, a struct dev whose store==0.
+	(dev_close): Shut down the store, but leave DEV intact with store==0.
+	* storeio.c (struct storeio_argp_params): New type.
+	(device, device_lock, store_name): Variables removed.
+	(readonly, inhibit_cache, enforce_store, rdev): Likewise.
+	These are all now members in struct storeio_argp_params or struct dev;
+	rdev now uses dev_t instead of int.
+	(parse_opt): Find a struct storeio_argp_params in STATE->input
+	and fill it in accordingly.  Use makedev macro to construct rdev.
+	(trivfs_append_args): Find options in struct dev off control hook.
+	Use major, minor macros.
+	(main): Make DEVICE a local here, and point FSYS->hook at it.
+	Don't modify trivfs_allow_open.
+	(getroot_hook): New static function.
+	(trivfs_getroot_hook): New variable, initialized to that.
+	(check_open_hook): Find struct dev in CNTL->hook and
+	use new dev_open interface.  Use dev_is_readonly.
+	(open_hook): Find struct dev in PEROPEN->cntl->hook and
+	check DEV->store.
+	(trivfs_modify_stat): Find struct dev in CRED->po->cntl->hook.
+	Use dev_is_readonly.
+	(trivfs_goaway): Find struct dev in FSYS->hook and use its lock.
+	(trivfs_S_fsys_syncfs): Find struct dev in CNTL->hook.
+
 1999-11-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* storeio.c (trivfs_modify_stat): Clear writable bits if open store is
