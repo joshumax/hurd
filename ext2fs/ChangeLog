@@ -1,3 +1,14 @@
+Wed Oct  9 13:30:15 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Return ports with
+	MACH_MSG_TYPE_COPY_SEND, not MACH_MSG_TYPE_MAKE_SEND.
+
+Tue Oct  8 23:25:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): If st_size
+ 	indicates a lower value for NUM_FS_BLOCK, use it instead of the
+ 	value derived from st_blocks.
+
 Mon Oct  7 15:48:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeinfo.c (diskfs_S_file_get_storage_info): Typo.
