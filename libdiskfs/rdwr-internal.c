@@ -89,6 +89,14 @@ _diskfs_rdwr_internal (struct node *np,
     }
   assert (amt == 0 || err);
 
+  if (!diskfs_readonly)
+    {
+      if (dir)
+	np->dn_set_mtime = 1;
+      else
+	np->dn_set_atime = 1;
+    }
+  
   mach_port_deallocate (mach_task_self (), memobj);
   return err;
 }
