@@ -211,6 +211,7 @@ See `tasks', the exported task list.
     and child_lookup() doesn't supply more than fds 0-2). !!
 ** Serverboot doesn't deal with symlinks properly. !!!
 ** Grub doesn't deal with symlinks properly. !!!
+** Make w use utmp's tty instead of the process's
 
 ** fsck:
 *** fsck should use fsys_get_options returned device instead of /etc/fstab !!
