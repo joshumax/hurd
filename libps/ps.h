@@ -743,6 +743,7 @@ struct ps_fmt
 
     /* Storage for various strings pointed to by the fields.  */
     char *src;
+    size_t src_len;		/* Size of SRC.  */
 
     /* The string displayed by default for fields that have no valid value. */
     char *inval;
@@ -791,6 +792,10 @@ void ps_fmt_creation_error (char *src, int posix,
 
 /* Free FMT, and any resources it consumes.  */
 void ps_fmt_free (struct ps_fmt *fmt);
+
+/* Return a copy of FMT in COPY, or an error.  This is useful if, for
+   instance, you would like squash a format without destroying the original.  */
+error_t ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy);
 
 /* Write an appropiate header line for FMT, containing the titles of all its
    fields appropiately aligned with where the values would be printed, to
@@ -851,6 +856,10 @@ error_t proc_stat_list_create (struct ps_context *context,
 
 /* Free PP, and any resources it consumes.  */
 void proc_stat_list_free (struct proc_stat_list *pp);
+
+/* Returns a copy of PP in COPY, or an error.  */
+error_t proc_stat_list_clone (struct proc_stat_list *pp,
+			      struct proc_stat_list **copy);
 
 /* Returns the proc_stat in PP with a process-id of PID, if there's one,
    otherwise, NULL.  */
