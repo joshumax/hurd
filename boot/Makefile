@@ -39,7 +39,7 @@ clean:
 relink:
 	rm -f boot
 
-boot.o: notify_S.h exec_S.h device_S.h io_S.h
+boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $< | \
@@ -59,7 +59,7 @@ device_S.h deviceServer.c: device.defs
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
 
-device_replyUser.c: $(includedir)/device/device_reply.defs
+device_reply.h device_replyUser.c: $(includedir)/device/device_reply.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -server /dev/null
 
