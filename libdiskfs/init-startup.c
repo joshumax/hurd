@@ -109,6 +109,7 @@ _diskfs_init_completed ()
   error_t err;
   struct port_info *pi;
   mach_port_t notify;
+  char *name;
 
   /* Contact the startup server and register our shutdown request. 
      If we get an error, print an informational message. */
@@ -137,7 +138,10 @@ _diskfs_init_completed ()
       goto errout;
     }
   
-  err = startup_request_notification (init, notify /* , name */);
+  asprintf (&name, "%s %s", program_invocation_short_name, 
+	    diskfs_device_arg);
+  err = startup_request_notification (init, notify, name);
+  free (name);
   if (err)
     goto errout;
   
