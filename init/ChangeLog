@@ -1,3 +1,21 @@
+1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ttys.c (struct terminal): Use `pid_t' for `pid' member.
+	(ttys, nttys, ttyslen): Make variables static.
+	(setup_terminal, add_terminal, find_line, startup_terminal,
+	shutdown_terminal): Make all these functions static.
+
+	Move all the /etc/ttys handling stuff into a separate source file.
+	* init.c (_PATH_LOGIN, WINDOW_DELAY, struct terminal,
+	nttys, ttyslen, setup_terminal, add_terminal,
+	init_ttys, free_ttys, startup_terminal, startup_ttys,
+	find_line, restart_terminal, shutdown_terminal, reread_ttys): Move to
+	* ttys.c: ... here, new file.
+	* ttys.h: New file, declare external functions in ttys.c.
+	* Makefile (SRCS): Add ttys.c.
+	(OBJS): Derive from $(SRCS).
+	(LCLHDRS): New variable, add ttys.h.
+
 1999-06-05  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (request_dead_name): New function.
