@@ -1,3 +1,10 @@
+Mon Dec 16 20:52:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* psout.c (psout): Use last N processes if TOP is negative.
+	* ps.c (options): Update doc for --top.
+	Add --head and --bottom/--tail/-b options.
+	(main): Implement --bottom/--tail/-b.
+
 Sat Nov 23 16:30:16 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* psout.c (psout): Delete var REMOVE.
