@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <fcntl.h>
 #include "netfs.h"
 #include "io_S.h"
 
@@ -25,10 +26,12 @@ error_t
 netfs_S_io_readable (struct protid *user,
 		     mach_msg_type_number_t *amount)
 {
+  error_t err;
+  
   if (!user)
     return EOPNOTSUPP;
   
-  if (!(cred->po->openstat & O_READ))
+  if (!(user->po->openstat & O_READ))
     return EINVAL;
   
   mutex_lock (&user->po->np->lock);
