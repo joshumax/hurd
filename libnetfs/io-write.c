@@ -19,17 +19,30 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include "io_S.h"
 
 error_t
 netfs_S_io_write (struct protid *user,
 		  char *data,
-		  mach_msg_number_t datalen,
+		  mach_msg_type_number_t datalen,
 		  off_t offset,
-		  mach_msg_number_t *amount)
+		  mach_msg_type_number_t *amount)
 {
+  error_t err;
+  
   if (!user)
     return EOPNOTSUPP;
   
-  return netfs_attempt_write (user->credential, user->po->np,
-			      offset, amount, data);
+  mutex_lock (&user->po->np->lock);
+  *amount = datalen;
+  err =  netfs_attempt_write (user->credential, user->po->np,
+			      offset == -1 ? user->po->filepointer : offset,
+			      amount, data);
+  if (offset == -1 && !err)
+    user->po->filepointer += *amount;
+  mutex_unlock (&user->po->np->lock);
+  
+  return err;
 }
+
+
