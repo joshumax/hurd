@@ -19,77 +19,56 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <errno.h>
-#include <getopt.h>
+#include <argp.h>
 
 #include "fsck.h"
 
 char *lfname = "lost+found";
 mode_t lfmode = 0755;
-
-#define USAGE "Usage: %s [OPTION...] DEVICE\n"
 
-static void
-usage(int status)
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -p, --preen                Terse automatic mode\n\
-  -y, --yes                  Automatically answer yes to all questions\n\
-  -n, --no                   Automatically answer no to all questions\n\
-  -l, --lost+found=NAME      The name of the lost+found directory in /\n\
-  -m, --lf-mode=MODE         The name of the lost+found directory in /\n\
-      --help                 Give this usage message\n\
-");
-    }
-
-  exit(status);
-}
-
-#define SHORT_OPTIONS "pynlm&"
-
-static struct option options[] =
-{
-  {"preen", no_argument, 0, 'p'},
-  {"yes", no_argument, 0, 'y'},
-  {"no", no_argument, 0, 'n'},
-  {"lost+found", required_argument, 0, 'l'},
-  {"lf-mode", required_argument, 0, 'm'},
-  {"help", no_argument, 0, '&'},
-  {0, 0, 0, 0}
+  {"preen",      'p', 0,      0,  "Terse automatic mode"},
+  {"yes",        'y', 0,      0,  "Automatically answer yes to all questions"},
+  {"no",         'n', 0,      0,  "Automatically answer no to all questions"},
+  {"lost+found", 'l', "NAME", 0,  "The name of the lost+found directory in /"},
+  {"lf-mode",    'm', "MODE", 0,  "The mode of the lost+found directory in /"},
+  {0, 0}
 };
-
+char *args_doc = "DEVICE";
+
 int
 main (int argc, char **argv)
 {
-  int opt;
+  char *device = 0;
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
+    {
+      switch (key)
+	{
+	case 'p': preen = 1; break;
+	case 'y': noquery = 1; break;
+	case 'n': nowrite = 1; break;
+	case 'l': lfname = arg; break;
+	case 'm': lfmode = strtol (arg, 0, 8); break;
+	case ARGP_KEY_ARG:
+	  if (!device)
+	    {
+	      device = arg;
+	      break;
+	    }
+	  /* Fall through */
+	case ARGP_KEY_NO_ARGS:
+	  argp_help (state->argp, stderr, ARGP_HELP_STD_USAGE);	/* exits */
+	default:  return EINVAL;
+	}
+      return 0;
+    }
+  struct argp argp = {options, parse_opt, args_doc};
 
   preen = nowrite = noquery = 0;
-  
-  while ((opt = getopt_long (argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 'p': preen = 1; break;
-      case 'y': noquery = 1; break;
-      case 'n': nowrite = 1; break;
-      case 'l': lfname = optarg; break;
-      case 'm': lfmode = strtol (optarg, 0, 8); break;
-      case '&': usage(0);
-      default:  usage(1);
-      }
+  argp_parse (&argp, argc, argv, 0, 0);
 
-  if (argv[optind] == 0 || argv[optind + 1] != 0)
-    {
-      fprintf(stderr, USAGE, program_invocation_name);
-      usage (1);
-    }
-
-  if (!setup (argv[optind]))
+  if (!setup (device))
     exit (1);
   
   if (!preen)
@@ -121,5 +100,6 @@ main (int argc, char **argv)
   
   if (fsmodified)
     printf ("\n***** FILE SYSTEM WAS MODIFIED *****\n");
-  return 0;
-}  
+
+  exit (fsmodified ? 2 : 0);
+}
