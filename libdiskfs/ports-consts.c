@@ -17,5 +17,4 @@
 
 
 /* ports_wire_threads is set in init-init.c. */
-int ports_use_multiple_threads = 1;
 int ports_wire_cthreads = 1;

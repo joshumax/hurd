@@ -24,6 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 void
 diskfs_spawn_first_thread (void)
 {
-  cthread_detach (cthread_fork ((cthread_fn_t) ports_manage_port_operations,
+  cthread_detach (cthread_fork ((cthread_fn_t) 
+				ports_manage_port_operations_multithread,
 				(any_t) 0));
 }

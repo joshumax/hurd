@@ -24,5 +24,5 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 void
 diskfs_main_request_loop (void)
 {
-  ports_manage_port_operations ();
+  ports_manage_port_operations_multithread ();
 }
