@@ -103,7 +103,7 @@ enum page_errors
   PAGE_EDQUOT,
 };
 
-int _pager_page_errors[];
+extern int _pager_page_errors[];
 
 /* Pagemap format */
 /* These are binary state bits */
