@@ -93,7 +93,6 @@ trunc_direct (struct node * node, unsigned long length)
   char * bh;
   unsigned long block_to_free = 0;
   unsigned long free_count = 0;
-  int blocks = block_size / 512;
   int direct_block = DIRECT_BLOCK(length);
 
   for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++)
@@ -106,7 +105,7 @@ trunc_direct (struct node * node, unsigned long length)
 
       node->dn->info.i_data[i] = 0;
 
-      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
+      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
 
       if (free_count == 0) {
@@ -141,7 +140,6 @@ trunc_indirect (struct node * node, unsigned long length,
   u32 * ind;
   unsigned long block_to_free = 0;
   unsigned long free_count = 0;
-  int blocks = block_size / 512;
   int indirect_block = INDIRECT_BLOCK (length, offset);
 
   block = *p;
@@ -187,7 +185,7 @@ trunc_indirect (struct node * node, unsigned long length,
       ext2_free_blocks (block, 1);
 #endif
 
-      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
+      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
     }
 
@@ -202,7 +200,7 @@ trunc_indirect (struct node * node, unsigned long length,
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
+      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
@@ -217,7 +215,6 @@ trunc_dindirect (struct node * node, unsigned long length,
   int i, block;
   char * dind_bh;
   u32 * dind;
-  int blocks = block_size / 512;
   int dindirect_block = DINDIRECT_BLOCK (length, offset);
 
   block = *p;
@@ -254,7 +251,7 @@ trunc_dindirect (struct node * node, unsigned long length,
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
+      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
@@ -268,7 +265,6 @@ trunc_tindirect (struct node * node, unsigned long length)
   int i, block;
   char * tind_bh;
   u32 * tind, * p;
-  int blocks = block_size / 512;
   int tindirect_block = TINDIRECT_BLOCK (length);
 
   p = node->dn->info.i_data + EXT2_TIND_BLOCK;
@@ -305,7 +301,7 @@ trunc_tindirect (struct node * node, unsigned long length)
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
+      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
