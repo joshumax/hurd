@@ -27,10 +27,8 @@
 
 #include "diskfs.h"
 
-extern mach_port_t fs_control_port;	/* receive right */
-
 /* These inhibit setuid or exec. */
-extern int nosuid, noexec;
+extern int _diskfs_nosuid, _diskfs_noexec;
 
 volatile struct mapped_time_value *_diskfs_mtime;
 
