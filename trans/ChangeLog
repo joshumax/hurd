@@ -1,3 +1,8 @@
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* firmlink.c (trivfs_S_io_readable): Use intptr_t, not off_t.
+	(trivfs_S_io_read): Likewise.
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* symlink.c (S_fsys_getroot, S_fsys_getfile): u_int -> size_t
