@@ -1,3 +1,7 @@
+Thu Jul 25 23:22:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* checklist: Add vmstat to the list of setuid programs.
+
 Thu Jul 18 18:27:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* SETUP: Install grub with INSTALL-GRUB-MBR if desired.
