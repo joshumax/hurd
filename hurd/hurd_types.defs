@@ -171,4 +171,5 @@ type term_io_data_t = struct[3] of int;
 type rusage_t = struct[18] of int;
 
 import <sys/types.h>;
+import <sys/stat.h>;
 import <hurd/hurd_types.h>;
