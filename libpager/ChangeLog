@@ -1,3 +1,8 @@
+2002-04-10  Neal H Walfield  <neal@cs.uml.edu>
+
+	* pager-memcpy.c (VMCOPY_BETTER_THAN_MEMCPY): New macro.
+	(pager_memcpy): Rewritten to use vmcopy.
+
 2002-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* data-request.c (_pager_seqnos_memory_object_data_request): Must
