@@ -1,5 +1,5 @@
 /* Main program and global state for tmpfs.
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -47,7 +47,9 @@ int diskfs_shortcurt_fifo = 1;
 int diskfs_shortcurt_ifsock = 1;
 
 struct node *diskfs_root_node;
+mach_port_t default_pager;
 
+off_t tmpfs_page_limit, tmpfs_space_used;
 
 error_t
 diskfs_set_statfs (struct statfs *st)
@@ -91,6 +93,7 @@ diskfs_reload_global_state ()
   return 0;
 }
 
+int diskfs_synchronous = 0;
 
 
 /* Parse a command line option.  */
