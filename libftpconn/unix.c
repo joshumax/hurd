@@ -136,10 +136,15 @@ error_t ftp_conn_unix_interp_err (struct ftp_conn *conn, const char *txt,
 struct get_stats_state
 {
   char *name;			/* Last read (maybe partial) name.  */
+  size_t name_len;		/* Valid length of NAME, *not including* '\0'.  */
+  size_t name_alloced;		/* Allocated size of NAME (>= NAME_LEN).  */
   int name_partial;		/* True if NAME isn't complete.  */
+
   struct stat stat;		/* Last read stat info.  */
-  size_t buf_len;		/* Length of contents in BUF.  */
+
   int start;			/* True if at beginning of output.  */
+
+  size_t buf_len;		/* Length of contents in BUF.  */
   char buf[7000];
 };
 
@@ -181,6 +186,7 @@ ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
   else
     {
       s->name = 0;
+      s->name_len = s->name_alloced = 0;
       s->name_partial = 0;
       s->buf_len = 0;
       s->start = 1;
@@ -512,26 +518,24 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
       if (name_len > 0 && p[name_len - 1] == '\r')
 	name_len--;
       if (name_len > 0)
-	if (s->name)
-	  /* Extending s->name.  */
-	  {
-	    size_t old_len = strlen (s->name);
-	    char *new_name = realloc (s->name, old_len + name_len + 1);
-	    if (! new_name)
-	      goto enomem;
-	    s->name = new_name;
-	    strncpy (new_name + old_len, p, name_len);
-	    new_name[old_len + name_len] = '\0';
-	  }
-	else
-	  /* A new name.  */
-	  {
-	    s->name = malloc (name_len + 1);
-	    if (! s->name)
-	      goto enomem;
-	    strncpy (s->name, p, name_len);
-	    s->name[name_len] = '\0';
-	  }
+	/* Extending s->name.  */
+	{
+	  size_t old_len = s->name_len;
+	  size_t total_len = old_len + name_len + 1;
+
+	  if (total_len > s->name_alloced)
+	    {
+	      char *new_name = realloc (s->name, total_len);
+	      if (! new_name)
+		goto enomem;
+	      s->name = new_name;
+	      s->name_alloced = total_len;
+	    }
+
+	  strncpy (s->name + old_len, p, name_len);
+	  s->name[old_len + name_len] = '\0';
+	  s->name_len = total_len - 1;
+	}
 
       if (nl)
 	{
@@ -540,13 +544,11 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 	  if (S_ISLNK (s->stat.st_mode))
 	    /* A symlink, see if we can find the link target.  */
 	    {
-	      char *lsep = strstr (s->name, " -> ");
-	      if (lsep)
+	      symlink_target = strstr (s->name, " -> ");
+	      if (symlink_target)
 		{
-		  *lsep = '\0';
-		  lsep += 4;
-		  symlink_target = strdup (lsep);
-		  s->name = realloc (s->name, (lsep - 3) - s->name);
+		  *symlink_target = '\0';
+		  symlink_target += 4;
 		}
 	    }
 
@@ -556,7 +558,7 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 	  if (err)
 	    goto finished;
 
-	  s->name = 0;
+	  s->name_len = 0;
 	  s->name_partial = 0;
 
 	skip_line:
