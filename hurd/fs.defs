@@ -280,9 +280,3 @@ routine file_get_translator_cntl (
 	file: file_t;
 	out translator_cntl: fsys_t);
 
-/* Return statfs information for the active translator for this file */
-/* INTR */
-routine file_stat_translator (
-	file: file_t;
-	out info: fsys_statfsbuf_t);
-
