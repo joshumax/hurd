@@ -22,7 +22,6 @@ diskfs_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
 				    mach_port_seqno_t seqno,
 				    mach_port_t name)
 {
-  printf ("port deleted notification\n");
   return 0;
 }
 
@@ -31,7 +30,6 @@ diskfs_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
 				    mach_port_seqno_t seqno,
 				    mach_port_t name)
 {
-  printf ("msg accepted notification\n");
   return 0;
 }
 
@@ -40,7 +38,6 @@ diskfs_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
 				      mach_port_seqno_t seqno,
 				      mach_port_t name)
 {
-  printf ("port destroyed notification\n");
   return 0;
 }
 
@@ -48,7 +45,6 @@ error_t
 diskfs_do_seqnos_mach_notify_send_once (mach_port_t notify,
 				 mach_port_seqno_t seqno)
 {
-  printf ("send once notification\n");
   return 0;
 }
 
@@ -57,6 +53,5 @@ diskfs_do_seqnos_mach_notify_dead_name (mach_port_t notify,
 				 mach_port_seqno_t seqno,
 				 mach_port_t name)
 {
-  printf ("dead name notification\n");
   return 0;
 }
