@@ -19,12 +19,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "priv.h"
+
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
    appropriately; do the analogous operation for atime and mtime as well. */
 void
 diskfs_set_node_times (struct node *np)
 {
-  int secs, usecs, ret;
+  int secs, usecs;
   
   do 
     {
