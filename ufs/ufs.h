@@ -270,6 +270,7 @@ error_t dev_read_sync (daddr_t addr, vm_address_t *data, long len);
 
 /* From hyper.c: */
 void get_hypermetadata (void);
+void copy_sblock (void);
 
 /* From inode.c: */
 error_t iget (ino_t ino, struct node **NP);

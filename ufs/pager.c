@@ -152,7 +152,7 @@ pager_write_page (struct user_pager_info *pager,
   else
     {
       printf ("Attempt to write unallocated disk\n.");
-      printf ("Object %#x\tOffset %#x\n", pager, page);
+      printf ("Object %p\tOffset %#x\n", pager, page);
       fflush (stdout);
       err = 0;			/* unallocated disk; 
 				   error would be pointless */
