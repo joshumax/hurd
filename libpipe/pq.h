@@ -101,9 +101,9 @@ packet_read_source (struct packet *packet, void **source)
    copying around data.  */
 #define PACKET_SIZE_LARGE	8192
 
-/* Returns a size to which a packet can be set, which will be at least GOAL,
-   but perhaps more.  */
-size_t packet_size_adjust (size_t goal);
+/* Returns a legal size to which PACKET can be set allowing enough room for
+   EXTRA bytes more than what's already in it, and perhaps more.  */
+size_t packet_new_size (struct packet *packet, size_t extra);
 
 /* Try to extend PACKET to be NEW_LEN bytes long, which should be greater
    than the current packet size.  This should be a valid length -- i.e., if
@@ -125,13 +125,12 @@ extern inline error_t
 packet_ensure (struct packet *packet, size_t amount)
 {
   size_t new_len;
-  size_t old_len = packet->buf_len;
-  size_t left = packet->buf + old_len - packet->buf_end;
+  size_t left = packet->buf + packet->buf_len - packet->buf_end;
 
   if (amount < left)
     return 0;
 
-  new_len = packet_size_adjust (old_len + amount - left);
+  new_len = packet_new_size (packet, amount);
   if (packet_extend (packet, new_len))
     return 0;
   else
@@ -146,13 +145,12 @@ extern inline int
 packet_ensure_efficiently (struct packet *packet, size_t amount)
 {
   size_t new_len;
-  size_t old_len = packet->buf_len;
-  size_t left = packet->buf + old_len - packet->buf_end;
+  size_t left = packet->buf + packet->buf_len - packet->buf_end;
 
   if (amount < left)
     return 1;
 
-  new_len = packet_size_adjust (old_len + amount - left);
+  new_len = packet_new_size (packet, amount);
   if (packet_extend (packet, new_len))
     return 1;
   if ((packet->buf_end - packet->buf_start) < PACKET_SIZE_LARGE)
