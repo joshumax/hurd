@@ -1,8 +1,8 @@
 /* Type decls for mig-produced server stubs
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -30,26 +30,26 @@
 typedef struct sock_user *sock_user_t;
 typedef struct addr *addr_t;
 
-extern inline
-sock_user_t begin_using_sock_user_port(mach_port_t port)
+static inline sock_user_t __attribute__ ((unused))
+begin_using_sock_user_port(mach_port_t port)
 {
   return (sock_user_t)ports_lookup_port (0, port, sock_user_port_class);
 }
 
-extern inline void
+static inline void __attribute__ ((unused))
 end_using_sock_user_port (sock_user_t sock_user)
 {
   if (sock_user != NULL)
     ports_port_deref (sock_user);
 }
 
-extern inline
-addr_t begin_using_addr_port(mach_port_t port)
+static inline addr_t __attribute__ ((unused))
+begin_using_addr_port(mach_port_t port)
 {
   return (addr_t)ports_lookup_port (0, port, addr_port_class);
 }
 
-extern inline void
+static inline void __attribute__ ((unused))
 end_using_addr_port (addr_t addr)
 {
   if (addr != NULL)

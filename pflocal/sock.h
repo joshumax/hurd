@@ -1,8 +1,8 @@
 /* Internal sockets
 
-   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,01 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -115,7 +115,7 @@ void sock_free (struct sock *sock);
 void _sock_norefs (struct sock *sock);
 
 /* Remove a reference from SOCK, possibly freeing it.  */
-extern inline void
+static inline void __attribute__ ((unused))
 sock_deref (struct sock *sock)
 {
   mutex_lock (&sock->lock);
