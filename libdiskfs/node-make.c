@@ -37,6 +37,7 @@ diskfs_make_node (struct disknode *dn)
   np->light_references = 0;
   np->owner = 0;
   np->sockaddr = MACH_PORT_NULL;
+  np->identity = MACH_PORT_NULL;
 
   np->dirmod_reqs = 0;
   
