@@ -70,7 +70,7 @@ main (int argc, char *argv[])
 	    {
 	    case 0:
 	      /* Make the '\0's in TRANS printable.  */
-	      argz_stringify (trans, trans_len);
+	      argz_stringify (trans, trans_len, ' ');
 
 	      if (!silent)
 		if (print_prefix)
@@ -109,7 +109,7 @@ main (int argc, char *argv[])
 	case ARGP_KEY_ARG:	/* A FILE argument */
 	  if (print_prefix < 0)
 	    /* By default, only print a prefix if there are multiple files. */
-	    print_prefix = (argc > state->index + 1);
+	    print_prefix = state->next < state->argc;
 
 	  if (arg && strcmp (arg, "-") != 0)
 	    print_node_trans (file_name_lookup (arg, O_NOTRANS, 0), arg);
