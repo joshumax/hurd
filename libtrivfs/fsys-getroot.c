@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -48,6 +48,15 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 
   if (!cntl)
     return EOPNOTSUPP;
+
+  if (trivfs_getroot_hook)
+    {
+      err = (*trivfs_getroot_hook) (cntl, reply_port, reply_port_type, dotdot,
+				    uids, nuids, gids, ngids, flags,
+				    do_retry, retry_name, newpt, newpttype);
+      if (err != EAGAIN)
+	return err;
+    }
 
   if ((flags & (O_READ|O_WRITE|O_EXEC) & trivfs_allow_open)
       != (flags & (O_READ|O_WRITE|O_EXEC)))
