@@ -290,16 +290,12 @@ S_proc_getprocenv (struct proc *callerp,
 		 char **buf,
 		 u_int *buflen)
 {
-#ifdef notyet
   struct proc *p = pid_find (pid);
   
   if (!p)
     return ESRCH;
   
-  return get_string_array (p->p_task, p->p_envp, buflen, buf);
-#else
-  return EOPNOTSUPP;
-#endif
+  return get_string_array (p->p_task, p->p_envp, (vm_address_t *)buf, buflen);
 }
 
 /* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
