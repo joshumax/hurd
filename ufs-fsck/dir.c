@@ -1,5 +1,5 @@
 /* Directory management subroutines
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -89,15 +89,15 @@ validdir (ino_t dir, char *action)
       return 1;
       
     case UNALLOC:
-      pfatal ("CANNOT %s I=%d; NOT ALLOCATED", action, dir);
+      warning (1, "CANNOT %s I=%d; NOT ALLOCATED", action, dir);
       return 0;
       
     case BADDIR:
-      pfatal ("CANNOT %s I=%d; BAD BLOCKS", action, dir);
+      warning (1, "CANNOT %s I=%d; BAD BLOCKS", action, dir);
       return 0;
       
     case REG:
-      pfatal ("CANNOT %s I=%d; NOT DIRECTORY", action, dir);
+      warning (1, "CANNOT %s I=%d; NOT DIRECTORY", action, dir);
       return 0;
 
     default:
@@ -379,17 +379,19 @@ makeentry (ino_t dir, ino_t ino, char *name)
   if (!madeentry)
     {
       /* Attempt to expand the directory. */
-      pwarn ("NO SPACE LEFT IN DIR INO=%d", dir);
+      problem (0, "NO SPACE LEFT IN DIR INO=%d", dir);
       if (preen || reply ("EXPAND"))
 	{
 	  if (expanddir (&dino))
 	    {
-	      if (preen)
-		printf (" (EXPANDED)");
 	      datablocks_iterate (&dino, checkdirblock);
+	      pfix ("EXPANDED");
 	    }
 	  else
-	    pfatal ("CANNOT EXPAND DIRECTORY");
+	    {
+	      pfail (0);
+	      warning (1, "CANNOT EXPAND DIRECTORY");
+	    }
 	}
     }
   return madeentry;
@@ -439,35 +441,31 @@ linkup (ino_t ino, ino_t parent)
     {
       if (!searchdir (ROOTINO, lfname, &lfdir))
 	{
-	  pfatal ("FAILURE SEARCHING FOR %s\n", lfname);
+	  warning (1, "FAILURE SEARCHING FOR %s", lfname);
 	  return 0;
 	}
       if (lfdir == 0)
 	{
-	  pwarn ("NO %s DIRECTORY", lfname);
+	  problem (0, "NO %s DIRECTORY", lfname);
 	  if (preen || reply ("CREATE"))
 	    {
 	      lfdir = allocdir (ROOTINO, 0, lfmode);
 	      if (lfdir != 0)
 		{
-		  if (makeentry (ROOTINO, lfdir, lfname))
-		    {
-		      if (preen)
-			printf (" (CREATED)");
-		    }
-		  else
+		  if (! makeentry (ROOTINO, lfdir, lfname))
 		    {
 		      freeino (lfdir);
 		      linkfound[ROOTINO]--;
 		      lfdir = 0;
-		      if (preen)
-			printf ("\n");
 		    }
 		}
 	    }
-	  if (!lfdir)
+	  if (lfdir)
+	    pfix ("CREATED");
+	  else
 	    {
-	      pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
+	      pfail (0);
+	      warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
 	      return 0;
 	    }
 	}
@@ -478,8 +476,8 @@ linkup (ino_t ino, ino_t parent)
     {
       ino_t oldlfdir;
       
-      pfatal ("%s IS NOT A DIRECTORY", lfname);
-      if (!reply ("REALLOCATE"))
+      problem (1, "%s IS NOT A DIRECTORY", lfname);
+      if (! reply ("REALLOCATE"))
 	return 0;
       
       oldlfdir = lfdir;
@@ -487,12 +485,12 @@ linkup (ino_t ino, ino_t parent)
       lfdir = allocdir (ROOTINO, 0, lfmode);
       if (!lfdir)
 	{
-	  pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
+	  warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
 	  return 0;
 	}
       if (!changeino (ROOTINO, lfname, lfdir))
 	{
-	  pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
+	  warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
 	  return 0;
 	}
       
@@ -504,7 +502,7 @@ linkup (ino_t ino, ino_t parent)
   
   if (inodestate[lfdir] != DIRECTORY && inodestate[lfdir] != (DIRECTORY|DIR_REF))
     {
-      pfatal ("SORRY.  %s DIRECTORY NOT ALLOCATED\n", lfname);
+      warning (1, "SORRY.  %s DIRECTORY NOT ALLOCATED", lfname);
       return 0;
     }
 
@@ -521,13 +519,13 @@ linkup (ino_t ino, ino_t parent)
   if (search_failed)
     {
       free (tempname);
-      pfatal ("FAILURE SEARCHING FOR %s in %s\n", tempname, lfname);
+      warning (1, "FAILURE SEARCHING FOR %s in %s", tempname, lfname);
       return 0;
     }
   if (!makeentry (lfdir, ino, tempname))
     {
       free (tempname);
-      pfatal("SORRY, NO SPACE IN %s DIRECTORY\n", lfname);
+      warning (1, "SORRY, NO SPACE IN %s DIRECTORY", lfname);
       return 0;
     }
   free (tempname);
@@ -540,7 +538,7 @@ linkup (ino_t ino, ino_t parent)
 	{
 	  if (!changeino (ino, "..", lfdir))
 	    {
-	      pfatal ("CANNOT ADJUST .. link I=%u\n", ino);
+	      warning (1, "CANNOT ADJUST .. LINK I=%u", ino);
 	      return 0;
 	    }
 	  /* Forget about link to old parent */
@@ -548,7 +546,7 @@ linkup (ino_t ino, ino_t parent)
 	}
       else if (!makeentry (ino, lfdir, ".."))
 	{
-	  pfatal ("CANNOT CREAT .. link I=%u\n", ino);
+	  warning (1, "CANNOT CREAT .. LINK I=%u", ino);
 	  return 0;
 	}
       
@@ -559,11 +557,10 @@ linkup (ino_t ino, ino_t parent)
       lfdino.di_nlink++;
       write_inode (lfdir, &lfdino);
       
-      pwarn ("DIR I=%u CONNECTED. ", ino);
       if (parent)
-	printf ("PARENT WAS I=%u\n", parent);
-      if (!preen)
-	printf ("\n");
+	warning (0, "DIR I=%u CONNECTED; PARENT WAS I=%u", ino, parent);
+      else
+	warning (0, "DIR I=%u CONNECTED", ino);
     }
   return 1;
 }
