@@ -380,17 +380,9 @@ record_indir_poke (struct node *node, void *ptr)
 /* ---------------------------------------------------------------- */
 
 extern inline void
-sync_super_block ()
+sync_global (int wait)
 {
-  sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
-  sync_global_ptr (sblock, 1);
-}
-
-extern inline void
-sync_global_data ()
-{
-  pokel_sync (&global_pokel, 1);
-  diskfs_set_hypermetadata (1, 0);
+  pokel_sync (&global_pokel, wait);
 }
 
 /* Sync all allocation information and node NP if diskfs_synchronous. */
@@ -404,7 +396,7 @@ alloc_sync (struct node *np)
 	  diskfs_node_update (np, 1);
 	  pokel_sync (&np->dn->indir_pokel, 1);
 	}
-      sync_global_data ();
+      diskfs_set_hypermetadata (1, 0);
     }
 }
 
