@@ -34,6 +34,7 @@ diskfs_create_node (struct node *dir,
 {
   struct node *np;
   error_t err;
+  uid_t newuid;
   
   if (diskfs_readonly)
     return EROFS;
@@ -46,13 +47,21 @@ diskfs_create_node (struct node *dir,
 	diskfs_drop_dirstat (dir, ds);
       return err;
     }
+
   np = *newnode;
   /* Initialize the on-disk fields. */
   
   if (cred->nuids)
-    np->dn_stat.st_uid = cred->uids[0];
+    {
+      err = diskfs_validate_owner_change (np, cred->uids[0]);
+      if (err)
+	goto change_err;
+      np->dn_stat.st_uid = cred->uids[0];
   else
     {
+      err = diskfs_validate_owner_change (np, dir->dn_stat.st_uid);
+      if (err)
+	goto change_err;
       np->dn_stat.st_uid = dir->dn_stat.st_uid;
       mode &= ~S_ISUID;
     }
