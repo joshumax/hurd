@@ -91,7 +91,8 @@ struct store_class
 store_remap_class =
 {
   STORAGE_REMAP, "remap", remap_read, remap_write,
-  remap_allocate_encoding, remap_encode, remap_decode
+  remap_allocate_encoding, remap_encode, remap_decode,
+  store_set_child_flags, store_clear_child_flags
 };
 
 /* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
@@ -106,7 +107,7 @@ store_remap_create (struct store *source,
 {
   error_t err;
 
-  *store = _make_store (&store_remap_class, MACH_PORT_NULL, flags,
+  *store = _make_store (&store_remap_class, MACH_PORT_NULL, flags | source->flags,
 			source->block_size, runs, num_runs, 0);
   if (! *store)
     return ENOMEM;
@@ -209,11 +210,13 @@ store_remap (struct store *source,
 			  &xruns, &num_xruns);
       if (! err)
 	{
-	  /* Don't use store_set_runs because we've already allocated the
-	     storages.  */
+	  /* Don't use store_set_runs -- we've already allocated the
+	     storage. */
 	  free (source->runs);
 	  source->runs = xruns;
 	  source->num_runs = num_xruns;
+	  source->flags &= ~STORE_ENFORCED;
+	  source->end = 0;	/* Needed to make _store_derive work.  */
 	  _store_derive (source);
 	  *store = source;
 	}
