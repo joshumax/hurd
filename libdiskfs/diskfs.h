@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -1024,6 +1024,27 @@ int diskfs_check_readonly (void);
    fsys, interrupt, and notify interfaces.  All the server routines
    have the prefix `diskfs_S_'; `in' arguments of type file_t or io_t
    appear as `struct protid *' to the stub.  */
+
+
+/* All-in-one initialization function for diskfs filesystems using
+   libstore.  This parses arguments using STARTUP_ARGP (defaulting to
+   diskfs_store_startup_argp if it's null; note that the ARGP_IN_ORDER
+   flag is always used); it calls diskfs_init_diskfs; it opens the
+   store with store_parsed_open, and sets diskfs_hard_readonly and
+   diskfs_readonly if the store is unwritable; it calls
+   diskfs_spawn_first_thread; finally, it returns the store and its
+   description in *STORE and *STORE_PARSED, and the bootstrap port in
+   *BOOTSTRAP.  The caller should pass *BOOTSTRAP to
+   diskfs_startup_diskfs after setting diskfs_root_node.
+   (See <argp.h> and <hurd/store.h>.)
+
+   This call cannot return failure; if it encounters a fatal problem,
+   it prints a diagnostic on stderr (or the console) and exits the
+   program.  */
+struct store *diskfs_init_main (struct argp *startup_argp,
+				int argc, char **argv,
+				struct store_parsed **store_parsed,
+				mach_port_t *bootstrap);
 
 /* The following are optional convenience routines and global variable, which
    can be used by any user program that uses a mach device to hold the
