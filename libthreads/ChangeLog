@@ -1,3 +1,8 @@
+2000-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* i386/csw.S: #undef __ELF__ before defining it, since
+	it is usually predefined.
+
 2000-01-10  Mark Kettenis  <kettenis@gnu.org>
 
 	* cprocs.c: Include <assert.h>

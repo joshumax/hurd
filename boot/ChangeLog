@@ -1,3 +1,7 @@
+2000-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (ds_device_get_status): Accept *STATUSLEN greater than needed.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c: Reverted changes related to io_map_segment.
