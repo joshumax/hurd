@@ -65,8 +65,8 @@ routine startup_procinit (
 	startup_proc: process_t;
 	out startup_task: task_t;
 	out auth: auth_t;
-	out host_priv: mach_port_move_send_t;
-	out device_master: mach_port_move_send_t);
+	out host_priv: mach_port_send_t;
+	out device_master: mach_port_send_t);
 
 /* This call is made by the auth server for its initialization. 
    The auth server will create an all-root authentication handle
@@ -74,5 +74,5 @@ routine startup_procinit (
 routine startup_authinit (
 	server: startup_t;
 	sreplyport reply_port: reply_port_t;
-	auth: mach_port_make_send_t;
-	out proc: mach_port_move_send_t);
+	auth: mach_port_send_t;
+	out proc: mach_port_send_t);
