@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "ufs.h"
+#include "dinode.h"
+
 int diskfs_link_max = LINK_MAX;
 int diskfs_maxsymlinks = 8;
 int diskfs_shortcut_symlink = 1;
