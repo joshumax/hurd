@@ -70,6 +70,7 @@
  * dp->d_ino set to 0.
  */
 #define DIRBLKSIZ	DEV_BSIZE
+#undef	MAXNAMLEN
 #define	MAXNAMLEN	255
 
 /* Don't call this struct DIRECT because the library defines that
