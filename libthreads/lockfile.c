@@ -1,5 +1,5 @@
-/* lockfile - Handle locking and unlocking of stream.  Hurd cthreads version.
-   Copyright (C) 2000 Free Software Foundation, Inc.
+/* lockfile - Handle locking and unlocking of streams.  Hurd cthreads version.
+   Copyright (C) 2000,01 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,11 +18,7 @@
    Boston, MA 02111-1307, USA.  */
 
 #include <cthreads.h>		/* Must come before <stdio.h>! */
-
-#define _IO_MTSAFE_IO
 #include <stdio.h>
-
-#include <assert.h>
 
 
 #ifdef _STDIO_USES_IOSTREAM
@@ -30,56 +26,19 @@
 void
 _cthreads_flockfile (_IO_FILE *fp)
 {
-  cthread_t self = cthread_self ();
-
-  if (fp->_lock->owner == self)
-    {
-      assert (fp->_lock->count != 0);
-      ++fp->_lock->count;
-    }
-  else
-    {
-      mutex_lock (&fp->_lock->mutex);
-      assert (fp->_lock->owner == 0);
-      fp->_lock->owner = self;
-      assert (fp->_lock->count == 0);
-      fp->_lock->count = 1;
-    }
+  _IO_lock_lock (*fp->_lock);
 }
 
 void
 _cthreads_funlockfile (_IO_FILE *fp)
 {
-  if (--fp->_lock->count == 0)
-    {
-      assert (fp->_lock->owner == cthread_self ());
-      fp->_lock->owner = 0;
-      mutex_unlock (&fp->_lock->mutex);
-    }
+  _IO_lock_unlock (*fp->_lock);
 }
 
 int
 _cthreads_ftrylockfile (_IO_FILE *fp)
 {
-  cthread_t self = cthread_self ();
-
-  if (fp->_lock->owner == self)
-    {
-      assert (fp->_lock->count != 0);
-      ++fp->_lock->count;
-    }
-  else if (mutex_try_lock (&fp->_lock->mutex))
-    {
-      assert (fp->_lock->owner == 0);
-      fp->_lock->owner = self;
-      assert (fp->_lock->count == 0);
-      fp->_lock->count = 1;
-    }
-  else
-    return 0;			/* No lock for us.  */
-
-  /* We got the lock. */
-  return 1;
+  return __libc_lock_trylock_recursive (*fp->_lock);
 }
 
 
