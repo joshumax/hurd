@@ -233,6 +233,10 @@ pass5 ()
 	  case REG:
 	    newcg->cg_cs.cs_nifree--;
 	    setbit (cg_inosused (newcg), i);
+	    /* Fall through... */
+	  case UNALLOC:
+	    break;
+
 	  default:
 	    errexit ("UNKNOWN STATE I=%d", i);
 	  }
