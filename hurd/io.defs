@@ -37,33 +37,30 @@ IO_IMPORTS
    object at a time; servers implement congestion control by delaying
    responses to io_write.  Servers may drop data (returning ENOBUFS)
    if they recevie more than one write when not prepared for it.  */
-/*INTR */ 
-routine io_write (
+INTR_ROUTINE (io_write, (
 	io_object: io_t;
 	RPT
 	data: data_t;
 	offset: off_t;
-	out amount: int);
+	out amount: int))
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
    ignored.  The amount desired to be read is in amount.  */
-/* INTR */
-routine io_read (
+INTR_ROUTINE (io_read, (
 	io_object: io_t;
 	RPT
 	out data: data_t;
 	offset: off_t;
-	amount: int);
+	amount: int))
 
 /* Change current read/write offset */
-/* INTR */
-routine io_seek (
+INTR_ROUTINE (io_seek, (
 	io_object: io_t;
 	RPT
 	offset: off_t;
 	whence: int;
-	out newp: off_t);
+	out newp: off_t))
 
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
@@ -164,11 +161,10 @@ routine io_select (
    io_statuf_t are meaningful for all objects; however, the access and
    modify times, the optimal IO size, and the fs type are meaningful
    for all objects.  */
-/* INTR */
-routine io_stat (
+INTR_ROUTINE (io_stat, (
 	stat_object: io_t;
 	RPT
-	out stat_info: io_statbuf_t);
+	out stat_info: io_statbuf_t))
 
 /* Get a reauthenticated port to an io object.  The user should follow
    this with a call to auth_user_authenticate.  The new_port passed
@@ -237,9 +233,8 @@ routine io_map_cntl (
    should call this function.  The server will endeavor to have
    USER_HAS_CONCH when this returns, but users should call io_get_it
    in a loop for safety.  */
-/* INTR */
-routine io_get_conch (
-	io_object: io_t RPTLAST);
+INTR_ROUTINE (io_get_conch, (
+	io_object: io_t RPTLAST))
 
 /* When the user is done with the shared page, while holding the
    conch, the filesystem may have changed the conch status to
@@ -293,9 +288,8 @@ routine io_readnotify (
 /* This routine sleeps until the read_size is increased.  The routine
    should be called while the user has the conch.  The user will keep
    it upon return.  */
-/* INTR */
-routine io_readsleep (
-	io_object: io_t RPTLAST);
+INTR_ROUTINE (io_readsleep, (
+	io_object: io_t RPTLAST))
    
 /* The shared user has just done some IO, and a signal needs to be
    sent for async users.  */
