@@ -25,14 +25,16 @@
 #include <hurd.h>
 #include <hurd/startup.h>
 #include <hurd/ports.h>
-#include <hurd/idvec.h>
 #include <hurd/ihash.h>
+#include <idvec.h>
 #include <assert.h>
+#include <argp.h>
 #include "auth_S.h"
 #include "auth_reply_U.h"
 
-char *auth_version = "0.0";
+#define AUTH_VERSION "0.0"
 
+char *argp_program_version = "auth " AUTH_VERSION " (GNU " HURD_RELEASE ")";
 
 /* Auth handles are server ports with sets of ids.  */
 struct authhandle
@@ -433,6 +435,8 @@ main (int argc, char **argv)
   mach_port_t hostpriv, masterdev;
   struct authhandle *firstauth;
 
+  argp_parse (0, argc, argv, 0, 0, 0);
+
   auth_bucket = ports_create_bucket ();
   authhandle_portclass = ports_create_class (&destroy_authhandle, 0);
 
@@ -452,7 +456,7 @@ main (int argc, char **argv)
 
   /* Register ourselves with the proc server and then start signals.  */
   proc_getprivports (proc, &hostpriv, &masterdev);
-  proc_register_version (proc, hostpriv, "auth", HURD_RELEASE, auth_version);
+  proc_register_version (proc, hostpriv, "auth", HURD_RELEASE, AUTH_VERSION);
   mach_port_deallocate (mach_task_self (), masterdev);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
   _hurd_proc_init (argv);
