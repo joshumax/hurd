@@ -16,9 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
+#include <string.h>
 
 error_t
-diskfs_S_file_statfs (struct protid *cred,
+diskfs_S_file_statfs (struct trivfs_protid *cred,
 		      struct fsys_statfsbuf *stb)
 {
   bzero (stb, sizeof (struct fsys_statfsbuf));
