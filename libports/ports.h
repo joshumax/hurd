@@ -248,9 +248,9 @@ void ports_resume_all_rpcs (void);
 /* Cancel (with thread_cancel) any RPC's in progress on PORT. */
 void ports_interrupt_rpc (void *port);
 
-/* Notification */
+/* Default servers */
 
-/* A notification server that calls the ports_do_mach_* routines.  */
+/* A notification server that calls the ports_do_mach_notify_* routines.  */
 int ports_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
 /* Notification server routines called by ports_notify_server.  */
@@ -260,6 +260,10 @@ error_t ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t c
 error_t ports_do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name);
 error_t ports_do_mach_notify_port_destroyed (mach_port_t notify, mach_port_t name);
 error_t ports_do_mach_notify_send_once (mach_port_t notify);
+
+/* A default interrupt server */
+int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
+error_t ports_S_interrupt_operation (mach_port_t port);
 
 /* Private data */
 extern struct mutex _ports_lock;
