@@ -191,7 +191,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = disk_pager_size;
+    *size = device_size;
   else
     *size = pager->np->allocsize;
   
