@@ -143,7 +143,8 @@ usage(int status)
       printf("\
 \n\
   -r, --readonly             disable writing to DEVICE\n\
-  -s, --synchronous          write data out immediately\n\
+  -s, --sync[=INTERVAL]      write data out immediately or at least ever\n\
+                             INTERVAL seconds\n\
       --help                 display this help and exit\n\
       --version              output version information and exit\n\
 ");
@@ -156,7 +157,7 @@ usage(int status)
 static struct option options[] =
 {
   {"readonly", no_argument, 0, 'r'},
-  {"synchronous", no_argument, 0, 's'},
+  {"sync", optional_argument, 0, 's'},
   {"help", no_argument, 0, '?'},
   {"version", no_argument, 0, 'V'},
   {0, 0, 0, 0}
@@ -164,8 +165,6 @@ static struct option options[] =
 
 
 /* ---------------------------------------------------------------- */
-
-int check_string = 1;
 
 void
 main (int argc, char **argv)
@@ -196,7 +195,11 @@ main (int argc, char **argv)
 	  case 'r':
 	    diskfs_readonly = 1; break;
 	  case 's':
-	    diskfs_synchronous = 1; break;
+	    if (optarg == NULL)
+	      diskfs_synchronous = 1;
+	    else
+	      diskfs_default_sync_interval = atoi (optarg);
+	    break;
 	  case 'V':
 	    printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
 		   diskfs_minor_version, diskfs_edit_version);
@@ -309,7 +312,7 @@ main (int argc, char **argv)
   if (bootstrap == MACH_PORT_NULL)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap (argv);
-  
+
   /* Now become a generic request thread.  */
   diskfs_main_request_loop ();
 }
