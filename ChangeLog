@@ -1,3 +1,9 @@
+Tue Oct  8 22:39:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makeconf ($(includedir)/$(installhdrsubdir),
+	$(installationdirlist)): Suppress command echo (when mkinstalldirs
+	actually does something, it prints the resulting commands itself).
+
 Fri Oct  4 17:52:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf ($(..)$(dir).d): Always include libhurdbugaddr in the
