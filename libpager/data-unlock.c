@@ -48,23 +48,23 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
 
   if (control != p->memobjcntl)
     {
-      printf ("incg data unlock: wrong control port");
+      printf ("incg data unlock: wrong control port\n");
       goto out;
     }
   /* The only thing we ever block is writes */
   if ((access & VM_PROT_WRITE) == 0)
     {
-      printf ("incg data unlock: not unlock writes");
+      printf ("incg data unlock: not unlock writes\n");
       goto out;
     }
   if (offset % __vm_page_size)
     {
-      printf ("incg data unlock: misaligned request");
+      printf ("incg data unlock: misaligned request\n");
       goto out;
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data request: bad length size");
+      printf ("incg data unlock: bad length size %d\n", length);
       goto out;
     }
 
