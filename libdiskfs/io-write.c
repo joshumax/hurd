@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 95, 96 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -42,7 +42,7 @@ diskfs_S_io_write (struct protid *cred,
 
   assert (!S_ISDIR(np->dn_stat.st_mode));
 
-  ioserver_get_conch (&np->conch);
+  iohelp_get_conch (&np->conch);
 
   if (off == -1)
     {
