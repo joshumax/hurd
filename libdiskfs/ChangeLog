@@ -1,3 +1,9 @@
+1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-revoke.c (diskfs_S_io_revoke): Fix typo in 1999-02-16 change.
+
+	* init-startup.c (diskfs_startup_diskfs): Fix typo 1999-02-12 change.
+
 Tue Feb 16 05:31:23 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-revoke.c: New file.
