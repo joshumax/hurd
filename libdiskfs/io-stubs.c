@@ -23,7 +23,7 @@
 /* Implement io_readsleep as described in <hurd/io.defs>
    Semantics of ordinary files say this shouldn't happen, because
    we never set use_read_size in the shared data. */
-error_t
+kern_return_t
 diskfs_S_io_readsleep (struct protid *cred)
 {
   if (!cred)
@@ -34,7 +34,7 @@ diskfs_S_io_readsleep (struct protid *cred)
 
 /* Implement io_eofnotify as described in <hurd/io.defs>. 
    We don't use this feature. */
-error_t
+kern_return_t
 diskfs_S_io_eofnotify (struct protid *cred)
 {
   if (!cred)
@@ -45,15 +45,16 @@ diskfs_S_io_eofnotify (struct protid *cred)
 
 /* Implement io_postnotify as described in <hurd/io.defs>.
    We don't use this feature. */
-error_t
-diskfs_S_io_postnotify (struct protid *cred, int start, int end)
+kern_return_t
+diskfs_S_io_postnotify (struct protid *cred,
+			vm_offset_t start, vm_offset_t end)
 {
   return cred ? 0 : EOPNOTSUPP;
 }
 
 /* Implement io_readnotify as described in <hurd/io.defs>.
    We don't use this feature. */
-error_t
+kern_return_t
 diskfs_S_io_readnotify (struct protid *cred)
 {
   return cred ? 0 : EOPNOTSUPP;
@@ -62,7 +63,7 @@ diskfs_S_io_readnotify (struct protid *cred)
 
 /* Implement io_sigio as described in <hurd/io.defs>. 
    We do this (in theory) but async IO is implemented here yet. */
-error_t
+kern_return_t
 diskfs_S_io_sigio (struct protid *cred)
 {
   if (!cred)
