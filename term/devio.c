@@ -762,6 +762,7 @@ const struct bottomhalf devio_bottom =
 {
   TERM_ON_MACHDEV,
   devio_init,
+  NULL,
   devio_start_output,
   devio_set_break,
   devio_clear_break,

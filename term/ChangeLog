@@ -1,3 +1,15 @@
+2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
+
+	* term.h (struct bottomhalf): New member GWINSZ.
+	* devio.c (devio_bottom): Add new member.
+	* ptyio.c (ptyio_bottom): Likewise.
+	* hurdio.c (hurdio_bottom): Likewise.
+	(hurdio_gwinsz): New function.
+	(tioc_caps): Change type to unsigned int.
+	(TIOC_CAP_GWINSZ): New symbol.
+	* users.c (open_hook): Call GWINSZ of bottom layer after
+	establishing the carrier.
+	
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* ptyio.c (pty_io_readable): int -> size_t in argument type.

@@ -135,11 +135,16 @@ uid_t term_group;
 mode_t term_mode;
 
 
+/* XXX Including <sys/ioctl.h> or <hurd/ioctl_types.h> leads to "ECHO
+   undeclared" errors in munge.c or users.c.  */
+struct winsize;
+
 /* Functions a bottom half defines */
 struct bottomhalf
 {
   enum term_bottom_type type;
   error_t (*init) (void);
+  error_t (*gwinsz) (struct winsize *size);
   error_t (*start_output) (void);
   error_t (*set_break) (void);
   error_t (*clear_break) (void);

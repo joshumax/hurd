@@ -219,6 +219,9 @@ open_hook (struct trivfs_control *cntl,
 	  termstate = state;
 	  termflags |= TTY_OPEN;
 	}
+
+      if (bottom->gwinsz)
+	(*bottom->gwinsz) (&window_size);
     }
 
   mutex_unlock (&global_lock);

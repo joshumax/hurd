@@ -59,7 +59,8 @@ static file_t ioport = MACH_PORT_NULL;
 #define TIOC_CAP_MODS  0x080
 #define TIOC_CAP_GETA  0x100
 #define TIOC_CAP_SETA  0x200
-int tioc_caps;
+#define TIOC_CAP_GWINSZ 0x400
+unsigned int tioc_caps;
 
 /* The thread performing all writes.  Only different from
    MACH_PORT_NULL if thread is live and blocked.  */
@@ -95,6 +96,23 @@ hurdio_init (void)
   cthread_detach (cthread_fork (hurdio_reader_loop, 0));
   cthread_detach (cthread_fork (hurdio_writer_loop, 0));
   return 0;
+}
+
+
+static error_t
+hurdio_gwinsz (struct winsize *size)
+{
+  if (tioc_caps & TIOC_CAP_GWINSZ)
+    {
+      error_t err = tioctl_tiocgwinsz (ioport, size);
+      if (err && (err == EMIG_BAD_ID || err == EOPNOTSUPP))
+	{
+	  tioc_caps &= ~TIOC_CAP_GWINSZ;
+	  err = EOPNOTSUPP;
+	}
+      return err;
+    }
+  return EOPNOTSUPP;
 }
 
 
@@ -579,6 +597,7 @@ const struct bottomhalf hurdio_bottom =
 {
   TERM_ON_HURDIO,
   hurdio_init,
+  hurdio_gwinsz,
   hurdio_start_output,
   hurdio_set_break,
   hurdio_clear_break,

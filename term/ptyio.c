@@ -276,6 +276,7 @@ const struct bottomhalf ptyio_bottom =
 {
   TERM_ON_MASTERPTY,
   ptyio_init,
+  NULL,
   ptyio_start_output,
   ptyio_set_break,
   ptyio_clear_break,
