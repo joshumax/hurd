@@ -16,13 +16,6 @@
 #ifndef _LINUX_EXT2_FS_H
 #define _LINUX_EXT2_FS_H
 
-typedef unsigned long u32;
-typedef long s32;
-typedef unsigned short u16;
-typedef short s16;
-typedef unsigned char u8;
-typedef signed char s8;
-
 /*
  * The second extended filesystem constants/structures
  */
@@ -103,7 +96,7 @@ extern int ext2_debug_flag;
 # define EXT2_BLOCK_SIZE(s)		(EXT2_MIN_BLOCK_SIZE << (s)->s_log_block_size)
 #endif
 #define EXT2_ACLE_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_acl_entry))
-#define	EXT2_ADDR_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / sizeof (u32))
+#define	EXT2_ADDR_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / sizeof (__u32))
 #ifdef __KERNEL__
 # define EXT2_BLOCK_SIZE_BITS(s)	((s)->u.ext2_sb.s_es->s_log_block_size + 10)
 #else
@@ -130,20 +123,20 @@ extern int ext2_debug_flag;
  */
 struct ext2_acl_header	/* Header of Access Control Lists */
 {
-	u32	aclh_size;
-	u32	aclh_file_count;
-	u32	aclh_acle_count;
-	u32	aclh_first_acle;
+	__u32	aclh_size;
+	__u32	aclh_file_count;
+	__u32	aclh_acle_count;
+	__u32	aclh_first_acle;
 };
 
 struct ext2_acl_entry	/* Access Control List Entry */
 {
-	u32	acle_size;
-	u16	acle_perms;	/* Access permissions */
-	u16	acle_type;	/* Type of entry */
-	u16	acle_tag;	/* User or group identity */
-	u16	acle_pad1;
-	u32	acle_next;	/* Pointer on next entry for the */
+	__u32	acle_size;
+	__u16	acle_perms;	/* Access permissions */
+	__u16	acle_type;	/* Type of entry */
+	__u16	acle_tag;	/* User or group identity */
+	__u16	acle_pad1;
+	__u32	acle_next;	/* Pointer on next entry for the */
 					/* same inode or on next free entry */
 };
 
@@ -152,23 +145,23 @@ struct ext2_acl_entry	/* Access Control List Entry */
  */
 struct ext2_old_group_desc
 {
-	u32	bg_block_bitmap;		/* Blocks bitmap block */
-	u32	bg_inode_bitmap;		/* Inodes bitmap block */
-	u32	bg_inode_table;		/* Inodes table block */
-	u16	bg_free_blocks_count;	/* Free blocks count */
-	u16	bg_free_inodes_count;	/* Free inodes count */
+	__u32	bg_block_bitmap;		/* Blocks bitmap block */
+	__u32	bg_inode_bitmap;		/* Inodes bitmap block */
+	__u32	bg_inode_table;		/* Inodes table block */
+	__u16	bg_free_blocks_count;	/* Free blocks count */
+	__u16	bg_free_inodes_count;	/* Free inodes count */
 };
 
 struct ext2_group_desc
 {
-	u32	bg_block_bitmap;		/* Blocks bitmap block */
-	u32	bg_inode_bitmap;		/* Inodes bitmap block */
-	u32	bg_inode_table;		/* Inodes table block */
-	u16	bg_free_blocks_count;	/* Free blocks count */
-	u16	bg_free_inodes_count;	/* Free inodes count */
-	u16	bg_used_dirs_count;	/* Directories count */
-	u16	bg_pad;
-	u32	bg_reserved[3];
+	__u32	bg_block_bitmap;		/* Blocks bitmap block */
+	__u32	bg_inode_bitmap;		/* Inodes bitmap block */
+	__u32	bg_inode_table;		/* Inodes table block */
+	__u16	bg_free_blocks_count;	/* Free blocks count */
+	__u16	bg_free_inodes_count;	/* Free inodes count */
+	__u16	bg_used_dirs_count;	/* Directories count */
+	__u16	bg_pad;
+	__u32	bg_reserved[3];
 };
 
 /*
@@ -216,53 +209,53 @@ struct ext2_group_desc
  * Structure of an inode on the disk
  */
 struct ext2_inode {
-	u16 i_mode;		/* File mode */
-	u16 i_uid;		/* Owner Uid */
-	u32  i_size;		/* Size in bytes */
-	u32  i_atime;		/* Access time */
-	u32  i_ctime;		/* Creation time */
-	u32  i_mtime;		/* Modification time */
-	u32  i_dtime;		/* Deletion Time */
-	u16 i_gid;		/* Group Id */
-	u16 i_links_count;	/* Links count */
-	u32  i_blocks;	/* Blocks count */
-	u32  i_flags;		/* File flags */
+	__u16 i_mode;		/* File mode */
+	__u16 i_uid;		/* Owner Uid */
+	__u32  i_size;		/* Size in bytes */
+	__u32  i_atime;		/* Access time */
+	__u32  i_ctime;		/* Creation time */
+	__u32  i_mtime;		/* Modification time */
+	__u32  i_dtime;		/* Deletion Time */
+	__u16 i_gid;		/* Group Id */
+	__u16 i_links_count;	/* Links count */
+	__u32  i_blocks;	/* Blocks count */
+	__u32  i_flags;		/* File flags */
 	union {
 		struct {
-			u32  l_i_reserved1;
+			__u32  l_i_reserved1;
 		} linux1;
 		struct {
-			u32  h_i_translator;
+			__u32  h_i_translator;
 		} hurd1;
 		struct {
-			u32  m_i_reserved1;
+			__u32  m_i_reserved1;
 		} masix1;
 	} osd1;				/* OS dependent 1 */
-	u32	i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
-	u32	i_version;	/* File version (for NFS) */
-	u32	i_file_acl;	/* File ACL */
-	u32	i_dir_acl;	/* Directory ACL */
-	u32	i_faddr;		/* Fragment address */
+	__u32	i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
+	__u32	i_version;	/* File version (for NFS) */
+	__u32	i_file_acl;	/* File ACL */
+	__u32	i_dir_acl;	/* Directory ACL */
+	__u32	i_faddr;		/* Fragment address */
 	union {
 		struct {
-			u8	l_i_frag;	/* Fragment number */
-			u8	l_i_fsize;	/* Fragment size */
-			u16	i_pad1;
-			u32	l_i_reserved2[2];
+			__u8	l_i_frag;	/* Fragment number */
+			__u8	l_i_fsize;	/* Fragment size */
+			__u16	i_pad1;
+			__u32	l_i_reserved2[2];
 		} linux2;
 		struct {
-			u8	h_i_frag;	/* Fragment number */
-			u8	h_i_fsize;	/* Fragment size */
-			u16	h_i_mode_high;
-			u16	h_i_uid_high;
-			u16	h_i_gid_high;
-			u32	h_i_author;
+			__u8	h_i_frag;	/* Fragment number */
+			__u8	h_i_fsize;	/* Fragment size */
+			__u16	h_i_mode_high;
+			__u16	h_i_uid_high;
+			__u16	h_i_gid_high;
+			__u32	h_i_author;
 		} hurd2;
 		struct {
-			u8	m_i_frag;	/* Fragment number */
-			u8	m_i_fsize;	/* Fragment size */
-			u16	m_pad1;
-			u32	m_i_reserved2[2];
+			__u8	m_i_frag;	/* Fragment number */
+			__u8	m_i_fsize;	/* Fragment size */
+			__u16	m_pad1;
+			__u32	m_i_reserved2[2];
 		} masix2;
 	} osd2;				/* OS dependent 2 */
 };
@@ -333,32 +326,32 @@ struct ext2_inode {
  * Structure of the super block
  */
 struct ext2_super_block {
-	u32	s_inodes_count;		/* Inodes count */
-	u32	s_blocks_count;		/* Blocks count */
-	u32	s_r_blocks_count;	/* Reserved blocks count */
-	u32	s_free_blocks_count;	/* Free blocks count */
-	u32	s_free_inodes_count;	/* Free inodes count */
-	u32	s_first_data_block;	/* First Data Block */
-	u32	s_log_block_size;	/* Block size */
-	s32	s_log_frag_size;	/* Fragment size */
-	u32	s_blocks_per_group;	/* # Blocks per group */
-	u32	s_frags_per_group;	/* # Fragments per group */
-	u32	s_inodes_per_group;	/* # Inodes per group */
-	u32	s_mtime;		/* Mount time */
-	u32	s_wtime;		/* Write time */
-	u16	s_mnt_count;		/* Mount count */
-	s16	s_max_mnt_count;	/* Maximal mount count */
-	u16	s_magic;		/* Magic signature */
-	u16	s_state;		/* File system state */
-	u16	s_errors;		/* Behaviour when detecting errors */
-	u16	s_pad;
-	u32	s_lastcheck;		/* time of last check */
-	u32	s_checkinterval;	/* max. time between checks */
-	u32	s_creator_os;		/* OS */
-	u32	s_rev_level;		/* Revision level */
-	u16	s_def_resuid;		/* Default uid for reserved blocks */
-	u16	s_def_resgid;		/* Default gid for reserved blocks */
-	u32	s_reserved[235];	/* Padding to the end of the block */
+	__u32	s_inodes_count;		/* Inodes count */
+	__u32	s_blocks_count;		/* Blocks count */
+	__u32	s_r_blocks_count;	/* Reserved blocks count */
+	__u32	s_free_blocks_count;	/* Free blocks count */
+	__u32	s_free_inodes_count;	/* Free inodes count */
+	__u32	s_first_data_block;	/* First Data Block */
+	__u32	s_log_block_size;	/* Block size */
+	__s32	s_log_frag_size;	/* Fragment size */
+	__u32	s_blocks_per_group;	/* # Blocks per group */
+	__u32	s_frags_per_group;	/* # Fragments per group */
+	__u32	s_inodes_per_group;	/* # Inodes per group */
+	__u32	s_mtime;		/* Mount time */
+	__u32	s_wtime;		/* Write time */
+	__u16	s_mnt_count;		/* Mount count */
+	__s16	s_max_mnt_count;	/* Maximal mount count */
+	__u16	s_magic;		/* Magic signature */
+	__u16	s_state;		/* File system state */
+	__u16	s_errors;		/* Behaviour when detecting errors */
+	__u16	s_pad;
+	__u32	s_lastcheck;		/* time of last check */
+	__u32	s_checkinterval;	/* max. time between checks */
+	__u32	s_creator_os;		/* OS */
+	__u32	s_rev_level;		/* Revision level */
+	__u16	s_def_resuid;		/* Default uid for reserved blocks */
+	__u16	s_def_resgid;		/* Default gid for reserved blocks */
+	__u32	s_reserved[235];	/* Padding to the end of the block */
 };
 
 #define EXT2_OS_LINUX		0
@@ -376,9 +369,9 @@ struct ext2_super_block {
 #define EXT2_NAME_LEN 255
 
 struct ext2_dir_entry {
-	u32	inode;			/* Inode number */
-	u16	rec_len;		/* Directory entry length */
-	u16	name_len;		/* Name length */
+	__u32	inode;			/* Inode number */
+	__u16	rec_len;		/* Directory entry length */
+	__u16	name_len;		/* Name length */
 	char	name[EXT2_NAME_LEN];	/* File name */
 };
 
