@@ -205,7 +205,12 @@ new_partition (const char *name, struct file_direct *fdp,
 	bzero((char *)part->bitmap, bmsize);
 
 	if (check_linux_signature < 0)
-	  return part;
+	  {
+	    printf("(default pager): "
+		   "Paging to raw partition %s (%uk paging space)\n",
+		   name, part->total_size * (vm_page_size / 1024));
+	    return part;
+	  }
 
 #define LINUX_PAGE_SIZE 4096	/* size of pages in Linux swap partitions */
 	rc = page_read_file_direct(part->file,
@@ -223,39 +228,71 @@ new_partition (const char *name, struct file_direct *fdp,
 	    /* The partition's first page has a Linux swap signature.
 	       This means the beginning of the page contains a bitmap
 	       of good pages, and all others are bad.  */
-	    unsigned int i, j, bad;
-	    printf("(default pager): Found Linux 2.0 swap signature in %s...",
+	    unsigned int i, j, bad, waste, max;
+
+	    printf("(default pager): Found Linux 2.0 swap signature in %s\n",
 		   name);
-	    part->bitmap[0] |= 1; /* first page unusable */
-	    part->free--;
-	    bad = 0;
+
+	    /* The first page, and the pages corresponding to the bits
+	       occupied by the signature in the final 10 bytes of the page,
+	       are always unavailable ("bad").  */
+	    *(u_int32_t *)raddr &= ~(u_int32_t) 1;
 	    memset((char *) raddr + LINUX_PAGE_SIZE-10, 0, 10);
-	    for (i = 0; i < LINUX_PAGE_SIZE / sizeof(bm_entry_t); ++i)
+
+	    max = LINUX_PAGE_SIZE / sizeof(u_int32_t);
+	    if (max > (part->total_size + 31) / 32)
+	      max = (part->total_size + 31) / 32;
+
+	    bad = 0;
+	    for (i = 0; i < max; ++i)
 	      {
-		bm_entry_t bm = ((bm_entry_t *) raddr)[i];
-		if (bm == BM_MASK)
+		u_int32_t bm = ((u_int32_t *) raddr)[i];
+		if (bm == ~(u_int32_t) 0)
 		  continue;
 		/* There are some zero bits in this word.  */
-		for (j = 0; j < NB_BM; ++j)
+		for (j = 0; j < 32; ++j)
 		  if ((bm & (1 << j)) == 0)
 		    {
+		      unsigned int p = i*32 + j;
+		      if (p >= part->total_size)
+			break;
 		      ++bad;
-		      part->bitmap[i] |= 1 << j;
+		      part->bitmap[p / NB_BM] |= 1 << (p % NB_BM);
 		    }
 	      }
 	    part->free -= bad;
-	    printf ("%dk swap-space (excludes %dk marked bad)\n",
-		    part->free * (LINUX_PAGE_SIZE / 1024),
-		    bad * (LINUX_PAGE_SIZE / 1024));
-	    if (part->total_size > 8 * LINUX_PAGE_SIZE)
+
+	    --bad;		/* Don't complain about first page.  */
+	    waste = part->total_size - (8 * (LINUX_PAGE_SIZE-10));
+	    if (waste > 0)
 	      {
-		unsigned int waste = part->total_size - (8 * LINUX_PAGE_SIZE);
-		part->free -= waste;
-		part->total_size -= waste;
-		printf("\
-(default pager): NOTE: wasting last %dk of %s past Linux max swapfile size\n",
-		       waste * (LINUX_PAGE_SIZE / 1024), name);
+		/* The wasted pages were already marked "bad".  */
+		bad -= waste;
+		if (bad > 0)
+		  printf("\
+(default pager): Paging to %s, %dk swap-space (%dk bad, %dk wasted at end)\n",
+			 name,
+			 part->free * (LINUX_PAGE_SIZE / 1024),
+			 bad * (LINUX_PAGE_SIZE / 1024),
+			 waste * (LINUX_PAGE_SIZE / 1024));
+		else
+		  printf("\
+(default pager): Paging to %s, %dk swap-space (%dk wasted at end)\n",
+			 name,
+			 part->free * (LINUX_PAGE_SIZE / 1024),
+			 waste * (LINUX_PAGE_SIZE / 1024));
 	      }
+	    else if (bad > 0)
+	      printf("\
+(default pager): Paging to %s, %dk swap-space (excludes %dk marked bad)\n",
+		     name,
+		     part->free * (LINUX_PAGE_SIZE / 1024),
+		     bad * (LINUX_PAGE_SIZE / 1024));
+	    else
+	      printf("\
+(default pager): Paging to %s, %dk swap-space\n",
+		     name,
+		     part->free * (LINUX_PAGE_SIZE / 1024));
 	  }
 	else if (!memcmp("SWAPSPACE2",
 			 (char *) raddr + LINUX_PAGE_SIZE-10, 10))
@@ -285,13 +322,16 @@ new_partition (const char *name, struct file_direct *fdp,
 		    printf ("version %u unknown!  SKIPPING %s!\n",
 			    hdr->version,
 			    name);
+		    vm_deallocate(mach_task_self(), raddr, rsize);
+		    kfree(part->bitmap, bmsize);
+		    kfree(part, sizeof *part);
 		    return 0;
 		  }
 		else
-		printf ("version %u unknown! IGNORING SIGNATURE PAGE!"
-			" %dk swap-space\n",
-			hdr->version,
-			part->free * (LINUX_PAGE_SIZE / 1024));
+		  printf ("version %u unknown! IGNORING SIGNATURE PAGE!"
+			  " %dk swap-space\n",
+			  hdr->version,
+			  part->free * (LINUX_PAGE_SIZE / 1024));
 		break;
 
 	      case 1:
@@ -308,11 +348,12 @@ new_partition (const char *name, struct file_direct *fdp,
 		    {
 		      waste = part->total_size - hdr->last_page;
 		      part->total_size = hdr->last_page;
+		      part->free = part->total_size - 1;
 		    }
 		  for (i = 0; i < hdr->nr_badpages; ++i)
 		    {
 		      const u_int32_t bad = hdr->badpages[i];
-		      part->bitmap[bad / NB_BM] |= 1 << (i % NB_BM);
+		      part->bitmap[bad / NB_BM] |= 1 << (bad % NB_BM);
 		      part->free--;
 		    }
 		  printf ("%uk swap-space",
@@ -329,11 +370,13 @@ new_partition (const char *name, struct file_direct *fdp,
 	  }
 	else if (check_linux_signature)
 	  {
-	    part = 0;
 	    printf ("(default pager): "
 		    "Cannot find Linux swap signature page!  "
 		    "SKIPPING %s (%uk partition)!",
 		    name, part->total_size * (vm_page_size / 1024));
+	    kfree(part->bitmap, bmsize);
+	    kfree(part, sizeof *part);
+	    part = 0;
 	  }
 	else
 	  printf("(default pager): "
