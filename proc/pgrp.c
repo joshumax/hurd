@@ -223,15 +223,20 @@ S_proc_getpgrppids (struct proc *callerp,
 		    pid_t **pids,
 		    u_int *npidsp)
 {
-  int count;
+
   struct proc *p;
   struct pgrp *pg;
   pid_t *pp = *pids;
   int npids = *npidsp;
   
-  pg = pgrp_find (pgid);
-  if (!pg)
-    return ESRCH;
+  if (pgid == 0)
+    pg = callerp->p_pgrp;
+  else
+    {
+      pg = pgrp_find (pgid);
+      if (!pg)
+	return ESRCH;
+    }
 
   count = 0;
   for (p = pg->pg_plist; p; p = p->p_gnext)
