@@ -1,5 +1,5 @@
 /* By-hand stubs for some RPC calls
-   Copyright (C) 1994, 1996 Free Software Foundation
+   Copyright (C) 1994, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -105,7 +105,7 @@ send_signal (mach_port_t msgport,
 	MACH_MSG_TYPE_COPY_SEND, /* msgt_name */
 	32,			/* msgt_size */
 	1,			/* msgt_number */
-	1,			/* msgt_unline */
+	1,			/* msgt_inline */
 	0,			/* msgt_longform */
 	0,			/* msgt_deallocate */
 	0,			/* msgt_unused */
