@@ -1,3 +1,34 @@
+hurd (20010426) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+    storeio hack to prevent double activation.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri, 27 Apr 2001 00:09:56 +0200
+
+hurd (20010311) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+  
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 11 Mar 2001 22:45:21 +0100
+
+hurd (20010111) unstable; urgency=low
+
+  * New snapshot from CVS, containing lots of small bug fixes, and:
+    + Together with gnumach 1.2-9, you can access large stores with
+    storeinfo, storeread (because libstore uses the new interface in
+    gnumach, and off64_t internally).
+    + pfinet contains support for network ioctls. The corresponding
+    changes in the glibc library are not available in Debian yet, though.
+  * streamdev is renamed to streamio.
+  
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri, 12 Jan 2001 00:06:41 +0100
+
 hurd (20001204) unstable; urgency=low
 
   * New snapshot from CVS, with a couple of bug fixes:
