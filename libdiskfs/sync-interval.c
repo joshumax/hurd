@@ -27,12 +27,12 @@
 #include "priv.h"
 
 /* The thread that's doing the syncing.  */
-static cthread_t periodic_sync_thread = 0;
+static cthread_t periodic_sync_thread;
 
-/* A lock to lock before changing any of the above.  */
-static spin_lock_t periodic_sync_lock = SPIN_LOCK_INITIALIZER;
-
-static struct port_info *pi = 0;
+/* This port represents the periodic sync service as if it were
+   an RPC.  We can use ports_inhibit_port_rpcs on this port to guarantee
+   that the periodic_sync_thread is quiescent.  */
+static struct port_info *pi;
 
 
 
@@ -48,31 +48,30 @@ diskfs_set_sync_interval (int interval)
 {
   error_t err = 0;
 
-  spin_lock (&periodic_sync_lock);
-
   if (!pi)
     pi = ports_allocate_port (diskfs_port_bucket,
 			      sizeof (struct port_info),
 			      diskfs_control_class);
 
-  if (!err)
-    /* Here we just set the new thread; any existing thread will notice when it
-       wakes up and go away silently.  */
-    if (interval == 0)
-      periodic_sync_thread = 0;
-    else
-      {
-	periodic_sync_thread =
-	  cthread_fork ((cthread_fn_t)periodic_sync, (any_t)interval);
-	if (periodic_sync_thread)
-	  cthread_detach (periodic_sync_thread);
-	else
-	  err = ED;
-      }
+  ports_inhibit_port_rpcs (pi);
 
-  spin_unlock (&periodic_sync_lock);
+  /* Here we just set the new thread; any existing thread will notice when it
+     wakes up and go away silently.  */
+  if (interval == 0)
+    periodic_sync_thread = 0;
+  else
+    {
+      periodic_sync_thread =
+	cthread_fork ((cthread_fn_t)periodic_sync, (any_t)interval);
+      if (periodic_sync_thread)
+	cthread_detach (periodic_sync_thread);
+      else
+	err = EIEIO;
+    }
 
-  return 0;
+  ports_resume_port_rpcs (pi);
+
+  return err;
 }
 
 /* ---------------------------------------------------------------- */
@@ -85,20 +84,22 @@ periodic_sync (int interval)
 {
   for (;;)
     {
-      cthread_t thread;
       struct rpc_info link;
 
-      spin_lock (&periodic_sync_lock);
-      thread = periodic_sync_thread;
-      spin_unlock (&periodic_sync_lock);
-
-      if (thread != cthread_self ())
-	/* We've been superseded as the sync thread...  Just die silently.  */
-	return;
-
+      /* This acts as a lock against creation of a new sync thread
+	 while we are in the process of syncing.  */
       ports_begin_rpc (pi, &link);
+
+      if (periodic_sync_thread != cthread_self ())
+	{
+	  /* We've been superseded as the sync thread.  Just die silently.  */
+	  ports_end_rpc (pi, &link);
+	  return;
+	}
+
       diskfs_sync_everything (0);
       diskfs_set_hypermetadata (0, 0);
+
       ports_end_rpc (pi, &link);
 
       /* Wait until next time.  */
