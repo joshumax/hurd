@@ -1,3 +1,10 @@
+1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf ($(libname).so): Make it a symlink to
+	$(libname).so.$(hurd-version).
+	($(libname).so.$(hurd-version)): New target, renamed from
+	$(libname).so; link the actual shared object with this name.
+
 Tue Feb 16 02:31:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* Makeconf ($(libname).so): Include $(hurd-version) as part of the
@@ -6,7 +13,7 @@ Tue Feb 16 02:31:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 	($(libdir)/$(libname).so): Only create a symlink to the
 	version-numbered name.
 	(install) [makemode == library]: Add
-	the versioned name $(libdir)/$(libname.so).$(hurd-version). 
+	the versioned name $(libdir)/$(libname.so).$(hurd-version).
 
 	* version.h.in: New file.
 	* versioh.h, sh-version.sed: Deleted files.
@@ -14,7 +21,7 @@ Tue Feb 16 02:31:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 	* Makefile ($(subdirs)): Depend on version.h.
 	(version.h): New rule.
 	(DIST_FILES): Delete version.h and sh-version.sed.  Add version.h.in.
-	
+
 1999-01-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* configure.in: Add AC_PROG_AWK.
