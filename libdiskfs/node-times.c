@@ -28,10 +28,10 @@ diskfs_set_node_times (struct node *np)
   
   do 
     {
-      secs = _diskfs_mtime->seconds;
-      usecs = _diskfs_mtime->microseconds;
+      secs = diskfs_mtime->seconds;
+      usecs = diskfs_mtime->microseconds;
     }
-  while (secs != _diskfs_mtime->check_seconds);
+  while (secs != diskfs_mtime->check_seconds);
   
   if (np->dn_set_mtime)
     {
