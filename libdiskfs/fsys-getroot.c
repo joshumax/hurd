@@ -85,7 +85,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       error = fsys_getroot (childcontrol, dotdot, MACH_MSG_TYPE_COPY_SEND,
 			    uids, nuids, gids, ngids,
 			    flags, retry, retryname, returned_port);
-      if (error == MACH_SEND_INVALID_DEST)
+      if (error == MACH_SEND_INVALID_DEST || error == MIG_SERVER_DIED)
 	{
 	  /* The server has died; unrecord the translator port
 	     and repeat the check. */
