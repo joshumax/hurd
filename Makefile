@@ -34,11 +34,10 @@ working-prog-subdirs := $(filter-out \
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
-	     hurd.boot.in build.mk.in \
+	     hurd.boot build.mk.in \
 	     README NEWS tasks INSTALL README-binary 
 
-all: hurd.boot \
-     $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
+all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
 %-all: 
 	$(MAKE) -C $* all
@@ -80,13 +79,8 @@ lndist-cthreads-h:
 	
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 
-hurd.boot: ${srcdir}/hurd.boot.in config.make
-	sed 's%@exec_prefix@%${exec_prefix}%g' $< > $@.new
-	mv -f $@.new $@
-
 .PHONY: clean-misc distclean
 clean-misc:
-	rm -f hurd.boot 
 
 distclean: clean
 	rm -f config.make config.log config.status
