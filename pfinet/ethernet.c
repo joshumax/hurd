@@ -21,9 +21,12 @@
 #include <device/device.h>
 #include <device/net_status.h>
 
+#define ethername "el1"
+
 device_t ether_port;
 struct device *ether_dev;
 
+struct port_class *etherreadclass;
 struct port_info *readpt;
 mach_port_t readptname;
 
@@ -50,33 +53,35 @@ ethernet_demuxer (struct mach_msg_header_t *inp,
   mutex_lock (&global_lock);
   skb = alloc_skb (msg->net_rcv_msg_packet_count, GFP_ATOMIC);
   skb->len = msg->net_rcv_msg_packet_count;
-  
-
-  
-
-
-error_t
-device_read_reply_inband (mach_port_t replypt,
-			  error_t error_code,
-			  vm_address_t data,
-			  u_int datalen)
-{
-  mutex_lock (&global_lock);
-  skb = alloc_skb (packetlen, GFP_ATOMIC);
-  skb->len = packetlen;
-  skb->dev = ether_dev;
-  bcopy (packet, skb->data);
-  netif_rx (skb);
+  sbx->dev = ether_dev;
+  bcopy (msg->packet, skb->data, msg->net_rcv_msg_packet_count);
   mutex_unlock (&global_lock);
-  
-  device_read_request (ether_port, ether_reply, 0, 0, vm_page_size);
 }
 
+static short ether_filter[] = 
+{
+  NETF_PUSHLIT | NETF_NOP,
+  1,
+  NETF_PUSHZERO | NETF_OR,
+};
+
+static int ether_filter_len = 3;
 
 void
 start_ethernet (void)
 {
-  device_read_request (ether_port, ether_reply, 0, 0, vm_page_size);
+  etherreadclass = ports_create_class (0, 0);
+  readpt = ports_allocate_port (pfinet_bucket, sizeof (struct port_info),
+				etherreadclass);
+  readptname = ports_get_right (readpt);
+  mach_port_insert_right (mach_task_self (), readptname, readptname,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
+  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
+
+  device_set_filter (ether_port, ports_get_right (readpt), 
+		     MACH_MSG_TYPE_MAKE_SEND, NET_HI_PRI,
+		     ether_filter, ether_filter_len);
 }
 
 
