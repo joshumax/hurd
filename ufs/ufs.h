@@ -23,6 +23,7 @@
 #include <hurd/ioserver.h>
 #include <hurd/diskfs.h>
 #include <assert.h>
+#include "fs.h"
 
 
 /* Define this if memory objects should not be cached by the kernel.
@@ -54,6 +55,8 @@ struct disknode
 
   struct rwlock allocptrlock;
 
+  struct dirty_indir *dirty;
+
   struct user_pager_info *fileinfo;
 };  
 
@@ -83,6 +86,14 @@ struct iblock_spec
 
   /* Offset in next block up; -1 if it's in the inode itself. */
   int offset;
+};
+
+/* Identifies an indirect block owned by this file which
+   might be dirty. */
+struct dirty_indir
+{
+  daddr_t bno;			/* Disk address of block. */
+  struct dirty_indir *next;
 };
 
 /* Get a writer lock on reader-writer lock LOCK for disknode DN */
@@ -202,7 +213,7 @@ int direct_symlink_extension;
 extern inline struct dinode *
 dino (ino_t inum)
 {
-  return (struct disknode *)
+  return (struct dinode *)
     (disk_image 
      + fsaddr (sblock, ino_to_fsba (sblock, inum))
      + ino_to_fsbo (sblock, inum));
@@ -212,21 +223,21 @@ dino (ino_t inum)
 extern inline daddr_t *
 indir_block (daddr_t bno)
 {
-  return (daddr_t *) (disk_image + fsaddr (fsbtodb (bno)));
+  return (daddr_t *) (disk_image + fsaddr (sblock, bno));
 }
 
 /* Convert a cg number to the cylinder group. */
 extern inline struct cg *
 cg_locate (int ncg)
 {
-  return (struct cg *) (disk_image + fsaddr (cgtod (sblock, ncg)));
+  return (struct cg *) (disk_image + fsaddr (sblock, cgtod (sblock, ncg)));
 }
 
 /* Sync part of the disk */
 extern inline void
 sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
 {
-  pager_sync_some (diskpager->p, fsaddr (blkno), nbytes, wait);
+  pager_sync_some (diskpager->p, fsaddr (sblock, blkno), nbytes, wait);
 }
 
 /* Sync an disk inode */
