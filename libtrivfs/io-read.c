@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
 error_t
 trivfs_S_io_read (struct protid *cred,
 		  char *data,
@@ -22,5 +24,6 @@ trivfs_S_io_read (struct protid *cred,
 		  off_t off,
 		  int amt)
 {
-  return EOPNOTSUPP;
+  assert (!trivfs_support_read);
+  return cred ? EBADF : EOPNOTSUPP;
 }  
