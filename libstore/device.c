@@ -1,6 +1,6 @@
 /* Mach device store backend
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -135,19 +135,28 @@ static error_t
 dev_set_flags (struct store *store, int flags)
 {
   if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
+    /* Trying to set flags we don't support.  */
     return EINVAL;
+
   if (! ((store->flags | flags) & STORE_INACTIVE))
-    if (store->num_runs >= 0 || store->runs[0].start != 0)
+    /* Currently active and staying that way, so we must be trying to set the
+       STORE_ENFORCED flag.  */
+    if (store->num_runs > 0 || store->runs[0].start != 0)
+      /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
       return EINVAL;
-    else if (flags & STORE_ENFORCED)
+    else
+      /* See if the the current (one) range is that the kernel is enforcing. */
       {
 	error_t err = enforced (store);
 	if (err)
 	  return err;
       }
+
   if (flags & STORE_INACTIVE)
     dclose (store);
+
   store->flags |= flags;	/* When inactive, anything goes.  */
+
   return 0;
 }
 
