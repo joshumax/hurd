@@ -28,7 +28,7 @@ struct pokeloc
 };
 
 struct pokeloc *pokelist;
-spin_lock_t pokelistlock = SPIN_LOCK_INITIAILIZER;
+spin_lock_t pokelistlock = SPIN_LOCK_INITIALIZER;
 
 /* Remember that data here on the disk has been modified. */
 void
