@@ -59,12 +59,12 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   ext2_debug ("freeing inode %lu\n", inum);
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   if (inum < EXT2_FIRST_INO || inum > sblock->s_inodes_count)
     {
       ext2_error ("free_inode", "reserved inode or nonexistent inode");
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return;
     }
 
@@ -89,7 +89,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
     }
 
   sblock_dirty = 1;
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
   alloc_sync(0);
 }
 
@@ -113,7 +113,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
 repeat:
   gdp = NULL;
@@ -206,7 +206,7 @@ repeat:
 
   if (!gdp)
     {
-      spin_unlock (&sblock_lock);
+      spin_unlock (&global_lock);
       return 0;
     }
 
@@ -254,7 +254,7 @@ repeat:
   sblock_dirty = 1;
 
  sync_out:
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
   alloc_sync (0);
 
   return inum;
@@ -323,7 +323,7 @@ ext2_count_free_inodes ()
   struct ext2_group_desc *gdp;
   int i;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -338,7 +338,7 @@ ext2_count_free_inodes ()
     }
   printf ("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
 	  sblock->s_free_inodes_count, desc_count, bitmap_count);
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
   return desc_count;
 #else
   return sblock->s_free_inodes_count;
@@ -354,7 +354,7 @@ ext2_check_inodes_bitmap ()
   struct ext2_group_desc *gdp;
   unsigned long desc_count, bitmap_count, x;
 
-  spin_lock (&sblock_lock);
+  spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -378,5 +378,5 @@ ext2_check_inodes_bitmap ()
 		"stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_inodes_count, bitmap_count);
 
-  spin_unlock (&sblock_lock);
+  spin_unlock (&global_lock);
 }
