@@ -1,3 +1,7 @@
+2004-09-29  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* config.make.in (datadir): New variable.
+
 2004-09-10  Roland McGrath  <roland@frob.com>
 
 	* Makefile (lib-subdirs): Remove bogon in last checkin.

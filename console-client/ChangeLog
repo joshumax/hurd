@@ -1,3 +1,11 @@
+2004-09-29  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* Makefile (vga-CPPFLAGS): New variable.
+
+	* vga.c (DEFAULT_VGA_FONT, DEFAULT_VGA_FONT_ITALIC)
+	(DEFAULT_VGA_FONT_BOLD, DEFAULT_VGA_FONT_BOLD_ITALIC): Use
+	`DEFAULT_VGA_FONT_DIR' instead of hardcoding the filename.
+
 2004-03-21  Marco Gerards  <metgerards@student.han.nl>
 
 	* console.c (main): Make sure the arguments are	parsed in order.
