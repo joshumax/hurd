@@ -46,7 +46,7 @@ main ()
 
   printf ("fstests running...\n");
 
-#if 1
+#if 0
   if ((err = dir_unlink (root, "CREATED")) && err != ENOENT)
     printf ("Error on unlink: %d\n", err);
   else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
@@ -61,7 +61,6 @@ main ()
 #else
 
   unlink ("/newdir");
-  printf ("errno: %d\n")
   dir_unlink (root, "newdir");	/* unlink ("/newdir") */
   dir_rmdir (root, "newdir");	/* rmdir */
   dir_mkdir (root, "newdir", 0666);
