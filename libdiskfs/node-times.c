@@ -1,5 +1,5 @@
-/*
-   Copyright (C) 1994,96,99 Free Software Foundation, Inc.
+/* Process st_?time updates marked for a diskfs node.
+   Copyright (C) 1994,96,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -34,6 +34,11 @@ diskfs_set_node_times (struct node *np)
 
   maptime_read (diskfs_mtime, &t);
 
+  /* We are careful to test and reset each of these individually, so there
+     is no race condition where a dn_set_?time flag setting gets lost.  It
+     is not a problem to have the kind of race where the flag is set after
+     we've tested it and done nothing--as long as the flag remains set so
+     the update will happen at the next call.  */
   if (np->dn_set_mtime)
     {
 #ifdef notyet
@@ -43,6 +48,8 @@ diskfs_set_node_times (struct node *np)
       np->dn_stat.st_mtime = t.tv_sec;
       np->dn_stat.st_mtime_usec = t.tv_usec;
 #endif
+      np->dn_stat_dirty = 1;
+      np->dn_set_mtime = 0;
     }
   if (np->dn_set_atime)
     {
@@ -53,6 +60,8 @@ diskfs_set_node_times (struct node *np)
       np->dn_stat.st_atime = t.tv_sec;
       np->dn_stat.st_atime_usec = t.tv_usec;
 #endif
+      np->dn_stat_dirty = 1;
+      np->dn_set_atime = 0;
     }
   if (np->dn_set_ctime)
     {
@@ -63,9 +72,7 @@ diskfs_set_node_times (struct node *np)
       np->dn_stat.st_ctime = t.tv_sec;
       np->dn_stat.st_ctime_usec = t.tv_usec;
 #endif
+      np->dn_stat_dirty = 1;
+      np->dn_set_ctime = 0;
     }
-
-  if (np->dn_set_mtime || np->dn_set_atime || np->dn_set_ctime)
-    np->dn_stat_dirty = 1;
-  np->dn_set_mtime = np->dn_set_atime = np->dn_set_ctime = 0;
 }
