@@ -434,7 +434,7 @@ main(int argc, char *argv[])
     {
       if (tty_names_alloced == num_tty_names)
 	{
-	  tty_names_alloced *= 2;
+	  tty_names_alloced += tty_names_alloced + 1;
 	  tty_names = realloc(tty_names, tty_names_alloced * sizeof(int));
 	  if (tty_names == NULL)
 	    error(8, ENOMEM, "Can't allocate tty_name list");
