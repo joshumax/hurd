@@ -59,7 +59,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   assert (!diskfs_readonly);
 
-  ext2_debug ("freeing inode %u\n", inum);
+  ext2_debug ("freeing inode %u", inum);
 
   spin_lock (&global_lock);
 
@@ -333,12 +333,14 @@ ext2_count_free_inodes ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = count_free (bptr (gdp->bg_inode_bitmap), sblock->s_inodes_per_group / 8);
-      printf ("group %d: stored = %d, counted = %lu\n", i, gdp->bg_free_inodes_count, x);
+      x = count_free (bptr (gdp->bg_inode_bitmap),
+		      sblock->s_inodes_per_group / 8);
+      ext2_debug ("group %d: stored = %d, counted = %lu",
+		  i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
     }
-  printf ("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
-	  sblock->s_free_inodes_count, desc_count, bitmap_count);
+  ext2_debug ("stored = %lu, computed = %lu, %lu",
+	      sblock->s_free_inodes_count, desc_count, bitmap_count);
   spin_unlock (&global_lock);
   return desc_count;
 #else
