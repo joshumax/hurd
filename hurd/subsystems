@@ -1,20 +1,37 @@
-These are the base MiG code numbers for each subsystem in the GNU Hurd.
-Each subsystem takes 200 in space.  
+These are the base MiG code numbers for each subsystem in the GNU
+Hurd.  Each subsystem takes 200 in space.  Subsystems marked with a *
+are Mach kernel subsystems.  Subsystems marked with ? may or may not
+be used in the Hurd and are defined by Mach non-kernel source.
 
-FS		20000	Filesystem nodes
-IO		21000	Generic IO
-FSYS		22000	Filesystem control operations
-MSG		23000	Calls made on process message ports
-PROCESS		24000	Process abstraction
-AUTH   		25000	Authentication
-SOCKET 		26000	Sockets
-NEWTERM		27000	Creation of terminal processing thingies
-TERM		28000	Terminal-specific operations
-STARTUP		29000	System initialization and destruction
-EXEC		30000	Process execution
-BOOT		31000	Bootstrapping
-CORE		32000	Core dumping
-INTR		33000	Interruption
-IFSOCK		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
-TAPE		35000	Special control operations for magtapes
-TIOCTL	       156000	Ioctl class 't'
+
+* notify	   64	IPC notifications
+* mach		 2000	Generic kernel calls
+* memory_object	 2200	Kernel -> pager calls
+* memory_object_default 2250  Extension to memory_object for default pager
+? default_pager	 2275   Default pager control
+* exc		 2400	Exceptions
+* mach_host	 2600	Kernel calls, mostly for multiprocessors
+* device	 2800   Physical device interface
+* mach_debug	 3000   Kernel debugging and statistics 
+* mach_port	 3200	Port name and IPC frobbing
+* mach4		 4000	PC sampling
+fs		20000	Filesystem nodes
+io		21000	Generic IO
+fsys		22000	Filesystem control operations
+msg		23000	Calls made on process message ports
+process		24000	Process abstraction
+auth   		25000	Authentication
+socket 		26000	Sockets
+newterm		27000	Creation of terminal processing thingies
+term		28000	Terminal-specific operations
+startup		29000	System initialization and destruction
+exec		30000	Process execution
+boot		31000	Bootstrapping
+core		32000	Core dumping
+intr		33000	Interruption
+ifsock		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
+tape		35000	Special control operations for magtapes
+tioctl	       156000	Ioctl class 't'
+* mach_norma   555000	NORMA machine additions; sort of deprecated right now
+* norma_task   666000   NORMA remote execution
+? dp_helper    888888	pager -> fileserver; asking for more paging space
