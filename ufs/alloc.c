@@ -66,6 +66,17 @@ extern u_long nextgennumber;
 
 spin_lock_t alloclock = SPIN_LOCK_INITIALIZER;
 
+/* Forward declarations */
+static u_long ffs_hashalloc (struct node *, int, long, int, 
+			     u_long (*)(struct node *, int, daddr_t, int));
+static u_long ffs_alloccg (struct node *, int, daddr_t, int);
+static daddr_t ffs_fragextend (struct node *, int, long, int, int);
+static ino_t ffs_dirpref (struct fs *);
+static u_long ffs_nodealloccg (struct node *, int, daddr_t, int);
+static daddr_t ffs_alloccgblk (struct fs *, struct cg *, daddr_t);
+static daddr_t ffs_mapsearch (struct fs *, struct cg *, daddr_t, int);
+void ffs_clusteracct (struct fs *, struct cg *, daddr_t, int);
+
 /*
  * Allocate a block in the file system.
  * 
@@ -85,6 +96,7 @@ spin_lock_t alloclock = SPIN_LOCK_INITIALIZER;
  *   2) quadradically rehash into other cylinder groups, until an
  *      available block is located.
  */
+error_t
 ffs_alloc(register struct node *np,
 	  daddr_t lbn, 
 	  daddr_t bpref,
@@ -94,7 +106,7 @@ ffs_alloc(register struct node *np,
 {
 	register struct fs *fs;
 	daddr_t bno;
-	int cg, error;
+	int cg;
 	
 	*bnp = 0;
 	fs = sblock;
@@ -154,16 +166,18 @@ nospace:
  * the original block. Failing that, the regular block allocator is
  * invoked to get an appropriate block.
  */
+error_t
 ffs_realloccg(register struct node *np,
 	      daddr_t lbprev,
-	      daddr_t bpref,
+	      volatile daddr_t bpref,
 	      int osize, 
 	      int nsize,
 	      daddr_t *pbn,
 	      struct protid *cred)
 {
 	register struct fs *fs;
-	int cg, request, error;
+	int cg, error;
+	volatile int request;
 	daddr_t bprev, bno;
 	
 	*pbn = 0;
@@ -182,7 +196,7 @@ ffs_realloccg(register struct node *np,
 
 	spin_lock (&alloclock);
 	
-	if (!isuid (0, cred) && freespace(fs, fs->fs_minfree) <= 0)
+	if (!diskfs_isuid (0, cred) && freespace(fs, fs->fs_minfree) <= 0)
 		goto nospace;
 	if (error = diskfs_catch_exception ())
 	  return error;
@@ -244,7 +258,7 @@ ffs_realloccg(register struct node *np,
 		    fs->fs_cstotal.cs_nffree >
 		    fs->fs_dsize * fs->fs_minfree / (2 * 100))
 			break;
-		log(LOG_NOTICE, "%s: optimization changed from SPACE to TIME\n",
+		printf ("%s: optimization changed from SPACE to TIME\n",
 			fs->fs_fsmnt);
 		fs->fs_optim = FS_OPTTIME;
 		break;
@@ -263,13 +277,11 @@ ffs_realloccg(register struct node *np,
 		if (fs->fs_cstotal.cs_nffree <
 		    fs->fs_dsize * (fs->fs_minfree - 2) / 100)
 			break;
-		log(LOG_NOTICE, "%s: optimization changed from TIME to SPACE\n",
+		printf ("%s: optimization changed from TIME to SPACE\n",
 			fs->fs_fsmnt);
 		fs->fs_optim = FS_OPTSPACE;
 		break;
 	default:
-		printf("dev = 0x%x, optim = %d, fs = %s\n",
-		    ip->i_dev, fs->fs_optim, fs->fs_fsmnt);
 		assert (0);
 		/* NOTREACHED */
 	}
@@ -505,9 +517,10 @@ diskfs_alloc_node (struct node *dir,
 		   struct node **npp)
 {
 	register struct fs *fs;
-	register struct node *np;
+	struct node *np;
 	ino_t ino, ipref;
 	int cg, error;
+	int sex;
 	
 	fs = sblock;
 
@@ -537,18 +550,19 @@ diskfs_alloc_node (struct node *dir,
 	assert ("duplicate allocation" && !np->dn_stat.st_mode);
 	if (np->dn_stat.st_blocks) {
 	  printf("free inode %d had %d blocks\n",
-		 ino, ip->i_blocks);
+		 ino, np->dn_stat.st_blocks);
 	  np->dn_stat.st_blocks = 0;
 	  np->dn_set_ctime = 1;
 	}
-	ip->i_flags = 0;
+	np->dn_stat.st_flags = 0;
 	/*
 	 * Set up a new generation number for this inode.
 	 */
 	spin_lock (&gennumberlock);
-	if (++nextgennumber < (u_long)time.tv_sec)
-		nextgennumber = time.tv_sec;
-	ip->i_gen = nextgennumber;
+	sex = diskfs_mtime->seconds;
+	if (++nextgennumber < (u_long)sex)
+		nextgennumber = sex;
+	np->dn_stat.st_gen = nextgennumber;
 	spin_unlock (&gennumberlock);
 	return (0);
 noinodes:
@@ -652,7 +666,7 @@ ffs_blkpref(struct node *np,
 				return (fs->fs_fpg * cg + fs->fs_frag);
 			}
 		spin_unlock (&alloclock);
-		return (NULL);
+		return 0;
 	}
 	spin_unlock (&alloclock);
 	/*
@@ -731,7 +745,7 @@ ffs_hashalloc(struct node *np,
 		if (cg == fs->fs_ncg)
 			cg = 0;
 	}
-	return (NULL);
+	return 0;
 }
 
 /*
@@ -749,19 +763,18 @@ ffs_fragextend(struct node *np,
 {
 	register struct fs *fs;
 	register struct cg *cgp;
-	struct buf *bp;
 	long bno;
 	int frags, bbase;
-	int i, error;
+	int i;
 
 	fs = sblock;
 	if (csum[cg].cs_nffree < numfrags(fs, nsize - osize))
-		return (NULL);
+		return 0;
 	frags = numfrags(fs, nsize);
 	bbase = fragnum(fs, bprev);
 	if (bbase > fragnum(fs, (bprev + frags - 1))) {
 		/* cannot extend across a block boundary */
-		return (NULL);
+		return 0;
 	}
 #if 0 /* Wrong for GNU Hurd ufs */
 	error = bread(ip->i_devvp, fsbtodb(fs, cgtod(fs, cg)),
@@ -776,14 +789,14 @@ ffs_fragextend(struct node *np,
 #endif
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
-		return (NULL);
+		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
 	bno = dtogd(fs, bprev);
 	for (i = numfrags(fs, osize); i < frags; i++)
 		if (isclr(cg_blksfree(cgp), bno + i)) {
 /* 			brelse(bp); */
-			return (NULL);
+			return 0;
 		}
 	/*
 	 * the current fragment can be extended
@@ -814,7 +827,7 @@ ffs_fragextend(struct node *np,
  * Check to see if a block of the appropriate size is available,
  * and if it is, allocate it.
  */
-static daddr_t
+static u_long
 ffs_alloccg(struct node *np,
 	    int cg,
 	    daddr_t bpref,
@@ -822,13 +835,12 @@ ffs_alloccg(struct node *np,
 {
 	register struct fs *fs;
 	register struct cg *cgp;
-	struct buf *bp;
 	register int i;
-	int error, bno, frags, allocsiz;
+	int bno, frags, allocsiz;
 
 	fs = sblock;
 	if (csum[cg].cs_nbfree == 0 && size == fs->fs_bsize)
-		return (NULL);
+		return 0;
 #if 0 /* Not this way in GNU Hurd ufs */
 	error = bread(ip->i_devvp, fsbtodb(fs, cgtod(fs, cg)),
 		(int)fs->fs_cgsize, NOCRED, &bp);
@@ -843,7 +855,7 @@ ffs_alloccg(struct node *np,
 	if (!cg_chkmagic(cgp) ||
 	    (cgp->cg_cs.cs_nbfree == 0 && size == fs->fs_bsize)) {
 /* 		brelse(bp); */
-		return (NULL);
+		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
 	if (size == fs->fs_bsize) {
@@ -867,7 +879,7 @@ ffs_alloccg(struct node *np,
 		 */
 		if (cgp->cg_cs.cs_nbfree == 0) {
 /* 			brelse(bp); */
-			return (NULL);
+			return 0;
 		}
 		bno = ffs_alloccgblk(fs, cgp, bpref);
 		bpref = dtogd(fs, bno);
@@ -884,8 +896,8 @@ ffs_alloccg(struct node *np,
 	}
 	bno = ffs_mapsearch(fs, cgp, bpref, allocsiz);
 	if (bno < 0) {
-/* 		brelse(bp);* /
-		return (NULL);
+/* 		brelse(bp); */
+		return 0;
 	}
 	for (i = 0; i < frags; i++)
 		clrbit(cg_blksfree(cgp), bno + i);
@@ -994,7 +1006,7 @@ norot:
 	 */
 	bno = ffs_mapsearch(fs, cgp, bpref, (int)fs->fs_frag);
 	if (bno < 0)
-		return (NULL);
+		return 0;
 	cgp->cg_rotor = bno;
 gotit:
 	blkno = fragstoblks(fs, bno);
@@ -1110,7 +1122,7 @@ fail:
  *   2) allocate the next available inode after the requested
  *      inode in the specified cylinder group.
  */
-static ino_t
+static u_long
 ffs_nodealloccg(struct node *np,
 		int cg,
 		daddr_t ipref,
@@ -1118,12 +1130,11 @@ ffs_nodealloccg(struct node *np,
 {
 	register struct fs *fs;
 	register struct cg *cgp;
-	struct buf *bp;
-	int error, start, len, loc, map, i;
+	int start, len, loc, map, i;
 
 	fs = sblock;
 	if (csum[cg].cs_nifree == 0)
-		return (NULL);
+		return 0;
 #if 0 /* Not this way in GNU Hurd ufs */
 	error = bread(ip->i_devvp, fsbtodb(fs, cgtod(fs, cg)),
 		(int)fs->fs_cgsize, NOCRED, &bp);
@@ -1137,9 +1148,9 @@ ffs_nodealloccg(struct node *np,
 #endif
 	if (!cg_chkmagic(cgp) || cgp->cg_cs.cs_nifree == 0) {
 /*		brelse(bp); */
-		return (NULL);
+		return 0;
 	}
-	cgp->cg_time = time.tv_sec;
+	cgp->cg_time = diskfs_mtime->seconds;
 	if (ipref) {
 		ipref %= fs->fs_ipg;
 		if (isclr(cg_inosused(cgp), ipref))
@@ -1163,7 +1174,7 @@ ffs_nodealloccg(struct node *np,
 			goto gotit;
 		}
 	}
-	assort (0);
+	assert (0);
 	/* NOTREACHED */
 gotit:
 	setbit(cg_inosused(cgp), ipref);
@@ -1187,21 +1198,21 @@ gotit:
  * free map. If a fragment is deallocated, a possible 
  * block reassembly is checked.
  */
+void
 ffs_blkfree(register struct node *np,
 	    daddr_t bno,
 	    long size)
 {
 	register struct fs *fs;
 	register struct cg *cgp;
-	struct buf *bp;
 	daddr_t blkno;
-	int i, error, cg, blk, frags, bbase;
+	int i, cg, blk, frags, bbase;
 
 	fs = sblock;
 	assert ((u_int)size <= fs->fs_bsize && !fragoff (fs, size));
 	cg = dtog(fs, bno);
 	if ((u_int)bno >= fs->fs_size) {
-		printf("bad block %d, ino %d\n", bno, np->dn->number);
+		printf("bad block %ld, ino %d\n", bno, np->dn->number);
 /*		ffs_fserr(fs, ip->i_uid, "bad block"); */
 		return;
 	}
@@ -1220,7 +1231,7 @@ ffs_blkfree(register struct node *np,
 /* 		brelse(bp); */
 		return;
 	}
-	cgp->cg_time = time.tv_sec;
+	cgp->cg_time = diskfs_mtime->seconds;
 	bno = dtogd(fs, bno);
 	if (size == fs->fs_bsize) {
 		blkno = fragstoblks(fs, bno);
@@ -1245,7 +1256,7 @@ ffs_blkfree(register struct node *np,
 		 */
 		frags = numfrags(fs, size);
 		for (i = 0; i < frags; i++) {
-		  assert (!isset (cg_blksfree(cgp, bno + i)));
+		  assert (!isset (cg_blksfree(cgp), bno + i));
 		  setbit(cg_blksfree(cgp), bno + i);
 		}
 		cgp->cg_cs.cs_nffree += i;
@@ -1290,8 +1301,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	register struct fs *fs;
 	register struct cg *cgp;
 	ino_t ino = np->dn->number;
-	struct buf *bp;
-	int error, cg;
+	int cg;
 
 	fs = sblock;
 	assert (ino < fs->fs_ipg * fs->fs_ncg);
@@ -1309,13 +1319,13 @@ diskfs_free_node (struct node *np, mode_t mode)
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
-		return (0);
+		return;
 	}
-	cgp->cg_time = time.tv_sec;
+	cgp->cg_time = diskfs_mtime->seconds;
 	ino %= fs->fs_ipg;
 	if (isclr(cg_inosused(cgp), ino)) {
-		printf("dev = 0x%x, ino = %d, fs = %s\n",
-		    pip->i_dev, ino, fs->fs_fsmnt);
+/*		printf("dev = 0x%x, ino = %d, fs = %s\n",
+		    pip->i_dev, ino, fs->fs_fsmnt); */
 		assert (diskfs_readonly);
 	}
 	clrbit(cg_inosused(cgp), ino);
@@ -1324,14 +1334,13 @@ diskfs_free_node (struct node *np, mode_t mode)
 	cgp->cg_cs.cs_nifree++;
 	fs->fs_cstotal.cs_nifree++;
 	csum[cg].cs_nifree++;
-	if ((ap->a_mode & IFMT) == IFDIR) {
+	if ((mode & IFMT) == IFDIR) {
 		cgp->cg_cs.cs_ndir--;
 		fs->fs_cstotal.cs_ndir--;
 		csum[cg].cs_ndir--;
 	}
 	fs->fs_fmod = 1;
 /* 	bdwrite(bp); */
-	return (0);
 }
 
 /*
@@ -1398,6 +1407,7 @@ ffs_mapsearch(register struct fs *fs,
  *
  * Cnt == 1 means free; cnt == -1 means allocating.
  */
+void
 ffs_clusteracct(struct fs *fs,
 		struct cg *cgp,
 		daddr_t blkno,
