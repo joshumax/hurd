@@ -114,6 +114,7 @@ extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
 #define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK|O_NOATIME)
 
 /* Bits that are turned off after open */
-#define OPENONLY_STATE_MODES (O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK)
+#define OPENONLY_STATE_MODES \
+  (O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK|O_EXLOCK|O_SHLOCK)
 
 #endif
