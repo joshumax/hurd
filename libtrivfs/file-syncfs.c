@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,5 +24,5 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      int wait,
 		      int dochildren)
 {
-  return cred ? file_sync (cred->realnode, wait) : EOPNOTSUPP;
+  return cred ? file_sync (cred->realnode, wait, 0) : EOPNOTSUPP;
 }
