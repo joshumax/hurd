@@ -354,11 +354,11 @@ packet_read (struct packet *packet,
 
   if (amount > 0)
     {
+      char *buf = packet->buf;
+
       if (packet->buf_vm_alloced && amount >= vm_page_size)
 	/* We can return memory from BUF directly without copying.  */
 	{
-	  char *buf = packet->buf;
-
 	  if (buf + vm_page_size <= start)
 	    /* BUF_START has been advanced past the start of the buffer
 	       (perhaps by a series of small reads); as we're going to assume
@@ -399,8 +399,27 @@ packet_read (struct packet *packet,
 	{
 	  if (*data_len < amount)
 	    vm_allocate (mach_task_self (), (vm_address_t *)data, amount, 1);
+
 	  bcopy (start, *data, amount);
-	  packet->buf_start = start + amount;
+	  start += amount;
+
+	  if (start - buf > 2 * PACKET_SIZE_LARGE)
+	    /* Get rid of unused space at the beginning of the buffer -- we
+	       know it's vm_alloced because of the size, and this will allow
+	       the buffer to just slide through memory.  Because we wait for
+	       a relatively large amount of free space before doing this, and
+	       packet_write() would have gotten rid the free space if it
+	       didn't require copying much data, it's unlikely that this will
+	       happen if it would have been cheaper to just move the packet
+	       contents around to make space for the next write.  */
+	    {
+	      vm_size_t dealloc = trunc_page (start) - (vm_address_t)buf;
+	      vm_deallocate (mach_task_self (), (vm_address_t)buf, dealloc);
+	      packet->buf = buf + dealloc;
+	      packet->buf_len -= dealloc;
+	    }
+
+	  packet->buf_start = start;
 	}
     }
   *data_len = amount;
