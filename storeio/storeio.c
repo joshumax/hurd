@@ -1,6 +1,6 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -81,7 +81,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	if (*end == ',')
 	  /* MAJOR,MINOR form */
 	  {
-	    start = end;
+	    start = end + 1;
 	    rdev = makedev (rdev, strtoul (start, &end, 0));
 	  }
 
