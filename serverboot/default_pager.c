@@ -2580,8 +2580,6 @@ default_pager_demux_object(in, out)
 	 *	the memory_object_default interface.
 	 */
 
-  clearerr (stdout);
-  printf ("dpi object message %d\n", in->msgh_id);
 	return (seqnos_memory_object_server(in, out) ||
 		seqnos_memory_object_default_server(in, out) ||
 		default_pager_notify_server(in, out));
@@ -2594,8 +2592,6 @@ default_pager_demux_default(in, out)
 	mach_msg_header_t	*in;
 	mach_msg_header_t	*out;
 {
-  clearerr (stdout);
-  printf ("dpi message %d\n", in->msgh_id);
 	if (in->msgh_local_port == default_pager_default_port) {
 		/*
 		 *	We receive memory_object_create messages in
@@ -2685,10 +2681,8 @@ default_pager_thread(arg)
 	mach_port_t pset;
 	kern_return_t kr;
 
-	printf ("dtp\n");
 	cthread_set_data(cthread_self(), (any_t) dpt);
 
-	printf ("dtp %#x\n", dpt);
 
 	/*
 	 *	Threads handling external objects cannot have
@@ -2706,7 +2700,6 @@ default_pager_thread(arg)
 	}
 
 	for (;;) {
-	  printf ("dtp %#x loop\n", dpt);
 		kr = mach_msg_server(default_pager_demux_object,
 				     default_pager_msg_size_object,
 				     pset);
@@ -2733,8 +2726,6 @@ start_default_pager_thread(internal)
 		panic(my_name);
 	wire_memory(dpt->dpt_buffer, vm_page_size,
 		    VM_PROT_READ|VM_PROT_WRITE);
-
-	printf ("starting thread %d\n", internal);
 
 	dpt->dpt_thread = cthread_fork(default_pager_thread, (any_t) dpt);
 }
@@ -2815,7 +2806,6 @@ default_pager()
 	kern_return_t kr;
 	int i;
 
-	printf ("dp1\n");
 	default_pager_thread_privileges();
 
 	/*
@@ -2823,14 +2813,11 @@ default_pager()
 	 */
 	wire_all_memory();
 
-	printf ("dp2\n");
 
 	/*
 	 *	Initialize the list of all pagers.
 	 */
 	pager_port_list_init();
-
-	printf ("dp3\n");
 
 	kr = mach_port_allocate(default_pager_self, MACH_PORT_RIGHT_PORT_SET,
 				&default_pager_internal_set);
@@ -2865,8 +2852,6 @@ default_pager()
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
 
-	printf ("dp4\n");
-
 	/*
 	 *	Now we create the threads that will actually
 	 *	manage objects.
@@ -2875,12 +2860,8 @@ default_pager()
 	for (i = 0; i < default_pager_internal_count; i++)
 		start_default_pager_thread(TRUE);
 
-	printf ("dp5\n");
-
 	for (i = 0; i < default_pager_external_count; i++)
 		start_default_pager_thread(FALSE);
-
-	printf ("dp6\n");
 
 	cthread_fork (default_pager_default_thread, 0);
 	cthread_exit (cthread_self ());
