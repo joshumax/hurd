@@ -348,12 +348,17 @@ dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
 
       struct store *store = dev->store;
 
-      if (offs % store->block_size != 0 || len % store->block_size != 0)
+      if (store->block_size == 0)
+	/* We don't know the block size, so let the device enforce it.  */
+	return store_write (dev->store, offs, buf, len, amount);
+
+      if ((offs & (store->block_size - 1)) != 0
+	  || (len & (store->block_size - 1)) != 0)
 	/* Not whole blocks.  No can do.  */
-	return EINVAL;
+	return EINVAL;	/* EIO? */
 
       /* Do a direct write to the store.  */
-      return store_write (dev->store, offs * store->block_size,
+      return store_write (dev->store, offs << store->log2_block_size,
 			  buf, len, amount);
     }
 
@@ -425,18 +430,25 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
   if (dev->inhibit_cache)
     {
       /* Under --no-cache, we permit only whole-block reads.
-	 Note that in this case we handle non-power-of-two block sizes.  */
+	 Note that in this case we handle non-power-of-two block sizes.
+	 We could, that is, but libstore won't have it (see libstore/make.c).
+	 If the device does not report a block size, we let any attempt
+	 through on the assumption the device will enforce its own limits.  */
 
       struct store *store = dev->store;
 
-      if (offs % store->block_size != 0
-	  || whole_amount % store->block_size != 0)
+      if (store->block_size == 0)
+	/* We don't know the block size, so let the device enforce it.  */
+	return store_read (dev->store, offs, whole_amount, buf, len);
+
+      if ((offs & (store->block_size - 1)) != 0
+	  || (whole_amount & (store->block_size - 1)) != 0)
 	/* Not whole blocks.  No can do.  */
 	return EINVAL;
 
       /* Do a direct read from the store.  */
-      return store_read (dev->store, offs * store->block_size, whole_amount,
-			 buf, len);
+      return store_read (dev->store, offs << store->log2_block_size,
+			 whole_amount, buf, len);
     }
 
   err = dev_rw (dev, offs, whole_amount, len, buf_read, raw_read);
