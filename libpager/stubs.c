@@ -18,6 +18,7 @@
 
 #include "priv.h"
 #include "memory_object.h"
+#include <stdio.h>
 
 error_t
 _pager_seqnos_memory_object_copy (mach_port_t old,
