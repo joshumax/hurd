@@ -26,3 +26,4 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define dn_thtat dn_stat
 #define tht_author st_author
 #define dn_thet_theetime dn_set_ctime
+#define fth_TH_dot_h "fs_S.h"
