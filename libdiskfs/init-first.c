@@ -27,4 +27,6 @@ diskfs_spawn_first_thread (void)
   cthread_detach (cthread_fork ((cthread_fn_t) 
 				ports_manage_port_operations_multithread,
 				(any_t) 0));
+  if (diskfs_default_sync_interval)
+    diskfs_set_sync_interval (diskfs_default_sync_interval);
 }
