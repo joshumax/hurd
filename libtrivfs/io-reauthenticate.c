@@ -47,7 +47,9 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
-  newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
+  newcred = ports_allocate_port (cred->po->cntl->protid_bucket,
+				 sizeof (struct trivfs_protid), 
+				 cred->po->cntl->protid_class);
   auth = getauth ();
   err = auth_server_authenticate (auth, 
 				  ports_get_right (cred),
