@@ -1,3 +1,7 @@
+Tue Sep 24 16:47:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* servers.boot (/hurd/ufs.static): Change --machdev to -Tdevice.
+
 Tue Sep 17 14:36:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* SETUP: Don't prepend `r' to $BOOT_DEV when invoking INSTALL-GRUB-MBR.
