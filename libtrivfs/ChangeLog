@@ -1,5 +1,11 @@
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* io-write.c (trivfs_S_io_write): Return EBADF if trivfs_allow_open
+	doesn't include O_WRITE.
+
+	* io-modes-get.c (trivfs_S_io_get_openmodes): Remove assert.
+	The default implementation ought to be fine for this.
+
 	* io-owner-get.c (trivfs_S_io_get_owner): Remove asserts.
 	It is entirely reasonable to have EOPNOTSUPP be the default
 	implementation for these calls that files are not obligated to provide.
