@@ -63,7 +63,7 @@ struct pipe
      deallocated (say by socket_shutdown), it doesn't actually go away until
      the reader realizes what happened.  It is normally frobbed using
      pipe_aquire & pipe_release, which do locking as well..  */
-  unsigned refs;
+  unsigned readers, writers;
 
   /* Various flags, from PIPE_* below.  */
   unsigned flags;
@@ -152,34 +152,95 @@ pipe_wait (struct pipe *pipe, int noblock, int data_only)
  
 /* Wake up all threads waiting on PIPE, which should be locked.  */
 void pipe_kick (struct pipe *pipe);
-
+
 /* Creates a new pipe of class CLASS and returns it in RESULT.  */
 error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
 
 /* Free PIPE and any resources it holds.  */
 void pipe_free (struct pipe *pipe);
+
+/* Take any actions necessary when PIPE aquires its first writer.  */
+void _pipe_first_writer (struct pipe *pipe);
 
-/* Discard a reference to PIPE, which should be unlocked, being sure to make
-   users aware of this.  */
-void pipe_break (struct pipe *pipe);
+/* Take any actions necessary when PIPE's last reader has gone away.  PIPE
+   should be locked.  */
+void _pipe_no_readers (struct pipe *pipe);
 
-/* Lock PIPE and increment its ref count.  */
+/* Take any actions necessary when PIPE's last writer has gone away.  PIPE
+   should be locked.  */
+void _pipe_no_writers (struct pipe *pipe);
+
+/* Lock PIPE and increment its readers count.  */
 extern inline void
-pipe_aquire (struct pipe *pipe)
+pipe_aquire_reader (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
-  pipe->refs++;
+  pipe->readers++;
 }
 
-/* Decrement PIPE's (which should be locked) ref count and unlock it.  If the
-   ref count goes to zero, PIPE will be destroyed.  */
+/* Lock PIPE and increment its writers count.  */
 extern inline void
-pipe_release (struct pipe *pipe)
+pipe_aquire_writer (struct pipe *pipe)
 {
-  if (--pipe->refs == 0)
-    pipe_free (pipe);
+  mutex_lock (&pipe->lock);
+  if (pipe->writers++ == 0)
+    _pipe_first_writer (pipe);
+}
+
+/* Decrement PIPE's (which should be locked) reader count and unlock it.  If
+   there are no more refs to PIPE, it will be destroyed.  */
+extern inline void
+pipe_release_reader (struct pipe *pipe)
+{
+  if (--pipe->readers == 0)
+    _pipe_no_readers (pipe);
   else
     mutex_unlock (&pipe->lock);
+}
+
+/* Decrement PIPE's (which should be locked) writer count and unlock it.  If
+   there are no more refs to PIPE, it will be destroyed.  */
+extern inline void
+pipe_release_writer (struct pipe *pipe)
+{
+  if (--pipe->writers == 0)
+    _pipe_no_writers (pipe);
+  else
+    mutex_unlock (&pipe->lock);
+}
+
+/* Increment PIPE's reader count.  PIPE should be unlocked.  */
+extern inline void
+pipe_add_reader (struct pipe *pipe)
+{
+  pipe_aquire_reader (pipe);
+  mutex_unlock (&pipe->lock);
+}
+
+/* Increment PIPE's writer count.  PIPE should be unlocked.  */
+extern inline void
+pipe_add_writer (struct pipe *pipe)
+{
+  pipe_aquire_writer (pipe);
+  mutex_unlock (&pipe->lock);
+}
+
+/* Decrement PIPE's (which should be unlocked) reader count and unlock it.  If
+   there are no more refs to PIPE, it will be destroyed.  */
+extern inline void
+pipe_remove_reader (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  pipe_release_reader (pipe);
+}
+
+/* Decrement PIPE's (which should be unlocked) writer count and unlock it.  If
+   there are no more refs to PIPE, it will be destroyed.  */
+extern inline void
+pipe_remove_writer (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  pipe_release_writer (pipe);
 }
 
 /* Empty out PIPE of any data.  PIPE should be locked.  */
