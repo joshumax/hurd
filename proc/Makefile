@@ -1,4 +1,4 @@
-# Copyright (C) 1992, 1993, 1994 Free Software Foundation, Inc.
+# Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@ OBJS = wait.o hash.o ihash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
 	proc_excreplServer.o
 
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
-       primes.c cpu-types.c stubs.c
+       cpu-types.c stubs.c
 
 CPPFLAGS += -I../lib
 vpath %.c ../lib
