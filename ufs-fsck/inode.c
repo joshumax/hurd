@@ -22,11 +22,12 @@
 
 static void
 inode_iterate (struct dinode *dp, 
-	       int (*fn) (daddr_t, int),
+	       int (*fn) (daddr_t, int, off_t),
 	       int doaddrblocks)
 {
   mode_t mode = dp->di_model & IFMT;
   int nb, maxb;
+  off_t totaloffset = 0;
   
   /* Call FN for iblock IBLOCK of level LEVEL and recurse down
      the indirect block pointers. */
@@ -39,7 +40,7 @@ inode_iterate (struct dinode *dp,
 
       if (doaddrblocks)
 	{
-	  cont = (*fn)(iblock, sblock->fs_frag);
+	  cont = (*fn)(iblock, sblock->fs_frag, totaloffset);
 	  if (cont == RET_STOP)
 	    return RET_STOP;
 	  else if (cont == RET_BAD)
@@ -50,7 +51,10 @@ inode_iterate (struct dinode *dp,
       for (i = 0; i < NINDIR (sblock); i++)
 	{
 	  if (level == 0)
-	    cont = (*fn)(ptrs[i], sblock->fs_frag);
+	    {
+	      cont = (*fn)(ptrs[i], sblock->fs_frag, totaloffset);
+	      totaloffset += sblock->fs_bsize;
+	    }
 	  else 
 	    cont = scaniblock (ptrs[i], level - 1);
 	  if (cont == RET_STOP)
@@ -65,7 +69,8 @@ inode_iterate (struct dinode *dp,
 	      || (sblock->fs_maxsymlinklen == 0 && dp->di_blocks == 0))))
     return;
 
-  maxb = howmany (dp->di_size, sblock->fs_bsize);
+  maxb = lblkno (sblock, dp->di_size - 1);
+  totaloffset = 0;
   for (nb = 0; nb < NDADDR; nb++)
     {
       int offset;
@@ -76,8 +81,10 @@ inode_iterate (struct dinode *dp,
       else
 	nfrags = sblock->fs_frag;
       
-      if (dp->di_db[nb] && (*fn)(dp->di_db[nb], nfrags) != RET_GOOD)
+      if (dp->di_db[nb]
+	  && (*fn)(dp->di_db[nb], nfrags, totaloffset) != RET_GOOD)
 	return;
+      totaloffset += nfrags * sizeof (sblock->fs_fsize);
     }
   
   for (nb = 0; nb < NIADDR; nb++)
@@ -85,19 +92,19 @@ inode_iterate (struct dinode *dp,
       return;
 
   if (doaddrblocks && dp->di_trans)
-    (*fn)(dp->di_trans, sblock->fs_frag);
+    (*fn)(dp->di_trans, sblock->fs_frag, totaloffset);
 }
 
 void
 datablocks_iterate (struct dinode *dp, 
-		    int (*fn) (daddr_t, int))
+		    int (*fn) (daddr_t, int, off_t))
 {
   inode_iterate (dp, fn, 0);
 }
 
 void
 allblock_iterate (struct dinode *dp,
-		  int (*fn) (daddr_t, int))
+		  int (*fn) (daddr_t, int, off_t))
 {
   inode_iterate (dp, fn, 1);
 }
@@ -154,7 +161,7 @@ freeino (ino_t inum)
   struct dinode dino;
   
   int
-  clearblock (daddr_t bno, int nfrags)
+  clearblock (daddr_t bno, int nfrags, off_t offset)
     {
       int i;
       
