@@ -35,7 +35,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   volatile int totalthreads;
   spin_lock_t lock = SPIN_LOCK_INITIALIZER;
 
-  auto void thread_function (int);
+  auto int thread_function (int);
 
   int 
   internal_demuxer (mach_msg_header_t *inp,
@@ -75,7 +75,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       return status;
     }
 
-  void 
+  int
   thread_function (int master)
     {
       int timeout;
@@ -107,7 +107,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	      spin_unlock (&lock);
 	      goto startover;
 	    }
-	  return;
 	}
       else
 	{
@@ -115,7 +114,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	  nreqthreads--;
 	  totalthreads--;
 	  spin_unlock (&lock);
-	  cthread_exit (0);
 	}
     }
   
