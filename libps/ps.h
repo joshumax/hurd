@@ -115,7 +115,7 @@ char *ps_tty_name(ps_tty_t tty);
 char *ps_tty_short_name(ps_tty_t tty);
 
 /* ---------------------------------------------------------------- */
-/* A ps_contex_t holds various information resulting from querying a
+/* A ps_context_t holds various information resulting from querying a
    particular process server, in particular a group of proc_stats, ps_users,
    and ps_ttys.  This information sticks around until the context is freed
    (subsets may be created by making proc_stat_lists).  */
@@ -140,6 +140,9 @@ struct ps_context
 
   /* ps_user_t's for every user we know about, indexed by user-id.  */
   ihash_t users;
+
+  /* Functions that can be set to extend the behavior of proc_stats.  */
+  struct ps_user_hooks *user_hooks;
 };
 
 #define ps_context_server(pc) ((pc)->server)
@@ -187,10 +190,11 @@ struct proc_stat
 
     /* Flags describing which fields in this structure are valid.  */
     ps_flags_t flags;
+    ps_flags_t failed;		/* flags that we tried to set and couldn't.  */
 
     /* Thread fields -- these are valid if PID < 0.  */
     proc_stat_t thread_origin;	/* A proc_stat_t for the task we're in.  */
-    unsigned thread_index;		/* Which thread in our proc we are.  */
+    unsigned thread_index;	/* Which thread in our proc we are.  */
 
     /* A process_t port for the process.  */
     process_t process;
@@ -274,6 +278,9 @@ struct proc_stat
 
     /* A ps_tty_t object for the process's controlling terminal.  */
     ps_tty_t tty;
+
+    /* A hook for the user to use.  */
+    void *hook;
   };
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
@@ -302,9 +309,14 @@ struct proc_stat
 #define PSTAT_OWNER_UID	      0x100000 /* The uid of the the proc's owner */
 #define PSTAT_UMASK	      0x200000 /* The proc's current umask */
 #define PSTAT_EXEC_FLAGS      0x400000 /* The process's exec flags */
+#define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
 
 /* Flag bits that don't correspond precisely to any field.  */
-#define PSTAT_NO_MSGPORT      0x800000 /* Don't use the msgport at all */
+#define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
+
+/* Bits from PSTAT_USER_BASE on up are available for user-use.  */
+#define PSTAT_USER_BASE      0x2000000
+#define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
 
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
    bitmask of the following bits, describing the process's run state.  If you
@@ -427,6 +439,28 @@ error_t proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags);
    it.  If N was out of range, EINVAL is returned.  If a memory allocation
    error occured, ENOMEM is returned.  Otherwise, 0 is returned.  */
 error_t proc_stat_thread_create(proc_stat_t ps, unsigned n, proc_stat_t *thread_ps);
+
+/* ---------------------------------------------------------------- */
+/* A struct ps_user_hooks holds functions that allow the user to extend the
+   behavior of libps.  */
+
+struct ps_user_hooks
+{
+  /* Given a set of flags in the range defined by PSTAT_USER_MASK, should
+     return any other flags (user or system) which should be set as a
+     precondition to setting them.  */
+  ps_flags_t (*dependencies) (ps_flags_t flags);
+
+  /* Try and fetch the information corresponding to NEED (which is in the
+     range defined by PSTAT_USER_MASK), and fill in the necessary fields in
+     PS (probably in a user defined structure pointed to by the hook field).
+     The user flags corresponding to what is successfully fetched should be
+     returned.  HAVE are the flags defining whas is currently valid in PS. */
+  ps_flags_t (*fetch) (proc_stat_t ps, ps_flags_t need, ps_flags_t have);
+
+  /* When a proc_stat goes away, this function is called on it.  */
+  void (*cleanup) (proc_stat_t ps);
+};
 
 /* ---------------------------------------------------------------- */
 /*
@@ -570,9 +604,16 @@ typedef struct ps_fmt_spec *ps_fmt_spec_t;
 
 struct ps_fmt_spec
   {
-    /* The name of the spec (and it's default title) */
+    /* The name of the spec (and it's title, if TITLE is NULL).  */
     char *name;
     
+    /* The title to be printed in the headers.  */
+    char *title;
+
+    /* The width of the field that this spec will be printed in if not
+       overridden.  */
+    int width;
+
     ps_getter_t getter;
 
     /* A function that, given a ps, a getter, a field width, and a stream,
@@ -590,31 +631,36 @@ struct ps_fmt_spec
        This may be NULL, in which case values in this field are _always_
        exciting...  */
     bool (*nominal_fn)(proc_stat_t ps, ps_getter_t getter);
-
-    /* The default width of the field that this spec will be printed in if not
-       overridden.  */
-    int default_width;
   };
 
 /* Accessor macros:  */
 #define ps_fmt_spec_name(spec) ((spec)->name)
+#define ps_fmt_spec_title(spec) ((spec)->title)
+#define ps_fmt_spec_width(spec) ((spec)->width)
 #define ps_fmt_spec_output_fn(spec) ((spec)->output_fn)
 #define ps_fmt_spec_compare_fn(spec) ((spec)->cmp_fn)
 #define ps_fmt_spec_nominal_fn(spec) ((spec)->nominal_fn)
 #define ps_fmt_spec_getter(spec) ((spec)->getter)
-#define ps_fmt_spec_default_width(spec) ((spec)->default_width)
 
-/* Returns true if a pointer into an array of struct ps_fmt_specs is at  the
+/* Returns true if a pointer into an array of struct ps_fmt_spec's is at  the
    end.  */
 #define ps_fmt_spec_is_end(spec) ((spec)->name == NULL)
+
+typedef struct ps_fmt_specs *ps_fmt_specs_t;
 
-/* An array of struct ps_fmt_spec, suitable for use with find_ps_fmt_spec, 
+struct ps_fmt_specs
+{
+  ps_fmt_spec_t specs;		/* An array of specs. */
+  ps_fmt_specs_t parent;	/* A link to more specs shadowed by this. */
+};
+
+/* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find, 
    containing specs for most values in a proc_stat_t.  */
-extern struct ps_fmt_spec ps_std_fmt_specs[];
+extern struct ps_fmt_specs ps_std_fmt_specs;
 
-/* Searches for a spec called NAME in SPECS (an array of struct ps_fmt_spec)
-   and returns it if found, otherwise NULL.  */
-ps_fmt_spec_t find_ps_fmt_spec(char *name, ps_fmt_spec_t specs);
+/* Searches for a spec called NAME in SPECS and returns it if found,
+   otherwise NULL.  */
+ps_fmt_spec_t ps_fmt_specs_find (ps_fmt_specs_t specs, char *name);
 
 /* ---------------------------------------------------------------- */
 /* A PS_FMT_T describes how to output user-readable  version of a proc_stat_t.
@@ -669,12 +715,16 @@ struct ps_fmt
 
     /* Storage for various strings pointed to by the fields.  */
     char *src;
+
+    /* The string displayed by default for fields that have no valid value. */
+    char *inval;
   };
 
 /* Accessor macros: */
 #define ps_fmt_fields(fmt) ((fmt)->fields)
 #define ps_fmt_num_fields(fmt) ((fmt)->num_fields)
 #define ps_fmt_needs(fmt) ((fmt)->needs)
+#define ps_fmt_inval (fmt) ((fmt)->inval)
 
 /*
    Make a PS_FMT_T by parsing the string SRC, searching for any named
@@ -696,7 +746,7 @@ struct ps_fmt
    spec's default width.  If a `-' is included, the output is right-aligned
    within this width, otherwise it is left-aligned.
  */
-error_t ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt);
+error_t ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt);
 
 /* Free FMT, and any resources it consumes.  */
 void ps_fmt_free(ps_fmt_t fmt);
