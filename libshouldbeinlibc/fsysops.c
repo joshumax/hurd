@@ -82,10 +82,10 @@ fsys_get_readonly (fsys_t fsys, int *readonly)
 
 /* Tell FSYS to remount itself.  */
 error_t
-fsys_remount (fsys_t fsys, int readonly)
+fsys_update (fsys_t fsys, int readonly)
 {
   error_t err;
-  char *opts = "--remount";
+  char *opts = "--update";
   size_t opts_len = strlen (opts) + 1;
   err = fsys_set_options (fsys, opts, opts_len, 0);
   if (err == EINVAL)
