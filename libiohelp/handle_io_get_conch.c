@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-#include <libioserver.h>
+#include "ioserver.h"
 
 error_t
 handle_io_get_conch (struct conch *c, void *user, struct shared_io *user_sh)
