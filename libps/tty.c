@@ -1,8 +1,8 @@
 /* The ps_tty type, for per-tty info.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,1996,2000 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -91,11 +91,11 @@ ps_tty_name (struct ps_tty *tty)
 
 struct ps_tty_abbrev
 {
-  char *pfx;
-  char *subst;
+  const char *pfx;
+  const char *subst;
 };
 
-struct ps_tty_abbrev ps_tty_abbrevs[] =
+const struct ps_tty_abbrev ps_tty_abbrevs[] =
 {
   { "/tmp/console", "oc" },	/* temp hack */
   { "/dev/console", "co" },
@@ -115,14 +115,14 @@ ps_tty_short_name (struct ps_tty *tty)
     return tty->short_name;
   else
     {
-      struct ps_tty_abbrev *abbrev;
+      const struct ps_tty_abbrev *abbrev;
       const char *name = ps_tty_name (tty);
 
       if (name)
 	for (abbrev = ps_tty_abbrevs; abbrev->pfx != NULL; abbrev++)
 	  {
-	    char *subst = abbrev->subst;
-	    unsigned pfx_len = strlen (abbrev->pfx);
+	    const char *subst = abbrev->subst;
+	    size_t pfx_len = strlen (abbrev->pfx);
 
 	    if (strncmp (name, abbrev->pfx, pfx_len) == 0)
 	      {
@@ -132,11 +132,13 @@ ps_tty_short_name (struct ps_tty *tty)
 		  tty->short_name = name + pfx_len;
 		else
 		  {
-		    char *n = malloc (strlen(subst) + strlen (name + pfx_len));
+		    size_t slen = strlen (subst);
+		    size_t nlen = strlen (name + pfx_len) + 1;
+		    char *n = malloc (slen + nlen);
 		    if (n)
 		      {
-			strcpy (n, subst);
-			strcat (n, name + pfx_len);
+			memcpy (n, subst, slen);
+			memcpy (&n[slen], &name[pfx_len], nlen);
 			tty->short_name = n;
 			tty->short_name_alloced = TRUE;
 		      }
