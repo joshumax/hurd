@@ -1,3 +1,7 @@
+1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* filedev.c, machdev.c: Files removed.
+
 Thu Jul 24 12:57:26 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* name-cache.c (find_cache): Grammar doc fix.
