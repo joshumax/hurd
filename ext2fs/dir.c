@@ -1,7 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
-
+   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -702,8 +701,6 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
   assert (ds->stat == HERE_TIS);
 
   assert (!diskfs_readonly);
-
-  dp->dn_set_mtime = 1;
 
   if (ds->preventry == 0)
     ds->entry->inode = 0;
