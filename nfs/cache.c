@@ -19,19 +19,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 
-/* We have fresh stat information for NP; the fattr structure is at 
-   P.  Update our entry.  Return the address of the next int after
-   the fattr structure.  */
-int *
-register_fresh_stat (struct node *np, int *p)
-{
-  int *ret;
-  
-  ret = xdr_decode_fattr (p, &np->nn_stat);
-  np->nn->stat_updat = netfs_mtime.seconds;
-  return ret;
-}
-
 
   
 
