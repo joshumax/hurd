@@ -616,10 +616,13 @@ diskfs_nput (struct node *np)
 	  /* Now we can drop the reference back... */
 	  goto loop;
 	}
+      mutex_unlock (&np->lock);
     }
   else
-    spin_unlock (&diskfs_node_refcnt_lock);
-  mutex_unlock (&np->lock);
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      mutex_unlock (&np->lock);
+    }
 }
 
 /* Release a hard reference on NP.  If NP is locked by anyone, then
