@@ -22,7 +22,7 @@ dir := release
 makemode := misc
 
 # Files that go into the root of binary distributions
-dist-files = INSTALL-binary dist-README SETUP
+dist-files = INSTALL-binary dist-README SETUP servers.boot
 
 # Tools for making images
 tool-files = tool-Makefile install-stripped
@@ -36,8 +36,10 @@ install-dist: dist-links
 	cp INSTALL-binary $(dist-root)/
 	cp dist-README $(dist-root)/README
 	cp SETUP $(dist-root)/SETUP
+	cp servers.boot $(dist-root)/boot
 
 dist-links:
+	mkdir -p $(dist-root)/boot
 	mkdir -p $(dist-root)/servers/socket
 	touch $(dist-root)/servers/socket/{1,2}
 	ln $(dist-root)/servers/socket/1 /servers/socket/local
