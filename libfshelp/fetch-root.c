@@ -150,7 +150,11 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
       if (err)
 	return err;
-      
+
+      if (! MACH_PORT_VALID (control))
+	/* The start translator succeeded, but it returned a bogus port.  */
+	return EDIED;
+
       box->active = control;
     }
   
