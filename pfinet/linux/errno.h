@@ -3,6 +3,6 @@
 
 #include <errno.h>
 
-#define ERESTARTSYS -1		/* let's hope this is not used */
+#define ERESTARTSYS EINTR
 
 #endif
