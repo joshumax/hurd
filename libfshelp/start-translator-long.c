@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02, 04 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -48,49 +48,6 @@ struct fsys_startup_reply
   mach_port_t realnode;
 };
 
-static const mach_msg_type_t flagsCheck = {
-  MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
-  32,				/* msgt_size = */
-  1,				/* msgt_number = */
-  TRUE,				/* msgt_inline = */
-  FALSE,			/* msgt_longform = */
-  FALSE,			/* msgt_deallocate = */
-  0				/* msgt_unused = */
-};
-
-static const mach_msg_type_t control_portCheck =
-{
-  17,				/* msgt_name = */
-  32,				/* msgt_size = */
-  1,				/* msgt_number = */
-  TRUE,				/* msgt_inline = */
-  FALSE,			/* msgt_longform = */
-  FALSE,			/* msgt_deallocate = */
-  0				/* msgt_unused = */
-};
-
-static const mach_msg_type_t RetCodeType = {
-  MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
-  32,				/* msgt_size = */
-  1,				/* msgt_number = */
-  TRUE,				/* msgt_inline = */
-  FALSE,			/* msgt_longform = */
-  FALSE,			/* msgt_deallocate = */
-  0				/* msgt_unused = */
-};
-
-static const mach_msg_type_t realnodeType =
-{
-  -1,				/* msgt_name = */
-  32,				/* msgt_size = */
-  1,				/* msgt_number = */
-  TRUE,				/* msgt_inline = */
-  FALSE,			/* msgt_longform = */
-  FALSE,			/* msgt_deallocate = */
-  0				/* msgt_unused = */
-};
-
-
 /* Wait around for an fsys_startup message on the port PORT from the
    translator on NODE (timing out after TIMEOUT milliseconds), and return a
    send right for the resulting fsys control port in CONTROL.  If a no-senders
@@ -102,12 +59,68 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
 		      mach_port_t port, long timeout, fsys_t *control,
 		      task_t task)
 {
+  /* These should be optimized away to pure integer constants.  */
+  const mach_msg_type_t flagsCheck =
+    {
+      MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
+      32,			/* msgt_size = */
+      1,			/* msgt_number = */
+      TRUE,			/* msgt_inline = */
+      FALSE,			/* msgt_longform = */
+      FALSE,			/* msgt_deallocate = */
+      0				/* msgt_unused = */
+    };
+  const mach_msg_type_t control_portCheck =
+    {
+      MACH_MSG_TYPE_PORT_SEND,	/* msgt_name = */
+      32,			/* msgt_size = */
+      1,			/* msgt_number = */
+      TRUE,			/* msgt_inline = */
+      FALSE,			/* msgt_longform = */
+      FALSE,			/* msgt_deallocate = */
+      0				/* msgt_unused = */
+    };
+  const mach_msg_type_t RetCodeType =
+    {
+      MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
+      32,			/* msgt_size = */
+      1,			/* msgt_number = */
+      TRUE,			/* msgt_inline = */
+      FALSE,			/* msgt_longform = */
+      FALSE,			/* msgt_deallocate = */
+      0				/* msgt_unused = */
+    };
+  const mach_msg_type_t realnodeType =
+    {
+      -1,			/* msgt_name = */
+      32,			/* msgt_size = */
+      1,			/* msgt_number = */
+      TRUE,			/* msgt_inline = */
+      FALSE,			/* msgt_longform = */
+      FALSE,			/* msgt_deallocate = */
+      0				/* msgt_unused = */
+    };
+
+  /* Return true iff TYPE fails to match CHECK.  */
+  inline int type_check (const mach_msg_type_t *type,
+			 const mach_msg_type_t *check)
+    {
+      union
+      {
+	unsigned32_t word;
+	mach_msg_type_t type;
+      } t, c;
+      t.type = *type;
+      c.type = *check;
+      return t.word != c.word;
+    }
+
   error_t err;
   union
-    {
-      mach_msg_header_t head;
-      struct fsys_startup_request startup;
-    }
+  {
+    mach_msg_header_t head;
+    struct fsys_startup_request startup;
+  }
   request;
   struct fsys_startup_reply reply;
 
@@ -134,9 +147,8 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
 
   if (request.head.msgh_id != 22000)
     reply.RetCode = MIG_BAD_ID;
-  else if ((*(int *)&request.startup.control_portType
-	    != *(int *)&control_portCheck)
-	   || (*(int *)&request.startup.flagsType != *(int *)&flagsCheck))
+  else if (type_check (&request.startup.control_portType, &control_portCheck)
+	   || type_check (&request.startup.flagsType, &flagsCheck))
     reply.RetCode = MIG_BAD_ARGUMENTS;
   else
     {
