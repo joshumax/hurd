@@ -20,6 +20,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "tmpfs.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <hurd/hurd_types.h>
+#include <hurd/store.h>
 #include <mach/default_pager.h>
 
 unsigned int num_files;
@@ -526,5 +529,31 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 				mach_msg_type_number_t *num_offsets,
 				char **data, mach_msg_type_number_t *data_len)
 {
-  return EOPNOTSUPP;
+  mach_port_t memobj = diskfs_get_filemap (cred->po->np, VM_PROT_ALL);
+  if (memobj == MACH_PORT_NULL)
+    return errno;
+
+  assert (*num_ports >= 1);	/* mig always gives us some */
+  *num_ports = 1;
+  *ports_type = MACH_MSG_TYPE_MOVE_SEND;
+  (*ports)[0] = memobj;
+
+  assert (*num_offsets >= 2);	/* mig always gives us some */
+  *num_offsets = 2;
+  (*offsets)[0] = 0;
+  (*offsets)[1] = cred->po->np->dn_stat.st_size;
+
+  assert (*num_ints >= 6);	/* mig always gives us some */
+  *num_ints = 6;
+  (*ints)[0] = STORAGE_MEMORY;
+  (*ints)[1] = (((cred->po->openstat & O_RDWR) == O_READ)
+		? STORE_READONLY : 0);
+  (*ints)[2] = 1;		/* block size */
+  (*ints)[3] = 1;		/* 1 run in offsets list */
+  (*ints)[4] = 0;		/* name len */
+  (*ints)[5] = 0;		/* misc len */
+
+  *data_len = 0;
+
+  return 0;
 }
