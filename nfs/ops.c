@@ -722,7 +722,14 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
   error_t err = 0;
   
   if (!excl)
-    return EOPNOTSUPP;		/* XXX */
+    {
+      /* We have no RPC available that will do an atomic replacement,
+	 so we settle for second best; just doing an unlink and ignoring
+	 any errors. */
+      mutex_lock (&dir->lock);
+      netfs_attempt_unlink (cred, dir, name);
+      mutex_unlock (&dir->lock);
+    }
 
   /* If we have postponed a translator setting on an unlinked node,
      then here's where we set it, by creating the new node instead of
@@ -1193,7 +1200,37 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
   error_t err;
   
   if (excl)
-    return EOPNOTSUPP;		/* XXX */
+    {
+      struct node *np;
+
+      /* Just do a lookup/link/unlink sequence. */
+
+      mutex_lock (&fromdir->lock);
+      err = netfs_attempt_lookup (cred, fromdir, fromname, &np);
+      mutex_unlock (&fromdir->lock);
+      if (err)
+	return err;
+      
+      err = netfs_attempt_link (cred, todir, np, toname, 1);
+      netfs_nput (np);
+      if (err)
+	return err;
+      
+      mutex_lock (&fromdir->lock);
+      err = netfs_attempt_unlink (cred, fromdir, fromname);
+      mutex_unlock (&fromdir->lock);
+      
+      /* If the unlink failed, then back out the link */
+      if (err)
+	{
+	  mutex_lock (&todir->lock);
+	  netfs_attempt_unlink (cred, todir, toname);
+	  mutex_unlock (&todir->lock);
+	  return err;
+	}
+      
+      return 0;
+    }
 
   mutex_lock (&fromdir->lock);
   purge_lookup_cache (fromdir, fromname, strlen (fromname));

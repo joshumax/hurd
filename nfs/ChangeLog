@@ -1,5 +1,8 @@
 Wed Aug 20 14:31:03 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* ops.c (netfs_attempt_link): Implement EXCL == 0 case.
+	(netfs_attempt_rename): Implement EXCL != 0 case. 
+
 	* pager.c (netfs_get_filemap): If pager_create fails, return
 	error to caller.
 
