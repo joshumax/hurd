@@ -54,6 +54,7 @@ _store_create (const struct store_class *class,
 	  new->log2_block_size = 0;
 	  new->log2_blocks_per_page = 0;
 	  new->misc = 0;
+	  new->misc_len = 0;
 	  new->hook = 0;
 	  new->children = 0;
 	  new->num_children = 0;
