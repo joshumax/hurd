@@ -179,7 +179,7 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = !! di->i_translator;
+  np->istranslated = sblock->s_creator_os == EXT2_OS_HURD && di->i_translator;
 
   if (!fsidset)
     {
@@ -464,6 +464,9 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
 
   assert (!diskfs_readonly);
 
+  if (sblock->s_creator_os != EXT2_OS_HURD)
+    return EOPNOTSUPP;
+
   if (namelen + 2 > block_size)
     return ENAMETOOLONG;
 
@@ -533,6 +536,8 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   unsigned datalen;
   void *transloc;
 
+  assert (sblock->s_creator_os == EXT2_OS_HURD);
+
   err = diskfs_catch_exception ();
   if (err)
     return err;
@@ -559,4 +564,3 @@ diskfs_shutdown_soft_ports ()
   /* Should initiate termination of internally held pager ports
      (the only things that should be soft) XXX */
 }
-
