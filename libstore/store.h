@@ -42,11 +42,15 @@ struct store
      address space.  In units of BLOCK_SIZE, below.  */
   off_t *runs;			/* Malloced */
   size_t runs_len;		/* Length of RUNS.  */
-  off_t end;			/* Maximum valid offset.  */
-  off_t wrap;			/* If 0, no wrap, otherwise RUNS describes a
-				   repeating pattern, of length WRAP -- each
-				   successive iteration having an additional
-				   offset of WRAP.  */
+
+  /* Maximum valid offset.  This is the same as SIZE, but in blocks.  */
+  off_t end;
+
+  /* WRAP_SRC is the sum of the run lengths in RUNS.  If this is less than
+     END, then RUNS describes a repeating pattern, of length WRAP_SRC -- each
+     successive iteration having an additional offset of WRAP_DST.  */
+  off_t wrap_src;
+  off_t wrap_dst;		/* Only meaningful if WRAP_SRC < END */
 
   /* Handles for the underlying storage.  */
   char *name;			/* Malloced */
@@ -89,6 +93,7 @@ struct store_meths
   /* Write up to LEN bytes from BUF to the storage at the underlying address
      ADDR.  INDEX varies from 0 to the number of runs in STORE. */
   store_write_meth_t write;
+
   /* Called just before deallocating STORE.  */
   void (*cleanup) (struct store *store);
 };
@@ -119,19 +124,18 @@ error_t _store_file_create (file_t file, size_t block_size,
 			    struct store **store);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
-   (NUM_STRIPES of them) every INTERLEAVE blocks (every store in STRIPES must
-   have the same block size).  If DEALLOC is true, then the striped stores
-   are freed when this store is (in any case, the array STRIPES is copied,
-   and so should be freed by the caller).  */
+   (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
+   integer multiple of each stripe's block size.  If DEALLOC is true, then
+   the striped stores are freed when this store is (in any case, the array
+   STRIPES is copied, and so should be freed by the caller).  */
 error_t store_ileave_create (struct store **stripes, size_t num_stripes,
 			     int dealloc,
 			     off_t interleave, struct store **store);
 
 /* Return a new store in STORE that concatenates all the stores in STORES
-   (NUM_STORES of them) every store in STRIPES must have the same block size.
-   If DEALLOC is true, then the sub-stores are freed when this store is (in
-   any case, the array STORES is copied, and so should be freed by the
-   caller).  */
+   (NUM_STORES of them).  If DEALLOC is true, then the sub-stores are freed
+   when this store is (in any case, the array STORES is copied, and so should
+   be freed by the caller).  */
 error_t store_concat_create (struct store **stores, size_t num_stores,
 			     int dealloc, struct store **store);
 
@@ -190,5 +194,50 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 			    mach_port_t *pager)
 
 #endif
+
+/* Encode/decode table:
+
+   4 vectors are used: ports, ints, offsets (off_t), and data (char);
+   each type of store uses the following entries in each vector:
+
+    -type-  -ports-  -ints-	     	     -offsets-	       -data-    -kids-
+    device  DEVICE   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    file    FILE     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    memory  MEMOBJ   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    task    TASK     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+      (the data for the above is a name (incl '\0') and a misc data block)
+    null    -	     TY, FL		     LEN	       -         -
+      (BS is 1)
+    ileave  -	     TY, FL, IL, NC	     -		       -         NC
+      (BS is the LCM of its children; LEN is the minimum of theirs * IL)
+    concat  - 	     TY, FL, NC      	     -		       -	 NC
+      (BS is the LCM of its children; LEN is the sum of theirs)
+    layer   - 	     TY, FL, NC      	     -		       -	 NC
+      (BS is the LCM of its children; LEN is the minimum of theirs)
+
+  For ileave, concat, and layer, the children are encoded following the parent.
+
+  key: TY = type code, FL = flags, BS = block size, NR = num runs,
+       NL = name len, ML = misc len, NC = num children,
+       IL = interleave (bytes),
+       LEN = run length (blocks), OFFS = run offset (blocks),
+ */
+
+/* Encode STORE into the given arrays, suitable for passing back using
+   file_get_storage_info.  */
+error_t store_encode (const struct store *store,
+		      mach_port_t **ports, mach_msg_type_number_t *ports_len,
+		      int **ints, mach_msg_type_number_t *ints_len,
+		      off_t **offsets, mach_msg_type_number_t *offsets_len,
+		      char **data, mach_msg_type_number_t *data_len);
+
+/* Decode the given arrays, as fetched using file_get_storage_info, and
+   either create a new store from them, which return in STORE, or return an
+   error.  */
+error_t store_decode (mach_port_t *ports, mach_msg_type_number_t ports_len,
+		      int *ints, mach_msg_type_number_t ints_len,
+		      off_t *offsets, mach_msg_type_number_t offsets_len,
+		      char *data, mach_msg_type_number_t data_len,
+		      struct store **store);
 
 #endif /* __STORE_H__ */
