@@ -223,65 +223,31 @@ vga_fini (void)
 }
 
 
-/* Write DATALEN bytes from DATA to the font buffer BUFFER, starting
-   from glyph INDEX.  */
-void
-vga_write_font_buffer (int buffer, int index, char *data, size_t datalen)
+/* Access the font buffer BUFFER, starting from glyph INDEX, and
+   either read DATALEN bytes into DATA (if WRITE is 0) or write
+   DATALEN bytes from DATA (if WRITE is not 0).  */
+static void
+vga_read_write_font_buffer (int write, int buffer, int index,
+			    char *data, size_t datalen)
 {
   char saved_seq_map;
   char saved_seq_mode;
-  char saved_gfx_mode;
-  char saved_gfx_misc;
-
-  int offset = buffer * VGA_FONT_SIZE + index * VGA_FONT_HEIGHT;
-  assert (offset >= 0 && offset + datalen <= VGA_VIDEO_MEM_LENGTH);
-
-  /* Select plane 2 for sequential writing.  */
-  outb (VGA_SEQ_MAP_ADDR, VGA_SEQ_ADDR_REG);
-  saved_seq_map = inb (VGA_SEQ_DATA_REG);
-  outb (VGA_SEQ_MAP_PLANE2, VGA_SEQ_DATA_REG);
-  outb (VGA_SEQ_MODE_ADDR, VGA_SEQ_ADDR_REG);
-  saved_seq_mode = inb (VGA_SEQ_DATA_REG);
-  outb (VGA_SEQ_MODE_SEQUENTIAL | VGA_SEQ_MODE_EXT | 0x1 /* XXX Why? */,
-	VGA_SEQ_DATA_REG);
-
-  /* Set write mode 0, but assume that rotate count, enable set/reset,
-     logical operation and bit mask fields are set to their
-     `do-not-modify-host-value' default.  The misc register is set to
-     select sequential addressing in text mode.  */
-  outb (VGA_GFX_MODE_ADDR, VGA_GFX_ADDR_REG);
-  saved_gfx_mode = inb (VGA_GFX_DATA_REG);
-  outb (VGA_GFX_MODE_WRITE0, VGA_GFX_DATA_REG);
-  outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
-  saved_gfx_misc = inb (VGA_GFX_DATA_REG);
-  outb (VGA_GFX_MISC_A0TOAF, VGA_GFX_DATA_REG);
-
-  memcpy (vga_videomem + offset, data, datalen);
-
-  /* Restore sequencer and graphic register values.  */
-  outb (VGA_SEQ_MAP_ADDR, VGA_SEQ_ADDR_REG);
-  outb (saved_seq_map, VGA_SEQ_DATA_REG);
-  outb (VGA_SEQ_MODE_ADDR, VGA_SEQ_ADDR_REG);
-  outb (saved_seq_mode, VGA_SEQ_DATA_REG);
-
-  outb (VGA_GFX_MODE_ADDR, VGA_GFX_ADDR_REG);
-  outb (saved_gfx_mode, VGA_GFX_DATA_REG);
-  outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
-  outb (saved_gfx_misc, VGA_GFX_DATA_REG);
-}
-
-
-/* Read DATALEN bytes into DATA from the font buffer BUFFER, starting
-   from glyph INDEX.  */
-void
-vga_read_font_buffer (int buffer, int index, char *data, size_t datalen)
-{
   char saved_gfx_map;
   char saved_gfx_mode;
   char saved_gfx_misc;
 
   int offset = buffer * VGA_FONT_SIZE + index * VGA_FONT_HEIGHT;
   assert (offset >= 0 && offset + datalen <= VGA_VIDEO_MEM_LENGTH);
+
+  /* Select plane 2 for sequential writing.  You might think it is not
+     necessary for reading, but it is.  Likewise for read settings
+     when writing.  Joy.  */
+  outb (VGA_SEQ_MAP_ADDR, VGA_SEQ_ADDR_REG);
+  saved_seq_map = inb (VGA_SEQ_DATA_REG);
+  outb (VGA_SEQ_MAP_PLANE2, VGA_SEQ_DATA_REG);
+  outb (VGA_SEQ_MODE_ADDR, VGA_SEQ_ADDR_REG);
+  saved_seq_mode = inb (VGA_SEQ_DATA_REG);
+  outb (VGA_SEQ_MODE_SEQUENTIAL | VGA_SEQ_MODE_EXT, VGA_SEQ_DATA_REG);
 
   /* Read sequentially from plane 2.  */
   outb (VGA_GFX_MAP_ADDR, VGA_GFX_ADDR_REG);
@@ -294,7 +260,16 @@ vga_read_font_buffer (int buffer, int index, char *data, size_t datalen)
   saved_gfx_misc = inb (VGA_GFX_DATA_REG);
   outb (VGA_GFX_MISC_A0TOBF, VGA_GFX_DATA_REG);
 
-  memcpy (data, vga_videomem + offset, datalen);
+  if (write)
+    memcpy (vga_videomem + offset, data, datalen);    
+  else
+    memcpy (data, vga_videomem + offset, datalen);
+
+  /* Restore sequencer and graphic register values.  */
+  outb (VGA_SEQ_MAP_ADDR, VGA_SEQ_ADDR_REG);
+  outb (saved_seq_map, VGA_SEQ_DATA_REG);
+  outb (VGA_SEQ_MODE_ADDR, VGA_SEQ_ADDR_REG);
+  outb (saved_seq_mode, VGA_SEQ_DATA_REG);
 
   outb (VGA_GFX_MAP_ADDR, VGA_GFX_ADDR_REG);
   outb (saved_gfx_map, VGA_GFX_DATA_REG);
@@ -302,6 +277,23 @@ vga_read_font_buffer (int buffer, int index, char *data, size_t datalen)
   outb (saved_gfx_mode, VGA_GFX_DATA_REG);
   outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
   outb (saved_gfx_misc, VGA_GFX_DATA_REG);
+}
+
+
+/* Write DATALEN bytes from DATA to the font buffer BUFFER, starting
+   from glyph INDEX.  */
+void
+vga_write_font_buffer (int buffer, int index, char *data, size_t datalen)
+{
+  vga_read_write_font_buffer (1, buffer, index, data, datalen);
+}
+
+/* Read DATALEN bytes into DATA from the font buffer BUFFER, starting
+   from glyph INDEX.  */
+void
+vga_read_font_buffer (int buffer, int index, char *data, size_t datalen)
+{
+  vga_read_write_font_buffer (0, buffer, index, data, datalen);
 }
 
 

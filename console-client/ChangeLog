@@ -1,3 +1,12 @@
+2002-09-19  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vga-support.c (vga_read_write_font_buffer): New function.  It
+	turns out that reading and writing needs the same register
+	settings.
+	(vga_write_font_buffer): Implement in terms of
+	vga_read_write_font_buffer.
+	(vga_read_font_buffer): Likewise.	
+	
 2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ncursesw.c: Add an entry for the clear function.
