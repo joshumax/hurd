@@ -28,6 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 int diskfs_bootflags;
 char *diskfs_bootflagarg;
+task_t diskfs_execserver_task;
 
 /* Call this if the bootstrap port is null and you want to support
    being a bootstrap filesystem.  ARGC and ARGV should be as passed
@@ -120,16 +121,17 @@ diskfs_parse_bootargs (int argc, char **argv)
       /* The arguments, as passed by the kernel, are as follows:
 	 -<flags> hostport deviceport rootname  */
 
-      if (argc != 5 || argv[1][0] != '-')
+      if (argc != 6 || argv[1][0] != '-')
 	{
-	  fprintf (stderr,
-		   "Usage: %s: -[qsdnx] hostport deviceport rootname\n",
+	  fprintf (stderr, "\
+Usage: %s: -[qsdnx] hostport deviceport exectaskport rootname\n",
 		   program_invocation_name);
 	  exit (1);
 	}
       diskfs_host_priv = atoi (argv[2]);
       diskfs_master_device = atoi (argv[3]);
-      devname = argv[4];
+      diskfs_execserver_task = atoi (argv[4]);	
+      devname = argv[5];
     }
 
   (void) device_open (diskfs_master_device, D_READ|D_WRITE, "console", &con);
