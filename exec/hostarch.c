@@ -40,9 +40,9 @@ aout_mach_host_machine (host_t host, int *host_machine)
 {
   error_t err;
   struct host_basic_info hostinfo;
+  unsigned int hostinfocnt = HOST_BASIC_INFO_COUNT;
 
-  if (err = host_info (host, HOST_BASIC_INFO,
-		       &hostinfo, sizeof (hostinfo)))
+  if (err = host_info (host, HOST_BASIC_INFO, &hostinfo, &hostinfocnt))
     return err;
 
 #ifdef	BFD
