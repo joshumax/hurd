@@ -1,3 +1,9 @@
+2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ops.c (netfs_attempt_mkdir): Add casts -1 -> (struct iouser *) -1
+	to silence gcc warning.
+	(netfs_attempt_create_file): Likewise.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib

@@ -684,8 +684,10 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
   p = process_returned_stat (newnp, p, 1);
 
   /* Did we set the owner correctly?  If not, try, but ignore failures. */
-  if (!netfs_validate_stat (newnp, -1) && newnp->nn_stat.st_uid != owner)
-    netfs_attempt_chown (-1, newnp, owner, newnp->nn_stat.st_gid);
+  if (!netfs_validate_stat (newnp, (struct iouser *) -1)
+      && newnp->nn_stat.st_uid != owner)
+    netfs_attempt_chown ((struct iouser *) -1, newnp, owner,
+			 newnp->nn_stat.st_gid);
 
   /* We don't actually return this. */
   netfs_nput (newnp);
@@ -1097,9 +1099,9 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 	    mutex_lock (&(*newnp)->lock);
 	}
 
-      if (*newnp && !netfs_validate_stat (*newnp, -1)
+      if (*newnp && !netfs_validate_stat (*newnp, (struct iouser *) -1)
 	  && (*newnp)->nn_stat.st_uid != owner)
-	netfs_attempt_chown (-1, *newnp, owner, (*newnp)->nn_stat.st_gid);
+	netfs_attempt_chown ((struct iouser *) -1, *newnp, owner, (*newnp)->nn_stat.st_gid);
     }
   else
     *newnp = 0;
