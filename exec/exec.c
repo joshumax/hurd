@@ -27,33 +27,20 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <errno.h>
-#include <mach.h>
-#include <mach/notify.h>
+
+
+#include "priv.h"
+#include <hurd.h>
+#include <hurd/exec.h>
+#include <hurd/fsys.h>
+#include <hurd/shared.h>
+#include <hurd/ports.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <hurd.h>
-#include <hurd/startup.h>
-#include <hurd/shared.h>
-#include <hurd/fsys.h>
-#include <hurd/exec.h>
-#include <hurd/paths.h>
-#include <fcntl.h>
-#include "exec_S.h"
-#include "fsys_S.h"
-#include "notify_S.h"
-
-#include <bfd.h>
-#include <elf.h>
-
-
-extern error_t bfd_mach_host_arch_mach (host_t host,
-					enum bfd_architecture *bfd_arch,
-					long int *bfd_machine,
-					Elf32_Half *elf_machine);
+#include <unistd.h>
+#include <rwlock.h>
 
 
 /* Data shared between check, check_section,
@@ -105,23 +92,13 @@ struct execdata
   };
 
 
-/* A BFD whose architecture and machine type are those of the host system.  */
-static bfd_arch_info_type host_bfd_arch_info;
-static bfd host_bfd = { arch_info: &host_bfd_arch_info };
-static Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
-
-static file_t realnode;
-static mach_port_t execserver;	/* Port doing exec protocol.  */
-static mach_port_t fsys;	/* Port doing fsys protocol.  */
-static mach_port_t request_portset; /* Portset we receive on.  */
-static mach_port_t procserver;	/* our proc port */
-char *exec_version = "0.0 pre-alpha";
-char **save_argv;
+mach_port_t procserver;	/* Our proc port.  */
 
 /* Standard exec data for secure execs.  */
 static mach_port_t *std_ports;
 static int *std_ints;
 static size_t std_nports, std_nints;
+static struct rwlock std_lock = RWLOCK_INITIALIZER;
 
 
 #ifdef	BFD
@@ -1077,53 +1054,6 @@ check_gzip (struct execdata *earg)
 }
 #endif
 
-static int
-request_server (mach_msg_header_t *inp,
-		mach_msg_header_t *outp)
-{
-  extern int notify_server (), exec_server (), fsys_server ();
-
-  return (notify_server (inp, outp) ||
-	  exec_server (inp, outp) ||
-	  fsys_server (inp, outp));
-}
-
-
-/* Allocate SIZE bytes of storage, and make the
-   resulting pointer a name for a new receive right.  */
-static void *
-alloc_recv (size_t size)
-{
-  void *obj = malloc (size);
-  if (obj == NULL)
-    return NULL;
-
-  if (mach_port_allocate_name (mach_task_self (),
-			       MACH_PORT_RIGHT_RECEIVE,
-			       (mach_port_t) obj)
-      == KERN_NAME_EXISTS)
-    {
-      void *new = alloc_recv (size); /* Bletch.  */
-      free (obj);
-      return new;
-    }
-
-  return obj;
-}
-
-/* Information kept around to be given to a new task
-   in response to a message on the task's bootstrap port.  */
-struct bootinfo
-  {
-    vm_address_t stack_base;
-    vm_size_t stack_size;
-    int flags;
-    char *argv, *envp;
-    size_t argvlen, envplen, dtablesize, nports, nints;
-    mach_port_t *dtable, *portarray;
-    int *intarray;
-    vm_address_t phdr_addr, phdr_size, user_entry;
-  };
 
 static inline error_t
 servercopy (void **arg, u_int argsize, boolean_t argcopy)
@@ -1145,8 +1075,7 @@ servercopy (void **arg, u_int argsize, boolean_t argcopy)
 
 
 static error_t
-do_exec (mach_port_t execserver,
-	 file_t file,
+do_exec (file_t file,
 	 task_t oldtask,
 	 int flags,
 	 char *argv, u_int argvlen, boolean_t argv_copy,
@@ -1263,6 +1192,7 @@ do_exec (mach_port_t execserver,
     newtask = oldtask;
 
 
+  rwlock_reader_lock (&std_lock);
   {
     /* Store the data that we will give in response
        to the RPC on the new task's bootstrap port.  */
@@ -1300,13 +1230,15 @@ do_exec (mach_port_t execserver,
 	ports_replaced[idx] = 1;
       }
 
-    boot = alloc_recv (sizeof (*boot));
+    boot = ports_allocate_port (port_bucket, sizeof *boot, execboot_portclass);
     if (boot == NULL)
       {
 	e.error = ENOMEM;
+      stdout:
+	rwlock_reader_unlock (&std_lock);
 	goto out;
       }
-    bzero (boot, sizeof *boot);
+    bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
 
     /* First record some information about the image itself.  */
     boot->phdr_addr = phdr_addr;
@@ -1326,7 +1258,11 @@ do_exec (mach_port_t execserver,
 
     e.error = servercopy ((void **) &argv, argvlen, argv_copy);
     if (e.error)
-      goto bootout;
+      {
+      bootout:
+	ports_port_deref (boot);
+	goto stdout;
+      }
     boot->argv = argv;
     boot->argvlen = argvlen;
     e.error = servercopy ((void **) &envp, envplen, envp_copy);
@@ -1435,6 +1371,7 @@ do_exec (mach_port_t execserver,
 		   && boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL))
       use (INIT_PORT_CWDIR, std_ports[INIT_PORT_CWDIR], 1, 0);
   }  
+  rwlock_reader_unlock (&std_lock);
 
 
   /* We have now concocted in BOOT the complete Hurd context (ports and
@@ -1618,63 +1555,16 @@ do_exec (mach_port_t execserver,
       mach_port_deallocate (mach_task_self (), oldtask);
     }
 
-  mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
-			  (mach_port_t) boot,
-			  MACH_MSG_TYPE_MAKE_SEND);
-  e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
-  mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
-
-  /* Request no-senders notification on BOOT, so we can release
-     its resources if the task dies before calling exec_startup.  */
   {
-    mach_port_t unused;
-    mach_port_request_notification (mach_task_self (),
-				    (mach_port_t) boot,
-				    MACH_NOTIFY_NO_SENDERS, 0,
-				    (mach_port_t) boot,
-				    MACH_MSG_TYPE_MAKE_SEND_ONCE,
-				    &unused);
+    mach_port_t btport = ports_get_right (boot);
+    mach_port_insert_right (mach_task_self (), btport, btport,
+			    MACH_MSG_TYPE_MAKE_SEND);
+    e.error = task_set_bootstrap_port (newtask, btport);
+    mach_port_deallocate (mach_task_self (), btport);
+    /* Release the original reference.  Now there is only one
+       reference, which will be released on no-senders notification.  */
+    ports_port_deref (boot);
   }
-
-  /* Add BOOT to the server port-set so we will respond to RPCs there.  */
-  mach_port_move_member (mach_task_self (),
-			 (mach_port_t) boot, request_portset);
-  
-  if (e.error)
-    {
-      /* We barfed somewhere along the way.  Deallocate any local data
-         copies we just made.  */
-    bootout:
-      mach_port_destroy (mach_task_self (), (mach_port_t) boot);
-      if (intarray_copy)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) boot->intarray,
-		       boot->nints * sizeof (int));
-      if (dtable_copy)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) boot->dtable,
-		       boot->dtablesize * sizeof (mach_port_t));
-      if (envp_copy)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) boot->envp, boot->envplen);
-      if (argv_copy)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) boot->argv, boot->argvlen);
-      if (boot->portarray)
-	{
-	  for (i = 0; i < boot->nports; ++i)
-	    if (ports_replaced[i] && boot->portarray[i] != MACH_PORT_NULL)
-	      /* This port was replaced, so we created reference anew and
-		 we must deallocate it.  (The references that arrived in
-		 the original portarray will be deallocated by MiG on
-		 failure return.)  */
-	      mach_port_deallocate (mach_task_self (), boot->portarray[i]);
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t) boot->portarray,
-			 boot->nports * sizeof (mach_port_t));
-	}
-      free (boot);
-    }
 
  out:
   if (e.interp.section)
@@ -1741,7 +1631,7 @@ do_exec (mach_port_t execserver,
 }
 
 kern_return_t
-S_exec_exec (mach_port_t execserver,
+S_exec_exec (struct trivfs_protid *protid,
 	     file_t file,
 	     task_t oldtask,
 	     int flags,
@@ -1753,6 +1643,9 @@ S_exec_exec (mach_port_t execserver,
 	     mach_port_t *deallocnames, u_int ndeallocnames,
 	     mach_port_t *destroynames, u_int ndestroynames)
 {
+  if (! protid)
+    return EOPNOTSUPP;
+
   if (!(flags & EXEC_SECURE))
     {
       const char envar[] = "\0EXECSERVERS=";
@@ -1778,27 +1671,35 @@ S_exec_exec (mach_port_t execserver,
 					  portarray[INIT_PORT_CWDIR],
 					  p, 0, 0, &server))
 		{
-		  error_t err = (server == execserver ?
-				 do_exec (server, file, oldtask, 0,
-					  argv, argvlen, argv_copy,
-					  envp, envplen, envp_copy,
-					  dtable, dtablesize, dtable_copy,
-					  portarray, nports, portarray_copy,
-					  intarray, nints, intarray_copy,
-					  deallocnames, ndeallocnames,
-					  destroynames, ndestroynames) :
-				 exec_exec (server,
-					    file, MACH_MSG_TYPE_MOVE_SEND,
-					    oldtask, 0,
-					    argv, argvlen,
-					    envp, envplen,
-					    dtable, MACH_MSG_TYPE_MOVE_SEND,
-					    dtablesize,
-					    portarray, MACH_MSG_TYPE_MOVE_SEND,
-					    nports,
-					    intarray, nints,
-					    deallocnames, ndeallocnames,
-					    destroynames, ndestroynames));
+		  error_t err;
+		  struct trivfs_protid *protid
+		    = ports_lookup_port (port_bucket, server,
+					 trivfs_protid_portclasses[0]);
+		  if (protid)
+		    {
+		      err = do_exec (file, oldtask, 0,
+				     argv, argvlen, argv_copy,
+				     envp, envplen, envp_copy,
+				     dtable, dtablesize, dtable_copy,
+				     portarray, nports, portarray_copy,
+				     intarray, nints, intarray_copy,
+				     deallocnames, ndeallocnames,
+				     destroynames, ndestroynames);
+		      ports_port_deref (protid);
+		    }
+		  else
+		    err = exec_exec (server,
+				     file, MACH_MSG_TYPE_MOVE_SEND,
+				     oldtask, 0,
+				     argv, argvlen,
+				     envp, envplen,
+				     dtable, MACH_MSG_TYPE_MOVE_SEND,
+				     dtablesize,
+				     portarray, MACH_MSG_TYPE_MOVE_SEND,
+				     nports,
+				     intarray, nints,
+				     deallocnames, ndeallocnames,
+				     destroynames, ndestroynames);
 		  mach_port_deallocate (mach_task_self (), server);
 		  if (err != ENOEXEC)
 		    return err;
@@ -1814,7 +1715,7 @@ S_exec_exec (mach_port_t execserver,
   /* There were no user-specified exec servers,
      or none of them could be found.  */
 
-  return do_exec (execserver, file, oldtask, flags,
+  return do_exec (file, oldtask, flags,
 		  argv, argvlen, argv_copy,
 		  envp, envplen, envp_copy,
 		  dtable, dtablesize, dtable_copy,
@@ -1825,24 +1726,36 @@ S_exec_exec (mach_port_t execserver,
 }
 
 kern_return_t
-S_exec_setexecdata (mach_port_t me,
+S_exec_setexecdata (struct trivfs_protid *protid,
 		    mach_port_t *ports, u_int nports, int ports_copy,
 		    int *ints, u_int nints, int ints_copy)
 {
   error_t err;
 
-  /* XXX needs authentication */
+  if (! protid || (protid->realnode != MACH_PORT_NULL && ! protid->isroot))
+    return EPERM;
 
   if (nports < INIT_PORT_MAX || nints < INIT_INT_MAX)
     return EINVAL;
 
-  if (std_ports)
-    vm_deallocate (mach_task_self (), (vm_address_t)std_ports, 
-		   std_nports * sizeof (mach_port_t));
   err = servercopy ((void **) &ports, nports * sizeof (mach_port_t),
 		    ports_copy);
   if (err)
     return err;
+  err = servercopy ((void **) &ints, nints * sizeof (int), ints_copy);
+  if (err)
+    return err;
+
+  rwlock_writer_lock (&std_lock);
+
+  if (std_ports)
+    {
+      u_int i;
+      for (i = 0; i < std_nports; ++i)
+	mach_port_deallocate (mach_task_self (), std_ports[i]);
+      vm_deallocate (mach_task_self (), (vm_address_t)std_ports, 
+		     std_nports * sizeof (mach_port_t));
+    }
 
   std_ports = ports;
   std_nports = nports;
@@ -1850,129 +1763,15 @@ S_exec_setexecdata (mach_port_t me,
   if (std_ints)
     vm_deallocate (mach_task_self (), (vm_address_t)std_ints,
 		   std_nints * sizeof (int));
-  err = servercopy ((void **) &ints, nints * sizeof (int), ints_copy);
-  if (err)
-    return err;
 
   std_ints = ints;
   std_nints = nints;
 
+  rwlock_writer_unlock (&std_lock);
+
   return 0;
 }
 
-
-
-/* fsys server.  */
-
-kern_return_t
-S_fsys_getroot (fsys_t fsys,
-		mach_port_t dotdot,
-		uid_t *uids, u_int nuids,
-		gid_t *gids, u_int ngids,
-		int flags,
-		retry_type *retry,
-		char *retry_name,
-		file_t *rootfile,
-		mach_msg_type_name_t *rootfilePoly)
-{
-  /* XXX eventually this should return a user-specific port which has an
-     associated access-restricted realnode port which file ops get
-     forwarded to.  */
-
-
-
-  *rootfile = execserver;
-  *rootfilePoly = MACH_MSG_TYPE_MAKE_SEND;
-
-  *retry = FS_RETRY_NORMAL;
-  *retry_name = '\0';
-  return 0;
-}
-
-kern_return_t
-S_fsys_goaway (fsys_t fsys, int flags)
-{
-  if (!(flags & FSYS_GOAWAY_FORCE))
-    {
-      mach_port_t *serving;
-      mach_msg_type_number_t nserving, i;
-      mach_port_get_set_status (mach_task_self (), request_portset,
-				&serving, &nserving);
-      for (i = 0; i < nserving; ++i)
-	mach_port_deallocate (mach_task_self (), serving[i]);
-      if (nserving > 2)
-	/* Not just fsys and execserver.
-	   We are also waiting on some bootstrap ports.  */
-	return EBUSY;
-    }
-  mach_port_mod_refs (mach_task_self (), request_portset,
-		      MACH_PORT_TYPE_RECEIVE, -1);
-  return 0;
-}
-
-kern_return_t
-S_fsys_startup (mach_port_t bootstrap,
-		fsys_t control,
-		mach_port_t *node,
-		mach_msg_type_name_t *realnodePoly)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_syncfs (fsys_t fsys,
-	       int wait,
-	       int dochildren)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_set_options (fsys_t fsys,
-		    char *data, mach_msg_type_number_t len,
-		    int do_children)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_getfile (fsys_t fsys,
-		uid_t *uids,
-		u_int nuids,
-		uid_t *gids,
-		u_int ngids,
-		char *filehandle,
-		u_int filehandlelen,
-		mach_port_t *file,
-		mach_msg_type_name_t *filetype)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_getpriv (fsys_t fsys,
-		mach_port_t *hp,
-		mach_port_t *dm,
-		mach_port_t *tk)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_init (fsys_t fsys,
-	     mach_port_t reply, mach_msg_type_name_t replytype,
-	     mach_port_t ps,
-	     mach_port_t ah)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_fsys_forward (fsys_t fsys, mach_port_t requestor,
-		char *argv, mach_msg_type_name_t argvlen)
-{
-  return EOPNOTSUPP;
-}
 
 /* RPC sent on the bootstrap port.  */
 
@@ -1988,241 +1787,40 @@ S_exec_startup (mach_port_t port,
 		u_int *nports,
 		int **intarray, u_int *nints)
 {
-  struct bootinfo *boot = (struct bootinfo *)port;
-  if ((mach_port_t) boot == execserver || (mach_port_t) boot == fsys)
+  struct bootinfo *boot = ports_lookup_port (port_bucket, port,
+					     execboot_portclass);
+  if (! boot)
     return EOPNOTSUPP;
+  ports_port_deref (boot);
+
+  /* Pass back all the information we are storing.  */
 
   *stack_base = boot->stack_base;
   *stack_size = boot->stack_size;
 
   *argvp = boot->argv;
   *argvlen = boot->argvlen;
+  boot->argvlen = 0;
 
   *envpp = boot->envp;
   *envplen = boot->envplen;
+  boot->envplen = 0;
 
   *dtable = boot->dtable;
   *dtablesize = boot->dtablesize;
   *dtablepoly = MACH_MSG_TYPE_MOVE_SEND;
+  boot->dtablesize = 0;
 
   *intarray = boot->intarray;
   *nints = boot->nints;
+  boot->nints = 0;
 
   *portarray = boot->portarray;
   *nports = boot->nports;
   *portpoly = MACH_MSG_TYPE_MOVE_SEND;
+  boot->nports = 0;
 
   *flags = boot->flags;
 
-  mach_port_move_member (mach_task_self (), (mach_port_t) boot, 
-			 MACH_PORT_NULL); /* XXX what is this XXX here for? */
-  
-  mach_port_mod_refs (mach_task_self (), (mach_port_t) boot,
-		      MACH_PORT_TYPE_RECEIVE, -1);
-  free (boot);
-
   return 0;
 }
-
-/* Clean up the storage in BOOT, which was never used.  */
-void
-deadboot (struct bootinfo *boot)
-{
-  size_t i;
-
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->argv, boot->argvlen);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->envp, boot->envplen);
-
-  for (i = 0; i < boot->dtablesize; ++i)
-    mach_port_deallocate (mach_task_self (), boot->dtable[i]);
-  for (i = 0; i < boot->nports; ++i)
-    mach_port_deallocate (mach_task_self (), boot->portarray[i]);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->portarray,
-		 boot->nports * sizeof (mach_port_t));
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->intarray,
-		 boot->nints * sizeof (int));
-
-  free (boot);
-}
-
-
-/* Notice when a receive right has no senders.  Either this is the
-   bootstrap port of a stillborn task, or it is the execserver port itself. */
-
-kern_return_t
-do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
-{
-  if (port != execserver && port != fsys)
-    {
-      /* Free the resources we were saving to give the task
-	 which can no longer ask for them.  */
-
-      struct bootinfo *boot = (struct bootinfo *) port;
-      deadboot (boot);
-    }
-
-  /* Deallocate the request port.  */
-  mach_port_move_member (mach_task_self (), port, MACH_PORT_NULL);
-  mach_port_mod_refs (mach_task_self (), port, MACH_PORT_TYPE_RECEIVE, -1);
-
-  return KERN_SUCCESS;
-}
-
-/* Attempt to set the active translator for the exec server so that
-   filesystems other than the bootstrap can find it. */
-void
-set_active_trans ()
-{
-  file_t execnode;
-  
-  execnode = file_name_lookup (_SERVERS_EXEC, O_NOTRANS | O_CREAT, 0666);
-  if (execnode == MACH_PORT_NULL)
-    return;
-  
-  file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0, fsys,
-		       MACH_MSG_TYPE_MAKE_SEND);
-  /* Don't deallocate EXECNODE here.  If we drop the last reference,
-     a bug in ufs might throw away the active translator. XXX */
-}
-
-
-/* Sent by the bootstrap filesystem after the other essential
-   servers have been started up.  */
-
-kern_return_t
-S_exec_init (mach_port_t server, auth_t auth, process_t proc)
-{
-  mach_port_t host_priv, dev_master, startup;
-  error_t err;
-
-  if (_hurd_ports[INIT_PORT_PROC].port != MACH_PORT_NULL)
-    /* Can only be done once.  */
-    return EPERM;
-
-  mach_port_mod_refs (mach_task_self (), proc, MACH_PORT_RIGHT_SEND, 1);
-  procserver = proc;
-  _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
-  _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], auth);
-
-  /* Do initial setup with the proc server.  */
-  _hurd_proc_init (save_argv);
-
-  /* Set the active translator on /hurd/exec. */
-  set_active_trans ();
-
-  err = get_privileged_ports (&host_priv, &dev_master);
-  if (!err)
-    {
-      proc_register_version (proc, host_priv, "exec", HURD_RELEASE,
-			     exec_version);
-      mach_port_deallocate (mach_task_self (), dev_master);
-      err = proc_getmsgport (proc, 1, &startup);
-      if (err)
-	{
-	  mach_port_deallocate (mach_task_self (), host_priv);
-	  host_priv = MACH_PORT_NULL;
-	}
-    }
-  else
-    host_priv = MACH_PORT_NULL;
-      
-  /* Have the proc server notify us when the canonical ints and ports change.
-     The notification comes as a normal RPC on the message port, which
-     the C library's signal thread handles.  */
-  proc_execdata_notify (procserver, execserver, MACH_MSG_TYPE_MAKE_SEND);
-
-  /* Call startup_essential task last; init assumes we are ready to
-     run once we call it. */
-  if (host_priv != MACH_PORT_NULL)
-    {
-      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      "exec", host_priv);
-      mach_port_deallocate (mach_task_self (), startup);
-      mach_port_deallocate (mach_task_self (), host_priv);
-    }
-  
-  return 0;
-}
-
-
-int
-main (int argc, char **argv)
-{
-  error_t err;
-  mach_port_t boot;
-
-  /* XXX */
-  stdout = mach_open_devstream (getdport (1), "w");
-  stderr = mach_open_devstream (getdport (2), "w");
-  /* End XXX */
-
-  save_argv = argv;
-
-  /* Put the Mach kernel's idea of what flavor of machine this is into the
-     fake BFD against which architecture compatibility checks are made.  */
-  err = bfd_mach_host_arch_mach (mach_host_self (),
-				 &host_bfd.arch_info->arch,
-				 &host_bfd.arch_info->mach,
-				 &elf_machine);
-  if (err)
-    return err;
-
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &fsys);
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &execserver);
-
-  task_get_bootstrap_port (mach_task_self (), &boot);
-  fsys_startup (boot, fsys, MACH_MSG_TYPE_MAKE_SEND, &realnode);
-
-  mach_port_allocate (mach_task_self (),
-		      MACH_PORT_RIGHT_PORT_SET, &request_portset);
-  mach_port_move_member (mach_task_self (), fsys, request_portset);
-  mach_port_move_member (mach_task_self (), execserver, request_portset);
-
-  while (1)
-    {
-      err = mach_msg_server (request_server, vm_page_size, request_portset);
-      fprintf (stderr, "%s: mach_msg_server: %s\n",
-	       (argv && argv[0]) ? argv[0] : "exec server",
-	       strerror (err));
-    }
-}
-
-/* Nops */
-kern_return_t 
-do_mach_notify_port_deleted (mach_port_t notify,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_msg_accepted (mach_port_t notify,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_port_destroyed (mach_port_t notify,
-			       mach_port_t rights)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_send_once (mach_port_t notify)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_dead_name (mach_port_t notify,
-			  mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
