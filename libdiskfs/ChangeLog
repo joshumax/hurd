@@ -1,3 +1,8 @@
+1997-09-16  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-append-std.c (diskfs_append_std_options): Add --no-suid and
+	--no-exec options.  Don't deallocate ARGZ when we get an error.
+
 Tue Sep 16 14:37:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* opts-append-std.c (diskfs_append_std_options): Add --no-suid and
