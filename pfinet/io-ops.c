@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -511,6 +511,13 @@ S_io_identity (struct sock_user *user,
   
   mutex_unlock (&global_lock);
   return 0;
+}
+
+error_t
+S_io_revoke (struct sock_user *user)
+{
+  /* XXX maybe we should try */
+  return EOPNOTSUPP;
 }
 
 
