@@ -1,3 +1,4 @@
+/* Modified from BSD by Michael I. Bushnell for GNU Hurd ufs server. */
 /*
  * Copyright (c) 1982, 1986, 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -40,6 +41,8 @@
 
 #ifndef _DIR_H_
 #define	_DIR_H_
+
+#include <endian.h>
 
 /*
  * A directory consists of some number of blocks of DIRBLKSIZ
@@ -95,12 +98,31 @@ struct	direct {
 #define	IFTODT(mode)	(((mode) & 0170000) >> 12)
 #define	DTTOIF(dirtype)	((dirtype) << 12)
 
+/* Return the type from a struct direct, paying attention to whether
+   this filesystem supports the type extension */
+#define DIRECT_TYPE(dp) (direct_symlink_extension ? (dp)->d_type : DT_UNKNOWN)
+
+/* Return the namlen from a struct direct, paying attention to whether
+   this filesystem supports the type extension */
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+#define DIRECT_NAMLEN(dp) (direct_symlink_extension ? (dp)->d_namlen : \
+			   (dp)->d_type)
+#else
+#define DIRECT_NAMLEN(dp) ((dp)->d_namlen)
+#endif
+
 /*
  * The DIRSIZ macro gives the minimum record length which will hold
  * the directory entry.  This requires the amount of space in struct direct
  * without the d_name field, plus enough space for the name with a terminating
  * null byte (dp->d_namlen+1), rounded up to a 4 byte boundary.
  */
+/* In BSD this macro takes a struct direct.  Modified by MIB here to
+   take the namelen (as computed by strlen).  */
+#define DIRSIZ(namelen) \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((namelen)+1 + 3) &~ 3))
+
+#if 0 /* This is the BSD definition */
 #if (BYTE_ORDER == LITTLE_ENDIAN)
 #define DIRSIZ(oldfmt, dp) \
     ((oldfmt) ? \
@@ -110,9 +132,12 @@ struct	direct {
 #define DIRSIZ(oldfmt, dp) \
     ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
 #endif
+#endif /* 0 */
+
 #define OLDDIRFMT	1
 #define NEWDIRFMT	0
 
+#if 0 /* Not used in GNU */
 /*
  * Template for manipulating directories.
  * Should use struct direct's, but the name field
@@ -144,4 +169,6 @@ struct odirtemplate {
 	u_short	dotdot_namlen;
 	char	dotdot_name[4];		/* ditto */
 };
+#endif /* 0 */
+
 #endif /* !_DIR_H_ */
