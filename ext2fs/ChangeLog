@@ -1,3 +1,9 @@
+1999-10-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hyper.c (get_hypermetadata): Avoid overflow in calculation of disk
+	size vs superblock-specified requirement.
+	Add a warning for wasted disk blocks after last filesystem block.
+
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c (ext2_file_type): #if 0 out this variable.
