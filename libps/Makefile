@@ -21,6 +21,7 @@
 dir := libps
 makemode := library
 
+libname = libps
 SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 	tty.c user.c write.c
 LCLHDRS=ps.h
