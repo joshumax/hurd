@@ -12,19 +12,19 @@ main (int argc, char **argv)
   error_t err;
   struct store *s;
   char *name;
-  struct store_parsed *parsed;
   off_t addr;
   size_t left;
   const struct argp *parents[] = { &store_argp, 0 };
   struct argp argp =
     { 0, 0, 0, "Write the contents of a store to stdout", parents };
+  store_argp_params p = { 0 };
 
-  argp_parse (&argp, argc, argv, 0, 0, &parsed);
-  err = store_parsed_name (parsed, &name);
+  argp_parse (&argp, argc, argv, 0, 0, &p);
+  err = store_parsed_name (p.result, &name);
   if (err)
     error (2, err, "store_parsed_name");
 
-  err = store_parsed_open (parsed, STORE_READONLY, 0, &s);
+  err = store_parsed_open (p.result, STORE_READONLY, 0, &s);
   if (err)
     error (4, err, "%s", name);
 
