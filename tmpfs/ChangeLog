@@ -1,3 +1,8 @@
+2001-05-05  Roland McGrath  <roland@frob.com>
+
+	* node.c (diskfs_truncate): Set st_size before rounding it up,
+	and do set it when there is a memory object.
+
 2001-05-01  Neal H Walfield  <neal@cs.uml.edu>
 
         * tmpfs.c (main): Set diskfs_root_node->dn_stat.st_nlink to 2.
