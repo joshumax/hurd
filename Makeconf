@@ -58,7 +58,7 @@ endif
 # Generic compiler options, appended to whatever the particular makefile set.
 # The config.make file will append the values chosed by configure.
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include \
-	    -D_GNU_SOURCE $($*-CPPFLAGS)
+	    -D_GNU_SOURCE -D_IO_MTSAFE_IO $($*-CPPFLAGS)
 CFLAGS += -Wall -g -O3
 
 # Include the configure-generated file of parameters.
@@ -339,7 +339,7 @@ $(libname)_pic.a: $(patsubst %.o,%_pic.o,$(OBJS))
 # we make that a symlink.
 $(libname).so.$(hurd-version): $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
-	      $(rpath) $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $^
+	      $(rpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) $^
 $(libname).so: $(libname).so.$(hurd-version)
 	ln -f -s $< $@
 endif
