@@ -85,7 +85,7 @@ struct disknode
 
 struct user_pager_info 
 {
-  struct node *np;
+  struct node *node;
   enum pager_type 
     {
       DISK,
@@ -115,9 +115,6 @@ struct user_pager_info
 
 /* ---------------------------------------------------------------- */
 
-/* The block size we assume the kernel device uses.  */
-#define DEV_BSIZE 512
-
 struct user_pager_info *disk_pager;
 mach_port_t disk_pager_port;
 void *disk_image;
@@ -125,6 +122,7 @@ void *disk_image;
 char *device_name;
 mach_port_t device_port;
 off_t device_size;
+unsigned device_block_size;
 
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
@@ -141,6 +139,12 @@ struct pokel sblock_pokel;
 
 /* The filesystem block-size.  */
 unsigned long block_size;
+/* The log base 2 of BLOCK_SIZE.  */
+unsigned log2_block_size;
+
+/* log2 of the number of device blocks (DEVICE_BLOCK_SIZE) in a filesystem
+   block (BLOCK_SIZE).  */
+unsigned int log2_dev_blocks_per_fs_block;
 
 vm_address_t zeroblock;
 
@@ -172,12 +176,20 @@ unsigned long nextgennumber;
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_image */
 
+/* block num --> byte offset on disk */
 #define boffs(block) ((block) * block_size)
-#define offsb(offs) ((block) / block_size)
-#define offsaddr(offs) (((char *)disk_image) + (offs))
-#define addroffs(offs) ((addr) - ((char *)disk_image))
-#define bptr(block) offsaddr(boffs(block))
-#define addrb(addr) offsb(addroffs(addr))
+/* byte offset on disk --> block num */
+#define boffs_block(offs) ((block) / block_size)
+
+/* byte offset on disk --> pointer to in-memory block */
+#define boffs_ptr(offs) (((char *)disk_image) + (offs))
+/* pointer to in-memory block --> byte offset on disk */
+#define bptr_offs(offs) ((char *)(ptr) - ((char *)disk_image))
+
+/* block num --> pointer to in-memory block */
+#define bptr(block) boffs_ptr(boffs(block))
+/* pointer to in-memory block --> block num */
+#define bptr_block(ptr) boffs_block(bptr_offs(ptr))
 
 /* Get the descriptor for the block group inode INUM is in.  */
 extern inline struct ext2_group_desc *
@@ -206,8 +218,7 @@ dino (ino_t inum)
 extern inline void
 sync_disk_image (void *place, size_t nbytes, int wait)
 {
-  pager_sync_some (disk_pager->p,
-		   (char *)place - (char *)disk_image, nbytes, wait);
+  pager_sync_some (disk_pager->p, bptr_offs (place), nbytes, wait);
 }
 
 /* ---------------------------------------------------------------- */
