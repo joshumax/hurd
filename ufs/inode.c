@@ -679,8 +679,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 
 	for (i = 0; i < NDADDR; i++)
 	  {
-	    off_t start = fsbtodb (sblock, read_disk_entry (di->di_db[i]));
-	    off_t length =
+	    store_offset_t start = fsbtodb (sblock, read_disk_entry (di->di_db[i]));
+	    store_offset_t length =
 	      (((i + 1) * sblock->fs_bsize > np->allocsize)
 	       ? np->allocsize - i * sblock->fs_bsize
 	       : sblock->fs_bsize);

@@ -1,3 +1,79 @@
+2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
+
+	* zero.c (zero_remap): Change type of variables length, old_length
+	to store_offset_t.
+	(zero_decode): Change type of variable size to store_offset_t.
+	(zero_open): Likewise. Use strtoull instead strtoul to parse
+	size argument from name. Use store_offset_t for max_offs and
+	its calculation.
+	(store_zero_create): Use store_offset_t type for size argument.
+
+	* derive.c (_store_derive): Use store_offset_t as type for
+	variable last_part_base.
+
+	* stripe.c (addr_adj): Change types of addr argument and return
+	value to store_offset_t.
+	(store_ileave_create): Change type of interleave argument and
+	variables min_end and end to store_offset_t, but type of variable
+	block_size to size_t.
+	(store_concat_create): Change type of variable block_size to
+	size_t.
+
+	* make.c (_store_create): Change end argument type to store_offset_t.
+
+	* store.h: New type store_offset_t, define to off64_t.
+	(struct store_run): Change type of start and length to
+	store_offset_t.
+	(struct store): Change type of end, wrap_src, wrap_dst, blocks,
+	size to store_offset_t.
+	Change type of addr arg in store_read_meth_t and
+	store_write_meth_t to store_offset_t, as well as in declarations
+	for store_read and store_write.
+	Change type of argument end in _store_create declaration to
+	store_offset_t.
+	Change type of argument size in store_zero_create to
+	store_offset_t. Change type of argument interleace in
+	store_ileace_create to store_offset_t.
+
+	* rdwr.c (store_find_first_run): Change type of return value, addr
+	and *base arguments, and variables wrap_src and run_blocks to
+	store_offset_t.
+	(store_next_run): Change type of *base argument to store_offset_t.
+	(store_write): Change type of addr argument and variable base to
+	store_offset_t.
+	(store_read): Likewise, also for addr argument of local function seg_read.
+	Change type of len argument to size_t.
+
+	* copy.c (copy_read): Change type of addr argument to store_offset_t.
+	(copy_write): Likewise.
+	* device.c (dev_read): Likewise.
+	(dev_write): Likewise.
+	* file.c (file_read): Likewise.
+	(file_write): Likewise.
+	(file_byte_read): Likewise.
+	(file_byte_write): Likewise.
+	* mvol.c (mvol_read): Likewise.
+	(mvol_write): Likewise.
+	* remap.c (remap_read): Likewise.
+	(remap_write): Likewise.
+	* stripe.c (stripe_read): Likewise.
+	(stripe_write): Likewise.
+	* task.c (task_read): Likewise.
+	(task_write): Likewise.
+	* zero.c (zero_read): Likewise.
+	(zero_write): Likewise.
+
+	* remap.c (store_remap_runs): Change type of addr and len
+	arguments of local function add_run and of local variables addr,
+	length, baddr, blen and len to store_offset_t.
+	(remap_open): Cast -1 to store_offset_t, not off_t.
+
+	* argp.c (struct store_parsed): Change type of interleave from
+	off_t to store_offset_t.
+	(store_parsed_append_args): Use %Ld instead %ld to print
+	interleave value.
+	(store_parsed_name): Likewise.
+
 2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* copy.c: Include <mach.h>. New macro page_aligned.

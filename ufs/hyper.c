@@ -251,7 +251,7 @@ get_hypermetadata (void)
   if (store->size < sblock->fs_size * sblock->fs_fsize)
     {
       fprintf (stderr,
-	       "Disk size (%ld) less than necessary "
+	       "Disk size (%Ld) less than necessary "
 	       "(superblock says we need %ld)\n",
 	       store->size, sblock->fs_size * sblock->fs_fsize);
       exit (1);

@@ -29,7 +29,8 @@
 
 static error_t
 zero_read (struct store *store,
-	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
+	   store_offset_t addr, size_t index, size_t amount, void **buf,
+	   size_t *len)
 {
   if (*len < amount)
     {
@@ -48,7 +49,8 @@ zero_read (struct store *store,
 
 static error_t
 zero_write (struct store *store,
-	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index, void *buf, size_t len,
+	    size_t *amount)
 {
   return 0;
 }
@@ -63,7 +65,7 @@ zero_remap (struct store *source,
      run; here we simply count up the number of blocks specified by RUNS, and
      modify SOURCE's one run to reflect that.  */
   int i;
-  off_t length = 0, old_length = source->runs[0].length;
+  store_offset_t length = 0, old_length = source->runs[0].length;
   for (i = 0; i < num_runs; i++)
     if (runs[i].start < 0 || runs[i].start + runs[i].length >= old_length)
       return EINVAL;
@@ -95,7 +97,7 @@ error_t
 zero_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
-  off_t size;
+  store_offset_t size;
   int type, flags;
 
   if (enc->cur_int + 2 > enc->num_ints
@@ -117,7 +119,7 @@ zero_open (const char *name, int flags,
   if (name)
     {
       char *end;
-      off_t size = strtoul (name, &end, 0);
+      store_offset_t size = strtoull (name, &end, 0);
       if (end == name || end == NULL)
 	return EINVAL;
       switch (*end)
@@ -142,7 +144,8 @@ zero_open (const char *name, int flags,
     }
   else
     {
-      off_t max_offs = ~((off_t)1 << (CHAR_BIT * sizeof (off_t) - 1));
+      store_offset_t max_offs = ~((store_offset_t)1
+				  << (CHAR_BIT * sizeof (store_offset_t) - 1));
       return store_zero_create (max_offs, flags, store);
     }
 }
@@ -178,7 +181,7 @@ store_zero_class =
 
 /* Return a new zero store SIZE bytes long in STORE.  */
 error_t
-store_zero_create (off_t size, int flags, struct store **store)
+store_zero_create (store_offset_t size, int flags, struct store **store)
 {
   struct store_run run = { 0, size };
   return

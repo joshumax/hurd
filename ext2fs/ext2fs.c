@@ -173,7 +173,7 @@ main (int argc, char **argv)
 			    &store_parsed, &bootstrap);
 
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
-    ext2_panic ("device too small for superblock (%ld bytes)", store->size);
+    ext2_panic ("device too small for superblock (%Ld bytes)", store->size);
   if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%u) greater than page size (%d)",
 		store->block_size, vm_page_size);

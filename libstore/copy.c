@@ -32,7 +32,7 @@
 
 static error_t
 copy_read (struct store *store,
-	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
+	   store_offset_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
   char *data = store->hook + (addr * store->block_size);
 
@@ -59,7 +59,7 @@ copy_read (struct store *store,
 
 static error_t
 copy_write (struct store *store,
-	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index, void *buf, size_t len, size_t *amount)
 {
   char *data = store->hook + (addr * store->block_size);
 

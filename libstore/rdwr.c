@@ -27,13 +27,13 @@
    ADDR, and is not a hole, and in RUNS_END a pointer pointing at the end of
    the run list.  Returns the offset within it at which ADDR occurs.  Also
    returns BASE, which should be added to offsets from RUNS.  */
-static inline off_t
-store_find_first_run (struct store *store, off_t addr,
+static inline store_offset_t
+store_find_first_run (struct store *store, store_offset_t addr,
 		      struct store_run **run, struct store_run **runs_end,
-		      off_t *base, size_t *index)
+		      store_offset_t *base, size_t *index)
 {
   struct store_run *tail = store->runs, *tail_end = tail + store->num_runs;
-  off_t wrap_src = store->wrap_src;
+  store_offset_t wrap_src = store->wrap_src;
 
   if (addr >= wrap_src && addr < store->end)
     /* Locate the correct position within a repeating pattern of runs.  */
@@ -49,7 +49,7 @@ store_find_first_run (struct store *store, off_t addr,
      binary search or something.  */
   while (tail < tail_end)
     {
-      off_t run_blocks = tail->length;
+      store_offset_t run_blocks = tail->length;
 
       if (run_blocks > addr)
 	{
@@ -72,7 +72,7 @@ store_find_first_run (struct store *store, off_t addr,
    things are still kosher.  */
 static inline int
 store_next_run (struct store *store, struct store_run *runs_end,
-		struct store_run **run, off_t *base, size_t *index)
+		struct store_run **run, store_offset_t *base, size_t *index)
 {
   (*run)++;
   (*index)++;
@@ -95,11 +95,11 @@ store_next_run (struct store *store, struct store_run *runs_end,
    in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t
 store_write (struct store *store,
-	     off_t addr, void *buf, size_t len, size_t *amount)
+	     store_offset_t addr, void *buf, size_t len, size_t *amount)
 {
   error_t err;
   size_t index;
-  off_t base;
+  store_offset_t base;
   struct store_run *run, *runs_end;
   int block_shift = store->log2_block_size;
   store_write_meth_t write = store->class->write;
@@ -172,10 +172,10 @@ store_write (struct store *store,
    (as defined by STORE->block_size).  */
 error_t
 store_read (struct store *store,
-	    off_t addr, size_t amount, void **buf, size_t *len)
+	    store_offset_t addr, size_t amount, void **buf, size_t *len)
 {
   size_t index;
-  off_t base;
+  store_offset_t base;
   struct store_run *run, *runs_end;
   int block_shift = store->log2_block_size;
   store_read_meth_t read = store->class->read;
@@ -204,7 +204,7 @@ store_read (struct store *store,
       /* Read LEN bytes from the store address ADDR into BUF_END.  BUF_END
 	 and AMOUNT are adjusted by the amount actually read.  Whether or not
 	 the amount read is the same as what was request is returned in ALL. */
-      inline error_t seg_read (off_t addr, off_t len, int *all)
+      inline error_t seg_read (store_offset_t addr, size_t len, int *all)
 	{
 	  /* SEG_BUF and SEG_LEN are the buffer for a particular bit of the
 	     whole (within one run). */

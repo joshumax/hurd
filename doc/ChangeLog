@@ -1,3 +1,9 @@
+2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd.texi (Store Management): Replace off_t with store_offset_t.
+	(Store I/O): Likewise.
+	(Store Classes): Likewise.
+
 2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.texi (Diskfs Callbacks): Make diskfs_dirstat_size const.

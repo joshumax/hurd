@@ -99,12 +99,20 @@ print_store (struct store *store, int level, unsigned what)
 	  fputs (str ?: "-", stdout);
 	}
     }
-  void pint (off_t val, unsigned mask)
+  void psiz (size_t val, unsigned mask)
     {
       if ((what & mask) == mask)
 	{
 	  psep ();
-	  printf ("%ld", val);
+	  printf ("%u", val);
+	}
+    }
+  void poff (store_offset_t val, unsigned mask)
+    {
+      if ((what & mask) == mask)
+	{
+	  psep ();
+	  printf ("%Ld", val);
 	}
     }
 
@@ -155,9 +163,9 @@ print_store (struct store *store, int level, unsigned what)
     }
 
   pstr (store->name,       W_NAME);
-  pint (store->block_size, W_BLOCK_SIZE);
-  pint (store->blocks,     W_BLOCKS);
-  pint (store->size,       W_SIZE);
+  psiz (store->block_size, W_BLOCK_SIZE);
+  poff (store->blocks,     W_BLOCKS);
+  poff (store->size,       W_SIZE);
 
   if (what & W_RUNS)
     {
@@ -168,9 +176,9 @@ print_store (struct store *store, int level, unsigned what)
 	    putchar (',');
 	  if (store->runs[i].start < 0)
 	    /* A hole */
-	    printf ("@+%ld", store->runs[i].length);
+	    printf ("@+%Ld", store->runs[i].length);
 	  else
-	    printf ("%ld+%ld", store->runs[i].start, store->runs[i].length);
+	    printf ("%Ld+%Ld", store->runs[i].start, store->runs[i].length);
 	}
     }
 

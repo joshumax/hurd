@@ -39,14 +39,16 @@ int
 main (int argc, char **argv)
 {
   struct store *store = 0;
-  off_t addr = -1;
+  store_offset_t addr = -1;
   int dumped = 0, use_file_io = 0, block_size = 0;
 
-  void dump (off_t addr,  ssize_t len)
+  void dump (store_offset_t addr,  ssize_t len)
     {
       char buf[4096];
       void *data = buf;
       size_t data_len = sizeof (buf);
+
+      /* XXX: store->size can be too big for len.  */
       error_t err =
 	store_read (store, addr, len < 0 ? store->size : len,
 		    &data, &data_len);
@@ -92,7 +94,7 @@ main (int argc, char **argv)
 		error (err, 3, "%s", arg);
 	    }
 	  else if (addr < 0)
-	    addr = atoi (arg);
+	    addr = atoll (arg);
 	  else
 	    {
 	      dump (addr, atoi (arg));

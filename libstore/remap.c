@@ -27,7 +27,7 @@
 
 static error_t
 remap_read (struct store *store,
-	     off_t addr, size_t index, size_t amount,
+	     store_offset_t addr, size_t index, size_t amount,
 	     void **buf, size_t *len)
 {
   return store_read (store->children[0], addr, amount, buf, len);
@@ -35,7 +35,7 @@ remap_read (struct store *store,
 
 static error_t
 remap_write (struct store *store,
-	      off_t addr, size_t index, void *buf, size_t len,
+	      store_offset_t addr, size_t index, void *buf, size_t len,
 	      size_t *amount)
 {
   return store_write (store->children[0], addr, buf, len, amount);
@@ -120,7 +120,7 @@ remap_open (const char *name, int flags,
 	      /* Syntax "100+" means block 100 to the end of the store.
 		 Since we don't know the size yet, we use -1 as a marker
 		 for the code below.  */
-	      runs[nruns++].length = (off_t) -1;
+	      runs[nruns++].length = (store_offset_t) -1;
 	      break;
 	    }
 	  runs[nruns].length = strtoul (p, &endp, 0);
@@ -144,7 +144,7 @@ remap_open (const char *name, int flags,
 	 and update them to use the actual size of the store.  */
       size_t i;
       for (i = 0; i < nruns; ++i)
-	if (runs[i].length == (off_t) -1)
+	if (runs[i].length == (store_offset_t) -1)
 	  runs[i].length = from->blocks - runs[i].start;
 
       /* Now do the remapping according to RUNS.  */
@@ -241,7 +241,7 @@ store_remap_runs (const struct store_run *runs, size_t num_runs,
   size_t xruns_alloced = num_runs + num_base_runs;
 
   /* Add the single run [ADDR, LEN) to *XRUNS, returning true if successful. */
-  int add_run (off_t addr, off_t len)
+  int add_run (store_offset_t addr, store_offset_t len)
     {
       if (*num_xruns == xruns_alloced)
 	/* Make some more space in *XRUNS.  */
@@ -266,13 +266,13 @@ store_remap_runs (const struct store_run *runs, size_t num_runs,
 
   for (i = 0; i < num_runs; i++)
     {
-      off_t addr = runs[i].start, left = runs[i].length;
+      store_offset_t addr = runs[i].start, left = runs[i].length;
 
       if (addr >= 0)
 	for (j = 0; j < num_base_runs && left > 0; j++)
 	  {
-	    off_t baddr = base_runs[j].start;
-	    off_t blen = base_runs[j].length;
+	    store_offset_t baddr = base_runs[j].start;
+	    store_offset_t blen = base_runs[j].length;
 
 	    if (addr >= blen)
 	      addr -= blen;
@@ -282,7 +282,7 @@ store_remap_runs (const struct store_run *runs, size_t num_runs,
 	    else
 	      /* Add another output run.  */
 	      {
-		off_t len = blen - addr; /* Size of next output run.  */
+		store_offset_t len = blen - addr; /* Size of next output run.  */
 		if (! add_run (baddr + addr, len > left ? left : len))
 		  ERR (ENOMEM);
 		addr = 0;

@@ -39,10 +39,13 @@
 #endif
 
 
+/* Type for addresses inside the store.  */
+typedef off64_t store_offset_t;
+
 /* A portion of a store.  If START == -1, it's a hole.  */
 struct store_run
 {
-  off_t start, length;
+  store_offset_t start, length;
 };
 
 struct store
@@ -57,13 +60,13 @@ struct store
   size_t num_runs;		/* Length of RUNS.  */
 
   /* Maximum valid offset.  This is the same as SIZE, but in blocks.  */
-  off_t end;
+  store_offset_t end;
 
   /* WRAP_SRC is the sum of the run lengths in RUNS.  If this is less than
      END, then RUNS describes a repeating pattern, of length WRAP_SRC -- each
      successive iteration having an additional offset of WRAP_DST.  */
-  off_t wrap_src;
-  off_t wrap_dst;		/* Only meaningful if WRAP_SRC < END */
+  store_offset_t wrap_src;
+  store_offset_t wrap_dst;	/* Only meaningful if WRAP_SRC < END */
 
   /* Handles for the underlying storage.  */
   char *name;			/* Malloced */
@@ -73,9 +76,9 @@ struct store
   size_t block_size;
 
   /* The number of blocks (of size BLOCK_SIZE) in this storage.  */
-  off_t blocks;
+  store_offset_t blocks;
   /* The number of bytes in this storage, including holes.  */
-  off_t size;
+  store_offset_t size;
 
   /* Log_2 (BLOCK_SIZE) or 0 if not a power of 2. */
   unsigned log2_block_size;
@@ -121,11 +124,11 @@ struct store
 				 | ~(STORE_BACKEND_SPEC_BASE - 1))
 
 typedef error_t (*store_write_meth_t)(struct store *store,
-				      off_t addr, size_t index,
+				      store_offset_t addr, size_t index,
 				      void *buf, mach_msg_type_number_t len,
 				      mach_msg_type_number_t *amount);
 typedef error_t (*store_read_meth_t)(struct store *store,
-				     off_t addr, size_t index,
+				     store_offset_t addr, size_t index,
 				     mach_msg_type_number_t amount,
 				     void **buf, mach_msg_type_number_t *len);
 
@@ -229,7 +232,7 @@ error_t
 _store_create (const struct store_class *class, mach_port_t port,
 	       int flags, size_t block_size,
 	       const struct store_run *runs, size_t num_runs,
-	       off_t end, struct store **store);
+	       store_offset_t end, struct store **store);
 
 /* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
 error_t store_set_runs (struct store *store,
@@ -293,13 +296,13 @@ error_t store_remap (struct store *source,
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written in
    AMOUNT (in bytes).  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t store_write (struct store *store,
-		     off_t addr, void *buf, size_t len, size_t *amount);
+		     store_offset_t addr, void *buf, size_t len, size_t *amount);
 
 /* Read AMOUNT bytes from STORE at ADDR into BUF & LEN (which following the
    usual mach buffer-return semantics) to STORE at ADDR.  ADDR is in BLOCKS
    (as defined by STORE->block_size).  Note that LEN is in bytes.  */
 error_t store_read (struct store *store,
-		    off_t addr, size_t amount, void **buf, size_t *len);
+		    store_offset_t addr, size_t amount, void **buf, size_t *len);
 
 /* If STORE was created using store_create, remove the reference to the
    source from which it was created.  */
@@ -322,7 +325,7 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 /* Creating specific types of stores.  */
 
 /* Return a new zero store SIZE bytes long in STORE.  */
-error_t store_zero_create (off_t size, int flags, struct store **store);
+error_t store_zero_create (store_offset_t size, int flags, struct store **store);
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
    the send right DEVICE.  */
@@ -388,7 +391,8 @@ error_t store_typed_open (const char *name, int flags,
    consumed -- that is, will be freed when this store is (however, the
    *array* STRIPES is copied, and so should be freed by the caller).  */
 error_t store_ileave_create (struct store * const *stripes, size_t num_stripes,
-			     off_t interleave, int flags, struct store **store);
+			     store_offset_t interleave, int flags,
+			     struct store **store);
 
 /* Return a new store in STORE that concatenates all the stores in STORES
    (NUM_STORES of them).  The stores in STRIPES are consumed -- that is, will

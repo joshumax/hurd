@@ -1,3 +1,19 @@
+2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
+
+	* storeread.c (main): Change type of addr to store_offset_t,
+	also for first argument of local function dump.
+	Add comment about store->size as len parameter for store_read.
+	Use atoll instead atoi for addr argument.
+
+	* storeinfo.c (print_store): Remove local function pint, add two
+	similar functions psiz and poff, accepting and printing a size_t
+	or store_offset_t respectively.
+	Use psiz to print block_size, poff to print blocks and size of
+	store.
+	Use %Ld instead %ld to print runs.
+
+	* storecat.c (main): Change type of addr and left to store_offset_t.
+
 2000-10-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* devprobe.c (main): Call device_close before freeing the device

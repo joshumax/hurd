@@ -3032,7 +3032,7 @@ reference to the source from which it was created.
 Clean up and deallocate @var{store}'s underlying stores.
 @end deftypefun
 
-@deftypefn {Structure} struct store_run @{ @w{off_t @var{start}}, @var{length}; @}
+@deftypefn {Structure} struct store_run @{ @w{store_offset_t @var{start}}, @var{length}; @}
 A @code{struct store_run} represents a contiguous region in a store's
 address range.  These are used to designate active portions of a store.
 If @var{start} is -1, then the region is a @dfn{hole} (it is zero-filled
@@ -3113,7 +3113,7 @@ the routines below to get a pager.
 @end ignore
 @end deftypefun
 
-@deftypefun error_t store_read (@w{struct store *@var{store}}, @w{off_t @var{addr}}, @w{size_t @var{amount}}, @w{void **@var{buf}}, @w{size_t *@var{len}})
+@deftypefun error_t store_read (@w{struct store *@var{store}}, @w{store_offset_t @var{addr}}, @w{size_t @var{amount}}, @w{void **@var{buf}}, @w{size_t *@var{len}})
 Read @var{amount} bytes from @var{store} at @var{addr} into @var{buf}
 and @var{len} (which follows the usual Mach buffer-return semantics) to
 @var{store} at @var{addr}.  @var{addr} is in @var{blocks} (as defined by
@@ -3124,7 +3124,7 @@ and @var{len} (which follows the usual Mach buffer-return semantics) to
 @c `microkernel'?
 @c  tb: nope, Mach-specific semantics.
 
-@deftypefun error_t store_write (@w{struct store *@var{store}}, @w{off_t @var{addr}}, @w{void *@var{buf}}, @w{size_t @var{len}}, @w{size_t *@var{amount}})
+@deftypefun error_t store_write (@w{struct store *@var{store}}, @w{store_offset_t @var{addr}}, @w{void *@var{buf}}, @w{size_t @var{len}}, @w{size_t *@var{amount}})
 Write @var{len} bytes from @var{buf} to @var{store} at @var{addr}.
 Returns the amount written in @var{amount} (in bytes).  @var{addr} is in
 @var{blocks} (as defined by @code{@var{store}->block_size}).
@@ -3264,7 +3264,7 @@ has been written into it.  This store corresponds to the Unix
 @file{/dev/zero} device node.
 @end deftypevar
 
-@deftypefun error_t store_zero_create (@w{off_t @var{size}}, @w{int @var{flags}}, @w{struct store **@var{store}})
+@deftypefun error_t store_zero_create (@w{store_offset_t @var{size}}, @w{int @var{flags}}, @w{struct store **@var{store}})
 Return a new zero store @var{size} bytes long in @var{store}.
 @end deftypefun
 
@@ -3378,7 +3378,7 @@ are not as reliable as others, failures will wipe out every @var{n}th
 storage block, where @var{n} is the number of substores.
 @end deftypevar
 
-@deftypefun error_t store_ileave_create (@w{struct store * const *@var{stripes}}, @w{size_t @w{num_stripes}}, @w{off_t @var{interleave}}, @w{int @var{flags}}, @w{struct store **@var{store}})
+@deftypefun error_t store_ileave_create (@w{struct store * const *@var{stripes}}, @w{size_t @w{num_stripes}}, @w{store_offset_t @var{interleave}}, @w{int @var{flags}}, @w{struct store **@var{store}})
 Return a new store in @var{store} that interleaves all the stores in
 @var{stripes} (@var{num_stripes} of them) every @var{interleave} bytes;
 @var{interleave} must be an integer multiple of each stripe's block

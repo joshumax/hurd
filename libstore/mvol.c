@@ -50,7 +50,7 @@ ensure_vol (struct store *store, size_t vol)
 
 static error_t
 mvol_read (struct store *store,
-	   off_t addr, size_t index, size_t amount,
+	   store_offset_t addr, size_t index, size_t amount,
 	   void **buf, size_t *len)
 {
   error_t err = ensure_vol (store, index);
@@ -61,7 +61,7 @@ mvol_read (struct store *store,
 
 static error_t
 mvol_write (struct store *store,
-	    off_t addr, size_t index, void *buf, size_t len,
+	    store_offset_t addr, size_t index, void *buf, size_t len,
 	    size_t *amount)
 {
   error_t err = ensure_vol (store, index);

@@ -102,7 +102,7 @@ get_hypermetadata (void)
 		(long long int) sblock->s_blocks_count << log2_block_size);
   if (log2_dev_blocks_per_fs_block != 0
       && (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)) != 0)
-    ext2_warning ("%ld (%d byte) device blocks "
+    ext2_warning ("%Ld (%d byte) device blocks "
 		  " unused after last filesystem (%d byte) block",
 		  (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)),
 		  store->block_size, block_size);

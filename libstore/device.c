@@ -48,7 +48,7 @@ dev_error (error_t err)
 
 static error_t
 dev_read (struct store *store,
-	  off_t addr, size_t index, mach_msg_type_number_t amount,
+	  store_offset_t addr, size_t index, mach_msg_type_number_t amount,
 	  void **buf, mach_msg_type_number_t *len)
 {
   return dev_error (device_read (store->port, 0, addr, amount,
@@ -57,7 +57,7 @@ dev_read (struct store *store,
 
 static error_t
 dev_write (struct store *store,
-	   off_t addr, size_t index, void *buf, mach_msg_type_number_t len,
+	   store_offset_t addr, size_t index, void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
   return dev_error (device_write (store->port, 0, addr,

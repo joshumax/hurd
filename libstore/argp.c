@@ -59,7 +59,7 @@ struct store_parsed
   /* DEFAULT_TYPE field passed to parser.  */
   const struct store_class *default_type;
 
-  off_t interleave;		/* --interleave value */
+  store_offset_t interleave;	/* --interleave value */
   int layer : 1;		/* --layer specified */
 };
 
@@ -85,7 +85,7 @@ store_parsed_append_args (const struct store_parsed *parsed,
   if (!err && num_names > 1 && (parsed->interleave || parsed->layer))
     {
       if (parsed->interleave)
-	snprintf (buf, sizeof buf, "--interleave=%ld", parsed->interleave);
+	snprintf (buf, sizeof buf, "--interleave=%Ld", parsed->interleave);
       else
 	snprintf (buf, sizeof buf, "--layer=%d", parsed->layer);
       err = argz_add (args, args_len, buf);
@@ -128,7 +128,7 @@ store_parsed_name (const struct store_parsed *parsed, char **name)
     {
       if (parsed->interleave)
 	{
-	  snprintf (buf, sizeof buf, "interleave(%ld,", parsed->interleave);
+	  snprintf (buf, sizeof buf, "interleave(%Ld,", parsed->interleave);
 	  pfx = buf;
 	}
       else if (parsed->layer)

@@ -27,8 +27,8 @@
 error_t
 _store_create (const struct store_class *class,
 	       mach_port_t port, int flags, size_t block_size,
-	       const struct store_run *runs, size_t num_runs, off_t end,
-	       struct store **store)
+	       const struct store_run *runs, size_t num_runs,
+	       store_offset_t end, struct store **store)
 {
   if ((block_size & (block_size - 1)) || (block_size == 0 && num_runs > 0))
     return EINVAL;		/* block size not a power of two.  */

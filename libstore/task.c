@@ -56,7 +56,7 @@ tclose (struct store *store)
 
 static error_t
 task_read (struct store *store,
-	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
+	   store_offset_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
   size_t bsize = store->block_size;
   return vm_read (store->port, addr * bsize, amount, (vm_address_t *)buf, len);
@@ -64,7 +64,7 @@ task_read (struct store *store,
 
 static error_t
 task_write (struct store *store,
-	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index, void *buf, size_t len, size_t *amount)
 {
   size_t bsize = store->block_size;
   error_t err = vm_write (store->port, addr * bsize, (vm_address_t)buf, len);

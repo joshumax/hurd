@@ -27,8 +27,8 @@ extern long lcm (long p, long q);
 
 /* Return ADDR adjust for any block size difference between STORE and
    STRIPE.  We assume that STORE's block size is no less than STRIPE's.  */
-static inline off_t
-addr_adj (off_t addr, struct store *store, struct store *stripe)
+static inline store_offset_t
+addr_adj (store_offset_t addr, struct store *store, struct store *stripe)
 {
   unsigned common_bs = store->log2_block_size;
   unsigned stripe_bs = stripe->log2_block_size;
@@ -40,7 +40,7 @@ addr_adj (off_t addr, struct store *store, struct store *stripe)
 
 static error_t
 stripe_read (struct store *store,
-	     off_t addr, size_t index, size_t amount,
+	     store_offset_t addr, size_t index, size_t amount,
 	     void **buf, size_t *len)
 {
   struct store *stripe = store->children[index];
@@ -49,7 +49,7 @@ stripe_read (struct store *store,
 
 static error_t
 stripe_write (struct store *store,
-	      off_t addr, size_t index, void *buf, size_t len,
+	      store_offset_t addr, size_t index, void *buf, size_t len,
 	      size_t *amount)
 {
   struct store *stripe = store->children[index];
@@ -160,11 +160,13 @@ store_concat_class =
    *array* STRIPES is copied, and so should be freed by the caller).  */
 error_t
 store_ileave_create (struct store *const *stripes, size_t num_stripes,
-		     off_t interleave, int flags, struct store **store)
+		     store_offset_t interleave, int flags,
+		     struct store **store)
 {
   size_t i;
   error_t err;
-  off_t block_size = 1, min_end = 0;
+  size_t block_size = 1;
+  store_offset_t min_end = 0;
   struct store_run runs[num_stripes];
   int common_flags = STORE_BACKEND_FLAGS;
 
@@ -180,7 +182,7 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
   for (i = 0; i < num_stripes; i++)
     {
        /* The stripe's end adjusted to the common block size.  */
-      off_t end = stripes[i]->end;
+      store_offset_t end = stripes[i]->end;
 
       runs[i].start = 0;
       runs[i].length = interleave;
@@ -222,7 +224,7 @@ store_concat_create (struct store * const *stores, size_t num_stores,
 {
   size_t i;
   error_t err;
-  off_t block_size = 1;
+  size_t block_size = 1;
   int common_flags = STORE_BACKEND_FLAGS;
   struct store_run runs[num_stores];
 

@@ -169,7 +169,7 @@ main (int argc, char **argv)
     error (4, 0, "%s: Bad device block size %d (should be <= %d)",
 	   diskfs_disk_name, store->block_size, DEV_BSIZE);
   if (store->size < SBSIZE + SBOFF)
-    error (5, 0, "%s: Disk too small (%ld bytes)", diskfs_disk_name,
+    error (5, 0, "%s: Disk too small (%Ld bytes)", diskfs_disk_name,
 	   store->size);
 
   log2_dev_blocks_per_dev_bsize = 0;

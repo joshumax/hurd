@@ -29,7 +29,8 @@
 
 static error_t
 file_read (struct store *store,
-	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
+	   store_offset_t addr, size_t index, size_t amount, void **buf,
+	   size_t *len)
 {
   size_t bsize = store->block_size;
   return io_read (store->port, (char **)buf, len, addr * bsize, amount);
@@ -37,7 +38,8 @@ file_read (struct store *store,
 
 static error_t
 file_write (struct store *store,
-	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index, void *buf, size_t len,
+	    size_t *amount)
 {
   size_t bsize = store->block_size;
   return io_write (store->port, buf, len, addr * bsize, amount);
@@ -197,7 +199,7 @@ store_file_class =
 
 static error_t
 file_byte_read (struct store *store,
-		off_t addr, size_t index, size_t amount,
+		store_offset_t addr, size_t index, size_t amount,
 		void **buf, size_t *len)
 {
   return io_read (store->port, (char **)buf, len, addr, amount);
@@ -205,7 +207,7 @@ file_byte_read (struct store *store,
 
 static error_t
 file_byte_write (struct store *store,
-		 off_t addr, size_t index, void *buf, size_t len,
+		 store_offset_t addr, size_t index, void *buf, size_t len,
 		 size_t *amount)
 {
   return io_write (store->port, buf, len, addr, amount);

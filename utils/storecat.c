@@ -30,8 +30,8 @@ main (int argc, char **argv)
   error_t err;
   struct store *s;
   char *name;
-  off_t addr;
-  size_t left;
+  store_offset_t addr;
+  store_offset_t left;
   const struct argp_child kids[] = { { &store_argp }, { 0 }};
   struct argp argp =
     { 0, 0, 0, "Write the contents of a store to stdout", kids };

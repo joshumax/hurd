@@ -50,7 +50,7 @@ _store_derive (struct store *store)
        to include all iterations.  */
     {
       size_t num_iters = store->end / store->wrap_src;
-      off_t last_part_base = num_iters * store->wrap_src;
+      store_offset_t last_part_base = num_iters * store->wrap_src;
 
       store->blocks *= num_iters;
 
