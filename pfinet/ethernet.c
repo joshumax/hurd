@@ -39,6 +39,8 @@ struct device ether_dev;
 
 struct enet_statistics retbuf;
 
+static struct condition more_packets = CONDITION_INITIALIZER;
+
 /* Mach doesn't provide this.  DAMN. */
 struct enet_statistics *
 ethernet_get_stats (struct device *dev)
@@ -66,28 +68,20 @@ static short ether_filter[] =
 };
 
 static int ether_filter_len = 3;
+static struct port_bucket *etherport_bucket;
 
-int
-ethernet_open (struct device *dev)
+void
+mark_bh (int arg)
 {
-  if (ether_port != MACH_PORT_NULL)
-    return 0;
-  
-  etherreadclass = ports_create_class (0, 0);
-  readpt = ports_allocate_port (pfinet_bucket, sizeof (struct port_info),
-				etherreadclass);
-  readptname = ports_get_right (readpt);
-  mach_port_insert_right (mach_task_self (), readptname, readptname,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  condition_broadcast (&more_packets);
+}
 
-  mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
-
-  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
-
-  device_set_filter (ether_port, ports_get_right (readpt), 
-		     MACH_MSG_TYPE_MAKE_SEND, 0,
-		     ether_filter, ether_filter_len);
-  return 0;
+void
+ethernet_thread (any_t arg)
+{
+  ports_manage_port_operations_one_thread (etherport_bucket,
+					   ethernet_demuxer,
+					   0);
 }
 
 int
@@ -129,6 +123,42 @@ ethernet_demuxer (mach_msg_header_t *inp,
   return 1;
 }
 
+int input_work_thread (any_t arg)
+{
+  mutex_lock (&global_lock);
+  for (;;)
+    {
+      condition_wait (&more_packets, &global_lock);
+      net_bh (0);
+    }
+}
+
+int
+ethernet_open (struct device *dev)
+{
+  if (ether_port != MACH_PORT_NULL)
+    return 0;
+  
+  etherreadclass = ports_create_class (0, 0);
+  readpt = ports_allocate_port (etherport_bucket, sizeof (struct port_info),
+				etherreadclass);
+  readptname = ports_get_right (readpt);
+  mach_port_insert_right (mach_task_self (), readptname, readptname,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
+  mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
+
+  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
+
+  device_set_filter (ether_port, ports_get_right (readpt), 
+		     MACH_MSG_TYPE_MAKE_SEND, 0,
+		     ether_filter, ether_filter_len);
+  cthread_detach (cthread_fork (ethernet_thread, 0));
+  cthread_detach (cthread_fork (input_work_thread, 0));
+  return 0;
+}
+
+
 /* Transmit an ethernet frame */
 int
 ethernet_xmit (struct sk_buff *skb, struct device *dev)
@@ -151,6 +181,8 @@ setup_ethernet_device (char *name)
   int net_address[2];
   int i;
   
+  etherport_bucket = ports_create_bucket ();
+
   ethername = name;
 
   /* Interface buffers. */
