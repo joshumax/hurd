@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -79,7 +79,7 @@ S_socket_create (struct trivfs_protid *master,
       if (! err)
 	isroot = 1;
     }
-  
+
   err = - (*net_families[PF_INET]->create) (sock, protocol);
   if (err)
     sock_release (sock);
@@ -368,7 +368,7 @@ S_socket_getopt (struct sock_user *user,
 		 int level,
 		 int option,
 		 char **data,
-		 u_int *datalen)
+		 size_t *datalen)
 {
   error_t err;
 
@@ -395,7 +395,7 @@ S_socket_setopt (struct sock_user *user,
 		 int level,
 		 int option,
 		 char *data,
-		 u_int datalen)
+		 size_t datalen)
 {
   error_t err;
 
@@ -422,11 +422,11 @@ S_socket_send (struct sock_user *user,
 	       struct sock_addr *addr,
 	       int flags,
 	       char *data,
-	       u_int datalen,
+	       size_t datalen,
 	       mach_port_t *ports,
-	       u_int nports,
+	       size_t nports,
 	       char *control,
-	       u_int controllen,
+	       size_t controllen,
 	       mach_msg_type_number_t *amount)
 {
   int sent;
@@ -469,12 +469,12 @@ S_socket_recv (struct sock_user *user,
 	       mach_msg_type_name_t *addrporttype,
 	       int flags,
 	       char **data,
-	       u_int *datalen,
+	       size_t *datalen,
 	       mach_port_t **ports,
 	       mach_msg_type_name_t *portstype,
-	       u_int *nports,
+	       size_t *nports,
 	       char **control,
-	       u_int *controllen,
+	       size_t *controllen,
 	       int *outflags,
 	       mach_msg_type_number_t amount)
 {

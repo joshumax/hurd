@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -36,7 +36,7 @@
 error_t
 S_io_write (struct sock_user *user,
 	    char *data,
-	    u_int datalen,
+	    size_t datalen,
 	    off_t offset,
 	    mach_msg_type_number_t *amount)
 {
@@ -69,7 +69,7 @@ S_io_write (struct sock_user *user,
 error_t
 S_io_read (struct sock_user *user,
 	   char **data,
-	   u_int *datalen,
+	   size_t *datalen,
 	   off_t offset,
 	   mach_msg_type_number_t amount)
 {
@@ -318,9 +318,9 @@ S_io_reauthenticate (struct sock_user *user,
   struct sock_user *newuser;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
+  size_t genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
-  int i, j;
+  size_t i, j;
   auth_t auth;
   mach_port_t newright;
 
@@ -391,10 +391,8 @@ error_t
 S_io_restrict_auth (struct sock_user *user,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobject_type,
-		    uid_t *uids,
-		    u_int uidslen,
-		    uid_t *gids,
-		    u_int gidslen)
+		    uid_t *uids, size_t uidslen,
+		    uid_t *gids, size_t gidslen)
 {
   struct sock_user *newuser;
   int i, j;
