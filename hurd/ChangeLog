@@ -1,3 +1,8 @@
+1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hurd_types.defs: Include <bits/utsname.h> instead of
+	<utsnamelen.h>.  Reported by Mark Kettenis <kettenis@phys.uva.nl>.
+
 Wed Oct 28 22:49:18 1998  Joel N. Weber II  <devnull@methedrine.ai.mit.edu>
 
 	* hurd_types.h: Added FSTYPE_HTTP, FSTYPE_MEMFS, and
