@@ -1,3 +1,19 @@
+1997-04-09 01:24  Ulrich Drepper  <drepper@cygnus.com>
+
+	* argp-fmtstream.c: Add casts to prevent warnings.
+	* argp-fmtstream.h: Likewise.
+	* argp-help.c: Likewise.
+
+1997-02-27 16:26  Andreas Schwab  <schwab@issan.informatik.uni-dortmund.de>
+
+	* argp-parse.c (parser_finalize): Always set *END_INDEX if
+	supplied.
+
+Thu May  8 17:15:31 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h [!__error_t_defined] (__error_t_defined): Define.
+	* argp-help.c (canon_doc_option): Correct ctype tests.
+
 Wed Mar  5 16:49:51 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (__argp_state_help): Use ARGP_ERR_EXIT_STATUS when
