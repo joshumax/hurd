@@ -256,8 +256,8 @@ packet_realloc (struct packet *packet, size_t new_len)
       packet->buf = new_buf;
       packet->buf_len = new_len;
       packet->buf_vm_alloced = vm_alloc;
-      packet->buf_start = new_buf + (start - old_buf);
-      packet->buf_end = new_buf + (end - old_buf);
+      packet->buf_start = new_buf;
+      packet->buf_end = new_buf + (end - start);
     }
 
   return err;
