@@ -651,7 +651,7 @@ ext2_open_file(master_device_port, path, fp)
 		if (++nlinks > MAXSYMLINKS)
 		    RETURN (FS_SYMLINK_LOOP);
 
-		ovbcopy(cp, &namebuf[link_len], len);
+		memmove(&namebuf[link_len], cp, len);
 
 #ifdef	IC_FASTLINK
 		if (fp->i_ic.i_blocks == 0) {
