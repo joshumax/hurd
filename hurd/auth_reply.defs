@@ -28,7 +28,6 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 
 skip; /* auth_getids */
 skip; /* auth_makeauth */
-skip; /* auth_combine */
 
 simpleroutine auth_user_authenticate_reply (
 	reply_port: reply_port_t;
