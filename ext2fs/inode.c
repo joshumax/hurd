@@ -452,17 +452,17 @@ diskfs_write_disknode (struct node *np, int wait)
 /* Set *ST with appropriate values to reflect the current state of the
    filesystem.  */
 error_t
-diskfs_set_statfs (struct fsys_statfsbuf *st)
+diskfs_set_statfs (struct statfs *st)
 {
-  st->fsys_stb_type = FSTYPE_EXT2FS;
-  st->fsys_stb_iosize = block_size;
-  st->fsys_stb_bsize = frag_size;
-  st->fsys_stb_blocks = sblock->s_blocks_count;
-  st->fsys_stb_bfree = sblock->s_free_blocks_count;
-  st->fsys_stb_bavail = st->fsys_stb_bfree - sblock->s_r_blocks_count;
-  st->fsys_stb_files = sblock->s_inodes_count;
-  st->fsys_stb_ffree = sblock->s_free_inodes_count;
-  st->fsys_stb_fsid = getpid ();
+  st->f_type = FSTYPE_EXT2FS;
+  st->f_bsize = block_size;
+  st->f_blocks = sblock->s_blocks_count;
+  st->f_bfree = sblock->s_free_blocks_count;
+  st->f_bavail = st->fsys_stb_bfree - sblock->s_r_blocks_count;
+  st->f_files = sblock->s_inodes_count;
+  st->f_ffree = sblock->s_free_inodes_count;
+  st->f_fsid = getpid ();
+  st->f_namelen = 0;
   return 0;
 }
 
