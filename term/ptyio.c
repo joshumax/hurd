@@ -80,6 +80,9 @@ pty_open_hook (struct trivfs_control *cntl,
     }
     
   ptyopen = 1;
+
+  /* Re-initialize pty state.  */
+  external_processing = 0;
   packet_mode = 0;
   user_ioctl_mode = 0;
   control_byte = 0;
