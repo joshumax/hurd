@@ -19,11 +19,17 @@ dir := libpager
 
 include ../Makeconf
 
-OBJS =
+COBJS = data-request.o data-return.o data-unlock.o get-port.o inhibit-term.o \
+	get-port.o inhibit-term.o lock-completed.o lock-object.o mark-error.o \
+	no-senders.o object-init.o object-terminate.o pagemap.o pager-create.o\
+	pager-flush.o pager-shutdown.o pager-sync.o reference.o stubs.o \
+	seqnos.o
 
-SRCS = 
+OBJS = $(COBJS) memory_objectServer.o
 
-DIST_FILES =
+SRCS = $(subst .o,.c,$(COBJS))
+
+DIST_FILES = $(SRCS) Makefile libpager.h priv.h
 
 # Make sure we get local copies of the headers we install
 CPPFLAGS := -I. $(CPPFLAGS)
@@ -44,6 +50,14 @@ install: $(hurdinst)/lib/libpager.a $(headers)/libports.h
 
 $(OBJS): libpager.h priv.h
 
+data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
+stubs.o object-init.o object-terminate.o: memory_object.h
+
 clean:
 	rm libpager.a *.o
 
+# MiG gook
+memory_object.h memory_objectServer.c:
+	$(CPP) $(CPPFLAGS) -DSEQNOS $(headers)/mach/memory_object.defs \
+	| $(MIGCOM) -prefix _pager_ -sheader memory_object.h \
+		-header /dev/null -user /dev/null
