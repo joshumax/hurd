@@ -128,7 +128,11 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
     {
       error_t err2 = diskfs_checkdirmod (dp, (err || !np) ? 0 : *np, cred);
       if (err2)
-	return err2;
+	{
+	  if (np)
+	    diskfs_nput (np);
+	  return err2;
+	}
     }
 
   if ((type == LOOKUP || type == CREATE) && !err && np)
