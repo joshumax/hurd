@@ -341,9 +341,12 @@ update_ordered_name (const char *name, void *hook)
 
 /* Refresh DIR from the directory DIR_NAME in the filesystem FS.  If
    UPDATE_STATS is true, then directory stat information will also be
-   updated.  */
+   updated.  If PRESERVE_ENTRY is non-0, that entry won't be deleted if it's
+   not in the directory after the refresh, but instead will have its NOENT
+   flag turned on.  */
 static error_t
-refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp)
+refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp,
+	     struct ftpfs_dir_entry *preserve_entry)
 {
   error_t err;
   struct ftp_conn *conn;
@@ -393,6 +396,11 @@ refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp)
       dir->name_timestamp = timestamp;
       if (update_stats)
 	dir->stat_timestamp = timestamp;
+      if (preserve_entry && !preserve_entry->valid)
+	{
+	  preserve_entry->noent = 1;
+	  preserve_entry->name_timestamp = timestamp;
+	}
       sweep (dir);
     }
 
@@ -406,7 +414,7 @@ error_t
 ftpfs_dir_refresh (struct ftpfs_dir *dir)
 {
   time_t timestamp = NOW;
-  return refresh_dir (dir, 0, timestamp);
+  return refresh_dir (dir, 0, timestamp, 0);
 }
 
 /* State shared between ftpfs_dir_entry_refresh and update_old_entry.  */
@@ -458,11 +466,19 @@ ftpfs_refresh_node (struct node *node)
 	  free_entry (entry);
 	  return 0;
 	}
+      else if ((entry->name_timestamp + dir->fs->params.name_timeout
+		>= timestamp)
+	       && entry->noent)
+	err = ENOENT;
       else if (entry->stat_timestamp + dir->fs->params.stat_timeout < timestamp)
 	/* Stat information needs updating.  */
 	if (need_bulk_stat (timestamp, dir))
 	  /* Refetch the whole directory from the server.  */
-	  err =  refresh_dir (entry->dir, 1, timestamp);
+	  {
+	    err =  refresh_dir (entry->dir, 1, timestamp, entry);
+	    if (!err && entry->noent)
+	      err = ENOENT;
+	  }
 	else
 	  {
 	    struct ftp_conn *conn;
@@ -490,6 +506,12 @@ ftpfs_refresh_node (struct node *node)
 		  }
 
 		ftpfs_release_ftp_conn (dir->fs, conn);
+	      }
+
+	    if (err == ENOENT)
+	      {
+		entry->noent = 1; /* A negative entry.  */
+		entry->name_timestamp = timestamp;
 	      }
 	  }
 
@@ -586,7 +608,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
   char *rmt_path = 0;
   time_t timestamp = NOW;
 
-  if (strcmp (name, ".") == 0)
+  if (*name == '\0' || strcmp (name, ".") == 0)
     /* Current directory -- just add an additional reference to DIR's node
        and return it.  */ 
     {
@@ -621,8 +643,8 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
       if (need_bulk_stat (timestamp, dir))
 	/* Refetch the whole directory from the server.  */
 	{
-	  err =  refresh_dir (dir, 1, timestamp);
-	  if (! err)
+	  err =  refresh_dir (dir, 1, timestamp, e);
+	  if (!err && !e)
 	    e = lookup (dir, name, 0);
 	}
       else
@@ -649,7 +671,10 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 		      if (! e)
 			err = ENOMEM;
 		      else
-			e->noent = 1;	/* A negative entry.  */
+			{
+			  e->noent = 1;	/* A negative entry.  */
+			  e->name_timestamp = timestamp;
+			}
 		    }
 		}
 
@@ -721,6 +746,54 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 
   if (rmt_path)
     free (rmt_path);
+
+  return err;
+}
+
+/* Lookup the null name in DIR, and return a node for it in NODE.  Unlike
+   ftpfs_dir_lookup, this won't attempt to validate the existance of the
+   entry (to avoid opening a new connection if possible) -- that will happen
+   the first time the entry is refreshed.  Also unlink ftpfs_dir_lookup, this
+   function doesn't expect DIR to be locked, and won't return *NODE locked.
+   This function is only used for bootstrapping the root node.  */
+error_t
+ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node)
+{
+  struct ftpfs_dir_entry *e;
+  error_t err = 0;
+
+  e = lookup (dir, "", 1);
+  if (! e)
+    return ENOMEM;
+
+  if (! e->noent)
+    /* We've got a dir entry, get a node for it.  */
+    {
+      /* If there's already a node, add a ref so that it doesn't go away.  */
+      spin_lock (&netfs_node_refcnt_lock);
+      if (e->node)
+	e->node->references++;
+      spin_unlock (&netfs_node_refcnt_lock);
+
+      if (! e->node)
+	/* No node; make one and install it into E.  */
+	{
+	  err = ftpfs_create_node (e, dir->rmt_path, &e->node);
+
+	  if (!err && dir->num_live_entries++ == 0)
+	    /* Keep a reference to dir's node corresponding to children.  */
+	    {
+	      spin_lock (&netfs_node_refcnt_lock);
+	      dir->node->references++;
+	      spin_unlock (&netfs_node_refcnt_lock);
+	    }
+	}
+
+      if (! err)
+	*node = e->node;
+    }
+  else
+    err = ENOENT;
 
   return err;
 }
