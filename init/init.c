@@ -321,6 +321,7 @@ run_for_real (char *filename, char *args, int arglen)
   task_create (mach_task_self (), 0, &task);
   proc_child (procserver, task);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
+  proc_setsid (default_ports[INIT_PORT_PROC]);
   printf ("Pausing for %s\n", filename);
   getchar ();
   progname = strrchr (filename, '/');
