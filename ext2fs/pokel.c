@@ -26,6 +26,7 @@ void pokel_init (struct pokel *pokel, struct pager *pager, void *image)
 {
   pokel->lock = SPIN_LOCK_INITIALIZER;
   pokel->pokes = NULL;
+  pokel->free_pokes = NULL;
   pokel->pager = pager;
   pokel->image = image;
 }
@@ -66,7 +67,10 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
     {
       pl = pokel->free_pokes;
       if (pl == NULL)
-	pl = malloc (sizeof (struct poke));
+	{
+	  pl = malloc (sizeof (struct poke));
+	  assert (pl);
+	}
       else
 	pokel->free_pokes = pl->next;
       pl->offset = offset;
@@ -82,19 +86,24 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 void
 pokel_sync (struct pokel *pokel, int wait)
 {
-  struct poke *pl, *next;
+  struct poke *pl, *pokes, *last = NULL;
   
   spin_lock (&pokel->lock);
+  pokes = pokel->pokes;
+  pokel->pokes = NULL;
+  spin_unlock (&pokel->lock);
 
-  for (pl = pokel->pokes; pl; pl = next)
+  for (pl = pokes; pl; last = pl, pl = pl->next)
     {
       ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
       pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
-      next = pl->next;
-      pl->next = pokel->free_pokes;
-      pokel->free_pokes = pl;
     }
-  pokel->pokes = NULL;
 
-  spin_unlock (&pokel->lock);
+  if (last)
+    {
+      spin_lock (&pokel->lock);
+      last->next = pokel->free_pokes;
+      pokel->free_pokes = pokes;
+      spin_unlock (&pokel->lock);
+    }
 }
