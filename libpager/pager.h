@@ -79,6 +79,23 @@ pager_flush_some (struct pager *pager,
 		  vm_size_t len,
 		  int wait);
 
+/* Flush data from the kernel for pager PAGER and force any pending
+   delayed copies.  Wait for all pages to be flushed iff WAIT is set.
+   Have the kernel write back modifications.  */
+void
+pager_return (struct pager *pager,
+	      int wait);
+
+
+/* Flush some data (starting at START, for LEN bytes) for pager PAGER
+   from the kernel.  Wait for all pages to be flushed iff WAIT is set.  
+   Have the kernel write back modifications. */
+void
+pager_return_some (struct pager *pager,
+		   vm_address_t start,
+		   vm_size_t len,
+		   int wait);
+
 /* Change the attributes of the memory object underlying pager PAGER.
    Args MAY_CACHE and COPY_STRATEGY are as for
    memory_object_change_atributes.  Wait for the kernel to report completion
