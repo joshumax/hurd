@@ -1,6 +1,6 @@
 /* Attempt to undo a previous su
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -41,7 +41,7 @@ static char doc[] =
   " current effective ids and the first two available ids, and then"
   " making the first remaining available id the current effective id.";
 
-void 
+int
 main (int argc, char *argv[])
 {
   struct frobauth frobauth = FROBAUTH_INIT;
@@ -84,7 +84,7 @@ main (int argc, char *argv[])
   argp_parse (&argp, argc, argv, 0, 0, &frobauth);
 
   if (frobauth_modify (&frobauth, 0, 0, modify, print_info, 0))
-    exit (0);
+    return 0;
   else
-    exit (1);
+    return 1;
 }

@@ -1,6 +1,6 @@
 /* Change the authentication of selected processes
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -52,7 +52,7 @@ static char doc[] =
 extern error_t
 get_nonsugid_ids (struct idvec *uids, struct idvec *gids);
 
-void 
+int
 main (int argc, char *argv[])
 {
   error_t err;
@@ -128,7 +128,7 @@ main (int argc, char *argv[])
     error (16, err, "Authentication failure");
 
   if (frobauth_modify (&frobauth, &auth, 1, modify, print_info, 0))
-    exit (0);
+    return 0;
   else
-    exit (1);
+    return 1;
 }

@@ -1,6 +1,6 @@
 /* Add authentication to selected processes
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -41,7 +41,7 @@ static char doc[] =
 extern error_t
 get_nonsugid_ids (struct idvec *uids, struct idvec *gids);
 
-void 
+int
 main (int argc, char *argv[])
 {
   int i;
@@ -96,5 +96,5 @@ main (int argc, char *argv[])
 	}
     }
 
-  exit (0);
+  return 0;
 }

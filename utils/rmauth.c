@@ -1,6 +1,6 @@
 /* Remove authentication from selected processes
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -48,7 +48,7 @@ static struct argp_child child_argps[] = {{ &frobauth_ea_argp }, { 0 }};
 static char doc[] =
   "Remove user/group ids from the authentication of selected processes";
 
-void 
+int
 main (int argc, char *argv[])
 {
   int save = 0;			/* save effective ids */
@@ -115,7 +115,7 @@ main (int argc, char *argv[])
   argp_parse (&argp, argc, argv, 0, 0, &frobauth);
 
   if (frobauth_modify (&frobauth, 0, 0, modify, print_info, 0))
-    exit (0);
+    return 0;
   else
-    exit (1);
+    return 1;
 }
