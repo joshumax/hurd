@@ -189,29 +189,35 @@ error_t
 store_device_create (device_t device, int flags, struct store **store)
 {
   struct store_run run;
-  size_t sizes[DEV_GET_SIZE_COUNT], block_size = 0;
-  size_t sizes_len = DEV_GET_SIZE_COUNT;
-  error_t err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
+  size_t block_size = 0;
+  size_t sizes[DEV_STATUS_MAX];
+  size_t sizes_len = DEV_STATUS_MAX;
+  error_t err;
 
-  if (! err)
+  /* Some Mach devices do not implement device_get_status, but do not
+     return an error.  To detect these devices we set the size of the
+     input buffer to something larger than DEV_GET_SIZE_COUNT.  If the
+     size of the returned device status is not equal to
+     DEV_GET_SIZE_COUNT, we know that something is wrong.  */
+  err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
+  if (! err && sizes_len == DEV_GET_SIZE_COUNT)
     {
-      if (sizes_len != DEV_GET_SIZE_COUNT)
-	err = EINVAL;
-      else
+      block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
+	  
+      if (block_size)
 	{
-	  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
 	  run.start = 0;
 	  run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
 
 	  if (run.length * block_size != sizes[DEV_GET_SIZE_DEVICE_SIZE])
 	    /* Bogus results (which some mach devices return).  */
-	    err = EINVAL;
+	    block_size = 0;
 	}
     }
 
   flags |= STORE_ENFORCED;	/* 'cause it's the whole device.  */
 
-  if (err)
+  if (block_size == 0)
     /* Treat devices that can't do device_get_status as zero-length.  */
     return _store_device_create (device, flags, 0, &run, 0, store);
   else
