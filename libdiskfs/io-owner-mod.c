@@ -20,8 +20,8 @@
 
 /* Implement io_mod_owner as described in <hurd/io.defs>. */
 error_t
-S_io_mod_owner (struct protid *cred,
-	      pid_t owner)
+diskfs_S_io_mod_owner (struct protid *cred,
+		       pid_t owner)
 {
   struct node *np;
 
