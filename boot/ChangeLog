@@ -1,3 +1,12 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* boot.c (load_image): Use munmap instead of vm_deallocate when
+	it's from our own task.
+	(boot_script_read_file): Likewise.
+	(boot_script_exec_cmd): Likewise.
+	(set_mach_stack_args): Likewise.
+	(ds_device_read_inband): Likewise.
+
 1999-03-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (S_term_get_peername): New function.

@@ -244,7 +244,7 @@ load_image (task_t t,
 
 	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
 	    vm_write (t, ph->p_vaddr, buf, bufsz);
-	    vm_deallocate (mach_task_self (), buf, bufsz);
+	    munmap ((caddr_h) buf, bufsz);
 	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0,
 			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
 			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
@@ -274,7 +274,7 @@ load_image (task_t t,
       if (magic != OMAGIC)
 	vm_protect (t, base, trunc_page (headercruft + hdr.a.a_text),
 		    0, VM_PROT_READ | VM_PROT_EXECUTE);
-      vm_deallocate (mach_task_self (), (u_int)buf, rndamount);
+      munmap ((caddr_t) buf, rndamount);
 
       bssstart = base + hdr.a.a_text + hdr.a.a_data + headercruft;
       bsspagestart = round_page (bssstart);
@@ -337,7 +337,7 @@ boot_script_read_file (const char *filename)
   vm_map (mach_task_self (), &region, round_page (st.st_size),
 	  0, 1, memobj, 0, 0, VM_PROT_ALL, VM_PROT_ALL, VM_INHERIT_NONE);
   read (fd, (char *) region, st.st_size);
-  vm_deallocate (mach_task_self (), region, round_page (st.st_size));
+  munmap ((caddr_t) region, round_page (st.st_size));
 
   close (fd);
   return memobj;
@@ -393,8 +393,8 @@ boot_script_exec_cmd (mach_port_t task, char *path, int argc,
   bzero (args, (vm_offset_t) arg_pos & (vm_page_size - 1));
   vm_write (task, trunc_page ((vm_offset_t) arg_pos), (vm_address_t) args,
 	    stack_end - trunc_page ((vm_offset_t) arg_pos));
-  vm_deallocate (mach_task_self (), (vm_address_t) args,
-		 stack_end - trunc_page ((vm_offset_t) arg_pos));
+  munmap ((caddr_t) args,
+	  stack_end - trunc_page ((vm_offset_t) arg_pos));
   thread_resume (thread);
   mach_port_deallocate (mach_task_self (), thread);
   return 0;
@@ -817,9 +817,8 @@ set_mach_stack_args (task_t user_task,
 			    k_arg_page_start,
 			    arg_page_size);
 
-	    (void) vm_deallocate(mach_task_self(),
-				 k_arg_page_start,
-				 arg_page_size);
+	    (void) munmap ((caddr_t) k_arg_page_start,
+			   arg_page_size);
 	}
 }
 
@@ -1262,8 +1261,7 @@ ds_device_read_inband (device_t device,
 	  if (returned != data)
 	    {
 	      bcopy (returned, (void *)data, *datalen);
-	      vm_deallocate (mach_task_self (),
-			     (vm_address_t)returned, *datalen);
+	      munmap ((caddr_t) returned, *datalen);
 	    }
 	  return D_SUCCESS;
 	}
