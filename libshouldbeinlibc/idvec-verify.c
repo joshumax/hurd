@@ -49,7 +49,8 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
     return 0;
   else
     {
-      int multiple;		/* Asking for multiple ids? */
+      int i;
+      int multiple = 0;		/* Asking for multiple ids? */
       error_t  err = 0;		/* Our return status.  */
       struct idvec implied_gids = IDVEC_INIT; /* Gids implied by uids.  */
       /* If we already are in group 0 (`wheel'), this user's password can be
@@ -60,17 +61,28 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
 	 ? have_uids->ids[0]
 	 : 0);
 
+      /* See if there are multiple ids in contention, in which case we should
+	 name each user/group as we ask for its password.  */
       if (uids && gids)
-	/* Calculate which groups we need not ask about because they are
-	   implied by the uids which we have verified.  Note that we ignore
-	   any errors; at most, it means we will ask for too many passwords. */
-	idvec_merge_implied_gids (&implied_gids, uids);
+	{
+	  int num_non_implied_gids = 0;
 
-      multiple =
-	(((uids ? uids->num : 0)
-	  + (gids ? gids->num : 0)
-	  - implied_gids.num)
-	 > 1);
+	  /* Calculate which groups we need not ask about because they are
+	     implied by the uids which we (will) have verified.  Note that we
+	     ignore any errors; at most, it means we will ask for too many
+	     passwords.  */
+	  idvec_merge_implied_gids (&implied_gids, uids);
+
+	  for (i = 0; i < gids->num; i++)
+	    if (! idvec_contains (&implied_gids, gids->ids[i]))
+	      num_non_implied_gids++;
+
+	  multiple = (uids->num + num_non_implied_gids) > 1;
+	}
+      else if (uids)
+	multiple = uids->num > 1;
+      else if (gids)
+	multiple = gids->num > 1;
 
       if (uids && idvec_contains (uids, 0))
 	/* root is being asked for, which, once granted will provide access for
@@ -78,8 +90,6 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
 	err = verify_id (0, 0, multiple, wheel_uid, getpass_fn);
       else
 	{
-	  int i;
-
 	  if (uids)
 	    /* Check uids */
 	    for (i = 0; i < uids->num && !err; i++)
