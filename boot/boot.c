@@ -2066,6 +2066,15 @@ S_io_sigio (mach_port_t obj,
   return EOPNOTSUPP;
 }
 
+
+kern_return_t
+S_io_pathconf (mach_port_t obj,
+	       mach_port_t reply_port,
+	       mach_msg_type_name_t reply_type,
+	       int name, int *value)
+{
+  return EOPNOTSUPP;
+}
     
 
 
