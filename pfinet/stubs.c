@@ -1,5 +1,5 @@
 /* Stub functions replacing things called from the Linux code
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -44,10 +44,13 @@ dev_init_scheduler (struct device *dev)
 {
   dev->qdisc = &qdisc_stub;
 }
-#pragma weak dev_shutdown = dev_init_scheduler
-#pragma weak dev_activate = dev_init_scheduler
-#pragma weak dev_deactivate = dev_init_scheduler
-#pragma weak tcp_ioctl = dev_init_scheduler
+void dev_shutdown (struct device *)
+     __attribute__ ((alias ("dev_init_scheduler")));
+void dev_activate (struct device *)
+     __attribute__ ((alias ("dev_init_scheduler")));
+void dev_deactivate (struct device *)
+     __attribute__ ((alias ("dev_init_scheduler")));
+void tcp_ioctl () __attribute__ ((alias ("dev_init_scheduler")));
 
 /* This isn't quite a stub, but it's not quite right either.  */
 __u32 secure_tcp_sequence_number(__u32 saddr, __u32 daddr,
