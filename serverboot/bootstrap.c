@@ -428,4 +428,5 @@ parse_script (struct file *f)
       line = ++p;
 
     }
+  free (buf);
 }

@@ -1,3 +1,8 @@
+Tue May 12 12:11:36 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* bootstrap.c (parse_script): Free BUF before returning.  Reported
+ 	by Katusya Tanaka (wyvern@pb3.so-net.ne.jp).
+
 1997-07-15  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* bootstrap.c (main): Rearrange default pager initialization.
