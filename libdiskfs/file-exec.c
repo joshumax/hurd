@@ -51,8 +51,8 @@ diskfs_S_file_exec (struct protid *cred,
     return EOPNOTSUPP;
   
   np = cred->po->np;
-  if (err = diskfs_access (np, S_IEXEC, cred))
-    return err;
+  if ((cred->po->flags & O_EXEC) == 0)
+    return EBADF;
   if (!((np->dn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((np->dn_stat.st_mode & S_IUSEUNK)
 	    && (np->dn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
