@@ -3185,9 +3185,12 @@ default_pager()
 	for (i = 0; i < default_pager_external_count; i++)
 		start_default_pager_thread(FALSE);
 
+	default_pager_default_thread(0); /* Become the default_pager server */
+#if 0
 	cthread_fork (default_pager_default_thread, 0);
 	/*	cthread_exit (cthread_self ()); */
 	thread_suspend (mach_thread_self ());
+#endif
 }
 
 /*
