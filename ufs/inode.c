@@ -683,6 +683,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 	      (((i + 1) * sblock->fs_bsize > np->allocsize)
 	       ? np->allocsize - i * sblock->fs_bsize
 	       : sblock->fs_bsize);
+	    start <<= log2_dev_blocks_per_dev_bsize;
+	    length <<= log2_dev_blocks_per_dev_bsize;
 	    if (num_runs == 0 || run->start + run->length != start)
 	      *run++ = (struct store_run){ start, length };
 	    else
