@@ -74,9 +74,15 @@ name (this is a mach partition name), or comment out the line if you
 don't want paging.  Note that you don't have to do anything to
 initialize swap partitions, unlike Linux.  
 
+(If you did STEP I using NetBSD boot floppies, then this file should
+be /mnt/boot/servers.boot.)
+
 
 
 STEP III:
+
+(If you used NetBSD boot floppies, shutdown NetBSD with the commands
+`umount /mnt' and `halt'.)
 
 Now boot the Hurd the following way.  First, boot the grub boot
 floppy.  When the menu comes up, select one of the single user boot
@@ -103,7 +109,13 @@ and you may notice that pipes don't work.
 In order to set up the translators for this to be a fully functional
 Hurd system, say
 
-  /bin/sh /SETUP
+  /bin/sh /SETUP disk
+
+where `disk' is the name of the disk to install the boot block on,
+without partition name, for example `sd0' or `hd0'.  (If you give no
+arg, it will ask you for the device to install the boot block on in
+case you forgot.  If you really don't want a boot block, just hit RET
+when it asks.)
 
 This will set up some initial translators so that the system runs
 normally, and then offer to reboot the system.  When it comes back up,
@@ -128,19 +140,12 @@ NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
 
 STEP V:
 
-If you want to be able to boot this disk without using the floppy each
-time, then run the script /INSTALL-GRUB-MBR; give it as an arg the
-name of your disk without any partition.  Something like
+Now boot from the floppy again.  This time, select the "grub install"
+option.  (If your disk isn't known as hd0 to grub, then you will need
+to edit the commands accordingly.)  Reset your PC and take the floppy
+disk out of the drive.  The hard disk should now boot successfully.
 
-/INSTALL-GRUB-MBR sd0
-
-is called for.
-
-Now halt the system, and boot from the floppy again.  This time,
-select the "grub install" option.  (If your disk isn't known as hd0 to
-grub, then you will need to edit the commands accordingly.)  Reset
-your PC.  The hard disk should now boot successfully.  Boot the system
-single-user, and proceed to STEP VI.
+Select the single-user boot menu option, and proceed to STEP VI.
 
 The menu that grub provides is found in /boot/grub/menu.lst.  You can
 edit that file to change what options the menu provides, as well as
@@ -159,20 +164,19 @@ the following:
 *** make devices
 cd to /dev and make devices.
 
-Say `MAKEDEV dev1 dev2 dev3 ...'.
+Say `./MAKEDEV dev1 dev2 dev3 ...'.
 
 Supported devices are:
   o any hard disk device you have; you must specify both unit number *and*
     partition.  Something like `sd0a' or `rd1f' is called for.  Unit
-    number without any partition names the entire disk. 
+    number without any partition names the entire disk.  (SETUP has
+    already created a device for the entire disk holding your boot
+    block, if you gave it that information.)
   o floppy disk drives, give something like `fd0' or `fd1'.
+  o hardwired terminals, something like `com0' or `com1'.
 
-For hardwired terminals, MAKEDEV doesn't know how to do it yet.  To
-create /dev/tty00, where `tty00' is the Mach device name for the
-terminal, do
-
-settrans -c /dev/tty00 /hurd/term /dev/tty00 device tty00
-
+In general, the name of the device to use was printed by Mach when it
+booted. 
 
 
 *** setup network
@@ -196,7 +200,6 @@ changed while pfinet is running by using fsysopts, e.g.:
 
 Make sure you edit /etc/resolv.conf and/or /etc/hosts for the
 nameserver to work properly. 
-
 
 
 *** mount partitions
@@ -258,11 +261,11 @@ Add any serial lines you have terminals on to /etc/ttys.
 Set your hostname with `echo foo.bar.baz > /etc/hostname'.  This will
 then be permanent until you change the file.
 
-Create a link from /etc/zoneinfo/localtime to the your timezone in
-etc/zoneinfo.  Something like the following command will do the trick:
-`ln /share/zoneinfo/US/Eastern /etc/localtime'.  Look at the directory
-/share/zoneinfo to see all the various possibilities.
- 
+Create a link from /etc/localtime to the file describing your timezone
+in /share/zoneinfo.  Something like the following command will do the
+trick: `ln /share/zoneinfo/US/Eastern /etc/localtime'.  Look at the
+directory /share/zoneinfo to see all the various possibilities.
+
 Edit /etc/fstab according to the disk mounts you've installed; this
 will control which partitions `df' prints and which partitions get
 `fsck' run for them at boot time.  It will not affect which partitions
