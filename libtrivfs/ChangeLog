@@ -1,5 +1,9 @@
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* io-write.c: Include <fcntl.h>.
+
+	* fsys-getroot.c (trivfs_S_fsys_getroot): Fix typo.
+
 	* io-write.c (trivfs_S_io_write): Return EBADF if trivfs_allow_open
 	doesn't include O_WRITE.
 
