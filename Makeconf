@@ -16,7 +16,7 @@
 # Types `server', `utility', and `library' should define
 # OBJS (all .o files used to produce the target).
 
-# Types `server', `utility', `servers', and `utilities' should define
+# Types `server', and `utility', should define
 # HURDLIBS (all Hurd libraries used, omitting the dirname and the .a.)
 
 # Types `server' and `utility' should define
@@ -25,14 +25,11 @@
 
 # Types `servers' and `utilities' should define
 # targets (the names of all the programs built)
+# foo-HURDLIBS (for each target FOO)
 
 # Type `library' should define
 # libname (the name of the library, without .a.)
 # installhdrs (header files that should be installed in /include)
-# 
-# If you define a new library, then you need to add it to the list
-# below under the comment `Hurd libraries' in the same form as the
-# other libraries listed there.
 
 
 # Put this first so it's the default
@@ -132,18 +129,33 @@ endif
 # Provide default.
 install:
 
+# Always, until bugs are fixed.
 LDFLAGS += -static
 
-# Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
-# a variable above with the complete file name to find it.
-# Yippee!  A use for computed variable references!
-ifeq ($(filter-out -static,$(LDFLAGS)),$(LDFLAGS))
-HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).so)
-else
-HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
+ifeq ($(doinst),many)
+HURDLIBS=$(foreach targ,$(targets),$($(targ)-HURDLIBS))
 endif
-HURDLIBS-libs := $(foreach lib,$(HURDLIBS), -L../$(lib)  \
+
+# We use recursively expanded variables that reference the automatic
+# variables in the link rules.  For now, you have to say -static
+# in $(LDFLAGS); it cannot be in a per-target LDFLAGS.
+ifeq ($(doinst),many)
+  HURDLIBS-libs = $(foreach lib,$($@-HURDLIBS), -L../$(lib)  \
 			$(patsubst lib%,-l%,$(lib)))
+else
+  HURDLIBS-libs = $(foreach lib,$(HURDLIBS), -L../$(lib)  \
+			$(patsubst lib%,-l%,$(lib)))
+endif
+
+# This variable is used for the default library-building rule
+# and for dependencies.  For the former, this is always adequate.
+# But for the latter, there is no automatic way, so our includer
+# will have to construct the dependency list by hand.
+ifeq ($(filter-out -static,$(LDFLAGS)),$(LDFLAGS))
+  HURDLIBS-files = $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).so)
+else
+  HURDLIBS-files = $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
+endif
 
 # Building the target
 ifeq ($(doinst),one)
@@ -152,6 +164,12 @@ $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 	$(OBJS) $(HURDLIBS-libs) $(OTHERLIBS) $(libc) '-Wl,-)'
 endif
 
+ifeq ($(doinst),many)
+$(targets): %:
+	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) \
+	-o $@ '-Wl,-(' $(filter-out $(HURDLIBS-files),$+) \
+	$(HURDLIBS-libs) $($@-OTHERLIBS) $(libc) '-Wl,-)'
+endif
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
@@ -200,7 +218,7 @@ relink:
 # Subdependencies
 
 # Building Hurd libraries
-$(HURDLIBS-files): FORCE
+$(sort $(HURDLIBS-files)): FORCE
 	$(MAKE) -C $(dir $@) $(notdir $@)
 
 
