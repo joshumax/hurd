@@ -31,6 +31,9 @@ installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
 installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
 
+ROOTDOTS = .bash_login .bashrc .profile
+installed_rootdots = $(addprefix $(prefix)/root,$(ROOTDOTS))
+
 # Mere symlinks are installed for these
 LINKEDCONFFILES = rc
 installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
@@ -42,7 +45,13 @@ else
 override_spec = 
 endif
 
-install: $(installed_conf) $(installed_links) $(installed_logins)
+install: $(installed_conf) $(installed_links) $(installed_logins) \
+	$(installed_rootdots)
+
+$(installed_rootdots): $(prefix)/root/%: root-%
+	mkdir -p $(prefix)/root
+	$(INSTALL_DATA) $< $(prefix)/$*
+
 $(installed_logins): $(sysconfdir)/login/%: login-%
 	mkdir -p $(sysconfdir)/login
 	$(INSTALL_DATA) $< $(sysconfdir)/$*
