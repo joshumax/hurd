@@ -6,12 +6,6 @@
 
 #define NET_BH 1
 
-extern inline void 
-mark_bh (int foo)
-{
-  assert (foo == NET_BH);
-  
-  net_bh (0);
-}
+extern void mark_bh (int);
 
 #endif
