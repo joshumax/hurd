@@ -137,7 +137,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
     }
   else
     {
-      *do_retry = FS_RETRY_NONE;
+      *do_retry = FS_RETRY_NORMAL;
       *retry_name = '\0';
       *newpt = ports_get_right (cred);
       *newpttype = MACH_MSG_TYPE_MAKE_SEND;
@@ -162,11 +162,11 @@ trivfs_complete_open (struct trivfs_control *cntl,
       
       if (!err)
 	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-			    FS_RETRY_NONE, "", ports_get_right (pendo->cred),
+			    FS_RETRY_NORMAL, "", ports_get_right (pendo->cred),
 			    MACH_MSG_TYPE_MAKE_SEND);
       else
 	fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
-			    FS_RETRY_NONE, "", MACH_PORT_NULL,
+			    FS_RETRY_NORMAL, "", MACH_PORT_NULL,
 			    MACH_MSG_TYPE_COPY_SEND);
       ports_done_with_port (pendo->cred);
       free (pendo);
@@ -177,12 +177,12 @@ trivfs_complete_open (struct trivfs_control *cntl,
 	{
 	  if (!err)
 	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
-				FS_RETRY_NONE, "", 
+				FS_RETRY_NORMAL, "", 
 				ports_get_right (pendo->cred),
 				MACH_MSG_TYPE_MAKE_SEND);
 	  else
 	    fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, err,
-				FS_RETRY_NONE, "", MACH_PORT_NULL,
+				FS_RETRY_NORMAL, "", MACH_PORT_NULL,
 				MACH_MSG_TYPE_COPY_SEND);
 	  nxt = pendo->next;
 	  ports_done_with_port (pendo->cred);
