@@ -27,6 +27,7 @@
 /* These tell whether the specified extensions are on or not. */
 int susp_live = 0;
 int rock_live = 0;
+int gnuext_live = 0;
 
 /* How far to skip when reading SUSP fields. */
 int susp_skip = 0;
@@ -38,6 +39,8 @@ release_rrip (struct rrip_lookup *rr)
     free (rr->name);
   if ((rr->valid & VALID_SL) && rr->target)
     free (rr->target);
+  if ((rr->valid & VALID_TR) && rr->trans)
+    free (rr->trans);
 }
 
 
@@ -186,35 +189,20 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  struct su_er *er = body;
 	  char *c;
 
-	  /* The only extension we currently support is Rock-Ridge. */
-	  
 	  /* Make sure the ER field is valid */
 	  if ((void *) er->more + er->len_id + er->len_des + er->len_src
 	      < terminus)
-	    goto nomatch;
+	    goto next_field;
 	  
-	  if (er->ext_ver != ROCK_VERS)
-	    goto nomatch;
-	  
-	  c = er->more;
-	  if (memcmp (ROCK_ID, c, er->len_id))
-	    goto nomatch;
+	  /* Check for rock-ridge */
+	  if (er->ext_ver == ROCK_VERS
+	      && !memcmp (ROCK_ID, er->more, er->lenid))
+	    rock_live = 1;
 
-	  /* At this point we know we have Rock-Ridge, but
-	     we check these and moan about it if they are wrong. */
-
-	  c += er->len_id;
-	  if (memcmp (ROCK_DES, c, er->len_des))
-	    fprintf (stderr, "isofs warning: Rock-Ridge extension description is not standard: %s\n", c);
-
-	  c += er->len_des;
-	  if (memcmp (ROCK_SRC, c, er->len_src))
-	    fprintf (stderr, "isofs warning: Rock-Ridge extensions source is not standard: %s\n", c);
-
-	  rock_live = 1;
-
-	nomatch:
-	  goto next_field;
+	  /* Check for Gnuext */
+	  else if (er->ext_ver == GNUEXT_VERS
+		   && !memcmp (GNUEXT_ID, er->more, er->lenid))
+	    gnuext_live = 1;
 	}
 
       /* PD fields are padding and just get ignored. */
@@ -551,6 +539,61 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 			       * (logical_block_size
 				  >> store->log2_block_size));
 	  rr->valid |= VALID_PL;
+	  goto next_field;
+	}
+
+      /* The rest are GNU ext. */
+      if (!gnuext_live)
+	goto next_field;
+
+      /* Author */
+      if (susp->sig[0] == 'A'
+	  && susp->sig[1] == 'U'
+	  && susp->version == 1)
+	{
+	  struct gn_au *au = body;
+
+	  rr->author = isonum_733 (au->author);
+	  rr->valid |= VALID_AU;
+
+	  goto next_field;
+	}
+      
+      if (susp->sig[0] == 'T'
+	  && susp->sig[1] == 'R'
+	  && susp->version == 1)
+	{
+	  struct gn_tr *tr = body;
+	  
+	  rr->translen = tr->len;
+	  rr->trans = malloc (rr->translen);
+	  memcpy (tr->data, rr->trans, rr->translen);
+	  rr->valid |= VALID_TR;
+	  
+	  goto next_field;
+	}
+      
+      if (susp->sig[0] == 'M'
+	  && susp->sig[1] == 'D'
+	  && susp->version == 1)
+	{
+	  struct gn_md *md = body;
+
+	  rr->allmode = isonum_733 (md->mode);
+	  rr->valid |= VALID_MD;
+	  
+	  goto next_field;
+	}
+      
+      if (susp->sig[0] == 'F'
+	  && susp->sig[1] == 'L'
+	  && susp->version == 1)
+	{
+	  struct gn_fl *fl = body;
+	  
+	  rr->flags = isonum_733 (fl->flags);
+	  rr->valid |= VALID_FL;
+	  
 	  goto next_field;
 	}
 

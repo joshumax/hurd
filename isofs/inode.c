@@ -322,26 +322,36 @@ read_disknode (struct node *np, struct dirrect *dr,
 
   if (rl->valid & VALID_PX)
     {
-      st->st_mode = rl->mode;
+      if ((rl->valid & VALID_MD) == 0)
+	st->st_mode = rl->mode;
       st->st_nlink = rl->nlink;
       st->st_uid = rl->uid;
       st->st_gid = rl->gid;
     }
   else
     {
-      /* If there are no periods, it's a directory. */
-      if (((rl->valid & VALID_NM) && !index (rl->name, '.'))
-	  || (!(rl->valid & VALID_NM) && !memchr (dr->name, '.', dr->namelen)))
-	st->st_mode = S_IFDIR | 0777;
-      else
-	st->st_mode = S_IFREG | 0666;
-
+      if ((rl->valid & VALID_MD) == 0)
+	{
+	  /* If there are no periods, it's a directory. */
+	  if (((rl->valid & VALID_NM) && !index (rl->name, '.'))
+	      || (!(rl->valid & VALID_NM) && !memchr (dr->name, '.', 
+						      dr->namelen)))
+	    st->st_mode = S_IFDIR | 0777;
+	  else
+	    st->st_mode = S_IFREG | 0666;
+	}
       st->st_nlink = 1;
       st->st_uid = 0;
       st->st_gid = 0;
     }
+
+  if (rl->valid & VALID_MD)
+    st->st_mode = rl->allmode;
   
-  st->st_author = st->st_gid;
+  if (rl->valid & VALID_AU)
+    st->st_author = rl->author;
+  else
+    st->st_author = st->st_gid;
 
   st->st_size = isonum_733 (dr->size);
 
@@ -391,7 +401,11 @@ read_disknode (struct node *np, struct dirrect *dr,
   
   st->st_blksize = logical_block_size;
   st->st_blocks = (st->st_size - 1) / 512 + 1;
-  st->st_flags = 0;
+
+  if (rl->valid & VALID_FL)
+    st->st_flags = rl->flags;
+  else
+    st->st_flags = 0;
   
   if (S_ISLNK (st->st_mode))
     {
@@ -408,6 +422,16 @@ read_disknode (struct node *np, struct dirrect *dr,
 	}
     }
 
+  if (rr->valid & VALID_TR)
+    {
+      st->st_mode |= S_IPTRANS;
+      np->dn->translen = rl->translen;
+      np->dn->translator = rl->trans;
+      rl->trans = 0;
+    }
+  else
+    np->dn->translator = np->dn->translen = 0;
+  
   diskfs_end_catch_exception ();
   
   return 0;
@@ -431,6 +455,9 @@ diskfs_node_norefs (struct node *np)
 {
   assert (node_cache[np->cache_id - 1].np == np);
   node_cache[np->cache_id - 1].np = 0;
+
+  if (np->translator)
+    free (np->translator);
 
   assert (!np->dn->fileinfo);
   free (np->dn);

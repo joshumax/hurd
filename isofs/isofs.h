@@ -37,6 +37,9 @@ struct disknode
   struct user_pager_info *fileinfo;
 
   char *link_target;		/* for S_ISLNK */
+
+  size_t translen;
+  char *translator;
 };
 
 struct user_pager_info

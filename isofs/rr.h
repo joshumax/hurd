@@ -54,6 +54,19 @@ struct rrip_lookup
   /* RL */
   off_t realfilestart;		/* override file start in dir entry */
 
+  /* AU */
+  uid_t author;
+
+  /* TR */
+  size_t translen;
+  char *trans;
+  
+  /* MD */
+  mode_t allmode;
+  
+  /* FL */
+  long flags;
+
   int valid;
 };
 
@@ -66,6 +79,10 @@ struct rrip_lookup
 #define VALID_PL	0x0020
 #define VALID_TF	0x0040
 #define VALID_RE	0x0080
+#define VALID_AU	0x0100
+#define VALID_TR	0x0200
+#define VALID_MD	0x0400
+#define VALID_FL	0x0800
 
 
 /* Definitions for System Use Sharing Protocol.
@@ -202,6 +219,41 @@ struct rr_tf
 struct rr_sf
 {
   char size[8];
+};
+
+
+/* GNU extensions */
+
+#define GNUEXT_VERS	1
+#define GNUEXT_ID	GNUEXT_1997
+#define GNUEXT_DES \
+   "The GNU Extensions provide support for special GNU filesystem features"
+#define GNUEXT_SRC \
+   "GNU Hurd source release 0.3 or later"
+
+/* AU -- author (version 1) */
+struct gn_au
+{
+  char author[8];
+};
+
+/* TR -- translator (version 1) */
+struct gn_tr
+{
+  u_char len;
+  char data[0];
+};
+
+/* MD -- full mode (version 1) */
+struct gn_md
+{
+  char mode[8];
+};
+
+/* FL -- flags (version 1) */
+struct gn_fl
+{
+  char flags[8];
 };
 
 

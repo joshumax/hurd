@@ -21,6 +21,7 @@ makemode := server
 target = isofs
 SRCS = inode.c main.c lookup.c pager.c rr.c
 LCLHDRS = iso9660.h isofs.h rr.h 
+DIST_FILES = EXTENSIONS
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
