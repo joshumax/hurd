@@ -66,6 +66,14 @@ enum ftype {
 	NF2FIFO = 8,		/* v2 only */
 };
 
+/* Ways to set the time in setattr structures */
+enum sattr_time_how 
+{
+  DONT_CHANGE = 0,
+  SET_TO_SERVER_TIME = 1,
+  SET_TO_CLIENT_TIME = 2,
+};
+
 #define NFS_PROGRAM ((u_long)100003)
 #define NFS_VERSION ((u_long)2)
 

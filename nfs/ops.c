@@ -429,7 +429,6 @@ verify_nonexistent (struct netcred *cred, struct node *dir,
   p = xdr_encode_fhandle (p, &dir->nn->handle);
   p = xdr_encode_string (p, name);
 
-  mutex_lock (&dir->lock);
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
@@ -463,8 +462,7 @@ netfs_attempt_lookup (struct netcred *cred, struct node *np,
   
   if (!err)
     {
-      *newnp = lookup_fhandle (p);
-      p += NFS2_FHSIZE / sizeof (int);
+      p = lookup_fhandle (p, newnp);
       register_fresh_stat (*newnp, p);
     }
   else
@@ -617,8 +615,7 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
 	  else
 	    {
 	      mutex_lock (&np->lock);
-	      recache_handle (np, p);
-	      p += NFS2_FHSIZE / sizeof (int);
+	      p = recache_handle (p, np);
 	      register_fresh_stat (np, p);
 	      mutex_unlock (&np->lock);
 	    }
@@ -632,11 +629,11 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
     case FIFO:
     case SOCK:
 
+      mutex_lock (&dir->lock);
       err = verify_nonexistent (cred, dir, name);
       if (err)
 	return err;
 
-      mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_CREATE (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
       p = xdr_encode_fhandle (p, &dir->nn->handle);
@@ -662,8 +659,7 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
       mutex_unlock (&dir->lock);
       
       mutex_lock (&np->lock);
-      recache_handle (np, p);
-      p += NFS2_FHSIZE / sizeof (int);
+      p = recache_handle (p, np);
       register_fresh_stat (np, p);
       mutex_unlock (&np->lock);
 
@@ -765,8 +761,7 @@ netfs_attempt_create_file (struct netcred *cred, struct node *np,
 
   if (!err)
     {
-      *newnp = lookup_fhandle (p);
-      p += NFS2_FHSIZE / sizeof (int);
+      p = lookup_fhandle (p, newnp);
       register_fresh_stat (*newnp, p);
     }
   else

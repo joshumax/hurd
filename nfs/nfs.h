@@ -24,11 +24,20 @@ typedef int bool_t;		/* Ick. */
 #include <rpcsvc/nfs_prot.h>
 #include <hurd/netfs.h>
 
+/* A file handle */
+struct fhandle
+{
+  size_t size;
+
+  /* Leave enough room for the biggest possible fhandle. */
+  char data[NFS3_FHSIZE];
+};
+
 /* One of these exists for private data needed by the client for each
    node. */
 struct netnode 
 {
-  char handle[NFS2_FHSIZE];
+  struct fhandle handle;
   time_t stat_updated;
   struct node *hnext, **hprevp;
 
@@ -155,7 +164,7 @@ int cred_has_uid (struct netcred *, uid_t);
 int cred_has_gid (struct netcred *, gid_t);
 
 /* nfs.c */
-int *xdr_encode_fhandle (int *, void *);
+int *xdr_encode_fhandle (int *, struct fhandle *);
 int *xdr_encode_data (int *, char *, size_t);
 int *xdr_encode_string (int *, char *);
 int *xdr_encode_sattr_mode (int *, mode_t);
@@ -183,5 +192,5 @@ void timeout_service_thread (void);
 void rpc_receive_thread (void);
 
 /* cache.c */
-struct node *lookup_fhandle (void *);
-void recache_handle (struct node *, void *);
+int *lookup_fhandle (int *, struct node **);
+int *recache_handle (int *, struct node *);

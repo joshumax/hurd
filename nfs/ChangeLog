@@ -1,4 +1,34 @@
+Thu Aug 15 15:24:29 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (verify_nonexistent): Don't need to lock DIR; it's already
+	locked.
+	(netfs_attempt_link): Lock DIR *before* calling verify_nonexistent.
+
+	* nfs.c (xdr_encode_fhandle) [protocol_version == 2]: Copy
+	fhandle->data, not fhandle itself.
+
 Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+  	* nfs.c (xdr_encode_fhandle): Second arg now a `struct fhandle *'.
+	Encode v3 fhandle if appropriate.
+	* cache.c: Include <netinet/in.h>.
+	(hash): New arg `length'.
+	(lookup_fhandle): Changed to be more like xdr_decode_* functions.
+	All callers changed.  Do the right thing for v3.
+	(recache_handle): Likewise.
+	* nfs.h (struct fhandle): New type.  
+	(struct netnode): Member `handle' is now a `struct fhandle'.  
+	(xdr_encode_fhandle): Second arg now a `struct fhandle *'.
+	(lookup_fhandle, recache_handle): Changed to be more like
+	xdr_decode_* functions. 
+
+	* rpcsvc/nfs_prot.h (enum sattr_time_how): New type.
+	* nfs.c (xdr_encode_64bit): New function.
+	(xdr_encode_sattr_mode, xdr_encode_sattr_ids,
+	xdr_encode_sattr_size, xdr_encode_sattr_times,
+	xdr_encode_create_state, xdr_encode_sattr_stat): Encode v3 sattr
+	if appropriate. 
+	(xdr_decode_fattr): Decode v3 fattr if appropriate.
 
 	* rpcsvc/nfs_prot.h (NFS_FHSIZE): Deleted macro.
 	(NFS2_FHSIZE, NFS3_FHSIZE, NFS3_COOKIEVERFSIZE, NFS3_CREATEVERFSIZE,

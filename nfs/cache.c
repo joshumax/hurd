@@ -21,49 +21,62 @@
 #include "nfs.h"
 
 #include <string.h>
+#include <netinet/in.h>
 
 /* Hash table containing all the nodes currently active. */
 #define CACHESIZE 512
 static struct node *nodehash [CACHESIZE];
 
-/* Compute and return a hash key for NFS file handle FHANDLE. */
+/* Compute and return a hash key for NFS file handle DATA of LEN bytes. */
 static inline int
-hash (void *fhandle)
+hash (int *data, size_t len)
 {
   unsigned int h = 0;
+  char *cp = (char *)data;
   int i;
   
-  for (i = 0; i < NFS2_FHSIZE; i++)
-    h += ((char *)fhandle)[i];
+  for (i = 0; i < len; i++)
+    h += cp[i];
   
   return h % CACHESIZE;
 }
 
-/* Lookup the specified file handle FHANDLE in the hash table.  If it
+/* Lookup the file handle in RPC result at P in the hash table.  If it
    is not present, initialize a new node structure and insert it into
    the hash table.  Whichever course, a new reference is generated and
-   the node is returned. */
-struct node *
-lookup_fhandle (void *fhandle)
+   the node is returned in *NPP.  Return the address in the RPC result
+   after the file handle.  */
+int *
+lookup_fhandle (int *p, struct node **npp)
 {
   struct node *np;
   struct netnode *nn;
-  int h = hash (fhandle);
+  size_t len;
+  int h;
+
+  if (protocol_version == 2)
+    len = NFS2_FHSIZE;
+  else
+    len = ntohl (*p++);
+  h = hash (p, len);
 
   spin_lock (&netfs_node_refcnt_lock);
   for (np = nodehash[h]; np; np = np->nn->hnext)
     {
-      if (bcmp (np->nn->handle, fhandle, NFS2_FHSIZE) != 0)
+      if (np->nn->handle.size != len
+	  || bcmp (np->nn->handle.data, p, len) != 0)
 	continue;
       
       np->references++;
       spin_unlock (&netfs_node_refcnt_lock);
       mutex_lock (&np->lock);
-      return np;
+      *npp = np;
+      return p + len / sizeof (int);
     }
   
   nn = malloc (sizeof (struct netnode));
-  bcopy (fhandle, nn->handle, NFS2_FHSIZE);
+  nn->handle.size = len;
+  bcopy (p, nn->handle.data, len);
   nn->stat_updated = 0;
   nn->dtrans = NOT_POSSIBLE;
   nn->dead_dir = 0;
@@ -79,7 +92,8 @@ lookup_fhandle (void *fhandle)
 
   spin_unlock (&netfs_node_refcnt_lock);
   
-  return np;
+  *npp = np;
+  return p + len / sizeof (int);
 }
 
 /* Called by libnetfs when node NP has no more references.  (See
@@ -123,27 +137,36 @@ netfs_node_norefs (struct node *np)
     }
 }
 
-/* Change the file handle used for node NP to be HANDLE.  Make sure the
-   hash table stays up to date. */
-void
-recache_handle (struct node *np, void *handle)
+/* Change the file handle used for node NP to be the handle at P.
+   Make sure the hash table stays up to date.  Return the address
+   after the hnadle. */
+int *
+recache_handle (int *p, struct node *np)
 {
   int h;
+  size_t len;
+
+  if (protocol_version == 2)
+    len = NFS2_FHSIZE;
+  else
+    len = ntohl (*p++);
   
   spin_lock (&netfs_node_refcnt_lock);
   *np->nn->hprevp = np->nn->hnext;
   if (np->nn->hnext)
     np->nn->hnext->nn->hprevp = np->nn->hprevp;
+
+  np->nn->handle.size = len;
+  bcopy (p, np->nn->handle.data, len);
   
-  bcopy (handle, np->nn->handle, NFS2_FHSIZE);
-  
-  h = hash (handle);
+  h = hash (p, len);
   np->nn->hnext = nodehash[h];
   if (np->nn->hnext)
     np->nn->hnext->nn->hprevp = &np->nn->hnext;
   np->nn->hprevp = &nodehash[h];
   
   spin_unlock (&netfs_node_refcnt_lock);
+  return p + len / sizeof (int);
 }
 
 

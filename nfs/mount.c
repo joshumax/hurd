@@ -176,8 +176,7 @@ mount_root (char *name, char *host)
     }
   
   /* Create the node for root */
-  np = lookup_fhandle (p);
-  p += NFS2_FHSIZE / sizeof (int);
+  lookup_fhandle (p, &np);
   free (rpcbuf);
   mutex_unlock (&np->lock);
 
