@@ -21,7 +21,8 @@
 /* Implement file_get_translator_cntl as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_get_translator_cntl (struct protid *cred,
-				   mach_port_t *ctl)
+				   mach_port_t *ctl,
+				   mach_msg_type_name_t *ctltype)
 {
   struct node *np;
   error_t error;
@@ -37,7 +38,10 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
     error = diskfs_isowner (np, cred);
 
   if (!error)
-    *ctl = np->translator.control;
+    {
+      *ctl = np->translator.control;
+      *ctltype = MACH_MSG_TYPE_COPY_SEND;
+    }
 
   diskfs_nput (np);
   return error;
