@@ -147,12 +147,51 @@ file_clear_flags (struct store *store, int flags)
   return err;
 }
 
+static error_t
+file_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
+{
+  error_t err;
+  mach_port_t rd_memobj, wr_memobj;
+  int ro = (store->flags & STORE_HARD_READONLY);
+
+  if (store->num_runs != 1 || store->runs[0].start != 0)
+    return EOPNOTSUPP;
+
+  if ((prot & VM_PROT_WRITE) && ro)
+    return EACCES;
+
+  err = io_map (store->port, &rd_memobj, &wr_memobj);
+  if (err)
+    return err;
+
+  *memobj = rd_memobj;
+
+  if (ro && wr_memobj == MACH_PORT_NULL)
+    return 0;
+  else if (rd_memobj == wr_memobj)
+    {
+      if (rd_memobj != MACH_PORT_NULL)
+	mach_port_mod_refs (mach_task_self (), rd_memobj,
+			    MACH_PORT_RIGHT_SEND, -1);
+    }
+  else
+    {
+      if (rd_memobj != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), rd_memobj);
+      if (wr_memobj != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), wr_memobj);
+      err = EOPNOTSUPP;
+    }
+
+  return err;
+}
+
 struct store_class
 store_file_class =
 {
   STORAGE_HURD_FILE, "file", file_read, file_write,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
-  file_set_flags, file_clear_flags, 0, 0, 0, file_open
+  file_set_flags, file_clear_flags, 0, 0, 0, file_open, 0, file_map
 };
 
 static error_t
@@ -176,7 +215,7 @@ store_file_byte_class =
 {
   STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
-  file_set_flags, file_clear_flags, 0, 0, 0, file_open
+  file_set_flags, file_clear_flags, 0, 0, 0, file_open, 0, file_map
 };
 
 /* Return a new store in STORE referring to the mach file FILE.  Consumes
