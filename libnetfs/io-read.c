@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -21,6 +21,7 @@
 #include "netfs.h"
 #include "io_S.h"
 #include <fcntl.h>
+#include <sys/mman.h>
 
 error_t
 netfs_S_io_read (struct protid *user,
@@ -101,4 +102,3 @@ netfs_S_io_read (struct protid *user,
 
   return err;
 }
-

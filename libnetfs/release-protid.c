@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -19,12 +19,13 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include <sys/mman.h>
 
 void
 netfs_release_protid (void *arg)
 {
   struct protid *user = arg;
-  
+
   iohelp_free_iouser (user->user);
   if (user->shared_object)
     mach_port_deallocate (mach_task_self (), user->shared_object);
