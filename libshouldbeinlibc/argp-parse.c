@@ -132,9 +132,8 @@ struct group
      particular short options is from.  */
   char *short_end;
 
-  /* True if this group has successfully processed a non-option argument;
-     used to determine who to call with ARGP_KEY_NO_ARGS.  */
-  int processed_arg;
+  /* The number of non-option args sucessfully handled by this parser.  */
+  unsigned args_processed;
 };
 
 /* Parse the options strings in ARGC & ARGV according to the argp in
@@ -149,6 +148,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 {
   int opt;
   error_t err = 0;
+  /* If true, then err == EINVAL is a result of a non-option argument failing
+     to be parsed (which in some cases isn't actually an error).  */
+  int arg_einval = 0;
   /* SHORT_OPTS is the getopt short options string for the union of all the
      groups of options.  */
   char *short_opts;
@@ -163,6 +165,32 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   struct group *group;
   /* State block supplied to parsing routines.  */
   struct argp_state state = { argp, argc, argv, 0, flags, 0 };
+
+  /* Parse the non-option argument ARG, at the current position.  Returns
+     any error, and sets ARG_EINVAL to true if return EINVAL.  */
+  error_t process_arg (char *val, int *arg_einval)
+    {
+      int index = state.next;
+      error_t err = EINVAL;
+
+      for (group = groups; group < egroup && err == EINVAL; group++)
+	if (group->parser)
+	  {
+	    state.arg_num = group->args_processed;
+	    err = (*group->parser)(ARGP_KEY_ARG, val, &state);
+	  }
+
+      if (!err && state.next >= index)
+	/* Remember that we successfully processed a non-option
+	   argument -- but only if the user hasn't gotten tricky and set
+	   the clock back.  */
+	(--group)->args_processed++;
+
+      if (err == EINVAL)
+	*arg_einval = 1;
+
+      return err;
+    }
 
   if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
@@ -280,7 +308,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 
 	    group->parser = argp->parser;
 	    group->short_end = short_end;
-	    group->processed_arg = 0;
+	    group->args_processed = 0;
 
 	    group++;
 	  }
@@ -340,28 +368,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 
       if (opt == 1)
 	/* A non-option argument; try each parser in turn.  */
-	{
-	  for (group = groups; group < egroup && err == EINVAL; group++)
-	    if (group->parser)
-	      err = (*group->parser)(ARGP_KEY_ARG, optarg, &state);
-	  if (err == EINVAL)
-	    /* No parser understood this argument, return immediately.  */
-	    {
-	      if (end_index)
-		/* As long as there's some way for the user to deal with the
-		   remaining arguments, don't complain.  */
-		err = 0;
-	      break;
-	    }
-	  else if (state.next >= optind)
-	    /* Remember that we successfully processed a non-option
-	       argument -- but only if the user hasn't gotten tricky and set
-	       the clock back.  */
-	    {
-	      (--group)->processed_arg = 1;
-	      state.arg_num++;
-	    }
-	}
+	err = process_arg (optarg, &arg_einval);
       else if (group_key == 0)
 	/* A short option.  */
 	{
@@ -391,16 +398,22 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     }
 
   if (opt == EOF)
-    state.next = optind;	/* Only update NEXT if getopt just failed. */
+    {
+      state.next = optind;	/* Only update NEXT if getopt just failed. */
+
+      /* Now process any non-option arguments that getopt didn't handle.  */
+      while (!err && state.next < state.argc)
+	err = process_arg (state.argv[state.next++], &arg_einval);
+    }
 
   mutex_unlock (&getopt_lock);
 
-  if (!err && !state.argv[state.next])
+  if (! err)
     /* We successfully parsed all arguments!  Call all the parsers again,
        just a few more times... */
     {
       for (group = groups; group < egroup && (!err || err == EINVAL); group++)
-	if (!group->processed_arg && group->parser)
+	if (group->args_processed == 0 && group->parser)
 	  err = (*group->parser)(ARGP_KEY_NO_ARGS, 0, &state);
       for (group = groups; group < egroup && (!err || err == EINVAL); group++)
 	if (group->parser)
@@ -411,7 +424,13 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     }
 
   if (end_index)
-    *end_index = state.next;
+    {
+      if (err == EINVAL && arg_einval)
+	/* As long as there's some way for the user to deal with the
+	   remaining arguments, don't complain.  */
+	err = 0;
+      *end_index = state.next;
+    }
 
   if (err && !(state.flags & ARGP_NO_HELP))
     {
