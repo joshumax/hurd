@@ -2,7 +2,7 @@
 
         * memobj.c: Include "store.h", not <hurd/store.h>.
         * nbd.c: Likewise.
-        * parted.c: Likewise.
+        * part.c: Likewise.
 
 2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
 
