@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -221,17 +221,19 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  newpi =
-	    diskfs_make_protid (diskfs_make_peropen (dnp, 0,
-						     dircred->po->dotdotport),
-				0, 0, 0, 0);
+	  error = 
+	    diskfs_create_protid (diskfs_make_peropen (dnp, 0, dircred->po->dotdotport),
+				  0, 0, 0, 0, &newpi);
+	  if (error)
+	    goto out;
+
 	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
 	  ports_port_deref (newpi);
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
-	  
+
 	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
 				     dirport, dircred->uids, dircred->nuids,
 				     dircred->gids, dircred->ngids, 
@@ -391,12 +393,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   flags &= ~OPENONLY_STATE_MODES;
       
-  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags, 
-						   dircred->po->dotdotport),
-			      dircred->uids, dircred->nuids,
-			      dircred->gids, dircred->ngids);
-  *returned_port = ports_get_right (newpi);
-  ports_port_deref (newpi);
+  error = diskfs_create_protid (diskfs_make_peropen (np, flags, 
+						     dircred->po->dotdotport),
+				dircred->uids, dircred->nuids,
+				dircred->gids, dircred->ngids,
+				&newpi);
+  if (! error)
+    {
+      *returned_port = ports_get_right (newpi);
+      ports_port_deref (newpi);
+    }
   
  out:
   if (np)
