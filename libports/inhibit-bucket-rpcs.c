@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -26,28 +26,31 @@
 void
 ports_inhibit_bucket_rpcs (struct port_bucket *bucket)
 {
+  int this_one = 0;
+
   error_t interruptor (void *portstruct)
     {
       struct port_info *pi = portstruct;
       struct rpc_info *rpc;
-      
+
       for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-	hurd_thread_cancel (rpc->thread);
+	if (hurd_thread_cancel (rpc->thread) == EINTR)
+	  this_one = 1;
       return 0;
     }
-  
+
   mutex_lock (&_ports_lock);
 
   ihash_iterate (bucket->htable, interruptor);
 
-  while (bucket->rpcs)
+  while (bucket->rpcs > this_one)
     {
       bucket->flags |= PORT_BUCKET_INHIBIT_WAIT;
       condition_wait (&_ports_block, &_ports_lock);
     }
-  
+
   bucket->flags |= PORT_BUCKET_INHIBITED;
   bucket->flags &= ~PORT_CLASS_INHIBIT_WAIT;
-  
+
   mutex_unlock (&_ports_lock);
 }
