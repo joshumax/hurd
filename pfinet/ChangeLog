@@ -1,3 +1,13 @@
+1998-10-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ethernet.c (ethernet_open): Check error return from device_open and
+	device_set_filter.
+	(setup_ethernet_device): Check error return from device_get_status.
+
+	* ethernet.c (ethername): Remove static variable.
+	(setup_ethernet_device): Don't set it.
+	(ethernet_open): Don't use it; use DEV->name instead.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* loopback.c (loopback_type_trans): Return u_int16_t.
