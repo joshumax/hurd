@@ -173,7 +173,17 @@ routine io_stat (
    through the auth server will be a port usable with the new
    authentication.  */
 simpleroutine io_reauthenticate (
-	auth_object: io_t);
+	auth_object: io_t;
+	rend_int: int);
+
+/* Return another port which has been restricted to do only those
+   things which both the current user and the newly specified user can
+   do.  */
+routine io_restrict_auth (
+	io_object: io_t;
+	out new_object: mach_port_send_t;
+	uids: idarray_t;
+	gids: idarray_t);
 
 /* Return a new port with the same semantics as the existing port. */
 routine io_duplicate (
