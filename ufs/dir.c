@@ -73,6 +73,10 @@ struct dirstat
   /* For stat HERE_TIS, type REMOVE, this is the address of the immediately
      previous direct in this directory block, or zero if this is the first. */
   struct directory_entry *preventry;
+
+  /* For stat COMPRESS, this is the number of bytes needed to be copied
+     in order to undertake the compression. */
+  size_t nbytes;
 };
 
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
@@ -311,17 +315,22 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 {
   int nfree = 0;
   int needed = 0;
-  int countup = 0;
   vm_address_t currentoff, prevoff;
-  struct directory_entry *entry;
+  struct directory_entry *entry = 0;
   int nentries = 0;
-
-  if (ds && ds->stat == LOOKING)
+  size_t nbytes = 0;
+  int looking = 0;
+  int countcopies = 0;
+  int consider_compress = 0;
+  
+  if (ds && (ds->stat == LOOKING
+	     || ds->stat == COMPRESS))
     {
-      countup = 1;
+      looking = 1;
+      countcopies = 1;
       needed = DIRSIZ (namelen);
     }
-  
+
   for (currentoff = blockaddr, prevoff = 0;
        currentoff < blockaddr + DIRBLKSIZ;
        prevoff = currentoff, currentoff += entry->d_reclen)
@@ -341,35 +350,41 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  return ENOENT;
 	}
       
-      if (countup)
+      if (looking || countcopies)
 	{
 	  int thisfree;
 	  
+	  /* Count how much free space this entry has in it. */
 	  if (entry->d_ino == 0)
 	    thisfree = entry->d_reclen;
 	  else
 	    thisfree = entry->d_reclen - DIRSIZ (DIRECT_NAMLEN (entry));
+
+	  /* If this isn't at the front of the block, then it will
+	     have to be copied if we do a compression; count the
+	     number of bytes there too. */
+	  if (countcopies && currentoff != blockaddr)
+	    nbytes += DIRSIZ (DIRECT_NAMLEN (entry));
 	  
+	  if (ds->stat == COMPRESS && nbytes > ds->nbytes)
+	    /* The previously found compress is better than 
+	       this one, so don't bother counting any more. */
+	    countcopies = 0;
+
 	  if (thisfree >= needed)
 	    {
 	      ds->type = CREATE;
 	      ds->stat = entry->d_ino == 0 ? TAKE : SHRINK;
 	      ds->entry = entry;
 	      ds->idx = idx;
-	      countup = 0;
+	      looking = countcopies = 0;
 	    }
 	  else
 	    {
 	      nfree += thisfree;
 	      if (nfree >= needed)
-		{
-		  ds->type = CREATE;
-		  ds->stat = COMPRESS;
-		  ds->entry = (struct directory_entry *) blockaddr;
-		  ds->idx = idx;
-		  countup = 0;
-		}
-	    }
+		consider_compress = 1;
+	    }	      
 	}
       
       if (entry->d_ino)
@@ -382,6 +397,17 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	break;
     }
 
+  if (consider_compress 
+      && (ds->type == LOOKING
+	  || (ds->type == COMPRESS && ds->nbytes > nbytes)))
+    {
+      ds->type = CREATE;
+      ds->stat = COMPRESS;
+      ds->entry = (struct directory_entry *) blockaddr;
+      ds->idx = idx;
+      ds->nbytes = nbytes;
+    }
+  
   if (currentoff >= blockaddr + DIRBLKSIZ)
     {
       int i;
