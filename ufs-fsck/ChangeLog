@@ -1,3 +1,7 @@
+2001-09-30  Roland McGrath  <roland@frob.com>
+
+	* pass5.c (pass5): A little manual CSE makes buggy gcc not to crash.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* utilities.c: Include <time.h> for decl.
