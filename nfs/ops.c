@@ -377,10 +377,10 @@ netfs_attempt_write (struct netcred *cred, struct node *np,
   for (amt = *len; amt;)
     {
       thisamt = amt;
-      if (amt > write_size)
-	amt = write_size;
+      if (thisamt > write_size)
+	thisamt = write_size;
       
-      p = nfs_initialize_rpc (NFSPROC_WRITE, cred, amt, &rpcbuf, np, -1);
+      p = nfs_initialize_rpc (NFSPROC_WRITE, cred, thisamt, &rpcbuf, np, -1);
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = 0;
       *p++ = htonl (offset);
