@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992, 93, 94, 95, 96, 99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -57,7 +57,8 @@ diskfs_S_file_set_translator (struct protid *cred,
       return error;
     }
 
-  if (active_flags & FS_TRANS_SET)
+  if (active_flags & FS_TRANS_SET
+      && ! (active_flags & FS_TRANS_ORPHAN))
     {
       error = fshelp_fetch_control (&np->transbox, &control);
       if (error)
