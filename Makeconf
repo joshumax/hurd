@@ -12,7 +12,7 @@ gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/include
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
-CFRAGS := -Wall -Wno-parentheses -O -g
+CFLAGS := -Wall -Wno-parentheses -O -g
 
 # Finding binaries
 CC=gcc
@@ -22,11 +22,13 @@ MIG=mig
 
 # How to do some things:
 
-ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
+ldflags = $(addprefix -Xlinker ,$(LDFLAGS)) 
+
+# $(link) uses threads to get malloc until the one in the library is fixed.
 
 define link
 $(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
-$^ $(libc) -lgcc $(libc)
+$^ $(libthreads) $(libc) -lgcc
 endef
 
 define link-with-threads
