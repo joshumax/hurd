@@ -65,11 +65,27 @@ struct argp_state;		/* " */
 typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 
 /* Special values for the KEY argument to an argument parsing function.
-   EINVAL should be returned if they aren't understood.  */
-/* This is not an option at all, but rather a command line argument.  */
+   EINVAL should be returned if they aren't understood.  
+
+   The sequence of keys to parser calls is either (where opt is a user key):
+       (opt | ARGP_KEY_ARG)... ARGP_KEY_END
+   or  opt... ARGP_KEY_NO_ARGS ARGP_KEY_END.  */
+
+/* This is not an option at all, but rather a command line argument.  If a
+   parser receiving this key returns success, the fact is recorded, and the
+   ARGP_KEY_NO_ARGS case won't be used.  HOWEVER, if while processing the
+   argument, a parser function decrements the INDEX field of the state it's
+   passed, the option won't be considered processed; this is to allow you to
+   actually modify the argument (perhaps into an option), and have it
+   processed again.  */
 #define ARGP_KEY_ARG		0
 /* There are no more command line arguments at all.  */
 #define ARGP_KEY_END		1
+/* Because it's common to want to do some special processing if there aren't
+   any non-option args, user parsers are called with this key if there
+   weren't any non-option arguments, before calling it again with
+   ARGP_KEY_END.  */
+#define ARGP_KEY_NO_ARGS	2
 
 /* An argp structure contains a set of getopt options declarations, a
    function to deal with getting one, and an optional pointer to another
@@ -124,6 +140,11 @@ struct argp_state
 
   /* The flags supplied to argp_parse.  May be modified.  */
   unsigned flags;
+
+  /* Set to true after a non-option arg has been processed successfully and
+     used to decide whether to call user parsers with ARGP_KEY_NO_ARGS (which
+     see).  May be modified.  */
+  int processed_arg;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
