@@ -22,7 +22,6 @@ See `tasks', the exported task list.
 * syslogify everything !
 * fix root dependencies in filesystem, network, etc. !
 * Profile things !!
-* Make for easier installation !
 * Write coding standards suggestions for Hurd
 * Implement file_fetch_dir
 * Conform to coding standards (esp. CFLAGS setting)
@@ -48,21 +47,17 @@ See `tasks', the exported task list.
 *** when a session leader _exits, it should SIGHUP, TIOCDRAIN, and revoke. !!!
     [it is still under discussion exactly where to address this,
      so don't do it in libc yet]
-*** convert to use libio !!!
 *** Version of tmpfile that takes a directory
 *** Hurd versions of tmpfile that don't create transient files !
 *** flink
 *** make sure profiling works !!
-*** add chflags flags to appropriate header(s)
-*** declare reboot() somewhere.
-*** extra commas in enums in socket.h and errnos.h.
 *** many functions that are syscalls in unix can potentially leak send rights
     if a signal handler longjmp's out past them.  They should probably all
     be using HURD_CRITICAL_SECTION to avoid this. !!
 ** items relocated from libc/hurd/STATUS:
 *** We are not sure about possible races between setpgrp (A, pgrp) from
     process B vs process A receiving proc_newids.
-*** does sigaltstack/sigstack really work?
+*** does sigaltstack/sigstack really work? -- NO
 *** hurdmalloc kludge
 *** think more about environment variable use viz security
 *** SIGINFO handler?
@@ -76,8 +71,6 @@ See `tasks', the exported task list.
     mincore
     mount
     msync
-    recvmsg
-    sendmsg
     sstk
     swapon
     unmount
@@ -110,12 +103,6 @@ See `tasks', the exported task list.
 ** libshouldbeinlibc:
 *** Merge contents of libshouldbeinlibc that belong there into libc.
    Rename the rest to libhurdutil or somesuch.
-*** argp: find some way to flag certain long options as only matching
-   exactly (add this as OPT_EXACT); use this on the built in option
-   --program-name.
-*** Rewrite argp to do its own parsing.  Preferably, split up libc's
-   getopt into more primitive functions, which both argp and getopt
-   can call.
 
 ** libdiskfs
 *** file_chflags does not do proper permission checking (non-root isn't
