@@ -1,3 +1,8 @@
+2000-04-18  Gordon Matzigkeit  <gord@fig.org>
+
+	* hurd.texi (Microkernel Object Library): Delete deprecated
+	node.
+
 2000-03-08  Gordon Matzigkeit  <gord@fig.org>
 
 	* hurd.texi (Overview): Add a first cut at an architectural

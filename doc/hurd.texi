@@ -842,7 +842,6 @@ the rest of the Hurd relies upon them quite heavily.
 
 @menu
 * Threads Library::             Every Hurd server and library is multithreaded.
-* Microkernel Object Library::  The Microkernel Object Model (MOM).
 * Ports Library::               Managing server port receive rights.
 * Integer Hash Library::        Integer-keyed hash tables.
 * Misc Library::                Things that soon will be in the GNU C library.
@@ -873,33 +872,6 @@ POSIX pthreads, which are documented in a lot of places.
 Every single library in the Hurd distribution (including the GNU C
 library) is completely thread-safe, and the Hurd servers themselves are
 aggressively multithreaded.
-
-
-@node Microkernel Object Library
-@section Microkernel Object Library
-@scindex libmom
-@scindex mom.h
-
-A commonly asked question is whether the Hurd has been ported to the
-Open Group's version of the Mach microkernel.  The answer is ``no''.
-
-Currently (April 1998), the Hurd is quite dependent on the GNU Mach
-microkernel, which is a derivative of the University of Utah's Mach 4.
-However, the Hurd developers are all too aware of the limitations of
-Mach.
-
-@cindex MOM
-@cindex Microkernel Object Model
-@code{libmom} is the first of several steps that need to be taken in
-order to make the Hurd portable to other message-passing microkernels.
-@dfn{MOM} stands for @dfn{Microkernel Object Model}, and is an
-abstraction of the basic services provided by common message-passing
-microkernels.  It will provide the necessary insulation so that Hurd
-servers and the C library can avoid making microkernel-dependent kernel
-calls.
-
-At the present, though, @code{libmom} is still evolving, and will take
-some time to be fully incorporated into the Hurd.
 
 
 @node Ports Library
