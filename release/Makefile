@@ -27,7 +27,7 @@ dist-files = INSTALL-binary dist-README SETUP
 # Tools for making images
 tool-files = tool-Makefile install-stripped
 
-DIST_FILES = README $(dist-files) install-stripped image-Makefile
+DIST_FILES = README $(dist-files) $(tool-files)
 
 include ../Makeconf
 
