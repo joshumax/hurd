@@ -1,5 +1,9 @@
 1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* syslog.conf: Removed.  We don't install syslogd, so we have no
+	business installing its configuration file.
+	* Makefile (SYSCONFFILES): Remove syslog.conf.
+
 	* inetd.conf: Removed.  We don't install inetd, so we have no business
 	installing inetd.conf.
 	* Makefile (SYSCONFFILES): Remove inetd.conf.
