@@ -18,10 +18,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-
 #include <hurd.h>
+#include <string.h>
+#include <errno.h>
+#include <stdio.h>
 
-main (argc, argv)
+int
+main (int argc, char **argv)
 {
   /* This is pretty kludgy for now */
   mach_port_t file;
