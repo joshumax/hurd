@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995 Free Software Foundation
+#   Copyright (C) 1995, 1996 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -23,4 +23,12 @@ makemode := misc
 
 SRCS = defpager.c
 
+subst-functions=__syscall_vm_allocate syscall_vm_allocate \
+		__vm_allocate_rpc vm_allocate_rpc \
+		__syscall_vm_map syscall_vm_map \
+		__vm_map_rpc vm_map_rpc
+comma=,
+LDFLAGS=-Wl,$(subst :,$(comma),$(strip $(subst-functions)))
+
 include ../Makeconf
+

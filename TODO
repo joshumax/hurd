@@ -47,6 +47,7 @@ See `tasks', the exported task list.
 *** flink
 *** make sure profiling works !!
 *** implement revoke once io_revoke is added. !!
+*** add chflags flags to appropriate header(s)
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
@@ -106,13 +107,11 @@ See `tasks', the exported task list.
 *** Add `author_tracks_uid' flag to struct node, and use it in places 
     that modify author/uid.  Initialized to 0. !!
 *** Move file_getfh and fsys_getfile here (from ufs). !!!
-*** Use idvecs. !!!
+
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications !!!
 *** Translator startup should provide a more useful stdin/stdout than nothing !
-*** Add functions to do permission checking and change libdiskfs et. al.
-    to use them. !!!
 
 ** libtrivfs
 *** Allow for read/write/exec to be passed down.
@@ -133,6 +132,7 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
+** term: find a way to reduce duplicate signals from repeated VINTR input
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
@@ -159,6 +159,7 @@ See `tasks', the exported task list.
 *** Implement nqnfs. !
 *** Add Hurd-specific calls. !!
 *** emacs M-x server doesn't work if ~ is on nfs. !!!
+*** errors in mount_root should get reflected more usefully to users. !
 
 ** storeio:
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
@@ -250,10 +251,6 @@ See `tasks', the exported task list.
   [bash only seems to print error messages in this particular format if an
    execve fails]
 ???
-
-Find out why ^G in emacs, esp at prompts, often results in a long (~2s)
-  pause; if you hit it several times, the abort-and-dump-core ^G catcher
-  usually gets activated.
 
 List for version 0.2 binary release
 

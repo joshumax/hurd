@@ -31,7 +31,6 @@ struct user_pager_info
   off_t *map;
 };
 
-
 /* Expand the P->map as necessary to handle an incoming request of the
    page at ADDR. */
 static inline void
@@ -52,7 +51,6 @@ expand_map (struct user_pager_info *p, vm_offset_t addr)
       pager->map = newmap;
     }
 }
-
 
 error_t
 pager_read_page (struct user_pager_info *pager,
