@@ -19,7 +19,8 @@ dir := exec
 makemode := server
 
 SRCS = exec.c main.c hashexec.o hostarch.c unzip.c util.c inflate.c
-OBJS = main.o hostarch.o exec.o hashexec.o execServer.o \
+OBJS = main.o hostarch.o exec.o hashexec.o \
+       execServer.o exec_startupServer.o \
        $(gzip-objects)
 gzip-objects = unzip.o util.o inflate.o
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
