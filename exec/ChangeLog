@@ -1,3 +1,9 @@
+2004-02-11  Roland McGrath  <roland@frob.com>
+
+	* exec.c (servercopy): Change signature to avoid casted arguments.
+	Update callers.
+	(do_exec, S_exec_setexecdata): Update callers.
+
 2004-02-10  Roland McGrath  <roland@frob.com>
 
 	* elfcore.c (dump_core): Include null terminator in note name size,
