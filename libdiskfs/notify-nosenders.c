@@ -34,10 +34,9 @@ diskfs_do_seqnos_mach_notify_no_senders (mach_port_t notify,
   if (pt->type == PT_PAGER)
     pager_no_senders ((struct pager *)pt, seqno, mscount);
   else
-    {
-      ports_done_with_port (pt);
-      ports_done_with_port (pt);
-    }
+    ports_no_senders (pt, mscount);
+
+  ports_done_with_port (pt);
   
   return 0;
 }
