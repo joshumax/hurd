@@ -119,8 +119,8 @@ mount_root (char *name, char *host)
     }
   
   /* Create the node for root */
-  np = netfs_make_node ();
-  p = xdr_decode_fhandle (p, &np->nn->handle);
+  np = lookup_fhandle (p);
+  p += NFS_FHSIZE / sizeof (int);
   free (rpcbuf);
 
   /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
