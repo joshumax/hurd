@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "memory_object_S.h"
-#include <stdio.h>
+#include "barf.h"
 
 /* The kernel calls this (as described in <mach/memory_object.defs>)
    when a memory_object_lock_request call has completed.  Read this
@@ -35,7 +35,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   p = ports_lookup_port (0, object, _pager_class);
   if (!p);
     {
-      printf ("Bad lock completed\n");
+      barf ("Bad lock completed: object = %d, control = %d\n", object, control);
       return EOPNOTSUPP;
     }
 
@@ -62,8 +62,8 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
       }
 
   if (!lr)
-    printf ("orphaned lock_request: p %#x; offset %#x; length %#x\n",
-	    (int) p, offset, length);
+    barf ("orphaned lock_request: p %#x <port = %d>; offset %#x; length %#x\n",
+	  (int) p, p->port.port_right, offset, length);
       
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
