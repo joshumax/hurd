@@ -30,7 +30,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 {
   struct pager *p;
 
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
 
   mutex_lock (&p->interlock);
@@ -61,6 +61,6 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 }
