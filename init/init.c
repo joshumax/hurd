@@ -1297,7 +1297,7 @@ process_signal (int signo)
 
 	for (;;)
 	  {
-	    pid = waitpid (WAIT_ANY, &status, WNOHANG);
+	    pid = waitpid (WAIT_ANY, &status, WNOHANG | WUNTRACED);
 	    if (pid <= 0)
 	      return;
 
