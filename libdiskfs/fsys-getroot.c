@@ -67,7 +67,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   type = diskfs_root_node->dn_stat.st_mode & S_IFMT;
 
-  if ((diskfs_root_node->istranslated
+  if (((diskfs_root_node->dn_stat.st_mode & S_IPTRANS)
        || fshelp_translated (&diskfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
