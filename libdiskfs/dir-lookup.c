@@ -94,7 +94,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   do
     {
       assert (!lastcomp);
-      
+
       /* Find the name of the next pathname component */
       nextname = index (path, '/');
 
@@ -116,7 +116,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	}
       else
 	lastcomp = 1;
-	  
+
       np = 0;
 
       /* diskfs_lookup the next pathname component */
@@ -184,7 +184,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  else
 	    diskfs_drop_dirstat (dnp, ds);
 	}
-      
+
       if (error)
 	goto out;
 
@@ -198,12 +198,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
-	  
+
 	  /* A callback function for short-circuited translators.
 	     Symlink & ifsock are handled elsewhere.  */
 	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
 					     uid_t *uid, gid_t *gid,
-					     char **argz, int *argz_len)
+					     char **argz, size_t *argz_len)
 	    {
 	      struct node *node = cookie1;
 
@@ -236,9 +236,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  error = 
+	  error =
 	    diskfs_create_protid (diskfs_make_peropen (dnp, 0, dircred->po),
-				  iohelp_create_iouser (make_idvec (), 
+				  iohelp_create_iouser (make_idvec (),
 							make_idvec ()),
 				  &newpi);
 	  if (error)
@@ -293,7 +293,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		}
 	    }
 	}
-      
+
       if (S_ISLNK (np->dn_stat.st_mode)
 	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
 	{
@@ -304,7 +304,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      error = ELOOP;
 	      goto out;
 	    }
-	      
+
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
 	  newnamelen = nextnamelen + np->dn_stat.st_size + 1;
 	  if (pathbuflen < newnamelen)
@@ -312,20 +312,20 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      pathbuf = alloca (newnamelen);
 	      pathbuflen = newnamelen;
 	    }
-	      
+
 	  if (diskfs_read_symlink_hook)
 	    error = (*diskfs_read_symlink_hook)(np, pathbuf);
 	  if (!diskfs_read_symlink_hook || error == EINVAL)
-	    error = diskfs_node_rdwr (np, pathbuf, 
-				      0, np->dn_stat.st_size, 0, 
+	    error = diskfs_node_rdwr (np, pathbuf,
+				      0, np->dn_stat.st_size, 0,
 				      dircred, &amt);
 	  if (error)
 	    goto out;
-	      
+
 	  if (nextname)
 	    {
 	      pathbuf[np->dn_stat.st_size] = '/';
-	      bcopy (nextname, pathbuf + np->dn_stat.st_size + 1, 
+	      bcopy (nextname, pathbuf + np->dn_stat.st_size + 1,
 		     nextnamelen - 1);
 	    }
 	  pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
@@ -338,7 +338,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      strcpy (retryname, pathbuf);
 	      goto out;
 	    }
-	  
+
 	  path = pathbuf;
 	  if (lastcomp)
 	    {
@@ -367,7 +367,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    dnp = 0;
 	}
     } while (path && *path);
-  
+
   /* At this point, np is the node to return.  If newnode is set, then
      we just created this node.  */
 
@@ -379,7 +379,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       error = ENOTDIR;
       goto out;
     }
-  
+
   if (!newnode)
     /* Check permissions on existing nodes, but not new ones. */
     {
@@ -408,14 +408,14 @@ diskfs_S_dir_lookup (struct protid *dircred,
       if (error)
 	goto out;
     }
-    
-  if ((flags & O_NOATIME) 
+
+  if ((flags & O_NOATIME)
       && (fshelp_isowner (&np->dn_stat, dircred->user) == EPERM))
     flags &= ~O_NOATIME;
-      
+
   error =
-    diskfs_create_protid (diskfs_make_peropen (np, 
-					       (flags &~OPENONLY_STATE_MODES), 
+    diskfs_create_protid (diskfs_make_peropen (np,
+					       (flags &~OPENONLY_STATE_MODES),
 					       dircred->po),
 			  dircred->user, &newpi);
 
@@ -430,13 +430,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
       if (error)
 	ports_port_deref (newpi); /* Get rid of NEWPI.  */
     }
-  
+
   if (! error)
     {
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);
     }
-  
+
  out:
   if (np)
     if (dnp == np)
