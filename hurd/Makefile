@@ -17,5 +17,5 @@
 
 dir := hurd
 include ../Makeconf
-DIST_FILES = ChangeLog Makefile *.defs *.h
+DIST_FILES = ChangeLog Makefile *.defs *.h subsystems
 
