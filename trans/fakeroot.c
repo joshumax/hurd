@@ -342,7 +342,8 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       flags = O_RDWR;
       file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
-  if (file == MACH_PORT_NULL && errno == EACCES)
+  if (file == MACH_PORT_NULL && (errno == EACCES
+				 || errno == EROFS || errno == EISDIR))
     {
       flags = O_READ|O_EXEC;
       file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
@@ -456,6 +457,7 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 			    real_from_fake_mode (mode), &newfile);
   if (err == 0)
     err = new_node (newfile, MACH_PORT_NULL, O_RDWR|O_EXEC, np);
+  mutex_unlock (&dir->lock);
   return err;
 }
 
@@ -466,6 +468,7 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
   file_t newfile = file_name_lookup_under (dir->nn->file, name,
 					   O_CREAT|O_RDWR|O_EXEC,
 					   real_from_fake_mode (mode));
+  mutex_unlock (&dir->lock);
   if (newfile == MACH_PORT_NULL)
     return errno;
   return new_node (newfile, MACH_PORT_NULL, O_RDWR|O_EXEC, np);
@@ -561,6 +564,24 @@ netfs_file_get_storage_info (struct iouser *cred,
 				offsets, num_offsets,
 				data, data_len);
 }
+
+error_t
+netfs_S_io_map (struct protid *user,
+		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
+		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+  *rdobjtype = *wrobjtype = MACH_MSG_TYPE_MOVE_SEND;
+
+  mutex_lock (&user->po->np->lock);
+  err = io_map (user->po->np->nn->file, rdobj, wrobj);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
 
 int
 main (int argc, char **argv)
