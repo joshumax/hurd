@@ -28,7 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <errno.h>
 
-mach_port_t _hurd_msgport = MACH_PORT_NULL;
+/* mach_port_t _hurd_msgport = MACH_PORT_NULL; */
 
 void
 main ()
@@ -42,7 +42,7 @@ main ()
   int err;
   mach_port_t root;
   
-  root = _hurd_ports[INIT_PORT_CRDIR].port;
+  root = getcrdir ();
 
   printf ("fstests running...\n");
 
