@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -49,7 +49,7 @@ LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h
 DIST_FILES = ourfs_notify.defs
 
-MIGSTUBS = fsServer.o ioServer.o fsysServer.o execServer.o \
+MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
