@@ -18,6 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+/* Create a new socket.  Sock type is, for example, SOCK_STREAM,
+   SOCK_DGRAM, or some such.  */
 S_socket_create (struct trivfs_protid *cred,
 		 int sock_type, int protocol,
 		 mach_port_t *port, mach_msg_type_name_t *port_type)
@@ -35,16 +37,17 @@ S_socket_create (struct trivfs_protid *cred,
   switch (sock_type)
     {
     case SOCK_STREAM:
-      pipe_ops = stream_pipe_ops; break;
+      pipe_class = stream_pipe_class; break;
     case SOCK_DGRAM:
-      pipe_ops = dgram_pipe_ops; break;
+      pipe_class = dgram_pipe_class; break;
     default:
       return ESOCKTNOSUPPORT;
     }
   
-  err = sock_create (pipe_ops, &sock);
+  err = sock_create (pipe_class, &sock);
   if (!err)
-    err = sock_create_port (sock, port, port_type);
-
+    err = sock_create_port (sock, port);
+  *port_type = MACH_MSG_TYPE_MAKE_SEND;
+  
   return err;
 }
