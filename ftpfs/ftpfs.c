@@ -139,6 +139,7 @@ static const struct argp_option common_options[] =
 static error_t
 parse_common_opt (int key, char *arg, struct argp_state *state)
 {
+  error_t err = 0;
   struct ftpfs_params *params = state->input;
 
   switch (key)
@@ -168,7 +169,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
 	      debug_stream = fopen (arg, "w+");
 	      if (! debug_stream)
 		{
-		  error_t err = errno;
+		  err = errno;
 		  argp_failure (state, 0, err, "%s: Cannot open debugging file", arg);
 		}
 	    }
@@ -176,7 +177,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
       else
 	debug_stream = stderr;
 
-      if (err)
+      if (! err)
 	ftpfs_ftp_hooks.cntl_debug = cntl_debug;
 
       mutex_unlock (&debug_lock);
