@@ -28,13 +28,16 @@ TRANS_INST = $(addprefix $(hurdroot)/hurd/,$(TRANS))
 
 all: $(TRANS)
 
+ifsock: ifsock.o $(libports) fsysServer.o
+	$(CC) $(CFLAGS) -o $@ $^
+
 install: $(TRANS_INST)
 
 clean:
 	rm -f $(TRANS) *.o
 
 relink:
-	rm -f $(UTILS)
+	rm -f $(TRANS)
 
 $(hurdroot)/hurd/%: %
 	$(INSTALL_BIN) $^ %@
