@@ -88,6 +88,10 @@ add_preconditions (ps_flags_t flags)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
     flags |= PSTAT_EXEC_FLAGS;	/* For the traced bit.  */
+  if (flags & PSTAT_SUSPEND_COUNT)
+    /* We just request the resources require for both the thread and task
+       versions, as the extraneous info won't be possible to aquire anyway. */
+    flags |= PSTAT_INFO | PSTAT_THREAD_INFO;
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK
 	       | PSTAT_EXEC_FLAGS)
       && !(flags & PSTAT_NO_MSGPORT))
@@ -252,6 +256,17 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
       tbi->system_time.microseconds %= 1000000;
 
       have |= PSTAT_THREAD_INFO;
+    }
+
+  if ((need & PSTAT_SUSPEND_COUNT)
+      &&
+      ((have & PSTAT_PID) ? (have & PSTAT_INFO) : (have & PSTAT_THREAD_INFO)))
+    {
+      if (have & PSTAT_PID)
+	ps->suspend_count = ps->info->taskinfo.suspend_count;
+      else
+	ps->suspend_count = ps->thread_basic_info.suspend_count;
+      have |= PSTAT_SUSPEND_COUNT;
     }
 
   ps->flags = have;		/* should_suppress_msgport looks at them.  */
