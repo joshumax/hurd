@@ -38,6 +38,7 @@ routine exec_exec ( /* Better name, Roland?? */
    startup ports and information.  */
 routine exec_startup (
 	execserver: mach_port_t;
+	out stack_base: vm_address_t;
 	out flags: int;
 	out argv: data_t;
 	out envp: data_t;
