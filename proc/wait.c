@@ -322,7 +322,7 @@ zombie_check_pid (pid_t pid)
   struct zombie *z;
   for (z = zombie_list; z; z = z->next)
     if (z->pid == pid || -z->pid == pid
-	|| z->pgrp == pid || -z->pgrp == pgrp)
+	|| z->pgrp == pid || -z->pgrp == pid)
       return 1;
   return 0;
 }
