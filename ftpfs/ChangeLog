@@ -1,3 +1,12 @@
+1997-09-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (delete): Immediately free entries without nodes.
+
+1997-08-29  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (parse_startup_opt): Report an error if no filesystem is
+	supplied.
+
 1997-08-27  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (parse_common_opt): Turn on debugging when there *aren't*
