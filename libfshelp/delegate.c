@@ -49,7 +49,7 @@ fshelp_delegate_translation (char *server_name,
     {
       char *argz;
       int argz_len;
-      err = argz_create ((char *const **)argv, &argz, &argz_len);
+      err = argz_create (argv, &argz, &argz_len);
       if (!err)
 	err = fsys_forward (server,
 			    requestor, MACH_MSG_TYPE_COPY_SEND,
