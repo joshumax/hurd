@@ -1,7 +1,7 @@
 /* Root usermux node
 
-   Copyright (C) 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,99,2000,02 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -480,6 +480,8 @@ error_t
 netfs_attempt_chmod (struct iouser *cred, struct node *node, mode_t mode)
 {
   mode &= ~S_ITRANS;
+  if ((mode & S_IFMT) == 0)
+    mode |= (node->nn_stat.st_mode & S_IFMT);
   if (node->nn->name || ((mode & S_IFMT) != (node->nn_stat.st_mode & S_IFMT)))
     return EOPNOTSUPP;
   else
