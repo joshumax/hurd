@@ -68,7 +68,8 @@ void *ports_allocate_port (struct port_bucket *bucket,
   assert_perror (err);
   pi->next = class->ports;
   pi->prevp = &class->ports;
-  class->ports->prevp = &pi->next;
+  if (class->ports)
+    class->ports->prevp = &pi->next;
   class->ports = pi;
   bucket->count++;
   class->count++;
