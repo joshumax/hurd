@@ -47,16 +47,6 @@ pager_read_page(struct user_pager_info *upi,
 
   err = device_read(dev->port, 0, page / dev->dev_block_size, want,
 		    (io_buf_ptr_t *)buf, &read);
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "device_read(%d, %d) [pager] => %s, %s, %d\n",
-	      page / dev->dev_block_size, want,
-	      strerror(err), err ? "-" : brep(*buf, read), read);
-      mutex_unlock(&debug_lock);
-    }
-#endif
 
   if (!err && want < vm_page_size)
     /* Zero anything we didn't read.  Allocation only happens in page-size
@@ -94,17 +84,6 @@ pager_write_page(struct user_pager_info *upi,
 
       err = device_write(dev->port, 0, page / dev->dev_block_size,
 			 (io_buf_ptr_t)buf, want, &written);
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "device_write(%d, %s, %d) [pager] => %s, %d\n",
-		  page / dev->dev_block_size,
-		  brep(buf, vm_page_size), vm_page_size,
-		  strerror(err), written);
-	  mutex_unlock(&debug_lock);
-	}
-#endif
 
       vm_deallocate(mach_task_self(), buf, vm_page_size);
 
