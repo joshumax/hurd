@@ -1,0 +1,40 @@
+#ifndef _MAPPED_TIME_H_
+#define _MAPPED_TIME_H_
+
+#define HZ 100
+
+extern volatile struct mapped_time_value *mapped_time;
+
+extern inline int
+read_mapped_secs ()
+{
+  return mapped_time->seconds;
+}
+
+extern inline void
+fill_timeval (struct timeval *tp)
+{
+  do
+    {
+      tp->tv_secs = mapped_time->seconds;
+      tp->tv_usecs = mapped_time->microseconds;
+    }
+  while (tp->tv_secs !=  mapped_time->check_seconds);
+}
+
+extern inline int
+fetch_jiffies ()
+{
+  int secs, usecs;
+  do
+    {
+      secs = mapped_time->seconds;
+      usecs = mapped_time->microseconds;
+    }
+  while (secs != mapped_time->check_seconds);
+  
+  return (secs * HZ) + microseconds * HZ / 1000.0;
+}
+
+
+#endif
