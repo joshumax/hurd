@@ -18,8 +18,8 @@
 #include "priv.h"
 
 error_t
-trivfs_S_file_chmod (struct protid *cred,
-		     mode_t mode)
+trivfs_S_file_utimes (struct protid *cred, time_value_t atime,
+		      time_value_t mtime)
 {
-  return cred ? file_chmod (cred->realnod, mode) : EOPNOTSUPP;
+  return cred ? file_utimes (cred->realnode, atime, mtime) : EOPNOTSUPP;
 }

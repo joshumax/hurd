@@ -18,8 +18,7 @@
 #include "priv.h"
 
 error_t
-trivfs_S_file_chmod (struct protid *cred,
-		     mode_t mode)
+diskfs_S_file_truncate (struct protid *cred, off_t size)
 {
-  return cred ? file_chmod (cred->realnod, mode) : EOPNOTSUPP;
+  return cred ? 0 : EOPNOTSUPP;
 }
