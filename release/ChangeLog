@@ -1,3 +1,7 @@
+Wed May  7 15:07:48 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* INSTALL-binary (STEP VI): Suggest building a kernel.
+
 Fri Apr 11 14:21:29 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* SETUP: Comment out frobbing of BOOT_DEV; grub does that on it's

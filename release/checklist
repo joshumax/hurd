@@ -16,7 +16,7 @@ Checklist for binary image filesystems
 
 *   Symlinks in /bin; esp. sh, awk, more, cc.
 *   Symlink /lib/libtermcap.a -> /lib/libncurses.a
-*   Check all symlinks to make sure they don't reference /gd4/hurdinst.
+*   Check all symlinks to make sure they don't reference /gd4.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
 *   Make sure /include/obstack.h is from libc and not binutils.
 *   Make sure there is no /include/i386.

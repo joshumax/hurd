@@ -182,9 +182,7 @@ Say `./MAKEDEV dev1 dev2 dev3 ...'.
 Supported devices are:
   o any hard disk device you have; you must specify both unit number *and*
     partition.  Something like `sd0a' or `hd1f' is called for.  Unit
-    number without any partition names the entire disk.  (SETUP has
-    already created a device for the entire disk holding your boot
-    block, if you gave it that information.)
+    number without any partition names the entire disk.  
   o floppy disk drives, give something like `fd0' or `fd1'.
   o hardwired terminals, something like `com0' or `com1'.
 
@@ -284,6 +282,16 @@ name server is available.
 
 Edit resolv.conf to provide for name service appropriate to your
 location. 
+
+
+*** build a smaller kernel
+
+As an optional step, you can build a smaller kernel.  The distributed
+kernel is quite large, because it includes a great many device
+drivers.  If you fetch the gnumach distribution, you can build a
+kernel with only the device drivers you actually need.  This will make
+bootstrapping faster, and also take less memory when the system is
+running, and result in a faster system in general.
 
 
 Once you've completed these steps, you can reboot the system multi
