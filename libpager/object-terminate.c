@@ -55,6 +55,24 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
 
   _pager_free_structure (p);
 
+#ifdef KERNEL_INIT_RACE
+  if (p->init_head)
+    {
+      struct pending_init *i = p->init_head;
+      p->init_head = i->next;
+      if (!i->next)
+	p->init_tail = 0;
+      p->memobjcntl = i->control;
+      p->memobjname = i->name;
+      memory_object_ready (i->control, p->may_cache, p->copy_strategy);
+      p->pager_state = NORMAL;
+      free (i);
+    }
+#endif
+
+  _pager_release_seqno (p, seqno);
+  mutex_unlock (&p->interlock);
+
  out:
   ports_done_with_port (p);
   return 0;
@@ -98,7 +116,4 @@ _pager_free_structure (struct pager *p)
     }
   
   p->pager_state = NOTINIT;
-  _pager_release_seqno (p);
-
-  mutex_unlock (&p->interlock);
 }
