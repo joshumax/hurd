@@ -408,8 +408,6 @@ S_proc_exception_raise (mach_port_t excport,
   err = proc_exception_raise (e->forwardport,
 			      reply, reply_type, MACH_SEND_NOTIFY,
 			      thread, task, exception, code, subcode);
-  mach_port_deallocate (mach_task_self (), thread);
-  mach_port_deallocate (mach_task_self (), task);
 
   switch (err)
     {
@@ -422,13 +420,15 @@ S_proc_exception_raise (mach_port_t excport,
 	 dequeue that message.  */
       err = thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
       ports_port_deref (e);
+      mach_port_deallocate (mach_task_self (), thread);
+      mach_port_deallocate (mach_task_self (), task);
       return MIG_NO_REPLY;
 
     default:
       /* Some unexpected error in forwarding the message.  */
       /* FALLTHROUGH */
 
-    case MACH_SEND_INVALID_NOTIFY:
+    case MACH_SEND_NOTIFY_IN_PROGRESS:
       /* The port's queue is full, meaning the thread didn't receive
 	 the exception message we forwarded last time it faulted.
 	 Declare that signal thread hopeless and the task crashed.  */
@@ -447,6 +447,32 @@ S_proc_exception_raise (mach_port_t excport,
 	 died with SIGNO.  */
       task_terminate (task);
       ports_port_deref (e);
+
+      /* In the MACH_SEND_NOTIFY_IN_PROGRESS case, the kernel did a
+	 pseudo-receive of the RPC request message that may have added user
+	 refs to these send rights.  But we have lost track because the MiG
+	 stub did not save the message buffer that was modified by the
+	 pseudo-receive.
+
+	 Fortunately, we can be sure that we don't need the THREAD send
+	 right for anything since this task is now dead; there would be a
+	 potential race here with another exception_raise message arriving
+	 with the same thread, but we expect that this won't happen since
+	 the thread will still be waiting for our reply.  XXX We have no
+	 secure knowledge that this is really from the kernel, so a
+	 malicious user could confuse us and induce a race where we clobber
+	 another port put on the THREAD name after the destroy; also, a
+	 user just doing thread_set_state et al could arrange that we get a
+	 second legitimate exception_raise for the same thread and have the
+	 first race mentioned above!
+
+	 There are all manner of race problems if we destroy the TASK
+	 right.  Fortunately, since we've terminated the task we know that
+	 we will shortly be getting a dead-name notifiction and that will
+	 call mach_port_destroy in TASK when it is safe to do so.  */
+
+      mach_port_destroy (mach_task_self (), thread);
+
       return 0;
     }
 
