@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <priv.h>
+#include "priv.h"
 
 mach_port_t
 trivfs_handle_port (mach_port_t realnode, 
