@@ -29,7 +29,21 @@
  *	Renamed cthread_t->catch to to cthread_t->catch_exit, because
  *	catch is reserved word in c++.
  *
- * $Log:	cthreads.c,v $
+ * $Log: cthreads.c,v $
+ * Revision 1.12  2002/05/27 02:50:10  roland
+ * 2002-05-26  Roland McGrath  <roland@frob.com>
+ *
+ * 	Changes merged from CMU MK83a version:
+ * 	* cthreads.h, options.h: Various cleanups.
+ * 	* call.c, cthread_data.c, sync.c, mig_support.c: Likewise.
+ * 	* i386/cthreads.h, i386/thread.c, i386/lock.s: Likewise.
+ * 	* cthread_internals.h: Add decls for internal functions.
+ * 	(struct cproc): Use vm_offset_t for stack_base and stack_size members.
+ * 	Use natural_t for context member.
+ * 	* cprocs.c: Use prototypes for all defns.
+ * 	* cthreads.c: Likewise.
+ * 	(cthread_exit): Cast any_t to integer_t before int.
+ *
  * Revision 2.13  93/01/21  12:27:55  danner
  * 	Remove deadlock in cproc_fork_child; must release malloc lock first.
  * 	[93/01/19  16:37:43  bershad]
@@ -397,7 +411,6 @@ cthread_fork_prepare(void)
 {
     spin_lock(&free_lock);
     mutex_lock(&cthread_lock);
-    malloc_fork_prepare();
     cproc_fork_prepare();
 }
 
@@ -405,7 +418,6 @@ void
 cthread_fork_parent(void)
 {
     cproc_fork_parent();
-    malloc_fork_parent();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);
 }
@@ -416,7 +428,6 @@ cthread_fork_child(void)
     cthread_t t;
     cproc_t p;
 
-    malloc_fork_child();
     cproc_fork_child();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);
