@@ -51,8 +51,6 @@ main ()
   mach_port_t boot;
   mach_port_t authhandle;
 
-  initprimes ();
-
   task_get_bootstrap_port (mach_task_self (), &boot);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
