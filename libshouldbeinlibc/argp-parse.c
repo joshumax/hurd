@@ -486,7 +486,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       *end_index = state.next;
     else
       /* No way to return the remaining arguments, they must be bogus. */
-      err = EINVAL;
+      {
+	if (! (state.flags & ARGP_NO_HELP))
+	  fprintf (stderr, "%s: Too many arguments\n",
+		   program_invocation_name);
+	err = EINVAL;
+      }
 
   if (err && !(state.flags & ARGP_NO_HELP))
     {
