@@ -208,7 +208,7 @@ S_socket_bind (struct sock_user *user,
   
   mutex_lock (&global_lock);
   become_task (user);
-  err = (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
+  err = - (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
   mutex_unlock (&global_lock);
   
   /* MiG should do this for us, but it doesn't. */
@@ -375,7 +375,20 @@ S_socket_setopt (struct sock_user *user,
 		 char *data,
 		 u_int datalen)
 {
-  return EOPNOTSUPP;
+  error_t err;
+
+  if (! user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  become_task (user);
+
+  err =
+    - (user->sock->ops->setsockopt)(user->sock, level, option, data, datalen);
+
+  mutex_unlock (&global_lock);
+
+  return err;
 }
 
 error_t
@@ -404,11 +417,11 @@ S_socket_send (struct sock_user *user,
   become_task (user);
   
   if (addr)
-    err = (*user->sock->ops->sendto) (user->sock, data, datalen, 
+    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 
 				      user->sock->userflags, flags,
 				      addr->address, addr->len);
   else
-    err = (*user->sock->ops->send) (user->sock, data, datalen, 
+    err = - (*user->sock->ops->send) (user->sock, data, datalen, 
 				    user->sock->userflags, flags);
   
   mutex_unlock (&global_lock);
@@ -466,7 +479,7 @@ S_socket_recv (struct sock_user *user,
   mutex_lock (&global_lock);
   become_task (user);
 
-  err = (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
+  err = - (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
 				      (struct sockaddr *)addr, &addrlen);
   
   mutex_unlock (&global_lock);
