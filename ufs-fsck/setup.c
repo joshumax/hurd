@@ -47,24 +47,27 @@ setup (char *dev)
       if (!reply ("CONTINUE"))
 	return 0;
     }
-  readfd = open (dev, O_RDONLY);
-  if (readfd == -1)
-    {
-      perror (dev);
-      return 0;
-    }
   if (preen == 0)
     printf ("** %s", dev);
-  if (nowrite)
-    writefd = -1;
-  else
-    writefd = open (dev, O_WRONLY);
-  if (nowrite || writefd == -1)
+  if (!nflag)
+    readfd = open (dev, O_RDWR);
+  if (nflag || readfd == -1)
     {
+      readfd = open (dev, O_RDONLY);
+      if (readfd == -1)
+	{
+	  perror (dev);
+	  return 0;
+	}
+      writefd = -1;
+      nflag = 1;
       if (preen)
 	pfatal ("NO WRITE ACCESS");
       printf (" (NO WRITE)");
     }
+  else
+    writefd = readfd;
+
   if (preen == 0)
     printf ("\n");
   
