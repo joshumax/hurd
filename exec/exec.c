@@ -1548,37 +1548,39 @@ do_exec (file_t file,
       uid_t euidbuf[10], egidbuf[10], auidbuf[10], agidbuf[10];
       uid_t *euids, *egids, *auids, *agids;
       size_t neuids, negids, nauids, nagids;
+      error_t err;
 
       /* Find out what our UID is from the auth server. */
       neuids = negids = nauids = nagids = 10;
       euids = euidbuf, egids = egidbuf;
       auids = auidbuf, agids = agidbuf;
-      e.error = auth_getids (boot->portarray[INIT_PORT_AUTH],
+      err = auth_getids (boot->portarray[INIT_PORT_AUTH],
 			     &euids, &neuids, &auids, &nauids,
 			     &egids, &negids, &agids, &nagids);
-      if (e.error)
-	goto stdout;
+
+      if (!err)
+	{
+	  /* Set the owner with the proc server */
+	  /* Not much we can do about errors here; caller is responsible
+	     for making sure that the provided proc port is correctly
+	     authenticated anyhow. */
+	  proc_setowner (boot->portarray[INIT_PORT_PROC],
+			 neuids ? euids[0] : 0, !neuids);
       
-      /* Set the owner with the proc server */
-      /* Not much we can do about errors here; caller is responsible
-	 for making sure that the provided proc port is correctly
-	 authenticated anyhow. */
-      proc_setowner (boot->portarray[INIT_PORT_PROC],
-		     neuids ? euids[0] : 0, !neuids);
-      
-      /* Clean up */
-      if (euids != euidbuf)
-	vm_deallocate (mach_task_self (), (vm_address_t) euids,
-		       neuids * sizeof (uid_t));
-      if (egids != egidbuf)
-	vm_deallocate (mach_task_self (), (vm_address_t) egids,
-		       negids * sizeof (uid_t));
-      if (auids != auidbuf)
-	vm_deallocate (mach_task_self (), (vm_address_t) auids,
-		       nauids * sizeof (uid_t));
-      if (agids != agidbuf)
-	vm_deallocate (mach_task_self (), (vm_address_t) agids,
-		       nagids * sizeof (uid_t));
+	  /* Clean up */
+	  if (euids != euidbuf)
+	    vm_deallocate (mach_task_self (), (vm_address_t) euids,
+			   neuids * sizeof (uid_t));
+	  if (egids != egidbuf)
+	    vm_deallocate (mach_task_self (), (vm_address_t) egids,
+			   negids * sizeof (uid_t));
+	  if (auids != auidbuf)
+	    vm_deallocate (mach_task_self (), (vm_address_t) auids,
+			   nauids * sizeof (uid_t));
+	  if (agids != agidbuf)
+	    vm_deallocate (mach_task_self (), (vm_address_t) agids,
+			   nagids * sizeof (uid_t));
+	}
     }
 
   {
