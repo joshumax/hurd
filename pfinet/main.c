@@ -33,7 +33,7 @@ main ()
   setup_ethernet_device ();
   
   /* Call initialization routines */
-  inet_proto_init ();
+  inet_proto_init (0);
 
   /* Simulate SIOCSIFADDR call. */
   {
