@@ -1,3 +1,52 @@
+hurd (20001127) unstable; urgency=low
+
+  * New snapshot from CVS, really fixes isofs now.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon, 27 Nov 2000 21:07:03 +0100
+
+hurd (20001126) unstable; urgency=low
+
+  * New snapshot from CVS, closes: #68417, #69281, #68626
+  * Fix in 20001030 closes: #72319
+  * debian/control: Add build dependencies, closes: #75734
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 26 Nov 2000 05:53:19 +0100
+
+hurd (20001030) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Still contains all the goodies, streadev, kbd, mouse. Now opening
+  kbd, mouse more than once doesn't crash them (thanks Erik Verbruggen
+  <ejv@cs.kun.nl>)
+  * sutils/MAKEDEV.sh: kmsg is really klog.
+  
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue, 30 Oct 2000 18:02:29 +0200
+
+hurd (20000921) unstable; urgency=low
+
+  * New snapshot from CVS
+  * Add streamdev by OKUJI Yoshinori
+  (source: ftp://alpha.gnu.org/contrib/okuji/hurd/streamdev-19990920.tar.gz)
+  * Add kbd and mouse by UCHIYAMA Yasushi <uch@nop.or.jp>.
+  * sutils/MAKEDEV.sh: Add kbd and kmsg. No sense to add mouse, as you need
+  to configure it (see /hurd/mouse --help).
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sat, 23 Sep 2000 04:27:58 +0200
+
+hurd (20000803) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * isofs: Patch to fix symlink handling.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu,  3 Aug 2000 21:09:44 +0200
+
+hurd (20000726) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Fixes the infamous zero hole bug (actually both of them).
+  
+ -- Marcus Brinkmann <brinkmd@debian.org>  Wed, 26 Jul 2000 02:24:06 +0200
+
 hurd (20000703) unstable; urgency=low
 
   * New snapshot from CVS.

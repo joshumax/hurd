@@ -171,6 +171,9 @@ binary-arch: build
 # libexec/runsystem is managed by update-alternatives
 	mv			debian/tmp/libexec/runsystem debian/tmp/libexec/runsystem.gnu
 
+# We have our own rc, slightly modified.
+	cp			debian/rc debian/tmp/libexec/rc
+
 	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
 	$(install_file)		debian/shlibs debian/tmp/DEBIAN/shlibs
 	$(install_script)	debian/postinst debian/tmp/DEBIAN/postinst

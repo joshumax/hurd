@@ -1,3 +1,10 @@
+2000-11-27  Marcus Brinkmann  <marcus@gnu.org>
+
+	* changelog: Update to reflect Debian upgrade.
+	* rc: New file.
+	* rules: Install rc.
+	* control: Add Build-Depends.
+
 2000-07-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update to reflect Debian uploads.

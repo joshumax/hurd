@@ -3,6 +3,7 @@ Section: base
 Priority: required
 Maintainer: GNU Hurd Maintainers <bug-hurd@gnu.org>
 Standards-Version: 2.5.0.0
+Build-Depends: mig, texinfo, tetex-bin
 
 Package: hurd
 Priority: required
