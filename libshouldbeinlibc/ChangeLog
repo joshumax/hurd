@@ -1,3 +1,7 @@
+Fri Jul 26 20:57:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_past_time): Always use WIDTH+1 as strftime's limit.
+
 Thu Jul 25 23:10:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* timefmt.c (fmt_past_time): Terminate SEPS.
