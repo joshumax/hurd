@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993,94,95,96,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -41,17 +41,15 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   do
     err = ports_create_port_noinstall (cred->po->cntl->protid_class,
 				       cred->po->cntl->protid_bucket,
-				       sizeof (struct trivfs_protid), 
+				       sizeof (struct trivfs_protid),
 				       &newcred);
   while (err == EINTR);
   if (err)
     return err;
 
   auth = getauth ();
-  newright = ports_get_right (newcred);
-  err = mach_port_insert_right (mach_task_self (), newright, newright,
-				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  newright = ports_get_send_right (newcred);
+  assert (newright != MACH_PORT_NULL);
 
   newcred->user = iohelp_reauth (auth, rendport, newright, 1);
   if (idvec_contains (newcred->user->uids, 0))
@@ -62,15 +60,15 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   mach_port_deallocate (mach_task_self (), auth);
 
   newcred->hook = cred->hook;
-  
+
   mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
   mutex_unlock (&cred->po->cntl->lock);
-  
+
   do
     err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
-			    newcred->user->uids->ids, 
+			    newcred->user->uids->ids,
 			    newcred->user->uids->num,
 			    newcred->user->gids->ids,
 			    newcred->user->gids->num);
