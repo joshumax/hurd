@@ -19,10 +19,11 @@ dir := boot
 makemode := utility
 
 SRCS = boot.c tcattr.c sigvec.S
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
+OBJS = boot.o notifyServer.o execServer.o ourdeviceServer.o ioServer.o \
        io_replyUser.o device_replyUser.o sigvec.o \
        termServer.o tcattr.o
 target = boot
+ioMIGSFLAGS=-DREPLY_PORTS
 
 include ../Makeconf
 
@@ -31,6 +32,8 @@ install: /usr/local/bin/boot
 /usr/local/bin/boot:
 	cp boot /usr/local/bin/boot
 
-boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply_U.h io_reply_U.h \
-	tioctl_S.h term_S.h
+boot.o: notify_S.h exec_S.h ourdevice_S.h io_S.h device_reply_U.h \
+	io_reply_U.h tioctl_S.h term_S.h
 
+ourdevice.defs: $(includedir)/device/device.defs
+	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
