@@ -225,14 +225,13 @@ get_dirents (struct ftpfs_dir *dir,
 	    }
 
 	  if (err)
-	    vm_deallocate (mach_task_self (), (vm_address_t)*data, size);
+	    munmap (*data, size);
 	  else
 	    {
 	      vm_address_t alloc_end = (vm_address_t)(*data + size);
 	      vm_address_t real_end = round_page (p);
 	      if (alloc_end > real_end)
-		vm_deallocate (mach_task_self (),
-			       real_end, alloc_end - real_end);
+		munmap ((caddr_t) real_end, alloc_end - real_end);
 	      *data_len = p - *data;
 	      *data_entries = count;
 	    }

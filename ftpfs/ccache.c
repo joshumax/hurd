@@ -1,6 +1,6 @@
 /* Remote file contents caching
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -126,9 +126,7 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 				/* That worked; copy what's already-fetched. */
 				{
 				  bcopy (cc->image, (void *)addr, cc->max);
-				  vm_deallocate (mach_task_self (),
-						 (vm_address_t)cc->image,
-						 cc->alloced);
+				  munmap (cc->image, cc->alloced);
 				  cc->image = (char *)addr;
 				}
 			    }
@@ -227,8 +225,7 @@ ccache_invalidate (struct ccache *cc)
     {
       if (cc->alloced > 0)
 	{
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t)cc->image, cc->alloced);
+	  munmap (cc->image, cc->alloced);
 	  cc->image = 0;
 	  cc->alloced = 0;
 	  cc->max = 0;
@@ -277,7 +274,7 @@ void
 ccache_free (struct ccache *cc)
 {
   if (cc->alloced > 0)
-    vm_deallocate (mach_task_self (), (vm_address_t)cc->image, cc->alloced);
+    munmap (cc->image, cc->alloced);
   if (cc->data_conn >= 0)
     close (cc->data_conn);
   if (cc->conn)
