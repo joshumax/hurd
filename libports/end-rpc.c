@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -38,10 +38,10 @@ ports_end_rpc (void *port, struct rpc_info *info)
   _ports_total_rpcs--;
   pi->bucket->rpcs--;
 
-  if ((!pi->current_rpcs && (pi->flags & PORT_INHIBIT_WAIT))
-      || (!pi->bucket->rpcs && (pi->bucket->flags & PORT_BUCKET_INHIBIT_WAIT))
-      || (!pi->class->rpcs && (pi->class->flags & PORT_CLASS_INHIBIT_WAIT))
-      || (!_ports_total_rpcs && (_ports_flags & _PORTS_INHIBIT_WAIT)))
+  if ((pi->flags & PORT_INHIBIT_WAIT)
+      || (pi->bucket->flags & PORT_BUCKET_INHIBIT_WAIT)
+      || (pi->class->flags & PORT_CLASS_INHIBIT_WAIT)
+      || (_ports_flags & _PORTS_INHIBIT_WAIT))
     condition_broadcast (&_ports_block);
 
   /* This removes the current thread's rpc (which should be INFO) from the
