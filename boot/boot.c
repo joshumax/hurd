@@ -178,6 +178,12 @@ open (const char *name,
 }
 
 int
+fstat (int fd, struct stat *buf)
+{
+  return syscall (62, fd, buf);
+}
+
+int
 close (int fd)
 {
   return syscall (6, fd);
