@@ -32,10 +32,3 @@ ifsock_getsockaddr (
 	file: file_t;
 	out sockaddr: mach_port_copy_send_t);
 
-ifsock_setsockaddr (
-	file: file_t;
-	sockaddr: mach_port_copy_send_t);
-
-ifsock_assume_responsibility (
-	master_sockaddr_port: mach_port_t;
-	bootport: mach_port_t);
