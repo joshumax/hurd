@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
+#   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -29,7 +29,8 @@ SRCS = create-bucket.c create-class.c \
  inhibit-port-rpcs.c inhibit-class-rpcs.c inhibit-bucket-rpcs.c \
  inhibit-all-rpcs.c resume-port-rpcs.c resume-class-rpcs.c \
  resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpcs.c \
- init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
+ init.c complete-deallocate.c get-right.c get-send-right.c \
+ count-class.c count-bucket.c \
  enable-class.c enable-bucket.c bucket-iterate.c class-iterate.c stubs.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
  notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \

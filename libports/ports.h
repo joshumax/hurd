@@ -1,5 +1,5 @@
 /* Ports library for server construction
-   Copyright (C) 1993,94,95,96,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -209,10 +209,15 @@ mach_port_t ports_claim_right (void *port);
    were called. */
 error_t ports_transfer_right (void *topt, void *frompt);
 
-/* Return the name of the receive right associated with PORT.  The user
-   is responsible for creating an ordinary  send right from this name.  */
+/* Return the name of the receive right associated with PORT.  This assumes
+   that send rights will shortly be created, and arranges for notifications
+   accordingly.  The user is responsible for creating an ordinary send
+   right from this name.  */
 mach_port_t ports_get_right (void *port);
 
+/* This convenience function uses ports_get_right, and
+   deals with the creation of a send right as well.  */
+mach_port_t ports_get_send_right (void *port);
 
 
 /* Reference counting */
