@@ -118,13 +118,3 @@ diskfs_lookup (struct node *dp,
   return err;
 }
 
-  /* If we will be modifying the directory, make sure it's allowed. */
-  if (type == RENAME
-      || (type == REMOVE && inum)
-      || (type == CREATE && !inum))
-    {
-      err = diskfs_checkdirmod (dp, np, cred);
-      if (err)
-	goto out;
-    }
-  
