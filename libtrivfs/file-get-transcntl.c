@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-error_t
-trivfs_S_file_get_translator_cntl (struct protid *cred,
+kern_return_t
+trivfs_S_file_get_translator_cntl (struct trivfs_protid *cred,
 				   mach_port_t *cntl)
 {
   return EOPNOTSUPP;
