@@ -73,7 +73,7 @@ check_uid (struct proc *p, uid_t uid)
 {
   int i;
   for (i = 0; i < p->p_id->i_nuids; i++)
-    if (p->p_id->i_uids[i] == uid || p->p_id\->i_uids[i] == 0)
+    if (p->p_id->i_uids[i] == uid || p->p_id->i_uids[i] == 0)
       return 1;
   return 0;
 }
@@ -182,9 +182,9 @@ S_proc_child (struct proc *parentp,
 	 it for us. */
     }
   else if (childp->p_msgport != MACH_PORT_NULL)
-    nowait_proc_newids (childp->p_msgport, childp->p_task, 
-			childp->p_parent->p_pid, childp->p_pgrp->pg_pgid,
-			!childp->p_pgrp->pg_orphcnt);
+    nowait_msg_proc_newids (childp->p_msgport, childp->p_task, 
+			    childp->p_parent->p_pid, childp->p_pgrp->pg_pgid,
+			    !childp->p_pgrp->pg_orphcnt);
   childp->p_parentset = 1;
   return 0;
 }
