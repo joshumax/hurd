@@ -86,6 +86,7 @@ diskfs_shutdown (int flags)
       && (nports || diskfs_pager_users ()))
     {
       ports_enable_class (diskfs_protid_class);
+      ports_resume_class_rpcs (diskfs_protid_class);
       mutex_unlock (&diskfs_shutdown_lock);
       return EBUSY;
     }
