@@ -117,19 +117,28 @@ S_io_write (struct sock_user *user,
 error_t
 S_interrupt_operation (mach_port_t port)
 {
+  struct sock *sock;
   struct pipe *pipe;
   struct sock_user *user = ports_lookup_port (sock_port_bucket, port, 0);
 
   if (!user)
     return EOPNOTSUPP;
-debug (user, "interrupt, sock: %p", user->sock);
-{unsigned refs;
- mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
- debug (user, "send rights: %d", refs);}
+
+  sock = user->sock;
+
+  /* Interrupt anyone trying to connect or listening for connections.  */
+  if (sock->listen_queue)
+    connq_interrupt (sock->listen_queue);
+
+  /* Interrupt SOCK's pending connection.  */
+  mutex_lock (&sock->lock);
+  if (sock->connect_queue)
+      connq_interrupt_sock (sock->connect_queue, sock);
+  mutex_unlock (&sock->lock);
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
-  if (sock_aquire_read_pipe (user->sock, &pipe) == 0)
+  if (sock_aquire_read_pipe (sock, &pipe) == 0)
     {
       /* Indicate to currently waiting threads they've been interrupted.  */
       pipe->interrupt_seq_num++;
@@ -213,7 +222,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 debug (sock, "lock");
   mutex_lock (&sock->lock);
 
-  if (sock->connq)
+  if (sock->listen_queue)
     /* Sock is used for accepting connections, not I/O.  For these, you can
        only select for reading, which will block until a connection request
        comes along.  */
@@ -231,7 +240,8 @@ debug (sock, "ebadf");
 	   request won't be dequeued.  */
 {debug (sock, "waiting for connection");
 	return 
-	  connq_listen (sock->connq, sock->flags & SOCK_NONBLOCK, NULL, NULL);
+	  connq_listen (sock->listen_queue,
+			sock->flags & SOCK_NONBLOCK, NULL, NULL);
 }
     }
   else
