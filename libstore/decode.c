@@ -25,20 +25,23 @@
 
 #include "store.h"
 
+/* The maximum number of runs for which we allocate run vectors on the stack. */
+#define MAX_STACK_RUNS (16*1024 / sizeof (struct store_run))
+
 /* Decodes the standard leaf encoding that's common to various builtin
    formats, and calls CREATE to actually create the store.  */
 error_t
 store_default_leaf_decode (struct store_enc *enc,
 			   error_t (*create)(mach_port_t port,
 					     size_t block_size,
-					     const off_t *runs,
+					     const struct store_run *runs,
 					     size_t num_runs,
 					     struct store **store),
 			   struct store **store)
 {
   char *misc;
   error_t err;
-  int type, flags;
+  int type, flags, i;
   mach_port_t port;
   size_t block_size, num_runs, name_len, misc_len;
   
@@ -69,9 +72,39 @@ store_default_leaf_decode (struct store_enc *enc,
   /* Read encoded ports (be careful to deallocate this if we barf).  */
   port = enc->ports[enc->cur_port++];
 
-  err =
-    (*create)(port, block_size, enc->offsets + enc->cur_offset, num_runs,
-	      store);
+  /* Since the runs are passed in an array of off_t pairs, and we use struct
+     store_run, we have to make a temporary array to hold the (probably
+     bitwise identical) converted representation to pass to CREATE.  */
+  if (num_runs <= MAX_STACK_RUNS)
+    {
+      struct store_run runs[num_runs];
+      off_t *e = enc->offsets + enc->cur_offset;
+      for (i = 0; i < num_runs; i++)
+	{
+	  runs[i].start = *e++;
+	  runs[i].length = *e++;
+	}
+      err = (*create)(port, block_size, runs, num_runs, store);
+    }
+  else
+    /* Ack.  Too many runs to allocate the temporary RUNS array on the stack.
+       This will probably never happen.  */
+    {
+      struct store_run *runs = malloc (num_runs * sizeof (struct store_run));
+      if (runs)
+	{
+	  off_t *e = enc->offsets + enc->cur_offset;
+	  for (i = 0; i < num_runs; i++)
+	    {
+	      runs[i].start = *e++;
+	      runs[i].length = *e++;
+	    }
+	  err = (*create)(port, block_size, runs, num_runs, store);
+	  free (runs);
+	}
+      else
+	err = ENOMEM;
+    }
 
   if (err)
     {
