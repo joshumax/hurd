@@ -1,3 +1,8 @@
+1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mach-defpager: New directory.  See its ChangeLog.
+	Makefile (prog-subdirs): Add mach-defpager.
+
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf [$(makemode) = misc]: If no installationdir and no targets,
