@@ -18,12 +18,12 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_set_translator (struct trivfs_protid *cred,
 			      int flags,
 			      int oldtransflags,
 			      char *trans,
-			      u_int *translen,
+			      u_int translen,
 			      mach_port_t existing)
 {
   return EOPNOTSUPP;
