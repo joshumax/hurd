@@ -218,7 +218,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		      if (real->arg)
 			{
 			  *short_end++ = ':';
-			  if (! (real->flags & OPTION_ARG_OPTIONAL))
+			  if (real->flags & OPTION_ARG_OPTIONAL)
 			    *short_end++ = ':';
 			}
 		      *short_end = '\0'; /* keep 0 terminated */
