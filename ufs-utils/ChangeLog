@@ -1,3 +1,8 @@
+2001-12-06  Roland McGrath  <roland@frob.com>
+
+	* dlabel.c (fd_get_device): Only deallocate NODE if store_create fails.
+	Found by Michael Teichgraeber <gnubert@web.de>.
+
 2001-12-02  Roland McGrath  <roland@frob.com>
 
 	* mkfs.c (fsinit): Set the root directory's owner/group to the user's.
