@@ -90,74 +90,85 @@ MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 
 
-# Decode makemode:
-
+# Decode makemode.
+# After this section, $(targets) and $(progtarg) will be defined,
+# and everything else should use only those and not $(target).
+# targets will have all the (one or more) targets that should be installed;
+# progtarg will have all the (one or more) programs that should be linked;
+# linktarg will have the complete set of linked targets, including both
+# .static versions of $(progtarg) and/or shared library object targets.
 
 ifeq ($(makemode),server)
  doinst := one
- installationdir := $(hurddir)
+ makemode-instdir := hurd
  clean := yes
- linktarg := $(target)
+ targets = $(target)
+ progtarg = $(targets)
 endif
 
 ifeq ($(makemode),utility)
  doinst := one
- ifndef installationdir
-   installationdir := $(bindir)
- endif
+ makemode-instdir := bin
  clean := yes
- linktarg := $(target)
+ targets = $(target)
 endif
 
 ifeq ($(makemode),servers)
  doinst := many
- installationdir := $(hurddir)
+ makemode-instdir := hurd
  clean := yes
- linktarg := $(targets)
+ progtarg := $(targets)
 endif
 
 ifeq ($(makemode),utilities)
  doinst := many
- ifndef installationdir
-   installationdir := $(bindir)
- endif
+ makemode-instdir := bin
  clean := yes
- linktarg := $(targets)
+ progtarg := $(targets)
 endif
 
 ifeq ($(makemode),library)
+
  linktarg := $(libname).so.$(hurd-version)
+
  clean := yes
- cleantarg := $(libname).a $(libname)_p.a $(libname).so $(libname)_pic.a $(linktarg)
+ cleantarg := $(linktarg) $(addprefix $(libname),.a _p.a _pic.a .so)
+
+ targets := $(libname).a $(libname).so
+ ifneq ($(no_pic),t)
+  targets += $(libname)_pic.a
+ endif
+ ifneq ($(no_prof),t)
+  targets += $(libname)_p.a
+ endif
+
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
- ifeq ($(no_pic),t)
-  ifeq ($(no_prof),t)
-   targets := $(libname).a $(libname).so
-  else
-   targets := $(libname).a $(libname).so $(libname)_p.a
-  endif
- else
-  ifeq ($(no_prof),t)
-   targets := $(libname).a $(libname).so $(libname)_pic.a
-  else
-   targets := $(libname).a $(libname).so $(libname)_pic.a $(libname)_p.a
-  endif
- endif
+
 else
- linktarg := $(linktarg) $(linktarg:=.static)
+
+ progtarg := $(filter-out $(special-targets),$(targets))
+ linktarg := $(progtarg) $(progtarg:=.static)
+
 endif
 
 ifeq ($(makemode),misc)
   ifndef doinst
     doinst := many
   endif
+  ifeq ($(doinst),one)
+    targets = $(target)
+  endif
   ifndef installationdir
-    ifneq (,$(target)$(targets))
+    ifneq (,$(targets))
     ?Error subdir Makefile must define installationdir
     endif
   endif
+endif
+
+ifndef installationdir
+installationdir := $($(makemode-instdir)dir)
 endif
 
 ifeq ($(cleantarg),)
@@ -189,9 +200,6 @@ endif
 ifneq ($(makemode),library)
 
 # not library
-ifndef targets
-targets = $(target)
-endif
 installable := $(sort $(linktarg) $(targets))
 install-targets := $(targets) $(filter $(build-static:=.static),$(linktarg))
 all: $(install-targets)
@@ -250,14 +258,10 @@ $(installationdirlist): %:
 	@$(MKINSTALLDIRS) $@
 
 # Building the target
-ifeq ($(doinst),many)
- target = $(filter-out $(special-targets),$(targets))
-endif
-
 ifneq ($(makemode),misc)
 
 ifeq ($(doinst),one)
-$(target) $(target).static: $(OBJS) $(OTHERLIBS) $(library_deps)
+$(linktarg): $(OBJS) $(OTHERLIBS) $(library_deps)
 endif
 
 # Determine which sort of library we should link against from whether -static
@@ -285,21 +289,21 @@ $(CC) $(rpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
       $(BUGADDR_REF) \
       -o $@
 endef
-$(target): %$(target-suffix): $(BUGADDR)
+$(progtarg): %$(target-suffix): $(BUGADDR)
 	$(link-executable) \
               $(filter %.o,$^) \
 	      '-Wl,-(' $(foreach lib,$(filter-out %.o,$^),${_libsubst}) \
 		       $($*-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)'
 
-$(addsuffix .static,$(target)): %$(target-suffix).static: $(BUGADDR)
+$(addsuffix .static,$(progtarg)): %$(target-suffix).static: $(BUGADDR)
 	$(link-executable) -static \
 	      '-Wl,-(' $(patsubst %.so,%.a,$^) $($*-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)'
 endif
 
 # Just like above, but tell how to make .prof versions of programs.
-$(addsuffix .prof,$(target)): %$(target-suffix).prof: $(BUGADDR)
+$(addsuffix .prof,$(progtarg)): %$(target-suffix).prof: $(BUGADDR)
 	$(CC) -pg $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
 		$(BUGADDR_REF) -static \
 		-o $@ \
@@ -500,11 +504,9 @@ ifneq ($(no_deps),t)
 -include $(subst Server.o,.migsh_d,$(filter %Server.o,$(OBJS))) /dev/null
 -include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
-ifneq ($(makemode),library)
 ifneq ($(prof-depend),t)
 ifneq ($(no_prof),t)
--include $(addsuffix .prof_d,$(target)) /dev/null
-endif
+-include $(addsuffix .prof_d,$(progtarg)) /dev/null
 endif
 endif
 
@@ -538,7 +540,7 @@ endif
 	$(MAKE) $* prof-depend=t
 
 ifeq ($(prof-depend),t)
-$(target): %: FORCE
+$(progtarg): %: FORCE
 	rm -f $@.prof_d
 	echo $@.prof: $(subst .so,_p.a,$(subst .o,_p.o,$(filter-out FORCE,$+))) > $@.prof_d
 endif
