@@ -32,7 +32,7 @@ LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
 installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
 
 ROOTDOTS = .bash_login .bashrc .profile
-installed_rootdots = $(addprefix $(prefix)/root,$(ROOTDOTS))
+installed_rootdots = $(addprefix $(prefix)/root/,$(ROOTDOTS))
 
 # Mere symlinks are installed for these
 LINKEDCONFFILES = rc
