@@ -143,17 +143,6 @@ xdr_decode_fattr (int *p, struct stat *st)
 
 }
 
-/* Decode *P into an fsys_statfsbuf structure; return the address of
-   the following data. */
-int *
-xdr_decode_statfs (int *p, struct fsys_statfsbuf *st)
-{
-  st->fsys_stb_
-
-
-  st->fsys_stb_type = FSTYPE_NFS;
-
-
 /* Create, initialize, and return a buffer suitable for sending an RPC
    of type RPC_PROC for the user identified in CRED.  For types READ,
    WRITE, READLINK, and READDIR, parm LEN is the amount of data the
