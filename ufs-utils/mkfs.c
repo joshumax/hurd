@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.2 1994/09/08 19:51:43 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.3 1994/09/08 20:03:28 mib Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -45,6 +45,30 @@ static char *rcsid = "$Id: mkfs.c,v 1.2 1994/09/08 19:51:43 mib Exp $";
 #include "../ufs/dir.h"
 #include "../ufs/fs.h"
 /* #include <sys/disklabel.h> */
+
+/* Begin additions for GNU Hurd */
+
+/* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD 
+   4.4 version that mkfs expects.  So we provide here the BSD version. */
+#undef DIRSIZ
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+#define DIRSIZ(oldfmt, dp) \
+    ((oldfmt) ? \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_type+1 + 3) &~ 3)) : \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3)))
+#else
+#define DIRSIZ(oldfmt, dp) \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
+#endif
+
+#define NBBY 8
+
+#define MAXPHYS (64 * 1024)
+
+/* Provide mode from struct dinode * */
+#define DI_MODE(dp) (((dp)->di_modeh << 16) | (dp)->di_model)
+
+/* End additions for GNU Hurd */
 
 #ifndef STANDALONE
 #include <a.out.h>
