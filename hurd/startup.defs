@@ -1,5 +1,5 @@
 /* Definitions for startup server interface
-   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -46,7 +46,7 @@ routine startup_essential_task (
    sent to the notify port. */
 routine startup_request_notification (
 	server: startup_t;
-	notify_port: mach_port_t);
+	notify_port: mach_port_send_t);
 
 /* This call causes the system to die.  */
 routine startup_reboot (
