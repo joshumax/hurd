@@ -1,4 +1,4 @@
-/* Determine the BFD (or a.out) architecture and machine flavor
+/* Determine the BFD and ELF architecture and machine flavor
    from a Mach host port.  Used by the exec and core servers.
    Copyright (C) 1992, 1993, 1995 Free Software Foundation, Inc.
    Written by Roland McGrath.
@@ -22,21 +22,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <errno.h>
-
-#ifdef	BFD
 #include <bfd.h>
-#else
-#include A_OUT_H
-#endif
+#include <elf.h>
 
 error_t
-#ifdef	BFD
 bfd_mach_host_arch_mach (host_t host,
 			 enum bfd_architecture *arch,
-			 long int *machine)
-#else
-aout_mach_host_machine (host_t host, int *host_machine)
-#endif
+			 long int *machine,
+			 Elf32_Half *e_machine)
 {
   error_t err;
   struct host_basic_info hostinfo;
@@ -46,29 +39,24 @@ aout_mach_host_machine (host_t host, int *host_machine)
 		       (natural_t *) &hostinfo, &hostinfocnt))
     return err;
 
-#ifdef	BFD
   *machine = hostinfo.cpu_subtype;
-#endif
+  *e_machine = EM_NONE;
   switch (hostinfo.cpu_type)
     {
     case CPU_TYPE_MC68020:
-#ifdef	BFD
       *arch = bfd_arch_m68k;
       *machine = 68020;
-#else
-    case CPU_TYPE_MC68030:
-    case CPU_TYPE_MC68040:
-      *host_machine = M_68020;
-#endif
+      *e_machine = EM_68K;
       break;
-#ifdef	BFD
     case CPU_TYPE_MC68030:
       *arch = bfd_arch_m68k;
       *machine = 68030;
+      *e_machine = EM_68K;
       break;
     case CPU_TYPE_MC68040:
       *arch = bfd_arch_m68k;
       *machine = 68040;
+      *e_machine = EM_68K;
       break;
 
     case CPU_TYPE_NS32032:
@@ -90,10 +78,12 @@ aout_mach_host_machine (host_t host, int *host_machine)
 
     case CPU_TYPE_I860:
       *arch = bfd_arch_i860;
+      *e_machine = EM_860;
       break;
 
     case CPU_TYPE_MIPS:
       *arch = bfd_arch_mips;
+      *e_machine = EM_MIPS;
       break;
 
     case CPU_TYPE_VAX:
@@ -102,44 +92,27 @@ aout_mach_host_machine (host_t host, int *host_machine)
 
     case CPU_TYPE_MC88000:
       *arch = bfd_arch_m88k;
+      *e_machine = EM_88K;
       break;
-#endif
 
     case CPU_TYPE_SPARC:
-#ifdef	BFD
       *arch = bfd_arch_sparc;
-#else
-      *host_machine = M_SPARC;
-#endif
+      *e_machine = EM_SPARC;
       break;
 
     case CPU_TYPE_I386:
-#ifdef	BFD
       *arch = bfd_arch_i386;
-#else
-      *host_machine = M_386;
-#endif
+      *e_machine = EM_386;
       break;
 
 #ifdef CPU_TYPE_ALPHA
     case CPU_TYPE_ALPHA:
-#ifdef	 BFD
       *arch = bfd_arch_alpha;
-#else
-#ifndef M_ALPHA
-#define M_ALPHA 999		/* XXX */
-#endif
-      *host_machine = M_ALPHA;
-#endif
       break;
 #endif
 
     default:
-#ifdef	BFD
       return ENOEXEC;
-#else
-      *host_machine = 0;
-#endif
     }
 
   return 0;
