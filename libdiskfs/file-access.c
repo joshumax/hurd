@@ -17,30 +17,28 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <fcntl.h>
 
 kern_return_t
-diskfs_S_file_access (struct protid *cred,
-		      int type)
+diskfs_S_file_check_access (struct protid *cred,
+			    int *type)
 {
   struct node *np;
-  error_t err;
   
   if (!cred)
     return EOPNOTSUPP;
 
-  if (type & ~(R_OK|W_OK|X_OK))
-    return EINVAL;
-
   np = cred->po->np;
   mutex_lock (&np->lock);
-  err = 0;
-  if (type & R_OK)
-    err = diskfs_access (np, S_IREAD, cred);
-  if (!err && (type & W_OK))
-    err = diskfs_access (np, S_IWRITE, cred);
-  if (!err && (type & X_OK))
-    err = diskfs_access (np, S_IEXEC, cred);
+  *type = 0;
+  if (diskfs_access (np, S_IREAD, cred) == 0)
+    *type |= O_READ;
+  if (diskfs_access (np, S_IWRITE, cred) == 0)
+    *type |= O_WRITE;
+  if (diskfs_access (np, S_IEXEC, cred) == 0)
+    *type |= O_EXEC;
+  
   mutex_unlock (&np->lock);
   
-  return err;
+  return 0;
 }
