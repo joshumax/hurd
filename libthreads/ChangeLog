@@ -1,3 +1,8 @@
+1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* cthreads.h (MACRO_BEGIN, MACRO_END): #undef before unconditionally
+	redefining.  Use GCC extension for statement expression with value 0.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* cthreads.h (mutex_clear): Change again, to call mutex_init.
