@@ -99,6 +99,9 @@ diskfs_create_node (struct node *dir,
 
   if (err)
     {
+    change_err:
+      np->dn_stat.st_mode = 0;
+      np->dn_stat.st_nlink = 0;
       if (name)
 	diskfs_drop_dirstat (dir, ds);
       return err;
