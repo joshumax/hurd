@@ -355,7 +355,7 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
 
   if (*dtablelen < 3)
     *dtableP = mmap (0, 3 * sizeof (mach_port_t), PROT_READ|PROT_WRITE,
-		     MAP_ANON, 0, 0)
+		     MAP_ANON, 0, 0);
   dtable = *dtableP;
   *dtablelen = 3;
   dtable[0] = dtable[1] = dtable[2] = get_console (); /* XXX */
@@ -594,7 +594,7 @@ diskfs_S_fsys_init (mach_port_t port,
 	 and call _hurd_init.  */
       mach_port_t *portarray;
       unsigned int i;
-      portarray = mmap (0, INIT_PORT_MAX * sizeof *portarray, 
+      portarray = mmap (0, INIT_PORT_MAX * sizeof *portarray,
 			PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (MACH_PORT_NULL != (mach_port_t) 0)
 	for (i = 0; i < INIT_PORT_MAX; ++i)
