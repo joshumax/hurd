@@ -1,5 +1,5 @@
 /* Definitions for multi-threaded pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@ int pager_demuxer (mach_msg_header_t *inp,
    created.  MAY_CACHE and COPY_STRATEGY are the original values of
    those attributes as for memory_object_ready.  Users may create
    references to pagers by use of the relevant ports library
-   functions.  */
+   functions.  On errors, return null and set errno.  */
 struct pager *
 pager_create (struct user_pager_info *u_pager,
 	      struct port_bucket *bucket,

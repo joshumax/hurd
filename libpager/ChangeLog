@@ -1,3 +1,7 @@
+Wed Aug 20 14:47:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* pager.h: Doc fix.
+
 Thu Feb  6 12:01:36 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pagemap.c (_pager_pagemap_resize): Return errors.
