@@ -24,8 +24,11 @@ trivfs_clean_protid (void *arg)
 {
   struct trivfs_protid *cred = arg;
   
-  if (trivfs_protid_destroy_hook)
+  if (trivfs_protid_destroy_hook && cred->realnode != MACH_PORT_NULL)
+    /* Allow the user to clean up; If the realnode field is null, then CRED
+       wasn't initialized to the point of needing user cleanup.  */
     (*trivfs_protid_destroy_hook) (cred);
+
   mutex_lock (&cred->po->cntl->lock);
   if (!--cred->po->refcnt)
     {
@@ -35,9 +38,12 @@ trivfs_clean_protid (void *arg)
       free (cred->po);
     }
   mutex_unlock (&cred->po->cntl->lock);
+
   free (cred->uids);
   free (cred->gids);
-  mach_port_deallocate (mach_task_self (), cred->realnode);
+
+  if (cred->realnode != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), cred->realnode);
 }
 
   
