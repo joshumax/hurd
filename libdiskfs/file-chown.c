@@ -26,7 +26,8 @@ diskfs_S_file_chown (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!diskfs_isowner (np, cred)
+		     err = diskfs_isowner (np, cred);
+		     if (err
 			 || ((!diskfs_isuid (uid, cred)
 			      || !diskfs_groupmember (gid, cred))
 			     && !diskfs_isuid (0, cred)))
