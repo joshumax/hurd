@@ -50,23 +50,52 @@ maptime_map (int use_mach_dev, char *dev_name,
     }
   else
     {
-      string_t name;
-      int class, flags = 0;
-      size_t block_size;
-      off_t *runs = 0;
-      char *misc = 0;
-      size_t runs_len = 0, misc_len = 0;
+      mach_msg_type_number_t data_len = 100;
+      mach_msg_type_number_t num_ints = 10, num_ports = 10, num_offsets = 10;
+      int _ints[num_ints], *ints = _ints;
+      mach_port_t _ports[num_ports], *ports = _ports;
+      off_t _offsets[num_offsets], *offsets = _offsets;
+      char _data[data_len], *data = _data;
       file_t node = file_name_lookup (dev_name ?: "/dev/time", 0, 0);
 
       if (node == MACH_PORT_NULL)
 	return errno;
 
-      err = file_get_storage_info (node, &class, &runs, &runs_len, &block_size,
-				   name, &device, &misc, &misc_len, &flags);
-      if (!err && runs_len)
-	vm_deallocate (mach_task_self (), (vm_address_t)runs, runs_len);
-      if (!err && misc_len)
-	vm_deallocate (mach_task_self (), (vm_address_t)misc, misc_len);
+      err = file_get_storage_info (node, &ports, &num_ports, &ints, &num_ints,
+				   &offsets, &num_offsets, &data, &data_len);
+
+      if (! err)
+	{
+	  int i;
+
+	  if (num_ints >= 6 && ints[0] == STORAGE_DEVICE)
+	    /* This a device.  */
+	    if (num_ports != 1)
+	      err = EGRATUITOUS;
+	    else if (! MACH_PORT_VALID (ports[0]))
+	      err = EPERM;	/* Didn't pass back the device port.  XXX */
+	    else
+	      {
+		device = ports[0];
+		ports[0] = MACH_PORT_NULL; /* Don't deallocate here.  */
+	      }
+	  else
+	    err = ENODEV;	/* Not admitting to being a device.  XXX */
+
+	  /* Deallocate any ports we got back.  */
+	  for (i = 0; i < num_ports; i++)
+	    if (MACH_PORT_VALID (ports[i]))
+	      mach_port_deallocate (mach_task_self (), ports[i]);
+
+	  /* Deallocate any out of line vectors return by gsi.  */ 
+#define DISCARD_MEM(v, vl, b)						    \
+	  if (vl && v != b)						    \
+	    vm_deallocate (mach_task_self (), (vm_address_t)v, vl * sizeof *v);
+	  DISCARD_MEM (ints, num_ints, _ints);
+	  DISCARD_MEM (offsets, num_offsets, _offsets);
+	  DISCARD_MEM (ports, num_ports, _ports);
+	  DISCARD_MEM (data, data_len, _data);
+	}
 
       mach_port_deallocate (mach_task_self (), node);
     }
