@@ -20,6 +20,7 @@
 
 #include "ports.h"
 #include <cthreads.h>
+#include <hurd/ihash.h>
 
 /* This is obsecenely ineffecient.  ihash and ports need to cooperate
    more closely to do it effeciently. */
