@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,02 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -230,8 +230,7 @@ check_hashbang (struct execdata *e,
 	      char *name;
 	      int free_name = 0; /* True if we should free NAME. */
 	      file_t name_file;
-	      mach_port_t fileid;
-	      dev_t filedev;
+	      mach_port_t fileid, filefsid;
 	      ino_t fileno;
 
 	      /* Search $PATH for NAME, opening a port NAME_FILE on it.
@@ -261,9 +260,10 @@ check_hashbang (struct execdata *e,
 		  return err;
 		}
 
-	      error = io_identity (file, &fileid, &filedev, &fileno);
+	      error = io_identity (file, &fileid, &filefsid, &fileno);
 	      if (error)
 		goto out;
+	      mach_port_deallocate (mach_task_self (), filefsid);
 
 	      if (memchr (argv, '\0', argvlen) == NULL)
 		{
@@ -284,11 +284,15 @@ check_hashbang (struct execdata *e,
 
 	      if (!error && name_file != MACH_PORT_NULL)
 		{
-		  mach_port_t id;
-		  dev_t dev;
+		  mach_port_t id, fsid;
 		  ino_t ino;
-		  error = io_identity (name_file, &id, &dev, &ino);
-		  mach_port_deallocate (mach_task_self (), id);
+		  error = io_identity (name_file, &id, &fsid, &ino);
+		  mach_port_deallocate (mach_task_self (), name_file);
+		  if (!error)
+		    {
+		      mach_port_deallocate (mach_task_self (), fsid);
+		      mach_port_deallocate (mach_task_self (), id);
+		    }
 		  if (!error && id == fileid)
 		    {
 		      file_name = name;
@@ -296,7 +300,6 @@ check_hashbang (struct execdata *e,
 		    }
 		  else if (free_name)
 		    free (name);
-		  mach_port_deallocate (mach_task_self (), name_file);
 		}
 
 	      mach_port_deallocate (mach_task_self (), fileid);
