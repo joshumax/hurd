@@ -28,9 +28,7 @@ trivfs_S_fsys_startup (mach_port_t bootport,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
-		       mach_port_t *realnodetype,
-		       mach_port_t *dotdotnode,
-		       mach_port_t *dotdotnodetype)
+		       mach_port_t *realnodetype)
 {
   return EOPNOTSUPP;
 }
