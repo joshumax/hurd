@@ -66,7 +66,7 @@ _diskfs_rdwr_internal (struct node *np,
       diskfs_register_memory_fault_area (diskfs_get_filemap_pager_struct (np), 
 					 winoff, window, 8 * __vm_page_size);
       
-      if ((offset - winoff) + amt > 8 * __vm_page_size)
+      if ((offset - winoff) + amt > 8 * (off_t) __vm_page_size)
 	cc = 8 * __vm_page_size - (offset - winoff);
       else
 	cc = amt;
