@@ -31,8 +31,8 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  int wire_cthreads,
 					  mach_port_t wire_threads)
 {
-  volatile int nreqthreads = 0;
-  volatile int totalthreads = 0;
+  volatile int nreqthreads;
+  volatile int totalthreads;
   spin_lock_t lock = SPIN_LOCK_INITIALIZER;
 
   auto void thread_function (int);
@@ -54,7 +54,13 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       spin_unlock (&lock);
 	  
       if (spawn)
-	cthread_detach (cthread_fork ((cthread_fn_t) thread_function, 0));
+	{
+	  spin_lock (&lock);
+	  totalthreads++;
+	  nreqthreads++;
+	  spin_unlock (&lock);
+	  cthread_detach (cthread_fork ((cthread_fn_t) thread_function, 0));
+	}
 
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
       ports_begin_rpc (pi, &link);
@@ -79,11 +85,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	thread_wire (wire_threads, hurd_thread_self (), 1);
       if (wire_cthreads)
 	cthread_wire ();
-
-      spin_lock (&lock);
-      totalthreads++;
-      nreqthreads++;
-      spin_unlock (&lock);
 
       if (master)
 	timeout = global_timeout;
@@ -118,6 +119,8 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	}
     }
   
+  nreqthreads = 1;
+  totalthreads = 1;
   thread_function (1);
 }
 
