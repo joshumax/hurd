@@ -364,7 +364,8 @@ load_section (enum section section, struct execdata *u)
 	  if (SECTION_IN_MEMORY_P)
 	    bcopy (SECTION_CONTENTS, readaddr, readsize);
 	  else
-	    if (fread (readaddr, readsize, 1, &u->stream) != 1)
+	    if (fseek (&u->stream, filepos, SEEK_SET) ||
+		fread (readaddr, readsize, 1, &u->stream) != 1)
 	      {
 		u->error = errno;
 		goto maplose;
@@ -508,6 +509,7 @@ input_room (FILE *f)
 {
   struct execdata *e = f->__cookie;
   const size_t size = e->file_size;
+  size_t offset = 0;
 
   if (f->__target >= size)
     {
@@ -539,10 +541,18 @@ input_room (FILE *f)
     }
   else
     {
+      /* Deallocate the old mapping area.  */
       if (f->__buffer != NULL)
 	vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
 		       f->__bufsize);
       f->__buffer = NULL;
+
+      /* Make sure our mapping is page-aligned in the file.  */
+      offset = f->__target % vm_page_size;
+      if (offset != 0)
+	f->__target -= offset;
+
+      /* Map the data from the file.  */
       if (vm_map (mach_task_self (),
 		  (vm_address_t *) &f->__buffer, vm_page_size, 0, 1,
 		  e->filemap, f->__target, 1, VM_PROT_READ, VM_PROT_READ,
@@ -564,7 +574,7 @@ input_room (FILE *f)
     }
 
   f->__offset = f->__target;
-  f->__bufp = f->__buffer;
+  f->__bufp = f->__buffer + offset;
 
   if (f->__get_limit == f->__buffer)
     {
