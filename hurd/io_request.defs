@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -94,7 +94,6 @@ simpleroutine io_select_request (
 		io_object: io_t;
 		reply: reply_port_t;
 		select_type: int;
-		return_port: mach_port_make_send_once_t;
 		id_tag: int);
 
 simpleroutine io_stat_request (
