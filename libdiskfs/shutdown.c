@@ -38,6 +38,7 @@ diskfs_shutdown (int flags)
 	mach_port_t control;
 
 	error = fshelp_fetch_control (&np->transbox, &control);
+	mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_goaway (control, flags);
@@ -45,6 +46,7 @@ diskfs_shutdown (int flags)
 	  }
 	else
 	  error = 0;
+	mutex_lock (&np->lock);
 	return error;
       }
   
