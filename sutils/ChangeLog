@@ -1,3 +1,8 @@
+2001-02-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fstab.c (STORE): Only copy when field exists (is non-zero).
+	Reported by Alexey Dejeka <alexey@comail.ru>.
+
 2001-01-14  Marcus Brinkmann  <marcus@gnu.org>
 
 	* MAKEDEV.sh (mkdev: klog): New device, using /hurd/streamio kmsg.

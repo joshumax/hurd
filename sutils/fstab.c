@@ -275,7 +275,13 @@ fs_set_mntent (struct fs *fs, const struct mntent *mntent)
   /* Copy each mntent field from MNTENT into FS's version.  */
   end = fs->storage;
 #define STORE(field) \
-    fs->mntent.field = end; end = stpcpy (end, mntent->field) + 1
+  if (mntent->field)				\
+    {						\
+      fs->mntent.field = end;			\
+      end = stpcpy (end, mntent->field) + 1;	\
+    }						\
+  else						\
+    fs->mntent.field = 0;
   STORE (mnt_fsname);
   STORE (mnt_dir);
   STORE (mnt_type);
