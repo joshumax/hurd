@@ -82,8 +82,8 @@ static struct argp_option options[] =
   {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
   {"sort",       OPT_SORT,"FIELD", 0, "Sort the output with respect to FIELD"},
   {"threads",    's',     0,      0,  "Show the threads for each process"},
-  {"tty",        't',     "TTY",  OA, "Only show processes who's controlling"
-                                      " terminal is TTY"},
+  {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
+                                      " terminal TTY"},
   {0,            'u',     0,      0,  "Use the `user' output-format"},
   {0,            'v',     0,      0,  "Use the `vmem' output-format"},
   {"width",      'w',     "WIDTH",OA, "If WIDTH is given, try to format the"
