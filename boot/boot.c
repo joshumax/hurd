@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -76,6 +76,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 static struct termios orig_tty_state;
 static int isig;
+static char *kernel_command_line;
 
 static void
 init_termstate ()
@@ -398,6 +399,8 @@ static struct argp_option options[] =
     "Root of a directory tree in which to find files specified in BOOT-SCRIPT" },
   { "single-user", 's', 0, 0,
     "Boot in single user mode" },
+  { "kernel-command-line", 'c', "COMMAND LINE", 0,
+    "Simulated multiboot command line to supply" },
   { "pause" ,      'd', 0, 0,
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
@@ -413,6 +416,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
       size_t len;
+
+    case 'c':  kernel_command_line = arg; break;
 
     case 'D':  useropen_dir = arg; break;
 
@@ -511,11 +516,17 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
+  if (kernel_command_line == 0)
+    asprintf (&kernel_command_line, "%s %s root=%s",
+	      argv[0], bootstrap_args, bootdevice);
+
   /* Initialize boot script variables.  */
   if (boot_script_set_variable ("host-port", VAL_PORT,
 				(int) privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
 				   (int) pseudo_master_device_port)
+      || boot_script_set_variable ("kernel-command-line", VAL_STR,
+				   (int) kernel_command_line)
       || boot_script_set_variable ("root-device", VAL_STR, (int) bootdevice)
       || boot_script_set_variable ("boot-args", VAL_STR, (int) bootstrap_args))
     {
