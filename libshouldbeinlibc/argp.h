@@ -108,6 +108,15 @@ struct argp_option
    is displayed after all options (and OPTION_DOC entries with a leading `-')
    in the same group.  */
 #define OPTION_DOC		0x8
+
+/* This option shouldn't be included in `long' usage messages (but is still
+   included in help messages).  This is mainly intended for options that are
+   completely documented in an argp's ARGS_DOC field, in which case including
+   the option in the generic usage list would be redundant.  For instance,
+   if ARGS_DOC is "FOO BAR\n-x BLAH", and the `-x' option's purpose is to
+   distinguish these two cases, -x should probably be marked
+   OPTION_NO_USAGE.  */
+#define OPTION_NO_USAGE		0x10
 
 struct argp;			/* fwd declare this type */
 struct argp_state;		/* " */
