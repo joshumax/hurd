@@ -62,6 +62,8 @@ struct pokel
 };
 
 void pokel_init (struct pokel *pokel, struct pager *pager, void *image);
+/* Clean up any state associated with POKEL (but don't free POKEL).  */
+void pokel_finalize (struct pokel *pokel);
 
 /* Remember that data here on the disk has been modified. */
 void pokel_add (struct pokel *pokel, void *loc, vm_size_t length);
@@ -71,6 +73,9 @@ void pokel_sync (struct pokel *pokel, int wait);
 
 /* Flush (that is, drop on the ground) all pending pokes in POKEL.  */
 void pokel_flush (struct pokel *pokel);
+
+/* Transfer all regions from FROM to POKEL, which must have the same pager. */
+void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
 /* ---------------------------------------------------------------- */
 /* Bitmap routines.  */
