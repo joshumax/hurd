@@ -27,7 +27,7 @@ OBJS = $(subst .c,.o,$(SRCS)) boot_script.o memory_objectServer.o \
 	memory_object_defaultServer.o
 LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h ext2_fs.h \
 	 minix_ffs_compat.h wiring.h dir.h ffs_compat.h minix_fs.h \
-	disk_inode.h file_io.h minix_super.h translate_root.h
+	disk_inode.h file_io.h minix_super.h translate_root.h mach-exec.h
 target = serverboot
 HURDLIBS = threads
 installationdir := $(prefix)/boot
