@@ -189,7 +189,7 @@ extern inline long long
 swab_long_long (long long arg)
 {
   return (((long long) swab_long (arg & 0xffffffff) << 32)
-	  | swab_long ((arg & 0xffffffff00000000) >> 32));
+	  | swab_long ((arg & 0xffffffff00000000lL) >> 32));
 }
 
 /* Return ENTRY, after byteswapping it if necessary */
