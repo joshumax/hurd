@@ -1,3 +1,10 @@
+1998-12-31  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (SRCS, targets, targets rule): Rename sync to syncfs.
+	* syncfs.c: Renamed from sync.c.
+	Take flags -a/--asynchronous and -c/--no-children,
+	and optional file arguments.  Diagnose errors.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (OBJS): Use % pattern instead of explicit list.
