@@ -25,11 +25,13 @@ DIST_FILES = sh.ChangeLog ps.ChangeLog
 HURDLIBS=libps  # Only used by ps.  
 
 CPPFLAGS += -I../lib
-
+CPPFLAGS += $(CPPFLAGS-$(notdir $<))
 vpath %.c ../lib
 
 include ../Makeconf
 
-ps: ps.o ihash.o primes.o error.o $(HURDLIBS-files) $(libc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o ps ps.o ihash.o primes.o error.o $(HURDLIBS-files)
+settrans: settrans.o start-trans.o argz.o error.o
 
+ps: ps.o ihash.o primes.o error.o $(HURDLIBS-files) $(libc)
+
+CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
