@@ -1,7 +1,16 @@
+1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* runttys.c (main): Only call error if setsid returns -1.
+	From Marcus Brinkmann  <Marcus.Brinkmann@ruhr-uni-bochum.de>.
+
+1999-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* getty.c: Include <utmp.h> for login_tty decl.
+
 1999-09-18  Marcus Brinkmann  <Marcus.Brinkmann@ruhr-uni-bochum.de>
 
 	* runttys.c (run): Only call error if setsid returns -1.
-	* console-run.c (open_console): Likewise. 
+	* console-run.c (open_console): Likewise.
 
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
