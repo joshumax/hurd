@@ -184,7 +184,20 @@ error_t trivfs_set_atime (struct trivfs_control *cntl);
 error_t trivfs_set_mtime (struct trivfs_control *cntl);
 
 /* If this is defined or set to an argp structure, it will be used by the
-   default trivfs_S_fsys_set_options to handle runtime options parsing.  */
+   default trivfs_set_options to handle runtime options parsing.  Redefining
+   this is the normal way to add option parsing to a trivfs program.  */
 extern struct argp *trivfs_runtime_argp;
+
+/* Set runtime options for FSYS to ARGZ & ARGZ_LEN.  The default definition
+   for this routine simply uses TRIVFS_RUNTIME_ARGP (supply FSYS as the argp
+   input field).  */
+error_t trivfs_set_options (struct trivfs_control *fsys,
+			    char *argz, size_t argz_len);
+
+/* Return runtime options for FSYS in ARGZ & ARGZ_LEN.  ARGZ should be
+   allocated with malloc.  The default definition for this routine returns
+   EOPNOTSUPP.  */
+error_t trivfs_get_options (struct trivfs_control *fsys,
+			    char **argz, size_t *argz_len);
 
 #endif /* __TRIVFS_H__ */
