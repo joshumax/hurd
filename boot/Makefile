@@ -24,7 +24,7 @@ VPATH=.:../machine
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
 	io_replUser.o device_replyUser.o sigvec.o
 
-DIST_FILES = boot.c Makefile mungio io_repl.defs ChangeLog
+DIST_FILES = boot.c Makefile io_repl.defs ChangeLog
 
 all: boot
 
@@ -63,10 +63,8 @@ device_replyUser.c: $(includedir)/device/device_reply.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -server /dev/null
 
-io.defs: $(includedir)/hurd/io.defs mungio
-	sed -f mungio $< > $@
-io_S.h ioServer.c: io.defs
-	$(CPP) $(CPPFLAGS) $< | \
+io_S.h ioServer.c: $(includedir)/hurd/io.defs
+	$(CPP) $(CPPFLAGS) $< -DREPLY_PORTS | \
 	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null -sheader io_S.h
 
 io_repl.h io_replUser.c: io_repl.defs
