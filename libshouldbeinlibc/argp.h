@@ -80,11 +80,15 @@ struct argp_state;		/* " */
 /* The type of a pointer to an argp parsing function.  */
 typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 
-/* What to return for unrecognized keys.  */
-#define ARGP_ERR_UNKNOWN_KEY E2BIG /* Hurd should never need E2BIG.  XXX */
+/* What to return for unrecognized keys.  For special ARGP_KEY_ keys, such
+   returns will simply be ignored.  For user keys, this error will be turned
+   into EINVAL (if the call to argp_parse is such that errors are propagated
+   back to the user instead of exiting); returning EINVAL itself would result
+   in an immediate stop to parsing in *all* cases.  */
+#define ARGP_ERR_UNKNOWN	E2BIG /* Hurd should never need E2BIG.  XXX */
 
 /* Special values for the KEY argument to an argument parsing function.
-   ARGP_ERR_UNKNOWN_KEY should be returned if they aren't understood.  
+   ARGP_ERR_UNKNOWN should be returned if they aren't understood.  
 
    The sequence of keys to parser calls is either (where opt is a user key):
        ARGP_KEY_INIT (opt | ARGP_KEY_ARG)... ARGP_KEY_END
@@ -134,11 +138,11 @@ struct argp
 
   /* What to do with an option from this structure.  KEY is the key
      associated with the option, and ARG is any associated argument (NULL if
-     none was supplied).  If KEY isn't understood, ARGP_ERR_UNKNOWN_KEY
-     should be returned.  If a non-zero, non-ARGP_ERR_UNKNOWN_KEY value is
-     returned, then parsing is stopped immediately, and that value is
-     returned from argp_parse().  For special (non-user-supplied) values of
-     KEY, see the ARGP_KEY_ definitions below.  */
+     none was supplied).  If KEY isn't understood, ARGP_ERR_UNKNOWN should be
+     returned.  If a non-zero, non-ARGP_ERR_UNKNOWN value is returned, then
+     parsing is stopped immediately, and that value is returned from
+     argp_parse().  For special (non-user-supplied) values of KEY, see the
+     ARGP_KEY_ definitions below.  */
   argp_parser_t parser;
 
   /* A string describing what other arguments are wanted by this program.  It
@@ -214,7 +218,7 @@ struct argp_state
    calling the parse functions with a key of ARGP_KEY_ARG, and the actual arg
    as the value.  Since it's impossible to know which parse function wants to
    handle it, each one is called in turn, until one returns 0 or an error
-   other than ARGP_ERR_UNKNOWN_KEY; if an argument is handled by no one, the
+   other than ARGP_ERR_UNKNOWN; if an argument is handled by no one, the
    argp_parse returns prematurely (but with a return value of 0).  If all
    args have been parsed without error, all parsing functions are called one
    last time with a key of ARGP_KEY_END.  This flag needn't normally be set,
@@ -239,8 +243,8 @@ struct argp_state
 /* Parse the options strings in ARGC & ARGV according to the options in ARGP.
    FLAGS is one of the ARGP_ flags above.  If ARG_INDEX is non-NULL, the
    index in ARGV of the first unparsed option is returned in it.  If an
-   unknown option is present, ARGP_ERR_UNKNOWN_KEY is returned; if some
-   parser routine returned a non-zero value, it is returned; otherwise 0 is
+   unknown option is present, ARGP_ERR_UNKNOWN is returned; if some parser
+   routine returned a non-zero value, it is returned; otherwise 0 is
    returned.  This function may also call exit unless the ARGP_NO_HELP flag
    is set.  INPUT is a pointer to a value to be passed in to the parser.  */
 error_t argp_parse (const struct argp *argp,

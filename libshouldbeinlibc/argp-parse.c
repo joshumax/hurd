@@ -45,8 +45,8 @@
 #define USER_BITS ((sizeof ((struct option *)0)->val * CHAR_BIT) - GROUP_BITS)
 #define USER_MASK ((1 << USER_BITS) - 1)
 
-/* EZ alias for ARGP_ERR_UNKNOWN_KEY.  */
-#define EBADKEY ARGP_ERR_UNKNOWN_KEY
+/* EZ alias for ARGP_ERR_UNKNOWN.  */
+#define EBADKEY ARGP_ERR_UNKNOWN
 
 /* ---------------------------------------------------------------- */
 /* Default options.  */
