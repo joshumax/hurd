@@ -67,15 +67,38 @@ diskfs_S_io_read (struct protid *cred,
     buf = *data;
 
   *datalen = maxread;
-  if (maxread)
+
+  if (maxread == 0)
+    err = 0;
+  else if (S_ISLNK (np->dn_stat.st_mode))
+    /* Read from a symlink.  */
+    if (! diskfs_read_symlink_hook)
+      err = EINVAL;
+    else
+      {
+	if (off == 0 && maxread == np->dn_stat.st_size)
+	  err = (*diskfs_read_symlink_hook)(np, buf);
+	else
+	  {
+	    char *whole_link = alloca (np->dn_stat.st_size);
+	    err = (*diskfs_read_symlink_hook)(np, whole_link);
+	    if (! err)
+	      memcpy (buf, whole_link + off, maxread);
+	  }
+      }
+  else
+    err = EINVAL;		/* Use read below.  */
+
+  if (err == EINVAL)
     err = _diskfs_rdwr_internal (np, buf, off, datalen, 0,
 				 cred->po->openstat & O_NOATIME);
-  else
-    err = 0;
+
   if (diskfs_synchronous)
     diskfs_node_update (np, 1);	/* atime! */
+
   if (offset == -1 && !err)
     cred->po->filepointer += *datalen;
+
   if (err && ourbuf)
     vm_deallocate (mach_task_self (), (u_int) buf, maxread);
 
