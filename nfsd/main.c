@@ -74,11 +74,11 @@ main (int argc, char **argv)
   init_filesystems ();
 
   cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
-				(any_t) pmap_udp_socket));
+				(any_t)(intptr_t) pmap_udp_socket));
 
   while (nthreads--)
     cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
-				  (any_t) main_udp_socket));
+				  (any_t)(intptr_t) main_udp_socket));
 
   for (;;)
     {
