@@ -30,7 +30,6 @@
 #include <hurd/id.h>
 #include <hurd/fsys.h>
 
-extern int __getuids (int num, gid_t *buf); /* XXX */
 
 /* This function is like file_name_lookup, but tries hard to avoid starting
    any passive translators.  If a node with an unstarted passive translator
@@ -143,11 +142,11 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
     }
 
   /* Fetch uids for use with fsys_getroot.  */
-  num_uids = __getuids (0, 0);
+  num_uids = geteuids (0, 0);
   if (num_uids < 0)
     return errno;
   uids = alloca (num_uids * sizeof (uid_t));
-  num_uids = __getuids (num_uids, uids);
+  num_uids = geteuids (num_uids, uids);
   if (num_uids < 0)
     return errno;
 
@@ -161,9 +160,9 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
     return errno;
 
   /* Look things up ...  */
-  err = __hurd_file_name_lookup (&_hurd_ports_use, &getdport, lookup,
-				 name, flags, mode & ~getumask (),
-				 &node);
+  err = hurd_file_name_lookup (&_hurd_ports_use, &getdport, lookup,
+			       name, flags, mode & ~getumask (),
+			       &node);
 
   return err ? (__hurd_fail (err), MACH_PORT_NULL) : node;
 }
