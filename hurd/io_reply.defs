@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991,93,94,95,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -28,7 +28,7 @@ subsystem io_reply 21100;  /* much mach io.defs + 100 */
 IO_IMPORTS
 #endif
 
-type reply_port_t = polymorphic | MACH_MSG_TYPE_MAKE_SEND_ONCE 
+type reply_port_t = polymorphic | MACH_MSG_TYPE_MAKE_SEND_ONCE
 	ctype: mach_port_t;
 
 simpleroutine io_write_reply (
@@ -90,8 +90,7 @@ simpleroutine io_get_icky_async_id_reply (
 simpleroutine io_select_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t;
-	select_result: int;
-	id_tag: int);
+	select_result: int);
 
 simpleroutine io_stat_reply (
 	reply: reply_port_t;
@@ -152,4 +151,3 @@ simpleroutine io_readsleep_reply (
 simpleroutine io_sigio_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t);
-
