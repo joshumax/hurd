@@ -92,7 +92,8 @@ pass2 ()
 	  /* Check INO */
 	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
-	      fileerror (dnp->i_number, dp->d_ino, "UNALLOCATED");
+	      printf ("REF TO UNALLOCATED NODE; DIR");
+	      pinode (dnp->i_number);
 	      if (reply ("REMOVE"))
 		{
 		  dp->d_ino = 0;
@@ -281,14 +282,15 @@ pass2 ()
 	{
 	  dnp->i_dotdot = dnp->i_parent;
 	  
-	  fileerror (dnp->i_parent, dnp->i_number, "MISSING `..'");
+	  printf ("MISSING `..' IN DIR");
+	  pinode (dnp->i_number);
 	  if (reply ("FIX"))
 	    makeentry (dnp->i_number, dnp->i_parent, "..");
 	}
       else if (dnp->i_parent && dnp->i_dotdot != dnp->i_parent)
 	{
-	  fileerror (dnp->i_parent, dnp->i_number, 
-		     "BAD INODE NUMBER FOR `..'");
+	  printf ("BAD INODE NUMBER FOR `..' IN DIR");
+	  pinode (dnp->i_number);
 	  if (reply ("FIX"))
 	    {
 	      dnp->i_dotdot = dnp->i_parent;
@@ -300,14 +302,15 @@ pass2 ()
       if (dnp->i_dot == 0)
 	{
 	  dnp->i_dot = dnp->i_number;
-	  fileerror (dnp->i_number, dnp->i_number, "MISSING `.'");
+	  printf ("MISSING `.' IN DIR");
+	  pinode (dnp->i_number);
 	  if (reply ("FIX"))
 	    makeentry (dnp->i_number, dnp->i_number, ".");
 	}
       else if (dnp->i_dot != dnp->i_number)
 	{
-	  fileerror (dnp->i_number, dnp->i_number,
-		     "MAD INODE NUMBER FOR `.'");
+	  printf ("BAD INODE NUMBER FOR `.' IN DIR");
+	  pinode (dnp->i_number);
 	  if (reply ("FIX"))
 	    {
 	      dnp->i_dot = dnp->i_number;
