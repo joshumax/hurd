@@ -28,7 +28,8 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply,
 		    mach_msg_type_name_t replytype,
 		    int seltype,
-		    mach_port_t ret,
+		    mach_port_t notify,
+		    mach_msg_type_name_t notifytype,
 		    int tag,
 		    int *result)
 {
