@@ -1,3 +1,10 @@
+2001-06-24  Mark Kettenis  <kettenis@gnu.org>
+
+	* idvec-impgids.c (_merge_implied_gids) [HAVE_GETGROUPLIST]:
+	Conditionally enable code that calls getgrouplist.  Use `int'
+	instead of `size_t' for number of groups.
+	[!HAVE_GETGROUPLIST]: Add #warning about missing getgrouplist.
+
 2001-03-31  Roland McGrath  <roland@frob.com>
 
 	* ugids.h: Fix obsolescent #endif syntax.
