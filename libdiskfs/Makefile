@@ -22,6 +22,7 @@ libname = libdiskfs
 FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c \
 	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
 	file-get-trans.c file-get-transcntl.c file-getfh.c file-getlinknode.c \
+	file-get-fs-opts.c \
 	file-set-trans.c file-statfs.c file-sync.c file-syncfs.c \
 	file-set-size.c file-utimes.c file-getcontrol.c file-lock.c \
 	file-chmod.c dir-readdir.c file-lock-stat.c file-exec.c dir-chg.c \
@@ -40,7 +41,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	init-init.c init-startup.c init-first.c init-completed.c \
 	rdwr-internal.c boot-start.c demuxer.c exc.c node-times.c shutdown.c \
-	sync-interval.c sync-default.c opts-set.c opts-std-startup.c \
+	sync-interval.c sync-default.c opts-set.c opts-get.c opts-std-startup.c \
 	opts-runtime-def.c opts-common.c trans-callback.c readonly.c remount.c \
 	filedev.c machdev.c dev-open.c dev-io.c dev-globals.c console.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
