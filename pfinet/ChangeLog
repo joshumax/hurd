@@ -1,3 +1,10 @@
+2001-01-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* iioctl-ops.c (siocsifXaddr): Remove incorrect comment
+	about isroot.
+	(S_iioctl_siocsifflags): Likewise.
+	(S_iioctl_siocsifmtu): And one more time.
+
 2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pfinet-ops.c: New file to implement hurd/pfinet.defs.

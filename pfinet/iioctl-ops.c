@@ -136,8 +136,6 @@ siocsifXaddr (io_t port,
 
   dev = get_dev (ifnam);
 
-  /* Only root is allowed to change the interface configuration.
-     XXX Check the underlying node as well.  */
   if (!user->isroot)
     err = EPERM;
   else if (!dev)
@@ -177,8 +175,6 @@ S_iioctl_siocsifflags (io_t port,
 
   dev = get_dev (ifnam);
 
-  /* Only root is allowed to change the interface configuration.
-     XXX Check the underlying node as well.  */
   if (!user->isroot)
     err = EPERM;
   else if (!dev)
@@ -302,8 +298,6 @@ S_iioctl_siocsifmtu (io_t port,
 
   dev = get_dev (ifnam);
 
-  /* Only root is allowed to change the interface configuration.
-     XXX Check the underlying node as well.  */
   if (!user->isroot)
     err = EPERM;
   if (!dev)
