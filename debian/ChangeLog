@@ -1,3 +1,8 @@
+2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* control (Build-Depends): Add libncursesw5-dev.
+	* changelog: Add a note about this here.
+
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update for new Debian package.

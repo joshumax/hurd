@@ -1,3 +1,6 @@
+
+  * debian/control: Add libncursesw5-dev as build-dependency.
+
 hurd (20020918-1) unstable; urgency=low
 
   * New snapshot from CVS.
