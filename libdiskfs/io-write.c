@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,7 +29,7 @@ diskfs_S_io_write (struct protid *cred,
 {
   struct node *np;
   error_t err;
-  int off = offset;
+  off_t off = offset;
 
   if (!cred)
     return EOPNOTSUPP;

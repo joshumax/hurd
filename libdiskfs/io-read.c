@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,7 +29,7 @@ diskfs_S_io_read (struct protid *cred,
 {
   struct node *np;
   int err;
-  int off = offset;
+  off_t off = offset;
   char *buf;
   int ourbuf = 0;
 

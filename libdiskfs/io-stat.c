@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+/*
+   Copyright (C) 1994,95,96,97,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@ diskfs_S_io_stat (struct protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
   mutex_lock (&np->lock);
 
@@ -38,13 +38,13 @@ diskfs_S_io_stat (struct protid *cred,
   else
     diskfs_set_node_times (np);
 
-  bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
+  memcpy (statbuf, &np->dn_stat, sizeof (struct stat));
   statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
   if (fshelp_translated (&np->transbox))
     statbuf->st_mode |= S_IATRANS;
   if (cred->po->shadow_root == np || np == diskfs_root_node)
     statbuf->st_mode |= S_IROOT;
-    
+
   mutex_unlock (&np->lock);
 
   return 0;
