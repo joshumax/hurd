@@ -1,3 +1,7 @@
+1999-03-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* setup.c (setup): Don't complain if the device is a block device.
+
 Wed Feb 19 23:10:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (argp_program_version): Make const.
@@ -17,8 +21,8 @@ Fri Sep  6 16:44:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Thu Sep  5 11:42:21 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c: Include <version.h>.
- 	(argp_program_version): Define with STANDARD_HURD_VERSION. 
-	
+ 	(argp_program_version): Define with STANDARD_HURD_VERSION.
+
 Fri Aug 16 10:25:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (record_directory): Maximum number of block pointers to
@@ -46,7 +50,7 @@ Sat Jul  6 19:59:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (argp_program_version): New variable.
 	<hurd.h>: New include.
-	
+
 Mon Jul  1 12:55:48 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* pass2.c (pass2): Don't skip empty directories in `.' and `..'
@@ -140,7 +144,7 @@ Fri Apr 26 16:20:37 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* inode.c (allocino): Parenthesize test correctly.
 
 	* fsck.h (swab_disk): Define as constant zero.
-	
+
 	* pass5.c (pass5): If not marked clean, but now it is, then offer
  	to mark it clean.
 	* utilities.c (reply): Set fix_denied anytime we return 0.
@@ -158,7 +162,7 @@ Tue Apr 23 10:11:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 Mon Apr 15 12:51:41 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
-	* Makefile (vpath tables.c): Find ufs directory in $(top_srcdir). 
+	* Makefile (vpath tables.c): Find ufs directory in $(top_srcdir).
 
 Tue Apr  2 09:00:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
@@ -272,13 +276,13 @@ Mon Oct 17 16:07:56 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
 	* utilities.c (getinode): Multiple ino_to_fsbo by
 	sizeof (struct dinode).
 	(write_inode): Likewise.
-	(getinode): Inode buffer needs to be a full block, not a 
+	(getinode): Inode buffer needs to be a full block, not a
 	fragment.
 
 Fri Oct 14 21:07:09 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
 
 	* utilities.c (lastifrag): New variable.
-	(getinode): Use lastifrag instead of buf; Only I/O new block 
+	(getinode): Use lastifrag instead of buf; Only I/O new block
 	if lastifrag isn't what we want.
 	(write_inode): Likewise.
 
