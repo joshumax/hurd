@@ -1,3 +1,10 @@
+2004-02-10  Roland McGrath  <roland@frob.com>
+
+	* start-translator-long.c (service_fsys_startup): Move mach_msg_type_t
+	const variables inside the function, make them auto so they are
+	optimized away to integer constants.
+	Use a union instead of casts to do efficient type checking.
+
 2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	* lock-acquire.c (fshelp_acquire_lock): Also wait for exclusive
