@@ -1,3 +1,8 @@
+2001-12-11  Marcus Brinkmann  <marcus@gnu.org>
+
+	* streamio.c (device_open_reply): In the D_INVALID_OPERATION case,
+	clear ERR, which is a global variable.
+
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* magic.c (trivfs_S_dir_lookup):  Use iohelp_dup_iouser

@@ -830,6 +830,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
       /* XXX Assume that the block size is 1 and the whole size is 0.  */
       dev_blksize = 1;
       dev_size = 0;
+      err = 0;
     }
   else if (err == 0)
     {
