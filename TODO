@@ -46,6 +46,7 @@ See `tasks', the exported task list.
     function.
 
 ** libstore:
+*** Add lock protocol for mutable stores.
 
 ** libfsserver/libnetfs:
 *** convert libnetfs to libfsserver
@@ -125,8 +126,8 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
-** pflocal: using emacsclient causes massive thread creation in pflocal, and
-   emacsclient hangs in connect().
+** Bug: pflocal: using emacsclient causes massive thread creation in pflocal,
+   and emacsclient hangs in connect().
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
