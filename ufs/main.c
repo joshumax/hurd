@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -261,8 +261,8 @@ main (int argc, char **argv)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap (argv);
   
-  /* Now become a generic request thread.  */
-  diskfs_main_request_loop ();
+  /* And this thread is done with its work. */
+  cthread_exit (0);
 }
 
 
