@@ -145,7 +145,7 @@ void udp_err(int err, unsigned char *header, unsigned long daddr,
 #else
 	if (icmp_err_convert[err & 0xff].fatal)
 	{
-		sk->err = icmp_err_convert[err & 0xff].errno;
+		sk->err = icmp_err_convert[err & 0xff].error;
 		sk->error_report(sk);
 	}
 #endif
@@ -405,6 +405,7 @@ static int udp_write(struct sock *sk, unsigned char *buff, int len, int noblock,
 }
 
 
+#ifndef _HURD_
 /*
  *	IOCTL requests applicable to the UDP protocol
  */
@@ -457,7 +458,7 @@ int udp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 	}
 	return(0);
 }
-
+#endif
 
 /*
  * 	This should be easy, if there is something there we\
