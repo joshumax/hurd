@@ -237,6 +237,14 @@ error_t store_set_flags (struct store *store, int flags);
 /* Remove FLAGS from STORE's currently set flags.  */
 error_t store_clear_flags (struct store *store, int flags);
 
+/* Set FLAGS in all children of STORE, and if successfull, add FLAGS to
+   STORE's flags.  */
+error_t store_set_child_flags (struct store *store, int flags);
+
+/* Clear FLAGS in all children of STORE, and if successfull, remove FLAGS from
+   STORE's flags.  */
+error_t store_clear_child_flags (struct store *store, int flags);
+
 /* Returns true if STORE can safely be returned to a user who has accessed it
    via a node using OPEN_FLAGS, without compromising security.  */
 extern inline int
