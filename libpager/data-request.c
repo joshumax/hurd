@@ -66,7 +66,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for read\n");
-      _pager_release_seqno (p);
+      _pager_release_seqno (p, seqno);
       mutex_unlock (&p->interlock);
       goto allow_term_out;
     }
@@ -103,7 +103,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
     }
 
   /* Let someone else in.  */
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
 
   if (!doread)
