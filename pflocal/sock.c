@@ -273,7 +273,6 @@ addr_clean (void *vaddr)
      it.  */
 debug (addr, "bye");
   assert (addr->sock == NULL);
-  free (addr);
 }
 
 /* Return a new address, not connected to any socket yet, ADDR.  */
@@ -441,8 +440,11 @@ debug (sock1, "socket pair lock");
   mutex_lock (&socket_pair_lock);
 debug (sock1, "lock");
   mutex_lock (&sock1->lock);
-debug (sock2, "lock");
-  mutex_lock (&sock2->lock);
+  if (sock1 != sock2)
+    /* If SOCK1 == SOCK2, then we get a fifo!  */
+{debug (sock2, "lock");
+    mutex_lock (&sock2->lock);
+}
 
   if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
     /* An already-connected socket.  */
@@ -460,14 +462,19 @@ debug (sock2, "lock");
       /* Only make the reverse for connection-oriented protocols.  */
       if (! connless)
 	{
-	  connect (sock2, sock1);
 	  sock1->flags |= SOCK_CONNECTED;
-	  sock2->flags |= SOCK_CONNECTED;
+	  if (sock1 != sock2)
+	    {
+	      connect (sock2, sock1);
+	      sock2->flags |= SOCK_CONNECTED;
+	    }
 	}
     }
 
-debug (sock2, "unlock");
-  mutex_unlock (&sock2->lock);
+  if (sock1 != sock2)
+{debug (sock2, "unlock");
+    mutex_unlock (&sock2->lock);
+}
 debug (sock1, "unlock");
   mutex_unlock (&sock1->lock);
 debug (sock1, "socket pair unlock");
