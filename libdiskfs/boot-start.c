@@ -64,8 +64,8 @@ diskfs_start_bootstrap (char **argv)
   task_t newt;
   error_t err;
   char *initname, *initnamebuf;
-  char *argv;
-  int argvlen;
+  char *exec_argv;
+  int exec_argvlen;
 
   saved_argv = argv;
 
@@ -144,7 +144,7 @@ diskfs_start_bootstrap (char **argv)
   fdarray[1] = con;
   fdarray[2] = con;
 /* XXX */
-  argvlen = asprintf (&argv, "%s%c%s%c", initname, '\0', diskfs_bootflagarg,
+  exec_argvlen = asprintf (&exec_argv, "%s%c%s%c", initname, '\0', diskfs_bootflagarg,
 		      '\0');
   
   task_create (mach_task_self (), 0, &newt);
@@ -156,13 +156,13 @@ diskfs_start_bootstrap (char **argv)
   printf (" init");
   fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
-		   newt, 0, argv, argvlen, 0, 0, 
+		   newt, 0, exec_argv, exec_argvlen, 0, 0, 
 		   fdarray, MACH_MSG_TYPE_COPY_SEND, 3,
 		   portarray, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX, 
 		   /* Supply no intarray, since we have no info for it.
 		      With none supplied, it will use the defaults.  */
 		   NULL, 0, 0, 0, 0, 0);
-  free (argv);
+  free (exec_argv);
   mach_port_deallocate (mach_task_self (), root_pt);
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
