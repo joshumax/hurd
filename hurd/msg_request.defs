@@ -51,7 +51,7 @@ skip; /* msg_get_env_variable */
 skip; /* msg_set_env_variable */
 skip; /* msg_startup_dosync */
 
-simpleroutine msg_sig_post_untraced_reply (
+simpleroutine msg_sig_post_untraced_request (
 	process: mach_port_t;
 	replyport reply_port: reply_port_t;
 	signal: int;
