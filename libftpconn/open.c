@@ -224,7 +224,7 @@ ftp_conn_open (struct ftp_conn *conn)
 
   if (!err && !conn->syshooks_valid)
     /* Try again now. */
-    ftp_conn_sysify (conn);
+    err = ftp_conn_sysify (conn);
 
   if (!err && conn->type)
     /* Set the connection type.  */
