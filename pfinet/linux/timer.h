@@ -3,10 +3,18 @@
 
 #include <cthreads.h>
 
+enum tstate
+{
+  TIMER_INACTIVE,
+  TIMER_STARTING,
+  TIMER_STARTED,
+  TIMER_EXPIRED,
+  TIMER_FUNCTION_RUNNING,
+};
+ 
 struct timer_list
 {
-  thread_t thread;
-  int foobiebletch;
+  struct timer_list *next, **prevp;
   unsigned long expires;
   unsigned long data;
   void (*function)(unsigned long);
