@@ -32,73 +32,17 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <hurd.h>
 #include <hurd/exec.h>
-#include <hurd/fsys.h>
 #include <hurd/shared.h>
-#include <hurd/ports.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <rwlock.h>
-
-
-/* Data shared between check, check_section,
-   load, load_section, and finish.  */
-struct execdata
-  {
-    /* Passed out to caller.  */
-    error_t error;
-
-    /* Set by check.  */
-    vm_address_t entry;
-    FILE stream;
-    file_t file;
-
-#ifdef BFD
-    bfd *bfd;
-#endif
-    union			/* Interpreter section giving name of file.  */
-      {
-	asection *section;
-	const Elf32_Phdr *phdr;
-      } interp;
-    memory_object_t filemap, cntlmap;
-    struct shared_io *cntl;
-    char *file_data;		/* File data if already copied in core.  */
-    off_t file_size;
-    size_t optimal_block;	/* Optimal size for io_read from file.  */
-
-    /* Set by caller of load.  */
-    task_t task;
-
-    union
-      {
-	/* Vector indexed by section index,
-	   information passed from check_section to load_section.
-	   Set by caller of check_section and load.  */
-	vm_offset_t *bfd_locations;
-	struct
-	  {
-	    /* Program header table read from the executable.
-	       After `check' this is a pointer into the mapping window.
-	       By `load' it is local alloca'd storage.  */
-	    Elf32_Phdr *phdr;
-	    Elf32_Word phnum;	/* Number of program header table elements.  */
-	    int anywhere;	/* Nonzero if image can go anywhere.  */
-	    vm_address_t loadbase; /* Actual mapping location.  */
-	  } elf;
-      } info;
-  };
-
 
 mach_port_t procserver;	/* Our proc port.  */
 
 /* Standard exec data for secure execs.  */
-static mach_port_t *std_ports;
-static int *std_ints;
-static size_t std_nports, std_nints;
-static struct rwlock std_lock = RWLOCK_INITIALIZER;
+mach_port_t *std_ports;
+int *std_ints;
+size_t std_nports, std_nints;
+struct rwlock std_lock = RWLOCK_INITIALIZER;
 
 
 #ifdef	BFD
@@ -845,7 +789,7 @@ finish_mapping (struct execdata *e)
 }
       
 /* Clean up after reading the file (need not be completed).  */
-static void
+void
 finish (struct execdata *e, int dealloc_file)
 {
   finish_mapping (e);
@@ -1112,27 +1056,18 @@ do_exec (file_t file,
       if (e->error == ENOEXEC)
 	{
 	  /* See if it is a compressed image.  */
+	  static struct mutex lock = MUTEX_INITIALIZER;
+	  /* The gzip code is really cheesy, not even close to thread-safe.
+	     So we serialize all uses of it.  */
+	  mutex_lock (&lock);
 	  check_gzip (e);
+	  mutex_unlock (&lock);
 	  if (e->error == 0)
 	    /* The file was uncompressed into memory, and now E describes the
 	       uncompressed image rather than the actual file.  Check it again
 	       for a valid magic number.  */
 	    check (e);
 	}
-#endif
-
-#if 0
-      if (e->error == ENOEXEC)
-	/* Check for a #! executable file.  */
-	check_hashbang (e, replyport,
-			file, oldtask, flags,
-			argv, argvlen, argv_copy,
-			envp, envplen, envp_copy,
-			dtable, dtablesize, dtable_copy,
-			portarray, nports, portarray_copy,
-			intarray, nints, intarray_copy,
-			deallocnames, ndeallocnames,
-			destroynames, ndestroynames);
 #endif
     }
 
@@ -1154,22 +1089,41 @@ do_exec (file_t file,
 
   /* Prime E for executing FILE and check its validity.  */
   prepare_and_check (file, &e);
-  if (! e.error)
+
+  if (e.error == ENOEXEC)
     {
+      /* Check for a #! executable file.  */
+      check_hashbang (&e,
+		      file, oldtask, flags,
+		      argv, argvlen, argv_copy,
+		      envp, envplen, envp_copy,
+		      dtable, dtablesize, dtable_copy,
+		      portarray, nports, portarray_copy,
+		      intarray, nints, intarray_copy,
+		      deallocnames, ndeallocnames,
+		      destroynames, ndestroynames);
+      if (! e.error)
+	/* The #! exec succeeded; nothing more to do.  */
+	return 0;
+    }
+
+  if (e.error)
+    /* The file is not a valid executable.  */
+    goto out;
+
 #ifdef	BFD
-      if (e.bfd)
-	{
-	  e.info.bfd_locations = alloca (e.bfd->section_count *
-					 sizeof (vm_offset_t));
-	  bfd_map_over_sections (e.bfd, check_section, &e);
-	}
-      else
+  if (e.bfd)
+    {
+      e.info.bfd_locations = alloca (e.bfd->section_count *
+				     sizeof (vm_offset_t));
+      bfd_map_over_sections (e.bfd, check_section, &e);
+    }
+  else
 #endif
-	{
-	  const Elf32_Phdr *phdr = e.info.elf.phdr;
-	  e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (Elf32_Phdr));
-	  check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
-	}
+    {
+      const Elf32_Phdr *phdr = e.info.elf.phdr;
+      e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (Elf32_Phdr));
+      check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
     }
 
   interp.file = MACH_PORT_NULL;
@@ -1202,7 +1156,8 @@ do_exec (file_t file,
        If CONSUME is nonzero, a reference on NEW is consumed;
        it is invalid to give nonzero values to both REAUTH and CONSUME.  */
 #define use(idx, new, reauth, consume) \
-  do { use1 (idx, new, reauth, consume); if (e.error) goto bootout; } while (0)
+  do { use1 (idx, new, reauth, consume); \
+       if (e.error) goto stdout; } while (0)
     void use1 (unsigned int idx, mach_port_t new,
 	       int reauth, int consume)
       {
@@ -1258,22 +1213,18 @@ do_exec (file_t file,
 
     e.error = servercopy ((void **) &argv, argvlen, argv_copy);
     if (e.error)
-      {
-      bootout:
-	ports_port_deref (boot);
-	goto stdout;
-      }
+      goto stdout;
     boot->argv = argv;
     boot->argvlen = argvlen;
     e.error = servercopy ((void **) &envp, envplen, envp_copy);
     if (e.error)
-      goto bootout;
+      goto stdout;
     boot->envp = envp;
     boot->envplen = envplen;
     e.error = servercopy ((void **) &dtable, dtablesize * sizeof (mach_port_t),
 			  dtable_copy);
     if (e.error)
-      goto bootout;
+      goto stdout;
     boot->dtable = dtable;
     boot->dtablesize = dtablesize;
 
@@ -1297,7 +1248,7 @@ do_exec (file_t file,
 	e.error = servercopy ((void **) &intarray, nints * sizeof (int),
 			      intarray_copy);
 	if (e.error)
-	  goto bootout;
+	  goto stdout;
 	boot->intarray = intarray;
 	boot->nints = nints;
       }
@@ -1346,7 +1297,7 @@ do_exec (file_t file,
 	mach_port_t new;
 	e.error = proc_task2proc (procserver, newtask, &new);
 	if (e.error)
-	  goto bootout;
+	  goto stdout;
 
 	use (INIT_PORT_PROC, new, 0, 1);
 
@@ -1361,14 +1312,14 @@ do_exec (file_t file,
 	e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
 				  newtask, &new);
 	if (e.error)
-	  goto bootout;
+	  goto stdout;
 	use (INIT_PORT_PROC, new, 0, 1);
       }
     if (secure || (defaults
 		   && boot->portarray[INIT_PORT_CRDIR] == MACH_PORT_NULL))
       use (INIT_PORT_CRDIR, std_ports[INIT_PORT_CRDIR], 1, 0);
-    if (secure || (defaults
-		   && boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL))
+    if ((secure || defaults)
+	&& boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL)
       use (INIT_PORT_CWDIR, std_ports[INIT_PORT_CWDIR], 1, 0);
   }  
   rwlock_reader_unlock (&std_lock);
@@ -1415,11 +1366,28 @@ do_exec (file_t file,
       if (! name)
 	e.interp.section = NULL;
       else
-	/* Open the named file using the appropriate directory ports for
-	   the user.  */
-	e.error = hurd_file_name_lookup (boot->portarray[INIT_PORT_CRDIR],
-					 boot->portarray[INIT_PORT_CWDIR],
-					 name, O_READ, 0, &interp.file);
+	{
+	  /* Open the named file using the appropriate directory ports for
+	     the user.  */
+	  error_t user_port (int which, error_t (*operate) (mach_port_t))
+	    {
+	      return (*operate) (boot->nports > which ?
+				 boot->portarray[which] :
+				 MACH_PORT_NULL);
+	    }
+	  file_t user_fd (int fd)
+	    {
+	      if (fd < 0 || fd >= boot->dtablesize ||
+		  boot->dtable[fd] == MACH_PORT_NULL)
+		{
+		  errno = EBADF;
+		  return MACH_PORT_NULL;
+		}
+	      return boot->dtable[fd];
+	    }
+	  e.error = hurd_file_name_lookup (&user_port, &user_fd,
+					   name, O_READ, 0, &interp.file);
+	}
     }
 
   if (interp.file != MACH_PORT_NULL)
@@ -1448,7 +1416,7 @@ do_exec (file_t file,
     }
 
   if (e.error)
-    goto bootout;
+    goto out;
 
 
   /* We are now committed to the exec.  It "should not fail".
@@ -1463,7 +1431,7 @@ do_exec (file_t file,
 
       e.error = task_threads (oldtask, &threads, &nthreads);
       if (e.error)
-	goto bootout;
+	goto out;
       for (i = 0; i < nthreads; ++i)
 	{
 	  thread_terminate (threads[i]);
@@ -1497,7 +1465,7 @@ do_exec (file_t file,
       if (interp.error)
 	{
 	  e.error = interp.error;
-	  goto bootout;
+	  goto out;
 	}
       finish (&interp, 1);
     }
@@ -1506,7 +1474,7 @@ do_exec (file_t file,
   /* Load the file into the task.  */
   load (newtask, &e);
   if (e.error)
-    goto bootout;
+    goto out;
 
   /* XXX loading of interp belongs here */
 
@@ -1516,7 +1484,7 @@ do_exec (file_t file,
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);
   if (e.error)
-    goto bootout;
+    goto out;
 
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
@@ -1525,7 +1493,7 @@ do_exec (file_t file,
 					 e.entry),
 			       &boot->stack_base, &boot->stack_size);
   if (e.error)
-    goto bootout;
+    goto out;
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
     {
@@ -1561,15 +1529,27 @@ do_exec (file_t file,
 			    MACH_MSG_TYPE_MAKE_SEND);
     e.error = task_set_bootstrap_port (newtask, btport);
     mach_port_deallocate (mach_task_self (), btport);
-    /* Release the original reference.  Now there is only one
-       reference, which will be released on no-senders notification.  */
-    ports_port_deref (boot);
   }
 
  out:
   if (e.interp.section)
     finish (&interp, 1);
   finish (&e, !e.error);
+
+  if (boot)
+    {
+      /* Release the original reference.  Now there is only one
+	 reference, which will be released on no-senders notification.
+	 If we are bailing out due to error before setting the task's
+	 bootstrap port, this will be the last reference and BOOT
+	 will get cleaned up here.  */
+      if (e.error)
+	/* Kill the pointers to the argument information so the cleanup
+	   of BOOT doesn't deallocate it.  It will be deallocated my MiG
+	   when we return the error.  */
+	bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
+      ports_port_deref (boot);
+    }
 
   if (thread != MACH_PORT_NULL)
     {
@@ -1646,6 +1626,7 @@ S_exec_exec (struct trivfs_protid *protid,
   if (! protid)
     return EOPNOTSUPP;
 
+#if 0
   if (!(flags & EXEC_SECURE))
     {
       const char envar[] = "\0EXECSERVERS=";
@@ -1711,6 +1692,7 @@ S_exec_exec (struct trivfs_protid *protid,
 	    return ENOEXEC;
 	}
     }
+#endif
 
   /* There were no user-specified exec servers,
      or none of them could be found.  */
