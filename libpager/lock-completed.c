@@ -33,7 +33,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   struct lock_request *lr;
   int wakeup;
 
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     {
       printf ("Bad lock completed\n");
       return EOPNOTSUPP;
