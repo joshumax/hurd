@@ -69,22 +69,24 @@ pass1 ()
 	  blkerror = 1;
 	  wasbad = 1;
 	  if (nblkrngerrors == 0)
-	    pwarn ("I=%d HAS BAD BLOCKS\n", number);
+	    warning (0, "I=%d HAS BAD BLOCKS", number);
 	  if (nblkrngerrors++ > MAXBAD)
 	    {
-	      pwarn ("EXCESSIVE BAD BLKS I=%d", number);
+	      problem (0, "EXCESSIVE BAD BLKS I=%d", number);
 	      if (preen || reply ("SKIP"))
 		{
-		  pfix ("SKIPPING");
+		  pfail ("SKIPPING");
 		  return RET_STOP;
 		}
+	      else
+		pfix ("CONTINUING");
 	    }
 	}
 
       for (; nfrags > 0; bno++, nfrags--)
 	{
 	  if (outofrange && check_range (bno, 1))
-	    pwarn ("BAD BLOCK %lu\n", bno);
+	    warning (0, "BAD BLOCK %lu", bno);
 	  else
 	    {
 	      if (!testbmap (bno))
@@ -93,17 +95,19 @@ pass1 ()
 		{
 		  blkerror = 1;
 		  if (nblkduperrors == 0)
-		    pwarn ("I=%d HAS DUPLICATE BLOCKS\n", number);
-		  pwarn ("DUPLICATE BLOCK %ld\n", bno);
+		    warning (0, "I=%d HAS DUPLICATE BLOCKS", number);
+		  warning (0, "DUPLICATE BLOCK %ld", bno);
 		  wasbad = 1;
 		  if (nblkduperrors++ > MAXBAD)
 		    {
-		      pwarn ("EXCESSIVE DUP BLKS I=%d", number);
+		      problem (0, "EXCESSIVE DUP BLKS I=%d", number);
 		      if (preen || reply ("SKIP"))
 			{
-			  pfix ("SKIPPING");
+			  pfail ("SKIPPING");
 			  return RET_STOP;
 			}
+		      else
+			pfix ("CONTINUING");
 		    }
 		  new = malloc (sizeof (struct dups));
 		  new->dup = bno;
@@ -184,12 +188,14 @@ pass1 ()
 		|| DI_MODE (dp)
 		|| dp->di_size)
 	      {
-		pwarn ("PARTIALLY ALLOCATED INODE I=%d", number);
+		problem (0, "PARTIALLY ALLOCATED INODE I=%d", number);
 		if (preen || reply ("CLEAR"))
 		  {
-		    pfix ("CLEARED");
 		    clear_inode (number, dp);
+		    pfix ("CLEARED");
 		  }
+		else
+		  pfail (0);
 	      }
 	    inodestate[number] = UNALLOC;
 	  }
@@ -204,7 +210,7 @@ pass1 ()
 	    
 	    if (dp->di_size + sblock->fs_bsize - 1 < dp->di_size)
 	      {
-		pfatal ("OVERFLOW IN FILE SIZE I=%d (SIZE == %lld)", number, 
+		problem (1, "OVERFLOW IN FILE SIZE I=%d (SIZE == %lld)", number, 
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -213,7 +219,7 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n",
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED",
 			number);
 		holdallblocks = 1;
 	      }
@@ -271,8 +277,7 @@ pass1 ()
 		break;
 		
 	      default:
-		pfatal ("UNKNOWN FILE TYPE I=%d (MODE=%ol)\n",
-			number, mode);
+		problem (1, "UNKNOWN FILE TYPE I=%d (MODE=%ol)", number, mode);
 		if (reply ("CLEAR"))
 		  {
 		    clear_inode (number, dp);
@@ -281,14 +286,14 @@ pass1 ()
 		  }
 		inodestate[number] = UNALLOC;
 		holdallblocks = 1;
-		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d "
-			"AS ALLOCATED\n", number);
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d "
+			"AS ALLOCATED", number);
 		ndb = 0;
 	      }
 
 	    if (ndb < 0)
 	      {
-		pfatal ("BAD FILE SIZE I= %d (SIZE == %lld)", number,
+		problem (1, "BAD FILE SIZE I= %d (SIZE == %lld)", number,
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -297,8 +302,8 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n", 
-			number);
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED", 
+			 number);
 		holdallblocks = 1;
 	      }
 
@@ -312,7 +317,7 @@ pass1 ()
 		    && (type == IFBLK || type == IFCHR 
 			|| type == IFSOCK || type == IFIFO))
 		  {
-		    pfatal ("SPECIAL NODE I=%d (MODE=%ol) HAS SIZE %lld\n",
+		    problem (1, "SPECIAL NODE I=%d (MODE=%ol) HAS SIZE %lld",
 			    number, mode, dp->di_size);
 		    if (reply ("TRUNCATE"))
 		      {
@@ -333,14 +338,16 @@ pass1 ()
 			if (!dbwarn)
 			  {
 			    dbwarn = 1;
-			    pwarn ("INODE I=%d HAS EXTRA DIRECT BLOCKS", 
+			    problem (0, "INODE I=%d HAS EXTRA DIRECT BLOCKS", 
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
-				pfix ("DEALLOCATED");
 				dp->di_db[lbn] = 0;
 				dbwarn = 2;
+				pfix ("DEALLOCATED");
 			      }
+			    else
+			      pfail (0);
 			  }
 			else if (dbwarn == 2)
 			  dp->di_db[lbn] = 0;
@@ -358,14 +365,16 @@ pass1 ()
 			if (ibwarn)
 			  {
 			    ibwarn = 1;
-			    pwarn ("INODE I=%d HAS EXTRA INDIRECT BLOCKS",
+			    problem (0, "INODE I=%d HAS EXTRA INDIRECT BLOCKS",
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
-				pfix ("DEALLOCATED");
 				dp->di_ib[lbn] = 0;
 				ibwarn = 2;
+				pfix ("DEALLOCATED");
 			      }
+			    else
+			      pfail (0);
 			  }
 			else if (ibwarn == 2)
 			  dp->di_ib[lbn] = 0;
@@ -395,23 +404,23 @@ pass1 ()
 	    if (blkerror)
 	      {
 		if (preen)
-		  pfatal ("DUPLICATE or BAD BLOCKS");
+		  warning (1, "DUPLICATE or BAD BLOCKS");
 		else
 		  {
-		    pwarn ("I=%d has ", number);
+		    problem (0, "I=%d has ", number);
 		    if (nblkduperrors)
 		      {
-			printf ("%d DUPLICATE BLOCKS", nblkduperrors);
+			pextend ("%d DUPLICATE BLOCKS", nblkduperrors);
 			if (nblkrngerrors)
-			  printf (" and ");
+			  pextend (" and ");
 		      }
 		    if (nblkrngerrors)
-		      printf ("%d BAD BLOCKS", nblkrngerrors);
-		    printf ("\n");
+		      pextend ("%d BAD BLOCKS", nblkrngerrors);
 		    if (reply ("CLEAR"))
 		      {
 			clear_inode (number, dp);
 			inodestate[number] = UNALLOC;
+			continue;
 		      }
 		    else if (inodestate[number] == DIRECTORY)
 		      inodestate[number] = BADDIR;
@@ -419,7 +428,7 @@ pass1 ()
 	      }
 	    else if (dp->di_blocks != nblocks)
 	      {
-		pwarn ("INCORRECT BLOCK COUNT I=%d (%ld should be %d)",
+		problem (0, "INCORRECT BLOCK COUNT I=%d (%ld should be %d)",
 		       number, dp->di_blocks, nblocks);
 		if (preen || reply ("CORRECT"))
 		  {
@@ -427,7 +436,11 @@ pass1 ()
 		    write_inode (number, dp);
 		    pfix ("CORRECTED");
 		  }
+		else
+		  pfail (0);
 	      }
+
+	    num_files++;
 
 	    if (type == IFDIR)
 	      record_directory (dp, number);
