@@ -45,7 +45,8 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-runtime-parse.c \
 	opts-runtime-unparse.c opts-common.c \
 	trans-callback.c readonly.c remount.c filedev.c machdev.c \
-	dev-open.c dev-io.c dev-globals.c console.c disk-pager.c
+	dev-open.c dev-io.c dev-globals.c console.c disk-pager.c \
+	name-cache.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h diskfs-pager.h
