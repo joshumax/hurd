@@ -1,3 +1,13 @@
+2002-01-30  Roland McGrath  <roland@frob.com>
+
+	* rpctrace.c (struct msgid_info): New type.
+	(msgid_ihash_cleanup): Updated to use it.
+	(parse_msgid_list): Use it to also record subsystem name in table.
+	(msgid_info): New function, guts of msgid_name.
+	(msgid_name): Use that.
+	(msgid_display, msgid_trace_replies): New stub functions.
+	(trace_and_forward): Use them to conditionalize tracing and printing.
+
 2002-01-29  Roland McGrath  <roland@frob.com>
 
 	* rpctrace.c (options): Add -I/--rpc-list.
