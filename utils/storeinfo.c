@@ -36,7 +36,8 @@ char *argp_program_version = STANDARD_HURD_VERSION (storeinfo);
 
 static struct argp_option options[] =
 {
-  {"kind",        'k', 0, 0, "Print the type of store behind FILE"},
+  {"type",        't', 0, 0, "Print the type of store behind FILE"},
+  {"flags",       'f', 0, 0, "Print the flags associated with FILE's store"},
   {"name",        'n', 0, 0, "Print the name of the store behind FILE"},
   {"blocks",      'b', 0, 0, "Print the number of blocks in FILE"},
   {"block-size",  'B', 0, 0, "Print the block size of FILE's store"},
@@ -50,26 +51,27 @@ static struct argp_option options[] =
 };
 static char *args_doc = "FILE...";
 static char *doc = "Show information about storage used by FILE..."
-"\vWith no FILE arguments, the file attached to standard \
-input is used.  The fields to be printed are separated by colons, in this \
-order: PREFIX: KIND: NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS.  If the store is a \
-composite one and --children is specified, children are printed on lines \
-following the main store, indented accordingly.  By default, all \
-fields, and children, are printed.";
+"\vWith no FILE arguments, the file attached to standard"
+" input is used.  The fields to be printed are separated by colons, in this"
+" order: PREFIX: TYPE (FLAGS): NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS."
+"  If the store is a composite one and --children is specified, children"
+" are printed on lines following the main store, indented accordingly."
+"  By default, all fields, and children, are printed.";
 
 /* ---------------------------------------------------------------- */
 
 /* Things we can print about a file's storage.  */
 #define W_SOURCE	0x01
-#define W_KIND		0x02
+#define W_TYPE		0x02
 #define W_NAME		0x04
 #define W_BLOCKS	0x08
 #define W_BLOCK_SIZE	0x10
 #define W_SIZE		0x20
 #define W_RUNS		0x40
 #define W_CHILDREN	0x80
+#define W_FLAGS		0x100
 
-#define W_ALL		0xFF
+#define W_ALL		0x1FF
 
 /* Print a line of information (exactly what is determinted by WHAT)
    about store to stdout.  LEVEL is the desired indentation level.  */
@@ -113,9 +115,9 @@ print_store (struct store *store, int level, unsigned what)
       putchar (' ');
     }
 
-  pstr (store->class->name,W_KIND);
+  pstr (store->class->name,W_TYPE);
 
-  if (store->flags && (what & W_KIND))
+  if (store->flags && (what & W_FLAGS))
     {
       int t = 0;		/* flags tested */
       int f = 1;
@@ -149,7 +151,7 @@ print_store (struct store *store, int level, unsigned what)
 	    putchar (';');
 	  printf ("0x%x", store->flags);
 	}
-      putchar ('(');
+      putchar (')');
     }
 
   pstr (store->name,       W_NAME);
@@ -216,7 +218,8 @@ main(int argc, char *argv[])
 	case 'p': print_prefix = 1; break;
 	case 'P': print_prefix = 0; break;
 
-	case 'k': what |= W_KIND; break;
+	case 't': what |= W_TYPE; break;
+	case 'f': what |= W_FLAGS; break;
 	case 'n': what |= W_NAME; break;
 	case 'b': what |= W_BLOCKS; break;
 	case 'B': what |= W_BLOCK_SIZE; break;
