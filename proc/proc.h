@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -42,7 +42,7 @@ struct proc
   struct login *p_login;
   uid_t p_owner;
   struct ids *p_id;
-  
+
   /* Process hierarchy */
   /* Every process is in the process hierarchy except processes
      0 and 1.  Processes which have not had proc_child called
@@ -74,7 +74,7 @@ struct proc
 	  struct proc *msgp;
 	} getmsgport_c;
     } p_continuation;
-  
+
   /* Miscellaneous information */
   vm_address_t p_argv, p_envp;
   int p_status;			/* to return via wait */
@@ -128,19 +128,18 @@ struct ids
   int i_refcnt;
 };
 
+/* Structure for an exception port we are listening on.  */
 struct exc
 {
-  mach_port_t excport;
-  mach_port_t forwardport;
-  int flavor;
-  mach_port_t replyport;
-  mach_msg_type_name_t replyporttype;
-  mach_msg_type_number_t statecnt;
+  mach_port_t excport;		/* Receive right.  */
+  mach_port_t forwardport;	/* Send right to forward msg to.  */
   void **hashloc;
+  int flavor;			/* State to restore faulting thread to.  */
+  mach_msg_type_number_t statecnt;
   natural_t thread_state[0];
 };
 
-struct zombie 
+struct zombie
 {
   struct zombie *next;
   pid_t pid, pgrp;
