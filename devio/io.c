@@ -362,16 +362,20 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 	  (*ints)[3] = 2;		      /* num_runs */
 	  (*ints)[4] = strlen (dev->name) + 1; /* name_len */
 	  (*ints)[5] = 0;		      /* misc_len */
+	  *num_ints = 6;
 
 	  (*offsets)[0] = 0;
 	  (*offsets)[1] = dev->size / dev->dev_block_size;
+	  *num_offsets = 1;
 
 	  strcpy (*data, dev->name);
+	  *data_len = strlen (dev->name) + 1;
 
 	  if (cred->isroot)
 	    (*ports)[0] = dev->port;
 	  else
 	    (*ports)[0] = MACH_PORT_NULL;
+	  *num_ports = 1;
 	  *ports_type = MACH_MSG_TYPE_COPY_SEND;
 	}
       else
