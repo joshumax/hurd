@@ -145,17 +145,29 @@ pass2 ()
 
 	  /* Check TYPE */
 	  type = DIRECT_TYPE (dp);
-	  if (type != DT_UNKNOWN && type != typemap[dp->d_ino])
+	  if (type != DT_UNKNOWN)
 	    {
-	      problem (1, "INCORRECT NODE TYPE IN DIRECTORY");
-	      if (reply ("FIX"))
+	      if (type == typemap[dp->d_ino])
 		{
-		  errexit ("NODE TYPE FOUND WHEN NOT SUPPORTED");
-		  dp->d_type = typemap[dp->d_ino];
-		  mod = 1;
+		  problem (0, "NODE TYPE FIELD SET IN DIRECTORY (I=%d) [NOT IMPLEMENTED IN HURD]");
+		  if (preen || reply ("CLEAR"))
+		    {
+		      dp->d_type = 0;
+		      mod = 1;
+		      pfix ("CLEARED");
+		    }
+		}
+	      else
+		{
+		  problem (1, "INCORRECT NODE TYPE IN DIRECTORY (I=%d)");
+		  if (reply ("FIX"))
+		    {
+		      dp->d_type = typemap[dp->d_ino];
+		      mod = 1;
+		    }
 		}
 	    }
-
+	  
 	  /* Here we should check for duplicate directory entries;
 	     that's too much trouble right now. */
 	  
