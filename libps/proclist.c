@@ -579,3 +579,50 @@ proc_stat_list_remove_threads(proc_stat_list_t pp)
     }
   return proc_stat_list_filter1(pp, is_thread, 0, FALSE);
 }
+
+/* ---------------------------------------------------------------- */
+
+/* Calls FN in order for each proc_stat in PP.  If FN ever returns a non-zero
+   value, then the iteration is stopped, and the value is returned
+   immediately; otherwise, 0 is returned.  */
+int
+proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps))
+{
+  unsigned nprocs = pp->num_procs;
+  proc_stat_t *procs = pp->proc_stats;
+
+  while (nprocs-- > 0)
+    {
+      int val = (*fn)(*procs++);
+      if (val)
+	return val;
+    }
+
+  return 0;
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Returns true if SPEC is `nominal' in every entry in PP.  */
+bool
+proc_stat_list_spec_nominal (proc_stat_list_t pp, ps_fmt_spec_t spec)
+{
+  bool (*nominal_fn)(proc_stat_t ps, ps_getter_t getter) =
+    ps_fmt_spec_nominal_fn (spec);
+
+  if (nominal_fn == NULL)
+    return FALSE;
+  else
+    {
+      ps_getter_t getter = ps_fmt_spec_getter (spec);
+      ps_flags_t needs = ps_getter_needs (getter);
+      int interesting (proc_stat_t ps)
+	{
+	  return proc_stat_has (ps, needs) && !(*nominal_fn)(ps, getter);
+	}
+
+      proc_stat_list_set_flags (pp, needs);
+
+      return !proc_stat_list_for_each (pp, interesting);
+    }
+}
