@@ -19,8 +19,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-error_t
-trivfs_S_io_map (struct protid *cred,
+#include "priv.h"
+#include "io_S.h"
+#include <assert.h>
+
+kern_return_t
+trivfs_S_io_map (struct trivfs_protid *cred,
 		 mach_port_t *rdobj,
 		 mach_msg_type_name_t *rdtype,
 		 mach_port_t *wrobj,
