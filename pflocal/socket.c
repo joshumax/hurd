@@ -195,11 +195,18 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
   if (err)
     return err;
 
+  if (user->sock->read_pipe->class != dest_sock->read_pipe->class)
+    /* Sending to a different type of socket!  */
+    return EINVAL;		/* ? XXX */
+
   err = sock_get_addr (user->sock, &source_addr);
   if (!err)
     {
       /* Grab the destination socket's read pipe directly, and stuff data
-	 into it.  */
+	 into it.  This is not quite the usage sock_aquire_read_pipe was
+	 intended for, but it will work, as the only inappropiate errors
+	 occur on a broken pipe, which shouldn't be possible with the sort of
+	 sockets with which we can use socket_send...  XXXX */
       err = sock_aquire_read_pipe (dest, &pipe);
       if (!err)
 	{
