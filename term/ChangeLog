@@ -1,3 +1,9 @@
+2001-05-26  Roland McGrath  <roland@frob.com>
+
+	* users.c (trivfs_S_io_select): Don't diagnose an error for *TYPE
+	containing irrelevant bits (i.e. SELECT_URG).  It's always ok to
+	ask even when the answer is always no.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
