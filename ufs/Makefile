@@ -1,5 +1,5 @@
 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,9 +18,9 @@
 dir := ufs
 makemode := server
 
-SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
-	sizes.c subr.c tables.c bmap.c pokeloc.c
-OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o /gd3/gnu/libc/i386/devstream.o
+SRCS = alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
+       sizes.c subr.c tables.c bmap.c pokeloc.c
+OBJS = $(SRCS:.c=.o) exec_server_image.o
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
