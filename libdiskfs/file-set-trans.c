@@ -63,7 +63,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 	  return error;
 	}
   
-      if (control != MACH_PORT_NULL && (active_flags & FS_TRANS_EXCL == 0))
+      if (control != MACH_PORT_NULL && ((active_flags & FS_TRANS_EXCL) == 0))
 	{
 	  mutex_unlock (&np->lock);
 	  error = fsys_goaway (control, killtrans_flags);
