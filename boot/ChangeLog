@@ -3,6 +3,11 @@
 	* boot_script.c (prompt_resume_task): Pass more than a single
 	character buffer to safe_gets.
 
+Mon Jul  7 16:25:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* boot.c: Include <fcntl.h> instead of <fcntlbits.h>.  Suggested
+	by Marcus G. Daniels (marcus@cathcart.sysc.pdx.edu).
+
 1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* boot.c (bootscript): Made global.

@@ -30,7 +30,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <stdio.h>
 #include <cthreads.h>
-#include <fcntlbits.h>
+#include <fcntl.h>
 #include <elf.h>
 #include <mach/mig_support.h>
 #include <mach/default_pager.h>
