@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/* Notifications of directory changes.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -40,7 +40,7 @@ diskfs_S_dir_notice_changes (struct protid *cred,
   req->port = notify;
   req->next = np->dirmod_reqs;
   np->dirmod_reqs = req;
-  nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
+  nowait_msg_dir_changed (notify, DIR_CHANGED_NULL, "");
   mutex_unlock (&np->lock);
   return 0;
 }
