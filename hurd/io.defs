@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -75,7 +75,7 @@ routine io_readable (
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
-   be used for.  The O_ASYNC bit affects icky async I/O; good async 
+   be used for.  The O_ASYNC bit affects icky async I/O; good async
    I/O is done through io_async which is orthogonal to these calls. */
 routine io_set_all_openmodes (
 	io_object: io_t;
@@ -158,8 +158,7 @@ routine io_select (
 	ureplyport reply: mach_port_make_send_t;
 #endif
 	waittime timeout: natural_t;
-	inout select_type: int;
-	inout id_tag: int);	/* Returned as passed.  */
+	inout select_type: int);
 
 /* Return the current status of the object.  Not all the fields of the
    io_statuf_t are meaningful for all objects; however, the access and
@@ -294,7 +293,7 @@ routine io_readnotify (
    it upon return.  */
 routine io_readsleep (
 	io_object: io_t RPTLAST);
-   
+
 /* The shared user has just done some IO, and a signal needs to be
    sent for async users.  */
 routine io_sigio (
@@ -307,3 +306,11 @@ routine io_pathconf (
 	RPT
 	name: int;
 	out value: int);
+
+
+/* Return success iff TEST is an io port open on the same object as IO_OBJECT.
+   Otherwise return EINVAL.  */
+routine io_verify_identity (
+	io_object: io_t;
+	RPT
+	test: io_t);
