@@ -20,36 +20,35 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <argz.h>
+
 #include "priv.h"
 
 error_t
 diskfs_append_std_options (char **argz, unsigned *argz_len)
 {
+  error_t err;
   extern int diskfs_sync_interval;
 
-  void append_opt (char *str)
-    {
-      unsigned old_end = *argz_len;
-      *argz_len += strlen (str) + 1;
-      *argz = realloc (*argz, *argz_len);
-      strcpy (*argz + old_end, str);;
-    }
-
   if (diskfs_readonly)
-    append_opt ("--readonly");
+    err = argz_add (argz, argz_len, "--readonly");
   else
-    append_opt ("--writable");
+    err = argz_add (argz, argz_len, "--writable");
+  if (err)
+    return err;
 
   if (diskfs_synchronous)
-    append_opt ("--sync");
+    err = argz_add (argz, argz_len, "--sync");
   else if (diskfs_sync_interval == 0)
-    append_opt ("--nosync");
+    err = argz_add (argz, argz_len, "--nosync");
   else
     {
       char buf[80];
       sprintf (buf, "--sync=%d", diskfs_sync_interval);
-      append_opt (buf);
+      err = argz_add (argz, argz_len, buf);
     }
+  if (err)
+    free (argz);		/* Free the first option allocated. */
 
-  return 0;
+  return err;
 }
