@@ -1,6 +1,11 @@
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-ops.c: Add #include <sys/mman.h> for munmap decl.
+	
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-ops.c (S_io_read): Use mmap instead of vm_allocate.
+	* socket-ops.c (S_socket_whatis_address): Likewise.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 

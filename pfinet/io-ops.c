@@ -75,7 +75,7 @@ S_io_read (struct sock_user *user,
      allocate as much as necessary. */
   if (amount > *datalen)
     {
-      vm_allocate (mach_task_self (), (vm_address_t *)data, amount, 1);
+      *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       alloced = 1;
     }
 

@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -339,7 +339,7 @@ S_socket_whatis_address (struct sock_addr *addr,
   
   *type = AF_INET;
   if (*datalen < addr->len)
-    vm_allocate (mach_task_self (), (vm_address_t *) data, addr->len, 1);
+    *data = mmap (0, addr->len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   bcopy (addr->address, *data, addr->len);
   *datalen = addr->len;
 
