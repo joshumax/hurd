@@ -1,6 +1,6 @@
 /* Show where a file exists
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -104,7 +104,7 @@ print_store (struct store *store, int level, unsigned what)
       if ((what & mask) == mask)
 	{
 	  psep ();
-	  printf ("%u", val);
+	  printf ("%zu", val);
 	}
     }
   void poff (store_offset_t val, unsigned mask)
