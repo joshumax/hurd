@@ -1,5 +1,5 @@
 /* Call sync synchronously.
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -19,10 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <hurd.h>
+#include <argp.h>
+
+char *argp_program_version = "sync 1.0 (GNU " HURD_RELEASE ")";
 
 int
-main ()
+main (int argc, char *argv[])
 {
+  struct argp argp =
+    {0, 0, 0, "Force all pending disk writes to be done immediately"};
+  argp_parse (&argp, argc, argv, 0, 0, 0);
   __USEPORT (CRDIR, __file_syncfs (port, 1, 1));
   return 0;
 }
