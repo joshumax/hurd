@@ -1,6 +1,6 @@
 /* Fstab filesystem frobbing
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -99,6 +99,7 @@ fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
   char *fmts, *fmt;
   size_t fmts_len;
   struct fstype *type;
+  char *program = 0;
 
   for (type = types->entries; type; type = type->next)
     if (strcasecmp (type->name, name) == 0)
@@ -108,14 +109,6 @@ fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
       }
 
   /* No existing entry, make a new one.  */
-  type = malloc (sizeof (struct fstype));
-  if (! type)
-    return ENOMEM;
-
-  type->name = strdup (name);
-  type->program = 0;
-  type->next = types->entries;
-  types->entries = type;
 
   fmts = types->program_search_fmts;
   fmts_len = types->program_search_fmts_len;
@@ -123,7 +116,6 @@ fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
   for (fmt = fmts; fmt; fmt = argz_next (fmts, fmts_len, fmt))
     {
       int fd;
-      char *program;
 
       asprintf (&program, fmt, name);
       fd = open (program, O_EXEC);
@@ -144,16 +136,33 @@ fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
 	  close (fd);
 
 	  if (rv < 0)
-	    return errno;
+	    {
+	      free (program);
+	      return errno;
+	    }
 
 	  if (stat.st_mode & S_IXUSR)
 	    /* Yup execute bit is set.  This must a program...  */
-	    {
-	      type->program = program;
-	      break;
-	    }
+	    break;
 	}
+
+      free (program);
+      program = 0;
     }
+
+  type = malloc (sizeof (struct fstype));
+  if (! type)
+    {
+      free (program);
+      return ENOMEM;
+    }
+
+  type->name = strdup (name);
+  type->program = program;
+  type->next = types->entries;
+  types->entries = type;
+
+  *fstype = type;
 
   return 0;
 }
@@ -180,7 +189,8 @@ fs_set_mntent (struct fs *fs, struct mntent *mntent)
   if (! fs->storage)
     return ENOMEM;
 
-  if (strcmp (fs->mntent.mnt_dir, mntent->mnt_dir) != 0)
+  if (!fs->mntent.mnt_dir || !mntent->mnt_dir
+      || strcmp (fs->mntent.mnt_dir, mntent->mnt_dir) != 0)
     {
       fs->mounted = fs->readonly = -1;
       if (fs->fsys != MACH_PORT_NULL)
@@ -201,7 +211,9 @@ fs_set_mntent (struct fs *fs, struct mntent *mntent)
   STORE (mnt_opts);
 #undef STORE
 
-  if (fs->type && strcasecmp (fs->type->name, mntent->mnt_type) != 0)
+  if (fs->type
+      && (!mntent->mnt_type
+	  || strcasecmp (fs->type->name, mntent->mnt_type) != 0))
     fs->type = 0;		/* Type is different.  */
 
   return 0;
