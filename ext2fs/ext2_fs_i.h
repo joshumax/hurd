@@ -23,8 +23,8 @@ struct ext2_inode_info {
 	u32	i_data[15];
 	u32	i_flags;
 	u32	i_faddr;
-	__u8	i_frag_no;
-	__u8	i_frag_size;
+	u8	i_frag_no;
+	u8	i_frag_size;
 	u16	i_osync;
 	u32	i_file_acl;
 	u32	i_dir_acl;
