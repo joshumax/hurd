@@ -1,7 +1,7 @@
 /* Directory operations
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -539,6 +539,7 @@ ftpfs_refresh_node (struct node *node)
 	ccache_invalidate (nn->contents);
 
       node->nn_stat = entry->stat;
+      node->nn_translated = S_ISLNK (entry->stat.st_mode) ? S_IFLNK : 0;
       if (!nn->dir && S_ISDIR (entry->stat.st_mode))
 	ftpfs_dir_create (nn->fs, node, nn->rmt_path, &nn->dir);
 
