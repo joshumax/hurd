@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_request for pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -39,27 +39,27 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
+
+  /* Acquire the right to meddle with the pagemap */
+  mutex_lock (&p->interlock);
+  _pager_wait_for_seqno (p, seqno);
   
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
       printf ("incg data request: wrong control port\n");
-      goto out;
+      goto release_out;
     }
   if (length != __vm_page_size)
     {
       printf ("incg data request: bad length size %d\n", length);
-      goto out;
+      goto release_out;
     }
   if (offset % __vm_page_size)
     {
       printf ("incg data request: misaligned request\n");
-      goto out;
+      goto release_out;
     }
-
-  /* Acquire the right to meddle with the pagemap */
-  mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
 
   _pager_block_termination (p);	/* prevent termination until 
 				   mark_object_error is done */
@@ -130,7 +130,6 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   mutex_lock (&p->interlock);
   _pager_allow_termination (p);
   mutex_unlock (&p->interlock);
- out:
   ports_port_deref (p);
   return 0;
   
@@ -138,6 +137,12 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   memory_object_data_error (p->memobjcntl, offset, length, EIO);
   _pager_mark_object_error (p, offset, length, EIO);
   _pager_allow_termination (p);
+  ports_port_deref (p);
+  return 0;
+
+ release_out:
+  _pager_release_seqno (p, seqno);
+  mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 }
