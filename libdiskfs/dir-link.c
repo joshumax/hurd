@@ -105,7 +105,7 @@ diskfs_S_dir_link (struct protid *dircred,
   if (tnp)
     {
       assert (!excl);
-      error = diskfs_dirrewrite (dp, tnp, np, name, ds);
+      error = diskfs_dirrewrite (dnp, tnp, np, name, ds);
       if (!error)
 	{
 	  /* Deallocate link on TNP */
@@ -117,10 +117,10 @@ diskfs_S_dir_link (struct protid *dircred,
       diskfs_nput (tnp);
     }
   else
-    error = diskfs_direnter (dp, name, np, ds, dircred);
+    error = diskfs_direnter (dnp, name, np, ds, dircred);
   
   if (diskfs_synchronous)
-    diskfs_node_update (dp, 1);
+    diskfs_node_update (dnp, 1);
   
   mutex_unlock (&dnp->lock);
   mutex_unlock (&np->lock);
