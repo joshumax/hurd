@@ -2,8 +2,11 @@
 #include <elf.h>
 #include <link.h>
 #include <string.h>
+#include <argz.h>
 #include <sys/mman.h>
 #include <sys/utsname.h>
+#include <sys/procfs.h>
+#include <stddef.h>
 
 
 #define ELF_MACHINE	EM_386	/* XXX */
@@ -20,10 +23,19 @@
 #endif
 
 
+#define TIME_VALUE_TO_TIMESPEC(tv, ts) \
+  TIMEVAL_TO_TIMESPEC ((struct timeval *) (tv), (ts))
+
+#define PAGES_TO_KB(x)	((x) * (vm_page_size / 1024))
+#define ENCODE_PCT(f)	((uint16_t) ((f) * 32768.0))
+
+extern process_t procserver;
+
 error_t
 dump_core (task_t task, file_t file, off_t corelimit,
 	   int signo, long int sigcode, int sigerror)
 {
+  static float host_memory_size = -1.0;
   error_t err;
   ElfW(Phdr) *phdrs, *ph;
   ElfW(Ehdr) hdr =		/* ELF header for the core file.  */
@@ -50,6 +62,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   off_t offset;
   size_t wrote;
 
+  pid_t pid;
   thread_t *threads;
   size_t nthreads, i;
   off_t notestart;
@@ -194,20 +207,115 @@ dump_core (task_t task, file_t file, off_t corelimit,
   if (err || (corelimit >= 0 && corelimit <= offset))
     return err;
 
-#if 0
-  /* The pstatus_t note should contain the death info and some process-global
-     info we should get from the proc server, but no thread-specific info
-     like register state.  We need to define this type.  */
+  err = proc_task2pid (procserver, task, &pid);
+  if (err)
+    return err;
+
+  /* Make sure we have the total RAM size of the host.
+     We only do this once, assuming that it won't change.
+     XXX this could use the task's host-self port instead. */
+  if (host_memory_size <= 0.0)
+    {
+      host_basic_info_data_t hostinfo;
+      mach_msg_type_number_t size = sizeof hostinfo;
+      error_t err = host_info (mach_host_self (), HOST_BASIC_INFO,
+			       (host_info_t) &hostinfo, &size);
+      if (err == 0)
+	host_memory_size = hostinfo.memory_size;
+    }
+
+  /* The psinfo_t note contains some process-global info we should get from
+     the proc server, but no thread-specific info like register state.  */
   {
-    DEFINE_NOTE (pstatus_t) note;
+    DEFINE_NOTE (psinfo_t) note;
+    int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
+    char *waits = 0;
+    mach_msg_type_number_t num_waits = 0;
+    char pibuf[offsetof (struct procinfo, threadinfos[2])];
+    struct procinfo *pi = (void *) &pibuf;
+    mach_msg_type_number_t pi_size = sizeof pibuf;
+    err = proc_getprocinfo (procserver, pid, &flags,
+			    (procinfo_t *) &pi, &pi_size,
+			    &waits, &num_waits);
+    if (err == 0)
+      {
+	if (num_waits != 0)
+	  munmap (waits, num_waits);
+	memset (&note.data, 0, sizeof note.data);
+	note.data.pr_flag = pi->state;
+	note.data.pr_nlwp = pi->nthreads;
+	note.data.pr_pid = pid;
+	note.data.pr_ppid = pi->ppid;
+	note.data.pr_pgid = pi->pgrp;
+	note.data.pr_sid = pi->session;
+	note.data.pr_euid = pi->owner;
+	/* XXX struct procinfo should have these */
+	note.data.pr_egid = note.data.pr_gid = note.data.pr_uid = -1;
+	note.data.pr_size = PAGES_TO_KB (pi->taskinfo.virtual_size);
+	note.data.pr_rssize = PAGES_TO_KB (pi->taskinfo.resident_size);
+	{
+	  /* Sum all the threads' cpu_usage fields.  */
+	  integer_t cpu_usage = 0;
+	  for (i = 0; i < pi->nthreads; ++i)
+	    cpu_usage += pi->threadinfos[i].pis_bi.cpu_usage;
+	  note.data.pr_pctcpu = ENCODE_PCT ((float) cpu_usage
+					    / (float) TH_USAGE_SCALE);
+	}
+	if (host_memory_size > 0.0)
+	  note.data.pr_pctmem = ENCODE_PCT ((float) pi->taskinfo.resident_size
+					    / host_memory_size);
+	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.creation_time,
+				&note.data.pr_start);
+	timeradd ((const struct timeval *) &pi->taskinfo.user_time,
+		  (const struct timeval *) &pi->taskinfo.system_time,
+		  (struct timeval *) &pi->taskinfo.user_time);
+	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time, &note.data.pr_time);
+	/* XXX struct procinfo should have dead child info for pr_ctime */
+	note.data.pr_wstat = pi->exitstatus;
+	{
+	  /* We have to nab the process's own proc port to get the
+	     proc server to tell us its registered arg locations.  */
+	  process_t proc;
+	  err = proc_task2proc (procserver, task, &proc);
+	  if (err == 0)
+	    {
+	      err = proc_get_arg_locations (proc,
+					    &note.data.pr_argv,
+					    &note.data.pr_envp);
+	      mach_port_deallocate (mach_task_self (), proc);
+	    }
+	  err = 0;
+	}
+	{
+	  /* Now fetch the arguments.  We could do this directly from the
+	     task given the locations we now have.  But we are lazy and have
+	     the proc server do it for us.  */
+	  char *data = note.data.pr_psargs;
+	  size_t datalen = sizeof note.data.pr_psargs;
+	  err = proc_getprocargs (procserver, pid, &data, &datalen);
+	  if (err == 0)
+	    {
+	      note.data.pr_argc = argz_count (data, datalen);
+	      argz_stringify (data, datalen, ' ');
+	      if (data != note.data.pr_psargs)
+		{
+		  memcpy (note.data.pr_psargs, data,
+			  sizeof note.data.pr_psargs);
+		  munmap (data, datalen);
+		}
+	    }
+	}
+	err = WRITE_NOTE (NT_PSTATUS, note);
+      }
+
+#if 0
     note.data.pr_info.si_signo = signo;
     note.data.pr_info.si_code = sigcode;
     note.data.pr_info.si_errno = sigerror;
-    err = WRITE_NOTE (NT_PSTATUS, note);
+#endif
   }
   if (err || (corelimit >= 0 && corelimit <= offset))
     return err;
-#endif
 
   /* Now examine all the threads in the task.
      For each thread we produce one or more notes.  */
