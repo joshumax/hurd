@@ -1,5 +1,5 @@
 /* Authentication server.
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -469,7 +469,7 @@ main (int argc, char **argv)
   proc_register_version (proc, hostpriv, "auth", "", HURD_VERSION);
   mach_port_deallocate (mach_task_self (), masterdev);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
-  _hurd_proc_init (argv);
+  _hurd_proc_init (argv, NULL, 0);
 
   /* Init knows intimately that we will be ready for messages
      as soon as this returns. */
