@@ -1,5 +1,5 @@
 /* Proc server host management calls
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -36,9 +36,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc.h"
 #include "process_S.h"
 
-static long hostid;
-static char *hostname;
-static int hostnamelen;
 static mach_port_t *std_port_array;
 static int *std_int_array;
 static int n_std_ports, n_std_ints;
@@ -57,81 +54,6 @@ struct execdata_notify
   struct execdata_notify *next;
 } *execdata_notifys;
 
-/* Implement proc_sethostid as described in <hurd/proc.defs>. */
-kern_return_t
-S_proc_sethostid (struct proc *p,
-		int newhostid)
-{
-  if (!p)
-    return EOPNOTSUPP;
-  
-  if (! check_uid (p, 0))
-    return EPERM;
-  
-  hostid = newhostid;
-
-  return 0;
-}
-
-/* Implement proc_gethostid as described in <hurd/proc.defs>. */
-kern_return_t 
-S_proc_gethostid (struct proc *p,
-		int *outhostid)
-{
-  /* No need to check P here; we don't use it. */
-  *outhostid = hostid;
-  return 0;
-}
-
-/* Implement proc_sethostname as described in <hurd/proc.defs>. */
-kern_return_t
-S_proc_sethostname (struct proc *p,
-		    char *newhostname,
-		    u_int newhostnamelen)
-{
-  int len;
-  if (!p)
-    return EOPNOTSUPP;
-  
-  if (! check_uid (p, 0))
-    return EPERM;
-  
-  if (hostname)
-    free (hostname);
-
-  hostname = malloc (newhostnamelen + 1);
-  hostnamelen = newhostnamelen;
-
-  bcopy (newhostname, hostname, newhostnamelen);
-  hostname[newhostnamelen] = '\0';
-
-  len = newhostnamelen + 1;
-  if (len > sizeof uname_info.nodename)
-    len = sizeof uname_info.nodename;
-  bcopy (hostname, uname_info.nodename, len);
-  uname_info.nodename[sizeof uname_info.nodename - 1] = '\0';
-
-  return 0;
-}
-
-/* Implement proc_gethostname as described in <hurd/proc.defs>. */
-kern_return_t
-S_proc_gethostname (struct proc *p,
-		    char **outhostname,
-		    u_int *outhostnamelen)
-{
-  /* No need to check P here; we don't use it. */
-
-  if (*outhostnamelen < hostnamelen + 1)
-    vm_allocate (mach_task_self (), (vm_address_t *)outhostname,
-		 hostnamelen + 1, 1);
-  *outhostnamelen = hostnamelen + 1;
-  if (hostname)
-    bcopy (hostname, *outhostname, hostnamelen + 1);
-  else
-    **outhostname = '\0';
-  return 0;
-}
 
 /* Implement proc_getprivports as described in <hurd/proc.defs>. */
 kern_return_t
@@ -483,3 +405,4 @@ S_proc_register_version (pstruct_t server,
   mach_port_deallocate (mach_task_self (), credential);
   return 0;
 }
+

@@ -1,3 +1,9 @@
+Tue Sep 16 15:26:04 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* host.c (hostid, hostname, hostnamelen): Delete variables.
+	(S_proc_sethostid, S_proc_gethostid, S_proc_sethostname,
+	S_proc_gethostname): Delete functions.
+
 Wed Aug 20 14:06:46 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): New args for
