@@ -147,6 +147,65 @@ enum term_bottom_type
  TERM_ON_MASTERPTY,
 };
 
+/* Classes for file_get_storage_info. */
+enum file_storage_class
+{
+  STORAGE_OTHER,
+  STORAGE_DEVICE,
+  STORAGE_DEVICE_MUTATED,
+  STORAGE_HURD_FILE,
+  STORAGE_HURD_FILE_MUTATED,
+  STORAGE_NETWORK,
+};
+/* STORAGE_DEVICE implies that:
+    
+   STORAGE_PORT, if non-null, is a device_t holding the data.
+   
+   STORAGE_NAME, if non-null, is the name (as for device_open) of the
+   device holding the data.  (Caveat: use storage_port in preference
+   to storage_name for actual I/O)
+   
+   The even members of ADDRESSES specify the physical addresses of the
+   data of the file, in order (in units appropriate as a RECNUM to
+   device_read/write) .  The odd members specify the lengths (in
+   bytes) of the storage at the preceding address.  An address of zero
+   identifies a hole, a length of zero should be ignored along with
+   the preceding address.
+
+   STORAGE_MISC may contain additional type specific information.
+   */
+
+/* STORAGE_DEVICE_MUTATED is like STORAGE_DEVICE, except that the data
+   as written to the device may be different (because of compression,
+   for example) than the contents of the file. */
+
+/* STORAGE_HURD_FILE implies that:
+
+   STORAGE_PORT, if non-null, is a file_t holding the data.
+
+   STORAGE_NAME, if non-null, is the filename of the file referenced
+   by STORAGE_PORT.  (Caveat: use storage_port in preference to
+   storage_name if both are provided.)
+
+   ADDRESSES are pairs of address pairs; the even numbers are off_t
+   offsets from the start of the file and the odd numbers are the
+   length of the segment.  Zero addresses are holes; zero lengths
+   should be ignored.
+
+   STORAGE_MISC may contain additional type-specific information. 
+*/
+
+/* STORAGE_HURD_FILE_MUTATED is like STORAGE_DEVICE, except that the
+   data as written to STORAGE_PORT/NAME may be different (because of
+   compression, for example) than the contents of the file. */
+
+/* STORAGE_NETWORK means that the file is stored elsewhere on the
+   network; all the remaining fields contan type-specific information. */
+
+/* STORAGE_OTHER means none of these apply; and should be used when no
+   meaningful answer can be given. */
+
+
 
 /*   Data types   */
 
