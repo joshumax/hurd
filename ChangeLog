@@ -1,5 +1,8 @@
 1999-09-18  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* Makeconf [$(makemode) != misc]: Use this to protect linking rules,
+	so we don't define any rule for $(targets) if $(makemode) is misc.
+
 	* Makefile: Revert last change; it is definitely wrong, and there is
 	no verified bug that needs to be fixed at all.
 

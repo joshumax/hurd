@@ -1,3 +1,9 @@
+1999-09-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (installationdir): New variable.
+	(DIST_FILES): Use := instead of =, so as to process wildcard only once.
+	(all): Target removed (superfluous).
+
 1999-09-18  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* hurd.texi: Added many comments (marked by `tb:') to some of the
