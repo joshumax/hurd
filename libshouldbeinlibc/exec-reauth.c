@@ -1,6 +1,6 @@
 /* Re-authentication in preparation for an exec
 
-   Copyright (C) 1995, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 98, 2000 Free Software Foundation, Inc.
 
    Stolen by Miles Bader <miles@gnu.ai.mit.edu>, but really
      written by Michael I. Bushnell p/BSG  <mib@gnu.ai.mit.edu>
@@ -54,9 +54,12 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 	    (isproc ? proc_reauthenticate : io_reauthenticate)
 	      (*port, ref, MACH_MSG_TYPE_MAKE_SEND);
 
+	  /* MAKE_SEND is safe here because we destroy REF ourselves. */
+
 	  if (!err)
 	    err = auth_user_authenticate (auth, ref, MACH_MSG_TYPE_MAKE_SEND,
 					  &newport);
+	  mach_port_destroy (mach_task_self (), ref);
 	  if (err)
 	    {
 	      if (must_reauth)
@@ -73,7 +76,6 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 		  *port = newport;
 		}
 	    }
-	  mach_port_destroy (mach_task_self (), ref);
 	}
       return 0;
     }
