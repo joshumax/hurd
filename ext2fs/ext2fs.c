@@ -1,5 +1,8 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/* Main entry point for the ext2 file system translator.
+
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+
+   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
