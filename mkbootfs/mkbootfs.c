@@ -55,6 +55,8 @@ main (int argc, char **argv)
   void *buf;
   struct nlist n;
 
+  signal (0, 0);
+
   if (argc != 3)
     {
       fprintf (stderr, "Usage: %s execserver newdoto\n", argv[0]);
