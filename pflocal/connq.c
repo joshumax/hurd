@@ -43,15 +43,6 @@ struct connq
   struct condition listeners;
   unsigned num_listeners;
 
-  /* When a connection queue receives an interrupt, we want to wake up all
-     listeners, and have them realize they've been interrupted; listeners
-     that happen after the interrupt shouldn't return EINTR.  When a thread
-     waits on this pipe's LISTENERS condition, it remembers this sequence
-     number; any interrupt bumps this number and broadcasts on the condition.
-     A listening thread will try to accept a connection only if the sequence
-     number is the same as when it went to sleep. */
-  unsigned long interrupt_seq_num;
-
   struct mutex lock;
 };
 
@@ -144,20 +135,17 @@ debug (cq, "lock");
   cq->num_listeners++;
 
   while (cq->head == cq->tail)
-    {
-      unsigned seq_num = cq->interrupt_seq_num;
-debug (cq, "wait listeners");
-      condition_wait (&cq->listeners, &cq->lock);
-      if (seq_num != cq->interrupt_seq_num)
-	{
+{debug (cq, "wait listeners");
+    if (hurd_condition_wait (&cq->listeners, &cq->lock))
+      {
 debug (cq, "eintr");
-	  cq->num_listeners--;
+	cq->num_listeners--;
 debug (cq, "unlock");
-	  mutex_unlock (&cq->lock);	  
+	mutex_unlock (&cq->lock);	  
 debug (cq, "out");
-	  return EINTR;
-	}
-    }
+	return EINTR;
+      }
+}
 
   if (req != NULL)
     /* Dequeue the next request, if desired.  */
@@ -270,66 +258,6 @@ debug (cq, "compress queue");
 
   /* Move back tail to only include what we kept in the queue.  */
   cq->tail = comp_tail;
-}
-
-/* Interrupt any threads waiting on CQ, both listeners and connectors, and
-   make them return with EINTR.  */
-void
-connq_interrupt (struct connq *cq)
-{
-debug (cq, "in");
-debug (cq, "lock");
-  mutex_lock (&cq->lock);
-
-debug (cq, "interrupt connectors");
-  /* Interrupt everyone trying to connect.  */
-  while (cq->head != cq->tail)
-    {
-debug (cq->queue[cq->head], "(req) interrupting");
-      connq_request_complete (cq->queue[cq->head], EINTR);
-      cq->head = qnext (cq, cq->head);
-    }
-
-debug (cq, "interrupt listeners");
-  /* Interrupt anyone waiting for a connection.  */
-  if (cq->num_listeners > 0)
-    {
-      cq->interrupt_seq_num++;
-      condition_broadcast (&cq->listeners);
-    }
-
-debug (cq, "unlock");
-  mutex_unlock (&cq->lock);
-debug (cq, "out");
-}
-
-/* Interrupt any threads that are attempting to connect SOCK to CQ, and make
-   them return with EINTR.  */
-void
-connq_interrupt_sock (struct connq *cq, struct sock *sock)
-{
-  unsigned pos;
-
-debug (cq, "in");
-debug (cq, "lock");
-  mutex_lock (&cq->lock);
-
-debug (cq, "interrupt connections from: %p", sock);
-  for (pos = cq->head; pos != cq->tail; pos = qnext (cq, pos))
-    {
-      struct connq_request *req = cq->queue[pos];
-      if (req->sock == sock)
-{debug (req, "(req) interrupting");
-	connq_request_complete (req, EINTR);
-}
-      cq->queue[pos] = NULL;	/* Mark REQ as being deleted.  */
-    }
-
-  connq_compress (cq);
-
-debug (cq, "unlock");
-  mutex_unlock (&cq->lock);
-debug (cq, "out");
 }
 
 /* Set CQ's queue length to LENGTH.  Any sockets already waiting for a
