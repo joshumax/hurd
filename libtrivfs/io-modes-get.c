@@ -32,7 +32,7 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
     return EOPNOTSUPP;
   else
     {
-      *bits = 0;
+      *bits = cred->po->openmodes;
       return 0;
     }
 }
