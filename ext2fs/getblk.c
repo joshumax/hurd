@@ -160,7 +160,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = *result;
-  node->dn_set_ctime = 1;
+  node->dn_set_ctime = node->dn_set_mtime = 1;
   node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
@@ -212,9 +212,9 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
   else
     record_indir_poke (node, bh);
 
-  node->dn_set_ctime = 1;
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = *result;
+  node->dn_set_ctime = node->dn_set_mtime = 1;
   node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
