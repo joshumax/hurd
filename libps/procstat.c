@@ -524,17 +524,25 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
 
 /* Returns the number of threads in PI that aren't marked dead.  */
 static unsigned
-count_threads (struct procinfo *pi)
+count_threads (struct procinfo *pi, ps_flags_t have)
 {
-  int i;
-  unsigned num_threads = 0;
+  if (have & (PSTAT_PROCINFO_THREAD & ~PSTAT_NUM_THREADS))
+    /* If we have thread info besides the number of threads, then the
+       threadinfos structures in PI are valid (we use the died bit).  */
+    {
+      int i;
+      unsigned num_threads = 0;
 
-  /* The union of all thread state bits...  */
-  for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died)
-      num_threads++;
+      /* The union of all thread state bits...  */
+      for (i = 0; i < pi->nthreads; i++)
+	if (! pi->threadinfos[i].died)
+	  num_threads++;
 
-  return num_threads;
+      return num_threads;
+    }
+  else
+    /* Otherwise just use the number proc gave us.  */
+    return pi->nthreads;
 }
 
 /* Returns the threadinfo for the INDEX'th thread from PI that isn't marked
@@ -608,7 +616,7 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	    {
 	      have = merge_procinfo (ps, PSTAT_NUM_THREADS, have);
 	      if (have & PSTAT_NUM_THREADS)
-		ps->num_threads = count_threads (ps->proc_info);
+		ps->num_threads = count_threads (ps->proc_info, have);
 	    }
 	  if ((have & PSTAT_NUM_THREADS) && ps->num_threads <= 3)
 	    /* Perhaps only 1 user thread -- thread-wait info may be
@@ -624,7 +632,7 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
       if (have & PSTAT_TASK_BASIC)
 	ps->task_basic_info = &pi->taskinfo;
       if (have & PSTAT_NUM_THREADS)
-	ps->num_threads = count_threads (pi);
+	ps->num_threads = count_threads (pi, have);
       if (had & PSTAT_THREAD_BASIC)
 	free (ps->thread_basic_info);
       if (have & PSTAT_THREAD_BASIC)
