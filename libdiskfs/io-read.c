@@ -42,44 +42,36 @@ diskfs_S_io_read (struct protid *cred,
   
   mutex_lock (&np->i_toplock);
 
-  if (err = ioserver_get_conch (&np->i_conch))
-    {
-      mutex_unlock (&np->i_toplock);
-      return err;
-    }
+  err = ioserver_get_conch (&np->i_conch);
+  if (err)
+    goto out;
   
   if (off == -1)
     off = cred->po->filepointer;
   
-  if (!(err = catch_exception ()))
-    {
-      if (off + maxread > np->di->di_size)
-	maxread = np->di->di_size - off;
-      end_catch_exception ();
-    }
+  if (off + maxread > np->dn_stat.st_size)
+    maxread = np->dn_stat.st_size - off;
   
-  if (!err)
+  if (maxread > *datalen)
     {
-      if (maxread > *datalen)
-	{
-	  ourbuf = 1;
-	  vm_allocate (mach_task_self (), (u_int *) &buf, maxread, 1);
-	  *data = buf;
-	}
-      else
-	buf = *data;
+      ourbuf = 1;
+      vm_allocate (mach_task_self (), (u_int *) &buf, maxread, 1);
+      *data = buf;
+    }
+  else
+    buf = *data;
 
-      *datalen = maxread;
-      if (maxread)
-	err = io_rdwr (np, buf, off, maxread, 0);
-      else
-	err = 0;
-      if (offset == -1 && !err)
-	cred->po->filepointer += *datalen;
-      if (err && ourbuf)
-	vm_deallocate (mach_task_self (), (u_int) buf, maxread);
-    }
+  *datalen = maxread;
+  if (maxread)
+    err = _diskfs_rdwr_internal (np, buf, off, maxread, 0);
+  else
+    err = 0;
+  if (offset == -1 && !err)
+    cred->po->filepointer += *datalen;
+  if (err && ourbuf)
+    vm_deallocate (mach_task_self (), (u_int) buf, maxread);
   
+ out:
   mutex_unlock (&np->i_toplock);
   return err;
 }
