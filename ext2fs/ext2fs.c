@@ -98,7 +98,7 @@ main (int argc, char **argv)
   inode_init ();
 
   /* Set diskfs_root_node to the root inode. */
-  err = iget (EXT2_ROOT_INO, &diskfs_root_node);
+  err = diskfs_cached_lookup (EXT2_ROOT_INO, &diskfs_root_node);
   if (err)
     ext2_panic ("can't get root: %s", strerror (err));
   else if ((diskfs_root_node->dn_stat.st_mode & S_IFMT) == 0)
