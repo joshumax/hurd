@@ -463,7 +463,7 @@ new_proc (task_t task)
   mach_port_request_notification (mach_task_self (), p->p_task,
 				  MACH_NOTIFY_DEAD_NAME, 1, p->p_reqport,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
+  if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 				  
   
@@ -689,13 +689,29 @@ add_tasks (task_t task)
 int
 genpid ()
 {
-  static int nextpid = 0;
-
 #define WRAP_AROUND 30000  
 #define START_OVER 100
+  static int nextpid = 0;
+  static int wrap = WRAP_AROUND;
 
-  while (!pidfree (nextpid)
-	 && ((++nextpid > WRAP_AROUND) || (nextpid = START_OVER)))
-    ;
+  int wrapped = 0;
+
+  while (!pidfree (nextpid))
+    {
+      ++nextpid;
+      if (nextpid > wrap)
+	{
+	  if (wrapped)
+	    {
+	      wrap *= 2;
+	      wrapped = 0;
+	    }
+	  else
+	    {
+	      nextpid = START_OVER;
+	      wrapped = 1;
+	    }
+	}
+
   return nextpid++;
 }
