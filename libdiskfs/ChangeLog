@@ -1,3 +1,13 @@
+Mon Jun 30 17:26:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_hard_readonly): New variable.
+	(diskfs_readonly): Doc change.
+	* readonly.c (diskfs_readonly): Provide initialized declaration.
+	(diskfs_check_readonly): If we cannot write the media and so we
+	switch to readonly, set diskfs_hard_readonly too.
+	(diskfs_set_readonly): If diskfs_hard_readonly is set, then
+	inhibit any attempt to clear readonly status.
+
 1997-06-23  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* peropen-make.c (diskfs_make_peropen): Initialize the

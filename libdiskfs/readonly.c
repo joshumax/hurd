@@ -1,6 +1,6 @@
 /* Change to/from read-only
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -26,6 +26,8 @@
 #include "priv.h"
 
 int _diskfs_diskdirty;
+int diskfs_readonly = 0;
+int diskfs_hard_readonly = 0;
 
 int
 diskfs_check_readonly ()
@@ -44,7 +46,7 @@ diskfs_check_readonly ()
 	      error (0, 0, 
 		     "%s: MEDIA NOT WRITABLE; switching to READ-ONLY",
 		     diskfs_disk_name ?: "-");
-	      diskfs_readonly = 1;
+	      diskfs_hard_readonly = diskfs_readonly = 1;
 	      return 1;
 	    }
 	  _diskfs_diskdirty = 1;
@@ -61,6 +63,9 @@ error_t
 diskfs_set_readonly (int readonly)
 {
   error_t err = 0;
+
+  if (diskfs_hard_readonly)
+    return readonly ? 0 : EROFS;
 
   if (readonly != diskfs_readonly)
     {

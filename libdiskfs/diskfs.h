@@ -168,6 +168,9 @@ extern spin_lock_t diskfs_node_refcnt_lock;
 
 extern int pager_port_type;
 
+/* Whether the filesystem is currently writable or not. */
+extern int diskfs_readonly;
+
 
 struct pager;
 
@@ -204,9 +207,9 @@ extern int diskfs_link_max;
    If this is exceeded, dir_pathtrans will return ELOOP.  */
 extern int diskfs_maxsymlinks;
 
-/* The user must define this variable and set it if the filesystem
-   should be readonly.  */
-extern int diskfs_readonly;
+/* This variable is defined by diskfs; the suer should set it if
+   the filesystem media cannot be made writeable. */
+extern int diskfs_hard_readonly;
 
 /* The user must define this variable.  Set this to be the node
    of root of the filesystem.  */
