@@ -115,6 +115,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	  totalthreads--;
 	  spin_unlock (&lock);
 	}
+      return 0;
     }
   
   nreqthreads = 1;
