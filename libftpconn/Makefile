@@ -24,7 +24,7 @@ installhdrs = ftpconn.h
 installhdrsubdir = .
 
 SRCS = addr.c cmd.c create.c cwd.c errs.c names.c open.c reply.c   \
-	rmt.c set-type.c stats.c unix.c xfer.c xinl.c
+	rmt.c set-type.c stats.c unix.c xfer.c xinl.c fname.c
 LCLHDRS = ftpconn.h priv.h
 
 OBJS = $(SRCS:.c=.o)
