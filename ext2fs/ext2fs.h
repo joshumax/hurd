@@ -23,7 +23,7 @@
 #include <hurd/ports.h>
 #include <hurd/pager.h>
 #include <hurd/fshelp.h>
-#include <hurd/ioserver.h>
+#include <hurd/iohelp.h>
 #include <hurd/diskfs.h>
 #include <assert.h>
 #include <rwlock.h>

@@ -24,7 +24,7 @@
 #include <rwlock.h>
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
-#include <hurd/ioserver.h>
+#include <hurd/iohelp.h>
 
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library).  */

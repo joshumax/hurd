@@ -21,7 +21,7 @@
 
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
-#include <hurd/ioserver.h>
+#include <hurd/iohelp.h>
 #include <assert.h>
 #include <argp.h>
 
