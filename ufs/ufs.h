@@ -183,7 +183,6 @@ void get_hypermetadata (void);
 void copy_sblock (void);
 
 /* From inode.c: */
-error_t iget (ino_t ino, struct node **NP);
 struct node *ifind (ino_t ino);
 void inode_init (void);
 void write_all_disknodes (void);
