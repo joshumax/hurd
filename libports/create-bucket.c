@@ -1,5 +1,5 @@
 /* Create a port bucket
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -31,17 +31,20 @@ ports_create_bucket ()
 
   ret = malloc (sizeof (struct port_bucket));
   assert (ret);
+
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET, 
 			    &ret->portset);
   assert_perror (err);
+
   err = ihash_create (&ret->htable);
   assert_perror (err);
+
+  ret->rpcs = ret->flags = ret->count = 0;
 
   mutex_lock (&_ports_lock);
   ret->next = _ports_all_buckets;
   _ports_all_buckets = ret;
   mutex_unlock (&_ports_lock);
+
   return ret;
 }
-
-  
