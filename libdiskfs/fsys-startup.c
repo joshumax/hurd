@@ -29,17 +29,6 @@ diskfs_S_fsys_startup (mach_port_t port,
 		       mach_port_t *real,
 		       mach_msg_type_name_t *realpoly)
 {
-  struct port_info *pi = ports_lookup_port (diskfs_port_bucket, port,
-					    diskfs_transboot_class);
-  error_t err;
-  
-  if (pi)
-    {
-      err = fshelp_handle_fsys_startup (pi, ctl, real, realpoly);
-      ports_port_deref (pi);
-      return err;
-    }
-  else
-    return diskfs_execboot_fsys_startup (port, ctl, real, realpoly);
+  return diskfs_execboot_fsys_startup (port, ctl, real, realpoly);
 }
 
