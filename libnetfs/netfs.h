@@ -282,6 +282,22 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
                            int entry, int nentries, char **data,
 			   mach_msg_type_number_t *datacnt,
 			   vm_size_t bufsize, int *amt);
+
+/* The user may define this function.  For a full description,
+   see hurd/hurd_types.h.  The default response indicates a network
+   store.  If the supplied buffers are not large enough, they should
+   be grown as necessary.  NP is locked.  */
+error_t netfs_file_get_storage_info (struct iouser *cred,
+    				     struct node *np,
+				     mach_port_t **ports,
+				     mach_msg_type_name_t *ports_type,
+				     mach_msg_type_number_t *num_ports,
+				     int **ints,
+				     mach_msg_type_number_t *num_ints,
+				     off_t **offsets,
+				     mach_msg_type_number_t *num_offsets,
+				     char **data,
+				     mach_msg_type_number_t *data_len);
 
 /* Option parsing */
 

@@ -1,3 +1,11 @@
+2001-01-15  Neal H Walfield   <neal@cs.uml.edu>
+
+	* netfs.h: Added netfs_get_storage_info.
+	* file-get-storage-info.c (netfs_S_get_storage_info): Calls
+	netfs_get_storage_info instead of providing default response.
+	* file-get-storage-info-default.c: New file.
+	(netfs_get_storage_info):  Provides default response.
+
 2001-01-30  Neal H Walfield   <neal@cs.uml.edu>
 
 	* netfs.h: Fix comment for netfs_nref (finally).

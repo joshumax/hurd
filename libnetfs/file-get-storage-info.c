@@ -1,6 +1,6 @@
 /*
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+   Copyright (C) 2001 Free Software Foundation, Inc.
+   Written by Neal H Walfield <neal@cs.uml.edu>
 
    This file is part of the GNU Hurd.
 
@@ -20,35 +20,28 @@
 
 #include "netfs.h"
 #include "fs_S.h"
-#include <sys/mman.h>
 
 error_t
 netfs_S_file_get_storage_info (struct protid *user,
-				mach_port_t **ports,
-				mach_msg_type_name_t *ports_type,
-				mach_msg_type_number_t *num_ports,
-				int **ints, mach_msg_type_number_t *num_ints,
-				off_t **offsets,
-				mach_msg_type_number_t *num_offsets,
-				char **data, mach_msg_type_number_t *data_len)
+			       mach_port_t **ports,
+			       mach_msg_type_name_t *ports_type,
+			       mach_msg_type_number_t *num_ports,
+			       int **ints, mach_msg_type_number_t *num_ints,
+			       off_t **offsets,
+			       mach_msg_type_number_t *num_offsets,
+			       char **data, mach_msg_type_number_t *data_len)
 {
+  error_t err;
+
   if (!user)
     return EOPNOTSUPP;
 
-  *data_len = 0;
-  *num_offsets = 0;
-  *num_ports = 0;
+  mutex_lock (&user->po->np->lock);
+  err = netfs_file_get_storage_info (user->user, user->po->np, ports,
+      				     ports_type, num_ports, ints,
+				     num_ints, offsets, num_offsets,
+				     data, data_len);
+  mutex_unlock (&user->po->np->lock);
 
-  if (*num_ints == 0)
-    /* Argh */
-    {
-      *ints = mmap (0, sizeof (int), PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (*ints == (int *) -1)
-	return errno;
-    }
-
-  *num_ints = 1;
-  (*ints)[0] = STORAGE_NETWORK;
-
-  return 0;
+  return err;
 }

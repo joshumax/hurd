@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation
+#   Copyright (C) 1995, 1996, 1997, 1999, 2001 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -46,8 +46,8 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 	init-loop.c demuxer.c shutdown.c release-protid.c release-peropen.c   \
 	init-startup.c startup-argp.c set-options.c append-args.c	      \
 	runtime-argp.c std-runtime-argp.c std-startup-argp.c		      \
-	append-std-options.c trans-callback.c set-get-trans.c \
-	nref.c nrele.c nput.c
+	append-std-options.c trans-callback.c set-get-trans.c		      \
+	nref.c nrele.c nput.c file-get-storage-info-default.c
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 
