@@ -1,10 +1,17 @@
 #!/bin/bash
+
 PATH=/bin:/sbin
 
+# Start the default pager.  It will bail if there is already one running.
+/hurd/mach-defpager
+
+# Set up swap space.  This will complain if no default pager is functioning.
 swapon -a
 
+# Check filesystems.
 if [ -r /fastboot ]
 then
+	# ... or don't.
 	rm -f /fastboot
 	echo Fast boot ... skipping disk checks
 elif [ $1x = autobootx ]
