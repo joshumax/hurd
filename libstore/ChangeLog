@@ -1,3 +1,8 @@
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* encode.c (store_std_leaf_encode): Do a sizeof comparison to get
+	`too_big' optimized out when store_enc starts using 64 bit offsets.
+
 2002-05-20  Ognyan Kulev <ogi@fmi.uni-sofia.bg>
 
 	* Makefile: Move inclusion of ../Makeconf before using $(srcdir).
