@@ -24,19 +24,19 @@ diskfs_S_file_getlinknode (struct protid *cred,
 			   file_t *port,
 			   mach_msg_type_name_t *portpoly)
 {
-  struct inode *np;
+  struct node *np;
 
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
-  if (np->i_number == diskfs_root_node_number)
+  if (np == diskfs_root_node)
     return EBUSY;
   
   /* XXX -- this is wrong; port management code for protids
      only allows a port to be given out once; we need to
      send a new protid unfortunately. */
-  *port = cred->fspt.pi.port;
+  *port = cred->pi.port;
   *portpoly = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
