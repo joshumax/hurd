@@ -30,11 +30,10 @@ See `tasks', the exported task list.
 * Conform to coding standards (esp. CFLAGS setting)
 * Internationalization !
 * Update INSTALL to refer to GNUmach. !!!
+* Use hostid in /etc/rc and mention it in installation instructions,
+  when suitable sh-utils is released.
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
-
-* Release/config
-** Have floppy nsswitch.conf use default feature when glibc 2.1 is in use.
 
 * Libraries
 
@@ -144,7 +143,6 @@ See `tasks', the exported task list.
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
     non-suid. !
 *** add timeouts to all the msg_* calls proc makes. !
-*** proc leaks dead names massively.
 
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
@@ -261,4 +259,15 @@ deeming
   I just saw it happen in make output; there the particular error
   happens only when execvp fails.  -thomas
 ???
+
+* Next release:
+** transparent FTP working
+** our own bootable floppies
+** fdisk
+** cdrom with extensions working
+** libc 2.1
+** Have floppy nsswitch.conf use default feature when glibc 2.1 is in use.
+** proc leaks dead names massively.
+** something is still soaking up wired pages on lengthy compiles
+** password server; eliminate other checkers of passwords
 
