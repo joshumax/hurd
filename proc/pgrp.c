@@ -287,7 +287,7 @@ S_proc_getsidport (struct proc *p,
 				  &p->p_pgrp->pg_session->s_sessionid);
       *sessport = p->p_pgrp->pg_session->s_sessionid;
     }
-  *sessport_type = MACH_MSG_TYPE_MAKE_SEND_ONCE;
+  *sessport_type = MACH_MSG_TYPE_MAKE_SEND;
   return err;
 }
 
