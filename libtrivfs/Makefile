@@ -24,13 +24,13 @@ FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c file-getlinknode.c\
 	file-lock.c file-pathconf.c file-set-trans.c file-statfs.c \
-	file-sync.c file-syncfs.c file-truncate.c file-utimes.c 
+	file-sync.c file-syncfs.c file-truncate.c file-utimes.c file-exec.c
 
 IOSRCS=io-async-icky.c \
 	io-async.c io-duplicate.c io-map.c io-modes-get.c io-modes-off.c \
 	io-modes-on.c io-modes-set.c io-owner-get.c io-owner-mod.c io-read.c \
 	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
-	io-select.c io-stat.c io-stubs.c io-write.c 
+	io-select.c io-stat.c io-stubs.c io-write.c io-version.c
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c
 
@@ -38,11 +38,11 @@ NOTIFYSRCS=nosenders.c notify-stubs.c
 
 INTSRCS=interrupt.c
 
-OTHERSRCS=demuxer.c handle-port.c
+OTHERSRCS=demuxer.c handle-port.c protid-clean.c cntl-clean.c migsupport.c
 
-SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSCS)
+SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
 
-MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o
+MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o
 
 OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
@@ -79,23 +79,32 @@ $(OBJS): trivfs.h $(includedir)/hurd/ports.h
 fs_S.h fsServer.c: $(includedir)/hurd/fs.defs $(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fs.defs \
 	| $(MIGCOM) -sheader fs_S.h -header /dev/null -user /dev/null
+	sed -e 's/fs_server/trivfs_fs_server/' < fsServer.c > tmp.c
+	mv tmp.c fsServer.c
 
 io_S.h ioServer.c: $(includedir)/hurd/io.defs $(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/io.defs \
 	| $(MIGCOM) -sheader io_S.h -header /dev/null -user /dev/null
+	sed -e 's/io_server/trivfs_io_server/' < ioServer.c > tmp.c
+	mv tmp.c ioServer.c
 
 fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
 		$(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
+	sed -e 's/fsys_server/trivfs_fsys_server/' < fsysServer.c > tmp.c
+	mv tmp.c fsysServer.c
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/notify.defs \
+	$(CPP) $(CPPFLAGS) $(includedir)/mach/notify.defs \
 	| $(MIGCOM) -prefix trivfs_ \
 		 -sheader notify_S.h -header /dev/null -user /dev/null
+	sed -e 's/notify_server/trivfs_notify_server/' < notifyServer.c > tmp.c
+	mv tmp.c notifyServer.c
 
 interrupt_S.h interruptServer.c: $(includedir)/hurd/interrupt.defs \
 		$(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/interrupt.defs \
 	| $(MIGCOM) -sheader interrupt_S.h -header /dev/null -user /dev/null
-
+	sed -e 's/interrupt_server/trivfs_interrupt_server/' < interruptServer.c > tmp.c
+	mv tmp.c interruptServer.c
