@@ -1,11 +1,11 @@
 /* Definitions for inclusion in MiG files
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1991, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -19,5 +19,5 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-struct idblock *convert_auth_to_idblock (auth_t);
+struct apt *convert_auth_to_idblock (auth_t);
 
