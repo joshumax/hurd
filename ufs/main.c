@@ -83,7 +83,9 @@ main (int argc, char **argv)
     }
 
   /* Initialize the diskfs library.  Must come before any other diskfs call. */
-  diskfs_init_diskfs ();
+  err = diskfs_init_diskfs ();
+  if (err)
+    error (4, err, "init");
 
   err = diskfs_device_open ();
   if (err)
