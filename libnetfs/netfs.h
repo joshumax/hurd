@@ -265,25 +265,42 @@ void netfs_node_norefs (struct node *np);
 
 error_t netfs_get_dirents (struct netcred *, struct node *, int, int, char **,
 			   mach_msg_type_number_t *, vm_size_t, int *);
+
+/* Option parsing */
 
-/* The user may define this function, in which case it is called when the the
-   filesystem receives a set-options request.  ARGC and ARGV are the
-   arguments given, and STANDARD_ARGP is a pointer to a struct argp
-   containing the info necessary to parse `standard' netfs runtime options.
-   The user may chain this onto the end of his own argp structure and call
-   argp_parse, or ignore it completely (or indeed, just call argp_parse on it
-   -- which is the behavior of the default implementation of this function.
-   EINVAL is returned if an unknown option is encountered.  */
-error_t netfs_parse_runtime_options (int argc, char **argv,
-				     const struct argp *standard_argp);
+/* Parse and execute the runtime options in ARGZ & ARGZ_LEN.  EINVAL is
+   returned if some option is unrecognized.  The default definition of this
+   routine will parse them using NETFS_RUNTIME_ARGP, which see.  */
+error_t netfs_set_options (char *argz, size_t argz_len);
 
-/* The user may define this function, in which case it is called when the the
-   filesystem receives a get-options request.  ARGZ & ARGZ_LEN will contain
-   information on `standard' netfs options; the user may extend them
-   (probably by using argz_add), or ignore them, in which case case ARGZ
-   should be freed, as it is malloced.  The default implementation simply
-   leaves ARGZ & ARGZ_LEN unmodified and returns sucess (0).  */
-error_t netfs_unparse_runtime_options (char **argz, size_t *argz_len);
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage.  The default definition of this routine
+   simply initializes *ARGZ and *ARGZ_LEN to 0 and calls
+   netfs_append_std_options.  */
+error_t netfs_get_options (char **argz, size_t *argz_len);
+
+/* If this is defined or set to a pointer to an argp structure, it will be
+   used by the default netfs_set_options to handle runtime option parsing.
+   The default definition is initialized to a pointer to
+   NETFS_STD_RUNTIME_ARGP.  Setting this variable is the usual way to add
+   option parsing to a program using libnetfs.  */
+extern struct argp *netfs_runtime_argp;
+
+/* An argp for the standard netfs runtime options.  The default definition
+   of NETFS_RUNTIME_ARGP points to this, although if the user redefines
+   that, he may chain this onto his argp as well.  */
+extern const struct argp netfs_std_runtime_argp;
+
+/* An argp structure for the standard netfs command line arguments.  The
+   user may call argp_parse on this to parse the command line, chain it onto
+   the end of his own argp structure, or ignore it completely.  */
+extern const struct argp netfs_std_startup_argp;
+
+/* *Appends* to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
+   netfs option state (note that unlike netfs_get_options, ARGZ & ARGZ_LEN
+   must already have a sane value).  */
+error_t netfs_append_std_options (char **argz, size_t *argz_len);
 
 /* Definitions provided by netfs. */
 struct node *netfs_make_node (struct netnode *);
@@ -303,21 +320,6 @@ void netfs_release_protid (void *);
 void netfs_release_peropen (struct peropen *);
 int netfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 error_t netfs_shutdown (int);
-
-/* Parse and execute the runtime options in ARGC and ARGV.  EINVAL is
-   returned if some option is unrecognized.  */
-error_t netfs_set_options (int argc, char **argv);
-
-/* Return an argz string describing the current options.  Fill *ARGZ
-   with a pointer to newly malloced storage holding the list and *LEN
-   to the length of that storage. */
-error_t netfs_get_options (char **argz, unsigned *argz_len);
-
-/* A pointer to an argp structure for the standard netfs command line
-   arguments.  The user may call argp_parse on this to parse the command
-   line, chain it onto the end of his own argp structure, or ignore it
-   completely.  */
-extern const struct argp *netfs_startup_argp;
 
 extern struct port_class *netfs_protid_class;
 extern struct port_class *netfs_control_class;
