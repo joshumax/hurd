@@ -53,15 +53,18 @@ S_proc_setmsgport (struct proc *p,
     prociterate (check_message_return, p);
   p->p_checkmsghangs = 0;
 
-  /* init is single-threaded.  Reply to it before we expect it
-     to service requests.  */
-  proc_setmsgport_reply (reply, replytype, 0, p->p_msgport);
-
   if (p == startup_proc)
-    startup_essential_task (msgport, mach_task_self (), MACH_PORT_NULL,
-			    "proc", master_host_port);
-      
-  return MIG_NO_REPLY;
+    {
+      /* init is single-threaded.  Reply to it before we expect it
+	 to service requests.  */
+      proc_setmsgport_reply (reply, replytype, 0, *oldmsgport);
+      mach_port_deallocate (mach_task_self (), *oldmsgport);
+      startup_essential_task (msgport, mach_task_self (), MACH_PORT_NULL,
+			      "proc", master_host_port);
+      return MIG_NO_REPLY;
+    }
+  else
+    return 0;
 }
 
 /* Check to see if process P is blocked trying to get the message port of 
