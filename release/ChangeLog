@@ -1,3 +1,13 @@
+1997-07-07  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfsimage.sh: Add support for dependency generation.
+	* Makefile (floppy-copy, scripts): New variables.
+	(DIST_FILES): Use them.
+	(boot-floppies): New rule.
+	(%.ext2.gz, %.ext2): New rules.
+	[$(no_deps) != t]: Include boot floppy dependency files (.f_d).
+	(%.ext2.f_d %.ext2.gz.f_d): New rule for generating floppy dep files.
+
 1997-07-03  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rfloppy.copy: Remove bin/ps, lib/libps.so, sbin/fsck.ufs, & sbin/libnss_db*.
