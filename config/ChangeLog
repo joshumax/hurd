@@ -1,3 +1,18 @@
+Thu Sep 19 16:56:52 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (install): Depend on installation directories directly;
+	don't make installed files depend on the directory.
+
+Tue Sep 17 16:29:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile ($(installed_logins), $(installed_rootdots),
+ 	$(installed_conf): Depend on FORCE instead of /dev/null.
+	(foo): Deleted target.
+	(LINKEDCONFFILES, installed_links): Deleted vars.
+	($(sysconfdir)/rc): Deleted target.
+	($(installed_links)): Deleted target.
+	(install): Don't depend on $(installed_links).
+
 Tue Sep 10 13:53:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile ($(installed_conf)): Depend on $(sysconfdir).

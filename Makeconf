@@ -138,15 +138,14 @@ BUGADDR_REF = -uargp_program_bug_address
 # Installation
 ifeq ($(doinst),one)
 all: $(target)
-install: $(installationdir)/$(target)
-$(installationdir)/$(target): $(target) $(installationdir)
+install: $(installationdir) $(installationdir)/$(target) 
+$(installationdir)/$(target): $(target)
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 endif
 
 ifeq ($(doinst),many)
 all: $(targets)
-install: $(addprefix $(installationdir)/,$(targets))
-$(addprefix $(installationdir)/,$(targets)): $(installationdir)
+install: $(installationdir) $(addprefix $(installationdir)/,$(targets))
 $(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 endif
@@ -155,9 +154,9 @@ ifeq ($(makemode),library)
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
+install: $(libdir) $(includedir)/$(installhdrsubdir) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
 
-install-headers: $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
+install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
 
 $(includedir)/$(installhdrsubdir): $(includedir)
 	$(MKINSTALLDIRS) $@
@@ -176,13 +175,11 @@ $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
 
-$(libdir)/$(libname).a: $(libname).a $(libdir)
+$(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
 	$(RANLIB) $(libdir)/$(libname).a
-$(libdir)/$(libname).so: $(libname).so $(libdir)
+$(libdir)/$(libname).so: $(libname).so
 	$(INSTALL_DATA) $(libname).so $(libdir)/$(libname).so
-
-$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)
 
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@

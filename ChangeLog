@@ -1,3 +1,8 @@
+Thu Sep 19 16:53:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (install) [all variants]: Depend on installation
+	directory directly; don't make installed file depend on it.
+
 Thu Sep 12 15:45:34 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (include $(addsuffix .d,$(subdirs))): New directive to

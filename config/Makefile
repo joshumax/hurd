@@ -35,31 +35,22 @@ installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
 ROOTDOTS = .bash_login .bashrc .profile
 installed_rootdots = $(addprefix $(prefix)/root/,$(ROOTDOTS))
 
-# Mere symlinks are installed for these
-LINKEDCONFFILES = rc
-installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
-
 DIST_FILES=$(SYSCONFFILES) \
 	$(addprefix login-,$(LOGINDOTS)) \
 	$(addprefix root-,$(ROOTDOTS))
 
-foo=$(shell touch /dev/null)
+FORCE:
 
 ifeq ($(override_conf),t)
-$(installed_rootdots): /dev/null
-$(installed_conf): /dev/null
+$(installed_rootdots): FORCE
+$(installed_conf): FORCE
 endif
 
-$(installed_logins): /dev/null
+$(installed_logins): FORCE
 
 include ../Makeconf
 
-install: $(installed_conf) $(installed_links) $(installed_logins) \
-	$(installed_rootdots)
-
-$(installed_rootdots): $(prefix)/root
-$(installed_logins): $(sysconfdir)/login
-$(installed_links) $(installed_conf): $(sysconfdir)
+install: $(prefix)/root $(sysconfdir) $(sysconfdir/login $(installed_conf) $(installed_logins) $(installed_rootdots)
 
 $(prefix)/root $(sysconfdir)/login: %:
 	mkdir -p $@
@@ -73,5 +64,3 @@ $(installed_logins): $(sysconfdir)/login/%: login-%
 $(installed_conf): $(sysconfdir)/%: %
 	$(INSTALL_DATA) $< $(sysconfdir)/$*
 
-$(sysconfdir)/rc:
-	ln -s ../libexec/rc $(sysconfdir)/rc

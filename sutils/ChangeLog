@@ -1,3 +1,8 @@
+Thu Sep 19 16:58:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (install): Depend on installation directory directly;
+	don't make installed files depend on it.
+
 Tue Sep 17 12:36:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile ($(prefix)/dev/MAKEDEV): Depend on $(prefix)/dev.
