@@ -192,8 +192,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   if (err)
     goto out;
 
-  diskfs_enter_cache (tdp, fnp, toname);
-
   /* 4: Remove the entry in fdp. */
   ds = buf;
   mutex_unlock (&fnp->lock);
