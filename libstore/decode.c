@@ -1,6 +1,6 @@
 /* Store wire decoding
 
-   Copyright (C) 1996,97,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -174,10 +174,15 @@ store_decode (struct store_enc *enc, const struct store_class *const *classes,
     /* The first int should always be the type.  */
     return EINVAL;
 
-  if (! classes)
-    classes = store_std_classes;
+  if (enc->ints[enc->cur_int] == STORAGE_NETWORK)
+    /* This is a special case because store classes supporting
+       individual URL types will also use STORAGE_NETWORK,
+       and we want the generic dispatcher to come first.  */
+    return store_url_decode (enc, classes, store);
 
-  for (cl = classes; *classes; cl ++)
+  for (cl = classes ?: __start_store_std_classes;
+       classes ? *cl != 0 : cl < __stop_store_std_classes;
+       ++cl)
     if ((*cl)->id == enc->ints[enc->cur_int])
       {
 	if ((*cl)->decode)
@@ -185,6 +190,14 @@ store_decode (struct store_enc *enc, const struct store_class *const *classes,
 	else
 	  return EOPNOTSUPP;
       }
+
+# pragma weak store_module_decode
+  if (! classes && store_module_decode)
+    {
+      error_t err = store_module_decode (enc, classes, store);
+      if (err != ENOENT)
+	return err;
+    }
 
   return EINVAL;
 }
