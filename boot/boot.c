@@ -233,7 +233,8 @@ load_image (task_t t,
 	    vm_size_t offs = ph->p_offset & (ph->p_align - 1);
 	    vm_size_t bufsz = round_page (ph->p_filesz + offs);
 
-	    vm_allocate (mach_task_self (), &buf, bufsz, 1);
+	    buf = (vm_address_t) mmap (0, bufsz, 
+				       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
 	    lseek (fd, ph->p_offset, SEEK_SET);
 	    read (fd, (void *)(buf + offs), ph->p_filesz);
@@ -267,7 +268,7 @@ load_image (task_t t,
 
       amount = headercruft + hdr.a.a_text + hdr.a.a_data;
       rndamount = round_page (amount);
-      vm_allocate (mach_task_self (), (u_int *)&buf, rndamount, 1);
+      buf = mmap (0, rndamount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       lseek (fd, sizeof hdr.a - headercruft, SEEK_SET);
       read (fd, buf, amount);
       vm_allocate (t, &base, rndamount, 0);
@@ -380,8 +381,8 @@ boot_script_exec_cmd (mach_port_t task, char *path, int argc,
   thread_set_state (thread, i386_THREAD_STATE,
 		    (thread_state_t) &regs, reg_size);
   arg_pos = (void *) regs.uesp;
-  vm_allocate (mach_task_self (), (vm_address_t *) &args,
-	       stack_end - trunc_page ((vm_offset_t) arg_pos), TRUE);
+  args = mmap (0, stack_end - trunc_page ((vm_offset_t) arg_pos),
+	       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   str_start = ((vm_address_t) arg_pos
 	       + (argc + 2) * sizeof (char *) + sizeof (integer_t));
   p = args + ((vm_address_t) arg_pos & (vm_page_size - 1));
@@ -758,10 +759,9 @@ set_mach_stack_args (task_t user_task,
 	    arg_page_size = (vm_size_t)(round_page(u_arg_start + arg_len)
 					- u_arg_page_start);
 
-	    vm_allocate(mach_task_self(),
-				 &k_arg_page_start,
-				 (vm_size_t)arg_page_size,
-				 TRUE);
+	    k_arg_page_start = (vm_address_t) mmap (0, arg_page_size, 
+						    PROT_READ|PROT_WRITE,
+						    MAP_ANON, 0, 0);
 
 	    /*
 	     * Set up addresses corresponding to user pointers
@@ -920,7 +920,7 @@ read_reply ()
   spin_unlock (&queuelock);
 
   if (qr->type == DEV_READ)
-    vm_allocate (mach_task_self (), (vm_address_t *)&buf, qr->amount, 1);
+    buf = mmap (0, qr->amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   else
     buf = alloca (qr->amount);
   amtread = read (0, buf, qr->amount);
@@ -1186,7 +1186,8 @@ ds_device_read (device_t device,
       ioctl (0, FIONREAD, &avail);
       if (avail)
 	{
-	  vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
+	  *data = (pointer_t) mmap (0, bytes_wanted, PROT_READ|PROT_WRITE,
+				    MAP_ANON, 0, 0);
 	  *datalen = read (0, *data, bytes_wanted);
 	  unlock_readlock ();
 	  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -1506,7 +1507,8 @@ S_io_read (mach_port_t object,
   if (avail)
     {
       if (amount > *datalen)
-	vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
+	*data = (pointer_t) mmap (0, amount, PROT_READ|PROT_WRITE,
+				  MAP_ANON, 0, 0);
       *datalen = read (0, *data, amount);
       unlock_readlock ();
       return *datalen == -1 ? errno : 0;

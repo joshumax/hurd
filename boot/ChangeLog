@@ -2,6 +2,15 @@
 
 	* boot.c: Add #include <sys/mman.h> for munmap decl.
 
+1999-07-06  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* boot.c (load_image): Use mmap instead of vm_allocate, when
+	allocating in mach_task_self ().
+	(boot_script_exec_cmd): Likewise.
+	(set_mach_stack_args): Likewise.
+	(read_reply): Likewise.
+	(S_io_read): Likewise.
+
 Mon Jul  5 20:04:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* boot.c (load_image): Fix typo in cast.  Reported by Yamashita
