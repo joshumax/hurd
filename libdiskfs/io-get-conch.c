@@ -23,7 +23,6 @@ error_t
 S_io_get_conch (struct protid *cred)
 {
   struct node *np;
-  int error = 0;
   
   if (!cred)
     return EOPNOTSUPP;
