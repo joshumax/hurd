@@ -1,5 +1,5 @@
 /* Message port manipulations
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,14 +28,9 @@
 void
 check_message_return (struct proc *p, void *availpaddr)
 {
-  struct proc *availp = availpaddr;
-  struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
-  
-  if (p->p_msgportwait && c->msgp == availp)
+  if (p->p_msgportwait)
     {
-      proc_getmsgport_reply (c->reply_port, c->reply_port_type,
-			     0, availp->p_msgport);
-      c->msgp = 0;
+      condition_broadcast (&p->p_wakeup);
       p->p_msgportwait = 0;
     }
 }
@@ -72,27 +67,11 @@ S_proc_setmsgport (struct proc *p,
 void
 check_message_dying (struct proc *p, struct proc *dyingp)
 {
-  struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
-  
-  if (p->p_msgportwait && c->msgp == dyingp)
+  if (p->p_msgportwait)
     {
-      proc_getmsgport_reply (c->reply_port, c->reply_port_type, ESRCH,
-			     MACH_PORT_NULL);
-      c->msgp = 0;
+      condition_broadcast (&p->p_wakeup);
       p->p_msgportwait = 0;
     }
-}
-
-/* Cause a pending proc_getmsgport operation to immediately return */
-void
-abort_getmsgport (struct proc *p)
-{
-  struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
-  
-  proc_getmsgport_reply (c->reply_port, c->reply_port_type, EINTR,
-			 MACH_PORT_NULL);
-  c->msgp = 0;
-  p->p_msgportwait = 0;
 }
 
 error_t
@@ -107,19 +86,13 @@ S_proc_getmsgport (struct proc *callerp,
   if (!p)
     return ESRCH;
   
-  if (p->p_deadmsg)
+  while (p->p_deadmsg)
     {
-      struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
-      if (callerp->p_msgportwait || callerp->p_waiting)
-	return EBUSY;
-      c->reply_port = reply_port;
-      c->reply_port_type = reply_port_type;
-      c->msgp = p;
-      p->p_checkmsghangs = 1;
       callerp->p_msgportwait = 1;
-      return MIG_NO_REPLY;
+      p->p_checkmsghangs = 1;
+      condition_wait (&callerp->p_wakeup, &global_lock);
     }
-  
+
   *msgport = p->p_msgport;
   return 0;
 }
