@@ -1,5 +1,8 @@
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* dir-lookup.c (trivfs_S_dir_lookup): Duplicate CRED->user to pass it
+	to trivfs_open.  Add ref to CRED->realnode when used by trivfs_open.
+
 	* trivfs.h (trivfs_open_hook): New variable.
 	* fsys-getroot.c (trivfs_S_fsys_getroot): Use it.
 
