@@ -36,6 +36,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/term.h>
 #include <paths.h>
 #include <sys/wait.h>
+#include <hurd/msg_server.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -129,7 +130,7 @@ reboot_mach (int flags)
     {
       printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
       fflush (stdout);
-      while (errno = host_reboot (host_priv, flags))
+      while ((errno = host_reboot (host_priv, flags)))
 	perror ("host_reboot");
       for (;;);
     }
@@ -551,8 +552,8 @@ launch_core_servers (void)
     mach_port_deallocate (mach_task_self (), old);
 
   /* Give the bootstrap FS its proc and auth ports.  */
-  if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
-			 authserver))
+  errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND, authserver);
+  if (errno)
     perror ("fsys_init");	/* Not necessarily fatal.  */
 }
 
