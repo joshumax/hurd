@@ -1,3 +1,12 @@
+1999-02-20  Mark Kettenis  <kettenis@gnu.org>
+
+	* password.c: New file.
+	* Makefile (targets): Add password.
+	(SRCS): Add password.c.
+	(OBJS): Add passwordServer.o.
+	(password-LDLIBS): New variable.
+	Use dependencies identical to those for crash.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fifo.c (open_hook: WAIT): Add braces to silence gcc warning.

@@ -18,19 +18,21 @@
 dir := trans
 makemode := servers
 
-targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash
+targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash password
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
-	crash.c firmlink.c
-OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
+	crash.c firmlink.c password.c
+OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o
 HURDLIBS=ports trivfs threads fshelp pipe ihash shouldbeinlibc
+password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
 
 symlink magic: fsysServer.o
 ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o
+password: passwordServer.o
 
-crash: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
+crash password: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a ../libports/libports.a
 null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
