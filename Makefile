@@ -23,7 +23,7 @@ include Makeconf
 lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
 	      libthreads 
 prog-subdirs = auth boot exec fstests init.trim mkbootfs \
-	       proc term ufs pflocal pipes dev.trim utils trans fsck
+	       proc term ufs pflocal pipes dev.trim utils trans fsck bsdfsck
 other-subdirs = hurd doc init tmpfs dev ext2fs 
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = ext2fs libnetserv

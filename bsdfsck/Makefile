@@ -15,7 +15,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := fsck
+dir := bsdfsck
 makemode := utility
 
 SRCS = dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
@@ -23,7 +23,7 @@ SRCS = dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
 OBJS = dir.o inode.o main.o pass1.o pass1b.o pass2.o pass3.o pass4.o \
 	pass5.o setup.o utilities.o tables.o # preen.o
 LCLHDRS = fsck.h
-target = fsck
+target = bsdfsck
 
 include ../Makeconf
 
