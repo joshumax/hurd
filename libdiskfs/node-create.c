@@ -1,5 +1,5 @@
 /* Making new files
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -101,6 +101,8 @@ diskfs_create_node (struct node *dir,
 	  np->dn_set_ctime = 1;
 	  diskfs_nput (np);
 	}
+      else
+	diskfs_enter_cache (dir, np, name);
     }
   return err;
 }
