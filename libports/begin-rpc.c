@@ -71,6 +71,7 @@ ports_begin_rpc (void *portstruct, struct rpc_info *info)
   /* Record that that an RPC is in progress */
   info->thread = hurd_thread_self ();
   info->next = pi->current_rpcs;
+  info->notifies = 0;
   if (pi->current_rpcs)
     pi->current_rpcs->prevp = &info->next;
   info->prevp = &pi->current_rpcs;
