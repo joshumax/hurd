@@ -11,13 +11,7 @@
 # Every makefile should define
 # SRCS (all actual source code)
 # LCLHDRS (all source headers in this directory [NOT MiG created])
-# REMHDRS (all Hurd headers in other directories [NOT .defs files])
-
-# Types `server', `utility', and `library' should define
-# OBJS (all .o files used to produce the target).
-
-# Types `server', and `utility', should define
-# HURDLIBS (all Hurd libraries used, omitting the dirname and the .a.)
+# OBJS (all .o files used to produce some target).
 
 # Types `server' and `utility' should define
 # OTHERLIBS (all other libraries used)
@@ -25,14 +19,13 @@
 
 # Types `servers' and `utilities' should define
 # targets (the names of all the programs built)
-# foo-HURDLIBS (for each target FOO)
 # special-targets (targets which should not be built the normal way
 # and have their own rules)
 
 # Type `library' should define
 # libname (the name of the library, without .a.)
 # installhdrs (header files that should be installed in /include)
-
+# installhdrsubdir (the subdirectory they should go in, default `hurd')
 
 # Put this first so it's the default
 all:
@@ -87,6 +80,9 @@ endif
 ifeq ($(makemode),library)
  clean := yes
  cleantarg := $(libname).a $(libname).so
+ ifndef installhdrsubdir
+  installhdrsubdir = hurd
+ endif
 endif
 
 
@@ -109,19 +105,19 @@ ifeq ($(doinst),one)
 all: $(target)
 install: $(installationdir)/$(target)
 $(installationdir)/$(target): $(target)
-	$(INSTALL_BIN) $< $@
+	$(INSTALL_PROGRAM) $< $@
 endif
 
 ifeq ($(doinst),many)
 all: $(targets)
 install: $(addprefix $(installationdir)/,$(targets))
 $(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
-	$(INSTALL_BIN) $< $@
+	$(INSTALL_PROGRAM) $< $@
 endif
 
 ifeq ($(makemode),library)
 all: $(libname).a $(libname).so
-install: $(libdir)/$(libname).a $(libdir)/$(libname).so $(addprefix $(includedir)/hurd/,$(installhdrs))
+install: $(libdir)/$(libname).a $(libdir)/$(libname).so $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
@@ -129,7 +125,7 @@ $(libdir)/$(libname).a: $(libname).a
 $(libdir)/$(libname).so: $(libname).so
 	$(INSTALL_DATA) $(libname).so $(libdir)/$(libname).so
 
-$(addprefix $(includedir)/hurd/,$(installhdrs)): $(includedir)/hurd/%: %
+$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
 
 endif
@@ -139,45 +135,16 @@ install:
 # Always, until bugs are fixed.
 LDFLAGS += -static
 
-ifeq ($(doinst),many)
-HURDLIBS=$(foreach targ,$(targets),$($(targ)-HURDLIBS))
-endif
-
-# We use recursively expanded variables that reference the automatic
-# variables in the link rules.  For now, you have to say -static
-# in $(LDFLAGS); it cannot be in a per-target LDFLAGS.
-#ifeq ($(doinst),many)
-#  HURDLIBS-libs = $(foreach lib,$($@-HURDLIBS), -L../$(lib)  \
-#			$(patsubst lib%,-l%,$(lib)))
-#else
-#  HURDLIBS-libs = $(foreach lib,$(HURDLIBS), -L../$(lib)  \
-#			$(patsubst lib%,-l%,$(lib)))
-#endif
-HURDLIBS-libs = $(HURDLIBS-files)
-
-# This variable is used for the default library-building rule
-# and for dependencies.  For the former, this is always adequate.
-# But for the latter, there is no automatic way, so our includer
-# will have to construct the dependency list by hand.
-ifeq ($(filter-out -static,$(LDFLAGS)),$(LDFLAGS))
-  HURDLIBS-files = $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).so)
-else
-  HURDLIBS-files = $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
-endif
-
 # Building the target
-ifeq ($(doinst),one)
-$(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) '-Wl,-(' \
-	$(OBJS) $(HURDLIBS-libs) $(OTHERLIBS) $(libc) '-Wl,-)'
+ifeq ($(doinst),many)
+ target = $(filter-out $(special-targets),$(targets))
+ _objs = %.o
+else
+ _objs = $(OBJS)
 endif
 
-ifeq ($(doinst),many)
-$(filter-out $(special-targets),$(targets)): %:
-	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) \
-	-o $@ '-Wl,-(' $(filter-out $(HURDLIBS-files),$+) \
-	$(HURDLIBS-libs) $($@-OTHERLIBS) $(OTHERLIBS) $(libc) '-Wl,-)'
-endif
+$(target): %: $(_objs) $(OTHERLIBS)
+	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),-Wl,-L$(dir $(lib)) $(patsubst lib%,-l%,$(notdir $(basename $(lib))))) '-Wl,-)'
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
@@ -203,9 +170,8 @@ endif
 
 # TAGS files
 ifneq ($(dir),.)
-TAGS: $(SRCS) $(LCLHDRS) $(REMHDRS) $(OTHERTAGS)
-	etags -o $@ $(HURDLIBS:-i ../%/TAGS) $(SRCS) \
-	      $(LCLHDRS) $(REMHDRS) $(OTHERTAGS)
+TAGS: $(SRCS) $(LCLHDRS) $(OTHERTAGS)
+	etags -o $@ $(SRCS) $(LCLHDRS) $(OTHERTAGS)
 endif
 
 
@@ -225,10 +191,11 @@ relink:
 
 # Subdependencies
 
-# Building Hurd libraries
-$(sort $(HURDLIBS-files)): FORCE
-	$(MAKE) -C $(dir $@) $(notdir $@)
-
+# Building libraries from other directories.  We force both libraries to be
+# built if either is, because it will use the appropriate one even if the other
+# is specified in someone's dependency list. 
+../%.a ../%.so: FORCE
+	$(MAKE) -C $(dir $@) $(notdir $(@:.so=.a)) $(notdir $(@:.a=.so))
 
 # Default rule to build PIC object files.
 %_pic.o: %.c
@@ -283,7 +250,7 @@ include $(subst Server.o,.migsh_d,$(filter %Server.o,$(OBJS))) /dev/null
 include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
 # For each .o file we need a .d file.
-include $(subst .o,.d,$(OBJS)) /dev/null
+include $(OBJS:.o=.d) /dev/null
 
 endif
 
@@ -323,7 +290,7 @@ endif
 %.d: %.S
 	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $< | \
 	sed -e 's/*\.o:/$*.o $@:/' > $@)
-	
+
 # .s files don't go through the preprocessor, so we do this
 # This rule must come *after* the genuine ones above, so that
 # make doesn't build a .s file and then make an empty dependency
