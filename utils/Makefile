@@ -18,17 +18,17 @@
 dir := utils
 makemode := utilities
 
-targets = shd ps settrans showtrans syncfs su mount fsysopts \
+targets = shd ps settrans showtrans syncfs su fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread ping msgport rpctrace
-special-targets = mount loginpr sush uptime
+	storeread ping msgport rpctrace mount
+special-targets = loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
-	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
+	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c \
-	rpctrace.c
+	rpctrace.c mount.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
@@ -66,9 +66,15 @@ ping: ../libthreads/libthreads.a
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth freeauth rmauth setauth su unsu ftpcp ftpdir storeread \
-  storecat msgport: \
+  storecat msgport mount: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
 rpctrace: ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
+
+mount: ../sutils/fstab.o ../sutils/clookup.o \
+       $(foreach L,fshelp ports,../lib$L/lib$L.a)
+../sutils/fstab.o ../sutils/clookup.o: FORCE
+	$(MAKE) -C $(@D) $(@F)
+FORCE:
