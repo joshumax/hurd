@@ -1,5 +1,6 @@
-
-#   Copyright (C) 1994,95,96,99 Free Software Foundation, Inc.
+# Makefile for ufs
+#
+#   Copyright (C) 1994,95,96,99,2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,6 +25,6 @@ SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
 
 include ../Makeconf

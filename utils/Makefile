@@ -32,7 +32,7 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
-HURDLIBS = ps ihash store fshelp ports threads ftpconn shouldbeinlibc
+HURDLIBS = ps ihash store fshelp threads ports ftpconn shouldbeinlibc
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
