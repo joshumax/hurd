@@ -1,3 +1,9 @@
+Mon Sep 30 15:45:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (OPT_RSIZE): Changed to 'R'.
+	(OPT_WSIZE): Changed to 'W'.
+	(doc): Add general description.
+
 Wed Sep 18 13:03:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (netfs_append_args): Renamed from netfs_get_options.

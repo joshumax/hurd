@@ -1,3 +1,7 @@
+Mon Sep 30 15:40:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Set *PORTS_TYPE.
+
 Thu Sep 19 17:57:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add store.
