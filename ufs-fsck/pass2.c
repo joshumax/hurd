@@ -18,16 +18,27 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
 
 /* Verify root inode's allocation and check all directories for
    viability.  Set DIRSORTED array fully and check to make sure
    each directory has a correct . and .. in it.  */
+void
 pass2 ()
 {
   int nd;
-  int change;
   struct dirinfo *dnp;
   struct dinode dino;
+
+  /* Return negative, zero, or positive according to the
+     ordering of the first data block of **DNP1 and **DNP2. */
+  int
+  sortfunc (const void *ptr1, const void *ptr2)
+    {
+      struct dirinfo * const *dnp1 = ptr1;
+      struct dirinfo * const *dnp2 = ptr2;
+      return ((*dnp1)->i_blks[0] - (*dnp2)->i_blks[0]);
+    }
 
   /* Called for each DIRBLKSIZ chunk of the directory.
      BUF is the data of the directory block.  Return
@@ -38,10 +49,9 @@ pass2 ()
     {
       struct directory_entry *dp;
       int mod = 0;
-      u_char namlen = DIRECT_NAMLEN (dp);
-      u_char type = DIRECT_TYPE (dp);
+      u_char namlen;
+      char type;
       int i;
-
 
       for (dp = buf; (void *)dp - buf < DIRBLKSIZ;
 	   dp = (struct directory_entry *) ((void *)dp + dp->d_reclen))
@@ -80,13 +90,13 @@ pass2 ()
 	    continue;
 	  
 	  /* Check INO */
-	  if (inodetype[dp->d_ino] == UNALLOC)
+	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
 	      fileerror (dnp->i_number, dp->d_ino, "UNALLOCATED");
 	      if (reply ("REMOVE"))
 		{
 		  dp->d_ino = 0;
-		  mode = 1;
+		  mod = 1;
 		  continue;
 		}
 	    }
@@ -100,7 +110,7 @@ pass2 ()
 		{
 		  /* Mark this entry clear */
 		  dp->d_ino = 0;
-		  mod = 1
+		  mod = 1;
 		}
 	    }		  
 	  else
@@ -134,12 +144,13 @@ pass2 ()
 	    continue;
 
 	  /* Check TYPE */
+	  type = DIRECT_TYPE (dp);
 	  if (type != DT_UNKNOWN && type != typemap[dp->d_ino])
 	    {
 	      pfatal ("INCORRECT NODE TYPE IN DIRECTORY");
 	      if (reply ("FIX"))
 		{
-		  assert (direct_symlink_extension);
+		  errexit ("NODE TYPE FOUND WHEN NOT SUPPORTED");
 		  dp->d_type = typemap[dp->d_ino];
 		  mod = 1;
 		}
@@ -149,17 +160,18 @@ pass2 ()
 	     that's too much trouble right now. */
 	  
 	  /* Account for the inode in the linkfound map */
-	  if (inodestate[number] != UNALLOC)
+	  if (inodestate[dp->d_ino] != UNALLOC)
 	    linkfound[dp->d_ino]++;
 	  
 	  /* If this is `.' or `..' then note the value for 
 	     later examination.  */
 	  if (dp->d_namlen == 1 && dp->d_name[0] == '.')
-	    dnp->d_dot = dp->d_ino;
+	    dnp->i_dot = dp->d_ino;
 	  if (dp->d_namlen == 2
 	      && dp->d_name[0] == '.' && dp->d_name[1] == '.')
-	    dnp->d_dotdot = dp->d_ino;
+	    dnp->i_dotdot = dp->d_ino;
 	}
+      return mod;
     }
 
   /* Called for each filesystem block of the directory.  Load BNO
@@ -172,7 +184,7 @@ pass2 ()
       void *bufp;
       int rewrite;
 
-      readblock (fsbtodb (bno), buf, nfrags * sblock.fs_fsize);
+      readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       rewrite = 0;
       for (bufp = buf; 
 	   bufp - buf < nfrags * sblock->fs_fsize;
@@ -182,22 +194,22 @@ pass2 ()
 	    rewrite = 1;
 	}
       if (rewrite)
-	writeblock (fsbtodb (bno), buf, nfrags * sblock.fs_fsize);
+	writeblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       return 1;
     }
 
-  switch (statemap [ROOTINO])
+  switch (inodestate [ROOTINO])
     {
     default:
-      errexit ("BAD STATE %d FOR ROOT INODE", statemap [ROOTINO]);
+      errexit ("BAD STATE %d FOR ROOT INODE", (int) (inodestate[ROOTINO]));
       
-    case DIR:
+    case DIRECTORY:
       break;
 
     case UNALLOC:
       pfatal ("ROOT INODE UNALLOCATED");
       if (!reply ("ALLOCATE"))
-	errexit ("");
+	errexit ("\n");
       if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
 	errexit ("CANNOT ALLOCATE ROOT INODE\n");
       break;
@@ -214,12 +226,12 @@ pass2 ()
       pfatal ("DUPLICATE or BAD BLOCKS IN ROOT INODE");
       if (reply ("REALLOCATE"))
 	{
-	  freeino (ROOINO);
+	  freeino (ROOTINO);
 	  if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
 	    errexit ("CANNOT ALLOCATE ROOT INODE\n");
 	}
       if (reply ("CONTINUE") == 0)
-	errexit ("");
+	errexit ("\n");
       break;
     }
   
@@ -241,16 +253,16 @@ pass2 ()
 	    {
 	      if (preen)
 		printf (" (ADJUSTED)");
-	      getinode (number, &dino);
+	      getinode (dnp->i_number, &dino);
 	      dino.di_size = roundup (dnp->i_isize, DIRBLKSIZ);
-	      write_inode (number, &dino);
+	      write_inode (dnp->i_number, &dino);
 	    }
 	}
       bzero (&dino, sizeof (struct dinode));
       dino.di_size = dnp->i_isize;
       bcopy (dnp->i_blks, dino.di_db, dnp->i_numblks);
       
-      datablocks_iterate (dp, checkdirblock);
+      datablocks_iterate (&dino, checkdirblock);
     }
   
   /* At this point for each directory:
