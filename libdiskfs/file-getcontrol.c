@@ -25,7 +25,8 @@ diskfs_S_file_getcontrol (struct protid *cred,
 			  mach_msg_type_name_t *controltype)
 {
   int error = 0;;
-
+  struct port_info *newpi;
+  
   if (!cred)
     return EOPNOTSUPP;
   
@@ -36,11 +37,12 @@ diskfs_S_file_getcontrol (struct protid *cred,
       spin_lock (&_diskfs_control_lock);
       _diskfs_ncontrol_ports++;
       spin_unlock (&_diskfs_control_lock);
-      *control = ports_get_right (ports_allocate_port
-				  (diskfs_port_bucket, 
-				   sizeof (struct port_info), 
-				   diskfs_control_class));
+      newpi = ports_allocate_port (diskfs_port_bucket,
+				   sizeof (struct port_info),
+				   diskfs_control_class);
+      *control = ports_get_right (newpi);
       *controltype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
     }
 
   return error;
