@@ -1,7 +1,6 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998,1999,2001 Free Software Foundation, Inc.
-   Written by Jose M. Moya <josem@gnu.org>
+   Copyright (C) 1998,99,2001,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -859,7 +858,11 @@ traced_spawn (char **argv, char **envp)
   if (file == MACH_PORT_NULL)
     error (1, errno, "command not found: %s", argv[0]);
 
-  err = task_create (mach_task_self (), 0, &traced_task);
+  err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		     NULL, 0,	/* OSF Mach */
+#endif
+		     0, &traced_task);
   assert_perror (err);
 
   /* Declare the new task to be our child.  This is what a fork does.  */

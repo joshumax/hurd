@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1999 Free Software Foundation
+   Copyright (C) 1994,95,99,2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -92,7 +92,11 @@ run (char **argv, int fd0, int fd1)
       task_t task;
       pid_t pid;
 
-      errno = task_create (mach_task_self (), 0, &task);
+      errno = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+			   NULL, 0,	/* OSF Mach */
+#endif
+			   0, &task);
       if (errno)
 	{
 	  perror ("task_create");
