@@ -1,75 +1,109 @@
-/* Miscellaneous map manipulation routines
-   Copyright (C) 1991, 1992, 1994 Free Software Foundation
-
-This file is part of the GNU Hurd.
-
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
-
-The GNU Hurd is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-/* Slightly modified from UCB by Michael I. Bushnell.  */
-
 /*
- * Copyright (c) 1982, 1986, 1989 Regents of the University of California.
- * All rights reserved.
+ * Copyright (c) 1982, 1986, 1989, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
- * Redistribution is only permitted until one year after the first shipment
- * of 4.4BSD by the Regents.  Otherwise, redistribution and use in source and
- * binary forms are permitted provided that: (1) source distributions retain
- * this entire copyright notice and comment, and (2) distributions including
- * binaries display the following acknowledgement:  This product includes
- * software developed by the University of California, Berkeley and its
- * contributors'' in the documentation or other materials provided with the
- * distribution and in all advertising materials mentioning features or use
- * of this software.  Neither the name of the University nor the names of
- * its contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- * THIS SOFTWARE IS PROVIDED AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- *	@(#)ufs_subr.c	7.13 (Berkeley) 6/28/90
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *	@(#)ffs_subr.c	8.2 (Berkeley) 9/21/93
  */
 
-#include "ufs.h"
-#include "fs.h"
+#include <sys/param.h>
+#include <ufs/ffs/fs.h>
 
+#ifdef KERNEL
+#include <sys/systm.h>
+#include <sys/vnode.h>
+#include <ufs/ffs/ffs_extern.h>
+#include <sys/buf.h>
+#include <ufs/ufs/quota.h>
+#include <ufs/ufs/inode.h>
 
-extern	int around[9];
-extern	int inside[9];
-extern	u_char *fragtbl[];
+/*
+ * Return buffer with the contents of block "offset" from the beginning of
+ * directory "ip".  If "res" is non-zero, fill it in with a pointer to the
+ * remaining space in the directory.
+ */
+int
+ffs_blkatoff(ap)
+	struct vop_blkatoff_args /* {
+		struct vnode *a_vp;
+		off_t a_offset;
+		char **a_res;
+		struct buf **a_bpp;
+	} */ *ap;
+{
+	struct inode *ip;
+	register struct fs *fs;
+	struct buf *bp;
+	daddr_t lbn;
+	int bsize, error;
+
+	ip = VTOI(ap->a_vp);
+	fs = ip->i_fs;
+	lbn = lblkno(fs, ap->a_offset);
+	bsize = blksize(fs, ip, lbn);
+
+	*ap->a_bpp = NULL;
+	if (error = bread(ap->a_vp, lbn, bsize, NOCRED, &bp)) {
+		brelse(bp);
+		return (error);
+	}
+	if (ap->a_res)
+		*ap->a_res = (char *)bp->b_data + blkoff(fs, ap->a_offset);
+	*ap->a_bpp = bp;
+	return (0);
+}
+#endif
 
 /*
  * Update the frsum fields to reflect addition or deletion 
  * of some frags.
  */
 void
-fragacct(int fragmap,
-	 long fraglist[],
-	 int cnt)
+ffs_fragacct(fs, fragmap, fraglist, cnt)
+	struct fs *fs;
+	int fragmap;
+	long fraglist[];
+	int cnt;
 {
 	int inblk;
-	int field, subfield;
-	int siz, pos;
+	register int field, subfield;
+	register int siz, pos;
 
-	inblk = (int)(fragtbl[sblock->fs_frag][fragmap]) << 1;
+	inblk = (int)(fragtbl[fs->fs_frag][fragmap]) << 1;
 	fragmap <<= 1;
-	for (siz = 1; siz < sblock->fs_frag; siz++) {
-		if ((inblk & (1 << (siz + (sblock->fs_frag % NBBY)))) == 0)
+	for (siz = 1; siz < fs->fs_frag; siz++) {
+		if ((inblk & (1 << (siz + (fs->fs_frag % NBBY)))) == 0)
 			continue;
 		field = around[siz];
 		subfield = inside[siz];
-		for (pos = siz; pos <= sblock->fs_frag; pos++) {
+		for (pos = siz; pos <= fs->fs_frag; pos++) {
 			if ((fragmap & field) == subfield) {
 				fraglist[siz] += cnt;
 				pos += siz;
@@ -82,18 +116,54 @@ fragacct(int fragmap,
 	}
 }
 
+#if defined(KERNEL) && defined(DIAGNOSTIC)
+void
+ffs_checkoverlap(bp, ip)
+	struct buf *bp;
+	struct inode *ip;
+{
+	register struct buf *ebp, *ep;
+	register daddr_t start, last;
+	struct vnode *vp;
+
+	ebp = &buf[nbuf];
+	start = bp->b_blkno;
+	last = start + btodb(bp->b_bcount) - 1;
+	for (ep = buf; ep < ebp; ep++) {
+		if (ep == bp || (ep->b_flags & B_INVAL) ||
+		    ep->b_vp == NULLVP)
+			continue;
+		if (VOP_BMAP(ep->b_vp, (daddr_t)0, &vp, (daddr_t)0, NULL))
+			continue;
+		if (vp != ip->i_devvp)
+			continue;
+		/* look for overlap */
+		if (ep->b_bcount == 0 || ep->b_blkno > last ||
+		    ep->b_blkno + btodb(ep->b_bcount) <= start)
+			continue;
+		vprint("Disk overlap", vp);
+		(void)printf("\tstart %d, end %d overlap start %d, end %d\n",
+			start, last, ep->b_blkno,
+			ep->b_blkno + btodb(ep->b_bcount) - 1);
+		panic("Disk buffer overlap");
+	}
+}
+#endif /* DIAGNOSTIC */
+
 /*
  * block operations
  *
  * check if a block is available
  */
 int
-isblock(u_char *cp,
-	daddr_t h)
+ffs_isblock(fs, cp, h)
+	struct fs *fs;
+	unsigned char *cp;
+	daddr_t h;
 {
-	u_char mask;
+	unsigned char mask;
 
-	switch ((int)sblock->fs_frag) {
+	switch ((int)fs->fs_frag) {
 	case 8:
 		return (cp[h] == 0xff);
 	case 4:
@@ -106,7 +176,7 @@ isblock(u_char *cp,
 		mask = 0x01 << (h & 0x7);
 		return ((cp[h >> 3] & mask) == mask);
 	default:
-		assert (0);
+		panic("ffs_isblock");
 	}
 }
 
@@ -114,11 +184,13 @@ isblock(u_char *cp,
  * take a block out of the map
  */
 void
-clrblock(u_char *cp,
-	 daddr_t h)
+ffs_clrblock(fs, cp, h)
+	struct fs *fs;
+	u_char *cp;
+	daddr_t h;
 {
 
-	switch ((int)sblock->fs_frag) {
+	switch ((int)fs->fs_frag) {
 	case 8:
 		cp[h] = 0;
 		return;
@@ -132,7 +204,7 @@ clrblock(u_char *cp,
 		cp[h >> 3] &= ~(0x01 << (h & 0x7));
 		return;
 	default:
-		assert (0);
+		panic("ffs_clrblock");
 	}
 }
 
@@ -140,10 +212,13 @@ clrblock(u_char *cp,
  * put a block into the map
  */
 void
-setblock(u_char *cp,
-	 daddr_t h)
+ffs_setblock(fs, cp, h)
+	struct fs *fs;
+	unsigned char *cp;
+	daddr_t h;
 {
-	switch ((int)sblock->fs_frag) {
+
+	switch ((int)fs->fs_frag) {
 
 	case 8:
 		cp[h] = 0xff;
@@ -158,31 +233,6 @@ setblock(u_char *cp,
 		cp[h >> 3] |= (0x01 << (h & 0x7));
 		return;
 	default:
-		assert (0);
+		panic("ffs_setblock");
 	}
-}
-
-int
-skpc(u_char mask,
-     u_int size,
-     u_char *cp)
-{
-  u_char *end = &cp[size];
-
-  while (cp < end && *cp == mask)
-    cp++;
-  return (end - cp);
-}
-
-int
-scanc(u_int size,
-      u_char *cp,
-      u_char table[],
-      u_char mask)
-{
-	register u_char *end = &cp[size];
-
-	while (cp < end && (table[*cp] & mask) == 0)
-		cp++;
-	return (end - cp);
 }
