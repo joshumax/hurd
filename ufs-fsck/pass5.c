@@ -168,7 +168,7 @@ pass5 ()
       writecg = 0;
       
       if (!cg_chkmagic (cg))
-	pfatal ("CG %d: BAD MAGIC NUMBER\n", c);
+	pfatal ("CG %d: BAD MAGIC NUMBER", c);
       
       /* Compute first and last data block addresses in this group */
       dbase = cgbase (sblock, c);
@@ -422,9 +422,10 @@ pass5 ()
 
   if (sblock->fs_clean == 0 && !fix_denied)
     {
-      if (preen || reply ("MARK FILESYSTEM CLEAN"))
+      pwarn ("FILESYSTEM MODIFIED");
+      if (preen || reply ("MARK CLEAN"))
 	{
-	  pfix ("FILESYSTEM MARKED CLEAN");
+	  pfix ("MARKED CLEAN");
 	  sblock->fs_clean = 1;
 	  writesb = 1;
 	}
