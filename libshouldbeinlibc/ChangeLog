@@ -1,3 +1,8 @@
+Wed Jul 31 15:24:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* wire.c (_start): No longer declared as weak, now that everything
+	is getting recompiled anyway.
+	
 Fri Jul 26 20:57:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* timefmt.c (fmt_past_time): Always use WIDTH+1 as strftime's limit.
