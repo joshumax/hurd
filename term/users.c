@@ -156,7 +156,7 @@ open_hook (struct trivfs_control *cntl,
   assert (! (termstate.c_oflag & OTILDE));
 
   /* Assert DTR if necessary. */
-  if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
+  if (termflags & NO_CARRIER)
     {
       err = (*bottom->assert_dtr) ();
       if (err)
