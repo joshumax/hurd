@@ -43,7 +43,7 @@ struct ftpfs *ftpfs;
 struct ftp_conn_params *ftpfs_ftp_params = 0;
 
 /* customization hooks.  */
-struct ftp_conn_hooks ftpfs_ftp_hooks = { 0 };
+struct ftp_conn_hooks ftpfs_ftp_hooks = { interrupt_check: hurd_check_cancel };
 
 /* The (user-specified) name of the SERVER:FILESYSTEM we're connected too.  */
 char *ftpfs_remote_fs;
