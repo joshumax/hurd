@@ -1,6 +1,6 @@
 /* Hurdish login
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -615,7 +615,7 @@ main(int argc, char *argv[])
     if (ugids.eff_uids.num > 0)
       pw = getpwuid (ugids.eff_uids.ids[0]);	/* Effective uid */
     else if (ugids.avail_uids.num > 0)
-      pw = getpwuid (ugids.eff_uids.ids[0]);	/* Auxiliary uid */
+      pw = getpwuid (ugids.avail_uids.ids[0]);	/* Auxiliary uid */
     else
       /* No user!  Try to used the `not-logged-in' user to set various
 	 parameters.  */

@@ -1,3 +1,8 @@
+1999-02-06  Mark Kettenis  <kettenis@gnu.org>
+
+	* login.c (main): If no effective uid, really use first auxiliary
+	uid to use as password entry to get parameters from.
+	
 1999-01-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* syncfs.c: Replace -a/--asynchronous with -s/--synchronous.
