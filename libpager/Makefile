@@ -35,6 +35,8 @@ DIST_FILES = $(SRCS) Makefile libpager.h priv.h
 CPPFLAGS := -I. $(CPPFLAGS)
 
 all: libpager.a(__.SYMDEF)
+
+libpager.a(__.SYMDEF): $(OBJS)
 	rm -f libpager.a
 	ar r $@ $^
 	ranlib $@
@@ -48,7 +50,7 @@ $(headers)libpager.h: libpager.h
 
 install: $(hurdinst)/lib/libpager.a $(headers)/libports.h
 
-$(OBJS): libpager.h priv.h
+$(OBJS): libpager.h priv.h $(headers)/libports.h
 
 data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
 stubs.o object-init.o object-terminate.o: memory_object.h
