@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include <device/device.h>
+#include <hurd/fsys.h>
 
 mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
@@ -72,8 +73,8 @@ diskfs_init_diskfs (mach_port_t bootstrap)
     {
       _diskfs_ncontrol_ports++;
       err = fsys_startup (bootstrap, 
-			  ports_allocate_port (sizeof (struct port_info), 
-					       PT_CTL),
+			  ports_get_right (ports_allocate_port 
+					   (sizeof (struct port_info), PT_CTL),
 			  MACH_MSG_TYPE_MAKE_SEND,
 			  &realnode);
       if (err)
