@@ -131,7 +131,7 @@ endif
 ifeq ($(doinst),many)
 all: $(targets)
 install: $(targets)
-	for i in $(targets); do; $(INSTALL_BIN) $$i $(installationdir)/$$i; done
+	for i in $(targets) ; do $(INSTALL_BIN) $$i $(installationdir)/$$i ; done
 endif
 
 ifeq ($(makemode),library)
@@ -253,16 +253,10 @@ ht := $(hurdsource)/hurd/hurd_types.defs
 
 
 # Where to find .defs files.
-vpath %.defs $(hurdsource)/hurd:$(includedir)/mach
+vpath %.defs $(hurdsource)/hurd:$(includedir)/mach:$(includedir)/device
 
 # Files generated from the Hurd .defs files depend on hurd_types.defs.
 $(foreach if,$(hurddefs),$(if)_S.h $(if)Server.c $(if)_U.h $(if)User.c): $(ht)
-
-# Server stubs from Mach interfaces.
-machdefs := notify memory_object
-
-# Server stubs from Mach device interfaces.
-devicedefs := device_reply device
 
 FORCE:
 
