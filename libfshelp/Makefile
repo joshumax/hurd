@@ -20,10 +20,10 @@ dir := libfshelp
 include ../Makeconf
 
 SRCS = fsys-startup.c init-trans.c trans-start.c transboot-clean.c \
-	kill-trans.c trans-iter.c 
+	kill-trans.c trans-iter.c lock-acquire.c lock-init.c
 
 OBJS = fsys-startup.o init-trans.o trans-start.o transboot-clean.o \
-	kill-trans.o trans-iter.o
+	kill-trans.o trans-iter.o lock-acquire.o lock-init.o
 
 DIST_FILES = $(SRCS) Makefile trans.h fshelp.h
 
