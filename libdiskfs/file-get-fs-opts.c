@@ -35,7 +35,7 @@ diskfs_S_file_get_fs_options (struct protid *cred,
     return EOPNOTSUPP;
 
   rwlock_reader_lock (&diskfs_fsys_lock);
-  err = _diskfs_get_options (&argz, data_len);
+  err = diskfs_get_options (&argz, data_len);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   if (!err)
