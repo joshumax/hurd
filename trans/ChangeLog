@@ -1,3 +1,15 @@
+2000-01-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* crash.c (enum crash_action): New alternative crash_unspecified (0).
+	(crash_orphans_how): New variable.
+	(S_crash_dump_task): If crash_how != crash_orphans_how, ascertain if
+	the task is an orphan before deciding what to do.
+	(options): New options --action, --orphan-action.
+	Old options now compatability aliases for --action=foo.
+	(parse_opt): Parse them.
+	(doc): New variable.
+	(crash_argp): Use DOC.
+
 1999-12-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* null.c: Support --full/-f option to be /dev/full (ENOSPC writes).
