@@ -1,3 +1,11 @@
+2000-07-25  Mark Kettenis  <kettenis@gnu.org>
+
+	* inhibit-all-rpcs.c (ports_inhibit_all_rpcs): Avoid calling
+	hurd_thread_cancel on the current thread.
+	* inhibit-class-rpcs.c (ports_inhibit_class_rpcs): Likewise.
+	* inhibit-bucket-rpcs.c (ports_inhibit_bucket_rpcs): Likewise.
+	* inhibit-port-rpcs.c (ports_inhibit_port_rpcs): Likewise.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* get-send-right.c: New file.

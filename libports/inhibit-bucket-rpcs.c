@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -41,8 +41,14 @@ ports_inhibit_bucket_rpcs (struct port_bucket *bucket)
 	  struct port_info *pi = portstruct;
 
 	  for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-	    if (hurd_thread_cancel (rpc->thread) == EINTR)
-	      this_one = 1;
+	    {
+	      /* Avoid cancelling the calling thread.  */
+	      if (rpc->thread == hurd_thread_self ())
+		this_one = 1;
+	      else
+		hurd_thread_cancel (rpc->thread);
+	    }
+
 	  return 0;
 	}
 
