@@ -1,3 +1,8 @@
+Sun Sep  8 18:10:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (DIST_FILES): Variable removed.
+	(install, $(prefix)/dev/MAKEDEV): Targets removed.
+
 Fri Jul 19 15:55:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io.c (trivfs_S_file_get_storage_info): Return correct values for
