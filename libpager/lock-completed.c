@@ -62,8 +62,8 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
       }
 
   if (!lr)
-    printf ("orphaned lock_request: offset = %#x; length = %#x\n",
-	    offset, length);
+    printf ("orphaned lock_request: p %#x; offset %#x; length %#x\n",
+	    (int) p, offset, length);
       
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
