@@ -68,6 +68,21 @@ diskfs_S_dir_rename (struct protid *fromcred,
 	}
       err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
 			       tocred);
+      if (diskfs_synchronous)
+	{
+	  mutex_lock (&fdp->lock);
+	  diskfs_file_update (fdp, 1);
+	  mutex_unlock (&fdp->lock);
+	  
+	  mutex_lock (&fnp->lock);
+	  diskfs_file_update (fnp, 1);
+	  mutex_unlock (&fnp->lock);
+
+	  mutex_lock (&tdp->lock);
+	  diskfs_file_update (tdp, 1);
+	  mutex_unlock (&tdp->lock);
+	}
+      
       diskfs_nrele (fnp);
       mutex_unlock (&renamedirlock);
       if (!err)
