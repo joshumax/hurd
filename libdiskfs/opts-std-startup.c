@@ -42,12 +42,13 @@ startup_options[] =
 {
   {"version", 'V'},
 
+  {0,0,0,0, "Boot options:", -2},
   {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
   {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
   {"exec-server-task",   OPT_EXEC_SERVER_TASK,   "PORT"},
   {"bootflags",          OPT_BOOTFLAGS,          "FLAGS"},
 
-  {0, 0, 0, 0}
+  {0}
 };
 
 static error_t
