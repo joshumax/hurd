@@ -47,15 +47,10 @@ int trivfs_support_exec = 0;
    $ cd /src/hurd/libtrivfs
    $ grep -l 'assert.*!trivfs_support_read' *.c |
      xargs grep '^trivfs_S_' | sed 's/^[^:]*:\([^ 	]*\).*$/\1/'
-   trivfs_S_io_get_icky_async_id
-   trivfs_S_io_async
-   trivfs_S_io_map
    trivfs_S_io_get_openmodes
    trivfs_S_io_clear_some_openmodes
    trivfs_S_io_set_some_openmodes
    trivfs_S_io_set_all_openmodes
-   trivfs_S_io_get_owner
-   trivfs_S_io_mod_owner
    trivfs_S_io_readable
    trivfs_S_io_select
    $
@@ -76,7 +71,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   /* Mark the node as a read-only plain file. */
   st->st_mode &= ~(S_IFMT | ALLPERMS);
   st->st_mode |= (S_IFREG | S_IRUSR | S_IRGRP | S_IROTH);
-  st->st_size = sizeof (hello) - 1;
+  st->st_size = contents_len;
 }
 
 error_t
