@@ -183,17 +183,18 @@ runtime_argp = { common_options, parse_common_opt, 0, 0, runtime_argp_parents };
 /* Use by netfs_set_options to handle runtime option parsing.  */
 struct argp *netfs_runtime_argp = &runtime_argp;
 
+/* Where to find the remote filesystem.  */
+static char *remote_fs = 0;
+static char *host = 0;
+
 /* Return an argz string describing the current options.  Fill *ARGZ
    with a pointer to newly malloced storage holding the list and *LEN
    to the length of that storage.  */
 error_t
-netfs_get_options (char **argz, size_t *argz_len)
+netfs_append_args (char **argz, size_t *argz_len)
 {
   char buf[80];
   error_t err = 0;
-
-  *argz = 0;
-  *argz_len = 0;
 
 #define FOPT(fmt, arg) \
   do { \
@@ -220,8 +221,10 @@ netfs_get_options (char **argz, size_t *argz_len)
   if (! err)
     err = netfs_append_std_options (argz, argz_len);
 
-  if (err)
-    free (argz);
+  if (! err)
+    err = argz_add (argz, argz_len, remote_fs);
+  if (! err)
+    err = argz_add (argz, argz_len, host);
 
   return err;
 }
@@ -259,13 +262,6 @@ extract_nfs_args (char *spec, char **remote_fs, char **host)
   return 0;
 }
 
-/* Where to find the remote filesystem.  */
-static char *remote_fs = 0;
-static char *host = 0;
-
-/* For debugging.  */
-static volatile int hold = 0;
-
 static error_t
 parse_startup_opt (int key, char *arg, struct argp_state *state)
 {
@@ -284,8 +280,6 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
     case OPT_NFS_PORT_D:
       nfs_port = atoi (arg);
       break;
-
-    case OPT_HOLD: hold = 1; break;
 
     case ARGP_KEY_ARG:
       if (state->arg_num == 0)
@@ -325,8 +319,6 @@ main (int argc, char **argv)
   int ret;
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
-
-  while (hold);
     
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
