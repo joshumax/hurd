@@ -53,7 +53,6 @@ See `tasks', the exported task list.
 *** add chflags flags to appropriate header(s)
 *** declare reboot() somewhere.
 *** extra commas in enums in socket.h and errnos.h.
-*** emacs, on standalone system, with no nsswitch.conf, crashes.
 *** many functions that are syscalls in unix can potentially leak send rights
     if a signal handler longjmp's out past them.  They should probably all
     be using HURD_CRITICAL_SECTION to avoid this. !!
