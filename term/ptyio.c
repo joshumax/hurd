@@ -80,7 +80,13 @@ pty_open_hook (struct trivfs_control *cntl,
     }
     
   ptyopen = 1;
+  packet_mode = 0;
+  user_ioctl_mode = 0;
+  control_byte = 0;
+  pktnostop = 0;
+
   mutex_unlock (&global_lock);
+
   return 0;
 }
 
@@ -292,6 +298,7 @@ pty_io_read (struct trivfs_protid *cred,
     }
 
   while (!control_byte
+	 && (termflags & TTY_OPEN)
 	 && (!qsize (outputq) || (termflags & USER_OUTPUT_SUSP)))
     {
       if (cred->po->openmodes & O_NONBLOCK)
@@ -446,7 +453,8 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
 
   while (1)
     {
-      if ((*type & SELECT_READ) && (control_byte || qsize (outputq)))
+      if ((*type & SELECT_READ)
+	  && (control_byte || qsize (outputq) || !(termflags & TTY_OPEN)))
 	avail |= SELECT_READ;
 
       if ((*type & SELECT_URG) && control_byte)
