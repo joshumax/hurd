@@ -482,7 +482,7 @@ map (struct execdata *e, off_t posn, size_t len)
       /* Map the data from the file.  */
       if (vm_map (mach_task_self (),
 		  (vm_address_t *) &f->__buffer, f->__bufsize, 0, 1,
-		  e->filemap, f->__target, 1, VM_PROT_READ, VM_PROT_READ,
+		  e->filemap, f->__offset, 1, VM_PROT_READ, VM_PROT_READ,
 		  VM_INHERIT_NONE))
 	{
 	  errno = e->error = EIO;
@@ -494,7 +494,7 @@ map (struct execdata *e, off_t posn, size_t len)
 	e->cntl->accessed = 1;
 
       if (f->__offset + f->__bufsize > size)
-	f->__get_limit = f->__buffer + (size - f->__target);
+	f->__get_limit = f->__buffer + (size - f->__offset);
       else
 	f->__get_limit = f->__buffer + f->__bufsize;
     }
