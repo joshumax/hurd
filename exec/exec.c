@@ -1208,6 +1208,7 @@ S_exec_setexecdata (mach_port_t me,
 
 kern_return_t
 S_fsys_getroot (fsys_t fsys,
+		mach_port_t dotdot,
 		uid_t *uids, u_int nuids,
 		gid_t *gids, u_int ngids,
 		int flags,
@@ -1219,6 +1220,8 @@ S_fsys_getroot (fsys_t fsys,
   /* XXX eventually this should return a user-specific port which has an
      associated access-restricted realnode port which file ops get
      forwarded to.  */
+
+  mach_port_deallocate (mach_task_self (), dotdot);
 
   *rootfile = execserver;
   *rootfilePoly = MACH_MSG_TYPE_MAKE_SEND;
@@ -1253,9 +1256,7 @@ kern_return_t
 S_fsys_startup (mach_port_t bootstrap,
 		fsys_t control,
 		mach_port_t *node,
-		mach_msg_type_name_t *realnodePoly,
-		mach_port_t *dotdot,
-		mach_msg_type_name_t *dotdotPoly)
+		mach_msg_type_name_t *realnodePoly)
 {
   return EOPNOTSUPP;
 }
@@ -1437,7 +1438,7 @@ int
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t boot, dotdot;
+  mach_port_t boot;
 
   /* XXX */
   stdout = mach_open_devstream (getdport (1), "w");
@@ -1462,8 +1463,7 @@ main (int argc, char **argv)
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &execserver);
 
   task_get_bootstrap_port (mach_task_self (), &boot);
-  fsys_startup (boot, fsys, MACH_MSG_TYPE_MAKE_SEND, &realnode, &dotdot);
-  mach_port_deallocate (mach_task_self (), dotdot); /* Don't care.  */
+  fsys_startup (boot, fsys, MACH_MSG_TYPE_MAKE_SEND, &realnode);
 
   mach_port_allocate (mach_task_self (),
 		      MACH_PORT_RIGHT_PORT_SET, &request_portset);
