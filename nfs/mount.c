@@ -25,6 +25,7 @@
 #undef malloc
 #include <rpc/pmap_prot.h>
 #include <errno.h>
+#include <error.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
