@@ -16,9 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "trivfs_S.h"
+#include <assert.h>
 
 error_t
-diskfs_S_file_truncate (struct protid *cred, off_t size)
+diskfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
 {
   assert (!trivfs_support_write);
   return cred ? EBADF : EOPNOTSUPP;
