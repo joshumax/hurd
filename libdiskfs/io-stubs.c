@@ -51,6 +51,14 @@ diskfs_S_io_postnotify (struct protid *cred, int start, int end)
   return cred ? 0 : EOPNOTSUPP;
 }
 
+/* Implement io_readnotify as described in <hurd/io.defs>.
+   We don't use this feature. */
+error_t
+diskfs_S_io_readnotify (struct protid *cred)
+{
+  return cred ? 0 : EOPNOTSUPP;
+}
+     
 
 /* Implement io_sigio as described in <hurd/io.defs>. 
    We do this (in theory) but async IO is implemented here yet. */
