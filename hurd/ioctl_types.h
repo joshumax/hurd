@@ -15,6 +15,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-typedef int modes_t[4], speeds_t[2];
-typedef short sizes_t[4];
-typedef char ccs_t[20];
+#include <termios.h>
+typedef tcflag_t modes_t[4];
+typedef speed_t speeds_t[2];
+typedef cc_t ccs_t[NCCS];
+
+#include <sys/ioctl.h>
+typedef struct winsize winsize_t;
