@@ -196,7 +196,6 @@ diskfs_S_dir_rename (struct protid *fromcred,
   
   diskfs_nrele (tmpnp);
 
-  diskfs_purge_cache_node (fdp, fnp);
   err = diskfs_dirremove (fdp, ds);
   if (diskfs_synchronous)
     diskfs_node_update (fdp, 1);
