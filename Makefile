@@ -10,7 +10,7 @@ exec bootexec: exec_machdep.o
 exec: transexec.o
 
 bootexec: bootexec.o exec.o
-	$(LD) $(LDFLAGS) -r -o $@ $^
+	$(LD) -X $(LDFLAGS) -r -o $@ $^
 
 $(serversdir)/core: core.text $(hurddir)/core
 	@rm -f $@
@@ -20,3 +20,5 @@ $(serversdir)/core: core.text $(hurddir)/core
 $(serversdir)/exec: exec.text
 	@rm -f $@
 	cp $< $@
+# Comment the next line out to use bootexec.
+#	settrans $(word 2,$^) $@
