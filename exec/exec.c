@@ -112,10 +112,10 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 static void
 load_section (void *section, struct execdata *u)
 {
-  volatile vm_address_t addr = 0;
+  vm_address_t addr = 0;
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
-  volatile vm_prot_t vm_prot;
+  vm_prot_t vm_prot;
   int anywhere;
   vm_address_t mask = 0;
 #ifdef BFD
