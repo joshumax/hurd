@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_seek
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,7 +21,8 @@
 /* Implement file_sync as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_sync (struct protid *cred,
-		    int wait)
+		    int wait,
+		    int omitmetadata)
 {
   struct node *np;
 
