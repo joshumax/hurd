@@ -23,6 +23,7 @@
 #include <device/device.h>
 #include <unistd.h>
 #include <errno.h>
+#include <error.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdlib.h>
