@@ -23,20 +23,20 @@ DIST_FILES = fstests.c Makefile fdtests.c ChangeLog timertest.c
 
 SRCS = fstests.c fdtests.c timertest.c
 
-#OBJS=fdtests.o 
-#OBJS=fstests.o
-OBJS=timertest.o
-
 all: timertest
 
-fstests: $(OBJS) $(libc); $(link)
-fdtests: $(OBJS) $(libc); $(link)
-timertest: $(OBJS) $(libc); $(link)
+fstests: $(OBJS) $(libc)
+	$(CC) $(CFLAGS) -o $@ $^
 
+fdtests: $(OBJS) $(libc)
+	$(CC) $(CFLAGS) -o $@ $^
 
-install:  $(hurdroot) timertest #fstests fdtests
-#	$(INSTALL_BIN) fdtests $(hurdroot)/bin/fdtests
-#	$(INSTALL_BIN) fstests $(hurdroot)/bin/fstests
+timertest: $(OBJS) $(libc)
+	$(CC) $(CFLAGS) -o $@ $^
+
+install:  $(hurdroot) timertest fstests fdtests
+	$(INSTALL_BIN) fdtests $(hurdroot)/bin/fdtests
+	$(INSTALL_BIN) fstests $(hurdroot)/bin/fstests
 	$(INSTALL_BIN) timertest $(hurdroot)/bin/timertest
 
 clean: 
