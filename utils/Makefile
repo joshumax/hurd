@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+#   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,14 +20,15 @@ makemode := utilities
 
 targets = shd ps settrans showtrans syncfs su mount fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
-	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread ping msgport
+	devprobe vminfo addauth freeauth rmauth unsu setauth ftpcp ftpdir storecat \
+	storeread ping msgport rpctrace
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
-	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c
+	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c \
+	rpctrace.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
@@ -49,9 +50,9 @@ INSTALL-ping-ops = -o root -m 4755
 
 include ../Makeconf
 
-ps addauth rmauth setauth su unsu msgport: parse.o pids.o
+freeauth ps addauth rmauth setauth su unsu msgport: parse.o pids.o
 login addauth setauth su: nonsugid.o
-addauth rmauth setauth su unsu: frobauth.o
+freeauth addauth rmauth setauth su unsu: frobauth.o
 rmauth setauth su unsu: frobauth-mod.o
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 
@@ -64,8 +65,10 @@ ping: ../libthreads/libthreads.a
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
-  devprobe vminfo addauth rmauth setauth su unsu ftpcp ftpdir storeread \
+  devprobe vminfo addauth freeauth rmauth setauth su unsu ftpcp ftpdir storeread \
   storecat msgport: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
+
+rpctrace: ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
