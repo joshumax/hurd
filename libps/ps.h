@@ -275,7 +275,7 @@ struct proc_stat
 #define PSTAT_ARGS		0x0080 /* The process's args.  */
 #define PSTAT_TASK_EVENTS_INFO	0x0100 /* A task_events_info_t for the proc. */
 #define PSTAT_STATE		0x0200 /* A bitmask describing the process's
-				0x0400    state (see below).  */
+					  state (see below).  */
 #define PSTAT_CTTYID		0x0800 /* The process's CTTYID port.  */
 #define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD.  */
 #define PSTAT_AUTH		0x2000 /* The proc's auth port.  */
@@ -303,7 +303,7 @@ struct proc_stat
 #define PSTAT_STATE_ZOMBIE   0x0200	/* Z process exited but not yet reaped */
 #define PSTAT_STATE_FG	     0x0400	/* + in foreground process group */
 #define PSTAT_STATE_SESSLDR  0x0800	/* s session leader */
-#define PSTAT_STATE_EXECED   0x1000	/* e has execed */
+#define PSTAT_STATE_FORKED   0x1000	/* f has forked and not execed */
 #define PSTAT_STATE_NOMSG    0x2000	/* m no msg port */
 #define PSTAT_STATE_NOPARENT 0x4000	/* p no parent */
 #define PSTAT_STATE_ORPHANED 0x8000	/* o orphaned */
