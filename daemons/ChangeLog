@@ -1,5 +1,8 @@
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* console-run.c (open_console): Move first setting of TERMINAL and
+	ARGZ_LEN outside of loop, quiets compiler warning.
+
 	* lmail.c: Add #include <sys/mman.h> for munmap decl.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
