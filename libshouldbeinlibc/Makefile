@@ -1,6 +1,6 @@
 # Makefile for libshouldbeinlibc
 #
-#   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -31,7 +31,7 @@ SRCS = termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
        mktime.c
 installhdrs = idvec.h timefmt.h maptime.h \
 	      wire.h portinfo.h portxlate.h cacheq.h ugids.h
-LCLHDRS = $(installhdrs) argp-fmtstream.h argp-namefrob.h
+LCLHDRS = $(installhdrs)
 installhdrsubdir = .
 
 CFLAGS += -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H
