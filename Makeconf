@@ -36,7 +36,7 @@
 all:
 
 # What version of the Hurd is this?
-hurd-version := 0.2
+hurd-version := 0.3
 
 # Figure out how to locate the parent directory from here.
 ifeq (.,$(dir))
