@@ -1,3 +1,9 @@
+1999-02-12  Gordon Matzigkeit  <gord@trick.fig.org>
+
+	* init-startup.c (diskfs_startup_diskfs): Release the virtual
+	root's lock as soon as we've checked that it's a valid directory.
+	Ignore leading slashes in _diskfs_chroot_directory.
+
 Sun Jan 31 18:24:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* file-utimes.c (diskfs_S_file_utimes): Implement new semantics

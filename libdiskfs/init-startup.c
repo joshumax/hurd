@@ -1,5 +1,5 @@
 /* diskfs_startup_diskfs -- advertise our fsys control port to our parent FS.
-   Copyright (C) 1994, 1995, 1996, 1998 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1998, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -43,6 +43,10 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       struct node *np, *old;
       struct protid *rootpi;
 
+      /* Skip leading slashes */
+      while (_diskfs_chroot_directory == '/')
+	_diskfs_chroot_directory++;
+
       mutex_lock (&diskfs_root_node->lock);
 
       /* Create a protid we can use in diskfs_lookup.  */
@@ -75,6 +79,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 	 if _diskfs_chroot_directory is non-null.  */
       old = diskfs_root_node;
       diskfs_root_node = np;
+      mutex_unlock (&np->lock);
       diskfs_nput (old);
     }
 
