@@ -37,5 +37,7 @@ pager_create (struct user_pager_info *upi)
   p->pagemap = 0;
   p->pagemapsize = 0;
   
-  spin_lock (&pagerlistlock);
+  return p;
+}
+
   
