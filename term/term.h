@@ -66,6 +66,7 @@ long termflags;
 #define EXCL_USE          0x00000100 /* user accessible exclusive use */
 #define NO_OWNER          0x00000200 /* there is no foreground_id */
 #define ICKY_ASYNC	  0x00000400 /* some user has set O_ASYNC */
+#define SUPPRESS_ASYNC	  0x00000800 /* don't signal asyncs on every char */
 
 /* Global lock */
 struct mutex global_lock;
@@ -174,7 +175,7 @@ clear_queue (struct queue *q)
 }
 
 /* Should be below, but inlines need it. */
-void call_asyncs (void);
+void call_asyncs (int force);
 
 /* Return the next character off Q; leave the quoting bit on. */
 extern inline quoted_char
@@ -194,7 +195,7 @@ dequeue_quote (struct queue *q)
     {
       condition_broadcast (q->wait);
       if (q == outputq)
-	call_asyncs ();
+	call_asyncs (1);
     }
   return *q->cs++;
 }
@@ -220,12 +221,10 @@ enqueue_internal (struct queue **qp, quoted_char c)
   *q->ce++ = c;
 
   if (qsize (q) == 1)
-    {
-      condition_broadcast (q->wait);
-      if (q == inputq)
-	call_asyncs ();
-    }      
-  
+    condition_broadcast (q->wait);
+  if (q == inputq && (termflags & ICKY_ASYNC))
+    call_asyncs (0);
+
   if (!q->susp && (qsize (q) > q->hiwat))
     q->susp = 1;
 }
