@@ -1,5 +1,5 @@
 /* file_get_storage_info RPC for NFS client filesystem
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -83,6 +83,7 @@ netfs_file_get_storage_info (struct iouser *cred,
      byte, and our URL as the name for the network store type.  */
 
   *num_ports = 0;
+  *ports_type = MACH_MSG_TYPE_COPY_SEND;
 
   assert (*num_offsets >= 2);	/* mig always gives us some */
   *num_offsets = 2;
