@@ -23,8 +23,8 @@ VPATH=.:../machine
 
 CFLAGS := $(CFLAGS) -Dinline= -DA_OUT_H=\"./a.out.h\"
 
-DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c a.out.h \
-		ChangeLog
+DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c \
+	     a.out.h a.out.gnu.h ChangeLog
 OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
 
 all: exec
@@ -34,7 +34,7 @@ exec: $(OBJS)
 
 exec.o: exec_server.h fsys_S.h notify_S.h 
 
-exec.o hostarch.o: a.out.h
+exec.o hostarch.o: a.out.h a.out.gnu.h
 
 install:
 
