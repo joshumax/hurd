@@ -1,5 +1,5 @@
 /* Making new files
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,7 +26,7 @@
    strategies.  */
 error_t
 diskfs_create_node (struct node *dir,
-		    char *name,
+		    const char *name,
 		    mode_t mode,
 		    struct node **newnode,
 		    struct protid *cred,
@@ -36,7 +36,7 @@ diskfs_create_node (struct node *dir,
   error_t err;
   uid_t newuid;
   gid_t newgid;
-  
+
   if (diskfs_check_readonly ())
     return EROFS;
 
@@ -90,7 +90,7 @@ diskfs_create_node (struct node *dir,
 
   if (S_ISDIR (mode))
     err = diskfs_init_dir (np, dir, cred);
-  
+
   diskfs_node_update (np, 1);
 
   if (err)
@@ -102,7 +102,7 @@ diskfs_create_node (struct node *dir,
 	diskfs_drop_dirstat (dir, ds);
       return err;
     }
-  
+
   if (name)
     {
       err = diskfs_direnter (dir, name, np, ds, cred);

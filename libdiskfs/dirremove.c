@@ -1,5 +1,5 @@
 /* Wrapper for diskfs_dirremove_hard
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,20 +27,19 @@
    call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  This
    function is a wrapper for diskfs_dirremove_hard.  The entry being
    removed has name NAME and refers to NP.  */
-error_t 
-diskfs_dirremove (struct node *dp, 
-		  struct node *np, 
-		  char *name,
+error_t
+diskfs_dirremove (struct node *dp,
+		  struct node *np,
+		  const char *name,
 		  struct dirstat *ds)
 {
   error_t err;
-  
+
   diskfs_purge_lookup_cache (dp, np);
-  
+
   err = diskfs_dirremove_hard (dp, ds);
-  
+
   if (!err && dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, name);
   return err;
 }
-

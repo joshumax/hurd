@@ -73,11 +73,11 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
    Return ENOENT if NAME isn't in the directory.
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
-   
-   This function is a wrapper for diskfs_lookup_hard. 
+
+   This function is a wrapper for diskfs_lookup_hard.
 */
-error_t 
-diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
+error_t
+diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
 	       struct node **np, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
@@ -146,7 +146,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	diskfs_null_dirstat (ds);
     }
   else
-    {  
+    {
       err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
 
       spin_lock (&cm_lock);
@@ -156,7 +156,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	    cache_misses.absent++;
 	  else if (err)
 	    cache_misses.errors++;
-	  else 
+	  else
 	    cache_misses.present++;
 	  if (name[0] == '.')
 	    {
@@ -170,7 +170,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 
       if (err && err != ENOENT)
 	return err;
-  
+
       if (type == RENAME
 	  || (type == CREATE && err == ENOENT)
 	  || (type == REMOVE && err != ENOENT))
@@ -190,8 +190,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	diskfs_enter_lookup_cache (dp, *np, name);
       else if (type == LOOKUP && err == ENOENT)
 	diskfs_enter_lookup_cache (dp, 0, name);
-    }    
+    }
 
   return err;
 }
-

@@ -1,6 +1,6 @@
 /* Set run-time options
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,7 +25,7 @@
 #include "priv.h"
 
 error_t
-diskfs_set_options (char *argz, size_t argz_len)
+diskfs_set_options (const char *argz, size_t argz_len)
 {
   if (diskfs_runtime_argp)
     return fshelp_set_options (diskfs_runtime_argp, 0, argz, argz_len, 0);

@@ -1,5 +1,5 @@
 /* Wrapper for diskfs_direnter_hard
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,13 +29,13 @@
    growth).  This function is a wrapper for diskfs_direnter_hard.  */
 error_t
 diskfs_direnter (struct node *dp,
-		 char *name,
+		 const char *name,
 		 struct node *np,
 		 struct dirstat *ds,
 		 struct protid *cred)
 {
   error_t err;
-  
+
   err = diskfs_direnter_hard (dp, name, np, ds, cred);
   if (err)
     return err;
@@ -45,5 +45,4 @@ diskfs_direnter (struct node *dp,
 
   diskfs_enter_lookup_cache (dp, np, name);
   return 0;
-}  
-  
+}

@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -309,7 +309,8 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
 */
-error_t diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+error_t diskfs_lookup_hard (struct node *dp,
+			    const char *name, enum lookup_type type,
 			    struct node **np, struct dirstat *ds,
 			    struct protid *cred);
 
@@ -319,7 +320,7 @@ error_t diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
    has been locked continuously since that call and DS is as that call
    set it, NP is locked.   CRED identifies the user responsible
    for the call (to be used only to validate directory growth). */
-error_t diskfs_direnter_hard (struct node *dp, char *name,
+error_t diskfs_direnter_hard (struct node *dp, const char *name,
 			      struct node *np, struct dirstat *ds,
 			      struct protid *cred);
 
@@ -370,7 +371,8 @@ error_t diskfs_get_translator (struct node *np, char **namep, u_int *namelen);
 /* The user must define this function.  For locked node NP, set
    the name of the translating program to be NAME, length NAMELEN.  CRED
    identifies the user responsible for the call.  */
-error_t diskfs_set_translator (struct node *np, char *name, u_int namelen,
+error_t diskfs_set_translator (struct node *np,
+			       const char *name, u_int namelen,
 			       struct protid *cred);
 
 /* The user must define this function.  Truncate locked node NP to be SIZE
@@ -529,7 +531,7 @@ error_t diskfs_node_reload (struct node *node);
    is called to set a symlink.  If it returns EINVAL or isn't set,
    then the normal method (writing the contents into the file data) is
    used.  If it returns any other error, it is returned to the user.  */
-error_t (*diskfs_create_symlink_hook)(struct node *np, char *target);
+error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to read the contents of a symlink.  If it returns EINVAL or
@@ -748,7 +750,7 @@ diskfs_node_rdwr (struct node *np, char *data, off_t off,
    fully completed.  */
 void
 diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
-			 char *name);
+			 const char *name);
 
 /* Send notifications to users who have requested them with
    file_notice_changes for file NP.  The type of modification is TYPE.
@@ -808,10 +810,11 @@ struct node *diskfs_make_node (struct disknode *dn);
    Return ENOENT if NAME isn't in the directory.
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
-   
-   This function is a wrapper for diskfs_lookup_hard. 
+
+   This function is a wrapper for diskfs_lookup_hard.
 */
-error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
+error_t diskfs_lookup (struct node *dp,
+		       const char *name, enum lookup_type type,
 		       struct node **np, struct dirstat *ds,
 		       struct protid *cred);
 
@@ -822,7 +825,7 @@ error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
    responsible for the call (to be used only to validate directory
    growth).  This function is a wrapper for diskfs_direnter_hard.  */
 error_t
-diskfs_direnter (struct node *dp, char *name, struct node *np, 
+diskfs_direnter (struct node *dp, const char *name, struct node *np,
 		 struct dirstat *ds, struct protid *cred);
 
 /* This will only be called after a successful call to diskfs_lookup
@@ -834,7 +837,8 @@ diskfs_direnter (struct node *dp, char *name, struct node *np,
    name of OLDNP inside DP; it is this reference which is being
    rewritten. This function is a wrapper for diskfs_dirrewrite_hard.  */
 error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
-			   struct node *np, char *name, struct dirstat *ds);
+			   struct node *np, const char *name,
+			   struct dirstat *ds);
 
 /* This will only be called after a successful call to diskfs_lookup
    of type REMOVE; this call should remove the name found from the
@@ -844,7 +848,7 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
    function is a wrapper for diskfs_dirremove_hard.  The entry being
    removed has name NAME and refers to NP.  */
 error_t diskfs_dirremove (struct node *dp, struct node *np,
-			  char *name, struct dirstat *ds);
+			  const char *name, struct dirstat *ds);
 
 /* Return the node corresponding to CACHE_ID in *NPP. */
 error_t diskfs_cached_lookup (int cache_id, struct node **npp);
@@ -857,7 +861,7 @@ error_t diskfs_cached_lookup (int cache_id, struct node **npp);
    DIR must always be provided as at least a hint for disk allocation
    strategies.  */
 error_t
-diskfs_create_node (struct node *dir, char *name, mode_t mode,
+diskfs_create_node (struct node *dir, const char *name, mode_t mode,
 		    struct node **newnode, struct protid *cred,
 		    struct dirstat *ds);
 
@@ -892,9 +896,10 @@ void diskfs_release_peropen (struct peropen *po);
 
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
    means that this name has been confirmed as absent in the directory. */
-void diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name);
+void diskfs_enter_lookup_cache (struct node *dir, struct node *np,
+				const char *name);
 
-/* Purge all references in the cache to NP as a node inside 
+/* Purge all references in the cache to NP as a node inside
    directory DP. */
 void diskfs_purge_lookup_cache (struct node *dp, struct node *np);
 
@@ -902,7 +907,7 @@ void diskfs_purge_lookup_cache (struct node *dp, struct node *np);
    anything entry at all, then return 0.  If the entry is confirmed to
    not exist, then return -1.  Otherwise, return NP for the entry, with
    a newly allocated reference. */
-struct node *diskfs_check_lookup_cache (struct node *dir, char *name);
+struct node *diskfs_check_lookup_cache (struct node *dir, const char *name);
 
 /* Rename directory node FNP (whose parent is FDP, and which has name
    FROMNAME in that directory) to have name TONAME inside directory
@@ -915,9 +920,9 @@ struct node *diskfs_check_lookup_cache (struct node *dir, char *name);
    if that is not true for your format, you have to redefine this
    function.*/
 error_t
-diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
-		   struct node *tdp, char *toname, struct protid *fromcred,
-		   struct protid *tocred);
+diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
+		   struct node *tdp, const char *toname,
+		   struct protid *fromcred, struct protid *tocred);
 
 /* Clear the `.' and `..' entries from directory DP.  Its parent is
    PDP, and the user responsible for this is identified by CRED.  Both
@@ -973,7 +978,7 @@ error_t diskfs_set_sync_interval (int interval);
 /* Parse and execute the runtime options in ARGZ & ARGZ_LEN.  EINVAL is
    returned if some option is unrecognized.  The default definition of this
    routine will parse them using DISKFS_RUNTIME_ARGP, which see.  */
-error_t diskfs_set_options (char *argz, size_t argz_len);
+error_t diskfs_set_options (const char *argz, size_t argz_len);
 
 /* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
    list of the arguments to this translator.  The default definition of this

@@ -1,5 +1,5 @@
 /* Wrapper for diskfs_dirrewrite_hard
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,23 +29,22 @@
    diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  NAME is the
    name of OLDNP inside DP; it is this reference which is being
    rewritten. This function is a wrapper for diskfs_dirrewrite_hard.  */
-error_t diskfs_dirrewrite (struct node *dp, 
+error_t diskfs_dirrewrite (struct node *dp,
 			   struct node *oldnp,
 			   struct node *np,
-			   char *name, 
+			   const char *name,
 			   struct dirstat *ds)
 {
   error_t err;
-  
+
   diskfs_purge_lookup_cache (dp, oldnp);
-  
+
   err = diskfs_dirrewrite_hard (dp, np, ds);
   if (err)
     return err;
-  
+
   if (dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, name);
   diskfs_enter_lookup_cache (dp, np, name);
   return 0;
 }
-

@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+/*
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -31,7 +31,7 @@ checkpath(struct node *source,
 {
   error_t err;
   struct node *np;
-  
+
   np = target;
   for (np = target, err = 0;
        /* nothing */;
@@ -44,20 +44,20 @@ checkpath(struct node *source,
 	  diskfs_nput (np);
 	  return err;
 	}
-      
+
       if (np == source)
 	{
 	  diskfs_nput (np);
 	  return EINVAL;
 	}
-      
+
       if (np == diskfs_root_node)
 	{
 	  diskfs_nput (np);
 	  return 0;
 	}
     }
-}  
+}
 
 /* Rename directory node FNP (whose parent is FDP, and which has name
    FROMNAME in that directory) to have name TONAME inside directory
@@ -67,9 +67,9 @@ checkpath(struct node *source,
    routine.  FROMCRED and TOCRED are the users responsible for
    FDP/FNP and TDP respectively.  */
 error_t
-diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
-		   struct node *tdp, char *toname, struct protid *fromcred,
-		   struct protid *tocred)
+diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
+		   struct node *tdp, const char *toname,
+		   struct protid *fromcred, struct protid *tocred)
 {
   error_t err;
   struct node *tnp, *tmpnp;
@@ -81,16 +81,16 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   diskfs_nref (tdp);		/* reference and lock will get consumed by
 				   checkpath */
   err = checkpath (fnp, tdp, tocred);
-  
+
   if (err)
     return err;
-  
+
   /* Now, lock the parent directories.  This is legal because tdp is not
      a child of fnp (guaranteed by checkpath above). */
   mutex_lock (&fdp->lock);
   if (fdp != tdp)
     mutex_lock (&tdp->lock);
-  
+
   /* 1: Lookup target; if it exists, make sure it's an empty directory. */
   ds = buf;
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
@@ -105,7 +105,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 	mutex_unlock (&fdp->lock);
       return 0;
     }
-  
+
   /* Now we can safely lock fnp */
   mutex_lock (&fnp->lock);
 
@@ -115,7 +115,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 	err = ENOTDIR;
       else if (!diskfs_dirempty (tnp, tocred))
 	err = ENOTEMPTY;
-    }     
+    }
 
   if (err && err != ENOENT)
     goto out;
@@ -132,9 +132,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
       tdp->dn_set_ctime = 1;
       if (diskfs_synchronous)
 	diskfs_node_update (tdp, 1);
-  
+
       tmpds = alloca (diskfs_dirstat_size);
-      err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
+      err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT,
 			   &tmpnp, tmpds, fromcred);
       assert (err != ENOENT);
       assert (tmpnp == fdp);
@@ -149,7 +149,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 	diskfs_file_update (fnp, 1);
       if (err)
 	goto out;
-  
+
       fdp->dn_stat.st_nlink--;
       fdp->dn_set_ctime = 1;
       if (diskfs_synchronous)
@@ -171,7 +171,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   fnp->dn_stat.st_nlink++;
   fnp->dn_set_ctime = 1;
   diskfs_node_update (fnp, 1);
-  
+
   if (tnp)
     {
       err = diskfs_dirrewrite (tdp, tnp, fnp, toname, ds);
@@ -203,7 +203,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   diskfs_nrele (tmpnp);
   if (err)
     goto out;
-  
+
   diskfs_dirremove (fdp, fnp, fromname, ds);
   ds = 0;
   fnp->dn_stat.st_nlink--;

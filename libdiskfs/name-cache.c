@@ -1,6 +1,6 @@
 /* Directory name lookup caching
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG, & Miles Bader.
 
    This file is part of the GNU Hurd.
@@ -79,8 +79,8 @@ find_cache (struct node *dir, const char *name, size_t name_len)
 
   /* Search the list.  All unused entries are contiguous at the end of the
      list, so we can stop searching when we see the first one.  */
-  for (i = 0, c = lookup_cache.mru; 
-       c && c->name_len; 
+  for (i = 0, c = lookup_cache.mru;
+       c && c->name_len;
        c = c->hdr.next, i++)
     if (c->name_len == name_len
 	&& c->dir_cache_id == dir->cache_id
@@ -89,18 +89,18 @@ find_cache (struct node *dir, const char *name, size_t name_len)
 	c->stati = i / 100;
 	return c;
       }
-  
+
   return 0;
 }
 
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
    means that this name has been confirmed as absent in the directory. */
 void
-diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name)
+diskfs_enter_lookup_cache (struct node *dir, struct node *np, const char *name)
 {
   struct lookup_cache *c;
   size_t name_len = strlen (name);
-  
+
   if (name_len > CACHE_NAME_LEN - 1)
     return;
 
@@ -127,13 +127,13 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name)
   spin_unlock (&cache_lock);
 }
 
-/* Purge all references in the cache to NP as a node inside 
+/* Purge all references in the cache to NP as a node inside
    directory DP. */
 void
 diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 {
   struct lookup_cache *c, *next;
-  
+
   spin_lock (&cache_lock);
   for (c = lookup_cache.mru; c; c = next)
     {
@@ -179,13 +179,13 @@ register_pos_hit (int n)
   for (; i < NPARTIALS; i++)
     partial_stats[i].pos_hits++;
 }
-  
+
 /* Register a miss */
 void
 register_miss ()
 {
   int i;
-  
+
   statistics.miss++;
   for (i = 0; i < NPARTIALS; i++)
     partial_stats[i].miss++;
@@ -198,10 +198,10 @@ register_miss ()
    not exist, then return -1.  Otherwise, return NP for the entry, with
    a newly allocated reference. */
 struct node *
-diskfs_check_lookup_cache (struct node *dir, char *name)
+diskfs_check_lookup_cache (struct node *dir, const char *name)
 {
   struct lookup_cache *c;
-  
+
   spin_lock (&cache_lock);
 
   c = find_cache (dir, name, strlen (name));
@@ -231,10 +231,10 @@ diskfs_check_lookup_cache (struct node *dir, char *name)
 	{
 	  struct node *np;
 	  error_t err;
-	  
+
 	  register_pos_hit (c->stati);
 	  spin_unlock (&cache_lock);
-	  
+
 	  if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 	    {
 	      mutex_unlock (&dir->lock);
@@ -257,7 +257,7 @@ diskfs_check_lookup_cache (struct node *dir, char *name)
 	  return err ? 0 : np;
 	}
     }
-  
+
   register_miss ();
   spin_unlock (&cache_lock);
 

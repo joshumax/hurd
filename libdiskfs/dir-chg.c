@@ -1,5 +1,5 @@
 /* Notifications of directory changes.
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1998 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,7 +26,7 @@ diskfs_S_dir_notice_changes (struct protid *cred,
   error_t err;
   struct modreq *req;
   struct node *np;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -53,11 +53,11 @@ diskfs_S_dir_notice_changes (struct protid *cred,
 
 void
 diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
-			 char *name)
+			 const char *name)
 {
   error_t err;
   struct modreq **preq;
-  
+
   preq = &dp->dirmod_reqs;
   while (*preq)
     {
@@ -72,4 +72,4 @@ diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
       else
 	preq = &req->next;
     }
-}  
+}
