@@ -18,8 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#ifndef __SSERVE_H__
-#define __SSERVE_H__
+#ifndef __SSERVER_H__
+#define __SSERVER_H__
 
 /* Makes sure there are some request threads for sock operations, and starts
    a server if necessary.  This routine should be called *after* creating the
@@ -30,3 +30,4 @@ void ensure_sock_server ();
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
 struct port_bucket *sock_port_bucket;
 
+#endif /* __SSERVER_H__ */
