@@ -61,7 +61,6 @@ diskfs_set_readonly (int readonly)
 		{
 		  diskfs_sync_everything (1);
 		  diskfs_set_hypermetadata (1, 1);
-		  sleep (1);	/* XXX! */
 		}
 	    }
 
