@@ -25,9 +25,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <hurd/ps.h>
 
 #include "error.h"
-#include "ps.h"
 #include "common.h"
 
 /* ---------------------------------------------------------------- */
