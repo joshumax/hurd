@@ -35,10 +35,18 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
   if (err = diskfs_catch_exception ())
     return err;
   
+  indirs[0].offset = -2;
+  indirs[1].offset = -2;
+  indirs[2].offset = -2;
+  indirs[3].offset = -2;
+
   if (lbn < NDADDR)
     {
-      indirs[0].bno = di->di_db[lbn];
-      indirs[0].offset = -1;
+      if (lbn >= 0)
+	{
+	  indirs[0].bno = di->di_db[lbn];
+	  indirs[0].offset = -1;
+	}
   
       diskfs_end_catch_exception ();
       return 0;
