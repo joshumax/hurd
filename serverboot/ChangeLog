@@ -1,3 +1,11 @@
+Tue Jun 10 21:54:52 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* disk_inode.h (struct icommon): Use short instead of uid_t/gid_t
+	in structure definition; those are now 32 bit types.
+	
+	* bootstrap.c (main): Support running from command line too; this
+	is useful at least for simple debugging.
+
 1997-06-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (LCLHDRS): Add mach-exec.h.

@@ -61,8 +61,8 @@
 struct 	icommon {
 	u_short	ic_mode;	/*  0: mode and type of file */
 	short	ic_nlink;	/*  2: number of links to file */
-	uid_t	ic_uid;		/*  4: owner's user id */
-	gid_t	ic_gid;		/*  6: owner's group id */
+	short	ic_uid;		/*  4: owner's user id */
+	short	ic_gid;		/*  6: owner's group id */
 	quad	ic_size;	/*  8: number of bytes in file */
 	time_t	ic_atime;	/* 16: time last accessed */
 	int	ic_atspare;

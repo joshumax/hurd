@@ -172,37 +172,47 @@ main(argc, argv)
 	cthread_wait_stack_size = 4 * 1024;
 
 	/*
-	 * Parse the arguments.
-	 */
-	if (argc < 5)
-	    panic("bootstrap: not enough arguments");
-
-	/*
-	 * Arg 0 is program name
-	 */
-
-	/*
 	 * Arg 1 is flags
 	 */
 	if (argv[1][0] != '-')
-	    panic("bootstrap: no flags");
-
+	  panic("bootstrap: no flags");
+	
 	flag_string = argv[1];
-
+	    
 	/*
-	 * Arg 2 is host port number
+	 * Parse the arguments.
 	 */
-	bootstrap_master_host_port = atoi(argv[2]);
+	if (argc >= 5)
+	  {
+	    /*
+	     * Arg 0 is program name
+	     */
 
-	/*
-	 * Arg 3 is device port number
-	 */
-	bootstrap_master_device_port = atoi(argv[3]);
+	    /*
+	     * Arg 2 is host port number
+	     */
+	    bootstrap_master_host_port = atoi(argv[2]);
 
-	/*
-	 * Arg 4 is root name
-	 */
-	root_name = argv[4];
+	    /*
+	     * Arg 3 is device port number
+	     */
+	    bootstrap_master_device_port = atoi(argv[3]);
+
+	    /*
+	     * Arg 4 is root name
+	     */
+	    root_name = argv[4];
+	  }
+	else if (argc == 3)
+	  {
+	    root_name = argv[2];
+	    
+	    get_privileged_ports (&bootstrap_master_host_port,
+				  &bootstrap_master_device_port);
+	  }
+	
+	    
+	
 
 	printf_init(bootstrap_master_device_port);
 #ifdef pleasenoXXX
