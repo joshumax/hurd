@@ -31,7 +31,10 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 STARTUP_IMPORTS
 #endif
 
-skip;	/* startup_essential_task */
+simpleroutine startup_essential_task_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t);
+
 skip;	/* startup_request_notification */
 skip;	/* startup_reboot */
 
