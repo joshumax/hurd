@@ -159,8 +159,15 @@ libsubst=$(basename ${lib})$(_libext)
 libsubst-override=${$(notdir $(basename ${lib}))-libsubst}
 _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 
+# Direct the linker where to find shared objects specified in the
+# dependencies of other shared objects it encounters.
+rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
+
 $(target): %: $(_objs) $(OTHERLIBS)
-	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),${_libsubst}) '-Wl,-)'
+	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
+	      '-Wl,-(' $(filter %.o,$^) \
+		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) \
+	      '-Wl,-)'
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
@@ -170,7 +177,7 @@ $(libname).a: $(OBJS)
 
 $(libname).so: $(patsubst %.o,%_pic.o,$(OBJS))
 	$(CC) -shared -Wl,-soname=$(libname).so -o $(libname).so \
-	      $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $+
+	      $(rpath) $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $^
 endif
 
 # Making a snapshot
