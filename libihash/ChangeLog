@@ -1,3 +1,10 @@
+Fri Mar  5 17:13:04 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* primes.c (_ihash_nextprime): Use a dynamically-sized array for
+	`seive' instead of alloca, so that if we are looping we won't
+	allocate more stack than necessary.  Suggested by wesommer@mit.edu
+	(Bill Sommerfeld).
+
 1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ihash.c (ihash_create): Initialize CLEANUP & CLEANUP_ARG fields.

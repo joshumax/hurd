@@ -1,5 +1,5 @@
 /* Prime number generation
-   Copyright (C) 1994, 1996 Free Software Foundation
+   Copyright (C) 1994, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -72,10 +72,8 @@ _ihash_nextprime (unsigned n)
          max_prime + 1 to 2 * max_prime, looking for more primes.  */
       unsigned start = next_sieve;
       unsigned end   = start + max_prime + 1;
-      char *sieve = (char *) alloca ((end - start) * sizeof (*sieve));
+      char sieve[end - start];
       int i;
-
-      assert (sieve);
 
       bzero (sieve, (end - start) * sizeof (*sieve));
 
