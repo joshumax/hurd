@@ -112,11 +112,13 @@ reboot_mach (int flags)
 {
 #ifdef STANDALONE
   printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
+  fflush (stdout);
   while (errno = host_reboot (host_priv, flags))
     perror ("host_reboot");
   for (;;);
 #else
   printf ("init: Would %s Mach with flags %#x\n", BOOT (flags), flags);
+  fflush (stdout);
   exit (1);
 #endif  
 }
@@ -138,12 +140,16 @@ reboot_system (int flags)
     {
       error_t err;
       printf ("init: notifying %p\n", (void *) n->notify_port);
+      fflush (stdout);
       /* XXX need to time out on reply */
       err = startup_dosync (n->notify_port);
       if (err && err != MACH_SEND_INVALID_DEST)
-	printf ("init: %p complained: %s\n",
-		(void *) n->notify_port,
-		strerror (err));
+	{
+	  printf ("init: %p complained: %s\n",
+		  (void *) n->notify_port,
+		  strerror (err));
+	  fflush (stdout);
+	}
     }
 
 #ifdef STANDALONE  
@@ -151,7 +157,7 @@ reboot_system (int flags)
 #else
   {
     pid_t *pp;
-    u_int npids;
+    u_int npids = 0;
     error_t err;
     int ind;
 
@@ -161,6 +167,7 @@ reboot_system (int flags)
       procbad:	
 	/* The procserver must have died.  Give up. */
 	printf ("Init: can't simulate crash; proc has died\n");
+	fflush (stdout);
 	reboot_mach (flags);
       }
     for (ind = 0; ind < npids; ind++)
@@ -174,14 +181,13 @@ reboot_system (int flags)
 	  {
 	    printf ("init: getting task for pid %d: %s\n",
 		    pp[ind], strerror (err));
+	    fflush (stdout);
 	    continue;
 	  }
 	
 	/* Postpone self so we can finish; postpone proc
-	   so that we can finish; postpone fs so that the 
-	   external master (boot) doesn't exit prematurely. */
-	if (task != mach_task_self ()
-	    && task != proctask)
+	   so that we can finish. */
+	if (task != mach_task_self () && task != proctask)
 	  {
 	    struct procinfo *pi = 0;
 	    u_int pisize = 0;
@@ -192,18 +198,22 @@ reboot_system (int flags)
 	      {
 		printf ("init: getting procinfo for pid %d: %s\n",
 			pp[ind], strerror (err));
+		fflush (stdout);
 		continue;
 	      }
 	    if (!(pi->state & PI_NOPARENT))
 	      {
-		printf ("Killing pid %d\n", pp[ind]);
+		printf ("init: killing pid %d\n", pp[ind]);
+		fflush (stdout);
 		task_terminate (task);
 	      }
 	  }
       }
     printf ("Killing proc server\n");
+    fflush (stdout);
     task_terminate (proctask);
     printf ("Init exiting\n");
+    fflush (stdout);
     exit (1);
   }
 #endif
@@ -267,6 +277,7 @@ run (char *server, mach_port_t *ports, task_t *task)
     }
 
   printf ("started %s\n", prog);
+  fflush (stdout);
 }
 
 /* Run FILENAME as root. */
@@ -427,6 +438,7 @@ launch_system (void)
   
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
+  fflush (stdout);
 }
 
 
@@ -556,6 +568,7 @@ do_mach_notify_dead_name (mach_port_t notify,
       {
 	printf ("Init crashing system; essential task %s died\n",
 		et->name);
+	fflush (stdout);
 	crash_system ();
       }
 
