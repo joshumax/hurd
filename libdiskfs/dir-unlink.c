@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_unlink
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   if (!dircred)
     return EOPNOTSUPP;
-  
+
   dnp = dircred->po->np;
   if (diskfs_check_readonly ())
     return EROFS;
@@ -41,14 +41,14 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
-    error = EISDIR;
+    error = EPERM;	/* 1003.1-1996 5.5.1.4 */
   if (error)
     {
       diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return error;
     }
-  
+
   /* This isn't the BSD behavior, but it is Posix compliant and saves
      us on several race conditions.*/
   if (S_ISDIR(np->dn_stat.st_mode))
@@ -59,9 +59,9 @@ diskfs_S_dir_unlink (struct protid *dircred,
 	diskfs_nput (np);
       diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
-      return EISDIR;
+      return EPERM;		/* 1003.1-1996 5.5.1.4 */
     }
-  
+
   error = diskfs_dirremove (dnp, np, name, ds);
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
@@ -71,7 +71,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
       mutex_unlock (&dnp->lock);
       return error;
     }
-      
+
   np->dn_stat.st_nlink--;
   np->dn_set_ctime = 1;
   if (diskfs_synchronous)
@@ -80,10 +80,10 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (np->dn_stat.st_nlink == 0)
     fshelp_fetch_control (&np->transbox, &control);
 
-  /* This check is necessary because we might get here on an error while 
+  /* This check is necessary because we might get here on an error while
      checking the mode on something which happens to be `.'. */
   if (np == dnp)
-    diskfs_nrele (np);	
+    diskfs_nrele (np);
   else
     diskfs_nput (np);
   mutex_unlock (&dnp->lock);
