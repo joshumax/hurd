@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,45 +20,45 @@
 struct trivfs_protid *
 _trivfs_begin_using_protid (mach_port_t port)
 {
-  if (trivfs_protid_nporttypes > 1)
+  if (trivfs_protid_nportclasses > 1)
     {
-      struct port_info *pi = ports_get_port (port);
+      struct port_info *pi = ports_lookup_port (0, port, 0);
       int i;
-      for (i = 0; i < trivfs_protid_nporttypes; i++)
-	if (pi->type == trivfs_protid_porttypes[i])
+      for (i = 0; i < trivfs_protid_nportclasses; i++)
+	if (pi->class == trivfs_protid_portclasses[i])
 	  return (struct trivfs_protid *) pi;
-      ports_done_with_port ((void *)port);
+      ports_port_deref ((void *)port);
       return 0;
     }
   else
-    return ports_check_port_type (port, trivfs_protid_porttypes[0]);
+    return ports_lookup_port (0, port, trivfs_protid_portclasses[0]);
 }
 
 void 
 _trivfs_end_using_protid (struct trivfs_protid *cred)
 {
-  ports_done_with_port (cred);
+  ports_port_deref (cred);
 }
 
 struct trivfs_control *
 _trivfs_begin_using_control (mach_port_t port)
 {
-  if (trivfs_cntl_nporttypes > 1)
+  if (trivfs_cntl_nportclasses > 1)
     {
-      struct port_info *pi = ports_get_port (port);
+      struct port_info *pi = ports_lookup_port (0, port, 0);
       int i;
-      for (i = 0; i < trivfs_cntl_nporttypes; i++)
-	if (pi->type == trivfs_cntl_porttypes[i])
+      for (i = 0; i < trivfs_cntl_nportclasses; i++)
+	if (pi->class == trivfs_cntl_portclasses[i])
 	  return (struct trivfs_control *) pi;
-      ports_done_with_port ((void *)port);
+      ports_port_deref ((void *)port);
       return 0;
     }
   else
-    return ports_check_port_type (port, trivfs_cntl_porttypes[0]);
+    return ports_lookup_port (0, port, trivfs_cntl_porttypes[0]);
 }
 
 void 
 _trivfs_end_using_control (struct trivfs_control *cred)
 {
-  ports_done_with_port (cred);
+  ports_port_deref (cred);
 }
