@@ -320,33 +320,6 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
 	   tty, pid < 0 ? "pgrp" : "pid", pid < 0 ? -pid : pid);
 }
 
-/* Read into PROCS from the utmp file called NAME.  */
-static void
-read_utmp_procs (struct proc_stat_list *procs, char *name)
-{
-  int rd, fd;
-  struct utmp buf[64];
-
-  fd = open (name, O_RDONLY);
-  if (fd < 0)
-    error (9, errno, "%s", name);
-
-  while ((rd = read (fd, buf, sizeof (buf))) > 0)
-    {
-      struct utmp *u = buf;
-      while (rd >= sizeof (*u))
-	{
-	  if (*u->ut_name && *u->ut_line)
-	    /* An active entry.  */
-	    add_utmp_procs (procs, u);
-	  rd -= sizeof (*u);
-	  u++;
-	}
-    }
-
-  close (fd);
-}
-
 static void
 uptime (struct proc_stat_list *procs)
 {
@@ -388,16 +361,18 @@ void
 main(int argc, char *argv[])
 {
   error_t err;
+  struct utmp *ut;
   struct ps_context *context;
   int output_width = -1;
   char *fmt_string = DEFAULT_FMT_STRING, *sort_key_name = NULL;
   int sort_reverse = 0, print_heading = 1, show_entries = 1, show_uptime = 1;
   int squash_bogus_fields = 1, squash_nominal_fields = 1;
+  int default_output = 1;	/* should show standard `all users' list.  */
   struct proc_stat_list *procs;
 #if 0
   char *tty_names = 0;
   unsigned num_tty_names = 0;
-  struct idvec *only_uids = make_idvec (), *not_uids = make_idvec ();
+  struct idvec *uids = make_idvec ();
 #endif
   struct ps_user_hooks ps_hooks = { w_deps, w_fetch, w_cleanup };
 
@@ -443,7 +418,11 @@ main(int argc, char *argv[])
   /* Parse our options.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  read_utmp_procs (procs, _PATH_UTMP);
+  /* Read the utmp file.  */
+  setutent ();
+  while (ut = getutent ())
+    add_utmp_procs (procs, ut);
+  endutent ();
 
   /* Keep only processes that have our hooks attached.  */
   proc_stat_list_filter1 (procs, has_hook, 0, 0);
