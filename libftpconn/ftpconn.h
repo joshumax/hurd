@@ -82,14 +82,20 @@ struct ftp_conn_syshooks
   error_t (*cont_get_stats) (struct ftp_conn *conn, int fd, void *state,
 			     ftp_conn_add_stat_fun_t add_stat, void *hook);
 
-  /* Some ftp servers return output from the nlist command that contains more
-     *than just the simple names.  This hook, if non-zero, should look at
-     *NAME and rewrite it to compensate, changing *NAME to point to the
-     *rewritten name.  If the result is not longer than the original, *NAME
-     *may be modified in place, otherwise a malloced string should be
-     *returned in *NAME, which will automatically be freed.  DIR is the name
-     *of the directory passed to the nlist command.  */
-  error_t (*fix_nlist_name) (struct ftp_conn *conn, char *dir, char **name);
+  /* Give a name which refers to a directory file, and a name in that
+     directory, this should return in COMPOSITE the composite name refering
+     to that name in that directory, in malloced storage.  */
+  error_t (*append_name) (struct ftp_conn *conn,
+			  const char *dir, const char *name,
+			  char **composite);
+
+  /* If the name of a file *NAME is a composite name (containing both a
+     filename and a directory name), this function should change *NAME to be
+     the name component only; if the result is shorter than the original
+     *NAME, the storage pointed to it may be modified, otherwise, *NAME
+     should be changed to point to malloced storage holding the result, which
+     will be freed by the caller.  */
+  error_t (*basename) (struct ftp_conn *conn, char **name);
 };
 
 /* Type parameter for the cntl_debug hook.  */
@@ -187,9 +193,10 @@ extern error_t ftp_conn_unix_cont_get_stats (struct ftp_conn *conn,
 					     int fd, void *state,
 					     ftp_conn_add_stat_fun_t add_stat,
 					     void *hook);
-
-extern error_t ftp_conn_unix_fix_nlist_name (struct ftp_conn *conn, char *dir,
-					     char **name);
+error_t ftp_conn_unix_append_name (struct ftp_conn *conn,
+				   const char *dir, const char *name,
+				   char **composite);
+error_t ftp_conn_unix_basename (struct ftp_conn *conn, char **name);
 
 extern struct ftp_conn_syshooks ftp_conn_unix_syshooks;
 
@@ -332,5 +339,19 @@ error_t ftp_conn_cont_get_names (struct ftp_conn *conn, int fd, void *state,
    (HOOK is passed to ADD_NAME).  This function may block.  */
 error_t ftp_conn_get_names (struct ftp_conn *conn, const char *name, 
 			    ftp_conn_add_name_fun_t add_name, void *hook);
+
+/* Give a name which refers to a directory file, and a name in that
+   directory, this should return in COMPOSITE the composite name refering to
+   that name in that directory, in malloced storage.  */
+error_t ftp_conn_append_name (struct ftp_conn *conn,
+			      const char *dir, const char *name,
+			      char **composite);
+
+/* If the name of a file COMPOSITE is a composite name (containing both a
+   filename and a directory name), this function will return the name
+   component only in BASE, in malloced storage, otherwise it simply returns a
+   newly malloced copy of COMPOSITE in BASE.  */
+error_t ftp_conn_basename (struct ftp_conn *conn,
+			   const char *composite, char **base);
 
 #endif /* __FTPCONN_H__ */
