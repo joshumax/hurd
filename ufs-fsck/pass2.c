@@ -177,9 +177,10 @@ pass2 ()
 
   /* Called for each filesystem block of the directory.  Load BNO
      into core and then call CHECK1BLOCK for each DIRBLKSIZ chunk.
+     OFFSET is the offset this block occupies ithe file.
      Always return 1.  */
   int
-  checkdirblock (daddr_t bno, int nfrags)
+  checkdirblock (daddr_t bno, int nfrags, off_t offset)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
@@ -188,7 +189,8 @@ pass2 ()
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       rewrite = 0;
       for (bufp = buf; 
-	   bufp - buf < nfrags * sblock->fs_fsize;
+	   bufp - buf < nfrags * sblock->fs_fsize
+	   && offset + (bufp - buf) + DIRBLKSIZ <= dnp->i_isize; 
 	   bufp += DIRBLKSIZ)
 	{
 	  if (check1block (bufp))
