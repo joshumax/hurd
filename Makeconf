@@ -89,7 +89,7 @@ endif
 
 ifneq ($(strip $(dir)),libfshelp)
 $(libfshelp): FORCE
-	$(MAKE) -C $(hurdsourc)/libfshelp $(libfshelp)
+	$(MAKE) -C $(hurdsource)/libfshelp $(libfshelp)
 $(headers)/hurd/fshelp.h: FORCE
 	$(MAKE) -C $(hurdsource)/libfshelp $(headers)/hurd/fshelp.h
 endif
