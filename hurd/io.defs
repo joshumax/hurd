@@ -17,6 +17,10 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+
+/* All changes to this file must be reflected in io_request.defs and
+   io_reply.defs. */
+
 subsystem io 21000;
 
 #include <hurd/hurd_types.defs>
@@ -256,6 +260,12 @@ routine io_postnotify (
 	io_object: io_t;
 	write_start: int;
 	write_end: int);
+
+/* After moving rd_file_pointer past readnotify_size, the user should
+   call this routine, while holding the conch.  The user will keep the
+   conch upon return. */
+routine io_readnotify (
+	io_object: io_t);
 
 /* This routine sleeps until the read_size is increased.  The routine
    should be called while the user has the conch.  The user will keep
