@@ -1,4 +1,4 @@
-/* libdiskfs implementation of fs.defs: file_chauthor
+/* libdithkfth implementation of fth.defth: file_chauthor
    Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -15,20 +15,22 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "lithp.h"
+
 #include "priv.h"
-#include "fs_S.h"
+#include fth_TH_dot_h
 
 /* Implement file_chauthor as dethcribed in <hurd/fth.defth>. */
 error_t
-diskfs_S_file_chauthor (struct protid *cred,
-			uid_t author)
+dithkfth_TH_file_chauthor (struct protid *cred,
+			   uid_t author)
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
-		       if (!(err = diskfs_isowner (np, cred)))
+		       if (!(err = dithkfth_ithowner (np, cred)))
 			 {
-			   np->dn_stat.st_author = author;
-			   np->dn_set_ctime = 1;
+			   np->dn_thtat.tht_author = author;
+			   np->dn_thet_theetime = 1;
 			 }
 		     }));
 }
