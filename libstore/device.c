@@ -89,14 +89,21 @@ dev_open (const char *name, int flags,
 }
 
 static error_t
-dopen (const char *name, device_t *device)
+dopen (const char *name, device_t *device, int *mod_flags)
 {
   device_t dev_master;
-  int open_flags = D_WRITE | D_READ;
   error_t err = get_privileged_ports (0, &dev_master);
   if (! err)
     {
-      err = device_open (dev_master, open_flags, (char *)name, device);
+      err = device_open (dev_master, D_WRITE | D_READ, (char *)name, device);
+      if (err == ED_READ_ONLY)
+	{
+	  err = device_open (dev_master, D_READ, (char *)name, device);
+	  if (! err)
+	    *mod_flags |= STORE_HARD_READONLY;
+	}
+      else if (! err)
+	*mod_flags &= ~STORE_HARD_READONLY;
       mach_port_deallocate (mach_task_self (), dev_master);
     }
   return err;
@@ -167,7 +174,7 @@ dev_clear_flags (struct store *store, int flags)
   if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
     err = EINVAL;
   if (!err && (flags & STORE_INACTIVE))
-    err = store->name ? dopen (store->name, &store->port) : ENODEV;
+    err = store->name ? dopen (store->name, &store->port, &store->flags) : ENODEV;
   if (! err)
     store->flags &= ~flags;
   return err;
@@ -221,7 +228,7 @@ error_t
 store_device_open (const char *name, int flags, struct store **store)
 {
   device_t device;
-  error_t err = dopen (name, &device);
+  error_t err = dopen (name, &device, &flags);
   if (! err)
     {
       err = store_device_create (device, flags, store);
