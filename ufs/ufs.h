@@ -253,5 +253,5 @@ void ffs_fragacct (struct fs *, int, long [], int);
 int ffs_isblock(struct fs *, u_char *, daddr_t);
 void ffs_clrblock(struct fs *, u_char *, daddr_t);
 void ffs_setblock (struct fs *, u_char *, daddr_t);
-int skpc (u_char, u_int, u_char *);
-int scanc (u_int, u_char *, u_char [], u_char);
+int skpc (int, int, char *);
+int scanc (u_int, u_char *, u_char [], int);
