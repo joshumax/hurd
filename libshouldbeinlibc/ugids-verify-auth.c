@@ -28,15 +28,22 @@
 #include <grp.h>
 
 #include <hurd/paths.h>
+/*#include <hurd/password.h>*/ /* XXX commented out until new libc installed */
 
 #include "ugids.h"
 
-/* XXXX these are dummies to use until libc gets re-installed.  */
+/* XXXX these are dummies to use until libc gets re-installed.
+   The weak symbols should make the real libhurduser.so versions
+   get used as soon as they exist, even though we didn't #include
+   the header.  When they are available in a working libc dist,
+   then this page can be removed and the #include above uncommented.  */
+#pragma weak password_check_user
 error_t
 password_check_user (io_t a, uid_t b, const char *c, auth_t *d)
 {
   return ENOSYS;
 }
+#pragma weak password_check_group
 error_t
 password_check_group (io_t a, uid_t b, const char *c, auth_t *d)
 {
@@ -56,7 +63,7 @@ struct svma_state
 
 /* Append the auth ports in AUTHS, of length NUM_AUTHS, to the auth port
    vector in SS, returning 0 if successful, or an error.  */
-static error_t 
+static error_t
 svma_state_add_auths (struct svma_state *ss, const auth_t *auths, size_t num_auths)
 {
   auth_t *new = realloc (ss->auths, ss->num_auths + num_auths);
@@ -114,7 +121,7 @@ ugids_verify_make_auth (const struct ugids *ugids,
 {
   error_t err;
   /* By default, get authentication from the password server.  */
-  struct svma_state svma_state = { 0 };
+  struct svma_state svma_state;
   error_t (*verify_fn) (const char *password,
 			uid_t id, int is_group,
 			void *pwd_or_grp, void *hook)
@@ -131,10 +138,16 @@ ugids_verify_make_auth (const struct ugids *ugids,
       verify_fn = 0;
       verify_hook = 0;
     }
+  else
+    {
+      /* Must initialize list to empty so svma_state_add_auths works.  */
+      svma_state.auth = NULL;
+      svma_state.nauth = 0;
+    }
 
   /* Check passwords.  */
   err = ugids_verify (ugids, have_uids, have_gids,
-		      getpass_fn, getpass_hook, verify_fn, verify_hook); 
+		      getpass_fn, getpass_hook, verify_fn, verify_hook);
 
   if (! err)
     /* The user apparently has access to all the ids, try to grant the
@@ -154,7 +167,7 @@ ugids_verify_make_auth (const struct ugids *ugids,
 	    err =
 	      auth_makeauth (cur_auth,
 			     svma_state.auths, MACH_MSG_TYPE_COPY_SEND,
-			     svma_state.num_auths, 
+			     svma_state.num_auths,
 			     ugids->eff_uids.ids, ugids->eff_uids.num,
 			     ugids->avail_uids.ids, ugids->avail_uids.num,
 			     ugids->eff_gids.ids, ugids->eff_gids.num,
