@@ -1,5 +1,7 @@
 1997-07-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* bfloppy1.grub (fd0): Use /boot/serverboot uncompressed.
+
 	* rfloppy.nss: New file.
 	* rfloppy-special.copy: etc/nsswitch.conf.
 	* rfloppy.copy: Add sbin/swapon, servers/socket/inet, servers/socket/local.

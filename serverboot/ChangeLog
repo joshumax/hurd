@@ -1,3 +1,7 @@
+1997-07-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* bootstrap.c (main): Don't exit when no paging partition.
+
 1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* bootstrap.c: Don't include "translate_root.h".
