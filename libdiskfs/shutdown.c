@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 94, 95, 96, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,99,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -21,8 +21,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include <hurd/fsys.h>
-
-struct rwlock diskfs_fsys_lock = RWLOCK_INITIALIZER;
 
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t
