@@ -33,20 +33,21 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
 
-  mutex_lock (&p->interlock);
-
-  if (p->pager_state != NOTINIT)
-    {
-      printf ("pager dup init");
-      goto out;
-    }
   if (pagesize != __vm_page_size)
     {
       printf ("incg init: bad page size");
       goto out;
     }
 
+  mutex_lock (&p->interlock);
+
   _pager_wait_for_seqno (p, seqno);
+
+  if (p->pager_state != NOTINIT)
+    {
+      printf ("pager dup init\n");
+      goto out;
+    }
 
   p->memobjcntl = control;
   p->memobjname = name;
