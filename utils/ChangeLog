@@ -1,6 +1,7 @@
 Mon Sep 23 00:19:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* sush.sh: Add option parsing, version number, &c.
+	* sush.sh, uptime.sh: Add option parsing, version number, &c.
+	Add copyright notice.
 
 	* Makefile (login-LDLIBS): Add $(LIBCRYPT).
 

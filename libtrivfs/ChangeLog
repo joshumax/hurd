@@ -1,5 +1,7 @@
 Mon Sep 23 17:20:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* file-get-fs-options.c <argz.h>: New include.
+
 	* trivfs.h (trivfs_append_args): Make ARGZ_LEN `size_t *'.
 	* append-args.c (trivfs_append_args): Likewise.
 

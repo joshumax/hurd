@@ -198,9 +198,6 @@ See `tasks', the exported task list.
     and child_lookup() doesn't supply more than fds 0-2).
 ** Serverboot doesn't deal with symlinks properly.
 ** Grub doesn't deal with symlinks properly.
-** `sush --help' gets a bus error.  
-** `uptime --help' and `uptime --version' fail.
-*** MAKEDEV should be able to make physical terminal devs.
 
 ** fsck:
 *** fsck should use (not-yet-added) fsys_get_options returned device instead 
