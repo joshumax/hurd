@@ -57,7 +57,7 @@ static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 			    "block_group = %d, group_desc = %lu, desc = %lu",
 			     block_group, group_desc, desc);
 	gdp = (struct ext2_group_desc *) 
-	      sb->u.ext2_sb.s_group_desc[group_desc]->b_data;
+	      sb->u.ext2_sb.s_group_desc[group_desc];
 	if (bh)
 		*bh = sb->u.ext2_sb.s_group_desc[group_desc];
 	return gdp + desc;
@@ -219,7 +219,7 @@ void ext2_free_blocks (struct super_block * sb, unsigned long block,
 			    block, count);
 
 	for (i = 0; i < count; i++) {
-		if (!clear_bit (bit + i, bh->b_data))
+		if (!clear_bit (bit + i, bh))
 			ext2_warning (sb, "ext2_free_blocks",
 				      "bit already cleared for block %lu", 
 				      block);
@@ -300,7 +300,7 @@ repeat:
 
 		ext2_debug ("goal is at %d:%d.\n", i, j);
 
-		if (!test_bit(j, bh->b_data)) {
+		if (!test_bit(j, bh)) {
 #ifdef EXT2FS_DEBUG
 			goal_hits++;
 			ext2_debug ("goal bit allocated.\n");
@@ -312,10 +312,10 @@ repeat:
 			 * The goal was occupied; search forward for a free 
 			 * block within the next 32 blocks
 			 */
-			lmap = ((((unsigned long *) bh->b_data)[j >> 5]) >>
+			lmap = ((((unsigned long *) bh)[j >> 5]) >>
 				((j & 31) + 1));
 			if (j < EXT2_BLOCKS_PER_GROUP(sb) - 32)
-				lmap |= (((unsigned long *) bh->b_data)[(j >> 5) + 1]) <<
+				lmap |= (((unsigned long *) bh)[(j >> 5) + 1]) <<
 				 (31 - (j & 31));
 			else
 				lmap |= 0xffffffff << (31 - (j & 31));
@@ -339,14 +339,14 @@ repeat:
 		 * Search first in the remainder of the current group; then,
 		 * cyclicly search through the rest of the groups.
 		 */
-		p = ((char *) bh->b_data) + (j >> 3);
+		p = ((char *) bh) + (j >> 3);
 		r = memscan(p, 0, (EXT2_BLOCKS_PER_GROUP(sb) - j + 7) >> 3);
-		k = (r - ((char *) bh->b_data)) << 3;
+		k = (r - ((char *) bh)) << 3;
 		if (k < EXT2_BLOCKS_PER_GROUP(sb)) {
 			j = k;
 			goto search_back;
 		}
-		k = find_next_zero_bit ((unsigned long *) bh->b_data, 
+		k = find_next_zero_bit ((unsigned long *) bh, 
 					EXT2_BLOCKS_PER_GROUP(sb),
 					j);
 		if (k < EXT2_BLOCKS_PER_GROUP(sb)) {
@@ -375,12 +375,12 @@ repeat:
 	}
 	bitmap_nr = load_block_bitmap (sb, i);
 	bh = sb->u.ext2_sb.s_block_bitmap[bitmap_nr];
-	r = memscan(bh->b_data, 0, EXT2_BLOCKS_PER_GROUP(sb) >> 3);
-	j = (r - bh->b_data) << 3;
+	r = memscan(bh, 0, EXT2_BLOCKS_PER_GROUP(sb) >> 3);
+	j = (r - bh) << 3;
 	if (j < EXT2_BLOCKS_PER_GROUP(sb))
 		goto search_back;
 	else
-		j = find_first_zero_bit ((unsigned long *) bh->b_data,
+		j = find_first_zero_bit ((unsigned long *) bh,
 					 EXT2_BLOCKS_PER_GROUP(sb));
 	if (j >= EXT2_BLOCKS_PER_GROUP(sb)) {
 		ext2_error (sb, "ext2_new_block",
@@ -395,7 +395,7 @@ search_back:
 	 * bitmap.  Now search backwards up to 7 bits to find the
 	 * start of this group of free blocks.
 	 */
-	for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh->b_data); k++, j--);
+	for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh); k++, j--);
 	
 got_block:
 
@@ -411,7 +411,7 @@ got_block:
 			    "Allocating block in system zone - "
 			    "block = %u", tmp);
 
-	if (set_bit (j, bh->b_data)) {
+	if (set_bit (j, bh)) {
 		ext2_warning (sb, "ext2_new_block",
 			      "bit already set for block %d", j);
 		goto repeat;
@@ -428,7 +428,7 @@ got_block:
 		*prealloc_block = tmp + 1;
 		for (k = 1;
 		     k < 8 && (j + k) < EXT2_BLOCKS_PER_GROUP(sb); k++) {
-			if (set_bit (j + k, bh->b_data))
+			if (set_bit (j + k, bh))
 				break;
 			(*prealloc_count)++;
 		}	
@@ -459,7 +459,7 @@ got_block:
 		unlock_super (sb);
 		return 0;
 	}
-	memset(bh->b_data, 0, sb->s_blocksize);
+	memset(bh, 0, sb->s_blocksize);
 	bh->b_uptodate = 1;
 	mark_buffer_dirty(bh, 1);
 	brelse (bh);
@@ -540,28 +540,28 @@ void ext2_check_blocks_bitmap (struct super_block * sb)
 		bitmap_nr = load_block_bitmap (sb, i);
 		bh = sb->u.ext2_sb.s_block_bitmap[bitmap_nr];
 
-		if (!test_bit (0, bh->b_data))
+		if (!test_bit (0, bh))
 			ext2_error (sb, "ext2_check_blocks_bitmap",
 				    "Superblock in group %d is marked free", i);
 
 		for (j = 0; j < desc_blocks; j++)
-			if (!test_bit (j + 1, bh->b_data))
+			if (!test_bit (j + 1, bh))
 				ext2_error (sb, "ext2_check_blocks_bitmap",
 					    "Descriptor block #%d in group "
 					    "%d is marked free", j, i);
 
-		if (!block_in_use (gdp->bg_block_bitmap, sb, bh->b_data))
+		if (!block_in_use (gdp->bg_block_bitmap, sb, bh))
 			ext2_error (sb, "ext2_check_blocks_bitmap",
 				    "Block bitmap for group %d is marked free",
 				    i);
 
-		if (!block_in_use (gdp->bg_inode_bitmap, sb, bh->b_data))
+		if (!block_in_use (gdp->bg_inode_bitmap, sb, bh))
 			ext2_error (sb, "ext2_check_blocks_bitmap",
 				    "Inode bitmap for group %d is marked free",
 				    i);
 
 		for (j = 0; j < sb->u.ext2_sb.s_itb_per_group; j++)
-			if (!block_in_use (gdp->bg_inode_table + j, sb, bh->b_data))
+			if (!block_in_use (gdp->bg_inode_table + j, sb, bh))
 				ext2_error (sb, "ext2_check_blocks_bitmap",
 					    "Block #%d of the inode table in "
 					    "group %d is marked free", j, i);
