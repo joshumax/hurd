@@ -1,0 +1,8 @@
+# Programs to be maintained on terminal lines.  init runs these programs,
+# and restartsthem when they die.  Note that in GNU, unlike in BSD, there
+# is no need to list pseudo-ttys here.
+
+# name	program				type	status	comments
+
+console	"/libexec/getty std.9600"	at386	on	secure trusted console
+tty00	"/libexec/getty std.9600"	dialup	on	secure
