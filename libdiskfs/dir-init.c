@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -48,6 +48,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
       dp->dn_set_ctime = 1;
       return err;
     }
+  /* Don't bother adding this to the name cache. */
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
@@ -60,6 +61,8 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
       pdp->dn_set_ctime = 1;
       return err;
     }
+  /* Don't bother adding this to the name cache. */
+
   diskfs_node_update (dp, 1);
   return 0;
 }
