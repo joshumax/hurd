@@ -26,19 +26,25 @@ mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
-struct port_info *diskfs_control_port;
 volatile struct mapped_time_value *diskfs_mtime;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
+spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
+int _diskfs_ncontrol_ports = 0;
+
+/* XXX */
+mach_port_t _diskfs_dotdot_node = MACH_PORT_NULL;
+
 /* Call this after arguments have been parsed to initialize the
    library.  */ 
-void 
-diskfs_init_diskfs (void)
+mach_port_t
+diskfs_init_diskfs (mach_port_t bootstrap)
 {
   mach_port_t host, dev;
   memory_object_t obj;
   device_t timedev;
+  mach_port_t realnode;
   
   _libports_initialize ();	/* XXX */
 
@@ -58,11 +64,23 @@ diskfs_init_diskfs (void)
   
   assert (diskfs_master_device != MACH_PORT_NULL); /* XXX */
 
-  diskfs_control_port = ports_allocate_port(sizeof (struct port_info), PT_CTL);
-  ports_port_ref (diskfs_control_port);
-  
   diskfs_default_pager = MACH_PORT_NULL;
   vm_set_default_memory_manager (diskfs_host_priv, &diskfs_default_pager);
+
+  if (bootstrap != MACH_PORT_NULL)
+    {
+      _diskfs_ncontrol_ports++;
+      err = fsys_startup (bootstrap, 
+			  ports_allocate_port (sizeof (struct port_info), 
+					       PT_CTL),
+			  MACH_MSG_TYPE_MAKE_SEND,
+			  &realnode,
+			  &_diskfs_dotdot_node);
+      if (err)
+	realnode = _diskfs_dotdot_node = MACH_PORT_NULL;
+    }
+  else
+    realnode = _diskfs_dotdot_node = MACH_PORT_NULL;
   
   device_open (diskfs_master_device, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
@@ -73,4 +91,14 @@ diskfs_init_diskfs (void)
   mach_port_deallocate (mach_task_self (), obj);
 
 /*  diskfs_auth_server_port = getauth (); */
+
+  return realnode;
+}
+
+void
+_diskfs_control_clean (void *arg)
+{
+  spin_lock (&_diskfs_control_lock);
+  _diskfs_ncontrol_ports--;
+  spin_unlock (&_diskfs_control_lock);
 }
