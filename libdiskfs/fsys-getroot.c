@@ -38,6 +38,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   if (!pt)
     return EOPNOTSUPP;
   
+  /* Check permission on flags. XXX */
+
   *result = (ports_get_right 
 	     (diskfs_make_protid
 	      (diskfs_make_peropen (diskfs_root_node, flags),
