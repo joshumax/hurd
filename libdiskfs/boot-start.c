@@ -516,8 +516,14 @@ start_execserver (void)
   err = vm_protect (newt, 0, trunc_page (execserver_text_size) + 0x10000, 0,
 	      VM_PROT_READ | VM_PROT_EXECUTE);
 
-  bssloc = 0x10000 + bufsiz;
-  err = vm_allocate (newt, &bssloc, round_page (execserver_bss_size), 0);
+  bssloc = trunc_page (0x10000 + execserver_text_size + execserver_data_size);
+  err = vm_allocate (newt, &bssloc,
+		     round_page (0x10000 +
+				 execserver_text_size +
+				 execserver_data_size +
+				 execserver_bss_size -
+				 bssloc),
+		     0);
 
   err = thread_create (newt, &newthd);
   err = mach_setup_thread (newt, newthd, (void *) execserver_start,
