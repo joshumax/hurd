@@ -1,3 +1,9 @@
+1999-07-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Fix bugs in last change.
+	Replace label `out' with local inline function `done'.
+	Don't try diskfs_nput (NP) when NP is null.
+
 1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-link.c (diskfs_S_dir_link): Fix error checks on ports.
