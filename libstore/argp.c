@@ -42,13 +42,22 @@ static const char doc[] = "\vIf neither --interleave or --layer is specified,"
 
 struct store_parsed
 {
+  /* Names of devices parsed.  */
   char *names;
   size_t names_len;
 
-  const struct store_class *const *classes; /* CLASSES field passed to parser.  */
+  /* Prefix that should be applied to each member of NAMES.  */
+  char *name_prefix;
 
-  const struct store_class *type;	/* --store-type specified */
-  const struct store_class *default_type; /* DEFAULT_TYPE field passed to parser.  */
+  /* --store-type specified.  This defaults to the `query' type.  */
+  const struct store_class *type;
+
+  /* A vector of class pointers used to lookup class names.  Defaults to
+     STORE_STD_CLASSES.  */
+  const struct store_class *const *classes;
+
+  /* DEFAULT_TYPE field passed to parser.  */
+  const struct store_class *default_type;
 
   off_t interleave;		/* --interleave value */
   int layer : 1;		/* --layer specified */
@@ -59,6 +68,8 @@ store_parsed_free (struct store_parsed *parsed)
 {
   if (parsed->names_len > 0)
     free (parsed->names);
+  if (parsed->name_prefix)
+    free (parsed->name_prefix);
   free (parsed);
 }
 
@@ -81,10 +92,23 @@ store_parsed_append_args (const struct store_parsed *parsed,
     }
 
   if (!err && parsed->type != parsed->default_type)
-    {
-      snprintf (buf, sizeof buf, "--store-type=%s", parsed->type->name);
-      err = argz_add (args, args_len, buf);
-    }
+    if (parsed->name_prefix)
+      /* A name prefix of "PFX:" is equivalent to appending ":PFX" to the
+	 type name.  */
+      {
+	size_t npfx_len = strlen (parsed->name_prefix);
+	char tname[strlen ("--store-type=")
+ 		   + strlen (parsed->type->name) + 1 + npfx_len - 1 + 1];
+	snprintf (tname, sizeof tname, "--store-type=%s:%.*s",
+		  parsed->type->name, npfx_len - 1, parsed->name_prefix);
+	err = argz_add (args, args_len, buf);
+      }
+    else
+      /* A simple type name.  */
+      {
+	snprintf (buf, sizeof buf, "--store-type=%s", parsed->type->name);
+	err = argz_add (args, args_len, buf);
+      }
 
   if (! err)
     err = argz_append (args, args_len, parsed->names, parsed->names_len);
@@ -136,12 +160,25 @@ error_t
 store_parsed_open (const struct store_parsed *parsed, int flags,
 		   struct store **store)
 {
+  size_t pfx_len = parsed->name_prefix ? strlen (parsed->name_prefix) : 0;
   size_t num = argz_count (parsed->names, parsed->names_len);
+
   error_t open (char *name, struct store **store)
     {
       const struct store_class *type = parsed->type;
       if (type->open)
-	return (*type->open) (name, flags, parsed->classes, store);
+	if (parsed->name_prefix)
+	  /* If there's a name prefix, we prefix any names we open with that
+	     and a colon.  */
+	  {
+	    char pfxed_name[pfx_len + 1 + strlen (name) + 1];
+	    stpcpy (stpcpy (stpcpy (pfxed_name, parsed->name_prefix),
+			    ":"),
+		    name);
+	    return (*type->open) (pfxed_name, flags, parsed->classes, store);
+	  }
+	else
+	  return (*type->open) (name, flags, parsed->classes, store);
       else
 	return EOPNOTSUPP;
     }
@@ -196,16 +233,48 @@ find_class (const char *name, const struct store_class *const *classes)
   return 0;
 }
 
+/* Print a parsing error message and (if exiting is turned off) return the
+   error code ERR.  Requires a variable called STATE to be in scope.  */
+#define PERR(err, fmt, args...) \
+  do { argp_error (state, fmt , ##args); return err; } while (0)
+
+/* Parse a --store-type/-T option.  */
+static error_t
+parse_type (char *arg, struct argp_state *state, struct store_parsed *parsed)
+{
+  char *name_prefix = 0;
+  char *type_name = arg;
+  const struct store_class *type;
+  char *class_sep = strchr (arg, ':');
+
+  if (class_sep)
+    /* A `:'-separated class name "T1:T2" is equivalent to prepending "T2:"
+       to the device name passed to T1, and is useful for the case where T1
+       takes typed names of the form "T:NAME".  A trailing `:', like "T1:" is
+       equivalent to prefixing `:' to the device name, which causes NAME to
+       be opened with store_open, as a file.  */
+    {
+      type_name = strndupa (arg, class_sep - arg);
+      name_prefix = class_sep + 1;
+    }
+
+  type = find_class (type_name, parsed->classes);
+  if (!type || !type->open)
+    PERR (EINVAL, "%s: Invalid argument to --store-type", arg);
+  else if (type != parsed->type && parsed->type != parsed->default_type)
+    PERR (EINVAL, "--store-type specified multiple times");
+
+  parsed->type = type;
+  parsed->name_prefix = name_prefix;
+
+  return 0;
+}
+
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
   error_t err;
   struct store_parsed *parsed = state->hook;
-
-  /* Print a parsing error message and (if exiting is turned off) return the
-     error code ERR.  */
-#define PERR(err, fmt, args...) \
-  do { argp_error (state, fmt , ##args); return err; } while (0)
 
   switch (opt)
     {
@@ -213,17 +282,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       arg = "device";
       /* fall through */
     case 'T':
-      {
-	const struct store_class *type = find_class (arg, parsed->classes);
-	if (!type || !type->open)
-	  PERR (EINVAL, "%s: Invalid argument to --store-type", arg);
-	else if (type != parsed->type && parsed->type != parsed->default_type)
-	  PERR (EINVAL, "--store-type specified multiple times");
-	else
-	  parsed->type = type;
-      }
-      break;
-
+      return parse_type (arg, state, parsed);
+   
     case 'I':
       if (parsed->layer)
 	PERR (EINVAL, "--layer and --interleave are exclusive");
