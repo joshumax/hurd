@@ -62,7 +62,7 @@ main (int argc, char **argv)
   off_t disk_size;
   mach_port_t bootstrap;
 
-  argp_parse (diskfs_device_startup_argp, argc, argv, 0, 0);
+  argp_parse (diskfs_device_startup_argp, argc, argv, 0, 0, 0);
 
   /* This must come after the args have been parsed, as this is where the
      host priv ports are set for booting.  */
