@@ -99,7 +99,7 @@ diskfs_S_fsys_get_options (fsys_t fsys,
     return EOPNOTSUPP;
 
   rwlock_reader_lock (&diskfs_fsys_lock);
-  err = diskfs_get_options (&argz, data_len);
+  err = _diskfs_get_options (&argz, data_len);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   if (!err)
