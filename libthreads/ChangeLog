@@ -1,5 +1,8 @@
 2002-05-28  Roland McGrath  <roland@frob.com>
 
+	* cthreads.h: Do not define WAIT_DEBUG to affect inlines.
+	* options.h: Not here either.
+
 	* cprocs.c (cproc_block): Can't be static, called from cancel-cond.c.
 
 	* cthreads.h (hurd_condition_wait, condition_implies,
