@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -151,20 +151,30 @@ check_hashbang (struct execdata *e,
   interp = strsep (&p, " \t");
 
   if (p)
-    /* Skip remaining blanks, and the rest of the line is the argument.  */
     {
+      /* Skip remaining blanks, and the rest of the line is the argument.  */
       p += strspn (p, " \t");
       arg = p;
       len = interp_len - (arg - ibuf);
+
+      if (len == 0)
+	arg = NULL;
+      else
+	{
+	  size_t i = len - 1;
+	  /* Trim trailing blanks after the argument.  */
+	  while (arg[i] == ' ' || arg[i] == '\t')
+	    --i;
+	  arg[i] = '\0';
+	  len = i + 2;		/* Include the terminating null.  */
+	}
     }
   else
-    /* There is no argument.  */
-    len = 0;
-
-  if (len == 0)
-    arg = NULL;
-  else
-    ++len;			/* Include the terminating null.  */
+    {
+      /* There is no argument.  */
+      arg = NULL;
+      len = 0;
+    }
 
   interp_len = strlen (interp) + 1;
 
