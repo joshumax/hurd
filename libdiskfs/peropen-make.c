@@ -21,20 +21,34 @@
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
 struct peropen *
-diskfs_make_peropen (struct node *np, int flags,
-		     mach_port_t dotdotport, unsigned depth)
+diskfs_make_peropen (struct node *np, int flags, struct peropen *context)
 {
   struct peropen *po = malloc (sizeof (struct peropen));
+
   po->filepointer = 0;
   po->lock_status = LOCK_UN;
   po->refcnt = 0;
   po->openstat = flags;
   po->np = np;
-  po->dotdotport = dotdotport;
-  po->depth = depth;
-  if (dotdotport != MACH_PORT_NULL)
-    mach_port_mod_refs (mach_task_self (), dotdotport, 
-			MACH_PORT_RIGHT_SEND, 1);
+
+  if (context)
+    {
+      po->root_parent = context->root_parent;
+      if (po->root_parent != MACH_PORT_NULL)
+	mach_port_mod_refs (mach_task_self (), po->root_parent, 
+			    MACH_PORT_RIGHT_SEND, 1);
+
+      po->shadow_root = context->shadow_root;
+      if (po->shadow_root)
+	diskfs_nref (po->shadow_root);
+
+      po->shadow_root_parent = context->shadow_root_parent;
+      if (po->shadow_root_parent != MACH_PORT_NULL)
+	mach_port_mod_refs (mach_task_self (), po->shadow_root_parent, 
+			    MACH_PORT_RIGHT_SEND, 1);
+    }
+
   diskfs_nref (np);
+
   return po;
 }
