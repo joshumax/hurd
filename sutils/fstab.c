@@ -34,7 +34,7 @@
 
 extern error_t fsys_set_readonly (fsys_t fsys, int readonly);
 extern error_t fsys_get_readonly (fsys_t fsys, int *readonly);
-extern error_t fsys_remount (fsys_t fsys);
+extern error_t fsys_update (fsys_t fsys);
 
 extern file_t file_name_lookup_carefully (const char *file,
 					  int flags, mode_t mode);
