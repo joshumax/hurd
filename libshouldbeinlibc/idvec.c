@@ -1,4 +1,4 @@
-/* Routines for vectors of integers
+/* Routines for vectors of uids/gids
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
@@ -20,62 +20,62 @@
 
 #include <malloc.h>
 #include <string.h>
-#include <ivec.h>
+#include <idvec.h>
 
-/* Return a new ivec, or NULL if there wasn't enough memory.  */
-struct ivec *
-make_ivec ()
+/* Return a new idvec, or NULL if there wasn't enough memory.  */
+struct idvec *
+make_idvec ()
 {
-  struct ivec *ivec = malloc (sizeof (struct ivec));
-  if (ivec)
+  struct idvec *idvec = malloc (sizeof (struct idvec));
+  if (idvec)
     {
-      ivec->ints = 0;
-      ivec->num = ivec->alloced = 0;
+      idvec->ids = 0;
+      idvec->num = idvec->alloced = 0;
     }
-  return ivec;
+  return idvec;
 }
 
-/* Insert I into IVEC at position POS, returning ENOMEM if there wasn't
+/* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
    enough memory, or 0.  */
 error_t
-ivec_insert (struct ivec *ivec, unsigned pos, int i)
+idvec_insert (struct idvec *idvec, unsigned pos, uid_t id)
 {
-  if (ivec->alloced == ivec->num)
+  if (idvec->alloced == idvec->num)
     {
-      unsigned new_size = ivec->alloced * 2 + 1;
-      int *new_ints = realloc (ivec->ints, new_size * sizeof (int));
+      unsigned new_size = idvec->alloced * 2 + 1;
+      int *new_ids = realloc (idvec->ids, new_size * sizeof (int));
 
-      if (! new_ints)
+      if (! new_ids)
 	return ENOMEM;
 	  
-      ivec->alloced = new_size;
-      ivec->ints = new_ints;
+      idvec->alloced = new_size;
+      idvec->ids = new_ids;
     }
 
-  if (pos < ivec->num)
-    bcopy (ivec->ints + pos, ivec->ints + pos + 1, ivec->num - pos);
+  if (pos < idvec->num)
+    bcopy (idvec->ids + pos, idvec->ids + pos + 1, idvec->num - pos);
 
-  ivec->ints[pos] = i;
-  ivec->num++;
+  idvec->ids[pos] = id;
+  idvec->num++;
 
   return 0;
 }
 
-/* Add I onto the end of IVEC, returning ENOMEM if there's not enough memory,
+/* Add ID onto the end of IDVEC, returning ENOMEM if there's not enough memory,
    or 0.  */
 error_t
-ivec_add (struct ivec *ivec, int i)
+idvec_add (struct idvec *idvec, uid_t id)
 {
-  return ivec_insert (ivec, ivec->num, i);
+  return idvec_insert (idvec, idvec->num, id);
 }
 
-/* Returns true if IVEC contains I.  */
+/* Returns true if IDVEC contains ID.  */
 int
-ivec_contains (struct ivec *ivec, int i)
+idvec_contains (struct idvec *idvec, uid_t id)
 {
-  unsigned j;
-  for (j = 0; j < ivec->num; j++)
-    if (ivec->ints[j] == i)
+  unsigned i;
+  for (i = 0; i < idvec->num; i++)
+    if (idvec->ids[i] == id)
       return 1;
   return 0;
 }
