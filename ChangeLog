@@ -1,3 +1,19 @@
+1999-10-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf [Decode makemode page]: Clean up variable usage in each
+	cases, as follows:
+	(installationdir): Don't test and set this directly.
+	(makemode-instdir): New variable, set instead for each makemode.
+	(linktarg): Don't this for each program-linking makemode.
+	(targets): Make sure this is always set, i.e. = $(target) in singular
+	modes.
+	[$(makemode) != library] (progtarg): New variable.
+	[$(makemode) != library] (linktarg): Set from $(progtarg), including
+	.static versions.
+	(installationdir): Test and default once, using $(makemode-instdir).
+	[linking and dep rules]: Use $(linktarg) and $(progtarg) as
+	appropriate instead of $(targets) or $(target).
+
 1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* configure.in (enable_static_progs): Move sed translation of commas
