@@ -1,3 +1,28 @@
+1997-07-07  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* kids.c (store_open_children): Support factored type notation.
+
+1997-07-05  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file.c (file_read, file_write, file_byte_read, file_byte_write):
+	Remove debugging noise.
+
+1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h: Doc fix.
+
+1997-06-27  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file.c (store_file_open): Use fiopen to open the file.
+	Set name of newly created store.
+	(fiopen, ficlose, enforced, file_set_flags, file_clear_flags): New
+	functions.
+	(store_file_class): Use new functions.
+	(store_file_byte_class): Fill in rest of functions.
+	* device.c (enforced): Move some checking here from dev_set_flags,
+	and correct the check for the number of stores.
+	(dev_set_flags): Move enforcement checking code to enforce.
+
 1997-06-26  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.c (parse_type): Fill in name_prefix field.
