@@ -1,5 +1,13 @@
 2002-06-13  Roland McGrath  <roland@frob.com>
 
+	* Makefile (mig-sheader-prefix): New variable.
+	(installhdrs): Add trivfs_*_S.h for fs, io, fsys (server stub headers).
+	($(MIGSTUBS:%Server.o=%.sdefsi)): Give dep $(srcdir)/fsmutations.h.
+	* priv.h: All declarations moved to ...
+	* trivfs.h: ... here.  #include those server stub headers.
+	* fsmutations.h (FILE_IMPORTS, IO_IMPORTS, FSYS_IMPORTS):
+	Use <hurd/trivfs.h> instead of "priv.h" here.
+
 	* io-version.c (trivfs_S_io_server_version): Fix receiver arg type.
 
 	* file-exec.c (trivfs_S_file_exec): Add reply port args.

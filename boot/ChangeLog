@@ -1,3 +1,8 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* boot.c (ds_device_write): int -> size_t in store_write call.
+	(ds_device_write_inband): Likewise.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* boot.c (S_io_identity): Use ino_t for FILENO.

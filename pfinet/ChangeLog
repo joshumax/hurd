@@ -1,3 +1,13 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* tunnel.c (trivfs_S_io_read): off_t -> loff_t
+	(trivfs_S_io_map): Add reply port args.
+	(trivfs_S_io_read): Fix argument types.  Check mmap for failure.
+
+	* pfinet.h (trivfs_protid_t): Type removed (now in trivfs.h).
+
+	* linux-src/include/net/ip_fib.h: Fix obsolescent #endif syntax.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* pfinet-ops.c (S_pfinet_siocgifconf): Use vm_size_t for AMOUNT.

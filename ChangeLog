@@ -1,3 +1,14 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* Makeconf (%_S.h %Server.c): Prepend $(mig-sheader-prefix)
+	to stub header file name.
+	(INSTALLED_LOCAL_HEADERS): Put them in the build directory,
+	not the source.  Make files with #include rather than symlinks.
+	(../$(dir)/%: %): New dummy pattern rule.
+	(INCLUDES): New variable broken out of CPPFLAGS.  Add -I$(..)include.
+	Include ..-relative dirs only if [$(dir) != .].
+	(CPPFLAGS): Use that.
+
 2002-06-11  Roland McGrath  <roland@frob.com>
 
 	* Makeconf (CPPFLAGS): Add -D_FILE_OFFSET_BITS=64.

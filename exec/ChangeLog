@@ -1,3 +1,7 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* priv.h (trivfs_protid_t): Type removed (now in trivfs.h).
+
 2002-05-29  Roland McGrath  <roland@frob.com>
 
 	* hashexec.c (check_hashbang): Fix fs id port arg in io_identity call.
