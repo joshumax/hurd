@@ -48,6 +48,7 @@ See `tasks', the exported task list.
 *** make sure profiling works !!
 *** implement revoke once io_revoke is added. !!
 *** add chflags flags to appropriate header(s)
+*** declare reboot() somewhere.
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
@@ -229,6 +230,7 @@ See `tasks', the exported task list.
 *** Implement nqnfs. !
 *** Add Hurd-specific calls. !!
 *** writes don't seem to work properly !!!
+*** Report statfs correctly. !!
 
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from
