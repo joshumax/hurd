@@ -20,7 +20,7 @@
 
 
 #include "priv.h"
-#include "name-cache.h"
+#include <string.h>
 
 /* Maximum number of names to cache at once */
 #define MAXCACHE 256
@@ -89,15 +89,16 @@ diskfs_enter_cache (struct node *dir, struct node *np, char *name)
     free (tmp);
 }
 
-/* Purge all references in the cache to NP as a node inside a directory */
+/* Purge all references in the cache to NP as a node inside 
+   directory DP. */
 void
-diskfs_purge_cache_node (struct node *np)
+diskfs_purge_cache (struct node *dp, struct node *np)
 {
   struct lookup_cache *lc, *nxt;
   
   spin_lock (&diskfs_node_refcnt_lock);
   for (lc = lookup_cache_head; lc; lc = nxt)
-    if (lc->np == np)
+    if (lc->np == np && lc->dp == dp)
       {
 	if (lc->prev)
 	  lc->prev->next = lc->next;
@@ -114,7 +115,7 @@ diskfs_purge_cache_node (struct node *np)
 /* Purge all references in the cache to NP, either as a node or as a
    directory.  diskfs_node_refcnt_lock must be held around this call. */
 void 
-_diskfs_purge_cache (struct node *np)
+_diskfs_purge_cache_deletion (struct node *np)
 {
   struct lookup_cache *lc, *nxt;
   
@@ -139,6 +140,7 @@ _diskfs_purge_cache (struct node *np)
 struct node *
 diskfs_check_cache (struct node *dir, char *name)
 {
+  struct lookup_cache *lc;
   size_t len = strlen (name);
   
   spin_lock (&diskfs_node_refcnt_lock);
@@ -150,9 +152,9 @@ diskfs_check_cache (struct node *dir, char *name)
       {
 	if (lc->np)
 	  {
-	    rp->refereces++;
+	    lc->np->references++;
 	    spin_unlock (&diskfs_node_refcnt_lock);
-	    return np;
+	    return lc->np;
 	  }
 	else
 	  {
