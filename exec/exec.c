@@ -427,8 +427,8 @@ map (struct execdata *e, off_t posn, size_t len)
   const size_t size = e->file_size;
   size_t offset;
 
-  if ((f->__target & ~(f->__bufsize - 1)) == (posn & ~(f->__bufsize - 1)) &&
-      f->__buffer + (posn + len - f->__target) < f->__get_limit)
+  if ((f->__offset & ~(f->__bufsize - 1)) == (posn & ~(f->__bufsize - 1)) &&
+      f->__buffer + (posn + len - f->__offset) < f->__get_limit)
     /* The current mapping window covers it.  */
     offset = posn & (f->__bufsize - 1);
   else if (e->filemap == MACH_PORT_NULL)
@@ -454,7 +454,7 @@ map (struct execdata *e, off_t posn, size_t len)
 	  f->__bufsize = round_page (nread);
 	}
 
-      f->__target = posn;
+      f->__offset = posn;
       f->__get_limit = f->__buffer + nread;
       offset = 0;
     }
@@ -468,8 +468,8 @@ map (struct execdata *e, off_t posn, size_t len)
 
       /* Make sure our mapping is page-aligned in the file.  */
       offset = posn & (vm_page_size - 1);
-      f->__target = trunc_page (posn);
-      f->__bufsize = round_page (posn + len) - f->__target;
+      f->__offset = trunc_page (posn);
+      f->__bufsize = round_page (posn + len) - f->__offset;
 
       /* Map the data from the file.  */
       if (vm_map (mach_task_self (),
@@ -485,13 +485,13 @@ map (struct execdata *e, off_t posn, size_t len)
       if (e->cntl)
 	e->cntl->accessed = 1;
 
-      if (f->__target + f->__bufsize > size)
+      if (f->__offset + f->__bufsize > size)
 	f->__get_limit = f->__buffer + (size - f->__target);
       else
 	f->__get_limit = f->__buffer + f->__bufsize;
     }
 
-  f->__offset = f->__target;
+  f->__target = f->__offset;
   f->__bufp = f->__buffer + offset;
 
   if (f->__bufp + len > f->__get_limit)
