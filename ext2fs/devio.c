@@ -36,8 +36,6 @@ dev_write_sync (daddr_t addr, vm_address_t data, long len)
   return 0;
 }
 
-static int deverr;
-
 /* Read disk block ADDR; put the address of the data in DATA; read LEN
    bytes.  Always *DATA should be a full page no matter what.   */
 error_t
