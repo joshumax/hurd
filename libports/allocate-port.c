@@ -42,6 +42,7 @@ void *ports_allocate_port (struct port_bucket *bucket,
   pi->class = class;
   pi->refcnt = 1;
   pi->weakrefcnt = 0;
+  pi->cancel_threshhold = 0;
   pi->mscount = 0;
   pi->flags = 0;
   pi->port_right = port;
