@@ -1,3 +1,9 @@
+1998-09-26  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* cacheq.c (cacheq_set_length): Fix the limit of the destination
+	entries.  Decide that there is no following entry if the current
+	entry is equal or greater than this limit.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* idvec-verify.c (verify_id): Add braces to silence gcc warning.

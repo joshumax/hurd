@@ -1,3 +1,8 @@
+1998-10-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (main): Don't bogusly clear bootstrap_args.
+	Reported by OKUJI Yoshinori <okuji@kuicr.kyoto-u.ac.jp>.
+
 Tue May 12 12:03:38 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* init.c (setup_terminal): Free LINE after done using it.
@@ -49,7 +54,7 @@ Thu Aug  8 16:34:06 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	(reread_ttys): Use shutdown_terminal instead of doing it by hand.
 	Keep track of which ttys we used to know about are no longer in
 	/etc/ttys, and treat them as now `off'.
-	
+
 	* init.c (kill_everyone): `continue' in the essential task case
 	didn't go back to the main loop; fix it up correctly.
 
@@ -100,22 +105,22 @@ Wed Jun 19 14:49:08 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* init.c (run_for_real): Doc fix.
 	(startup_terminal): Deal properly if one of the run_for_real's
-	fails. 
+	fails.
 	(launch_single_user): If the shell can't be started, crash the
-	system. 
+	system.
 	(process_rc_script): Return non-zero if run_for_real fails.
 	(process_signal) [SIGCHLD]: If process_rc_script fails, go back to
 	single-user.
 	(S_startup_essential_task): Likewise.
 	(init_ttys): Return non-zero if we fail.
 	(startup_terminal): Return non-zero if we don't actually start
-	anything. 
+	anything.
 	(startup_ttys): Return non-zero if we fail.
 	(launch_multi_user): If init_ttys fails, go back to single.  If we
 	go multi, actually set system_state accordingly.  If startup_ttys
 	fails, go back to single.
 	(init_ttys, reread_ttys): Test return value of setttyent
-	correctly. 
+	correctly.
 
 Mon Jun 17 14:05:33 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
@@ -133,7 +138,7 @@ Mon Jun 17 14:05:33 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* init.c (run_for_real): New arg `setsid'; only do setsid if it's
 	set.  All callers changed.  Return the pid of the new program,
 	not the task port.  All callers changed.
-	
+
 	* Makefile (dir): Now init.
 
 	* init.c: Include "mung_msg_S.h" instead of "msg_S.h".
@@ -145,7 +150,7 @@ Mon Jun 17 00:17:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* init.c (run_for_real, open_console, process_signal, reboot_mach,
 	run_for_real, run, reboot_system): Use error instead of fprintf.
 	(notify_shutdown): Always emit terminating newline.
-	
+
 Fri Jun 14 11:07:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* init.c: Include <paths.h>, <error.h>, <sys/wait.h>, and
@@ -156,13 +161,13 @@ Fri Jun 14 11:07:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(open_console): New function; massaged guts taken from
 	launch_single_user.  Be more verbose if we do something unusual.
 	(launch_single_user): Call open_console.  Don't call
-	init_stdarrays here. 
+	init_stdarrays here.
 	(system_state, default_ints): New variables.
 	(main): Initialize SYSTEM_STATE and DEFAULT_INTS.
 	(run_for_real): Pass default_ints.
 	(run): Likewise.
 	(S_startup_essential_task): Delete var INITDONE; use SYSTEM_STATE
-	instead. 
+	instead.
 	(launch_single_user): Set SYSTEM_STATE to SINGLE.
 	(process_rc_script): New function.
 	(launch_multi_user): New function.
@@ -217,7 +222,7 @@ Thu May  9 19:03:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(S_msg_startup_dosync): Delete function.
 	Include <hurd/startup_notify.h>.
  	(reboot_system): Use new startup_dosync interface.
-	
+
 	* init.c (init_stdarrays): Use new authentication interface.
 
 Mon May  6 14:25:02 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
@@ -543,4 +548,3 @@ Thu May  5 19:15:39 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 Thu May  5 07:44:21 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
 
 	* Makefile: Change uses of $(headers) to $(includedir).
-
