@@ -1,3 +1,8 @@
+2002-03-21  Roland McGrath  <roland@frob.com>
+
+	* Makeconf ($(libname).so.$(hurd-version)): Reorder link arguments so
+	that .map files come after the -( ... -) group.
+
 2002-03-15  Roland McGrath  <roland@frob.com>
 
 	* configure.in: Remove the checks for libparted.
