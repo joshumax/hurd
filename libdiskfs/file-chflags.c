@@ -20,7 +20,7 @@
 
 /* Implement file_chflags as described in <hurd/fs.defs>. */
 error_t
-dikfs_S_file_chflags (struct protid *cred,
+diskfs_S_file_chflags (struct protid *cred,
 		      int flags)
 {
   CHANGE_NODE_FIELD (cred,
