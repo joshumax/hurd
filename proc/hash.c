@@ -57,18 +57,21 @@ addhash (struct htable *ht,
   int oldsize;
   int i;
   
-  for (h = HASH (id, ht); 
-       (ht->tab[h] != 0 && ht->tab[h] != HASH_DEL && h != firsth);
-       firsth = (firsth == -1) ? h : firsth, h = REHASH (id, ht, h))
-    ;
-
-  if (ht->tab[h] == 0
-      || ht->tab[h] == HASH_DEL)
+  if (ht->size)
     {
-      ht->tab[h] = item;
-      ht->ids[h] = id;
-      *locp = &ht->tab[h];
-      return;
+      for (h = HASH (id, ht); 
+	   (ht->tab[h] != 0 && ht->tab[h] != HASH_DEL && h != firsth);
+	   firsth = (firsth == -1) ? h : firsth, h = REHASH (id, ht, h))
+	;
+
+      if (ht->tab[h] == 0
+	  || ht->tab[h] == HASH_DEL)
+	{
+	  ht->tab[h] = item;
+	  ht->ids[h] = id;
+	  *locp = &ht->tab[h];
+	  return;
+	}
     }
   
   /* We have to rehash this again? */
@@ -102,6 +105,9 @@ findhash (struct htable *ht,
 {
   int h, firsth = -1;
   void *ret;
+
+  if (ht->size == 0)
+    return 0;
 
   for (h = HASH (id, ht);
        (ht->tab[h] != 0	&& ht->ids[h] != id && h != firsth);
