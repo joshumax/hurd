@@ -1,3 +1,9 @@
+Tue Jul 23 19:32:09 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (allocino): `struct timespec' now uses a field prefix
+	of `tv_'.
+	* utilities.c (pinode): Likewise.
+
 Thu Jul 18 14:55:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* pass2.c (pass2): If an entire directory block is null, allow
