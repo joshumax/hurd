@@ -1,6 +1,6 @@
 /* Access, formatting, & comparison routines for printing process info.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -742,14 +742,19 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
       else if (strcmp (wait, "init#5") == 0)
 	wait = "boot";		/* Bootstrap port */
       else
-	/* See if we can shorten the name to fit better.  We happen know that
-	   all currently returned keys are unique in the first character. */
+	/* See if we can shorten the name to fit better.  */
 	{
-	  char *sep = index (wait, '#');
-	  if (sep && sep > wait)
+	  char *abbrev = 0, *num = 0;
+	  if (strncmp (wait, "fd#", 3) == 0)
+	    abbrev = "fd", num = wait + 3;
+	  else if (strncmp (wait, "bgfd#", 5) == 0)
+	    abbrev = "bg", num = wait + 5;
+	  else if (strncmp (wait, "port#", 5) == 0)
+	    abbrev = "", num = wait + 5;
+	  if (abbrev)
 	    {
 	      snprintf (port_name_buf, sizeof port_name_buf,
-			"%c%s", wait[0], sep);
+			"%s%s", abbrev, num);
 	      wait = port_name_buf;
 	    }
 	}
