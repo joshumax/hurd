@@ -23,7 +23,8 @@ makemode := utility
 
 SRCS = mkfs.c # newfs.c
 OBJS = mkfs.o # newfs.o
-target = mkfs
+target = mkfs.ufs
+installationdir = $(sbindir)
 
 include ../Makeconf
 
