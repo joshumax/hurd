@@ -1,3 +1,9 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* streamio.c (create_buffer): extern inline -> static inline
+	(buffer_size, buffer_readable, buffer_writable): Likewise.
+	(clear_buffer, buffer_read): Likewise.
+
 2001-12-11  Marcus Brinkmann  <marcus@gnu.org>
 
 	* streamio.c (device_open_reply): In the D_INVALID_OPERATION case,
@@ -5,7 +11,7 @@
 
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
-	* magic.c (trivfs_S_dir_lookup):  Use iohelp_dup_iouser
+	* magic.c (trivfs_S_dir_lookup): Use iohelp_dup_iouser
 	as per the new semantics.
 
 2001-02-28  Roland McGrath  <roland@frob.com>

@@ -1,3 +1,8 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* proc.h (check_owner): Move this extern inline function ...
+	* info.c (check_owner): ... to here, made static inline.
+
 2001-08-14  Marcus Brinkmann  <marcus@gnu.org>
 
 	* mgt.c (S_proc_dostop): If task_threads fails, resume the

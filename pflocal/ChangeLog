@@ -1,3 +1,14 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* connq.c (connq_compress): #if 0 out unused function.
+
+	* sock.h (sock_deref): Don't define this extern inline.
+	Instead, use static inline and __attribute__ ((unused)).
+	* mig-decls.h (begin_using_sock_user_port): Likewise.
+	(end_using_sock_user_port): Likewise.
+	(begin_using_addr_port): Likewise.
+	(end_using_addr_port): Likewise.
+
 2001-03-31  Roland McGrath  <roland@frob.com>
 
 	* sock.c: Include "connq.h" for connq_destroy decl.

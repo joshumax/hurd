@@ -1,3 +1,7 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* i386/thread.c (cthread_sp): Use __thread_stack_pointer.
+
 2001-08-23  Roland McGrath  <roland@frob.com>
 
 	* lockfile.c: Rewritten to use macros now defined by libc.
