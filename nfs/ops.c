@@ -1658,7 +1658,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
   else
     allocsize = round_page (bufsiz);
   if (allocsize > *datacnt)
-    vm_allocate (mach_task_self (), (vm_address_t *)data, allocsize, 1);
+    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   /* Skip ahead to the correct entry. */
   bp = buf;

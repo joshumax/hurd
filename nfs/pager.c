@@ -118,7 +118,8 @@ pager_read_page (struct user_pager_info *pager,
 
   mutex_lock (&np->lock);
 
-  vm_allocate (mach_task_self (), buf, vm_page_size, 1);
+  *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+			      MAP_ANON, 0, 0);
   data = (char *) *buf;
   amt = vm_page_size;
   offset = page;
