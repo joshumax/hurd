@@ -232,7 +232,8 @@ ht := $(srcdir)/hurd/hurd_types.defs
 		    -user /dev/null -header /dev/null
 %_U.h %User.c: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) $< \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
+	| $(MIGCOM) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) \
+		    -user $*User.c -server /dev/null -header $*_U.h
 
 
 # Where to find .defs files.
