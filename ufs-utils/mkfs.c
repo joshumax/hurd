@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.4 1994/09/09 16:48:27 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.5 1994/10/12 16:58:58 mib Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -250,7 +250,8 @@ main (int argc, char **argv)
   minfree = MINFREE;
   opt = DEFAULTOPT ;
   density = 4 * fsize;
-  maxcontig = MAX (1, MIN (MAXPHYS, MAXBSIZE) / bsize - 1);
+/*  maxcontig = MAX (1, MIN (MAXPHYS, MAXBSIZE) / bsize - 1); */
+  makcontig = 0;
   rotdelay = 4;
 #define MAXBLKPG(bsize)	((bsize) / sizeof(daddr_t))
   maxbpg = MAXBLKPG (bsize);
