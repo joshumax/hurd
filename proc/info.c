@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992,93,94,95,96,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -165,7 +165,7 @@ get_string (task_t t,
 
   vm_address_t readaddr;
   vm_address_t data;
-  u_int readlen;
+  size_t readlen;
   error_t err;
   char *c;
 
@@ -261,7 +261,7 @@ static error_t
 get_string_array (task_t t,
 		  vm_address_t loc,
 		  vm_address_t *buf,
-		  u_int *buflen)
+		  size_t *buflen)
 {
   char *bp;
   int *vector, *vp;
@@ -334,7 +334,7 @@ kern_return_t
 S_proc_getprocargs (struct proc *callerp,
 		  pid_t pid,
 		  char **buf,
-		  u_int *buflen)
+		  size_t *buflen)
 {
   struct proc *p = pid_find (pid);
 
@@ -351,7 +351,7 @@ kern_return_t
 S_proc_getprocenv (struct proc *callerp,
 		 pid_t pid,
 		 char **buf,
-		 u_int *buflen)
+		 size_t *buflen)
 {
   struct proc *p = pid_find (pid);
 
@@ -373,12 +373,12 @@ S_proc_getprocinfo (struct proc *callerp,
 		    pid_t pid,
 		    int *flags,
 		    int **piarray,
-		    u_int *piarraylen,
+		    size_t *piarraylen,
 		    char **waits, mach_msg_type_number_t *waits_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
-  int nthreads;
+  size_t nthreads;
   thread_t *thds;
   error_t err = 0;
   size_t structsize;
@@ -386,7 +386,7 @@ S_proc_getprocinfo (struct proc *callerp,
   int pi_alloced = 0, waits_alloced = 0;
   /* The amount of WAITS we've filled in so far.  */
   mach_msg_type_number_t waits_used = 0;
-  u_int tkcount, thcount;
+  size_t tkcount, thcount;
   struct proc *tp;
   task_t task;			/* P's task port.  */
   mach_port_t msgport;		/* P's msgport, or MACH_PORT_NULL if none.  */
@@ -470,9 +470,23 @@ S_proc_getprocinfo (struct proc *callerp,
   if (*flags & PI_FETCH_TASKINFO)
     {
       tkcount = TASK_BASIC_INFO_COUNT;
-      err = task_info (task, TASK_BASIC_INFO, (int *)&pi->taskinfo, &tkcount);
+      err = task_info (task, TASK_BASIC_INFO,
+		       (task_info_t) &pi->taskinfo, &tkcount);
       if (err == MACH_SEND_INVALID_DEST)
 	err = ESRCH;
+#ifdef TASK_SCHED_TIMESHARE_INFO
+      if (!err)
+	{
+	  tkcount = TASK_SCHED_TIMESHARE_INFO_COUNT;
+	  err = task_info (task, TASK_SCHED_TIMESHARE_INFO,
+			   (int *)&pi->timeshare_base_info, &tkcount);
+	  if (err == KERN_INVALID_POLICY)
+	    {
+	      pi->timeshare_base_info.base_priority = -1;
+	      err = 0;
+	    }
+	}
+#endif
     }
 
   for (i = 0; i < nthreads; i++)
@@ -483,7 +497,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	{
 	  thcount = THREAD_BASIC_INFO_COUNT;
 	  err = thread_info (thds[i], THREAD_BASIC_INFO,
-			     (int *)&pi->threadinfos[i].pis_bi,
+			     (thread_info_t) &pi->threadinfos[i].pis_bi,
 			     &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
@@ -503,7 +517,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	{
 	  thcount = THREAD_SCHED_INFO_COUNT;
 	  err = thread_info (thds[i], THREAD_SCHED_INFO,
-			     (int *)&pi->threadinfos[i].pis_si,
+			     (thread_info_t) &pi->threadinfos[i].pis_si,
 			     &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
@@ -629,7 +643,7 @@ kern_return_t
 S_proc_getloginpids (struct proc *callerp,
 		     pid_t id,
 		     pid_t **pids,
-		     u_int *npids)
+		     size_t *npids)
 {
   error_t err = 0;
   struct proc *l = pid_find (id);

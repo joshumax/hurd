@@ -1,5 +1,5 @@
 /* Proc server host management calls
-   Copyright (C) 1992,93,94,96,97,2001 Free Software Foundation
+   Copyright (C) 1992,93,94,96,97,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -49,7 +49,7 @@ struct server_version
 } *server_versions;
 int nserver_versions, server_versions_nalloc;
 
-struct execdata_notify 
+struct execdata_notify
 {
   mach_port_t notify_port;
   struct execdata_notify *next;
@@ -64,10 +64,10 @@ S_proc_getprivports (struct proc *p,
 {
   if (!p)
     return EOPNOTSUPP;
-  
+
   if (! check_uid (p, 0))
     return EPERM;
-  
+
   *hostpriv = master_host_port;
   *devpriv = master_device_port;
   return 0;
@@ -78,9 +78,9 @@ S_proc_getprivports (struct proc *p,
 kern_return_t
 S_proc_setexecdata (struct proc *p,
 		    mach_port_t *ports,
-		    u_int nports,
+		    size_t nports,
 		    int *ints,
-		    u_int nints)
+		    size_t nints)
 {
   int i;
   struct execdata_notify *n;
@@ -89,7 +89,7 @@ S_proc_setexecdata (struct proc *p,
 
   if (!p)
     return EOPNOTSUPP;
-  
+
   if (!check_uid (p, 0))
     return EPERM;
 
@@ -104,7 +104,7 @@ S_proc_setexecdata (struct proc *p,
       free (std_port_array_new);
       return ENOMEM;
     }
-  
+
   if (std_port_array)
     {
       for (i = 0; i < n_std_ports; i++)
@@ -113,30 +113,30 @@ S_proc_setexecdata (struct proc *p,
     }
   if (std_int_array)
     free (std_int_array);
-  
+
   std_port_array = std_port_array_new;
   n_std_ports = nports;
   memcpy (std_port_array, ports, sizeof (mach_port_t) * nports);
-  
+
   std_int_array = std_int_array_new;
   n_std_ints = nints;
   memcpy (std_int_array, ints, sizeof (int) * nints);
-  
+
   for (n = execdata_notifys; n; n = n->next)
     exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND,
 		      n_std_ports, std_int_array, n_std_ints);
-      
+
   return 0;
 }
 
 /* Implement proc_getexecdata as described in <hurd/process.defs>. */
-kern_return_t 
+kern_return_t
 S_proc_getexecdata (struct proc *p,
 		    mach_port_t **ports,
 		    mach_msg_type_name_t *portspoly,
-		    u_int *nports,
+		    size_t *nports,
 		    int **ints,
-		    u_int *nints)
+		    size_t *nints)
 {
   int i;
   int ports_allocated = 0;
@@ -155,7 +155,7 @@ S_proc_getexecdata (struct proc *p,
     }
   memcpy (*ports, std_port_array, n_std_ports * sizeof (mach_port_t));
   *nports = n_std_ports;
-  
+
   if (*nints < n_std_ints)
     {
       *ints = mmap (0, round_page (n_std_ints * sizeof (int)),
@@ -195,16 +195,16 @@ S_proc_execdata_notify (struct proc *p,
   n->next = execdata_notifys;
   execdata_notifys = n;
 
-  mach_port_request_notification (mach_task_self (), notify, 
+  mach_port_request_notification (mach_task_self (), notify,
 				  MACH_NOTIFY_DEAD_NAME, 1,
 				  generic_port, MACH_MSG_TYPE_MAKE_SEND_ONCE,
 				  &foo);
 
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
-  
+
   if (std_port_array)
-    exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND, 
+    exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND,
 		      n_std_ports, std_int_array, n_std_ints);
   return 0;
 }
@@ -215,7 +215,7 @@ void
 check_dead_execdata_notify (mach_port_t port)
 {
   struct execdata_notify *en, **prevp;
-  
+
   for (en = execdata_notifys, prevp = &execdata_notifys; en; en = *prevp)
     {
       if (en->notify_port == port)
@@ -239,7 +239,7 @@ check_dead_execdata_notify (mach_port_t port)
    The uname version string is composed of all the server names and
    versions, omitting special mention of those which match the uname
    release, plus the kernel version string. */
-   
+
 char *kernel_name, *kernel_version;
 
 
@@ -314,7 +314,7 @@ rebuild_uname (void)
 
   /* release is the most popular version */
   strcpy (uname_info.release, versions[0].version);
-  
+
   initstr (uname_info.version);
 
   addstr (kernel_name, kernel_version);
@@ -329,7 +329,7 @@ rebuild_uname (void)
       if (versions[0].count == 1
 	  || strcmp (server_versions[i].version, versions[0].version))
 	addstr (server_versions[i].name, server_versions[i].version);
-    
+
   if (p > end)
 #ifdef notyet
     syslog (LOG_EMERG,
@@ -350,13 +350,14 @@ initialize_version_info (void)
   kernel_version_t kv;
   char *p;
   struct host_basic_info info;
-  unsigned int n = sizeof info;
+  size_t n = sizeof info;
   error_t err;
 
   /* Fill in fixed slots sysname and machine.  */
   strcpy (uname_info.sysname, "GNU");
 
-  err = host_info (mach_host_self (), HOST_BASIC_INFO, (int *) &info, &n);
+  err = host_info (mach_host_self (), HOST_BASIC_INFO,
+		   (host_info_t) &info, &n);
   assert (! err);
   snprintf (uname_info.machine, sizeof uname_info.machine, "%s-%s",
 	    mach_cpu_types[info.cpu_type],
@@ -392,7 +393,7 @@ initialize_version_info (void)
   nserver_versions = 1;
 
   rebuild_uname ();
-  
+
   uname_info.nodename[0] = '\0';
 }
 
@@ -409,7 +410,7 @@ kern_return_t
 S_proc_register_version (pstruct_t server,
 			 mach_port_t credential,
 			 char *name,
-			 char *release, 
+			 char *release,
 			 char *version)
 {
   error_t err = 0;
@@ -420,7 +421,7 @@ S_proc_register_version (pstruct_t server,
   if (credential != master_host_port)
     /* Must be privileged to register for uname. */
     return EPERM;
-  
+
   for (i = 0; i < nserver_versions; i++)
     if (!strcmp (name, server_versions[i].name))
       {
@@ -458,7 +459,7 @@ S_proc_register_version (pstruct_t server,
 	  err = ENOMEM;
 	  goto out;
 	}
-      server_versions[nserver_versions].version = malloc (strlen (version) 
+      server_versions[nserver_versions].version = malloc (strlen (version)
 							  + 1);
       if (! server_versions[nserver_versions].version)
         {
@@ -470,10 +471,9 @@ S_proc_register_version (pstruct_t server,
       strcpy (server_versions[nserver_versions].version, version);
       nserver_versions++;
     }
-  
+
   rebuild_uname ();
 out:
   mach_port_deallocate (mach_task_self (), credential);
   return err;
 }
-
