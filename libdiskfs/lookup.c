@@ -1,5 +1,5 @@
 /* Wrapper for diskfs_lookup_hard
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -175,9 +175,11 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
 	  || (type == CREATE && err == ENOENT)
 	  || (type == REMOVE && err != ENOENT))
 	{
-	  error_t err2 = fshelp_checkdirmod (&dp->dn_stat,
-					     (err || !np) ? 0 : &(*np)->dn_stat,
-					     cred->user);
+	  error_t err2;
+
+	  err2 = fshelp_checkdirmod (&dp->dn_stat,
+				     (err || !np) ? 0 : &(*np)->dn_stat,
+				     cred->user);
 	  if (err2)
 	    {
 	      if (np && !err)

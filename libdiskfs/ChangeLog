@@ -1,3 +1,7 @@
+Tue Mar 16 17:20:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* lookup.c (diskfs_lookup): Reformat for prettiness.
+
 1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-revoke.c (diskfs_S_io_revoke): Use ports_class_iterate.
