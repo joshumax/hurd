@@ -177,8 +177,28 @@ open (const char *name,
   return syscall (5, name, flags, mode);
 }
 
+struct uxstat
+  {
+    short int st_dev;		/* Device containing the file.	*/
+    __ino_t st_ino;		/* File serial number.		*/
+    unsigned short int st_mode;	/* File mode.  */
+    __nlink_t st_nlink;		/* Link count.  */
+    unsigned short int st_uid;	/* User ID of the file's owner.	*/
+    unsigned short int st_gid;	/* Group ID of the file's group.*/
+    short int st_rdev;		/* Device number, if device.  */
+    __off_t st_size;		/* Size of file, in bytes.  */
+    __time_t st_atime;		/* Time of last access.  */
+    unsigned long int st_atime_usec;
+    __time_t st_mtime;		/* Time of last modification.  */
+    unsigned long int st_mtime_usec;
+    __time_t st_ctime;		/* Time of last status change.  */
+    unsigned long int st_ctime_usec;
+    unsigned long int st_blksize; /* Optimal block size for I/O.  */
+    unsigned long int st_blocks; /* Number of 512-byte blocks allocated.  */
+    long int st_spare[2];
+  };
 int
-fstat (int fd, struct stat *buf)
+uxfstat (int fd, struct uxstat *buf)
 {
   return syscall (62, fd, buf);
 }
@@ -511,12 +531,12 @@ boot_script_port_insert_right (mach_port_t task, mach_port_t name,
   return mach_port_insert_right (task, name, port, right);
 }
 
-int
+mach_port_t
 boot_script_read_file (const char *filename)
 {
   static const char msg[] = ": cannot open\n";
   int fd = useropen (filename, 0, 0);
-  struct stat st;
+  struct uxstat st;
   error_t err;
   mach_port_t memobj;
   vm_address_t region;
@@ -530,7 +550,7 @@ boot_script_read_file (const char *filename)
   else
     write (2, msg + sizeof msg - 2, 1);
 
-  fstat (fd, &st);
+  uxfstat (fd, &st);
 
   err = default_pager_object_create (defpager, &memobj,
 				     round_page (st.st_size));
@@ -548,7 +568,7 @@ boot_script_read_file (const char *filename)
   vm_deallocate (mach_task_self (), region, round_page (st.st_size));
 
   close (fd);
-  return 0;
+  return memobj;
 }
 
 int
