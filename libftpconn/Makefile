@@ -23,8 +23,9 @@ libname = libftpconn
 installhdrs = ftpconn.h
 installhdrsubdir = .
 
-SRCS = ftpconn.c unix.c
-LCLHDRS = ftpconn.h
+SRCS = addr.c cmd.c create.c cwd.c errs.c names.c open.c reply.c   \
+	rmt.c set-type.c stats.c unix.c xfer.c xinl.c
+LCLHDRS = ftpconn.h priv.h
 
 OBJS = $(SRCS:.c=.o)
 
