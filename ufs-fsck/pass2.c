@@ -297,14 +297,45 @@ pass2 ()
   for (nd = 0; nd < dirarrayused; nd++)
     {
       dnp = dirsorted[nd];
-      if (dnp->i_isize == 0)
-	continue;
       
       /* Root is considered to be its own parent even though it isn't
 	 listed. */
       if (dnp->i_number == ROOTINO && !dnp->i_parent)
 	dnp->i_parent = ROOTINO;
 	  
+      /* Check `.' to make sure it exists and is correct */
+      if (dnp->i_dot == 0)
+	{
+	  dnp->i_dot = dnp->i_number;
+	  pinode (0, dnp->i_number, "MISSING `.' IN");
+	  if ((preen || reply ("FIX"))
+	       && makeentry (dnp->i_number, dnp->i_number, "."))
+	    {
+	      linkfound[dnp->i_number]++;
+	      pfix ("FIXED");
+	    }
+	  else
+	    pfail (0);
+	}
+      else if (dnp->i_dot != dnp->i_number)
+	{
+	  pinode (0, dnp->i_number, "BAD INODE NUMBER FOR `.' IN");
+	  if (preen || reply ("FIX"))
+	    {
+	      ino_t old_dot = dnp->i_dot;
+	      dnp->i_dot = dnp->i_number;
+	      if (changeino (dnp->i_number, ".", dnp->i_number))
+		{
+		  linkfound[dnp->i_number]++;
+		  if (inodestate[old_dot] != UNALLOC)
+		    linkfound[old_dot]--;
+		  pfix ("FIXED");
+		}
+	      else
+		pfail (0);
+	    }
+	}
+
       /* Check `..' to make sure it exists and is correct */
       if (dnp->i_parent && dnp->i_dotdot == 0)
 	{
@@ -333,39 +364,6 @@ pass2 ()
 		  linkfound[parent]++;
 		  if (inodestate[old_dotdot] != UNALLOC)
 		    linkfound[old_dotdot]--;
-		  pfix ("FIXED");
-		}
-	      else
-		pfail (0);
-	    }
-	}
-      
-      /* Check `.' to make sure it exists and is correct */
-      if (dnp->i_dot == 0)
-	{
-	  dnp->i_dot = dnp->i_number;
-	  pinode (0, dnp->i_number, "MISSING `.' IN");
-	  if ((preen || reply ("FIX"))
-	       && makeentry (dnp->i_number, dnp->i_number, "."))
-	    {
-	      linkfound[dnp->i_number]++;
-	      pfix ("FIXED");
-	    }
-	  else
-	    pfail (0);
-	}
-      else if (dnp->i_dot != dnp->i_number)
-	{
-	  pinode (0, dnp->i_number, "BAD INODE NUMBER FOR `.' IN");
-	  if (preen || reply ("FIX"))
-	    {
-	      ino_t old_dot = dnp->i_dot;
-	      dnp->i_dot = dnp->i_number;
-	      if (changeino (dnp->i_number, ".", dnp->i_number))
-		{
-		  linkfound[dnp->i_number]++;
-		  if (inodestate[old_dot] != UNALLOC)
-		    linkfound[old_dot]--;
 		  pfix ("FIXED");
 		}
 	      else
