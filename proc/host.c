@@ -141,37 +141,6 @@ S_proc_getprivports (struct proc *p,
   return 0;
 }
 
-/* Initialize the standard exec ports and ints. */
-void
-init_stdarrays ()
-{
-  auth_t nullauth;
-  mach_port_t pt;
-  int pid = getpid ();
-  
-  std_port_array = malloc (sizeof (mach_port_t) * INIT_PORT_MAX);
-  std_int_array = malloc (sizeof (int) * INIT_INT_MAX);
-  
-  bzero (std_port_array, sizeof (mach_port_t) * INIT_PORT_MAX);
-  bzero (std_int_array, sizeof (int) * INIT_INT_MAX);
-  
-  __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
-				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
-  
-  pt = getcwdir ();
-  io_reauthenticate (pt, pid);
-  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CWDIR]);
-  mach_port_deallocate (mach_task_self (), pt);
-  
-  pt = getcrdir ();
-  io_reauthenticate (pt, pid);
-  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CRDIR]);
-  mach_port_deallocate (mach_task_self (), pt);
-  
-  std_port_array[INIT_PORT_AUTH] = nullauth;
-  
-  std_int_array[INIT_UMASK] = CMASK;
-}
 
 /* Implement proc_setexecdata as described in <hurd/proc.defs>. */
 kern_return_t
@@ -223,7 +192,7 @@ S_proc_getexecdata (struct proc *p,
   /* XXX memory leak here */
 
   if (!std_port_array)
-    init_stdarrays ();
+    return ENOENT;
 
   if (*nports < n_std_ports)
     *ports = malloc (n_std_ports * sizeof (mach_port_t));
@@ -258,11 +227,9 @@ S_proc_execdata_notify (struct proc *p,
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
   
-  if (!std_port_array)
-    init_stdarrays ();
-      
-  exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND, 
-		    n_std_ports, std_int_array, n_std_ints);
+  if (std_port_array)
+    exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND, 
+		      n_std_ports, std_int_array, n_std_ints);
   return 0;
 }
 
