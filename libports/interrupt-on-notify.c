@@ -1,8 +1,8 @@
 /* Mark an rpc to be interrupted when a port dies
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include <assert.h>
 
 /* Arrange for hurd_cancel to be called on RPC's thread if OBJECT gets notified
    that any of the things in COND have happened to PORT.  RPC should be an
@@ -175,11 +176,9 @@ ports_interrupt_self_on_notification (void *object,
       break;
   mutex_unlock (&_ports_lock);
 
-  if (rpc)
-    /* We don't have to worry about RPC going away after we dropped the lock
-       because we're that thread, and we're still here.  */
-    return ports_interrupt_rpc_on_notification (object, rpc, port, what);
-  else
-    /* This thread isn't in an rpc!  */
-    return EIEIO;
+  assert (rpc);
+
+  /* We don't have to worry about RPC going away after we dropped the lock
+     because we're that thread, and we're still here.  */
+  return ports_interrupt_rpc_on_notification (object, rpc, port, what);
 }
