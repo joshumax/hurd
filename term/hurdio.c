@@ -98,6 +98,14 @@ hurdio_init (void)
   return 0;
 }
 
+static error_t
+hurdio_fini (void)
+{
+  hurdio_desert_dtr ();
+  writer_thread = MACH_PORT_NULL;
+  /* XXX destroy reader thread too */
+  return 0;
+}
 
 static error_t
 hurdio_gwinsz (struct winsize *size)
@@ -124,33 +132,40 @@ wait_for_dtr (void)
     hurd_condition_wait (&hurdio_assert_dtr_condition, &global_lock);
   assert_dtr = 0;
 
-  /* Open the file in blocking mode, so that the carrier is
-     established as well.  */
-  ioport = file_name_lookup (tty_arg, O_READ|O_WRITE, 0);
-  if (ioport == MACH_PORT_NULL)
-    report_carrier_error (errno);
+  if (tty_arg == 0)
+    ioport = termctl->underlying;
   else
     {
-      error_t err;
-      struct termios state = termstate;
-
-      /* Assume that we have a full blown terminal initially.  */
-      tioc_caps = ~0;
-
-      /* Set terminal in raw mode etc.  */
-      err = hurdio_set_bits (&state);
-      if (err)
-	report_carrier_error (err);
-      else
+      /* Open the file in blocking mode, so that the carrier is
+	 established as well.  */
+      ioport = file_name_lookup (tty_arg, O_READ|O_WRITE, 0);
+      if (ioport == MACH_PORT_NULL)
 	{
-	  termstate = state;
-
-	  /* Signal that we have a carrier.  */
-	  report_carrier_on ();
-
-	  /* Signal that the writer thread should resume its work.  */
-	  condition_broadcast (&hurdio_writer_condition);
+	  report_carrier_error (errno);
+	  return;
 	}
+    }
+
+
+  error_t err;
+  struct termios state = termstate;
+
+  /* Assume that we have a full blown terminal initially.  */
+  tioc_caps = ~0;
+
+  /* Set terminal in raw mode etc.  */
+  err = hurdio_set_bits (&state);
+  if (err)
+    report_carrier_error (err);
+  else
+    {
+      termstate = state;
+
+      /* Signal that we have a carrier.  */
+      report_carrier_on ();
+
+      /* Signal that the writer thread should resume its work.  */
+      condition_broadcast (&hurdio_writer_condition);
     }
 }
 
@@ -173,7 +188,7 @@ hurdio_reader_loop (any_t arg)
   while (1)
     {
       /* We can only start when the DTR has been asserted.  */
-      while (!ioport)
+      while (ioport == MACH_PORT_NULL)
 	wait_for_dtr ();
       mutex_unlock (&global_lock);
 
@@ -226,9 +241,12 @@ hurdio_writer_loop (any_t arg)
 
   while (1)
     {
-      while (!ioport || !qsize (outputq)
-	     || (termflags & USER_OUTPUT_SUSP))
+      while (writer_thread != MACH_PORT_NULL
+	     && (ioport == MACH_PORT_NULL || !qsize (outputq)
+		 || (termflags & USER_OUTPUT_SUSP)))
 	hurd_condition_wait (&hurdio_writer_condition, &global_lock);
+      if (writer_thread == MACH_PORT_NULL) /* A sign to die.  */
+	return 0;
 
       /* If the output was suspended earlier, we have to tell the
 	 underlying port to resume it.  */
@@ -429,14 +447,14 @@ hurdio_pending_output_size ()
 static error_t
 hurdio_desert_dtr ()
 {
-  if (ioport)
+  if (writer_thread != MACH_PORT_NULL)
+    hurd_thread_cancel (writer_thread);
+  if (reader_thread != MACH_PORT_NULL)
+    hurd_thread_cancel (reader_thread);
+  if (ioport != MACH_PORT_NULL && tty_arg)
     {
       mach_port_deallocate (mach_task_self (), ioport);
       ioport = MACH_PORT_NULL;
-      if (writer_thread != MACH_PORT_NULL)
-	hurd_thread_cancel (writer_thread);
-      if (reader_thread != MACH_PORT_NULL)
-	hurd_thread_cancel (reader_thread);
     }
   /* If we are called after hurdio_assert_dtr before the reader thread
      had a chance to wake up and open the port, we can prevent it from
@@ -597,6 +615,7 @@ const struct bottomhalf hurdio_bottom =
 {
   TERM_ON_HURDIO,
   hurdio_init,
+  hurdio_fini,
   hurdio_gwinsz,
   hurdio_start_output,
   hurdio_set_break,
