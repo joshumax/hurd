@@ -969,6 +969,8 @@ netfs_report_access (struct netcred *cred,
   
   *types = O_READ | O_EXEC;
   
+  assert (len == 1 || len == 0);
+
   if (len == 1)
     {
       err = netfs_attempt_write (cred, np, 0, &len, &byte);
