@@ -13,7 +13,7 @@ mighost := ernst.gnu.ai.mit.edu
 
 # Set these options to the GCC compiler spec (the correct value
 # can be found in /usr/local/lib/lib-gcc).
-CCTARGET=i386-mach
+CCTARGET=i386-gnu
 CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.5.8)
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
@@ -33,7 +33,7 @@ MIGCOM=rsh $(mighost) cd `pwd` \; umask `umask` \; /usr/local/lib/migcom
 else
 MIGCOM=/usr/local/lib/migcom
 endif
-CPP=$(ccdir)/cpp
+CPP=$(CC) -E -x c
 export CPP
 # I put a /usr/local/bin/mig on the hp300s that will run $CPP locally and
 # rsh to ernst to run migcom. --roland
