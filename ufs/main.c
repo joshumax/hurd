@@ -33,6 +33,8 @@ char *
 trans_parse_args (int argc, char **arg)
 {
   #ifdef notyet
+  /* Option to set compat_mode should be provided here. */
+
   /* When started as a translator, we are called with
      the device name and an optional argument -r, which
      signifies read-only. */
@@ -128,6 +130,7 @@ main (int argc, char **argv)
     {
       devname = diskfs_parse_bootargs (argc, argv);
       diskfs_dotdot_file = MACH_PORT_NULL;
+      compat_mode = COMPAT_GNU;
     }
   
   diskfs_init_diskfs ();
@@ -160,6 +163,13 @@ main (int argc, char **argv)
 		 sblock->fs_size * sblock->fs_fsize);
 	exit (1);
       }
+
+  /* If the filesystem has new features in it, don't pay attention to
+     the user's request not to use them. */
+  if ((sblock->fs_inodefmt == FS_44INODEFMT
+       || direct_symlink_extension)
+      && compat_mode == COMPAT_BSD42)
+    compat_mode = COMPAT_BSD44;
 
   if (!diskfs_readonly)
     {
