@@ -19,5 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 
+#include "netfs.h"
+
 spin_lock_t netfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
