@@ -1,5 +1,12 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* mgt.c (S_proc_exception_raise): Check for
+	MACH_SEND_NOTIFY_IN_PROGRESS rather than MACH_SEND_INVALID_NOTIFY.
+	Don't deallocate THREAD and TASK ports before the switch, since the
+	successful case uses THREAD again and the failure case uses TASK
+	again.  Instead, deallocate them at the end of the successful case.
+	At the end of the error case, use mach_port_destroy on THREAD only.
+
 	* stubs.c (struct msg_sig_post_request): New type, broken out of
 	send_signal, where it was anonymous.
 	(struct msg_spec): Type removed.
