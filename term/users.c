@@ -484,6 +484,7 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&global_lock);
   for (i = 0; i < cred->nuids; i++)
     if (cred->isroot || cred->uids[i] == term_owner)
       {
@@ -505,7 +506,11 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 	  }
 	
 	term_mode = (mode | S_IFCHR);
+	mutex_unlock (&global_lock);
+	return 0;
       }
+  mutex_unlock (&global_lock);
+  return EPERM;
 }
 
 
