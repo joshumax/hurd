@@ -143,7 +143,8 @@ endif
 
 ifeq ($(makemode),library)
 all: libs
-libs: $(targets)
+install libs: add-to-librecord
+add-to-librecord: $(targets)
 install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(libdir) $(includedir)
 
 # Arrange to have the headers installed locally anytime we build the library.
@@ -258,9 +259,33 @@ relink:
 
 # Subdependencies
 
+# We record which libraries have been built in this run in the file
+# $(librecord).  That file contains a series of lines like
+# `../libfoo/libfoo.a ../libfoo/libfoo.so: ; /bin/true'
+# that serve to inhibit the pattern rule which follows from doing anything. 
+# Above, when we make `libs' in library directories, we always append
+# to $(librecord), so that future make invocations don't bother repeating
+# the effort.
+
+# if this is the first level, then set librecord.  Otherwise, read it in.
+ifeq ($(MAKELEVEL),0)
+librecord:=/tmp/hurd-make-$(shell echo $$$$)
+export librecord
+endif
+
+include $(librecord)
+
+# How to create it.
+$(librecord):
+	touch $(librecord)
+
+# `libs' target depends on this.
+add-to-librecord:
+	echo $(addprefix ../$(dir)/,$(targets)) : \; /bin/true >> $(librecord)
+
 # Building libraries from other directories.  We force both libraries to be
 # built if either is, because it will use the appropriate one even if the other
-# is specified in someone's dependency list.
+# is specified in someone's dependency list.   
 ../%.a ../%.so: FORCE
 	$(MAKE) -C $(dir $@) libs
 
