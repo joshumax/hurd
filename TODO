@@ -16,6 +16,9 @@ See `tasks', the exported task list.
 * fix root dependencies in filesystem, network, etc.
 * Profile things
 * Make for easier installation
+* Write coding standards suggestions for Hurd
+
+* Fix emacs/src/unexelf.c to deal with occasional lack of mmap
 
 * Libraries
 
@@ -228,4 +231,3 @@ See `tasks', the exported task list.
 ** Relink everything after version numbered libc is installed
 ** Debug ext2fs
 ** Find fsck system hang
-** Emacs `M-x shell' starts all ptys and then hangs.

@@ -51,8 +51,6 @@ Building the Hurd, Mach4, and libc together
 
 1. Configure mach4.
 
-2. `make' mach4.
-
 3. Do `make install' in <mach4-build>/mig.  ONLY.
 
 4. Do `make install' in <mach4-build>/include.  ONLY.
@@ -67,7 +65,9 @@ Building the Hurd, Mach4, and libc together
 
 9. `make' and `make install' Hurd.
 
-10. `make install' mach4.
+10. Do `make -r kernel' in mach4/kernel.
+
+11. Copy mach4/kernel to /boot/kernel.
 
 
 Building the Hurd and libc together

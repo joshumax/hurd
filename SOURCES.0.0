@@ -83,7 +83,12 @@ instructions, after making the indicated minor modifications:
   [add `strerror' to AC_CHECK_FUNCS in configure.in]
 * texinfo (3.7) 
   [info/terminal.c -- add `#define B9600 9600']
-
+nethack (3.2.1)
+  [3.2.0 + nethack-3.2.0-3.2.1.patch
+   define BSD & linux, frob paths in config.h & unixconf.h & root Makefile
+   comment out declaration of random in system.h
+   declare `int status' in files.c:decompress_file, and pass &status
+    as an arg to the call to `wait' in the same function. ]
 
 
 
@@ -100,7 +105,7 @@ serverboot
     mach3-a.out object file format. ]
 * sh-utils (1.12m from alpha.gnu.ai.mit.edu; unmodified)
 * make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
-gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
+* gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
 
 
 
@@ -155,10 +160,6 @@ id-utils
 jacal
 lily
 mkisofs
-nethack (3.2.1)
-  [3.2.0 + nethack-3.2.0-3.2.1.patch
-   define BSD & linux, frob paths in config.h & unixconf.h & root Makefile
-   comment out declaration of random in system.h]
 nih classes
 oaklisp
 libobjects
