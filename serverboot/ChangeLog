@@ -1,3 +1,7 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* default_pager.c: #include "default_pager_S.h"
+
 2002-05-29  Roland McGrath  <roland@frob.com>
 
 	* bootstrap.c (main): int -> integer_t for boot_script values.
