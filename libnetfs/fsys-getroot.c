@@ -87,7 +87,10 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   
   if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR 
       || type == S_IFIFO) && (flags & (O_READ|O_WRITE|O_EXEC)))
-    return EOPNOTSUPP;
+    {
+      mutex_unlock (&netfs_root_node->lock);
+      return EOPNOTSUPP;
+    }
   
   err = netfs_check_open_permissions (cred, netfs_root_node, flags, 0);
   if (err)
