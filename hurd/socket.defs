@@ -118,7 +118,7 @@ routine socket_send (
 	flags: int;
 	data: data_t;
 	ports: fd_array_t;
-	control: inband_data_t;
+	control: data_t;
 	out amount: int);
 
 /* Receive data from a socket, possibly including Mach ports.  */
@@ -129,6 +129,6 @@ routine socket_recv (
 	flags: int;
 	out data: data_t;
 	out ports: fd_array_t;
-	out control: inband_data_t;
+	out control: data_t;
 	out outflags: int;
 	amount: int);
