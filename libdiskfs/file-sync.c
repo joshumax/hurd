@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_seek
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,6 +28,9 @@ diskfs_S_file_sync (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  if (diskfs_synchronous)
+    wait = 1;
+
   np = cred->po->np;
   
   mutex_lock (&np->lock);
