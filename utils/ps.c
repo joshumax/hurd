@@ -155,7 +155,7 @@ char *fmts[] =
   /* vmem (-v) */
   "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem %command",
   /* long (-l) */
-  "%^%uid %pid %th %ppid %pri %ni %th %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command",
+  "%^%uid %pid %th %ppid %pri %ni %nth %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command",
   /* jobc (-j) */
   "%^%user %pid %th %ppid %pgrp %sess %lcoll %sc %stat %tt %time %command",
   /* full (-f) (from sysv) */
@@ -170,7 +170,7 @@ char *fmts[] =
 static const struct ps_fmt_spec
 spec_abbrevs[] = {
   {"TT=tty"}, {"SC=susp"}, {"Stat=state"}, {"Command=args"}, {"SL=sleep"},
-  {"TH=nth"}, {"NI=bpri"}, {"SZ=vsize"}, {"RSS=rsize"},
+  {"NTH=nth", "TH"}, {"NI=bpri"}, {"SZ=vsize"}, {"RSS=rsize"},
   {"MsgI=msgin"}, {"MsgO=msgout"},
   {0}
 };
