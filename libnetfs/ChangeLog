@@ -1,3 +1,8 @@
+Sat Nov 23 16:24:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* file-set-translator.c (netfs_S_file_set_translator): Delete var
+	I. 
+
 Wed Nov 20 17:13:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsys-syncfs.c (netfs_S_fsys_syncfs): Use iohelp_create_iouser, not

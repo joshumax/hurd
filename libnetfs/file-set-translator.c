@@ -33,7 +33,6 @@ netfs_S_file_set_translator (struct protid *user,
 {
   struct node *np;
   error_t err = 0;
-  int i;
   mach_port_t control;
 
   if (!user)
