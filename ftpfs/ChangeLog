@@ -1,4 +1,38 @@
+1997-08-07  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (DEFAULT_NAME_TIMEOUT): New macro.
+	(DEFAULT_DIR_TIMEOUT, DEFAULT_DIRENT_TIMEOUT): Macros removed.
+	(OPT_NAME_TIMEOUT): New macro.
+	(OPT_DIR_TIMEOUT, OPT_DIRENT_TIMEOUT): Macros removed.
+	(common_options, parse_common_opt, netfs_append_args, main):
+	Replace --dir-timeout & --dirent-timeout by --name-timeout.
+	Add --bulk-stat-period and --bulk-stat-threshold options.
+	(netfs_append_args): Output --debug.
+
+	* ftpfs.h (struct ftpfs_params): Remove dirent_timeout and
+	dir_timeout fields.  Add name_timeout field.
+	* dir.c (ftpfs_dir_lookup): dirent_timeout parameter renamed to
+	name_timeout and dirent_timestamp field renamed to name_timestamp.
+	(lookup): Initialize timestamps.
+	* ftpfs.h (struct ftpfs_dir): timestamp renamed to stat_timestamp.
+	Add name_timestamp field.
+	(struct ftpfs_dir_entry): dirent_timestamp renamed to name_timestamp.
+
+	* dir.c (update_ordered_name): New function.
+	(refresh_dir): Use ftp_conn_get_names instead of huge wodge of code.
+	Update new timestamps.
+
 1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (update_entry): Allow ST to be zero.  Don't leak memory
+	when updating symlink info.  Change return type to void.  Remove
+	NO_LOCK parameter.
+	(update_ordered_entry, update_old_entry, update_new_entry): Update
+	calls to update_entry.
+	(refresh_dir): Add UPDATE_STATS parameter, and only fetch names if
+	it's zero.
+	(ftpfs_dir_refresh, ftpfs_refresh_node, ftpfs_dir_lookup): Supply
+	UPDATE_STATS argument to refresh_dir.
 
 	* host.c (split_server_name): Enable password parsing.
 

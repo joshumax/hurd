@@ -1,3 +1,15 @@
+1997-08-07  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpconn.h (struct ftp_conn_syshooks): Add FIX_NLIST_NAME field.
+	(ftp_conn_unix_fix_nlist_name): New declaration.
+	* names.c (ftp_conn_cont_get_names): Support FIX_NLIST_NAME hook.
+	Free S->dir if necessary.  Close or abort connection when done.
+	(struct get_names_state): Add DIR field.
+	(ftp_conn_start_get_names): Fill in S->dir field if necessary.
+
+	* unix.c (ftp_conn_unix_fix_nlist_name): New function.
+	(ftp_conn_unix_syshooks): Add ftp_conn_unix_fix_nlist_name.
+
 1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* open.c (ftp_conn_sysify): Handle REPLY_UNIMP_CMD for "syst".
