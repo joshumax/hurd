@@ -1,7 +1,5 @@
-
-
 /* MiG type declarations for Hurd interfaces
-   Copyright (C) 1992 Free Software Foundation
+   Copyright (C) 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -163,12 +161,6 @@ type procinfo_t = array[] of int;
 type fsys_statfsbuf_t=struct[19] of int;
 
 type idarray_t = array[] of uid_t;
-
-type pathconf_t = struct[9] of int;
-
-type idblock_t = struct[512] of uid_t;
-
-type term_io_data_t = struct[3] of int;
 
 type rusage_t = struct[18] of int;
 
