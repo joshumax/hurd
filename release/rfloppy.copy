@@ -16,6 +16,8 @@ objcopy bin/chmod
 objcopy bin/chown
 objcopy bin/cp
 objcopy bin/dd
+objcopy bin/devprobe
+objcopy bin/fsysopts
 objcopy bin/ftp
 objcopy bin/gzip
 objcopy bin/ln
@@ -27,6 +29,7 @@ objcopy bin/showtrans
 objcopy bin/sync
 copy bin/sh
 objcopy bin/tar
+objcopy bin/vmstat
 
 copy dev/MAKEDEV
 makedev dev/std
@@ -165,5 +168,5 @@ objcopy sbin/reboot
 
 touch servers/exec
 mkdir servers/socket
-settrans servers/socket/1
+settrans servers/socket/1 /hurd/pflocal
 touch servers/socket/2
