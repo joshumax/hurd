@@ -1,5 +1,18 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* exec.c (map): Made global.
+	* priv.h: Declare it.
+	(map_fsize, map_vsize): New macros for accessing state set up by map.
+	* hashexec.c (check_hashbang): Use map and copying operations rather
+	than stdio to extract the first line from the file.  Move finish call
+	to immediately after reading the line.
+
+	* exec.c (map): If E->file_data is set, diagnose EOF before going to
+	direct io_read.
+	(prepare_in_memory): New function, broken out of check_gzip before
+	last change.
+	(check_gzip, check_bzip2): Use it.
+
 	* exec.c (prepare_stream): New function, broken out of prepare.
 	(prepare): Call it.
 	[_STDIO_USES_IOSTREAM]: Do #error if this is defined.
