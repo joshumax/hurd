@@ -1,3 +1,13 @@
+Tue Mar  9 13:11:43 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* mgt.c (S_proc_reassign): It's not necessary to re-request the
+	task-death notification; we've moved both the task right and the
+	proc port that gets the notification, so delete that.
+	
+	* mgt.c (S_proc_reassign): Use mach_port_destroy instead of
+	mach_port_deallocate to release P->p_msgport, for the same reasons
+	as the changes below.
+
 Sun Mar  7 18:19:07 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* mgt.c (process_has_exited): Use mach_port_destroy instead of

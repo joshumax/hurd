@@ -225,19 +225,11 @@ S_proc_reassign (struct proc *p,
   /* For security, we need use the request port from STUBP */
   ports_transfer_right (p, stubp);
 
-  /* Redirect the task-death notification to the new receive right. */
-  mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1,
-				  p->p_pi.port_right,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
-
   /* Enqueued messages might refer to the old task port, so
      destroy them. */
   if (p->p_msgport != MACH_PORT_NULL)
     {
-      mach_port_deallocate (mach_task_self (), p->p_msgport);
+      mach_port_destroy (mach_task_self (), p->p_msgport);
       p->p_msgport = MACH_PORT_NULL;
       p->p_deadmsg = 1;
     }
