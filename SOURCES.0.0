@@ -73,19 +73,19 @@ instructions, after making the indicated minor modifications:
    Add `#define ARG_MAX 20480' in xargs/xargs.c, right after the includes]
 *+ gzip (1.2.4) 
   [commented out basename from gzip.h and util.c]
-* ncurses (1.9.9e) 
+*+ ncurses (1.9.9e) 
   [In read_entry.c, change second arg of call to open from `0' to O_RDONLY]
   [In lib_tparm.c:tparam, add the following before the call to tparam_internal]
 	if (!buffer)
 		buffer = malloc (256);
-* patch (2.1) 
+*+ patch (2.1) 
   [comment out basename in backupfile.c.]
-* rcs (5.7) 
+*+ rcs (5.7) 
   [Put `#undef ED' before #define ED in conf.h.]
   [Add `#define SYMLOOP_MAX 8' to conf.h.]
-* tar (1.11.8) 
+*+ tar (1.11.8) 
   [add `strerror' to AC_CHECK_FUNCS in configure.in]
-* texinfo (3.7) 
+*+ texinfo (3.7) 
   [info/terminal.c -- add `#define B9600 9600']
 *+ nethack (3.2.1)
   [3.2.0 + nethack-3.2.0-3.2.1.patch
