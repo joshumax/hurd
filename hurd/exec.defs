@@ -60,7 +60,7 @@ routine exec_init (
 	auth_handle: auth_t;
 	proc_server: process_t);
 
-routine exec_setexecdata (
+simpleroutine exec_setexecdata (
 	execserver: mach_port_t;
 	ports: portarray_t;
 	ints: intarray_t);
