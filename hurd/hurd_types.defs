@@ -1,5 +1,5 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -140,7 +140,7 @@ intran: STARTUP_INTRAN
 outtran: STARTUP_OUTTRAN
 #endif
 #ifdef STARTUP_DESTRUCTOR
-destructor: STARTUP_DESCTRUCTOR
+destructor: STARTUP_DESTRUCTOR
 #endif
 ;
 
