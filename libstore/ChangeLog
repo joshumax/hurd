@@ -3,6 +3,7 @@
 	* nbd.c: New file.
 	* Makefile (SRCS): Add it.
 	* store.h (store_nbd_open, _store_nbd_create): Declare them.
+	* std.c (store_std_classes): Add store_nbd_class.
 
 2001-09-16  Roland McGrath  <roland@frob.com>
 
