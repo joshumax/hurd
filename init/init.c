@@ -935,12 +935,8 @@ open_console ()
 {
 #define TERMINAL_FIRST_TRY "/hurd/term\0/tmp/console\0device\0console"
 #define TERMINAL_SECOND_TRY "/hurd/term\0/tmp\0device\0console"
-  static char *terminal;
-  int try;
-  size_t argz_len;
   mach_port_t term;
   static char *termname;
-  int fd;
   struct stat st;
   error_t err = 0;
   
@@ -958,12 +954,17 @@ open_console ()
     err = errno;
   if (err)
     error (0, err, "%s", termname);
+  else if (st.st_fstype != FSTYPE_TERM)
+    error (0, 0, "%s: Not a terminal", termname);
   
-  try = 1;
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     /* Start the terminal server ourselves. */
     {
+      size_t argz_len;		/* Length of args passed to translator.  */
+      char *terminal;		/* Name of term translator.  */
       mach_port_t control;	/* Control port for term translator.  */
+      int try = 1;
+
       error_t open_node (int flags,
 			 mach_port_t *underlying,
 			 mach_msg_type_name_t *underlying_type)
@@ -1052,7 +1053,7 @@ open_console ()
      Otherwise, open fd's 0, 1, and 2. */
   if (term != MACH_PORT_NULL)
     {
-      fd = openport (term, O_RDWR);
+      int fd = openport (term, O_RDWR);
       if (fd < 0)
 	assert_perror (errno);
 
