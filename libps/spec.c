@@ -26,6 +26,8 @@
 #include <hurd/resource.h>
 #include <unistd.h>
 #include <string.h>
+#include <timefmt.h>
+#include <sys/time.h>
 
 #include "ps.h"
 #include "common.h"
@@ -173,26 +175,32 @@ struct ps_getter ps_max_priority_getter =
 {"max_priority", PSTAT_THREAD_SCHED, (vf) ps_get_max_priority};
 
 static void 
-ps_get_usr_time(proc_stat_t ps, time_value_t * tv_out)
+ps_get_usr_time (proc_stat_t ps, struct timeval *tv)
 {
-  *tv_out = proc_stat_thread_basic_info(ps)->user_time;
+  time_value_t tvt = proc_stat_thread_basic_info (ps)->user_time;
+  tv->tv_sec = tvt.seconds;
+  tv->tv_usec = tvt.microseconds;
 }
 struct ps_getter ps_usr_time_getter =
 {"usr_time", PSTAT_THREAD_BASIC, ps_get_usr_time};
 
 static void 
-ps_get_sys_time(proc_stat_t ps, time_value_t * tv_out)
+ps_get_sys_time (proc_stat_t ps, struct timeval *tv)
 {
-  *tv_out = proc_stat_thread_basic_info(ps)->system_time;
+  time_value_t tvt = proc_stat_thread_basic_info (ps)->system_time;
+  tv->tv_sec = tvt.seconds;
+  tv->tv_usec = tvt.microseconds;
 }
 struct ps_getter ps_sys_time_getter =
 {"sys_time", PSTAT_THREAD_BASIC, ps_get_sys_time};
 
 static void 
-ps_get_tot_time(proc_stat_t ps, time_value_t * tv_out)
+ps_get_tot_time (proc_stat_t ps, struct timeval *tv)
 {
-  *tv_out = proc_stat_thread_basic_info(ps)->user_time;
-  time_value_add(tv_out, &proc_stat_thread_basic_info(ps)->system_time);
+  time_value_t tvt = proc_stat_thread_basic_info (ps)->user_time;
+  time_value_add (&tvt, &proc_stat_thread_basic_info (ps)->system_time);
+  tv->tv_sec = tvt.seconds;
+  tv->tv_usec = tvt.microseconds;
 }
 struct ps_getter ps_tot_time_getter =
 {"tot_time", PSTAT_THREAD_BASIC, ps_get_tot_time};
@@ -427,150 +435,45 @@ ps_emit_nice_int (proc_stat_t ps, ps_getter_t getter, int width,
       sfx++;
     }
 
-  sprintf(buf + sprint_frac_value(buf, value, 1, frac, 3, ABS(width) - 1),
+  sprintf(buf + sprint_frac_value (buf, value, 1, frac, 3, ABS(width) - 1),
 	  "%c", *sfx);
 
   return ps_stream_write_field (stream, buf, width);
-}
-
-#define MINUTE	60
-#define HOUR	(60*MINUTE)
-#define DAY	(24*HOUR)
-#define WEEK 	(7*DAY)
-
-static int 
-sprint_long_time(char *buf, int seconds, int width)
-{
-  char *p = buf;
-  struct tscale
-    {
-      int length;
-      char *sfx;
-      char *short_sfx;
-    }
-  time_scales[] =
-  {
-    { WEEK,  " week", "wk"} ,
-    { DAY,   " day",  "dy"} ,
-    { HOUR,  " hour", "hr"} ,
-    { MINUTE," min",   "m"} ,
-    { 0}
-  };
-  struct tscale *ts = time_scales;
-
-  while (ts->length > 0 && width > 0)
-    {
-      if (ts->length < seconds)
-	{
-	  int len;
-	  int num = seconds / ts->length;
-	  seconds %= ts->length;
-	  sprintf(p, "%d%s", num, ts->sfx);
-	  len = strlen(p);
-	  width -= len;
-	  if (width < 0 && p > buf)
-	    break;
-	  p += len;
-	}
-      ts++;
-    }
-
-  *p = '\0';
-
-  return p - buf;
-}
-
-error_t
-ps_emit_nice_seconds (proc_stat_t ps, ps_getter_t getter, int width,
-		      ps_stream_t stream)
-{
-  char buf[20];
-  time_value_t tv;
-
-  G(getter, int)(ps, &tv);
-
-  if (tv.seconds == 0)
-    {
-      if (tv.microseconds < 500)
-	sprintf(buf, "%dus", tv.microseconds);
-      else
-	strcpy(buf
-	       + sprint_frac_value(buf,
-				   tv.microseconds / 1000, 1,
-				   tv.microseconds % 1000, 3,
-				   ABS(width) - 2),
-	       "ms");
-    }
-  else if (tv.seconds < MINUTE)
-    sprint_frac_value(buf, tv.seconds, 1, tv.microseconds, 6, ABS(width));
-  else if (tv.seconds < HOUR)
-    {
-      /* 0:00.00... */
-      int min_len;
-      sprintf(buf, "%d:", tv.seconds / 60);
-      min_len = strlen(buf);
-      sprint_frac_value(buf + min_len,
-			tv.seconds % 60, 2,
-			tv.microseconds, 6,
-			ABS(width) - min_len);
-    }
-  else
-    sprint_long_time(buf, tv.seconds, width);
-
-  return ps_stream_write_field (stream, buf, width);
-}
-
-static int 
-append_fraction(char *buf, int frac, int digits, int width)
-{
-  int slen = strlen(buf);
-  int left = width - strlen(buf);
-  if (left > 1)
-    {
-      buf[slen] = '.';
-      left--;
-      while (digits > left)
-	frac /= 10, digits--;
-      sprintf(buf + slen + 1, "%0*d", digits, frac);
-      return slen + 1 + digits;
-    }
-  else
-    return slen;
 }
 
 error_t
 ps_emit_seconds (proc_stat_t ps, ps_getter_t getter, int width,
 		 ps_stream_t stream)
 {
-  int max = (width == 0 ? 999 : ABS(width));
   char buf[20];
-  time_value_t tv;
+  struct timeval tv;
 
   G(getter, void)(ps, &tv);
 
-  if (tv.seconds > DAY)
-    sprint_long_time(buf, tv.seconds, max);
-  else if (tv.seconds > HOUR)
-    if (max >= 8)
-      {
-	/* 0:00:00.00... */
-	sprintf(buf, "%2d:%02d:%02d",
-		tv.seconds / HOUR,
-		(tv.seconds % HOUR) / MINUTE, (tv.seconds % MINUTE));
-	append_fraction(buf, tv.microseconds, 6, max);
-      }
-    else
-      sprint_long_time(buf, tv.seconds, max);
-  else if (max >= 5 || tv.seconds > MINUTE)
-    {
-      /* 0:00.00... */
-      sprintf(buf, "%2d:%02d", tv.seconds / MINUTE, tv.seconds % MINUTE);
-      append_fraction(buf, tv.microseconds, 6, max);
-    }
-  else
-    sprint_frac_value(buf, tv.seconds, 1, tv.microseconds, 6, max);
+  fmt_seconds (&tv, ABS (width), buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
+}
+
+error_t
+ps_emit_minutes (proc_stat_t ps, ps_getter_t getter,
+		 int width, ps_stream_t stream)
+{
+  char buf[20];
+  struct timeval tv;
+
+  G(getter, int)(ps, &tv);
+
+  fmt_minutes (&tv, ABS (width), buf, sizeof (buf));
+
+  return ps_stream_write_field (stream, buf, width);
+}
+
+error_t
+ps_emit_past_time (proc_stat_t ps, ps_getter_t getter,
+		   int width, ps_stream_t stream)
+{
+  
 }
 
 error_t
@@ -694,9 +597,12 @@ struct state_shadow state_shadows[] = {
   /* Only show the longest sleep.  */
   { PSTAT_STATE_T_IDLE,		PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_WAIT },
   { PSTAT_STATE_T_SLEEP,	PSTAT_STATE_T_WAIT },
-  /* Turn off the per-thread stop bits when the process is stopped, as
-     they're expected.  */
-  { PSTAT_STATE_P_STOP,		PSTAT_STATE_T_HALT | PSTAT_STATE_T_UNCLEAN },
+  /* Turn off the thread stop bits if any thread is not stopped.  This is
+     generally reasonable, as threads are often suspended to be frobed; if
+     they're all suspended, then something's odd (probably in the debugger,
+     or crashed).  */
+  { PSTAT_STATE_T_STATES & ~PSTAT_STATE_T_HALT,
+    PSTAT_STATE_T_HALT | PSTAT_STATE_T_UNCLEAN },
   { 0 }
 };
 
@@ -784,6 +690,23 @@ ps_cmp_strings(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
   return GUARDED_CMP(s1, s2, strncmp(s1, s2, MIN(s1len, s2len)));
 }
 
+int
+ps_cmp_times (proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
+{
+  void (*g)() = G(getter, void);
+  struct timeval tv1, tv2;
+
+  g (ps1, &tv1);
+  g (ps2, &tv2);
+
+  return
+    tv1.tv_sec > tv2.tv_sec ? 1
+      : tv1.tv_sec < tv2.tv_sec ? -1
+	: tv1.tv_usec > tv2.tv_usec ? 1
+	  : tv2.tv_usec < tv2.tv_usec ? -1
+	    : 0;
+}
+
 /* ---------------------------------------------------------------- */
 /* `Nominal' functions -- return true for `unexciting' values.  */
 
@@ -835,87 +758,144 @@ ps_nominal_uid (proc_stat_t ps, ps_getter_t getter)
 /* ---------------------------------------------------------------- */
 
 ps_fmt_spec_t 
-find_ps_fmt_spec(char *name, ps_fmt_spec_t specs)
+ps_fmt_specs_find (ps_fmt_specs_t specs, char *name)
 {
-  while (!ps_fmt_spec_is_end(specs))
-    if (strcasecmp(ps_fmt_spec_name(specs), name) == 0)
-      return specs;
-    else
-      specs++;
-  return NULL;
+  if (specs)			/* Allow NULL to make recursion more handy. */
+    {
+      ps_fmt_spec_t s = specs->specs;
+
+      while (! ps_fmt_spec_is_end (s))
+	{
+	  char *alias = index (s->name, '=');
+	  if (alias)
+	    {
+	      unsigned name_len = strlen (name);
+
+	      if (name_len == alias - s->name
+		  && strncasecmp (name, s->name, name_len) == 0)
+		/* S is an alias, lookup what it refs to. */
+		{
+		  ps_fmt_spec_t src; /* What S is an alias to.  */
+
+		  ++alias;	/* Point at the alias name.  */
+
+		  if (strcasecmp (name, alias) == 0)
+		    /* An alias to the same name (useful to just change some
+		       property) -- start looking up in the parent.  */
+		    src = ps_fmt_specs_find (specs->parent, alias);
+		  else
+		    src = ps_fmt_specs_find (specs, alias);
+
+		  if (! src)
+		    return 0;
+
+		  /* Copy fields into the alias entry.  */
+		  if (! s->title && src->title)
+		    s->title = src->title;
+		  if (! s->width && src->width)
+		    s->width = src->width;
+		  if (! s->getter && src->getter)
+		    s->getter = src->getter;
+		  if (! s->output_fn && src->output_fn)
+		    s->output_fn = src->output_fn;
+		  if (! s->cmp_fn && src->cmp_fn)
+		    s->cmp_fn = src->cmp_fn;
+		  if (! s->nominal_fn && src->nominal_fn)
+		    s->nominal_fn = src->nominal_fn;
+
+		  /* Now make this not an alias.  */
+		  *--alias = '\0';
+
+		  return s;
+		}
+	    }
+	  else
+	    if (strcasecmp (s->name, name) == 0)
+	      return s;
+	  s++;
+	}
+
+      /* Try again with our parent.  */
+      return ps_fmt_specs_find (specs->parent, name);
+    }
+  else
+    return 0;
 }
 
 /* ---------------------------------------------------------------- */
 
-struct ps_fmt_spec ps_std_fmt_specs[] =
+static struct ps_fmt_spec
+specs[] =
 {
-  {"PID",
-   &ps_pid_getter,	   ps_emit_int,	    ps_cmp_ints,   0,		   -5},
-  {"TH#",
-   &ps_thread_index_getter,ps_emit_int,	    ps_cmp_ints,   0,		   -2},
-  {"PPID",
-   &ps_ppid_getter,	   ps_emit_int,     ps_cmp_ints,   0,		   -5},
-  {"UID",
-   &ps_owner_uid_getter,   ps_emit_uid,	    ps_cmp_ints,   ps_nominal_uid, -4},
-  {"User",
-   &ps_owner_getter,	   ps_emit_uname,   ps_cmp_unames, ps_nominal_user, 8},
-  {"NTh",
-   &ps_num_threads_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_nth, -2},
-  {"PGrp",
-   &ps_pgrp_getter,	   ps_emit_int,	    ps_cmp_ints,   0,		   -5},
-  {"Sess",
-   &ps_session_getter,     ps_emit_int,     ps_cmp_ints,   0,		   -5},
-  {"LColl",
-   &ps_login_col_getter,   ps_emit_int,     ps_cmp_ints,   0,		   -5},
-  {"Args",
-   &ps_args_getter,	   ps_emit_string0, ps_cmp_strings,0,		    0},
-  {"Arg0",
-   &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,0,	            0},
-  {"Time",
-   &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
-  {"UTime",
-   &ps_usr_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
-  {"STime",
-   &ps_sys_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
-  {"VSize",
-   &ps_vsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0,		   -5},
-  {"RSize",
-   &ps_rsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0,		   -5},
-  {"Pri",
-   &ps_cur_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri, -3},
-  {"BPri",
-   &ps_base_priority_getter,ps_emit_priority,ps_cmp_ints,  ps_nominal_pri, -3},
-  {"MPri",
-   &ps_max_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri, -3},
-  {"%Mem",
-   &ps_rmem_frac_getter,   ps_emit_percent, ps_cmp_floats, 0,		   -4},
-  {"%CPU",
-   &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0,		   -4},
-  {"State",
-   &ps_state_getter,	   ps_emit_state,   0,   	   0,		    4},
-  {"RPC",
-   &ps_rpc_getter,         ps_emit_nz_int,  ps_cmp_ints,   ps_nominal_zint,-6},
-  {"Sleep",
-   &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-2},
-  {"Susp",
-   &ps_susp_count_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-2},
-  {"PSusp",
-   &ps_proc_susp_count_getter, ps_emit_int, ps_cmp_ints,   ps_nominal_zint,-2},
-  {"TSusp",
-   &ps_thread_susp_count_getter, ps_emit_int,ps_cmp_ints,  ps_nominal_zint,-2},
-  {"TTY",
-   &ps_tty_getter,	   ps_emit_tty_name,ps_cmp_strings,0,		    2},
-  {"PgFlts",
-   &ps_page_faults_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
-  {"COWFlts",
-   &ps_cow_faults_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
-  {"PgIns",
-   &ps_pageins_getter,     ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
-  {"MsgIn",
-   &ps_msgs_rcvd_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
-  {"MsgOut",
-   &ps_msgs_sent_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
-  {"ZFills",
-   &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"PID",	0,	-5,
+   &ps_pid_getter,	   ps_emit_int,	    ps_cmp_ints,   0},
+  {"TH#",	0,	-2,
+   &ps_thread_index_getter,ps_emit_int,	    ps_cmp_ints,   0},
+  {"PPID",	0,	-5,
+   &ps_ppid_getter,	   ps_emit_int,     ps_cmp_ints,   0},
+  {"UID",	0,	-4,
+   &ps_owner_uid_getter,   ps_emit_uid,	    ps_cmp_ints,   ps_nominal_uid},
+  {"User",	0,	8,
+   &ps_owner_getter,	   ps_emit_uname,   ps_cmp_unames, ps_nominal_user},
+  {"NTh",	0,	-2,
+   &ps_num_threads_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_nth},
+  {"PGrp",	0,	-5,
+   &ps_pgrp_getter,	   ps_emit_int,	    ps_cmp_ints,   0},
+  {"Sess",	0,	-5,
+   &ps_session_getter,     ps_emit_int,     ps_cmp_ints,   0},
+  {"LColl",	0,	-5,
+   &ps_login_col_getter,   ps_emit_int,     ps_cmp_ints,   0},
+  {"Args",	0,	0,
+   &ps_args_getter,	   ps_emit_string0, ps_cmp_strings,0},
+  {"Arg0",	0,	0,
+   &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,0},
+  {"Time",	0,	-8,
+   &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
+  {"UTime",	0,	-8,
+   &ps_usr_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
+  {"STime",	0,	-8,
+   &ps_sys_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
+  {"VSize",	0,	-5,
+   &ps_vsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
+  {"RSize",	0,	-5,
+   &ps_rsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
+  {"Pri",	0,	-3,
+   &ps_cur_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri},
+  {"BPri",	0,	-3,
+   &ps_base_priority_getter,ps_emit_priority,ps_cmp_ints,  ps_nominal_pri},
+  {"MPri",	0,	-3,
+   &ps_max_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri},
+  {"%Mem",	0,	-4,
+   &ps_rmem_frac_getter,   ps_emit_percent, ps_cmp_floats, 0},
+  {"%CPU",	0,	-4,
+   &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0},
+  {"State",	0,	4,
+   &ps_state_getter,	   ps_emit_state,   0,   	   0},
+  {"RPC",	0,	-6,
+   &ps_rpc_getter,         ps_emit_nz_int,  ps_cmp_ints,   ps_nominal_zint},
+  {"Sleep",	0,	-2,
+   &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"Susp",	0,	-2,
+   &ps_susp_count_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"PSusp",	0,	-2,
+   &ps_proc_susp_count_getter, ps_emit_int, ps_cmp_ints,   ps_nominal_zint},
+  {"TSusp",	0,	-2,
+   &ps_thread_susp_count_getter, ps_emit_int,ps_cmp_ints,  ps_nominal_zint},
+  {"TTY",	0,	2,
+   &ps_tty_getter,	   ps_emit_tty_name,ps_cmp_strings,0},
+  {"PgFlts",	0,	-5,
+   &ps_page_faults_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"COWFlts",	0,	-5,
+   &ps_cow_faults_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"PgIns",	0,	-5,
+   &ps_pageins_getter,     ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"MsgIn",	0,	-5,
+   &ps_msgs_rcvd_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"MsgOut",	0,	-5,
+   &ps_msgs_sent_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"ZFills",	0,	-5,
+   &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {0}
 };
+
+struct ps_fmt_specs ps_std_fmt_specs = { specs, 0 };
