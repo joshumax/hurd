@@ -45,6 +45,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   error_t error = 0;
   mode_t type;
   struct protid pseudocred;
+  struct protid *newpi;
   
   if (!pt)
     return EOPNOTSUPP;
@@ -159,14 +160,15 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
+  newpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
+						   flags, dotdot),
+			      uids, nuids, gids, ngids);
   *retry = FS_RETRY_NORMAL;
   *retryname = '\0';
-  *returned_port = (ports_get_right 
-		    (diskfs_make_protid
-		     (diskfs_make_peropen (diskfs_root_node, flags, dotdot),
-		      uids, nuids, gids, ngids)));
+  *returned_port = ports_get_right (newpi);
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
-
+  ports_port_deref (newpi);
+  
   mutex_unlock (&diskfs_root_node->lock);
 
   ports_port_deref (pt);
