@@ -36,16 +36,28 @@ diskfs_S_fsys_set_options (fsys_t fsys,
   struct port_info *pt = ports_lookup_port (diskfs_port_bucket, fsys,
 					    diskfs_control_class);
   int ret;
-  void dochild (struct trans_link *trans, void *arg __attribute__ ((unused)))
-    {
-      fsys_set_options (trans->control, data, len, do_children);
-    }
+  error_t
+    helper (struct node *np)
+      {
+	error_t error;
+	mach_port_t control;
+	
+	error = fshelp_fetch_control (np, &control);
+	if (!error && (control != MACH_PORT_NULL))
+	  {
+	    error = fsys_set_options (control, data, len, do_children);
+	    mach_port_deallocate (mach_task_self (), control);
+	  }
+	else
+	  error = 0;
+	return error;
+      }
   
   if (!pt)
     return EOPNOTSUPP;
 
   if (do_children)
-    fshelp_translator_iterate (dochild, 0);
+    diskfs_node_iterate (helper);
 
   argz_extract (data, len, argv);
 
