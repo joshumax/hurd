@@ -319,7 +319,8 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
 				size_t *block_size,
 				char *dev_name, mach_port_t *dev_port,
 				mach_msg_type_name_t *dev_port_type,
-				char **misc, unsigned *misc_len)
+				char **misc, unsigned *misc_len,
+				int *flags)
 {
   error_t err;
   if (!cred)
@@ -333,6 +334,7 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
       if (!err)
 	{
 	  *class = STORAGE_DEVICE;
+	  *flags = 0;
 
 	  (*runs)[0] = 0;
 	  (*runs)[1] = dev->size / dev->dev_block_size;
