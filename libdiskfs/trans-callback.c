@@ -53,7 +53,6 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
 				 mach_msg_type_name_t *underlying_type)
 {
   struct node *np = cookie1;
-  struct diskfs_trans_callback_cookie2 *c2 = cookie2;
   struct protid *cred;
   error_t err;
   struct idvec *uids, *gids;
@@ -64,8 +63,7 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
   idvec_set_ids (gids, &np->dn_stat.st_gid, 1);
 
   err =
-    diskfs_create_protid (diskfs_make_peropen (np, flags,
-					       c2->dotdot, c2->depth),
+    diskfs_create_protid (diskfs_make_peropen (np, flags, cookie2),
 			  iohelp_create_iouser (uids, gids), &cred);
   if (! err)
     {
