@@ -42,7 +42,7 @@ prog-subdirs = auth proc exec init term \
 	       benchmarks fstests
 
 # Other directories
-other-subdirs = hurd doc config release include
+other-subdirs = hurd doc config release include debian
 
 # All the subdirectories together
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)

@@ -1,3 +1,7 @@
+1999-03-17  Gordon Matzigkeit  <gord@trick.fig.org>
+
+	* Makefile (other-subdirs): Add the debian directory.
+
 1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf (install): Fix typo in Thomas's last change.
