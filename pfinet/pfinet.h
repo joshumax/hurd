@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <device/device.h>
+#include <hurd/ports.h>
 
 extern device_t master_device;
 
@@ -28,3 +29,4 @@ extern struct proto_ops *proto_ops;
 
 struct mutex global_lock;
 
+struct port_bucket *pfinet_bucket;
