@@ -83,22 +83,16 @@ idvec_grow (struct idvec *idvec, unsigned inc)
 {
   return idvec_ensure (idvec, idvec->num + inc);
 }
-
+
 /* Returns true if IDVEC contains ID, at or after position POS.  */
 int
-idvec_tail_contains (struct idvec *idvec, unsigned pos, id_t id)
+idvec_tail_contains (const struct idvec *idvec, unsigned pos, id_t id)
 {
-  while (pos < idvec->num)
-    if (idvec->ids[pos++] == id)
+  id_t *ids = idvec->ids, *end = ids + idvec->num, *p = ids + pos;
+  while (p < end)
+    if (*p++ == id)
       return  1;
   return 0;
-}
-
-/* Returns true if IDVEC contains ID.  */
-int
-idvec_contains (struct idvec *idvec, id_t id)
-{
-  return idvec_tail_contains (idvec, 0, id);
 }
 
 /* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
@@ -163,7 +157,7 @@ idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
 /* Set the ids in IDVEC to IDS (NUM elements long); delete whatever
    the previous ids were. */
 error_t
-idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num)
+idvec_set_ids (struct idvec *idvec, const id_t *ids, unsigned num)
 {
   error_t err;
 
@@ -178,7 +172,7 @@ idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num)
 
 /* Like idvec_set_ids, but get the new ids from new. */
 error_t
-idvec_set (struct idvec *idvec, struct idvec *new)
+idvec_set (struct idvec *idvec, const struct idvec *new)
 {
   return idvec_set_ids (idvec, new->ids, new->num);
 }
@@ -186,7 +180,7 @@ idvec_set (struct idvec *idvec, struct idvec *new)
 /* Adds each id in the vector IDS (NUM elements long) to IDVEC, as long as it
    wasn't previously in IDVEC.  */
 error_t
-idvec_merge_ids (struct idvec *idvec, id_t *ids, unsigned num)
+idvec_merge_ids (struct idvec *idvec, const id_t *ids, unsigned num)
 {
   error_t err = 0;
   unsigned num_old = idvec->num;
@@ -205,7 +199,7 @@ idvec_merge_ids (struct idvec *idvec, id_t *ids, unsigned num)
 
 /* Adds each id from  NEW to IDVEC, as if with idvec_add_new().  */
 error_t
-idvec_merge (struct idvec *idvec, struct idvec *new)
+idvec_merge (struct idvec *idvec, const struct idvec *new)
 {
   return idvec_merge_ids (idvec, new->ids, new->num);
 }
@@ -238,6 +232,44 @@ idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
     return 0;
 }
 
+/* Remove all ids in SUB from IDVEC, returning true if anything was done. */ 
+int
+idvec_subtract (struct idvec *idvec, const struct idvec *sub)
+{
+  int i;
+  int done = 0;
+  for (i = 0; i < sub->num; i++)
+    done |= idvec_remove (idvec, 0, sub->ids[i]);
+  return done;
+}
+
+/* Remove all ids from IDVEC that are *not* in KEEP, returning true if
+   anything was changed. */
+int
+idvec_keep (struct idvec *idvec, const struct idvec *keep)
+{
+  id_t *old = idvec->ids, *new = old, *end = old + idvec->num;
+
+  while (old < end)
+    {
+      id_t id = *old++;
+      if (idvec_contains (keep, id))
+	{
+	  if (old != new)
+	    *new = id;
+	  new++;
+	}
+    }
+
+  if (old != new)
+    {
+      idvec->num = new - idvec->ids;
+      return 1;
+    }
+  else
+    return 0;
+}
+
 /* Deleted the id at position POS in IDVEC.  */
 void
 idvec_delete (struct idvec *idvec, unsigned pos)
