@@ -1,8 +1,7 @@
 /* Unix-specific ftpconn hooks
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997, 1998, 2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -224,7 +223,7 @@ ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
 	 than looking it up directly, as not all ftp servers support
 	 the -d option to ls.  To make sure we get a directory, append
 	 '/', except for the root directory.  */
-      char *dirn = dirname ((char *) name);
+      char *dirn = dirname (strdupa (name));
       int is_root = ! strcmp (dirn, "/");
       req_len += strlen (dirn) + (is_root ? 0 : 1);
       req = malloc (req_len);
@@ -244,7 +243,7 @@ ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
       else
 	sprintf (req, "%s %s%s", flags, slash ? "" : "./", name);
     }
-  
+
   if (err)
     goto out;
 
