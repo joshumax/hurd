@@ -41,10 +41,7 @@ vpath boot_script.c $(srcdir)/../boot
 vpath userland-boot.c $(srcdir)/../boot
 
 # Look for zip stuff
-vpath unzip.c $(srcdir)/../exec
-vpath inflate.c $(srcdir)/../exec
-vpath util.c $(srcdir)/../exec
-vpath do-bunzip2.c $(srcdir)/../exec
+vpath %.c $(srcdir) $(srcdir)/../exec
 
 # If SMALL_BZIP2 is defined, use relatively small memory.
 # It's crucial for serverboot, because swap is not enabled yet.

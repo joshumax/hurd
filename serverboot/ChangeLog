@@ -1,5 +1,10 @@
 2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
 
+	* Makefile: Fix last change properly, by relaxing the rule again
+	and adding our source dir before the exec dir.
+
+2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
+
 	* Makefile: Fix last change, constraining vpath even further.
 
 2002-05-20  Ognyan Kulev <ogi@fmi.uni-sofia.bg>
