@@ -2,6 +2,8 @@
 
    Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
+   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
@@ -870,11 +872,28 @@ diskfs_get_directs (struct node *dp,
 	  i++;
 	}
 
+      if (entryp->rec_len == 0)
+	{
+	  ext2_warning ("diskfs_get_directs", 
+			"Zero length directory entry: inode: %d offset: %ld",
+			dp->dn->number,
+			blkno * DIRBLKSIZ + bufp - buf);
+	  return EIO;
+	}
+
       bufp += entryp->rec_len;
       if (bufp - buf == DIRBLKSIZ)
 	{
 	  blkno++;
 	  bufvalid = 0;
+	}
+      else if (bufp - buf > DIRBLKSIZ)
+	{
+	  ext2_warning ("diskfs_get_directs", 
+			"Directory entry too long: inode: %d offset: %ld",
+			dp->dn->number,
+			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
+	  return EIO;
 	}
     }
   
