@@ -1007,9 +1007,12 @@ frob_kernel_process (void)
 
   windowsz = round_page (((argc + 1) * sizeof (char *)) + argzlen);
 
-  err = vm_allocate (mach_task_self (), &mine, windowsz, 1);
-  assert_perror (err);
-  err = vm_allocate (mach_task_self (), &his, windowsz, 1);
+  mine = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
+			      MAP_ANON, 0, 0);
+  assert (mine != -1);
+  his = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
+			     MAP_ANON, 0, 0);
+  assert (his != -1);
   if (err)
     {
       error (0, err, "cannot allocate %Zu bytes in kernel task", windowsz);
