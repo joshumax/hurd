@@ -1,3 +1,9 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (SYSCONFFILES): Remove hostname.
+	* hostname: File removed (it was empty).  Current libc copes with
+	having no hostname file.
+
 1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* syslog.conf: Removed.  We don't install syslogd, so we have no
