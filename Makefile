@@ -43,4 +43,4 @@ dist: hurd-snap $(addsuffix -lndist,$(SUBDIRS)) lndist
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
 
-clean: $(addsuffix -clean,$(SUBDIRS))
+clean: $(addsuffix -clean,$(LIB_SUBDIRS)) $(addsuffix -clean,$(PROG_SUBDIRS))
