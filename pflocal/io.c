@@ -18,13 +18,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <string.h>		/* For bzero */
-#include <unistd.h>		/* For getpid */
-
+#include <string.h>		/* For bzero() */
+#include <unistd.h>		/* For getpid() */
 #include <sys/types.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
+
+#include <hurd.h>		/* for getauth() */
 #include <hurd/hurd_types.h>
+#include <hurd/auth.h>
 
 #include "sock.h"
 #include "pipe.h"
@@ -326,6 +328,64 @@ S_io_clear_some_openmodes (struct sock_user *user, int bits)
     user->sock->flags &= ~SOCK_NONBLOCK;
   mutex_unlock (&user->sock->lock);
   return 0;
+}
+
+#define NIDS 10
+
+error_t
+S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
+{
+  error_t err;
+  mach_port_t auth_server;
+  mach_port_t new_user_port;
+  uid_t uids_buf[NIDS], aux_uids_buf[NIDS];
+  uid_t *uids = uids_buf, *aux_uids = aux_uids_buf;
+  gid_t gids_buf[NIDS], aux_gids_buf[NIDS];
+  gid_t *gids = gids_buf, *aux_gids = aux_gids_buf;
+  unsigned num_uids = NIDS, num_aux_uids = NIDS;
+  unsigned num_gids = NIDS, num_aux_gids = NIDS;
+
+  if (!user)
+    return EOPNOTSUPP;
+  
+  err = sock_create_port (user->sock, &new_user_port);
+  if (err)
+    return err;
+
+  auth_server = getauth ();
+  err =
+    auth_server_authenticate (auth_server, ports_get_right (user), 
+			      MACH_MSG_TYPE_MAKE_SEND, 
+			      rendezvous, MACH_MSG_TYPE_MOVE_SEND,
+			      new_user_port, MACH_MSG_TYPE_MAKE_SEND, 
+			      &uids, &num_uids, &aux_uids, &num_aux_uids,
+			      &gids, &num_gids, &aux_gids, &num_aux_gids);
+  mach_port_deallocate (mach_task_self (), auth_server);
+
+  /* Throw away the ids we went through all that trouble to get... */
+#define TRASH_IDS(ids, buf, num) \
+  if (buf != ids) \
+    vm_deallocate (mach_task_self (), (vm_address_t)ids, num * sizeof (uid_t));
+
+  TRASH_IDS (uids, uids_buf, num_uids);
+  TRASH_IDS (gids, gids_buf, num_gids);
+  TRASH_IDS (aux_uids, aux_uids_buf, num_aux_uids);
+  TRASH_IDS (aux_gids, aux_gids_buf, num_aux_gids);
+
+  return err;
+}
+
+error_t
+S_io_restrict_auth (struct sock_user *user,
+		    mach_port_t *new_port,
+		    mach_msg_type_name_t *new_port_type,
+		    uid_t *uids, unsigned num_uids,
+		    uid_t *gids, unsigned num_gids)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  return sock_create_port (user->sock, new_port);
 }
 
 /* Stubs for currently unsupported rpcs.  */
