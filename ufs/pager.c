@@ -525,8 +525,9 @@ diskfs_get_filemap_pager_struct (struct node *np)
 void
 diskfs_shutdown_pager ()
 {
-  error_t shutdown_one (struct pager *p)
+  error_t shutdown_one (void *arg)
     {
+      struct pager *p = arg;
       /* Make sure the disk pager is done last. */
       if (p != diskpager->p)
 	pager_shutdown (p);
@@ -543,8 +544,9 @@ diskfs_shutdown_pager ()
 void
 diskfs_sync_everything (int wait)
 {
-  error_t sync_one (struct pager *p)
+  error_t sync_one (void *arg)
     {
+      struct pager *p = arg;
       /* Make sure the disk pager is done last. */
       if (p != diskpager->p)
 	pager_sync (p, wait);
