@@ -67,7 +67,9 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
       if (childcontrol == MACH_PORT_NULL)
 	{
-	  if (error = diskfs_start_translator (diskfs_root_node, dotdot))
+	  mach_port_mod_refs (mach_task_self (), dotdot, 
+			      MACH_PORT_RIGHT_SEND, 1);
+	  if (error = diskfs_start_translator (diskfs_root_node, dotdot, 0))
 	    {
 	      mutex_unlock (&diskfs_root_node->lock);
 	      return error;
@@ -99,6 +101,9 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	*returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
       else
 	*returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+
+      if (!error)
+	mach_port_deallocate (mach_task_self (), dotdot);
       
       return error;
     }
@@ -127,6 +132,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	  *returned_port = MACH_PORT_NULL;
 	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	  strcpy (retryname, pathbuf);
+	  mach_port_deallocate (mach_task_self (), dotdot);
 	  return 0;
 	}
       else
