@@ -77,10 +77,11 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case '?':
-      argp_state_help (state, stdout, ARGP_HELP_STD_HELP);
+      argp_state_help (state, state->out_stream, ARGP_HELP_STD_HELP);
       break;
     case OPT_USAGE:
-      argp_state_help (state, stdout, ARGP_HELP_USAGE | ARGP_HELP_EXIT_OK);
+      argp_state_help (state, state->out_stream,
+		       ARGP_HELP_USAGE | ARGP_HELP_EXIT_OK);
       break;
 
     case OPT_PROGNAME:		/* Set the program name.  */
@@ -237,7 +238,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   /* An vector containing storage for the CHILD_INPUTS field in all groups.  */
   void **child_inputs;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0, 0, 0, 0 };
+  struct argp_state state =
+    { argp, argc, argv, 0, flags, err_stream: stderr, out_stream: stdout };
 
   /* Call GROUP's parser with KEY and ARG, swapping any group-specific info
      from STATE before calling, and back into state afterwards.  If GROUP has
@@ -528,6 +530,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   else
     opterr = 1;			/* Print error messages.  */
 
+  if (state.argv == argv && argv[0])
+    /* There's an argv[0]; use it for messages.  */
+    state.name = argv[0];
+  else
+    state.name = program_invocation_name;
+
   /* Now use getopt on our coalesced options lists.  */
   while (! err)
     {
@@ -613,8 +621,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       /* No way to return the remaining arguments, they must be bogus. */
       {
 	if (! (state.flags & ARGP_NO_ERRS))
-	  fprintf (stderr, "%s: Too many arguments\n",
-		   program_invocation_name);
+	  fprintf (state.err_stream, "%s: Too many arguments\n", state.name);
 	err = EBADKEY;
       }
 
@@ -625,7 +632,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     {
       /* Maybe print an error message.  */
       if (err == EBADKEY)
-	argp_state_help (&state, stderr, ARGP_HELP_STD_ERR);
+	argp_state_help (&state, state.err_stream, ARGP_HELP_STD_ERR);
 
       /* Since we didn't exit, give each parser an error indication.  */
       for (group = groups; group < egroup; group++)
