@@ -40,14 +40,13 @@
 
 #define NBD_INIT_MAGIC		"NBDMAGIC\x00\x00\x42\x02\x81\x86\x12\x53"
 
-#define NBD_REQUEST_MAGIC	htonl(0x25609513)
-#define NBD_REPLY_MAGIC		htonl(0x67446698)
+#define NBD_REQUEST_MAGIC	(htonl (0x25609513))
+#define NBD_REPLY_MAGIC		(htonl (0x67446698))
 
 struct nbd_startup
 {
   char magic[16];		/* NBD_INIT_MAGIC */
-  uint32_t sizehi;		/* size in bytes, 64 bits in net order */
-  uint32_t sizelo;
+  uint64_t size;		/* size in bytes, 64 bits in net order */
   char reserved[128];		/* zeros, we don't check it */
 };
 
@@ -303,7 +302,7 @@ nbdopen (const char *name, int *mod_flags,
       return EGRATUITOUS;	/* ? */
     }
 
-  *size = ((uint64_t) ntohl (ns.sizehi) << 32) | ntohl (ns.sizelo);
+  *size = ntohll (ns.size);
   *sockport = getdport (sock);
   close (sock);
 
