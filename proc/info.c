@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -38,10 +38,10 @@ S_proc_pid2task (struct proc *callerp,
 	       task_t *t)
 {
   struct proc *p = pid_find (pid);
-  
+
   if (!p)
     return ESRCH;
-  
+
   if (!check_uid (callerp, p->p_owner))
     return EPERM;
   *t = p->p_task;
@@ -56,10 +56,10 @@ S_proc_task2pid (struct proc *callerp,
 	       pid_t *pid)
 {
   struct proc *p = task_find (t);
-  
+
   if (!p)
     return ESRCH;
-  
+
   *pid = p->p_pid;
   mach_port_deallocate (mach_task_self (), t);
   return 0;
@@ -72,10 +72,10 @@ S_proc_task2proc (struct proc *callerp,
 		mach_port_t *outproc)
 {
   struct proc *p = task_find (t);
-  
+
   if (!p)
     return ESRCH;
-  
+
   *outproc = p->p_reqport;
   mach_port_deallocate (mach_task_self (), t);
   return 0;
@@ -97,13 +97,13 @@ S_proc_pid2proc (struct proc *callerp,
 	       mach_port_t *outproc)
 {
   struct proc *p = pid_find (pid);
-  
+
   if (!p)
     return ESRCH;
-  
+
   if (!check_uid (callerp, p->p_owner))
     return EPERM;
-  
+
   *outproc = p->p_reqport;
   return 0;
 }
@@ -149,12 +149,12 @@ get_string (task_t t,
 	bcopy ((char *)(data + (addr - readaddr)), *str,
 	       c - (char *)(data + (addr - readaddr)));
     }
-  
+
   vm_deallocate (mach_task_self (), data, readlen);
   return err;
 }
 
-/* Read a vector of addresses (stored as are argv and envp) from tast TASK 
+/* Read a vector of addresses (stored as are argv and envp) from tast TASK
    found at address ADDR.  Set *VEC to point to newly malloced storage holding
    the addresses. */
 static error_t
@@ -181,7 +181,7 @@ get_vector (task_t task,
   *vec = 0;
   /* This will lose sometimes on machines with unfortunate alignment
      restrictions. XXX */
-  for (t = (vm_address_t *) (data + (addr - readaddr)); 
+  for (t = (vm_address_t *) (data + (addr - readaddr));
        t < (vm_address_t *) (data + readlen);
        ++t)
     if (*t == 0)
@@ -200,14 +200,14 @@ get_vector (task_t task,
 
   if (!err && *vec == 0)
     err = KERN_INVALID_ADDRESS;
-  
+
   vm_deallocate (mach_task_self (), data, readlen);
   return err;
-}  
+}
 
-/* Fetch an array of strings at address LOC in task T into 
+/* Fetch an array of strings at address LOC in task T into
    BUF of size BUFLEN. */
-static error_t 
+static error_t
 get_string_array (task_t t,
 		  vm_address_t loc,
 		  vm_address_t *buf,
@@ -221,7 +221,7 @@ get_string_array (task_t t,
   err = get_vector (t, loc, &vector);
   if (err)
     return err;
-  
+
   bp = (char *) *buf;
   for (vp = vector; *vp; ++vp)
     {
@@ -236,13 +236,16 @@ get_string_array (task_t t,
 	    vm_deallocate (mach_task_self (), *buf, *buflen);
 	  return err;
 	}
-      
+
       len = strlen (string) + 1;
       if (len > (char *) *buf + *buflen - bp)
 	{
 	  vm_address_t newbuf;
-	  
-	  err = vm_allocate (mach_task_self (), &newbuf, *buflen * 2, 1);
+	  vm_size_t newsize = *buflen * 2;
+	  if (newsize < len)
+	    newsize = len;
+
+	  err = vm_allocate (mach_task_self (), &newbuf, newsize, 1);
 	  if (err)
 	    {
 	      free (string);
@@ -251,12 +254,14 @@ get_string_array (task_t t,
 		vm_deallocate (mach_task_self (), *buf, *buflen);
 	      return err;
 	    }
-	  bcopy (*(char **)buf, (void *)newbuf, (vm_address_t) bp - newbuf);
+
+	  bcopy (*(char **) buf, (char *) newbuf, bp - (char *) *buf);
 	  bp = newbuf + (bp - *buf);
 	  if (*buf != origbuf)
 	    vm_deallocate (mach_task_self (), *buf, *buflen);
+
 	  *buf = newbuf;
-	  *buflen *= 2;
+	  *buflen = newsize;
 	}
       bcopy (string, bp, len);
       bp += len;
@@ -276,10 +281,10 @@ S_proc_getprocargs (struct proc *callerp,
 		  u_int *buflen)
 {
   struct proc *p = pid_find (pid);
-  
+
   if (!p)
     return ESRCH;
-  
+
   return get_string_array (p->p_task, p->p_argv, (vm_address_t *) buf, buflen);
 }
 
@@ -291,10 +296,10 @@ S_proc_getprocenv (struct proc *callerp,
 		 u_int *buflen)
 {
   struct proc *p = pid_find (pid);
-  
+
   if (!p)
     return ESRCH;
-  
+
   return get_string_array (p->p_task, p->p_envp, (vm_address_t *)buf, buflen);
 }
 
@@ -320,7 +325,7 @@ S_proc_getprocinfo (struct proc *callerp,
 
   if (!p)
     return ESRCH;
-  
+
   if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
 	       | PI_FETCH_THREAD_WAITS))
     flags |= PI_FETCH_THREADS;
@@ -346,8 +351,8 @@ S_proc_getprocinfo (struct proc *callerp,
     }
   *piarraylen = structsize / sizeof (int);
   pi = (struct procinfo *) *piarray;
-  
-  pi->state = 
+
+  pi->state =
     ((p->p_stopped ? PI_STOPPED : 0)
      | (p->p_exec ? PI_EXECED : 0)
      | (p->p_waiting ? PI_WAITING : 0)
@@ -366,19 +371,19 @@ S_proc_getprocinfo (struct proc *callerp,
   for (tp = p; !tp->p_loginleader; tp = tp->p_parent)
     assert (tp);
   pi->logincollection = tp->p_pid;
-  
+
   pi->nthreads = nthreads;
-  
+
   if (flags & PI_FETCH_TASKINFO)
     {
       tkcount = TASK_BASIC_INFO_COUNT;
       err = task_info (p->p_task, TASK_BASIC_INFO, (int *)&pi->taskinfo,
 		       &tkcount);
-  
+
       if (err == MACH_SEND_INVALID_DEST)
 	err = ESRCH;
     }
-  
+
   for (i = 0; i < nthreads; i++)
     {
       pi->threadinfos[i].died = 0;
@@ -386,7 +391,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	{
 	  thcount = THREAD_BASIC_INFO_COUNT;
 	  err = thread_info (thds[i], THREAD_BASIC_INFO,
-			     (int *)&pi->threadinfos[i].pis_bi, 
+			     (int *)&pi->threadinfos[i].pis_bi,
 			     &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
@@ -412,20 +417,20 @@ S_proc_getprocinfo (struct proc *callerp,
 	  if (err && err != ESRCH)
 	    break;
 	}
-      
-      if ((flags & PI_FETCH_THREAD_WAITS) 
+
+      if ((flags & PI_FETCH_THREAD_WAITS)
 	  && p->p_msgport != MACH_PORT_NULL
 	  && !p->p_deadmsg)
 #ifdef notyet
 	/* Errors are not significant here. */
-	msg_report_wait (p->p_msgport, thds[i], 
+	msg_report_wait (p->p_msgport, thds[i],
 			 &pi->threadinfos[i].rpc_block);
 #else
         pi->threadinfos[i].rpc_block = 0;
-#endif      
+#endif
       mach_port_deallocate (mach_task_self (), thds[i]);
     }
-  
+
   if (flags & PI_FETCH_THREADS)
     {
       vm_deallocate (mach_task_self (), (u_int )thds,
@@ -480,10 +485,10 @@ S_proc_getloginpids (struct proc *callerp,
   struct proc **tail, **new, **parray;
   int parraysize;
   int i;
-  
+
   if (!l || !l->p_loginleader)
     return ESRCH;
-  
+
   /* Simple breadth first search of the children of L. */
   parraysize = 50;
   parray = malloc (sizeof (struct proc *) * parraysize);
@@ -497,7 +502,7 @@ S_proc_getloginpids (struct proc *callerp,
 	    if (new - parray > parraysize)
 	      {
 		struct proc **newparray;
-		newparray = realloc (parray, ((parraysize *= 2) 
+		newparray = realloc (parray, ((parraysize *= 2)
 					      * sizeof (struct proc *)));
 		tail = newparray + (tail - parray);
 		new = newparray + (new - parray);
