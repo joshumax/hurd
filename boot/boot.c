@@ -36,8 +36,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "exec_S.h"
 #include "device_S.h"
 #include "io_S.h"
-#include "device_reply.h"
-#include "io_repl.h"
+#include "device_reply_U.h"
+#include "io_reply_U.h"
 #include "term_S.h"
 /* #include "tioctl_S.h" */
 
