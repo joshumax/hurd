@@ -178,7 +178,7 @@ check_hashbang (struct execdata *e,
 
       arg = p + strspn (p, " \t");
       arg_len = interp_len - 1 - (arg - interp_buf); /* without null here */
-      interp_len = p + 1 - interp; /* This one includes the null.  */
+      interp_len = p - interp; /* This one includes the null.  */
 
       if (arg_len == 0)
 	arg = NULL;
