@@ -190,7 +190,8 @@ See `tasks', the exported task list.
         down; bsd does SIGHUP + drain + revoke.)
 
 ** exec:
-*** convert stdio magic to use libio (when libc converts) !!!
+*** either resurrect or excise BFD exec server
+    (needs stdio magic converted to use libio when libc converts)
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
