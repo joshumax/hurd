@@ -1,8 +1,8 @@
 /* Reparent a file
 
-   Copyright (C) 1997 Free Software Foundation
+   Copyright (C) 1997, 2001 Free Software Foundation
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -26,18 +26,25 @@ error_t
 netfs_S_file_reparent (struct protid *cred, mach_port_t parent,
 		       mach_port_t *new_file, mach_msg_type_name_t *new_file_type)
 {
+  error_t err;
   struct node *node;
   struct protid *new_cred;
+  struct iouser *user;
 
   if (! cred)
     return EOPNOTSUPP;
   
+  err = iohelp_dup_iouser (&user, cred->user);
+  if (err)
+    return err;
+
   node = cred->po->np;
 
   mutex_lock (&node->lock);
+  
   new_cred =
     netfs_make_protid (netfs_make_peropen (node, cred->po->openstat, cred->po),
-		       iohelp_dup_iouser (cred->user));
+		       user);
   mutex_unlock (&node->lock);
 
   if (new_cred)

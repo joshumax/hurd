@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -48,6 +48,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   char *nextname;
   error_t error;
   struct protid *newpi;
+  struct iouser *user;
 
   if (!diruser)
     return EOPNOTSUPP;
@@ -233,25 +234,37 @@ netfs_S_dir_lookup (struct protid *diruser,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  newpi =
-	    netfs_make_protid (netfs_make_peropen (dnp, 0, diruser->po),
-			       iohelp_create_iouser (make_idvec (),
-						     make_idvec ()));
-	  dirport = ports_get_send_right (newpi);
-	  ports_port_deref (newpi);
+	  error = iohelp_create_empty_iouser (&user);
+	  if (! error)
+	    {
+	      newpi = netfs_make_protid (netfs_make_peropen (dnp, 0,
+							     diruser->po),
+					 user);
+	      if (! newpi)
+	        {
+		  iohelp_free_iouser (user);
+		  error = ENOMEM;
+		}
+	    }
 
-	  error = fshelp_fetch_root (&np->transbox, diruser->po,
-				     dirport,
-				     diruser->user,
-				     lastcomp ? flags : 0,
-				     ((np->nn_stat.st_mode & S_IPTRANS)
-				      ? _netfs_translator_callback1
-				      : short_circuited_callback1),
-				     _netfs_translator_callback2,
-				     do_retry, retry_name, retry_port);
-	  /* fetch_root copies DIRPORT for success, so we always should
-	     deallocate our send right.  */
-	  mach_port_deallocate (mach_task_self (), dirport);
+	  if (! error)
+	    {
+	      dirport = ports_get_send_right (newpi);
+	      ports_port_deref (newpi);
+
+	      error = fshelp_fetch_root (&np->transbox, diruser->po,
+					 dirport,
+					 diruser->user,
+					 lastcomp ? flags : 0,
+					 ((np->nn_stat.st_mode & S_IPTRANS)
+					 ? _netfs_translator_callback1
+					   : short_circuited_callback1),
+					 _netfs_translator_callback2,
+					 do_retry, retry_name, retry_port);
+	      /* fetch_root copies DIRPORT for success, so we always should
+		 deallocate our send right.  */
+	      mach_port_deallocate (mach_task_self (), dirport);
+	    }
 
 	  if (error != ENOENT)
 	    {
@@ -362,8 +375,12 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   flags &= ~OPENONLY_STATE_MODES;
 
+  error = iohelp_dup_iouser (&user, diruser->user);
+  if (error)
+    goto out;
+
   newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
-			     iohelp_dup_iouser (diruser->user));
+			     user);
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
 

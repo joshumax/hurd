@@ -1,6 +1,6 @@
 /* Callback functions for starting translators
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -51,17 +51,18 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
 				mach_port_t *underlying,
 				mach_msg_type_name_t *underlying_type)
 {
+  error_t err;
   struct protid *cred;
-  struct idvec *uids, *gids;
   struct node *node = cookie1;
+  struct iouser *user;
 
-  uids = make_idvec ();
-  gids = make_idvec ();
-  idvec_set_ids (uids, &node->nn_stat.st_uid, 1);
-  idvec_set_ids (gids, &node->nn_stat.st_gid, 1);
+  err = iohelp_create_simple_iouser (&user, node->nn_stat.st_uid,
+				   node->nn_stat.st_gid);
+  if (err)
+    return err;
 
   cred = netfs_make_protid (netfs_make_peropen (node, flags, cookie2),
-			    iohelp_create_iouser (uids, gids));
+			    user);
   if (cred)
     {
       *underlying = ports_get_right (cred);

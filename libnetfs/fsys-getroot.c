@@ -43,19 +43,15 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   error_t err;
   struct protid *newpi;
   mode_t type;
-  struct idvec *uvec, *gvec;
   struct peropen peropen_context = { root_parent: dotdot };
 
   if (!pt)
     return EOPNOTSUPP;
   ports_port_deref (pt);
 
-  uvec = make_idvec ();
-  gvec = make_idvec ();
-  idvec_set_ids (uvec, uids, nuids);
-  idvec_set_ids (gvec, gids, ngids);
-
-  cred = iohelp_create_iouser (uvec, gvec);
+  err = iohelp_create_complex_iouser (&cred, uids, nuids, gids, ngids);
+  if (err)
+    return err;
   
   flags &= O_HURD;
   

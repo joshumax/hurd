@@ -29,12 +29,11 @@ netfs_S_fsys_syncfs (mach_port_t cntl,
 		     int children)
 {
   struct iouser *cred;
-  uid_t root = 0;
   error_t err;
 
-  cred = iohelp_create_iouser (make_idvec (), make_idvec ());
-  idvec_set_ids (cred->uids, &root, 1);
-  idvec_set_ids (cred->gids, &root, 1);
+  err = iohelp_create_simple_iouser (&cred, 0, 0);
+  if (err)
+    return err;
   err = netfs_attempt_syncfs (cred, wait);
   iohelp_free_iouser (cred);
   return err;
