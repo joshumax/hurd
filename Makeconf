@@ -17,6 +17,7 @@ startup := $(hurdinst)/lib/crt0.o
 libc := $(hurdinst)/lib/libc.a
 libthreads := $(hurdinst)/lib/libthreads.a
 libports := $(hurdinst)/lib/libports.a
+libioserver := $(hurdinst)/lib/libioserver.a
 gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/include
 
 # Flags for compilation
@@ -47,5 +48,13 @@ $(libports): FORCE
 	$(MAKE) -C $(hurdsource)/libports $(libports)
 $(headers)/libports.h: FORCE
 	$(MAKE) -C $(hurdsource)/libports $(headers)/libports.h
-FORCE:
 endif
+
+ifneq ($(strip $(dir)),libioserver)
+$(libioserver): FORCE
+	$(MAKE) -C $(hurdsource)/libioserver $(libioserver)
+$(headers)/libioserver.h: FORCE
+	$(MAKE) -C $(hurdsource)/libioserver $(headers)/libioserver.h
+endif
+
+FORCE:
