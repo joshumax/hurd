@@ -1,3 +1,8 @@
+Thu Jul 18 13:23:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* main.c (main): Don't wire proc anymore.  It's not necessary or
+	useful. 
+
 Thu Jul 18 04:15:49 1996  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mgt.c (add_tasks): Fix vm_deallocate call to use mach_task_self ()

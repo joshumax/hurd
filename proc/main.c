@@ -110,7 +110,7 @@ main (int argc, char **argv, char **envp)
   mach_port_deallocate (mach_task_self (), pset);
   mach_port_deallocate (mach_task_self (), psetcntl);
 
-  wire_task_self ();
+/*  wire_task_self (); */
 
   while (1)
     ports_manage_port_operations_multithread (proc_bucket,
