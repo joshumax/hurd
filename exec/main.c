@@ -39,10 +39,9 @@ extern error_t bfd_mach_host_arch_mach (host_t host,
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
-int trivfs_support_read = 1;
-int trivfs_support_write = 1;
-int trivfs_support_exec = 1;
-int trivfs_allow_open = O_READ|O_WRITE|O_EXEC;
+int trivfs_support_read = 0;
+int trivfs_support_write = 0;
+int trivfs_allow_open = 0;
 
 struct port_class *trivfs_protid_portclasses[1];
 struct port_class *trivfs_cntl_portclasses[1];
@@ -229,7 +228,7 @@ S_exec_init (struct trivfs_protid *protid,
   {
     struct trivfs_protid *cred;
     mach_port_t right;
-    
+
     err = trivfs_open (fsys,
 		       iohelp_create_iouser (make_idvec (), make_idvec ()),
 		       0, MACH_PORT_NULL, &cred);
