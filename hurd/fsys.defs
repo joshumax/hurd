@@ -64,10 +64,11 @@ routine fsys_getfile (
 routine fsys_getpriv (
 	fsys: fsys_t;
 	out host_priv: mach_port_t;
-	out device_master: mach_port_t);
+	out device_master: mach_port_t;
+	out fstask: task_t);
 
 routine fsys_init (
 	fsys: fsys_t;
-	proc_server: mach_port_move_send_t;
+	proc_server: mach_port_send_t;
 	auth_handle: auth_t);
 
