@@ -198,7 +198,7 @@ diskfs_lookup_hard (struct node *dp,
       else
         {
 	  mutex_unlock (&dp->lock);
-          err = diskfs_cached_lookup ((int) dddn, np);
+          err = diskfs_cached_lookup ((int) dddn, dp, np);
 
 	  if (type == (LOOKUP|SPEC_DOTDOT))
 	    diskfs_nrele (dp);
@@ -220,7 +220,7 @@ diskfs_lookup_hard (struct node *dp,
 	  ds->prevp = prevp;
 
 	if (np)
-	  return diskfs_cached_lookup ((ino_t) d->dn, dp, np);
+	  return diskfs_cached_lookup ((ino_t) d->dn, np);
 	else
 	  return 0;
       }
