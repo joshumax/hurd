@@ -1,11 +1,17 @@
+1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* lookup.c (diskfs_lookup): Rewrite code from last change, which had
+	typos (and then I just decided to change the details of the string
+	diddling).
+
 1999-10-06  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* lookup.c (diskfs_lookup): NAME is no longer const.  Update
-	documentation Strip leading and trailing slashes from NAME before
+	documentation.  Strip leading and trailing slashes from NAME before
 	using it.
 	* diskfs.h (diskfs_lookup): NAME is no longer const.
 	Update documentation.
-	
+
 1999-10-05  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* priv.h (CHANGE_NODE_FIELD): Use diskfs_check_readonly instead of
