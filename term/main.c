@@ -82,7 +82,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       {
         char *start = arg;
         char *end;
-	
+
         rdev = strtoul (start, &end, 0);
         if (*end == ',')
           {
@@ -152,7 +152,7 @@ main (int argc, char **argv)
   error_t err;
 
   term_bucket = ports_create_bucket ();
-  
+
   trivfs_add_control_port_class (&tty_cntl_class);
   trivfs_add_control_port_class (&pty_cntl_class);
   trivfs_add_protid_port_class (&tty_class);
@@ -209,10 +209,12 @@ main (int argc, char **argv)
     default:
       /* Should not happen.  */
       error (1, 0, "Unknown terminal type");
+      /*NOTREACHED*/
+      return 1;
     }
-  
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  
+
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
 
@@ -275,11 +277,11 @@ main (int argc, char **argv)
   term_mode |= S_IFCHR | S_IROOT;
 
   inputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
-  
+
   rawq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
-  
+
   outputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
-  
+
   err = (*bottom->init) ();
   if (err)
     error (1, err, "Initializing bottom handler");
@@ -293,4 +295,4 @@ main (int argc, char **argv)
   ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0, 0);
 
   return 0;
-}  
+}
