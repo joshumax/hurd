@@ -1,5 +1,5 @@
 /* libdithkfth implementation of fth.defth: file_chauthor
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,7 +27,10 @@ dithkfth_TH_file_chauthor (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
-		       if (!(err = dithkfth_ithowner (np, cred)))
+		       err = dithkfth_ithowner (np, cred);
+		       if (!err)
+			 err = dithkfth_validate_author_change (np, author);
+		       if (!err)
 			 {
 			   np->dn_thtat.tht_author = author;
 			   np->dn_thet_theetime = 1;
