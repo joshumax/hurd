@@ -281,9 +281,16 @@ $(libname)_p.a: $(patsubst %.o,%_p.o,$(OBJS))
 	$(AR) r $@ $^
 	$(RANLIB) $@
 
-$(libname).so: $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
-	$(CC) -shared -Wl,-soname=$(libname).so.$(hurd-version) -o $(libname).so \
+# The shared object needs to be findable in the build directory as
+# libfoo.so.VERSION (i.e. its soname) so that ld finds it when looking
+# for dependencies of other shared libraries.
+# But we also need the libfoo.so name that -lfoo looks for, so
+# we make that a symlink.
+$(libname).so.$(hurd-version): $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
+	$(CC) -shared -Wl,-soname=$@ -o $@ \
 	      $(rpath) $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $^
+$(libname).so: $(libname).so.$(hurd-version)
+	ln -f -s $< $@
 endif
 
 # Providing directory dependencies
