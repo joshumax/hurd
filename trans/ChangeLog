@@ -1,3 +1,8 @@
+2002-08-14  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile: Revert undocumented changes related to devpts that
+	were checked in unintentionally with the last change.
+
 2002-08-06  Roland McGrath  <roland@frob.com>
 
 	* proxy-defpager.c: Rename all the server functions with S_ prefix.

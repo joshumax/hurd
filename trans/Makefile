@@ -19,10 +19,10 @@ dir := trans
 makemode := servers
 
 targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
-	  password hello hello-mt streamio fakeroot proxy-defpager devpts
+	  password hello hello-mt streamio fakeroot proxy-defpager
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c \
-	fakeroot.c proxy-defpager.c devpts.c
+	fakeroot.c proxy-defpager.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
@@ -52,8 +52,5 @@ hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../l
 hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-
-devpts: ../libtermios/libtermserver.a ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
-
 
 $(targets): %: %.o
