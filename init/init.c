@@ -1392,6 +1392,7 @@ S_startup_essential_task (mach_port_t server,
   struct ess_task *et;
   mach_port_t prev;
   static int authinit, procinit, execinit;
+  int fail;
 
   if (credential != host_priv)
     return EPERM;
