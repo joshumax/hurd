@@ -67,7 +67,6 @@ top_srcdirinc=-I$(top_srcdir)
 endif
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE
 CFLAGS += -Wall -g -O3
-
 
 # Local programs:
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
@@ -120,8 +119,11 @@ ifeq ($(makemode),library)
  endif
 endif
 
+# This is a hack to give all hurd utilities a default bug-reporting
+# address (defined in libhurdbugaddr/bugaddr.c).
+BUGADDR = $(..)libhurdbugaddr/libhurdbugaddr.a
+BUGADDR_REF = -uargp_program_bug_address
 
-
 # Standard targets
 
 .PHONY: all install libs relink clean
@@ -212,8 +214,9 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 # dependencies of other shared objects it encounters.
 rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 
-$(target): %$(target-suffix):
-	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
+$(target): %$(target-suffix): $(BUGADDR)
+	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $(BUGADDR_REF) \
+	      -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
 		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) $($@-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)'
