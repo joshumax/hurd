@@ -1,3 +1,32 @@
+2002-06-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.c (new_node): Adjust size of display node.
+	* console.h: Add macros for color names.  Add macros for intensity
+	names.  Add new types conchar_t and conchar_attr_t, which
+	represent a console matrix cell and the attribute of one such
+	cell, resp.  Add macros for keycodes.
+	(struct cons_display): Change type of _matrix member to conchar_t.
+	* display.c (struct attr): Rewrite, usiong cons_attr_t to hold the
+	attributes.
+	(handle_escape_bracket_m): Use new members of ATTR.
+	(display_flush_filechange): Send notification for changed matrix
+	before the notification for new cur_line.  Fix types in length
+	calculation.
+	(conchar_memset): New function.
+	(user_create): Accept CHR and ATTR arguments.  Fix calculation of
+	NPAGES.  Use conchar_memset instead of wmemset.
+	(screen_fill): Fix type of ATTR argument.  Use conchar_memset
+	instead of wmemset.
+	(screen_shift_left): Fix type of ATTR argument.  Set attribute of
+	empty cells.  Fix length calculation.
+	(screen_shift_right): Likewise.
+	(handle_escape_bracket): Set default parameter for HUP.  Be more
+	ECMA-48 conform.
+	(display_output_one): Fix arguments in screen_fill invocation.
+	Set attribute for character output.  Add <NEL> from ECMA-48.
+	(display_create): Use 50 lines for now.  Set default colors, and
+	add new arguments to user_create invocation.
+
 2002-06-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (struct changes): Change type of WHICH from int to

@@ -120,18 +120,9 @@ typedef struct output *output_t;
 
 struct attr
 {
-  /* Current attribute.  */
-  char current;
-  int fg;
-  int bg;
-  int def_fg;
-  int def_bg;
-  int reverse : 1;
-  int bold : 1;
-  int blink : 1;
-  int invisible : 1;
-  int dim : 1;
-  int underline : 1;
+  unsigned int bgcol_def;
+  unsigned int fgcol_def;
+  conchar_attr_t current;
 };
 typedef struct attr *attr_t;
 
@@ -334,6 +325,18 @@ display_flush_filechange (display_t display, unsigned int type)
 {
   struct cons_display *user = display->user;
 
+  if (type & DISPLAY_CHANGE_MATRIX
+      && display->changes.which & DISPLAY_CHANGE_MATRIX)
+    {
+      display_notice_filechange (display, FILE_CHANGED_WRITE,
+				 sizeof (struct cons_display)
+				 + display->changes.start * sizeof (conchar_t),
+				 sizeof (struct cons_display)
+				 + (display->changes.end + 1)
+				 * sizeof (conchar_t) - 1);
+      type &= ~DISPLAY_CHANGE_MATRIX;
+    }
+
   if (type & DISPLAY_CHANGE_CURSOR_POS
       || type & DISPLAY_CHANGE_CURSOR_STATUS)
     {
@@ -358,7 +361,7 @@ display_flush_filechange (display_t display, unsigned int type)
 	}
       if (len)
 	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
-				   start + len * sizeof (wchar_t) - 1);
+				   start + len * sizeof (uint32_t) - 1);
     }
 
   if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
@@ -384,19 +387,7 @@ display_flush_filechange (display_t display, unsigned int type)
 	}
       if (len)
 	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
-				   start + len * sizeof (wchar_t) - 1);
-    }
-
-  if (type & DISPLAY_CHANGE_MATRIX
-      && display->changes.which & DISPLAY_CHANGE_MATRIX)
-    {
-      display_notice_filechange (display, FILE_CHANGED_WRITE,
-				 sizeof (struct cons_display)
-				 + display->changes.start * sizeof (wchar_t),
-				 sizeof (struct cons_display)
-				 + (display->changes.end + 1)
-				 * sizeof (wchar_t) - 1);
-      type &= ~DISPLAY_CHANGE_MATRIX;
+				   start + len * sizeof (uint32_t) - 1);
     }
 }
 
@@ -482,14 +473,29 @@ display_record_filechange (display_t display, off_t start, off_t end)
       
 	    
 
+static void
+conchar_memset (conchar_t *conchar, wchar_t chr, conchar_attr_t attr,
+		size_t size)
+{
+  int i;
+
+  for (i = 0; i < size; i++)
+    {
+      conchar->chr = chr;
+      conchar->attr = attr;
+      conchar++;
+    }
+}
+
 static error_t
 user_create (display_t display, uint32_t width, uint32_t height,
-	     uint32_t lines)
+	     uint32_t lines, wchar_t chr, conchar_attr_t attr)
 {
   error_t err;
   struct cons_display *user;
+
   int npages = (round_page (sizeof (struct cons_display) +
-			   sizeof (uint32_t) * width * lines)) / vm_page_size;
+			   sizeof (conchar_t) * width * lines)) / vm_page_size;
 
   display->upi = calloc (1, sizeof (struct user_pager_info)
 			 + sizeof (vm_address_t) * npages);
@@ -539,9 +545,9 @@ user_create (display_t display, uint32_t width, uint32_t height,
   user->cursor.col = 0;
   user->cursor.row = 0;
   user->cursor.status = CONS_CURSOR_NORMAL;
-  wmemset (user->_matrix, L' ', user->screen.width * user->screen.lines);
+  conchar_memset (user->_matrix, chr, attr,
+		  user->screen.width * user->screen.lines);
 
-  /* XXX Set attribute flags.  */
   display->user = user;
   return 0;
 }
@@ -556,7 +562,7 @@ user_destroy (display_t display)
 
 static void
 screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
-	     size_t row2, wchar_t chr, char attr)
+	     size_t row2, wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
   off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
@@ -571,20 +577,20 @@ screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
 
   if (end < size)
     {
-      wmemset (user->_matrix + start, chr, end - start + 1);
+      conchar_memset (user->_matrix + start, chr, attr, end - start + 1);
       display_record_filechange (display, start, end);
     }
   else
     {
-      wmemset (user->_matrix + start, chr, size - start);
-      wmemset (user->_matrix, chr, end - size + 1);
+      conchar_memset (user->_matrix + start, chr, attr, size - start);
+      conchar_memset (user->_matrix, chr, attr, end - size + 1);
       display_record_filechange (display, start, end - size);
     }
 }
 
 static void
 screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
-		   size_t row2, size_t shift, wchar_t chr, char attr)
+		   size_t row2, size_t shift, wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
   off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
@@ -607,21 +613,24 @@ screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
       while (src <= end)
 	user->_matrix[dst++ % size] = user->_matrix[src++ % size];
       while (dst <= end)
-	user->_matrix[dst++ % size] = chr;
+	{
+	  user->_matrix[dst++ % size].chr = chr;
+	  user->_matrix[dst++ % size].attr = attr;
+	}
 
       display_record_filechange (display, start, end);
 #if 0
       display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
 				 sizeof (struct cons_display)
-				 + start * sizeof (wchar_t),
+				 + start * sizeof (conchar_t),
 				 sizeof (struct cons_display)
-				 + (start + shift) * sizeof (wchar_t) - 1);
+				 + (start + shift) * sizeof (conchar_t) - 1);
       display_notice_filechange (display, FILE_CHANGED_EXTEND,
 				 sizeof (struct cons_display)
-				 + (end - shift + 1) * sizeof (wchar_t),
+				 + (end - shift + 1) * sizeof (conchar_t),
 				 sizeof (struct cons_display)
-				 + (end + 1) * sizeof (wchar_t) - 1);
+				 + (end + 1) * sizeof (conchar_t) - 1);
 #endif
     }
   else
@@ -630,7 +639,8 @@ screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
 
 static void
 screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
-		    size_t row2, size_t shift, wchar_t chr, char attr)
+		    size_t row2, size_t shift,
+		    wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
   off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
@@ -653,21 +663,24 @@ screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
       while (src >= start)
 	user->_matrix[dst-- % size] = user->_matrix[src-- % size];
       while (dst >= start)
-	user->_matrix[dst-- % size] = chr;
+	{
+	  user->_matrix[dst-- % size].chr = chr;
+	  user->_matrix[dst-- % size].attr = attr;
+	}
 
       display_record_filechange (display, start, end);
 #if 0
       display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_EXTEND,
 				 sizeof (struct cons_display)
-				 + start * sizeof (wchar_t),
+				 + start * sizeof (conchar_t),
 				 sizeof (struct cons_display)
-				 + (start + shift) * sizeof (wchar_t) - 1);
+				 + (start + shift) * sizeof (conchar_t) - 1);
       display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
 				 sizeof (struct cons_display)
-				 + (end - shift + 1) * sizeof (wchar_t),
+				 + (end - shift + 1) * sizeof (conchar_t),
 				 sizeof (struct cons_display)
-				 + (end + 1) * sizeof (wchar_t) - 1);
+				 + (end + 1) * sizeof (conchar_t) - 1);
 #endif
     }
   else
@@ -721,80 +734,71 @@ handle_esc_bracket_m (attr_t attr, int code)
     {
     case 0:
       /* All attributes off: <sgr0>.  */
-      attr->fg = attr->def_fg;
-      attr->bg = attr->def_bg;
-      attr->reverse = attr->bold = attr->blink
-	= attr->invisible = attr->dim
-	= attr->underline = 0;
-      /* Cursor attributes aren't text attributes.  */
+      memset (&attr->current, 0, sizeof (conchar_attr_t));
+      attr->current.fgcol = attr->fgcol_def;
+      attr->current.bgcol = attr->bgcol_def;
       break;
     case 1:
       /* Bold on: <bold>.  */
-      attr->bold = 1;
+      attr->current.intensity = CONS_ATTR_INTENSITY_BOLD;
       break;
     case 2:
       /* Dim on: <dim>.  */
-      attr->dim = 1;
+      attr->current.intensity = CONS_ATTR_INTENSITY_DIM;
       break;
     case 4:
       /* Underline on: <smul>.  */
-      attr->underline = 1;
+      attr->current.underlined = 1;
       break;
     case 5:
-      /* Blink on: <blink>.  */
-      attr->blink = 1;
+      /* (Slow) blink on: <blink>.  */
+      attr->current.blinking = 1;
       break;
     case 7:
       /* Reverse video on: <rev>, <smso>.  */
-      attr->reverse = 1;
+      attr->current.reversed = 1;
       break;
     case 8:
       /* Concealed on: <invis>.  */
-      attr->invisible = 1;
-      break;
-    case 21:
-      /* Bold Off.  */
-      attr->bold = 0;
+      attr->current.concealed = 1;
       break;
     case 22:
-      /* Dim off.  */
-      attr->dim = 0;
+      /* Normal intensity.  */
+      attr->current.intensity = CONS_ATTR_INTENSITY_NORMAL;
       break;
     case 24:
       /* Underline off: <rmul>.  */
-      attr->underline = 0;
+      attr->current.underlined = 0;
       break;
     case 25:
       /* Blink off.  */
-      attr->blink = 0;
+      attr->current.blinking = 0;
       break;
     case 27:
       /* Reverse video off: <rmso>.  */
-      attr->reverse = 0;
+      attr->current.reversed = 0;
       break;
     case 28:
       /* Concealed off.  */
-      attr->invisible = 0;
+      attr->current.concealed = 0;
       break;
     case 30 ... 37:
       /* Set foreground color: <setaf>.  */
-      attr->fg = code - 30;
+      attr->current.fgcol = code - 30;
       break;
     case 39:
       /* Default foreground color; ANSI?.  */
-      attr->fg = attr->def_fg;
+      attr->current.fgcol = attr->fgcol_def;
       break;
     case 40 ... 47:
       /* Set background color: <setab>.  */
-      attr->bg = code - 40;
+      attr->current.bgcol = code - 40;
       break;
     case 49:
       /* Default background color; ANSI?.  */
-      attr->bg = attr->def_bg;
+      attr->current.bgcol = attr->bgcol_def;
       break;
     }
-  /* XXX */
-  /* recalc_attr (display); */
 }
 
 static void
@@ -821,42 +825,50 @@ handle_esc_bracket (display_t display, char op)
 
   switch (op)
     {
-    case 'H':
-    case 'f':
+    case 'H':		/* ECMA-48 <CUP>.  */
+    case 'f':		/* ECMA-48 <HVP>.  */
       /* Cursor position: <cup>.  */
-      user->cursor.col = parse->params[1] - 1;
-      user->cursor.row = parse->params[0] - 1;
+      user->cursor.col = (parse->params[1] ?: 1) - 1;
+      user->cursor.row = (parse->params[0] ?: 1) - 1;
       limit_cursor ();
       break;
-    case 'G':
-      /* Horizontal position: <hpa>.  */
-      user->cursor.col = parse->params[0] - 1;
+    case 'G':		/* ECMA-48 <CHA>.  */
+    case '`':		/* ECMA-48 <HPA>.  */
+      /* Horizontal cursor position: <hpa>.  */
+      user->cursor.col = (parse->params[0] ?: 1) - 1;
       limit_cursor ();
       break;
-    case 'F':
+    case 'd':		/* ECMA-48 <VPA>.  */
+      /* Vertical cursor position: <hpa>.  */
+      user->cursor.row = (parse->params[0] ?: 1) - 1;
+      limit_cursor ();
+      break;
+    case 'F':		/* ECMA-48 <CPL>.  */
       /* Beginning of previous line.  */
       user->cursor.col = 0;
-      /* fall through */
-    case 'A':
+      /* Fall through.  */
+    case 'A':		/* ECMA-48 <CUU>.  */
+    case 'k':		/* ECMA-48 <VPB>.  */
       /* Cursor up: <cuu>, <cuu1>.  */
       user->cursor.row -= (parse->params[0] ?: 1);
       limit_cursor ();
       break;
-    case 'E':
+    case 'E':		/* ECMA-48 <CNL>.  */
       /* Beginning of next line.  */
       user->cursor.col = 0;
       /* Fall through.  */
-    case 'B':
+    case 'B':		/* ECMA-48 <CUD>.  */
+    case 'e':		/* ECMA-48 <VPR>.  */
       /* Cursor down: <cud1>, <cud>.  */
       user->cursor.row += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
-    case 'C':
+    case 'C':		/* ECMA-48 <CUF>.  */
       /* Cursor right: <cuf1>, <cuf>.  */
       user->cursor.col += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
-    case 'D':
+    case 'D':		/* ECMA-48 <CUB>.  */
       /* Cursor left: <cub>, <cub1>.  */
       user->cursor.col -= (parse->params[0] ?: 1);
       limit_cursor ();
@@ -883,11 +895,11 @@ handle_esc_bracket (display_t display, char op)
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_hl (display, parse->params[i], 1);
       break;
-    case 'm':
+    case 'm':		/* ECME-48 <SGR>.  */
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_m (&display->attr, parse->params[i]);
       break;
-    case 'J':
+    case 'J':		/* ECME-48 <ED>.  */
       switch (parse->params[0])
 	{
 	case 0:
@@ -910,7 +922,7 @@ handle_esc_bracket (display_t display, char op)
 	  break;
 	}
       break;
-    case 'K':
+    case 'K':		/* ECME-48 <EL>.  */
       switch (parse->params[0])
 	{
 	case 0:
@@ -933,52 +945,52 @@ handle_esc_bracket (display_t display, char op)
 	  break;
 	}
       break;
-    case 'L':
+    case 'L':		/* ECME-48 <IL>.  */
       /* Insert line(s): <il1>, <il>.  */
       screen_shift_right (display, 0, user->cursor.row,
 			  user->screen.width - 1, user->screen.height - 1,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
-    case 'M':
+    case 'M':		/* ECME-48 <DL>.  */
       /* Delete line(s): <dl1>, <dl>.  */
       screen_shift_left (display, 0, user->cursor.row,
 			 user->screen.width - 1, user->screen.height - 1,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
-    case '@':
+    case '@':		/* ECME-48 <ICH>.  */
       /* Insert character(s): <ich1>, <ich>.  */
       screen_shift_right (display, user->cursor.col, user->cursor.row,
 			  user->screen.width - 1, user->cursor.row,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
-    case 'P':
+    case 'P':		/* ECME-48 <DCH>.  */
       /* Delete character(s): <dch1>, <dch>.  */
       screen_shift_left (display, user->cursor.col, user->cursor.row,
 			 user->screen.width - 1, user->cursor.row,
 			 parse->params[0] ?: 1,
 			 L' ', display->attr.current);
       break;
-    case 'S':
+    case 'S':		/* ECME-48 <SU>.  */
       /* Scroll up: <ind>, <indn>.  */
       screen_shift_left (display, 0, 0,
 			 user->screen.width - 1, user->screen.height - 1,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
-    case 'T':
+    case 'T':		/* ECME-48 <SD>.  */
       /* Scroll down: <ri>, <rin>.  */
       screen_shift_right (display, 0, 0,
 			  user->screen.width, user->screen.height,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
-    case 'X':
+    case 'X':		/* ECME-48 <ECH>.  */
       /* Erase character(s): <ech>.  */
       screen_fill (display, user->cursor.col, user->cursor.row,
-		   /* XXX limit ? */user->cursor.col + parse->params[0] ?: 1,
+		   /* XXX limit ? */user->cursor.col + (parse->params[0] ?: 1),
 		   user->cursor.row,
 		   L' ', display->attr.current);
       break;
@@ -1030,7 +1042,7 @@ display_output_one (display_t display, wchar_t chr)
   struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
 
-  void newline (void)
+  void linefeed (void)
     {
       if (user->cursor.row < user->screen.height - 1)
 	{
@@ -1042,10 +1054,9 @@ display_output_one (display_t display, wchar_t chr)
 	  user->screen.cur_line++;
 	  user->screen.cur_line %= user->screen.lines;
 
-	  /* XXX Set attribute flags.  */
 	  screen_fill (display, 0, user->screen.height - 1,
 		       user->screen.width - 1, user->screen.height - 1,
-		       L' ', user->screen.width);
+		       L' ', display->attr.current);
 	  if (user->screen.scr_lines <
 	      user->screen.lines - user->screen.height)
 	    user->screen.scr_lines++;
@@ -1068,11 +1079,11 @@ display_output_one (display_t display, wchar_t chr)
 	    }
 	  break;
 	case L'\n':
-	  /* Cursor down: <cud1>, scroll up: <ind>.  */
-	  newline ();
+	  /* Line feed.  */
+	  linefeed ();
 	  break;
 	case L'\b':
-	  /* Cursor backward: <cub1>.  */
+	  /* Backspace.  */
 	  if (user->cursor.col > 0 || user->cursor.row > 0)
 	    {
 	      if (user->cursor.col > 0)
@@ -1093,7 +1104,7 @@ display_output_one (display_t display, wchar_t chr)
 	  if (user->cursor.col >= user->screen.width)
 	    {
 	      user->cursor.col = 0;
-	      newline ();
+	      linefeed ();
 	    }
 	  /* XXX Flag cursor update.  */
 	  break;
@@ -1108,15 +1119,15 @@ display_output_one (display_t display, wchar_t chr)
 	    int line = (user->screen.cur_line + user->cursor.row)
 	      % user->screen.lines;
 	    int idx = line * user->screen.width + user->cursor.col;
-	    /* XXX Set attribute flags.  */
-	    user->_matrix[idx] = chr;
+	    user->_matrix[idx].chr = chr;
+	    user->_matrix[idx].attr = display->attr.current;
 
 	    display_record_filechange (display, idx, idx);
 	    user->cursor.col++;
 	    if (user->cursor.col == user->screen.width)
 	      {
 		user->cursor.col = 0;
-		newline ();
+		linefeed ();
 	      }
 	  }
 	  break;
@@ -1138,13 +1149,18 @@ display_output_one (display_t display, wchar_t chr)
 	  /* XXX Flag cursor change.  */
 	  parse->state = STATE_NORMAL;
 	  break;
+	case L'E':		/* ECMA-48 <NEL>.  */
+	  /* Newline.  */
+	  user->cursor.col = 0;
+	  linefeed ();
+	  break;
 	default:
 	  /* Unsupported escape sequence.  */
 	  parse->state = STATE_NORMAL;
 	  break;
 	}
       break;
-      
+
     case STATE_ESC_BRACKET_INIT:
       memset (&parse->params, 0, sizeof parse->params);
       parse->nparams = 0;
@@ -1251,7 +1267,7 @@ display_create (display_t *r_display, const char *encoding)
   display_t display;
   int width = 80;
   int height = 25;
-  int lines = 25; 	/* XXX For now.  */
+  int lines = 50; 	/* XXX For now.  */
 
   *r_display = NULL;
   display = calloc (1, sizeof *display);
@@ -1259,7 +1275,12 @@ display_create (display_t *r_display, const char *encoding)
     return ENOMEM;
 
   mutex_init (&display->lock);
-  err = user_create (display, width, height, lines);
+  display->attr.bgcol_def = CONS_COLOR_BLACK;
+  display->attr.fgcol_def = CONS_COLOR_WHITE;
+  display->attr.current.bgcol = display->attr.bgcol_def;
+  display->attr.current.fgcol = display->attr.fgcol_def;
+  err = user_create (display, width, height, lines, L' ',
+		     display->attr.current);
   if (err)
     {
       free (display);

@@ -21,6 +21,35 @@
 
 #include <stdint.h>
 
+#define CONS_COLOR_BLACK	0
+#define CONS_COLOR_RED		1
+#define CONS_COLOR_GREEN	2
+#define CONS_COLOR_YELLOW	3
+#define CONS_COLOR_BLUE		4
+#define CONS_COLOR_MAGENTA	5
+#define CONS_COLOR_CYAN		6
+#define CONS_COLOR_WHITE	7
+
+typedef struct
+{
+#define CONS_ATTR_INTENSITY_NORMAL	000000000000
+#define CONS_ATTR_INTENSITY_BOLD	000000000001
+#define CONS_ATTR_INTENSITY_DIM		000000000002
+  uint32_t intensity : 2;
+  uint32_t underlined : 1;
+  uint32_t blinking : 1;
+  uint32_t reversed : 1;
+  uint32_t concealed : 1;
+  uint32_t bgcol : 3;
+  uint32_t fgcol : 3;
+} conchar_attr_t;
+  
+typedef struct
+{
+  wchar_t chr;
+  conchar_attr_t attr;
+} conchar_t;
+
 struct cons_display
 {
 #define CONS_MAGIC 0x48555244	/* Hex for "HURD".  */
@@ -61,8 +90,31 @@ struct cons_display
   /* Don't use this, use ((wchar_t *) cons_display +
      cons_display.screen.matrix) instead.  This will make your client
      upward compatible with future versions of this interface.  */
-  wchar_t _matrix[0];
+  conchar_t _matrix[0];
 };
 
+
+#define CONS_KEY_UP		"\e[A"		/* Cursor up.  */
+#define CONS_KEY_DOWN		"\e[B"		/* Cursor down.  */
+#define CONS_KEY_RIGHT		"\e[C"		/* Cursor right.  */
+#define CONS_KEY_LEFT		"\e[D"		/* Cursor left.  */
+#define CONS_KEY_HOME		"\e[H"		/* Home key.  */
+#define CONS_KEY_BACKSPACE	"\177"		/* Backspace key.  */
+#define CONS_KEY_F1		"\eOP"		/* Function key 1.  */
+#define CONS_KEY_F2		"\eOQ"		/* Function key 2.  */
+#define CONS_KEY_F3		"\eOR"		/* Function key 3.  */
+#define CONS_KEY_F4		"\eOS"		/* Function key 4.  */
+#define CONS_KEY_F5		"\eOT"		/* Function key 5.  */
+#define CONS_KEY_F6		"\eOU"		/* Function key 6.  */
+#define CONS_KEY_F7		"\eOV"		/* Function key 7.  */
+#define CONS_KEY_F8		"\eOW"		/* Function key 8.  */
+#define CONS_KEY_F9		"\eOX"		/* Function key 9.  */
+#define CONS_KEY_F10		"\eOY"		/* Function key 10.  */
+#define CONS_KEY_DC		"\e[9"		/* Delete character.  */
+#define CONS_KEY_NPAGE		"\e[U"		/* Next page.  */
+#define CONS_KEY_PPAGE		"\e[V"		/* Previous page.  */
+#define CONS_KEY_BTAB		"\e[Z"		/* Back tab key.  */
+#define CONS_KEY_IC		"\e[@"		/* Insert char mode.  */
+#define CONS_KEY_END		"\e[Y"		/* End key.  */
 
 #endif	/* _HURD_CONSOLE_H */
