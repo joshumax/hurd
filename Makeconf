@@ -176,10 +176,10 @@ endif
 
 # TAGS files
 ifneq ($(dir),.)
-TAGS: $(SRCS) $(LCLHDRS) $(OTHERTAGS)
-	etags -o $@ $(SRCS) $(LCLHDRS) $(OTHERTAGS)
+DEP_SRCS=sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -u
+TAGS: $(OBJS:.o=.d) $(OTHERTAGS)
+	cat $(OBJS:.o=.d) | $(DEP_SRCS) | etags -o $@ - $(OTHERTAGS)
 endif
-
 
 # Cleaning
 ifeq ($(clean),yes)
