@@ -271,6 +271,8 @@ main (int argc, char **argv)
 		      fputs (sep, stdout);
 		    if (use_pfx)
 		      printf (pfx, h->name, dir);
+		    if ((use_pfx && *pfx) || (state->arg_num > 0 && *sep))
+		      fflush (stdout);
 		    if (interpret)
 		      errs |= ftpdir2 (dir, h);
 		    else
