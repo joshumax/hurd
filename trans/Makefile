@@ -29,6 +29,7 @@ symlink magic: fsysServer.o
 ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o
 
+crash: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a
 null ifsock fifo new-fifo devport: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
