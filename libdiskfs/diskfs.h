@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -54,8 +54,13 @@ struct peropen
   int lock_status;
   int refcnt;
   int openstat;
-  mach_port_t dotdotport;	/* dotdot from ROOT through this peropen */
+
   struct node *np;
+
+  mach_port_t dotdotport;	/* dotdot from ROOT through this peropen */
+  unsigned depth;		/* How many levels there are between
+				   DOTDOTPORT and us; if DEPTH == 0,
+				   DOTDOTPORT is our parent.  */
 };
 
 /* A unique one of these exists for each node currently in use (and
@@ -780,6 +785,10 @@ struct node *diskfs_make_node (struct disknode *dn);
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
 
+   DEPTH is the number of nodes between DP and the filesystem root.
+   If NEW_DEPTH is non-zero, then for a non-error return, the depth of the
+   resulting node NP is returned in it.
+
    Return ENOTDIR if DP is not a directory.
    Return EACCES if CRED isn't allowed to search DP.
    Return EACCES if completing the operation will require writing
@@ -792,7 +801,8 @@ struct node *diskfs_make_node (struct disknode *dn);
 */
 error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 		       struct node **np, struct dirstat *ds,
-		       struct protid *cred);
+		       struct protid *cred,
+		       unsigned depth, unsigned *new_depth);
 
 /* Add NP to directory DP under the name NAME.  This will only be
    called after an unsuccessful call to diskfs_lookup of type CREATE
@@ -856,7 +866,7 @@ void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
 struct peropen *diskfs_make_peropen (struct node *np, int flags,
-				     mach_port_t dotdotnode);
+				     mach_port_t dotdotnode, unsigned depth);
 
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is
