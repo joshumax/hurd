@@ -39,8 +39,6 @@ diskfs_S_io_read (struct protid *cred,
   np = cred->po->np;
   if (!(cred->po->openstat & O_READ))
     return EBADF;
-  if (maxread < 0)
-    return EINVAL;
   
   mutex_lock (&np->lock);
 
@@ -50,11 +48,7 @@ diskfs_S_io_read (struct protid *cred,
     off = cred->po->filepointer;
 
   if (off + maxread > np->dn_stat.st_size)
-    {
-      maxread = np->dn_stat.st_size - off;
-      if (maxread < 0)
-	maxread = 0;
-    }
+    maxread = np->dn_stat.st_size - off;
   
   if (maxread > *datalen)
     {
