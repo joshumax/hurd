@@ -38,30 +38,31 @@ trivfs_startup(mach_port_t bootstrap, int flags,
 	       struct port_bucket *protid_bucket,
 	       struct trivfs_control **control)
 {
-  error_t err;
-  mach_port_t realnode;
-  struct trivfs_control *tcntl;
-  mach_port_t mcntl =
-    trivfs_handle_port (MACH_PORT_NULL, control_class, control_bucket,
-			protid_class, protid_bucket);
+  mach_port_t underlying, right;
+  struct trivfs_control *fsys;
+  error_t err =
+    trivfs_create_control (MACH_PORT_NULL,
+			   control_class, control_bucket,
+			   protid_class, protid_bucket,
+			   &fsys);
 
-  assert(mcntl != MACH_PORT_NULL);
+  if (err)
+    return err;
+
+  right = ports_get_right (fsys);
 
   /* Contact whoever started us.  */
-  err =
-    fsys_startup (bootstrap, flags, mcntl, MACH_MSG_TYPE_MAKE_SEND, &realnode);
+  err = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_MAKE_SEND,
+		      &underlying);
 
-  /* Install the returned realnode for trivfs's use */
-  tcntl = ports_lookup_port (control_bucket, mcntl, control_class);
-  assert (tcntl);
+  if (! err)
+    fsys->underlying = underlying;
 
-  if (!err)
-    tcntl->underlying = realnode;
+  ports_port_deref (fsys);
 
-  ports_port_deref (tcntl);
-
-  if (control)
-    *control = tcntl;
+  /* Pass back what we got, unless the caller doesn't want it.  */
+  if (!err && control)
+    *control = fsys;
 
   return err;
 }
