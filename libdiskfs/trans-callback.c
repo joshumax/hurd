@@ -36,7 +36,10 @@ _diskfs_translator_callback1_fn (void *cookie1, void *cookie2,
 
   err = diskfs_get_translator (np, argz, (u_int *) argz_len);
   if (err)
-    return err;
+    {
+      assert (err != EOPNOTSUPP);
+      return err;
+    }
 
   *uid = np->dn_stat.st_uid;
   *gid = np->dn_stat.st_gid;
