@@ -1,3 +1,8 @@
+1999-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (new_partition): When reading Linux signature page,
+	handle pager_read_file_direct returning sub-page blocks.
+
 1999-06-03  Mark Kettenis  <kettenis@gnu.org>
 
 	* default_pager.c (new_partition): Declare `waste' as `int'
