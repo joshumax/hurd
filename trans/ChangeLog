@@ -1,5 +1,8 @@
 2002-05-12  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.c (netfs_attempt_lookup): Treat EOPNOTSUPP like EACCES.
+	When all modes fail, try opening the node with zero openmodes.
+
 	* fakeroot.c (netfs_demuxer): New function.  Reflect unrecognized
 	messages to the underlying node port.
 
