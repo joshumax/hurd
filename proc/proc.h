@@ -57,23 +57,7 @@ struct proc
   /* Communication */
   mach_port_t p_msgport;	/* send right */
 
-  /* Continuations */
-  union
-    {
-      struct wait_c
-	{
-	  mach_port_t reply_port;
-	  mach_msg_type_name_t reply_port_type;
-	  pid_t pid;
-	  int options;
-	} wait_c;
-      struct getmsgport_c
-	{
-	  mach_port_t reply_port;
-	  mach_msg_type_name_t reply_port_type;
-	  struct proc *msgp;
-	} getmsgport_c;
-    } p_continuation;
+  struct condition p_wakeup;
 
   /* Miscellaneous information */
   vm_address_t p_argv, p_envp;
@@ -160,6 +144,8 @@ mach_port_t master_host_port;
 mach_port_t master_device_port;
 
 mach_port_t generic_port;	/* messages not related to a specific proc */
+
+struct mutex global_lock;
 
 /* Our name for version system */
 #define OUR_SERVER_NAME "proc"
