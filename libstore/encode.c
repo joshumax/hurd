@@ -24,11 +24,11 @@
 
 #include "store.h"
 
-/* Default encoding used for most leaf store types.  */
+/* Standard encoding used for most leaf store types.  */
 
 error_t
-store_default_leaf_allocate_encoding (struct store *store,
-				      struct store_enc *enc)
+store_std_leaf_allocate_encoding (const struct store *store,
+				  struct store_enc *enc)
 {
   enc->num_ports++;
   enc->num_ints += 6;
@@ -40,14 +40,14 @@ store_default_leaf_allocate_encoding (struct store *store,
 }
 
 error_t
-store_default_leaf_encode (struct store *store, struct store_enc *enc)
+store_std_leaf_encode (const struct store *store, struct store_enc *enc)
 {
   int i;
   size_t name_len = (store->name ? strlen (store->name) + 1 : 0);
 
   enc->ports[enc->cur_port++] = store->port;
 
-  enc->ints[enc->cur_int++] = store->class;
+  enc->ints[enc->cur_int++] = store->class->id;
   enc->ints[enc->cur_int++] = store->flags;
   enc->ints[enc->cur_int++] = store->block_size;
   enc->ints[enc->cur_int++] = store->num_runs;
@@ -83,7 +83,7 @@ error_t
 store_encode (const struct store *store, struct store_enc *enc)
 {
   error_t err;
-  struct store_meths *meths = store->meths;
+  struct store_class *class = store->class;
   /* We zero each vector length for the allocate_encoding method to work, so
      save the old values.  */
   mach_msg_type_number_t init_num_ports = enc->num_ports;
@@ -91,14 +91,14 @@ store_encode (const struct store *store, struct store_enc *enc)
   mach_msg_type_number_t init_num_offsets = enc->num_offsets;
   mach_msg_type_number_t init_data_len = enc->data_len;
 
-  if (!meths->allocate_encoding || !meths->encode)
+  if (!class->allocate_encoding || !class->encode)
     return EOPNOTSUPP;
 
   enc->num_ports = 0;
   enc->num_ints = 0;
   enc->num_offsets = 0;
   enc->data_len = 0;
-  err = (*meths->allocate_encoding) (store, enc);
+  err = (*class->allocate_encoding) (store, enc);
   if (err)
     return err;
 
@@ -116,7 +116,7 @@ store_encode (const struct store *store, struct store_enc *enc)
 		       (vm_address_t *)&enc->data, enc->data_len, 1);
 
   if (! err)
-    err = (*meths->encode) (store, enc);
+    err = (*class->encode) (store, enc);
 
   enc->cur_port = enc->cur_int = enc->cur_offset = enc->cur_data = 0;
 
