@@ -21,5 +21,6 @@ error_t
 trivfs_S_file_chmod (struct protid *cred,
 		     mode_t mode)
 {
-  return cred ? file_chmod (cred->realnod, mode) : EOPNOTSUPP;
+  /* Is this right? */
+  return cred ? file_chmod (cred->realnode, mode) : EOPNOTSUPP;
 }
