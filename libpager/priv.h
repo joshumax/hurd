@@ -68,3 +68,14 @@ enum page_errors
   PAGE_EDQUOT,
 };
 
+
+void _pager_wait_for_seqno (struct pager *, int);
+void _pager_release_seqno (struct pager *);
+void _pager_block_termination (struct pager *);
+void _pager_allow_termination (struct pager *);
+void _pager_pagemap_resize (struct pager *, vm_address_t);
+void _pager_mark_object_error (struct pager *, vm_address_t, vm_size_t, int);
+
+struct pager *_pager_all_pagers;
+spin_lock_t pagerlistlock;
+   
