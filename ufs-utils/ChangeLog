@@ -1,3 +1,7 @@
+Mon Aug 19 15:18:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfs.c (doc): Supply a useful value.
+
 Tue Jul 23 19:34:58 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mkfs.c (fsinit): `struct timespec' now uses a field prefix of `tv_'.

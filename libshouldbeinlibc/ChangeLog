@@ -1,3 +1,15 @@
+Tue Aug 20 17:12:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_doc): Add FIRST_ONLY argument.
+	Don't output a blank line for empty post-docs.
+	(argp_help): Use it.  Move first call to argp_doc after newline.
+
+Mon Aug 19 14:45:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_help): Add note about --usage to `Try...' msg.
+	Supply new args to argp_doc, and additional call before arg help.
+	(argp_doc): Add the POST and PRE_BLANK arguments, & return val.
+
 Wed Jul 31 15:24:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* wire.c (_start): No longer declared as weak, now that everything
