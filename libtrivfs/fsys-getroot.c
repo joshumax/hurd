@@ -25,7 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 
 kern_return_t
-trivfs_S_fsys_getroot (mach_port_t fsys,
+trivfs_S_fsys_getroot (struct trivfs_control *cntl;
 		       int flags,
 		       uid_t *uids, u_int nuids,
 		       uid_t *gids, u_int ngids,
@@ -34,9 +34,7 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 {
   struct trivfs_protid *cred;
   int i;
-  struct trivfs_control *cntl;
 
-  cntl = ports_check_port_type (fsys, trivfs_cntl_porttype);
   if (!cntl)
     return EOPNOTSUPP;
 
@@ -50,18 +48,32 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
     }
   
   cred = ports_allocate_port (sizeof (struct trivfs_protid),
-			      trivfs_protid_porttype);
+			      cntl->protidtypes);
   cred->isroot = 0;
   for (i = 0; i < nuids; i++)
     if (uids[i] == 0)
       cred->isroot = 1;
-  cred->cntl = cntl;
+  cred->uids = malloc (nuids * sizeof (uid_t));
+  cred->gids = malloc (ngids * sizeof (uid_t));
+  bcopy (uids, cred->uids, nuids * sizeof (uid_t));
+  bcopy (gids, cred->gids, ngids * sizeof (uid_t));
+  cred->nuids = nuids;
+  cred->ngids = ngids;
+
+  cred->po = malloc (sizeof (struct trivfs_peropen));
+  cred->po->refcnt = 1;
+  cred->po->cntl = cntl;
   ports_port_ref (cntl);
-  io_restrict_auth (cred->cntl->underlying, &cred->realnode, 
+  if (trivfs_peropen_create_hook)
+    (*trivfs_peropen_create_hook) (cred->po);
+
+  io_restrict_auth (cred->po->cntl->underlying, &cred->realnode, 
 		    uids, nuids, gids, ngids);
+  if (trivfs_protid_create_hook)
+    (*trivfs_protid_create_hook) (cred);
+
   *newpt = ports_get_right (cred);
   *newpttype = MACH_MSG_TYPE_MAKE_SEND;
-  ports_done_with_port (cntl);
   return 0;
 }
 
