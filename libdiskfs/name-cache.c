@@ -169,6 +169,13 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name)
   if (name_len > CACHE_NAME_LEN - 1)
     return;
 
+  /* Never cache . or ..; it's too much trouble to get the locking
+     order right.  */
+  if (name[0] == '.' 
+      && (name[1] == '\0'
+	  || (name[1] == '.' && name[2] == '\0')))
+    return;
+
   spin_lock (&cache_lock);
 
   if (lru_cache == 0)
