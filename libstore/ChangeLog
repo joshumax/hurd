@@ -1,3 +1,10 @@
+2000-12-20  Roland McGrath  <roland@frob.com>
+
+	* copy.c (copy_read): When reading whole aligned pages, use vm_read.
+	Use MAP_FAILED in place of (void *) -1.  Use memcpy in place of bcopy.
+	(copy_write): When reading whole aligned pages, use vm_write.
+	Use memcpy in place of bcopy.
+
 1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* store.h (struct store_class): Add const to type of `name' member.
