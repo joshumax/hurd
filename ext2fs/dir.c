@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -72,8 +72,8 @@ struct dirstat
 
   /* Index of this directory block. */
   int idx;
-  
-  /* For stat COMPRESS, this is the address (inside mapbuf) 
+
+  /* For stat COMPRESS, this is the address (inside mapbuf)
      of the first direct in the directory block to be compressed. */
   /* For stat HERE_TIS, SHRINK, and TAKE, this is the entry referenced. */
   struct ext2_dir_entry *entry;
@@ -90,21 +90,21 @@ struct dirstat
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
 
 /* Initialize DS such that diskfs_drop_dirstat will ignore it. */
-void 
+void
 diskfs_null_dirstat (struct dirstat *ds)
 {
   ds->type = LOOKUP;
 }
 
-static error_t					
-dirscanblock (vm_address_t blockoff, struct node *dp, int idx, char *name, 
-	      int namelen, enum lookup_type type, struct dirstat *ds,
-	      ino_t *inum);
+static error_t
+dirscanblock (vm_address_t blockoff, struct node *dp, int idx,
+	      const char *name, int namelen, enum lookup_type type,
+	      struct dirstat *ds, ino_t *inum);
 
 /* Implement the diskfs_lookup from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification.  */
 error_t
-diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 		    struct node **npp, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
@@ -121,7 +121,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   int blockaddr;
   int idx, lastidx;
   int looped;
-  
+
   if ((type == REMOVE) || (type == RENAME))
     assert (npp);
 
@@ -130,12 +130,12 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   spec_dotdot = type & SPEC_DOTDOT;
   type &= ~SPEC_DOTDOT;
-  
+
   namelen = strlen (name);
 
   if (namelen > EXT2_NAME_LEN)
     return ENAMETOOLONG;
-  
+
  try_again:
   if (ds)
     {
@@ -165,10 +165,10 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   mach_port_deallocate (mach_task_self (), memobj);
 
   inum = 0;
-  
+
   if (!diskfs_check_readonly ())
     dp->dn_set_atime = 1;
-  
+
   /* Start the lookup at DP->dn->dir_idx.  */
   idx = dp->dn->dir_idx;
   if (idx * DIRBLKSIZ > dp->dn_stat.st_size)
@@ -229,7 +229,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 		goto out;
 	    }
 	}
-	  
+
       /* We are looking up .. */
       /* Check to see if this is the root of the filesystem. */
       else if (dp->cache_id == 2)
@@ -237,7 +237,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  err = EAGAIN;
 	  goto out;
 	}
-	  
+
       /* We can't just do diskfs_cached_lookup, because we would then deadlock.
 	 So we do this.  Ick.  */
       else if (retry_dotdot)
@@ -271,11 +271,11 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  retry_dotdot = inum;
 	  goto try_again;
 	}
-      
+
       /* Here below are the spec dotdot cases. */
       else if (type == RENAME || type == REMOVE)
 	np = ifind (inum);
-      
+
       else if (type == LOOKUP)
 	{
 	  diskfs_nput (dp);
@@ -286,7 +286,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       else
 	assert (0);
     }
-  
+
   if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
     {
       /* We didn't find any room, so mark ds to extend the dir */
@@ -312,7 +312,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       ds->mapbuf = buf;
       ds->mapextent = buflen;
     }
-  
+
   if (np)
     {
       assert (npp);
@@ -346,8 +346,8 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
    diskfs_lookup.  If found, set *INUM to the inode number, else
    return ENOENT.  */
 static error_t
-dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
-	      int namelen, enum lookup_type type, 
+dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
+	      const char *name, int namelen, enum lookup_type type,
 	      struct dirstat *ds, ino_t *inum)
 {
   int nfree = 0;
@@ -359,7 +359,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
   int looking = 0;
   int countcopies = 0;
   int consider_compress = 0;
-  
+
   if (ds && (ds->stat == LOOKING
 	     || ds->stat == COMPRESS))
     {
@@ -373,7 +373,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
        prevoff = currentoff, currentoff += entry->rec_len)
     {
       entry = (struct ext2_dir_entry *)currentoff;
-      
+
       if (!entry->rec_len
 	  || entry->rec_len % EXT2_DIR_PAD
 	  || entry->name_len > EXT2_NAME_LEN
@@ -386,11 +386,11 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
 	}
-      
+
       if (looking || countcopies)
 	{
 	  int thisfree;
-	  
+
 	  /* Count how much free space this entry has in it. */
 	  if (entry->inode == 0)
 	    thisfree = entry->rec_len;
@@ -402,9 +402,9 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	     number of bytes there too. */
 	  if (countcopies && currentoff != blockaddr)
 	    nbytes += EXT2_DIR_REC_LEN (entry->name_len);
-	  
+
 	  if (ds->stat == COMPRESS && nbytes > ds->nbytes)
-	    /* The previously found compress is better than 
+	    /* The previously found compress is better than
 	       this one, so don't bother counting any more. */
 	    countcopies = 0;
 
@@ -421,9 +421,9 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	      nfree += thisfree;
 	      if (nfree >= needed)
 		consider_compress = 1;
-	    }	      
+	    }
 	}
-      
+
       if (entry->inode)
 	nentries++;
 
@@ -434,7 +434,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	break;
     }
 
-  if (consider_compress 
+  if (consider_compress
       && (ds->type == LOOKING
 	  || (ds->type == COMPRESS && ds->nbytes > nbytes)))
     {
@@ -444,7 +444,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       ds->idx = idx;
       ds->nbytes = nbytes;
     }
-  
+
   if (currentoff >= blockaddr + DIRBLKSIZ)
     {
       int i;
@@ -454,9 +454,9 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	 down how many entries there were. */
       if (!dp->dn->dirents)
 	{
-	  dp->dn->dirents = malloc ((dp->dn_stat.st_size / DIRBLKSIZ) 
+	  dp->dn->dirents = malloc ((dp->dn_stat.st_size / DIRBLKSIZ)
 				    * sizeof (int));
-	  for (i = 0; i < dp->dn_stat.st_size/DIRBLKSIZ; i++) 
+	  for (i = 0; i < dp->dn_stat.st_size/DIRBLKSIZ; i++)
 	    dp->dn->dirents[i] = -1;
 	}
       /* Make sure the count is correct if there is one now. */
@@ -466,7 +466,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 
       return ENOENT;
     }
-  
+
   /* We have found the required name. */
 
   if (ds && type == CREATE)
@@ -491,7 +491,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
    only be made if the directory has been held locked continuously since
    the preceding lookup call, and only if that call returned ENOENT. */
 error_t
-diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
+diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 		      struct dirstat *ds, struct protid *cred)
 {
   struct ext2_dir_entry *new;
@@ -499,12 +499,12 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
   int needed = EXT2_DIR_REC_LEN (namelen);
   int oldneeded;
   vm_address_t fromoff, tooff;
-  int totfreed;  
+  int totfreed;
   error_t err;
   off_t oldsize = 0;
 
   assert (ds->type == CREATE);
-  
+
   assert (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
@@ -514,30 +514,30 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
     case TAKE:
       /* We are supposed to consume this slot. */
       assert (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
-      
+
       ds->entry->inode = np->cache_id;
       ds->entry->name_len = namelen;
       bcopy (name, ds->entry->name, namelen);
 
       break;
-      
+
     case SHRINK:
       /* We are supposed to take the extra space at the end
 	 of this slot. */
       oldneeded = EXT2_DIR_REC_LEN (ds->entry->name_len);
       assert (ds->entry->rec_len - oldneeded >= needed);
-      
+
       new = (struct ext2_dir_entry *) ((vm_address_t) ds->entry + oldneeded);
 
       new->inode = np->cache_id;
       new->rec_len = ds->entry->rec_len - oldneeded;
       new->name_len = namelen;
       bcopy (name, new->name, namelen);
-      
+
       ds->entry->rec_len = oldneeded;
-      
+
       break;
-      
+
     case COMPRESS:
       /* We are supposed to move all the entries to the
 	 front of the block, giving each the minimum
@@ -565,7 +565,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
 
       totfreed = (vm_address_t) ds->entry + DIRBLKSIZ - tooff;
       assert (totfreed >= needed);
-      
+
       new = (struct ext2_dir_entry *) tooff;
       new->inode = np->cache_id;
       new->rec_len = totfreed;
@@ -576,7 +576,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
     case EXTEND:
       /* Extend the file. */
       assert (needed <= DIRBLKSIZ);
-      
+
       oldsize = dp->dn_stat.st_size;
       while (oldsize + DIRBLKSIZ > dp->allocsize)
 	{
@@ -598,7 +598,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       new->name_len = namelen;
       bcopy (name, new->name, namelen);
       break;
-      
+
     default:
       assert (0);
     }
@@ -606,10 +606,10 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
   dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
-        
+
   if (ds->stat != EXTEND)
     {
-      /* If we are keeping count of this block, then keep the count up 
+      /* If we are keeping count of this block, then keep the count up
 	 to date. */
       if (dp->dn->dirents && dp->dn->dirents[ds->idx] != -1)
 	dp->dn->dirents[ds->idx]++;
@@ -621,10 +621,10 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
 	 anything at all. */
       if (dp->dn->dirents)
 	{
-	  dp->dn->dirents = realloc (dp->dn->dirents, 
+	  dp->dn->dirents = realloc (dp->dn->dirents,
 				     (dp->dn_stat.st_size / DIRBLKSIZ
 				      * sizeof (int)));
-	  for (i = oldsize / DIRBLKSIZ; 
+	  for (i = oldsize / DIRBLKSIZ;
 	       i < dp->dn_stat.st_size / DIRBLKSIZ;
 	       i++)
 	    dp->dn->dirents[i] = -1;
@@ -633,14 +633,14 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
 	}
       else
 	{
-	  dp->dn->dirents = malloc (dp->dn_stat.st_size / DIRBLKSIZ 
+	  dp->dn->dirents = malloc (dp->dn_stat.st_size / DIRBLKSIZ
 				    * sizeof (int));
 	  for (i = 0; i < dp->dn_stat.st_size / DIRBLKSIZ; i++)
 	    dp->dn->dirents[i] = -1;
 	  dp->dn->dirents[ds->idx] = 1;
 	}
     }
-  
+
   diskfs_file_update (dp, 1);
 
   return 0;
@@ -656,7 +656,7 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
-  
+
   assert (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
@@ -678,16 +678,16 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
      to date. */
   if (dp->dn->dirents && dp->dn->dirents[ds->idx] != -1)
     dp->dn->dirents[ds->idx]--;
-  
+
   diskfs_file_update (dp, 1);
 
   return 0;
 }
-  
+
 
 /* Following a lookup call for RENAME, this changes the inode number
-   on a directory entry.  DP is the directory being changed; NP is 
-   the new node being linked in; DP is the cached information returned 
+   on a directory entry.  DP is the directory being changed; NP is
+   the new node being linked in; DP is the cached information returned
    by lookup.  This call is only valid if the directory has been locked
    continuously since the call to lookup, and only if that call
    succeeded.  */
@@ -696,14 +696,14 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 {
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
-  
+
   assert (!diskfs_readonly);
 
   ds->entry->inode = np->cache_id;
   dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
-  
+
   diskfs_file_update (dp, 1);
 
   return 0;
@@ -719,7 +719,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   struct ext2_dir_entry *entry;
   int hit = 0;			/* Found something in the directory.  */
   memory_object_t memobj = diskfs_get_filemap (dp, VM_PROT_READ);
-  
+
   if (memobj == MACH_PORT_NULL)
     /* XXX should reflect error properly. */
     return 0;
@@ -732,7 +732,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   if (! diskfs_check_readonly ())
     dp->dn_set_atime = 1;
 
-  for (curoff = buf; 
+  for (curoff = buf;
        !hit && curoff < buf + dp->dn_stat.st_size;
        curoff += entry->rec_len)
     {
@@ -784,12 +784,12 @@ count_dirents (struct node *dp, int nb, char *buf)
 
   assert (dp->dn->dirents);
   assert ((nb + 1) * DIRBLKSIZ <= dp->dn_stat.st_size);
-  
+
   err = diskfs_node_rdwr (dp, buf, nb * DIRBLKSIZ, DIRBLKSIZ, 0, 0, &amt);
   if (err)
     return err;
   assert (amt == DIRBLKSIZ);
-  
+
   for (offinblk = buf;
        offinblk < buf + DIRBLKSIZ;
        offinblk += entry->rec_len)
@@ -798,7 +798,7 @@ count_dirents (struct node *dp, int nb, char *buf)
       if (entry->inode)
 	count++;
     }
-  
+
   assert (dp->dn->dirents[nb] == -1 || dp->dn->dirents[nb] == count);
   dp->dn->dirents[nb] = count;
   return 0;
@@ -811,8 +811,8 @@ count_dirents (struct node *dp, int nb, char *buf)
 /* Implement the disikfs_get_directs callback as described in
    <hurd/diskfs.h>. */
 error_t
-diskfs_get_directs (struct node *dp, 
-		    int entry, 
+diskfs_get_directs (struct node *dp,
+		    int entry,
 		    int nentries,
 		    char **data,
 		    u_int *datacnt,
@@ -832,7 +832,7 @@ diskfs_get_directs (struct node *dp,
   int allocsize;
   int checklen;
   struct dirent *userp;
-  
+
   nblks = dp->dn_stat.st_size/DIRBLKSIZ;
 
   if (!dp->dn->dirents)
@@ -868,7 +868,7 @@ diskfs_get_directs (struct node *dp,
 
   if (allocsize > *datacnt)
     vm_allocate (mach_task_self (), (vm_address_t *) data, allocsize, 1);
-  
+
   /* Scan through the entries to find ENTRY.  If we encounter
      a -1 in the process then stop to fill it.  When we run
      off the end, ENTRY is too big. */
@@ -889,10 +889,10 @@ diskfs_get_directs (struct node *dp,
 	break;
 
       curentry += dp->dn->dirents[blkno];
-      
+
       bufvalid = 0;
     }
-  
+
   if (blkno == nblks)
     {
       *datacnt = 0;
@@ -915,13 +915,13 @@ diskfs_get_directs (struct node *dp,
 	  assert (checklen == DIRBLKSIZ);
 	  bufvalid = 1;
 	}
-      for (i = 0, bufp = buf; 
-	   i < entry - curentry && bufp - buf < DIRBLKSIZ; 
+      for (i = 0, bufp = buf;
+	   i < entry - curentry && bufp - buf < DIRBLKSIZ;
 	   bufp += ((struct ext2_dir_entry *)bufp)->rec_len, i++)
 	;
       /* Make sure we didn't run off the end. */
       assert (bufp - buf < DIRBLKSIZ);
-    }      
+    }
 
   i = 0;
   datap = *data;
@@ -933,7 +933,7 @@ diskfs_get_directs (struct node *dp,
     {
       if (!bufvalid)
 	{
-	  err = diskfs_node_rdwr (dp, buf, blkno * DIRBLKSIZ, DIRBLKSIZ, 
+	  err = diskfs_node_rdwr (dp, buf, blkno * DIRBLKSIZ, DIRBLKSIZ,
 				  0, 0, &checklen);
 	  if (err)
 	    return err;
@@ -1000,17 +1000,17 @@ diskfs_get_directs (struct node *dp,
 	  return EIO;
 	}
     }
-  
+
   /* We've copied all we can.  If we allocated our own array
      but didn't fill all of it, then free whatever memory we didn't use. */
   if (allocsize > *datacnt)
     {
       if (round_page (datap - *data) < allocsize)
-	vm_deallocate (mach_task_self (), 
+	vm_deallocate (mach_task_self (),
 		       (vm_address_t) (*data + round_page (datap - *data)),
 		       allocsize - round_page (datap - *data));
     }
-  
+
   /* Set variables for return */
   *datacnt = datap - *data;
   *amt = i;

@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -58,9 +58,9 @@ inode_init ()
     nodehash[n] = 0;
 }
 
-/* Fetch inode INUM, set *NPP to the node structure; 
+/* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
-error_t 
+error_t
 diskfs_cached_lookup (int inum, struct node **npp)
 {
   error_t err;
@@ -77,7 +77,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
 	*npp = np;
 	return 0;
       }
-  
+
   /* Format specific data for the new node.  */
   dn = malloc (sizeof (struct disknode));
   if (! dn)
@@ -105,10 +105,10 @@ diskfs_cached_lookup (int inum, struct node **npp)
   nodehash[INOHASH(inum)] = np;
 
   spin_unlock (&diskfs_node_refcnt_lock);
-  
+
   /* Get the contents of NP off disk.  */
   err = read_node (np);
-  
+
   if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
       spin_lock (&generation_lock);
@@ -118,7 +118,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       spin_unlock (&generation_lock);
       np->dn_set_ctime = 1;
     }
-  
+
   if (err)
     return err;
   else
@@ -134,13 +134,13 @@ struct node *
 ifind (ino_t inum)
 {
   struct node *np;
-  
+
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->cache_id != inum)
 	continue;
-      
+
       assert (np->references);
       spin_unlock (&diskfs_node_refcnt_lock);
       return np;
@@ -150,7 +150,7 @@ ifind (ino_t inum)
 
 /* The last reference to a node has gone away; drop
    it from the hash table and clean all state in the dn structure. */
-void      
+void
 diskfs_node_norefs (struct node *np)
 {
   *np->dn->hprevp = np->dn->hnext;
@@ -201,7 +201,7 @@ read_node (struct node *np)
   struct disknode *dn = np->dn;
   struct ext2_inode *di = dino (np->cache_id);
   struct ext2_inode_info *info = &dn->info;
-  
+
   err = diskfs_catch_exception ();
   if (err)
     return err;
@@ -293,7 +293,7 @@ read_node (struct node *np)
     }
 
   diskfs_end_catch_exception ();
-  
+
   if (S_ISREG (st->st_mode) || S_ISDIR (st->st_mode)
       || (S_ISLNK (st->st_mode) && st->st_blocks))
     {
@@ -388,7 +388,7 @@ write_node (struct node *np)
 
   if (np->dn->info.i_prealloc_count)
     ext2_discard_prealloc (np);
-  
+
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
@@ -399,7 +399,7 @@ write_node (struct node *np)
       err = diskfs_catch_exception ();
       if (err)
 	return NULL;
-  
+
       di->i_version = st->st_gen;
 
       /* We happen to know that the stat mode bits are the same
@@ -467,7 +467,7 @@ write_node (struct node *np)
 	  for (block = 0; block < EXT2_N_BLOCKS; block++)
 	    di->i_block[block] = np->dn->info.i_data[block];
 	}
-  
+
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
 
@@ -505,7 +505,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   error_t err = 0;
   int n, num_nodes = 0;
   struct node *node, **node_list, **p;
-  
+
   spin_lock (&diskfs_node_refcnt_lock);
 
   /* We must copy everything from the hash table into another data structure
@@ -604,7 +604,7 @@ diskfs_set_statfs (struct statfs *st)
 /* Implement the diskfs_set_translator callback from the diskfs
    library; see <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_set_translator (struct node *np, char *name, unsigned namelen,
+diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 		       struct protid *cred)
 {
   daddr_t blkno;
@@ -623,10 +623,10 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
   err = diskfs_catch_exception ();
   if (err)
     return err;
-  
+
   di = dino (np->cache_id);
   blkno = di->i_translator;
-  
+
   if (namelen && !blkno)
     {
       /* Allocate block for translator */
@@ -640,7 +640,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
 	  diskfs_end_catch_exception ();
 	  return ENOSPC;
 	}
-      
+
       di->i_translator = blkno;
       record_global_poke (di);
 
@@ -658,7 +658,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
       np->dn_stat.st_mode &= ~S_IPTRANS;
       np->dn_set_ctime = 1;
     }
-  
+
   if (namelen)
     {
       buf[0] = namelen & 0xFF;
@@ -671,7 +671,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
       np->dn_stat.st_mode |= S_IPTRANS;
       np->dn_set_ctime = 1;
     }
-  
+
   diskfs_end_catch_exception ();
   return err;
 }
@@ -695,7 +695,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   blkno = (dino (np->cache_id))->i_translator;
   assert (blkno);
   transloc = bptr (blkno);
-  
+
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
   *namep = malloc (datalen);
@@ -713,7 +713,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 
 /* Write an in-inode symlink, or return EINVAL if we can't.  */
 static error_t
-write_symlink (struct node *node, char *target)
+write_symlink (struct node *node, const char *target)
 {
   size_t len = strlen (target) + 1;
 
@@ -747,7 +747,7 @@ read_symlink (struct node *node, char *target)
    is called to set a symlink.  If it returns EINVAL or isn't set,
    then the normal method (writing the contents into the file data) is
    used.  If it returns any other error, it is returned to the user.  */
-error_t (*diskfs_create_symlink_hook)(struct node *np, char *target) =
+error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target) =
   write_symlink;
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
