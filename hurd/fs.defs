@@ -171,17 +171,17 @@ routine file_getfh (
 
 /* Operations supported on directories */
 
-/* Translate a pathname, following all symlinks.  Upon return, if
-   do_retry is FS_RETRY_NONE, then result is a port referencing the
-   pathname's target.  If do_retry is FS_RETRY_NORMAL, then the call
-   needs to be repeated, calling RESULT with pathname RETRY_NAME. 
-   If do_retry is FS_RETRY_REAUTH, then the call needs to be repeated,
-   but RESULT should be reauthenticated first.  If do_retry is
-   FS_RETRY_MAGICAL, then RETRY_NAME specifies what to do; the list
-   of possibilities is documented in <hurd/hurd_types.h>.  */
-routine dir_pathtrans (
+/* Translate a file name, following all symlinks.  Upon return, if DO_RETRY
+   is FS_RETRY_MAGICAL then RETRY_NAME specifies what to do, the list of
+   possibilities is documented in <hurd/hurd_types.h>; if FS_RETRY_REAUTH,
+   then RESULT should be reauthenticated before being used.  If RETRY_NAME
+   is the empty string, no further dir_lookup calls are required; RESULT,
+   or the reauthenticated port, is the port to use.  Otherwise the
+   dir_lookup call should be repeated, sent to RESULT (or the
+   reauthenticated port) with RETRY_NAME passed for FILE_NAME.  */
+routine dir_lookup (
 	start_dir: file_t;
-	pathname: string_t;
+	file_name: string_t;
 	flags: int;
 	mode: mode_t;
 	out do_retry: retry_type;
