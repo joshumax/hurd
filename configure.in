@@ -1,0 +1,32 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_REVISION([$Id: configure.in,v 1.1 1995/09/16 18:19:43 roland Exp $])
+AC_PREREQ(2.4)			dnl Minimum Autoconf version required.
+AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
+
+AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.
+
+AC_CANONICAL_HOST
+case "$host_os" in
+gnu*) ;;
+*) AC_MSG_ERROR([sorry, this is the gnu os, not $host_os]) ;;
+esac
+
+AC_PROG_INSTALL
+AC_CHECK_TOOL(CC, gcc)
+AC_CHECK_TOOL(LD, ld)
+AC_CHECK_TOOL(OBJCOPY, objcopy)
+AC_CHECK_TOOL(AR, ar)
+AC_CHECK_TOOL(RANLIB, ranlib)
+AC_CHECK_TOOL(MIG, mig)
+
+dnl Let these propagate from the environment.
+AC_SUBST(CFLAGS) AC_SUBST(CPPFLAGS) AC_SUBST(LDFLAGS)
+
+AC_OUTPUT(config.make)
+
+dnl Local Variables:
+dnl comment-start: "dnl "
+dnl comment-end: ""
+dnl comment-start-skip: "\\bdnl\\b\\s *"
+dnl compile-command: "autoconf"
+dnl End:

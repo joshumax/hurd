@@ -1,0 +1,39 @@
+# @configure_input@
+
+# Machine architecture.
+machine = @host_cpu@
+
+# Prefix prepended to names of machine-independent installed files.
+prefix = @prefix@
+# Prefix prepended to names of machine-dependent installed files.
+exec_prefix = @exec_prefix@
+
+# Directories where things get installed.
+hurddir = $(exec_prefix)/hurd
+libdir = $(exec_prefix)/lib
+bindir = $(exec_prefix)/bin
+sbindir = $(exec_prefix)/sbin
+includedir = $(exec_prefix)/include
+infodir = $(prefix)/info
+sysconfdir = $(prefix)/etc
+
+# How to run compilation tools.
+CC = @CC@
+CPP = $(CC) -E -x c # We need this option when input file names are not *.c.
+LD = @LD@
+OBJCOPY = @OBJCOPY@
+AR = @AR@
+RANLIB = @RANLIB@
+MIG = @MIG@
+MIGCOM = $(MIG) -cc cat - /dev/null
+
+# Compilation flags.  Append these to the definitions already made by 
+# the specific Makefile.
+CPPFLAGS += @CPPFLAGS@ @DEFS@
+CFLAGS += @CFLAGS@
+LDFLAGS += @LDFLAGS@
+
+# Installation tools.
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
