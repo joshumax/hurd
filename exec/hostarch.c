@@ -1,6 +1,6 @@
 /* Determine the BFD (or a.out) architecture and machine flavor
    from a Mach host port.  Used by the exec and core servers.
-   Copyright (C) 1992, 1993 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1995 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -33,7 +33,7 @@ error_t
 #ifdef	BFD
 bfd_mach_host_arch_mach (host_t host,
 			 bfd_architecture *arch,
-			 bfd_machine *machine)
+			 long int *machine)
 #else
 aout_mach_host_machine (host_t host, int *host_machine)
 #endif
