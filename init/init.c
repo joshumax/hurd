@@ -1351,9 +1351,8 @@ killing it and going to single user mode",
 	      }
 	    else if (system_state == MULTI)
 	      restart_terminal (pid);
-
-	    break;
 	  }
+	break;
       }
     default:
       break;
