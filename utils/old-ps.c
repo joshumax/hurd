@@ -96,7 +96,7 @@ main ()
   stdout = mach_open_devstream (getdport (1), "w");
 #endif
 
-  puts ("PID\tUSER\tPP\tPG\tSS\tVMem\tRSS\tPRI\t%CPU\tUser\tSystem\tArgs");
+  puts ("PID\tUSER\tPP\tPG\tSS\tThds\tVMem\tRSS\tPRI\t%CPU\tUser\tSystem\tArgs");
   proc = getproc ();
   proc_getallpids (proc, &pp, &npids);
   for (ind = 0; ind < npids; ind++)
@@ -132,12 +132,13 @@ main ()
       tbi.user_time.microseconds %= 1000000;
       tbi.system_time.seconds += tbi.system_time.microseconds / 1000000;
       tbi.system_time.microseconds %= 1000000;
-      printf ("%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d/%d\t%d\t%s\t%s\t",
+      printf ("%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d/%d\t%d\t%s\t%s\t",
 	      pp[ind], 
 	      (pi->state & PI_NOTOWNED) ? -1 : pi->owner,
 	      pi->ppid,
 	      pi->pgrp,
 	      pi->session,
+	      pi->nthreads,
 	      mem_str (pi->taskinfo.virtual_size),
 	      mem_str (pi->taskinfo.resident_size),
 	      tsi.base_priority,
