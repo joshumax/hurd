@@ -24,13 +24,22 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <unistd.h>
 #include <envz.h>
 
+extern error_t hurd_file_name_path_lookup (error_t (*use_init_port)
+					   (int which,
+					    error_t (*operate) (mach_port_t)),
+					   file_t (*get_dtable_port) (int fd),
+					   const char *file_name,
+					   const char *path,
+					   int flags, mode_t mode,
+					   file_t *result,
+					   char **prefixed_name);
+
 /* This is called to check E for a #! interpreter specification.  E has
    already been prepared (successfully) and checked (unsuccessfully).  If
    we return success, our caller just returns success for the RPC; we must
    handle all the RPC argument details ourselves.  If we return ENOEXEC, we
    should leave everything as it was.  If we return failure other than
    ENOEXEC, our caller will just fail the RPC.  */
-
 void
 check_hashbang (struct execdata *e,
 		file_t file,
@@ -177,8 +186,8 @@ check_hashbang (struct execdata *e,
 	{ longjmp (args_faulted, 1); }
       error_t setup_args (struct hurd_signal_preempter *preempter)
 	{
-	  char *file_name = NULL;
 	  size_t namelen;
+	  char * volatile file_name = NULL;
 
 	  if (setjmp (args_faulted))
 	    file_name = NULL;
@@ -214,7 +223,7 @@ check_hashbang (struct execdata *e,
 		    }
 
 		  err = hurd_file_name_path_lookup (user_port, user_fd,
-						    name, path,
+						    name, path, O_EXEC, 0,
 						    &name_file, &pfxed_name);
 		  if (!err && pfxed_name)
 		    {
