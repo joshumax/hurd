@@ -67,31 +67,29 @@ ugids_add_user (struct ugids *ugids, uid_t uid, int avail)
   struct idvec uids = { uids_ids, 1 };
   struct idvec *gids = avail ? &ugids->avail_gids : &ugids->eff_gids;
 
-  err = idvec_merge_implied_gids (&imp_gids, &uids);
+  idvec_merge_implied_gids (&imp_gids, &uids);
+
+  /* Now remove any gids we already know about from IMP_GIDS.  For gids
+     that weren't in the appropiate implied set before, this will
+     ensure that they remain out after we merge IMP_GIDS into it, and
+     ones that *were*, they will remain so.  */
+  idvec_subtract (&imp_gids, gids);
+
+  /* Try to add UID.  */
+  err = idvec_add_new (avail ? &ugids->avail_uids : &ugids->eff_uids, uid);
+
   if (! err)
-    {
-      /* Now remove any gids we already know about from IMP_GIDS.  For gids
-	 that weren't in the appropiate implied set before, this will
-	 ensure that they remain out after we merge IMP_GIDS into it, and
-	 ones that *were*, they will remain so.  */
-      idvec_subtract (&imp_gids, gids);
-
-      /* Try to add UID.  */
-      err = idvec_add_new (avail ? &ugids->avail_uids : &ugids->eff_uids, uid);
-
-      if (! err)
-	/* Now that we've added UID, we can add appropriate implied gids.
-	   [If this fails, UGIDS will be an inconsistent state, but things
-	   are probably fucked anyhow] */
-	err =
-	  idvec_merge (avail ? &ugids->avail_gids : &ugids->eff_gids,
+    /* Now that we've added UID, we can add appropriate implied gids.
+       [If this fails, UGIDS will be an inconsistent state, but things
+       are probably fucked anyhow] */
+    err =
+      idvec_merge (avail ? &ugids->avail_gids : &ugids->eff_gids,
+		   &imp_gids);
+  if (! err)
+    err = idvec_merge ((avail
+			? &ugids->imp_avail_gids
+			: &ugids->imp_eff_gids),
 		       &imp_gids);
-      if (! err)
-	err = idvec_merge ((avail
-			    ? &ugids->imp_avail_gids
-			    : &ugids->imp_eff_gids),
-			   &imp_gids);
-    }
 
   idvec_fini (&imp_gids);
 
