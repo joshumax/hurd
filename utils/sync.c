@@ -1,5 +1,5 @@
 /* Call sync synchronously.
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -20,6 +20,7 @@
 
 #include <hurd.h>
 
+int
 main ()
 {
   __USEPORT (CRDIR, __file_syncfs (port, 1, 1));
