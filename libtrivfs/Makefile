@@ -34,17 +34,12 @@ IOSRCS=io-async-icky.c \
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c fsys-forward.c
 
-NOTIFYSRCS=nosenders.c notify-stubs.c
-
-INTSRCS=interrupt.c
-
 OTHERSRCS=demuxer.c handle-port.c protid-clean.c protid-dup.c cntl-clean.c \
 	migsupport.c times.c startup.c open.c
 
-SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
+SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 
-MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o \
-	fsys_replyUser.o
+MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
