@@ -24,8 +24,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/fsys.h>
 #include <stdio.h>
 
-mach_port_t diskfs_host_priv;
-mach_port_t diskfs_master_device;
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
@@ -44,33 +42,22 @@ struct port_bucket *diskfs_port_bucket;
 
 /* Call this after arguments have been parsed to initialize the
    library.  */ 
-void
+error_t
 diskfs_init_diskfs (void)
 {
-  mach_port_t host, dev;
-  memory_object_t obj;
+  error_t err;
   device_t timedev;
+  memory_object_t obj;
+  mach_port_t host, dev_master;
   
-  if (diskfs_host_priv == MACH_PORT_NULL
-      || diskfs_master_device == MACH_PORT_NULL)
-    {
-      get_privileged_ports (&host, &dev);
-      if (diskfs_host_priv == MACH_PORT_NULL)
-	diskfs_host_priv = host;
-      else
-	mach_port_deallocate (mach_task_self (), host);
-      if (diskfs_master_device == MACH_PORT_NULL)
-	diskfs_master_device = dev;
-      else
-	mach_port_deallocate (mach_task_self (), dev);
-    }
-  
-  assert (diskfs_master_device != MACH_PORT_NULL); /* XXX */
+  err = get_privileged_ports (&host, &dev_master);
+  if (err)
+    return err;
 
   diskfs_default_pager = MACH_PORT_NULL;
-  vm_set_default_memory_manager (diskfs_host_priv, &diskfs_default_pager);
+  vm_set_default_memory_manager (host, &diskfs_default_pager);
 
-  device_open (diskfs_master_device, 0, "time", &timedev);
+  device_open (dev_master, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
   vm_map (mach_task_self (), (vm_address_t *)&diskfs_mtime,
 	  sizeof (mapped_time_value_t), 0, 1, obj, 0, 0, VM_PROT_READ,
@@ -85,6 +72,11 @@ diskfs_init_diskfs (void)
   diskfs_initboot_class = ports_create_class (0, 0);
   diskfs_execboot_class = ports_create_class (0, 0);
   diskfs_port_bucket = ports_create_bucket ();
+
+  mach_port_deallocate (mach_task_self (), host);
+  mach_port_deallocate (mach_task_self (), dev_master);
+
+  return 0;
 }
 
 void
