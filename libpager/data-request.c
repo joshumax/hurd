@@ -36,7 +36,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   vm_address_t page;
   int write_lock;
 
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
   
   /* sanity checks -- we don't do multi-page requests yet.  */
@@ -122,7 +122,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   _pager_mark_object_error (p, offset, length, 0);
   _pager_allow_termination (p);
   mutex_unlock (&p->interlock);
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 
  allow_term_out:
@@ -130,13 +130,13 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   _pager_allow_termination (p);
   mutex_unlock (&p->interlock);
  out:
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
   
  error_read:
   memory_object_data_error (p->memobjcntl, offset, length, EIO);
   _pager_mark_object_error (p, offset, length, EIO);
   _pager_allow_termination (p);
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 }
