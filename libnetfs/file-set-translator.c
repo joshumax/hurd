@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -45,7 +45,8 @@ netfs_S_file_set_translator (struct protid *user,
   np = user->po->np;
   mutex_lock (&np->lock);
 
-  if (active_flags & FS_TRANS_SET)
+  if (active_flags & FS_TRANS_SET
+      && ! (active_flags & FS_TRANS_ORPHAN))
     {
       /* Validate--user must be owner */
       err = netfs_validate_stat (np, user->user);
