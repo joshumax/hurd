@@ -18,8 +18,12 @@
 
 #include "ioserver.h"
 
+/* Called by an I/O server when an io_get_conch message is received.
+   The user represented by USER and USER_SH wants conch C; give it
+   to her or return an error.  */
 error_t
-handle_io_get_conch (struct conch *c, void *user, struct shared_io *user_sh)
+ioserver_handle_io_get_conch (struct conch *c, void *user,
+			      struct shared_io *user_sh)
 {
   error_t error = 0;
   
