@@ -89,6 +89,117 @@ alloc_sync (struct node *np)
     }
 }
 
+/* Byteswap everything in CGP. */
+void
+swab_cg (struct cg *cgp)
+{
+  int i, j;
+  
+  if (swab_long (cg->cg_magic) == CG_MAGIC
+      || cg->cg_magic == CG_MAGIC)
+    {
+      cg->cg_magic = swab_long (cg->cg_magic);
+      cg->cg_time = swab_long (cg->cg_time);
+      cg->cg_cgx = swab_long (cg->cg_cgx);
+      cg->cg_ncyl = swab_short (cg->cg_ncyl);
+      cg->cg_niblk = swab_short (cg->cg_niblk);
+      cg->cg_cs.cs_ndir = swab_long (cg->cg_cs.cs_ndir);
+      cg->cg_cs.cs_nbfree = swab_long (cg->cg_cs.cs_nbfree);
+      cg->cg_cs.cs_nifree = swab_long (cg->cg_cs.cs_nifree);
+      cg->cg_cs.cs_nffree = swab_long (cg->cg_cs.cs_nffree);
+      cg->cg_rotor = swab_long (cg->cg_rotor);
+      cg->cg_irotor = swab_long (cg->cg_irotor);
+      for (i = 0; i < MAXFRAG; i++)
+	cg->cg_frsum[i] = swab_long (cg->cg_frsum[i]);
+      cg->cg_btotoff = swab_long (cg->cg_btotoff);
+      cg->cg_boff = swab_long (cg->cg_boff);
+      cg->cg_iusedoff = swab_long (cg->cg_iusedoff);
+      cg->cg_freeoff = swab_long (cg->cg_freeoff);
+      cg->cg_nextfreeoff = swab_long (cg->cg_nextfreeoff);
+      cg->cg_clustersumoff = swab_long (cg->cg_clustersumoff);
+      cg->cg_clusteroff = swab_long (cg->cg_clusteroff);
+      cg->cg_nclusterblks = swab_long (cg->cg_nclusterblks);
+
+      /* blktot map */
+      for (i = 0; i < cg->cg_ncyl; i++)
+	cg_blktot(cg)[i] = swab_long (cg_blktot(cg)[i]);
+      
+      /* blks map */
+      for (i = 0; i < cg->cg_ncyl; i++)
+	for (j = 0; j < sblock->fs_nrpos; j++)
+	  cg_blks(sblock, cg, i)[j] = swab_short (cg_blks (sblock, cg, i)[j]);
+      
+      for (i = 0; i < sblock->fs_contigsumsize; i++)
+	cg_clustersum(cg)[i] = swab_long (cg_clustersum(cg)[i]);
+
+      /* inosused, blksfree, and cg_clustersfree are char arrays */
+    }
+  else
+    {
+      /* Old format cylinder group... */
+      struct ocg *ocg = cg;
+      
+      if (swab_long (ocg->cg_magic) != CG_MAGIC
+	  && ocg->cg_magic != CG_MAGIC)
+	return;
+      
+      ocg->cg_time = swab_long (ocg->cg_time);
+      ocg->cg_cgx = swab_long (ocg->cg_cgx);
+      ocg->cg_ncyl = swab_short (ocg->cg_ncyl);
+      ocg->cg_niblk = swab_short (ocg->cg_niblk);
+      ocg->cg_ndblk = swab_long (ocg->cg_ndblk);
+      ocg->cg_cs.cs_ndir = swab_long (ocg->cg_cs.cs_ndir);
+      ocg->cg_cs.cs_nbfree = swab_long (ocg->cg_cs.cs_nbfree);
+      ocg->cg_cs.cs_nifree = swab_long (ocg->cg_cs.cs_nifree);
+      ocg->cg_cs.cs_nffree = swab_long (ocg->cg_cs.cs_nffree);
+      ocg->cg_rotor = swab_long (ocg->cg_rotor);
+      ocg->cg_frotor = swab_long (ocg->cg_frotor);
+      ocg->cg_irotor = swab_long (ocg->cg_irotor);
+      for (i = 0; i < 8; i++)
+	ocg->cg_frsum[i] = swab_long (ocg->cg_frsum[i]);
+      for (i = 0; i < 32; i++)
+	ocg->cg_btot[i] = swab_long (ocg->cg_btot[i]);
+      for (i = 0; i < 32; i++)
+	for (j = 0; j < 8; j++)
+	  ocg->cg_b[i][j] = swab_short (ocg->cg_b[i][j]);
+      ocg->cg_magic = swab_long (ocg->cg_magic);
+    }
+}
+
+
+/* Read cylinder group indexed CG.  Set *CGPP to point at it.
+   Return 1 if caller should call release_cgp when we're done with it;
+   otherwise zero. */
+int
+read_cg (int cg, struct cg **cgpp)
+{
+  struct cg *diskcg = cg_locate (cg);
+  
+  if (swab_disk)
+    {
+      *cgp = malloc (sblock->fs_cgsize);
+      bcopy (diskcg, *cgp, sblock->fs_cgsize);
+      swab_cg (*cgp);
+      return 1;
+    }
+  else
+    {
+      *cgp = diskcg;
+      return 0;
+    }
+}
+
+/* Caller of read_cg is done with cg; write it back to disk (swapping it
+   along the way) and free the memory allocated in read_cg. */
+void
+release_cgp (struct cg *cgp)
+{
+  swab_cg (cgp);
+  bcopy (cgp, cg_locate (cg), sblock->fs_cgsize);
+  free (cgp);
+}
+
+
 /*
  * Allocate a block in the file system.
  * 
@@ -214,7 +325,7 @@ ffs_realloccg(register struct node *np,
 	error = diskfs_catch_exception ();
 	if (error)
 	  return error;
-	bprev = (dino (np->dn->number))->di_db[lbprev];
+	bprev = read_disk_entry ((dino (np->dn->number))->di_db[lbprev]);
 	diskfs_end_catch_exception ();
 	assert ("old block not allocated" && bprev);
 
@@ -674,7 +785,8 @@ ffs_blkpref(struct node *np,
 			    (ino_to_cg(fs, np->dn->number) 
 			     + lbn / fs->fs_maxbpg);
 		else
-			startcg = dtog(fs, bap[indx - 1]) + 1;
+			startcg = dtog(fs, 
+				       read_disk_entry (bap[indx - 1])) + 1;
 		startcg %= fs->fs_ncg;
 		avgbfree = fs->fs_cstotal.cs_nbfree / fs->fs_ncg;
 		for (cg = startcg; cg < fs->fs_ncg; cg++)
@@ -699,9 +811,10 @@ ffs_blkpref(struct node *np,
 	 * next block is requested contiguously, otherwise it is
 	 * requested rotationally delayed by fs_rotdelay milliseconds.
 	 */
-	nextblk = bap[indx - 1] + fs->fs_frag;
-	if (indx < fs->fs_maxcontig || bap[indx - fs->fs_maxcontig] +
-	    blkstofrags(fs, fs->fs_maxcontig) != nextblk)
+	nextblk = read_disk_entry (bap[indx - 1]) + fs->fs_frag;
+	if (indx < fs->fs_maxcontig
+	    || (read_disk_entry (bap[indx - fs->fs_maxcontig]) +
+		blkstofrags(fs, fs->fs_maxcontig) != nextblk))
 	  {
 	    return (nextblk);
 	  }
@@ -790,6 +903,7 @@ ffs_fragextend(struct node *np,
 	long bno;
 	int frags, bbase;
 	int i;
+	int releasecg;
 
 	fs = sblock;
 	if (csum[cg].cs_nffree < numfrags(fs, nsize - osize))
@@ -809,10 +923,12 @@ ffs_fragextend(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = cg_locate (cg);
+	releasecg = read_cg (cg, &cgp);
 #endif
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
+		if (releasecg)
+			release_cg (cgp);
 		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
@@ -820,6 +936,8 @@ ffs_fragextend(struct node *np,
 	for (i = numfrags(fs, osize); i < frags; i++)
 		if (isclr(cg_blksfree(cgp), bno + i)) {
 /* 			brelse(bp); */
+			if (releasecg)
+				release_cg (cgp);
 			return 0;
 		}
 	/*
@@ -840,6 +958,8 @@ ffs_fragextend(struct node *np,
 		fs->fs_cstotal.cs_nffree--;
 		csum[cg].cs_nffree--;
 	}
+	if (releasecg)
+		release_cg (cgp);
 	record_poke (cgp, sblock->fs_cgsize);
 	csum_dirty = 1;
 	sblock_dirty = 1;
@@ -864,6 +984,7 @@ ffs_alloccg(struct node *np,
 	register struct cg *cgp;
 	register int i;
 	int bno, frags, allocsiz;
+	int releasecg;
 
 	fs = sblock;
 	if (csum[cg].cs_nbfree == 0 && size == fs->fs_bsize)
@@ -877,17 +998,21 @@ ffs_alloccg(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = cg_locate (cg);
+	releasecg = read_cg (cg, &cgp);
 #endif
 	if (!cg_chkmagic(cgp) ||
 	    (cgp->cg_cs.cs_nbfree == 0 && size == fs->fs_bsize)) {
 /* 		brelse(bp); */
+		if (releasecg)
+			release_cg (cgp);
 		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
 	if (size == fs->fs_bsize) {
 		bno = ffs_alloccgblk(fs, cgp, bpref);
 /* 		bdwrite(bp); */
+		if (releasecg)
+			release_cg (cgp);			
 		return (bno);
 	}
 	/*
@@ -906,6 +1031,8 @@ ffs_alloccg(struct node *np,
 		 */
 		if (cgp->cg_cs.cs_nbfree == 0) {
 /* 			brelse(bp); */
+			if (releasecg)
+				release_cg (cgp);
 			return 0;
 		}
 		bno = ffs_alloccgblk(fs, cgp, bpref);
@@ -919,6 +1046,8 @@ ffs_alloccg(struct node *np,
 		fs->fs_fmod = 1;
 		cgp->cg_frsum[i]++;
 		
+		if (releasecg)
+			release_cg (cgp)
 		record_poke (cgp, sblock->fs_cgsize);
 		csum_dirty = 1;
 		sblock_dirty = 1;
@@ -928,6 +1057,8 @@ ffs_alloccg(struct node *np,
 	bno = ffs_mapsearch(fs, cgp, bpref, allocsiz);
 	if (bno < 0) {
 /* 		brelse(bp); */
+		if (releasecg)
+			release_cg (cgp);
 		return 0;
 	}
 	for (i = 0; i < frags; i++)
@@ -939,6 +1070,8 @@ ffs_alloccg(struct node *np,
 	cgp->cg_frsum[allocsiz]--;
 	if (frags != allocsiz)
 		cgp->cg_frsum[allocsiz - frags]++;
+	if (releasecg)
+		release_cg (cgp);
 	record_poke (cgp, sblock->fs_cgsize);
 	csum_dirty = 1;
 	sblock_dirty = 1;
@@ -1168,6 +1301,7 @@ ffs_nodealloccg(struct node *np,
 	register struct fs *fs;
 	register struct cg *cgp;
 	int start, len, loc, map, i;
+	int releasecg;
 
 	fs = sblock;
 	if (csum[cg].cs_nifree == 0)
@@ -1181,10 +1315,12 @@ ffs_nodealloccg(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = cg_locate (cg);
+	releasecg = read_cg (cg, &cgp);
 #endif
 	if (!cg_chkmagic(cgp) || cgp->cg_cs.cs_nifree == 0) {
 /*		brelse(bp); */
+		if (releasecg)
+			release_cg (cg);
 		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
@@ -1224,6 +1360,8 @@ gotit:
 		fs->fs_cstotal.cs_ndir++;
 		csum[cg].cs_ndir++;
 	}
+	if (releasecg)
+		release_cg (cgp);
 	record_poke (cgp, sblock->fs_cgsize);
 	csum_dirty = 1;
 	sblock_dirty = 1;
@@ -1247,6 +1385,7 @@ ffs_blkfree(register struct node *np,
 	register struct cg *cgp;
 	daddr_t blkno;
 	int i, cg, blk, frags, bbase;
+	int releasecg;
 
 	fs = sblock;
 	assert ((u_int)size <= fs->fs_bsize && !fragoff (fs, size));
@@ -1265,10 +1404,12 @@ ffs_blkfree(register struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = cg_locate (cg);
+	releasecg = cg_read (cg, &cgp);
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
+		if (releasecg)
+			release_cg (cgp);
 		return;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
@@ -1324,6 +1465,8 @@ ffs_blkfree(register struct node *np,
 			cg_blktot(cgp)[i]++;
 		}
 	}
+	if (releasecg)
+		release_cg (cgp);
 	record_poke (cgp, sblock->fs_cgsize);
 	csum_dirty = 1;
 	sblock_dirty = 1;
@@ -1346,6 +1489,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	register struct cg *cgp;
 	ino_t ino = np->dn->number;
 	int cg;
+	int releasecg;
 
 	fs = sblock;
 	assert (ino < fs->fs_ipg * fs->fs_ncg);
@@ -1359,10 +1503,12 @@ diskfs_free_node (struct node *np, mode_t mode)
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = cg_locate (cg);
+	releasecg = read_cg (cg, &cgp);
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
+		if (releasecg)
+			release_cg (cgp);	
 		return;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
@@ -1383,6 +1529,8 @@ diskfs_free_node (struct node *np, mode_t mode)
 		fs->fs_cstotal.cs_ndir--;
 		csum[cg].cs_ndir--;
 	}
+	if (releasecg)
+		release_cg (cgp);
 	record_poke (cgp, sblock->fs_cgsize);
 	csum_dirty = 1;
 	sblock_dirty = 1;
