@@ -205,7 +205,7 @@ block_getblk (struct node *node,
   if (diskfs_synchronous || node->dn->info.i_osync)
     sync_global_ptr (bh, 1);
   else
-    pokel_add (&node->dn->pokel, bh, block_size);
+    record_indir_poke (node, bh);
 
   node->dn_set_ctime = 1;
   node->dn->info.i_next_alloc_block = new_block;
