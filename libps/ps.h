@@ -218,6 +218,9 @@ struct proc_stat
     thread_basic_info_data_t thread_basic_info;
     thread_sched_info_data_t thread_sched_info;
 
+    /* The task or thread suspend count (whatever this proc_stat refers to). */
+    int suspend_count;
+
     /* Exec flags (see EXEC_* in <hurd/hurd_types.h>).  */
     unsigned exec_flags;
 
@@ -265,29 +268,30 @@ struct proc_stat
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
    information is currently valid.  */
-#define PSTAT_PID		0x0001 /* Process ID.  */
+#define PSTAT_PID		0x0001 /* Process ID */
 #define PSTAT_THREAD		0x0002 /* thread_index & thread_origin */
-#define PSTAT_PROCESS		0x0004 /* The process_t for the process.  */
-#define PSTAT_TASK		0x0008 /* The task port for the process.  */
-#define PSTAT_MSGPORT		0x0010 /* The process's msgport.  */
+#define PSTAT_PROCESS		0x0004 /* The process_t for the process */
+#define PSTAT_TASK		0x0008 /* The task port for the process */
+#define PSTAT_MSGPORT		0x0010 /* The process's msgport */
 #define PSTAT_INFO		0x0020 /* A struct procinfo for the process. */
-#define PSTAT_THREAD_INFO	0x0040 /* Thread summary info.  */
-#define PSTAT_ARGS		0x0080 /* The process's args.  */
+#define PSTAT_THREAD_INFO	0x0040 /* Thread summary info */
+#define PSTAT_ARGS		0x0080 /* The process's args */
 #define PSTAT_TASK_EVENTS_INFO	0x0100 /* A task_events_info_t for the proc. */
 #define PSTAT_STATE		0x0200 /* A bitmask describing the process's
-					  state (see below).  */
-#define PSTAT_CTTYID		0x0800 /* The process's CTTYID port.  */
-#define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD.  */
-#define PSTAT_AUTH		0x2000 /* The proc's auth port.  */
+					  state (see below) */
+#define PSTAT_SUSPEND_COUNT	0x0400 /* Task/thread suspend count */
+#define PSTAT_CTTYID		0x0800 /* The process's CTTYID port */
+#define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD */
+#define PSTAT_AUTH		0x2000 /* The proc's auth port */
 #define PSTAT_TTY		0x4000 /* A ps_tty_t for the proc's terminal.*/
-#define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner.  */
-#define PSTAT_UMASK	       0x10000 /* The proc's current umask.  */
-#define PSTAT_EXEC_FLAGS       0x20000	/* The process's exec flags.  */
+#define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner */
+#define PSTAT_UMASK	       0x10000 /* The proc's current umask */
+#define PSTAT_EXEC_FLAGS       0x20000	/* The process's exec flags */
 
 #define PSTAT_NUM_THREADS PSTAT_INFO
 
 /* Flag bits that don't correspond precisely to any field.  */
-#define PSTAT_NO_MSGPORT      0x100000 /* Don't use the msgport at all.  */
+#define PSTAT_NO_MSGPORT      0x100000 /* Don't use the msgport at all */
 
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
    bitmask of the following bits, describing the process's run state.  */
@@ -339,6 +343,7 @@ char *proc_stat_state_tags;
 #define proc_stat_num_threads(ps) ((ps)->info->nthreads)
 #define proc_stat_thread_basic_info(ps) (&(ps)->thread_basic_info)
 #define proc_stat_thread_sched_info(ps) (&(ps)->thread_sched_info)
+#define proc_stat_suspend_count(ps) ((ps)->suspend_count)
 #define proc_stat_args(ps) ((ps)->args)
 #define proc_stat_args_len(ps) ((ps)->args_len)
 #define proc_stat_state(ps) ((ps)->state)
