@@ -1,0 +1,40 @@
+/* Definitions for the authentication server. */
+
+subsystem auth 25000;
+
+#ifdef AUTH_IMPORTS
+AUTH_IMPORTS
+#endif
+
+/* Given an authentication handle, return the identification. */
+routine auth_getids (
+	handle: auth_t;
+	out id: idblock_t);
+
+/* Create a new authentication handle.  */
+routine auth_makeauth (
+	handle: auth_t;
+	id: idblock_t;
+	out newhandle: auth_t);
+
+/* Called by a user in a reauthentication transaction.  The rendezvous
+   port is used to match the request up with the server's
+   auth_server_authenticate call.  The newport is a port provided by
+   the server.  */
+routine auth_user_authenticate (
+	handle: auth_t;
+	rendezvous: mach_port_t;
+	out newport: mach_port_t);
+   
+/* Called by a server in a reauthentication transaction.  The
+   rendezvous port is used to match the request up with the user's
+   auth_user_authenticate call.  The newport is passed to the user
+   through the authentication server.  The identification information
+   is returned.  */
+routine auth_server_authenticate (
+	handle: auth_t;
+	rendezvous: mach_port_t;
+	newport: mach_port_t;
+	out id: idblock_t);
+
+
