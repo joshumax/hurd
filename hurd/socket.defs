@@ -110,45 +110,24 @@ routine socket_setopt (
 	option: int;
 	optval: ioctl_data_t);
 
-/* Send data in band over a socket, possibly including Mach ports.  */
+/* Send data over a socket, possibly including Mach ports.  */
 /* INTR */
-routine socket_send_inband (
+routine socket_send (
 	sock: socket_t;
 	addr: addr_port_t;
 	flags: int;
-	data: inband_data_t;
-	ports: fd_array_t;
-	control: inband_data_t;
-	out amount: int);
-
-/* INTR */
-routine socket_send_outofband (
-	sock: socket_t;
-	addr: addr_port_t;
-	flags: int;
-	data: outofband_data_t;
+	data: data_t;
 	ports: fd_array_t;
 	control: inband_data_t;
 	out amount: int);
 
 /* Receive data from a socket, possibly including Mach ports.  */
 /* INTR */
-routine socket_recv_inband (
+routine socket_recv (
 	sock: socket_t;
 	out addr: addr_port_t;
 	flags: int;
-	out data: inband_data_t;
-	out ports: fd_array_t;
-	out control: inband_data_t;
-	out outflags: int;
-	amount: int);
-
-/* INTR */
-routine socket_recv_outofband (
-	sock: socket_t;
-	out addr: addr_port_t;
-	flags: int;
-	out data: outofband_data_t;
+	out data: data_t;
 	out ports: fd_array_t;
 	out control: inband_data_t;
 	out outflags: int;
