@@ -450,17 +450,17 @@ struct ps_filter
    operator to get a ps_filter_t from them */
 
 /* A filter that retains only process's owned by getuid() */
-struct ps_filter ps_own_filter;
+extern struct ps_filter ps_own_filter;
 /* A filter that retains only process's that aren't session leaders */
-struct ps_filter ps_not_sess_leader_filter;
+extern struct ps_filter ps_not_sess_leader_filter;
 /* A filter that retains only process's with a controlling terminal */
-struct ps_filter ps_ctty_filter;
+extern struct ps_filter ps_ctty_filter;
 /* A filter that retains only `unorphaned' process.  A process is unorphaned
    if it's a session leader, or the process's process group is not orphaned */
-struct ps_filter ps_unorphaned_filter;
+extern struct ps_filter ps_unorphaned_filter;
 /* A filter that retains only `parented' process.  Typically only hurd
    processes have parents.  */
-struct ps_filter ps_parent_filter;
+extern struct ps_filter ps_parent_filter;
 
 /* ---------------------------------------------------------------- */
 /*
