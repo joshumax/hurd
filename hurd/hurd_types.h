@@ -104,7 +104,7 @@ enum retry_type
 };
 typedef enum retry_type retry_type;
 
-/* Types for msg.defs:dir_changed call: */
+/* Types for fs_notify.defs:dir_changed call: */
 enum dir_changed_type
 {
   DIR_CHANGED_NULL,		/* Always sent first for sync.  */
@@ -114,7 +114,7 @@ enum dir_changed_type
 };
 typedef enum dir_changed_type dir_changed_type_t;
 
-/* Types for msg.defs:file_changed call: */
+/* Types for fs_notify.defs:file_changed call: */
 enum file_changed_type
 {
   FILE_CHANGED_NULL,		/* Always sent first for sync.  */
