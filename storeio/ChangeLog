@@ -1,3 +1,8 @@
+Fri Nov 15 17:54:10 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* storeio.c (trivfs_check_open_hook): New arg syntax.
+	(check_open_hook): Likewise.
+
 Thu Oct 24 16:24:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeio.c (main): Use elements of type `struct argp_child' for KIDS.

@@ -179,8 +179,7 @@ trivfs_append_args (struct trivfs_control *trivfs_control,
    return errors from here.  */
 static error_t
 check_open_hook (struct trivfs_control *trivfs_control,
-		 uid_t *uids, u_int nuids,
-		 gid_t *gids, u_int ngids,
+		 struct iouser *user,
 		 int flags)
 {
   error_t err = 0;
@@ -322,7 +321,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 }
 
 /* If this variable is set, it is called every time an open happens.
-   UIDS, GIDS, and FLAGS are from the open; CNTL identifies the
+   USER and FLAGS are from the open; CNTL identifies the
    node being opened.  This call need not check permissions on the underlying
    node.  If the open call should block, then return EWOULDBLOCK.  Other
    errors are immediately reflected to the user.  If O_NONBLOCK 
@@ -330,8 +329,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
    trivfs_complete_open when all pending open requests for this 
    file can complete. */
 error_t (*trivfs_check_open_hook)(struct trivfs_control *trivfs_control,
-				  uid_t *uids, u_int nuids,
-				  gid_t *gids, u_int ngids,
+				  struct iouser *user,
 				  int flags)
      = check_open_hook;
 
