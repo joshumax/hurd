@@ -18,6 +18,8 @@
 #include "priv.h"
 #include "memory_object.h"
 
+/* Demultiplex a single message directed at a pager port; INP is the
+   message received; fille OUTP with the reply.  */
 int
 pager_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
