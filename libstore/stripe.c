@@ -1,6 +1,6 @@
-/* Interleaved store backend
+/* Striped store backend
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -29,7 +29,7 @@ struct stripe_info
   struct store **stripes;
   int dealloc : 1;
 };
-
+
 static error_t
 stripe_read (struct store *store,
 	     off_t addr, size_t index, mach_msg_type_number_t amount,
@@ -119,7 +119,7 @@ store_ileave_create (struct store **stripes, size_t num_stripes, int dealloc,
   free (info);
   return err;
 }
-
+
 /* Return a new store in STORE that concatenates all the stores in STORES
    (NUM_STORES of them) every store in STRIPES must have the same block size.
    If DEALLOC is true, then the sub-stores are freed when this store is (in
