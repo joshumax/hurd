@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -40,6 +40,10 @@ _diskfs_rdwr_internal (struct node *np,
 
   if (dir)
     assert (!diskfs_readonly);
+
+  if (*amt == 0)
+    /* Zero-length writes do not update mtime or anything else, by POSIX.  */
+    return 0;
 
   if (!diskfs_check_readonly () && !notime)
     {
