@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,7 +47,7 @@ diskfs_S_io_stat (struct protid *cred,
       statbuf->st_mode |= S_IATRANS;
       mach_port_deallocate (mach_task_self (), atrans);
     }
-  if (np == diskfs_root_node)
+  if (cred->po->shadow_root == np || np == diskfs_root_node)
     statbuf->st_mode |= S_IROOT;
     
   mutex_unlock (&np->lock);
