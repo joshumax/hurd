@@ -28,7 +28,7 @@ SRCS = add-ref.c allocate-address.c allocate-memory.c copy-ref.c \
 	mach-port-set.c make-memory-readonly.c make-memory-readwrite.c \
 	memory-init.c ref-destroy.c refs-identical.c reserve-memory.c \
 	reserve-memory-anywhere.c unreserve-memory.c unuse-memory.c \
-	wire-memory.c
+	wire-memory.c error-trans.c
 
 LCLHDRS = mom.h mom-kerndep.h priv.h mom-errors.h
 installhdrs = mom.h mom-kerndep.h mom-errors.h
