@@ -25,7 +25,7 @@
 #include <fcntl.h>
 #include <hurd.h>
 #include <argp.h>
-#include <error.h>
+#include <argz.h>
 
 #include "store.h"
 
@@ -37,7 +37,7 @@ static const struct argp_option options[] = {
 };
 
 static const char args_doc[] = "DEVICE...";
-static const char doc[] = "If multiple DEVICEs are specified, they are"
+static const char doc[] = "\vIf multiple DEVICEs are specified, they are"
 " concatenated unless either --interleave or --layer is specified (mutually"
 " exlusive).";
 
@@ -57,17 +57,20 @@ struct store_parse_hook
   int layer : 1;		/* --layer specified */
 };
 
-/* Free the parse hook H.  If FREE_STORES is true, also free the stores in
-   H's store vector, otherwise just free the vector itself.  */
+/* Free the parse hook H.  If ERR_RETURN is true, also free the stores in H's
+   store vector, and any other return values, otherwise just free the vector
+   itself.  */
 static void
-free_hook (struct store_parse_hook *h, int free_stores)
+free_hook (struct store_parse_hook *h, int err_return)
 {
   int i;
-  if (free_stores)
+  if (err_return)
     for (i = 0; i < h->num_stores; i++)
       store_free (h->stores[i]);
   if (h->stores)
     free (h->stores);
+  if (err_return && h->params->return_args && h->params->args)
+    free (h->params->args);
   free (h);
 }
 
@@ -137,21 +140,23 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	err = store_device_open (arg, h->params->flags, &s);
       else
 	err = open_file (arg, h, &s);
-      if (err)
-	{
-	  argp_failure (state, 1, err, "%s", arg);
-	  return err;
-	}
-      else
+      if (! err)
 	{
 	  struct store **stores = realloc (h->stores, h->num_stores + 1);
 	  if (stores)
 	    {
 	      stores[h->num_stores++] = s;
 	      h->stores = stores;
+	      if (h->params->return_args)
+		err = argz_add (&h->params->args, &h->params->args_len, arg);
 	    }
 	  else
-	    return ENOMEM;	/* Just fucking lovely */
+	    err = ENOMEM;	/* Just fucking lovely */
+	}
+      if (err)
+	{
+	  argp_failure (state, 1, err, "%s", arg);
+	  return err;
 	}
       break;
 
@@ -164,6 +169,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	return ENOMEM;
       bzero (h, sizeof (struct store_parse_hook));
       h->params = state->input;
+      if (h->params->return_args)
+	/* Initialiaze the returned argument vector.  */
+	{
+	  h->params->args = 0;
+	  h->params->args_len = 0;
+	}
       state->hook = h;
       break;
 
@@ -180,7 +191,26 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  PERR (EINVAL, "No store specified");
 	}
 
-      if (state->input == 0)
+      if (h->params->return_args)
+	{
+	  if (h->machdev)
+	    err = argz_insert (&h->params->args, &h->params->args_len,
+			       h->params->args, "--machdev");
+	  if (!err && h->num_stores > 1 && (h->interleave || h->layer))
+	    {
+	      char buf[40];
+	      if (h->interleave)
+		snprintf (buf, sizeof buf, "--interleave=%ld", h->interleave);
+	      else
+		snprintf (buf, sizeof buf, "--layer=%ld", h->layer);
+	      err = argz_insert (&h->params->args, &h->params->args_len,
+				 h->params->args, buf);
+	    }
+	}
+
+      if (err)
+	/* nothing */;
+      else if (state->input == 0)
 	/* No way to return a value!  */
 	err = EINVAL;
       else if (h->num_stores == 1)
