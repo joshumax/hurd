@@ -1,3 +1,8 @@
+2002-03-15  Roland McGrath  <roland@frob.com>
+
+	* Makefile (OBJS): Remove hack for part.o.
+	(parted.o parted_p.o parted_pic.o): Targets removed.
+
 2002-03-14  Roland McGrath  <roland@frob.com>
 
 	* Makefile (cleantarg): Append $(store-types:%=libstore_%.a) here.

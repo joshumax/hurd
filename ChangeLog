@@ -1,3 +1,11 @@
+2002-03-15  Roland McGrath  <roland@frob.com>
+
+	* configure.in: Remove the checks for libparted.
+	Instead, check just for a static -lstore_part library and do
+	that only if no --enable-boot-store-types option was given.
+
+	* configure.in (boot_store_types): Add remap to the default list.
+
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* Makeconf ($(libname).so.$(hurd-version)):
