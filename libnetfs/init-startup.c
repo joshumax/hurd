@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -26,24 +26,25 @@
 mach_port_t
 netfs_startup (mach_port_t bootstrap, int flags)
 {
+  error_t err;
   mach_port_t realnode, right;
   struct port_info *newpi;
   
   if (bootstrap == MACH_PORT_NULL)
     error (10, 0, "Must be started as a translator");
 
-  errno = ports_create_port (netfs_control_class, netfs_port_bucket,
+  err = ports_create_port (netfs_control_class, netfs_port_bucket,
 			     sizeof (struct port_info), &newpi);
-  if (!errno)
+  if (!err)
     {
       right = ports_get_send_right (newpi);
-      errno = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_COPY_SEND,
+      err = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_COPY_SEND,
 			    &realnode);
       mach_port_deallocate (mach_task_self (), right);
       ports_port_deref (newpi);
     }
-  if (errno)
-    error (11, errno, "Translator startup failure: fsys_startup");
+  if (err)
+    error (11, err, "Translator startup failure: fsys_startup");
 
   mach_port_deallocate (mach_task_self (), bootstrap);
 
