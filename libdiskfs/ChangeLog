@@ -1,3 +1,8 @@
+1999-09-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-pathconf.c: Include <unistd.h>.
+	(diskfs_S_io_pathconf): Provide real definition.
+
 1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-map-segment.c: New file.  Guts from io-map.c.
