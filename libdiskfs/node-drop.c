@@ -18,7 +18,7 @@
 #include "priv.h"
 
 /* Node NP now has no more references; clean all state.  The
-   _diskfs_node_refcnt_lock must be held.  */
+   diskfs_node_refcnt_lock must be held.  */
 void
 diskfs_drop_node (struct node *np)
 {
@@ -33,6 +33,7 @@ diskfs_drop_node (struct node *np)
       diskfs_node_update (np, 1);
       diskfs_free_node (np);
     }
+  diskfs_node_norefs (np);
 }
 
       
