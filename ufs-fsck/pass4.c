@@ -18,11 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
+
+void
 pass4()
 {
   ino_t number;
   
-  for (number = ROOTINO; number < lastino; number++)
+  for (number = ROOTINO; number < maxino; number++)
     {
       if (linkfound[number] && inodestate[number] != UNALLOC)
 	{
@@ -31,7 +34,7 @@ pass4()
 	      struct dinode dino;
 	      getinode (number, &dino);
 	      pwarn ("LINK COUNT %s", 
-		     (DI_MODE (dp) & IFMT) == IFDIR ? "DIR" : "FILE");
+		     (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE");
 	      pinode (dino);
 	      printf (" COUNT %d SHOULD BE %d", linkcount[number],
 		      linkfound[number]);
@@ -59,7 +62,7 @@ pass4()
 	  
 	  getinode (number, &dino);
 
-	  if (dino.st_size)
+	  if (dino.di_size)
 	    {
 	      /* This can't happen for dirctories because pass 3 should
 		 already have reset them up.  */
