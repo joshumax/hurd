@@ -48,7 +48,7 @@ netfs_S_file_get_storage_info (struct protid *user,
     }
 
   *num_ints = 1;
-  ints[0] = STORAGE_NETWORK;
+  (*ints)[0] = STORAGE_NETWORK;
 
   return 0;
 }
