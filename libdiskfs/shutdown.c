@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -69,7 +69,12 @@ diskfs_shutdown (int flags)
   
   /* Permit all the current RPC's to finish, and then
      suspend new ones.  */
-  ports_inhibit_class_rpcs (diskfs_protid_class);
+  err = ports_inhibit_class_rpcs (diskfs_protid_class);
+  if (err)
+    {
+      rwlock_writer_unlock (&diskfs_fsys_lock);
+      return err;
+    }
 
   /* First, see if there are outstanding user ports. */
   nports = ports_count_class (diskfs_protid_class);
