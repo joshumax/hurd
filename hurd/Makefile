@@ -17,5 +17,7 @@
 
 dir := hurd
 include ../Makeconf
-DIST_FILES = ChangeLog Makefile *.defs *.h subsystems
+DIST_FILES = ChangeLog Makefile *.defs subsystems $(HDRS)
+
+HDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 
