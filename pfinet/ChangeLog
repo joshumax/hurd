@@ -1,3 +1,8 @@
+2001-07-13  Neal H Walfield  <neal@cs.uml.edu>
+
+	* options.c (parse_opt): In the cases where we hold global_lock
+	and fail, we must release the lock before calling FAIL.
+
 2001-06-08  Marcus Brinkmann  <marcus@gnu.org>
 
 	* timer-emul.c (add_timer): Don't add jiffies to EXPIRES, it is

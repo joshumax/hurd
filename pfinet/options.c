@@ -1,6 +1,6 @@
 /* Pfinet option parsing
 
-   Copyright (C) 1996,97,2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,2000,01 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -253,7 +253,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    err = configure_device (in->device, in->address, in->netmask,
 				    in->peer, INADDR_NONE);
 	    if (err)
-	      FAIL (err, 16, 0, "cannot configure interface");
+	      {
+		__mutex_unlock (&global_lock);
+		FAIL (err, 16, 0, "cannot configure interface");
+	      }
 	  }
 
       /* Set the default gateway.  This code is cobbled together from what
@@ -289,7 +292,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      {
 		err = - (*tb->tb_delete) (tb, &req.rtm, &rta, &req.nlh, 0);
 		if (err && err != ESRCH)
-		  FAIL (err, 17, 0, "cannot remove old default gateway");
+		  {
+		    __mutex_unlock (&global_lock);
+		    FAIL (err, 17, 0, "cannot remove old default gateway");
+		  }
 		err = 0;
 	      }
 	  }
@@ -302,12 +308,14 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    err = (!tb ? ENOBUFS
 		   : - (*tb->tb_insert) (tb, &req.rtm, &rta, &req.nlh, 0));
 	    if (err)
-	      FAIL (err, 17, 0, "cannot set default gateway");
+	      {
+		__mutex_unlock (&global_lock);
+	        FAIL (err, 17, 0, "cannot set default gateway");
+	      }
 	  }
       }
 
       __mutex_unlock (&global_lock);
-
 
       /* Fall through to free hook.  */
 
