@@ -33,6 +33,7 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
     helper (struct node *np)
       {
 	error_t error;
+	mach_port_t control;
 	
 	error = fshelp_fetch_control (np, &control);
 	if (!error && (control != MACH_PORT_NULL))
