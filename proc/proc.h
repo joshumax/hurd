@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -153,7 +153,6 @@ process_drop (struct proc *p)
 
 /* Forward declarations */
 void complete_wait (struct proc *, int);
-int nextprime (int);
 int check_uid (struct proc *, uid_t);
 void addalltasks (void);
 void prociterate (void (*)(struct proc *, void *), void *);
