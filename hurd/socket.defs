@@ -130,8 +130,8 @@ routine socket_recv (
 	sock: socket_t;
 	out addr: addr_port_t;
 	flags: int;
-	out data: data_t;
-	out ports: portarray_t;
-	out control: data_t;
+	out data: data_t, dealloc;
+	out ports: portarray_t, dealloc;
+	out control: data_t, dealloc;
 	out outflags: int;
 	amount: int);
