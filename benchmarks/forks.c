@@ -1,5 +1,11 @@
 /* From 4.4 BSD sys/tests/benchmarks/forks.c. */
 
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <sys/wait.h>
+
 /*
  * Benchmark program to calculate fork+wait
  * overhead (approximately).  Process
@@ -8,13 +14,14 @@
  * in calculating exec overhead.
  */
 
+int
 main(argc, argv)
 	char *argv[];
 {
 	register int nforks, i;
 	char *cp;
 	int pid, child, status, brksize;
-	int starttime, endtime;
+	time_t starttime, endtime;
 
 	if (argc < 3) {
 		printf("usage: %s number-of-forks sbrk-size\n", argv[0]);
@@ -30,7 +37,7 @@ main(argc, argv)
 		printf("%s: bad size to sbrk\n", argv[2]);
 		exit(3);
 	}
-	
+
 	time (&starttime);
 	cp = (char *)sbrk(brksize);
 	if ((int)cp == -1) {
@@ -51,6 +58,6 @@ main(argc, argv)
 			;
 	}
 	time (&endtime);
-	printf ("Time: %d seconds.\n", endtime - starttime);
+	printf ("Time: %d seconds.\n", (int) (endtime - starttime));
 	exit(0);
 }
