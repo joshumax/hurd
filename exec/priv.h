@@ -72,8 +72,6 @@ typedef struct trivfs_protid *trivfs_protid_t; /* For MiG.  */
 
 extern mach_port_t procserver;	/* Our proc port.  */
 
-#define EXECDATA_STREAM		/* XXX */
-
 #ifdef BFD
 #define EXECDATA_STREAM		/* BFD uses stdio to access the executable.  */
 #else
