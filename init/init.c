@@ -1,6 +1,6 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -1061,7 +1061,8 @@ frob_kernel_process (void)
 pid_t child_pid;		/* PID of the child we run */
 task_t child_task;		/* and its (original) task port */
 
-error_t send_signal (mach_port_t msgport, int signal, mach_port_t refport);
+error_t send_signal (mach_port_t msgport, int signal, mach_port_t refport,
+		     mach_msg_timeout_t);
 
 static void launch_something (const char *why);
 
@@ -1152,7 +1153,8 @@ process_signal (int signo)
 	    error (0, err, "proc_getmsgport");
 	  else
 	    {
-	      err = send_signal (msgport, signo, task); /* Avoids blocking.  */
+	      err = send_signal (msgport, signo, task,
+				 500); /* Block only half a second.  */
 	      mach_port_deallocate (mach_task_self (), msgport);
 	      if (err)
 		{
