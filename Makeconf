@@ -66,7 +66,7 @@ else
 top_srcdirinc=-I$(top_srcdir)
 endif
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -D_GNU_SOURCE
-CFLAGS += -Wall -g
+CFLAGS += -Wall -g -O3
 
 # Decode makemode:
 
