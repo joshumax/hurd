@@ -1,6 +1,6 @@
 /* Root usermux node
 
-   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -272,7 +272,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
 /* User lookup.  */
 
-/* Free storage allocated consumed by the host mux name NM, but not the node
+/* Free storage allocated consumed by the user mux name NM, but not the node
    it points to.  */
 static void
 free_name (struct usermux_name *nm)

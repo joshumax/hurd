@@ -1,6 +1,6 @@
-/* Multiplexing filesystems by host
+/* Multiplexing filesystems by user
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -33,7 +33,7 @@ struct passwd;
 /* Handy source of time.  */
 volatile struct mapped_time_value *usermux_maptime;
 
-/* The state associated with a host multiplexer translator.  */
+/* The state associated with a user multiplexer translator.  */
 struct usermux
 {
   /* The user nodes in this mux.  */

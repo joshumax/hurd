@@ -1,6 +1,6 @@
-/* Multiplexing filesystems by host
+/* Multiplexing filesystems by user
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
