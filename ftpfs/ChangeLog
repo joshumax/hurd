@@ -1,3 +1,13 @@
+1997-08-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (main): Supply the FSID argument to ftpfs_create.
+	* dir.c (update_entry): Set E->stat.st_fsid & st_fstype.
+	(ftpfs_next_inode): Variable removed.
+	* ftpfs.h (struct ftpfs ): Add FSID & NEXT_INODE fields.
+	(ftpfs_create): Add FSID parameter.
+	* fs.c (ftpfs_create): Add FSID parameter.  Initialize FSID &
+	NEXT_INODE fields.
+
 1997-08-11  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir.c (sweep): Don't delete entries that have the NOENT flag set.
