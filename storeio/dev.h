@@ -44,7 +44,7 @@ struct dev
   /* Non-block I/O is buffered through BUF.  BUF_OFFS is the device offset
      corresponding to the start of BUF (which holds one block); if it is -1,
      then BUF is inactive.  */
-  char *buf;
+  void *buf;
   off_t buf_offs;
   int buf_dirty;
 
@@ -82,20 +82,16 @@ int dev_stop_paging (struct dev *dev, int nosync);
    for any paging activity to cease.  */
 error_t dev_sync (struct dev *dev, int wait);
 
-#ifdef MSG
-char *brep(vm_address_t buf, vm_size_t len);
-#endif
-
 /* Write LEN bytes from BUF to DEV, returning the amount actually written in
    AMOUNT.  If successful, 0 is returned, otherwise an error code is
    returned.  */
-error_t dev_write (struct dev *dev, off_t offs, char *buf, size_t len,
+error_t dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
 		   size_t *amount);
 
 /* Read up to AMOUNT bytes from DEV, returned in BUF and LEN in the with the
    usual mach memory result semantics.  If successful, 0 is returned,
    otherwise an error code is returned.  */
 error_t dev_read (struct dev *dev, off_t offs, size_t amount,
-		  char **buf, size_t *len);
+		  void **buf, size_t *len);
 
 #endif /* !__DEV_H__ */
