@@ -27,7 +27,7 @@ newterm		27000	Creation of terminal processing thingies
 term		28000	Terminal-specific operations
 startup		29000	System initialization and destruction
 exec		30000	Process execution
-boot		31000	Bootstrapping
+exec_startup	30500	Process startup communication
 crash		32000	Program crash handling (core dumps)
 intr		33000	Interruption
 ifsock		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
