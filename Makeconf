@@ -143,8 +143,13 @@ install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installh
 # it never needs to be repeated for a particular header.
 INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/$(installhdrsubdir)/,$(installhdrs))
 libs: $(INSTALLED_LOCAL_HEADERS)
+ifeq ($(installhdrsubdir),.)
+$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
+	ln -s $(dir)/$* $@
+else
 $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 	ln -s ../$(dir)/$* $@
+endif
 
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
