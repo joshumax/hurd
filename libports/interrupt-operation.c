@@ -23,11 +23,16 @@
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
 error_t
-ports_S_interrupt_operation (mach_port_t port)
+ports_S_interrupt_operation (mach_port_t port,
+			     mach_port_seqno_t seqno)
 {
   struct port_info *pi = ports_lookup_port (0, port, 0);
   if (!pi)
     return EOPNOTSUPP;
+  mutex_lock (&_ports_lock);
+  if (pi->cancel_threshhold < seqno)
+    pi->cancel_threshhold = seqno;
+  mutex_unlock (&_ports_lock);
   ports_interrupt_rpc (pi);
   ports_port_deref (pi);
   return 0;
