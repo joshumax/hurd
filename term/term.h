@@ -300,3 +300,5 @@ error_t pty_io_readable (int *);
 error_t pty_io_select (struct trivfs_protid *, int *, int *);
 error_t pty_open_hook (struct trivfs_cntl, uid_t *, u_int, uid_t *, 
 		       u_int, int);
+error_t pty_po_create_hook (struct trivfs_peropen *);
+error_t pty_po_destroy_hook (struct trivfs_peropen *);
