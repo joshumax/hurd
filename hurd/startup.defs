@@ -51,20 +51,16 @@ routine startup_reboot (
 	refport: mach_port_t;
 	reboot_code: int);
 
-/* This call is made by the proc server for its initialization.
-   PROCESS is the proc server port for the startup program.
-   TASK and MSGPORT are set in the proc structure for the startup program.  */
+/* This call is made by the proc server for its initialization, on its
+   bootstrap port.  */
 routine startup_procinit (
 	server: startup_t;
-	process: process_t;
-	out task: task_t;
-	out msgport: mach_port_make_send_t;
-	out auth: mach_port_t;
 	out host_priv: mach_port_t;
 	out device_master: mach_port_t);
 
-/* This call is made by the auth server for its initialization. */
+/* This call is made by the auth server for its initialization. 
+   The auth server will create an all-root authentication handle
+   to give to the startup server.  */
 routine startup_authinit (
 	server: startup_t;
-	out auth: mach_port_move_receive_t;
-	out host_priv: mach_port_t);
+	auth: mach_port_make_send_t);
