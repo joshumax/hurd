@@ -1190,7 +1190,7 @@ S_msg_describe_ports (mach_port_t process,
 		      mach_port_array_t names,
 		      mach_msg_type_number_t namesCnt,
 		      data_t *descriptions,
-		      mach_msg_type_number_t descriptionsCnt)
+		      mach_msg_type_number_t *descriptionsCnt)
 {
   return _S_msg_describe_ports (process, refport, names, namesCnt, 
 				descriptions, descriptionsCnt);
