@@ -155,8 +155,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      error = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
 	      if (diskfs_synchronous)
 		{
-		  diskfs_update_file (dnp, 1);
-		  diskfs_update_file (np, 1);
+		  diskfs_file_update (dnp, 1);
+		  diskfs_file_update (np, 1);
 		}
 	      newnode = 1;
 	    }
