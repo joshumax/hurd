@@ -106,7 +106,7 @@ trunc_direct (struct node * node, unsigned long length)
 
       node->dn->info.i_data[i] = 0;
 
-      node->dn_stat.st_blocks -= blocks;
+      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
 
       if (free_count == 0) {
@@ -187,7 +187,7 @@ trunc_indirect (struct node * node, unsigned long length,
       ext2_free_blocks (block, 1);
 #endif
 
-      node->dn_stat.st_blocks -= blocks;
+      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
     }
 
@@ -202,7 +202,7 @@ trunc_indirect (struct node * node, unsigned long length,
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks;
+      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
@@ -254,7 +254,7 @@ trunc_dindirect (struct node * node, unsigned long length,
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks;
+      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
@@ -305,7 +305,7 @@ trunc_tindirect (struct node * node, unsigned long length)
     {
       block = *p;
       *p = 0;
-      node->dn_stat.st_blocks -= blocks;
+      node->dn_stat.st_blocks -= blocks << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
@@ -373,8 +373,8 @@ diskfs_truncate (struct node *node, off_t length)
   int offset;
   mode_t mode = node->dn_stat.st_mode;
 
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
+
   if (S_ISDIR(mode))
     return EISDIR;
   if (!S_ISREG(mode))
@@ -441,8 +441,7 @@ diskfs_truncate (struct node *node, off_t length)
 error_t
 diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
   if (size > node->allocsize)
     node->allocsize = size;
   return 0;
