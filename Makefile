@@ -26,7 +26,7 @@ prog-subdirs = auth boot exec fstests ifsock init.trim mkbootfs \
 other-subdirs = hurd i386 doc init
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 
-DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS
+DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS missing gcc-specs
 
 all: $(addsuffix -all,$(prog-subdirs))
 
