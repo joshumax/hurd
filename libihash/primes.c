@@ -28,10 +28,10 @@
 static spin_lock_t table_lock = SPIN_LOCK_INITIALIZER;
 
 /* Return the next prime greater than or equal to N. */
-int 
+int
 _ihash_nextprime (unsigned n)
 {
-  /* Among other things, We guarantee that, for all i (0 <= i < primes_len), 
+  /* Among other things, We guarantee that, for all i (0 <= i < primes_len),
      primes[i] is a prime,
      next_multiple[i] is a multiple of primes[i],
      next_multiple[i] > primes[primes_len - 1],
@@ -44,7 +44,7 @@ _ihash_nextprime (unsigned n)
   unsigned max_prime;
 
   spin_lock (&table_lock);
-  
+
   if (! primes)
     {
       primes_size = 128;
@@ -61,12 +61,12 @@ _ihash_nextprime (unsigned n)
     }
 
   if (n <= primes[0])
-    { 
+    {
       spin_unlock (&table_lock);
       return primes[0];
     }
-  
-  while (n > (max_prime = primes[primes_len - 1])) 
+
+  while (n > (max_prime = primes[primes_len - 1]))
     {
       /* primes doesn't contain any prime large enough.  Sieve from
          max_prime + 1 to 2 * max_prime, looking for more primes.  */
@@ -79,10 +79,8 @@ _ihash_nextprime (unsigned n)
 
       /* Make the sieve indexed by prime number, rather than
 	 distance-from-start-to-the-prime-number.  When we're done,
-	 sieve[P] will be zero iff P is prime.
-
-	 ANSI C doesn't define what this means.  Fuck them.  */
-      sieve -= start;
+	 sieve[P] will be zero iff P is prime.  */
+#define sieve (sieve - start)
 
       /* Set sieve[i] for all composites i, start <= i < end.
 	 Ignore multiples of 2.  */
@@ -135,9 +133,8 @@ _ihash_nextprime (unsigned n)
 	else
 	  top = mid;
       }
-    
+
     spin_unlock (&table_lock);
     return primes[top];
   }
 }
-
