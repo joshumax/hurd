@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
 
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
    Written by Roland McGrath.
    This file is part of the GNU Hurd.
 
@@ -247,7 +247,7 @@ S_exec_init (struct trivfs_protid *protid,
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], auth); /* Consume.  */
 
   /* Do initial setup with the proc server.  */
-  _hurd_proc_init (save_argv);
+  _hurd_proc_init (save_argv, NULL, 0);
 
   /* Set the active translator on /servers/exec. */
   set_active_trans ();
