@@ -1,6 +1,6 @@
 /* interrupt_operation
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -31,10 +31,10 @@ ports_S_interrupt_operation (mach_port_t port,
   if (!pi)
     return EOPNOTSUPP;
   mutex_lock (&_ports_lock);
-  if (pi->cancel_threshhold < seqno)
-    pi->cancel_threshhold = seqno;
+  if (pi->cancel_threshold < seqno)
+    pi->cancel_threshold = seqno;
   mutex_unlock (&_ports_lock);
-  ports_interrupt_rpc (pi);
+  ports_interrupt_rpcs (pi);
   ports_port_deref (pi);
   return 0;
 }
