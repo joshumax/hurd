@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include <hurd/fsys.h>
 
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t 
