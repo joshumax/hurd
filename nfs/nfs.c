@@ -1,4 +1,4 @@
-/* 
+/* XDR frobbing and lower level routines for NFS client
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -24,7 +24,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 
-/* Convert an NFS mode to a Hurd mode */
+/* Convert an NFS mode (TYPE and MODE) to a Hurd mode and return it. */
 mode_t
 nfs_mode_to_hurd_mode (int type, int mode)
 {
@@ -77,10 +77,12 @@ hurd_mode_to_nfs_mode (mode_t mode)
   return mode & 07777;
 }
 
-/* Each of these functions copies its second arg to *P, converting it
-   to XDR representation along the way.  They then return the address after
-   the copied value. */
+
+/* Each of the functions on this page copies its second arg to *P,
+   converting it to XDR representation along the way.  They then
+   return the address after the copied value. */
 
+/* Encode an NFS file handle. */
 int *
 xdr_encode_fhandle (int *p, void *fhandle)
 {
@@ -88,6 +90,7 @@ xdr_encode_fhandle (int *p, void *fhandle)
   return p + INTSIZE (NFS_FHSIZE);
 }
 
+/* Encode uninterpreted bytes. */
 int *
 xdr_encode_data (int *p, char *data, size_t len)
 {
@@ -99,14 +102,14 @@ xdr_encode_data (int *p, char *data, size_t len)
   return p + nints;
 }
 
+/* Encode a C string. */
 int *
 xdr_encode_string (int *p, char *string)
 {
   return xdr_encode_data (p, string, strlen (string));
 }
   
-/* The SATTR calls are different; they each only fill in one 
-   or two attributes; the rest get -1. */
+/* Encode a MODE into an otherwise empty sattr. */
 int *
 xdr_encode_sattr_mode (int *p, mode_t mode)
 {
@@ -121,6 +124,7 @@ xdr_encode_sattr_mode (int *p, mode_t mode)
   return p;
 }
 
+/* Encode UID and GID into an otherwise empty sattr. */
 int *
 xdr_encode_sattr_ids (int *p, u_int uid, u_int gid)
 {
@@ -135,6 +139,7 @@ xdr_encode_sattr_ids (int *p, u_int uid, u_int gid)
   return p;
 }
 
+/* Encode a file size into an otherwise empty sattr. */
 int *
 xdr_encode_sattr_size (int *p, off_t size)
 {
@@ -149,6 +154,7 @@ xdr_encode_sattr_size (int *p, off_t size)
   return p;
 }
 
+/* Encode ATIME and MTIME into an otherwise empty sattr. */
 int *
 xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
 {
@@ -163,6 +169,7 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
   return p;
 }
 
+/* Encode MODE and a size of 0 into an otherwise empty sattr. */
 int *
 xdr_encode_create_state (int *p, 
 			 mode_t mode)
@@ -178,6 +185,7 @@ xdr_encode_create_state (int *p,
   return p;
 }
 
+/* Encode ST into an sattr. */
 int *
 xdr_encode_sattr_stat (int *p,
 		       struct stat *st)
@@ -192,9 +200,10 @@ xdr_encode_sattr_stat (int *p,
   *p++ = htonl (st->st_mtime_usec);
   return p;
 }
+
 
 /* Decode *P into a stat structure; return the address of the
- following data. */
+   following data. */
 int *
 xdr_decode_fattr (int *p, struct stat *st)
 {
@@ -210,7 +219,7 @@ xdr_decode_fattr (int *p, struct stat *st)
   st->st_blksize = ntohl (*p++);
   st->st_rdev = ntohl (*p++);
   st->st_blocks = ntohl (*p++);
-  st->st_fsid = ntohl (*p++);	/* surely wrong */
+  st->st_fsid = ntohl (*p++);
   st->st_ino = ntohl (*p++);
   st->st_atime = ntohl (*p++);
   st->st_atime_usec = ntohl (*p++);
@@ -236,7 +245,15 @@ xdr_decode_string (int *p, char *buf)
   return p + INTSIZE (len);
 }
 
-
+
+/* Set up an RPC for procedure RPC_PROC for talking to the NFS server.
+   Allocate storage with malloc and point *BUFP at it; caller must
+   free this when done.  Initialize RPC credential information with
+   information from CRED (identifying the user making this call; -1
+   means superuser), NP (identifying the node we are operating on), and
+   SECOND_GID (specifying another GID the server might be interested
+   in).  Allocate at least LEN bytes of space for bulk data in
+   addition to the normal amount for an RPC. */
 int *
 nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 		    size_t len, void **bufp, struct node *np,
@@ -246,6 +263,9 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
   uid_t gid;
   error_t err;
   
+  /* Use heuristics to figure out what ids to present to the server.
+     Don't lie, but adjust ids as necessary to secure the desired result. */ 
+
   if (cred == (struct netcred *) -1)
     {
       uid = gid = 0;
@@ -323,6 +343,7 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 			 uid, gid, second_gid);
 }
 
+/* ERROR is an NFS error code; return the correspending Hurd error. */
 error_t
 nfs_error_trans (int error)
 {
