@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-error_t
-trivfs_S_dir_mkdir (struct protid *cred, char *name, mode_t mode)
+kern_return_t
+trivfs_S_dir_mkdir (struct trivfs_protid *cred, char *name, mode_t mode)
 {
   return cred ? ENOTDIR : EOPNOTSUPP;
 }
