@@ -1,0 +1,86 @@
+Sources for binaries in GNU version 0.2.
+
+Typical configure line is
+
+../../src/foo-NN/configure --prefix= --cache-file=../config.cache i486-gnu
+
+Mark with - when source has been fetched.  
+Mark with C if configured but not built
+Mark with + when source has been compiled.  
+Mark with * when installation into /gd4/gnu-0.2 has been done.
+
+* autoconf (2.12)
+* automake (1.0) (useless w/out perl)
+* bash (2.0)
+* bc  (1.03)
+* binutils (Modified 2.7; /home/hi2/src/binutils-2.7)
+* bison (1.25)
+cfengine (1.3.19)
+* cpio (2.4.2)
+* cvs (1.9)
+  [ inhibit use of libc getopt by defining _LIBC in lib/getopt.c
+    and lib/getopt1.c immediately before it is tested. ]
+* diffutils (2.7)
+* doschk (1.1)
+* e2fsprogs (1.08)
+* ed  (0.2)
+* emacs (19.34b)
+* emacs lisp manual (19-2.4.2)
+- fdisk (3.04)
+* fileutils (3.16)
+* findutils (4.1)
+  [ Comment out basename in find/defs.h and find/util.c.
+    Define _GNU_SOURCE at front of find/pred.c.
+    Define ARG_MAX to be 20480 before its first use. ]
+* flex  (2.5.4)
+* from (special source)
+* g77 (0.5.19.1)
+* gawk  (3.0.0)  (don't use 3.0.2)
+* gcal (2.10)
+* gcc  (2.7.2.2) (includes patches from g77 0.5.19.1)
+gdb (special!)
+gettext (0.10)
+glibc (2.0.2)
+glibc-crypt (??)
+* gmp (2.0.2)
+- gnat (3.09)
+- gnumach (1.0) [ wait to decide what devices to include ]
+gperf (2.1a) (modified?)
+* grep (2.0)
+* grub (0.4)
+* gzip (1.2.4)
+  [ Comment out basename in gzip.h and util.c. ]
+* hello (1.3)
+hurd (0.2)
+* indent (1.9.1)
+* inetutils (1.3)
+* less (321)
+* m4 (1.4)
+* make (3.75) [ use latest getloadavg ]
+* miscfiles (1.1)
+* ncurses (1.9.9g)
+nethack (??) (modified?)
+* nvi (1.71)
+patch (2.1) [ Comment out basename in backupfile.c. ]
+* perl (5.003)
+* ptx (0.4)
+* readline (2.0)
+* rcs (5.7)
+* recode (3.4.1)
+C sed  (2.05) [ compilation error ]
+- sendmail (8.8.5) (modified)
+* sh-utils (1.16) [ use latest getloadavg.c ]
+* sharutils (4.2)
+tar (1.11.8)
+* termutils (2.0)
+* texinfo (3.9)
+  [ Omit OCRNL from the expression in which it occurs in
+      info/terminal.c.
+    In util/install-info.c, replace guts of my_strerror with a call to
+      strerror. ]
+* textutils (1.22)
+* time (1.7)
+* wdiff (0.5)
+
+
+
