@@ -74,9 +74,12 @@ struct transbox
 {
   fsys_t active;
   struct mutex *lock;
-  struct mutex innerlock;
+  int flags;
+  struct condition wakeup;
   void *cookie;
 };
+#define TRANSBOX_STARTING 1
+#define TRANSBOX_WANTED 2
 
 /* This interface is complex, because creating the ports and state
    necessary for start_translator_long is expensive.  The caller to
