@@ -207,13 +207,13 @@ diskfs_new_hardrefs (struct node *np)
   allow_pager_softrefs (np);
 }
 
-/* Read stat information out of the dinode. */
+/* Read stat information out of the ext2_inode. */
 static error_t
 read_disknode (struct node *np)
 {
   static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
-  struct dinode *di = dino (np->dn->number);
+  struct ext2_inode *di = dino (np->dn->number);
   error_t err;
   
   err = diskfs_catch_exception ();
@@ -277,7 +277,7 @@ static void
 write_node (struct node *np)
 {
   struct stat *st = &np->dn_stat;
-  struct dinode *di = dino (np->dn->number);
+  struct ext2_inode *di = dino (np->dn->number);
   error_t err;
   
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
@@ -341,7 +341,7 @@ write_node (struct node *np)
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
-      record_poke (di, sizeof (struct dinode));
+      record_poke (di, sizeof (struct ext2_inode));
     }
 }  
 
@@ -353,7 +353,7 @@ create_symlink_hook (struct node *np, char *target)
 {
   int len = strlen (target);
   error_t err;
-  struct dinode *di;
+  struct ext2_inode *di;
   
   if (!direct_symlink_extension)
     return EINVAL;
@@ -372,7 +372,7 @@ create_symlink_hook (struct node *np, char *target)
   np->dn_stat.st_size = len;
   np->dn_set_ctime = 1;
   np->dn_set_mtime = 1;
-  record_poke (di, sizeof (struct dinode));
+  record_poke (di, sizeof (struct ext2_inode));
 
   diskfs_end_catch_exception ();
   return 0;
@@ -406,7 +406,7 @@ error_t (*diskfs_read_symlink_hook)(struct node *, char *)
      = read_symlink_hook;
      
 
-/* Write all active disknodes into the dinode pager. */
+/* Write all active disknodes into the ext2_inode pager. */
 void
 write_all_disknodes ()
 {
@@ -427,7 +427,7 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   write_node (np);
-  sync_dinode (np->dn->number, wait);
+  sync_ext2_inode (np->dn->number, wait);
 }
 
 /* Implement the diskfs_set_statfs callback from the diskfs library;
@@ -458,7 +458,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   daddr_t blkno;
   error_t err;
   char buf[sblock->fs_bsize];
-  struct dinode *di;
+  struct ext2_inode *di;
 
   if (compat_mode != COMPAT_GNU)
     return EOPNOTSUPP;
@@ -483,7 +483,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  return err;
 	}
       di->di_trans = blkno;
-      record_poke (di, sizeof (struct dinode));
+      record_poke (di, sizeof (struct ext2_inode));
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
@@ -491,7 +491,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       /* Clear block for translator going away. */
       ffs_blkfree (np, blkno, sblock->fs_bsize);
       di->di_trans = 0;
-      record_poke (di, sizeof (struct dinode));
+      record_poke (di, sizeof (struct ext2_inode));
       np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
       np->istranslated = 0;
       np->dn_set_ctime = 1;
