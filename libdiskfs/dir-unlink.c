@@ -61,15 +61,6 @@ diskfs_S_dir_unlink (struct protid *dircred,
       mutex_unlock (&dnp->lock);
       return EISDIR;
     }
-
-  /* If this is the last link to the node, then give the translator a 
-     push when we do the unlink.  Here we fetch the control port.  */
-  if (np->dn_stat.st_nlink == 1)
-    {
-      error = fshelp_fetch_control (&np->transbox, &control);
-      if (error)
-	control = MACH_PORT_NULL;
-    }
   
   error = diskfs_dirremove (dnp, ds);
   if (diskfs_synchronous)
