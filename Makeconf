@@ -63,7 +63,7 @@ CFLAGS += -Wall -g -O3
 
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.
-ifneq (,$(wildard $(..)config.make))
+ifneq (,$(wildcard $(..)config.make))
 include $(..)config.make
 # Set a flag for the makefiles to indicated config.make was included.
 configured = yes
