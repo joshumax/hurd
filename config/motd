@@ -1,2 +1,2 @@
-# Leave this line here; line 1 gets replaced automatically by /etc/rc.
+# Leave this line alone; /etc/rc looks for it. GNU Version
 This is the Hurd.  Welcome.

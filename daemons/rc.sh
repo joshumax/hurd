@@ -65,8 +65,16 @@ echo -n clearing /tmp...
 (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -r {} \; )
 echo done
 
-chmod 664 /etc/motd
+echo -n restoring pty permissions...
 chmod 666 /dev/tty[pqrs]*
+echo done
+
+echo -n updating /etc/motd...
+echo GNU\'s Not Unix Version `uname --release` > /tmp/newmotd
+egrep -v 'GNU|Version' /etc/motd >> /tmp/t1
+mv /tmp/t1 /etc/motd
+chmod 664 /etc/motd
+echo done
 
 echo -n starting daemons:
 /sbin/syslogd;		echo -n ' syslogd'
