@@ -22,7 +22,12 @@
 #include "notify_S.h"
 
 error_t
-ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t deadport)
+ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t dead_name)
 {
+  void *pi = ports_lookup_port (0, notify, 0);
+  if (!pi)
+    return EOPNOTSUPP;
+  ports_dead_name (pi, dead_name);
+  ports_port_deref (pi);
   return 0;
 }
