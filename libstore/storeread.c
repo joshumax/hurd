@@ -60,14 +60,14 @@ main (int argc, char **argv)
 		    if (! err)
 		      {
 			struct store_run run = {0, stat.st_size / block_size};
-			err = _store_file_create (source, block_size, &run, 1,
+			err = _store_file_create (source, 0, block_size, &run, 1,
 						  &store);
 		      }
 		  }
 		else
-		  err = store_file_create (source, &store);
+		  err = store_file_create (source, 0, &store);
 	      else
-		err = store_create (source, &store);
+		err = store_create (source, 0, 0, &store);
 	      if (err)
 		error (err, 3, "%s", arg);
 	    }
