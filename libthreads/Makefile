@@ -1,4 +1,4 @@
-CPPFLAGS = -nostdinc -I. -I/usr1/gnu/DIST/include
+CPPFLAGS = -nostdinc -I. -I/usr1/gnu/DIST/include -DCTHREAD_DATA -I/usr1/gnu/DIST/hurd/include
 CFLAGS = -g -O
 CPP = /usr1/gnu/DIST/lib/gcc-cpp
 AS = as
