@@ -19,10 +19,10 @@
 /* Called by the kernel when a shutdown has finished. */
 /* This is a dual of seqnos_memory_object_init. */
 kern_return_t
-seqnos_memory_object_terminate (mach_port_t object, 
-				mach_port_seqno_t seqno,
-				mach_port_t control,
-				mach_port_t name)
+_pager_seqnos_memory_object_terminate (mach_port_t object, 
+				       mach_port_seqno_t seqno,
+				       mach_port_t control,
+				       mach_port_t name)
 {
   struct pager *p;
   struct lock_request *lr;
