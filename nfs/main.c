@@ -65,8 +65,10 @@ int write_size = DEFAULT_WRITE_SIZE;
 #define ___D(what) #what
 #define __D(what) ___D(what)
 #define _D(what) __D(DEFAULT_ ## what)
-
-static struct argp_option options[] = {
+
+/* Options usable both at startup and at runtime.  */
+static struct argp_option common_options[] =
+{
   {0,0,0,0,0,1},
   {"soft",		    OPT_SOFT,	   "RETRIES", OPTION_ARG_OPTIONAL,
      "File system requests will eventually fail, after RETRIES tries if"
@@ -90,7 +92,40 @@ static struct argp_option options[] = {
   {"init-transmit-timeout", OPT_INIT_TR_TO,"SEC", 0}, 
   {"max-transmit-timeout",  OPT_MAX_TR_TO, "SEC", 0}, 
 
-  {0,0,0,0,"Server specification:",4},
+  {0}
+};
+
+static error_t
+parse_common_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case OPT_SOFT:
+      mounted_soft = 1;
+      if (arg)
+	soft_retries = atoi (arg);
+      break;
+    case OPT_HARD:
+      mounted_soft = 0;
+      break;
+
+    case OPT_RSIZE: read_size = atoi (arg); break;
+    case OPT_WSIZE: write_size = atoi (arg); break;
+
+    case OPT_STAT_TO: stat_timeout = atoi (arg); break;
+    case OPT_CACHE_TO: cache_timeout = atoi (arg); break;
+    case OPT_INIT_TR_TO: initial_transmit_timeout = atoi (arg); break;
+    case OPT_MAX_TR_TO: max_transmit_timeout = atoi (arg); break;
+
+    default:
+      return EINVAL;
+    }
+  return 0;
+}
+
+/* Options usable only at startup.  */
+static struct argp_option startup_options[] = {
+  {0,0,0,0,"Server specification:",10},
   {"mount-port",	    OPT_MNT_PORT,  "PORT", 0,
      "Port for mount server"},
   {"default-mount-port",    OPT_MNT_PORT_D,"PORT", 0,
@@ -112,96 +147,101 @@ static char *args_doc = "REMOTE_FS [HOST]";
 static char *doc = "If HOST is not specified, an attempt is made to extract"
 " it from REMOTE_FS, using either the `HOST:FS' or `FS@HOST' notations.";
 
+/* Extract the host and remote filesystem names from SPEC, which should use
+   either HOST:FS or FS@HOST notation.  Returns the malloced storage into
+   which both REMOTE_FS and HOST point, or 0 if SPEC is invalid.  */
+static char *
+extract_nfs_args (char *spec, char **remote_fs, char **host)
+{
+  char *sep;
+
+  spec = strdup (spec);		/* So we can trash it.  */
+
+  sep = index (spec, ':');
+  if (sep)
+    {
+      *sep++ = '\0';
+      *host = spec;
+      *remote_fs = sep;
+      return spec;
+    }
+
+  sep = index (spec, '@');
+  if (sep)
+    {
+      *sep++ = '\0';
+      *host = sep;
+      *remote_fs = spec;
+      return spec;
+    }
+
+  free (spec);
+
+  return 0;
+}
+
+/* Where to find the remote filesystem.  */
+static char *remote_fs = 0;
+static char *host = 0;
+
+/* For debugging.  */
+static volatile int hold = 0;
+
+static error_t
+parse_startup_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case OPT_MNT_PORT:
+      mount_port_override = 1;
+      /* fall through */
+    case OPT_MNT_PORT_D:
+      mount_port = atoi (arg);
+      break;
+
+    case OPT_NFS_PORT:
+      nfs_port_override = 1;
+      /* fall through */
+    case OPT_NFS_PORT_D:
+      nfs_port = atoi (arg);
+      break;
+
+    case OPT_HOLD: hold = 1; break;
+
+    case ARGP_KEY_ARG:
+      if (state->arg_num == 0)
+	remote_fs = arg;
+      else if (state->arg_num == 1)
+	host = arg;
+      else
+	return EINVAL;
+      break;
+
+    case ARGP_KEY_END:
+      if (!host && !extract_nfs_args (remote_fs, &remote_fs, &host))
+	argp_error (state->argp, "No HOST specified");
+      break;
+
+    case ARGP_KEY_NO_ARGS:
+      argp_error (state->argp, "No REMOTE_FS specified");
+
+    default:
+      return EINVAL;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv)
 {
   mach_port_t bootstrap;
-  static volatile int hold = 0;
   struct sockaddr_in addr;
   int ret;
-  char *remote_fs = 0;
-  char *host = 0;
 
-  error_t parse_opt (int key, char *arg, struct argp_state *state)
-    {
-      switch (key)
-	{
-	case OPT_SOFT:
-	  mounted_soft = 1;
-	  if (arg)
-	    soft_retries = atoi (arg);
-	  break;
-	case OPT_HARD:
-	  mounted_soft = 0;
-	  break;
-
-	case OPT_RSIZE: read_size = atoi (arg); break;
-	case OPT_WSIZE: write_size = atoi (arg); break;
-
-	case OPT_STAT_TO: stat_timeout = atoi (arg); break;
-	case OPT_CACHE_TO: cache_timeout = atoi (arg); break;
-	case OPT_INIT_TR_TO: initial_transmit_timeout = atoi (arg); break;
-	case OPT_MAX_TR_TO: max_transmit_timeout = atoi (arg); break;
-
-	case OPT_MNT_PORT:
-	  mount_port_override = 1;
-	  /* fall through */
-	case OPT_MNT_PORT_D:
-	  mount_port = atoi (arg);
-	  break;
-
-	case OPT_NFS_PORT:
-	  nfs_port_override = 1;
-	  /* fall through */
-	case OPT_NFS_PORT_D:
-	  nfs_port = atoi (arg);
-	  break;
-
-	case OPT_HOLD: hold = 1; break;
-
-	case ARGP_KEY_ARG:
-	  if (state->arg_num == 0)
-	    remote_fs = arg;
-	  else if (state->arg_num == 1)
-	    host = arg;
-	  else
-	    return EINVAL;
-	  break;
-
-	case ARGP_KEY_END:
-	  if (! host)
-	    /* Try and extract HOST from REMOTE_FS.  */
-	    {
-	      char *sep = index (remote_fs, ':');
-	      if (sep)
-		{
-		  *sep++ = '\0';
-		  host = remote_fs;
-		  remote_fs = sep;
-		  break;
-		}
-
-	      sep = index (remote_fs, '@');
-	      if (sep)
-		{
-		  *sep++ = '\0';
-		  host = sep;
-		  break;
-		}
-
-	      argp_error (state->argp, "No HOST specified");
-	    }
-	  break;
-
-	case ARGP_KEY_NO_ARGS:
-	  argp_error (state->argp, "No REMOTE_FS specified");
-
-	default:
-	  return EINVAL;
-	}
-      return 0;
-    }
-  struct argp argp = {options, parse_opt, args_doc, doc};
+  struct argp common_argp = {common_options, parse_common_opt};
+  const struct argp *argp_parents[] = {&common_argp, 0};
+  struct argp argp = {startup_options, parse_startup_opt, args_doc, doc,
+			argp_parents};
 
   argp_parse (&argp, argc, argv, 0, 0);
 
