@@ -1,3 +1,16 @@
+2002-06-04  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* spec.c (sprint_frac_value): Added case for values between 1000 and
+	1023.  Make VALUE, FRAC size_t's and return a value of type size_t.
+	(ps_emit_nice_int): Removed function.  Replaced by ...
+	(ps_emit_nice_size_t): ... this.  New Function.
+	(ps_cmp_size_ts): New function.
+	(ps_vsize_getter): Return a size_t instead of an int.
+	(ps_rsize_getter): Likewise.
+	(ps_get_rmem_frac): MEM_SIZE is now a size_t.
+	(specs): Use ps_emit_nice_size_t instead of ps_emit_nice_int and use
+	ps_cmp_size_ts instead of ps_cmp_ints for RSize and VSize.
+
 2002-05-13  Roland McGrath  <roland@frob.com>
 
 	* ps.h (proc_stat_state_tags): Make decl extern, not common.

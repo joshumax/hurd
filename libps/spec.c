@@ -1,6 +1,6 @@
 /* Access, formatting, & comparison routines for printing process info.
 
-   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -148,7 +148,7 @@ ps_get_wait (struct proc_stat *ps, char **wait, int *rpc)
 const struct ps_getter ps_wait_getter =
 {"wait", PSTAT_THREAD_WAIT, ps_get_wait};
 
-static int
+static size_t
 ps_get_vsize (struct proc_stat *ps)
 {
   return proc_stat_task_basic_info (ps)->virtual_size;
@@ -156,7 +156,7 @@ ps_get_vsize (struct proc_stat *ps)
 const struct ps_getter ps_vsize_getter =
 {"vsize", PSTAT_TASK_BASIC, (vf) ps_get_vsize};
 
-static int
+static size_t
 ps_get_rsize (struct proc_stat *ps)
 {
   return proc_stat_task_basic_info (ps)->resident_size;
@@ -232,7 +232,7 @@ const struct ps_getter ps_start_time_getter =
 static float
 ps_get_rmem_frac (struct proc_stat *ps)
 {
-  static int mem_size = 0;
+  static size_t mem_size = 0;
 
   if (mem_size == 0)
     {
@@ -397,16 +397,18 @@ ps_emit_num_blocks (struct proc_stat *ps, struct ps_fmt_field *field,
   return ps_stream_write_field (stream, buf, field->width);
 }
 
-int
+size_t
 sprint_frac_value (char *buf,
-		  int value, int min_value_len,
-		  int frac, int frac_scale,
+		  size_t value, int min_value_len,
+		  size_t frac, int frac_scale,
 		  int width)
 {
-  int value_len;
-  int frac_len;
+  int value_len = 0;
+  int frac_len = 0;
 
-  if (value >= 100)		/* the integer part */
+  if (value >= 1000)            /* the integer part */
+    value_len = 4;              /* values 1000-1023 */
+  if (value >= 100)		
     value_len = 3;
   else if (value >= 10)
     value_len = 2;
@@ -422,9 +424,9 @@ sprint_frac_value (char *buf,
     frac /= 10;
 
   if (frac_len > 0)
-    sprintf (buf, "%d.%0*d", value, frac_len, frac);
+    sprintf (buf, "%zd.%0*zd", value, frac_len, frac);
   else
-    sprintf (buf, "%d", value);
+    sprintf (buf, "%zd", value);
 
   return strlen (buf);
 }
@@ -449,13 +451,13 @@ ps_emit_percent (struct proc_stat *ps, struct ps_fmt_field *field,
 
 /* prints its value nicely */
 error_t
-ps_emit_nice_int (struct proc_stat *ps, struct ps_fmt_field *field,
-		  struct ps_stream *stream)
+ps_emit_nice_size_t (struct proc_stat *ps, struct ps_fmt_field *field,
+		     struct ps_stream *stream)
 {
   char buf[20];
-  int value = FG (field, int)(ps);
+  size_t value = FG (field, size_t)(ps);
   char *sfx = " KMG";
-  int frac = 0;
+  size_t frac = 0;
 
   while (value >= 1024)
     {
@@ -801,7 +803,7 @@ ps_cmp_ints (struct proc_stat *ps1, struct proc_stat *ps2,
   int (*gf)() = G (getter, int);
   int v1 = gf(ps1), v2 = gf (ps2);
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
-}
+} 
 
 int
 ps_cmp_floats (struct proc_stat *ps1, struct proc_stat *ps2,
@@ -810,7 +812,16 @@ ps_cmp_floats (struct proc_stat *ps1, struct proc_stat *ps2,
   float (*gf)() = G (getter, float);
   float v1 = gf(ps1), v2 = gf (ps2);
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
-}
+} 
+
+int
+ps_cmp_size_ts (struct proc_stat *ps1, struct proc_stat *ps2,
+		const struct ps_getter *getter)
+{
+  size_t (*gf)() = G (getter, size_t);
+  size_t v1 = gf(ps1), v2 = gf (ps2);
+  return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
+} 
 
 int
 ps_cmp_uids (struct proc_stat *ps1, struct proc_stat *ps2,
@@ -1105,9 +1116,9 @@ static const struct ps_fmt_spec specs[] =
   {"STime",	0,	-8, 2, 0,
    &ps_sys_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
   {"VSize",	0,	-5, -1, 0,
-   &ps_vsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
+   &ps_vsize_getter,	   ps_emit_nice_size_t,ps_cmp_size_ts,   0},
   {"RSize",	0,	-5, -1, 0,
-   &ps_rsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
+   &ps_rsize_getter,	   ps_emit_nice_size_t,ps_cmp_size_ts,   0},
   {"Pri",	0,	-3, -1, 0,
    &ps_cur_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri},
   {"BPri",	0,	-3, -1, 0,
