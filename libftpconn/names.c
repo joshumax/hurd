@@ -31,6 +31,8 @@ struct get_names_state
   size_t name_alloced;		/* Allocated size of NAME (>= NAME_LEN).  */
   int name_partial;		/* True if NAME isn't complete.  */
 
+  char *dir;			/* Directory being listed.  */
+
   size_t buf_len;		/* Length of contents in BUF.  */
   char buf[7000];
 };
@@ -47,6 +49,19 @@ ftp_conn_start_get_names (struct ftp_conn *conn,
 
   if (! s)
     return ENOMEM;
+
+  if (conn->syshooks.fix_nlist_name)
+    /* We only need save the directory name if calling this hook.  */
+    {
+      s->dir = strdup (name);
+      if (! s->dir)
+	{
+	  free (s);
+	  return ENOMEM;
+	}
+    }
+  else
+    s->dir = 0;
 
   err = ftp_conn_start_list (conn, name, fd);
 
@@ -141,8 +156,23 @@ ftp_conn_cont_get_names (struct ftp_conn *conn, int fd, void *state,
 
       if (nl)
 	{
+	  /* Fixup any screwy names returned by the server.  */
+	  char *name = s->name;
+
+	  if (conn->syshooks.fix_nlist_name)
+	    {
+	      err = (*conn->syshooks.fix_nlist_name) (conn, s->dir, &name);
+	      if (err)
+		goto finished;
+	    }
+
 	  /* Call the callback function to process the current entry.  */
-	  err = (*add_name) (s->name, hook);
+	  err = (*add_name) (name, hook);
+
+	  if (name < s->name || name > s->name + s->name_len)
+	    /* User-allocated NAME from the fix_nlist_name hook.  */
+	    free (name);
+
 	  if (err)
 	    goto finished;
 
@@ -181,8 +211,17 @@ finished:
      return.  */
   if (s->name)
     free (s->name);
+  if (s->dir)
+    free (s->dir);
   free (s);
   close (fd);
+
+  if (err && rd > 0)
+    ftp_conn_abort (conn);
+  else if (err)
+    ftp_conn_finish_transfer (conn);
+  else
+    err = ftp_conn_finish_transfer (conn);
 
   return err;
 }
@@ -191,7 +230,7 @@ finished:
    (HOOK is passed to ADD_NAME).  This function may block.  */
 error_t
 ftp_conn_get_names (struct ftp_conn *conn, const char *name, 
-			    ftp_conn_add_name_fun_t add_name, void *hook)
+		    ftp_conn_add_name_fun_t add_name, void *hook)
 {
   int fd;
   void *state;
