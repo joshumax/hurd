@@ -22,9 +22,9 @@
 
 /* This is obsecenely ineffecient.  ihash and ports need to cooperate
    more closely to do it effeciently. */
-void
+error_t
 ports_bucket_iterate (struct port_bucket *bucket,
-		      void (*fun)(void *))
+		      error_t (*fun)(void *))
 {
   struct item 
     {
@@ -32,6 +32,7 @@ ports_bucket_iterate (struct port_bucket *bucket,
       void *p;
     } *list = 0;
   struct item *i, nxt;
+  error_t err;
 
   error_t enqueue (void *pi)
     {
@@ -49,11 +50,14 @@ ports_bucket_iterate (struct port_bucket *bucket,
   ihash_iterate (bucket->htable, enqueue);
   mutex_unlock (&_ports_lock);
   
+  err = 0;
   for (i = list; i; i = nxt)
     {
-      (*fun)(i->p);
+      if (!err)
+	err = (*fun)(i->p);
       ports_port_deref (i->p);
       nxt = i->next;
       free (i);
     }
+  return err;
 }  
