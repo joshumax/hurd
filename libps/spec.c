@@ -916,6 +916,16 @@ specv_find (const struct ps_fmt_spec *specs, const char *name,
   return 0;
 }
 
+/* Number of specs allocated in each block of expansions.  */ 
+#define EXP_BLOCK_SIZE  20
+
+/* A node in a linked list of spec vectors.  */
+struct ps_fmt_spec_block
+{
+  struct ps_fmt_spec_block *next;
+  struct ps_fmt_spec specs[EXP_BLOCK_SIZE];
+};
+
 /* Adds a new alias expansion, using fields from ALIAS, where non-zero,
    otherwise SRC, to SPECS.  */
 struct ps_fmt_spec *
@@ -924,37 +934,29 @@ specs_add_alias (struct ps_fmt_specs *specs,
 		 const struct ps_fmt_spec *src)
 {
   struct ps_fmt_spec *exp;
+  struct ps_fmt_spec_block *block;
   char *name_end = index (alias->name, '=');
   size_t name_len = name_end ? name_end - alias->name : strlen (alias->name);
 
-  if (specs->expansions == 0)
+  for (block = specs->expansions; block; block = block->next)
     {
-      specs->expansions_alloced = 5;
-      specs->expansions =
-	malloc (sizeof (struct ps_fmt_spec) * specs->expansions_alloced);
-      exp = specs->expansions;
-    }
-  else
-    {
-      exp = specs->expansions;
+      exp = block->specs;
       while (! ps_fmt_spec_is_end (exp))
 	exp++;
-      if (exp + 1 - specs->expansions == specs->expansions_alloced)
-	/* End marker's really at the end, so make room for some more.  */
-	{
-	  size_t exp_offs = exp - specs->expansions;
-	  size_t new_alloced = specs->expansions_alloced * 2;
-	  struct ps_fmt_spec *new_exps =
-	    realloc (specs->expansions,
-		     sizeof (struct ps_fmt_spec) * new_alloced);
+      if (exp + 1 < block->specs + EXP_BLOCK_SIZE)
+	/* Found some empty space at EXP.  */
+	break;
+    }
 
-	  if (! new_exps)
-	    return 0;
-
-	  specs->expansions = new_exps;
-	  specs->expansions_alloced = new_alloced;
-	  exp = new_exps + exp_offs;
-	}
+  if (! block)
+    /* Ran out of blocks, we gotta make a new one.  */
+    {
+      block = malloc (sizeof (struct ps_fmt_spec_block));
+      if (! block)
+	return 0;
+      block->next = specs->expansions;
+      specs->expansions = block;
+      exp = block->specs;
     }
 
   /* EXP gets its name from ALIAS, but only the bit before the alias marker. */
@@ -985,12 +987,13 @@ ps_fmt_specs_find (struct ps_fmt_specs *specs, const char *name)
 {
   if (specs)			/* Allow NULL to make recursion more handy. */
     {
+      struct ps_fmt_spec_block *block;
       char *aliased_to = 0;
       const struct ps_fmt_spec *s = 0;
 
-      if (specs->expansions)
-	/* If SPECS contains any alias expansions, look there first.  */
-	s = specv_find (specs->expansions, name, &aliased_to);
+      /* If SPECS contains any alias expansions, look there first.  */
+      for (block = specs->expansions; block && !s; block = block->next)
+	s = specv_find (block->specs, name, &aliased_to);
 
       if (! s)
 	/* Look in the local list of specs.  */
