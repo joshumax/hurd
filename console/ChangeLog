@@ -1,3 +1,34 @@
+2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd.ti: Change <gsbom> and <grbom> to escape bracket
+	right-angle sequences.  Add <csr>, <smir>, <rmir> and <mir>,
+	disable <ich1>.
+	* display.c (handle_esc_bracket_m): Map \E[21m to normal intensity
+	(as a way to switch off bright intensity).
+	(handle_esc_bracket): Fix calculation of fill area for <ech>.
+	(struct scrolling_region): New type.
+	(struct display): New members INSERT_MODE and CSR.
+	(display_output_one): For <rs2>, also reset DISPLAY->insert_mode
+	and DISPLAY->csr.
+	(display_create): Initialize DISPLAY->csr.bottom.
+	(display_output_one): If in insert mode, shift to the right before
+	printing the character.
+	(linefeed): Take scrolling region into account.
+	(handle_esc_bracket): Switch the meaning of 'h' and 'l'.
+	(handle_esc_bracket_question): Likewise.
+	(handle_esc_bracket_question_hl): Switch the interpretation of
+	FLAG.
+	(handle_esc_bracket_hl): Likewise.  Add support for insert mode
+	<smir> and <rmir>.
+	(struct parse): New state STATE_ESC_BRACKET_RIGHT_ANGLE.
+	(display_output_one): Handle STATE_ESC_BRACKET_RIGHT_ANGLE.
+	(display_output_one): Move the bold attribute handling from here
+	(<PU1>, <PU2>) ...
+	(handle_esc_bracket_right_angle_hl): ... to here.  New function
+	handling <gsbom> and <grbom>.
+	(handle_esc_bracket_right_angle): New function.
+	(handle_esc_bracket): Implement <csr>.
+
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* input.c (input_enqueue): Initialize ERR.

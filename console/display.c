@@ -85,6 +85,12 @@ struct cursor
 };
 typedef struct cursor *cursor_t;
 
+struct scrolling_region
+{
+  uint32_t top;
+  uint32_t bottom;
+};
+
 struct parse
 {
   /* The parsing state of output characters, needed to handle escape
@@ -96,7 +102,8 @@ struct parse
       STATE_ESC,
       STATE_ESC_BRACKET_INIT,
       STATE_ESC_BRACKET,
-      STATE_ESC_BRACKET_QUESTION
+      STATE_ESC_BRACKET_QUESTION,
+      STATE_ESC_BRACKET_RIGHT_ANGLE
     } state;
 
   /* How many parameters an escape sequence may have.  */
@@ -171,11 +178,21 @@ struct display
      signal for this virtual console.  */
   int owner_id;
 
+  /* The pending changes.  */
   struct changes changes;
 
+  /* The state of the virtual console.  */
+  /* The saved cursor position.  */
   struct cursor cursor;
+  /* The output queue and parser state.  */
   struct output output;
+  /* The current video attributes.  */
   struct attr attr;
+  /* Non-zero if we are in insert mode.  */
+  int insert_mode;
+  /* Scrolling region.  */
+  struct scrolling_region csr;
+
   struct cons_display *user;
 
   struct user_pager_info *upi;  
@@ -971,12 +988,16 @@ handle_esc_bracket_hl (display_t display, int code, int flag)
 {
   switch (code)
     {
+    case 4:		/* ECMA-48 <SMIR>, <RMIR>.  */
+      /* Insert mode: <smir>, <rmir>.  */
+      display->insert_mode = flag ? 1 : 0;
+      break;
     case 34:
       /* Cursor standout: <cnorm>, <cvvis>.  */
       if (flag)
-	display->user->cursor.status = CONS_CURSOR_VERY_VISIBLE;
-      else
 	display->user->cursor.status = CONS_CURSOR_NORMAL;
+      else
+	display->user->cursor.status = CONS_CURSOR_VERY_VISIBLE;
       /* XXX Flag cursor status change.  */
       break;
     }
@@ -1028,8 +1049,12 @@ handle_esc_bracket_m (attr_t attr, int code)
       /* Alternate character set mode on: <smacs>.  */
       attr->altchar = 1;
       break;
+    case 21:
+      /* Normal intensity (switch off bright).  */
+      attr->current.intensity = CONS_ATTR_INTENSITY_NORMAL;
+      break;
     case 22:
-      /* Normal intensity.  */
+      /* Normal intensity (switch off dim).  */
       attr->current.intensity = CONS_ATTR_INTENSITY_NORMAL;
       break;
     case 23:
@@ -1095,24 +1120,44 @@ linefeed (display_t display)
 {
   struct cons_display *user = display->user;
 
-  if (user->cursor.row < user->screen.height - 1)
+  if (display->csr.top == 0 && display->csr.bottom >= user->screen.height - 1)
     {
-      user->cursor.row++;
-      /* XXX Flag cursor update.  */
+      /* No scrolling region active, do the normal scrolling activity.  */
+      if (user->cursor.row < user->screen.height - 1)
+	{
+	  user->cursor.row++;
+	  /* XXX Flag cursor update.  */
+	}
+      else
+	{
+	  user->screen.cur_line++;
+
+	  screen_fill (display, 0, user->screen.height - 1,
+		       user->screen.width - 1, user->screen.height - 1,
+		       L' ', display->attr.current);
+	  if (user->screen.scr_lines <
+	      user->screen.lines - user->screen.height)
+	    user->screen.scr_lines++;
+	  /* XXX Flag current line change.  */
+	  /* XXX Possibly flag change of length of scroll back buffer.  */
+	}
     }
   else
     {
-      user->screen.cur_line++;
-
-      screen_fill (display, 0, user->screen.height - 1,
-		   user->screen.width - 1, user->screen.height - 1,
-		   L' ', display->attr.current);
-      if (user->screen.scr_lines <
-	  user->screen.lines - user->screen.height)
-	user->screen.scr_lines++;
-      /* XXX Flag current line change.  */
-      /* XXX Possibly flag change of length of scroll back buffer.  */
-    }
+      /* With an active scrolling region, never actually scroll.  Just
+	 shift the scrolling region if necessary.  */
+      if (user->cursor.row != display->csr.bottom
+	  && user->cursor.row < user->screen.height - 1)
+	{
+	  user->cursor.row++;
+	  /* XXX Flag cursor update.  */
+	}
+      else if (user->cursor.row == display->csr.bottom)
+	screen_shift_left (display, 0, display->csr.top,
+			   user->screen.width - 1, display->csr.bottom,
+			   user->screen.width,
+			   L' ', display->attr.current);
+    }       
 }
 
 static void
@@ -1192,12 +1237,12 @@ handle_esc_bracket (display_t display, char op)
       user->cursor.col -= (parse->params[0] ?: 1);
       limit_cursor (display);
       break;
-    case 'h':
+    case 'l':
       /* Reset mode.  */
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_hl (display, parse->params[i], 0);
       break;
-    case 'l':
+    case 'h':
       /* Set mode.  */
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_hl (display, parse->params[i], 1);
@@ -1280,6 +1325,25 @@ handle_esc_bracket (display_t display, char op)
 			 parse->params[0] ?: 1,
 			 L' ', display->attr.current);
       break;
+    case 'r':		/* VT100: Set scrolling region.  */
+      if (!parse->params[1])
+	{
+	  display->csr.top = 0;
+	  display->csr.bottom = user->screen.height - 1;
+	}
+      else
+	{
+	  if (parse->params[1] <= user->screen.height
+	      && parse->params[0] < parse->params[1])
+	    {
+	      display->csr.top = parse->params[0] ? parse->params[0] - 1 : 0;
+	      display->csr.bottom = parse->params[1] - 1;
+	      user->cursor.col = 0;
+	      user->cursor.row = 0;
+	      /* XXX Flag cursor change.  */
+	    }
+	}
+      break;
     case 'S':		/* ECMA-48 <SU>.  */
       /* Scroll up: <ind>, <indn>.  */
       screen_shift_left (display, 0, 0,
@@ -1296,10 +1360,16 @@ handle_esc_bracket (display_t display, char op)
       break;
     case 'X':		/* ECMA-48 <ECH>.  */
       /* Erase character(s): <ech>.  */
-      screen_fill (display, user->cursor.col, user->cursor.row,
-		   /* XXX limit ? */user->cursor.col + (parse->params[0] ?: 1),
-		   user->cursor.row,
-		   L' ', display->attr.current);
+      {
+	int col = user->cursor.col;
+	if (parse->params[0] - 1 > 0)
+	  col += parse->params[0] - 1;
+	if (col > user->screen.width - 1)
+	  col = user->screen.width - 1;
+
+	screen_fill (display, user->cursor.col, user->cursor.row,
+		     col, user->cursor.row, L' ', display->attr.current);
+      }
       break;
     case 'I':		/* ECMA-48 <CHT>.  */
       /* Horizontal tab.  */
@@ -1339,6 +1409,7 @@ handle_esc_bracket (display_t display, char op)
     }
 }
 
+
 static void
 handle_esc_bracket_question_hl (display_t display, int code, int flag)
 {
@@ -1347,9 +1418,9 @@ handle_esc_bracket_question_hl (display_t display, int code, int flag)
     case 25:
       /* Cursor invisibility: <civis>, <cnorm>.  */
       if (flag)
-	display->user->cursor.status = CONS_CURSOR_INVISIBLE;
-      else
 	display->user->cursor.status = CONS_CURSOR_NORMAL;
+      else
+	display->user->cursor.status = CONS_CURSOR_INVISIBLE;
       /* XXX Flag cursor status change.  */
       break;
     }
@@ -1364,18 +1435,57 @@ handle_esc_bracket_question (display_t display, char op)
   int i;
   switch (op)
     {
-    case 'h':
+    case 'l':
       /* Reset mode.  */
       for (i = 0; i < parse->nparams; ++i)
 	handle_esc_bracket_question_hl (display, parse->params[i], 0);
       break;
-    case 'l':
+    case 'h':
       /* Set mode.  */
       for (i = 0; i < parse->nparams; ++i)
 	handle_esc_bracket_question_hl (display, parse->params[i], 1);
       break;
     }
 }
+
+
+static void
+handle_esc_bracket_right_angle_hl (display_t display, int code, int flag)
+{
+  switch (code)
+    {
+    case 1:
+      /* Bold: <gsbom>, <grbom>.  This is a GNU extension.  */
+      if (flag)
+	display->attr.current.bold = 1;
+      else
+	display->attr.current.bold = 0;
+      break;
+    }
+}
+
+
+static void
+handle_esc_bracket_right_angle (display_t display, char op)
+{
+  parse_t parse = &display->output.parse;
+
+  int i;
+  switch (op)
+    {
+    case 'l':
+      /* Reset mode.  */
+      for (i = 0; i < parse->nparams; ++i)
+	handle_esc_bracket_right_angle_hl (display, parse->params[i], 0);
+      break;
+    case 'h':
+      /* Set mode.  */
+      for (i = 0; i < parse->nparams; ++i)
+	handle_esc_bracket_right_angle_hl (display, parse->params[i], 1);
+      break;
+    }
+}
+
 
 static wchar_t
 altchar_to_ucs4 (wchar_t chr)
@@ -1484,8 +1594,7 @@ display_output_one (display_t display, wchar_t chr)
 		user->cursor.col--;
 	      else
 		{
-		  /* XXX This implements the <bw> functionality.
-		     The alternative is to cut off and set col to 0.  */
+		  /* This implements the <bw> functionality.  */
 		  user->cursor.col = user->screen.width - 1;
 		  user->cursor.row--;
 		}
@@ -1511,6 +1620,15 @@ display_output_one (display_t display, wchar_t chr)
 	    int line = (user->screen.cur_line + user->cursor.row)
 	      % user->screen.lines;
 	    int idx = line * user->screen.width + user->cursor.col;
+
+	    if (display->insert_mode
+		&& user->cursor.col != user->screen.width - 1)
+	      {
+		/* If in insert mode, do the same as <ich1>.  */
+		screen_shift_right (display, user->cursor.col, user->cursor.row,
+				    user->screen.width - 1, user->cursor.row, 1,
+				    L' ', display->attr.current);
+	      }
 
 	    user->_matrix[idx].chr = display->attr.altchar
 	      ? altchar_to_ucs4 (chr) : chr;
@@ -1539,6 +1657,9 @@ display_output_one (display_t display, wchar_t chr)
 	  /* Reset: <rs2>.  */
 	  display->attr.current = display->attr.attr_def;
 	  display->attr.altchar = 0;
+	  display->insert_mode = 0;
+	  display->csr.top = 0;
+	  display->csr.bottom = user->screen.height - 1;
 	  user->cursor.status = CONS_CURSOR_NORMAL;
 	  /* Fall through.  */
 	case L'c':
@@ -1570,14 +1691,6 @@ display_output_one (display_t display, wchar_t chr)
 	  /* Visible bell.  */
 	  user->bell.visible++;
 	  break;
-	case L'Q':		/* ECMA-48 <PU1>.  */
-	  /* Bold on: <gsbom>.  This is a GNU extension.  */
-	  display->attr.current.bold = 1;
-	  break;
-	case L'R':		/* ECMA-48 <PU2>.  */
-	  /* Bold off: <grbom>.  This is a GNU extension.  */
-	  display->attr.current.bold = 0;
-	  break;
 	default:
 	  /* Unsupported escape sequence.  */
 	  break;
@@ -1592,11 +1705,17 @@ display_output_one (display_t display, wchar_t chr)
 	  parse->state = STATE_ESC_BRACKET_QUESTION;
 	  break;	/* Consume the question mark.  */
 	}
+      else if (chr == '>')
+	{
+	  parse->state = STATE_ESC_BRACKET_RIGHT_ANGLE;
+	  break;	/* Consume the right angle.  */
+	}
       else
 	parse->state = STATE_ESC_BRACKET;
       /* Fall through.  */
     case STATE_ESC_BRACKET:
     case STATE_ESC_BRACKET_QUESTION:
+    case STATE_ESC_BRACKET_RIGHT_ANGLE:
       if (chr >= '0' && chr <= '9')
 	parse->params[parse->nparams]
 	    = parse->params[parse->nparams]*10 + chr - '0';
@@ -1610,6 +1729,8 @@ display_output_one (display_t display, wchar_t chr)
 	  parse->nparams++;
 	  if (parse->state == STATE_ESC_BRACKET)
 	    handle_esc_bracket (display, chr);
+	  else if (parse->state == STATE_ESC_BRACKET_RIGHT_ANGLE)
+	    handle_esc_bracket_right_angle (display, chr);
 	  else
 	    handle_esc_bracket_question (display, chr);
 	  parse->state = STATE_NORMAL;
@@ -1738,6 +1859,8 @@ display_create (display_t *r_display, const char *encoding,
   mutex_init (&display->lock);
   display->attr.attr_def = def_attr;
   display->attr.current = display->attr.attr_def;
+  display->csr.bottom = height - 1;
+
   err = user_create (display, width, height, lines, L' ',
 		     display->attr.current);
   if (err)
@@ -1919,7 +2042,6 @@ display_output (display_t display, int nonblock, char *data, size_t datalen)
       errno = err;
       return err;
     }
-  /* XXX What should be done with invalid characters etc?  */
   if (buffer_size)
     {
       /* If we used the caller's buffer DATA, the remaining bytes

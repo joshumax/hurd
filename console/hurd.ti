@@ -19,6 +19,8 @@ hurd|The GNU Hurd console server,
 # Moving the cursor.
 # We have automatic margins.
 	am,
+# We wrap around the left edge.
+	bw,
 # Carriage return and newline.
 	cr=^M, nel=^M^J,
 # Move cursor to home position (to position P1, P2).
@@ -35,9 +37,8 @@ hurd|The GNU Hurd console server,
 	hpa=\E[%i%p1%dG, vpa=\E[%i%p1%dd,
 # Save (restore) cursor position.
 	sc=\E7, rc=\E8,
-# XXX When we support this.
 # Set the scrolling region to lines P1 to P2.
-# csr=\E[%i%p1%d;%p2%dr,
+	csr=\E[%i%p1%d;%p2%dr,
 
 # Modifying cursor attributes.
 # Make cursor invisible, very visible or normal.
@@ -66,13 +67,13 @@ hurd|The GNU Hurd console server,
 	el=\E[K, el1=\E[1K,
 
 # Insert one character (P1 characters).
-# XXX Don't give this when having insert mode.
-	ich1=\E[@, ich=\E[%p1%d@,
-# XXX When we implement insert mode (smir and rmir) (but don't set ich1 then):
+# <ich1> not included because we have insert mode.
+#	ich1=\E[@,
+	ich=\E[%p1%d@,
 # Enter (leave) insert mode.
-# smir=\E[4h, rmir=\E[4l,
+	smir=\E[4h, rmir=\E[4l,
 # It is save to move when in insert mode.	
-# mir,
+	mir,
 # Delete one character (P1 characters).
 	dch1=\E[P, dch=\E[%p1%dP,
 # Erase the next N characters.
@@ -94,6 +95,7 @@ hurd|The GNU Hurd console server,
 	bel=^G,
 # Flash the screen (visible bell).
 	flash=\Eg,
+
 
 # Keycodes for special keys.
 # Backspace key.
@@ -136,7 +138,8 @@ hurd|The GNU Hurd console server,
 # Video attributes colliding with color.
 # ORed: A_STANDOUT 1, A_UNDERLINE 2, A_REVERSE 4, A_BLINK 8, A_DIM 16,
 # A_BOLD 32, A_INVIS 64
-	ncv#18,
+# We do our own display optimization, depending on the display driver.
+#	ncv#18,
 # Set background (foreground) color.
 	setab=\E[4%p1%dm, setaf=\E[3%p1%dm,
 # Set default color pair to its original value.
@@ -157,7 +160,7 @@ hurd|The GNU Hurd console server,
 	sitm=\E[3m, ritm=\E[23m,
 # Enable (disable) real bold (not intensity bright) mode.  This is a
 # GNU extension.
-	gsbom=\EQ, grbom=\ER,
+	gsbom=\E[>1h, grbom=\E[>1l,
 # XXX Linux has those also for rmpch and smpch.
 # Enable (disable) alternative character set.
 	smacs=\E[11m, rmacs=\E[10m,
