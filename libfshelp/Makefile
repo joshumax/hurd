@@ -23,7 +23,8 @@ SRCS =	lock-acquire.c lock-init.c \
 	start-translator-long.c start-translator.c \
 	fetch-root.c transbox-init.c set-active.c fetch-control.c \
 	drop-transbox.c \
-	delegate.c
+	delegate.c \
+	exec-reauth.c
 LCLHDRS = fshelp.h locks.h
 installhdrs = fshelp.h
 
