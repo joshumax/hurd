@@ -246,7 +246,8 @@ pager_unlock_page (struct user_pager_info *pager,
 	  assert (lblkno (sblock, address) < NDADDR);
 	  diskfs_device_write_sync (fsbtodb (sblock, bno),
 				    zeroblock, sblock->fs_bsize);
-	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
+	  indirs[0].bno = bno;
+	  write_disk_entry (di->di_db[lblkno (sblock, address)], bno);
 	  record_poke (di, sizeof (struct dinode));
 	}
       else
@@ -266,7 +267,8 @@ pager_unlock_page (struct user_pager_info *pager,
 		  if (err)
 		    goto out;
 		  zero_disk_block (bno);
-		  indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
+		  indirs[1].bno = bno;
+		  write_disk_entry (di->di_ib[INDIR_SINGLE], bno);
 		  record_poke (di, sizeof (struct dinode));
 		}
 	      else
@@ -290,7 +292,8 @@ pager_unlock_page (struct user_pager_info *pager,
 		      if (err)
 			goto out;
 		      zero_disk_block (bno);
-		      indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
+		      indirs[2].bno = bno;
+		      write_disk_entry (di->di_ib[INDIR_DOUBLE], bno);
 		      record_poke (di, sizeof (struct dinode));
 		    }
 
@@ -306,7 +309,8 @@ pager_unlock_page (struct user_pager_info *pager,
 		  if (err)
 		    goto out;
 		  zero_disk_block (bno);
-		  indirs[1].bno = diblock[indirs[1].offset] = bno;
+		  indirs[1].bno = bno;
+		  write_disk_entry (diblock[indirs[1].offset], bno);
 		  record_poke (diblock, sblock->fs_bsize);
 		}
 	    }
@@ -326,7 +330,8 @@ pager_unlock_page (struct user_pager_info *pager,
 	  diskfs_device_write_sync (fsbtodb (sblock, bno),
 				    zeroblock, sblock->fs_bsize);
 
-	  indirs[0].bno = siblock[indirs[0].offset] = bno;
+	  indirs[0].bno = bno;
+	  write_disk_entry (siblock[indirs[0].offset], bno);
 	  record_poke (siblock, sblock->fs_bsize);
 	}
     }
