@@ -231,8 +231,19 @@ void ftpfs_dir_free (struct ftpfs_dir *dir);
 /* Refresh DIR.  */
 error_t ftpfs_dir_refresh (struct ftpfs_dir *dir);
 
-/* Lookup NAME in DIR, returning its entry, or an error.  */
+/* Lookup NAME in DIR, returning its entry, or an error.  DIR's node should
+   be locked, and will be unlocked after returning; *NODE will contain the
+   result node, locked, and with an additional reference, or 0 if an error
+   occurs.  */
 error_t ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 			  struct node **node);
+
+/* Lookup the null name in DIR, and return a node for it in NODE.  Unlike
+   ftpfs_dir_lookup, this won't attempt to validate the existance of the
+   entry (to avoid opening a new connection if possible) -- that will happen
+   the first time the entry is refreshed.  Also unlink ftpfs_dir_lookup, this
+   function doesn't expect DIR to be locked, and won't return *NODE locked.
+   This function is only used for bootstrapping the root node.  */
+error_t ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node);
 
 #endif /* __FTPFS_H__ */
