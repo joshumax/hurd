@@ -36,6 +36,8 @@ diskfs_S_file_chown (struct protid *cred,
 		       {
 			 err = diskfs_validate_owner_change (np, uid);
 			 if (!err)
+			   err = diskfs_validate_group_change (np, gid);
+			 if (!err)
 			   {
 			     np->dn_stat.st_uid = uid;
 			     np->dn_stat.st_gid = gid;
