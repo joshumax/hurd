@@ -1,6 +1,6 @@
 /* Show process information.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -44,7 +44,7 @@
 
 #define OA OPTION_ARG_OPTIONAL
 
-static struct argp_option options[] =
+static const struct argp_option options[] =
 {
   {"all-users",  'a',     0,      0,  "List other users' processes"},
   {"fmt",        OPT_FMT, "FMT",  0,  "Use the output-format FMT FMT may be"
@@ -157,7 +157,7 @@ char *fmts[] =
   /* vmem (-v) */
   "~PID ~TH# ~STAT ~SL ~PAGEIN ~FAULTS ~COWFLT ~ZFILLS ~SIZE ~RSS ~%CPU ~%MEM ~COMMAND",
   /* long (-l) */
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI ~TH ~MSGI ~MSGO ~SZ ~RSS ~SC ~RPC ~STAT ~TT ~TIME ~COMMAND",
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI ~TH ~MSGI ~MSGO ~SZ ~RSS ~SC ~WAIT ~STAT ~TT ~TIME ~COMMAND",
   /* jobc (-j) */
   "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC ~STAT ~TT ~TIME ~COMMAND",
   /* full (-f) (from sysv) */
@@ -176,7 +176,8 @@ spec_abbrevs[] = {
   {"MSGI=msgin"}, {"MSGO=msgout"},
   {0}
 };
-static struct ps_fmt_specs ps_specs = { spec_abbrevs, &ps_std_fmt_specs };
+static const struct ps_fmt_specs ps_specs =
+  { spec_abbrevs, &ps_std_fmt_specs };
 
 /* ---------------------------------------------------------------- */
 
@@ -195,7 +196,7 @@ _parse_strlist (char *arg,
     if (default_add_fn)
       (*default_add_fn)();
     else
-      error(7, 0, "No %s specified", type_name);
+      error(7, 0, "Empty %s list", type_name);
   else
     {
       char *end = arg;
@@ -270,12 +271,16 @@ parse_numlist (char *arg,
       for (p = str; *p != '\0'; p++)
 	if (!isdigit(*p))
 	  {
-	    (*add_fn)((*lookup_fn)(str));
+	    if (lookup_fn)
+	      (*add_fn)((*lookup_fn)(str));
+	    else
+	      error (7, 0, "%s: Invalid %s", p, type_name);
 	    return;
 	  }
       (*add_fn)(atoi(str));
     }
-  _parse_strlist(arg, add_num_str, default_num_add, type_name);
+  _parse_strlist(arg, add_num_str, default_fn ? default_num_add : 0,
+		 type_name);
 }
 
 /* ---------------------------------------------------------------- */
@@ -316,6 +321,13 @@ lookup_user(char *name)
 
 /* ---------------------------------------------------------------- */
 
+extern void
+psout (struct proc_stat_list *procs,
+       const char *fmt_string, const ps_fmt_specs_t specs,
+       const char *sort_key_name, int sort_reverse,
+       int output_width, int print_heading,
+       int squash_bogus_fields, int squash_nominal_fields);
+
 void 
 main(int argc, char *argv[])
 {
@@ -341,9 +353,19 @@ main(int argc, char *argv[])
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
     {
-      err = proc_stat_list_add_pid(procset, pid);
+      proc_stat_t ps;
+
+      err = proc_stat_list_add_pid (procset, pid, &ps);
       if (err)
-	error(3, err, "%d: Can't add process id", pid);
+	error (0, err, "%d: Can't add process", pid);
+
+      /* See if this process actually exists.  */
+      proc_stat_set_flags (ps, PSTAT_PROC_INFO);
+      if (! proc_stat_has (ps, PSTAT_PROC_INFO))
+	/* Give an error message; using ps_alive_filter below will delete the
+	   entry so it doesn't get output. */
+	error (0, 0, "%d: Unknown process", pid);
+
       /* If explicit processes are specified, we probably don't want to
 	 filter them out later.  This implicit turning off of filtering might
 	 be confusing in the case where a login-collection or session is
@@ -354,23 +376,23 @@ main(int argc, char *argv[])
   /* Print out all process from the given session.  */
   void add_sid(unsigned sid)
     {
-      err = proc_stat_list_add_session(procset, sid);
+      err = proc_stat_list_add_session (procset, sid, 0, 0);
       if (err)
-	error(2, err, "Couldn't add session");
+	error(2, err, "%u: Can't add session", sid);
     }
   /* Print out all process from the given login collection.  */
   void add_lid(unsigned lid)
     {
-      error_t err = proc_stat_list_add_login_coll(procset, lid);
+      error_t err = proc_stat_list_add_login_coll (procset, lid, 0, 0);
       if (err)
-	error(2, err, "Couldn't add login collection");
+	error(2, err, "%u: Can't add login collection", lid);
     }
   /* Print out all process from the given process group.  */
   void add_pgrp(unsigned pgrp)
     {
-      error_t err = proc_stat_list_add_pgrp(procset, pgrp);
+      error_t err = proc_stat_list_add_pgrp (procset, pgrp, 0, 0);
       if (err)
-	error(2, err, "Couldn't add process group");
+	error(2, err, "%u: Can't add process group", pgrp);
     }
     
   /* Add a user who's processes should be printed out.  */
@@ -378,14 +400,14 @@ main(int argc, char *argv[])
     {
       error_t err = idvec_add (only_uids, uid);
       if (err)
-	error (23, err, "Couldn't add uid");
+	error (23, err, "Can't add uid");
     }
   /* Add a user who's processes should not be printed out.  */
   void add_not_uid (uid_t uid)
     {
       error_t err = idvec_add (not_uids, uid);
       if (err)
-	error (23, err, "Couldn't add uid");
+	error (23, err, "Can't add uid");
     }
   /* Returns TRUE if PS is owned by any of the users in ONLY_UIDS, and none
      in NOT_UIDS.  */
@@ -450,7 +472,7 @@ main(int argc, char *argv[])
       switch (key)
 	{
 	case ARGP_KEY_ARG:			/* Non-option argument.  */
-	  if (!isdigit (*arg))
+	  if (!isdigit (*arg) && !state->quoted)
 	    /* Old-fashioned `ps' syntax takes options without the leading
 	       dash.  Prepend a dash and feed back to getopt.  */
 	    {
@@ -463,7 +485,7 @@ main(int argc, char *argv[])
 	    }
 	  /* Otherwise, fall through and treat the arg as a process id.  */
 	case 'p':
-	  parse_numlist(arg, add_pid, NULL, NULL, "PID");
+	  parse_numlist(arg, add_pid, NULL, NULL, "process id");
 	  break;
 
 	case 'a': filter_mask &= ~(FILTER_OWNER | FILTER_NOT_LEADER); break;
@@ -552,9 +574,9 @@ main(int argc, char *argv[])
 
   if (proc_stat_list_num_procs(procset) == 0)
     {
-      err = proc_stat_list_add_all(procset);
+      err = proc_stat_list_add_all (procset, 0, 0);
       if (err)
-	error(2, err, "Couldn't get process list");
+	error(2, err, "Can't get process list");
     }
 
   if (no_msg_port)
@@ -580,6 +602,8 @@ main(int argc, char *argv[])
 
   if (show_threads)
     proc_stat_list_add_threads(procset);
+
+  proc_stat_list_filter (procset, &ps_alive_filter, FALSE);
 
   psout (procset, fmt_string, &ps_specs, sort_key_name, sort_reverse,
 	 output_width, print_heading,
