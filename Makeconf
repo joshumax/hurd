@@ -251,9 +251,7 @@ $(addsuffix .prof,$(target)): %$(target-suffix).prof: $(BUGADDR)
 	$(CC) -pg $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
 		$(BUGADDR_REF) -static \
 		-o $@ \
-		'-Wl,-(' $(filter %.o,$^) \
-			$(patsubst %.a,%_p.a,$(filter-out %.o,$+)) \
-			$($*-LDLIBS) $(LDLIBS) \
+		'-Wl,-(' $^ $($*-LDLIBS) $(LDLIBS) \
 		'-Wl,-)'
 
 ifeq ($(makemode),library)
@@ -458,13 +456,13 @@ endif
 %.miguh_d: %.migu_d
 	sed -e 's/User\.c/_U\.h/' -e 's/migu_d/miguh_d/' < $< > $@
 
-%.prof_d: Makefile
+%.prof_d: $(srcdir)/Makefile
 	$(MAKE) $* prof-depend=t
 
 ifeq ($(prof-depend),t)
 $(target): %: FORCE
 	rm -f $@.prof_d
-	echo $@.prof: $(subst .o,_p.o,$(filter-out FORCE,$+)) > $@.prof_d
+	echo $@.prof: $(subst .so,_p.a,$(subst .o,_p.o,$(filter-out FORCE,$+))) > $@.prof_d
 endif
 
 define make-deps

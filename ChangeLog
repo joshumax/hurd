@@ -3,6 +3,13 @@
 	* usermux: New directory.
 	* Makefile (prog-subdirs): Add usermux.
 
+Mon Jul 21 16:18:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (linking .prof executable): Don't mutate library names
+	here. 
+	(making %.prof_d special target): Mutate library names here.
+	(%.prof_d): Depend on Makefile in srcdir.
+
 Fri Jul 18 16:37:22 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* isofs: New directory.

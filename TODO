@@ -33,6 +33,9 @@ See `tasks', the exported task list.
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 
+* Release/config
+** Have floppy nsswitch.conf use default feature when glibc 2.1 is in use.
+
 * Libraries
 
 ** general:
@@ -267,9 +270,3 @@ deeming
   happens only when execvp fails.  -thomas
 ???
 
-List for version 0.2 binary release
-
-* Have term do scancodes, at least kludgily.
-* nfsd?
-* recompile libraries after libc release
-* Change all copyright notices to say "GNU Hurd" instead of "This program".
