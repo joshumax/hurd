@@ -62,7 +62,8 @@ ifneq (.,$(dir))
 INCLUDES += -I.. $(top_srcdirinc)
 endif
 INCLUDES += -I$(..)include -I$(top_srcdir)/include
-CPPFLAGS += $(INCLUDES) -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
+CPPFLAGS += -std=gnu99 $(INCLUDES) \
+	     -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
 CFLAGS += -Wall -g -O3
 
