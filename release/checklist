@@ -11,6 +11,7 @@ Order for building binary distribution:
 *   Build/install libc again.
 *   Build/install everything else.
 
+See `release-steps' for Hurd source release steps.
 
 Checklist for binary image filesystems
 

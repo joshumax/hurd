@@ -2,7 +2,7 @@
 
 This is the Hurd.  Welcome.
 
-This is the complete GNU system, version 0.0.  
+This is the complete GNU system, version 0.2.  
 
 This directory contains i386 binaries for the Hurd and various
 programs built to run under it.  
@@ -31,9 +31,6 @@ request to `bug-hurd-request@prep.ai.mit.edu' or
 In addition, bug reports or requests for help in using the system as a
 connected whole (as opposed to for particular programs) should be sent
 to the hurd mailing lists.
-
-If any of these mailing address should fail, send your message to
-`tower@gnu.ai.mit.edu' and ask him to forward it properly.
 
 The GNU system is free software.  See the files /share/misc/COPYING
 and /share/misc/COPYING.LIB.

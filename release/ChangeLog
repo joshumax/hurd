@@ -1,3 +1,9 @@
+Mon Jun  9 12:18:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dist-README: Update version number.
+	* INSTALL-binary: Likewise.  Also added some instructions to help
+	Linux users.
+
 Mon May 26 23:03:41 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* checklist: Add su, addauth, setauth, ids, & vminfo to list of

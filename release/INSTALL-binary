@@ -1,6 +1,6 @@
 -*- Text -*-
 Instructions for bootstrapping the Hurd from binary images (i386).
-GNU Version 0.0
+GNU Version 0.2
 
 
 This is the Hurd.  Welcome.
@@ -15,10 +15,9 @@ Library General Public when distributing this binary snapshot.  See
 licenses. 
 
 If you have noticed that these steps are rather long and a bit too
-complex, you are right.  But we didn't want to delay the release just
-in order to make the installation prettier.  You can rest assured,
-however: Making it prettier and easier is one of our more important
-priorities. 
+complex, you are right.  One of our upcoming tasks is to develop a
+convenient package mechanism and more streamlined installation
+procedure. 
 
 Bug reports for programs in this distribution should be sent to the
 maintainer of the program.  For a complete list of which mailing lists
@@ -35,9 +34,6 @@ request to `bug-hurd-request@prep.ai.mit.edu' or
 In addition, bug reports or requests for help in using the system as a
 connected whole (as opposed to for particular programs) should be sent
 to the hurd mailing lists.
-
-If any of these mailing address should fail, send your message to
-`tower@gnu.ai.mit.edu' and ask him to forward it properly.
 
 
 
@@ -66,15 +62,25 @@ Start with a system already running BSD:
   entire Hurd image into it.  Make sure you do this as root, and
   remember to give tar the `p' option.
   
-If you do not have a system running BSD, you can install using the
-NetBSD boot floppies:
+Start with a system already running a GNU/Linux system:
+
+  Again, we suggest using a fresh disk.  But you can also use an
+  existing partition.  Make it big enough to hold the entire Hurd
+  binary image, and then some.  Make sure you have a partition for
+  swap too.  Extract the binary image onto the new partition using
+  tar; make sure you sue the `p' option to tar.   
+
+If you do not have a system running BSD or a GNU/Linux system, you can
+install using the NetBSD boot floppies.  To do this, you do NOT need
+to install NetBSD; you will just be using their boot floppies
+briefly. 
 
   Unpack the entire Hurd image somewhere accessible by NFS.  Then see
   the instruction subroutine in this file labelled `Installing from
   NetBSD boot floppies' and follow them.
 
-We plan to have our own boot floppies soon, which will make this all a
-fair bit easier.
+We plan to have our own boot floppies, which will make this all a fair
+bit easier.
 
 
 
@@ -90,6 +96,11 @@ the line which looks like:
 name (this is a mach partition name), or comment out the line if you
 don't want paging.  Note that you don't have to do anything to
 initialize swap partitions, unlike Linux.  
+
+If your filesystem is an ext2fs filesystem (if you are starting with a
+system already running a GNU/Linux system, for example), then you also
+should change the reference to /hurd/ufs.static into a reference to
+/hurd/ext2fs.static.  
 
 (If you did STEP I using NetBSD boot floppies, then this file should
 be /mnt/boot/servers.boot.)
