@@ -18,6 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <hurd/netfs.h>
+#include <string.h>
+
+#include "nfs.h"
+
 static spin_lock_t cred_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
 void
@@ -25,13 +30,13 @@ netfs_interpret_credential (struct netcred *cred, uid_t **uids,
 			    int *nuids, uid_t **gids, int *ngids)
 {
   /* Who says C isn't APL? */
-  bcopy (cred->uids, *uids = malloc ((*nuids = cred->nuids) * sizeof (uid_t))
+  bcopy (cred->uids, *uids = malloc ((*nuids = cred->nuids) * sizeof (uid_t)),
 	 cred->nuids * sizeof (uid_t));
-  bcopy (cred->gids, *gids = malloc ((*ngids = cred->ngids) * sizeof (uid_t))
+  bcopy (cred->gids, *gids = malloc ((*ngids = cred->ngids) * sizeof (uid_t)),
 	 cred->ngids * sizeof (uid_t));
 }
 
-struct credential *
+struct netcred *
 netfs_copy_credential (struct netcred *cred)
 {
   spin_lock (&cred_refcnt_lock);
@@ -59,14 +64,14 @@ struct netcred *
 netfs_make_credential (uid_t *uids, 
 		       int nuids, 
 		       uid_t *gids,
-		       int nuids)
+		       int ngids)
 {
   struct netcred *cred;
   
   cred = malloc (sizeof (struct netcred)
 		 + nuids * sizeof (uid_t)
 		 + ngids * sizeof (uid_t));
-  cred->uids = (void *) cred + sizeof (struct cred);
+  cred->uids = (void *) cred + sizeof (struct netcred);
   cred->gids = (void *) cred->uids + nuids * sizeof (uid_t);
   cred->nuids = nuids;
   cred->ngids = ngids;
