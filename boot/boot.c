@@ -234,7 +234,7 @@ main (int argc, char **argv, char **envp)
   vm_address_t startpc;
   char msg[] = "Boot is here.\n";
   char c;
-/*   struct sigvec vec = {read_reply, 0, 0}; */
+  struct sigvec vec = {read_reply, 0, 0};
 
   write (1, msg, sizeof msg);
 
@@ -288,9 +288,9 @@ main (int argc, char **argv, char **envp)
 
   foo = 1;
   ioctl (0, FIOASYNC, &foo);
-/*  sigvec (SIGIO, &vec, 0);
+  sigvec (SIGIO, &vec, 0);
   sigvec (SIGMSG, &vec, 0);
-  sigvec (SIGEMSG, &vec, 0); */
+  sigvec (SIGEMSG, &vec, 0);
   
   thread_create (newtask, &newthread);
   __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
