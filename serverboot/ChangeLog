@@ -1,3 +1,18 @@
+1999-05-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (new_partition): Fix SWAP-SPACE page handling.
+
+1999-05-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (new_partition): Deallocate signature page when
+	rejecting it for wrong version.  Fix typo in SWAPSPACE2 v1 bad block
+	bitmap handling.  Free bitmap and partition structure if we reject the
+	partition signature.
+	Reported by Kalle Olavi Niemitalo <tosi@ees2.oulu.fi>.
+
+	* default_pager.c (new_partition): Print out for
+	CHECK_LINUX_SIGNATURE<0 case.
+
 1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* default_pager.c (new_partition): Check if requested partition is
