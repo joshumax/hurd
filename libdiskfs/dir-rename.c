@@ -28,7 +28,8 @@ kern_return_t
 diskfs_S_dir_rename (struct protid *fromcred,
 		     char *fromname,
 		     struct protid *tocred,
-		     char *toname)
+		     char *toname,
+		     int excl)
 {
   struct node *fdp, *tdp, *fnp, *tnp, *tmpnp;
   error_t err;
@@ -99,6 +100,11 @@ diskfs_S_dir_rename (struct protid *fromcred,
   mutex_lock (&tdp->lock);
   
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
+  if (!err && excl)
+    {
+      err = EEXIST;
+      diskfs_nput (tnp);
+    }
   if (err && err != ENOENT)
     {
       diskfs_drop_dirstat (tdp, ds);
