@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -71,17 +71,19 @@ diskfs_S_file_set_translator (struct protid *cred,
       return EBUSY;
     }
   
-  /* Kill existing active translator */
-  if (np->translator.control != MACH_PORT_NULL)
-    diskfs_destroy_translator (np, killtrans_flags);
-
   if (active_flags & FS_TRANS_SET)
     {
+      if (np->translator.control != MACH_PORT_NULL
+	  && np->translator.control != active)
+	diskfs_destroy_translator (np, killtrans_flags);
+      
       if (active != MACH_PORT_NULL)
-	fshelp_set_control (&np->translator, active);
-      else
-	/* Should have been cleared above. */
-	assert (np->translator.control == MACH_PORT_NULL);
+	{
+	  if (active == np->translator.control)
+	    mach_port_deallocate (mach_task_self (), active);
+	  else
+	    fshelp_set_control (&np->translator, active);
+	}
     }
 
   mutex_unlock (&np->translator.lock);
