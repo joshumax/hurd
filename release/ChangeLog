@@ -1,4 +1,16 @@
+1997-06-25  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfsimage.sh: Correct parsing of delayed translator specs.
+
 1997-06-24  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfsimage.sh: Set the owner of created files.  Add --owner option.
+	Rename `settrans' copy-op to `copytrans', & implement `settrans'.
+	* rfloppy.copy: Add bin/fsysopts, bin/devprobe, bin/vmstat.
+	Explicitly specify a translator for servers/socket/1.
+	* Makefile (bfloppy.ext2, rfloppy.ext2.gz): Set owner to root.wheel.
+	Use $(bfloppy-src) as the source, rather than /.
+	(bfloppy-src): New variable.
 
 	* mkfsimage.sh: New file.
 	* bfloppy.copy, rfloppy.copy, bfloppy-special.copy: New files.
