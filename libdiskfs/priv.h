@@ -36,7 +36,7 @@ extern int _diskfs_nosuid, _diskfs_noexec;
 extern int _diskfs_noatime;
 
 /* This is the -C argument value.  */
-extern const char *_diskfs_chroot_directory;
+extern char *_diskfs_chroot_directory;
 
 /* If --boot-command is given, this points to the program and args.  */
 extern char **_diskfs_boot_command;

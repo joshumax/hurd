@@ -27,7 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/fsys.h>
 #include <hurd/startup.h>
 
-const char *_diskfs_chroot_directory;
+char *_diskfs_chroot_directory;
 
 mach_port_t
 diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
