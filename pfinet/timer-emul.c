@@ -67,8 +67,8 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 	  tp = timers;
 
 	  timers = timers->next;
-	  if (timers->next)
-	    timers->next->prevp = &timers;
+	  if (timers)
+	    timers->prevp = &timers;
 	  
 	  tp->next = 0;
 	  tp->prevp = 0;
@@ -108,10 +108,13 @@ add_timer (struct timer_list *timer)
 	 to push things up. */
       while (timer_thread == 0)
 	swtch_pri (0);
-	  
-      thread_suspend (timer_thread);
-      thread_abort (timer_thread);
-      thread_resume (timer_thread);
+
+      if (timer_thread != mach_thread_self ())
+	{
+	  thread_suspend (timer_thread);
+	  thread_abort (timer_thread);
+	  thread_resume (timer_thread);
+	}
     }
 }
 
@@ -157,7 +160,7 @@ init_time ()
   fill_timeval (&tp);
   
   root_jiffies = (long long) tp.tv_sec * HZ 
-    + (long long) tp.tv_usec * HZ / 1000.0;
+    + ((long long) tp.tv_usec * HZ) / 1000;
 
   cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
 }
