@@ -297,7 +297,7 @@ load_section (enum section section, struct execdata *u)
 	  else
 #endif
 #if	1
-	    if (fread (readaddr, readsize, 1, u->stream) != 1)
+	    if (fread (readaddr, readsize, 1, &u->stream) != 1)
 	      {
 		u->error = errno;
 		goto maplose;
@@ -480,7 +480,8 @@ input_room (FILE *f)
   const size_t size = e->file_size;
 
   if (f->__buffer != NULL)
-    vm_deallocate (mach_task_self (), f->__buffer, f->__bufsize);
+    vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
+		   f->__bufsize);
 
   if (f->__target > size)
     {
@@ -495,7 +496,7 @@ input_room (FILE *f)
 	      VM_INHERIT_NONE))
     {
       errno = EIO;
-      f.__error = 1;
+      f->__error = 1;
       return EOF;
     }
   f->__bufsize = vm_page_size;
@@ -519,7 +520,8 @@ close_exec_stream (void *cookie)
   struct execdata *e = cookie;
 
   if (e->stream.__buffer != NULL)
-    vm_deallocate (e->stream.__buffer, e->stream.__bufsize);
+    vm_deallocate (mach_task_self (), (vm_address_t) e->stream.__buffer,
+		   e->stream.__bufsize);
 
   return 0;
 }
@@ -606,7 +608,7 @@ check (file_t file, struct execdata *e)
   e->stream.__mode.__read = 1;
   e->stream.__userbuf = 1;
   e->stream.__room_funcs.__input = input_room;
-  e->stream.__io_funcs.__close = close_exec_stream;
+  e->stream.__io_funcs.close = close_exec_stream;
   e->stream.__cookie = e;
 
 #ifdef	BFD
@@ -1045,8 +1047,10 @@ do_exec (mach_port_t execserver,
      below it. */
   if ((secure || defaults)
       && boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
-    /* XXX doesn't this let anyone run a program and make it
-       get a root auth port? */
+    /* Q: Doesn't this let anyone run a program and make it
+       get a root auth port? 
+       A: No; the standard port for INIT_PORT_AUTH has no UID's at all.
+       See init.trim/init.c (init_stdarrays).  */
     set_init_port (std_ports[INIT_PORT_AUTH], 
 		   &boot->portarray[INIT_PORT_AUTH], 0, 0);
   if (secure || (defaults 
@@ -1057,6 +1061,8 @@ do_exec (mach_port_t execserver,
 	goto bootout;
 
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
+
+      /* XXX We should also call proc_setowner at this point. */
     }
   else if (oldtask != newtask && oldtask != MACH_PORT_NULL 
 	   && nports > INIT_PORT_PROC
