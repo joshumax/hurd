@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <assert.h>
 
 #include "proc.h"
 #include "proc_S.h"
@@ -371,6 +372,81 @@ S_proc_getprocinfo (struct proc *callerp,
     vm_deallocate (mach_task_self (), (u_int) piarray, structsize);
 
   return err;
+}
+
+/* Implement proc_make_login_coll as described in <hurd/process.defs>. */
+error_t
+S_proc_make_login_coll (struct proc *p)
+{
+  p->p_loginleader = 1;
+  return 0;
+}
+
+/* Implement proc_getloginid as described in <hurd/process.defs>. */
+error_t
+S_proc_getloginid (struct proc *callerp,
+		   pid_t pid,
+		   pid_t *leader)
+{
+  struct proc *proc = pid_find (pid);
+  struct proc *p;
+
+  if (!proc)
+    return ESRCH;
+
+  for (p = proc; !p->p_loginleader; p = p->p_parent)
+    assert (p);
+
+  *leader = p->p_pid;
+  return 0;
+}
+
+/* Implement proc_getloginpids as described in <hurd/process.defs>. */
+error_t
+S_proc_getloginpids (struct proc *callerp,
+		     pid_t id,
+		     pid_t **pids,
+		     u_int *npids)
+{
+  struct proc *l = pid_find (id);
+  struct proc *p;
+  struct proc **tail, **new, **parray;
+  int parraysize;
+  int i;
+  
+  if (!l || !l->p_loginleader)
+    return ESRCH;
+  
+  /* Simple breadth first search of the children of L. */
+  parraysize = 50;
+  parray = malloc (sizeof (struct proc *) * parraysize);
+  parray[0] = l;
+  for (tail = parray, new = &parray[1]; tail != new; tail++)
+    {
+      for (p = (*tail)->p_ochild; p; p = p->p_sib)
+	if (!p->p_loginleader)
+	  {
+	    /* Add P to the list at NEW */
+	    if (new - parray > parraysize)
+	      {
+		struct proc **newparray;
+		newparray = realloc (parray, parraysize *= 2);
+		tail = newparray + (tail - parray);
+		new = newparray + (new - parray);
+		parray = newparray;
+	      }
+	    *new++ = p;
+	  }
+    }
+
+  if (*npids < new - parray)
+    vm_allocate (mach_task_self (), (vm_address_t *) pids,
+		 (new - parray) * sizeof (pid_t), 1);
+  *npids = new - parray;
+  for (i = 0; i < *npids; i++)
+    (*pids)[i] = parray[i]->p_pid;
+  free (parray);
+  return 0;
 }
 
 /* Implement proc_setlogin as described in <hurd/proc.defs>. */
