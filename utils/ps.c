@@ -52,7 +52,7 @@ static struct argp_option options[] =
 				      " or a custom format-string"},
   {0,            'd',     0,      0,  "List all processes except process group"
                                       " leaders"},
-  {"all",        'a',     0,      0,  "List all processes"},
+  {"all",        'e',     0,      0,  "List all processes"},
   {0,            'f',     0,      0,  "Use the `full' output-format"},
   {0,            'g',     0,      0,  "Include session leaders"},
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
