@@ -1,3 +1,7 @@
+1997-09-04  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys.defs: Add INTR_INTERFACE.
+
 Thu Feb 13 19:21:03 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fs.defs (file_reparent): Renamed from dir_reparent.

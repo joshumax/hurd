@@ -1,3 +1,15 @@
+1997-08-27  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mux.c (netfs_attempt_lookup): Clear *NODE on errors.
+
+1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hostmux.c (main): If the underlying node isn't a directory,
+	propagate read permission to execute permission.
+
+	* mux.c (netfs_attempt_lookup): Check for lookup permission.
+	Re-arrange code to correctly handle errors.
+
 1997-08-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* stubs.c (netfs_attempt_mkfile): Correctly implement the interface.
