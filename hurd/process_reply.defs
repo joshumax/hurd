@@ -39,7 +39,7 @@ skip; /* child */
 
 simpleroutine proc_setmsgport_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RetCode;
+	errorcode: kern_return_t, RETCODE;
 	in oldmsgport: mach_port_t);
 
 skip; /* reassign */
@@ -50,12 +50,12 @@ skip; /* get_arg_locations */
 
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RetCode;
+	errorcode: kern_return_t, RETCODE;
 	in msgports: mach_port_t);
 
 simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RetCode;
+	errorcode: kern_return_t, RETCODE;
 	in status: int;
 	in sigcode: int;
 	in rusage: rusage_t;
