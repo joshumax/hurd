@@ -47,7 +47,7 @@ pager_read_page (struct user_pager_info *upi,
     /* Read a partial page if necessary to avoid reading off the end.  */
     want = store->size - page;
 
-  err = dev_read (dev, page, want, (char **)buf, &read);
+  err = dev_read (dev, page, want, (void **)buf, &read);
 
   if (!err && want < vm_page_size)
     /* Zero anything we didn't read.  Allocation only happens in page-size
