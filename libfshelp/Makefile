@@ -18,17 +18,15 @@
 dir := libfshelp
 makemode := library
 
+libname = libfshelp
 SRCS =	lock-acquire.c lock-init.c \
 	start-translator-long.c start-translator.c \
-	fetch-root.c transbox-init.c set-active.c fetch-control.c drop-transbox.c
+	fetch-root.c transbox-init.c set-active.c fetch-control.c \
+	drop-transbox.c \
+	delegate.c
+LCLHDRS = fshelp.h locks.h
+installhdrs = fshelp.h
 
 OBJS = $(subst .c,.o,$(SRCS))
 
-LCLHDRS = fshelp.h locks.h
-REMHDRS = ../hurd/ports.h
-libname = libfshelp
-installhdrs = fshelp.h
-
 include ../Makeconf
-
-
