@@ -81,7 +81,7 @@ run (char **argv, int fd0, int fd1)
       memcpy (&program[sizeof bin - 1], argv[0], len + 1);
     }
 
-  file = path_lookup (program, O_EXEC, 0);
+  file = file_name_lookup (program, O_EXEC, 0);
   if (file == MACH_PORT_NULL)
     {
       perror (program);

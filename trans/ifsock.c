@@ -82,7 +82,7 @@ main (int argc, char **argv)
 
   /* Try and connect to the pflocal server */
   sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
-  pflocal = path_lookup (buf, 0, 0);
+  pflocal = file_name_lookup (buf, 0, 0);
 
   if (pflocal == MACH_PORT_NULL)
     address_port = MACH_PORT_NULL;
