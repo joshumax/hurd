@@ -20,8 +20,9 @@
 
 #include <sys/socket.h>
 
+#include <hurd/pipe.h>
+
 #include "sock.h"
-#include "pipe.h"
 
 #include "socket_S.h"
 
