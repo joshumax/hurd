@@ -224,8 +224,10 @@ load_section (void *section, struct execdata *u)
 	  if (! u->error && off != 0)
 	    {
 	      vm_address_t page = 0;
-	      u->error = vm_allocate (mach_task_self (),
-				      &page, vm_page_size, 1);
+	      page = (vm_address_t) mmap (0, vm_page_size, 
+					  PROT_READ|PROT_WRITE, MAP_ANON,
+					  0, 0);
+	      u->error = (page == -1) ? errno : 0;
 	      if (! u->error)
 		{
 		  memcpy ((void *) page,
@@ -268,8 +270,8 @@ load_section (void *section, struct execdata *u)
 		 it into the task.  */
 	      void *buf;
 	      const vm_size_t size = filesz - (mapstart - addr);
-	      u->error = vm_allocate (mach_task_self (),
-				      (vm_address_t *) &buf, size, 1);
+	      buf = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	      u->error = (buf == (caddr_t) -1) ? errno : 0;
 	      if (! u->error)
 		{
 		  if (fseek (&u->stream,
@@ -318,8 +320,11 @@ load_section (void *section, struct execdata *u)
 					  &overlap_page, vm_page_size, 0);
 		  size = vm_page_size;
 		  if (!u->error)
-		    u->error = vm_allocate (mach_task_self (),
-					    &ourpage, vm_page_size, 1);
+		    {
+		      ourpage = (vm_address_t) mmap (0, vm_page_size,
+						     PROT_READ|PROT_WRITE,
+						     MAP_ANON, 0, 0);
+		      u->error = (ourpage == -1) ? errno : 0;
 		}
 	      if (u->error)
 		{
@@ -1141,10 +1146,9 @@ servercopy (void **arg, mach_msg_type_number_t argsize, boolean_t argcopy)
       /* ARG came in-line, so we must copy it.  */
       error_t error;
       void *copy;
-      error = vm_allocate (mach_task_self (),
-			   (vm_address_t *) &copy, argsize, 1);
-      if (error)
-	return error;
+      copy = mmap (0, argsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (copy == (void *) -1)
+	return errno;
       bcopy (*arg, copy, argsize);
       *arg = copy;
     }
@@ -1388,10 +1392,8 @@ do_exec (file_t file,
 			      round_page (INIT_INT_MAX * sizeof (int))))
 	  {
 	    /* Allocate a new vector that is big enough.  */
-	    vm_allocate (mach_task_self (),
-			 (vm_address_t *) &boot->intarray,
-			 INIT_INT_MAX * sizeof (int),
-			 1);
+	    boot->intarray = mmap (0, INIT_INT_MAX * sizeof (int),
+				   PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	    memcpy (boot->intarray, intarray, nints * sizeof (int));
 	    intarray_dealloc = !intarray_copy;
 	  }
@@ -1415,9 +1417,8 @@ do_exec (file_t file,
     /* Now choose the ports to give the new program.  */
 
     boot->nports = nports < INIT_PORT_MAX ? INIT_PORT_MAX : nports;
-    vm_allocate (mach_task_self (),
-		 (vm_address_t *) &boot->portarray,
-		 boot->nports * sizeof (mach_port_t), 1);
+    boot->portarray = mmap (0, boot->nports * sizeof (mach_port_t),
+			    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
     /* Start by copying the array as passed.  */
     for (i = 0; i < nports; ++i)
       boot->portarray[i] = portarray[i];

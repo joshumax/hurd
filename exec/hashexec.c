@@ -318,11 +318,15 @@ check_hashbang (struct execdata *e,
 	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */
 	    + interp_len + len + namelen; /* New args */
 
-	  e->error = vm_allocate (mach_task_self (),
-				  (vm_address_t *) &new_argv,
-				  new_argvlen, 1);
-	  if (e->error)
-	    return e->error;
+	  new_argv = mmap (0, new_argvlen, PROT_READ|PROT_WRITE, 
+			   MAP_ANON, 0, 0);
+	  if (new_argv == (caddr_t) -1)
+	    {
+	      e->error = errno;
+	      return e->error;
+	    }
+	  else
+	    e->error = 0;
 
 	  if (! setjmp (args_faulted))
 	    {
