@@ -52,6 +52,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= O_HURD;
 
+  rwlock_reader_lock (&diskfs_fsys_lock);
   mutex_lock (&diskfs_root_node->lock);
     
   /* This code is similar (but not the same as) the code in
@@ -69,15 +70,13 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 				 gids, ngids, flags, 
 				 _diskfs_translator_callback,
 				 retry, retryname, returned_port);
-      if (error && error != ENOENT)
+      if (error != ENOENT)
 	{
 	  mutex_unlock (&diskfs_root_node->lock);
+	  rwlock_reader_unlock (&diskfs_fsys_lock);
+	  if (!error)
+	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  return error;
-	}
-      if (!error)
-	{
-	  *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-	  return 0;
 	}
       
       /* ENOENT means the translator was removed in the interim. */
@@ -99,6 +98,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       pathbuf[amt] = '\0';
 
       mutex_unlock (&diskfs_root_node->lock);
+      rwlock_reader_unlock (&diskfs_fsys_lock);
       if (error)
 	return error;
       
@@ -151,6 +151,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   if (error)
     {
       mutex_unlock (&diskfs_root_node->lock);
+      rwlock_reader_unlock (&diskfs_fsys_lock);
       return error;
     }
   
@@ -170,6 +171,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   ports_port_deref (newpi);
   
   mutex_unlock (&diskfs_root_node->lock);
+  rwlock_reader_unlock (&diskfs_fsys_lock);
 
   ports_port_deref (pt);
 
