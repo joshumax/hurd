@@ -54,6 +54,9 @@ VERSIONING = @VERSIONING@
 # If a separate libcrypt is available, use it.
 LIBCRYPT = @LIBCRYPT@
 
+# How to link against Parted libraries, if at all.
+PARTED_LIBS = @PARTED_LIBS@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
