@@ -41,13 +41,13 @@ routine file_exec (
 	RPT
 	exec_task: task_t;
 	flags: int;
-	argv: data_t;
-	envp: data_t;
-	fdarray: portarray_t;
-	portarray: portarray_t;
-	intarray: intarray_t;
-	deallocnames: mach_port_name_array_t;
-	destroynames: mach_port_name_array_t);
+	argv: data_t SCP;
+	envp: data_t SCP;
+	fdarray: portarray_t SCP;
+	portarray: portarray_t SCP;
+	intarray: intarray_t SCP;
+	deallocnames: mach_port_name_array_t SCP;
+	destroynames: mach_port_name_array_t SCP);
 
 /* Change owner and/or group */
 routine file_chown (
@@ -313,7 +313,7 @@ routine file_set_translator (
 	passive_flags: int;
 	active_flags: int;
 	oldtrans_flags: int;
-	passive: data_t;
+	passive: data_t SCP;
 	active: mach_port_send_t);
 
 /* Return the stored permanent translator for this file.  */
