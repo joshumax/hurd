@@ -31,6 +31,7 @@
 #define REPLY_OK	200	/* Command OK */
 #define REPLY_SYSTYPE	215	/* NAME version */
 #define REPLY_HELLO	220	/* Service ready for new user */
+#define REPLY_ABORT_OK	225	/* ABOR command successful */
 #define REPLY_TRANS_OK	226	/* Closing data connection; requested file
 				   action successful */
 #define REPLY_PASV_OK	227	/* Entering passive mode */
