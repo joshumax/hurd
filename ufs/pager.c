@@ -1,5 +1,5 @@
 /* Pager for ufs
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -166,7 +166,8 @@ pager_read_page (struct user_pager_info *pager,
   if (addr)
     {
       size_t read = 0;
-      err = store_read (store, addr, disksize, (void **)buf, &read);
+      err = store_read (store, addr << log2_dev_blocks_per_dev_bsize,
+			disksize, (void **)buf, &read);
       if (read != disksize)
 	err = EIO;
       if (!err && disksize != __vm_page_size)
@@ -208,7 +209,8 @@ pager_write_page (struct user_pager_info *pager,
   if (addr)
     {
       size_t wrote;
-      err = store_write (store, addr, (void *)buf, disksize, &wrote);
+      err = store_write (store, addr << log2_dev_blocks_per_dev_bsize,
+			 (void *)buf, disksize, &wrote);
       if (wrote != disksize)
 	err = EIO;
     }
@@ -310,7 +312,9 @@ pager_unlock_page (struct user_pager_info *pager,
 	    goto out;
 
 	  assert (lblkno (sblock, address) < NDADDR);
-	  err = store_write (store, fsbtodb (sblock, bno),
+	  err = store_write (store,
+			     fsbtodb (sblock, bno)
+			       << log2_dev_blocks_per_dev_bsize,
 			     zeroblock, sblock->fs_bsize, &wrote);
 	  if (!err && wrote != sblock->fs_bsize)
 	    err = EIO;
@@ -398,7 +402,9 @@ pager_unlock_page (struct user_pager_info *pager,
 	  if (err)
 	    goto out;
 
-	  err = store_write (store, fsbtodb (sblock, bno),
+	  err = store_write (store,
+			     fsbtodb (sblock, bno)
+			       << log2_dev_blocks_per_dev_bsize,
 			     zeroblock, sblock->fs_bsize, &wrote);
 	  if (!err && wrote != sblock->fs_bsize)
 	    err = EIO;
