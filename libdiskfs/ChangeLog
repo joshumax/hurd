@@ -1,3 +1,10 @@
+2000-12-26  Roland McGrath  <roland@frob.com>
+
+	* file-statfs.c (diskfs_S_file_statfs): Zero out the struct statfs
+	before calling diskfs_set_statfs.  Set f_namelen to diskfs_name_max
+	after the call.
+	* diskfs.h: Update comment.
+
 2000-12-02  Roland McGrath  <roland@frob.com>
 
 	* node-times.c (diskfs_set_node_times): Make individual flag checks
