@@ -4,3 +4,5 @@
 #define FILE_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
 
 #define EXEC_IMPORTS import "priv.h";
+
+#define SERVERCOPY 1
