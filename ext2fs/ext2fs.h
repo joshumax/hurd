@@ -1,6 +1,6 @@
 /* Common definitions for the ext2 filesystem translator
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -27,6 +27,7 @@
 #include <hurd/diskfs.h>
 #include <assert.h>
 #include <rwlock.h>
+#include <sys/mman.h>
 
 #define __hurd__		/* Enable some hurd-specific fields.  */
 
