@@ -161,11 +161,10 @@ check_hashbang (struct execdata *e,
 	arg = NULL;
       else
 	{
-	  size_t i = len - 1;
 	  /* Trim trailing blanks after the argument.  */
+	  size_t i = len - 1;
 	  while (arg[i] == ' ' || arg[i] == '\t')
-	    --i;
-	  arg[i] = '\0';
+	    arg[i--] = '\0';
 	  len = i + 2;		/* Include the terminating null.  */
 	}
     }
