@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_syncfs
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -51,7 +51,11 @@ diskfs_S_file_syncfs (struct protid *cred,
   if (diskfs_synchronous)
     wait = 1;
 
-  diskfs_sync_everything (wait);
-  diskfs_set_hypermetadata (wait, 0);
+  if (! diskfs_readonly)
+    {
+      diskfs_sync_everything (wait);
+      diskfs_set_hypermetadata (wait, 0);
+    }
+
   return 0;
 }
