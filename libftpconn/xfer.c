@@ -20,35 +20,178 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <netinet/in.h>
 
 #include <ftpconn.h>
 #include "priv.h"
 
-/* Open a data connection, returning the file descriptor in DATA.  */
+/* Open an active data connection, returning the file descriptor in DATA.  */
 static error_t
-ftp_conn_open_data (struct ftp_conn *conn, int *data)
+ftp_conn_start_open_actv_data (struct ftp_conn *conn, int *data)
 {
-  struct sockaddr *addr;
-  error_t err = ftp_conn_get_pasv_addr (conn, &addr);
+  error_t err = 0;
+
+  if (conn->actv_data_conn_queue < 0)
+    {
+      /* DCQ is a socket on which we listen for data connections from the
+	 server.  */
+      int dcq;
+      struct sockaddr *addr = conn->actv_data_addr;
+      size_t addr_len = sizeof *addr;
+
+      if (! addr)
+	/* Generate an address for the data connection (which we must know,
+	   so we can tell the server).  */
+	{
+	  addr = conn->actv_data_addr = malloc (sizeof (struct sockaddr_in));
+	  if (! addr)
+	    return ENOMEM;
+
+	  /* Get the local address chosen by the system.  */
+	  if (conn->control < 0)
+	    err = EBADF;
+	  else if (getsockname (conn->control, addr, &addr_len) < 0)
+	    err = errno;
+
+	  if (err == EBADF || err == EPIPE)
+	    /* Control connection has closed; reopen it and try again.  */
+	    {
+	      err = ftp_conn_open (conn);
+	      if (!err && getsockname (conn->control, addr, &addr_len) < 0)
+		err = errno;
+	    }
+
+	  if (err)
+	    {
+	      free (addr);
+	      conn->actv_data_addr = 0;
+	      return err;
+	    }
+	}
+
+      dcq = socket (AF_INET, SOCK_STREAM, 0);
+      if (dcq < 0)
+	return errno;
+
+#if 0
+      if (setsockopt (dcq, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof on) < 0)
+	err = errno;
+#endif
+
+      /* Let the system choose a port for us.  */
+      ((struct sockaddr_in *)addr)->sin_port = 0;
+
+      /* Use ADDR as the data socket's local address.  */
+      if (!err && bind (dcq, addr, addr_len) < 0)
+	err = errno;
+
+      /* See what port was chosen by the system.  */
+      if (!err && getsockname (dcq, addr, &addr_len) < 0)
+	err = errno;
+
+      /* Set the incoming connection queue length.  */
+      if (!err && listen (dcq, 1) < 0)
+	err = errno;
+
+      if (err)
+	close (dcq);
+      else
+	conn->actv_data_conn_queue = dcq;
+    }
 
   if (! err)
+    /* By my reading of rfc959, we shouldn't have to re-send the data
+       connection address to the server after the first time (the servers
+       should always use the last-specified address), but bsd-derived ftp
+       servers don't work unless this is done.  Aren't standards wonderful?  */
+    err = ftp_conn_send_actv_addr (conn, conn->actv_data_addr);
+
+  if (! err)
+    *data = conn->actv_data_conn_queue;
+
+  return err;
+}
+
+/* Finish opening the active data connection *DATA opened with
+   ftp_conn_start_open_actv_data, following the sending of the command that
+   uses the connection to the server.  This function closes the file
+   descriptor in *DATA, and returns a new file descriptor for the actual data
+   connection.  */
+static error_t
+ftp_conn_finish_open_actv_data (struct ftp_conn *conn, int *data)
+{
+  struct sockaddr_in rmt_addr;
+  size_t rmt_addr_len = sizeof rmt_addr;
+  int real = accept (*data, &rmt_addr, &rmt_addr_len);
+
+  if (real < 0)
+    return errno;
+
+  *data = real;
+
+  return 0;
+}
+
+/* Return a data connection, which may not be in a completely open state;
+   this call should be followed by the command that uses the connection, and
+   a call to ftp_conn_finish_open_data, if that succeeds.  */
+static error_t
+ftp_conn_start_open_data (struct ftp_conn *conn, int *data)
+{
+  error_t err;
+
+  if (conn->use_passive)
+    /* First try a passive connection.  */
     {
-      int dsock = socket (PF_INET, SOCK_STREAM, 0);
+      struct sockaddr *addr;
 
-      if (dsock < 0)
-	err = errno;
-      else if (connect (dsock, addr, addr->sa_len) < 0)
+      /* Tell the server we wan't to use passive mode, for which it should
+	 give us an address to connect to.  */
+      err = ftp_conn_get_pasv_addr (conn, &addr);
+
+      if (! err)
 	{
-	  err = errno;
-	  close (dsock);
-	}
-      else
-	*data = dsock;
+	  int dsock = socket (PF_INET, SOCK_STREAM, 0);
 
-      free (addr);
+	  if (dsock < 0)
+	    err = errno;
+	  else if (connect (dsock, addr, addr->sa_len) < 0)
+	    {
+	      err = errno;
+	      close (dsock);
+	    }
+	  else
+	    *data = dsock;
+
+	  free (addr);
+	}
+    }
+  else
+    err = EAGAIN;
+
+  if (err)
+    /* Using a passive connection didn't work, try an active one.  */
+    {
+      conn->use_passive = 0;	/* Don't try again.  */
+      err = ftp_conn_start_open_actv_data (conn, data);
     }
 
   return err;
+}
+
+/* Finish opening the data connection *DATA opened with
+   ftp_conn_start_open_data, following the sending of the command that uses
+   the connection to the server.  This function may change *DATA, in which
+   case the old file descriptor is closed.  */
+static error_t
+ftp_conn_finish_open_data (struct ftp_conn *conn, int *data)
+{
+  if (conn->use_passive)
+    /* Passive connections should already have been completely opened.  */
+    return 0;
+  else
+    return ftp_conn_finish_open_actv_data (conn, data);
 }
 
 /* Start a transfer command CMD/ARG, returning a file descriptor in DATA.
@@ -60,7 +203,7 @@ ftp_conn_start_transfer (struct ftp_conn *conn,
 			 const error_t *poss_errs,
 			 int *data)
 {
-  error_t err = ftp_conn_open_data (conn, data);
+  error_t err = ftp_conn_start_open_data (conn, data);
 
   if (! err)
     {
@@ -69,7 +212,10 @@ ftp_conn_start_transfer (struct ftp_conn *conn,
 
       err = ftp_conn_cmd (conn, cmd, arg, &reply, &txt);
       if (!err && !REPLY_IS_PRELIM (reply))
-	  err = unexpected_reply (conn, reply, txt, poss_errs);
+	err = unexpected_reply (conn, reply, txt, poss_errs);
+
+      if (! err)
+	err = ftp_conn_finish_open_data (conn, data);
 
       if (err)
 	close (*data);
