@@ -68,10 +68,14 @@ cluster_t next_free_cluster = 2;
 void
 fat_read_sblock (void)
 {
+  error_t err;
   int read;
 
   sblock = malloc (sizeof (struct boot_sector));
-  store_read (store, 0, sizeof (struct boot_sector), (void **) &sblock, &read);
+  err = store_read (store, 0, sizeof (struct boot_sector),
+		    (void **) &sblock, &read);
+  if (err)
+    error (1, err, "Could not read superblock");
 
   if (read_word(sblock->id) != BOOT_SECTOR_ID)
     error (1, 0, "Could not find valid superblock");
