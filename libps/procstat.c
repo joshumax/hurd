@@ -168,11 +168,16 @@ merge_procinfo (process_t server, pid_t pid,
 /* Returns FLAGS augmented with any other flags that are necessary
    preconditions to setting them.  */
 static ps_flags_t 
-add_preconditions (ps_flags_t flags)
+add_preconditions (ps_flags_t flags, ps_context_t context)
 {
-  /* Implement any inter-flag dependencies: if the new flags in FLAGS depend
-     on some other set of flags to be set, make sure those are also in
-     FLAGS. */
+  /* Implement any inter-flag dependencies: if the new flags in FLAGS depend on
+     some other set of flags to be set, make sure those are also in FLAGS. */
+
+  if ((flags & PSTAT_USER_MASK)
+      && context->user_hooks && context->user_hooks->dependencies)
+    /* There are some user flags needing to be set...  See what they need.  */
+    flags |= (*context->user_hooks->dependencies) (flags & PSTAT_USER_MASK);
+
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
@@ -244,8 +249,10 @@ static struct thread_basic_info *
 summarize_thread_basic_info (struct procinfo *pi)
 {
   int i;
-  unsigned num_threads = 0;
+  unsigned num_threads = 0, num_run_threads = 0;
   thread_basic_info_t tbi = malloc (sizeof (struct thread_basic_info));
+  int run_base_priority = 0, run_cur_priority = 0;
+  int total_base_priority = 0, total_cur_priority = 0;
 
   if (!tbi)
     return 0;
@@ -286,8 +293,17 @@ summarize_thread_basic_info (struct procinfo *pi)
 	tbi->system_time.seconds += bi->system_time.seconds;
 	tbi->system_time.microseconds += bi->system_time.microseconds;
 
-	tbi->base_priority += bi->base_priority;
-	tbi->cur_priority += bi->cur_priority;
+	if (tbi->run_state == TH_STATE_RUNNING)
+	  {
+	    run_base_priority += bi->base_priority;
+	    run_cur_priority += bi->base_priority;
+	    num_run_threads++;
+	  }
+	else
+	  {
+	    total_base_priority += bi->base_priority;
+	    total_cur_priority += bi->base_priority;
+	  }
 
 	num_threads++;
       }
@@ -295,8 +311,16 @@ summarize_thread_basic_info (struct procinfo *pi)
   if (num_threads > 0)
     {
       tbi->sleep_time /= num_threads;
-      tbi->base_priority /= num_threads;
-      tbi->cur_priority /= num_threads;
+      if (num_run_threads > 0)
+	{
+	  tbi->base_priority = run_base_priority / num_run_threads;
+	  tbi->cur_priority = run_cur_priority / num_run_threads;
+	}
+      else
+	{
+	  tbi->base_priority = total_base_priority / num_threads;
+	  tbi->cur_priority = total_cur_priority / num_threads;
+	}
     }
 
   tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
@@ -438,21 +462,24 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
       have = SUPPRESS_MSGPORT_FLAGS (have);
     }
 
+  flags &= ~ps->failed;		/* Don't try to get things we can't.  */
+
   /* Propagate PSTAT_NO_MSGPORT.  */
   if (flags & PSTAT_NO_MSGPORT)
     have = SUPPRESS_MSGPORT_FLAGS (have);
   if (have & PSTAT_NO_MSGPORT)
     flags = SUPPRESS_MSGPORT_FLAGS (flags);
 
-  no_msgport_flags = add_preconditions (SUPPRESS_MSGPORT_FLAGS (flags));
-  flags = add_preconditions (flags);
+  no_msgport_flags =
+    add_preconditions (SUPPRESS_MSGPORT_FLAGS (flags), ps->context);
+  flags = add_preconditions (flags, ps->context);
 
   if (flags & PSTAT_USES_MSGPORT)
     /* Add in some values that we can use to determine whether the msgport
        shouldn't be used.  */
-    flags |= add_preconditions (PSTAT_TEST_MSGPORT);
+    flags |= add_preconditions (PSTAT_TEST_MSGPORT, ps->context);
 
-  need = flags & ~have;
+  need = flags & ~have & ~ps->failed;
 
   /* MGET: If we're trying to set FLAG, and the preconditions PRECOND are set
      in the flags already, then eval CALL and set ERR to the result.
@@ -548,7 +575,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	      get_thread_info (origin->proc_info, ps->thread_index);
 
 	    /* Now copy out the information for this particular thread from the
-	       ORIGINS's list of thread information.  */
+	       ORIGIN's list of thread information.  */
 
 	    if ((need  & PSTAT_THREAD_BASIC) && ! (have & PSTAT_THREAD_BASIC)
 		&& (oflags & PSTAT_THREAD_BASIC)
@@ -713,7 +740,21 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
     if (ps_context_find_tty_by_cttyid(ps->context, ps->cttyid, &ps->tty) == 0)
       have |= PSTAT_TTY;
 
+  /* Update PS's flag state.  We haven't tried user flags yet, so don't mark
+     them as having failed.  We do this before checking user bits so that the
+     user fetch hook sees PS in a consistent state.  */
+  ps->failed |= (need & ~PSTAT_USER_MASK) & ~have;
   ps->flags = have;
+
+  need &= PSTAT_USER_MASK;	/* Only consider user bits now.  */
+  if (need && ps->context->user_hooks && ps->context->user_hooks->fetch)
+    /* There is some user state we need to fetch.  */
+    {
+      have |= (*ps->context->user_hooks->fetch) (ps, need, have);
+      /* Update the flag state again having tried the user bits.  */
+      ps->failed |= need & ~have;
+      ps->flags = have;
+    }
 
   return 0;
 }
@@ -724,6 +765,10 @@ void
 _proc_stat_free(ps)
      proc_stat_t ps;
 {
+  if (ps->context->user_hooks && ps->context->user_hooks->cleanup)
+    /* Free any user state.  */
+    (*ps->context->user_hooks->cleanup) (ps);
+
   /* Free the mach port PORT if FLAG is set in PS's flags.  */
 #define MFREEPORT(flag, port) \
     ((ps->flags & (flag)) \
@@ -772,7 +817,9 @@ _proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps)
 
   (*ps)->pid = pid;
   (*ps)->flags = PSTAT_PID;
+  (*ps)->failed = 0;
   (*ps)->context = context;
+  (*ps)->hook = 0;
 
   return 0;
 }
