@@ -24,9 +24,9 @@ OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
-HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
-	libfshelp libdiskfs libthreads libports
-#HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
+#HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
+#	libfshelp libdiskfs libthreads libports
+HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
 LDFLAGS = -Wl,--no-keep-memory
 target = ufs
 
