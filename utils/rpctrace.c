@@ -722,7 +722,9 @@ print_reply_header (struct traced_info *info, mig_reply_header_t *reply)
   else
     {
       /* This does not match up with the last thing printed.  */
-      unfinished_line ();
+      if (expected_reply_port != MACH_PORT_NULL)
+	/* We don't print anything if the last call was a simpleroutine.  */
+	unfinished_line ();
       if (info->name == 0)
 	/* This was not a reply port in previous message sent
 	   through our wrappers.  */
