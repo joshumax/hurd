@@ -51,6 +51,8 @@ growprimes ()
   iscomp = alloca (sizeof (int) * nints);
   bzero (iscomp, sizeof (int) * nints);
 
+  
+
   for (i = 0; i < nprimes; i++)
     for (j = primes[i] * 2; j < nints; j += primes[i])
       iscomp[j] = 1;
