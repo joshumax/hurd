@@ -1,3 +1,9 @@
+1999-01-31  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeio.c (trivfs_modify_stat): Return S_IFCHR iff inhibit_cache
+	set, otherwsie S_IFBLK.  For a block-addressed device, S_IFCHR means
+	"must do whole-block i/o".
+
 1999-01-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io.c (trivfs_S_file_syncfs): Fix inverted test.
