@@ -1,3 +1,52 @@
+Sun May 25 21:57:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (parser_init): For the special case where no
+ 	parsing function is supplied for an argp, propagate its input to
+ 	its first child, if any.
+
+	* argp.h (struct argp_state): `argp' field renamed to `root_argp'.
+	* argp-help.c (__argp_state_help, argp_args_usage, hol_help): 
+	Replace references to STATE->argp with STATE->root_argp.
+	* argp-parse.c (parser_init): Likewise.
+
+Fri May 23 10:23:51 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.h (idvec_contains): Now an inline function.
+	(idvec_equal): New inline function.
+	* idvec.c (idvec_tail): Function removed (now inline in idvec.h).
+	* ugids-imply.c, ugids-posix.c: New files.
+	* Makefile (SRCS): Add ugids-imply.c & ugids-posix.c.
+
+Thu May 22 11:38:01 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.c (idvec_subtract, idvec_keep): New functions.
+	(idvec_contains, idvec_tail_contains): Make IDVEC arg const.
+	(idvec_tail_contains): Rewrite.
+	(idvec_set_ids, idvec_merge_ids): Make IDS arg const.
+	(idvec_set, idvec_merge): Make NEW arg const.
+	* idvec.h (idvec_subtract, idvec_keep, idvec_rep, idvec_uids_rep,
+	idvec_gids_rep, idvec_merge_implied_gids, idvec_verify):
+	New declarations.
+	(idvec_fini): New macro.
+	(idvec_contains, idvec_tail_contains): Make IDVEC arg const.
+	(idvec_set_ids, idvec_merge_ids): Make IDS arg const.
+	(idvec_set, idvec_merge): Make NEW arg const.
+	(idvec_is_empty): New function.
+	(IDVEC_INIT): New macro.
+	* idvec-impgids.c, idvec-verify.c, idvec_rep.c: New files.
+	* ugids.h, ugids.c, ugids-subtract.c, ugids-verify.c,
+	ugids-argp.c, ugids-rep.c, ugids-auth.c, ugids-xinl.c,
+	ugids-merge.c: New files. 
+	* Makefile (SRCS): Add idvec-impgids.c, idvec-verify.c,
+ 	idvec-rep.c, ugids.c, ugids-subtract.c, ugids-verify.c,
+ 	ugids-argp.c, ugids-rep.c, ugids-auth.c, ugids-xinl.c,
+ 	& ugids-merge.c.
+	(installhdrs): Add ugids.h.
+
+Wed May 21 17:53:30 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (hol_add_cluster): Initialize CL->depth.
+
 Tue May 20 14:01:00 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (_help): Supply STATE to argp_args_usage.
