@@ -1,3 +1,7 @@
+1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* servers.boot: Remove obsolete $(default-pager) tag.
+
 1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rfloppy.copy: Remove hurd/devport.
@@ -112,8 +116,8 @@ Mon Jun 16 11:56:33 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (dist-links): Make $(dist-root)/boot/grub and
 	$(dist-root)/share/misc.  Reported by Marcus G. Daniels
-	(marcus@cathcart.sysc.pdx.edu). 
-	
+	(marcus@cathcart.sysc.pdx.edu).
+
 Wed Jun 11 12:05:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (dist-links): Create /servers/exec node.
@@ -153,7 +157,7 @@ Fri Apr 11 14:21:29 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  	own now.
 	* INSTALL-GRUB-MBR: Delete file.
 	* Makefile (dist-files): Omit INSTALL-GRUB-MBR.
-	(install-dist): Likewise.	
+	(install-dist): Likewise.
 	* menu.lst (title): Replace install entries with new versions.
 	* INSTALL-binary (STEP IV): Revised instructions to correspond to
 	new reality, with Grub 0.4.
@@ -250,7 +254,7 @@ Sat Jul 13 18:06:03 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* COPYING.LIB: New file.
 	* Makefile (install-dist): Install COPYING.LIB and COPYING.
 	Fix commands to install most everything from $(srcdir).
-	
+
 	* boot-menu.grub: New file.
 	* servers.boot: New file.
 	* Makefile (dist-files): Add servers.boot and boot-menu.grub.
@@ -284,5 +288,3 @@ Tue Jul  9 18:03:45 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 Mon Jul  8 17:47:58 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* INSTALL-binary: Various changes.
-	
-
