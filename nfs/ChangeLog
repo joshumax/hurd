@@ -1,3 +1,8 @@
+Tue Jul 23 19:41:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* nfs.c (xdr_encode_sattr_times): `struct timespec' now uses a
+	field prefix of `tv_'.
+
 Wed Jul 17 13:12:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* main.c (mounted_soft): Initialize to zero.
