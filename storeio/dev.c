@@ -47,7 +47,7 @@ dev_buf_discard (struct dev *dev)
 	  error_t err =
 	    store_write (store, dev->buf_offs >> store->log2_block_size,
 			 dev->buf, store->block_size, &amount);
-	  if (amount < store->block_size)
+	  if (!err && amount < store->block_size)
 	    err = EIO;
 	  if (err)
 	    return err;
