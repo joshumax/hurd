@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -56,6 +56,13 @@ diskfs_S_dir_mkfile (struct protid *cred,
   mode |= S_IFREG;
   err = diskfs_create_node (dnp, 0, mode, &np, cred, 0);
   mutex_unlock (&dnp->lock);
+
+  if (diskfs_synchronous)
+    {
+      diskfs_update_file (dnp, 1);
+      diskfs_update_file (np, 1);
+    }
+
   if (err)
     return err;
   
