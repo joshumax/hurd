@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992,93,94,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -306,7 +306,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	}
 
       if (S_ISLNK (np->dn_stat.st_mode)
-	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
+	  && (!lastcomp
+	      || mustbedir	/* "foo/" must see that foo points to a dir */
+	      || !(flags & (O_NOLINK|O_NOTRANS))))
 	{
 	  /* Handle symlink interpretation */
 
