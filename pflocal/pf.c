@@ -47,7 +47,7 @@ S_socket_create (mach_port_t pf,
     case SOCK_DGRAM:
       pipe_class = dgram_pipe_class; break;
     case SOCK_SEQPACKET:
-      pipe_class = seqpacket_pipe_class; break;
+      pipe_class = seqpack_pipe_class; break;
     default:
       return ESOCKTNOSUPPORT;
     }
