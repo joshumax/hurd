@@ -216,7 +216,7 @@ S_proc_wait (struct proc *p,
   return MIG_NO_REPLY;
 }
 
-/* Implement proc_mark_stop as described in <hurd/prco.defs>. */
+/* Implement proc_mark_stop as described in <hurd/proc.defs>. */
 error_t
 S_proc_mark_stop (struct proc *p,
 	       int signo)
