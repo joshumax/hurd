@@ -19,6 +19,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include <stdio.h>
+
 #include "priv.h"
 #include "io_S.h"
 
@@ -31,8 +33,8 @@ diskfs_S_io_server_version (struct protid *cred,
 {
   if (cred)
     {
-      sprintf (server_name, "%s %s", 
-	       diskfs_server_name, diskfs_server_version);
+      snprintf (server_name, sizeof (string_t), "%s %s", 
+		diskfs_server_name, diskfs_server_version);
       return 0;
     }
   else
