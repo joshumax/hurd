@@ -24,13 +24,13 @@ libname = libnetfs
 
 FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	dir-notice-changes.c dir-readdir.c dir-rename.c \
-	dir-reparent.c dir-rmdir.c dir-unlink.c file-chauthor.c \
+	dir-rmdir.c dir-unlink.c file-chauthor.c \
 	file-check-access.c file-chflags.c file-chmod.c file-chown.c \
 	file-exec.c file-get-fs-options.c file-get-storage-info.c \
 	file-get-translator.c file-getcontrol.c file-getlinknode.c \
 	file-lock-stat.c file-lock.c file-set-size.c \
 	file-set-translator.c file-statfs.c file-sync.c file-syncfs.c \
-	file-utimes.c fsstubs.c
+	file-utimes.c file-reparent.c fsstubs.c
 
 IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c     \
