@@ -34,5 +34,21 @@ struct port_bucket *pfinet_bucket;
 
 extern struct device ether_dev;
 
+/* A port on SOCK.  Multiple sock_user's can point to the same socket. */
+struct sock_user
+{
+  struct port_info pi;
+  int isroot;
+  struct socket *sock;		/* Linux socket structure, see linux/net.h */
+};
+
+/* Socket address ports. */
+struct sock_addr
+{
+  struct port_info pi;
+  size_t len;
+  char address[0];
+};
+
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (void);
