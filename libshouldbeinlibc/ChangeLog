@@ -1,3 +1,29 @@
+1997-09-26  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec-verify.c (verify_passwd, get_passwd): New functions.
+	(idvec_verify): Change type of GETPASS_FN arg.
+	Add GETPASS_HOOK, VERIFY_FN, and VERIFY_HOOK args & use them.
+	(verify_id): Change type of GETPASS_FN arg.
+	Add GETPASS_HOOK, VERIFY_FN, and VERIFY_HOOK args.
+	Remove WHEEL_UID arg.
+	Use VERIFY_FN & VERIFY_HOOK instead of doing password comparison
+	ourselves.
+	* ugids.h (ugids_verify_make_auth): New declaration.
+	(ugids_verify): Change type of GETPASS_FN arg.
+	Add GETPASS_HOOK, VERIFY_FN, and VERIFY_HOOK args.
+	(ugids_make_auth): Change FROM arg into an array, & add NUM_FROM.
+	* ugids-verify.c (ugids_verify): Change type of GETPASS_FN arg.
+	Add GETPASS_HOOK, VERIFY_FN, and VERIFY_HOOK args.
+	* ugids-verify-auth.c: New file.
+	* ugids-auth.c (ugids_make_auth): Change FROM arg into an array, &
+	add NUM_FROM arg.
+	* Makefile (SRCS): Add ugids-verify-auth.c.
+
+1997-09-25  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.h (idvec_verify): Change type of GETPASS_FN arg.
+	Add GETPASS_HOOK, VERIFY_FN, and VERIFY_HOOK args.
+
 1997-08-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mktime.c: A copy of libc's time/mktime.c with the
