@@ -21,7 +21,7 @@
 dir := newfsck
 makemode := utility
 
-SRCS = dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
+SRCS = dir.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
 	pass5.c setup.c utilities.c
 OBJS = $(subst .c,.o,$(SRCS))
 LCLHDRS = fsck.h
@@ -29,3 +29,4 @@ target = newfsck
 
 include ../Makeconf
 
+$(OBJS): fsck.h
