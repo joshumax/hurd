@@ -23,17 +23,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fsys_S.h>
 
 kern_return_t
-trivfs_S_fsys_goaway (mach_port_t fsys,
+trivfs_S_fsys_goaway (struct trivfs_control *cntl,
 		      int flags)
 {
   error_t err;
-  struct port_info *pi;
-  
-  pi = ports_check_port_type (fsys, trivfs_cntl_porttype);
-  if (!pi)
+
+  if (!cred)
     return EOPNOTSUPP;
 
-  err = trivfs_goaway (flags);
-  ports_done_with_port (pi);
+  err = trivfs_goaway (flags, cred->underlying, cred->pi.type,
+		       cred->protidtypes);
+
   return err;
 }
