@@ -1,3 +1,8 @@
+2002-06-21  Roland McGrath  <roland@frob.com>
+
+	* streamio.c (parse_opt): Fix fencepost error in -n arg parsing.
+	Reported by Nicola Girardi <nicola@g-n-u.de>.
+
 2002-06-20  Roland McGrath  <roland@frob.com>
 
 	* firmlink.c (trivfs_S_io_read): Fix pointer arithmetic.
