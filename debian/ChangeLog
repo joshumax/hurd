@@ -1,3 +1,7 @@
+2001-10-16  Marcus Brinkmann  <marcus@gnu.org>
+
+	* debian/changelog: Update for new Debian package.
+
 2001-10-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* debian/rules: New dpkg-shlibdeps is more strict and complains

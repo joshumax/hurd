@@ -1,9 +1,20 @@
+hurd (20011016-1) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+    Compiled with -O2 rather than -O3.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue, 16 Oct 2001 19:43:21 +0200
+
 hurd (20011013-1) unstable; urgency=low
 
   * New snapshot from CVS.
   * Additional patches:
     kbd, mouse as usual.
     Change terminal type to mach-color.
+    Compiled with -O2 rather than -O3.
   * debian/rules: Change way how to find executables by Kevin Kreamer.
   * debian/control: Add `file' to build dependencies by Kevin Kreamer.
 
