@@ -24,7 +24,7 @@ unsigned long count_free (char * map, unsigned int numchars)
 
 /* ---------------------------------------------------------------- */
 
-static int ffz_nibble_map[] = {0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0};
+static int ffz_nibble_map[] = {0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4};
 
 inline unsigned long ffz(unsigned long word)
 {
