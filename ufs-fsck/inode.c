@@ -1,5 +1,5 @@
 /* Inode allocation, deallocation, etc.
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -138,7 +138,7 @@ allocino (ino_t request, mode_t mode)
 	return 0;
     }
   
-  if (mode & IFMT == IFDIR)
+  if ((mode & IFMT) == IFDIR)
     inodestate[ino] = DIRECTORY | DIR_REF;
   else
     inodestate[ino] = REG;
