@@ -42,6 +42,7 @@ struct port_class *socketport_class;
 mach_port_t fsys_identity;
 
 extern struct device ether_dev;
+extern struct device loopback_dev;
 
 /* A port on SOCK.  Multiple sock_user's can point to the same socket. */
 struct sock_user
@@ -59,6 +60,8 @@ struct sock_addr
   struct sockaddr address[0];
 };
 
+void setup_loopback_device (char *);
+
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (char *);
 void become_task_protid (struct trivfs_protid *);
@@ -71,6 +74,7 @@ void init_time (void);
 void inet_proto_init (struct net_proto *);
 void ip_rt_add (short, u_long, u_long, u_long, struct device *, 
 		u_short, u_long);
+void ip_rt_del (u_long, struct device *);
 int tcp_readable (struct sock *);
 
 

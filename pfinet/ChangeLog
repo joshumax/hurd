@@ -1,3 +1,13 @@
+Thu Oct 24 22:38:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (main): Call setup_loopback_device before parsing args
+	(and thus before the ethernet device shows up).
+	* loopback.c: New file.
+	* Makefile (SRCS): Add loopback.c.
+	* pfinet.h (loopback_dev): New variable.
+
+	* pfinet.h (ip_rt_del): New prototype.
+
 Thu Sep 12 16:47:24 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

@@ -210,6 +210,8 @@ main (int argc,
 
   arrange_shutdown_notification ();
 
+  setup_loopback_device ("loopback");
+
   /* Parse options.  */
   argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
