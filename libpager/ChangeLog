@@ -1,3 +1,7 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* pager-memcpy.c: Include <string.h> for memcpy decl.
+
 2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* priv.h (PM_WRITEWAIT): New pagemap bit.
@@ -13,11 +17,11 @@
 	* data-request.c (_pager_seqnos_memory_object_data_request):
 	Make PM_ENTRY a short pointer.
 	* data-return.c (_pager_do_write_request): Make PM_ENTRIES a short
-	pointer.	
+	pointer.
 	* lock-object.c (_pager_lock_object): Make PM_ENTRIES a short
-	pointer. 
+	pointer.
 	* mark-error.c (_pager_mark_next_request_error): Make P a short
-	pointer.  
+	pointer.
 	(_pager_mark_object_error): Likewise.
 	* offer-page.c (pager_offer_page): Make PM_ENTRY a short pointer.
 	* object-terminate.c (_pager_free_structure): Interpret

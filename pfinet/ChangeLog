@@ -1,3 +1,8 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* linux-src/include/linux/net.h (struct file): Move forward
+	decl outside of `struct socket' type definition, for gcc-2.96 syntax.
+
 2001-01-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* iioctl-ops.c (siocsifXaddr): Remove incorrect comment

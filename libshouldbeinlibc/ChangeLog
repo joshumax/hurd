@@ -1,3 +1,9 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* idvec.h: Include <string.h> for memcmp decl.
+
+	* wire.c (map_extent): Add dead return stmt to silence gcc warning.
+
 2001-02-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* timefmt.c: Include <time.h>.  Reported by Arkadi E. Shishlov

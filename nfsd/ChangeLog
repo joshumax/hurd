@@ -1,3 +1,7 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* ops.c: Include <string.h> for decls of built-ins.
+
 2000-12-02  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ops.c (op_readlink): Before returning, check if the buffer

@@ -1,3 +1,8 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* i386/thread.c: Remove superfluous bzero decl,
+	just include <strings.h> instead.
+
 2000-05-25  Mark Kettenis  <kettenis@gnu.org>
 
 	* libthreads.map: Update comment to reflect Roland's 2000-03-30

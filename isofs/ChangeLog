@@ -1,3 +1,7 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* lookup.c: Include <stdlib.h> for abort decl.
+
 2001-02-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* inode.c: Include <time.h>. Reported by Arkadi E. Shishlov
@@ -63,7 +67,7 @@
 	enough.  After finalizing the link, set VALID_SL valid flag.
 	* inode.c (read_disknode): For links use rl->target instead
 	rl->name.
-		
+
 	Closes Debian Bug #69281: Don't use file_start as inode numbers,
 	but the offset of the directory record in disk_image. This is what
 	Linux 2.4 does.
@@ -84,7 +88,7 @@
 	* lookup.c (diskfs_get_directs): Remove variable file_start.
 	Don't calculate file_start. Set D_FILENO to EP - DISK_IMAGE
 	instead FILE_START.
-	
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib

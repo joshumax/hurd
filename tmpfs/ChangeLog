@@ -1,3 +1,15 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* pager-stubs.c: New file.
+	* Makefile (SRCS): Add it.
+
+	* node.c (diskfs_S_file_get_storage_info): New function.
+	* tmpfs.c (diskfs_synchronous): New variable.
+
+	* dir.c (diskfs_lookup_hard): Look up .. disknode's in-core node.
+
+	* node.c: #include <mach/default_pager.h>.
+
 2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dir.c: Include <stddef.h>, <unistd.h>, <sys/mman.h>
@@ -23,7 +35,7 @@
 
 	Some of the above were also reported by Alexey Dejneka
 	<adejneka@comail.ru>.
-	
+
 2000-12-28  Roland McGrath  <roland@frob.com>
 
 	* node.c (recompute_blocks): New function, broken out of ...

@@ -1,3 +1,8 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* mkfs.c [!STANDALONE]: Include <time.h> for decl.
+	* stati.c: Likewise.
+
 1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dlabel.c (fd_get_device): Check STORE->class->id, not STORE->class.

@@ -1,3 +1,14 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* symlink.c: Include <string.h> for decls of built-ins.
+	* firmlink.c: Include <stdlib.h> for exit decl.
+	* ifsock.c: Likewise.
+	* null.c: Likewise.
+	* magic.c: Likewise.
+	* fifo.c: Likewise.
+	* hello.c: Likewise.
+	* hello-mt.c: Likewise.
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fifo.c: Make version string say `fifo', not `null'.

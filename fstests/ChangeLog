@@ -1,3 +1,9 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* fstests.c (main): sync now returns void.
+
+	* timertest.c: Include <stdlib.h> for decl.
+
 2000-03-26  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fstests.c (main): Fix return type.  #if 0 out some unused variables.

@@ -1,7 +1,12 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* storecat.c: Include <stdlib.h> for decls.
+	* w.c: Include <time.h> for decls.
+
 2001-01-17  Neal H Walfield  <neal@cs.uml.edu>
 
 	* mount.c (do_mount): Conform to new fshelp_start_translator
-	semantics.       
+	semantics.
 
 	* settrans.c (main): Conform to new fshelp_start_translator
 	semantics therby allowing us to print the pid of the an
@@ -32,7 +37,7 @@
 
 	* portinfo.c: Comment out unimplemented argument
 	`--show-targets'.  Reported by
-	Marcus.Brinkmann@ruhr-uni-bochum.de. 
+	Marcus.Brinkmann@ruhr-uni-bochum.de.
 
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
@@ -45,7 +50,7 @@
 
 	* frobauth-mod.c (frobauth_modify): Don't use MOVE_SEND in Hurd RPC.
 	* msgport.c (do_setfd, cmd_chcwdir, cmd_cdroot, cmd_chcrdir):
-	Likewise. 
+	Likewise.
 
 2000-02-08  Roland McGrath  <roland@baalperazim.frob.com>
 

@@ -1,3 +1,10 @@
+2001-02-25  Roland McGrath  <roland@frob.com>
+
+	* readonly-changed.c: New file.
+	* Makefile (OTHERSRCS): Add it.
+
+	* init-first.c: Include <stdlib.h> for exit decl.
+
 2001-01-30  Neal H Walfield   <neal@cs.uml.edu>
 
 	* diskfs.h: Fix comment (fsys_shutdown -> fsys_goaway).
