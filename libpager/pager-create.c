@@ -19,7 +19,9 @@
 
 /* Create and return a new pager with user info UPI.  */
 struct pager *
-pager_create (struct user_pager_info *upi)
+pager_create (struct user_pager_info *upi, 
+	      boolean_t may_cache,
+	      memory_object_copy_strategy_t copy_strategy)
 {
   struct pager *p;
   
@@ -31,6 +33,8 @@ pager_create (struct user_pager_info *upi)
   condition_init (&p->wakeup);
   p->lock_requests = 0;
   p->attribute_requests = 0;
+  p->may_cache = may_cache;
+  p->copy_strategy = copy_strategy;
   p->memobjcntl = MACH_PORT_NULL;
   p->memobjname = MACH_PORT_NULL;
   p->seqno = -1;
@@ -39,7 +43,7 @@ pager_create (struct user_pager_info *upi)
   p->waitingforseqno = 0;
   p->pagemap = 0;
   p->pagemapsize = 0;
-  
+
   return p;
 }
 
