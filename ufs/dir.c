@@ -1,5 +1,5 @@
 /* Directory management routines
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -856,15 +856,6 @@ diskfs_get_directs (struct node *dp,
 	dp->dn->dirents[i] = -1;
     }
 
-  /* Allocate enough space to hold the maximum we might return */
-  if (!bufsiz || bufsiz > dp->dn_stat.st_size)
-    allocsize = round_page (dp->dn_stat.st_size);
-  else
-    allocsize = round_page (bufsiz);
-
-  if (allocsize > *datacnt)
-    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-
   /* Scan through the entries to find ENTRY.  If we encounter
      a -1 in the process then stop to fill it.  When we run
      off the end, ENTRY is too big. */
@@ -891,10 +882,22 @@ diskfs_get_directs (struct node *dp,
 
   if (blkno == nblks)
     {
+      /* We reached the end of the directory without seeing ENTRY.
+	 This is treated as an EOF condition, meaning we return
+	 success with empty results.  */
       *datacnt = 0;
       *amt = 0;
       return 0;
     }
+
+  /* Allocate enough space to hold the maximum we might return */
+  if (!bufsiz || bufsiz > dp->dn_stat.st_size)
+    allocsize = round_page (dp->dn_stat.st_size);
+  else
+    allocsize = round_page (bufsiz);
+
+  if (allocsize > *datacnt)
+    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   /* Set bufp appropriately */
   bufp = buf;

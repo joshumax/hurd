@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
@@ -884,33 +884,6 @@ diskfs_get_directs (struct node *dp,
 	dp->dn->dirents[i] = -1;
     }
 
-  /* Allocate enough space to hold the maximum we might return */
-  if (!bufsiz || bufsiz > dp->dn_stat.st_size)
-    /* Allocate enough to return the entire directory.  Since ext2's
-       directory format is different than the format used to return the
-       entries, we allocate enough to hold the on disk directory plus
-       whatever extra would be necessary in the worst-case.  */
-    {
-      /* The minimum size of an ext2fs directory entry.  */
-      size_t min_entry_size = EXT2_DIR_REC_LEN (0);
-      /* The minimum size of a returned dirent entry.  The +1 is for '\0'.  */
-      size_t min_dirent_size = offsetof (struct dirent, d_name) + 1;
-      /* The maximum possible number of ext2fs dir entries in this dir.  */
-      size_t max_entries = dp->dn_stat.st_size / min_entry_size;
-      /* The maximum difference in size per directory entry.  */
-      size_t entry_extra =
-	DIRENT_ALIGN
-	  + (min_dirent_size > min_entry_size
-	     ? min_dirent_size - min_entry_size : 0);
-
-      allocsize = round_page (dp->dn_stat.st_size + max_entries * entry_extra);
-    }
-  else
-    allocsize = round_page (bufsiz);
-
-  if (allocsize > *datacnt)
-    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-
   /* Scan through the entries to find ENTRY.  If we encounter
      a -1 in the process then stop to fill it.  When we run
      off the end, ENTRY is too big. */
@@ -937,10 +910,40 @@ diskfs_get_directs (struct node *dp,
 
   if (blkno == nblks)
     {
+      /* We reached the end of the directory without seeing ENTRY.
+	 This is treated as an EOF condition, meaning we return
+	 success with empty results.  */
       *datacnt = 0;
       *amt = 0;
       return 0;
     }
+
+  /* Allocate enough space to hold the maximum we might return */
+  if (!bufsiz || bufsiz > dp->dn_stat.st_size)
+    /* Allocate enough to return the entire directory.  Since ext2's
+       directory format is different than the format used to return the
+       entries, we allocate enough to hold the on disk directory plus
+       whatever extra would be necessary in the worst-case.  */
+    {
+      /* The minimum size of an ext2fs directory entry.  */
+      size_t min_entry_size = EXT2_DIR_REC_LEN (0);
+      /* The minimum size of a returned dirent entry.  The +1 is for '\0'.  */
+      size_t min_dirent_size = offsetof (struct dirent, d_name) + 1;
+      /* The maximum possible number of ext2fs dir entries in this dir.  */
+      size_t max_entries = dp->dn_stat.st_size / min_entry_size;
+      /* The maximum difference in size per directory entry.  */
+      size_t entry_extra =
+	DIRENT_ALIGN
+	  + (min_dirent_size > min_entry_size
+	     ? min_dirent_size - min_entry_size : 0);
+
+      allocsize = round_page (dp->dn_stat.st_size + max_entries * entry_extra);
+    }
+  else
+    allocsize = round_page (bufsiz);
+
+  if (allocsize > *datacnt)
+    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   /* Set bufp appropriately */
   bufp = buf;
