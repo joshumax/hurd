@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -34,6 +34,12 @@ netfs_S_io_write (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
+  if ((user->po->openstat & O_WRITE) == 0)
+    {
+      mutex_unlock (&user->po->np->lock);
+      return EBADF;
+    }
+
   *amount = datalen;
   err =  netfs_attempt_write (user->credential, user->po->np,
 			      offset == -1 ? user->po->filepointer : offset,
