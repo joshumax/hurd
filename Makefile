@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,13 +20,14 @@ makemode := misc
 
 include Makeconf
 
-lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
-	      libthreads libps libdirmgt libnetfs libihash libpipe
+lib-subdirs = libshouldbeinlibc libihash libioserver libports libpager \
+	      libfshelp libdiskfs libtrivfs libthreads libps \
+	      libnetfs libpipe libstore
 prog-subdirs = auth boot exec fstests init.trim \
-	       proc term ufs utils trans fsck bsdfsck \
-	       devio newfs ext2fs benchmarks pflocal tmpfs defpager \
+	       proc term ufs utils trans fsck \
+	       devio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet
-other-subdirs = hurd doc init tmpfs dev
+other-subdirs = hurd doc init
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = 
 working-prog-subdirs := $(filter-out \
