@@ -10,7 +10,7 @@ then
 	echo Automatic boot in progress...
 	date
 
-	/sbin/fsck -p
+	/sbin/fsck --preen --writable
 
 	case $? in
 	# Successful completion
