@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-error_t
-trivfs_S_dir_mkfile (struct protid *file,
+kern_return_t
+trivfs_S_dir_mkfile (struct trivfs_protid *file,
 		     int flags,
 		     mode_t mode,
 		     mach_port_t *newnod,
