@@ -1,3 +1,12 @@
+2000-02-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hashexec.c (check_hashbang: user_fd): Add a user ref to DTABLE[FD]
+	send right, because caller (hurd_file_name_lookup internals) will
+	consume one.
+
+	* hashexec.c (check_hashbang): When dealloc'ing DTABLE ports,
+	optimize out syscall for null ports.
+
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exectrans.c (trivfs_support_write, trivfs_support_exec): Variables

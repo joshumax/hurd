@@ -1,3 +1,8 @@
+2000-02-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-exec.c (diskfs_S_file_exec): Give the new peropen for the exec
+	server O_EXEC permission as well as O_READ.
+
 2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Follow symlink despite flags if
