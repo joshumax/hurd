@@ -1,6 +1,8 @@
-Fri Aug  2 11:02:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+Tue Aug  6 12:20:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Released source version 0.0.
+
+Fri Aug  2 11:02:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (cp-linked-files): Add missing hyphen to rule.
 	(dist): Delete directory named for VERSION, not old var DATE.
