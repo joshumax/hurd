@@ -1,6 +1,6 @@
 /* Integer-keyed hash table functions.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -74,9 +74,11 @@ void ihash_set_cleanup(ihash_t ht,
    occurs, ENOMEM is returned, otherwise 0.  */
 error_t ihash_add(ihash_t ht, int id, void *item, void ***locp);
 
-/* Find and return the item in hash table HT with key ID, or NULL if it
-   doesn't exist.  */
-void *ihash_find(ihash_t ht, int id);
+/* Find and return a pointer to the item in hash table HT with key ID, or
+   NULL if it doesn't exist.  The actual item data is got by dereferencing
+   the returned pointer, which can also be passed directly to
+   ihash_locp_remove (below).  */
+void **ihash_find(ihash_t ht, int id);
 
 /* Call function FUN of one arg for each element of HT.  FUN's only arg is a
    pointer to the value stored in the hash table.  If FUN ever returns
