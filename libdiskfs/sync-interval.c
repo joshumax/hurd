@@ -109,10 +109,13 @@ periodic_sync (int interval)
 
       if (! err)
 	{
-	  rwlock_reader_lock (&diskfs_fsys_lock);
-	  diskfs_sync_everything (0);
-	  diskfs_set_hypermetadata (0, 0);
-	  rwlock_reader_unlock (&diskfs_fsys_lock);
+	  if (! diskfs_readonly)
+	    {
+	      rwlock_reader_lock (&diskfs_fsys_lock);
+	      diskfs_sync_everything (0);
+	      diskfs_set_hypermetadata (0, 0);
+	      rwlock_reader_unlock (&diskfs_fsys_lock);
+	    }
 	  ports_end_rpc (pi, &link);
 	}
 
