@@ -271,6 +271,16 @@ error_t diskfs_dirremove (struct node *dp, struct dirstat *ds);
    the call to diskfs_lookup.  */
 error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
 
+/* The user must define this function.  Return N directory entries
+   starting at ENTRY from locked directory node DP.  Fill *DATA with
+   the entries; that pointer currently points to *DATACNT bytes.  If
+   it isn't big enough, vm_allocate into *DATA.  Set *DATACNT with the
+   total size used.  Fill AMT with the number of entries copied.  
+   Regardless, never copy more than BUFSIZ bytes.  */
+error_t diskfs_get_directs (struct node *dp, int entry, int n,
+			    char **data, u_int *datacnt, 
+			    vm_size_t bufsiz, int *amt);
+
 /* The user must define this function.  For locked node NP, return nonzero
    iff there is a translator program defined for the node.  */
 int diskfs_node_translated (struct node *np);
