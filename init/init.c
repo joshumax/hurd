@@ -1583,6 +1583,9 @@ do_mach_notify_dead_name (mach_port_t notify,
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
 
+  /* Deallocate the extra reference the notification carries. */
+  mach_port_deallocate (mach_task_self (), name);
+
   for (et = ess_tasks; et != NULL; et = et->next)
     if (et->task_port == name)
       /* An essential task has died.  */
@@ -1601,8 +1604,10 @@ do_mach_notify_dead_name (mach_port_t notify,
 	else
 	  ntfy_tasks = nt->next;
 	free (nt);
+
 	return 0;
       }
+
   return 0;
 }
 

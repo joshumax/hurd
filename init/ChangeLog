@@ -1,3 +1,8 @@
+Sat Mar  6 17:13:48 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* init.c (do_mach_notify_dead_name): Deallocate the extra
+	reference to NAME that the notification carries.
+
 Tue Feb 16 18:54:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* init.c (shutdown_terminal): Revoke access to the terminal from
