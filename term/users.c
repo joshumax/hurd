@@ -1641,9 +1641,6 @@ S_tioctl_tiocspgrp (io_t port,
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
-  else if (!cred->hook
-	   || getsid (-pgrp) != ((struct protid_hook *)cred->hook)->sid)
-    err = EPERM;
   else
     {
       termflags &= ~NO_OWNER;
