@@ -31,7 +31,7 @@ diskfs_S_dir_readdir (struct protid *cred,
 		      int entry,
 		      int nentries,
 		      vm_size_t bufsiz,
-		      vm_size_t *amt)
+		      int *amt)
 {
   error_t err;
   struct node *np;
