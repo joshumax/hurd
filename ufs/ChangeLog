@@ -1,3 +1,16 @@
+Wed Aug 20 14:34:24 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir.c (diskfs_lookup_hard): Cope with error return from
+	diskfs_get_filemap. 
+	* sizes.c (diskfs_grow): Likewise.
+	* dir.c (diskfs_dirempty): Cope (poorly) with error return from
+	diskfs_get_filemap. 
+	* sizes.c (diskfs_truncate): Likewise.
+	(block_extended): Likewise.
+
+	* pager.c (diskfs_get_filemap): If pager_create fails, return
+	error to caller.
+
 Mon Jun 30 17:38:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): If the store cannot be made writable, then set

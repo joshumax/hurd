@@ -1,5 +1,5 @@
 /* File growth and truncation
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -104,10 +104,14 @@ diskfs_truncate (struct node *np,
       pager_change_attributes (upi->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_NONE, 1);
       obj = diskfs_get_filemap (np, VM_PROT_READ | VM_PROT_WRITE);
-      poke_pages (obj, round_page (length), round_page (np->allocsize));
-      mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (upi->p, round_page (length),
-			np->allocsize - length, 1);
+      if (obj != MACH_PORT_NULL)
+	{
+	  /* XXX should cope with errors from diskfs_get_filemap */
+	  poke_pages (obj, round_page (length), round_page (np->allocsize));
+	  mach_port_deallocate (mach_task_self (), obj);
+	  pager_flush_some (upi->p, round_page (length),
+			    np->allocsize - length, 1);
+	}
       ports_port_deref (upi->p);
     }
 
@@ -400,6 +404,11 @@ block_extended (struct node *np,
 
       /* Map in this part of the file */
       mapobj = diskfs_get_filemap (np, VM_PROT_WRITE | VM_PROT_READ);
+
+      /* XXX Should cope with errors from diskfs_get_filemap and back
+         out the operation here. */
+      assert (mapobj);
+
       err = vm_map (mach_task_self (), &mapaddr, round_page (old_size), 0, 1,
 		    mapobj, lbn * sblock->fs_bsize, 0, 
 		    VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE, 0);
@@ -476,6 +485,9 @@ diskfs_grow (struct node *np,
 
   /* This reference will ensure that NP->dn->fileinfo stays allocated. */
   pagerpt = diskfs_get_filemap (np, VM_PROT_WRITE|VM_PROT_READ);
+
+  if (pagerpt == MACH_PORT_NULL)
+    return errno;
 
   /* The new last block of the file. */
   lbn = lblkno (sblock, end - 1);

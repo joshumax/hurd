@@ -1,5 +1,5 @@
 /* Directory management routines
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -145,6 +145,10 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   /* Map in the directory contents. */
   memobj = diskfs_get_filemap (dp, prot);
+
+  if (memobj == MACH_PORT_NULL)
+    return errno;
+
   buf = 0;
   /* We allow extra space in case we have to do an EXTEND. */
   buflen = round_page (dp->dn_stat.st_size + DIRBLKSIZ);
@@ -727,6 +731,11 @@ diskfs_dirempty(struct node *dp,
   error_t err;
 
   memobj = diskfs_get_filemap (dp, VM_PROT_READ);
+
+  if (memobj == MACH_PORT_NULL)
+    /* XXX should reflect error properly */
+    return 0;
+
   buf = 0;
   
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
