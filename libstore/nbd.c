@@ -43,6 +43,8 @@
 #define NBD_REQUEST_MAGIC	(htonl (0x25609513))
 #define NBD_REPLY_MAGIC		(htonl (0x67446698))
 
+#define NBD_IO_MAX		10240
+
 struct nbd_startup
 {
   char magic[16];		/* NBD_INIT_MAGIC */
@@ -120,29 +122,45 @@ nbd_write (struct store *store,
   {
     magic: NBD_REQUEST_MAGIC,
     type: htonl (1),		/* WRITE */
-    from: htonll (addr << store->log2_block_size),
-    len: htonl (len)
   };
   error_t err;
   mach_msg_type_number_t cc;
 
-  err = io_write (store->port, (char *) &req, sizeof req, -1, &cc);
-  if (err)
-    return err;
-  if (cc != sizeof req)
-    return EIO;
-
+  addr <<= store->log2_block_size;
   *amount = 0;
+
   do
     {
-      err = io_write (store->port, (char *) buf, len - *amount, -1, &cc);
+      size_t chunk = len < NBD_IO_MAX ? len : NBD_IO_MAX, nwrote;
+      req.from = htonll (addr);
+      req.len = htonl (chunk);
+
+      err = io_write (store->port, (char *) &req, sizeof req, -1, &cc);
       if (err)
 	return err;
-      buf += cc;
-      *amount += cc;
-    } while (*amount < len);
+      if (cc != sizeof req)
+	return EIO;
 
-  return read_reply (store, req.handle);
+      nwrote = 0;
+      do
+	{
+	  err = io_write (store->port, (char *) buf, chunk - nwrote, -1, &cc);
+	  if (err)
+	    return err;
+	  buf += cc;
+	  nwrote += cc;
+	} while (nwrote < chunk);
+
+      err = read_reply (store, req.handle);
+      if (err)
+	return err;
+
+      addr += chunk;
+      *amount += chunk;
+      len -= chunk;
+    } while (len > 0);
+
+  return 0;
 }
 
 static error_t
@@ -154,11 +172,17 @@ nbd_read (struct store *store,
   {
     magic: NBD_REQUEST_MAGIC,
     type: htonl (0),		/* READ */
-    from: htonll (addr << store->log2_block_size),
-    len: htonl (amount),
   };
   error_t err;
   mach_msg_type_number_t cc;
+
+  if (amount > NBD_IO_MAX)
+    amount = NBD_IO_MAX;
+
+  addr <<= store->log2_block_size;
+
+  req.from = htonll (addr);
+  req.len = htonl (amount);
 
   err = io_write (store->port, (char *) &req, sizeof req, -1, &cc);
   if (err)
@@ -168,7 +192,7 @@ nbd_read (struct store *store,
 
   err = read_reply (store, req.handle);
   if (err == 0)
-    err = io_read (store->port, (char **) buf, len, (off_t) -1, amount);
+    err = io_read (store->port, (char **) buf, &cc, (off_t) -1, amount);
   return err;
 }
 
