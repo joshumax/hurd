@@ -80,8 +80,12 @@ long termflags;
 #define NO_OWNER          0x00000200 /* there is no foreground_id */
 #define ICKY_ASYNC	  0x00000400 /* some user has set O_ASYNC */
 
-#define QUEUE_LOWAT 100
-#define QUEUE_HIWAT 300
+/* Use a high watermark that allows about as much input as once as
+   other operating systems do.  Using something just a bit smaller
+   than a power of 2 helps to make maximum use of the buffer and avoid
+   reallocation for just a few bytes.  */
+#define QUEUE_LOWAT 200
+#define QUEUE_HIWAT 8100
 
 /* Global lock */
 struct mutex global_lock;
