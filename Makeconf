@@ -151,9 +151,9 @@ LDFLAGS += -static
 # a variable above with the complete file name to find it.
 # Yippee!  A use for computed variable references!
 ifeq ($(filter-out -static,$(LDFLAGS)),$(LDFLAGS))
-HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
-else
 HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).so)
+else
+HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
 endif
 HURDLIBS-libs := $(foreach lib,$(HURDLIBS), -L../$(lib) -l$(lib))
 
