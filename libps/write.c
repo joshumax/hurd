@@ -189,6 +189,10 @@ _ps_stream_write_field (struct ps_stream *stream,
   while (isspace (*buf))
     buf++;
 
+  if (stream->spaces < 0 && max_width >= 0)
+    /* Take some of our spacing deficit out of a truncatable field.  */
+    max_width += stream->spaces;
+
   len = noise_len (buf, max_width);
 
   if (width > 0)
