@@ -265,7 +265,7 @@ relink:
 
 
 # Where to find .defs files.
-vpath %.defs $(top_srcdir)/hurd $(includedir)
+vpath %.defs $(top_srcdir)/hurd $(includedir)/mach $(includedir)/device
 
 FORCE:
 
