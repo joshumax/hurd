@@ -148,7 +148,8 @@ main(argc, argv)
   int had_a_partition = 0;
   int script_paging_file (const struct cmd *cmd, int linux_signature)
     {
-      if (add_paging_file (bootstrap_master_device_port, cmd->path))
+      if (add_paging_file (bootstrap_master_device_port, cmd->path,
+			   linux_signature))
 	printf ("(serverboot): %s: Cannot add paging file\n", cmd->path);
       else
 	had_a_partition = 1;
