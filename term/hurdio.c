@@ -243,25 +243,10 @@ hurdio_writer_loop (any_t arg)
     {
       while (writer_thread != MACH_PORT_NULL
 	     && (ioport == MACH_PORT_NULL || !qsize (outputq)
-		 || (termflags & USER_OUTPUT_SUSP)))
+		 || output_stopped))
 	hurd_condition_wait (&hurdio_writer_condition, &global_lock);
       if (writer_thread == MACH_PORT_NULL) /* A sign to die.  */
 	return 0;
-
-      /* If the output was suspended earlier, we have to tell the
-	 underlying port to resume it.  */
-      if (output_stopped)
-	{
-	  if (tioc_caps & TIOC_CAP_START)
-	    {
-	      err = tioctl_tiocstart (ioport);
-	      if (err && (err == EMIG_BAD_ID || err == EOPNOTSUPP))
-		tioc_caps &= ~TIOC_CAP_START;
-	      /* XXX Handle the error.  */
-	      err = 0;
-	    }
-	  output_stopped = 0;
-	}
 
       /* Copy characters onto PENDING_OUTPUT, not bothering
 	 those already there. */
@@ -323,6 +308,18 @@ hurdio_writer_loop (any_t arg)
 static error_t
 hurdio_start_output ()
 {
+  /* If the output was suspended earlier and not anymore, we have to
+     tell the underlying port to resume it.  */
+  if (output_stopped && !(termflags & USER_OUTPUT_SUSP))
+    {
+      if (tioc_caps & TIOC_CAP_START)
+	{
+	  error_t err = tioctl_tiocstart (ioport);
+	  if (err && (err == EMIG_BAD_ID || err == EOPNOTSUPP))
+	    tioc_caps &= ~TIOC_CAP_START;
+	}
+      output_stopped = 0;
+    }
   condition_broadcast (&hurdio_writer_condition);
   return 0;
 }
