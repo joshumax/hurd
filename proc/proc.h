@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define PROC_H_INCLUDED
 
 #include <sys/resource.h>
+#include <sys/mman.h>
 #include <hurd/ports.h>
 #include <cthreads.h>
 
