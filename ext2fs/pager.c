@@ -32,8 +32,38 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 #define MAY_CACHE 1
 #endif
 
-/* ---------------------------------------------------------------- */
+#define STATS
 
+#ifdef STATS
+struct ext2fs_pager_stats
+{
+  spin_lock_t lock;
+
+  unsigned long disk_pageins;
+  unsigned long disk_pageouts;
+
+  unsigned long file_pageins;
+  unsigned long file_pagein_reads; /* Device reads done by file pagein */
+  unsigned long file_pagein_freed_bufs;	/* Discarded pages */
+  unsigned long file_pagein_alloced_bufs; /* Allocated pages */
+
+  unsigned long file_pageouts;
+
+  unsigned long file_page_unlocks;
+  unsigned long file_grows;
+};
+
+static struct ext2fs_pager_stats ext2s_pager_stats;
+
+#define STAT_INC(field)							\
+do { spin_lock (&ext2s_pager_stats.lock);					\
+     ext2s_pager_stats.field++;							\
+     spin_unlock (&ext2s_pager_stats.lock); } while (0)
+
+#else /* !STATS */
+#define STAT_INC(field) /* nop */0
+#endif /* STATS */
+
 /* Find the location on disk of page OFFSET in NODE.  Return the disk block
    in BLOCK (if unallocated, then return 0).  If *LOCK is 0, then it a reader
    lock is aquired on NODE's ALLOC_LOCK before doing anything, and left
@@ -94,6 +124,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	  int length = num_pending_blocks << log2_block_size;
 	  vm_address_t new_buf;
 
+	  STAT_INC (file_pagein_reads);
+
 	  err = diskfs_device_read_sync (dev_block, &new_buf, length);
 	  if (err)
 	    return err;
@@ -105,7 +137,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	    {
 	      /* We've already got some buffer, so copy into it.  */
 	      bcopy ((char *)new_buf, (char *)*buf + offs, length);
-	      vm_deallocate (mach_task_self (), new_buf, length);
+	      free_page_buf (new_buf);
+	      STAT_INC (file_pagein_freed_bufs);
 	    }
 
 	  offs += length;
@@ -114,6 +147,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 
       return 0;
     }
+
+  STAT_INC (file_pageins);
 
   *writelock = 0;
 
@@ -151,9 +186,10 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	  if (offs == 0)
 	    /* No page allocated to read into yet.  */
 	    {
-	      err = vm_allocate (mach_task_self (), buf, vm_page_size, 1);
-	      if (err)
+	      *buf = get_page_buf ();
+	      if (! *buf)
 		break;
+	      STAT_INC (file_pagein_alloced_bufs);
 	    }
 	  bzero ((char *)*buf + offs, block_size);
 	  offs += block_size;
@@ -284,6 +320,8 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 
   ext2_debug ("writing inode %d page %d[%d]", node->cache_id, offset, left);
 
+  STAT_INC (file_pageouts);
+
   while (left > 0)
     {
       err = find_block (node, offset, &block, &lock);
@@ -337,6 +375,8 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
     length = dev_end - page;
 
   ext2_debug ("writing disk page %d[%d]", page, length);
+
+  STAT_INC (disk_pageouts);
 
   if (modified_global_blocks)
     /* Be picky about which blocks in a page that we write.  */
@@ -465,6 +505,8 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 		    page, vm_page_size, node->cache_id);
 #endif
 
+      STAT_INC (file_page_unlocks);
+
       rwlock_writer_unlock (&dn->alloc_lock);
 
       if (err == ENOSPC)
@@ -553,6 +595,8 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		  (old_page_end_block > end_block);
 	    }
 	}
+
+      STAT_INC (file_grows);
 
       ext2_debug ("new size: %ld%s.", new_size,
 		  dn->last_page_partially_writable
