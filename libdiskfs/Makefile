@@ -53,6 +53,8 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
 
+TAGSHDRS = diskfs.h priv.h lithp.h fsmutations.h
+
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
 	interruptServer.o fsys_replyUser.o msgUser.o ifsockServer.o
 
