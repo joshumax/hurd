@@ -1,3 +1,20 @@
+Mon Aug 12 13:48:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (diskfs_minor_version): Changed to `1'.
+
+	* inode.c (read_disknode): Don't set allocsize for in-inode symlinks.
+	(MAX_INODE_SYMLINK): New macro.
+	(write_symlink, read_symlink): New functions.
+	(diskfs_create_symlink_hook, diskfs_read_symlink_hook): New variables.
+	* truncate.c (diskfs_truncate): For in-inode symlinks, just frob
+	the size.
+
+	* ext2fs.h (__u32, __u16, __u8, __s32, __s16, __s8): New types.
+	* ext2_fs.h (u32, u16, u8, s32, s16, s8): All uses of these types
+	changed to have a leading `__', and the definitions removed.
+	* ext2_fs_i.h (u32, u16, u8, s32, s16, s8): All uses of these types
+	changed to have a leading `__'.
+
 Mon Aug 12 11:18:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* hyper.c (diskfs_set_hypermetadata): Return an error code now.
