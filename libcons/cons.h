@@ -237,7 +237,6 @@ error_t cons_vcons_input (vcons_t vcons, char *buf, size_t size);
    cons_vcons_write that covers the whole new screen matrix.  */
 error_t cons_vcons_set_dimension (vcons_t vcons,
 				  uint32_t col, uint32_t row);
-);
 
 typedef enum
   {

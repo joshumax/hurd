@@ -1,3 +1,7 @@
+2003-08-16  Marco Gerards  <metgerards@student.han.nl>
+
+	* cons.h (cons_vcons_set_dimension): Fix typo.
+
 2003-08-11  Marco Gerards  <metgerards@student.han.nl>
 
 	* cons.h (cons_vcons_set_dimension): New prototype.
