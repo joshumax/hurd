@@ -1,3 +1,7 @@
+2002-09-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ttys (console): Change type column ($TERM setting) to `mach-color'.
+
 2002-06-05  Roland McGrath  <roland@frob.com>
 
 	* login-.bash_login: Prepend ~/ to file names.

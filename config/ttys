@@ -2,7 +2,7 @@
 # and restartsthem when they die.  Note that in GNU, unlike in BSD, there
 # is no need to list pseudo-ttys here.
 
-# name	program				type	status	comments
+# name	program				type		status	comments
 
-console	"/libexec/getty 9600"		mach	on	secure trusted console
-#com0	"/libexec/getty 9600"		dialup	on	secure
+console	"/libexec/getty 9600"		mach-color	on	secure trusted console
+#com0	"/libexec/getty 9600"		dialup		on	secure
