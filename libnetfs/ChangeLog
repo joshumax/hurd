@@ -1,3 +1,10 @@
+2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
+
+	* io-read.c (netfs_S_io_read): If desired amount is larger than
+	symlink length, truncate amount.  Actually use WHOLE_LINK to store
+	link target temporarily.  When reading the link target directly,
+	update *DATALEN.
+
 2002-05-13  Roland McGrath  <roland@frob.com>
 
 	* netfs.h (struct node): New member `nn_translated'.

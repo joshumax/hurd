@@ -65,6 +65,8 @@ netfs_S_io_read (struct protid *user,
 
       if (start + amount > size)
 	amount = size - start;
+      if (amount > size)
+	amount = size;
 
       if (start >= size)
 	{
@@ -74,7 +76,7 @@ netfs_S_io_read (struct protid *user,
       else if (amount < size || start > 0)
 	{
 	  char *whole_link = alloca (size);
-	  err = netfs_attempt_readlink (user->user, node, *data);
+	  err = netfs_attempt_readlink (user->user, node, whole_link);
 	  if (! err)
 	    {
 	      memcpy (*data, whole_link + start, amount);
@@ -82,7 +84,10 @@ netfs_S_io_read (struct protid *user,
 	    }
 	}
       else
-	err = netfs_attempt_readlink (user->user, node, *data);
+	{
+	  err = netfs_attempt_readlink (user->user, node, *data);
+	  *datalen = amount;
+	}
     }
   else
     /* Read from a normal file.  */
