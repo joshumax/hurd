@@ -166,27 +166,25 @@ routine proc_get_arg_locations (
 	out envp: vm_address_t);
 
 /* Fetch the message ports of a set of processes */
-/* INTR */
-routine proc_getmsgport (
+INTR_ROUTINE (proc_getmsgport, (
 	process: process_t;
 	sreplyport reply_port: sreply_port_t;
 	pid: pid_t;
-	out msgport: mach_port_t);
+	out msgport: mach_port_t))
 
 /* Wait for a child process to exit.  If pid is zero, it waits for any
    child.  If pid is negative, it waits for any process in the
    specified process group.  If pid is positive, it waits for the
    specified process.  The exit status and resource usage of the
    process are returned in status and rusage respectively.  */
-/* INTR */
-routine proc_wait (
+INTR_ROUTINE (proc_wait, (
 	process: process_t;
 	sreplyport reply_port: sreply_port_t;
 	pid: pid_t;
 	options: int;
 	out status: int;
 	out rusage: rusage_t;
-	out pid_status: pid_t);
+	out pid_status: pid_t))
 
 /* Have the process server stop all threads except contthread.  */
 routine proc_dostop (
