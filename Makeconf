@@ -174,7 +174,7 @@ $(libname).a: $(OBJS)
 endif
 
 # Making a snapshot
-distfiles := Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
+distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(hurdsource)/hurd-snap/$(dir) FORCE
 	ln $(distfiles) $(hurdsource)/hurd-snap/$(dir)
  
