@@ -161,7 +161,6 @@ struct user_pager_info
 
 struct user_pager_info *diskpager;
 mach_port_t diskpagerport;
-off_t diskpagersize;
 
 vm_address_t zeroblock;
 
@@ -178,9 +177,6 @@ spin_lock_t alloclock;
 
 spin_lock_t gennumberlock;
 u_long nextgennumber;
-
-mach_port_t ufs_device;
-char *ufs_device_name;
 
 /* The compat_mode specifies whether or not we write
    extensions onto the disk. */
@@ -262,11 +258,6 @@ error_t ffs_realloccg(struct node *, daddr_t, daddr_t,
 /* From bmap.c */
 error_t fetch_indir_spec (struct node *, daddr_t, struct iblock_spec *);
 void mark_indir_dirty (struct node *, daddr_t);
-
-/* From devio.c: */
-error_t dev_write_sync (daddr_t addr, vm_address_t data, long len);
-error_t dev_write (daddr_t addr, vm_address_t data, long len);
-error_t dev_read_sync (daddr_t addr, vm_address_t *data, long len);
 
 /* From hyper.c: */
 void get_hypermetadata (void);
