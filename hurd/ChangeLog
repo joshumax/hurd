@@ -1,3 +1,7 @@
+2002-03-17  Roland McGrath  <roland@frob.com>
+
+	* tioctl.defs [TIOCTL_IMPORTS]: Use this macro if defined.
+
 2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fs.defs: Refer to dir_lookup, not dir_pathtrans, in comments.
