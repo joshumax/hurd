@@ -1632,7 +1632,7 @@ trivfs_S_io_get_async_icky (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_get_async_icky (id, idtype);
+    return pty_io_get_async_icky (cred, id, idtype);
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
