@@ -18,7 +18,7 @@ hurdrootdev := /dev/hd0f
 hurdsource := /home/gd3/gnu/hurd
 
 # Where to find various things for compilation:
-headers := $(hurdinst)/include
+includedir := $(hurdinst)/include
 startup := $(hurdinst)/lib/crt0.o
 libc := $(patsubst %,$(hurdinst)/lib/lib%.a,c machuser hurduser c hurduser)
 libthreads := $(hurdinst)/lib/libthreads.a
@@ -27,7 +27,8 @@ libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
 libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
-malloc := $(hurdinst)/lib/malloc.o
+#malloc := $(hurdinst)/lib/malloc.o
+malloc := -u _malloc $(libthreads) # roland
 
 # Finding binaries
 include $(hurdsource)/Maketools
@@ -35,8 +36,10 @@ include $(hurdsource)/Maketools
 gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
 libgcc := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/libgcc.a
 
-# Flags for compilation
-CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
+# Flags for compilation.  It is important to have -I. first for things that
+# use their own headers which are later installed; they might do `#include
+# <foo.h>' and that ignores the current directory.
+CPPFLAGS := -nostdinc -I. -I$(includedir) -I$(gccheaders)
 CFLAGS := -Wall -Wno-parentheses -g
 
 # How to do some things:
@@ -79,45 +82,45 @@ endif
 ifneq ($(strip $(dir)),libports)
 $(libports): FORCE
 	$(MAKE) -C $(hurdsource)/libports $(libports)
-$(headers)/hurd/ports.h: FORCE
-	$(MAKE) -C $(hurdsource)/libports $(headers)/hurd/ports.h
+$(includedir)/hurd/ports.h: FORCE
+	$(MAKE) -C $(hurdsource)/libports $(includedir)/hurd/ports.h
 endif
 
 ifneq ($(strip $(dir)),libioserver)
 $(libioserver): FORCE
 	$(MAKE) -C $(hurdsource)/libioserver $(libioserver)
-$(headers)/hurd/ioserver.h: FORCE
-	$(MAKE) -C $(hurdsource)/libioserver $(headers)/hurd/ioserver.h
+$(includedir)/hurd/ioserver.h: FORCE
+	$(MAKE) -C $(hurdsource)/libioserver $(includedir)/hurd/ioserver.h
 endif
 
 ifneq ($(strip $(dir)),libpager)
 $(libpager): FORCE
 	$(MAKE) -C $(hurdsource)/libpager $(libpager)
-$(headers)/hurd/pager.h: FORCE
-	$(MAKE) -C $(hurdsource)/libpager $(headers)/hurd/pager.h
+$(includedir)/hurd/pager.h: FORCE
+	$(MAKE) -C $(hurdsource)/libpager $(includedir)/hurd/pager.h
 endif
 
 ifneq ($(strip $(dir)),libdiskfs)
 $(libdiskfs): FORCE
 	$(MAKE) -C $(hurdsource)/libdiskfs $(libdiskfs)
-$(headers)/hurd/diskfs.h: FORCE
-	$(MAKE) -C $(hurdsource)/libdiskfs $(headers)/hurd/diskfs.h
+$(includedir)/hurd/diskfs.h: FORCE
+	$(MAKE) -C $(hurdsource)/libdiskfs $(includedir)/hurd/diskfs.h
 endif
 
 ifneq ($(strip $(dir)),libfshelp)
 $(libfshelp): FORCE
 	$(MAKE) -C $(hurdsource)/libfshelp $(libfshelp)
-$(headers)/hurd/fshelp.h: FORCE
-	$(MAKE) -C $(hurdsource)/libfshelp $(headers)/hurd/fshelp.h
+$(includedir)/hurd/fshelp.h: FORCE
+	$(MAKE) -C $(hurdsource)/libfshelp $(includedir)/hurd/fshelp.h
 endif
 
 ifneq ($(strip $(dir)),libthreads)
 $(libthreads): FORCE
 	$(MAKE) -C $(hurdsource)/libthreads $(libthreads)
-$(headers)/cthreads.h: FORCE
-	$(MAKE) -C $(hurdsource)/libthreads $(headers)/cthreads.h
-$(headers)/machine/cthreads.h: FORCE
-	$(MAKE) -C $(hurdsource)/libthreads $(headers)/machine/cthreads.h
+$(includedir)/cthreads.h: FORCE
+	$(MAKE) -C $(hurdsource)/libthreads $(includedir)/cthreads.h
+$(includedir)/machine/cthreads.h: FORCE
+	$(MAKE) -C $(hurdsource)/libthreads $(includedir)/machine/cthreads.h
 endif
 
 FORCE:
