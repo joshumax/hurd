@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -257,7 +257,7 @@ check_hashbang (struct execdata *e,
 		  dev_t dev;
 		  ino_t ino;
 		  error = io_identity (name_file, &id, &dev, &ino);
-		  __mach_port_deallocate (__mach_task_self (), id);
+		  mach_port_deallocate (mach_task_self (), id);
 		  if (!error && id == fileid)
 		    {
 		      file_name = name;
@@ -265,10 +265,10 @@ check_hashbang (struct execdata *e,
 		    }
 		  else if (free_name)
 		    free (name);
-		  __mach_port_deallocate (__mach_task_self (), name_file);
+		  mach_port_deallocate (mach_task_self (), name_file);
 		}
 
-	      __mach_port_deallocate (__mach_task_self (), fileid);
+	      mach_port_deallocate (mach_task_self (), fileid);
 	    }
 
 	  if (file_name == NULL)
@@ -306,7 +306,7 @@ check_hashbang (struct execdata *e,
 	  namelen = strlen (file_name) + 1;
 
 	  new_argvlen
-	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */ 
+	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */
 	    + interplen + len + namelen; /* New args */
 
 	  e->error = vm_allocate (mach_task_self (),
@@ -318,7 +318,7 @@ check_hashbang (struct execdata *e,
 	  if (! setjmp (args_faulted))
 	    {
 	      char *other_args;
-	      
+
 	      p = new_argv;
 
 	      /* INTERP */
