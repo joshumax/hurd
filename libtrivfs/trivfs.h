@@ -124,8 +124,9 @@ void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
    fsys_startup.  CONTROL_TYPE is the ports library type for the control
    port, and PROTID_TYPE is the type for ports representing opens of this
    node.  If CONTROL isn't NULL, the trivfs control port is return in it.  If
-   any error occurs sending fsys_startup, it is returned, otherwise 0.  */
-error_t trivfs_startup(mach_port_t bootstrap,
+   any error occurs sending fsys_startup, it is returned, otherwise 0.
+   FLAGS specifies how to open the underlying node (O_*).  */
+error_t trivfs_startup(mach_port_t bootstrap, int flags,
 		       struct port_class *control_class,
 		       struct port_bucket *control_bucket,
 		       struct port_class *protid_class,
