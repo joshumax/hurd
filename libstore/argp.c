@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <hurd.h>
 #include <argp.h>
+#include <error.h>
 
 #include "store.h"
 
