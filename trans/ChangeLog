@@ -1,3 +1,8 @@
+2002-05-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* magic.c (trivfs_S_dir_readdir): Increment I after comparing it
+	with ENTRY, to fix off-by-one error.
+
 2002-05-23  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.c (netfs_report_access): Always report O_RDWR|O_EXEC.

@@ -260,7 +260,7 @@ trivfs_S_dir_readdir (struct trivfs_protid *cred,
       i = 0;
       for (p = dirbuf; p < dirbuf + dirbufsize;
 	   p += ((struct dirent *) p)->d_reclen)
-	if (++i == entry)
+	if (i++ == entry)
 	  break;
       *data = p;
       *datalen = dirbuf + dirbufsize - p;
