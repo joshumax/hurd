@@ -51,7 +51,7 @@ installhdrs=store.h
 HURDLIBS = shouldbeinlibc
 GUNZIP_OBJS = unzip.o inflate.o util.o
 BUNZIP2_OBJS = do-bunzip2.o
-OBJS = $(patsubst part.o,parted.o,$(SRCS:.c=.o)) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
+OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
 DIST_FILES = unzipstore.c
 
 # Look for zip stuff
@@ -65,32 +65,9 @@ module-CPPFLAGS = -D'STORE_SONAME_SUFFIX=".so.$(hurd-version)"'
 libstore_gunzip.so.$(hurd-version): $(GUNZIP_OBJS:.o=_pic.o)
 libstore_bunzip2.so.$(hurd-version): $(BUNZIP2_OBJS:.o=_pic.o)
 
-ifeq (,$(strip $(PARTED_LIBS)))
-# Configure didn't find the Parted libraries, so we have no "part" store type.
-
-parted.o parted_p.o parted_pic.o:
-	$(CC) -o $@ -c -x c /dev/null
-
-else
-
-# We have Parted, so link against it.  For the static libraries,
-# we slurp in all the Parted code we need and stuff it into one
-# object file along with our code that uses it.
-
-libstore.so-LDFLAGS += $(PARTED_LIBS)
-
-parted.o: part.o $(..)config.make
-	$(CC) -nostdlib -r -o $@ $< $(PARTED_LIBS)
-
-parted_p.o: part_p.o $(..)config.make
-	$(CC) -nostdlib -r -o $@ $< $(PARTED_LIBS:=_p)
-
-parted_pic.o: part_pic.o
-	ln -f $< $@
-
-endif
-
-
+# You can use this rule to make a dynamically-loadable version of any
+# of the modules.  We don't make any of these by default, since we
+# just include all the standard store types in libstore.so itself.
 libstore_%.so.$(hurd-version): %_pic.o libstore.so
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
 	      $(rpath) $(CFLAGS) $(LDFLAGS) $(libstore_$*.so-LDFLAGS) $^
