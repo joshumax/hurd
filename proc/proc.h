@@ -65,20 +65,20 @@ struct proc
   int p_status;			/* to return via wait */
   int p_sigcode;
 
-  int p_exec:1;			/* has called proc_mark_exec */
-  int p_stopped:1;		/* has called proc_mark_stop */
-  int p_waited:1;		/* stop has been reported to parent */
-  int p_exiting:1;		/* has called proc_mark_exit */
-  int p_waiting:1;		/* blocked in wait */
-  int p_traced:1;		/* has called proc_mark_traced */
-  int p_nostopcld:1;		/* has called proc_mark_nostopchild */
-  int p_parentset:1;		/* has had a parent set with proc_child */
-  int p_deadmsg:1;		/* hang on requests for a message port */
-  int p_checkmsghangs:1;	/* someone is currently hanging on us */
-  int p_msgportwait:1;		/* blocked in getmsgport */
-  int p_noowner:1;		/* has no owner known */
-  int p_loginleader:1;		/* leader of login collection */
-  int p_dead:1;			/* process is dead */
+  unsigned int p_exec:1;	/* has called proc_mark_exec */
+  unsigned int p_stopped:1;	/* has called proc_mark_stop */
+  unsigned int p_waited:1;	/* stop has been reported to parent */
+  unsigned int p_exiting:1;	/* has called proc_mark_exit */
+  unsigned int p_waiting:1;	/* blocked in wait */
+  unsigned int p_traced:1;	/* has called proc_mark_traced */
+  unsigned int p_nostopcld:1;	/* has called proc_mark_nostopchild */
+  unsigned int p_parentset:1;	/* has had a parent set with proc_child */
+  unsigned int p_deadmsg:1;	/* hang on requests for a message port */
+  unsigned int p_checkmsghangs:1; /* someone is currently hanging on us */
+  unsigned int p_msgportwait:1;	/* blocked in getmsgport */
+  unsigned int p_noowner:1;	/* has no owner known */
+  unsigned int p_loginleader:1;	/* leader of login collection */
+  unsigned int p_dead:1;	/* process is dead */
 };
 
 typedef struct proc *pstruct_t;
@@ -190,7 +190,9 @@ void exc_clean (void *);
 struct proc *add_tasks (task_t);
 int pidfree (pid_t);
 
-struct proc *new_proc (task_t);
+struct proc *create_startup_proc (void);
+struct proc *allocate_proc (task_t);
+void complete_proc (struct proc *, pid_t);
 
 void leave_pgrp (struct proc *);
 void join_pgrp (struct proc *);
