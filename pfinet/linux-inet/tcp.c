@@ -956,6 +956,7 @@ static int tcp_select(struct sock *sk, int sel_type, select_table *wait)
 	return 0;
 }
 
+#ifndef _HURD_
 int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 {
 	int err;
@@ -1010,7 +1011,7 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 			return(-EINVAL);
 	}
 }
-
+#endif
 
 /*
  *	This routine computes a TCP checksum. 
