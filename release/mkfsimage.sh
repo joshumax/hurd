@@ -29,7 +29,7 @@ MIN_SIZE=500    # avoid lossage for compressed filesystems
 
 OWNER="`id -un`.`id -gn`"
 
-unset IMAGE SRCS COMPRESS SCRIPTS QUIET
+unset IMAGE SRCS COMPRESS SCRIPTS QUIET GEN_DEPS
 declare -a SRCS SCRIPTS
 
 NUM_SRCS=0
@@ -51,6 +51,8 @@ while :; do
     --quiet|-q|-s)  QUIET=yes; shift 1;;
     --copy=*|--copy-rules=*)      SCRIPTS[NUM_SCRIPTS]="`echo "$1" | sed 's/^--[-a-z]*=//'`"; let NUM_SCRIPTS+=1; shift 1;;
     --copy|--copy-rules)        SCRIPTS[NUM_SCRIPTS]="$2"; let NUM_SCRIPTS+=1; shift 2;;
+    --dependencies=*) GEN_DEPS="`echo "$1" | sed 's/^--[-a-z]*=//'`"; shift 1;;
+    --dependencies)   GEN_DEPS="$2"; shift 2;;
 
     --version)
       echo "STANDARD_HURD_VERSION_mkfsimage_"; exit 0;;
@@ -64,6 +66,7 @@ while :; do
       --compress             Compress the final image
       --owner=USER[.GROUP]   Make files owned by USER & GROUP (default "\`"$OWNER')
       --max-size=KBYTES      Maximum size of final image (default $MAX_SIZE)
+      --dependencies=DEPS    Generate a make dependency rule into DEPS and exit
 
       --fstype=TYPE          Type of filesystem (TYPE may be "\`"ext2' or "\`"ufs')
       --mkfs=PROGRAM         Program to make an empty filesystem image
@@ -156,7 +159,13 @@ TRANS_LIST="/tmp/,mkfsimage-$$.trans"
 # Extra blocks that will be used by translators
 TRANS_BLOCKS=0
 
-trap "settrans 2>/dev/null -a $MNT; rm -rf $MNT $IMAGE_TMP $IMAGE_GZIP_TMP $ERROUT $STAGE $TRANS_LIST" 0 1 2 3 15
+if [ "$GEN_DEPS" ]; then
+  GEN_DEPS_TMP="$GEN_DEPS.new"
+  echo "$GEN_DEPS: ${SCRIPTS[*]}" >> "$GEN_DEPS_TMP"
+  echo "$IMAGE: \\" >> "$GEN_DEPS_TMP"
+fi
+
+trap "settrans 2>/dev/null -a $MNT; rm -rf $MNT $IMAGE_TMP $IMAGE_GZIP_TMP $ERROUT $STAGE $TRANS_LIST $GEN_DEPS_TMP" 0 1 2 3 15
 
 if [ ${#SRCS[@]} = 1 -a ${#SCRIPTS[@]} = 0 ]; then
   # No staging directory
@@ -183,7 +192,10 @@ else
       *)  PFX="$SRC/";;
     esac
 
-    eval $ECHO "'# Copying files from $SRC into staging directory $STAGE...'"
+    if [ ! "$GEN_DEPS" ]; then
+      eval $ECHO "'# Copying files from $SRC into staging directory $STAGE...'"
+    fi
+
     if [ x"${SCRIPT}" != x ]; then
       eval $ECHO "'# Using copy script $SCRIPT'"
       (
@@ -194,6 +206,8 @@ else
 	  fi
 	  exec <"$SCRIPT"
 	fi
+
+        test "$GEN_DEPS" && echo "  $SCRIPT \\" >> "$GEN_DEPS_TMP"
 
 	while read -a args; do
 	  case $args in
@@ -228,6 +242,14 @@ else
 
 	  # Pop op & src off of args
 	  set -- "${args[@]}"; shift 2; unset args; args=("$@")
+
+	  if [ "$GEN_DEPS" ]; then
+	    case $op in
+	      copy|objcopy)
+	        echo "  ${PFX}$src \\" >> "$GEN_DEPS_TMP";;
+            esac
+            continue
+          fi
 
 	  case $op in
 	    copy)
@@ -295,6 +317,11 @@ else
     fi
   done
   TREE="$STAGE"
+fi
+
+if [ "$GEN_DEPS" ]; then
+  echo "" >> "$GEN_DEPS_TMP" && mv "$GEN_DEPS_TMP" "$GEN_DEPS"
+  exit 0
 fi
 
 eval $ECHO "'# Changing file owners to $OWNER'"
