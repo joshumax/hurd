@@ -36,6 +36,7 @@ include ../Makeconf
 
 login: /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
+storeinfo: ../libstore/libstore.a
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libthreads/libthreads.a
