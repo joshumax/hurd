@@ -546,6 +546,7 @@ diskfs_shutdown_pager ()
       pager_shutdown (p->p);
     }
 
+  copy_sblock ();
   write_all_disknodes ();
   pager_traverse (shutdown_one);
 }
@@ -562,6 +563,7 @@ diskfs_sync_everything (int wait)
 	sync_disk (wait);
     }
   
+  copy_sblock ();
   write_all_disknodes ();
   pager_traverse (sync_one);
 }
