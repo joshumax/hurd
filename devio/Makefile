@@ -22,15 +22,9 @@ makemode := server
 target = devio
 SRCS = dev.c iostate.c window.c devio.c open.c devpager.c io.c rdwr.c mem.c
 LCLHDRS = dev.h iostate.h window.h open.h ptypes.h mem.h
-DIST_FILES = MAKEDEV
 
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
 
 devio: $(OBJS) ../libtrivfs/libtrivfs.a ../libpager/libpager.a ../libports/libports.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
-
-install: $(prefix)/dev/MAKEDEV
-
-$(prefix)/dev/MAKEDEV: MAKEDEV
-	$(INSTALL_PROGRAM) $(srcdir)/MAKEDEV $(prefix)/dev/MAKEDEV
