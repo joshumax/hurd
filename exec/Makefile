@@ -37,6 +37,8 @@ exec.o hostarch.o: a.out.h
 
 clean: 
 	rm -f *.o exec exec_server.h *_S.h *Server.c
+relink:
+	rm -f exec
 
 exec_server.h execServer.c: $(headers)/hurd/exec.defs $(headers)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ $(headers)/hurd/exec.defs \
