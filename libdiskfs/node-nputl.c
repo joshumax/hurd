@@ -22,7 +22,7 @@
 #include "priv.h"
 
 /* Unlock node NP and release a light reference */
-DISKFS_EI void
+void
 diskfs_nput_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
