@@ -1,17 +1,21 @@
+1999-02-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mount.sh: Use `awk' instead of `gawk'.
+
 Fri Feb 19 02:43:11 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* login.c (main): Correctly implement -f instead of always
 	acting as if it were set.
-	
+
 	* login.c (main): When transitioning from no UID's to having UID's
 	create a new session like normal.  Reported by Mark M. Kettenis
-	<kettenis@wins.uva.nl>. 
+	<kettenis@wins.uva.nl>.
 
 1999-02-06  Mark Kettenis  <kettenis@gnu.org>
 
 	* login.c (main): If no effective uid, really use first auxiliary
 	uid to use as password entry to get parameters from.
-	
+
 1999-01-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* syncfs.c: Replace -a/--asynchronous with -s/--synchronous.
