@@ -1,3 +1,10 @@
+Mon Aug 12 10:51:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* e2os.sh: New file.
+	* Makefile (targets): Add e2os.
+	(SRCS): Add $(SCRIPTS).
+	(special-targets, SCRIPTS, LCLHDRS): New variables.
+
 Thu Aug  1 16:29:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* clookup.c (file_name_lookup_carefully/lookup): When appending
