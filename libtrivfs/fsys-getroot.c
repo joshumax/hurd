@@ -43,6 +43,8 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   error_t err = 0;
   mach_port_t new_realnode;
   struct trivfs_protid *cred;
+  struct iouser *user;
+  struct idvec *uvec, *gvec;
 
   if (!cntl)
     return EOPNOTSUPP;
@@ -67,15 +69,23 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       != (flags & (O_READ|O_WRITE|O_EXEC)))
     err = EACCES;
 
+  uvec = make_idvec ();
+  gvec = make_idvec ();
+  idvec_set_ids (uvec, uids, nuids);
+  idvec_set_ids (gvec, gids, ngids);
+  user = iohelp_create_iouser (uvec, gvec);
+  
   if (!err && trivfs_check_open_hook)
-    err = (*trivfs_check_open_hook) (cntl, uids, nuids, gids, ngids, flags);
+    err = (*trivfs_check_open_hook) (cntl, user, flags);
   if (!err)
-    err = trivfs_open (cntl, uids, nuids, gids, ngids, flags, new_realnode,
-		       &cred);
-  if (err)
-    mach_port_deallocate (mach_task_self (), new_realnode);
+    err = trivfs_open (cntl, user, flags, new_realnode, &cred);
 
-  if (!err)
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), new_realnode);
+      iohelp_free_iouser (user);
+    }
+  else
     {
       *do_retry = FS_RETRY_NORMAL;
       *retry_name = '\0';

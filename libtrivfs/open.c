@@ -27,7 +27,7 @@
    FLAGS.  CNTL is the trivfs control object.  */
 error_t
 trivfs_open (struct trivfs_control *cntl,
-	     uid_t *uids, unsigned num_uids, gid_t *gids, unsigned num_gids,
+	     struct iouser *user,
 	     unsigned flags,
 	     mach_port_t realnode,
 	     struct trivfs_protid **cred)
@@ -57,18 +57,9 @@ trivfs_open (struct trivfs_control *cntl,
 	{
 	  int i;
 
-	  new->isroot = 0;
-	  for (i = 0; i < num_uids; i++)
-	    if (uids[i] == 0)
-	      new->isroot = 1;
-
-	  new->uids = malloc (num_uids * sizeof (uid_t));
-	  bcopy (uids, new->uids, num_uids * sizeof (uid_t));
-	  new->nuids = num_uids;
-
-	  new->gids = malloc (num_gids * sizeof (uid_t));
-	  bcopy (gids, new->gids, num_gids * sizeof (uid_t));
-	  new->ngids = num_gids;
+	  new->user = user;
+	  if (idvec_contains (user, 0))
+	    new->isroot = 1;
 
 	  new->po = po;
 	  new->hook = 0;

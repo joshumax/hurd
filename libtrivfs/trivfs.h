@@ -27,8 +27,7 @@
 struct trivfs_protid
 {
   struct port_info pi;
-  uid_t *uids, *gids;
-  int nuids, ngids;
+  struct iouser *user;
   int isroot;
   /* REALNODE will be null if this protid wasn't fully created (currently
      only in the case where trivfs_protid_create_hook returns an error).  */
@@ -96,15 +95,13 @@ extern int trivfs_cntl_nportclasses;
 void trivfs_modify_stat (struct trivfs_protid *cred, struct stat *);
 
 /* If this variable is set, it is called every time an open happens.
-   UIDS, GIDS, and FLAGS are from the open; CNTL identifies the
+   USER and FLAGS are from the open; CNTL identifies the
    node being opened.  This call need not check permissions on the underlying
    node.  This call can block as necessary, unless O_NONBLOCK is set
    in FLAGS.  Any desired error can be returned, which will be reflected
    to the user and prevent the open from succeeding.  */
 error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
-				   uid_t *uids, u_int nuids,
-				   gid_t *gids, u_int ngids,
-				   int flags);
+				   struct iouser *user, int flags);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
@@ -161,8 +158,7 @@ int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    the underlying node reference, with the given identity, and open flags in
    FLAGS.  CNTL is the trivfs control object.  */
 error_t trivfs_open (struct trivfs_control *fsys,
-		     uid_t *uids, unsigned num_uids,
-		     gid_t *gids, unsigned num_gids,
+		     struct iouser *user,
 		     unsigned flags,
 		     mach_port_t realnode,
 		     struct trivfs_protid **cred);

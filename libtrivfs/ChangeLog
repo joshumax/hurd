@@ -3,6 +3,24 @@ Thu Nov  7 17:05:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* io-restrict-auth.c (trivfs_S_io_restrict_auth): If CRED has
 	root, use the requested id sets verbatim.
 
+Thu Nov  7 01:01:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* io-restrict-auth.c (trivfs_S_io_restrict_auth): Rewrite to use
+ 	idvecs.
+
+Wed Nov  6 23:40:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* trivfs.h (struct trivfs_protid): Delete members `uids', `gids',
+ 	`nuids', and `ngids'.  Replace with `user'.
+	(trivfs_check_open_hook): Delete args `uids', `nuids', `gids', 
+	`ngids'.  Replace with new arg `user'.  All callers changed.
+	(trivfs_open): Likewise.
+	* open.c (trivfs_open): Change to match new declaration.
+
+	* trivfs.h (struct trivfs_protid): Delete members `uids', `gids',
+	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Use new
+ 	iohelp_reauth call.
+
 Thu Sep 26 14:25:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-access.c (trivfs_S_file_check_access): Return

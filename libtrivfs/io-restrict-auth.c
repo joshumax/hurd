@@ -46,31 +46,32 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   int i;
   error_t err = 0;
   struct trivfs_protid *newcred;
-  uid_t *newuids, *newgids;
-  int newnuids, newngids;
+  struct idvec *uvec, *gvec;
+  struct iouser *user;
   
   if (!cred)
     return EOPNOTSUPP;
   
+  uvec = make_idvec ();
+  gvec = make_idvec ();
+
+  user = iohelp_create_iouser (uvec, gvec);
+
   if (cred->isroot)
-    /* CRED has root access, and so may use any ids.  */
     {
-      newuids = uids;
-      newnuids = nuids;
-      newgids = gids;
-      newngids = ngids;
+      /* CRED has root access, and so may use any ids.  */
+      idvec_set (uvec, uids, nuids);
+      idvec_set (gvec, gids, ngids);
     }
   else
-    /* Otherwise, use any of the requested ids that CRED already has.  */
     {
-      newuids = alloca (sizeof (uid_t) * cred->nuids);
-      newgids = alloca (sizeof (uid_t) * cred->ngids);
-      for (i = newnuids = 0; i < cred->nuids; i++)
-	if (listmember (uids, cred->uids[i], nuids))
-	  newuids[newnuids++] = cred->uids[i];
-      for (i = newngids = 0; i < cred->gids[i]; i++)
-	if (listmember (gids, cred->gids[i], ngids))
-	  newgids[newngids++] = cred->gids[i];
+      /* Otherwise, use any of the requested ids that CRED already has.  */
+      for (i = 0; i < cred->user->uids->num; i++)
+	if (listmember (uids, cred->user->uids->id[i], nuids))
+	  idvec_add (uvec, cred->user->uids->ids[i]);
+      for (i = 0; i < cred->user->gids->num; i++)
+	if (listmember (gids, cred->user->gids->ids[i], ngids))
+	  idvec_add (gvec, cred->user->gids->ids[i]);
     }
 
   err = ports_create_port (cred->po->cntl->protid_class,
@@ -78,29 +79,24 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   sizeof (struct trivfs_protid), 
 			   &newcred);
   if (err)
-    return err;
+    {
+      iouser_free_iouser (user);
+      return err;
+    }
 
   newcred->isroot = 0;
   mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
   mutex_unlock (&cred->po->cntl->lock);
-  if (cred->isroot)
-    {
-      for (i = 0; i < nuids; i++)
-	if (uids[i] == 0)
-	  newcred->isroot = 1;
-    }
-  newcred->gids = malloc (newngids * sizeof (uid_t));
-  newcred->uids = malloc (newnuids * sizeof (uid_t));
-  bcopy (newuids, newcred->uids, newnuids * sizeof (uid_t));
-  bcopy (newgids, newcred->gids, newngids * sizeof (uid_t));
-  newcred->ngids = newngids;
-  newcred->nuids = newnuids;
+  if (cred->isroot && idvec_contains (uvec, 0))
+    newcred->isroot = 1;
+  newcred->user = user;
   newcred->hook = cred->hook;
 
   err = io_restrict_auth (cred->realnode, &newcred->realnode, 
-			  newuids, newnuids, newgids, newngids);
+			  user->uids->ids, user->uids->num, 
+			  user->gids->ids, user->gids->num);
   if (!err && trivfs_protid_create_hook)
     {
       err = (*trivfs_protid_create_hook) (newcred);
