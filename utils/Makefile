@@ -29,10 +29,10 @@ DIST_FILES = shd.ChangeLog
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 
-all: $(targets)
-
 # This hack to get around ickiness in Makeconf
 libutil-libsubst = -lutil
+
+include ../Makeconf
 
 login: /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
@@ -42,7 +42,7 @@ settrans: ../libfshelp/libfshelp.a ../libthreads/libthreads.a
 ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe: ../libshouldbeinlibc/libshouldbeinlibc.a
 
-include ../Makeconf
-
 %: %.sh
 	cp $< $@
+
+$(targets): %: %.o
