@@ -105,70 +105,42 @@ char *doc =
 "\vThe USER, LID, PID, PGRP, and SID arguments may also be comma separated"
 " lists.  The System V options -u and -g may be accessed with -O and -G."; 
 
-int 
-parse_enum(char *arg, char **choices, char *kind, int allow_mismatches)
-{
-  int arglen = strlen(arg);
-  char **p = choices;
-  int partial_match = -1;
-
-  while (*p != NULL)
-    if (strcmp(*p, arg) == 0)
-      return p - choices;
-    else
-      {
-	if (strncmp(*p, arg, arglen) == 0)
-	  if (partial_match >= 0)
-	    argp_error (0, "%s: Ambiguous %s", arg, kind);
-	  else
-	    partial_match = p - choices;
-	p++;
-      }
-
-  if (partial_match < 0 && !allow_mismatches)
-    argp_error (0, "%s: Invalid %s", arg, kind);
-
-  return partial_match;
-}
-
 #define FILTER_OWNER		0x01
 #define FILTER_NOT_LEADER	0x02
 #define FILTER_CTTY    		0x04
 #define FILTER_UNORPHANED	0x08
 #define FILTER_PARENTED		0x10
 
-enum procsets
+/* A particular predefined output format.  */
+struct output_fmt
 {
-  PROCSET_ALL, PROCSET_SESSION, PROCSET_LOGIN
+  const char *name;
+  const char *sort_key;		/* How this format should be sorted.  */
+  const char *fmt;		/* The format string.  */
 };
-char *procset_names[] =
-{"all", "session", "login", 0};
 
-/* The names of various predefined output formats.  */
-char *fmt_names[] =
-  {"default",	"user",	"vmem",	"long",	"jobc",	"full",	"hurd",	"hurd-long",0};
-/* How each of those formats should be sorted; */
-char *fmt_sortkeys[] =
-  {"pid",	"-cpu","-mem",	"pid",	"pid",	"pid",	"pid",	"pid"};
-/* and the actual format strings.  */
-char *fmts[] =
+/* The predefined output formats.  */
+struct output_fmt output_fmts[] =
 {
-  /* default */
-  "%^%?user %pid %th %tt %sc %stat %time %command",
-  /* user (-u) */
-  "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %command",
-  /* vmem (-v) */
-  "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem %command",
-  /* long (-l) */
-  "%^%uid %pid %th %ppid %pri %ni %nth %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command",
-  /* jobc (-j) */
-  "%^%user %pid %th %ppid %pgrp %sess %lcoll %sc %stat %tt %time %command",
-  /* full (-f) (from sysv) */
-  "%^%-user %pid %ppid %tty %time %command",
-  /* hurd */
-  "%pid %th %uid %nth %{vsize:Vmem} %rss %{utime:User} %{stime:System} %args",
-  /* hurd-long */
-  "%pid %th %uid %ppid %pgrp %sess %nth %{vsize:Vmem} %rss %cpu %{utime:User} %{stime:System} %args"
+  { "default", "pid",
+    "%^%?user %pid %th %tt %sc %stat %time %command" },
+  { "user", "-cpu",
+    "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %command" },
+  { "vmem", "-mem",
+    "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem  %command"
+  },
+  { "long", "pid",
+    "%^%uid %pid %th %ppid %pri %ni %nth %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command" },
+  { "jobc", "pid",
+    "%^%user %pid %th %ppid %pgrp %sess %lcoll %sc %stat %tt %time %command" },
+  { "full", "pid",
+    "%^%-user %pid %ppid %tty %time %command" },
+  { "hurd", "pid",
+    "%pid %th %uid %nth %{vsize:Vmem} %rss %{utime:User} %{stime:System} %args"
+  },
+  { "hurd-long", "pid",
+    "%pid %th %uid %ppid %pgrp %sess %nth %{vsize:Vmem} %rss %cpu %{utime:User} %{stime:System} %args"
+  }
 };
 
 /* Augment the standard specs with our own abbrevs.  */
@@ -231,7 +203,7 @@ main(int argc, char *argv[])
   unsigned num_tty_names = 0;
   struct proc_stat_list *procset;
   struct ps_context *context;
-  char *fmt_string = "default", *sort_key_name = NULL;
+  const char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
     FILTER_OWNER | FILTER_NOT_LEADER | FILTER_UNORPHANED | FILTER_PARENTED;
   int sort_reverse = FALSE, print_heading = TRUE;
@@ -458,12 +430,19 @@ main(int argc, char *argv[])
     }
 
   {
-    int fmt_index = parse_enum(fmt_string, fmt_names, "format type", 1);
+    const char *fmt_name (int n)
+      {
+	return
+	  (n < 0 || n >= (sizeof output_fmts / sizeof *output_fmts))
+	  ? 0
+	  : output_fmts[n].name;
+      }
+    int fmt_index = parse_enum (fmt_string, fmt_name, "format type", 1);
     if (fmt_index >= 0)
       {
-	fmt_string = fmts[fmt_index];
+	fmt_string = output_fmts[fmt_index].fmt;
 	if (sort_key_name == NULL)
-	  sort_key_name = fmt_sortkeys[fmt_index];
+	  sort_key_name = output_fmts[fmt_index].sort_key;
       }
   }
 
