@@ -1,8 +1,7 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,98,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,7 +43,7 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
       mach_port_urefs_t refs;
       error_t err = mach_port_get_refs (task, name, right, &refs);
       if (! err)
-	fprintf (stream, " (refs: %u)", refs);
+	fprintf (stream, " (refs: %zu)", refs);
     }
 
   if (type == 0)
@@ -54,7 +53,7 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 	return err;
     }
 
-  fprintf (stream, hex_names ? "%#6x: " : "%6d: ", name);
+  fprintf (stream, hex_names ? "%#6zx: " : "%6zd: ", name);
 
   if (type & MACH_PORT_TYPE_RECEIVE)
     {
@@ -69,15 +68,15 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 	      fprintf (stream, " (");
 	      if (status.mps_pset != MACH_PORT_NULL)
 		fprintf (stream,
-			 hex_names ? "port-set: %#x, " : "port-set: %d, ",
+			 hex_names ? "port-set: %#zx, " : "port-set: %zd, ",
 			 status.mps_pset);
-	      fprintf (stream, "seqno: %u", status.mps_seqno);
+	      fprintf (stream, "seqno: %zu", status.mps_seqno);
 	      if (status.mps_mscount)
-		fprintf (stream, ", ms-count: %u", status.mps_mscount);
+		fprintf (stream, ", ms-count: %zu", status.mps_mscount);
 	      if (status.mps_qlimit != MACH_PORT_QLIMIT_DEFAULT)
-		fprintf (stream, ", qlimit: %u", status.mps_qlimit);
+		fprintf (stream, ", qlimit: %zu", status.mps_qlimit);
 	      if (status.mps_msgcount)
-		fprintf (stream, ", msgs: %u", status.mps_msgcount);
+		fprintf (stream, ", msgs: %zu", status.mps_msgcount);
 	      fprintf (stream, "%s%s%s)",
 		       status.mps_srights ? ", send-rights" : "",
 		       status.mps_pdrequest ? ", pd-req" : "",
@@ -120,9 +119,10 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 		fprintf (stream, " (empty)");
 	      else
 		{
-		  fprintf (stream, hex_names ? " (%#x" : " (%u", members[0]);
+		  fprintf (stream, hex_names ? " (%#zx" : " (%zu", members[0]);
 		  for (i = 1; i < members_len; i++)
-		    fprintf (stream, hex_names ? ", %#x" : ", %u", members[i]);
+		    fprintf (stream, hex_names ? ", %#zx" : ", %zu",
+			     members[i]);
 		  fprintf (stream, ")");
 		  munmap ((caddr_t) members, members_len * sizeof *members);
 		}
