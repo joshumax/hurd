@@ -32,6 +32,7 @@ skip; /* getprivports */
 skip; /* getallpids */
 skip; skip; /* set/get execdata */
 skip; /* execdata_notify */
+skip; skip; /* proc_uname, proc_register_version */
 
 skip; /* reauthenticate */
 skip; /* child */
