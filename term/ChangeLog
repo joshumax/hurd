@@ -4,6 +4,7 @@ Wed Feb 19 13:10:47 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	trivfs_cntl_portclasses, trivfs_cntl_nportclasses): Variables removed.
 	(main): Don't set port class/bucket variables, use
 	trivfs_add_{protid,control}_port_class instead.
+
 	* Makefile (HURDLIBS): Add iohelp & shouldbeinlibc.
 
 Thu Dec 12 18:33:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
