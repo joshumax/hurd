@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.20 2001/06/26 13:33:07 kettenis Exp $])
+AC_REVISION([$Id: configure.in,v 1.21 2001/08/26 00:10:50 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -104,9 +104,6 @@ AC_CACHE_CHECK([for libio],
     hurd_cv_libio=yes,
     hurd_cv_libio=no))
 
-# Check if libc contains getgrouplist().
-AC_CHECK_FUNCS(getgrouplist)
-
 # The versions of the symbols in libthreads have to match those in
 # libc.so.  Since the symbols in a libc that includes libio will be
 # versioned differently from the ones in a libc that uses stdio, this
@@ -119,6 +116,29 @@ else
 fi
 AC_SUBST(VERSIONING)
 
+# Check if libc contains getgrouplist().
+AC_CHECK_FUNCS(getgrouplist)
+
+AC_ARG_WITH(parted, dnl
+[  --without-parted        don't try to use GNU Parted libraries],
+	    , with_parted=yes)
+
+# Check if we have the necessary stuff to build against GNU Parted libraries.
+parted=$with_parted
+save_LIBS=
+LIBS=
+test $parted = no || {
+  AC_CHECK_HEADER(parted/parted.h, , parted=no)
+}
+test $parted = no || {
+  AC_CHECK_LIB(uuid, uuid_generate, , parted=no)
+}
+test $parted = no || {
+  AC_CHECK_LIB(parted, ped_device_read, , parted=no)
+}
+PARTED_LIBS=$LIBS
+LIBS=$save_LIBS
+AC_SUBST(PARTED_LIBS)
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.
