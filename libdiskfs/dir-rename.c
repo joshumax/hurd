@@ -24,7 +24,7 @@
 static struct mutex renamedirlock = MUTEX_INITIALIZER;
 
 /* Implement dir_rename as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_dir_rename (struct protid *fromcred,
 		     char *fromname,
 		     struct protid *tocred,
