@@ -294,18 +294,6 @@ void msg_thread ();
 
 /* Callbacks for boot_script.c; see boot_script.h.  */
 
-void *
-boot_script_malloc (int size)
-{
-  return malloc (size);
-}
-
-void
-boot_script_free (void *ptr, int size)
-{
-  free (ptr);
-}
-
 mach_port_t
 boot_script_read_file (const char *filename)
 {
@@ -347,7 +335,8 @@ boot_script_read_file (const char *filename)
 }
 
 int
-boot_script_exec_cmd (mach_port_t task, char *path, int argc,
+boot_script_exec_cmd (void *hook,
+		      mach_port_t task, char *path, int argc,
 		      char **argv, char *strings, int stringlen)
 {
   char *args, *p;
@@ -585,7 +574,7 @@ main (int argc, char **argv, char **envp)
 	while (p < buf + amt && *p != '\n')
 	  p++;
 	*p = '\0';
-	err = boot_script_parse_line (line);
+	err = boot_script_parse_line (0, line);
 	if (err)
 	  {
 	    char *str;
