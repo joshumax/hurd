@@ -27,9 +27,9 @@
 #include <hurd.h>		/* for getauth() */
 #include <hurd/hurd_types.h>
 #include <hurd/auth.h>
+#include <hurd/pipe.h>
 
 #include "sock.h"
-#include "pipe.h"
 #include "connq.h"
 #include "sserver.h"
 
@@ -57,8 +57,8 @@ S_io_read (struct sock_user *user,
   if (!err)
     {
       err =
-	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, NULL, NULL,
-		   data, data_len, amount, NULL, NULL, NULL, NULL);
+	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, NULL,
+		   data, data_len, amount);
       pipe_release (pipe);
     }
 
@@ -101,9 +101,7 @@ S_io_write (struct sock_user *user,
 
       if (!err)
 	{
-	  err = pipe_write (pipe, source_addr,
-			    data, data_len, NULL, 0, NULL, 0,
-			    amount);
+	  err = pipe_write (pipe, source_addr, data, data_len, amount);
 	  if (source_addr)
 	    ports_port_deref (source_addr);
 	}
@@ -310,6 +308,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
   bzero (st, sizeof (struct stat));
 
   st->st_fstype = FSTYPE_SOCKET;
+  st->st_mode = S_IFSOCK;
   st->st_fsid = getpid ();
   st->st_ino = sock->id;
   /* As we try to be clever with large transfers, ask for them. */
@@ -335,9 +334,6 @@ debug (sock, "lock");
     }
 
   copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
-
-  /* When RPIPE == WPIPE, it *is* a fifo; also the fifo server uses sockets. */
-  st->st_mode = (wpipe == rpipe ? S_IFIFO : S_IFSOCK);
 
 debug (sock, "unlock");
   mutex_unlock (&sock->lock);
