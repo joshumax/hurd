@@ -1,6 +1,6 @@
 /* A translator for fifos
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -20,11 +20,11 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <getopt.h>
 #include <unistd.h>
 #include <error.h>
 #include <string.h>
 #include <fcntl.h>
+#include <argp.h>
 
 #include <cthreads.h>
 #include <hurd.h>
@@ -32,6 +32,8 @@
 #include <hurd/trivfs.h>
 #include <hurd/fsys.h>
 #include <hurd/pipe.h>
+
+#include <version.h>
 
 /* Global options.  These defaults are the standard ones, I think...   */
 int wait_for_reader = 1, wait_for_writer = 1;
@@ -48,104 +50,61 @@ struct mutex active_fifo_lock;
 /* Signal this when ACTIVE_FIFO may have changed.  */
 struct condition active_fifo_changed;
 
-/* ---------------------------------------------------------------- */
+char *argp_program_version = STANDARD_HURD_VERSION (null);
 
-#define USAGE "Usage: %s [OPTION...]\n"
-
-static void
-usage(int status)
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -r, --multiple-readers     Allow multiple simultaneous readers\n\
-  -n, --noblock              Don't block on open\n\
-  -d, --dgram                Reads reflect write record boundaries\n\
-      --help                 Give this usage message\n\
-");
-    }
+  { "multiple-readers", 'm', 0, 0, "Allow multiple simultaneous readers" },
+  { "noblock",          'n', 0, 0, "Don't block on open" },
+  { "dgram",            'd', 0, 0, "Reads reflect write record boundaries" },
+  { 0 }
+};
 
-  exit(status);
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'm': one_reader = 0; break;
+    case 'n': wait_for_reader = wait_for_writer = 0; break;
+    case 'd': fifo_pipe_class = seqpack_pipe_class; break;
+    default: return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
 }
 
-#define SHORT_OPTIONS "&"
-
-static struct option options[] =
-{
-  {"multiple-readers", no_argument, 0, 'r'},
-  {"noblock", no_argument, 0, 'n'},
-  {"dgram", no_argument, 0, 'd'},
-  {"help", no_argument, 0, '&'},
-  {0, 0, 0, 0}
+static const struct argp argp = {
+  options, parse_opt, 0, "Translator for fifos"
 };
 
-/* ---------------------------------------------------------------- */
-
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
-
 void
 main (int argc, char **argv)
 {
-  int opt;
   error_t err;
   mach_port_t bootstrap;
-  struct port_bucket *port_bucket;
-  struct port_class *fifo_port_class, *fsys_port_class;
+  struct trivfs_control *fsys;
 
   fifo_pipe_class = stream_pipe_class;
 
-  while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 'r': one_reader = 0; break;
-      case 'n': wait_for_reader = wait_for_writer = 0; break;
-      case 'd': fifo_pipe_class = seqpack_pipe_class;
-      case '&': usage(0);
-      default:  usage(1);
-      }
-
-  if (argc != 1)
-    {
-      fprintf(stderr, "Usage: %s", program_invocation_name);
-      exit(1);
-    }
-  
-  port_bucket = ports_create_bucket ();
-  fifo_port_class = ports_create_class (trivfs_clean_protid, 0);
-  fsys_port_class = ports_create_class (trivfs_clean_cntl, 0);
-
-  trivfs_protid_portclasses[0] = fifo_port_class;
-  trivfs_cntl_portclasses[0] = fsys_port_class;
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    error(1, 0, "must be started as a translator");
+    error (1, 0, "must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap, 0,
-		       fsys_port_class, port_bucket,
-		       fifo_port_class, port_bucket,
-		       NULL);
+  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
   if (err)
-    error(3, err, "Contacting parent");
+    error (3, err, "Contacting parent");
 
   /* Launch. */
   do
     {
-      ports_enable_class (fifo_port_class);
-      ports_manage_port_operations_multithread (port_bucket,
-						trivfs_demuxer,
+      ports_enable_class (fsys->protid_class);
+      ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
 						30*1000, 5*60*1000, 0, 0);
     }
-  while (ports_count_class (fifo_port_class) > 0);
+  while (ports_count_class (fsys->protid_class) > 0);
 
   exit(0);
 }
