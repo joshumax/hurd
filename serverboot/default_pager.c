@@ -303,7 +303,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		    printf (" (excludes %uk marked bad)",
 			    hdr->nr_badpages * (LINUX_PAGE_SIZE / 1024));
 		  if (waste != 0)
-		    printf (" (excludes %uk pages at end of partition)",
+		    printf (" (excludes %uk at end of partition)",
 			    waste * (LINUX_PAGE_SIZE / 1024));
 		  printf ("\n");
 		}
@@ -313,9 +313,15 @@ new_partition (const char *name, struct file_direct *fdp,
 	  {
 	    part = 0;
 	    printf ("(default pager): "
-		    "Cannot find Linux swap signature page!  SKIPPING %s!",
-		    name);
+		    "Cannot find Linux swap signature page!  "
+		    "SKIPPING %s (%uk partition)!",
+		    name, part->total_size * (vm_page_size / 1024));
 	  }
+	else
+	  printf("(default pager): "
+		 "Paging to raw partition %s (%uk paging space)\n",
+		 name, part->total_size * (vm_page_size / 1024));
+
 	vm_deallocate(mach_task_self(), raddr, rsize);
 
 	return part;
