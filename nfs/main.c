@@ -74,8 +74,8 @@ int write_size = DEFAULT_WRITE_SIZE;
 
 #define OPT_SOFT	's'
 #define OPT_HARD	'h'
-#define OPT_RSIZE	'r'
-#define OPT_WSIZE	'w'
+#define OPT_RSIZE	'R'
+#define OPT_WSIZE	'W'
 #define OPT_STAT_TO	-2
 #define OPT_CACHE_TO	-3
 #define OPT_INIT_TR_TO	-4
@@ -172,7 +172,8 @@ static const struct argp_option startup_options[] = {
   { 0 }
 };
 static char *args_doc = "REMOTE_FS [HOST]";
-static char *doc = "If HOST is not specified, an attempt is made to extract"
+static char *doc = "Hurd nfs translator"
+"\vIf HOST is not specified, an attempt is made to extract"
 " it from REMOTE_FS, using either the `HOST:FS' or `FS@HOST' notations.";
 
 static const struct argp *
