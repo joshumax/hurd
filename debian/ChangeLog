@@ -1,3 +1,8 @@
+2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
+
+	* control (Provides, Replaces, Conflicts): Add fakeroot.
+	* changelog: Update for Debian package.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* rules (INFODIR): Move to /share.
