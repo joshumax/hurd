@@ -34,6 +34,7 @@
 
 #include "psout.h"
 #include "parse.h"
+#include "pids.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (ps);
 
@@ -41,46 +42,49 @@ const char *argp_program_version = STANDARD_HURD_VERSION (ps);
 
 static const struct argp_option options[] =
 {
-  {"all-users",  'a',     0,      0,  "List other users' processes"},
+  {0,0,0,0, "Output format selection:", 1},
   {"format",     'F',     "FMT",  0,  "Use the output-format FMT; FMT may be"
                                       " `default', `user', `vmem', `long',"
 				      " `jobc', `full', `hurd', `hurd-long',"
 				      " or a custom format-string"},
   {"posix-format",'o',    "FMT",  0,  "Use the posix-style output-format FMT"},
+  {0,            'f',     0,      0,  "Use the `full' output-format"},
+  {0,            'j',     0,      0,  "Use the `jobc' output-format"},
+  {0,            'l',     0,      0,  "Use the `long' output-format"},
+  {0,            'u',     0,      0,  "Use the `user' output-format"},
+  {0,            'v',     0,      0,  "Use the `vmem' output-format"},
+
+  {0,0,0,0, "Process filtering (by default, other user's"
+   " processes, threads, and process-group leaders are not shown):", 2},
+  {"all-users",  'a',     0,      0,  "List other users' processes"},
   {0,            'd',     0,      0,  "List all processes except process group"
                                       " leaders"},
   {"all",        'e',     0,      0,  "List all processes"},
   {0,		 'A',     0,      OPTION_ALIAS}, /* Posix option meaning -e */
-  {0,            'f',     0,      0,  "Use the `full' output-format"},
   {0,            'g',     0,      0,  "Include session and login leaders"},
-  {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
-  {0,            'j',     0,      0,  "Use the `jobc' output-format"},
-  {0,            'l',     0,      0,  "Use the `long' output-format"},
-  {"login",      'L',     "LID", OA, "Add the processes from the login"
-                                      " collection LID (which defaults that of"
-                                      " the current process)"},
-  {"lid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
+  {"owner",      'U',     "USER", 0,  "Show only processes owned by USER"},
+  {"not-owner",  'O',     "USER", 0,  "Show only processes not owned by USER"},
+  {"no-parent",  'P',     0,      0,  "Include processes without parents"},
+  {"threads",    'T',     0,      0,  "Show the threads for each process"},
+  {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
+                                      " terminal TTY"},
+  {0,            'x',     0,      0,  "Include orphaned processes"},
+
+  {0,0,0,0, "Elision of output fields:", 4},
   {"no-msg-port",'M',     0,      0,  "Don't show info that uses a process's"
                                       " msg port"},
   {"nominal-fields",'n',  0,      0,  "Don't elide fields containing"
                                       " `uninteresting' data"},
-  {"owner",      'U',     "USER", 0,  "Show only processes owned by USER"},
-  {"not-owner",  'O',     "USER", 0,  "Show only processes not owned by USER"},
-  {"pid",        'p',     "PID",  0,  "List the process PID"},
-  {"pgrp",       'G',     "PGRP", 0,  "List processes in process group PGRP"},
-  {"no-parent",  'P',     0,      0,  "Include processes without parents"},
   {"all-fields", 'Q',     0,      0,  "Don't elide unusable fields (normally"
                                       " if there's some reason ps can't print"
                                       " a field for any process, it's removed"
                                       " from the output entirely)"},
+
+  {0,0,0,0, "Output attributes:"},
+  {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
   {"reverse",    'r',     0,      0,  "Reverse the order of any sort"},
-  {"session",    'S',     "SID",  OA, "Add the processes from the session SID"
-                                      " (which defaults to the sid of the"
-                                      " current process)"},
-  {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
   {"sort",       's',	  "FIELD",0, "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
-  {"threads",    'T',     0,      0,  "Show the threads for each process"},
   {"top",	 'h',     "ENTRIES", OA, "Show the top ENTRIES processes"
                                       " (default 10), or if ENTRIES is"
                                       " negative, the bottom -ENTRIES"},
@@ -88,14 +92,9 @@ static const struct argp_option options[] =
   {"bottom",     'b',     "ENTRIES", OA, "Show the bottom ENTRIES processes"
                                       " (default 10)"},
   {"tail",	 0,       0,      OPTION_ALIAS},
-  {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
-                                      " terminal TTY"},
-  {0,            'u',     0,      0,  "Use the `user' output-format"},
-  {0,            'v',     0,      0,  "Use the `vmem' output-format"},
   {"width",      'w',     "WIDTH",OA, "If WIDTH is given, try to format the"
                                       " output for WIDTH columns, otherwise,"
 				      " remove the default limit"}, 
-  {0,            'x',     0,      0,  "Include orphaned processes"},
   {0, 0}
 };
 
@@ -154,38 +153,13 @@ spec_abbrevs[] = {
 static struct ps_fmt_specs ps_specs =
   { spec_abbrevs, &ps_std_fmt_specs };
 
-
-static process_t proc_server;
-
-/* Returns our session id.  */
-static pid_t
-current_sid()
-{
-  pid_t sid;
-  error_t err = proc_getsid(proc_server, getpid(), &sid);
-  if (err)
-    error(2, err, "Couldn't get current session id");
-  return sid;
-}
-
-/* Returns our login collection id.  */
-static pid_t
-current_lid()
-{
-  pid_t lid;
-  error_t err = proc_getloginid(proc_server, getpid(), &lid);
-  if (err)
-    error(2, err, "Couldn't get current login collection") ;
-  return lid;
-}
-
 /* Returns the UID for the user called NAME.  */
 static int
-lookup_user(const char *name)
+lookup_user (const char *name, struct argp_state *state)
 {
   struct passwd *pw = getpwnam(name);
   if (pw == NULL)
-    error(2, 0, "%s: Unknown user", name);
+    argp_failure (state, 2, 0, "%s: Unknown user", name);
   return pw->pw_uid;
 }
 
@@ -213,65 +187,25 @@ main(int argc, char *argv[])
   int show_non_hurd_procs = 1;	/* Show non-hurd processes.  */
   int posix_fmt = 0;		/* Use a posix_fmt-style format string.  */
   int top = 0;			/* Number of entries to output.  */
-
-  /* Add a specific process to be printed out.  */
-  void add_pid (unsigned pid)
-    {
-      struct proc_stat *ps;
-
-      err = proc_stat_list_add_pid (procset, pid, &ps);
-      if (err)
-	error (0, err, "%d: Can't add process", pid);
-
-      /* See if this process actually exists.  */
-      proc_stat_set_flags (ps, PSTAT_PROC_INFO);
-      if (! proc_stat_has (ps, PSTAT_PROC_INFO))
-	/* Give an error message; using ps_alive_filter below will delete the
-	   entry so it doesn't get output. */
-	error (0, 0, "%d: Unknown process", pid);
-
-      /* If explicit processes are specified, we probably don't want to
-	 filter them out later.  This implicit turning off of filtering might
-	 be confusing in the case where a login-collection or session is
-	 specified along with some pids, but it's probably not worth worrying
-	 about.  */
-      filter_mask = 0;
-    }
-  /* Print out all process from the given session.  */
-  void add_sid(unsigned sid)
-    {
-      err = proc_stat_list_add_session (procset, sid, 0, 0);
-      if (err)
-	error(2, err, "%u: Can't add session", sid);
-    }
-  /* Print out all process from the given login collection.  */
-  void add_lid(unsigned lid)
-    {
-      error_t err = proc_stat_list_add_login_coll (procset, lid, 0, 0);
-      if (err)
-	error(2, err, "%u: Can't add login collection", lid);
-    }
-  /* Print out all process from the given process group.  */
-  void add_pgrp(unsigned pgrp)
-    {
-      error_t err = proc_stat_list_add_pgrp (procset, pgrp, 0, 0);
-      if (err)
-	error(2, err, "%u: Can't add process group", pgrp);
-    }
+  pid_t *pids = 0;		/* User-specified pids.  */
+  size_t num_pids = 0;
+  struct pids_argp_params pids_argp_params = { &pids, &num_pids, 1 };
     
   /* Add a user who's processes should be printed out.  */
-  void add_uid (uid_t uid)
+  error_t add_uid (uid_t uid, struct argp_state *state)
     {
       error_t err = idvec_add (only_uids, uid);
       if (err)
-	error (23, err, "Can't add uid");
+	argp_failure (state, 23, err, "Can't add uid");
+      return err;
     }
   /* Add a user who's processes should not be printed out.  */
-  void add_not_uid (uid_t uid)
+  error_t add_not_uid (uid_t uid, struct argp_state *state)
     {
       error_t err = idvec_add (not_uids, uid);
       if (err)
-	error (23, err, "Can't add uid");
+	argp_failure (state, 23, err, "Can't add uid");
+      return err;
     }
   /* Returns TRUE if PS is owned by any of the users in ONLY_UIDS, and none
      in NOT_UIDS.  */
@@ -287,11 +221,12 @@ main(int argc, char *argv[])
 
   /* Add TTY_NAME to the list for which processes with those controlling
      terminals will be printed.  */
-  void add_tty_name (const char *tty_name)
+  error_t add_tty_name (const char *tty_name, struct argp_state *state)
     {
       error_t err = argz_add (&tty_names, &num_tty_names, tty_name);
       if (err)
-	error (8, err, "%s: Can't add tty", tty_name);
+	argp_failure (state, 8, err, "%s: Can't add tty", tty_name);
+      return err;
     }
   int proc_stat_has_ctty(struct proc_stat *ps)
     {
@@ -347,10 +282,9 @@ main(int argc, char *argv[])
 	      memcpy (&state->argv[state->next][1], arg, len);
 	      break;
 	    }
-	  /* Otherwise, fall through and treat the arg as a process id.  */
-	case 'p':
-	  parse_numlist(arg, add_pid, NULL, NULL, "process id");
-	  break;
+	  else
+	    /* Let PIDS_ARGP handle it.  */
+	    return ARGP_ERR_UNKNOWN;
 
 	case 'a': filter_mask &= ~FILTER_OWNER; break;
 	case 'd': filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
@@ -380,22 +314,15 @@ main(int argc, char *argv[])
 	  break;
 
 	case 't':
-	  parse_strlist (arg, add_tty_name, current_tty_name, "tty");
-	  break;
+	  return parse_strlist (arg, add_tty_name, current_tty_name, "tty", state);
 	case 'U':
-	  parse_numlist (arg, add_uid, NULL, lookup_user, "user");
-	  break;
+	  return parse_numlist (arg, add_uid, NULL, lookup_user, "user", state);
 	case 'O':
-	  parse_numlist (arg, add_not_uid, NULL, lookup_user, "user");
-	  break;
-	case 'S':
-	  parse_numlist(arg, add_sid, current_sid, NULL, "session id");
-	  break;
-	case 'L':
-	  parse_numlist(arg, add_lid, current_lid, NULL, "login collection");
-	  break;
-	case 'G':
-	  parse_numlist(arg, add_pgrp, NULL, NULL, "process group");
+	  return parse_numlist (arg, add_not_uid, NULL, lookup_user, "user", state);
+
+	case ARGP_KEY_INIT:
+	  /* Initialize inputs for child parsers.  */
+	  state->child_inputs[0] = &pids_argp_params;
 	  break;
 
 	default:
@@ -404,17 +331,15 @@ main(int argc, char *argv[])
       return 0;
     }
 
-  struct argp argp = { options, parse_opt, args_doc, doc};
+  struct argp_child argp_kids[] =
+    { { &pids_argp, 0,
+	"Process selection (before filtering; default is all processes):", 3},
+      {0} };
+  struct argp argp = { options, parse_opt, args_doc, doc, argp_kids };
 
-  proc_server = getproc();
-
-  err = ps_context_create (proc_server, &context);
+  err = ps_context_create (getproc (), &context);
   if (err)
     error(1, err, "ps_context_create");
-
-  err = proc_stat_list_create(context, &procset);
-  if (err)
-    error(1, err, "proc_stat_list_create");
 
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
@@ -424,20 +349,21 @@ main(int argc, char *argv[])
     {
       int uid = getuid ();
       if (uid >= 0)
-	add_uid (uid);
+	add_uid (uid, 0);
       else
 	filter_mask &= ~FILTER_OWNER; /* Must be an anonymous process.  */
     }
 
+  /* Select an explicit format string if FMT_STRING is a format name.  */
   {
-    const char *fmt_name (int n)
+    const char *fmt_name (unsigned n)
       {
 	return
-	  (n < 0 || n >= (sizeof output_fmts / sizeof *output_fmts))
-	  ? 0
-	  : output_fmts[n].name;
+	  n >= (sizeof output_fmts / sizeof *output_fmts)
+  	    ? 0
+	    : output_fmts[n].name;
       }
-    int fmt_index = parse_enum (fmt_string, fmt_name, "format type", 1);
+    int fmt_index = parse_enum (fmt_string, fmt_name, "format type", 1, 0);
     if (fmt_index >= 0)
       {
 	fmt_string = output_fmts[fmt_index].fmt;
@@ -446,11 +372,14 @@ main(int argc, char *argv[])
       }
   }
 
-  if (proc_stat_list_num_procs (procset) == 0)
+  err = proc_stat_list_create(context, &procset);
+  if (err)
+    error(1, err, "proc_stat_list_create");
+
+  if (num_pids == 0)
+    /* No explicit processes specified.  */
     {
       err = proc_stat_list_add_all (procset, 0, 0);
-      if (err)
-	error(2, err, "Can't get process list");
 
       /* Try to avoid showing non-hurd processes if this isn't a native-booted
 	 hurd system (because there would be lots of them).  Here we use a
@@ -469,6 +398,15 @@ main(int argc, char *argv[])
 	    show_non_hurd_procs = 1;
 	}
     }
+  else
+    /* User-specified processes. */
+    {
+      err = proc_stat_list_add_pids (procset, pids, num_pids, 0);
+      filter_mask = 0;		/* Don't mess with them.  */
+    }
+
+  if (err)
+    error(2, err, "Can't get process list");
 
   if (no_msg_port)
     proc_stat_list_set_flags(procset, PSTAT_NO_MSGPORT);
