@@ -32,7 +32,7 @@ DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S tcattr.c
 all: boot
 
 boot: $(OBJS)
-	$(link)
+	$(CC) $(CFLAGS) -o $@ $^
 
 install: boot
 	cp boot /usr/local/bin/boot
