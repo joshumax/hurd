@@ -22,6 +22,36 @@
 #include <stdio.h>
 #include "ext2fs.h"
 
+vm_address_t zeroblock = 0;
+char *modified_global_blocks = 0;
+
+static void allocate_mod_map ()
+{
+  static vm_size_t mod_map_size = 0;
+
+  if (modified_global_blocks && mod_map_size)
+    /* Get rid of the old one.  */
+    vm_deallocate (mach_task_self (),
+		   (vm_address_t)modified_global_blocks, mod_map_size);
+
+ if (!diskfs_readonly && block_size < vm_page_size)
+    /* If the block size is too small, we have to take extra care when
+       writing out pages from the global pager, to make sure we don't stomp
+       on any file pager blocks.  In this case use a bitmap to record which
+       global blocks are actually modified so the pager can write only them. */
+    {
+      error_t err;
+      /* One bit per filesystem block.  */
+      mod_map_size = sblock->s_blocks_count >> 3;
+      err =
+	vm_allocate (mach_task_self (),
+		     (vm_address_t *)&modified_global_blocks, mod_map_size, 1);
+      assert_perror (err);
+    }
+  else
+    modified_global_blocks = 0;
+}
+
 error_t
 get_hypermetadata (void)
 {
@@ -29,6 +59,9 @@ get_hypermetadata (void)
 
   if (err)
     return err;
+
+  if (zeroblock)
+    vm_deallocate (mach_task_self (), zeroblock, block_size);
 
   sblock = (struct ext2_super_block *)boffs_ptr (SBLOCK_OFFS);
   
@@ -45,13 +78,18 @@ get_hypermetadata (void)
   if (block_size > 8192)
     ext2_panic ("block size %ld is too big (max is 8192 bytes)", block_size);
 
-  log2_dev_blocks_per_fs_block = 0;
-  while ((device_block_size << log2_dev_blocks_per_fs_block) < block_size)
-    log2_dev_blocks_per_fs_block++;
-  if ((device_block_size << log2_dev_blocks_per_fs_block) != block_size)
+  log2_block_size = 0;
+  while ((1 << log2_block_size) < block_size)
+    log2_block_size++;
+  if ((1 << log2_block_size) != block_size)
+    ext2_panic ("block size %ld isn't a power of two!", block_size);
+
+  log2_dev_blocks_per_fs_block =
+    log2_block_size - diskfs_log2_device_block_size;
+  if (log2_dev_blocks_per_fs_block < 0)
     ext2_panic ("block size %ld isn't a power-of-two multiple of the device"
 		" block size (%d)!",
-		block_size, device_block_size);
+		block_size, diskfs_device_block_size);
 
   log2_stat_blocks_per_fs_block = 0;
   while ((512 << log2_stat_blocks_per_fs_block) < block_size)
@@ -60,27 +98,7 @@ get_hypermetadata (void)
     ext2_panic ("block size %ld isn't a power-of-two multiple of 512!",
 		block_size);
 
-  log2_block_size = 0;
-  while ((1 << log2_block_size) < block_size)
-    log2_block_size++;
-  if ((1 << log2_block_size) != block_size)
-    ext2_panic ("block size %ld isn't a power of two!", block_size);
-
-  if (!diskfs_readonly && block_size < vm_page_size)
-    /* If the block size is too small, we have to take extra care when
-       writing out pages from the global pager, to make sure we don't stomp
-       on any file pager blocks.  In this case use a bitmap to record which
-       global blocks are actually modified so the pager can write only them. */
-    {
-      /* One bit per filesystem block.  */
-      err =
-	vm_allocate (mach_task_self (),
-		     (vm_address_t *)&modified_global_blocks,
-		     sblock->s_blocks_count >> 3, 1);
-      assert_perror (err);
-    }
-  else
-    modified_global_blocks = 0;
+  allocate_mod_map ();
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / sizeof (struct ext2_inode);
@@ -103,6 +121,15 @@ get_hypermetadata (void)
 
   diskfs_end_catch_exception ();
 
+  if (diskfs_device_size
+      < (sblock->s_blocks_count << log2_dev_blocks_per_fs_block))
+    ext2_panic ("disk size (%ld blocks) too small (superblock says we need %ld)",
+		diskfs_device_size,
+		sblock->s_blocks_count << log2_dev_blocks_per_fs_block);
+
+  /* A handy source of page-aligned zeros.  */
+  vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
+
   return 0;
 }
 
@@ -117,9 +144,27 @@ diskfs_set_hypermetadata (int wait, int clean)
       sblock_dirty = 0;		/* doesn't matter if this gets stomped */
       bcopy (sblock, (void *)page_buf, SBLOCK_SIZE);
       ((struct ext2_super_block *)page_buf)->s_state |= EXT2_VALID_FS;
-      dev_write_sync (SBLOCK_OFFS / device_block_size, page_buf, block_size);
+      diskfs_device_write_sync (SBLOCK_OFFS >> diskfs_log2_device_block_size,
+				page_buf, block_size);
       free_page_buf (page_buf);
     }
   else if (sblock_dirty)
     sync_super_block ();
+}
+
+void 
+diskfs_readonly_changed (int readonly)
+{
+  allocate_mod_map ();
+
+  vm_protect (mach_task_self (),
+	      (vm_address_t)disk_image,
+	      diskfs_device_size << diskfs_log2_device_block_size,
+	      0, VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE));
+
+  if (!readonly && (sblock->s_state & EXT2_VALID_FS))
+    {
+      sblock->s_state &= ~EXT2_VALID_FS;
+      sync_super_block ();
+    }
 }
