@@ -484,16 +484,20 @@ error_t
 fstab_add_fs (struct fstab *dst, struct fs *fs, struct fs **copy)
 {
   error_t err;
+  struct fs *new;
   struct fstab *src = fs->fstab;
 
   if (dst->types != src->types)
     return EINVAL;
 
-  err = fstab_add_mntent (dst, &fs->mntent, copy);
+  err = fstab_add_mntent (dst, &fs->mntent, &new);
   if (err)
     return err;
 
-  (*copy)->type = fs->type;
+  new->type = fs->type;
+
+  if (copy)
+    *copy = new;
 
   return 0;
 }
