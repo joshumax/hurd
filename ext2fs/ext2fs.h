@@ -74,7 +74,7 @@ struct disknode
   /* Links on hash list. */
   struct node *hnext, **hprevp;
 
-  struct rwlock allocptrlock;
+  struct rwlock alloc_lock;
 
   struct pokel pokel;
 
