@@ -3,7 +3,7 @@ dnl In the situation that cross-linking is impossible, the variable
 dnl `cross_linkable' will be substituted with "yes".
 
 dnl
-AC_DEFUN(AC_PROG_CC_LOCAL,
+AC_DEFUN(hurd_PROG_CC,
 [AC_BEFORE([$0], [AC_PROG_CPP])dnl
 AC_CHECK_PROG(CC, gcc, gcc)
 if test -z "$CC"; then
@@ -11,7 +11,7 @@ if test -z "$CC"; then
   test -z "$CC" && AC_MSG_ERROR([no acceptable cc found in \$PATH])
 fi
 
-AC_PROG_CC_WORKS_LOCAL
+hurd_PROG_CC_WORKS
 AC_PROG_CC_GNU
 
 if test $ac_cv_prog_gcc = yes; then
@@ -52,7 +52,7 @@ dnl   test "${CFLAGS+set}" = set || CFLAGS="-g"
 fi
 ])
 
-AC_DEFUN(AC_PROG_CC_WORKS_LOCAL,
+AC_DEFUN(hurd_PROG_CC_WORKS,
 [AC_MSG_CHECKING([whether the C compiler ($CC $CFLAGS $LDFLAGS) works])
 AC_LANG_SAVE
 AC_LANG_C
@@ -71,4 +71,3 @@ AC_MSG_RESULT($ac_cv_prog_cc_cross)
 AC_SUBST(cross_linkable)
 cross_compiling=$ac_cv_prog_cc_cross
 ])
-
