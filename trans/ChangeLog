@@ -1,5 +1,7 @@
 1999-06-01  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* crash.c (options): Add --dump-core as alias for --core-file.
+
 	* crash.c: Support three modes of operation, selected by command line
 	switches:
 		-s/--suspend	suspend crashing process (old behavior)
