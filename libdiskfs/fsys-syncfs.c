@@ -35,7 +35,7 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 	error_t error;
 	
 	error = fshelp_fetch_control (np, &control);
-	if (!error && control != MACH_PORT_NULL)
+	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    fsys_syncfs (control, wait, 1);
 	    mach_port_deallocate (mach_task_self (), control);
