@@ -1,4 +1,4 @@
-# Copyright (C) 1997, 1999 Free Software Foundation, Inc.
+# Copyright (C) 1997,99,2001 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -30,11 +30,14 @@ HURDLIBS = threads
 installationdir = $(prefix)/boot
 
 UNZIP_OBJS = unzip.o inflate.o util.o do-bunzip2.o
-OBJS = $(subst .c,.o,$(SRCS)) boot_script.o memory_objectServer.o \
-	default_pagerServer.o excServer.o bootstrapServer.o \
-	memory_object_defaultServer.o $(UNZIP_OBJS)
+OBJS = $(subst .c,.o,$(SRCS)) \
+       boot_script.o userland-boot.o \
+       memory_objectServer.o \
+       default_pagerServer.o excServer.o bootstrapServer.o \
+       memory_object_defaultServer.o $(UNZIP_OBJS)
 
 vpath boot_script.c $(srcdir)/../boot
+vpath userland-boot.c $(srcdir)/../boot
 
 # Look for zip stuff
 VPATH += $(srcdir)/../exec

@@ -24,6 +24,7 @@
  * the rights to redistribute these changes.
  */
 
+#include <stddef.h>
 #include <assert.h>
 #include <mach/mach_interface.h>
 #include <varargs.h>
@@ -237,7 +238,8 @@ mach_port_t boot_script_read_file (const char *file)
 { return MACH_PORT_NULL; }	/* XXX */
 
 int
-boot_script_exec_cmd (task_t user_task,
+boot_script_exec_cmd (void *hook,
+		      task_t user_task,
 		      char *file_name,
 		      int arg_count, char **argv,
 		      char *argstrings, int argslen)

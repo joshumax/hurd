@@ -474,7 +474,7 @@ parse_script (struct file *f)
       while (p < buf + f->f_size && *p != '\n')
 	p++;
       *p = '\0';
-      err = boot_script_parse_line (line);
+      err = boot_script_parse_line (0, line);
       if (err)
 	boot_panic (err);
       if (p == buf + f->f_size)
