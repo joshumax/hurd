@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1999 Free Software Foundation
    Written by Thomas Bushnell, BSG.
 
@@ -26,12 +26,12 @@ diskfs_S_io_revoke (struct protid *cred)
   error_t err;
   struct node *np;
 
-  error_t 
+  error_t
     iterator_function (void *port)
     {
       struct protid *user = port;
-            
-      if ((user.pi.class == diskfs_protid_class)
+
+      if ((user->pi.class == diskfs_protid_class)
 	  && (user != cred)
 	  && (user->po->np == np))
 	ports_destroy_right (user);
@@ -40,23 +40,21 @@ diskfs_S_io_revoke (struct protid *cred)
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
 
   mutex_lock (&np->lock);
-  
+
   err = fshelp_isowner (&np->dn_stat, cred->user);
   if (err)
     {
       mutex_unlock (&np->lock);
       return err;
     }
-  
+
   ports_bucket_iterate (diskfs_port_bucket, iterator_function);
 
   mutex_unlock (&np->lock);
 
   return 0;
 }
-
-
