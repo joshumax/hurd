@@ -1,3 +1,7 @@
+2000-01-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* maptime.h: Include <errno.h> for error_t decl.
+
 1999-10-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* wire.c: Use a weak reference to _DYNAMIC.
