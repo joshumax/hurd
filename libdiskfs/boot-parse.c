@@ -25,6 +25,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <sys/reboot.h>
 
+int diskfs_bootflags;
+char *diskfs_bootflagarg;
+
 /* Call this if the bootstrap port is null and you want to support
    being a bootstrap filesystem.  ARGC and ARGV should be as passed
    to main.  If the arguments are not in the proper format, an
