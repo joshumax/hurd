@@ -252,6 +252,7 @@ struct procinfo
   struct task_basic_info taskinfo;
   struct
     {
+      int died;			/* this thread died in the middle of call */
       int rpc_block;		/* thred is blocked on this RPC */
       struct thread_basic_info pis_bi;
       struct thread_sched_info pis_si;
