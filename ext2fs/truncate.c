@@ -324,7 +324,7 @@ force_delayed_copies (struct node *node, off_t length)
   spin_lock (&node_to_page_lock);
   upi = node->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node_to_page_lock);
  
   if (upi)
@@ -336,7 +336,7 @@ force_delayed_copies (struct node *node, off_t length)
       poke_pages (obj, round_page (length), round_page (node->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
       pager_flush_some (upi->p, round_page(length), node->allocsize - length, 1);
-      pager_unreference (upi->p);
+      ports_port_deref (upi->p);
     }
 }
 
@@ -348,13 +348,13 @@ enable_delayed_copies (struct node *node)
   spin_lock (&node_to_page_lock);
   upi = node->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
 
   spin_unlock (&node_to_page_lock);
   if (upi)
     {
       pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
-      pager_unreference (upi->p);
+      ports_port_deref (upi->p);
     }
 }
 
