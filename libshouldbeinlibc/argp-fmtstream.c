@@ -22,15 +22,24 @@
 /* This package emulates glibc `line_wrap_stream' semantics for systems that
    don't have that.  */
 
+/* Get some gnu features: isblank, vsnprintf  */
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include "argp-fmtstream.h"
 #include "argp-namefrob.h"
 
 #ifndef ARGP_FMTSTREAM_USE_LINEWRAP
+
+#ifndef isblank
+#define isblank(ch) ((ch)==' ' || (ch)=='\t')
+#endif
 
 #define INIT_BUF_SIZE 200
 #define PRINTF_SIZE_GUESS 150
