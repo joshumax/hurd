@@ -1,1 +1,2 @@
-rename boot/servers.boot copy bfloppy1.boot
+mkdir boot
+rename boot/servers.boot copy bfloppy2.boot
