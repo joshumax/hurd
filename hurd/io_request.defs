@@ -27,3 +27,141 @@ subsystem io 21000;
 #ifdef IO_IMPORTS
 IO_IMPORTS
 #endif
+
+type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
+	ctype: mach_port_t;
+
+simpleroutine io_write_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		data: data_t;
+		offset: off_t);
+
+simpleroutine io_read_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		offset: off_t;
+		amount: int);
+
+simpleroutine io_seek_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		offset: off_t;
+		whence: int);
+
+simpleroutine io_readable_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_set_all_openmodes_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		newbits: int);
+
+simpleroutine io_get_openmodes_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_set_some_openmodes_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		bits_to_set: int);
+
+simpleroutine io_clear_some_openmodes_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		bits_to_clear: int);
+
+simpleroutine io_async_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		notify_port: mach_port_send_t);
+
+simpleroutine io_mod_owner_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		owner: pid_t);
+
+simpleroutine io_get_owner_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_get_icky_async_id_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_select_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		select_type: int;
+		return_port: mach_port_make_send_once_t;
+		id_tag: int);
+
+simpleroutine io_stat_request (
+		stat_object: io_t;
+		reply: reply_port_t);
+
+/* io_reauthenticate is a simpleroutine already. */
+skip;
+
+simpleroutine io_restrict_auth_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		uids: idarray_t;
+		gids: idarray_t);
+
+simpleroutine io_duplicate_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_server_version_request (
+		vers_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_map_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_map_cntl_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_get_conch_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_release_conch_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_eofnotify_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_prenotify_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		write_start: vm_offset_t;
+		write_end: vm_offset_t);
+
+simpleroutine io_postnotify_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		write_start: vm_offset_t;
+		write_end: vm_offset_t);
+
+simpleroutine io_readnotify_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_readsleep_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_sigio_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+
+		
+		
