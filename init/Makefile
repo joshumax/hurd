@@ -30,7 +30,7 @@ init: $(OBJS)
 
 init.o: startup_S.h startup_reply.h
 
-install:
+install: init $(hurdroot)
 	cp init $(hurdroot)/hurd/init
 
 
