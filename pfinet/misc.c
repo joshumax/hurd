@@ -113,11 +113,22 @@ struct socket *
 sock_alloc (void)
 {
   struct socket *sock;
+  struct wait_queue *wait, **waitp;
+
+  sock = malloc (sizeof (struct wait_queue) 
+		 + sizeof (struct wait_queue *)
+		 + sizeof (struct socket));
+  wait = (void *)sock + sizeof (struct socket);
+  waitp = (void *)wait + sizeof (struct wait_queue);
   
-  sock = malloc (sizeof (struct socket));
   bzero (sock, sizeof (struct socket));
-  
   sock->state = SS_UNCONNECTED;
+  sock->wait = waitp;
+
+  condition_init (&wait->c);
+
+  *waitp = wait;
+
   return sock;
 }
 
