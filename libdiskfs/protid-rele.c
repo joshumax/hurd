@@ -15,10 +15,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is 
    installed in the clean routines list.)  The ports library will
    free the structure for us.  */
+void
 diskfs_protid_rele (void *arg)
 {
   struct protid *cred = arg;
@@ -26,8 +29,9 @@ diskfs_protid_rele (void *arg)
   if (cred->shared_object)
     mach_port_deallocate (mach_task_self (), cred->shared_object);
   if (cred->mapped)
-    vm_deallocate (mach_task_self (), cred->mapped, vm_page_size);
-  diskfs_peropen_rele (cred->po);
+    vm_deallocate (mach_task_self (), (vm_address_t) cred->mapped,
+		   vm_page_size);
+  diskfs_release_peropen (cred->po);
 }
 
   
