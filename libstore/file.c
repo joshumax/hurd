@@ -68,19 +68,27 @@ file_write (struct store *store,
 }
 
 static error_t
-file_decode (struct store_enc *enc, struct store_class *classes,
+file_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
   return store_std_leaf_decode (enc, _store_file_create, store);
 }
 
-static struct store_class
-file_class =
+static error_t
+file_open (const char *name, int flags,
+	   const struct store_class *const *classes,
+	   struct store **store)
+{
+  return store_file_open (name, flags, store);
+}
+
+struct store_class
+store_file_class =
 {
   STORAGE_HURD_FILE, "file", file_read, file_write,
-  store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode
+  store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
+  0, 0, 0, 0, 0, file_open
 };
-_STORE_STD_CLASS (file_class);
 
 static error_t
 file_byte_read (struct store *store,
@@ -120,8 +128,8 @@ file_byte_write (struct store *store,
   return io_write (store->port, buf, len, addr, amount);
 }
 
-static struct store_class
-file_byte_class = {STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write};
+struct store_class
+store_file_byte_class = {STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write};
 
 /* Return a new store in STORE referring to the mach file FILE.  Consumes
    the send right FILE.  */
@@ -150,10 +158,12 @@ _store_file_create (file_t file, int flags, size_t block_size,
 		    struct store **store)
 {
   if (block_size == 1)
-    *store = _make_store (&file_byte_class, file, flags, 1, runs, num_runs, 0);
+    *store = _make_store (&store_file_byte_class,
+			  file, flags, 1, runs, num_runs, 0);
   else if ((block_size & (block_size - 1)) == 0)
     *store =
-      _make_store (&file_class, file, flags, block_size, runs, num_runs, 0);
+      _make_store (&store_file_class,
+		   file, flags, block_size, runs, num_runs, 0);
   else
     return EINVAL;		/* block size not a power of two */
   return *store ? 0 : ENOMEM;
