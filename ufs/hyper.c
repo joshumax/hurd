@@ -18,6 +18,7 @@
 #include "ufs.h"
 #include "fs.h"
 #include <string.h>
+#include <stdio.h>
 
 void
 get_hypermetadata (void)
@@ -26,7 +27,26 @@ get_hypermetadata (void)
   
   err = dev_read_sync (SBLOCK, (vm_address_t *)&sblock, SBSIZE);
   assert (!err);
-  
+
+  if (sblock->fs_magic != FS_MAGIC)
+    {
+      fprintf (stderr, "Bad magic number %#lx (should be %#x)\n",
+	       sblock->fs_magic, FS_MAGIC);
+      exit (1);
+    }
+  if (sblock->fs_bsize > 8192)
+    {
+      fprintf (stderr, "Block size %ld is too big (max is 8192 bytes)\n",
+	       sblock->fs_bsize);
+      exit (1);
+    }
+  if (sblock->fs_bsize < sizeof (struct fs))
+    {
+      fprintf (stderr, "Block size %ld is too small (min is %ld bytes)\n",
+	       sblock->fs_bsize, sizeof (struct fs));
+      exit (1);
+    }
+
   /* If this is an old filesystem, then we have some more
      work to do; some crucial constants might not be set; we
      are therefore forced to set them here.  */
