@@ -166,17 +166,19 @@ check_hashbang (struct execdata *e,
 
 
   /* Find the name of the interpreter.  */
-  p = interp_buf;
-  p += strspn (p, " \t");
-  interp = strsep (&p, " \t");
+  interp = interp_buf + strspn (interp_buf, " \t");
+  p = strpbrk (interp, " \t");
 
   if (p)
     {
+      /* Terminate the interpreter name.  */
+      *p++ = '\0';
+
       /* Skip remaining blanks, and the rest of the line is the argument.  */
 
       arg = p + strspn (p, " \t");
-      arg_len = interp_len - 1 - (arg - interp_buf); /* without null */
-      interp_len = p - interp;
+      arg_len = interp_len - 1 - (arg - interp_buf); /* without null here */
+      interp_len = p + 1 - interp; /* This one includes the null.  */
 
       if (arg_len == 0)
 	arg = NULL;
@@ -194,6 +196,7 @@ check_hashbang (struct execdata *e,
       /* There is no argument.  */
       arg = NULL;
       arg_len = 0;
+      interp_len -= interp - interp_buf; /* Account for blanks skipped.  */
     }
 
   user_crdir = user_cwdir = MACH_PORT_NULL;
