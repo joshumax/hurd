@@ -47,6 +47,8 @@ exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 
 clean:
 	rm -f *.o ufs
+relink:
+	rm -f ufs
 
 $(OBJS): ufs.h 
 $(OBJS): $(addprefix $(headers)/hurd/,diskfs.h pager.h ioserver.h \
