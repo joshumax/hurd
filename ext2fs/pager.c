@@ -53,6 +53,7 @@ find_address (struct user_pager_info *upi,
     }
   else 
     {
+      error_t err;
       struct node *np = upi->np;
       
       rwlock_reader_lock (&np->dn->allocptrlock);
@@ -69,7 +70,14 @@ find_address (struct user_pager_info *upi,
       else
 	*disksize = vm_page_size;
 
-      return ext2_getblk(np, offset / block_size, 0, addr);
+      err = ext2_getblk(np, offset / block_size, 0, addr);
+      if (err == EINVAL)
+	{
+	  *addr = 0;
+	  err = 0;
+	}
+
+      return err;
     }
 }
 
@@ -154,21 +162,11 @@ pager_unlock_page (struct user_pager_info *pager,
   else
     {
       error_t err;
+      char *buf;
       struct node *np = pager->np;
       struct disknode *dn = np->dn;
-      int block_size_shift = EXT2_BLOCK_SIZE_BITS(sblock);
 
       rwlock_writer_lock (&dn->allocptrlock);
-  
-      /* If this is the last block, we don't let it get unlocked. */
-      if (address + vm_page_size
-	  > ((np->allocsize >> block_size_shift) << block_size_shift))
-	{
-	  ext2_error ("pager_unlock_page",
-		      "attempt to unlock at last block denied\n");
-	  rwlock_writer_unlock (&dn->allocptrlock);
-	  return EIO;
-	}
 
       err = diskfs_catch_exception ();
       if (!err)
@@ -236,7 +234,6 @@ create_disk_pager ()
 void
 diskfs_file_update (struct node *np, int wait)
 {
-  struct dirty_indir *d, *tmp;
   struct user_pager_info *upi;
 
   spin_lock (&node2pagelock);
@@ -251,13 +248,7 @@ diskfs_file_update (struct node *np, int wait)
       pager_unreference (upi->p);
     }
   
-  for (d = np->dn->dirty; d; d = tmp)
-    {
-      sync_disk_image (d->bno, block_size, wait);
-      tmp = d->next;
-      free (d);
-    }
-  np->dn->dirty = 0;
+  pokel_sync (&np->dn->pokel, wait);
 
   diskfs_node_update (np, wait);
 }
@@ -272,9 +263,7 @@ diskfs_get_filemap (struct node *np)
 
   assert (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)
-	  || (S_ISLNK (np->dn_stat.st_mode)
-	      && (!direct_symlink_extension 
-		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
+	  || (S_ISLNK (np->dn_stat.st_mode)));
 
   spin_lock (&node2pagelock);
   if (!np->dn->fileinfo)
@@ -406,7 +395,7 @@ diskfs_sync_everything (int wait)
       if (p != diskpager)
 	pager_sync (p->p, wait);
       else
-	sync_disk (wait);
+	pokel_sync (&sblock_pokel, wait);
     }
   
   copy_sblock ();
