@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -42,6 +42,12 @@ init_devices (void)
   dev_base = 0;
 }
 
+void
+add_device (struct device *dev)
+{
+  dev->next = dev_base;
+  dev_base = dev;
+}
 
 
   

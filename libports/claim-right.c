@@ -34,13 +34,16 @@ ports_claim_right (void *portstruct)
       
       mutex_lock (&_ports_lock);
       ihash_locp_remove (pi->bucket->htable, pi->hentry);
+      mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
       pi->port_right = MACH_PORT_NULL;
       if (pi->flags & PORT_HAS_SENDRIGHTS)
 	{
 	  pi->flags &= ~PORT_HAS_SENDRIGHTS;
+	  mutex_unlock (&_ports_lock);
 	  ports_port_deref (pi);
 	}
-      mutex_unlock (&_ports_lock);
+      else
+	mutex_unlock (&_ports_lock);
     }
   else
     ret = MACH_PORT_NULL;
