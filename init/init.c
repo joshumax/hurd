@@ -178,10 +178,10 @@ reboot_system (int flags)
       {
 	task_t task;
 	err = proc_pid2task (procserver, pp[ind], &task);
-/*	if (err == MACH_SEND_INVALID_DEST)
+	if (err == MACH_SEND_INVALID_DEST)
 	  goto procbad; 
 
-	else */ if (err)
+	else  if (err)
 	  {
 	    printf ("init: getting task for pid %d: %s\n",
 		    pp[ind], strerror (err));
@@ -196,8 +196,8 @@ reboot_system (int flags)
 	    struct procinfo *pi = 0;
 	    u_int pisize = 0;
 	    err = proc_getprocinfo (procserver, pp[ind], (int **)&pi, &pisize);
-/*	    if (err == MACH_SEND_INVALID_DEST)
-	      goto procbad; */
+	    if (err == MACH_SEND_INVALID_DEST)
+	      goto procbad; 
 	    if (err)
 	      {
 		printf ("init: getting procinfo for pid %d: %s\n",
