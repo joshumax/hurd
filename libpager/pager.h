@@ -30,7 +30,7 @@ int pager_demuxer (mach_msg_header_t *inp,
 		   mach_msg_header_t *outp);
 
 /* Create a new pager.  The pager will have a port created for it
-   (using libports, in BUCKET of CLASS) and will be immediately ready
+   (using libports, in BUCKET) and will be immediately ready
    to receive requests.  U_PAGER will be provided to later calls to
    pager_find_address.  The pager will have one user reference
    created.  MAY_CACHE and COPY_STRATEGY are the original values of
@@ -40,7 +40,6 @@ int pager_demuxer (mach_msg_header_t *inp,
 struct pager *
 pager_create (struct user_pager_info *u_pager, 
 	      struct port_bucket *bucket,
-	      struct port_class *class,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy);
 
