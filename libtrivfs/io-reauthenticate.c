@@ -28,7 +28,7 @@ kern_return_t
 trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
 			    mach_port_t reply,
 			    mach_msg_type_name_t replytype,
-			    int rendint)
+			    mach_port_t rendport)
 {
   struct trivfs_protid *newcred;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
@@ -52,7 +52,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   err = auth_server_authenticate (auth, 
 				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
-				  rendint,
+				  rendport,
+				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 

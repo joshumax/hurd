@@ -21,7 +21,7 @@
 /* Implement io_reathenticate as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_reauthenticate (struct protid *cred, 
-		     int rend_int)
+			    mach_port_t rend_port)
 {
   struct protid *newcred;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
@@ -43,7 +43,8 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   err = auth_server_authenticate (diskfs_auth_server_port, 
 				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
-				  rend_int,
+				  rend_port,
+				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 
