@@ -1,5 +1,5 @@
 /* Device input and output
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-#include "ufs.h"
+#include "ext2fs.h"
 #include <device/device.h>
 #include <device/device_request.h>
 
@@ -31,7 +31,7 @@ dev_write_sync (daddr_t addr,
 {
   int foo;
   assert (!diskfs_readonly);
-  if (device_write (ufs_device, 0, addr, (io_buf_ptr_t) data, len, &foo)
+  if (device_write (ext2fs_device, 0, addr, (io_buf_ptr_t) data, len, &foo)
       || foo != len)
     return EIO;
   return 0;
@@ -45,7 +45,7 @@ dev_write (daddr_t addr,
 	   long len)
 {
   assert (!diskfs_readonly);
-  if (device_write_request (ufs_device, MACH_PORT_NULL, 0, addr,
+  if (device_write_request (ext2fs_device, MACH_PORT_NULL, 0, addr,
 			    (io_buf_ptr_t) data, len))
     return EIO;
   return 0;
@@ -61,7 +61,7 @@ dev_read_sync (daddr_t addr,
 	       long len)
 {
   int foo;
-  deverr = device_read (ufs_device, 0, addr, len, (io_buf_ptr_t *)data,
+  deverr = device_read (ext2fs_device, 0, addr, len, (io_buf_ptr_t *)data,
 			(u_int *)&foo);
   if (deverr || foo != len)
     return EIO;
