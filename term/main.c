@@ -90,6 +90,7 @@ main (int argc, char **argv)
   if (!strcmp (argv[2], "device"))
     {
       type = T_DEVICE;
+      bottom = &devio_bottom;
       ourclass = tty_class;
       ourcntlclass = tty_cntl_class;
       ourcntl = &termctl;
@@ -101,6 +102,7 @@ main (int argc, char **argv)
   else if (!strcmp (argv[2], "pty-master"))
     {
       type = T_PTYMASTER;
+      bottom = &ptyio_botom;
       ourclass = pty_class;
       ourcntlclass = pty_cntl_class;
       ourcntl = &ptyctl;
@@ -111,6 +113,7 @@ main (int argc, char **argv)
   else if (!strcmp (argv[2], "pty-slave"))
     {
       type = T_PTYSLAVE;
+      bottom = &ptyio_bottom;
       ourclass = tty_class;
       ourcntlclass = tty_cntl_class;
       ourcntl = &termctl;
