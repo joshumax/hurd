@@ -1,5 +1,22 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* priv.h (EXECDATA_STREAM): New macro, always defined for now.
+	(struct execdata) [! EXECDATA_STREAM]: Add members
+	map_buffer, map_bsize, map_fsize, map_filepos in place of stream.
+	(map_buffer, map_filepos, map_set_fsize): New macros for accessing
+	those or stream.
+	[! EXECDATA_STREAM] (map_fsize, map_vsize): Define using new members.
+	* exec.c (map): Rewritten purely using those accessor macros.
+	(input_room): Set the __target, __bufp, __error, and __eof members,
+	which are no longer set by map.
+	[! EXECDATA_STREAM] (prepare_stream, prepare_in_memory): Make no-ops.
+	(input_room, close_exec_stream, fake_seek, prepare_stream,
+	prepare_in_memory): Conditionalize these defns on [EXECDATA_STREAM].
+	(load_section): Always use map instead of stdio.
+	Replace bcopy with memcpy.
+	(check_gzip: zipread): Rewrite using map instead of stdio.
+	(check_bzip2: zipread): Likewise.
+
 	* hashexec.c (check_hashbang): Fix up multiple fencepost brainos.
 
 	* hashexec.c (check_hashbang): Fix fencepost error in last change.
