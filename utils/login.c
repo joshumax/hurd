@@ -336,10 +336,13 @@ dog (time_t timeout, pid_t pid)
 		exit (0);	/* Give up, luser wins. */
 	  /* None are owned.  Kill session after emitting cryptic, yet
 	     stupid, message. */
+	  putc ('\n', stderr);
 	  error (0, 0, "Beware of dog.");
 	}
       else if (err)
 	exit (1);		/* Impossible error.... XXX  */
+      else if (owned)
+	exit (0);		/* Use logged in.  */
       else
 	/* Give normal you-forgot-to-login message.  */
 	{
@@ -347,6 +350,8 @@ dog (time_t timeout, pid_t pid)
 	  struct timeval tv = { timeout, 0 };
 
 	  fmt_named_interval (&tv, 0, interval, sizeof interval);
+
+	  putc ('\n', stderr);
 	  error (0, 0, "Timed out after %s.", interval);
 	}
 
@@ -489,12 +494,23 @@ main(int argc, char *argv[])
       need_parent_ids ();
       return idvec_contains (parent_uids, uid);
     }
-
   /* Returns true if the *caller* of this login program has GID.  */
   int parent_has_gid (gid_t gid)
     {
       need_parent_ids ();
       return idvec_contains (parent_gids, gid);
+    }
+  /* Returns the number of parent uids.  */
+  int count_parent_uids ()
+    {
+      need_parent_ids ();
+      return parent_uids->num;
+    }
+  /* Returns the number of parent gids.  */
+  int count_parent_gids ()
+    {
+      need_parent_ids ();
+      return parent_gids->num;
     }
 
   /* Make sure the user should be allowed to do this.  */
@@ -597,8 +613,8 @@ main(int argc, char *argv[])
 	    /* True if this is the user arg and there were no user options. */
 	    int only_user =
 	      (key == ARGP_KEY_ARG
-	       && eff_uids->num == 0 && avail_uids->num <= parent_uids->num
-	       && eff_gids->num == 0 && avail_gids->num <= parent_gids->num);
+	       && eff_uids->num == 0 && avail_uids->num <= count_parent_uids ()
+	       && eff_gids->num == 0 && avail_gids->num <= count_parent_gids ());
 
 	    if (! pw)
 	      if (! arg)
@@ -759,7 +775,7 @@ main(int argc, char *argv[])
   if (err)
     fail (3, err, "Authentication failure", 0);
 
-  if (!no_login && parent_uids->num > 0)
+  if (!no_login && count_parent_uids () != 0)
     /* Make a new login collection (but only for real users).  */
     {
       char *user = envz_get (args, args_len, "USER");
@@ -768,7 +784,7 @@ main(int argc, char *argv[])
       proc_make_login_coll (proc_server);
     }
 
-  if (eff_uids->num + avail_uids->num == 0 && parent_uids->num != 0)
+  if (eff_uids->num + avail_uids->num == 0 && count_parent_uids () != 0)
     /* We're transiting from having some uids to having none, which means
        this is probably a new login session.  Unless specified otherwise, set
        a timer to kill this session if it hasn't aquired any ids by then.
