@@ -458,7 +458,7 @@ ps_emit_seconds (struct proc_stat *ps, const struct ps_getter *getter,
 
   G (getter, void)(ps, &tv);
 
-  fmt_seconds (&tv, ABS (width), buf, sizeof (buf));
+  fmt_seconds (&tv, width != 0, width ? -1 : 0, ABS (width), buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
@@ -472,7 +472,7 @@ ps_emit_minutes (struct proc_stat *ps, const struct ps_getter *getter,
 
   G (getter, int)(ps, &tv);
 
-  fmt_minutes (&tv, ABS (width), buf, sizeof (buf));
+  fmt_minutes (&tv, width != 0, ABS (width), buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
@@ -481,7 +481,18 @@ error_t
 ps_emit_past_time (struct proc_stat *ps, const struct ps_getter *getter,
 		   int width, struct ps_stream *stream)
 {
-  return 0;
+  static struct timeval now;
+  struct timeval tv;
+  char buf[20];
+
+  G (getter, int)(ps, &tv);
+
+  if (now.tv_sec == 0 && gettimeofday (&now, 0) < 0)
+    return errno;
+
+  fmt_past_time (&tv, &now, ABS (width), buf, sizeof buf);
+
+  return ps_stream_write_field (stream, buf, width);
 }
 
 error_t
