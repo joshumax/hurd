@@ -32,16 +32,6 @@
 
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
 
-/* Simple reader/writer lock. */
-struct rwlock
-{
-  struct mutex master;
-  struct condition wakeup;
-  int readers;
-  int writers_waiting;
-  int readers_waiting;
-};
-
 struct disknode 
 {
   ino_t number;
@@ -59,23 +49,6 @@ struct disknode
 
   struct user_pager_info *fileinfo;
 };  
-
-/* Get a reader lock on reader-writer lock LOCK for disknode DN */
-extern inline void
-rwlock_reader_lock (struct rwlock *lock)
-{
-  mutex_lock (&lock->master);
-  if (lock->readers == -1 || lock->writers_waiting)
-    {
-      lock->readers_waiting++;
-      do
-	condition_wait (&lock->wakeup, &lock->master);
-      while (lock->readers == -1 || lock->writers_waiting);
-      lock->readers_waiting--;
-    }
-  lock->readers++;
-  mutex_unlock (&lock->master);
-}
 
 /* Identifies a particular block and where it's found
    when interpreting indirect block structure.  */
@@ -96,58 +69,6 @@ struct dirty_indir
   struct dirty_indir *next;
 };
 
-/* Get a writer lock on reader-writer lock LOCK for disknode DN */
-extern inline void
-rwlock_writer_lock (struct rwlock *lock)
-{
-  mutex_lock (&lock->master);
-  if (lock->readers)
-    {
-      lock->writers_waiting++;
-      do
-	condition_wait (&lock->wakeup, &lock->master);
-      while (lock->readers);
-      lock->writers_waiting--;
-    }
-  lock->readers = -1;
-  mutex_unlock (&lock->master);
-}
-
-/* Release a reader lock on reader-writer lock LOCK for disknode DN */
-extern inline void
-rwlock_reader_unlock (struct rwlock *lock)
-{
-  mutex_lock (&lock->master);
-  assert (lock->readers);
-  lock->readers--;
-  if (lock->readers_waiting || lock->writers_waiting)
-    condition_broadcast (&lock->wakeup);
-  mutex_unlock (&lock->master);
-}
-
-/* Release a writer lock on reader-writer lock LOCK for disknode DN */
-extern inline void
-rwlock_writer_unlock (struct rwlock *lock)
-{
-  mutex_lock (&lock->master);
-  assert (lock->readers == -1);
-  lock->readers = 0;
-  if (lock->readers_waiting || lock->writers_waiting)
-    condition_broadcast (&lock->wakeup);
-  mutex_unlock (&lock->master);
-}
-
-/* Initialize reader-writer lock LOCK */
-extern inline void
-rwlock_init (struct rwlock *lock)
-{
-  mutex_init (&lock->master);
-  condition_init (&lock->wakeup);
-  lock->readers = 0;
-  lock->readers_waiting = 0;
-  lock->writers_waiting = 0;
-}
-
 struct user_pager_info 
 {
   struct node *np;
@@ -157,15 +78,16 @@ struct user_pager_info
       FILE_DATA,
     } type;
   struct pager *p;
+  vm_prot_t max_prot;
 };
 
 struct user_pager_info *diskpager;
 mach_port_t diskpagerport;
 
-vm_address_t zeroblock;
+extern vm_address_t zeroblock;
 
-struct fs *sblock;
-struct csum *csum;
+extern struct fs *sblock;
+extern struct csum *csum;
 int sblock_dirty;
 int csum_dirty;
 
@@ -278,6 +200,7 @@ void sin_unmap (struct node *);
 void din_unmap (struct node *);
 void drop_pager_softrefs (struct node *);
 void allow_pager_softrefs (struct node *);
+void flush_node_pager (struct node *);
 
 /* From subr.c: */
 void ffs_fragacct (struct fs *, int, long [], int);
@@ -290,3 +213,4 @@ int scanc (u_int, u_char *, u_char [], int);
 /* From pokeloc.c: */
 void record_poke (void *, vm_size_t);
 void sync_disk (int);
+void flush_pokes ();
