@@ -27,8 +27,7 @@ SRCS = termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
        idvec-impgids.c idvec-verify.c idvec-rep.c \
        ugids.c ugids-argp.c ugids-rep.c ugids-verify.c ugids-subtract.c \
        ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c \
-       ugids-verify-auth.c \
-       mktime.c
+       ugids-verify-auth.c
 installhdrs = idvec.h timefmt.h maptime.h \
 	      wire.h portinfo.h portxlate.h cacheq.h ugids.h
 LCLHDRS = $(installhdrs)
