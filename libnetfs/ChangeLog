@@ -1,3 +1,8 @@
+Tue Jul 14 16:30:48 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* dir-lookup.c (netfs_S_dir_lookup): Don't require the node to be
+	a directory in the null pathname case.
+
 1997-09-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-lookup.c (netfs_S_dir_lookup): Fix type signature of

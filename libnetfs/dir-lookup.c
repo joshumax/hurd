@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -69,8 +69,6 @@ netfs_S_dir_lookup (struct protid *diruser,
   
   if (*filename == '\0')
     {
-      mustbedir = 1;
-      
       /* Set things up in the state expected by the code from gotit: on. */
       dnp = 0;
       np = diruser->po->np;
