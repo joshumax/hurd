@@ -74,8 +74,8 @@ struct execdata
 
     /* Set by check.  */
     vm_address_t entry;
-#ifdef	BFD
     FILE stream;
+#ifdef	BFD
     bfd *bfd;
 #else
     file_t file;
@@ -294,11 +294,14 @@ load_section (enum section section, struct execdata *u)
 #ifdef	BFD
 	  if (sec->flags & SEC_IN_MEMORY)
 	    bcopy (sec->contents, readaddr, readsize);
-	  else if (fread (readaddr, readsize, 1, u->stream) != 1)
-	    {
-	      u->error = errno;
-	      goto maplose;
-	    }
+	  else
+#endif
+#if	1
+	    if (fread (readaddr, readsize, 1, u->stream) != 1)
+	      {
+		u->error = errno;
+		goto maplose;
+	      }
 #else
 	  if (u->cntl)
 	    {
@@ -469,7 +472,6 @@ postload_section (enum section section, struct execdata *u)
 
 
 
-#ifdef	BFD
 /* stdio input-room function.  */
 static int
 input_room (FILE *f)
@@ -512,7 +514,7 @@ input_room (FILE *f)
 }
 
 static int
-close_stdio_bfd (void *cookie)
+close_exec_stream (void *cookie)
 {
   struct execdata *e = cookie;
 
@@ -521,7 +523,6 @@ close_stdio_bfd (void *cookie)
 
   return 0;
 }
-#endif
 
 
 /* Prepare to load FILE.
@@ -599,16 +600,16 @@ check (file_t file, struct execdata *e)
 	}
   }
 
-#ifdef	BFD
-  /* Open a BFD to do mapped i/o to the file.  */
+  /* Open a stdio stream to do mapped i/o to the file.  */
   memset (&e->stream, 0, sizeof (e->stream));
   e->stream.__magic = _IOMAGIC;
   e->stream.__mode.__read = 1;
   e->stream.__userbuf = 1;
   e->stream.__room_funcs.__input = input_room;
-  e->stream.__io_funcs.__close = close_stdio_bfd;
-  e->stream.__cookie = &e;
+  e->stream.__io_funcs.__close = close_exec_stream;
+  e->stream.__cookie = e;
 
+#ifdef	BFD
   e->bfd = bfd_openstream (&e->stream);
   if (e->bfd == NULL)
     {
@@ -848,22 +849,41 @@ do_exec (mach_port_t execserver,
   struct bootinfo *boot = 0;
   int secure, defaults;
 
-  /* Catch this error now, rather than later */
+  /* Catch this error now, rather than later.  */
   if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
     return EIEIO;
 
+  /* Check the file for validity first.  */
+  check (file, &e);
+#if 0
+  if (e.error == ENOEXEC)
+    /* Check for a #! executable file.  */
+    check_hashbang (&e, replyport,
+		    file, oldtask, flags,
+		    argv, argvlen, argv_copy,
+		    envp, envplen, envp_copy,
+		    dtable, dtablesize, dtable_copy,
+		    portarray, nports, portarray_copy,
+		    intarray, nints, intarray_copy,
+		    deallocnames, ndeallocnames,
+		    destroynames, ndestroynames);
+#endif
+#ifdef	BFD
+  if (! e.error)
+    {
+      e.locations = alloca (e.bfd->section_count * sizeof (vm_offset_t));
+      bfd_map_over_sections (e.bfd, check_section, e);
+    }
+#endif
+  if (e.error)
+    {
+      finish (&e);
+      return e.error;
+    }
+
+  /* Suspend the existing task before frobnicating it.  */
   if (oldtask != MACH_PORT_NULL && (e.error = task_suspend (oldtask)))
     return e.error;
-
-  check (file, &e);
-  if (e.error)
-    goto out;
-#ifdef	BFD
-  e.locations = alloca (e.bfd->section_count * sizeof (vm_offset_t));
-  bfd_map_over_sections (e.bfd, check_section, e);
-  if (e.error)
-    goto out;
-#endif
 
   if (oldtask == MACH_PORT_NULL)
     flags |= EXEC_NEWTASK;
@@ -1021,10 +1041,12 @@ do_exec (mach_port_t execserver,
       nports = INIT_PORT_MAX;
     }
 
-  /* Note that the paretheses on this first test are defferent from the others
+  /* Note that the paretheses on this first test are different from the others
      below it. */
   if ((secure || defaults)
       && boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
+    /* XXX doesn't this let anyone run a program and make it
+       get a root auth port? */
     set_init_port (std_ports[INIT_PORT_AUTH], 
 		   &boot->portarray[INIT_PORT_AUTH], 0, 0);
   if (secure || (defaults 
