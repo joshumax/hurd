@@ -30,25 +30,21 @@ pager_offer_page (struct pager *p,
 {
   char *pm_entry;
   
-  /* The caller expects this to get written back, then our request
-     will get ignored and the precious bit won't get set, so flush it
-     first */
-  if (precious)
+ try_again:
+  mutex_lock (&p->interlock);
+  _pager_pagemap_resize (p, offset + vm_page_size);
+  pm_entry = &p->pagemap[offset / vm_page_size];
+  if (*pm_entry & PM_INCORE)
     {
-      mutex_lock (&p->interlock);
-      _pager_pagemap_resize (p, offset + vm_page_size);
-      pm_entry = &p->pagemap[offset / vm_page_size];
-      if (*pm_entry & PM_INCORE)
-	{
-	  mutex_unlock (&p->interlock);
-	  pager_flush_some (p, offset, vm_page_size, 1);
-	}
-      else
-	mutex_unlock (&p->interlock);
+      mutex_unlock (&p->interlock);
+      pager_flush_some (p, offset, vm_page_size, 1);
+      goto try_again;
     }
+  *pm_entry |= PM_INCORE;
 
   memory_object_data_supply (p->memobjcntl, offset, buf, vm_page_size, 0,
 			     writelock ? VM_PROT_WRITE : VM_PROT_NONE, 
 			     precious, MACH_PORT_NULL);
+  mutex_unlock (&p->interlock);
 }
 
