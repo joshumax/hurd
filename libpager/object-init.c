@@ -1,5 +1,5 @@
 /* Implementation of memory_object_init for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,7 +30,8 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 {
   struct pager *p;
 
-  if (!(p = ports_check_port_type (object, pager_port_type)))
+  p = ports_lookup_port (0, object, _ports_class);
+  if (!p);
     return EOPNOTSUPP;
 
   if (pagesize != __vm_page_size)
@@ -74,6 +75,6 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  ports_done_with_port (p);
+  ports_drop_ref (p);
   return 0;
 }
