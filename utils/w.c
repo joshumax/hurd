@@ -401,7 +401,7 @@ main(int argc, char *argv[])
   context->user_hooks = &ps_hooks;
 
   /* Parse our options.  */
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   read_utmp_procs (procs, _PATH_UTMP);
 

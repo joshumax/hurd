@@ -617,7 +617,7 @@ main(int argc, char *argv[])
   err = argz_create (environ, &parent_env, &parent_env_len);
 
   /* Parse our options.  */
-  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   /* Now that we've parsed the command line, put together all these
      environments we've gotten from various places.  There are two targets:

@@ -1,6 +1,6 @@
 /* Show where a file exists
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -220,7 +220,7 @@ main(int argc, char *argv[])
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   exit(0);
 }

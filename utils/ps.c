@@ -548,7 +548,7 @@ main(int argc, char *argv[])
     error(1, err, "proc_stat_list_create");
 
   /* Parse our command line.  This shouldn't ever return an error.  */
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   if (only_uids->num == 0 && (filter_mask & FILTER_OWNER))
     /* Restrict the output to only our own processes.  */

@@ -83,7 +83,7 @@ main(int argc, char *argv[])
 
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   node = file_name_lookup (node_name, (deref ? 0 : O_NOLINK), 0666);
   if (node == MACH_PORT_NULL)

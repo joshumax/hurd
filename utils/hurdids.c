@@ -70,7 +70,7 @@ main(int argc, char *argv[])
 
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   if (! show_eff && ! show_avail)
     show_eff = show_avail = 1;
