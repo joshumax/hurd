@@ -1300,14 +1300,18 @@ handle_esc_bracket (display_t display, char op)
     case 'L':		/* ECMA-48 <IL>.  */
       /* Insert line(s): <il1>, <il>.  */
       screen_shift_right (display, 0, user->cursor.row,
-			  user->screen.width - 1, user->screen.height - 1,
+			  user->screen.width - 1,
+			  (user->cursor.row <= display->csr.bottom)
+			  ? display->csr.bottom : user->screen.height - 1,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
     case 'M':		/* ECMA-48 <DL>.  */
       /* Delete line(s): <dl1>, <dl>.  */
       screen_shift_left (display, 0, user->cursor.row,
-			 user->screen.width - 1, user->screen.height - 1,
+			 user->screen.width - 1,
+			  (user->cursor.row <= display->csr.bottom)
+			  ? display->csr.bottom : user->screen.height - 1,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
@@ -1346,15 +1350,15 @@ handle_esc_bracket (display_t display, char op)
       break;
     case 'S':		/* ECMA-48 <SU>.  */
       /* Scroll up: <ind>, <indn>.  */
-      screen_shift_left (display, 0, 0,
-			 user->screen.width - 1, user->screen.height - 1,
+      screen_shift_left (display, 0, display->csr.top,
+			 user->screen.width - 1, display->csr.bottom,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
     case 'T':		/* ECMA-48 <SD>.  */
       /* Scroll down: <ri>, <rin>.  */
-      screen_shift_right (display, 0, 0,
-			  user->screen.width, user->screen.height,
+      screen_shift_right (display, 0, display->csr.top,
+			  user->screen.width - 1, display->csr.bottom,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
@@ -1625,9 +1629,10 @@ display_output_one (display_t display, wchar_t chr)
 		&& user->cursor.col != user->screen.width - 1)
 	      {
 		/* If in insert mode, do the same as <ich1>.  */
-		screen_shift_right (display, user->cursor.col, user->cursor.row,
-				    user->screen.width - 1, user->cursor.row, 1,
-				    L' ', display->attr.current);
+		screen_shift_right (display, user->cursor.col,
+				    user->cursor.row,
+				    user->screen.width - 1, user->cursor.row,
+				    1, L' ', display->attr.current);
 	      }
 
 	    user->_matrix[idx].chr = display->attr.altchar

@@ -1,5 +1,9 @@
 2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
 
+	* display.c (handle_esc_bracket): Use scrolling region for <ind>,
+	<indn>, <ri>, <rin>, <il1>, <il>, <dl1> and <dl>.  Also fix
+	off-by-one error in <ri>, <rin>.
+
 	* hurd.ti: Change <gsbom> and <grbom> to escape bracket
 	right-angle sequences.  Add <csr>, <smir>, <rmir> and <mir>,
 	disable <ich1>.
