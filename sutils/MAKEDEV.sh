@@ -173,11 +173,11 @@ function mkdev {
       # We don't want the underlying node to be written by randoms,
       # but the filesystem presented should be writable by anyone
       # and have the sticky bit set so others' files can't be removed.
-      # tmpfs requires an arbitrary size limitation here.
-      # To be like Linux, tmpfs could have an option to compute
-      # that max based on (half of) the physical RAM in the machine.
+      # tmpfs requires an arbitrary size limitation here.  To be like
+      # Linux, we tell tmpfs to set the size to half the physical RAM
+      # in the machine.
       shm)
-        st $I root 644 /hurd/tmpfs -m 1777 512M
+        st $I root 644 /hurd/tmpfs --mode=1777 50%
         ;;
 
       # Linux compatibility
