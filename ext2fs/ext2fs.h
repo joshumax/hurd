@@ -115,13 +115,16 @@ struct user_pager_info
 
 /* ---------------------------------------------------------------- */
 
+/* The block size we assume the kernel device uses.  */
+#define DEV_BSIZE 512
+
 struct user_pager_info *disk_pager;
 mach_port_t disk_pager_port;
-off_t device_size;
-
 void *disk_image;
+
 char *device_name;
 mach_port_t device_port;
+off_t device_size;
 
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
@@ -169,12 +172,12 @@ unsigned long nextgennumber;
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_image */
 
-/* The block size we assume the kernel device uses.  */
-#define DEV_BSIZE 512
-
-/* Returns a pointer to the disk block BLOCK.  */
-#define baddr(block) (((char *)disk_image) + (block) * DEV_BSIZE)
-#define addrb(addr) ((((char *)disk_image) - addr) / DEV_BSIZE)
+#define boffs(block) ((block) * block_size)
+#define offsb(offs) ((block) / block_size)
+#define offsaddr(offs) (((char *)disk_image) + (offs))
+#define addroffs(offs) ((addr) - ((char *)disk_image))
+#define baddr(block) offsaddr(boffs(block))
+#define addrb(addr) offsb(addroffs(addr))
 
 /* Get the descriptor for the block group inode INUM is in.  */
 extern inline struct ext2_group_desc *
