@@ -71,8 +71,8 @@ validdir (ino_t dir, char *action)
 {
   switch (inodestate[dir])
     {
-    case DIR:
-    case DIR|DIR_REF:
+    case DIRECTORY:
+    case DIRECTORY|DIR_REF:
       return 1;
       
     case UNALLOC:
@@ -366,7 +366,7 @@ makeentry (ino_t dir, ino_t ino, char *name)
 	    {
 	      if (preen)
 		printf (" (EXPANDED)");
-	      datablock_iterate (&dino, checkdirblock);
+	      datablocks_iterate (&dino, checkdirblock);
 	    }
 	  else
 	    pfatal ("CANNOT EXPAND DIRECTORY");
@@ -384,7 +384,7 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
 {
   ino_t ino;
   
-  ino = allocino (request, (mode & IFMT) == IFDIR);
+  ino = allocino (request, mode);
   if (!ino)
     return 0;
   if (!makeentry (ino, ino, "."))
@@ -403,12 +403,14 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
 
 /* Link node INO into lost+found.  If PARENT is positive then INO is
    a directory, and PARENT is the number of `..' as found in INO.
-   If PARENT is zero then INO is a directory without any .. entry. */
-void
+   If PARENT is zero then INO is a directory without any .. entry.
+   If the node could be linked, return 1; else return 0. */
+int
 linkup (ino_t ino, ino_t parent)
 {
   struct dinode lfdino;
-  char tempname[MAXNAMLEN];
+  char *tempname;
+  ino_t foo;
 
   if (lfdir == 0)
     {
@@ -428,7 +430,8 @@ linkup (ino_t ino, ino_t parent)
 		    }
 		  else
 		    {
-		      freedir (lfdir, ROOTINO);
+		      freeino (lfdir);
+		      linkfound[ROOTINO]--;
 		      lfdir = 0;
 		      if (preen)
 			printf ("\n");
@@ -439,7 +442,7 @@ linkup (ino_t ino, ino_t parent)
 	    {
 	      pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
 	      printf ("\n\n");
-	      return;
+	      return 0;
 	    }
 	}
     }
@@ -451,7 +454,7 @@ linkup (ino_t ino, ino_t parent)
       
       pfatal ("lost+found IS NOT A DIRECTORY");
       if (!reply ("REALLOCATE"))
-	return;
+	return 0;
       
       oldlfdir = lfdir;
 
@@ -460,13 +463,13 @@ linkup (ino_t ino, ino_t parent)
 	{
 	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
 	  printf ("\n\n");
-	  return;
+	  return 0;
 	}
       if (!changeino (ROOTINO, lfname, lfdir))
 	{
 	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
 	  printf ("\n\n");
-	  return;
+	  return 0;
 	}
       
       /* One less link to the old one */
@@ -475,18 +478,29 @@ linkup (ino_t ino, ino_t parent)
       getinode (lfdir, &lfdino);
   }
   
-  if (inodestate[lfdir] != DIR && inodestate[lfdir] != (DIR|DIR_REF))
+  if (inodestate[lfdir] != DIRECTORY && inodestate[lfdir] != (DIRECTORY|DIR_REF))
     {
       pfatal ("SORRY.  lost+found DIRECTORY NOT ALLOCATED.\n\n");
-      return;
+      return 0;
     }
-  lftempnam (tempname, ino);
+  asprintf (&tempname, "#%d", ino);
+  searchdir (lfdir, tempname, &foo);
+  while (foo)
+    {
+      char *newname;
+      asprintf (&newname, "%sa", tempname);
+      free (tempname);
+      tempname = newname;
+      searchdir (lfdir, tempname, &foo);
+    }
   if (makeentry (lfdir, ino, tempname))
     {
+      free (tempname);
       pfatal("SORRY. NO SPACE IN lost+found DIRECTORY");
       printf("\n\n");
-      return;
+      return 0;
     }
+  free (tempname);
   linkfound[ino]++;
   
   if (parent != -1)
@@ -497,7 +511,7 @@ linkup (ino_t ino, ino_t parent)
 	  if (!changeino (ino, "..", lfdir))
 	    {
 	      pfatal ("CANNOT ADJUST .. link I=%u", ino);
-	      return;
+	      return 0;
 	    }
 	  /* Forget about link to old parent */
 	  linkfound[parent]--;
@@ -505,7 +519,7 @@ linkup (ino_t ino, ino_t parent)
       else if (!makeentry (ino, lfdir, ".."))
 	{
 	  pfatal ("CANNOT CREAT .. link I=%u", ino);
-	  return;
+	  return 0;
 	}
       
       /* Account for link to lost+found; update inode directly
@@ -521,6 +535,7 @@ linkup (ino_t ino, ino_t parent)
       if (!preen)
 	printf ("\n");
     }
+  return 1;
 }
 
 
