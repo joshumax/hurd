@@ -41,7 +41,6 @@ struct trivfs_control
   struct mutex lock;
   int protidtypes;
   mach_port_t underlying;
-  struct pending_open *openshead, *openstail;
 };
 
 /* The user must define these variables. */
