@@ -19,8 +19,12 @@ dir := libioserver
 
 include ../Makeconf
 
+SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
+	initialize_conch.c verify_user_conch.c
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
+
+DIST_FILES = $(SRCS) Makefile
 
 # Make sure we get local copies of the headers we install.
 CPPFLAGS := -I. $(CPPFLAGS)
