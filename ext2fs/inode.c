@@ -249,7 +249,6 @@ read_disknode (struct node *np)
 
   /* Set these to conservative values.  */
   dn->last_page_partially_writable = 0;
-  dn->last_block_allocated = 1;
   
   np->allocsize = np->dn_stat.st_size;
   offset = np->allocsize & ((1 << log2_block_size) - 1);
