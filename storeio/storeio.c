@@ -1,6 +1,6 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,20 +33,6 @@
 #include "open.h"
 #include "dev.h"
 
-/* The port class of our file system control pointer.  */
-struct port_class *fsys_port_class;
-/* The port class of the (only) root file port for the opened device.  */
-struct port_class *root_port_class;
-
-/* A bucket to put all our ports in.  */
-struct port_bucket *port_bucket;
-
-/* Trivfs noise.  */
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
-
 static struct argp_option options[] =
 {
   {"readonly", 'r', 0,	  0, "Disallow writing"},
@@ -54,15 +40,12 @@ static struct argp_option options[] =
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
-  {0, 0, 0, 0}
+  {0}
 };
-static char *args_doc = 0;
-static char *doc = "Translator for devices and other stores";
+static const char doc[] = "Translator for devices and other stores";
 
-char *argp_program_version = STANDARD_HURD_VERSION (storeio);
+const char *argp_program_version = STANDARD_HURD_VERSION (storeio);
 
-/* ---------------------------------------------------------------- */
-
 /* The open store.  */
 static struct dev *device = NULL;
 /* And a lock to arbitrate changes to it.  */
@@ -75,44 +58,52 @@ static int readonly = 0;
 /* A unixy device number to return when the device is stat'd.  */
 static int rdev = 0;
 
+/* Parse a single option.  */
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'r': readonly = 1; break;
+    case 'w': readonly = 0; break;
+
+    case 'n':
+      {
+	char *start = arg, *end;
+
+	rdev = strtoul (start, &end, 0);
+	if (*end == ',')
+	  /* MAJOR,MINOR form */
+	  {
+	    start = end;
+	    rdev = (rdev << 8) + strtoul (start, &end, 0);
+	  }
+
+	if (end == start || *end != '\0')
+	  {
+	    argp_error (state, "%s: Invalid argument to --rdev", arg);
+	    return EINVAL;
+	  }
+      }
+      break;
+
+    case ARGP_KEY_INIT:
+      state->child_inputs[0] = state->input; break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
+static const struct argp_child argp_kids[] = { { &store_argp }, {0} };
+static const struct argp argp = { options, parse_opt, 0, doc, argp_kids };
+
 void main (int argc, char *argv[])
 {
   error_t err;
   mach_port_t bootstrap;
-  error_t parse_opt (int key, char *arg, struct argp_state *state)
-    {
-      switch (key)
-	{
-	case 'r': readonly = 1; break;
-	case 'w': readonly = 0; break;
-	case 'n':
-	  {
-	    char *start = arg, *end;
-
-	    rdev = strtoul (start, &end, 0);
-	    if (*end == ',')
-	      /* MAJOR,MINOR form */
-	      {
-		start = end;
-		rdev = (rdev << 8) + strtoul (start, &end, 0);
-	      }
-
-	    if (end == start || *end != '\0')
-	      {
-		argp_error (state, "%s: Invalid argument to --rdev", arg);
-		return EINVAL;
-	      }
-	  }
-	  break;
-	case ARGP_KEY_INIT:
-	  state->child_inputs[0] = state->input; break;
-	default:
-	  return ARGP_ERR_UNKNOWN;
-	}
-      return 0;
-    }
-  const struct argp_child kids[] = { {&store_argp}, {0} };
-  const struct argp argp = { options, parse_opt, args_doc, doc, kids };
+  struct trivfs_control *fsys;
   struct store_argp_params store_params = { default_type: "device" };
 
   argp_parse (&argp, argc, argv, 0, 0, &store_params);
@@ -125,19 +116,9 @@ void main (int argc, char *argv[])
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (2, 0, "Must be started as a translator");
-  
-  fsys_port_class = ports_create_class (trivfs_clean_cntl, 0);
-  root_port_class = ports_create_class (trivfs_clean_protid, 0);
-  port_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[0] = root_port_class;
-  trivfs_cntl_portclasses[0] = fsys_port_class;
 
   /* Reply to our parent */
-  err =
-    trivfs_startup (bootstrap, 0,
-		   fsys_port_class, port_bucket,
-		   root_port_class, port_bucket,
-		   NULL);
+  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
   if (err)
     error (3, err, "trivfs_startup");
 
@@ -146,7 +127,7 @@ void main (int argc, char *argv[])
   mutex_init (&device_lock);
 
   /* Launch. */
-  ports_manage_port_operations_multithread (port_bucket, trivfs_demuxer,
+  ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
 					    30*1000, 5*60*1000, 0, 0);
 
   exit (0);
@@ -271,6 +252,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   error_t err;
   int force = (flags & FSYS_GOAWAY_FORCE);
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
+  struct port_class *root_port_class = fsys->protid_class;
 
   mutex_lock (&device_lock);
 
