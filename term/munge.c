@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -713,12 +713,16 @@ create_queue (int size, int lowat, int hiwat)
   struct queue *q;
 
   q = malloc (sizeof (struct queue) + size * sizeof (quoted_char));
+  assert (q);
+  
   q->susp = 0;
   q->lowat = lowat;
   q->hiwat = hiwat;
   q->cs = q->ce = q->array;
   q->arraylen = size;
   q->wait = malloc (sizeof (struct condition));
+  assert (q->wait);
+  
   condition_init (q->wait);
   return q;
 }

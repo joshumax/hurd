@@ -172,7 +172,9 @@ main (int argc, char **argv)
   term_mode = (bottom == &ptyio_bottom ? 0666 : 0600) | S_IFCHR | S_IROOT;
 
   inputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
+  
   rawq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
+  
   outputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   
   if (bottom == &ptyio_bottom)
