@@ -31,10 +31,11 @@
 
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
 
-
 /* Simple reader/writer lock. */
 struct rwlock
 {
+  struct mutex master;
+  struct condition wakeup;
   int readers;
   int writers_waiting;
   int readers_waiting;
@@ -51,97 +52,81 @@ struct disknode
   /* Links on hash list. */
   struct node *hnext, **hprevp;
 
-  struct mutex rwlock_master;
-  struct condition rwlock_wakeup;
+  struct rwlock allocptrlock;
 
-  struct rwlock dinlock;		/* locks INDIR_DOUBLE pointer */
-  
-  /* sinlock locks INDIR_SINGLE pointer and all the pointers in
-     the double indir block.  */
-  struct rwlock sinlock;		
-  
-  /* datalock locks all the direct block pointers and all the pointers
-     in all the single indir blocks */
-  struct rwlock datalock;
-
-  /* These pointers are locked by sinmaplock and dinmaplock for all nodes. */
   daddr_t *dinloc;
   daddr_t *sinloc;
 
   size_t dinloclen;
   size_t sinloclen;
   
-  /* These two pointers are locked by pagernplock for all nodes. */
-  struct user_pager_info *sininfo;
   struct user_pager_info *fileinfo;
 };  
 
 /* Get a reader lock on reader-writer lock LOCK for disknode DN */
 extern inline void
-rwlock_reader_lock (struct rwlock *lock, 
-		    struct disknode *dn)
+rwlock_reader_lock (struct rwlock *lock)
 {
-  mutex_lock (&dn->rwlock_master);
+  mutex_lock (&lock->master);
   if (lock->readers == -1 || lock->writers_waiting)
     {
       lock->readers_waiting++;
       do
-	condition_wait (&dn->rwlock_wakeup, &dn->rwlock_master);
+	condition_wait (&lock->wakeup, &lock->master);
       while (lock->readers == -1 || lock->writers_waiting);
       lock->readers_waiting--;
     }
   lock->readers++;
-  mutex_unlock (&dn->rwlock_master);
+  mutex_unlock (&lock->master);
 }
 
 /* Get a writer lock on reader-writer lock LOCK for disknode DN */
 extern inline void
-rwlock_writer_lock (struct rwlock *lock,
-		    struct disknode *dn)
+rwlock_writer_lock (struct rwlock *lock)
 {
-  mutex_lock (&dn->rwlock_master);
+  mutex_lock (&lock->master);
   if (lock->readers)
     {
       lock->writers_waiting++;
       do
-	condition_wait (&dn->rwlock_wakeup, &dn->rwlock_master);
+	condition_wait (&lock->wakeup, &lock->master);
       while (lock->readers);
       lock->writers_waiting--;
     }
   lock->readers = -1;
-  mutex_unlock (&dn->rwlock_master);
+  mutex_unlock (&lock->master);
 }
 
 /* Release a reader lock on reader-writer lock LOCK for disknode DN */
 extern inline void
-rwlock_reader_unlock (struct rwlock *lock,
-		      struct disknode *dn)
+rwlock_reader_unlock (struct rwlock *lock)
 {
-  mutex_lock (&dn->rwlock_master);
+  mutex_lock (&lock->master);
   assert (lock->readers);
   lock->readers--;
   if (lock->readers_waiting || lock->writers_waiting)
-    condition_broadcast (&dn->rwlock_wakeup);
-  mutex_unlock (&dn->rwlock_master);
+    condition_broadcast (&lock->wakeup);
+  mutex_unlock (&lock->master);
 }
 
 /* Release a writer lock on reader-writer lock LOCK for disknode DN */
 extern inline void
-rwlock_writer_unlock (struct rwlock *lock,
-		      struct disknode *dn)
+rwlock_writer_unlock (struct rwlock *lock)
 {
-  mutex_lock (&dn->rwlock_master);
+  mutex_lock (&lock->master);
   assert (lock->readers == -1);
   lock->readers = 0;
   if (lock->readers_waiting || lock->writers_waiting)
-    condition_broadcast (&dn->rwlock_wakeup);
-  mutex_unlock (&dn->rwlock_master);
+    condition_broadcast (&lock->wakeup);
+  mutex_unlock (&lock->master);
 }
 
 /* Initialize reader-writer lock LOCK */
 extern inline void
 rwlock_init (struct rwlock *lock)
 {
+  mutex_init (&lock->master);
+  condition_init (&lock->wakeup);
   lock->readers = 0;
   lock->readers_waiting = 0;
   lock->writers_waiting = 0;
@@ -152,31 +137,29 @@ struct user_pager_info
   struct node *np;
   enum pager_type 
     {
-      DINODE,
-      CG,
-      SINDIR,
-      DINDIR,
+      DISK,
       FILE_DATA,
     } type;
   struct pager *p;
   struct user_pager_info *next, **prevp;
 };
 
-struct user_pager_info *dinpager, *dinodepager, *cgpager;
+struct user_pager_info *diskpager;
 
 vm_address_t zeroblock;
 
+/* These are copies (not mapped) of the hypermetadata; maintained
+   by hypen.c. */
 struct fs *sblock;
-struct dinode *dinodes;
-vm_address_t cgs;
 struct csum *csum;
 int sblock_dirty;
 int csum_dirty;
-spin_lock_t alloclock;
 
-struct mutex dinmaplock;
-struct mutex sinmaplock;
-struct mutex pagernplock;
+/* These are both mapped from the disk appropriately. */
+struct dinode *dinodes;
+vm_address_t cgs;
+
+spin_lock_t alloclock;
 
 spin_lock_t gennumberlock;
 u_long nextgennumber;
