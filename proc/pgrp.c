@@ -360,10 +360,9 @@ leave_pgrp (struct proc *p)
 	{
 	  if (ip->p_stopped)
 	    dosignal = 1;
-	  nowait_proc_newids (ip->p_msgport, ip->p_task, 
-			      ip->p_parent->p_pid,
-			      ip->p_pid,
-			      1);
+	  if (ip->p_msgport != MACH_PORT_NULL)
+	    nowait_proc_newids (ip->p_msgport, ip->p_task, ip->p_parent->p_pid,
+				ip->p_pid, 1);
 	}
       if (dosignal)
 	for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
@@ -379,6 +378,8 @@ void
 join_pgrp (struct proc *p)
 {
   struct pgrp *pg = p->p_pgrp;
+  struct proc *tp;
+  int origorphcnt;
 
   p->p_gnext = pg->pg_plist;
   p->p_gprevp = &pg->pg_plist;
@@ -386,10 +387,20 @@ join_pgrp (struct proc *p)
     pg->pg_plist->p_gprevp = &p->p_gnext;
   pg->pg_plist = p;
   
+  origorphcnt = !!pg->pg_orphcnt;
   if (p->p_parent->p_pgrp != pg
       && p->p_parent->p_pgrp->pg_session == pg->pg_session)
     pg->pg_orphcnt++;
-
-  nowait_proc_newids (p->p_msgport, p->p_task,
-		      p->p_parent->p_pid, pg->pg_pgid, !pg->pg_orphcnt);
+  if (origorphcnt != !!pg->pg_orphcnt)
+    {
+      /* Tell all the processes that their status has changed */
+      for (tp = pg->pg_plist; tp; tp = tp->p_gnext)
+	if (tp->p_msgport != MACH_PORT_NULL)
+	  nowait_proc_newids (tp->p_msgport, tp->p_task, tp->p_parent->p_pid,
+			      pg->pg_pgid, !pg->pg_orphcnt);
+    }
+  else if (p->p_msgport != MACH_PORT_NULL)
+    /* Always notify process P, because its pgrp has changed. */
+    nowait_proc_newids (p->p_msgport, p->p_task,
+			p->p_parent->p_pid, pg->pg_pgid, !pg->pg_orphcnt);
 }
