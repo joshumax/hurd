@@ -26,7 +26,7 @@ subsystem exec 30000;
 routine exec_exec ( /* Better name, Roland??
 		       No, it doesn't seem likely. */
 	execserver: mach_port_t;
-	file: mach_port_make_send_t;
+	file: mach_port_send_t;
 	oldtask: task_t;
 	flags: int;
 	argv: data_t, servercopy;
