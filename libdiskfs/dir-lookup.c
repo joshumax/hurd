@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -57,6 +57,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int amt;
   int type;
   struct protid *newpi;
+  unsigned depth;		/* Depth of DNP below FS root.  */
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -75,6 +76,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
   *retry = FS_RETRY_NORMAL;
   retryname[0] = '\0';
 
+  /* How far beneath root we are; this changes as we traverse the path.  */
+  depth = dircred->po->depth;
+
   if (path[0] == '\0')
     {
       mustbedir = 1;
@@ -88,6 +92,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
     }
 
   dnp = dircred->po->np;
+
   mutex_lock (&dnp->lock);
   np = 0;
 
@@ -126,10 +131,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  assert (!ds);
 	  ds = alloca (diskfs_dirstat_size);
-	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
+	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred, depth, &depth);
 	}
       else
-	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
+	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred, depth, &depth);
 
       if (lastcomp && create && excl && (!error || error == EAGAIN))
 	error = EEXIST;
@@ -187,6 +192,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
+	  struct diskfs_trans_callback_cookie2 cookie2 =
+	    { dircred->po->dotdotport, depth };
 	  
 	  /* A callback function for short-circuited translators.
 	     Symlink & ifsock are handled elsewhere.  */
@@ -227,9 +234,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	     unlock it. */
 	  error = 
 	    diskfs_create_protid (diskfs_make_peropen (dnp, 0,
-						       dircred->po->dotdotport),
+						       dircred->po->dotdotport,
+						       depth),
 				  iohelp_create_iouser (make_idvec (), 
-						      make_idvec ()),
+							make_idvec ()),
 				  &newpi);
 	  if (error)
 	    goto out;
@@ -241,7 +249,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 
-	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
+	  error = fshelp_fetch_root (&np->transbox, &cookie2,
 				     dirport, dircred->user,
 				     lastcomp ? flags : 0,
 				     ((np->dn_stat.st_mode & S_IPTRANS)
@@ -405,7 +413,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
   error =
     diskfs_create_protid (diskfs_make_peropen (np, 
 					       (flags &~OPENONLY_STATE_MODES), 
-					       dircred->po->dotdotport),
+					       dircred->po->dotdotport,
+					       depth),
 			  dircred->user, &newpi);
 
   if (! error)
