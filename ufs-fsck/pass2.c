@@ -44,7 +44,7 @@ pass2 ()
 
 
       for (dp = buf; (void *)dp - buf < DIRBLKSIZ;
-	   dp = (struct directory_entry *) ((void *) dp + dp->d_reclen))
+	   dp = (struct directory_entry *) ((void *)dp + dp->d_reclen))
 	{
 	  /* Check RECLEN for basic validity */
 	  if (dp->d_reclen == 0
@@ -163,8 +163,9 @@ pass2 ()
     }
 
   /* Called for each filesystem block of the directory.  Load BNO
-     into core and then call CHECK1BLOCK for each DIRBLKSIZ chunk. */
-  void
+     into core and then call CHECK1BLOCK for each DIRBLKSIZ chunk.
+     Always return 1.  */
+  int
   checkdirblock (daddr_t bno, int nfrags)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
@@ -182,6 +183,7 @@ pass2 ()
 	}
       if (rewrite)
 	writeblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+      return 1;
     }
 
   switch (statemap [ROOTINO])
