@@ -79,6 +79,9 @@ char *fsname;
 char *bootstrap_args;
 char *bootdevice = "sd0a";
 
+extern void __mach_init ();
+void	(*mach_init_routine)() = __mach_init;
+
 /* We can't include <unistd.h> for this, because that will fight witho
    our definitions of syscalls below. */
 int syscall (int, ...);
@@ -86,6 +89,21 @@ int syscall (int, ...);
 void set_mach_stack_args ();
 
 /* These will prevent the Hurd-ish versions from being used */
+
+mach_port_t __mig_get_reply_port ()
+{
+  return __mach_reply_port ();
+}
+mach_port_t mig_get_reply_port ()
+{
+  return __mach_reply_port ();
+}
+void __mig_init (void *stack) {}
+void mig_init (void *stack) {}
+void __mig_dealloc_reply_port (mach_port_t port) {}
+void mig_dealloc_reply_port (mach_port_t port) {}
+void __mig_put_reply_port (mach_port_t port) {}
+void mig_put_reply_port (mach_port_t port) {}
 
 int
 task_by_pid (int pid)
