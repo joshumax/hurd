@@ -30,5 +30,6 @@ installationdir = $(sbindir)
 
 vpath tables.c ../ufs
 
-include ../Makeconf
+$(target): ../libshouldbeinlibc/libshouldbeinlibc.a
 
+include ../Makeconf
