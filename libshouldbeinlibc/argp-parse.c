@@ -22,7 +22,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>		/* for CHAR_BIT */
+#include <unistd.h>
+#include <limits.h>
 #include <getopt.h>
 #include <cthreads.h>
 
@@ -45,15 +46,25 @@
 #define USER_MASK ((1 << USER_BITS) - 1)
 
 /* ---------------------------------------------------------------- */
+/* Default options.  */
+
+/* When argp is given the --HANG switch, _ARGP_HANG is set and argp will sleep
+   for one second intervals, decrementing _ARGP_HANG until it's zero.  Thus
+   you can force the program to continue by attaching a debugger and setting
+   it to 0 yourself.  */
+volatile int _argp_hang = 0;
 
 #define OPT_PROGNAME	-2
 #define OPT_USAGE	-3
+#define OPT_HANG	-4
 
 static const struct argp_option argp_default_options[] =
 {
   {"help",	  '?',    	0, 0,  "Give this help list", -1},
   {"usage",	  OPT_USAGE,	0, 0,  "Give a short usage message"},
   {"program-name",OPT_PROGNAME,"NAME", OPTION_HIDDEN, "Set the program name"},
+  {"HANG",	  OPT_HANG,    "SECS", OPTION_ARG_OPTIONAL | OPTION_HIDDEN,
+     "Hang for SECS seconds (default 3600)"},
   {0, 0}
 };
 
@@ -83,6 +94,11 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
 
       break;
 
+    case OPT_HANG:
+      _argp_hang = atoi (arg ?: "3600");
+      while (_argp_hang-- > 0)
+	sleep (1);
+
     default:
       return EINVAL;
     }
@@ -92,6 +108,36 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
 static const struct argp argp_default_argp =
   {argp_default_options, &argp_default_parser};
 
+
+static const struct argp_option argp_version_options[] =
+{
+  {"version",	  'v',    	0, 0,  "Print program version", -1},
+  {0, 0}
+};
+
+static error_t
+argp_version_parser (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'v':
+      if (argp_program_version_hook)
+	(*argp_program_version_hook) ();
+      else if (argp_program_version)
+	puts (argp_program_version);
+      else
+	argp_error (state, "No version known!?");
+      if (! (state->flags & ARGP_NO_EXIT))
+	exit (0);
+      break;
+    default:
+      return EINVAL;
+    }
+  return 0;
+}
+
+static const struct argp argp_version_argp =
+  {argp_version_options, &argp_version_parser};
 
 /* ---------------------------------------------------------------- */
 
@@ -283,6 +329,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       if (state.argp)
 	*plist++ = state.argp;
       *plist++ = &argp_default_argp;
+      if (argp_program_version || argp_program_version_hook)
+	*plist++ = &argp_version_argp;
       *plist = 0;
 
       state.argp = top_argp;
