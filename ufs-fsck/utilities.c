@@ -255,7 +255,7 @@ errexit (char *fmt, ...)
   va_end (args);
   putchar ('\n');
 
-  exit (1);
+  exit (8);
 }
 
 static void
@@ -271,7 +271,7 @@ punt (char *msg)
 {
   problem (0, msg);
   flush_problems ();
-  exit (1);
+  exit (8);
 }
 
 /* If SEVERE is true, and we're in preen mode, then things are too hair to
