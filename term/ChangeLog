@@ -1,3 +1,11 @@
+Mon Oct 26 16:47:18 1998  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* devio.c (char_size_mask_xxx): New variable.
+	(devio_set_bits): Don't munge c_cflag here.  Instead,
+	set char_size_mask_xxx.
+	(device_read_reply_inband): Mask off high bits from the input to
+	simulate less than 8-bit channels.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* devio.c: Add #undef's for B19200, B38400, B57600, B115200, in case

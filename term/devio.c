@@ -1,4 +1,4 @@
-/*
+/* 
    Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -76,6 +76,10 @@ static struct port_info *phys_reply_pi;
 static device_t device_master;
 
 static int output_stopped;
+
+/* XXX Mask that omits high bits we are currently not supposed to pass
+   through. */
+static int char_size_mask_xxx = 0xff;
 
 /* Forward */
 static void devio_desert_dtr ();
@@ -302,7 +306,13 @@ device_read_reply_inband (mach_port_t replypt,
   if (!error_code && (termstate.c_cflag & CREAD))
     for (i = 0; i < datalen; i++)
       {
-	flush = input_character (data[i]);
+	int c = data[i];
+	
+	/* XXX Mach only supports 8-bit channels; this munges things 
+	   to account for the reality.  */
+	c &= char_size_mask_xxx;
+
+	flush = input_character (c);
 	if (flush)
 	  break;
       }
@@ -535,9 +545,29 @@ devio_set_bits ()
       else
 	termstate.c_cflag &= ~CSTOPB;
 
-      /* Mach only supports 8 bit channels.  So wark the CSIZE to conform. */
-      termstate.c_cflag = ((termstate.c_cflag & ~CSIZE)
-			   | ((termstate.c_cflag & PARENB) ? CS7 : CS8));
+      /* Figure out how to munge input, since we are unable to actually
+	 affect what the hardware does. */
+      switch (termstate.c_cflag & CSIZE)
+	{
+	case CS5:
+	  char_size_mask_xxx = 0x1f;
+	  break;
+
+	case CS6:
+	  char_size_mask_xxx = 0x3f;
+	  break;
+	  
+	case CS7:
+	  char_size_mask_xxx = 0x7f;
+	  break;
+	  
+	case CS8:
+	default:
+	  char_size_mask_xxx = 0xff;
+	  break;
+	}
+      if (termstate.c_cflag & PARENB)
+	char_size_mask_xxx |= 0x80;
     }
 }
 
