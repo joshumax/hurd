@@ -1,6 +1,6 @@
-/* Mach device backend
+/* Mach device store backend
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -61,23 +61,16 @@ store_device_create (device_t device, struct store **store)
   runs[0] = 0;
   runs[1] = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
 
-  return _store_device_create (device, runs, 2, block_size, store);
+  return _store_device_create (device, block_size, runs, 2, store);
 }
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t
-_store_device_create (device_t device,
-		      off_t *runs, unsigned runs_len, size_t block_size,
+_store_device_create (device_t device, size_t block_size,
+		      off_t *runs, unsigned runs_len,
 		      struct store **store)
 {
-  *store = _make_store (STORAGE_DEVICE, &device_meths);
-
-  if (!*store)
-    return ENOMEM;
-
-  (*store)->block_size = block_size;
-  store_set_runs (*store, runs, runs_len);
-  _store_derive (*store);
-
-  return 0;
+  *store = _make_store (STORAGE_DEVICE, &device_meths, device, block_size,
+			runs, runs_len);
+  return *store ? 0 : ENOMEM;
 }
