@@ -234,7 +234,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	if (*end == ',')
 	  /* MAJOR,MINOR form */
 	  {
-	    start = end;
+	    start = end + 1;
 	    rdev = (rdev << 8) + strtoul (start, &end, 0);
 	  }
 
