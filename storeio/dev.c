@@ -151,13 +151,8 @@ dev_open (struct store_parsed *name, int flags, struct dev **dev)
       return err;
     }
 
-#if 0 /* valloc doesn't work */
-  new->buf = valloc (new->store->block_size);
-  if (new->buf == 0)
-#else
   if (vm_allocate (mach_task_self (),
 		   (vm_address_t *)&new->buf, new->store->block_size, 1))
-#endif
     {
       store_free (new->store);
       free (new);
@@ -184,12 +179,8 @@ dev_close (struct dev *dev)
 
   dev_buf_discard (dev);
 
-#if 0
-  free (dev->buf);
-#else
   vm_deallocate (mach_task_self (),
 		 (vm_address_t)dev->buf, dev->store->block_size);
-#endif
 
   store_free (dev->store);
 
@@ -290,10 +281,8 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
   error_t err;
   unsigned block_mask = dev->block_mask;
 
-  if (offs < 0)
+  if (offs < 0 || offs > dev->store->size)
     return EINVAL;
-  else if (offs > dev->store->size)
-    return EIO;
   else if (offs + len > dev->store->size)
     len = dev->store->size - offs;
 
