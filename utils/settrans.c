@@ -32,16 +32,19 @@
 
 static struct argp_option options[] =
 {
-  {"active",      'a', 0, 0, "Set NODE's active translator"},
+  {"active",      'a', 0, 0, "Set NODE's active translator", 1},
   {"passive",     'p', 0, 0, "Set NODE's passive translator"},
   {"keep-active", 'k', 0, 0, "Keep any currently running active translator"
                              " when setting the passive translator"},
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
-  {"goaway",      'g', 0, 0, "Make any existing translator go away"},
-  {"recursive",   'R', 0, 0, "When killing an old translator, shutdown its children too"},
-  {"force",       'f', 0, 0, "If an old active translator doesn't want to die, force it"},
-  {"nosync",      'S', 0, 0, "Don't sync any existing translator's state before killing it"},
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
+  {"goaway",      'g', 0, 0, "Make any existing active translator go away"},
+
+  {0,0,0,0, "When an active translator is told to go away:", 2},
+  {"recursive",   'R', 0, 0, "Shutdown its children too"},
+  {"force",       'f', 0, 0, "If it doesn't want to die, force it"},
+  {"nosync",      'S', 0, 0, "Don't sync it before killing it"},
+
   {0, 0}
 };
 static char *args_doc = "NODE [TRANSLATOR ARG...]";
@@ -66,9 +69,9 @@ main(int argc, char *argv[])
   /* The control port for any active translator we start up.  */
   fsys_t active_control = MACH_PORT_NULL;
 
-  /* Flags to pass to file_set_translator.  By default we only set a
-     translator if there's no existing one.  */
-  int flags = FS_TRANS_SET | FS_TRANS_EXCL;
+  /* Flags to pass to file_set_translator.  */
+  int active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
+  int passive_flags = FS_TRANS_SET;
   int lookup_flags = O_NOTRANS;
   int goaway_flags = 0;
 
@@ -98,7 +101,7 @@ main(int argc, char *argv[])
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
 
-	case 'g': flags &= ~FS_TRANS_EXCL; break;
+	case 'g': active_flags &= ~FS_TRANS_EXCL; break;
 
 	case 'R': goaway_flags |= FSYS_GOAWAY_RECURSE; break;
 	case 'S': goaway_flags |= FSYS_GOAWAY_NOSYNC; break;
@@ -146,8 +149,8 @@ main(int argc, char *argv[])
 
   err =
     file_set_translator(node,
-			passive ? flags : 0,
-			(active || !keep_active) ? flags : 0,
+			passive ? passive_flags : 0,
+			(active || !keep_active) ? active_flags : 0,
 			goaway_flags,
 			argz, argz_len,
 			active_control, MACH_MSG_TYPE_MOVE_SEND);
