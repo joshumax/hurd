@@ -777,9 +777,11 @@ create_disk_pager (void)
 /* Call this to create a FILE_DATA pager and return a send right.
    NODE must be locked.  */
 mach_port_t
-diskfs_get_filemap (struct node *node, vm_prot_t prot)
+diskfs_get_filemap (struct node *node, int index, vm_prot_t prot)
 {
   mach_port_t right;
+
+  assert (index == 0);		/* XXX */
 
   assert (S_ISDIR (node->dn_stat.st_mode)
 	  || S_ISREG (node->dn_stat.st_mode)

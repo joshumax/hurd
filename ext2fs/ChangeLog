@@ -1,3 +1,11 @@
+1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dir.c (diskfs_lookup_hard): Pass additional parameter to
+	diskfs_get_filemap. 
+	(diskfs_dirempty): Likewise.
+	* truncate.c (force_delayed_copies): Likewise.
+	* pager.c (diskfs_get_filemap): Accept additional parameter.
+
 1999-09-04  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* pager.c (file_pager_write_page): Don't report errors on writes

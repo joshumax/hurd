@@ -152,7 +152,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
     ds->stat = LOOKING;
 
   /* Map in the directory contents. */
-  memobj = diskfs_get_filemap (dp, prot);
+  memobj = diskfs_get_filemap (dp, 0, prot);
 
   if (memobj == MACH_PORT_NULL)
     return errno;
@@ -721,7 +721,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   vm_address_t buf = 0, curoff;
   struct ext2_dir_entry_2 *entry;
   int hit = 0;			/* Found something in the directory.  */
-  memory_object_t memobj = diskfs_get_filemap (dp, VM_PROT_READ);
+  memory_object_t memobj = diskfs_get_filemap (dp, 0, VM_PROT_READ);
 
   if (memobj == MACH_PORT_NULL)
     /* XXX should reflect error properly. */
