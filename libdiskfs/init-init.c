@@ -25,7 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
 mach_port_t diskfs_default_pager;
-mach_port_t diskfs_control_port;
+struct port_info *diskfs_control_port;
 struct mapped_time_value *diskfs_mtime;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
@@ -60,9 +60,8 @@ diskfs_init_diskfs (void)
 
   ports_wire_threads = diskfs_host_priv;
 
-  diskfs_control_port = (ports_get_right
-			 (ports_allocate_port(sizeof (struct port_info),
-					      PT_CTL)));
+  diskfs_control_port = ports_allocate_port(sizeof (struct port_info), PT_CTL);
+  ports_port_ref (diskfs_control_port);
   
   diskfs_default_pager = MACH_PORT_NULL;
   vm_set_default_memory_manager (diskfs_host_priv, &diskfs_default_pager);
