@@ -1,5 +1,5 @@
 /* Map the disk image and handle faults accessing it.
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -98,7 +98,7 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
 	     " eip %#x err %#x",
 	     sig, sigcode,
 	     preemptor.first, preemptor.last,
-	     scp->sc_eip, scp->sc_error);
+	     scp->sc_pc, scp->sc_error);
       assert (scp->sc_error == EKERN_MEMORY_ERROR);
       err = pager_get_error (diskfs_disk_pager, sigcode);
       assert (err);
