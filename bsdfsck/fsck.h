@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.9 1994/10/05 17:08:23 mib Exp $
+ *	$Id: fsck.h,v 1.10 1994/10/05 17:09:06 mib Exp $
  */
 
 /* Begin GNU Hurd */
@@ -109,7 +109,7 @@ struct odirtemplate {
 
 /* Don't include dirent.h lest we get confused, but we still want this. */
 #define IFTODT(mode) (((mode) & 0170000) >> 12)
-#define DT_DIR IFTODT (S_IFDIR)
+#define DT_DIR IFTODT (IFDIR)
 
 /* missing macros */
 
