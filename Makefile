@@ -68,7 +68,7 @@ all: $(lib-subdirs) $(working-prog-subdirs)
 # Create a distribution tar file.  Set make variable `version' on the
 # command line; otherwise the tar file will be a dated snapshot.
 ifeq ($(version),)
-version:=$(shell date +%y%m%d)
+version:=$(shell date +%Y%m%d)
 endif
 dirname:=hurd
 
