@@ -25,6 +25,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <string.h>
 
+struct pending_open 
+{
+  mach_port_t users_port;
+  mach_port_t reply_port;
+  mach_msg_type_name_t reply_port_type;
+  struct pending_open *next;
+};
+
 kern_return_t
 trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 		       uid_t *uids, u_int nuids,
@@ -47,10 +55,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (((flags & O_READ) && !trivfs_support_read)
       || ((flags & O_WRITE) && !trivfs_support_write)
       || ((flags & O_EXEC) && !trivfs_support_exec))
-    {
-      ports_done_with_port (cntl);
-      return EACCES;
-    }
+    return EACCES;
 
   /* O_CREAT and O_EXCL are not meaningful here; O_NOLINK and O_NOTRANS
      will only be useful when trivfs supports translators (which it doesn't 
@@ -65,10 +70,22 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       != (flags & (O_READ|O_WRITE|O_EXEC)))
     {
       mach_port_deallocate (mach_task_self (), new_realnode);
-      ports_done_with_port (cntl);
       return EACCES;
     }
 
+  if (trivfs_check_open_hook)
+    {
+      err = (*trivfs_check_open_hook) (cntl, uids, nuids, gids, ngids, flags);
+      if (err && (err != EWOULDBLOCK 
+		  || (err == EWOULDBLOCK && (flags & O_NONBLOCK))))
+	{
+	  mach_port_deallocate (mach_task_self (), new_realnode);
+	  return err;
+	}
+    }
+  
+  /* At this point we are commited to the open, now or in the
+     future. */
   cred = ports_allocate_port (sizeof (struct trivfs_protid),
 			      cntl->protidtypes);
   cred->isroot = 0;
@@ -96,11 +113,64 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (cred);
 
-  *do_retry = FS_RETRY_NONE;
-  *retry_name = '\0';
-  *newpt = ports_get_right (cred);
-  *newpttype = MACH_MSG_TYPE_MAKE_SEND;
-  return 0;
+  if (err == EWOULDBLOCK)
+    {
+      /* This open request must block. */
+      struct pending_open *pendo;
+      pendo = malloc (sizeof (struct pending_open));
+      pondo->users_port = ports_get_right (cred);
+      pendo->reply_port = reply_port;
+      pendo->reply_port_type = reply_port_type;
+      pendo->next = 0;
+      if (cntl->openstail)
+	cntl->openstail->next = pendo;
+      else
+	cntl->openshead = pendo;
+      cntl->openstail = pendo;
+      
+      ports_done_with_port (cntl);
+      return MIG_NO_REPLY;
+    }
+  else
+    {
+      *do_retry = FS_RETRY_NONE;
+      *retry_name = '\0';
+      *newpt = ports_get_right (cred);
+      *newpttype = MACH_MSG_TYPE_MAKE_SEND;
+      return 0;
+    }
 }
 
+void
+trivfs_complete_open (struct trivfs_control *cntl,
+		      int multi)
+{
+  struct pending_open *pendo, *nxt;
+  
+  if (!multi)
+    {
+      pendo = cntl->openshead;
+      cntl->openshead = pendo->next;
+      if (!cntl->openshead)
+	cntl->openstail = 0;
+      
+      fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
+			  FS_RETRY_NONE, "", pendo->users_port, 
+			  MACH_MSG_TYPE_MAKE_SEND);
+      free (pendo);
+    }
+  else
+    {
+      for (pendo = cntl->openshead; pendo; pendo = nxt)
+	{
+	  fsys_getroot_reply (pendo->reply_port, pendo->reply_port_type, 0,
+			      FS_RETRY_NONE, "", pendo->users_port, 
+			      MACH_MSG_TYPE_MAKE_SEND);
+	  nxt = pendo->next;
+	  free (pendo);
+	}
+      cntl->openshead = cntl->openstail = 0;
+    }
+}
 
+	
