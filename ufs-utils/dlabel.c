@@ -23,9 +23,15 @@
 #include <mach.h>
 #include <string.h>
 #include <device/device.h>
-#include <mach/sa/sys/ioctl.h>	/* Ick */
 #include <device/disk_status.h>
 #include <hurd/store.h>
+
+/* XXX Ick. */
+#define IOCPARM_MASK 0x1fff/* parameter length, at most 13 bits */
+#define IOC_OUT 0x40000000/* copy out parameters */
+#define _IOC(inout,group,num,len) \
+	(inout | ((len & IOCPARM_MASK) << 16) | ((group) << 8) | (num))
+#define _IOR(g,n,t) _IOC(IOC_OUT,(g), (n), sizeof(t))
 
 static error_t
 fd_get_device (int fd, device_t *device)
