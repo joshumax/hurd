@@ -81,8 +81,7 @@ struct dirstat
 
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
 
-/* The user must define this function.  Initialize DS such that
-   diskfs_drop_dirstat will ignore it. */
+/* Initialize DS such that diskfs_drop_dirstat will ignore it. */
 void 
 diskfs_null_dirstat (struct dirstat *ds)
 {
