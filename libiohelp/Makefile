@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993 Free Software Foundation
+#   Copyright (C) 1993, 1994 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,10 +24,7 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
 
-DIST_FILES = $(SRCS) Makefile libioserver.h
-
-# Make sure we get local copies of the headers we install.
-CPPFLAGS := -I. $(CPPFLAGS)
+DIST_FILES = $(SRCS) Makefile ioserver.h
 
 all: libioserver.a(__.SYMDEF)
 
@@ -40,12 +37,12 @@ $(hurdinst)/lib/libioserver.a: libioserver.a(__.SYMDEF)
 	cp libioserver.a $@
 	ranlib $@
 
-$(headers)/libioserver.h: libioserver.h
+$(headers)/hurd/ioserver.h: ioserver.h
 	cp $< $@
 
-install: $(hurdinst)/lib/libioserver.a $(headers)/libioserver.h
+install: $(hurdinst)/lib/libioserver.a $(headers)/hurd/ioserver.h
 
-$(OBJS): libioserver.h
+$(OBJS): ioserver.h
 
 clean:
 	rm libioserver.a *.o
