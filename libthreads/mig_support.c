@@ -174,3 +174,21 @@ __mig_dealloc_reply_port ()
 {
   mig_dealloc_reply_port ();
 }
+
+/* XXX shouldn't need these */
+/* Called by MiG to allocate space.  */
+void
+__mig_allocate (vm_address_t *addr,
+		vm_size_t size)
+{
+  if (__vm_allocate (__mach_task_self (), addr, size, 1) != KERN_SUCCESS)
+    *addr = 0;
+}
+
+/* Called by MiG to deallocate space.  */
+void
+__mig_deallocate (vm_address_t addr,
+		  vm_size_t size)
+{
+  (void) __vm_deallocate (__mach_task_self (), addr, size);
+}
