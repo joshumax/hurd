@@ -1,3 +1,7 @@
+2000-01-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* changelog: Update to reflect Debian uploads.
+
 1999-10-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* rules (BUILDARCH): Renamed to DEB_BUILD_GNU_TYPE.
