@@ -26,10 +26,12 @@ target = console
 SRCS = console.c display.c input.c
 LCLHDRS = console.h display.h input.h priv.h mutations.h
 
-MIGSTUBS = notifyServer.o tioctlServer.o
+MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 
 HURDLIBS = netfs fshelp iohelp pager threads ports ihash shouldbeinlibc
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
+
+MIGSFLAGS += -imacros $(srcdir)/mutations.h
 
 # This is the old monolithic version of the console server.
 #SRCS = main.c vcons.c focus.c vga-display.c vga.c dynafont.c bdf.c

@@ -101,8 +101,10 @@ struct node
   struct conch conch;
 
   struct modreq *dirmod_reqs;
+  unsigned int dirmod_tick;
 
   struct modreq *filemod_reqs;
+  unsigned int filemod_tick;
 
   loff_t allocsize;
 

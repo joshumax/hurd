@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
-#include "ourfs_notify_U.h"
+#include "fs_notify_U.h"
 
 kern_return_t
 diskfs_S_dir_notice_changes (struct protid *cred,
@@ -37,7 +37,7 @@ diskfs_S_dir_notice_changes (struct protid *cred,
       mutex_unlock (&np->lock);
       return ENOTDIR;
     }
-  err = nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
+  err = dir_changed (notify, np->dirmod_tick, DIR_CHANGED_NULL, "");
   if (err)
     {
       mutex_unlock (&np->lock);
@@ -63,13 +63,15 @@ diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
   error_t err;
   struct modreq **preq;
 
+  dp->dirmod_tick++;
   preq = &dp->dirmod_reqs;
   while (*preq)
     {
       struct modreq *req = *preq;
-      err = nowait_dir_changed (req->port, type, name);
-      if (err)
-	{			/* remove notify port */
+      err = dir_changed (req->port, dp->dirmod_tick, type, name);
+      if (err && err != MACH_SEND_TIMED_OUT)
+	{
+	  /* Remove notify port.  */
 	  *preq = req->next;
 	  mach_port_deallocate (mach_task_self (), req->port);
 	  free (req);

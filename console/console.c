@@ -43,6 +43,8 @@
 /* We include console.h for the color numbers.  */
 #include "console.h"
 
+#include "fs_notify_U.h"
+
 const char *argp_program_version = STANDARD_HURD_VERSION (console);
 
 char *netfs_server_name = "console";
@@ -91,6 +93,13 @@ struct vcons
   struct node *inpt_node;
 };
 
+/* Pending directory modification requests.  */
+struct modreq
+{
+  mach_port_t port;
+  struct modreq *next;
+};
+
 struct cons
 {
   /* The lock protects the console, all virtual consoles contained in
@@ -104,11 +113,41 @@ struct cons
   int foreground;
   int background;
 
+  /* Requester of directory modification notifications.  */
+  struct modreq *dirmod_reqs;
+  unsigned int dirmod_tick;
+
   struct node *node;
   mach_port_t underlying;
   /* A template for the stat information of all nodes.  */
   struct stat stat_template;
 };
+
+
+/* Requires CONS to be locked.  */
+static void
+cons_notice_dirchange (cons_t cons, dir_changed_type_t type, char *name)
+{
+  error_t err;
+  struct modreq **preq = &cons->dirmod_reqs;
+
+  cons->dirmod_tick++;
+  while (*preq)
+    {
+      struct modreq *req = *preq;
+
+      err = dir_changed (req->port, cons->dirmod_tick, type, name);
+      if (err && err != MACH_SEND_TIMEOUT)
+        {
+	  /* Remove notify port.  */
+	  *preq = req->next;
+	  mach_port_deallocate (mach_task_self (), req->port);
+	  free (req);
+	}
+      else
+        preq = &req->next;
+    }
+}
 
 
 /* Lookup the virtual console with number ID in the console CONS,
@@ -215,6 +254,8 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
 	}
       cons->vcons_list = vcons;
     }
+  cons_notice_dirchange (cons, DIR_CHANGED_NEW, vcons->name);
+
   mutex_unlock (&cons->lock);
   *r_vcons = vcons;
   return 0;
@@ -252,6 +293,8 @@ vcons_release (vcons_t vcons)
 	cons->vcons_list = vcons->next;
       if (vcons->next)
         vcons->next->prev = vcons->prev;
+
+      cons_notice_dirchange (cons, DIR_CHANGED_UNLINK, vcons->name);
 
       /* XXX Destroy the state.  */
       display_destroy (vcons->display);
@@ -1186,6 +1229,40 @@ netfs_S_io_map (struct protid *cred,
 
 
 kern_return_t
+netfs_S_dir_notice_changes (struct protid *cred, mach_port_t notify)
+{
+  error_t err;
+  cons_t cons;
+  struct modreq *req;
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  cons = cred->po->np->nn->cons;
+  if (!cons)
+    return EOPNOTSUPP;
+
+  mutex_lock (&cons->lock);
+  err = dir_changed (notify, cons->dirmod_tick, DIR_CHANGED_NULL, "");
+  if (err)
+    {
+      mutex_unlock (&cons->lock);
+      return err;
+    }
+  req = malloc (sizeof (struct modreq));
+  if (!req)
+    {
+      mutex_unlock (&cons->lock);
+      return errno;
+    }
+  req->port = notify;
+  req->next = cons->dirmod_reqs;
+  cons->dirmod_reqs = req;
+  mutex_unlock (&cons->lock);
+  return 0;
+}
+
+kern_return_t
 netfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
 {
   struct node *np;
@@ -1676,6 +1753,8 @@ main (int argc, char **argv)
   cons->foreground = DEFAULT_FOREGROUND;
   cons->background = DEFAULT_BACKGROUND;
   cons->vcons_list = NULL;
+  cons->dirmod_reqs = NULL;
+  cons->dirmod_tick = 0;
   root_nn.cons = cons;
 
   /* Parse our command line arguments (all none of them).  */

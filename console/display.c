@@ -291,12 +291,15 @@ static struct port_class *notify_class;
 
 /* SimpleRoutine file_changed */
 kern_return_t
-nowait_file_changed (mach_port_t notify_port, file_changed_type_t change,
+nowait_file_changed (mach_port_t notify_port, natural_t tickno,
+		     file_changed_type_t change,
 		     off_t start, off_t end, mach_port_t notify)
 {
   typedef struct
   {
     mach_msg_header_t Head;
+    mach_msg_type_t ticknoType;
+    natural_t tickno;
     mach_msg_type_t changeType;
     file_changed_type_t change;
     mach_msg_type_t startType;
@@ -309,7 +312,17 @@ nowait_file_changed (mach_port_t notify_port, file_changed_type_t change,
     Request In;
   } Mess;
   register Request *InP = &Mess.In;
-  
+
+  static const mach_msg_type_t ticknoType = {
+    /* msgt_name = */           2,
+    /* msgt_size = */           32,
+    /* msgt_number = */         1,
+    /* msgt_inline = */         TRUE,
+    /* msgt_longform = */       FALSE,
+    /* msgt_deallocate = */     FALSE,
+    /* msgt_unused = */         0
+  };  
+
   static const mach_msg_type_t changeType = {
     /* msgt_name = */		2,
     /* msgt_size = */		32,
@@ -340,6 +353,8 @@ nowait_file_changed (mach_port_t notify_port, file_changed_type_t change,
     /* msgt_unused = */		0
   };
 
+  InP->ticknoType = ticknoType;
+  InP->tickno = tickno;
   InP->changeType = changeType;
   InP->change = change;
   InP->startType = startType;
@@ -356,11 +371,11 @@ nowait_file_changed (mach_port_t notify_port, file_changed_type_t change,
 
   if (notify == MACH_PORT_NULL)
     return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_MSG_OPTION_NONE,
-		     48, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     56, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
 		     MACH_PORT_NULL);
   else
     return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_SEND_NOTIFY,
-		     48, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     56, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
 		     notify);
 }
 
@@ -435,7 +450,7 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
       /* A request was desired while we were blocking.  Send it now
 	 and stay in pending queue.  */
       req->pending = 0;
-      err = nowait_file_changed (req->port, FILE_CHANGED_WRITE, -1, -1,
+      err = nowait_file_changed (req->port, 0, FILE_CHANGED_WRITE, -1, -1,
 				 notify);
       if (err && err != MACH_SEND_WILL_NOTIFY)
 	{
@@ -484,7 +499,7 @@ display_notice_changes (display_t display, mach_port_t notify)
   struct modreq *req;
 
   mutex_lock (&display->lock);
-  err = nowait_file_changed (notify, FILE_CHANGED_NULL, 0, 0, MACH_PORT_NULL);
+  err = nowait_file_changed (notify, 0, FILE_CHANGED_NULL, 0, 0, MACH_PORT_NULL);
   if (err)
     {
       mutex_unlock (&display->lock);
@@ -523,7 +538,7 @@ display_notice_filechange (display_t display)
     {
       req = *preq;
 
-      err = nowait_file_changed (req->port, FILE_CHANGED_WRITE, -1, -1,
+      err = nowait_file_changed (req->port, 0, FILE_CHANGED_WRITE, -1, -1,
 				 notify_port);
       if (err)
         {

@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
-#include "ourfs_notify_U.h"
+#include "fs_notify_U.h"
 
 kern_return_t
 diskfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
@@ -31,7 +31,7 @@ diskfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
 
   np = cred->po->np;
   mutex_lock (&np->lock);
-  err = nowait_file_changed (notify, FILE_CHANGED_NULL, 0, 0);
+  err = file_changed (notify, np->filemod_tick, FILE_CHANGED_NULL, 0, 0);
   if (err)
     {
       mutex_unlock (&np->lock);
@@ -51,14 +51,16 @@ diskfs_notice_filechange (struct node *dp, enum file_changed_type type,
 {
   error_t err;
   struct modreq **preq;
-  
+
+  dp->filemod_tick++;
   preq = &dp->filemod_reqs;
   while (*preq)
     {
       struct modreq *req = *preq;
-      err = nowait_file_changed (req->port, type, start, end);
-      if (err)
-	{			/* remove notify port */
+      err = file_changed (req->port, dp->filemod_tick, type, start, end);
+      if (err && err != MACH_SEND_TIMED_OUT)
+	{
+	  /* Remove notify port.  */
 	  *preq = req->next;
 	  mach_port_deallocate (mach_task_self (), req->port);
 	  free (req);

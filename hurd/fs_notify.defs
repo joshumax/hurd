@@ -25,22 +25,31 @@ subsystem fs_notify 20500;
 FS_NOTIFY_IMPORTS
 #endif
 
+/* For maximum robustness, the server must not wait for the client to
+   receive the notification message.  This is achieved by setting a
+   send timeout (XXX which is implicitely 0 with MACH_MSG_TIMEOUT_NONE).  */
+MsgOption MACH_SEND_TIMEOUT;
 
 /* This is sent by a filesystem (after being requested with
    dir_notice_changes) every time a directory is changed.
    CHANGE identifies the sort of change that has occurred (see hurd_types.h);
-   NAME is the name that was changed.  */
-routine dir_changed (
-	notify_port: mach_port_t;
+   NAME is the name that was changed.  TICKNO is a sequential number
+   that allows the client to verify that it got all notifications.  */
+simpleroutine dir_changed (
+	notify_port: fs_notify_t;
+	tickno: natural_t;
 	change: dir_changed_type_t;
 	name: string_t);
 
 /* This is sent by a filesystem (after being requested with
    file_notice_changes) every time a file or its stat info is changed.
    CHANGE identifies the sort of change that has occurred (see hurd_types.h);
-   START and END identify the affected regions of the file's data.  */
-routine file_changed (
-	notify_port: mach_port_t;
+   START and END identify the affected regions of the file's data.
+   TICKNO is a sequential number that allows the client to verify that
+   it got all notifications.  */
+simpleroutine file_changed (
+	notify_port: fs_notify_t;
+	tickno: natural_t;
 	change: file_changed_type_t;
 	start: loff_t;
 	end: loff_t);

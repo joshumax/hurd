@@ -1,3 +1,23 @@
+2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (DIST_FILES): Variable removed.
+	(MIGSTUBS): Use fs_notifyUser.o, not ourfs_notifyUser.o.
+	* ourfs_notify.defs: File removed.
+	* diskfs.h (struct node): New members DIRMOD_TICK and
+	FILEMOD_TICK.
+	* node-make.c (diskfs_make_node): Initialize DIRMOD_TICK and
+	FILEMOD_TICK.
+	* dir-chg.c: Include "fs_notify_U.h" instead "ourfs_notify_U.h".
+	(diskfs_S_dir_notice_changes): Use new dir_changed invocation
+	instead nowait_dir_changed.
+	(diskfs_notice_dirchange): Likewise.  Increase tick number.
+	Ignore send timeout error.
+	* file-chg.c: Include "fs_notify_U.h" instead "ourfs_notify_U.h".
+	(diskfs_S_file_notice_changes): Use new file_changed invocation
+	instead nowait_file_changed.
+	(diskfs_notice_filechange): Likewise.  Increase tick number.
+	Ignore send timeout error.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* dir-readdir.c (diskfs_S_dir_readdir): Revert last change.

@@ -1,3 +1,20 @@
+2002-06-27  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (MIGSTUBS): Add fs_notifyUser.o.
+	(MIGSFLAGS): New variable.
+	* console.c: Include "fs_notify_U.h".
+	(struct modreq): New structure.
+	(struct cons): New members DIRMOD_REQS and DIRMOD_TICK.
+	(cons_notice_dirchange): New function.
+	(vcons_lookup): Call cons_notice_dirchange.
+	(netfs_S_dir_notice_changes): New function.
+	(main): Initialize new members in CONS.
+	* display.c (nowait_file_changed): Update to new interface (new
+	argument TICKNO).
+	(do_mach_notify_msg_accepted): Call nowait_file_changed with new argument.
+	(display_notice_changes): Likewise.
+	(display_notice_filechange): Likewise.
+	
 2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (HURDLIBS): Add pager, reported by Alfred M. Szmidt.

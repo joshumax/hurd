@@ -1,3 +1,12 @@
+2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fs_notify.defs: Add MsgOption for send timeout.
+	(dir_changed): Changed to simpleroutine.  Change type of first
+	argument to fs_notify_t.  Add TICKNO argument.
+	(file_changed): Likewise.
+	* hurd_types.defs (fs_notify_t): New type.
+	* hurd_types.h (fs_notify_t): Likewise.
+
 2002-06-14  Roland McGrath  <roland@frob.com>
 
 	* paths.h (_SERVERS_DEFPAGER): New macro.

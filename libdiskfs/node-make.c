@@ -42,7 +42,9 @@ diskfs_make_node (struct disknode *dn)
   np->sockaddr = MACH_PORT_NULL;
 
   np->dirmod_reqs = 0;
+  np->dirmod_tick = 0;
   np->filemod_reqs = 0;
+  np->filemod_tick = 0;
 
   fshelp_transbox_init (&np->transbox, &np->lock, np);
   iohelp_initialize_conch (&np->conch, &np->lock);

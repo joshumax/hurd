@@ -55,10 +55,9 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h diskfs-pager.h fhandle.h
 installhdrs = diskfs.h diskfs-pager.h
-DIST_FILES = ourfs_notify.defs
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
-	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o \
+	fsys_replyUser.o fs_notifyUser.o ifsockServer.o \
 	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 

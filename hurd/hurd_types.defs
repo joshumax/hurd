@@ -144,6 +144,19 @@ destructor: STARTUP_DESTRUCTOR
 #endif
 ;
 
+type fs_notify_t = mach_port_copy_send_t
+#ifdef FS_NOTIFY_INTRAN
+intran: FS_NOTIFY_INTRAN
+#endif
+#ifdef FS_NOTIFY_OUTTRAN
+outtran: FS_NOTIFY_OUTTRAN
+#endif
+#ifdef FS_NOTIFY_DESTRUCTOR
+destructor: FS_NOTIFY_DESTRUCTOR
+#endif
+;
+
+
 type proccoll_t = mach_port_copy_send_t;
 
 type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
