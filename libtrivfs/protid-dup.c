@@ -27,44 +27,47 @@
 error_t
 trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 {
-  error_t err = 0;
-  struct trivfs_protid *new = 
-    ports_allocate_port (cred->po->cntl->protid_bucket,
-			 sizeof (struct trivfs_protid), 
-			 cred->po->cntl->protid_class);
+  struct trivfs_protid *new;
+  error_t err = ports_create_port (cred->po->cntl->protid_class,
+				   cred->po->cntl->protid_bucket,
+				   sizeof (struct trivfs_protid), 
+				   &new);
 
-  mutex_lock (&cred->po->cntl->lock);
-  new->po = cred->po;
-  new->po->refcnt++;
-  mutex_unlock (&cred->po->cntl->lock);
-
-  new->isroot = cred->isroot;
-
-  new->uids = malloc (cred->nuids * sizeof (uid_t));
-  bcopy (cred->uids, new->uids, cred->nuids * sizeof (uid_t));
-  new->nuids = cred->nuids;
-
-  new->gids = malloc (cred->ngids * sizeof (gid_t));
-  bcopy (cred->gids, new->gids, cred->ngids * sizeof (uid_t));
-  new->ngids = cred->ngids;
-
-  new->realnode = cred->realnode;
-  mach_port_mod_refs (mach_task_self (), new->realnode,
-		      MACH_PORT_RIGHT_SEND, 1);
-
-  new->hook = cred->hook;
-
-  if (trivfs_protid_create_hook)
-    err = (*trivfs_protid_create_hook) (new);
-  if (err)
+  if (! err)
     {
-      mach_port_deallocate (mach_task_self (), new->realnode);
-      /* Signal that the user destroy hook shouldn't be called on NEW.  */
-      new->realnode = MACH_PORT_NULL;
-      ports_port_deref (new);
+      mutex_lock (&cred->po->cntl->lock);
+      new->po = cred->po;
+      new->po->refcnt++;
+      mutex_unlock (&cred->po->cntl->lock);
+
+      new->isroot = cred->isroot;
+
+      new->uids = malloc (cred->nuids * sizeof (uid_t));
+      bcopy (cred->uids, new->uids, cred->nuids * sizeof (uid_t));
+      new->nuids = cred->nuids;
+
+      new->gids = malloc (cred->ngids * sizeof (gid_t));
+      bcopy (cred->gids, new->gids, cred->ngids * sizeof (uid_t));
+      new->ngids = cred->ngids;
+
+      new->realnode = cred->realnode;
+      mach_port_mod_refs (mach_task_self (), new->realnode,
+			  MACH_PORT_RIGHT_SEND, 1);
+
+      new->hook = cred->hook;
+
+      if (trivfs_protid_create_hook)
+	err = (*trivfs_protid_create_hook) (new);
+      if (err)
+	{
+	  mach_port_deallocate (mach_task_self (), new->realnode);
+	  /* Signal that the user destroy hook shouldn't be called on NEW.  */
+	  new->realnode = MACH_PORT_NULL;
+	  ports_port_deref (new);
+	}
+      else
+	*dup = new;
     }
-  else
-    *dup = new;
 
   return err;
 }
