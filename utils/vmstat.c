@@ -23,6 +23,8 @@
 #include <argp.h>
 #include <error.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include <mach.h>
 #include <mach/vm_statistics.h>
@@ -37,28 +39,34 @@ struct field {
   /* Terse header used for the columnar style output.  */
   char *hdr;
 
+  /* True if this field is `cumulative', that is, monotonic increasing. */
+  int cum;
+
   /* Offset of the integer_t field in a vm_statistics structure */
   int offs;
 };
 
 /* Returns the byte offset of the field FIELD in a vm_statistics structure. */
-#define FOFFS(field)  offsetof (struct vm_statistics, field)
+#define FOFFS(field_name)  offsetof (struct vm_statistics, field_name)
+
+/* Yields an lvalue refering to FIELD in STATS.  */
+#define FVAL(stats, field) (*(integer_t *)((char *)&(stats) + (field)->offs))
 
 /* vm_statistics fields we know about.  */
 static const struct field fields[] = {
-  { "pagesize",	   "Pagesize",	     "pgsz",	FOFFS (pagesize) },
-  { "free",	   "Free pages",     "free",	FOFFS (free_count) },
-  { "active",	   "Active pages",   "actv",	FOFFS (active_count) },
-  { "inactive",	   "Inactive pages", "inac",	FOFFS (inactive_count) },
-  { "wired",	   "Wired pages",    "wire",	FOFFS (wire_count) },
-  { "zero-filled", "Zeroed pages",   "zeroed",	FOFFS (zero_fill_count) },
-  { "reactivations","Reactivations", "react",	FOFFS (reactivations) },
-  { "pageins",	   "Pageins",	     "pgins",	FOFFS (pageins) },
-  { "pageouts",    "Pageouts",	     "pgouts",	FOFFS (pageouts) },
-  { "faults",	   "Faults",	     "pfaults",  FOFFS (faults) },
-  { "cow-faults",  "Cow faults",     "cowpfs",	FOFFS (cow_faults) },
-  { "cache-lookups","Cache lookups", "clkups",	FOFFS (lookups) },
-  { "cache-hits",  "Cache hits",     "chits",	FOFFS (hits) },
+  { "pagesize",	   "Pagesize",	     "pgsz",	0, FOFFS (pagesize) },
+  { "free",	   "Free pages",     "free",	0, FOFFS (free_count) },
+  { "active",	   "Active pages",   "actv",	0, FOFFS (active_count) },
+  { "inactive",	   "Inactive pages", "inac",	0, FOFFS (inactive_count) },
+  { "wired",	   "Wired pages",    "wire",	0, FOFFS (wire_count) },
+  { "zero-filled", "Zeroed pages",   "zeroed",	1, FOFFS (zero_fill_count) },
+  { "reactivations","Reactivations", "react",	1, FOFFS (reactivations) },
+  { "pageins",	   "Pageins",	     "pgins",	1, FOFFS (pageins) },
+  { "pageouts",    "Pageouts",	     "pgouts",	1, FOFFS (pageouts) },
+  { "faults",	   "Faults",	     "pfaults", 1, FOFFS (faults) },
+  { "cow-faults",  "Cow faults",     "cowpfs",	1, FOFFS (cow_faults) },
+  { "cache-lookups","Cache lookups", "clkups",	1, FOFFS (lookups) },
+  { "cache-hits",  "Cache hits",     "chits",	1, FOFFS (hits) },
   {0}
 };
 
@@ -73,8 +81,14 @@ static const struct argp_option options[] = {
 
   {0}
 };
-static const char *args_doc = 0;
-static const char *doc = 0;
+static const char *args_doc = "[PERIOD [COUNT [HEADER_INTERVAL]]]";
+static const char *doc = "If PERIOD is supplied, then terse mode is"
+" selected, and the output repeated every PERIOD seconds, with cumulative"
+" fields given the difference from the last output.  If COUNT is given"
+" and non-zero, only that many lines are output.  HEADER_INTERVAL"
+" defaults to 23, and if not zero, is the number of repeats after which a"
+" blank line and the header will be reprinted (as well as the totals for"
+" cumulative fields).";
 
 int
 main (int argc, char **argv)
@@ -84,6 +98,9 @@ main (int argc, char **argv)
   struct vm_statistics stats;
   int num_fields = 0;		/* Number of vm_fields known. */
   unsigned long output_fields = 0; /* A bit per field, from 0. */
+  int count = 1;		/* Number of repeats.  */
+  unsigned period = 0;		/* Seconds between terse mode repeats.  */
+  unsigned hdr_interval = 23;	/*  */
 
   int terse = 0, print_heading = 1, print_prefix = -1;
 
@@ -100,6 +117,22 @@ main (int argc, char **argv)
 	  case 'p': print_prefix = 1; break;
 	  case 'P': print_prefix = 0; break;
 	  case 'H': print_heading = 0; break;
+
+	  case ARGP_KEY_ARG:
+	    terse = 1;
+	    switch (state->arg_num)
+	      {
+	      case 0:
+		period = atoi (arg); count = 0; break;
+	      case 1:
+		count = atoi (arg); break;
+	      case 2:
+		hdr_interval = atoi (arg); break;
+	      default:
+		return EINVAL;
+	      }
+	    break;
+
 	  default: return EINVAL;
 	  }
       return 0;
@@ -139,42 +172,75 @@ main (int argc, char **argv)
   if (output_fields == 0)
     output_fields = ~0;		/* By default, show all fields. */
 
-  /* Actually fetch the statistics.  */
-  err = vm_statistics (mach_task_self (), &stats);
-  if (err)
-    error (2, err, "vm_statistics");
-
-  /* Print them.  */
   if (terse)
+    /* Terse (one-line) output mode.  */
     {
-      int first = 1;
-      if (print_heading)
+      int first_hdr = 1, first, repeats;
+      struct vm_statistics prev_stats;
+
+      if (count == 0)
+	count = -1;
+
+      do
 	{
-	  int which;
-	  for (which = 0; which < num_fields; which++)
-	    if (output_fields & (1 << which))
-	      {
-		if (first)
-		  first = 0;
-		else
-		  putchar (' ');
-		fputs (fields[which].hdr, stdout);
-	      }
-	  putchar ('\n');
+	  if (first_hdr)
+	    first_hdr = 0;
+	  else
+	    putchar ('\n');
+
+	  if (print_heading)
+	    {
+	      int which;
+	      for (which = 0, first = 1; which < num_fields; which++)
+		if (output_fields & (1 << which))
+		  {
+		    if (first)
+		      first = 0;
+		    else
+		      putchar (' ');
+		    fputs (fields[which].hdr, stdout);
+		  }
+	      putchar ('\n');
+	    }
+	
+	  bzero (&prev_stats, sizeof (prev_stats));
+
+	  for (repeats = 0
+	       ; count && repeats < hdr_interval && count
+	       ; repeats++, count--)
+	    {
+	      /* Actually fetch the statistics.  */
+	      err = vm_statistics (mach_task_self (), &stats);
+	      if (err)
+		error (2, err, "vm_statistics");
+
+	      /* Output the fields.  */
+	      for (field = fields, first = 1; field->name; field++)
+		if (output_fields & (1 << (field - fields)))
+		  {
+		    integer_t val = FVAL (stats, field);
+		    int width = strlen (field->hdr);
+
+		    if (field->cum)
+		      {
+			integer_t cum = val;
+			val -= FVAL (prev_stats, field);
+			FVAL (prev_stats, field) = cum;
+		      }
+
+		    if (first)
+		      first = 0;
+		    else
+		      putchar (' ');
+		    printf ("%*d", width, val);
+		  }
+	      putchar ('\n');
+
+	      if (period)
+		sleep (period);
+	    }
 	}
-      first = 1;
-      for (field = fields; field->name; field++)
-	if (output_fields & (1 << (field - fields)))
-	  {
-	    int width = strlen (field->hdr);
-	    if (first)
-	      first = 0;
-	    else
-	      putchar (' ');
-	    printf ("%*d", width,
-		    *(integer_t *)((char *)&stats + field->offs));
-	  }
-      putchar ('\n');
+      while (count);
     }
   else
     /* Verbose output.  */
@@ -195,15 +261,19 @@ main (int argc, char **argv)
 		max_desc_width = desc_len;
 	    }
 
+      /* Actually fetch the statistics.  */
+      err = vm_statistics (mach_task_self (), &stats);
+      if (err)
+	error (2, err, "vm_statistics");
+
       for (field = fields; field->name; field++)
 	if (output_fields & (1 << (field - fields)))
 	  if (print_prefix)
-	    printf ("%s:%*d\n",
-		    field->desc,
+	    printf ("%s:%*d\n", field->desc,
 		    max_desc_width + 5 - strlen (field->desc),
-		    *(integer_t *)((char *)&stats + field->offs));
+		    FVAL (stats, field));
 	  else
-	    printf ("%d\n", *(integer_t *)((char *)&stats + field->offs));
+	    printf ("%d\n", FVAL (stats, field));
     }
 
   exit (0);
