@@ -1,3 +1,12 @@
+1998-08-12  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* argz-replace.c: Removed, now in libcwhereitshouldbe.
+
+	* argp-ba.c, argp-eexst.c, argp-ex1.c, argp-ex2.c, argp-ex3.c,
+	argp-ex4.c, argp-fmtstream.c, argp-fmtstream.h argp-fs-xinl.c,
+	argp-help.c, argp-namefrob.h argp-parse.c, argp-pv.c, argp-pvh.c,
+	argp-test.c, argp-xinl.c, argp.h: Removed, now in libcwhereitshouldbe.
+
 1998-08-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ugids-verify-auth.c: Leave #include <hurd/password.h> there, but
