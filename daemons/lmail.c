@@ -35,6 +35,7 @@
 #include <version.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 
 #define OPT_FILE -5
 #define OPT_REMOVE -6
@@ -450,7 +451,7 @@ main (int argc, char **argv)
 	case 'd':
 	  /* do nothing; compatibility */
 	  break;
-	case 'f': 
+	case 'f':
 	case 'r':
 	  params.from = arg; break;
 	case OPT_FILE:
