@@ -1,0 +1,547 @@
+Mon Jul 15 18:00:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.h (struct disknode): Add debugging info.
+	(RECORD_LAST): New function.
+	(LAST_BUFSZ): New macro.
+	(enum last_act): New type.
+	* pager.c (pager_unlock_page, diskfs_grow, file_pager_read_page,
+	file_pager_write_page): Record debugging info.
+	* truncate.c (diskfs_truncate): Likewise.
+	* inode.c (diskfs_cached_lookup): Initialize debugging info.
+
+	* pager.c (file_pager_read_page): Initialize *WRITELOCK to 0.
+
+Tue Jun 25 12:22:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.h (sync_global): Renamed from sync_global_data.  Add WAIT
+ 	flag.  Don't call diskfs_set_hypermetadata.
+	(alloc_sync): Call diskfs_set_hypermetadata instead of sync_global_data.
+	(sync_super_block): Function removed.
+	* hyper.c (diskfs_readonly_changed): No longer clear the clean bit.
+	(diskfs_set_hypermetadata): Work correctly.
+	* truncate.c (diskfs_truncate): Add call diskfs_check_readonly to
+	clear clean bit.
+	* inode.c (diskfs_cached_lookup): Use diskfs_check_readonly
+	instead of diskfs_readonly.
+	* dir.c (diskfs_lookup_hard, diskfs_dirempty): Likewise.
+	* pager.c (diskfs_shutdown_pager): Don't shutdown the disk pager,
+	just sync it.
+	(diskfs_sync_everything): Call sync_global instead of pokel_sync.
+	(final_sblock): Variable removed.
+	(diskfs_grow): Add call diskfs_check_readonly to clear clean bit.
+
+Mon Jun 24 17:14:25 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (check_high_bits, diskfs_validate_owner_change,
+	diskfs_validate_group_change, diskfs_validate_mode_change,
+	diskfs_validate_author_change): New functions.
+	(write_node): For non-hurd filesystems, assert that no hurd
+	extensions should be used.
+
+Thu Jun 20 22:36:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Rename diskfs_device_startup_argp to
+	diskfs_std_device_startup_argp.
+
+Sat Jun 15 15:56:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (read_disknode, write_inode): Use hurd-specific fields
+	only on a hurd filesystem.
+
+Fri May 10 09:32:43 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_set_statfs): Fix one reference to old name of ST
+ 	member.
+
+Thu May  9 11:52:20 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_set_statfs): Expect and fill in new format
+ 	statfs buffer.
+
+	* Makefile (ext2fs ext2fs.static): s/ioserver/iohelp/g.
+	* ext2fs.h: ioserver.h -> iohelp.h.
+
+Tue May  7 16:22:56 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Rewrite for new
+	interface.
+
+Tue Apr 30 12:51:09 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (targets): Renamed from `target'.
+
+Fri Apr 26 16:10:19 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (makemode): Now `servers'.
+	(targets): Renamed from `target'; now include ext2fs.static.
+	(ext2fs.static-LDFLAGS): Renamed from `LDFLAGS'.
+	(ext2fs.static): Depend on same things as `ext2fs'.
+	(include ../Makeconf): Must come before dependency information.
+
+Wed Apr 17 13:30:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_write_disknode): Only sync DI if WAIT.
+
+	* dir.c (diskfs_lookup_hard): Set atime appropriately, and sync
+	the new atime if we are running synchronously (!).
+	(diskfs_dirempty): Likewise.
+	(diskfs_direnter_hard): Set mtime appropriately.
+	(diskfs_dirremove_hard): Likewise.
+	(diskfs_dirrewrite_hard): Likewise.
+
+Thu Apr  4 18:51:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_cached_lookup): Renamed from iget; all uses updated.
+	Initialize the CACHE_ID field in the new node.
+	* ext2fs.h (struct disknode): Get rid of NUMBER field; all references
+	replaced by references to the CACHE_ID field in the corresponding node.
+
+Fri Mar 29 11:03:58 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (diskfs_null_dirstat): New function.
+	(diskfs_lookup_hard, diskfs_direnter, diskfs_dirremove_hard,
+	diskfs_dirrewrite_hard): Renamed from versions without `_hard' suffix.
+	Get rid of stuff now done by diskfs.
+
+	* ext2fs.c (main): Pass new argument to argp_parse.
+
+Tue Mar 19 17:52:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (pager_unlock_page, diskfs_grow): Try to make the logic
+	a bit simpler and more robust.
+
+Fri Feb 16 17:05:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Check error return from diskfs_init_diskfs.
+
+Tue Feb  6 14:49:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.h (ext2_warning): Make a declaration, not a macro.
+	* msg.c (ext2_warning): Rename from _ext2_warning; don't take (or
+	print) a function argument any more.
+
+	* dir.c (diskfs_get_directs): When BUFSIZ is 0, allocate enough
+	extra space over the directory size to account for the worst case
+	difference between the ext2 and canonical formats.
+
+Sat Feb  3 11:27:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hyper.c (get_hypermetadata, diskfs_readonly_changed): Use
+	ext2_warning to print warnings instead of error().
+	* msg.c (_ext2_warning): Include `warning:' in message.
+
+Sat Feb  3 06:10:43 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* hyper.c: Fixed handling of the filesystem `clean bit'.
+	(ext2fs_clean): New boolean variable.
+	(get_hypermetadata): Set it iff the clean bit is set on entry.
+	If not clean, complain and force read-only.
+	(diskfs_set_hypermetadata): Set clean bit only if ext2fs_clean is set.
+	(diskfs_readonly_changed): Complain if going writable and clean
+	bit clear.
+
+	* ext2fs.c: Include string.h for strerror decl.
+
+Tue Jan 30 22:25:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hyper.c (get_hypermetadata): Don't return any error value, just
+	panic if we can't read the superblock.
+	* ext2fs.c (main): Move warp_inode() inline.  Make sure root inode
+	is really there.  Don't check return value from get_hypermetadata.
+	(warp_inode): Function removed.
+	* ext2fs.h (get_hypermetadata): Returns void now.
+
+Tue Jan 30 17:04:41 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* pager.c (file_pager_read_page, file_pager_write_page): Check for
+	a page offset beyond the allocsize and return EIO.
+
+Wed Jan 17 15:11:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Calculate the
+	right value for *RUNS_LEN.
+
+Tue Jan 16 17:37:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (diskfs_file_update): Ext2fs doesn't require that the
+	last block in the file always be allocated, so don't.
+	(diskfs_grow, pager_unlock_page): Don't set last_block_allocated.
+	* ext2fs.h (struct disknode): Get rid of last_block_allocated field.
+	* inode.c (read_disknode): Don't set last_block_allocated.
+	* truncate.c (diskfs_truncate): Likewise.
+
+	* Makefile (LDFLAGS): Add -static.
+
+Mon Jan 15 10:25:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (pager_unlock_page, diskfs_grow): Leave things in a
+	slightly more consistent state when block allocation errors happen.
+
+	* dir.c (diskfs_direnter): Don't include the terminating '\0' in
+	on-disk directory entry names.
+
+	* inode.c (diskfs_node_norefs): When losing our in-core copy of an
+	inode, remember which indirect blocks still have to be written.
+	* pokel.c (pokel_inherit, pokel_finalize): New functions.
+	* ext2fs.h (pokel_inherit, pokel_finalize): New declarations.
+
+	* dir.c (diskfs_lookup): Patch from ufs/dir.c: If we are returning
+ 	an error, then set the dirstat to be ignored by drop_dirstat.
+
+Sun Jan 14 13:17:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ialloc.c (diskfs_alloc_node): Set NP->istranslated to 0.
+	* inode.c (write_node): If NP isn't translated, force
+	DI->i_translator to 0.
+
+	* getblk.c (inode_getblk, block_getblk): Set dn_set_mtime too.
+
+Sat Jan  6 11:57:26 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* pager.c (pager_bucket): Made global.
+	(create_disk_pager): Pass MAY_CACHE to disk_pager_setup.
+	* ext2fs.c (main): Don't map in disk image here; create_disk_pager
+	now does it.
+
+Fri Jan  5 16:57:54 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.h: Declare create_disk_pager.
+
+Thu Jan  4 18:46:40 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.h (disk_pager, disk_pager_port, disk_image,
+	create_disk_pager): Decls removed.
+	Include hurd/diskfs-pager.h instead.
+
+	* pager.c (create_disk_pager): Use disk_pager_setup.
+
+Tue Nov 14 14:59:32 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (dirscanblock): Apply mib's changes to ufs/dir.c.
+
+Sat Nov  4 20:01:01 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Add FLAGS argument.
+
+Wed Nov  1 20:09:59 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Add FLAGS arg to diskfs_startup_diskfs call.
+
+Mon Oct 23 17:49:16 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_get_translator, diskfs_set_translator): Only
+	support these if the filesystem's creator-os is `hurd'.
+	(read_disknode): Only check the i_translator field if the
+	filesystem's creator-os is `hurd'.
+
+Fri Oct 20 19:18:16 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.h (MS_RDONLY, MS_NOSUID, MS_NODEV, MS_NOEXEC,
+	MS_SYNCHRONOUS, MS_REMOUNT, S_APPEND, S_IMMUTABLE, IS_APPEND,
+	IS_IMMUTABLE): Macros deleted.
+
+Thu Oct 19 19:15:15 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (create_disk_pager, diskfs_get_filemap,
+	pager_clear_user_data): Don't use the p field in a upi.
+	(diskfs_get_filemap): Update/initialize the max_prot field.
+	Add the prot arg.
+
+	* ext2fs.h (struct user_pager_info): Add max_prot field, remove p.
+	* pager.c (drop_pager_softrefs): Declare PAGER, not UPI.
+	(enable_caching): The disk node is upi->node, not upi->np.
+	(diskfs_enable_pagers): Function removed.
+	* inode.c (read_disknode): Add DN and OFFSET variables.  Use
+	log2_block_size to mask instead of doing a modulo with block_size.
+	* hyper.c (diskfs_readonly_changed): Typo.
+	(allocate_mod_map): Declare ERR; OLD_MOD_MAP_SIZE --> MOD_MAP_SIZE.
+	* dir.c (diskfs_lookup, diskfs_dirempty): Give diskfs_get_filemap
+	a protection arg.
+	* truncate.c (force_delayed_copies): Ditto.
+
+Wed Oct 18 21:00:28 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.h (struct disknode): Replace fileinfo field with pager.
+	* inode.c (diskfs_node_norefs, iget): Use pager field, not fileinfo.
+	* pager.c (diskfs_get_filemap_pager_struct, flush_node_pager,
+	diskfs_file_update, pager_clear_user_data, drop_pager_softrefs): Ditto.
+	* truncate.c (enable_delayed_copies, force_delayed_copies): Ditto.
+
+	* ext2fs.c (main): Always include VM_PROT_WRITE in max prot.
+	* hyper.c (diskfs_readonly_changed): Change the protection of
+	DISK_IMAGE to reflect the new state.
+	* pager.c (diskfs_enable_pagers): New function.
+
+Tue Oct 17 21:16:04 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pokel.c (_pokel_exec, pokel_flush): New functions.
+	(pokel_sync): Use _pokel_exec to do the work.
+	* pager.c (flush_node_pager): New function.
+	* ext2fs.h (pokel_flush, flush_node_pager): New declarations.
+
+	* hyper.c (allocate_mod_map): New function (from get_hypermetadata).
+	(zeroblock, modified_global_blocks): Define (were common).
+	(get_hypermetadata): Deallocate ZEROBLOCK if necessary.  Use
+	allocate_mod_map to allocate MODIFIED_GLOBAL_BLOCKS.
+	(diskfs_readonly_changed): New function.
+	* main.c (main): Move stuff into get_hypermetadata.
+	Writable init code moved to diskfs_readonly_changed.
+
+	* inode.c (diskfs_node_reload): New function.
+	(iget, read_disknode): Code to set allocsize and the last_* fields
+	moved from iget to read_disknode.
+
+	* ext2fs.h (disk_pager): Type changed to struct pager.
+	(sync_global_ptr): Use DISK_PAGER, not DISK_PAGER->p.
+	* pager.c (create_disk_pager): Store the actual pager into DISK_PAGER.
+	* ext2fs.c (main): Use DISK_PAGER directly, not ->p.
+	* inode.c (iget): Ditto.
+	* pager.c (diskfs_shutdown_pager, diskfs_sync_everything): Ditto.
+
+Mon Oct 16 15:23:25 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_lost_hardrefs): #ifdef'd out contents removed.
+
+Fri Oct 13 17:50:23 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Use argp for parsing.
+	(usage, USAGE, SHORT_OPTS, long_opts, console_stdio): Removed
+
+Thu Oct 12 18:16:00 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hyper.c (get_hypermetadata): Use diskfs device functions &
+	variables instead of our own.
+	* ext2fs.h (device_arg, device_name, device_port, device_start,
+	device_size, device_block_size): Declarations removed.
+
+	* ext2fs.c (printf, _ext2_error, _ext2_panic, _ext2_warning):
+	Functions moved to msg.c
+	* msg.c: New file.
+	(printf, _ext2_error, _ext2_panic, _ext2_warning): Funcs from ext2fs.c.
+	* Makefile (SRCS): Remove devio.c, add msg.c.
+
+Sat Oct  7 20:47:19 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): run_elem_t --> off_t.
+
+	* ext2fs.c (diskfs_init_completed): Func deleted (now in libdiskfs).
+
+Fri Oct  6 17:24:57 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Change type of
+	ADDRESSES to off_t **, and add BLOCK_SIZE parameter.
+
+Wed Oct  4 20:02:34 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_set_statfs): fsys_stb_bsize -> fsys_stb_iosize.
+  	fsys_stb_fsize -> fsys_stb_bsize.
+
+Wed Sep 27 20:07:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Use diskfs routines to open the device.
+	Support both file and mach devices.  Move the parse function here.
+	(parse_opt): Move into main (as a nested function).
+	* ext2fs.h (device_arg, device_start): New declarations.
+	* devio.c (dev_read_sync, dev_write_sync): Offset the address to
+	which we're doing i/o with DEVICE_START.
+
+Tue Sep 26 18:39:58 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): New function.
+	* Makefile (SRCS): Add storeinfo.c.
+
+Fri Sep 15 14:21:18 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* truncate.c (trunc_indirect): Only record an indirect block as
+	being modified when it actually is.
+
+	* truncate.c (diskfs_truncate): Use the new truncate functions.
+	(poke_pages): Gratuitous cosmetic changes.
+	(trunc_direct): Rewritten, new args.
+	(trunc_indirect): Rewritten, new args, now more general to support
+	all the various indirection levels.
+	(trunc_triple_indirect, trunc_double_indirect,
+	trunc_single_indirect): New functions.
+	(struct free_block_run): New structure.
+	(free_block_run_finish, free_block_run_free_ptr,
+	free_block_run_add, free_block_run_init, _free_block_run_flush):
+	New functions.
+	(trunc_dindirect, trunc_tindirect): Functions deleted.
+	(DIRECT_BLOCK, INDIRECT_BLOCK, DINDIRECT_BLOCK, TINDIRECT_BLOCK):
+	Macros deleted.
+
+	* getblk.c (block_getblk, ext2_getblk): u32 --> block_t.
+	* balloc.c (ext2_new_block): Ditto.
+	* hyper.c (get_hypermetadata): Ditto.
+	* pager.c (file_pager_write_page): Ditto.
+
+Wed Sep 13 12:30:23 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* dir.c (diskfs_lookup): Don't attempt to lock NP if NPP is not
+ 	set.  Don't even set NP if NPP is not set; use INUM as "lookup
+ 	succeeded flag" instead.  Lookups for REMOVE and RENAME now *must*
+	set NPP.
+
+Tue Sep 12 11:03:19 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* pokel.c (pokel_init): Initialize the free_pokes field.
+	(pokel_add): Assert that this malloc should succeed.
+	(pokel_sync): Don't hold POKEL's spin lock while syncing.
+
+	* ialloc.c (diskfs_alloc_node): Check for a non-zero ALLOCSIZE.
+
+Tue Sep  5 16:59:40 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* pager.c (diskfs_pager_users): Ignore the disk pager when seeing
+	if there are any active pagers.
+	(diskfs_shutdown_pager): shutdown_one gets passed a pager, not a upi.
+	(diskfs_sync_everything): sync_one gets passed a pager, not a upi.
+
+Sun Sep  3 17:28:13 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.c (thread_cancel): Removed.
+
+Fri Aug 25 14:37:32 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (ext2fs): Put libports in the right place in the
+	linking order.
+
+Thu Aug 24 10:34:15 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (ext2fs): Put all dependencies here.
+	(HURDLIBS): Removed.
+
+Tue Aug 22 19:39:06 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add libshouldbeinlibc.
+	Remove rules for error.o.
+
+Fri Jul 21 17:51:33 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* pager.c (diskfs_get_filemap): Free initial reference created by
+ 	pager_create.
+
+	* pager.c (diskfs_get_filemap): Avoid race with simultaneous
+	termination by looping until we win.
+	(pager_clear_user_data): Only clear UPI->np->dn->fileinfo if it
+	still points to us.
+
+Thu Jul  6 15:33:24 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Thu Jul  6 13:36:25 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* pager.c (diskfs_pager_users): New function.
+
+Tue Jun 27 13:08:33 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* pager.c (pager_unlock_page): Declare BLOCK volatile.
+
+Sat Jun 24 17:59:36 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add libihash.
+
+	* ext2fs.c (thread_cancel): Dummy function.
+
+	* dir.c (diskfs_direnter): Move assignment out of test.
+	(diskfs_get_directs): Fix print-format types.
+	* ialloc.c (diskfs_free_node): Fix print-format types.
+
+	* pager.c (thread_function): New function.
+	(create_disk_pager): Make a new thread to service paging requests.
+	* ext2fs.c (main): Have the initial thread die when it's done, leaving
+	other thread to do the work.
+
+	* pager.c (pager_bucket): New variable.
+	(pager_list_lock, file_pager_list): Variables deleted.
+	(create_disk_pager): Create pager_bucket.
+	(create_disk_pager, diskfs_get_filemap): Pass pager_bucket to
+	pager_create.
+	(pager_traverse): Function deleted.
+	(diskfs_get_filemap, pager_clear_user_data): Don't add/remove UPI
+	to/from the pager list, as there isn't any.
+	(diskfs_shutdown_pager, diskfs_sync_everything): Use
+	ports_bucket_iterate on pager_bucket to go through all the pagers,
+	instead of pager_traverse.
+	(diskfs_file_update, pager_traverse, allow_pager_softrefs,
+	drop_pager_softrefs): Change pager [un]ref calls to use the new ports
+	ref calls directly instead.
+	(pager_dropweak): New function (does nothing).
+	* ext2fs.h (struct user_pager_info): Remove the next & prevp fields.
+
+	* truncate.c (force_delayed_copies, enable_delayed_copies): Change
+	pager [un]ref calls to use the new ports ref calls directly instead.
+	* inode.c (diskfs_lost_hardrefs): Ditto.
+
+	* inode.c (diskfs_node_iterate): New function.
+	(write_all_disknodes): Re-implemented using diskfs_node_iterate.
+
+Wed Jun 14 16:19:49 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* inode.c (diskfs_get_translator): Conform to new memory usage
+        semantic.
+
+Fri May 19 20:56:51 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Use options_parse & diskfs_standard_startup_options
+	to do command line options parsing.
+	(long_opts): Was `options'.  Most things removed, as
+	they're now handled by libdiskfs.
+	(parse_opt): New routine to deal with our few meagre remaining
+	options in the approved options_parse manner.
+
+Mon May 15 15:55:49 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.c (main, usage, options): Add --writable & --nosync options.
+
+Sat May 13 20:04:55 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* inode.c (diskfs_set_statfs): Set st->fsys_stb_bsize, not _fsize,
+	to the block size.
+
+Sat May 13 05:02:59 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (OBJS): Remove exec_server_image.o.
+	(exec_server_image.o): Rule removed.
+
+Fri May 12 15:23:02 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Add an optional argument to the --sync option
+	that lets the user specify an initial sync interval.
+
+Thu May 11 13:30:06 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* pager.c (pager_unlock_page): Give an explanation of why the file
+	system will shortly crash.
+
+	* balloc.c (ext2_free_blocks, ext2_new_block): Get rid of the
+	CHECK_STRICT variable, and just always do the tests it controlled.
+	* ext2fs.h: Get rid of the CHECK_STRICT variable.
+
+	* ext2fs.h (ext2_error, ext2_warning, ext2_panic, all callers changed):
+	Make these into macros that automagically supply the caller's
+	function name, and rename the original functions (which these
+	macros call) to have an underline prefix.
+	* ext2fs.c (ext2_error, ext2_warning, ext2_panic): Rename to add
+	the underline prefix.  Also rearrange a bit to hold the lock
+	around the use of the global message buffer.
+
+	* ext2fs.c (main): Enable the bootstrap code.
+
+	* inode.c (read_disknode): Make st_blksize larger: 2 * pagesize.
+
+Wed May 10 14:03:34 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* getblk.c (block_getblk, inode_getblk): Return ENOSPC instead of
+	EIO when we can't allocate a new block.
+
+	* bitmap.c (find_next_zero_bit): Fix stupid typos (present in the
+	original linux source I copied this function from!) which were
+	causing occasional garbage results.
+
+Tue May  9 18:08:41 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ext2fs.h (DONT_CACHE_MEMORY_OBJECTS): Don't define this any
+	more, as the bugs we were using it to catch are supposedly gone :-|

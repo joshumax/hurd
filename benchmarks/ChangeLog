@@ -1,0 +1,9 @@
+Wed Apr 12 11:25:25 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (OBJS): New var.
+
+Tue Apr 11 11:17:32 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Rewrote in accordance with new scheme.
+
+

@@ -1,0 +1,324 @@
+Fri Jul 12 23:02:36 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* crash.c (stop_pgrp): Fetch pgrp using correct call.
+
+Mon Jul  8 13:52:36 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* crash.c (stop_pgrp): Don't do anything if ORPHANED.
+
+Mon Jul  8 08:54:05 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* crash.c (stop_pgrp): Take second arg CTTYID.  Fetch each pgrp
+ 	member's msgpor and send msg_sig_post with that as refport instead of
+ 	calling POSIX.1 kill function like a bonehead.
+	(S_crash_dump_task): Pass CTTY_ID arg through to stop_pgrp.
+
+Sun Jul  7 22:43:23 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* crash.c (stop_pgrp): New function.
+	(S_crash_dump_task): Call stop_pgrp.
+
+	* Makefile (fwd): Depend on libports.
+
+Mon Jul  1 16:09:10 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (crash): New target.
+	* Makefile (SRCS): Added crash.c.
+	* crash.c: Moved here from ../exec.
+	(S_crash_dump_task): New args EXC, CODE, SUBCODE, CTTY_ID.
+	Supply SIGCODE arg to proc_mark_stop.
+	(signal_crasher): New arg SIGCODE, supply to proc_mark_exit.  All
+	callers changed.
+	(S_msg_sig_post_untraced): Supply C->sigcode to proc_mark_stop.
+	(S_crash_dump_task): Drop arg TARGET.
+	(dump_core): Likewise; all callers changed.
+	(struct crasher): Delete member `target'.
+	(S_msg_describe_ports): New function.
+
+Thu Jun 20 16:28:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (null ifsock fifo new-fifo devport): Depend on
+	../libfshelp/libfshelp.a.
+
+Wed May 29 10:31:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devport.c (trivfs_S_file_get_storage_info): Implement new interface.
+
+Sat May 11 01:19:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* new-fifo.c (fifo_trans_parse_args): Use ARGP_ERR_UNKNOWN instead
+	of EINVAL.
+
+Tue Apr 30 09:58:47 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (all): Delete target.
+	(include ../Makeconf): *Before* all dependences.
+	($(targets)): Each program depends on its associated .o.
+
+Mon Apr 15 12:50:37 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* new-fifo.c (fifo_trans_parse_args): Supply missing arg to
+ 	argp_parse.
+
+Sun Mar 31 13:26:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets): Add devport.
+	(SRCS): Add devport.c.
+	Add devport as a target to various dependency rules.
+
+Wed Feb  7 17:51:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (trivfs_S_file_set_size): Add #!$@&* reply port args.
+	* new-fifo.c (trivfs_S_file_set_size): Likewise.
+
+Mon Jan 29 09:53:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (close_hook): Also disconnect ACTIVE_FIFO if the laster
+	writer is going away and there were no readers.
+	(open_hook): Unbreak a new read pipe even if not waiting for writers.
+
+	* new-fifo.c (fifo_trans_open): Typo.
+
+Sun Jan 28 21:52:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (open_hook): Only bother to do anything if O_READ | O_WRITE.
+	* new-fifo.c (fifo_trans_open): Likewise.
+	When O_NONBLOCK is set, just don't block if possible, instead of
+	of returning EWOULDBLOCK.
+	(trivfs_S_io_select): The pipe is on CRED->po->hook, not CRED->hook.
+	(trivfs_modify_stat): Zero the returned size if there's no pipe.
+
+Sat Jan 27 19:30:25 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (open_hook): When O_NONBLOCK is set, just don't block if
+	possible, instead of of returning EWOULDBLOCK.
+	Only set PO->hook if O_READ or O_WRITE is set.
+	(trivfs_S_io_select): The pipe is on CRED->po->hook, not CRED->hook.
+	(trivfs_modify_stat): Zero the returned size if there's no pipe.
+
+Thu Jan 25 18:34:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (trivfs_goaway): Handle errors from ports_inhibit_bucket_rpcs.
+	* new-fifo.c (trivfs_goaway): Likewise.
+	Call ports_interrupt_rpcs instead of ports_interrupt_rpc.
+
+Tue Jan 16 14:18:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* new-fifo.c (trivfs_S_io_select): Request interruption if the
+	reply-port dies.
+	Don't block if there's an error immediately available.
+	* fifo.c (trivfs_S_io_select): Ditto.
+
+Mon Nov  6 12:39:32 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* magic.c (S_fsys_get_options): New function.
+	* symlink.c (S_fsys_get_options): New function.
+
+Sun Nov  5 01:56:20 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ifsock.c (main): Add flags argument to trivfs_startup call.
+	* null.c (main): Ditto.
+	* fifo.c (main): Ditto.
+	* new-fifo.c (fifo_trans_start): Ditto.
+	* symlink.c (main): Add flags argument to fsys_startup call.
+	(S_fsys_startup): Add FLAGS arg.
+	* magic.c (main): Add flags argument to fsys_startup call.
+	(S_fsys_startup): Add FLAGS arg.
+
+Sat Oct  7 23:41:02 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* symlink.c (S_fsys_getpriv): Add new extra args.
+	* magic.c (S_fsys_getpriv): Ditto.
+
+Mon Sep 18 14:54:55 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fifo.c (trivfs_S_file_set_size): Renamed from trivfs_S_file_truncate;
+	Return EINVAL if the new size isn't 0.
+	* new-fifo.c (trivfs_S_file_truncate): Ditto.
+	* null.c (trivfs_S_file_set_size): Renamed from trivfs_S_file_truncate.
+
+Fri Sep  8 12:27:35 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fifo.c, new-fifo.c (open_hook): Block for read only when there's
+ 	really someone reading already, or until there's a writer.
+  	(open_hook): Use the WAIT macro to block.
+	* fifo.c (wait_for_writer): New variable.
+	(main): Set WAIT_FOR_WRITER with WAIT_FOR_READER.
+	* new-fifo.c (struct fifo_trans): Added wait_for_writer field.
+	Delete standalone field.  Add some comments.
+	(fifo_trans_create): Propagate and set the wait_for_writer field.
+	(fifo_trans_parse_args): Set the wait_for_writer field.
+
+	* fifo.c (trivfs_modify_stat): Only return pipe info if there's a pipe.
+	(close_hook): Don't die if there's no pipe.
+	* new-fifo.c (trivfs_modify_stat): Only return pipe info if
+ 	there's a pipe.
+	(fifo_trans_close): Don't die if there's no pipe.
+
+Thu Aug 31 19:16:25 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fifo.c (trivfs_S_io_select): Use pipe_pair_select.
+	(trivfs_S_io_write): Pass in the NOBLOCK parameter to pipe_write.
+
+Wed Aug 30 12:14:58 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* fifo.c (trivfs_goaway): Implement correctly.
+	(main): When we time out, don't exit unless there are no opens.
+	(main): Add timeouts.
+	(port_bucket): Now a local variable in main.
+	(trivfs_S_io_select): Implement correctly.
+
+Tue Aug 29 17:31:45 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* fifo.c (open_hook): Use hurd_condition_wait to detect interrupts.
+
+Thu Aug 24 10:41:31 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (all): New target.
+	(symlink, magic, ifsock, fifo, null): Put all dependencies in
+	these targets.
+	(null-HURDLIBS, ifsock-HURDLIBS, fifo-HURDLIBS): Removed.
+	Get rid of rules dealing with error.o
+
+Wed Aug 23 13:11:18 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* magic.c (S_fsys_forward): New function.
+	* symlink.c (S_fsys_forward): New function.
+	* bogus-fifo.c (S_fsys_forward): New function.
+
+Tue Aug 22 10:48:47 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add libshouldbeinlibc (everyone uses it).
+	(symlink, magic, fifo, null, ifsock): Remove error.o.
+	Get rid of rules dealing with error.o.
+
+	* fifo.c (trivfs_goaway, trivfs_modify_stat): Update arguments.
+	(trivfs_modify_stat): Give the size of the fifo now that we've got
+	a handle on it.
+
+Mon Aug 21 14:43:46 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (trivfs_goaway, trivfs_modify_stat): Update arguments.
+	* ifsock.c (trivfs_goaway, trivfs_modify_stat): Update arguments.
+
+	* fifo.c (open_hook): Use condition_broadcast instead of
+ 	condition_signal on active_fifo_changed, as all waiters need be
+ 	notified of changes.
+
+Tue Jul 25 13:53:30 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fifo.c: New file.
+	(main): Don't pass in the MACH_RCV_TIMEOUT flag with a zero timeout.
+	* Makefile (SRCS): Add fifo.c.
+	(targets): Add fifo.
+	(fifo): New target.
+
+Thu Jul  6 15:42:25 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (OBJS): New var.
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Wed Jul  5 21:17:34 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (ifsock-HURDLIBS, null-HURDLIBS): New vars.
+	(null, ifsock): Fix dependencies.
+
+Wed Jun 28 15:07:25 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* null.c (PT_CTL, PT_NODE): Deleted macros.
+	(trivfs_protid_porttypes, trivfs_cntl_porttypes,
+	trivfs_protid_nporttypes, trivfs_cntl_nporttypes): Deleted vars.
+	(trivfs_protid_portclasses, trivfs_cntl_portclasses,
+	trivfs_protid_nportclasses, trivfs_cntl_nportclasses): New vars.
+	(control_class, node_class, port_bucket): New vars.
+	(main): Initialize control_class, node_class, port_bucket,
+	trivfs_protid_portclasses, and trivfs_cntl_portclasses.
+	(ports_cleanroutines): Delete initialization.
+	(main): Convert to new trivfs interface.
+	(trivfs_goaway): Likewise.
+	(main): Convert to new ports interface.
+	(ports_demuxer, ports_notice_idle, ports_no_live_ports,
+	ports_no_hard_ports): Deleted functions.
+
+	* Makefile (ifsock): Add dependency on libihash.
+	(null): Likewise.
+
+	* ifsock.c (PT_CTL, PT_NODE): Deleted macros.
+	(ports_cleanroutines): Deleted var.
+	(ports_notice_idle, ports_no_live_ports, ports_no_hard_ports):
+	Deleted functions.
+	(control_class, node_class, port_bucket): New vars.
+	(trivfs_protid_porttypes, trivfs_cntl_porttypes,
+	trivfs_protid_nporttypes, trivfs_cntl_nporttypes): Deleted vars.
+	(trivfs_protid_portclasses, trivfs_cntl_portclasses,
+	trivfs_protid_nportclasses, trivfs_cntl_nportclasses): New vars.
+	(main): Initialize control_class, node_class, port_bucket,
+	trivfs-protid_portclasses, and trivfs_cntl_portclasses.
+	(main): Use new trivfs interface.
+	(trivfs_goaway): Likewise.
+	(main): Use new ports interface.
+	(S_ifsock_getsockaddr): Likewise.
+	(demuxer): Renamed from ports_demuxer.
+	(demuxer): Declare ifsock_server.
+
+Fri May 12 19:07:54 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* magic.c (S_fsys_set_options, S_fsys_mod_readonly):  Change from
+	mod_readonly to set_options.
+	* symlink.c (S_fsys_set_options, S_fsys_mod_readonly): Ditto.
+
+Thu May 11 13:36:28 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (trivfs_modify_stat): Make st_blksize really large.
+
+Mon Apr 10 20:38:49 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (trivfs_S_file_truncate): Always return 0, so O_TRUNC works.
+
+Sun Apr  9 00:26:07 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (main): Use trivfs_startup() instead of doing things manually.
+	Get rid of _libports_initialize() [it gets called automatically].
+	* ifsock.c (main): Ditto; also, use error() to print error messages.
+
+Mon Apr  3 16:39:33 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (trivfs_modify_stat): Return more useful values for the
+        st_blksize and st_fstype fields.
+
+Fri Mar 31 12:20:48 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* null.c (main): Move the check for the bootstrap port after the
+	args check, so that users can run it from the shell to get a usage
+	message.
+
+	* magic.c (main): Don't deallocate our right to the underlying
+	disk node, so we don't get garbage collected prematurely.  Also
+	move the check for the bootstrap port after the args check, so
+	that users can run it from the shell to get a usage message.
+
+Wed Mar 29 19:30:33 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* magic.c: New file: Translator to return F_RETRY_MAGIC strings.
+	* null.c: New file: Translator for /dev/null & /dev/zero.
+	* Makefile: Add support for the magic and null servers.
+
+Wed Aug 31 11:08:10 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* symlink.c (S_fsys_mod_readonly, S_fsys_syncfs): New functions.
+
+Tue Aug 30 16:42:29 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* ifsock.c (main): Call file_name_lookup instead af path_lookup.
+
+Tue Aug 16 11:38:26 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile (symlink, symlink.o): New targets.
+	Change to be type `servers.'.
+
+Fri Jul 22 15:15:49 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile: Rewritten in accord with new scheme.
+

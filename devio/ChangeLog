@@ -1,0 +1,253 @@
+Wed Jul 17 10:00:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV (st): New function.
+	Use new st function (get rid of chmods).
+	Accept disk device names without partitions, & with slice + partition.
+
+Sat Jun 15 14:13:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* MAKEDEV ([hrs]d*): Allow user to specify slice as well.  Patch
+ 	from Gord Matzigkeit, gord@enci.ucalgary.ca.
+
+Thu May  9 12:15:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_io_select): Remove TAG arg.
+	(trivfs_S_file_get_storage_info): Fix param type.
+
+Tue May  7 16:41:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): Swap PORTS_TYPE & NUM_PORTS.
+
+Mon May  6 20:14:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): Enable new version.
+
+Fri May  3 15:09:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c [0] (trivfs_S_file_get_storage_info): Rewrite for new interface.
+
+Tue Apr 30 10:03:50 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (include ../Makeconf): BEFORE dependencies.
+	($(prefix)/dev/MAKEDEV): Find MAKEDEV in $(srcdir).
+	
+Fri Feb 16 19:28:32 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV: Add rule for `time', and add `time' to std.
+
+Tue Jan 30 12:34:28 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* MAKEDEV: Grok `tty'.
+
+Thu Jan 25 18:10:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devio.c (trivfs_goaway): Handle errors from ports_inhibit_class_rpcs.
+	Allow rpcs to resume if we're going to return EBUSY.
+
+Tue Jan 16 16:19:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devio.c (trivfs_modify_stat): The peropen hook holds a struct
+	open, not a struct dev.
+
+Fri Dec 29 23:41:39 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV (std): Make `fd' one of the standard devices.
+
+Fri Dec 15 13:30:33 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV (ST): Variable holding the proper settrans command,
+	which use.
+	(_CWD): Use this variable to pass down the current directory to
+	sub MAKEDEVS.
+	(console): Use the new term syntax.
+	(tty[0-9]?|tty[0-9a-f]): New rule for normal ttys.
+	([pt]ty[pqPQ]?): New rule for ptys (both master and slave).
+	([pt]ty[pqPQ]): New rule for making sets of ptys.
+
+Mon Dec  4 15:17:14 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_set_size, trivfs_S_file_sync,
+	trivfs_S_file_syncfs, trivfs_S_file_get_storage_info): Add totally
+	gratuitous, annoying, and trouble-making reply-port args.
+
+	* io.c (trivfs_S_file_get_storage_info): Use inline return if possible.
+
+Wed Nov  8 16:44:05 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_set_size): Renamed from trivfs_S_file_truncate.
+
+Sun Nov  5 10:00:56 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devio.c (main): Add FLAGS arg to trivfs_startup call.
+
+Sat Nov  4 20:03:05 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): Add FLAGS argument.
+
+Fri Oct  6 17:25:37 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): Change type of ADDRESSES
+ 	to off_t **, and add BLOCK_SIZE parameter.
+
+Sun Oct  1 16:20:45 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devio.c (main, trivfs_S_fsys_syncfs): Get rid of debugging noise.
+	* rdwr.c (open_write, open_read): Ditto.
+	* dev.c (dev_open, dev_sync, dev_write, dev_read): Ditto.
+	* io.c (trivfs_S_file_syncfs, trivfs_S_file_sync): Ditto.
+	* devpager.c (pager_write_page, pager_read_page): Ditto.
+	* window.c (position): Ditto.
+
+Tue Sep 26 15:33:14 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): New function.
+	* dev.c (dev_open): Record NAME in the returned dev structure.
+	* dev.h (struct dev): Add the NAME field.
+
+Thu Aug 24 10:28:00 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (devio): Put all dependencies here.
+	(HURDLIBS): Removed.
+
+Tue Aug 22 10:45:31 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add libshouldbeinlibc.
+	(OBJS): Get rid of error.o.
+	Get rid of rules dealing with error.o.
+	($(prefix)/dev/MAKEDEV): Use $(INSTALL_PROGRAM) instead of
+	$(INSTALL_DATA) + `chmod +x'.
+
+	* devio.c (trivfs_modify_stat): Get the device from CRED now that
+	we have it.
+
+Mon Aug 21 16:34:29 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* devio.c (trivfs_goaway, trivfs_modify_stat): Update arguments.
+
+Tue Aug 15 19:47:57 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* MAKEDEV ([hrs]d*): Fixed partition parsing: use glob pattern,
+ 	not regexp.
+
+Sun Aug 13 10:57:03 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* devio.c (trivfs_peropen_create_hook): This now returns an error_t.
+	(open_hook): And thus this does as well.
+
+Sat Jul 22 18:32:03 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* rdwr.c (open_read, open_write): Clean up STATE before returning
+ 	with an error.
+	* devpager.c (dev_get_memory_object): A new pager now comes with 1
+	ref, so we allocate a ref ourselves when we're using an old one,
+	and once we've created the send right, remove a reference.
+
+Mon Jul 10 15:15:45 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* rdwr.c (open_seek): New function.
+	(raw_read, raw_write): Return EINVAL if *OFFS isn't a block boundary.
+	* open.h: Add declaration for open_seek.
+	* io.c (trivfs_S_io_seek): Call open_seek instead of doing ourselves.
+
+Sat Jul  8 18:35:17 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* MAKEDEV (fd): Put the fd server on `fd', not `stdin'.
+	* MAKEDEV (console): Give /hurd/term a ttyname argument.
+
+Thu Jul  6 15:33:33 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* Makefile: Remove include dependencies.
+
+Wed Jun 28 19:22:47 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add libihash.
+
+	* iostate.c (io_state_sync): Remember that we've synced the buffer.
+	* devpager.c (dev_stop_paging): New function.
+	(pager_dropweak): New function.
+	* dev.h (struct dev): Add the pager_port_bucket field.
+	Declare dev_stop_paging ().
+	* devio.c (trivfs_goaway): Make trivfs_goaway do the right thing.
+	(clean_exit, close_device): Deleted functions.
+	(thread_cancel): New function.
+
+	* devpager.c (pager_port_type): Deleted var.
+	(pager_port_bucket, pager_port_class): New vars.
+	(dev_get_memory_object): Moved here from dev.c.  Also, call
+	init_dev_pager if necessary.
+	(service_paging_requests): New function.
+	(init_dev_pager): New function.
+	* dev.c (dev_get_memory_object): Moved function to devpager.c.
+
+	* devio.c (fsys_port_class, root_port_class, port_bucket): New vars.
+	(trivfs_protid_portclasses, trivfs_cntl_portclasses,
+	trivfs_protid_nportclasses, trivfs_cntl_nportclasses): New vars.
+	(main): Initialize *portclasses vars, and convert to new trivfs lib.
+	(trivfs_protid_porttypes, trivfs_cntl_porttypes,
+	trivfs_protid_nporttypes, trivfs_cntl_nporttypes): Deleted vars.
+	(trivfs_goaway): Convert args for new trivfs lib.
+	(ports_cleanroutines): Delete var.
+	(ports_demuxer, ports_notice_idle, ports_no_live_ports,
+	ports_no_hard_ports): Delete functions.
+	* ptypes.h: Deleted file.
+
+Wed Jun 28 15:51:51 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Repair mangled include-file dependencies.
+
+Fri Apr 21 14:17:19 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* MAKEDEV: Split out `std' into individual device-makers it calls.
+  	Rewrote /dev/fd stuff (still commented out).  Use case built-in
+ 	instead of expr program.
+
+Tue Apr 11 15:46:35 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (DIST_FILES): New var, for MAKEDEV.
+	(install): Depend on $(prefix)/dev/MAKEDEV.
+	($(prefix)/dev/MAKEDEV): New target.
+	* MAKEDEV: New file.
+
+Mon Apr 10 10:22:26 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* rdwr.c (open_write, open_read): Bounds check I/O.
+
+	* io.c (trivfs_S_file_truncate): Always return 0, so O_TRUNC works.
+
+	* devio.c (main, check_open_hook, close_device, trivfs_goaway):
+	Add a new lock, device_lock, and use it to control access to the
+	DEVICE variable.
+	(open_hook, trivfs_modify_stat, trivfs_S_fys_syncfs): Copy DEVICE
+	before using it, so it doesn't change underneath us.
+
+	* devio.c (clean_exit): Add a new argument that says whether to
+	aquire a lock before doing our work.
+	(ports_notice_idle, ports_no_live_ports): Use it.
+
+	* devio.c (close_device): New function, closes DEVICE cleanly.
+	(clean_exit, ports_no_hard_ports): Use close_device.
+
+	* devio.c (main): Use trivfs_startup instead of doing it manually.
+
+	* devio.c (trivfs_goaway): Try and do it better, paying attention
+	to flags, etc.; this still isn't right though, we may want to wait
+	for the ports library to be fixed first.
+
+	* devio.c (DEBUG): New macro, executes its arg with debug_lock locked.
+	(most everything): use DEBUG instead of doing things manually.
+
+	* open.c (open_create): Supply our dev's size when creating a window.
+
+Sun Apr  9 14:49:33 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* window.h: Add a new window field, max_pos.  Rename the location
+	field `pos'.
+	* window.c (position): Use a shorter than normal window if
+	necessary to avoid going past the end of the device.
+	(window_create): Initialize the new MAX_POS field.
+	(window_create, position, window_write, window_read): Rename the
+	location field `pos'.
+
+	* devpager.c (pager_read_page, pager_write_page): Read or write
+	partial pages at the end of the device.
+

@@ -1,0 +1,129 @@
+Sat Jul  6 23:16:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* auth.c (AUTH_VERSION): New macro.
+	(argp_program_version): New variable.
+	(auth_version): Variable removed.
+	(main): Call argp_parse to get defaults.
+	Use AUTH_VERSION instead of auth_version.
+	<argp.h>: New include.
+	<idvec.h>: Changed from <hurd/idvec.h>.
+
+Wed Jun 26 14:22:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* auth.c (S_auth_makeauth): Don't special-case the 0 explicit ids
+	case (it used to merge in all the ids from passed in auth-handles
+	in that case).
+
+Mon May  6 14:22:13 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* auth.c (auth_version): Upgrade to 0.0.
+
+Sat May  4 22:40:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* auth.c (S_auth_user_authenticate, S_auth_server_authenticate):
+ 	Use ports_interrupt_self_on_port_death instead of
+ 	cancel_on_dead_name.  Hurd_condition_wait returns a boolean, not
+ 	an error_t, so supply EINTR ourselves.
+	(cancel_on_dead_name): Function removed.
+
+Fri May  3 17:07:45 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* auth.c (S_auth_server_authenticate, S_auth_user_authenticate):
+ 	Remove IGNORED arg.
+
+Tue Apr 30 21:16:07 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* auth.c (S_auth_makeauth): Increment NAUTHS for first elt.
+	(main): Initialize the ihash tables, dammit.
+
+Thu Apr 25 02:57:53 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* auth.c: Rewritten.
+	* authmutations.h: New file.
+	* Makefile (LCLHDRS): Add it, remove auth_mig.h.
+	(OBJS): Remove auth_replyUser.o, notifyServer.o.
+	(auth): Depend on libports, libihash, libthreads, libshouldbeinlibc.
+
+	* auth_mig.h: Rewritten.
+	* Makefile (OBJS): Add auth_replyUser.o.
+
+Thu Jul  6 15:29:43 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Fri Nov 18 07:34:11 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (OBJS): Add notifyServer.o.
+	(auth.o): Depend on notify_S.h.
+	* auth.c: Include "notify_S.h".  Remove _S_ from all
+	do_mach_notify_* server routines.
+
+Wed Sep  7 13:14:41 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* auth.c (isuid): Look for TEST in the uid arrays, not the gid arrays.
+
+Tue Sep  6 14:33:02 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* auth.c (auth_nosenders): Remove auth struct from allapts
+	list correctly.
+
+Thu Aug 25 13:24:24 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* auth.c (struct saved_user): Use second rendezvous port in place
+	of rend_int.
+	(strut saved_server): Likewise.
+	(S_auth_user_authenticate): Replace int arg with secondary
+	rendezvous port.  Check it instead of old rend_int for match.
+	Deallocate it (twice) if we are completing the auth transaction
+	here.  Store it in U in place of the old int.
+	(S_auth_server_authenticate): Likewise, mutatis mutandis.
+
+Mon Aug 15 11:52:49 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* auth.c (main): Make startup_essential_task the last thing we
+	do before processing messages.
+
+Thu Jul 21 18:39:38 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile: Rewritten in accord with new scheme.
+	* auth.c: Include "auth_reply_U.h" instead of "auth_reply.h".
+
+Tue Jul 19 12:32:54 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* Makefile (auth): Don't use variable $(link) anymore.
+
+Tue Jul  5 14:18:23 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* Makefile (SRCS, TAGSHDRS): New variables.
+
+Mon Jun 20 15:04:42 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* Makefile (install): Use $(INSTALL_BIN) instead of cp.
+
+Thu May 19 15:18:52 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* auth.c (auth_nosenders): Take auth off of allapts list
+	before destroying it.
+
+Thu May 12 15:28:50 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* auth.c (main): Declare args ARGC and ARGV; pass ARGV in call
+	to _hurd_proc_init.
+
+Mon May  9 16:50:09 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* auth.c (auth_version): New variable.
+	(main): Call proc_register_version.
+
+Thu May  5 07:42:28 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* Makefile: Change uses of $(headers) to $(includedir).
+
+Fri Apr 29 16:50:50 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* auth.c (main): Fetch hostpriv arg and provide it to
+	startup_essential_task in accord with interface change to
+	startup.defs.
+
+

@@ -1,0 +1,21 @@
+Thu Apr 11 15:26:18 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ihash.c: Include "priv.h".
+	* primes.c: Likewise.
+	* priv.h: New file.
+	* Makefile (LCLHDRS): Add priv.h.
+	* primes.c (_ihash_nextprime): Renamed from nextprime.c.  All
+ 	callers changed.
+
+Thu Mar  7 15:01:46 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* primes.c: Include <spin_lock.h>.
+	(table_lock): New variable.
+	(nextprime): Lock table_lock around operation of routine.
+
+Sun Aug  6 15:23:13 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ihash.c (ihash_locp_remove): Get rid of the optimization to use
+ 	HASH_EMPTY instead of HASH_DEL when the next position on the chain
+ 	is empty -- different hash chains may share this cell, and have
+ 	different next positions.

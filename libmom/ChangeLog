@@ -1,0 +1,31 @@
+Sat May 25 17:25:09 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* refs-identical.c (mom_ports_identical): Omit uses of deleted
+ 	members of struct mom_port_ref.c.
+
+	* ref-destroy.c (mom_ref_destroy): Omit uses of deleted members of
+ 	struct mom_port_ref.c.
+
+	* mach-port-set.c (mom_mach_port_set): Omit uses of deleted
+ 	members of struct mom_port_ref.c.
+
+	* fetch-mach-port.c (mom_fetch_mach_port): Omit uses of deleted
+ 	members of struct mom_port_ref.c.
+
+	* copy-ref.c (mom_copy_ref): Likewise.
+
+	* mom-kerndep.h (struct mom_port_ref): Delete members `lock' and
+ 	`refcnt'.
+	* Makefile (SRCS): Delete add-ref.c and drop-ref.c.
+	* mom.h (mom_add_ref, mom_drop_ref): Delete functions.
+	* add-ref.c, drop-ref.c: Delete files.
+
+Fri May 24 16:14:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* mom.h: Include <mom-errors.h>.
+	* error-trans.c: New file.
+	* mom-kerndep.h (mom_error_translate_mach): New function.
+	* Makefile (LCLHDRS, installhdrs): Add mom-errors.h.
+	(SRCS): Add error-trans.c.
+	* mom-errors.h: New file.
+

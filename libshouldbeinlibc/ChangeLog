@@ -1,0 +1,589 @@
+Tue Jul 16 00:24:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_help): Set the lmargin after printing the
+	start of the usage message, so that it won't get indented.
+
+Wed Jul 10 12:16:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_version_options, argp_version_parser): Use an
+	uppercase 'V' for short version option.
+
+	* argp-help.c (argp_help): "OPTIONS..." -> "OPTION...".
+
+Sat Jul  6 16:17:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_version_parser): Output ARGP_PROGRAM_VERSION
+	to STATE->out_stream, not stdout.  Supply that stream and STATE to
+	ARGP_PROGRAM_VERSION_HOOK.
+	* argp.h (argp_program_version_hook): Add argument types.
+	* argp-pv.c (argp_program_version): Doc updated.
+	* argp-pvh.c (argp_program_version_hook): Type & doc updated.
+	"argp.h": New include.
+
+Fri Jul  5 17:13:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_past_time): Get rid of extraneous `f' in fmt string.
+
+Thu Jun 27 17:09:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Zero the CHILD_INPUTS vector.
+
+Fri Jun 21 17:15:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Use group_parse instead of calling
+	group parser directly for long options.
+
+Wed Jun 19 13:11:15 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsysops.c: New file.
+	* Makefile (SRCS): Add fsysops.c.
+
+Tue Jun 18 21:09:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_failure): If FMT is 0, don't print `: MSG'.
+
+Sun Jun 16 19:25:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Remove line.c.
+	(LCLHDRS): Remove line.h.
+
+	* argp-help.c (argp_help, argp_state_help, argp_error, argp_failure): 
+	Handle null streams.
+
+	* argp.h (struct argp_state): Add NAME, ERR_STREAM, & OUT_STREAM
+	fields.
+	(argp_failure): New declaration.
+	(ARGP_NO_HELP, ARGP_NO_EXIT): Fix values (were hex, but with
+	decimal value!).
+	(argp_help): Add NAME argument.
+	* argp-parse.c (argp_default_parser): Output to STATE->out_stream.
+	(argp_parse): Initialize new fields in STATE.
+	Output errors to STATE.err_stream.  Handle null streams.
+
+	* argp-help.c (argp_help): Add and use NAME argument.
+	(argp_error): Use STATE->err_stream instead of STDERR.
+	(argp_state_help): Supply NAME argument to argp_help.
+	(argp_failure): New function.
+
+Thu May 30 18:10:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (indent_to): Terminate.
+
+Tue May 28 18:05:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_seconds): Don't print two decimal points.
+
+Wed May 22 00:11:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_default_parser): Break after --HANG.
+
+	* argp-help.c (hol_usage): Prefix each option desc with a space.
+	Do manual wrapping of descs with an embedded space.
+	Don't set wrap margin (done elsewhere now).
+	(argp_args_usage): Do manual line wrapping because of embedded spaces.
+	(argp_help): Set wrap & left margins when printing usage.
+
+	* argp-parse.c (argp_parse): Only print a `Try...' message if the
+	error was a parsing error.
+
+Tue May 14 21:59:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (add_field): Correctly decrement *SECS by amount printed.
+
+	* timefmt.c (fmt_named_interval): Use fraction digit in more cases.
+	Always pick the last suffix if we can't find any that fits.
+	Use new tv_ functions.
+	(tv_is_zero, tv_is_ge): New functions.
+
+Fri May 10 23:17:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (ARGP_ERR_UNKNOWN): New define.
+	* argp-parse.c (EBADKEY): New define.
+	(argp_default_parser, argp_version_parser, argp_parse): Use
+	EBADKEY instead of EINVAL.  Turn any EBADKEY that makes it to the
+	end back into EINVAL.
+
+Thu May  9 11:30:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* maptime.c (maptime_map): Use new file_get_storage_info interface.
+
+	* argp-help.c (argp_help): Just assign STREAM instead of using 2 vars.
+
+Thu May  9 11:00:52 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* exec-reauth.c (exec_reauth): Use new args to
+ 	auth_user_authenticate.
+
+	* timefmt.c (fmt_past_time): Cast arg to localtime appropriately.
+
+	* argp-help.c (argp_args_usage): add_usage_item -> fprintf.
+	(argp_help): Don't shadow arg; change parm STREAM to be STREAMARG
+	and adjust initialization of STREAM variable to use the renamed
+	parm. 
+
+Tue May  7 14:58:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_past_time): Suppress leading noise in some formats.
+
+	* argp-help.c (hol_usage): Set the wmargin, not the lmargin.
+	(hol_help): Set the wmargin as well as the lmargin.
+	* argp-help.c <linewrap.h>: New include.
+	(lmargin): Function deleted.
+	(hol_entry_help, hol_usage): Use line_wrap_set_lmargin instead.
+
+Mon May  6 12:46:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c <line.h>: Include removed.
+	(lmargin, indent_to): New functions.
+	(argp_usage_arg): Function removed.
+	(hol_entry_help, hol_help, hol_usage, argp_args_usage, argp_doc,
+	argp_help): Use stdio streams and line_wrap_ functions instead of
+	line_ functions.
+
+Sat May  4 05:32:28 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* rwlock.h: Moved to ../libthreads.
+	* Makefile (LCLHDRS): Remove rwlock.h.
+
+Fri May  3 18:10:41 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* path-lookup.c: File removed.
+	* Makefile (SRCS): Remove path-lookup.c.
+
+	* argz.c, argz.h, envz.c, envz.h: Files removed.
+	* Makefile (SRCS): Remove argz.c, envz.c.
+	(LCLHDRS): Remove argz.h, envz.h.
+
+Thu May  2 00:31:32 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (_argp_hang): New variable.
+	(OPT_HANG): New macro.
+	(argp_default_options, argp_default_parser): Add hidden --HANG option.
+	(argp_default_parser): New function.
+	(argp_version_options, argp_version_argp): New variables.
+	(argp_parse): Use ARGP_VERSION_ARGP when appropiate.
+	* argp.h (argp_program_version, argp_program_version_hook): New decls.
+	* Makefile (SRCS): Add argp-pv.c & argp-pvh.c.
+	* argp-pv.c, argp-pvh.c: New files.
+
+Tue Apr 30 20:25:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_past_time): New function.
+	(fmt_minutes, fmt_seconds): New args, rewrite.
+	(add_field): New function.
+	(fmt_frac_value, append_fraction): Functions removed.
+	* timefmt.h (fmt_past_time): New declaration.
+	(fmt_minutes, fmt_seconds): Update.
+
+	* argp-parse.c (argp_parse): Work with ARGP == 0.
+
+Mon Apr 29 15:34:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* cacheq.c, cacheq.h: New files.
+	* Makefile (SRCS): Add cacheq.c.
+	(LCLHDRS): Add cacheq.h.
+
+Thu Apr 25 00:09:48 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* idvec.c (idvec_free_contents): New function.
+	* idvec.h (idvec_free_contents): Declare it.
+
+Thu Apr 11 15:23:15 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* wire.c (wire_segment_internal): Cast values nicely in `poke'
+	loop.
+
+Wed Apr  3 12:57:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (argp_parse): Change HOOK argument to INPUT.
+	(struct argp_state): Rename HOOK & CHILD_HOOKS to INPUT & CHILD_INPUTS;
+	add HOOK field again.
+	* argp-parse.c (argp_parse): Change HOOK argument to INPUT.
+	Don't propagate back return values when we're done.
+	(struct group): Rename HOOK & CHILD_HOOKS to INPUT & CHILD_INPUTS;
+	add HOOK field again.
+	(group_parse): Restore and save value of GROUP's hook field into
+	STATE around calling the parser.  Don't save changed value of INPUT.
+
+Tue Apr  2 18:25:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lcm.c: New file.
+	* Makefile (SRCS): Add lcm.c.
+
+Thu Mar 28 19:06:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c, xportinfo.c, portinfo.h: New files.
+	* portxlate.c, portxlate.h: New files.
+	* Makefile (LCLHDRS): Add portinfo.h, portxlate.h.
+	(SRCS): Add portinfo.c, xportinfo.c, portxlate.c.
+
+Tue Mar 26 17:43:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* wire.c: Add a weak reference to _start, so we don't have to
+	compile all users of this library.
+
+Mon Mar 25 18:38:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* timefmt.c (fmt_named_interval): Rationalize WIDTH.
+
+Mon Mar 25 16:11:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* wire.h, wire.c: New files.
+	* Makefile (SRCS): Add wire.c.
+	(LCLHDRS): Add wire.h.
+
+Mon Mar 25 16:06:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* envz.c (envz_merge): NEW_LEN is a size, not a char.
+
+Mon Mar 18 14:09:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (struct argp_state): Add HOOK and CHILD_HOOKS fields.
+	Rename the PARENTS field to be CHILDREN (the most common use is
+	initialization, so this change shouldn't have much effect).
+	(ARGP_KEY_BEGIN, ARGP_KEY_ERROR): New macros.
+	* argp-parse.c (struct group): Add PARENT, PARENT_INDEX, HOOK, and
+	CHILD_HOOKS fields.
+	(argp_parse): Add HOOK argument.
+	Implement passing hook values to parsers, and propagating them
+	between parents and children.
+	* argp-help.c (argp_doc, argp_args_usage, argp_hol): Rename
+	PARENTS field to CHILDREN.
+
+	* argp-help.c (argp_error): Take an argp_state instead of an argp,
+	and only doing anything if ARGP_NO_ERRS isn't set in it.
+	(argp_state_help): New function.
+	(argp_help): Don't interpret exiting options anymore.
+	* argp-parse.c (argp_default_options): Add --usage option.
+	(argp_default_parser): Use argp_state_help, so we don't need to
+	screw with exit options anymore.
+	Add usage option.
+	(argp_parse): When printing `too many arguments', test
+	ARGP_NO_ERRS instead of ARGP_NO_HELP.
+	* argp.h (argp_state_help): New function.
+	(argp_usage, argp_error): Change arguments.
+
+Fri Mar  1 18:59:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (hol_entry_help): Don't print extraneous blank lines.
+
+Wed Feb 28 18:44:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Print an error message if appropiate
+	when we know there are too many arguments.
+
+	* argp-help.c (hol_entry_help): Handle null group headers nicely.
+
+Wed Feb 28 16:09:27 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* maptime.c (maptime_map): mapped_time_value arg is volatile data.
+	* maptime.h (maptime_map): Likewise.
+
+Sat Feb 17 21:34:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* shared-dom.c, localhost.c: New file.
+	* Makefile (SRCS): Add shared-dom.c and localhost.c.
+
+Fri Feb 16 15:54:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* maptime.c, maptime.h: New files.
+	* Makefile (SRCS, LCLHDRS): Add maptime.c and maptime.h respectively.
+
+	* timefmt.c (fmt_named_interval): Correct backwards comparison.
+
+Thu Feb 15 15:18:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* canon-host.c: New file.
+	* Makefile (SRCS): Add canon-host.c.
+
+	* argp-parse.c (argp_parse): Correctly deal with errors from
+	getopt, and allow the user to use '?' as a short option.
+	(KEY_ERR): New macro.
+	(argp_default_options, argp_default_parser): Use -? as the short
+	option for --help.
+
+Wed Feb 14 14:33:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Make things a bit more readable by
+	using the TRY_GETOPT variable in place of opt == EOF.
+	Use KEY_END, KEY_ARG, and QUOTE.
+	Clear STATE.quoted if STATE.next has been moved back before it.
+	(KEY_END): New macro, in place of EOF.
+	(KEY_ARG, QUOTE): New macros.
+
+Mon Feb 12 15:08:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Don't parse args in order by
+	default.  Honor ARGP_NO_ARGS.
+	Deal correctly when the user turns a non-option arg into an option
+	in re-ordering mode.
+	* argp.h (struct argp_state): Add `quoted' field.
+
+Thu Feb  8 19:35:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): When a non-option arg fails to be
+	parsed with EINVAL, set ARG_EINVAL true, and leave ERR as is until
+	just before we return.
+	Put process_arg() in the right scope.
+
+Wed Feb  7 23:08:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Deal with getopt returning EOF early
+ 	because of `--'.
+
+	* argp-parse.c (argp_parse): Make STATE.arg_num per-group.
+	(struct group): Renamed process_arg field to args_processed (a count).
+
+Mon Feb  5 13:39:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (struct argp_state): Add ARG_NUM field.
+	* argp-parse.c (argp_parse): Implement the ARG_NUM field.
+
+	* argp.h (struct argp, struct argp_state, argp_parse, argp_help,
+	argp_usage, argp_error, _option_is_short, _option_is_end): Add `const'
+	where appropriate.
+	* argp-parse.c (argp_default_options, argp_default_argp,
+	argp_parse, find_long_option): Likewise.
+	* argp-help.c (struct hol_entry, make_hol,
+	hol_entry_short_iterate, hol_entry_long_iterate,
+	hol_entry_first_short, hol_entry_first_long, hol_find_entry,
+	hol_sort, hol_entry_help, argp_hol, argp_args_usage, argp_doc,
+	argp_help, argp_error): Likewise.
+	* line.h (line_write, line_fill, line_puts): Likewise.
+	* line.c (line_write, line_fill): Likewise.
+
+Sat Feb  3 02:00:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.c (idvec_merge_ids): Correctly add all IDS, even if some
+	duplicates are avoided.
+
+Tue Jan 23 15:02:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (hol_entry_help): Correctly print group headers, and
+	precede them with a blank line.
+	(hol_set_group): Renamed from hol_set_sort_class.
+	(argp_help): Use hol_set_group instead of hol_set_sort_class.
+	(struct hol_entry, make_hol, hol_sort, hol_set_group): Rename the
+	`set_class' field to be `group'.
+	(hol_help, hol_entry_help): After a group header has been printed,
+	separate subsequent groups with a blank line.
+
+Mon Jan 15 11:01:15 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* path-lookup.c (hurd_file_name_path_lookup, file_name_path_lookup):
+	Add PREFIXED_NAME (return) argument.
+	(file_name_path_scan): New function.
+	(hurd_file_name_path_lookup): Use file_name_path_scan().
+
+Tue Jan  2 01:24:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_default_options, argp_default_parser): Add
+	--program-name (hidden) option.
+	(OPT_PROGNAME): New macro.
+
+	* idvec.c (idvec_merge_ids): Preserve duplicates internal to IDS.
+	(idvec_ensure): Alloc NUM ids, not NUM chars!
+	(idvec_remove): Correctly copy ids when deleting.
+	* idvec.h (idvec_merge, idvec_delete): New declarations.
+
+	* idvec-auth.c (idvec_merge_auth): Fix various small typos.
+
+	* argz.c (argz_delete): If the result is empty, free it.
+
+	* exec-reauth.c (exec_reauth): Doc fix.
+
+	* argz.h (argz_delete): Renamed from argz_remove.
+	* argz.c (argz_delete): Ditto.
+	(argz_insert): Deref ARGZ where necessary.
+	* envz.c (envz_merge): Rename argz_remove to argz_delete.
+
+Mon Jan  1 17:48:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.c (idvec_remove, idvec_insert_only): New functions.
+	(idvec_setid): Use idvec_insert_only() instead of idvec_insert_new().
+	* idvec.h (idvec_remove, idvec_insert_only): New declarations.
+
+	* Makefile (SRCS): Add exec-reauth.c.
+
+	* idvec.c (idvec_free_wrapper, idvec_free, idvec_ensure,
+	idvec_grow, idvec_tail_contains, idvec_add_new, idvec_insert_new,
+	idvec_merge_ids, idvec_setid): New functions.
+	(idvec_insert): Rewritten to use idvec_grow().
+	* idvec-auth.c (idvec_merge_auth): New function.
+	* idvec.h (idvec_free_wrapper, idvec_free, idvec_ensure,
+	idvec_grow, idvec_tail_contains, idvec_add_new, idvec_insert_new,
+	idvec_merge_ids, idvec_setid, idvec_merge_auth): New declarations.
+	* Makefile (SRCS): Added idvec-auth.c.
+
+Fri Dec 29 12:15:00 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (_argp_unlock_xxx): New function.
+
+Thu Dec 21 10:18:04 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec.h (struct idvec): Renamed from struct ivec.  `ints' field
+	renamed to `ids'.
+	(make_idvec, idvec_insert, idvec_add, idvec_contains):
+	All renamed from the corresponding `ivec' declaration, and types,
+	variable names, etc, changed accordingly.
+	* idvec.c (make_idvec, idvec_insert, idvec_add, idvec_contains):
+	All renamed from the corresponding `ivec' routine, and types,
+	variable names, etc, changed accordingly.
+	* Makefile (SRCS): Remove options.c.  Rename ivec.c to idvec.c.
+	(LCLHDRS): Remove options.h.  Rename ivec.h to idvec.h.
+
+Wed Dec 20 13:05:00 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argz.c (argz_insert): Instead of an integer position N, take a
+	pointer BEFORE into ARGZ to insert before.
+	* argz.h (argz_insert): Instead of an integer position N, take a
+	pointer BEFORE into ARGZ to insert before.
+	(argz_next): New inline function.
+
+Tue Dec 19 13:52:52 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (struct argp_option): Add the GROUP field.  Twiddle doc.
+ 	(_option_is_end): Be more pessimistic about what constitutes `the end'.
+	* argp-help.c (make_hol): Use the new GROUP field in struct
+	argp_option to initialize sort_classes.
+	(HEADER_COL): New macro.
+	(hol_entry_help): Deal with group headers.
+	* argp-parse.c (argp_default_options): Put --help in group -1.
+
+Sun Dec 17 00:18:58 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ivec.c: New file.
+	* ivec.h: New file.
+	* Makefile (LCLHDRS): Add ivec.h.
+	(SRCS): Add ivec.c.
+
+Sat Dec 16 17:42:27 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* termsize.c (deduce_term_size): New function, new file.
+	* Makefile (SRCS): Add termsize.c.
+
+	* argz.c (argz_insert): New function.
+	(argz_remove, argz_append, argz_add): New functions, were in envz.c.
+	* argz.h (argz_insert): New declaration.
+
+Thu Dec 14 18:04:48 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argz.h (argz_append, argz_add, argz_remove): New functions.
+
+Wed Dec 13 14:28:12 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* envz.c: New file.
+	* envz.h: New file.
+	* Makefile (SRCS): Add envz.c.
+	(LCLHDRS): Add envz.h
+
+Wed Dec  6 15:05:43 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (struct argp_state): Rename the INDEX field to be NEXT.
+	* argp-parse.c (argp_parse): Change uses of that field.
+
+	* argz.c (argz_stringify): Add the SEP argument.
+	* argz.h (argz_stringify): Ditto.
+
+Tue Dec  5 18:38:40 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (SRCS, LCLHDRS): Removed error.c and error.h.
+	(CPPFLAGS-error.c): Variable removed.
+	* error.c, error.h: Files removed.
+
+Thu Oct 19 18:39:59 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (argp_usage, argp_error): New declarations.
+	(argp_usage): New inline function.
+	* argp-help.c (argp_error): New function.
+
+Fri Oct 13 19:28:28 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (ARGP_HELP_STD_ERR): Doesn't print a usage message.
+	(ARGP_HELP_STD_USAGE): ... whereas this does.
+
+Thu Oct 12 15:57:18 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Correctly mark short options as optional.
+	(argp_parse): If an option alias doesn't have a key, use the real key.
+
+Wed Oct 11 13:54:18 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (hol_find_entry): Don't increment ENTRY prematurely.
+
+	* argp-parse.c (argp_parse): Update STATE.argp when adding a
+	wrapper to implement the --help option.
+	In general, use the version of variables that are in STATE.
+	Update STATE.index in the case where getopt returns EOF.
+	(argp_parse): Correctly translate options.
+
+	* line.c (line_write): New function.
+	(line_puts): Function deleted.
+	(line_fill): Use line_write instead of line_printf.
+	* line.h (line_write): New declaration.
+	(line_puts): Rewrite in terms of line_write.
+
+	* argp-help.c (hol_entry_help): Print the right documentation
+	string for each entry.
+
+	* argp-parse.c (argp_default_parser, argp_parse): Rename uses of
+	argp_usage* to argp_help*.
+
+	* argp-help.c (argp_help): Renamed from argp_usage.
+	* argp.h (ARGP_HELP_*, argp_help): Renamed from ARGP_USAGE_* &c.
+
+	* argp.h (ARGP_USAGE_STD_HELP): Use ARGP_USAGE_SHORT_USAGE instead
+	of ARGP_USAGE_USAGE.
+
+	* argp-help.c (make_hol): Deal with a null value of OPT.  If there
+	are no entries, don't define the ENTRIES or SHORT_OPTIONS fields.
+	(hol_free): Don't free ENTRIES or SHORT_OPTIONS unless there are any.
+	(hol_sort): Don't sort unless there are some entries.
+	(hol_usage): Don't do anything unless there are some entries.
+	(hol_sort): Sort int he correct order.
+	(argp_usage): Add the ARGP_USAGE_SHORT_USAGE case.
+
+	* argp-parse.c (argp_parse): Deal with null parser or option fields.
+	If an argp has neither a parser or any options, don't put it in GROUPS.
+	Use comparison with EGROUP, rather than testing the parser field,
+	the end test for iteration over GROUPS.
+
+	* argp-help.c (hol_append): Implement.
+
+	* argp-parse.c (argp_parse): Pass in the right value for GROUPS to
+	convert_options.
+
+	* Makefile (SRCS): Add argp-parse.c, argp-help.c, and line.c
+	(LCLHDRS): Add line.h and argp.h.
+
+Tue Oct 10 17:58:14 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h: Doc fixes.
+
+	* argp.h: (ARGP_KEY_NO_ARGS): New macro.
+	* argp-parse.c (argp_parse): Add support for ARGP_KEY_NO_ARGS.
+	Put all the group attributes into structures which get stored in
+ 	the GROUPS array, rather than having a separate array for each.
+
+Sat Oct  7 03:32:51 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* rwlock.h: Protect against multiple inclusion.
+	Include cthreads.h and assert.h.
+
+Wed Sep 27 17:37:08 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* options.c (options_parse): Use 0 as the tag for non-option args.
+	* options.h: Ditto.
+
+Sat Sep 23 14:15:01 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* rwlock.h (RWLOCK_INITIALIZER): New macro.
+
+Sat Sep 16 13:40:22 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (lndist, $(srcdir)/hurd-snap/$(dir)/error.[ch]):
+	Targets removed.
+
+Thu Aug 24 11:49:13 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* options.c: Include "options.h" instead of <options.h>.

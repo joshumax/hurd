@@ -1,0 +1,1057 @@
+Tue Jul 16 21:38:01 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* login.c (main): If chown fails, print error message using errno,
+ 	not -1.
+
+Fri Jul 12 15:49:09 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (dog): Get rid of `Beware of dog' -- it can't ever happen.
+	Rename watch_login calls to check_login; don't use return value.
+	(check_login): Renamed from watch_login.  Change type to void.
+	Exit if there's no such process.
+
+	* login.c (main): Only start a watchdog timer if in a new login coll.
+
+	* login.c (watch_login): New function.
+	(dog): Use watch_login.  Get rid of wierd rules for root-gone-away.
+
+	* Makefile (INSTALL-ps-ops, INSTALL-w-ops): New variables.
+
+Fri Jul 12 14:20:44 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (INSTALL-login-ops): New variable.
+
+Sun Jul  7 21:31:36 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* settrans.c (main): Don't use unsafe MOVE_SEND in call to
+ 	file_set_translator.
+
+Sat Jul  6 18:06:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c, vmstat.c, hurdids.c, fsysopts.c, settrans.c,
+	showtrans.c, storeinfo.c, login.c, w.c, ps.c
+	(argp_program_version): New variable.
+	* vmstat.c <hurd.h>: New include.
+
+Fri Jul  5 22:28:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_utmp_entry): Pass the the basename of TTY to getutline.
+
+Wed Jul  3 14:00:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_utmp_entry): Don't fill in ut_line or ut_type
+	fields in UTMP.
+	Fill in the ut_addr field.
+
+	* Makefile (settrans): Depend on ../libports/libports.a.
+
+Tue Jul  2 14:54:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (dog): Include all args in the asprintf.
+	Put the ARGV message in parens.
+
+Mon Jul  1 13:05:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (kill_login): Don't kill dog.
+	(dog): Take new ARGV argument, and record status in it for ps.
+	(main): Pass ARGV to dog.
+
+	* w.c (_w_specs): Don't use utmp buffer sizes for field widths, as
+	they can be very large.
+
+	* login.c (add_utmp_entry): Always fill in UTMP.ut_line.
+	Set UTMP.ut_type.
+
+Fri Jun 28 15:44:15 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_utmp_entry): Increment TTY_FD while searching for a
+	TTY.
+
+Mon Jun 24 16:02:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Fix heuristic to decide whether native booted.
+
+Thu Jun 20 14:41:25 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* login.c (main): No need for EXEC_NEWTASK or EXEC_SECURE.
+
+	* Makefile (getty): Remove rule.
+	(targets): Remove `getty'.
+	(SRCS): Remove getty.c.
+	* getty.c: Removed file to daemons directory.
+	
+Wed Jun 19 14:11:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (hurd_file_name_path_lookup): Declaration removed.
+	(main: child_lookup): Pass 0 for new LOOKUP arg to
+	hurd_file_name_path_lookup.
+
+Mon Jun 17 18:06:03 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (targets): Add `getty'.
+	(SRCS): Add `getty.c'.
+	(getty): Depend on -lutil.
+
+Mon Jun 17 10:41:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets): Remove reboot & halt.
+	(SRCS): Remove reboot.c & halt.c.
+	(login): Depend on -lutil instead of grot.
+
+Tue Jun 11 13:43:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (get_utmp_host): Function removed.
+	(add_utmp_entry): Get rid of TTY_FD parameter.  Don't search for
+	the tty unless we need it to get the old host, since login does it
+	for us.
+	Also use the `existing host' in the case that a new one isn't specified.
+	(main): Update call to add_utmp_entry.
+
+	* login.c (dog): Don't print stupid message if login session is empty.
+	(add_utmp_entry): Use gettimeofday instead of time to get the time.
+
+Wed May 29 11:01:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sush.sh: Don't use -z flag to login.
+
+Tue May 28 17:48:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Fetch the parent uids before checking their number.
+	(dog): Don't kill session if the user logged in!
+	Print newline before message.
+	(check_owned): Return OWNED, not NOTOWNED.
+
+	* ps.c (fmts): Use %sz for vmem format, not %size. 
+	(spec_abbrevs): Still use `NTH' for field name, just `TH' for title.
+	(fmts): Use %nth.
+
+Tue May 21 12:18:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (print_store): Get rid of class-name printing code,
+	and use store->class->name.  Print all flags.
+
+Tue May 14 09:50:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (dog): Use error to print messages.  Use pretty time fmting.
+	(main): Fork login timeout watchdog before clearing the process owner.
+
+	* login.c (main): Only allow real users to make new login collections.
+
+Mon May 13 18:10:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (options, main): Remove -z/--no-utmp option.
+	(main): Only add utmp entry for session leader.
+	Clear process owner if no uids.
+	Fork self-destruct timer when appropiate.
+	(default_args): Add NOAUTH_TIMEOUT entry.
+	(check_owned, kill_login, dog): New functions.
+
+Sun May 12 13:38:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* psout.c (psout): When printing result of ps_fmt_creation_error,
+ 	don't pass ERR to error (it should already be in PROBLEM if necessary).
+
+Sat May 11 01:00:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (_parse_strlist, parse_strlist, parse_numlist, lookup_user,
+	main):  Slather on consts, in a misguided attempt to shut up the
+	compiler.
+
+Fri May 10 13:53:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devprobe.c (parse_opt): Use ARGP_ERR_UNKNOWN instead of EINVAL.
+	* showtrans.c (parse_opt): Likewise.
+	* portinfo.c (parse_opt): Likewise.
+	* ps.c (parse_opt): Likewise.
+	* settrans.c (parse_opt): Likewise.
+	* login.c (parse_opt): Likewise.
+	* hurdids.c (parse_opt): Likewise.
+	* fsysopts.c (parse_opt): Likewise.
+
+	* showtrans.c (parse_opt): Print a usage msg with no args.
+	(options, main): Add --translated/-t option.
+
+	* Makefile (storeinfo): Depend on ../libstore/libstore.a.
+
+	* settrans.c (main): Remove const cast from first arg to argz_create.
+	* fsysopts.c (main): Likewise.
+	* login.c (main): Likewise.
+	(main): Remove const from decl of USER & ARG.
+	(fail): Remove const from decl of VIA.
+
+	* ps.c (parse_strlist): Make DEFAULT_FN return a const char *.
+
+	* storeinfo.c (print_store): New function.
+	(info): Use store_create to make a store and print_store to print it.
+	(parse_opt): Print a usage message for no args.
+	(options, parse_opt): Add --children option.
+
+Thu May  9 19:46:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* w.c (uptime): Cast arg to localtime appropriately.
+
+	* login.c (add_utmp_entry): Declare HOST `char const *'.
+	(main) [fail]: Declare VIA `char const *'.
+	(main): Declare USER `char const *'.
+	Declare ARG `char const *'.
+
+	* login.c (main): Provide new third arg to proc_setowner.
+
+	* fsysopts.c (main) [parse_opt]: Cast first arg of argz_create
+ 	appropriately.
+	* settrans.c (main) [parse_opt]: Likewise.
+	* login.c (main) [parse_opt] [case ARGP_KEY_ARG]: Likewise.
+	(main): Likewise.
+
+	* ps.c (main) [current_tty_name]: Remove `const' keyword to avoid
+ 	type clash.
+
+	* ps.c (main) [proc_stat_has_ctty]: Add parentheses around
+ 	assignment used as truth value.
+
+Mon May  6 17:36:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* psout.c (psout): Take a field, not a spec.  Honor PS_FMT_FIELD_KEEP.
+
+	* w.c (w_user_getter): New function.
+	(w_get_user): New function.
+	(w_fetch): Implement W_PSTAT_USER.
+	(struct w_hook): Add user field.
+	(_w_specs): Add "Name" entry.
+	(w_get_uname): Renamed from w_get_user.
+	(w_uname_getter): Renamed from w_user_getter.
+	* ps.c (fmts): Upcase most format strings.
+
+Sun May  5 01:05:54 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* psout.h: New file.
+	* ps.c (fmts): Use new field syntax.
+	(options): Add -o/--posix-fmt option.  -A is an alias.
+	"psout.h": New include.
+	* w.c (_w_specs): Add precision & keep fields.
+	(DEFAULT_FMT_STRING): Use new field syntax.
+	"psout.h": New include.
+	(main): Update call to psout.
+	* psout.c (psout): Add posix_fmt arg.
+
+Thu May  2 00:10:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* psout.c (psout): Use ps_fmt_creation_error to find out in detail
+	why ps_fmt_create fails.
+
+Wed May  1 19:53:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (main): Default KILL_ACTIVE to 0.
+
+Tue Apr 30 19:04:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (_w_specs): Use ps_emit_past_time to show login times.
+
+Tue Apr 30 09:47:03 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (all): Remove target.
+	(include ../Makeconf): Place before all dependencies.
+	($(targets)): Each separate target should depend on its own .o.
+
+Tue Apr 23 13:49:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Try to intuit whether this is a native-booted hurd
+	system, and if so, don't filtered out non-parented processes.
+
+Wed Apr 10 19:47:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devprobe.c: New file.
+	* Makefile (targets): Add devprobe.
+	(SRCS): Add devprobe.c.
+
+Mon Apr  8 17:09:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c (options, doc): Change meaning of --translate's
+	argument, in preparation for other changes.
+	(options, main): Add, but don't really implement, --search option.
+
+Fri Mar 29 14:37:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (options): Add --exclusive option, change descriptions.
+	(main): Rearrange meanings of arguments somewhat.
+
+Thu Mar 28 13:58:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c (main): Use new names for functions, and pass stdout.
+	(port_info, ports_info, xlated_port_info, xlated_ports_info,
+	name_xlator_create, name_xlator_free, name_xlator_xlate):
+	Functions removed (renamed and put in libshouldbeinlibc).
+
+	* portinfo.c (parse_task): Use strtoul instead of atoi so pid 0 works.
+
+Mon Mar 25 14:19:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (uptime): Correctly calculate uptime.
+	(...various...): Use real types instead of old ps typedefs.
+	* ps.c (spec_abbrevs): Make const.
+	(ps_specs): Make non-const.
+	(...various...): Use real types instead of old ps typedefs.
+	* psout.c (psout): Use real types instead of old ps typedefs.
+
+Sat Mar 23 01:02:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (uptime): Add a temporary hack to pretend to show uptime.
+
+Mon Mar 18 18:34:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Pass new arg to argp_parse.
+	* w.c (main): Likewise.
+	* storeinfo.c (main): Likewise.
+	* fsysopts.c (main): Likewise.
+	* hurdids.c (main): Likewise.
+	* login.c (main): Likewise.
+	* vmstat.c (main): Likewise.
+	* showtrans.c (main): Likewise.
+	* settrans.c (main): Likewise.  Also use argp_usage correctly.
+	* portinfo.c (main): Likewise.
+
+Tue Mar  5 14:17:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c (main): Fix arg order to name_xlator_create.
+	(name_xlator_create): Return X in XLATOR.
+	(name_xlator_free): Deallocate all ports in X too.
+	(main): Use xlated_port_info / xlated_ports_info.
+	(xlated_port_info, xlated_ports_info): New functions.
+	(struct name_xlator, name_xlator_create, name_xlator_xlate): Don't
+	depend on a specified receive/send type for the source being specified.
+	(name_xlator_xlate): Take FROM_TYPE arg, & return TO_TYPE.
+	(options, main): Get rid of -R/-S options, and add --translate/-t
+	option.
+
+Mon Mar  4 15:25:41 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* portinfo.c (struct name_xlator): New structure.
+	(name_xlator_create, name_xlator_free, name_xlator_xlate): New funcs.
+	(options, main): Add --translate-{receive,send}/-R/-S options.
+
+Fri Mar  1 18:55:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets, SRCS): Add portinfo & portinfo.c.
+
+Tue Feb 27 14:51:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets, SRCS): Remove clri & clri.c.
+
+Mon Feb 26 13:50:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (main): Don't print a newline after `Pausing...' msg.
+
+	* ps.c: Include <error.h> instead of "error.h".
+	"common.h": Don't include this anymore.
+
+Wed Feb 21 11:47:01 1996  Roland McGrath  <roland@charlie-brown.gnu.ai.mit.edu>
+
+	* w.c (uptime): Use %.2f format for load average numbers.
+
+Mon Feb 19 15:49:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (STRINGIFY): Make work.  Is this in a header somewhere?
+	(_STRINGIFY): New macro.  Ick.
+
+	* fsysopts.c (main): Use ARGP_IN_ORDER.
+
+Sat Feb 17 23:47:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* uptime.sh: New file.
+	* Makefile (targets, special-targets): Add uptime.
+	(SRCS): Add uptime.sh.
+
+Thu Feb 15 15:47:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Don't make -a imply -g.
+
+	* sush.sh: Change -aBACKUP_SHELL to -aBACKUP_SHELLS.
+
+	* login.c (child_lookup): Pass last arg to hurd_file_name_path_lookup.
+
+Wed Feb 14 17:38:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (add_utmp_procs): Correctly add terminal processes using new
+	libps functionality.
+	(read_utmp_procs): Emit all utmp entries, even the last one.
+
+	* ps.c (main): Get rid of totally dead processes/threads.
+	(add_pid): Complain about non-existant processes.
+	(psout): New declaration.
+
+	* ps.c (parse_numlist): Correctly handle NULL hook functions.
+	(parse_opt): Deref STATE correctly.
+	(main): Update calls to changed proc_stat_list_add_* functions.
+
+	* login.c (main): Don't set old SAW_USER_ARG variable.
+
+Tue Feb 13 13:54:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sush.sh: Exec login.
+
+	* login.c (main): Deal with the shell args reasonably.
+
+	* ps.c (parse_opt): Don't turn quoted args into options.
+
+Mon Feb 12 14:54:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (options, main): Add --timeout/-t option.
+	(main): Pass ARGP_IN_ORDER to argp_parse (it's no longer the
+	default), and deal with the fallout.
+
+Wed Feb  7 23:11:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Allow switches in the login args naturally.
+
+Mon Feb  5 14:18:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (main, args_doc, doc): Add repeat mode.
+	(FVAL): New macro.
+
+	* vmstat.c (main): Slightly decrease the space for numbers in the
+	verbose output format.
+	Twiddle the widths of the terse fields to make sure there's room
+	for typical numbers.
+
+Sat Feb  3 01:28:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (fields, options): Make const.
+
+	* vmstat.c: New file.
+	* Makefile (targets): Add vmstat.
+	(SRCS): Add vmstat.c
+
+	* login.c (main): Correctly add gids.
+	Avoid duplicating the old real id when keeping the old ids.
+	Don't ask for a password unnecessarily.
+
+Thu Feb  1 19:15:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sush.sh: Don't save the parent ids.
+
+	* login.c (main): When the user is specified as the first
+	argument, always add it as both effective, real, and saved ids,
+	even if there are others already.
+
+	* login.c (main): Get the ttyname to chown.
+	Only do the chown if NO_LOGIN isn't set.
+
+	* settrans.c (options, main): Add --pause option.
+
+Thu Feb  1 16:27:24 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* login.c (main): Chown the terminal.
+
+Tue Jan 30 15:25:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Put LOGNAME in the environ even if it was already.
+	(copied_args): Add "USER".
+
+Mon Jan 29 09:52:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_utmp_entry): Get rid of declaration for login().
+	(main, default_args): Replace the BACKUP_SHELL param with
+	BACKUP_SHELLS, which is a list of things to try.  The default
+	includes both bash and the /bin/sh.
+	(main): Try to set the default path using confstr().
+
+Mon Jan 15 12:29:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (options, main): Make -g/--goaway only apply to
+	active translators.
+	(options): Rearrange a bit.
+
+Sun Jan 14 12:45:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Call setlogin().
+
+Thu Jan 11 19:30:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (options, main): Change the -R/--retry option so that
+ 	the optional argument is an argument to add to those passed to
+ 	login when retrying, and remove all the hardwired arguments
+ 	(except propagating -h/--via).
+	(default_args, options, main): Get rid of the -n/--nobody option
+	and variables, making it an additional login parameter.
+
+	* login.c (default_args): Make the default shell /bin/bash instead of
+	_PATH_BSHELL.
+	(default_args, default_env): Make the default path just /bin.
+
+	* loginpr.sh (user): Pass the appropiate -R options to login.
+
+Wed Jan 10 15:32:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Turn on RETRY when the -h option is specified.
+
+Fri Jan  5 15:21:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_canonical_host): Try harder to get the actual host name.
+
+Thu Jan  4 22:37:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (add_canonical_host): New function.
+	(add_utmp_entry): Use VIA_ADDR instead of VIA in the utmp entry if
+	it fits better.
+	(add_entry): Function moved out of main.
+	(main): Use add_canonical_host() to implement the -h option.  Only
+	let root specify the login host.
+
+	* login.c (main): child_lookup() now takes an additional PATH arg,
+	and calls hurd_file_name_path_lookup() instead.  Pass a path when
+	looking up the shell executable.
+
+Tue Jan  2 01:15:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sush.sh: Instead of giving --su to login, use all the component
+ 	options it stood for.  Also use --program-name for nice errors.
+
+	* login.c (main): Do all file-name lookups using the target
+	authentication, so that login isn't a security hole.
+	Rework how password-checking is done somewhat (only ask when necess).
+	Call exec_reauth() with SECURE==0 so that it reauths all the ports.
+	If setting the real [ug]id, also add it as the `saved id'.
+	(cat): Take an io_t port instead of a file descriptor.
+	(options, main): Get rid of the -s/--su option, and add -S/--shell-arg.
+	(FAILURE_SHELL): Macro deleted.
+	(default_args): Add BACKUP_SHELL param.
+	(main): Use BACKUP_SHELL instead of FAILURE_SHELL define.
+
+Mon Jan  1 20:51:41 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main): Use exec_reauth() instead of our own.
+	(options, main): Add -k/--keep & -s/--su options.
+	(options, main): Remove -m/--umask option; use UMASK param instead.
+	(main): Get rid of various string vars only used once.
+
+Fri Dec 29 12:16:13 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* loginpr.sh: New program.
+	* login.c (main): Add optional shell argument for --retry.
+	Add --paranoid/-P option.
+
+	* login.c (main): Don't ask for password by name if only one user.
+
+Thu Dec 28 17:41:11 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main, options): Add --retry/-R option.
+
+	* login.c (main): If -f/--no-passwd is specified, get rid of the
+	effect of the login executable being setuid/gid.
+	Only set the shell proc's owner to an effective uid.
+
+Sun Dec 24 14:26:18 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Move a bunch of stuff into psout() in psout.c.
+	* psout.c: New file.
+
+Sat Dec 23 20:49:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Allow user to use `-' prefix to invert sort as well.
+	(main): Use ps_fmt_set_output_width() to set the output width.
+
+	* login.c (add_utmp_entry): Only remove a prefix from the tty name
+	if it's _PATH_DEV.
+
+Thu Dec 21 11:15:42 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (spec_abbrevs, ps_specs): New variables.
+	(fmts): Get rid of redundant header specifications.
+	(fmt_sortrevs): Variable removed.
+	(main): Don't allow sorting on field names any more, just spec
+	names (prob ok, since most things ps prints are now spec names).
+	(main, options): Rename -o flag to -U for posix compat (ick).
+
+	* login.c (options): Add --no-utmp/-z option.
+	(add_utmp_entry): New function.
+	(main): Call add_utmp_entry().
+	(main): Ivec routines are now idvec routines.
+	Include <idvec.h> instead of <ivec.h>.
+	(options): --host/-h is now --via/-h.
+	(main): Store the host were logged in from via in VIA, in the
+	login parameters instead of the child environment; optionally copy
+	it into the environment too.
+	(main): Enable EXEC_SECURE.
+	* Makefile (libutil-libsubst): New hack.
+	(login): Depend on -lutil.
+
+	* ps.c (main): Ivec routines are now idvec routines.
+	Include <idvec.h> instead of <ivec.h>.
+	Use argz functions to store tty_names instead of our own.
+
+Sun Dec 17 00:24:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main, options): If the specified sort field begins with
+	`-', reverse the sort.
+
+	* ps.c (main): If there is no current uid, don't try to filter with it.
+	(FILTER_NOT_LEADER):  Renamed from FILTER_NSESSLDR.
+	(main): Rename ps_not_leader_filter from ps_not_sess_leader_filter.
+
+	* ps.c (main): Use ivec routines instead of ids.
+	(make_ids, ids_add, ids_contains): Routines deleted.
+	Include <ivec.h>.
+
+Sat Dec 16 22:13:32 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (options): Reformat doc string for --tty option.
+
+	* ps.c (options): Add argument and doc for 'w' option.
+	(main): Implement 'w' option.
+
+	* login.c: Zillions of changes.
+
+Tue Dec 12 20:16:22 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c: New file.
+	* Makefile (SRCS): Add login.c
+	(targets): Add login.
+	(login): Depends on ../libshouldbelibc/libshouldbelibc.
+
+Wed Dec  6 15:12:15 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsysopts.c (main): Supply the new SEP argument to argz_stringify.
+	* showtrans.c (main): Ditto.
+
+	* fsysopts.c (main): Change uses of the INDEX field in argp_state
+	structures to use NEXT instead.
+	* ps.c (main): Ditto.
+	* settrans.c (main): Ditto.
+	* showtrans.c (main): Ditto.  Fix default prefix-printing test.
+	* storeinfo.c (main): Ditto.
+
+Mon Dec  4 15:41:06 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (main): Correctly whether to print prefix by default.
+	(options): Fix help strings.
+
+Wed Nov 15 19:56:21 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Use new libps stream type.
+
+Tue Nov 14 18:28:20 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Grow TTY_NAMES properly even when it's empty.
+
+Mon Nov  6 12:41:21 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (ids_add): Increase the size of IDS even when 0.
+
+	* fsysopts.c (main): Use file_get_fs_options, not fsys_get_options.
+	(doc): `filesystem' --> `FILESYS'.
+
+Sat Nov  4 19:56:38 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (print_info): Use the new FLAGS argument to
+	file_get_storage_info.  Add new storage types.
+
+Wed Nov  1 19:30:42 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (main): Change to use the new wierd callback
+	interface to fshelp_start_translator.
+
+	* ps.c (options): Add --not-owner/-O option.
+	(id_t, struct ids): New type.
+	(make_ids, ids_add, ids_contains): New functions.
+	(main): Use a struct ids instead of multiple variables to hold the
+ 	wanted uids list, which renamed to ONLY_UIDS.  Add the NOT_UIDS
+ 	list to contain the opposite sense, and use it.
+
+	* ps.c (main): Use proc_stat_proc_info instead of proc_stat_info and
+	PSTAT_PROC_INFO instead of PSTAT_INFO.
+
+Tue Oct 31 17:57:25 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsysopts.c (doc, args_doc): Mention usage without any options.
+	(main): If no options are supplied, print existing options.
+
+	* ps.c (fmts): Add RPC field to the -l format.
+
+Mon Oct 30 16:24:37 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (options): --all is -e, not -a.
+
+Mon Oct 23 15:17:42 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (options): Change --force/-f to --goaway/-g.  Add
+	flags for killing translators: --recurse/-r, --force/-f, --nosync/-S.
+	(doc): New variable.
+	(main): Support new flags.  Have some of the options update flag
+	words instead of setting variables.
+
+	* storeinfo.c (print_info): Calculate total size/blocks correctly.
+
+Fri Oct 20 15:44:45 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* settrans.c (args_doc): New variable.
+	(main): Set ARGZ inside of parse_opt.
+
+	* fsysopts.c (options): FILE --> FILESYS in help msg.
+	(args_doc): OPTION --> FS_OPTION, since the usage message already
+	uses OPTION to mean those to fsysopts.
+	(doc): New variable; give some common choices for FS_OPTION.
+
+Thu Oct 19 19:07:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (parse_enum): Use argp_error.
+
+Thu Oct 12 15:22:24 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (parse_enum): Use ARGP_HELP_STD_ERR.
+
+Wed Oct 11 19:03:19 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (main): Use realloc on a variable in main instead of
+	alloca, since the storage gets used after parse_opt returns.
+
+	* fsysopts.c (main): Use argp_help instead of argp_usage.
+
+Tue Oct 10 15:02:17 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* showtrans.c (options): Converted to argp format.
+	(main): Use argp, not getopt.
+	(usage, USAGE, SHORT_OPTIONS): Deleted.
+	(arg_doc, doc): New variables.
+        Include <argp.h> not <getopt.h>.
+	* fsysopts.c (options): Converted to argp format.
+	(main): Use argp, not getopt.
+	(usage, USAGE, SHORT_OPTIONS): Deleted.
+	(arg_doc): New variable.
+        Include <argp.h> not <getopt.h>.
+	* settrans.c (options): Converted to argp format.
+	(main): Use argp, not getopt.
+	(usage, USAGE, SHORT_OPTIONS): Deleted.
+        Include <argp.h> not <getopt.h>.
+	* ps.c (options): Converted to argp format.
+	(main): Use argp, not getopt.
+	(usage, USAGE, SHORT_OPTIONS): Deleted.
+	(arg_doc, doc): New variables.
+        Include <argp.h> not <getopt.h>.
+
+Fri Oct  6 17:33:01 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (print_info): Use the new block_size value returned
+	from file_get_storage_info.
+
+Wed Oct  4 18:15:59 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* showtrans.c (usage, options, main): Change -h/--no-header options to
+	-p/--prefix and -P/--no-prefix.
+	(main): Unless overridden by -p/-P, only print a FILE: prefix when
+	there are multiple files on the command line.
+
+Mon Oct  2 19:00:27 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets): Add storeinfo.
+	(SRCS): Add storeinfo.c.
+
+Fri Sep  1 11:35:12 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* settrans.c (main): Use fshelp_start_translator instead of
+	start_translator from ../lib.
+	* Makefile: Get rid of rules related to ../lib.
+	(settrans): Depend on libfshelp.a instead of starttrans.o.
+
+Thu Aug 24 10:44:17 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (all): New target.
+	(ps, settrans, showtrans, fsysopts): Put all dependencies in these
+	targets.
+	(settrans-HURDLIBS, showtrans-HURDLIBS, ps-HURDLIBS): Removed.
+
+Tue Aug 22 17:56:09 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (settrans-HURDLIBS, showtrans-HURDLIBS, ps-HURDLIBS):
+	Add libshouldbeinlibc.
+	(settrans, showtrans, fsysopts, ps): Get rid of things that are
+	now in libshouldbeinlibc.
+	Get rid of rules dealing with error.o.
+
+Sun Jul 23 15:58:06 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile (DIST_FILES): sh.ChangeLog -> shd.ChangeLog.
+
+Fri Jul  7 19:20:21 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* clri.c (copyright, sccsid): Correct syntax.
+
+Fri Jul  7 18:56:45 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* settrans.c (SHORT_OPTIONS): Remove '?' as getopt usurps it.
+	(options, main): Use '&' instead of '?' to mean help.
+
+Thu Jul  6 21:04:04 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* su.c (main, apply_auth_to_loginid, apply_auth_to_pgrp): Remove
+ 	assignments from inside if tests.
+
+	* sync.c (main): Declare return type.
+
+	* clri.c (copyright, sccsid): Declare unused.
+	(main): Correct format for fourth arg in printf call.
+
+	* ps.c (lookup_user): Declare return to be `int' to avoid type
+ 	clash in use as 4th parameter to parse_numlist.
+
+	* shd.c (run): Remove assignments from inside if tests.
+	(command): Likewise.
+
+	* Makefile (special-targets): New var.
+	(mount): Provide command.
+	(OBJS): New var.
+	(shd, su, clri, sync, reboot, halt): List object files here.
+
+Thu Jul  6 16:12:22 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* settrans.c (main): Give an error message instead of dying when
+	no filename argument is given.
+
+Thu Jul  6 15:43:15 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Wed Jul  5 21:18:42 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (ps-HURDLIBS): Renamed from HURDLIBS.
+	(ps): Fix dependencies.
+
+Mon Jun 26 16:13:47 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (CPPFLAGS): Put -I../lib back in.
+	Put back the vpath for %.c to ../lib.
+
+Tue Jun  6 13:22:52 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Added libihash.
+	(CPPFLAGS): Deleted addition of -I../lib.
+	(vpath): Deleted spec.
+	(ps): Deleted ihash.o and primes.o.
+
+Thu Jun  1 11:33:47 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (ps.o, fsysopts.o, showtrans.o, settrans.o): Add
+	dependencies on header files.
+	(REMHDRS): Define this variable.
+
+Tue May 30 12:17:33 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (SCRS): Removed update.c.
+	(targets): Removed update.
+
+Sat May 20 00:51:50 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fsysopts.c (main): Check for a missing filesystem name.
+	(main): Tweak the error msgs a bit.
+
+	* fsysopts.c (options, main): Don't use '?' as the --help key.
+
+Mon May 15 20:31:31 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* Makefile (SRCS, targets): Add fsysopts.
+
+Wed May  3 11:37:39 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main, usage, SHORT_OPTIONS, options): Add the -n flag
+	(--nominal-fields), which prevents elision of uninteresting fields.
+	Also add elision of uninteresting fields...
+
+Tue May  2 17:22:11 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* ps.c (fmts): Add the SC (suspend count) field to various output fmts.
+	(usage, main, SHORT_OPTIONS): Add the (ignored) -w flag for BSD compat.
+	(main): Use the new name for ps_fmt_squash: ps_fmt_squash_flags.
+
+Tue May  2 14:37:07 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* shd.c (reap): Check for ECHILD, not ESRCH.
+
+Wed Apr 26 21:40:57 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* settrans.c (main): Allow options before and immediately after
+	the node name to be rearranged by getopt without affecting those
+	following the translator name.
+
+Fri Apr 14 10:18:34 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* mount.sh: Move the test for a valid translator to just before we
+	use it.  Gratuitously change the "unknown" value for type to "".
+	Don't use `--' when invoking settrans, as getopt doesn't seem to
+	be handling it correctly.  Use `usage' not `USAGE'.
+
+Wed Apr 12 14:38:25 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (DIST_FILES): Omit ps.ChangeLog.
+
+Tue Apr 11 15:21:46 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (targets): Changed `sh' to `shd'.
+	(SRCS): Changed `sh.c' to `shd.c'.
+	* shd.c: Renamed from `sh.c'.
+
+Mon Apr 10 20:01:20 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main): Tweak things so that the -t flag works correctly
+	for processes whose tty we can't figure out.
+
+Sun Apr  9 14:00:09 1995  Miles Bader  <miles@duality.gnu.ai.mit.edu>
+
+	* su.c (main): Getopt now returns '\001' for non-switch options
+	instead of '\0', no doubt to work around an obscure bug in some
+	brain-dead system only used by 2 people twice a decade.
+
+Fri Apr  7 11:55:25 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ps.c (parse_enum): Renamed from enum_name.
+	(main, usage): Add lots of sysvish options, and generalize some
+	existing ones to deal with sysvish usage.  Make -t & -o work.
+
+Thu Apr  6 11:56:23 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main): Add the `jobc' (-j) output format from netbsd.
+
+Wed Apr  5 22:10:50 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main): When processes are specified on the command line by PID,
+	turn off all filtering so that they don't disappear later.  Also
+	minor changes in some spec names.
+
+Tue Apr  4 11:32:53 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile: Add showtrans & mount, and uncomment-out su.
+
+	* settrans.c (main): Get rid of the `show passive translator'
+	functionality, as this is now done by showtrans.
+
+	* ps.c (main): Make -a imply -g as well, to be compatible with bsd.
+	Add the -M (--no-msg-port) switch, which disables all fields that
+	would use any process's message port.
+
+	* showtrans.c: New file: Show passive translators.
+
+	* su.c (apply_auth): Use msg_add_auth & msg_del_auth instead of
+	add_auth & del_auth.
+	(apply_auth_to_pids, apply_auth_to_loginid, apply_auth_to_pgrp):
+	Don't use the IDS variable, it's no longer around; I think AUTH is
+	the right thing to replace it with.
+
+Tue Apr  4 01:47:57 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main): Treat argument without leading - as if it had one,
+ 	unless it's a number.
+
+Mon Mar 20 20:17:04 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (ps): Link in ihash.o, error.o, and primes.o too.
+	* Makefile (vpath %.c): New decl.
+
+	* ps.c: Include <hurd/ps.h> instead of "ps.h".
+	Include <unistd.h>.
+	(enum_name): Avoid warning.
+	(program_name): New variable.
+	(main): Don't set program_invocation_short_name (the library does it
+	for us).  Do set program_name.
+
+	* ps.c: Replace with new version by Miles Bader.  See ps.ChangeLog
+	for some changes made to the new version before the replacement.
+	Old ps.c and ps.ChangeLog are now ps.c.old and ps.ChangeLog.old.
+	* Makefile (HURDLIBS): Define, for ps.
+	(CPPFLAGS): Define, for ps.
+	(ps): Add rule to get library.
+
+Sat Jan 28 15:02:08 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* sh.c (main): Only open /dev/tty if stdin is unreadable.
+
+Wed Nov 16 20:28:40 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* reboot.c: Include unistd.h, stdio.h, not hurd/anything.
+	(main): If reboot returns, give error message and return 1.
+	* halt.c: Likewise.
+
+Sat Nov 12 21:20:07 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* reboot.c (main): Just use the reboot function.
+	* halt.c (main): Likewise.
+
+Fri Nov 11 12:05:38 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* Makefile (targets): Added reboot and halt.
+	(SRCS): Added reboot.c and halt.c.
+	* reboot.c: New file
+	* halt.c: New file.
+
+	* ps.c (main): Print in shorter format by default; take -v flag to
+	print in longer format.
+
+Wed Nov  9 04:43:54 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* ps.c (time_str): Specify format for decimals correctly.
+
+Wed Nov  9 00:20:09 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ps.c (time_str): Use %.2d instead of %2d to get 0 pads.
+
+Mon Nov  7 14:15:10 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* ps.c (time_str): Don't use floating point conversion;
+	it's buggy.
+
+Wed Nov  2 13:34:56 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* sync.c: New file.
+	* Makefile (targets): Added sync.
+	(SRCS): Added sync.c.
+
+Thu Oct 27 22:19:29 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* ps.c (main): Also print out a field with the number of threads.
+
+Tue Oct  4 19:40:22 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* clri.c: New file.
+	* Makefile (targets): Added clri.
+	(SRCS): Added clri.c.
+
+Sat Oct  1 03:44:55 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* update.c: Take optional arg to specify sleep time.
+	Use daemon instead of doing its work by hand.
+
+Fri Sep 30 11:53:53 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* update.c: New file.
+	* Makefile (SRCS): Added update.c.
+	(targets): Added update.
+
+Sat Sep 10 08:22:34 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* settrans.c (main): Give usage message when given no args.
+	Use O_NOTRANS in file name lookup.
+	Don't use FS_TRANS_EXCL in file_set_translator.
+	If given args "FILE -show", get translator and print it out.
+
+Thu Sep  1 11:50:51 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* settrans.c: New file.
+	* Makefile (SRCS): Added settrans.c.
+	(targets): Added settrans.
+
+Tue Aug 30 16:40:54 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* sh.c (run): Use file_name_lookup instead of path_lookup.
+
+Tue Aug 23 10:44:16 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile (targets): Comment out `su' until Roland gets it back
+	into a usable state.
+
+Mon Aug 22 12:18:09 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* sh.c (main): Open /dev/tty with O_IGNORE_CTTY and fdopen that
+	onto stdin/out/err.
+
+Fri Jul 22 12:26:27 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile: Rewritten to use new scheme.
+

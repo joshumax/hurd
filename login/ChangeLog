@@ -1,0 +1,15 @@
+Mon Aug 21 16:35:34 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* utmp.c (trivfs_goaway, trivfs_modify_stat): Update arguments.
+
+Sun Apr 23 16:03:48 1995  Miles Bader  <miles@geech.gnu.ai.mit.edu>
+
+	* utmp.c (_find_device, add_device, remove_device): Remove the LEN
+	parameter and the incorrectly computed value which was shadowing
+	it, both of which are the wrong thing anyway.
+
+Tue Apr 11 11:20:21 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: New file.
+
+

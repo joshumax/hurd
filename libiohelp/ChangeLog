@@ -1,0 +1,37 @@
+Thu May  9 12:42:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile: All occurrences of `ioserver' replaced with `iohelp'.
+
+Mon May  6 16:27:20 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* iohelp.h: Renamed from `ioserver.h'.  All local includes
+	updated.
+	* get_conch.c: All occurrences of `ioserver' replaced with
+	`iohelp'.
+	* handle_io_get_conch.c: Likewise.
+	* handle_io_release_conch.c: Likewise.
+	* initialize_conch.c: Likewise.
+	* verify_user_conch.c: Likewise.
+	* iohelp.h: Likewise.
+	
+Mon Oct  9 14:57:48 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+        * Makefile: Specify shared library dependencies.
+
+Thu Jul  6 15:35:56 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Fri Jul 22 11:43:56 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile: Converted to new scheme.
+
+Tue Jul  5 14:13:09 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* Makefile (TAGSHDRS): New variable.
+
+Thu May  5 07:48:45 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* Makefile: Change uses of $(headers) to $(includedir).
+

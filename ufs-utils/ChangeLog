@@ -1,0 +1,104 @@
+Fri Jun 21 02:12:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dlabel.c (fd_get_device): Supply new args to store_create.
+
+Sat May 11 01:20:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfs.c (parse_opt): Use ARGP_ERR_UNKNOWN instead of EINVAL.
+
+Fri May 10 15:50:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dlabel.c (fd_get_device): Update to use libstore.
+	<hurd/store.h>: New include.
+	* Makefile (mkfs.ufs): Depend on ../libstore/libstore.a.
+
+Tue Apr 30 10:06:21 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (include ../Makeconf): BEFORE dependencies.
+	(all): Delete target.
+	($(targets)): Each target depends on its associated .o.
+
+Wed Apr  3 16:31:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfs.c (main): In `Can't get disklabel' error message, specify
+	which flag the user can use to supply the needed information.
+	(mkfs): Fiddle with info message.
+
+Sun Mar 31 14:34:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* stati.c (mode_rep): Prefix octal number with `0'.
+
+Fri Mar 29 11:56:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* stati.c (main): Print mode & {in,}direct blocks too.
+	(mode_rep): New function.
+	(timespec_rep): P shouldn't be static.
+
+	* mkfs.c (main): Argp interface changes.
+
+Wed Mar 13 18:30:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfs.c (options, args_doc, doc): New variables for option parsing.
+	(struct amark): New type.
+	(amarks_add, amarks_contains): New functions.
+	(default_disklabel): New variable.
+	(main): Most arguments are now options (and optional).  Allow many
+	more parameters to be specified.  Consult the disk label for some
+	defaults.
+	(most functions): Add explicit return type declarations.  Fix
+	printf format specifications.  Get rid of #ifdefs for MFS.
+	(started, malloc, realloc, calloc, free): Functions removed.
+	(mfs, membase): Variables removed.
+	<stddef.h>, <stdlib.h>,	<argp.h>, <assert.h>, <error.h>,
+	<string.h>: New includes
+	* dlabel.c: New file.
+	* Makefile (SRCS): Add dlabel.c.
+	(mkfs.ufs): New target.
+
+Tue Feb 27 14:52:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* clri.c: Move here from ../utils.
+
+	[Entire directory renamed to `ufs-utils' from `newfs']
+
+Sat Sep  9 12:17:11 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (target): Changed to `mkfs.ufs'.
+	(installationdir): New variable, install into $(sbindir).
+
+Thu Nov 24 18:39:30 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* mkfs.c: Protect all mfs code with #ifdef MFS.
+
+Wed Oct 12 12:59:01 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* mkfs.c (main): MAXCONTIG should be zero because we don't 
+	do clustering.
+
+Fri Sep  9 09:45:23 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* mkfs.c: Include <sys/stat.h> and <fcntl.h>.
+	(main): New function.  Punt newfs.c for now.
+	* Makefile (SRCS, OBJS): Comment out uses of newfs.c.
+	(target): Build mkfs, not newfs.
+
+	* newfs.c (mopts): Comment out.
+	(mntflags): Comment out.
+	(main): Omit check for `mfs'.  Omit var `partition'.
+	(main) [case 'o']: Comment out mfs specific code.
+	(main): Comment out check for already-mounted partition.
+	(main): Comment out MFS specific open of FSI.
+
+	* mkfs.c (fsinit): Use DI_MODE to read mode from NODE, and 
+	set di_model and di_modeh instead of di_mode.
+	(mkfs): Don't set fields in *PP.
+
+	* newfs.c: Include ufs header files with "../ufs/foo.h" instead of
+	<ufs/ufs/foo.h>.  Don't include <sys/disklabel.h>, <sys/mount.h>,
+	or "mntopts.h".
+
+Thu Sep  8 15:52:05 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* mkfs.c: Include ufs header files with "../ufs/foo.h" instead of
+	<ufs/ufs/foo.h>.  Don't include <sys/disklabel.h>.
+

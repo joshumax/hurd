@@ -1,0 +1,160 @@
+Wed Jul 17 13:12:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* main.c (mounted_soft): Initialize to zero.
+
+Thu Jul  4 17:14:42 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_link) [case SYMLINK]: Include directory
+ 	handle as an RPC arg.
+
+Wed Jun 26 16:41:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (netfs_get_options): New function.
+	(netfs_parse_runtime_options, netfs_unparse_runtime_options):
+	Functions removed.
+	(runtime_argp_parents, runtime_argp, netfs_runtime_argp): New variables.
+	(main): Use &NETFS_STD_STARTUP_ARGP insteda of NETFS_STARTUP_ARGP.
+
+Thu Jun 13 09:24:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Remove pager.c.
+	* nfs.h (struct netnode): Add member `fileinfo'.
+	* nfs.h (register_fresh_stat): Add decl.
+
+Wed Jun 12 22:37:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Add pager.c.
+
+Wed May 22 18:49:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (parse_startup_opt): Use ARGP_ERR_UNKNOWN instead of EINVAL.
+
+Tue May 14 14:00:21 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_unlink): Add new arg in call to
+ 	netfs_attempt_link.
+
+Sat May 11 01:10:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (parse_common_opt): Use ARGP_ERR_UNKNOWN instead of EINVAL.
+
+Fri May 10 18:15:11 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_rename, netfs_attempt_link): New parm EXCL,
+ 	but don't implement the hard case yet.
+
+Thu May  9 20:24:21 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_statfs): Expect and fill in new statfs
+ 	buffer.
+
+Fri Apr 19 13:50:25 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* main.c (main): Failure to bind privileged ports is indicated by
+ 	EACCES, not EPERM.
+
+Thu Apr 11 13:51:33 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (guess_mode_use): New function.
+	(netfs_check_open_permissions, netfs_report_access): Replace old
+	clever versions with less obtrusive one.
+	
+Tue Apr  2 09:12:28 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_report_access):  Bother to initialize LEN.
+
+Fri Mar 29 17:26:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rpc.c: Define malloc to something random around include of rpc/*
+	header files to avoid bogus definition there.
+
+Fri Mar 29 17:10:58 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_report_access): Make sure netfs_attempt_read return
+ 	a reasonable LEN.
+	(netfs_attempt_write): Truncate to THISAMT instead of AMT.
+
+Tue Mar 19 11:00:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (LCLHDRS): Drop rpc.h.
+
+	* consts.c: Doc fixes.
+	* cache.c: Likewise.
+	* cred.c: Likewise.
+	* main.c: Likewise.
+	* mount.c: Likewise.
+	* mount.h: Likewise.
+	* nfs.c: Likewise.
+	* ops.c: Likewise.
+	* rpc.c: Likewise.
+	
+	* rpc.c (rpc_receive_thread): Allocate receive buffer big enough
+	for largest read we expect.
+
+	* cache.c (lookup_fhandle): Correctly install new node in hash
+	table slot.
+
+	* main.c (parse_startup_opt): Pass STATE, not STATE->argp in call
+	to argp_error.
+
+	* cache.c (lookup_fhandle): Initialize NN->dead_dir and
+	NN->dead_name. 
+
+	* ops.c: Include <unistd.h>.
+	(register_fresh_stat): Repair syntax.
+
+Mon Mar 18 19:49:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (main, netfs_parse_runtime_options): Pass new arg to
+	argp_parse.
+
+Mon Mar 18 11:19:27 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (register_fresh_stat): Set fs_fsid, st_fstype, st_gen,
+	st_author, and st_flags here.
+	* nfs.c (xdr_decode_fattr): Don't set st_fstype, st_gen,
+	st_author, or st_flags here.
+
+	* ops.c (netfs_attempt_write): Increment OFFSET each time around
+	the loop.
+
+	* nfs.c (xdr_encode_create_state): Call hurd_mode_to_nfs_mode and
+ 	htonl on MODE.
+	
+	* nfs.c (xdr_encode_sattr_stat): New function.
+
+Thu Mar 14 15:11:41 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* nfs.h (struct netnode): New members `dtrans' and `transarg'.
+	* cache.c (lookup_fhandle): Initialize NN->dtrans.
+	(netfs_node_norefs): Free transarg if necessary.
+	(recache_handle): New function.
+	* ops.c (netfs_attempt_mkfile): Make dtrans possible if it
+	isn't already.
+	(netfs_attempt_unlink): Likewise, when doing the rename hack. 
+	(netfs_attempt_mksymlink): Implement using dtrans and transarg.
+	(netfs_attempt_mkdev): Likewise.
+	(register_fresh_stat): If NP->nn->dtrans is set, then mutate the
+	mode here.
+	(netfs_attempt_readlink): If NP->nn->dtrans is SYMLINK, then DTRT.
+	(netfs_attempt_link): Only issue NFSPROC_LINK if dtrans is not
+	operative.  Otherwise, DTRT. 
+	(netfs_attempt_chmod): Implement type-changing using dtrans.
+
+Tue Mar 12 15:23:32 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ops.c (netfs_set_translator, netfs_attempt_mksymlink,
+	netfs_attempt_mkdev): New functions.
+	(netfs_attempt_chmod): Detect attempt to change node type.
+	(netfs_validate_stat): Clear NP->istranslated.
+
+Mon Mar  4 16:16:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (main): Use NETFS_STARTUP_ARGP.
+	(netfs_parse_runtime_options, netfs_unparse_runtime_options): New funs.
+
+Wed Feb 28 19:24:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (options): New variable.
+	(main): Parse our arguments.
+

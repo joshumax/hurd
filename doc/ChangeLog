@@ -1,0 +1,4 @@
+Mon Aug  8 15:50:17 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* Makefile: Rewritten in accord with new scheme.
+

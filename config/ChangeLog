@@ -1,0 +1,70 @@
+Wed Jul 17 17:09:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* root-.bashrc: Fixup test and source of user's .root_bashrc.
+	* root-.profile: Likewise.
+
+Tue Jul 16 11:12:10 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* passwd (root): Group should be `0'.
+
+	* Makefile: Prettier installation of dotfiles for root and login.
+
+Mon Jul 15 19:16:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* ttys: Comment out tty00 entry.
+
+Sat Jul 13 18:06:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile: Always touch /dev/null.  If OVERRIDE_CONF, then
+ 	$(installed_rootdots) and $(installed_conf) depend on it.
+  	$(installed_logins) always depend on /dev/null.
+
+	* Makefile (DIST_FILES): New variable.  Move rules to past
+ 	`include ../Makeconf'.
+
+	* Makefile (ROOTDOTS, installed_rootdots): New variables.
+	(install): Depend on $(installed_rootdots).
+	($(installed_rootdots): New target.
+	* root-.bash_login, root-.bashrc, root-.profile: New files.
+
+	* Makefile (LOGINDOTS, installed_logins): New variables.
+	(install): Depend on $(installed_logins).
+	($(installed_logins)): New rule.
+	* login-.bash_login, login-.bashrc, login-.hushlogin,
+	login-.profile, login-README: New files.
+
+	* passwd, fstab: New files.
+	* hostname: New (empty) file.
+	* Makefile (SYSCONFFILES): Add hostname, fstab, and passwd.
+
+Thu Jun 20 14:46:39 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (install): Install symlink for rc.
+
+	* Makefile (SYSCONFFILES): Removed `rc'.
+	* rc: Removed to daemons/rc.sh.
+	
+Wed Jun 19 15:25:15 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* rc: Print date before running fsck.  Comment out pty permission
+	frobbing. 
+
+Tue Jun 18 22:40:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rc: Understand special more status codes for signals from fsck.
+	Fix some messages.  Factor out date.
+
+Mon Jun 17 13:45:40 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* motd: Drop first line.
+	* rc: Comment out motd update.
+
+	* ttys: Fixup getty spec.
+
+	* protocols: Updated from RFC 1700.
+
+	* Makefile (SYSCONFFILES): Add protocols services shells motd ttys
+
+	* rc: Update /etc/motd.
+	(autoboot) Make root readonly before fscking it.
+	Clean /var/run and make utmp.

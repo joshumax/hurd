@@ -1,0 +1,55 @@
+Sat Jul  6 19:55:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c: (argp_program_version): New variable.
+
+Wed Jul  3 14:22:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (fstab_add_fs): Don't SEGV if COPY is 0.
+
+Thu Jun 27 00:01:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (fsck): Fsck pass 0 if not in automatic mode.  Respect
+	`noauto' option in automatic mode.
+	(main): Set FSCK_F_AUTO flag if in automatic mode.
+	(FSCK_F_AUTO): New macro.
+	(fs_start_fsck): When deciding to use a flags arg, mask flags
+	against an explicit list of valid ones.
+
+Tue Jun 25 18:39:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (main, options): Add --writable/-w option.
+	(FSCK_F_WRITABLE): New macro.
+	(struct fsck): Rename WAS_READONLY field to MAKE_WRITABLE.
+	(fscks_start_fsck): Change to set make_writable field instead of
+	was_readonly.
+	(fsck_cleanup): Change RESTORE_WRITABLE to MAKE_WRITABLE.
+	(fscks_wait): Likewise.
+
+Thu Jun 20 14:08:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (fsck): Wait for fscks to finish.
+	* fstab.c (fstypes_create): Copy SEARCH_FMTS contents into NEW.
+	(fs_set_mntent): Don't keep old fsys fields if the mnt_dir is changed.
+	(fstab_add_mntent): Initialize fields in FS with non-zero values.
+	(_fs_check_mounted): The root is always mounted.
+
+Wed Jun 19 10:44:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (fs_set_readonly, fs_remount): If fsys_set_options
+	returns EINVAL, return EOPNOTSUPP instead.
+	(fs_set_readonly): Use fsys_set_readonly.
+	(fs_remount): Use fsys_remount.
+	(fs_readonly): Use fsys_get_readonly.
+	(_fs_check_mounted): Use file_name_lookup_carefully.
+	* clookup.c: New file.
+	* fsck.c (_debug): New variable.
+	(debug, fs_debug): New macros.
+	(fs_start_fsck, fscks_start_fsck, fsck_cleanup, fscks_wait, fsck, main): 
+	Add debugging noise.
+	(main): Use FSTAB_PATH instead of _PATH_MNTTAB.
+	(args_doc): Fix.
+
+Tue Jun 18 22:56:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (options): Rename `--max-parallel' to `--parallel'.
+

@@ -1,0 +1,147 @@
+Sun Jun 16 22:49:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_opt): Use argp_failure.
+
+Thu May 23 10:54:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_opt): Honor ARGP_NO_ERRS.
+	<error.h>: New include.
+
+Wed May 22 00:14:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_opt): Use error instead of ERR for non-parsing errors.
+	Rename ERR to PERR.
+
+Tue May 21 00:01:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storecat.c (main): Delete most everything and use store arg parsing.
+	(options, doc, args_doc): Variables removed.
+
+	* create.c (store_create): Add FLAGS & CLASSES params.
+	* rdwr.c (store_write): Return an error if STORE is readonly.
+	* decode.c (store_decode): Add CLASSES param, use it instead of big
+	hardwired switch statement.
+	(store_default_leaf_decode): Use typedef for CREATE param.  Pass in
+	FLAGS arg when calling it.
+	* encode.c (store_std_leaf_allocate_encoding): Renamed from
+	store_default_leaf_allocate_encoding.  Make STORE const.
+	(store_std_leaf_encode): Renamed from store_default_leaf_encode.
+	Make STORE const.  Get class id from store->class->id.
+	(store_encode): Use CLASS field instead of METHS field.
+	* clone.c (store_clone): Copy the flags by passing them to _make_store.
+	Use CLASS field instead of METHS field.
+	* file.c (store_file_open, file_decode): New functions.
+	(store_file_create): Always set STORE_ENFORCED.
+	(file_class): Renamed from file_meths.  Add more fields.  Make std
+	with _STORE_STD_CLASS.
+	(file_byte_class): Renamed from file_byte_meths.
+	<fcntl.h>, <hurd.h>: New includes.
+	* device.c (store_device_open, dev_decode): New functions.
+	(store_device_create): Always set STORE_ENFORCED.
+	(device_class): Renamed from device_meths.  Add more fields.  Make std
+	with _STORE_STD_CLASS.
+	<hurd.h>: New include.
+	* stripe.c (ileave_allocate_encoding, ileave_encode, ileave_decode,
+	concat_allocate_encoding, concat_encode, concat_decode): New functions.
+	(concat_class): New variable.
+	(ileave_class): Renamed from stripe_class.  More fields added.
+	* store.h (struct store): Remove CLASS field.  METHS field renamed
+	CLASS.
+	(STORE_IMMUTABLE_FLAGS, STORE_GENERIC_FLAGS, STORE_BACKEND_SPEC_BASE,
+	STORE_BACKEND_FLAGS, STORE_READONLY, STORE_HARD_READONLY,
+	STORE_ENFORCED): New macros.
+	(struct store_class): Renamed from store_meths; all uses changed.
+	Add ID, NAME, DECODE, SET_FLAGS, CLEAR_FLAGS, and NEXT fields.
+	(store_std_leaf_decode): Renamed from store_default_leaf_decode.
+	(store_std_leaf_create_t): New type.
+	(_STORE_STD_CLASS): New macro.
+	(struct store_argp_params): READONLY field deleted, FLAGS field added.
+	(store_allocate_child_encodings, store_encode_children,
+ 	store_decode_children, store_set_flags, store_clear_flags,
+ 	store_file_open, store_device_open, store_null_create,
+ 	store_std_classes, _store_add_std_class,
+ 	store_allocate_child_encodings, store_encode_children,
+ 	store_decode_children): New declarations
+	(store_decode, store_create, store_device_create, _store_device_create,
+ 	store_file_create, _store_file_create, store_ileave_create,
+	store_concat_create, _make_store): Declarations updated. 
+	* make.c (_make_store): CLASS param removed, METHS param renamed
+	CLASS; all callers changed.  FLAGS param added.
+	* stripe.c (store_ileave_create, store_concat_create): Likewise.
+	* file.c (store_file_create, _store_file_create): Likewise.
+	* device.c (store_device_create, _store_device_create): Likewise.
+	* argp.c (open_machdev): Function removed.
+	(parse_opt): Use store_device_open instead of open_machdev.
+	(open_file, parse_opt): Add FLAGS arg to various function calls.
+	* set.c (store_set_children): Function moved to kids.c.
+	* null.c, flags.c, std.c, kids.c: New files.
+	* Makefile (SRCS): Add null.c, flags.c, std.c, & kids.c.
+
+Sun May 12 10:12:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (store_parse_opt): Put result in the passed-in params struct.
+	Pass hook to open_{file,machdev}.
+	(open_machdev): Use params to determine readonly-ness.
+	(open_file): New function.
+	* store.h (store_argp): New declaration.
+	(struct store_argp_params): New type.
+	* Makefile (SRCS): Add argp.c.
+
+	* create.c (store_create): Steal SOURCE instead of cloning it.
+
+Sat May 11 01:17:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c: New file.
+
+	* storeread.c (parse_opt): Use ARGP_ERR_UNKNOWN instead of EINVAL.
+	* storecat.c (parse_opt): Likewise.
+
+Fri May 10 13:23:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (struct store_run): New type.
+	(struct store): RUNS is a vector of runs, not offsets.
+	(_store_device_create, _store_file_create, _make_store,
+	store_set_runs, store_default_leaf_decode): Update declaration.
+	* rdwr.c (store_find_first_run, store_next_run, store_write,
+	store_read): Use store_run, not off_t, vectors; tweak accordingly.
+	Rename variables called `RUNS' to `RUN', because although they're
+	always vectors, they're used more often for their first element.
+	* derive.c (_store_derive): Use store_run, not off_t, vectors; tweak
+	accordingly.
+	* device.c (store_device_create, _store_device_create): Likewise.
+	* set.c (store_set_runs): Likewise.
+	* storecat.c (main): Likewise.
+	* storeread.c (main): Likewise.
+	* make.c (_make_store): Likewise.
+	* stripe.c (store_ileave_create, store_concat_create): Likewise.
+	* file.c (store_file_create, _store_file_create): Likewise.
+	* decode.c (store_default_leaf_decode): Convert the slice of the
+	offset vector we're using into a vector of store_runs to pass to
+	CREATE.  Change type of CREATE accordingly.
+	* encode.c (store_default_leaf_encode): Convert from the store_run
+	vector to a off_t vector for encoding.
+
+	* create.c (store_create): Use the real file_get_storage_info.
+	(fgsi): Function removed.
+
+	* store.h (struct store): Add CHILDREN & NUM_CHILDREN fields.
+	Rename RUNS_LEN to NUM_RUNS (all uses changed).
+	(store_set_children): New declaration.
+	* make.c (_make_store): Initialize CHILDREN & NUM_CHILDREN.
+	(store_free): Free all children too.
+	* clone.c (store_clone): Clone children too.
+	* set.c (store_set_children): New function.
+	* stripe.c (store_ileave_create, store_concat_create): Use
+	store_set_children.
+	(stripe_clone): Function removed.
+	(stripe_read, stripe_write): Get stripes from CHILDREN, not HOOK.
+
+	* Makefile (storeread, storecat): Remove explicit dependency on
+	program object file.
+	Put include of ../Makeconf before dependencies.
+
+Mon May  6 15:20:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h: Move big comment describing file_get_storage_info
+	encoding to <hurd/hurd_types.h>.
+

@@ -1,0 +1,2448 @@
+Mon Jul 15 21:37:12 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_checkdirmod): diskfs_isowner returns error or
+ 	zero, so invert sense of tests.
+
+	* lookup.c (diskfs_lookup): If we get an error from
+ 	diskfs_checkdirmod, diskfs_nput the node we picked up; the caller
+ 	won't want it.
+
+	* dir-renamed.c (diskfs_rename_dir): When unlocking FDP, only do
+ 	it if we FDP != TDP.  Also, only do step two (changing .. in the
+ 	directory being moved) if FDP != TDP.
+
+Sat Jul 13 20:05:27 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Repeat
+ 	diskfs_start_protid and auth_server_authenticate for as we get
+ 	EINTR.
+
+Sun Jul  7 21:07:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_S_fsys_init): Don't use unsafe MOVE_SEND in
+ 	call to exec_init.
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Don't use
+ 	unsafe MOVE_SEND in auth_server_authenticate.
+
+Sun Jul  7 10:27:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (_print_version): Include HURD_RELEASE in default.
+
+Sat Jul  6 16:27:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c: New file.
+	* Makefile (OTHERSRCS): Add opts-version.c.
+
+Sat Jul  6 13:32:58 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): If this might be a special
+ 	symlink, then truncate it even though NP->allocsize might be
+ 	clear.
+
+Wed Jul  3 11:22:58 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* io-identity.c (diskfs_S_io_identity): Fetch identity using
+ 	fshelp_get_identity rather than creating it ourselves.
+	* diskfs.h (struct node): Remove member `identity'.
+	* node-drop.c (diskfs_drop_node): Don't deallocate NP->identity.
+	* node-make.c (diskfs_make_node): Don't initialize NP->identity.
+
+Thu Jun 27 10:07:03 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* init-startup.c (diskfs_startup_diskfs): Don't call
+ 	diskfs_readonly_changed here anymore.
+
+	* disk-pager.c (disk_pager_setup): Check diskfs_readonly variable
+	instead of calling diskfs_check_readonly.
+
+	* Makefile (LCLHDRS): Add diskfs-pager.h.
+
+Tue Jun 25 21:55:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-std-runtime.c (parse_opt): Add hair to share arg parsing
+	state between two parsers that use the same parse_opt function at
+	the same time.
+
+Mon Jun 24 14:55:50 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* init-startup.c (diskfs_S_startup_dosync): Don't crash the
+ 	filesystem, just do a clean sync.
+	* node-drop.c (diskfs_drop_node): Call diskfs_check_readonly
+ 	before making mods.
+	* priv.h (_diskfs_diskdirty): New variable.
+	* diskfs.h (diskfs_check_readonly): New function.
+	* readonly.c (_diskfs_diskdirty): New var.
+	(diskfs_check_readonly): New function.
+	(diskfs_set_readonly): After clean sync, clear _diskfs_diskdirty.
+	* rdwr-internal.c (_diskfs_rdwr_internal): Use
+ 	diskfs_check_readonly instead of diskfs_readonly.
+	* node-create.c (diskfs_create_node): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise.
+	* disk-pager.c (disk_pager_setup): Likewise.
+	* dir-unlink.c (diskfs_S_dir_unlink): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* dir-mkdir.c (diskfs_S_dir_mkdir): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	* dir-link.c (diskfs_S_dir_link): Likewise.
+	* conch-fetch.c (iohelp_fetch_shared_data): Likewise.
+	* remount.c (diskfs_remount): Likewise.
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): If
+ 	auth_server_authenticate fails, then fill with empty IDs.  We
+ 	can't permit interruption, because this is a simpleroutine.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Validate rdev
+ 	change before making it.
+	* file-chflags.c (diskfs_S_file_chflags): Validate flags change
+ 	before making it.
+	* lithp.h (dithkfth_validate_author_change): New macro.
+	* file-chauthor.c (dithkfth_TH_file_chauthor): Validate new author
+ 	before changing it.
+	* node-create.c (diskfs_create_node): Validate group change before
+ 	making it.
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* node-create.c (diskfs_create_node): Validate mode change before
+ 	making it.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise
+	* file-chmod.c (diskfs_S_file_chmod): Likewise.
+	* node-create.c (diskfs_creade_node): Validate owner change before
+ 	making it.
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* Makefile (OTHERSRCS): Add validate-mode.c, validate-group.c,
+ 	validate-author.c, validate-flags.c, validate-rdev.c, and
+ 	validate-owner.c.
+	* validate-mode.c, validate-group.c, validate-author.c,
+	validate-flags.c, validate-rdev.c, validate-owner.c: New files.
+	* diskfs.h (diskfs_validate_mode_change,
+ 	diskfs_validate_owner_change, diskfs_validate_group_change,
+ 	diskfs_validate_author_change, diskfs_validate_flags_change,
+ 	diskfs_validate_rdev_change): New decls.
+
+Fri Jun 21 00:18:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys-options.c (diskfs_S_fsys_get_options): Use
+	fshelp_return_malloced_buffer to setup the return data.
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Likewise.
+	* opts-set.c (diskfs_set_options): Supply INPUT arg to
+	fshelp_set_options.
+
+	* opts-append-std.c (diskfs_append_std_options): Use argz_add
+	instead of rolling our own.  Deal with errors.
+	<argz.h>: New include.
+
+Wed Jun 19 21:57:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* init-startup.c (diskfs_S_startup_dosync): Pass HANDLE to
+	ports_lookup_port.  Declare ERR.
+
+	* opts-get.c (diskfs_get_options): Call diskfs_append_std_options to
+	do most of the work.
+	* opts-append-std.c: New file.
+	* opts-set.c: New file (old version renamed).
+	* opts-std-runtime.c: Renamed from opts-set.c.
+	(diskfs_set_options): Function removed.
+	(struct parse_hook): New type.
+	(set_opts, parse_opt): New functions.
+	(common_argp, parents, diskfs_std_runtime_argp): New variables.
+	* diskfs.h (diskfs_parse_runtime_options): Decl removed.
+	(diskfs_std_startup_argp): Renamed from diskfs_startup_argp, now a
+	structure decl, not a pointer decl.
+	(diskfs_std_device_startup_argp): Renamed from
+ 	diskfs_device_startup_argp, now a structure decl, not a pointer
+ 	decl.
+	(diskfs_set_options): Update decl (now takes argz & argz_len).
+	(diskfs_runtime_arg): New declaration.
+	(diskfs_std_runtime_argp, diskfs_append_std_options): New declarations.
+	* opts-runtime-parse.c, opts-runtime-unparse.c: Files removed.
+	* opts-std-startup.c (parse_dev_startup_opt): Use argp_error.
+ 	(diskfs_startup_arg, diskfs_device_startup_arg): Variables removed.
+	(diskfs_std_startup_argp): Renamed from startup_argp, exported.
+	(diskfs_std_device_startup_argp): Renamed from dev_startup_argp,
+	exported.
+	* fsys-options.c (diskfs_S_fsys_set_options): Don't split
+	arguments, just call diskfs_set_options with what we got.
+	* opts-runtime.c: New file.
+	* Makefile (OTHERSRCS): Add opts-std-runtime.c, opts-append-std.c,
+	opts-runtime.c.  Remove opts-runtime-parse.c, opts-runtime-unparse.c
+
+Thu Jun 13 10:05:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (MIGSTUBS): Add startup_notifyServer.o.
+	* init-startup.c (diskfs_S_startup_dosync): Uncomment function.
+	* demuxer.c (diskfs_demuxer): Call diskfs_startup_notify_server.
+	* init-startup.c (_diskfs_init_completed): NOTIFY doesn't need
+ 	deallocation.
+
+	* boot-start.c (diskfs_S_fsys_init): Build version string
+ 	correctly.
+
+Tue May 14 11:14:12 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (OTHERSRCS): Remove init-completed.c.
+
+	* node-drop.c (diskfs_drop_node): Fix typo.
+
+Sat May 11 01:11:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-std-startup.c (parse_dev_startup_opt, parse_startup_opt):
+	Use ARGP_ERR_UNKNOWN instead of EINVAL.
+	* opts-set.c (diskfs_set_options): Likewise.
+
+Fri May 10 17:15:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* io-identity.c: New file.
+	* Makefile (IOSRCS): Add io-identity.c.
+	* diskfs.h (diskfs_fsys_identity): New variable.
+	(struct node): New member `identity'.
+	* init-init.c (diskfs_fsys_identity): New variable.
+	(diskfs_init_diskfs): Initialize diskfs_fsys_identity.
+	* node-make.c (diskfs_make_node): Initialize NP->identity.
+	* node-drop.c (diskfs_drop_node): Free NP->identity if it's been
+ 	allocated.
+
+Thu May  9 11:52:52 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* protid-make.c (diskfs_make_protid): Delete function.
+	* diskfs.h (diskfs_make_protid): Delete declaration.
+
+	* init-startup.c (_diskfs_init_completed): Don't need to insert
+ 	right any more now that it's a poly arg.
+	Provide helpful name to init.
+
+	* fsys-options.c (diskfs_S_fsys_get_options): Accept and ignore
+ 	replyport parameters.
+
+	* file-sync.c (diskfs_S_file_sync): Accept and ignore new parm
+	OMITMETADATA.
+
+	* priv.h: ioserver.h -> iohelp.h.
+	* diskfs.h: Likewise.
+	* file-sync.c (diskfs_S_file_sync): s/ioserver/iohelp/g
+	* io-prenotify.c (diskfs_S_io_prenotify): Likewise.
+	* io-get-conch.c (diskfs_S_io_get_conch): Likewise.
+	* io-modes-off.c (diskfs_S_io_clear_some_openmodes): Likewise.
+	* io-modes-on.c (diskfs_S_io_set_some_openmodes): Likewise.
+	* io-modes-set.c (diskfs_S_io_set_all_openmodes): Likewise.
+	* io-read.c (diskfs_S_io_read): Likewise.
+	* io-readable.c (diskfs_S_io_readable): Likewise.
+	* io-rel-conch.c (diskfs_S_io_release_conch): Likewise.
+	* io-seek.c (diskfs_S_io_seek): Likewise.
+	* io-stat.c (diskfs_S_io_stat): Likewise.
+	* io-write.c (diskfs_S_io_write): Likewise.
+	* conch-fetch.c (iohelp_fetch_shared_data): Likewise.
+	* conch-set.c (iohelp_put_shared_data): Likewise.
+	* node-make.c (diskfs_make_node): Likewise.
+	* node-rdwr.c (diskfs_node_rdwr): Likewise.
+	* Makefile (libdiskfs.so): Likewise.
+
+	* dir-rename.c (diskfs_S_dir_rename): Understand new parm EXCL and
+ 	do the right thing with it.
+	* dir-link.c (diskfs_S_dir_link): Likewise.
+
+Thu May  9 12:12:41 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Don't pass CRED
+ 	port in auth_server_authenticate.
+
+	* io-select.c (diskfs_S_io_select): Removed TAG arg.
+
+Thu May  9 11:42:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* filedev.c (diskfs_get_file_device): Deallocate most things we
+	got back from file_get_storage_info even if we didn't get an error.
+
+	* filedev.c (diskfs_get_file_device): Fix type of DATA & _DATA.
+	BLOCKSIZE -> BLOCK_SIZE.  Copy name from DATA, not DEV_NAME_BUF.
+
+Mon May  6 20:12:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* filedev.c (diskfs_get_file_device): Enable new version.
+
+Fri May  3 15:55:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* filedev.c [0] (diskfs_get_file_device): Rewrite to use new interface.
+
+Tue Apr 30 14:39:06 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* init-startup.c: Include <string.h> and <hurd/startup.h>.
+	(diskfs_startup_diskfs): If not bootstrap filesystem, call
+	_diskfs_init_completed here.
+	(diskfs_S_startup_dosync): New function (commented out).
+	(_diskfs_init_completed): New function.
+	* init-completed.c: Delete file.
+	* init-init.c (diskfs_shutdown_notification_class): New variable.
+	(diskfs_init_diskfs): Initialize diskfs_shutdown_notification_class.
+	* diskfs.h (diskfs_shutdown_notification_class): New variable.
+	* boot-start.c (diskfs_S_fsys_init): diskfs_init_completed ->
+ 	_diskfs_init_completed.
+	* priv.h (_diskfs_init_completed): New declaration.
+	* diskfs.h (diskfs_init_completed): Delete function.
+
+Mon Apr 29 15:42:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* name-cache.c (struct lookup_cache): Add HDR, remove NEXT & PREV.
+	(lookup_cache): Change type to struct cacheq.
+	(mru_cache, lru_cache): Variables removed.
+	(make_mru, make_lru, init_lookup_cache): Functions removed.
+	(find_cache, diskfs_purge_lookup_cache,
+	diskfs_check_lookup_cache): Use cacheq functions.
+
+Sun Apr 28 15:22:30 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* protid-make.c: Add obsolescence link warning.
+
+Tue Apr 23 11:05:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): Don't do anything special for
+ 	socket naming points.
+	* Makefile (OTHERSRCS): Add dead-name.c.
+	* dead-name.c: New file.
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Request notification for
+ 	new SOCKADDR; count that notification as a reference.
+
+Fri Apr 12 15:56:48 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* name-cache.c (diskfs_enter_lookup_cache): Never cache . or ..
+
+Thu Apr 11 17:59:18 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* console.c: Include <hurd.h>.
+
+	* Makefile (fsys-MIGSFLAGS, fs-MIGSFLAGS, io-MIGSFLAGS,
+ 	ifsock-MIGSFLAGS): Reference fsmutations.h in $(srcdir).
+
+        * boot-start.c (diskfs_start_bootstrap): Print helpful message
+	before doing anything else.
+
+Wed Apr 10 16:47:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* name-cache.c (struct lookup_cache): Add NEXT & PREV fields.
+	Rename LEN back to NAME_LEN.
+	(lru_cache, mru_cache): New variables.
+	(first_cache, last_cache): Variables removed.
+	(make_mru, make_lru, find_cache, init_lookup_cache): New functions.
+	(diskfs_enter_lookup_cache, diskfs_purge_lookup_cache,
+	diskfs_check_lookup_cache): Rewrite to use the linked list.  Deal
+	with negative entries.
+
+Tue Apr  9 12:59:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lookup.c (diskfs_lookup): Deal with DS or NP being 0.
+	* name-cache.c (diskfs_check_lookup_cache): Correctly handle the
+ 	case where the lookup returns DIR itself.
+
+	* diskfs.h (diskfs_enter_lookup_cache, diskfs_purge_lookup_cache,
+ 	diskfs_check_lookup_cache): Renamed from versions without `lookup_'.
+	* name-cache.c (diskfs_enter_lookup_cache, diskfs_purge_lookup_cache,
+ 	diskfs_check_lookup_cache): Likewise.
+	* direnter.c (diskfs_direnter): Similarly, rename use.
+	* dirrewrite.c (diskfs_dirrewrite): Likewise.
+	* dirremove.c (diskfs_dirremove): Likewise.
+	* lookup.c (diskfs_lookup): Likewise.
+
+Sun Apr  7 15:29:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* name-cache.c (diskfs_check_cache): Declare I.
+	(struct lookup_cache, diskfs_enter_cache): Change NAMELEN field to LEN.
+
+Wed Apr  3 16:02:45 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): Don't call
+	_diskfs_purge_cache_deletion.
+	* name-cache.c (_diskfs_purge_cache_deletion): Delete function.
+
+	* diskfs.h (diskfs_cached_lookup): New declaration.
+	(struct node): New member `cache_id'.
+
+Tue Apr  2 12:50:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* name-cache.c (diskfs_enter_cache): Don't set LC->next->prev if
+ 	LC->next is null.
+	(diskfs_purge_cache): If freeing node at LOOKUP_CACHE_TAIL, bump
+	LOOKUP_CACHE_TAIL back itself too.
+	(_diskfs_purge_cache_deletion): Likewise.
+
+	* lookup.c (diskfs_lookup): When doing diskfs_checkdirmod check,
+ 	don't return success when we should return ENOENT, just because
+ 	checkdirmod won.  Also enter successful lookups for CREATE or
+ 	LOOKUP in the name cache.
+
+Fri Mar 29 13:57:37 1996  Roland McGrath  <roland@charlie-brown.gnu.ai.mit.edu>
+
+	* io-map-cntl.c: Initialize shared page magic number.
+
+Mon Mar 25 09:30:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* name-cache.c (statistics): New variable.
+	(diskfs_check_cache): Keep statistics on cache performance.
+
+Fri Mar 22 17:51:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-runtime-parse.c (diskfs_parse_runtime_options): Supply new
+	argument to argp_parse.
+
+Fri Mar 22 15:44:10 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* lookup.c (diskfs_lookup): Dereference NP in call to
+	diskfs_checkdirmod.
+	* direnter.c (diskfs_direnter): Don't fall off end.
+	* diskfs.h (diskfs_enter_cache, diskfs_purge_cache,
+	diskfs_check_cache): Add declarations.
+	* dir-rename.c (diskfs_S_dir_rename): Use new args for
+	diskfs_dirrewrite and diskfs_dirremove.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+	* dir-clear.c (diskfs_clear_directory): Use new diskfs_dirremove
+ 	args.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-unlink.c (diskfs_S_dir_unlink): Likewise.
+
+	* Makefile (OTHERSRCS): Add direnter.c, dirrewrite.c, dirremove.c,
+ 	and lookup.c.
+
+Wed Mar 20 14:34:22 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_lookup_hard): Remove mention of ENOTDIR and
+ 	EACCES errors.
+	* diskfs.h (diskfs_null_dirstat): New function.
+	* dir-lookup.c (diskfs_S_dir_lookup): Don't check cache here.
+	* dir-unlink.c (diskfs_S_dir_unlink): Don't frob cache here.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-clear.c (diskfs_clear_directory): Likewise.
+	* node-create.c (diskfs_create_node): Likewise.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-link.c (diskfs_S_dir_link): Likewise.
+	* direnter.c: New file.
+	* dirrewrite.c: Likewise.
+	* dirremove.c: Likewise.
+	* lookup.c: Likewise.
+	* diskfs.h (diskfs_lookup): Renamed to be diskfs_lookup_hard.
+	(diskfs_direnter): Renamed to be diskfs_direnter_hard.
+	(diskfs_dirrewrite): Renamed to be diskfs_dirrewrite_hard.
+	(diskfs_dirremove): Renamed to be diskfs_dirremove_hard.
+	(diskfs_lookup, diskfs_direnter, diskfs_dirrewrite, diskfs_dirremove):
+
+Tue Mar 19 14:55:46 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* name-cache.c: New file.
+	* Makefile (OTHERSRCS): Add name-cache.c.
+	* dir-lookup.c (diskfs_S_dir_lookup): Check cache before normal
+ 	diskfs_lookup call.
+	* node-drop.c (diskfs_drop_node): Call
+ 	_diskfs_purge_cache_deletion before releasing node structure with
+ 	diskfs_node_norefs.
+	* dir-clear.c (diskfs_clear_directory): Call
+	diskfs_purge_cache_node before diskfs_dirremove.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-unlink.c (diskfs_S_dir_unlink): Likewise.
+	* dir-init.c (diskfs_init_dir): Doc fix.
+	* dir-rename.c (diskfs_S_dir_rename): Call diskfs_purge_cache
+ 	before diskfs_dirrewrite for old node.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+	* node-create.c (diskfs_create_node): Call diskfs_enter_cache if
+ 	diskfs_direnter is successful.
+	* dir-link.c (diskfs_S_dir_link): Likewise.
+	* dir-rename.c (diskfs_S_dir_rename): Call diskfs_enter_cache if
+ 	diskfs_direnter/diskfs_dirrewrite is successful.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+
+Fri Mar 15 23:10:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Don't leak a send right to
+	the anonymous handle on DNP when calling fetch_root.
+
+Tue Mar 12 14:36:10 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Deallocate ref
+ 	on CONTROL when we are done with it.
+
+Thu Mar  7 16:45:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* readonly.c (diskfs_set_readonly): Don't sleep(1) after syncing.
+
+Thu Feb 29 14:29:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (OTHERSRCS): Change `opts-runtime-def.c' to
+	`opts-runtime-parse.c'.  Add `opts-runtime-unparse.c'.
+
+Wed Feb 21 06:10:05 1996  Roland McGrath  <roland@charlie-brown.gnu.ai.mit.edu>
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Add EROFS check.
+
+Sun Feb 18 00:08:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* init-init.c (diskfs_init_diskfs): Use maptime_map.
+	* node-times.c (diskfs_set_node_times): Use maptime_read.
+
+Fri Feb 16 13:48:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-runtime-def.c (diskfs_parse_runtime_options): STANDARD_ARGP
+	is const.
+
+Thu Feb 15 16:59:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_nput): It's not valid to touch *NP (by
+ 	`mutex_unlock (&np->lock);') after we have called
+ 	diskfs_drop_node.  So don't do it in that case.
+
+Wed Feb  7 22:42:22 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_nput): Before bumping NP->references (which
+ 	precedes diskfs_try_dropping_softrefs), *lock*
+ 	diskfs_node_refcnt_lock, not mutant unlock.
+	(diskfs_nrele): Likewise.
+
+Wed Feb  7 16:22:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_parse_runtime_options): Make STANDARD_ARGP const.
+	(diskfs_startup_argp, diskfs_device_startup_argp): Make const.
+	* opts-common.c (diskfs_common_options): Make const.
+	* opts-std-startup.c (startup_options, dev_startup_options,
+	dev_start_argp_parents, dev_startup_argp, startup_common_argp,
+	startup_argp_parents, startup_argp, diskfs_startup_argp): Make const.
+	* opts-set.c (std_runtime_options): Make const.
+	(diskfs_set_options): Make argp structures const.
+
+Wed Feb  7 13:39:09 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Revert last change.
+
+Tue Feb  6 15:56:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Make the new peropen we'll
+	pass as dotdot to the fetch_root with the same flags as DIRCRED->po.
+
+Wed Jan 31 00:27:10 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* node-rdwr.c (diskfs_node_rdwr): Handle null AMTREAD.
+
+Tue Jan 30 21:20:13 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* fsys-options.c (diskfs_S_fsys_set_options): Use
+	rwlock_writer_lock instead of rwlock_reader_lock in DO_CHILDREN case.
+
+Tue Jan 30 15:03:35 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* peropen-rele.c (diskfs_release_peropen): Free dotdotport when
+ 	deallocating peropen.
+
+Wed Jan 24 18:14:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Use diskfs_create_protid instead
+	of diskfs_make_protid, and deal with an error return.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* io-duplicate.c (diskfs_S_io_duplicate): Likewise.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Likewise.
+	* trans-callback.c (_diskfs_translator_callback2_fn): Likewise.
+	* boot-start.c (diskfs_start_bootstrap, diskfs_S_exec_startup_get_info,
+	diskfs_execboot_fsys_startup, diskfs_S_fsys_init): Likewise.
+	* protid-make.c (diskfs_start_protid): Return an error now, and use
+	ports_create_port instead of ports_allocate_port.
+	(diskfs_create_protid): New function.
+	(diskfs_make_protid): Call diskfs_create_protid.
+	* diskfs.h (diskfs_start_protid): Update declaration.
+	(diskfs_create_protid): New declaration.
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Use new version of
+	diskfs_start_protid.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Use ports_create_port
+	instead of ports_allocate_port.
+	* boot-start.c (start_execserver, diskfs_start_bootstrap): Likewise.
+	* init-startup.c (diskfs_startup_diskfs): Likewise.
+	* sync-interval.c (diskfs_set_sync_interval): Likewise.
+	(periodic_sync): Pass in the MSG_ID arg to ports_begin_rpc, and
+	deal with any error returned.
+
+	* readonly.c (diskfs_set_readonly): Deal with ports_inhibit_class_rpcs
+ 	returning an error.
+	* remount.c (diskfs_remount): Likewise.
+	* shutdown.c (diskfs_shutdown): Likewise.
+	* sync-interval.c (diskfs_set_sync_interval): Likewise.
+
+	* dir-readdir.c: Include <fcntl.h>.
+
+Tue Jan 23 16:28:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-std-startup.c (startup_options): Put boot options in a
+	separate group with a header.
+
+Thu Jan 18 14:05:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* dir-readdir.c (diskfs_S_dir_readdir): Require read permission
+ 	before succeeding.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Deallocate ref to dotdot
+ 	after diskfs_make_peropen, because the latter does not eat a
+ 	reference.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): In symlink case, use
+ 	MOVE_SEND to return the dotdot port to the user.
+
+Thu Jan 11 22:09:05 1996  Roland McGrath  <roland@delasyd.gnu.ai.mit.edu>
+
+	* diskfs-pager.h (struct disk_image_user): New type.
+	(diskfs_catch_exception, diskfs_end_catch_exception): Use it to
+	maintain a linked list of catchers instead of just one.
+
+Sat Jan  6 11:49:02 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (installhdrs): Add diskfs-pager.h.
+	(OTHERSRCS): Add disk-pager.c.
+
+Fri Jan  5 17:06:42 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* io-write.c: Return errors regardless of *AMT--writes are all or
+	nothing.
+	* io-read.c: Return errors regardless of *DATALEN--reads are all or
+	nothing.
+
+Thu Jan  4 16:11:35 1996  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* disk-pager.c, diskfs-pager.h: New files.
+	* exc.c: File removed.
+	* Makefile (OTHERSRCS): Remove exc.c.
+	* diskfs.h (diskfs_catch_exception, diskfs_end_catch_exception):
+	Macros removed.
+	(diskfs_register_memory_fault_area,
+	diskfs_unregister_memory_fault_area): Decls removed.
+
+	* diskfs.h: Use size_t instead of int for amounts in
+	diskfs_node_rdwr prototype.
+	* node-rdwr.c (diskfs_node_rdwr): Pass AMTREAD read/write to
+ 	_diskfs_rdwr_internal, instead of assuming it wrote the whole amount.
+  	Update the node if anything was transferred, regardless of ERR.
+	* rdwr-internal.c (_diskfs_rdwr_internal): Rewritten using
+	pager_memcpy.
+	Fix types of args: OFFSET to off_t, make AMT read/write size_t *.
+	* priv.h: Fix args in _diskfs_rdwr_internal prototype.
+	* io-write.c: Pass AMT read/write to _diskfs_rdwr_internal, and
+	return success if any bytes were written.
+	* io-read.c: Likewise.
+
+Mon Jan  1 15:45:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Use fshelp_exec_reauth().
+	(setid, scan_ids): Functions deleted.
+
+Thu Dec 28 14:21:42 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Always reauth the proc port,
+	as exec does not do it, even in the secure case.  Set the proc's
+	owner too.
+
+	* file-exec.c (setid): Don't touch the return params unless we succeed.
+	Add SETID parameter, and just copy old into new unless it's set.
+	Handle the NOLDGENIDS == 0 case correctly.
+	(diskfs_S_file_exec): Use the new setid() properly.  Make sure that
+	{GEN,AUX}{UIDS,GIDS} are always in a state where they can be freed.
+
+Thu Dec 28 00:24:29 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* priv.h (end_using_protid_port): Don't calls ports_port_deref if
+	CRED is null.
+
+Wed Dec 27 17:32:21 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-exec.c (setid): New function.
+	(scan_ids): Moved out of diskfs_S_file_exec.
+	(diskfs_S_file_exec): Move duplicated code into setid().  Make the
+	bogus auth port case work correctly.  Deleted old ifdefed-out code.
+	Enable setuid code.
+
+	* exc.c (diskfs_register_memory_fault_area): Register both
+	preempter1 and preempter2 in REC instead of preempter1 twice.
+
+Sat Dec 23 14:49:22 1995  Michael I. Bushnell p/BSG  <mib@gnu.ai.mit.edu>
+
+	* exc.c: Entire file rewritten to use libc signal preemption
+        facility.
+
+Wed Dec 20 14:49:29 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_S_fsys_init): Call proc_mark_exec on
+	EXECPROCESS.
+
+Tue Dec 19 13:19:19 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Better attempt at
+	setuid/setgid execution; still not entirely right, but mostly so.
+	Will move this code to libfshelp before turning it on.
+
+Thu Dec 14 15:51:19 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_checkdirmod): Correctly return error code for
+ 	failure, not 1.
+
+Mon Dec  4 17:07:20 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* dir-unlink.c (diskfs_S_dir_unlink): Don't call fsys_goaway until
+ 	we've released our lock.
+
+Mon Dec  4 16:57:28 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-unlink.c (diskfs_S_dir_unlink): Delete vestigial fetch_control.
+
+Tue Nov 21 13:54:14 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* rdwr-internal.c (_diskfs_rdwr_internal): Declare PROT volatile.
+
+	* init-first.c (master_thread_function): Declare to be `static
+ 	any_t'.
+
+	* fsys-options.c: Include <string.h>.
+
+	* diskfs.h (diskfs_get_options): Bother providing declaration.
+
+	* file-get-fs-opts.c: Include <string.h>.
+	(diskfs_S_file_get_fs_options): Dereference DATA_LEN in call to
+	vm_allocate.
+
+Sat Nov 18 09:01:28 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_S_exec_startup_get_info): Renamed from
+	diskfs_S_exec_startup, slightly different protocol.  Unused exec
+	server stubs removed.
+	* Makefile (MIGSTUBS): Replaced execServer.o with exec_startupServer.o.
+
+Mon Nov 13 17:13:40 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* demuxer.c (diskfs_demuxer):
+	diskfs_exec_server --> diskfs_exec_startup_server.
+
+Mon Nov 13 16:28:27 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* file-lock-stat.c (diskfs_S_file_lock_stat): Lock around reads to
+ 	make sure they are mutually consistent.
+
+	* io-readable.c (diskfs_S_io_readable): Set *AMOUNT to zero if
+ 	filepointer is past the end of the file.
+
+Thu Nov  9 12:33:53 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* dir-link.c (diskfs_S_dir_link): Now that args are swapped,
+ 	deallocate port ref on FILECRED instead of DIRCRED.
+
+Sun Nov  5 10:49:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (OTHERSRCS): Add opts-get.c.
+	(FSSRCS): Add file-get-fs-opts.c.
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): New function.
+	* fsys-options.c (diskfs_S_fsys_get_options): New function.
+	* opts-get.c (diskfs_get_options): New function.
+
+	* sync-interval.c (diskfs_sync_interval): New variable.
+	(diskfs_set_sync_interval): Set DISKFS_SYNC_INTERVAL.
+
+Sat Nov  4 23:17:50 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-get-trans.c (diskfs_S_file_get_translator): Initialize ERROR.
+
+	* trans-callback.c (_diskfs_translator_callback2_fn):
+	UNDERLYING_TYPE should be a pointer.  As should the UIDS & GIDS
+	args to diskfs_make_protid.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Pass both callback args
+	to fshelp_fetch_root.
+
+	* filedev.c (diskfs_get_file_device): Give FLAGS argument to
+	file_get_storage_info.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Fix various typos.
+	(short_circuited_callback1): Dereference ARGZ & ARGZ_LEN.
+	Include <hurd/paths.h>
+
+Wed Nov  1 15:56:45 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Add new callback arg to
+	fshelp_fetch_root call.  Change short_circuited_callback1 to
+	reflect the split into two callbacks (we use the global diskfs
+	callback for the other_).
+	* trans-callback.c (_diskfs_translator_callback1_fn,
+	_diskfs_translator_callback2_fn): New functions, replacing the
+	single original.
+	(_diskfs_translator_callback1, _diskfs_translator_callback2):
+	New variables, replacing the single original.
+	* priv.h (_diskfs_translator_callback1, _diskfs_translator_callback2):
+	Declare.
+
+	* boot-start.c (diskfs_execboot_fsys_startup): Add FLAGS arg; use.
+	* fsys-startup.c (diskfs_S_fsys_startup): Ditto.
+	* init-startup.c (diskfs_startup_diskfs): Ditto.
+	* diskfs.h (diskfs_startup_diskfs, diskfs_execboot_fsys_startup):
+	Add FLAGS arg.
+
+Mon Oct 30 13:20:12 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Move code for starting
+ 	short-circuited translators here, from _diskfs_translator_callback_fn.
+	Inline code from node_is_translated.
+	(node_is_translated): Function removed.
+	(major, minor): New macros -- temporarily here until libc exports them.
+
+Thu Oct 26 18:41:23 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* trans-callback.c (_diskfs_translator_callback_fn): Deal with
+	short-circuited translators.
+	* dir-lookup.c (node_is_translated): New function.
+	(diskfs_S_dir_lookup): Use node_is_translated() instead of
+	np->istranslated to see whether NP has a passive translator.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Add missing else.
+	Use makedev macro instead of doing it by hand.
+	(makedev): New macro -- temporarily here until libc exports one.
+
+Thu Oct 19 12:43:47 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys-options.c (diskfs_S_fsys_set_options): Only hold
+ 	DISKFS_FSYS_LOCK for writing while setting our own options; we
+ 	hold it for reading while setting our children's.
+
+	* rdwr-internal.c (_diskfs_rdwr_internal): Get rid of CRED argument.
+	* priv.h (_diskfs_rdwr_internal): Ditto.
+	* node-rdwr.c (diskfs_node_rdwr): Ditto.
+	* io-write.c (diskfs_S_io_write): Ditto.
+	* io-read.c (diskfs_S_io_read): Ditto.
+
+Wed Oct 18 15:52:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_get_filemap): Add prot parameter.
+	(diskfs_max_user_pager_prot): New declaration.
+	* rdwr-internal.c (_diskfs_rdwr_internal): Add argument CRED, and
+	use it to decide how to setup the mapped i/o.
+	* io-write.c (diskfs_S_io_write): Pass CRED to _diskfs_rdwr_internal.
+	* io-read.c (diskfs_S_io_read): Ditto.
+	* node-rdwr.c (diskfs_node_rdwr): Ditto.
+	* io-map.c (diskfs_S_io_map): Pass the appropiate vm protection to
+	diskfs_get_filemap.  If this node isn't O_RDWR, only return the
+	appropiate memobj.
+	Include <fcntl.h>.
+	* priv.h (_diskfs_rdwr_internal): Add cred parameter.
+
+	* boot-start.c (diskfs_execboot_fsys_startup): Open exec's
+	realnode read-only for now, since we know it doesn't matter and
+	having gratuitously writable nodes around prevents us from
+	starting up or going read-only.
+	(diskfs_S_fsys_init): Don't make the cwdir/crdir right with O_WRITE.
+	* trans-callback.c (_diskfs_translator_callback_fn): Ditto for
+	other translators.  The fsys_startup interface should change very
+	soon and make this irrelevant.
+
+	* readonly.c (diskfs_set_readonly): Return EBUSY if necessary.
+	Add hack to try and work around pagers-can't-wait bug.
+
+	* opts-common.c (diskfs_common_options): New variable.
+	* priv.h (diskfs_common_options): New declaration.
+	* opts-std-startup.c (startup_options): Remove options common to
+	both runtime and startup.
+	(startup_common_argp, startup_argp_parents): New variables.
+	(startup_argp): Include parents.
+	* opts-set.c (std_runtime_options): Remove options common to
+	both runtime and startup.
+	(diskfs_set_options): Use the common options.
+	* Makefile (OTHERSRCS): Add opts-common.c.
+
+	* diskfs.h (diskfs_fsys_lock): Change to a struct rwlock.
+	Include <rwlock.h>
+	* shutdown.c (diskfs_fsys_lock): Now a rwlock.
+	(diskfs_shutdown): Lock DISKFS_FSYS_LOCK for writing.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Hold DISKFS_FSYS_LOCK
+	for reading.
+	* sync-interval.c (periodic_sync): Hold DISKFS_FSYS_LOCK for
+	reading while syncing.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Ditto.
+	* fsys-options.c (diskfs_S_fsys_set_options): Hold DISKS_FSYS_LOCK
+	for writing.
+	Dereference PT even when a child filesystem returns an error.
+	* opts-set.c (diskfs_set_options): Don't hold DISKS_FSYS_LOCK (our
+	caller should).
+
+	* machdev.c (diskfs_get_mach_device): SIZE is in blocks.
+
+Wed Oct 18 14:00:58 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Return EACCES for attempts to
+ 	execute a directory.  Dike out totally bogus set[ug]id code.
+  	Bother to lock NP around critical section.
+
+Tue Oct 17 14:32:41 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* init-startup.c (diskfs_startup_diskfs): Call diskfs_readonly_changed
+	if we're starting up writable.
+	* diskfs.h (diskfs_readonly_changed, diskfs_reload_global_state,
+	diskfs_node_reload, diskfs_set_readonly, diskfs_remount): New
+	declarations.
+	(diskfs_main_request_loop): Declaration removed.
+	* Makefile (OTHERSRCS): Add readonly.c, remount.c.
+	* readonly.c (diskfs_set_readonly): New function.
+	* remount.c (diskfs_remount): New function.
+
+	* opts-set.c (diskfs_set_options): Rework readonly transition &
+	remounting.  Hold diskfs_fsys_lock.
+
+	* diskfs.h (diskfs_fsys_lock): Renamed from diskfs_shutdown_lock.
+	* shutdown.c (diskfs_shutdown): diskfs_shutdown_lock -->
+	diskfs_fsys_lock.
+
+Fri Oct 13 14:51:42 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_start_bootstrap): Get rid of ARGV argument.
+	(diskfs_argv): New declaration.
+	* boot-start.c (saved_argv): Variable removed.
+	(diskfs_argv): New variable.  Should get set by default arg parser.
+	(diskfs_start_bootstrap): Get rid of ARGV argument.
+	(diskfs_S_fsys_init): Use DISKFS_ARGV instead of SAVED_ARGV.
+	* opts-std-startup.c (parse_startup_opt): Set DISKFS_ARGV.
+	* init-startup.c (diskfs_startup_diskfs): Call diskfs_start_bootstrap
+ 	if we're the bootstrap file system.
+
+	* dev-globals.c (diskfs_device, diskfs_device_name,
+	diskfs_device_start, diskfs_device_size, diskfs_device_block_size,
+	diskfs_log2_device_block_size, diskfs_log2_device_blocks_per_page):
+	New variables.
+	* dev-io.c (diskfs_device_write_sync, diskfs_device_write_sync):
+	New functions.
+	* dev-open.c (diskfs_device_open): New function, new file.
+	* diskfs.h (diskfs_device, diskfs_device_name,
+	diskfs_device_start, diskfs_device_size, diskfs_device_block_size,
+	diskfs_log2_device_block_size, diskfs_log2_device_blocks_per_page,
+	diskfs_device_write_sync, diskfs_device_write_sync,
+	diskfs_device_open, diskfs_console_stdio): New declarations.
+	* console.c (diskfs_console_stdio): New function.
+	* Makefile (OTHERSRCS): Add dev-open.c, dev-io.c, dev-globals.c,
+	console.c.
+	* opts-std-startup.c (diskfs_use_mach_device, diskfs_device_arg,
+ 	dev_startup_options, dev_startup_argp_parents, dev_startup_argp,
+ 	diskfs_device_startup_argp): New variables.
+  	(parse_dev_startup_opt): New function.
+
+Thu Oct 12 16:11:22 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_execboot_fsys_startup): Fix args to dir_lookup.
+	Declare PATHBUF and RETRY.
+
+	* boot-start.c (diskfs_S_fsys_init): Put the contents of
+	diskfs_init_completed in here, freeing that routine for user-use.
+
+	* init-completed.c (diskfs_init_completed): Now empty.
+
+	* opts-set.c (std_runtime_options): Renamed from long_options,
+	convert to argp format.
+	(SHORT_OPTIONS): Removed.
+	(diskfs_set_options): Converted to use argp.
+	* diskfs.h (diskfs_parse_runtime_options,
+	diskfs_standard_startup_argp): Use argp, not options.
+	Include <argp.h> instead of <options.h>.
+	* opts-runtime-def.c (diskfs_parse_runtime_options): Use argp
+	instead of options.
+	* opts-std-startup.c (std_startup_options): Renamed from
+	std_long_options; converted to argp format.
+	(std_startup_argp): Renamed from std_startp_argp, converted argp fmt.
+	(diskfs_standard_startup_argp): Renamed from
+	diskfs_standard_startup_options.
+
+Thu Oct 12 03:25:09 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_execboot_fsys_startup): Use dir_lookup
+	instead of hurd_file_name_lookup to open /servers/exec.
+
+Mon Oct  9 03:42:49 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_execboot_fsys_startup): Pass back a port to
+	/servers/exec in *REAL.
+
+Sat Oct  7 20:51:06 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* init-completed.c (diskfs_init_completed): New function.
+	* diskfs.h (diskfs_init_completed): must --> may.
+	Add necessary includes.
+
+	* Makefile (OTHERSRCS): Add init-completed.c.
+
+Sat Oct  7 05:07:42 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (libdiskfs.so): Depend on libpager, libioserver,
+	libfshelp, libthreads.
+
+Fri Oct  6 17:26:51 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_get_file_device, diskfs_get_mach_device): New funcs.
+	(diskfs_boot_flags): New variable.
+	(diskfs_bootflags, diskfs_bootflagarg): Variables deleted.
+
+	* boot-start.c (diskfs_S_fsys_getpriv): Add the port type parameters.
+
+	* Makefile (MIGSFLAGS): Variable deleted.
+	(fs-MIGSFLAGS, io-MIGSFLAGS, ifsock-MIGSFLAGS): New variables.
+	(fsys-MIGSFLAGS): Also import fsmutations.h.
+
+	* dir-link.c (diskfs_S_dir_link): Swap first two arguments.
+
+	* filedev.c (diskfs_get_file_device): Use new block_size return
+	value from file_get_storage_info.
+
+Thu Oct  5 15:10:34 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (OTHERSRCS): Remove boot-parse.c; add filedev.c & machdev.c.
+	* diskfs.h (diskfs_host_priv, diskfs_master_device): Variables deleted.
+	(diskfs_parse_bootargs): Function deleted.
+	(diskfs_init_diskfs): Now returns error_t.
+	* init-init.c (diskfs_init_diskfs): Always use get_privileged_ports.
+	Now return error_t.
+	* machdev.c (diskfs_get_mach_device): Use get_privileged_ports
+	instead of diskfs_master_device.
+	* boot-start.c (diskfs_S_fsys_getpriv): Use get_privileged_ports
+	to get the privileged ports.
+	(diskfs_start_bootstrap): Use diskfs_boot_flags instead of
+	diskfs_bootflagarg.
+	(diskfs_start_bootstrap, start_execserver): Look for flags
+	directly in diskfs_boot_flags, instead of using the old
+	diskfs_bootflags.
+	* boot-start.c (diskfs_S_exec_startup): Use get_console to get the
+	console device.
+	(get_console): New function.
+	* opts-std-startup.c (OPT_BOOTFLAGS, OPT_EXEC_SERVER_TASK,
+	OPT_HOST_PRIV_PORT, OPT_DEVICE_MASTER_PORT): New defines.
+	(std_long_opts, parse_std_startup_opt): Add the
+	--device-master-port, --host-priv-port, --exec-server-task, and
+	--bootflags options.
+
+Thu Oct  5 00:46:09 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* sync-interval.c (periodic_sync_lock): Variable removed.
+	(diskfs_set_sync_interval): Use ports_inhibit_port_rpcs on `pi'
+	instead of the spin lock.
+	(periodic_sync): Don't use the lock.
+	Put ports_begin_rpc before check of periodic_sync_thread.
+
+Wed Sep 27 20:11:09 1995  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* filedev.c (diskfs_get_file_device): New file, new function.
+	* machdev.c (diskfs_get_mach_device): New file, new function.
+
+Mon Sep 18 14:21:29 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* io-pathconf.c (diskfs_S_io_pathconf): Renamed from
+	file_pathconf.c:diskfs_S_file_pathconf.
+	* Makefile (FSSRCS): Deleted file-pathconf.c.
+	(IOSRCS): Added io-pathconf.c.
+
+Sun Sep 17 18:04:10 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_S_exec_startup): Don't pass an argument
+	string.  Set *FLAGS to EXEC_STACK_ARGS.
+
+	* file-set-size.c: Renamed from file-trunate.c.
+	(diskfs_S_file_set_size): Renamed from diskfs_s_file_truncate.
+	If SIZE exceeds the file size, extend the file.
+	* Makefile (FSSRCS): Rename file-truncate.c to file-set-size.c.
+
+Sat Sep 16 13:10:21 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ourfs_notify.defs: New file.
+	* Makefile (DIST_FILES): Added ourfs_notify.defs.
+	(ourfs_notify_U.h ourfs_notifyUser.c, ourfs_notify.defs): Targets
+	removed.
+
+Wed Sep 13 12:36:26 1995  Michael I. Bushnell, p/BSG  <mib@duality.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_lookup): Doc fix.
+	* dir-clear.c (diskfs_clear_directory): Set the fourth arg in
+ 	REMOVE lookup calls in accord with change in rules for the lookup
+ 	call.
+
+Wed Sep  6 11:30:24 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* demuxer.c (diskfs_demuxer): Use ports_notify_server and
+	ports_interrupt_server instead of our own versions.
+	* Makefile (SRCS): Removed $(NOTIFYSRCS) and $(INTSRCS).
+	(NOTIFYSRCS, INTSRCS, notify-MIGSFLAGS): Removed.
+	(MIGSTUBS): Removed notifyServer.o and interruptServer.o.
+	* interrupt.c: File deleted.
+
+Tue Aug 29 14:22:58 1995  Michael I. Bushnell, p/BSG  <mib@duality.gnu.ai.mit.edu>
+
+	* io-select.c (diskfs_S_io_select): Don't check open modes or
+	return EBADF.
+
+Fri Aug 25 15:02:19 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (FSYSSRCS): Add fsys-forward.c.
+
+Fri Aug 25 09:44:43 1995  Michael I. Bushnell, p/BSG  <mib@mole.gnu.ai.mit.edu>
+
+	* file-truncate.c (diskfs_S_file_truncate): Bother to check the
+ 	return value of diskfs_truncate.
+
+Wed Aug 23 14:39:07 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* Makefile (REMHDRS): Removed.
+	Rules dealing with ../lib removed.
+
+Sat Jul 29 10:34:38 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Don't loop infinitely if
+	we fail to get a reasonable PF_LOCAL server.
+
+Fri Jul 28 14:59:45 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Try to restart the
+	PF_LOCAL server if it dies.
+
+	* node-drop.c (diskfs_drop_node): Don't actually drop the node if
+	it is a socket naming point, unless it also has no links.
+
+Sat Jul 22 13:54:48 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Fix typo.
+	* boot-start.c (start_execserver): Likewise.
+
+Fri Jul 21 12:37:36 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* trans-callback.c (_diskfs_translator_callback_fn): Use correct
+ 	sense of diskfs_readonly flag.
+
+	* boot-start.c (diskfs_start_bootstrap): Free initial reference
+	created by diskfs_make_protid.
+	(diskfs_S_exec_startup): Likewise.
+	(diskfs_S_fsys_init): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.  (Two places.)
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* io-duplicate.c (diskfs_S_io_duplicate): Likewise.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Likewise.
+	* trans-callback.c (_diskfs_translator_callback_fn): Likewise.
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Free initial
+	reference created by diskfs_start_protid.
+
+	* boot-start.c (diskfs_start_bootstrap): Free initial reference
+	created by ports_allocate_port.
+	(start_execserver): Likewise.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
+	* init-startup.c (diskfs_startup_diskfs): Likewise.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Examine the active
+ 	translator on NP, not on diskfs_root_node, to see if translator
+ 	usage is necessary.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Only validate
+ 	PASSIVELEN if PASSIVE is set.
+
+Tue Jul 18 16:12:20 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* init-first.c (thread_timeout, server_timeout): New vars.
+	(THREAD_TIMEOUT, SERVER_TIMEOUT): Delete macros.
+	(master_thread_function): Use vars instead of macros.
+
+	* file-get-trans.c (diskfs_S_file_get_translator): Conform to new
+ 	memory semantic of diskfs_get_translator.
+
+Wed Jul 12 16:39:24 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* shutdown.c (diskfs_shutdown): Call ports_resume_class_rpcs for
+ 	diskfs_protid_class before return EBUSY.
+
+Thu Jul  6 15:34:59 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* Makefile (ourfs_notify_U.h ourfs_notifyUser.c): Use
+ 	ourfs_notify.defs instead of directly out of the include
+ 	directory.
+	(ourfs_notify.defs): New target.
+
+	* Makefile: Removed dependencies that are now automatically
+ 	generated.
+
+Mon Jun 26 15:38:07 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* fsys-goaway.c (diskfs_S_fsys_goaway): Include "fsys_S.h" and
+	"fsys_reply_U.h".  New parms REPLY and REPLY_TYPE.  Send
+	fsys_goaway reply message before exit.
+	* Makefile (fsys-MIGSFLAGS): New variable.
+	* fsys-startup.c (diskfs_S_fsys_startup): New parms REPLY and
+        REPLYTYPE.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* fsys-options.c (diskfs_S_fsys_set_options): Likewise.
+	* boot-start.c (diskfs_S_fsys_getpriv): Likewise.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Likewise.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Include "fsys_S.h".  New
+	parms REPLY and REPLYTYPE.
+
+	* sync-interval.c (periodic_sync_thread, periodic_sync_lock):
+        Declare static.
+	(control): Delete var.
+	(pi): New var.
+	(diskfs_set_sync_interval): Set PI instead of CONTROL.
+	(periodic_sync): Do sync by hand; use ports routines around it
+	properly.
+
+	* shutdown.c (diskfs_shutdown): Fix parentheses on bitwise tests.
+
+	* fsys-goaway.c (diskfs_S_fsys_goaway): If diskfs_shutdown returns
+	zero, then exit here.
+	* shutdown.c (diskfs_shutdown): Don't actually exit; return zero
+        instead.
+	* init-first.c (master_thread_function): Exit when shutdown
+        returns zero.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Ignore harmless
+	errors from fsys_goaway.
+	* shutdown.c (diskfs_shutdown): Ignore harmless errors from
+        fsys_goaway.
+	* fsys-options.c (diskfs_S_fsys_set_options/helper): Ignore
+	harmless errors from fsys_set_options.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Fix parentheses
+	on first active EXCL check.
+
+Fri Jun 23 15:43:55 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* fsys-options.c (diskfs_S_fsys_set_options) [helper]: Unlock NP
+        around fsys call.
+	* file-syncfs.c (diskfs_S_file_syncfs) [helper]: Likewise.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs) [helper]: Likewise.
+	* shutdown.c (diskfs_shutdown) [helper]: Likewise.
+
+Thu Jun 22 14:48:46 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* priv.h (_diskfs_translator_callback): Must be extern to force
+	inclusion of trans-callback.c.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Correctly parethenize
+	O_NOTRANS flags test.
+
+Tue Jun 20 11:52:24 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* node-make.c (diskfs_make_node): Fix function name
+	fshelp_init_transbox -> fshelp_transbox_init.
+
+	* file-syncfs.c: Include <hurd/fsys.h>.
+	* fsys-syncfs.c: Likewise.
+
+	* file-syncfs.c (diskfs_S_file_syncfs) [helper]: First arg to
+	fshelp_fetch_control should be &NP->transbox, not NP.
+	* fsys-options.c (diskfs_S_fsys_set_options) [helper]: Likewise.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs) [helper]: Likewise.
+	* shutdown.c (diskfs_shutdown) [helper]: Likewise.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Remove
+        assignment from if test.
+	* node-rdwr.c (diskfs_node_rdwr): Likewise.
+
+Mon Jun 19 16:32:12 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_node_iterate): New (user-provided) function.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Use diskfs_node_iterate
+	instead of diskfs_sync_translators.
+	* file-syncfs.c (diskfs_S_file_syncfs): Likewise.
+	* shutdown.c (diskfs_shutdown): Likewise.
+	* fsys-options.c (diskfs_S_fsys_set_options): Likewise.
+
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Don't attempt anything for
+	translated directories here; just return EBUSY.
+	* dir-unlink.c (diskfs_S_dir_unlink): Don't do massively
+	complicated fsys_goaway.  Instead, call it at the end (but only if
+	this was the last link) and ignore errors.
+
+	* fsys-startup.c (diskfs_S_fsys_startup): Strip out support for
+	translators; fshelp now does that itself.
+
+	* file-set-trans.c: Include <hurd/fsys.h>.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Use new
+	translator interface throughout.
+	* dir-lookup.c (diskfs_S_dir_lookup): Use new translator startup
+        interface.
+
+Fri Jun 16 17:42:44 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl): Use
+	fshelp_fetch_control instead of old interface.
+
+Wed Jun 14 15:52:30 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): Call fshelp_drop_transbox
+	instead of fshelp_kill_translator; do it *after* the truncate.
+	* node-make.c (diskfs_make_node): Initialize TRANSBOX member using
+	new function.  Drop initialization of TRANSLATOR member.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Use new translator
+        startup interface.
+	* Makefile (OTHERSRCS): Removed trans-start.c, trans-destroy.c,
+        and trans-sync.c.  Added trans-callback.c.
+	* trans-start.c, trans-destroy,c, trans-sync.c: Deleted files.
+	* trans-callback.c: New file.
+	* priv.h (_diskfs_translator_callback): New declaration.
+	* diskfs.h (diskfs_start_translator, diskfs_destroy_translator,
+	diskfs_sync_translators):
+	Delete declarations.
+	(struct node): Replace TRANSLATOR member with new TRANSBOX member.
+	(diskfs_get_translator): Specify new calling interface.
+
+Fri Jun  9 15:48:30 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* rdwr-internal.c (_diskfs_rdwr_internal): Cast __VM_PAGE_SIZE in
+        comparisen.
+	* io-write.c (diskfs_S_io_write): Cast DATALEN to off_t in
+        comparisons.
+	* io-read.c (diskfs_S_io_read): Cast MAKREAD to off_t in
+        comparison.
+	* io-prenotify.c (diskfs_S_io_prenotify): Cast END to off_t in
+	comparison.
+	* file-get-trans.c (diskfs_S_file_get_translator): Declare
+	variable `buflen' and various variables `len' to be unsigned.
+	* file-exec.c (diskfs_S_file_exec): Declare both variables `i' to
+        be unsigned int.
+
+	* io-async-icky.c (diskfs_S_io_get_icky_async_id): Validate CRED.
+
+	* interrupt.c (diskfs_S_interrupt_operation): Bother to implement.
+
+	* init-init.c (diskfs_init_diskfs): Pass null second argument in
+	calls to ports_create_class.
+
+	* fsys-options.c (diskfs_S_fsys_set_options): Bother validating
+	FSYS and implementing DO_CHILDREN.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Initialize GIDS, NUIDS, and
+	NGIDS to avoid warning.
+
+	* boot-start.c: Provide unused attributes where appropriate.
+	* file-chg.c (diskfs_S_file_notice_changes): Mark parameters as
+	unused.
+	* file-getfh.c (diskfs_S_file_getfh): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Likewise.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Likewise.
+	* init-init.c (_diskfs_control_clean): Likewise.
+	* io-async.c (diskfs_S_io_async): Likewise.
+	* notify-stubs.c: Likewise.
+	* file-pathconf.c (diskfs_S_file_pathconf): Declare NAME to be
+        unused.
+	* io-select.c (diskfs_S_io_select): Declare ATTRIBUTE unused.
+	* io-stubs.c (diskfs_S_io_postnotify): Declare parms START and END
+        unused.
+	* io-prenotify.c (diskfs_S_io_prenotify): Declare parm START
+	unused.
+
+	* diskfs.h (diskfs_transboot_class): Delete var.
+	* init-init.c (diskfs_transboot_class): Delete var.
+	(diskfs_init_diskfs): Don't initialize it.
+
+	* dir-rename.c (diskfs_S_dir_rename): After renaming directory,
+	synchronize relevant state if DISKFS_SYNCHRONOUS.
+
+Thu Jun  8 19:01:25 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_pager_users): New function.
+	* shutdown.c (diskfs_shutdown): Rewrote to use new ports interface
+	adequately.
+
+Tue Jun  6 13:50:13 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* init-first.c (diskfs_spawn_first_thread): Call our own
+	thread function instead of the ports one directly.
+	(master_thread_function): New function.
+
+	* notify-nosenders.c (diskfs_do_seqnos_mach_notify_no_senders):
+	Don't help support pagers here at all.
+	* demuxer.c (diskfs_demuxer): Don't call pager_demuxer.
+
+	* boot-start.c (diskfs_start_bootstrap): Use new args for
+	ports_allocate_port.
+	(start_execserver): Likewise.
+	* init-startup.c (diskfs_startup_diskfs): Likewise.
+	* protid-make.c (diskfs_start_protid): Likewise.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
+	* sync-interval.c (diskfs_set_sync_interval): Likewise.
+
+	* boot-start.c (diskfs_S_exec_startup): Use ports_lookup_port and
+	ports_port_deref instead of ports_check_port_type and
+	ports_done_with_port.
+	(diskfs_execboot_fsys_startup): Likewise.
+	(diskfs_S_fsys_init): Likewise.
+	(diskfs_S_fsys_getpriv): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* fsys-goaway.c (diskfs_S_fsys_goaway): Likewise
+	* fsys-startup.c (diskfs_S_fsys_startup): Likewise.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Likewise.
+	* notify-nosenders.c (diskfs_do_seqnos_mach_notify_no_senders):
+	Likewise.
+	* priv.h (begin_using_protid_port): Use ports_lookup_port.
+	(end_using_protid_port): Use ports_port_deref.
+
+	* trans-start.c (fshelp_transboot_port_type): Deleted var.
+	* priv.h (enum porttype): Delete.
+	* demuxer.c: Renamed from ports-demuxer.c.
+	(diskfs_demuxer): Renamed from ports_demuxer.
+	* init-init.c (diskfs_protid_class, diskfs_transboot_class,
+	diskfs_control_class, diskfs_initboot_class,
+	diskfs_execboot_class, diskfs_port_bucket): New vars.
+	(diskfs_init_diskfs): Don't call libports_initialize.
+	Initialize diskfs_protid_class, diskfs_transboot_class,
+	diskfs_control_class, diskfs_initboot_class,
+	diskfs_execboot_class, and diskfs_port_bucket.
+	* diskfs.h: (diskfs_shutdown_soft_ports): Deleted decl.
+	(ports_demuxer): Deleted decl.
+	(diskfs_demuxer): New decl.
+	(diskfs_protid_class, diskfs_transboot_class, diskfs_control_class,
+	diskfs_initboot_class,diskfs_execboot_class, diskfs_port_bucket):
+	New decls.
+	* ports-noports.c, ports-clean.c, ports-soft.c, ports-idle.c,
+	ports-consts.c, pager-consts.c, init-loop.c: Deleted files.
+	* Makefile (OTHERSRCS): Deleted ports-noports.c, ports-clean.c,
+	ports-soft.c, ports-consts, pager-consts.c, init-loop.c, and
+	ports-idle.c.
+	Replace ports-demuxer.c with demuxer.c.
+
+Mon May 22 13:52:16 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* opts-set.c (diskfs_set_options): Don't fall through to the error
+	case from the 's' one!
+	Use ARG instead of the global OPTARG.
+
+Sat May 20 01:11:05 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Unlock
+	_diskfs_control_lock lock instead of locking it again!
+
+Fri May 19 21:22:14 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* opts-set.c (diskfs_set_options): New function in new file.
+	* opts-runtime-def.c (diskfs_parse_runtime_options): Ditto.
+	* opts-std-startup.c (diskfs_standard_startup_options): New
+	exported variable in new file.
+	* fsys-options.c (diskfs_S_fsys_set_options): Extract the argument
+	vector and call diskfs_set_options.
+	* diskfs.h: (diskfs_standard_startup_options): Declare new variable.
+	(diskfs_set_options): Declare new function.
+	(diskfs_parse_runtime_options): Ditto.
+	Include <options.h> (currently in ../lib).
+	* Makefile (OTHERSRCS): Add opts-set.c, opts-std-startup.c, and
+	opts-runtime-def.c.
+	(OBJS): Add argz.o & options.o.
+	(REMHDRS): Add argz.h & options.h.
+
+Tue May 16 17:36:46 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* init-first.c (diskfs_spawn_first_thread): Don't start syncing here.
+	* init-startup.c (diskfs_startup_diskfs): Do it here instead.
+
+Mon May 15 15:18:25 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_set_options): Declare.
+	* fsys-options.c (diskfs_S_fsys_set_options): Extract argc & argv,
+	and call diskfs_set_options.
+	* def-set-options.c: New file (contains a default diskfs_set_options).
+
+	* Makefile (OBJS): Add argz.o (from ../lib).  It shouldn't hurt to
+	have this in libdiskfs, since we need it...
+	(CPPFLAGS): Add -I../lib, to get argz.h, + $(CPPFLAGS-$(notdir $<))
+	Set the vpath for %.c to ../lib, so we get argz.c.
+	(OTHERSRCS): Add def-set-options.c.
+
+Sat May 13 03:08:35 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_execserver_task): New variable.
+	(diskfs_parse_bootargs): Take a third integer arg before the
+	device name, our name for the task port of the exec server, which
+	is loaded and ready to run but suspended.
+	* boot-start.c (start_execserver): Don't create and load a task;
+ 	the exec server file is no longer linked into the filesystem.
+  	Just set the bootstrap port of diskfs_execserver_task and resume
+ 	it.
+
+Fri May 12 16:22:33 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* fsys-readonly.c (diskfs_S_fsys_set_options,
+	diskfs_S_fsys_mod_readonly): Change from mod_readonly to
+	set_options.  This file is now actually called fsys-options.c.
+	* Makefile (FSYSSRCS): Rename fsys-readonly.c to fsys-options.c.
+
+	* sync-interval.c (diskfs_set_sync_interval): New function (in a
+	new file) that establishes a thread to periodically sync the
+	filesystem.
+	* Makefile (OTHERSRCS): Add sync-interval.c and sync-default.c.
+	* diskfs.h: Add declarations of diskfs_set_sync_interval and
+	diskfs_default_sync_interval.
+
+	* init-first.c (diskfs_spawn_first_thread): Start background syncing.
+	* sync-default.c (diskfs_default_sync_interval): A new variable
+	that defines a default initial sync interval.
+
+Fri May 12 15:45:43 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* io-read.c (diskfs_S_io_read): If the offset is past the end of
+	the file, then return EOF.
+
+Thu Apr 27 20:01:16 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): Deal cleanly with errors in
+        diskfs_truncate.
+
+	* diskfs.h (diskfs_nrele, diskfs_nput): We need to hold a real
+	reference around the call to diskfs_try_dropping_softrefs, because
+	that's a user-supplied routine that might itself rely on the
+	reference counting system.
+
+Thu Apr 20 18:54:26 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* node-create.c (diskfs_create_node): Return EROFS if diskfs_readonly.
+
+Tue Apr  4 20:20:40 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* dir-unlink.c (diskfs_S_dir_unlink): Do fsys_goaway for
+	translated nodes being unlinked.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+
+Tue Apr  4 18:33:35 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): However, replacing *MAKE_SEND*
+	with COPY_SEND just doesn't work...
+
+Tue Apr  4 14:31:51 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Using MOVE_SEND in call to
+	exec_exec loses, because it consumes a reference, which will be
+	consumed again by mach_msg_server if we return an error.  So use
+	COPY_SEND instead, and deallocate the rights ourselves only when
+	we are to return success.
+
+Fri Mar 31 12:25:57 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Only destroy
+	existing active translator if ACTIVE_FLAGS will change it.  If the
+	existing active translator is provided then don't do anything.
+
+Fri Mar 17 11:36:40 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* io-stat.c (diskfs_S_io_stat): Typo.
+
+	* diskfs.h: Back out changes to protid and associated permission
+	checking functions.
+	* file-chmod.c (diskfs_S_file_chmod): Likewise.
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
+
+	* dir-link.c (diskfs_S_dir_link): Fix typo.
+
+	* diskfs.h (_diskfs_idcheckdirmod): `diskfs_hasuid' ->
+        diskfs_idhasuid.
+	* priv.h (CHANGE_NODE_FIELD): Remove trailing space on backslashed
+	line.
+
+	* diskfs.h (_diskfs_idcheckdirmod): `cred' -> `id'.
+	(diskfs_idhasgid): Likewise.
+
+	* dir-clear.c (diskfs_clear_directory): Don't do
+        diskfs_synchronous here.
+	* dir-init.c (diskfs_init_dir): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Repair implementation of
+        diskfs_syncronous.
+	* dir-renamed.c (diskfs_rename_dir): If we are synchronous,
+	sync the one node our parent doesn't have access to.
+	* dir-mkdir.c (diskfs_S_dir_mkdir): Implement diskfs_synchronous.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	* io-read.c (diskfs_S_io_read): Likewise.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Likewise.
+	* node-drop.c (diskfs_drop_node): Likewise.
+	* node-rdwr.c (diskfs_node_rdwr): Likewise.
+
+Wed Mar 15 11:54:12 1995  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* conch-fetch.c (ioserver_fetch_shared_data): Implement
+        diskfs_synchronous.
+	* dir-clear.c (diskfs_clear_directory): Likewise.
+	* dir-init.c (diskfs_init_dir): Likewise.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+
+Wed Mar  8 16:36:04 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_synchronous): New variable.
+	* priv.h (CHANGE_NODE_FIELD): If DISKFS_SYNCHRONOUS, then sync
+	node after possibly changing it.
+	* io-seek.c: Prevent diskfs_synchronous from having its usual
+        effect here.
+	* dir-link.c (diskfs_S_dir_link): Implement diskfs_synchronous.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise
+	* dir-unlink.c (diskfs_S_dir_unlink): Likewise.
+	* file-sync.c (diskfs_S_file_sync): Likewise.
+	* file-syncfs.c (diskfs_S_file_syncfs): Likewise.
+	* io-prenotify.c (diskfs_S_io_prenotify): Likewise.
+	* io-stat.c (diskfs_S_io_stat): Likewise.
+	* io-write.c (diskfs_S_io_write): Likewise.
+	* io-sigio.c (diskfs_S_io_sigio): Likewise.
+
+Tue Mar  7 15:21:09 1995  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* diskfs.h (struct userid): New type.
+	(struct protid): Replace UIDS, GIDS, NUIDS, and NGIDS with ID.
+	(diskfs_isuid): Replace with new function diskfs_idhasuid.
+	(diskfs_groupmember): Replace with new function diskfs_idhasgid.
+	(_diskfs_idisowner, _diskfs_idaccess, _diskfs_idcheckdirmod):
+	New functions.
+	(diskfs_isowner): Check each ID in the chain with
+	_diskfs_idisowner.
+	(diskfs_access): Check each ID in the chain with _diskfs_idaccess.
+	(diskfs_checkdirmod): Check each ID in the chain with
+	_diskfs_idcheckdirmod.
+	* file-chmod.c (diskfs_S_file_chmod): Perform the permission
+	check for each ID in the chain.
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
+
+	* boot-parse.c (diskfs_parse_bootargs): Use assert_perror instead
+	of assert where appropriate.
+	* boot-start.c (diskfs_start_bootstrap): Likewise.
+	(diskfs_S_fsys_init): Likewise.
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Likewise.
+	* rdwr-internal.c (_diskfs_rdwr_internal): Likewise.
+
+Thu Jan 19 02:04:34 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (ourfs_notify_U.h ourfs_notifyUser.c): Make this
+	instead of ourmsg_U.h.  All references changed.
+	* dir-chg.c: Undo renaming.  Includ ourfs_notify_U.h instead of
+	ourmsg_U.h.
+
+	* io-select.c: Updated to new io_select protocol.
+
+	* dir-chg.c (diskfs_S_dir_notice_changes): Call
+	nowait_msg_dir_changed instead of nowait_dir_changed.
+
+Sat Dec 10 20:03:07 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (start_execserver): When aligning bss size for
+	vm_allocate, don't include bss start alignment fixup offset.
+
+Fri Dec  9 02:06:35 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* io-read.c (diskfs_S_io_read): Don't check for MAXREAD<0.
+
+	* io-write.c: Use mach_msg_type_number_t in place of unsigned int
+        and int.
+	* io-readable.c: Likewise.
+	* io-read.c: Likewise.
+
+Wed Nov 23 00:26:48 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* ports-demuxer.c (ports_demuxer): Call
+	diskfs_seqnos_notify_server, not seqnos_notify_server.
+
+Fri Nov 11 13:11:35 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* io-read.c (diskfs_S_io_read): If OFF is past the end of the
+	file, don't set MAXREAD to a negative number; that will crash
+	rdwr_internal.
+
+Wed Nov  9 01:46:18 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-exec.c: Include <hurd/paths.h>.
+	(diskfs_S_file_exec): If diskfs_exec isn't already
+	set, try to open it here.  (Later, we should also deal if
+	exec_exec returns that the previous server died.)
+
+Tue Nov  8 00:06:56 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* file-get-trans.c: Include <stdio.h> for asprintf decl.
+
+Wed Nov  2 16:16:57 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* priv.h (CHANGE_NODE_FIELD): Don't call diskfs_node_update here.
+
+Fri Oct 28 18:26:15 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_parse_bootargs): Make stdout line buffered.
+	(diskfs_parse_bootargs): Use getline instead of scanf.
+	* boot-start.c (diskfs_start_bootstrap): Likewise.
+	(diskfs_S_fsys_init): Create a root port with two send right refs
+	and install it as crdir and cwdir.
+
+Tue Oct 25 14:16:50 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_start_bootstrap): Renamed variable ARGV
+        to be EXEC_ARGV and ARGVLEN to be EXEC_ARGVLEN.
+
+Fri Oct  7 01:30:12 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_parse_bootargs): Open console for reading too.
+
+	* boot-start.c (saved_argv): New static variable.
+	(diskfs_start_bootstrap): Take arg ARGV; store it in saved_argv.
+	(diskfs_S_fsys_init): Construct a portarray and call _hurd_init.
+	Or, if _hurd_ports is already allocated, call _hurd_proc_init.
+	* diskfs.h (diskfs_start_bootstrap): Update prototype.
+
+Thu Oct  6 17:47:42 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* boot-start.c (diskfs_S_fsys_init): Allocate a reference on
+	authhandle before allowing the library to consume one.
+
+Wed Oct  5 13:00:46 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* node-drop.c (diskfs_drop_node): Clear passive translator
+	if we are releasing the inode.
+
+Thu Sep 29 18:12:31 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_parse_bootargs): If we have a bootstrap
+	port, talk to the CMU default pager on it, then clear it.
+
+Fri Sep 23 00:15:52 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_lost_hardrefs): Doc fix.
+	(diskfs_try_dropping_softrefs): New declaration.
+	(diskfs_nput): Always call diskfs_lost_hardrefs if the last
+	hardref goes away; call diskfs_try_dropping_softrefs if the
+	link count has vanished too.
+	(diskfs_nrele): Likewise.
+	(diskfs_nref): Lock node during call to diskfs_new_hardrefs.
+
+Thu Sep 22 21:20:40 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* diskfs.h (struct node): New member `istranslated'.
+	(diskfs_node_translated): Deleted function.
+	* dir-lookup.c (diskfs_S_dir_lookup): Use istranslated field
+	instead of diskfs_node_translated.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Likewise.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+Fri Sep 16 11:53:04 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Use new
+	lock on translator fields; don't hold it and the NP lock
+	simultaneously.
+	* trans-destroy.c (diskfs_destroy_translator): Doc fix.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Turn off *all* flags
+	in call to getroot if we aren't the last component.
+
+Thu Sep 15 13:01:21 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* init-init.c (diskfs_init_diskfs): Restore commented-out
+	initialization of diskfs_auth_server_port.
+
+Mon Sep 12 14:38:54 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Clear translator
+	port if we get MIG_SERVER_DIED, as with MACH_SEND_INVALID_DEST.
+
+Sun Sep 11 23:30:13 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Copy PATHBUF into RETRYNAME
+	properly when symlink target begins with a slash.
+
+Sat Sep 10 08:36:08 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (OTHERSRCS): Add init-startup.c.
+	* init-init.c (_diskfs_dotdot_file): Variable removed.
+	(diskfs_init_diskfs): Take no args; return void.
+	Don't do fsys_startup here.
+	* init-startup.c (diskfs_startup_diskfs): New file, new function.
+	Do fsys_startup here instead.
+	* diskfs.h (diskfs_init_diskfs): Update prototype.
+	(diskfs_startup_diskfs): Declare it.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Use error_t for ERROR.
+	Retry when fsys_getroot returns MIG_SERVER_DIED, as with
+	MACH_SEND_INVALID_DEST.
+
+Fri Sep  9 13:04:36 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup) [EAGAIN]: Only copy
+	into RETRYNAME if this isn't the last component.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Set *RETRY
+	and *RETRYNAME properly on normal return.
+
+	* init-init.c (diskfs_init_diskfs): Don't attempt to continue
+	if fsys_startup fails.  Deallocate BOOTSTRAP after using it.
+
+Wed Sep  7 09:52:52 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* trans-start.c (diskfs_start_translator): Don't give write
+	access to underlying node if it's not IFREG.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): When returning a port
+	passed back from fsys_getroot, use MACH_MSG_TYPE_MOVE_SEND,
+	not the local default of MAKE_SEND.
+
+	* trans-start.c (diskfs_start_translator): Removed assert.
+
+Tue Sep  6 15:30:59 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Translator startup code
+	rewritted to be more robust and use new locking protocol
+	on translink structures.
+	* trans-start.c (diskfs_start_translator): Don't pass LOCK arg
+	to diskfs_start_translator.  Unlock NP around call to
+	diskfs_start_translator.  Don't expect DIR to be deallocated.
+
+Thu Sep  1 12:28:03 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* trans-start.c (diskfs_start_translator): Expect right
+	on DIR and NPPORT to be consumed by fshelp_start_translator.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Allocate additional
+	send-right for DOTDOT to be consumed by diskfs_start_translator.
+	Be careful to deallocate DOTDOT when appropriate.
+	* dir-lookup.c (diskfs_S_dir_lookup): Create DIRFILE from
+	DNP, not NP.   Create local reference for dirfile to use
+	in call to fsys_getroot.
+
+	* boot-start.c (diskfs_start_bootstrap): Give the
+	library values for current working and root directories.
+
+	* trans-start.c (diskfs_start_translator): Fix and enable.
+	* diskfs.h (diskfs_start_translator): Add new third arg to
+	prototype.
+	* dir-lookup.c (diskfs_S_dir_lookup): Provide third arg to
+	diskfs_start_translator.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+Wed Aug 31 12:04:51 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec) [reauth]: Destroy REF after
+	using it.
+
+	* file-get-trans.c (diskfs_S_file_get_translator)
+	[S_ISCHR || S_ISBLK]: Correct cast of second arg to vm_allocate.
+
+	* Makefile (FSYSSRCS): Added fsys-readonly.c and fsys-syncfs.c.
+	* fsys-readonly.c, fsys-syncfs.c: New files.
+
+Wed Aug 31 01:50:07 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_parse_bootargs): Fix scanf format for
+	bootstrap filesystem device name.
+
+	* file-exec.c (diskfs_S_file_exec): For S_ISUID|S_ISGID, create
+	new auth handle and reauthenticate passed ports properly.
+
+Tue Aug 30 13:44:29 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Don't bother setting
+	EXEC_NEWTASK for non-readable execs; it doesn't really work
+	anyhow.
+
+	* init-init.c: Call ports_get_right with the result of
+	ports_allocate_port in call to fsys_startup.
+
+	* trans-sync.c (diskfs_sync_translators): Use fsys_syncfs
+	instead of old ugly method.
+
+	* init-init.c: Include <hurd/fsys.h>.
+
+	* boot-start.c (diskfs_start_bootstrap): Check to make sure return
+	from fsys_getroot and dir_lookup is FS_RETRY_NORMAL with empty
+	retry_name instead of old FS_RETRY_NONE.
+	* dir-lookup.c (diskfs_S_dir_lookup): Initialize return values with
+	FS_RETRY_NORMAL and empty retryname instead of old FS_RETRY_NONE.
+
+	* Makefile (FSSRCS): Remove dir-pathtrans.c; add dir-lookup.c.
+        * dir-lookup.c: Renamed from dir-pathtrans.c.
+	* dir-pathtrans.c (diskfs_S_dir_lookup): Renamed from
+	diskfs_S_dir_pathtrans.
+	* boot-start.c (diskfs_start_bootstrap): Call dir_lookup instead
+	of dir_pathtrans.
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Call file_name_lookup
+	instead of path_lookup.
+
+Mon Aug 29 12:51:42 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Use new
+	protocol for auth_server_authenticate.
+
+Fri Aug 26 12:49:09 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Rename args;
+	split flags arg into two.  Interpret flags according to new
+	scheme.
+
+Thu Aug 18 12:58:44 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* boot-parse.c (diskfs_parse_bootargs): Print informative
+	bootstrap message.
+	* boot-start.c (diskfs_start_bootstrap): Likewise.
+	(start_execserver): Likewise.
+
+	* boot-start.c (diskfs_start_bootstrap): Only do `pausing'
+	hack if RB_KDB was in bootstrap args.
+	(start_execserver): Likewise.
+
+	* io-select.c (diskfs_S_io_select): Add new `porttype' arg.
+
+Thu Aug 11 13:05:40 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Set retry stuff
+	correctly if there are more components after translator
+	fsys_getroot.
+
+Sat Jul 23 02:25:54 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
+
+	* Makefile (notify-MIGSFLAGS): New variable: -DSEQNOS.
+
+	* ports-demuxer.c (ports_demuxer): Prepend diskfs_ to Hurd
+	interface server functions.
+
+Fri Jul 22 10:54:23 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
+
+	* Makefile: Changed to use new scheme.
+	* boot-start.c: Include "fsys_reply_U.h" instead of "fsys_reply.h".
+	* dir-chg.c: Include "ourmsg_U.h" instead of "msg.h".
+	* fsmutations.h SERVERPREFIX): Delete macro.
+
+	* diskfs.h (struct thread_stuff, diskfs_catch_exception,
+	diskfs_end_catch_exception): Moved here from diskfs_machdep.
+	Delete inclusion of diskfs_machdep.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Skip leading
+	slashes instead of returning an error.
+
+Tue Jul 19 22:12:29 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Fix fsys_getroot call:
+	MACH_MSG_TYPE_MOVE_SEND instead of MACH_PORT_RIGHT_MOVE_SEND.
+
+Tue Jul 19 18:37:52 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* boot-start.c (diskfs_start_bootstrap): Create root port
+	before calling fsys_getroot on exec server.  Pass root port
+	as exec server's dotdot node.
+	(diskfs_execboot_fsys_startup): Deleted dotdot args.
+	* diskfs.h (diskfs_execboot_fsys_startup): Deleted dotdot args.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans) [translator startup]:
+	Set dirfile always, not just when invoking the passive translator.
+	Pass dirfile to fsys_getroot.  Clean up deallocate of dirfile.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Comment
+	out code; this function should vanish.
+	* priv.h (_diskfs_dotdot_file): Deleted variable.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Use new arg `dotdot'
+	in place of _diskfs_dotdot_file.  Pass dotdot in call to
+	fsys_getroot.
+	* trans-sync.c (diskfs_sync_translators): Pass grunge as dotdot
+	arg in call to fsys_getroot.
+	* fsys-startup.c (diskfs_S_fsys_startup): Deleted dotdot args;
+	don't pass them in calls to helper functions.
+	* init-init.c (diskfs_init_diskfs): Don't expect dotdot arg
+	from fsys_getroot; don't set _diskfs_dotdot_file.
+
+Mon Jul 18 15:24:30 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* file-inv-trans.c: New file.
+	* Makefile (FSSRCS): Added file-inv-trans.c.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Dereference
+	returned_port in check for null.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Likewise.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): After
+	diskfs_start_translator, set var `control'.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): After getting
+	MACH_SEND_INVALID_DEST from the translator, set error to zero
+	so that the user's open completes normally.  Do other fixes
+	from Jul 7 that were made in dir-pathtrans.c for translator
+	startup.
+
+	* ports-idle.c (ports_notice_idle): New file.
+	* Makefile (OTHERSRCS): Added ports-idle.c.
+
+	* node-times.c (diskfs_set_node_times): Set old stat structure
+	times until the header file gets changed.
+
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Provide type argument
+	in call to socket_fabricate_address.
+
+Fri Jul 15 12:00:38 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Use
+	DIRCRED->po->dotdotport instead of diskfs_dotdot_file.
+
+	* diskfs.h (diskfs_read_symlink_hook): New variable.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Don't permit symlinks
+	to be opened for reading or writing (just like other special file
+	types).  Try using diskfs_read_symlink_hook before reading
+	from file data.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Try using
+	diskfs_read_symlink_hook before reading from file data.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+
+Thu Jul 14 14:39:08 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* diskfs.h (diskfs_create_symlink_hook): New variable.
+	(diskfs_truncate): Doc fix.
+	* file-set-trans.c (diskfs_S_file_set_translator): Try
+	diskfs_create_symlink_hook first, before writing ourselves.
+	Return errors to user properly.
+
+	* node-times.c (diskfs_set_node_times): Use new stat structures
+	with struct timespec instead of old definitions.
+
+Wed Jul 13 14:26:37 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* shutdown.c (diskfs_shutdown): Check UNLINK bit first to avoid
+	dumping translators if we end up returning an error.
+
+	* ports-noports.c: New file.
+	* ports-soft.c: New file.
+	* diskfs.h (diskfs_shutdown_soft_ports): New declaration.
+	* Makefile (OTHERSRCS): Added ports-noports.c and ports-soft.c.
+
+	* diskfs.h (diskfs_init_diskfs): New arg `bootstrap'; add return
+	value.  Call fsys_getroot if bootstrap is set.
+
+	* diskfs.h (diskfs_dotdot_file): Deleted variable.
+	(struct peropen): New member `dotdotnode'.
+	(diskfs_make_peropen): New arg DOTDOTPORT.
+	* peropen-make.c (diskfs_make_peropen): Set PO->dotdotport;
+	allocate reference if necessary.
+	* priv.h (_diskfs_dotdot_file): New variable.
+	* init-init.c (_diskfs_dotdot_file): New definition.
+	* boot-start.c (diskfs_start_bootstrap): dotdot for created
+	peropen to root should be null (we are *the* root directory in this
+	case).
+	(diskfs_S_exec_startup): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Inherit dotdot for
+	new peropen from CRED->po.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Inherit dotdot for
+	new peropens from DIRCRED->po.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Set dotdot
+	from _diskfs_dotdot_file.
+
+	* diskfs.h (diskfs_control_port): Deleted variable.
+	* priv.h (_diskfs_control_lock, _diskfs_ncontrol_ports): New vars.
+	(_diskfs_control_clean): New declaration.
+	* ports-clean.c (ports_cleanroutines[PT_CTL]): Use
+	_diskfs_control_clean.
+	* init-init.c (diskfs_init_diskfs): Don't create control port here.
+	(_diskfs_control_lock, _diskfs_ncontrol_ports): New declarations.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Always create
+	a new control port structure.
+
+	* io-write.c (diskfs_S_io_write): Honor O_FSYNC bit.
+	* conch-set.c (ioserver_put_shared_data): Set do_sigio if
+	user set O_FSYNC.
+	* io-stubs.c (diskfs_S_io_sigio): Removed function.
+	* io-sigio.c: New file.
+	* Makefile (IOSRCS): Added io-sigio.c
+
+	* io-write.c (diskfs_S_io_write): Eliminate pointless test for
+	!err before _diskfs_rdwr_internal; only increment filepointer if
+	there was no error.
+
+	* priv.h (_diskfs_rdwr_internal): New arg NOTIME.
+	* rdwr-internal.c (_diskfs_rdwr_internal): New arg NOTIME.
+	* io-read.c (diskfs_S_io_read): Don't set atime if O_NOATIME is on.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Don't allow non-owner
+	to set O_NOATIME.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+	* priv.h (HONORED_STATE_MODES): Add O_NOATIME.
+	(OPENONLY_STATE_MODES): New macro.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Use
+	OPENONLY_STATE_MODES to turn off appropriate bits.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): At start, turn
+	off all the bits not in O_HURD; we ignore all those and don't
+	keep track of them in any way.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+	* file-get-trans.c (diskfs_S_file_get_translator): Return
+	shortcircuited translators for IFCHR, IFBLK, IFIFO, and IFSOCK.
+
+	* file-set-trans.c (diskfs_S_file_set_translator): In computing
+	rdev, 377 should be *octal*, not hex.
+
+	* dir-rename.c (diskfs_S_dir_rename): Deallocate received
+	send-right for TOCRED any time we return success.
+
+	* dir-link.c (diskfs_S_dir_link): Don't assume that NP is a
+	non-directory before checking it.
+
+	* boot-start.c (diskfs_start_bootstrap): New variable
+	`initnamebuf' which is allocated and then not changed; free
+	it rather than freeing `initname'.
+
+Mon Jul 11 18:16:25 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Symlinks to pathnames
+	beginning with `/' sholud return FS_RERTY_MAGICAL (but the
+	retry name is stils the same).
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+Fri Jul  8 13:34:25 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): After getting
+	MACH_SEND_INVALID_DEST from the translator, set error to zero
+	so that the user's open completes normally.
+	(diskfs_S_dir_pathtrans): Call mach_port_mod_refs correctly.
+	(diskfs_S_dir_pathtrans): In call to fsys_getroot, turn off
+	O_NOLINK for !lastcomp, not for lastcomp.
+
+Thu Jul  7 14:46:46 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Deal correctly
+	with the sendright on the translator control port avoiding
+	races while the node is unlocked.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): At translator
+	lookup time, if there is an active translator, release the
+	lock on DNP just like we do in the start-passive case.  Also
+	after fsys_getroot, release reference and clear DNP so that
+	code at out: doesn't get it wrong.
+	(diskfs_S_dir_pathtrans): Call fshelp_translator_drop instead
+	of setting it to null ourselves.
+	* trans-destroy.c (diskfs_destroy_translator): Likewise.
+
+Wed Jul  6 14:43:55 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* ports-demuxer.c (ports_demuxer): Only call ifsock_server
+	if diskfs_shortcut_ifsock is set.
+
+Tue Jul  5 14:15:32 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* Makefile (TAGSHDRS): New variable.
+
+Thu Jun 30 11:35:43 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* fsmutations.h (IFSOCK_IMPORTS): New macro.
+
+	* ports-demuxer.c (ports_demuxer): Call ifsock_server.
+
+Wed Jun 29 17:07:17 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* diskfs.h (struct node): New member `sockaddr'.
+	* node-make.c (diskfs_make_node): Initialize NP->sockaddr.
+	* node-drop.c (diskfs_drop_node): Deallocate NP->sockaddr
+	if it's been set.
+	* ifsock.c: New file.
+	* Makefile (IFSOCKSRCS): New variable.
+	(SRCS): Added $(IFSOCKSRCS).
+	(MIGSTUBS): Added ifsockServer.o.
+	(ifsock_S.h ifsockServer.c): New rule.
+	(ifsock_S.h): Depended on by IFSOCKSRCS generated objects.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Detect the case
+	where the server has died by looking for MACH_SEND_INVALID_DEST
+	as a return from fsys_getroot.  Rearrange lock/unlock and
+	reference counting of NP and DNP because we may need them back
+	if we have to repeat the call.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+Fri Jun 24 15:52:52 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-link.c (diskfs_S_dir_link): The port_info struct member
+	is `port_right', not `port'.
+
+Tue Jun 21 13:25:15 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-link.c (diskfs_S_dir_link): Deallocate received send
+	right for DIRCRED anytime we return success.
+
+	* dir-chg.c (diskfs_S_dir_notice_changes): New var `np'.  Return
+	ENOTDIR if call is made on a non-directory.
+
+Mon Jun 20 16:40:37 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* node-drop.c (diskfs_drop_node): Free structures holding
+	dirmod requests.
+	* node-make.c (diskfs_make_node): Initialize NP->dirmod_reqs
+	to zero.
+
+Fri Jun 17 13:16:18 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Initialize ERROR.
+
+Fri Jun 17 11:21:25 1994  Roland McGrath  (roland@geech.gnu.ai.mit.edu)
+
+	* trans-sync.c: Include <fcntl.h>.
+
+	* Makefile (boot-start.o): Depend on fsys_reply.h.
+
+Thu Jun 16 11:31:46 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* Makefile (msg.h, msgUser.c): New rules.
+	(MIGSTUBS): Added msgUser.o.
+	(dir-chg.o): Depends on msg.h.
+	* dir-chg.c: Include "msg.h".
+
+	* diskfs.h (diskfs_start_translator): Second arg DIR is now
+	file_t.  Changed locking rules.
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Call
+	diskfs_start_translator the new way; clean up lock releases.
+
+	* fshelp-dropnode.c: Deleted file.
+	* fshelp-getnode.c: Deleted file.
+	* Makefile (OTHERSRCS): Removed fshelp-dropnode.c and fshelp-getnode.c.
+
+	* boot-start.c (diskfs_start_bootstrap): Use new fsys_getroot
+	interface.
+
+	* fsys-getroot.c: Include <fcntl.h> for O_ bits.  Include
+	<hurd/fsys.h> for fsys_startup prototype.
+
+	* boot-start.c (diskfs_start_bootstrap, diskfs_S_exec_startup):
+	Delete obsolete assignments to INIT_PORT_LOGINCOLL.
+
+	* diskfs.h (struct node) [dirmod_reqs]: New member.
+	(struct dirmod): New type.
+	(diskfs_dirrewrite, diskfs_dirremove, diskfs_direnter): Doc fix.
+	(diskfs_notice_dirchange): New prototype.
+	* dir-chg.c (diskfs_S_dir_notice_changes): Implement call.
+	(diskfs_notice_dirchange): New function.
+
+	* diskfs.h (diskfs_get_directs): Doc fix.
+
+	* file-access.c (diskfs_S_file_check_access): Renamed from
+	diskfs_S_file_access.  Return allowable operations in *TYPE
+	rather than checking those explicitly asked for.  Use O_ bits
+	instead of _OK bits.  Include <fcntl.h>.
+
+Wed Jun 15 21:26:14 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Require lookup of
+	empty pathname to fail if not made on a directory.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Rewritten to implement
+	the new fsys_getroot interface.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Don't implement
+	O_TRUNC here anymore.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Use the new
+	fsys_getroot interface for translator startup.
+
+	* io-modes-set.c (diskfs_S_io_set_all_openmodes): Only let
+	the user set the user-setable bits.
+
+	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl): New
+	arg CTLTYPE; set appropriately.
+
+Wed Jun 15 12:18:16 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* file-chg.c (diskfs_S_file_notice_changes): Declare return type.
+
+	* file-access.c: New file.
+	* Makefile (FSSRCS): Added file-access.c.
+
+Tue Jun 14 14:06:36 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* diskfs.h (diskfs_get_dirents): New declaration.
+	* dir-readdir.c (diskfs_S_dir_readdir): Implement new
+	interface using diskfs_get_directs.
+
+	* dir-chg.c, file-chg.c: New files.
+	* Makefile (FSSRCS): Added dir-chg.c and file-chg.c.
+
+Thu Jun  9 13:39:25 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Release lock on NP
+	during call to fsys_getroot; stash control port and uid info in
+	new local variables.  Reacquire lock before return (because
+	common code at label OUT expects NP to be locked).
+
+Mon Jun  6 18:54:50 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): In translator
+	startup check, test O_NOTRANS in flags correctly.
+
+	* dir-renamed.c (diskfs_rename_dir): Don't call diskfs_nrele on
+	TMPNP after SPEC_DOTDOT calls; the spec says that SPEC_DOTDOT
+	with RENAME does not allocate a new reference.
+
+Sun Jun  5 05:51:11 1994  Roland McGrath  (roland@geech.gnu.ai.mit.edu)
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Fix
+	initialization of {GEN,AUX}_{UIDS,GIDS}.
+
+Fri Jun  3 18:19:22 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* file-set-trans.c (diskfs_S_file_set_translator): Use
+	fshelp_set_control instead of doing it ourselves.
+
+Thu Jun  2 12:00:51 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* diskfs.h (struct node): New member `light_references'.
+	(diskfs_nref, diskfs_nput, diskfs_nrele, diskfs_make_node): Doc fix.
+	(diskfs_nref_light, diskfs_nput_light, diskfs_nrele_light):
+	New functions.
+	(diskfs_nrele, diskfs_nput): Only call diskfs_drop_node if both
+	NP->references *and* NP->light_references are zero.
+	(diskfs_new_hardrefs, diskfs_lost_hardrefs): New declarations.
+	(diskfs_nref): Call diskfs_new_hardrefs when appropriate.
+	(diskfs_nput, diskfs_nrele): Call diskfs_lost_hardrefs when
+	appropriate.
+
+	* node-make.c (diskfs_make_node): Initialize NP->light_references.
+	Doc fix.
+
+Wed Jun  1 18:24:11 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Skip over multiple
+	slashes in pathnames by incrementing NEXTNAME after setting it.
+	Also, if after we do this we discover that there is no last
+	component, then set LASTCOMP and clear NEXTNAME and CREATE
+	entirely, and set (new variable) MUSTBEDIR.  Then check for
+	MUSTBEDIR after the node has been fetched.  Make var TYPE
+	function-global and set it always, not just when NEWNODE is unset.
+
+Fri May 27 08:47:46 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* boot-start.c (diskfs_S_exec_exec, diskfs_S_exec_setexecdata):
+	Add missing args.
+	(diskfs_S_exec_startup): Don't point *ARGVP to EXEC_DATA local
+	storage.  Instead, copy EXEC_DATA to *ARGVP if *ARGVLEN allows;
+	otherwise vm_allocate new space and copy into there.
+
+Thu May 26 15:33:57 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* diskfs.h (diskfs_nrele): Acquire lock if we are releasing
+	the last reference.
+
+	* node-drop.c (diskfs_drop_node): If we are truncating, then
+	go back to normal user state and do the truncate; the next
+	time through we will do the dealloc for real.
+	Semantics change: now this routine is responsible for
+	unlocking diskfs_node_refcnt_lock.  All callers changed.
+
+Wed May 25 20:34:17 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* io-write.c (diskfs_S_io_write): Don't check for *AMT < 0; AMT is
+	an out-only parameter.
+
+Wed May 25 12:23:25 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* ports-consts.c (ports_use_multiple_threads): Deleted definition.
+	* init-first.c (diskfs_spawn_first_thread): Fork
+	ports_manage_port_operations_multithread instead of
+	ports_maange_port_operations.
+	* init-loop.c (diskfs_main_request_loop): Likewise.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Reference node in
+	lookup of empty path case so that common code at the out: label
+	doesn't free an extra one.
+
+Mon May 23 23:13:51 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* boot-start.c (diskfs_S_fsys_init): Start exec_init after
+	proc_child.
+
+Thu May 19 12:48:53 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Unlock
+	node after calling diskfs_finish_protid.
+
+Thu May 12 14:23:29 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* Makefile (clean): Add fsys_reply.h and *User.c.
+
+Thu May 12 03:45:38 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* Makefile (fsys_reply.h fsys_replyUser.c): New rule.
+	(MIGSTUBS): Add fsys_replyUser.o.
+	* boot-start.c: Include fsys_reply.h.
+	(diskfs_S_fsys_init): Take new reply port args.
+	Send reply msg as soon as verified, before doing anything.
+
+Mon May  9 16:58:24 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* diskfs.h (diskfs_init_completed): New function declaration.
+	* boot-start.c (diskfs_S_fsys_init): Don't call _hurd_proc_init.
+	Do call diskfs_init_completed.
+
+Thu May  5 13:04:43 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Behave properly
+	if nextname is null.  Copy nextname to the end of the symlink
+	target rather than vice versa.  Don't punt to the caller before
+	doing the append.
+	(diskfs_S_dir_pathtrans): O_NOTRANS should prevent symlink
+	interpretation.
+	(diskfs_S_dir_pathtrans): If a symlink traversal was the last
+	component, then clear CREATE (symlinks to nothing don't honor
+	O_CREAT) and clear LASTCOMP (because it isn't true any longer).
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Fix mangled check
+	for O_NOLINK.
+	(diskfs_S_dir_pathtrans): Repair furtherly mangled check for
+	O_NOLINK.
+
+	* conch-set.c (ioserver_put_shared_data): Set
+	optimal_transfer_size from the same thing we return in stat.
+
+	* io-async.c (diskfs_S_io_async): Just return EOPNOTSUPP without
+	doing anything more at all.
+
+Thu May  5 06:32:10 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* io-prenotify.c (diskfs_S_io_prenotify): Make START and END args
+	type vm_offset_t.
+
+	* io-map-cntl.c (diskfs_S_io_map_cntl): Take 3rd result arg
+	for msg type of *CTLOBJ; set it to copy-send.
+
+	* io-async.c (diskfs_S_io_async): Take 3rd result arg for msg type
+	of *IDPORT; set it to copy-send.  Return 0 instead of EOPNOTSUPP;
+	should not be deallocating NOTIFY if returning an error.
+
+	* io-async-icky.c (diskfs_S_io_get_icky_async_id): Take 3rd result arg
+	for msg type of *IDPORT; set it to copy-send.
+
+	* conch-set.c (ioserver_put_shared_data): Temporarily #if 0
+	setting of optimal_transfer_size from bogus undeclared variable.
+
+	* protid-make.c: Include <string.h> to get bcopy declared.
+
+	* {file,dir,io,fsys}-*.c: Changed return type of all RPC server
+	functions to kern_return_t.  error_t is not compatible with the
+	declarations in the mig-generated header files.
+
+	* Makefile: Change uses of $(headers) to $(includedir).
+
+	* file-exec.c (diskfs_S_file_exec): Fix msg type arg in exec_exec call.
+
+	* dir-pathtrans.c (diskfs_S_dir_pathtrans): Add missing close paren.
+
+	* boot-start.c (diskfs_start_bootstrap): Pass msg type arg for
+	FILE arg to exec_exec.
+	(diskfs_S_fsys_getpriv): Change return type to kern_return_t.
+	error_t is not compatible with the declarations in the
+	mig-generated header files.
+	(diskfs_S_fsys_init): Likewise.
+	(exec_stack_base, exec_stack_size): New variables.
+	(diskfs_S_exec_startup): Use those for stack values in reply.
+	(start_execserver): Pass them to mach_setup_thread to be initialized.
+
+Mon May  2 16:32:22 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
+
+	* dir-pathtrans.c: Test for O_NOLINK flag was mangled.
+
+Fri Apr 29 16:44:08 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
+
+	* io-stubs.c (diskfs_S_io_readnotify): New function.
+
+	* conch-set.c (ioserver_put_shared_data): Set new fields
+	optimal_transfer_size (to sblock->fs_bsize) and
+	use_readnotify_size (to zero).
+
+	* file-exec.c (diskfs_S_file_exec): Change call to exec_exec in
+	accord with interface change in exec.defs.
+
+Mon Feb 14 11:26:26 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
+
+	* boot-start.c: #include <hurd.h>.
+	(start_execserver): Call _hurd_setup_thread in place of start_thread.
