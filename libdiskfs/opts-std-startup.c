@@ -1,6 +1,6 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -37,7 +37,7 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 #define OPT_EXEC_SERVER_TASK	(-3)
 #define OPT_BOOTFLAGS		(-4)
 
-static struct argp_option
+static const struct argp_option
 startup_options[] =
 {
   {"version", 'V'},
@@ -96,23 +96,23 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
 }
 
 /* Suck in the common arguments.  */
-static struct argp startup_common_argp =
+static const struct argp startup_common_argp =
   { diskfs_common_options, parse_startup_opt };
 
 /* This may be used with argp_parse to parse standard diskfs startup
    options, possible chained onto the end of a user argp structure.  */
-static struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
-static struct argp startup_argp =
+static const struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
+static const struct argp startup_argp =
   { startup_options, parse_startup_opt, 0, 0, startup_argp_parents };
 
-struct argp *diskfs_startup_argp = &startup_argp;
+const struct argp *diskfs_startup_argp = &startup_argp;
 
 /* ---------------------------------------------------------------- */
 
 int diskfs_use_mach_device = 0;
 char *diskfs_device_arg = 0;
 
-static struct argp_option
+static const struct argp_option
 dev_startup_options[] =
 {
   {"machdev", 'm', 0, 0, "DEVICE is a mach device, not a file"},
@@ -146,9 +146,9 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
   return 0;
 }
 
-static struct argp *dev_startup_argp_parents[] = { &startup_argp, 0 };
-static struct argp dev_startup_argp =
+static const struct argp *dev_startup_argp_parents[] = { &startup_argp, 0 };
+static const struct argp dev_startup_argp =
   { dev_startup_options, parse_dev_startup_opt, "DEVICE", 0,
       dev_startup_argp_parents };
 
-struct argp *diskfs_device_startup_argp = &dev_startup_argp;
+const struct argp *diskfs_device_startup_argp = &dev_startup_argp;
