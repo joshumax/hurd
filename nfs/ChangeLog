@@ -1,3 +1,8 @@
+Fri Feb 21 16:47:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (netfs_append_args): Present the remote filesystem as a
+	single argument, in HOST:FS format.
+
 Wed Feb 12 13:53:42 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_check_open_permissions): If this is a new node,
