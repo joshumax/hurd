@@ -616,7 +616,7 @@ void
 launch_single_user ()
 {
   char shell[1024];
-  char terminal[] = "/hurd/term\0console\0/tmp/console";
+  char terminal[] = "/hurd/term\0/tmp/console\0device\0console";
   mach_port_t term, shelltask;
   char *termname;
   task_t termtask;
@@ -647,43 +647,47 @@ launch_single_user ()
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     {
       /* Start the terminal server ourselves. */
-
-      termtask = run_for_real (terminal, terminal, 
-			       sizeof (terminal), MACH_PORT_NULL);
-      printf (" term");
-      fflush (stdout);
-
-      /* Must match arg to terminal above. */
-      termname = "/tmp/console";
-      
-    tryagain:
-      
-      term = file_name_lookup (termname, O_READ, 0);
-      if (term != MACH_PORT_NULL)
-	io_stat (term, &st);
-      if (term == MACH_PORT_NULL || st.st_fstype != FSTYPE_TERM)
+      termname = terminal + strlen (terminal) + 1; /* first arg is name */
+      unlink (termname);
+      term = file_name_lookup (termname, O_CREAT|O_NOTRANS|O_EXCL, 0666);
+      if (term == MACH_PORT_NULL)
 	{
-	  /* It hasn't been set yet; sleep a bit and try again.
-
-	     However, if TERMTASK has died, then it has a bug.  We'll
-	     just let our fd's pass through unchanged.  This probably
-	     won't work, but it will enable some sort of debugging,
-	     maybe. */
-	  errno = task_info (termtask, TASK_BASIC_INFO, foobiebletch,
-			     &foobiebletchcount);
-	  if (errno != MACH_SEND_INVALID_DEST 
-	      && errno != KERN_INVALID_ARGUMENT)
-	    {
-	      sleep (1);
-	      goto tryagain;
-	    }
-	  printf ("\nWarning: no normal console terminal.\n");
-	  fflush (stdout);
-	  term = MACH_PORT_NULL;
+	  perror (termname);
+	  goto fail;
 	}
-      mach_port_deallocate (mach_task_self (), termtask);
+      errno = file_set_translator (term, FS_TRANS_SET, 0,
+				   terminal, sizeof terminal, 
+				   MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
+      if (errno)
+	{
+	  perror (termname);
+	  goto fail;
+	}
+      mach_port_deallocate (mach_task_self (), term);
+
+      /* Now repeat the open. */
+      term = file_name_lookup (termname, O_READ, 0);
+      if (term == MACH_PORT_NULL)
+	{
+	  perror (termname);
+	  goto fail;
+	}
+      errno = io_stat (term, &st);
+      if (errno)
+	{
+	  perror (termname);
+	  term = MACH_PORT_NULL;
+	  goto fail;
+	}
+      if (st.st_fstype != FSTYPE_TERM)
+	{
+	  fprintf (stderr, "Installed /tmp/console terminal failed\n");
+	  term = MACH_PORT_NULL;
+	  goto fail;
+	}
     }
-  
+ fail:
+    
   /* At this point either TERM is the console or it's null.  If it's
      null, then don't do anything, and our fd's will be copied.
      Otherwise, open fd's 0, 1, and 2. */
