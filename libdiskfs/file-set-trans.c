@@ -60,35 +60,31 @@ diskfs_S_file_set_translator (struct protid *cred,
       return EBUSY;
     }
   
-  mutex_unlock (&np->lock);
-  mutex_lock (&np->translator.lock);
-  
   if ((active_flags & FS_TRANS_SET)
       && (active_flags & FS_TRANS_EXCL)
-      && np->translator.control != MACH_PORT_NULL)
+      && np->transbox.active != MACH_PORT_NULL)
     {
-      mutex_unlock (&np->translator.lock);
+      mutex_unlock (&np->lock);
       return EBUSY;
     }
   
   if (active_flags & FS_TRANS_SET)
     {
-      if (np->translator.control != MACH_PORT_NULL
-	  && np->translator.control != active)
-	diskfs_destroy_translator (np, killtrans_flags);
-      
-      if (active != MACH_PORT_NULL)
+      if (active != np->transbox.active
+	  && np->transbox.active != MACH_PORT_NULL)
 	{
-	  if (active == np->translator.control)
-	    mach_port_deallocate (mach_task_self (), active);
-	  else
-	    fshelp_set_control (&np->translator, active);
+	  mach_port_t control;
+
+	  control = fshelp_get_active (&np->transbox);
+	  mutex_unlock (&np->lock);
+	  error = fsys_goaway (control, killtrans_flags);
+	  if (error)
+	    return error;
+	  mutex_lock (&np->lock);
 	}
+      fshelp_set_active (&np->transbox, active);
     }
-
-  mutex_unlock (&np->translator.lock);
-  mutex_lock (&np->lock);
-
+  
   /* Set passive translator */
   if (passive_flags & FS_TRANS_SET)
     {
