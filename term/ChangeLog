@@ -1,3 +1,11 @@
+Thu Aug 15 16:07:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* users.c (trivfs_S_io_pathconf): Implement function.
+
+	* term.h (QUEUE_HIWAT, QUEUE_LOWAT): New macros.
+	* main.c (main): Use these new macros to create inputq, rawq, and
+	outputq.
+
 Thu Aug 15 15:32:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* users.c (trivfs_S_file_check_access): Renamed from

@@ -180,9 +180,9 @@ main (int argc, char **argv)
   term_owner = term_group = 0;
   term_mode = (bottom == &ptyio_bottom ? 0666 : 0600) | S_IFCHR;
 
-  inputq = create_queue (256, 100, 300);
-  rawq = create_queue (256, 100, 300);
-  outputq = create_queue (256, 100, 300);
+  inputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
+  rawq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
+  outputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   
   if (bottom == &ptyio_bottom)
     ptyio_init ();

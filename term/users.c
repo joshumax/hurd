@@ -742,6 +742,46 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 }
 
 error_t
+trivfs_S_io_pathconf (struct trivfs_protid *cred,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
+		      int name,
+		      int *val)
+{
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  switch (name)
+    {
+    case _PC_LINK_MAX:
+    case _PC_NAME_MAX:
+    case _PC_PATH_MAX:
+    case _PC_PIPE_BUF:
+    case _PC_NO_TRUNC:
+    default:
+      return io_pathconf (cred->realnode, name, val);
+      
+    case _PC_MAX_CANON:
+      *val = rawq->hiwat;
+      return 0;
+      
+    case _PC_MAX_INPUT:
+      *val = inputq->hiwat;
+      return 0;
+      
+    case _PC_CHOWN_RESTRICTED:
+      /* We implement this locally, remember... */
+      *val = 1;
+      return 0;
+      
+    case _PC_VDISABLE:
+      *val = _POSIX_VDISABLE;
+      return 0;
+    }
+}    
+
+
+error_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply,
 		      mach_msg_type_name_t replytype,

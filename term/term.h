@@ -70,6 +70,9 @@ long termflags;
 #define NO_OWNER          0x00000200 /* there is no foreground_id */
 #define ICKY_ASYNC	  0x00000400 /* some user has set O_ASYNC */
 
+#define QUEUE_LOWAT 100
+#define QUEUE_HIWAT 300
+
 /* Global lock */
 struct mutex global_lock;
 
