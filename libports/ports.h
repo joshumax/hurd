@@ -303,7 +303,7 @@ ports_interrupt_self_on_notification (void *object,
 				      mach_port_t port, mach_msg_id_t what);
 
 /* Some handy aliases.  */
-#define ports_interrupt_self_on_dead_port(obj, port) \
+#define ports_interrupt_self_on_port_death(obj, port) \
   ports_interrupt_self_on_notification (obj, port, MACH_NOTIFY_DEAD_NAME)
 
 /* Interrupt any rpcs on OBJECT that have requested such.  */
