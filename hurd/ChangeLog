@@ -1,3 +1,9 @@
+Tue Sep 23 15:52:35 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* password.defs: New file.
+	* paths.h (_SERVERS_PASSWORD): New entry.
+	* subsystems: Add password at 38000.
+
 Tue Sep 16 15:24:37 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* process.defs: Delete proc_sethostid, proc_gethostid,
