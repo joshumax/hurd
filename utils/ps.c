@@ -28,11 +28,10 @@
 #include <argp.h>
 #include <argz.h>
 #include <idvec.h>
-#include <hurd/ps.h>
+#include <ps.h>
 #include <error.h>
+#include "psout.h"
 
-/* ---------------------------------------------------------------- */
-
 /* Long options without corresponding short ones.  -1 is EOF.  */
 #define OPT_LOGIN	-2
 #define OPT_SESS	-3
@@ -49,10 +48,11 @@ static const struct argp_option options[] =
                                       " `default', `user', `vmem', `long',"
 				      " `jobc', `full', `hurd', `hurd-long',"
 				      " or a custom format-string"},
+  {"posix-fmt",  'o',     "FMT",  0,  "Use the posix-style output-format FMT"},
   {0,            'd',     0,      0,  "List all processes except process group"
                                       " leaders"},
   {"all",        'e',     0,      0,  "List all processes"},
-  {0,		 'A',     0,      OA}, /* Posix option */
+  {0,		 'A',     0,      OPTION_ALIAS}, /* Posix option meaning -e */
   {0,            'f',     0,      0,  "Use the `full' output-format"},
   {0,            'g',     0,      0,  "Include session and login leaders"},
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
@@ -97,7 +97,7 @@ static const struct argp_option options[] =
 char *args_doc = "[PID...]";
 
 char *doc = "The USER, LID, PID, PGRP, and SID arguments may also be comma \
-separated lists.  The System V options -u and -g may be accessed with -o and \
+separated lists.  The System V options -u and -g may be accessed with -O and \
 --pgrp.";
 
 int 
@@ -144,41 +144,39 @@ char *fmt_names[] =
   {"default",	"user",	"vmem",	"long",	"jobc",	"full",	"hurd",	"hurd-long",0};
 /* How each of those formats should be sorted; */
 char *fmt_sortkeys[] =
-  {"pid",	"-%cpu","-%mem","pid",	"pid",	"pid",	"pid",	"pid"};
+  {"pid",	"-cpu","-mem",	"pid",	"pid",	"pid",	"pid",	"pid"};
 /* and the actual format strings.  */
 char *fmts[] =
 {
   /* default */
-  "~PID ~TH# ~TT ~SC ~STAT ~TIME ~COMMAND",
+  "%^%?user %pid %th %tt %sc %stat %time %command",
   /* user (-u) */
-  "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ ~RSS ~TT ~SC ~STAT ~COMMAND",
+  "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %command",
   /* vmem (-v) */
-  "~PID ~TH# ~STAT ~SL ~PAGEIN ~FAULTS ~COWFLT ~ZFILLS ~SIZE ~RSS ~%CPU ~%MEM ~COMMAND",
+  "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %size %rss %cpu %mem %command",
   /* long (-l) */
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI ~TH ~MSGI ~MSGO ~SZ ~RSS ~SC ~WAIT ~STAT ~TT ~TIME ~COMMAND",
+  "%^%uid %pid %th %ppid %pri %ni %th %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command",
   /* jobc (-j) */
-  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC ~STAT ~TT ~TIME ~COMMAND",
+  "%^%user %pid %th %ppid %pgrp %sess %lcoll %sc %stat %tt %time %command",
   /* full (-f) (from sysv) */
-  "~-USER ~PID ~PPID ~TTY ~TIME ~COMMAND",
+  "%^%-user %pid %ppid %tty %time %command",
   /* hurd */
-  "~PID ~Th# ~UID ~NTh ~VMem=vsize ~RSS ~User=utime ~System=stime ~Args",
+  "%pid %th %uid %nth %{vsize:Vmem} %rss %{utime:User} %{stime:System} %args",
   /* hurd-long */
-  "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS ~%CPU ~User=utime ~System=stime ~Args"
+  "%pid %th %uid %ppid %pgrp %sess %nth %{vsize:Vmem} %rss %cpu %{utime:User} %{stime:System} %args"
 };
 
 /* Augment the standard specs with our own abbrevs.  */
 static const struct ps_fmt_spec
 spec_abbrevs[] = {
-  {"TT=tty"}, {"SC=susp"}, {"STAT=state"}, {"COMMAND=args"}, {"SL=sleep"},
+  {"TT=tty"}, {"SC=susp"}, {"Stat=state"}, {"Command=args"}, {"SL=sleep"},
   {"TH=nth"}, {"NI=bpri"}, {"SZ=vsize"}, {"RSS=rsize"},
-  {"MSGI=msgin"}, {"MSGO=msgout"},
+  {"MsgI=msgin"}, {"MsgO=msgout"},
   {0}
 };
 static struct ps_fmt_specs ps_specs =
   { spec_abbrevs, &ps_std_fmt_specs };
 
-/* ---------------------------------------------------------------- */
-
 /* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
    empty and DEFAULT_ADD_FN isn't NULL, then call DEFAULT_ADD_FN instead. */
 static void
@@ -234,8 +232,6 @@ _parse_strlist (char *arg,
     }
 }
 
-/* ---------------------------------------------------------------- */
-
 /* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
    empty and DEFAULT_FN isn't NULL, then call ADD_FN on the resutl of calling
    DEFAULT_FN instead, otherwise signal an error.  */
@@ -281,8 +277,6 @@ parse_numlist (char *arg,
 		 type_name);
 }
 
-/* ---------------------------------------------------------------- */
-
 static process_t proc_server;
 
 /* Returns our session id.  */
@@ -317,15 +311,6 @@ lookup_user(char *name)
   return pw->pw_uid;
 }
 
-/* ---------------------------------------------------------------- */
-
-extern void
-psout (struct proc_stat_list *procs,
-       const char *fmt_string, const struct ps_fmt_specs *specs,
-       const char *sort_key_name, int sort_reverse,
-       int output_width, int print_heading,
-       int squash_bogus_fields, int squash_nominal_fields);
-
 void 
 main(int argc, char *argv[])
 {
@@ -348,6 +333,7 @@ main(int argc, char *argv[])
   int show_threads = FALSE, no_msg_port = FALSE;
   int output_width = -1;	/* Desired max output size.  */
   int show_non_hurd_procs = 1;	/* Show non-hurd processes.  */
+  int posix_fmt = 0;		/* Use a posix_fmt-style format string.  */
 
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
@@ -503,9 +489,10 @@ main(int argc, char *argv[])
 	case 'Q': squash_bogus_fields = squash_nominal_fields = FALSE; break;
 	case 'n': squash_nominal_fields = FALSE; break;
 	case 's': show_threads = TRUE; break;
-	case OPT_FMT: fmt_string = arg; break;
 	case OPT_SORT: sort_key_name = arg; break;
 	case 'r': sort_reverse = TRUE; break;
+	case OPT_FMT: fmt_string = arg; posix_fmt = 0; break;
+	case 'o': fmt_string = arg; posix_fmt = 1; break;
 
 	case 'w':
 	  output_width = arg ? atoi (arg) : 0; /* 0 means `unlimited'.  */
@@ -613,7 +600,8 @@ main(int argc, char *argv[])
 
   proc_stat_list_filter (procset, &ps_alive_filter, FALSE);
 
-  psout (procset, fmt_string, &ps_specs, sort_key_name, sort_reverse,
+  psout (procset, fmt_string, posix_fmt, &ps_specs,
+	 sort_key_name, sort_reverse,
 	 output_width, print_heading,
 	 squash_bogus_fields, squash_nominal_fields);
 
