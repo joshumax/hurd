@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1997,99,2002 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "isofs.h"
 
 /* These tell whether the specified extensions are on or not. */
@@ -94,7 +95,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 
       /* Set C to the system use area. */
       c = p->name + p->namelen;
-      if ((int)c & 1)
+      if ((uintptr_t)c & 1)
 	c++;
 
       /* There needs to be an SUSP SP field right here; make sure there is */
@@ -113,7 +114,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
     {
       /* It's in the normal place. */
       bp = dr->name + dr->namelen;
-      if ((int) bp & 1)
+      if ((uintptr_t) bp & 1)
 	bp++;			/* must be even */
       bp += susp_skip;		/* skip to start of susp area */
       terminus = (char *) dr + dr->len;
