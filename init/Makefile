@@ -23,7 +23,7 @@ OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
 	startup_notifyUser.o
 target = init
 
-init: $(OBJS) ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a
+init: $(OBJS) ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a -lutil
 
 mung_msg_S.h: msg_S.h
 	sed 's/msg_server/mung_msg_server/' < $< > $@
