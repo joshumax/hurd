@@ -1,6 +1,6 @@
 /* Manage an ftp connection
 
-   Copyright (C) 1997,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -49,7 +49,11 @@ struct ftp_conn_stat;
    symlink.  NAME and SYMLINK_TARGET should be copied if they are used
    outside of this function.  HOOK is as passed into ...get_stats.  */
 typedef error_t (*ftp_conn_add_stat_fun_t) (const char *name,
+# if _FILE_OFFSET_BITS == 64
 					    const struct stat *stat,
+# else
+					    const struct stat64 *stat,
+# endif
 					    const char *symlink_target,
 					    void *hook);
 
