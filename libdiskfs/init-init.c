@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -35,6 +35,14 @@ spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
 int _diskfs_ncontrol_ports = 0;
 
+struct port_class *diskfs_protid_class;
+struct port_class *diskfs_transboot_class;
+struct port_class *diskfs_control_class;
+struct port_class *diskfs_initboot_class;
+struct port_class *diskfs_execboot_class;
+
+struct port_bucket *diskfs_port_bucket;
+
 /* Call this after arguments have been parsed to initialize the
    library.  */ 
 void
@@ -44,8 +52,6 @@ diskfs_init_diskfs (void)
   memory_object_t obj;
   device_t timedev;
   
-  _libports_initialize ();	/* XXX */
-
   if (diskfs_host_priv == MACH_PORT_NULL
       || diskfs_master_device == MACH_PORT_NULL)
     {
@@ -74,6 +80,13 @@ diskfs_init_diskfs (void)
   mach_port_deallocate (mach_task_self (), obj);
 
   diskfs_auth_server_port = getauth ();
+
+  diskfs_protid_class = ports_create_class (diskfs_protid_rele);
+  diskfs_transboot_class = ports_create_class (fshelp_transboot_clean);
+  diskfs_control_class = ports_create_class (_diskfs_control_clean);
+  diskfs_initboot_class = ports_create_class (0);
+  diskfs_execboot_class = ports_create_class (0);
+  diskfs_port_bucket = ports_create_bucket ();
 }
 
 void
