@@ -1,3 +1,8 @@
+2002-05-11  Roland McGrath  <roland@frob.com>
+
+	* trans-callback.c (_diskfs_translator_callback1_fn): Add an assert
+	that netfs_get_translator not fail with EOPNOTSUPP.
+
 2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
 
 	* diskfs.h (diskfs_boot_filesystem): Documentation fix.

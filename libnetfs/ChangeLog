@@ -1,3 +1,8 @@
+2002-05-11  Roland McGrath  <roland@frob.com>
+
+	* trans-callback.c (_netfs_translator_callback1_fn): Add an assert
+	that netfs_get_translator not fail with EOPNOTSUPP.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* fsys-getroot.c (netfs_S_fsys_getroot): Fix arg type in decl.
