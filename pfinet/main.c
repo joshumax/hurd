@@ -192,7 +192,7 @@ main (int argc,
   arrange_shutdown_notification ();
 
   /* Parse options.  */
-  argp_parse (&pfinet_argp, argv, argc, 0,0,0);
+  argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
   /* Talk to parent and link us in. */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
