@@ -301,6 +301,11 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 	np->dn->info.i_data[block] = 0;
 	np->dn_set_ctime = 1;
       }
+  if (np->dn->info_i_translator != 0)
+    {
+      np->dn->info_i_translator = 0;
+      np->dn_set_ctime = 1;
+    }
   st->st_mode &= ~S_IPTRANS;
   if (np->allocsize)
     {

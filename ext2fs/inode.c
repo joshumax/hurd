@@ -295,6 +295,7 @@ read_node (struct node *np)
 	      EXT2_N_BLOCKS * sizeof info->i_data[0]);
       st->st_rdev = 0;
     }
+  dn->info_i_translator = di->i_translator;
 
   diskfs_end_catch_exception ();
 
@@ -666,6 +667,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 	}
 
       di->i_translator = blkno;
+      np->dn->info_i_translator = blkno;
       record_global_poke (di);
 
       np->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
@@ -675,6 +677,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
     {
       /* Clear block for translator going away. */
       di->i_translator = 0;
+      np->dn->info_i_translator = 0;
       record_global_poke (di);
       ext2_free_blocks (blkno, 1);
 

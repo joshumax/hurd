@@ -1,6 +1,6 @@
 /* Common definitions for the ext2 filesystem translator
 
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -160,6 +160,7 @@ struct disknode
 
   /* Random extra info used by the ext2 routines.  */
   struct ext2_inode_info info;
+  uint32_t info_i_translator;	/* That struct from Linux source lacks this. */
 
   /* This file's pager.  */
   struct pager *pager;
