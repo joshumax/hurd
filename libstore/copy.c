@@ -24,6 +24,9 @@
 #include <string.h>
 #include <malloc.h>
 #include <sys/mman.h>
+#include <mach.h>
+
+#define page_aligned(addr) (((size_t) addr & (vm_page_size - 1)) == 0)
 
 #include "store.h"
 
@@ -37,8 +40,7 @@ copy_read (struct store *store,
     {
       /* When reading whole pages, we can avoid any real copying.  */
       error_t err = vm_read (mach_task_self (),
-			     (vm_address_t) data, amount, (pointer_t *) buf);
-      *len = amount;
+			     (vm_address_t) data, amount, (pointer_t *) buf, len);
       return err;
     }
 
@@ -65,12 +67,12 @@ copy_write (struct store *store,
     {
       /* When reading whole pages, we can avoid any real copying.  */
       error_t err = vm_write (mach_task_self (),
-			      (vm_address_t) data, buf, len);
+			      (vm_address_t) data, (vm_address_t) buf, len);
       *amount = len;
       return err;
     }
 
-  memcpy (data, buf, amount);
+  memcpy (data, buf, *amount);
   *amount = len;
   return 0;
 }

@@ -1,3 +1,11 @@
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* diskfs.h: Make diskfs_dirstat_size const.
+
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* file-statfs.c: Include <string.h>.
+
 2000-12-26  Roland McGrath  <roland@frob.com>
 
 	* file-statfs.c (diskfs_S_file_statfs): Zero out the struct statfs

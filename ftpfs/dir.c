@@ -818,7 +818,7 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
 {
   struct ftpfs_dir *new = malloc (sizeof (struct ftpfs_dir));
   struct ftpfs_dir_entry **htable
-    = calloc (INIT_HTABLE_LEN * sizeof (struct ftpfs_dir_entry *));
+    = calloc (INIT_HTABLE_LEN, sizeof (struct ftpfs_dir_entry *));
 
   if (!new || !htable)
     {

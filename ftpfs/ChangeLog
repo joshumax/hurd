@@ -1,3 +1,7 @@
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dir.c (ftpfs_dir_create): Fix last change (calloc invocation).
+
 2000-12-21  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dir.c (ftpfs_dir_create): New macro INIT_HTABLE_LEN to

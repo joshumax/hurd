@@ -79,7 +79,7 @@ struct dirstat
   size_t nbytes;
 };
 
-size_t diskfs_dirstat_size = sizeof (struct dirstat);
+const size_t diskfs_dirstat_size = sizeof (struct dirstat);
 
 /* Initialize DS such that diskfs_drop_dirstat will ignore it. */
 void

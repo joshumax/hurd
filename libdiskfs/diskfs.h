@@ -193,7 +193,7 @@ struct dirstat;
 
 /* The user must define this variable; it should be the size in bytes
    of a struct dirstat. */
-extern size_t diskfs_dirstat_size;
+extern const size_t diskfs_dirstat_size;
 
 /* The user must define this variable; it is the maximum number of
    links to any one file.  The implementation of dir_rename does not know

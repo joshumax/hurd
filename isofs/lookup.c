@@ -410,7 +410,7 @@ diskfs_get_directs (struct node *dp,
 }
 
 /* We have no dirstats at all. */
-size_t diskfs_dirstat_size = 0;
+const size_t diskfs_dirstat_size = 0;
 
 void
 diskfs_null_dirstat (struct dirstat *ds)

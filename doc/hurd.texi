@@ -3942,7 +3942,7 @@ You must define this type, which will hold information between a call to
 enough information so that those calls work as described below.
 @end deftypevr
 
-@deftypevar size_t diskfs_dirstat_size
+@deftypevar const size_t diskfs_dirstat_size
 This must be the size in bytes of a @code{struct dirstat}.
 @end deftypevar
 

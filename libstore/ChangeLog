@@ -1,3 +1,11 @@
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* copy.c: Include <mach.h>. New macro page_aligned.
+	(copy_write): Cast buf to vm_address_t in call to vm_write.
+	Dereference amount for memcpy.
+	(copy_read): Add len parameter to vm_read, remove redundant following
+	len assignment.
+
 2000-12-20  Roland McGrath  <roland@frob.com>
 
 	* zero.c (zero_open): Check for END being null after strtoul call.
