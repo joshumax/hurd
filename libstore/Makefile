@@ -100,6 +100,10 @@ libstore_%.so.$(hurd-version): %_pic.o libstore.so
 $(store-types:%=libstore_%.a): libstore_%.a: $(srcdir)/Makefile
 	$(CC) -r -nostdlib -nostartfiles -x c /dev/null \
 	      -o $@ -u store_$*_class
+cleantarg += $(store-types:%=libstore_%.a)
 
-# XXX need to install these
 all: $(store-types:%=libstore_%.a)
+
+install: $(store-types:%=$(libdir)/libstore_%.a)
+$(store-types:%=$(libdir)/libstore_%.a): $(libdir)/%: %
+	$(INSTALL_DATA) $< $@
