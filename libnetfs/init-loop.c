@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -34,7 +34,7 @@ netfs_server_loop ()
 						netfs_demuxer,
 						thread_timeout,
 						server_timeout,
-						1, MACH_PORT_NULL);
+						0);
       err = netfs_shutdown (0);
     }
   while (err);

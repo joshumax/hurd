@@ -1,3 +1,8 @@
+Wed Aug 20 14:05:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* init-loop.c (netfs_server_loop): New args for
+	ports_manage_port_operations_multithread. 
+
 Mon Jul  7 16:25:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-exec.c: Include <fcntl.h> instead of <fcntlbits.h>.
