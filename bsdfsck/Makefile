@@ -1,14 +1,35 @@
-#	from: @(#)Makefile	8.1 (Berkeley) 6/5/93
-#	$Id: Makefile,v 1.1 1994/08/23 19:29:26 mib Exp $
+# 
+#   Copyright (C) 1994 Free Software Foundation
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License as
+#   published by the Free Software Foundation; either version 2, or (at
+#   your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#   General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-PROG=	fsck
-MAN8=	fsck.0
-SRCS=	dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
-	pass5.c preen.c setup.c utilities.c ffs_subr.c ffs_tables.c
-.PATH:	${.CURDIR}/../../sys/ufs/ffs
+dir := fsck
+makemode := utility
 
-.if make(install)
-SUBDIR+= SMM.doc
-.endif
+SRCS = dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
+	pass5.c preen.c setup.c utilities.c
+OBJS = dir.o inode.o main.o pass1.o pass1b.o pass2.o pass3.o pass4.o \
+	pass5.o preen.o setup.o utilities.o
+target = fsck
 
-.include <bsd.prog.mk>
+include ../Makeconf
+
+all: fsck.native
+
+fsck.native: $(addprefix native-,$(OBJS))
+	rsh $(mighost) -n cd `pwd` \; gcc $^ -o $@
+
+native-%.o: %.c
+	rsh $(mighost) -n cd `pwd` \; gcc -c $^ -o $@
