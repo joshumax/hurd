@@ -44,6 +44,8 @@ struct dev
 {
   /* The device port for the kernel device we're doing paging on.  */
   device_t port;
+  /* The mach device name which we opened.  */
+  char *name;
 
   /* The total size of DEV.  */
   vm_size_t size;
