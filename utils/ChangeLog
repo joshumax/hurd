@@ -1,5 +1,7 @@
 2004-09-21  Alfred M. Szmidt  <ams@kemisten.nu>
 
+	* fsysopts.c (doc): Changed `--remount' to `--update'.
+
 	* mount.c (argp_opts): Enabled never-enabled options and added
 	long versions: --verbose/-v, --remount/--update/-u,
 	--writable/-w, --readonly/-r and --options/-o.	Reported by
