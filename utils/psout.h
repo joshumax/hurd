@@ -1,6 +1,6 @@
 /* Common output function for ps & w
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -23,9 +23,10 @@
 
 #include <ps.h>
 
-void psout (struct proc_stat_list *procs,
-	    char *fmt_string, int posix_fmt, struct ps_fmt_specs *specs,
-	    char *sort_key_name, int sort_reverse,
+void psout (const struct proc_stat_list *procs,
+	    const char *fmt_string, int posix_fmt,
+	    const struct ps_fmt_specs *specs,
+	    const char *sort_key_name, int sort_reverse,
 	    int output_width, int print_heading,
 	    int squash_bogus_fields, int squash_nominal_fields,
 	    int top);
