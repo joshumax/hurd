@@ -22,7 +22,7 @@ makemode := server
 target = pflocal
 
 SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
-LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h
+LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h sserver.h
 
 MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
