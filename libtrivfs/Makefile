@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,99,2001,02 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,99,2001,02,03 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -51,8 +51,11 @@ OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
 MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix trivfs_
-installhdrs := trivfs.h $(patsubst %,trivfs_%_S.h,fs io fsys)
+installhdrs := trivfs.h
 mig-sheader-prefix = trivfs_
+ifndef no_deps
+installhdrs += $(patsubst %,trivfs_%_S.h,fs io fsys)
+endif
 
 include ../Makeconf
 
