@@ -167,7 +167,14 @@
 /* MIB XXX */
 #define CTHREAD_DATA
 
+#if 0
+/* This is CMU's machine-dependent file.  In GNU all of the machine
+   dependencies are dealt with in libc.  */
 #include <machine/cthreads.h>
+#else
+#include <machine-sp.h>
+#define cthread_sp()	((int) __thread_stack_pointer ())
+#endif
 
 #if	c_plusplus || __STDC__
 
@@ -271,6 +278,14 @@ typedef struct cthread_queue_item {
 		} \
 	MACRO_END
 
+#if 1
+
+/* In GNU, spin locks are implemented in libc.
+   Just include its header file.  */
+#include <spin-lock.h>
+
+#else  /* Unused CMU code.  */
+
 /*
  * Spin locks.
  */
@@ -289,14 +304,20 @@ spin_try_lock C_ARG_DECLS((spin_lock_t *p));
 
 #define spin_lock(p) ({if (!spin_try_lock(p)) spin_lock_solid(p);})
 
+#endif /* End unused CMU code.  */
+
 /*
  * Mutex objects.
  */
 typedef struct mutex {
+  /* The `held' member must be first in GNU.  The GNU C library relies on
+     being able to cast a `struct mutex *' to a `spin_lock_t *' (which is
+     kosher if it is the first member) and spin_try_lock that address to
+     see if it gets the mutex.  */
+	spin_lock_t held;
 	spin_lock_t lock;
 	char *name;
 	struct cthread_queue queue;
-	spin_lock_t held;
 } *mutex_t;
 
 #define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER, SPIN_LOCK_INITIALIZER}
