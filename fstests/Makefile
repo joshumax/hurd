@@ -22,7 +22,6 @@ include ../Makeconf
 DIST_FILES = fstests.c Makefile fdtests.c
 
 OBJS=fdtests.o #fstests.o
-testprog = fdtests
 
 all: fdtests
 
@@ -30,10 +29,12 @@ fstests: $(OBJS) $(libc); $(link)
 fdtests: $(OBJS) $(libc); $(link)
 
 
-install: $(testprog) $(hurdroot)
-	cp $< $(hurdroot)/bin/$(testprog)
+install: fdtests fstests $(hurdroot)
+	cp fdtests $(hurdroot)/bin/fdtests
+	cp fstests $(hurdroot)/bin/fstests
+
 
 clean: 
-	rm -f fstests fstests.o
+	rm -f fstests 
 relink:
 	rm -f fstests
