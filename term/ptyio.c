@@ -52,6 +52,7 @@ static int pktnostop;
 
 static int ptyopen;
 
+static int nptyperopens;
 
 
 static void
@@ -70,14 +71,42 @@ pty_open_hook (struct trivfs_control *cntl,
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
   
+  mutex_lock (&global_lock);
+
   if (ptyopen)
-    return EBUSY;
-  
+    {
+      mutex_unlock (&global_lock);
+      return EBUSY;
+    }
+    
   pty_open = 1;
   report_carrier_on ();
+  mutex_unlock (&global_lock);
   return 0;
 }
 
+error_t
+pty_po_create_hook (struct trivfs_peropen *po)
+{
+  mutex_lock (&global_lock);
+  nptyperopens++;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
+pty_po_destroy_hook (struct trivfs_peropen *po)
+{
+  mutex_lock (&global_lock);
+  nptyperopens--;
+  if (!nptyperopns)
+    {
+      pty_open = 0;
+      report_carrier_off ();
+    }
+  mutex_unlock (&global_lock);
+  return 0;
+}
 
 static inline void
 wake_reader ()
