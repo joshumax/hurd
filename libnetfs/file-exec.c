@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -30,7 +30,7 @@
 #include <string.h>
 #include <idvec.h>
 
-kern_return_t 
+kern_return_t
 netfs_S_file_exec (struct protid *cred,
 		   task_t task,
 		   int flags,
@@ -56,7 +56,7 @@ netfs_S_file_exec (struct protid *cred,
   mode_t mode;
   int suid, sgid;
   mach_port_t right;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -67,7 +67,7 @@ netfs_S_file_exec (struct protid *cred,
 
   if ((cred->po->openstat & O_EXEC) == 0)
     return EBADF;
-  
+
   np = cred->po->np;
 
   mutex_lock (&np->lock);
@@ -79,11 +79,11 @@ netfs_S_file_exec (struct protid *cred,
 
   if (err)
     return err;
-  
+
   if (!((mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((mode & S_IUSEUNK) && (mode & (S_IEXEC << S_IUNKSHIFT)))))
     return EACCES;
-  
+
   if ((mode & S_IFMT) == S_IFDIR)
     return EACCES;
 
@@ -102,7 +102,7 @@ netfs_S_file_exec (struct protid *cred,
 
 	  return err;
 	}
-      err = 
+      err =
 	fshelp_exec_reauth (suid, uid, sgid, gid,
 			    netfs_auth_server_port, get_file_ids,
 			    portarray, portarraylen, fds, fdslen, &secure);
@@ -125,22 +125,22 @@ netfs_S_file_exec (struct protid *cred,
       struct protid *newpi =
 	netfs_make_protid (netfs_make_peropen (np, O_READ, cred->po),
 			   iohelp_dup_iouser (cred->user));
-      right = port_get_send_right (newpi);
-      err = exec_exec (_netfs_exec, 
+      right = ports_get_send_right (newpi);
+      err = exec_exec (_netfs_exec,
 		       right, MACH_MSG_TYPE_COPY_SEND,
-		       task, flags, argv, argvlen, envp, envplen, 
+		       task, flags, argv, argvlen, envp, envplen,
 		       fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
 		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		       intarray, intarraylen, deallocnames, deallocnameslen,
 		       destroynames, destroynameslen);
-      mach_port_deallocate (mach_task_self (), newpi);
+      mach_port_deallocate (mach_task_self (), right);
       ports_port_deref (newpi);
     }
 
   if (! err)
     {
       unsigned int i;
-      
+
       mach_port_deallocate (mach_task_self (), task);
       for (i = 0; i < fdslen; i++)
 	mach_port_deallocate (mach_task_self (), fds[i]);
@@ -148,5 +148,5 @@ netfs_S_file_exec (struct protid *cred,
 	mach_port_deallocate (mach_task_self (), portarray[i]);
     }
 
-  return err; 
+  return err;
 }
