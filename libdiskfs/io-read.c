@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -65,6 +65,8 @@ diskfs_S_io_read (struct protid *cred,
 				 cred->po->openstat & O_NOATIME);
   else
     err = 0;
+  if (diskfs_synchronous)
+    diskfs_node_update (np, 1);	/* atime! */
   if (offset == -1 && !err)
     cred->po->filepointer += *datalen;
   if (err && ourbuf)
