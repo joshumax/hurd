@@ -1,7 +1,14 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* rr.c (rrip_work): Cast pointer to uintptr_t instead of int.
+
+	* main.c (diskfs_append_args): unsigned -> size_t
+	* lookup.c (diskfs_get_directs): Likewise.
+
 2001-04-30  Marcus Brinkmann  <marcus@gnu.org>
 
-	* rr.c (rrip_work): In the MATCH_NAME case, free NMBUF if it is non-zero
-	before returning.
+	* rr.c (rrip_work): In the MATCH_NAME case, free NMBUF if it is
+	non-zero before returning.
 
 2001-04-29  Marcus Brinkmann  <marcus@gnu.org>
 
