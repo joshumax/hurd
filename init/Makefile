@@ -34,16 +34,16 @@ install: init $(hurdroot)
 	cp init $(hurdroot)/hurd/init
 
 
-startup_S.h startupServer.c: $(headers)/hurd/startup.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(headers)/hurd/startup.defs \
+startup_S.h startupServer.c: $(includedir)/hurd/startup.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(includedir)/hurd/startup.defs \
 	| $(MIGCOM) -prefix S_ -sheader startup_S.h -header /dev/null -user /dev/null
 
-startup_reply.h startup_replyUser.c: $(headers)/hurd/startup_reply.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(headers)/hurd/startup_reply.defs \
+startup_reply.h startup_replyUser.c: $(includedir)/hurd/startup_reply.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(includedir)/hurd/startup_reply.defs \
 	| $(MIGCOM) -server /dev/null
 
-notify_S.h notifyServer.c: $(headers)/mach/notify.defs
-	$(CPP) $(CPPFLAGS)  $(headers)/mach/notify.defs \
+notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
+	$(CPP) $(CPPFLAGS)  $(includedir)/mach/notify.defs \
 	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
 
 clean:

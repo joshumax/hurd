@@ -47,20 +47,20 @@ notify.o: notify_S.h
 wait.o: process_reply.h msg.h interrupt_S.h
 mgt.o: proc_exc_S.h proc_exc.h proc_excrepl.h proc_excrepl_S.h
 
-proc_S.h processServer.c: $(headers)/hurd/process.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(PROCMIGOPTS) $(headers)/hurd/process.defs \
+proc_S.h processServer.c: $(includedir)/hurd/process.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(PROCMIGOPTS) $(includedir)/hurd/process.defs \
 	| $(MIGCOM) -sheader proc_S.h -user /dev/null -header /dev/null
 
-process_reply.h process_replyUser.c: $(headers)/hurd/process_reply.defs $(hurd/hurd_types.defs)
-	$(CPP) $(CPPFLAGS) $(headers)/hurd/process_reply.defs \
+process_reply.h process_replyUser.c: $(includedir)/hurd/process_reply.defs $(hurd/hurd_types.defs)
+	$(CPP) $(CPPFLAGS) $(includedir)/hurd/process_reply.defs \
 	| $(MIGCOM) -server /dev/null
 
-interrupt_S.h interruptServer.c: $(headers)/hurd/interrupt.defs
-	$(CPP) $(CPPFLAGS) $(PROCMIGOPTS) $(headers)/hurd/interrupt.defs \
+interrupt_S.h interruptServer.c: $(includedir)/hurd/interrupt.defs
+	$(CPP) $(CPPFLAGS) $(PROCMIGOPTS) $(includedir)/hurd/interrupt.defs \
 	| $(MIGCOM) -sheader interrupt_S.h -user /dev/null -header /dev/null
 
 notify_S.h notifyServer.c:
-	$(CPP) $(CPPFLAGS) $(headers)/mach/notify.defs \
+	$(CPP) $(CPPFLAGS) $(includedir)/mach/notify.defs \
 	 | $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
 
 proc_exc_S.h proc_excUser.c proc_excServer.c proc_exc.h: proc_exc.defs
@@ -75,8 +75,8 @@ proc_excrepl_S.h proc_excreplUser.c proc_excreplServer.c proc_excrepl.h: proc_ex
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.
-msg.h msgUser.c: $(headers)/hurd/msg.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(headers)/hurd/msg.defs \
+msg.h msgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(includedir)/hurd/msg.defs \
 	| $(MIGCOM) -prefix nowait_ -server /dev/null
 
 clean:
