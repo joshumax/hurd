@@ -25,7 +25,7 @@ OBJS = dir.o inode.o main.o pass1.o pass1b.o pass2.o pass3.o pass4.o \
 LCLHDRS = fsck.h
 target = bsdfsck
 
+vpath tables.c ../ufs
+
 include ../Makeconf
 
-tables.o: ../ufs/tables.c
-	$(CC) $(CFLAGS) -c -o $@ $<
