@@ -4,6 +4,7 @@
 #define HZ 100
 
 extern volatile struct mapped_time_value *mapped_time;
+extern long long root_jiffies;
 
 extern inline int
 read_mapped_secs ()
@@ -16,16 +17,17 @@ fill_timeval (struct timeval *tp)
 {
   do
     {
-      tp->tv_secs = mapped_time->seconds;
-      tp->tv_usecs = mapped_time->microseconds;
+      tp->tv_sec = mapped_time->seconds;
+      tp->tv_usec = mapped_time->microseconds;
     }
-  while (tp->tv_secs !=  mapped_time->check_seconds);
+  while (tp->tv_sec !=  mapped_time->check_seconds);
 }
 
 extern inline int
 fetch_jiffies ()
 {
   int secs, usecs;
+  long long j;
   do
     {
       secs = mapped_time->seconds;
@@ -33,7 +35,8 @@ fetch_jiffies ()
     }
   while (secs != mapped_time->check_seconds);
   
-  return (secs * HZ) + microseconds * HZ / 1000.0;
+  j = (long long) secs * HZ + (long long) usecs * HZ / 1000.0;
+  return j - root_jiffies;
 }
 
 
