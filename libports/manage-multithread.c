@@ -83,11 +83,12 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       spin_lock (&lock);
       totalthreads++;
       nreqthreads++;
+      spin_unlock (&lock);
+
       if (master)
 	timeout = global_timeout;
       else
 	timeout = thread_timeout;
-      spin_unlock (&lock);
 
     startover:
 
