@@ -1,3 +1,7 @@
+2005-01-06  Marco Gerards  <metgerards@student.han.nl>
+
+	* kdioctl.defs: New file.
+
 2004-10-31  Alfred M. Szmidt  <ams@gnu.org>
 
 	* io.defs (io_read, io_write, io_select): Comment fixes.
