@@ -3,6 +3,12 @@ Thu May  1 18:40:53 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* bootstrap.c (cthread_stack_size): Don't set special value here;
 	use the default.
 
+Wed Apr 30 12:01:53 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* default_pager.c (default_pager_default_thread): Now that this is
+ 	forked, rather than run directly by the first thread, we have to
+ 	gain kernel privileges to acquire reserved pages.
+
 Fri Apr 18 16:44:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* wiring.c (__vm_allocate): New function.
