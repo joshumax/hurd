@@ -18,9 +18,42 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <device/device.h>
+#include <device/net_status.h>
 
 device_t ether_port;
 struct device *ether_dev;
+
+struct port_info *readpt;
+mach_port_t readptname;
+
+int
+ethernet_demuxer (struct mach_msg_header_t *inp,
+		  struct mach_msg_header_t *outp)
+{
+  struct net_rcv_msg *msg = (struct net_rcv_msg *) inp;
+  struct packet_header *pkthdr = (struct packet_header *) msg->header;
+  
+  if (inp->msgh_id != 2999)
+    return 0;
+  
+  if (inp->msgh_local_port != readptname)
+    {
+      if (inp->msgh_remote_port != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
+      return 1;
+    }
+  
+  if (ntohs (pkthdr->type) != HDR_ETHERNET)
+    return 1;
+  
+  mutex_lock (&global_lock);
+  skb = alloc_skb (msg->net_rcv_msg_packet_count, GFP_ATOMIC);
+  skb->len = msg->net_rcv_msg_packet_count;
+  
+
+  
+
 
 error_t
 device_read_reply_inband (mach_port_t replypt,
@@ -45,3 +78,5 @@ start_ethernet (void)
 {
   device_read_request (ether_port, ether_reply, 0, 0, vm_page_size);
 }
+
+
