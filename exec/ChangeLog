@@ -1,3 +1,8 @@
+2002-09-17  Roland McGrath  <roland@frob.com>
+
+	* elfcore.c [i386_THREAD_STATE] (fetch_thread_regset): The two types
+	are not actually identical, must rearrange some members a little.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* priv.h (trivfs_protid_t): Type removed (now in trivfs.h).
