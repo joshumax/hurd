@@ -44,8 +44,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	sync-interval.c sync-default.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-std-runtime.c \
         opts-append-std.c opts-common.c opts-runtime.c opts-version.c \
-	trans-callback.c readonly.c remount.c filedev.c machdev.c \
-	dev-open.c dev-io.c dev-globals.c console.c disk-pager.c \
+	trans-callback.c readonly.c remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
 	validate-rdev.c validate-owner.c extra-version.c
@@ -59,7 +58,7 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-HURDLIBS= threads ports fshelp shouldbeinlibc iohelp
+HURDLIBS=fshelp iohelp store ports threads shouldbeinlibc
 
 fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
