@@ -23,6 +23,9 @@
 #define IO_INTRAN trivfs_protid_t _trivfs_begin_using_protid (io_t)
 #define IO_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
 
+#define FSYS_INTRAN trivfs_control_t _trivfs_begin_using_control (fsys_t)
+#define FSYS_DESTRUCTOR _trivfs_end_using_control (trivfs_control_t)
+
 #define SERVERPREFIX trivfs_S_
 
 #define FILE_IMPORTS import "priv.h";
