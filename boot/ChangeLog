@@ -1,3 +1,8 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* boot.c: Include <version.h>
+	(argp_program_version): New variable.
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* boot.c (main): Use error, not perror and exit.

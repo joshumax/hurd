@@ -37,6 +37,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <argp.h>
 #include <hurd/store.h>
 #include <sys/mman.h>
+#include <version.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -393,6 +394,8 @@ boot_script_exec_cmd (void *hook,
   return 0;
 }
 
+const char *argp_program_version = STANDARD_HURD_VERSION (boot);
+
 static struct argp_option options[] =
 {
   { "boot-root",   'D', "DIR", 0,
