@@ -422,7 +422,7 @@ read_disknode (struct node *np, struct dirrect *dr,
 	}
     }
 
-  if (rr->valid & VALID_TR)
+  if (rl->valid & VALID_TR)
     {
       st->st_mode |= S_IPTRANS;
       np->dn->translen = rl->translen;
@@ -430,8 +430,11 @@ read_disknode (struct node *np, struct dirrect *dr,
       rl->trans = 0;
     }
   else
-    np->dn->translator = np->dn->translen = 0;
-  
+    {
+      np->dn->translator = 0;
+      np->dn->translen = 0;
+    }
+
   diskfs_end_catch_exception ();
   
   return 0;
@@ -456,8 +459,8 @@ diskfs_node_norefs (struct node *np)
   assert (node_cache[np->cache_id - 1].np == np);
   node_cache[np->cache_id - 1].np = 0;
 
-  if (np->translator)
-    free (np->translator);
+  if (np->dn->translator)
+    free (np->dn->translator);
 
   assert (!np->dn->fileinfo);
   free (np->dn);
