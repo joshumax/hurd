@@ -53,14 +53,6 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
       condition_wait (&p->wakeup, &p->interlock);
     }
 
-  _pager_wait_for_seqno (p, seqno);
-
-  while (p->noterm)
-    {
-      p->termwaiting = 1;
-      condition_wait (&p->wakeup, &p->interlock);
-    }
-
   _pager_free_structure (p);
 
  out:
