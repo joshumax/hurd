@@ -1,4 +1,7 @@
+1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (dir): Is isofs, not ufs.
+
 Mon Jul 21 16:00:04 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (LCLHDRS): Remove susp.h.
-
