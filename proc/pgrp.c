@@ -86,6 +86,8 @@ static inline void
 free_pgrp (struct pgrp *pg)
 {
   *pg->pg_prevp = pg->pg_next;
+  if (pg->pg_next)
+    pg->pg_next->pg_prevp = pg->pg_prevp;
   if (!pg->pg_session->s_pgrps)
     free_session (pg->pg_session);
   remove_pgrp_from_hash (pg);
@@ -339,6 +341,8 @@ leave_pgrp (struct proc *p)
   struct pgrp *pg = p->p_pgrp;
 
   *p->p_gprevp = p->p_gnext;
+  if (p->p_gnext)
+    p->p_gnext->p_gprevp = p->p_gprevp;
   
   /* If we were the last member of our pgrp, free it */
   if (!pg->pg_plist)
