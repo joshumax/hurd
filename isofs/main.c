@@ -105,7 +105,22 @@ read_sblock ()
   /* Parse some important bits of this */
   logical_block_size = isonum_723 (sblock->blksize);
 }
+
+/* Override the standard diskfs routine so we can add our own output.  */
+error_t
+diskfs_append_args (char **argz, unsigned *argz_len)
+{
+  error_t err;
 
+  /* Get the standard things.  */
+  err = diskfs_append_std_options (argz, argz_len);
+
+  if (! err)
+    err = store_parsed_append_args (store_parsed, argz, argz_len);
+
+  return err;
+}
+
 int
 main (int argc, char **argv)
 {
