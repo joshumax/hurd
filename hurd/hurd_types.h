@@ -1,5 +1,5 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -85,7 +85,7 @@ typedef struct statfs fsys_statfsbuf_t;
 enum retry_type
 {
   FS_RETRY_NORMAL = 1,		/* Retry normally if retry_name is not null. */
-  FS_RETRY_REAUTH = 2,		/* Retry after reauthenticating retry port. 
+  FS_RETRY_REAUTH = 2,		/* Retry after reauthenticating retry port.
 				   Even if the retry name is null, a retry
 				   is still necessary with this code after the
 				   reauthentication is complete. */
@@ -308,6 +308,9 @@ typedef int *procinfo_t;
 #define FSTYPE_SOCKET  0x00000015 /* io_t that isn't a file but a socket */
 #define FSTYPE_MISC    0x00000016 /* generic trivfs server */
 #define FSTYPE_EXT2FS  0x00000017 /* Linux filesystem by Remy Card */
+#define FSTYPE_HTTP    0x00000018 /* Transparent HTTP */
+#define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
+#define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
 
 /* Standard port assignments for file_exec and exec_* */
 enum
