@@ -23,11 +23,12 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <assert.h>
-#include <argp.h>
 
 /* This library supports client-side network file system
    implementations.  It is analogous to the diskfs library provided for 
    disk-based filesystems.  */
+
+struct argp;
 
 struct protid
 {
@@ -271,12 +272,10 @@ error_t netfs_get_dirents (struct netcred *, struct node *, int, int, char **,
    routine will parse them using NETFS_RUNTIME_ARGP, which see.  */
 error_t netfs_set_options (char *argz, size_t argz_len);
 
-/* Return an argz string describing the current options.  Fill *ARGZ
-   with a pointer to newly malloced storage holding the list and *LEN
-   to the length of that storage.  The default definition of this routine
-   simply initializes *ARGZ and *ARGZ_LEN to 0 and calls
-   netfs_append_std_options.  */
-error_t netfs_get_options (char **argz, size_t *argz_len);
+/* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
+   list of the arguments to this translator.  The default definition of this
+   routine simply calls netfs_append_std_options.  */
+error_t netfs_append_args (char **argz, unsigned *argz_len);
 
 /* If this is defined or set to a pointer to an argp structure, it will be
    used by the default netfs_set_options to handle runtime option parsing.
