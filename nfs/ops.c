@@ -497,12 +497,15 @@ netfs_attempt_rmdir (struct netcred *cred, struct node *np,
    <hurd/netfs.h>. */
 error_t
 netfs_attempt_link (struct netcred *cred, struct node *dir,
-		    struct node *np, char *name)
+		    struct node *np, char *name, int excl)
 {
   int *p;
   void *rpcbuf;
   error_t err = 0;
   
+  if (!excl)
+    return EOPNOTSUPP;		/* XXX */
+
   /* If we have postponed a translator setting on an unlinked node,
      then here's where we set it, by creating the new node instead of
      doing a normal link. */
@@ -802,12 +805,16 @@ netfs_attempt_unlink (struct netcred *cred, struct node *dir,
    <hurd/netfs.h>. */
 error_t
 netfs_attempt_rename (struct netcred *cred, struct node *fromdir,
-		      char *fromname, struct node *todir, char *toname)
+		      char *fromname, struct node *todir, char *toname, 
+		      int excl)
 {
   int *p;
   void *rpcbuf;
   error_t err;
   
+  if (excl)
+    return EOPNOTSUPP;		/* XXX */
+
   mutex_lock (&fromdir->lock);
   p = nfs_initialize_rpc (NFSPROC_RENAME, cred, 0, &rpcbuf, fromdir, -1);
   p = xdr_encode_fhandle (p, &fromdir->nn->handle);
