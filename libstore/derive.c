@@ -1,9 +1,7 @@
 /* Calculation of various derived store fields
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
+
+#include <assert.h>
 
 #include "store.h"
 
@@ -72,13 +72,11 @@ _store_derive (struct store *store)
   store->log2_block_size = 0;
   while ((1 << store->log2_block_size) < bsize)
     store->log2_block_size++;
-  if ((1 << store->log2_block_size) != bsize)
-    store->log2_block_size = 0;
+  assert ((1 << store->log2_block_size) == bsize);
 
   /* LOG2_BLOCKS_PER_PAGE */
   store->log2_blocks_per_page = 0;
   while ((bsize << store->log2_blocks_per_page) < vm_page_size)
     store->log2_blocks_per_page++;
-  if ((bsize << store->log2_blocks_per_page) != vm_page_size)
-    store->log2_blocks_per_page = 0;
+  assert ((bsize << store->log2_blocks_per_page) == vm_page_size);
 }
