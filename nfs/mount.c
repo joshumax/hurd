@@ -18,6 +18,28 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <rpcsvc/mount_prot.h>
+#include <errno.h>
+#include <socket.h>
+#include <arpa/netdb.h>
+#include <string.h>
+#include <netinet/in.h>
+
+#include "nfs.h"
+
+
+int *
+pmap_initialize_rpc (int procnum, void **buf)
+{
+  return initialize_rpc (PMAPPROG, PMAPVERS, procnum, 0, buf, 0, 0, -1);
+}
+
+int *
+mount_initialize_rpc (int procnum, void **buf)
+{
+  return initialize_rpc (MOUNTPROG, MOUNTVERS, procnum, 0, buf, 0, 0, -1);
+}
+
 /* Using the mount protocol, lookup NAME at host HOST.
    Return a netnode for or null for an error. */
 struct netnode *
@@ -58,8 +80,8 @@ mount_root (char *name, char *host)
   /* Formulate and send a PMAPPROC_GETPORT request
      to lookup the mount program on the server.  */
   p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
-  *p++ = htonl (MOUNT_RPC_PROGRAM);
-  *p++ = htonl (MOUNT_RPC_VERSION);
+  *p++ = htonl (MOUNTPROG);
+  *p++ = htonl (MOUNTVERS);
   *p++ = htonl (IPPROTO_UDP);
   *p++ = htonl (0);
   errno = conduct_rpc (&rpcbuf, &p);
@@ -103,13 +125,13 @@ mount_root (char *name, char *host)
   addr.sin_port = htons (s->s_port);
   connect (main_udp_socket, &addr, sizeof (struct sockaddr_in));
   p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
-  *p++ = htonl (NFSV2_RPC_PROGRAM);
-  *p++ = htonl (NFSV2_RPC_VERSION);
+  *p++ = htonl (NFS_PROGRAM);
+  *p++ = htonl (NFS_VERSION);
   *p++ = htonl (IPPROTO_UDP);
   *p++ = htonl (0);
   errno = conduct_rpc (&rpcbuf, &p);
   if (errno)
-    port = NFSV2_UDP_PORT;
+    port = NFS_PORT;
   else
     port = ntohl (*p++);
   free (rpcbuf);
@@ -119,18 +141,3 @@ mount_root (char *name, char *host)
   
   return np;
 }
-
-int *
-pmap_initialize_rpc (int procnum, void **buf)
-{
-  return initialize_rpc (PMAP_RPC_PROGRAM, PMAP_RPC_VERSION, procnum,
-			 0, buf, 0, 0, -1);
-}
-
-int *
-mount_initialize_rpc (int procnum, void **buf)
-{
-  return initialize_rpc (MOUNT_RPC_PROGRAM, MOUNT_RPC_VERSION, procnum,
-			 0, buf, 0, 0, -1);
-}
-
