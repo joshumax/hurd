@@ -24,6 +24,8 @@ targets = symlink ifsock magic null
 CPPFLAGS += -I../lib
 CPPFLAGS += $(CPPFLAGS-$(notdir $<))
 vpath %.c ../lib
+null-HURDLIBS=libtrivfs libports libihash
+ifsock-HURDLIBS=libtrivfs libports libihash
 
 include ../Makeconf
 
@@ -33,10 +35,14 @@ symlink.o: fsys_S.h
 magic: magic.o fsysServer.o error.o
 magic.o: fsys_S.h
 
-null: null.o error.o $(libtrivfs) $(libports) $(libihash)
+# The .a files have to be mentioned explicitly due to a make deficiency,
+# even though they are already specified by null-HURDLIBS above.
+null: null.o error.o ../libtrivfs/libtrivfs.a ../libports/libports.a \
+	../libihash/libihash.a
 null.o: ../hurd/trivfs.h ../hurd/ports.h
 
-ifsock: ifsock.o error.o $(libtrivfs) $(libports) $(libihash) ifsockServer.o
+ifsock: ifsock.o error.o ../libtrivfs/libtrivfs.a ../libports/libports.a \
+	../libihash/libihash.a ifsockServer.o
 ifsock.o: ifsock_S.h ../hurd/trivfs.h ../hurd/ports.h
 
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
