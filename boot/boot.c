@@ -1603,9 +1603,9 @@ S_io_select (mach_port_t object,
   FD_SET (0, &x);
 
   n = select (1,
-	      (type & SELECT_READ) ? &r : 0,
-	      (type & SELECT_WRITE) ? &w : 0,
-	      (type & SELECT_URG) ? &x : 0,
+	      (*type & SELECT_READ) ? &r : 0,
+	      (*type & SELECT_WRITE) ? &w : 0,
+	      (*type & SELECT_URG) ? &x : 0,
 	      0);
   if (n < 0)
     return errno;
