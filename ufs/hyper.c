@@ -1,5 +1,5 @@
 /* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -34,7 +34,7 @@ void
 swab_sblock (struct fs *sblock)
 {
   int i, j;
-      
+
   sblock->fs_sblkno = swab_long (sblock->fs_sblkno);
   sblock->fs_cblkno = swab_long (sblock->fs_cblkno);
   sblock->fs_iblkno = swab_long (sblock->fs_iblkno);
@@ -108,24 +108,24 @@ swab_sblock (struct fs *sblock)
   else
     for (i = 0; i < sblock->fs_cpc; i++)
       for (j = 0; j < sblock->fs_nrpos; j++)
-	fs_postbl(sblock, j)[i] 
+	fs_postbl(sblock, j)[i]
 	  = swab_short (fs_postbl (sblock, j)[i]);
 
   /* The rot table is all chars */
 }
-  
+
 void
 swab_csums (struct csum *csum)
 {
   int i;
-  
+
   for (i = 0; i < sblock->fs_ncg; i++)
     {
       csum[i].cs_ndir = swab_long (csum[i].cs_ndir);
       csum[i].cs_nbfree = swab_long (csum[i].cs_nbfree);
       csum[i].cs_nifree = swab_long (csum[i].cs_nifree);
       csum[i].cs_nffree = swab_long (csum[i].cs_nffree);
-    }      
+    }
 }
 
 void
@@ -252,7 +252,7 @@ get_hypermetadata (void)
   if (store->size < sblock->fs_size * sblock->fs_fsize)
     {
       fprintf (stderr,
-	       "Disk size (%Zd) less than necessary "
+	       "Disk size (%ld) less than necessary "
 	       "(superblock says we need %ld)\n",
 	       store->size, sblock->fs_size * sblock->fs_fsize);
       exit (1);
@@ -315,7 +315,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 	}
 
       vm_deallocate (mach_task_self (), (vm_address_t)buf, read);
-      
+
       if (err)
 	{
 	  spin_unlock (&alloclock);
