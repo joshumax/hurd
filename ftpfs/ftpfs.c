@@ -286,10 +286,24 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 
 /* Runtime options.  */
 
+/* Parse a single command line option/argument.  */
+static error_t
+parse_runtime_opt (int key, char *arg, struct argp_state *state)
+{
+  if (key == ARGP_KEY_INIT)
+    /* Setup up state for our first child parser (common options).  */
+    {
+      state->child_inputs[0] = &ftpfs->params;
+      return 0;
+    }
+  else
+    return ARGP_ERR_UNKNOWN;
+}
+
 static const struct argp_child runtime_argp_children[] =
   { {&common_argp}, {&netfs_std_runtime_argp}, {0} };
 static struct argp runtime_argp =
-  { 0, 0, 0, 0, runtime_argp_children };
+  { 0, parse_runtime_opt, 0, 0, runtime_argp_children };
 
 /* Use by netfs_set_options to handle runtime option parsing.  */
 struct argp *netfs_runtime_argp = &runtime_argp;
@@ -330,7 +344,7 @@ netfs_append_args (char **argz, size_t *argz_len)
   if (ftpfs->params.stat_timeout != DEFAULT_STAT_TIMEOUT)
     FOPT ("--stat-timeout=%d", ftpfs->params.stat_timeout);
   if (ftpfs->params.node_cache_max != DEFAULT_NODE_CACHE_MAX)
-    FOPT ("--node-cache-max=%d", ftpfs->params.node_cache_max);
+    FOPT ("--node-cache-size=%d", ftpfs->params.node_cache_max);
   if (ftpfs->params.bulk_stat_period != DEFAULT_BULK_STAT_PERIOD)
     FOPT ("--bulk-stat-period=%d", ftpfs->params.bulk_stat_period);
   if (ftpfs->params.bulk_stat_threshold != DEFAULT_BULK_STAT_THRESHOLD)
