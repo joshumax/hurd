@@ -89,7 +89,7 @@ diskfs_drop_node (struct node *np)
   if (np->sockaddr)
     mach_port_deallocate (mach_task_self (), np->sockaddr);
 
-  _diskfs_purge_cache (np);
+  _diskfs_purge_cache_deletion (np);
   diskfs_node_norefs (np);
   spin_unlock (&diskfs_node_refcnt_lock);
 }
