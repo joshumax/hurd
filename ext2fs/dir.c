@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dirent.h>
+#include <stddef.h>
 
 /* This isn't quite right because a file system block may straddle several
    device blocks, and so a write failure between writing two device blocks
@@ -349,7 +350,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       entry = (struct ext2_dir_entry *)currentoff;
       
       if (!entry->rec_len
-	  || entry->rec_len % 4
+	  || entry->rec_len % EXT2_DIR_PAD
 	  || entry->name_len > EXT2_NAME_LEN
 	  || currentoff + entry->rec_len > blockaddr + DIRBLKSIZ
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
@@ -769,6 +770,10 @@ count_dirents (struct node *dp, int nb, char *buf)
   return 0;
 }
 
+/* Returned directory entries are aligned to blocks this many bytes long.
+   Must be a power of two.  */
+#define DIRENT_ALIGN 4
+
 /* Implement the disikfs_get_directs callback as described in
    <hurd/diskfs.h>. */
 error_t
@@ -805,7 +810,25 @@ diskfs_get_directs (struct node *dp,
 
   /* Allocate enough space to hold the maximum we might return */
   if (!bufsiz || bufsiz > dp->dn_stat.st_size)
-    allocsize = round_page (dp->dn_stat.st_size);
+    /* Allocate enough to return the entire directory.  Since ext2's
+       directory format is different than the format used to return the
+       entries, we allocate enough to hold the on disk directory plus
+       whatever extra would be necessary in the worst-case.  */
+    {
+      /* The minimum size of an ext2fs directory entry.  */
+      size_t min_entry_size = EXT2_DIR_REC_LEN (0);
+      /* The minimum size of a returned dirent entry.  The +1 is for '\0'.  */
+      size_t min_dirent_size = offsetof (struct dirent, d_name) + 1;
+      /* The maximum possible number of ext2fs dir entries in this dir.  */
+      size_t max_entries = dp->dn_stat.st_size / min_entry_size;
+      /* The maximum difference in size per directory entry.  */
+      size_t entry_extra =
+	DIRENT_ALIGN
+	  + (min_dirent_size > min_entry_size
+	     ? min_dirent_size - min_entry_size : 0);
+
+      allocsize = round_page (dp->dn_stat.st_size + max_entries * entry_extra);
+    }
   else
     allocsize = round_page (bufsiz);
 
@@ -897,7 +920,19 @@ diskfs_get_directs (struct node *dp,
 	  /* Length is structure before the name + the name + '\0', all
 	     padded to a four-byte alignment.  */
 	  rec_len =
-	    (((char *)&userp->d_name - (char *)userp) + name_len + 1 + 3) & ~3;
+	    ((offsetof (struct dirent, d_name)
+	      + name_len + 1
+	      + (DIRENT_ALIGN - 1))
+	     & ~(DIRENT_ALIGN - 1));
+
+	  /* See if this record would run over the end of the return buffer. */
+	  if (bufsiz == 0)
+	    /* It shouldn't ever, as we calculated the worst case size.  */
+	    assert (datap + rec_len <= *data + allocsize);
+	  else
+	    /* It's ok if it does, just leave off returning this entry.  */
+	    if (datap + rec_len > *data + allocsize)
+	      break;
 
 	  userp->d_fileno = entryp->inode;
 	  userp->d_reclen = rec_len;
