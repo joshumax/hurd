@@ -33,6 +33,8 @@
 struct fsys_startup_request
 {
   mach_msg_header_t head;
+  mach_msg_type_t flagsType;
+  int flags;
   mach_msg_type_t control_portType;
   mach_port_t control_port;
 };
@@ -44,6 +46,16 @@ struct fsys_startup_reply
   kern_return_t RetCode;
   mach_msg_type_t realnodeType;
   mach_port_t realnode;
+};
+
+static const mach_msg_type_t flagsCheck = {
+  MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
+  32,				/* msgt_size = */
+  1,				/* msgt_number = */
+  TRUE,				/* msgt_inline = */
+  FALSE,			/* msgt_longform = */
+  FALSE,			/* msgt_deallocate = */
+  0				/* msgt_unused = */
 };
 
 static const mach_msg_type_t control_portCheck =
@@ -86,9 +98,9 @@ static const mach_msg_type_t realnodeType =
    translator died, and EDIED will be returned.  If an error occurs, the
    error code is returned, otherwise 0.  */
 static error_t
-service_fsys_startup(file_t node, mach_msg_type_name_t node_type,
-		     mach_port_t port, long timeout,
-		     fsys_t *control)
+service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
+		      mach_port_t port, long timeout,
+		      fsys_t *control)
 {
   error_t err;
   union
@@ -123,19 +135,20 @@ service_fsys_startup(file_t node, mach_msg_type_name_t node_type,
 
   if (request.head.msgh_id != 22000)
     reply.RetCode = MIG_BAD_ID;
-  else if (*(int *)&request.startup.control_portType
-	   != *(int *)&control_portCheck)
+  else if ((*(int *)&request.startup.control_portType
+	    != *(int *)&control_portCheck)
+	   || (*(int *)&request.startup.flagsType != *(int *)&flagsCheck))
     reply.RetCode = MIG_BAD_ARGUMENTS;
   else
     {
       *control = request.startup.control_port;
 
-      reply.RetCode = KERN_SUCCESS;
       reply.realnodeType = realnodeType;
+      reply.RetCode =
+	(*underlying_open_fn) (request.startup.flags,
+			       &reply.realnode, &reply.realnodeType.msgt_name);
 
-      reply.realnode = node;
-      reply.realnodeType.msgt_name = node_type;
-      if (node != MACH_PORT_NULL)
+      if (!reply.RetCode && reply.realnode != MACH_PORT_NULL)
 	/* The message can't be simple because of the port.  */
 	reply.head.msgh_bits |= MACH_MSGH_BITS_COMPLEX;
     }
@@ -153,8 +166,7 @@ service_fsys_startup(file_t node, mach_msg_type_name_t node_type,
 
 
 error_t
-fshelp_start_translator_long (file_t underlying, 
-			      mach_msg_type_name_t underlying_type,
+fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
 			      mach_port_t *fds, 
 			      mach_msg_type_name_t fds_type, int fds_len,
@@ -244,8 +256,7 @@ fshelp_start_translator_long (file_t underlying,
 
   /* Ok, cool, we've got a running(?) program, now rendezvous with it if
      possible using the startup protocol on the bootstrap port... */
-  err = service_fsys_startup(underlying, underlying_type, bootstrap, 
-			     timeout, control);
+  err = service_fsys_startup(underlying_open_fn, bootstrap, timeout, control);
 
  lose:
   if (!ports_moved)
