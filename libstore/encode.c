@@ -55,7 +55,10 @@ store_default_leaf_encode (struct store *store, struct store_enc *enc)
   enc->ints[enc->cur_int++] = store->misc_len;
 
   for (i = 0; i < store->num_runs; i++)
-    enc->offsets[enc->cur_offset++] = store->runs[i];
+    {
+      enc->offsets[enc->cur_offset++] = store->runs[i].start;
+      enc->offsets[enc->cur_offset++] = store->runs[i].length;
+    }
 
   if (store->name)
     {
