@@ -40,7 +40,9 @@
 #include <timefmt.h>
 #include <error.h>
 
-#define DEFAULT_FMT_STRING "~USER ~TTY ~FROM ~LOGIN ~IDLE ~WHAT"
+#include "psout.h"
+
+#define DEFAULT_FMT_STRING "%^%user %tty %from %login %idle %what"
 
 extern char *canon_host (char *host);
 extern char *shared_domain (char *host1, char *host2);
@@ -83,6 +85,7 @@ struct w_hook
 {
   struct utmp utmp;
   struct timeval idle;
+  struct ps_user *user;
   char *host;			/* A malloced host name.  */
 };
 
@@ -139,6 +142,10 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	}
     }
 
+  if (need & W_PSTAT_USER)
+    if (ps_user_uname_create (hook->utmp.ut_name, &hook->user) == 0)
+      have |= W_PSTAT_USER;
+
   /* We can always return these.  */
   have |= (need & W_PSTAT_LOGIN);
 
@@ -176,14 +183,23 @@ const struct ps_getter w_login_getter =
 {"login_time", 0, w_get_login};
 
 static void
-w_get_user (struct proc_stat *ps, char **user, unsigned *user_len)
+w_get_uname (struct proc_stat *ps, char **uname, unsigned *uname_len)
 {
   struct w_hook *hook = ps->hook;
-  *user = hook->utmp.ut_name;
-  *user_len = ((char *)memchr (*user, 0, UT_NAMESIZE) ?: *user) - *user;
+  *uname = hook->utmp.ut_name;
+  *uname_len = ((char *)memchr (*uname, 0, UT_NAMESIZE) ?: *uname) - *uname;
+}
+const struct ps_getter w_uname_getter =
+{"uname", 0, w_get_uname};
+
+static struct ps_user *
+w_get_user (struct proc_stat *ps)
+{
+  struct w_hook *hook = ps->hook;
+  return hook->user;
 }
 const struct ps_getter w_user_getter =
-{"user", 0, w_get_user};
+{"user", W_PSTAT_USER, (void (*)())w_get_user};
 
 static void
 w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
@@ -196,15 +212,16 @@ const struct ps_getter w_host_getter =
 {"host", W_PSTAT_HOST, w_get_host};
 
 extern error_t ps_emit_past_time (), ps_emit_string (), ps_emit_minutes ();
+extern error_t ps_emit_user_name ();
 extern int ps_cmp_times (), ps_cmp_strings ();
-
 const struct ps_fmt_spec _w_specs[] =
 {
-  {"USER",  0, UT_NAMESIZE, &w_user_getter, ps_emit_string, ps_cmp_strings},
-  {"LOGIN", "LOGIN@", -7,   &w_login_getter, ps_emit_past_time, ps_cmp_times},
-  {"FROM",  0, UT_HOSTSIZE, &w_host_getter,  ps_emit_string,  ps_cmp_strings},
-  {"IDLE",  0, -5,          &w_idle_getter,  ps_emit_minutes, ps_cmp_times},
-  {"WHAT=args"},
+  {"User", 0, UT_NAMESIZE,-1,0,&w_uname_getter,ps_emit_string, ps_cmp_strings},
+  {"Name", 0, 20,	  -1,0,&w_user_getter, ps_emit_user_name,ps_cmp_strings},
+  {"Login","Login@", -7,  -1,0,&w_login_getter,ps_emit_past_time,ps_cmp_times},
+  {"From", 0, UT_HOSTSIZE,-1,0,&w_host_getter, ps_emit_string, ps_cmp_strings},
+  {"Idle", 0, -5,         -1,0,&w_idle_getter, ps_emit_minutes,ps_cmp_times},
+  {"What=args"},
   {0}
 };
 struct ps_fmt_specs w_specs = {_w_specs, &ps_std_fmt_specs};
@@ -349,8 +366,6 @@ uptime (struct proc_stat_list *procs)
 	  (double)load->avenrun[2] / (double)LOAD_SCALE);
 }
 
-extern void psout ();
-
 void
 main(int argc, char *argv[])
 {
@@ -417,7 +432,7 @@ main(int argc, char *argv[])
     uptime (procs);
 
   if (show_entries)
-    psout (procs, fmt_string, &w_specs, sort_key_name, sort_reverse,
+    psout (procs, fmt_string, 0, &w_specs, sort_key_name, sort_reverse,
 	   output_width, print_heading,
 	   squash_bogus_fields, squash_nominal_fields);
 
