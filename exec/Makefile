@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@ target = exec
 DIST_FILES = core.c gcore.c
 #OTHERLIBS = -lbfd -liberty
 
-exec-MIGSFLAGS = -imacros execmutations.h
+exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
 include ../Makeconf
 
