@@ -50,6 +50,7 @@
 #include <error.h>
 #include <argp.h>
 #include <argz.h>
+#include <fnmatch.h>
 #include <assert.h>
 #include <version.h>
 
@@ -95,6 +96,7 @@ static int _debug = 0;
 #define FSCK_F_VERBOSE	0x100
 #define FSCK_F_WRITABLE	0x200	/* Make writable after fscking.  */
 #define FSCK_F_AUTO	0x400	/* Do all filesystems in fstab.  */
+#define FSCK_F_DRYRUN	0x800	/* Don't actually do anything.  */
 
 static int got_sigquit = 0, got_sigint = 0;
 
@@ -156,6 +158,17 @@ fs_start_fsck (struct fs *fs, int flags)
 
   *argp++ = fs->mntent.mnt_fsname;
   *argp = 0;
+
+  if (flags & FSCK_F_DRYRUN)
+    {
+      char *argz;
+      size_t argz_len;
+      argz_create (argv, &argz, &argz_len);
+      argz_stringify (argz, argz_len, ' ');
+      puts (argz);
+      free (argz);
+      return 0;
+    }
 
   pid = fork ();
   if (pid < 0)
@@ -219,6 +232,16 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
       fs_debug (fs, "Checking readonly state");
       err = fs_readonly (fs, &readonly);
       CK (err, "%s: Cannot check readonly state", fs->mntent.mnt_dir);
+
+      if (fscks->flags & FSCK_F_DRYRUN)
+	{
+	  if (! readonly)
+	    {
+	      printf ("%s: writable filesystem %s would be made read-only\n",
+		      program_invocation_name, fs->mntent.mnt_dir);
+	      readonly = 1;
+	    }
+	}
 
       if (! readonly)
 	{
@@ -392,20 +415,18 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 	summary_status = status;
     }
 
-  /* Do in pass order; if in automatic mode, we skip pass 0.  */
-  for (pass = autom ? 1 : 0; pass >= 0; pass = fstab_next_pass (fstab, pass))
+  /* Do in pass order; pass 0 is never run, it is reserved for "off".  */
+  for (pass = 1; pass > 0; pass = fstab_next_pass (fstab, pass))
     /* Submit all filesystems in the given pass, up to MAX_PARALLEL at a
        time.  There should currently be no fscks running.  */
     {
       debug ("Pass %d", pass);
 
-      /* Do pass 0 filesystems one at a time.  */
-      fscks.free_slots = (pass == 0 ? 1 : max_parallel);
+      fscks.free_slots = max_parallel;
 
       /* Try and fsck every filesystem in this pass.  */
       for (fs = fstab->entries; fs; fs = fs->next)
-	if (fs->mntent.mnt_passno == pass
-	    && !(autom && hasmntopt (&fs->mntent, "noauto")))
+	if (fs->mntent.mnt_passno == pass)
 	  /* FS is applicable for this pass.  */
 	  {
 	    struct fstype *type;
@@ -447,7 +468,7 @@ options[] =
   {"preen",      'p', 0,      0, "Terse automatic mode", 1},
   {"yes",        'y', 0,      0, "Automatically answer yes to all questions"},
   {"no",         'n', 0,      0, "Automatically answer no to all questions"},
-  {"fstab",	 't', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
+  {"fstab",	 'F', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
   {"parallel",   'l', "NUM",  0, "Limit the number of parallel checks to NUM"},
   {"verbose",	 'v', 0,      0, "Print informational messages"},
   {"writable",   'w', 0,      0,
@@ -455,8 +476,14 @@ options[] =
   {"debug",	 'D', 0,      OPTION_HIDDEN },
   {"search-fmts",'S', "FMTS", 0,
      "`:' separated list of formats to use for finding fsck programs"},
-  {0, 0, 0, 0, "In --preen mode, the following also apply:", 2},
   {"force",	 'f', 0,      0, "Check even if clean"},
+  {"exclude-root",'R',0,      0,
+     "Exclude root (/) filesystem from " _PATH_MNTTAB " list"},
+  {"exclude",	 'X', "PATTERN", 0, "Exclude directories matching PATTERN"},
+  {"dry-run",	 'N', 0,      0, "Don't check, just show what would be done"},
+  {"fstype",	 't', "TYPE", 0, "Check only filesystems of given type(s)"},
+  {"all",	 'A', 0,      0, "Check all filesystem in " _PATH_MNTTAB},
+  {0, 0, 0, 0, "In --preen mode, the following also apply:", 2},
   {"silent",     's', 0,      0, "Only print diagostic messages"},
   {"quiet",      'q', 0,      OPTION_ALIAS | OPTION_HIDDEN },
   {0, 0}
@@ -474,10 +501,15 @@ main (int argc, char **argv)
   int flags = 0;
   char *names = 0;
   size_t names_len = 0;
+  char *exclude = 0;
+  size_t exclude_len = 0;
+  char *include_types = 0, *exclude_types = 0;
+  size_t exclude_types_len = 0, include_types_len = 0;
   char *search_fmts = FSCK_SEARCH_FMTS;
   size_t search_fmts_len = sizeof FSCK_SEARCH_FMTS;
   char *fstab_path = _PATH_MNTTAB;
   int max_parallel = -1;	/* -1 => use default */
+  int do_all = 0;
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
@@ -490,11 +522,13 @@ main (int argc, char **argv)
 	case 's': flags |= FSCK_F_SILENT; break;
 	case 'v': flags |= FSCK_F_VERBOSE; break;
 	case 'w': flags |= FSCK_F_WRITABLE; break;
-	case 't': fstab_path = arg; break;
+	case 'N': flags |= FSCK_F_DRYRUN; break;
+	case 'A': do_all = 1; break;
+	case 'F': fstab_path = arg; break;
 	case 'D': _debug = 1; break;
 	case 'l':
 	  max_parallel = atoi (arg);
-	  if (! max_parallel)
+	  if (max_parallel < 1)
 	    argp_error (state, "%s: Invalid value for --max-parellel", arg);
 	  break;
 	case 'S':
@@ -504,6 +538,28 @@ main (int argc, char **argv)
 	  err = argz_add (&names, &names_len, arg);
 	  if (err)
 	    argp_failure (state, 100, ENOMEM, "%s", arg);
+	  break;
+	case 'R':
+	  arg = "/";
+	  /* FALLTHROUGH */
+	case 'X':
+	  err = argz_add (&exclude, &exclude_len, arg);
+	  if (err)
+	    argp_failure (state, 100, ENOMEM, "%s", arg);
+	  break;
+	case 't':
+	  {
+	    char *p;
+	    while ((p = strsep (&arg, ",")) != 0)
+	      {
+		if (!strncasecmp (p, "no", 2))
+		  err = argz_add (&exclude_types, &exclude_types_len, p + 2);
+		else
+		  err = argz_add (&include_types, &include_types_len, p);
+		if (err)
+		  argp_failure (state, 100, ENOMEM, "%s", arg);
+	      }
+	  }
 	  break;
 	default:
 	  return ARGP_ERR_UNKNOWN;
@@ -532,6 +588,13 @@ main (int argc, char **argv)
     {
       char *name;
 
+      if (do_all)
+	error (2, 0, "filesystem arguments not allowed with --all");
+      else if (exclude)
+	error (2, 0, "--exclude not allowed with filesystem arguments");
+      else if (include_types || exclude_types)
+	error (2, 0, "--fstype not allowed with filesystem arguments");
+
       debug ("Reading %s...", _PATH_MOUNTED);
       err = fstab_read (fstab, _PATH_MOUNTED);
       if (err && err != ENOENT)
@@ -553,8 +616,102 @@ main (int argc, char **argv)
   else
     /* Fsck everything in /etc/fstab.  */
     {
-      check = fstab;
       flags |= FSCK_F_AUTO;
+
+      if (exclude == 0 && include_types == 0 && exclude_types == 0)
+	check = fstab;
+      else
+	{
+	  struct fs *fs;
+
+	  err = fstab_create (types, &check);
+	  if (err)
+	    error (105, err, "fstab_create");
+
+	  /* For each excluded type (i.e. `-t notype'), clobber the
+	     fstype entry's program with an empty string to mark it.  */
+	  if (exclude_types)
+	    {
+	      const char *tn;
+	      struct fstype *type;
+	      for (tn = exclude_types; tn;
+		   tn = argz_next (exclude_types, exclude_types_len, tn))
+		{
+		  err = fstypes_get (types, tn, &type);
+		  if (err)
+		    error (106, err, "fstypes_get");
+		  free (type->program);
+		  type->program = strdup ("");
+		}
+	    }
+
+	  if (include_types)
+	    {
+	      const char *tn;
+	      struct fstypes *wanttypes;
+
+	      /* We will copy the types we want to include into a fresh
+		 list in WANTTYPES.  Since we specify no search formats,
+		 `fstypes_get' applied to WANTTYPES can only create
+		 elements with a null `program' field.  */
+	      err = fstypes_create (0, 0, &wanttypes);
+	      if (err)
+		error (102, err, "fstypes_create");
+
+	      for (tn = include_types; tn;
+		   tn = argz_next (include_types, include_types_len, tn))
+		{
+		  struct fstype *type;
+		  err = fstypes_get (types, tn, &type);
+		  if (err)
+		    error (106, err, "fstypes_get");
+		  if (type->program == 0)
+		    error (0, 0, "requested filesystem type `%s' unknown", tn);
+		  else
+		    {
+		      struct fstype *newtype = malloc (sizeof *newtype);
+		      newtype->name = strdup (type->name);
+		      newtype->program = strdup (type->program);
+		      newtype->next = wanttypes->entries;
+		      wanttypes->entries = newtype;
+		    }
+		}
+
+	      /* fstypes_free (types); */
+	      types = wanttypes;
+	    }
+
+	  for (fs = fstab->entries; fs; fs = fs->next)
+	    {
+	      const char *ptn;
+	      struct fstype *type;
+
+	      err = fs_type (fs, &type);
+	      if (err || include_types)
+		{
+		  err = fstypes_get (types, fs->mntent.mnt_type, &type);
+		  if (err)
+		    error (106, err, "fstypes_get");
+		  if (exclude_types || include_types)
+		    continue;
+		}
+	      if (include_types && type->program == 0)
+		continue;	/* Freshly created, was not in WANTTYPES.  */
+	      if (type->program != 0 && type->program[0] == '\0')
+		continue;	/* This type is marked as excluded.  */
+
+	      for (ptn = exclude; ptn;
+		   ptn = argz_next (exclude, exclude_len, ptn))
+		if (fnmatch (ptn, fs->mntent.mnt_dir, 0) == 0)
+		  break;
+	      if (ptn)	/* An exclude pattern matched.  */
+		continue;
+
+	      err = fstab_add_fs (check, fs, 0);
+	      if (err)
+		error (107, err, "fstab_add_fs");
+	    }
+	}
     }
 
   if (max_parallel <= 0)
