@@ -1,3 +1,9 @@
+2001-06-06  Roland McGrath  <roland@frob.com>
+
+	* rpctrace.c (print_reply_header): Don't call unfinished_line if
+	expected_reply_port is null, indicating the last line was finished as
+	a simpleroutine.
+
 2001-03-31  Roland McGrath  <roland@frob.com>
 
 	* pids.h: Fix obsolescent #endif syntax.
