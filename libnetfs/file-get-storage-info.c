@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,27 +23,33 @@
 
 error_t
 netfs_S_file_get_storage_info (struct protid *user,
-			       int *class,
-			       off_t **addresses,
-			       mach_msg_type_number_t *naddresses,
-			       size_t *address_units,
-			       char *storage_name,
-			       mach_port_t *storage_port,
-			       mach_msg_type_name_t *storage_port_type,
-			       char **storage_data,
-			       mach_msg_type_number_t *storage_data_len,
-			       int *flags)
+				mach_port_t **ports,
+				mach_msg_type_name_t *ports_type,
+				mach_msg_type_number_t *num_ports,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets,
+				mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
 {
   if (!user)
     return EOPNOTSUPP;
   
-  /* Necessary to keep MiG happy. */
-  *naddresses = 0;
-  *storage_data_len = 0;
-  *storage_port = MACH_PORT_NULL;
-  *storage_port_type = MACH_MSG_TYPE_COPY_SEND;
-  
-  *class = STORAGE_NETWORK;
+  *data_len = 0;
+  *num_offsets = 0;
+  *num_ports = 0;
+
+  if (*num_ints == 0)
+    /* Argh */
+    {
+      error_t err =
+	vm_allocate (mach_task_self (), (vm_address_t *)ints, sizeof (int), 1);
+      if (err)
+	return err;
+    }
+
+  *num_ints = 1;
+  ints[0] = STORAGE_NETWORK;
+
   return 0;
 }
 
