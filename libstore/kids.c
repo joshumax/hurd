@@ -1,6 +1,6 @@
 /* Managing sub-stores
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -118,8 +118,8 @@ store_set_child_flags (struct store *store, int flags)
     }
 
   if (err)
-    while (i > 0)
-      store_clear_flags (store->children[--i], flags & ~old_child_flags[i]);
+    while (i-- > 0)
+      store_clear_flags (store->children[i], flags & ~old_child_flags[i]);
   else
     store->flags |= flags;
 
@@ -142,8 +142,8 @@ store_clear_child_flags (struct store *store, int flags)
     }
 
   if (err)
-    while (i > 0)
-      store_set_flags (store->children[--i], flags & ~old_child_flags[i]);
+    while (i-- > 0)
+      store_set_flags (store->children[i], flags & ~old_child_flags[i]);
   else
     store->flags &= ~flags;
 
