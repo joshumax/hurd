@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.5 1994/10/12 16:58:58 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.6 1994/10/18 18:26:04 mib Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -47,6 +47,7 @@ static char *rcsid = "$Id: mkfs.c,v 1.5 1994/10/12 16:58:58 mib Exp $";
 /* #include <sys/disklabel.h> */
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 /* Begin misc additions for GNU Hurd */
 
@@ -56,11 +57,11 @@ static char *rcsid = "$Id: mkfs.c,v 1.5 1994/10/12 16:58:58 mib Exp $";
 #if (BYTE_ORDER == LITTLE_ENDIAN)
 #define DIRSIZ(oldfmt, dp) \
     ((oldfmt) ? \
-    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_type+1 + 3) &~ 3)) : \
-    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3)))
+    ((sizeof (struct directory_entry) - (MAXNAMLEN+1)) + (((dp)->d_type+1 + 3) &~ 3)) : \
+    ((sizeof (struct directory_entry) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3)))
 #else
 #define DIRSIZ(oldfmt, dp) \
-    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
+    ((sizeof (struct directory_entry) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
 #endif
 
 #define NBBY 8
@@ -251,7 +252,7 @@ main (int argc, char **argv)
   opt = DEFAULTOPT ;
   density = 4 * fsize;
 /*  maxcontig = MAX (1, MIN (MAXPHYS, MAXBSIZE) / bsize - 1); */
-  makcontig = 0;
+  maxcontig = 0;
   rotdelay = 4;
 #define MAXBLKPG(bsize)	((bsize) / sizeof(daddr_t))
   maxbpg = MAXBLKPG (bsize);
@@ -945,34 +946,34 @@ struct dinode node;
 #define PREDEFDIR 2
 #endif
 
-struct direct root_dir[] = {
-	{ ROOTINO, sizeof(struct direct), DT_DIR, 1, "." },
-	{ ROOTINO, sizeof(struct direct), DT_DIR, 2, ".." },
+struct directory_entry root_dir[] = {
+	{ ROOTINO, sizeof(struct directory_entry), DT_DIR, 1, "." },
+	{ ROOTINO, sizeof(struct directory_entry), DT_DIR, 2, ".." },
 #ifdef LOSTDIR
-	{ LOSTFOUNDINO, sizeof(struct direct), DT_DIR, 10, "lost+found" },
+	{ LOSTFOUNDINO, sizeof(struct directory_entry), DT_DIR, 10, "lost+found" },
 #endif
 };
-struct odirect {
+struct odirectory_entry {
 	u_long	d_ino;
 	u_short	d_reclen;
 	u_short	d_namlen;
 	u_char	d_name[MAXNAMLEN + 1];
 } oroot_dir[] = {
-	{ ROOTINO, sizeof(struct direct), 1, "." },
-	{ ROOTINO, sizeof(struct direct), 2, ".." },
+	{ ROOTINO, sizeof(struct directory_entry), 1, "." },
+	{ ROOTINO, sizeof(struct directory_entry), 2, ".." },
 #ifdef LOSTDIR
-	{ LOSTFOUNDINO, sizeof(struct direct), 10, "lost+found" },
+	{ LOSTFOUNDINO, sizeof(struct directory_entry), 10, "lost+found" },
 #endif
 };
 #ifdef LOSTDIR
-struct direct lost_found_dir[] = {
-	{ LOSTFOUNDINO, sizeof(struct direct), DT_DIR, 1, "." },
-	{ ROOTINO, sizeof(struct direct), DT_DIR, 2, ".." },
+struct directory_entry lost_found_dir[] = {
+	{ LOSTFOUNDINO, sizeof(struct directory_entry), DT_DIR, 1, "." },
+	{ ROOTINO, sizeof(struct directory_entry), DT_DIR, 2, ".." },
 	{ 0, DIRBLKSIZ, 0, 0, 0 },
 };
-struct odirect olost_found_dir[] = {
-	{ LOSTFOUNDINO, sizeof(struct direct), 1, "." },
-	{ ROOTINO, sizeof(struct direct), 2, ".." },
+struct odirectory_entry olost_found_dir[] = {
+	{ LOSTFOUNDINO, sizeof(struct directory_entry), 1, "." },
+	{ ROOTINO, sizeof(struct directory_entry), 2, ".." },
 	{ 0, DIRBLKSIZ, 0, 0 },
 };
 #endif
@@ -994,7 +995,7 @@ fsinit(utime)
 	 * create the lost+found directory
 	 */
 	if (Oflag) {
-		(void)makedir((struct direct *)olost_found_dir, 2);
+		(void)makedir((struct directory_entry *)olost_found_dir, 2);
 		for (i = DIRBLKSIZ; i < sblock.fs_bsize; i += DIRBLKSIZ)
 			bcopy(&olost_found_dir[2], &buf[i],
 			    DIRSIZ(0, &olost_found_dir[2]));
@@ -1023,7 +1024,7 @@ fsinit(utime)
 	node.di_modeh = 0;
 	node.di_nlink = PREDEFDIR;
 	if (Oflag)
-		node.di_size = makedir((struct direct *)oroot_dir, PREDEFDIR);
+		node.di_size = makedir((struct directory_entry *)oroot_dir, PREDEFDIR);
 	else
 		node.di_size = makedir(root_dir, PREDEFDIR);
 	node.di_db[0] = alloc(sblock.fs_fsize, DI_MODE (&node));
@@ -1037,7 +1038,7 @@ fsinit(utime)
  * return size of directory.
  */
 makedir(protodir, entries)
-	register struct direct *protodir;
+	register struct directory_entry *protodir;
 	int entries;
 {
 	char *cp;
