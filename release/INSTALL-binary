@@ -2,7 +2,7 @@
 Instructions for bootstrapping the Hurd from binary images (i486).
 Last updated 8 July 1996
 
-This directory contains i486 binaries for the Hurd and various
+This directory contains i386 binaries for the Hurd and various
 programs built to run under it.  All program binaries are stripped to
 save disk space; the installed libraries have the debugging
 information stripped to speed linking.
@@ -32,7 +32,7 @@ copy to it from nfs.]
 STEP II:
 
 You probably need to change the device on which paging is done.  This
-is done in a file in the Hurd partition called `XXX, on
+is done in a file in the Hurd partition called `boot/servers.boot', on
 the line which looks like:
 
   /dev/sd0b $(add-paging-file) $(default-pager)
@@ -46,7 +46,7 @@ Fsck and unmount the new partition before using it, to make sure it's
 clean.
 
 
-STEP IV:
+STEP III:
 
 Install the grub bootloader.  
 
@@ -64,7 +64,7 @@ http://www.uruk.org/grub, or in the grub source (which you should find
 wherever you picked up this binary release).
 
 
-STEP V:
+STEP IV:
 
 Boot the system with grub.  You should get a grub boot menu with two
 entries, `hurd' and `hurd-single'.  Select hurd-single.
@@ -76,63 +76,63 @@ Mach should load, and then the Hurd should start, saying something like:
    bash# 
 
 
-STEP VI:
+STEP V:
 
 When GNU boots the first time, you might see some confusing messages,
 and you may notice that pipes don't work.
-
-Before you change anything, you may have to make the root filesystem
-writable -- if the clean bit wasn't set, it will have been made
-read-only automatically, printing obvious warning messages to that
-effect.  Since things aren't set up enough at this point to fsck it,
-just make it writable using the command
-
-  fsysopts / --writable
 
 In order to set up the translators for this to be a fully functional
 Hurd system, say
 
   /bin/sh /SETUP
 
-Now run `sync' and then `halt'.  Boot the system again (still
-single-user), and it should come up more sanely.
+This will set up some initial translators so that the system runs
+normally, and then offer to reboot the system.  When it comes back up,
+boot it single-user again, so that you can do step VI. 
 
-(CAVEAT: Hurd partitions, especially the root partition, may have
-filesystem extensions that BSD does not know about.  Most of these are
-ignored by the BSD kernel and filesystem tools.  One of them, `passive
-translators' (a/k/a non-transient mounts), is not understood by the
-BSD fsck.  If you run the BSD fsck on a Hurd partition with such
-translators, things might fail *massively*.  The Hurd version of fsck
-does not, of course, have any such problem.
+NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
+  
+  (Hurd partitions, especially the root partition, may have filesystem
+  extensions that BSD does not know about.  Most of these are ignored
+  by the BSD kernel and filesystem tools.  One of them, `passive
+  translators' (a/k/a non-transient mounts), is not understood by the
+  BSD fsck.  If you run the BSD fsck on a Hurd partition with such
+  translators, things might fail *massively*.  The Hurd version of
+  fsck does not, of course, have any such problem.
 
-(The Hurd root partition needs to have such translators installed in
-order to work correctly.  Other partitions don't; the filesystems
-support compat options to prevent the use of Hurd filesystem
-extensions.)
+  (The Hurd root partition needs to have such translators installed in
+  order to work correctly.  Other partitions don't; the filesystems
+  support compat options to prevent the use of Hurd filesystem
+  extensions.)
 
 
-STEP VII:
+STEP VI:
 
-Now you have a Hurd system.  Some things you will want to do before
-you get going are:
+Now you have a Hurd system.  But in order to make it fully usable, do
+the following:
 
-A: cd to /dev and make useful devices.  At least pty's thus:
-   ./MAKEDEV ptyp ptyq 
+A: cd to /dev give the command `./MAKEDEV ptyp ptyq'.
 
-   Also add any disk device you have; you must specify both unit number
-   *and* partition.  Something like `sd0a' or `rd1f' is called for.
+   Also add any disk device you have; you must specify both unit
+   number *and* partition.  Something like `sd0a' or `rd1f' is called
+   for.
+
 
 B: If you want to use the network, set it up thus:
    
-     settrans /servers/socket/2 NN.NN.NN.NN eth0 MM.MM.MM.MM
+     settrans /servers/socket/inet NN.NN.NN.NN eth0 MM.MM.MM.MM
 
    where NN.NN.NN.NN is your IP address (not hostname, IP address).
    MM.MM.MM.MM is the address of an IP gateway.  If your host is
    isolated, then you can omit that arg.
 
+
 C: You can mount a partition (say hd0a) by saying:
 
      settrans /mnt /hurd/ufs /dev/rhd0a
+
+The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a'
+during step VI.A.
 
 (This is equivalent to Unixy `mount /dev/hd0a /mnt'.)
 
@@ -140,7 +140,7 @@ C: You can mount a partition (say hd0a) by saying:
 irrelevant [and this is really only being used to get a name in a
 clever but strange way], but there are minor bugs in the non-raw
 versions, so don't try and use them.)
-
+   
 If it's a Linux ext2 format disk, just do
 
   settrans /mnt /hurd/ext2fs /dev/rhd0a
@@ -148,6 +148,55 @@ If it's a Linux ext2 format disk, just do
 You can make it readonly thus:
 
   settrans /mnt /hurd/ufs -r /dev/rhd0a
+
+For more information on settrans, see the end of this file.
+
+
+D: NFS mounts, not surprisingly, are done thus:
+
+  settrans /mnt /hurd/nfs /remote/file/system remote.host.org
+
+(You may also use the host:fs and fs@host notations if you prefer.)
+NFS supports many options; use `/hurd/nfs --help' to see them all.
+
+
+E:
+Edit the password file (/etc/passwd) appropriately, and add any serial
+lines you have terminals on to /etc/ttys.
+
+
+Once you've completed these steps, you can reboot the system multi
+user.  Enjoy!
+
+
+
+
+MISCELLANEOUS NOTES:
+
+Fscking:
+
+XXX MILES -- Please insert arg summary here XXX
+
+
+GDB:
+
+XXX MILE -- Please verify
+
+The version of gdb included in this release has various features not used by
+most systems, in particular, the `thread' and `info thread' commands.
+
+The Hurd gdb can also debug running programs without halting them, which is
+useful to debug crucial system servers that can't be stopped without wedging
+the system.  To do this, give the commands `set task pause off', `set
+exceptions off', and `set signals off', before attaching to the process.  Of
+course, gdb may get confused because data structures are changing underneath
+it, but this generally works pretty well.
+
+The `portinfo' program is also very useful for debugging.
+
+
+SETTRANS:
+
 
 In all these cases, note that all the args after `/mnt' are a command
 line being sent to the filesystem program when it starts.  The syntax
@@ -174,38 +223,3 @@ option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
 (Note the placement of this option, as an arg to settrans, is
 different from the -r options you might give to the filesystem.)
 `showtrans' does not display these temporary mounts.
-
-NFS mounts, not surprisingly, are done thus:
-
-  settrans /mnt /hurd/nfs /remote/file/system remote.host.org
-
-(You may also use the host:fs and fs@host notations if you prefer.)
-NFS supports many options; use `/hurd/nfs --help' to see them all.
-
-You should also examine the /etc/rc script we've written; it's pretty
-specific to our use right now and you might want to make sure it makes
-sense for you.  Perhaps you will want to edit the password file too.
-
-
-MISCELLANEOUS NOTES:
-
-Fscking:
-
-XXX MILES -- Please insert arg summary here XXX
-
-
-GDB:
-
-XXX MILE -- Please verify
-
-The version of gdb included in this release has various features not used by
-most systems, in particular, the `thread' and `info thread' commands.
-
-The Hurd gdb can also debug running programs without halting them, which is
-useful to debug crucial system servers that can't be stopped without wedging
-the system.  To do this, give the commands `set task pause off', `set
-exceptions off', and `set signals off', before attaching to the process.  Of
-course, gdb may get confused because data structures are changing underneath
-it, but this generally works pretty well.
-
-The `portinfo' program is also very useful for debugging.
