@@ -144,6 +144,7 @@ main(argc, argv)
 	int	argc;
 	char	**argv;
 {
+  int die = 0;
   int script_paging_file (const struct cmd *cmd, int linux_signature)
     {
       if (add_paging_file (bootstrap_master_device_port, cmd->path,
@@ -162,6 +163,15 @@ main(argc, argv)
   int script_add_linux_paging_file (const struct cmd *cmd, int *val)
     {
       return script_paging_file (cmd, 1);
+    }
+  int script_serverboot_ctl (const struct cmd *cmd, int *val)
+    {
+      const char *const ctl = cmd->path;
+      if (!strcmp (ctl, "die"))
+	die = 1;
+      else
+	printf ("(serverboot): Unknown control word `%s' ignored\n", ctl);
+      return 0;
     }
 
   register kern_return_t	result;
@@ -320,6 +330,9 @@ main(argc, argv)
 	      || boot_script_define_function ("add-linux-paging-file",
 					      VAL_NONE,
 					      &script_add_linux_paging_file)
+	      || boot_script_define_function ("serverboot",
+					      VAL_NONE,
+					      &script_serverboot_ctl)
 	      )
 	    panic ("bootstrap: error setting boot script variables");
 
@@ -391,6 +404,13 @@ main(argc, argv)
 		(void) vm_deallocate(my_task, r_addr, r_size);
 	}
 #endif
+
+      if (die)
+	{
+	  printf ("(serverboot): terminating, not becoming default pager\n");
+	  while (1)
+	    task_terminate (mach_task_self ());
+	}
 
       default_pager_initialize (bootstrap_master_host_port);
 
