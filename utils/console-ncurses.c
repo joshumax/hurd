@@ -259,24 +259,68 @@ ucs4_to_altchar (wchar_t chr, chtype *achr)
   return 1;
 }
 
+struct mutex global_lock;
 static vcons_t active_vcons = NULL;
 
 error_t
-cons_vcons_activate (vcons_t vcons)
+console_switch (int id, int delta)
 {
-  error_t err;
+  error_t err = 0;
+  int active_id;
+  cons_t cons;
+  vcons_t vcons;
 
-  assert (vcons);
-  assert (vcons != active_vcons);
+  mutex_lock (&global_lock);
+  if (!active_vcons)
+    {
+      mutex_unlock (&global_lock);
+      return 0;
+    }
+  cons = active_vcons->cons;
+  active_id = active_vcons->id;
 
-  err = cons_vcons_open (vcons);
-  if (err)
-    return err;
+  /* We must give up our global lock before we can call back into
+     libcons.  This is because cons_switch will lock CONS, and as
+     other functions in libcons lock CONS while calling back into our
+     functions which take the global lock (like cons_vcons_add), we
+     would deadlock.  Because of this, we can not refer to our active
+     console directly, but we must refer to it by name (ID).  XXX
+     Likewise, we can not really refer to CONS directly, but the
+     current implementation guarantees an eternal life span for
+     CONS.  */
+  mutex_unlock (&global_lock);
+  err = cons_switch (cons, active_id, id, delta, &vcons);
+  if (!err)
+    {
+      mutex_lock (&global_lock);
+      if (active_vcons != vcons)
+        {
+          cons_vcons_close (active_vcons);
+          active_vcons = vcons;
+        }
+      mutex_unlock (&vcons->lock);
+      mutex_unlock (&global_lock);
+    }
+  return err;
+}
 
-  if (active_vcons)
-    cons_vcons_close (active_vcons);
-  active_vcons = vcons;
-  return 0;
+void
+cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
+{
+  error_t err = 0;
+  mutex_lock (&global_lock);
+  if (!active_vcons)
+    {
+      vcons_t vcons;
+      err = cons_vcons_open (cons, vcons_entry, &vcons);
+      if (!err)
+        {
+          vcons_entry->vcons = vcons;
+	  active_vcons = vcons;
+	  mutex_unlock (&vcons->lock);
+	}
+    }
+  mutex_unlock (&global_lock);
 }
 
 any_t
@@ -331,8 +375,7 @@ input_loop (any_t unused)
 		    case '9':
 		      /* Avoid a dead lock.  */
 		      mutex_unlock (&ncurses_lock);
-		      /* XXX: We ignore any error here.  */
-		      cons_switch (active_vcons->cons, 1 + (ret - '1'), 0);
+		      console_switch (1 + (ret - '1'), 0);
 		      mutex_lock (&ncurses_lock);
 		      break;
 		    default:
@@ -373,9 +416,9 @@ input_loop (any_t unused)
 	  mutex_unlock (&ncurses_lock);
 	  if (size)
 	    {
+	      mutex_lock (&global_lock);
 	      if (active_vcons)
 		{
-		  mutex_lock (&active_vcons->lock);
 		  do
 		    {
 		      ret = write (active_vcons->input, buf, size);
@@ -386,8 +429,8 @@ input_loop (any_t unused)
 			}
 		    }
 		  while (size && (ret != -1 || errno == EINTR));
-		  mutex_unlock (&active_vcons->lock);
 		}
+	      mutex_unlock (&global_lock);
 	    }
 	}
     }
@@ -466,45 +509,55 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 void
 cons_vcons_update (vcons_t vcons)
 {
-  if (vcons != active_vcons)
-    return;
-  refresh ();
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    refresh ();
+  mutex_unlock (&global_lock);
 }
 
 void
 cons_vcons_set_cursor_pos (vcons_t vcons, uint32_t col, uint32_t row)
 {
-  if (vcons != active_vcons)
-    return;
-  mutex_lock (&ncurses_lock);
-  move (row, col);
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      move (row, col);
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 void
 cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status)
 {
-  if (vcons != active_vcons)
-    return;
-  mutex_lock (&ncurses_lock);
-  curs_set (status ? (status == 1 ? 1 : 2) : 0);
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      curs_set (status ? (status == 1 ? 1 : 2) : 0);
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 void
 cons_vcons_scroll (vcons_t vcons, int delta)
 {
   assert (delta >= 0);
-  if (vcons != active_vcons)
-    return;
 
-  mutex_lock (&ncurses_lock);
-  idlok (stdscr, TRUE);
-  scrollok (stdscr, TRUE);
-  scrl (delta);
-  idlok (stdscr, FALSE);
-  scrollok (stdscr, FALSE);
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      idlok (stdscr, TRUE);
+      scrollok (stdscr, TRUE);
+      scrl (delta);
+      idlok (stdscr, FALSE);
+      scrollok (stdscr, FALSE);
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 void
@@ -514,36 +567,42 @@ cons_vcons_write (vcons_t vcons, conchar_t *str, size_t length,
   int x;
   int y;
 
-  if (vcons != active_vcons)
-    return;
-
-  mutex_lock (&ncurses_lock);
-  getyx (stdscr, y, x);
-  mvwputsn (str, length, col, row);
-  wmove (stdscr, y, x);
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      getyx (stdscr, y, x);
+      mvwputsn (str, length, col, row);
+      wmove (stdscr, y, x);
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 void
 cons_vcons_beep (vcons_t vcons)
 {
-  if (vcons != active_vcons)
-    return;
-
-  mutex_lock (&ncurses_lock);
-  beep ();
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      beep ();
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 void
 cons_vcons_flash (vcons_t vcons)
 {
-  if (vcons != active_vcons)
-    return;
-
-  mutex_lock (&ncurses_lock);
-  flash ();
-  mutex_unlock (&ncurses_lock);
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    {
+      mutex_lock (&ncurses_lock);
+      flash ();
+      mutex_unlock (&ncurses_lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 
@@ -557,6 +616,7 @@ main (int argc, char *argv[])
   argp_parse (&cons_startup_argp, argc, argv, 0, 0, 0);
 
   mutex_init (&ncurses_lock);
+  mutex_init (&global_lock);
 
   initscr ();
   start_color ();

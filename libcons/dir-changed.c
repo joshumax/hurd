@@ -27,7 +27,7 @@
 #include "cons.h"
 #include "fs_notify_S.h"
 
-
+
 static error_t
 add_one (cons_t cons, char *name)
 {
@@ -38,14 +38,14 @@ add_one (cons_t cons, char *name)
   nr = strtoul (name, &tail, 10);
   if (!errno && *tail == '\0' && nr > 0)
     {
-      vcons_t vcons;
-      return cons_lookup (cons, nr, 1, &vcons);
+      vcons_list_t vcons_entry;
+      return cons_lookup (cons, nr, 1, &vcons_entry);
     }
   return 0;
 }
 
 static error_t
-lookup_one (cons_t cons, char *name, vcons_t *vcons)
+lookup_one (cons_t cons, char *name, vcons_list_t *vcons_entry)
 {
   unsigned long int nr;
   char *tail;
@@ -53,11 +53,11 @@ lookup_one (cons_t cons, char *name, vcons_t *vcons)
   errno = 0;
   nr = strtoul (name, &tail, 10);
   if (!errno && *tail == '\0' && nr > 0)
-    return cons_lookup (cons, nr, 0, vcons);
+    return cons_lookup (cons, nr, 0, vcons_entry);
   return 0;
 }
 
-
+
 kern_return_t
 cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
 		    dir_changed_type_t change, string_t name)
@@ -100,22 +100,21 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
       break;
     case DIR_CHANGED_UNLINK:
       {
-	vcons_t vcons;
-	err = lookup_one (cons, name, &vcons);
+	vcons_list_t vcons_entry;
+	err = lookup_one (cons, name, &vcons_entry);
 	if (!err)
 	  {
-	    cons_vcons_remove (vcons);
-	    if (vcons->prev)
-	      vcons->prev->next = vcons->next;
+	    cons_vcons_remove (cons, vcons_entry);
+	    if (vcons_entry->prev)
+	      vcons_entry->prev->next = vcons_entry->next;
 	    else
-	      cons->vcons_list = vcons->next;
-	    if (vcons->next)
-	      vcons->next->prev = vcons->prev;
+	      cons->vcons_list = vcons_entry->next;
+	    if (vcons_entry->next)
+	      vcons_entry->next->prev = vcons_entry->prev;
 	    else
-	      cons->vcons_last = vcons->prev;
+	      cons->vcons_last = vcons_entry->prev;
 
-	    /* XXX Destroy the state.  */
-	    free (vcons);
+	    free (vcons_entry);
 	  }
       }
       break;
@@ -123,7 +122,7 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
     default:
       assert ("Unexpected dir-changed type.");
       mutex_unlock (&cons->lock);
-     return EINVAL;
+      return EINVAL;
     }
   mutex_unlock (&cons->lock);
   return 0;

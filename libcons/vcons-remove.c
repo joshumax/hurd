@@ -18,15 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <errno.h>
 #include <assert.h>
 
 #include "cons.h"
 
-/* The virtual console VCONS is going to be removed.  VCONS->cons is
-   locked.  */
+/* The virtual console VCONS_ENTRY is going to be removed.
+   VCONS_ENTRY->cons is locked.  */
 void
-cons_vcons_remove (vcons_t vcons)
+cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry)
 {
-  assert (vcons != vcons->cons->active);
+  assert (!vcons_entry->vcons);
 }

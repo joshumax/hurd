@@ -30,12 +30,10 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		     off_t start, off_t end)
 {
   error_t err = 0;
-  vcons_t vcons;
+  vcons_t vcons = (vcons_t) notify;
 
-  if (!notify || !notify->vcons)
+  if (!notify || notify->cons)
     return EOPNOTSUPP;
-
-  vcons = notify->vcons;
 
   mutex_lock (&vcons->lock);
   switch (change)

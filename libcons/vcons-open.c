@@ -29,9 +29,10 @@
 
 #include "cons.h"
 
-/* Open the virtual console VCONS.  VCONS->cons is locked.  */
+/* Open the virtual console for VCONS_ENTRY.  CONS is locked.
+   Afterwards, R_VCONS will be locked.  */
 error_t
-cons_vcons_open (vcons_t vcons)
+cons_vcons_open (cons_t cons, vcons_list_t vcons_entry, vcons_t *r_vcons)
 {
   error_t err = 0;
   char *name;
@@ -40,12 +41,23 @@ cons_vcons_open (vcons_t vcons)
   int fd = -1;
   struct stat statbuf;
   mach_port_t notify = MACH_PORT_NULL;
+  vcons_t vcons;
 
-  if (asprintf (&name, "%u", vcons->id) < 0)
+  if (asprintf (&name, "%u", vcons_entry->id) < 0)
     return err;
 
+  /* Set up the port we receive notification messages on.  */
+  err = ports_create_port (cons_port_class, cons_port_bucket,
+                           sizeof (*vcons), &vcons);
+  if (err)
+    goto err;
+  vcons->notify.cons = NULL;
+  vcons->cons = cons;
+  vcons->vcons_entry = vcons_entry;
+  vcons->id = vcons_entry->id;
+
   /* Open the directory port of the virtual console.  */
-  vconsp = file_name_lookup_under (vcons->cons->dirport, name,
+  vconsp = file_name_lookup_under (cons->dirport, name,
 				   O_DIRECTORY | O_RDONLY, 0);
   if (vconsp == MACH_PORT_NULL)
     {
@@ -116,23 +128,19 @@ cons_vcons_open (vcons_t vcons)
   vcons->state.changes.buffer = ((uint32_t *) vcons->display)
     + vcons->display->changes.buffer;
 
-  /* Set up the port we receive notification messages on.  */
-  err = ports_create_port (cons_port_class, cons_port_bucket,
-                           sizeof (*vcons->notify), &vcons->notify);
-  if (err)
-    goto err;
-  vcons->notify->cons = NULL;
-  vcons->notify->vcons = vcons;
-
   /* Request notification messages.  */
-  notify = ports_get_right (vcons->notify);
+  notify = ports_get_right (vcons);
   mach_port_set_qlimit (mach_task_self (), notify, 1);
 
   /* When this succeeds, we will immediately receive notification
      messages for this virtual console.  */
+  mutex_lock (&vcons->lock);
   err = file_notice_changes (file, notify, MACH_MSG_TYPE_MAKE_SEND);
   if (!err)
-    goto out;
+    {
+      *r_vcons = vcons;
+      goto out;
+    }
 
  err:
   if (vcons->input >= 0)
@@ -148,8 +156,9 @@ cons_vcons_open (vcons_t vcons)
   if (notify)
     {
       mach_port_deallocate (mach_task_self (), notify);
-      vcons->notify = MACH_PORT_NULL;
+      ports_port_deref (vcons);
     }
+  ports_destroy_right (vcons);
  out:
   if (fd > 0)
     close (fd);

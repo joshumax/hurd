@@ -18,7 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-
 #include <errno.h>
 #include <malloc.h>
 
@@ -30,9 +29,10 @@
 #include "cons.h"
 #include "priv.h"
 
-  struct port_bucket *cons_port_bucket;
-  struct port_class *cons_port_class;
+struct port_bucket *cons_port_bucket;
+struct port_class *cons_port_class;
 
+
 error_t
 cons_init (void)
 {
@@ -45,7 +45,7 @@ cons_init (void)
   if (!cons_port_bucket)
     return errno;
 
-  cons_port_class = ports_create_class (NULL, NULL);
+  cons_port_class = ports_create_class (cons_vcons_destroy, NULL);
   if (!cons_port_class)
     return errno;
 
@@ -56,7 +56,6 @@ cons_init (void)
   mutex_init (&cons->lock);
   cons->vcons_list = NULL;
   cons->vcons_last = NULL;
-  cons->active = NULL;
   cons->dir = opendir (_cons_file);
   cons->slack = _cons_slack;
   if (!cons->dir)
@@ -83,7 +82,6 @@ cons_init (void)
       return err;
     }
   dir_notify_port->cons = cons;
-  dir_notify_port->vcons = NULL;
 
   dir_notify = ports_get_right (dir_notify_port);
   err = dir_notice_changes (cons->dirport, dir_notify,

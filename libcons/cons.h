@@ -28,23 +28,51 @@
 
 #include <hurd/console.h>
 
-typedef struct vcons *vcons_t;
 typedef struct cons *cons_t;
+typedef struct vcons_list *vcons_list_t;
+typedef struct vcons *vcons_t;
 typedef struct cons_notify *cons_notify_t;
+
+struct vcons_list
+{
+  cons_t cons;
+  vcons_list_t next;
+  vcons_list_t prev;
+
+  /* The ID of the virtual console entry in the list.  */
+  int id;
+
+  /* The opened vcons port on which we receive notifications.  */
+  vcons_t vcons;
+};
+
+struct cons_notify
+{
+  struct port_info pi;
+
+  /* This is set for the dir notification port.  */
+  cons_t cons;
+};
 
 struct vcons
 {
-  vcons_t next;
-  vcons_t prev;
+  /* This must come first for the port info structure.  */
+  struct cons_notify notify;
+
+  /* These elements are static from creation time.  */
   cons_t cons;
+  vcons_list_t vcons_entry;
   int id;
 
+  /* The lock that protects all other members.  */
   struct mutex lock;
+
   /* The FD of the input node.  */
   int input;
+
+  /* The shared memory of the display.  */
   struct cons_display *display;
   size_t display_size;
-  cons_notify_t notify;
 
   struct
   {
@@ -82,9 +110,8 @@ struct cons
   /* Protects the cons structure and the linked list in
      VCONS_LIST.  */
   struct mutex lock;
-  vcons_t vcons_list;
-  vcons_t vcons_last;
-  vcons_t active;
+  vcons_list_t vcons_list;
+  vcons_list_t vcons_last;
 
   struct port_class *port_class;
   struct port_bucket *port_bucket;
@@ -93,23 +120,12 @@ struct cons
   int slack;
 };
 
-struct cons_notify
-{
-  struct port_info pi;
-
-  /* This is set for the dir notification port.  */
-  cons_t cons;
-
-  /* This is set for the file notification ports.  */
-  vcons_t vcons;
-};
-
 
 /* The user must define this variable.  Set this to the name of the
    console client.  */
 extern const char *cons_client_name;
 
-/* The user must define this variables.  Set this to be the client
+/* The user must define this variable.  Set this to be the client
    version number.  */
 extern const char *cons_client_version;
 
@@ -133,10 +149,31 @@ void cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status);
 
 /* The user must define this function.  Scroll the content of virtual
    console VCONS, which is locked, up by DELTA if DELTA is positive or
-   down by -DELTA if DELTA is negative.  This call will be immediately
-   followed by corresponding cons_vcons_write calls to fill the
-   resulting gap on the screen, and VCONS will be looked throughout
-   the whole time.  */
+   down by -DELTA if DELTA is negative.  DELTA will never be zero, and
+   the absolute value if DELTA will be smaller than or equal to the
+   height of the screen matrix.
+
+   This call will be immediately followed by corresponding
+   cons_vcons_write calls to fill the resulting gap on the screen, and
+   VCONS will be looked throughout the whole time.  The purpose of the
+   function is two-fold: It is called with an absolute value of DELTA
+   smaller than the screen height to perform scrolling.  It is called
+   with an absolute value of DELTA equal to the screen height to
+   prepare a full refresh of the screen.  In the latter case the user
+   should not really perform any scrolling.  Instead it might
+   deallocate limited resources (like display glyph slots and palette
+   colors) if that helps to perform the subsequent write.  It goes
+   without saying that the same deallocation, if any, should be
+   performed on the area that will be filled with the scrolled in
+   content.
+
+   XXX Possibly need a function to invalidate scrollback buffer, or in
+   general to signal a switch of the console so state can be reset.
+   Only do this if we make guarantees about validity of scrollback
+   buffer, of course.
+
+   The driver is allowed to delay the effect of this operation until
+   the UPDATE function is called.  */
 void cons_vcons_scroll (vcons_t vcons, int delta);
 
 /* The user may define this function.  Make the changes from
@@ -157,21 +194,22 @@ void cons_vcons_beep (vcons_t vcons);
 void cons_vcons_flash (vcons_t vcons);
 
 /* The user must define this function.  It is called whenever a
-   virtual console is selected to be the active one.  */
+   virtual console is selected to be the active one.  It is the user's
+   responsibility to close the console at some later time.  */
 error_t cons_vcons_activate (vcons_t vcons);
 
-/* The user may define this function.  It is called whenever a
-   virtual console is added.  VCONS->cons is locked.  */
-void cons_vcons_add (vcons_t vcons);
+/* The user may define this function.  It is called after a
+   virtual console entry was added.  CONS is locked.  */
+void cons_vcons_add (cons_t cons, vcons_list_t vcons_entry);
 
-/* The user may define this function.  It is called whenever a
-   virtual console is removed.  VCONS->cons is locked.  */
-void cons_vcons_remove (vcons_t vcons);
+/* The user may define this function.  It is called just before a
+   virtual console entry is removed.  CONS is locked.  */
+void cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry);
 
-/* Switch the active console in CONS to ID or the current one plus
-   DELTA.  This will call back into the user code by doing a
-   cons_vcons_activate.  */
-error_t cons_switch (cons_t cons, int id, int delta);
+/* Open the virtual console ID or the ACTIVE_ID plus DELTA one in CONS
+   and return it in R_VCONS.  */
+error_t cons_switch (cons_t cons, int active_id, int id, int delta,
+		     vcons_t *r_vcons);
 
 
 extern const struct argp cons_startup_argp;
@@ -184,17 +222,21 @@ void cons_server_loop (void);
 int cons_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp);
 
 /* Lookup the virtual console with number ID in the console CONS,
-   acquire a reference for it, and return it in R_VCONS.  If CREATE is
-   true, the virtual console will be created if it doesn't exist yet.
-   If CREATE is true, and ID 0, the first free virtual console id is
-   used.  CONS must be locked.  */
-error_t cons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons);
+   acquire a reference for it, and return its list entry in R_VCONS.
+   If CREATE is true, the virtual console will be created if it
+   doesn't exist yet.  If CREATE is true, and ID 0, the first free
+   virtual console id is used.  CONS must be locked.  */
+error_t cons_lookup (cons_t cons, int id, int create, vcons_list_t *r_vcons);
 
-/* Open the virtual console VCONS.  VCONS->cons is locked.  */
-error_t cons_vcons_open (vcons_t vcons);
+/* Open the virtual console for VCONS_ENTRY.  CONS is locked.  */
+error_t cons_vcons_open (cons_t cons, vcons_list_t vcons_entry,
+			 vcons_t *r_vcons);
 
 /* Close the virtual console VCONS.  VCONS->cons is locked.  */
 void cons_vcons_close (vcons_t vcons);
+
+/* Destroy the virtual console VCONS.  */
+void cons_vcons_destroy (void *port);
 
 /* Redraw the virtual console VCONS, which is locked.  */
 void cons_vcons_refresh (vcons_t vcons);

@@ -1,3 +1,55 @@
+2002-09-09  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vcons-remove.c: New file.
+	* Makefile (SRCS): Add vcons-destroy.c.
+	* cons.h: New type vcons_list_t.
+	(struct vcons_list): New structure.
+	(struct cons_notify): Remove VCONS member.
+	(struct vcons): Remove members NEXT, PREV and NOTIFY.  Add the
+	notify structure to the top to make it possible to use a vcons as
+	a port.  New member VCONS_ENTRY.
+	(struct cons): Change type of members vcons_list and vcons_last to
+	vcons_list_t.  Remove member active.
+	(cons_vcons_add): Change prototype to match new definition.
+	(cons_vcons_remove): Likewise.
+	(cons_switch): Likewise.
+	(cons_lookup): Likewise.
+	(cons_vcons_open): Likewise.
+	(cons_vcons_destroy): New prototype.
+	* cons-lookup.c (cons_lookup): Change type of R_VCONS argument
+	vcons_list_t.  Change type of previous_vcons and vcons variables
+	to vcons_list_t.  Append _entry to all these variables.
+	Don't allocate and initialize a vcons_t, but a vcons_list_t.
+	After this has been added to the list, call cons_vcons_add.
+	* cons-switch.c: Do not include <error.h>
+	(cons_switch): Add arguments ACTIVE_ID and R_VCONS.  New variable
+	ERR and VCONS_ENTRY.  Remove variable ACTIVE.  Do not keep track
+	of active console.  Instead, look it up using ACTIVE_ID.  Lock the
+	returned console.  Call cons_vcons_open, not cons_vcons_activate.
+	* dir-changed.c (add_one): Change VCONS to VCONS_ENTRY and its
+	type from vcons_t to vcons_list_t to follow cons_lookup change.
+	(lookup_one): Likewise.
+	(cons_S_dir_changed): Likewise.
+	* file-changed.c (cons_S_file_changed): Cast NOTIFY to VCONS.
+	Check that NOTIFY->cons is not set instead that NOTIFY->vcons is.
+	* init-init.c (cons_init): Pass cons_vcons_destroy as
+	clean_routine to ports_create_class.
+	Don't initialize CONS->active, nor DIR_NOTIFY_PORT->vcons.
+	* vcons-add.c (cons_vcons_add): Change argument VCONS to CONS and
+	VCONS_ENTRY.  Don't do anything here (the user must implement it
+	all).
+	* vcons-close.c: Don't include <errno.h>, <unistd.h>, <stdio.h>,
+	<sys/mman.h>, <sys/fcntl.h>, <mach.h>.  Include <assert.h>,
+	<hurd/ports.h> and <cthreads.h>.
+	(cons_vcons_close): Clear VCONS->vcons_entry->vcons.  Derefence
+	and destroy VCONS.
+	* vcons-open.c (cons_vcons_open): Change arguments from VCONS to
+	CONS, VCONS_ENTRY and R_VCONS.  New variable VCONS.  Set up VCONS
+	as a port, and request notification messages on that.
+	* vcons-remove.c: Do not include <errno.h>.
+	(cons_vcons_remove): Assert that VCONS_ENTRY does not have an open
+	VCONS.
+
 2002-08-28  Marcus Brinkmann  <marcus@gnu.org>
 
 	* file-changed.c (cons_S_file_changed): Take NEW_CUR_LINE modulo

@@ -19,77 +19,65 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <error.h>
 #include <assert.h>
 
 #include "cons.h"
 
-/* Switch the active console in CONS to ID or the current one plus
-   DELTA.  This will call back into the user code by doing a
-   cons_vcons_activate.  */
+/* Open the virtual console ID or the ACTIVE_ID plus DELTA one in CONS
+   and return it in R_VCONS, which will be locked.  */
 error_t
-cons_switch (cons_t cons, int id, int delta)
+cons_switch (cons_t cons, int active_id, int id, int delta, vcons_t *r_vcons)
 {
-  vcons_t vcons = NULL;
-  vcons_t active;
+  error_t err = 0;
+  vcons_list_t vcons_entry = NULL;
 
   if (!id && !delta)
     return 0;
 
   mutex_lock (&cons->lock);
-  active = cons->active;
+  vcons_entry = cons->vcons_list;
+  while (vcons_entry && vcons_entry->id != (id ?: active_id))
+    vcons_entry = vcons_entry->next;
 
-  if (!id && !active)
+  if (!id && vcons_entry)
     {
-      mutex_unlock (&cons->lock);
-      return EINVAL;
-    }
-
-  if (id)
-    {
-      vcons = cons->vcons_list;
-      while (vcons && vcons->id != id)
-	vcons = vcons->next;
-    }
-  else if (delta > 0)
-    {
-      vcons = cons->active;
-      while (delta-- > 0)
+      if (delta > 0)
 	{
-	  vcons = vcons->next;
-	  if (!vcons)
-	    vcons = cons->vcons_list;
+	  while (delta-- > 0)
+	    {
+	      vcons_entry = vcons_entry->next;
+	      if (!vcons_entry)
+		vcons_entry = cons->vcons_list;
+	    }
+	}
+      else
+	{
+	  assert (delta < 0);
+	  while (delta++ < 0)
+	    {
+	      vcons_entry = vcons_entry->prev;
+	      if (!vcons_entry)
+		vcons_entry = cons->vcons_last;
+	    }
 	}
     }
-  else
-    {
-      assert (delta < 0);
-      while (delta++ < 0)
-	{
-	  vcons = vcons->prev;
-	  if (!vcons)
-	    vcons = cons->vcons_last;
-	}
-    }
-
-  if (!vcons)
+  if (!vcons_entry)
     {
       mutex_unlock (&cons->lock);
       return ESRCH;
     }
 
-  if (vcons != active)
+  if (vcons_entry->vcons)
     {
-      error_t err = cons_vcons_activate (vcons);
-      if (err)
-	{
-	  mutex_unlock (&cons->lock);
-	  return err;
-	}
-
-      cons->active = vcons;
-      cons_vcons_refresh (vcons);
+      *r_vcons = vcons_entry->vcons;
+      mutex_lock (&vcons_entry->vcons->lock);
+    }
+  else
+    {
+      err = cons_vcons_open (cons, vcons_entry, r_vcons);
+      if (!err)
+        vcons_entry->vcons = *r_vcons;
     }
   mutex_unlock (&cons->lock);
-  return 0;
+  return err;
 }

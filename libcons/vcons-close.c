@@ -18,34 +18,28 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <sys/fcntl.h>
+#include <assert.h>
 
 #include <hurd.h>
-#include <mach.h>
+#include <hurd/ports.h>
+#include <cthreads.h>
 
 #include "cons.h"
 
-/* Close the virtual console VCONS.  VCONS->cons is locked.  */
+/* Close the virtual console VCONS.  */
 void
 cons_vcons_close (vcons_t vcons)
 {
-  if (vcons->input >= 0)
-    {
-      close (vcons->input);
-      vcons->input = -1;
-    }
-  if (vcons->display != MAP_FAILED)
-    {
-      munmap (vcons->display, vcons->display_size);
-      vcons->display = MAP_FAILED;
-    }
-  if (vcons->notify)
-    {
-      ports_destroy_right (vcons->notify);
-      vcons->notify = NULL;
-    }
+  cons_t cons = vcons->cons;
+  vcons_list_t vcons_entry = vcons->vcons_entry;
+
+  mutex_lock (&cons->lock);
+  /* The same virtual console should never be opened twice.  */
+  assert (vcons_entry->vcons == vcons);
+  vcons_entry->vcons = NULL;
+  mutex_unlock (&cons->lock);
+
+  /* Destroy the port.  */
+  ports_port_deref (vcons);
+  ports_destroy_right (vcons);
 }

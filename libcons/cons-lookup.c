@@ -24,16 +24,16 @@
 
 #include "cons.h"
 
-/* Lookup the virtual console with number ID in the console CONS,
-   acquire a reference for it, and return it in R_VCONS.  If CREATE is
-   true, the virtual console will be created if it doesn't exist yet.
-   If CREATE is true, and ID 0, the first free virtual console id is
+/* Lookup the virtual console entry with number ID in the console
+   CONS, and return it in R_VCONS_ENTRY.  If CREATE is true, the
+   virtual console entry will be created if it doesn't exist yet.  If
+   CREATE is true, and ID 0, the first free virtual console id is
    used.  CONS must be locked.  */
 error_t
-cons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
+cons_lookup (cons_t cons, int id, int create, vcons_list_t *r_vcons_entry)
 {
-  vcons_t previous_vcons = 0;
-  vcons_t vcons;
+  vcons_list_t previous_vcons_entry = 0;
+  vcons_list_t vcons_entry;
 
   if (!id && !create)
     return EINVAL;
@@ -42,13 +42,13 @@ cons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
     {
       if (cons->vcons_list && cons->vcons_list->id <= id)
         {
-	  previous_vcons = cons->vcons_list;
-          while (previous_vcons->next && previous_vcons->next->id <= id)
-            previous_vcons = previous_vcons->next;
-          if (previous_vcons->id == id)
+	  previous_vcons_entry = cons->vcons_list;
+          while (previous_vcons_entry->next
+		 && previous_vcons_entry->next->id <= id)
+            previous_vcons_entry = previous_vcons_entry->next;
+          if (previous_vcons_entry->id == id)
             {
-              /* previous_vcons->refcnt++; */
-              *r_vcons = previous_vcons;
+              *r_vcons_entry = previous_vcons_entry;
               return 0;
             }
         }
@@ -60,75 +60,48 @@ cons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
       id = 1;
       if (cons->vcons_list && cons->vcons_list->id == 1)
         {
-	  previous_vcons = cons->vcons_list;
-          while (previous_vcons && previous_vcons->id == id)
+	  previous_vcons_entry = cons->vcons_list;
+          while (previous_vcons_entry && previous_vcons_entry->id == id)
             {
               id++;
-              previous_vcons = previous_vcons->next;
+              previous_vcons_entry = previous_vcons_entry->next;
             }
         }
     }
 
-  vcons = calloc (1, sizeof (struct vcons));
-  if (!vcons)
-    {
-      mutex_unlock (&vcons->cons->lock);
-      return ENOMEM;
-    }
-  vcons->cons = cons;
-  /* vcons->refcnt = 1; */
-  vcons->id = id;
-  mutex_init (&vcons->lock);
-  vcons->input = -1;
-  vcons->display = MAP_FAILED;
-  vcons->notify = NULL;
+  vcons_entry = calloc (1, sizeof (struct vcons_list));
+  if (!vcons_entry)
+    return ENOMEM;
 
-#if 0
-  err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING,
-                        cons->foreground, cons->background);
-  if (err)
-    {
-      free (vcons->name);
-      free (vcons);
-      return err;
-    }
-
-  err = input_create (&vcons->input, cons->encoding ?: DEFAULT_ENCODING);
-  if (err)
-    {
-      display_destroy (vcons->display);
-      free (vcons->name);
-      free (vcons);
-      return err;
-    }
-#endif
-
-  cons_vcons_add (vcons);
+  vcons_entry->id = id;
+  vcons_entry->vcons = NULL;
 
   /* Insert the virtual console into the doubly linked list.  */
-  if (previous_vcons)
+  if (previous_vcons_entry)
     {
-      vcons->prev = previous_vcons;
-      if (previous_vcons->next)
+      vcons_entry->prev = previous_vcons_entry;
+      if (previous_vcons_entry->next)
         {
-          previous_vcons->next->prev = vcons;
-          vcons->next = previous_vcons->next;
+          previous_vcons_entry->next->prev = vcons_entry;
+          vcons_entry->next = previous_vcons_entry->next;
         }
       else
-	cons->vcons_last = vcons;
-      previous_vcons->next = vcons;
+	cons->vcons_last = vcons_entry;
+      previous_vcons_entry->next = vcons_entry;
     }
   else
     {
       if (cons->vcons_list)
         {
-          cons->vcons_list->prev = vcons;
-          vcons->next = cons->vcons_list;
+          cons->vcons_list->prev = vcons_entry;
+          vcons_entry->next = cons->vcons_list;
         }
       else
-	cons->vcons_last = vcons;
-      cons->vcons_list = vcons;
+	cons->vcons_last = vcons_entry;
+      cons->vcons_list = vcons_entry;
     }
-  *r_vcons = vcons;
+
+  cons_vcons_add (cons, vcons_entry);
+  *r_vcons_entry = vcons_entry;
   return 0;
 }
