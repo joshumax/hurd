@@ -86,7 +86,7 @@ function mkdev {
 	;;
 
       std)
-	mkdev console tty null zero fd time
+	mkdev console tty null zero fd time mem
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -103,7 +103,9 @@ function mkdev {
 	cmd ln -f -s fd/2 stderr
 	;;
       'time')
-	st $I root 644 /hurd/storeio time ;;
+	st $I root 644 /hurd/storeio --no-cache time ;;
+      mem)
+	st $I root 660 /hurd/storeio --no-cache mem ;;
 
       # ptys
       [pt]ty[pqrstuvwxyzPQRST]?)
