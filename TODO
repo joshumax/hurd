@@ -29,7 +29,6 @@ See `tasks', the exported task list.
 * Implement file_fetch_dir
 * Conform to coding standards (esp. CFLAGS setting)
 * Internationalization !
-* Update INSTALL to refer to GNUmach. !!!
 * Use hostid in /etc/rc and mention it in installation instructions,
   when suitable sh-utils is released.
 
