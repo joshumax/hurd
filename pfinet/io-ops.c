@@ -334,7 +334,7 @@ S_io_reauthenticate (struct sock_user *user,
   aux_gids = agbuf;
 
   __mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, 0, 1);
+  newuser = make_sock_user (user->sock, 0, 1, 0);
 
   auth = getauth ();
   newright = ports_get_right (newuser);
@@ -406,7 +406,7 @@ S_io_restrict_auth (struct sock_user *user,
       if (uids[i] == 0)
 	isroot = 1;
 
-  newuser = make_sock_user (user->sock, isroot, 0);
+  newuser = make_sock_user (user->sock, isroot, 0, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
@@ -424,7 +424,7 @@ S_io_duplicate (struct sock_user *user,
     return EOPNOTSUPP;
 
   __mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, user->isroot, 0);
+  newuser = make_sock_user (user->sock, user->isroot, 0, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);

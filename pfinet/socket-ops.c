@@ -68,7 +68,7 @@ S_socket_create (struct trivfs_protid *master,
     sock_release (sock);
   else
     {
-      user = make_sock_user (sock, master->isroot, 0);
+      user = make_sock_user (sock, master->isroot, 0, 1);
       *port = ports_get_right (user);
       *porttype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (user);
@@ -136,7 +136,7 @@ S_socket_accept (struct sock_user *user,
 
       if (!err)
 	{
-	  newuser = make_sock_user (newsock, user->isroot, 0);
+	  newuser = make_sock_user (newsock, user->isroot, 0, 1);
 	  *new_port = ports_get_right (newuser);
 	  *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
 	  ports_port_deref (newuser);

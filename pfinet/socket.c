@@ -59,9 +59,10 @@ sock_alloc (void)
 }
 
 /* Create a sock_user structure, initialized from SOCK and ISROOT.
-   If NOINSTALL is set, don't put it in the portset.  */
+   If NOINSTALL is set, don't put it in the portset.
+   We increment SOCK->refcnt iff CONSUME is zero.  */
 struct sock_user *
-make_sock_user (struct socket *sock, int isroot, int noinstall)
+make_sock_user (struct socket *sock, int isroot, int noinstall, int consume)
 {
   error_t err;
   struct sock_user *user;
@@ -81,7 +82,8 @@ make_sock_user (struct socket *sock, int isroot, int noinstall)
      in the original Linux structure), because there can be multiple
      ports (struct sock_user, aka protids) pointing to the same socket.
      The socket lives until all the ports die.  */
-  ++sock->refcnt;
+  if (! consume)
+    ++sock->refcnt;
   user->isroot = isroot;
   user->sock = sock;
   return user;
