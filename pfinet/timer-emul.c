@@ -85,8 +85,6 @@ add_timer (struct timer_list *timer)
 {
   struct timer_list **tp;
 
-  timer->expires += jiffies;
-
   for (tp = &timers; *tp; tp = &(*tp)->next)
     if ((*tp)->expires > timer->expires)
       {
