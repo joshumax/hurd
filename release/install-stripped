@@ -60,17 +60,30 @@ copy()
   local from=$1
   local to=$2
 
+  copyattrs()
+  {
+    local ls="`ls -l $from`"
+    local owner="`echo "$ls" | awk '{print $3 "." $4}'`"
+    local mode="`echo "$ls" | sed -e 's/^.\(...\)\(...\)\(...\).*$/u=\1,g=\2,o=\3/' -e 's/-//g' -e 's/s/xs/g'`"
+    chown "$owner" $to
+    chmod "$mode" $to
+  }
+
   plaincopy()
   {
     rm -f $to
     echo "$from -> $to"
-    ln -f $from $to 2>/dev/null || install -m 644 -c $from $to
+    if ! ln -f $from $to 2>/dev/null; then
+      install -m 644 -c $from $to
+      copyattrs
+    fi
   }
 
   objcopy()
   {
     if $OBJCOPY --strip-debug $from $to; then
       echo "strip-debug $from -> $to"
+      copyattrs
     else
       plaincopy
     fi
@@ -146,6 +159,7 @@ foo
       if test -x $from; then
         if $OBJCOPY -S $from $to 2>/dev/null; then
           echo "strip $from -> $to"
+          copyattrs
         else
           plaincopy
         fi
