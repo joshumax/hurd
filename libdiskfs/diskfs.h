@@ -93,6 +93,8 @@ struct node
   struct dirmod *dirmod_reqs;
 
   off_t allocsize;
+
+  int cache_id;
 };
 
 /* Possibly lookup types for diskfs_lookup call */
