@@ -88,56 +88,68 @@ thread_state (thread_basic_info_t bi)
    have.  */
 static error_t
 fetch_procinfo (process_t server, pid_t pid,
-		ps_flags_t need, ps_flags_t have,
+		ps_flags_t need, ps_flags_t *phave,
 		struct procinfo **pi, size_t *pi_size,
 		char **waits, size_t *waits_len)
 {
   int pi_flags = 0;
 
-  if ((need & PSTAT_TASK_BASIC) && !(have & PSTAT_TASK_BASIC))
+  if ((need & PSTAT_TASK_BASIC) && !(*have & PSTAT_TASK_BASIC))
     pi_flags |= PI_FETCH_TASKINFO;
-  if ((need & PSTAT_NUM_THREADS) && !(have & PSTAT_NUM_THREADS))
+  if ((need & PSTAT_NUM_THREADS) && !(*have & PSTAT_NUM_THREADS))
     pi_flags |= PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_BASIC) && !(have & PSTAT_THREAD_BASIC))
+  if ((need & PSTAT_THREAD_BASIC) && !(*have & PSTAT_THREAD_BASIC))
     pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_BASIC) && !(have & PSTAT_THREAD_BASIC))
-    pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_SCHED) && !(have & PSTAT_THREAD_SCHED))
+  if ((need & PSTAT_THREAD_SCHED) && !(*have & PSTAT_THREAD_SCHED))
     pi_flags |= PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_WAIT) && !(have & PSTAT_THREAD_WAIT))
+  if ((need & PSTAT_THREAD_WAIT) && !(*have & PSTAT_THREAD_WAIT))
     pi_flags |= PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS;
 
-  if (pi_flags || ((need & PSTAT_PROC_INFO) && !(have & PSTAT_PROC_INFO)))
+  if (pi_flags || ((need & PSTAT_PROC_INFO) && !(*have & PSTAT_PROC_INFO)))
     {
       error_t err =
 	proc_getprocinfo (server, pid, &pi_flags, (procinfo_t *)pi, pi_size,
 			  waits, waits_len);
+      if (! err)
+	/* Update *HAVE to reflect what we've successfully fetched.  */
+	{
+	  if (pi_flags & PI_FETCH_TASKINFO)
+	    *have |= PSTAT_TASK_BASIC;
+	  if (pi_flags & PI_FETCH_THREADS)
+	    *have |= PSTAT_NUM_THREADS;
+	  if (pi_flags & PI_FETCH_THREAD_BASIC)
+	    *have |= PSTAT_THREAD_BASIC;
+	  if (pi_flags & PI_FETCH_THREAD_SCHED)
+	    *have |= PSTAT_THREAD_SCHED;
+	  if (pi_flags & PI_FETCH_THREAD_WAITS)
+	    *have |= PSTAT_THREAD_WAIT;
+	}
       return err;
     }
   else
     return 0;
 }
-
+
 /* Fetches process information from the set in PSTAT_PROCINFO, returning it
    in PI & PI_SIZE, and if *PI_SIZE is non-zero, merges the new information
    with what was in *PI, and deallocates *PI.  NEED is the information, and
-   HAVE is the what we already have.  */
+   *HAVE is the what we already have (which will be updated).  */
 static error_t
 merge_procinfo (process_t server, pid_t pid,
-		ps_flags_t need, ps_flags_t have,
+		ps_flags_t need, ps_flags_t *have,
 		struct procinfo **pi, size_t *pi_size,
 		char **waits, size_t *waits_len)
 {
+  /* We always re-fetch any thread-specific info, as the set of threads could
+     have changed since the last time we did this, and we can't tell.  */
+  ps_flags_t really_need = need | (have & PSTAT_PROCINFO_THREAD);
+  ps_flags_t really_have = *have & ~PSTAT_PROCINFO_THREAD;
   struct procinfo *new_pi;
   size_t new_pi_size = 0;
   char *new_waits = 0;
   size_t new_waits_len = 0;
-  /* We always re-fetch any thread-specific info, as the set of threads could
-     have changed since the last time we did this, and we can't tell.  */
   error_t err =
-    fetch_procinfo (server, pid,
-		    (need | (have & PSTAT_PROCINFO_THREAD)),
-		    have & ~PSTAT_PROCINFO_THREAD,
+    fetch_procinfo (server, pid, really_need, &really_have,
 		    &new_pi, &new_pi_size,
 		    &new_waits, &new_waits_len);
 
@@ -147,7 +159,7 @@ merge_procinfo (process_t server, pid_t pid,
   if (*pi_size > 0)
     /* There was old information, try merging it. */
     {
-      if (have & PSTAT_TASK_BASIC)
+      if (*have & PSTAT_TASK_BASIC)
 	/* Task info */
 	bcopy (&(*pi)->taskinfo, &new_pi->taskinfo,
 	       sizeof (struct task_basic_info));
@@ -158,6 +170,12 @@ merge_procinfo (process_t server, pid_t pid,
   if (*waits_len > 0)
     vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
 
+  /* Update what thread info we have -- this may *decrease*, as all
+     previously fetched thread-info is out-of-date now, so we have to make do
+     with whatever we've fetched this time.  */
+  *have =
+    (*have & ~PSTAT_PROCINFO_THREAD) | (really_have & PSTAT_PROCINFO_THREAD);
+
   *pi = new_pi;
   *pi_size = new_pi_size;
   *waits = new_waits;
@@ -165,10 +183,7 @@ merge_procinfo (process_t server, pid_t pid,
 
   return 0;
 }
-
 
-/* ---------------------------------------------------------------- */
-
 /* Returns FLAGS augmented with any other flags that are necessary
    preconditions to setting them.  */
 static ps_flags_t 
@@ -559,17 +574,15 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	    ps->thread_waits_len = 0;
 	  }
 
+	/* XXX test num threads.  */
+
 	err =
-	  merge_procinfo (server, ps->pid, need, have,
+	  merge_procinfo (server, ps->pid, need, &have,
 			  &ps->proc_info, &ps->proc_info_size,
 			  &ps->thread_waits, &ps->thread_waits_len);
 	if (!err)
 	  {
 	    struct procinfo *pi = ps->proc_info;
-	    ps_flags_t added =
-	      (need & PSTAT_PROCINFO) & ~(have & PSTAT_PROCINFO);
-
-	    have |= added;
 
 	    /* Update dependent fields.  We redo these even if we've already
 	       gotten them, as the information will be newer.  */
@@ -594,10 +607,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
 	    if (have & PSTAT_PROCINFO_THREAD)
 	      /* Any thread information automatically gets us this for free. */
-	      {
-		have |= PSTAT_NUM_THREADS;
-		ps->num_threads = count_threads (pi);
-	      }
+	      ps->num_threads = count_threads (pi);
 	  }
       }
     else
