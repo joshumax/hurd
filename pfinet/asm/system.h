@@ -2,6 +2,7 @@
 #define _HACK_ASM_SYSTEM_H_
 
 #include <cthreads.h>
+#include <sys/types.h>
 
 /* This lock is held when "interrupts" are disabled. */
 extern struct mutex global_interrupt_lock;
