@@ -116,13 +116,19 @@ reparent_zombies (struct proc *p)
 {
   struct zombie *z, *prevz;
   struct wait_c *w = &startup_proc->p_continuation.wait_c;
-  int initwoken = 0;
+  int initwoken = 0, initsignalled = 0;
   
   for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
     {
       if (z->parent != p)
 	continue;
       z->parent = startup_proc;
+
+      if (!initsignalled)
+	{
+	  send_signal (startup_proc->p_msgport, SIGCHLD, startup_proc->p_task);
+	  initsignalled = 1;
+	}
 
       if (initwoken || !startup_proc->p_waiting)
 	continue;
