@@ -114,7 +114,12 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       return 0;
     }
 
-  if (page + left > node->allocsize)
+  if (page >= node->allocsize)
+    {
+      err = EIO;
+      left = 0;
+    }
+  else if (page + left > node->allocsize)
     left = node->allocsize - page;
 
   while (left > 0)
@@ -134,7 +139,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	}
 
       if (block == 0)
-	/* Reading unallocate block, just make a zero-filled one.  */
+	/* Reading unallocated block, just make a zero-filled one.  */
 	{
 	  *writelock = 1;
 	  if (offs == 0)
@@ -260,7 +265,12 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 
   pending_blocks_init (&pb, buf);
 
-  if (offset + left > node->allocsize)
+  if (offset >= node->allocsize)
+    {
+      err = EIO;
+      left = 0;
+    }
+  else if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
   ext2_debug ("writing inode %d page %d[%d]", node->dn->number, offset, left);
