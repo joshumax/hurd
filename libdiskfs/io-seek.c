@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #define diskfs_readonly 0
+#define diskfs_synchronous 0
 
 /* Implement io_seek as described in <hurd/io.defs>. */
 kern_return_t
