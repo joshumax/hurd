@@ -25,6 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <hurd.h>
 #include <hurd/lookup.h>
 #include <hurd/id.h>
