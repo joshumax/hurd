@@ -149,7 +149,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
   
   if ((err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED)
       && control == box->active)
-    fshelp_set_active (box, MACH_PORT_NULL);
+    fshelp_set_active (box, MACH_PORT_NULL, 0);
   mach_port_deallocate (mach_task_self (), control);
 
   if (err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED)
