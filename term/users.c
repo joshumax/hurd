@@ -176,7 +176,7 @@ static void
 pi_destroy_hook (struct trivfs_protid *cred)
 {
   if (cred->pi.class == pty_class)
-    return 0;
+    return;
 
   mutex_lock (&global_lock);
   if (cred->hook && !--((struct protid_hook *)cred->hook)->refcnt)
@@ -205,7 +205,10 @@ static void
 po_destroy_hook (struct trivfs_peropen *po)
 {
   if (po->cntl == ptyctl)
-    return pty_po_destroy_hook (po);
+    {
+      pty_po_destroy_hook (po);
+      return;
+    }
 
   mutex_lock (&global_lock);
   nperopens--;
