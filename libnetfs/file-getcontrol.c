@@ -1,6 +1,6 @@
 /* Return the filesystem corresponding to a file
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -21,6 +21,7 @@
 
 #include "netfs.h"
 #include "fsys_S.h"
+#include <hurd/fshelp.h>
 
 error_t
 netfs_S_file_getcontrol (struct protid *user,
@@ -33,10 +34,11 @@ netfs_S_file_getcontrol (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  if (!idvec_contains (user->user->uids, 0))
-    return EPERM;
+  err = fshelp_iscontroller (&netfs_root_node->nn_stat, user->user);
+  if (err)
+    return err;
   
-  /* They've got root; give it to them. */
+  /* They've have the appropriate credentials; give it to them. */
   err = ports_create_port (netfs_control_class, netfs_port_bucket,
 			   sizeof (struct port_info), &pi);
   if (err)
