@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_duplicate as described in <hurd/io.defs>. */
 error_t
@@ -27,8 +28,8 @@ diskfs_S_io_duplicate (struct protid *cred,
     return EOPNOTSUPP;
   
   mutex_lock (&cred->po->np->lock);
-  *port = (make_protid (cred->po, cred->uids, cred->nuids, cred->gids, 
-			cred->ngids))->fspt.pi.port;
+  *port = (diskfs_make_protid (cred->po, cred->uids, cred->nuids, cred->gids, 
+			       cred->ngids))->fspt.pi.port;
   *portpoly = MACH_MSG_TYPE_MAKE_SEND;
   mutex_unlock (&cred->po->np->lock);
   return 0;
