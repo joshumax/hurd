@@ -1,6 +1,6 @@
 /* Redirect stdio to the console if possible
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -29,6 +29,7 @@
 
 #include <mach/mach.h>
 #include <device/device.h>
+#include <hurd.h>
 
 /* Make errors go somewhere reasonable.  */
 void
