@@ -39,7 +39,8 @@ struct sock_user
 {
   struct port_info pi;
   int isroot;
-  struct socket *sock;		/* Linux socket structure, see linux/net.h */
+  struct task_struct *task;
+  struct socket *sock;
 };
 
 /* Socket address ports. */
