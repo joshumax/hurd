@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "ufs.h"
+#include "fs.h"
+#include <string.h>
 
 void
 get_hypermetadata (void)
@@ -46,12 +49,12 @@ get_hypermetadata (void)
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
-  error_t (*writefn) (daddr_t, vm_address_t, vm_size_t);
+  error_t (*writefn) (daddr_t, vm_address_t, long);
   writefn = (wait ? dev_write_sync : dev_write);
   
   (*writefn)(fsbtodb (sblock->fs_csaddr), (vm_address_t) csum,
 	     sblock->fs_fsize * howmany (sblock->fs_cssize,
-					 sblock->fs_fssize));
+					 sblock->fs_fsize));
 
   if (clean)
     sblock->fs_clean = 1;
