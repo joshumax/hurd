@@ -26,6 +26,13 @@
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.7  1997/08/20 19:41:20  thomas
+ * Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+ *
+ * 	* cthreads.c (cthread_body): Wire self before calling user work
+ *  	function.  This way all cthreads will be wired, which the ports
+ * 	library (and hurd_thread_cancel, etc.) depend on.
+ *
  * Revision 1.6  1997/06/10 01:22:19  thomas
  * Mon Jun  9 21:18:46 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  *
@@ -415,14 +422,12 @@ cthread_fork_prepare()
 {
     spin_lock(&free_lock);
     mutex_lock(&cthread_lock);
-    malloc_fork_prepare();
     cproc_fork_prepare();
 }
 
 cthread_fork_parent()
 {
     cproc_fork_parent();
-    malloc_fork_parent();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);
 }
@@ -433,7 +438,6 @@ cthread_fork_child()
     cproc_t p;
 
     cproc_fork_child();
-    malloc_fork_child();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);
     condition_init(&cthread_needed);
