@@ -1,6 +1,6 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -169,13 +169,11 @@ S_io_duplicate (struct sock_user *user,
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
-   return the types that are then available.  ID_TAG is returned as passed; it
-   is just for the convenience of the user in matching up reply messages with
-   specific requests sent.  */
+   return the types that are then available.  */
 error_t
 S_io_select (struct sock_user *user,
 	     mach_port_t reply, mach_msg_type_name_t reply_type,
-	     int *select_type, int *id_tag)
+	     int *select_type)
 {
   error_t err = 0;
   struct sock *sock;
