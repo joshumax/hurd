@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@
 char *ufs_version = "0.0 pre-alpha";
 
 
-/* Parse the arguments for ufs when started as a translator. */
+/* Parse the arguments for ext2fs when started as a translator. */
 char *
 trans_parse_args (int argc, char **argv)
 {
@@ -137,7 +137,7 @@ main (int argc, char **argv)
       
       err = device_open (diskfs_master_device, 
 			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 devname, &ufs_device);
+			 devname, &ext2fs_device);
       if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
 	{
 	  /* Prompt the user to give us another name rather
@@ -159,7 +159,7 @@ main (int argc, char **argv)
     }
 
   /* Check to make sure device sector size is reasonable. */
-  err = device_get_status (ufs_device, DEV_GET_SIZE, sizes, &sizescnt);
+  err = device_get_status (ext2fs_device, DEV_GET_SIZE, sizes, &sizescnt);
   assert (sizescnt == DEV_GET_SIZE_COUNT);
   if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
     {
@@ -184,8 +184,9 @@ main (int argc, char **argv)
 		VM_INHERIT_NONE);
   assert (!err);
 
-  get_hypermetadata ();
+  ext2_read_super(sblock, options, silent);
 
+#if 0
   if (diskpagersize < sblock->fs_size * sblock->fs_fsize)
     {
       fprintf (stderr, 
@@ -195,6 +196,7 @@ main (int argc, char **argv)
 	       sblock->fs_size * sblock->fs_fsize);
       exit (1);
     }
+#endif
 
   vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
 
@@ -240,13 +242,13 @@ diskfs_init_completed ()
   error_t err;
 
   proc = getproc ();
-  proc_register_version (proc, diskfs_host_priv, "ufs", HURD_RELEASE,
-			 ufs_version);
+  proc_register_version (proc, diskfs_host_priv, "ext2fs", HURD_RELEASE,
+			 ext2fs_version);
   err = proc_getmsgport (proc, 1, &startup);
   if (!err)
     {
       startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      "ufs", diskfs_host_priv);
+			      "ext2fs", diskfs_host_priv);
       mach_port_deallocate (mach_task_self (), startup);
     }
   mach_port_deallocate (mach_task_self (), proc);
