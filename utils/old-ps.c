@@ -90,7 +90,7 @@ print_args_str (process_t proc, pid_t pid)
   
 /* Very simple PS */
 int
-main ()
+main (int argc, char **argv)
 {
   process_t proc;
   pid_t pids[20];
@@ -99,12 +99,24 @@ main ()
   int ind;
   struct thread_basic_info tbi;
   struct thread_sched_info tsi;
+  int verbose;
 
 #if 0
   stdout = mach_open_devstream (getdport (1), "w");
 #endif
 
-  puts ("PID\tUSER\tPP\tPG\tSS\tThds\tVMem\tRSS\tPRI\t%CPU\tUser\tSystem\tArgs");
+  if (argc > 2 ||
+      (argc == 2 && (argv[1][0] != '-' || argv[1][1] != 'v' || argv[1][2])))
+    {
+      fprintf (stderr, "Usage: %s [-v]\n", argv[0]);
+      exit (1);
+    }
+  verbose = argc == 2;
+
+  if (verbose)
+    puts ("PID\tUSER\tPP\tPG\tSS\tThds\tVMem\tRSS\tPRI\t%CPU\tUser\tSystem\tArgs");
+  else
+    puts ("PID\tUSER\tThds\tVMem\tRSS\tUser\tSystem\tArgs");
   proc = getproc ();
   proc_getallpids (proc, &pp, &npids);
   for (ind = 0; ind < npids; ind++)
@@ -140,20 +152,30 @@ main ()
       tbi.user_time.microseconds %= 1000000;
       tbi.system_time.seconds += tbi.system_time.microseconds / 1000000;
       tbi.system_time.microseconds %= 1000000;
-      printf ("%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d/%d\t%d\t%s\t%s\t",
-	      pp[ind], 
-	      (pi->state & PI_NOTOWNED) ? -1 : pi->owner,
-	      pi->ppid,
-	      pi->pgrp,
-	      pi->session,
-	      pi->nthreads,
-	      mem_str (pi->taskinfo.virtual_size),
-	      mem_str (pi->taskinfo.resident_size),
-	      tsi.base_priority,
-	      tsi.cur_priority,
-	      tbi.cpu_usage,
-	      time_str (&tbi.user_time),
-	      time_str (&tbi.system_time));
+      if (verbose)
+	printf ("%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d/%d\t%d\t%s\t%s\t",
+		pp[ind], 
+		(pi->state & PI_NOTOWNED) ? -1 : pi->owner,
+		pi->ppid,
+		pi->pgrp,
+		pi->session,
+		pi->nthreads,
+		mem_str (pi->taskinfo.virtual_size),
+		mem_str (pi->taskinfo.resident_size),
+		tsi.base_priority,
+		tsi.cur_priority,
+		tbi.cpu_usage,
+		time_str (&tbi.user_time),
+		time_str (&tbi.system_time));
+      else
+	printf ("%d\t%d\t%d\t%s\t%s\t%s\t%s\t",
+		pp[ind],
+		(pi->state & PI_NOTOWNED) ? -1 : pi->owner,
+		pi->nthreads,
+		mem_str (pi->taskinfo.virtual_size),
+		mem_str (pi->taskinfo.resident_size),
+		time_str (&tbi.user_time),
+		time_str (&tbi.system_time));
       print_args_str (proc, pp[ind]);
       putchar ('\n');
     }
