@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01
+   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01,02
    	Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
@@ -54,6 +54,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int amt;
   int type;
   struct protid *newpi;
+  struct peropen *newpo;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -252,10 +253,14 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  error = iohelp_create_empty_iouser (&user);
 	  if (! error)
 	    {
-	      error =
-		diskfs_create_protid (diskfs_make_peropen (dnp, 0,
-							   dircred->po),
-				      user, &newpi);
+	      error = diskfs_make_peropen (dnp, 0, dircred->po, &newpo);
+	      if (! error)
+		{
+		  error = diskfs_create_protid (newpo, user, &newpi);
+		  if (error)
+		    diskfs_release_peropen (newpo);
+		}
+		
 	      iohelp_free_iouser (user);
 	    }
 
@@ -451,11 +456,15 @@ diskfs_S_dir_lookup (struct protid *dircred,
       && (fshelp_isowner (&np->dn_stat, dircred->user) == EPERM))
     flags &= ~O_NOATIME;
 
-  error =
-    diskfs_create_protid (diskfs_make_peropen (np,
-					       (flags &~OPENONLY_STATE_MODES),
-					       dircred->po),
-			  dircred->user, &newpi);
+  error = diskfs_make_peropen (np, (flags &~OPENONLY_STATE_MODES),
+			       dircred->po, &newpo);
+  
+  if (! error)  
+    {
+      error = diskfs_create_protid (newpo, dircred->user, &newpi);
+      if (error)
+	diskfs_release_peropen (newpo);
+    }
 
   if (! error)
     {

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,97,98, 2002 Free Software Foundation
+   Copyright (C) 1993,94,95,96,97,98,2002 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -45,6 +45,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   error_t error = 0;
   mode_t type;
   struct protid *newpi;
+  struct peropen *newpo;
   struct iouser user;
   struct peropen peropen_context =
   {
@@ -176,10 +177,14 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  error =
-    diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags,
-					       &peropen_context),
-			  &user, &newpi);
+  error = diskfs_make_peropen (diskfs_root_node, flags,
+			       &peropen_context, &newpo);
+  if (! error)
+    {
+      error = diskfs_create_protid (newpo, &user, &newpi);
+      if (error)
+	diskfs_release_peropen (newpo);
+    }
 
   mach_port_deallocate (mach_task_self (), dotdot);
 

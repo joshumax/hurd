@@ -102,12 +102,15 @@ diskfs_start_bootstrap ()
   size_t exec_argvlen, exec_envlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
+  struct peropen *rootpo;
   mach_port_t diskfs_exec;
 
   /* Create the port for current and root directory.  */
-  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ | O_EXEC, 0),
-			      0, &rootpi);
+  err = diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC, 0,
+			     &rootpo);
+  assert_perror (err);
+
+  err = diskfs_create_protid (rootpo, 0, &rootpi);
   assert_perror (err);
 
   /* Get us a send right to copy around.  */
@@ -307,6 +310,7 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
   mach_port_t rootport;
   struct ufsport *upt;
   struct protid *rootpi;
+  struct peropen *rootpo;
 
   if (!(upt = ports_lookup_port (diskfs_port_bucket, port,
 				 diskfs_execboot_class)))
@@ -337,10 +341,12 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
   *intarrayP = NULL;
   *intarraylen = 0;
 
-  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ | O_EXEC, 0),
-			      0, &rootpi);
+  err = diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC, 0, &rootpo);
   assert_perror (err);
+
+  err = diskfs_create_protid (rootpo, 0, &rootpi);
+  assert_perror (err);
+
   rootport = ports_get_right (rootpi);
   ports_port_deref (rootpi);
   portarray[INIT_PORT_CWDIR] = rootport;
@@ -371,14 +377,16 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
   enum retry_type retry;
   struct port_info *pt;
   struct protid *rootpi;
+  struct peropen *rootpo;
   mach_port_t rootport;
 
   if (!(pt = ports_lookup_port (diskfs_port_bucket, port,
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
 
-  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags, 0),
-			      0, &rootpi);
+  err = diskfs_make_peropen (diskfs_root_node, flags, 0, &rootpo);
+  assert_perror (err);
+  err = diskfs_create_protid (rootpo, 0, &rootpi);
   assert_perror (err);
   rootport = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
@@ -444,6 +452,7 @@ diskfs_S_fsys_init (mach_port_t port,
   error_t err;
   mach_port_t root_pt;
   struct protid *rootpi;
+  struct peropen *rootpo;
 
   pt = ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
   if (!pt)
@@ -534,9 +543,9 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
-  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ|O_EXEC, 0),
-			      0, &rootpi);
+  err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC, 0, &rootpo);
+  assert_perror (err);
+  err = diskfs_create_protid (rootpo, 0, &rootpi);
   assert_perror (err);
   root_pt = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);

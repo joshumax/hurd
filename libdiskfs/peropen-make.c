@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1997, 1999, 2001 Free Software Foundation
+   Copyright (C) 1994,97,99,2001,02 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,13 +20,14 @@
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
-struct peropen *
-diskfs_make_peropen (struct node *np, int flags, struct peropen *context)
+error_t
+diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
+		     struct peropen **ppo)
 {
-  struct peropen *po = malloc (sizeof (struct peropen));
+  struct peropen *po = *ppo = malloc (sizeof (struct peropen));
 
   if (! po)
-    return NULL;
+    return ENOMEM;
 
   po->filepointer = 0;
   po->lock_status = LOCK_UN;
@@ -59,5 +60,5 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context)
 
   diskfs_nref (np);
 
-  return po;
+  return 0;
 }

@@ -1,6 +1,6 @@
 /* Reparent a file
 
-   Copyright (C) 1997 Free Software Foundation
+   Copyright (C) 1997,2002 Free Software Foundation
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -30,6 +30,7 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   error_t err;
   struct node *node;
   struct protid *new_cred;
+  struct peropen *new_po;
 
   if (! cred)
     return EOPNOTSUPP;
@@ -37,9 +38,13 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   node = cred->po->np;
 
   mutex_lock (&node->lock);
-  err = diskfs_create_protid (diskfs_make_peropen (node, cred->po->openstat,
-						   cred->po),
-			      cred->user, &new_cred);
+  err = diskfs_make_peropen (node, cred->po->openstat, cred->po, &new_po);
+  if (! err)
+    {
+      err = diskfs_create_protid (new_po, cred->user, &new_cred);
+      if (err)
+	diskfs_release_peropen (new_po);
+    }
   mutex_unlock (&node->lock);
 
   if (! err)

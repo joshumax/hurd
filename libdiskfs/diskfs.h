@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994,95,96,97,98,99,2001, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -794,18 +794,19 @@ diskfs_end_using_protid_port (struct protid *cred)
     ports_port_deref (cred);
 }
 
-/* Create and return a new peropen structure on node NP with open
-   flags FLAGS.  The initial values for the root_parent, shadow_root, and
-   shadow_root_parent fields are copied from CONTEXT if it's non-zero,
-   otherwise zerod.  */
-struct peropen *diskfs_make_peropen (struct node *np, int flags,
-				     struct peropen *context);
-
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is
    installed in the clean routines list.)  The ports library will
    free the structure for us.  */
 void diskfs_protid_rele (void *arg);
+
+/* Create a new peropen structure on node NP with open flags FLAGS in
+   *PPO.  The initial values for the root_parent, shadow_root, and
+   shadow_root_parent fields are copied from CONTEXT if it's non-zero,
+   otherwise they are zeroed.  */
+error_t
+diskfs_make_peropen (struct node *np, int flags,
+		     struct peropen *context, struct peropen **ppo);
 
 /* Decrement the reference count on a peropen structure. */
 void diskfs_release_peropen (struct peropen *po);

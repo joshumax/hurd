@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -54,6 +54,7 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
 {
   struct node *np = cookie1;
   struct protid *cred;
+  struct peropen *po;
   error_t err;
   struct iouser *user;
 
@@ -62,11 +63,16 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
   if (err)
     return err;
 
-  err =
-    diskfs_create_protid (diskfs_make_peropen (np, flags, cookie2),
-			  user, &cred);
+  err = diskfs_make_peropen (np, flags, cookie2, &po);
+  if (! err)
+    {
+      err = diskfs_create_protid (po, user, &cred);
+      if (err)
+	diskfs_release_peropen (po);
+    }
 
   iohelp_free_iouser (user);
+
   if (! err)
     {
       *underlying = ports_get_right (cred);

@@ -34,6 +34,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   struct node *dnp, *np;
   error_t err;
   struct protid *newpi;
+  struct peropen *newpo;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -68,8 +69,15 @@ diskfs_S_dir_mkfile (struct protid *cred,
     return err;
 
   flags &= ~OPENONLY_STATE_MODES; /* These bits are all meaningless here.  */
-  err = diskfs_create_protid (diskfs_make_peropen (np, flags, cred->po),
-			      cred->user, &newpi);
+
+  err = diskfs_make_peropen (np, flags, cred->po, &newpo);
+  if (! err)
+    {
+      err = diskfs_create_protid (newpo, cred->user, &newpi);
+      if (err)
+	diskfs_release_peropen (newpo);
+    }
+
   if (! err)
     {
       *newnode = ports_get_right (newpi);
