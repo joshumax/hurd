@@ -107,6 +107,7 @@ struct bottomhalf
   void (*abandon_physical_output) (void);
   void (*suspend_physical_output) (void);
   int (*pending_output_size) (void);
+  void (*notice_input_flushed) (void);
   error_t (*assert_dtr) (void);
   void (*desert_dtr) (void);
   void (*set_bits) (void);
