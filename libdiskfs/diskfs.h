@@ -79,7 +79,7 @@ struct node
 
   int owner;
   
-  struct trans_link translator;
+  struct transbox transbox;
 
   struct lock_box userlock;
 
@@ -799,14 +799,6 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 		    struct node **newnode, struct protid *cred,
 		    struct dirstat *ds);
 
-/* Start the translator on node NP.  NP is locked.  The node referenced
-   by DIR must not be locked.  NP will be unlocked during the execution
-   of this function, and then relocked before return.  The authentication
-   of DIR is ignored, so it may be anything convenient.  DIRCRED identifies
-   the directory in which this node was found, or 0 if it is root.  */
-error_t diskfs_start_translator (struct node *np, file_t dir,
-				 struct protid *dircred);
-
 /* Create and return a protid for an existing peropen.  The uid set is
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
    PO->np must be locked. */
@@ -869,15 +861,6 @@ error_t diskfs_clear_directory (struct node *dp, struct node *pdp,
    redefine this function.   CRED identifies the user making the call. */
 error_t
 diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
-
-/* Get rid of any translator running on the file NP; FLAGS
-   (from the set FSYS_GOAWAY_*) describes details of shutting
-   down the child filesystem.  */
-void diskfs_destroy_translator (struct node *np, int flags);
-
-/* Sync all the running translators.  Wait for them to complete if 
-   WAIT is nonzero.  */
-void diskfs_sync_translators (int wait);
 
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
    appropriately; do the analogous operation for atime and mtime as well. */
