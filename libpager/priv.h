@@ -68,14 +68,34 @@ enum page_errors
   PAGE_EDQUOT,
 };
 
+/* Pagemap format */
+/* These are binary state bits */
+#define PM_PAGINGOUT  0x40	/* being written to disk */
+#define PM_PAGEINWAIT 0x20	/* provide data back when write done */
+#define PM_INVALID    0x10	/* data on disk is irrevocably wrong */
+
+/* These take values of enum page_errors */
+
+/* Doesn't belong here; this is the error that should have been passed
+   through m_o_data_error to the user but isn't; this lets internal use
+   of the pager know what the error is.  */
+#define PM_ERROR(byte) (((byte) & 0xc) >> 2)
+#define SET_PM_ERROR(byte,err) (((byte) & ~0xc) | ((err) << 2))
+
+/* Issue this error on next data_request, but only if it asks for
+   write access.  */
+#define PM_NEXTERROR(byte) ((byte) & 0x2)
+#define SET_PM_NEXTERROR(byte,err) (((byte) & ~0x2) | (err))
+
 
 void _pager_wait_for_seqno (struct pager *, int);
 void _pager_release_seqno (struct pager *);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 void _pager_pagemap_resize (struct pager *, vm_address_t);
-void _pager_mark_object_error (struct pager *, vm_address_t, vm_size_t, int);
+void _pager_mark_next_request_error (struct pager *, vm_address_t,
+				     vm_size_t, error_t);
+void _pager_mark_object_error (struct pager *, vm_address_t,
+			       vm_size_t, error_t);
 
-struct pager *_pager_all_pagers;
-spin_lock_t pagerlistlock;
    
