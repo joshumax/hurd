@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)inode.c	8.4 (Berkeley) 4/18/94";*/
-static char *rcsid = "$Id: inode.c,v 1.4 1994/09/01 19:15:35 mib Exp $";
+static char *rcsid = "$Id: inode.c,v 1.5 1994/10/05 02:51:16 root Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,6 +47,9 @@ static char *rcsid = "$Id: inode.c,v 1.4 1994/09/01 19:15:35 mib Exp $";
 #include <stdlib.h>
 #include <string.h>
 #include "fsck.h"
+
+/* Don't include dirent.h lest we get confused, but we still want this. */
+#define IFTODT(mode) (((mode) & 0170000) >> 12)
 
 static ino_t startinum;
 
@@ -102,7 +105,7 @@ ckinode(dp, idesc)
 		remsize -= sizepb;
 	}
 	/* GNU Hurd extension. */
-	if (dino.di_trans)
+	if (dino.di_trans && idesc->id_type == ADDR)
 	  {
 	    idesc->id_blkno = dino.di_trans;
 	    idesc->id_numfrags = sblock.fs_frag;
