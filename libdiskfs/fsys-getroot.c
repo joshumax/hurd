@@ -184,6 +184,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
+  *retry = FS_RETRY_NORMAL;
+  *retryname = '\0';
   *returned_port = (ports_get_right 
 		    (diskfs_make_protid
 		     (diskfs_make_peropen (diskfs_root_node, flags, dotdot),
