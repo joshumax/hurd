@@ -313,11 +313,10 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred, int wait, int dochildren)
 
 /* ---------------------------------------------------------------- */
 
-typedef int run_elem_t;
-
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
-				run_elem_t **runs, unsigned *runs_len,
+				off_t **runs, unsigned *runs_len,
+				size_t *block_size,
 				char *dev_name, mach_port_t *dev_port,
 				mach_msg_type_name_t *dev_port_type,
 				char **misc, unsigned *misc_len)
@@ -330,7 +329,7 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
       struct dev *dev = ((struct open *)cred->po->hook)->dev;
 
       err = vm_allocate (mach_task_self (),
-			 (vm_address_t *)runs, 2 * sizeof (run_elem_t), 1);
+			 (vm_address_t *)runs, 2 * sizeof (off_t), 1);
       if (!err)
 	{
 	  *class = STORAGE_DEVICE;
@@ -338,6 +337,8 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
 	  (*runs)[0] = 0;
 	  (*runs)[1] = dev->size / dev->dev_block_size;
 	  *runs_len = 2;
+
+	  *block_size = dev->dev_block_size;
 
 	  strcpy (dev_name, dev->name);
 
