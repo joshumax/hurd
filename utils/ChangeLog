@@ -1,3 +1,13 @@
+2004-09-21  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* mount.c (argp_opts): Enabled never-enabled options and added
+	long versions: --verbose/-v, --remount/--update/-u,
+	--writable/-w, --readonly/-r and --options/-o.	Reported by
+	Ben Asselstine.
+
+	* mount.c (parse_opt): For -u, use "update" instead of the deprecated
+	"remount" argument.
+
 2004-03-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* login.c (main): Remove extern declaration and invocation of
