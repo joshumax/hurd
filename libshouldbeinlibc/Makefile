@@ -1,6 +1,6 @@
 # Makefile for libshouldbeinlibc
 #
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -21,8 +21,9 @@ makemode := library
 
 libname = libshouldbeinlibc
 SRCS = argz.c argp-parse.c argp-help.c line.c envz.c termsize.c \
-	idvec.c idvec-auth.c timefmt.c exec-reauth.c path-lookup.c
-LCLHDRS = argz.h rwlock.h argp.h line.h envz.h idvec.h timefmt.h
+	idvec.c idvec-auth.c timefmt.c exec-reauth.c path-lookup.c \
+	canon-host.c maptime.c shared-dom.c localhost.c
+LCLHDRS = argz.h rwlock.h argp.h line.h envz.h idvec.h timefmt.h maptime.h
 installhdrs = $(LCLHDRS)
 installhdrsubdir = .
 
