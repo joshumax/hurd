@@ -1,8 +1,7 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -48,46 +47,39 @@ static const char doc[] = "Translator for devices and other stores";
 
 const char *argp_program_version = STANDARD_HURD_VERSION (storeio);
 
-/* The open store.  */
-static struct dev *device = NULL;
-/* And a lock to arbitrate changes to it.  */
-static struct mutex device_lock;
-
 /* Desired store parameters specified by the user.  */
-struct store_parsed *store_name;
-static int readonly;
-
-/* Nonzero if user gave --no-cache flag.  */
-static int inhibit_cache;
-
-/* Nonzero if user gave --enforced flag.  */
-static int enforce_store;
-
-/* A unixy device number to return when the device is stat'd.  */
-static int rdev;
+struct storeio_argp_params
+{
+  struct store_argp_params store_params; /* Filled in by store_argp parser.  */
+  struct dev *dev;		/* We fill in its flag members.  */
+};
 
 /* Parse a single option.  */
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
+  struct storeio_argp_params *params = state->input;
+
   switch (key)
     {
-    case 'r': readonly = 1; break;
-    case 'w': readonly = 0; break;
 
-    case 'c': inhibit_cache = 1; break;
-    case 'e': enforce_store = 1; break;
+    case 'r': params->dev->readonly = 1; break;
+    case 'w': params->dev->readonly = 0; break;
+
+    case 'c': params->dev->inhibit_cache = 1; break;
+    case 'e': params->dev->enforced = 1; break;
 
     case 'n':
       {
 	char *start = arg, *end;
+	dev_t rdev;
 
 	rdev = strtoul (start, &end, 0);
 	if (*end == ',')
 	  /* MAJOR,MINOR form */
 	  {
 	    start = end;
-	    rdev = (rdev << 8) + strtoul (start, &end, 0);
+	    rdev = makedev (rdev, strtoul (start, &end, 0));
 	  }
 
 	if (end == start || *end != '\0')
@@ -95,11 +87,22 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	    argp_error (state, "%s: Invalid argument to --rdev", arg);
 	    return EINVAL;
 	  }
+
+	params->dev->rdev = rdev;
       }
       break;
 
     case ARGP_KEY_INIT:
-      state->child_inputs[0] = state->input; break;
+      /* Now store_argp's parser will get to initialize its state.
+	 The default_type member is our input parameter to it.  */
+      bzero (&params->store_params, sizeof params->store_params);
+      params->store_params.default_type = "device";
+      state->child_inputs[0] = &params->store_params;
+      break;
+
+    case ARGP_KEY_SUCCESS:
+      params->dev->store_name = params->store_params.result;
+      break;
 
     default:
       return ARGP_ERR_UNKNOWN;
@@ -116,14 +119,14 @@ main (int argc, char *argv[])
   error_t err;
   mach_port_t bootstrap;
   struct trivfs_control *fsys;
-  struct store_argp_params store_params = { default_type: "device" };
+  struct dev device;
+  struct storeio_argp_params params;
 
-  argp_parse (&argp, argc, argv, 0, 0, &store_params);
-  store_name = store_params.result;
+  bzero (&device, sizeof device);
+  mutex_init (&device.lock);
 
-  if (readonly)
-    /* Catch illegal writes at the point of open.  */
-    trivfs_allow_open &= ~O_WRITE;
+  params.dev = &device;
+  argp_parse (&argp, argc, argv, 0, 0, &params);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
@@ -134,9 +137,7 @@ main (int argc, char *argv[])
   if (err)
     error (3, err, "trivfs_startup");
 
-  /* Open the device only when necessary.  */
-  device = NULL;
-  mutex_init (&device_lock);
+  fsys->hook = &device;
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
@@ -149,30 +150,54 @@ error_t
 trivfs_append_args (struct trivfs_control *trivfs_control,
 		    char **argz, size_t *argz_len)
 {
+  struct dev *const dev = trivfs_control->hook;
   error_t err = 0;
 
-  if (rdev)
+  if (dev->rdev != (dev_t) 0)
     {
       char buf[40];
-      snprintf (buf, sizeof buf, "--rdev=%d,%d", (rdev >> 8), rdev & 0xFF);
+      snprintf (buf, sizeof buf, "--rdev=%d,%d",
+		major (dev->rdev), minor (dev->rdev));
       err = argz_add (argz, argz_len, buf);
     }
 
-  if (!err && inhibit_cache)
+  if (!err && dev->inhibit_cache)
     err = argz_add (argz, argz_len, "--no-cache");
 
-  if (!err && enforce_store)
+  if (!err && dev->enforced)
     err = argz_add (argz, argz_len, "--enforced");
 
   if (! err)
-    err = argz_add (argz, argz_len, readonly ? "--readonly" : "--writable");
+    err = argz_add (argz, argz_len,
+		    dev->readonly ? "--readonly" : "--writable");
 
   if (! err)
-    err = store_parsed_append_args (store_name, argz, argz_len);
+    err = store_parsed_append_args (dev->store_name, argz, argz_len);
 
   return err;
 }
 
+/* Called whenever a new lookup is done of our node.  The only reason we
+   set this hook is to duplicate the check done normally done against
+   trivfs_allow_open in trivfs_S_fsys_getroot, but looking at the
+   per-device state.  This gets checked again in check_open_hook, but this
+   hook runs before a little but more overhead gets incurred.  In the
+   success case, we just return EAGAIN to have trivfs_S_fsys_getroot
+   continue with its generic processing.  */
+static error_t
+getroot_hook (struct trivfs_control *cntl,
+	      mach_port_t reply_port,
+	      mach_msg_type_name_t reply_port_type,
+	      mach_port_t dotdot,
+	      uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+	      int flags,
+	      retry_type *do_retry, char *retry_name,
+	      mach_port_t *node, mach_msg_type_name_t *node_type)
+{
+  struct dev *const dev = cntl->hook;
+  return (dev_is_readonly (dev) && (flags & O_WRITE)) ? EROFS : EAGAIN;
+}
+
 /* Called whenever someone tries to open our node (even for a stat).  We
    delay opening the kernel device until this point, as we can usefully
    return errors from here.  */
@@ -181,27 +206,23 @@ check_open_hook (struct trivfs_control *trivfs_control,
 		 struct iouser *user,
 		 int flags)
 {
+  struct dev *const dev = trivfs_control->hook;
   error_t err = 0;
 
-  if (!err && readonly && (flags & O_WRITE))
+  if (!err && dev_is_readonly (dev) && (flags & O_WRITE))
     return EROFS;
 
-  mutex_lock (&device_lock);
-  if (device == NULL)
-    /* Try and open the device.  */
+  mutex_lock (&dev->lock);
+  if (dev->store == NULL)
     {
-      err = dev_open (store_name, readonly ? STORE_READONLY : 0, inhibit_cache,
-		      &device);
-      if (err)
-	device = NULL;
-      else
-	device->enforced = enforce_store;
+      /* Try and open the store.  */
+      err = dev_open (dev);
       if (err && (flags & (O_READ|O_WRITE)) == 0)
 	/* If we're not opening for read or write, then just ignore the
 	   error, as this allows stat to word correctly.  XXX  */
 	err = 0;
     }
-  mutex_unlock (&device_lock);
+  mutex_unlock (&dev->lock);
 
   return err;
 }
@@ -209,8 +230,8 @@ check_open_hook (struct trivfs_control *trivfs_control,
 static error_t
 open_hook (struct trivfs_peropen *peropen)
 {
-  struct dev *dev = device;
-  if (dev)
+  struct dev *const dev = peropen->cntl->hook;
+  if (dev->store)
     return open_create (dev, (struct open **)&peropen->hook);
   else
     return 0;
@@ -238,6 +259,7 @@ int trivfs_allow_open = O_READ | O_WRITE;
 void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
+  struct dev *const dev = cred->po->cntl->hook;
   struct open *open = cred->po->hook;
 
   st->st_mode &= ~S_IFMT;
@@ -254,7 +276,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
       st->st_size = size;
       st->st_blocks = size / 512;
 
-      st->st_mode |= ((inhibit_cache || store->block_size == 1)
+      st->st_mode |= ((dev->inhibit_cache || store->block_size == 1)
 		      ? S_IFCHR : S_IFBLK);
     }
   else
@@ -264,32 +286,36 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
       st->st_size = 0;
       st->st_blocks = 0;
 
-      st->st_mode |= inhibit_cache ? S_IFCHR : S_IFBLK;
+      st->st_mode |= dev->inhibit_cache ? S_IFCHR : S_IFBLK;
     }
 
-  st->st_rdev = rdev;
-  if (readonly || (open && (open->dev->store->flags & STORE_READONLY)))
+  st->st_rdev = dev->rdev;
+  if (dev_is_readonly (dev))
     st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 }
 
 error_t
 trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
+  struct dev *const device = fsys->hook;
   error_t err;
   int force = (flags & FSYS_GOAWAY_FORCE);
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
   struct port_class *root_port_class = fsys->protid_class;
 
-  mutex_lock (&device_lock);
+  mutex_lock (&device->lock);
 
-  if (device == NULL)
+  if (device->store == NULL)
+    /* The device is not actually open.
+       XXX note that exitting here nukes non-io users, like someone
+       in the middle of a stat who will get SIGLOST or something.  */
     exit (0);
 
   /* Wait until all pending rpcs are done.  */
   err = ports_inhibit_class_rpcs (root_port_class);
   if (err == EINTR || (err && !force))
     {
-      mutex_unlock (&device_lock);
+      mutex_unlock (&device->lock);
       return err;
     }
 
@@ -322,11 +348,25 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   /* Allow normal operations to proceed.  */
   ports_enable_class (root_port_class);
   ports_resume_class_rpcs (root_port_class);
-  mutex_unlock (&device_lock);
+  mutex_unlock (&device->lock);
 
   /* Complain that there are still users.  */
   return EBUSY;
 }
+
+/* If this variable is set, it is called by trivfs_S_fsys_getroot before any
+   other processing takes place; if the return value is EAGAIN, normal trivfs
+   getroot processing continues, otherwise the rpc returns with that return
+   value.  */
+error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
+				mach_port_t reply_port,
+				mach_msg_type_name_t reply_port_type,
+				mach_port_t dotdot,
+				uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				int flags,
+				retry_type *do_retry, char *retry_name,
+				mach_port_t *node, mach_msg_type_name_t *node_type)
+     = getroot_hook;
 
 /* If this variable is set, it is called every time an open happens.
    USER and FLAGS are from the open; CNTL identifies the
@@ -355,7 +395,7 @@ trivfs_S_fsys_syncfs (struct trivfs_control *cntl,
 		      mach_port_t reply, mach_msg_type_name_t replytype,
 		      int wait, int dochildren)
 {
-  struct dev *dev = device;
+  struct dev *dev = cntl->hook;
   if (dev)
     return dev_sync (dev, wait);
   else

@@ -1,8 +1,7 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,11 +25,19 @@
 #include <rwlock.h>
 #include <hurd/store.h>
 
-/* Information about a kernel device.  */
+/* Information about backend store, which we presumptively call a "device".  */
 struct dev
 {
-  /* The device to which we're doing io.  */
+  /* The argument specification that we use to open the store.  */
+  struct store_parsed *store_name;
+
+  /* The device to which we're doing io.  This is null when the
+     device is closed, in which case we will open from `store_name'.  */
   struct store *store;
+
+  int readonly;			/* Nonzero if user gave --readonly flag.  */
+  int enforced;			/* Nonzero if user gave --enforced flag.  */
+  dev_t rdev;			/* A unixy device number for st_rdev.  */
 
   /* The current owner of the open device.  For terminals, this affects
      controlling terminal behavior (see term_become_ctty).  For all objects
@@ -40,7 +47,9 @@ struct dev
      indicates that there is no owner.  */
   pid_t owner;
 
-  int enforced;			/* Nonzero iff --enforced flag was given.  */
+  /* This lock protects `store' and `owner'.  The other members never
+     change after creation, except for those locked by io_lock (below).  */
+  struct mutex lock;
 
   /* Nonzero iff the --no-cache flag was given.
      If this is set, the remaining members are not used at all
@@ -68,14 +77,18 @@ struct dev
   struct mutex pager_lock;
 };
 
-/* Returns a pointer to a new device structure in DEV for the device
-   NAME, with the given FLAGS.  If BLOCK_SIZE is non-zero, it should be the
-   desired block size, and must be a multiple of the device block size.
-   If an error occurs, the error code is returned, otherwise 0.  */
-error_t dev_open (struct store_parsed *name, int flags, int inhibit_cache,
-		  struct dev **dev);
+static inline int
+dev_is_readonly (const struct dev *dev)
+{
+  return dev->readonly || (dev->store && (dev->store->flags & STORE_READONLY));
+}
 
-/* Free DEV and any resources it consumes.  */
+/* Called with DEV->lock held.  Try to open the store underlying DEV.  */
+error_t dev_open (struct dev *dev);
+
+/* Shut down the store underlying DEV and free any resources it consumes.
+   DEV itself remains intact so that dev_open can be called again.
+   This should be called with DEV->lock held.  */
 void dev_close (struct dev *dev);
 
 /* Returns in MEMOBJ the port for a memory object backed by the storage on

@@ -1,8 +1,7 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -133,55 +132,49 @@ dev_buf_rw (struct dev *dev, size_t buf_offs, size_t *io_offs, size_t *len,
     }
 }
 
-/* Returns a pointer to a new device structure in DEV for the kernel device
-   NAME, with the given FLAGS.  If BLOCK_SIZE is non-zero, it should be the
-   desired block size, and must be a multiple of the device block size.
-   If an error occurs, the error code is returned, otherwise 0.  */
+/* Called with DEV->lock held.  Try to open the store underlying DEV.  */
 error_t
-dev_open (struct store_parsed *name, int flags, int inhibit_cache,
-	  struct dev **dev)
+dev_open (struct dev *dev)
 {
   error_t err;
-  struct dev *new = malloc (sizeof (struct dev));
 
-  if (! new)
-    return ENOMEM;
+  assert (dev->store == 0);
 
-  err = store_parsed_open (name, flags, &new->store);
+  err = store_parsed_open (dev->store_name,
+			   dev->readonly ? STORE_READONLY : 0,
+			   &dev->store);
   if (err)
-    {
-      free (new);
-      return err;
-    }
+    return err;
 
-  new->buf = mmap (0, new->store->block_size, PROT_READ|PROT_WRITE,
+  dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
 		   MAP_ANON, 0, 0);
-  if (new->buf == (void *) -1)
+  if (dev->buf == MAP_FAILED)
     {
-      store_free (new->store);
-      free (new);
+      store_free (dev->store);
+      dev->store = 0;
       return ENOMEM;
     }
 
-  new->inhibit_cache = inhibit_cache;
-  new->owner = 0;
-  if (!inhibit_cache)
+  if (!dev->inhibit_cache)
     {
-      new->buf_offs = -1;
-      rwlock_init (&new->io_lock);
-      new->block_mask = (1 << new->store->log2_block_size) - 1;
-      new->pager = 0;
-      mutex_init (&new->pager_lock);
+      dev->buf_offs = -1;
+      rwlock_init (&dev->io_lock);
+      dev->block_mask = (1 << dev->store->log2_block_size) - 1;
+      dev->pager = 0;
+      mutex_init (&dev->pager_lock);
     }
-  *dev = new;
 
   return 0;
 }
 
-/* Free DEV and any resources it consumes.  */
+/* Shut down the store underlying DEV and free any resources it consumes.
+   DEV itself remains intact so that dev_open can be called again.
+   This should be called with DEV->lock held.  */
 void
 dev_close (struct dev *dev)
 {
+  assert (dev->store);
+
   if (!dev->inhibit_cache)
     {
       if (dev->pager != NULL)
@@ -193,8 +186,7 @@ dev_close (struct dev *dev)
     }
 
   store_free (dev->store);
-
-  free (dev);
+  dev->store = 0;
 }
 
 /* Try and write out any pending writes to DEV.  If WAIT is true, will wait
