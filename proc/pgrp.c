@@ -371,10 +371,7 @@ join_pgrp (struct proc *p)
     pg->pg_plist->p_gprevp = &p->p_gnext;
   pg->pg_plist = p;
   
-  /* Processes 0 and 1 have no parent; they count as orphaned
-     processes always. */
-  if (p->p_parent
-      && p->p_parent->p_pgrp != pg
+  if (p->p_parent->p_pgrp != pg
       && p->p_parent->p_pgrp->pg_session == pg->pg_session)
     pg->pg_orphcnt++;
 }
