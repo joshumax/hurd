@@ -36,7 +36,6 @@
 # define _(msgid)       gettext (msgid)
 #else
 # define _(msgid)       (msgid)
-# define gettext(msgid) (msgid)
 #endif
 #endif
 
@@ -156,7 +155,7 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
       else if (argp_program_version)
 	fprintf (state->out_stream, "%s\n", argp_program_version);
       else
-	__argp_error (state, gettext ("No version known!?"));
+	__argp_error (state, _("No version known!?"));
       if (! (state->flags & ARGP_NO_EXIT))
 	exit (0);
       break;
@@ -562,14 +561,14 @@ parser_init (struct parser *parser, const struct argp *argp,
 
   if (parser->state.flags & ARGP_NO_ERRS)
     {
-      __opterr = 0;
+      opterr = 0;
       if (parser->state.flags & ARGP_PARSE_ARGV0)
 	/* getopt always skips ARGV[0], so we have to fake it out.  As long
 	   as OPTERR is 0, then it shouldn't actually try to access it.  */
 	parser->state.argv--, parser->state.argc++;
     }
   else
-    __opterr = 1;		/* Print error messages.  */
+    opterr = 1;			/* Print error messages.  */
 
   return 0;
 }
@@ -613,7 +612,7 @@ parser_finalize (struct parser *parser,
       {
 	if (!(parser->state.flags & ARGP_NO_ERRS) && parser->state.err_stream)
 	  fprintf (parser->state.err_stream,
-		   gettext ("%s: Too many arguments\n"), parser->state.name);
+		   _("%s: Too many arguments\n"), parser->state.name);
 	err = EBADKEY;
       }
 
@@ -734,15 +733,15 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
   if (parser->try_getopt && !parser->state.quoted)
     /* Give getopt a chance to parse this.  */
     {
-      __optind = parser->state.next; /* Put it back in OPTIND for getopt.  */
-      __optopt = KEY_END;	/* Distinguish KEY_ERR from a real option.  */
+      optind = parser->state.next; /* Put it back in OPTIND for getopt.  */
+      optopt = KEY_END;		/* Distinguish KEY_ERR from a real option.  */
       if (parser->state.flags & ARGP_LONG_ONLY)
-	opt = __getopt_long_only (parser->state.argc, parser->state.argv,
-				  parser->short_opts, parser->long_opts, 0);
+	opt = getopt_long_only (parser->state.argc, parser->state.argv,
+				parser->short_opts, parser->long_opts, 0);
       else
-	opt = __getopt_long (parser->state.argc, parser->state.argv,
-			     parser->short_opts, parser->long_opts, 0);
-      parser->state.next = __optind; /* And see what getopt did.  */
+	opt = getopt_long (parser->state.argc, parser->state.argv,
+			   parser->short_opts, parser->long_opts, 0);
+      parser->state.next = optind; /* And see what getopt did.  */
 
       if (opt == KEY_END)
 	/* Getopt says there are no more options, so stop using
@@ -758,7 +757,7 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
 	       here, whatever happens.  */
 	    parser->state.quoted = parser->state.next;
 	}
-      else if (opt == KEY_ERR && __optopt != KEY_END)
+      else if (opt == KEY_ERR && optopt != KEY_END)
 	/* KEY_ERR can have the same value as a valid user short
 	   option, but in the case of a real error, getopt sets OPTOPT
 	   to the offending character, which can never be KEY_END.  */
