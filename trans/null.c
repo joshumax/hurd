@@ -34,13 +34,37 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (null);
 
+/* Error code to return for write attempts.
+   If zero, they succeed in writing to the bitbucket.  */
+static error_t write_error_code;
+
+static const struct argp_option options[] =
+{
+  {"full",	'f', 0, 0, "Cause writes to fail as if to a full disk"},
+  {0}
+};
+
+static error_t
+parse_opt (int opt, char *arg, struct argp_state *state)
+{
+  switch (opt)
+    {
+    case 'f':
+      write_error_code = ENOSPC;
+      return 0;
+    }
+  return ARGP_ERR_UNKNOWN;
+}
+
+static const struct argp argp =
+{ options, parse_opt, 0, "Endless sink and null source" };
+
 int
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
   struct trivfs_control *fsys;
-  const struct argp argp = { 0, 0, 0, "Endless sink and null source" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
@@ -197,7 +221,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   else if (!(cred->po->openmodes & O_WRITE))
     return EBADF;
   *amt = datalen;
-  return 0;
+  return write_error_code;
 }
 
 /* Truncate file.  */
