@@ -1063,6 +1063,7 @@ do_exec (file_t file,
   vm_address_t phdr_addr = 0;
   vm_size_t phdr_size = 0;
   mach_msg_type_number_t i;
+  int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1264,7 +1265,10 @@ do_exec (file_t file,
 			 INIT_INT_MAX * sizeof (int),
 			 1);
 	    memcpy (boot->intarray, intarray, nints * sizeof (int));
+	    intarray_dealloc = !intarray_copy;
 	  }
+	else
+	  boot->intarray = intarray;
 	boot->nints = INIT_INT_MAX;
       }
     else
@@ -1567,11 +1571,17 @@ do_exec (file_t file,
 	 If we are bailing out due to error before setting the task's
 	 bootstrap port, this will be the last reference and BOOT
 	 will get cleaned up here.  */
+
       if (e.error)
 	/* Kill the pointers to the argument information so the cleanup
 	   of BOOT doesn't deallocate it.  It will be deallocated my MiG
 	   when we return the error.  */
 	bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
+      else
+	/* Do this before we release the last reference.  */
+	if (boot->nports > INIT_PORT_PROC)
+	  proc_mark_exec (boot->portarray[INIT_PORT_PROC]);
+
       ports_port_deref (boot);
     }
 
@@ -1607,9 +1617,6 @@ do_exec (file_t file,
       /* Deallocate the right to the new task we created.  */
       mach_port_deallocate (mach_task_self (), newtask);
 
-      if (boot->nports > INIT_PORT_PROC)
-	proc_mark_exec (boot->portarray[INIT_PORT_PROC]);
-
       for (i = 0; i < nports; ++i)
 	if (ports_replaced[i] && portarray[i] != MACH_PORT_NULL)
 	  /* This port was replaced, so the reference that arrived in the
@@ -1621,11 +1628,11 @@ do_exec (file_t file,
       /* If there is vm_allocate'd space for the original intarray and/or
 	 portarray, and we are not saving those pointers in BOOT for later
 	 transfer, deallocate the original space now.  */
-      if (!intarray_copy && boot->intarray != intarray)
+      if (intarray_dealloc)
 	vm_deallocate (mach_task_self (),
 		       (vm_address_t) intarray,
 		       nints * sizeof intarray[0]);
-      if (!portarray_copy && boot->portarray != portarray)
+      if (!portarray_copy)
 	vm_deallocate (mach_task_self (),
 		       (vm_address_t) portarray,
 		       nports * sizeof portarray[0]);
