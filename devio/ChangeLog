@@ -1,3 +1,8 @@
+Fri Jul 19 15:55:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_file_get_storage_info): Return correct values for
+	NUM_RUNS and NUM_OFFSETS.
+
 Thu Jul 18 18:33:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io.c (trivfs_S_file_get_storage_info): Fill in the array-length
