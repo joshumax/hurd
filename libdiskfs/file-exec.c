@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -113,23 +113,27 @@ diskfs_S_file_exec (struct protid *cred,
     flags |= EXEC_NEWTASK;
 #endif
 
-  newpi = diskfs_make_protid (diskfs_make_peropen (np, O_READ, 
+  err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, 
 						   cred->po->dotdotport),
 			      cred->uids, cred->nuids,
-			      cred->gids, cred->ngids);
+			      cred->gids, cred->ngids,
+			      &newpi);
   mutex_unlock (&np->lock);
 
-  err = exec_exec (diskfs_exec, 
-		   ports_get_right (newpi),
-		   MACH_MSG_TYPE_MAKE_SEND,
-		   task, flags, argv, argvlen, envp, envplen, 
-		   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
-		   intarray, intarraylen, deallocnames, deallocnameslen,
-		   destroynames, destroynameslen);
+  if (! err)
+    {
+      err = exec_exec (diskfs_exec, 
+		       ports_get_right (newpi),
+		       MACH_MSG_TYPE_MAKE_SEND,
+		       task, flags, argv, argvlen, envp, envplen, 
+		       fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
+		       intarray, intarraylen, deallocnames, deallocnameslen,
+		       destroynames, destroynameslen);
+      ports_port_deref (newpi);
+    }
 
-  ports_port_deref (newpi);
-  if (!err)
+  if (! err)
     {
       unsigned int i;
       
