@@ -230,7 +230,10 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
 
    If the name is found, return zero, and (if NP is nonzero) set *NP
    to point to the node for it, locked.  If the name is not found,
-   return ENOENT, and (if NP is nonzero) set *NP to zero.
+   return ENOENT, and (if NP is nonzero) set *NP to zero.  If NP is
+   zero, then the node found must not be locked, even transitorily.
+   Lookups for REMOVE and RENAME (which must often check permissions
+   on the node being found) will always set NP.
 
    If DS is nonzero then:
      For LOOKUP: set *DS to be ignored by diskfs_drop_dirstat.
