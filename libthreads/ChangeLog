@@ -1,3 +1,7 @@
+Mon Nov 18 16:36:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* cprocs.c (cproc_create): Cast CHILD in assignment.
+
 Mon Oct 21 22:05:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* i386/csw.S (CALL_MCOUNT): New macro.

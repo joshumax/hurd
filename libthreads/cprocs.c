@@ -26,6 +26,10 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.8  1995/12/06 19:48:34  mib
+ * (condition_unimplies): Take address of (*impp)->next in assignment to
+ * IMPP on loop step instruction.
+ *
  * Revision 1.7  1995/09/22 17:51:10  roland
  * Include hurd/threadvar.h.
  *
@@ -748,7 +752,7 @@ cproc_create()
 					 sizeof (long int));
 		cproc_prepare(child, &child->context, stack);
 		/* Set up the cproc_self ptr at the base of CHILD's stack.  */
-		ur_cthread_ptr(stack) = child;
+		ur_cthread_ptr(stack) = (ur_cthread_t) child;
 		cproc_ready(child,0);
 	}
 	return child;
