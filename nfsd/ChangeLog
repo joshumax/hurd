@@ -1,3 +1,18 @@
+2000-12-01  Marcus Brinkmann  <marcus@gnu.org>
+
+	* cache.c (scan_creds): Move I inside for-statement.
+	Replace inner for-loop with a while-loop. New variable
+	NEXT_I set to I->NEXT, because we might free I.
+	Set I to NEXT_I at end of while block.
+	Move update of leastidlastuse inside if block, because
+	otherwise we will constantly prevent ourself from scanning.
+	(scan_fhs): Very much the same.
+	(scan_replies): Likewise. Also free CR.
+
+	(check_cached_reply): Make HASH value absolute (as XID can be
+	negative, and thus the modulus).
+	Initialize REFERENCES to 1.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* cache.c (create_cached_handle): Add comment.

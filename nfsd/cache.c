@@ -202,33 +202,43 @@ cred_ref (struct idspec *i)
 void
 scan_creds ()
 {
-  struct idspec *i;
   int n;
   int newleast = mapped_time->seconds;
 
   spin_lock (&idhashlock);
+
   if (mapped_time->seconds - leastidlastuse > ID_KEEP_TIMEOUT)
-    for (n = 0; n < IDHASH_TABLE_SIZE && nfreeids; n++)
-      for (i = idhashtable[n]; i && nfreeids; i = i->next)
+    {
+      for (n = 0; n < IDHASH_TABLE_SIZE && nfreeids; n++)
 	{
-	  if (!i->references
-	      && mapped_time->seconds - i->lastuse > ID_KEEP_TIMEOUT)
+	  struct idspec *i = idhashtable[n];
+	  
+	  while (i && nfreeids)
 	    {
-	      nfreeids--;
-	      *i->prevp = i->next;
-	      if (i->next)
-		i->next->prevp = i->prevp;
-	      free (i->uids);
-	      free (i->gids);
-	      free (i);
+	      struct idspec *next_i = i->next;
+	      
+	      if (!i->references
+		  && mapped_time->seconds - i->lastuse > ID_KEEP_TIMEOUT)
+		{
+		  nfreeids--;
+		  *i->prevp = i->next;
+		  if (i->next)
+		    i->next->prevp = i->prevp;
+		  free (i->uids);
+		  free (i->gids);
+		  free (i);
+		}
+	      else if (!i->references && newleast > i->lastuse)
+		newleast = i->lastuse;
+
+	      i = next_i;
 	    }
-	  else if (!i->references && newleast > i->lastuse)
-	    newleast = i->lastuse;
 	}
 
-  /* If we didn't bail early, then this is valid */
-  if (nfreeids)
-    leastidlastuse = newleast;
+      /* If we didn't bail early, then this is valid */
+      if (nfreeids)
+	leastidlastuse = newleast;
+    }
   spin_unlock (&idhashlock);
 }
 
@@ -320,33 +330,43 @@ cache_handle_rele (struct cache_handle *c)
 void
 scan_fhs ()
 {
-  struct cache_handle *c;
   int n;
   int newleast = mapped_time->seconds;
 
   mutex_lock (&fhhashlock);
+
   if (mapped_time->seconds - leastfhlastuse > FH_KEEP_TIMEOUT)
-    for (n = 0; n < FHHASH_TABLE_SIZE && nfreefh; n++)
-      for (c = fhhashtable[n]; c && nfreefh; c = c->next)
+    {
+      for (n = 0; n < FHHASH_TABLE_SIZE && nfreefh; n++)
 	{
-	  if (!c->references
-	      && mapped_time->seconds - c->lastuse > FH_KEEP_TIMEOUT)
+	  struct cache_handle *c = fhhashtable[n];
+
+	  while (c && nfreefh)
 	    {
-	      nfreefh--;
-	      *c->prevp = c->next;
-	      if (c->next)
-		c->next->prevp = c->prevp;
-	      cred_rele (c->ids);
-	      mach_port_deallocate (mach_task_self (), c->port);
-	      free (c);
+	      struct cache_handle *next_c = c->next;
+
+	      if (!c->references
+		  && mapped_time->seconds - c->lastuse > FH_KEEP_TIMEOUT)
+		{
+		  nfreefh--;
+		  *c->prevp = c->next;
+		  if (c->next)
+		    c->next->prevp = c->prevp;
+		  cred_rele (c->ids);
+		  mach_port_deallocate (mach_task_self (), c->port);
+		  free (c);
+		}
+	      else if (!c->references && newleast > c->lastuse)
+		newleast = c->lastuse;
+
+	      c = next_c;
 	    }
-	  else if (!c->references && newleast > c->lastuse)
-	      newleast = c->lastuse;
 	}
 
-  /* If we didn't bail early, then this is valid. */
-  if (nfreefh)
-    leastfhlastuse = newleast;
+      /* If we didn't bail early, then this is valid. */
+      if (nfreefh)
+	leastfhlastuse = newleast;
+    }
   mutex_unlock (&fhhashlock);
 }
 
@@ -452,7 +472,7 @@ check_cached_replies (int xid,
   struct cached_reply *cr;
   int hash;
 
-  hash = xid % REPLYHASH_TABLE_SIZE;
+  hash = abs(xid % REPLYHASH_TABLE_SIZE);
 
   spin_lock (&replycachelock);
   for (cr = replyhashtable[hash]; cr; cr = cr->next)
@@ -473,6 +493,7 @@ check_cached_replies (int xid,
   bcopy (sender, &cr->source, sizeof (struct sockaddr_in));
   cr->xid = xid;
   cr->data = 0;
+  cr->references = 1;
 
   cr->next = replyhashtable[hash];
   if (replyhashtable[hash])
@@ -505,31 +526,42 @@ release_cached_reply (struct cached_reply *cr)
 void
 scan_replies ()
 {
-  struct cached_reply *cr;
   int n;
   int newleast = mapped_time->seconds;
 
   spin_lock (&replycachelock);
+
   if (mapped_time->seconds - leastreplylastuse > REPLY_KEEP_TIMEOUT)
-    for (n = 0; n < REPLYHASH_TABLE_SIZE && nfreereplies; n++)
-      for (cr = replyhashtable[n]; cr && nfreereplies; cr = cr->next)
+    {
+      for (n = 0; n < REPLYHASH_TABLE_SIZE && nfreereplies; n++)
 	{
-	  if (!cr->references
-	      && mapped_time->seconds - cr->lastuse > REPLY_KEEP_TIMEOUT)
+	  struct cached_reply *cr = replyhashtable[n];
+
+	  while (cr && nfreereplies)
 	    {
-	      nfreereplies--;
-	      *cr->prevp = cr->next;
-	      if (cr->next)
-		cr->next->prevp = cr->prevp;
-	      if (cr->data)
-		free (cr->data);
+	      struct cached_reply *next_cr = cr->next;
+	  
+	      if (!cr->references
+		  && mapped_time->seconds - cr->lastuse > REPLY_KEEP_TIMEOUT)
+		{
+		  nfreereplies--;
+		  *cr->prevp = cr->next;
+		  if (cr->next)
+		    cr->next->prevp = cr->prevp;
+		  if (cr->data)
+		    free (cr->data);
+		  free (cr);
+		}
+	      else if (!cr->references && newleast > cr->lastuse)
+		newleast = cr->lastuse;
+
+	      cr = next_cr;
 	    }
-	  else if (!cr->references && newleast > cr->lastuse)
-	    newleast = cr->lastuse;
 	}
 
-  /* If we didn't bail early, then this is valid */
-  if (nfreereplies)
-    leastreplylastuse = newleast;
+      /* If we didn't bail early, then this is valid */
+      if (nfreereplies)
+	leastreplylastuse = newleast;
+    }
   spin_unlock (&replycachelock);
 }
