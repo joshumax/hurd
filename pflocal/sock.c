@@ -129,20 +129,7 @@ sock_free (struct sock *sock)
   /* But we must do the read pipe ourselves.  */
   pipe_release (sock->read_pipe);
 
-  
-
   free (sock);
-}
-
-/* Remove a reference from SOCK, possibly freeing it.  */
-void
-sock_unref (struct sock *sock)
-{
-  mutex_lock (&sock->lock);
-  if (--sock->refs == 0)
-    sock_free (sock);
-  else
-    mutex_unlock (&sock->lock);
 }
 
 /* ---------------------------------------------------------------- */
@@ -154,7 +141,19 @@ static void
 clean_sock_user (void *vuser)
 {
   struct sock_user *user = vuser;
-  sock_unref (user->sock);
+  struct sock *sock = user->sock;
+
+  /* Remove a reference from SOCK, possibly freeing it.  */
+  mutex_lock (&sock->lock);
+  if (--sock->refs == 0)
+    {
+      /* A sock should never have an address when it has 0 refs, as the
+	 address should hold a reference to the sock!  */
+      assert (sock->addr == NULL);
+      sock_free (sock);
+    }
+  else
+    mutex_unlock (&sock->lock);
 }
 
 /* Return a new user port on SOCK in PORT.  */
@@ -167,8 +166,8 @@ sock_create_port (struct sock *sock, mach_port_t *port)
     sock_user_port_class = ports_create_class (NULL, clean_sock_user);
 
   user =      
-    port_allocate_port (pflocal_port_bucket,
-			sizeof (struct sock_user), sock_user_port_class);
+    ports_allocate_port (pflocal_port_bucket,
+			 sizeof (struct sock_user), sock_user_port_class);
 
   if (!user)
     return ENOMEM;
@@ -185,45 +184,94 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 }
 
 /* ---------------------------------------------------------------- */
+/* Address manipulation.  */
 
+struct port_class *addr_port_class = NULL;
+
+/* Cleanup after the address ADDR, which is going away... */
+static void
+clean_addr (void *vaddr)
+{
+  struct addr *addr = vaddr;
+
+  
+  struct sock *sock = addr->sock;
+  /* ... */
+}
+
+inline error_t
+addr_create (struct addr **addr)
+{
+  if (addr_port_class == NULL)
+    addr_port_class = ports_create_class (NULL, clean_addr);
+
+  *addr =
+    ports_allocate_port (pflocal_port_bucket,
+			 sizeof (struct addr), addr_port_class);
+  if (! *addr)
+    return ENOMEM;
+
+  (*addr)->sock = NULL;
+  return 0;
+}
+
 /* Bind SOCK to ADDR.  */
 error_t
 sock_bind (struct sock *sock, struct addr *addr)
 {
   error_t err = 0;
+  struct addr *old_addr;
 
-  mutex_lock (&sock->lock);
   mutex_lock (&addr->lock);
+  mutex_lock (&sock->lock);
 
-  if (addr && sock->addr)
+  old_addr = sock->addr
+  if (addr && old_addr)
     err = EINVAL;		/* SOCK already bound.  */
   else if (addr && addr->sock)
     err = EADDRINUSE;		/* Something else already bound ADDR.  */
   else if (addr)
     addr->sock = sock;		/* First binding for SOCK.  */
   else
-    sock->addr->sock = NULL;	/* Unbinding SOCK.  */
+    old_addr->sock = NULL;	/* Unbinding SOCK.  */
 
   if (!err)
     sock->addr = addr;
 
-  mutex_unlock (&addr->lock);
+  if (addr)
+    sock->refs++;
+  if (old_addr)
+    {
+      /* Note that we don't have to worry about SOCK's ref count going to zero
+	 because whoever's calling us should be holding a ref somehow.  */
+      sock->refs--;
+      assert (sock->refs > 0);	/* But make sure... */
+    }
+
   mutex_unlock (&sock->lock);
+  mutex_unlock (&addr->lock);
 
   return err;
 }
 
 /* Returns SOCK's addr, fabricating one if necessary.  SOCK should be
    locked.  */
-static struct addr *
-ensure_addr (struct sock *sock)
+static inline error_t
+ensure_addr (struct sock *sock, struct addr **addr)
 {
-  if (! sock->addr)
+  error_t err = 0;
+
+  if (! sock->addr || sock->addr->refcnt == 0)
     {
-      addr_create (&sock->addr);
-      sock->addr->sock = sock;
+      err = addr_create (&sock->addr);
+      if (!err)
+	{
+	  sock->addr->sock = sock;
+	  sock->refs++;
+	}
     }
-  return sock->addr;
+  *addr = sock->addr;
+  return err;
 }
 
 /* Returns a send right to SOCK's address in ADDR_PORT.  If SOCK doesn't
@@ -231,10 +279,32 @@ ensure_addr (struct sock *sock)
 error_t
 sock_get_addr_port (struct sock *sock, mach_port_t *addr_port)
 {
+  error_t err;
+  struct addr *addr;
+
   mutex_lock (&sock->lock);
-  *addr_port = ports_get_right (ensure_addr (sock));
+  err = ensure_addr (sock, addr);
+  if (!err)
+    *addr_port = ports_get_right (addr);
   mutex_unlock (&sock->lock);
-  return 0;			/* XXX */
+
+  return err;
+}
+
+/* Returns SOCK's address in ADDR, with an additional reference added.  If
+   SOCK doesn't currently have an address, one is fabricated first.  */
+error_t
+sock_get_addr (struct sock *sock, struct addr *addr)
+{
+  error_t err;
+
+  mutex_lock (&sock->lock);
+  err = ensure_addr (sock, addr);
+  if (!err)
+    ports_port_ref (*addr);
+  mutex_unlock (&sock->lock);
+
+  return err;			/* XXX */
 }
 
 /* If SOCK is a connected socket, returns a send right to SOCK's peer's
@@ -363,4 +433,3 @@ sock_shutdown (struct sock *sock, unsigned flags)
   else
     mutex_unlock (&sock->lock);
 }
-
