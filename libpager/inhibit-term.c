@@ -28,7 +28,7 @@ _pager_block_termination (struct pager *p)
 /* Allow termination again. */
 /* Must be called with interlock held. */
 void
-_pagerallow_termination (struct pager *p)
+_pager_allow_termination (struct pager *p)
 {
   if (!--p->noterm && p->termwaiting)
     condition_broadcast (&p->wakeup);
