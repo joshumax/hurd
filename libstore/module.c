@@ -34,7 +34,7 @@ open_class (int need_open,
 
   /* Construct the name of the shared object for this module.  */
   if (asprintf (&modname,
-		"libstore_%.*s%s", clname_end - name, name,
+		"libstore_%.*s%s", (int) (clname_end - name), name,
 		STORE_SONAME_SUFFIX) < 0)
     return ENOMEM;
 
@@ -57,7 +57,8 @@ open_class (int need_open,
   if (mod == NULL)
     return errno ?: ENOENT;
 
-  if (asprintf (&clsym, "store_%.*s_class", clname_end - name, name) < 0)
+  if (asprintf (&clsym, "store_%.*s_class",
+		(int) (clname_end - name), name) < 0)
     {
       dlclose (mod);
       return ENOMEM;
@@ -68,7 +69,7 @@ open_class (int need_open,
   if (*classp == NULL)
     {
       error (0, 0, "invalid store module %.*s: %s",
-	     clname_end - name, name, dlerror ());
+	     (int) (clname_end - name), name, dlerror ());
       dlclose (mod);
       return EGRATUITOUS;
     }
