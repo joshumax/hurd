@@ -25,16 +25,6 @@
 
 #include "dev.h"
 #include "iostate.h"
-
-#ifdef MSG
-#include <ctype.h>
-#endif
-#ifdef FAKE
-#include <stdio.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <sys/fcntl.h>
-#endif
 
 /* ---------------------------------------------------------------- */
 
@@ -67,22 +57,6 @@ dev_open(char *name, int flags, int block_size, struct dev **dev)
   if (!err && device_master == MACH_PORT_NULL)
     err = get_privileged_ports(NULL, &device_master);
 
-#ifdef FAKE
-  (*dev)->port = (mach_port_t)
-    open(name, ((flags & DEV_READONLY) ? O_RDONLY : O_RDWR));
-  err = ((int)(*dev)->port == -1 ? errno : 0);
-  if (!err)
-    {
-      struct stat stat;
-      if (fstat((int)(*dev)->port, &stat) == 0)
-	{
-	  (*dev)->size = stat.st_size;
-	  (*dev)->dev_block_size = stat.st_blksize;
-	}
-      else
-	err = errno;
-    }
-#else
   if (!err)
     err = device_open(device_master,
 		      D_READ | (flags & DEV_READONLY ? D_WRITE : 0),
@@ -102,19 +76,6 @@ dev_open(char *name, int flags, int block_size, struct dev **dev)
 	  (*dev)->dev_block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
 	}
     }
-#endif
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "dev_open(`%s', 0x%x, %d) => %s\n",
-	      name, flags, block_size, err ? strerror(err) : "OK");
-      if (!err)
-	fprintf(debug, "  size = %d, dev_block_size = %d\n",
-		(*dev)->size, (*dev)->dev_block_size);
-      mutex_unlock(&debug_lock);
-    }
-#endif
 
   if (!err)
     {
@@ -194,50 +155,6 @@ dev_sync(struct dev *dev, int wait)
 
 /* ---------------------------------------------------------------- */
 
-#ifdef MSG
-char *
-brep(vm_address_t buf, vm_size_t len)
-{
-  static char rep[200];
-  char *prep(char *buf, char *str, int len)
-    {
-      *buf++ = '`';
-      while (len-- > 0)
-	{
-	  int ch = *str++;
-	  if (isprint(ch) && ch != '\'' && ch != '\\')
-	    *buf++ = ch;
-	  else
-	    {
-	      *buf++ = '\\';
-	      switch (ch)
-		{
-		case '\n': *buf++ = 'n'; break;
-		case '\t': *buf++ = 't'; break;
-		case '\b': *buf++ = 'b'; break;
-		case '\f': *buf++ = 'f'; break;
-		default:   sprintf(buf, "%03o", ch); buf += 3; break;
-		}
-	    }
-	}
-      *buf++ = '\'';
-      *buf = '\0';
-      return buf;
-    }
-
-  if (len < 40)
-    prep(rep, (char *)buf, (int)len);
-  else
-    {
-      char *end = prep(rep, (char *)buf, 20);
-      *end++ = '.'; *end++ = '.'; *end++ = '.';
-      prep(end, (char *)buf + len - 20, 20);
-    }
-
-  return rep;
-}
-#endif
-
 /* Writes AMOUNT bytes from the buffer pointed to by BUF to the device DEV.
    *OFFS is incremented to reflect the amount read/written.  Both AMOUNT and
    *OFFS must be multiples of DEV's block size, and either BUF must be
@@ -257,67 +174,12 @@ dev_write(struct dev *dev,
   assert(amount % bsize == 0);
 
   if (amount < IO_INBAND_MAX)
-    {
-#ifdef FAKE
-      if (*offs != dev->io_state.location)
-	{
-	  err = lseek((int)dev->port, SEEK_SET, *offs);
-	  if (err == -1)
-	    err = errno;
-	  else
-	    dev->io_state.location = *offs;
-	}
-      written = write((int)dev->port, (char *)buf, amount);
-      err = (written < 1 ?  errno : 0);
-      if (!err)
-	dev->io_state.location += written;
-#else
-      err =
-	device_write_inband(dev->port, 0, block,
-			    (io_buf_ptr_t)buf, amount, &written);
-#endif
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "device_write_inband(%d, %s, %d) => %s, %d\n",
-		  block, brep(buf, amount), amount, err ? strerror(err) : "OK", written);
-	  fprintf(debug, "  offset = %d => %d\n", *offs, *offs + written);
-#endif
-	  mutex_unlock(&debug_lock);
-	}
-    }
-  else
-    {
-#ifdef FAKE
-    if (*offs != dev->io_state.location)
-      {
-	err = lseek((int)dev->port, SEEK_SET, *offs);
-	if (err == -1)
-	  err = errno;
-	else
-	  dev->io_state.location = *offs;
-      }
-    written = write((int)dev->port, (char *)buf, amount);
-    err = (written < 1 ?  errno : 0);
-    if (!err)
-      dev->io_state.location += written;
-#else
     err =
-      device_write(dev->port, 0, block, (io_buf_ptr_t)buf, amount, &written);
-#endif
-#ifdef MSG
-    if (debug)
-      {
-	mutex_lock(&debug_lock);
-	fprintf(debug, "device_write(%d, %s, %d) => %s, %d\n",
-		block, brep(buf, amount), amount,
-		err ? strerror(err) : "OK", written);
-	fprintf(debug, "  offset = %d => %d\n", *offs, *offs + written);
-	mutex_unlock(&debug_lock);
-      }
-#endif
-  }
+      device_write_inband (dev->port, 0, block,
+			   (io_buf_ptr_t)buf, amount, &written);
+  else
+    err =
+      device_write (dev->port, 0, block, (io_buf_ptr_t)buf, amount, &written);
 
   if (!err)
     *offs += written;
@@ -346,80 +208,14 @@ dev_read(struct dev *dev,
     {
       if (*buf_len < amount)
 	err = vm_allocate(mach_task_self(), buf, amount, 1);
-#ifdef FAKE
-      if (*offs != dev->io_state.location)
-	{
-	  err = lseek((int)dev->port, SEEK_SET, *offs);
-	  if (err == -1)
-	    err = errno;
-	  else
-	    dev->io_state.location = *offs;
-	}
-      err = vm_allocate(mach_task_self(), buf, amount, 1);
-      if (!err)
-	{
-	  read = __read((int)dev->port, (char *)*buf, amount);
-	  err = (read == -1 ? errno : 0);
-	  if (!err)
-	    dev->io_state.location += read;
-	}
-#else
       if (!err)
 	err =
 	  device_read_inband(dev->port, 0, block,
 			     amount, (io_buf_ptr_t)*buf, &read);
-#endif
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "device_read_inband(%d, %d) => %s, %s, %d\n",
-		  block, amount,
-		  err ? strerror(err) : "OK", err ? "-" : brep(*buf, read),
-		  read);
-	  if (!err)
-	    fprintf(debug, "  offset = %d => %d\n", *offs, *offs + read);
-	  mutex_unlock(&debug_lock);
-	}
-#endif
     }
   else
-    {
-#ifdef FAKE
-      if (*offs != dev->io_state.location)
-	{
-	  err = lseek((int)dev->port, SEEK_SET, *offs);
-	  if (err == -1)
-	    err = errno;
-	  else
-	    dev->io_state.location = *offs;
-	}
-      err = vm_allocate(mach_task_self(), buf, amount, 1);
-      if (!err)
-	{
-	  read = __read((int)dev->port, (char *)*buf, amount);
-	  err = (read == -1 ? errno : 0);
-	  if (!err)
-	    dev->io_state.location += read;
-	}
-#else
-      err =
-	device_read(dev->port, 0, block, amount, (io_buf_ptr_t *)buf, &read);
-#endif
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "device_read(%d, %d) => %s, %s, %d\n",
-		  block, amount,
-		  err ? strerror(err) : "OK", err ? "-" : brep(*buf, read),
-		  read);
-	  if (!err)
-	    fprintf(debug, "  offset = %d => %d\n", *offs, *offs + read);
-	  mutex_unlock(&debug_lock);
-	}
-#endif
-    }
+    err =
+      device_read(dev->port, 0, block, amount, (io_buf_ptr_t *)buf, &read);
 
   if (!err)
     {
