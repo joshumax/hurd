@@ -1,3 +1,11 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* io-ops.c (S_io_write, S_io_read): u_int -> size_t
+	(S_io_restrict_auth): Likewise.
+	(S_io_reauthenticate): Likewise.
+	* socket-ops.c (S_socket_getopt, S_socket_setopt): Likewise.
+	(S_socket_send, S_socket_recv): Likewise.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c: Include <version.h>.
