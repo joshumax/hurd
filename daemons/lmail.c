@@ -46,7 +46,7 @@ options[] =
   {"file",    OPT_FILE, "FILE",	0, "Deliver FILE instead of standard input"},
   {"remove",  'r',	0,     	0, "Remove FILE after successful delivery"},
   {"mail-dir",'m',	"DIR", 	0, "Look for mailboxes in DIR"},
-  {"use-lock-file",'l',	0,     	0,
+  {"use-lock-file",'l',	0,     	OPTION_HIDDEN,
    "Use a lock file instead of flock for mailboxes"},
   {0}
 };
