@@ -61,6 +61,10 @@ void fshelp_init_trans_link (struct trans_link *LINK);
    send right will be created.  */
 mach_port_t fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
 
+/* Call to set the control field of translator LINK to CTL
+   directly. */
+void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
+
 /* Call this when the control field of a translator is null and you
    want to have the translator started so you can talk to it.  LINK is
    the trans_link structure for this node; NAME is the file to execute
