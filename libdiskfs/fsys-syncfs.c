@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -60,8 +60,11 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
   if (diskfs_synchronous)
     wait = 1;
   
-  diskfs_sync_everything (wait);
-  diskfs_set_hypermetadata (wait, 0);
+  if (! diskfs_readonly)
+    {
+      diskfs_sync_everything (wait);
+      diskfs_set_hypermetadata (wait, 0);
+    }
 
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
