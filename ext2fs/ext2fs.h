@@ -221,6 +221,14 @@ void flush_node_pager (struct node *node);
 
 /* ---------------------------------------------------------------- */
 
+/* The physical media.  */
+extern struct store *store;
+/* What the user specified.  */
+extern struct store_parsed *store_parsed;
+
+/* Mapped image of the disk.  */
+extern void *disk_image;
+
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
@@ -236,8 +244,7 @@ unsigned long block_size;
 /* The log base 2 of BLOCK_SIZE.  */
 unsigned log2_block_size;
 
-/* log2 of the number of device blocks (DISKFS_DEVICE_BLOCK_SIZE) in a
-   filesystem block (BLOCK_SIZE).  */
+/* log2 of the number of device blocks in a filesystem block.  */
 unsigned log2_dev_blocks_per_fs_block;
 
 /* log2 of the number of stat blocks (512 bytes) in a filesystem block.  */
@@ -248,14 +255,6 @@ vm_address_t zeroblock;
 
 /* Get the superblock from the disk, & setup various global info from it.  */
 void get_hypermetadata ();
-
-/* ---------------------------------------------------------------- */
-
-/* Returns a single page page-aligned buffer.  */
-vm_address_t get_page_buf ();
-
-/* Frees a block returned by get_page_buf.  */
-void free_page_buf (vm_address_t buf);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -388,7 +387,7 @@ sync_global_ptr (void *bptr, int wait)
 {
   vm_offset_t boffs = trunc_block (bptr_offs (bptr));
   global_block_modified (boffs_block (boffs));
-  pager_sync_some (disk_pager, trunc_page (boffs), vm_page_size, wait);
+  pager_sync_some (diskfs_disk_pager, trunc_page (boffs), vm_page_size, wait);
 }
 
 /* This records a modification to one of a file's indirect blocks.  */
