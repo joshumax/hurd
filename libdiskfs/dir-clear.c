@@ -27,12 +27,17 @@ diskfs_clear_directory (struct node *dp,
 {
   error_t err;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
-  
+  struct node *np;
+
   /* Find and remove the `.' entry. */
-  err = diskfs_lookup (dp, ".", REMOVE, 0, ds, cred);
+  err = diskfs_lookup (dp, ".", REMOVE, &np, ds, cred);
   assert (err != ENOENT);
   if (!err)
-    err = diskfs_dirremove (dp, ds);
+    {
+      assert (np == dp);
+      err = diskfs_dirremove (dp, ds);
+      diskfs_nrele (np);
+    }
   else
     diskfs_drop_dirstat (dp, ds);
   if (err)
@@ -43,10 +48,13 @@ diskfs_clear_directory (struct node *dp,
   dp->dn_set_ctime = 1;
 
   /* Find and remove the `..' entry. */
-  err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, 0, ds, cred);
+  err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, &np, ds, cred);
   assert (err != ENOENT);
   if (!err)
-    err = diskfs_dirremove (dp, ds);
+    {
+      assert (np == pdp);
+      err = diskfs_dirremove (dp, ds);
+    }
   else
     diskfs_drop_dirstat (dp, ds);
   if (err)
