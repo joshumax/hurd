@@ -88,7 +88,15 @@ struct user_pager_info
 
 #include <hurd/diskfs-pager.h>
 
-extern vm_address_t zeroblock;
+/* The physical media.  */
+extern struct store *store;
+/* What the user specified.  */
+extern struct store_parsed *store_parsed;
+
+/* Mapped image of the disk.  */
+extern void *disk_image;
+
+extern void *zeroblock;
 
 extern struct fs *sblock;
 extern struct csum *csum;
@@ -166,7 +174,7 @@ cg_locate (int ncg)
 extern inline void
 sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
 {
-  pager_sync_some (disk_pager, fsaddr (sblock, blkno), nbytes, wait);
+  pager_sync_some (diskfs_disk_pager, fsaddr (sblock, blkno), nbytes, wait);
 }
 
 /* Sync an disk inode */
