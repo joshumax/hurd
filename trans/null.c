@@ -55,7 +55,7 @@ main (int argc, char **argv)
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
-x					    2 * 60 * 1000, 0, 0);
+					    2 * 60 * 1000, 0, 0);
 
   exit(0);
 }
