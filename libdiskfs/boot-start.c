@@ -96,8 +96,7 @@ diskfs_start_bootstrap ()
 
   /* Create the port for current and root directory.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ | O_EXEC,
-						   MACH_PORT_NULL, 0),
+						   O_READ | O_EXEC, 0),
 			      0, &rootpi);
   assert_perror (err);
   root_pt = ports_get_right (rootpi);
@@ -259,8 +258,7 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
   *intarraylen = 0;
 
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ | O_EXEC,
-						   MACH_PORT_NULL, 0),
+						   O_READ | O_EXEC, 0),
 			      0, &rootpi);
   assert_perror (err);
   rootport = ports_get_right (rootpi);
@@ -299,8 +297,7 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
 
-  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags,
-						   MACH_PORT_NULL, 0),
+  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags, 0),
 			      0, &rootpi);
   assert_perror (err);
   rootport = ports_get_right (rootpi);
@@ -413,8 +410,7 @@ diskfs_S_fsys_init (mach_port_t port,
   /* Get a port to the root directory to put in the library's
      data structures.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						   O_READ|O_EXEC,
-						   MACH_PORT_NULL, 0),
+						   O_READ|O_EXEC, 0),
 			      0, &rootpi);
   assert_perror (err);
   root_pt = ports_get_right (rootpi);
