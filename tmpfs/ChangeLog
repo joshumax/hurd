@@ -1,3 +1,17 @@
+2001-02-26  Roland McGrath  <roland@frob.com>
+
+	* node.c (diskfs_free_node): Reset hnext's hprevp.
+	(diskfs_node_norefs): Likewise.
+	(diskfs_cached_lookup): Fix insane code for finding existing node ptr.
+
+	* dir.c (diskfs_get_directs): When using st_size, calculate additional
+	space for . and .. entries.  Skip . and .. entries when ENTRY says to.
+	Set d_fileno=2 for .. entry when it is the parent of the filesystem.
+
+	* tmpfs.c (main): Don't lock diskfs_root_node after alloc,
+	which already locks it.  In root node's mode, clear S_ITRANS bits
+	and set S_IROOT bit.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* pager-stubs.c: New file.
