@@ -319,12 +319,14 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
 
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
-				mach_port_t reply, mach_msg_type_name_t reply_type,
+				mach_port_t reply,
+				mach_msg_type_name_t reply_type,
 				mach_port_t **ports,
-				mach_msg_type_number_t num_ports,
 				mach_msg_type_name_t *ports_type,
+				mach_msg_type_number_t num_ports,
 				int **ints, mach_msg_type_number_t *num_ints,
-				off_t **offsets, mach_msg_type_number_t *num_offsets,
+				off_t **offsets,
+				mach_msg_type_number_t *num_offsets,
 				char **data, mach_msg_type_number_t *data_len)
 {
   error_t err = 0;
