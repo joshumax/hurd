@@ -38,6 +38,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "io_S.h"
 #include "device_reply.h"
 #include "io_repl.h"
+#include "term_S.h"
+#include "tioctl_S.h"
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
@@ -206,6 +208,7 @@ request_server (mach_msg_header_t *inp,
 	  || io_server (inp, outp)
 	  || device_server (inp, outp)
 	  || notify_server (inp, outp)
+	  || term_server (inp, outp)
 	  || tioctl_server (inp, outp));
 }
 
@@ -439,27 +442,29 @@ read_reply ()
 
 
 kern_return_t
-S_exec_exec (
-	mach_port_t execserver,
-	mach_port_t file,
-	mach_port_t oldtask,
-	int flags,
-	data_t argv,
-	mach_msg_type_number_t argvCnt,
-	boolean_t argvSCopy,
-	data_t envp,
-	mach_msg_type_number_t envpCnt,
-	boolean_t envpSCopy,
-	portarray_t dtable,
-	mach_msg_type_number_t dtableCnt,
-	portarray_t portarray,
-	mach_msg_type_number_t portarrayCnt,
-	intarray_t intarray,
-	mach_msg_type_number_t intarrayCnt,
-	mach_port_array_t deallocnames,
-	mach_msg_type_number_t deallocnamesCnt,
-	mach_port_array_t destroynames,
-	mach_msg_type_number_t destroynamesCnt)
+S_exec_exec (mach_port_t execserver,
+	     mach_port_t file,
+	     mach_port_t oldtask,
+	     int flags,
+	     data_t argv,
+	     mach_msg_type_number_t argvCnt,
+	     boolean_t argvSCopy,
+	     data_t envp,
+	     mach_msg_type_number_t envpCnt,
+	     boolean_t envpSCopy,
+	     portarray_t dtable,
+	     mach_msg_type_number_t dtableCnt,
+	     boolean_t dtableSCopy,
+	     portarray_t portarray,
+	     mach_msg_type_number_t portarrayCnt,
+	     boolean_t portarraySCopy,
+	     intarray_t intarray,
+	     mach_msg_type_number_t intarrayCnt,
+	     boolean_t intarraySCopy,
+	     mach_port_array_t deallocnames,
+	     mach_msg_type_number_t deallocnamesCnt,
+	     mach_port_array_t destroynames,
+	     mach_msg_type_number_t destroynamesCnt)
 {
   return EOPNOTSUPP;
 }
@@ -474,12 +479,13 @@ S_exec_init (
 }
 
 kern_return_t
-S_exec_setexecdata (
-	mach_port_t execserver,
-	portarray_t ports,
-	mach_msg_type_number_t portsCnt,
-	intarray_t ints,
-	mach_msg_type_number_t intsCnt)
+S_exec_setexecdata (mach_port_t execserver,
+		    portarray_t ports,
+		    mach_msg_type_number_t portsCnt,
+		    boolean_t portsSCopy,
+		    intarray_t ints,
+		    mach_msg_type_number_t intsCnt,
+		    boolean_t intsSCopy)
 {
   return EOPNOTSUPP;
 }
@@ -1302,3 +1308,91 @@ S_io_sigio (mach_port_t obj,
 }
 
     
+
+
+/* Implementation of the Hurd terminal driver interface, which we only
+   support on the console device.  */
+
+kern_return_t
+S_term_getctty (mach_port_t object,
+		mach_port_t *cttyid, mach_msg_type_name_t *cttyPoly)
+{
+  static mach_port_t id = MACH_PORT_NULL;
+
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+
+  if (id == MACH_PORT_NULL)
+    mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_DEAD_NAME, &id);
+
+  *cttyid = id;
+  *cttyPoly = MACH_MSG_TYPE_COPY_SEND;
+  return 0;
+}
+
+kern_return_t S_term_getctty
+(
+	io_t terminal,
+	mach_port_t *ctty,
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_become_ctty
+(
+	io_t terminal,
+	pid_t pid,
+	pid_t pgrp,
+	mach_port_t sigpt,
+	io_t *newtty
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_set_nodename
+(
+	io_t terminal,
+	string_t name
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_get_nodename
+(
+	io_t terminal,
+	string_t name
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_set_filenode
+(
+	io_t terminal,
+	file_t filenode
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_get_bottom_type
+(
+	io_t terminal,
+	int *ttype
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_on_machdev
+(
+	io_t terminal,
+	mach_port_t machdev
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_on_hurddev
+(
+	io_t terminal,
+	io_t hurddev
+)
+{ return EOPNOTSUPP; }
+
+kern_return_t S_term_on_pty
+(
+	io_t terminal,
+	io_t *ptymaster
+)
+{ return EOPNOTSUPP; }
+
