@@ -368,11 +368,13 @@ error_t _store_task_create (task_t task, int flags, size_t block_size,
 error_t store_task_open (const char *name, int flags, struct store **store);
 
 /* Parse multiple store names in NAME, and open each individually, returning
-   all in the vector STORES, and the number in NUM_STORES.  The syntax is
-   simply a single character, followed by each individual store name (which
-   are in the store_typed_open syntax -- the type name, a ':', and the store
-   name) separated by that same character, with the whole list optionally
-   terminated by the same. */
+   all in the vector STORES, and the number in NUM_STORES.  The syntax of
+   NAME is a single non-alpha-numeric separator character, followed by each
+   child store name separated by the same separator; each child name is
+   TYPE:NAME notation as parsed by store_typed_open.  If every child uses the
+   same TYPE: prefix, then it may be factored out and put before the child
+   list instead (the two types of notation are differentiated by whether the
+   first character of name is alpha-numeric or not).  */
 error_t store_open_children (const char *name, int flags,
 			     const struct store_class *const *classes,
 			     struct store ***stores, size_t *num_stores);
@@ -603,9 +605,9 @@ void store_parsed_free (struct store_parsed *parsed);
 error_t store_parsed_open (const struct store_parsed *parsed, int flags,
 			   struct store **store);
 
-/* Add the arguments  PARSED, and return the corresponding store in STORE.  */
+/* Add the arguments used to create PARSED to ARGZ & ARGZ_LEN.  */
 error_t store_parsed_append_args (const struct store_parsed *parsed,
-				  char **args, size_t *args_len);
+				  char **argz, size_t *argz_len);
 
 /* Make a string describing PARSED, and return it in malloced storage in
    NAME.  */

@@ -151,15 +151,13 @@ store_clear_child_flags (struct store *store, int flags)
 }
 
 /* Parse multiple store names in NAME, and open each individually, returning
-   all in the vector STORES, and the number in NUM_STORES.  The syntax is
-   simply a single character, followed by each individual store name (which
-   are in the store_typed_open syntax -- the type name, a ':', and the store
-   name) separated by that same character, with the whole list optionally
-   terminated by the same.  If the first character of NAME is an
-   alpha-numeric, then NAME is taken to be in `factored-type' notation,
-   meaning that a common type-name for each child actually precedes the
-   entire list of children, instead of being specified in each child,
-   followed by a `:' and the child list as above.  */
+   all in the vector STORES, and the number in NUM_STORES.  The syntax of
+   NAME is a single non-alpha-numeric separator character, followed by each
+   child store name separated by the same separator; each child name is
+   TYPE:NAME notation as parsed by store_typed_open.  If every child uses the
+   same TYPE: prefix, then it may be factored out and put before the child
+   list instead (the two types of notation are differentiated by whether the
+   first character of name is alpha-numeric or not).  */
 error_t
 store_open_children (const char *name, int flags,
 		     const struct store_class *const *classes,
