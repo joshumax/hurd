@@ -26,6 +26,7 @@ kern_return_t
 trivfs_S_fsys_startup (mach_port_t bootport,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
+		       int flags,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
 		       mach_port_t *realnodetype)
@@ -76,6 +77,22 @@ trivfs_S_fsys_set_options (struct trivfs_control *cntl,
 			   mach_msg_type_name_t replytype,
 			   char *data, mach_msg_type_number_t len,
 			   int do_children)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+trivfs_S_fsys_get_options (struct trivfs_control *fsys,
+			   char **data, mach_msg_type_number_t *len)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+trivfs_S_file_get_fs_options (struct trivfs_protid *cred,
+			      mach_port_t reply,
+			      mach_msg_type_name_t replytype,
+			      char **data, mach_msg_type_number_t *len)
 {
   return EOPNOTSUPP;
 }
