@@ -2666,6 +2666,7 @@ any_t
 default_pager_default_thread (arg)
      any_t arg;
 {
+  kern_return_t kr;
  	for (;;) {
 		kr = mach_msg_server(default_pager_demux_default,
 				     default_pager_msg_size_default,
