@@ -36,7 +36,7 @@ working-prog-subdirs := $(filter-out \
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 	     hurd.boot build.mk.in SETUP \
-	     README NEWS tasks INSTALL README-binary 
+	     README NEWS tasks INSTALL INSTALL-binary INSTALL-cross
 
 all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
@@ -73,11 +73,16 @@ relink: $(addsuffix -relink,$(prog-subdirs))
 
 install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs))
 
-lndist: lndist-cthreads-h
+lndist: lndist-cthreads-h cp-linked-files
 
 lndist-cthreads-h:
 	ln -s libthreads/cthreads.h $(srcdir)/hurd-snap/cthreads.h
 	
+cp-linked-files:
+	cp $(srcdir)/install-sh $(srcdir)/hurd-snap/install-sh
+	cp $(srcdir)/config.guess $(srcdir)/hurd-snap/config.guess
+	cp $(srcdir)/config.sub $(srcdir)/hurd-snap/config.sub
+
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 
 .PHONY: clean-misc distclean
