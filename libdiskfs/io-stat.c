@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <string.h>
 
 /* Implement io_stat as described in <hurd/io.defs>. */
 error_t
@@ -24,15 +25,15 @@ diskfs_S_io_stat (struct protid *cred,
 		  io_statbuf_t *statbuf)
 {
   struct node *np;
-  error_t error;
 
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
   mutex_lock (&np->lock);
-  ioserver_get_conch (&ip->conch);
+  ioserver_get_conch (&np->conch);
+  diskfs_set_node_times (np);
   bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
   mutex_unlock (&np->lock);
-  return error;
+  return 0;
 }
