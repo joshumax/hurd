@@ -101,8 +101,6 @@ diskfs_create_node (struct node *dir,
 	  np->dn_set_ctime = 1;
 	  diskfs_nput (np);
 	}
-      else
-	diskfs_enter_cache (dir, np, name);
     }
   return err;
 }
