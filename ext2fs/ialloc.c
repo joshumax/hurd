@@ -301,7 +301,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 	np->dn->info.i_data[block] = 0;
 	np->dn_set_ctime = 1;
       }
-  np->istranslated = 0;
+  st->st_mode &= ~S_IPTRANS;
   if (np->allocsize)
     {
       ext2_warning ("Free inode %d had a size of %ld", inum, st->st_size);
