@@ -175,7 +175,7 @@ $(libdir)/$(libname).a: $(libname).a $(libdir)
 $(libdir)/$(libname).so: $(libname).so $(libdir)
 	$(INSTALL_DATA) $(libname).so $(libdir)/$(libname).so
 
-$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includdir)/$(installhdrsubdir)
+$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)
 
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
