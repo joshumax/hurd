@@ -178,7 +178,8 @@ routine file_get_storage_info (
 	out address_units: size_t;
 	out storage_name: string_t;
 	out storage_port: mach_port_send_t;
-	out storage_misc: data_t);
+	out storage_misc: data_t;
+	out flags: int);
 
 /* Return the node for hard links to this potentially translated file.
    This returns a potentially unauthenticated node.  */
