@@ -1,3 +1,8 @@
+2001-04-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rr.c (rrip_work): In the MATCH_NAME case, free NMBUF if it is non-zero
+	before returning.
+
 2001-04-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* lookup.c (diskfs_get_directs): If an RE entry is encountered,

@@ -295,7 +295,11 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  /* Is this a failed match? */
 	  if (match_name && (match_name_len != namelen
 	      || memcmp (match_name, name, match_name_len)))
-	    return 0;
+	    {
+	      if (nmbuf)
+		free (nmbuf);
+	      return 0;
+	    }
 
 	  /* Store the name */
 	  rr->valid |= VALID_NM;
