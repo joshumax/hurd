@@ -1,3 +1,7 @@
+Thu Sep 26 15:43:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makeconf (%: %.sh): New rule.
+
 Tue Sep 24 21:43:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* configure.in: Add check for crypt function.

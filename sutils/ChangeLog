@@ -1,3 +1,13 @@
+Thu Sep 26 15:36:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (targets, special-targets): Add MAKEDEV.
+	(SCRIPTS): Add MAKEDEV.sh.
+	(DIST_FILES): Variable removed.
+	(all): Target removed.
+	($(prefix)/dev/MAKEDEV): Get rid of dependencies.
+	Implement with a symbolic link to /sbin/MAKEDEV.
+	(%: %.sh): Variable removed.
+
 Tue Sep 24 14:46:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh: Fix argument parsing.

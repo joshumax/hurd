@@ -1,3 +1,7 @@
+Thu Sep 26 16:10:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (%: %.sh): Rule removed.
+
 Tue Sep 24 17:05:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* login.c (main: verify_passwd): Only declare reference to crypt
