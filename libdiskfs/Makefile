@@ -49,7 +49,8 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	init-startup.c init-first.c init-loop.c				    \
 	boot-parse.c boot-start.c ports-clean.c				    \
 	ports-consts.c pager-consts.c ports-demuxer.c exc.c node-times.c    \
-	trans-sync.c shutdown.c ports-noports.c ports-soft.c ports-idle.c
+	trans-sync.c shutdown.c ports-noports.c ports-soft.c ports-idle.c   \
+	sync-interval.c sync-default.c
 
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
