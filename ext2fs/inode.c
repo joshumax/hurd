@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
@@ -618,6 +618,8 @@ diskfs_set_statfs (struct statfs *st)
   st->f_blocks = sblock->s_blocks_count;
   st->f_bfree = sblock->s_free_blocks_count;
   st->f_bavail = st->f_bfree - sblock->s_r_blocks_count;
+  if (st->f_bfree < sblock->s_r_blocks_count)
+    st->f_bavail = 0;
   st->f_files = sblock->s_inodes_count;
   st->f_ffree = sblock->s_free_inodes_count;
   st->f_fsid = getpid ();

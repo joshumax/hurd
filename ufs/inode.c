@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994,95,96,97,98,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,2000,01 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -519,6 +519,8 @@ diskfs_set_statfs (struct statfs *st)
 		 + sblock->fs_cstotal.cs_nffree);
   st->f_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)
 		  - (sblock->fs_dsize - st->f_bfree));
+  if (st->f_bfree < ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)))
+    st->f_bavail = 0;
   st->f_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
   st->f_ffree = sblock->fs_cstotal.cs_nifree;
   st->f_fsid = getpid ();

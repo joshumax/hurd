@@ -1,3 +1,9 @@
+2001-06-09  Mark Kettenis  <kettenis@gnu.org>
+
+	* inode.c (diskfs_set_statfs): If number of free blocks is less
+	than the number of reserved blocks, set the number of available
+	blocks to 0.
+
 2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c (main): Use %Ld instead %ld to print store->size.
