@@ -80,44 +80,50 @@ int printf (const char *fmt, ...)
 
 static char error_buf[1024];
 
-void ext2_error (const char * function, const char * fmt, ...)
+void _ext2_error (const char * function, const char * fmt, ...)
 {
   va_list args;
+
+  mutex_lock(&printf_lock);
 
   va_start (args, fmt);
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  mutex_lock(&printf_lock);
   fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
+
   mutex_unlock(&printf_lock);
 }
 
-void ext2_panic (const char * function, const char * fmt, ...)
+void _ext2_panic (const char * function, const char * fmt, ...)
 {
   va_list args;
+
+  mutex_lock(&printf_lock);
 
   va_start (args, fmt);
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  mutex_lock(&printf_lock);
   fprintf(stderr, "ext2fs: %s: panic: %s: %s\n", device_name, function, error_buf);
+
   mutex_unlock(&printf_lock);
 
-  exit (0);
+  exit (1);
 }
 
-void ext2_warning (const char * function, const char * fmt, ...)
+void _ext2_warning (const char * function, const char * fmt, ...)
 {
   va_list args;
+
+  mutex_lock(&printf_lock);
 
   va_start (args, fmt);
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  mutex_lock(&printf_lock);
   fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
+
   mutex_unlock(&printf_lock);
 }
 
@@ -277,10 +283,9 @@ main (int argc, char **argv)
     error (3, err, "get_hypermetadata");
 
   if (device_size < sblock->s_blocks_count * block_size)
-    ext2_panic("main",
-	       "Disk size (%d) too small (superblock says we need %ld)",
-	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
-	       sblock->s_blocks_count * block_size);
+    ext2_panic ("disk size (%d) too small (superblock says we need %ld)",
+		sizes[DEV_GET_SIZE_DEVICE_SIZE],
+		sblock->s_blocks_count * block_size);
 
   /* A handy source of page-aligned zeros.  */
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
