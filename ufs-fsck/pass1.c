@@ -69,14 +69,13 @@ pass1 ()
 	  blkerror = 1;
 	  wasbad = 1;
 	  if (nblkrngerrors == 0)
-	    printf ("I=%d HAS BAD BLOCKS\n", number);
+	    pwarn ("I=%d HAS BAD BLOCKS\n", number);
 	  if (nblkrngerrors++ > MAXBAD)
 	    {
 	      pwarn ("EXCESSIVE BAD BLKS I=%d", number);
 	      if (preen || reply ("SKIP"))
 		{
-		  if (preen)
-		    printf (" (SKIPPING)\n");
+		  pfix ("SKIPPING");
 		  return RET_STOP;
 		}
 	    }
@@ -85,7 +84,7 @@ pass1 ()
       for (; nfrags > 0; bno++, nfrags--)
 	{
 	  if (outofrange && check_range (bno, 1))
-	    printf ("BAD BLOCK %lu\n", bno);
+	    pwarn ("BAD BLOCK %lu\n", bno);
 	  else
 	    {
 	      if (!testbmap (bno))
@@ -94,16 +93,15 @@ pass1 ()
 		{
 		  blkerror = 1;
 		  if (nblkduperrors == 0)
-		    printf ("I=%d HAS DUPLICATE BLOCKS\n", number);
-		  printf ("DUPLICATE BLOCK %ld\n", bno);
+		    pwarn ("I=%d HAS DUPLICATE BLOCKS\n", number);
+		  pwarn ("DUPLICATE BLOCK %ld\n", bno);
 		  wasbad = 1;
 		  if (nblkduperrors++ > MAXBAD)
 		    {
 		      pwarn ("EXCESSIVE DUP BLKS I=%d", number);
 		      if (preen || reply ("SKIP"))
 			{
-			  if (preen)
-			    printf (" (SKIPPING)\n");
+			  pfix ("SKIPPING");
 			  return RET_STOP;
 			}
 		    }
@@ -162,7 +160,11 @@ pass1 ()
   for (number = 0, cg = 0; cg < sblock->fs_ncg; cg++)
     for (i = 0; i < sblock->fs_ipg; i++, number++)
       {
-	if (!(number % 10000))
+	/* These record whether we've already complained about extra
+	   direct/indirect blocks.  */
+	int dbwarn = 0, ibwarn = 0;
+
+	if (!preen && !(number % 10000))
 	  printf ("I=%d\n", number);
 
 	if (number < ROOTINO)
@@ -185,8 +187,7 @@ pass1 ()
 		pwarn ("PARTIALLY ALLOCATED INODE I=%d", number);
 		if (preen || reply ("CLEAR"))
 		  {
-		    if (preen)
-		      printf (" (CLEARED)\n");
+		    pfix ("CLEARED");
 		    clear_inode (number, dp);
 		  }
 	      }
@@ -212,7 +213,7 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n",
+		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n",
 			number);
 		holdallblocks = 1;
 	      }
@@ -279,7 +280,7 @@ pass1 ()
 		  }
 		inodestate[number] = UNALLOC;
 		holdallblocks = 1;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d "
+		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d "
 			"AS ALLOCATED\n", number);
 		ndb = 0;
 	      }
@@ -295,7 +296,7 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n", 
+		pwarn ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n", 
 			number);
 		holdallblocks = 1;
 	      }
@@ -326,7 +327,6 @@ pass1 ()
 		   amount necessary to be zero. */
 		for (lbn = ndb; lbn < NDADDR; lbn++)
 		  {
-		    int dbwarn = 0;
 		    if (dp->di_db[lbn])
 		      {
 			if (!dbwarn)
@@ -336,8 +336,7 @@ pass1 ()
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
-				if (preen)
-				  printf (" (DEALLOCATED)\n");
+				pfix ("DEALLOCATED");
 				dp->di_db[lbn] = 0;
 				dbwarn = 2;
 			      }
@@ -353,7 +352,6 @@ pass1 ()
 		  ndb /= NINDIR (sblock);
 		for (; lbn < NIADDR; lbn++)
 		  {
-		    int ibwarn = 0;
 		    if (dp->di_ib[lbn])
 		      {
 			if (ibwarn)
@@ -363,8 +361,7 @@ pass1 ()
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
-				if (preen)
-				  printf (" (DEALLOCATED)\n");
+				pfix ("DEALLOCATED");
 				dp->di_ib[lbn] = 0;
 				ibwarn = 2;
 			      }
@@ -400,7 +397,7 @@ pass1 ()
 		  pfatal ("DUPLICATE or BAD BLOCKS");
 		else
 		  {
-		    printf ("I=%d has ", number);
+		    pwarn ("I=%d has ", number);
 		    if (nblkduperrors)
 		      {
 			printf ("%d DUPLICATE BLOCKS", nblkduperrors);
@@ -425,10 +422,9 @@ pass1 ()
 		       number, dp->di_blocks, nblocks);
 		if (preen || reply ("CORRECT"))
 		  {
-		    if (preen)
-		      printf (" (CORRECTED)");
 		    dp->di_blocks = nblocks;
 		    write_inode (number, dp);
+		    pfix ("CORRECTED");
 		  }
 	      }
 
