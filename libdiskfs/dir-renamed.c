@@ -132,7 +132,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 		       &tmpnp, tmpds, fromcred);
   assert (err != ENOENT);
   assert (tmpnp == fdp);
-  diskfs_nrele (tmpnp);
   if (err)
     {
       diskfs_drop_dirstat (fnp, tmpds);
