@@ -162,14 +162,14 @@ pipe_send (struct pipe *pipe, void *source,
       timestamp (&pipe->write_time);
       
       /* And wakeup anyone that might be interested in it.  */
-      condition_signal (&pipe->pending_reads);
+      condition_broadcast (&pipe->pending_reads);
       mutex_unlock (&pipe->lock);
 
       mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
       /* Only wakeup selects if there's still data available.  */
       if (pipe_is_readable (pipe, 0))
 	{
-	  condition_signal (&pipe->pending_selects);
+	  condition_broadcast (&pipe->pending_selects);
 	  /* We leave PIPE locked here, assuming the caller will soon unlock
 	     it and allow others access.  */
 	}
