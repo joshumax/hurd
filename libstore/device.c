@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <hurd.h>
 
 #include "store.h"
 
@@ -54,13 +55,25 @@ dev_write (struct store *store,
   return device_write (store->port, 0, addr, (io_buf_ptr_t)buf, len, amount);
 }
 
-static struct store_meths
-device_meths = {dev_read, dev_write};
+static error_t
+dev_decode (struct store_enc *enc, struct store_class *classes,
+	    struct store **store)
+{
+  return store_std_leaf_decode (enc, _store_device_create, store);
+}
+
+static struct store_class
+dev_class =
+{
+  STORAGE_DEVICE, "device", dev_read, dev_write,
+  store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode
+};
+_STORE_STD_CLASS (dev_class);
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
    the send right DEVICE.  */
 error_t
-store_device_create (device_t device, struct store **store)
+store_device_create (device_t device, int flags, struct store **store)
 {
   struct store_run run;
   size_t sizes[DEV_GET_SIZE_COUNT], block_size;
@@ -76,16 +89,40 @@ store_device_create (device_t device, struct store **store)
   run.start = 0;
   run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
 
-  return _store_device_create (device, block_size, &run, 1, store);
+  flags |= STORE_ENFORCED;	/* 'cause it's the whole device.  */
+
+  return _store_device_create (device, flags, block_size, &run, 1, store);
 }
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t
-_store_device_create (device_t device, size_t block_size,
+_store_device_create (device_t device, int flags, size_t block_size,
 		      const struct store_run *runs, size_t num_runs,
 		      struct store **store)
 {
-  *store = _make_store (STORAGE_DEVICE, &device_meths, device, block_size,
-			runs, num_runs, 0);
+  *store =
+    _make_store (&dev_class, device, flags, block_size, runs, num_runs, 0);
   return *store ? 0 : ENOMEM;
+}
+
+/* Open the device NAME, and return the corresponding store in STORE.  */
+error_t
+store_device_open (const char *name, int flags, struct store **store)
+{
+  device_t dev_master, device;
+  int open_flags = ((flags & STORE_HARD_READONLY) ? 0 : D_WRITE) | D_READ;
+  error_t err = get_privileged_ports (0, &dev_master);
+
+  if (err)
+    return err;
+
+  err = device_open (dev_master, open_flags, (char *)name, &device);
+
+  mach_port_deallocate (mach_task_self (), dev_master);
+
+  err = store_device_create (device, flags, store);
+  if (err)
+    mach_port_deallocate (mach_task_self (), device);
+
+  return err;
 }
