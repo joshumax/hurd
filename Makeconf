@@ -197,6 +197,7 @@ rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 $(target): %$(target-suffix):
 	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
+			-defsym ___brk_addr=0 \
 		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) \
 	      '-Wl,-)'
 
