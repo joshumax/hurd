@@ -1,5 +1,5 @@
 /* Load a task using the single server, and then run it
-   as if we were the kernel. */
+   as if we were the kernel. 
    Copyright (C) 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
@@ -20,6 +20,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include <mach.h>
+#include <mach/notify.h>
+#include <errno.h>
+#include <device/device.h>
+
+#include "notify_S.h"
+#include "exec_S.h"
+#include "device_S.h"
+
 
 /* These will prevent the Hurd-ish versions from being used */
 
@@ -30,101 +39,401 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define read(foo1, foo2, foo3) syscall (3, foo1, foo2, foo3)
 #define getpid() syscall (20)
 
+mach_port_t privileged_host_port, master_device_port;
+mach_port_t pseudo_master_device_port;
+mach_port_t receive_set;
+mach_port_t pseudo_console;
+
+mach_port_t php_child_name, psmdp_child_name;
+
+task_t child_task;
+mach_port_t bootport;
+
+int
+request_server (mach_msg_header_t *inp,
+		mach_msg_header_t *outp)
+{
+  return (exec_server (inp, outp)
+	  || device_server (inp, outp)
+	  || notify_server (inp, outp));
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
   task_t newtask;
   thread_t newthread;
-  mach_port_t bootport;
+  mach_port_t foo;
   vm_address_t startpc;
+
+  privileged_host_port = task_by_pid (-1);
+  master_device_port = task_by_pid (-2);
 
   task_create (mach_task_self (), 0, &newtask);
   
   startpc = load_image (newtask, argv[1]);
   
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
+		      &receive_set);
+  
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
+		      &pseudo_master_device_port);
+  mach_port_move_member (mach_task_self (), pseudo_master_device_port,
+			 receive_set);
+
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_console);
+  mach_port_move_member (mach_task_self (), pseudo_console, receive_set);
+  mach_port_insert_right (mach_task_self (), pseudo_console, pseudo_console,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &bootport);
+  mach_port_move_member (mach_task_self (), bootport, receive_set);
+
   mach_port_insert_right (mach_task_self (), bootport, bootport, 
 			  MACH_MSG_TYPE_MAKE_SEND);
   task_set_bootstrap_port (newtask, bootport);
   mach_port_deallocate (mach_task_self (), bootport);
+
+  mach_port_request_notification (mach_task_self (), newtask, 
+				  MACH_NOTIFY_DEAD_NAME, 1, bootport, 
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo)
+    mach_port_deallocate (mach_task_self (), foo);
+  child_task = newtask;
+
+  php_child_name = 100;
+  psmdp_child_name = 101;
+  mach_port_insert_right (newtask, php_child_name, privileged_host_port,
+			  MACH_MSG_TYPE_COPY_SEND);
+  mach_port_insert_right (newtask, psmdp_child_name, pseudo_master_device_port,
+			  MACH_MSG_TYPE_MAKE_SEND);
   
   thread_create (newtask, &newthread);
   start_thread (newtask, newthread, startpc);
   
-  request_server ();
+  mach_msg_server (request_server, __vm_page_size * 2, receive_set);
+}
+
+
+/* Implementation of exec interface */
+
+
+S_exec_exec (
+	mach_port_t execserver,
+	mach_port_t file,
+	mach_port_t oldtask,
+	int flags,
+	data_t argv,
+	mach_msg_type_number_t argvCnt,
+	boolean_t argvSCopy,
+	data_t envp,
+	mach_msg_type_number_t envpCnt,
+	boolean_t envpSCopy,
+	portarray_t dtable,
+	mach_msg_type_number_t dtableCnt,
+	portarray_t portarray,
+	mach_msg_type_number_t portarrayCnt,
+	intarray_t intarray,
+	mach_msg_type_number_t intarrayCnt,
+	mach_port_array_t deallocnames,
+	mach_msg_type_number_t deallocnamesCnt,
+	mach_port_array_t destroynames,
+	mach_msg_type_number_t destroynamesCnt)
+{
+  return EOPNOTSUPP;
+}
+
+S_exec_init (
+	mach_port_t execserver,
+	auth_t auth_handle,
+	process_t proc_server)
+{
+  return EOPNOTSUPP;
+}
+
+S_exec_setexecdata (
+	mach_port_t execserver,
+	portarray_t ports,
+	mach_msg_type_number_t portsCnt,
+	intarray_t ints,
+	mach_msg_type_number_t intsCnt)
+{
+  return EOPNOTSUPP;
 }
 
 
-  mach_port_t boot, recset;
-  int parpid;
-  int otherpid;
-  int err;
-  int i;
+error_t
+S_exec_startup (mach_port_t port,
+		u_int *base_addr,
+		vm_size_t *stack_size,
+		int *flags,
+		char **argvP,
+		u_int *argvlen,
+		char **envpP,
+		u_int *envplen,
+		mach_port_t **dtableP,
+		mach_msg_type_name_t *dtablepoly,
+		u_int *dtablelen,
+		mach_port_t **portarrayP,
+		mach_msg_type_name_t *portarraypoly,
+		u_int *portarraylen,
+		int **intarrayP,
+		u_int *intarraylen)
+{
+  mach_port_t *portarray, *dtable;
+  int *intarray, nc;
+  char argv[100];
 
-  err = mach_port_allocate (mach_task_self (),
-			    MACH_PORT_RIGHT_RECEIVE,
-			    &boot);
-  
-  if (err)
-    write (1, "err1\n", 5);
+  /* The argv string has nulls in it; so we use %c for the nulls
+     and fill with constant zero. */
+  nc = sprintf (argv, "-x%c%d%c%d%c%s%c", '\0', php_child_name, '\0',
+		psmdp_child_name, "hd0a", '\0');
 
-  device_master = task_by_pid (-2);
-
-  parpid = getpid ();
-
-  otherpid = myfork ();
-
-  write (1, "after fork\n", 11);
-  if (otherpid == -1)
-    {
-      write (1, "error!\n", 7);
-      /*       perror ("fork"); */
-      exit (1);
-    }
-  else if (otherpid == parpid)
-    {
-      __mach_init ();
-      for (i = 0; i < 100000; i++);
-      write (1, "execing ", 8);
-      write (1, argv[1], strlen (argv[1]));
-      write (1, "\n", 1);
-      execve (argv[1], &argv[1], envp);
-      write (1, "exec failed\n", 12);
-      /*       perror (argv[1]);*/
-      exit (1);
-    }
+  if (nc > *argvlen)
+    vm_allocate (mach_task_self (), (vm_address_t *)argvP, nc, 1);
   else
-    {
-      write (1, "parent?\n", 8);
-      err = mach_port_insert_right (mach_task_self (), boot, boot,
-				    MACH_MSG_TYPE_MAKE_SEND);
-      
-      if (err)
-	write (1, "err2\n", 5);
-      err = task_set_bootstrap_port (task_by_pid (otherpid), boot);
-      if (err)
-	write (1, "err3\n", 5);
-      
-      write (1, "parent ", 7);
-      writenum (parpid);
-      write (1, "\nchild ", 7);
-      writenum (otherpid);
-      write (1, "\n", 1);
+    bcopy (argv, *argvP, nc);
+  *argvlen = nc;
+  
+  *base_addr = *stack_size = 0;
 
-      mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-			  &pseudo_master);
-      mach_port_insert_right (mach_task_self (), pseudo_master,
-			      pseudo_master, MACH_MSG_TYPE_MAKE_SEND);
-      mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-			  &pseudo_console);
-      mach_port_insert_right (mach_task_self (), pseudo_console,
-			      pseudo_console, MACH_MSG_TYPE_MAKE_SEND);
-      mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
-			  &recset);
-      mach_port_move_member (mach_task_self (), pseudo_master, recset);
-      mach_port_move_member (mach_task_self (), pseudo_console, recset);
-      mach_port_move_member (mach_task_self (), boot, recset);
+  *flags = 0;
+  
+  *argvlen = 0;
+  
+  *envplen = 0;
 
-      mach_msg_server (my_server, 10000, recset);
-    }
+  if (*portarraylen < INIT_PORT_MAX)
+    vm_allocate (mach_task_self (), (u_int *)portarrayP,
+		 (INIT_PORT_MAX * sizeof (mach_port_t)), 1);
+  portarray = *portarrayP;
+  *portarraylen = INIT_PORT_MAX;
+  *portarraypoly = MACH_MSG_TYPE_COPY_SEND;
+
+  *dtablelen = 0;
+  *dtablepoly = MACH_MSG_TYPE_COPY_SEND;
+  
+  if (*intarraylen < INIT_INT_MAX)
+    vm_allocate (mach_task_self (), (u_int *)intarrayP,
+		 (INIT_INT_MAX * sizeof (mach_port_t)), 1);
+  intarray = *intarrayP;
+  *intarraylen = INIT_INT_MAX;
+  
+  bzero (portarray, INIT_PORT_MAX * sizeof (mach_port_t));
+  bzero (intarray, INIT_INT_MAX * sizeof (int));
+  
+  return 0;
 }
+
+
+
+/* Implementation of device interface */
+
+ds_device_open (mach_port_t master_port,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
+		dev_mode_t mode,
+		dev_name_t name,
+		device_t *device)
+{
+  if (master_port != pseudo_master_device_port)
+    return D_INVALID_OPERATION;
+  
+  if (!strcmp (name, "console"))
+    {
+      *device = pseudo_console;
+      return 0;
+    }
+  
+  return device_open (master_device_port, mode, name, device);
+}
+
+ds_device_close (device_t device)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return 0;
+}
+
+ds_device_write (device_t device,
+		 mach_port_t reply_port,
+		 mach_msg_type_name_t reply_type,
+		 dev_mode_t mode,
+		 recnum_t recnum,
+		 io_buf_ptr_t data,
+		 unsigned int datalen,
+		 int *bytes_written)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+
+  *bytes_written = write (1, *data, datalen);
+  
+  return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+}
+
+ds_device_write_inband (device_t device,
+			mach_port_t reply_port,
+			mach_msg_type_name_t reply_type,
+			dev_mode_t mode,
+			recnum_t recnum,
+			io_buf_ptr_inband_t data,
+			unsigned int datalen,
+			int *bytes_written)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+
+  *bytes_written = write (1, data, datalen);
+  
+  return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
+}
+
+ds_device_read (device_t device,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
+		dev_mode_t mode,
+		recnum_t recnum,
+		int bytes_wanted,
+		io_buf_ptr_t *data,
+		unsigned int *datalen)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  
+  vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
+  *datalen = read (0, *data, bytes_wanted);
+
+  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+}
+
+ds_device_read_inband (device_t device,
+		       mach_port_t reply_port,
+		       mach_msg_type_name_t reply_type,
+		       dev_mode_t mode,
+		       recnum_t recnum,
+		       int bytes_wanted,
+		       io_buf_ptr_inband_t data,
+		       unsigned int *datalen)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  
+  *datalen = read (0, data, bytes_wanted);
+  
+  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+}
+
+ds_xxx_device_set_status (device_t device,
+			  dev_flavor_t flavor,
+			  dev_status_t status,
+			  u_int statu_cnt)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_xxx_device_get_status (device_t device,
+			  dev_flavor_t flavor,
+			  dev_status_t status,
+			  u_int *statuscnt)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_xxx_device_set_filter (device_t device,
+			  mach_port_t rec,
+			  int pri,
+			  filter_array_t filt,
+			  unsigned int len)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_device_map (device_t device,
+	       vm_prot_t prot,
+	       vm_offset_t offset,
+	       vm_size_t size,
+	       memory_object_t *pager,
+	       int unmap)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_device_set_status (device_t device,
+		      dev_flavor_t flavor,
+		      dev_status_t status,
+		      unsigned int statuslen)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_device_get_status (device_t device,
+		      dev_flavor_t flavor,
+		      dev_status_t status,
+		      unsigned int *statuslen)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+ds_device_set_filter (device_t device,
+		      mach_port_t receive_port,
+		      int priority,
+		      filter_array_t filter,
+		      unsigned int filterlen)
+{
+  if (device != pseudo_console)
+    return D_NO_SUCH_DEVICE;
+  return D_INVALID_OPERATION;
+}
+
+
+/* Implementation of notify interface */
+do_mach_notify_port_deleted (mach_port_t notify,
+			     mach_port_t name)
+{
+  return EOPNOTSUPP;
+}
+
+do_mach_notify_msg_accepted (mach_port_t notify,
+			     mach_port_t name)
+{
+  return EOPNOTSUPP;
+}
+
+do_mach_notify_port_destroyed (mach_port_t notify,
+			       mach_port_t port)
+{
+  return EOPNOTSUPP;
+}
+
+do_mach_notify_no_senders (mach_port_t notify,
+			   mach_port_mscount_t mscount)
+{
+  return EOPNOTSUPP;
+}
+
+do_mach_notify_send_once (mach_port_t notify)
+{
+  return EOPNOTSUPP;
+}
+
+do_mach_notify_dead_name (mach_port_t notify,
+			  mach_port_t name)
+{
+  if (name == child_task && notify == bootport)
+    exit ();
+}
+
