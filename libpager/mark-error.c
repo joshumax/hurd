@@ -15,15 +15,17 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
 
-int page_errors[] = {KERN_SUCCESS, ENOSPC, EIO, EDQUOT};
+
+int _pager_page_errors[] = {KERN_SUCCESS, ENOSPC, EIO, EDQUOT};
 
 /* Some error has happened indicating that the page cannot be written. 
    (Usually this is ENOSPC or EDQOUT.)  On the next pagein which
    requests write access, return the error to the kernel.  (This is 
    screwy because of the rules associated with m_o_lock_request.) */
 void
-_pager_mark_next_request_error(struct pager *p,
+_pager_mark_next_request_error(struct pager *pager,
 			       vm_address_t offset,
 			       vm_size_t length,
 			       error_t error)
@@ -43,17 +45,15 @@ _pager_mark_next_request_error(struct pager *p,
       page_error = PAGE_ENOSPC;
       break;
     case EIO:
+    default:
       page_error = PAGE_EIO;
       break;
     case EDQUOT:
       page_error = PAGE_EDQUOT;
       break;
-    default:
-      panic ("mark_object_error");
-      break;
     }
   
-  for (p = p->pagemap; p < p->pagemap + length; p++)
+  for (p = pager->pagemap; p < pager->pagemap + length; p++)
     *p = SET_PM_NEXTERROR (*p, page_error);
 }
 
@@ -62,7 +62,7 @@ _pager_mark_next_request_error(struct pager *p,
    routines can find out.  (This is only necessary because the
    XP interface is not completely implemented in the kernel.) */
 void
-_pager_mark_object_error(struct pager *p,
+_pager_mark_object_error(struct pager *pager,
 			 vm_address_t offset,
 			 vm_size_t length,
 			 error_t error)
@@ -82,17 +82,15 @@ _pager_mark_object_error(struct pager *p,
       page_error = PAGE_ENOSPC;
       break;
     case EIO:
+    default:
       page_error = PAGE_EIO;
       break;
     case EDQUOT:
       page_error = PAGE_EDQUOT;
       break;
-    default:
-      panic ("mark_object_error");
-      break;
     }
   
-  for (p = p->pagemap; p < p->pagemap + length; p++)
+  for (p = pager->pagemap; p < pager->pagemap + length; p++)
     *p = SET_PM_ERROR (*p, page_error);
 }
 
@@ -104,12 +102,12 @@ pager_get_error (struct pager *p,
 {
   error_t err;
   
-  mutex_lock (&p->p_interlock);
-  pagemap_resize (p, addr);
+  mutex_lock (&p->interlock);
+  _pager_pagemap_resize (p, addr);
   
-  err = page_errors[PM_ERROR(addr/__vm_page_size)];
+  err = _pager_page_errors[PM_ERROR(addr/__vm_page_size)];
 
-  mutex_unlock (&p->p_interlock);
+  mutex_unlock (&p->interlock);
   return err;
 }
 
