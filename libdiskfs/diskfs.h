@@ -907,6 +907,10 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
 error_t diskfs_dirremove (struct node *dp, struct node *np,
 			  char *name, struct dirstat *ds);
 
+/* Return the node corresponding to CACHE_ID.  Return null
+   if no such node exists. */
+struct node *diskfs_cached_lookup (int cache_id);
+
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
    CRED identifies the user responsible for the call.  If NAME is nonzero,
