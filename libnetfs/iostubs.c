@@ -57,13 +57,15 @@ netfs_S_io_eofnotify (struct protid *user)
 }
 
 error_t
-netfs_S_io_prenotify (struct protid *user)
+netfs_S_io_prenotify (struct protid *user,
+		      vm_offset_t start, vm_offset_t stop)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-netfs_S_io_postnotify (struct protid *user)
+netfs_S_io_postnotify (struct protid *user,
+		       vm_offset_t start, vm_offset_t stop)
 {
   return EOPNOTSUPP;
 }
