@@ -38,7 +38,7 @@
 #include "../boot/boot_script.h"
 
 /* Use this device if no root specified.  */
-#define DEFAULT_ROOT "hd0a"
+#define DEFAULT_ROOT "hd0s1"
 
 
 #if 0
