@@ -1,3 +1,7 @@
+1999-09-22  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* getty.c (main): Make TTY our controlling terminal with TIOCSCTTY.
+
 1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* runttys.c (main): Only call error if setsid returns -1.
