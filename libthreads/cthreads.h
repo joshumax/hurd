@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.7  1995/07/18 17:15:51  mib
+ * Reverse previous change.
+ *
  * Revision 1.5  1995/04/04 21:06:16  roland
  * (mutex_lock, mutex_unlock): Use __ names for *_solid.
  *
@@ -416,6 +419,9 @@ cond_broadcast C_ARG_DECLS((condition_t c));
 
 extern void
 condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
+
+extern int
+hurd_condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
 
 /*
  * Threads.
