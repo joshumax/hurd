@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1999 Free Software Foundation, Inc.
    Written by Thomas Bushnell, BSG.
 
@@ -37,6 +37,12 @@ diskfs_nput (struct node *np)
   else if (np->references == 0 && !tried_drop_softrefs)
     {
       spin_unlock (&diskfs_node_refcnt_lock);
+
+      /* This is our cue that something akin to "last process closes file"
+	 in the POSIX.1 sense happened, so make sure any pending node time
+	 updates now happen in a timely fashion.  */
+      diskfs_set_node_times (np);
+
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink)
 	{
