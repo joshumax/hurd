@@ -181,12 +181,13 @@ sock_user_clean (void *vuser)
 error_t
 sock_create_port (struct sock *sock, mach_port_t *port)
 {
-  struct sock_user *user =
-    ports_allocate_port (sock_port_bucket,
-			 sizeof (struct sock_user), sock_user_port_class);
+  struct sock_user *user;
+  error_t err =
+    ports_create_port (sock_user_port_class, sock_port_bucket,
+		       sizeof (struct sock_user), &user);
 
-  if (!user)
-    return ENOMEM;
+  if (err)
+    return err;
 
   ensure_sock_server ();
 
@@ -251,18 +252,18 @@ addr_clean (void *vaddr)
 inline error_t
 addr_create (struct addr **addr)
 {
-  *addr =
-    ports_allocate_port (sock_port_bucket,
-			 sizeof (struct addr), addr_port_class);
-  if (! *addr)
-    return ENOMEM;
+  error_t err =
+    ports_create_port (addr_port_class, sock_port_bucket,
+		       sizeof (struct addr), addr);
 
-  ensure_sock_server ();
+  if (! err)
+    {
+      ensure_sock_server ();
+      (*addr)->sock = NULL;
+      mutex_init (&(*addr)->lock);
+    }
 
-  (*addr)->sock = NULL;
-  mutex_init (&(*addr)->lock);
-
-  return 0;
+  return err;
 }
 
 /* Bind SOCK to ADDR.  */
