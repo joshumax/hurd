@@ -20,52 +20,56 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "io_S.h"
 
-error_t
-trivfs_S_io_map_cntl (struct protid *cred,
-		      mach_port_t *obj)
+kern_return_t
+trivfs_S_io_map_cntl (struct trivfs_protid *cred,
+		      mach_port_t *obj,
+		      mach_msg_type_name_t *objtype)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_get_conch (struct protid *cred)
+kern_return_t
+trivfs_S_io_get_conch (struct trivfs_protid *cred)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_release_conch (struct protid *cred)
+kern_return_t
+trivfs_S_io_release_conch (struct trivfs_protid *cred)
 {
   return EOPNOTSUPP;
 }
 
-error_t 
-trivfs_S_io_eofnotify (struct protid *)
+kern_return_t 
+trivfs_S_io_eofnotify (struct trivfs_protid *cred)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_prenotify (struct protid *, int start, int end)
+kern_return_t
+trivfs_S_io_prenotify (struct trivfs_protid *cred, vm_offset_t start, 
+		       vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_postnotify (struct protid *, int start, int end)
+kern_return_t
+trivfs_S_io_postnotify (struct trivfs_protid *cred, vm_offset_t start, 
+			vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_readsleep (struct protid *)
+kern_return_t
+trivfs_S_io_readsleep (struct trivfs_protid *cred)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-trivfs_S_io_sigio (struct protid *)
+kern_return_t
+trivfs_S_io_sigio (struct trivfs_protid *cred)
 {
   return EOPNOTSUPP;
 }
