@@ -46,7 +46,7 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
   
   newpi = diskfs_make_protid (diskfs_make_peropen (np, 
 						   (O_READ|O_EXEC
-						    | (diskfs_readonly 
+						    | (!diskfs_readonly 
 						       ? O_WRITE : 0)),
 						   *dotdot),
 			      uid, 1, gid, 1);
