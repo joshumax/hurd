@@ -298,7 +298,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	  err = pipe_send (pipe, source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
-	  pipe_release (pipe);
+	  pipe_release_writer (pipe);
 	  if (err)
 	    /* The send failed, so free any resources it would have consumed
 	       (mig gets rid of memory, but we have to do everything else). */
@@ -342,13 +342,22 @@ S_socket_recv (struct sock_user *user,
     0;
 
   err = sock_aquire_read_pipe (user->sock, &pipe);
-  if (!err)
+  if (err == EPIPE)
+    /* EOF */
+    {
+      *data_len = 0;
+      if (num_ports)
+	*num_ports = 0;
+      if (control_len)
+	*control_len = 0;
+    }
+  else if (!err)
     {
       err =
 	pipe_recv (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
 		   &source_addr, data, data_len, amount,
 		   control, control_len, ports, num_ports);
-      pipe_release (pipe);
+      pipe_release_reader (pipe);
     }
 
   if (!err)
