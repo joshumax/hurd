@@ -32,6 +32,8 @@ OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 # This hack to get around ickiness in Makeconf
 libutil-libsubst = -lutil
 
+INSTALL-login-ops = -o root -m 4755
+
 include ../Makeconf
 
 login: -lutil     # /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
