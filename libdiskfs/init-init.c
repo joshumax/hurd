@@ -60,9 +60,9 @@ diskfs_init_diskfs (void)
 
   ports_wire_threads = diskfs_host_priv;
 
-  diskfs_control_port =
-    ((struct port_info *)ports_allocate_port(sizeof (struct port_info),
-					     PT_CTL))->port;
+  diskfs_control_port = (ports_get_right
+			 (ports_allocate_port(sizeof (struct port_info),
+					      PT_CTL)));
   
   diskfs_default_pager = MACH_PORT_NULL;
   vm_set_default_memory_manager (diskfs_host_priv, &diskfs_default_pager);
