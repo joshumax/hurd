@@ -210,6 +210,13 @@ struct argp;			/* Include <argp.h> to get the real thing.  */
 
 /* Invoke ARGP with data from DATA & LEN, in the standard way.  */
 error_t fshelp_set_options (struct argp *argp, int flags,
-			    char *data, mach_msg_type_number_t len);
+			    char *argz, size_t argz_len, void *input);
+
+/* Puts data from the malloced buffer BUF, LEN bytes long, into RBUF & RLEN,
+   suitable for returning from a mach rpc.  If LEN > 0, BUF is freed,
+   regardless of whether an error is returned or not.  */
+error_t fshelp_return_malloced_buffer (char *buf, size_t len,
+				       char **rbuf,
+				       mach_msg_type_number_t *rlen);
 
 #endif
