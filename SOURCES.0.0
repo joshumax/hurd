@@ -65,7 +65,8 @@ instructions, after making the indicated minor modifications:
    #endif
    #define setpgrp(a,b) setpgrp()
 * findutils (4.1)  
-  [Comment out decl of basename in defs.h and defn in util.c]
+  [Comment out decl of basename in defs.h and defn in util.c
+   Add `#define ARG_MAX 20480' right after the includes]
 * gzip (1.2.4) 
   [commented out basename from gzip.h and util.c]
 * ncurses (1.9.9e) 
@@ -86,6 +87,7 @@ nethack (3.2.1)
   [3.2.0 + nethack-3.2.0-3.2.1.patch
    define BSD & linux, frob paths in config.h & unixconf.h & root Makefile
    comment out declaration of random in system.h
+   Use `-lncurses' for WINTTYLIB in src/Makefile
    declare `int status' in files.c:decompress_file, and pass &status
     as an arg to the call to `wait' in the same function. ]
 
