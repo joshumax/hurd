@@ -69,7 +69,7 @@ struct passwd *ps_user_passwd(ps_user_t u)
 	{
 	  int needed = 0;
 
-#define COUNT(field) (pw->field == NULL || (needed += strlen(pw->field) + 1))
+#define COUNT(field) if (pw->field != NULL) (needed += strlen(pw->field) + 1)
 	  COUNT(pw_name);
 	  COUNT(pw_passwd);
 	  COUNT(pw_gecos);
@@ -85,8 +85,8 @@ struct passwd *ps_user_passwd(ps_user_t u)
 		 structure and point the fields at that instead of the static
 		 storage that pw currently points to.  */
 #define COPY(field) \
-  (pw->field == NULL \
-   || (strcpy(p, pw->field), (pw->field = p), (p += strlen(p) + 1)))
+  if (pw->field != NULL) \
+   strcpy(p, pw->field), (pw->field = p), (p += strlen(p) + 1)
 	      COPY(pw_name);
 	      COPY(pw_passwd);
 	      COPY(pw_gecos);
