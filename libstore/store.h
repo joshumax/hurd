@@ -84,7 +84,9 @@ error_t store_create (file_t source, struct store **store);
 error_t store_device_create (device_t device, struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
-   store_create, this will always use file i/o.  */
+   store_create, this will always use file i/o, even it would be possible to
+   be more direct.  This may work in more cases, for instance if the file has
+   holes.  */
 error_t store_file_create (file_t file, struct store **store);
 
 error_t store_destroy (struct store *store);
