@@ -146,11 +146,15 @@ endif
 install:
 
 
+# Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
+# a variable above with the complete file name to find it.
+HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
+
 # Building the target
 # Yippee!  A use for computed variable references!
 ifeq ($(doinst),one)
-$(target): $(OBJS) $($(HURDLIBS)) $(OTHERLIBS)
-	$(CC) $(CFLAGS) -o $(target) $(OBJS) $($(HURDLIBS)) $(OTHERLIBS)
+$(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
+	$(CC) $(CFLAGS) -o $(target) $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
 endif
 
 ifeq ($(makemode),library)
@@ -161,7 +165,7 @@ $(libname).a: $(OBJS)
 endif
 
 # Making a snapshot
-distfiles := Makefile ChangeLog $(SRCS) $(LCLHDRS) DIST_FILES
+distfiles := Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(hurdsource)/hurd-snap/$(dir) FORCE
 	ln $(distfiles) $(hurdsource)/hurd-snap/$(dir)
  
@@ -175,7 +179,8 @@ endif
 # TAGS files
 ifneq ($(dir),.)
 TAGS: $(SRCS) $(LCLHDRS) $(REMHDRS) $(OTHERTAGS)
-	etags -o $@ $(addprefix -i ,$(addsuffix /TAGS,$(addprefix ../,$(HURDLIBS)))) $(SRCS) $(LCLHDRS) $(REMHDRS) $(OTHERTAGS)
+	etags -o $@ $(HURDLIBS:-i ../%/TAGS) $(SRCS) \
+	      $(LCLHDRS) $(REMHDRS) $(OTHERTAGS)
 endif
 
 
