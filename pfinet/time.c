@@ -1,4 +1,4 @@
-/* 
+/* Time management functions
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-/* Time management functions */
+#include <sys/time.h>
 
 void
 do_gettimeofday (struct timeval *tp)
