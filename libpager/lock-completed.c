@@ -18,11 +18,11 @@
 
 /* A lock_request has finished.  Do our part of the wakeup
    process.  */
-seqnos_memory_object_lock_completed (mach_port_t object,
-				     mach_port_seqno_t seqno,
-				     mach_port_t control,
-				     vm_offset_t offset,
-				     vm_size_t length)
+_pager_seqnos_memory_object_lock_completed (mach_port_t object,
+					    mach_port_seqno_t seqno,
+					    mach_port_t control,
+					    vm_offset_t offset,
+					    vm_size_t length)
 {
   struct controlinfo *ci;
   struct lock_request *lr;
