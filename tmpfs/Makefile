@@ -1,6 +1,6 @@
 # Makefile for tmpfs
 #
-#   Copyright (C) 2000 Free Software Foundation, Inc.
+#   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,7 +20,7 @@ dir := tmpfs
 makemode := server
 
 target = tmpfs
-SRCS = tmpfs.c node.c dir.c
+SRCS = tmpfs.c node.c dir.c pager-stubs.c
 OBJS = $(SRCS:.c=.o)
 LCLHDRS = tmpfs.h
 # XXX The shared libdiskfs requires libstore even though we don't use it here.
