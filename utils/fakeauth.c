@@ -327,10 +327,17 @@ main (int argc, char **argv)
   auth_t authport;
   pid_t child;
   int status;
+  int argi;
 
-  struct argp argp = { 0, 0, 0, "Hurd standard authentication server." };
+  struct argp argp = { 0, 0, "COMMAND...", "\
+Run COMMAND with a fake authentication handle that claims to be root or \
+any arbitrary identity derived from that handle, but in fact is always just \
+a proxy for your real authentication handle.  This means that all processes \
+created by the COMMAND will have your privileges, even though it may \
+believe it has restricted them to different identities or no identity at all.\
+" };
 
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, &argi, 0);
 
   auth_bucket = ports_create_bucket ();
   authhandle_portclass = ports_create_class (&destroy_authhandle, 0);
@@ -365,11 +372,11 @@ main (int argc, char **argv)
     error (2, errno, "Cannot switch to fake auth handle");
   mach_port_deallocate (mach_task_self (), authport);
 
-  if (posix_spawnp (&child, argv[1], NULL, NULL, &argv[1], environ))
+  if (posix_spawnp (&child, argv[argi], NULL, NULL, &argv[argi], environ))
     error (3, errno, "cannot run %s", argv[1]);
 
   if (waitpid (child, &status, 0) != child)
-    error (4, errno, "waitpid");
+    error (4, errno, "waitpid on %d", child);
 
   if (WIFSIGNALED (status))
     error (WTERMSIG (status) + 128, 0,
