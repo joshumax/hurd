@@ -45,7 +45,8 @@ SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
 
 TAGSHDRS = trivfs.h fsmutations.h
 
-MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o
+MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o \
+	fsys_replyUser.o
 
 OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
@@ -76,6 +77,7 @@ $(subst .c,.o,$(IOSRCS)): io_S.h
 $(subst .c,.o,$(FSYSSRCS)): fsys_S.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
+fsys-getroot.c: fsys_reply.h
 
 $(OBJS): trivfs.h $(includedir)/hurd/ports.h
 
@@ -97,6 +99,11 @@ fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
 	sed -e 's/fsys_server/trivfs_fsys_server/' < fsysServer.c > tmp.c
 	mv tmp.c fsysServer.c
+
+fsys_reply.h fsys_replyUser.c: $(includedir)/hurd/fsys_reply.defs \
+		$(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(includedir)/hurd/fsys_reply.defs \
+	| $(MIGCOM) -server /dev/null
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $(includedir)/mach/notify.defs \
