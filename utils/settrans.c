@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
+#include <argp.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -32,46 +32,16 @@
 
 /* ---------------------------------------------------------------- */
 
-#define USAGE "Usage: %s [OPTION...] FILE [TRANSLATOR...]\n" 
-
-static void
-usage(status)
-     int status;
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	      program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -a, --active               Set FILE's active translator\n\
-  -p, --passive              Set FILE's passive translator\n\
-  -c, --create               Create FILE if it doesn't exist\n\
-  -f, --force                Set the translator even if one already exists\n\
-  -k, --keep-active          Keep any currently running active translator\n\
-                             when setting the passive translator\n\
-  -L, --dereference          If a translator exists, put the new one on top\n\
-      --help                 Give this help list\n\
-");
-    }
-
-  exit(status);
-}
-
-#define SHORT_OPTIONS "apcfkLt"
-
-static struct option options[] =
-{
-  {"active", no_argument, 0, 'a'},
-  {"passive", no_argument, 0, 'p'},
-  {"keep-active", no_argument, 0, 'k'},
-  {"create", no_argument, 0, 'c'},
-  {"force", no_argument, 0, 'f'},
-  {"dereference", no_argument, 0, 'L'},
-  {"help", no_argument, 0, '&'},
-  {0, 0, 0, 0}
+  {"active",      'a', 0, 0, "Set NODE's active translator"},
+  {"passive",     'p', 0, 0, "Set NODE's passive translator"},
+  {"keep-active", 'k', 0, 0, "Keep any currently running active translator"
+                             " when setting the passive translator"},
+  {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
+  {"force",       'f', 0, 0, "Set the translator even if one already exists"},
+  {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
+  {0, 0}
 };
 
 /* ---------------------------------------------------------------- */
@@ -79,7 +49,6 @@ static struct option options[] =
 void 
 main(int argc, char *argv[])
 {
-  int opt;
   error_t err;
 
   /* The filesystem node we're putting a translator on.  */
@@ -101,34 +70,40 @@ main(int argc, char *argv[])
   int passive = 0, active = 0;
   int create = 0, force = 0, deref = 0, keep_active = 0;
 
-  /* Parse our options...  */
-  while ((opt = getopt_long(argc, argv, "-" SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 1:
-	if (node_name)
-	  /* We've already read the node name, this must be the translator.  */
-	  {
-	    err = argz_create(argv + optind - 1, &argz, &argz_len);
-	    if (err)
-	      error(3, err, "Can't create argz vector");
-	    optind = argc;	/* stop parsing */
-	  }
-	else
-	  node_name = optarg;
-	break;
-      case 'a': active = 1; break;
-      case 'p': passive = 1; break;
-      case 'f': force = 1; break;
-      case 'k': keep_active = 1; break;
-      case 'c': create = 1; break;
-      case 'L': deref = 1; break;
-      case '&': usage(0);
-      default:  usage(-1);
-      }
+  int trans_argv_index;
 
-  if (! node_name)
-    usage (-1);
+  /* Parse our options...  */
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
+    {
+      switch (key)
+	{
+	case ARGP_KEY_ARG:
+	  if (node_name)
+	    /* We've already read the node name, this must be the translator.*/
+	    return EINVAL;	/* stop parsing */
+	  else
+	    node_name = arg;
+	  break;
+	case 'a': active = 1; break;
+	case 'p': passive = 1; break;
+	case 'f': force = 1; break;
+	case 'k': keep_active = 1; break;
+	case 'c': create = 1; break;
+	case 'L': deref = 1; break;
+	default:
+	  return EINVAL;
+	}
+      return 0;
+    }
+  struct argp argp = {options, parse_opt, "NODE [TRANSLATOR ARGS...]"};
+
+  err = argp_parse (&argp, argc, argv, 0, &trans_argv_index);
+  if (err || !node_name)
+    argp_help (&argp, stderr, ARGP_HELP_STD_USAGE);
+
+  err = argz_create(argv + trans_argv_index - 1, &argz, &argz_len);
+  if (err)
+    error(3, err, "Can't create argz vector");
 
   if (!active && !passive)
     passive = 1;
