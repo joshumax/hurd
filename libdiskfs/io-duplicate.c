@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,14 +24,17 @@ diskfs_S_io_duplicate (struct protid *cred,
 		       mach_port_t *port,
 		       mach_msg_type_name_t *portpoly)
 {
+  struct protid *newpi;
+
   if (!cred)
     return EOPNOTSUPP;
   
   mutex_lock (&cred->po->np->lock);
-  *port = (ports_get_right 
-	   (diskfs_make_protid
-	    (cred->po, cred->uids, cred->nuids, cred->gids, cred->ngids)));
+  newpi = diskfs_make_protid (cred->po, cred->uids, cred->nuids,
+			      cred->gids, cred->ngids);
+  *port = ports_get_right (newpi);
   *portpoly = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
   mutex_unlock (&cred->po->np->lock);
   return 0;
 }
