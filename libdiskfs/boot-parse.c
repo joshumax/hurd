@@ -160,12 +160,25 @@ diskfs_parse_bootargs (int argc, char **argv)
   
   if (diskfs_bootflags & RB_ASKNAME)
     {
-      char *tmp;
+      char *line = NULL;
+      size_t linesz = 0;
+      ssize_t len;
       printf ("Bootstrap filesystem device name [%s]: ", devname);
-      fflush (stdout);
-      scanf ("%as\n", &tmp);
-      if (*tmp)
-	devname = tmp;
+      switch (len = getline (&line, &linesz, stdin))
+	{
+	case -1:
+	  perror ("getline");
+	  printf ("Using default of `%s'.\n", devname);
+	case 0:			/* Hmm.  */
+	case 1:			/* Empty line, just a newline.  */
+	  /* Use default.  */
+	  free (line);
+	  break;
+	default:
+	  line[len - 1] = '\0';	/* Remove the newline.  */
+	  devname = line;
+	  break;
+	}
     }
 
   printf ("\nInitial bootstrap: %s", argv[0]);
