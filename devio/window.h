@@ -33,7 +33,9 @@ struct window
   vm_address_t buffer;
 
   /* The device offset of the window.  */
-  vm_offset_t location;
+  vm_offset_t pos;
+  /* The end of the device.  */
+  vm_offset_t max_pos;
 
   /* The length of the window (should be a multiple of __vm_page_size).  If
      this is 0, this window isn't allocated.  */
@@ -55,7 +57,7 @@ struct window
 /* Create a VM window onto the memory object MEMOBJ, and return it in WIN.
    MIN_SIZE and MAX_SIZE are the minimum and maximum sizes that the window
    will shrink/grow to.  */
-error_t window_create(mach_port_t memobj,
+error_t window_create(mach_port_t memobj, vm_offset_t max_pos,
 		      vm_size_t min_size, vm_size_t max_size, int read_only,
 		      struct window **win);
 
