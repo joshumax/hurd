@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994,95,96,2001 Free Software Foundation
+/*
+   Copyright (C) 1994,95,96,2001, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,16 +18,6 @@
 #include "priv.h"
 #include "io_S.h"
 
-/* Tell if the array LIST (of size N) contains a member equal to QUERY. */
-static inline int
-listmember (int *list, int query, int n)
-{
-  int i;
-  for (i = 0; i < n; i++)
-    if (list[i] == query)
-      return 1;
-  return 0;
-}
 
 /* Implement io_restrict_auth as described in <hurd/io.defs>. */
 kern_return_t
@@ -39,61 +29,17 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 			   gid_t *gids,
 			   u_int ngids)
 {
-  error_t err = 0;
-  struct idvec *uvec, *gvec;
+  error_t err;
   struct iouser *user;
   struct protid *newpi;
   int i;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
-  if (idvec_contains (cred->user->uids, 0))
-    /* CRED has root access, and so may use any ids.  */
-    {
-      err = iohelp_create_complex_iouser (&user, uids, nuids, gids, ngids);
-      if (err)
-        return err;
-    }
-  else
-    {
-      uvec = make_idvec ();
-      if (! uvec)
-        return ENOMEM;
-
-      gvec = make_idvec ();
-      if (! gvec)
-        {
-	  idvec_free (uvec);
-	  return ENOMEM;
-	}
-  
-      /* Otherwise, use any of the requested ids that CRED already has.  */
-      for (i = 0; i < cred->user->uids->num; i++)
-	if (listmember (uids, cred->user->uids->ids[i], nuids))
-	  {
-	    err = idvec_add (uvec, cred->user->uids->ids[i]);
-	    if (err)
-	      goto out;
-	  }
-      for (i = 0; i < cred->user->gids->num; i++)
-	if (listmember (gids, cred->user->gids->ids[i], ngids))
-	  {
-	    idvec_add (gvec, cred->user->gids->ids[i]);
-	    if (err)
-	      goto out;
-	  }
-
-      err = iohelp_create_iouser (&user, uvec, gvec);
-
-      if (err)
-        {
-        out:
-	  idvec_free (uvec);
-	  idvec_free (gvec);
-	  return err;
-	}
-    }
+  err = iohelp_restrict_iouser (&user, cred->user, uids, nuids, gids, ngids);
+  if (err)
+    return err;
 
   mutex_lock (&cred->po->np->lock);
   err = diskfs_create_protid (cred->po, user, &newpi);
