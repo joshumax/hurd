@@ -63,7 +63,7 @@ inode_init ()
 /* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
 error_t
-diskfs_cached_lookup (int inum, struct node **npp)
+diskfs_cached_lookup (ino_t inum, struct node **npp)
 {
   error_t err;
   struct node *np;
@@ -275,7 +275,7 @@ read_node (struct node *np)
       info->i_high_size = di->i_size_high;
       if (info->i_high_size)	/* XXX */
 	{
-	  ext2_warning ("cannot handle large file inode %d", np->cache_id);
+	  ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
 	  return EFBIG;
 	}
     }
