@@ -20,165 +20,206 @@
    with this program; if not, write to the Free Software Foundation, Inc.,
    675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/* Write LEN bytes from BUF to STORE at ADDR.  If AMOUNT is NULL, returns EIO
-   if less than LEN bytes were written, otherwise returns the amount written
+#include "store.h"
+
+/* Returns in RUNS the tail of STORE's run list, who's first run contains
+   ADDR, and is not a whole, and in RUNS_END a pointer pointing at the end of
+   the run list.  Returns the offset within it at which ADDR occurs.  */
+static inline off_t
+store_find_first_run (struct store *store, off_t addr,
+		      off_t **runs, unsigned *runs_end)
+{
+  off_t *tail = store->runs, *tail_end = tail + store->runs_len;
+
+  /* XXX: this isn't going to be very efficient if RUNS is very complex...
+     But it should do dandy if it's short.  For long run lists, we could do a
+     binary search or something.  */
+  while (tail < tail_end)
+    {
+      off_t run_addr = tail[0];
+      off_t run_blocks = tail[1];
+
+      if (run_blocks > addr)
+	{
+	  *runs = tail;
+	  *runs_end = tail_end;
+	  return addr;
+	}
+
+      /* Not to the right place yet, move on...  */
+      addr -= run_blocks;
+      tail += 2;
+    }
+
+  return -1;
+}
+
+/* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written
    in AMOUNT.  ADDR is in BLOCKS (as defined by store->block_size).  */
 error_t
 store_write (struct store *store,
 	     off_t addr, char *buf, size_t len, size_t *amount);
 {
-  error_t err = EIO;		/* What happens if we run off the end */
-  size_t total_written = 0;
-  off_t *runs = store->runs;
-  unsigned runs_len = store->runs_len;
+  error_t err;
+  off_t *runs;
+  unsigned runs_end;
   store_write_meth_t write = store->meths->write;
-  int block_shift = store->log2_block_size;
 
-  /* XXX: this isn't going to be very efficient if RUNS is very complex...
-     But it should do dandy if it's short.  For long run lists, we could do a
-     binary search or something to find the starting run.  */
-  while (runs_len)
+  addr = store_find_first_run (store, addr, &runs, &runs_end);
+  if (addr < 0)
+    err = EIO;
+  else if (runs[1] >= len)
+    /* The first run has it all... */
+    err = (*write)(store, runs[0] + addr, buf, len, amount);
+  else
+    /* ARGH, we've got to split up the write ... */
     {
-      off_t run_addr = runs[0];
-      off_t run_blocks = runs[1];
+      off_t written;
 
-      if (run_blocks <= addr)
-	/* Not to the right place yet, move on...  */
-	addr -= run_blocks;
-      else if (run_addr < 0)
-	/* A hole!  Can't write here.  Must stop.  If no data's been written
-	   so far, ERR will still contain EIO, otherwise it will contain 0
-	   and we'll just return a short write.  */
-	break;
-      else
-	/* Ok, we can write in this run, at least a bit.  */
+      /* Write the initial bit in the first run.  Errors here are returned.  */
+      err = (*write)(store, runs[0] + addr, buf, runs[1], &written);
+
+      if (!err && written == runs[1])
+	/* Wrote the first bit successfully, now do the rest.  Any errors
+	   will just result in a short write.  */
 	{
-	  size_t written, blocks_written;
-	  off_t run_len = (run_blocks << block_shift);
-	  off_t end = (addr << block_shift) + len;
-	  off_t seg_len = end > run_len ? run_len - addr : len;
-
-	  /* Write to the actual object at the correct address.  */
-	  err = (*write)(store, run_addr + addr, buf, seg_len, &written);
-	  if (err)
-	    /* Ack */
-	    break;
-
-	  total_written += written;
-
-	  len -= written;
-	  if (len == 0)
-	    break;		/* All data written */
+	  int block_shift = store->log2_block_size;
 
 	  buf += written;
+	  len -= written;
 
-	  blocks_written = written >> block_shift;
-	  if ((blocks_written << block_shift) != seg_amount)
-	    /* A non-block multiple amount was written!?  What do we do?  */
-	    break;
+	  runs += 2;
+	  while (runs != runs_end)
+	    {
+	      off_t run_addr = runs[0];
+	      off_t run_blocks = runs[1];
 
-	  addr += blocks_written;
+	      if (run_addr < 0)
+		/* A hole!  Can't write here.  Must stop.  */
+		break;
+	      else
+		/* Ok, we can write in this run, at least a bit.  */
+		{
+		  off_t run_len = (run_blocks << block_shift);
+		  off_t seg_len = run_len > len ? len : run_len;
+
+		  err = (*write)(store, run_addr, buf, seg_len, &seg_written);
+		  if (err)
+		    break;	/* Ack */
+
+		  written += seg_written;
+		  if (seg_written < run_len)
+		    break;	/* Didn't use up the run, we're done.  */
+
+		  len -= seg_written;
+		  if (len == 0)
+		    break;	/* Nothing left to write!  */
+
+		  buf += written;
+		}
+
+	      runs += 2;
+	    }
 	}
 
-      runs += 2;
-      runs_len -= 2;
+      *amount = written;
     }
-
-  if (amount)
-    /* The user wants to know about short writes.  */
-    {
-      if (total_written)
-	err = 0;		/* return a short write */
-      *amount = total_written;
-    }
-  else if (!err)
-    /* Since there's no way to return the amount actually written, signal an
-       error.  */
-    err = EIO;
 
   return err;
 }
-
+
 error_t
 store_read (struct store *store,
 	    off_t addr, size_t amount, char **buf, size_t *len)
 {
-  error_t err = EIO;		/* What happens if we run off the end */
-  size_t total_read = 0;
-  off_t *runs = store->runs;
-  unsigned runs_len = store->runs_len;
+  error_t err;
+  off_t *runs;
+  unsigned runs_end;
   store_read_meth_t read = store->meths->read;
-  int block_shift = store->log2_block_size;
 
-  /* XXX: this isn't going to be very efficient if RUNS is very complex...
-     But it should do dandy if it's short.  For long run lists, we could do a
-     binary search or something to find the starting run.  */
-  while (runs_len)
+  addr = store_find_first_run (store, addr, &runs, &runs_end);
+  if (addr < 0)
+    err = EIO;
+  else if (runs[1] >= len)
+    /* The first run has it all... */
+    err = (*read)(store, runs[0] + addr, amount, buf, len);
+  else
+    /* ARGH, we've got to split up the write ... This isn't fun. */
     {
-      off_t run_addr = runs[0];
-      off_t run_blocks = runs[1];
+      int all;
+      /* WHOLE_BUF and WHOLE_BUF_LEN will point to a buff that's large enough
+	 to hold the entire request.  This is initially whatever the user
+	 passed in, but we'll change it as necessary.  */
+      char *whole_buf = *buf, *buf_end = whole_buf;
+      size_t whole_buf_len = *len, buf_left = whole_buf_len;
 
-      if (run_blocks <= addr)
-	/* Not to the right place yet, move on...  */
-	addr -= run_blocks;
-      else if (run_addr < 0)
-	/* A hole!  Can't read here.  Must stop.  If no data's been read
-	   so far, ERR will still contain EIO, otherwise it will contain 0
-	   and we'll just return a short read.  */
-	break;
-      else
-	/* Ok, we can read in this run, at least a bit.  */
+      /* Read LEN bytes from the store address ADDR into BUF_LEN.  BUF_LEN
+	 and AMOUNT are adjusted by the amount actually read.  Whether or not
+	 the amount read is the same as what was request is returned in ALL. */
+      inline error_t seg_read (off_t addr, off_t len, int *all)
 	{
-	  size_t seg_read, blocks_read;
-	  off_t run_len = (run_blocks << block_shift);
-	  off_t end = (addr << block_shift) + amount;
-	  off_t seg_amount = end > run_len ? run_len - addr : amount;
-
-	  /* Read to the actual object at the correct address.  */
-	  if (total_read)
-	    /* Some stuff has already been read, so we have to worry about
-	       coalescing the return buffers.  */
+	  /* SEG_BUF and SEG_LEN are the buffer for a particular bit of the
+	     whole (within one run). */
+	  char *seg_buf = buf_end;
+	  size_t seg_buf_len = len;
+	  error_t err = (*read)(store, addr, len, &seg_buf, &seg_buf_len);
+	  if (!err)
 	    {
-	      
+	      /* If for some bizarre reason, the underlying storage chose not
+		 to use the buffer space we so kindly gave it, bcopy it to
+		 that space.  */
+	      if (seg_buf != buf_end)
+		bcopy (seg_buf, buf_end, seg_buf_len);
+	      buf_end += seg_buf_len;
+	      amount -= seg_buf_len;
+	      *all = (seg_buf_len == len);
 	    }
-	  else
-	    {
-	      err = (*read)(store, run_addr + addr, seg_amount, buf, len);
-	      if (err)
-		/* Ack */
-		break;
-	      seg_read = len;
-	    }
-
-	  total_read += seg_read;
-
-	  amount -= seg_read;
-	  if (amount == 0)
-	    break;		/* All data read */
-
-	  blocks_read = seg_read >> block_shift;
-	  if ((blocks_read << block_shift) != seg_amount)
-	    /* A non-block multiple amount was read!?  What do we do?  */
-	    break;
-
-	  addr += blocks_read;
 	}
 
-      runs += 2;
-      runs_len -= 2;
-    }
+      if (whole_buf_left < amount)
+	/* Not enough room in the user's buffer to hold everything, better
+	   make room.  */
+	{
+	  whole_buf_left = amount;
+	  err = vm_allocate (mach_task_self (), &whole_buf, amount, 1);
+	  if (err)
+	    return err;		/* Punt early, there's nothing to clean up.  */
+	}
 
-  if (amount)
-    /* The user wants to know about short reads.  */
-    {
-      if (total_read)
-	err = 0;		/* return a short read!! */
-      *amount = total_read;
-    }
-  else if (!err)
-    /* Since there's no way to return the amount actually read, signal an
-       error.  */
-    err = EIO;
+      err = seg_read (store, runs[0] + addr, runs[1], &all);
 
-  return err;
+      if (!err && all)
+	{
+	  runs += 2;
+	  while (!err && runs != runs_end && all)
+	    {
+	      off_t run_addr = runs[0];
+	      off_t run_blocks = runs[1];
+
+	      if (run_addr < 0)
+		/* A hole!  Can't write here.  Must stop.  */
+		break;
+	      else if (amount == 0)
+		break;
+	      else
+		{
+		  off_t run_len = (run_blocks << block_shift);
+		  off_t seg_len = run_len > amount ? amount : run_len;
+		  err = seg_read (run_addr, seg_len, &all);
+		}
+
+	      runs +=2;
+	    }
+	}
+
+      /* The actual amount written.  */
+      *len = whole_buf_len - amount; XXXXXXXXX
+
+      /* Deallocate any amount of WHOLE_BUF we didn't use.  */
+      if (whole_buf != *buf)
+	{
+	  *buf = whole_buf;
+	}
+    }
 }
+		
