@@ -20,7 +20,7 @@
 /* Called by an I/O server to initialize a conch structure C; 
    M will be used to lock conch data structures.  */
 void
-initialize_conch (struct conch *c, struct mutex *m)
+ioserver_initialize_conch (struct conch *c, struct mutex *m)
 {
   c->lock = m;
   condition_init (&c->wait);

@@ -21,7 +21,7 @@
 /* Check to see if the user identified by USER has conch C; if not,
    return an error, else, return 0.  */
 error_t
-verify_user_conch (struct conch *c, void *user)
+ioserver_verify_user_conch (struct conch *c, void *user)
 {
   struct shared_io *user_sh;
   
