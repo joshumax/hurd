@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -39,7 +39,7 @@ hash (void *fhandle)
 }
 
 struct node *
-lookup_fhandle (void *fhandle)
+lookup_fhandle (void *fhandle, struct node *dir)
 {
   struct node *np;
   struct netnode *nn;
@@ -60,6 +60,9 @@ lookup_fhandle (void *fhandle)
   nn = malloc (sizeof (struct netnode));
   bcopy (fhandle, nn->handle, NFS_FHSIZE);
   nn->stat_updated = 0;
+  if (dir)
+    dir->references++;
+  nn->dir = dir;
   
   np = netfs_make_node (nn);
   mutex_lock (&np->lock);
@@ -76,6 +79,7 @@ lookup_fhandle (void *fhandle)
 void
 netfs_node_norefs (struct node *np)
 {
+  struct node *dir;
   if (np->nn->dead_dir)
     {
       struct node *dir;
@@ -101,10 +105,15 @@ netfs_node_norefs (struct node *np)
     }
   else
     {
+      dir = np->nn->dir;
       *np->nn->hprevp = np->nn->hnext;
       if (np->nn->hnext)
 	np->nn->hnext->nn->hprevp = np->nn->hprevp;
       free (np->nn);
       free (np);
+
+      spin_unlock (&netfs_node_refcnt_lock);
+      netfs_nrele (dir);
+      spin_lock (&netfs_node_refcnt_lock);
     }
 }
