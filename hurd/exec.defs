@@ -55,6 +55,12 @@ routine exec_startup (
 
 /* This call is made by the bootstrapping filesystem to give the
    execserver its auth handle.  */
-routine exec_here_is_auth (
+routine exec_init (
 	execserver: mach_port_t;
-	auth_handle: auth_t);
+	auth_handle: auth_t;
+	proc_server: process_t);
+
+routine exec_setexecdata (
+	execserver: mach_port_t;
+	ports: portarray_t;
+	ints: intarray_t);
