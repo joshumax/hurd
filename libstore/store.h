@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -204,14 +204,14 @@ struct store_class
   error_t (*map) (const struct store *store, vm_prot_t prot, mach_port_t *memobj);
 };
 
-/* Return a new store in STORE, which refers to the storage underlying SOURCE.
-   CLASSES is used to select classes specified by the provider; if it is 0,
-   STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags, with the
-   exception of STORE_INACTIVE, which merely indicates that no attempt should
-   be made to activate an inactive store; if STORE_INACTIVE is not specified,
-   and the store returned for SOURCE is inactive, an attempt is made to
-   activate it (failure of which causes an error to be returned).  A reference
-   to SOURCE is created (but may be destroyed with store_close_source).  */
+/* Return a new store in STORE, which refers to the storage underlying
+   SOURCE.  CLASSES is as if passed to store_find_class, which see.  FLAGS
+   is set with store_set_flags, with the exception of STORE_INACTIVE, which
+   merely indicates that no attempt should be made to activate an inactive
+   store; if STORE_INACTIVE is not specified, and the store returned for
+   SOURCE is inactive, an attempt is made to activate it (failure of which
+   causes an error to be returned).  A reference to SOURCE is created (but
+   may be destroyed with store_close_source).  */
 error_t store_create (file_t source, int flags,
 		      const struct store_class *const *classes,
 		      struct store **store);
@@ -219,10 +219,9 @@ error_t store_create (file_t source, int flags,
 void store_free (struct store *store);
 
 /* Open the file NAME, and return a new store in STORE, which refers to the
-   storage underlying it.  CLASSES is used to select classes specified by the
-   provider; if it is 0, STORE_STD_CLASSES is used.  FLAGS is set with
-   store_set_flags.  A reference to the open file is created (but may be
-   destroyed with store_close_source).  */
+   storage underlying it.  CLASSES is as if passed to store_find_class,
+   which see.  FLAGS is set with store_set_flags.  A reference to the open
+   file is created (but may be destroyed with store_close_source).  */
 error_t store_open (const char *name, int flags,
 		    const struct store_class *const *classes,
 		    struct store **store);
@@ -346,12 +345,12 @@ error_t store_device_open (const char *name, int flags, struct store **store);
 error_t store_part_create (struct store *source, int index, int flags,
                           struct store **store);
 
-/* Open the part NAME.  NAME consists of a partition number, a ':', a another
-   store class name, a ':' and a name for to by passed to the store class.
-   E.g. "2:device:hd0" would open the second partition on a DEVICE store
-   named "hd0".  FLAGS indicate how to open the store.  CLASSES is used to
-   select classes specified by the type NAME; if it is 0, STORE_STD_CLASSES
-   is used.  The new store is returned in *STORE.  */
+/* Open the part NAME.  NAME consists of a partition number, a ':', a
+   another store class name, a ':' and a name for to by passed to the
+   store class.  E.g. "2:device:hd0" would open the second partition
+   on a DEVICE store named "hd0".  FLAGS indicate how to open the
+   store.  CLASSES is as if passed to store_find_class, which see.
+   The new store is returned in *STORE.  */
 error_t store_part_open (const char *name, int flags,
                         const struct store_class *const *classes,
                         struct store **store);
@@ -401,33 +400,6 @@ error_t _store_nbd_create (mach_port_t port, int flags, size_t block_size,
 			   const struct store_run *runs, size_t num_runs,
 			   struct store **store);
 
-/* Parse multiple store names in NAME, and open each individually, returning
-   all in the vector STORES, and the number in NUM_STORES.  The syntax of
-   NAME is a single non-alpha-numeric separator character, followed by each
-   child store name separated by the same separator; each child name is
-   TYPE:NAME notation as parsed by store_typed_open.  If every child uses the
-   same TYPE: prefix, then it may be factored out and put before the child
-   list instead (the two types of notation are differentiated by whether the
-   first character of name is alpha-numeric or not).  */
-error_t store_open_children (const char *name, int flags,
-			     const struct store_class *const *classes,
-			     struct store ***stores, size_t *num_stores);
-
-/* Open the store indicated by NAME, which should consist of a store type
-   name followed by a ':' and any type-specific name, returning the new store
-   in STORE.  CLASSES is used to select classes specified by the type name;
-   if it is 0, STORE_STD_CLASSES is used.  */
-error_t store_typed_open (const char *name, int flags,
-			  const struct store_class *const *classes,
-			  struct store **store);
-
-/* Similar to store_typed_open, but NAME must be in URL format,
-   i.e. a class name followed by a ':' and any type-specific name.
-   A leading ':' or no ':' at all is invalid syntax.  */
-error_t store_url_open (const char *name, int flags,
-			const struct store_class *const *classes,
-			struct store **store);
-
 /* Return a new store of type "unknown" that holds a copy of the
    given encoding.  The name of the store is taken from ENC->data.
    Future calls to store_encode/store_return will produce exactly
@@ -467,15 +439,15 @@ error_t store_concat_open (const char *name, int flags,
 error_t store_remap_create (struct store *source,
 			    const struct store_run *runs, size_t num_runs,
 			    int flags, struct store **store);
-
+
 /* Return a new store in STORE which contains a snapshot of the contents of
    the store FROM; FROM is consumed.  */
 error_t store_copy_create (struct store *from, int flags, struct store **store);
 
-/* Open the copy store NAME -- which consists of another store-class name, a
-   ':', and a name for that store class to open -- and return the
-   corresponding store in STORE.  CLASSES is used to select classes specified
-   by the type name; if it is 0, STORE_STD_CLASSES is used.  */
+/* Open the copy store NAME -- which consists of another store-class
+   name, a ':', and a name for that store class to open -- and return
+   the corresponding store in STORE.  CLASSES is as if passed to
+   store_find_class, which see.  */
 error_t store_copy_open (const char *name, int flags,
 			 const struct store_class *const *classes,
 			 struct store **store);
@@ -491,10 +463,10 @@ error_t store_buffer_create (void *buf, size_t buf_len, int flags,
 error_t store_gunzip_create (struct store *from, int flags,
 			     struct store **store);
 
-/* Open the gunzip NAME -- which consists of another store-class name, a ':',
-   and a name for that store class to open -- and return the corresponding
-   store in STORE.  CLASSES is used to select classes specified by the type
-   name; if it is 0, STORE_STD_CLASSES is used.  */
+/* Open the gunzip NAME -- which consists of another store-class name, a
+   ':', and a name for that store class to open -- and return the
+   corresponding store in STORE.  CLASSES is as if passed to
+   store_find_class, which see.  */
 error_t store_gunzip_open (const char *name, int flags,
 			   const struct store_class *const *classes,
 			   struct store **store);
@@ -507,8 +479,7 @@ error_t store_bunzip2_create (struct store *from, int flags,
 
 /* Open the bunzip2 NAME -- which consists of another store-class name, a ':',
    and a name for that store class to open -- and return the corresponding
-   store in STORE.  CLASSES is used to select classes specified by the type
-   name; if it is 0, STORE_STD_CLASSES is used.  */
+   store in STORE.  CLASSES is as if passed to store_find_class, which see.  */
 error_t store_bunzip2_open (const char *name, int flags,
 			    const struct store_class *const *classes,
 			    struct store **store);
@@ -523,9 +494,108 @@ error_t store_mvol_create (struct store *phys,
 			   int flags,
 			   struct store **store);
 
-/* Standard store classes implemented by libstore.  */
-extern const struct store_class *const store_std_classes[];
+/* Opening stores from a standard set of store classes.
 
+   These first two functions underlie the following functions, and
+   other functions such as store_open taking a CLASSES argument that
+   can be null.  The standard set of classes to be searched when that
+   argument is null includes all the `const struct store_class *'
+   pointers found in the `store_std_classes' section of the executable
+   and all loaded shared objects; store_find_class searches that set
+   for the named class.  The store_typed_open and store_url_open
+   functions also try store_module_find_class, but only if the
+   function has already been linked in; it's always available in the
+   shared library, and available for static linking with
+   -lstore_module -ldl.
+
+   The macro STORE_STD_CLASS produces a reference in the `store_std_classes'
+   section, so that linking in a module containing that definition will add
+   the referenced class to the standard search list.  In the shared library,
+   the various standard classes are included this way.  In the static
+   library, only the pseudo classes like `query' and `typed' will normally
+   be linked in (via referenced to store_open and so forth); to force
+   specific store type modules to be linked in, you must specify an
+   `-lstore_CLASS' option for each individual class to be statically linked.
+*/
+
+/* Find a store class by name.  CLNAME_END points to the character
+   after the class name NAME points to; if null, then NAME is just the
+   null-terminated class name.  */
+const struct store_class *
+store_find_class (const char *name,
+		  const char *clname_end,
+		  const struct store_class *const *classes);
+
+/* This is the underlying function that tries to load a module to
+   define the store type called NAME.  On success, returns zero
+   and sets *CLASSP to the descriptor found.  Returns ENOENT if
+   there is no such module, or other error codes if there is a
+   module but it does not load correctly.  */
+error_t store_module_find_class (const char *name,
+				 const char *clname_end,
+				 const struct store_class **classp);
+
+
+/* Open the store indicated by NAME, which should consist of a store
+   type name followed by a ':' and any type-specific name, returning the
+   new store in STORE.  CLASSES is as if passed to store_find_class,
+   which see.  */
+error_t store_typed_open (const char *name, int flags,
+			  const struct store_class *const *classes,
+			  struct store **store);
+
+/* Similar to store_typed_open, but NAME must be in URL format, i.e. a
+   class name followed by a ':' and any type-specific name.  A leading ':'
+   or no ':' at all is invalid syntax.  (See store_module_open, below.)  */
+error_t store_url_open (const char *name, int flags,
+			const struct store_class *const *classes,
+			struct store **store);
+
+/* This attempts to decode a standard-form STORAGE_NETWORK encoding whose
+   encoded name is in URL format, by finding the store type indicated in
+   the URL (as for store_url_open) and that type's decode function.  */
+error_t store_url_decode (struct store_enc *enc,
+			  const struct store_class *const *classes,
+			  struct store **store);
+
+
+/* Similar to store_typed_open, but the store type's code is found
+   dynamically rather than statically in CLASSES.  A shared object name
+   for `dlopen' and symbol names for `dlsym' are derived from the type
+   name and used to find the `struct store_class' for the named type.
+   (CLASSES is used only by the type's own open function, e.g. if that
+   type accepts a child-store syntax in its name.)
+
+   In fact, when this code is linked in (always in the shared library,
+   only with `-lstore_module -ldl -lstore' for static linking), all
+   the functions documented as using STORE_STD_CLASSES will also
+   check for loadable modules if the type name is not found statically.  */
+error_t store_module_open (const char *name, int flags,
+			   const struct store_class *const *classes,
+			   struct store **store);
+
+
+/* This attempts to find a module that can decode ENC.  If no such
+   module can be found it returns ENOENT.  Otherwise it returns
+   the result of the loaded store type's `decode' function.  */
+error_t store_module_decode (struct store_enc *enc,
+			     const struct store_class *const *classes,
+			     struct store **store);
+
+/* Parse multiple store names in NAME, and open each individually, returning
+   all in the vector STORES, and the number in NUM_STORES.  The syntax of
+   NAME is a single non-alpha-numeric separator character, followed by each
+   child store name separated by the same separator; each child name is
+   TYPE:NAME notation as parsed by store_typed_open.  If every child uses the
+   same TYPE: prefix, then it may be factored out and put before the child
+   list instead (the two types of notation are differentiated by whether the
+   first character of name is alpha-numeric or not).  */
+error_t store_open_children (const char *name, int flags,
+			     const struct store_class *const *classes,
+			     struct store ***stores, size_t *num_stores);
+
+
+/* Standard store classes implemented by libstore.  */
 extern const struct store_class store_device_class;
 extern const struct store_class store_part_class;
 extern const struct store_class store_file_class;
@@ -542,16 +612,19 @@ extern const struct store_class store_gunzip_class;
 extern const struct store_class store_bunzip2_class;
 extern const struct store_class store_typed_open_class;
 extern const struct store_class store_url_open_class;
+extern const struct store_class store_module_open_class;
 extern const struct store_class store_unknown_class;
 
 /* The following are not included in STORE_STD_CLASSES.  */
 extern const struct store_class store_mvol_class;
 
-/* Concatenates the store class vectors in CV1 and CV2, and returns a new
-   (malloced) vector in CONCAT.  */
-error_t store_concat_class_vectors (struct store_class **cv1,
-				    struct store_class **cv2,
-				    struct store_class ***concat);
+#define STORE_STD_CLASS(name) \
+  static const struct store_class *const store_std_classes_##name[] \
+    __attribute__ ((unused, section ("store_std_classes"))) \
+    = { &store_##name##_class }
+
+extern const struct store_class *const __start_store_std_classes[];
+extern const struct store_class *const __stop_store_std_classes[];
 
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
@@ -615,10 +688,10 @@ error_t store_return (const struct store *store,
    used by the unsent vectors.  */
 error_t store_encode (const struct store *store, struct store_enc *enc);
 
-/* Decode ENC, either returning a new store in STORE, or an error.  CLASSES
-   defines the mapping from hurd storage class ids to store classes; if it is
-   0, STORE_STD_CLASSES is used.  If nothing else is to be done with ENC, its
-   contents may then be freed using store_enc_dealloc.  */
+/* Decode ENC, either returning a new store in STORE, or an error.
+   CLASSES is as if passed to store_find_class, which see.  If nothing
+   else is to be done with ENC, its contents may then be freed using
+   store_enc_dealloc.  */
 error_t store_decode (struct store_enc *enc,
 		      const struct store_class *const *classes,
 		      struct store **store);
