@@ -139,7 +139,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'm':			/* --mode=OCTAL */
       {
 	char *end = NULL;
-	mode_t mode = strtoul (state->argv[state->next], &end, 8);
+	mode_t mode = strtoul (arg, &end, 8);
 	if (end == NULL || end == arg)
 	  {
 	    argp_error (state, "argument must be an octal number");

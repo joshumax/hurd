@@ -1,3 +1,8 @@
+2005-03-20  Marcus Brinkmann  <marcus@gnu.org>
+
+	* tmpfs.c (parse_opt): Use the right argument for parsing the
+	mode.
+
 2002-06-14  Roland McGrath  <roland@frob.com>
 
 	* tmpfs.c (main): If get_privileged_ports fails with EPERM, try to
