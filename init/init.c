@@ -204,7 +204,7 @@ crash_mach (void)
 
 /* Notify all tasks that have requested shutdown notifications */
 void
-notify_shutdown (char *msg)
+notify_shutdown (const char *msg)
 {
   struct ntfy_task *n;
 
