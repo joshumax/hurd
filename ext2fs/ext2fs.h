@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,14 +24,44 @@
 #include <hurd/diskfs.h>
 #include <assert.h>
 #include <rwlock.h>
+
+#define __hurd__		/* Enable some hurd-specific fields.  */
 #include "ext2_fs.h"
-#include "fs.h"
+#include "ext2_fs_i.h"
+#undef __hurd__
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
    of paging requests, which may be helpful in catching bugs. */
 
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
+
+/* ---------------------------------------------------------------- */
+
+struct poke 
+{
+  vm_offset_t offset;
+  vm_size_t length;
+  struct poke *next;
+};
+
+struct pokel
+{
+  struct poke *pokes, *free_pokes;
+  spin_lock_t lock;
+  struct pager *pager;
+  void *image;
+};
+
+void pokel_init (struct pokel *pokel, struct pager *pager, void *image);
+
+/* Remember that data here on the disk has been modified. */
+void pokel_add (struct pokel *pokel, void *loc, vm_size_t length);
+
+/* Sync all the modified pieces of disk */
+void pokel_sync (struct pokel *pokel, int wait);
+
+/* ---------------------------------------------------------------- */
 
 struct disknode 
 {
@@ -46,31 +76,12 @@ struct disknode
 
   struct rwlock allocptrlock;
 
-  struct dirty_indir *dirty;
+  struct pokel pokel;
 
   struct ext2_inode_info info;
 
   struct user_pager_info *fileinfo;
 };  
-
-/* Identifies a particular block and where it's found
-   when interpreting indirect block structure.  */
-struct iblock_spec
-{
-  /* Disk address of block */
-  daddr_t bno;
-
-  /* Offset in next block up; -1 if it's in the inode itself. */
-  int offset;
-};
-
-/* Identifies an indirect block owned by this file which
-   might be dirty. */
-struct dirty_indir
-{
-  daddr_t bno;			/* Disk address of block. */
-  struct dirty_indir *next;
-};
 
 struct user_pager_info 
 {
@@ -86,17 +97,6 @@ struct user_pager_info
 
 /* ---------------------------------------------------------------- */
 
-#define BLOCK_SIZE 1024
-#define BLOCK_SIZE_BITS 10
-
-extern unsigned long inode_init(unsigned long start, unsigned long end);
-extern unsigned long file_table_init(unsigned long start, unsigned long end);
-extern unsigned long name_cache_init(unsigned long start, unsigned long end);
-
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
-
 /*
  * These are the fs-independent mount-flags: up to 16 flags are supported
  */
@@ -110,17 +110,8 @@ extern unsigned long name_cache_init(unsigned long start, unsigned long end);
 #define S_APPEND    256 /* append-only file */
 #define S_IMMUTABLE 512 /* immutable file */
 
-/*
- * Note that read-only etc flags are inode-specific: setting some file-system
- * flags just means all the inodes inherit those flags by default. It might be
- * possible to override it selectively if you really wanted to with some
- * ioctl() that is not currently implemented.
- *
- * Exception: MS_RDONLY is always applied to the entire file system.
- */
-#define IS_RDONLY(inode) (((inode)->i_sb) && ((inode)->i_sb->s_flags & MS_RDONLY))
-#define IS_APPEND(inode) ((inode)->i_flags & S_APPEND)
-#define IS_IMMUTABLE(inode) ((inode)->i_flags & S_IMMUTABLE)
+#define IS_APPEND(node) ((node)->dn->info.i_flags & S_APPEND)
+#define IS_IMMUTABLE(node) ((inode)->dn->info.i_flags & S_IMMUTABLE)
 
 /* ---------------------------------------------------------------- */
 
@@ -136,13 +127,23 @@ mach_port_t ext2fs_device;
 struct ext2_super_block *sblock;
 /* What to lock if changing the super block.  */
 spin_lock_t sblock_lock;
-/* Where the super-block is on the disk.  */
-char *disk_sblock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
 
+struct pokel sblock_pokel;
+
+#define SBLOCK_BLOCK 1
+#define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
+#define SBLOCK_SIZE (sizeof (struct ext2_super_block))
+
 /* The filesystem block-size.  */
 unsigned long block_size;
+
+vm_address_t zeroblock;
+
+/* Copy the sblock into the disk.  */
+void copy_sblock ();
+void get_hypermetadata ();
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -159,30 +160,21 @@ unsigned long addr_per_block;	/* Number of disk addresses per block */
 unsigned long groups_count;	/* Number of groups in the fs */
 
 /* ---------------------------------------------------------------- */
+
 spin_lock_t node2pagelock;
 
-spin_lock_t alloclock;
-
 spin_lock_t gennumberlock;
-u_long nextgennumber;
+unsigned long nextgennumber;
 
 /* ---------------------------------------------------------------- */
-
-/* Handy macros */
-#define DEV_BSIZE 512
-#define NBBY 8
-#define btodb(n) ((n) / DEV_BSIZE)
-#define howmany(x,y) (((x)+((y)-1))/(y))
-#define roundup(x, y) ((((x)+((y)-1))/(y))*(y))
-#define isclr(a, i) (((a)[(i)/NBBY] & (1<<((i)%NBBY))) == 0)
-#define isset(a, i) ((a)[(i)/NBBY] & (1<<((i)%NBBY)))
-#define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
-#define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
-
 /* Functions for looking inside disk_image */
+
+/* The block size we assume the kernel device uses.  */
+#define DEV_BSIZE 512
 
 /* Returns a pointer to the disk block BLOCK.  */
 #define baddr(block) (((char *)disk_image) + (block) * DEV_BSIZE)
+#define addrb(addr) ((((char *)disk_image) - addr) / DEV_BSIZE)
 
 /* Get the descriptor for the block group inode INUM is in.  */
 extern inline struct ext2_group_desc *
@@ -191,7 +183,7 @@ group_desc(unsigned long bg_num)
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
   unsigned long group_desc = bg_num / desc_per_block;
   unsigned long desc = bg_num % desc_per_block;
-  return ((struct ext2_group_desc *)baddr(sb_block_num + group_desc)) + desc;
+  return ((struct ext2_group_desc *)baddr(1 + group_desc)) + desc;
 }
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
@@ -203,37 +195,29 @@ dino (ino_t inum)
   unsigned long bg_num = inode_group_num(inum);
   struct ext2_group_desc *bg = group_desc(bg_num);
   unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
-  unsigned long block = bg.bg_inode_table + (bg_num / inodes_per_block);
+  unsigned long block = bg->bg_inode_table + (bg_num / inodes_per_block);
   return ((struct ext2_inode *)baddr(block)) + inum % inodes_per_block;
-}
-
-/* Convert a indirect block number to a daddr_t table. */
-extern inline daddr_t *
-indir_block (daddr_t bno)
-{
-  return (daddr_t *) (disk_image + fsaddr (sblock, bno));
-}
-
-/* Convert a cg number to the cylinder group. */
-extern inline struct cg *
-cg_locate (int ncg)
-{
-  return (struct cg *) (disk_image + fsaddr (sblock, cgtod (sblock, ncg)));
 }
 
 /* Sync part of the disk */
 extern inline void
-sync_disk_image (char *place, size_t nbytes, int wait)
+sync_disk_image (void *place, size_t nbytes, int wait)
 {
-  pager_sync_some (diskpager->p, place - disk_image, nbytes, wait);
+  pager_sync_some (diskpager->p,
+		   (char *)place - (char *)disk_image, nbytes, wait);
 }
+
+/* ---------------------------------------------------------------- */
 
-/* Sync an disk inode */
-extern inline void
-sync_dinode (int inum, int wait)
-{
-  sync_disk_blocks (dino (inum), sizeof (struct ext2_inode), wait);
-}
+/* Fetch inode INUM, set *NPP to the node structure; gain one user reference
+   and lock the node.  */
+error_t iget (ino_t inum, struct node **npp);
+
+/* Lookup node INUM (which must have a reference already) and return it
+   without allocating any new references. */
+struct node *ifind (ino_t inum);
+
+void inode_init (void);
 
 /* ---------------------------------------------------------------- */
 
@@ -244,9 +228,100 @@ alloc_sync (struct node *np)
   if (diskfs_synchronous)
     {
       if (np)
-	diskfs_node_update (np, 1);
+	{
+	  diskfs_node_update (np, 1);
+	  pokel_sync (&np->dn->pokel, 1);
+	}
       copy_sblock ();
       diskfs_set_hypermetadata (1, 0);
-      sync_disk (1);
+      pokel_sync (&sblock_pokel, 1);
     }
 }
+
+/* ---------------------------------------------------------------- */
+
+error_t ext2_getblk (struct node *node, long block, int create, char **buf);
+
+int ext2_new_block (unsigned long goal,
+		    u32 * prealloc_count, u32 * prealloc_block);
+
+void ext2_free_blocks (unsigned long block, unsigned long count);
+
+/* ---------------------------------------------------------------- */
+/* Bitmap routines.  */
+
+/* Returns TRUE if bit NUM is set in BITMAP.  */
+inline int test_bit (unsigned num, char *bitmap)
+{
+  return bitmap[num >> 3] & (1 << (num & 0x7));
+}
+
+/* Sets bit NUM in BITMAP, and returns TRUE if it was already set.  */
+inline int set_bit (unsigned num, char *bitmap)
+{
+  char *p = bitmap + (num >> 3);
+  char byte = *p;
+  char mask = (1 << (num & 0x7));
+
+  if (byte & mask)
+    return 1;
+  else
+    {
+      *p = byte | mask;
+      return 0;
+    }
+}
+
+/* Clears bit NUM in BITMAP, and returns TRUE if it was already clear.  */
+inline int clear_bit (unsigned num, char *bitmap)
+{
+  char *p = bitmap + (num >> 3);
+  char byte = *p;
+  char mask = (1 << (num & 0x7));
+
+  if (byte & mask)
+    {
+      *p = byte & ~mask;
+      return 0;
+    }
+  else
+    return 1;
+}
+
+/* Counts the number of bits unset in MAP, a bitmap NUMCHARS long. */
+unsigned long count_free (char * map, unsigned int numchars);
+
+extern int find_first_zero_bit(void * addr, unsigned size);
+
+extern int find_next_zero_bit (void * addr, int size, int offset);
+
+extern unsigned long ffz(unsigned long word);
+
+/* Returns a pointer to the first occurence of CH in the buffer BUF of len
+   LEN, or BUF + LEN if CH doesn't occur.  */
+void *memscan(void *buf, unsigned char ch, unsigned len);
+
+/* ---------------------------------------------------------------- */
+
+/* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
+error_t dev_write_sync (daddr_t addr, vm_address_t data, long len);
+
+/* Write diskblock ADDR with DATA of LEN bytes; don't bother waiting
+   for completion. */
+error_t dev_write (daddr_t addr, vm_address_t data, long len);
+
+/* Read disk block ADDR; put the address of the data in DATA; read LEN
+   bytes.  Always *DATA should be a full page no matter what.   */
+error_t dev_read_sync (daddr_t addr, vm_address_t *data, long len);
+
+/* ---------------------------------------------------------------- */
+
+extern void ext2_error (const char *, const char *, ...)
+	__attribute__ ((format (printf, 2, 3)));
+extern void ext2_panic (const char *, const char *, ...)
+	__attribute__ ((format (printf, 2, 3)));
+extern void ext2_warning (const char *, const char *, ...)
+	__attribute__ ((format (printf, 2, 3)));
+
+/* Enable some more error checking.  */
+int check_strict;
