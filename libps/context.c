@@ -41,6 +41,7 @@ ps_context_create(process_t server, ps_context_t *pc)
     return ENOMEM;
 
   (*pc)->server = server;
+  (*pc)->user_hooks = 0;
   err_procs = ihash_create(&(*pc)->procs);
   err_ttys = ihash_create(&(*pc)->ttys);
   err_ttys_by_cttyid = ihash_create(&(*pc)->ttys_by_cttyid);
