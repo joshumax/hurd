@@ -326,15 +326,19 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 
       while (length > 0 && !err)
 	{
-	  int modified;
 	  block_t block = boffs_block (offs);
 
-	  spin_lock (&modified_global_blocks_lock);
-	  modified = clear_bit (block, modified_global_blocks);
-	  spin_unlock (&modified_global_blocks_lock);
-
-	  if (modified)
-	    /* This block's been modified, so write it out.  */
+	  /* We don't clear the block modified bit here because this paging
+	     write request may not be the same one that actually set the bit,
+	     and our copy of the page may be out of date; we have to leave
+	     the bit on in case a paging write request corresponding to the
+	     modification comes along later.  The bit is only actually ever
+	     cleared if the block is allocated to a file, so this results in
+	     excess writes of blocks from modified pages.  Unfortunately I
+	     know of no way to get arount this given the current external
+	     paging interface.  XXXX */
+	  if (test_bit (block, modified_global_blocks))
+	    /* This block may have been modified, so write it out.  */
 	    err = pending_blocks_add (&pb, block);
 	  else
 	    /* Otherwise just skip it.  */
