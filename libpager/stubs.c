@@ -17,7 +17,7 @@
 
 
 error_t
-seqnos_memory_object_copy (mach_port_t old,
+_pager_seqnos_memory_object_copy (mach_port_t old,
 			   mach_port_seqno_t seq,
 			   memory_object_control_t old_ctl,
 			   vm_offset_t off,
@@ -29,7 +29,7 @@ seqnos_memory_object_copy (mach_port_t old,
 }
 
 error_t
-seqnos_memory_object_data_write (mach_port_t old,
+_pager_seqnos_memory_object_data_write (mach_port_t old,
 				 mach_port_seqno_t seq,
 				 mach_port_t ctl,
 				 vm_offset_t off,
@@ -41,7 +41,7 @@ seqnos_memory_object_data_write (mach_port_t old,
 }
 
 error_t
-seqnos_memory_object_supply_completed (mach_port_t obj,
+_pager_seqnos_memory_object_supply_completed (mach_port_t obj,
 				       mach_port_seqno_t seq,
 				       mach_port_t ctl,
 				       vm_offset_t off,
@@ -54,7 +54,7 @@ seqnos_memory_object_supply_completed (mach_port_t obj,
 }
 
 error_t
-seqnos_memory_object_change_completed (mach_port_t obj,
+_pager_seqnos_memory_object_change_completed (mach_port_t obj,
 				       mach_port_seqno_t seq,
 				       boolean_t maycache,
 				       memory_object_copy_strategy_t strat)
