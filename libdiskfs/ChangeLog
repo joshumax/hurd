@@ -3,6 +3,9 @@ Fri Jul 19 21:19:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* filedev.c (diskfs_get_file_device): INTS[3] contains the number
 	of runs, not the number of offsets (which is 2*NUM_RUNS).
 
+	* opts-std-startup.c (startup_options, parse_startup_opt): Remove
+	the --version option, which is handled elsewhere now.
+
 Thu Jul 18 23:05:56 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* protid-make.c (diskfs_start_protid): Use noinstall version of
