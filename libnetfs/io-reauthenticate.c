@@ -44,7 +44,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   newpi = netfs_make_protid (user->po, 0);
 
   newright = ports_get_right (newpi);
-  err = mach_port_insert_right (mach_task_self (), newpi, newpi,
+  err = mach_port_insert_right (mach_task_self (), newright, newright,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
   do
