@@ -49,10 +49,11 @@ usage(status)
   -a, --all-users            List other users' processes\n\
       --fmt=FMT              Use the output-format FMT\n\
                              FMT may be `default', `user', `vmem', `long',\n\
-                             `hurd', `hurd-long', or a format-string\n\
+                             `jobc', `hurd', `hurd-long', or a format-string\n\
   -g                         Include session leaders\n\
   -H, --no-header            Don't print a descriptive header line\n\
-  -l                         Use the `long' output-format'\n\
+  -j                         Use the `jobc' output-format\n\
+  -l                         Use the `long' output-format\n\
       --login[=LID]	     Add the processes from the login collection LID\n\
                              (which defaults that of the current process)\n\
   -M, --no-msg-port          Don't show info that uses a process's msg port\n\
@@ -66,8 +67,8 @@ usage(status)
                              defaults to the sid of the current process)\n
       --sort=FIELD           Sort the output with respect to FIELD\n\
   -t, --threads		     Show the threads for each process\n\
-  -u                         Use the `user' output-format'\n\
-  -v                         Use the `vmem' output-format'\n\
+  -u                         Use the `user' output-format\n\
+  -v                         Use the `vmem' output-format\n\
   -x                         Include orphaned processes\n\
 ");
     }
@@ -130,7 +131,7 @@ char *procset_names[] =
 #define OPT_FMT		-5
 #define OPT_HELP	-6
 
-#define SHORT_OPTIONS "agHlMPQrtuvx"
+#define SHORT_OPTIONS "agHjlMPQrtuvx"
 
 static struct option options[] =
 {
@@ -152,21 +153,29 @@ static struct option options[] =
 
 /* The names of various predefined output formats.  */
 char *fmt_names[] =
-  {"default", "user", "vmem", "long", "hurd", "hurd-long", 0};
+  {"default",	"user",	"vmem",	"long",	"jobc",	"hurd",	"hurd-long", 0};
 /* How each of those formats should be sorted; */
 char *fmt_sortkeys[] =
-  {"pid", "%cpu", "%mem", "pid", "pid", "pid"};
+  {"pid",	"%cpu",	"%mem",	"pid",	"pid",	"pid",	"pid"};
 /* and whether the sort should be backwards or forwards; */ 
 bool fmt_sortrev[] =
-  {FALSE, TRUE, TRUE, FALSE, FALSE, FALSE};
+  {FALSE,	TRUE,	TRUE,	FALSE,	FALSE,	FALSE,	FALSE};
 /* and the actual format strings.  */
 char *fmts[] =
 {
+  /* default */
   "~PID ~TH# ~TT=tty ~STAT=state ~TIME ~COMMAND=args",
+  /* user (-u) */
   "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ=vsize ~RSS=rsize ~TT=tty ~STAT=state ~COMMAND=args",
+  /* vmem (-v) */
   "~PID ~TH# ~STAT=state ~SL=sleep ~PAGEIN=pgins ~FAULTS=pgflts ~COWFLT=cowflts ~ZFILLS ~SIZE=vsize ~RSS=rsize ~%CPU ~%MEM ~COMMAND=args",
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGIN=msgin ~MSGOUT=msgout ~SZ=vsize ~RSS=rsize ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  /* long (-l) */
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGIN ~MSGOUT ~SZ=vsize ~RSS=rsize ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  /* jobc (-j) */
+  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  /* hurd */
   "~PID ~Th# ~UID ~NTh ~VMem=vsize ~RSS=rsize ~User=utime ~System=stime ~Args",
+  /* hurd-long */
   "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS=rsize ~%CPU ~User=utime ~System=stime ~Args"
 };
 
@@ -244,6 +253,8 @@ main(int argc, char *argv[])
 	fmt_string = "user"; break;
       case 'v':
 	fmt_string = "vmem"; break;
+      case 'j':
+	fmt_string = "jobc"; break;
       case 'l':
 	fmt_string = "long"; break;
       case 'M':
