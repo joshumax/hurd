@@ -31,6 +31,7 @@ _pager_lock_object (struct pager *p,
 		    int sync)
 {
   struct lock_request *lr = 0;
+  struct anticipation *ant;
 
   mutex_lock (&p->interlock);
   if (p->pager_state != NORMAL)
