@@ -17,4 +17,4 @@
 
 dir := doc
 include ../Makeconf
-DIST_FILES = hurd.texi Makefile
+DIST_FILES = hurd.texi Makefile ChangeLog
