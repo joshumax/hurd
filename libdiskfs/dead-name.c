@@ -34,6 +34,7 @@ ports_dead_name (void *notify, mach_port_t dead_name)
       if (dead_name == np->sockaddr)
 	{
 	  mach_port_deallocate (mach_task_self (), np->sockaddr);
+	  np->sockaddr = MACH_PORT_NULL;
 	  diskfs_nput (np);
 	}
       else
