@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -54,16 +54,18 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
 {
   struct node *np = cookie1;
   mach_port_t *dotdot = cookie2;
-  struct protid *newpi = 
-    diskfs_make_protid (diskfs_make_peropen (np, flags, *dotdot),
-			&np->dn_stat.st_uid, 1, &np->dn_stat.st_gid, 1);
-
-  *underlying = ports_get_right (newpi);
-  *underlying_type = MACH_MSG_TYPE_MAKE_SEND;
-
-  ports_port_deref (newpi);
-
-  return 0;
+  struct protid *cred;
+  error_t err =
+    diskfs_create_protid (diskfs_make_peropen (np, flags, *dotdot),
+			  &np->dn_stat.st_uid, 1, &np->dn_stat.st_gid, 1,
+			  &cred);
+  if (! err)
+    {
+      *underlying = ports_get_right (cred);
+      *underlying_type = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (cred);
+    }
+  return err;
 }
 
 fshelp_fetch_root_callback1_t _diskfs_translator_callback1 =
