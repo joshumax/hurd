@@ -1,5 +1,5 @@
 /* diskfs_startup_diskfs -- advertise our fsys control port to our parent FS.
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -35,19 +35,21 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 
   if (bootstrap != MACH_PORT_NULL)
     {
-      _diskfs_ncontrol_ports++;
-      newpi = ports_allocate_port (diskfs_port_bucket,
-				   sizeof (struct port_info),
-				   diskfs_control_class);
-      errno = fsys_startup (bootstrap, flags, ports_get_right (newpi),
-			    MACH_MSG_TYPE_MAKE_SEND, &realnode);
-      ports_port_deref (newpi);
+      errno = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+				 sizeof (struct port_info), &newpi);
+      if (! errno)
+	{
+	  errno = fsys_startup (bootstrap, flags, ports_get_right (newpi),
+				MACH_MSG_TYPE_MAKE_SEND, &realnode);
+	  ports_port_deref (newpi);
+	}
       if (errno)
 	{
 	  perror ("Translator startup failure: fsys_startup");
 	  exit (1);
 	}
       mach_port_deallocate (mach_task_self (), bootstrap);
+      _diskfs_ncontrol_ports++;
     }
   else
     {
