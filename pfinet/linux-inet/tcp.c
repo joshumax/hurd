@@ -812,7 +812,10 @@ void tcp_err(int err, unsigned char *header, unsigned long daddr,
  *	sorting using two queues as data arrives makes life so much harder.
  */
 
-static int tcp_readable(struct sock *sk)
+#ifndef _HURD_
+static 
+#endif
+int tcp_readable(struct sock *sk)
 {
 	unsigned long counted;
 	unsigned long amount;
