@@ -1,3 +1,9 @@
+Thu Feb 13 16:46:59 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c, argp-help.c, argp-fmtstream.c, argp-pvh.c,
+ 	argp-test.c, argp-fs-xinl.c, argp-xinl.c
+	[HAVE_CONFIG_H] <config.h>: New include.
+
 Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-fmtstream.c (_GNU_SOURCE): New macro.
