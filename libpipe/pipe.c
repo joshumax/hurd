@@ -55,7 +55,6 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
   condition_init (&new->pending_selects);
   mutex_init (&new->lock);
 
-  new->interrupt_seq_num = 0;
   pq_create (&new->queue);  
 
   *pipe = new;
