@@ -1,3 +1,10 @@
+Thu Jul 18 22:59:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* create-port-noinstall.c: New file.
+	* create-port.c (ports_create_port): Guts deleted; call new work
+	function. 
+	* create-internal.c:  New file; all the guts from create-port.c.
+
 Wed Jul  3 14:13:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* get-right.c (ports_get_right): Supply correct sync value in
