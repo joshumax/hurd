@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -20,7 +20,7 @@
 
 #include "ports.h"
 #include <stdlib.h>
-#include <assert.h>
+#include <errno.h>
 
 struct port_class *
 ports_create_class (void (*clean_routine)(void *),
@@ -29,7 +29,12 @@ ports_create_class (void (*clean_routine)(void *),
   struct port_class *cl;
   
   cl = malloc (sizeof (struct port_class));
-  assert (cl);
+  if (! cl)
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+
   cl->clean_routine = clean_routine;
   cl->dropweak_routine = dropweak_routine;
   cl->flags = 0;
