@@ -23,12 +23,15 @@
 #include <ctype.h>
 #include <error.h>
 
+#include "parse.h"
+
 /* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
    empty and DEFAULT_ADD_FN isn't NULL, then call DEFAULT_ADD_FN instead. */
-void
+error_t
 _parse_strlist (char *arg,
-		void (*add_fn)(const char *str), void (*default_add_fn)(),
-		const char *type_name)
+		error_t (*add_fn)(const char *str, struct argp_state *state),
+		error_t (*default_add_fn)(struct argp_state *state),
+		const char *type_name, struct argp_state *state)
 {
   if (arg)
     while (isspace(*arg))
@@ -36,11 +39,15 @@ _parse_strlist (char *arg,
 
   if (arg == NULL || *arg == '\0')
     if (default_add_fn)
-      (*default_add_fn)();
+      return (*default_add_fn)(state);
     else
-      error(7, 0, "Empty %s list", type_name);
+      {
+	argp_error (state, "Empty %s list", type_name);
+	return EINVAL;
+      }
   else
     {
+      error_t err = 0;
       char *end = arg;
 
       void mark_end()
@@ -49,46 +56,54 @@ _parse_strlist (char *arg,
 	  while (isspace(*end))
 	    end++;
 	}
-      void parse_element()
+      error_t parse_element()
 	{
-	  if (*arg == '\0')
-	    error(7, 0, "Empty element in %s list", type_name);
-	  (*add_fn)(arg);
+	  char *cur = arg;
+	  if (*cur == '\0')
+	    {
+	      argp_error (state, "Empty element in %s list", type_name);
+	      return EINVAL;
+	    }
 	  arg = end;
+	  return (*add_fn)(cur, state);
 	}
 
-      while (*end != '\0')
+      while (*end != '\0' && !err)
 	switch (*end)
 	  {
 	  case ' ': case '\t':
 	    mark_end();
 	    if (*end == ',')
 	      mark_end();
-	    parse_element();
+	    err = parse_element();
 	    break;
 	  case ',':
 	    mark_end();
-	    parse_element();
+	    err = parse_element();
 	    break;
 	  default:
 	    end++;
 	  }
 
-      parse_element();
+      if (! err)
+	err = parse_element();
+
+      return err;
     }
 }
 
 /* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
    empty and DEFAULT_FN isn't NULL, then call ADD_FN on the resutl of calling
    DEFAULT_FN instead, otherwise signal an error.  */
-void
+error_t
 parse_strlist (char *arg,
-	       void (*add_fn)(const char *str),
-	       const char *(*default_fn)(),
-	       const char *type_name)
+	       error_t (*add_fn)(const char *str, struct argp_state *state),
+	       const char *(*default_fn)(struct argp_state *state),
+	       const char *type_name, struct argp_state *state)
 {
-  void default_str_add() { (*add_fn)((*default_fn)()); }
-  _parse_strlist(arg, add_fn, default_str_add, type_name);
+  error_t default_str_add (struct argp_state *state)
+    { return (*add_fn)((*default_fn)(state), state); }
+  return _parse_strlist (arg, add_fn, default_str_add, type_name, state);
 }
 
 /* For each numeric string in the comma-separated list in ARG, call ADD_FN;
@@ -97,30 +112,33 @@ parse_strlist (char *arg,
    list isn't a number, and LOOKUP_FN isn't NULL, then it is called to return
    an integer for the string.  LOOKUP_FN should signal an error itself it
    there's some problem parsing the string.  */
-void
+error_t
 parse_numlist (char *arg,
-	       void (*add_fn)(unsigned num),
-	       int (*default_fn)(),
-	       int (*lookup_fn)(const char *str),
-	       const char *type_name)
+	       error_t (*add_fn)(unsigned num, struct argp_state *state),
+	       int (*default_fn)(struct argp_state *state),
+	       int (*lookup_fn)(const char *str, struct argp_state *state),
+	       const char *type_name, struct argp_state *state)
 {
-  void default_num_add() { (*add_fn)((*default_fn)()); }
-  void add_num_str(const char *str)
+  error_t default_num_add() { return (*add_fn)((*default_fn)(state), state); }
+  error_t add_num_str(const char *str, struct argp_state *state)
     {
       const char *p;
       for (p = str; *p != '\0'; p++)
 	if (!isdigit(*p))
 	  {
 	    if (lookup_fn)
-	      (*add_fn)((*lookup_fn)(str));
+	      return (*add_fn)((*lookup_fn)(str, state), state);
 	    else
-	      error (7, 0, "%s: Invalid %s", p, type_name);
-	    return;
+	      {
+		argp_error (state, "%s: Invalid %s", p, type_name);
+		return EINVAL;
+	      }
+	    return 0;
 	  }
-      (*add_fn)(atoi(str));
+      return (*add_fn) (atoi (str), state);
     }
-  _parse_strlist(arg, add_num_str, default_fn ? default_num_add : 0,
-		 type_name);
+  return _parse_strlist(arg, add_num_str, default_fn ? default_num_add : 0,
+			type_name, state);
 }
 
 /* Return the index of which of a set of strings ARG matches, including
@@ -132,8 +150,10 @@ parse_numlist (char *arg,
    program exits in this event.  If ARG is an ambiguous match, an error
    message is printed and the program exits.  */
 int 
-parse_enum (char *arg, const char *(*choice_fn)(unsigned n),
-            char *kind, int allow_mismatches)
+parse_enum (const char *arg,
+	    const char *(*choice_fn)(unsigned n),
+            const char *kind, int allow_mismatches,
+	    struct argp_state *state)
 {
   const char *choice;
   int arglen = strlen (arg);
@@ -147,14 +167,17 @@ parse_enum (char *arg, const char *(*choice_fn)(unsigned n),
       {
 	if (strncasecmp (choice, arg, arglen) == 0)
 	  if (partial_match >= 0)
-	    error (7, 0, "%s: Ambiguous %s", arg, kind);
+	    {
+	      argp_error (state, "%s: Ambiguous %s", arg, kind);
+	      return -1;
+	    }
 	  else
 	    partial_match = n;
 	n++;
       }
 
   if (partial_match < 0 && !allow_mismatches)
-    error (7, 0, "%s: Invalid %s", arg, kind);
+    argp_error (state, "%s: Invalid %s", arg, kind);
 
   return partial_match;
 }
