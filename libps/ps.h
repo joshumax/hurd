@@ -488,8 +488,15 @@ struct ps_fmt_spec
 		   int width, FILE *str, unsigned *count);
 
     /* A function that, given two pses and a getter, will compare what
-       the getter gets for each ps, and return an integer ala qsort */
+       the getter gets for each ps, and return an integer ala qsort.  This
+       may be NULL, in which case values in this field cannot be compared.  */
     int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter);
+
+    /* A function that, given a ps and a getter, will return true if what the
+       getter gets from the ps is `nominal' -- a default unexciting value.
+       This may be NULL, in which case values in this field are _always_
+       exciting...  */
+    bool (*nominal_fn)(proc_stat_t ps, ps_getter_t getter);
 
     /* The default width of the field that this spec will be printed in if not
        overridden.  */
@@ -500,6 +507,7 @@ struct ps_fmt_spec
 #define ps_fmt_spec_name(spec) ((spec)->name)
 #define ps_fmt_spec_output_fn(spec) ((spec)->output_fn)
 #define ps_fmt_spec_compare_fn(spec) ((spec)->cmp_fn)
+#define ps_fmt_spec_nominal_fn(spec) ((spec)->nominal_fn)
 #define ps_fmt_spec_getter(spec) ((spec)->getter)
 #define ps_fmt_spec_default_width(spec) ((spec)->default_width)
 
@@ -614,11 +622,17 @@ error_t ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count);
 error_t ps_fmt_write_proc_stat(ps_fmt_t fmt,
 			       proc_stat_t ps, FILE *stream, unsigned *count);
 
+/* Remove those fields from FMT for which the function FN, when called on the
+   field's format spec, returns true.  Appropiate inter-field characters are
+   also removed: those *following* deleted fields at the beginning of the
+   fmt, and those *preceeding* deleted fields *not* at the beginning. */
+void ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec));
+
 /* Remove those fields from FMT which would need the proc_stat flags FLAGS.
    Appropiate inter-field characters are also removed: those *following*
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning.  */
-void ps_fmt_squash(ps_fmt_t fmt, ps_flags_t flags);
+void ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags);
 
 /* ---------------------------------------------------------------- */
 /* A PROC_STAT_LIST_T represents a list of proc_stat_t's */
@@ -760,6 +774,13 @@ error_t proc_stat_list_add_threads(proc_stat_list_t pp);
 
 error_t proc_stat_list_remove_threads(proc_stat_list_t pp);
 
+/* Calls FN in order for each proc_stat in PP.  If FN ever returns a non-zero
+   value, then the iteration is stopped, and the value is returned
+   immediately; otherwise, 0 is returned.  */
+int proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps));
+
+/* Returns true if SPEC is `nominal' in every entry in PP.  */
+bool proc_stat_list_spec_nominal (proc_stat_list_t pp, ps_fmt_spec_t spec);
 
 /* ---------------------------------------------------------------- */
 /*
