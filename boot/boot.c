@@ -142,6 +142,7 @@ ioctl (int fd, int code, void *buf)
 #define LNOFLSH 0x8000
 #define RAW 0x0020
 #define ANYP 0x00c0
+#define ECHO 8
 
 
 struct sgttyb
@@ -628,6 +629,7 @@ S_tioctl_tiocseta (mach_port_t port,
       bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
       ioctl (0, TIOCLSET, &bits);
       sgb = term_sgb;
+      sgb.flags &= ~ECHO;
       sgb.flags |= RAW | ANYP;
       ioctl (0, TIOCSETN, &sgb);
     }
@@ -1152,7 +1154,36 @@ S_io_select (mach_port_t object,
 	     int tag,
 	     int *result)
 {
-  return EOPNOTSUPP;
+  fd_set r, w, x;
+  int n;
+
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+
+  FD_ZERO (&r);
+  FD_ZERO (&w);
+  FD_ZERO (&x);
+  FD_SET (0, &r);
+  FD_SET (0, &w);
+  FD_SET (0, &x);
+
+  n = select (1,
+	      (type & SELECT_READ) ? &r : 0,
+	      (type & SELECT_WRITE) ? &w : 0,
+	      (type & SELECT_URG) ? &x : 0,
+	      0);
+  if (n < 0)
+    return errno;
+
+  if (! FD_ISSET (0, &r))
+    type &= ~SELECT_READ;
+  if (! FD_ISSET (0, &w))
+    type &= ~SELECT_WRITE;
+  if (! FD_ISSET (0, &x))
+    type &= ~SELECT_URG;
+
+  *result = type;
+  return 0;
 }
 
 kern_return_t
