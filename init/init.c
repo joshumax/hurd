@@ -1,6 +1,6 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -267,8 +267,10 @@ reboot_system (int flags)
 	      u_int pisize = 0;
 	      char *noise;
 	      unsigned noise_len;
-	      err = proc_getprocinfo (procserver, pp[ind], 0,
-				      (int **)&pi, &pisize, &noise,&noise_len);
+	      int flags;
+	      err = proc_getprocinfo (procserver, pp[ind], &flags,
+				      (int **)&pi, &pisize,
+				      &noise, &noise_len);
 	      if (err == MACH_SEND_INVALID_DEST)
 		goto procbad;
 	      if (err)
@@ -726,7 +728,7 @@ init_stdarrays ()
   __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
 
-  /* MAKE_SEND is safe in these transactions because we destroy REF 
+  /* MAKE_SEND is safe in these transactions because we destroy REF
      ourselves each time. */
   pt = getcwdir ();
   ref = mach_reply_port ();
