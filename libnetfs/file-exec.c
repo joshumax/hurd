@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -122,8 +122,7 @@ netfs_S_file_exec (struct protid *cred,
   if (! err)
     {
       struct protid *newpi =
-	netfs_make_protid (netfs_make_peropen (np, O_READ,
-					       cred->po->dotdotport),
+	netfs_make_protid (netfs_make_peropen (np, O_READ, cred->po),
 			   iohelp_dup_iouser (cred->user));
       err = exec_exec (_netfs_exec, 
 		       ports_get_right (newpi),
