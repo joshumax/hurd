@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -184,10 +184,10 @@ netfs_S_dir_lookup (struct protid *diruser,
 	goto out;
 
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && ((np->nn_stat.st_mode & S_IPTRANS)
-	      || S_ISFIFO (np->nn_stat.st_mode)
-	      || S_ISCHR (np->nn_stat.st_mode)
-	      || S_ISBLK (np->nn_stat.st_mode)
+	  && ((np->nn_translated & S_IPTRANS)
+	      || S_ISFIFO (np->nn_translated)
+	      || S_ISCHR (np->nn_translated)
+	      || S_ISBLK (np->nn_translated)
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
@@ -205,12 +205,12 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      if (err)
 		return err;
 
-	      switch (np->nn_stat.st_mode & S_IFMT)
+	      switch (np->nn_translated & S_IFMT)
 		{
 		case S_IFCHR:
 		case S_IFBLK:
 		  if (asprintf (argz, "%s%c%d%c%d",
-				(S_ISCHR (np->nn_stat.st_mode)
+				(S_ISCHR (np->nn_translated)
 				 ? _HURD_CHRDEV : _HURD_BLKDEV),
 				0, major (np->nn_stat.st_rdev),
 				0, minor (np->nn_stat.st_rdev)) < 0)
@@ -258,7 +258,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 					 dirport,
 					 diruser->user,
 					 lastcomp ? flags : 0,
-					 ((np->nn_stat.st_mode & S_IPTRANS)
+					 ((np->nn_translated & S_IPTRANS)
 					 ? _netfs_translator_callback1
 					   : short_circuited_callback1),
 					 _netfs_translator_callback2,
@@ -286,7 +286,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  error = 0;
 	}
 
-      if (S_ISLNK (np->nn_stat.st_mode)
+      if (S_ISLNK (np->nn_translated)
 	  && (!lastcomp
 	      || mustbedir	/* "foo/" must see that foo points to a dir */
 	      || !(flags & (O_NOLINK|O_NOTRANS))))

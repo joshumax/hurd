@@ -74,6 +74,10 @@ struct node
 
   /* The stat information for this particular node.  */
   struct stat nn_stat;
+  /* The S_IPTRANS and S_IFMT bits here are examined instead of nn_stat.st_mode
+     to decide whether to do passive translator processing.  Other bits
+     are ignored, so you can set this to nn_stat.st_mode if you want that.  */
+  mode_t nn_translated;
 
   struct mutex lock;
 
