@@ -49,11 +49,18 @@ netfs_S_io_identity (struct protid *cred,
 	}
     }
   
+  err = netfs_validate_stat (np, cred->credential);
+  if (err)
+    {
+      mutex_unlock (&np->lock);
+      return err;
+    }
+
   *id = np->identity;
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
   *fsys = netfs_fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
-  *fileno = np->dn_stat.st_ino;
+  *fileno = np->nn_stat.st_ino;
   
   mutex_unlock (&np->lock);
   return 0;
