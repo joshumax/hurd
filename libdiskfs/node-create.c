@@ -35,6 +35,9 @@ diskfs_create_node (struct node *dir,
   struct node *np;
   error_t err;
   
+  if (diskfs_readonly)
+    return EROFS;
+
   /* Make the node */
   err = diskfs_alloc_node (dir, mode, newnode);
   if (err)
