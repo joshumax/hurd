@@ -22,6 +22,8 @@
 
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
+spin_lock_t unlocked_pagein_lock = SPIN_LOCK_INITIALIZER;
+
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
 #else
@@ -34,15 +36,18 @@ struct port_bucket *pager_bucket;
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
    return, then release that mutex after I/O on the data has
    completed.  Set DISKSIZE to be the amount of valid data on disk.
-   (If this is an unallocated block, then set *ADDR to zero.)  */
+   (If this is an unallocated block, then set *ADDR to zero.) 
+   ISREAD is non-zero iff this is for a pagein. */
 static error_t
 find_address (struct user_pager_info *upi,
 	      vm_address_t offset,
 	      daddr_t *addr,
 	      int *disksize,
-	      struct rwlock **nplock)
+	      struct rwlock **nplock,
+	      int isread)
 {
   error_t err;
+  struct rwlock *lock;
 
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
@@ -60,12 +65,58 @@ find_address (struct user_pager_info *upi,
 
       np = upi->np;
 
-      rwlock_reader_lock (&np->dn->allocptrlock);
-      *nplock = &np->dn->allocptrlock;
+      if (isread)
+	{
+	try_again:
+	  
+	  /* If we should allow an unlocked pagein, do so.  (This
+	     still has a slight race; there could be a pageout in progress
+	     which is blocked on NP->np->allocptrlock itself.  In that
+	     case the pagein that should proceed unimpeded is blocked
+	     in the pager library waiting for the pageout to complete.
+	     I think this is sufficiently rare to put it off for the time
+	     being.) */
 
+	  spin_lock (&unlocked_pagein_lock);
+	  if (offset >= upi->allow_unlocked_pagein
+	      && (offset + vm_page_size
+		  <= upi->allow_unlocked_pagein + upi->unlocked_pagein_length))
+	    {
+	      spin_unlock (&unlocked_pagein_lock);
+	      *nplock = 0;
+	      goto have_lock;
+	    }
+	  spin_unlock (&unlocked_pagein_lock);
+
+	  /* Block on the rwlock if necessary; but when we wake up,
+	     don't acquire it; check again from the top.
+	     This is mutated inline from rwlock.h.  */
+	  lock = &np->dn->allocptrlock;
+	  mutex_lock (&lock->master);
+	  if (lock->readers == -1 || lock->writers_waiting)
+	    {
+	      lock->readers_waiting++;
+	      condition_wait (&lock->wakeup, &lock->master);
+	      lock->readers_waiting--;
+	      mutex_unlock (&lock->master);
+	      goto try_again;
+	    }
+	  lock->readers++;
+	  mutex_unlock (&lock->master);
+	  *nplock = lock;
+	}
+      else
+	{
+	  rwlock_reader_lock (&np->dn->allocptrlock);
+	  *nplock = &np->dn->allocptrlock;
+	}
+
+    have_lock:
+      
       if (offset >= np->allocsize)
 	{
-	  rwlock_reader_unlock (&np->dn->allocptrlock);
+	  if (*nplock)
+	    rwlock_reader_unlock (*nplock);
 	  return EIO;
 	}
 
@@ -75,8 +126,8 @@ find_address (struct user_pager_info *upi,
 	*disksize = __vm_page_size;
 
       err = fetch_indir_spec (np, lblkno (sblock, offset), indirs);
-      if (err)
-	rwlock_reader_unlock (&np->dn->allocptrlock);
+      if (err && *nplock)
+	rwlock_reader_unlock (*nplock);
       else
 	{
 	  if (indirs[0].bno)
@@ -104,7 +155,7 @@ pager_read_page (struct user_pager_info *pager,
   daddr_t addr;
   int disksize;
 
-  err = find_address (pager, page, &addr, &disksize, &nplock);
+  err = find_address (pager, page, &addr, &disksize, &nplock, 1);
   if (err)
     return err;
 
@@ -143,7 +194,7 @@ pager_write_page (struct user_pager_info *pager,
   struct rwlock *nplock;
   error_t err;
 
-  err = find_address (pager, page, &addr, &disksize, &nplock);
+  err = find_address (pager, page, &addr, &disksize, &nplock, 0);
   if (err)
     return err;
 
@@ -490,6 +541,8 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	upi->type = FILE_DATA;
 	upi->np = np;
 	upi->max_prot = prot;
+	upi->allow_unlocked_pagein = 0;
+	upi->unlocked_pagein_length = 0;
 	diskfs_nref_light (np);
 	upi->p = pager_create (upi, pager_bucket,
 			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
