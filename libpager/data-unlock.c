@@ -35,7 +35,7 @@ seqnos_memory_object_data_unlock (mach_port_t object,
   daddr_t *slot;
   daddr_t *table;
   
-  if (!(p = check_port_type (object, PT_PAGER)))
+  if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
 
   mutex_lock (&p->interlock);
@@ -89,7 +89,7 @@ seqnos_memory_object_data_unlock (mach_port_t object,
 	 to issue an error.  */
       lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 1,
 		   VM_PROT_WRITE, 1);
-      mark_next_request_error (p, offset, length, err);
+      _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
   done_with_port (p);
