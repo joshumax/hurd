@@ -22,47 +22,16 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "timefmt.h"
+
+#define SECOND 	1
 #define MINUTE	60
 #define HOUR	(60*MINUTE)
 #define DAY	(24*HOUR)
 #define WEEK 	(7*DAY)
 #define MONTH   (31*DAY)	/* Not strictly accurate, but oh well.  */
 #define YEAR    (365*DAY)	/* ditto */
-
-/* XXX move this somewhere else.  */
-int 
-fmt_frac_value (int value, unsigned min_value_len,
-		unsigned frac, unsigned frac_scale,
-		unsigned width, char *buf, unsigned buf_len)
-{
-  unsigned value_len;
-  unsigned frac_len;
-  unsigned len = 0;
-
-  if (value >= 100)		/* the integer part */
-    value_len = 3;
-  else if (value >= 10)
-    value_len = 2;
-  else
-    value_len = 1;
-
-  while (value_len < min_value_len-- && len < buf_len)
-    *buf++ = '0', len++;
-
-  for (frac_len = frac_scale
-       ; frac_len > 0 && (width < value_len + 1 + frac_len || frac % 10 == 0)
-       ; frac_len--)
-    frac /= 10;
-
-  if (frac_len > 0)
-    len +=
-      snprintf (buf + len, buf_len - len, "%d.%0*d", value, frac_len, frac);
-  else
-    len += snprintf (buf + len, buf_len - len, "%d", value);
-
-  return len;
-}
-
+
 /* Returns the number of digits in the integer N.  */
 static unsigned
 int_len (unsigned n)
@@ -86,12 +55,12 @@ tv_div (struct timeval *tv1, struct timeval *tv2)
 	: (tv1->tv_usec / tv2->tv_usec
 	   + (tv1->tv_sec ? tv1->tv_sec * 1000000 / tv2->tv_usec : 0));
 }
-
+
 /* Format into BUF & BUF_LEN the time interval represented by TV, trying to
    make the result less than WIDTH characters wide.  The number of characters
    used is returned.  */
-int
-fmt_named_interval (struct timeval *tv, int width, char *buf, unsigned buf_len)
+size_t
+fmt_named_interval (struct timeval *tv, size_t width, char *buf, size_t buf_len)
 {
   struct tscale
     {
@@ -157,106 +126,197 @@ fmt_named_interval (struct timeval *tv, int width, char *buf, unsigned buf_len)
 
   return sprintf (buf, "0");	/* Whatever */
 }
-
-static int 
-append_fraction (int frac, int digits, char *buf, unsigned max)
+
+/* Prints the number of units of size UNIT in *SECS, subtracting them from
+   *SECS, to BUF (the result *must* fit!), followed by SUFFIX; if the number
+   of units is zero, however, and *LEADING_ZEROS is false, print nothing (and
+   if something *is* printed, set *LEADING_ZEROS to true).  MIN_WIDTH is the
+   minimum *total width* (including other fields) needed to print these
+   units.  WIDTH is the amount of (total) space available.  The number of
+   characters printed is returned.  */
+static size_t
+add_field (int *secs, int unit, int *leading_zeros,
+	   size_t min_width, char *suffix,
+	   size_t width, char *buf)
 {
-  int slen = strlen (buf);
-  int left = max - slen;
-  if (left > 1)
+  int units = *secs / unit;
+  if (units || (width >= min_width && *leading_zeros))
     {
-      buf[slen] = '.';
-      left--;
-      while (digits > left)
-	frac /= 10, digits--;
-      sprintf (buf + slen + 1, "%0*d", digits, frac);
-      return slen + 1 + digits;
+      *secs -= units;
+      *leading_zeros = 1;
+      return
+	sprintf (buf,
+		  (width == min_width ? "%d%s"
+		   : width == min_width + 1 ? "%2d%s"
+		   : "%02d%s"),
+		  units, suffix);
     }
   else
-    return slen;
+    return 0;
 }
-
+
 /* Format into BUF & BUF_LEN the time interval represented by TV, using
-   HH:MM:SS notation where possible, and trying to make the result less than
-   WIDTH characters wide.  The number of characters used is returned.  */
-int
-fmt_seconds (struct timeval *tv, unsigned width, char *buf, unsigned buf_len)
+   HH:MM:SS notation where possible, with FRAC_PLACES digits after the
+   decimal point, and trying to make the result less than WIDTH characters
+   wide.  If LEADING_ZEROS is true, then any fields that are zero-valued, but
+   would fit in the given width are printed.  If FRAC_PLACES is negative,
+   then any space remaining after printing the time, up to WIDTH, is used for
+   the fraction.  The number of characters used is returned.  */
+size_t
+fmt_seconds (struct timeval *tv, int leading_zeros, int frac_places,
+	     size_t width, char *buf, size_t buf_len)
 {
+  char *p = buf;
+  int secs = tv->tv_sec;
+
   if (width <= 0 || width >= buf_len)
     width = buf_len - 1;
 
   if (tv->tv_sec > DAY)
     return fmt_named_interval (tv, width, buf, buf_len);
 
-  if (tv->tv_sec > HOUR)
-    if (width >= 8)
-      /* H:MM:SS.ss... */
-      return snprintf (buf, buf_len, "%2d:%02d:%02d",
-		       tv->tv_sec / HOUR,
-		       (tv->tv_sec % HOUR) / MINUTE, (tv->tv_sec % MINUTE))
-	+ append_fraction (tv->tv_usec, 6, buf, width);
-    else
-      return fmt_named_interval (tv, width, buf, buf_len);
-  else if (width >= 5 || tv->tv_sec > MINUTE)
-    /* M:SS.ss... */
-    return snprintf (buf, buf_len, "%2d:%02d",
-		     tv->tv_sec / MINUTE, tv->tv_sec % MINUTE)
-      + append_fraction (tv->tv_usec, 6, buf, width);
-  else
-    return fmt_frac_value (tv->tv_sec, 1, tv->tv_usec, 6, width, buf, buf_len);
-}
+  if (frac_places > 0)
+    width -= frac_places + 1;
 
-/* Format into BUF & BUF_LEN the time interval represented by TV, using
-   HH:MM notation where possible, and trying to make the result less than
-   WIDTH characters wide.  The number of characters used is returned.  */
-int
-fmt_minutes (struct timeval *tv, int width, char *buf, unsigned buf_len)
+  /* See if this time won't fit at all in fixed format.  */
+  if ((secs > 10*HOUR && width < 8)
+      || (secs > HOUR && width < 7)
+      || (secs > 10*MINUTE && width < 5)
+      || (secs > MINUTE && width < 4)
+      || (secs > 10 && width < 2)
+      || width < 1)
+    return fmt_named_interval (tv, width, buf, buf_len);
+
+  p += add_field (&secs, HOUR, &leading_zeros, 7, ":", width, p);
+  p += add_field (&secs, MINUTE, &leading_zeros, 4, ":", width, p);
+  p += add_field (&secs, SECOND, &leading_zeros, 1, "", width, p);
+
+  if (frac_places < 0 && (p - buf) < width - 2)
+    /* If FRAC_PLACES is < 0, then use any space remaining before WIDTH.  */
+    frac_places = width - (p - buf) - 1;
+
+  if (frac_places > 0)
+    /* Print fractions of a second.  */
+    {
+      int frac = tv->tv_usec, i;
+      for (i = 6; i > frac_places; i--)
+	frac /= 10;
+      *p++ = '.';
+      return (p - buf) + sprintf (p, ".%0*d", frac_places, frac);
+    }
+  else
+    return (p - buf);
+}
+
+/* Format into BUF & BUF_LEN the time interval represented by TV, using HH:MM
+   notation where possible, and trying to make the result less than WIDTH
+   characters wide.  If LEADING_ZEROS is true, then any fields that are
+   zero-valued, but would fit in the given width are printed.  The number of
+   characters used is returned.  */
+size_t
+fmt_minutes (struct timeval *tv, int leading_zeros,
+	     size_t width, char *buf, size_t buf_len)
 {
+  char *p = buf;
+  int secs = tv->tv_sec;
+
   if (width <= 0 || width >= buf_len)
     width = buf_len - 1;
 
-  if (tv->tv_sec > DAY)
+  if (secs > DAY)
     return fmt_named_interval (tv, width, buf, buf_len);
 
-  if (width >= 8)
-    /* H:MM:SS.ss... */
-    return snprintf (buf, buf_len, "%2d:%02d:%02d",
-		     tv->tv_sec / HOUR,
-		     (tv->tv_sec % HOUR) / MINUTE, (tv->tv_sec % MINUTE))
-      + append_fraction (tv->tv_usec, 6, buf, width);
-  else if (width >= 5 || (width >= 4 && tv->tv_sec < 10 * HOUR))
-    /* H:MM */
-    return sprintf (buf, "%2d:%02d",
-		    tv->tv_sec / HOUR, (tv->tv_sec % HOUR) / MINUTE);
-  else if ((tv->tv_sec >= 100 * MINUTE && width < 3) || tv->tv_sec > 3 * HOUR)
-    /* H: */
-    return snprintf (buf, buf_len, "%2d:", tv->tv_sec / HOUR);
-  else
-    /* M */
-    return snprintf (buf, buf_len, "%2d", tv->tv_sec / MINUTE);
-}
+  /* See if this time won't fit at all in fixed format.  */
+  if ((secs > 10*HOUR && width < 5)
+      || (secs > HOUR && width < 4)
+      || (secs > 10*MINUTE && width < 2)
+      || width < 1)
+    return fmt_named_interval (tv, width, buf, buf_len);
 
-#if 0
-int
+  p += add_field (&secs, HOUR, &leading_zeros, 4, ":", width, p);
+  p += add_field (&secs, MINUTE, &leading_zeros, 1, "", width, p);
+
+  return p - buf;
+}
+
+/* Format into BUF & BUF_LEN the absolute time represented by TV.  An attempt
+   is made to fit the result in less than WIDTH characters, by omitting
+   fields implied by the current time, NOW (if NOW is 0, then no assumption
+   is made, so the resulting times will be somewhat long).  The number of
+   characters used is returned.  */
+size_t
 fmt_past_time (struct timeval *tv, struct timeval *now,
-	  int width, char *buf, unsigned buf_len)
+	       size_t width, char *buf, size_t buf_len)
 {
-  struct tm tm, now_tm;
-  char day[10], month[10], time[20];
-  long diff = now->tv_sec - tv->tv_sec;
+  static char *time_fmts[] = { "%-r", "%l:%M%p", "%l%p", 0 };
+  static char *week_fmts[] = { "%A,", "%a,", "%a", 0 };
+  static char *month_fmts[] = { "%A, %-d", "%a, %-d", "%a %-d", "%a%-d", 0 };
+  static char *date_fmts[] =
+    { "%A, %-d %B", "%a, %-d %b", "%-d %B", "%-d %b", "%-d%b", 0 };
+  static char *year_fmts[] =
+    { "%A, %-d %B %Y", "%a, %-d %b %Y", "%a, %-d %b %y", "%-d %b %y", "%-d%b%y", 0 };
+  struct tm tm;
+  int used = 0;			/* Number of characters generated.  */
+  long diff = now ? (now->tv_sec - tv->tv_sec) : tv->tv_sec;
 
   if (diff < 0)
     diff = -diff;		/* XXX */
 
-  bcopy (tm, localtime (&tv.tv_sec), sizeof (tm));
-  bcopy (now_tm, localtime (&now.tv_sec), sizeof (now_tm));
+  bcopy (localtime (&tv->tv_sec), &tm, sizeof tm);
 
-  strftime (time, sizeof (time), "%r", tv);
-  if (tm.tm_yday != now_tm.tm_yday || tm.tm_year != now_tm.tm_year)
-    strftime (day, sizeof (day), "%a", tv);
-  if (tm.tm_mon != now_tm.tm_mon)
-    strftime (month, sizeof (month), "%b", tv);
+  if (width <= 0 || width >= buf_len)
+    width = buf_len - 1;
 
-  
+  if (diff < DAY)
+    {
+      char **fmt;
+      for (fmt = time_fmts; *fmt && !used; fmt++)
+	used = strftime (buf, width + 1, *fmt, &tm);
+      if (! used)
+	/* Nothing worked, perhaps WIDTH is too small, but BUF_LEN will work.
+	   We know FMT is one past the end the array, so FMT[-1] should be
+	   the shortest possible option.  */
+	used = strftime (buf, buf_len, fmt[-1], &tm);
+    }
+  else
+    {
+      char **fmt, **dfmt, **dfmts;
+
+      if (diff < WEEK)
+	dfmts = week_fmts;
+      else if (diff < MONTH)
+	dfmts = month_fmts;
+      else if (diff < YEAR)
+	dfmts = date_fmts;
+      else
+	dfmts = year_fmts;
+
+      for (fmt = time_fmts; *fmt && !used; fmt++)
+	{
+	  for (dfmt = dfmts; *dfmt && !used; dfmt++)
+	    {
+	      char whole_fmt[strlen (*dfmt) + 1 + strlen (*fmt) + 1];
+	      char *end = whole_fmt;
+
+	      end = stpcpy (end, *dfmt);
+	      *end++ = ' ';
+	      end = stpcpy (end, *fmt);
+	      
+	      used = strftime (buf, width, whole_fmt, &tm);
+	    }
+	}
+
+      if (! used)
+	/* No concatenated formats worked, try just date formats.  */
+	for (dfmt = dfmts; *dfmt && !used; dfmt++)
+	  used = strftime (buf, width + 1, *dfmt, &tm);
+
+      if (! used)
+	/* Absolutely nothing has worked, perhaps WIDTH is too small, but
+	   BUF_LEN will work.  We know DFMT is one past the end the array, so
+	   DFMT[-1] should be the shortest possible option.  */
+	used = strftime (buf, buf_len, dfmt[-1], &tm);
+    }
+
+  return used;
 }
-#endif
