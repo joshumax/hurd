@@ -68,7 +68,7 @@ noise_write (const unsigned char *t, ssize_t max, FILE *s)
 	if (flush (&ok, t, s))
 	  return errno;
 
-	len += (is_cntl ? 2 : 3);
+	len += (is_cntl ? 2 : 4);
 	if (max >= 0 && len > max)
 	  break;
 
@@ -96,7 +96,7 @@ noise_len (const char *t, ssize_t max)
       len++;
     else
       {
-	size_t rep_len = iscntl (ch) ? 2 : 3;
+	size_t rep_len = iscntl (ch) ? 2 : 4;
 	if (max >= 0 && rep_len + len > max)
 	  break;
 	len += rep_len;
