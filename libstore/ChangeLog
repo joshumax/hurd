@@ -1,3 +1,18 @@
+Wed Feb 19 15:40:18 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeread.c (doc): Make doc string come after options.
+
+	* device.c (dev_set_flags): Correctly check for unenforcable runs.
+
+	* task.c: New file.
+	* Makefile (SRCS): Add task.c.
+	* store.h (store_task_class): New declaration.
+	(store_task_create, _store_task_create, store_open): New declarations.
+	* std.c (store_std_classes): Add &STORE_TASK_CLASS.
+
+	* xinl.c: Renamed from store.c.
+	* Makefile (SRCS): Change store.c to xinl.c.
+
 Mon Oct 21 22:03:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* store.h: Add extern inline protection.
