@@ -48,7 +48,7 @@ CFLAGS := $(filter-out -Wall,$(CFLAGS))
 lndist: lndist-i386-files
 
 lndist-i386-files: $(top_srcdir)/hurd-snap/$(dir)/i386
-	ln $(I386SRCS) $(I386HDRS) $<
+	ln $(addprefix $(srcdir)/,$(I386SRCS) $(I386HDRS)) $<
 
 $(top_srcdir)/hurd-snap/$(dir)/i386:
 	mkdir $@

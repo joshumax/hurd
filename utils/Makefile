@@ -25,7 +25,6 @@ special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c
-DIST_FILES = shd.ChangeLog
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 

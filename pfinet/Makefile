@@ -62,13 +62,13 @@ $(OBJS): config.h
 lndist: lndist-linux-inet-files lndist-linux-files lndist-asm-files
 
 lndist-linux-inet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-inet
-	ln $(addprefix linux-inet/,$(LINUXSRCS) $(UNUSEDSRC) $(LINUXHDRS)) $<
+	ln $(addprefix $(srcdir)/linux-inet/,$(LINUXSRCS) $(UNUSEDSRC) $(LINUXHDRS)) $<
 
 lndist-linux-files: $(top_srcdir)/hurd-snap/$(dir)/linux
-	ln $(addprefix linux/,$(FROBBEDLINUXHEADERS)) $<
+	ln $(addprefix $(srcdir)/linux/,$(FROBBEDLINUXHEADERS)) $<
 
 lndist-asm-files: $(top_srcdir)/hurd-snap/$(dir)/asm
-	ln $(addprefix asm/,$(ASMHEADERS)) $<
+	ln $(addprefix $(srcdir)/asm/,$(ASMHEADERS)) $<
 
 $(top_srcdir)/hurd-snap/$(dir)/linux-inet:
 	mkdir $@

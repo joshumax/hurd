@@ -232,7 +232,7 @@ endif
 # Making a snapshot
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
-	ln $(distfiles) $(top_srcdir)/hurd-snap/$(dir)
+	ln $(addprefix $(srcdir)/,$(distfiles)) $(top_srcdir)/hurd-snap/$(dir)
 
 ifeq ($(dir),.)
 $(top_srcdir)/hurd-snap/$(dir):

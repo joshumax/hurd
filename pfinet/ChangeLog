@@ -1,3 +1,9 @@
+Sat Jul 20 15:48:29 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (lndist-asm-files): Look for files in $(srcdir).
+	(lndist-linux-files): Likewise.
+	(lndist-linux-inet-files): Likewise.
+
 Fri Jul 19 09:39:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pfinet.h (make_sock_user): Declaration updated.

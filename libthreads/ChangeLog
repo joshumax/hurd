@@ -1,3 +1,8 @@
+Sat Jul 20 15:47:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* Makefile (lndist-i386-files): Look for I386SRCS and I386HDRS in
+	$(srcdir). 
+
 Thu Jun  6 07:29:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* malloc.c (more_memory): Use assert_perror instead of MACH_CALL.

@@ -47,7 +47,7 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 %-all:
 	$(MAKE) -C $* all
 
-%-lndist: hurd-snap
+%-lndist: $(top_srcdir)/hurd-snap
 	$(MAKE) -C $* lndist no_deps=t
 
 %-clean:
@@ -65,14 +65,20 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 %-TAGS:
 	$(MAKE) -C $* TAGS no_deps=t
 
-hurd-snap:
-	mkdir hurd-snap
+$(srcdir)/hurd-snap:
+	mkdir $(srcdir)/hurd-snap
 
-date:=$(shell date +%y%m%d)
-dist: hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
-	mv hurd-snap hurd-snap-$(date)
-	tar cfz hurd-snap-$(date).tar.gz hurd-snap-$(date)
-	rm -rf hurd-snap-$(date)
+ifeq ($(version),)
+version:=$(shell date +%y%m%d)
+dirname:=hurd-snap
+else
+dirname:=hurd
+endif
+
+dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
+	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
+	tar cfz $(srcdir)/$(dirname)-$(version).tar.gz $(srcdir)/$(dirname)-$(version)
+	rm -rf $(srcdir)/$(dirname)-$(date)
 
 clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
 
