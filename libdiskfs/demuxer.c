@@ -24,7 +24,7 @@ ports_demuxer (mach_msg_header_t *inp,
   int diskfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int seqnos_notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_seqnos_notify_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_exec_server (mach_msg_header_t *, mach_msg_header_t *);
   int pager_demuxer (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
@@ -33,7 +33,7 @@ ports_demuxer (mach_msg_header_t *inp,
   return (diskfs_io_server (inp, outp)
 	  || pager_demuxer (inp, outp)
 	  || diskfs_fs_server (inp, outp)
-	  || seqnos_notify_server (inp, outp)
+	  || diskfs_seqnos_notify_server (inp, outp)
 	  || diskfs_fsys_server (inp, outp)
 	  || diskfs_exec_server (inp, outp)
 	  || diskfs_interrupt_server (inp, outp)
