@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
 
 kern_return_t
 trivfs_S_file_getcontrol (struct trivfs_protid *cred,
@@ -27,7 +26,7 @@ trivfs_S_file_getcontrol (struct trivfs_protid *cred,
     return EOPNOTSUPP;
   if (!cred->isroot)
     return EPERM;
-  
+
   *cntl = ports_get_right (cred->po->cntl);
   *cntltype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;

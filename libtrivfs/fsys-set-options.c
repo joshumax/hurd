@@ -1,6 +1,6 @@
 /* Set runtime options
 
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996,2002 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -21,7 +21,6 @@
 #include <hurd/fshelp.h>
 
 #include "priv.h"
-#include "fsys_S.h"
 
 error_t
 trivfs_S_fsys_set_options (struct trivfs_control *cntl,

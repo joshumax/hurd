@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,98,99,2001 Free Software Foundation
+   Copyright (C) 1994,98,99,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
@@ -65,7 +64,7 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
   if (!err)
     {
       struct iouser *user;
-      
+
       err = iohelp_dup_iouser (&user, cred->user);
       if (err)
 	return err;

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993,94,2002 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -20,7 +20,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
-#include "io_S.h"
 #include <assert.h>
 
 kern_return_t

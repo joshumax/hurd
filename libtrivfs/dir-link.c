@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1996 Free Software Foundation
+/*
+   Copyright (C) 1994,96,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,10 +16,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
 
 kern_return_t
-trivfs_S_dir_link (struct trivfs_protid *dir, 
+trivfs_S_dir_link (struct trivfs_protid *dir,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
 		   struct trivfs_protid *file, char *name, int excl)
 {
@@ -29,5 +28,3 @@ trivfs_S_dir_link (struct trivfs_protid *dir,
     return EXDEV;
   return ENOTDIR;
 }
-
-		     

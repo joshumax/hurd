@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1996 Free Software Foundation
+/*
+   Copyright (C) 1994,96,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
 
 error_t
 trivfs_S_file_check_access (struct trivfs_protid *cred,
@@ -31,6 +30,6 @@ trivfs_S_file_check_access (struct trivfs_protid *cred,
   else
     (*trivfs_check_access_hook) (cred->po->cntl, cred->user,
 				 cred->realnode, allowed);
-  
+
   return 0;
 }

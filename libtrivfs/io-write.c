@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "io_S.h"
 #include <assert.h>
 #include <fcntl.h>
 

@@ -20,7 +20,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
-#include "io_S.h"
 #include <string.h>
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */

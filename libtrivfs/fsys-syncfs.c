@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1994,96,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fsys_S.h"
 
 kern_return_t
 trivfs_S_fsys_syncfs (struct trivfs_control *cntl,

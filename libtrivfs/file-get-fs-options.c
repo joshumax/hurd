@@ -1,6 +1,6 @@
 /* Get runtime options given a file handle
 
-   Copyright (C) 1996, 1998 Free Software Foundation
+   Copyright (C) 1996,98,2002 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -22,7 +22,6 @@
 #include <hurd/fshelp.h>
 
 #include "priv.h"
-#include "fsys_S.h"
 
 error_t
 trivfs_S_file_get_fs_options (struct trivfs_protid *cred,

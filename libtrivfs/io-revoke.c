@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1999 Free Software Foundation
+   Copyright (C) 1999,2002 Free Software Foundation, Inc.
    Written by Thomas Bushnell, BSG.
 
    This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "io_S.h"
 
 /* Implement io_revoke as described in <hurd/io.defs>. */
 kern_return_t
