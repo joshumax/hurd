@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,7 +35,6 @@ diskfs_clear_directory (struct node *dp,
   if (!err)
     {
       assert (np == dp);
-      diskfs_purge_cache_node (dp, np);
       err = diskfs_dirremove (dp, ds);
       diskfs_nrele (np);
     }
@@ -54,7 +53,6 @@ diskfs_clear_directory (struct node *dp,
   if (!err)
     {
       assert (np == pdp);
-      diskfs_purge_cache_node (dp, np);
       err = diskfs_dirremove (dp, ds);
     }
   else
