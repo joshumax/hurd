@@ -20,7 +20,7 @@
 
 #include "store.h"
 
-const struct store_class *const
+const struct store_class *const __attribute__ ((section ("store_std_classes")))
 store_std_classes[] =
 {
   &store_device_class,
