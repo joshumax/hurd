@@ -592,100 +592,100 @@ void
 launch_single_user ()
 {
   char shell[] = "/bin/sh";
-  char pipes[] = "/hurd/pipes\0/servers/socket/1";
-  char terminal[] = "/hurd/term\0console\0/dev/console";
-  char devname[] = "/hurd/dev\0/dev";
-  mach_port_t term;
+  char terminal[] = "/hurd/term\0console\0/tmp/console";
+  mach_port_t term, foo;
+  char *termname;
   task_t termtask;
-  task_t foo;
   int fd;
-  volatile int run_dev=1;	/* So you can set this from gdb.  */
   int foobiebletch[TASK_BASIC_INFO_COUNT];
   int foobiebletchcount = TASK_BASIC_INFO_COUNT;
+  struct stat st;
 
   init_stdarrays ();
 
   printf ("Single-user environment:");
   fflush (stdout);
 
-#if 0
-  printf ("Hit t for term, else dev: ");
-  fflush (stdout);
-  run_dev = getchar () != 't';
-#endif
-
-  if (run_dev)
-    /* Run the device server */
-    termtask = run_for_real (devname, devname, sizeof (devname), 
-			     MACH_PORT_NULL);
-  else  
-    /* Run the terminal driver and open it for the shell. */
-    termtask = run_for_real (terminal, terminal, sizeof (terminal),
-			     MACH_PORT_NULL);
-
-  printf (" dev");
-  fflush (stdout);
-
-  if (termtask != MACH_PORT_NULL)
+  /* Open the console.  If we get something which is a terminal, then
+     we conclude that the filesystem has a proper translator for it,
+     and we're done.  Otherwise, start /hurd/term on something inside
+     /tmp and use that.  */
+  term = file_name_lookup ("/dev/console", O_READ, 0);
+  termname = "/dev/console";
+  if (term != MACH_PORT_NULL)
+    io_stat (term, &st);
+  
+  if (term == MACH_PORT_NULL || st.st_fstype != FSTYPE_TERM)
     {
-      /* Open the console.  We are racing here against the
-	 terminal driver that we just started, so keep trying until
-	 we get it. */
-      struct stat st;
-      for (;;)
+      /* Start the terminal server ourselves. */
+
+      termtask = run_for_real (terminal, terminal, 
+			       sizeof (terminal), MACH_PORT_NULL);
+      printf (" term");
+      fflush (stdout);
+
+      /* Must match arg to terminal above. */
+      termname = "/tmp/console";
+      
+    tryagain:
+      
+      term = file_name_lookup (termname, O_READ, 0);
+      if (term != MACH_PORT_NULL)
+	io_stat (term, &st);
+      if (term == MACH_PORT_NULL || st.st_fstype != FSTYPE_TERM)
 	{
-	  term = file_name_lookup ("/dev/console", O_READ|O_WRITE, 0);
-	  if (term)
-	    io_stat (term, &st);
-	  if (term && st.st_fstype == FSTYPE_TERM)
-	    {
-	      /* Open the terminal for real */
-	      
-	      /* Open console for our use  */
-	      fd = open ("/dev/console", O_READ);
-	      assert (fd != -1);
-	      dup2 (fd, 0);
-	      close (fd);
-	      fd = open ("/dev/console", O_WRITE);
-	      assert (fd != -1);
-	      dup2 (fd, 1);
-	      dup2 (fd, 2);
-	      close (fd);
+	  /* It hasn't been set yet; sleep a bit and try again.
 
-	      fclose (stdin);
-	      stdin = fdopen (0, "r");
-
-	      /* Set ports in init_dtable for programs we start */
-	      mach_port_deallocate (mach_task_self (), default_dtable[0]);
-	      mach_port_deallocate (mach_task_self (), default_dtable[1]);
-	      mach_port_deallocate (mach_task_self (), default_dtable[2]);
-	      default_dtable[0] = getdport (0);
-	      default_dtable[1] = getdport (1);
-	      default_dtable[2] = getdport (2);
-	      break;
-	    }
-	  sleep (1);
-	  /* Perhaps the terminal driver died? */
+	     However, if TERMTASK has died, then it has a bug.  We'll
+	     just let our fd's pass through unchanged.  This probably
+	     won't work, but it will enable some sort of debugging,
+	     maybe. */
 	  errno = task_info (termtask, TASK_BASIC_INFO, foobiebletch,
 			     &foobiebletchcount);
-	  if (errno == MACH_SEND_INVALID_DEST
-	      || errno == KERN_INVALID_ARGUMENT)
-	    break;
+	  if (errno != MACH_SEND_INVALID_DEST 
+	      && errno != KERN_INVALID_ARGUMENT)
+	    {
+	      sleep (1);
+	      goto tryagain;
+	    }
+	  printf ("\nWarning: no normal console terminal.\n");
+	  fflush (stdout);
+	  term = MACH_PORT_NULL;
 	}
       mach_port_deallocate (mach_task_self (), termtask);
     }
-  else
-    term = MACH_PORT_NULL;
-
-  /* Run pipes. */
-  foo = run_for_real (pipes, pipes, sizeof (pipes), MACH_PORT_NULL);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
-  printf (" pipes");
-  fflush (stdout);
-
-  /* The shell needs a real controlling terminal, so set that up here. */
   
+  /* At this point either TERM is the console or it's null.  If it's
+     null, then don't do anything, and our fd's will be copied.
+     Otherwise, open fd's 0, 1, and 2. */
+  if (term != MACH_PORT_NULL)
+    {
+      fd = open (termname, O_READ);
+      assert (fd != -1);
+      dup2 (fd, 0);
+      close (fd);
+      
+      fd = open (termname, O_WRITE);
+      assert (fd != -1);
+      dup2 (fd, 1);
+      dup2 (fd, 2);
+      close (fd);
+      
+      fclose (stdin);
+      stdin = fdopen (0, "r");
+      
+      /* Don't reopen our output channel for reliability's sake. */
+
+      /* Set ports in init_dtable for programs we start. */
+      mach_port_deallocate (mach_task_self (), default_dtable[0]);
+      mach_port_deallocate (mach_task_self (), default_dtable[1]);
+      mach_port_deallocate (mach_task_self (), default_dtable[2]);
+      default_dtable[0] = getdport (0);
+      default_dtable[1] = getdport (1);
+      default_dtable[2] = getdport (2);
+    }
+  
+  /* The shell needs a real controlling terminal, so set that up here. */
   foo = run_for_real (shell, shell, sizeof (shell), term);
   mach_port_deallocate (mach_task_self (), term);
   if (foo != MACH_PORT_NULL)
