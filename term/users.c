@@ -711,6 +711,10 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
+  /* If we really read something, set atime */
+  if (*datalen || !cancel)
+    trivfs_set_atime (termctl);
+
   call_asyncs (O_READ);
 
   mutex_unlock (&global_lock);
