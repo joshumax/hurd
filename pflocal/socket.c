@@ -18,12 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <sys/socket.h>
+
 #include "sock.h"
 #include "connq.h"
-
-/* temp XXX */
-#include <mach/mach.h>
-typedef mach_port_t pf_t;
+#include "pipe.h"
 
 #include "socket_S.h"
 
@@ -92,7 +91,7 @@ S_socket_accept (struct sock_user *user,
 		 mach_msg_type_name_t *peer_addr_port_type)
 {
   error_t err;
-  struct socket *sock;
+  struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
@@ -118,10 +117,11 @@ S_socket_accept (struct sock_user *user,
 	      err = sock_connect (conn_sock, peer_sock);
 	      if (!err)
 		{
+		  struct addr *peer_addr;
 		  *port_type = MACH_MSG_TYPE_MAKE_SEND;
 		  err = sock_create_port (conn_sock, port);
 		  if (!err)
-		    err = sock_get_addr (peer_sock, peer_addr);
+		    err = sock_get_addr (peer_sock, &peer_addr);
 		  if (!err)
 		    {
 		      *peer_addr_port = ports_get_right (peer_addr);
@@ -172,6 +172,7 @@ error_t
 S_socket_name (struct sock_user *user,
 	       mach_port_t *addr_port, mach_msg_type_name_t *addr_port_type)
 {
+  error_t err;
   struct addr *addr;
 
   if (!user)
@@ -196,20 +197,21 @@ S_socket_peername (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  return sock_get_write_addr_port (user->sock, &addr_port);
+  return sock_get_write_addr_port (user->sock, addr_port);
 }
 
 /* Send data over a socket, possibly including Mach ports.  */
 error_t
-S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
+S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	       char *data, size_t data_len,
 	       mach_port_t *ports, size_t num_ports,
 	       char *control, size_t control_len,
 	       size_t *amount)
 {
+  error_t err;
   struct pipe *pipe;
   struct sock *dest_sock;
-  struct addr *dest_addr, *source_addr;
+  struct addr *source_addr;
 
   if (!user || !dest_addr)
     return EOPNOTSUPP;
@@ -235,7 +237,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
 	 intended for, but it will work, as the only inappropiate errors
 	 occur on a broken pipe, which shouldn't be possible with the sort of
 	 sockets with which we can use socket_send...  XXXX */
-      err = sock_aquire_read_pipe (dest, &pipe);
+      err = sock_aquire_read_pipe (dest_sock, &pipe);
       if (!err)
 	{
 	  err = pipe_write (pipe, source_addr,
@@ -256,16 +258,17 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
 error_t
 S_socket_recv (struct sock_user *user,
 	       mach_port_t *addr, mach_msg_type_name_t *addr_type,
-	       unsigned in_flags,
+	       int in_flags,
 	       char **data, size_t *data_len,
 	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
 	       size_t *num_ports,
 	       char **control, size_t *control_len,
-	       unsigned *out_flags, size_t amount)
+	       int *out_flags, size_t amount)
 {
   error_t err;
   unsigned flags;
   struct pipe *pipe;
+  struct addr *source_addr = NULL;
 
   if (!user)
     return EOPNOTSUPP;
@@ -282,7 +285,7 @@ S_socket_recv (struct sock_user *user,
     {
       err =
 	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
-		   source_addr, data, data_len, amount,
+		   &source_addr, data, data_len, amount,
 		   control, control_len, ports, num_ports);
       pipe_release (pipe);
     }
@@ -311,7 +314,7 @@ S_socket_recv (struct sock_user *user,
 
 error_t
 S_socket_getopt (struct sock_user *user,
-		 unsigned level, unsigned opt,
+		 int level, int opt,
 		 char **value, size_t *value_len)
 {
   return EOPNOTSUPP;
@@ -319,8 +322,7 @@ S_socket_getopt (struct sock_user *user,
 
 error_t
 S_socket_setopt (struct sock_user *user,
-		 unsigned level, unsigned opt,
-		 char *value, size_t value_len)
+		 int level, int opt, char *value, size_t value_len)
 {
   return EOPNOTSUPP;
 }
