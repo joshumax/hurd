@@ -140,6 +140,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
       goto out;
     }
 
+  diskfs_purge_cache (fnp, tdp);
   err = diskfs_dirrewrite (fnp, tdp, tmpds);
   if (diskfs_synchronous)
     diskfs_file_update (fnp, 1);
@@ -169,6 +170,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   
   if (tnp)
     {
+      diskfs_purge_cache (tdp, fnp);
       err = diskfs_dirrewrite (tdp, fnp, ds);
       ds = 0;
       if (!err)
