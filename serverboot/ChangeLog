@@ -1,3 +1,8 @@
+1998-07-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (pager_read_offset): Cast NO_BLOCK twice, to real
+	return type of this function.
+
 Tue May 12 12:11:36 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* bootstrap.c (parse_script): Free BUF before returning.  Reported
@@ -42,13 +47,13 @@ Mon Jun 16 11:52:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* Makefile (installationdir): Use `=' to set this instead of :=;
 	$(prefix) is not yet available and `=' postpones the evaluation
 	properly.   Reported by Marcus G. Daniels,
-	marcus@cathcart.sysc.pdx.edu. 
+	marcus@cathcart.sysc.pdx.edu.
 
 Tue Jun 10 21:54:52 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* disk_inode.h (struct icommon): Use short instead of uid_t/gid_t
 	in structure definition; those are now 32 bit types.
-	
+
 	* bootstrap.c (main): Support running from command line too; this
 	is useful at least for simple debugging.
 
@@ -95,7 +100,7 @@ Thu Apr  3 20:00:58 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* elf-load.c (exec_load): Include <elf.h> instead of
 	<mach/exec/elf.h>.  Include "mach-exec.h" instead of
-	<mach/exec/elf.h>. 
+	<mach/exec/elf.h>.
 	(exec_load) [i386]: Check for i386 types directly; abandon old
 	MY_EI_DATA and MY_E_MACHINE.
 	* load.c: Include "mach-exec.h" instead of <mach/exec/elf.h>.
@@ -110,10 +115,10 @@ Wed Mar 19 14:45:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Mon Mar 17 13:13:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* wiring.c (wire_all_memory): Don't attempt wire if PROTECTION is
-	VM_PROT_NONE. 
+	VM_PROT_NONE.
 
 	* panic.c (panic): Be more informative about where the error is
-	coming from. 
+	coming from.
 
 	* default_pager.c (create_paging_partition): Don't print
 	gratuitous output noise.
@@ -122,7 +127,7 @@ Mon Mar 17 13:13:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Wed Mar 12 10:53:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ext2_file_io.c (ext2_open_file): Clear FP before beginning
-	work. 
+	work.
 	* ffs_file_io.c (ffs_open_file): Likewise.
 	* minix_file_io.c (minix_open_file): Likewise.
 
@@ -136,14 +141,14 @@ Wed Mar 12 10:53:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* defs.h: Comment out redefinitions of common types.
 
 	* default_pager.c: Include <cthreads.h> instead of
-	<mach/cthreads.h>. 
+	<mach/cthreads.h>.
 	* file_io.h: Likewise.
 	* kalloc.c: Likewise.
 
 	* panic.c: Include <varargs.h> instead of <sys/varargs.h>.
 
 	* default_pager.c (pager_read_offset): Cast return of NO_BLOCK
-	properly. 
+	properly.
 
 Mon Mar 10 17:07:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -154,4 +159,3 @@ Mon Mar 10 17:07:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* strfcns.c: Include <varargs.h> instead of <sys/varargs.h>.
 	* load.c: Likewise.
-
