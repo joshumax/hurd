@@ -45,19 +45,32 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifdef i386_THREAD_STATE
 # define ELF_MACHINE		EM_386
 
-/* There is a natural layout for this on x86, so it happens
-   that the canonical gregset_t from <sys/ucontext.h>
-   matches Mach's i386_thread_state exactly.  */
+/* The gregset_t format (compatible with Linux/x86) almost fits
+   the Mach i386_thread_state.  */
 static inline void
 fetch_thread_regset (thread_t thread, prgregset_t *gregs)
 {
+  union
+  {
+    struct i386_thread_state state;
+    prgregset_t gregs;
+  } *u = (void *) gregs;
   mach_msg_type_number_t count = i386_THREAD_STATE_COUNT;
-  assert (sizeof (struct i386_thread_state) == sizeof (prgregset_t));
-  assert (offsetof (struct i386_thread_state, gs) == REG_GS);
-  assert (offsetof (struct i386_thread_state, eip) == REG_EIP * 4);
-  assert (offsetof (struct i386_thread_state, ss) == REG_SS * 4);
+  assert (sizeof (struct i386_thread_state) < sizeof (prgregset_t));
+  assert (offsetof (struct i386_thread_state, gs) == REG_GS * 4);
+  assert (offsetof (struct i386_thread_state, eax) == REG_EAX * 4);
+
   (void) thread_get_state (thread, i386_THREAD_STATE,
-			   (thread_state_t) gregs, &count);
+			   (thread_state_t) &u->state, &count);
+
+  u->gregs[REG_EIP] = u->state.eip;
+  u->gregs[REG_CS] = u->state.cs;
+  u->gregs[REG_EFL] = u->state.efl;
+  u->gregs[REG_UESP] = u->state.uesp;
+  u->gregs[REG_SS] = u->state.ss;
+
+  /* These are the extra words that don't exist in prgregset_t.  */
+  u->gregs[REG_ERR] = u->gregs[REG_TRAPNO] = 0;
 }
 
 static inline void
