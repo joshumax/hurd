@@ -1427,6 +1427,14 @@ handle_esc_bracket_question_hl (display_t display, int code, int flag)
 	display->user->cursor.status = CONS_CURSOR_INVISIBLE;
       /* XXX Flag cursor status change.  */
       break;
+    case 1000:
+      /* XTerm mouse tracking.  */
+      if (flag)
+	display->user->flags |= CONS_FLAGS_TRACK_MOUSE;
+      else
+	display->user->flags &= ~CONS_FLAGS_TRACK_MOUSE;
+      /* XXX Flag flags change.  */
+      break;
     }
 }
 

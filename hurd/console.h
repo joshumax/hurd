@@ -92,9 +92,19 @@ struct cons_display
 				   bits define the age, upper 16 bits
 				   the major version.  */
 
+
   /* Various one bit flags that don't deserve their own field.  */
-#define CONS_FLAGS_SCROLL_LOCK 0x00000001
+
+  /* The output is stopped.  The client can display the status of this
+     flag, but should not otherwise interpret it.  */
+#define CONS_FLAGS_SCROLL_LOCK	0x00000001
+
+  /* Tracking mouse events is requested.  See CONS_MOUSE_* macros
+     further down.  */
+#define CONS_FLAGS_TRACK_MOUSE	0x00000002
+
   uint32_t flags;
+
 
   struct
   {
@@ -257,5 +267,37 @@ struct cons_display
 #define CONS_KEY_PPAGE		"\e[5~"		/* Previous page.  */
 #define CONS_KEY_NPAGE		"\e[6~"		/* Next page.  */
 #define CONS_KEY_BTAB		"\e[Z"		/* Back tab key.  */
+#define CONS_KEY_B2		"\e[G"		/* Center of keypad.  */
+
+/* Mouse support is compatible to xterm's mouse tracking feature.  */
+
+#define CONS_MOUSE_BUTTON_MASK	0x03
+#define CONS_MOUSE_BUTTON1	0x00
+#define CONS_MOUSE_BUTTON2	0x01
+#define CONS_MOUSE_BUTTON3	0x02
+#define CONS_MOUSE_RELEASE	0x03
+#define CONS_MOUSE_MOD_MASK	0x1c
+#define CONS_MOUSE_MOD_SHIFT	0x04
+#define CONS_MOUSE_MOD_META	0x08
+#define CONS_MOUSE_MOD_CTRL	0x10
+
+/* Screen positions are offset by this value.  */
+#define CONS_MOUSE_OFFSET_BASE	0x21
+
+#define CONS_MOUSE_EVENT_LENGTH 6
+#define CONS_MOUSE_EVENT_PREFIX "\e[M"
+
+/* This macro populates STR with the mouse event EVENT at position X
+   and Y, and returns 1 if successul and 0 if X or Y is out of
+   range.  X and Y start from 0.  */
+#define CONS_MOUSE_EVENT(str,event,x,y)					\
+  (((int)(x) < 0 || (int)(x) + CONS_MOUSE_OFFSET_BASE > 255		\
+   || (int)(y) < 0 || (int)(y) + CONS_MOUSE_OFFSET_BASE > 255) ? 0	\
+   : ((*(str) = CONS_MOUSE_EVENT_PREFIX[0]),				\
+     (*((str) + 1) = CONS_MOUSE_EVENT_PREFIX[1]),			\
+     (*((str) + 2) = CONS_MOUSE_EVENT_PREFIX[2]),			\
+     (*((str) + 3) = (char)((int)(event) + CONS_MOUSE_OFFSET_BASE)),	\
+     (*((str) + 4) = (char)((int)(x) + CONS_MOUSE_OFFSET_BASE)),	\
+     (*((str) + 5) = (char)((int)(y) + CONS_MOUSE_OFFSET_BASE), 1)))
 
 #endif	/* _HURD_CONSOLE_H */

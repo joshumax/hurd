@@ -1,3 +1,14 @@
+2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.h (struct cons_display): Add a new flag
+	CONS_FLAGS_TRACK_MOUSE.
+	(CONS_MOUSE_BUTTON_MASK, CONS_MOUSE_BUTTON1, CONS_MOUSE_BUTTON2,
+	CONS_MOUSE_BUTTON3, CONS_MOUSE_RELEASE, CONS_MOUSE_MOD_MASK,
+	CONS_MOUSE_MOD_SHIFT, CONS_MOUSE_MOD_META, CONS_MOUSE_MOD_CTRL,
+	CONS_MOUSE_OFFSET_BASE, CONS_MOUSE_EVENT_LENGTH,
+	CONS_MOUSE_EVENT_PREFIX, CONS, MOUSE_EVENT): New macro.
+	(CONS_KEY_B2): New macro.
+
 2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.h (conchar_attr_t): Add bits for italic and bold text
