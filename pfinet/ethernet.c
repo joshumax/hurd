@@ -137,6 +137,7 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
   err = device_write (ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
   assert (err == 0);
   assert (count == skb->len);
+  dev_kfree_skb (skb, FREE_WRITE);
   return 0;
 }
 
