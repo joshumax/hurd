@@ -286,7 +286,7 @@ debug (cq, "out");
 void
 connq_interrupt_sock (struct connq *cq, struct sock *sock)
 {
-  unsigned pos, comp_pos;
+  unsigned pos, comp_tail;
 
 debug (cq, "in");
 debug (cq, "lock");
@@ -305,16 +305,19 @@ debug (cq, "interrupt connections from: %p", sock);
 
 debug (cq, "compress queue");
   /* Now compress the queue to remove any null entries we put in.  */
-  for (pos = cq->head, comp_pos = cq->head;
+  for (pos = cq->head, comp_tail = cq->head;
        pos != cq->tail;
        pos = qnext (cq, pos))
     if (cq->queue[pos] != NULL)
       /* This position has a non-NULL request, so move it to the end of the
 	 compressed queue.  */
       {
-	cq->queue[comp_pos] = cq->queue[pos];
-	comp_pos = qnext (cq, comp_pos);
+	cq->queue[comp_tail] = cq->queue[pos];
+	comp_tail = qnext (cq, comp_tail);
       }
+
+  /* Move back tail to only include what we kept in the queue.  */
+  cq->tail = comp_tail;
 
 debug (cq, "unlock");
   mutex_unlock (&cq->lock);
