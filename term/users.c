@@ -460,7 +460,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
 		term_owner = uid;
 		term_group = gid;
 		mutex_unlock (&global_lock);
-		return EPERM;
+		return 0;
 	      }
 
 	  /* Not legitimate */
