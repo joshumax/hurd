@@ -21,8 +21,7 @@ include ../Makeconf
 
 VPATH=.:../machine
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o boot_machdep.o \
-	ioServer.o
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o
 
 DIST_FILES = boot.c Makefile
 
