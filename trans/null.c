@@ -289,9 +289,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
 {
-  /* The zero device is `big and fixed size', so can't be truncated; the null
-     device is always really truncated.  */
-  return provide_zeros ? EINVAL : 0;
+  return 0;
 }
 
 /* ---------------------------------------------------------------- */
