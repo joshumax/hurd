@@ -22,6 +22,7 @@
 #include <string.h>
 #include <setjmp.h>
 #include <cthreads.h>
+#include <sys/mman.h>
 
 #include "store.h"
 
