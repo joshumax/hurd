@@ -37,6 +37,7 @@ _pager_do_seqnos_mach_notify_no_senders (mach_port_t notify,
   ports_no_senders (p, mscount);
 
   ports_port_deref (p);
+  return 0;
 }
 
 
