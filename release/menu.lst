@@ -1,11 +1,41 @@
+# This is the amount grub waits before booting the default entry
 timeout= 30
 
-title= hurd
-root= hd(0,a)
-kernel= /boot/kernel
+# Tell which entry to boot by default.  Note that this is origin zero
+# from the beginning of the file.  
+default= 0
+
+# These two entries are for SCSI disks
+# Entry 0:
+title= hurd (sd0a multi-user)
+root=   hd(0,a)
+kernel= /boot/kernel root=sd0a
 module= /boot/serverboot
 
-title= hurd (single user)
-root= hd(0,a)
-kernel= /boot/kernel -s
+# Entry 1:
+title= hurd (sd0a single-user)
+root=   hd(0,a)
+kernel= /boot/kernel root=sd0a -s
 module= /boot/serverboot
+
+
+# These two entries are for RLL/IDE/ST-506/etc. disks
+# Entry 2:
+title=  hurd (hd0a multi-user)
+root=   hd(0,a)
+kernel= /boot/kernel root=hd0a
+module= /boot/serverboot
+
+# Entry 3:
+title=	hurd (hd0a single-user)
+root=	hd(0,a)
+kernel=	/boot/kernel root=hd0a -s
+module=	/boot/serverboot
+
+
+# Installation step for GRUB hard disk boot blocks
+# Entry 4:
+title=	grub install
+root=	hd(0)
+install=hd(0,a)/boot/grub/stage2
+
