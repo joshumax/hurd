@@ -665,6 +665,7 @@ process_has_exited (struct proc *p)
   if (p->p_ochild)
     {
       struct proc *tp;		/* will point to the last one */
+      int isdead = 0;
 
       /* first tell them their parent is changing */
       for (tp = p->p_ochild; tp->p_sib; tp = tp->p_sib)
@@ -674,6 +675,8 @@ process_has_exited (struct proc *p)
 				    1, tp->p_pgrp->pg_pgid,
 				    !tp->p_pgrp->pg_orphcnt);
 	  tp->p_parent = startup_proc;
+	  if (tp->p_dead)
+	    isdead = 1;
 	}
       if (tp->p_msgport != MACH_PORT_NULL)
 	nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
@@ -687,6 +690,9 @@ process_has_exited (struct proc *p)
 	tp->p_sib->p_prevsib = &tp->p_sib;
       startup_proc->p_ochild = p->p_ochild;
       p->p_ochild->p_prevsib = &startup_proc->p_ochild;
+
+      if (isdead)
+	alert_parent (startup_proc);
     }
 
   /* If an operation is in progress for this process, cause it
