@@ -83,6 +83,9 @@ diskfs_start_bootstrap (void)
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
+  /* Tell the library what they are. */
+  setcwdir (root_pt);
+  setcrdir (root_pt);
 
   /* Contact the exec server */
   err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
