@@ -33,7 +33,7 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
 	io-rel-conch.c io-restrict-auth.c io-seek.c io-select.c io-stat.c   \
 	io-stubs.c io-write.c io-version.c io-sigio.c
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
-	fsys-options.c fsys-syncfs.c
+	fsys-options.c fsys-syncfs.c fsys-forward.c
 IFSOCKSRCS=ifsock.c
 NOTIFYSRCS=notify-nosenders.c notify-stubs.c
 INTSRCS=interrupt.c
