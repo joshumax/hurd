@@ -60,9 +60,9 @@ extern int trivfs_support_exec;
    operations.)  */
 extern int trivfs_allow_open;
 
-extern struct port_class *trivfs_protid_portclasses;
+extern struct port_class *trivfs_protid_portclasses[];
 extern int trivfs_protid_nportclasses;
-extern struct port_class *trivfs_cntl_portclasses;
+extern struct port_class *trivfs_cntl_portclasses[];
 extern int trivfs_cntl_nportclasses;
 
 /* The user must define this function.  This should modify a struct 
