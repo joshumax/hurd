@@ -37,10 +37,11 @@ static struct argp_option options[] =
   {"recursive",   'R', 0, 0, "Pass these options to any child translators"},
   {0, 0, 0, 0}
 };
-static char *args_doc = "FILESYS FS_OPTION...";
+static char *args_doc = "FILESYS [FS_OPTION...]";
 static char *doc = "The legal values for FS_OPTION depends on FILESYS, but\
  some common ones are: --readonly, --writable, --remount, --sync[=INTERVAL],\
- and --nosync.";
+ and --nosync.\n\nIf no options are supplied, FILESYS's existing options\
+ are printed";
 
 /* ---------------------------------------------------------------- */
 
@@ -48,9 +49,6 @@ void
 main(int argc, char *argv[])
 {
   error_t err;
-
-  /* The filesystem we're passing options to.  */
-  fsys_t fsys;
 
   /* The file we use as a handle to get FSYS.  */
   char *node_name = 0;
@@ -75,9 +73,6 @@ main(int argc, char *argv[])
 	  state->index = state->argc; /* stop parsing */
 	  break;
 
-	case ARGP_KEY_NO_ARGS:
-	  argp_usage (state->argp); /* exits */
-
 	case 'R': recursive = 1; break;
 	case 'L': deref = 1; break;
 
@@ -94,16 +89,30 @@ main(int argc, char *argv[])
   if (node == MACH_PORT_NULL)
     error (1, errno, "%s", node_name);
 
-  /* Get the filesystem for NODE.  */
-  err = file_getcontrol (node, &fsys);
-  if (err)
-    error (2, err, "%s", node_name);
-
-  err = fsys_set_options (fsys, argz, argz_len, recursive);
-  if (err)
+  if (argz_len)
     {
+      /* The filesystem we're passing options to.  */
+      fsys_t fsys;
+
+      /* Get the filesystem for NODE.  */
+      err = file_getcontrol (node, &fsys);
+      if (err)
+	error (2, err, "%s", node_name);
+
+      err = fsys_set_options (fsys, argz, argz_len, recursive);
+      if (err)
+	{
+	  argz_stringify (argz, argz_len);
+	  error(5, err, "%s: %s", node_name, argz);
+	}
+    }
+  else
+    {
+      err = file_get_fs_options (node, &argz, &argz_len);
+      if (err)
+	error (5, err, "%s", node_name);
       argz_stringify (argz, argz_len);
-      error(5, err, "%s: %s", node_name, argz);
+      puts (argz);
     }
 
   exit(0);
