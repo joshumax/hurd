@@ -19,7 +19,7 @@ dir := auth
 makemode := server
 
 SRCS = auth.c
-OBJS = auth.o authServer.o auth_replyUser.o
+OBJS = auth.o authServer.o auth_replyUser.o notifyServer.o
 LCLHDRS = auth_mig.h
 target = auth
 
@@ -28,5 +28,4 @@ MIGSFLAGS = "-DAUTH_INTRAN=aptptr_t convert_auth_to_apt (auth_t)" \
 
 include ../Makeconf
 
-auth.o: auth_S.h auth_reply_U.h
-
+auth.o: auth_S.h auth_reply_U.h notify_S.h
