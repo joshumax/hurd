@@ -37,9 +37,7 @@ diskfs_node_rdwr (struct node *np,
 {
   error_t err;
   
-  err = ioserver_get_conch (&np->i_conch);
-  if (err)
-    return err;
+  ioserver_get_conch (&np->conch);
   
   if (dir)
     while (off + amt > np->allocsize)
@@ -58,7 +56,7 @@ diskfs_node_rdwr (struct node *np,
     }
 
   err = _diskfs_rdwr_internal (np, data, off, amt, dir);
-  if (!err)
+  if (!err && amtread)
     *amtread = amt;
 
   return err;
