@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.6 1994/10/18 18:26:04 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.7 1994/11/24 23:39:21 roland Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -103,7 +103,9 @@ static char *rcsid = "$Id: mkfs.c,v 1.6 1994/10/18 18:26:04 mib Exp $";
  * variables set up by front end.
  */
 #define extern
+#ifdef MFS
 extern int	mfs;		/* run as the memory based filesystem */
+#endif
 extern int	Nflag;		/* run mkfs without writing file system */
 extern int	Oflag;		/* format as an 4.3BSD file system */
 extern int	fssize;		/* file system size */
@@ -204,7 +206,9 @@ main (int argc, char **argv)
       exit (1);
     }
 
+#ifdef MFS
   mfs = 0;
+#endif
   Oflag = 0;
   fssize = st.st_size / DEV_BSIZE;
 
@@ -285,6 +289,7 @@ mkfs(pp, fsys, fi, fo)
 #ifndef STANDALONE
 	time(&utime);
 #endif
+#ifdef MFS
 	if (mfs) {
 		ppid = getpid();
 		(void) signal(SIGUSR1, started);
@@ -304,6 +309,7 @@ mkfs(pp, fsys, fi, fo)
 		if ((membase = malloc(fssize * sectorsize)) == 0)
 			exit(12);
 	}
+#endif
 	fsi = fi;
 	fso = fo;
 	if (Oflag) {
@@ -538,7 +544,7 @@ mkfs(pp, fsys, fi, fo)
 	}
 	sblock.fs_fpg = (sblock.fs_cpg * sblock.fs_spc) / NSPF(&sblock);
 	if ((sblock.fs_cpg * sblock.fs_spc) % NSPB(&sblock) != 0) {
-		printf("panic (fs_cpg * fs_spc) % NSPF != 0");
+		printf("panic (fs_cpg * fs_spc) %% NSPF != 0");
 		exit(24);
 	}
 	if (sblock.fs_cpg < mincpg) {
@@ -677,7 +683,11 @@ next:
 		    NSPF(&sblock);
 		warn = 0;
 	}
-	if (warn && !mfs) {
+	if (warn
+#ifdef MFS
+	    && !mfs
+#endif
+	    ) {
 		printf("Warning: %d sector(s) in last cylinder unallocated\n",
 		    sblock.fs_spc -
 		    (fssize * NSPF(&sblock) - (sblock.fs_ncyl - 1)
@@ -713,7 +723,10 @@ next:
 	/*
 	 * Dump out summary information about file system.
 	 */
-	if (!mfs) {
+#ifdef MFS
+	if (!mfs)
+#endif
+	  {
 		printf("%s:\t%d sectors in %d %s of %d tracks, %d sectors\n",
 		    fsys, sblock.fs_size * NSPF(&sblock), sblock.fs_ncyl,
 		    "cylinders", sblock.fs_ntrak, sblock.fs_nsect);
@@ -729,19 +742,29 @@ next:
 	 * Now build the cylinders group blocks and
 	 * then print out indices of cylinder groups.
 	 */
+#ifdef MFS
 	if (!mfs)
+#endif
 		printf("super-block backups (for fsck -b #) at:");
 	for (cylno = 0; cylno < sblock.fs_ncg; cylno++) {
 		initcg(cylno, utime);
+#ifdef MFS
 		if (mfs)
 			continue;
+#endif
 		if (cylno % 8 == 0)
 			printf("\n");
 		printf(" %d,", fsbtodb(&sblock, cgsblock(&sblock, cylno)));
 	}
+#ifdef MFS
 	if (!mfs)
+#endif
 		printf("\n");
-	if (Nflag && !mfs)
+	if (Nflag
+#ifdef MFS
+	    && !mfs
+#endif
+	    )
 		exit(0);
 	/*
 	 * Now construct the initial file system,
@@ -775,6 +798,7 @@ next:
 	 * Notify parent process of success.
 	 * Dissociate from session and tty.
 	 */
+#ifdef MFS
 	if (mfs) {
 		kill(ppid, SIGUSR1);
 		(void) setsid();
@@ -783,6 +807,7 @@ next:
 		(void) close(2);
 		(void) chdir("/");
 	}
+#endif
 }
 
 /*
@@ -1017,9 +1042,11 @@ fsinit(utime)
 	/*
 	 * create the root directory
 	 */
+#ifdef MFS
 	if (mfs)
 		node.di_model = IFDIR | 01777;
 	else
+#endif
 		node.di_model = IFDIR | UMASK;
 	node.di_modeh = 0;
 	node.di_nlink = PREDEFDIR;
@@ -1239,10 +1266,12 @@ rdfs(bno, size, bf)
 {
 	int n;
 
+#ifdef MFS
 	if (mfs) {
 		bcopy(membase + bno * sectorsize, bf, size);
 		return;
 	}
+#endif
 	if (lseek(fsi, (off_t)bno * sectorsize, 0) < 0) {
 		printf("seek error: %ld\n", bno);
 		perror("rdfs");
@@ -1266,10 +1295,12 @@ wtfs(bno, size, bf)
 {
 	int n;
 
+#ifdef  MFS
 	if (mfs) {
 		bcopy(bf, membase + bno * sectorsize, size);
 		return;
 	}
+#endif
 	if (Nflag)
 		return;
 	if (lseek(fso, (off_t)bno * sectorsize, SEEK_SET) < 0) {
