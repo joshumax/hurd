@@ -97,7 +97,7 @@ error_t
 do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
 {
   void *pi = ports_lookup_port (sock_port_bucket, port, 0);
-debug (pi, "count: %lu, refs: %d",
+debug (pi, "count: %u, refs: %d",
        count, (pi ? ((struct port_info *)pi)->refcnt : 0));
   if (!pi)
     return EOPNOTSUPP;
