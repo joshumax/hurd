@@ -1,3 +1,9 @@
+2004-09-12  Marco Gerards  <metgerards@student.han.nl>
+
+	* io-select.c: Include <hurd/ports.h>.
+	(netfs_S_io_select): Add arguments `reply' and `replytype'.
+	* mutations.h (IO_SELECT_REPLY_PORT): New macro.
+
 2004-07-27  Roland McGrath  <roland@frob.com>
 
 	* misc.h (OPENONLY_STATE_MODES): Remove O_NONBLOCK.

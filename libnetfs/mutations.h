@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2004 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -19,6 +19,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 /* Only CPP macro definitions should go in this file. */
+
+#define IO_SELECT_REPLY_PORT
 
 #define FILE_INTRAN protid_t begin_using_protid_port (file_t)
 #define FILE_DESTRUCTOR end_using_protid_port (protid_t)

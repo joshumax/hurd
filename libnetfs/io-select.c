@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2004 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,9 +20,12 @@
 
 #include "netfs.h"
 #include "io_S.h"
+#include <hurd/ports.h>
 
 error_t
 netfs_S_io_select (struct protid *user,
+		   mach_port_t reply,
+		   mach_msg_type_name_t replytype,
 		   int *type)
 {
   if (!user)
