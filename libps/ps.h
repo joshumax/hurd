@@ -263,6 +263,11 @@ struct proc_stat
     task_events_info_data_t task_events_info_buf;
     unsigned task_events_info_size;
 
+    /* Flags showing whether a field is vm_alloced or malloced.  */
+    unsigned proc_info_vm_alloced : 1;
+    unsigned thread_waits_vm_alloced : 1;
+    unsigned args_vm_alloced : 1;
+
     /* Various libc ports:  */
 
     /* The process's ctty id port, or MACH_PORT_NULL if the process has no
