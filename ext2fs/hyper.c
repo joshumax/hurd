@@ -107,13 +107,30 @@ get_hypermetadata (void)
 		sblock->s_blocks_count << log2_dev_blocks_per_fs_block);
 
   /* Set these handy variables.  */
-  inodes_per_block = block_size / sizeof (struct ext2_inode);
+  inodes_per_block = block_size / EXT2_INODE_SIZE (sblock);
 
   frag_size = EXT2_MIN_FRAG_SIZE << sblock->s_log_frag_size;
   if (frag_size)
     frags_per_block = block_size / frag_size;
   else
     ext2_panic ("frag size is zero!");
+
+  if (sblock->s_rev_level > EXT2_GOOD_OLD_REV)
+    {
+      if (sblock->s_feature_incompat & ~EXT2_FEATURE_INCOMPAT_SUPP)
+	ext2_panic ("could not mount because of unsupported optional features"
+		    " (0x%x)",
+		    sblock->s_feature_incompat & ~EXT2_FEATURE_INCOMPAT_SUPP);
+      if (sblock->s_feature_ro_compat & ~EXT2_FEATURE_RO_COMPAT_SUPP)
+	{
+	  ext2_warning ("mounted readonly because of"
+			" unsupported optional features (0x%x)",
+			sblock->s_feature_ro_compat & ~EXT2_FEATURE_RO_COMPAT_SUPP);
+	  diskfs_readonly = 1;
+	}
+      if (sblock->s_inode_size != EXT2_GOOD_OLD_INODE_SIZE)
+	ext2_panic ("inode size %d isn't supported", sblock->s_inode_size);
+    }
 
   groups_count =
     ((sblock->s_blocks_count - sblock->s_first_data_block +
