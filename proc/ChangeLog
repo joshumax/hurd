@@ -1,3 +1,70 @@
+2000-04-03  Neal H Walfield  <neal@cs.uml.edu>
+
+	* proc.h (struct ids): Drop gids and ngids, we never use
+	them.  Turn uids into a zero length array.
+	* mgt.c (make_ids): Conform to new semantics.
+	(ids_free): Removed.  Rendered obsolete by ids_rele.
+	(ids_rele): New function.  Drop a reference to the given
+	ids.
+	(ids_ref): Add a reference to the given ids.
+	(S_proc_reauthenticate): Use ids_rele and new make_ids
+	semantics.
+	(S_proc_child): Use ids_rele and ids_ref.
+	(create_startup_proc): Conform to new make_ids semantics.
+	(complete_proc): Use ids_ref.
+	(process_has_exited): Use ids_rele.
+
+	* host.c: Doc fix: ``Implement foo as described in <hurd/proc.defs>''
+	=> ``Implement foo as described in <hurd/process.defs>''
+	* info.c: Likewise.
+	* mgt.c: Likewise.
+	* pgrp.c: Likewise.
+	* wait.c: Likewise.
+
+	* mgt.c (S_proc_reauthenticate): Calculate the value of
+	NGEN_UIDS, NAUX_UIDS, NGEN_GIDS AND NAUX_GIDS; do not use
+	a constant.
+	(create_startup_proc): Add asserts.
+
+	* host.c (S_proc_setexecdata):  Check for memory allocation errors.
+	Use memcpy, not bcopy.
+	(S_proc_getexecdata): Likewise.
+	(S_proc_execdata_notify): Check return of malloc.
+	(S_proc_register_version): Likewise.
+	(initialize_version_info): Add asserts.
+	* info.c (S_proc_pid2task): Do not bother searching for the pid
+	if we do not have a valid caller.
+	(S_proc_pid2proc): Likewise.
+	Use memcpy, not bcopy.
+	(S_proc_getprocinfo): Doc fixes.  Use MAP_FAILED not -1.  Use
+	memcpy, not bcopy.
+	(S_proc_getloginpids): Check return value of malloc.  Use realloc
+	correctly.
+	(S_proc_setlogin): Check return value of malloc.
+	* main.c (main): Assert allocate_proc.
+	* mgt.c (make_ids): Check return value of malloc and fail
+	accordingly.
+	(S_proc_reauthenticate): Check return value of make_ids and fail
+	accordingly.
+	(S_proc_child): Call task_find after we know that we were passed
+	a valid child.
+	(S_proc_reassign): Likewise.
+	(S_proc_handle_exceptions): Use memcpy, not bcopy.
+	(allocate_proc): Check return value of ports_create_port and fail
+	accordingly.
+	(create_startup_proc): Add asserts.
+	(complete_proc): Do not assume the length of "<none>".
+	* msg.c (S_proc_getmsgport): Call pid_find_allow_zombie after
+	we know we were passed a valid caller.
+	* pgrp.c: Include assert.h.
+	(new_pgrp): Check return value of malloc and fail accordingly.
+	(new_session): Likewise.
+	(boot_setsid): Assert sess.
+	(S_proc_getsessionpids): Use MAP_FAILED not -1.
+	(S_proc_getsessionppids): Likewise.
+	(S_proc_getpgrppids): Likewise.
+	* wait.c (S_proc_wait): Use memset, not bzero.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Use ports_get_send_right.
