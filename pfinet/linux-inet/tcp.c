@@ -2069,7 +2069,9 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		 *	Next get a buffer.
 		 */
 		 
+#ifndef _HURD_
 		current->state = TASK_INTERRUPTIBLE;
+#endif
 
 		skb = skb_peek(&sk->receive_queue);
 		do 
