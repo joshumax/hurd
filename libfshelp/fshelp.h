@@ -40,11 +40,11 @@ error_t
 fshelp_start_translator_long (mach_port_t underlying,
 			      mach_msg_type_name_t underlying_type,
 			      char *name, char *argz, int argz_len,
-			      mach_port_t *ports, int ports_len,
-			      mach_msg_type_name_t ports_type,
+			      mach_port_t *fds, 
+			      mach_msg_type_name_t fds_type, int fds_len,
+			      mach_port_t *ports, 
+			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
-			      mach_port_t *fds, int fds_len,
-			      mach_msg_type_name_t fds_type,
 			      int timeout, fsys_t *control);
 
 
