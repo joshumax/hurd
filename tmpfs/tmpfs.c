@@ -186,6 +186,25 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	    case 'K':
 	      size <<= 10;
 	      break;
+	    case '%':
+	      {
+		/* Set as a percentage of the machine's physical memory.  */
+		struct vm_statistics vmstats;
+		error_t err = vm_statistics (mach_task_self (), &vmstats);
+		if (err)
+		  {
+		    argp_error (state, "cannot find total physical memory: %s",
+				strerror (err));
+		    return err;
+		  }
+		size = round_page ((((vmstats.free_count
+				      + vmstats.active_count
+				      + vmstats.inactive_count
+				      + vmstats.wire_count)
+				     * vm_page_size)
+				    * size + 99) / 100);
+		break;
+	      }
 	    }
 	  size = (off_t) size;
 	  if (size < 0)
