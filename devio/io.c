@@ -184,7 +184,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
 /* Truncate file.  */
 kern_return_t
-trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
 {
   if (!cred)
     return EOPNOTSUPP;
