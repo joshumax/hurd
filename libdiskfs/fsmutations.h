@@ -28,3 +28,4 @@
 #define FILE_IMPORTS import "priv.h";
 #define IO_IMPORTS import "priv.h";
 #define FSYS_IMPORTS import "priv.h";
+#define IFSOCK_IMPORTS import "priv.h";
