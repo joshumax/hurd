@@ -16,16 +16,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-struct protid
+struct trivfs_protid
 {
   struct port_info pi;
   int isroot;
-  mach_port_t realnode;
+  mach_port_t realnode;		/* restricted permissions */
+  struct control *cntl;
 };
 
-mach_port_t trivfs_underlying_node;
-
-struct port_info *trivfs_control_port;
+struct trivfs_control
+{
+  struct port_info pi;
+  mach_port_t underlying;
+};
 
 /* The user must define these variables. */
 extern int trivfs_fstype;
@@ -35,15 +38,27 @@ extern int trivfs_support_read;
 extern int trivfs_support_write;
 extern int trivfs_support_exec;
 
-extern char *trivfs_server_name;
-extern int trivfs_major_version;
-extern int trivfs_minor_version;
-extern int trivfs_edit_version;
+extern int trivfs_protid_porttype;
+extern int trivfs_cntl_porttype;
 
 /* The user must define this function.  This should modify a struct 
    stat (as returned from the underlying node) for presentation to
    callers of io_stat.  It is permissable for this function to do
    nothing.  */
 void trivfs_modify_stat (struct stat *);
+
+/* Call this to create a new control port and return a receive right
+   for it; exactly one send right must be created from the returned
+   receive right.  UNDERLYING is the underlying port, such as fsys_startup
+   returns as the realnode.  */
+mach_port_t trivfs_handle_port (mach_port_t realnode);
+
+/* Install these as libports cleanroutines for trivfs_protid_porttype
+   and trivfs_cntl_porttype respectively. */
+void trivfs_clean_protid (void *);
+void trivfs_clean_cntl (void *);
+
+/* This demultiplees messages for trivfs ports. */
+int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 
 error_t trivfs_goaway (int);
