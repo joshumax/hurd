@@ -235,9 +235,6 @@ ftp_conn_close (struct ftp_conn *conn)
   if (conn->control >= 0)
     close (conn->control);
   conn->control = -1;
-  if (conn->actv_data_conn_queue >= 0)
-    close (conn->actv_data_conn_queue);
-  conn->actv_data_conn_queue = -1;
   if (conn->hooks && conn->hooks->closed)
     (* conn->hooks->closed) (conn);
 }
