@@ -55,16 +55,13 @@ main (int argc, char **argv)
 	      if (use_file_io)
 		if (block_size)
 		  {
-		    off_t runs[2];
 		    struct stat stat;
-
 		    err = io_stat (source, &stat);
 		    if (! err)
 		      {
-			runs[0] = 0;
-			runs[1] = stat.st_size / block_size;
-			err = _store_file_create (source,
-						  block_size, runs, 2, &store);
+			struct store_run run = {0, stat.st_size / block_size};
+			err = _store_file_create (source, block_size, &run, 1,
+						  &store);
 		      }
 		  }
 		else
