@@ -36,7 +36,7 @@ install: /usr/local/bin/boot
 	cp boot /usr/local/bin/boot
 
 boot.o: notify_S.h exec_S.h ourdevice_S.h io_S.h device_reply_U.h \
-	io_reply_U.h tioctl_S.h term_S.h
+	io_reply_U.h tioctl_S.h term_S.h bootstrap_S.h
 
 ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
