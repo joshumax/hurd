@@ -89,7 +89,8 @@ diskfs_start_bootstrap (void)
 		      idlist, 3, idlist, 3, 0, 
 		      &retry, retry_name, &diskfs_exec);
   assert (!err);
-  assert (retry == FS_RETRY_NONE);
+  assert (retry == FS_RETRY_NORMAL);
+  assert (retry_name[0] == '\0');
   assert (diskfs_exec);
 
   
@@ -109,11 +110,12 @@ diskfs_start_bootstrap (void)
   else
     initnamebuf = initname = default_init;
   
-  err = dir_pathtrans (root_pt, initname, O_READ, 0,
-		       &retry, pathbuf, &startup_pt);
+  err = dir_lookup (root_pt, initname, O_READ, 0,
+		    &retry, pathbuf, &startup_pt);
   
   assert (!err);
-  assert (retry == FS_RETRY_NONE);
+  assert (retry == FS_RETRY_NORMAL);
+  assert (pathbuf[0] == '\0');
 
   bootpt = ports_get_right (ports_allocate_port (sizeof (struct port_info), 
 						 PT_INITBOOT));
