@@ -333,6 +333,7 @@ write_node (struct node *np)
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
+      record_poke (di, sizeof (struct dinode));
     }
 }  
 
@@ -344,6 +345,7 @@ create_symlink_hook (struct node *np, char *target)
 {
   int len = strlen (target);
   error_t err;
+  struct dinode *di;
   
   if (!direct_symlink_extension)
     return EINVAL;
@@ -357,10 +359,12 @@ create_symlink_hook (struct node *np, char *target)
   if (err)
     return err;
   
-  bcopy (target, (dino (np->dn->number))->di_shortlink, len);
+  di = dino (np->dn->number);
+  bcopy (target, di->di_shortlink, len);
   np->dn_stat.st_size = len;
   np->dn_set_ctime = 1;
   np->dn_set_mtime = 1;
+  record_poke (di, sizeof (struct dinode));
 
   diskfs_end_catch_exception ();
   return 0;
@@ -446,7 +450,8 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   daddr_t blkno;
   error_t err;
   char buf[sblock->fs_bsize];
-  
+  struct dinode *di;
+
   if (compat_mode != COMPAT_GNU)
     return EOPNOTSUPP;
 
@@ -457,7 +462,8 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   if (err)
     return err;
   
-  blkno = (dino (np->dn->number))->di_trans;
+  di = dino (np->dn->number);
+  blkno = di->di_trans;
   
   if (namelen && !blkno)
     {
@@ -468,14 +474,16 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  diskfs_end_catch_exception ();
 	  return err;
 	}
-      (dino (np->dn->number))->di_trans = blkno;
+      di->di_trans = blkno;
+      record_poke (di, sizeof (struct dinode));
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
     {
       /* Clear block for translator going away. */
       ffs_blkfree (np, blkno, sblock->fs_bsize);
-      (dino (np->dn->number))->di_trans = 0;
+      di->di_trans = 0;
+      record_poke (di, sizeof (struct dinode));
       np->istranslated = 0;
       np->dn_set_ctime = 1;
     }
