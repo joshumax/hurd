@@ -43,8 +43,9 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   uid_t *uids, u_int nuids,
 			   uid_t *gids, u_int ngids)
 {
-  struct trivfs_protid *newcred;
   int i;
+  error_t err = 0;
+  struct trivfs_protid *newcred;
   uid_t *newuids, *newgids;
   int newnuids, newngids;
   
@@ -82,14 +83,27 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   newcred->nuids = newnuids;
   newcred->hook = cred->hook;
 
-  io_restrict_auth (cred->realnode, &newcred->realnode, 
-		    newuids, newnuids, newgids, newngids);
-  
-  if (trivfs_protid_create_hook)
-    (*trivfs_protid_create_hook) (newcred);
+  err = io_restrict_auth (cred->realnode, &newcred->realnode, 
+			  newuids, newnuids, newgids, newngids);
+  if (!err && trivfs_protid_create_hook)
+    {
+      err = (*trivfs_protid_create_hook) (newcred);
+      if (err)
+	mach_port_deallocate (mach_task_self (), newcred->realnode);
+    }
 
-  *newport = ports_get_right (newcred);
-  *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+  if (err)
+    /* Signal that the user destroy hook shouldn't be called on NEWCRED.  */
+    newcred->realnode = MACH_PORT_NULL;
+  else
+    {
+      *newport = ports_get_right (newcred);
+      *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+    }
+
+  /* This will destroy NEWCRED if we got an error and didn't do the
+     ports_get_right above.  */
   ports_port_deref (newcred);
+
   return 0;
 }
