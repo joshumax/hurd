@@ -170,6 +170,10 @@ void ports_enable_class (struct port_class *class);
    to continue. */
 void port_enable_bucket (struct port_bucket *bucket);
 
+/* Call FUN once for each port in BUCKET. */
+void port_bucket_iterate (struct port_bucket *bucket,
+			  void (*fun)(void *port));
+
 
 
 /* RPC management */
