@@ -1,0 +1,6 @@
+inodes		blocks		r_blocks	free_blocks
+free_inodes	first_dblock	log_block_size	log_frag_size
+blocks/group	frags/group	inodes/group	mtime
+wtime		mnt_cnt;max	magic;state	errors;pad
+lastcheck	check_int	creator_os	rev_level
+res_uid;gid
