@@ -35,13 +35,13 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->cntl->lock);
-
   newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
   newcred->realnode = cred->realnode;
   newcred->isroot = cred->isroot;
+  mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
+  mutex_unlock (&cred->po->cntl->lock);
   newcred->uids = malloc (cred->nuids * sizeof (uid_t));
   newcred->gids = malloc (cred->ngids * sizeof (gid_t));
   bcopy (cred->uids, newcred->uids, cred->nuids * sizeof (uid_t));
@@ -53,8 +53,6 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
 
   newcred->hook = cred->hook;
 
-  mutex_unlock (&cred->po->cntl->lock);
-  
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (newcred);
 
