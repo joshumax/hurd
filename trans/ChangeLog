@@ -1,3 +1,33 @@
+2003-03-05  Roland McGrath  <roland@frob.com>
+
+	Make /hurd/magic support translator delegation via /servers/magic.
+	* magic.c (struct magic): New structure.
+	(magic, directory, dirbuf, dirbufsize): Variables removed,
+	not members of struct magic.
+	(trivfs_modify_stat, magic_getroot, trivfs_S_dir_readdir): Use a
+	struct magic hanging off CNTL->hook rather than global variables.
+	(trivfs_append_args): Likewise.
+	(trivfs_S_dir_lookup): Likewise.  Let magic string be null to indicate
+	prepending nothing in --directory mode.
+	(parse_opt): Use struct magic in STATE->input instead of globals.
+	If no argument, turn on --directory and leave M->magic null.
+	(argp): New static variable, instead of auto in main.
+	(main): Set both trivfs hook functions unconditionally.
+	Use a struct magic, pass it to argp_parse and store it in FSYS->hook.
+	Move directory buffer setup to ...
+	(parse_opt): ... here, do it on ARGP_KEY_SUCCESS.
+	(magic_open): Track users with a count.
+	(magic_protid_destroy): New function to track users.
+	(main): Set trivfs_protid_destroy_hook to that.
+	(trivfs_goaway): Call ports_destroy_right if FSYS has no users.
+	(all_fsys): New variable, list of all filesystems.
+	(trivfs_clean_cntl): New function, exit if no filesystems left.
+	(main): Put FSYS on that list.  On timeout with no RPCs, try
+	trivfs_goaway on each filesystem on the list.
+	(trivfs_S_fsys_forward): New function.
+	(delegate): New variable.
+	(options): New option -U/--use-server to set it.
+
 2002-12-08  Roland McGrath  <roland@frob.com>
 
 	* pump.c: File removed.
