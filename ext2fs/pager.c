@@ -1,6 +1,6 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,02 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
@@ -69,62 +69,59 @@ do { spin_lock (&ext2s_pager_stats.lock);				      \
 #define STAT_INC(field) /* nop */0
 #endif /* STATS */
 
-#define MAX_FREE_PAGE_BUFS 32
-
-static spin_lock_t free_page_bufs_lock = SPIN_LOCK_INITIALIZER;
-static void *free_page_bufs = 0;
-static int num_free_page_bufs = 0;
+#define FREE_PAGE_BUFS 24
 
 /* Returns a single page page-aligned buffer.  */
 static void *
 get_page_buf ()
 {
+  static struct mutex free_page_bufs_lock = MUTEX_INITIALIZER;
+  static void *free_page_bufs;
+  static int num_free_page_bufs;
   void *buf;
 
-  spin_lock (&free_page_bufs_lock);
-
-  buf = free_page_bufs;
-  if (buf == 0)
+  mutex_lock (&free_page_bufs_lock);
+  if (num_free_page_bufs > 0)
     {
-      spin_unlock (&free_page_bufs_lock);
-      buf = mmap (0, vm_page_size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (buf == (void *) -1)
-	buf = 0;
+      buf = free_page_bufs;
+      num_free_page_bufs --;
+      if (num_free_page_bufs > 0)
+	free_page_bufs += vm_page_size;
+#ifndef NDEBUG
+      else
+	free_page_bufs = 0;
+#endif /* ! NDEBUG */
     }
   else
     {
-      free_page_bufs = *(void **)buf;
-      num_free_page_bufs--;
-      spin_unlock (&free_page_bufs_lock);
+      assert (free_page_bufs == 0);
+      buf = mmap (0, vm_page_size * FREE_PAGE_BUFS,
+		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf == MAP_FAILED)
+	buf = 0;
+      else
+	{
+	  free_page_bufs = buf + vm_page_size;
+	  num_free_page_bufs = FREE_PAGE_BUFS - 1;
+	}
     }
 
+  mutex_unlock (&free_page_bufs_lock);
   return buf;
 }
 
 /* Frees a block returned by get_page_buf.  */
-static void
+static inline void
 free_page_buf (void *buf)
 {
-  spin_lock (&free_page_bufs_lock);
-  if (num_free_page_bufs < MAX_FREE_PAGE_BUFS)
-    {
-      *(void **)buf = free_page_bufs;
-      free_page_bufs = buf;
-      num_free_page_bufs++;
-      spin_unlock (&free_page_bufs_lock);
-    }
-  else
-    {
-      spin_unlock (&free_page_bufs_lock);
-      munmap (buf, vm_page_size);
-    }
+  munmap (buf, vm_page_size);
 }
 
 /* Find the location on disk of page OFFSET in NODE.  Return the disk block
-   in BLOCK (if unallocated, then return 0).  If *LOCK is 0, then it a reader
+   in BLOCK (if unallocated, then return 0).  If *LOCK is 0, then a reader
    lock is aquired on NODE's ALLOC_LOCK before doing anything, and left
-   locked after return -- even if an error is returned.  0 on success or an
-   error code otherwise is returned.  */
+   locked after the return -- even if an error is returned.  0 is returned
+   on success otherwise an error code.  */
 static error_t
 find_block (struct node *node, vm_offset_t offset,
 	    block_t *block, struct rwlock **lock)
