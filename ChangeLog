@@ -1,5 +1,8 @@
 1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* Makeconf (install): Fix typo in Thomas's last change.
+	($(libdir)/$(libname).so): Depend on ....so.$(hurd-version).
+
 	* Makeconf ($(libname).so): Make it a symlink to
 	$(libname).so.$(hurd-version).
 	($(libname).so.$(hurd-version)): New target, renamed from
