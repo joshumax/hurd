@@ -18,9 +18,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "pflocal.h"
+#include <string.h>		/* For bzero() */
 
-/* We hold this lock before we lock two sockets at once, to someone
+#include "pflocal.h"
+#include "sock.h"
+#include "pipe.h"
+
+/* We hold this lock before we lock two sockets at once, to prevent someone
    else trying to lock the same two sockets in the reverse order, resulting
    in a deadlock.  */
 static struct mutex socket_pair_lock;
@@ -33,11 +37,11 @@ static struct mutex socket_pair_lock;
 error_t
 sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
-  error_t err;
+  error_t err = 0;
 
   mutex_lock (&sock->lock);
 
-  *pipe = user->sock->read_pipe;
+  *pipe = sock->read_pipe;
   assert (*pipe);		/* A socket always has a read pipe.  */
 
   if (((*pipe)->flags & PIPE_BROKEN)
@@ -64,7 +68,7 @@ sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe)
   error_t err = 0;
 
   mutex_lock (&sock->lock);
-  *pipe = user->sock->write_pipe;
+  *pipe = sock->write_pipe;
   if (*pipe != NULL)
     pipe_aquire (*pipe);	/* Do this before unlocking the sock!  */
   else if (sock->flags & SOCK_SHUTDOWN_WRITE)
@@ -110,7 +114,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   new->flags = 0;
   new->write_pipe = NULL;
   new->id = next_sock_id++;
-  new->listenq = NULL;
+  new->connq = NULL;
   new->addr = NULL;
   bzero (&new->change_time, sizeof (new->change_time));
   mutex_init (&new->lock);
@@ -130,6 +134,23 @@ sock_free (struct sock *sock)
   pipe_release (sock->read_pipe);
 
   free (sock);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Return a new socket largely copied from TEMPLATE.  */
+error_t
+sock_clone (struct sock *template, struct sock **sock)
+{
+  error_t err = sock_create (template->read_pipe->class, sock);
+
+  if (err)
+    return err;
+
+  /* Copy some properties from TEMPLATE.  */
+  (*sock)->flags = template->flags & ~SOCK_CONNECTED;
+
+  return 0;
 }
 
 /* ---------------------------------------------------------------- */
@@ -174,6 +195,13 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 /* ---------------------------------------------------------------- */
 /* Address manipulation.  */
 
+struct addr
+{
+  struct port_info pi;
+  struct sock *sock;
+  struct mutex lock;
+};
+
 struct port_class *addr_port_class = NULL;
 
 /* Get rid of ADDR's socket's reference to it, in preparation for ADDR going
@@ -204,9 +232,10 @@ clean_addr (void *vaddr)
 {
   struct addr *addr = vaddr;
   /* ADDR should never have a socket bound to it at this point, as it should
-     have been removed by unbind_addr to drop the socket's weak reference to
+     have been removed by unbind_addr dropping the socket's weak reference
      it.  */
   assert (addr->sock == NULL);
+  free (addr);
 }
 
 /* Return a new address, not connected to any socket yet, ADDR.  */
@@ -236,7 +265,7 @@ sock_bind (struct sock *sock, struct addr *addr)
   mutex_lock (&addr->lock);
   mutex_lock (&sock->lock);
 
-  old_addr = sock->addr
+  old_addr = sock->addr;
   if (addr && old_addr)
     err = EINVAL;		/* SOCK already bound.  */
   else if (addr && addr->sock)
@@ -308,7 +337,7 @@ addr_get_sock (struct addr *addr, struct sock **sock)
 /* Returns SOCK's address in ADDR, with an additional reference added.  If
    SOCK doesn't currently have an address, one is fabricated first.  */
 error_t
-sock_get_addr (struct sock *sock, struct addr *addr)
+sock_get_addr (struct sock *sock, struct addr **addr)
 {
   error_t err;
 
@@ -360,7 +389,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	  pipe_aquire (pipe);
 	  pipe->flags &= ~PIPE_BROKEN; /* Not yet...  */
 	  wr->write_pipe = pipe;
-	  wr->write_addr = ensure_addr (rd);
+	  ensure_addr (rd, &wr->write_addr); /* XXXXXXXXXXX */
 	  ports_port_ref (wr->write_addr);
 	  mutex_unlock (&pipe->lock);
 	}
@@ -400,7 +429,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 
   if (old_sock1_write_pipe)
     {
-      pipe_discard (old_sock1_write_pipe);
+      pipe_break (old_sock1_write_pipe);
       ports_port_deref (old_sock1_write_addr);
     }
 
@@ -439,11 +468,21 @@ sock_shutdown (struct sock *sock, unsigned flags)
 	  sock->write_pipe = NULL;
 	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
 	  mutex_unlock (&sock->lock);
-	  pipe_discard (pipe);
+	  pipe_break (pipe);
 	}
       else
 	mutex_unlock (&sock->lock);
     }
   else
     mutex_unlock (&sock->lock);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Try to shutdown any active sockets, returning EBUSY if we can't.  */
+error_t
+sock_goaway (int flags)
+{
+  /* XXX */
+  return 0;
 }
