@@ -466,7 +466,7 @@ launch_system (void)
      We must do this before calling proc_setmsgport below.  */
   proc_task2proc (procserver, fstask, &fsproc);
 
-#if 1
+#if 0
   /* Run the device server */
   termtask = run_for_real (devname, devname, sizeof (devname));
 #else  
