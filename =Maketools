@@ -29,4 +29,5 @@ export CPP
 # rsh to ernst to run migcom. --roland
 MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
-RANLIB=@echo NOT RUNNING BUGGY $(tooldir)/ranlib
+RANLIB=$(tooldir)/ranlib
+LD=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/ld
