@@ -2,6 +2,7 @@ Fri Jul 19 21:19:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* filedev.c (diskfs_get_file_device): INTS[3] contains the number
 	of runs, not the number of offsets (which is 2*NUM_RUNS).
+	Don't deallocate the device port we've fetched.
 
 	* opts-std-startup.c (startup_options, parse_startup_opt): Remove
 	the --version option, which is handled elsewhere now.
