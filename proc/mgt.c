@@ -99,7 +99,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   err = auth_server_authenticate (authserver, p->p_reqport, 
 				  MACH_MSG_TYPE_MAKE_SEND, 
 				  rendport, MACH_MSG_TYPE_MOVE_SEND,
-				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
+				  p->p_reqport, MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &ngen_uids,
 				  &aux_uids, &naux_uids,
 				  &gen_gids, &ngen_gids,
