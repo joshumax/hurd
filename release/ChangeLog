@@ -1,3 +1,11 @@
+Wed Jul 31 13:15:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* install-stripped (copy/copyattrs): New function.
+	(copy/plaincopy, copy/objcopy, copy): Use copyattrs.
+
+	* Makefile (install-tools): Copy from the right place.  Make the
+	installed install-stripped executable.
+
 Tue Jul 30 12:05:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* INSTALL-binary: Don't make stupid claims about avoiding use of
