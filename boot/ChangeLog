@@ -1,3 +1,8 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot_script.c: Include <string.h> instead of declaring memset here.
+	Include <stdlib.h> instead of declaring malloc, free here.
+
 1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* boot_script.c (prompt_resume_task): Pass more than a single
@@ -54,13 +59,13 @@ Mon Aug 12 11:11:08 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (ourdevice.defs): Find device.defs under
 	install_includedir now.
-	
+
 	* Makefile (all): No longer build uxboot by default.
 
 Thu Aug  1 14:38:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* boot_script.h (safe_gets): Declare second parm as type `int'.
-	* boot.c (safe_gets): Likewise.	
+	* boot.c (safe_gets): Likewise.
 
 Sun Jul  7 21:10:08 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
@@ -78,7 +83,7 @@ Fri May 10 09:18:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 Thu May  9 18:57:34 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* boot.c (S_io_select): No longer has TAG parm.
-	
+
 	* boot.c (S_io_reauthenticate): Use new interface.
 
 Sun Apr 28 22:50:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -102,7 +107,7 @@ Wed Apr  3 18:54:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Wed Mar 27 11:30:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* boot.c [notanymore] (S_tioctl_tiocgeta, S_tioctl_tiocseta,
-	S_tioctl_tiocsetaf, term_modes, term_ccs, term_speeds): 
+	S_tioctl_tiocsetaf, term_modes, term_ccs, term_speeds):
 	Functions & variables removed.
 	* Makefile (COMMON-OBJS): Remove tcattr.o.
 	(SRCS): Remove tcattr.c.
@@ -642,4 +647,3 @@ Mon May  2 16:47:49 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 Fri Apr  1 17:55:38 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
 
 	* Makefile (OBJS): Remove boot_machdep.o.
-
