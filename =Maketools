@@ -42,7 +42,7 @@ RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
 
 startup := $(crossdir)/lib/crt0.o
-libc := -L$(crossdir)/lib -lc
+libc := $(crossdir)/lib/libc.a
 crossheaders := $(crossdir)/include
 
 INSTALL = install -c
