@@ -149,11 +149,69 @@ enum term_bottom_type
  TERM_ON_HURDIO,
  TERM_ON_MASTERPTY,
 };
+
+/* Types of storage, as returned by file_get_storage_info.
 
-/* Flags for file_get_storage_info. */
-#define STORAGE_MUTATED   0x00000001 /* data as stored is munged from file */
+   STORAGE_DEVICE is a mach device_t (for random access devices)
+   STORAGE_HURD_FILE is a hurd file_t (as if a file were mapped)
+   STORAGE_TASK is a task_t (the storage is in the vm of the task)
+   STORAGE_MEMORY is a memory object port
+   STORAGE_NULL is a fixed-size constant source of zeros
+   STORAGE_INTERLEAVE is a set of other storage types interleaved at a fixed
+    interval
+   STORAGE_CONCAT is a set of other storage types concatenated end-to-end
+   STORAGE_LAYER is a set of storage types, representing the same address
+     range; all will be written too, and will be read in turn until one
+     succeeds
+   STORAGE_NETWORK means that the file is stored elsewhere on the
+     network; all the remaining fields contan type-specific information.
+   STORAGE_OTHER means none of these apply; and should be used when no
+     meaningful answer can be given
 
-/* Classes for file_get_storage_info. */
+   The vectors returned by file_get_storage_info encode each of the above
+   (note that the first int is always the storage type).  There are four:
+   ports, ints, offsets (off_t), and data (char); each type of store uses the
+   following entries in each vector:
+
+    -type-  -ports-  -ints-	     	     -offsets-	       -data-    -kids-
+    device  DEVICE   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    file    FILE     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    memory  MEMOBJ   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+    task    TASK     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
+      (the data for the above is a name (incl '\0') and a misc data block)
+    null    -	     TY, FL		     SIZE	       -         -
+      (BS is 1)
+    ileave  -	     TY, FL, IL, NC	     -		       -         NC
+      (BS is the LCM of its children; SIZE is the minimum of theirs * IL)
+    concat  - 	     TY, FL, NC      	     -		       -	 NC
+      (BS is the LCM of its children; SIZE is the sum of theirs)
+    layer   - 	     TY, FL, NC      	     -		       -	 NC
+      (BS is the LCM of its children; SIZE is the minimum of theirs)
+
+  For ileave, concat, and layer, the children are encoded following the parent.
+  The first int must always be TY.
+
+  key: TY = type code, FL = flags, BS = block size, NR = num runs,
+       NL = name len, ML = misc len, NC = num children,
+       IL = interleave (bytes), SIZE = Size of storage (blocks),
+       LEN = run length (blocks), OFFS = run offset (blocks),
+
+  The NR * (OFFS, LEN) offsets for some of the types is the set of block
+  ranges in the underlying address space that, concatenated, make up the
+  contents of the storage -- for instance, doing file_get_storage_info on a
+  file may return storage of type STORAGE_DEVICE, and the accompanying block
+  ranges are the set of blocks on the given device that correspond to that
+  file.  Any OFFS == -1 designates a hole in the address range.  Note that
+  the total size (SIZE) for these types is the sum of their LEN's.
+
+  The optional NAME returned by some types (if NL != 0) is a type specific
+  name for the same object referenced by the port also returned.  E.g.:
+    device -- The mach device name
+    file   -- The file name (unreliable, as the root may not be the same)
+    task   -- The pid
+  Unless it is MACH_PORT_NULL, the port should generally be used instead of
+  trying to regenerate it from the associated name, which is intended more for
+  printing messages, etc.  */
 enum file_storage_class
 {
   STORAGE_OTHER,
@@ -168,53 +226,8 @@ enum file_storage_class
   STORAGE_LAYER,
 };
 
-/* STORAGE_DEVICE implies that:
-
-   STORAGE_PORT, if non-null, is a device_t holding the data.
-
-   STORAGE_NAME, if non-null, is the name (as for device_open) of the
-   device holding the data.  (Caveat: use storage_port in preference
-   to storage_name for actual I/O)
-
-   The even members of ADDRESSES specify the physical addresses of the
-   data of the file, in order (in units appropriate as a RECNUM to
-   device_read/write) .  The odd members specify the lengths (in
-   bytes) of the storage at the preceding address.  An address of -1
-   identifies a hole, a length of zero should be ignored along with
-   the preceding address.
-
-   STORAGE_MISC may contain additional type specific information.
-   */
-
-/* STORAGE_HURD_FILE implies that:
-
-   STORAGE_PORT, if non-null, is a file_t holding the data.
-
-   STORAGE_NAME, if non-null, is the filename of the file referenced
-   by STORAGE_PORT.  (Caveat: use storage_port in preference to
-   storage_name if both are provided.)
-
-   ADDRESSES are pairs of address pairs; the even numbers are off_t
-   offsets from the start of the file and the odd numbers are the
-   length of the segment.  -1 addresses are holes; zero lengths
-   should be ignored.
-
-   STORAGE_MISC may contain additional type-specific information.
-*/
-
-/* STORAGE_TASK is like STORAGE_HURD_FILE, except that the data is found
-   in the virtual address space of the task identified by STORAGE_PORT.  */
-
-/* STORAGE_MEMORY is similar, except the data is found in the memory
-   object identified by STORAGE_PORT. */
-
-/* STORAGE_NETWORK means that the file is stored elsewhere on the
-   network; all the remaining fields contan type-specific information. */
-
-/* STORAGE_OTHER means none of these apply; and should be used when no
-   meaningful answer can be given. */
-
-
+/* Flags for the flags word returned by some types . */
+#define STORAGE_MUTATED   0x00000001 /* data as stored is munged from file */
 
 /*   Data types   */
 
