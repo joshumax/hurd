@@ -216,9 +216,9 @@ routine io_server_version (
    io_write.  */
 routine io_map (
 	io_object: io_t;
-	out memobjxx: mach_port_move_send_t;
-	out memobjrd: mach_port_move_send_t;
-	out memobjwt: mach_port_move_send_t);
+	out memobjxx: mach_port_send_t;
+	out memobjrd: mach_port_send_t;
+	out memobjwt: mach_port_send_t);
 
 /* This call can only be made once per request port.  If it returns
    POSIX_EBUSY, then the user should duplicate the port (using
