@@ -1,7 +1,11 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* iouser-reauth.c: Add #include <sys/mman.h> for munmap decl.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* iouser-reauth.c (iohelp_reauth): Use munmap instead of
-	vm_deallocate. 
+	vm_deallocate.
 
 1998-08-21  Roland McGrath  <roland@baalperazim.frob.com>
 

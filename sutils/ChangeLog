@@ -1,7 +1,15 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* clookup.c: Add #include <sys/mman.h>.
+
+	* Makefile (special-targets): Add losetup.
+	(SCRIPTS): Add losetup.sh.
+	* losetup.sh: New file.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* clookup.c (file_name_lookup_carefully): Use munmap instead of
-	vm_deallocate. 
+	vm_deallocate.
 
 1999-06-11  Roland McGrath  <roland@baalperazim.frob.com>
 
