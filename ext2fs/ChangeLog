@@ -1,5 +1,9 @@
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* dir.c (ext2_file_type): #if 0 out this variable.
+	(diskfs_get_directs): #if 0 out code to interpret file_type field
+	and set d_type.  Instead, always return DT_UNKNOWN for now.
+
 	* dir.c (file_type_ext2): #if 0 out.
 	(diskfs_direnter_hard): #if 0 out code to set file_type field in
 	directory entries.  Instead, always set it to zero.
