@@ -1,3 +1,12 @@
+1999-12-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* null.c: Support --full/-f option to be /dev/full (ENOSPC writes).
+	(write_error_code): New variable.
+	(options, argp): New static const variables.
+	(parse_opt): New function.
+	(main): Move local ARGP out to static.
+	(trivfs_S_io_write): Return write_error_code instead of zero.
+
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hello-mt.c: New file, modified from hello.c to be multithreaded.
