@@ -1,3 +1,12 @@
+Wed Aug 20 13:56:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* manage-multithread.c (ports_manage_port_operations_multithread):
+ 	Drop parms `wire_cthreads' and `wire_threads'.  Add parm `hook'.
+	(thread_function): Call HOOK instead of cthread_wire and/or
+	thread_wire. 
+	* ports.h (ports_manage_port_operations_multithread): Adjust
+	declaration. 
+	
 Fri Feb 14 00:51:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* create-bucket.c (ports_create_bucket): Initialize rpcs, flags, &

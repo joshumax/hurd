@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -29,8 +29,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  ports_demuxer_type demuxer,
 					  int thread_timeout,
 					  int global_timeout,
-					  int wire_cthreads,
-					  mach_port_t wire_threads)
+					  void (*hook)())
 {
   volatile int nreqthreads;
   volatile int totalthreads;
@@ -123,10 +122,8 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       int timeout;
       error_t err;
 
-      if (wire_threads)
-	thread_wire (wire_threads, hurd_thread_self (), 1);
-      if (wire_cthreads)
-	cthread_wire ();
+      if (hook)
+	(*hook) ();
 
       if (master)
 	timeout = global_timeout;

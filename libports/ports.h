@@ -1,5 +1,5 @@
 /* Ports library for server construction
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -293,20 +293,16 @@ void ports_manage_port_operations_one_thread(struct port_bucket *bucket,
    for each incoming message.  Return if GLOBAL_TIMEOUT is nonzero and
    no messages have been receieved for GLOBAL_TIMEOUT milliseconds.
    Create threads as necessary to handle incoming messages so that no
-   port is starved because of sluggishness on another port.  All
-   threads created (and the calling thread) will be wired with
-   cthread_wire if WIRE_CTHREADS is non-zero.  All threads created
-   (and the calling thread) will be wired with thread_wire if
-   WIRE_THREADS is non-zero (it must be the priviliged host port in
-   order to succeed).  If LOCAL_TIMEOUT is non-zero, then individual
-   threads will die off if they handle no incoming messages for
-   LOCAL_TIMEOUT milliseconds. */
+   port is starved because of sluggishness on another port.  If
+   LOCAL_TIMEOUT is non-zero, then individual threads will die off if
+   they handle no incoming messages for LOCAL_TIMEOUT milliseconds.
+   HOOK (if not null) will be called in each new thread immediately
+   after it is created. */
 void ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					       ports_demuxer_type demuxer,
 					       int thread_timeout,
 					       int global_timeout,
-					       int wire_cthreads,
-					       mach_port_t wire_threads);
+					       void (*hook)(void));
    
 /* Interrupt any pending RPC on PORT.  Wait for all pending RPC's to
    finish, and then block any new RPC's starting on that port. */
