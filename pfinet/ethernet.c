@@ -93,7 +93,6 @@ ethernet_demuxer (mach_msg_header_t *inp,
 		  mach_msg_header_t *outp)
 {
   struct net_rcv_msg *msg = (struct net_rcv_msg *) inp;
-  struct packet_header *pkthdr = (struct packet_header *) msg->packet;
   struct sk_buff *skb;
   int datalen;
 
