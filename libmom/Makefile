@@ -30,7 +30,7 @@ SRCS = add-ref.c allocate-address.c allocate-memory.c copy-ref.c \
 	reserve-memory-anywhere.c unreserve-memory.c unuse-memory.c \
 	wire-memory.c
 
-LCLHDRS = mom.h mom-kernep.h priv.h
+LCLHDRS = mom.h mom-kerndep.h priv.h
 installhdrs = mom.h mom-kerndep.h
 installhdrsubdir = .
 
