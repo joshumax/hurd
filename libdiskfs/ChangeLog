@@ -1,3 +1,9 @@
+1999-10-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* node-nput.c (diskfs_nput): Call diskfs_set_node_times before
+	diskfs_lost_hardrefs.  This should address the late mtime update
+	bug reported and investigated by Mark Kettenis.
+
 1999-10-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* sync-interval.c (periodic_sync): With diskfs_fsys_lock reader lock
