@@ -46,7 +46,7 @@
 #define in_range(b, first, len) ((b) >= (first) && (b) <= (first) + (len) - 1)
 
 void 
-ext2_free_blocks (unsigned long block, unsigned long count)
+ext2_free_blocks (block_t block, unsigned long count)
 {
   char *bh;
   unsigned long block_group;
@@ -117,8 +117,8 @@ ext2_free_blocks (unsigned long block, unsigned long count)
  * each block group the search first looks for an entire free byte in the block
  * bitmap, and then for any free bit if that fails.
  */
-int 
-ext2_new_block (unsigned long goal,
+block_t
+ext2_new_block (block_t goal,
 		u32 * prealloc_count, u32 * prealloc_block)
 {
   char *bh;
@@ -163,7 +163,7 @@ repeat:
 #endif
       bh = bptr (gdp->bg_block_bitmap);
 
-      ext2_debug ("goal is at %d:%d.\n", i, j);
+      ext2_debug ("goal is at %d:%d", i, j);
 
       if (!test_bit (j, bh))
 	{
@@ -326,9 +326,6 @@ got_block:
       goto sync_out;
     }
 
-  bh = bptr (j);
-  memset (bh, 0, block_size);
-
   ext2_debug ("allocating block %d; goal hits %d of %d",
 	      j, goal_hits, goal_attempts);
 
@@ -377,7 +374,7 @@ ext2_count_free_blocks ()
 }
 
 static inline int 
-block_in_use (unsigned long block, unsigned char *map)
+block_in_use (block_t block, unsigned char *map)
 {
   return test_bit ((block - sblock->s_first_data_block) %
 		   sblock->s_blocks_per_group, map);
