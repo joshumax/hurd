@@ -19,12 +19,21 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include <mach.h>
+#include <stdio.h>
+#include <hurd/hurd_types.h>
+#include <hurd/fs.h>
+#include <hurd/io.h>
+
+void
 main ()
 {
   file_t root, passwd;
   retry_type retry;
   char buf[1024], *bp;
+  int buflen;
   char pathbuf[1024];
+  extern file_t *_hurd_init_dtable;
   
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
