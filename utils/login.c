@@ -264,7 +264,7 @@ main(int argc, char *argv[])
 {
   int i;
   io_t node;
-  char const *arg;
+  char *arg;
   char *path;
   error_t err = 0;
   char *args = 0;		/* The login parameters */
@@ -336,7 +336,7 @@ main(int argc, char *argv[])
     {
       int retry_argc;
       char **retry_argv;
-      char const *via = envz_get (args, args_len, "VIA");
+      char *via = envz_get (args, args_len, "VIA");
 
       error (retry ? 0 : code, err, fmt, str); /* May exit... */
 
@@ -473,8 +473,7 @@ main(int argc, char *argv[])
 	case ARGP_KEY_ARG:
 	  if (state->arg_num > 0)
 	    {
-	      err = argz_create ((char *const **)(state->argv
-						  + state->next - 1),
+	      err = argz_create (state->argv + state->next - 1,
 				 &sh_args, &sh_args_len);
 	      state->next = state->argc; /* Consume all args */
 	      if (err)
@@ -599,9 +598,9 @@ main(int argc, char *argv[])
     }
 
   /* Put in certain last-ditch defaults.  */
-  err = argz_create ((char *const **)default_args, &args_defs, &args_defs_len);
+  err = argz_create (default_args, &args_defs, &args_defs_len);
   if (! err)
-    err = argz_create ((char *const **)default_env, &env_defs, &env_defs_len);
+    err = argz_create (default_env, &env_defs, &env_defs_len);
   if (! err)
     /* Set the default path using confstr() if possible.  */
     {
@@ -617,7 +616,7 @@ main(int argc, char *argv[])
   if (err)
     error (23, err, "adding defaults");
 
-  err = argz_create ((char *const **)environ, &parent_env, &parent_env_len);
+  err = argz_create (environ, &parent_env, &parent_env_len);
 
   /* Parse our options.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
@@ -662,7 +661,7 @@ main(int argc, char *argv[])
 
   if (! no_login)
     {
-      char const *user = envz_get (args, args_len, "USER");
+      char *user = envz_get (args, args_len, "USER");
       if (user && *user)
 	setlogin (user);
       proc_make_login_coll (proc_server);
