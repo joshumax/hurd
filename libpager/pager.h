@@ -97,13 +97,6 @@ pager_get_port (struct pager *pager);
 void
 pager_shutdown (struct pager *pager);
 
-/* This is a clean routine which should be called when a pager port is
-   being deallocated.  It can be specified as the clean routine for
-   the port classes passed in pager_create.  ARG is the address of the
-   struct pager referenced by the port.  */
-void
-pager_clean (void *arg);
-
 /* Return the error code of the last page error for pager P at address ADDR;
    this will be deleted when the kernel interface is fixed.  */
 error_t
