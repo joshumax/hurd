@@ -483,7 +483,7 @@ error_t diskfs_node_reload (struct node *node);
    -- which is the behavior of the default implementation of this function.
    EINVAL is returned if an unknown option is encountered.  */
 error_t diskfs_parse_runtime_options (int argc, char **argv,
-				      struct argp *standard_argp);
+				      const struct argp *standard_argp);
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to set a symlink.  If it returns EINVAL or isn't set,
@@ -950,7 +950,7 @@ error_t diskfs_get_options (char **argz, unsigned *argz_len);
    arguments.  The user may call argp_parse on this to parse the command
    line, chain it onto the end of his own argp structure, or ignore it
    completely.  */
-extern struct argp *diskfs_startup_argp;
+extern const struct argp *diskfs_startup_argp;
 
 /* Demultiplex incoming messages on ports created by libdiskfs.  */
 int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
@@ -968,7 +968,7 @@ int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    arguments, that also parses a device argument.  The user may call
    argp_parse on this to parse the command line, chain it onto the end of his
    own argp structure, or ignore it completely.  */
-extern struct argp *diskfs_device_startup_argp;
+extern const struct argp *diskfs_device_startup_argp;
 
 /* The following two are set by the preceding argument parser:  */
 /* The device specifier given on the command line.  */
