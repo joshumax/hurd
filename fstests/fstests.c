@@ -63,8 +63,11 @@ main ()
   unlink ("/newdir");
   dir_unlink (root, "newdir");	/* unlink ("/newdir") */
   dir_rmdir (root, "newdir");	/* rmdir */
-  dir_mkdir (root, "newdir", 0666);
-  dir_rename (root, "README", root, "here it is now");
+  dir_mkdir (root, "newdir", 0777);
+  dir_rename (root, "newdir", root, "newdir2");
+  dir_rmdir (root, "foo");
+  dir_mkdir (root, "foo", 0777);
+  dir_rename (root, "newdir2", root, "foo");
   file_syncfs (root, 1, 0);
 
 #endif
