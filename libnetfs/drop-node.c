@@ -24,8 +24,6 @@ void
 netfs_drop_node (struct node *np)
 {
   fshelp_drop_transbox (&np->transbox);
-  if (np->identity != MACH_PORT_NULL)
-    mach_port_destroy (mach_task_self (), np->identity);
   netfs_node_norefs (np);
   spin_unlock (&netfs_node_refcnt_lock);
 }
