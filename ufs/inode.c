@@ -72,8 +72,6 @@ iget (ino_t inum, struct node **npp)
   dn->number = inum;
   dn->dirents = 0;
 
-  mutex_init (&dn->rwlock_master);
-  condition_init (&dn->rwlock_wakeup);
   rwlock_init (&dn->dinlock);
   rwlock_init (&dn->sinlock);
   rwlock_init (&dn->datalock);
