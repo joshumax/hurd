@@ -1,5 +1,5 @@
 /* generic-speaker.c - The simple speaker bell driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -20,6 +20,8 @@
 
 #include <errno.h>
 #include <sys/io.h>
+#include <string.h>
+#include <argp.h>
 
 #include <cthreads.h>
 
@@ -202,31 +204,37 @@ struct note
 
 struct melody
 {
+  char *name;
   int measure;
   struct note *next;
   struct note note[];
 };
 
+#define BELL_CLASSIC	"classic"
+#define BELL_LINUX	"linux"
+#define BELL_ALARM	"alarm"
+#define BELL_CMAJOR	"cmajor"
+
 static struct melody beep1 =
-  { 160, NULL, {
+  { BELL_CLASSIC, 160, NULL, {
     /* The classical bell.  */
     { T_a_1, 4 }, { T_FINE, 0 }
   } };
 
 static struct melody beep2 =
-  { 60, NULL, {
+  { BELL_LINUX, 60, NULL, {
     /* The Linux bell.  */
     { 750, 1 }, { T_FINE, 0 }
   } };
 
 static struct melody beep3 =
-  { 160, NULL, {
+  { BELL_ALARM, 160, NULL, {
     /* The tritonus.  Quite alarming.  */
     { T_f_2, 2 }, { T_b_1, 4 }, { T_FINE, 0 }
   } };
 
 static struct melody beep4 =
-  { 160, NULL, {
+  { BELL_CMAJOR, 160, NULL, {
     /* C-Major chord.  A bit playful.  */
     { T_c_2, 2 }, { T_e_2, 2 }, { T_g_2, 2 },
     { T_FINE, 0 }
@@ -237,7 +245,7 @@ static int active_beep;
 
 #if QUAERENDO_INVENIETIS
 struct melody tune1 =
-  { 160, NULL, {
+  { "FSF Song", 160, NULL, {
     /* The Free Software Song.  Measure: 7/4.  */
     { T_d_2, 16 }, { T_c_2,  8 }, { T_b_1, 16 }, { T_a_1, 16 },
     { T_b_1, 16 }, { T_c_2,  8 }, { T_b_1,  8 }, { T_a_1,  8 }, { T_g_1, 16 },
@@ -254,7 +262,7 @@ struct melody tune1 =
   } };
 
 struct melody tune2 =
-  { 160, NULL, {
+  { "I Feel Pretty", 160, NULL, {
     /* I feel pretty.  Measure: 3/4.  By Leonard Bernstein.  */
     { T_c_1,  8 }, { T_e_1,  8 },
     { T_f_1,  4 }, { T_a_1, 20 },
@@ -273,7 +281,7 @@ struct melody tune2 =
   } };
 
 struct melody tune3 =
-  { 120, NULL, {
+  { "Summertime", 120, NULL, {
     /* Summertime.  Measure: 4/4.  By George & Ira Gershwin.  */
     { T_b_1,  8 }, { T_g_1,  8 },
     { T_b_1, 36 }, { T_REST, 4 }, { T_a_1,  6 }, { T_g_1,  2 },
@@ -299,7 +307,7 @@ struct melody tune3 =
   } };
 
 struct melody tune4 =
-  { 250, NULL, {
+  { "Indiana Jones Theme", 250, NULL, {
     /* Indiana Jones Theme.  Measure: 4/4.  By John Williams.  */
     { T_e_1, 4 }, { T_REST, 8 }, { T_f_1, 4 },
     { T_g_1, 4 }, { T_REST, 4 }, { T_c_2, 24 },
@@ -386,11 +394,71 @@ next_note (void *handle)
 }
 
 
+static const char doc[] = "Generic speaker driver";
+
+static const struct argp_option options[] =
+  {
+    {"bell-style", 'b', "BELL", 0, "Use one of the bells: "
+                                   BELL_CLASSIC ", " BELL_LINUX ", " BELL_ALARM
+                                   " or " BELL_CMAJOR},
+    { 0 }
+  };
+
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  int *pos = (int *) state->input;
+
+  switch (key)
+    {
+    case 'b':
+      {
+	unsigned int i;
+	int found = 0;
+
+	for (i = 0; i < sizeof (*beep); i++)
+	  {
+	    if (! strcasecmp (beep[i]->name, arg))
+	      {
+		found = 1;
+		break;
+	      }
+	  }
+
+	if (! found)
+	  argp_usage (state);
+
+	active_beep = i;
+	break;
+      }
+      
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+
+  /* Save which option comes after the last accepted option.  */
+  *pos = state->next;
+  return 0;
+}
+
+static struct argp argp = {options, parse_opt, 0, doc};
+
 /* Initialization of the generic speaker driver.  */
 static error_t
 generic_speaker_init (void **handle, int no_exit,
 		      int argc, char *argv[], int *next)
 {
+  error_t err;
+  int pos = 1;
+
+  /* Parse the arguments.  */
+  err = argp_parse (&argp, argc, argv, ARGP_IN_ORDER | ARGP_NO_EXIT
+		    | ARGP_SILENT, 0 , &pos);
+  *next += pos - 1;
+
+  if (err && err != EINVAL)
+    return err;
+
   timer_clear (&generic_speaker_timer);
   generic_speaker_timer.fnc = &next_note;
 

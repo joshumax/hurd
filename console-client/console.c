@@ -1,5 +1,5 @@
 /* console.c -- A pluggable console client.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -455,7 +455,7 @@ main (int argc, char *argv[])
   driver_init ();
 
   /* Parse our command line.  This shouldn't ever return an error.  */
-  argp_parse (&startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   err = driver_start (&errname);
   if (err)

@@ -1,5 +1,5 @@
 /* vga.c - The VGA device display driver.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -152,80 +152,97 @@ vga_display_flash (void *handle)
 }
 
 
-/* Parse arguments at startup.  */
+
+static const char doc[] = "VGA Driver";
+
+static const struct argp_option options[] =
+  {
+    {"font",		'f', "FONT", 0, "Use FONT for normal text"},
+    {"font-italic",	'i', "FONT", 0, "Use FONT for italic text"},
+    {"font-bold",	'b', "FONT", 0, "Use FONT for bold text"},
+    {"font-bold-italic",'a', "FONT", 0,
+     "Use FONT for text that is both bold and italic"},
+    {"max-colors",	'm', 0     , 0,
+     "Prefer a lot of colors above a lot of glyphs"},
+    {"max-glyphs",	'g', 0     , 0,
+     "Prefer a lot of glyphs above a lot of colors"},
+    { 0 }
+    };
+
 static error_t
-parse_startup_args (int no_exit, int argc, char *argv[], int *next)
+parse_opt (int key, char *arg, struct argp_state *state)
 {
-#define PARSE_FONT_OPT(x,y)				\
-    do {						\
-      if (!strcmp (argv[*next], x))			\
-	{						\
-	  (*next)++;					\
-	  if (*next == argc)				\
-	    {						\
-	      if (no_exit)				\
-		return EINVAL;				\
-	      else					\
-		error (1, 0, "option " x		\
-		       " requires an argument");	\
-	    }						\
-	  if (vga_display_##y)				\
-	    free (vga_display_##y);			\
-	  vga_display_##y = strdup (argv[*next]);	\
-	  if (!vga_display_##y)				\
-	    {						\
-	      if (no_exit)				\
-		return errno;				\
-	      else					\
-		error (1, errno, "malloc failed");	\
-	    }						\
-	  (*next)++;					\
-          continue;					\
-	}						\
-      } while (0)
-
-#define PARSE_FONT_OPT_NOARGS(x,y,z)           \
-  {                                            \
-    if (!strcmp (argv[*next], x))              \
-      {                                        \
-       (*next)++;                              \
-       vga_display_##y = z;                    \
-      }                                        \
-  }
-
-  while (*next < argc)
+  int *pos = (int *) state->input;
+  
+  switch (key)
     {
-      PARSE_FONT_OPT ("--font", font);
-      PARSE_FONT_OPT ("--font-italic", font_italic);
-      PARSE_FONT_OPT ("--font-bold", font_bold);
-      PARSE_FONT_OPT ("--font-bold-italic", font_bold_italic);
-      PARSE_FONT_OPT_NOARGS ("--max-colors", max_glyphs, 1);
-      PARSE_FONT_OPT_NOARGS ("--max-glyphs", max_glyphs, 0);
-
-
+    case 'f':
+      vga_display_font = strdup (arg);
+      if (! vga_display_font)
+	return 0;
       break;
+
+    case 'i':
+      vga_display_font_italic = strdup (arg);
+      if (! vga_display_font_italic)
+	return 0;
+      break;
+
+    case 'b':
+      vga_display_font_bold = strdup (arg);
+      if (! vga_display_font_bold)
+	return 0;
+      break;
+
+    case 'a':
+      vga_display_font_bold_italic = strdup (arg);
+      if (! vga_display_font_bold_italic)
+	return 0;
+      break;
+
+    case 'm':
+      vga_display_max_glyphs = 1;
+      break;
+
+    case 'g':
+      vga_display_max_glyphs = 0;
+      break;
+
+    case ARGP_KEY_END:
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
     }
+
+  *pos = state->next;
   return 0;
 }
 
+static struct argp argp = {options, parse_opt, 0, doc};
+
 /* Initialize the subsystem.  */
 static error_t
-vga_display_init (void **handle, int no_exit, int argc, char *argv[], int *next)
+vga_display_init (void **handle, int no_exit, int argc, char *argv[],
+		  int *next)
 {
   error_t err;
   struct vga_display *disp;
+  int pos = 1;
 
   /* XXX Assert that we are called only once.  */
   mutex_init (&vga_display_lock);
   timer_clear (&vga_display_timer);
   vga_display_timer.fnc = &vga_display_flash_off;
-
+  
   /* Parse the arguments.  */
-  err = parse_startup_args (no_exit, argc, argv, next);
-  if (err)
+  err = argp_parse (&argp, argc, argv, ARGP_IN_ORDER | ARGP_NO_EXIT
+		    | ARGP_SILENT, 0, &pos);
+  *next += pos - 1;
+  if (err && err != EINVAL)
     return err;
 
-  /* Create and initialize the display srtucture as much as
+  /* Create and initialize the display structure as much as
      possible.  */
   disp = calloc (1, sizeof *disp);
   if (!disp)
@@ -339,7 +356,8 @@ vga_display_set_cursor_status (void *handle, uint32_t state)
   if (!cursor_hidden)
     {
       if (state != CONS_CURSOR_INVISIBLE)
-	dynafont_set_cursor (disp->df, state == CONS_CURSOR_VERY_VISIBLE ? 1 : 0);
+	dynafont_set_cursor (disp->df,
+			     state == CONS_CURSOR_VERY_VISIBLE ? 1 : 0);
       
       vga_display_cursor (state == CONS_CURSOR_INVISIBLE ? 0 : 1);
     }

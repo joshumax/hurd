@@ -1,5 +1,5 @@
 /* driver.c - The console client driver code.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -99,6 +99,7 @@ error_t driver_add (const char *const name, const char *const driver,
   unsigned int i;
   char *dir = driver_path;
   int defpath = 0;
+  char *opt_backup;
 
   mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
@@ -213,8 +214,13 @@ error_t driver_add (const char *const name, const char *const driver,
       return ENOMEM;
     }
 
+  opt_backup = argv[*next - 1];
+  argv[*next - 1] = (char *) name;
   /* If we will start the driver, the init function must not exit.  */
-  err = (*drv->ops->init) (&drv->handle, start, argc, argv, next);
+  err = (*drv->ops->init) (&drv->handle, start, argc - (*next - 1),
+			   argv + *next - 1, next);
+  argv[*next - 1] = opt_backup;
+
   if (!err && start && drv->ops->start)
     err = (*drv->ops->start) (drv->handle);
   if (err)

@@ -1,3 +1,20 @@
+2004-03-21  Marco Gerards  <metgerards@student.han.nl>
+
+	* console.c (main): Make sure the arguments are	parsed in order.
+	* driver.c (driver_add):  Set up argc and argv so they can be used
+	by argp.
+	* generic-speaker.c: Include <string.h> and <argp.h>.
+	(struct melody): New member `name'.  Every melody was given a
+	name.
+	(BELL_CLASSIC, BELL_LINUX, BELL_ALARM, BELL_CMAJOR): New macros.
+	(doc, options, argp): New variables.
+	(parse_opt): New function.
+	(generic_speaker_init): Parse the arguments using argp.
+	* vga.c (doc, options, argp): New variables.
+	(parse_opt): New function.
+	(parse_startup_args): Function removed.
+	(vga_display_init): Use argp_parse instead of parse_startup_args.
+
 2004-03-07  Marco Gerards  <metgerards@student.han.nl>
 
 	* bdf.c (bdf_read): Change the types of has_size, has_fbbx,
