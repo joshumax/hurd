@@ -86,7 +86,7 @@ function mkdev {
 	;;
 
       std)
-	mkdev console tty null zero full fd time mem
+	mkdev console tty null zero full fd time mem klog
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -108,7 +108,8 @@ function mkdev {
 	st $I root 644 /hurd/storeio --no-cache time ;;
       mem)
 	st $I root 660 /hurd/storeio --no-cache mem ;;
-
+      klog)
+        st $I root 660 /hurd/streamio kmsg;;
       # ptys
       [pt]ty[pqrstuvwxyzPQRST]?)
 	# Make one pty, both the master and slave halves.

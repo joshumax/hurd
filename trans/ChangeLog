@@ -1,3 +1,14 @@
+2001-01-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (SRCS): Add streamio.c
+	(streamio): Add dependency on device_replyServer.o.
+	Other dependencies identical to those for crash and password.
+
+	(OBJS): Add missing object files to list (crashServer.o
+	crash_replyUser.o msgServer.o device_replyServer.o).
+
+	* storeio.c: New file by OKUJI Yoshinori.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile: Reorder libs such that the threads lib comes before
