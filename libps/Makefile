@@ -27,9 +27,14 @@ SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 LCLHDRS=ps.h
 installhdrs=ps.h
 
-OBJS = $(subst .c,.o,$(SRCS))
+MIGSTUBS=msgUser.o termUser.o
+
+OBJS = $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
 CPPFLAGS += -I../lib
+MIGCOMUFLAGS=-subrprefix __
+msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;'
+term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;'
 
 include ../Makeconf
 
