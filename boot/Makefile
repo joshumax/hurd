@@ -50,7 +50,10 @@ exec_S.h execServer.c: $(headers)/hurd/exec.defs
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader exec_S.h
 
-device_S.h deviceServer.c: $(headers)/device/device.defs
+device.defs: $(headers)/device/device.defs
+	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
+
+device_S.h deviceServer.c: device.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
