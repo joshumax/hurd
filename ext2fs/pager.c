@@ -407,8 +407,8 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       struct disknode *dn = node->dn;
 
       rwlock_writer_lock (&dn->alloc_lock);
-      err = diskfs_catch_exception ();
 
+      err = diskfs_catch_exception ();
       if (!err)
 	{
 	  int left = vm_page_size;
@@ -424,14 +424,14 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 	  while (left > 0)
 	    {
 	      block_t disk_block;
-	      err = ext2_getblk(node, block++, 1, &disk_block);
+	      err = ext2_getblk (node, block++, 1, &disk_block);
 	      if (err)
-		break;
+		{
+		  dn->last_page_partially_writable = (left < vm_page_size);
+		  break;
+		}
 	      left -= block_size;
 	    }
-
-	  if (page + vm_page_size >= node->allocsize)
-	    dn->last_block_allocated = 1;
 
 #ifdef EXT2FS_DEBUG
 	  if (dn->last_page_partially_writable)
@@ -442,12 +442,15 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 			page, vm_page_size, dn->number);
 #endif
 	}
-
       diskfs_end_catch_exception ();
+
       rwlock_writer_unlock (&dn->alloc_lock);
 
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
+      else if (err)
+	ext2_warning ("inode=%d, page=0x%x: %s",
+		      dn->number, page, strerror (err));
 
       return err;
     }
@@ -468,15 +471,15 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
     {
       error_t err;
       struct disknode *dn = node->dn;
-      vm_offset_t old_size = node->allocsize;
-      vm_offset_t new_size = round_block (size);
+      off_t old_size = node->allocsize;
+      volatile off_t new_size = round_block (size);
 
       ext2_debug ("growing inode %d to %u bytes (from %u)", dn->number,
 		  new_size, old_size);
 
       rwlock_writer_lock (&dn->alloc_lock);
-      err = diskfs_catch_exception ();
 
+      err = diskfs_catch_exception ();
       if (!err)
 	{
 	  if (dn->last_page_partially_writable)
@@ -488,12 +491,6 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	    {
 	      block_t block = old_size >> log2_block_size;
 	      int count = trunc_page (old_size) + vm_page_size - old_size;
-
-	      if (old_size + count < new_size)
-		/* The page we're unlocking (and therefore creating) doesn't
-		   extend all the way to the end of the file, so there's some
-		   unallocated space left there.  */
-		dn->last_block_allocated = 0;
 
 	      if (old_size + count > new_size)
 		/* This growth won't create the whole of the last page.  */
@@ -511,20 +508,28 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		  block_t disk_block;
 		  err = ext2_getblk(node, block++, 1, &disk_block);
 		  if (err)
-		    break;
+		    /* We've failed to make the whole last page writable. */
+		    {
+		      new_size -= count; /* Ensure we get re-called later. */
+		      dn->last_page_partially_writable = 1; /* still */
+		      break;
+		    }
 		  count -= block_size;
 		}
 
-	      ext2_debug ("new state: page %s, last block %sallocated",
+	      ext2_debug ("new state: page %s",
 			  dn->last_page_partially_writable
-			    ? "still partial" : "completely allocated",
-			  dn->last_block_allocated ? "" : "now un");
+			    ? "still partial" : "completely allocated");
+
+	      if (err)
+		ext2_warning ("inode=%d, target=%ld: %s",
+			      dn->number, new_size + count, strerror (err));
 	    }
 
 	  node->allocsize = new_size;
 	}
-
       diskfs_end_catch_exception ();
+
       rwlock_writer_unlock (&dn->alloc_lock);
 
       return err;
@@ -541,22 +546,6 @@ void
 diskfs_file_update (struct node *node, int wait)
 {
   struct pager *pager;
-
-  if (!node->dn->last_block_allocated)
-    /* Allocate the last block in the file to maintain consistency with the
-       file size.  */
-    {
-      rwlock_writer_lock (&node->dn->alloc_lock);
-      if (!node->dn->last_block_allocated) /* check again with the lock */
-	{
-	  block_t disk_block;
-	  block_t block = (node->allocsize >> log2_block_size) - 1;
-	  ext2_debug ("allocating final block %lu", block);
-	  if (ext2_getblk (node,  block, 1, &disk_block) == 0)
-	    node->dn->last_block_allocated = 1;
-	}
-      rwlock_writer_unlock (&node->dn->alloc_lock);
-    }
 
   spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
