@@ -20,14 +20,18 @@
 
 #include "pfinet.h"
 
+#define pfinet_demuxer ethernet_demuxer
+
 main ()
 {
   char addr[4];
+
+  pfinet_bucket = ports_create_bucket ();
   
   setup_ethernet_device ();
   
   /* Call initialization routines */
-  init_proto_init ();
+  inet_proto_init ();
 
   /* Simulate SIOCSIFADDR call. */
 
@@ -44,8 +48,13 @@ main ()
   ether_dev.pa_mask = *(u_long *)addr;
   
   ether_dev.family = AF_INET;
-  ether_dev.pa_brdaddr = ether_dev->pa_addr | ~ether_dev->pa_mask;
+  ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
   
   /* Turn on device. */
   dev_open (&ether_dev);
+
+  ports_manage_port_operations_multithread (pfinet_bucket,
+					    pfinet_demuxer,
+					    0, 0, 1, 0);
+  return 0;
 }
