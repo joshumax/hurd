@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <hurd/ioserver.h>
 
 /* Update our copy of the relevant fields from a shared page.  Callers
    must have the share lock on the shared page as well as the inode
@@ -26,15 +27,26 @@ ioserver_fetch_shared_data (void *arg)
 {
   struct protid *cred = arg;
   
+  /* Don't allow the user to grow the file past the alloc size. */
+  if (cred->mapped->file_size > cred->po->np->allocsize)
+    cred->mapped->file_size = cred->po->np->allocsize;
+
+  /* Don't allow the user to truncate the file this way. */
   if (cred->mapped->file_size < cred->po->np->dn_stat.st_size)
     cred->mapped->file_size = cred->po->np->dn_stat.st_size;
-  else if (cred->po->np->dn_stat.st_size != cred->mapped->file_size
-	   && !readonly)
+  else if (cred->po->np->dn_stat.st_size != cred->mapped->file_size)
     {
-      cred->po->np->dn_stat.st_size = cred->mapped->file_size;
-      cred->po->np->dn_set_ctime = 1;
+      /* The user can validly set the size, but block the attempt
+	 if we are readonly. */
+      if (readonly)
+	cred->mapped->file_size = cred->po->np->dn_stat.st_size;
+      else
+	{
+	  cred->po->np->dn_stat.st_size = cred->mapped->file_size;
+	  cred->po->np->dn_set_ctime = 1;
+	}
     }
-      
+  
   cred->po->filepointer = cred->mapped->xx_file_pointer;
       
   if (!readonly)
