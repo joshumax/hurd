@@ -18,7 +18,8 @@
 #include "priv.h"
 
 /* Node NP now has no more references; clean all state.  The
-   diskfs_node_refcnt_lock must be held.  */
+   diskfs_node_refcnt_lock must be held, and will be released
+   upon return.  NP must be locked.  */
 void
 diskfs_drop_node (struct node *np)
 {
@@ -27,7 +28,24 @@ diskfs_drop_node (struct node *np)
   if (np->dn_stat.st_nlink == 0)
     {
       assert (!diskfs_readonly);
-      diskfs_truncate (np, 0);
+
+      if (np->allocsize != 0)
+	{
+	  /* If the node needs to be truncated, then a complication
+	     arises, because truncation might require gaining
+	     new references to the node.  So, we give ourselves
+	     a reference back, unlock the refcnt lock.  Then
+	     we are in the state of a normal user, and do the truncate
+	     and an nput.  The next time through, this routine
+	     will notice that the size is zero, and not have to
+	     do anything. */
+	  np->references++;
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  diskfs_truncate (np, 0);
+	  diskfs_nput (np);
+	  return;
+	}
+
       savemode = np->dn_stat.st_mode;
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
@@ -39,6 +57,7 @@ diskfs_drop_node (struct node *np)
     diskfs_node_update (np, 0);
 
   diskfs_node_norefs (np);
+  spin_unlock (&diskfs_node_refcnt_lock);
 }
 
       
