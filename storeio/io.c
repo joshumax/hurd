@@ -1,6 +1,6 @@
 /* The hurd io interface to storeio
 
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -81,8 +81,8 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  vm_address_t *data, mach_msg_type_number_t *data_len,
-		  off_t offs, mach_msg_type_number_t amount)
+		  char **data, mach_msg_type_number_t *data_len,
+		  loff_t offs, mach_msg_type_number_t amount)
 {
   if (! cred)
     return EOPNOTSUPP;
@@ -123,8 +123,8 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   vm_address_t data, mach_msg_type_number_t data_len,
-		   off_t offs, mach_msg_type_number_t *amount)
+		   char *data, mach_msg_type_number_t data_len,
+		   loff_t offs, mach_msg_type_number_t *amount)
 {
   if (! cred)
     return EOPNOTSUPP;
@@ -272,7 +272,7 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
 error_t
 trivfs_S_file_sync (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int wait)
+		    int wait, int omit_metadata)
 {
   if (cred)
     return dev_sync (((struct open *)cred->po->hook)->dev, wait);
