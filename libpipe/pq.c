@@ -357,27 +357,44 @@ packet_read (struct packet *packet,
       if (packet->buf_vm_alloced && amount > vm_page_size)
 	/* We can return memory from BUF directly without copying.  */
 	{
+	  char *buf = packet->buf;
+	  char *end = packet->buf_end;
+
+	  /* Return the buffer directly.  */
 	  *data = start;
-	  if (start + amount < packet->buf_end)
+
+	  if (buf > start)
+	    /* BUF_START has been advanced past the start of the buffer
+	       (perhaps by a series of small reads); as we're going to assume
+	       everything before START is gone, make sure we deallocate any
+	       memory on pages before those we return to the user.  */
+	    {
+	      char *first_page = (char *)trunc_page (start);
+	      if (first_page > buf)
+		vm_deallocate (mach_task_self (),
+			       (vm_address_t)buf, first_page - buf);
+	    }
+
+	  if (start + amount < end)
 	    /* Since returning a partial page actually means returning the
 	       whole page, we have to be careful not to grab past the page
 	       boundary before the end of the data we want, unless the rest
 	       of the page is unimportant.  */
-	    {
-	      amount = (char *)trunc_page (start + amount) - start;
-	      packet->buf_start = (char *)round_page (start + amount);
-	    }
-	  else
-	    /* As we're at the end of the buffer, we don't care about
-	       BUF_START remaining page-aligned (the buffer size will be
-	       zero anyway), and this way we ensure that BUF_START doesn't
-	       go past BUF_END (which causes all sorts of fun).  */
-	    packet->buf_start = start + amount;
+	    amount = (char *)trunc_page (start + amount) - start;
+
+	  /* Advance the read point.  */
+	  start = (char *)round_page (start + amount);
+
+	  if (start > end)
+	    /* Make sure BUF_START is never beyond BUF_END (page-aligning the
+	       new BUF_START may have move it past).  */
+	    packet->buf_end = start;
 
 	  /* We've actually consumed the memory at the start of BUF, so
 	     adjust it and BUF_LEN to reflect this.  */
-	  packet->buf_len -= (packet->buf_start - packet->buf);
-	  packet->buf = packet->buf_start;
+	  packet->buf = start;
+	  packet->buf_start = start;
+	  packet->buf_len -= start - buf;
 	}
       else
 	/* Just copy the data the old fashioned way....  */
