@@ -33,8 +33,11 @@ dev_read (struct store *store,
 	  off_t addr, size_t index, mach_msg_type_number_t amount,
 	  char **buf, mach_msg_type_number_t *len)
 {
-  error_t err = device_read (store->port, 0, addr, amount, (io_buf_ptr_t *)buf, len);
+#if 1
+  return device_read (store->port, 0, addr, amount, (io_buf_ptr_t *)buf, len);
+#else
   char rep_buf[20];
+  error_t err = device_read (store->port, 0, addr, amount, (io_buf_ptr_t *)buf, len);
   if (err)
     strcpy (rep_buf, "-");
   else if (*len > sizeof rep_buf - 3)
@@ -45,6 +48,7 @@ dev_read (struct store *store,
 	   addr, index, amount, store->block_size, err ? strerror (err) : "-",
 	   rep_buf, err ? 0 : *len);
   return err;
+#endif
 }
 
 static error_t
@@ -52,7 +56,21 @@ dev_write (struct store *store,
 	   off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
+#if 1
   return device_write (store->port, 0, addr, (io_buf_ptr_t)buf, len, amount);
+#else
+  error_t err;
+  char rep_buf[20];
+  if (len > sizeof rep_buf - 3)
+    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
+  else
+    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
+  err = device_write (store->port, 0, addr, (io_buf_ptr_t)buf, len, amount);
+  fprintf (stderr, "; dev_write (%ld, %d, %s, %d) [%d] => %s, %d\n",
+	   addr, index, rep_buf, len, store->block_size,
+	   err ? strerror (err) : "-", *amount);
+  return err;
+#endif
 }
 
 static error_t
