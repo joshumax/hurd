@@ -72,9 +72,14 @@ typedef struct trivfs_protid *trivfs_protid_t; /* For MiG.  */
 
 extern mach_port_t procserver;	/* Our proc port.  */
 
-#ifndef BFD
+#define EXECDATA_STREAM		/* XXX */
+
+#ifdef BFD
+#define EXECDATA_STREAM		/* BFD uses stdio to access the executable.  */
+#else
 typedef void asection;
 #endif
+
 
 /* Data shared between check, check_section,
    load, load_section, and finish.  */
@@ -87,11 +92,34 @@ struct execdata
     vm_address_t entry;
     file_t file;
 
+#ifndef EXECDATA_STREAM
+
+    /* Note that if `file_data' (below) is set, then these just point
+       into that and should not be deallocated (file_data is malloc'd).  */
+    char *map_buffer;		/* Our mapping window or read buffer.  */
+    size_t map_vsize;		/* Page-aligned size allocated there.  */
+    size_t map_fsize;		/* Bytes from there to end of mapped data.  */
+    off_t map_filepos;		/* Position `map_buffer' maps to.  */
+#define map_buffer(e)	((e)->map_buffer)
+#define map_fsize(e)	((e)->map_fsize)
+#define map_vsize(e)	((e)->map_vsize)
+#define map_filepos(e)	((e)->map_filepos)
+#define map_set_fsize(e, fsize) ((e)->map_fsize = (fsize))
+
+#else
+
 #ifdef _STDIO_USES_IOSTREAM
+# error implement me for libio!
 #else
     FILE stream;
+#define map_buffer(e)	((e)->stream.__buffer)
 #define map_fsize(e)	((e)->stream.__get_limit - (e)->stream.__buffer)
 #define map_vsize(e)	((e)->stream.__bufsize)
+#define map_filepos(e)	((e)->stream.__offset)
+#define map_set_fsize(e, fsize)	\
+  ((e)->stream.__get_limit = (e)->stream.__buffer + (fsize))
+#endif
+
 #endif
 
 #ifdef BFD
@@ -136,9 +164,9 @@ error_t elf_machine_matches_host (Elf32_Half e_machine);
 void finish (struct execdata *, int dealloc_file_port);
 
 /* Make sure our mapping window (or read buffer) covers
-   LEN bytes of the file starting at POSN.  */
+   LEN bytes of the file starting at POSN, and return
+   a pointer into the window corresponding to POSN.  */
 void *map (struct execdata *e, off_t posn, size_t len);
-
 
 
 void check_hashbang (struct execdata *e,

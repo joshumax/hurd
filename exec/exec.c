@@ -36,6 +36,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd.h>
 #include <hurd/exec.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <unistd.h>
 
 mach_port_t procserver;	/* Our proc port.  */
@@ -268,21 +269,10 @@ load_section (void *section, struct execdata *u)
 	    {
 	      /* Cannot map the data.  Read it into a buffer and vm_write
 		 it into the task.  */
-	      void *buf;
 	      const vm_size_t size = filesz - (mapstart - addr);
-	      buf = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-	      u->error = (buf == (caddr_t) -1) ? errno : 0;
-	      if (! u->error)
-		{
-		  if (fseek (&u->stream,
-			     filepos + (mapstart - addr), SEEK_SET) ||
-		      fread (buf, size, 1, &u->stream) != 1)
-		    u->error = errno;
-		  else
-		    write_to_task (mapstart, size, vm_prot,
-				   (vm_address_t) buf);
-		  munmap (buf, size);
-		}
+	      void *buf = map (u, filepos + (mapstart - addr), size);
+	      if (buf)
+		write_to_task (mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
 	    return;
@@ -341,14 +331,14 @@ load_section (void *section, struct execdata *u)
 	    readsize = filesz;
 
 	  if (SECTION_IN_MEMORY_P)
-	    bcopy (SECTION_CONTENTS, readaddr, readsize);
+	    memcpy (readaddr, SECTION_CONTENTS, readsize);
 	  else
-	    if (fseek (&u->stream, filepos, SEEK_SET) ||
-		fread (readaddr, readsize, 1, &u->stream) != 1)
-	      {
-		u->error = errno;
+	    {
+	      const void *contents = map (u, filepos, readsize);
+	      if (!contents)
 		goto maplose;
-	      }
+	      memcpy (readaddr, contents, readsize);
+	    }
 	  u->error = vm_write (u->task, overlap_page, ourpage, size);
 	  if (u->error == KERN_PROTECTION_FAILURE)
 	    {
@@ -433,11 +423,87 @@ load_section (void *section, struct execdata *u)
     }
 }
 
+void *
+map (struct execdata *e, off_t posn, size_t len)
+{
+  const size_t size = e->file_size;
+  size_t offset;
+
+  if ((map_filepos (e) & ~(map_vsize (e) - 1)) == (posn & ~(map_vsize (e) - 1))
+      && posn + len - map_filepos (e) <= map_fsize (e))
+    /* The current mapping window covers it.  */
+    offset = posn & (map_vsize (e) - 1);
+  else if (e->file_data != NULL)
+    /* The current "mapping window" is in fact the whole file contents.
+       So if it's not in there, it's not in there.  */
+    return NULL;
+  else if (e->filemap == MACH_PORT_NULL)
+    {
+      /* No mapping for the file.  Read the data by RPC.  */
+      char *buffer = map_buffer (e);
+      mach_msg_type_number_t nread = map_vsize (e);
+      /* Read as much as we can get into the buffer right now.  */
+      e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
+      if (e->error)
+	return NULL;
+      if (buffer != map_buffer (e))
+	{
+	  /* The data was returned out of line.  Discard the old buffer.  */
+	  if (map_vsize (e) != 0)
+	    munmap (map_buffer (e), map_vsize (e));
+	  map_buffer (e) = buffer;
+	  map_vsize (e) = round_page (nread);
+	}
+
+      map_filepos (e) = posn;
+      map_set_fsize (e, nread);
+      offset = 0;
+    }
+  else
+    {
+      /* Deallocate the old mapping area.  */
+      if (map_buffer (e) != NULL)
+	munmap (map_buffer (e), map_vsize (e));
+      map_buffer (e) = NULL;
+
+      /* Make sure our mapping is page-aligned in the file.  */
+      offset = posn & (vm_page_size - 1);
+      map_filepos (e) = trunc_page (posn);
+      map_vsize (e) = round_page (posn + len) - map_filepos (e);
+
+      /* Map the data from the file.  */
+      if (vm_map (mach_task_self (),
+		  (vm_address_t *) &map_buffer (e), map_vsize (e), 0, 1,
+		  e->filemap, map_filepos (e), 1, VM_PROT_READ, VM_PROT_READ,
+		  VM_INHERIT_NONE))
+	{
+	  e->error = EIO;
+	  return NULL;
+	}
+
+      if (e->cntl)
+	e->cntl->accessed = 1;
+
+      map_set_fsize (e, MIN (map_vsize (e), size - map_filepos (e)));
+    }
+
+  return map_buffer (e) + offset;
+}
+
+
 /* Initialize E's stdio stream.  */
 static void prepare_stream (struct execdata *e);
 
 /* Point the stream at the buffer of file data in E->file_data.  */
 static void prepare_in_memory (struct execdata *e);
+
+
+#ifndef EXECDATA_STREAM
+
+static void prepare_stream (struct execdata *e) {}
+static void prepare_in_memory (struct execdata *e) {}
+
+#else
 
 #ifdef _STDIO_USES_IOSTREAM
 
@@ -445,6 +511,7 @@ static void prepare_in_memory (struct execdata *e);
 
 #else  /* old GNU stdio */
 
+#if 0
 void *
 map (struct execdata *e, off_t posn, size_t len)
 {
@@ -532,13 +599,24 @@ map (struct execdata *e, off_t posn, size_t len)
 
   return f->__bufp;
 }
+#endif
 
 /* stdio input-room function.  */
 static int
 input_room (FILE *f)
 {
-  return (map (f->__cookie, f->__target, 1) == NULL ? EOF :
-	  (unsigned char) *f->__bufp++);
+  struct execdata *e = f->__cookie;
+  char *p = map (e, f->__target, 1);
+  if (p == NULL)
+    {
+      (e->error ? f->__error : f->__eof) = 1;
+      return EOF;
+    }
+
+  f->__target = f->__offset;
+  f->__bufp = p;
+
+  return (unsigned char) *f->__bufp++;
 }
 
 static int
@@ -605,6 +683,8 @@ prepare_in_memory (struct execdata *e)
   e->stream.__bufp = e->stream.__buffer;
   e->stream.__seen = 1;
 }
+#endif
+
 #endif
 
 
@@ -749,7 +829,7 @@ check_elf (struct execdata *e)
 
   if (! ehdr)
     {
-      if (! ferror (&e->stream))
+      if (!e->error)
 	e->error = ENOEXEC;
       return;
     }
@@ -787,7 +867,7 @@ check_elf (struct execdata *e)
   phdr = map (e, ehdr->e_phoff, ehdr->e_phnum * sizeof (Elf32_Phdr));
   if (! phdr)
     {
-      if (! ferror (&e->stream))
+      if (!e->error)
 	e->error = ENOEXEC;
       return;
     }
@@ -886,7 +966,16 @@ finish (struct execdata *e, int dealloc_file)
     }
   else
 #endif
-    fclose (&e->stream);
+    {
+#ifdef EXECDATA_STREAM
+      fclose (&e->stream);
+#else
+      if (e->file_data != NULL)
+	free (e->file_data);
+      else if (map_buffer (e) != NULL)
+	munmap (map_buffer (e), map_vsize (e));
+#endif
+    }
   if (dealloc_file && e->file != MACH_PORT_NULL)
     {
       mach_port_deallocate (mach_task_self (), e->file);
@@ -1004,9 +1093,19 @@ check_gzip (struct execdata *earg)
   size_t zipdatasz = 0;
   FILE *zipout = NULL;
   jmp_buf ziperr;
+  off_t zipread_pos = 0;
   int zipread (char *buf, size_t maxread)
     {
-      return fread (buf, 1, maxread, &e->stream);
+      char *contents = map (e, zipread_pos, 1);
+      size_t n;
+      if (contents == NULL)
+	{
+	  errno = e->error;
+	  return -1;
+	}
+      n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
+      memcpy (buf, contents, n);
+      return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
     {
@@ -1041,7 +1140,6 @@ check_gzip (struct execdata *earg)
       return;
     }
 
-  rewind (&e->stream);
   if (get_method (0) != 0)
     {
       /* Not a happy gzip file.  */
@@ -1101,9 +1199,19 @@ check_bzip2 (struct execdata *earg)
   size_t zipdatasz = 0;
   FILE *zipout = NULL;
   jmp_buf ziperr;
+  off_t zipread_pos = 0;
   int zipread (char *buf, size_t maxread)
     {
-      return fread (buf, 1, maxread, &e->stream);
+      char *contents = map (e, zipread_pos, 1);
+      size_t n;
+      if (contents == NULL)
+	{
+	  errno = e->error;
+	  return -1;
+	}
+      n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
+      memcpy (buf, contents, n);
+      return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
     {
@@ -1137,8 +1245,6 @@ check_bzip2 (struct execdata *earg)
       e->error = errno;
       return;
     }
-
-  rewind (&e->stream);
 
   zipout = open_memstream (&zipdata, &zipdatasz);
   if (! zipout)
@@ -1542,7 +1648,7 @@ do_exec (file_t file,
 	  name = map (&e, (e.interp.phdr->p_offset
 			   & ~(e.interp.phdr->p_align - 1)),
 		      e.interp.phdr->p_filesz);
-	  if (! name && ! ferror (&e.stream))
+	  if (! name && ! e.error)
 	    e.error = ENOEXEC;
 	}
 
