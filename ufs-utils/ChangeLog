@@ -1,3 +1,8 @@
+Fri Jun 20 13:39:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* mkfs.c (mkfs): Set SBLOCK.fs_clean.  New file systems are always
+	clean.
+
 Thu Apr 10 13:54:31 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dlabel.c: Don't include <mach/sa/sys/ioctl.h>.

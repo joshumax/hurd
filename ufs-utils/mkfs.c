@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.16 1997/02/20 04:15:02 miles Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.17 1997/06/23 17:35:37 thomas Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -863,6 +863,7 @@ next:
 	sblock.fs_cstotal.cs_nffree = 0;
 	sblock.fs_fmod = 0;
 	sblock.fs_ronly = 0;
+	sblock.fs_clean = 1;
 
 	/*
 	 * Dump out summary information about file system.
