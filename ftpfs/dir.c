@@ -678,6 +678,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 
 		  nes.dir = dir;
 		  nes.timestamp = timestamp;
+		  nes.entry = NULL;
 
 		  err = ftp_conn_get_stats (conn, rmt_path, 0,
 					    update_new_entry, &nes);
