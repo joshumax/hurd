@@ -1,5 +1,5 @@
 /* Message port manipulations
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -107,7 +107,7 @@ S_proc_getmsgport (struct proc *callerp,
   if (p->p_deadmsg)
     {
       struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
-      if (callerp->p_msgportwait)
+      if (callerp->p_msgportwait || callerp->p_waiting)
 	return EBUSY;
       c->reply_port = reply_port;
       c->reply_port_type = reply_port_type;
