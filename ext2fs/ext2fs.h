@@ -102,11 +102,15 @@ void pokel_flush (struct pokel *pokel);
 /* Transfer all regions from FROM to POKEL, which must have the same pager. */
 void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
+#ifndef EXT2FS_EI
+#define EXT2FS_EI extern inline
+#endif
+
 /* ---------------------------------------------------------------- */
 /* Bitmap routines.  */
 
 /* Returns TRUE if bit NUM is set in BITMAP.  */
-extern inline int
+EXT2FS_EI int
 test_bit (unsigned num, char *bitmap)
 {
   return bitmap[num >> 3] & (1 << (num & 0x7));
@@ -114,7 +118,7 @@ test_bit (unsigned num, char *bitmap)
 
 /* Sets bit NUM in BITMAP, and returns the previous state of the bit.  Unlike
    the linux version, this function is NOT atomic!  */
-extern inline int
+EXT2FS_EI int
 set_bit (unsigned num, char *bitmap)
 {
   char *p = bitmap + (num >> 3);
@@ -132,7 +136,7 @@ set_bit (unsigned num, char *bitmap)
 
 /* Clears bit NUM in BITMAP, and returns the previous state of the bit.
    Unlike the linux version, this function is NOT atomic!  */
-extern inline int
+EXT2FS_EI int
 clear_bit (unsigned num, char *bitmap)
 {
   char *p = bitmap + (num >> 3);
@@ -229,11 +233,15 @@ int sblock_dirty;
 #define SBLOCK_BLOCK 1
 #define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
 #define SBLOCK_SIZE (sizeof (struct ext2_super_block))
+#define SBLOCK_LBLOCK (SBLOCK_BLOCK >> BLOCKSIZE_SCALE)
 
 /* The filesystem block-size.  */
 unsigned long block_size;
 /* The log base 2 of BLOCK_SIZE.  */
 unsigned log2_block_size;
+
+/* The number of bits to scale min-blocks to get filesystem blocks.  */
+#define BLOCKSIZE_SCALE	(log2_block_size - EXT2_MIN_BLOCK_LOG_SIZE)
 
 /* log2 of the number of device blocks in a filesystem block.  */
 unsigned log2_dev_blocks_per_fs_block;
@@ -291,22 +299,21 @@ unsigned long next_generation;
 #define bptr_block(ptr) boffs_block(bptr_offs(ptr))
 
 /* Get the descriptor for block group NUM.  The block group descriptors are
-   stored starting in the block following the super block.  */
-extern inline struct ext2_group_desc *
+   stored starting in the filesystem block following the super block.  */
+EXT2FS_EI struct ext2_group_desc *
 group_desc(unsigned long num)
 {
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
   unsigned long group_desc = num / desc_per_block;
   unsigned long desc = num % desc_per_block;
-  return
-    ((struct ext2_group_desc *)boffs_ptr(SBLOCK_OFFS + boffs(1 + group_desc)))
-      + desc;
+  return ((struct ext2_group_desc *) bptr(SBLOCK_LBLOCK + 1 + group_desc)
+	  + desc);
 }
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
 /* Convert an inode number to the dinode on disk. */
-extern inline struct ext2_inode *
+EXT2FS_EI struct ext2_inode *
 dino (ino_t inum)
 {
   unsigned long inodes_per_group = sblock->s_inodes_per_group;
@@ -348,7 +355,7 @@ spin_lock_t modified_global_blocks_lock;
    think it may have been clean before (but we may not be sure).  Note that
    this isn't enough to cause the block to be synced; you must call
    record_global_poke to do that.  */
-extern inline int
+EXT2FS_EI int
 global_block_modified (block_t block)
 {
   if (modified_global_blocks)
@@ -364,7 +371,7 @@ global_block_modified (block_t block)
 }
 
 /* This records a modification to a non-file block.  */
-extern inline void
+EXT2FS_EI void
 record_global_poke (void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
@@ -373,7 +380,7 @@ record_global_poke (void *ptr)
 }
 
 /* This syncs a modification to a non-file block.  */
-extern inline void
+EXT2FS_EI void
 sync_global_ptr (void *bptr, int wait)
 {
   vm_offset_t boffs = trunc_block (bptr_offs (bptr));
@@ -382,7 +389,7 @@ sync_global_ptr (void *bptr, int wait)
 }
 
 /* This records a modification to one of a file's indirect blocks.  */
-extern inline void
+EXT2FS_EI void
 record_indir_poke (struct node *node, void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
@@ -392,14 +399,14 @@ record_indir_poke (struct node *node, void *ptr)
 
 /* ---------------------------------------------------------------- */
 
-extern inline void
+EXT2FS_EI void
 sync_global (int wait)
 {
   pokel_sync (&global_pokel, wait);
 }
 
 /* Sync all allocation information and node NP if diskfs_synchronous. */
-extern inline void
+EXT2FS_EI void
 alloc_sync (struct node *np)
 {
   if (diskfs_synchronous)
