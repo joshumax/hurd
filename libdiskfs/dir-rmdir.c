@@ -32,7 +32,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
     return EOPNOTSUPP;
   
   dnp = dircred->po->np;
-  if (readonly)
+  if (diskfs_readonly)
     return EROFS;
 
   mutex_lock (&dnp->lock);
@@ -43,7 +43,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (error)
     {
       mutex_unlock (&dnp->lock);
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (dnp, ds);
       return error;
     }
 
@@ -51,7 +51,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (dnp == np)
     {
       diskfs_nrele (np);
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return EINVAL;
     }
@@ -62,7 +62,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (!diskfs_dirempty (np, dircred))
     {
       diskfs_nput (np);
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return ENOTEMPTY;
     }
