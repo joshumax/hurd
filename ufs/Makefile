@@ -38,10 +38,9 @@ LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
 
 all: ufs
 
-LDFLAGS=--no-keep-memory
-
+# Don't use $^ in this rule; it will omit the duplicates in $(LIBS).
 ufs: $(OBJS) $(LIBS)
-	$(link)
+	$(CC) -Xlinker --no-keep-memory $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	rsh $(mighost) -n cd `pwd` \; \
