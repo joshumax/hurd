@@ -156,7 +156,7 @@ reboot_system (int flags)
       error_t err;
       printf ("init: notifying %p\n", (void *) n->notify_port);
       fflush (stdout);
-      err = msg_startup_dosync (n->notify_port, 1000); /* 1 second to reply */
+      err = msg_startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err && err != MACH_SEND_INVALID_DEST)
 	{
 	  printf ("init: %p complained: %s\n",
