@@ -27,13 +27,13 @@
 #include "priv.h"
 
 /* The thread that's doing the syncing.  */
-cthread_t periodic_sync_thread = 0;
+static cthread_t periodic_sync_thread = 0;
 
 /* A lock to lock before changing any of the above.  */
-spin_lock_t periodic_sync_lock = SPIN_LOCK_INITIALIZER;
+static spin_lock_t periodic_sync_lock = SPIN_LOCK_INITIALIZER;
 
-/* The filesystem control port to which we send our sync requests.  */
-mach_port_t control_port;
+static struct port_info *pi = 0;
+
 
 
 static void periodic_sync ();
@@ -50,17 +50,10 @@ diskfs_set_sync_interval (int interval)
 
   spin_lock (&periodic_sync_lock);
 
-  if (control_port == MACH_PORT_NULL)
-    {
-      control_port =
-	ports_get_right (ports_allocate_port
-			 (diskfs_port_bucket, sizeof (struct port_info), 
-			  diskfs_control_class));
-      err =
-	mach_port_insert_right (mach_task_self (),
-				control_port, control_port,
-				MACH_MSG_TYPE_MAKE_SEND);
-    }
+  if (!pi)
+    pi = ports_allocate_port (diskfs_port_bucket,
+			      sizeof (struct port_info),
+			      diskfs_control_class);
 
   if (!err)
     /* Here we just set the new thread; any existing thread will notice when it
@@ -93,6 +86,7 @@ periodic_sync (int interval)
   for (;;)
     {
       cthread_t thread;
+      struct rpc_info link;
 
       spin_lock (&periodic_sync_lock);
       thread = periodic_sync_thread;
@@ -102,7 +96,10 @@ periodic_sync (int interval)
 	/* We've been superseded as the sync thread...  Just die silently.  */
 	return;
 
-      fsys_syncfs (control_port, 0, 0);
+      ports_begin_rpc (pi, &link);
+      diskfs_sync_everything (0);
+      diskfs_set_hypermetadata (0, 0);
+      ports_end_rpc (pi, &link);
 
       /* Wait until next time.  */
       sleep (interval);
