@@ -47,14 +47,14 @@ routine fsys_getroot (
 	ureplyport ureply: mig_reply_port_t;
 #endif
 	flags: int;
-	uids: idarray_t;
-	gids: idarray_t;
+	gen_uids: idarray_t;
+	gen_gids: idarray_t;
 	out file: mach_port_send_t);
 
 /* Get a file given a file handle (see file_getfh).  */
 routine fsys_getfile (
 	fsys: fsys_t;
-	uids: idarray_t;
-	gids: idarray_t;
+	gen_uids: idarray_t;
+	gen_gids: idarray_t;
 	filehandle: data_t;
 	out file: mach_port_send_t);
