@@ -572,6 +572,40 @@ netfs_file_get_storage_info (struct iouser *cred,
 				data, data_len);
 }
 
+kern_return_t
+netfs_S_file_exec (struct protid *user,
+                   task_t task,
+                   int flags,
+                   char *argv,
+                   size_t argvlen,
+                   char *envp,
+                   size_t envplen,
+                   mach_port_t *fds,
+                   size_t fdslen,
+                   mach_port_t *portarray,
+                   size_t portarraylen,
+                   int *intarray,
+                   size_t intarraylen,
+                   mach_port_t *deallocnames,
+                   size_t deallocnameslen,
+                   mach_port_t *destroynames,
+                   size_t destroynameslen)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&user->po->np->lock);
+  err = file_exec (user->po->np->nn->file, task, flags, argv, argvlen,
+		   envp, envplen, fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
+		   portarray, MACH_MSG_TYPE_MOVE_SEND, portarraylen,
+		   intarray, intarraylen, deallocnames, deallocnameslen,
+		   destroynames, destroynameslen);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
 error_t
 netfs_S_io_map (struct protid *user,
 		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
@@ -638,7 +672,7 @@ netfs_S_io_prenotify (struct protid *user,
     return EOPNOTSUPP;
 
   mutex_lock (&user->po->np->lock);
-  err = io_get_prenotify (user->po->np->nn->file, start, stop);
+  err = io_prenotify (user->po->np->nn->file, start, stop);
   mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -653,7 +687,7 @@ netfs_S_io_postnotify (struct protid *user,
     return EOPNOTSUPP;
 
   mutex_lock (&user->po->np->lock);
-  err = io_get_postnotify (user->po->np->nn->file, start, stop);
+  err = io_postnotify (user->po->np->nn->file, start, stop);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

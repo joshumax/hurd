@@ -1,5 +1,11 @@
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
+	* fakeroot.c (netfs_S_file_exec): New function.
+	(netfs_S_io_prenotify): Fix last change.
+	(netfs_S_io_postnotify): Likewise.
+
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
 	* fakeroot.c (NETFS_S_SIMPLE): New macro.
 	(netfs_S_io_get_conch): New function.
 	(netfs_S_io_release_conch): New function.
