@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -21,6 +21,9 @@
 #include "ports.h"
 #include <cthreads.h>
 #include <mach/notify.h>
+#include <assert.h>
+
+static volatile error_t gdb_loses = 0;
 
 mach_port_t
 ports_get_right (void *port)
@@ -41,10 +44,12 @@ ports_get_right (void *port)
     {
       pi->flags |= PORT_HAS_SENDRIGHTS;
       pi->refcnt++;
-      mach_port_request_notification (mach_task_self (), pi->port_right,
-				      MACH_NOTIFY_NO_SENDERS, 1,
-				      pi->port_right,
-				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+      gdb_loses =
+	mach_port_request_notification (mach_task_self (), pi->port_right,
+					MACH_NOTIFY_NO_SENDERS, 1,
+					pi->port_right,
+					MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+      assert_perror (gdb_loses);
       if (foo != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), foo);
     }
