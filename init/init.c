@@ -34,6 +34,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdlib.h>
 #include <hurd/msg.h>
 #include <hurd/term.h>
+#include <paths.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -377,7 +378,7 @@ demuxer (mach_msg_header_t *inp,
   return (notify_server (inp, outp) ||
 	  startup_server (inp, outp));
 }
-
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -409,14 +410,18 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_WRITE, "console", &consdev))
     crash_mach ();
 
-  err = vm_wire (host_priv, mach_task_self (), 
-		 (vm_address_t) 0x10000, /* XXX */
-		 (vm_size_t) (&_etext - 0x10000),
-		 VM_PROT_READ|VM_PROT_EXECUTE);
-  err = vm_wire (host_priv, mach_task_self (), 
-		 (vm_address_t) &__data_start,
-		 (vm_size_t) (&_edata - &__data_start), 
-		 VM_PROT_READ|VM_PROT_WRITE);
+  {
+    extern void _start ();
+    vm_address_t text_start = (vm_address_t) &_start;
+    err = vm_wire (host_priv, mach_task_self (), 
+		   (vm_address_t) text_start,
+		   (vm_size_t) (&_etext - text_start),
+		   VM_PROT_READ|VM_PROT_EXECUTE);
+    err = vm_wire (host_priv, mach_task_self (), 
+		   (vm_address_t) &__data_start,
+		   (vm_size_t) (&_edata - &__data_start), 
+		   VM_PROT_READ|VM_PROT_WRITE);
+  }
 
   /* Clear our bootstrap port so our children don't inherit it.  */
   task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
@@ -430,10 +435,10 @@ main (int argc, char **argv, char **envp)
   /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
-  assert (!err);
+  assert_perror (err);
   err = mach_port_insert_right (mach_task_self (), startup, startup,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert (!err);
+  assert_perror (err);
 
   /* Set up the set of ports we will pass to the programs we exec.  */
   for (i = 0; i < INIT_PORT_MAX; i++)
@@ -468,7 +473,7 @@ main (int argc, char **argv, char **envp)
   while (1)
     {
       err = mach_msg_server (demuxer, 0, startup);
-      assert (!err);
+      assert_perror (err);
     }
 }
 
@@ -527,15 +532,15 @@ launch_core_servers (void)
      assumes it can send us requests, so we cannot block on proc again
      before accepting more RPC requests!  However, we must do this before
      calling fsys_init, because fsys_init blocks on exec_init, and
-     exec_init to block waiting on our message port.  */
+     exec_init will block waiting on our message port.  */
   proc_setmsgport (procserver, startup, &old);
-  if (old)
+  if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
 
   /* Give the bootstrap FS its proc and auth ports.  */
   if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
 			 authserver))
-    perror ("fsys_init");
+    perror ("fsys_init");	/* Not necessarily fatal.  */
 }
 
 /* Set up the initial value of the standard exec data. */
@@ -591,7 +596,7 @@ init_stdarrays ()
 void
 launch_single_user ()
 {
-  char shell[] = "/bin/sh";
+  char shell[1024];
   char terminal[] = "/hurd/term\0console\0/tmp/console";
   mach_port_t term, foo;
   char *termname;
@@ -600,6 +605,7 @@ launch_single_user ()
   int foobiebletch[TASK_BASIC_INFO_COUNT];
   int foobiebletchcount = TASK_BASIC_INFO_COUNT;
   struct stat st;
+  error_t err;
 
   init_stdarrays ();
 
@@ -610,12 +616,16 @@ launch_single_user ()
      we conclude that the filesystem has a proper translator for it,
      and we're done.  Otherwise, start /hurd/term on something inside
      /tmp and use that.  */
-  term = file_name_lookup ("/dev/console", O_READ, 0);
-  termname = "/dev/console";
+  termname = _PATH_CONSOLE;
+  term = file_name_lookup (termname, O_READ, 0);
   if (term != MACH_PORT_NULL)
-    io_stat (term, &st);
+    {
+      err = io_stat (term, &st);
+      if (err)
+	perror (termname);
+    }
   
-  if (term == MACH_PORT_NULL || st.st_fstype != FSTYPE_TERM)
+  if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     {
       /* Start the terminal server ourselves. */
 
@@ -685,15 +695,21 @@ launch_single_user ()
       default_dtable[2] = getdport (2);
     }
   
+#if 0
+  printf ("Shell program [%s]: ", _PATH_BSHELL);
+  if (! getstring (shell, sizeof shell))
+#endif
+    strcpy (shell, _PATH_BSHELL);
+
   /* The shell needs a real controlling terminal, so set that up here. */
-  foo = run_for_real (shell, shell, sizeof (shell), term);
+  foo = run_for_real (shell, shell, strlen (shell) + 1, term);
   mach_port_deallocate (mach_task_self (), term);
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
   printf (" shell.\n");
   fflush (stdout);
 }
-
+
 
 kern_return_t
 S_startup_procinit (startup_t server,
@@ -827,7 +843,7 @@ S_startup_request_notification (mach_port_t server,
   mach_port_request_notification (mach_task_self (), notify, 
 				  MACH_NOTIFY_DEAD_NAME, 1, startup, 
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
-  if (prev)
+  if (prev != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), prev);
 
   nt = malloc (sizeof (struct ntfy_task));
@@ -880,7 +896,7 @@ S_startup_reboot (mach_port_t server,
   reboot_system (code);
   for (;;);
 }
-
+
 kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
 			       mach_port_t rights)
