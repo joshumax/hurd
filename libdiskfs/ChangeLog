@@ -1,3 +1,11 @@
+1999-12-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	Rewrite of a fix provided by Bill White <bill.white@griggsinst.com>:
+	* fhandle.h (union diskfs_fhandle): Replaces struct diskfs_fhandle.
+	Use a union element of char[28] to ensure size requirement.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Update uses for new type.
+	* file-getfh.c (diskfs_S_file_getfh): Likewise.
+
 1999-12-02  Mark Kettenis  <kettenis@gnu.org>
 
 	* io-read.c (diskfs_S_io_read): Add braces to silence gcc
