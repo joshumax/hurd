@@ -92,20 +92,32 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_INIT:
-      h = state->hook = malloc (sizeof (struct parse_hook));
-      if (! h)
-	return ENOMEM;
-      h->readonly = diskfs_readonly;
-      h->sync = diskfs_synchronous;
-      h->sync_interval = -1;
-      h->remount = 0;
+      if (state->input)
+	state->hook = state->input; /* Share hook with parent.  */
+      else
+	{
+	  h = state->hook = malloc (sizeof (struct parse_hook));
+	  if (! h)
+	    return ENOMEM;
+	  h->readonly = diskfs_readonly;
+	  h->sync = diskfs_synchronous;
+	  h->sync_interval = -1;
+	  h->remount = 0;
+
+	  /* We know that we have one child, with which we share our hook.  */
+	  state->child_inputs[0] = h;
+	}
       break;
 
     case ARGP_KEY_ERROR:
-      free (h); break;
+      if (! state->input)
+	free (h);
+      break;
 
     case ARGP_KEY_SUCCESS:
-      return set_opts (h);
+      if (! state->input)
+	return set_opts (h);
+      break;
 
     default:
       return ARGP_ERR_UNKNOWN;
@@ -114,8 +126,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 }
 
 static const struct argp common_argp = { diskfs_common_options, parse_opt };
-static const struct argp *parents[] = { &common_argp, 0 };
 
+static const struct argp *parents[] = { &common_argp, 0 };
 const struct argp diskfs_std_runtime_argp =
 {
   std_runtime_options, parse_opt, 0, 0, parents
