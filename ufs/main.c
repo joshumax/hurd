@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -81,7 +81,7 @@ main (int argc, char **argv)
       if (bootstrap == MACH_PORT_NULL)
 	error (2, 0, "Must be started as a translator");
     }
-  
+
   /* Initialize the diskfs library.  Must come before any other diskfs call. */
   diskfs_init_diskfs ();
 
@@ -105,13 +105,6 @@ main (int argc, char **argv)
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
 
-  err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		disk_size, 0, 1, diskpagerport, 0, 0, 
-		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
-		VM_PROT_READ | VM_PROT_WRITE,
-		VM_INHERIT_NONE);
-  assert (!err);
-
   get_hypermetadata ();
 
   inode_init ();
@@ -123,14 +116,14 @@ main (int argc, char **argv)
      set properly, it is safe to export our fsys control port to the
      outside world.  */
   diskfs_startup_diskfs (bootstrap, 0);
-  
+
   /* And this thread is done with its work. */
   cthread_exit (0);
 
   return 0;
 }
 
-error_t 
+error_t
 diskfs_reload_global_state ()
 {
   flush_pokes ();
