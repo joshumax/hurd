@@ -168,6 +168,8 @@ vm_address_t zeroblock;
 
 struct fs *sblock;
 struct csum *csum;
+int sblock_dirty;
+int csum_dirty;
 
 void *disk_image;
 
@@ -270,7 +272,7 @@ void inode_init (void);
 void write_all_disknodes (void);
 
 /* From pager.c: */
-void pager_init (void);
+void create_disk_pager (void);
 void din_map (struct node *);
 void sin_map (struct node *);
 void sin_remap (struct node *, int);
