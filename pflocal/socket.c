@@ -21,6 +21,10 @@
 #include "sock.h"
 #include "connq.h"
 
+/* temp XXX */
+#include <mach/mach.h>
+typedef mach_port_t pf_t;
+
 #include "socket_S.h"
 
 /* Connect two sockets */
@@ -39,7 +43,7 @@ ensure_connq (struct sock *sock)
   error_t err = 0;
   mutex_lock (&sock->lock);
   if (!sock->connq)
-    err = connq_create (0, &sock->connq);
+    err = connq_create (&sock->connq);
   mutex_unlock (&sock->lock);
   return err;
 }
@@ -47,6 +51,7 @@ ensure_connq (struct sock *sock)
 error_t
 S_socket_connect (struct sock_user *user, struct addr *addr)
 {
+  error_t err;
   struct sock *peer;
 
   if (! user)
@@ -55,22 +60,27 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
     return EADDRNOTAVAIL;
 
   err = addr_get_sock (addr, &peer);
-  if (err)
-    return err;
+  if (!err)
+    {
+      err = sock_connect (user->sock, peer);
+      sock_deref (peer);
+    }
 
-  return sock_connect (user->sock, peer);
+  return err;
 }
 
 /* Prepare a socket of appropriate type for future accept operations.  */
 error_t
-S_socket_listen (struct sock_user *user, unsigned queue_limit)
+S_socket_listen (struct sock_user *user, int queue_limit)
 {
   error_t err;
   if (!user)
     return EOPNOTSUPP;
-  err = ensure_connq (sock);
+  if (queue_limit < 0)
+    return EINVAL;
+  err = ensure_connq (user->sock);
   if (!err)
-    err = connq_set_length (sock->connq, queue_limit);
+    err = connq_set_length (user->sock->connq, queue_limit);
   return err;
 }
 
@@ -78,12 +88,16 @@ S_socket_listen (struct sock_user *user, unsigned queue_limit)
 error_t
 S_socket_accept (struct sock_user *user,
 		 mach_port_t *port, mach_msg_type_name_t *port_type,
-		 mach_port_t *peer_addr, mach_msg_type_name_t *peer_addr_type)
+		 mach_port_t *peer_addr_port,
+		 mach_msg_type_name_t *peer_addr_port_type)
 {
   error_t err;
+  struct socket *sock;
 
   if (!user)
     return EOPNOTSUPP;
+
+  sock = user->sock;
 
   err = ensure_connq (sock);
   if (!err)
@@ -104,11 +118,15 @@ S_socket_accept (struct sock_user *user,
 	      err = sock_connect (conn_sock, peer_sock);
 	      if (!err)
 		{
-		  err = sock_create_port (conn_sock, port, port_type);
+		  *port_type = MACH_MSG_TYPE_MAKE_SEND;
+		  err = sock_create_port (conn_sock, port);
+		  if (!err)
+		    err = sock_get_addr (peer_sock, peer_addr);
 		  if (!err)
 		    {
-		      *addr = ports_get_right (peer_sock->addr);
-		      *addr_type = MACH_MSG_MAKE_SEND;
+		      *peer_addr_port = ports_get_right (peer_addr);
+		      *peer_addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+		      ports_port_deref (peer_addr);
 		    }
 		  else
 		    /* TEAR DOWN THE CONNECTION XXX */;
@@ -139,7 +157,7 @@ S_socket_bind (struct sock_user *user, struct addr *addr)
 
 /* Shutdown a socket for reading or writing.  */
 error_t
-S_socket_shutdown (struct sock_user *user, unsigned what)
+S_socket_shutdown (struct sock_user *user, int what)
 {
   if (! user)
     return EOPNOTSUPP;
@@ -154,10 +172,19 @@ error_t
 S_socket_name (struct sock_user *user,
 	       mach_port_t *addr_port, mach_msg_type_name_t *addr_port_type)
 {
+  struct addr *addr;
+
   if (!user)
     return EOPNOTSUPP;
-  *addr_port_type = MACH_MSG_MAKE_SEND;
-  return sock_get_addr_port (user->sock, &addr_port);
+
+  err = sock_get_addr (user->sock, &addr);
+  if (err)
+    return err;
+
+  *addr_port = ports_get_right (addr);
+  *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+
+  return 0;
 }
 
 /* Find out the name of the socket's peer.  */
@@ -168,8 +195,8 @@ S_socket_peername (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  *addr_port_type = MACH_MSG_MAKE_SEND;
-  return sock_get_peer_addr_port (user->sock, &addr_port);
+  *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  return sock_get_write_addr_port (user->sock, &addr_port);
 }
 
 /* Send data over a socket, possibly including Mach ports.  */
@@ -197,9 +224,10 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
 
   if (user->sock->read_pipe->class != dest_sock->read_pipe->class)
     /* Sending to a different type of socket!  */
-    return EINVAL;		/* ? XXX */
+    err = EINVAL;		/* ? XXX */
 
-  err = sock_get_addr (user->sock, &source_addr);
+  if (!err)
+    err = sock_get_addr (user->sock, &source_addr);
   if (!err)
     {
       /* Grab the destination socket's read pipe directly, and stuff data
@@ -210,11 +238,16 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
       err = sock_aquire_read_pipe (dest, &pipe);
       if (!err)
 	{
-	  err = pipe_write (pipe, source_addr, data, data_len, amount);
+	  err = pipe_write (pipe, source_addr,
+			    data, data_len,
+			    control, control_len, ports, num_ports,
+			    amount);
 	  pipe_release (pipe);
 	}
       ports_port_deref (source_addr);
     }
+
+  sock_deref (dest_sock);
 
   return err;
 }
@@ -257,14 +290,15 @@ S_socket_recv (struct sock_user *user,
   if (!err)
     /* Setup mach ports for return.  */
     {
+      *addr_type = MACH_MSG_TYPE_MAKE_SEND;
+      *ports_type = MACH_MSG_TYPE_MAKE_SEND;
       if (source_addr)
 	{
 	  *addr = ports_get_right (source_addr);
-	  *addr_type = MACH_MSG_MAKE_SEND;
-	  ports_port_deref (source_addr); /* since get_right gives us one.  */
+	  ports_port_deref (source_addr); /* since get_right has one too.  */
 	}
-      if (ports && *ports_len > 0)
-	*ports_type = MACH_MSG_MAKE_SEND;
+      else
+	*addr = MACH_PORT_NULL;
     }
 
   out_flags =
