@@ -20,40 +20,84 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <stdio.h>
+#include <string.h>
+
 #include <hurd/io.h>
 
 #include "store.h"
 
 static error_t
-file_read (struct store *store, off_t addr, mach_msg_type_number_t amount,
-	  char **buf, mach_msg_type_number_t *len)
+file_read (struct store *store,
+	   off_t addr, size_t index, mach_msg_type_number_t amount,
+	   char **buf, mach_msg_type_number_t *len)
 {
-  return io_read (store->port, buf, len, addr * store->block_size, amount);
+  size_t bsize = store->block_size;
+  error_t err = io_read (store->port, buf, len, addr * bsize, amount);
+  char rep_buf[20];
+  if (err)
+    strcpy (rep_buf, "-");
+  else if (*len > sizeof rep_buf - 3)
+    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), *buf);
+  else
+    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), *buf);
+  fprintf (stderr, "; file_read (%ld, %d, %d) [%d] => %s, %s, %d\n",
+	   addr, index, amount, store->block_size, err ? strerror (err) : "-",
+	   rep_buf, err ? 0 : *len);
+  return err;
 }
 
 static error_t
 file_write (struct store *store,
-	   off_t addr, char *buf, mach_msg_type_number_t len,
+	   off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
-  return io_write (store->port, buf, len, addr * store->block_size, amount);
+  size_t bsize = store->block_size;
+  char rep_buf[20];
+  if (len > sizeof rep_buf - 3)
+    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
+  else
+    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
+  fprintf (stderr, "; file_write (%ld, %d, %s, %d)\n",
+	   addr, index, rep_buf, len);
+  return io_write (store->port, buf, len, addr * bsize, amount);
 }
 
 static struct store_meths
 file_meths = {file_read, file_write};
 
 static error_t
-file_byte_read (struct store *store, off_t addr, mach_msg_type_number_t amount,
+file_byte_read (struct store *store,
+		off_t addr, size_t index, mach_msg_type_number_t amount,
 		char **buf, mach_msg_type_number_t *len)
 {
-  return io_read (store->port, buf, len, addr, amount);
+  error_t err = io_read (store->port, buf, len, addr, amount);
+  char rep_buf[20];
+  if (err)
+    strcpy (rep_buf, "-");
+  else if (*len > sizeof rep_buf - 3)
+    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), *buf);
+  else
+    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), *buf);
+  fprintf (stderr, "; file_byte_read (%ld, %d, %d) => %s, %s, %d\n",
+	   addr, index, amount, err ? strerror (err) : "-",
+	   rep_buf, err ? 0 : *len);
+  return err;
 }
 
 static error_t
 file_byte_write (struct store *store,
-		 off_t addr, char *buf, mach_msg_type_number_t len,
-	   mach_msg_type_number_t *amount)
+		 off_t addr, size_t index,
+		 char *buf, mach_msg_type_number_t len,
+		 mach_msg_type_number_t *amount)
 {
+  char rep_buf[20];
+  if (len > sizeof rep_buf - 3)
+    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
+  else
+    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
+  fprintf (stderr, "; file_byte_write (%ld, %d, %s, %d)\n",
+	   addr, index, rep_buf, len);
   return io_write (store->port, buf, len, addr, amount);
 }
 
@@ -86,9 +130,11 @@ _store_file_create (file_t file, size_t block_size,
 {
   if (block_size == 1)
     *store = _make_store (STORAGE_HURD_FILE, &file_byte_meths, file, 1,
-			  runs, runs_len);
-  else
+			  runs, runs_len, 0);
+  else if ((block_size & (block_size - 1)) == 0)
     *store = _make_store (STORAGE_HURD_FILE, &file_meths, file, block_size,
-			  runs, runs_len);
+			  runs, runs_len, 0);
+  else
+    return EINVAL;		/* block size not a power of two */
   return *store ? 0 : ENOMEM;
 }
