@@ -408,7 +408,7 @@ main(int argc, char *argv[])
 	  || idvec_contains (is_group ? avail_gids : avail_uids, id)
 	  || (no_passwd
 	      && (parent_has_uid (0)
-		  || is_group ? parent_has_uid (id) : parent_has_gid (id))))
+		  || (is_group ? parent_has_uid (id) : parent_has_gid (id)))))
 	return;			/* Already got this one.  */
 
       if (name)
@@ -536,11 +536,29 @@ main(int argc, char *argv[])
 		  }
 		if (arg)	/* A real user.  */
 		  if (key == ARGP_KEY_ARG)
-		    /* The main user arg, make sure it goes at the
-		       beginning.  */
+		    /* The main user arg; add both effective and available
+		       ids (the available ids twice, for posix compatibility
+		       -- once for the real id, and again for the saved).  */
 		    {
+		      /* Updates the real id in IDS to be ID.  */
+		      void update_real (struct idvec *ids, uid_t id)
+			{
+			  if (ids->num == 0
+			      || !idvec_tail_contains (ids, 1, ids->ids[0]))
+			    idvec_insert (ids, 0, id);
+			  else
+			    ids->ids[0] = id;
+			}
+			
+		      /* Effective */
 		      idvec_insert_only (eff_uids, 0, pw->pw_uid);
 		      idvec_insert_only (eff_gids, 0, pw->pw_gid);
+		      /* Real */
+		      update_real (avail_uids, pw->pw_uid);
+		      update_real (avail_gids, pw->pw_gid);
+		      /* Saved */
+		      idvec_insert_only (avail_uids, 1, pw->pw_uid);
+		      idvec_insert_only (avail_gids, 1, pw->pw_gid);
 		    }
 		  else
 		    {
@@ -628,19 +646,6 @@ main(int argc, char *argv[])
     err = envz_merge (&args, &args_len, args_defs, args_defs_len, 0);
   if (err)
     error (24, err, "merging parameters");
-
-  /* Make sure the new process has a real uid/gid (we add the ids twice, for
-     posix compatibility, once for the real id, and again for the saved).  */
-  if (avail_uids->num == 0 && eff_uids->num > 0)
-    {
-      idvec_add (avail_uids, eff_uids->ids[0]);
-      idvec_add (avail_uids, eff_uids->ids[0]);
-    }
-  if (avail_gids->num == 0 && eff_gids->num > 0)
-    {
-      idvec_add (avail_gids, eff_gids->ids[0]);
-      idvec_add (avail_gids, eff_gids->ids[0]);
-    }
 
   err =
     auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
@@ -848,7 +853,7 @@ main(int argc, char *argv[])
   if (! no_utmp)
     add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
 
-  if (eff_uids->num | eff_gids->num)
+  if ((eff_uids->num | eff_gids->num) && !no_login)
     {
       char *tty = ttyname (0);
       if (tty)
