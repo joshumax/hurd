@@ -20,30 +20,29 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "fsys_S.h"
 
 /* Implement fsys_getroot as described in <hurd/fsys.defs>. */
 error_t
-S_fsys_getroot (fsys_t controlport,
-		int flags,
-		uid_t *uids,
-		u_int nuids,
-		uid_t *gids,
-		u_int ngids,
-		file_t *result,
-		mach_msg_type_name_t *result_poly)
+diskfs_S_fsys_getroot (fsys_t controlport,
+		       int flags,
+		       uid_t *uids,
+		       u_int nuids,
+		       uid_t *gids,
+		       u_int ngids,
+		       file_t *result,
+		       mach_msg_type_name_t *result_poly)
 {
-  struct inode *ip;
-  error_t error;
   struct port_info *pt = ports_check_port_type (controlport, PT_CTL);
   
   if (!pt)
     return EOPNOTSUPP;
   
-  *result = (make_protid (make_peropen (diskfs_root_node, flags),
+  *result = (diskfs_make_protid (diskfs_make_peropen (diskfs_root_node, flags),
 			  uids, nuids, gids, ngids))->pi.port;
   *result_poly = MACH_MSG_TYPE_MAKE_SEND;
 
-  ports_done_with_port (upt);
+  ports_done_with_port (pt);
 
   return 0;
 }
