@@ -41,6 +41,7 @@
 #include <envz.h>
 #include <idvec.h>
 #include <error.h>
+#include <timefmt.h>
 #include <hurd/lookup.h>
 
 extern error_t
@@ -335,13 +336,19 @@ dog (time_t timeout, pid_t pid)
 		exit (0);	/* Give up, luser wins. */
 	  /* None are owned.  Kill session after emitting cryptic, yet
 	     stupid, message. */
-	  fprintf (stderr, "Beware of dog.\n");
+	  error (0, 0, "Beware of dog.");
 	}
       else if (err)
 	exit (1);		/* Impossible error.... XXX  */
       else
 	/* Give normal you-forgot-to-login message.  */
-	fprintf (stderr, "Login timed out after %ld seconds.\n", timeout);
+	{
+	  char interval[10];	/* Be gratuitously pretty.  */
+	  struct timeval tv = { timeout, 0 };
+
+	  fmt_named_interval (&tv, 0, interval, sizeof interval);
+	  error (0, 0, "Timed out after %s.", interval);
+	}
 
       /* Kill login session, trying to be nice about it.  */
       kill_login (proc_server, pid, SIGHUP);
