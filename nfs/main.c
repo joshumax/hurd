@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -224,9 +224,16 @@ netfs_append_args (char **argz, size_t *argz_len)
     err = netfs_append_std_options (argz, argz_len);
 
   if (! err)
-    err = argz_add (argz, argz_len, remote_fs);
-  if (! err)
-    err = argz_add (argz, argz_len, host);
+    {
+      char *fs;
+      if (asprintf (&fs, "%s:%s", host, remote_fs))
+	{
+	  err = argz_add (argz, argz_len, fs);
+	  free (fs);
+	}
+      else
+	err = ENOMEM;
+    }
 
   return err;
 }
