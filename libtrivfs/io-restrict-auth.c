@@ -60,7 +60,9 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
     if (listmember (gids, cred->gids[i], ngids))
       newgids[newngids++] = cred->gids[i];
 
-  newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
+  newcred = ports_allocate_port (cred->po->cntl->protid_bucket,
+				 sizeof (struct trivfs_protid),
+				 cred->po->cntl->protid_class);
   newcred->isroot = 0;
   mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
