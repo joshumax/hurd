@@ -113,7 +113,7 @@ extern inline size_t
 buffer_read (struct buffer *b, void *data, size_t len)
 {
   size_t max = buffer_size (b);
-  
+
   if (len > max)
     len = max;
 
@@ -123,7 +123,7 @@ buffer_read (struct buffer *b, void *data, size_t len)
   if (b->head > b->buf + b->size / 2)
     {
       size_t size = buffer_size (b);
-      
+
       memmove (b->buf, b->head, size);
       b->head = b->buf;
       b->tail = b->buf + size;
@@ -183,11 +183,17 @@ error_t dev_sync (int wait);
 
 static struct argp_option options[] =
 {
-  {"readonly", 'r', 0,    0, "Disallow writing"},
-  {"writable", 'w', 0,    0, "Allow writing"},
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
+  {"readonly", 'r', 0,    0, "Disallow writing"},
+  {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"ro",       0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"writable", 'w', 0,    0, "Allow writing"},
+  {"rdwr",     0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"rw",       0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"writeonly", 'W',0,    0, "Disallow reading"},
+  {"wronly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
   {0}
 };
 
@@ -197,10 +203,9 @@ static const char doc[] = "Translator for stream devices";
 const char *argp_program_version = STANDARD_HURD_VERSION (streamdev);
 
 
-static char *stream_name = 0;
-static int readonly = 0;
-static int rdev = 0;
-static int nperopens = 0;
+static char *stream_name;
+static int rdev;
+static int nperopens;
 
 /* Parse a single option.  */
 static error_t
@@ -209,11 +214,13 @@ parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case 'r':
-      readonly = 1;
+      trivfs_allow_open = O_READ;
       break;
-
     case 'w':
-      readonly = 0;
+      trivfs_allow_open = O_RDWR;
+      break;
+    case 'W':
+      trivfs_allow_open = O_WRITE;
       break;
 
     case 'n':
@@ -245,7 +252,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (stream_name == 0)
 	argp_usage (state);
       break;
-      
+
     default:
       return ARGP_ERR_UNKNOWN;
     }
@@ -263,7 +270,7 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   return (trivfs_demuxer (inp, outp)
 	  || device_reply_server (inp, outp));
 }
-  
+
 int
 main (int argc, char *argv[])
 {
@@ -273,15 +280,12 @@ main (int argc, char *argv[])
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  if (readonly)
-    trivfs_allow_open &= ~O_WRITE;
-
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (2, 0, "Must be started as a translator");
 
   streamdev_bucket = ports_create_bucket ();
-  
+
   err = trivfs_startup (bootstrap, 0,
 			0, streamdev_bucket, 0, streamdev_bucket,
 			&fsys);
@@ -289,16 +293,20 @@ main (int argc, char *argv[])
     error (3, err, "trivfs_startup");
 
   mutex_init (&global_lock);
-  
-  input_buffer = create_buffer (256);
-  if (!readonly)
-    output_buffer = create_buffer (256);
 
   condition_init (&open_alert);
   condition_init (&select_alert);
-  condition_implies (input_buffer->wait, &select_alert);
-  if (!readonly)
-    condition_implies (output_buffer->wait, &select_alert);
+
+  if (trivfs_allow_open & O_READ)
+    {
+      input_buffer = create_buffer (256);
+      condition_implies (input_buffer->wait, &select_alert);
+    }
+  if (trivfs_allow_open & O_WRITE)
+    {
+      output_buffer = create_buffer (256);
+      condition_implies (output_buffer->wait, &select_alert);
+    }
 
   /* Launch */
   ports_manage_port_operations_multithread (streamdev_bucket, demuxer,
@@ -321,10 +329,12 @@ static error_t
 open_hook (struct trivfs_control *cntl, struct iouser *user, int flags)
 {
   error_t err;
-  dev_mode_t mode = D_READ;
+  dev_mode_t mode;
 
-  if (readonly && (flags & O_WRITE))
+  if (flags & O_WRITE & ~trivfs_allow_open)
     return EROFS;
+  if (flags & O_READ & ~trivfs_allow_open)
+    return EIO;
 
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
@@ -332,9 +342,12 @@ open_hook (struct trivfs_control *cntl, struct iouser *user, int flags)
   /* XXX */
   if (flags & O_ASYNC)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
+  mode = 0;
+  if (flags & O_READ)
+    mode |= D_READ;
   if (flags & O_WRITE)
     mode |= D_WRITE;
 
@@ -411,7 +424,9 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_mode &= ~S_IFMT;
   st->st_mode |= S_IFCHR;
   st->st_rdev = rdev;
-  if (readonly)
+  if (trivfs_allow_open & O_READ)
+    st->st_mode &= ~(S_IRUSR | S_IRGRP | S_IROTH);
+  if (trivfs_allow_open & O_WRITE)
     st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 }
 
@@ -437,7 +452,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 
   if (force && nosync)
     exit (0);
-  
+
   if (!force && ports_count_class (root_port_class) > 0)
     goto busy;
 
@@ -449,7 +464,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   ports_enable_class (root_port_class);
   ports_resume_class_rpcs (root_port_class);
   mutex_unlock (&global_lock);
-  
+
   return EBUSY;
 }
 
@@ -461,10 +476,10 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  off_t offs, mach_msg_type_number_t amount)
 {
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (!(cred->po->openmodes & O_READ))
     return EBADF;
 
@@ -480,10 +495,10 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_msg_type_number_t *amount)
 {
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (!(cred->po->openmodes & O_READ))
     return EBADF;
 
@@ -500,10 +515,10 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   off_t offs, mach_msg_type_number_t *amount)
 {
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (!(cred->po->openmodes & O_WRITE))
     return EBADF;
 
@@ -530,13 +545,13 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 		    int *type)
 {
   int available;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
   if (!(cred->po->openmodes & O_WRITE) && (*type & SELECT_WRITE))
     return EBADF;
-  
+
   if (*type & ~(SELECT_READ | SELECT_WRITE))
     return EINVAL;
 
@@ -648,7 +663,7 @@ trivfs_S_file_sync (struct trivfs_protid *cred,
 		    int wait)
 {
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -664,7 +679,7 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      int wait, int dochildren)
 {
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -721,7 +736,7 @@ dev_open (const char *name, dev_mode_t mode)
 {
   if (open_pending || (phys_device != MACH_PORT_NULL))
     return 0;
-  
+
   err = get_privileged_ports (0, &device_master);
   if (err)
     return err;
@@ -738,7 +753,7 @@ dev_open (const char *name, dev_mode_t mode)
   phys_reply = ports_get_right (phys_reply_pi);
   mach_port_insert_right (mach_task_self (), phys_reply, phys_reply,
 			  MACH_MSG_TYPE_MAKE_SEND);
-  
+
   if (output_buffer)
     {
       err = ports_create_port (phys_reply_class, streamdev_bucket,
@@ -758,7 +773,7 @@ dev_open (const char *name, dev_mode_t mode)
       mach_port_insert_right (mach_task_self (), phys_reply_writes,
 			      phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
     }
-  
+
   err = device_open_request (device_master, phys_reply, mode, name);
   if (err)
     {
@@ -787,7 +802,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   size_t sizes[DEV_GET_SIZE_COUNT];
   size_t sizes_len = DEV_GET_SIZE_COUNT;
   int amount;
-  
+
   if (reply != phys_reply)
     return EOPNOTSUPP;
 
@@ -795,7 +810,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
 
   open_pending = 0;
   condition_broadcast (&open_alert);
-  
+
   if (returncode != 0)
     {
       dev_close ();
@@ -817,10 +832,10 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   else if (err == 0)
     {
       assert (sizes_len == DEV_GET_SIZE_COUNT);
-      
+
       dev_blksize = sizes[DEV_GET_SIZE_RECORD_SIZE];
       dev_size = sizes[DEV_GET_SIZE_DEVICE_SIZE];
-      
+
       assert (dev_blksize && dev_blksize <= IO_INBAND_MAX);
     }
   else
@@ -837,7 +852,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   mutex_unlock (&global_lock);
   return 0;
 }
-      
+
 /* Check if the device is already opened.  */
 /* Be careful that the global lock is already locked.  */
 int
@@ -845,7 +860,7 @@ dev_already_opened (void)
 {
   return (phys_device != MACH_PORT_NULL);
 }
-  
+
 /* Close the device.  */
 /* Be careful that the global lock is already locked.  */
 void
@@ -864,7 +879,7 @@ dev_close (void)
   phys_reply_pi = 0;
   clear_buffer (input_buffer);
   input_pending = 0;
-  
+
   if (output_buffer)
     {
       mach_port_deallocate (mach_task_self (), phys_reply_writes);
@@ -884,7 +899,7 @@ start_input (int nowait)
   int size;
   error_t err;
   size_t amount;
-  
+
   size = buffer_writable (input_buffer);
 
   if (size < dev_blksize || input_pending)
@@ -893,7 +908,7 @@ start_input (int nowait)
   amount = vm_page_size;
   if (dev_blksize != 1)
     amount = amount / dev_blksize * dev_blksize;
-  
+
   err = device_read_request_inband (phys_device, phys_reply,
 				    nowait? D_NOWAIT : 0,
 				    0, amount);
@@ -918,7 +933,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
 
   if (err)
     return err;
-  
+
   while (!buffer_readable (input_buffer))
     {
       err = start_input (nowait);
@@ -930,7 +945,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
 	  *len = 0;
 	  return 0;
 	}
-      
+
       if (nowait)
 	return EWOULDBLOCK;
 
@@ -970,11 +985,11 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
 	  mutex_unlock (&global_lock);
 	  return 0;
 	}
-      
+
       while (datalen)
 	{
 	  size_t nwritten;
-	  
+
 	  while (!buffer_writable (input_buffer))
 	    condition_wait (input_buffer->wait, &global_lock);
 
@@ -993,7 +1008,7 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
   mutex_unlock (&global_lock);
   return 0;
 }
-  
+
 /* Return current readable size in AMOUNT. If an error occurs, the error
    code is returned, otherwise 0.  */
 /* Be careful that the global lock is already locked.  */
@@ -1011,9 +1026,9 @@ start_output (int nowait)
   int size;
 
   assert (output_buffer);
-  
+
   size = buffer_size (output_buffer);
-  
+
   if (size < dev_blksize || output_pending)
     return 0;
 
@@ -1049,23 +1064,23 @@ dev_write (void *buf, size_t len, size_t *amount, int nowait)
 {
   if (err)
     return err;
-  
+
   while (!buffer_writable (output_buffer))
     {
       err = start_output (nowait);
       if (err)
 	return err;
-      
+
       if (nowait)
 	return EWOULDBLOCK;
-      
+
       if (hurd_condition_wait (output_buffer->wait, &global_lock))
 	return EINTR;
     }
 
   *amount = buffer_write (output_buffer, buf, len);
   err = start_output (nowait);
-  
+
   return err;
 }
 
@@ -1078,7 +1093,7 @@ device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
   mutex_lock (&global_lock);
 
   output_pending = 0;
-  
+
   if (!returncode)
     {
       if (amount >= npending_output)
@@ -1107,16 +1122,16 @@ dev_sync (int wait)
 {
   if (err)
     return err;
-  
+
   if (!output_buffer || phys_device == MACH_PORT_NULL)
     return 0;
-  
+
   while (buffer_readable (output_buffer) >= dev_blksize)
     {
       err = start_output (! wait);
       if (err)
 	return err;
-      
+
       if (!wait)
 	return 0;
 
