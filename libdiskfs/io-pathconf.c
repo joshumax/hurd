@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include "priv.h"
 #include "io_S.h"
+#include <dirent.h>
+#include <limits.h>
 
 /* Implement io_pathconf as described in <hurd/io.defs>. */
 kern_return_t
@@ -43,12 +45,16 @@ diskfs_S_io_pathconf (struct protid *cred,
       break;
 
     case _PC_NAME_MAX:
-      /* <hurd/hurd_types.defs> string_t constrains the upper bound.  */
-      *value = diskfs_name_max > 1023 ? 1023 : diskfs_name_max;
+      /* <hurd/hurd_types.defs> string_t constrains the upper bound.
+	 The `struct dirent' format defined by libc further contrains it.  */
+#define D_NAMLEN_MAX (UCHAR_MAX * sizeof (((struct dirent *) 0)->d_namlen))
+      if (diskfs_name_max > D_NAMLEN_MAX || diskfs_name_max < 0)
+	diskfs_name_max = D_NAMLEN_MAX;
+      *value = diskfs_name_max;
       break;
 
     case _PC_NO_TRUNC:		/* enforced in diskfs_lookup */
-      *value = diskfs_name_max >= 0;
+      *value = 1; /* diskfs_name_max >= 0; */ /* see above */
       break;
 
     case _PC_CHOWN_RESTRICTED:
