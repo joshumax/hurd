@@ -481,9 +481,9 @@ diskfs_grow (struct node *np,
     {
       int newallocsize;
       if (lbn < NDADDR)
-	newallocsize = (lbn - 1) * sblock->fs_bsize + size;
+	newallocsize = lbn * sblock->fs_bsize + size;
       else
-	newallocsize = lbn * sblock->fs_bsize;
+	newallocsize = (lbn + 1) * sblock->fs_bsize;
       assert (newallocsize > np->allocsize);
       np->allocsize = newallocsize;
     }
