@@ -437,7 +437,7 @@ parse_script (struct file *f)
   int amt, fd, err;
   int n = 0;
 
-  buf = malloc (f->f_size);
+  buf = malloc (f->f_size + 1);	/* add one for null terminator we will write */
   if (read_file (f, 0, buf, f->f_size, 0))
     panic ("bootstrap: error reading boot script file");
 
@@ -445,7 +445,7 @@ parse_script (struct file *f)
   while (1)
     {
       while (p < buf + f->f_size && *p != '\n')
-	  p++;
+	p++;
       *p = '\0';
       err = boot_script_parse_line (line);
       if (err)
@@ -453,7 +453,6 @@ parse_script (struct file *f)
       if (p == buf + f->f_size)
 	break;
       line = ++p;
-
     }
   free (buf);
 }
