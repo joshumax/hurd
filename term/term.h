@@ -144,6 +144,7 @@ struct bottomhalf
 {
   enum term_bottom_type type;
   error_t (*init) (void);
+  error_t (*fini) (void);
   error_t (*gwinsz) (struct winsize *size);
   error_t (*start_output) (void);
   error_t (*set_break) (void);

@@ -110,7 +110,31 @@ devio_init (void)
   if (err)
     return err;
   mach_port_deallocate (mach_task_self (), host_priv);
+  if (!phys_reply_class)
   phys_reply_class = ports_create_class (0, 0);
+  return 0;
+}
+
+static error_t
+devio_fini (void)
+{
+  if (phys_reply_pi)
+    {
+      mach_port_deallocate (mach_task_self (), phys_reply);
+      phys_reply = MACH_PORT_NULL;
+      ports_port_deref (phys_reply_pi);
+      phys_reply_pi = 0;
+    }
+  if (phys_reply_writes_pi)
+    {
+      mach_port_deallocate (mach_task_self (), phys_reply_writes);
+      phys_reply_writes = MACH_PORT_NULL;
+      ports_port_deref (phys_reply_writes_pi);
+      phys_reply_writes_pi = 0;
+    }
+  mach_port_deallocate (mach_task_self (), phys_device);
+  mach_port_deallocate (mach_task_self (), device_master);
+  device_master = MACH_PORT_NULL;
   return 0;
 }
 
@@ -762,6 +786,7 @@ const struct bottomhalf devio_bottom =
 {
   TERM_ON_MACHDEV,
   devio_init,
+  devio_fini,
   NULL,
   devio_start_output,
   devio_set_break,
