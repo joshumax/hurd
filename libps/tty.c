@@ -21,6 +21,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <hurd/term.h>
 
@@ -40,6 +41,8 @@ ps_tty_create(file_t port, ps_tty_t *tty)
 
   (*tty)->port = port;
   (*tty)->name_state = PS_TTY_NAME_PENDING;
+  (*tty)->short_name = NULL;
+  (*tty)->short_name_alloced = FALSE;
 
   return 0;
 }
@@ -51,6 +54,8 @@ ps_tty_free(ps_tty_t tty)
   mach_port_deallocate(mach_task_self(), tty->port);
   if (tty->name_state == PS_TTY_NAME_OK && tty->name != NULL)
     free(tty->name);
+  if (tty->short_name_alloced)
+    free(tty->short_name);
   free(tty);
 }
 
@@ -63,7 +68,7 @@ char *ps_tty_name(ps_tty_t tty)
     {
       string_t buf;
 
-      if (term_get_nodename(tty->port, &buf) != 0)
+      if (term_get_nodename(tty->port, buf) != 0)
 	/* There is a terminal there, but we can't figure out its name.  */
 	tty->name_state = PS_TTY_NAME_ERROR;
       else
@@ -83,4 +88,68 @@ char *ps_tty_name(ps_tty_t tty)
     return tty->name;
   else
     return NULL;
+}
+
+/* ---------------------------------------------------------------- */
+
+struct ps_tty_abbrev
+{
+  char *pfx;
+  char *subst;
+};
+
+struct ps_tty_abbrev ps_tty_abbrevs[] =
+{
+  { "/tmp/console", "oc" },	/* temp hack */
+  { "/dev/console", "co"},
+  { "/dev/tty",     ""},
+  { "/dev/pty",     ""},
+  { "/dev/",	    ""},
+  { 0 }
+};
+
+/* Returns the standard abbreviated name of the tty, the whole name if there
+   is no standard abbreviation, or NULL if it can't be figured out.  */
+char *
+ps_tty_short_name(ps_tty_t tty)
+{
+  if (tty->short_name != NULL)
+    return tty->short_name;
+  else
+    {
+      struct ps_tty_abbrev *abbrev;
+      char *name = ps_tty_name(tty);
+
+      if (name)
+	for (abbrev = ps_tty_abbrevs; abbrev->pfx != NULL; abbrev++)
+	  {
+	    char *subst = abbrev->subst;
+	    unsigned pfx_len = strlen(abbrev->pfx);
+
+	    if (strncmp(name, abbrev->pfx, pfx_len) == 0)
+	      {
+		if (name[pfx_len] == '\0')
+		  tty->short_name = abbrev->subst;
+		else if (subst[0] = '\0')
+		  tty->short_name = name + pfx_len;
+		else
+		  {
+		    tty->short_name =
+		      malloc(strlen(subst) + strlen(name + pfx_len));
+		    if (tty->short_name)
+		      {
+			tty->short_name_alloced = TRUE;
+			strcpy(tty->short_name, subst);
+			strcat(tty->short_name, name + pfx_len);
+		      }
+		  }
+		break;
+	      }
+	  }
+
+      if (tty->short_name == NULL)
+	tty->short_name = name;
+
+      return tty->short_name;
+    }
 }
