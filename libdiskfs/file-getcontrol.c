@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement file_getcontrol as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_getcontrol (struct protid *cred,
 			  mach_port_t *control,
 			  mach_msg_type_name_t *controltype)
