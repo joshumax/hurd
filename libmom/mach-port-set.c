@@ -24,9 +24,7 @@ error_t
 mom_mach_port_set (struct mom_port_ref *obj,
 		   mach_port_t port)
 {
-  obj->lock = SPIN_LOCK_INITIALIZER;
   obj->port = port;
-  obj->refcnt = 1;
   return 0;
 }
 
