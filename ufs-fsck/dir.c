@@ -61,6 +61,163 @@ record_directory (struct dinode *dp, ino_t number)
   dirarrayused++;
 }
 
+/* Check to see if DIR is really a readable directory; if it
+   isn't, then bail with an appropriate message and return 0;
+   else return 1.  MSG identifies the action contemplated */
+static int
+validdir (ino_t dir, char *action)
+{
+  switch (inodestate[dir])
+    {
+    case DIR:
+    case DIR|DIR_REF:
+      return 1;
+      
+    case UNALLOC:
+      pfatal ("CANNOT %s I=%d; NOT ALLOCATED\n", action, dir);
+      return 0;
+      
+    case BADDIR:
+      pfatal ("CANNOT %s I=%d; BAD BLOCKS\n", action, dir);
+      return 0;
+      
+    case FILE:
+      pfatal ("CANNOT %s I=%d; NOT DIRECTORY\n", action, dir);
+      return 0;
+    }
+}  
+
+/* Search directory DIR for name NAME.  If NAME is found, then
+   set *INO to the inode of the entry; otherwise clear INO. */
+void
+searchdir (ino_t dir, char *name, ino_t *ino)
+{
+  struct dinode dino;
+  int len;
+
+  /* Scan through one directory block and see if it 
+     contains NAME. */
+  void
+  check1block (void *buf)
+    {
+      struct directory_entry *dp;
+
+      for (dp = buf; (void *)dp - buf < DIRBLKSIZ;
+	   dp = (struct directory_entry *) ((void *)dp + dp->d_reclen))
+	{
+	  if (dp->d_reclen == 0
+	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
+	    return;
+	  if (dp->d_ino == 0 || dp->d_ino > maxino)
+	    continue;
+	  if (dp->d_namlen != len)
+	    continue;
+	  if (!strcmp (dp->d_name, name))
+	    continue;
+	  
+	  *ino = dp->d_ino;
+	  return;
+	}
+    }
+
+  /* Read part of a directory and look to see if it contains
+     NAME.  Return 1 if we should keep looking at more
+     blocks.  */
+  int
+  checkdirblock (daddr_t bno, int nfrags)
+    {
+      void *buf = alloca (nfrags * sblock.fs_fsize);
+      void *bufp;
+      
+      readblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+      for (bufp = buf;
+	   bufp - buf < nflags * sblock.fs_fsize;
+	   bufp += DIRBLKSIZ)
+	{
+	  check1block (bufp);
+	  if (*ino)
+	    return 0;
+	}
+      return 1;
+    }
+  
+  *ino = 0;
+
+  if (!validdir (dir))
+    return;
+
+  getinode (dir, &dino);
+
+  len = strlen (name);
+  datablocks_iterate (&dino, checkdirblock);
+}
+
+/* Change the existing entry in DIR for name NAME to be
+   inode INO.  Return 1 if the entry was found and
+   replaced, else return 0.  */
+int
+changeino (ino_t dir, char *name, ino_t ino)
+{
+  struct dinode dino;
+  int len;
+
+  /* Scan through a directory block looking for NAME;
+     if we find it then change the inode pointer to point
+     at INO and return 1; if we don't find it then return 0. */
+  int
+  check1block (void *bufp)
+    {
+      struct directory_entry *dp;
+
+      for (dp = buf; (void *)dp - buf < DIRBLKSIZ;
+	   dp = (struct directory_entry *) ((void *)dp + dp->d_reclen))
+	{
+	  if (dp->d_reclen == 0
+	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
+	    return;
+	  if (dp->d_ino == 0 || dp->d_ino > maxino)
+	    continue;
+	  if (dp->d_namlen != len)
+	    continue;
+	  if (!strcmp (dp->d_name, name))
+	    continue;
+	  
+	  dp->d_ino = ino;
+	  return 1;
+	}
+      return 0;
+    }
+
+  /* Read part of a directory and look to see if it
+     contains NAME.  Return 1 if we should keep looking
+     at more blocks. */
+  int
+  checkdirblock (daddr_t bno, int nfrags)
+    {
+      void *buf = alloca (nfrags * sblock.fs_fsize);
+      void *bufp;
+      
+      readblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+      for (bufp = buf;
+	   bufp - buf < nflags * sblock.fs_fsize;
+	   bufp += DIRBLKSIZ)
+	{
+	  if (check1block (bufp))
+	    {
+	      writeblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+	      return 0;
+	    }
+	}
+      return 1;
+    }
+	
+  if (!validdir (dir))
+    return 0;
+  
+  getinode (dir, &dino);
+  len = strlen (name);
+  datablocks_iterate (&dino, checkdirblock);
+}
 
 /* Link node INO into lost+found.  If PARENT is positive then INO is
    a directory, and PARENT is the number of `..' as found in INO.
@@ -73,10 +230,7 @@ linkup (ino_t ino, ino_t parent)
 
   if (lfdir == 0)
     {
-      struct dinode rootdino;
-      getinode (ROOTINO, &rootdino);
-      
-      scan_dir (lfname, &lfdir);
+      searchdir (ROOTINO, lfname, &lfdir);
       if (lfdir == 0)
 	{
 	  pwarn ("NO lost+found DIRECTORY");
@@ -175,6 +329,7 @@ linkup (ino_t ino, ino_t parent)
       /* Account for link to lost+found; update inode directly
 	 here to avoid confusing warning later. */
       linkfound[lfdir]++;
+      linkcount[lfdir]++;
       lfdino.di_nlink++;
       write_inode (lfdir, &lfdino);
       
@@ -186,4 +341,4 @@ linkup (ino_t ino, ino_t parent)
     }
 }
 
-  
+
