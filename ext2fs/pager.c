@@ -397,7 +397,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
   else
     {
       error_t err;
-      block_t block = page >> log2_block_size;
+      volatile block_t block = page >> log2_block_size;
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
 
