@@ -79,19 +79,22 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   newcred->hook = cred->hook;
   
   mutex_lock (&cred->po->cntl->lock);
-
   newcred->po = cred->po;
   newcred->po->refcnt++;
-  
   mutex_unlock (&cred->po->cntl->lock);
 
   err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
 			  gen_uids, genuidlen, gen_gids, gengidlen);
-  if (err)
-    newcred->realnode = MACH_PORT_NULL;
+  if (!err && trivfs_protid_create_hook)
+    {
+      err = (*trivfs_protid_create_hook) (newcred);
+      if (err)
+	mach_port_deallocate (mach_task_self (), newcred->realnode);
+    }
 
-  if (trivfs_protid_create_hook)
-    (*trivfs_protid_create_hook) (newcred);
+  if (err)
+    /* Signal that the user destroy hook shouldn't be called on NEWCRED.  */
+    newcred->realnode = MACH_PORT_NULL;
 
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
@@ -106,7 +109,7 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
     vm_deallocate (mach_task_self (), (u_int) aux_gids,
 		   auxgidlen * sizeof (uid_t));
 
-
   ports_port_deref (newcred);
-  return 0;
+
+  return err;
 }
