@@ -1,5 +1,5 @@
 /* Pass 3 of GNU fsck -- Look for disconnected directories
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -57,18 +57,15 @@ pass3 ()
 	{
 	  if (inodestate[dnp->i_number] & DIR_REF)
 	    errexit ("ORPHANED DIR MARKED WITH CONNECT");
-	  pinode (dnp->i_number, "UNREF");
-	  if (preen || reply ("RECONNECT"))
+	  pinode (0, dnp->i_number, "UNREF");
+	  if ((preen || reply ("RECONNECT"))
+	      && linkup (dnp->i_number, dnp->i_dotdot))
 	    {
-	      if (linkup (dnp->i_number, dnp->i_dotdot))
-		dnp->i_parent = dnp->i_dotdot = lfdir;
+	      dnp->i_parent = dnp->i_dotdot = lfdir;
 	      pfix ("RECONNECTED");
 	    }
+	  else
+	    pfail (0);
 	}
     }
 }
-
-	  
-	
-	
-
