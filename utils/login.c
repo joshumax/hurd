@@ -48,15 +48,6 @@ extern error_t
 exec_reauth (auth_t auth, int secure, int must_reauth,
 	     mach_port_t *ports, unsigned num_ports,
 	     mach_port_t *fds, unsigned num_fds);
-
-extern error_t
-hurd_file_name_path_lookup (error_t (*use_init_port)
-			    (int which,
-			     error_t (*operate) (mach_port_t)),
-			    file_t (*get_dtable_port) (int fd),
-			    const char *file_name, const char *path,
-			    int flags, mode_t mode,
-			    file_t *result, char **prefixed_name);
 
 /* Defaults for various login parameters.  */
 char *default_args[] = {
@@ -146,68 +137,52 @@ cat (mach_port_t node, char *str)
     error (0, errno, "%s", str);
 }
 
-/* Returns the host from the umtp entry for the current tty, or 0.  The
-   return value is in a static buffer.  */
-static char *
-get_utmp_host ()
-{
-  static struct utmp utmp;
-  int tty = ttyslot ();
-  char *host = 0;
-
-  if (tty > 0)
-    {
-      int fd = open (_PATH_UTMP, O_RDONLY);
-      if (fd >= 0)
-	{
-	  lseek (fd, (off_t)(tty * sizeof (struct utmp)), L_SET);
-	  if (read (fd, &utmp, sizeof utmp) == sizeof utmp
-	      && *utmp.ut_name && *utmp.ut_line && *utmp.ut_host)
-	    host = utmp.ut_host;
-	  close (fd);
-	}
-    }
-
-  return host;
-}
-
-/* Add a utmp entry based on the parameters in ARGS & ARGS_LEN, from tty
-   TTY_FD.  If INHERIT_HOST is true, the host parameters in ARGS aren't to be
-   trusted, so try to get the host from the existing utmp entry (this only
-   works if re-logging in during an existing session).  */
+/* Add a utmp entry based on the parameters in ARGS & ARGS_LEN.  If
+   INHERIT_HOST is true, the host parameters in ARGS aren't to be trusted, so
+   try to get the host from the existing utmp entry (this only works if
+   re-logging in during an existing session).  */
 static void
-add_utmp_entry (char *args, unsigned args_len, int tty_fd, int inherit_host)
+add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 {
   struct utmp utmp;
-  char bogus_tty[sizeof (_PATH_TTY) + 2];
-  char *tty = ttyname (0);
-  char const *host;
-
-  if (! tty)
-    {
-      sprintf (bogus_tty, "%s??", _PATH_TTY);
-      tty = bogus_tty;
-    }
-
-  if (strncmp (tty, _PATH_DEV, sizeof (_PATH_DEV) - 1) == 0)
-    /* Remove a prefix of `/dev/'.  */
-    tty += sizeof (_PATH_DEV) - 1;
+  char const *host = 0;
 
   bzero (&utmp, sizeof (utmp));
 
   gettimeofday (&utmp.ut_tv, 0);
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
-  strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
 
-  if (inherit_host)
-    host = get_utmp_host ();
-  else
+  if (! inherit_host)
     {
       host = envz_get (args, args_len, "VIA");
       if (host && strlen (host) > sizeof (utmp.ut_host))
 	host = envz_get (args, args_len, "VIA_ADDR") ?: host;
     }
+
+  if (! host)
+    /* Get the host from the `existing utmp entry'.  This is a crock.  */
+    {
+      int tty_fd = 0;
+      char *tty = 0;
+
+      /* Search for a file descriptor naming a tty.  */
+      while (!tty && tty_fd < 3)
+	tty = ttyname (tty_fd);
+
+      if (tty)
+	/* Look for an existing utmp entry that has our tty.  */
+	{
+	  struct utmp *old_utmp;
+
+	  strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
+	  old_utmp = getutline (&utmp);
+
+	  if (old_utmp)
+	    host = old_utmp->ut_host;
+	}
+    }
+
   strncpy (utmp.ut_host, host ?: "", sizeof (utmp.ut_host));
 
   login (&utmp);
@@ -438,7 +413,7 @@ main(int argc, char *argv[])
     {
       mach_port_t port = MACH_PORT_NULL;
       errno =
-	hurd_file_name_path_lookup (use_child_init_port, get_child_fd_port,
+	hurd_file_name_path_lookup (use_child_init_port, get_child_fd_port, 0,
 				    name, path, flags, 0, &port, 0);
       return port;
     }
@@ -999,7 +974,7 @@ main(int argc, char *argv[])
   err = proc_getsid (proc_server, pid, &sid);
   if (!err && pid == sid)
     /* Only add utmp entries for the session leader.  */
-    add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
+    add_utmp_entry (args, args_len, !parent_has_uid (0));
 
   if ((eff_uids->num | eff_gids->num) && !no_login)
     {
