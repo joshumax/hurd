@@ -1,3 +1,9 @@
+1998-07-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* shutdown.c (diskfs_shutdown): Sync and set the clean flag even if we
+	don't shut down.  Thus a disk that was in use but hadn't been touched
+	recently needn't necessarily be checked after a system crash.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-lookup.c (diskfs_S_dir_lookup: short_circuited_callback1): Fix
