@@ -3,6 +3,16 @@
 	* info.c: Add #include <sys/mman.h> for munmap decl.
 	* mgt.c: Likewise.
 
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* info.c (get_string_array): Use mmap instead of vm_allocate.
+	(S_proc_getprocinfo): Likewise.
+	(S_proc_getloginpids): Likewise.
+	* mgt.c (S_proc_getallpids): Likewise.
+	* pgrp.c (S_proc_getsessionpids): Likewise.
+	(S_proc_getsessionpgids): Likewise.
+	(S_proc_getpgrppids): Likewise.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* info.c (get_string): Use munmap instead of vm_deallocate.

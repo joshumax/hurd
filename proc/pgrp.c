@@ -1,5 +1,5 @@
 /* Session and process group manipulation 
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -174,8 +174,8 @@ S_proc_getsessionpids (struct proc *callerp,
   if (count > npids)
     /* They didn't all fit */
     {
-      vm_allocate (mach_task_self (), (vm_address_t *)pids, 
-		   count * sizeof (pid_t), 1);
+      *pids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		    MAP_ANON, 0, 0);
       pp = *pids;
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	for (p = pg->pg_plist; p; p = p->p_gnext)
@@ -214,8 +214,8 @@ S_proc_getsessionpgids (struct proc *callerp,
   if (count > npgids)
     /* They didn't all fit. */
     {
-      vm_allocate (mach_task_self (), (vm_address_t *)pgids,
-		   count * sizeof (pid_t), 1);
+      *pgids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		     MAP_ANON, 0, 0);
       pp = *pgids;
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	*pp++ = pg->pg_pgid;
@@ -257,8 +257,8 @@ S_proc_getpgrppids (struct proc *callerp,
   if (count > npids)
     /* They didn't all fit. */
     {
-      vm_allocate (mach_task_self (), (vm_address_t *)pids,
-		   count * sizeof (pid_t), 1);
+      *pids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		    MAP_ANON, 0, 0);
       pp = *pids;
       for (p = pg->pg_plist; p; p = p->p_gnext)
 	*pp++ = p->p_pid;

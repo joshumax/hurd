@@ -281,7 +281,9 @@ get_string_array (task_t t,
 	  if (newsize < prev_len + len)
 	    newsize = prev_len + len;
 
-	  err = vm_allocate (mach_task_self (), &newbuf, newsize, 1);
+	  newbuf = (vm_address_t) mmap (0, newsize, PROT_READ|PROT_WRITE,
+					MAP_ANON, 0, 0);
+	  err = (newbuf == -1) ? errno : 0;
 	  if (err)
 	    {
 	      free (string);
@@ -402,7 +404,7 @@ S_proc_getprocinfo (struct proc *callerp,
 
   if (structsize / sizeof (int) > *piarraylen)
     {
-      vm_allocate (mach_task_self (), (vm_address_t *)piarray, structsize, 1);
+      *piarray = mmap (0, structsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       pi_alloced = 1;
     }
   *piarraylen = structsize / sizeof (int);
@@ -521,8 +523,9 @@ S_proc_getprocinfo (struct proc *callerp,
 		  mach_msg_type_number_t new_len =
 		    round_page (waits_used + desc_len + 1);
 
-		  err = vm_allocate (mach_task_self (),
-				     (vm_address_t *)&new_waits, new_len,1);
+		  new_waits = mmap (0, new_len, PROT_READ|PROT_WRITE,
+				    MAP_ANON, 0, 0);
+		  err = (new_waits == (char *) -1) ? errno : 0;
 		  if (err)
 		    /* Just don't return any more waits information.  */
 		    *flags &= ~PI_FETCH_THREAD_WAITS;
@@ -639,8 +642,8 @@ S_proc_getloginpids (struct proc *callerp,
     }
 
   if (*npids < new - parray)
-    vm_allocate (mach_task_self (), (vm_address_t *) pids,
-		 (new - parray) * sizeof (pid_t), 1);
+    *pids = mmap (0, (new - parray) * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		  MAP_ANON, 0, 0);
   *npids = new - parray;
   for (i = 0; i < *npids; i++)
     (*pids)[i] = parray[i]->p_pid;
