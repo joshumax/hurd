@@ -1,6 +1,6 @@
 /* Parse standard run-time options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -89,7 +89,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'n': h->sync_interval = 0; h->sync = 0; break;
     case 's':
       if (arg)
-	h->sync_interval = atoi (arg);
+	{
+	  h->sync = 0;
+	  h->sync_interval = atoi (arg);
+	}
       else
 	h->sync = 1;
       break;
