@@ -42,7 +42,6 @@ allocate_mod_map (void)
        on any file pager blocks.  In this case use a bitmap to record which
        global blocks are actually modified so the pager can write only them. */
     {
-      error_t err;
       /* One bit per filesystem block.  */
       mod_map_size = sblock->s_blocks_count >> 3;
       modified_global_blocks = mmap (0, mod_map_size, PROT_READ|PROT_WRITE,

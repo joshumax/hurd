@@ -85,7 +85,6 @@ get_page_buf ()
   buf = free_page_bufs;
   if (buf == 0)
     {
-      error_t err;
       spin_unlock (&free_page_bufs_lock);
       buf = mmap (0, vm_page_size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (buf == (void *) -1)
