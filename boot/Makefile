@@ -40,7 +40,7 @@ relink:
 	rm -f boot
 
 boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h \
-	tioctl_S.h
+	tioctl_S.h term_S.h
 tioctlServer.o: ../hurd/ioctl_types.h
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
