@@ -292,7 +292,9 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_fsid = getpid ();
   st->st_ino = 0;
   st->st_mode &= ~S_IFMT;
-  st->st_mode |= S_IFCHR;
+  st->st_mode = term_mode;
+  st->st_uid = term_owner;
+  st->st_gid = term_group;
 }
 
 /* Implement term_getctty as described in <hurd/term.defs>. */
@@ -408,6 +410,104 @@ S_term_open_ctty (mach_port_t arg,
 
   return err;
 }
+
+/* Implement chown locally; don't pass the value down to the
+   underlying node. */
+error_t
+trivfs_S_file_chown (struct trivfs_protid *cred,
+		     mach_port_t reply,
+		     mach_msg_type_name_t reply_type,
+		     uid_t uid,
+		     gid_t gid)
+{
+  int i;
+  int noticed_uid;
+
+  /* This routine is flawed in several ways; it needs to
+     be rewritted once the idvec handling stuff can do
+     permission checks. */
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  noticed_uid = 0;
+  mutex_lock (&global_lock);
+  for (i = 0; i < cred->nuids; i++)
+    {
+      if (cred->uids[i] == uid)
+	noticed_uid = 1;
+      if (cred->uids[i] == 0 || cred->uids[i] == term_owner)
+	{
+	  /* Make sure UID is legitimate */
+	  if (!cred->isroot && !noticed_uid && term_owner != uid)
+	    {
+	      /* Continue scanning UIDS */
+	      for (i++; i < cred->nuids; i++)
+		if (cred->uids[i] == uid)
+		  noticed_uid = 1;
+	      if (!noticed_uid)
+		{
+		  mutex_unlock (&global_lock);
+		  return EPERM;
+		}
+	    }
+	  
+	  /* Make sure GID is legitimate */
+	  for (i = 0; i < cred->ngids; i++)
+	    if (cred->gids[i] == gid || cred->isroot)
+	      {
+		/* Make the change */
+		term_owner = uid;
+		term_group = gid;
+		mutex_unlock (&global_lock);
+		return EPERM;
+	      }
+
+	  /* Not legitimate */
+	  break;
+	}
+    }
+
+  mutex_unlock (&global_lock);
+  return EPERM;
+}
+
+/* Implement chmod locally */
+error_t
+trivfs_S_file_chmod (struct trivfs_protid *cred,
+		     mach_port_t reply,
+		     mach_msg_type_name_t reply_type,
+		     mode_t mode)
+{
+  int i;
+  
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  for (i = 0; i < cred->nuids; i++)
+    if (cred->isroot || cred->uids[i] == term_owner)
+      {
+	if (!cred->isroot)
+	  {
+	    mode &= S_ISVTX;
+
+	    for (i = 0; i < cred->nuids; i++)
+	      if (cred->uids[i] == term_owner)
+		break;
+	    if (i == cred->nuids)
+	      mode &= ~S_ISUID;
+	    
+	    for (i = 0; i < cred->ngids; i++)
+	      if (cred->gids[i] == term_group)
+		break;
+	    if (i == cred->nuids)
+	      mode &= ~S_ISGID;
+	  }
+	
+	term_mode = (mode | S_IFCHR);
+      }
+}
+
 
 /* Called for user writes to the terminal as described
    in <hurd/io.defs>. */
