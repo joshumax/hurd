@@ -1,6 +1,6 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1998,99,2001,02,03 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -43,10 +43,8 @@ static const struct argp_option options[] =
   {0}
 };
 
-static const char *args_doc = "COMMAND [ARG...]";
-static const char *doc =
-"Trace Mach Remote Procedure Calls."
-"\v.";
+static const char args_doc[] = "COMMAND [ARG...]";
+static const char doc[] = "Trace Mach Remote Procedure Calls.";
 
 /* The msgid_ihash table maps msgh_id values to names.  */
 
