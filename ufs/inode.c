@@ -66,7 +66,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
 
   dn = malloc (sizeof (struct disknode));
 
-  np->cache_id = dn->number = inum;
+  dn->number = inum;
   dn->dirents = 0;
 
   rwlock_init (&dn->allocptrlock);
@@ -74,6 +74,8 @@ diskfs_cached_lookup (int inum, struct node **npp)
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
+  np->cache_id = inum;
+
   mutex_lock (&np->lock);
   dn->hnext = nodehash[INOHASH(inum)];
   if (dn->hnext)
