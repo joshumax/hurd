@@ -29,7 +29,7 @@ OBJS = $(COBJS) memory_objectServer.o
 
 SRCS = $(subst .o,.c,$(COBJS))
 
-DIST_FILES = $(SRCS) Makefile pager.h priv.h
+DIST_FILES = $(SRCS) Makefile pager.h priv.h ChangeLog
 
 all: libpager.a
 
