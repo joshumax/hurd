@@ -1,3 +1,7 @@
+Thu Jul 30 10:38:30 1998  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* fs.defs (file_notice_changes, dir_notice_changes): Doc fix.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* process_request.defs: Delete proc_sethostid, proc_gethostid,

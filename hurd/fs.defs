@@ -136,7 +136,7 @@ routine file_check_access (
 	out allowed: int);
 
 /* Notice changes to file FILE.  Send notification messages (see
-   msg.defs) to PORT as they occur. */
+   fs_notify.defs) to PORT as they occur. */
 routine file_notice_changes (
 	file: file_t;
 	RPT
@@ -292,7 +292,7 @@ routine dir_mkfile (
 	out newnode: mach_port_send_t);
 
 /* Notice changes to directory DIR.  Send directory change notifications
-   (see msg.defs) to PORT as they occur.  */
+   (see fs_notify.defs) to PORT as they occur.  */
 routine dir_notice_changes (
 	directory: file_t;
 	RPT
