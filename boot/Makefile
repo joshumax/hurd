@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -18,33 +18,40 @@
 dir := boot
 makemode := utility
 
-SRCS = mach-crt0.c boot.c tcattr.c sigvec.S syscall.S boot_script.c
-OBJS = mach-crt0.o boot.o notifyServer.o ourdeviceServer.o \
-       ioServer.o io_replyUser.o device_replyUser.o sigvec.o syscall.o \
+SRCS = mach-crt0.c boot.c ux.c tcattr.c sigvec.S syscall.S boot_script.c
+COMMON-OBJS = notifyServer.o ourdeviceServer.o \
+       ioServer.o io_replyUser.o device_replyUser.o \
        termServer.o tcattr.o bootstrapServer.o boot_script.o
-LCLHDRS = boot_script.h
+OBJS = boot.o $(COMMON-OBJS)
+UX-OBJS = mach-crt0.o uxboot.o sigvec.o syscall.o ux.o $(COMMON-OBJS)
+LCLHDRS = boot_script.h ux.h
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
 DIST_FILES=frank1.ld frankemul.ld
 
 include ../Makeconf
 
-LDFLAGS += -static -nostartfiles -Wl,-T -Wl,frank1.ld
-
 #install: /usr/local/bin/boot
 #
 #/usr/local/bin/boot: boot
 #	cp boot /usr/local/bin/boot
 
-all: boot.a
+all: boot uxboot
 
 ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
+LDFLAGS += $($@-LDFLAGS)
+
 boot: ../libthreads/libthreads.a
 
-boot.1: boot frankemul.ld
-	$(LD) -o boot.1 -T frankemul.ld boot
-boot.a: boot.1
-	$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 \
-			    boot.1 boot.a
+uxboot.o: boot.c
+	$(COMPILE.c) -DUX $< -o $@
+
+uxboot.0-LDFLAGS += -static -nostartfiles -Wl,-T -Wl,frank1.ld
+uxboot.0: $(UX-OBJS) ../libthreads/libthreads.a
+	$(LINK.o) -o $@ $(UX-OBJS) ../libthreads/libthreads.a
+uxboot.1: uxboot.0 frankemul.ld
+	$(LD) -o $@ -T frankemul.ld uxboot.0
+uxboot: uxboot.1
+	$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 $< $@
