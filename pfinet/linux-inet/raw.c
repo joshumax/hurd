@@ -81,7 +81,7 @@ void raw_err (int err, unsigned char *header, unsigned long daddr,
 		return;
 	}
 
-	sk->err = icmp_err_convert[err & 0xff].errno;
+	sk->err = icmp_err_convert[err & 0xff].error;
 	sk->error_report(sk);
   
 	return;
