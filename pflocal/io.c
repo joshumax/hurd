@@ -452,6 +452,53 @@ S_io_pathconf (struct sock_user *user, int name, int *value)
   else
     return EINVAL;
 }
+
+error_t
+S_io_identity (struct sock_user *user,
+	       mach_port_t *id, mach_msg_type_name_t *id_type,
+	       mach_port_t *fsys_id, mach_msg_type_name_t *fsys_id_type,
+	       int *fileno)
+{
+  static mach_port_t server_id = MACH_PORT_NULL;
+  error_t err = 0;
+  struct sock *sock;
+
+  if (! user)
+    return EOPNOTSUPP;
+
+  if (server_id == MACH_PORT_NULL)
+    {
+      static struct mutex server_id_lock = MUTEX_INITIALIZER;
+
+      mutex_lock (&server_id_lock);
+      if (server_id == MACH_PORT_NULL) /* Recheck with the lock held.  */
+	err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+				  &server_id);
+      mutex_unlock (&server_id_lock);
+
+      if (err)
+	return err;
+    }
+
+  sock = user->sock;
+
+  mutex_lock (&sock->lock);
+  if (sock->id == MACH_PORT_NULL)
+    err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			      &sock->id);
+  mutex_unlock (&sock->lock);
+
+  if (! err)
+    {
+      *id = sock->id;
+      *id_type = MACH_MSG_TYPE_MAKE_SEND;
+      *fsys_id = server_id;
+      *fsys_id_type = MACH_MSG_TYPE_MAKE_SEND;
+      *fileno = sock->id;	/* Might as well */
+    }
+
+  return err;
+}
 
 /* Stubs for currently unsupported rpcs.  */
 
