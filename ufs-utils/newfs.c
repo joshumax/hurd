@@ -39,7 +39,7 @@ static char copyright[] =
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)newfs.c	8.8 (Berkeley) 4/18/94";*/
-static char *rcsid = "$Id: newfs.c,v 1.1 1994/08/23 19:30:43 mib Exp $";
+static char *rcsid = "$Id: newfs.c,v 1.2 1994/09/09 14:11:41 mib Exp $";
 #endif /* not lint */
 
 /*
@@ -48,12 +48,12 @@ static char *rcsid = "$Id: newfs.c,v 1.1 1994/08/23 19:30:43 mib Exp $";
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/disklabel.h>
+/* #include <sys/disklabel.h> */
 #include <sys/file.h>
-#include <sys/mount.h>
+/* #include <sys/mount.h> */
 
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -70,13 +70,21 @@ static char *rcsid = "$Id: newfs.c,v 1.1 1994/08/23 19:30:43 mib Exp $";
 #include <varargs.h>
 #endif
 
-#include "mntopts.h"
+/* #include "mntopts.h" */
 
+/* GNU Hurd additions */
+#define MAXPATHLEN 2048
+
+/* End GNU Hurd additions */
+
+
+#if 0
 struct mntopt mopts[] = {
 	MOPT_STDOPTS,
 	MOPT_ASYNC,
 	{ NULL },
 };
+#endif
 
 #if __STDC__
 void	fatal(const char *fmt, ...);
@@ -168,7 +176,7 @@ int	maxbpg;			/* maximum blocks per file in a cyl group */
 int	nrpos = NRPOS;		/* # of distinguished rotational positions */
 int	bbsize = BBSIZE;	/* boot block size */
 int	sbsize = SBSIZE;	/* superblock size */
-int	mntflags = MNT_ASYNC;	/* flags to be passed to mount */
+/* int	mntflags = MNT_ASYNC;*/	/* flags to be passed to mount */
 u_long	memleft;		/* virtual memory available */
 caddr_t	membase;		/* start address of memory based filesystem */
 #ifdef COMPAT
@@ -190,7 +198,7 @@ main(argc, argv)
 	register struct partition *pp;
 	register struct disklabel *lp;
 	struct disklabel *getdisklabel();
-	struct partition oldpartition;
+/*	struct partition oldpartition; */
 	struct stat st;
 	struct statfs *mp;
 	int fsi, fso, len, n;
@@ -201,10 +209,12 @@ main(argc, argv)
 	else
 		progname = *argv;
 
+#if 0
 	if (strstr(progname, "mfs")) {
 		mfs = 1;
 		Nflag++;
 	}
+#endif
 
 	opstring = mfs ?
 	    "NT:a:b:c:d:e:f:i:m:o:s:" :
@@ -275,9 +285,12 @@ main(argc, argv)
 				    optarg);
 			break;
 		case 'o':
+#if 0
 			if (mfs)
 				getmntopts(optarg, mopts, &mntflags);
-			else {
+			else 
+#endif
+			  {
 				if (strcmp(optarg, "space") == 0)
 					opt = FS_OPTSPACE;
 				else if (strcmp(optarg, "time") == 0)
@@ -340,6 +353,7 @@ main(argc, argv)
 		if (fso < 0)
 			fatal("%s: %s", special, strerror(errno));
 
+#if 0
 		/* Bail if target special is mounted */
 		n = getmntinfo(&mp, MNT_NOWAIT);
 		if (n == 0)
@@ -361,7 +375,9 @@ main(argc, argv)
 				    special, mp->f_mntonname);
 			++mp;
 		}
+#endif
 	}
+#if 0
 	if (mfs && disktype != NULL) {
 		lp = (struct disklabel *)getdiskbyname(disktype);
 		if (lp == NULL)
@@ -396,6 +412,16 @@ main(argc, argv)
 			fatal("%s: `%c' partition overlaps boot program",
 			      argv[0], *cp);
 	}
+#endif
+	/* GNU Hurd specific here */
+	fsi = open (special, O_RDONLY);
+	if (fsi < 0)
+	  fatal("%s: %s", special, strerror(errno));
+	if (fstat(fsi, &st) < 0)
+	  fatal("%s: %s", special, strerror(errno));
+	fssize = st.st_size;
+	/* End GNU Hurd specific */
+	
 	if (fssize == 0)
 		fssize = pp->p_size;
 	if (fssize > pp->p_size && !mfs)
