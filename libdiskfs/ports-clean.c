@@ -25,4 +25,5 @@ void (*ports_cleanroutines[])(void *)=
   [PT_PROTID] = diskfs_protid_rele,
   [PT_PAGER] = pager_clean,
   [PT_TRANSBOOT] = fshelp_transboot_clean,
+  [PT_CTL] = _diskfs_control_clean,
 };
