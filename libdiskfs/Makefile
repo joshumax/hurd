@@ -19,19 +19,19 @@ dir := libdiskfs
 makemode := library
 
 libname = libdiskfs
-FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c    \
+FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c \
 	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
 	file-get-trans.c file-get-transcntl.c file-getfh.c file-getlinknode.c \
-	file-pathconf.c file-set-trans.c file-statfs.c file-sync.c 	    \
-	file-syncfs.c file-set-size.c file-utimes.c file-getcontrol.c       \
-	file-lock.c file-chmod.c dir-readdir.c file-lock-stat.c file-exec.c \
-	dir-chg.c file-chg.c file-access.c file-inv-trans.c
-IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
+	file-set-trans.c file-statfs.c file-sync.c file-syncfs.c \
+	file-set-size.c file-utimes.c file-getcontrol.c file-lock.c \
+	file-chmod.c dir-readdir.c file-lock-stat.c file-exec.c dir-chg.c \
+	file-chg.c file-access.c file-inv-trans.c
+IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c \
 	io-interrupt.c io-map-cntl.c io-map.c io-modes-get.c io-modes-off.c \
-	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c 	    \
-	io-prenotify.c io-read.c io-readable.c io-reauthenticate.c	    \
-	io-rel-conch.c io-restrict-auth.c io-seek.c io-select.c io-stat.c   \
-	io-stubs.c io-write.c io-version.c io-sigio.c
+	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c \
+	io-pathconf.c io-prenotify.c io-read.c io-readable.c \
+	io-reauthenticate.c io-rel-conch.c io-restrict-auth.c io-seek.c \
+	io-select.c io-stat.c io-stubs.c io-write.c io-version.c io-sigio.c
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c
 IFSOCKSRCS=ifsock.c
