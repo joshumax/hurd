@@ -368,6 +368,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
+  if (cred->pi.class == pty_class)
+    return pty_io_write (data, datalen, amt);
+
   mutex_lock (&global_lock);
 
   /* Check for errors first. */
@@ -436,6 +439,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_read (data, datalen, amt);
 
   mutex_lock (&global_lock);
   
@@ -541,6 +547,9 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
+  if (cred->pi.class == pty_class)
+    return pty_io_readable (amt);
+
   mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_READ) == 0)
     return EBADF;
@@ -557,10 +566,16 @@ kern_return_t
 S_tioctl_tiocmodg (io_t port,
 		   int *state)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   *state = (*bottom->mdmstate) ();
@@ -575,11 +590,17 @@ kern_return_t
 S_tioctl_tiocmods (io_t port,
 		   int state)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
 
@@ -601,11 +622,17 @@ S_tioctl_tiocmods (io_t port,
 kern_return_t
 S_tioctl_tiocexcl (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
 
@@ -626,12 +653,18 @@ S_tioctl_tiocexcl (io_t port)
 kern_return_t
 S_tioctl_tiocnxcl (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, 
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -652,11 +685,18 @@ kern_return_t
 S_tioctl_tiocflush (io_t port,
 		    int flags)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+
   error_t err;
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   
@@ -691,10 +731,17 @@ S_tioctl_tiocgeta (io_t port,
 		   cc_t *ccs,
 		   speed_t *speeds)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   modes[0] = termstate.c_iflag;
@@ -719,13 +766,19 @@ set_state (io_t port,
 	   int draino,
 	   int flushi)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   int oldlflag;
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   
@@ -735,6 +788,12 @@ set_state (io_t port,
     err = EBACKGROUND;
   else  
     {
+      if (cred->pi.class == pty_class)
+	{
+	  clear_queue (outputq);
+	  (*bottom->abandon_pending_output) ();
+	}
+
       if (draino)
 	{
 	  err = drain_output ();
@@ -825,10 +884,17 @@ kern_return_t
 S_tioctl_tiocgetd (io_t port,
 		   int *disc)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   *disc = 0;
 
@@ -841,11 +907,18 @@ kern_return_t
 S_tioctl_tiocsetd (io_t port,
 		   int disc)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -865,13 +938,19 @@ S_tioctl_tiocsetd (io_t port,
 kern_return_t
 S_tioctl_tiocdrain (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   
   if (!cred)
     return EOPNOTSUPP;
-  
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & O_WRITE))
     {
@@ -891,11 +970,19 @@ kern_return_t
 S_tioctl_tiocswinsz (io_t port,
 		     struct winsize size)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+
 
   mutex_lock (&global_lock);
   
@@ -926,10 +1013,17 @@ kern_return_t
 S_tioctl_tiocgwinsz (io_t port,
 		     struct winsize *size)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   *size = window_size;
@@ -944,10 +1038,17 @@ kern_return_t
 S_tioctl_tiocmget (io_t port,
 		   int *bits)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   *bits = (*bottom->mdmstate) ();
@@ -962,11 +1063,18 @@ kern_return_t
 S_tioctl_tiocmset (io_t port,
 		   int bits)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -987,11 +1095,18 @@ kern_return_t
 S_tioctl_tiocmbic (io_t port,
 		   int bits)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1012,11 +1127,19 @@ kern_return_t
 S_tioctl_tiocmbis (io_t port,
 		   int bits)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+
   mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1035,11 +1158,18 @@ S_tioctl_tiocmbis (io_t port,
 kern_return_t
 S_tioctl_tiocstart (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
 
@@ -1061,12 +1191,18 @@ S_tioctl_tiocstart (io_t port)
 kern_return_t
 S_tioctl_tiocstop (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
 
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
   mutex_lock (&global_lock);
   
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1088,11 +1224,18 @@ kern_return_t
 S_tioctl_tiocsti (io_t port,
 		  char c)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
 
@@ -1118,11 +1261,18 @@ kern_return_t
 S_tioctl_tiocoutq (io_t port,
 		   int *queue_size)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
 
@@ -1144,11 +1294,18 @@ kern_return_t
 S_tioctl_tiocspgrp (io_t port,
 		    int pgrp)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1170,12 +1327,20 @@ kern_return_t
 S_tioctl_tiocgpgrp (io_t port,
 		    int *pgrp)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t ret;
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+
+  mutex_lock (&global_lock);
 
   mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
@@ -1195,11 +1360,18 @@ S_tioctl_tiocgpgrp (io_t port,
 kern_return_t
 S_tioctl_tioccdtr (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1219,11 +1391,18 @@ S_tioctl_tioccdtr (io_t port)
 kern_return_t
 S_tioctl_tiocsdtr (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1243,11 +1422,18 @@ S_tioctl_tiocsdtr (io_t port)
 kern_return_t
 S_tioctl_tioccbrk (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port,
-						  tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1267,11 +1453,18 @@ S_tioctl_tioccbrk (io_t port)
 kern_return_t
 S_tioctl_tiocsbrk (io_t port)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, tty_class);
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class != pty_class
+      && cred->pi.class != tty_class)
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1320,6 +1513,10 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_get_openmodes (cred, bits);
+
   mutex_lock (&global_lock);
   *bits = cred->po->openmodes;
   mutex_unlock (&global_lock);
@@ -1337,6 +1534,10 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_set_all_openmodes (cred, bits);
+
   mutex_lock (&global_lock);
   cred->po->openmodes &= ~HONORED_STATE_MODES;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
@@ -1352,6 +1553,10 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_set_some_openmodes (cred, bits);
+
   mutex_lock (&global_lock);
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
   mutex_unlock (&global_lock);
@@ -1366,6 +1571,10 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_clear_some_openmodes (cred, bits);
+
   mutex_lock (&global_lock);
   cred->po->openmodes &= ~(bits & HONORED_STATE_MODES);
   mutex_unlock (&global_lock);
@@ -1380,6 +1589,10 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_mod_owner (cred, owner);
+
   mutex_lock (&global_lock);
   termflags &= ~NO_OWNER;
   foreground_id = owner;
@@ -1395,6 +1608,10 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_get_owner (cred, owner);
+
   mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
     {
@@ -1413,6 +1630,10 @@ trivfs_S_io_get_async_icky (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_get_async_icky (id, idtype);
+
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     {
@@ -1434,6 +1655,10 @@ trivfs_S_io_async (struct trivfs_protid *cred,
   struct async_req *ar;
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_async (cred, notify, id, idtype);
+
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     {
@@ -1461,6 +1686,9 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.class == pty_class)
+    return pty_io_select (cred, type, idtag);
 
   /* We don't deal with SELECT_URG here.  */
   if (*type & ~(SELECT_READ | SELECT_WRITE))
