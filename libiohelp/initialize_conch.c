@@ -18,9 +18,9 @@
 #include <libioserver.h>
 
 void
-initialize_conch (struct conch *c)
+initialize_conch (struct conch *c, struct mutex *m)
 {
-  mutex_init (&c->lock);
+  c->lock = m;
   condition_init (&c->wait);
   c->holder = 0;
   c->holder_shared_page = 0;
