@@ -1,6 +1,6 @@
 /* Support for opening stores named in URL syntax.
 
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -22,22 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const struct store_class *
-find_url_class (const char *name, const struct store_class *const *classes)
-{
-  const struct store_class *const *cl;
-  const char *clname_end = strchr (name, ':');
-
-  if (clname_end == name || clname_end == 0)
-    return 0;
-
-  for (cl = classes ?: store_std_classes; *cl; cl++)
-    if (strlen ((*cl)->name) == (clname_end - name)
-	&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
-      return *cl;
-
-  return 0;
-}
 
 /* Similar to store_typed_open, but NAME must be in URL format,
    i.e. a class name followed by a ':' and any type-specific name.
@@ -49,21 +33,16 @@ store_url_open (const char *name, int flags,
 		const struct store_class *const *classes,
 		struct store **store)
 {
-  const struct store_class *cl = find_url_class (name, classes);
-
-  if (cl == 0)
+  if (name == 0 || name[0] == ':' || strchr (name, ':') == 0)
     return EINVAL;
 
-  if (! cl->open)
-    /* CL cannot be opened.  */
-    return EOPNOTSUPP;
-
-  return (*cl->open) (name, flags, classes, store);
+  return store_typed_open (name, flags, classes, store);
 }
 
-static error_t
-url_decode (struct store_enc *enc, const struct store_class *const *classes,
-	    struct store **store)
+error_t
+store_url_decode (struct store_enc *enc,
+		  const struct store_class *const *classes,
+		  struct store **store)
 {
   const struct store_class *cl;
 
@@ -83,7 +62,11 @@ url_decode (struct store_enc *enc, const struct store_class *const *classes,
     return err;
 
   /* Find the class matching this name.  */
-  cl = find_url_class (dummy.name, classes);
+  cl = store_find_class (dummy.name, strchr (dummy.name, ':'), classes);
+# pragma weak store_module_find_class
+  if (cl == 0 && store_module_find_class)
+    err = store_module_find_class (dummy.name, strchr (dummy.name, ':'),
+				   &cl);
   free (dummy.name);
   free (dummy.misc);
 
@@ -104,5 +87,6 @@ const struct store_class store_url_open_class =
 {
   STORAGE_NETWORK, "url",
   open: store_url_open,
-  decode: url_decode
+  decode: store_url_decode
 };
+STORE_STD_CLASS (url_open);
