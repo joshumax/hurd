@@ -213,11 +213,11 @@ enum file_storage_class
 struct fsys_statfsbuf
 {
   long fsys_stb_type;
-  long fsys_stb_bsize;
-  long fsys_stb_fsize;
-  long fsys_stb_blocks;
-  long fsys_stb_bfree;
-  long fsys_stb_bavail;
+  long fsys_stb_bsize;		/* fundamental allocation unit */
+  long fsys_stb_iosize;		/* optimal I/O transfer size */
+  long fsys_stb_blocks;		/* number of blocks (fsys_stb_bsize) */
+  long fsys_stb_bfree;		/* likewise */
+  long fsys_stb_bavail;		/* likewise */
   long fsys_stb_files;
   long fsys_stb_ffree;
   fsid_t fsys_stb_fsid;
