@@ -24,7 +24,6 @@
 #include <assert.h>
 
 #include "ps.h"
-#include "pshost.h"
 #include "common.h"
 
 /* ---------------------------------------------------------------- */
