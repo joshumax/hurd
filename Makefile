@@ -77,10 +77,7 @@ relink: $(addsuffix -relink,$(prog-subdirs))
 
 install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs))
 
-lndist: lndist-cthreads-h cp-linked-files
-
-lndist-cthreads-h:
-	ln -s libthreads/cthreads.h $(srcdir)/hurd-snap/cthreads.h
+lndist: cp-linked-files
 
 cp-linked-files:
 	cp $(srcdir)/install-sh $(srcdir)/hurd-snap/install-sh
