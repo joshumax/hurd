@@ -44,6 +44,9 @@
 /* The number of bits available for the user value.  */
 #define USER_BITS ((sizeof ((struct option *)0)->val * CHAR_BIT) - GROUP_BITS)
 #define USER_MASK ((1 << USER_BITS) - 1)
+
+/* EZ alias for ARGP_ERR_UNKNOWN_KEY.  */
+#define EBADKEY ARGP_ERR_UNKNOWN_KEY
 
 /* ---------------------------------------------------------------- */
 /* Default options.  */
@@ -100,7 +103,7 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
 	sleep (1);
 
     default:
-      return EINVAL;
+      return EBADKEY;
     }
   return 0;
 }
@@ -131,7 +134,7 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
 	exit (0);
       break;
     default:
-      return EINVAL;
+      return EBADKEY;
     }
   return 0;
 }
@@ -215,9 +218,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
      cleared whenever getopt returns KEY_END, but may be set again if the user
      moves the next argument pointer backwards.  */
   int try_getopt = 1;
-  /* If true, then err == EINVAL is a result of a non-option argument failing
+  /* If true, then err == EBADKEY is a result of a non-option argument failing
      to be parsed (which in some cases isn't actually an error).  */
-  int arg_einval = 0;
+  int arg_ebadkey = 0;
   /* SHORT_OPTS is the getopt short options string for the union of all the
      groups of options.  */
   char *short_opts;
@@ -237,7 +240,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 
   /* Call GROUP's parser with KEY and ARG, swapping any group-specific info
      from STATE before calling, and back into state afterwards.  If GROUP has
-     no parser, EINVAL is returned.  */
+     no parser, EBADKEY is returned.  */
   error_t group_parse (struct group *group, int key, char *arg)
     {
       if (group->parser)
@@ -252,17 +255,17 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  return err;
 	}
       else
-	return EINVAL;
+	return EBADKEY;
     }
 
   /* Parse the non-option argument ARG, at the current position.  Returns
-     any error, and sets ARG_EINVAL to true if return EINVAL.  */
-  error_t process_arg (char *val, int *arg_einval)
+     any error, and sets ARG_EBADKEY to true if return EBADKEY.  */
+  error_t process_arg (char *val, int *arg_ebadkey)
     {
       int index = state.next;
-      error_t err = EINVAL;
+      error_t err = EBADKEY;
 
-      for (group = groups; group < egroup && err == EINVAL; group++)
+      for (group = groups; group < egroup && err == EBADKEY; group++)
 	err = group_parse (group, ARGP_KEY_ARG, val);
 
       if (!err)
@@ -275,21 +278,21 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  /* The user wants to reparse some args, give getopt another try.  */
 	  try_getopt = 1;
 
-      if (err == EINVAL)
-	*arg_einval = 1;
+      if (err == EBADKEY)
+	*arg_ebadkey = 1;
 
       return err;
     }
 
   /* Parse the option OPT (with argument ARG), at the current position.
-     Returns any error, and sets ARG_EINVAL to true if it was actually an
-     argument and the parser returned EINVAL.  */
-  error_t process_opt (int opt, char *val, int *arg_einval)
+     Returns any error, and sets ARG_EBADKEY to true if it was actually an
+     argument and the parser returned EBADKEY.  */
+  error_t process_opt (int opt, char *val, int *arg_ebadkey)
     {
       /* The group key encoded in the high bits; 0 for short opts or
 	 group_number + 1 for long opts.  */
       int group_key = opt >> USER_BITS;
-      error_t err = EINVAL;	/* until otherwise asserted */
+      error_t err = EBADKEY;	/* until otherwise asserted */
 
       if (group_key == 0)
 	/* A short option.  */
@@ -497,14 +500,14 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
      values to child parsers.  */
   if (groups < egroup)
     groups->input = input;
-  for (group = groups ; group < egroup && (!err || err == EINVAL); group++)
+  for (group = groups ; group < egroup && (!err || err == EBADKEY); group++)
     {
       if (group->parent)
 	/* If a child parser, get the initial input value from the parent. */
 	group->input = group->parent->child_inputs[group->parent_index];
       err = group_parse (group, ARGP_KEY_INIT, 0);
     }
-  if (err == EINVAL)
+  if (err == EBADKEY)
     err = 0;			/* Some parser didn't understand.  */
 
   /* Getopt is (currently) non-reentrant.  */
@@ -562,7 +565,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	       option, but in the case of a real error, getopt sets OPTOPT
 	       to the offending character, which can never be KEY_END.  */
 	    {
-	      err = EINVAL;
+	      err = EBADKEY;
 	      break;
 	    }
 	}
@@ -575,17 +578,17 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  break;		/* done */
 	else
 	  /* A non-option arg.  */
-	  err = process_arg (state.argv[state.next++], &arg_einval);
+	  err = process_arg (state.argv[state.next++], &arg_ebadkey);
       else if (opt == KEY_ARG)
 	/* A non-option argument; try each parser in turn.  */
-	err = process_arg (optarg, &arg_einval);
+	err = process_arg (optarg, &arg_ebadkey);
       else
-	err = process_opt (opt, optarg, &arg_einval);
+	err = process_opt (opt, optarg, &arg_ebadkey);
     }
 
   mutex_unlock (&getopt_lock);
 
-  if (err == EINVAL && arg_einval)
+  if (err == EBADKEY && arg_ebadkey)
     /* Suppress errors generated by unparsed arguments.  */
     err = 0;
 
@@ -594,12 +597,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       /* We successfully parsed all arguments!  Call all the parsers again,
 	 just a few more times... */
       {
-	for (group = groups; group < egroup && (!err || err ==EINVAL); group++)
+	for (group = groups; group < egroup && (!err || err==EBADKEY); group++)
 	  if (group->args_processed == 0)
 	    err = group_parse (group, ARGP_KEY_NO_ARGS, 0);
-	for (group = groups; group < egroup && (!err || err ==EINVAL); group++)
+	for (group = groups; group < egroup && (!err || err==EBADKEY); group++)
 	  err = group_parse (group, ARGP_KEY_END, 0);
-	if (err == EINVAL)
+	if (err == EBADKEY)
 	  err = 0;		/* Some parser didn't understand.  */
       }
     else if (end_index)
@@ -611,7 +614,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	if (! (state.flags & ARGP_NO_ERRS))
 	  fprintf (stderr, "%s: Too many arguments\n",
 		   program_invocation_name);
-	err = EINVAL;
+	err = EBADKEY;
       }
 
   /* Okay, we're all done, with either an error or success.  We only call the
@@ -633,10 +636,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	 given a chance to do there processing before passing back a value to
 	 the parent.  */
       for (group = egroup - 1
-	   ; group >= groups && (!err || err == EINVAL)
+	   ; group >= groups && (!err || err == EBADKEY)
 	   ; group--)
 	err = group_parse (group, ARGP_KEY_SUCCESS, 0);
-      if (err == EINVAL)
+      if (err == EBADKEY)
 	err = 0;		/* Some parser didn't understand.  */
     }
 
