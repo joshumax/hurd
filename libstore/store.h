@@ -382,6 +382,18 @@ error_t _store_task_create (task_t task, int flags, size_t block_size,
    corresponding store in STORE.  */
 error_t store_task_open (const char *name, int flags, struct store **store);
 
+/* Open the network block device NAME (parsed as "HOSTNAME:PORT[/BLOCKSIZE]"),
+   and return the corresponding store in STORE.  This opens a socket and
+   initial connection handshake, which determine the size of the device,
+   and then uses _store_nbd_create with the open socket port.  */
+error_t store_nbd_open (const char *name, int flags, struct store **store);
+
+/* Create a store that works by talking to an nbd server on an existing
+   socket port.  */
+error_t _store_nbd_create (mach_port_t port, int flags, size_t block_size,
+			   const struct store_run *runs, size_t num_runs,
+			   struct store **store);
+
 /* Parse multiple store names in NAME, and open each individually, returning
    all in the vector STORES, and the number in NUM_STORES.  The syntax of
    NAME is a single non-alpha-numeric separator character, followed by each
