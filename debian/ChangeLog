@@ -1,3 +1,8 @@
+2001-12-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* control (Build-Depends): Add automake and autoconf to build
+	dependencies.  Reported by Jordi Mallach.
+
 2001-11-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* debian/changelog: Update for new Debian package.
