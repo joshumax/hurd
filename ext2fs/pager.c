@@ -68,8 +68,11 @@ do { spin_lock (&ext2s_pager_stats.lock);				      \
 #define STAT_INC(field) /* nop */0
 #endif /* STATS */
 
+#define MAX_FREE_PAGE_BUFS 32
+
 static spin_lock_t free_page_bufs_lock = SPIN_LOCK_INITIALIZER;
 static void *free_page_bufs = 0;
+static int num_free_page_bufs = 0;
 
 /* Returns a single page page-aligned buffer.  */
 static void *
@@ -92,6 +95,7 @@ get_page_buf ()
   else
     {
       free_page_bufs = *(void **)buf;
+      num_free_page_bufs--;
       spin_unlock (&free_page_bufs_lock);
     }
 
@@ -103,9 +107,18 @@ static void
 free_page_buf (void *buf)
 {
   spin_lock (&free_page_bufs_lock);
-  *(void **)buf = free_page_bufs;
-  free_page_bufs = buf;
-  spin_unlock (&free_page_bufs_lock);
+  if (num_free_page_bufs < MAX_FREE_PAGE_BUFS)
+    {
+      *(void **)buf = free_page_bufs;
+      free_page_bufs = buf;
+      num_free_page_bufs++;
+      spin_unlock (&free_page_bufs_lock);
+    }
+  else
+    {
+      spin_unlock (&free_page_bufs_lock);
+      vm_deallocate (mach_task_self (), (vm_address_t *)buf, vm_page_size);
+    }
 }
 
 /* Find the location on disk of page OFFSET in NODE.  Return the disk block

@@ -1,3 +1,15 @@
+Tue Jun 15 21:51:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* pager.c: Clamp the number of free pages we keep around to some
+	reasonably small value.  Patch from Mark Kettenis
+	<kettenis@wins.uva.nl>. 
+
+1999-06-15  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* inode.c (diskfs_validate_flags_change): Invert sense of test wrt
+	bits that haven't yet been defined.  Reported by Kalle Olavi
+	Niemitalo <tosi@ees2.oulu.fi>.
+
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ialloc.c (diskfs_alloc_node): Frob printf format to suppress warning.

@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -373,10 +373,10 @@ diskfs_validate_author_change (struct node *np, uid_t author)
 error_t
 diskfs_validate_flags_change (struct node *np, int flags)
 {
-  if (flags & (UF_NODUMP | UF_IMMUTABLE | UF_APPEND))
-    return 0;
-  else
+  if (flags & ~(UF_NODUMP | UF_IMMUTABLE | UF_APPEND))
     return EINVAL;
+  else
+    return 0;
 }
 
 /* Writes everything from NP's inode to the disk image, and returns a pointer
