@@ -142,7 +142,7 @@ diskfs_truncate (struct node *np,
 	if (di->di_db[i])
 	  {
 	    long bsize = blksize (sblock, np, i);
-	    ffs_blkfree (np, di->di_db[i], bsize);
+	    ffs_blkfree (np, read_disk_entry (di->di_db[i]), bsize);
 	    di->di_db[i] = 0;
 	    blocksfreed += btodb (bsize);
 	  }
@@ -156,7 +156,8 @@ diskfs_truncate (struct node *np,
 	  for (i = indirs[0].offset + 1; i < NINDIR (sblock); i++)
 	    if (sindir[i])
 	      {
-		ffs_blkfree (np, sindir[i], sblock->fs_bsize);
+		ffs_blkfree (np, read_disk_entry (sindir[i]), 
+			     sblock->fs_bsize);
 		sindir[i] = 0;
 		blocksfreed += btodb (sblock->fs_bsize);
 	      }
@@ -170,7 +171,9 @@ diskfs_truncate (struct node *np,
       /* ...mapped from the inode */
       if (di->di_ib[INDIR_SINGLE] && indirs[1].offset == -2)
 	{
-	  blocksfreed += indir_release (np, di->di_ib[INDIR_SINGLE],
+	  blocksfreed += indir_release (np, 
+					read_disk_entry (di->di_ib
+							 [INDIR_SINGLE]),
 					INDIR_SINGLE);
 	  di->di_ib[INDIR_SINGLE] = 0;
 	}
@@ -184,7 +187,9 @@ diskfs_truncate (struct node *np,
 	  for (i = indirs[1].offset + 1; i < NINDIR (sblock); i++)
 	    if (dindir[i])
 	      {
-		blocksfreed += indir_release (np, dindir[i], INDIR_SINGLE);
+		blocksfreed += indir_release (np, 
+					      read_disk_entry (dindir[i]),
+					      INDIR_SINGLE);
 		dindir[i] = 0;
 	      }
 	  record_poke (dindir, sblock->fs_bsize);
@@ -197,7 +202,9 @@ diskfs_truncate (struct node *np,
     {
       if (di->di_ib[INDIR_DOUBLE])
 	{
-	  blocksfreed += indir_release (np, di->di_ib[INDIR_DOUBLE],
+	  blocksfreed += indir_release (np, 
+					read_disk_entry (di->di_ib
+							 [INDIR_DOUBLE]),
 					INDIR_DOUBLE);
 	  di->di_ib[INDIR_DOUBLE] = 0;
 	}
@@ -210,7 +217,7 @@ diskfs_truncate (struct node *np,
       long oldspace, newspace;
       daddr_t bn;
 
-      bn = di->di_db[lbn];
+      bn = read_disk_entry (di->di_db[lbn]);
       oldspace = blksize (sblock, np, lbn);
       np->allocsize = fragroundup (sblock, length);
       newspace = blksize (sblock, np, lbn);
@@ -297,11 +304,11 @@ indir_release (struct node *np, daddr_t bno, int level)
       {
 	if (level == INDIR_SINGLE)
 	  {
-	    ffs_blkfree (np, addrs[i], sblock->fs_bsize);
+	    ffs_blkfree (np, read_disk_entry (addrs[i]), sblock->fs_bsize);
 	    count += btodb (sblock->fs_bsize);
 	  }
 	else
-	  count += indir_release (np, addrs[i], level - 1);
+	  count += indir_release (np, read_disk_entry (addrs[i]), level - 1);
       }
 
   /* Subtlety: this block is no longer necessary; the information
@@ -391,7 +398,7 @@ block_extended (struct node *np,
 	 we deallocate the old block.  */
       for (off = 0; off < round_page (old_size); off += vm_page_size)
 	{
-	  diskfs_device_read_sync (fsbtodb (old_pbn) + off / DEV_BSIZE,
+	  diskfs_device_read_sync (fsbtodb (sblock, old_pbn) + off / DEV_BSIZE,
 				   (void *) &buf, vm_page_size);
 	  /* If this page is the last one, then zero the excess first */
 	  if (off + vm_page_size > old_size)
@@ -467,8 +474,8 @@ diskfs_grow (struct node *np,
 				 osize, sblock->fs_bsize, &bno, cred);
 	  if (err)
 	    goto out;
-	  old_pbn = di->di_db[olbn];
-	  di->di_db[olbn] = bno;
+	  old_pbn = read_disk_entry (di->di_db[olbn]);
+	  write_disk_entry (di->di_db[olbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 
@@ -478,7 +485,7 @@ diskfs_grow (struct node *np,
 
   if (lbn < NDADDR)
     {
-      daddr_t bno, old_pbn = di->di_db[lbn];
+      daddr_t bno, old_pbn = read_disk_entry (di->di_db[lbn]);
 
       if (old_pbn != 0)
 	{
@@ -494,7 +501,7 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
-	  di->di_db[lbn] = bno;
+	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 
@@ -509,7 +516,7 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
-	  di->di_db[lbn] = bno;
+	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 	  
@@ -551,7 +558,8 @@ diskfs_grow (struct node *np,
 	      if (err)
 		goto out;
 	      zero_disk_block (bno);
-	      indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
+	      indirs[1].bno = bno;
+	      write_disk_entry (di->di_ib[INDIR_SINGLE], bno);
 	      record_poke (di, sizeof (struct dinode));
 	    }
 	  else
@@ -572,7 +580,8 @@ diskfs_grow (struct node *np,
 		  if (err)
 		    goto out;
 		  zero_disk_block (bno);
-		  indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
+		  indirs[2].bno = bno;
+		  write_disk_entry (di->di_ib[INDIR_DOUBLE], bno);
 		  record_poke (di, sizeof (struct dinode));
 		}
 
@@ -587,7 +596,8 @@ diskfs_grow (struct node *np,
 	      if (err)
 		goto out;
 	      zero_disk_block (bno);
-	      indirs[1].bno = diblock[indirs[1].offset] = bno;
+	      indirs[1].bno = bno;
+	      write_disk_entry (diblock[indirs[1].offset], bno);
 	      record_poke (diblock, sblock->fs_bsize);
 	    }
 	}
@@ -601,7 +611,8 @@ diskfs_grow (struct node *np,
 		       sblock->fs_bsize, &bno, 0);
       if (err)
 	goto out;
-      indirs[0].bno = siblock[indirs[0].offset] = bno;
+      indirs[0].bno = bno;
+      write_disk_entry (siblock[indirs[0].offset], bno);
       record_poke (siblock, sblock->fs_bsize);
       offer_data (np, lbn, sblock->fs_bsize, zeroblock);
     }
