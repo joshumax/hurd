@@ -71,21 +71,23 @@ diskfs_S_io_read (struct protid *cred,
   if (maxread == 0)
     err = 0;
   else if (S_ISLNK (np->dn_stat.st_mode))
-    /* Read from a symlink.  */
-    if (! diskfs_read_symlink_hook)
-      err = EINVAL;
-    else
-      {
-	if (off == 0 && maxread == np->dn_stat.st_size)
-	  err = (*diskfs_read_symlink_hook)(np, buf);
-	else
-	  {
-	    char *whole_link = alloca (np->dn_stat.st_size);
-	    err = (*diskfs_read_symlink_hook)(np, whole_link);
-	    if (! err)
-	      memcpy (buf, whole_link + off, maxread);
-	  }
-      }
+    {
+      /* Read from a symlink.  */
+      if (! diskfs_read_symlink_hook)
+	err = EINVAL;
+      else
+	{
+	  if (off == 0 && maxread == np->dn_stat.st_size)
+	    err = (*diskfs_read_symlink_hook)(np, buf);
+	  else
+	    {
+	      char *whole_link = alloca (np->dn_stat.st_size);
+	      err = (*diskfs_read_symlink_hook)(np, whole_link);
+	      if (! err)
+		memcpy (buf, whole_link + off, maxread);
+	    }
+	}
+    }
   else
     err = EINVAL;		/* Use read below.  */
 
