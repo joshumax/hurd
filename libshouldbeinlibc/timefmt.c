@@ -283,7 +283,7 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
 {
   static char *time_fmts[] = { "%-r", "%-l:%M%p", "%-l%p", 0 };
   static char *week_fmts[] = { "%A", "%a", 0 };
-  static char *month_fmts[] = { "%A, %-d", "%a, %-d", "%a %-d", "%a%-d", 0 };
+  static char *month_fmts[] = { "%A %-d", "%a %-d", "%a%-d", 0 };
   static char *date_fmts[] =
     { "%A, %-d %B", "%a, %-d %b", "%-d %B", "%-d %b", "%-d%b", 0 };
   static char *year_fmts[] =
@@ -313,7 +313,7 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
     }
   else
     {
-      static char *seps[] = { ", ", " ", "" };
+      static char *seps[] = { ", ", " ", "", 0 };
       char **fmt, **dfmt, **dfmts, **sep;
 
       if (diff < WEEK)
