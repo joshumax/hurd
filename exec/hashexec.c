@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -179,7 +179,7 @@ check_hashbang (struct execdata *e,
       jmp_buf args_faulted;
       void fault_handler (int signo)
 	{ longjmp (args_faulted, 1); }
-      error_t setup_args (struct hurd_signal_preempter *preempter)
+      error_t setup_args (struct hurd_signal_preemptor *preemptor)
 	{
 	  size_t namelen;
 	  char * volatile file_name = NULL;
@@ -204,7 +204,7 @@ check_hashbang (struct execdata *e,
 	      /* Search $PATH for NAME, opening a port NAME_FILE on it.
 		 This is encapsulated in a function so we can catch faults
 		 reading the user's environment.  */
-	      error_t search_path (struct hurd_signal_preempter *preempter)
+	      error_t search_path (struct hurd_signal_preemptor *preemptor)
 		{
 		  error_t err;
 		  char *path = envz_get (envp, envplen, "PATH"), *pfxed_name;
