@@ -1,3 +1,13 @@
+Thu Oct 24 15:00:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (options): Remove header for run-time supplied fields.
+	(main): And add it back here as a child header.
+
+Wed Oct 23 14:04:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (main): Replace PARENTS with CHILDREN, which uses the
+	new argp_child structure.
+
 Thu Oct 10 13:53:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ps.c (options, main): Add --top/-h option.

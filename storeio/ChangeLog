@@ -1,3 +1,7 @@
+Thu Oct 24 16:24:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (main): Use elements of type `struct argp_child' for KIDS.
+
 Mon Oct  7 16:38:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io.c (trivfs_S_file_get_storage_info): If necessary to enforce

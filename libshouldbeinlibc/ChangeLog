@@ -1,3 +1,34 @@
+Thu Oct 24 15:15:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (hol_entry_help: comma): Only print cluster headers for
+	real clusters.
+	Emit a newline after cluster headers.
+
+Wed Oct 23 13:58:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_args_usage, argp_doc): Use the new type of
+	argp child vector.
+
+Tue Oct 22 15:35:56 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (make_hol): Accept new CLUSTER argument,
+	and fill in the corresponding entry fields with it.
+	(hol_sort): Use hol_entry_cmp.
+	(hol_entry_cmp, group_cmp, hol_cluster_cmp, hol_cluster_base,
+	hol_add_cluster): New functions.
+	(hol_free): Free clusters.
+	(hol_append): Deal with clusters.
+	Always use hol_free to free MORE, and just mark it's entries as
+	invalid if we steal them.
+	(argp_hol): Add, and use the new CLUSTER argument.
+	Use the new type of argp child vector, and make clusters.
+	(argp_help): Pass new CLUSTER argument to argp_hol.
+	(hol_entry_help): Add gunk to print cluster headers.
+	* argp.h (struct argp_child): New type.
+	(struct argp): Change type of CHILDREN field to `struct argp_child *'.
+	* argp-parse.c (argp_parse): Convert to use the new type of argp
+	children vectors.
+
 Mon Oct 21 22:00:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* argp.h: Add extern inline protection.
