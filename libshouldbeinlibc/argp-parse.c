@@ -86,10 +86,10 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case '?':
-      argp_state_help (state, state->out_stream, ARGP_HELP_STD_HELP);
+      __argp_state_help (state, state->out_stream, ARGP_HELP_STD_HELP);
       break;
     case OPT_USAGE:
-      argp_state_help (state, state->out_stream,
+      __argp_state_help (state, state->out_stream,
 		       ARGP_HELP_USAGE | ARGP_HELP_EXIT_OK);
       break;
 
@@ -144,7 +144,7 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
       else if (argp_program_version)
 	fprintf (state->out_stream, "%s\n", argp_program_version);
       else
-	argp_error (state, "No version known!?");
+	__argp_error (state, "No version known!?");
       if (! (state->flags & ARGP_NO_EXIT))
 	exit (0);
       break;
@@ -317,7 +317,7 @@ convert_options (const struct argp *argp,
       const struct argp_option *opt;
 
       if (real)
-	for (opt = real; !_option_is_end (opt); opt++)
+	for (opt = real; !__option_is_end (opt); opt++)
 	  {
 	    if (! (opt->flags & OPTION_ALIAS))
 	      /* OPT isn't an alias, so we can use values from it.  */
@@ -326,7 +326,7 @@ convert_options (const struct argp *argp,
 	    if (! (real->flags & OPTION_DOC))
 	      /* A real option (not just documentation).  */
 	      {
-		if (_option_is_short (opt))
+		if (__option_is_short (opt))
 		  /* OPT can be used as a short option.  */
 		  {
 		    *cvt->short_end++ = opt->key;
@@ -455,7 +455,7 @@ calc_sizes (const struct argp *argp,  struct parser_sizes *szs)
       if (opt)
 	{
 	  int num_opts = 0;
-	  while (!_option_is_end (opt++))
+	  while (!__option_is_end (opt++))
 	    num_opts++;
 	  szs->short_len += num_opts * 3; /* opt + up to 2 `:'s */
 	  szs->long_len += num_opts;
@@ -607,8 +607,8 @@ parser_finalize (struct parser *parser,
     {
       /* Maybe print an error message.  */
       if (err == EBADKEY)
-	argp_state_help (&parser->state, parser->state.err_stream,
-			 ARGP_HELP_STD_ERR);
+	__argp_state_help (&parser->state, parser->state.err_stream,
+			   ARGP_HELP_STD_ERR);
 
       /* Since we didn't exit, give each parser an error indication.  */
       for (group = parser->groups; group < parser->egroup; group++)
@@ -790,8 +790,8 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
    unknown option is present, EINVAL is returned; if some parser routine
    returned a non-zero value, it is returned; otherwise 0 is returned.  */
 error_t
-argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
-	    int *end_index, void *input)
+__argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
+	      int *end_index, void *input)
 {
   error_t err;
   struct parser parser;
@@ -836,3 +836,6 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 
   return err;
 }
+#ifdef weak_alias
+weak_alias (__argp_parse, argp_parse)
+#endif
