@@ -19,7 +19,7 @@ dir := utils
 makemode := utilities
 
 SRCS = shd.c ps.c su.c settrans.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh fsysopts.c
-OBJS = $(subst .c,.o,$(SRCS)) argz.o error.o
+OBJS = $(filter-out mount.sh,$(subst .c,.o,$(SRCS))) argz.o error.o
 targets = shd ps settrans showtrans clri sync reboot halt su mount fsysopts
 DIST_FILES = sh.ChangeLog
 
@@ -33,11 +33,17 @@ vpath %.c ../lib
 include ../Makeconf
 
 settrans: settrans.o start-trans.o argz.o error.o
-
 showtrans: showtrans.o argz.o error.o
-
 fsysopts: fsysopts.o argz.o error.o
-
 ps: ps.o error.o ../libps/libps.a ../libihash/libihash.a
+shd: shd.o
+su: su.o
+clri: clri.o
+sync: sync.o
+reboot: reboot.o
+halt: halt.o
+fsysopts: fsysopts.o
+
+mount: mount.sh
 
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
