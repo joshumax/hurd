@@ -1,8 +1,8 @@
 /* Inode allocation routines.
 
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
 
-   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -361,7 +361,7 @@ ext2_count_free_inodes ()
 		  i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
     }
-  ext2_debug ("stored = %lu, computed = %lu, %lu",
+  ext2_debug ("stored = %u, computed = %lu, %lu",
 	      sblock->s_free_inodes_count, desc_count, bitmap_count);
   spin_unlock (&global_lock);
   return desc_count;

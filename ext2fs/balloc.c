@@ -1,6 +1,6 @@
 /* Block allocation routines
 
-   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,99,2000 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
@@ -74,7 +74,7 @@ ext2_free_blocks (block_t block, unsigned long count)
       return;
     }
 
-  ext2_debug ("freeing block %lu[%lu]", block, count);
+  ext2_debug ("freeing block %u[%lu]", block, count);
 
   do
     {
@@ -162,7 +162,7 @@ ext2_new_block (block_t goal,
     }
 #endif
 
-  ext2_debug ("goal=%lu", goal);
+  ext2_debug ("goal=%u", goal);
 
 repeat:
   /*
@@ -341,7 +341,7 @@ got_block:
 	}
       gdp->bg_free_blocks_count -= *prealloc_count;
       sblock->s_free_blocks_count -= *prealloc_count;
-      ext2_debug ("preallocated a further %lu bits", *prealloc_count);
+      ext2_debug ("preallocated a further %u bits", *prealloc_count);
     }
 #endif
 
@@ -394,7 +394,7 @@ ext2_count_free_blocks ()
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
     }
-  printf ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu",
+  printf ("ext2_count_free_blocks: stored = %u, computed = %lu, %lu",
 	  sblock->s_free_blocks_count, desc_count, bitmap_count);
   spin_unlock (&global_lock);
   return bitmap_count;

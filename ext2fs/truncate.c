@@ -1,8 +1,8 @@
 /* File truncation
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -102,7 +102,7 @@ trunc_direct (struct node *node, block_t end, struct free_block_run *fbr)
 {
   block_t *blocks = node->dn->info.i_data;
 
-  ext2_debug ("truncating direct blocks from %ld", end);
+  ext2_debug ("truncating direct blocks from %d", end);
 
   while (end < EXT2_NDIR_BLOCKS)
     free_block_run_free_ptr (fbr, blocks + end++);

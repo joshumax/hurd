@@ -1,8 +1,8 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
-   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -300,7 +300,7 @@ pending_blocks_write (struct pending_blocks *pb)
       block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       size_t length = pb->num << log2_block_size, amount;
 
-      ext2_debug ("writing block %lu[%d]", pb->block, pb->num);
+      ext2_debug ("writing block %u[%ld]", pb->block, pb->num);
 
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
@@ -632,8 +632,8 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		 ? new_end_block
 		 : old_page_end_block);
 
-	      ext2_debug ("extending writable page %u by %ld blocks"
-			  "; first new block = %lu",
+	      ext2_debug ("extending writable page %u by %d blocks"
+			  "; first new block = %u",
 			  trunc_page (old_size),
 			  writable_end - end_block,
 			  end_block);

@@ -1,6 +1,6 @@
 /* File block to disk block mapping routines
 
-   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
@@ -78,7 +78,7 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
     {
       result = node->dn->info.i_prealloc_block++;
       node->dn->info.i_prealloc_count--;
-      ext2_debug ("preallocation hit (%lu/%lu) => %lu",
+      ext2_debug ("preallocation hit (%lu/%lu) => %u",
 		  ++alloc_hits, ++alloc_attempts, result);
     }
   else
@@ -154,7 +154,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 
   *result = ext2_alloc_block (node, goal, zero);
 
-  ext2_debug ("%screate, hint = %lu, goal = %lu => %lu",
+  ext2_debug ("%screate, hint = %u, goal = %u => %u",
 	      create ? "" : "no", hint, goal, *result);
 
   if (!*result)
@@ -248,7 +248,7 @@ ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
      * allocations use the same goal zone
    */
 
-  ext2_debug ("block = %lu, next = %lu, goal = %lu", block,
+  ext2_debug ("block = %u, next = %u, goal = %u", block,
 	      node->dn->info.i_next_alloc_block,
 	      node->dn->info.i_next_alloc_goal);
 
