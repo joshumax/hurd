@@ -268,20 +268,20 @@ relink:
 # the effort.
 
 # if this is the first level, then set librecord.  Otherwise, read it in.
-ifeq ($(MAKELEVEL),0)
-librecord:=/tmp/hurd-make-$(shell echo $$$$)
-export librecord
-else
-include $(librecord)
-endif
+#ifeq ($(MAKELEVEL),0)
+#librecord:=/tmp/hurd-make-$(shell echo $$$$)
+#export librecord
+#else
+#include $(librecord)
+#endif
 
 # How to create it.
-$(librecord):
-	touch $(librecord)
+#$(librecord):
+#	touch $(librecord)
 
 # `libs' target depends on this.
-add-to-librecord:
-	echo $(addprefix ../$(dir)/,$(targets)) : \; /bin/true >> $(librecord)
+#add-to-librecord:
+#	echo $(addprefix ../$(dir)/,$(targets)) : \; /bin/true >> $(librecord)
 
 # Building libraries from other directories.  We force both libraries to be
 # built if either is, because it will use the appropriate one even if the other
