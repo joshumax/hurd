@@ -1,3 +1,7 @@
+1999-06-22  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rc.sh: Clean /tmp using special hackery to nuke translators.
+
 1999-06-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* runsystem.sh: New file.
