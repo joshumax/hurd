@@ -20,21 +20,29 @@ dir := .
 include Makeconf
 
 LIB_SUBDIRS = libioserver libports libpager libfshelp libdiskfs libtrivfs
-PROG_SUBDIRS = auth boot exec fstests hello ifsock init init.trim mkbootfs \
-	 proc term tmpfs ufs pflocal sh.trim
-OTHER_SUBDIRS = hurd i386 doc
+PROG_SUBDIRS = auth boot exec fstests hello ifsock init.trim mkbootfs \
+	 proc term tmpfs ufs pflocal sh.trim ps
+OTHER_SUBDIRS = hurd i386 doc init
 SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
 
 DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS
 
-all:
-	@echo Can\'t make all yet.
+all: $(addsuffix -all,$(PROG_SUBDIRS))
+
+%-all: 
+	make -C $* all
 
 %-lndist: hurd-snap
 	make -C $* lndist
 
 %-clean:
 	make -C $* clean
+
+%-relink:
+	make -C $* relink
+
+%-install:
+	make -C $* install
 
 hurd-snap:
 	mkdir hurd-snap
@@ -44,3 +52,7 @@ dist: hurd-snap $(addsuffix -lndist,$(SUBDIRS)) lndist
 	rm -rf hurd-snap
 
 clean: $(addsuffix -clean,$(LIB_SUBDIRS)) $(addsuffix -clean,$(PROG_SUBDIRS))
+
+relink: $(addsuffix -relink,$(PROG_SUBDIRS))
+
+install: $(addsuffix -install,$(PROG_SUBDIRS))
