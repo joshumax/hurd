@@ -30,6 +30,8 @@
 #include <argp.h>
 #include <argz.h>
 
+extern char *localhost ();
+
 #define DEFAULT_SOFT_RETRIES  3	/* times */
 #define DEFAULT_STAT_TIMEOUT  3	/* seconds */
 #define DEFAULT_CACHE_TIMEOUT 3	/* seconds */
@@ -342,8 +344,8 @@ main (int argc, char **argv)
   cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
   cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));
   
-  hostname = malloc (1000);
-  gethostname (hostname, 1000);
+  hostname = localhost ();
+
   netfs_root_node = mount_root (remote_fs, host);
 
   if (!netfs_root_node)
