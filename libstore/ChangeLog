@@ -1,3 +1,7 @@
+2002-03-05  Roland McGrath  <roland@frob.com>
+
+	* device.c (dev_map): Pass proper OFFSET and SIZE params to device_map.
+
 2002-01-19  Roland McGrath  <roland@frob.com>
 
 	Support explicit open of unknown store (with no name), i.e. -Tunknown.
