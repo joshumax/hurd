@@ -97,7 +97,7 @@ S_proc_reauthenticate (struct proc *p, int id)
   ngen_gids = naux_gids = 50;
 
   err = auth_server_authenticate (authserver, p->p_reqport, 
-				  MACH_MSG_TYPE_COPY_SEND, id,
+				  MACH_MSG_TYPE_MAKE_SEND, id,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 				  &gen_uids, &ngen_uids,
 				  &aux_uids, &naux_uids,
