@@ -24,13 +24,84 @@
 
 #include "store.h"
 
+/* Decodes the standard leaf device encoding that's common to various builtin
+   formats.  */
+error_t
+store_default_leaf_decode (struct store_enc *enc, struct store **store)
+{
+  char *misc;
+  error_t err;
+  int type, flags;
+  mach_port_t port;
+  size_t block_size, num_runs, name_len, misc_len;
+  
+  /* Make sure there are enough encoded ints and ports.  */
+  if (enc->cur_int + 6 > enc->ints_len || enc->cur_port + 1 > enc->ports_len)
+    return EINVAL;
+
+  /* Read encoded ints.  */
+  type = enc->ints[enc->cur_int++];
+  flags = enc->ints[enc->cur_int++];
+  block_size = enc->ints[enc->cur_int++];
+  num_runs = enc->ints[enc->cur_int++];
+  name_len = enc->ints[enc->cur_int++];
+  misc_len = enc->ints[enc->cur_int++];
+
+  /* Make sure there are enough encoded offsets and data.  */
+  if (enc->cur_offset + num_runs * 2 > enc->offsets_len
+      || enc->cur_data + name_len + misc_len > enc->data_len)
+    return EINVAL;
+
+  if (ports->data[ports->cur_data + name_len - 1] != '\0')
+    return EINVAL;		/* Name not terminated.  */
+
+  misc = malloc (misc_len);
+  if (! misc)
+    return ENOMEM;
+
+  /* Read encoded ports (be careful to deallocate this if we barf).  */
+  port = enc->ports[enc->cur_port++];
+
+  switch (type)
+    {
+    case STORAGE_DEVICE:
+      err =
+	_store_device_create (port, block_size,
+			      ports->offsets + ports->curr_offset, num_runs,
+			      store);
+      break;
+    case STORAGE_FILE:
+      err =
+	_store_file_create (port, block_size,
+			    ports->offsets + ports->curr_offset, num_runs,
+			    store);
+      break;
+    default:
+      err = EINVAL;
+    }
+
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), port);
+      free (misc);
+    }
+  else
+    {
+      (*store)->flags = flags;
+      (*store)->misc = misc;
+      (*store)->misc_len = misc_len;
+    }
+
+  return err;
+}
+
 /* Decode ENC, either returning a new store in STORE, or an error.  If
    nothing else is to be done with ENC, its contents may then be freed using
    store_enc_dealloc.  */
 error_t
 store_decode (struct store_enc *enc, struct store **store)
 {
-  if (enc->cur_ints >= enc->ints_len)
+  if (enc->cur_int >= enc->ints_len)
     /* The first int should always be the type.  */
     return EINVAL;
 
