@@ -71,8 +71,7 @@ struct disknode
   size_t dinloclen;
   size_t sinloclen;
   
-  /* These two pointers are locked by pagernplock in pager.c for
-     all nodes. */
+  /* These two pointers are locked by pagernplock for all nodes. */
   struct user_pager_info *sininfo;
   struct user_pager_info *fileinfo;
 };  
@@ -177,6 +176,7 @@ spin_lock_t alloclock;
 
 struct mutex dinmaplock;
 struct mutex sinmaplock;
+struct mutex pagernplock;
 
 spin_lock_t gennumberlock;
 u_long nextgennumber;
