@@ -374,14 +374,19 @@ void diskfs_node_norefs (struct node *np);
 
 /* The user must define this function.  Node NP has some light
    references, but has just lost its last hard references.  Take steps
-   so that if any light references can be freed, they are.  NP might
-   or might not be locked; this routine should not attempt to gain the lock. */
+   so that if any light references can be freed, they are.  NP is locked
+   as is the pager refcount lock.  This function will be called after
+   diskfs_lost_hardrefs.  */
+void diskfs_try_dropping_softrefs (struct node *np);
+
+/* The user must define this funcction.  Node NP has some light
+   references but has just lost its last hard reference.  NP is locked. */
 void diskfs_lost_hardrefs (struct node *np);
 
 /* The user must define this function.  Node NP has just acquired
    a hard reference where it had none previously.  It is thus now
-   OK again to have light references without real users.  NP might or
-   might not be locked; this routine should not attempt to gain the lock. */
+   OK again to have light references without real users.  NP is
+   locked. */
 void diskfs_new_hardrefs (struct node *np);
 
 /* The user must define this function.  There are no hard ports outstanding;
@@ -423,7 +428,8 @@ mach_port_t diskfs_get_filemap (struct node *np);
 
 /* The user must define this function.  Return a `struct pager *' suitable
    for use as an argument to diskfs_register_memory_fault_area that
-   refers to the pager returned by diskfs_get_filemap for node NP.  */
+   refers to the pager returned by diskfs_get_filemap for node NP. 
+   NP is locked.  */
 struct pager *diskfs_get_filemap_pager_struct (struct node *np);
 
 /* The user must define this function if she calls diskfs_start_bootstrap.
@@ -492,7 +498,9 @@ void diskfs_drop_node (struct node *np);
    media has been completely updated.  */
 void diskfs_node_update (struct node *np, int wait);
 
-/* Add a hard reference to a node. */
+/* Add a hard reference to a node.  If there were no hard 
+   references previously, then the node cannot be locked 
+   (because you must hold a hard reference to hold the lock). */
 extern inline void
 diskfs_nref (struct node *np)
 {
@@ -502,7 +510,11 @@ diskfs_nref (struct node *np)
   new_hardref = (np->references == 1);
   spin_unlock (&diskfs_node_refcnt_lock);
   if (new_hardref)
-    diskfs_new_hardrefs (np);
+    {
+      mutex_lock (&np->lock);
+      diskfs_new_hardrefs (np);
+      mutex_unlock (&np->lock);
+    }
 }
 
 /* Unlock node NP and release a hard reference; if this is the last
@@ -514,22 +526,20 @@ diskfs_nput (struct node *np)
   int nlinks;
 
   spin_lock (&diskfs_node_refcnt_lock);
+  assert (np->references);
   np->references--;
   if (np->references + np->light_references == 0)
     diskfs_drop_node (np);
   else if (np->references == 0)
     {
       spin_unlock (&diskfs_node_refcnt_lock);
-      nlinks = np->dn_stat.st_nlink;
-      mutex_unlock (&np->lock);
-      if (!nlinks)
-	diskfs_lost_hardrefs (np);
+      diskfs_lost_hardrefs (np);
+      if (!np->dn_stat.st_nlink)
+	diskfs_try_dropping_softrefs (np);
     }
   else
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
-    }
+    spin_unlock (&diskfs_node_refcnt_lock);
+  mutex_unlock (&np->lock);
 }
 
 /* Release a hard reference on NP.  If NP is locked by anyone, then
@@ -543,6 +553,7 @@ diskfs_nrele (struct node *np)
   int nlinks;
   
   spin_lock (&diskfs_node_refcnt_lock);
+  assert (np->references);
   np->references--;
   if (np->references + np->light_references == 0)
     {
@@ -552,11 +563,11 @@ diskfs_nrele (struct node *np)
   else if (np->references == 0)
     {
       mutex_lock (&np->lock);
-      nlinks = np->dn_stat.st_nlink;
-      mutex_unlock (&np->lock);
       spin_unlock (&diskfs_node_refcnt_lock);
-      if (!nlinks)
-	diskfs_lost_hardrefs (np);
+      diskfs_lost_hardrefs (np);
+      if (!np->dn_stat.st_nlink)
+	diskfs_try_dropping_softrefs (np);
+      mutex_unlock (&np->lock);
     }
   else
     spin_unlock (&diskfs_node_refcnt_lock);
@@ -576,6 +587,7 @@ extern inline void
 diskfs_nput_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
+  assert (np->light_references);
   np->light_references--;
   if (np->references + np->light_references == 0)
     diskfs_drop_node (np);
@@ -593,6 +605,7 @@ extern inline void
 diskfs_nrele_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
+  assert (np->light_references);
   np->light_references--;
   if (np->references + np->light_references == 0)
     {
