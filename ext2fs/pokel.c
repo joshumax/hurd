@@ -32,7 +32,7 @@ void pokel_init (struct pokel *pokel, struct pager *pager, void *image)
 
 /* Remember that data here on the disk has been modified. */
 void
-pokel_add (struct pokel, void *loc, vm_size_t length)
+pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 {
   struct poke *pl;
   vm_offset_t offset;
@@ -57,12 +57,12 @@ pokel_add (struct pokel, void *loc, vm_size_t length)
       pokel->pokes = pl;
     }
 
-  spin_lock (&pokelistlock);
+  spin_unlock (&pokel->lock);
 }
 
 /* Sync all the modified pieces of disk */
 void
-pokel_sync (struct pokel *pokes, int wait)
+pokel_sync (struct pokel *pokel, int wait)
 {
   struct poke *pl, *next;
   
@@ -70,7 +70,7 @@ pokel_sync (struct pokel *pokes, int wait)
 
   for (pl = pokel->pokes; pl; pl = next)
     {
-      pager_sync_some (pokel->pager->p, pl->offset, pl->length, wait);
+      pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
       next = pl->next;
       pl->next = pokel->free_pokes;
       pokel->free_pokes = pl;
@@ -79,4 +79,3 @@ pokel_sync (struct pokel *pokes, int wait)
 
   spin_unlock (&pokel->lock);
 }
-
