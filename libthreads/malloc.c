@@ -26,6 +26,14 @@
 /*
  * HISTORY
  * $Log: malloc.c,v $
+ * Revision 1.6  1996/03/07 21:13:08  miles
+ * (realloc):
+ *   Use LOG2_MIN_SIZE.
+ *   Don't bother allocating a new block if the new size request fits in the old
+ *     one and doesn't waste any space.
+ *   Only free the old block if we successfully got a new one.
+ * (LOG2_MIN_SIZE): New macro.
+ *
  * Revision 1.5  1996/03/06 23:51:04  miles
  * [MCHECK] (struct header): New type.
  * (union header): Only define if !MCHECK.
@@ -80,9 +88,7 @@
 
 
 #include <assert.h>
-
 #include <cthreads.h>
-#include "cthread_internals.h"
 
 #define MCHECK
 
@@ -165,14 +171,15 @@ more_memory(size, fl)
 	if (size <= vm_page_size) {
 		amount = vm_page_size;
 		n = vm_page_size / size;
-		/*
-		 * We lose vm_page_size - n*size bytes here.
-		 */
+		/* We lose vm_page_size - n*size bytes here.  */
 	} else {
 		amount = size;
 		n = 1;
 	}
-	MACH_CALL(vm_allocate(mach_task_self(), &where, (vm_size_t) amount, TRUE), r);
+
+	r = vm_allocate(mach_task_self(), &where, (vm_size_t) amount, TRUE);
+	assert_perror (r);
+
 	h = (header_t) where;
 	do {
 		HEADER_NEXT (h) = fl->head;
