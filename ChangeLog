@@ -1,3 +1,9 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf (objs): New target, just compile w/o ar or ld.
+	(OBJS): Remove bogus `%.o' default defn.
+	* Makefile (objs, %-objs): New subdir target.
+
 1998-08-12  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* aclocal.m4 (AC_PROG_CC_LOCAL): Renamed to hurd_PROG_CC.
