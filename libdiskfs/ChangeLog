@@ -1,3 +1,7 @@
+1999-01-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* sync-interval.c (diskfs_set_sync_interval): Use ENOMEM, not EIEIO.
+
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	Use a struct hurd_port for the cached exec server port,

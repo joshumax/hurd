@@ -1,3 +1,8 @@
+1999-01-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* interrupt-on-notify.c (ports_interrupt_self_on_notification): Use
+	assert to check we are in an rpc; don't return EIEIO (not appropriate).
+
 1997-08-14  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* interrupt-rpcs.c (ports_interrupt_rpcs): Put RPC into the
@@ -13,10 +18,10 @@ Wed Aug 20 13:56:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* manage-multithread.c (ports_manage_port_operations_multithread):
  	Drop parms `wire_cthreads' and `wire_threads'.  Add parm `hook'.
 	(thread_function): Call HOOK instead of cthread_wire and/or
-	thread_wire. 
+	thread_wire.
 	* ports.h (ports_manage_port_operations_multithread): Adjust
-	declaration. 
-	
+	declaration.
+
 Fri Feb 14 00:51:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* create-bucket.c (ports_create_bucket): Initialize rpcs, flags, &
@@ -37,7 +42,7 @@ Thu Jul 18 22:59:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* Makefile (SRCS): Add create-port-noinstall.c and create-internal.c.
 	* create-port-noinstall.c: New file.
 	* create-port.c (ports_create_port): Guts deleted; call new work
-	function. 
+	function.
 	* create-internal.c:  New file; all the guts from create-port.c.
 
 Wed Jul  3 14:13:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
@@ -469,4 +474,3 @@ Tue Jun 20 12:35:44 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
 
 	* libports/lookup-port.c (ports_lookup_port): Remove assignment
         from if test.
-
