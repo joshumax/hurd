@@ -1,3 +1,7 @@
+1998-12-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* lmail.c (deliver, main): Add braces to silence gcc warning.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* lmail.c: Include <time.h> and <sys/time.h>.
