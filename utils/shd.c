@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -54,7 +54,7 @@ reap (pid_t waitfor)
 	printf ("PID %d %s\n",
 		pid, strsignal (WTERMSIG (status)));
       else if (WIFSTOPPED (status))
-	printf ("PID %d stopped: %s\n", 
+	printf ("PID %d stopped: %s\n",
 		pid, strsignal (WSTOPSIG (status)));
       else
 	printf ("PID %d bizarre status %#x\n", pid, status);
@@ -91,7 +91,7 @@ run (char **argv, int fd0, int fd1)
     {
       task_t task;
       pid_t pid;
-      
+
       errno = task_create (mach_task_self (), 0, &task);
       if (errno)
 	{
@@ -141,7 +141,7 @@ run (char **argv, int fd0, int fd1)
 	    perror ("proc_child");
 	  if (pause_startup)
 	    {
-	      printf ("Pausing...");
+	      printf ("Pausing (child PID %d)...", pid);
 	      fflush (stdout);
 	      getchar ();
 	    }
@@ -149,7 +149,7 @@ run (char **argv, int fd0, int fd1)
 	  if (movefd (fd0, 0, &save0) ||
 	      movefd (fd1, 1, &save1))
 	    return -1;
-	  
+
 	  errno = _hurd_exec (task, file, argv, environ);
 
 	  if (restorefd (fd0, 0, &save0) ||
@@ -183,7 +183,7 @@ command (int argc, char **argv)
   bg = !strcmp (argv[argc - 1], "&");
   if (bg)
     argv[--argc] = NULL;
-		      
+
   start = 0;
   for (i = 1; i < argc; ++i)
     if (! strcmp (argv[i], "|"))
@@ -228,15 +228,15 @@ main ()
     mach_port_t hostp, masterd;
     err = proc_getprivports (proc, &hostp, &masterd);
     assert (!err);
-  
+
     err = device_open (masterd, D_WRITE|D_READ, "console", &outp);
     assert (!err);
-  
+
     stdin = mach_open_devstream (outp, "r");
     stdout = stderr = mach_open_devstream (outp, "w+");
   }
 #endif
-  
+
   /* Kludge to give boot a port to the auth server.  */
   exec_init (getdport (0), getauth (),
 	     MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
@@ -377,5 +377,3 @@ main ()
       fflush (stderr);
     }
 }
-
-  
