@@ -1,10 +1,8 @@
 /* Mach task store backend
 
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
-   This task is part of the GNU Hurd.
+   This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <stdio.h>
 #include <string.h>
@@ -156,16 +154,11 @@ _store_task_create (task_t task, int flags, size_t block_size,
 {
   error_t err = 0;
 
-  if ((block_size & (block_size - 1)) == 0 && block_size >= vm_page_size)
-    {
-      *store =
-	_make_store (&store_task_class,
-		     task, flags, block_size, runs, num_runs, 0);
-      if (! *store)
-	err = ENOMEM;
-    }
+  if (block_size >= vm_page_size)
+    err = _store_create (&store_task_class,
+			 task, flags, block_size, runs, num_runs, 0, store);
   else
-    err = EINVAL;		/* block size not a power of two */
+    err = EINVAL;		/* block size less than page size.  */
   
   if (! err)
     {
