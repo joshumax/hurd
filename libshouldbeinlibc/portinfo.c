@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <sys/types.h>
+#include <sys/mman.h>
+
 #include "portinfo.h"
 
 /* Prints info about NAME in TASK to STREAM, in a way described by the flags
