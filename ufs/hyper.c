@@ -1,5 +1,5 @@
 /* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,8 @@ struct csum *csum = 0;
 void
 get_hypermetadata (void)
 {
+  error_t err;
+
   if (!sblock)
     sblock = malloc (SBSIZE);
 
@@ -38,10 +40,11 @@ get_hypermetadata (void)
   if (csum)
     free (csum);
 
-  assert (!diskfs_catch_exception ());
+  err = diskfs_catch_exception ();
+  assert_perror (err);
   bcopy (disk_image + SBOFF, sblock, SBSIZE);
   diskfs_end_catch_exception ();
-  
+
   if (sblock->fs_magic != FS_MAGIC)
     {
       fprintf (stderr, "Bad magic number %#lx (should be %#x)\n",
@@ -109,7 +112,7 @@ get_hypermetadata (void)
 
   csum = malloc (fsaddr (sblock, howmany (sblock->fs_cssize,
 					  sblock->fs_fsize)));
-  
+
   assert (!diskfs_catch_exception ());
   bcopy (disk_image + fsaddr (sblock, sblock->fs_csaddr),
 	 csum,
@@ -119,7 +122,7 @@ get_hypermetadata (void)
   if ((diskfs_device_size << diskfs_log2_device_block_size)
       < sblock->fs_size * sblock->fs_fsize)
     {
-      fprintf (stderr, 
+      fprintf (stderr,
 	       "Disk size (%ld) less than necessary "
 	       "(superblock says we need %ld)\n",
 	       diskfs_device_size << diskfs_log2_device_block_size,
@@ -158,20 +161,20 @@ diskfs_set_hypermetadata (int wait, int clean)
     }
 
   /* Copy into a page-aligned buffer to avoid bugs in kernel device code. */
-  
+
   bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
 
   err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
 				 &buf, bufsize);
   if (!err)
-    {  
+    {
       bcopy (csum, (void *) buf, sblock->fs_cssize);
       diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
 				buf, bufsize);
       csum_dirty = 0;
       vm_deallocate (mach_task_self (), buf, bufsize);
     }
-  
+
   spin_unlock (&alloclock);
 }
 
@@ -179,9 +182,12 @@ diskfs_set_hypermetadata (int wait, int clean)
 void
 copy_sblock ()
 {
+  error_t err;
+
   int clean = 1;		/* XXX wrong... */
-  
-  assert (!diskfs_catch_exception ());
+
+  err = diskfs_catch_exception ();
+  assert_perror (err);
 
   spin_lock (&alloclock);
 
