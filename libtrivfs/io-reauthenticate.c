@@ -26,6 +26,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 kern_return_t
 trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
+			    mach_port_t reply,
+			    mach_msg_type_name_t replytype,
 			    int rendint)
 {
   struct trivfs_protid *newcred;
