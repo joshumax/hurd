@@ -1,6 +1,6 @@
-/* The type ps_context_t, for per-procserver and somewhat global state.
+/* The ps_context type, for per-procserver and somewhat global state.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -29,42 +29,42 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Returns in PC a new ps_context_t for the proc server SERVER.  If a memory
+/* Returns in PC a new ps_context for the proc server SERVER.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
-ps_context_create(process_t server, ps_context_t *pc)
+ps_context_create (process_t server, struct ps_context **pc)
 {
   error_t err_procs, err_ttys, err_ttys_by_cttyid, err_users;
 
-  *pc = NEW(struct ps_context);
+  *pc = NEW (struct ps_context);
   if (*pc == NULL)
     return ENOMEM;
 
   (*pc)->server = server;
   (*pc)->user_hooks = 0;
-  err_procs = ihash_create(&(*pc)->procs);
-  err_ttys = ihash_create(&(*pc)->ttys);
-  err_ttys_by_cttyid = ihash_create(&(*pc)->ttys_by_cttyid);
-  err_users = ihash_create(&(*pc)->users);
+  err_procs = ihash_create (&(*pc)->procs);
+  err_ttys = ihash_create (&(*pc)->ttys);
+  err_ttys_by_cttyid = ihash_create (&(*pc)->ttys_by_cttyid);
+  err_users = ihash_create (&(*pc)->users);
 
   if (err_procs || err_ttys || err_ttys_by_cttyid)
     /* Some allocation error occurred, backout any successful ones and fail. */
     {
-      if (!err_procs) ihash_free((*pc)->procs);
-      if (!err_users) ihash_free((*pc)->users);
-      if (!err_ttys)  ihash_free((*pc)->ttys);
-      if (!err_ttys_by_cttyid) ihash_free((*pc)->ttys_by_cttyid);
-      free(*pc);
+      if (!err_procs) ihash_free ((*pc)->procs);
+      if (!err_users) ihash_free ((*pc)->users);
+      if (!err_ttys)  ihash_free ((*pc)->ttys);
+      if (!err_ttys_by_cttyid) ihash_free ((*pc)->ttys_by_cttyid);
+      free (*pc);
       return ENOMEM;
     }
 
-  ihash_set_cleanup((*pc)->procs,
+  ihash_set_cleanup ((*pc)->procs,
 		    (void (*)(void *, void *arg))_proc_stat_free,
 		    NULL);
-  ihash_set_cleanup((*pc)->ttys,
+  ihash_set_cleanup ((*pc)->ttys,
 		    (void (*)(void *, void *arg))ps_tty_free,
 		    NULL);
-  ihash_set_cleanup((*pc)->users,
+  ihash_set_cleanup ((*pc)->users,
 		    (void (*)(void *, void *arg))ps_user_free,
 		    NULL);
 
@@ -73,11 +73,11 @@ ps_context_create(process_t server, ps_context_t *pc)
 
 /* Frees PC and any resources it consumes.  */
 void
-ps_context_free(ps_context_t pc)
+ps_context_free (struct ps_context *pc)
 {
-  ihash_free(pc->procs);
-  ihash_free(pc->procs);
-  free(pc);
+  ihash_free (pc->procs);
+  ihash_free (pc->procs);
+  free (pc);
 }
 
 /* ---------------------------------------------------------------- */
@@ -87,49 +87,51 @@ ps_context_free(ps_context_t pc)
    (CREATE should return either an error-code or 0 if no error occurs), and
    cache it in HT.  */
 static error_t
-lookup(int id, ihash_t ht, error_t (*create)(int id, void **), void **value)
+lookup (int id, ihash_t ht, error_t (*create)(int id, void **), void **value)
 {
-  *value = ihash_find(ht, id);
+  *value = ihash_find (ht, id);
   if (*value == NULL)
     {
-      error_t err = create(id, value);
+      error_t err = create (id, value);
       if (err)
 	return err;
-      ihash_add(ht, id, *value, NULL);
+      ihash_add (ht, id, *value, NULL);
     }
   return 0;
 }
 
-/* Find a proc_stat_t for the process referred to by PID, and return it in
+/* Find a proc_stat for the process referred to by PID, and return it in
    PS.  If an error occurs, it is returned, otherwise 0.  */
 error_t
-ps_context_find_proc_stat(ps_context_t pc, pid_t pid, proc_stat_t *ps)
+ps_context_find_proc_stat (struct ps_context *pc, pid_t pid, struct proc_stat **ps)
 {
-  error_t create(int pid, void **value)
+  error_t create (int pid, void **value)
     {
-      return _proc_stat_create(pid, pc, (proc_stat_t *)value);
+      return _proc_stat_create (pid, pc, (struct proc_stat **)value);
     }
-  return lookup(pid, pc->procs, create, (void **)ps);
+  return lookup (pid, pc->procs, create, (void **)ps);
 }
 
-/* Find a ps_tty_t for the terminal referred to by the port TTY_PORT, and
+/* Find a ps_tty for the terminal referred to by the port TTY_PORT, and
    return it in TTY.  If an error occurs, it is returned, otherwise 0.  */
 error_t
-ps_context_find_tty(ps_context_t pc, mach_port_t tty_port, ps_tty_t *tty)
+ps_context_find_tty (struct ps_context *pc, mach_port_t tty_port,
+		     struct ps_tty **tty)
 {
-  return lookup(tty_port,
+  return lookup (tty_port,
 		pc->ttys,
 		(error_t (*)(int id, void **result))ps_tty_create,
 		(void **)tty);
 }
 
-/* Find a ps_tty_t for the terminal referred to by the ctty id port
+/* Find a ps_tty for the terminal referred to by the ctty id port
    CTTYID_PORT, and return it in TTY.  If an error occurs, it is returned,
    otherwise 0.  */
 error_t
-ps_context_find_tty_by_cttyid(ps_context_t pc, mach_port_t cttyid_port, ps_tty_t *tty)
+ps_context_find_tty_by_cttyid (struct ps_context *pc, mach_port_t cttyid_port,
+			       struct ps_tty **tty)
 {
-  error_t create(int cttyid_port, void **value)
+  error_t create (int cttyid_port, void **value)
     {
       if (cttyid_port == MACH_PORT_NULL)
 	{
@@ -139,22 +141,22 @@ ps_context_find_tty_by_cttyid(ps_context_t pc, mach_port_t cttyid_port, ps_tty_t
       else
 	{
 	  int tty_port;
-	  error_t err = termctty_open_terminal(cttyid_port, 0, &tty_port);
+	  error_t err = termctty_open_terminal (cttyid_port, 0, &tty_port);
 	  if (err)
 	    return err;
 	  else
-	    return ps_context_find_tty(pc, tty_port, (ps_tty_t *)value);
+	    return ps_context_find_tty (pc, tty_port, (struct ps_tty **)value);
 	}
     }
 
-  return lookup(cttyid_port, pc->ttys, create, (void **)tty);
+  return lookup (cttyid_port, pc->ttys, create, (void **)tty);
 }
 
-/* Find a ps_user_t for the user referred to by UID, and return it in U.  */
+/* Find a ps_user for the user referred to by UID, and return it in U.  */
 error_t
-ps_context_find_user(ps_context_t pc, uid_t uid, ps_user_t *u)
+ps_context_find_user (struct ps_context *pc, uid_t uid, struct ps_user **u)
 {
-  return lookup(uid,
+  return lookup (uid,
 		pc->users,
 		(error_t (*)(int id, void **result))ps_user_create,
 		(void **)u);

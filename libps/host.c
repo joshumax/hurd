@@ -1,6 +1,6 @@
 /* Routines to get global host info.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -38,11 +38,11 @@
 
 /* Return the current host port.  */
 host_t 
-ps_get_host()
+ps_get_host ()
 {
   static host_t host = MACH_PORT_NULL;
   if (host == MACH_PORT_NULL)
-    host = mach_host_self();
+    host = mach_host_self ();
   return host;
 }
 
@@ -50,15 +50,15 @@ ps_get_host()
    this is static global information we just use a static buffer.  If a
    system error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_host_basic_info(host_basic_info_t *info)
+ps_host_basic_info (host_basic_info_t *info)
 {
-  bool initialized = FALSE;
+  int initialized = FALSE;
   static host_basic_info_data_t buf;
 
   if (!initialized)
     {
-      int size = sizeof(buf);
-      error_t err = host_info(ps_get_host(), HOST_BASIC_INFO, 
+      int size = sizeof (buf);
+      error_t err = host_info (ps_get_host (), HOST_BASIC_INFO, 
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;
@@ -73,15 +73,15 @@ ps_host_basic_info(host_basic_info_t *info)
    Since this is static global information we just use a static buffer.  If a
    system error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_host_sched_info(host_sched_info_t *info)
+ps_host_sched_info (host_sched_info_t *info)
 {
-  bool initialized = FALSE;
+  int initialized = FALSE;
   static host_sched_info_data_t buf;
 
   if (!initialized)
     {
-      int size = sizeof(buf);
-      error_t err = host_info(ps_get_host(), HOST_SCHED_INFO, 
+      int size = sizeof (buf);
+      error_t err = host_info (ps_get_host (), HOST_SCHED_INFO, 
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;
@@ -97,11 +97,11 @@ ps_host_sched_info(host_sched_info_t *info)
    to keep old load info, they should copy the buffer we return a pointer
    to).  If a system error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_host_load_info(host_load_info_t *info)
+ps_host_load_info (host_load_info_t *info)
 {
   static host_load_info_data_t buf;
-  int size = sizeof(buf);
-  error_t err = host_info(ps_get_host(), HOST_LOAD_INFO,
+  int size = sizeof (buf);
+  error_t err = host_info (ps_get_host (), HOST_LOAD_INFO,
 			  (host_info_t) &buf, &size);
 
   if (err)

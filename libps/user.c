@@ -1,6 +1,6 @@
-/* The type ps_user_t, for per-user info.
+/* The ps_user type, for per-user info.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -28,12 +28,12 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Create a ps_user_t for the user referred to by UID, returning it in U.
+/* Create a ps_user for the user referred to by UID, returning it in U.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
-ps_user_create(uid_t uid, ps_user_t *u)
+ps_user_create (uid_t uid, struct ps_user **u)
 {
-  *u = NEW(struct ps_user);
+  *u = NEW (struct ps_user);
   if (*u == NULL)
     return ENOMEM;
 
@@ -45,18 +45,18 @@ ps_user_create(uid_t uid, ps_user_t *u)
 
 /* Free U and any resources it consumes.  */
 void
-ps_user_free(ps_user_t u)
+ps_user_free (struct ps_user *u)
 {
   if (u->passwd_state == PS_USER_PASSWD_OK)
-    free(u->storage);
-  free(u);
+    free (u->storage);
+  free (u);
 }
 
 /* ---------------------------------------------------------------- */
 
 /* Returns the password file entry (struct passwd, from <pwd.h>) for the user
    referred to by U, or NULL if it can't be gotten.  */
-struct passwd *ps_user_passwd(ps_user_t u)
+struct passwd *ps_user_passwd (struct ps_user *u)
 {
   if (u->passwd_state == PS_USER_PASSWD_OK)
     return &u->passwd;
@@ -64,19 +64,19 @@ struct passwd *ps_user_passwd(ps_user_t u)
     return NULL;
   else
     {
-      struct passwd *pw = getpwuid(u->uid);
+      struct passwd *pw = getpwuid (u->uid);
       if (pw != NULL)
 	{
 	  int needed = 0;
 
 #define COUNT(field) if (pw->field != NULL) (needed += strlen(pw->field) + 1)
-	  COUNT(pw_name);
-	  COUNT(pw_passwd);
-	  COUNT(pw_gecos);
-	  COUNT(pw_dir);
-	  COUNT(pw_shell);
+	  COUNT (pw_name);
+	  COUNT (pw_passwd);
+	  COUNT (pw_gecos);
+	  COUNT (pw_dir);
+	  COUNT (pw_shell);
 
-	  u->storage = malloc(needed);
+	  u->storage = malloc (needed);
 	  if (u->storage != NULL)
 	    {
 	      char *p = u->storage;
@@ -86,12 +86,12 @@ struct passwd *ps_user_passwd(ps_user_t u)
 		 storage that pw currently points to.  */
 #define COPY(field) \
   if (pw->field != NULL) \
-   strcpy(p, pw->field), (pw->field = p), (p += strlen(p) + 1)
-	      COPY(pw_name);
-	      COPY(pw_passwd);
-	      COPY(pw_gecos);
-	      COPY(pw_dir);
-	      COPY(pw_shell);
+   strcpy(p, pw->field), (pw->field = p), (p += strlen (p) + 1)
+	      COPY (pw_name);
+	      COPY (pw_passwd);
+	      COPY (pw_gecos);
+	      COPY (pw_dir);
+	      COPY (pw_shell);
 
 	      u->passwd = *pw;
 	      u->passwd_state = PS_USER_PASSWD_OK;
@@ -107,9 +107,9 @@ struct passwd *ps_user_passwd(ps_user_t u)
 
 /* Returns the user name for the user referred to by U, or NULL if it can't
    be gotten.  */
-char *ps_user_name(ps_user_t u)
+char *ps_user_name (struct ps_user *u)
 {
-  struct passwd *pw = ps_user_passwd(u);
+  struct passwd *pw = ps_user_passwd (u);
   if (pw)
     return pw->pw_name;
   else

@@ -1,7 +1,7 @@
-/* Implements the type ps_fmt_t, which describes how to output a user-readable
-   version of a proc_stat_t.
+/* Implements the ps_fmt type, which describes how to output a user-readable
+   version of a proc_stat.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -36,33 +36,33 @@
    field name, EINVAL is returned.  Otherwise 0 is returned.  See ps.h for an
    explanation of how FMT is derived from SRC.  */
 error_t
-ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
+ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
 {
-  ps_fmt_t new_fmt;
+  struct ps_fmt *new_fmt;
   int needs = 0;
   int fields_alloced = 10;
-  ps_fmt_field_t fields = NEWVEC(struct ps_fmt_field, fields_alloced);
-  ps_fmt_field_t field = fields; /* current last field */
+  struct ps_fmt_field *fields = NEWVEC (struct ps_fmt_field, fields_alloced);
+  struct ps_fmt_field *field = fields; /* current last field */
 
   if (fields == NULL)
     return ENOMEM;
 
-  new_fmt = NEW(struct ps_fmt);
+  new_fmt = NEW (struct ps_fmt);
   if (fmt == NULL)
     {
-      FREE(fields);
+      FREE (fields);
       return ENOMEM;
     }
 
   /* Make a private copy of SRC so we can mutate it.  */
-  new_fmt->src = NEWVEC(char, strlen(src) + 1);
+  new_fmt->src = NEWVEC (char, strlen (src) + 1);
   if (new_fmt->src == NULL)
     {
-      FREE(fields);
-      FREE(new_fmt);
+      FREE (fields);
+      FREE (new_fmt);
       return ENOMEM;
     }
-  strcpy(new_fmt->src, src);
+  strcpy (new_fmt->src, src);
   src = new_fmt->src;
 
   while (*src != '\0')
@@ -73,12 +73,12 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 	  int offs = field - fields;
 
 	  fields_alloced += 10;
-	  fields = GROWVEC(fields, struct ps_fmt_field, fields_alloced);
+	  fields = GROWVEC (fields, struct ps_fmt_field, fields_alloced);
 
 	  if (fields == NULL)
 	    {
-	      FREE(new_fmt);
-	      FREE(new_fmt->src);
+	      FREE (new_fmt);
+	      FREE (new_fmt->src);
 	      return ENOMEM;
 	    }
 
@@ -101,14 +101,14 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 	{
 	  char *name;
 	  int sign = 1;
-	  bool explicit_width = FALSE; /* True if the width set from SRC.  */
+	  int explicit_width = FALSE; /* True if the width set from SRC.  */
 	  char *spec_start = src++;
 
 	  /* Read an explicit field width.  */
 	  field->width = 0;
 	  if (*src == '-')
 	    sign = -1, src++;
-	  while (isdigit(*src))
+	  while (isdigit (*src))
 	    {
 	      field->width = field->width * 10 + (*src++ - '0');
 	      explicit_width = TRUE;
@@ -120,7 +120,7 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 
 	  /* The name of the spec, or `TITLE=NAME'.  */
 	  name = src;
-	  while (*src != '\0' && !isspace(*src) && *src != '/' && *src != '=')
+	  while (*src != '\0' && !isspace (*src) && *src != '/' && *src != '=')
 	    src++;
 
 	  if (*src == '=')
@@ -132,7 +132,7 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 
 	      /* Now read the real name.  */
 	      name = src;
-	      while (*src != '\0' && !isspace(*src) && *src != '/')
+	      while (*src != '\0' && !isspace (*src) && *src != '/')
 		src++;
 	    }
 
@@ -152,9 +152,9 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 	  if (!field->spec)
 	    /* Failed to find any named spec called NAME.  */
 	    {
-	      FREE(new_fmt->src);
-	      FREE(fields);
-	      FREE(new_fmt);
+	      FREE (new_fmt->src);
+	      FREE (fields);
+	      FREE (new_fmt);
 	      return EINVAL;
 	    }
 
@@ -166,10 +166,10 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 	      field->title = name; /* Just use the field name.  */
 
 	  /* Add FIELD's required pstat_flags to FMT's set */
-	  needs |= ps_getter_needs(ps_fmt_spec_getter(field->spec));
+	  needs |= ps_getter_needs (ps_fmt_spec_getter (field->spec));
 
 	  if (!explicit_width)
-	    field->width = ps_fmt_spec_width(field->spec);
+	    field->width = ps_fmt_spec_width (field->spec);
 
 	  /* Skip optional trailing `/' after the spec name.  */
 	  if (*src == '/')
@@ -183,8 +183,8 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 	  {
 	    /* Force the field to be wide enough to hold the title.  */
 	    int width = field->width;
-	    int tlen = strlen(field->title);
-	    if (width != 0 && tlen > ABS(width))
+	    int tlen = strlen (field->title);
+	    if (width != 0 && tlen > ABS (width))
 	      field->width = (width > 0 ? tlen : -tlen);
 	  }
 	}
@@ -204,11 +204,11 @@ ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 
 /* Free FMT, and any resources it consumes.  */
 void 
-ps_fmt_free(ps_fmt_t fmt)
+ps_fmt_free (struct ps_fmt *fmt)
 {
-  FREE(fmt->src);
-  FREE(fmt->fields);
-  FREE(fmt);
+  FREE (fmt->src);
+  FREE (fmt->fields);
+  FREE (fmt);
 }
 
 /* ---------------------------------------------------------------- */
@@ -219,24 +219,24 @@ ps_fmt_free(ps_fmt_t fmt)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_titles (ps_fmt_t fmt, ps_stream_t stream)
+ps_fmt_write_titles (struct ps_fmt *fmt, struct ps_stream *stream)
 {
   error_t err = 0;
-  ps_fmt_field_t field = ps_fmt_fields(fmt);
-  int left = ps_fmt_num_fields(fmt);
+  struct ps_fmt_field *field = ps_fmt_fields (fmt);
+  int left = ps_fmt_num_fields (fmt);
 
   while (left-- > 0 && !err)
     {
-      char *pfx = ps_fmt_field_prefix(field);
-      int pfx_len = ps_fmt_field_prefix_length(field);
+      const char *pfx = ps_fmt_field_prefix (field);
+      int pfx_len = ps_fmt_field_prefix_length (field);
 
       if (pfx_len > 0)
 	err = ps_stream_write (stream, pfx, pfx_len);
 
-      if (ps_fmt_field_fmt_spec(field) != NULL && !err)
+      if (ps_fmt_field_fmt_spec (field) != NULL && !err)
 	{
-	  char *title = ps_fmt_field_title(field);
-	  int width = ps_fmt_field_width(field);
+	  const char *title = ps_fmt_field_title (field);
+	  int width = ps_fmt_field_width (field);
 
 	  if (title == NULL)
 	    title = "??";
@@ -255,34 +255,34 @@ ps_fmt_write_titles (ps_fmt_t fmt, ps_stream_t stream)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps, ps_stream_t stream)
+ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps, struct ps_stream *stream)
 {
   error_t err = 0;
-  ps_fmt_field_t field = ps_fmt_fields(fmt);
-  int nfields = ps_fmt_num_fields(fmt);
-  int have = proc_stat_flags(ps);
+  struct ps_fmt_field *field = ps_fmt_fields (fmt);
+  int nfields = ps_fmt_num_fields (fmt);
+  int have = proc_stat_flags (ps);
 
   while (nfields-- > 0 && !err)
     {
-      ps_fmt_spec_t spec = ps_fmt_field_fmt_spec(field);
-      char *pfx = ps_fmt_field_prefix(field);
-      int pfx_len = ps_fmt_field_prefix_length(field);
+      const struct ps_fmt_spec *spec = ps_fmt_field_fmt_spec (field);
+      const char *pfx = ps_fmt_field_prefix (field);
+      int pfx_len = ps_fmt_field_prefix_length (field);
 
       if (pfx_len > 0)
 	err = ps_stream_write (stream, pfx, pfx_len);
 
       if (spec != NULL && !err)
 	{
-	  int need = ps_getter_needs(ps_fmt_spec_getter(spec));
-	  int width = ps_fmt_field_width(field);
+	  int need = ps_getter_needs (ps_fmt_spec_getter (spec));
+	  int width = ps_fmt_field_width (field);
 
 	  /* do we have the resources to print this field? */
 	  if ((need & have) == need)
 	    /* Yup */
 	    {
-	      int (*output_fn)() = (int (*)())ps_fmt_spec_output_fn(spec);
-	      ps_getter_t getter = ps_fmt_spec_getter(spec);
-	      err = output_fn(ps, getter, width, stream);
+	      int (*output_fn)() = (int (*)())ps_fmt_spec_output_fn (spec);
+	      const struct ps_getter *getter = ps_fmt_spec_getter (spec);
+	      err = output_fn (ps, getter, width, stream);
 	    }
 	  else
 	    /* Something to display in invalid fields.  */
@@ -302,31 +302,31 @@ ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps, ps_stream_t stream)
    also removed: those *following* deleted fields at the beginning of the
    fmt, and those *preceeding* deleted fields *not* at the beginning. */
 void
-ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec))
+ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(const struct ps_fmt_spec *spec))
 {
   int nfields = fmt->num_fields;
-  ps_fmt_field_t fields = fmt->fields, field = fields;
+  struct ps_fmt_field *fields = fmt->fields, *field = fields;
   /* As we're removing some fields, we must recalculate the set of ps flags
      needed by all fields.  */
   ps_flags_t need = 0;
 
   while ((field - fields) < nfields)
     {
-      ps_fmt_spec_t spec = field->spec;
+      const struct ps_fmt_spec *spec = field->spec;
 
       if (spec != NULL && (*fn)(spec))
 	/* Squash this field! */
 	{
 	  /* Save the old prefix, in case we're deleting the first field,
 	     and need to prepend it to the next field.  */
-	  char *beg_pfx = field->pfx; 
+	  const char *beg_pfx = field->pfx; 
 	  int beg_pfx_len = field->pfx_len;
 
 	  nfields--;
 
 	  /* Shift down all following fields over this one.  */
 	  if (nfields > 0)
-	    bcopy(field + 1, field,
+	    bcopy (field + 1, field,
 		  (nfields - (field - fields)) * sizeof *field);
 
 	  if (field == fields)
@@ -356,7 +356,7 @@ ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec))
 		{
 		  field->pfx -= beg_pfx_len;
 		  field->pfx_len += beg_pfx_len;
-		  bcopy(beg_pfx, field->pfx, beg_pfx_len);
+		  bcopy (beg_pfx, (char *)field->pfx, beg_pfx_len);
 		}
 	      else
 		/* otherwise just replace the next field's prefix with
@@ -386,9 +386,9 @@ ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec))
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning.  */
 void
-ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags)
+ps_fmt_squash_flags (struct ps_fmt *fmt, ps_flags_t flags)
 {
-  bool squashable_spec (ps_fmt_spec_t spec)
+  int squashable_spec (const struct ps_fmt_spec *spec)
     {
       return ps_getter_needs (ps_fmt_spec_getter (spec)) & flags;
     }
@@ -400,7 +400,7 @@ ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags)
 
 /* Try and restrict the number of output columns in FMT to WIDTH.  */
 void
-ps_fmt_set_output_width (ps_fmt_t fmt, int width)
+ps_fmt_set_output_width (struct ps_fmt *fmt, int width)
 {
   struct ps_fmt_field *field = ps_fmt_fields (fmt);
   int nfields = ps_fmt_num_fields (fmt);

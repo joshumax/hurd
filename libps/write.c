@@ -34,9 +34,9 @@
    about it is what caused the flush), and update *BEG to be NEW.  True is
    returned if a write error occurs.  */
 static int
-flush (char **beg, char *new, FILE *s)
+flush (const char **beg, const char *new, FILE *s)
 {
-  char *b = *beg;
+  const char *b = *beg;
   if (new > b)
     *beg = new;
   if (new - 1 > b)
@@ -52,10 +52,10 @@ flush (char **beg, char *new, FILE *s)
 /* Write T to S, up to MAX characters (unless MAX == 0), making sure not to
    write any unprintable characters.  */ 
 error_t
-noise_write (unsigned char *t, ssize_t max, FILE *s)
+noise_write (const unsigned char *t, ssize_t max, FILE *s)
 {
   int ch;
-  char *ok = t;
+  const char *ok = t;
   size_t len = 0;
 
   while ((ch = *t++) && (max < 0 || len < max))
@@ -86,7 +86,7 @@ noise_write (unsigned char *t, ssize_t max, FILE *s)
 
 /* Return what noise_write would write with arguments of T and MAX.  */
 size_t
-noise_len (char *t, ssize_t max)
+noise_len (const char *t, ssize_t max)
 {
   int ch;
   size_t len = 0;
@@ -111,7 +111,7 @@ noise_len (char *t, ssize_t max)
    length of STRING, then write all of it; if MAX_LEN == -1, then write all
    of STRING regardless).  */
 error_t
-ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
+ps_stream_write (struct ps_stream *stream, const char *string, ssize_t max_len)
 {
   size_t len = noise_len (string, max_len);
 
@@ -149,7 +149,7 @@ ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
    consumed if possible.  If an error occurs, the error code is returned,
    otherwise 0.  */
 error_t
-ps_stream_space (ps_stream_t stream, ssize_t num)
+ps_stream_space (struct ps_stream *stream, ssize_t num)
 {
   stream->spaces += num;
   return 0;
@@ -159,14 +159,14 @@ ps_stream_space (ps_stream_t stream, ssize_t num)
    be at least WIDTH characters wide (the absolute value of WIDTH is used).
    If an error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_stream_pad (ps_stream_t stream, ssize_t sofar, ssize_t width)
+ps_stream_pad (struct ps_stream *stream, ssize_t sofar, ssize_t width)
 {
   return ps_stream_space (stream, ABS (width) - sofar);
 }
 
 /* Write a newline to STREAM, resetting its position to zero.  */
 error_t
-ps_stream_newline (ps_stream_t stream)
+ps_stream_newline (struct ps_stream *stream)
 {
   putc ('\n', stream->stream);
   stream->spaces = 0;
@@ -179,8 +179,9 @@ ps_stream_newline (ps_stream_t stream)
    side, otherwise on the right side.  If an error occurs, the error code is
    returned, otherwise 0.  */
 error_t
-_ps_stream_write_field (ps_stream_t stream, char *buf, size_t max_width,
-		       int width)
+_ps_stream_write_field (struct ps_stream *stream,
+			const char *buf, size_t max_width,
+			int width)
 {
   error_t err;
   size_t len;
@@ -213,14 +214,15 @@ _ps_stream_write_field (ps_stream_t stream, char *buf, size_t max_width,
    side, otherwise on the right side.  If an error occurs, the error code is
    returned, otherwise 0.  */
 error_t
-ps_stream_write_field (ps_stream_t stream, char *buf, int width)
+ps_stream_write_field (struct ps_stream *stream, const char *buf, int width)
 {
   return _ps_stream_write_field (stream, buf, -1, width);
 }
 
 /* Like ps_stream_write_field, but truncates BUF to make it fit into WIDTH.  */
 error_t
-ps_stream_write_trunc_field (ps_stream_t stream, char *buf, int width)
+ps_stream_write_trunc_field (struct ps_stream *stream,
+			     const char *buf, int width)
 {
   return _ps_stream_write_field (stream, buf, width ? ABS (width) : -1, width);
 }
@@ -230,16 +232,16 @@ ps_stream_write_trunc_field (ps_stream_t stream, char *buf, int width)
    0, then on the left side, otherwise on the right side.  If an error
    occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_stream_write_int_field (ps_stream_t stream, int value, int width)
+ps_stream_write_int_field (struct ps_stream *stream, int value, int width)
 {
   char buf[20];
-  sprintf(buf, "%d", value);
+  sprintf (buf, "%d", value);
   return ps_stream_write_field (stream, buf, width);
 }
 
 /* Create a stream outputing to DEST, and return it in STREAM, or an error.  */
 error_t
-ps_stream_create (FILE *dest, ps_stream_t *stream)
+ps_stream_create (FILE *dest, struct ps_stream **stream)
 {
   *stream = malloc (sizeof (struct ps_stream));
   if (! *stream)
@@ -252,7 +254,7 @@ ps_stream_create (FILE *dest, ps_stream_t *stream)
 
 /* Frees STREAM.  The destination file is *not* closed.  */
 void
-ps_stream_free (ps_stream_t stream)
+ps_stream_free (struct ps_stream *stream)
 {
   free (stream);
 }

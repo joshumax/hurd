@@ -1,4 +1,4 @@
-/* The type proc_stat_list_t, which holds lists of proc_stat_t's.
+/* The type proc_stat_list_t, which holds lists of proc_stats.
 
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
@@ -32,9 +32,9 @@
    returned in PP, and returns 0, or else returns ENOMEM if there wasn't
    enough memory.  */
 error_t
-proc_stat_list_create(ps_context_t context, proc_stat_list_t *pp)
+proc_stat_list_create (struct ps_context *context, struct proc_stat_list **pp)
 {
-  *pp = NEW(struct proc_stat_list);
+  *pp = NEW (struct proc_stat_list);
   if (*pp == NULL)
     return ENOMEM;
 
@@ -48,26 +48,27 @@ proc_stat_list_create(ps_context_t context, proc_stat_list_t *pp)
 
 /* Free PP, and any resources it consumes.  */
 void 
-proc_stat_list_free(proc_stat_list_t pp)
+proc_stat_list_free (struct proc_stat_list *pp)
 {
-  proc_stat_list_remove_threads(pp);
-  FREE(pp->proc_stats);
-  FREE(pp);
+  proc_stat_list_remove_threads (pp);
+  FREE (pp->proc_stats);
+  FREE (pp);
 }
 
 /* ---------------------------------------------------------------- */
 
 /* Make sure there are at least AMOUNT new locations allocated in PP's
-   proc_stat_t array (but without changing NUM_PROCS).  Returns ENOMEM if a
+   proc_stat array (but without changing NUM_PROCS).  Returns ENOMEM if a
    memory allocation error occurred, 0 otherwise.  */
 static error_t
-proc_stat_list_grow(proc_stat_list_t pp, int amount)
+proc_stat_list_grow (struct proc_stat_list *pp, int amount)
 {
   amount += pp->num_procs;
 
   if (amount > pp->alloced)
     {
-      proc_stat_t *new_procs = GROWVEC(pp->proc_stats, proc_stat_t, amount);
+      struct proc_stat **new_procs =
+	GROWVEC (pp->proc_stats, struct proc_stat *, amount);
 
       if (new_procs == NULL)
 	return ENOMEM;
@@ -79,7 +80,7 @@ proc_stat_list_grow(proc_stat_list_t pp, int amount)
   return 0;
 }
 
-/* Add proc_stat_t entries to PP for each process with a process id in the
+/* Add proc_stat entries to PP for each process with a process id in the
    array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
    added for processes not already in PP.  ENOMEM is returned if a memory
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
@@ -87,9 +88,9 @@ proc_stat_list_grow(proc_stat_list_t pp, int amount)
    PROC_STATS is non-NULL, a malloced array NUM_PROCS entries long of the
    resulting proc_stats is returned in it.  */
 error_t
-proc_stat_list_add_pids (proc_stat_list_t pp,
+proc_stat_list_add_pids (struct proc_stat_list *pp,
 			 pid_t *pids, unsigned num_procs,
-			 proc_stat_t **proc_stats)
+			 struct proc_stat ***proc_stats)
 {
   error_t err = proc_stat_list_grow (pp, num_procs);
 
@@ -98,19 +99,19 @@ proc_stat_list_add_pids (proc_stat_list_t pp,
   else
     {
       int i;
-      proc_stat_t *end = pp->proc_stats + pp->num_procs;
+      struct proc_stat **end = pp->proc_stats + pp->num_procs;
 
       if (proc_stats)
-	*proc_stats = NEWVEC (proc_stat_t, num_procs);
+	*proc_stats = NEWVEC (struct proc_stat *, num_procs);
 
       for (i = 0; i < num_procs; i++)
 	{
 	  int pid = *pids++;
-	  proc_stat_t ps = proc_stat_list_pid_proc_stat (pp, pid);
+	  struct proc_stat *ps = proc_stat_list_pid_proc_stat (pp, pid);
 
 	  if (ps == NULL)
 	    {
-	      err = ps_context_find_proc_stat(pp->context, pid, end);
+	      err = ps_context_find_proc_stat (pp->context, pid, end);
 	      if (err)
 		{
 		  if (proc_stats)
@@ -131,14 +132,14 @@ proc_stat_list_add_pids (proc_stat_list_t pp,
     }
 }
 
-/* Add a proc_stat_t for the process designated by PID at PP's proc context to
+/* Add a proc_stat for the process designated by PID at PP's proc context to
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  If PS is
    non-NULL, the resulting entry is returned in it.  */
 error_t
-proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid, proc_stat_t *ps)
+proc_stat_list_add_pid (struct proc_stat_list *pp, pid_t pid, struct proc_stat **ps)
 {
-  proc_stat_t _ps = proc_stat_list_pid_proc_stat(pp, pid);
+  struct proc_stat *_ps = proc_stat_list_pid_proc_stat (pp, pid);
 
   if (_ps == NULL)
     {
@@ -146,7 +147,7 @@ proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid, proc_stat_t *ps)
 
       if (pp->num_procs == pp->alloced)
 	{
-	  err = proc_stat_list_grow(pp, 32);
+	  err = proc_stat_list_grow (pp, 32);
 	  if (err)
 	    return err;
 	}
@@ -166,16 +167,16 @@ proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid, proc_stat_t *ps)
 
 /* ---------------------------------------------------------------- */
 
-/* Returns the proc_stat_t in PP with a process-id of PID, if there's one,
+/* Returns the proc_stat in PP with a process-id of PID, if there's one,
    otherwise, NULL.  */
-proc_stat_t
-proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid)
+struct proc_stat *
+proc_stat_list_pid_proc_stat (struct proc_stat_list *pp, pid_t pid)
 {
   unsigned nprocs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
+  struct proc_stat **procs = pp->proc_stats;
 
   while (nprocs-- > 0)
-    if (proc_stat_pid(*procs) == pid)
+    if (proc_stat_pid (*procs) == pid)
       return *procs;
     else
       procs++;
@@ -185,43 +186,43 @@ proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid)
 
 /* ---------------------------------------------------------------- */
 
-/* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
-   already in PP; the resulting order of proc_stat_t's in PP is undefined.
+/* Adds all proc_stats in MERGEE to PP that don't correspond to processes
+   already in PP; the resulting order of proc_stats in PP is undefined.
    If MERGEE and PP point to different proc contexts, EINVAL is returned.  If a
    memory allocation error occurs, ENOMEM is returned.  Otherwise 0 is
    returned, and MERGEE is freed.  */
 error_t
-proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
+proc_stat_list_merge (struct proc_stat_list *pp, struct proc_stat_list *mergee)
 {
   if (pp->context != mergee->context)
     return EINVAL;
   else
     {
       /* Make sure there's room for the max number of new elements in PP. */
-      error_t err = proc_stat_list_grow(pp, mergee->num_procs);
+      error_t err = proc_stat_list_grow (pp, mergee->num_procs);
 
       if (err)
 	return err;
       else
 	{
 	  int mnprocs = mergee->num_procs;
-	  proc_stat_t *mprocs = mergee->proc_stats;
+	  struct proc_stat **mprocs = mergee->proc_stats;
 	  int nprocs = pp->num_procs;
-	  proc_stat_t *procs = pp->proc_stats;
+	  struct proc_stat **procs = pp->proc_stats;
 
-	  /* Transfer over any proc_stat_t's from MERGEE to PP that don't
+	  /* Transfer over any proc_stats from MERGEE to PP that don't
 	     already exist there; for each of these, we set its entry in
 	     MERGEE's proc_stat array to NULL, which prevents
-	     proc_list_free() from freeing them.  */
+	     proc_list_free () from freeing them.  */
 	  while (mnprocs-- > 0)
-	    if (proc_stat_list_pid_proc_stat(pp, proc_stat_pid(mprocs[mnprocs]))
+	    if (proc_stat_list_pid_proc_stat(pp, proc_stat_pid (mprocs[mnprocs]))
 		== NULL)
 	      {
 		procs[nprocs++] = mprocs[mnprocs];
 		mprocs[mnprocs] = NULL;
 	      }
 
-	  proc_stat_list_free(mergee);
+	  proc_stat_list_free (mergee);
 
 	  return 0;
 	}
@@ -239,17 +240,17 @@ proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
    error code is returned, otherwise 0.  If PROC_STATS and NUM_PROCS are
    non-NULL, a malloced vector of the resulting entries is returned in them. */
 static error_t
-proc_stat_list_add_fn_pids (proc_stat_list_t pp,
+proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
 			    kern_return_t (*fetch_fn)(process_t proc,
 						      pid_t **pids,
 						      unsigned *num_pids),
-			    proc_stat_t **proc_stats, unsigned *num_procs)
+			    struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array;
   unsigned num_pids = STATICPIDS;
 
-  err = (*fetch_fn)(ps_context_server(pp->context), &pids, &num_pids);
+  err = (*fetch_fn)(ps_context_server (pp->context), &pids, &num_pids);
   if (err)
     return err;
 
@@ -258,7 +259,7 @@ proc_stat_list_add_fn_pids (proc_stat_list_t pp,
     *num_procs = num_pids;
 
   if (pids != pid_array)
-    VMFREE(pids, sizeof(pid_t) * num_pids);
+    VMFREE(pids, sizeof (pid_t) * num_pids);
 
   return err;
 }
@@ -269,12 +270,12 @@ proc_stat_list_add_fn_pids (proc_stat_list_t pp,
    are non-NULL, a malloced vector of the resulting entries is returned in
    them.  */
 static error_t
-proc_stat_list_add_id_fn_pids (proc_stat_list_t pp, unsigned id,
+proc_stat_list_add_id_fn_pids (struct proc_stat_list *pp, unsigned id,
 			       kern_return_t (*fetch_fn)(process_t proc,
 							 pid_t id,
 							 pid_t **pids,
 							 unsigned *num_pids),
-			       proc_stat_t **proc_stats, unsigned *num_procs)
+			       struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   error_t id_fetch_fn (process_t proc, pid_t **pids, unsigned *num_pids)
     {
@@ -290,8 +291,8 @@ proc_stat_list_add_id_fn_pids (proc_stat_list_t pp, unsigned id,
    NUM_PROCS are non-NULL, a malloced vector of the resulting entries is
    returned in them.  */
 error_t
-proc_stat_list_add_all (proc_stat_list_t pp,
-			proc_stat_t **proc_stats, unsigned *num_procs)
+proc_stat_list_add_all (struct proc_stat_list *pp,
+			struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   return
     proc_stat_list_add_fn_pids (pp, proc_getallpids, proc_stats, num_procs);
@@ -302,8 +303,8 @@ proc_stat_list_add_all (proc_stat_list_t pp,
    otherwise 0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector
    of the resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_login_coll (proc_stat_list_t pp, pid_t login_id,
-			       proc_stat_t **proc_stats, unsigned *num_procs)
+proc_stat_list_add_login_coll (struct proc_stat_list *pp, pid_t login_id,
+			       struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, login_id, proc_getloginpids,
@@ -315,8 +316,8 @@ proc_stat_list_add_login_coll (proc_stat_list_t pp, pid_t login_id,
    0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
    resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_session (proc_stat_list_t pp, pid_t session_id,
-			    proc_stat_t **proc_stats, unsigned *num_procs)
+proc_stat_list_add_session (struct proc_stat_list *pp, pid_t session_id,
+			    struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, session_id, proc_getsessionpids,
@@ -328,8 +329,8 @@ proc_stat_list_add_session (proc_stat_list_t pp, pid_t session_id,
    0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
    resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_pgrp (proc_stat_list_t pp, pid_t pgrp,
-			 proc_stat_t **proc_stats, unsigned *num_procs)
+proc_stat_list_add_pgrp (struct proc_stat_list *pp, pid_t pgrp,
+			 struct proc_stat ***proc_stats, unsigned *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, pgrp, proc_getpgrppids,
@@ -338,22 +339,22 @@ proc_stat_list_add_pgrp (proc_stat_list_t pp, pid_t pgrp,
 
 /* ---------------------------------------------------------------- */
 
-/* Try to set FLAGS in each proc_stat_t in PP (but they may still not be set
+/* Try to set FLAGS in each proc_stat in PP (but they may still not be set
    -- you have to check).  If a fatal error occurs, the error code is
    returned, otherwise 0.  */
 error_t
-proc_stat_list_set_flags(proc_stat_list_t pp, ps_flags_t flags)
+proc_stat_list_set_flags (struct proc_stat_list *pp, ps_flags_t flags)
 {
   unsigned nprocs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
+  struct proc_stat **procs = pp->proc_stats;
 
   while (nprocs-- > 0)
     {
-      proc_stat_t ps = *procs++;
+      struct proc_stat *ps = *procs++;
 
-      if (!proc_stat_has(ps, flags))
+      if (!proc_stat_has (ps, flags))
 	{
-	  error_t err = proc_stat_set_flags(ps, flags);
+	  error_t err = proc_stat_set_flags (ps, flags);
 	  if (err)
 	    return err;
 	}
@@ -364,25 +365,25 @@ proc_stat_list_set_flags(proc_stat_list_t pp, ps_flags_t flags)
 
 /* ---------------------------------------------------------------- */
 
-/* Destructively modify PP to only include proc_stat_t's for which the
-   function PREDICATE returns true; if INVERT is true, only proc_stat_t's for
+/* Destructively modify PP to only include proc_stats for which the
+   function PREDICATE returns true; if INVERT is true, only proc_stats for
    which PREDICATE returns false are kept.  FLAGS is the set of pstat_flags
    that PREDICATE requires be set as precondition.  Regardless of the value
-   of INVERT, all proc_stat_t's for which the predicate's preconditions can't
+   of INVERT, all proc_stats for which the predicate's preconditions can't
    be satisfied are kept.  If a fatal error occurs, the error code is
    returned, it returns 0.  */
 error_t
-proc_stat_list_filter1(proc_stat_list_t pp,
-		       bool (*predicate)(proc_stat_t ps), ps_flags_t flags,
-		       bool invert)
+proc_stat_list_filter1(struct proc_stat_list *pp,
+		       int (*predicate)(struct proc_stat *ps), ps_flags_t flags,
+		       int invert)
 {
   unsigned which = 0;
   unsigned num_procs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
+  struct proc_stat **procs = pp->proc_stats;
   /* We compact the proc array as we filter, and KEPT points to end of the
      compacted part that we've already processed.  */
-  proc_stat_t *kept = procs;
-  error_t err = proc_stat_list_set_flags(pp, flags);
+  struct proc_stat **kept = procs;
+  error_t err = proc_stat_list_set_flags (pp, flags);
 
   if (err)
     return err;
@@ -391,12 +392,12 @@ proc_stat_list_filter1(proc_stat_list_t pp,
 
   while (which < num_procs)
     {
-      proc_stat_t ps = procs[which++];
+      struct proc_stat *ps = procs[which++];
 
       /* See if we should keep PS; if PS doesn't satisfy the set of flags we
 	 need, we don't attempt to call PREDICATE at all, and keep PS.  */
 
-      if (!proc_stat_has(ps, flags) || !!predicate(ps) != invert)
+      if (!proc_stat_has(ps, flags) || !!predicate (ps) != invert)
 	*kept++ = ps;
       /* ... otherwise implicitly delete PS from PP by not putting it in the
 	 KEPT sequence.  */
@@ -407,19 +408,20 @@ proc_stat_list_filter1(proc_stat_list_t pp,
   return 0;
 }
 
-/* Destructively modify PP to only include proc_stat_t's for which the
+/* Destructively modify PP to only include proc_stats for which the
    predicate function in FILTER returns true; if INVERT is true, only
-   proc_stat_t's for which the predicate returns false are kept.  Regardless
-   of the value of INVERT, all proc_stat_t's for which the predicate's
+   proc_stats for which the predicate returns false are kept.  Regardless
+   of the value of INVERT, all proc_stats for which the predicate's
    preconditions can't be satisfied are kept.  If a fatal error occurs,
    the error code is returned, it returns 0.  */
 error_t
-proc_stat_list_filter(proc_stat_list_t pp, ps_filter_t filter, bool invert)
+proc_stat_list_filter (struct proc_stat_list *pp,
+		       const struct ps_filter *filter, int invert)
 {
   return
     proc_stat_list_filter1(pp,
-			   ps_filter_predicate(filter),
-			   ps_filter_needs(filter),
+			   ps_filter_predicate (filter),
+			   ps_filter_needs (filter),
 			   invert);
 }
 
@@ -430,27 +432,28 @@ proc_stat_list_filter(proc_stat_list_t pp, ps_filter_t filter, bool invert)
    opposite order.  If a fatal error occurs, the error code is returned, it
    returns 0.  */
 error_t
-proc_stat_list_sort1(proc_stat_list_t pp,
-		     ps_getter_t getter,
-		     int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2,
-				   ps_getter_t getter),
-		     bool reverse)
+proc_stat_list_sort1 (struct proc_stat_list *pp,
+		      const struct ps_getter *getter,
+		      int (*cmp_fn)(struct proc_stat *ps1,
+				    struct proc_stat *ps2,
+				    const struct ps_getter *getter),
+		      int reverse)
 {
-  int needs = ps_getter_needs(getter);
-  proc_stat_t *procs = pp->proc_stats;
-  error_t err = proc_stat_list_set_flags(pp, needs);
+  int needs = ps_getter_needs (getter);
+  struct proc_stat **procs = pp->proc_stats;
+  error_t err = proc_stat_list_set_flags (pp, needs);
 
   /* Lessp is a nested function so it may use state variables from
      proc_stat_list_sort1, which qsort gives no other way of passing in.  */
-  int lessp(const void *p1, const void *p2)
+  int lessp (const void *p1, const void *p2)
   {
-    proc_stat_t ps1 = *(proc_stat_t *)p1;
-    proc_stat_t ps2 = *(proc_stat_t *)p2;
-    bool is_th_1 = proc_stat_is_thread(ps1);
-    bool is_th_2 = proc_stat_is_thread(ps2);
+    struct proc_stat *ps1 = *(struct proc_stat **)p1;
+    struct proc_stat *ps2 = *(struct proc_stat **)p2;
+    int is_th_1 = proc_stat_is_thread (ps1);
+    int is_th_2 = proc_stat_is_thread (ps2);
 
     if (!is_th_1 || !is_th_2
-	|| proc_stat_thread_origin(ps1) != proc_stat_thread_origin(ps2))
+	|| proc_stat_thread_origin(ps1) != proc_stat_thread_origin (ps2))
       /* Compare the threads' origins to keep them ordered after their
 	 respective processes.  The exception is when they're both from the
 	 same process, in which case we want to compare them directly so that
@@ -460,27 +463,27 @@ proc_stat_list_sort1(proc_stat_list_t pp,
 	 order).  */
       {
 	if (is_th_1)
-	  ps1 = proc_stat_thread_origin(ps1);
+	  ps1 = proc_stat_thread_origin (ps1);
 	if (is_th_2)
-	  ps2 = proc_stat_thread_origin(ps2);
+	  ps2 = proc_stat_thread_origin (ps2);
       }
 
-    if (ps1 == ps2 || !proc_stat_has(ps1, needs) || !proc_stat_has(ps2, needs))
+    if (ps1 == ps2 || !proc_stat_has(ps1, needs) || !proc_stat_has (ps2, needs))
       /* If we're comparing a thread with it's process (and so the thread's
 	 been replaced by the process), or we can't call CMP_FN on either
-	 proc_stat_t due to lack of the necessary preconditions, then compare
+	 proc_stat due to lack of the necessary preconditions, then compare
 	 their original positions, to retain the same order.  */
       return p1 - p2;
     else if (reverse)
-      return cmp_fn(ps2, ps1, getter);
+      return cmp_fn (ps2, ps1, getter);
     else
-      return cmp_fn(ps1, ps2, getter);
+      return cmp_fn (ps1, ps2, getter);
   }
 
   if (err)
     return err;
 
-  qsort((void *)procs, (size_t)pp->num_procs, sizeof(proc_stat_t), lessp);
+  qsort((void *)procs, (size_t)pp->num_procs, sizeof (struct proc_stat *), lessp);
 
   return 0;
 }
@@ -490,14 +493,15 @@ proc_stat_list_sort1(proc_stat_list_t pp,
    key, EINVAL is returned.  If a fatal error occurs the error code is
    returned.  Otherwise, 0 is returned.  */
 error_t
-proc_stat_list_sort(proc_stat_list_t pp, ps_fmt_spec_t key, bool reverse)
+proc_stat_list_sort (struct proc_stat_list *pp,
+		     struct ps_fmt_spec *key, int reverse)
 {
-  int (*cmp_fn)() = ps_fmt_spec_compare_fn(key);
+  int (*cmp_fn)() = ps_fmt_spec_compare_fn (key);
   if (cmp_fn == NULL)
     return EINVAL;
   else
     return
-      proc_stat_list_sort1(pp, ps_fmt_spec_getter(key), cmp_fn, reverse);
+      proc_stat_list_sort1 (pp, ps_fmt_spec_getter (key), cmp_fn, reverse);
 }
 
 /* ---------------------------------------------------------------- */
@@ -506,11 +510,12 @@ proc_stat_list_sort(proc_stat_list_t pp, ps_fmt_spec_t key, bool reverse)
    STREAM, separated by newlines (and with a terminating newline).  If a
    fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-proc_stat_list_fmt (proc_stat_list_t pp, ps_fmt_t fmt, ps_stream_t stream)
+proc_stat_list_fmt (struct proc_stat_list *pp, struct ps_fmt *fmt,
+		    struct ps_stream *stream)
 {
   unsigned nprocs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
-  error_t err = proc_stat_list_set_flags(pp, ps_fmt_needs(fmt));
+  struct proc_stat **procs = pp->proc_stats;
+  error_t err = proc_stat_list_set_flags(pp, ps_fmt_needs (fmt));
 
   while (!err && nprocs-- > 0)
     {
@@ -524,22 +529,22 @@ proc_stat_list_fmt (proc_stat_list_t pp, ps_fmt_t fmt, ps_stream_t stream)
 
 /* ---------------------------------------------------------------- */
 
-/* Modifies FLAGS to be the subset which can't be set in any proc_stat_t in
-   PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat_t
+/* Modifies FLAGS to be the subset which can't be set in any proc_stat in
+   PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat
    as possible).  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
 error_t
-proc_stat_list_find_bogus_flags(proc_stat_list_t pp, ps_flags_t *flags)
+proc_stat_list_find_bogus_flags (struct proc_stat_list *pp, ps_flags_t *flags)
 {
   unsigned nprocs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
-  error_t err = proc_stat_list_set_flags(pp, *flags);
+  struct proc_stat **procs = pp->proc_stats;
+  error_t err = proc_stat_list_set_flags (pp, *flags);
 
   if (err)
     return err;
 
   while (nprocs-- > 0 && *flags != 0)
-    *flags &= ~proc_stat_flags(*procs++);
+    *flags &= ~proc_stat_flags (*procs++);
 
   return 0;
 }
@@ -552,9 +557,9 @@ proc_stat_list_find_bogus_flags(proc_stat_list_t pp, ps_flags_t *flags)
    order of the thread entries themselves may change.  If a fatal error
    occurs, the error code is returned, otherwise 0.  */
 error_t
-proc_stat_list_add_threads(proc_stat_list_t pp)
+proc_stat_list_add_threads (struct proc_stat_list *pp)
 {
-  error_t err = proc_stat_list_set_flags(pp, PSTAT_NUM_THREADS);
+  error_t err = proc_stat_list_set_flags (pp, PSTAT_NUM_THREADS);
 
   if (err)
     return err;
@@ -562,37 +567,37 @@ proc_stat_list_add_threads(proc_stat_list_t pp)
     {
       int new_entries = 0;
       int nprocs = pp->num_procs;
-      proc_stat_t *procs = pp->proc_stats;
+      struct proc_stat **procs = pp->proc_stats;
 
       /* First, count the number of threads that will be added.  */
       while (nprocs-- > 0)
 	{
-	  proc_stat_t ps = *procs++;
-	  if (proc_stat_has(ps, PSTAT_NUM_THREADS))
-	    new_entries += proc_stat_num_threads(ps);
+	  struct proc_stat *ps = *procs++;
+	  if (proc_stat_has (ps, PSTAT_NUM_THREADS))
+	    new_entries += proc_stat_num_threads (ps);
 	}
 
       /* And make room for them...  */
-      err = proc_stat_list_grow(pp, new_entries);
+      err = proc_stat_list_grow (pp, new_entries);
       if (err)
 	return err;
       else
 	/* Now add thread entries for every existing entry in PP; we go
 	   through them backwards so we can do it in place.  */
 	{
-	  proc_stat_t *end = pp->proc_stats + pp->num_procs + new_entries;
+	  struct proc_stat **end = pp->proc_stats + pp->num_procs + new_entries;
 
 	  nprocs = pp->num_procs;
 	  procs = pp->proc_stats + nprocs;
 
 	  while (nprocs-- > 0)
 	    {
-	      proc_stat_t ps = *--procs;
-	      if (proc_stat_has(ps, PSTAT_NUM_THREADS))
+	      struct proc_stat *ps = *--procs;
+	      if (proc_stat_has (ps, PSTAT_NUM_THREADS))
 		{
-		  int nthreads = proc_stat_num_threads(ps);
+		  int nthreads = proc_stat_num_threads (ps);
 		  while (nthreads-- > 0)
-		    proc_stat_thread_create(ps, nthreads, --end);
+		    proc_stat_thread_create (ps, nthreads, --end);
 		}
 	      *--end = ps;
 	    }
@@ -605,11 +610,11 @@ proc_stat_list_add_threads(proc_stat_list_t pp)
 }
 
 error_t
-proc_stat_list_remove_threads(proc_stat_list_t pp)
+proc_stat_list_remove_threads (struct proc_stat_list *pp)
 {
-  bool is_thread(proc_stat_t ps)
+  int is_thread (struct proc_stat *ps)
     {
-      return proc_stat_is_thread(ps);
+      return proc_stat_is_thread (ps);
     }
   return proc_stat_list_filter1(pp, is_thread, 0, FALSE);
 }
@@ -620,10 +625,10 @@ proc_stat_list_remove_threads(proc_stat_list_t pp)
    value, then the iteration is stopped, and the value is returned
    immediately; otherwise, 0 is returned.  */
 int
-proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps))
+proc_stat_list_for_each (struct proc_stat_list *pp, int (*fn)(struct proc_stat *ps))
 {
   unsigned nprocs = pp->num_procs;
-  proc_stat_t *procs = pp->proc_stats;
+  struct proc_stat **procs = pp->proc_stats;
 
   while (nprocs-- > 0)
     {
@@ -638,19 +643,20 @@ proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps))
 /* ---------------------------------------------------------------- */
 
 /* Returns true if SPEC is `nominal' in every entry in PP.  */
-bool
-proc_stat_list_spec_nominal (proc_stat_list_t pp, ps_fmt_spec_t spec)
+int
+proc_stat_list_spec_nominal (struct proc_stat_list *pp,
+			     struct ps_fmt_spec *spec)
 {
-  bool (*nominal_fn)(proc_stat_t ps, ps_getter_t getter) =
+  int (*nominal_fn)(struct proc_stat *ps, const struct ps_getter *getter) =
     ps_fmt_spec_nominal_fn (spec);
 
   if (nominal_fn == NULL)
     return FALSE;
   else
     {
-      ps_getter_t getter = ps_fmt_spec_getter (spec);
+      const struct ps_getter *getter = ps_fmt_spec_getter (spec);
       ps_flags_t needs = ps_getter_needs (getter);
-      int interesting (proc_stat_t ps)
+      int interesting (struct proc_stat *ps)
 	{
 	  return proc_stat_has (ps, needs) && !(*nominal_fn)(ps, getter);
 	}

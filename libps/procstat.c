@@ -1,4 +1,4 @@
-/* The type proc_stat_t, which holds information about a hurd process.
+/* The proc_stat type, which holds information about a hurd process.
 
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
@@ -38,7 +38,7 @@ char *proc_stat_state_tags = "TZRHDSIN<u+slfmpoxwg";
 /* Return the PSTAT_STATE_ bits describing the state of an individual thread,
    from that thread's thread_basic_info_t struct */
 static int 
-thread_state(thread_basic_info_t bi)
+thread_state (thread_basic_info_t bi)
 {
   int state = 0;
 
@@ -170,7 +170,7 @@ merge_procinfo (process_t server, pid_t pid,
 /* Returns FLAGS augmented with any other flags that are necessary
    preconditions to setting them.  */
 static ps_flags_t 
-add_preconditions (ps_flags_t flags, ps_context_t context)
+add_preconditions (ps_flags_t flags, struct ps_context *context)
 {
   /* Implement any inter-flag dependencies: if the new flags in FLAGS depend on
      some other set of flags to be set, make sure those are also in FLAGS. */
@@ -216,7 +216,7 @@ add_preconditions (ps_flags_t flags, ps_context_t context)
    PS's msg port.  For this routine to work correctly, PS's flags should
    contain as many flags in PSTAT_TEST_MSGPORT as possible.  */
 static int
-should_suppress_msgport (proc_stat_t ps)
+should_suppress_msgport (struct proc_stat *ps)
 {
   ps_flags_t have = ps->flags;
 
@@ -259,7 +259,7 @@ summarize_thread_basic_info (struct procinfo *pi)
   if (!tbi)
     return 0;
 
-  bzero(tbi, sizeof *tbi);
+  bzero (tbi, sizeof *tbi);
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died)
@@ -346,7 +346,7 @@ summarize_thread_sched_info (struct procinfo *pi)
   if (!tsi)
     return 0;
 
-  bzero(tsi, sizeof *tsi);
+  bzero (tsi, sizeof *tsi);
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died)
@@ -380,7 +380,7 @@ summarize_thread_states (struct procinfo *pi)
   /* The union of all thread state bits...  */
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died)
-      state |= thread_state(&pi->threadinfos[i].pis_bi);
+      state |= thread_state (&pi->threadinfos[i].pis_bi);
 
   return state;
 }
@@ -474,13 +474,13 @@ clone (void *src, size_t size)
    field before using new fields, as something might have failed.  Returns
    a system error code if a fatal error occurred, or 0 if none.  */
 error_t
-proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
+proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 {
   ps_flags_t have = ps->flags;	/* flags set in ps */
   ps_flags_t need;		/* flags not set in ps, but desired to be */
   ps_flags_t no_msgport_flags;	/* a version of FLAGS for use when we can't
 				   use the msg port.  */
-  process_t server = ps_context_server(ps->context);
+  process_t server = ps_context_server (ps->context);
 
   /* Turn off use of the msg port if we decide somewhere along the way that
      it's hosed.  */
@@ -532,7 +532,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
      port if a call to it times out.  It also implies a precondition of
      PSTAT_MSGPORT.  */
 #define MP_MGET(flag, precond, call) \
-  ({ error_t err = MGET(flag, (precond) | PSTAT_MSGPORT, call); \
+  ({ error_t err = MGET (flag, (precond) | PSTAT_MSGPORT, call); \
      if (err) suppress_msgport (); \
      err; \
    })
@@ -596,7 +596,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
     else
       /* For a thread, we get use the proc_info from the containing process. */
       {
-	proc_stat_t origin = ps->thread_origin;
+	struct proc_stat *origin = ps->thread_origin;
 	ps_flags_t oflags = need & PSTAT_PROCINFO_THREAD;
 
 	proc_stat_set_flags (origin, oflags);
@@ -657,18 +657,18 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
     suppress_msgport ();
 
   /* The process's libc msg port (see <hurd/msg.defs>).  */
-  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
+  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport (server, ps->pid, &ps->msgport));
   /* The process's process port.  */
-  MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc(server, ps->pid, &ps->process));
+  MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc (server, ps->pid, &ps->process));
   /* The process's task port.  */
-  MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
+  MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task (server, ps->pid, &ps->task));
 
   /* VM statistics for the task.  See <mach/task_info.h>.  */
   if ((need & PSTAT_TASK_EVENTS) && (have & PSTAT_TASK))
     {
       ps->task_events_info = &ps->task_events_info_buf;
       ps->task_events_info_size = TASK_EVENTS_INFO_COUNT;
-      if (task_info(ps->task, TASK_EVENTS_INFO,
+      if (task_info (ps->task, TASK_EVENTS_INFO,
 		    (task_info_t)&ps->task_events_info,
 		    &ps->task_events_info_size)
 	  == 0)
@@ -676,8 +676,8 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
     }
 
   /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
-  MP_MGET(PSTAT_EXEC_FLAGS, PSTAT_TASK,
-	  msg_get_exec_flags(ps->msgport, ps->task, &ps->exec_flags));
+  MP_MGET (PSTAT_EXEC_FLAGS, PSTAT_TASK,
+	  msg_get_exec_flags (ps->msgport, ps->task, &ps->exec_flags));
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & (PSTAT_PROC_INFO | PSTAT_THREAD_BASIC)))
@@ -728,7 +728,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   if ((need & PSTAT_ARGS) && (have & PSTAT_PID))
     {
       ps->args_len = 0;
-      if (proc_getprocargs(server, ps->pid, &ps->args, &ps->args_len))
+      if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
 	ps->args_len = 0;
       else
 	have |= PSTAT_ARGS;
@@ -737,24 +737,24 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   /* The ctty id port; note that this is just a magic cookie;
      we use it to fetch a port to the actual terminal -- it's not useful for
      much else.  */
-  MP_MGET(PSTAT_CTTYID, PSTAT_TASK,
-	  msg_get_init_port(ps->msgport, ps->task,
+  MP_MGET (PSTAT_CTTYID, PSTAT_TASK,
+	  msg_get_init_port (ps->msgport, ps->task,
 			    INIT_PORT_CTTYID, &ps->cttyid));
 
   /* A port to the process's current working directory.  */
-  MP_MGET(PSTAT_CWDIR, PSTAT_TASK,
-	  msg_get_init_port(ps->msgport, ps->task,
+  MP_MGET (PSTAT_CWDIR, PSTAT_TASK,
+	  msg_get_init_port (ps->msgport, ps->task,
 			    INIT_PORT_CWDIR, &ps->cwdir));
 
   /* The process's auth port, which we can use to determine who the process
      is authenticated as.  */
-  MP_MGET(PSTAT_AUTH, PSTAT_TASK,
-	  msg_get_init_port(ps->msgport, ps->task, INIT_PORT_AUTH, &ps->auth));
+  MP_MGET (PSTAT_AUTH, PSTAT_TASK,
+	  msg_get_init_port (ps->msgport, ps->task, INIT_PORT_AUTH, &ps->auth));
 
   /* The process's umask, which controls which protection bits won't be set
      when creating a file.  */
-  MP_MGET(PSTAT_UMASK, PSTAT_TASK,
-	  msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
+  MP_MGET (PSTAT_UMASK, PSTAT_TASK,
+	  msg_get_init_int (ps->msgport, ps->task, INIT_UMASK, &ps->umask));
 
   if ((need & PSTAT_OWNER_UID) && (have & PSTAT_PROC_INFO))
     {
@@ -765,20 +765,20 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
       have |= PSTAT_OWNER_UID;
     }
 
-  /* A ps_user_t object for the process's owner.  */
+  /* A ps_user object for the process's owner.  */
   if ((need & PSTAT_OWNER) && (have & PSTAT_OWNER_UID))
     if (ps->owner_uid < 0)
       {
 	ps->owner = 0;
 	have |= PSTAT_OWNER;
       }
-    else if (! ps_context_find_user(ps->context, ps->owner_uid, &ps->owner))
+    else if (! ps_context_find_user (ps->context, ps->owner_uid, &ps->owner))
       have |= PSTAT_OWNER;
 
-  /* A ps_tty_t for the process's controlling terminal, or NULL if it
+  /* A ps_tty for the process's controlling terminal, or NULL if it
      doesn't have one.  */
   if ((need & PSTAT_TTY) && (have & PSTAT_CTTYID))
-    if (ps_context_find_tty_by_cttyid(ps->context, ps->cttyid, &ps->tty) == 0)
+    if (ps_context_find_tty_by_cttyid (ps->context, ps->cttyid, &ps->tty) == 0)
       have |= PSTAT_TTY;
 
   /* Update PS's flag state.  We haven't tried user flags yet, so don't mark
@@ -803,8 +803,8 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 /* ---------------------------------------------------------------- */
 /* Discard PS and any resources it holds.  */
 void 
-_proc_stat_free(ps)
-     proc_stat_t ps;
+_proc_stat_free (ps)
+     struct proc_stat *ps;
 {
   if (ps->context->user_hooks && ps->context->user_hooks->cleanup)
     /* Free any user state.  */
@@ -813,7 +813,7 @@ _proc_stat_free(ps)
   /* Free the mach port PORT if FLAG is set in PS's flags.  */
 #define MFREEPORT(flag, port) \
     ((ps->flags & (flag)) \
-     ? mach_port_deallocate(mach_task_self(), (ps->port)) : 0)
+     ? mach_port_deallocate(mach_task_self (), (ps->port)) : 0)
 
   /* If FLAG is set in PS's flags, vm_deallocate MEM, consisting of SIZE 
      elements of type ELTYPE, *unless* MEM == SBUF, which usually means
@@ -821,38 +821,38 @@ _proc_stat_free(ps)
      memory.  */
 #define MFREEVM(flag, mem, size, sbuf, eltype) \
     (((ps->flags & (flag)) && ps->mem != sbuf) \
-     ? (VMFREE(ps->mem, ps->size * sizeof(eltype))) : 0)
+     ? (VMFREE(ps->mem, ps->size * sizeof (eltype))) : 0)
 
   /* if FLAG is set in PS's flags, free the malloc'd memory MEM. */
 #define MFREEM(flag, mem) ((ps->flags & (flag)) ? free (ps->mem) : 0)
 
   /* free PS's ports */
-  MFREEPORT(PSTAT_PROCESS, process);
-  MFREEPORT(PSTAT_TASK, task);
-  MFREEPORT(PSTAT_MSGPORT, msgport);
-  MFREEPORT(PSTAT_CTTYID, cttyid);
-  MFREEPORT(PSTAT_CWDIR, cwdir);
-  MFREEPORT(PSTAT_AUTH, auth);
+  MFREEPORT (PSTAT_PROCESS, process);
+  MFREEPORT (PSTAT_TASK, task);
+  MFREEPORT (PSTAT_MSGPORT, msgport);
+  MFREEPORT (PSTAT_CTTYID, cttyid);
+  MFREEPORT (PSTAT_CWDIR, cwdir);
+  MFREEPORT (PSTAT_AUTH, auth);
 
   /* free any allocated memory pointed to by PS */
-  MFREEVM(PSTAT_PROCINFO, proc_info, proc_info_size, 0, char);
-  MFREEM(PSTAT_THREAD_BASIC, thread_basic_info);
-  MFREEM(PSTAT_THREAD_SCHED, thread_sched_info);
-  MFREEVM(PSTAT_ARGS, args, args_len, 0, char);
-  MFREEVM(PSTAT_TASK_EVENTS,
+  MFREEVM (PSTAT_PROCINFO, proc_info, proc_info_size, 0, char);
+  MFREEM (PSTAT_THREAD_BASIC, thread_basic_info);
+  MFREEM (PSTAT_THREAD_SCHED, thread_sched_info);
+  MFREEVM (PSTAT_ARGS, args, args_len, 0, char);
+  MFREEVM (PSTAT_TASK_EVENTS,
 	  task_events_info, task_events_info_size,
 	  &ps->task_events_info_buf, char);
 
-  FREE(ps);
+  FREE (ps);
 }
 
-/* Returns in PS a new proc_stat_t for the process PID at the process context
+/* Returns in PS a new proc_stat for the process PID at the process context
    CONTEXT.  If a memory allocation error occurs, ENOMEM is returned,
    otherwise 0.  */
 error_t
-_proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps)
+_proc_stat_create (pid_t pid, struct ps_context *context, struct proc_stat **ps)
 {
-  *ps = NEW(struct proc_stat);
+  *ps = NEW (struct proc_stat);
   if (*ps == NULL)
     return ENOMEM;
 
@@ -867,17 +867,17 @@ _proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps)
 
 /* ---------------------------------------------------------------- */
 
-/* Returns in THREAD_PS a proc_stat_t for the Nth thread in the proc_stat_t
+/* Returns in THREAD_PS a proc_stat for the Nth thread in the proc_stat
    PS (N should be between 0 and the number of threads in the process).  The
-   resulting proc_stat_t isn't fully functional -- most flags can't be set in
+   resulting proc_stat isn't fully functional -- most flags can't be set in
    it.  It also contains a pointer to PS, so PS shouldn't be freed without
    also freeing THREAD_PS.  If N was out of range, EINVAL is returned.  If a
    memory allocation error occured, ENOMEM is returned.  Otherwise, 0 is
    returned.  */
 error_t
-proc_stat_thread_create(proc_stat_t ps, unsigned index, proc_stat_t *thread_ps)
+proc_stat_thread_create (struct proc_stat *ps, unsigned index, struct proc_stat **thread_ps)
 {
-  error_t err = proc_stat_set_flags(ps, PSTAT_NUM_THREADS);
+  error_t err = proc_stat_set_flags (ps, PSTAT_NUM_THREADS);
 
   if (err)
     return err;
@@ -885,7 +885,7 @@ proc_stat_thread_create(proc_stat_t ps, unsigned index, proc_stat_t *thread_ps)
     return EINVAL;
   else
     {
-      proc_stat_t tps = NEW(struct proc_stat);
+      struct proc_stat *tps = NEW (struct proc_stat);
 
       if (tps == NULL)
 	return ENOMEM;

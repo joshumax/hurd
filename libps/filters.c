@@ -1,4 +1,4 @@
-/* Some ps_filter_t's to restrict proc_stat_list's in various ways.
+/* Some ps_filters to restrict proc_stat_lists in various ways.
 
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
@@ -30,8 +30,8 @@
 
 /* ---------------------------------------------------------------- */
 
-static bool 
-ps_own_p (proc_stat_t ps)
+static int 
+ps_own_p (struct proc_stat *ps)
 {
   static int own_uid = -2;	/* -1 means no uid at all.  */
   if (own_uid == -2)
@@ -41,19 +41,19 @@ ps_own_p (proc_stat_t ps)
 struct ps_filter ps_own_filter =
 {"own", PSTAT_OWNER_UID, ps_own_p};
 
-static bool 
-ps_not_leader_p (proc_stat_t ps)
+static int 
+ps_not_leader_p (struct proc_stat *ps)
 {
   return
-    !(proc_stat_state(ps) & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
+    !(proc_stat_state (ps) & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
 }
 struct ps_filter ps_not_leader_filter =
 {"not-sess-leader", PSTAT_STATE, ps_not_leader_p};
 
-static bool 
-ps_unorphaned_p(proc_stat_t ps)
+static int 
+ps_unorphaned_p (struct proc_stat *ps)
 {
-  int state = proc_stat_state(ps);
+  int state = proc_stat_state (ps);
   return
     !(state & PSTAT_STATE_P_ORPHAN)
       || (state & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
@@ -61,24 +61,24 @@ ps_unorphaned_p(proc_stat_t ps)
 struct ps_filter ps_unorphaned_filter =
 {"unorphaned", PSTAT_STATE, ps_unorphaned_p};
 
-static bool 
-ps_ctty_p(proc_stat_t ps)
+static int 
+ps_ctty_p (struct proc_stat *ps)
 {
-  return proc_stat_cttyid(ps) != MACH_PORT_NULL;
+  return proc_stat_cttyid (ps) != MACH_PORT_NULL;
 }
 struct ps_filter ps_ctty_filter =
 {"ctty", PSTAT_CTTYID, ps_ctty_p};
 
-static bool 
-ps_parent_p(proc_stat_t ps)
+static int 
+ps_parent_p (struct proc_stat *ps)
 {
-  return !(proc_stat_state(ps) & PSTAT_STATE_P_NOPARENT);
+  return !(proc_stat_state (ps) & PSTAT_STATE_P_NOPARENT);
 }
 struct ps_filter ps_parent_filter =
 {"parent", PSTAT_STATE, ps_parent_p};
 
-static bool
-ps_alive_p (proc_stat_t ps)
+static int
+ps_alive_p (struct proc_stat *ps)
 {
   ps_flags_t test_flag =
     proc_stat_is_thread (ps) ? PSTAT_THREAD_BASIC : PSTAT_PROC_INFO;
