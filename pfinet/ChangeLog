@@ -1,3 +1,9 @@
+2000-02-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* linux-src (many files): Merge Linux 2.2.13 and 2.2.14 code.
+	* glue-include/linux/mm.h (PAGE_SIZE, num_physpages): New macros.
+	(__get_free_pages): New inline function.
+
 2000-02-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* options.c (parse_opt): New code to set the default gateway using
