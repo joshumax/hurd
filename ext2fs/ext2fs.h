@@ -359,7 +359,7 @@ struct pokel global_pokel;
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
 char *modified_global_blocks;
-struct mutex modified_global_blocks_lock;
+spin_lock_t modified_global_blocks_lock;
 
 /* Marks the global block BLOCK as being modified, and returns true if we
    think it may have been clean before (but we may not be sure).  Note that
@@ -371,9 +371,9 @@ global_block_modified (block_t block)
   if (modified_global_blocks)
     {
       int was_clean;
-      mutex_lock (&modified_global_blocks_lock);
+      spin_lock (&modified_global_blocks_lock);
       was_clean = !set_bit(block, modified_global_blocks);
-      mutex_unlock (&modified_global_blocks_lock);
+      spin_unlock (&modified_global_blocks_lock);
       return was_clean;
     }
   else
