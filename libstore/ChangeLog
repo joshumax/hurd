@@ -1,3 +1,9 @@
+2002-05-16  Roland McGrath  <roland@frob.com>
+
+	* device.c (enforced): Use dev_status_data_t for SIZES.
+	(store_device_create): Likewise.
+	(dev_write): Do some silly magic since device.defs uses int.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* module.c (open_class): Add cast to int for %* arg.
