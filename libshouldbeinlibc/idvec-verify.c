@@ -1,8 +1,7 @@
 /* Verify user passwords
 
-   Copyright (C) 1996,97,98,99 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,98,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -54,7 +53,7 @@ verify_passwd (const char *password,
 	       void *pwd_or_grp, void *hook)
 {
   const char *encrypted;
-  int wheel_uid = (int)hook;
+  int wheel_uid = (intptr_t)hook;
   const char *sys_encrypted;
 
   if (! pwd_or_grp)
@@ -174,7 +173,7 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
       if (! verify_fn)
 	{
 	  verify_fn = verify_passwd;
-	  verify_hook = (void *)wheel_uid;
+	  verify_hook = (void *)(intptr_t)wheel_uid;
 	}
 
       /* See if there are multiple ids in contention, in which case we should
