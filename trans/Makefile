@@ -18,7 +18,7 @@
 dir := trans
 makemode := servers
 
-targets = symlink ifsock magic null fifo new-fifo fwd devport
+targets = symlink ifsock magic null fifo new-fifo fwd devport crash
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c devport.c \
 	crash.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
