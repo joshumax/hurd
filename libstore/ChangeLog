@@ -1,3 +1,8 @@
+2001-09-16  Roland McGrath  <roland@frob.com>
+
+	* std.c (store_std_classes): Only include store_part_class
+	if [HAVE_PARTED_PARTED_H].
+
 2001-08-25  Roland McGrath  <roland@frob.com>
 
 	* part.c (store_part_create): Do a run-time check on ped_get_version.
