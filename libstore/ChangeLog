@@ -1,3 +1,11 @@
+2003-08-02  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* module.c (store_module_open): NAME that doesn't contain ':' is
+	not considered invalid argument, but a class name without
+	class-specific portion.
+	* typed.c (store_typed_open): When NAME is empty string, don't
+	invoke store_open (name + 1, ...).
+
 2002-10-01  Ludovic Courtès <ludovic.courtes@utbm.fr>
 
 	* store.h: New type store_set_size_meth_t: New type.  New

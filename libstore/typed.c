@@ -1,6 +1,6 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997,98,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,2001,02,03 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -113,7 +113,7 @@ store_typed_open (const char *name, int flags,
   const struct store_class *cl;
   const char *clname_end = strchrnul (name, ':');
 
-  if (clname_end == name)
+  if (clname_end == name && *clname_end)
     /* Open NAME with store_open.  */
     return store_open (name + 1, flags, classes, store);
 

@@ -1,5 +1,5 @@
 /* Dynamic loading of store class modules
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -97,11 +97,8 @@ store_module_open (const char *name, int flags,
 		   struct store **store)
 {
   const struct store_class *cl;
-  const char *clname_end = strchr (name, ':');
+  const char *clname_end = strchrnul (name, ':');
   error_t err;
-
-  if (! clname_end)
-    return EINVAL;
 
   err = open_class (1, name, clname_end, &cl);
   if (err)
