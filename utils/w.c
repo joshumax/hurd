@@ -50,19 +50,15 @@ extern char *localhost ();
 
 char *argp_program_version = "w 1.0 (GNU " HURD_RELEASE ")";
 
-/* Long options without corresponding short ones.  -1 is EOF.  */
-#define OPT_SORT	-4
-#define OPT_FMT		-5
-
 #define OA OPTION_ARG_OPTIONAL
 
 static struct argp_option options[] =
 {
-  {"fmt",        OPT_FMT, "FMT",  0,  "Use the custom output-format FMT"},
+  {"format",     'F',     "FMT",  0,  "Use the custom output-format FMT"},
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
   {0,		 'h',     0,   OPTION_ALIAS | OPTION_HIDDEN}, /* BSD compat */
   {"reverse",    'r',     0,      0,  "Reverse the order of any sort"},
-  {"sort",       OPT_SORT,"FIELD",0,  "Sort the output with respect to FIELD,"
+  {"sort",       's',     "FIELD",0,  "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
   {0,            'i',     0,	  0,  "Sort output by idle time"},
   {"tty",        't',     "TTY",  OA, "Only show entries for terminal TTY"},
@@ -395,8 +391,8 @@ main(int argc, char *argv[])
 	{
 	case 'H': case 'h': print_heading = 0; break;
 	case 'i': sort_key_name = "idle"; break;
-	case OPT_SORT: sort_key_name = arg; break;
-	case OPT_FMT:  fmt_string = arg; break;
+	case 's': sort_key_name = arg; break;
+	case 'F': fmt_string = arg; break;
 	case 'r': sort_reverse = 1; break;
 	case 'u': show_entries = 0; break;
 	case 'U': show_uptime = 0; break;
