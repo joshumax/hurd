@@ -1,5 +1,6 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992,93,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01
+   	Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -286,8 +287,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	      if (!lastcomp && !error)
 		{
-		  strcat (retryname, "/");
-		  strcat (retryname, nextname);
+		  char *end = strchr (retryname, '\0');
+		  *end++ = '/';
+		  strcpy (end, nextname);
 		}
 	      return error;
 	    }
@@ -323,7 +325,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    }
 
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
-	  newnamelen = nextnamelen + np->dn_stat.st_size + 1;
+	  newnamelen = nextnamelen + np->dn_stat.st_size + 1 + 1;
 	  if (pathbuflen < newnamelen)
 	    {
 	      pathbuf = alloca (newnamelen);
@@ -350,8 +352,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (nextname)
 		{
 		  pathbuf[np->dn_stat.st_size] = '/';
-		  bcopy (nextname, pathbuf + np->dn_stat.st_size + 1,
-			 nextnamelen - 1);
+		  memcpy (pathbuf + np->dn_stat.st_size + 1,
+			  nextname, nextnamelen - 1);
 		}
 	      pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
 
@@ -360,9 +362,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  /* Punt to the caller.  */
 		  *retry = FS_RETRY_MAGICAL;
 		  *returned_port = MACH_PORT_NULL;
-		  strcpy (retryname, pathbuf);
+		  memcpy (retryname, pathbuf,
+			  nextnamelen + np->dn_stat.st_size + 1);
+		  if (mustbedir)
+		    {
+		      retryname[nextnamelen + np->dn_stat.st_size] = '/';
+		      retryname[nextnamelen + np->dn_stat.st_size + 1] = '\0';
+		    }
 		  goto out;
 		}
+
 	      path = pathbuf;
 	    }
 
