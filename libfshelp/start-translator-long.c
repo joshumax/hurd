@@ -141,12 +141,16 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
     reply.RetCode = MIG_BAD_ARGUMENTS;
   else
     {
+      mach_msg_type_name_t realnode_type;
+
       *control = request.startup.control_port;
 
-      reply.realnodeType = realnodeType;
       reply.RetCode =
 	(*underlying_open_fn) (request.startup.flags,
-			       &reply.realnode, &reply.realnodeType.msgt_name);
+			       &reply.realnode, &realnode_type);
+
+      reply.realnodeType = realnodeType;
+      reply.realnodeType.msgt_name = realnode_type;
 
       if (!reply.RetCode && reply.realnode != MACH_PORT_NULL)
 	/* The message can't be simple because of the port.  */
