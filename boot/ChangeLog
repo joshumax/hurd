@@ -1,3 +1,7 @@
+1999-03-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (S_term_get_peername): New function.
+
 1999-03-14  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c: Fix typo in last change.
