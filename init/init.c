@@ -626,7 +626,7 @@ launch_single_user ()
   printf (" dev");
   fflush (stdout);
 
-  if (termtask)
+  if (termtask != MACH_PORT_NULL)
     {
       /* Open the console.  We are racing here against the
 	 terminal driver that we just started, so keep trying until
@@ -672,9 +672,10 @@ launch_single_user ()
 	      || errno == KERN_INVALID_ARGUMENT)
 	    break;
 	}
+      mach_port_deallocate (mach_task_self (), termtask);
     }
-  if (termtask != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), termtask);
+  else
+    term = MACH_PORT_NULL;
 
   /* Run pipes. */
   foo = run_for_real (pipes, pipes, sizeof (pipes), MACH_PORT_NULL);
