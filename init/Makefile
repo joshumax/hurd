@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+#
+#   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,9 +18,11 @@
 dir := init
 makemode := server
 
-SRCS = init.c
-OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
-	startup_notifyUser.o
+SRCS = init.c ttys.c
+OBJS = $(SRCS:.c=.o) \
+       startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
+       startup_notifyUser.o
+LCLHDRS = ttys.h
 target = init
 HURDLIBS=ports fshelp shouldbeinlibc
 
@@ -30,4 +32,3 @@ include ../Makeconf
 
 mung_msg_S.h: msg_S.h
 	sed 's/msg_server/mung_msg_server/' < $< > $@
-
