@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,8 +32,41 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
 		     mach_port_t *retrypt,
 		     mach_msg_type_name_t *retrypt_type)
 {
+  int perms;
+  error_t err;
+  struct trivfs_protid *newcred;
+
   if (!cred)
     return EOPNOTSUPP;
 
-  return ENOTDIR;
+  if (filename[0])
+    return ENOTDIR;
+
+  /* This is a null-pathname "reopen" call; do the right thing. */
+
+  /* Burn off flags we don't actually implement */
+  flags &= O_HURD;
+  flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
+
+  /* Validate permissions */
+  file_check_access (cred->realnode, &perms);
+  if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
+      != (flags & (O_READ|O_WRITE|O_EXEC)))
+    return EACCES;
+  
+  /* Execute the open */
+  if (trivfs_check_open_hook)
+    err = (*trivfs_check_open_hook) (cred->po->cntl, user, flags);
+  if (!err)
+    err = trivfs_open (cred->po->cntl, cred->user, flags, 
+		       cred->realnode, &newcred);
+  if (err)
+    return err;
+  
+  *retry_type = FS_RETRY_NORMAL;
+  *retry_name = '\0';
+  *retrypt = ports_get_right (newcred);
+  *retrypt_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newcred);
+  return 0;
 }
