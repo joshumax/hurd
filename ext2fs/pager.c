@@ -117,7 +117,7 @@ free_page_buf (void *buf)
   else
     {
       spin_unlock (&free_page_bufs_lock);
-      vm_deallocate (mach_task_self (), (vm_address_t) buf, vm_page_size);
+      munmap (buf, vm_page_size);
     }
 }
 

@@ -34,8 +34,7 @@ allocate_mod_map (void)
 
   if (modified_global_blocks && mod_map_size)
     /* Get rid of the old one.  */
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t)modified_global_blocks, mod_map_size);
+    munmap (modified_global_blocks, mod_map_size);
 
  if (!diskfs_readonly && block_size < vm_page_size)
     /* If the block size is too small, we have to take extra care when
@@ -65,7 +64,7 @@ get_hypermetadata (void)
     ext2_panic ("can't read superblock: %s", strerror (err));
 
   if (zeroblock)
-    vm_deallocate (mach_task_self (), zeroblock, block_size);
+    munmap ((caddr_t) zeroblock, block_size);
 
   sblock = (struct ext2_super_block *)boffs_ptr (SBLOCK_OFFS);
 

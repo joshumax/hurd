@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -145,7 +145,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
     }
   if (buf)
     {
-      vm_deallocate (mach_task_self (), buf, buflen);
+      munmap ((caddr_t) buf, buflen);
       buf = 0;
     }
   if (ds && (type == CREATE || type == RENAME))
@@ -189,7 +189,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 	}
       if (err != ENOENT)
 	{
-	  vm_deallocate (mach_task_self (), buf, buflen);
+	  munmap ((caddr_t) buf, buflen);
 	  return err;
 	}
 
@@ -303,7 +303,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
       || !ds
       || ds->type == LOOKUP)
     {
-      vm_deallocate (mach_task_self (), buf, buflen);
+      munmap ((caddr_t) buf, buflen);
       if (ds)
 	ds->type = LOOKUP;	/* set to be ignored by drop_dirstat */
     }
@@ -583,7 +583,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	  err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred);
 	  if (err)
 	    {
-	      vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+	      munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 	      return err;
 	    }
 	}
@@ -605,7 +605,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
   dp->dn_set_mtime = 1;
 
-  vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
   if (ds->stat != EXTEND)
     {
@@ -672,7 +672,7 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 
   dp->dn_set_mtime = 1;
 
-  vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
   /* If we are keeping count of this block, then keep the count up
      to date. */
@@ -702,7 +702,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   ds->entry->inode = np->cache_id;
   dp->dn_set_mtime = 1;
 
-  vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
   diskfs_file_update (dp, 1);
 
@@ -751,7 +751,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   if (diskfs_synchronous)
     diskfs_node_update (dp, 1);
 
-  vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
+  munmap ((caddr_t) buf, dp->dn_stat.st_size);
 
   return !hit;
 }
@@ -763,7 +763,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
   if (ds->type != LOOKUP)
     {
       assert (ds->mapbuf);
-      vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+      munmap ((caddr_t) ds->mapbuf, ds->mapextent);
       ds->type = LOOKUP;
     }
   return 0;
@@ -1006,9 +1006,8 @@ diskfs_get_directs (struct node *dp,
   if (allocsize > *datacnt)
     {
       if (round_page (datap - *data) < allocsize)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) (*data + round_page (datap - *data)),
-		       allocsize - round_page (datap - *data));
+	munmap ((caddr_t) (*data + round_page (datap - *data)),
+		allocsize - round_page (datap - *data));
     }
 
   /* Set variables for return */

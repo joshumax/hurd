@@ -1,6 +1,6 @@
 /* File truncation
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -205,7 +205,7 @@ poke_pages (memory_object_t obj, vm_offset_t start, vm_offset_t end)
 	  vm_address_t poke;
 	  for (poke = addr; poke < addr + len; poke += vm_page_size)
 	    *(volatile int *)poke = *(volatile int *)poke;
-	  vm_deallocate (mach_task_self (), addr, len);
+	  munmap ((caddr_t) addr, len);
 	}
 
       start += len;
