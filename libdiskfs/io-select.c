@@ -36,8 +36,6 @@ diskfs_S_io_select (struct protid *cred,
       return EBADF;
     }
   mutex_unlock (&cred->po->np->lock);
-  /* Select is always possible.  */
-  mach_port_deallocate (mach_task_self (), port);
   *type &= ~SELECT_URG;
   return 0;
 }
