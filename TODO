@@ -192,6 +192,8 @@ See `tasks', the exported task list.
 *** select for read on a UDP socket seems never to return. !!!
 *** Undefined functions at the end of pfinet/io-ops.c. !!
 *** Implement io_revoke on sockets. !
+*** Implement SO_LINGER correctly (close() should return EWOULDBLOCK if not all
+    packets could be delivered). !
 
 ** nfs
 *** Implement async I/O !!
@@ -211,8 +213,8 @@ See `tasks', the exported task list.
 *** Implement clustering, a la 4.4-lite sys/kern/vfs_cluster.c.
 *** Make file_get_storage_info work for files with indirect blocks. !!
 *** Optimizations:
-    pager.c/inode.c/libdiskfs count pager refs separately and then save
-      mappings in _diskfs_rdwr_internal and dir.c  !
+    pager.c/inode.c/libdiskfs count pager refs separately and then
+      save mappings in _diskfs_rdwr_internal and dir.c !
 *** Problems with DT_* hack: !
 ****   Fix multiple-links DT_* bug.
 ****   Deal with change of type which should update directory.
