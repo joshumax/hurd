@@ -1709,10 +1709,10 @@ S_io_reauthenticate (mach_port_t object,
 				  &gg, &gglen,
 				  &ag, &aglen))
     {
-      mig_deallocate (gu, gulen * sizeof *gu);
-      mig_deallocate (au, aulen * sizeof *gu);
-      mig_deallocate (gg, gglen * sizeof *gu);
-      mig_deallocate (au, aulen * sizeof *gu);
+      mig_deallocate ((vm_address_t) gu, gulen * sizeof *gu);
+      mig_deallocate ((vm_address_t) au, aulen * sizeof *gu);
+      mig_deallocate ((vm_address_t) gg, gglen * sizeof *gu);
+      mig_deallocate ((vm_address_t) au, aulen * sizeof *gu);
     }
 
   return 0;
