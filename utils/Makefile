@@ -19,11 +19,12 @@ dir := utils
 makemode := utilities
 
 targets = shd ps settrans showtrans sync reboot halt su mount fsysopts \
-	storeinfo login w uptime hurdids loginpr sush vmstat portinfo
+	storeinfo login w uptime hurdids loginpr sush vmstat portinfo \
+	devprobe
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c reboot.c halt.c showtrans.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
-	uptime.sh psout.c hurdids.c vmstat.c portinfo.c
+	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c
 DIST_FILES = shd.ChangeLog
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
@@ -33,13 +34,13 @@ all: $(targets)
 # This hack to get around ickiness in Makeconf
 libutil-libsubst = -lutil
 
-login: -lutil
+login: /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libthreads/libthreads.a
-ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo: \
-  ../libshouldbeinlibc/libshouldbeinlibc.a
+ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo \
+  devprobe: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
