@@ -277,6 +277,17 @@ diskfs_truncate (struct node *node, off_t length)
   if (length >= node->dn_stat.st_size)
     return 0;
 
+  if (S_ISLNK (node->dn_stat.st_mode) && !node->dn_stat.st_blocks)
+    /* An in-inode symlink; there aren't really any blocks allocated, so
+       just frob the size.  */
+    {
+      node->dn_stat.st_size = length;
+      node->dn_set_mtime = 1;
+      node->dn_set_ctime = 1;
+      diskfs_node_update (node, 1);
+      return 0;
+    }
+
   /*
    * If the file is not being truncated to a block boundary, the
    * contents of the partial block following the end of the file must be
