@@ -16,28 +16,10 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := trans
+makemode := misc
+
+SRCS = ifsock.c symlink.c
+
 include ../Makeconf
 
-DIST_FILES = Makefile $(SRCS) ChangeLog
 
-TRANS = ifsock symlink
-
-SRCS = $(addsuffix .c,$(TRANS))
-
-TRANS_INST = $(addprefix $(hurdroot)/hurd/,$(TRANS))
-
-all: $(TRANS)
-
-ifsock: ifsock.o $(libports) fsysServer.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-install: $(TRANS_INST)
-
-clean:
-	rm -f $(TRANS) *.o
-
-relink:
-	rm -f $(TRANS)
-
-$(hurdroot)/hurd/%: %
-	$(INSTALL_BIN) $^ %@
