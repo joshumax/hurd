@@ -1,5 +1,10 @@
 2002-04-10  Neal H Walfield  <neal@cs.uml.edu>
 
+       * pager-memcpy.c (pager_memcpy): Pass not the block but the byte
+       offset of the page in question to pager_get_error.
+
+2002-04-10  Neal H Walfield  <neal@cs.uml.edu>
+
 	* pager-memcpy.c (VMCOPY_BETTER_THAN_MEMCPY): New macro.
 	(pager_memcpy): Rewritten to use vmcopy.
 
