@@ -96,6 +96,16 @@ pager_return_some (struct pager *pager,
 		   vm_size_t len,
 		   int wait);
 
+/* Offer a page of data to the kernel.  If PRECIOUS is set, then this
+   page will be paged out at some future point, otherwise it might be
+   dropped by the kernel.  If the page is currently in core, the
+   kernel might ignore this call.  */
+void
+pager_offer_page (struct pager *pager,
+		  int precious,
+		  vm_offset_t page,
+		  vm_address_t buf);  
+
 /* Change the attributes of the memory object underlying pager PAGER.
    Args MAY_CACHE and COPY_STRATEGY are as for
    memory_object_change_atributes.  Wait for the kernel to report completion
