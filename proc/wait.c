@@ -297,7 +297,8 @@ kern_return_t
 S_proc_mod_stopchild (struct proc *p,
 		      int value)
 {
-  p->p_nostopcld = !! value;
+  /* VALUE is nonzero if we should send SIGCHLD.  */
+  p->p_nostopcld = ! value;
   return 0;
 }
 
