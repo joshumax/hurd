@@ -1,3 +1,10 @@
+2003-01-04  Roland McGrath  <roland@frob.com>
+
+	* boot_script.c (boot_script_parse_line): Copy the file name into
+	malloc'd storage.
+	(add_arg): New arg TEXTLEN.  Store malloc'd copy of TEXT.
+	(boot_script_parse_line): Update callers.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* boot.c (ds_device_write): int -> size_t in store_write call.
