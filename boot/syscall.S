@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <i386/asm.h>
 
-	.globl EXT(errno)
+/*	.globl EXT(errno)*/
 .text
 ENTRY(syscall)
 	pop %ecx
