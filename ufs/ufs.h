@@ -180,6 +180,7 @@ spin_lock_t gennumberlock;
 u_long nextgennumber;
 
 mach_port_t ufs_device;
+char *ufs_device_name;
 
 /* The compat_mode specifies whether or not we write
    extensions onto the disk. */
