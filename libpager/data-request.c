@@ -34,11 +34,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   int doread, doerror;
   error_t err;
   vm_address_t page;
-  location_t loc;
-  void *cookie;
-  vm_size_t size, iosize;
   int write_lock;
-  int extra_zeroes;
 
   if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
@@ -99,9 +95,9 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   if (PM_NEXTERROR (*pm_entry) != PAGE_NOERR && (access & VM_PROT_WRITE))
     {
       memory_object_data_error (control, offset, length, 
-				page_errors[PM_NEXTERROR (*pm_entry)]);
+				_pager_page_errors[PM_NEXTERROR (*pm_entry)]);
       _pager_mark_object_error (p, offset, length, 
-				page_errors[PM_NEXTERROR (*pm_entry)]);
+				_pager_page_errors[PM_NEXTERROR (*pm_entry)]);
       *pm_entry = SET_PM_NEXTERROR (*pm_entry, PAGE_NOERR);
       doread = 0;
     }
@@ -115,17 +111,9 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   if (doerror)
     goto error_read;
 
-  err = pager_find_address (p->upi, offset, &loc, &cookie,
-			    &size, &iosize, &write_lock);
-
-  if (!err)
-    err = pager_read_page (loc, cookie, &page, iosize, &extra_zeroes);
-
+  err = pager_read_page (p->upi, offset, &page, &write_lock);
   if (err)
     goto error_read;
-  
-  if (size != __vm_page_size && !extra_zeroes)
-    bzero ((void *)page + size, __vm_page_size - size);
   
   memory_object_data_supply (p->memobjcntl, offset, page, length, 1,
 			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE, 0,
