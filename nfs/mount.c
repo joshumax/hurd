@@ -110,6 +110,9 @@ mount_root (char *name, char *host)
       perror (name);
       return 0;
     }
+  /* XXX Protocol spec says this should be a "unix error code"; we'll
+     pretend that an NFS error code is what's meant, the numbers match
+     anyhow.  */
   errno = nfs_error_trans (htonl (*p++));
   if (errno)
     {
