@@ -1743,7 +1743,11 @@ call_asyncs ()
     return;
   
   if ((termflags & ICKY_ASYNC) && !(termflags & NO_OWNER))
-    hurd_sig_post (foreground_id, SIGIO, async_icky_id);
+    {
+      mutex_unlock (&global_lock);
+      hurd_sig_post (foreground_id, SIGIO, async_icky_id);
+      mutex_lock (&global_lock);
+    }
   
   for (ar = async_requests, prevp = &async_requests;
        ar;
@@ -1774,7 +1778,9 @@ send_signal (int signo)
       right = ports_get_right (cttyid);
       mach_port_insert_right (mach_task_self (), right, right,
 			      MACH_MSG_TYPE_MAKE_SEND);
+      mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, signo, right);
+      mutex_lock (&global_lock);
       mach_port_deallocate (mach_task_self (), right);
     }
 }
