@@ -127,6 +127,9 @@ main(int argc, char *argv[])
       default:  usage(-1);
       }
 
+  if (! node_name)
+    usage (-1);
+
   if (!active && !passive)
     passive = 1;
 
