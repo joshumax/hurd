@@ -1,6 +1,6 @@
 /* Starting a passive translator
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -55,6 +55,7 @@ _treefs_node_start_translator (struct treefs_node *node,
   uid = auth->nuids > 0 ? auth->uids[0] : -1;
   gid = auth->ngids > 0 ? auth->gids[0] : -1;
 
+  /* XXX this should use fshelp_start_translator_long. */
   err =
     fshelp_start_translator (&node->active_trans, trans, trans_len,
 			     parent_port, node_port, uid, gid);
