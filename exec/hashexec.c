@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
 
 #include "priv.h"
 #include <hurd/sigpreempt.h>
@@ -57,12 +56,18 @@ check_hashbang (struct execdata *e,
 
   file_t user_fd (int fd)
     {
-      if (fd < 0 || fd >= dtablesize || dtable[fd] == MACH_PORT_NULL)
+      if (fd >= 0 && fd < dtablesize)
 	{
-	  errno = EBADF;
-	  return MACH_PORT_NULL;
+	  const file_t dport = dtable[fd];
+	  if (dport != MACH_PORT_NULL)
+	    {
+	      mach_port_mod_refs (mach_task_self (), dport,
+				  MACH_PORT_RIGHT_SEND, +1);
+	      return dport;
+	    }
 	}
-      return dtable[fd];
+      errno = EBADF;
+      return MACH_PORT_NULL;
     }
   file_t user_crdir, user_cwdir;
   error_t user_port (int which, error_t (*operate) (mach_port_t))
@@ -318,7 +323,7 @@ check_hashbang (struct execdata *e,
 	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */
 	    + interp_len + len + namelen; /* New args */
 
-	  new_argv = mmap (0, new_argvlen, PROT_READ|PROT_WRITE, 
+	  new_argv = mmap (0, new_argvlen, PROT_READ|PROT_WRITE,
 			   MAP_ANON, 0, 0);
 	  if (new_argv == (caddr_t) -1)
 	    {
@@ -416,7 +421,8 @@ check_hashbang (struct execdata *e,
       if (! envp_copy)
 	munmap (envp, envplen);
       for (i = 0; i < dtablesize; ++i)
-	mach_port_deallocate (mach_task_self (), dtable[i]);
+	if (MACH_PORT_VALID (dtable[i]))
+	  mach_port_deallocate (mach_task_self (), dtable[i]);
       if (! dtable_copy)
 	munmap (dtable, dtablesize * sizeof *dtable);
       for (i = 0; i < nports; ++i)
