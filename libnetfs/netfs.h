@@ -148,7 +148,7 @@ error_t netfs_attempt_set_size (struct netcred *cred, struct node *np,
    filesystem status information for the remote filesystem, for the
    user CRED. */
 error_t netfs_attempt_statfs (struct netcred *cred, struct node *np,
-			      struct fsys_statfsbuf *st);
+			      struct statfs *st);
 
 /* The user must define this function.  This should sync the file NP
    completely to disk, for the user CRED.  If WAIT is set, return
