@@ -78,17 +78,19 @@ thread_state (thread_basic_info_t bi)
 /* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
 #define PSTAT_PROCINFO \
   (PSTAT_PROC_INFO | PSTAT_TASK_BASIC | PSTAT_NUM_THREADS \
-   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT)
+   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT \
+   | PSTAT_THREAD_WAIT)
 /* The set of things we get from procinfo that's thread dependent.  */
 #define PSTAT_PROCINFO_THREAD \
- (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED |PSTAT_THREAD_WAIT)
+ (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED \
+  | PSTAT_THREAD_WAIT | PSTAT_THREAD_WAITS)
 
 /* Fetches process information from the set in PSTAT_PROCINFO, returning it
    in PI & PI_SIZE.  NEED is the information, and HAVE is the what we already
    have.  */
 static error_t
 fetch_procinfo (process_t server, pid_t pid,
-		ps_flags_t need, ps_flags_t *phave,
+		ps_flags_t need, ps_flags_t *have,
 		struct procinfo **pi, size_t *pi_size,
 		char **waits, size_t *waits_len)
 {
@@ -102,7 +104,7 @@ fetch_procinfo (process_t server, pid_t pid,
     pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
   if ((need & PSTAT_THREAD_SCHED) && !(*have & PSTAT_THREAD_SCHED))
     pi_flags |= PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_WAIT) && !(*have & PSTAT_THREAD_WAIT))
+  if ((need & PSTAT_THREAD_WAITS) && !(*have & PSTAT_THREAD_WAITS))
     pi_flags |= PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS;
 
   if (pi_flags || ((need & PSTAT_PROC_INFO) && !(*have & PSTAT_PROC_INFO)))
@@ -122,7 +124,7 @@ fetch_procinfo (process_t server, pid_t pid,
 	  if (pi_flags & PI_FETCH_THREAD_SCHED)
 	    *have |= PSTAT_THREAD_SCHED;
 	  if (pi_flags & PI_FETCH_THREAD_WAITS)
-	    *have |= PSTAT_THREAD_WAIT;
+	    *have |= PSTAT_THREAD_WAITS;
 	}
       return err;
     }
@@ -142,7 +144,7 @@ merge_procinfo (process_t server, pid_t pid,
 {
   /* We always re-fetch any thread-specific info, as the set of threads could
      have changed since the last time we did this, and we can't tell.  */
-  ps_flags_t really_need = need | (have & PSTAT_PROCINFO_THREAD);
+  ps_flags_t really_need = need | (*have & PSTAT_PROCINFO_THREAD);
   ps_flags_t really_have = *have & ~PSTAT_PROCINFO_THREAD;
   struct procinfo *new_pi;
   size_t new_pi_size = 0;
@@ -226,7 +228,7 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
   (PSTAT_NUM_THREADS | PSTAT_SUSPEND_COUNT | PSTAT_THREAD_BASIC)
 
 /* Those flags that need the msg port, perhaps implicitly.  */
-#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_WAIT)
+#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_WAITS)
 
 /* Return true when there's some condition indicating that we shouldn't use
    PS's msg port.  For this routine to work correctly, PS's flags should
@@ -412,20 +414,25 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
   *wait = 0;			/* Defaults */
   *rpc = 0;
 
-  /* The union of all thread state bits...  */
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died)
       if (next_wait > waits + waits_len)
 	break;
-      else if (*next_wait
-	       && strncmp (next_wait, "msgport",
-			   waits + waits_len - next_wait) != 0)
+      else if (strncmp (next_wait, "msgport", waits + waits_len - next_wait)
+	       == 0)
+	next_wait++;		/* signal thread.  */
+      else if (*wait)
+	/* There are multiple user threads.  Punt.  */
+	{
+	  *wait = "*";
+	  *rpc = 0;
+	  break;
+	}
+      else
 	{
 	  *wait = next_wait;
 	  *rpc = pi->threadinfos[i].rpc_block;
 	}
-      else
-	next_wait++;
 }
 
 /* Returns the number of threads in PI that aren't marked dead.  */
@@ -564,8 +571,9 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
     if (have & PSTAT_PID)
       {
 	error_t err;
+	ps_flags_t had = have;
 
-	if (!(have & PSTAT_PROCINFO))
+	if (! (have & PSTAT_PROCINFO))
 	  /* Never got any before; zero out our pointers.  */
 	  {
 	    ps->proc_info = 0;
@@ -574,7 +582,25 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	    ps->thread_waits_len = 0;
 	  }
 
-	/* XXX test num threads.  */
+	if ((need & PSTAT_THREAD_WAIT) && !(need & PSTAT_THREAD_WAITS))
+	  /* We need thread wait information only for summarization.  This is
+	     expensive and pointless for lots of threads, so try to avoid it
+	     in that case.  */
+	  {
+	    if (! (have & PSTAT_NUM_THREADS))
+	      /* We've don't know how many threads there are yet; find out. */
+	      {
+		err = merge_procinfo (server, ps->pid,
+				      PSTAT_NUM_THREADS, &have,
+				      &ps->proc_info, &ps->proc_info_size,
+				      0, 0);
+		if (! err)
+		  need &= ~PSTAT_NUM_THREADS;
+	      }
+	    if ((have & PSTAT_NUM_THREADS) && ps->num_threads == 2)
+	      /* Only one user thread -- thread-wait info is meaningful!  */
+	      need |= PSTAT_THREAD_WAITS;
+	  }
 
 	err =
 	  merge_procinfo (server, ps->pid, need, &have,
@@ -588,33 +614,49 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	       gotten them, as the information will be newer.  */
 	    if (have & PSTAT_TASK_BASIC)
 	      ps->task_basic_info = &pi->taskinfo;
+	    if (have & PSTAT_NUM_THREADS)
+	      ps->num_threads = count_threads (pi);
 	    if (have & PSTAT_THREAD_BASIC)
 	      {
-		if (! (added & PSTAT_THREAD_BASIC))
+		if (had & PSTAT_THREAD_BASIC)
 		  free (ps->thread_basic_info);
 		ps->thread_basic_info = summarize_thread_basic_info (pi);
 	      }
 	    if (have & PSTAT_THREAD_SCHED)
 	      {
-		if (! (added & PSTAT_THREAD_SCHED))
+		if (had & PSTAT_THREAD_SCHED)
 		  free (ps->thread_sched_info);
 		ps->thread_sched_info = summarize_thread_sched_info (pi);
 	      }
-	    if (have & PSTAT_THREAD_WAIT)
-	      summarize_thread_waits (pi,
-				      ps->thread_waits, ps->thread_waits_len,
-				      &ps->thread_wait, &ps->thread_rpc);
-
-	    if (have & PSTAT_PROCINFO_THREAD)
-	      /* Any thread information automatically gets us this for free. */
-	      ps->num_threads = count_threads (pi);
+	    if (have & PSTAT_THREAD_WAITS)
+	      /* Thread-waits info can be used to generate thread-wait info. */
+	      {
+		summarize_thread_waits (pi,
+					ps->thread_waits, ps->thread_waits_len,
+					&ps->thread_wait, &ps->thread_rpc);
+		have |= PSTAT_THREAD_WAIT;
+	      }
+	    else if ((have & PSTAT_NUM_THREADS) && ps->num_threads > 2)
+	      /* More than 2 threads (1 user thread) always results in this
+		 value for the process's thread_wait field.  For the 2 thread
+		 case, we should have fetched thread_waits info and hit the
+		 previous case.  */
+	      {
+		ps->thread_wait = "*";
+		ps->thread_rpc = 0;
+		have |= PSTAT_THREAD_WAIT;
+	      }
 	  }
       }
     else
       /* For a thread, we get use the proc_info from the containing process. */
       {
 	struct proc_stat *origin = ps->thread_origin;
-	ps_flags_t oflags = need & PSTAT_PROCINFO_THREAD;
+	/* Fetch for the containing process basically the same information we
+	   want for the thread, but it also needs all the thread wait info.  */
+	ps_flags_t oflags =
+	  (need & PSTAT_PROCINFO_THREAD)
+	    | ((need & PSTAT_THREAD_WAIT) ? PSTAT_THREAD_WAITS : 0);
 
 	proc_stat_set_flags (origin, oflags);
 	oflags = origin->flags;
@@ -641,7 +683,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	      have |= PSTAT_THREAD_SCHED;
 
 	    if ((need & PSTAT_THREAD_WAIT) && ! (have & PSTAT_THREAD_WAIT)
-		&& (oflags & PSTAT_THREAD_WAIT))
+		&& (oflags & PSTAT_THREAD_WAITS))
 	      {
 		ps->thread_wait =
 		  get_thread_wait (origin->thread_waits,
