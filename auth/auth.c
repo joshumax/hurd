@@ -278,6 +278,9 @@ S_auth_user_authenticate (struct authhandle *userauth,
   if (! userauth)
     return EOPNOTSUPP;
 
+  if (rendezvous == MACH_PORT_DEAD) /* Port died in transit.  */
+    return EINVAL;
+
   mutex_lock (&pending_lock);
 
   /* Look for this port in the server list.  */
@@ -360,6 +363,9 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 
   if (! serverauth)
     return EOPNOTSUPP;
+
+  if (rendezvous == MACH_PORT_DEAD) /* Port died in transit.  */
+    return EINVAL;
 
   mutex_lock (&pending_lock);
 
