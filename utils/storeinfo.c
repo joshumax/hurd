@@ -216,7 +216,7 @@ main(int argc, char *argv[])
 	  break;
 
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

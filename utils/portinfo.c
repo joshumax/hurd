@@ -39,6 +39,8 @@ static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},
   {"members",   'm', 0, 0, "Show members of port-sets"},
   {"hex-names",	'x', 0, 0, "Show port names in hexadecimal"},
+  {"query-process", 'q', 0, 0, "Query the process itself for the identity of"
+     " the ports in question -- requires the process be in a sane state"},
   {"hold", '*', 0, OPTION_HIDDEN},
 
   {0,0,0,0, "Selecting which names to show:", 2},
@@ -50,6 +52,10 @@ static const struct argp_option options[] = {
 
   {0,0,0,0, "Translating port names between tasks:", 3},
   {"translate", 't', "PID", 0, "Translate port names to process PID"},
+  {"show-targets", 'h', 0, 0,
+     "Print a header describing the target process" },
+  {"no-translation-errors", 'E', 0, 0,
+     "Don't display an error if a specified port can't be translated" },
 #if 0
   {"search",    'a', 0, 0,  "Search all processes for the given ports"},
   {"target-receive",  'R', 0, 0,
@@ -135,7 +141,7 @@ main (int argc, char **argv)
 
 	case ARGP_KEY_NO_ARGS:
 	  argp_error (state, "No process specified");
-	  return ED;		/* Some non-EINVAL error.  */
+	  return EINVAL;
 
 	case ARGP_KEY_ARG:
 	  if (state->arg_num == 0)
@@ -190,7 +196,8 @@ main (int argc, char **argv)
 	  }
 	  break;
 
-	default: return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

@@ -129,11 +129,12 @@ main (int argc, char **argv)
 	      case 2:
 		hdr_interval = atoi (arg); break;
 	      default:
-		return EINVAL;
+		return ARGP_ERR_UNKNOWN;
 	      }
 	    break;
 
-	  default: return EINVAL;
+	  default:
+	    return ARGP_ERR_UNKNOWN;
 	  }
       return 0;
     }

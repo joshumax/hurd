@@ -126,7 +126,8 @@ main (int argc, char *argv[])
 	case ARGP_KEY_NO_ARGS:
 	  argp_usage (state);	/* exits */
 
-	default:  return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

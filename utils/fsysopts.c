@@ -76,7 +76,8 @@ main(int argc, char *argv[])
 	case 'R': recursive = 1; break;
 	case 'L': deref = 1; break;
 
-	default:  return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

@@ -87,7 +87,8 @@ main (int argc, char **argv)
 	    error (0, err, "%s", arg);
 	  break;
 
-	default: return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

@@ -403,7 +403,8 @@ main(int argc, char *argv[])
 	case ARGP_KEY_ARG:
 	  break;
 
-	default: return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

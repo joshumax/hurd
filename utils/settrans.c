@@ -130,7 +130,7 @@ main(int argc, char *argv[])
 	case 't': timeout = atof (arg) * 1000.0; break;
 
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

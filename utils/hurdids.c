@@ -63,7 +63,8 @@ main(int argc, char *argv[])
 	case 'g': show_gids = 1; break;
 	case 'n': show_names = 1; break;
 	case 'i': show_ids = 1; break;
-	default:  return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }
