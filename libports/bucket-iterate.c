@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "ports.h"
+#include <cthreads.h>
 
 /* This is obsecenely ineffecient.  ihash and ports need to cooperate
    more closely to do it effeciently. */
@@ -31,7 +32,7 @@ ports_bucket_iterate (struct port_bucket *bucket,
       struct item *next;
       void *p;
     } *list = 0;
-  struct item *i, nxt;
+  struct item *i, *nxt;
   error_t err;
 
   error_t enqueue (void *pi)
