@@ -1,6 +1,6 @@
 /* Automagic type transformation for our mig interfaces
 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,13 +18,14 @@
 
 /* Only CPP macro definitions should go in this file. */
 
-#define FILE_INTRAN treefs_handle_t treefs_begin_using_handle_port (file_t)
-#define FILE_DESTRUCTOR treefs_end_using_handle_port (treefs_handle_t)
-
-#define IO_INTRAN treefs_handle_t treefs_begin_using_handle_port (io_t)
-#define IO_DESTRUCTOR treefs_end_using_handle_port (treefs_handle_t)
-
-#define FILE_IMPORTS import "mig-decls.h";
+#define IO_INTRAN sock_user_t begin_using_sock_user_port (io_t)
+#define IO_DESTRUCTOR end_using_sock_user_port (sock_user_t)
 #define IO_IMPORTS import "mig-decls.h";
-#define FSYS_IMPORTS import "mig-decls.h";
-#define IFSOCK_IMPORTS import "mig-decls.h";
+
+#define SOCKET_INTRAN sock_user_t begin_using_sock_user_port (socket_t)
+#define SOCKET_DESTRUCTOR end_using_sock_user_port (sock_user_t)
+#define SOCKET_IMPORTS import "mig-decls.h";
+
+#define ADDR_INTRAN addr_t begin_using_addr_port (addr_t)
+#define ADDR_DESTRUCTOR end_using_addr_port (addr_t)
+#define ADDR_IMPORTS import "mig-decls.h";
