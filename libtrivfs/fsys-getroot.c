@@ -58,9 +58,11 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 	return err;
     }
 
-  if ((flags & (O_READ|O_WRITE|O_EXEC) & trivfs_allow_open)
+  if ((flags & O_WRITE & trivfs_allow_open) != (flags & O_WRITE))
+    return EROFS;
+  if ((flags & (O_READ_WRITE|O_EXEC) & trivfs_allow_open)
       != (flags & (O_READ|O_WRITE|O_EXEC)))
-    return EOPNOTSUPP;
+    return EACCES;
 
   /* O_CREAT and O_EXCL are not meaningful here; O_NOLINK and O_NOTRANS
      will only be useful when trivfs supports translators (which it doesn't
