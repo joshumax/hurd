@@ -116,17 +116,32 @@ main(int argc, char *argv[])
   if (!active && !passive)
     passive = 1;
 
-  node = file_name_lookup(node_name, lookup_flags, 0666);
-  if (node == MACH_PORT_NULL)
-    error(1, errno, "%s", node_name);
-
   if (active && argz_len > 0)
     {
-      err = fshelp_start_translator (node, MACH_MSG_TYPE_COPY_SEND,
-				     argz, argz, argz_len, 60000,
+      /* The callback to start_translator opens NODE as a side effect.  */
+      error_t open_node (int flags,
+			 mach_port_t *underlying,
+			 mach_msg_type_name_t *underlying_type)
+	{
+	  node = file_name_lookup (node_name, flags | lookup_flags, 0666);
+	  if (node == MACH_PORT_NULL)
+	    return errno;
+
+	  *underlying = node;
+	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
+
+	  return 0;
+	}
+      err = fshelp_start_translator (open_node, argz, argz, argz_len, 60000,
 				     &active_control);
       if (err)
 	error(4, err, "%s", argz);
+    }
+  else
+    {
+      node = file_name_lookup(node_name, lookup_flags, 0666);
+      if (node == MACH_PORT_NULL)
+	error(1, errno, "%s", node_name);
     }
 
   err =
