@@ -21,20 +21,21 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 
-/* Called by the kernel when a port has no more senders.  We arrange
-   to have this sent to the port which is out of senders (NOTIFY).  MSCOUNT
-   is the make-send count of the port when the notification was generated. */
-error_t
-trivfs_do_mach_notify_no_senders (mach_port_t notify,
-				  mach_port_mscount_t mscount)
+int
+ports_demuxer (mach_msg_header_t *inp,
+	       mach_msg_header_t *outp)
 {
-  struct port_info *pt;
-
-  pt = ports_get_port (notify);
-
-  ports_no_senders (pt, mscount);
-
-  ports_done_with_port (pt);
+  int fs_server (mach_msg_header_t *, mach_msg_header_t *);
+  int io_server (mach_msg_header_t *, mach_msg_header_t *);
+  int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  int notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return 0;
+  return (io_server (inp, outp)
+	  || fs_server (inp, outp)
+	  || notify_server (inp, outp)
+	  || fsys_server (inp, outp)
+	  || interrupt_server (inp, outp));
 }
+
+  
