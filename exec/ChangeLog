@@ -1,3 +1,7 @@
+1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (servercopy): Removed unused variable.
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exec.c (load_section): Fix typos in last change.
