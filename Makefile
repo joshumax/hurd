@@ -31,8 +31,7 @@ working-prog-subdirs := $(filter-out \
 			  $(patsubst %/,%,\
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
 			  $(prog-subdirs))
-DIST_FILES = COPYING Makeconf Maketools README NEWS missing \
-	gcc-specs tasks INSTALL
+DIST_FILES = COPYING Makeconf Maketools README NEWS missing tasks INSTALL
 
 all: $(addsuffix -all,$(working-prog-subdirs))
 
