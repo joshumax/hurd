@@ -84,8 +84,6 @@ diskfs_S_dir_link (struct protid *dircred,
       if (diskfs_synchronous)
 	diskfs_node_update (np, 1);
     }
-  else
-    diskfs_enter_cache (dnp, np, name);
 
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
