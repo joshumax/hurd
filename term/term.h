@@ -21,6 +21,8 @@
 #include <cthreads.h>
 #include <assert.h>
 #include <errno.h>
+#include <hurd/trivfs.h>
+#include <sys/types.h>
 
 #undef MDMBUF
 #undef ECHO
