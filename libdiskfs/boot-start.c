@@ -43,7 +43,7 @@ static char *default_init = "hurd/init";
 
 static void start_execserver ();
 
-static char **saved_argv;
+char **diskfs_argv = 0;
 
 static mach_port_t
 get_console ()
@@ -64,7 +64,7 @@ get_console ()
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  */
 void
-diskfs_start_bootstrap (char **argv)
+diskfs_start_bootstrap ()
 {
   mach_port_t root_pt, startup_pt, bootpt;
   retry_type retry;
@@ -80,8 +80,6 @@ diskfs_start_bootstrap (char **argv)
   int exec_argvlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
-
-  saved_argv = argv;
 
   /* Get the execserver going and wait for its fsys_startup */
   mutex_init (&execstartlock);
@@ -279,10 +277,12 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 			      mach_port_t *real,
 			      mach_msg_type_name_t *realpoly)
 {
+  error_t err;
+  string_t pathbuf;
+  enum retry_type retry;
   struct port_info *pt;
   struct protid *rootpi;
   mach_port_t rootport;
-  error_t err;
 
   if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
 				diskfs_execboot_class)))
@@ -298,7 +298,7 @@ diskfs_execboot_fsys_startup (mach_port_t port,
   ports_port_deref (rootpi);
 
   err = dir_lookup (rootport, _SERVERS_EXEC,
-		    O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, real);
+		    O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, &retry, pathbuf, real);
   assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
@@ -355,6 +355,8 @@ diskfs_S_fsys_init (mach_port_t port,
   struct port_infe *pt;
   static int initdone = 0;
   process_t execprocess;
+  string_t version;
+  mach_port_t host, startup;
   error_t err;
   mach_port_t root_pt;
   struct protid *rootpi;
@@ -421,7 +423,7 @@ diskfs_S_fsys_init (mach_port_t port,
       _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle); /* Consume. */
       _hurd_port_set (&_hurd_ports[INIT_PORT_CRDIR], root_pt); /* Consume. */
       _hurd_port_set (&_hurd_ports[INIT_PORT_CWDIR], root_pt); /* Consume. */
-      _hurd_proc_init (saved_argv);
+      _hurd_proc_init (diskfs_argv);
     }
   else
     {
@@ -440,8 +442,29 @@ diskfs_S_fsys_init (mach_port_t port,
       portarray[INIT_PORT_AUTH] = authhandle;
       portarray[INIT_PORT_CRDIR] = root_pt;
       portarray[INIT_PORT_CWDIR] = root_pt;
-      _hurd_init (0, saved_argv, portarray, INIT_PORT_MAX, NULL, 0);
-    }  
+      _hurd_init (0, diskfs_argv, portarray, INIT_PORT_MAX, NULL, 0);
+    }
+
+  err = get_privileged_ports (&host, 0);
+  if (err)
+    return err;
+
+  sprintf (version, "%s %d.%d.%d",
+	   diskfs_server_name, diskfs_major_version,
+	   diskfs_minor_version, diskfs_edit_version);
+
+  proc_register_version (procserver, host,
+			 diskfs_server_name, HURD_RELEASE, version);
+
+  err = proc_getmsgport (procserver, 1, &startup);
+  if (!err)
+    {
+      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
+			      diskfs_server_name, host);
+      mach_port_deallocate (mach_task_self (), startup);
+    }
+
+  mach_port_deallocate (mach_task_self (), host);
 
   diskfs_init_completed ();
 
