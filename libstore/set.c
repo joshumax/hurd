@@ -27,10 +27,10 @@
 
 /* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
 error_t
-store_set_runs (struct store *store, const off_t *runs, unsigned num_runs)
+store_set_runs (struct store *store, const struct store_run *runs, unsigned num_runs)
 {
-  unsigned size = num_runs * sizeof (off_t);
-  off_t *copy = malloc (size);
+  unsigned size = num_runs * sizeof (struct store_run);
+  struct store_run *copy = malloc (size);
 
   if (!copy)
     return ENOMEM;
@@ -44,6 +44,27 @@ store_set_runs (struct store *store, const off_t *runs, unsigned num_runs)
 
   if (store->block_size > 0)
     _store_derive (store);
+
+  return 0;
+}
+
+/* Set STORE's current children list to (a copy of) CHILDREN and NUM_CHILDREN.  */
+error_t
+store_set_children (struct store *store,
+		    struct store *const *children, unsigned num_children)
+{
+  unsigned size = num_children * sizeof (struct store_run);
+  struct store **copy = malloc (size);
+
+  if (!copy)
+    return ENOMEM;
+
+  if (store->children)
+    free (store->children);
+
+  bcopy (children, copy, size);
+  store->children = copy;
+  store->num_children = num_children;
 
   return 0;
 }
