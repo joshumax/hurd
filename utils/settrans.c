@@ -101,7 +101,8 @@ main(int argc, char *argv[])
 	  else			/* command */
 	    {
 	      error_t err =
-		argz_create (state->argv + state->next - 1, &argz, &argz_len);
+		argz_create ((char *const **)(state->argv + state->next - 1),
+			     &argz, &argz_len);
 	      if (err)
 		error(3, err, "Can't create options vector");
 	      state->next = state->argc; /* stop parsing */
