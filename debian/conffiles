@@ -1,1 +1,6 @@
 /boot/servers.boot
+/etc/login/.bash_login
+/etc/login/.bashrc
+/etc/login/.hushlogin
+/etc/login/.profile
+/etc/login/README

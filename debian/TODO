@@ -9,3 +9,5 @@
 * Library dependencies.
 
 * Do something with the Texinfo documentation.
+
+* Make use of suid-manager for all the setuid binaries.

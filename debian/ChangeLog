@@ -1,3 +1,11 @@
+Wed Apr 28 02:44:13 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* conffiles: Add contents of /etc/login.
+	* rules: Add debian/tmp/etc and debian/tmp/etc/login to the list
+	of things to be chmod 0755.
+	* TODO: New item.
+	All of these because Marcus says so.
+
 1999-04-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* control (Depends): Change shlibs to hurd cause Marcus says so.
