@@ -45,14 +45,16 @@
 #include <error.h>
 #include <timefmt.h>
 #include <hurd/lookup.h>
+#include <ugids.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (login);
 
 extern error_t
 exec_reauth (auth_t auth, int secure, int must_reauth,
 	     mach_port_t *ports, unsigned num_ports,
 	     mach_port_t *fds, unsigned num_fds);
-
-const char *argp_program_version = STANDARD_HURD_VERSION (login);
-     
+extern error_t
+get_nonsugid_ids (struct idvec *uids, struct idvec *gids);
 
 /* Defaults for various login parameters.  */
 char *default_args[] = {
@@ -90,23 +92,24 @@ static struct argp_option options[] =
   {"arg",	'a', "ARG",   0, "Add login parameter ARG"},
   {"arg-default", 'A', "ARG", 0, "Use ARG as a default login parameter"},
   {"no-environment-args", 'X', 0, 0, "Don't add the parent environment as default login params"},
-  {"user",	'u', "USER",  0, "Add USER to the effective uids"},
-  {"avail-user",'U', "USER",  0, "Add USER to the available uids"},
-  {"group",     'g', "GROUP", 0, "Add GROUP to the effective groups"},
-  {"avail-group",'G',"GROUP", 0, "Add GROUP to the available groups"},
   {"no-login",  'L', 0,       0, "Don't modify the shells argv[0] to look"
    " like a login shell"},
   {"preserve-environment", 'p', 0, 0, "Inherit the parent's environment"},
   {"via",	'h', "HOST",  0, "This login is from HOST"},
   {"no-passwd", 'f', 0,       0, "Don't ask for passwords"},
   {"paranoid",  'P', 0,       0, "Don't admit that a user doesn't exist"},
-  {"keep",      'k', 0,       0, "Keep the old available ids, and save the old"
-     "effective ids as available ids"},
+  {"save",      's', 0,       0, "Keep the old available ids, and save the old"
+     " effective ids as available ids"},
   {"shell-from-args", 'S', 0, 0, "Use the first shell arg as the shell to invoke"},
   {"retry",     'R', "ARG",   OPTION_ARG_OPTIONAL,
    "Re-exec login with no users after non-fatal errors; if ARG is supplied,"
    "add it to the list of args passed to login when retrying"},
   {0, 0}
+};
+static struct argp_child child_argps[] =
+{
+  { &ugids_argp, 0, "Adding individual user/group ids:" },
+  { 0 }
 };
 static char *args_doc = "[USER [ARG...]]";
 static char *doc =
@@ -372,8 +375,6 @@ main(int argc, char *argv[])
   error_t err = 0;
   char *args = 0;		/* The login parameters */
   unsigned args_len = 0;
-  char *passwd = 0;		/* Login parameters from /etc/passwd */
-  unsigned passwd_len = 0;
   char *args_defs = 0;		/* Defaults for login parameters.  */
   unsigned args_defs_len = 0;
   char *env = 0;		/* The new environment.  */
@@ -397,12 +398,10 @@ main(int argc, char *argv[])
   unsigned sh_args_len = 0;
   int shell_arg = 0;		/* If there are shell args, use the first as
 				   the shell name. */
-  struct idvec *eff_uids = make_idvec (); /* The UIDs of the new shell.  */
-  struct idvec *eff_gids = make_idvec (); /* The EFF_GIDs.  */
-  struct idvec *avail_uids = make_idvec (); /* The aux UIDs of the new shell.  */
-  struct idvec *avail_gids = make_idvec (); /* The aux EFF_GIDs.  */
-  struct idvec *parent_uids = make_idvec (); /* Parent uids, -SETUID. */
-  struct idvec *parent_gids = make_idvec (); /* Parent gids, -SETGID. */
+  struct ugids ugids = UGIDS_INIT; /* Authorization of the new shell.  */
+  struct ugids_argp_params ugids_argp_params = { &ugids, 0, 0, 0, -1, 0 };
+  struct idvec parent_uids = IDVEC_INIT; /* Parent uids, -SETUID. */
+  struct idvec parent_gids = IDVEC_INIT; /* Parent gids, -SETGID. */
   mach_port_t exec;		/* The shell executable.  */
   mach_port_t cwd;		/* The child's CWD.  */
   mach_port_t root;		/* The child's root directory.  */
@@ -411,7 +410,6 @@ main(int argc, char *argv[])
   mach_port_t fds[3];		/* File descriptors passed. */
   mach_port_t auth;		/* The new shell's authentication.  */
   mach_port_t proc_server = getproc ();
-  mach_port_t parent_auth = getauth ();
   pid_t pid = getpid (), sid;
 
   /* These three functions are to do child-authenticated lookups.  See
@@ -442,7 +440,10 @@ main(int argc, char *argv[])
       char *via = envz_get (args, args_len, "VIA");
       extern void _argp_unlock_xxx (); /* Secret unknown function.  */
 
-      error (retry ? 0 : code, err, fmt, str); /* May exit... */
+      if (fmt)
+	error (retry ? 0 : code, err, fmt, str); /* May exit... */
+      else if (! retry)
+	exit (code);
 
       if (via)
 	envz_add (&retry_args, &retry_args_len, "--via", via);
@@ -456,126 +457,6 @@ main(int argc, char *argv[])
       _argp_unlock_xxx ();	/* Hack to get around problems with getopt. */
       main (retry_argc, retry_argv);
       exit (code);		/* But if it does... */
-    }
-
-  /* Make sure that the parent_[ug]ids are filled in.  To make them useful
-     for su'ing, each is the avail ids with all effective ids but the first
-     appended; this gets rid of the effect of login being suid, and is useful
-     as the new process's avail id list (e.g., the real id is right).   */
-  void need_parent_ids ()
-    {
-      if (parent_uids->num == 0 && parent_gids->num == 0)
-	{
-	  struct idvec *p_eff_uids = make_idvec ();
-	  struct idvec *p_eff_gids = make_idvec ();
-	  if (!p_eff_uids || !p_eff_gids)
-	    err = ENOMEM;
-	  if (! err)
-	    err = idvec_merge_auth (p_eff_uids, parent_uids,
-				    p_eff_gids, parent_gids,
-				    parent_auth);
-	  if (! err)
-	    {
-	      idvec_delete (p_eff_uids, 0); /* Counteract setuid. */
-	      idvec_delete (p_eff_gids, 0);
-	      err = idvec_merge (parent_uids, p_eff_uids);
-	      if (! err)
-		err = idvec_merge (parent_gids, p_eff_gids);
-	    }
-	  if (err)
-	    error (39, err, "Can't get uids");
-	}
-    }
-
-  /* Returns true if the *caller* of this login program has UID.  */
-  int parent_has_uid (uid_t uid)
-    {
-      need_parent_ids ();
-      return idvec_contains (parent_uids, uid);
-    }
-  /* Returns true if the *caller* of this login program has GID.  */
-  int parent_has_gid (gid_t gid)
-    {
-      need_parent_ids ();
-      return idvec_contains (parent_gids, gid);
-    }
-  /* Returns the number of parent uids.  */
-  int count_parent_uids ()
-    {
-      need_parent_ids ();
-      return parent_uids->num;
-    }
-  /* Returns the number of parent gids.  */
-  int count_parent_gids ()
-    {
-      need_parent_ids ();
-      return parent_gids->num;
-    }
-
-  /* Make sure the user should be allowed to do this.  */
-  void verify_passwd (const char *name, const char *password,
-		      uid_t id, int is_group)
-    {
-      extern char *crypt (const char *string, const char salt[2]);
-#ifndef HAVE_CRYPT
-#pragma weak crypt
-#endif
-      char *prompt, *unencrypted, *encrypted;
-
-      if (!password || !*password
-	  || idvec_contains (is_group ? eff_gids : eff_uids, id)
-	  || idvec_contains (is_group ? avail_gids : avail_uids, id)
-	  || (no_passwd
-	      && (parent_has_uid (0)
-		  || (is_group ? parent_has_uid (id) : parent_has_gid (id)))))
-	return;			/* Already got this one.  */
-
-      if (name)
-	asprintf (&prompt, "Password for %s%s:",
-		  is_group ? "group " : "", name);
-      else
-	prompt = "Password:";
-
-      unencrypted = getpass (prompt);
-      if (name)
-	free (prompt);
-
-      if (crypt)
-	{
-	  encrypted = crypt (unencrypted, password);
-	  if (! encrypted)
-	    /* Something went wrong.  */
-	    {
-	      /* Paranoia may destroya.  */
-	      memset (unencrypted, 0, strlen (unencrypted));
-	      fail (51, errno, "Password encryption failed", 0);
-	    }
-	}
-      else
-	encrypted = unencrypted;
-
-      if (strcmp (encrypted, password) == 0)
-	{
-	  memset (unencrypted, 0, strlen (unencrypted));
-	  return;			/* password O.K. */
-	}
-
-      if (id == 0 && !is_group && parent_has_gid (0)
-	  && (parent_uids->num == 0 || parent_uids->ids[0] != 0))
-	/* Special hack: a user attempting to gain root access can use
-	   their own password (instead of root's) if they're in group 0. */
-	{
-	  struct passwd *pw = getpwuid (parent_uids->ids[0]);
-
-	  encrypted = crypt (unencrypted, pw->pw_passwd);
-	  memset (unencrypted, 0, strlen (unencrypted));
-
-	  if (pw && strcmp (encrypted, pw->pw_passwd) == 0)
-	    return;
-	}
-
-      memset (unencrypted, 0, strlen (unencrypted));
-      fail (50, 0, "Incorrect password", 0);
     }
 
   /* Parse our options...  */
@@ -611,14 +492,14 @@ main(int argc, char *argv[])
 	  retry = 1;
 	  break;
 
-	case 'k':
-	  need_parent_ids ();
-	  idvec_merge (avail_uids, parent_uids);
-	  idvec_merge (avail_gids, parent_gids);
+	case 's':
+	  idvec_merge (&ugids.avail_uids, &parent_uids);
+	  idvec_merge (&ugids.avail_gids, &parent_gids);
 	  break;
 
 	case ARGP_KEY_ARG:
 	  if (state->arg_num > 0)
+	    /* Program arguments.  */
 	    {
 	      err = argz_create (state->argv + state->next - 1,
 				 &sh_args, &sh_args_len);
@@ -629,108 +510,32 @@ main(int argc, char *argv[])
 	    }
 
 	  if (strcmp (arg, "-") == 0)
-	    arg = 0;		/* Just like there weren't any args at all.  */
-	  /* Fall through to deal with adding the user.  */
+	    /* An explicit no-user-specified (so remaining args can be used
+	       to set the program args).  */
+	    break;
 
-	case 'u':
-	case 'U':
-	case ARGP_KEY_NO_ARGS:
-	  {
-	    /* USER is whom to look up.  If it's 0, then we hit the end of
-	       the sh_args without seeing a user, so we want to add defaults
-	       values for `nobody'.  */
-	    char *user = arg
-	      ?: envz_get (args, args_len, "NOBODY")
-	      ?: envz_get (args_defs, args_defs_len, "NOBODY")
-	      ?: "login";
-	    struct passwd *pw =
-	      isdigit (*user) ? getpwuid (atoi (user)) : getpwnam (user);
-	    /* True if this is the user arg and there were no user options. */
-	    int only_user =
-	      (key == ARGP_KEY_ARG
-	       && eff_uids->num == 0 && avail_uids->num <= count_parent_uids ()
-	       && eff_gids->num == 0 && avail_gids->num <= count_parent_gids ());
-
-	    if (! pw)
-	      if (! arg)
-		/* It was nobody anyway.  Just use the defaults.  */
-		break;
+	  if (isdigit (*arg))
+	    err = ugids_set_posix_user (&ugids, atoi (arg));
+	  else
+	    {
+	      struct passwd *pw = getpwnam (arg);
+	      if (pw)
+		err = ugids_set_posix_user (&ugids, pw->pw_uid);
 	      else if (paranoid)
-		/* In paranoid mode, we don't admit we don't know about a
-		   user, so we just ask for a password we we know the user
-		   can't supply.  */
-		verify_passwd (only_user ? 0 : user, "*", -1, 0);
+		/* Add a bogus uid so that password verification will
+		   fail.  */
+		idvec_add (&ugids.eff_uids, -1);
 	      else
-		fail (10, 0, "%s: Unknown user", user);
+		fail (10, 0, "%s: Unknown user", arg);
+	    }
 
-	    if (arg)
-	      /* If it's not nobody, make sure we're authorized.  */
-	      verify_passwd (only_user ? 0 : pw->pw_name, pw->pw_passwd,
-			     pw->pw_uid, 0);
+	  if (err)
+	    fail (11, err, "%s: Can't set user!", arg);
 
-	    if (key == 'U')
-	      /* Add available ids instead of effective ones.  */
-	      {
-		idvec_add_new (avail_uids, pw->pw_uid);
-		idvec_add_new (avail_gids, pw->pw_gid);
-	      }
-	    else
-	      {
-		if (key == ARGP_KEY_ARG || eff_uids->num == 0)
-		  /* If it's the argument (as opposed to option) specifying a
-		     user, or the first option user, then we get defaults for
-		     various things from the password entry.  */
-		  {
-		    envz_add (&passwd, &passwd_len, "HOME", pw->pw_dir);
-		    envz_add (&passwd, &passwd_len, "SHELL", pw->pw_shell);
-		    envz_add (&passwd, &passwd_len, "NAME", pw->pw_gecos);
-		    envz_add (&passwd, &passwd_len, "USER", pw->pw_name);
-		  }
-		if (arg)	/* A real user.  */
-		  if (key == ARGP_KEY_ARG)
-		    /* The main user arg; add both effective and available
-		       ids (the available ids twice, for posix compatibility
-		       -- once for the real id, and again for the saved).  */
-		    {
-		      /* Updates the real id in IDS to be ID.  */
-		      void update_real (struct idvec *ids, uid_t id)
-			{
-			  if (ids->num == 0
-			      || !idvec_tail_contains (ids, 1, ids->ids[0]))
-			    idvec_insert (ids, 0, id);
-			  else
-			    ids->ids[0] = id;
-			}
-			
-		      /* Effective */
-		      idvec_insert_only (eff_uids, 0, pw->pw_uid);
-		      idvec_insert_only (eff_gids, 0, pw->pw_gid);
-		      /* Real */
-		      update_real (avail_uids, pw->pw_uid);
-		      update_real (avail_gids, pw->pw_gid);
-		      /* Saved */
-		      idvec_insert_only (avail_uids, 1, pw->pw_uid);
-		      idvec_insert_only (avail_gids, 1, pw->pw_gid);
-		    }
-		  else
-		    {
-		      idvec_add_new (eff_uids, pw->pw_uid);
-		      idvec_add_new (eff_gids, pw->pw_gid);
-		    }
-	      }
-	  }
 	  break;
 
-	case 'g':
-	case 'G':
-	  {
-	    struct group *gr =
-	      isdigit (*arg) ? getgrgid (atoi (arg)) : getgrnam (arg);
-	    if (! gr)
-	      fail (11, 0, "%s: Unknown group", arg);
-	    verify_passwd (gr->gr_name, gr->gr_passwd, gr->gr_gid, 1);
-	    idvec_add_new (key == 'g' ? eff_gids : avail_gids, gr->gr_gid);
-	  }
+	case ARGP_KEY_INIT:
+	  state->child_inputs[0] = &ugids_argp_params;
 	  break;
 
 	default:
@@ -738,7 +543,7 @@ main(int argc, char *argv[])
 	}
       return 0;
     }
-  struct argp argp = {options, parse_opt, args_doc, doc};
+  struct argp argp = { options, parse_opt, args_doc, doc, child_argps };
 
   /* Don't allow logins if the nologin file exists.  */
   node = file_name_lookup (_PATH_NOLOGIN, O_RDONLY, 0);
@@ -769,8 +574,18 @@ main(int argc, char *argv[])
 
   err = argz_create (environ, &parent_env, &parent_env_len);
 
+  /* Get authentication of our parent, minus any setuid.  */
+  get_nonsugid_ids (&parent_uids, &parent_gids);
+
   /* Parse our options.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
+
+  /* Check passwords where necessary.  */
+  err = ugids_verify (&ugids, &parent_uids, &parent_gids, 0);
+  if (err == EINVAL)
+    fail (5, 0, "Invalid password", 0);
+  else if (err)
+    error (5, err, "Checking passwords");
 
   /* Now that we've parsed the command line, put together all these
      environments we've gotten from various places.  There are two targets:
@@ -783,37 +598,58 @@ main(int argc, char *argv[])
       d) From the user-specified defaults (--arg-default)
       e) From last-ditch defaults given by the DEFAULT_* defines above
 
-     The child environment is from:
+     The child environment (constructed later) is from:
       a) User specified (--environ)
       b) From the login parameters (if --no-args wasn't specified)
       c) From the parent environment, if --inherit-environ was specified
       d) From the user-specified default env values (--environ-default)
       e) From last-ditch defaults given by the DEFAULT_* defines above
    */
+  {
+    struct passwd *pw;
+    char *passwd = 0;		/* Login parameters from /etc/passwd */
+    unsigned passwd_len = 0;
 
-  /* Merge the login parameters.  */
-  err = envz_merge (&args, &args_len, passwd, passwd_len, 0);
-  if (! err && ! no_environ)
-    err = envz_merge (&args, &args_len, parent_env, parent_env_len, 0);
-  if (! err)
-    err = envz_merge (&args, &args_len, args_defs, args_defs_len, 0);
-  if (err)
-    error (24, err, "merging parameters");
+    /* Decide which password entry to get parameters from.  */
+    if (ugids.eff_uids.num > 0)
+      pw = getpwuid (ugids.eff_uids.ids[0]);	/* Effective uid */
+    else if (ugids.avail_uids.num > 0)
+      pw = getpwuid (ugids.eff_uids.ids[0]);	/* Auxiliary uid */
+    else
+      /* No user!  Try to used the `not-logged-in' user to set various
+	 parameters.  */
+      pw = getpwnam (envz_get (args, args_len, "NOBODY")
+		     ?: envz_get (args_defs, args_defs_len, "NOBODY")
+		     ?: "login");
 
-  err =
-    auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
-		   eff_uids->ids, eff_uids->num,
-		   avail_uids->ids, avail_uids->num,
-		   eff_gids->ids, eff_gids->num,
-		   avail_gids->ids, avail_gids->num,
-		   &auth);
+    if (pw)
+      {
+	envz_add (&passwd, &passwd_len, "HOME", pw->pw_dir);
+	envz_add (&passwd, &passwd_len, "SHELL", pw->pw_shell);
+	envz_add (&passwd, &passwd_len, "NAME", pw->pw_gecos);
+	envz_add (&passwd, &passwd_len, "USER", pw->pw_name);
+      }
+
+    /* Merge the login parameters.  */
+    err = envz_merge (&args, &args_len, passwd, passwd_len, 0);
+    if (! err && ! no_environ)
+      err = envz_merge (&args, &args_len, parent_env, parent_env_len, 0);
+    if (! err)
+      err = envz_merge (&args, &args_len, args_defs, args_defs_len, 0);
+    if (err)
+      error (24, err, "merging parameters");
+
+    free (passwd);
+  }
+
+  err = ugids_make_auth (&ugids, MACH_PORT_NULL, &auth);
   if (err)
     fail (3, err, "Authentication failure", 0);
 
   err = proc_getsid (proc_server, pid, &sid);
   assert_perror (err);		/* This should never fail.  */
 
-  if (!no_login && count_parent_uids () != 0)
+  if (!no_login && parent_uids.num != 0)
     /* Make a new login collection (but only for real users).  */
     {
       char *user = envz_get (args, args_len, "USER");
@@ -821,7 +657,7 @@ main(int argc, char *argv[])
 	setlogin (user);
       proc_make_login_coll (proc_server);
 
-      if (eff_uids->num + avail_uids->num == 0)
+      if (ugids.eff_uids.num + ugids.avail_uids.num == 0)
 	/* We're transiting from having some uids to having none, which means
 	   this is probably a new login session.  Unless specified otherwise,
 	   set a timer to kill this session if it hasn't aquired any ids by
@@ -838,8 +674,8 @@ main(int argc, char *argv[])
 	}
     }
 
-  if (eff_uids->num > 0)
-    proc_setowner (proc_server, eff_uids->ids[0], 0);
+  if (ugids.eff_uids.num > 0)
+    proc_setowner (proc_server, ugids.eff_uids.ids[0], 0);
   else
     proc_setowner (proc_server, 0, 1); /* Clear the owner.  */
 
@@ -1027,17 +863,17 @@ main(int argc, char *argv[])
   
   if (pid == sid)
     /* Only add utmp entries for the session leader.  */
-    add_utmp_entry (args, args_len, !parent_has_uid (0));
+    add_utmp_entry (args, args_len, !idvec_contains (&parent_uids, 0));
 
-  if ((eff_uids->num | eff_gids->num) && !no_login)
+  if ((ugids.eff_uids.num | ugids.eff_gids.num) && !no_login)
     {
       char *tty = ttyname (0);
       if (tty)
 	{
 	  /* Change the terminal to be owned by the user.  */
 	  err = chown (tty,
-		       eff_uids->num ? eff_uids->ids[0] : -1,
-		       eff_gids->num ? eff_gids->ids[0] : -1);
+		       ugids.eff_uids.num ? ugids.eff_uids.ids[0] : -1,
+		       ugids.eff_gids.num ? ugids.eff_gids.ids[0] : -1);
 	  if (err)
 	    error (0, errno, "chown: %s", tty);
 	}
