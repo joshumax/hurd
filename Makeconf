@@ -385,7 +385,8 @@ endif
 # Cleaning
 ifeq ($(clean),yes)
 clean:
-	rm -f *.d *.*_d *.o *Server.c *User.c *_S.h *_U.h $(cleantarg)
+	rm -f *.d *.*_d *.o *Server.c *User.c *_S.h *_U.h *.[su]defsi \
+	      $(cleantarg)
 relink:
 	rm -f $(linktarg)
 endif
@@ -459,15 +460,21 @@ vpath libutil.% $(libdir)/
 #	CPPFLAGS	   flags to CPP
 
 # Implicit rules for building server and user stubs from mig .defs files.
-%_S.h %Server.c: %.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ $< \
-	| $(MIGCOM) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
+
+# These chained rules could be (and used to be) single rules using pipes.
+# But it's convenient to be able to explicitly make the intermediate
+# files when you want to deal with a problem in the MiG stub generator.
+%_S.h %Server.c: %.sdefsi
+	$(MIGCOM) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
 		    -sheader $*_S.h -server $*Server.c \
-		    -user /dev/null -header /dev/null
-%_U.h %User.c: %.defs
-	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) $< \
-	| $(MIGCOM) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) \
-		    -user $*User.c -server /dev/null -header $*_U.h
+		    -user /dev/null -header /dev/null < $<
+%.sdefsi: %.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ $< -o $@
+%.udefsi: %.defs
+	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) $< -o $@
+%_U.h %User.c: %.udefsi
+	$(MIGCOM) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) < $< \
+		  -user $*User.c -server /dev/null -header $*_U.h
 
 # Where to find .defs files.
 vpath %.defs $(top_srcdir)/hurd
