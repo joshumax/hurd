@@ -41,7 +41,7 @@ struct store
   /* Address ranges in the underlying storage which make up our contiguous
      address space.  In units of BLOCK_SIZE, below.  */
   off_t *runs;			/* Malloced */
-  size_t runs_len;		/* Length of RUNS.  */
+  size_t num_runs;		/* Length of RUNS.  */
 
   /* Maximum valid offset.  This is the same as SIZE, but in blocks.  */
   off_t end;
@@ -76,6 +76,10 @@ struct store
   size_t misc_len;
 
   struct store_meths *meths;
+
+  /* A list of sub-stores.  The interpretation of this is type-specific.  */
+  struct store **children;
+  size_t num_children;
 
   void *hook;			/* Type specific noise.  */
 };
@@ -127,7 +131,7 @@ error_t store_device_create (device_t device, struct store **store);
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t _store_device_create (device_t device, size_t block_size,
-			      const off_t *runs, size_t runs_len,
+			      const off_t *runs, size_t num_runs,
 			      struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
@@ -138,7 +142,7 @@ error_t store_file_create (file_t file, struct store **store);
 
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t _store_file_create (file_t file, size_t block_size,
-			    const off_t *runs, size_t runs_len,
+			    const off_t *runs, size_t num_runs,
 			    struct store **store);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
@@ -163,10 +167,10 @@ void store_free (struct store *store);
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths,
 	     mach_port_t port, size_t block_size,
-	     const off_t *runs, size_t runs_len, off_t end);
+	     const off_t *runs, size_t num_runs, off_t end);
 
-/* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
-error_t store_set_runs (struct store *store, const off_t *runs, size_t runs_len);
+/* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
+error_t store_set_runs (struct store *store, const off_t *runs, size_t num_runs);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t store_set_name (struct store *store, const char *name);
@@ -227,7 +231,7 @@ struct store_enc
   char *data;
 
   /* The sizes of the vectors.  */
-  mach_msg_type_number_t ports_len, ints_len, offsets_len, data_len;
+  mach_msg_type_number_t num_ports, num_ints, num_offsets, data_len;
 
   /* Offsets into the above vectors, for an encoding/decoding in progress. */
   size_t cur_port, cur_int, cur_offset, cur_data;
@@ -245,9 +249,9 @@ struct store_enc
    if they are big enough (otherwise new ones will be automatically
    allocated).  */
 void store_enc_init (struct store_enc *enc,
-		     mach_port_t *ports, mach_msg_type_number_t ports_len,
-		     int *ints, mach_msg_type_number_t ints_len,
-		     off_t *offsets, mach_msg_type_number_t offsets_len,
+		     mach_port_t *ports, mach_msg_type_number_t num_ports,
+		     int *ints, mach_msg_type_number_t num_ints,
+		     off_t *offsets, mach_msg_type_number_t num_offsets,
 		     char *data, mach_msg_type_number_t data_len);
 
 /* Deallocate storage used by the fields in ENC (but nothing is done with ENC
@@ -277,7 +281,7 @@ error_t store_default_leaf_decode (struct store_enc *enc,
 				   error_t (*create)(mach_port_t port,
 						     size_t block_size,
 						     const off_t *runs,
-						     size_t runs_len,
+						     size_t num_runs,
 						     struct store **store),
 				   struct store **store);
 
