@@ -101,7 +101,9 @@ int trivfs_cntl_nporttypes = 1;
 void
 trivfs_modify_stat (struct stat *st)
 {
-  st->st_blksize = 1;
+  st->st_blksize = vm_page_size;
+
+  st->st_fstype = FSTYPE_DEV;
 
   st->st_size = 0;
   st->st_blocks = 0;
