@@ -310,12 +310,6 @@ main (int argc, char **argv)
   cthread_exit (0);
 }
 
-/* Dummy */
-void
-thread_cancel (thread_t foo __attribute__ ((unused)))
-{
-}
-
 void
 diskfs_init_completed ()
 {
