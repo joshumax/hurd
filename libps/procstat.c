@@ -26,6 +26,8 @@
 
 #include "ps.h"
 #include "common.h"
+
+#include "ps_msg.h"
 
 /* ---------------------------------------------------------------- */
 
@@ -677,7 +679,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
   MP_MGET (PSTAT_EXEC_FLAGS, PSTAT_TASK,
-	  msg_get_exec_flags (ps->msgport, ps->task, &ps->exec_flags));
+	   ps_msg_get_exec_flags (ps->msgport, ps->task, &ps->exec_flags));
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & (PSTAT_PROC_INFO | PSTAT_THREAD_BASIC)))
@@ -738,23 +740,25 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
      we use it to fetch a port to the actual terminal -- it's not useful for
      much else.  */
   MP_MGET (PSTAT_CTTYID, PSTAT_TASK,
-	  msg_get_init_port (ps->msgport, ps->task,
-			    INIT_PORT_CTTYID, &ps->cttyid));
+	   ps_msg_get_init_port (ps->msgport, ps->task,
+				 INIT_PORT_CTTYID, &ps->cttyid));
 
   /* A port to the process's current working directory.  */
   MP_MGET (PSTAT_CWDIR, PSTAT_TASK,
-	  msg_get_init_port (ps->msgport, ps->task,
-			    INIT_PORT_CWDIR, &ps->cwdir));
+	   ps_msg_get_init_port (ps->msgport, ps->task,
+				 INIT_PORT_CWDIR, &ps->cwdir));
 
   /* The process's auth port, which we can use to determine who the process
      is authenticated as.  */
   MP_MGET (PSTAT_AUTH, PSTAT_TASK,
-	  msg_get_init_port (ps->msgport, ps->task, INIT_PORT_AUTH, &ps->auth));
+	   ps_msg_get_init_port (ps->msgport, ps->task, INIT_PORT_AUTH,
+				 &ps->auth));
 
   /* The process's umask, which controls which protection bits won't be set
      when creating a file.  */
   MP_MGET (PSTAT_UMASK, PSTAT_TASK,
-	  msg_get_init_int (ps->msgport, ps->task, INIT_UMASK, &ps->umask));
+	   ps_msg_get_init_int (ps->msgport, ps->task, INIT_UMASK,
+				&ps->umask));
 
   if ((need & PSTAT_OWNER_UID) && (have & PSTAT_PROC_INFO))
     {
