@@ -258,6 +258,8 @@ struct argp_state
 error_t argp_parse (const struct argp *argp,
 		    int argc, char **argv, unsigned flags,
 		    int *arg_index, void *input);
+
+/* Global variables.  */
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
@@ -272,16 +274,27 @@ extern char *argp_program_version;
    used).  This variable takes precedent over ARGP_PROGRAM_VERSION.  */
 extern void (*argp_program_version_hook) (FILE *stream,
 					  struct argp_state *state);
+
+/* If defined or set by the user program, it should point to string that is
+   the bug-reporting address for the program.  It will be printed by
+   argp_help if the ARGP_HELP_BUG_ADDR flag is set (as it is by various
+   standard help messages), embedded in a sentence that says something like
+   `Report bugs to ADDR.'.  */
+extern char *argp_program_bug_address;
 
 /* Flags for argp_help.  */
-#define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
+#define ARGP_HELP_USAGE		0x01 /* a Usage: message. */
 #define ARGP_HELP_SHORT_USAGE	0x02 /*  " but don't actually print options. */
-#define ARGP_HELP_SEE		0x04 /* Print a `for more help...' message. */
-#define ARGP_HELP_LONG		0x08 /* Print a long help message. */
+#define ARGP_HELP_SEE		0x04 /* a `Try ... for more help' message. */
+#define ARGP_HELP_LONG		0x08 /* a long help message. */
+#define ARGP_HELP_PRE_DOC	0x10 /* doc string preceding long help.  */
+#define ARGP_HELP_POST_DOC	0x20 /* doc string following long help.  */
+#define ARGP_HELP_DOC		(ARGP_HELP_PRE_DOC | ARGP_HELP_POST_DOC)
+#define ARGP_HELP_BUG_ADDR	0x40 /* bug report address */
 
 /* These ARGP_HELP flags are only understood by argp_state_help.  */
-#define ARGP_HELP_EXIT_ERR	0x10 /* Call exit(1) instead of returning.  */
-#define ARGP_HELP_EXIT_OK	0x20 /* Call exit(0) instead of returning.  */
+#define ARGP_HELP_EXIT_ERR	0x100 /* Call exit(1) instead of returning.  */
+#define ARGP_HELP_EXIT_OK	0x200 /* Call exit(0) instead of returning.  */
 
 /* The standard thing to do after a program command line parsing error, if an
    error message has already been printed.  */
@@ -293,7 +306,8 @@ extern void (*argp_program_version_hook) (FILE *stream,
   (ARGP_HELP_SHORT_USAGE | ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
 /* The standard thing to do in response to a --help option.  */
 #define ARGP_HELP_STD_HELP \
-  (ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG | ARGP_HELP_EXIT_OK)
+  (ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG | ARGP_HELP_EXIT_OK \
+   | ARGP_HELP_DOC | ARGP_HELP_BUG_ADDR)
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
