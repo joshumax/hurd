@@ -1,3 +1,8 @@
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* Makefile (ext2fs.static): Depend on
+	$(boot-store-types:%=../libstore/libstore_%.a).
+
 2002-01-03  Roland McGrath  <roland@frob.com>
 
 	* inode.c (write_node): Never clear i_translator here.
