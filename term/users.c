@@ -816,7 +816,9 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 }
 
 error_t
-trivfs_S_io_revoke (struct trivfs_protid *cred)
+trivfs_S_io_revoke (struct trivfs_protid *cred,
+		    mach_port_t reply,
+		    mach_msg_type_name_t replytype)
 {
   struct stat st;
 
@@ -850,9 +852,10 @@ trivfs_S_io_revoke (struct trivfs_protid *cred)
 	}
     }
 
+  mutex_unlock (&global_lock);
+
   ports_bucket_iterate (term_bucket, iterator_function);
 
-  mutex_unlock (&global_lock);
   return 0;
 }
 
