@@ -3,7 +3,7 @@
 # Make standard devices
 #
 
-PATH=/bin
+PATH=/bin:/usr/bin
 
 ECHO=:		# Change to "echo" to echo commands
 EXEC=""		# Change to ":" to suppress command execution
