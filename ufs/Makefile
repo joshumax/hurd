@@ -53,8 +53,8 @@ relink:
 	rm -f ufs
 
 $(OBJS): ufs.h 
-$(OBJS): $(addprefix $(headers)/hurd/,diskfs.h pager.h ioserver.h \
-				      fshelp.h ports.h)
+$(OBJS): $(addprefix $(includedir)/hurd/,diskfs.h pager.h ioserver.h \
+				         fshelp.h ports.h)
 alloc.o: fs.h dinode.h
 consts.o: dinode.h
 dir.o: dir.h
