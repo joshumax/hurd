@@ -38,7 +38,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 		       mach_msg_type_name_t *returned_port_poly)
 {
   struct port_info *pt = ports_check_port_type (controlport, PT_CTL);
-  error_t error;
+  error_t error = 0;
   mode_t type;
   struct protid pseudocred;
   
