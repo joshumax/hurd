@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.7  1995/09/22 17:51:10  roland
+ * Include hurd/threadvar.h.
+ *
  * Revision 1.6  1995/08/30 15:57:47  mib
  * Repair typos.
  *
@@ -809,7 +812,7 @@ condition_unimplies (condition_t implicator, condition_t implicatand)
 {
   struct cond_imp **impp;
   
-  for (impp = &implicator->implications; *impp; impp = (*impp)->next)
+  for (impp = &implicator->implications; *impp; impp = &(*impp)->next)
     {
       if ((*impp)->implicatand == implicatand)
 	{
