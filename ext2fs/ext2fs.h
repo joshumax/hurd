@@ -156,10 +156,6 @@ extern int find_first_zero_bit(void * addr, unsigned size);
 extern int find_next_zero_bit (void * addr, int size, int offset);
 
 extern unsigned long ffz(unsigned long word);
-
-/* Returns a pointer to the first occurence of CH in the buffer BUF of len
-   LEN, or BUF + LEN if CH doesn't occur.  */
-void *memscan(void *buf, unsigned char ch, unsigned len);
 
 /* ---------------------------------------------------------------- */
 

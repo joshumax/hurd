@@ -1,6 +1,6 @@
 /* Bitmap perusing routines
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,8 +33,8 @@ unsigned long count_free (char * map, unsigned int numchars)
 {
 	unsigned int i;
 	unsigned long sum = 0;
-	
-	if (!map) 
+
+	if (!map)
 		return (0);
 	for (i = 0; i < numchars; i++)
 		sum += nibblemap[map[i] & 0xf] +
@@ -89,7 +89,7 @@ find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
     return size;
   size -= result;
   offset &= 31UL;
-  if (offset) 
+  if (offset)
     {
       tmp = *(p++);
       tmp |= ~0UL >> (32-offset);
@@ -100,7 +100,7 @@ find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
       size -= 32;
       result += 32;
     }
-  while (size & ~31UL) 
+  while (size & ~31UL)
     {
       if (~(tmp = *(p++)))
 	goto found_middle;
@@ -125,19 +125,4 @@ inline int
 find_first_zero_bit(void *buf, unsigned len)
 {
   return find_next_zero_bit(buf, len, 0);
-}
-
-/* ---------------------------------------------------------------- */
-
-/* Returns a pointer to the first occurence of CH in the buffer BUF of len
-   LEN, or BUF + LEN if CH doesn't occur.  */
-void *memscan(void *buf, unsigned char ch, unsigned len)
-{
-  unsigned char *p = (unsigned char *)buf;
-  while (len-- > 0)
-    if (*p == ch)
-      break;
-    else
-      p++;
-  return (void *)p;
 }
