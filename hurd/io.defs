@@ -216,7 +216,6 @@ routine io_server_version (
    io_write.  */
 routine io_map (
 	io_object: io_t;
-	out memobjxx: mach_port_send_t;
 	out memobjrd: mach_port_send_t;
 	out memobjwt: mach_port_send_t);
 
@@ -230,32 +229,34 @@ routine io_map_cntl (
 	io_object: io_t;
 	out memobj: memory_object_t);
 
-/* Users of the shared page who are USER_NOT_IT and want to become it
+/* Users of the shared page who don't have the conch and want it
    should call this function.  The server will endeavor to have
-   USER_IT when this returns, but users should call io_get_it in a
-   loop for safety.  */
+   USER_HAS_CONCH when this returns, but users should call io_get_it
+   in a loop for safety.  */
 /* INTR */
-routine io_get_it (
+routine io_get_conch (
 	io_object: io_t;
 	cntl: memory_object_t);
 
-/* When the user become it, the user is USER_IT.  When the user is
-   done with the shared page, the filesystem may have changed the it
-   status to USER_RELEASE_IT.  In that case, rather than downgrading
-   USER_IT to USER_POTENTIALLY_IT, the user should call io_release_it.
-   Also, when the user is done with an IO object and wants permanent
-   characteristics of the object (like file size) to be updated, the
-   user should call io_release_it.  */
-routine io_release_it (
+/* When the user is done with the shared page, while holding the
+   conch, the filesystem may have changed the conch status to
+   USER_RELEASE_CONCH.  In that case, rather than downgrading
+   USER_HAS_CONCH to USER_COULD_HAVE_CONCH, the user should call
+   io_release_conch.  Also, when the user is done with an IO object
+   and wants permanent characteristics of the object (like file size)
+   to be updated, the user should call io_release_conch.  Upon return,
+   the conch status might be either USER_COULD_HAVE_CONCH or
+   USER_HAS_NOT_CONCH. */
+routine io_release_conch (
 	io_object: io_t;
 	cntl: memory_object_t);
 
-/* This routine should be called while the user is it, after the user
-   has encountered an eof condition (where the file pointer is equal
-   to the file size).  This could be used by terminals, for example,
-   to clear the eof condition after it is read once.  The routine
-   should be called while the it status is USER_IT or USER_RELEASE_IT.
-   The user will keep it upon return.  */
+/* This routine should be called while the user has the conch, after
+   the user has encountered an eof condition (where the file pointer
+   is equal to the file size).  This could be used by terminals, for
+   example, to clear the eof condition after it is read once.  The
+   routine should be called while the user has the conch. The user
+   will keep it upon return.  */
 routine io_eofnotify (
 	io_object: io_t;
 	cntl: memory_object_t);
@@ -264,8 +265,8 @@ routine io_eofnotify (
    be made to io_prenotify giving the paramters of the write.  Upon
    return from io_prenotify, there is no guarantee that the prenotify
    size will now permit the write, so it should be re-checked.  The
-   routine should be called while the it status is USER_IT or
-   USER_RELEASE_IT.  The user will keep it upon return.  */
+   routine should be called while the user has the conch.  The user
+   will keep it upon return.  */
 routine io_prenotify (
 	io_object: io_t;
 	cntl: memory_object_t;
@@ -274,18 +275,17 @@ routine io_prenotify (
 
 /* After doing a write which extends past the postnotify_size, the
    user needs to call io_postnotify.  The routine should be called
-   while the it status is USER_IT or USER_RELEASE_IT.  The user will
-   keep it upon return.  */
+   while the user has the conch.  The user will keep it upon return.
+   */
 routine io_postnotify (
 	io_object: io_t;
 	cntl: memory_object_t;
 	write_start: int;
 	write_end: int);
 
-/* This routine sleeps until the read_size is increased.  The it
-   status should be USER_IT or USER_RELEASE_IT, and will be upon
-   return.  Any of the shared variables might change across this call.
-   */
+/* This routine sleeps until the read_size is increased.  The routine
+   should be called while the user has the conch.  The user will keep
+   it upon return.  */
 /* INTR */
 routine io_readsleep (
 	io_object: io_t;
