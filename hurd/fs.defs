@@ -96,14 +96,6 @@ routine file_utimes (
 	new_atime: time_value_t;
 	new_mtime: time_value_t);
 
-/* Change current file offset */
-/* INTR */
-routine file_seek (
-	seek_file: file_t;
-	offset: int;
-	whence: int;
-	out newp: int);
-
 /* Truncate file */
 /* INTR */
 routine file_truncate (
