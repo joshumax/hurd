@@ -27,8 +27,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <signal.h>
 
 #include "proc.h"
-#include "proc_S.h"
-#include "msg.h"
+#include "process_S.h"
+#include "ourmsg_U.h"
 
 
 /* Create and return a new process group with pgid PGID in session SESS. */
