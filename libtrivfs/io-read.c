@@ -21,6 +21,8 @@
 
 kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
+		  mach_port_t reply,
+		  mach_msg_type_name_t replytype,
 		  char **data,
 		  u_int *datalen,
 		  off_t off,

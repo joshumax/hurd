@@ -20,8 +20,6 @@
 
 kern_return_t
 trivfs_S_dir_readdir (struct trivfs_protid *cred,
-		      mach_port_t reply,
-		      mach_msg_type_name_t replytype,
 		      char **data,
 		      u_int *datalen,
 		      int entry,

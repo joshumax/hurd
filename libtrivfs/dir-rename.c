@@ -19,7 +19,8 @@
 #include "fs_S.h"
 
 kern_return_t
-trivfs_S_dir_rename (struct trivfs_protid *cred, char *name,
+trivfs_S_dir_rename (struct trivfs_protid *cred, 
+		     char *name,
 		     struct trivfs_protid *cred2, char *name2)
 {
   if (!cred)
