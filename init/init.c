@@ -86,7 +86,7 @@ options[] =
 char doc[] = "Start and maintain hurd core servers and system run state";
 
 /* Current state of the system. */
-enum 
+enum
 {
   INITIAL,
   SINGLE,
@@ -118,23 +118,23 @@ struct ntfy_task *ntfy_tasks;
 volatile struct mapped_time_value *mapped_time;
 
 /* All the ttys in /etc/ttys. */
-struct terminal 
+struct terminal
 {
   /* argz list for getty */
   char *getty_argz;
   size_t getty_argz_len;
-  
+
   /* argz list for window spec */
   char *window_argz;
   size_t window_argz_len;
-  
+
   int on;
   int pid;
   int read;
-  
+
   char *name;
 };
-  
+
 struct terminal *ttys;
 /* Number of live elements in ttys */
 int nttys;
@@ -241,7 +241,7 @@ notify_shutdown (char *msg)
   for (n = ntfy_tasks; n != NULL; n = n->next)
     {
       error_t err;
-      printf ("%s: notifying %s of %s...", 
+      printf ("%s: notifying %s of %s...",
 	      program_invocation_short_name, n->name, msg);
       fflush (stdout);
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
@@ -253,7 +253,7 @@ notify_shutdown (char *msg)
 	puts ("done");
       fflush (stdout);
     }
-}  
+}
 
 /* Reboot the Hurd. */
 void
@@ -407,7 +407,7 @@ run (char *server, mach_port_t *ports, task_t *task)
    collection.  If SETSID is set, put it in a new session.  Return
    0 if the task was not created successfully. */
 pid_t
-run_for_real (char *filename, char *args, int arglen, mach_port_t ctty, 
+run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
 	      int setsid)
 {
   file_t file;
@@ -508,14 +508,14 @@ setup_terminal (struct terminal *t, struct ttyent *tt)
       argz_create_sep (line, ' ', &t->getty_argz, &t->getty_argz_len);
       free (line);
       if (tt->ty_window)
-	argz_create_sep (tt->ty_window, ' ', 
+	argz_create_sep (tt->ty_window, ' ',
 			 &t->window_argz, &t->window_argz_len);
       else
 	t->window_argz = 0;
     }
   else
       t->getty_argz = t->window_argz = 0;
-}  
+}
 
 
 /* Add a new terminal spec for TT and return it. */
@@ -523,14 +523,14 @@ struct terminal *
 add_terminal (struct ttyent *tt)
 {
   struct terminal *t;
-  
+
   if (nttys >= ttyslen)
     {
       ttys = realloc (ttys, (ttyslen * 2) * sizeof (struct ttyent));
       bzero (&ttys[nttys], ttyslen);
       ttyslen *= 2;
     }
-      
+
   t = &ttys[nttys];
   nttys++;
 
@@ -552,7 +552,7 @@ init_ttys (void)
 
   ttyslen = 10;
   nttys = 0;
-  
+
   ttys = malloc (ttyslen * sizeof (struct ttyent));
   bzero (ttys, ttyslen * sizeof (struct ttyent));
 
@@ -568,7 +568,7 @@ init_ttys (void)
 
       add_terminal (tt);
     }
-  
+
   endttyent ();
   return 0;
 }
@@ -597,14 +597,14 @@ startup_terminal (struct terminal *t)
   pid_t pid;
   assert (t->on);
   assert (t->getty_argz);
-  
+
   if (t->window_argz)
     {
       pid = run_for_real (t->window_argz, t->window_argz,
 			  t->window_argz_len, MACH_PORT_NULL, 1);
       if (!pid)
 	goto error;
-	  
+
       sleep (WINDOW_DELAY);
     }
 
@@ -631,9 +631,9 @@ startup_ttys (void)
 {
   int i;
   int didone, fail;
-  
+
   didone = 0;
-  
+
   for (i = 0; i < nttys; i++)
     if (ttys[i].on)
       {
@@ -649,7 +649,7 @@ struct terminal *
 find_line (char *line)
 {
   int i;
-  
+
   for (i = 0; i < nttys; i++)
     if (!strcmp (ttys[i].name, line))
       return &ttys[i];
@@ -661,7 +661,7 @@ void
 restart_terminal (int pid)
 {
   int i;
-  
+
   for (i = 0; i < nttys; i++)
     if (pid == ttys[i].pid)
       {
@@ -671,7 +671,7 @@ restart_terminal (int pid)
 	if (ttys[i].on)
 	  startup_terminal (&ttys[i]);
       }
-}  
+}
 
 /* Shutdown the things running on terminal spec T. */
 void
@@ -690,13 +690,13 @@ reread_ttys (void)
   struct terminal *t;
   int on;
   int i;
-  
+
   if (!setttyent ())
     {
       error (0, errno, "%s", _PATH_TTYS);
       return;
     }
-  
+
   /* Mark all the lines not yet read */
   for (i = 0; i < nttys; i++)
     ttys[i].read = 0;
@@ -705,10 +705,10 @@ reread_ttys (void)
     {
       if (!tt->ty_name)
 	continue;
-      
+
       t = find_line (tt->ty_name);
       on = tt->ty_getty && (tt->ty_status & TTY_ON);
-      
+
       if (t)
 	{
 	  if (t->on && !on)
@@ -781,17 +781,12 @@ main (int argc, char **argv, char **envp)
   mach_port_t consdev;
   struct argp argp = { options, parse_opt, 0, doc };
 
+  /* Parse the arguments */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   global_argv = argv;
 
   system_state = INITIAL;
-
-  /* Parse the arguments */
-  bootstrap_args = 0;
-  if (argc >= 2)
-    {
-    }
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
      master device ports, and the console.  */
@@ -843,7 +838,7 @@ main (int argc, char **argv, char **envp)
      not run under job control shells are protected.  */
   default_ints[INIT_SIGIGN] = (sigmask (SIGTSTP)
 			       | sigmask (SIGTTIN)
-			       | sigmask (SIGTTOU)); 
+			       | sigmask (SIGTTOU));
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask);
@@ -983,7 +978,7 @@ init_stdarrays ()
 /* Open /dev/console.  If it isn't there, or it isn't a terminal, then
    create /tmp/console and put the terminal on it.  If we get EROFS,
    in trying to create /tmp/console then as a last resort, put the
-   console on /tmp itself.  
+   console on /tmp itself.
 
    In any case, after the console has been opened, set it appropriately
    in default_dtable.  Also return a port right for the terminal. */
@@ -996,7 +991,7 @@ open_console ()
   static char *termname;
   struct stat st;
   error_t err = 0;
-  
+
   if (system_state != INITIAL)
     {
       term = file_name_lookup (termname, O_RDWR, 0);
@@ -1013,7 +1008,7 @@ open_console ()
     error (0, err, "%s", termname);
   else if (st.st_fstype != FSTYPE_TERM)
     error (0, 0, "%s: Not a terminal", termname);
-  
+
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     /* Start the terminal server ourselves. */
     {
@@ -1035,7 +1030,7 @@ open_console ()
 
 	  *underlying = term;
 	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
-	      
+
 	  return 0;
 	}
 
@@ -1058,7 +1053,7 @@ open_console ()
 	goto fail;
 
       termname = terminal + strlen (terminal) + 1; /* first arg is name */
-	  
+
       /* The callback to start_translator opens TERM as a side effect.  */
       errno =
 	fshelp_start_translator (open_node, terminal, terminal, argz_len, 3000,
@@ -1068,7 +1063,7 @@ open_console ()
 	  error (0, errno, "%s", terminal);
 	  goto retry;
 	}
-	  
+
       errno = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
 				   control, MACH_MSG_TYPE_COPY_SEND);
       mach_port_deallocate (mach_task_self (), control);
@@ -1078,7 +1073,7 @@ open_console ()
 	  goto retry;
 	}
       mach_port_deallocate (mach_task_self (), term);
-      
+
       /* Now repeat the open. */
       term = file_name_lookup (termname, O_RDWR, 0);
       if (term == MACH_PORT_NULL)
@@ -1160,7 +1155,7 @@ launch_single_user ()
   term = open_console ();
 
   system_state = SINGLE;
-  
+
 #if 0
   printf ("Shell program [%s]: ", _PATH_BSHELL);
   if (! getstring (shell, sizeof shell))
@@ -1179,7 +1174,7 @@ launch_single_user ()
 /* Run /etc/rc as a shell script.  Return non-zero if we fail.  */
 int
 process_rc_script ()
-{  
+{
   char *rcargs;
   size_t rcargslen;
   mach_port_t term;
@@ -1194,11 +1189,11 @@ process_rc_script ()
       rcargslen = asprintf (&rcargs, "%s%c%s", _PATH_RUNCOM, '\0', "autoboot");
       rcargslen++;		/* final null */
     }
-    
+
   term = open_console ();
 
   system_state = RUNCOM;
-  
+
   rc_pid = run_for_real (rcargs, rcargs, rcargslen, term, 1);
   free (rcargs);
   mach_port_deallocate (mach_task_self (), term);
@@ -1210,7 +1205,7 @@ void
 launch_multi_user ()
 {
   int fail;
-  
+
   if (!mapped_time)
     maptime_map (1, 0, &mapped_time);
 
@@ -1257,12 +1252,12 @@ kill_everyone (int signo)
 		  || pids[i] == 2 /* kernel */
 		  || pids[i] == 3 /* default pager for now XXX */)
 		continue;
-	      
+
 	      /* See if the task is essential */
 	      err = proc_pid2task (procserver, pids[i], &tk);
 	      if (err)
 		continue;
-	      
+
 	      for (es = ess_tasks; es; es = es->next)
 		if (tk == es->task_port)
 		  {
@@ -1272,7 +1267,7 @@ kill_everyone (int signo)
 		  }
 	      if (es)
 		continue;
-	      
+
 	      /* Kill it */
 	      if (signo == SIGKILL)
 		{
@@ -1287,7 +1282,7 @@ kill_everyone (int signo)
 		      mach_port_deallocate (mach_task_self (), tk);
 		      continue;
 		    }
-		  
+
 		  didany = 1;
 		  msg_sig_post (msg, signo, 0, tk);
 		  mach_port_deallocate (mach_task_self (), tk);
@@ -1315,21 +1310,21 @@ kill_multi_user ()
   for (stage = 0; stage < 3; stage++)
     if (kill_everyone (sigs[stage]))
       break;
-  
+
   /* Notify tasks that they are about to die. */
   notify_shutdown ("transition to single-user");
-  
+
   if (stage == 3)
     error (0, 0, "warning: some processes wouldn't die; `ps -axlM' advised");
 }
 
-/* SIGNO has arrived and has been validated.  Do whatever work it 
+/* SIGNO has arrived and has been validated.  Do whatever work it
    implies. */
 void
 process_signal (int signo)
 {
   int fail;
-  
+
   switch (signo)
     {
     case SIGTERM:
@@ -1345,7 +1340,7 @@ process_signal (int signo)
       if (system_state == MULTI)
 	reread_ttys ();
       break;
-      
+
     case SIGCHLD:
       {
 	/* A child died.  Find its status.  */
@@ -1569,7 +1564,7 @@ S_startup_request_notification (mach_port_t server,
   if (prev != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), prev);
 
-  /* Note that the ntfy_tasks list is kept in inverse order of the 
+  /* Note that the ntfy_tasks list is kept in inverse order of the
      calls; this is important.  We need later notification requests
      to get executed first.  */
   nt = malloc (sizeof (struct ntfy_task));
@@ -1671,7 +1666,7 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 
   /* Reply immediately */
   msg_sig_post_untraced_reply (reply, reply_type, 0);
-  
+
   process_signal (signo);
   return MIG_NO_REPLY;
 }
@@ -1684,10 +1679,10 @@ S_msg_sig_post (mach_port_t msgport,
   if (refport != mach_task_self ())
     return EPERM;
   mach_port_deallocate (mach_task_self (), refport);
-  
+
   /* Reply immediately */
   msg_sig_post_reply (reply, reply_type, 0);
-  
+
   process_signal (signo);
   return MIG_NO_REPLY;
 }
@@ -1860,7 +1855,7 @@ S_msg_describe_ports (mach_port_t process,
 		      data_t *descriptions,
 		      mach_msg_type_number_t *descriptionsCnt)
 {
-  return _S_msg_describe_ports (process, refport, names, namesCnt, 
+  return _S_msg_describe_ports (process, refport, names, namesCnt,
 				descriptions, descriptionsCnt);
 }
 
