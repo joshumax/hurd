@@ -147,6 +147,6 @@ __vm_allocate (task, address, size, anywhere)
 	vm_size_t	size;
 	boolean_t	anywhere;
 {
-  return vm_allcoate (task, address, size, anywhere);
+  return vm_allocate (task, address, size, anywhere);
 }
 
