@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "auth_S.h"
 #include "auth_reply_U.h"
+#include "notify_S.h"
 #include <hurd/startup.h>
 #include <mach/error.h>
 #include <errno.h>
@@ -146,7 +147,7 @@ main (int argc, char **argv)
 
 /* Called when an auth port has no more senders. */
 error_t
-_S_do_mach_notify_no_senders (mach_port_t notify,
+do_mach_notify_no_senders (mach_port_t notify,
 			      mach_port_mscount_t mscount)
 {
   auth_nosenders (convert_auth_to_apt (notify));
@@ -614,43 +615,38 @@ convert_auth_to_apt (auth_t auth)
       return a;
   return 0;
 }
-
+
 /* Unneeded notification stubs: */
-error_t
-_S_do_mach_notify_port_deleted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
-				    mach_port_t name)
+kern_return_t
+do_mach_notify_port_deleted (mach_port_t notify,
+			     mach_port_t name)
 {
   return 0;
 }
 
-error_t
-_S_do_mach_notify_msg_accepted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
-				    mach_port_t name)
+kern_return_t
+do_mach_notify_msg_accepted (mach_port_t notify,
+			     mach_port_t name)
 {
   return 0;
 }
 
-error_t
-_S_do_mach_notify_port_destroyed (mach_port_t notify,
-				      mach_port_seqno_t seqno,
-				      mach_port_t name)
+kern_return_t
+do_mach_notify_port_destroyed (mach_port_t notify,
+			       mach_port_t name)
 {
   return 0;
 }
 
-error_t
-_S_do_mach_notify_send_once (mach_port_t notify,
-				 mach_port_seqno_t seqno)
+kern_return_t
+do_mach_notify_send_once (mach_port_t notify)
 {
   return 0;
 }
 
-error_t
-_S_do_mach_notify_dead_name (mach_port_t notify,
-				 mach_port_seqno_t seqno,
-				 mach_port_t name)
+kern_return_t
+do_mach_notify_dead_name (mach_port_t notify,
+			  mach_port_t name)
 {
   return 0;
 }
