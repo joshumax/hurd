@@ -19,7 +19,7 @@ dir := fstests
 
 include ../Makeconf
 
-DIST_FILES = fstests.c Makefile
+DIST_FILES = fstests.c Makefile fdtests.c
 
 fstests: fstests.o; $(link)
 
