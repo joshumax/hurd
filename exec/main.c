@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
 
-   Copyright (C) 1992, 93, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
    This file is part of the GNU Hurd.
 
@@ -75,21 +75,15 @@ deadboot (void *p)
   struct bootinfo *boot = p;
   size_t i;
 
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->argv, boot->argvlen);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->envp, boot->envplen);
+  munmap (boot->argv, boot->argvlen);
+  munmap (boot->envp, boot->envplen);
 
   for (i = 0; i < boot->dtablesize; ++i)
     mach_port_deallocate (mach_task_self (), boot->dtable[i]);
   for (i = 0; i < boot->nports; ++i)
     mach_port_deallocate (mach_task_self (), boot->portarray[i]);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->portarray,
-		 boot->nports * sizeof (mach_port_t));
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t) boot->intarray,
-		 boot->nints * sizeof (int));
+  munmap (boot->portarray, boot->nports * sizeof (mach_port_t));
+  munmap (boot->intarray, boot->nints * sizeof (int));
 
   /* See if we are going away and this was the last thing keeping us up.  */
   if (ports_count_class (trivfs_cntl_portclasses[0]) == 0)

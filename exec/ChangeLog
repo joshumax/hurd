@@ -1,3 +1,18 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* core.c (core_dump_task): Use munmap instead of vm_deallocate,
+	when it's from our own task.
+	* elfcore.c: Likewise.
+	* exec.c (load_section): Likewise.
+	(map): Likewise.
+	(close_exec_stream): Likewise.
+	(finish_mapping): Likewise.
+	(load): Likewise.
+	(do_exec): Likewise.
+	(S_exec_setexecdata): Likewise.
+	* hashexec.c (check_hashbang): Likewise.
+	* main.c (deadboot): Likewise.
+
 1999-06-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exec.c (map): Fix mapping calls to use F->__offset consistently

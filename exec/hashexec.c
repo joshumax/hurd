@@ -408,21 +408,18 @@ check_hashbang (struct execdata *e,
       task_resume (oldtask);	/* Our caller suspended it.  */
       mach_port_deallocate (mach_task_self (), oldtask);
       if (! argv_copy)
-	vm_deallocate (mach_task_self (), (vm_address_t) argv, argvlen);
+	munmap (argv, argvlen);
       if (! envp_copy)
-	vm_deallocate (mach_task_self (), (vm_address_t) envp, envplen);
+	munmap (envp, envplen);
       for (i = 0; i < dtablesize; ++i)
 	mach_port_deallocate (mach_task_self (), dtable[i]);
       if (! dtable_copy)
-	vm_deallocate (mach_task_self (), (vm_address_t) dtable,
-		       dtablesize * sizeof *dtable);
+	munmap (dtable, dtablesize * sizeof *dtable);
       for (i = 0; i < nports; ++i)
 	mach_port_deallocate (mach_task_self (), portarray[i]);
       if (! portarray_copy)
-	vm_deallocate (mach_task_self (), (vm_address_t) portarray,
-		       nports * sizeof *portarray);
+	munmap (portarray, nports * sizeof *portarray);
       if (! intarray_copy)
-	vm_deallocate (mach_task_self (), (vm_address_t) intarray,
-		       nints * sizeof *intarray);
+	munmap (intarray, nints * sizeof *intarray);
     }
 }

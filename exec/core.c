@@ -1,5 +1,5 @@
 /* GNU Hurd standard core server.
-   Copyright (C) 1992 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -172,7 +172,7 @@ core_dump_task (mach_port_t coreserver,
 	goto lose;
       err = bfd_set_section_contents (bfd, sec, data, 0,
 				      bfd_section_size (bfd, sec));
-      vm_deallocate (mach_task_self (), data, bfd_section_size (bfd, sec));
+      munmap ((caddr_t) data, bfd_section_size (bfd, sec));
       if (err)
 	goto bfdlose;
     }

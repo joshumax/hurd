@@ -231,7 +231,7 @@ load_section (void *section, struct execdata *u)
 			  off);
 		  u->error = vm_write (u->task, mapstart + (size - off),
 				       page, vm_page_size);
-		  vm_deallocate (mach_task_self (), page, vm_page_size);
+		  munmap ((caddr_t) page, vm_page_size);
 		}
 	    }
 	  /* Reset the current protections to the desired state.  */
@@ -277,7 +277,7 @@ load_section (void *section, struct execdata *u)
 		  else
 		    write_to_task (mapstart, size, vm_prot,
 				   (vm_address_t) buf);
-		  vm_deallocate (mach_task_self (), (vm_address_t) buf, size);
+		  munmap (buf, size);
 		}
 	    }
 	  if (u->error)
@@ -357,7 +357,7 @@ load_section (void *section, struct execdata *u)
 		u->error = vm_protect (u->task, overlap_page, size,
 				       0, vm_prot);
 	    }
-	  vm_deallocate (mach_task_self (), ourpage, size);
+	  munmap ((caddr_t) ourpage, size);
 	  if (u->error)
 	    goto maplose;
 	}
@@ -420,7 +420,7 @@ load_section (void *section, struct execdata *u)
 	    u->error = vm_write (u->task, overlap_page, ourpage, size);
 	  if (! u->error && !(vm_prot & VM_PROT_WRITE))
 	    u->error = vm_protect (u->task, overlap_page, size, 0, vm_prot);
-	  vm_deallocate (mach_task_self (), ourpage, size);
+	  munmap ((caddr_t) ourpage, size);
 	}
     }
 }
@@ -456,8 +456,7 @@ map (struct execdata *e, off_t posn, size_t len)
 	{
 	  /* The data was returned out of line.  Discard the old buffer.  */
 	  if (f->__bufsize != 0)
-	    vm_deallocate (mach_task_self (),
-			   (vm_address_t) f->__buffer, f->__bufsize);
+	    munmap (f->__buffer, f->__bufsize);
 	  f->__buffer = buffer;
 	  f->__bufsize = round_page (nread);
 	}
@@ -470,8 +469,7 @@ map (struct execdata *e, off_t posn, size_t len)
     {
       /* Deallocate the old mapping area.  */
       if (f->__buffer != NULL)
-	vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
-		       f->__bufsize);
+	munmap ((vm_address_t) f->__buffer, f->__bufsize);
       f->__buffer = NULL;
 
       /* Make sure our mapping is page-aligned in the file.  */
@@ -525,8 +523,7 @@ close_exec_stream (void *cookie)
   struct execdata *e = cookie;
 
   if (e->stream.__buffer != NULL)
-    vm_deallocate (mach_task_self (), (vm_address_t) e->stream.__buffer,
-		   e->stream.__bufsize);
+    munmap (e->stream.__buffer, e->stream.__bufsize);
 
   return 0;
 }
@@ -813,7 +810,7 @@ finish_mapping (struct execdata *e)
 	  e->cntl->conch_status = USER_HAS_NOT_CONCH;
 	  spin_unlock (&e->cntl->lock);
 	}
-      vm_deallocate (mach_task_self (), (vm_address_t) e->cntl, vm_page_size);
+      munmap (e->cntl, vm_page_size);
       e->cntl = NULL;
     }
   if (e->filemap != MACH_PORT_NULL)
@@ -925,7 +922,7 @@ load (task_t usertask, struct execdata *e)
 		    /* Force it to be paged in.  */
 		    (void) *(volatile int *) a;
 
-		  vm_deallocate (mach_task_self (), myaddr, mysize);
+		  munmap ((caddr_t) myaddr, mysize);
 		}
 	    }
 
@@ -1590,8 +1587,7 @@ do_exec (file_t file,
 	  thread_terminate (threads[i]);
 	  mach_port_deallocate (mach_task_self (), threads[i]);
 	}
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) threads, nthreads * sizeof (thread_t));
+      munmap ((caddr_t) threads, nthreads * sizeof (thread_t));
 
       /* Deallocate the entire virtual address space of the task.  */
 
@@ -1718,17 +1714,13 @@ do_exec (file_t file,
 
 	  /* Clean up */
 	  if (euids != euidbuf)
-	    vm_deallocate (mach_task_self (), (vm_address_t) euids,
-			   neuids * sizeof (uid_t));
+	    munmap (euids, neuids * sizeof (uid_t));
 	  if (egids != egidbuf)
-	    vm_deallocate (mach_task_self (), (vm_address_t) egids,
-			   negids * sizeof (uid_t));
+	    munmap (egids, negids * sizeof (uid_t));
 	  if (auids != auidbuf)
-	    vm_deallocate (mach_task_self (), (vm_address_t) auids,
-			   nauids * sizeof (uid_t));
+	    munmap (auids, nauids * sizeof (uid_t));
 	  if (agids != agidbuf)
-	    vm_deallocate (mach_task_self (), (vm_address_t) agids,
-			   nagids * sizeof (uid_t));
+	    munmap (agids, nagids * sizeof (uid_t));
 	}
     }
 
@@ -1839,13 +1831,9 @@ do_exec (file_t file,
 	 portarray, and we are not saving those pointers in BOOT for later
 	 transfer, deallocate the original space now.  */
       if (intarray_dealloc)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) intarray,
-		       nints * sizeof intarray[0]);
+	munmap (intarray, nints * sizeof intarray[0]);
       if (!portarray_copy)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) portarray,
-		       nports * sizeof portarray[0]);
+	munmap (portarray, nports * sizeof portarray[0]);
     }
 
   return e.error;
@@ -1992,16 +1980,14 @@ S_exec_setexecdata (struct trivfs_protid *protid,
       mach_msg_type_number_t i;
       for (i = 0; i < std_nports; ++i)
 	mach_port_deallocate (mach_task_self (), std_ports[i]);
-      vm_deallocate (mach_task_self (), (vm_address_t)std_ports,
-		     std_nports * sizeof (mach_port_t));
+      munmap (std_ports, std_nports * sizeof (mach_port_t));
     }
 
   std_ports = ports;
   std_nports = nports;
 
   if (std_ints)
-    vm_deallocate (mach_task_self (), (vm_address_t)std_ints,
-		   std_nints * sizeof (int));
+    munmap (std_ints, std_nints * sizeof (int));
 
   std_ints = ints;
   std_nints = nints;

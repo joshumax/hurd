@@ -94,7 +94,7 @@
 	goto lose;
       err = bfd_set_section_contents (bfd, sec, data, 0,
 				      bfd_section_size (bfd, sec));
-      vm_deallocate (mach_task_self (), data, bfd_section_size (bfd, sec));
+      munmap ((caddr_t) data, bfd_section_size (bfd, sec));
       if (err)
 	goto bfdlose;
     }
