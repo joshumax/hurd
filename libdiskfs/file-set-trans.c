@@ -20,6 +20,9 @@
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
+/* XXX - Temporary */
+#define makedev(maj,min) ((((maj)&0xFF)<<8)+((min)&0xFF))
+
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_set_translator (struct protid *cred,
@@ -105,7 +108,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 	
 	  if (diskfs_shortcut_symlink && !strcmp (passive, _HURD_SYMLINK))
 	    newmode = S_IFLNK;
-	  if (diskfs_shortcut_chrdev && !(strcmp (passive, _HURD_CHRDEV)))
+	  else if (diskfs_shortcut_chrdev && !(strcmp (passive, _HURD_CHRDEV)))
 	    newmode = S_IFCHR;
 	  else if (diskfs_shortcut_blkdev && !strcmp (passive, _HURD_BLKDEV))
 	    newmode = S_IFBLK;
@@ -150,8 +153,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		  minor = strtol (arg, 0, 0);
 	      
-		  np->dn_stat.st_rdev = (((major & 0377) << 8)
-					 | (minor & 0377));
+		  np->dn_stat.st_rdev = makedev (major, minor);
 		}
 
 	      diskfs_truncate (np, 0);
