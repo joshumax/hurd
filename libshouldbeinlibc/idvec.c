@@ -61,7 +61,7 @@ idvec_ensure (struct idvec *idvec, unsigned num)
 {
   if (num > idvec->alloced)
     {
-      id_t *_ids = realloc (idvec->ids, num);
+      id_t *_ids = realloc (idvec->ids, num * sizeof (id_t));
       if (! _ids)
 	return ENOMEM;
       idvec->ids = _ids;
@@ -153,15 +153,30 @@ idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
     return idvec_insert (idvec, pos, id);
 }
 
-/* Adds each id in the vector IDS (NUM elements long) to IDVEC, as if with
-   idvec_add_new().  */
+/* Adds each id in the vector IDS (NUM elements long) to IDVEC, as long as it
+   wasn't previously in IDVEC.  */
 error_t
 idvec_merge_ids (struct idvec *idvec, id_t *ids, unsigned num)
 {
   error_t err = 0;
+  unsigned num_old = idvec->num;
   while (num-- > 0 && !err)
-    err = idvec_add_new (idvec, *ids++);
+    {
+      int i;
+      for (i = 0; i < num_old; i++)
+	if (idvec->ids[i] == *ids)
+	  break;
+      if (i == num_old)
+	err = idvec_add (idvec, *ids++);
+    }
   return err;
+}
+
+/* Adds each id from  NEW to IDVEC, as if with idvec_add_new().  */
+error_t
+idvec_merge (struct idvec *idvec, struct idvec *new)
+{
+  return idvec_merge_ids (idvec, new->ids, new->num);
 }
 
 /* Remove any occurances of ID in IDVEC after position POS>  Returns true if
@@ -175,7 +190,7 @@ idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
     {
       if (*ids != id)
 	{
-	  if (ids == targ)
+	  if (ids != targ)
 	    *targ = *ids;
 	  targ++;
 	}
@@ -185,6 +200,20 @@ idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
     return 0;
   idvec->num = targ - idvec->ids;
   return 1;
+}
+
+/* Deleted the id at position POS in IDVEC.  */
+void
+idvec_delete (struct idvec *idvec, unsigned pos)
+{
+  unsigned num = idvec->num;
+  if (pos < num)
+    {
+      id_t *ids = idvec->ids;
+      idvec->num = --num;
+      if (num > pos)
+	bcopy (ids + pos + 1, ids + pos, (num - pos) * sizeof (id_t));
+    }
 }
 
 /* Insert ID at position POS in IDVEC, remoint any instances of ID previously
