@@ -15,8 +15,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "priv.h"
-
 /* Called by the kernel when a port has no more senders.  We arrange
    to have this sent to the port which is out of senders (NOTIFY).  MSCOUNT
    is the make-send count of the port when the notification was generated;
