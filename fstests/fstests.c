@@ -1,5 +1,5 @@
 /* Test filesystem behavior
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -43,7 +43,7 @@ main ()
   root = _hurd_ports[INIT_PORT_CRDIR].port;
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
-#if 0
+#if 1
   if ((err = dir_unlink (root, "CREATED")) && err != ENOENT)
     printf ("Error on unlink: %d\n", err);
   else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
@@ -55,12 +55,17 @@ main ()
     printf ("Short write: %d\n", written);
   else if (err = file_syncfs (filetowrite, 1, 0))
     printf ("Error on sync: %d\n", err);
-#endif
+#else
 
-  dir_unlink (root, "newdir");
-  dir_rmdir (root, "newdir");
+  unlink ("/newdir");
+  printf ("errno: %d\n")
+  dir_unlink (root, "newdir");	/* unlink ("/newdir") */
+  dir_rmdir (root, "newdir");	/* rmdir */
   dir_mkdir (root, "newdir", 0666);
+  dir_rename (root, "README", root, "here it is now");
   file_syncfs (root, 1, 0);
+
+#endif
 
   printf ("All done.\n");
   malloc (0);
