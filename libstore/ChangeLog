@@ -1,3 +1,9 @@
+2001-09-30  Roland McGrath  <roland@frob.com>
+
+	* memobj.c: New file.
+	* Makefile (SRCS): Add it.
+	* store.h (store_memobj_class, store_memobj_create): Declare them.
+
 2001-09-29  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (struct nbd_startup): Replace sizehi, sizelo with just size.

@@ -1,3 +1,8 @@
+2001-09-30  Roland McGrath  <roland@frob.com>
+
+	* node.c (diskfs_S_file_get_storage_info): Implement it to return
+	the memory object port with STORAGE_MEMORY.
+
 2001-04-23  Neal H Walfield  <neal@cs.uml.edu>
 
 	* tmpfs.c (main): Pass diskfs_demuxer to
