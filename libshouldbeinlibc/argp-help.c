@@ -1030,6 +1030,7 @@ argp_args_usage (const struct argp *argp, char **levels, int advance,
 		 argp_fmtstream_t stream)
 {
   char *our_level = *levels;
+  int multiple = 0;
   const struct argp_child *child = argp->children;
   const char *doc = argp->args_doc, *nl = 0;
 
@@ -1041,6 +1042,7 @@ argp_args_usage (const struct argp *argp, char **levels, int advance,
 	   as determined by our state in LEVELS, and update LEVELS.  */
 	{
 	  int i;
+	  multiple = 1;
 	  for (i = 0; i < *our_level; i++)
 	    doc = nl + 1, nl = strchr (doc, '\n');
 	  (*levels)++;
@@ -1063,9 +1065,9 @@ argp_args_usage (const struct argp *argp, char **levels, int advance,
     while (child->argp)
       advance = !argp_args_usage ((child++)->argp, levels, advance, stream);
 
-  if (advance)
+  if (advance && multiple)
     /* Need to increment our level.  */
-    if (nl && *nl)
+    if (*nl)
       /* There's more we can do here.  */
       {
 	(*our_level)++;
