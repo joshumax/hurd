@@ -130,8 +130,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
 static const struct argp common_argp = { diskfs_common_options, parse_opt };
 
-static const struct argp *parents[] = { &common_argp, 0 };
+static const struct argp_child children[] = { {&common_argp}, {0} };
 const struct argp diskfs_std_runtime_argp =
 {
-  std_runtime_options, parse_opt, 0, 0, parents
+  std_runtime_options, parse_opt, 0, 0, children
 };
