@@ -75,13 +75,12 @@ diskfs_init_diskfs (mach_port_t bootstrap)
 			  ports_allocate_port (sizeof (struct port_info), 
 					       PT_CTL),
 			  MACH_MSG_TYPE_MAKE_SEND,
-			  &realnode,
-			  &_diskfs_dotdot_file);
+			  &realnode);
       if (err)
-	realnode = _diskfs_dotdot_file = MACH_PORT_NULL;
+	realnode = MACH_PORT_NULL;
     }
   else
-    realnode = _diskfs_dotdot_file = MACH_PORT_NULL;
+    realnode = MACH_PORT_NULL;
   
   device_open (diskfs_master_device, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
