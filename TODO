@@ -30,6 +30,10 @@ See `tasks', the exported task list.
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 
+* Currently libshouldbeinlibc (idvec, etc) and password.defs and login
+  all think there is one user per-uid, and that ain't necessarily so.
+  Needs fixed.  !
+
 * Libraries
 
 ** general:
@@ -149,6 +153,13 @@ See `tasks', the exported task list.
 *** when a session leader exits, netbsd SIGHUP's the terminal, drains output,
     and then revokes it.  (See Posix.1-1996, p. 184, l. 64-68.)
 *** when a session leader sets the ospeed to 0, netbsd SIGHUP's the termianl.
+*** enforce session leader / controlling terminal uniqueness rules. !
+    (1: if a terminal is matched to a session, then another session
+        can't make it its controlling terminal;
+     2: tcsetpgrp to a pgrp that's not in the right sessions must
+        fail;
+     3: when a session leader exits, the association has to be torn
+        down; bsd does SIGHUP + drain + revoke.)
 
 ** exec:
 *** convert stdio magic to use libio (when libc converts) !!!
