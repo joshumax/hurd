@@ -39,5 +39,19 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 main (int argc, char **argv)
 {
-  if (argc != 
-     
+  int execserver;
+  
+  if (argc != 2)
+    {
+      fprintf (stderr, "Usage: %s execserver\n", argv[0]);
+      exit (1);
+    }  
+
+  execserver = open (argv[1]);
+  if (execserver == -1)
+    {
+      perror (argv[1]);
+      exit (1);
+    }
+  
+  
