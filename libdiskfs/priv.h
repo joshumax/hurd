@@ -17,6 +17,8 @@
 
 extern mach_port_t fs_control_port;	/* receive right */
 
+spin_lock_t _diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
+
 /* Called by MiG to translate ports into struct protid *.  
    fsmutations.h arranges for this to happen for the io and
    fs interfaces. */
@@ -33,6 +35,46 @@ extern inline void
 diskfs_end_using_protid_port (struct protid *cred)
 {
   ports_done_with_port (cred);
+}
+
+/* Add a reference to a node. */
+extern inline void
+diskfs_nref (struct node *np)
+{
+  spin_lock (&_diskfs_node_refcnt_lock);
+  np->references++;
+  spin_unlock (&_diskfs_node_refcnt_lock);
+}
+
+/* Unlock node NP and release a reference */
+extern inline void
+diskfs_nput (struct node *np)
+{
+  spin_lock (&_diskfs_node_refcnt_lock);
+  np->references--;
+  if (np->references == 0)
+    {
+      diskfs_drop_node (np);
+      spin_unlock (&_diskfs_node_refcnt_lock);
+    }
+  else
+    {
+      spin_unlock (&_diskfs_node_refcnt_lock);
+      mutex_unlock (&np->lock);
+    }
+}
+
+/* Release a reference on NP.  If NP is locked by anyone, then this cannot
+   be the last reference (because you must hold a reference in order to
+   hold the lock).  */
+extern inline void
+diskfs_nrele (struct node *np)
+{
+  spin_lock (&_diskfs_node_refcnt_lock);
+  np->references--;
+  if (np->references == 0)
+    diskfs_drop_node (np);
+  spin_unlock (&_diskfs_node_refcnt_lock);
 }
 
 /* This macro locks the node associated with PROTID, and then
