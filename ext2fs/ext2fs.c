@@ -279,6 +279,12 @@ main (int argc, char **argv)
   /* A handy source of page-aligned zeros.  */
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
 
+  if (!diskfs_readonly)
+    {
+      sblock->s_state &= ~EXT2_VALID_FS;
+      sync_super_block ();
+    }
+
   inode_init ();
 
   /* Find our root node.  */
