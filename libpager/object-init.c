@@ -29,8 +29,6 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 				  vm_size_t pagesize)
 {
   struct pager *p;
-  boolean_t may_cache;
-  memory_object_copy_strategy_t copy_strategy;
 
   if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
@@ -54,8 +52,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   p->memobjcntl = control;
   p->memobjname = name;
 
-  pager_report_attributes (p->upi, &may_cache, &copy_strategy);
-  memory_object_ready (control, may_cache, copy_strategy);
+  memory_object_ready (control, p->may_cache, p->copy_strategy);
 
   p->pager_state = NORMAL;
 
