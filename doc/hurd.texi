@@ -203,7 +203,6 @@ Server Bootstrap
 Foundations
 
 * Threads Library::             Every Hurd server and library is multithreaded.
-* Microkernel Object Library::  The Microkernel Object Model (MOM).
 * Ports Library::               Managing server port receive rights.
 * Integer Hash Library::        Integer-keyed hash tables.
 * Misc Library::                Things that soon will be in the GNU C library.
