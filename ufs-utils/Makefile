@@ -32,6 +32,6 @@ include ../Makeconf
 
 mkfs.ufs: mkfs.o dlabel.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
-$(targets): %: %.o
+$(targets): %.ufs: %.o
 
 
