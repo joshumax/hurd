@@ -1,3 +1,13 @@
+2002-01-29  Roland McGrath  <roland@frob.com>
+
+	* rpctrace.c (options): Add -I/--rpc-list.
+	(msgid_ihash): New static variable.
+	(msgid_ihash_cleanup): New function.
+	(parse_msgid_list, magid_name): New functions.
+	(main: parse_opt): Grok -I using parse_msgid_list.
+	(trace_and_forward, print_request_header, print_reply_header):
+	Look up msgh_id values using msgid_name and print strings if possible.
+
 2002-01-04  Roland McGrath  <roland@frob.com>
 
 	* msgport.c (str2flags): Use const in argument type; make static.
