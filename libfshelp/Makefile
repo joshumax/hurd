@@ -25,25 +25,26 @@ SRCS = fsys-startup.c init-trans.c trans-start.c transboot-clean.c \
 OBJS = fsys-startup.o init-trans.o trans-start.o transboot-clean.o \
 	kill-trans.o trans-iter.o lock-acquire.o lock-init.o
 
-DIST_FILES = $(SRCS) Makefile trans.h fshelp.h
+DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h
 
-all: libfshelp.a(__.SYMDEF)
+all: libfshelp.a
 
-libfshelp.a(__.SYMDEF): $(OBJS)
+libfshelp.a: $(OBJS)
 	rm -f libfshelp.a
 	ar r $@ $^
-	ranlib $@
 
-$(hurdinst)/lib/libfshelp.a: libfshelp.a(__.SYMDEF)
-	cp libioserver.a $@
+$(hurdinst)/lib/libfshelp.a: libfshelp.a
+	cp libfshelp.a $@
 	ranlib $@
 
 $(headers)/hurd/fshelp.h: fshelp.h
 	cp $< $@
 
-$(OBJS): fshelp.h
+$(OBJS): fshelp.h $(headers)/hurd/ports.h
 fsys-startup.o init-trans.o trans-start.o transboot-clean.o: trans.h
 kill-trans.o trans-iter.o: trans.h
+
+lock-acquire.o lock-init.o: locks.h
 
 clean:
 	rm libfshelp.a *.o
