@@ -1,5 +1,5 @@
 /* S_IFSOCK filesystem node protocol
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -38,6 +38,4 @@ ifsock_setsockaddr (
 
 ifsock_assume_responsibility (
 	master_sockaddr_port: mach_port_t;
-	fsys: mach_port_t;
-	realnode: mach_port_t;
-	dotdot_dir: mach_port_t);
+	bootport: mach_port_t);
