@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <hurd/iohelp.h>
 #include <hurd/fshelp.h>
+#include <error.h>
 #include "ourmsg_U.h"
 
 
@@ -84,13 +85,12 @@ struct protid_hook
 void
 init_users ()
 {
-  errno = ports_create_port (cttyid_class, term_bucket,
-			     sizeof (struct port_info), &cttyid);
-  if (errno)
-    {
-      perror ("Allocating cttyid");
-      exit (1);
-    }
+  error_t err;
+
+  err = ports_create_port (cttyid_class, term_bucket,
+			   sizeof (struct port_info), &cttyid);
+  if (err)
+    error (1, err, "Allocating cttyid");
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &async_icky_id);

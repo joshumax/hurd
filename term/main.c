@@ -26,6 +26,7 @@
 #include <argp.h>
 #include <hurd/fsys.h>
 #include <string.h>
+#include <error.h>
 
 #include <version.h>
 
@@ -148,6 +149,7 @@ main (int argc, char **argv)
   struct trivfs_control **ourcntl, **peercntl;
   mach_port_t bootstrap, right;
   struct stat st;
+  error_t err;
 
   term_bucket = ports_create_bucket ();
   
@@ -206,27 +208,20 @@ main (int argc, char **argv)
 
     default:
       /* Should not happen.  */
-      fprintf (stderr, "Unknown terminal type\n");
-      exit (1);
+      error (1, 0, "Unknown terminal type");
     }
   
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "Must be started as a translator\n");
-      exit (1);
-    }
+    error (1, 0, "Must be started as a translator");
 
   /* Set our node.  */
-  errno = trivfs_startup (bootstrap, 0,
-			  ourcntlclass, term_bucket, ourclass, term_bucket,
-			  ourcntl);
-  if (errno)
-    {
-      perror ("Starting translator");
-      exit (1);
-    }
+  err = trivfs_startup (bootstrap, 0,
+			ourcntlclass, term_bucket, ourclass, term_bucket,
+			ourcntl);
+  if (err)
+    error (1, err, "Starting translator");
 
   /* For ptys, the nodename depends on which half is used.  For now just use
      the hook to store the nodename.  */
@@ -238,25 +233,22 @@ main (int argc, char **argv)
       char *peer_name = tty_arg;
       file_t file = file_name_lookup (peer_name, O_CREAT|O_NOTRANS, 0666);
 
-      if (file != MACH_PORT_NULL)
-	errno = 0;
+      if (file == MACH_PORT_NULL)
+	err = errno;
 
-      if (! errno)
-	errno = trivfs_create_control (file, peercntlclass, term_bucket,
-				       peerclass, term_bucket, peercntl);
-      if (! errno)
+      if (! err)
+	err = trivfs_create_control (file, peercntlclass, term_bucket,
+				     peerclass, term_bucket, peercntl);
+      if (! err)
 	{
 	  right = ports_get_send_right (*peercntl);
-	  errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
+	  err = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
 				     0, 0, 0, right, MACH_MSG_TYPE_COPY_SEND);
 	  mach_port_deallocate (mach_task_self (), right);
 	}
 
-      if (errno)
-	{
-	  perror (peer_name);
-	  exit (1);
-	}
+      if (err)
+	  error (1, err, peer_name);
 
       (*peercntl)->hook = peer_name;
       ports_port_deref (*peercntl);
@@ -267,13 +259,12 @@ main (int argc, char **argv)
   mutex_init (&global_lock);
 
   /* Initialize status from underlying node.  */
-  errno = io_stat ((*ourcntl)->underlying, &st);
-  if (errno)
+  err = io_stat ((*ourcntl)->underlying, &st);
+  if (err)
     {
       /* We cannot stat the underlying node.  Fallback to the defaults.  */
       term_owner = term_group = 0;
       term_mode = (bottom == &ptyio_bottom ? DEFFILEMODE : S_IRUSR | S_IWUSR);
-      errno = 0;
     }
   else
     {
@@ -289,12 +280,9 @@ main (int argc, char **argv)
   
   outputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   
-  errno = (*bottom->init) ();
-  if (errno)
-    {
-      perror ("Initializing bottom handler");
-      exit (1);
-    }
+  err = (*bottom->init) ();
+  if (err)
+    error (1, err, "Initializing bottom handler");
 
   condition_init (&carrier_alert);
   condition_init (&select_alert);
