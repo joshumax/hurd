@@ -1,14 +1,14 @@
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
-	* dir-lookup.c (trivfs_S_dir_lookup): Use
-	iohelp_dup_iouser as per the new semantics.
+	* dir-lookup.c (trivfs_S_dir_lookup): Use iohelp_dup_iouser as
+	per the new semantics.
 	* fsys-getroot.c (trivfs_S_fsys_getroot): Use
 	iohelp_create_complex_iouser.
 	* io-reauthenticate.c (trivfs_S_io_reauthenticate):
 	Use iohelp_reauth as per the new semantics.
 	* io-restrict-auth.c (trivfs_S_io_restrict_auth):
 	Use iohelp_create_complex_iouser.  Check return values.
-	* trivfs_protid_dup (trivfs_protid_dup): Use iohelp_dup_iouser
+	* protid-dup.c (trivfs_protid_dup): Use iohelp_dup_iouser
 	as per the new semantics.
 
 2001-06-10  Neal H Walfield  <neal@cs.uml.edu>

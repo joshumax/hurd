@@ -15,7 +15,7 @@
 	as per the new semantics.
 	* io-reauthenticate.c (netfs_S_io_reauthenticate): Use
 	iohelp_reauth as per the new semantics.
-	* io-restric-auth.c (netfs_S_io_restric_auth): Use
+	* io-restrict-auth.c (netfs_S_io_restrict_auth): Use
 	iohelp_create_complex_iouser.  Check return values.
 	* trans-callback.c (_netfs_transcallback2_fn):	Use
 	iohelp_create_simple_iouser.
