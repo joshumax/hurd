@@ -94,6 +94,9 @@ error_t sock_connect (struct sock *sock1, struct sock *sock2);
 /* Return a new socket with the given pipe class in SOCK.  */
 error_t sock_create (struct pipe_class *pipe_class, struct sock **sock);
 
+/* Free SOCK, assuming there are no more handle on it.  */
+void sock_free (struct sock *sock);
+
 /* Remove a reference from SOCK, possibly freeing it.  */
 extern inline void
 sock_deref (struct sock *sock)
