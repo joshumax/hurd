@@ -29,6 +29,7 @@ See `tasks', the exported task list.
 * Implement file_fetch_dir
 * Conform to coding standards (esp. CFLAGS setting)
 * Internationalization !
+* Update INSTALL to refer to GNUmach. !!!
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 
@@ -162,10 +163,7 @@ See `tasks', the exported task list.
 *** Implement V3 nfs. 
 *** Implement nqnfs. !
 *** Add Hurd-specific calls. !!
-*** emacs M-x server doesn't work if ~ is on nfs. !!!
 *** errors in mount_root should get reflected more usefully to users. !
-*** nfs/libnetfs validates file_set_size based upon current node mode
-    rather than O_WRITE.  !!!
 
 ** storeio:
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
@@ -209,9 +207,9 @@ See `tasks', the exported task list.
     script by other than root (it doesn't now if the script specifies
     --retry="$0" because the exec server will use /dev/fd/N for name,
     and child_lookup() doesn't supply more than fds 0-2). !!
-** Serverboot doesn't deal with symlinks properly. !!!
 ** Grub doesn't deal with symlinks properly. !!!
 ** Make w use utmp's tty instead of the process's
+** Write passwd.
 
 ** fsck:
 *** fsck should use fsys_get_options returned device instead of /etc/fstab !!

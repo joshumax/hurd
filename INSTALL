@@ -56,10 +56,10 @@ called `autoconf'.  You only need `configure.in' if you want to change
 it or regenerate `configure' using a newer version of `autoconf'.
 
 
-Building the Hurd, Mach4, and libc together
+Building the Hurd, GNUmach, and libc together
 ===========================================
 
-1. Configure mach4.
+1. Configure GNUmach.
 
 3. Do `make install' in <mach4-build>/mig.  ONLY.
 
