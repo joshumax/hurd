@@ -20,7 +20,7 @@
 
 /* Implement io_release_conch as described in <hurd/io.defs>. */
 error_t
-S_io_release_conch (struct protid *cred)
+diskfs_S_io_release_conch (struct protid *cred)
 {
   struct node *np;
   
