@@ -1,3 +1,7 @@
+2001-08-23  Roland McGrath  <roland@frob.com>
+
+	* lockfile.c: Rewritten to use macros now defined by libc.
+
 2001-03-31  Roland McGrath  <roland@frob.com>
 
 	* cthreads.h: Fix obsolescent #endif syntax.
