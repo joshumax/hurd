@@ -26,6 +26,12 @@
 
 /* XXX */
 typedef unsigned long long u_quad_t;
+typedef long long quad_t;
+struct timespec 
+{
+  long ts_sec;
+  long ts_nsec;
+};
 
 
 /* Define this if memory objects should not be cached by the kernel.
@@ -179,7 +185,7 @@ struct mutex dinmaplock;
 struct mutex sinmaplock;
 
 spin_lock_t gennumberlock;
-int nextgennumber;
+u_long nextgennumber;
 
 mach_port_t ufs_device;
 
@@ -190,7 +196,7 @@ enum compat_mode
   COMPAT_GNU = 0,
   COMPAT_BSD42 = 1,
   COMPAT_BSD44 = 2,
-};
+} compat_mode;
 
 /* If this is set, then this filesystem has two extensions:
    1) directory entries include the type field.
@@ -212,7 +218,7 @@ int direct_symlink_extension;
 /* From alloc.c: */
 error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *, 
 		   struct protid *);
-void ffs_blkfree(struct node *, volatile daddr_t bno, int size);
+void ffs_blkfree(struct node *, daddr_t bno, long size);
 daddr_t ffs_blkpref (struct node *, daddr_t, int, daddr_t *);
 error_t ffs_realloccg(struct node *, daddr_t, daddr_t,
 		  int, int, daddr_t *, struct protid *);
@@ -243,9 +249,9 @@ void drop_pager_softrefs (struct node *);
 void allow_pager_softrefs (struct node *);
 
 /* From subr.c: */
-void fragacct (int, long [], int);
-int isblock(u_char *, daddr_t);
-void clrblock(u_char *, daddr_t);
-void setblock (u_char *, daddr_t);
+void ffs_fragacct (struct fs *, int, long [], int);
+int ffs_isblock(struct fs *, u_char *, daddr_t);
+void ffs_clrblock(struct fs *, u_char *, daddr_t);
+void ffs_setblock (struct fs *, u_char *, daddr_t);
 int skpc (u_char, u_int, u_char *);
 int scanc (u_int, u_char *, u_char [], u_char);
