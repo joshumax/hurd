@@ -200,8 +200,7 @@ See `tasks', the exported task list.
 ** Grub doesn't deal with symlinks properly.
 
 ** fsck:
-*** fsck should use (not-yet-added) fsys_get_options returned device instead 
-   of /etc/fstab.
+*** fsck should use fsys_get_options returned device instead of /etc/fstab.
 *** If fstab mentions a bad type, fsck gets as assert failure.
 
 ** settrans:
