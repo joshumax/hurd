@@ -31,9 +31,9 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t dotdot,
 		       uid_t *uids,
-		       u_int nuids,
+		       size_t nuids,
 		       uid_t *gids,
-		       u_int ngids,
+		       size_t ngids,
 		       int flags,
 		       retry_type *retry,
 		       char *retryname,
@@ -101,7 +101,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
     {
       /* Handle symlink interpretation */
       char pathbuf[diskfs_root_node->dn_stat.st_size + 1];
-      int amt;
+      size_t amt;
 
       if (diskfs_read_symlink_hook)
 	error = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);

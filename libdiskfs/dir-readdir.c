@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,96,99,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
 		      char **data,
-		      u_int *datacnt,
+		      size_t *datacnt,
 		      boolean_t *data_dealloc,
 		      int entry,
 		      int nentries,

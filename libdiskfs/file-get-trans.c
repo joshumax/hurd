@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_get_translator
-   Copyright (C) 1992,93,94,95,96,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,98,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,7 +25,7 @@
 kern_return_t
 diskfs_S_file_get_translator (struct protid *cred,
 			      char **trans,
-			      u_int *translen)
+			      size_t *translen)
 {
   struct node *np;
   error_t error = 0;
@@ -41,7 +41,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   if (S_ISLNK (np->dn_stat.st_mode))
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
-      int amt;
+      size_t amt;
       assert (diskfs_shortcut_symlink);
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
@@ -107,7 +107,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
-	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);    
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
       *translen = len;
       error = 0;
