@@ -265,7 +265,7 @@ relink:
 
 
 # Where to find .defs files.
-vpath %.defs $(top_srcdir)/hurd
+vpath %.defs $(top_srcdir)/hurd /gd4/hurdinst/include/mach
 
 FORCE:
 
