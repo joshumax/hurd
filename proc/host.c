@@ -138,6 +138,8 @@ S_proc_getexecdata (struct proc *p,
 		    int **ints,
 		    u_int *nints)
 {
+  int i;
+  int ports_allocated = 0;
   /* No need to check P here; we don't use it. */
 
   if (!std_port_array)
@@ -149,6 +151,7 @@ S_proc_getexecdata (struct proc *p,
 		     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*ports == MAP_FAILED)
         return ENOMEM;
+      ports_allocated = 1;
     }
   memcpy (*ports, std_port_array, n_std_ports * sizeof (mach_port_t));
   *nports = n_std_ports;
@@ -158,10 +161,18 @@ S_proc_getexecdata (struct proc *p,
       *ints = mmap (0, round_page (n_std_ints * sizeof (int)),
 		    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*ints == MAP_FAILED)
-        return ENOMEM;
+	{
+	  if (ports_allocated)
+	    munmap (*ports, round_page (n_std_ports * sizeof (mach_port_t)));
+	  return ENOMEM;
+	}
     }
   memcpy (*ints, std_int_array, n_std_ints * sizeof (int));
   *nints = n_std_ints;
+
+  for (i = 0; i < n_std_ports; i++)
+    mach_port_mod_refs (mach_task_self (), std_port_array[i], MACH_PORT_RIGHT_SEND, 1);
+  *portspoly = MACH_MSG_TYPE_MOVE_SEND;
 
   return 0;
 }

@@ -1,3 +1,14 @@
+2001-07-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* host.c (S_proc_getexecdata): New variable PORTS_ALLOCATED.
+	Set it if we allocated a new buffer for PORTS.  If it is set,
+	and allocation of a new buffer for INTS fails, unmap the buffer
+	for PORTS.
+
+	* host.c (S_proc_getexecdata): New variable I.  Go over all
+	standard ports and increase the send right user reference by one.
+	Set *PORTSPOLY to MACH_MSG_TYPE_MOVE_SEND.
+
 2001-06-27  Marcus Brinkmann  <marcus@gnu.org>
 
 	* info.c (S_proc_getprocinfo): If we return because mmap failed
