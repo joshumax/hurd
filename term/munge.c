@@ -135,7 +135,7 @@ output_width (int c, int loc)
       int n = loc + 1;
       while (n % 8)
 	n++;
-      return n; 
+      return n - loc; 
     }
   if ((c >= ' ') && (c < '\177'))
     return 1;
