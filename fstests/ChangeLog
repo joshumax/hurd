@@ -1,3 +1,7 @@
+2000-03-26  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fstests.c (main): Fix return type.  #if 0 out some unused variables.
+
 Thu Jun 27 17:59:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (targets): Comment out opendisk for now.
@@ -14,7 +18,7 @@ Thu Jul  6 21:03:12 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
 Wed Aug 31 12:02:01 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
 
 	* Makefile (targets): Added opendisk.
-	(SRCS): Added opendisk.c. 
+	(SRCS): Added opendisk.c.
 	* opendisk.c: New file.
 
 Wed Aug 31 03:26:13 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
@@ -44,4 +48,3 @@ Tue Jul  5 14:20:48 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
 Mon Jun 20 15:05:34 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
 
 	* Makefile (install): Use $(INSTALL_BIN) instead of cp.
-
