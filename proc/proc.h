@@ -217,7 +217,7 @@ check_owner (struct proc *proc1, struct proc *proc2)
 {
   return
     proc2->p_noowner
-      ? proc1->p_login == proc2->p_login
+      ? check_uid (proc1, 0) || proc1->p_login == proc2->p_login
       : check_uid (proc1, proc2->p_owner);
 }
 
