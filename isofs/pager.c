@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -52,7 +52,8 @@ pager_read_page (struct user_pager_info *upi,
   
       if (page >= np->dn_stat.st_size)
 	{
-	  vm_allocate (mach_task_self (), buf, vm_page_size, 1);
+	  *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+				      MAP_ANON, 0, 0);
 	  return 0;
 	}
 
