@@ -43,11 +43,13 @@ OTHERSRCS=demuxer.c handle-port.c protid-clean.c cntl-clean.c migsupport.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
 
+TAGSHDRS = trivfs.h fsmutations.h
+
 MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o
 
 OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
-DIST_FILES= $(SRCS) Makefile ChangeLog trivfs.h
+DIST_FILES= $(SRCS) Makefile ChangeLog trivfs.h fsmutations.h
 
 MIGSFLAGS=-imacros fsmutations.h
 
