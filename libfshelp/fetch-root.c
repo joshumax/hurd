@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -69,6 +69,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
 	  rend = mach_reply_port ();
 
+	  /* MAKE_SEND is safe here because we destroy REND ourselves. */
 	  err = io_reauthenticate (port, rend,
 				   MACH_MSG_TYPE_MAKE_SEND);
 	  mach_port_deallocate (mach_task_self (), port);
@@ -112,7 +113,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	{
 	  uid_t uidarray[2] = { uid, uid };
 	  gid_t gidarray[2] = { gid, gid };
-	  err = auth_makeauth (ourauth, 0, MACH_MSG_TYPE_MAKE_SEND, 0,
+	  err = auth_makeauth (ourauth, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 			       uidarray, 1, uidarray, 2,
 			       gidarray, 1, gidarray, 2, &newauth);
 	  if (err)
