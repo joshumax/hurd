@@ -19,10 +19,6 @@
 #ifndef _HURD_PAGER_
 #define _HURD_PAGER_
 
-/* This is a user-dependent type which represents a location of
-   a single page. */
-typedef void *location_t;
-
 /* This declaration exists to place struct user_pager_info in the proper
    scope.  */
 struct user_pager_info;
