@@ -292,6 +292,7 @@ main (int argc, char **argv)
     }
   diskfs_root_node->dn_stat.st_mode &= ~S_ITRANS;
   diskfs_root_node->dn_stat.st_mode |= S_IROOT;
+  diskfs_root_node->dn_stat.st_nlink = 2;
 
   mutex_unlock (&diskfs_root_node->lock);
 
