@@ -155,8 +155,10 @@ objs: $(OBJS)
 ifneq ($(no_prof),t)
 objs: $(OBJS:%.o=%_p.o)
 endif
+ifeq ($(makemode),library)
 ifneq ($(no_pic),t)
 objs: $(OBJS:%.o=%_pic.o)
+endif
 endif
 
 # Installation
