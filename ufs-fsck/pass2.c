@@ -146,26 +146,14 @@ pass2 ()
 
 	  /* Check TYPE */
 	  type = DIRECT_TYPE (dp);
-	  if (type != DT_UNKNOWN)
+	  if (type != DT_UNKNOWN && type == typemap[dp->d_ino])
 	    {
-	      if (type == typemap[dp->d_ino])
+	      problem (0, "INCORRECT NODE TYPE IN DIRECTORY");
+	      if (preen || reply ("CLEAR"))
 		{
-		  problem (0, "NODE TYPE FIELD SET IN DIRECTORY [NOT IMPLEMENTED IN HURD]");
-		  if (preen || reply ("CLEAR"))
-		    {
-		      dp->d_type = 0;
-		      mod = 1;
-		      pfix ("CLEARED");
-		    }
-		}
-	      else
-		{
-		  problem (1, "INCORRECT NODE TYPE IN DIRECTORY");
-		  if (reply ("CLEAR"))
-		    {
-		      dp->d_type = 0;
-		      mod = 1;
-		    }
+		  pfix ("CLEARED");
+		  dp->d_type = 0;
+		  mod = 1;
 		}
 	    }
 	  
