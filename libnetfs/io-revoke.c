@@ -54,7 +54,9 @@ netfs_S_io_revoke (struct protid *cred)
   if (err)
     return err;
 
+  ports_inhibit_bucket_rpcs (netfs_port_bucket);
   ports_bucket_iterate (netfs_port_bucket, iterator_function);
+  ports_resume_bucket_rpcs (netfs_port_bucket);
 
   return 0;
 }

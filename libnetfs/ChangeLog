@@ -1,3 +1,8 @@
+Mon Feb 22 04:30:18 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-revoke.c (netfs_S_io_revoke): Protect the revocation by
+	blocking other rpcs.
+
 Sat Feb 20 20:54:26 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-revoke.c (netfs_S_io_revoke): Release lock before iteration. 
