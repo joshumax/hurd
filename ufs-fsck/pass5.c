@@ -168,7 +168,7 @@ pass5 ()
       writecg = 0;
       
       if (!cg_chkmagic (cg))
-	pfatal ("CG %d: BAD MAGIC NUMBER", c);
+	warning (1, "CG %d: BAD MAGIC NUMBER", c);
       
       /* Compute first and last data block addresses in this group */
       dbase = cgbase (sblock, c);
@@ -199,36 +199,42 @@ pass5 ()
       newcg->cg_irotor = cg->cg_irotor;
       if (newcg->cg_rotor > newcg->cg_ndblk)
 	{
-	  pwarn ("ILLEGAL ROTOR VALUE IN CG %d", c);
+	  problem (0, "ILLEGAL ROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      newcg->cg_rotor = 0;
 	      cg->cg_rotor = 0;
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       if (newcg->cg_frotor > newcg->cg_ndblk)
 	{
-	  pwarn ("ILLEGAL FROTOR VALUE IN CG %d", c);
+	  problem (0, "ILLEGAL FROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      newcg->cg_frotor = 0;
 	      cg->cg_frotor = 0;
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       if (newcg->cg_irotor > newcg->cg_niblk)
 	{
-	  pwarn ("ILLEGAL IROTOR VALUE IN CG %d", c);
+	  problem (0, "ILLEGAL IROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      newcg->cg_irotor = 0;
 	      cg->cg_irotor = 0;
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       
       /* Zero the block maps and summary areas */
@@ -355,47 +361,55 @@ pass5 ()
       /* Check counts in superblock */
       if (bcmp (&newcg->cg_cs, &sbcsums[c], sizeof (struct csum)))
 	{
-	  pwarn ("FREE BLK COUNTS FOR CG %d WRONG IN SUPERBLOCK", c);
+	  problem (0, "FREE BLK COUNTS FOR CG %d WRONG IN SUPERBLOCK", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      bcopy (&newcg->cg_cs, &sbcsums[c], sizeof (struct csum));
 	      writecsum = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       
       /* Check inode and block maps */
       if (bcmp (cg_inosused (newcg), cg_inosused (cg), mapsize))
 	{
-	  pwarn ("BLKS OR INOS MISSING IN CG %d BIT MAPS", c);
+	  problem (0, "BLKS OR INOS MISSING IN CG %d BIT MAPS", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      bcopy (cg_inosused (newcg), cg_inosused (cg), mapsize);
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       
       if (bcmp (&cg_blktot(newcg)[0], &cg_blktot(cg)[0], sumsize))
 	{
-	  pwarn ("SUMMARY INFORMATION FOR CG %d BAD", c);
+	  problem (0, "SUMMARY INFORMATION FOR CG %d BAD", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      bcopy (&cg_blktot(newcg)[0], &cg_blktot(cg)[0], sumsize);
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
       
       if (bcmp (newcg, cg, basesize))
 	{
-	  pwarn ("CYLINDER GROUP %d BAD", c);
+	  problem (0, "CYLINDER GROUP %d BAD", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      pfix ("FIXED");
 	      bcopy (newcg, cg, basesize);
 	      writecg = 1;
+	      pfix ("FIXED");
 	    }
+	  else
+	    pfail (0);
 	}
 
       if (writecg)
@@ -409,26 +423,30 @@ pass5 ()
   
   if (bcmp (&cstotal, &sblock->fs_cstotal, sizeof (struct csum)))
     {
-      pwarn ("TOTAL FREE BLK COUNTS WRONG IN SUPERBLOCK");
+      problem (0, "TOTAL FREE BLK COUNTS WRONG IN SUPERBLOCK");
       if (preen || reply ("FIX"))
 	{
-	  pfix ("FIXED");
 	  bcopy (&cstotal, &sblock->fs_cstotal, sizeof (struct csum));
 	  sblock->fs_ronly = 0;
 	  sblock->fs_fmod = 0;
 	  writesb = 1;
+	  pfix ("FIXED");
 	}
+      else
+	pfail (0);
     }
 
   if (sblock->fs_clean == 0 && !fix_denied)
     {
-      pwarn ("FILESYSTEM MODIFIED");
+      problem (0, fsmodified ? "FILESYSTEM MODIFIED" : "FILESYSTEM UNCLEAN");
       if (preen || reply ("MARK CLEAN"))
 	{
-	  pfix ("MARKED CLEAN");
 	  sblock->fs_clean = 1;
 	  writesb = 1;
+	  pfix ("MARKED CLEAN");
 	}
+      else
+	pfail ("LEFT UNCLEAN");
     }
   
   if (writesb)
@@ -445,6 +463,6 @@ pass5 ()
       readblock (fsbtodb (sblock, sblock->fs_csaddr), test,
 		 fragroundup (sblock, sblock->fs_cssize));
       if (bcmp (test, sbcsums, fragroundup (sblock, sblock->fs_cssize)))
-	printf ("CSUM write inconsistent");
+	warning (0, "CSUM WRITE INCONSISTENT");
     }
 }
