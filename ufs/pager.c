@@ -667,7 +667,7 @@ diskfs_max_user_pager_prot ()
 
   ports_enable_bucket (pager_bucket);
 
-  return 1;
+  return max_prot;
 }
 
 /* Call this to find out the struct pager * corresponding to the
