@@ -29,5 +29,6 @@ diskfs_make_peropen (struct node *np, int flags)
   po->refcnt = 0;
   po->openstat = flags;
   po->np = np;
+  diskfs_nref (np);
   return po;
 }
