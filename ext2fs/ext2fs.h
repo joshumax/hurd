@@ -42,6 +42,9 @@ typedef int8_t    __s8;
 #include "ext2_fs.h"
 #include "ext2_fs_i.h"
 
+#define i_mode_high	osd2.hurd2.h_i_mode_high /* missing from ext2_fs.h */
+
+
 /* If ext2_fs.h defined a debug routine, undef it and use our own.  */
 #undef ext2_debug
 
@@ -433,7 +436,9 @@ void ext2_discard_prealloc (struct node *node);
    otherwise EINVAL is returned.  */
 error_t ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block);
 
-block_t ext2_new_block (block_t goal, block_t *prealloc_count, block_t *prealloc_block);
+block_t ext2_new_block (block_t goal,
+			block_t prealloc_goal,
+			block_t *prealloc_count, block_t *prealloc_block);
 
 void ext2_free_blocks (block_t block, unsigned long count);
 
