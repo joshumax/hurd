@@ -22,15 +22,9 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_dir_rmdir (struct protid *diruser, char *name)
+netfs_S_dir_notice_changes (struct protid *dir,
+			    mach_port_t port)
 {
-  error_t err;
-  
-  if (!diruser)
-    return EOPNOTSUPP;
-
-  mutex_lock (&diruser->po->np->lock);
-  err = netfs_attempt_rmdir (diruser->credential, diruser->po->np, name);
-  mutex_unlock (&diruser->po->np->lock);
-  return err;
+  /* Don't even try */
+  return EOPNOTSUPP;
 }
