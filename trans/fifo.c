@@ -86,8 +86,6 @@ static struct option options[] =
 
 /* ---------------------------------------------------------------- */
 
-struct port_bucket *port_bucket;
-
 struct port_class *trivfs_protid_portclasses[1];
 struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_protid_nportclasses = 1;
@@ -99,6 +97,8 @@ main (int argc, char **argv)
   int opt;
   error_t err;
   mach_port_t bootstrap;
+  struct port_bucket *port_bucket;
+  struct port_class *fifo_port_class, *fsys_port_class;
 
   fifo_pipe_class = stream_pipe_class;
 
@@ -111,16 +111,19 @@ main (int argc, char **argv)
       case '&': usage(0);
       default:  usage(1);
       }
-  
-  port_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
-  trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
 
   if (argc != 1)
     {
       fprintf(stderr, "Usage: %s", program_invocation_name);
       exit(1);
     }
+  
+  port_bucket = ports_create_bucket ();
+  fifo_port_class = ports_create_class (trivfs_clean_protid, 0);
+  fsys_port_class = ports_create_class (trivfs_clean_cntl, 0);
+
+  trivfs_protid_portclasses[0] = fifo_port_class;
+  trivfs_cntl_portclasses[0] = fsys_port_class;
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
@@ -128,16 +131,21 @@ main (int argc, char **argv)
 
   /* Reply to our parent */
   err = trivfs_startup(bootstrap,
-		       trivfs_cntl_portclasses[0], port_bucket,
-		       trivfs_protid_portclasses[0], port_bucket,
+		       fsys_port_class, port_bucket,
+		       fifo_port_class, port_bucket,
 		       NULL);
   if (err)
     error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_multithread (port_bucket,
-					    trivfs_demuxer,
-					    0, 0, 0, MACH_PORT_NULL);
+  do
+    {
+      ports_enable_class (fifo_port_class);
+      ports_manage_port_operations_multithread (port_bucket,
+						trivfs_demuxer,
+						30*1000, 5*60*1000, 0, 0);
+    }
+  while (ports_count_class (fifo_port_class) > 0);
 
   exit(0);
 }
@@ -276,6 +284,18 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
+  struct port_bucket *bucket = ((struct port_info *)cntl)->bucket;
+
+  ports_inhibit_bucket_rpcs (bucket);
+  if (ports_count_class (cntl->protid_class) > 0
+      && !(flags & FSYS_GOAWAY_FORCE))
+    /* Still some opens, and we're not being forced to go away, so don't.  */
+    {
+      ports_enable_class (cntl->protid_class);
+      ports_resume_bucket_rpcs (bucket);
+      return EBUSY;
+    }
+
   exit(0);
 }
 
