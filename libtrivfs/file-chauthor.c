@@ -16,11 +16,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-trivfs_S_file_chauthor (struct protid *cred,
-		      uid_t auth)
+trivfs_S_file_chauthor (struct trivfs_protid *cred,
+			uid_t auth)
 {
-  return cred ? file_chauthor (cred->realnode, uid, gid) : EOPNOTSUPP;
+  return cred ? file_chauthor (cred->realnode, auth) : EOPNOTSUPP;
 }
 
