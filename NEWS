@@ -99,6 +99,11 @@ The proc server can show the start time of processes.
 
 * msgport, ping
 
+The Hurd interfaces have been changed to support large files.
+
+The new proxy-defpager translator grants unprivileged users access to
+the default pager.
+
 
 9 June 1997
 Version 0.2
