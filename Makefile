@@ -21,11 +21,11 @@ include Makeconf
 
 LIB_SUBDIRS = libioserver libports libpager libfshelp libdiskfs libtrivfs
 PROG_SUBDIRS = auth boot exec fstests hello ifsock init init.trim mkbootfs \
-	 proc term tmpfs ufs
+	 proc term tmpfs ufs pflocal
 OTHER_SUBDIRS = hurd i386
 SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
 
-DIST_FILES = COPYING Makeconf Makefile README NEWS
+DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS
 
 all:
 	@echo Can\'t make all yet.
