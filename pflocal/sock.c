@@ -22,9 +22,10 @@
 
 #include <cthreads.h>
 
+#include <hurd/pipe.h>
+
 #include "sock.h"
 #include "sserver.h"
-#include "pipe.h"
 
 #include "debug.h"
 
