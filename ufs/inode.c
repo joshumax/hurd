@@ -270,10 +270,17 @@ read_disknode (struct node *np)
   if (!S_ISBLK (st->st_mode) && !S_ISCHR (st->st_mode))
     st->st_rdev = 0;
 
-  if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
-    np->allocsize = fragroundup (sblock, np->dn_stat.st_size);
+  if (S_ISLNK (st->st_mode) 
+      && direct_symlink_extension 
+      && st->st_size < sblock->fs_maxsymlinklen)
+    np->allocsize = 0;
   else
-    np->allocsize = blkroundup (sblock, np->dn_stat.st_size);
+    {
+      if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
+	np->allocsize = fragroundup (sblock, st->st_size);
+      else
+	np->allocsize = blkroundup (sblock, st->st_size);
+    }
 
   return 0;
 }
