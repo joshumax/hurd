@@ -264,7 +264,7 @@ netfs_attempt_statfs (struct netcred *cred, struct node *np,
   void *rpcbuf;
   error_t err;
     
-  p = nfs_initialize_rpc (NFSPROC_SETATTR, cred, 0, &rpcbuf, np, -1);
+  p = nfs_initialize_rpc (NFSPROC_STATFS, cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   
   err = conduct_rpc (&rpcbuf, &p);

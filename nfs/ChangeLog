@@ -1,3 +1,8 @@
+Wed Jul 31 13:25:00 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_statfs): Use NFSPROC_STATFS, not SETATTR to
+	do a statfs.
+
 Tue Jul 23 19:41:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* nfs.c (xdr_encode_sattr_times): `struct timespec' now uses a

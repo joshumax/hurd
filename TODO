@@ -59,7 +59,6 @@ See `tasks', the exported task list.
 ** libshouldbeinlibc:
 *** Merge contents of libshouldbeinlibc that belong there into libc.
    Rename the rest to libhurdutil or somesuch.
-*** debug linewrap.c (in libshouldbeinlibc temporarily)
 *** argp: finde some way to flag certain long options as only matching
    exactly (add this as OPT_EXACT); use this on the built in option
    --program-name. 
@@ -131,6 +130,7 @@ See `tasks', the exported task list.
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
     non-suid.
 *** Remove hostname/hostid functions
+*** add timeouts to all the msg_* calls proc makes.
 
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
@@ -225,7 +225,6 @@ See `tasks', the exported task list.
 
 * TODO for version 0.0:
 
-** Bug: GDB as non-root
 ** Compile released libc.
 ** Compile released utilities.  (See SOURCES-0.0)
 ** Make serverboot source tar and build instructions.
