@@ -1,5 +1,10 @@
 Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-fmtstream.c (_GNU_SOURCE): New macro.
+	<ctype.h>: New include.
+	[!isblank] (isblank): New macro.
+	* argp-fmtstream.h <ctype.h>: Include removed.
+
 	* argp-parse.c (parser_parse_next): Decrement PARSER->state.next
  	if we consumed an arg we didn't end up parsing.
 	Set ARG_EBADKEY ourselves in all cases.
