@@ -1,3 +1,7 @@
+2000-07-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* truncate.c (trunc_indirect): Add missing argument to pager_flush_some.
+
 2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
 	
 	* truncate.c (trunc_indirect): Before freeing an indirect block,
