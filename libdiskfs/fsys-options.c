@@ -43,6 +43,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	mach_port_t control;
 	
 	error = fshelp_fetch_control (&np->transbox, &control);
+	mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_set_options (control, data, len, do_children);
@@ -50,6 +51,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	  }
 	else
 	  error = 0;
+	mutex_lock (&np->lock);
 	return error;
       }
   
