@@ -16,13 +16,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+#include "priv.h"
+#include <stdio.h>
+#include <mach/notify.h>
+
 void
 pager_no_senders (struct pager *p,
 		  mach_port_seqno_t seqno,
-		  mach_port_mscount_t mscount);
+		  mach_port_mscount_t mscount)
 {
   mach_port_t old;
-  int ret;
   int dealloc;
   
   mutex_lock (&p->interlock);
@@ -67,9 +70,10 @@ pager_clean (void *arg)
   struct pager *p = arg;
   
   if (p->pager_state != NOTINIT)
-    panic ("pager not terminated"); /* XXX */
+    {
+      mutex_lock (&p->interlock);
+      _pager_free_structure (p);
+    }
   
-  pager_clean_user_data (p->upi);
-  
-  /* Should remove from list. XXX */
+  pager_clear_user_data (p->upi);
 }
