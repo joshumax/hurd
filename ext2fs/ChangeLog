@@ -7,7 +7,7 @@
 1999-08-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2_fs.h, ext2_fs_i.h: Replaced with Linux 2.3.14 versions.
-	* ext2fs.h (i_mode_high): New macro, missing from ext_fs.h.
+	* ext2fs.h (i_mode_high): New macro, missing from ext2_fs.h.
 
 	* inode.c (read_node): Don't set INFO->i_version.
 	Extract INFO->i_dir_acl value only for a directory;
