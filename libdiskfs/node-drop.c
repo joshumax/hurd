@@ -22,16 +22,18 @@
 void
 diskfs_drop_node (struct node *np)
 {
+  mode_t savemode;
   fshelp_kill_translator (&np->translator);
   if (np->dn_stat.st_nlink == 0)
     {
       assert (!diskfs_readonly);
       diskfs_truncate (np, 0);
+      savemode = np->dn_stat.st_mode;
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
       np->dn_set_ctime = np->dn_set_atime = 1;
       diskfs_node_update (np, 1);
-      diskfs_free_node (np);
+      diskfs_free_node (np, savemode);
     }
   diskfs_node_norefs (np);
 }
