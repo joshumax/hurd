@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <string.h>
 
 /* Actually read or write a file.  The file size must already permit
    the requested access.  NP is the file to read/write.  DATA is a buffer
@@ -24,7 +25,7 @@
    DIR is set for writing and clear for reading.  The inode must
    be locked.  */
 error_t
-_diskfs_rdwr_internal (struct inode *np,
+_diskfs_rdwr_internal (struct node *np,
 		       char *data,
 		       int offset, 
 		       int amt, 
@@ -34,7 +35,7 @@ _diskfs_rdwr_internal (struct inode *np,
   int winoff;
   int cc;
   memory_object_t memobj;
-  int err;
+  int err = 0;
 
   if (dir)
     assert (!diskfs_readonly);
