@@ -373,7 +373,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
   
       pextend (" M=0%o", DI_MODE (&dino));
       pextend (" SZ=%llu", dino.di_size);
-      p = ctime (&dino.di_mtime.ts_sec);
+      p = ctime (&dino.di_mtime.tv_sec);
       pextend (" MT=%12.12s %4.4s", &p[4], &p[20]);
     }
 
