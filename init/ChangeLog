@@ -1,3 +1,8 @@
+2001-07-02  Roland McGrath  <roland@frob.com>
+
+	* init.c (reboot_system): Don't pass null pointer to RPC out param.
+	Thanks to Moritz Schulte <moritz@chaosdorf.de> for finding this.
+
 2001-01-17  Neal H Walfield  <neal@cs.uml.edu>
 
 	* init.c (open_console): Conform to new fshelp_start_translator
@@ -10,7 +15,7 @@
 
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
-	* init.c (launch_core_servers): Don't use MOVE_SEND in Hurd RPCs. 
+	* init.c (launch_core_servers): Don't use MOVE_SEND in Hurd RPCs.
 
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
