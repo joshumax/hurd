@@ -1339,7 +1339,15 @@ static int inet_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 	return(0);
 
 }
+#else /* _HURD_ */
+static int inet_ioctl (struct socket *sock,
+		       unsigned int cm,
+		       unsigned long arg)
+{
+  return EOPNOTSUPP;
+}
 #endif
+
 
 /*
  * This routine must find a socket given a TCP or UDP header.
