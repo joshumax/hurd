@@ -25,7 +25,7 @@ gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/include
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
-CFLAGS := -Wall -Wno-parentheses -O -g
+CFLAGS := -Wall -Wno-parentheses -O -g -pipe
 
 # Finding binaries
 CC=gcc
