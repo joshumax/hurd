@@ -1,6 +1,6 @@
 /* Duplicate a protid
 
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -42,7 +42,12 @@ trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 
       new->isroot = cred->isroot;
 
-      new->user = iohelp_dup_iouser (cred->user);
+      err = iohelp_dup_iouser (&new->user, cred->user);
+      if (err)
+        {
+	  ports_port_deref (new);
+	  return err;
+	}
 
       new->realnode = cred->realnode;
       mach_port_mod_refs (mach_task_self (), new->realnode,
