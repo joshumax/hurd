@@ -3,9 +3,10 @@ Checklist for Hurd releases.
 o   Symlinks in /bin; esp. sh, awk, more, cc.
 o   Make sure /i486-gnu contains hard links, not copies.
 o   Make sure we are using Hurd versions of su and uptime, not sh-utils.
+o   Make sure we are using Hurd fsck, not e2fs.
 o   Make install-dist from release dir.
 o   Make sure there is only a stubby resolv.conf in the distribution.
-o   Make sure there /etc/fstab has no active members
+o   Make sure /etc/fstab has no active members
 o   Make /info/dir
 o   Source code for Hurd and libc must be released.
 o   Make sure everything listed in SOURCES is on prep.
