@@ -45,6 +45,7 @@ diskfs_init_diskfs (mach_port_t bootstrap)
   memory_object_t obj;
   device_t timedev;
   mach_port_t realnode;
+  error_t err;
   
   _libports_initialize ();	/* XXX */
 
