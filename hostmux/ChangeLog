@@ -1,3 +1,9 @@
+1997-08-14  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hostmux.c (DEFAULT_HOST_PAT): New macro.
+	(options, main): Use DEFAULT_HOST_PAT.
+	(netfs_append_args): New function.
+
 1997-08-11  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mux.c (netfs_attempt_lookup): Handle `.' and `..' lookups.
