@@ -23,6 +23,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <pwd.h>
 
 /* Read disk block ADDR into BUF of SIZE bytes. */
 void
@@ -229,6 +230,28 @@ reply (char *question)
     }
 }
 
+/* Print a helpful description of the given inode number. */
+void
+pinode (ino_t ino)
+{
+  struct dinode dino;
+  struct passwd *pw;
+  char *p;
+
+  printf (" I=%d ", ino);
+  if (ino < ROOTINO || ino > maxino)
+    return;
+  getinode (ino, &dino);
   
+  printf (" OWNER=");
+  if (pw = getpwuid (dino.di_uid))
+    printf ("%s ", pw->pw_name);
+  else
+    printf ("%lu ", dino.di_uid);
   
-  
+  printf (" MODE=%o\n", DI_MODE (&dino));
+  printf ("SIZE=%llu ", dino.di_size);
+  p = ctime (&dino.di_mtime.ts_sec);
+  printf ("MTIME=%12.12s %4.4s ", &p[4], &p[20]);
+}
+
