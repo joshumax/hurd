@@ -31,7 +31,6 @@ netfs_make_node (struct netnode *nn)
   mutex_init (&np->lock);
   np->references = 1;
   np->sockaddr = MACH_PORT_NULL;
-  np->identity = MACH_PORT_NULL;
   np->owner = 0;
 
   fshelp_transbox_init (&np->transbox, &np->lock, np);
