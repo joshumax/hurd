@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
-#include "msg.h"
+#include "ourmsg_U.h"
 
 kern_return_t
 diskfs_S_dir_notice_changes (struct protid *cred,

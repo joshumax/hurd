@@ -70,6 +70,22 @@ routine fsys_getfile (
 	filehandle: data_t;
 	out file: mach_port_send_t);
 
+/* Sync a filesystem.  Args are the same as for file_syncfs in fs.defs. */
+routine fsys_syncfs (
+	fsys: fsys_t;
+	RPT
+	wait: int;
+	do_children: int);
+
+/* Change the readonly status of the filesystem.  FORCE (when changing
+   from writeable to readonly) means that existing open ports for writing
+   should be ignored.  */
+routine fsys_mod_readonly (
+	fsys: fsys_t;
+	RPT
+	readonly: int;
+	force: int);
+
 /* The following two calls are only implemented by bootstrap filesystems. */
 
 routine fsys_getpriv (

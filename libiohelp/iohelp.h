@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include _HURD_IOSERVER_
+#ifndef _HURD_IOSERVER_
 #define _HURD_IOSERVER_
 
 #include <mach.h>

@@ -167,7 +167,7 @@ routine file_getlinknode (
    filesystem cannot be NFS mounted.  */
 routine file_getfh (
 	file: file_t;
-	out filehandle: data_t);
+	out filehandle: data_t, dealloc);
 
 /* Operations supported on directories */
 
@@ -198,7 +198,7 @@ routine dir_lookup (
    data regardless.  */
 routine dir_readdir (
 	dir: file_t;
-	out data: data_t;
+	out data: data_t, dealloc;
 	entry: int;
 	nentries: int;
 	bufsiz: vm_size_t;
@@ -283,7 +283,7 @@ routine file_set_translator (
 /* Return the stored permanent translator for this file.  */
 routine file_get_translator (
 	file: file_t;
-	out translator: data_t);
+	out translator: data_t, dealloc);
 
 /* Return the translator control port to the
    active translator (if any) for this file.  */

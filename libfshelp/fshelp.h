@@ -37,6 +37,9 @@ struct trans_link
      from the child filesystem. */
   struct condition initwait;
 
+  /* Lock of this structure's contents */
+  struct mutex lock;
+
   /* This indicates that someone has already started up the translator */
   int starting;
 
@@ -70,12 +73,10 @@ void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
    and will be provided as the cwdir of the process.  NODE should
    refer to the node being translated, and will be provided as the
    realnode return value from fsys_startup.  UID and GID are the uid
-   and gid of the process to be started.  LOCK must be a mutex which
-   you hold; it is assumed that the trans_link structure will not be
-   changed unless this is held. */
+   and gid of the process to be started.  */
 error_t fshelp_start_translator (struct trans_link *link, char *name, 
 				 int namelen, file_t dir, file_t node, 
-				 uid_t uid, gid_t gid, struct mutex *lock);
+				 uid_t uid, gid_t gid);
 
 /* Call this when you receive a fsys_startup message on a port of type
    fshelp_transboot_port_type.  PORTSTRUCT is the result of

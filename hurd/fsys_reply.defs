@@ -40,6 +40,10 @@ skip; /* getfile */
 
 skip; /* getpriv */
 
+skip; /* fsys_syncfs */
+
+skip; /* fsys_mod_readonly */
+
 simpleroutine fsys_init_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t);

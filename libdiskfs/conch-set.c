@@ -30,7 +30,7 @@ ioserver_put_shared_data (void *arg)
   
   cred->mapped->append_mode = (cred->po->openstat & O_APPEND);
   cred->mapped->eof_notify = 0;
-  cred->mapped->do_sigio = 0;
+  cred->mapped->do_sigio = (cred->po->openstat & O_FSYNC);
   cred->mapped->use_file_size = 1;
   cred->mapped->use_read_size = 0;
   cred->mapped->optimal_transfer_size = cred->po->np->dn_stat.st_blksize;
