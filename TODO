@@ -45,6 +45,7 @@ See `tasks', the exported task list.
 *** Change servers to be mom-ish
 
 ** libc:
+*** convert to use libio (note exec needs conversion too) !!!
 *** Version of tmpfile that takes a directory
 *** Hurd versions of tmpfile that don't create transient files !
 *** flink
@@ -82,7 +83,7 @@ See `tasks', the exported task list.
    Rename the rest to libhurdutil or somesuch.
 *** argp: find some way to flag certain long options as only matching
    exactly (add this as OPT_EXACT); use this on the built in option
-   --program-name. 
+   --program-name.
 *** Rewrite argp to do its own parsing.  Preferably, split up libc's
    getopt into more primitive functions, which both argp and getopt
    can call.
@@ -91,8 +92,8 @@ See `tasks', the exported task list.
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
     routines and then share common code. !!
-*** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC under the right 
-    names; change libc header to match current Posix. 
+*** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC under the right
+    names; change libc header to match current Posix.
 *** Handle dead name notifications on execserver ports. !
 *** Deal correctly with setting the translators on /servers/exec.
 *** Implement file_notice_changes.
@@ -105,7 +106,7 @@ See `tasks', the exported task list.
 *** Use off_t correctly. !!
 *** Add a consistent message printing facility for filesystems to use
     (syslog, but takes special care when the root file system?). !!
-*** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
+*** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic
     routines. !
 
 
@@ -135,6 +136,9 @@ See `tasks', the exported task list.
 ** term: find a way to reduce duplicate signals from repeated VINTR input
 ** magic: `ls -ld /dev/fd' and `test -d /dev/fd' should work.
 
+** exec:
+*** convert stdio magic to use libio (when libc converts) !!!
+
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
     gdb; maybe just a flag WNOREAP to proc_wait that doesn't reap and allows
@@ -155,7 +159,7 @@ See `tasks', the exported task list.
 *** Implement async I/O !!
 *** Finish work to turn on paging. !!
 *** Implement TCP nfs. !
-*** Implement V3 nfs. 
+*** Implement V3 nfs.
 *** Implement nqnfs. !
 *** Add Hurd-specific calls. !!
 *** errors in mount_root should get reflected more usefully to users. !
@@ -175,8 +179,8 @@ See `tasks', the exported task list.
 ****   Fix multiple-links DT_* bug.
 ****   Deal with change of type which should update directory.
 ****   Type is also wrong for translated nodes...
-*** Roland sez: ENOSPC detection flaky in ufs.  Try write of >page, 
-    non-page-multiple, when free space allows write size but not 
+*** Roland sez: ENOSPC detection flaky in ufs.  Try write of >page,
+    non-page-multiple, when free space allows write size but not
     round_page (write size).
 
 ** ext2fs
@@ -222,7 +226,7 @@ See `tasks', the exported task list.
 ** gdb:
 *** Add various mach convenience features (vminfo, &c). !!
 *** Be even more vigilant about noticing new threads.  In particular:
-**** For mach-indep thread commands, before validating against 
+**** For mach-indep thread commands, before validating against
      internal thread list. !!!
 *** read core files !!
 *** Gdb doesn't work right if it doesn't have permission to frob the
@@ -237,7 +241,7 @@ See `tasks', the exported task list.
 *** writes don't seem to work properly !!!
 *** Report statfs correctly. !!
 
-** telnetd 
+** telnetd
 *** doesn't fill in the utmp host field !!
 *** telnet -l root hurd-machine works without any authorization checks at all !!!
 
@@ -275,4 +279,3 @@ deeming
 ** proc leaks dead names massively.
 ** something is still soaking up wired pages on lengthy compiles
 ** password server; eliminate other checkers of passwords
-
