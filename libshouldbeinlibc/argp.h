@@ -157,6 +157,12 @@ struct argp_state
 
   /* The flags supplied to argp_parse.  May be modified.  */
   unsigned flags;
+
+  /* While calling a parsing function with a key of ARGP_KEY_ARG, this is the
+     number of the current arg, starting at zero, and incremented after each
+     such call returns.  At all other times, this is the number of such
+     arguments that have been processed.  */
+  unsigned arg_num;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
