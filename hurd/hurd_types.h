@@ -71,6 +71,7 @@ typedef struct stat io_statbuf_t;
 #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
 #define	EXEC_TRACED	0x00000008 /* Process is traced.  */
+#define	EXEC_INHERITED	(EXEC_TRACED) /* Flags inherited by later execs.  */
 
 /* Bits for flags in fs.defs:file_set_translator call: */
 #define FS_TRANS_FORCE     0x00000001 /* Must use translator(no sht circuit) */
