@@ -948,14 +948,6 @@ do_mach_notify_msg_accepted (mach_port_t notify,
 /* msg server */
 
 kern_return_t
-S_msg_sig_post (mach_port_t msgport,
-		mach_port_t reply, mach_msg_type_name_t reply_type,
-		int signo, mach_port_t refport)
-{
-  return S_msg_sig_post_untraced (msgport, reply, reply_type, signo, refport);
-}
-
-kern_return_t
 S_msg_sig_post_untraced (mach_port_t msgport,
 			 mach_port_t reply, mach_msg_type_name_t reply_type,
 			 int signo, mach_port_t refport)
@@ -995,6 +987,14 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 
   mach_port_deallocate (mach_task_self (), refport);
   return 0;
+}
+
+kern_return_t
+S_msg_sig_post (mach_port_t msgport,
+		mach_port_t reply, mach_msg_type_name_t reply_type,
+		int signo, mach_port_t refport)
+{
+  return S_msg_sig_post_untraced (msgport, reply, reply_type, signo, refport);
 }
 
 
