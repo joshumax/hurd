@@ -55,16 +55,24 @@ int
 pfinet_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
+  struct port_info *pi;
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
+  /* We have several classes in one bucket, which need to be demuxed
+     differently.  */
+  pi = ports_lookup_port(pfinet_bucket, inp->msgh_local_port, socketport_class);
   
-  if (ports_lookup_port(pfinet_bucket, inp->msgh_local_port, socketport_class) != 0)
+  if (pi)
+    {
+      ports_port_deref (pi);
+      
       return (io_server (inp, outp)
 	      || socket_server (inp, outp)
 	      || trivfs_demuxer (inp, outp)
 	      || startup_notify_server (inp, outp));
+    }
   else
     return (socket_server (inp, outp)
 	    || trivfs_demuxer (inp, outp)

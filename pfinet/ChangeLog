@@ -1,3 +1,8 @@
+2000-12-03  Marcus Brinkmann  <marcus@gnu.org>
+
+	* main.c (pfinet_demuxer): New variable PI.
+	Store port info in PI, and dereference it if found.
+
 2000-11-02  Marcus Brinkmann  <marcus@gnu.org>
 
 	* tunnel.c (trivfs_S_io_get_owner): Add return type to silence
