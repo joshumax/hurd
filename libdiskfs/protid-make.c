@@ -30,3 +30,44 @@ diskfs_start_protid (struct peropen *po)
   cred->mapped = 0;
   return cred;
 }
+
+/* Finish building protid CRED started with diskfs_start_protid;
+   the uid set is UID (length NUIDS); the gid set is GID (length NGIDS). */
+void
+diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
+		      gid_t *gids, int nguds)
+{
+  if (!uids)
+    nuids = 1;
+  if (!gids)
+    ngids = 1;
+  
+  cred->uids = malloc (nuids * sizeof (uid_t));
+  cred->gids = malloc (ngids * sizeof (uid_t));
+  cred->nuids = nuids;
+  cred->ngids = ngids;
+  
+  if (uids)
+    bcopy (uids, cred->uids, nuids * sizeof (uid_t));
+  else
+    *cred->uids = 0;
+  
+  if (gids)
+    bcopy (gids, cred->gids, ngids * sizeof (uid_t));
+  else
+    *cred->gids = 0;
+}
+
+/* Create and return a protid for an existing peropen.  The uid set is
+   UID (length NUIDS); the gid set is GID (length NGIDS).  The node
+   PO->np must be locked. */
+struct protid *
+diskfs_make_protid (struct peropen *cred, uid_t *uids, int nuids,
+		    uid_t *gids, int ngids)
+{
+  struct protid *cred = diskfs_start_protid (cred);
+  diskfs_finish_protid (cred, uids, nuids, gids, ngids);
+  return cred;
+}
+
+
