@@ -62,34 +62,34 @@ struct ps_getter ps_owner_getter =
 static int 
 ps_get_ppid(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->ppid;
+  return proc_stat_proc_info(ps)->ppid;
 }
 struct ps_getter ps_ppid_getter =
-{"ppid", PSTAT_INFO, (vf) ps_get_ppid};
+{"ppid", PSTAT_PROC_INFO, (vf) ps_get_ppid};
 
 static int 
 ps_get_pgrp(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->pgrp;
+  return proc_stat_proc_info(ps)->pgrp;
 }
 struct ps_getter ps_pgrp_getter =
-{"pgrp", PSTAT_INFO, (vf) ps_get_pgrp};
+{"pgrp", PSTAT_PROC_INFO, (vf) ps_get_pgrp};
 
 static int 
 ps_get_session(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->session;
+  return proc_stat_proc_info(ps)->session;
 }
 struct ps_getter ps_session_getter =
-{"session", PSTAT_INFO, (vf) ps_get_session};
+{"session", PSTAT_PROC_INFO, (vf) ps_get_session};
 
 static int 
 ps_get_login_col(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->logincollection;
+  return proc_stat_proc_info(ps)->logincollection;
 }
 struct ps_getter ps_login_col_getter =
-{"login_col", PSTAT_INFO, (vf) ps_get_login_col};
+{"login_col", PSTAT_PROC_INFO, (vf) ps_get_login_col};
 
 static int 
 ps_get_num_threads(proc_stat_t ps)
@@ -117,20 +117,28 @@ struct ps_getter ps_state_getter =
 {"state", PSTAT_STATE, (vf) ps_get_state};
 
 static int 
+ps_get_rpc(proc_stat_t ps)
+{
+  return proc_stat_thread_rpc(ps);
+}
+struct ps_getter ps_rpc_getter =
+{"RPC", PSTAT_THREAD_RPC, (vf) ps_get_rpc};
+
+static int 
 ps_get_vsize(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->taskinfo.virtual_size;
+  return proc_stat_task_basic_info(ps)->virtual_size;
 }
 struct ps_getter ps_vsize_getter =
-{"vsize", PSTAT_INFO, (vf) ps_get_vsize};
+{"vsize", PSTAT_TASK_BASIC, (vf) ps_get_vsize};
 
 static int 
 ps_get_rsize(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->taskinfo.resident_size;
+  return proc_stat_task_basic_info(ps)->resident_size;
 }
 struct ps_getter ps_rsize_getter =
-{"rsize", PSTAT_INFO, (vf) ps_get_rsize};
+{"rsize", PSTAT_TASK_BASIC, (vf) ps_get_rsize};
 
 static int 
 ps_get_cur_priority(proc_stat_t ps)
@@ -138,7 +146,7 @@ ps_get_cur_priority(proc_stat_t ps)
   return proc_stat_thread_sched_info(ps)->cur_priority;
 }
 struct ps_getter ps_cur_priority_getter =
-{"cur_priority", PSTAT_THREAD_INFO, (vf) ps_get_cur_priority};
+{"cur_priority", PSTAT_THREAD_SCHED, (vf) ps_get_cur_priority};
 
 static int 
 ps_get_base_priority(proc_stat_t ps)
@@ -146,7 +154,7 @@ ps_get_base_priority(proc_stat_t ps)
   return proc_stat_thread_sched_info(ps)->base_priority;
 }
 struct ps_getter ps_base_priority_getter =
-{"base_priority", PSTAT_THREAD_INFO, (vf) ps_get_base_priority};
+{"base_priority", PSTAT_THREAD_SCHED, (vf) ps_get_base_priority};
 
 static int 
 ps_get_max_priority(proc_stat_t ps)
@@ -154,7 +162,7 @@ ps_get_max_priority(proc_stat_t ps)
   return proc_stat_thread_sched_info(ps)->max_priority;
 }
 struct ps_getter ps_max_priority_getter =
-{"max_priority", PSTAT_THREAD_INFO, (vf) ps_get_max_priority};
+{"max_priority", PSTAT_THREAD_SCHED, (vf) ps_get_max_priority};
 
 static void 
 ps_get_usr_time(proc_stat_t ps, time_value_t * tv_out)
@@ -162,7 +170,7 @@ ps_get_usr_time(proc_stat_t ps, time_value_t * tv_out)
   *tv_out = proc_stat_thread_basic_info(ps)->user_time;
 }
 struct ps_getter ps_usr_time_getter =
-{"usr_time", PSTAT_THREAD_INFO, ps_get_usr_time};
+{"usr_time", PSTAT_THREAD_BASIC, ps_get_usr_time};
 
 static void 
 ps_get_sys_time(proc_stat_t ps, time_value_t * tv_out)
@@ -170,7 +178,7 @@ ps_get_sys_time(proc_stat_t ps, time_value_t * tv_out)
   *tv_out = proc_stat_thread_basic_info(ps)->system_time;
 }
 struct ps_getter ps_sys_time_getter =
-{"sys_time", PSTAT_THREAD_INFO, ps_get_sys_time};
+{"sys_time", PSTAT_THREAD_BASIC, ps_get_sys_time};
 
 static void 
 ps_get_tot_time(proc_stat_t ps, time_value_t * tv_out)
@@ -179,7 +187,7 @@ ps_get_tot_time(proc_stat_t ps, time_value_t * tv_out)
   time_value_add(tv_out, &proc_stat_thread_basic_info(ps)->system_time);
 }
 struct ps_getter ps_tot_time_getter =
-{"tot_time", PSTAT_THREAD_INFO, ps_get_tot_time};
+{"tot_time", PSTAT_THREAD_BASIC, ps_get_tot_time};
 
 static float 
 ps_get_rmem_frac(proc_stat_t ps)
@@ -195,12 +203,14 @@ ps_get_rmem_frac(proc_stat_t ps)
     }
   
   if (mem_size > 0)
-    return (float)proc_stat_info(ps)->taskinfo.resident_size / (float)mem_size;
+    return
+      (float)proc_stat_task_basic_info(ps)->resident_size
+	/ (float)mem_size;
   else
     return 0.0;
 }
 struct ps_getter ps_rmem_frac_getter =
-{"rmem_frac", PSTAT_INFO, (vf) ps_get_rmem_frac};
+{"rmem_frac", PSTAT_TASK_BASIC, (vf) ps_get_rmem_frac};
 
 static float 
 ps_get_cpu_frac(proc_stat_t ps)
@@ -209,7 +219,7 @@ ps_get_cpu_frac(proc_stat_t ps)
     / (float) TH_USAGE_SCALE;
 }
 struct ps_getter ps_cpu_frac_getter =
-{"cpu_frac", PSTAT_THREAD_INFO, (vf) ps_get_cpu_frac};
+{"cpu_frac", PSTAT_THREAD_BASIC, (vf) ps_get_cpu_frac};
 
 static int 
 ps_get_sleep(proc_stat_t ps)
@@ -217,7 +227,7 @@ ps_get_sleep(proc_stat_t ps)
   return proc_stat_thread_basic_info(ps)->sleep_time;
 }
 struct ps_getter ps_sleep_getter =
-{"sleep", PSTAT_THREAD_INFO, (vf) ps_get_sleep};
+{"sleep", PSTAT_THREAD_BASIC, (vf) ps_get_sleep};
 
 static int 
 ps_get_susp_count(proc_stat_t ps)
@@ -230,10 +240,10 @@ struct ps_getter ps_susp_count_getter =
 static int 
 ps_get_proc_susp_count(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->taskinfo.suspend_count;
+  return proc_stat_task_basic_info(ps)->suspend_count;
 }
 struct ps_getter ps_proc_susp_count_getter =
-{"proc_susp_count", PSTAT_INFO, (vf) ps_get_proc_susp_count};
+{"proc_susp_count", PSTAT_TASK_BASIC, (vf) ps_get_proc_susp_count};
 
 static int 
 ps_get_thread_susp_count(proc_stat_t ps)
@@ -257,7 +267,7 @@ ps_get_page_faults(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->faults;
 }
 struct ps_getter ps_page_faults_getter =
-{"page_faults", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_page_faults};
+{"page_faults", PSTAT_TASK_EVENTS, (vf) ps_get_page_faults};
 
 static int 
 ps_get_cow_faults(proc_stat_t ps)
@@ -265,7 +275,7 @@ ps_get_cow_faults(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->cow_faults;
 }
 struct ps_getter ps_cow_faults_getter =
-{"cow_faults", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_cow_faults};
+{"cow_faults", PSTAT_TASK_EVENTS, (vf) ps_get_cow_faults};
 
 static int 
 ps_get_pageins(proc_stat_t ps)
@@ -273,7 +283,7 @@ ps_get_pageins(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->pageins;
 }
 struct ps_getter ps_pageins_getter =
-{"pageins", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_pageins};
+{"pageins", PSTAT_TASK_EVENTS, (vf) ps_get_pageins};
 
 static int 
 ps_get_msgs_sent(proc_stat_t ps)
@@ -281,7 +291,7 @@ ps_get_msgs_sent(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->messages_sent;
 }
 struct ps_getter ps_msgs_sent_getter =
-{"msgs_sent", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_msgs_sent};
+{"msgs_sent", PSTAT_TASK_EVENTS, (vf) ps_get_msgs_sent};
 
 static int 
 ps_get_msgs_rcvd(proc_stat_t ps)
@@ -289,7 +299,7 @@ ps_get_msgs_rcvd(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->messages_received;
 }
 struct ps_getter ps_msgs_rcvd_getter =
-{"msgs_rcvd", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_msgs_rcvd};
+{"msgs_rcvd", PSTAT_TASK_EVENTS, (vf) ps_get_msgs_rcvd};
 
 static int 
 ps_get_zero_fills(proc_stat_t ps)
@@ -297,7 +307,7 @@ ps_get_zero_fills(proc_stat_t ps)
   return proc_stat_task_events_info(ps)->zero_fills;
 }
 struct ps_getter ps_zero_fills_getter =
-{"zero_fills", PSTAT_TASK_EVENTS_INFO, (vf) ps_get_zero_fills};
+{"zero_fills", PSTAT_TASK_EVENTS, (vf) ps_get_zero_fills};
 
 /* ---------------------------------------------------------------- */
 /* some printing functions */
@@ -311,6 +321,17 @@ error_t
 ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
 {
   return ps_write_int_field(G(getter, int)(ps), width, stream, count);
+}
+
+error_t
+ps_emit_nz_int (proc_stat_t ps, ps_getter_t getter, int width,
+		FILE *stream, unsigned *count)
+{
+  int value = G(getter, int)(ps);
+  if (value)
+    return ps_write_int_field (value, width, stream, count);
+  else
+    return ps_write_spaces (width, stream, count);
 }
 
 error_t
@@ -843,6 +864,8 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
    &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0,		   -4},
   {"State",
    &ps_state_getter,	   ps_emit_state,   0,   	   0,		    4},
+  {"RPC",
+   &ps_rpc_getter,         ps_emit_nz_int,  ps_cmp_ints,   ps_nominal_zint,-6},
   {"Sleep",
    &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-2},
   {"Susp",
