@@ -287,9 +287,9 @@ run (char *server, mach_port_t *ports, task_t *task)
   fflush (stdout);
 }
 
-/* Run FILENAME as root. */
+/* Run FILENAME as root with ARGS as its argv (length ARGLEN). */
 void
-run_for_real (char *filename)
+run_for_real (char *filename, char *args, int arglen)
 {
   file_t file;
   error_t err;
@@ -319,7 +319,7 @@ run_for_real (char *filename)
   else
     progname = filename;
   err = file_exec (file, task, 0,
-		   progname, strlen (progname) + 1, /* Args.  */
+		   args, arglen,
 		   NULL, 0, /* No env.  */
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
@@ -410,6 +410,8 @@ launch_system (void)
 {
   mach_port_t old;
   mach_port_t authproc, fsproc;
+  char shell[] = "/bin/sh";
+  char pipes[] = "/bin/pipes\0/servers/sockets/1";
   
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0, 
@@ -450,7 +452,11 @@ launch_system (void)
 
   /* Run the shell.  We must do this before calling proc_setmsgport below,
      because run_for_real does proc server operations.  */
-  run_for_real ("/bin/sh");
+  run_for_real (shell, shell, sizeof (shell));
+
+  /* Run pipes. */
+  run_for_real (pipes, pipes, sizeof (pipes));
+
   printf ("Init has completed.\n");
   fflush (stdout);
 
