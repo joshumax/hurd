@@ -68,7 +68,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 				 retry, retryname, returned_port);
       if (error && error != ENOENT)
 	{
-	  mutex_unlocx (&diskfs_root_node->lock);
+	  mutex_unlock (&diskfs_root_node->lock);
 	  return error;
 	}
       if (!error)
