@@ -38,13 +38,13 @@ void
 main (int argc, char **argv)
 {
   error_t err;
+  size_t arg_index;
   mach_port_t bootstrap, control, realnode;
   struct argp argp = { 0, 0, args_doc, doc };
 
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, &arg_index, 0);
+  magic = argv[arg_index];
 
-  magic = argv[1];
-  
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (3, 0, "Must be started as a translator");
