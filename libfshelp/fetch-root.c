@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -47,7 +47,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
     {
       uid_t uid, gid;
       char *argz;
-      int argz_len;
+      size_t argz_len;
       error_t err;
       mach_port_t ports[INIT_PORT_MAX];
       int ints[INIT_INT_MAX];

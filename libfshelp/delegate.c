@@ -1,6 +1,6 @@
 /* fshelp_delegate_translation
 
-   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ fshelp_delegate_translation (const char *server_name,
   if (server != MACH_PORT_NULL)
     {
       char *argz;
-      int argz_len;
+      size_t argz_len;
       err = argz_create (argv, &argz, &argz_len);
       if (!err)
 	{
