@@ -93,7 +93,7 @@ zero_encode (const struct store *store, struct store_enc *enc)
 }
 
 error_t
-zero_decode (struct store_enc *enc, struct store_class *classes,
+zero_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
   off_t size;
@@ -109,21 +109,50 @@ zero_decode (struct store_enc *enc, struct store_class *classes,
 
   return store_zero_create (size, flags, store);
 }
+
+static error_t
+zero_open (const char *name, int flags,
+	   const struct store_class *const *classes,
+	   struct store **store)
+{
+  if (name)
+    {
+      char *end;
+      size_t size = strtoul (name, &end, 0);
+      if (end == name)
+	return EINVAL;
+      return store_zero_create (size, flags, store);
+    }
+  else
+    return store_zero_create (~(size_t)0, flags, store);
+}
 
-static struct store_class
-zero_class =
+static error_t
+zero_validate_name (const char *name, const struct store_class *const *classes)
+{
+  if (name)
+    {
+      char *end;
+      strtoul (name, &end, 0);
+      return end == name ? EINVAL : 0;
+    }
+  else
+    return 0;			/* `maximum size' */
+}
+
+struct store_class
+store_zero_class =
 {
   STORAGE_ZERO, "zero", zero_read, zero_write,
   zero_allocate_encoding, zero_encode, zero_decode,
-  0, 0, 0, 0, zero_remap
+  0, 0, 0, 0, zero_remap, zero_open, zero_validate_name
 };
-_STORE_STD_CLASS (zero_class);
 
 /* Return a new zero store SIZE bytes long in STORE.  */
 error_t
 store_zero_create (size_t size, int flags, struct store **store)
 {
   struct store_run run = { 0, size };
-  *store = _make_store (&zero_class, MACH_PORT_NULL, flags, 1, &run, 1, 0);
+  *store = _make_store (&store_zero_class, MACH_PORT_NULL, flags, 1, &run, 1, 0);
   return *store ? 0 : ENOMEM;
 }
