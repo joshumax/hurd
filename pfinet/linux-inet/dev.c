@@ -976,6 +976,7 @@ static inline int bad_mask(unsigned long mask, unsigned long addr)
 	return 0;
 }
 
+#ifndef _HURD_
 /*
  *	Perform the SIOCxIFxxx calls. 
  *
@@ -1402,6 +1403,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 			return -EINVAL;
 	}
 }
+#endif
 
 
 /*
