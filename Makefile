@@ -31,7 +31,7 @@ prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet daemons
-other-subdirs = hurd doc config release
+other-subdirs = hurd doc config release include
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist =
 working-prog-subdirs := $(filter-out \
@@ -78,10 +78,11 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subd
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
-install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs)) \
-	$(addsuffix -install,$(other-subdirs))
+install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
+	   $(other-subdirs))
 
-install-hdrs: $(addsuffix -install-hdrs,$(lib-subdirs)) $(working-prog-subdirs)
+install-hdrs: $(addsuffix -install-hdrs,$(lib-subdirs) $(working-prog-subdirs)\
+		$(other-subdirs))
 
 lndist: cp-linked-files
 
