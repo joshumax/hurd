@@ -21,10 +21,18 @@ const char *const mach_cpu_types[] =
     [CPU_TYPE_SPARC] = "sparc",
     [CPU_TYPE_I860] = "i860",
     [CPU_TYPE_ALPHA] = "alpha",
+#ifdef CPU_TYPE_I486
     [CPU_TYPE_I486] = "i486",
+#endif
+#ifdef CPU_TYPE_PENTIUM
     [CPU_TYPE_PENTIUM] = "i586",
+#endif
+#ifdef CPU_TYPE_PENTIUMPRO
     [CPU_TYPE_PENTIUMPRO] = "i686",
+#endif
+#ifdef CPU_TYPE_POWERPC
     [CPU_TYPE_POWERPC] = "powerpc",
+#endif
   };
 
 const char *const mach_cpu_subtypes[][32] =
@@ -80,9 +88,15 @@ const char *const mach_cpu_subtypes[][32] =
 	[CPU_SUBTYPE_PS2] = "PS2",					    \
       }
     [CPU_TYPE_I386] = Ix86_SUBTYPES,
+#ifdef CPU_TYPE_I486
     [CPU_TYPE_I486] = Ix86_SUBTYPES,
+#endif
+#ifdef CPU_TYPE_PENTIUM
     [CPU_TYPE_PENTIUM] = Ix86_SUBTYPES,
+#endif
+#ifdef CPU_TYPE_PENTIUMPRO
     [CPU_TYPE_PENTIUMPRO] = Ix86_SUBTYPES,
+#endif
     [CPU_TYPE_MIPS] =
       {
 	[CPU_SUBTYPE_MIPS_R2300] = "R2300",
