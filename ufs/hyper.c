@@ -18,13 +18,16 @@
 #include "ufs.h"
 #include <string.h>
 #include <stdio.h>
+#include <error.h>
 
-static int oldformat = 0;
+static int ufs_clean;		/* fs clean before we started writing? */
 
-vm_address_t zeroblock = 0;
+static int oldformat;
 
-struct fs *sblock = 0;
-struct csum *csum = 0;
+vm_address_t zeroblock;
+
+struct fs *sblock;
+struct csum *csum;
 
 void
 get_hypermetadata (void)
@@ -74,6 +77,18 @@ get_hypermetadata (void)
   assert ((__vm_page_size % DEV_BSIZE) == 0);
   assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
   assert (__vm_page_size <= sblock->fs_bsize);
+
+  /* Examine the clean bit and force read-only if unclean.  */
+  ufs_clean = sblock->fs_clean;
+  if (! ufs_clean)
+    {
+      error (0, 0, "warning: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck");
+      if (! diskfs_readonly)
+	{
+	  diskfs_readonly = 1;
+	  error (0, 0, "MOUNTED READ-ONLY; MUST USE `fsysopts --writable'");
+	}
+    }
 
   /* If this is an old filesystem, then we have some more
      work to do; some crucial constants might not be set; we
@@ -137,8 +152,11 @@ get_hypermetadata (void)
   if ((sblock->fs_inodefmt == FS_44INODEFMT
        || direct_symlink_extension)
       && compat_mode == COMPAT_BSD42)
-    /* XXX should syslog to this effect */
-    compat_mode = COMPAT_BSD44;
+    {
+      compat_mode = COMPAT_BSD44;
+      error (0, 0,
+	     "4.2 compat mode requested on 4.4 fs--switched to 4.4 mode");
+    }
 }
 
 /* Write the csum data.  This isn't backed by a pager because it is
@@ -154,28 +172,36 @@ diskfs_set_hypermetadata (int wait, int clean)
 
   spin_lock (&alloclock);
 
-  if (!csum_dirty)
+  if (csum_dirty)
     {
-      spin_unlock (&alloclock);
-      return;
+      /* Copy into a page-aligned buffer to avoid bugs in kernel device
+         code. */
+
+      bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
+
+      err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
+				     &buf, bufsize);
+      if (!err)
+	{
+	  bcopy (csum, (void *) buf, sblock->fs_cssize);
+	  diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
+				    buf, bufsize);
+	  csum_dirty = 0;
+	  vm_deallocate (mach_task_self (), buf, bufsize);
+	}
     }
 
-  /* Copy into a page-aligned buffer to avoid bugs in kernel device code. */
-
-  bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
-
-  err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
-				 &buf, bufsize);
-  if (!err)
+  if (clean && ufs_clean && !sblock->fs_clean)
     {
-      bcopy (csum, (void *) buf, sblock->fs_cssize);
-      diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
-				buf, bufsize);
-      csum_dirty = 0;
-      vm_deallocate (mach_task_self (), buf, bufsize);
+      /* The filesystem is clean, so set the clean flag.  */
+      sblock->fs_clean = 1;
+      sblock_dirty = 1;
     }
 
   spin_unlock (&alloclock);
+
+  /* Update the superblock if necessary (clean bit was just set).  */
+  copy_sblock ();
 }
 
 /* Copy the sblock into the disk */
@@ -184,21 +210,15 @@ copy_sblock ()
 {
   error_t err;
 
-  int clean = 1;		/* XXX wrong... */
-
   err = diskfs_catch_exception ();
   assert_perror (err);
 
   spin_lock (&alloclock);
 
-  if (clean && !diskfs_readonly)
-    {
-      sblock->fs_clean = 1;
-      sblock_dirty = 1;
-    }
-
   if (sblock_dirty)
     {
+      assert (! diskfs_readonly);
+
       if (sblock->fs_postblformat == FS_42POSTBLFMT
 	  || oldformat)
 	{
@@ -221,17 +241,23 @@ copy_sblock ()
       sblock_dirty = 0;
     }
 
-  if (clean && !diskfs_readonly)
+  if (!diskfs_readonly && sblock->fs_clean)
     {
+      /* We just sync'd with the clean flag set, but we are still a
+	 writable filesystem.  Clear the flag in core, but don't write the
+	 superblock yet.  This should ensure that the flag will be written
+	 as clear as soon as we make any modifications.  */
       sblock->fs_clean = 0;
       sblock_dirty = 1;
     }
 
   spin_unlock (&alloclock);
+
   diskfs_end_catch_exception ();
 }
 
-void diskfs_readonly_changed (int readonly)
+void
+diskfs_readonly_changed (int readonly)
 {
   vm_protect (mach_task_self (),
 	      (vm_address_t)disk_image,
@@ -239,12 +265,21 @@ void diskfs_readonly_changed (int readonly)
 	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
   if (readonly)
-    sblock_dirty = 0;
-  else
     {
-      sblock->fs_clean = 0;
-      strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
-      sblock_dirty = 1;
-      diskfs_set_hypermetadata (1, 0);
+      /* We know we are sync'd now.  The superblock is marked as dirty
+	 because we cleared the clean flag immediately after sync'ing.
+	 But now we want to leave it marked clean and not touch it further.  */
+      sblock_dirty = 0;
+      return;
     }
+
+  strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
+
+  if (sblock->fs_clean)
+    sblock->fs_clean = 0;
+  else
+    error (0, 0, "WARNING: UNCLEANED FILESYSTEM NOW WRITABLE");
+
+  sblock_dirty = 1;
+  diskfs_set_hypermetadata (1, 0);
 }
