@@ -20,6 +20,12 @@
 
 #include <device/device.h>
 #include <device/net_status.h>
+#include <linux/netdevice.h>
+#include <linux/etherdevice.h>
+#include <netinet/in.h>
+#include <string.h>
+
+#include "pfinet.h"
 
 #define ethername "el1"
 
@@ -31,9 +37,60 @@ mach_port_t readptname;
 
 struct device ether_dev;
 
+struct enet_statistics retbuf;
+
+/* Mach doesn't provide this.  DAMN. */
+struct enet_statistics *
+ethernet_get_stats (struct device *dev)
+{
+  return &retbuf;
+}
+
+int 
+ethernet_stop (struct device *dev)
+{
+  return 0;
+}
+
+void
+ethernet_set_multi (struct device *dev, int numaddrs, void *addrs)
+{
+  assert (numaddrs == 0);
+}
+
+static short ether_filter[] = 
+{
+  NETF_PUSHLIT | NETF_NOP,
+  1,
+  NETF_PUSHZERO | NETF_OR,
+};
+
+static int ether_filter_len = 3;
+
 int
-ethernet_demuxer (struct mach_msg_header_t *inp,
-		  struct mach_msg_header_t *outp)
+ethernet_open (struct device *dev)
+{
+  if (ether_port != MACH_PORT_NULL)
+    return 1;
+  
+  etherreadclass = ports_create_class (0, 0);
+  readpt = ports_allocate_port (pfinet_bucket, sizeof (struct port_info),
+				etherreadclass);
+  readptname = ports_get_right (readpt);
+  mach_port_insert_right (mach_task_self (), readptname, readptname,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
+  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
+
+  device_set_filter (ether_port, ports_get_right (readpt), 
+		     MACH_MSG_TYPE_MAKE_SEND, NET_HI_PRI,
+		     ether_filter, ether_filter_len);
+  return 0;
+}
+
+int
+ethernet_demuxer (mach_msg_header_t *inp,
+		  mach_msg_header_t *outp)
 {
   struct net_rcv_msg *msg = (struct net_rcv_msg *) inp;
   struct packet_header *pkthdr = (struct packet_header *) msg->packet;
@@ -65,7 +122,7 @@ ethernet_demuxer (struct mach_msg_header_t *inp,
   mutex_lock (&global_lock);
   skb = alloc_skb (datalen, GFP_ATOMIC);
   skb->len = datalen;
-  sbx->dev = ether_dev;
+  skb->dev = &ether_dev;
 
   /* Copy the two parts of the frame into the buffer. */
   bcopy (msg->header, skb->data, ETH_HLEN);
@@ -80,78 +137,70 @@ ethernet_demuxer (struct mach_msg_header_t *inp,
   return 1;
 }
 
-static short ether_filter[] = 
+/* Transmit an ethernet frame */
+int
+ethernet_xmit (struct sk_buff *skb, struct device *dev)
 {
-  NETF_PUSHLIT | NETF_NOP,
-  1,
-  NETF_PUSHZERO | NETF_OR,
-};
+  u_int count;
+  int err;
+  
+  err = device_write (ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
+  assert (err == 0);
+  assert (count == skb->len);
+  return 0;
+}
 
-static int ether_filter_len = 3;
-
-/* Much of this is taken from Linux drivers/net/net_init.c: ether_setup */
 void
 setup_ethernet_device (void)
 {
+  struct net_status netstat;
+  u_int count;
+  int net_address[2];
   int i;
   
   /* Interface buffers. */
-  ether_dev->name = ethername;
+  ether_dev.name = ethername;
   for (i = 0; i < DEV_NUMBUFFS; i++)
-    skb_queue_head_init (&ether_dev->buffs[i]);
+    skb_queue_head_init (&ether_dev.buffs[i]);
 
   /* Functions */
-  ether_dev->open = ethernet_open;
-  ether_dev->stop = ethernet_stop;
-  ether_dev->hard_start_xmit = ethernet_xmit;
-  ether_dev->hard_header = eth_header;
-  ether_dev->rebuild_header = eth_rebuild_header;
-  ether_dev->type_trans = eth_type_trans;
-  ether_dev->get_stats = ethernet_get_stats;
-  ether_dev->set_multicast_list = ethernet_set_multi;
+  ether_dev.open = ethernet_open;
+  ether_dev.stop = ethernet_stop;
+  ether_dev.hard_start_xmit = ethernet_xmit;
+  ether_dev.hard_header = eth_header;
+  ether_dev.rebuild_header = eth_rebuild_header;
+  ether_dev.type_trans = eth_type_trans;
+  ether_dev.get_stats = ethernet_get_stats;
+  ether_dev.set_multicast_list = ethernet_set_multi;
   
   /* Some more fields */
-  ether_dev->type = ARPHRD_ETHER;
-  ether_dev->hard_header_len = sizeof (struct ethhdr);
-  ether_dev->mtu = 1500;
-  ether_dev->addr_len = 6;
+  ether_dev.type = ARPHRD_ETHER;
+  ether_dev.hard_header_len = sizeof (struct ethhdr);
+  ether_dev.addr_len = ETH_ALEN;
   for (i = 0; i < 6; i++)
-    ether_dev->broadcast[i] = 0xff;
-  ether_dev->flags = IFF_BROADCAST | IFF_MULTICAST;
-  ether_dev->family = AF_INET;	/* hmm. */
-  ether_dev->pa_addr = ether_dev->pa_brdaddr = ether_dev->pa_mask = 0;
-  ether_dev->pa_alen = sizeof (unsigned_long);
+    ether_dev.broadcast[i] = 0xff;
+  ether_dev.flags = IFF_BROADCAST | IFF_MULTICAST;
+  ether_dev.family = AF_INET;	/* hmm. */
+  ether_dev.pa_addr = ether_dev.pa_brdaddr = ether_dev.pa_mask = 0;
+  ether_dev.pa_alen = sizeof (unsigned long);
+
+  /* Fetch hardware information */
+  count = NET_STATUS_COUNT;
+  device_get_status (ether_port, NET_STATUS, (dev_status_t) &netstat, &count);
+  ether_dev.mtu = netstat.max_packet_size;
+  assert (netstat.header_format == HDR_ETHERNET);
+  assert (netstat.header_size == ETH_HLEN);
+  assert (netstat.address_size == ETH_ALEN);
+
+  count = 2;
+  assert (count * sizeof (int) <= ETH_ALEN);
+  device_get_status (ether_port, NET_ADDRESS, net_address, &count);
+  net_address[0] = ntohl (net_address[0]);
+  net_address[1] = ntohl (net_address[1]);
+  bcopy (net_address, ether_dev.dev_addr, ETH_ALEN);
 
   /* That should be enough. */
 }
 
-struct enet_statistics retbuf;
-
-/* Mach doesn't provide this.  DAMN. */
-struct enet_statistics *
-get_stats (struct device *dev)
-{
-  return &retbuf;
-}
-
-
-
-
-void
-ethernet_open (void)
-{
-  etherreadclass = ports_create_class (0, 0);
-  readpt = ports_allocate_port (pfinet_bucket, sizeof (struct port_info),
-				etherreadclass);
-  readptname = ports_get_right (readpt);
-  mach_port_insert_right (mach_task_self (), readptname, readptname,
-			  MACH_MSG_TYPE_MAKE_SEND);
-
-  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
-
-  device_set_filter (ether_port, ports_get_right (readpt), 
-		     MACH_MSG_TYPE_MAKE_SEND, NET_HI_PRI,
-		     ether_filter, ether_filter_len);
-}
 
 
