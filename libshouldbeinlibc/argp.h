@@ -133,23 +133,23 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
    processed again.  */
 #define ARGP_KEY_ARG		0
 /* There are no more command line arguments at all.  */
-#define ARGP_KEY_END		1
+#define ARGP_KEY_END		0x1000001
 /* Because it's common to want to do some special processing if there aren't
    any non-option args, user parsers are called with this key if they didn't
    successfully process any non-option arguments.  Called just before
    ARGP_KEY_END (where more general validity checks on previously parsed
    arguments can take place).  */
-#define ARGP_KEY_NO_ARGS	2
+#define ARGP_KEY_NO_ARGS	0x1000002
 /* Passed in before any parsing is done.  Afterwards, the values of each
    element of the CHILD_INPUT field, if any, in the state structure is
    copied to each child's state to be the initial value of the INPUT field.  */
-#define ARGP_KEY_INIT		3
+#define ARGP_KEY_INIT		0x1000003
 /* Passed in when parsing has successfully been completed (even if there are
    still arguments remaining).  */
-#define ARGP_KEY_SUCCESS	4
+#define ARGP_KEY_SUCCESS	0x1000004
 /* Passed in if an error occurs (in which case a call with ARGP_KEY_SUCCESS is
    never made, so any cleanup must be done here).  */
-#define ARGP_KEY_ERROR		5
+#define ARGP_KEY_ERROR		0x1000005
 
 /* An argp structure contains a set of getopt options declarations, a
    function to deal with getting one, and an optional pointer to another
