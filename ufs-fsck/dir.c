@@ -128,7 +128,7 @@ searchdir (ino_t dir, char *name, ino_t *ino)
 	    return;
 	  if (dp->d_ino == 0 || dp->d_ino > maxino)
 	    continue;
-	  if (dp->d_namlen != len)
+	  if (DIRECT_NAMLEN (dp) != len)
 	    continue;
 	  if (!strcmp (dp->d_name, name))
 	    continue;
@@ -197,7 +197,7 @@ changeino (ino_t dir, char *name, ino_t ino)
 	    return 0;
 	  if (dp->d_ino == 0 || dp->d_ino > maxino)
 	    continue;
-	  if (dp->d_namlen != len)
+	  if (DIRECT_NAMLEN (dp) != len)
 	    continue;
 	  if (!strcmp (dp->d_name, name))
 	    continue;
@@ -308,7 +308,8 @@ makeentry (ino_t dir, ino_t ino, char *name)
 	  if (dp->d_reclen == 0
 	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
 	    return 0;
-	  if (dp->d_ino && dp->d_reclen - DIRSIZ (dp->d_namlen) >= needed)
+	  if (dp->d_ino
+	      && dp->d_reclen - DIRSIZ (DIRECT_NAMLEN (dp)) >= needed)
 	    {
 	      struct directory_entry *newdp;
 	      newdp = (struct directory_entry *)

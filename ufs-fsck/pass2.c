@@ -117,7 +117,7 @@ pass2 ()
 	  else
 	    {
 	      /* Check for illegal characters */
-	      for (i = 0; i < dp->d_namlen; i++)
+	      for (i = 0; i < DIRECT_NAMLEN (dp); i++)
 		if (dp->d_name[i] == '\0' || dp->d_name[i] == '/')
 		  {
 		    pfatal ("ILLEGAL CHARACTER IN FILE NAME");
@@ -129,7 +129,7 @@ pass2 ()
 			break;
 		      }
 		  }
-	      if (dp->d_name[dp->d_namlen])
+	      if (dp->d_name[DIRECT_NAMLEN (dp)])
 		{
 		  pfatal ("DIRECTORY NAME NOT TERMINATED");
 		  if (reply ("SALVAGE"))
@@ -167,9 +167,9 @@ pass2 ()
 	   if (inodestate[dp->d_ino] == DIRECTORY
 	      || inodestate[dp->d_ino] == BADDIR)
 	    {
-	      if (dp->d_namlen == 1 && dp->d_name[0] == '.')
+	      if (DIRECT_NAMLEN (dp) == 1 && dp->d_name[0] == '.')
 		dnp->i_dot = dp->d_ino;
-	      else if (dp->d_namlen == 2
+	      else if (DIRECT_NAMLEN (dp) == 2
 		       && dp->d_name[0] == '.' && dp->d_name[1] == '.')
 		dnp->i_dotdot = dp->d_ino;
 	      else
