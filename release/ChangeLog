@@ -1,3 +1,7 @@
+Fri Aug 16 10:50:01 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* SETUP: Set `PATH'.
+
 Wed Aug 14 16:23:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* tool-Makefile (INSTALL, IMAGE): New variables.

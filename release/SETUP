@@ -1,6 +1,8 @@
 #!/bin/bash
 # Setup critical hurd translators
 
+PATH=/bin:/sbin
+
 BOOT_DEV="$1"
 if [ ! "$BOOT_DEV" ]; then
   echo "No device to install a boot loader was specified."
