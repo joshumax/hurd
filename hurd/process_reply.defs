@@ -31,6 +31,7 @@ skip; skip;  /* get/set hostname */
 skip; /* getpids */
 skip; /* reauth */
 skip; /* register */
+skip; /* setports */
 skip; /* setsigport */
 skip; skip; skip; /* kill, cttykill, setctty */
 
