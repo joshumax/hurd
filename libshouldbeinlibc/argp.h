@@ -201,23 +201,29 @@ struct argp_state
 error_t argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		    int *arg_index);
 
-/* Flags for argp_usage:  */
-#define ARGP_USAGE_USAGE	0x01 /* Print a Usage: message. */
-#define ARGP_USAGE_SEE		0x02 /* Print a `for more help...' message. */
-#define ARGP_USAGE_HELP		0x04 /* Print a long help message. */
-#define ARGP_USAGE_EXIT_ERR	0x08 /* Call exit(1) instead of returning.  */
-#define ARGP_USAGE_EXIT_OK	0x10 /* Call exit(0) instead of returning.  */
+/* Flags for argp_help:  */
+#define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
+#define ARGP_HELP_SHORT_USAGE	0x02 /*  " but don't actually print options. */
+#define ARGP_HELP_SEE		0x04 /* Print a `for more help...' message. */
+#define ARGP_HELP_LONG		0x08 /* Print a long help message. */
+#define ARGP_HELP_EXIT_ERR	0x10 /* Call exit(1) instead of returning.  */
+#define ARGP_HELP_EXIT_OK	0x20 /* Call exit(0) instead of returning.  */
+
+/* If used as a flag to argp_help, this has the same effect as
+   ARGP_HELP_EXIT_ERR.  However it can be used to clear both types of exit
+   flags at once.  */
+#define ARGP_HELP_EXIT   (ARGP_HELP_EXIT_ERR | ARGP_HELP_EXIT_OK)
 
 /* The standard thing to do after a program command line parsing error.  */
-#define ARGP_USAGE_STD \
-  (ARGP_USAGE_USAGE | ARGP_USAGE_SEE | ARGP_USAGE_EXIT_ERR)
+#define ARGP_HELP_STD_ERR \
+  (ARGP_HELP_USAGE | ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
 /* The standard thing to do in response to a --help option.  */
-#define ARGP_USAGE_STD_HELP \
-  (ARGP_USAGE_USAGE | ARGP_USAGE_HELP | ARGP_USAGE_EXIT_OK)
+#define ARGP_HELP_STD_HELP \
+  (ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG | ARGP_HELP_EXIT_OK)
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
-   ARGP_USAGE_*.  */
-void argp_usage (struct argp *argp, FILE *stream, unsigned flags);
+   ARGP_HELP_*.  */
+void argp_help (struct argp *argp, FILE *stream, unsigned flags);
 
 /* Returns true if the option OPT is a valid short option.  */
 extern inline int
