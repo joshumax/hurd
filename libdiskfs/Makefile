@@ -56,10 +56,10 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-fsys-MIGSFLAGS = -imacros fsmutations.h -DREPLY_PORTS
-fs-MIGSFLAGS = -imacros fsmutations.h
-io-MIGSFLAGS = -imacros fsmutations.h
-ifsock-MIGSFLAGS = -imacros fsmutations.h
+fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
+fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
+io-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
+ifsock-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
