@@ -36,7 +36,7 @@
 
 static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 						unsigned int block_group,
-						struct buffer_head ** bh)
+						char ** bh)
 {
 	unsigned long group_desc;
 	unsigned long desc;
@@ -67,7 +67,7 @@ static void read_inode_bitmap (struct super_block * sb,
 			       unsigned int bitmap_nr)
 {
 	struct ext2_group_desc * gdp;
-	struct buffer_head * bh;
+	char * bh;
 
 	gdp = get_group_desc (sb, block_group, NULL);
 	bh = bread (sb->s_dev, gdp->bg_inode_bitmap, sb->s_blocksize);
@@ -96,7 +96,7 @@ static int load_inode_bitmap (struct super_block * sb,
 {
 	int i, j;
 	unsigned long inode_bitmap_number;
-	struct buffer_head * inode_bitmap;
+	char * inode_bitmap;
 
 	if (block_group >= sb->u.ext2_sb.s_groups_count)
 		ext2_panic (sb, "load_inode_bitmap",
@@ -160,7 +160,7 @@ static void set_inode_dtime (struct inode * inode,
 			     struct ext2_group_desc * gdp)
 {
 	unsigned long inode_block;
-	struct buffer_head * bh;
+	char * bh;
 	struct ext2_inode * raw_inode;
 
 	inode_block = gdp->bg_inode_table + (((inode->i_ino - 1) %
@@ -189,8 +189,8 @@ static void set_inode_dtime (struct inode * inode,
 void ext2_free_inode (struct inode * inode)
 {
 	struct super_block * sb;
-	struct buffer_head * bh;
-	struct buffer_head * bh2;
+	char * bh;
+	char * bh2;
 	unsigned long block_group;
 	unsigned long bit;
 	int bitmap_nr;
@@ -268,7 +268,7 @@ static void inc_inode_version (struct inode * inode,
 			       int mode)
 {
 	unsigned long inode_block;
-	struct buffer_head * bh;
+	char * bh;
 	struct ext2_inode * raw_inode;
 
 	inode_block = gdp->bg_inode_table + (((inode->i_ino - 1) %
@@ -306,8 +306,8 @@ static void inc_inode_version (struct inode * inode,
 struct inode * ext2_new_inode (const struct inode * dir, int mode)
 {
 	struct super_block * sb;
-	struct buffer_head * bh;
-	struct buffer_head * bh2;
+	char * bh;
+	char * bh2;
 	int i, j, avefreei;
 	struct inode * inode;
 	int bitmap_nr;
