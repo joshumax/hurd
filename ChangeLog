@@ -1,5 +1,7 @@
 Mon Sep 23 00:10:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* sh-version.sed: Change to use new version format.
+
 	* configure.in: Check for libcrypt.
 	* config.make.in (LIBCRYPT): New variable.
 
