@@ -83,7 +83,7 @@ error_t
 store_encode (const struct store *store, struct store_enc *enc)
 {
   error_t err;
-  struct store_class *class = store->class;
+  const struct store_class *class = store->class;
   /* We zero each vector length for the allocate_encoding method to work, so
      save the old values.  */
   mach_msg_type_number_t init_num_ports = enc->num_ports;
