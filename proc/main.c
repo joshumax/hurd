@@ -50,7 +50,6 @@ int
 main (int argc, char **argv, char **envp)
 {
   mach_port_t boot;
-  mach_port_t authhandle;
   error_t err;
   mach_port_t pset, psetcntl;
 
@@ -72,11 +71,12 @@ main (int argc, char **argv, char **envp)
   mach_port_insert_right (mach_task_self (), startup_proc->p_reqport,
 			  startup_proc->p_reqport, MACH_MSG_TYPE_MAKE_SEND);
   err = startup_procinit (boot, startup_proc->p_reqport, &startup_proc->p_task,
-			  &authhandle, &master_host_port, &master_device_port);
+			  &authserver, &master_host_port, &master_device_port);
   assert (!err);
   mach_port_deallocate (mach_task_self (), startup_proc->p_reqport);
 
-  _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle);
+  mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
+  _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
 
   add_proc_to_hash (self_proc);
