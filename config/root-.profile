@@ -1,7 +1,15 @@
 # Execute the user's .root_profile file if it exists rather than this one.
 
-if [ $USER && $USER != root ]; then
-  . ~USER/.root_profile
+case "$USER" in
+  "" | root)
+    UHOME="";;
+  *)
+    UHOME="`eval echo ~$USER`";;
+esac
+
+if [ "$UHOME" -a -r "$UHOME/.root_profile" ]; then
+  . "$UHOME/.root_profile"
 else
-  export PATH=/sbin:/bin:/local/bin
+  PATH=/sbin:/bin:/local/bin
+  export PATH
 fi
