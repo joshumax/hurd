@@ -116,12 +116,12 @@ findhash (struct htable *ht,
     return 0;
 
   for (h = HASH (id, ht);
-       (ht->tab[h] != 0	&& ht->ids[h] != id && h != firsth);
+       (ht->tab[h] != 0 && ht->ids[h] != id && h != firsth);
        firsth = (firsth == -1) ? h : firsth, h = REHASH (id, ht, h))
     ;
   
   if (ht->ids[h] == id)
-    ret =  ht->tab[h];
+    ret = ht->tab[h] == HASH_DEL ? 0 : ht->tab[h];
   else
     ret = 0;
   return ret;
