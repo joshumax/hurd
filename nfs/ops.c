@@ -1,5 +1,5 @@
 /* Libnetfs callbacks for node operations in NFS client
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -1167,7 +1167,7 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
 {
   int modes;
   
-  if ((flags & (O_READ|O_WRITE|O_EXEC)) == 0)
+  if (newnode || (flags & (O_READ|O_WRITE|O_EXEC)) == 0)
     return 0;
   
   netfs_report_access (cred, np, &modes);

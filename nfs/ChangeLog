@@ -1,3 +1,9 @@
+Wed Feb 12 13:53:42 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_check_open_permissions): If this is a new node,
+	don't report an error here.  (Though, later I/O requests still
+	might fail.)
+
 Wed Nov 20 17:13:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add iohelp.
