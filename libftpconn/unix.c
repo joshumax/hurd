@@ -486,6 +486,7 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
   size_t name_len;
   error_t err = 0;
   struct get_stats_state *s = state;
+  int (*icheck) (struct ftp_conn *conn) = conn->hooks->interrupt_check;
 
   /* We always consume full lines, so we know that we have to read more when
      we first get called.  */
@@ -493,6 +494,12 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
   if (rd < 0)
     {
       err = errno;
+      goto finished;
+    }
+
+  if (icheck && (*icheck) (conn))
+    {
+      err = EINTR;
       goto finished;
     }
 
