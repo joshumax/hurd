@@ -181,10 +181,15 @@ swab_short (short arg)
 extern inline long
 swab_long (long arg)
 {
-  return (((arg & 0xff) << 24)
-	  | ((arg & 0xff00) << 8)
-	  | ((arg & 0xff0000) >> 8)
-	  | ((arg & 0xff000000) >> 24));
+  return ((swab_short (arg & 0xffff) << 16)
+	  | swab_short ((arg & 0xffff0000) >> 16));
+}
+
+extern inline long long
+swab_long_long (long long arg)
+{
+  return ((swab_long (arg & 0xffffffff) << 32)
+	  | swab_long ((arg & 0xffffffff00000000) >> 32));
 }
 
 /* Return ENTRY, after byteswapping it if necessary */
