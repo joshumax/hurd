@@ -53,8 +53,8 @@ make_ids (uid_t *uids, int nuids, uid_t *gids, int ngids)
   i->i_gids = malloc (sizeof (uid_t) * ngids);
   i->i_refcnt = 1;
   
-  bcopy (i->i_uids, uids, sizeof (uid_t) * nuids);
-  bcopy (i->i_gids, gids, sizeof (uid_t) * ngids);
+  memcpy (i->i_uids, uids, sizeof (uid_t) * nuids);
+  memcpy (i->i_gids, gids, sizeof (uid_t) * ngids);
   return i;
 }
 
@@ -247,7 +247,7 @@ S_proc_reassign (struct proc *p,
 /* Implement proc_setowner as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,
-	       uid_t owner)
+		 uid_t owner)
 {
   if (! check_uid (p, owner))
     return EPERM;
@@ -260,9 +260,9 @@ S_proc_setowner (struct proc *p,
 /* Implement proc_getpids as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_getpids (struct proc *p,
-	      pid_t *pid,
-	      pid_t *ppid,
-	      int *orphaned)
+		pid_t *pid,
+		pid_t *ppid,
+		int *orphaned)
 {
   *pid = p->p_pid;
   *ppid = p->p_parent->p_pid;
