@@ -1,3 +1,27 @@
+1999-11-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* swapon.c (swaponoff): Check for a null default pager port.
+
+1999-10-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fstab.c (fstypes_get): Check strdup return for ENOMEM failure.
+	(fstypes_find_program): New function, #if 0'd out for now.
+	(fstab_argp, fstab_argp_create, options, parse_opt): New variables
+	and functions.
+	* fstab.h: Misc comment fixes.
+	(struct fstab_argp_params): New type.
+	(fstab_argp, fstab_argp_create): Declare them.
+	* fsck.c (options): Remove --fstab/-F, --search-fmts/-S,
+	--exclude-root/-R, --exclude/-X, --fstype/-t, --all/-A;
+	all of these are now factored out into fstab_argp.
+	(main): Remove parsing code for options now in fstab_argp.
+	Instead, use fstab_argp as an argp_child and use fstab_argp_create
+	to process the option-parsing results into a struct fstab * to process.
+
+	* fstab.c (fstab_read): Undo change of 1999-09-17.
+	It should not be necessary at all, given 1999-05-23 change, and:
+	(fstab_find_mount): Do not consider name "ignore" to match any mount.
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* MAKEDEV.sh (fd): Pass --directory to /hurd/magic translator.
