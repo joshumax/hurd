@@ -168,6 +168,9 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 			  cc->data_conn_pos += rd;
 			}
 		    }
+
+		  if (!err && hurd_check_cancel ())
+		    err = EINTR;
 		}
 
 	      mutex_lock (&cc->lock);
