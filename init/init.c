@@ -171,12 +171,13 @@ reboot_mach (int flags)
     }
   else
     {
+      error_t err;
       printf ("%s: %sing Mach (flags %#x)...\n",
 	      program_invocation_short_name, BOOT (flags), flags);
       fflush (stdout);
       sleep (5);
-      while ((errno = host_reboot (host_priv, flags)))
-	error (0, errno, "reboot");
+      while ((err = host_reboot (host_priv, flags)))
+	error (0, err, "reboot");
       for (;;);
     }
 }
@@ -357,6 +358,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
   while (1)
     {
       file_t file;
+      error_t err;
 
       file = file_name_lookup (prog, O_EXEC, 0);
       if (file == MACH_PORT_NULL)
@@ -373,17 +375,17 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	      printf ("Pausing for %s\n", prog);
 	      getchar ();
 	    }
-	  errno = file_exec (file, *task, 0,
-			     (char *)prog, strlen (prog) + 1, /* Args.  */
-			     startup_envz, startup_envz_len,
-			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			     default_ints, INIT_INT_MAX,
-			     NULL, 0, NULL, 0);
-	  if (!errno)
+	  err = file_exec (file, *task, 0,
+			   (char *)prog, strlen (prog) + 1, /* Args.  */
+			   startup_envz, startup_envz_len,
+			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			   default_ints, INIT_INT_MAX,
+			   NULL, 0, NULL, 0);
+	  if (!err)
 	    break;
 
-	  error (0, errno, "%s", prog);
+	  error (0, err, "%s", prog);
 	}
 
       printf ("File name for server %s (or nothing to reboot): ", server);
@@ -426,13 +428,13 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
       if (getstring (buf, sizeof (buf)) && *buf)
 	filename = buf;
       file = file_name_lookup (filename, O_EXEC, 0);
-      if (!file)
+      if (file == MACH_PORT_NULL)
 	error (0, errno, "%s", filename);
     }
-  while (!file);
+  while (file == MACH_PORT_NULL);
 #else
   file = file_name_lookup (filename, O_EXEC, 0);
-  if (!file)
+  if (file == MACH_PORT_NULL)
     {
       error (0, errno, "%s", filename);
       return 0;
@@ -692,10 +694,10 @@ launch_core_servers (void)
     mach_port_deallocate (mach_task_self (), old);
 
   /* Give the bootstrap FS its proc and auth ports.  */
-  errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
+  err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
   mach_port_deallocate (mach_task_self (), fsproc);
-  if (errno)
-    error (0, errno, "fsys_init"); /* Not necessarily fatal.  */
+  if (err)
+    error (0, err, "fsys_init"); /* Not necessarily fatal.  */
 }
 
 /* Set up the initial value of the standard exec data. */
@@ -1029,7 +1031,7 @@ start_child (const char *prog, char **progargs)
   assert_perror (err);
 
   file = file_name_lookup (args, O_EXEC, 0);
-  if (!file)
+  if (file == MACH_PORT_NULL)
     {
       error (0, errno, "%s", args);
       free (args);
