@@ -141,9 +141,9 @@ ftp_conn_sysify (struct ftp_conn *conn)
   error_t err = ftp_conn_cmd (conn, "syst", 0, &reply, &txt);
 
   if (! err)
-    if (reply == REPLY_SYSTYPE || reply == REPLY_BAD_CMD)
+    if (reply == REPLY_SYSTYPE || reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
       {
-	if (reply == REPLY_BAD_CMD)
+	if (reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
 	  txt = 0;
 	if (conn->hooks && conn->hooks->choose_syshooks)
 	  (*conn->hooks->choose_syshooks) (conn, txt);
