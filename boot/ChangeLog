@@ -1,8 +1,15 @@
+2001-08-17  Neal H Walfield  <neal@cs.uml.edu>
+
+        * userland-boot.c (boot_script_task_create): Suspend the newly
+        created task as the protocol requires.
+        (boot_script_insert_right): Fix the error message.
+
 2001-08-17  Roland McGrath  <roland@frob.com>
 
 	* userland-boot.c (boot_script_insert_right): Take new result
 	parameter for send right name in target task.
 	(boot_script_insert_task_port): New function.
+
 	* boot_script.h: Update those two decls.
 	(VAL_TASK): New macro.
 	* boot_script.c (VAL_SYM, VAL_FUNC): Increase these constants.
