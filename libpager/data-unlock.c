@@ -15,6 +15,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
+
 /* Called by the kernel to request a lock on memory. */
 kern_return_t
 _pager_seqnos_memory_object_data_unlock (mach_port_t object, 
@@ -26,18 +30,13 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
 {
   struct pager *p;
   volatile int err;
-  struct inode *volatile ip;
-  daddr_t newblk;
-  daddr_t vblkno;
-  daddr_t *slot;
-  daddr_t *table;
   
   if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
 
   mutex_lock (&p->interlock);
-  wait_for_seqno (p, seqno);
-  release_seqno (p);
+  _pager_wait_for_seqno (p, seqno);
+  _pager_release_seqno (p);
   mutex_unlock (&p->interlock);
 
   if (p->pager_state != NORMAL)
@@ -68,24 +67,18 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       goto out;
     }
 
-  if (shutting_down)
-    {
-      /* Let the kernel stew. */
-      return EIEIO;
-    }
-
   err = pager_unlock_page (p->upi, offset);
   
   if (!err)
     /* We can go ahead and release the lock.  */
-    lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 0,
-		 VM_PROT_NONE, 0);
+    _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 0,
+			VM_PROT_NONE, 0);
   else
     {
       /* Flush the page, and set a bit so that m_o_data_request knows
 	 to issue an error.  */
-      lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 1,
-		   VM_PROT_WRITE, 1);
+      _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 1,
+			  VM_PROT_WRITE, 1);
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
