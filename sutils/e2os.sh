@@ -20,12 +20,16 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
+USAGE="Usage: $0 DEVICE [OS]"
+
 DD=${DD-/bin/dd}
 OD=${OD-/bin/od}
 SED=${SED-/bin/sed}
 AWK=${AWK-/bin/gawk}
 
-USAGE="Usage: $0 DEVICE [OS]"
+# Hack to allow this script to work well under linux too.
+test ! -x "$OD" -a -x /usr/bin/od && OD=/usr/bin/od
+test ! -x "$AWK" -a -x /usr/bin/gawk && AWK=/usr/bin/gawk
 
 while :; do
   case "$1" in
