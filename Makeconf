@@ -149,16 +149,17 @@ install:
 # a variable above with the complete file name to find it.
 # Yippee!  A use for computed variable references!
 HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
-#HURDLIBS-libs := $(foreach lib,$(HURDLIBS-files), \
-#			   -L$(dir $(lib)) \
-#			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
+HURDLIBS-libs := $(foreach lib,$(HURDLIBS-files), \
+			   -L$(dir $(lib)) \
+			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
 
 LDFLAGS += -static
 
 # Building the target
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) '-Wl,-(' $+ '-Wl,-)'
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) '-Wl,-(' \
+	$(OBJS) $(HURDLIBS-libs) $(OTHERLIBS) $(libc) '-Wl,-)'
 endif
 
 
