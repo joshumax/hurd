@@ -184,6 +184,8 @@ hurdio_reader_loop (any_t arg)
 	}
     }
 #undef BUFFER_SIZE
+
+  return 0;
 }
 
 
@@ -231,7 +233,7 @@ hurdio_writer_loop (any_t arg)
 
       if (size + npending_output > BUFFER_SIZE)
 	size = BUFFER_SIZE - npending_output;
-      
+
       bufp = pending_output + npending_output;
       npending_output += size;
       /* We need to save these values, as otherwise there are races
@@ -276,6 +278,8 @@ hurdio_writer_loop (any_t arg)
 	}
     }
 #undef BUFFER_SIZE
+
+  return 0;
 }
 
 
@@ -521,7 +525,7 @@ hurdio_mdmctl (int how, int bits)
 {
   error_t err;
   int oldbits, newbits;
-  
+
   if (tioc_caps & TIOC_CAP_MODS)
     {
       if ((how == MDMCTL_BIS) || (how == MDMCTL_BIC))
@@ -557,7 +561,7 @@ static int
 hurdio_mdmstate ()
 {
   int oldbits;
-  
+
   if (tioc_caps & TIOC_CAP_MODG)
     {
       error_t err = tioctl_tiocmodg (ioport, &oldbits);
