@@ -51,7 +51,7 @@ diskfs_S_io_prenotify (struct protid *cred,
   
   ioserver_fetch_shared_data (cred);
   
-  if (end < np->allocsize)
+  if ((off_t) end < np->allocsize)
     {
       /* The user didn't need to do this, so we'll make sure they
 	 have the right shared page info.  */
