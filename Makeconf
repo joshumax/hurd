@@ -169,7 +169,8 @@ $(libname).a: $(OBJS)
 	$(RANLIB) $@
 
 $(libname).so: $(patsubst %.o,%_pic.o,$(OBJS))
-	$(CC) -shared $(CFLAGS) -Wl,-soname=$(libname).so -o $(libname).so $+
+	$(CC) -shared -Wl,-soname=$(libname).so -o $(libname).so \
+	      $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $+
 endif
 
 # Making a snapshot
