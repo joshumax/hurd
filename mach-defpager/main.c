@@ -1,5 +1,5 @@
 /* Main program for standalone Hurd version of Mach default pager.
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <error.h>
+#include <signal.h>
 
 /* XXX */
 #include <fcntl.h>
@@ -74,6 +75,10 @@ printf_init (device_t master)
 
 int debug;
 
+static void
+nohandler (int sig)
+{ }
+
 int
 main (int argc, char **argv)
 {
@@ -98,8 +103,34 @@ main (int argc, char **argv)
   if (MACH_PORT_VALID (defpager))
     error (2, 0, "Another default memory manager is already running");
 
-  if (!(argc == 2 && !strcmp (argv[1], "-d")) && daemon (0, 0) < 0)
-    error (1, errno, "cannot become daemon");
+  if (!(argc == 2 && !strcmp (argv[1], "-d")))
+    {
+      /* We don't use the `daemon' function because we might exit back to the
+	 parent before the daemon has completed vm_set_default_memory_manager.
+	 Instead, the parent waits for a SIGUSR1 from the child before
+	 exitting, and the child sends that signal after it is set up.  */
+      sigset_t set;
+      signal (SIGUSR1, nohandler);
+      sigemptyset (&set);
+      sigaddset (&set, SIGUSR1);
+      sigprocmask (SIG_BLOCK, &set, 0);
+      switch (fork ())
+	{
+	case -1:
+	  error (1, errno, "cannot become daemon");
+	case 0:
+	  setsid ();
+	  chdir ("/");
+	  close (0);
+	  close (1);
+	  close (2);
+	  break;
+	default:
+	  sigemptyset (&set);
+	  sigsuspend (&set);
+	  _exit (0);
+	}
+    }
 
   printf_init(bootstrap_master_device_port);
 
@@ -126,6 +157,9 @@ main (int argc, char **argv)
   (void) task_set_exception_port(my_task, default_pager_exception_port);
 
   default_pager_initialize (bootstrap_master_host_port);
+
+  if (!(argc == 2 && !strcmp (argv[1], "-d")))
+    kill (getppid (), SIGUSR1);
 
   /*
    * Become the default pager
