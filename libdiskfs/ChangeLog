@@ -1,3 +1,7 @@
+2001-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* file-exec.c: Initialize GID with st_gid rather than st_uid.
+
 2001-04-22  Neal H Walfield  <neal@cs.uml.edu>
 
 	* Makefile (OTHERSRCS): Add extern-inline.c.

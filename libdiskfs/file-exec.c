@@ -87,7 +87,7 @@ diskfs_S_file_exec (struct protid *cred,
   mutex_lock (&np->lock);
   mode = np->dn_stat.st_mode;
   uid = np->dn_stat.st_uid;
-  gid = np->dn_stat.st_uid;
+  gid = np->dn_stat.st_gid;
   mutex_unlock (&np->lock);
 
   if (_diskfs_noexec)
