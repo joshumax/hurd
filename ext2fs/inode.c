@@ -445,8 +445,8 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   struct ext2_inode *di = write_node (np);
-  if (di)
-    sync_global_ptr (di, wait);
+  if (di && wait)
+    sync_global_ptr (di, 1);
 }
 
 /* Set *ST with appropriate values to reflect the current state of the
