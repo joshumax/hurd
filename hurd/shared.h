@@ -35,6 +35,24 @@ struct shared_io
     } conch_status;
 
 
+  /*  While you hold the conch, the shared page will not change (except the
+      conch-status word might be changed from USER_HAS_CONCH to
+      USER_RELEASE_CONCH).  In addition, cooperating users will not change
+      the contents of the file.  The I/O server is a cooperating user itself
+      in its implementation of io_read, io_write, and so forth.  The I/O
+      server is a separate user from all the shared I/O users.  If a user
+      does not release the conch "promptly" then the conch may be stolen
+      from that user by the I/O server.  "Promptly" will probably mean a few
+      seconds.
+
+      As a consequence of these rules, if you hold the shared page, io_read
+      and so forth will block until you release the conch.  You cannot
+      reliably predict what I/O operations in the server (in the io.defs
+      preceding the comment `Definitions for mapped I/O') might need the
+      conch, as a consequence, you should normally not call such functions
+      while you are holding the conch if that could cause a deadlock. */
+
+
   /* These values are set by the IO server only: */
 
   int append_mode;		/* append on each write */
