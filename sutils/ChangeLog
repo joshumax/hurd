@@ -1,3 +1,15 @@
+Wed Feb  5 11:50:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (fstypes_get): Improve error behavior a bit.
+
+	* fsck.c (fsck): In non-automatic mode, print a warning if a
+	filesystem is of a type that can't be fscked.
+
+Tue Feb  4 17:09:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (fs_set_mntent): Avoid null deferences.
+	(fstypes_get): Fill in FSTYPE in the case where we added a new type.
+
 Thu Sep 26 15:36:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (targets, special-targets): Add MAKEDEV.
