@@ -23,12 +23,14 @@ makemode := utilities
 
 targets = mkfs.ufs clri.ufs stati.ufs
 target-suffix = .ufs
-SRCS = mkfs.c clri.c stati.c
+SRCS = mkfs.c clri.c stati.c dlabel.c
 installationdir = $(sbindir)
 
 OBJS = $(SRCS:.c=.o)
 
 all: $(targets)
+
+mkfs.ufs: mkfs.o dlabel.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
