@@ -1,5 +1,5 @@
 /* Map the disk image and handle faults accessing it.
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@ service_paging_requests (any_t arg)
   for (;;)
     ports_manage_port_operations_multithread (pager_bucket,
 					      pager_demuxer,
-					      1000 * 60 * 2, 
+					      1000 * 60 * 2,
 					      1000 * 60 * 10, 0);
 }
 
@@ -90,7 +90,21 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
   jmp_buf *env = cthread_data (cthread_self ());
   error_t err;
 
-  assert (env && "unexpected fault on disk image");
+#ifndef NDEBUG
+  if (!env)
+    {
+      error (0, 0,
+	     "BUG: unexpected fault on disk image (%d, %#lx) in [%#lx,%#lx)"
+	     " eip %#x err %#x",
+	     sig, sigcode,
+	     preemptor.first, preemptor.last,
+	     scp->sc_eip, scp->sc_error);
+      assert (scp->sc_error == EKERN_MEMORY_ERROR);
+      err = pager_get_error (diskfs_disk_pager, sigcode);
+      assert (err);
+      assert_perror (err);
+    }
+#endif
 
   /* Clear the record, since the faulting thread will not.  */
   cthread_set_data (cthread_self (), 0);
