@@ -84,8 +84,11 @@ typedef struct statfs fsys_statfsbuf_t;
 /* Values for retry field in fs.defs:dir_pathtrans call: */
 enum retry_type
 {
-  FS_RETRY_NORMAL = 1,		/* Retry normally.  */
-  FS_RETRY_REAUTH = 2,		/* Retry after reauthenticating retry port. */
+  FS_RETRY_NORMAL = 1,		/* Retry normally if retry_name is not null. */
+  FS_RETRY_REAUTH = 2,		/* Retry after reauthenticating retry port. 
+				   Even if the retry name is null, a retry
+				   is still necessary with this code after the
+				   reauthentication is complete. */
   FS_RETRY_MAGICAL = 3,		/* Retry string is magical.  */
   /* "tty" means controlling tty;
 
@@ -159,6 +162,10 @@ enum file_storage_class
   STORAGE_NETWORK,
   STORAGE_MEMORY,
   STORAGE_TASK,
+  STORAGE_NULL,
+  STORAGE_CONCAT,
+  STORAGE_INTERLEAVE,
+  STORAGE_LAYER,
 };
 
 /* STORAGE_DEVICE implies that:
@@ -285,7 +292,7 @@ typedef int *procinfo_t;
 #define FSTYPE_AFS     0x00000012 /* Andrew File System 3.xx */
 #define FSTYPE_DFS     0x00000013 /* Distributed File Sys (OSF) == AFS 4.xx */
 #define FSTYPE_PROC9   0x00000014 /* /proc filesystem ala Plan 9 */
-#define FSTYPE_SOCKET  0x00000015 /* Naming point for socket server */
+#define FSTYPE_SOCKET  0x00000015 /* io_t that isn't a file but a socket */
 #define FSTYPE_MISC    0x00000016 /* generic trivfs server */
 #define FSTYPE_EXT2FS  0x00000017 /* Linux filesystem by Remy Card */
 
