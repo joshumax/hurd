@@ -17,7 +17,6 @@
 
 
 #include "priv.h"
-#include <stdio.h>
 #include <mach/notify.h>
 
 error_t
