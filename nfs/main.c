@@ -67,7 +67,7 @@ int write_size = DEFAULT_WRITE_SIZE;
 #define _D(what) __D(DEFAULT_ ## what)
 
 /* Options usable both at startup and at runtime.  */
-static struct argp_option common_options[] =
+static const struct argp_option common_options[] =
 {
   {0,0,0,0,0,1},
   {"soft",		    OPT_SOFT,	   "RETRIES", OPTION_ARG_OPTIONAL,
@@ -124,7 +124,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
 }
 
 /* Options usable only at startup.  */
-static struct argp_option startup_options[] = {
+static const struct argp_option startup_options[] = {
   {0,0,0,0,"Server specification:",10},
   {"mount-port",	    OPT_MNT_PORT,  "PORT", 0,
      "Port for mount server"},
@@ -234,14 +234,13 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 int
 main (int argc, char **argv)
 {
+  struct argp common_argp = { common_options, parse_common_opt };
+  const struct argp *argp_parents[] = { &common_argp, 0 };
+  struct argp argp =
+    { startup_options, parse_startup_opt, args_doc, doc, argp_parents };
   mach_port_t bootstrap;
   struct sockaddr_in addr;
   int ret;
-
-  struct argp common_argp = {common_options, parse_common_opt};
-  const struct argp *argp_parents[] = {&common_argp, 0};
-  struct argp argp = {startup_options, parse_startup_opt, args_doc, doc,
-			argp_parents};
 
   argp_parse (&argp, argc, argv, 0, 0);
 
