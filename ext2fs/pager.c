@@ -172,7 +172,7 @@ pager_unlock_page (struct user_pager_info *pager,
   struct iblock_spec indirs[NIADDR + 1];
   daddr_t bno;
   struct disknode *dn;
-  struct dinode *di;
+  struct ext2_inode *di;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
      synchronously.  We do this on newly allocated indirect
@@ -242,7 +242,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	    goto out;
 	  assert (lblkno (sblock, address) < NDADDR);
 	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
-	  record_poke (di, sizeof (struct dinode));
+	  record_poke (di, sizeof (struct ext2_inode));
 	}
       else
 	{
@@ -262,7 +262,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		    goto out;
 		  zero_disk_block (bno);
 		  indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
-		  record_poke (di, sizeof (struct dinode));
+		  record_poke (di, sizeof (struct ext2_inode));
 		}
 	      else
 		{
@@ -286,7 +286,7 @@ pager_unlock_page (struct user_pager_info *pager,
 			goto out;
 		      zero_disk_block (bno);
 		      indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
-		      record_poke (di, sizeof (struct dinode));
+		      record_poke (di, sizeof (struct ext2_inode));
 		    }
 
 		  diblock = indir_block (indirs[2].bno);
