@@ -1,5 +1,7 @@
 Tue Sep 16 14:37:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* opts-append-std.c (diskfs_append_std_options): Add --no-suid and
+	--no-exec when appropriate.
 	* priv.h (nosuid, noexec): New variables.
 	* init-init.c (nosuid, noexec): New variables, initialized to zero.
 	* file-exec.c (diskfs_S_file_exec): If noexec is on, then prohibit

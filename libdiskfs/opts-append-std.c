@@ -1,6 +1,6 @@
 /* Get standard diskfs run-time options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -30,6 +30,16 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
 {
   error_t err;
   extern int diskfs_sync_interval;
+
+  if (nosuid)
+    err = argz_add (argz, argz_len, "--no-suid");
+  if (err)
+    return err;
+  
+  if (noexec)
+    err = argz_add (argz, argz_len, "--no-exec");
+  if (err)
+    return err;
 
   if (diskfs_readonly)
     err = argz_add (argz, argz_len, "--readonly");
