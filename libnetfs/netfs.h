@@ -72,6 +72,8 @@ struct node
   int references;
   
   mach_port_t sockaddr;
+
+  mach_port_t identity;
   
   int owner;
   
@@ -321,7 +323,7 @@ extern struct port_class *netfs_protid_class;
 extern struct port_class *netfs_control_class;
 extern struct port_bucket *netfs_port_bucket;
 extern struct node *netfs_root_node;
-
+extern mach_port_t netfs_fsys_identity;
 extern auth_t netfs_auth_server_port;
 
 extern inline void
