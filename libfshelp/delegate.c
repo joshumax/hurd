@@ -1,7 +1,6 @@
 /* fshelp_delegate_translation
 
-   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
-
+   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -30,7 +29,7 @@
    ARGV is the command line.  If SERVER_NAME is NULL, then a name is
    concocted by appending ARGV[0] to _SERVERS.  */
 error_t
-fshelp_delegate_translation (char *server_name,
+fshelp_delegate_translation (const char *server_name,
 			     mach_port_t requestor, char **argv)
 {
   error_t err;

@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -61,7 +61,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
-			      uid_t owner_uid, 
+			      uid_t owner_uid,
 			      int timeout, fsys_t *control);
 
 
@@ -201,7 +201,7 @@ error_t fshelp_get_identity (struct port_bucket *bucket,
    the node SERVER_NAME.  REQUESTOR is the translator's bootstrap port, and
    ARGV is the command line.  If SERVER_NAME is NULL, then a name is
    concocted by appending ARGV[0] to _SERVERS.  */
-error_t fshelp_delegate_translation (char *server_name,
+error_t fshelp_delegate_translation (const char *server_name,
 				     mach_port_t requestor, char **argv);
 
 struct idvec;			/* Include <idvec.h> to get the real thing. */
