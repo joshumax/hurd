@@ -131,9 +131,9 @@ argz_add (char **argz, unsigned *argz_len, char *str)
   return argz_append (argz, argz_len, str, strlen (str) + 1);
 }
 
-/* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
+/* Delete ENTRY from ARGZ & ARGZ_LEN, if any.  */
 void
-argz_remove (char **argz, unsigned *argz_len, char *entry)
+argz_delete (char **argz, unsigned *argz_len, char *entry)
 {
   if (entry)
     /* Get rid of the old value for NAME.  */
@@ -141,6 +141,11 @@ argz_remove (char **argz, unsigned *argz_len, char *entry)
       unsigned entry_len = strlen (entry) + 1;
       *argz_len -= entry_len;
       bcopy (entry + entry_len, entry, *argz_len - (entry - *argz));
+      if (*argz_len == 0)
+	{
+	  free (*argz);
+	  *argz = 0;
+	}
     }
 }
 
@@ -159,7 +164,7 @@ argz_insert (char **argz, unsigned *argz_len, char *before, char *entry)
   if (before < *argz || before >= *argz + *argz_len)
     return EINVAL;
 
-  if (before > argz)
+  if (before > *argz)
     /* Make sure before is actually the beginning of an entry.  */
     while (before[-1])
       before--;
