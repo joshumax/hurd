@@ -25,7 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
 error_t
-dev_write_sync (daddr_t addr, vm_address_t data, long len)
+dev_write_sync (block_t addr, vm_address_t data, long len)
 {
   int written;
   assert (!diskfs_readonly);
@@ -38,7 +38,7 @@ dev_write_sync (daddr_t addr, vm_address_t data, long len)
 /* Read disk block ADDR; put the address of the data in DATA; read LEN
    bytes.  Always *DATA should be a full page no matter what.   */
 error_t
-dev_read_sync (daddr_t addr, vm_address_t *data, long len)
+dev_read_sync (block_t addr, vm_address_t *data, long len)
 {
   u_int read;
   if (device_read (device_port, 0, addr, len, (io_buf_ptr_t *)data, &read)
