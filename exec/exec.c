@@ -1000,7 +1000,7 @@ check_gzip (struct execdata *earg)
 
 
 static inline error_t
-servercopy (void **arg, u_int argsize, boolean_t argcopy)
+servercopy (void **arg, mach_msg_type_number_t argsize, boolean_t argcopy)
 {
   if (argcopy)
     {
@@ -1022,13 +1022,15 @@ static error_t
 do_exec (file_t file,
 	 task_t oldtask,
 	 int flags,
-	 char *argv, u_int argvlen, boolean_t argv_copy,
-	 char *envp, u_int envplen, boolean_t envp_copy,
-	 mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
-	 mach_port_t *portarray, u_int nports, boolean_t portarray_copy,
-	 int *intarray, u_int nints, boolean_t intarray_copy,
-	 mach_port_t *deallocnames, u_int ndeallocnames,
-	 mach_port_t *destroynames, u_int ndestroynames)
+	 char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+	 char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+	 mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+	 boolean_t dtable_copy,
+	 mach_port_t *portarray, mach_msg_type_number_t nports,
+	 boolean_t portarray_copy,
+	 int *intarray, mach_msg_type_number_t nints, boolean_t intarray_copy,
+	 mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+	 mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
   struct execdata e, interp;
   task_t newtask = MACH_PORT_NULL;
@@ -1038,7 +1040,7 @@ do_exec (file_t file,
   int secure, defaults;
   vm_address_t phdr_addr = 0;
   vm_size_t phdr_size = 0;
-  u_int i;
+  mach_msg_type_number_t i;
   
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1615,13 +1617,16 @@ S_exec_exec (struct trivfs_protid *protid,
 	     file_t file,
 	     task_t oldtask,
 	     int flags,
-	     char *argv, u_int argvlen, boolean_t argv_copy,
-	     char *envp, u_int envplen, boolean_t envp_copy,
-	     mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
-	     mach_port_t *portarray, u_int nports, boolean_t portarray_copy,
-	     int *intarray, u_int nints, boolean_t intarray_copy,
-	     mach_port_t *deallocnames, u_int ndeallocnames,
-	     mach_port_t *destroynames, u_int ndestroynames)
+	     char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+	     char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+	     mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+	     boolean_t dtable_copy,
+	     mach_port_t *portarray, mach_msg_type_number_t nports,
+	     boolean_t portarray_copy,
+	     int *intarray, mach_msg_type_number_t nints,
+	     boolean_t intarray_copy,
+	     mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+	     mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
   if (! protid)
     return EOPNOTSUPP;
@@ -1709,8 +1714,8 @@ S_exec_exec (struct trivfs_protid *protid,
 
 kern_return_t
 S_exec_setexecdata (struct trivfs_protid *protid,
-		    mach_port_t *ports, u_int nports, int ports_copy,
-		    int *ints, u_int nints, int ints_copy)
+		    mach_port_t *ports, mach_msg_type_number_t nports, int ports_copy,
+		    int *ints, mach_msg_type_number_t nints, int ints_copy)
 {
   error_t err;
 
@@ -1732,7 +1737,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
 
   if (std_ports)
     {
-      u_int i;
+      mach_msg_type_number_t i;
       for (i = 0; i < std_nports; ++i)
 	mach_port_deallocate (mach_task_self (), std_ports[i]);
       vm_deallocate (mach_task_self (), (vm_address_t)std_ports, 
@@ -1755,19 +1760,25 @@ S_exec_setexecdata (struct trivfs_protid *protid,
 }
 
 
+#include "exec_startup_S.h"
+
 /* RPC sent on the bootstrap port.  */
 
 kern_return_t
-S_exec_startup (mach_port_t port,
-		vm_address_t *stack_base, vm_size_t *stack_size,
-		int *flags,
-		char **argvp, u_int *argvlen,
-		char **envpp, u_int *envplen,
-		mach_port_t **dtable, mach_msg_type_name_t *dtablepoly,
-		u_int *dtablesize,
-		mach_port_t **portarray, mach_msg_type_name_t *portpoly,
-		u_int *nports,
-		int **intarray, u_int *nints)
+S_exec_startup_get_info (mach_port_t port,
+			 vm_address_t *user_entry,
+			 vm_address_t *phdr_data, vm_size_t *phdr_size,
+			 vm_address_t *stack_base, vm_size_t *stack_size,
+			 int *flags,
+			 char **argvp, mach_msg_type_number_t *argvlen,
+			 char **envpp, mach_msg_type_number_t *envplen,
+			 mach_port_t **dtable,
+			 mach_msg_type_name_t *dtablepoly,
+			 mach_msg_type_number_t *dtablesize,
+			 mach_port_t **portarray,
+			 mach_msg_type_name_t *portpoly,
+			 mach_msg_type_number_t *nports,
+			 int **intarray, mach_msg_type_number_t *nints)
 {
   struct bootinfo *boot = ports_lookup_port (port_bucket, port,
 					     execboot_portclass);
@@ -1777,6 +1788,9 @@ S_exec_startup (mach_port_t port,
 
   /* Pass back all the information we are storing.  */
 
+  *user_entry = boot->user_entry;
+  *phdr_data = boot->phdr_addr;
+  *phdr_size = boot->phdr_size;
   *stack_base = boot->stack_base;
   *stack_size = boot->stack_size;
 
@@ -1805,4 +1819,28 @@ S_exec_startup (mach_port_t port,
   *flags = boot->flags;
 
   return 0;
+}
+
+/* XXX compat */
+kern_return_t
+S_exec_startup (mach_port_t port,
+		vm_address_t *stack_base, vm_size_t *stack_size,
+		int *flags,
+		char **argvp, mach_msg_type_number_t *argvlen,
+		char **envpp, mach_msg_type_number_t *envplen,
+		mach_port_t **dtable, mach_msg_type_name_t *dtablepoly,
+		mach_msg_type_number_t *dtablesize,
+		mach_port_t **portarray, mach_msg_type_name_t *portpoly,
+		mach_msg_type_number_t *nports,
+		int **intarray, mach_msg_type_number_t *nints)
+{
+  vm_address_t user_entry, phdr_addr;
+  vm_size_t phdr_size;
+
+  return S_exec_startup_get_info (port, &user_entry, &phdr_addr, &phdr_size,
+				  stack_base, stack_size, flags,
+				  argvp, argvlen, envpp, envplen,
+				  dtable, dtablepoly, dtablesize,
+				  portarray, portpoly, nports,
+				  intarray, nints);
 }
