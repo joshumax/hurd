@@ -593,13 +593,15 @@ process_has_exited (struct proc *p)
       for (tp = p->p_ochild; tp->p_sib; tp = tp->p_sib)
 	{
 	  if (tp->p_msgport != MACH_PORT_NULL)
-	    nowait_proc_newids (tp->p_msgport, tp->p_task, 1, 
-				tp->p_pgrp->pg_pgid, !tp->p_pgrp->pg_orphcnt);
+	    nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
+				    1, tp->p_pgrp->pg_pgid,
+				    !tp->p_pgrp->pg_orphcnt);
 	  tp->p_parent = startup_proc;
 	}
       if (tp->p_msgport != MACH_PORT_NULL)
-	nowait_proc_newids (tp->p_msgport, tp->p_task, 1, tp->p_pgrp->pg_pgid,
-			    !tp->p_pgrp->pg_orphcnt);
+	nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
+				1, tp->p_pgrp->pg_pgid,
+				!tp->p_pgrp->pg_orphcnt);
       tp->p_parent = startup_proc;
 
       /* And now nappend the lists. */

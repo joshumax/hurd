@@ -369,7 +369,7 @@ leave_pgrp (struct proc *p)
 	  if (ip->p_stopped)
 	    dosignal = 1;
 	  if (ip->p_msgport != MACH_PORT_NULL)
-	    nowait_proc_newids (ip->p_msgport, ip->p_task, ip->p_parent->p_pid,
+	    nowait_msg_proc_newids (ip->p_msgport, ip->p_task, ip->p_parent->p_pid,
 				ip->p_pid, 1);
 	}
       if (dosignal)
@@ -404,11 +404,12 @@ join_pgrp (struct proc *p)
       /* Tell all the processes that their status has changed */
       for (tp = pg->pg_plist; tp; tp = tp->p_gnext)
 	if (tp->p_msgport != MACH_PORT_NULL)
-	  nowait_proc_newids (tp->p_msgport, tp->p_task, tp->p_parent->p_pid,
-			      pg->pg_pgid, !pg->pg_orphcnt);
+	  nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
+				  tp->p_parent->p_pid, pg->pg_pgid,
+				  !pg->pg_orphcnt);
     }
   else if (p->p_msgport != MACH_PORT_NULL)
     /* Always notify process P, because its pgrp has changed. */
-    nowait_proc_newids (p->p_msgport, p->p_task,
+    nowait_msg_proc_newids (p->p_msgport, p->p_task,
 			p->p_parent->p_pid, pg->pg_pgid, !pg->pg_orphcnt);
 }
