@@ -60,14 +60,22 @@ main ()
     printf ("Error on sync: %d\n", err);
 #else
 
-  unlink ("/newdir");
-  rmdir ("/newdir");
-  mkdir ("/newdir", 0777);
-  rename ("/newdir", "/newdir2");
-  rmdir ("/foo");
-  mkdir ("/foo", 0777);
-  rename ("/newdir2", "/foo");
-  sync ();
+  if (unlink ("/newdir"))
+    perror ("unlink");
+  if (rmdir ("/newdir"))
+    perror ("1st rmdir");
+  if (mkdir ("/newdir", 0777))
+    perror ("1st mkdir");
+  if (rename ("/newdir", "/newdir2"))
+    perror ("1st rename");
+  if (rmdir ("/foo"))
+    perror ("2nd rmdir");
+  if (mkdir ("/foo", 0777))
+    perror ("2nd mkdir");
+  if (rename ("/newdir2", "/foo"))
+    perror ("2nd rename");
+  if (sync ())
+    perror ("sync");
 #endif
 
   printf ("All done.\n");
