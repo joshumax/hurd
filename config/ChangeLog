@@ -1,3 +1,7 @@
+Mon Jul 29 14:43:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* passwd: mib -> thomas.
+
 Wed Jul 24 15:23:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* root-.profile: But do \ ` inside "s.

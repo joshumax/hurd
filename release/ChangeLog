@@ -1,3 +1,7 @@
+Mon Jul 29 14:47:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* checklist: Add cc to the list of symlinks to check.
+
 Thu Jul 25 23:22:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* checklist: Add vmstat to the list of setuid programs.
