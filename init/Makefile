@@ -22,7 +22,7 @@ SRCS = init.c
 OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o
 target = init
 
-init: $(OBJS) ../libshouldbeinlibc/libshouldbeinlibc.a
+init: $(OBJS) ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
