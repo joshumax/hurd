@@ -1,5 +1,7 @@
 1999-11-16  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* strfcns.c (index): Function removed.
+
 	* ffs_file_io.c (ffs_open_file): Use memmove instead of ovbcopy.
 	* ext2_file_io.c (ext2_open_file): Likewise.
 	* strfcns.c (ovbcopy): Function removed.
