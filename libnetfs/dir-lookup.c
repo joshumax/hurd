@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -272,7 +272,9 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
 
       if (S_ISLNK (np->nn_stat.st_mode)
-	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
+	  && (!lastcomp
+	      || mustbedir	/* "foo/" must see that foo points to a dir */
+	      || !(flags & (O_NOLINK|O_NOTRANS))))
 	{
 	  size_t nextnamelen, newnamelen, linklen;
 	  char *linkbuf;
