@@ -1,5 +1,9 @@
 Thu Feb  6 02:17:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* io-write.c (diskfs_S_io_write): Check OFF for validity and
+	return EINVAL if it's bogus.
+	* io-read.c (diskfs_S_io_read): Likewise.
+
 	* dir-mkfile.c (diskfs_S_dir_mkfile): New file's depth is one
 	greater than CRED's.
 
