@@ -251,7 +251,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
     }
 
   st->st_mode &= ~S_IFMT;
-  st->st_mode |= S_IFCHR;
+  st->st_mode |= inhibit_cache ? S_IFCHR : S_IFBLK;
   st->st_rdev = rdev;
   if (readonly)
     st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
