@@ -39,7 +39,7 @@ FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	notifier.h param.h route.h sched.h skbuff.h socket.h sockios.h stat.h \
 	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
 
-pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 vpath %.c $(srcdir)/linux-inet
 
