@@ -306,7 +306,32 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
   if (! cred)
     return EOPNOTSUPP;
   else
-    return store_return (((struct open *)cred->po->hook)->dev->store,
-			 ports, num_ports, ints, num_ints,
-			 offsets, num_offsets, data, data_len);
+    {
+      error_t err;
+      struct store *store = ((struct open *)cred->po->hook)->dev->store;
+
+      if (!cred->isroot
+	  && !store_is_securely_returnable (store, cred->po->openmodes))
+	{
+	  struct store *clone;
+	  err = store_clone (store, &clone);
+	  if (! err)
+	    {
+	      err = store_set_flags (clone, STORE_INACTIVE);
+	      if (err == EINVAL)
+		err = EACCES;
+	      else
+		err = store_return (clone,
+				    ports, num_ports, ints, num_ints,
+				    offsets, num_offsets, data, data_len);
+	      store_free (clone);
+	    }
+	}
+      else
+	err = store_return (store,
+			    ports, num_ports, ints, num_ints,
+			    offsets, num_offsets, data, data_len);
+
+      return err;
+    }	
 }
