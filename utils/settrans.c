@@ -40,14 +40,16 @@ static struct argp_option options[] =
   {"active",      'a', 0, 0, "Set NODE's active translator", 1},
   {"passive",     'p', 0, 0, "Set NODE's passive translator"},
   {"keep-active", 'k', 0, 0, "Keep any currently running active translator"
-                             " when setting the passive translator"},
+     " when setting the passive translator"},
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
-  {"goaway",      'g', 0, 0, "Make any existing active translator go away"},
+  {"goaway",      'g', 0, 0, "Make any existing active translator go away"
+     " when setting the passive translator"},
   {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
      " wait for a newline on stdin before completing the startup handshake"},
   {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
      " (default " STRINGIFY (DEFAULT_TIMEOUT) "); 0 means no timeout"},
+  {"exclusive",   'x', 0, 0, "Only set the translator if there is none already"},
 
   {0,0,0,0, "When an active translator is told to go away:", 2},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
@@ -57,8 +59,7 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "NODE [TRANSLATOR ARG...]";
-static char *doc = "When setting a translator, the passive translator is set"
-" by defualt, and when clearing, the active.";
+static char *doc = "By default the passive translator is set.";
 
 /* ---------------------------------------------------------------- */
 
@@ -79,13 +80,14 @@ main(int argc, char *argv[])
   fsys_t active_control = MACH_PORT_NULL;
 
   /* Flags to pass to file_set_translator.  */
-  int active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
-  int passive_flags = FS_TRANS_SET;
+  int active_flags = 0;
+  int passive_flags = 0;
   int lookup_flags = O_NOTRANS;
   int goaway_flags = 0;
 
   /* Various option flags.  */
-  int passive = 0, active = 0, keep_active = 0, pause = 0;
+  int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 1;
+  int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
 
   /* Parse our options...  */
@@ -113,12 +115,12 @@ main(int argc, char *argv[])
 	case 'a': active = 1; break;
 	case 'p': passive = 1; break;
 	case 'k': keep_active = 1; break;
+	case 'g': kill_active = 1; break;
+	case 'x': excl = 1; break;
 	case 'P': pause = 1; break;
 
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
-
-	case 'g': active_flags &= ~FS_TRANS_EXCL; break;
 
 	case 'R': goaway_flags |= FSYS_GOAWAY_RECURSE; break;
 	case 'S': goaway_flags |= FSYS_GOAWAY_NOSYNC; break;
@@ -137,9 +139,21 @@ main(int argc, char *argv[])
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   if (!active && !passive)
-    /* When not otherwise specified, defaults are: active when clearing,
-       passive when setting.  */
-    (argz_len == 0 ? active : passive) = 1;
+    passive = 1;		/* By default, set the passive translator.  */
+
+  if (passive)
+    passive_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0);
+  if (active)
+    active_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0);
+
+  if (passive && !active)
+    /* When setting just the passive, decide what to do with any active.  */
+    if (kill_active)
+      /* Make it go away.  */
+      active_flags = FS_TRANS_SET;
+    else if (! keep_active)
+      /* Ensure that there isn't one.  */
+      active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
 
   if (active && argz_len > 0)
     {
@@ -177,9 +191,7 @@ main(int argc, char *argv[])
 
   err =
     file_set_translator(node,
-			passive ? passive_flags : 0,
-			(active || !keep_active) ? active_flags : 0,
-			goaway_flags,
+			passive_flags, active_flags, goaway_flags,
 			argz, argz_len,
 			active_control, MACH_MSG_TYPE_MOVE_SEND);
   if (err)
