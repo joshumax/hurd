@@ -137,9 +137,10 @@ more_memory(size, fl)
 	} while (--n != 0);
 }
 
-char *
+/* Declaration changed to standard one for GNU.  */
+void *
 malloc(size)
-	register unsigned int size;
+	register size_t size;
 {
 	register int i, n;
 	register free_list_t fl;
@@ -197,8 +198,10 @@ malloc(size)
 	return ((char *) h) + sizeof(union header);
 }
 
+/* Declaration changed to standard one for GNU.  */
+void
 free(base)
-	char *base;
+	void *base;
 {
 	register header_t h;
 	register free_list_t fl;
@@ -236,10 +239,11 @@ free(base)
 	return;
 }
 
-char *
+/* Declaration changed to standard one for GNU.  */
+void *
 realloc(old_base, new_size)
-	char *old_base;
-	unsigned int new_size;
+        void *old_base;
+        size_t new_size;
 {
 	register header_t h;
 	register free_list_t fl;
