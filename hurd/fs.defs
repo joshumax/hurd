@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface.
-   Copyright (C) 1994,95,96,97,98,99, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -108,7 +108,7 @@ routine file_utimes (
 routine file_set_size (
 	trunc_file: file_t;
 	RPT
-	new_size: off_t);
+	new_size: loff_t);
 
 /* Apply/manipulate advisory lock */
 routine file_lock (
@@ -235,7 +235,7 @@ routine dir_readdir (
 	entry: int;
 	nentries: int;
 	bufsiz: vm_size_t;
-	out amount: int);
+	out amount: vm_size_t);
 
 /* Create directory */
 routine dir_mkdir (

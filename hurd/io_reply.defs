@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991,93,94,95,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,95,2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -34,7 +34,7 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_MAKE_SEND_ONCE
 simpleroutine io_write_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG;
-	amount: int);
+	amount: vm_size_t);
 
 simpleroutine io_read_reply (
 	reply: reply_port_t;
@@ -44,12 +44,12 @@ simpleroutine io_read_reply (
 simpleroutine io_seek_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG;
-	newp: off_t);
+	newp: loff_t);
 
 simpleroutine io_readable_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG;
-	amount: int);
+	amount: vm_size_t);
 
 simpleroutine io_set_all_openmodes_reply (
 	reply: reply_port_t;

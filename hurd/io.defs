@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991,93,94,95,96,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -43,8 +43,8 @@ routine io_write (
 	io_object: io_t;
 	RPT
 	data: data_t SCP;
-	offset: off_t;
-	out amount: size_t);
+	offset: loff_t;
+	out amount: vm_size_t);
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
@@ -53,16 +53,16 @@ routine io_read (
 	io_object: io_t;
 	RPT
 	out data: data_t, dealloc;
-	offset: off_t;
-	amount: size_t);
+	offset: loff_t;
+	amount: vm_size_t);
 
 /* Change current read/write offset */
 routine io_seek (
 	io_object: io_t;
 	RPT
-	offset: off_t;
+	offset: loff_t;
 	whence: int;
-	out newp: off_t);
+	out newp: loff_t);
 
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
@@ -70,7 +70,7 @@ routine io_seek (
 routine io_readable (
 	io_object: io_t;
 	RPT
-	out amount: size_t);
+	out amount: vm_size_t);
 
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
@@ -316,7 +316,7 @@ routine io_identity (
 	RPT
 	out idport: mach_port_send_t;
 	out fsidport: mach_port_send_t;
-	out fileno: int);
+	out fileno: ino64_t);
 
 /* Revoke the access of all descriptors except this one currently open
    on the specified object.  */

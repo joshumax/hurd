@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991,93,94,95,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -35,18 +35,18 @@ simpleroutine io_write_request (
 		io_object: io_t;
 		reply: reply_port_t;
 		data: data_t;
-		offset: off_t);
+		offset: loff_t);
 
 simpleroutine io_read_request (
 		io_object: io_t;
 		reply: reply_port_t;
-		offset: off_t;
-		amount: int);
+		offset: loff_t;
+		amount: vm_size_t);
 
 simpleroutine io_seek_request (
 		io_object: io_t;
 		reply: reply_port_t;
-		offset: off_t;
+		offset: loff_t;
 		whence: int);
 
 simpleroutine io_readable_request (
@@ -160,7 +160,3 @@ simpleroutine io_readsleep_request (
 simpleroutine io_sigio_request (
 		io_object: io_t;
 		reply: reply_port_t);
-
-
-		
-		
