@@ -23,7 +23,7 @@ makemode := server
 
 target = nfs
 LCLHDRS = nfs.h 
-SRCS = ops.c rpc.c mount.c cred.c nfs.c cache.c consts.c main.c
+SRCS = ops.c rpc.c mount.c cred.c nfs.c cache.c consts.c main.c pager.c
 OBJS = $(subst .c,.o,$(SRCS))
 
 nfs: $(OBJS) ../libports/libports.a ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a
