@@ -137,6 +137,10 @@ diskfs_node_norefs (struct node *np)
     free (np->dn->dirents);
   assert (!np->dn->pager);
 
+  /* Move any pending writes of indirect blocks.  */
+  pokel_inherit (&global_pokel, &np->dn->indir_pokel);
+  pokel_finalize (&np->dn->indir_pokel);
+
   free (np->dn);
   free (np);
 }
