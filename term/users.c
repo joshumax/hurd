@@ -1828,7 +1828,10 @@ S_term_get_bottom_type (io_t arg,
     return EOPNOTSUPP;
 
   ports_port_deref (cred);
-  *ttype = TERM_ON_MACHDEV;
+  if (bottom == &devio_bottom)
+    *ttype = TERM_ON_MACHDEV;
+  else
+    *ttype = TERM_ON_MASTERPTY;
   return 0;
 }
 
