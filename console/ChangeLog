@@ -1,5 +1,11 @@
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
+	* input.c (input_enqueue): Initialize ERR.
+
+	* bdf.c, bdf.h, display-drv.h, dynafont.c, dynafont.h, focus.c,
+	focus.h, input-drv.h, main.c, ourfs_notify.defs, vcons.c, vcons.h,
+	vga.c, vga-display.c, vga.h, vga-hw.h: Obsolete files removed.
+
 	* display.c (handle_esc_bracket_m): Really disable italics on
 	<ritm>.
 

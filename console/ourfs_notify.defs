@@ -1,5 +1,0 @@
-/* Private specialized presentation of fs_notify.defs for diskfs library.  */
-
-#define routine simpleroutine
-#define USERPREFIX nowait_
-#include <hurd/fs_notify.defs>

@@ -90,7 +90,7 @@ void input_destroy (input_t input)
 ssize_t input_enqueue (input_t input, int nonblock, char *data,
 		       size_t datalen)
 {
-  error_t err;
+  error_t err = 0;
   int was_empty;
   int enqueued = 0;
   char *buffer;
