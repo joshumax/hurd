@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 99, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -28,6 +28,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
+
+struct rwlock diskfs_fsys_lock = RWLOCK_INITIALIZER;
 mach_port_t diskfs_fsys_identity;
 
 int _diskfs_nosuid, _diskfs_noexec;
@@ -38,7 +40,7 @@ struct hurd_port _diskfs_exec_portcell;
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
 spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
-int _diskfs_ncontrol_ports = 0;
+int _diskfs_ncontrol_ports;
 
 struct port_class *diskfs_protid_class;
 struct port_class *diskfs_control_class;
