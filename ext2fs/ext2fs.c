@@ -143,8 +143,10 @@ usage(int status)
       printf("\
 \n\
   -r, --readonly             disable writing to DEVICE\n\
-  -s, --sync[=INTERVAL]      write data out immediately or at least ever\n\
-                             INTERVAL seconds\n\
+  -w, --writable             enable writing to DEVICE\n\
+  -s, --sync[=INTERVAL]      with an argument, sync every INTERVAL seconds,\n\
+                             otherwise operate in synchronous mode\n\
+  -n, --nosync               never sync the filesystem\n\
       --help                 display this help and exit\n\
       --version              output version information and exit\n\
 ");
@@ -152,12 +154,14 @@ usage(int status)
   exit (status);
 }
 
-#define SHORT_OPTIONS "rs?"
+#define SHORT_OPTIONS "rwsn?V"
 
 static struct option options[] =
 {
   {"readonly", no_argument, 0, 'r'},
+  {"writable", no_argument, 0, 'w'},
   {"sync", optional_argument, 0, 's'},
+  {"nosync", no_argument, 0, 'n'},
   {"help", no_argument, 0, '?'},
   {"version", no_argument, 0, 'V'},
   {0, 0, 0, 0}
@@ -194,11 +198,17 @@ main (int argc, char **argv)
 	  {
 	  case 'r':
 	    diskfs_readonly = 1; break;
+	  case 'w':
+	    diskfs_readonly = 0; break;
 	  case 's':
 	    if (optarg == NULL)
 	      diskfs_synchronous = 1;
 	    else
 	      diskfs_default_sync_interval = atoi (optarg);
+	    break;
+	  case 'n':
+	    diskfs_synchronous = 0;
+	    diskfs_default_sync_interval = 0;
 	    break;
 	  case 'V':
 	    printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
