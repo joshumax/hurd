@@ -283,11 +283,13 @@ load_image (task_t t,
 	    vm_allocate (mach_task_self (), &buf, bufsz, 1);
 	    lseek (fd, ph->p_offset, SEEK_SET);
 	    read (fd, buf + (ph->p_offset & (ph->p_align - 1)), ph->p_filesz);
+	    ph->p_memsz = ((ph->p_vaddr + ph->p_memsz + ph->p_align - 1)
+			   & ~(ph->p_align - 1));
 	    ph->p_vaddr &= ~(ph->p_align - 1);
-	    ph->p_memsz += ph->p_align - 1;
-	    ph->p_memsz &= ~(ph->p_align - 1);
+	    ph->p_memsz -= ph->p_vaddr;
 	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
-	    vm_write (t, ph->p_vaddr, (vm_address_t)buf, bufsz);
+	    vm_write (t, ph->p_vaddr, buf, bufsz);
+	    vm_deallocate (mach_task_self (), buf, bufsz);
 	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0, 
 			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
 			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
