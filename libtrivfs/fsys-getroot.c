@@ -31,12 +31,20 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 {
   struct protid *cred;
   int i;
+  struct port_info *pi;
+
+  pi = ports_get_port (fsys, PT_CTL);
+  if (!pi)
+    return EOPNOTSUPP;
 
   assert (!trivfs_support_read && !trivfs_support_write
 	  && !trivfs_support_exec);
   
   if (flags & (O_READ|O_WRITE|O_EXEC))
-    return EACCES;
+    {
+      ports_done_with_port (pi);
+      return EACCES;
+    }
   
   cred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
   cred->isroot = 0;
@@ -47,6 +55,7 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 		    uids, nuids, gids, ngids);
   *newpt = ports_get_right (cred);
   *newpttype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_done_with_port (pi);
   return 0;
 }
 
