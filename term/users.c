@@ -1083,14 +1083,6 @@ S_tioctl_tiocstop (io_t port)
   return err;
 }
   
-/* TIOCPKT -- PTY Master packet mode */
-kern_return_t
-S_tioctl_tiocpkt (io_t port,
-		  int how)
-{
-  return EOPNOTSUPP;
-}
-
 /* TIOCSTI -- Simulate terminal input */
 kern_return_t
 S_tioctl_tiocsti (io_t port,
