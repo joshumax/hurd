@@ -23,7 +23,7 @@
 #include <hurd/fsys.h>
 
 mach_port_t
-netfs_startup_netfs (mach_port_t bootstrap, int flags)
+netfs_startup (mach_port_t bootstrap, int flags)
 {
   mach_port_t realnode;
   struct port_info *newpi;
