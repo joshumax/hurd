@@ -14,7 +14,7 @@ struct argp_option options[] = {
   {0, 0}
 };
 char *arg_doc = "FILE [ADDR [LENGTH]]...";
-char *doc = "ADDR is in blocks, and defaults to 0; LENGTH is in bytes, and defaults to the remainder of FILE.";
+char *doc = "\vADDR is in blocks, and defaults to 0; LENGTH is in bytes, and defaults to the remainder of FILE.";
 
 int
 main (int argc, char **argv)
