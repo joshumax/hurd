@@ -65,7 +65,7 @@ remap_encode (const struct store *store, struct store_enc *enc)
 }
 
 error_t
-remap_decode (struct store_enc *enc, struct store_class *classes,
+remap_decode (struct store_enc *enc, const struct store_class *const *classes,
 	      struct store **store)
 {
   if (enc->cur_int + 3 > enc->num_ints)
@@ -87,13 +87,12 @@ remap_decode (struct store_enc *enc, struct store_class *classes,
     }
 }
 
-static struct store_class
-remap_class =
+struct store_class
+store_remap_class =
 {
   STORAGE_REMAP, "remap", remap_read, remap_write,
   remap_allocate_encoding, remap_encode, remap_decode
 };
-_STORE_STD_CLASS (remap_class);
 
 /* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
    from SOURCE; SOURCE is consumed, but RUNS is not.  Unlike the
@@ -107,7 +106,7 @@ store_remap_create (struct store *source,
 {
   error_t err;
 
-  *store = _make_store (&remap_class, MACH_PORT_NULL, flags,
+  *store = _make_store (&store_remap_class, MACH_PORT_NULL, flags,
 			source->block_size, runs, num_runs, 0);
   if (! *store)
     return ENOMEM;
