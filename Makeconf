@@ -271,9 +271,9 @@ relink:
 ifeq ($(MAKELEVEL),0)
 librecord:=/tmp/hurd-make-$(shell echo $$$$)
 export librecord
-endif
-
+else
 include $(librecord)
+endif
 
 # How to create it.
 $(librecord):
