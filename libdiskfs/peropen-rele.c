@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1996 Free Software Foundation
+   Copyright (C) 1994, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,7 +30,17 @@ diskfs_release_peropen (struct peropen *po)
       return;
     }
 
-  mach_port_deallocate (mach_task_self (), po->dotdotport);
+  if (po->root_parent)
+    mach_port_deallocate (mach_task_self (), po->root_parent);
+
+  if (po->shadow_root)
+    {
+      mutex_lock (&po->shadow_root->lock);
+      diskfs_nput (po->shadow_root);
+    }
+  if (po->shadow_root_parent)
+    mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
+
   if (po->lock_status != LOCK_UN)
     fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
 			 &po->np->lock, LOCK_UN);
@@ -39,5 +49,3 @@ diskfs_release_peropen (struct peropen *po)
 
   free (po);
 }
-
-  
