@@ -781,9 +781,7 @@ diskfs_get_filemap_pager_struct (struct node *node)
   return node->dn->pager;
 }
 
-static struct ext2_super_block final_sblock;
-
-/* Shutdown all the pagers. */
+/* Shutdown all the pagers (except the disk pager). */
 void
 diskfs_shutdown_pager ()
 {
@@ -797,13 +795,13 @@ diskfs_shutdown_pager ()
 
   write_all_disknodes ();
 
-  /* Because the superblock lives in the disk pager, we copy out the last
-     known value just before we shut it down.  */
-  bcopy (sblock, &final_sblock, sizeof (final_sblock));
-  sblock = &final_sblock;
-
   ports_bucket_iterate (pager_bucket, shutdown_one);
-  pager_shutdown (disk_pager);
+
+  /* Sync everything on the the disk pager.  */
+  sync_global (1);
+
+  /* Despite the name of this function, we never actually shutdown the disk
+     pager, just make sure it's synced. */
 }
 
 /* Sync all the pagers. */
@@ -822,7 +820,7 @@ diskfs_sync_everything (int wait)
   ports_bucket_iterate (pager_bucket, sync_one);
 
   /* Do things on the the disk pager.  */
-  pokel_sync (&global_pokel, wait);
+  sync_global (wait);
 }
 
 /* ---------------------------------------------------------------- */
