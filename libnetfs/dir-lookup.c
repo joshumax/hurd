@@ -232,7 +232,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  newpi = 
 	    netfs_make_protid (netfs_make_peropen (dnp, 0,
 						   diruser->po->dotdotport),
-			       0);
+			       netfs_make_credential (0, 0, 0, 0));
 	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
