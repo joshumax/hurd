@@ -18,6 +18,8 @@
 
 /* Only CPP macro definitions should go in this file. */
 
+#define IO_SELECT_REPLY_PORT
+
 #define IO_INTRAN sock_user_t begin_using_sock_user_port (io_t)
 #define IO_DESTRUCTOR end_using_sock_user_port (sock_user_t)
 
