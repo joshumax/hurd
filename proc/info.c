@@ -1,0 +1,403 @@
+/* Process information queries
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* Written by Michael I. Bushnell.  */
+
+#include <mach.h>
+#include <sys/types.h>
+#include <hurd/hurd_types.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/resource.h>
+
+#include "proc.h"
+#include "proc_S.h"
+
+/* Implement S_proc_pid2task as described in <hurd/proc.defs>. */
+error_t
+S_proc_pid2task (struct proc *callerp,
+	       pid_t pid,
+	       task_t *t)
+{
+  struct proc *p = pid_find (pid);
+  
+  if (!p)
+    return ESRCH;
+  
+  if (!check_uid (callerp, p->p_owner))
+    return EPERM;
+  
+  *t = p->p_task;
+
+  return 0;
+}
+
+/* Implement proc_task2pid as described in <hurd/proc.defs>. */
+error_t
+S_proc_task2pid (struct proc *callerp,
+	       task_t t,
+	       pid_t *pid)
+{
+  struct proc *p = task_find (t);
+  
+  if (!p)
+    return ESRCH;
+  
+  *pid = p->p_pid;
+  mach_port_deallocate (mach_task_self (), t);
+  return 0;
+}
+
+/* Implement proc_task2proc as described in <hurd/proc.defs>. */
+error_t
+S_proc_task2proc (struct proc *callerp,
+		task_t t,
+		mach_port_t *outproc)
+{
+  struct proc *p = task_find (t);
+  
+  if (!p)
+    return ESRCH;
+  
+  *outproc = p->p_reqport;
+  mach_port_deallocate (mach_task_self (), t);
+  return 0;
+}
+
+/* Implement proc_proc2task as described in <hurd/proc.defs>. */
+error_t
+S_proc_proc2task (struct proc *p,
+		task_t *t)
+{
+  *t = p->p_task;
+  return 0;
+}
+
+/* Implement proc_pid2proc as described in <hurd/proc.defs>. */
+error_t
+S_proc_pid2proc (struct proc *callerp,
+	       pid_t pid,
+	       mach_port_t *outproc)
+{
+  struct proc *p = pid_find (pid);
+  
+  if (!p)
+    return ESRCH;
+  
+  if (!check_uid (callerp, p->p_owner))
+    return EPERM;
+  
+  *outproc = p->p_reqport;
+  return 0;
+}
+
+#ifdef notyet
+
+/* Read a string starting at address ADDR in task T; set *STR to point at
+   newly malloced storage holding it.  */
+static error_t
+get_string (task_t t,
+	    vm_address_t addr,
+	    char **str)
+{
+  /* This version assumes that a string is never more than one
+     page in length.  */
+
+  vm_address_t readaddr;
+  vm_address_t data;
+  u_int readlen;
+  error_t err;
+  char *c;
+
+  readaddr = trunc_page (addr);
+  err = vm_read (t, readaddr, vm_page_size * 2, &data, &readlen);
+  if (err == KERN_INVALID_ADDRESS)
+    err = vm_read (t, readaddr, vm_page_size, &data, &readlen);
+  if (err)
+    return err;
+
+  /* Scan for a null */
+  for (c = (char *)(data + (addr - readaddr));
+       c < (char *)(data + readlen);
+       c++)
+    if (*(char *)c == '\0')
+      {
+	c++;			/* include the null */
+	*str = malloc (c - (char *)(data + (addr - readaddr)));
+	bcopy ((char *)(data + (addr - readaddr)), *str,
+	       c - (char *)(data + (addr - readaddr)));
+      }
+
+  if (*str == 0)
+    err = KERN_INVALID_ADDRESS;
+  
+  vm_deallocate (mach_task_self (), data, (vm_address_t)&readlen);
+  return err;
+}
+
+/* Read a vector of addresses (stored as are argv and envp) from tast TASK 
+   found at address ADDR.  Set *VEC to point to newly malloced storage holding
+   the addresses. */
+static error_t
+get_vector (task_t task,
+	    vm_address_t addr,
+	    int **vec)
+{
+  vm_address_t readaddr;
+  vm_address_t data = 0;
+  u_int readlen;
+  error_t err;
+  vm_address_t *t;
+
+  readaddr = trunc_page (addr);
+  err = vm_read (task, readaddr, vm_page_size * 2, &data, &readlen);
+  if (err == KERN_INVALID_ADDRESS)
+    err = vm_read (task, readaddr, vm_page_size, &data, &readlen);
+  if (err)
+    return err;
+
+  /* Scan for a null */
+  /* This will lose sometimes on machines with unfortunate alignment
+     restrictions. XXX */
+  for (t = (int *)(data + (addr - readaddr)); 
+       t < (vm_address_t *)(data + readlen);
+       t += sizeof (int))
+    if (*(int *)t == 0)
+      {
+	t += 4;			/* include the null */
+	*vec = malloc ((char *)t - (char *)(data + (addr - readaddr)) 
+		       + sizeof (int));
+	bcopy ((char *)(data + (addr - readaddr)), *vec,
+	       (char *)t - (char *)(data + (addr - readaddr)));
+      }
+
+  if (*vec == 0)
+    err = KERN_INVALID_ADDRESS;
+  
+  vm_deallocate (mach_task_self (), data, (vm_address_t)readlen);
+  return err;
+}  
+
+/* Fetch an array of strings at address LOC in task T into 
+   BUF of size BUFLEN. */
+static error_t 
+get_string_array (task_t t,
+		  vm_address_t loc,
+		  vm_address_t *buf,
+		  u_int *buflen)
+{
+  int totstringlen;
+  char *bp;
+  int *vector;
+  error_t err;
+  vm_address_t origbuf = *buf;
+  
+  err = get_vector (t, loc, &vector);
+  if (err)
+    return err;
+  
+  while (*vector)
+    {
+      char *string;
+      int len;
+
+      err = get_string (t, *vector, &string);
+      if (err)
+	{
+	  free (vector);
+	  if (*buf != origbuf)
+	    vm_deallocate (mach_task_self (), *buf, *buflen);
+	  return err;
+	}
+      
+      len = strlen (string) + 1;
+      if (len > (bp - *(char **)buf))
+	{
+	  vm_address_t newbuf;
+	  
+	  err = vm_allocate (mach_task_self (), &newbuf, *buflen * 2, 1);
+	  if (err)
+	    {
+	      free (string);
+	      free (vector);
+	      if (*buf != origbuf)
+		vm_deallocate (mach_task_self (), *buf, *buflen);
+	      return err;
+	    }
+	  bcopy (*(char **)buf, (void *)newbuf, (vm_address_t) bp - newbuf);
+	  bp = newbuf + (bp - *buf);
+	  if (*buf != origbuf)
+	    vm_deallocate (mach_task_self (), *buf, *buflen);
+	  *buf = newbuf;
+	  *buflen *= 2;
+	}
+      bcopy (string, bp, len);
+      bp += len;
+      free (string);
+    }
+  free (vector);
+  *buflen = (vm_address_t)bp - *buf;
+  return 0;
+}
+#endif /* notyet */
+
+/* Implement proc_getprocargs as described in <hurd/proc.defs>. */
+error_t
+S_proc_getprocargs (struct proc *callerp,
+		  pid_t pid,
+		  char **buf,
+		  u_int *buflen)
+{
+ #ifdef notyet
+  struct proc *p = pid_find (pid);
+  
+  if (!p)
+    return ESRCH;
+  
+  return get_string_array (p->p_task, p->p_argv, buflen, buf);
+#else
+  return EOPNOTSUPP;
+#endif
+}
+
+/* Implement proc_getprocenv as described in <hurd/proc.defs>. */
+error_t
+S_proc_getprocenv (struct proc *callerp,
+		 pid_t pid,
+		 char **buf,
+		 u_int *buflen)
+{
+#ifdef notyet
+  struct proc *p = pid_find (pid);
+  
+  if (!p)
+    return ESRCH;
+  
+  return get_string_array (p->p_task, p->p_envp, buflen, buf);
+#else
+  return EOPNOTSUPP;
+#endif
+}
+
+/* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
+error_t
+S_proc_getprocinfo (struct proc *callerp,
+		  pid_t pid,
+		  int **piarray,
+		  u_int *piarraylen)
+{
+  struct proc *p = pid_find (pid);
+  struct procinfo *pi;
+  int nthreads;
+  thread_t *thds;
+  error_t err;
+  size_t structsize;
+  int i;
+  int didalloc = 0;
+  u_int tkcount, thcount;
+
+  if (!p)
+    return ESRCH;
+  
+  err = task_threads (p->p_task, &thds, &nthreads);
+  if (err)
+    return err;
+
+  structsize = (sizeof (struct procinfo)
+		+ nthreads * sizeof (struct thread_basic_info)
+		+ nthreads * sizeof (struct thread_sched_info));
+
+  if (structsize / sizeof (int) > *piarraylen)
+    {
+      vm_allocate (mach_task_self (), (u_int *)&piarray, structsize, 1);
+      didalloc = 1;
+    }
+  *piarraylen = structsize / sizeof (int);
+  pi = (struct procinfo *) *piarray;
+  
+  pi->state = 
+    ((p->p_stopped ? PI_STOPPED : 0)
+     | (p->p_exec ? PI_EXECED : 0)
+     | (!p->p_pgrp->pg_orphcnt ? PI_ORPHAN : 0)
+     | (p->p_pgrp->pg_session->s_sid == p->p_pid ? PI_SESSLD : 0)
+     | (!p->p_parentset ? PI_NOPARENT : 0)
+     | (p->p_msgport == MACH_PORT_NULL ? PI_NOMSG : 0));
+  pi->owner = p->p_owner;
+  pi->ppid = p->p_parent->p_pid;
+  pi->pgrp = p->p_pgrp->pg_pgid;
+  pi->session = p->p_pgrp->pg_session->s_sid;
+  
+  pi->nthreads = nthreads;
+  
+  tkcount = TASK_BASIC_INFO_COUNT;
+  err = task_info (p->p_task, TASK_BASIC_INFO, (int *)&pi->taskinfo,
+		   &tkcount);
+  
+  for (i = 0; i < nthreads; i++)
+    {
+      thcount = THREAD_BASIC_INFO_COUNT;
+      if (!err)
+	err = thread_info (thds[i], THREAD_BASIC_INFO,
+			   (int *)&pi->threadinfos[i].pis_bi, 
+			   &thcount);
+      thcount = THREAD_SCHED_INFO_COUNT;
+      if (!err)
+	err = thread_info (thds[i], THREAD_SCHED_INFO,
+			   (int *)&pi->threadinfos[i].pis_si,
+			   &thcount);
+      mach_port_deallocate (mach_task_self (), thds[i]);
+    }
+  
+  vm_deallocate (mach_task_self (), (u_int )thds,
+		 nthreads * sizeof (thread_t));
+  if (err && didalloc)
+    vm_deallocate (mach_task_self (), (u_int) piarray, structsize);
+
+  return err;
+}
+
+/* Implement proc_setlogin as described in <hurd/proc.defs>. */
+error_t
+S_proc_setlogin (struct proc *p,
+	       char *login)
+{
+  struct login *l;
+
+  if (!check_uid (p, 0))
+    return EPERM;
+
+  l = malloc (sizeof (struct login) + strlen (login) + 1);
+  l->l_refcnt = 1;
+  strcpy (l->l_name, login);
+  if (!--p->p_login->l_refcnt)
+    free (p->p_login);
+  p->p_login = l;
+  return 0;
+}
+
+/* Implement proc_getlogin as described in <hurd/proc.defs>. */
+error_t
+S_proc_getlogin (struct proc *p,
+	       char *login)
+{
+  strcpy (login, p->p_login->l_name);
+  return 0;
+}
+
