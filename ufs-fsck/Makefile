@@ -22,7 +22,7 @@ dir := newfsck
 makemode := utility
 
 SRCS = dir.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
-	pass5.c setup.c utilities.c
+	pass5.c setup.c utilities.c inode.c
 OBJS = $(subst .c,.o,$(SRCS))
 LCLHDRS = fsck.h
 target = newfsck
