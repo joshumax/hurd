@@ -84,15 +84,12 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_ARG:
       if (state->arg_num > 0)
 	/* Too many arguments.  */
-	argp_usage (state);
-
+	argp_error (state, "Too many non option arguments");
       _cons_file = arg;
       break;
 
-    case ARGP_KEY_END:
-      if (state->arg_num != 1)
-	/* Not enough arguments. */
-	argp_usage (state);
+    case ARGP_KEY_NO_ARGS:
+      argp_error (state, "Filename of console server missing");
       break;
 
     default:

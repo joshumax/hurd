@@ -1,3 +1,9 @@
+2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
+
+	* opts-std-startup.c (parse_startup_opt): Use argp_error instead
+	argp_usage for error.  Replace case for ARGP_KEY_END with case for
+	ARGP_KEY_NO_ARGS.
+
 2002-09-14  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (SRCS): Add vcons-input.c.
