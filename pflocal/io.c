@@ -402,10 +402,11 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   auth_server = getauth ();
   err =
     auth_server_authenticate (auth_server, 
-			      rendezvous, MACH_MSG_TYPE_MOVE_SEND,
+			      rendezvous, MACH_MSG_TYPE_COPY_SEND,
 			      new_user_port, MACH_MSG_TYPE_MAKE_SEND, 
 			      &uids, &num_uids, &aux_uids, &num_aux_uids,
 			      &gids, &num_gids, &aux_gids, &num_aux_gids);
+  mach_port_deallocate (mach_task_self (), rendezvous);
   mach_port_deallocate (mach_task_self (), auth_server);
 
   /* Throw away the ids we went through all that trouble to get... */

@@ -377,13 +377,14 @@ S_io_reauthenticate (struct sock_user *user,
   auth = getauth ();
   err = auth_server_authenticate (auth, 
 				  rend,
-				  MACH_MSG_TYPE_MOVE_SEND,
+				  MACH_MSG_TYPE_COPY_SEND,
 				  ports_get_right (newuser),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 
 				  &aux_uids, &auxuidlen,
 				  &gen_gids, &gengidlen,
 				  &aux_gids, &auxgidlen);
+  mach_port_deallocate (mach_task_self (), rend);
   assert (!err);		/* XXX */
   mach_port_deallocate (mach_task_self (), auth);
 
