@@ -1,5 +1,5 @@
 /* Handle notifications
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -48,10 +48,10 @@ do_mach_notify_dead_name (mach_port_t notify,
     }
 
   p = reqport_find (notify);
-  
+
   if (!p)
     return EOPNOTSUPP;
-  
+
   if (p->p_reqport == deadport)
     {
       message_port_dead (p);
@@ -66,7 +66,7 @@ do_mach_notify_dead_name (mach_port_t notify,
     return EINVAL;
 }
 
-/* We get no-senders notifications on exception ports that we 
+/* We get no-senders notifications on exception ports that we
    handle through proc_handle_exceptions. */
 kern_return_t
 do_mach_notify_no_senders (mach_port_t notify,
@@ -75,13 +75,11 @@ do_mach_notify_no_senders (mach_port_t notify,
   struct exc *e = exc_find (notify);
   if (!e)
     return EOPNOTSUPP;
-  
+
   remove_exc_from_hash (e);
   mach_port_mod_refs (mach_task_self (), e->excport,
 		      MACH_PORT_RIGHT_RECEIVE, -1);
   mach_port_deallocate (mach_task_self (), e->forwardport);
-  if (e->replyport != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), e->replyport);
   free (e);
   return 0;
 }
