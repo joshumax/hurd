@@ -366,7 +366,7 @@ summarize_thread_basic_info (struct procinfo *pi)
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died
-	&& ! (pi->threadinfos[i].pis_bi & TH_FLAGS_IDLE))
+	&& ! (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE))
       {
 	thread_basic_info_t bi = &pi->threadinfos[i].pis_bi;
 	int thread_run_state = bi->run_state;
