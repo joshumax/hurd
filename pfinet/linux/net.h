@@ -75,6 +75,7 @@ struct socket {
   long			flags;
 #ifdef _HURD_
   int			userflags; /* O_* */
+  int			refcnt;
 #endif
   struct proto_ops	*ops;		/* protocols do most everything	*/
   void			*data;		/* protocol data		*/
