@@ -68,7 +68,7 @@ static struct rtable *rt_loopback = NULL;
  *	Remove a routing table entry.
  */
 
-void ip_rt_del(unsigned long dst, char *devname)
+static void rt_del(unsigned long dst, char *devname)
 {
 	struct rtable *r, **rp;
 	unsigned long flags;
@@ -341,6 +341,16 @@ void ip_rt_add(short flags, unsigned long dst, unsigned long mask,
 	return;
 }
 
+/*
+ *	Remove a routing table entry (exported version).
+ */
+void ip_rt_del (unsigned long dst, struct device *dev)
+{
+	/* Should probably just copy contents of rt_del and replace name
+	   comparison with device comparsion.  */
+	rt_del (dst, dev->name);
+}
+
 
 /*
  *	Check if a mask is acceptable.
@@ -482,7 +492,7 @@ static int rt_kill(struct rtentry *r)
 		if (err)
 			return err;
 	}
-	ip_rt_del(trg->sin_addr.s_addr, devname);
+	rt_del(trg->sin_addr.s_addr, devname);
 	if ( devname != NULL )
 		putname(devname);
 	return 0;
