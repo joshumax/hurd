@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -42,8 +42,10 @@ static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},
   {"members",   'm', 0, 0, "Show members of port-sets"},
   {"hex-names",	'x', 0, 0, "Show port names in hexadecimal"},
+#if 0				/* XXX implement this */
   {"query-process", 'q', 0, 0, "Query the process itself for the identity of"
      " the ports in question -- requires the process be in a sane state"},
+#endif
   {"hold", '*', 0, OPTION_HIDDEN},
 
   {0,0,0,0, "Selecting which names to show:", 2},
@@ -113,6 +115,7 @@ main (int argc, char **argv)
   unsigned show = 0;		/* what info we print */
   mach_port_type_t only = 0, target_only = 0; /* Which names to show */
   task_t xlate_task = MACH_PORT_NULL;
+  int no_translation_errors = 0; /* inhibit complaints about bad names */
   struct port_name_xlator *xlator = 0;
 
   /* Parse our options...  */
@@ -136,6 +139,7 @@ main (int argc, char **argv)
 
 	case 't': xlate_task = parse_task (arg); break;
 	case 'a': search = 1; break;
+	case 'E': no_translation_errors = 1; break;
 
 	case '*':
 	  hold = 1;
@@ -191,7 +195,12 @@ main (int argc, char **argv)
 	    else
 	      {
 		if (xlator)
-		  err = print_xlated_port_info (name, 0, xlator, show, stdout);
+		  {
+		    err = print_xlated_port_info (name, 0, xlator,
+						  show, stdout);
+		    if (err && no_translation_errors)
+		      break;
+		  }
 		else
 		  err = print_port_info (name, 0, task, show, stdout);
 		if (err)
