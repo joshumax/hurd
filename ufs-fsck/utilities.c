@@ -1,5 +1,5 @@
 /* Miscellaneous functions for fsck
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -235,6 +235,7 @@ reply (char *question)
   putchar ('\n');
   if (!persevere && (nowrite || writefd < 0))
     {
+      fix_denied = 1;
       printf ("%s? no\n\n", question);
       return 0;
     }
@@ -252,11 +253,20 @@ reply (char *question)
 	  c = getchar ();
 	  while (c != '\n' && getchar () != '\n')
 	    if (feof (stdin))
-	      return 0;
+	      {
+		fix_denied = 1;
+		return 0;
+	      }
 	}
       while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
       putchar ('\n');
-      return c == 'y' || c == 'Y';
+      if (c == 'y' || c == 'Y')
+	return 1;
+      else
+	{
+	  fix_denied = 1;
+	  return 0;
+	} 
     }
 }
 
