@@ -149,14 +149,14 @@ main(argc, argv)
 	char	**argv;
 {
   int die = 0;
-  int script_paging_file (const struct cmd *cmd, int *val)
+  int script_paging_file (const struct cmd *cmd, integer_t *val)
     {
       printf ("*** paging files no longer supported in boot scripts ***\n\a"
 	      "*** use swapon %s and/or /etc/fstab instead ***\n",
 	      cmd->path);
       return 0;
     }
-  int script_serverboot_ctl (const struct cmd *cmd, int *val)
+  int script_serverboot_ctl (const struct cmd *cmd, integer_t *val)
     {
       const char *const ctl = cmd->path;
       if (!strcmp (ctl, "die"))
@@ -323,13 +323,13 @@ main(argc, argv)
 
 	  /* Initialize boot script variables.  */
 	  if (boot_script_set_variable ("host-port", VAL_PORT,
-					(int) bootstrap_master_host_port)
+					(integer_t) bootstrap_master_host_port)
 	      || boot_script_set_variable ("device-port", VAL_PORT,
-					   (int) bootstrap_master_device_port)
+					   (integer_t) bootstrap_master_device_port)
 	      || boot_script_set_variable ("root-device", VAL_STR,
-					   (int) root_name)
+					   (integer_t) root_name)
 	      || boot_script_set_variable ("boot-args", VAL_STR,
-					   (int) flag_string)
+					   (integer_t) flag_string)
 	      || boot_script_define_function ("add-paging-file", VAL_NONE,
 					      &script_paging_file)
 	      || boot_script_define_function ("add-raw-paging-file", VAL_NONE,
@@ -347,7 +347,7 @@ main(argc, argv)
 	  if (cmdline != NULL
 	      && boot_script_set_variable ("kernel-command-line",
 					   VAL_STR,
-					   (int) cmdline))
+					   (integer_t) cmdline))
 	    panic ("bootstrap: error setting boot script variables");
 
 	  parse_script (&scriptf);
