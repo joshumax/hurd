@@ -73,13 +73,14 @@ get_hypermetadata (void)
     /* If the block size is too small, we have to take extra care when
        writing out pages from the global pager, to make sure we don't stomp
        on any file pager blocks.  In this case use a bitmap to record which
-       global blocks are actually modified so the pager can write only them.
-       Since small block sizes are probably used on smaller media (to save
-       space), this shouldn't be too much of a problem.  */
+       global blocks are actually modified so the pager can write only them. */
     {
       /* One bit per filesystem block.  */
-      vm_allocate (mach_task_self (), (vm_address_t *)&modified_global_blocks,
-		   (sblock->s_blocks_count >> log2_block_size) >> 3, 1);
+      err =
+	vm_allocate (mach_task_self (),
+		     (vm_address_t *)&modified_global_blocks,
+		     sblock->s_blocks_count >> 3, 1);
+      assert_perror (err);
     }
   else
     modified_global_blocks = 0;
