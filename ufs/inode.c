@@ -258,7 +258,8 @@ read_disknode (struct node *np)
     {
       st->st_uid = read_disk_entry (di->di_ouid);
       st->st_gid = read_disk_entry (di->di_ogid);
-      st->st_author = 0;
+      st->st_author = st->st_uid;
+      np->author_tracks_uid = 1;
     }
   else
     {
@@ -298,6 +299,18 @@ error_t diskfs_node_reload (struct node *node)
   flush_node_pager (node);
   read_disknode (node);
   return 0;
+}
+
+/* Return 0 if NP's author can be changed to AUTHOR; otherwise return an
+   error code. */
+error_t
+diskfs_validate_author_change (struct node *np, uid_t author)
+{
+  if (compat_mode == COMPAT_GNU)
+    return 0;
+  else
+    /* For non-hurd filesystems, the author & owner are the same.  */
+    return (author == np->dn_stat.st_uid) ? 0 : EINVAL;
 }
 
 static void
