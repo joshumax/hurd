@@ -18,7 +18,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -237,7 +237,7 @@ load_section (void *section, struct execdata *u)
 	    u->error = vm_map (u->task,
 			       &mapstart, filesz - (mapstart - addr),
 			       mask, anywhere,
-			       u->filemap, filepos + (mapstart - addr), 1, 
+			       u->filemap, filepos + (mapstart - addr), 1,
 			       vm_prot,
 			       VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
 			       VM_INHERIT_COPY);
@@ -392,9 +392,34 @@ load_section (void *section, struct execdata *u)
 	      vm_deallocate (u->task, mapstart, memsz);
 	      return;
 	    }
-	  bzero ((void *) (ourpage + (addr - overlap_page)),
-		 size - (addr - overlap_page));
-	  if (!(vm_prot & VM_PROT_WRITE))
+	  {
+	    /* Zero the appropriate portion of our copy of the page.  All
+	       this rigamorole is in case the memory backing this page is
+	       bogus and we fault in bzero; we want to return the fault's
+	       error code to the user, rather than crash the server.  */
+	    jmp_buf env;
+	    void fault (int signo) { longjmp (env, 1); }
+	    thread_t thisthread = hurd_thread_self ();
+	    sighandler_t preempt (thread_t thread, int signo,
+				  long int sigcode, int sigerror)
+	      {
+		if (thread == thisthread)
+		  {
+		    u->error = sigerror ?: EIO;
+		    return &fault;
+		  }
+		return SIG_DFL;
+	      }
+	    struct hurd_signal_preempt preempter;
+	    hurd_preempt_signals (&preempter, SIGSEGV,
+				  ourpage, ourpage + vm_page_size,
+				  &preempt);
+	    if (! setjmp (env))
+	      bzero ((void *) (ourpage + (addr - overlap_page)),
+		     size - (addr - overlap_page));
+	    hurd_unpreempt_signals (&preempter, SIGSEGV);
+	  }
+	  if (! u->error && !(vm_prot & VM_PROT_WRITE))
 	    u->error = vm_protect (u->task, overlap_page, size,
 				   0, VM_PROT_WRITE);
 	  if (! u->error)
@@ -565,7 +590,7 @@ prepare (file_t file, struct execdata *e)
     else
       e->error = vm_map (mach_task_self (), (vm_address_t *) &e->cntl,
 			 vm_page_size, 0, 1, e->cntlmap, 0, 0,
-			 VM_PROT_READ|VM_PROT_WRITE, 
+			 VM_PROT_READ|VM_PROT_WRITE,
 			 VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
 
     if (e->cntl)
@@ -738,7 +763,7 @@ check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
 				     phdr->p_filesz))
 	  e->error = EINVAL;
 	break;
-      }	      
+      }
 }
 
 
@@ -787,7 +812,7 @@ finish_mapping (struct execdata *e)
       e->cntlmap = MACH_PORT_NULL;
     }
 }
-      
+
 /* Clean up after reading the file (need not be completed).  */
 void
 finish (struct execdata *e, int dealloc_file)
@@ -869,12 +894,12 @@ load (task_t usertask, struct execdata *e)
 		  vm_address_t myaddr, a;
 		  vm_size_t mysize;
 		  myaddr = 0;
-	  
+
 		  /* We have already mapped the file into the task in
 		     load_section.  Now read from the task's memory into our
 		     own address space so we can peek each page and cause it to
 		     be paged in.  */
-		  u->error = vm_read (u->task, trunc_page (addr), 
+		  u->error = vm_read (u->task, trunc_page (addr),
 				      round_page (secsize), &myaddr, &mysize);
 		  if (u->error)
 		    return;
@@ -1041,7 +1066,7 @@ do_exec (file_t file,
   vm_address_t phdr_addr = 0;
   vm_size_t phdr_size = 0;
   mach_msg_type_number_t i;
-  
+
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
      for later use in `load'.  */
@@ -1136,7 +1161,7 @@ do_exec (file_t file,
   if (flags & (EXEC_NEWTASK|EXEC_SECURE))
     {
       /* Create the new task.  If we are not being secure, then use OLDTASK
-	 for the task_create RPC, in case it is something magical.  */	 
+	 for the task_create RPC, in case it is something magical.  */
       e.error = task_create (((flags & EXEC_SECURE) ||
 			      oldtask == MACH_PORT_NULL) ?
 			     mach_task_self () : oldtask,
@@ -1169,7 +1194,7 @@ do_exec (file_t file,
 	    e.error = io_reauthenticate (new, ref, MACH_MSG_TYPE_MAKE_SEND);
 	    if (! e.error)
 	      e.error = auth_user_authenticate
-		(boot->portarray[INIT_PORT_AUTH], 
+		(boot->portarray[INIT_PORT_AUTH],
 		 new, ref, MACH_MSG_TYPE_MAKE_SEND, &authed);
 	    mach_port_destroy (mach_task_self (), ref);
 	    if (e.error)
@@ -1182,7 +1207,7 @@ do_exec (file_t file,
 	      mach_port_mod_refs (mach_task_self (),
 				  new, MACH_PORT_RIGHT_SEND, 1);
 	  }
-	
+
 	boot->portarray[idx] = new;
 	ports_replaced[idx] = 1;
       }
@@ -1288,11 +1313,11 @@ do_exec (file_t file,
     if ((secure || defaults)
 	&& boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
       /* Q: Doesn't this let anyone run a program and make it
-	 get a root auth port? 
+	 get a root auth port?
 	 A: No; the standard port for INIT_PORT_AUTH has no UID's at all.
 	 See init.trim/init.c (init_stdarrays).  */
       use (INIT_PORT_AUTH, std_ports[INIT_PORT_AUTH], 0, 0);
-    if (secure || (defaults 
+    if (secure || (defaults
 		   && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
       {
 	/* Ask the proc server for the proc port for this task.  */
@@ -1305,13 +1330,13 @@ do_exec (file_t file,
 
 	/* XXX We should also call proc_setowner at this point. */
       }
-    else if (oldtask != newtask && oldtask != MACH_PORT_NULL 
+    else if (oldtask != newtask && oldtask != MACH_PORT_NULL
 	     && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
       {
 	mach_port_t new;
 	/* This task port refers to the old task; use it to fetch a new
 	   one for the new task.  */
-	e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
+	e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC],
 				  newtask, &new);
 	if (e.error)
 	  goto stdout;
@@ -1323,7 +1348,7 @@ do_exec (file_t file,
     if ((secure || defaults)
 	&& boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL)
       use (INIT_PORT_CWDIR, std_ports[INIT_PORT_CWDIR], 1, 0);
-  }  
+  }
   rwlock_reader_unlock (&std_lock);
 
 
@@ -1457,7 +1482,7 @@ do_exec (file_t file,
       for (i = 0; i < ndestroynames; ++i)
 	mach_port_destroy (oldtask, destroynames[i]);
     }
-  
+
 /* XXX this should be below
    it is here to work around a vm_map kernel bug. */
   if (interp.file != MACH_PORT_NULL)
@@ -1490,7 +1515,7 @@ do_exec (file_t file,
 
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
-  e.error = mach_setup_thread (newtask, thread, 
+  e.error = mach_setup_thread (newtask, thread,
 			       (void *) (e.interp.section ? interp.entry :
 					 e.entry),
 			       &boot->stack_base, &boot->stack_size);
@@ -1740,7 +1765,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
       mach_msg_type_number_t i;
       for (i = 0; i < std_nports; ++i)
 	mach_port_deallocate (mach_task_self (), std_ports[i]);
-      vm_deallocate (mach_task_self (), (vm_address_t)std_ports, 
+      vm_deallocate (mach_task_self (), (vm_address_t)std_ports,
 		     std_nports * sizeof (mach_port_t));
     }
 
