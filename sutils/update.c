@@ -1,5 +1,5 @@
 /* Periodically call sync.
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -41,10 +41,7 @@ main (int argc, char **argv)
     }
   
   if (daemon (0, 0))
-    {
-      perror ("daemon");
-      exit (1);
-    }
+    error (1, errno, "daemon");
 
   for (;;)
     {
