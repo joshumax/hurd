@@ -28,7 +28,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 			      u_int *translen)
 {
   struct node *np;
-  error_t error;
+  error_t error = 0;
   
   if (!cred)
     return EOPNOTSUPP;
