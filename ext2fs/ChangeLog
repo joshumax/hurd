@@ -1,3 +1,9 @@
+Sun Aug 18 01:45:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (file_pager_read_page): Use get_page_buf to get a free page.
+	(file_pager_read_page): Use free_page_buf to deallocate pages.
+	* ext2fs.c (get_page_buf): Return 0 if we can't allocate.
+
 Thu Aug 15 14:55:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.c (diskfs_edit_version): Change to `1'.
