@@ -18,14 +18,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <rpcsvc/mount_prot.h>
+#include "nfs.h"
+
+#include <rpcsvc/mount.h>
+#include <rpc/pmap_prot.h>
 #include <errno.h>
-#include <socket.h>
-#include <arpa/netdb.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include <string.h>
 #include <netinet/in.h>
-
-#include "nfs.h"
+#include <stdio.h>
 
 
 int *
@@ -41,19 +43,17 @@ mount_initialize_rpc (int procnum, void **buf)
 }
 
 /* Using the mount protocol, lookup NAME at host HOST.
-   Return a netnode for or null for an error. */
-struct netnode *
+   Return a node for it or null for an error. */
+struct node *
 mount_root (char *name, char *host)
 {
-  error_t err;
   struct sockaddr_in addr;
   struct hostent *h;
   struct servent *s;
   int *p;
   void *rpcbuf;
-  error_t err;
   int port;
-  struct netnode *np;
+  struct node *np;
 
   /* Lookup the portmapper port number */
   s = getservbyname ("portmap", "udp");
@@ -75,7 +75,8 @@ mount_root (char *name, char *host)
   bcopy (h->h_addr_list[0], &addr.sin_addr, h->h_length);
   addr.sin_port = htons (s->s_port);
   
-  connect (main_udp_socket, &addr, sizeof (struct sockaddr_in));
+  connect (main_udp_socket,
+	   (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
 
   /* Formulate and send a PMAPPROC_GETPORT request
      to lookup the mount program on the server.  */
@@ -98,7 +99,8 @@ mount_root (char *name, char *host)
 
   /* Now talking to the mount program, fetch the file handle
      for the root. */
-  connect (main_udp_socket, &addr, sizeof (struct sockaddr_in));
+  connect (main_udp_socket, 
+	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
   p = mount_initialize_rpc (MOUNTPROC_MNT, &rpcbuf);
   p = xdr_encode_string (p, name);
   errno = conduct_rpc (&rpcbuf, &p);
@@ -108,7 +110,7 @@ mount_root (char *name, char *host)
       perror (name);
       return 0;
     }
-  errno = mount_error_trans (htonl (*p++));
+  errno = nfs_error_trans (htonl (*p++));
   if (errno)
     {
       free (rpcbuf);
@@ -118,12 +120,13 @@ mount_root (char *name, char *host)
   
   /* Create the node for root */
   np = netfs_make_node ();
-  p = xdr_decode_fhandle (p, &np->nn.fhandle);
+  p = xdr_decode_fhandle (p, &np->nn->handle);
   free (rpcbuf);
 
   /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
   addr.sin_port = htons (s->s_port);
-  connect (main_udp_socket, &addr, sizeof (struct sockaddr_in));
+  connect (main_udp_socket, 
+	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
   p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
   *p++ = htonl (NFS_PROGRAM);
   *p++ = htonl (NFS_VERSION);
@@ -137,7 +140,8 @@ mount_root (char *name, char *host)
   free (rpcbuf);
   
   addr.sin_port = htons (port);
-  connect (main_udp_socket, &addr, sizeof (struct sockaddr_in));
+  connect (main_udp_socket, 
+	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
   
   return np;
 }
