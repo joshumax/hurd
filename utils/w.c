@@ -64,7 +64,7 @@ static struct argp_option options[] =
   {"tty",        't',     "TTY",  OA, "Only show entries for terminal TTY"},
   {"width",      'w',     "WIDTH",OA, "If WIDTH is given, try to format the"
                                       " output for WIDTH columns, otherwise,"
-				      " remove the default limit"}, 
+				      " remove the default limit"},
   {"uptime",     'u',     0,      0,  "Only show the uptime and load info"},
   {"no-uptime",  'U',     0,      0,  "Don't show the uptime and load info"},
   {"raw-hosts",  'n',     0,      0,  "Show network addresses as numbers"},
@@ -248,7 +248,7 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
       error (0, err, "%s", tty);
       return;
     }
-  
+
   /* The new process will get added at the end, so look for it there. */
   pos = proc_stat_list_num_procs (procs);
   if (pid >= 0)
@@ -337,16 +337,16 @@ uptime (proc_stat_list_t procs)
 
   fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
 
-  printf ("%s  up %s,  %u user%s,  load averages: %g, %g, %g\n",
+  printf ("%s  up %s,  %u user%s,  load averages: %.2f, %.2f, %.2f\n",
 	  tod_rep, uptime_rep, nusers, nusers == 1 ? "" : "s",
-	  (float)load->avenrun[0] / (float)LOAD_SCALE,
-	  (float)load->avenrun[1] / (float)LOAD_SCALE,
-	  (float)load->avenrun[2] / (float)LOAD_SCALE);
+	  (double)load->avenrun[0] / (double)LOAD_SCALE,
+	  (double)load->avenrun[1] / (double)LOAD_SCALE,
+	  (double)load->avenrun[2] / (double)LOAD_SCALE);
 }
 
 extern void psout ();
 
-void 
+void
 main(int argc, char *argv[])
 {
   error_t err;
@@ -407,7 +407,7 @@ main(int argc, char *argv[])
 
   /* Keep only processes that have our hooks attached.  */
   proc_stat_list_filter1 (procs, has_hook, 0, 0);
-  
+
   if (show_uptime)
     uptime (procs);
 
