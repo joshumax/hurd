@@ -22,6 +22,8 @@
 spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
 struct user_pager_info *filepagerlist;
 
+spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
+
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
 #else
@@ -232,6 +234,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	    goto out;
 	  assert (lblkno (sblock, address) < NDADDR);
 	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
+	  record_poke (di, sizeof (struct dinode));
 	}
       else
 	{
@@ -251,6 +254,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		    goto out;
 		  zero_disk_block (bno);
 		  indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
+		  record_poke (di, sizeof (struct dinode));
 		}
 	      else
 		{
@@ -274,6 +278,7 @@ pager_unlock_page (struct user_pager_info *pager,
 			goto out;
 		      zero_disk_block (bno);
 		      indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
+		      record_poke (di, sizeof (struct dinode));
 		    }
 
 		  diblock = indir_block (indirs[2].bno);
@@ -289,6 +294,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		    goto out;
 		  zero_disk_block (bno);
 		  indirs[1].bno = diblock[indirs[1].offset] = bno;
+		  record_poke (diblock, sblock->fs_bsize);
 		}
 	    }
 	  
@@ -307,6 +313,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
 
 	  indirs[0].bno = siblock[indirs[0].offset] = bno;
+	  record_poke (siblock, sblock->fs_bsize);
 	}
     }
   
@@ -341,6 +348,9 @@ void
 pager_clear_user_data (struct user_pager_info *upi)
 {
   assert (upi->type == FILE_DATA);
+  spin_lock (&node2pagelock);
+  upi->np->dn->fileinfo = 0;
+  spin_unlock (&node2pagelock);
   diskfs_nrele_light (upi->np);
   *upi->prevp = upi->next;
   if (upi->next)
@@ -370,10 +380,20 @@ diskfs_file_update (struct node *np,
 		    int wait)
 {
   struct dirty_indir *d, *tmp;
-  
-  if (np->dn->fileinfo)
-    pager_sync (np->dn->fileinfo->p, wait);
+  struct user_pager_info *upi;
 
+  spin_lock (&node2pagelock);
+  upi = np->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node2pagelock);
+  
+  if (upi)
+    {
+      pager_sync (upi->p, wait);
+      pager_unreference (upi->p);
+    }
+  
   for (d = np->dn->dirty; d; d = tmp)
     {
       sync_disk_blocks (d->bno, sblock->fs_bsize, wait);
@@ -399,6 +419,7 @@ diskfs_get_filemap (struct node *np)
 	      && (!direct_symlink_extension 
 		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
 
+  spin_lock (&node2pagelock);
   if (!np->dn->fileinfo)
     {
       upi = malloc (sizeof (struct user_pager_info));
@@ -407,7 +428,6 @@ diskfs_get_filemap (struct node *np)
       diskfs_nref_light (np);
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
-      ports_port_ref (upi->p);
 
       spin_lock (&pagerlistlock);
       upi->next = filepagerlist;
@@ -418,6 +438,8 @@ diskfs_get_filemap (struct node *np)
       spin_unlock (&pagerlistlock);
     }
   right = pager_get_port (np->dn->fileinfo->p);
+  spin_unlock (&node2pagelock);
+  
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
@@ -429,9 +451,18 @@ diskfs_get_filemap (struct node *np)
 void
 drop_pager_softrefs (struct node *np)
 {
-  if (MAY_CACHE && np->dn->fileinfo)
-    pager_change_attributes (np->dn->fileinfo->p, 0,
-			     MEMORY_OBJECT_COPY_DELAY, 0);
+  struct user_pager_info *upi;
+  
+  spin_lock (&node2pagelock);
+  upi = np->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node2pagelock);
+
+  if (MAY_CACHE && upi)
+    pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (upi)
+    pager_unreference (upi->p);
 }
 
 /* Call this when we should turn on caching because it's no longer
@@ -439,9 +470,18 @@ drop_pager_softrefs (struct node *np)
 void
 allow_pager_softrefs (struct node *np)
 {
-  if (MAY_CACHE && np->dn->fileinfo)
-    pager_change_attributes (np->dn->fileinfo->p, 1,
-			     MEMORY_OBJECT_COPY_DELAY, 0);
+  struct user_pager_info *upi;
+  
+  spin_lock (&node2pagelock);
+  upi = np->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node2pagelock);
+  
+  if (MAY_CACHE && upi)
+    pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (upi)
+    pager_unreference (upi->p);
 }
 
 /* Call this to find out the struct pager * corresponding to the
@@ -451,6 +491,8 @@ allow_pager_softrefs (struct node *np)
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *np)
 {
+  /* This is safe because fileinfo can't be cleared; there must be
+     an active mapping for this to be called. */
   return np->dn->fileinfo->p;
 }
 
@@ -503,7 +545,10 @@ diskfs_sync_everything (int wait)
 {
   void sync_one (struct user_pager_info *p)
     {
-      pager_sync (p->p, wait);
+      if (p != diskpager)
+	pager_sync (p->p, wait);
+      else
+	sync_disk (wait);
     }
   
   write_all_disknodes ();
