@@ -87,14 +87,7 @@ options[] =
 
 char doc[] = "Start and maintain hurd core servers and system run state";
 
-/* Current state of the system. */
-enum
-{
-  INITIAL,
-  SINGLE,
-  RUNCOM,
-  MULTI,
-} system_state;
+int booted;			/* Set when the core servers are up.  */
 
 /* This structure keeps track of each notified task.  */
 struct ntfy_task
@@ -154,12 +147,12 @@ mach_port_t default_ports[INIT_PORT_MAX];
 mach_port_t default_dtable[3];
 int default_ints[INIT_INT_MAX];
 
-char **global_argv;
+static char **global_argv;
+static char *startup_envz;
+static size_t startup_envz_len;
 
-pid_t shell_pid;		/* PID of single-user shell.  */
-pid_t rc_pid;			/* PID of rc script */
-
-
+void launch_system (void);
+void process_signal (int signo);
 
 /** Utility functions **/
 
@@ -353,6 +346,8 @@ record_essential_task (const char *name, task_t task)
      if the task tries to get wedged on a fault.  */
   task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
 #endif
+
+  return 0;
 }
 
 
@@ -390,7 +385,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	    }
 	  errno = file_exec (file, *task, 0,
 			     (char *)prog, strlen (prog) + 1, /* Args.  */
-			     "", 1, /* No env.  */
+			     startup_envz, startup_envz_len,
 			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 			     default_ints, INIT_INT_MAX,
@@ -479,7 +474,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     progname = filename;
   err = file_exec (file, task, 0,
 		   args, arglen,
-		   NULL, 0, /* No env.  */
+		   startup_envz, startup_envz_len,
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
 		   INIT_PORT_MAX,
@@ -550,9 +545,10 @@ main (int argc, char **argv, char **envp)
   /* Parse the arguments */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  global_argv = argv;
+  if (getpid () > 0)
+    error (2, 0, "can only be run by bootstrap filesystem");
 
-  system_state = INITIAL;
+  global_argv = argv;
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
      master device ports, and the console.  */
@@ -571,6 +567,9 @@ main (int argc, char **argv, char **envp)
   if (stdout == NULL || stdin == NULL)
     crash_mach ();
   setbuf (stdout, NULL);
+
+  err = argz_create (envp, &startup_envz, &startup_envz_len);
+  assert_perror (err);
 
   /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
@@ -771,7 +770,7 @@ open_console ()
   struct stat st;
   error_t err = 0;
 
-  if (system_state != INITIAL)
+  if (booted)
     {
       term = file_name_lookup (termname, O_RDWR, 0);
       return term;
@@ -1050,6 +1049,19 @@ frob_kernel_process (void)
 
 /** Single and multi user transitions **/
 
+/* Current state of the system. */
+enum
+{
+  INITIAL,
+  SINGLE,
+  RUNCOM,
+  MULTI,
+} system_state;
+
+pid_t shell_pid;		/* PID of single-user shell.  */
+pid_t rc_pid;			/* PID of rc script */
+
+
 #include "ttys.h"
 
 
@@ -1132,6 +1144,18 @@ launch_multi_user ()
       system_state = MULTI;
       fail = startup_ttys ();
       if (fail)
+	launch_single_user ();
+    }
+}
+
+void
+launch_system ()
+{
+  if (bootstrap_args & RB_SINGLE)
+    launch_single_user ();
+  else
+    {
+      if (process_rc_script ())
 	launch_single_user ();
     }
 }
@@ -1329,7 +1353,6 @@ killing it and going to single user mode",
     }
 }
 
-
 
 /** RPC servers **/
 
@@ -1409,7 +1432,7 @@ S_startup_essential_task (mach_port_t server,
 
   mach_port_deallocate (mach_task_self (), credential);
 
-  if (system_state == INITIAL)
+  if (!booted)
     {
       if (!strcmp (name, "auth"))
 	authinit = 1;
@@ -1427,14 +1450,10 @@ S_startup_essential_task (mach_port_t server,
 	  init_stdarrays ();
 	  frob_kernel_process ();
 
-	  if (bootstrap_args & RB_SINGLE)
-	    launch_single_user ();
-	  else
-	    {
-	      fail = process_rc_script ();
-	      if (fail)
-		launch_single_user ();
-	    }
+	  launch_system ();
+
+	  booted = 1;
+
 	  return MIG_NO_REPLY;
 	}
     }
@@ -1497,7 +1516,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 	return 0;
       }
 
-  if (system_state == INITIAL)
+  if (! booted)
     {
       /* The system has not come up yet, so essential tasks are not yet
 	 registered.  But the essential servers involved in the bootstrap
