@@ -1,3 +1,13 @@
+1998-08-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ugids-verify-auth.c: Leave #include <hurd/password.h> there, but
+	commented out for the time being.
+	(password_check_user, password_check_group): Make symbols weak; these
+	are temporary defns until we get back in synch with libc.
+
+	* ugids-verify-auth.c (ugids_verify_make_auth): Properly initialize
+	SVMA_STATE members if they will be used.
+
 Wed Jul 29 16:25:50 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* ugids-verify-auth.c: Don't include <hurd/password.h> for now.
@@ -123,7 +133,7 @@ Sun May 25 21:57:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
  	its first child, if any.
 
 	* argp.h (struct argp_state): `argp' field renamed to `root_argp'.
-	* argp-help.c (__argp_state_help, argp_args_usage, hol_help): 
+	* argp-help.c (__argp_state_help, argp_args_usage, hol_help):
 	Replace references to STATE->argp with STATE->root_argp.
 	* argp-parse.c (parser_init): Likewise.
 
@@ -154,7 +164,7 @@ Thu May 22 11:38:01 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	* idvec-impgids.c, idvec-verify.c, idvec_rep.c: New files.
 	* ugids.h, ugids.c, ugids-subtract.c, ugids-verify.c,
 	ugids-argp.c, ugids-rep.c, ugids-auth.c, ugids-xinl.c,
-	ugids-merge.c: New files. 
+	ugids-merge.c: New files.
 	* Makefile (SRCS): Add idvec-impgids.c, idvec-verify.c,
  	idvec-rep.c, ugids.c, ugids-subtract.c, ugids-verify.c,
  	ugids-argp.c, ugids-rep.c, ugids-auth.c, ugids-xinl.c,
@@ -249,9 +259,9 @@ Wed Feb 19 18:48:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-parse.c (argp_default_parser): Set STATE->name for OPT_PROGNAME.
 	(parser_init): Use the basename for PARSER->state.name.
-	* argp-help.c (__argp_error, __argp_failure, __argp_state_help): 
+	* argp-help.c (__argp_error, __argp_failure, __argp_state_help):
 	Use PROGRAM_INVOCATION_SHORT_NAME instead of PROGRAM_INVOCATION_NAME.
-	
+
 	* argp-parse.c (parser_init): Set PARSER->state.flags.
 	Make check whether PARSER has the prog name in argv[0] at the
 	proper place.
@@ -297,7 +307,7 @@ Sat Feb 15 22:00:42 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.h (struct argp): Add help_filter field.
 	(struct argp_state): Add pstate field.
-	
+
 Fri Feb 14 18:00:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c, argp-parse.c [!_] (_): New macro.
@@ -306,7 +316,7 @@ Fri Feb 14 18:00:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
  	usage_long_opt, arg, hol_entry_help): Call gettext in appropriate
  	places.
 	* argp-parse.c (parser_finalize, argp_version_parser): Likewise.
-	
+
 	* argp-help.c: Incorporate gettext changes from drepper.
 
 Thu Feb 13 16:46:59 1997  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -326,7 +336,7 @@ Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
  	if we consumed an arg we didn't end up parsing.
 	Set ARG_EBADKEY ourselves in all cases.
 	(parser_parse_arg, parser_parse_opt): Get rid of ARG_EBADKEY param.
-	
+
 	* argp-parse.c (__progname, __progname_full): Decls removed.
   	(argp_default_parser): Use PROGRAM_INVOCATION_NAME &
  	PROGRAM_INVOCATION_SHORT_NAME, not __PROGNAME_FULL & __PROGNAME.
@@ -373,7 +383,7 @@ Tue Feb 11 19:16:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	(__argp_state_help, __argp_error, __argp_failure): Use
 	__PROGNAME_FULL instead of PROGRAM_INVOCATION_NAME.
 	"argp-namefrob.h": New include.
-	
+
 	* argp.h [HAVE_CONFIG_H] <config.h>: New include.
 	[__GNU_LIBRARY__] <sys/cdefs.h>: New include.
 	[!__const] (__const): New macro.
@@ -400,7 +410,7 @@ Tue Feb 11 19:16:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	(installhdrs): Define explicitly.
 	(LCLHDRS): Define in terms of $(installhdrs) + others.
 	(CFLAGs): Add -DHAVE_LINEWRAP_H & -DHAVE_CTHREADS_H.
-	
+
 Mon Feb 10 22:19:46 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (indent_to, arg, struct pentry_state, print_header,
@@ -503,7 +513,7 @@ Mon Oct 21 22:00:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* maptime.h: Likewise.
 	* argp.c, idvec-funcs.c, maptime-funcs.c: New files.
 	* Makefile (SRCS): Add argp.c, idvec-funcs.c, and
-	maptime-funcs.c. 
+	maptime-funcs.c.
 
 Mon Oct 14 18:06:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -546,7 +556,7 @@ Wed Jul 31 15:24:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* wire.c (_start): No longer declared as weak, now that everything
 	is getting recompiled anyway.
-	
+
 Fri Jul 26 20:57:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* timefmt.c (fmt_past_time): Always use WIDTH+1 as strftime's limit.
@@ -616,7 +626,7 @@ Sun Jun 16 19:25:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* Makefile (SRCS): Remove line.c.
 	(LCLHDRS): Remove line.h.
 
-	* argp-help.c (argp_help, argp_state_help, argp_error, argp_failure): 
+	* argp-help.c (argp_help, argp_state_help, argp_error, argp_failure):
 	Handle null streams.
 
 	* argp.h (struct argp_state): Add NAME, ERR_STREAM, & OUT_STREAM
@@ -688,7 +698,7 @@ Thu May  9 11:00:52 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* argp-help.c (argp_args_usage): add_usage_item -> fprintf.
 	(argp_help): Don't shadow arg; change parm STREAM to be STREAMARG
 	and adjust initialization of STREAM variable to use the renamed
-	parm. 
+	parm.
 
 Tue May  7 14:58:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
