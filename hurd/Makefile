@@ -16,10 +16,12 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := hurd
-include ../Makeconf
-DIST_FILES = ChangeLog Makefile *.defs subsystems $(HDRS)
+makemode := misc
 
-HDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
+DIST_FILES = *.defs subsystems
+LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
+
+include ../Makeconf
 
 # XXX This should be done by the individual libraries' install targets XXX
 REMHDRS = ../libioserver/ioserver.h \
