@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <error.h>
 
 /* XXX */
 extern int login_tty (int);
@@ -75,7 +77,13 @@ main (int argc, char **argv)
   login_tty (tty);
   
   asprintf (&arg, "TERM=%s", tt ? tt->ty_type : "unknown");
-  execl (_PATH_LOGIN, "login", "-e", arg, 0);
-}
 
-  
+  if (strcmp (tt->ty_type, "dialup") == 0)
+    /* Dialup lines time out (which is login's default).  */
+    execl (_PATH_LOGIN, "login", "-e", arg, 0);
+  else
+    /* Hardwired lines don't.  */
+    execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", 0);
+
+  error (99, errno, "execl");
+}
