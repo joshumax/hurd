@@ -249,7 +249,6 @@ See `tasks', the exported task list.
 
 
 * Utilities
-** Write a real mount program. !!
 ** Make id, et. al. work with no/multiple uids. !!!
 ** Make things work with the `nobody' mode bits: chmod, ls, ... !
 ** Make things work with filesystem extensions (author, etc.): ls!!!
