@@ -50,6 +50,8 @@
 
 #include <file_io.h>
 
+#include "default_pager_S.h"
+
 #define debug 0
 
 extern void *kalloc();
