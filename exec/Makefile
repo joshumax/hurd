@@ -33,7 +33,7 @@ TAGSHDRS = a.out.h a.out.gnu.h
 all: exec
 
 exec: $(OBJS)
-	$(link)
+	$(CC) $(CFLAGS) -o $@ $^
 
 exec.o: exec_server.h fsys_S.h notify_S.h 
 
