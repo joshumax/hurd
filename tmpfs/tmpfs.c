@@ -1,5 +1,5 @@
 /* Main program and global state for tmpfs.
-   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
+   Copyright (C) 2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -265,7 +265,6 @@ main (int argc, char **argv)
   /* Propagate permissions, owner, etc. from underlying node to
      the root directory of the new (empty) filesystem.  */
   err = io_stat (realnode, &st);
-  mach_port_deallocate (mach_task_self (), realnode);
   if (err)
     {
       error (0, err, "cannot stat underlying node");
@@ -293,6 +292,9 @@ main (int argc, char **argv)
   diskfs_root_node->dn_stat.st_mode &= ~S_ITRANS;
   diskfs_root_node->dn_stat.st_mode |= S_IROOT;
   diskfs_root_node->dn_stat.st_nlink = 2;
+
+  /* We must keep the REALNODE send right to remain the active
+     translator for the underlying node.  */
 
   mutex_unlock (&diskfs_root_node->lock);
 
