@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <mach/default_pager.h>
 
 /* Implement io_map_cntl as described in <hurd/io.defs>. */
 error_t
@@ -30,7 +31,7 @@ S_io_map_cntl (struct protid *cred,
   mutex_lock (&cred->po->np->lock);
   if (!cred->mapped)
     {
-      default_pager_object_create (default_pager, &cred->shared_object,
+      default_pager_object_create (diskfs_default_pager, &cred->shared_object,
 				   __vm_page_size);
       vm_map (mach_task_self (), (u_int *)&cred->mapped, __vm_page_size, 0, 1, 
 	      cred->shared_object, 0, 0, VM_PROT_READ|VM_PROT_WRITE,
