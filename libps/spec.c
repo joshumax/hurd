@@ -724,15 +724,17 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
 
       /* See if we should give a more useful name for the port.  */
       if (strcmp (wait, "init#0") == 0)
-	wait = "cwdir";		/* Current directory */
+	wait = "cwd";		/* Current directory */
       else if (strcmp (wait, "init#1") == 0)
-	wait = "crdir";		/* Root directory */
+	wait = "root";		/* Root directory */
       else if (strcmp (wait, "init#2") == 0)
 	wait = "auth";		/* Auth port */
       else if (strcmp (wait, "init#3") == 0)
 	wait = "proc";		/* Proc port */
       else if (strcmp (wait, "init#4") == 0)
-	wait = "bootstrap";	/* Bootstrap port */
+	wait = "cttyid";	/* Ctty id port */
+      else if (strcmp (wait, "init#5") == 0)
+	wait = "boot";		/* Bootstrap port */
       else
 	/* See if we can shorten the name to fit better.  We happen know that
 	   all currently returned keys are unique in the first character. */
