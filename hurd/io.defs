@@ -205,14 +205,7 @@ routine io_server_version (
 
 /* Definitions for mapped io */
 
-/* Return objects mapping the data underlying this memory object.  If
-   the object can be read then memobjrd will be provided; if the
-   object can be written then memobjwr will be provided.  For objects
-   where read data and write data are the same, these objects will be
-   equal, otherwise they will be disjoint.  Servers are permitted to
-   implement io_map but not io_map_cntl.  Some objects do not provide
-   mapping; they will set none of the ports and return an error.  Such
-   objects can still be accessed by io_read and io_write.  */
+/* This RPC is a deprecated alias for io_map_segment with an INDEX of zero. */
 routine io_map (
 	io_object: io_t;
 	RPT
@@ -227,6 +220,7 @@ routine io_map (
    This call may be unimplemented by some servers; they will return
    EOPNOTSUPP.
    */
+/* This call is deprecated. */
 routine io_map_cntl (
 	io_object: io_t;
 	RPT
@@ -236,6 +230,7 @@ routine io_map_cntl (
    should call this function.  The server will endeavor to have
    USER_HAS_CONCH when this returns, but users should call io_get_it
    in a loop for safety.  */
+/* This call is deprecated. */
 routine io_get_conch (
 	io_object: io_t RPTLAST);
 
@@ -248,6 +243,7 @@ routine io_get_conch (
    to be updated, the user should call io_release_conch.  Upon return,
    the conch status might be either USER_COULD_HAVE_CONCH or
    USER_HAS_NOT_CONCH. */
+/* This call is deprecated. */
 routine io_release_conch (
 	io_object: io_t RPTLAST);
 
@@ -257,6 +253,7 @@ routine io_release_conch (
    example, to clear the eof condition after it is read once.  The
    routine should be called while the user has the conch. The user
    will keep it upon return.  */
+/* This call is deprecated. */
 routine io_eofnotify (
 	io_object: io_t RPTLAST);
 
@@ -266,6 +263,7 @@ routine io_eofnotify (
    size will now permit the write, so it should be re-checked.  The
    routine should be called while the user has the conch.  The user
    will keep it upon return.  */
+/* This call is deprecated. */
 routine io_prenotify (
 	io_object: io_t;
 	RPT
@@ -276,6 +274,7 @@ routine io_prenotify (
    user needs to call io_postnotify.  The routine should be called
    while the user has the conch.  The user will keep it upon return.
    */
+/* This call is deprecated. */
 routine io_postnotify (
 	io_object: io_t;
 	RPT
@@ -285,17 +284,20 @@ routine io_postnotify (
 /* After moving rd_file_pointer past readnotify_size, the user should
    call this routine, while holding the conch.  The user will keep the
    conch upon return. */
+/* This call is deprecated. */
 routine io_readnotify (
 	io_object: io_t RPTLAST);
 
 /* This routine sleeps until the read_size is increased.  The routine
    should be called while the user has the conch.  The user will keep
    it upon return.  */
+/* This call is deprecated. */
 routine io_readsleep (
 	io_object: io_t RPTLAST);
 
 /* The shared user has just done some IO, and a signal needs to be
    sent for async users.  */
+/* This call is deprecated. */
 routine io_sigio (
 	io_object: io_t RPTLAST);
 
@@ -323,3 +325,20 @@ routine io_identity (
 routine io_revoke (
 	io_object: io_t RPTLAST);
 
+/* Return objects mapping a portion of the data underlying this memory
+   object.  Objects in size through 2^64 are supported.  Each is divided
+   into 2^32 segments, each of which is 2^32 bytes long.  INDEX selects
+   the segment in question (the high 32 bits).  
+
+   If the object can be read then memobjrd will be provided; if the
+   object can be written then memobjwr will be provided.  For objects
+   where read data and write data are the same, these objects will be
+   equal, otherwise they will be disjoint.  Some objects do not
+   provide mapping; they will set none of the ports and return an
+   error.  Such objects can still be accessed by io_read and io_write. */
+routine io_map_segment (
+	io_object: io_t;
+	RPT
+	index: int;
+	out memobjrd: mach_port_send_t;
+	out memobjwt: mach_port_send_t);	

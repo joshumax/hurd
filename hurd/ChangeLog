@@ -1,3 +1,11 @@
+1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io.defs (io_map_segment): New RPC.
+	(io_map): Refer to io_map_segment; label as deprecated.
+	(io_map_cntl, io_get_conch, io_release_conch, io_prenotify,
+	io_eofnotify, io_postnotify, io_readnotify, io_readsleep,
+	io_sigio): Label as deprecated.
+	
 Tue May 11 13:38:50 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* startup.defs: Doc fixes.
