@@ -33,7 +33,8 @@ diskfs_S_dir_mkfile (struct protid *cred,
 {
   struct node *dnp, *np;
   error_t err;
-
+  struct protid *newpi;
+  
   if (!cred)
     return EOPNOTSUPP;
   if (diskfs_readonly)
@@ -67,12 +68,14 @@ diskfs_S_dir_mkfile (struct protid *cred,
     return err;
   
   flags &= (O_READ | O_WRITE | O_EXEC);
-  *newnode = (ports_get_right
-	      (diskfs_make_protid 
-	       (diskfs_make_peropen (np, flags, cred->po->dotdotport),
-		cred->uids, cred->nuids, 
-		cred->gids, cred->ngids)));
+  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags, 
+						   cred->po->dotdotport),
+			      cred->uids, cred->nuids, 
+			      cred->gids, cred->ngids);
+
+  *newnode = ports_get_right (newpi);
   *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
   diskfs_nput (np);
   return 0;
 }
