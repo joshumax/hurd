@@ -338,8 +338,8 @@ diskfs_S_fsys_init (mach_port_t port,
 /* Unused */
 error_t
 diskfs_S_exec_init (mach_port_t a,
-	     auth_t b,
-	     process_t c)
+		    auth_t b,
+		    process_t c)
 {
   return EOPNOTSUPP;
 }
@@ -347,46 +347,47 @@ diskfs_S_exec_init (mach_port_t a,
 /* Unused */
 error_t
 diskfs_S_exec_setexecdata (mach_port_t a,
-		    mach_port_t *b,
-		    u_int c,
-		    int *d,
-		    u_int e)
+			   mach_port_t *b,
+			   u_int c, int bcopy,
+			   int *d, u_int e, int ecopy)
 {
   return EOPNOTSUPP;
 }
 
 /* Unused. */
 error_t
-diskfs_S_exec_exec (	mach_port_t execserver,
-	mach_port_t file,
-	mach_port_t oldtask,
-	int flags,
-	data_t argv,
-	mach_msg_type_number_t argvCnt,
-	boolean_t argvSCopy,
-	data_t envp,
-	mach_msg_type_number_t envpCnt,
-	boolean_t envpSCopy,
-	portarray_t dtable,
-	mach_msg_type_number_t dtableCnt,
-	portarray_t portarray,
-	mach_msg_type_number_t portarrayCnt,
-	intarray_t intarray,
-	mach_msg_type_number_t intarrayCnt,
-	mach_port_t *deallocnames,
-        u_int deallocnamescnt,
-	     mach_port_t *destroynames,
-	     u_int destroynamescnt
-)
+diskfs_S_exec_exec (mach_port_t execserver,
+		    mach_port_t file,
+		    mach_port_t oldtask,
+		    int flags,
+		    data_t argv,
+		    mach_msg_type_number_t argvCnt,
+		    boolean_t argvSCopy,
+		    data_t envp,
+		    mach_msg_type_number_t envpCnt,
+		    boolean_t envpSCopy,
+		    portarray_t dtable,
+		    mach_msg_type_number_t dtableCnt,
+		    boolean_t dtableSCopy,
+		    portarray_t portarray,
+		    mach_msg_type_number_t portarrayCnt,
+		    boolean_t portarraySCopy,
+		    intarray_t intarray,
+		    mach_msg_type_number_t intarrayCnt,
+		    boolean_t intarraySCopy,
+		    mach_port_t *deallocnames,
+		    u_int deallocnamescnt,
+		    mach_port_t *destroynames,
+		    u_int destroynamescnt
+		    )
 {
   return EOPNOTSUPP;
 }
 
 /* Unused. */
 error_t
-diskfs_S_exec_boot_init (	mach_port_t execserver,
-	startup_t init
-)
+diskfs_S_exec_boot_init (mach_port_t execserver,
+			 startup_t init)
 {
   return EOPNOTSUPP;
 }
