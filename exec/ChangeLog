@@ -1,3 +1,24 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (S_exec_init): Remove variable DEV_MASTER; pass null instead
+	since we don't need it.  Use assert_perror on getting the host-priv
+	port and on startup_essential_task, since init will hang until we've
+	done made that RPC.
+
+1998-12-26  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (do_exec): Fix conditional for cleaning up INTERP,
+	from nonnull E.interp.section to nonnull INTERP.file.
+	If we failed to open the interpreter file, INTERP.file will be
+	null and the rest of INTERP will be uninitialized.
+
+1998-12-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (S_exec_init): Don't call set_active_trans.
+	(set_active_trans): Function removed.
+
+	* Makefile (HURDLIBS): Add missing implied library deps.
+
 1998-11-25  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* main.c (S_exec_init): Call _hurd_proc_init with new args set to

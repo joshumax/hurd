@@ -1,3 +1,11 @@
+1998-12-26  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (isig): New variable.
+	(init_termstate): If it's set, set ISIG flag in c_lflag.
+	(options): New option -I/--isig.
+	(parse_opt): Make -I set `isig'.
+	(boot_script_exec_cmd): Print out args as well as file name.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot_script.c: Include <string.h> instead of declaring memset here.
