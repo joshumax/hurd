@@ -17,23 +17,23 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA.
 
 dir := libstore
 makemode := library
 
 libname = libstore
-SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c \
-	storeread.c storecat.c enc.c encode.c decode.c clone.c argp.c \
-	std.c kids.c zero.c flags.c open.c remap.c xinl.c task.c
+SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c	   \
+	enc.c encode.c decode.c clone.c argp.c std.c kids.c zero.c flags.c \
+	open.c remap.c xinl.c task.c typed.c copy.c gunzip.c
 LCLHDRS=store.h
 installhdrs=store.h
 
-UTIL_OBJS = storeread.o storecat.o
-OBJS = $(filter-out $(UTIL_OBJS), $(SRCS:.c=.o))
+UNZIP_OBJS = unzip.o inflate.o util.o
+OBJS = $(SRCS:.c=.o) $(UNZIP_OBJS)
+
+# Look for zip stuff
+VPATH += $(srcdir)/../exec
+CPPFLAGS += -I$(srcdir)/../exec
 
 include ../Makeconf
-
-storeread: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
-storecat: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
-storeargs: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
