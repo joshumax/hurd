@@ -20,8 +20,8 @@
   
 /* Grow the pagemap as necessary to deal with address OFF */
 void
-pagemap_resize (struct pager *p,
-		int off)
+_pager_pagemap_resize (struct pager *p,
+		       vm_address_t off)
 {
   void *newaddr;
   int newsize;
