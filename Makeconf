@@ -137,9 +137,6 @@ endif
 # Provide default.
 install:
 
-# Always, until bugs are fixed.
-LDFLAGS += -static
-
 # Building the target
 ifeq ($(doinst),many)
  target = $(filter-out $(special-targets),$(targets))
