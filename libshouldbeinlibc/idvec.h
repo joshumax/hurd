@@ -1,8 +1,7 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,8 +21,9 @@
 #define __IDVEC_H__
 
 #include <sys/types.h>
-#include <errno.h>
 #include <hurd/hurd_types.h>
+#include <errno.h>
+#include <string.h>
 
 #ifndef IDVEC_EI
 #define IDVEC_EI extern inline
@@ -124,7 +124,7 @@ error_t idvec_merge_ids (struct idvec *idvec, const uid_t *ids, unsigned num);
 /* Adds each id from  NEW to IDVEC, as if with idvec_add_new().  */
 error_t idvec_merge (struct idvec *idvec, const struct idvec *new);
 
-/* Remove all ids in SUB from IDVEC, returning true if anything was done. */ 
+/* Remove all ids in SUB from IDVEC, returning true if anything was done. */
 int idvec_subtract (struct idvec *idvec, const struct idvec *sub);
 
 /* Remove all ids from IDVEC that are *not* in KEEP, returning true if
