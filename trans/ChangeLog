@@ -1,3 +1,8 @@
+1999-05-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fwd.c (main): Add missing newline in usage msg.
+	From Marcus Brinkmann.
+
 1999-02-20  Mark Kettenis  <kettenis@gnu.org>
 
 	* password.c: New file.

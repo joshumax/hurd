@@ -1,3 +1,8 @@
+1999-05-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* auth.c (main): Give diagnostics for lack of bootstrap port or
+	failure of startup_authinit RPC.
+
 1998-11-27  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* auth.c (main): Call _hurd_proc_init with new args set to zero.
