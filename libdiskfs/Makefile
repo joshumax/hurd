@@ -43,7 +43,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-std-runtime.c \
-        opts-append-std.c opts-common.c opts-runtime.c \
+        opts-append-std.c opts-common.c opts-runtime.c opts-version.c \
 	trans-callback.c readonly.c remount.c filedev.c machdev.c \
 	dev-open.c dev-io.c dev-globals.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
