@@ -33,13 +33,13 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   error_t err;
   struct node *tnp, *tmpnp;
   void *buf = alloca (diskfs_dirstat_size);
-  struct diskfs_dirstat *ds;
-  struct diskfs_dirstat *tmpds;
+  struct dirstat *ds;
+  struct dirstat *tmpds;
 
   mutex_lock (&tdp->lock);
   diskfs_nref (tdp);		/* reference and lock will get consumed by
 				   checkpath */
-  err = checkpath (fnp, tdp, tocred);
+  err = diskfs_checkpath (fnp, tdp, tocred);
   
   if (err)
     return err;
@@ -57,10 +57,10 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   
   if (tnp == fnp)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (tnp);
       mutex_unlock (&tdp->lock);
-      mutex_unlock (&ftp->lock);
+      mutex_unlock (&fdp->lock);
       return 0;
     }
   
@@ -71,7 +71,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     {
       if (! S_ISDIR(tnp->dn_stat.st_mode))
 	err = ENOTDIR;
-      else if (!dirempty (tnp, tocred))
+      else if (!diskfs_dirempty (tnp, tocred))
 	err = ENOTEMPTY;
     }     
 
@@ -79,25 +79,26 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     goto out;
 
   /* 2: Set our .. to point to the new parent */
-  if (tdp->dn_stat.st_nlink == LINK_MAX - 1)
+  if (tdp->dn_stat.st_nlink == diskfs_link_max - 1)
     {
       err = EMLINK;
       return EMLINK;
     }
   tdp->dn_stat.st_nlink++;
   tdp->dn_set_ctime = 1;
-  err = diskfs_checkdirmod (fnp, fnp->dn_stat.st_mode, fdp, fromcred);
+  err = diskfs_checkdirmod (fnp, fdp, fromcred);
   if (err)
     goto out;
   
   tmpds = alloca (diskfs_dirstat_size);
-  err = lookup (fnp, "..", RENAME | SPEC_DOTDOT, tmpnp, &tmpds, fromcred);
+  err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
+		       &tmpnp, tmpds, fromcred);
   assert (err != ENOENT);
   assert (tmpnp == fdp);
   diskfs_nrele (tmpnp);
   if (err)
     {
-      diskfs_drop_dirstat (tmpds);
+      diskfs_drop_dirstat (fnp, tmpds);
       goto out;
     }
 
@@ -111,10 +112,10 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 
   /* 3: Increment the link count on the node being moved and rewrite
      tdp. */
-  if (fnp->dn_stat.st_nlink == LINK_MAX - 1)
+  if (fnp->dn_stat.st_nlink == diskfs_link_max - 1)
     {
       mutex_unlock (&fnp->lock);
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       mutex_unlock (&tdp->lock);
       if (tnp)
 	diskfs_nput (tnp);
@@ -144,12 +145,12 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   /* 4: Remove the entry in fdp. */
   ds = buf;
   mutex_unlock (&fnp->lock);
-  err = diskfs_lookup (fdp, fromname, REMOVE, tmpnp, ds, fromcred);
+  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   assert (tmpnp == fnp);
   if (err)
     goto out;
   
-  dirremove (fdp, ds);
+  diskfs_dirremove (fdp, ds);
   ds = 0;
   fnp->dn_stat.st_nlink--;
   fnp->dn_set_ctime = 1;
@@ -164,6 +165,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   if (fnp)
     mutex_unlock (&fnp->lock);
   if (ds)
-    diskfs_drop_dirstat (ds);
+    diskfs_drop_dirstat (tdp, ds);
   return err;
 }
