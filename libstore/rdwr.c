@@ -107,7 +107,8 @@ store_write (struct store *store,
   if (store->flags & STORE_READONLY)
     return EROFS;		/* XXX */
 
-  assert ((len & (block_shift - 1)) == 0);
+  if (store->block_size != 0)
+    assert ((len & (store->block_size - 1)) == 0);
 
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
   if (addr < 0)
@@ -183,7 +184,8 @@ store_read (struct store *store,
   if (addr < 0 || run->start < 0)
     return EIO;			/* Reading from a hole.  */
 
-  assert ((amount & (block_shift - 1)) == 0);
+  if (store->block_size != 0)
+    assert ((amount & (store->block_size - 1)) == 0);
 
   if ((amount >> block_shift) <= run->length - addr)
     /* The first run has it all... */
