@@ -39,7 +39,6 @@ static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},
   {"members",   'm', 0, 0, "Show members of port-sets"},
   {"hex-names",	'x', 0, 0, "Show port names in hexadecimal"},
-  {"translate", 't', "PID", 0, "Translate port names from process PID"},
   {"hold", '*', 0, OPTION_HIDDEN},
 
   {0,0,0,0, "Selecting which names to show:", 2},
@@ -49,15 +48,25 @@ static const struct argp_option options[] = {
   {"dead-names",'d', 0, 0, "Show ports with dead name rights"},
   {"port-sets",	'p', 0, 0, "Show port sets"},
 
+  {0,0,0,0, "Translating port names between tasks:", 3},
+  {"translate", 't', "PID", 0, "Translate port names to process PID"},
+#if 0
+  {"search",    'a', 0, 0,  "Search all processes for the given ports"},
+  {"target-receive",  'R', 0, 0,
+     "Only show ports that translate into receive rights"},
+  {"target-send",     'S', 0, 0,
+     "Only show ports that translate into receive rights"},
+  {"target-send-once",'O', 0, 0,
+     "Only show ports that translate into receive rights"},
+#endif
+
   {0}
 };
 static const char *args_doc = "PID [NAME...]";
 static const char *doc =
 "If no port NAMEs are given, all ports in process PID are reported (if"
 " translation is used, then only those common to both processes).  NAMEs"
-" may be specified in hexadecimal or octal by using a 0x or 0 prefix.  When"
-" translating, the port-type selection options apply to the"
-" translated task, not the destination one.";
+" may be specified in hexadecimal or octal by using a 0x or 0 prefix.";
 
 /* Return the task corresponding to the user argument ARG, exiting with an
    appriate error message if we can't.  */
@@ -90,8 +99,9 @@ main (int argc, char **argv)
 {
   error_t err;
   task_t task;
+  int search = 0;
   unsigned show = 0;		/* what info we print */
-  mach_port_type_t only = 0;	/* Which names to show */
+  mach_port_type_t only = 0, target_only = 0; /* Which names to show */
   task_t xlate_task = MACH_PORT_NULL;
   struct port_name_xlator *xlator = 0;
 
@@ -110,7 +120,12 @@ main (int argc, char **argv)
 	case 'd': only |= MACH_PORT_TYPE_DEAD_NAME; break;
 	case 'p': only |= MACH_PORT_TYPE_PORT_SET; break;
 
+	case 'R': target_only |= MACH_PORT_TYPE_RECEIVE; break;
+	case 'S': target_only |= MACH_PORT_TYPE_SEND; break;
+	case 'O': target_only |= MACH_PORT_TYPE_SEND_ONCE; break;
+
 	case 't': xlate_task = parse_task (arg); break;
+	case 'a': search = 1; break;
 
 	case '*':
 	  hold = 1;
@@ -130,10 +145,15 @@ main (int argc, char **argv)
 
 	      if (only == 0)
 		only = ~0;
+	      if (target_only == 0)
+		target_only = ~0;
 
 	      if (xlate_task != MACH_PORT_NULL)
 		{
-		  err = port_name_xlator_create (xlate_task, task, &xlator);
+		  if (search)
+		    argp_error (state,
+				"Both --search and --translate specified");
+		  err = port_name_xlator_create (task, xlate_task, &xlator);
 		  if (err)
 		    error (13, err, "Cannot setup task translation");
 		}
