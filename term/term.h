@@ -91,11 +91,11 @@ struct port_class *cttyid_class;
 /* Port class for pty master ports */
 struct port_class *pty_class;
 
+/* Port class for pty control ports */
+struct port_class *pty_cntl_class;
+
 /* Trivfs control structure for the tty */
 struct trivfs_control *termctl;
-
-/* Trivfs control structure for pty master ports */
-struct trivfs_control *ptyctl;
 
 /* Filename for this terminal */
 char *nodename;
