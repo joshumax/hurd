@@ -40,7 +40,6 @@ enum porttype
   PT_TRANSBOOT,
 };
 
-spin_lock_t _diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 volatile struct mapped_time_value *_diskfs_mtime;
 
 /* Needed for MiG. */
@@ -68,25 +67,25 @@ end_using_protid_port (struct protid *cred)
 extern inline void
 diskfs_nref (struct node *np)
 {
-  spin_lock (&_diskfs_node_refcnt_lock);
+  spin_lock (&diskfs_node_refcnt_lock);
   np->references++;
-  spin_unlock (&_diskfs_node_refcnt_lock);
+  spin_unlock (&diskfs_node_refcnt_lock);
 }
 
 /* Unlock node NP and release a reference */
 extern inline void
 diskfs_nput (struct node *np)
 {
-  spin_lock (&_diskfs_node_refcnt_lock);
+  spin_lock (&diskfs_node_refcnt_lock);
   np->references--;
   if (np->references == 0)
     {
       diskfs_drop_node (np);
-      spin_unlock (&_diskfs_node_refcnt_lock);
+      spin_unlock (&diskfs_node_refcnt_lock);
     }
   else
     {
-      spin_unlock (&_diskfs_node_refcnt_lock);
+      spin_unlock (&diskfs_node_refcnt_lock);
       mutex_unlock (&np->lock);
     }
 }
@@ -97,11 +96,11 @@ diskfs_nput (struct node *np)
 extern inline void
 diskfs_nrele (struct node *np)
 {
-  spin_lock (&_diskfs_node_refcnt_lock);
+  spin_lock (&diskfs_node_refcnt_lock);
   np->references--;
   if (np->references == 0)
     diskfs_drop_node (np);
-  spin_unlock (&_diskfs_node_refcnt_lock);
+  spin_unlock (&diskfs_node_refcnt_lock);
 }
 
 /* Actually read or write a file.  The file size must already permit
