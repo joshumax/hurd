@@ -1,3 +1,11 @@
+2001-01-16  Marcus Brinkmann <marcus@gnu.org>
+
+	* demuxer.c (pager_demuxer): If the message was not accepted by
+	one of the servers, acquire a reference to the pager and its lock,
+	and wait until all previous messages have been processed.  This
+	makes sure that the next message that arrives can proceed.
+	Reported by Neal H Walfield <neal@cs.uml.edu>
+
 2001-12-29  Roland McGrath  <roland@frob.com>
 
 	* data-init.c, object-create.c: Removed obsolete files.
