@@ -194,7 +194,7 @@ struct port_bucket;		/* shut up C compiler */
    notifications) are used.
    */
 error_t fshelp_get_identity (struct port_bucket *bucket,
-			     ino_t fileno, mach_port_t *pt);
+			     ino64_t fileno, mach_port_t *pt);
 
 
 
@@ -236,26 +236,26 @@ error_t fshelp_set_options (struct argp *argp, int flags,
 /* Check to see whether USER should be considered the owner of the
    file identified by ST.  If so, return zero; otherwise return an
    appropriate error code. */
-error_t fshelp_isowner (struct stat *st, struct iouser *user);
+error_t fshelp_isowner (io_statbuf_t *st, struct iouser *user);
 
 /* Check to see whether USER should be considered a controller of the
    filesystem.  Which is to say, check to see if we should give USER the
    control port.  ST is the stat of the root node.  USER is the user
    asking for a send right to the control port.  */
 error_t
-fshelp_iscontroller (struct stat *st, struct iouser *user);
+fshelp_iscontroller (io_statbuf_t *st, struct iouser *user);
 
 /* Check to see whether the user USER can operate on a file identified
    by ST.  OP is one of S_IREAD, S_IWRITE, and S_IEXEC.  If the access
    is permitted, return zero; otherwise return an appropriate error
    code.  */
-error_t fshelp_access (struct stat *st, int op, struct iouser *user);
+error_t fshelp_access (io_statbuf_t *st, int op, struct iouser *user);
 
 /* Check to see whether USER is allowed to modify DIR with respect to
    existing file ST.  (If there is no existing file, pass 0 for ST.)
    If the access is permissable return 0; otherwise return an
    appropriate error code.  */
-error_t fshelp_checkdirmod (struct stat *dir, struct stat *st,
+error_t fshelp_checkdirmod (io_statbuf_t *dir, io_statbuf_t *st,
 			    struct iouser *user);
 
 
@@ -266,6 +266,6 @@ error_t fshelp_checkdirmod (struct stat *dir, struct stat *st,
 
 /* Change the stat times of NODE as indicated by WHAT (from the set TOUCH_*)
    to the current time.  */
-void fshelp_touch (struct stat *st, unsigned what,
+void fshelp_touch (io_statbuf_t *st, unsigned what,
 		   volatile struct mapped_time_value *maptime);
 #endif
