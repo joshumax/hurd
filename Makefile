@@ -22,8 +22,8 @@ include Makeconf
 lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
 	      libthreads
 prog-subdirs = auth boot exec fstests ifsock init.trim mkbootfs \
-	       proc term ufs pflocal sh.trim ps pipes dev su symlink
-other-subdirs = hurd i386 doc init tmpfs 
+	       proc term ufs pflocal sh.trim ps pipes dev.trim su symlink
+other-subdirs = hurd i386 doc init tmpfs dev
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 
 DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS missing \
