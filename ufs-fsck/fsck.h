@@ -37,6 +37,9 @@ enum inodetype *inodestate;
 /* Number of links claimed by each inode (set by pass 1) */
 nlink_t *linkcount;
 
+/* Number of links found to each inode (set by pass 2) */
+nlink_t *linkfound;
+
 /* DT_foo type of each inode (set by pass 1) */
 char *typemap;
 
@@ -50,6 +53,7 @@ struct dirinfo
   ino_t i_number;		/* inode entry of this dir */
   ino_t i_parent;		/* inode entry of parent */
   ino_t i_dotdot;		/* inode number of `..' */
+  ino_t i_dot;			/* inode number of `.' */
   ino_t i_isize;		/* size of inode */
   u_int i_numblks;		/* size of block array in bytes */
   daddr_t i_blks[0];		/* array of inode block addresses */
