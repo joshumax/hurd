@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2001 Free Software Foundation, Inc.
    Written by Thomas Bushnell, BSG.
 
    This file is part of the GNU Hurd.
@@ -22,7 +22,7 @@
 
 /* Unlock node NP and release a hard reference; if this is the last
    hard reference and there are no links to the file then request
-   soft references to be dropped.  */
+   weak references to be dropped.  */
 void
 diskfs_nput (struct node *np)
 {

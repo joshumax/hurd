@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@
 
    We set the prenotify size to be the allocated size of the file;
    then users are forced to call this routine before writing past
-   that, and we can do allocation (orreturn ENOSPC if necessary. */
+   that, and we can do allocation (or return ENOSPC if necessary). */
 kern_return_t
 diskfs_S_io_prenotify (struct protid *cred,
 		       vm_offset_t start __attribute__ ((unused)),
