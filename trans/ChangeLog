@@ -1,3 +1,14 @@
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* crash.c: Add `corelimit' parameter to `dump_core' forward decl.
+	(S_crash_dump_task): Change caller, pass (off_t)-1 for now.
+	(struct crasher): New member `core_limit'.
+	(dead_crasher): Pass C->core_limit to dump_core.
+	(S_crash_dump_task): Set C->core_limit, to (off_t) -1 for now.
+	(dump_core): Function removed; now ../exec/elfcore.c defines it.
+	* Makefile (OBJS, crash): Add elfcore.o.
+	(elfcore.c): vpath decl to find this in $(top_srcdir)/exec.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* streamio.c (create_buffer): extern inline -> static inline
