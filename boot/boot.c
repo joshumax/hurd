@@ -391,7 +391,6 @@ main (int argc, char **argv, char **envp)
   char *buf = 0;
   char *bootscript;
   int i, len;
-  struct sigvec vec = { read_reply, 0, 0};
   char *newargs;
 
   get_privileged_ports (&privileged_host_port, &master_device_port);
@@ -539,10 +538,7 @@ main (int argc, char **argv, char **envp)
       read (0, &c, 1);
     }
 
-  foo = 1;
   init_termstate ();
-  ioctl (0, FIOASYNC, &foo);
-  sigvec (SIGIO, &vec, 0);
 
   /* The boot script has now been parsed into internal data structures.
      Now execute its directives.  */
@@ -563,12 +559,20 @@ main (int argc, char **argv, char **envp)
 
   mach_port_deallocate (mach_task_self (), pseudo_master_device_port);
 
-  cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
-				(any_t) 0));
+  cthread_detach (cthread_fork ((cthread_fn_t) msg_thread, (any_t) 0));
 
-  while (1)
+  for (;;)
     {
-      sigpause (0);
+      fd_set rmask;
+      FD_ZERO (&rmask);
+      FD_SET (0, &rmask);
+      if (select (1, &rmask, 0, 0, 0) == 1)
+	read_reply ();
+      else
+	{			/* We hosed */
+	  perror ("select");
+	  exit (5);
+	}
     }
 
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
