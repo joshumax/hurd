@@ -1,7 +1,7 @@
 /* ftpfs interface to libnetfs
 
-   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 
 #include <hurd/netfs.h>
@@ -180,7 +181,7 @@ get_dirents (struct ftpfs_dir *dir,
 	 ? DIRENTS_CHUNK_SIZE
 	 : max_data_len);
 
-      *data = mmap (0, size, PROT_READ|PROT_WRITE, 
+      *data = mmap (0, size, PROT_READ|PROT_WRITE,
 				   MAP_ANON, 0, 0);
       err = ((void *) *data == (void *) -1) ? errno : 0;
 
@@ -384,10 +385,14 @@ error_t netfs_attempt_set_size (struct iouser *cred, struct node *node,
 
 /* This should attempt to fetch filesystem status information for the remote
    filesystem, for the user CRED. */
-error_t netfs_attempt_statfs (struct iouser *cred, struct node *node,
-			      struct statfs *st)
+error_t
+netfs_attempt_statfs (struct iouser *cred, struct node *node,
+		      struct statfs *st)
 {
-  return EOPNOTSUPP;
+  bzero (st, sizeof *st);
+  st->f_type = FSTYPE_FTP;
+  st->f_fsid = getpid ();
+  return 0;
 }
 
 /* This should sync the entire remote filesystem.  If WAIT is set, return
