@@ -23,7 +23,9 @@ hurd|The GNU Hurd console server,
 # Move cursor to home position (to position P1, P2).
 	home=\E[H, cup=\E[%i%p1%d;%p2%dH,
 # Move cursor one character (P1 characters) backwards.
-	cub1=\E[D, cub=\E[%p1%dD,
+# We use ^H instead \E[D for cub1, as only ^H implements <bw> and it
+# is one byte instead three.
+	cub1=^H, cub=\E[%p1%dD,
 # Move cursor one line (P1 lines) downwards.
 	cud1=\E[B, cud=\E[%p1%dB,
 # Move cursor one character (P1 characters) forwards.

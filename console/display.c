@@ -1195,12 +1195,6 @@ handle_esc_bracket (display_t display, char op)
       break;
     case 'D':		/* ECMA-48 <CUB>.  */
       /* Cursor left: <cub>, <cub1>.  */
-      if (!parse->params[0] && user->cursor.col == 0)
-	{
-	  /* This implements the <bw> functionality.  */
-	  user->cursor.row--;
-	  user->cursor.col = user->screen.width;
-	}
       user->cursor.col -= (parse->params[0] ?: 1);
       limit_cursor (display);
       break;
