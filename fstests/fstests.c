@@ -43,7 +43,6 @@ main ()
   mach_port_t root;
   
   root = _hurd_ports[INIT_PORT_CRDIR].port;
-  stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
   printf ("fstests running...\n");
 
