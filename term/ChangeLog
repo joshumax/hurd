@@ -1,3 +1,8 @@
+2001-12-17  Roland McGrath  <roland@frob.com>
+
+	* munge.c (input_character): Fix DISCARD character handling
+	so it doesn't process the character as plain input.
+
 2001-10-14  Roland McGrath  <roland@frob.com>
 
 	* devio.c (real_speed_to_bogus_speed): Handle B57600, B115200 if they
