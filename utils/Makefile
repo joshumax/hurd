@@ -18,8 +18,8 @@
 dir := utils
 makemode := utilities
 
-SRCS = shd.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh
-targets = shd ps settrans showtrans update clri sync reboot halt su mount
+SRCS = shd.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh fsysopts.c
+targets = shd ps settrans showtrans update clri sync reboot halt su mount fsysopts
 DIST_FILES = sh.ChangeLog
 
 HURDLIBS=libps  # Only used by ps.  
@@ -32,6 +32,8 @@ include ../Makeconf
 
 settrans: settrans.o start-trans.o argz.o error.o
 showtrans: showtrans.o argz.o error.o
+
+fsysopts: fsysopts.o argz.o error.o
 
 ps: ps.o ihash.o primes.o error.o $(HURDLIBS-files) $(libc)
 
