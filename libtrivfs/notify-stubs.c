@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "notify_S.h"
 
 error_t
 trivfs_do_mach_notify_port_deleted (mach_port_t notify,
