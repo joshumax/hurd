@@ -615,7 +615,7 @@ diskfs_grow (struct node *np,
       indirs[0].bno = bno;
       write_disk_entry (siblock[indirs[0].offset], bno);
       record_poke (siblock, sblock->fs_bsize);
-      offer_data (np, lbn, sblock->fs_bsize, zeroblock);
+      offer_data (np, lbn * sblock->fs_bsize, sblock->fs_bsize, zeroblock);
     }
 
  out:
