@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -18,15 +18,18 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include "pfinet.h"
+
 #include <device/device.h>
 #include <device/net_status.h>
-#include <linux/netdevice.h>
-#include <linux/etherdevice.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <error.h>
 
-#include "pfinet.h"
+#include <linux/netdevice.h>
+#include <linux/etherdevice.h>
+#include <linux/if_arp.h>
+
 
 device_t ether_port;
 
@@ -53,9 +56,8 @@ ethernet_stop (struct device *dev)
 }
 
 void
-ethernet_set_multi (struct device *dev, int numaddrs, void *addrs)
+ethernet_set_multi (struct device *dev)
 {
-  assert (numaddrs == 0);
 }
 
 static short ether_filter[] =
@@ -68,7 +70,7 @@ static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
 static struct port_bucket *etherport_bucket;
 
 
-any_t
+static any_t
 ethernet_thread (any_t arg)
 {
   ports_manage_port_operations_one_thread (etherport_bucket,
@@ -98,7 +100,7 @@ ethernet_demuxer (mach_msg_header_t *inp,
   datalen = ETH_HLEN
     + msg->packet_type.msgt_number - sizeof (struct packet_header);
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&net_bh_lock);
   skb = alloc_skb (datalen, GFP_ATOMIC);
   skb->len = datalen;
   skb->dev = &ether_dev;
@@ -110,32 +112,46 @@ ethernet_demuxer (mach_msg_header_t *inp,
 	 datalen - ETH_HLEN);
 
   /* Drop it on the queue. */
+  skb->protocol = eth_type_trans (skb, &ether_dev);
   netif_rx (skb);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&net_bh_lock);
 
   return 1;
 }
 
 
+void
+ethernet_initialize (void)
+{
+  etherport_bucket = ports_create_bucket ();
+  etherreadclass = ports_create_class (0, 0);
+
+  cthread_detach (cthread_fork (ethernet_thread, 0));
+}
+
 int
 ethernet_open (struct device *dev)
 {
   error_t err;
+  device_t master_device;
 
-  if (ether_port != MACH_PORT_NULL)
-    return 0;
+  assert (ether_port == MACH_PORT_NULL);
 
-  etherreadclass = ports_create_class (0, 0);
-  errno = ports_create_port (etherreadclass, etherport_bucket,
-			     sizeof (struct port_info), &readpt);
-  assert_perror (errno);
+  err = ports_create_port (etherreadclass, etherport_bucket,
+			   sizeof (struct port_info), &readpt);
+  assert_perror (err);
   readptname = ports_get_right (readpt);
   mach_port_insert_right (mach_task_self (), readptname, readptname,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
 
+  err = get_privileged_ports (0, &master_device);
+  if (err)
+    error (2, err, "cannot get device master port");
+
   err = device_open (master_device, D_WRITE | D_READ, dev->name, &ether_port);
+  mach_port_deallocate (mach_task_self (), master_device);
   if (err)
     error (2, err, "%s", dev->name);
 
@@ -144,7 +160,6 @@ ethernet_open (struct device *dev)
 			   ether_filter, ether_filter_len);
   if (err)
     error (2, err, "%s", dev->name);
-  cthread_detach (cthread_fork (ethernet_thread, 0));
   return 0;
 }
 
@@ -154,12 +169,12 @@ int
 ethernet_xmit (struct sk_buff *skb, struct device *dev)
 {
   u_int count;
-  int err;
+  error_t err;
 
   err = device_write (ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
-  assert (err == 0);
+  assert_perror (err);
   assert (count == skb->len);
-  dev_kfree_skb (skb, FREE_WRITE);
+  dev_kfree_skb (skb);
   return 0;
 }
 
@@ -169,36 +184,36 @@ setup_ethernet_device (char *name)
   struct net_status netstat;
   u_int count;
   int net_address[2];
-  int i;
   error_t err;
 
-  etherport_bucket = ports_create_bucket ();
+  bzero (&ether_dev, sizeof ether_dev);
 
-  /* Interface buffers. */
-  ether_dev.name = name;
-  for (i = 0; i < DEV_NUMBUFFS; i++)
-    skb_queue_head_init (&ether_dev.buffs[i]);
+  ether_dev.name = strdup (name);
 
-  /* Functions */
-  ether_dev.open = ethernet_open;
+  /* Functions.  These ones are the true "hardware layer" in Linux.  */
+  ether_dev.open = 0;		/* We set up before calling dev_open.  */
   ether_dev.stop = ethernet_stop;
   ether_dev.hard_start_xmit = ethernet_xmit;
-  ether_dev.hard_header = eth_header;
-  ether_dev.rebuild_header = eth_rebuild_header;
-  ether_dev.type_trans = eth_type_trans;
   ether_dev.get_stats = ethernet_get_stats;
   ether_dev.set_multicast_list = ethernet_set_multi;
 
+  /* These are the ones set by drivers/net/net_init.c::ether_setup.  */
+  ether_dev.hard_header = eth_header;
+  ether_dev.rebuild_header = eth_rebuild_header;
+  ether_dev.hard_header_cache = eth_header_cache;
+  ether_dev.header_cache_update = eth_header_cache_update;
+  ether_dev.hard_header_parse = eth_header_parse;
+  /* We can't do these two (and we never try anyway).  */
+  /* ether_dev.change_mtu = eth_change_mtu; */
+  /* ether_dev.set_mac_address = eth_mac_addr; */
+
   /* Some more fields */
   ether_dev.type = ARPHRD_ETHER;
-  ether_dev.hard_header_len = sizeof (struct ethhdr);
+  ether_dev.hard_header_len = ETH_HLEN;
   ether_dev.addr_len = ETH_ALEN;
-  for (i = 0; i < 6; i++)
-    ether_dev.broadcast[i] = 0xff;
+  memset (ether_dev.broadcast, 0xff, ETH_ALEN);
   ether_dev.flags = IFF_BROADCAST | IFF_MULTICAST;
-  ether_dev.family = AF_INET;	/* hmm. */
-  ether_dev.pa_addr = ether_dev.pa_brdaddr = ether_dev.pa_mask = 0;
-  ether_dev.pa_alen = sizeof (unsigned long);
+  dev_init_buffers (&ether_dev);
 
   ethernet_open (&ether_dev);
 
@@ -222,8 +237,11 @@ setup_ethernet_device (char *name)
   net_address[1] = ntohl (net_address[1]);
   bcopy (net_address, ether_dev.dev_addr, ETH_ALEN);
 
-  /* That should be enough. */
+  /* That should be enough.  */
 
-  ether_dev.next = dev_base;
-  dev_base = &ether_dev;
+  /* This call adds the device to the `dev_base' chain,
+     initializes its `ifindex' member (which matters!),
+     and tells the protocol stacks about the device.  */
+  err = - register_netdevice (&ether_dev);
+  assert_perror (err);
 }

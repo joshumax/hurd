@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 

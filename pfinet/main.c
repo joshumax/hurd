@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -26,6 +26,9 @@
 #include <argp.h>
 #include <hurd/startup.h>
 #include <string.h>
+
+#include <linux/netdevice.h>
+#include <linux/inet.h>
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -141,12 +144,6 @@ find_device (char *name, struct device **device)
 
   setup_ethernet_device (name);
 
-  /* Default mask is 255.255.255.0.  XXX should be class dependent.  */
-  {
-    char addr[4] = {255, 255, 255, 0};
-    ether_dev.pa_mask = *(u_long *)addr;
-  }
-
   /* Turn on device. */
   dev_open (&ether_dev);
 
@@ -168,6 +165,9 @@ enumerate_devices (error_t (*fun) (struct device *dev))
     return 0;
 }
 
+extern void sk_init (void), skb_init (void);
+extern int net_dev_init (void);
+
 int
 main (int argc,
       char **argv)
@@ -186,19 +186,37 @@ main (int argc,
 
   /* Generic initialization */
 
-  init_devices ();
   init_time ();
-  cthread_detach (cthread_fork (input_work_thread, 0));
+  ethernet_initialize ();
+  cthread_detach (cthread_fork (net_bh_worker, 0));
+
+  __mutex_lock (&global_lock);
+
+  prepare_current (1);		/* Set up to call into Linux initialization. */
+
+  sk_init ();
+#ifdef SLAB_SKB
+  skb_init ();
+#endif
   inet_proto_init (0);
 
-  arrange_shutdown_notification ();
+  /* This initializes the Linux network device layer, including
+     initializing each device on the `dev_base' list.  For us,
+     that means just loopback_dev, which will get fully initialized now.
+     After this, we can use `register_netdevice' for new interfaces.  */
+  net_dev_init ();
 
-  setup_loopback_device ("loopback");
-
-  /* Parse options.  */
+  /* Parse options.  When successful, this configures the interfaces
+     before returning.  (And when not sucessful, it never returns.)  */
   argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
-  /* Talk to parent and link us in. */
+  __mutex_unlock (&global_lock);
+
+  /* Ask init to tell us when the system is going down,
+     so we can try to be friendly to our correspondents on the network.  */
+  arrange_shutdown_notification ();
+
+  /* Talk to parent and link us in.  */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
@@ -207,7 +225,7 @@ main (int argc,
 			trivfs_cntl_portclasses[0], pfinet_bucket,
 			trivfs_protid_portclasses[0], pfinet_bucket, 0);
   if (err)
-    error (1, errno, "contacting parent");
+    error (1, err, "contacting parent");
 
   /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,

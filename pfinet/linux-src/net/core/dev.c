@@ -115,7 +115,7 @@ const char *if_port_text[] = {
  *	and the routines to invoke.
  *
  *	Why 16. Because with 16 the only overlap we get on a hash of the
- *	low nibble of the protocol value is RARP/SNAP/X.25. 
+ *	low nibble of the protocol value is RARP/SNAP/X.25.
  *
  *		0800	IP
  *		0001	802.3
@@ -137,13 +137,13 @@ struct packet_type *ptype_all = NULL;		/* Taps */
  *	Device list lock. Setting it provides that interface
  *	will not disappear unexpectedly while kernel sleeps.
  */
- 
+
 atomic_t dev_lockct = ATOMIC_INIT(0);
 
 /*
  *	Our notifier list
  */
- 
+
 static struct notifier_block *netdev_chain=NULL;
 
 /*
@@ -189,7 +189,7 @@ int netdev_nit=0;
  *	change it and subsequent readers will get broken packet.
  *							--ANK (980803)
  */
- 
+
 void dev_add_pack(struct packet_type *pt)
 {
 	int hash;
@@ -207,7 +207,7 @@ void dev_add_pack(struct packet_type *pt)
 		ptype_all=pt;
 	}
 	else
-	{	
+	{
 		hash=ntohs(pt->type)&15;
 		pt->next = ptype_base[hash];
 		ptype_base[hash] = pt;
@@ -218,7 +218,7 @@ void dev_add_pack(struct packet_type *pt)
 /*
  *	Remove a protocol ID from the list.
  */
- 
+
 void dev_remove_pack(struct packet_type *pt)
 {
 	struct packet_type **pt1;
@@ -251,15 +251,15 @@ void dev_remove_pack(struct packet_type *pt)
 
 ******************************************************************************************/
 
-/* 
+/*
  *	Find an interface by name.
  */
- 
+
 struct device *dev_get(const char *name)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		if (strcmp(dev->name, name) == 0)
 			return(dev);
@@ -271,7 +271,7 @@ struct device * dev_get_by_index(int ifindex)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		if (dev->ifindex == ifindex)
 			return(dev);
@@ -283,7 +283,7 @@ struct device *dev_getbyhwaddr(unsigned short type, char *ha)
 {
 	struct device *dev;
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		if (dev->type == type &&
 		    memcmp(dev->dev_addr, ha, dev->addr_len) == 0)
@@ -311,7 +311,7 @@ int dev_alloc_name(struct device *dev, const char *name)
 	}
 	return -ENFILE;	/* Over 100 of the things .. bail out! */
 }
- 
+
 struct device *dev_alloc(const char *name, int *err)
 {
 	struct device *dev=kmalloc(sizeof(struct device)+16, GFP_KERNEL);
@@ -340,7 +340,7 @@ void netdev_state_change(struct device *dev)
 /*
  *	Find and possibly load an interface.
  */
- 
+
 #ifdef CONFIG_KMOD
 
 void dev_load(const char *name)
@@ -363,9 +363,9 @@ static int default_rebuild_header(struct sk_buff *skb)
 }
 
 /*
- *	Prepare an interface for use. 
+ *	Prepare an interface for use.
  */
- 
+
 int dev_open(struct device *dev)
 {
 	int ret = 0;
@@ -380,15 +380,15 @@ int dev_open(struct device *dev)
 	/*
 	 *	Call device private open method
 	 */
-	 
-	if (dev->open) 
+
+	if (dev->open)
   		ret = dev->open(dev);
 
 	/*
 	 *	If it went open OK then:
 	 */
-	 
-	if (ret == 0) 
+
+	if (ret == 0)
 	{
 		/*
 		 *	nil rebuild_header routine,
@@ -404,7 +404,7 @@ int dev_open(struct device *dev)
 		dev->flags |= (IFF_UP | IFF_RUNNING);
 
 		/*
-		 *	Initialize multicasting status 
+		 *	Initialize multicasting status
 		 */
 		dev_mc_upload(dev);
 
@@ -448,7 +448,7 @@ void dev_clear_fastroute(struct device *dev)
 /*
  *	Completely shutdown an interface.
  */
- 
+
 int dev_close(struct device *dev)
 {
 	if (!(dev->flags&IFF_UP))
@@ -462,7 +462,7 @@ int dev_close(struct device *dev)
 	 *	Call the device specific close. This cannot fail.
 	 *	Only if device is UP
 	 */
-	 
+
 	if (dev->stop)
 		dev->stop(dev);
 
@@ -513,7 +513,7 @@ void dev_queue_xmit_nit(struct sk_buff *skb, struct device *dev)
 	struct packet_type *ptype;
 	get_fast_time(&skb->stamp);
 
-	for (ptype = ptype_all; ptype!=NULL; ptype = ptype->next) 
+	for (ptype = ptype_all; ptype!=NULL; ptype = ptype->next)
 	{
 		/* Never send packets back to the socket
 		 * they originated from - MvS (miquels@drinkel.ow.org)
@@ -558,7 +558,7 @@ void dev_queue_xmit_nit(struct sk_buff *skb, struct device *dev)
 /*
  *	Fast path for loopback frames.
  */
- 
+
 void dev_loopback_xmit(struct sk_buff *skb)
 {
 	struct sk_buff *newskb=skb_clone(skb, GFP_ATOMIC);
@@ -608,7 +608,7 @@ int dev_queue_xmit(struct sk_buff *skb)
 	   made by us here.
 	 */
 	if (dev->flags&IFF_UP) {
-		if (netdev_nit) 
+		if (netdev_nit)
 			dev_queue_xmit_nit(skb,dev);
 		if (dev->hard_start_xmit(skb, dev) == 0) {
 			end_bh_atomic();
@@ -723,7 +723,7 @@ static void dev_clear_backlog(struct device *dev)
 	 *
 	 *  It looks better to use net_bh trick, at least
 	 *  to be sure, that we keep interrupt latency really low. --ANK (980727)
-	 */ 
+	 */
 
 	if (backlog.qlen) {
 		start_bh_atomic();
@@ -751,7 +751,7 @@ static void dev_clear_backlog(struct device *dev)
 
 /*
  *	Receive a packet from a device driver and queue it for the upper
- *	(protocol) levels.  It always succeeds. 
+ *	(protocol) levels.  It always succeeds.
  */
 
 void netif_rx(struct sk_buff *skb)
@@ -802,13 +802,13 @@ static inline void handle_bridge(struct sk_buff *skb, unsigned short type)
 		 *	We pass the bridge a complete frame. This means
 		 *	recovering the MAC header first.
 		 */
-		
+
 		int offset;
 
 		skb=skb_clone(skb, GFP_ATOMIC);
-		if(skb==NULL)		
+		if(skb==NULL)
 			return;
-			
+
 		offset=skb->data-skb->mac.raw;
 		skb_push(skb,offset);	/* Put header back on for bridge */
 
@@ -828,7 +828,7 @@ static inline void handle_bridge(struct sk_buff *skb, unsigned short type)
  *	This is run as a bottom half after an interrupt handler that does
  *	mark_bh(NET_BH);
  */
- 
+
 void net_bh(void)
 {
 	struct packet_type *ptype;
@@ -854,7 +854,7 @@ void net_bh(void)
 
 	if (qdisc_head.forw != &qdisc_head)
 		qdisc_run_queues();
-  
+
 	/*
 	 *	Any data left to process. This may occur because a
 	 *	mark_bh() is done after we empty the queue including
@@ -869,7 +869,7 @@ void net_bh(void)
 	 *	disabling interrupts.
 	 */
 
-	while (!skb_queue_empty(&backlog)) 
+	while (!skb_queue_empty(&backlog))
 	{
 		struct sk_buff * skb;
 
@@ -904,7 +904,7 @@ void net_bh(void)
 
 		/*
 	 	 *	Bump the pointer to the next structure.
-		 * 
+		 *
 		 *	On entry to the protocol layer. skb->data and
 		 *	skb->nh.raw point to the MAC and encapsulated data
 		 */
@@ -919,7 +919,7 @@ void net_bh(void)
 		}
 
 		/*
-		 * 	Fetch the packet protocol ID. 
+		 * 	Fetch the packet protocol ID.
 		 */
 
 		type = skb->protocol;
@@ -930,7 +930,7 @@ void net_bh(void)
 		 *	bridging code (if this protocol is to be bridged).
 		 *      If it is bridged then move on
 		 */
-		handle_bridge(skb, type); 
+		handle_bridge(skb, type);
 #endif
 
 		/*
@@ -953,7 +953,7 @@ void net_bh(void)
 			}
 		}
 
-		for (ptype = ptype_base[ntohs(type)&15]; ptype != NULL; ptype = ptype->next) 
+		for (ptype = ptype_base[ntohs(type)&15]; ptype != NULL; ptype = ptype->next)
 		{
 			if (ptype->type == type && (!ptype->dev || ptype->dev==skb->dev))
 			{
@@ -989,16 +989,16 @@ void net_bh(void)
 		/*
 		 * 	Has an unknown packet has been received ?
 		 */
-	 
+
 		else {
 			kfree_skb(skb);
 		}
   	}	/* End of queue loop */
-  	
+
   	/*
   	 *	We have emptied the queue
   	 */
-	
+
 	/*
 	 *	One last output flush.
 	 */
@@ -1067,9 +1067,9 @@ static int dev_ifname(struct ifreq *arg)
 	int err;
 
 	/*
-	 *	Fetch the caller's info block. 
+	 *	Fetch the caller's info block.
 	 */
-	
+
 	err = copy_from_user(&ifr, arg, sizeof(struct ifreq));
 	if (err)
 		return -EFAULT;
@@ -1100,9 +1100,9 @@ static int dev_ifconf(char *arg)
 	int i;
 
 	/*
-	 *	Fetch the caller's info block. 
+	 *	Fetch the caller's info block.
 	 */
-	
+
 	if (copy_from_user(&ifc, arg, sizeof(struct ifconf)))
 		return -EFAULT;
 
@@ -1110,7 +1110,7 @@ static int dev_ifconf(char *arg)
 	len = ifc.ifc_len;
 
 	/*
-	 *	Loop over the interfaces, and write an info block for each. 
+	 *	Loop over the interfaces, and write an info block for each.
 	 */
 
 	total = 0;
@@ -1131,14 +1131,14 @@ static int dev_ifconf(char *arg)
   	}
 
 	/*
-	 *	All done.  Write the updated control block back to the caller. 
+	 *	All done.  Write the updated control block back to the caller.
 	 */
 	ifc.ifc_len = total;
 
 	if (copy_to_user(arg, &ifc, sizeof(struct ifconf)))
-		return -EFAULT; 
+		return -EFAULT;
 
-	/* 
+	/*
 	 * 	Both BSD and Solaris return 0 here, so we do too.
 	 */
 	return 0;
@@ -1154,7 +1154,7 @@ static int sprintf_stats(char *buffer, struct device *dev)
 {
 	struct net_device_stats *stats = (dev->get_stats ? dev->get_stats(dev): NULL);
 	int size;
-	
+
 	if (stats)
 		size = sprintf(buffer, "%6s:%8lu %7lu %4lu %4lu %4lu %5lu %10lu %9lu %8lu %7lu %4lu %4lu %4lu %5lu %7lu %10lu\n",
  		   dev->name,
@@ -1181,31 +1181,31 @@ static int sprintf_stats(char *buffer, struct device *dev)
  *	Called from the PROCfs module. This now uses the new arbitrary sized /proc/net interface
  *	to create /proc/net/dev
  */
- 
+
 int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy)
 {
 	int len=0;
 	off_t begin=0;
 	off_t pos=0;
 	int size;
-	
+
 	struct device *dev;
 
 
-	size = sprintf(buffer, 
+	size = sprintf(buffer,
 		"Inter-|   Receive                                                |  Transmit\n"
 		" face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n");
-	
+
 	pos+=size;
 	len+=size;
-	
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
+
+	for (dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		size = sprintf_stats(buffer+len, dev);
 		len+=size;
 		pos=begin+len;
-				
+
 		if(pos<offset)
 		{
 			len=0;
@@ -1214,7 +1214,7 @@ int dev_get_info(char *buffer, char **start, off_t offset, int length, int dummy
 		if(pos>offset+length)
 			break;
 	}
-	
+
 	*start=buffer+(offset-begin);	/* Start of wanted data */
 	len-=(offset-begin);		/* Start slop */
 	if(len>length)
@@ -1305,17 +1305,17 @@ int dev_get_wireless_info(char * buffer, char **start, off_t offset,
 	off_t		begin = 0;
 	off_t		pos = 0;
 	int		size;
-	
+
 	struct device *	dev;
 
 	size = sprintf(buffer,
 		       "Inter-|sta|  Quality       |  Discarded packets\n"
 		       " face |tus|link level noise| nwid crypt  misc\n");
-	
+
 	pos+=size;
 	len+=size;
 
-	for(dev = dev_base; dev != NULL; dev = dev->next) 
+	for(dev = dev_base; dev != NULL; dev = dev->next)
 	{
 		size = sprintf_wireless_stats(buffer+len, dev);
 		len+=size;
@@ -1388,7 +1388,7 @@ int dev_change_flags(struct device *dev, unsigned flags)
 
 	/*
 	 *	Load in the correct multicast list now the flags have changed.
-	 */				
+	 */
 
 	dev_mc_upload(dev);
 
@@ -1403,7 +1403,7 @@ int dev_change_flags(struct device *dev, unsigned flags)
 	{
 		ret = ((old_flags & IFF_UP) ? dev_close : dev_open)(dev);
 
-		if (ret == 0) 
+		if (ret == 0)
 			dev_mc_upload(dev);
 	}
 
@@ -1430,10 +1430,16 @@ int dev_change_flags(struct device *dev, unsigned flags)
 	return ret;
 }
 
+#ifdef _HURD_
+
+#define dev_ioctl 0
+
+#else
+
 /*
- *	Perform the SIOCxIFxxx calls. 
+ *	Perform the SIOCxIFxxx calls.
  */
- 
+
 static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 {
 	struct device *dev;
@@ -1442,7 +1448,7 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 	if ((dev = dev_get(ifr->ifr_name)) == NULL)
 		return -ENODEV;
 
-	switch(cmd) 
+	switch(cmd)
 	{
 		case SIOCGIFFLAGS:	/* Get interface flags */
 			ifr->ifr_flags = (dev->flags&~(IFF_PROMISC|IFF_ALLMULTI))
@@ -1451,18 +1457,18 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 
 		case SIOCSIFFLAGS:	/* Set interface flags */
 			return dev_change_flags(dev, ifr->ifr_flags);
-		
+
 		case SIOCGIFMETRIC:	/* Get the metric on the interface (currently unused) */
 			ifr->ifr_metric = 0;
 			return 0;
-			
+
 		case SIOCSIFMETRIC:	/* Set the metric on the interface (currently unused) */
 			return -EOPNOTSUPP;
-	
+
 		case SIOCGIFMTU:	/* Get the MTU of a device */
 			ifr->ifr_mtu = dev->mtu;
 			return 0;
-	
+
 		case SIOCSIFMTU:	/* Set the MTU of a device */
 			if (ifr->ifr_mtu == dev->mtu)
 				return 0;
@@ -1470,7 +1476,7 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 			/*
 			 *	MTU must be positive.
 			 */
-			 
+
 			if (ifr->ifr_mtu<=0)
 				return -EINVAL;
 
@@ -1488,7 +1494,7 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 			memcpy(ifr->ifr_hwaddr.sa_data,dev->dev_addr, MAX_ADDR_LEN);
 			ifr->ifr_hwaddr.sa_family=dev->type;
 			return 0;
-				
+
 		case SIOCSIFHWADDR:
 			if(dev->set_mac_address==NULL)
 				return -EOPNOTSUPP;
@@ -1498,7 +1504,7 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 			if (!err)
 				notifier_call_chain(&netdev_chain, NETDEV_CHANGEADDR, dev);
 			return err;
-			
+
 		case SIOCSIFHWBROADCAST:
 			if(ifr->ifr_hwaddr.sa_family!=dev->type)
 				return -EINVAL;
@@ -1514,12 +1520,12 @@ static int dev_ifsioc(struct ifreq *ifr, unsigned int cmd)
 			ifr->ifr_map.dma=dev->dma;
 			ifr->ifr_map.port=dev->if_port;
 			return 0;
-			
+
 		case SIOCSIFMAP:
 			if (dev->set_config)
 				return dev->set_config(dev,&ifr->ifr_map);
 			return -EOPNOTSUPP;
-			
+
 		case SIOCADDMULTI:
 			if(dev->set_multicast_list==NULL ||
 			   ifr->ifr_hwaddr.sa_family!=AF_UNSPEC)
@@ -1598,7 +1604,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 	   and requires shared lock, because it sleeps writing
 	   to user space.
 	 */
-	   
+
 	if (cmd == SIOCGIFCONF) {
 		rtnl_shlock();
 		ret = dev_ifconf((char *) arg);
@@ -1619,10 +1625,10 @@ int dev_ioctl(unsigned int cmd, void *arg)
 		*colon = 0;
 
 	/*
-	 *	See which interface the caller is talking about. 
+	 *	See which interface the caller is talking about.
 	 */
-	 
-	switch(cmd) 
+
+	switch(cmd)
 	{
 		/*
 		 *	These ioctl calls:
@@ -1630,7 +1636,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 		 *	- atomic and do not require locking.
 		 *	- return a value
 		 */
-		 
+
 		case SIOCGIFFLAGS:
 		case SIOCGIFMETRIC:
 		case SIOCGIFMTU:
@@ -1655,7 +1661,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 		 *	- require strict serialization.
 		 *	- do not return a value
 		 */
-		 
+
 		case SIOCSIFFLAGS:
 		case SIOCSIFMETRIC:
 		case SIOCSIFMTU:
@@ -1674,7 +1680,7 @@ int dev_ioctl(unsigned int cmd, void *arg)
 			ret = dev_ifsioc(&ifr, cmd);
 			rtnl_unlock();
 			return ret;
-	
+
 		case SIOCGIFMEM:
 			/* Get the per device memory space. We can add this but currently
 			   do not support it */
@@ -1685,8 +1691,8 @@ int dev_ioctl(unsigned int cmd, void *arg)
 
 		/*
 		 *	Unknown or private ioctl.
-		 */	
-		 
+		 */
+
 		default:
 			if (cmd >= SIOCDEVPRIVATE &&
 			    cmd <= SIOCDEVPRIVATE + 15) {
@@ -1719,6 +1725,8 @@ int dev_ioctl(unsigned int cmd, void *arg)
 	}
 }
 
+#endif
+
 int dev_new_index(void)
 {
 	static int ifindex;
@@ -1740,7 +1748,7 @@ int register_netdevice(struct device *dev)
 	if (dev_boot_phase) {
 		/* This is NOT bug, but I am not sure, that all the
 		   devices, initialized before netdev module is started
-		   are sane. 
+		   are sane.
 
 		   Now they are chained to device boot list
 		   and probed later. If a module is initialized
@@ -1838,7 +1846,7 @@ int unregister_netdevice(struct device *dev)
 
 /*
  *	Initialize the DEV module. At boot time this walks the device list and
- *	unhooks any devices that fail to initialise (normally hardware not 
+ *	unhooks any devices that fail to initialise (normally hardware not
  *	present) and leaves us with a valid list of present and active devices.
  *
  */
@@ -1892,17 +1900,17 @@ __initfunc(int net_dev_init(void))
 	/*
 	 *	Initialise the packet receive queue.
 	 */
-	 
+
 	skb_queue_head_init(&backlog);
-	
+
 	/*
 	 *	The bridge has to be up before the devices
 	 */
 
-#ifdef CONFIG_BRIDGE	 
+#ifdef CONFIG_BRIDGE
 	br_init();
-#endif	
-	
+#endif
+
 	/*
 	 * This is Very Ugly(tm).
 	 *
@@ -1914,7 +1922,7 @@ __initfunc(int net_dev_init(void))
 #endif
 #if defined(CONFIG_DMASCC)
 	dmascc_init();
-#endif	
+#endif
 #if defined(CONFIG_BPQETHER)
 	bpq_init();
 #endif
@@ -1952,13 +1960,13 @@ __initfunc(int net_dev_init(void))
 	 *	SLHC if present needs attaching so other people see it
 	 *	even if not opened.
 	 */
-	 
-#ifdef CONFIG_INET	 
+
+#ifdef CONFIG_INET
 #if (defined(CONFIG_SLIP) && defined(CONFIG_SLIP_COMPRESSED)) \
 	 || defined(CONFIG_PPP) \
     || (defined(CONFIG_ISDN) && defined(CONFIG_ISDN_PPP))
 	slhc_install();
-#endif	
+#endif
 #endif
 
 #ifdef CONFIG_NET_PROFILE
@@ -1980,14 +1988,14 @@ __initfunc(int net_dev_init(void))
 	while ((dev = *dp) != NULL)
 	{
 		dev->iflink = -1;
-		if (dev->init && dev->init(dev)) 
+		if (dev->init && dev->init(dev))
 		{
 			/*
 			 *	It failed to come up. Unhook it.
 			 */
 			*dp = dev->next;
 			synchronize_bh();
-		} 
+		}
 		else
 		{
 			dp = &dev->next;

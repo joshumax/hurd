@@ -1,8 +1,8 @@
 /* Pfinet option parsing
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,2000 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -25,10 +25,14 @@
 #include <hurd.h>
 #include <argp.h>
 #include <argz.h>
+#include <error.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "pfinet.h"
+
+#include <linux/netdevice.h>
+#include <linux/route.h>
 
 /* Our interface to the set of devices.  */
 extern error_t find_device (char *name, struct device **device);
@@ -117,6 +121,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
   /* Parse STR and return the corresponding  internet address.  If STR is not
      a valid internet address, signal an error mentioned TYPE.  */
+#undef	ADDR
 #define ADDR(str, type)							      \
   ({ unsigned long addr = inet_addr (str);				      \
      if (addr == INADDR_NONE) PERR (EINVAL, "Malformed %s", type);	      \
@@ -154,16 +159,16 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case 'a':
-      h->curint->address = ADDR (arg, "address"); 
+      h->curint->address = ADDR (arg, "address");
       if (!IN_CLASSA (ntohl (h->curint->address))
 	  && !IN_CLASSB (ntohl (h->curint->address))
 	  && !IN_CLASSC (ntohl (h->curint->address)))
 	{
 	  if (IN_MULTICAST (ntohl (h->curint->address)))
-	    FAIL (EINVAL, 1, 0, 
-		  "%s: Cannot set interface address to multicast address", 
+	    FAIL (EINVAL, 1, 0,
+		  "%s: Cannot set interface address to multicast address",
 		  arg);
-	  else 
+	  else
 	    FAIL (EINVAL, 1, 0,
 		  "%s: Illegal or undefined network address", arg);
 	}
@@ -202,52 +207,26 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      FAIL (err, 13, 0, "No default interface");
 	  }
 
+#if 0				/* XXX what does this mean??? */
       /* Check for bogus option combinations.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	if (in->netmask != INADDR_NONE
 	    && in->address == INADDR_NONE && in->device->pa_addr == 0)
 	  /* Specifying a netmask for an address-less interface is a no-no.  */
 	  FAIL (EDESTADDRREQ, 14, 0, "Cannot set netmask");
+#endif
 
       /* Successfully finished parsing, return a result.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
-	{
-	  struct device *dev = in->device;
-	  if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
-	    {
-	      if (dev->pa_addr != 0)
-		/* There's already an address, delete the old entry.  */
-		ip_rt_del (dev->pa_addr & dev->pa_mask, dev);
-
-	      if (in->address != INADDR_NONE)
-		dev->pa_addr = in->address;
-
-	      if (in->netmask != INADDR_NONE)
-		dev->pa_mask = in->netmask;
-	      else
-		{
-		  if (IN_CLASSA (ntohl (dev->pa_addr)))
-		    dev->pa_mask = htonl (IN_CLASSA_NET);
-		  else if (IN_CLASSB (ntohl (dev->pa_addr)))
-		    dev->pa_mask = htonl (IN_CLASSB_NET);
-		  else if (IN_CLASSC (ntohl (dev->pa_addr)))
-		    dev->pa_mask = htonl (IN_CLASSC_NET);
-		  else
-		    abort ();
-		}
-
-	      dev->family = AF_INET;
-	      dev->pa_brdaddr = dev->pa_addr | ~dev->pa_mask;
-
-	      ip_rt_add (0, dev->pa_addr & dev->pa_mask, dev->pa_mask,
-			 0, dev, 0, 0);
-	    }
-	  if (in->gateway != INADDR_NONE)
-	    {
-	      ip_rt_del (0, dev);
-	      ip_rt_add (RTF_GATEWAY, 0, 0, in->gateway, dev, 0, 0);
-	    }
-	}
+	if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
+	  {
+	    extern error_t configure_device (struct device *dev,
+					     uint32_t addr,
+					     uint32_t netmask);	/* devinet.c */
+	    err = configure_device (in->device, in->address, in->netmask);
+	    if (err)
+	      error (2, err, "cannot configure interface"); /* XXX */
+	  }
       /* Fall through to free hook.  */
 
     case ARGP_KEY_ERROR:
@@ -287,10 +266,12 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
        ADD_OPT ("--%s=%s", name, inet_ntoa (i)); } while (0)
 
       ADD_OPT ("--interface=%s", dev->name);
+#if 0				/* XXX */
       if (dev->pa_addr != 0)
         ADD_ADDR_OPT ("address", dev->pa_addr);
       if (dev->pa_mask != 0)
         ADD_ADDR_OPT ("netmask", dev->pa_mask);
+#endif
 
       /* XXX how do we figure out the default gateway?  */
 #undef ADD_OPT

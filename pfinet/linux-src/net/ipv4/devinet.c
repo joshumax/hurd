@@ -23,7 +23,7 @@
  */
 
 #include <linux/config.h>
- 
+
 #include <asm/uaccess.h>
 #include <asm/system.h>
 #include <asm/bitops.h>
@@ -370,8 +370,8 @@ inet_rtm_newaddr(struct sk_buff *skb, struct nlmsghdr *nlh, void *arg)
 
 #endif
 
-/* 
- *	Determine a default network mask, based on the IP address. 
+/*
+ *	Determine a default network mask, based on the IP address.
  */
 
 static __inline__ int inet_abc_len(u32 addr)
@@ -380,20 +380,62 @@ static __inline__ int inet_abc_len(u32 addr)
   		return 0;
 
   	addr = ntohl(addr);
-  	if (IN_CLASSA(addr)) 
+  	if (IN_CLASSA(addr))
   		return 8;
-  	if (IN_CLASSB(addr)) 
+  	if (IN_CLASSB(addr))
   		return 16;
-  	if (IN_CLASSC(addr)) 
+  	if (IN_CLASSC(addr))
   		return 24;
 
 	/*
-	 *	Something else, probably a multicast. 
+	 *	Something else, probably a multicast.
 	 */
-  	 
+
   	return -1;
 }
 
+
+#ifdef _HURD_
+
+#define devinet_ioctl 0
+
+error_t
+configure_device (struct device *dev,
+		  uint32_t addr, uint32_t netmask)
+{
+  struct in_device *in_dev = dev->ip_ptr;
+  struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
+
+  if (ifa)
+    {
+      inet_del_ifa (in_dev, &in_dev->ifa_list, 0);
+      ifa->ifa_broadcast = 0;
+      ifa->ifa_anycast = 0;
+    }
+  else
+    {
+      ifa = inet_alloc_ifa ();
+      if (!ifa)
+	return ENOBUFS;
+      memcpy(ifa->ifa_label, dev->name, IFNAMSIZ);
+    }
+
+  if (addr != INADDR_NONE)
+    ifa->ifa_address = ifa->ifa_local = addr;
+  if (netmask != INADDR_NONE)
+    {
+      ifa->ifa_mask = netmask;
+      ifa->ifa_prefixlen = inet_mask_len (ifa->ifa_mask);
+      if ((dev->flags&IFF_BROADCAST) && ifa->ifa_prefixlen < 31)
+	ifa->ifa_broadcast = ifa->ifa_address|~ifa->ifa_mask;
+      else
+	ifa->ifa_broadcast = 0;
+    }
+
+  return - inet_set_ifa (dev, ifa);
+}
+
+#else
 
 int devinet_ioctl(unsigned int cmd, void *arg)
 {
@@ -514,7 +556,7 @@ int devinet_ioctl(unsigned int cmd, void *arg)
 #endif
 			ret = dev_change_flags(dev, ifr.ifr_flags);
 			break;
-	
+
 		case SIOCSIFADDR:	/* Set interface address (and family) */
 			if (inet_abc_len(sin->sin_addr.s_addr) < 0) {
 				ret = -EINVAL;
@@ -563,7 +605,7 @@ int devinet_ioctl(unsigned int cmd, void *arg)
 				inet_insert_ifa(in_dev, ifa);
 			}
 			break;
-	
+
 		case SIOCSIFDSTADDR:	/* Set the destination address */
 			if (ifa->ifa_address != sin->sin_addr.s_addr) {
 				if (inet_abc_len(sin->sin_addr.s_addr) < 0) {
@@ -604,6 +646,8 @@ rarok:
 		return -EFAULT;
 	return 0;
 }
+
+#endif
 
 static int
 inet_gifconf(struct device *dev, char *buf, int len)
@@ -657,7 +701,7 @@ u32 inet_select_addr(struct device *dev, u32 dst, int scope)
 		if (!addr)
 			addr = ifa->ifa_local;
 	} endfor_ifa(in_dev);
-	
+
 	if (addr || scope >= RT_SCOPE_LINK)
 		return addr;
 
@@ -691,7 +735,7 @@ int unregister_inetaddr_notifier(struct notifier_block *nb)
 {
 	return notifier_chain_unregister(&inetaddr_chain,nb);
 }
- 
+
 static int inetdev_event(struct notifier_block *this, unsigned long event, void *ptr)
 {
 	struct device *dev = ptr;
@@ -725,7 +769,7 @@ static int inetdev_event(struct notifier_block *this, unsigned long event, void 
 	case NETDEV_DOWN:
 		ip_mc_down(in_dev);
 		break;
-	case NETDEV_CHANGEMTU:	
+	case NETDEV_CHANGEMTU:
 		if (dev->mtu >= 68)
 			break;
 		/* MTU falled under minimal IP mtu. Disable IP. */

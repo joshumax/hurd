@@ -1,6 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+/*
+   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -18,38 +17,21 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <asm/system.h>
-#include <linux/sched.h>
 #include "pfinet.h"
 
+#include <asm/system.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+
 struct mutex global_lock = MUTEX_INITIALIZER;
-struct mutex packet_queue_lock = MUTEX_INITIALIZER;
+struct mutex net_bh_lock = MUTEX_INITIALIZER;
+struct condition net_bh_wakeup = CONDITION_INITIALIZER;
 
-struct task_struct current_contents;
-struct task_struct *current = &current_contents;
-
-void
-interruptible_sleep_on (struct wait_queue **p)
-{
-  int cancel;
-  
-  cancel = hurd_condition_wait (&(*p)->c, &global_lock);
-  if (cancel)
-    current->signal = 1;
-}
-
-void
-wake_up_interruptible (struct wait_queue **p)
-{
-  /* tcp.c uses an unitialized wait queue; don't bomb
-     if we see it. */
-  if (*p)
-    condition_broadcast (&(*p)->c);
-}
+struct task_struct current_contents; /* zeros are right default values */
 
 
 /* Wake up the owner of the SOCK.  If HOW is zero, then just
-   send SIGIO.  If HOW is one, then send SIGIO only if the 
+   send SIGIO.  If HOW is one, then send SIGIO only if the
    SO_WAITDATA flag is off.  If HOW is two, then send SIGIO
    only if the SO_NOSPACE flag is on, and also clear it. */
 int
@@ -60,28 +42,28 @@ sock_wake_async (struct socket *sock, int how)
 }
 
 
-/* Set the contents of current appropriately for an RPC being undertaken
-   by USER. */
-void
-become_task (struct sock_user *user)
+/* This function is the "net_bh worker thread".
+   The packet receiver thread calls net/core/dev.c::netif_rx with a packet;
+   netif_rx either drops the packet, or enqueues it and wakes us up
+   via mark_bh which is really condition_broadcast on net_bh_wakeup.
+   The packet receiver thread holds net_bh_lock while calling netif_rx.
+   We wake up and take global_lock, which locks out RPC service threads.
+   We then also take net_bh_lock running net_bh.
+   Thus, only this thread running net_bh locks out the packet receiver
+   thread (which takes only net_bh_lock while calling netif_rx), so packets
+   are quickly moved from the Mach port's message queue to the `backlog'
+   queue, or dropped, without synchronizing with RPC service threads.
+   (The RPC service threads lock out the running of net_bh, but not
+   the queuing/dropping of packets in netif_rx.)  */
+any_t
+net_bh_worker (any_t arg)
 {
-  /* These fields are not really used currently. */
-  current->pgrp = current->pid = 0;
-  
-  current->flags = 0;
-  current->timeout = 0;
-  current->signal = current->blocked = 0;
-  current->state = TASK_RUNNING;
-  current->isroot = user->isroot;
-}
-
-void
-become_task_protid (struct trivfs_protid *protid)
-{
-  current->pgrp = current->pid = 0;
-  current->flags = 0;
-  current->timeout = 0;
-  current->signal = current->blocked = 0;
-  current->state = TASK_RUNNING;
-  current->isroot = protid->isroot;
+  __mutex_lock (&global_lock);
+  while (1)
+    {
+      condition_wait (&net_bh_wakeup, &global_lock);
+      __mutex_lock (&net_bh_lock);
+      net_bh ();
+      __mutex_unlock (&net_bh_lock);
+    }
 }

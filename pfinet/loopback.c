@@ -1,6 +1,5 @@
 /* Loopback "device" for pfinet
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
-   Written by Thomas Bushnell, n/BSG.
+   Copyright (C) 1996,98,2000 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -18,79 +17,114 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <linux/netdevice.h>
+#include "pfinet.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "pfinet.h"
+#include <linux/socket.h>
+#include <linux/net.h>
+#include <linux/inet.h>
+#include <linux/netdevice.h>
+#include <linux/etherdevice.h>
+#include <linux/skbuff.h>
+#include <net/sock.h>
+#include <linux/if_ether.h>	/* For the statistics structure. */
+#include <linux/if_arp.h>	/* For ARPHRD_ETHER */
 
-struct device loopback_dev;
+#define LOOPBACK_MTU	(vm_page_size - 172)
 
-int
-loopback_xmit (struct sk_buff *skb, struct device *dev)
+/*
+ * The higher levels take care of making this non-reentrant (it's
+ * called with bh's disabled).
+ */
+static int loopback_xmit(struct sk_buff *skb, struct device *dev)
 {
-  int done;
+	struct net_device_stats *stats = (struct net_device_stats *)dev->priv;
 
-  if (!skb || !dev)
-    return 0;
+	/*
+	 *	Take this out if the debug says its ok
+	 */
 
-  if (dev->tbusy)
-    return 1;
+	if (skb == NULL || dev == NULL)
+		printk(KERN_DEBUG "loopback fed NULL data - splat\n");
 
-  dev->tbusy;
+	/*
+	 *	Optimise so buffers with skb->free=1 are not copied but
+	 *	instead are lobbed from tx queue to rx queue
+	 */
 
-  done = dev_rint (skb->data, skb->len, 0, dev);
-  dev_kfree_skb (skb, FREE_WRITE);
+	if(atomic_read(&skb->users) != 1)
+	{
+	  	struct sk_buff *skb2=skb;
+	  	skb=skb_clone(skb, GFP_ATOMIC);		/* Clone the buffer */
+	  	if(skb==NULL) {
+			kfree_skb(skb2);
+			return 0;
+		}
+	  	kfree_skb(skb2);
+	}
+	else
+		skb_orphan(skb);
 
-  while (done != 1)
-    done = dev_rint (0, 0, 0, dev);
+	skb->protocol=eth_type_trans(skb,dev);
+	skb->dev=dev;
+#ifndef LOOPBACK_MUST_CHECKSUM
+	skb->ip_summed = CHECKSUM_UNNECESSARY;
+#endif
+	netif_rx(skb);
 
-  dev->tbusy = 0;
-  return 0;
+	stats->rx_bytes+=skb->len;
+	stats->tx_bytes+=skb->len;
+	stats->rx_packets++;
+	stats->tx_packets++;
+
+	return(0);
 }
 
-u_int16_t
-loopback_type_trans (struct sk_buff *skb, struct device *dev)
+static struct net_device_stats *get_stats(struct device *dev)
 {
-  return htons (ETH_P_IP);
+	return (struct net_device_stats *)dev->priv;
+}
+
+static int loopback_open(struct device *dev)
+{
+	dev->flags|=IFF_LOOPBACK;
+	return 0;
+}
+
+/* Initialize the rest of the LOOPBACK device. */
+static int loopback_init(struct device *dev)
+{
+	dev->mtu		= LOOPBACK_MTU;
+	dev->tbusy		= 0;
+	dev->hard_start_xmit	= loopback_xmit;
+	dev->hard_header	= eth_header;
+	dev->hard_header_cache	= eth_header_cache;
+	dev->header_cache_update= eth_header_cache_update;
+	dev->hard_header_len	= ETH_HLEN;		/* 14			*/
+	dev->addr_len		= ETH_ALEN;		/* 6			*/
+	dev->tx_queue_len	= 0;
+	dev->type		= ARPHRD_LOOPBACK;	/* 0x0001		*/
+	dev->rebuild_header	= eth_rebuild_header;
+	dev->open		= loopback_open;
+	dev->flags		= IFF_LOOPBACK;
+	dev->priv = kmalloc(sizeof(struct net_device_stats), GFP_KERNEL);
+	if (dev->priv == NULL)
+			return -ENOMEM;
+	memset(dev->priv, 0, sizeof(struct net_device_stats));
+	dev->get_stats = get_stats;
+
+	/*
+	 *	Fill in the generic fields of the device structure.
+	 */
+
+	dev_init_buffers(dev);
+
+	return(0);
 }
 
 
-void
-setup_loopback_device (char *name)
-{
-  int i;
+struct device loopback_dev = { name: "lo", init: &loopback_init, };
 
-  loopback_dev.name = name;
-  for (i = 0; i < DEV_NUMBUFFS; i++)
-    skb_queue_head_init (&loopback_dev.buffs[i]);
-
-  loopback_dev.open = 0;
-  loopback_dev.stop = 0;
-  loopback_dev.hard_start_xmit = loopback_xmit;
-  loopback_dev.hard_header = 0;
-  loopback_dev.rebuild_header = 0;
-  loopback_dev.type_trans = loopback_type_trans;
-  loopback_dev.get_stats = 0;
-  loopback_dev.set_multicast_list = 0;
-
-  loopback_dev.type = 0;
-  loopback_dev.addr_len = 0;
-  loopback_dev.flags = IFF_LOOPBACK | IFF_BROADCAST | IFF_UP;
-  loopback_dev.family = AF_INET;
-
-  loopback_dev.mtu = 2000;
-
-  /* Defaults */
-  loopback_dev.pa_addr = inet_addr ("127.0.0.1");
-  loopback_dev.pa_brdaddr = inet_addr ("127.255.255.255");
-  loopback_dev.pa_mask = inet_addr ("255.0.0.0");
-  loopback_dev.pa_alen = sizeof (unsigned long);
-
-  loopback_dev.next = dev_base;
-  dev_base = &loopback_dev;
-
-  /* Add the route */
-  ip_rt_add (RTF_HOST, loopback_dev.pa_addr, 0xffffffff, 0, &loopback_dev,
-	     loopback_dev.mtu, 0);
-}
+/* It is important magic that this is the first thing on the list.  */
+struct device *dev_base = &loopback_dev;

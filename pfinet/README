@@ -1,0 +1,49 @@
+The Hurd's pfinet server is based on networking code taken from
+the Linux kernel sources, initially version 2.2.12 of Linux.
+The subset of the Linux kernel sources used for pfinet is kept
+in the linux-src subdirectory.
+
+This file describes the procedures for tracking new Linux kernel versions
+and updating the Linux networking code in the Hurd CVS repository.
+
+The verbatim Linux kernel sources are kept on a vendor branch in CVS.  To
+simplify the process of importing and merging new versions, I have mostly
+imported whole subdirectories of the linux source tree rather than just the
+precise subset of files we are actually using.  However, for the arch/*/lib
+and include/asm-* subdirectories I have taken just the checksum files (the
+only thing we use from the machine-dependent Linux code); and I have
+removed the extraneous whole subdirectories within the include/linux and
+include/net directories.  It is my intention to leave the remaining
+extraneous files in the CVS repository, but to include in the distributions
+only the files we are actually using (they will be listed in the Makefile).
+They could also be left on the vendor branch and removed from the trunk, but
+I think that would have more disadvantages than advantages.
+
+The initial import was done with the following commands.  It is crucial to
+use `-I !' in the `cvs import' command because of the directory
+linux-src/net/core/ ("core" is in CVS's default list of names to ignore).
+
+mkdir import-tmp
+cd import-tmp
+bunzip2 < linux-2.2.12.tar.bz2 | tar xf - linux/{'arch/*/lib/*checksum*','include/asm-*/checksum.h',include/{linux,net},net/{core,ipv4,ethernet}}
+cd linux
+rm -rf include/{net,linux}/*/
+cvs -d `cat ../../CVS/Root` import -I ! -ko -m "Import of Linux 2.2.12 subset (ipv4 stack and related)" hurd/pfinet/linux-src Linux Linux_2_2_12
+
+It should work to repeat the same procedure with later versions to upgrade
+the `Linux' vendor branch.  Please import only verbatim official Linux
+kernel sources, and stick to the tag name schema.  If you don't already
+know how to merge the new vendor release into the trunk and finish the
+upgrade, then you probably should not be doing this anyway.
+
+On the main branch, only a few files within the linux-src tree are
+modified, and those only lightly (the changes are described in ChangeLog).
+Linux header files that are heavily modified or wholly replaced for use in
+pfinet go into the glue-include/ subdirectory instead of modifying
+linux-src files in place.  Whole C source files can just be replaced with
+new files in the top-level pfinet source directory.  When modifications to
+a file in linux-src are justified, the modifications should always be
+conditionalized by #ifdef _HURD_.
+
+
+	-- Roland McGrath <roland@gnu.org>	2000-02-03

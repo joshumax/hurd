@@ -65,8 +65,14 @@ struct socket
 	unsigned long		flags;
 	struct proto_ops	*ops;
 	struct inode		*inode;
+#ifdef _HURD_
+ 	uint_fast32_t		refcnt;	/* # of sock_user's pointing to this */
+	mach_port_t 		identity; /* for io_identity */
+  	struct file;		/* forward decl magic */
+#else
 	struct fasync_struct	*fasync_list;	/* Asynchronous wake up list	*/
 	struct file		*file;		/* File back pointer for gc	*/
+#endif
 	struct sock		*sk;
 	struct wait_queue	*wait;
 
@@ -103,12 +109,12 @@ struct proto_ops {
   int	(*getsockopt)	(struct socket *sock, int level, int optname,
 			 char *optval, int *optlen);
   int	(*fcntl)	(struct socket *sock, unsigned int cmd,
-			 unsigned long arg);	
+			 unsigned long arg);
   int   (*sendmsg)	(struct socket *sock, struct msghdr *m, int total_len, struct scm_cookie *scm);
   int   (*recvmsg)	(struct socket *sock, struct msghdr *m, int total_len, int flags, struct scm_cookie *scm);
 };
 
-struct net_proto_family 
+struct net_proto_family
 {
 	int	family;
 	int	(*create)(struct socket *sock, int protocol);
@@ -119,7 +125,7 @@ struct net_proto_family
 	short	encrypt_net;
 };
 
-struct net_proto 
+struct net_proto
 {
 	const char *name;		/* Protocol name */
 	void (*init_func)(struct net_proto *);	/* Bootstrap */

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,16 +23,12 @@
 
 #include <device/device.h>
 #include <hurd/ports.h>
-#include <linux/netdevice.h>
 #include <hurd/trivfs.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
 
-extern device_t master_device;
-
-extern struct proto_ops *proto_ops;
-
-struct mutex global_lock;
-struct mutex packet_queue_lock;
+extern struct mutex global_lock;
+extern struct mutex net_bh_lock;
 
 struct port_bucket *pfinet_bucket;
 struct port_class *addrport_class;
@@ -55,27 +51,23 @@ struct sock_user
 struct sock_addr
 {
   struct port_info pi;
-  size_t len;
-  struct sockaddr address[0];
+  struct sockaddr address;
 };
 
-void setup_loopback_device (char *);
-
+void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (char *);
-void become_task_protid (struct trivfs_protid *);
-void become_task (struct sock_user *);
 struct sock_user *make_sock_user (struct socket *, int, int);
 error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);
 void init_devices (void);
-any_t input_work_thread (any_t);
+any_t net_bh_worker (any_t);
 void init_time (void);
-void inet_proto_init (struct net_proto *);
 void ip_rt_add (short, u_long, u_long, u_long, struct device *,
 		u_short, u_long);
 void ip_rt_del (u_long, struct device *);
-int tcp_readable (struct sock *);
+struct sock;
+error_t tcp_tiocinq (struct sock *sk, mach_msg_type_number_t *amount);
 
 
 struct sock_user *begin_using_socket_port (socket_t);

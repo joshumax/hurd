@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,11 +20,18 @@
 
 #include <hurd/trivfs.h>
 #include <string.h>
+#include <stddef.h>
+#include <fcntl.h>
 
 #include "pfinet.h"
 #include "socket_S.h"
 
-
+#include <linux/sched.h>
+#include <linux/socket.h>
+#include <linux/net.h>
+#include <net/sock.h>
+
+
 error_t
 S_socket_create (struct trivfs_protid *master,
 		 int sock_type,
@@ -48,16 +55,15 @@ S_socket_create (struct trivfs_protid *master,
       || protocol < 0)
     return EINVAL;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
 
   become_task_protid (master);
 
   sock = sock_alloc ();
 
   sock->type = sock_type;
-  sock->ops = proto_ops;
 
-  err = - (*sock->ops->create) (sock, protocol);
+  err = - (*net_families[PF_INET]->create) (sock, protocol);
   if (err)
     sock_release (sock);
   else
@@ -68,7 +74,7 @@ S_socket_create (struct trivfs_protid *master,
       ports_port_deref (user);
     }
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   return err;
 }
@@ -78,26 +84,17 @@ S_socket_create (struct trivfs_protid *master,
 error_t
 S_socket_listen (struct sock_user *user, int queue_limit)
 {
+  error_t err;
+
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
-
+  __mutex_lock (&global_lock);
   become_task (user);
+  err = - (*user->sock->ops->listen) (user->sock, queue_limit);
+  __mutex_unlock (&global_lock);
 
-  if (user->sock->state == SS_UNCONNECTED)
-    {
-      if (user->sock->ops && user->sock->ops->listen)
-	(*user->sock->ops->listen) (user->sock, queue_limit);
-      user->sock->flags |= SO_ACCEPTCON;
-      mutex_unlock (&global_lock);
-      return 0;
-    }
-  else
-    {
-      mutex_unlock (&global_lock);
-      return EINVAL;
-    }
+  return err;
 }
 
 error_t
@@ -114,47 +111,43 @@ S_socket_accept (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  sock = user->sock;
+
+  __mutex_lock (&global_lock);
 
   become_task (user);
 
-  sock = user->sock;
-  newsock = 0;
-  err = 0;
-
-  if ((sock->state != SS_UNCONNECTED)
-      || (!(sock->flags & SO_ACCEPTCON)))
-    err = EINVAL;
-  else if (!(newsock = sock_alloc ()))
+  newsock = sock_alloc ();
+  if (!newsock)
     err = ENOMEM;
+  else
+    {
+      newsock->type = sock->type;
 
-  if (err)
-    goto out;
+      err = - (*sock->ops->dup) (newsock, sock);
+      if (!err)
+	err = - (*sock->ops->accept) (sock, newsock, sock->flags);
 
-  newsock->type = sock->type;
-  newsock->ops = sock->ops;
+      if (!err)
+	/* In Linux there is a race here with the socket closing before the
+	   ops->getname call we do in make_sockaddr_port.  Since we still
+	   have the world locked, this shouldn't be an issue for us.  */
+	err = make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
 
-  err = - (*sock->ops->dup) (newsock, sock);
-  if (err)
-    goto out;
+      if (!err)
+	{
+	  newuser = make_sock_user (newsock, user->isroot, 0);
+	  *new_port = ports_get_right (newuser);
+	  *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
+	  ports_port_deref (newuser);
+	}
 
-  err = - (*sock->ops->accept) (sock, newsock, sock->userflags);
-  if (err)
-    goto out;
+      if (err)
+	sock_release (newsock);
+    }
 
-  err = make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
-  if (err)
-    goto out;
+  __mutex_unlock (&global_lock);
 
-  newuser = make_sock_user (newsock, user->isroot, 0);
-  *new_port = ports_get_right (newuser);
-  *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newuser);
-
- out:
-  if (err && newsock)
-    sock_release (newsock);
-  mutex_unlock (&global_lock);
   return err;
 }
 
@@ -170,25 +163,14 @@ S_socket_connect (struct sock_user *user,
 
   sock = user->sock;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
 
   become_task (user);
 
-  err = 0;
+  err = - (*sock->ops->connect) (sock, &addr->address, addr->address.sa_len,
+				 sock->flags);
 
-  if (sock->state == SS_CONNECTED
-      && sock->type != SOCK_DGRAM)
-    err = EISCONN;
-  else if (sock->state != SS_UNCONNECTED
-	   && sock->state != SS_CONNECTING
-	   && sock->state != SS_CONNECTED)
-    err = EINVAL;
-
-  if (!err)
-    err = - (*sock->ops->connect) (sock, addr->address, addr->len,
-				   sock->userflags);
-
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   /* MiG should do this for us, but it doesn't. */
   if (!err)
@@ -208,10 +190,11 @@ S_socket_bind (struct sock_user *user,
   if (! addr)
     return EADDRNOTAVAIL;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
-  err = - (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
-  mutex_unlock (&global_lock);
+  err = - (*user->sock->ops->bind) (user->sock,
+				    &addr->address, addr->address.sa_len);
+  __mutex_unlock (&global_lock);
 
   /* MiG should do this for us, but it doesn't. */
   if (!err)
@@ -228,10 +211,10 @@ S_socket_name (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
   make_sockaddr_port (user->sock, 0, addr_port, addr_port_name);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -245,10 +228,10 @@ S_socket_peername (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
   err = make_sockaddr_port (user->sock, 1, addr_port, addr_port_name);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   return err;
 }
@@ -262,7 +245,7 @@ S_socket_connect2 (struct sock_user *user1,
   if (!user1 || !user2)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
 
   become_task (user1);
 
@@ -274,15 +257,7 @@ S_socket_connect2 (struct sock_user *user1,
   else
     err = - (*user1->sock->ops->socketpair) (user1->sock, user2->sock);
 
-  if (!err)
-    {
-      user1->sock->conn = user2->sock;
-      user2->sock->conn = user1->sock;
-      user1->sock->state = SS_CONNECTED;
-      user2->sock->state = SS_CONNECTED;
-    }
-
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   /* MiG should do this for us, but it doesn't. */
   if (!err)
@@ -299,23 +274,30 @@ S_socket_create_address (mach_port_t server,
 			 mach_port_t *addr_port,
 			 mach_msg_type_name_t *addr_port_type)
 {
-  struct sock_addr *addr;
   error_t err;
+  struct sock_addr *addrstruct;
+  const struct sockaddr *const sa = (void *) data;
 
   if (sockaddr_type != AF_INET)
     return EAFNOSUPPORT;
+  if (sa->sa_family != sockaddr_type
+      || data_len < offsetof (struct sockaddr, sa_data))
+    return EINVAL;
 
   err = ports_create_port (addrport_class, pfinet_bucket,
-			   sizeof (struct sock_addr) + data_len, &addr);
+			   (offsetof (struct sock_addr, address)
+			    + data_len), &addrstruct);
   if (err)
     return err;
 
-  addr->len = data_len;
-  bcopy (data, addr->address, data_len);
+  memcpy (&addrstruct->address, data, data_len);
 
-  *addr_port = ports_get_right (addr);
+  /* BSD does not require incoming sa_len to be set, so we don't either.  */
+  addrstruct->address.sa_len = data_len;
+
+  *addr_port = ports_get_right (addrstruct);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (addr);
+  ports_port_deref (addrstruct);
   return 0;
 }
 
@@ -337,11 +319,12 @@ S_socket_whatis_address (struct sock_addr *addr,
   if (!addr)
     return EOPNOTSUPP;
 
-  *type = AF_INET;
-  if (*datalen < addr->len)
-    *data = mmap (0, addr->len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-  bcopy (addr->address, *data, addr->len);
-  *datalen = addr->len;
+  *type = addr->address.sa_family;
+  if (*datalen < addr->address.sa_len)
+    *data = mmap (0, addr->address.sa_len,
+		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  *datalen = addr->address.sa_len;
+  memcpy (*data, &addr->address, addr->address.sa_len);
 
   return 0;
 }
@@ -355,10 +338,10 @@ S_socket_shutdown (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
   err = - (*user->sock->ops->shutdown) (user->sock, direction);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   return err;
 }
@@ -375,18 +358,17 @@ S_socket_getopt (struct sock_user *user,
   if (! user)
     return EOPNOTSUPP;
 
-  /* XXX all options supported in the linux code are in fact ints.  */
-  *datalen = sizeof (int);
-
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
 
-  err =
-    - (user->sock->ops->getsockopt)(user->sock, level, option, *data, datalen);
+  err = - (level == SOL_SOCKET ? sock_getsockopt
+	   : *user->sock->ops->getsockopt)
+    (user->sock, level, option, *data, datalen);
 
-  assert (*datalen == sizeof (int));
+  __mutex_unlock (&global_lock);
 
-  mutex_unlock (&global_lock);
+  /* XXX option data not properly typed, needs byte-swapping for netmsgserver.
+     Most options are ints, some like IP_OPTIONS are bytesex-neutral.  */
 
   return err;
 }
@@ -403,13 +385,17 @@ S_socket_setopt (struct sock_user *user,
   if (! user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  /* XXX option data not properly typed, needs byte-swapping for netmsgserver.
+     Most options are ints, some like IP_OPTIONS are bytesex-neutral.  */
+
+  __mutex_lock (&global_lock);
   become_task (user);
 
-  err =
-    - (user->sock->ops->setsockopt)(user->sock, level, option, data, datalen);
+  err = - (level == SOL_SOCKET ? sock_setsockopt
+	   : *user->sock->ops->setsockopt)
+    (user->sock, level, option, data, datalen);
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   return err;
 }
@@ -427,6 +413,11 @@ S_socket_send (struct sock_user *user,
 	       mach_msg_type_number_t *amount)
 {
   int sent;
+  struct iovec iov = { data, datalen };
+  struct msghdr m = { msg_name: addr ? &addr->address : 0,
+		      msg_namelen: addr ? addr->address.sa_len : 0,
+		      msg_flags: flags,
+		      msg_controllen: 0, msg_iov: &iov, msg_iovlen: 1 };
 
   if (!user)
     return EOPNOTSUPP;
@@ -435,19 +426,12 @@ S_socket_send (struct sock_user *user,
   if (nports != 0 || controllen != 0)
     return EINVAL;
 
-  mutex_lock (&global_lock);
-
+  __mutex_lock (&global_lock);
   become_task (user);
-
-  if (addr)
-    sent = (*user->sock->ops->sendto) (user->sock, data, datalen,
-				       user->sock->userflags, flags,
-				       addr->address, addr->len);
-  else
-    sent = (*user->sock->ops->send) (user->sock, data, datalen,
-				     user->sock->userflags, flags);
-
-  mutex_unlock (&global_lock);
+  if (user->sock->flags & O_NONBLOCK)
+    m.msg_flags |= MSG_DONTWAIT;
+  sent = (*user->sock->ops->sendmsg) (user->sock, &m, datalen, 0);
+  __mutex_unlock (&global_lock);
 
   /* MiG should do this for us, but it doesn't. */
   if (addr && sent >= 0)
@@ -477,50 +461,53 @@ S_socket_recv (struct sock_user *user,
 	       int *outflags,
 	       mach_msg_type_number_t amount)
 {
-  int recvd;
-  char addr[128];
-  size_t addrlen = sizeof addr;
-  int didalloc = 0;
+  error_t err;
+  union { struct sockaddr_storage storage; struct sockaddr sa; } addr;
+  int alloced = 0;
+  struct iovec iov;
+  struct msghdr m = { msg_name: &addr.sa, msg_namelen: sizeof addr,
+		      msg_controllen: 0, msg_iov: &iov, msg_iovlen: 1 };
 
   if (!user)
     return EOPNOTSUPP;
 
-  /* For unused recvmsg interface */
-  *nports = 0;
-  *portstype = MACH_MSG_TYPE_COPY_SEND;
-  *controllen = 0;
-  *outflags = 0;
-
-  /* Instead of this, we should peek at the socket and only allocate
-     as much as necessary. */
-  if (*datalen < amount)
+  /* Instead of this, we should peek and the socket and only
+     allocate as much as necessary. */
+  if (amount > *datalen)
     {
-      vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
-      didalloc = 1;
+      *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      alloced = 1;
     }
 
-  mutex_lock (&global_lock);
+  iov.iov_base = *data;
+  iov.iov_len = amount;
+
+  __mutex_lock (&global_lock);
   become_task (user);
+  if (user->sock->flags & O_NONBLOCK)
+    flags |= MSG_DONTWAIT;
+  err = (*user->sock->ops->recvmsg) (user->sock, &m, amount, flags, 0);
+  __mutex_unlock (&global_lock);
 
-  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount,
-					 user->sock->userflags, flags,
-					 (struct sockaddr *)addr, &addrlen);
+  if (err < 0)
+    err = -err;
+  else
+    {
+      *datalen = err;
+      if (alloced && round_page (*datalen) < round_page (amount))
+	munmap (*data + round_page (*datalen),
+		round_page (amount) - round_page (*datalen));
+      err = S_socket_create_address (0, addr.sa.sa_family,
+				     (void *) &addr.sa, m.msg_namelen,
+				     addrport, addrporttype);
+      if (err && alloced)
+	munmap (*data, *datalen);
 
-  mutex_unlock (&global_lock);
+      *outflags = m.msg_flags;
+      *nports = 0;
+      *portstype = MACH_MSG_TYPE_COPY_SEND;
+      *controllen = 0;
+    }
 
-  if (recvd < 0)
-    return (error_t)-recvd;
-
-  *datalen = recvd;
-
-  if (didalloc && round_page (*datalen) < round_page (amount))
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t) (*data + round_page (*datalen)),
-		   round_page (amount) - round_page (*datalen));
-
-
-  S_socket_create_address (0, AF_INET, addr, addrlen, addrport,
-			   addrporttype);
-
-  return 0;
+  return err;
 }

@@ -1,0 +1,44 @@
+#ifndef _HACK_INTERRUPT_H_
+#define _HACK_INTERRUPT_H_
+
+#include <linux/netdevice.h>
+#include "pfinet.h"
+
+#define in_interrupt()		(0)
+#define synchronize_irq()	((void) 0)
+
+#define synchronize_bh()	((void) 0) /* XXX ? */
+
+/* The code that can call these are already entered holding
+   global_lock, which locks out the net_bh worker thread.  */
+#define start_bh_atomic()	((void) 0)
+#define end_bh_atomic()		((void) 0)
+/*
+extern struct mutex net_bh_lock;
+#define start_bh_atomic()	__mutex_lock (&net_bh_lock)
+#define end_bh_atomic()		__mutex_unlock (&net_bh_lock)
+*/
+
+/* See sched.c::net_bh_worker comments.  */
+extern struct condition net_bh_wakeup;
+
+#define NET_BH	0xb00bee51
+
+/* The only call to this ever reached is in net/core/dev.c::netif_rx,
+   to announce having enqueued a packet on `backlog'.  */
+static inline void
+mark_bh (int bh)
+{
+  assert (bh == NET_BH);
+  condition_broadcast (&net_bh_wakeup);
+}
+
+void net_bh (void);
+static inline void
+init_bh (int bh, void (*fn) (void))
+{
+  assert (bh == NET_BH);
+  assert (fn == &net_bh);
+}
+
+#endif

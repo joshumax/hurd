@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -19,10 +19,14 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "pfinet.h"
+
+#include <linux/wait.h>
+#include <linux/socket.h>
+#include <linux/net.h>
+#include <net/sock.h>
+
 #include "io_S.h"
 #include <netinet/in.h>
-#include <linux/wait.h>
-#include <linux-inet/sock.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -37,15 +41,19 @@ S_io_write (struct sock_user *user,
 	    mach_msg_type_number_t *amount)
 {
   error_t err;
+  struct iovec iov = { data, datalen };
+  struct msghdr m = { msg_name: 0, msg_namelen: 0, msg_flags: 0,
+		      msg_controllen: 0, msg_iov: &iov, msg_iovlen: 1 };
 
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
-  err = (*user->sock->ops->write) (user->sock, data, datalen,
-				   user->sock->userflags);
-  mutex_unlock (&global_lock);
+  if (user->sock->flags & O_NONBLOCK)
+    m.msg_flags |= MSG_DONTWAIT;
+  err = (*user->sock->ops->sendmsg) (user->sock, &m, datalen, 0);
+  __mutex_unlock (&global_lock);
 
   if (err < 0)
     err = -err;
@@ -67,6 +75,9 @@ S_io_read (struct sock_user *user,
 {
   error_t err;
   int alloced = 0;
+  struct iovec iov;
+  struct msghdr m = { msg_name: 0, msg_namelen: 0, msg_flags: 0,
+		      msg_controllen: 0, msg_iov: &iov, msg_iovlen: 1 };
 
   if (!user)
     return EOPNOTSUPP;
@@ -79,11 +90,16 @@ S_io_read (struct sock_user *user,
       alloced = 1;
     }
 
-  mutex_lock (&global_lock);
+  iov.iov_base = *data;
+  iov.iov_len = amount;
+
+  __mutex_lock (&global_lock);
   become_task (user);
-  err = (*user->sock->ops->read) (user->sock, *data, amount,
-				  user->sock->userflags);
-  mutex_unlock (&global_lock);
+  err = (*user->sock->ops->recvmsg) (user->sock, &m, amount,
+				     ((user->sock->flags & O_NONBLOCK)
+    				      ? MSG_DONTWAIT : 0),
+				     0);
+  __mutex_unlock (&global_lock);
 
   if (err < 0)
     err = -err;
@@ -117,13 +133,13 @@ S_io_readable (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
 
   /* We need to avoid calling the Linux ioctl routines,
      so here is a rather ugly break of modularity. */
 
-  sk = (struct sock *) user->sock->data;
+  sk = user->sock->sk;
   err = 0;
 
   /* Linux's af_inet.c ioctl routine just calls the protocol-specific
@@ -134,15 +150,7 @@ S_io_readable (struct sock_user *user,
     {
     case SOCK_STREAM:
     case SOCK_SEQPACKET:
-      /* These guts are copied from tcp.c:tcp_ioctl. */
-      if (sk->state == TCP_LISTEN)
-	err = EINVAL;
-      else
-	{
-	  sk->inuse = 1;
-	  *amount = tcp_readable (sk);
-	  release_sock (sk);
-	}
+      err = tcp_tiocinq (sk, amount);
       break;
 
     case SOCK_DGRAM:
@@ -161,7 +169,7 @@ S_io_readable (struct sock_user *user,
       break;
     }
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return err;
 }
 
@@ -172,12 +180,12 @@ S_io_set_all_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
-    user->sock->userflags |= O_NONBLOCK;
+    user->sock->flags |= O_NONBLOCK;
   else
-    user->sock->userflags &= ~O_NONBLOCK;
-  mutex_unlock (&global_lock);
+    user->sock->flags &= ~O_NONBLOCK;
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -190,18 +198,18 @@ S_io_get_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
-  sk = user->sock->data;
+  __mutex_lock (&global_lock);
+  sk = user->sock->sk;
 
   *bits = 0;
   if (!(sk->shutdown & SEND_SHUTDOWN))
     *bits |= O_WRITE;
   if (!(sk->shutdown & RCV_SHUTDOWN))
     *bits |= O_READ;
-  if (user->sock->userflags & O_NONBLOCK)
+  if (user->sock->flags & O_NONBLOCK)
     *bits |= O_NONBLOCK;
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -212,10 +220,10 @@ S_io_set_some_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
-    user->sock->userflags |= O_NONBLOCK;
-  mutex_unlock (&global_lock);
+    user->sock->flags |= O_NONBLOCK;
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -226,114 +234,62 @@ S_io_clear_some_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
-    user->sock->userflags &= ~O_NONBLOCK;
-  mutex_unlock (&global_lock);
+    user->sock->flags &= ~O_NONBLOCK;
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
 error_t
 S_io_select (struct sock_user *user,
-	     mach_port_t reply, mach_msg_type_name_t reply_type,
+	     mach_port_t reply,
+	     mach_msg_type_name_t reply_type,
 	     int *select_type)
 {
-  int avail = 0;
-  int cancel = 0;
-  int requested_notify = 0;
-  select_table table;
-  struct select_table_elt *elt, *nxt;
+  const int want = *select_type;
+  int avail;
 
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   become_task (user);
 
   /* In Linux, this means (supposedly) that I/O will never be possible.
      That's a lose, so prevent it from happening.  */
-  assert (user->sock->ops->select);
+  assert (user->sock->ops->poll);
 
-  /* The select function returns one if the specified I/O type is
-     immediately possible.  If it returns zero, then it is not
-     immediately possible, and it has called select_wait.  Eventually
-     it will wakeup the wait queue specified in the select_wait call;
-     at that point we should retry the call. */
-
-  for (;;)
+  avail = (*user->sock->ops->poll) ((void *) 0xdeadbeef,
+				    user->sock,
+				    (void *) 0xdeadbead);
+  if ((avail & want) == 0)
     {
-      condition_init (&table.master_condition);
-      table.head = 0;
+      ports_interrupt_self_on_notification (user, reply,
+					    MACH_NOTIFY_DEAD_NAME);
 
-      if (*select_type & SELECT_READ)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_IN, &table)
-		  ? SELECT_READ : 0);
-      if (*select_type & SELECT_WRITE)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_OUT, &table)
-		  ? SELECT_WRITE : 0);
-      if (*select_type & SELECT_URG)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_EX, &table)
-		  ? SELECT_URG : 0);
-
-      if (!avail)
+      do
 	{
-	  if (! requested_notify)
+	  /* Block until we are woken or cancelled.  */
+	  interruptible_sleep_on (user->sock->sk->sleep);
+	  if (signal_pending (current)) /* This means we were cancelled.  */
 	    {
-	      ports_interrupt_self_on_notification (user, reply,
-						    MACH_NOTIFY_DEAD_NAME);
-	      requested_notify = 1;
+	      __mutex_unlock (&global_lock);
+	      return EINTR;
 	    }
-	  cancel = hurd_condition_wait (&table.master_condition, &global_lock);
+	  avail = (*user->sock->ops->poll) ((void *) 0xdeadbeef,
+					    user->sock,
+					    (void *) 0xdeadbead);
 	}
-
-      /* Drop the conditions implications and structures allocated in the
-	 select table. */
-      for (elt = table.head; elt; elt = nxt)
-	{
-	  condition_unimplies (elt->dependent_condition,
-			       &table.master_condition);
-	  nxt = elt->next;
-	  free (elt);
-	}
-
-      if (avail)
-	{
-	  mutex_unlock (&global_lock);
-	  *select_type = avail;
-	  return 0;
-	}
-
-      if (cancel)
-	{
-	  mutex_unlock (&global_lock);
-	  mach_port_deallocate (mach_task_self (), reply);
-	  return EINTR;
-	}
-    }
-}
-
-/* Establish that the condition in WAIT_ADDRESS should imply
-   the condition in P.  Also, add us to the queue in P so
-   that the relation can be undone at the proper time. */
-void
-select_wait (struct wait_queue **wait_address, select_table *p)
-{
-  struct select_table_elt *elt;
-
-  /* tcp.c happens to use an uninitalized wait queue;
-     so this special hack is for that. */
-  if (*wait_address == 0)
-    {
-      *wait_address = malloc (sizeof (struct wait_queue));
-      condition_init (&(*wait_address)->c);
+      while ((avail & want) == 0);
     }
 
-  elt = malloc (sizeof (struct select_table_elt));
-  elt->dependent_condition = &(*wait_address)->c;
-  elt->next = p->head;
-  p->head = elt;
+  /* We got something.  */
+  *select_type = avail;
 
-  condition_implies (elt->dependent_condition, &p->master_condition);
+  __mutex_unlock (&global_lock);
+
+  return 0;
 }
 
 error_t
@@ -349,7 +305,9 @@ S_io_stat (struct sock_user *user,
   st->st_fsid = getpid ();
   st->st_ino = (ino_t) user->sock; /* why not? */
 
+  st->st_mode = S_IFSOCK | ACCESSPERMS;
   st->st_blksize = 512;		/* ???? */
+
   return 0;
 }
 
@@ -375,7 +333,7 @@ S_io_reauthenticate (struct sock_user *user,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, 0, 1);
 
   auth = getauth ();
@@ -408,7 +366,7 @@ S_io_reauthenticate (struct sock_user *user,
   mach_port_move_member (mach_task_self (), newuser->pi.port_right,
 			 pfinet_bucket->portset);
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
 
   ports_port_deref (newuser);
 
@@ -440,7 +398,7 @@ S_io_restrict_auth (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
 
   isroot = 0;
   if (user->isroot)
@@ -452,7 +410,7 @@ S_io_restrict_auth (struct sock_user *user,
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -465,12 +423,12 @@ S_io_duplicate (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, user->isroot, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -487,14 +445,14 @@ S_io_identity (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   if (user->sock->identity == MACH_PORT_NULL)
     {
       err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 				&user->sock->identity);
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  __mutex_unlock (&global_lock);
 	  return err;
 	}
     }
@@ -505,7 +463,7 @@ S_io_identity (struct sock_user *user,
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
   *fileno = (ino_t) user->sock;	/* matches S_io_stat above */
 
-  mutex_unlock (&global_lock);
+  __mutex_unlock (&global_lock);
   return 0;
 }
 

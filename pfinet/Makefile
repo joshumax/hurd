@@ -1,6 +1,5 @@
-# 
-#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-#   Written by Michael I. Bushnell.
+#
+#   Copyright (C) 1995,96,97,2000 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -18,21 +17,57 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
 
-dir := pfinet
-makemode := server
-LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
-	icmp.c igmp.c ip.c  \
-	proc.c protocol.c raw.c route.c skbuff.c sock.c \
-	tcp.c timer.c udp.c utils.c
-UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
-SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c \
-	io-ops.c socket-ops.c misc.c time.c options.c loopback.c
-MIGSRCS = ioServer.c socketServer.c startup_notifyServer.c
-OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
-LCLHDRS= config.h mapped-time.h mutations.h pfinet.h
-LINUXHDRS = arp.h datalink.h eth.h icmp.h ip.h ipx.h ipxcall.h p8022.h \
-	p8022call.h protocol.h psnap.h psnapcall.h rarp.h raw.h route.h \
-	snmp.h sock.h tcp.h udp.h
+dir		:= pfinet
+makemode	:= server
+
+core-srcs	:= datagram.c						      \
+		   dev.c						      \
+		   dev_mcast.c						      \
+		   dst.c						      \
+		   iovec.c						      \
+		   neighbour.c						      \
+		   skbuff.c						      \
+		   sock.c						      \
+		   utils.c
+arch-lib-srcs   := checksum.c old-checksum.c
+ethernet-srcs	:= eth.c
+ipv4-srcs	:= af_inet.c						      \
+		   arp.c						      \
+		   devinet.c						      \
+		   fib_frontend.c					      \
+		   fib_hash.c						      \
+		   fib_semantics.c					      \
+		   icmp.c						      \
+		   igmp.c						      \
+		   ip_forward.c						      \
+		   ip_fragment.c					      \
+		   ip_input.c						      \
+		   ip_options.c						      \
+		   ip_output.c						      \
+		   ip_sockglue.c					      \
+		   protocol.c						      \
+		   raw.c						      \
+		   route.c						      \
+		   syncookies.c						      \
+		   sysctl_net_ipv4.c					      \
+		   tcp.c						      \
+		   tcp_input.c						      \
+		   tcp_ipv4.c						      \
+		   tcp_output.c						      \
+		   tcp_timer.c						      \
+		   timer.c						      \
+		   udp.c						      \
+		   utils.c
+LINUXSRCS	= $(core-srcs) $(ethernet-srcs) $(ipv4-srcs) $(arch-lib-srcs)
+SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
+		  io-ops.c socket-ops.c misc.c time.c options.c loopback.c \
+		  kmem_cache.c stubs.c
+MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c
+OBJS		:= $(patsubst %.c,%.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
+LCLHDRS		= config.h mapped-time.h mutations.h pfinet.h
+LINUXHDRS	= arp.h datalink.h eth.h icmp.h ip.h ipx.h ipxcall.h p8022.h \
+		  p8022call.h protocol.h psnap.h psnapcall.h \
+		  rarp.h raw.h route.h snmp.h sock.h tcp.h udp.h
 FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	icmp.h if.h if_arp.h if_ether.h igmp.h in.h inet.h interrupt.h \
 	ip.h ip_fw.h ipx.h kernel.h major.h malloc.h mm.h net.h netdevice.h \
@@ -46,9 +81,14 @@ target = pfinet
 
 include ../Makeconf
 
-vpath %.c $(srcdir)/linux-inet
+vpath %.c $(addprefix $(srcdir)/linux-src/net/,core ethernet ipv4)
+vpath %.c $(srcdir)/linux-src/arch/$(asm_syntax)/lib
+vpath %.S $(srcdir)/linux-src/arch/$(asm_syntax)/lib
 
-CPPFLAGS += -imacros $(srcdir)/config.h
+CPPFLAGS += '-D_HURD_SYSTYPE="$(asm_syntax)"'	\
+	    -imacros $(srcdir)/config.h		\
+	    -I$(srcdir)/glue-include		\
+	    -I$(srcdir)/linux-src/include
 
 io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h

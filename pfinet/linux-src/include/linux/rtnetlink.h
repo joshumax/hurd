@@ -49,7 +49,7 @@
 
 #define	RTM_MAX		(RTM_BASE+31)
 
-/* 
+/*
    Generic structure for encapsulation optional route information.
    It is reminiscent of sockaddr, but with sa_family replaced
    with attribute type.
@@ -90,7 +90,7 @@ struct rtmsg
 
 	unsigned char		rtm_table;	/* Routing table id */
 	unsigned char		rtm_protocol;	/* Routing protocol; see below	*/
-	unsigned char		rtm_scope;	/* See below */	
+	unsigned char		rtm_scope;	/* See below */
 	unsigned char		rtm_type;	/* See below	*/
 
 	unsigned		rtm_flags;
@@ -636,15 +636,19 @@ extern __inline__ void rtnl_exunlock(void)
 
 extern __inline__ void rtnl_shlock(void)
 {
+#ifndef _HURD_
 	while (atomic_read(&rtnl_rlockct))
 		sleep_on(&rtnl_wait);
 	atomic_inc(&rtnl_rlockct);
+#endif
 }
 
 extern __inline__ void rtnl_shunlock(void)
 {
+#ifndef _HURD_
 	if (atomic_dec_and_test(&rtnl_rlockct))
 		wake_up(&rtnl_wait);
+#endif
 }
 
 extern __inline__ void rtnl_exlock(void)

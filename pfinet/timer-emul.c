@@ -41,7 +41,7 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 
   timer_thread = mach_thread_self ();
 
-  mutex_lock (&global_lock);
+  __mutex_lock (&global_lock);
   while (1)
     {
       int jiff = jiffies;
@@ -53,13 +53,13 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
       else
 	wait = ((timers->expires - jiff) * 1000) / HZ;
 
-      mutex_unlock (&global_lock);
+      __mutex_unlock (&global_lock);
 
       mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT
 		       | (wait == -1 ? 0 : MACH_RCV_TIMEOUT)),
 		0, 0, recv, wait, MACH_PORT_NULL);
 
-      mutex_lock (&global_lock);
+      __mutex_lock (&global_lock);
 
       while (timers->expires < jiffies)
 	{
@@ -69,10 +69,10 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 
 	  timers = timers->next;
 	  if (timers)
-	    timers->prevp = &timers;
+	    timers->prev = &timers;
 
 	  tp->next = 0;
-	  tp->prevp = 0;
+	  tp->prev = 0;
 
 	  (*tp->function) (tp->data);
 	}
@@ -91,15 +91,15 @@ add_timer (struct timer_list *timer)
     if ((*tp)->expires > timer->expires)
       {
 	timer->next = *tp;
-	timer->next->prevp = &timer->next;
-	timer->prevp = tp;
+	timer->next->prev = &timer->next;
+	timer->prev = tp;
 	*tp = timer;
 	break;
       }
   if (!*tp)
     {
       timer->next = 0;
-      timer->prevp = tp;
+      timer->prev = tp;
       *tp = timer;
     }
 
@@ -122,19 +122,29 @@ add_timer (struct timer_list *timer)
 int
 del_timer (struct timer_list *timer)
 {
-  if (timer->prevp)
+  if (timer->prev)
     {
-      *timer->prevp = timer->next;
+      *timer->prev = timer->next;
       if (timer->next)
-	timer->next->prevp = timer->prevp;
+	timer->next->prev = timer->prev;
 
       timer->next = 0;
-      timer->prevp = 0;
+      timer->prev = 0;
       return 1;
     }
   else
     return 0;
 }
+
+void
+mod_timer (struct timer_list *timer, unsigned long expires)
+{
+  /* Should optimize this.  */
+  del_timer (timer);
+  timer->expires = expires;
+  add_timer (timer);
+}
+
 
 void
 init_timer (struct timer_list *timer)

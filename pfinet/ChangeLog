@@ -1,3 +1,217 @@
+2000-02-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	Complete overhaul of pfinet based on the IPv4 networking code from the
+	Linux 2.2.12 kernel sources.  This page describes a single unified set
+	of interdependent changes, but there are so many changes that I have
+	broken up the log entry into paragraphs based on rough topical
+	divisions of the work involved.
+
+	Subset of verbatim Linux 2.2.12 sources imported on a vendor branch.
+	* linux-src: New directory, see README for details.
+	* README: New file, describes linux-src layout and procedures for
+	tracking Linux source updates.
+
+	Light modifications to linux-src files to avoid really bending over
+	backwards with the glue macros.  All modifications to files in
+	linux-src are conditionalized by #ifdef _HURD_.
+	* linux-src/include/linux/net.h [_HURD_] (struct socket): New members
+	refcnt and identity; elide members fasync_list, file.
+	* linux-src/include/linux/rtnetlink.h [! CONFIG_RTNETLINK]
+	(rtnl_shlock, rtnl_shunlock) [! _HURD_]: Conditionalize contents on
+	this, making these no-ops #ifdef _HURD_.
+	* linux-src/net/core/dev.c [_HURD_] (dev_ioctl): Don't define the
+	function, instead #define it to 0.
+	* linux-src/net/ipv4/af_inet.c [_HURD_] (inet_ioctl): Likewise.
+	* linux-src/net/ipv4/arp.c [_HURD_] (arp_ioctl): Likewise.
+	* linux-src/net/ipv4/udp.c [_HURD_] (udp_ioctl): Likewise.
+	* linux-src/net/ipv4/tcp.c [_HURD_] (tcp_ioctl): Likewise.
+	[_HURD_] (tcp_tiocinq): New function, TIOCINQ code from tcp_ioctl.
+	* linux-src/net/ipv4/devinet.c [_HURD_] (devinet_ioctl): Don't define
+	the function, instead #define it to 0.
+	[_HURD_] (configure_device): New function, cobbled from SIOCSIFADDR
+	and SIOCSIFNETMASK code from devinet_ioctl.
+
+	* glue-include/asm, glue-include/linux: New directories.
+	These contain glue kludge headers that replace all of the
+	Linux <asm/*.h> headers except checksum.h, and several of
+	the Linux <linux/*.h> headers (the remainder come from
+	linux-src/include/linux and are mostly unmodified).
+	* glue-include/asm/atomic.h: New file, glue replacement header.
+	* glue-include/asm/bitops.h: New file, glue replacement header.
+	* glue-include/asm/byteorder.h: New file, glue replacement header.
+	* glue-include/asm/checksum.h: New file, glue replacement header.
+	* glue-include/asm/errno.h: New file, glue replacement header.
+	* glue-include/asm/hardirq.h: New file, glue replacement header.
+	* glue-include/asm/init.h: New file, glue replacement header.
+	* glue-include/asm/segment.h: New file, glue replacement header.
+	* glue-include/asm/spinlock.h: New file, glue replacement header.
+	* glue-include/asm/system.h: New file, glue replacement header.
+	* glue-include/asm/types.h: New file, glue replacement header.
+	* glue-include/asm/uaccess.h: New file, glue replacement header.
+	* glue-include/linux/autoconf.h: New file, glue replacement header.
+	* glue-include/linux/binfmts.h: New file, glue replacement header.
+	* glue-include/linux/config.h: New file, glue replacement header.
+	* glue-include/linux/errno.h: New file, glue replacement header.
+	* glue-include/linux/fcntl.h: New file, glue replacement header.
+	* glue-include/linux/fs.h: New file, glue replacement header.
+	* glue-include/linux/in.h: New file, glue replacement header.
+	* glue-include/linux/in6.h: New file, glue replacement header.
+	* glue-include/linux/interrupt.h: New file, glue replacement header.
+	* glue-include/linux/ioctl.h: New file, glue replacement header.
+	* glue-include/linux/ipv6.h: New file, glue replacement header.
+	* glue-include/linux/kernel.h: New file, glue replacement header.
+	* glue-include/linux/limits.h: New file, glue replacement header.
+	* glue-include/linux/major.h: New file, glue replacement header.
+	* glue-include/linux/malloc.h: New file, glue replacement header.
+	* glue-include/linux/mm.h: New file, glue replacement header.
+	* glue-include/linux/param.h: New file, glue replacement header.
+	* glue-include/linux/personality.h: New file, glue replacement header.
+	* glue-include/linux/poll.h: New file, glue replacement header.
+	* glue-include/linux/proc_fs.h: New file, glue replacement header.
+	* glue-include/linux/sched.h: New file, glue replacement header.
+	* glue-include/linux/slab.h: New file, glue replacement header.
+	* glue-include/linux/socket.h: New file, glue replacement header.
+	* glue-include/linux/sockios.h: New file, glue replacement header.
+	* glue-include/linux/stat.h: New file, glue replacement header.
+	* glue-include/linux/string.h: New file, glue replacement header.
+	* glue-include/linux/termios.h: New file, glue replacement header.
+	* glue-include/linux/time.h: New file, glue replacement header.
+	* glue-include/linux/timer.h: New file, glue replacement header.
+	* glue-include/linux/timex.h: New file, glue replacement header.
+	* glue-include/linux/types.h: New file, glue replacement header.
+	* glue-include/linux/un.h: New file, glue replacement header.
+	* glue-include/linux/version.h: New file, glue replacement header.
+	* glue-include/linux/wait.h: New file, glue replacement header.
+
+	* kmem_cache.c: New file.  Glue code replaces Linux kmem_cache_t et al.
+	* stubs.c: New file.  No-op functions and stub variables for a few
+	things the Linux networking code needs to link.
+
+	* Makefile (core-srcs, arch-lib-srcs, ethernet-srcs, ipv4-srcs): New
+	variables, listing sources used from linux-src subdirectories.
+	(LINUXSRCS): Define using those.
+	(SRCS): Remove devices.c; add kmem_cache.c, stubs.c.
+	(UNUSEDSRC): Variable removed.
+	(vpath %.c): Remove vpath for $(srcdir)/linux-inet directory.
+	Add vpaths for $(srcdir)/linux-src subdirectories.
+	(CPPFLAGS): Add -D_HURD_SYSTYPE defining it to $(asm_syntax) as a
+	double-quoted string.  Add -I's for glue-include and linux-src/include.
+
+	* pfinet.h: Include <sys/socket.h>, and not <linux/netdevice.h>.
+	(master_device): Remove decl.
+	(global_lock, packet_queue_lock): Remove common defns.
+	(global_lock, net_bh_lock): Declare them as externs.
+	(struct sockaddr): Remove len member, make address member just a
+	struct sockaddr rather than a 0-length array.
+	(setup_loopback_device, become_task_protid, become_task): Remove decls.
+	(ethernet_initialize): Declare it.
+	(input_work_thread): Remove decl.
+	(net_bh_thread): Declare it.
+	(tcp_readable): Remove decl.
+	(tcp_tiocinq): Declare it.
+
+	* config.h: Rewritten based on Linux 2.2.12 set of CONFIG_* options.
+	(CONFIG_NET, CONFIG_INET, CONFIG_SKB_LARGE): These are the only
+	Linux config options we set.
+	(CONFIG_IP_NOSIOCRT): New macro (not a proper config option, but
+	used conveniently in the code).
+	* ethernet.c (ethernet_set_multi): Take only one parameter.
+	Remove assert, since we always get passed IGMP_ALL_HOSTS.
+	(ethernet_thread): Make static.
+	(ethernet_demuxer): Use __mutex_lock in place of mutex_lock, so as to
+	get cthreads instead of linux/spinlock.h glue macros.  Lock
+	net_bh_lock instead of global_lock.  Set SKB->protocol with
+	eth_type_trans before calling netif_rx.
+	(ethernet_initialize): New function, one-time initialization broken
+	out of ethernet_open.
+	(ethernet_open): Ports setup moved to ethernet_initialize.
+	Don't use `errno' to avoid glue conflicts.
+	Use get_privileged_ports here to get the master device port, and
+	deallocate it after calling device_open.
+	(ethernet_xmit): Use assert_perror.  Only one arg to dev_kfree_skb now.
+	(setup_ethernet_device): Change initializations for structure changes.
+	Call dev_init_buffers and register_netdevice on the device.
+	* timer-emul.c (all functions): Use __mutex_lock instead of mutex_lock.
+	Adjust for renaming of `prevp' member to `prev' in struct timer_list.
+	(mod_timer): New function.
+	* socket.c (proto_ops): Variable removed.
+	(net_families): New variable replaces it.
+	(sock_register): Rewritten for new calling convention, set
+	net_families rather than proto_ops.
+	(make_sock_user, clean_socketport, sock_alloc, sock_release):
+	Functions moved here from misc.c.
+	* sched.c (packet_queue_lock): Variable removed.
+	(net_bh_lock, net_bh_wakeup): New variables.
+	(current): Variable removed (now a macro in the glue headers).
+	(interruptible_sleep_on, wake_up_interruptible): Functions removed.
+	They are replaced by inlines in the glue headers.
+	(become_task, become_task_protid): Functions removed; they are
+	replaced by macros in glue-include/linux/sched.h.
+	(net_bh_worker): New function.
+	* loopback.c: Completely rewritten, mostly copied from linux-2.2.12's
+	drivers/net/loopback.c source file.
+
+	* io-ops.c (all functions): Use __mutex_lock in place of mutex_lock.
+	(S_io_write): Call ops->sendmsg instead of ops->write,
+	which no longer exists.  If O_NONBLOCK is set, set MSG_DONTWAIT in
+	msg_flags.
+	(S_io_read): Call ops->recvmsg instead of ops->read,
+	which no longer exists  If O_NONBLOCK is set, pass MSG_DONTWAIT.
+	(S_io_readable): Use USER->sock->data in place of USER->sock->sk.
+	For SOCK_STREAM and SOCK_SEQPACKET types, call tcp_tiocinq.
+	(S_io_set_all_openmodes, S_io_get_openmodes, S_io_set_some_openmodes,
+	S_io_clear_some_openmodes): Member USER->sock->userflags is now
+	renamed USER->sock->flags.
+	(S_io_select): Completely rewritten using ops->poll.
+	(select_wait): Function removed.
+	(S_io_stat): Set st_mode to reflect S_IFSOCK.
+	* socket-ops.c (all functions): Use __mutex_lock instead of mutex_lock.
+	(S_socket_create): Don't set SOCK->ops or call SOCK->ops->create.
+	Instead, call net_families[PF_INET]->create.
+	(S_socket_listen): Remove extra checks; just call ops->listen.
+	(S_socket_accept): Remove extra checks before ops->accept call.
+	Avoid use of goto.
+	(S_socket_connect): Remove extra checks; just call ops->connect.
+	(S_socket_bind): Adjust for struct sock_addr changes.
+	(S_socket_create_address): Likewise.
+	(S_socket_whatis_address): Likewise.
+	(S_socket_connect2): Don't diddle data structures after
+	ops->socketpair call.
+	(S_socket_getopt): Use sock_getsockopt if LEVEL is SOL_SOCKET.
+	Accept any data size, not just sizeof (int).
+	(S_socket_setopt): Use sock_setsockopt if LEVEL is SOL_SOCKET.
+	(S_socket_send): Always use ops->sendmsg instead of ops->send or
+	ops->sendto, which no longer exist.  If O_NONBLOCK is set, set
+	MSG_DONTWAIT in msg_flags.
+	(S_socket_recv): Always use ops->recvmsg instead of ops->recv, which
+	no longer exists.  If O_NONBLOCK is set, set MSG_DONTWAIT in flags.
+	Check for error from S_socket_create_address.
+
+	* main.c (find_device): Don't try to set ether_dev.pa_mask (it's gone).
+	(main): Don't call init_devices.  Call ethernet_initialize.
+	Start net_bh_worker instead of input_work_thread.  Don't call
+	setup_loopback_device.  Instead, take global_lock, do prepare_current,
+	and then call sk_init, skb_init, inet_proto_init, and net_dev_init.
+	Keep global_lock held while calling argp_parse.
+	Call arrange_shutdown_notification only after all that.
+	Fix error call for "contacting parent" to pass ERR instead of errno.
+	* options.c (ADDR): #undef before defining macro.
+	(parse_opt): #if 0 out EDESTADDRREQ check (I don't understand it).
+	To apply settings, call configure_devices.
+	(ADD_ADDR_OPT): #if 0 --address and --netmask options.  Needs fixed.
+	* misc.c (make_sock_user, clean_socketport, sock_alloc, sock_release):
+	Functions moved to socket.c.
+	(sock_release_peer): Function removed.
+	(make_sockaddr_port): Use struct sockaddr_storage to size buffer.
+	Fix size calculation for new struct sock_addr layout.
+	Initialize sa_family and sa_len of new struct sock_addr.
+
+	Remove the old Linux (2.0.??) network stack and the glue code for it.
+	* linux-inet, asm, linux: Directories and all files removed.
+	Some of the new files in glue-include came from the old glue headers
+	in the asm and linux directories, but most were substantially modified.
+	* devices.c: File removed.  The equivalent glue is now elsewhere.
+
 2000-01-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mapped-time.h: Include <maptime.h>.
