@@ -5,7 +5,6 @@ STILL TO CATEGORIZE: XXX
 * gperf (cperf 2.1a) [hacked src/Makefile and src/stderr.c slightly]
 	[substitute with libg++ version?]
 libc
-mach
 
 
 
@@ -106,6 +105,7 @@ serverboot
 * sh-utils (1.12m from alpha.gnu.ai.mit.edu; unmodified)
 * make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
 * gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
+* mach4 (UK22, slighly hacked)
 
 
 
