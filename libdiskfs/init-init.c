@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <device/device.h>
 #include <hurd/fsys.h>
 #include <stdio.h>
+#include <maptime.h>
 
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
@@ -46,24 +47,27 @@ error_t
 diskfs_init_diskfs (void)
 {
   error_t err;
-  device_t timedev;
-  memory_object_t obj;
-  mach_port_t host, dev_master;
   
-  err = get_privileged_ports (&host, &dev_master);
+  if (diskfs_boot_flags)
+    /* This is a boot filesystem, we have to do some things specially.  */
+    {
+      mach_port_t host;
+      err = get_privileged_ports (&host, 0);
+      if (! err)
+	{
+	  diskfs_default_pager = MACH_PORT_NULL;
+	  err = vm_set_default_memory_manager (host, &diskfs_default_pager);
+	  mach_port_deallocate (mach_task_self (), host);
+
+	  if (!err)
+	    err = maptime_map (1, 0, &diskfs_mtime);
+	}
+    }
+  else
+    err = maptime_map (0, 0, &diskfs_mtime);
+
   if (err)
     return err;
-
-  diskfs_default_pager = MACH_PORT_NULL;
-  vm_set_default_memory_manager (host, &diskfs_default_pager);
-
-  device_open (dev_master, 0, "time", &timedev);
-  device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
-  vm_map (mach_task_self (), (vm_address_t *)&diskfs_mtime,
-	  sizeof (mapped_time_value_t), 0, 1, obj, 0, 0, VM_PROT_READ,
-	  VM_PROT_READ, VM_INHERIT_NONE);
-  mach_port_deallocate (mach_task_self (), timedev);
-  mach_port_deallocate (mach_task_self (), obj);
 
   diskfs_auth_server_port = getauth ();
 
@@ -72,9 +76,6 @@ diskfs_init_diskfs (void)
   diskfs_initboot_class = ports_create_class (0, 0);
   diskfs_execboot_class = ports_create_class (0, 0);
   diskfs_port_bucket = ports_create_bucket ();
-
-  mach_port_deallocate (mach_task_self (), host);
-  mach_port_deallocate (mach_task_self (), dev_master);
 
   return 0;
 }
