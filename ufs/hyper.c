@@ -28,8 +28,12 @@ get_hypermetadata (void)
 {
   error_t err;
   
-  sblock = (struct fs *) disk_image + SBOFF;
+  sblock = malloc (SBSIZE);
 
+  assert (!diskfs_catch_exception ());
+  bcopy (disk_image + SBOFF, sblock, SBSIZE);
+  diskfs_end_catch_exception ();
+  
   if (sblock->fs_magic != FS_MAGIC)
     {
       fprintf (stderr, "Bad magic number %#lx (should be %#x)\n",
@@ -66,32 +70,23 @@ get_hypermetadata (void)
   if (sblock->fs_interleave < 1)
     sblock->fs_interleave = 1;
 
-  if (sblock->fs_postblformat == FS_42POSTBLFMT
-      || sblock->fs_inodefmt < FS_44INODEFMT)
+  if (sblock->fs_postblformat == FS_42POSTBLFMT)
+    sblock->fs_nrpos = 8;
+
+  if (sblock->fs_inodefmt < FS_44INODEFMT)
     {
-      /* Make a local copy so we don't write our different
-	 values into the old format disk. */
-      sblock = malloc (SBSIZE);
-      bcopy (disk_image + SBOFF, sblock, SBSIZE);
+      quad_t sizepb = sblock->fs_bsize;
+      int i;
 
-      if (sblock->fs_postblformat == FS_42POSTBLFMT)
-	sblock->fs_nrpos = 8;
-
-      if (sblock->fs_inodefmt < FS_44INODEFMT)
+      oldformat = 1;
+      sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
+      for (i = 0; i < NIADDR; i++)
 	{
-	  quad_t sizepb = sblock->fs_bsize;
-	  int i;
-
-	  oldformat = 1;
-	  sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
-	  for (i = 0; i < NIADDR; i++)
-	    {
-	      sizepb *= NINDIR (sblock);
-	      sblock->fs_maxfilesize += sizepb;
-	    }
-	  sblock->fs_qbmask = ~sblock->fs_bmask;
-	  sblock->fs_qfmask = ~sblock->fs_fmask;
+	  sizepb *= NINDIR (sblock);
+	  sblock->fs_maxfilesize += sizepb;
 	}
+      sblock->fs_qbmask = ~sblock->fs_bmask;
+      sblock->fs_qfmask = ~sblock->fs_fmask;
     }
 
   /* Find out if we support the 4.4 symlink/dirtype extension */
@@ -100,21 +95,35 @@ get_hypermetadata (void)
   else
     direct_symlink_extension = 0;
 
-  csum = (struct csum *) 
-    (disk_image
-     + howmany (sblock->fs_cssize, sblock->fs_fsize) * sblock->fs_fsize);
+  csum = malloc (fsaddr (sblock, howmany (sblock->fs_cssize, 
+					  sblock->fs_fsize)));
+  
+  assert (!diskfs_catch_exception ());
+  bcopy (disk_image + fsaddr (sblock, sblock->fs_csaddr),
+	 csum,
+	 fsaddr (sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
+  diskfs_end_catch_exception ();
 }
 
-/* Write the superblock and cg summary info to disk.  If WAIT is set,
-   we must wait for everything to hit the disk; if CLEAN is set, then
-   mark the clean bit.  */
+/* We don't need this callback; all our data is backed by pagers. */
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
-  error_t (*writefn) (daddr_t, vm_address_t, long);
-  writefn = (wait ? dev_write_sync : dev_write);
+}
+
+/* Copy the sblock and csum into the disk */
+void
+copy_sblock ()
+{
+  assert (!diskfs_catch_exception ());
 
   spin_lock (&alloclock);
+  if (csum_dirty)
+    {
+      bcopy (csum, disk_image + fsaddr (sblock, sblock->fs_csaddr),
+	     fsaddr (sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
+      csum_dirty = 0;
+    }
 
   if (clean && !diskfs_readonly)
     {
@@ -138,11 +147,10 @@ diskfs_set_hypermetadata (int wait, int clean)
 	      sbcopy->fs_qbmask = -1;
 	      sbcopy->fs_qfmask = -1;
 	    }
-	  bcopy (sbcopy, disk_image + SBOFF, SBSIZE)
-	  (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
+	  bcopy (sbcopy, disk_image + SBOFF, SBSIZE);
 	}
       else
-	(*writefn) (SBLOCK, (vm_address_t) sblock, SBSIZE);
+	bcopy (sblock, disk_image + SBOFF, SBSIZE);
       sblock_dirty = 0;
     }
 
@@ -151,8 +159,9 @@ diskfs_set_hypermetadata (int wait, int clean)
       sblock->fs_clean = 0;
       sblock_dirty = 1;
     }
-  
+
   spin_unlock (&alloclock);
+  diskfs_end_catch_exception ();
 }
 
 
