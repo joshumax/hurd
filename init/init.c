@@ -296,7 +296,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).
    Return the task that we started. */
 task_t
-run_for_real (char *filename, char *args, int arglen)
+run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 {
   file_t file;
   error_t err;
@@ -328,6 +328,13 @@ run_for_real (char *filename, char *args, int arglen)
   proc_child (procserver, task);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
   proc_setsid (default_ports[INIT_PORT_PROC]);
+  if (ctty != MACH_PORT_NULL)
+    {
+      int pid;
+      term_getctty (ctty, &default_ports[INIT_PORT_CTTYID]);
+      proc_task2pid (procserver, task, &pid);
+      io_mod_owner (ctty, -pid);
+    }
   if (bootstrap_args & RB_KDB)
     {
       printf ("Pausing for %s\n", filename);
@@ -347,6 +354,13 @@ run_for_real (char *filename, char *args, int arglen)
 		   NULL, 0, /* No info in init ints.  */
 		   NULL, 0, NULL, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
+  if (ctty != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), 
+			    default_ports[INIT_PORT_CTTYID]);
+      default_ports[INIT_PORT_CTTYID] = MACH_PORT_NULL;
+    }
+      
   mach_port_deallocate (mach_task_self (), file);
   return err ? MACH_PORT_NULL : task;
 }
@@ -593,10 +607,12 @@ launch_single_user ()
 
   if (run_dev)
     /* Run the device server */
-    termtask = run_for_real (devname, devname, sizeof (devname));
+    termtask = run_for_real (devname, devname, sizeof (devname), 
+			     MACH_PORT_NULL);
   else  
     /* Run the terminal driver and open it for the shell. */
-    termtask = run_for_real (terminal, terminal, sizeof (terminal));
+    termtask = run_for_real (terminal, terminal, sizeof (terminal),
+			     MACH_PORT_NULL);
 
   printf (" dev");
   fflush (stdout);
@@ -615,7 +631,6 @@ launch_single_user ()
 	  if (term && st.st_fstype == FSTYPE_TERM)
 	    {
 	      /* Open the terminal for real */
-	      mach_port_deallocate (mach_task_self (), term);
 	      
 	      /* Open console for our use  */
 	      fd = open ("/dev/console", O_READ);
@@ -653,13 +668,16 @@ launch_single_user ()
     mach_port_deallocate (mach_task_self (), termtask);
 
   /* Run pipes. */
-  foo = run_for_real (pipes, pipes, sizeof (pipes));
+  foo = run_for_real (pipes, pipes, sizeof (pipes), MACH_PORT_NULL);
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
   printf (" pipes");
   fflush (stdout);
 
-  foo = run_for_real (shell, shell, sizeof (shell));
+  /* The shell needs a real controlling terminal, so set that up here. */
+  
+  foo = run_for_real (shell, shell, sizeof (shell), term);
+  mach_port_deallocate (mach_task_self (), term);
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
   printf (" shell.\n");
