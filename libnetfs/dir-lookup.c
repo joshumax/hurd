@@ -326,6 +326,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      create = 0;
 	    }
 	  netfs_nput (np);
+	  mutex_lock (&dnp->lock);
 	  np = 0;
 	}
       else
