@@ -1,6 +1,6 @@
 /* Set options in a running filesystem
 
-   Copyright (C) 1995,96,97,98,2002 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2002,2004 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -43,7 +43,7 @@ static struct argp_option options[] =
 static char *args_doc = "FILESYS [FS_OPTION...]";
 static char *doc = "Get or set command line options for running translator FILESYS."
 "\vThe legal values for FS_OPTION depends on FILESYS, but\
- some common ones are: --readonly, --writable, --remount, --sync[=INTERVAL],\
+ some common ones are: --readonly, --writable, --update, --sync[=INTERVAL],\
  and --nosync.\n\nIf no options are supplied, FILESYS's existing options\
  are printed";
 
