@@ -23,17 +23,8 @@ subsystem term 28000;
 
 #include <hurd/hurd_types.defs>
 
-/* Make a virtual terminal.  Slave will look like a Posix terminfo.
-   Master should be connected to a hardware terminal or its
-   equivalent.  */
-routine term_maketerm (
-	access: term_t;
-	out term_slave: term_t;
-	out term_master: term_t);
+term_getctty (
+	terminal: io_t;
+	out ctty: mach_port_make_send_t);
 
-/* Called on a slave terminal; puts it into the filesystem under the given
-   file.  */
-routine term_putinfs (
-	term: term_t;
-	port: file_t);
-
+	
