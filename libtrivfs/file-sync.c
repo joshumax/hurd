@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 kern_return_t
-diskfs_S_file_sync (struct trivfs_protid *cred,
+trivfs_S_file_sync (struct trivfs_protid *cred,
 		    int wait)
 {
   return cred ? file_sync (cred->realnode, wait) : EOPNOTSUPP;
