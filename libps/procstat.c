@@ -31,7 +31,7 @@
 
 /* These directly correspond to the bits in a state, starting from 0.  See
    ps.h for an explanation of what each of these means.  */
-char *proc_stat_state_tags = "RTHDSIWN<Z+sempo";
+char *proc_stat_state_tags = "RTHDSIWN<Z+sempox";
 
 /* ---------------------------------------------------------------- */
 
@@ -94,7 +94,9 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
 
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
-  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK))
+  if (flags & PSTAT_STATE)
+    flags |= PSTAT_EXEC_FLAGS;	/* For the traced bit.  */
+  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK | PSTAT_EXEC_FLAGS))
     {
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
@@ -209,6 +211,10 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
 	have |= PSTAT_TASK_EVENTS_INFO;
     }
 
+  /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
+  MGET(PSTAT_EXEC_FLAGS, PSTAT_MSGPORT | PSTAT_TASK,
+       msg_get_exec_flags(ps->msgport, ps->task, &ps->exec_flags));
+
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & PSTAT_INFO))
     {
@@ -234,6 +240,9 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
 	state |= PSTAT_STATE_NOPARENT;
       if (pi_flags & PI_ORPHAN)
 	state |= PSTAT_STATE_ORPHANED;
+
+      if ((have & PSTAT_EXEC_FLAGS) & (ps->exec_flags & EXEC_TRACED))
+	state |= PSTAT_STATE_TRACED;
 
       ps->state = state;
       have |= PSTAT_STATE;
