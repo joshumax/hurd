@@ -43,6 +43,11 @@ See `tasks', the exported task list.
 *** implement an soversion and symbol-versioning scheme similar to libc's.
 
 ** libc:
+*** !!!! Do these for libc 2.3 (ask Roland for details):
+**** nix hurdmalloc, use special arena with new _int_malloc
+**** TLS support
+**** avoid sbrk altogether in malloc (don't link it in at all for static)?
+**** maybe hack libio to use _hurd_fd_read et al directly as stdio used to
 *** (once vm_remap exists) implement mremap
 *** when a session leader _exits, it should SIGHUP, TIOCDRAIN, and revoke. !!!
     [it is still under discussion exactly where to address this,
