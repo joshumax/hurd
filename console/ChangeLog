@@ -18,6 +18,9 @@
 	(main): Set default colors and attributes.
 	(parse_attributes): New function.
 
+	* console.c (parse_opt): If STATE->input is zero, use
+	netfs_root_node's hook to cons.
+
 2002-08-28  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (screen_fill): Take CUR_LINES modulo LINES.

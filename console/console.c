@@ -1403,7 +1403,7 @@ parse_attributes (const char *name, conchar_attr_t *attr)
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
-  cons_t cons = state->input;
+  cons_t cons = state->input ?: netfs_root_node->nn->cons;
   error_t err;
   int color = 0;
 
@@ -1874,7 +1874,11 @@ console_demuxer (mach_msg_header_t *inp,
   return (netfs_demuxer (inp, outp)
 	  || tioctl_server (inp, outp));
 }
-  
+
+const struct argp netfs_std_runtime_argp =
+  { options, parse_opt, NULL,
+    "A translator that provides virtual consoles." };
+
 int
 main (int argc, char **argv)
 {
@@ -1883,8 +1887,6 @@ main (int argc, char **argv)
   struct stat ul_stat;
   cons_t cons;
   struct netnode root_nn = { vcons: 0 };
-  struct argp argp = { options, parse_opt, NULL,
-		       "A translator that provides virtual consoles." };
 
   cons = malloc (sizeof (struct cons));
   if (!malloc)
@@ -1903,8 +1905,8 @@ main (int argc, char **argv)
   cons->dirmod_tick = 0;
   root_nn.cons = cons;
 
-  /* Parse our command line arguments (all none of them).  */
-  argp_parse (&argp, argc, argv, 0, 0, cons);
+  /* Parse our command line arguments.  */
+  argp_parse (&netfs_std_runtime_argp, argc, argv, 0, 0, cons);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
 
