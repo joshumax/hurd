@@ -153,11 +153,12 @@ diskfs_truncate (struct node *np,
 	{
 	  daddr_t *sindir = indir_block (indirs[1].bno);
 	  for (i = indirs[0].offset + 1; i < NINDIR (sblock); i++)
-	    {
-	      ffs_blkfree (np, sindir[i], sblock->fs_bsize);
-	      sindir[i] = 0;
-	      blocksfreed += btodb (sblock->fs_bsize);
-	    }
+	    if (sindir[i])
+	      {
+		ffs_blkfree (np, sindir[i], sblock->fs_bsize);
+		sindir[i] = 0;
+		blocksfreed += btodb (sblock->fs_bsize);
+	      }
 	  record_poke (sindir, sblock->fs_bsize);
 	}
     }
@@ -180,10 +181,11 @@ diskfs_truncate (struct node *np,
 	{
 	  daddr_t *dindir = indir_block (indirs[2].bno);
 	  for (i = indirs[1].offset + 1; i < NINDIR (sblock); i++)
-	    {
-	      blocksfreed += indir_release (np, dindir[i], INDIR_SINGLE);
-	      dindir[i] = 0;
-	    }
+	    if (dindir[i])
+	      {
+		blocksfreed += indir_release (np, dindir[i], INDIR_SINGLE);
+		dindir[i] = 0;
+	      }
 	  record_poke (dindir, sblock->fs_bsize);
 	}
     }
