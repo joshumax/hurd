@@ -20,6 +20,7 @@
 
 
 #include <string.h>
+#include <sys/mman.h>
 #include <hurd/fsys.h>
 #include <assert.h>
 #include <string.h>
