@@ -65,14 +65,14 @@ diskfs_S_io_write (struct protid *cred,
       np->dn_set_ctime = 1;
     }
 
-  if (!err)
-    {
-      *amt = datalen;
-      err = _diskfs_rdwr_internal (np, data, off, datalen, 1);
+  *amt = datalen;
+  err = _diskfs_rdwr_internal (np, data, off, datalen, 1, 0);
   
-      if (offset == -1)
-	cred->po->filepointer += *amt;
-    }
+  if (!err && offset == -1)
+    cred->po->filepointer += *amt;
+
+  if (!err && (cred->po->openstat & O_FSYNC))
+    diskfs_file_update (np, 1);
 
  out:
   mutex_unlock (&np->lock);

@@ -63,7 +63,8 @@ diskfs_S_io_read (struct protid *cred,
 
   *datalen = maxread;
   if (maxread)
-    err = _diskfs_rdwr_internal (np, buf, off, maxread, 0);
+    err = _diskfs_rdwr_internal (np, buf, off, maxread, 0, 
+				 cred->po->openstat & O_NOATIME);
   else
     err = 0;
   if (offset == -1 && !err)
