@@ -506,6 +506,54 @@ extern struct ps_filter ps_unorphaned_filter;
 extern struct ps_filter ps_parent_filter;
 
 /* ---------------------------------------------------------------- */
+/* A PS_STREAM_T describes an output stream for libps to use.  */
+
+typedef struct ps_stream *ps_stream_t;
+struct ps_stream
+{
+  FILE *stream;			/* The actual destination.  */
+  int pos;			/* The number of characters output.  */
+  int spaces;			/* The number of spaces pending.  */
+};
+
+/* Create a stream outputing to DEST, and return it in STREAM, or an error.  */
+error_t ps_stream_create (FILE *dest, ps_stream_t *stream);
+
+/* Frees STREAM.  The destination file is *not* closed.  */
+void ps_stream_free (ps_stream_t stream);
+
+/* Write at most MAX_LEN characters of STRING to STREAM (if MAX_LEN > the
+   length of STRING, then write all of it; if MAX_LEN == -1, then write all
+   of STRING regardless).  */
+error_t ps_stream_write (ps_stream_t stream, char *string, int max_len);
+
+/* Write NUM spaces to STREAM.  NUM may be negative, in which case the same
+   number of adjacent spaces (written by other calls to ps_stream_space) are
+   consumed if possible.  If an error occurs, the error code is returned,
+   otherwise 0.  */
+error_t ps_stream_space (ps_stream_t stream, int num);
+
+/* Write as many spaces to STREAM as required to make a field of width SOFAR
+   be at least WIDTH characters wide (the absolute value of WIDTH is used).
+   If an error occurs, the error code is returned, otherwise 0.  */
+error_t ps_stream_pad (ps_stream_t stream, int sofar, int width);
+
+/* Write a newline to STREAM, resetting its position to zero.  */
+error_t ps_stream_newline (ps_stream_t stream);
+
+/* Write the string BUF to STREAM, padded on one side with spaces to be at
+   least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
+   side, otherwise on the right side.  If an error occurs, the error code is
+   returned, otherwise 0.  */
+error_t ps_stream_write_field (ps_stream_t stream, char *buf, int width);
+
+/* Write the decimal representation of VALUE to STREAM, padded on one side
+   with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
+   0, then on the left side, otherwise on the right side.  If an error
+   occurs, the error code is returned, otherwise 0.  */
+error_t ps_stream_write_int_field (ps_stream_t stream, int value, int width);
+
+/* ---------------------------------------------------------------- */
 /*
    A PS_FMT_SPEC_T describes how to output something from a PROC_STAT_T; it
    is a combination of a getter (describing how to get the value), an output 
@@ -526,9 +574,8 @@ struct ps_fmt_spec
 
     /* A function that, given a ps, a getter, a field width, and a stream,
        will output what the getter gets in some format */
-    error_t
-      (*output_fn)(proc_stat_t ps, ps_getter_t getter,
-		   int width, FILE *str, unsigned *count);
+    error_t (*output_fn)(proc_stat_t ps, ps_getter_t getter, int width,
+			 ps_stream_t stream);
 
     /* A function that, given two pses and a getter, will compare what
        the getter gets for each ps, and return an integer ala qsort.  This
@@ -656,14 +703,14 @@ void ps_fmt_free(ps_fmt_t fmt);
    STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
-error_t ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count);
+error_t ps_fmt_write_titles (ps_fmt_t fmt, ps_stream_t stream);
 
 /* Format a description as instructed by FMT, of the process described by PS
    to STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
-error_t ps_fmt_write_proc_stat(ps_fmt_t fmt,
-			       proc_stat_t ps, FILE *stream, unsigned *count);
+error_t ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps,
+				ps_stream_t stream);
 
 /* Remove those fields from FMT for which the function FN, when called on the
    field's format spec, returns true.  Appropiate inter-field characters are
@@ -799,8 +846,8 @@ error_t proc_stat_list_sort(proc_stat_list_t pp,
    is non-NULL, it points to an integer which is incremented by the number of
    characters output.  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
-error_t proc_stat_list_fmt(proc_stat_list_t pp,
-			   ps_fmt_t fmt, FILE *stream, unsigned *count);
+error_t proc_stat_list_fmt (proc_stat_list_t pp, ps_fmt_t fmt,
+			    ps_stream_t stream);
 
 /* Modifies FLAGS to be the subset which can't be set in any proc_stat_t in
    PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat_t
@@ -852,41 +899,5 @@ error_t ps_host_sched_info(host_sched_info_t *host_info);
    to keep old load info, they should copy the buffer we return a pointer
    to).  If a system error occurs, the error code is returned, otherwise 0.  */
 error_t ps_host_load_info(host_load_info_t *host_info);
-
-/* ---------------------------------------------------------------- */
-
-/* Write at most MAX_LEN characters of STRING to STREAM (if MAX_LEN > the
-   length of STRING, then write all of it; if MAX_LEN == -1, then write all
-   of STRING regardless).  If COUNT is non-NULL, the number of characters
-   written is added to the integer it points to.  If an error occurs, the
-   error code is returned, otherwise 0.  */
-error_t ps_write_string(char *string, int max_len, FILE *stream, unsigned *count);
-
-/* Write NUM spaces to STREAM.  If COUNT is non-NULL, the number of spaces
-   written is added to the integer it points to.  If an error occurs, the
-   error code is returned, otherwise 0.  */
-error_t ps_write_spaces(int num, FILE *stream, unsigned *count);
-
-/* Write as many spaces to STREAM as required to make a field of width SOFAR
-   be at least WIDTH characters wide (the absolute value of WIDTH is used).
-   If COUNT is non-NULL, the number of spaces written is added to the integer
-   it points to.  If an error occurs, the error code is returned, otherwise
-   0.  */
-error_t ps_write_padding(int sofar, int width, FILE *stream, unsigned *count);
-
-/* Write the string BUF to STREAM, padded on one side with spaces to be at
-   least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
-   side, otherwise on the right side.  If COUNT is non-NULL, the number of
-   characters written is added to the integer it points to.  If an error
-   occurs, the error code is returned, otherwise 0.  */
-error_t ps_write_field(char *buf, int width, FILE *stream, unsigned *count);
-
-/* Write the decimal representation of VALUE to STREAM, padded on one side
-   with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
-   0, then on the left side, otherwise on the right side.  If COUNT is
-   non-NULL, the number of characters written is added to the integer it
-   points to.  If an error occurs, the error code is returned, otherwise 0.  */
-error_t ps_write_int_field(int value, int width, FILE *stream, unsigned *count);
-
 
 #endif /* __PS_H__ */
