@@ -365,8 +365,9 @@ load_section (void *section, struct execdata *u)
 	  void *readaddr;
 	  size_t readsize;
 
-	  if (u->error = vm_read (u->task, overlap_page, vm_page_size,
-				  &ourpage, &size))
+	  u->error = vm_read (u->task, overlap_page, vm_page_size,
+			      &ourpage, &size);
+	  if (u->error)
 	    {
 	      if (u->error == KERN_INVALID_ADDRESS)
 		{
@@ -439,10 +440,10 @@ load_section (void *section, struct execdata *u)
 	{
 	  /* MAPSTART is the first page that starts inside the section.
 	     Allocate all the pages that start inside the section.  */
-
-	  if (u->error = vm_map (u->task, &mapstart, memsz - (mapstart - addr),
-				 mask, anywhere, MACH_PORT_NULL, 0, 1,
-				 vm_prot, VM_PROT_ALL, VM_INHERIT_COPY))
+	  u->error = vm_map (u->task, &mapstart, memsz - (mapstart - addr),
+			     mask, anywhere, MACH_PORT_NULL, 0, 1,
+			     vm_prot, VM_PROT_ALL, VM_INHERIT_COPY);
+	  if (u->error)
 	    return;
 	}
 
@@ -463,8 +464,9 @@ load_section (void *section, struct execdata *u)
 	  vm_address_t overlap_page = trunc_page (addr);
 	  vm_address_t ourpage = 0;
 	  vm_size_t size = 0;
-	  if (u->error = vm_read (u->task, overlap_page, vm_page_size,
-				  &ourpage, &size))
+	  u->error = vm_read (u->task, overlap_page, vm_page_size,
+			      &ourpage, &size);
+	  if (u->error)
 	    {
 	      vm_deallocate (u->task, mapstart, memsz);
 	      return;
@@ -501,8 +503,9 @@ map (struct execdata *e, off_t posn, size_t len)
       mach_msg_type_number_t nread = f->__bufsize;
       while (nread < len)
 	nread += __vm_page_size;
-      if (e->error = io_read (e->file, &buffer, &nread,
-			      f->__target, e->optimal_block))
+      e->error = io_read (e->file, &buffer, &nread,
+			  f->__target, e->optimal_block);
+      if (e->error)
 	{
 	  errno = e->error;
 	  f->__error = 1;
@@ -615,7 +618,8 @@ prepare (file_t file, struct execdata *e)
 
   {
     memory_object_t rd, wr;
-    if (e->error = io_map (file, &rd, &wr))
+    e->error = io_map (file, &rd, &wr);
+    if (e->error)
       return;
     if (wr != MACH_PORT_NULL)
       mach_port_deallocate (mach_task_self (), wr);
@@ -631,7 +635,8 @@ prepare (file_t file, struct execdata *e)
       {
 	/* No shared page.  Do a stat to find the file size.  */
 	struct stat st;
-	if (e->error = io_stat (file, &st))
+	e->error = io_stat (file, &st);
+	if (e->error)
 	  return;
 	e->file_size = st.st_size;
 	e->optimal_block = st.st_blksize;
@@ -658,7 +663,8 @@ prepare (file_t file, struct execdata *e)
 	    case USER_HAS_NOT_CONCH:
 	    default:		/* Oops.  */
 	      spin_unlock (&e->cntl->lock);
-	      if (e->error = io_get_conch (e->file))
+	      e->error = io_get_conch (e->file);
+	      if (e->error)
 		return;
 	      /* Continue the loop.  */
 	      continue;
@@ -947,9 +953,9 @@ load (task_t usertask, struct execdata *e)
 		     load_section.  Now read from the task's memory into our
 		     own address space so we can peek each page and cause it to
 		     be paged in.  */
-		  if (u->error = vm_read (u->task,
-					  trunc_page (addr), round_page (secsize),
-					  &myaddr, &mysize))
+		  u->error = vm_read (u->task, trunc_page (addr), 
+				      round_page (secsize), &myaddr, &mysize);
+		  if (u->error)
 		    return;
 
 		  /* Peek at the first word of each page.  */
@@ -1127,8 +1133,9 @@ servercopy (void **arg, u_int argsize, boolean_t argcopy)
       /* ARG came in-line, so we must copy it.  */
       error_t error;
       void *copy;
-      if (error = vm_allocate (mach_task_self (),
-			       (vm_address_t *) &copy, argsize, 1))
+      error = vm_allocate (mach_task_self (),
+			   (vm_address_t *) &copy, argsize, 1);
+      if (error)
 	return error;
       bcopy (*arg, copy, argsize);
       *arg = copy;
@@ -1354,9 +1361,10 @@ do_exec (mach_port_t execserver,
     {
       /* Create the new task.  If we are not being secure, then use OLDTASK
 	 for the task_create RPC, in case it is something magical.  */	 
-      if (e.error = task_create (flags & EXEC_SECURE || !oldtask ?
-				 mach_task_self () : oldtask,
-				 0, &newtask))
+      e.error = task_create ((flags & EXEC_SECURE) || !oldtask ?
+			     mach_task_self () : oldtask,
+			     0, &newtask);
+      if (e.error)
 	goto out;
     }
   else
@@ -1366,7 +1374,8 @@ do_exec (mach_port_t execserver,
 
       /* Terminate all the threads of the old task.  */
 
-      if (e.error = task_threads (oldtask, &threads, &nthreads))
+      e.error = task_threads (oldtask, &threads, &nthreads);
+      if (e.error)
 	goto out;
       for (i = 0; i < nthreads; ++i)
 	{
@@ -1420,7 +1429,8 @@ do_exec (mach_port_t execserver,
   finish (&e, 0);
 
   /* Create the initial thread.  */
-  if (e.error = thread_create (newtask, &thread))
+  e.error = thread_create (newtask, &thread);
+  if (e.error)
     goto out;
 
   /* Store the data that we will give in response
@@ -1446,12 +1456,13 @@ do_exec (mach_port_t execserver,
       oldtask != MACH_PORT_NULL)
     task_get_bootstrap_port (oldtask, &portarray[INIT_PORT_BOOTSTRAP]);
 
-  if (e.error = mach_port_insert_right (mach_task_self (),
-					(mach_port_t) boot,
-					(mach_port_t) boot,
-					MACH_MSG_TYPE_MAKE_SEND))
+  e.error = mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
+				    (mach_port_t) boot,
+				    MACH_MSG_TYPE_MAKE_SEND);
+  if (e.error)
     goto out;
-  if (e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot))
+  e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
+  if (e.error)
     goto out;
   mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
 
@@ -1461,29 +1472,31 @@ do_exec (mach_port_t execserver,
   boot->user_entry = e.entry;
 #endif
 
-  if (e.error = servercopy ((void **) &argv, argvlen, argv_copy))
+  e.error = servercopy ((void **) &argv, argvlen, argv_copy);
+  if (e.error)
     goto bootallocout;
   boot->argv = argv;
   boot->argvlen = argvlen;
-  if (e.error = servercopy ((void **) &envp, envplen, envp_copy))
+  e.error = servercopy ((void **) &envp, envplen, envp_copy);
+  if (e.error)
     goto argvout;
   boot->envp = envp;
   boot->envplen = envplen;
-  if (e.error = servercopy ((void **) &dtable,
-			    dtablesize * sizeof (mach_port_t),
-			    dtable_copy))
+  e.error = servercopy ((void **) &dtable, dtablesize * sizeof (mach_port_t),
+			dtable_copy);
+  if (e.error)
     goto envpout;
   boot->dtable = dtable;
   boot->dtablesize = dtablesize;
-  if (e.error = servercopy ((void **) &portarray,
-			    nports * sizeof (mach_port_t),
-			    portarray_copy))
+  e.error = servercopy ((void **) &portarray, nports * sizeof (mach_port_t),
+			portarray_copy);
+  if (e.error)
     goto portsout;
   boot->portarray = portarray;
   boot->nports = nports;
-  if (e.error = servercopy ((void **) &intarray,
-			    nints * sizeof (int),
-			    intarray_copy))
+  e.error = servercopy ((void **) &intarray, nints * sizeof (int),
+			intarray_copy);
+  if (e.error)
     {
     bootout:
       vm_deallocate (mach_task_self (),
@@ -1537,7 +1550,8 @@ do_exec (mach_port_t execserver,
 		 && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
     {
       mach_port_t new;
-      if (e.error = proc_task2proc (procserver, newtask, &new))
+      e.error = proc_task2proc (procserver, newtask, &new);
+      if (e.error)
 	goto bootout;
 
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
@@ -1551,8 +1565,9 @@ do_exec (mach_port_t execserver,
       mach_port_t new;
       /* This task port refers to the old task; use it to fetch a new
 	 one for the new task.  */
-      if (e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
-				    newtask, &new))
+      e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
+				newtask, &new);
+      if (e.error)
 	goto bootout;
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
     }
@@ -1588,10 +1603,11 @@ do_exec (mach_port_t execserver,
 
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
-  if (e.error = mach_setup_thread (newtask, thread, 
-				   (void *) (e.interp.section ? interp.entry :
-					     e.entry),
-				   &boot->stack_base, &boot->stack_size))
+  e.error = mach_setup_thread (newtask, thread, 
+			       (void *) (e.interp.section ? interp.entry :
+					 e.entry),
+			       &boot->stack_base, &boot->stack_size);
+  if (e.error)
     goto bootout;
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
@@ -1694,7 +1710,7 @@ S_exec_exec (mach_port_t execserver,
 	  len = strlen (p) + 1;
 	  list = alloca (len);
 	  memcpy (list, p, len);
-	  while (p = strsep (&list, ":"))
+	  while ((p = strsep (&list, ":")))
 	    {
 	      file_t server;
 	      if (!hurd_file_name_lookup (portarray[INIT_PORT_CRDIR],
@@ -1762,8 +1778,9 @@ S_exec_setexecdata (mach_port_t me,
   if (std_ports)
     vm_deallocate (mach_task_self (), (vm_address_t)std_ports, 
 		   std_nports * sizeof (mach_port_t));
-  if (err = servercopy ((void **) &ports, nports * sizeof (mach_port_t),
-			ports_copy))
+  err = servercopy ((void **) &ports, nports * sizeof (mach_port_t),
+		    ports_copy);
+  if (err)
     return err;
 
   std_ports = ports;
@@ -1772,7 +1789,8 @@ S_exec_setexecdata (mach_port_t me,
   if (std_ints)
     vm_deallocate (mach_task_self (), (vm_address_t)std_ints,
 		   std_nints * sizeof (int));
-  if (err = servercopy ((void **) &ints, nints * sizeof (int), ints_copy))
+  err = servercopy ((void **) &ints, nints * sizeof (int), ints_copy);
+  if (err)
     return err;
 
   std_ints = ints;
