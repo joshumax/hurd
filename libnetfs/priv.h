@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995,96,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -22,13 +22,13 @@
 
 #include "netfs.h"
 
-extern inline struct protid *
+static inline struct protid * __attribute__ ((unused))
 begin_using_protid_port (file_t port)
 {
   return ports_lookup_port (netfs_port_bucket, port, netfs_protid_class);
 }
 
-extern inline void
+static inline void __attribute__ ((unused))
 end_using_protid_port (struct protid *cred)
 {
   if (cred)
