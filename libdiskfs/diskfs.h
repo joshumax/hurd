@@ -907,9 +907,8 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
 error_t diskfs_dirremove (struct node *dp, struct node *np,
 			  char *name, struct dirstat *ds);
 
-/* Return the node corresponding to CACHE_ID.  Return null
-   if no such node exists. */
-struct node *diskfs_cached_lookup (int cache_id);
+/* Return the node corresponding to CACHE_ID in *NPP. */
+error_t diskfs_cached_lookup (int cache_id, struct node **npp);
 
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
@@ -958,17 +957,17 @@ void diskfs_release_peropen (struct peropen *po);
 
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
    means that this name has been confirmed as absent in the directory. */
-void diskfs_enter_cache (struct node *dir, struct node *np, char *name);
+void diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name);
 
 /* Purge all references in the cache to NP as a node inside 
    directory DP. */
-void diskfs_purge_cache (struct node *dp, struct node *np);
+void diskfs_purge_lookup_cache (struct node *dp, struct node *np);
 
 /* Scan the cache looking for NAME inside DIR.  If we don't know
    anything entry at all, then return 0.  If the entry is confirmed to
    not exist, then return -1.  Otherwise, return NP for the entry, with
    a newly allocated reference. */
-struct node *diskfs_check_cache (struct node *dir, char *name);
+struct node *diskfs_check_lookup_cache (struct node *dir, char *name);
 
 /* Rename directory node FNP (whose parent is FDP, and which has name
    FROMNAME in that directory) to have name TONAME inside directory
