@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -34,6 +34,14 @@ netfs_S_io_read (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
+  mutex_lock (&user->po->np->lock);
+
+  if ((user->po->openstat & O_READ) == 0)
+    {
+      mutex_unlock (&user->po->np->lock);
+      return EBADF;
+    }
+
   if (amount > *datalen)
     {
       alloced = 1;
@@ -41,7 +49,6 @@ netfs_S_io_read (struct protid *user,
     }
   *datalen = amount;
 
-  mutex_lock (&user->po->np->lock);
   err = netfs_attempt_read (user->credential, user->po->np, 
 			    offset == -1 ? user->po->filepointer : offset, 
 			    datalen, *data);
