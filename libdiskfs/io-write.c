@@ -23,9 +23,9 @@
 kern_return_t
 diskfs_S_io_write (struct protid *cred,
 		   char *data,
-		   unsigned int datalen,
+		   mach_msg_type_number_t datalen,
 		   off_t offset, 
-		   int *amt)
+		   mach_msg_type_number_t *amt)
 {
   struct node *np;
   error_t err;
