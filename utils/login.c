@@ -696,6 +696,7 @@ main(int argc, char *argv[])
   for (i = 0; i < INIT_PORT_MAX; i++)
     ports[i] = MACH_PORT_NULL;
   ports[INIT_PORT_PROC] = getproc ();
+  ports[INIT_PORT_CTTYID] = getcttyid ();
   ports[INIT_PORT_CRDIR] = getcrdir ();	/* May be replaced below. */
   ports[INIT_PORT_CWDIR] = getcwdir ();	/*  "  */
 
