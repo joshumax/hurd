@@ -140,8 +140,7 @@ service_paging_requests (any_t arg)
   for (;;)
     ports_manage_port_operations_multithread (pager_port_bucket,
 					      pager_demuxer,
-					      1000 * 30, 1000 * 60 * 5,
-					      1, MACH_PORT_NULL);
+					      1000 * 30, 1000 * 60 * 5, 0);
 }
 
 /* Initialize paging for this device.  */

@@ -1,3 +1,9 @@
+Wed Aug 20 14:07:05 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* pager.c (service_paging_requests): New args for
+	ports_manage_port_operations_multithread. 
+	* storeio.c (main): Likewise.
+
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io.c (trivfs_S_io_readable, trivfs_S_io_read, trivfs_S_io_map):
