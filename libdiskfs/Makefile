@@ -58,3 +58,6 @@ ifsock-MIGSFLAGS = -imacros fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
+
+libdiskfs.so: ../libpager/libpager.so ../libioserver/libioserver.so \
+	      ../libfshelp/libfshelp.so ../libthreads/libthreads.so
