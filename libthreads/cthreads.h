@@ -25,7 +25,10 @@
  */
 /*
  * HISTORY
- * $Log:	cthreads.h,v $
+ * $Log: cthreads.h,v $
+ * Revision 1.4  1994/05/05  10:52:06  roland
+ * entered into RCS
+ *
  * Revision 2.12  92/05/22  18:38:36  jfriedl
  * 	From Mike Kupfer <kupfer@sprite.Berkeley.EDU>:
  * 	Add declaration for cthread_wire().
@@ -340,24 +343,21 @@ typedef struct mutex {
 #define	mutex_clear(m)		/* nop */???
 #define	mutex_free(m)		free((any_t) (m))
 
-extern void
-mutex_lock_solid C_ARG_DECLS((mutex_t m));		/* blocking */
-
-extern void
-mutex_unlock_solid C_ARG_DECLS((mutex_t m));
+extern void __mutex_lock_solid (void *mutex); /* blocking -- roland@gnu */
+extern void __mutex_unlock_solid (void *mutex); /* roland@gnu */
 
 #define mutex_try_lock(m) spin_try_lock(&(m)->held)
 #define mutex_lock(m) \
 	MACRO_BEGIN \
 	if (!spin_try_lock(&(m)->held)) { \
-		mutex_lock_solid(m); \
+		__mutex_lock_solid(m); \
 	} \
 	MACRO_END
 #define mutex_unlock(m) \
 	MACRO_BEGIN \
 	if (spin_unlock(&(m)->held), \
 	    cthread_queue_head(&(m)->queue, int) != 0) { \
-		mutex_unlock_solid(m); \
+		__mutex_unlock_solid(m); \
 	} \
 	MACRO_END
 
