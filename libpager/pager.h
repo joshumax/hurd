@@ -1,5 +1,5 @@
 /* Definitions for multi-threaded pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,13 +30,17 @@ int pager_demuxer (mach_msg_header_t *inp,
 		   mach_msg_header_t *outp);
 
 /* Create a new pager.  The pager will have a port created for it
-   (using libports) and will be immediately ready to receive requests.
-   U_PAGER will be provided to later calls to pager_find_address.  
-   The pager will have one user reference created.  MAY_CACHE and
-   COPY_STRATEGY are the original values of those attributes as 
-   for memory_object_ready.  */
+   (using libports, in BUCKET of CLASS) and will be immediately ready
+   to receive requests.  U_PAGER will be provided to later calls to
+   pager_find_address.  The pager will have one user reference
+   created.  MAY_CACHE and COPY_STRATEGY are the original values of
+   those attributes as for memory_object_ready.  Users may create
+   references to pagers by use of the relevant ports library
+   functions.  */
 struct pager *
 pager_create (struct user_pager_info *u_pager, 
+	      struct port_bucket *bucket,
+	      struct port_class *class,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy);
 
@@ -86,14 +90,6 @@ pager_change_attributes (struct pager *pager,
 mach_port_t
 pager_get_port (struct pager *pager);
 
-/* Call this whenever a no-senders notification is called for a port
-   of type pager_port_type.  The first argument is the result of a
-   check_port_type.  */
-void
-pager_no_senders (struct pager *pager,
-		  mach_port_seqno_t seqno,
-		  mach_port_mscount_t mscount);
-
 /* Force termination of a pager.  After this returns, no
    more paging requests on the pager will be honored, and the 
    pager will be deallocated.  (The actual deallocation might
@@ -102,9 +98,9 @@ pager_no_senders (struct pager *pager,
 void
 pager_shutdown (struct pager *pager);
 
-/* This is a clean routine which should be called when a pager port 
-   is being deallocated.  It is suitable to be installed directly into
-   the libports_cleanroutines array.  ARG is the address of the
+/* This is a clean routine which should be called when a pager port is
+   being deallocated.  It can be specified as the clean routine for
+   the port classes passed in pager_create.  ARG is the address of the
    struct pager referenced by the port.  */
 void
 pager_clean (void *arg);
@@ -113,18 +109,6 @@ pager_clean (void *arg);
    this will be deleted when the kernel interface is fixed.  */
 error_t
 pager_get_error (struct pager *p, vm_address_t addr);
-
-/* Allocate a user reference to pager structure P */
-void
-pager_reference (struct pager *p);
-
-/* Deallocate a user reference to pager structure P */
-void
-pager_unreference (struct pager *p);
-
-/* The user must set this variable.  This will be the type used in calls
-   to allocate_port by the pager system.  */
-extern int pager_port_type;
 
 /* The user must define this function.  For pager PAGER, read one
    page from offset PAGE.  Set *BUF to be the address of the page,
