@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,6 +20,7 @@
 
 
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <hurd/diskfs.h>
 #include <hurd/diskfs-pager.h>
 #include <hurd/store.h>
@@ -70,7 +71,7 @@ void *disk_image;
 size_t logical_block_size;
 
 /* Size of "logical sectors" (6.1.2).  These are 2048 or the
-   largest power of two that will fit in a physical sector, whichever is 
+   largest power of two that will fit in a physical sector, whichever is
    greater.  I don't know how to fetch the physical sector size; so
    we'll just use a constant. */
 #define logical_sector_size	2048
