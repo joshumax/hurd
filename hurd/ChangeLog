@@ -1,3 +1,8 @@
+Tue Sep 16 15:24:37 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* process.defs: Delete proc_sethostid, proc_gethostid,
+	proc_sethostname, and proc_gethostname.
+
 1997-09-04  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsys.defs: Add INTR_INTERFACE.

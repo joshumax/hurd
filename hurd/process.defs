@@ -1,5 +1,5 @@
 /* Definitions for process server interface
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -33,28 +33,10 @@ INTR_INTERFACE
 
 /*** Host management ***/
 
-/* Set the hostid for the machine.  This should be unique among all
-   machines.  By convention, it is the "primary" IP address of the
-   machine.  */
-routine proc_sethostid (
-	process: process_t;
-	hostid: int);
-
-/* Get the host id.  */
-routine proc_gethostid (
-	process: process_t;
-	out hostid: int);
-
-/* Set the hostname for the machine.  By convention this is the DNS
-   FQDN for the machine.  */
-routine proc_sethostname (
-	process: process_t;
-	hostname: data_t);
-
-/* Get the hostname.  */
-routine proc_gethostname (
-	process: process_t;
-	out hostname: data_t, dealloc);
+skip;  /* Was proc_sethostid */
+skip;  /* Was proc_gethostid */
+skip;  /* Was proc_sethostname */
+skip;  /* Was proc_gethostname */
 
 /* Get the privileged host port and the device master port.  */
 routine proc_getprivports (
