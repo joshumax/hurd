@@ -289,6 +289,16 @@ got_block:
       goto repeat;
     }
 
+  /* Since due to bletcherousness block-modified bits are never turned off
+     when writing disk-pager pages, make sure they are here, in case this
+     block is being allocated to a file (see pager.c).  */
+  if (modified_global_blocks)
+    {
+      spin_lock (&modified_global_blocks_lock);
+      clear_bit (tmp, modified_global_blocks);
+      spin_unlock (&modified_global_blocks_lock);
+    }
+
   ext2_debug ("found bit %d", j);
 
   /*
@@ -305,11 +315,18 @@ got_block:
 	  if (set_bit (j + k, bh))
 	    break;
 	  (*prealloc_count)++;
+
+	  /* (See comment before the clear_bit above) */
+	  if (modified_global_blocks)
+	    {
+	      spin_lock (&modified_global_blocks_lock);
+	      clear_bit (tmp + k, modified_global_blocks);
+	      spin_unlock (&modified_global_blocks_lock);
+	    }
 	}
       gdp->bg_free_blocks_count -= *prealloc_count;
       sblock->s_free_blocks_count -= *prealloc_count;
-      ext2_debug ("Preallocated a further %lu bits",
-		  *prealloc_count);
+      ext2_debug ("Preallocated a further %lu bits", *prealloc_count);
     }
 #endif
 
