@@ -1,4 +1,4 @@
-/* Seive of Eratosthenes
+/* Prime number generation
    Copyright (C) 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@ nextprime (int n)
   
   if (!q)
     {
+      /* Init */
       q = malloc (sizeof (int) * 2);
       q[0] = 2;
       q[1] = 3;
@@ -41,14 +42,18 @@ nextprime (int n)
 
   while (n > q[l - 1])
     {
+      /* Grow q */
+
       p = q[l-1] * q[l-1];
       m = alloca (sizeof (int) * p);
       bzero (m, sizeof (int) * p);
       
+      /* Seive */
       for (i = 0; i < l; i++)
 	for (j = q[i] * 2; j < p; j += q[i])
 	  m[j] = 1;
 
+      /* Copy */
       for (i = q[l-1] + 1; i < p; i++)
 	{
 	  if (l == k)
@@ -61,6 +66,7 @@ nextprime (int n)
 	}
     }
   
+  /* Binary search */
   i = 0;
   j = l - 1;
   p = j / 2;
@@ -77,14 +83,4 @@ nextprime (int n)
   return q[p];
 }
 
-
-main ()
-{
-  int i;
-
-  initprimes();
-  
-  for (i = 0; i < 100; i++)
-    printf ("%d\t%d\n", i, nextprime(i));
-}
 
