@@ -230,27 +230,27 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 	  dev->pager =
 	    pager_create ((struct user_pager_info *)dev, pager_port_bucket,
 			  1, MEMORY_OBJECT_COPY_DELAY);
+	  if (dev->pager == NULL)
+	    {
+	      mutex_unlock (&dev->pager_lock);
+	      return errno;
+	    }
 	  created = 1;
 	}
 
-      if (dev->pager == NULL)
-	err = ENODEV;		/* XXX ??? */
-      else
-	{
-	  *memobj = pager_get_port (dev->pager);
+      *memobj = pager_get_port (dev->pager);
 
-	  if (*memobj == MACH_PORT_NULL)
-	    /* Pager is currently being destroyed, try again.  */
-	    {
-	      dev->pager = 0;
-	      mutex_unlock (&dev->pager_lock);
-	      return dev_get_memory_object (dev, prot, memobj);
-	    }
-	  else
-	    err =
-	      mach_port_insert_right (mach_task_self (),
-				      *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
+      if (*memobj == MACH_PORT_NULL)
+	/* Pager is currently being destroyed, try again.  */
+	{
+	  dev->pager = 0;
+	  mutex_unlock (&dev->pager_lock);
+	  return dev_get_memory_object (dev, prot, memobj);
 	}
+      else
+	err =
+	  mach_port_insert_right (mach_task_self (),
+				  *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
 
       if (created)
 	ports_port_deref (dev->pager);

@@ -1,5 +1,8 @@
 Wed Aug 20 14:07:05 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* pager.c (dev_get_memory_object): Deal with errors from
+	pager_create properly.
+	
 	* pager.c (service_paging_requests): New args for
 	ports_manage_port_operations_multithread. 
 	* storeio.c (main): Likewise.
