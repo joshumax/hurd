@@ -22,6 +22,19 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/stat.h>
+
+/* these flags aren't actually defined by a header file yet, so temporarily
+   disable them if necessary.  */
+#ifndef UF_APPEND
+#define UF_APPEND 0
+#endif
+#ifndef UF_NODUMP
+#define UF_NODUMP 0
+#endif
+#ifndef UF_IMMUTABLE
+#define UF_IMMUTABLE 0
+#endif
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -32,7 +45,7 @@
 
 static struct node *nodehash[INOHSZ];
 
-static error_t read_disknode (struct node *np);
+static error_t read_node (struct node *np);
 
 spin_lock_t generation_lock = SPIN_LOCK_INITIALIZER;
 
@@ -94,7 +107,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
   
   /* Get the contents of NP off disk.  */
-  err = read_disknode (np);
+  err = read_node (np);
   
   if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
@@ -180,7 +193,7 @@ diskfs_new_hardrefs (struct node *np)
 
 /* Read stat information out of the ext2_inode. */
 static error_t
-read_disknode (struct node *np)
+read_node (struct node *np)
 {
   error_t err;
   static int fsid, fsidset;
@@ -221,8 +234,15 @@ read_disknode (struct node *np)
 #endif
 
   st->st_blocks = di->i_blocks;
-  st->st_flags = di->i_flags;
-  
+
+  st->st_flags = 0;
+  if (di->i_flags & EXT2_APPEND_FL)
+    st->st_flags |= UF_APPEND;
+  if (di->i_flags & EXT2_NODUMP_FL)
+    st->st_flags |= UF_NODUMP;
+  if (di->i_flags & EXT2_IMMUTABLE_FL)
+    st->st_flags |= UF_IMMUTABLE;
+
   if (sblock->s_creator_os == EXT2_OS_HURD)
     {
       st->st_mode = di->i_mode | (di->i_mode_high << 16);
@@ -344,6 +364,18 @@ diskfs_validate_author_change (struct node *np, uid_t author)
     return (author == np->dn_stat.st_uid) ? 0 : EINVAL;
 }
 
+/* The user may define this function.  Return 0 if NP's flags can be
+   changed to FLAGS; otherwise return an error code.  It must always
+   be possible to clear the flags.   */
+error_t
+diskfs_validate_flags_change (struct node *np, int flags)
+{
+  if (flags & (UF_NODUMP | UF_IMMUTABLE | UF_APPEND))
+    return 0;
+  else
+    return EINVAL;
+}
+
 /* Writes everything from NP's inode to the disk image, and returns a pointer
    to it, or NULL if nothing need be done.  */
 static struct ext2_inode *
@@ -409,7 +441,16 @@ write_node (struct node *np)
 #endif
 
       di->i_blocks = st->st_blocks;
-      di->i_flags = st->st_flags;
+
+      /* Convert generic flags in ST->st_flags to ext2-specific flags in DI
+         (but don't mess with ext2 flags we don't know about).  */
+      di->i_flags &= ~(EXT2_APPEND_FL | EXT2_NODUMP_FL | EXT2_IMMUTABLE_FL);
+      if (st->st_flags & UF_APPEND)
+	di->i_flags |= EXT2_APPEND_FL;
+      if (st->st_flags & UF_NODUMP)
+	di->i_flags |= EXT2_NODUMP_FL;
+      if (st->st_flags & UF_IMMUTABLE)
+	di->i_flags |= EXT2_IMMUTABLE_FL;
 
       if (!np->istranslated && sblock->s_creator_os == EXT2_OS_HURD)
 	di->i_translator = 0;
@@ -449,7 +490,7 @@ diskfs_node_reload (struct node *node)
     }
   pokel_flush (&dn->indir_pokel);
   flush_node_pager (node);
-  read_disknode (node);
+  read_node (node);
 
   return 0;
 }
