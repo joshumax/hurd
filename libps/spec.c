@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <pwd.h>
 #include <hurd/resource.h>
+#include <string.h>
 
 #include "ps.h"
 #include "common.h"
@@ -300,7 +301,7 @@ ps_emit_num_blocks(proc_stat_t ps, ps_getter_t getter, int width, FILE
 		   *stream, int *count)
 {
   char buf[20];
-  sprintf(buf, "%ld", G(getter, int)(ps) / 1024);
+  sprintf(buf, "%d", G(getter, int)(ps) / 1024);
   return ps_write_field(buf, width, stream, count);
 }
 
@@ -329,9 +330,9 @@ sprint_frac_value(char *buf,
     frac /= 10;
 
   if (frac_len > 0)
-    sprintf(buf, "%ld.%0*ld", value, frac_len, frac);
+    sprintf(buf, "%d.%0*d", value, frac_len, frac);
   else
-    sprintf(buf, "%ld", value);
+    sprintf(buf, "%d", value);
 
   return strlen(buf);
 }
