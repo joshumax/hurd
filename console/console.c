@@ -161,11 +161,11 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
 	      *r_vcons = previous_cons;
 	      return 0;
 	    }
-	  else if (!create)
-	    {
-	      mutex_unlock (&cons_list_lock);
-	      return ESRCH;
-	    }
+	}
+      else if (!create)
+	{
+	  mutex_unlock (&cons_list_lock);
+	  return ESRCH;
 	}
     }
   else
@@ -236,7 +236,7 @@ void
 vcons_release (vcons_t vcons)
 {
   mutex_lock (&cons_list_lock);
-  if (--vcons->refcnt)
+  if (!--vcons->refcnt)
     {
       /* As we keep a reference for all input focus groups pointing to
 	 the virtual console, and a reference for the active console,
@@ -250,6 +250,8 @@ vcons_release (vcons_t vcons)
 	vcons->prev->next = vcons->next;
       if (vcons->next)
 	vcons->next->prev = vcons->prev;
+      if (!vcons->prev && !vcons->next)
+	vcons->cons->vcons_list = NULL;
       vcons->cons->vcons_length--;
       vcons->cons->refcnt--;
       free (vcons);
