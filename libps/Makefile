@@ -1,6 +1,6 @@
 # Makefile for libps
-# 
-#   Copyright (C) 1995, 1996 Free Software Foundation
+#
+#   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -29,7 +29,7 @@ LCLHDRS=ps.h common.h
 installhdrs=$(LCLHDRS)
 installhdrsubdir = .
 
-HURDLIBS=ihash
+HURDLIBS=ihash shouldbeinlibc
 OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
 
 msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
@@ -39,5 +39,3 @@ ps_%.h: %_U.h
 	sed 's/_$*_user_/_ps_$*_user_/g' $< > $@
 
 include ../Makeconf
-
-
