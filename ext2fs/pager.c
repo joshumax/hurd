@@ -187,6 +187,8 @@ pending_blocks_write (struct pending_blocks *pb)
       daddr_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       int length = pb->num << log2_block_size;
 
+printf ("Writing %d pending block(s) at %d\n", pb->num, pb->block);
+
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
 	{
@@ -237,6 +239,7 @@ pending_blocks_add (struct pending_blocks *pb, daddr_t block)
       if (err)
 	return err;
       pb->block = block;
+ printf ("Adding pending block %d\n", block);
     }
   pb->num++;
   return 0;
@@ -260,6 +263,8 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 
   if (offset + left > node->allocsize)
     left = left > node->allocsize - offset;
+
+ printf ("Writing file_pager page %d[%d]\n", offset, left);
 
   while (left > 0)
     {
@@ -309,6 +314,8 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
   if (page + vm_page_size > device_size)
     length = device_size - page;
 
+ printf ("Writing disk_pager page %d[%d]\n", page, length);
+
   if (modified_global_blocks)
     /* Be picky about which blocks in a page that we write.  */
     {
@@ -326,6 +333,8 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 	  modified = clear_bit (block, modified_global_blocks);
 	  spin_unlock (&modified_global_blocks_lock);
 
+ printf ("Disk_pager block %d %s\n", block, (modified ? "modified" : "unmodified"));
+
 	  if (modified)
 	    /* This block's been modified, so write it out.  */
 	    err = pending_blocks_add (&pb, block);
@@ -334,6 +343,7 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 	    err = pending_blocks_skip (&pb);
 
 	  offs += block_size;
+	  length -= block_size;
 	}
 
       if (!err)
