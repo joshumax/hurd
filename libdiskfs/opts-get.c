@@ -1,6 +1,6 @@
 /* Get run-time options
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,34 +25,7 @@
 error_t
 diskfs_get_options (char **argz, unsigned *argz_len)
 {
-  extern int diskfs_sync_interval;
-
-  void append_opt (char *str)
-    {
-      unsigned old_end = *argz_len;
-      *argz_len += strlen (str) + 1;
-      *argz = realloc (*argz, *argz_len);
-      strcpy (*argz + old_end, str);;
-    }
-
   *argz = 0;
   *argz_len = 0;
-
-  if (diskfs_readonly)
-    append_opt ("--readonly");
-  else
-    append_opt ("--writable");
-
-  if (diskfs_synchronous)
-    append_opt ("--sync");
-  else if (diskfs_sync_interval == 0)
-    append_opt ("--nosync");
-  else
-    {
-      char buf[80];
-      sprintf (buf, "--sync=%d", diskfs_sync_interval);
-      append_opt (buf);
-    }
-
-  return 0;
+  return diskfs_append_std_options (argz, argz_len);
 }
