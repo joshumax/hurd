@@ -25,7 +25,7 @@ OBJS = main.o hostarch.o exec.o hashexec.o \
 gzip-objects = unzip.o util.o inflate.o
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
-DIST_FILES = core.c gcore.c
+DIST_FILES = core.c gcore.c elfcore.c crash.c exectrans.c
 #OTHERLIBS = -lbfd -liberty
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
