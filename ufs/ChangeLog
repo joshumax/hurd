@@ -1,3 +1,8 @@
+Mon Jul  5 20:04:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dir.c (diskfs_lookup_hard): Repair typo.  Reported by Yamashita
+ 	TAKAO <jargon@lares.dti.ne.jp>.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Use munmap instead of

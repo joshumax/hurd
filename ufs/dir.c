@@ -295,7 +295,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
       || !ds
       || ds->type == LOOKUP)
     {
-      vm_deallocate ((caddr_t) buf, buflen);
+      munmap ((caddr_t) buf, buflen);
       if (ds)
 	ds->type = LOOKUP;	/* set to be ignored by drop_dirstat */
     }
