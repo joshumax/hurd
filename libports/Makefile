@@ -33,7 +33,8 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  enable-class.c enable-bucket.c bucket-iterate.c stubs.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
  notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \
- interrupt-operation.c
+ interrupt-operation.c interrupt-on-notify.c interrupt-notified-rpcs.c \
+ dead-name.c 
 
 LCLHDRS = ports.h
 installhdrs = ports.h
