@@ -2,12 +2,13 @@
    Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
+   Can exec ELF format directly.
+   #ifdef GZIP
+   Can gunzip executables into core on the fly.
+   #endif
    #ifdef BFD
    Can exec any executable format the BFD library understands
    to be for this flavor of machine.
-   #endif
-   #ifdef AOUT
-   Can exec a.out format.
    #endif
 
 This file is part of the GNU Hurd.
@@ -45,23 +46,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fsys_S.h"
 #include "notify_S.h"
 
-/* Default: BFD or a.out?  */
-#if	!defined (BFD) && !defined (AOUT)
-#define	AOUT
-#endif
-
-
-#ifdef	BFD
 #include <bfd.h>
+#include <elf.h>
+
 
 extern error_t bfd_mach_host_arch_mach (host_t host,
-					enum bfd_architecture *arch,
-					long int *machine);
-#else
-#include A_OUT_H
-
-extern error_t aout_mach_host_machine (host_t host, int *host_machine);
-#endif
+					enum bfd_architecture *bfd_arch,
+					long int *bfd_machine,
+					Elf32_Half *elf_machine);
 
 
 /* Data shared between check, check_section,
@@ -75,12 +67,15 @@ struct execdata
     vm_address_t entry;
     FILE stream;
     file_t file;
-#ifdef	BFD
+
+#ifdef BFD
     bfd *bfd;
-    asection *interp_section;	/* Interpreter section giving name of file.  */
-#else
-    struct exec *header, headbuf;
 #endif
+    union			/* Interpreter section giving name of file.  */
+      {
+	asection *section;
+	const Elf32_Phdr *phdr;
+      } interp;
     memory_object_t filemap, cntlmap;
     struct shared_io *cntl;
     char *file_data;		/* File data if already copied in core.  */
@@ -90,21 +85,28 @@ struct execdata
     /* Set by caller of load.  */
     task_t task;
 
-#ifdef	BFD
-    /* Vector indexed by section index,
-       information passed from check_section to load_section.
-       Set by caller of check_section and load.  */
-    vm_offset_t *locations;
-#endif
+    union
+      {
+	/* Vector indexed by section index,
+	   information passed from check_section to load_section.
+	   Set by caller of check_section and load.  */
+	vm_offset_t *bfd_locations;
+	struct
+	  {
+	    /* Program header table read from the executable.
+	       After `check' this is a pointer into the mapping window.
+	       By `load' it is local alloca'd storage.  */
+	    Elf32_Phdr *phdr;
+	    Elf32_Word phnum;	/* Number of program header table elements.  */
+	  } elf;
+      } info;
   };
 
-#ifdef	BFD
+
 /* A BFD whose architecture and machine type are those of the host system.  */
 static bfd_arch_info_type host_bfd_arch_info;
 static bfd host_bfd = { arch_info: &host_bfd_arch_info };
-#else
-static enum machine_type host_machine; /* a.out machine_type of the host.  */
-#endif
+static Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
 
 static file_t realnode;
 static mach_port_t execserver;	/* Port doing exec protocol.  */
@@ -141,7 +143,9 @@ b2he (error_t deflt)
 #define	b2he()	a2he (errno)
 #endif
 
+#ifdef GZIP
 static void check_gzip (struct execdata *);
+#endif
 
 #ifdef	BFD
 
@@ -162,7 +166,7 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 
   /* Fast strcmp for this 8-byte constant string.  */
   if (*(const __typeof (interp.quadword) *) sec->name == interp.quadword)
-    u->interp_section = sec;
+    u->interp.section = sec;
 
   if (!(sec->flags & (SEC_ALLOC|SEC_LOAD)) ||
       (sec->flags & SEC_NEVER_LOAD))
@@ -173,36 +177,32 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 
   if (sec->flags & SEC_LOAD)
     {
-      u->locations[sec->index] = sec->filepos;
+      u->info.bfd_locations[sec->index] = sec->filepos;
       if ((off_t) sec->filepos < 0 || (off_t) sec->filepos > u->file_size)
 	u->error = EINVAL;
     }
 }
 #endif
 
-enum section { text, data, bss };
 
 /* Load or allocate a section.  */
 static void
-#ifdef	BFD
-load_section (bfd *bfd, asection *sec, void *userdata)
-#else
-load_section (enum section section, struct execdata *u)
-#endif
+load_section (void *section, struct execdata *u)
 {
-#ifdef	BFD
-  struct execdata *u = userdata;
-#endif
   vm_address_t addr = 0;
   vm_offset_t filepos = 0;
-  vm_size_t secsize = 0;
+  vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
+#ifdef BFD
+  asection *const sec = section;
+#endif
+  const Elf32_Phdr *const ph = section;
 
   if (u->error)
     return;
 
-#ifdef	BFD
-  if (sec->flags & SEC_NEVER_LOAD)
+#ifdef BFD
+  if (u->bfd && sec->flags & SEC_NEVER_LOAD)
     /* Nothing to do for this section.  */
     return;
 #endif
@@ -210,43 +210,35 @@ load_section (enum section section, struct execdata *u)
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
 #ifdef	BFD
-  addr = (vm_address_t) sec->vma;
-  filepos = u->locations[sec->index];
-  secsize = sec->_raw_size;
-  if (sec->flags & (SEC_READONLY|SEC_ROM))
-    vm_prot &= ~VM_PROT_WRITE;
-#else
-  switch (section)
+  if (u->bfd)
     {
-    case text:
-      addr = (vm_address_t) N_TXTADDR (*u->header);
-      filepos = (vm_offset_t) N_TXTOFF (*u->header);
-      secsize = N_TXTLEN (*u->header);
-      vm_prot &= ~VM_PROT_WRITE;
-      break;
-    case data:
-      addr = (vm_address_t) N_DATADDR (*u->header);
-      filepos = (vm_offset_t) N_DATOFF (*u->header);
-      secsize = N_DATLEN (*u->header);
-      break;
-    case bss:
-      addr = (vm_address_t) N_BSSADDR (*u->header);
-      secsize = N_BSSLEN (*u->header);
-      break;
+      addr = (vm_address_t) sec->vma;
+      filepos = u->info.bfd_locations[sec->index];
+      memsz = sec->_raw_size;
+      filesz = (sec->flags & SEC_LOAD) ? memsz : 0;
+      if (sec->flags & (SEC_READONLY|SEC_ROM))
+	vm_prot &= ~VM_PROT_WRITE;
     }
+  else
 #endif
+    {
+      addr = ph->p_vaddr & ~(ph->p_align - 1);
+      memsz = ph->p_vaddr + ph->p_memsz - addr;
+      filepos = ph->p_offset & ~(ph->p_align - 1);
+      filesz = ph->p_offset + ph->p_filesz - filepos;
+      if ((ph->p_flags & PF_R) == 0)
+	vm_prot &= ~VM_PROT_READ;
+      if ((ph->p_flags & PF_W) == 0)
+	vm_prot &= ~VM_PROT_WRITE;
+      if ((ph->p_flags & PF_X) == 0)
+	vm_prot &= ~VM_PROT_EXECUTE;
+    }
 
-  if (secsize == 0)
+  if (memsz == 0)
     /* This section is empty; ignore it.  */
     return;
 
-  if (
-#ifdef	BFD
-      sec->flags & SEC_LOAD
-#else
-      section != bss
-#endif
-      )
+  if (filesz != 0)
     {
       vm_address_t mapstart = round_page (addr);
 
@@ -284,27 +276,22 @@ load_section (enum section section, struct execdata *u)
 	    u->error = vm_protect (u->task, mapstart, size, 0, vm_prot);
 	}
 
-      if (mapstart - addr < secsize)
+      if (mapstart - addr < filesz)
 	{
 	  /* MAPSTART is the first page that starts inside the section.
 	     Map all the pages that start inside the section.  */
 
-#ifdef	BFD
-#define SECTION_IN_MEMORY_P	(sec->flags & SEC_IN_MEMORY)
-#define SECTION_CONTENTS	sec->contents
-#else
 #define SECTION_IN_MEMORY_P	(u->file_data != NULL)
 #define SECTION_CONTENTS	(u->file_data + filepos)
-#endif
 	  if (SECTION_IN_MEMORY_P)
 	    /* Data is already in memory; write it into the task.  */
-	    write_to_task (mapstart, secsize - (mapstart - addr), vm_prot,
+	    write_to_task (mapstart, filesz - (mapstart - addr), vm_prot,
 			   (vm_address_t) SECTION_CONTENTS
 			   + (mapstart - addr));
 	  else if (u->filemap != MACH_PORT_NULL)
 	    /* Map the data into the task directly from the file.  */
 	    u->error = vm_map (u->task,
-			       &mapstart, secsize - (mapstart - addr), 0, 0,
+			       &mapstart, filesz - (mapstart - addr), 0, 0,
 			       u->filemap, filepos + (mapstart - addr), 1, 
 			       vm_prot,
 			       VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
@@ -314,7 +301,7 @@ load_section (enum section section, struct execdata *u)
 	      /* Cannot map the data.  Read it into a buffer and vm_write
 		 it into the task.  */
 	      void *buf;
-	      const vm_size_t size = secsize - (mapstart - addr);
+	      const vm_size_t size = filesz - (mapstart - addr);
 	      u->error = vm_allocate (mach_task_self (),
 				      (vm_address_t *) &buf, size, 1);
 	      if (! u->error)
@@ -343,14 +330,6 @@ load_section (enum section section, struct execdata *u)
 	  void *readaddr;
 	  size_t readsize;
 
-#ifdef	AOUT
-	  if (N_MAGIC (*u->header) == NMAGIC || N_MAGIC (*u->header) == ZMAGIC)
-	    {
-	      u->error = ENOEXEC;
-	      goto maplose;
-	    }
-#endif
-
 	  if (u->error = vm_read (u->task, overlap_page, vm_page_size,
 				  &ourpage, &size))
 	    {
@@ -367,15 +346,15 @@ load_section (enum section section, struct execdata *u)
 	      if (u->error)
 		{
 		maplose:
-		  vm_deallocate (u->task, mapstart, secsize);
+		  vm_deallocate (u->task, mapstart, filesz);
 		  return;
 		}
 	    }
 
 	  readaddr = (void *) (ourpage + (addr - overlap_page));
 	  readsize = size - (addr - overlap_page);
-	  if (readsize > secsize)
-	    readsize = secsize;
+	  if (readsize > filesz)
+	    readsize = filesz;
 
 	  if (SECTION_IN_MEMORY_P)
 	    bcopy (SECTION_CONTENTS, readaddr, readsize);
@@ -409,24 +388,25 @@ load_section (enum section section, struct execdata *u)
 
       if (u->cntl)
 	u->cntl->accessed = 1;
+
+      /* Tell the code below to zero-fill the remaining area.  */
+      addr += filesz;
+      memsz -= filesz;
     }
-#ifdef	BFD
-  else if (sec->flags & SEC_ALLOC)
-#else
-  else
-#endif
+
+  if (memsz != 0)
     {
       /* SEC_ALLOC: Allocate zero-filled memory for the section.  */
 
       vm_address_t mapstart = round_page (addr);
 
-      if (mapstart - addr < secsize)
+      if (mapstart - addr < memsz)
 	{
 	  /* MAPSTART is the first page that starts inside the section.
 	     Allocate all the pages that start inside the section.  */
 
 	  if (u->error = vm_allocate (u->task, &mapstart, 
-				      secsize - (mapstart - addr), 0))
+				      memsz - (mapstart - addr), 0))
 	    return;
 	}
 
@@ -439,110 +419,47 @@ load_section (enum section section, struct execdata *u)
 	  if (u->error = vm_read (u->task, overlap_page, vm_page_size,
 				  &ourpage, &size))
 	    {
-	      vm_deallocate (u->task, mapstart, secsize);
+	      vm_deallocate (u->task, mapstart, memsz);
 	      return;
 	    }
 	  bzero ((void *) (ourpage + (addr - overlap_page)),
 		 size - (addr - overlap_page));
-	  u->error = vm_write (u->task, overlap_page, ourpage, size);
+	  if (!(vm_prot & VM_PROT_WRITE))
+	    u->error = vm_protect (u->task, overlap_page, size,
+				   0, VM_PROT_WRITE);
+	  if (! u->error)
+	    u->error = vm_write (u->task, overlap_page, ourpage, size);
+	  if (! u->error && !(vm_prot & VM_PROT_WRITE))
+	    u->error = vm_protect (u->task, overlap_page, size, 0, vm_prot);
 	  vm_deallocate (mach_task_self (), ourpage, size);
 	}
     }
 }
+
+/* Make sure our mapping window (or read buffer) covers
+   LEN bytes of the file starting at POSN.  */
 
-/* Do post-loading processing for a section.  This consists of peeking the
-   pages of non-demand-paged executables.  */
-
-static void
-#ifdef	BFD
-postload_section (bfd *bfd, asection *sec, void *userdata)
-#else
-postload_section (enum section section, struct execdata *u)
-#endif
+static void *
+map (struct execdata *e, off_t posn, size_t len)
 {
-#ifdef	BFD
-  struct execdata *u = userdata;
-#endif
-  vm_address_t addr = 0;
-  vm_size_t secsize = 0;
-
-#ifdef	BFD
-  addr = (vm_address_t) sec->vma;
-  secsize = sec->_raw_size;
-#else
-  switch (section)
-    {
-    case text:
-      addr = (vm_address_t) N_TXTADDR (*u->header);
-      secsize = N_TXTLEN (*u->header);
-      break;
-    case data:
-      addr = (vm_address_t) N_DATADDR (*u->header);
-      secsize = N_DATLEN (*u->header);
-      break;
-    case bss:
-      addr = (vm_address_t) N_BSSADDR (*u->header);
-      secsize = N_BSSLEN (*u->header);
-      break;
-    }
-#endif
-
-  if (
-#ifdef	AOUT
-      section != bss && N_MAGIC (*u->header) == NMAGIC
-#else
-      (sec->flags & SEC_LOAD) && !(bfd->flags & D_PAGED)
-#endif
-      )
-    {
-      /* Pre-load the section by peeking every mapped page.  */
-      vm_address_t myaddr, a;
-      vm_size_t mysize;
-      myaddr = 0;
-	  
-      /* We have already mapped the file into the task in load_section.
-	 Now read from the task's memory into our own address space so we
-	 can peek each page and cause it to be paged in.  */
-      if (u->error = vm_read (u->task, trunc_page (addr), round_page (secsize),
-			      &myaddr, &mysize))
-	return;
-
-      /* Peek at the first word of each page.  */
-      for (a = ((myaddr + mysize) & ~(vm_page_size - 1));
-	   a >= myaddr; a -= vm_page_size)
-	/* Force it to be paged in.  */
-	(void) *(volatile int *) a;
-
-      vm_deallocate (mach_task_self (), myaddr, mysize);
-    }
-}
-
-
-
-/* stdio input-room function.  */
-static int
-input_room (FILE *f)
-{
-  struct execdata *e = f->__cookie;
+  FILE *f = &e->stream;
   const size_t size = e->file_size;
   size_t offset = 0;
 
-  if (f->__target >= size)
-    {
-      f->__eof = 1;
-      return EOF;
-    }
+  f->__target = posn;
 
   if (e->filemap == MACH_PORT_NULL)
     {
-      mach_msg_type_number_t nread = f->__bufsize;
       char *buffer = f->__buffer;
+      mach_msg_type_number_t nread = f->__bufsize;
+      while (nread < len)
+	nread += __vm_page_size;
       if (e->error = io_read (e->file, &buffer, &nread,
 			      f->__target, e->optimal_block))
 	{
 	  errno = e->error;
 	  f->__error = 1;
-	  return EOF;
+	  return NULL;
 	}
       if (buffer != f->__buffer)
 	{
@@ -554,6 +471,12 @@ input_room (FILE *f)
 	}
 
       f->__get_limit = f->__buffer + nread;
+
+      if (nread < len)
+	{
+	  f->__eof = 1;
+	  return NULL;
+	}
     }
   else
     {
@@ -567,18 +490,18 @@ input_room (FILE *f)
       offset = f->__target % vm_page_size;
       if (offset != 0)
 	f->__target -= offset;
+      f->__bufsize = round_page (posn + len) - f->__target;
 
       /* Map the data from the file.  */
       if (vm_map (mach_task_self (),
-		  (vm_address_t *) &f->__buffer, vm_page_size, 0, 1,
+		  (vm_address_t *) &f->__buffer, f->__bufsize, 0, 1,
 		  e->filemap, f->__target, 1, VM_PROT_READ, VM_PROT_READ,
 		  VM_INHERIT_NONE))
 	{
-	  errno = EIO;
+	  errno = e->error = EIO;
 	  f->__error = 1;
-	  return EOF;
+	  return NULL;
 	}
-      f->__bufsize = vm_page_size;
 
       if (e->cntl)
 	e->cntl->accessed = 1;
@@ -592,13 +515,28 @@ input_room (FILE *f)
   f->__offset = f->__target;
   f->__bufp = f->__buffer + offset;
 
-  if (f->__get_limit == f->__buffer)
+  if (f->__bufp + len >= f->__get_limit)
+    {
+      f->__eof = 1;
+      return NULL;
+    }
+
+  return f->__bufp;
+}
+
+/* stdio input-room function.  */
+static int
+input_room (FILE *f)
+{
+  struct execdata *e = f->__cookie;
+  if (f->__target >= e->file_size)
     {
       f->__eof = 1;
       return EOF;
     }
 
-  return (unsigned char) *f->__bufp++;
+  return (map (e, f->__target, 1) == NULL ? EOF :
+	  (unsigned char) *f->__bufp++);
 }
 
 static int
@@ -615,7 +553,7 @@ close_exec_stream (void *cookie)
 
 
 /* Prepare to check and load FILE.  */
-static inline void
+static void
 prepare (file_t file, struct execdata *e)
 {
   e->file = file;
@@ -701,26 +639,26 @@ prepare (file_t file, struct execdata *e)
   e->stream.__cookie = e;
   e->stream.__seen = 1;
 
-#ifdef BFD
-  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
-  if (e->bfd == NULL)
-    {
-      e->error = b2he (ENOEXEC);
-      return;
-    }
-  e->interp_section = NULL;
-#endif
+  e->interp.section = NULL;
 }
 
 /* Check the magic number, etc. of the file.
    On successful return, the caller must allocate the
    E->locations vector, and map check_section over the BFD.  */
 
+#ifdef BFD
 static void
-check (struct execdata *e)
+check_bfd (struct execdata *e)
 {
-#ifdef	BFD
   bfd_set_error (bfd_error_no_error);
+
+  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
+  if (e->bfd == NULL)
+    {
+      e->error = b2he (ENOEXEC);
+      return;
+    }
+
   if (!bfd_check_format (e->bfd, bfd_object))
     {
       e->error = b2he (ENOEXEC);
@@ -737,45 +675,105 @@ check (struct execdata *e)
     }
 
   e->entry = e->bfd->start_address;
-#else
-  /* Map in the a.out header.  */
-  if (e->file_size < sizeof (*e->header))
+}
+#endif
+
+#include <endian.h>
+#if BYTE_ORDER == BIG_ENDIAN
+#define host_ELFDATA ELFDATA2MSB
+#endif
+#if BYTE_ORDER == LITTLE_ENDIAN
+#define host_ELFDATA ELFDATA2LSB
+#endif
+
+static void
+check_elf (struct execdata *e)
+{
+  Elf32_Ehdr *ehdr = map (e, 0, sizeof (Elf32_Ehdr));
+  Elf32_Phdr *phdr;
+
+  if (! ehdr)
     {
-      e->error = EINVAL;
+      if (! ferror (&e->stream))
+	e->error = ENOEXEC;
       return;
     }
-  e->header = NULL;
-  if (e->file_data)
-    /* Data already in core.  Just use it.  */
-    e->header = (void *) e->file_data;
-  else if (e->filemap == MACH_PORT_NULL)
-    {
-      /* Cannot map the file.  Read the header into a buffer.  */
-      if (fread (&e->headbuf, sizeof e->headbuf, 1, &e->stream) != 1)
-	{
-	  e->error = errno;
-	  return;
-	}
-      e->header = &e->headbuf;
-    }
-  else
-    if (e->error = vm_map (mach_task_self (),
-			   (vm_address_t *) &e->header, sizeof (*e->header),
-			   0, 1, e->filemap, 0, 1, VM_PROT_READ, VM_PROT_READ,
-			   VM_INHERIT_NONE))
-      return;
-  if (N_BADMAG (*e->header))
+
+  if (*(Elf32_Word *) ehdr != ((union { Elf32_Word word;
+				       unsigned char string[SELFMAG]; })
+			       { string: ELFMAG }).word)
     {
       e->error = ENOEXEC;
       return;
     }
-  if (N_MACHTYPE (*e->header) && N_MACHTYPE (*e->header) != host_machine)
+
+  if (ehdr->e_ident[EI_CLASS] != ELFCLASS32 ||
+      ehdr->e_ident[EI_DATA] != host_ELFDATA ||
+      ehdr->e_ident[EI_VERSION] != EV_CURRENT ||
+      ehdr->e_version != EV_CURRENT ||
+      ehdr->e_machine != elf_machine ||
+      ehdr->e_ehsize < sizeof *ehdr ||
+      ehdr->e_phentsize != sizeof (Elf32_Phdr))
     {
       e->error = EINVAL;
       return;
     }
 
-  e->entry = e->header->a_entry;
+  e->entry = ehdr->e_entry;
+  e->info.elf.phnum = ehdr->e_phnum;
+  phdr = map (e, ehdr->e_phoff, ehdr->e_phnum * sizeof (Elf32_Phdr));
+  if (! phdr)
+    {
+      if (! ferror (&e->stream))
+	e->error = EINVAL;
+      return;
+    }
+  e->info.elf.phdr = phdr;
+}
+
+static void
+check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
+		vm_address_t *phdr_addr, vm_size_t *phdr_size)
+{
+  const Elf32_Phdr *phdr;
+
+  memcpy (e->info.elf.phdr, mapped_phdr,
+	  e->info.elf.phnum * sizeof (Elf32_Phdr));
+
+  for (phdr = e->info.elf.phdr;
+       phdr < &e->info.elf.phdr[e->info.elf.phnum];
+       ++phdr)
+    switch (phdr->p_type)
+      {
+      case PT_INTERP:
+	e->interp.phdr = phdr;
+	break;
+      case PT_PHDR:
+	if (phdr_addr)
+	  *phdr_addr = phdr->p_vaddr & ~(phdr->p_align - 1);
+	if (phdr_size)
+	  *phdr_size = phdr->p_memsz;
+	break;
+      case PT_LOAD:
+	/* Sanity check.  */
+	if (e->file_size <= (off_t) (phdr->p_offset +
+				     phdr->p_filesz))
+	  e->error = EINVAL;
+	break;
+      }	      
+}
+
+
+static void
+check (struct execdata *e)
+{
+  check_elf (e);
+#ifdef BFD
+  if (e->error == ENOEXEC)
+    {
+      e->error = 0;
+      check_bfd (e);
+    }
 #endif
 }
 
@@ -789,12 +787,22 @@ load (task_t usertask, struct execdata *e)
 
   e->task = usertask;
 #ifdef	BFD
-  bfd_map_over_sections (e->bfd, load_section, e);
-#else
-  load_section (text, e);
-  load_section (data, e);
-  load_section (bss, e);
+  if (e->bfd)
+    {
+      void load_bfd_section (bfd *bfd, asection *sec, void *userdata)
+	{
+	  load_section (sec, userdata);
+	}
+      bfd_map_over_sections (e->bfd, &load_bfd_section, e);
+    }
+  else
 #endif
+    {
+      Elf32_Word i;
+      for (i = 0; i < e->info.elf.phnum; ++i)
+	if (e->info.elf.phdr[i].p_type == PT_LOAD)
+	  load_section (&e->info.elf.phdr[i], e);
+    }
 }
 
 /* Do post-loading processing on the task.  */
@@ -805,11 +813,48 @@ postload (struct execdata *e)
     return;
 
 #ifdef	BFD
-  bfd_map_over_sections (e->bfd, postload_section, e);
-#else
-  postload_section (text, e);
-  postload_section (data, e);
-  postload_section (bss, e);
+  if (e->bfd)
+    {
+      /* Do post-loading processing for a section.  This consists of
+	 peeking the pages of non-demand-paged executables.  */
+
+      void postload_section (bfd *bfd, asection *sec, void *userdata)
+	{
+	  struct execdata *u = userdata;
+	  vm_address_t addr = 0;
+	  vm_size_t secsize = 0;
+
+	  addr = (vm_address_t) sec->vma;
+	  secsize = sec->_raw_size;
+
+	  if ((sec->flags & SEC_LOAD) && !(bfd->flags & D_PAGED))
+	    {
+	      /* Pre-load the section by peeking every mapped page.  */
+	      vm_address_t myaddr, a;
+	      vm_size_t mysize;
+	      myaddr = 0;
+	  
+	      /* We have already mapped the file into the task in
+		 load_section.  Now read from the task's memory into our
+		 own address space so we can peek each page and cause it to
+		 be paged in.  */
+	      if (u->error = vm_read (u->task,
+				      trunc_page (addr), round_page (secsize),
+				      &myaddr, &mysize))
+		return;
+
+	      /* Peek at the first word of each page.  */
+	      for (a = ((myaddr + mysize) & ~(vm_page_size - 1));
+		   a >= myaddr; a -= vm_page_size)
+		/* Force it to be paged in.  */
+		(void) *(volatile int *) a;
+
+	      vm_deallocate (mach_task_self (), myaddr, mysize);
+	    }
+	}
+
+      bfd_map_over_sections (e->bfd, postload_section, e);
+    }
 #endif
 }
 
@@ -855,15 +900,8 @@ finish (struct execdata *e)
   if (e->bfd != NULL)
     bfd_close (e->bfd);
   else
-    fclose (&e->stream);
-#else
-  fclose (&e->stream);
-  if (e->header != NULL && e->header != &e->headbuf &&
-      e->header != (void *) e->file_data)
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t) e->header, sizeof (*e->header));
-  e->header = NULL;
 #endif
+    fclose (&e->stream);
   if (e->file != MACH_PORT_NULL)
     {
       mach_port_deallocate (mach_task_self (), e->file);
@@ -871,6 +909,7 @@ finish (struct execdata *e)
     }
 }
 
+#ifdef GZIP
 /* Check the file for being a gzip'd image.  Return with ENOEXEC means not
    a valid gzip file; return with another error means lossage in decoding;
    return with zero means the file was uncompressed into memory which E now
@@ -970,11 +1009,8 @@ check_gzip (struct execdata *earg)
   e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
   e->stream.__bufp = e->stream.__buffer;
   e->stream.__seen = 1;
-
-  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
-  e->error = e->bfd ? 0 : b2he (ENOEXEC);
 }
-
+#endif
 
 static int
 request_server (mach_msg_header_t *inp,
@@ -1089,10 +1125,22 @@ do_exec (mach_port_t execserver,
   thread_t thread = MACH_PORT_NULL;
   struct bootinfo *boot = 0;
   int secure, defaults;
+  vm_address_t phdr_addr = 0;
+  vm_size_t phdr_size = 0;
 
-  void check_maybe_gzip (struct execdata *e)
+  /* Prime E for executing FILE and check its validity.  This must be an
+     inline function because it stores pointers into alloca'd storage in E
+     for later use in `load'.  */
+  void prepare_and_check (file_t file, struct execdata *e)
     {
+      /* Prepare E to read the file.  */
+      prepare (file, e);
+
+      /* Check the file for validity first.  */
+
       check (e);
+
+#ifdef GZIP
       if (e->error == ENOEXEC)
 	{
 	  /* See if it is a compressed image.  */
@@ -1103,52 +1151,94 @@ do_exec (mach_port_t execserver,
 	       for a valid magic number.  */
 	    check (e);
 	}
+#endif
+
+#if 0
+      if (e->error == ENOEXEC)
+	/* Check for a #! executable file.  */
+	check_hashbang (e, replyport,
+			file, oldtask, flags,
+			argv, argvlen, argv_copy,
+			envp, envplen, envp_copy,
+			dtable, dtablesize, dtable_copy,
+			portarray, nports, portarray_copy,
+			intarray, nints, intarray_copy,
+			deallocnames, ndeallocnames,
+			destroynames, ndestroynames);
+#endif
     }
+
+
+  /* Here is the main body of the function.  */
+
 
   /* Catch this error now, rather than later.  */
   if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
     return EIEIO;
 
-  interp.file = MACH_PORT_NULL;
 
-  /* Prepare E to read the file.  */
-  prepare (file, &e);
-
-  /* Check the file for validity first.  */
-
-  check_maybe_gzip (&e);
-#if 0
-  if (e.error == ENOEXEC)
-    /* Check for a #! executable file.  */
-    check_hashbang (&e, replyport,
-		    file, oldtask, flags,
-		    argv, argvlen, argv_copy,
-		    envp, envplen, envp_copy,
-		    dtable, dtablesize, dtable_copy,
-		    portarray, nports, portarray_copy,
-		    intarray, nints, intarray_copy,
-		    deallocnames, ndeallocnames,
-		    destroynames, ndestroynames);
-#endif
-#ifdef	BFD
+  /* Prime E for executing FILE and check its validity.  */
+  prepare_and_check (file, &e);
   if (! e.error)
     {
-      e.locations = alloca (e.bfd->section_count * sizeof (vm_offset_t));
-      bfd_map_over_sections (e.bfd, check_section, &e);
-    }
-  if (! e.error && e.interp_section)
-    {
-      /* There is an interpreter section specifying another file to load
-	 along with this executable.  */
-      char name[e.interp_section->_raw_size];
-      if (! bfd_get_section_contents (e.bfd, e.interp_section,
-				      name, 0, e.interp_section->_raw_size))
+#ifdef	BFD
+      if (e.bfd)
 	{
-	  e.error = b2he (errno);
-	  e.interp_section = NULL;
+	  e.info.bfd_locations = alloca (e.bfd->section_count *
+					 sizeof (vm_offset_t));
+	  bfd_map_over_sections (e.bfd, check_section, &e);
 	}
       else
+#endif
 	{
+	  const Elf32_Phdr *phdr = e.info.elf.phdr;
+	  e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (Elf32_Phdr));
+	  check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
+	}
+    }
+
+
+  interp.file = MACH_PORT_NULL;
+  if (! e.error && e.interp.section)
+    {
+      /* There is an interpreter section specifying another file to load
+	 along with this executable.  Find the name of the file and open
+	 it.  */
+
+#ifdef BFD
+      char namebuf[e.bfd ? e.interp.section->_raw_size : 0];
+#endif
+      char *name;
+
+#ifdef BFD
+      if (e.bfd)
+	{
+	  if (! bfd_get_section_contents (e.bfd, e.interp.section,
+					  namebuf, 0,
+					  e.interp.section->_raw_size))
+	    {
+	      e.error = b2he (errno);
+	      name = NULL;
+	    }
+	  else
+	    name = namebuf;
+	}
+      else
+#endif
+	{
+	  name = map (&e, (e.interp.phdr->p_offset
+			   & ~(e.interp.phdr->p_align - 1)),
+		      e.interp.phdr->p_filesz);
+	  if (! name && ! ferror (&e.stream))
+	    e.error = EINVAL;
+	}
+
+      if (! name)
+	e.interp.section = NULL;
+      else
+	{
+	  /* Open the named file using the appropriate directory ports for
+	     the user.  */
 	  inline mach_port_t user_port (unsigned int idx)
 	    {
 	      return (((flags & (EXEC_SECURE|EXEC_DEFAULTS)) || idx >= nports)
@@ -1163,17 +1253,29 @@ do_exec (mach_port_t execserver,
     }
   if (interp.file != MACH_PORT_NULL)
     {
-      prepare (interp.file, &interp);
-      check_maybe_gzip (&interp);
+      /* We opened an interpreter file.  Prepare it for loading too.  */
+      prepare_and_check (interp.file, &interp);
       if (! interp.error)
 	{
-	  interp.locations = alloca (interp.bfd->section_count *
-				     sizeof (vm_offset_t));
-	  bfd_map_over_sections (interp.bfd, check_section, &interp);
+#ifdef	BFD
+	  if (interp.bfd)
+	    {
+	      interp.info.bfd_locations = alloca (interp.bfd->section_count *
+						  sizeof (vm_offset_t));
+	      bfd_map_over_sections (interp.bfd, check_section, &e);
+	    }
+	  else
+#endif
+	    {
+	      const Elf32_Phdr *phdr = interp.info.elf.phdr;
+	      interp.info.elf.phdr = alloca (interp.info.elf.phnum *
+					     sizeof (Elf32_Phdr));
+	      check_elf_phdr (&interp, phdr, NULL, NULL);
+	    }
 	}
       e.error = interp.error;
     }
-#endif
+
   if (e.error)
     {
       if (interp.file != MACH_PORT_NULL)
@@ -1304,6 +1406,8 @@ do_exec (mach_port_t execserver,
   mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
 
 #ifdef XXX
+  boot->phdr_addr = phdr_addr;
+  boot->phdr_size = phdr_size;
   boot->user_entry = e.entry;
 #endif
 
@@ -1435,10 +1539,8 @@ do_exec (mach_port_t execserver,
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
   if (e.error = mach_setup_thread (newtask, thread, 
-#ifdef BFD
-				   e.interp_section ? (void *) interp.entry :
-#endif
-				   (void *) e.entry,
+				   (void *) (e.interp.section ? interp.entry :
+					     e.entry),
 				   &boot->stack_base, &boot->stack_size))
     goto bootout;
 
@@ -1936,15 +2038,12 @@ main (int argc, char **argv)
 
   save_argv = argv;
 
-#ifdef	BFD
   /* Put the Mach kernel's idea of what flavor of machine this is into the
      fake BFD against which architecture compatibility checks are made.  */
   err = bfd_mach_host_arch_mach (mach_host_self (),
 				 &host_bfd.arch_info->arch,
-				 &host_bfd.arch_info->mach);
-#else
-  err = aout_mach_host_machine (mach_host_self (), (int *)&host_machine);
-#endif
+				 &host_bfd.arch_info->mach,
+				 &elf_machine);
   if (err)
     return err;
 
