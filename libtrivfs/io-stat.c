@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "io_S.h"
+#include <unistd.h>
 
 kern_return_t
 trivfs_S_io_stat (struct trivfs_protid *cred,
@@ -33,8 +34,18 @@ trivfs_S_io_stat (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   err = io_stat (cred->realnode, st);
+
   if (!err)
-    trivfs_modify_stat (st);
+    {
+      if (!trivfs_fsid)
+	trivfs_fsid = getpid();
+
+      st->st_fstype = trivfs_fstype;
+      st->st_fsid = trivfs_fsid;
+
+      trivfs_modify_stat (st);
+    }
+
   return err;
 }
 
