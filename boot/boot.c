@@ -1922,6 +1922,13 @@ kern_return_t S_term_get_nodename
 )
 { return EOPNOTSUPP; }
 
+kern_return_t S_term_get_peername
+(
+	io_t terminal,
+	string_t name
+)
+{ return EOPNOTSUPP; }
+
 kern_return_t S_term_set_filenode
 (
 	io_t terminal,
