@@ -440,8 +440,8 @@ error_t
 diskfs_set_statfs (struct fsys_statfsbuf *st)
 {
   st->fsys_stb_type = FSTYPE_EXT2FS;
-  st->fsys_stb_fsize = EXT2_BLOCK_SIZE(sblock);
-  st->fsys_stb_fsize = EXT2_FRAG_SIZE(sblock);
+  st->fsys_stb_bsize = block_size;
+  st->fsys_stb_fsize = frag_size;
   st->fsys_stb_blocks = sblock->s_blocks_count;
   st->fsys_stb_bfree = sblock->s_free_blocks_count;
   st->fsys_stb_bavail = st->fsys_stb_bfree - sblock->s_r_blocks_count;
