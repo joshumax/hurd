@@ -1,3 +1,13 @@
+2001-03-31  Roland McGrath  <roland@frob.com>
+
+	* cthreads.h: Fix obsolescent #endif syntax.
+	* cthread_internals.h: Likewise.
+	* cancel-cond.c: Likewise.
+	* stack.c: Likewise.
+	* cthreads.c: Likewise.
+	* cprocs.c: Likewise.
+	* call.c: Likewise.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* i386/thread.c: Remove superfluous bzero decl,
