@@ -40,7 +40,8 @@ all: ufs
 
 # Don't use $^ in this rule; it will omit the duplicates in $(LIBS).
 ufs: $(OBJS) $(LIBS)
-	$(CC) -Xlinker --no-keep-memory $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS) 
+# -Xlinker --no-keep-memory
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	rsh $(mighost) -n cd `pwd` \; \
