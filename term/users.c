@@ -1581,6 +1581,8 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
   mutex_lock (&global_lock);
   cred->po->openmodes &= ~HONORED_STATE_MODES;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
+  if (bits & O_ASYNC)
+    termflags |= ICKY_ASYNC;
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -1596,6 +1598,8 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
 
   mutex_lock (&global_lock);
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
+  if (bits & O_ASYNC)
+    termflags |= ICKY_ASYNC;
   mutex_unlock (&global_lock);
   return 0;
 }
