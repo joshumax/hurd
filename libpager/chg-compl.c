@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <stdio.h>
 
 /* The kernel calls this (as described in <mach/memory_object.defs>)
    when a memory_object_change_attributes call has completed.  Read this
