@@ -45,7 +45,6 @@ _pager_do_write_request (mach_port_t object,
 		    struct lock_list *next;} *lock_list, *ll;
   int wakeup;
   int omitdata = 0;
-  struct anticipation *ant;
   
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
@@ -86,13 +85,6 @@ _pager_do_write_request (mach_port_t object,
 
   _pager_block_termination (p);	/* until we are done with the pagemap
 				   when the write completes. */
-
-  ant = _pager_check_anticitpations (p, length, offset);
-  if (ant)
-    {
-      vm_deallocate (mach_task_self (), ant->address, ant->length);
-      free (ant);
-    }
 
   _pager_pagemap_resize (p, offset + length);
 
