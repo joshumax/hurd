@@ -20,6 +20,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef __MIG_DECLS_H__
+#define __MIG_DECLS_H__
+
 #include "sock.h"
 
 /* For mig */
@@ -52,3 +55,5 @@ end_using_addr_port (addr_t addr)
   if (addr != NULL)
     ports_port_deref (addr);
 }
+
+#endif /* __MIG_DECLS_H__ */
