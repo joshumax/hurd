@@ -298,12 +298,12 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   /*
    * Set up a new generation number for this inode.
    */
-  spin_lock (&gennumberlock);
+  spin_lock (&generation_lock);
   sex = diskfs_mtime->seconds;
   if (++nextgennumber < (u_long)sex)
     nextgennumber = sex;
   np->dn_stat.st_gen = nextgennumber;
-  spin_unlock (&gennumberlock);
+  spin_unlock (&generation_lock);
 
   alloc_sync (np);
 
