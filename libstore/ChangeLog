@@ -1,3 +1,7 @@
+2001-12-29  Roland McGrath  <roland@frob.com>
+
+	* nbd.c (nbd_validate_name): Skip : before port number.
+
 2001-12-26  Roland McGrath  <roland@frob.com>
 
 	* unknown.c: New file.
