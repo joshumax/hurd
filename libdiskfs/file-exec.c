@@ -112,9 +112,7 @@ diskfs_S_file_exec (struct protid *cred,
 #endif
 
   if (! err)
-    err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, 
-						     cred->po->dotdotport,
-						     cred->po->depth),
+    err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, cred->po),
 				cred->user, &newpi);
 
   if (! err)
