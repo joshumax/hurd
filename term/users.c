@@ -111,7 +111,7 @@ check_access_hook (struct trivfs_control *cntl,
 		   int *allowed)
 {
   struct stat st;
-  
+
   mutex_lock (&global_lock);
 
   st.st_uid = term_owner;
@@ -826,7 +826,7 @@ trivfs_S_io_revoke (struct trivfs_protid *cred,
     {
       struct trivfs_protid *user = port;
 
-      if (user->pi.class == cred->pi.class && user != cred)
+      if (user != cred)
 	ports_destroy_right (user);
       return 0;
     }
@@ -855,7 +855,7 @@ trivfs_S_io_revoke (struct trivfs_protid *cred,
   mutex_unlock (&global_lock);
 
   ports_inhibit_bucket_rpcs (term_bucket);
-  ports_bucket_iterate (term_bucket, iterator_function);
+  ports_class_iterate (cred->pi.class, iterator_function);
   ports_resume_bucket_rpcs (term_bucket);
 
   return 0;
