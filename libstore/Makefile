@@ -23,7 +23,7 @@ dir := libstore
 makemode := library
 
 libname = libstore
-SRCS = create.c derive.c device.c make.c rdwr.c set.c
+SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c
 LCLHDRS=store.h
 installhdrs=store.h
 
