@@ -1,6 +1,6 @@
 /* The proc_stat type, which holds information about a hurd process.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -365,7 +365,8 @@ summarize_thread_basic_info (struct procinfo *pi)
   bzero (tbi, sizeof *tbi);
 
   for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died)
+    if (! pi->threadinfos[i].died
+	&& ! (pi->threadinfos[i].pis_bi & TH_FLAGS_IDLE))
       {
 	thread_basic_info_t bi = &pi->threadinfos[i].pis_bi;
 	int thread_run_state = bi->run_state;
@@ -452,7 +453,8 @@ summarize_thread_sched_info (struct procinfo *pi)
   bzero (tsi, sizeof *tsi);
 
   for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died)
+    if (! pi->threadinfos[i].died 
+	&& ! (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE))
       {
 	thread_sched_info_t si = &pi->threadinfos[i].pis_si;
 	tsi->base_priority += si->base_priority;
@@ -482,7 +484,8 @@ summarize_thread_states (struct procinfo *pi)
 
   /* The union of all thread state bits...  */
   for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died)
+    if (! pi->threadinfos[i].died
+	&& ! (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE))
       state |= thread_state (&pi->threadinfos[i].pis_bi);
 
   return state;
@@ -507,7 +510,9 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
 	{
 	  int left = waits + waits_len - next_wait;
 
-	  if (strncmp (next_wait, "msgport", left) == 0
+	  if (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE)
+	    ;			/* kernel idle thread; ignore */
+	  else if (strncmp (next_wait, "msgport", left) == 0
 	      || strncmp (next_wait, "itimer", left) == 0)
 	    ;		/* libc internal threads; ignore.  */
 	  else if (*wait)

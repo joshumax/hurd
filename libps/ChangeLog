@@ -1,3 +1,11 @@
+Fri May 23 13:13:18 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* procstat.c (summarize_thread_basic_info): Don't include the
+	kernel's idle threads in the summation.
+	(summarize_thread_sched_info): Likewise.
+	(summarize_thread_states): Likewise.
+	(summarize_thread_waits): Likewise.
+
 Fri Feb 28 18:11:28 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fmt.c (ps_fmt_squash): Deal with FIELD->spec being NULL when
