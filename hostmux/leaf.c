@@ -29,31 +29,8 @@ netfs_attempt_readlink (struct iouser *user, struct node *node, char *buf)
 {
   assert (node->nn->name);
   memcpy (buf, node->nn->name->canon, node->nn_stat.st_size);
-  touch (node, TOUCH_ATIME);
+  fshelp_touch (&node->nn_stat, TOUCH_ATIME, hostmux_maptime);
   return 0;
-}
-
-/* Append BUF, of length BUF_LEN to *TO, of length *TO_LEN, reallocating and
-   updating *TO & *TO_LEN appropriately.  If an allocation error occurs,
-   *TO's old value is freed, and *TO is set to 0.  */
-static void
-str_append (char **to, size_t *to_len, const char *buf, const size_t buf_len)
-{
-  size_t new_len = *to_len + buf_len;
-  char *new_to = realloc (*to, new_len + 1);
-
-  if (new_to)
-    {
-      memcpy (new_to + *to_len, buf, buf_len);
-      new_to[new_len] = '\0';
-      *to = new_to;
-      *to_len = new_len;
-    }
-  else
-    {
-      free (*to);
-      *to = 0;
-    }
 }
 
 /* For locked node NODE with S_IPTRANS set in its mode, look up the name of
@@ -70,69 +47,25 @@ netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
   else
     {
       error_t err = 0;
-      char *arg = 0;
-      int did_replace = 0;
+      unsigned replace_count = 0;
       struct hostmux *mux = node->nn->mux;
-      char *template = mux->trans_template;
-      size_t template_len = mux->trans_template_len;
-      char *host_pat = mux->host_pat;
-      const char *host = node->nn->name->canon;
-      size_t host_len = strlen (host);
 
       *argz = 0;			/* Initialize return value.  */
       *argz_len = 0;
 
-      if (host_pat)
-	{
-	  size_t host_pat_len = strlen (host_pat);
+      /* Return a copy of MUX's translator template, with occurances of
+	 HOST_PAT replaced by the canonical hostname.  */
+      err = argz_append (argz, argz_len,
+			 mux->trans_template, mux->trans_template_len);
+      if (! err)
+	err = argz_replace (argz, argz_len,
+			    mux->host_pat, node->nn->name->canon,
+			    &replace_count);
 
-	  while (!err && (arg = argz_next (template, template_len, arg)))
-	    {
-	      char *match = strstr (arg, host_pat);
-	      if (match)
-		{
-		  char *from = match + host_pat_len;
-		  size_t to_len = match - arg;
-		  char *to = strndup (arg, to_len);
-
-		  while (to && from)
-		    {
-		      str_append (&to, &to_len, host, host_len);
-		      if (to)
-			{
-			  match = strstr (from, host_pat);
-			  if (match)
-			    {
-			      str_append (&to, &to_len, from, match - from);
-			      from = match + host_pat_len;
-			    }
-			  else
-			    {
-			      str_append (&to, &to_len, from, strlen (from));
-			      from = 0;
-			    }
-			}
-		    }
-
-		  if (to)
-		    {
-		      err = argz_add (argz, argz_len, to);
-		      free (to);
-		    }
-		  else
-		    err = ENOMEM;
-
-		  did_replace = 1;
-		}
-	      else
-		err = argz_add (argz, argz_len, arg);
-	    }
-	}
-      else
-	err = argz_append (argz, argz_len, template, template_len);
-
-      if (!err && !did_replace)
-	err = argz_add (argz, argz_len, host);
+      if (!err && replace_count == 0)
+	/* Default, if no instances of HOST_PAT occur, is to append the
+	   hostname. */
+	err = argz_add (argz, argz_len, node->nn->name->canon);
 
       if (err && *argz_len > 0)
 	free (*argz);
@@ -178,6 +111,9 @@ create_host_node (struct hostmux *mux, struct hostmux_name *name,
       new->nn_stat.st_mode = (S_IFLNK | 0666);
       new->nn_stat.st_size = strlen (name->canon);
     }
+
+  fshelp_touch (&new->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
+		hostmux_maptime);
 
   name->node = new;
 
