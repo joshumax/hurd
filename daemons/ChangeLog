@@ -1,3 +1,7 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rc.sh: Don't create /var/run/uptime.  It's no longer used.
+
 1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rc.sh: Do `swapon -a' first thing.
