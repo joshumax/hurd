@@ -1,5 +1,5 @@
 /* Disk allocation routines
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -308,7 +308,10 @@ ffs_realloccg(register struct node *np,
 		bp->b_blkno = fsbtodb(fs, bno);
 		(void) vnode_pager_uncache(ITOV(ip));
 #endif
-		ffs_blkfree(np, bprev, (long)osize);
+/* Commented out here for Hurd; we don't want to free this until we've
+   saved the old contents.  Callers are responsible for freeing the
+   block when they are done with it. */
+/*		ffs_blkfree(np, bprev, (long)osize); */
 		if (nsize < request)
 			ffs_blkfree(np, bno + numfrags(fs, nsize),
 			    (long)(request - nsize));
@@ -563,7 +566,7 @@ diskfs_alloc_node (struct node *dir,
 	spin_unlock (&alloclock);
 	if (ino == 0)
 		goto noinodes;
-	error = iget (ino, &np);
+	error = diskfs_cached_lookup (ino, &np);
 	assert ("duplicate allocation" && !np->dn_stat.st_mode);
 	assert (!np->istranslated);
 	if (np->dn_stat.st_blocks) {
