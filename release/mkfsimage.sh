@@ -337,11 +337,13 @@ if [ "${COMPRESS-no}" = yes ]; then
   SIZE=$(($TREE_SIZE * 110 / 100))
   test $SIZE -lt $MIN_SIZE && SIZE=$MIN_SIZE
 else
-  SIZE=$MAX_SIZE
-  if [ $TREE_SIZE -gt $SIZE ]; then
+  if [ $TREE_SIZE -gt $MAX_SIZE ]; then
     echo 1>&2 "$0: $TREE: Too big (${TREE_SIZE}k) to fit in ${MAX_SIZE}k"
     exit 10
   fi
+  SIZE=$(($TREE_SIZE * 110 / 100))
+  test $SIZE -lt $MIN_SIZE && SIZE=$MIN_SIZE
+  test $SIZE -gt $MAX_SIZE && SIZE=$MAX_SIZE
 fi
 
 eval $ECHO "'# Zeroing disk image...'"
