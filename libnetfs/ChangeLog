@@ -1,3 +1,25 @@
+2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* dir-lookup.c (netfs_S_dir_lookup):  Use
+	iohelp_create_empty_iouser.  Use iohelp_dup_iouser
+	as per the new semantics.
+	* dir-mkfile.c (netfs_S_dir_mkfile): Use iohelp_dup_iouser
+	as per the new semantics.
+	* file-exec.c (netfs_S_file_exec): Likewise.
+	* file-reparent.c (netfs_S_file_reparent): Likewise.
+	* fsys-getroot.c (netfs_S_fsys_getroot): Use
+	iohelp_create_complex_iouser.
+	* fsys-syncfs.c (netfs_S_fsys_syncfs): Use
+	iohelp_create_simple_iouser.
+	* io-duplicate.c (netfs_S_io_duplicate): Use iohelp_dup_iouser
+	as per the new semantics.
+	* io-reauthenticate.c (netfs_S_io_reauthenticate): Use
+	iohelp_reauth as per the new semantics.
+	* io-restric-auth.c (netfs_S_io_restric_auth): Use
+	iohelp_create_complex_iouser.  Check return values.
+	* trans-callback.c (_netfs_transcallback2_fn):	Use
+	iohelp_create_simple_iouser.
+
 2001-06-15  Neal H Walfield  <neal@cs.uml.edu>
 
         * file-set-translator.c (netfs_S_file_set_translator):  If

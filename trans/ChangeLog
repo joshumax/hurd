@@ -1,3 +1,8 @@
+2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* magic.c (trivfs_S_dir_lookup):  Use iohelp_dup_iouser
+	as per the new semantics.
+
 2001-02-28  Roland McGrath  <roland@frob.com>
 
 	* streamio.c (trivfs_modify_stat): Fix inverted sense of tests

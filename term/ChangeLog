@@ -1,3 +1,7 @@
+2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* users.c (S_termctty_open_terminal): Use iohelp_create_empty_iouser.
+
 2001-06-01  Roland McGrath  <roland@frob.com>
 
 	* users.c (trivfs_S_io_select): Fix typo in last change.

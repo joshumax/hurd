@@ -1,3 +1,19 @@
+2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Use
+	iohelp_create_empty_iouser.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Use
+	iohelp_create_complex_iouser.
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Use
+	new iohelp_reauth semantics.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Use
+	new iohelp_create_iouser semantics.
+	* protid-make.c (diskfs_finish_protid): Use
+	iohelp_create_simple_iouser and new iohelp_dup_iouse
+	semantics.
+	* trans-callback.c (_diskfs_translator_callback2_fn):
+	Use iohelp_create_simple_iouser.
+
 2001-06-15  Neal H Walfield  <neal@cs.uml.edu>
 
 	* file-set-trans.c (diskfs_S_file_set_translator):  If
