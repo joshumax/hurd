@@ -25,6 +25,9 @@ subsystem msg 23000;
 MSG_IMPORTS
 #endif
 
+type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
+	ctype: mach_port_t;
+
 /* Post a signal to the process.  The refport indicates some
    permission attribute that the caller provides in the hope that the
    receiver will honor the signal.  Conventional values include:
@@ -38,12 +41,7 @@ async IO ID (see io_async)	URG, IO
 */
 routine sig_post (
 	process: mach_port_t;
-/* MiG has a bug that breaks user stubs when an sreplyport argument
-   is specified.  So servers must MiG with -DMSG_SREPLYPORT to enable the
-   argument.  */
-#ifdef MSG_SREPLYPORT
-	sreplyport reply_port: mach_port_t;
-#endif
+	sreplyport reply_port: reply_port_t;
 	signal: int;
 	refport: mach_port_t);
 
