@@ -16,72 +16,21 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := boot
+makemode := utility
+
+SRCS = boot.c tcattr.c sigvec.S
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
+       io_replyUser.o device_replyUser.o sigvec.o \
+       termServer.o tcattr.o
+target = boot
 
 include ../Makeconf
 
-VPATH = ../machine
+install: /usr/local/bin/boot
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
-       io_replUser.o device_replyUser.o sigvec.o \
-       termServer.o tcattr.o
-# tioctlServer.o
-SRCS = boot.c tcattr.c sigvec.S
-
-DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S tcattr.c
-
-all: boot
-
-boot: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-install: boot
+/usr/local/bin/boot:
 	cp boot /usr/local/bin/boot
 
-clean: 
-	rm -f boot $(OBJS) *_S.h *Server.c *User.c
-relink:
-	rm -f boot
-
-boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h \
+boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply_U.h io_reply_U.h \
 	tioctl_S.h term_S.h
-# tioctlServer.o: ../hurd/ioctl_types.h
 
-notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -user /dev/null -header /dev/null \
-	-sheader notify_S.h
-
-exec_S.h execServer.c: $(includedir)/hurd/exec.defs
-	$(CPP) $(CPPFLAGS) $< -DSERVERPREFIX=S_ | \
-	$(MIGCOM) -user /dev/null -header /dev/null \
-	-sheader exec_S.h
-
-device.defs: $(includedir)/device/device.defs
-	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
-
-device_S.h deviceServer.c: device.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -user /dev/null -header /dev/null \
-	-sheader device_S.h
-
-device_reply.h device_replyUser.c: $(includedir)/device/device_reply.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -server /dev/null
-
-io_S.h ioServer.c: $(includedir)/hurd/io.defs
-	$(CPP) $(CPPFLAGS) $< -DREPLY_PORTS | \
-	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null -sheader io_S.h
-
-io_repl.h io_replUser.c: io_repl.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -server /dev/null
-
-#tioctlServer.c tioctl_S.h: ../hurd/tioctl.defs
-#	$(CPP) $(CPPFLAGS) $< | \
-#	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
-#	-sheader tioctl_S.h
-
-termServer.c term_S.h: ../hurd/term.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
-	-sheader term_S.h
