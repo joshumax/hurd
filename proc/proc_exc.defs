@@ -36,7 +36,7 @@ ServerPrefix S_;
 
 simpleroutine proc_exception_raise (
 	exception_port: mach_port_t;
-	replyport replyport: mach_port_send_t;
+	replyport reply: mach_port_poly_t;
 	thread: mach_port_t;
 	task: mach_port_t;
 	exception: int;

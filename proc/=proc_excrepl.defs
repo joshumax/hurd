@@ -34,4 +34,4 @@ ServerPrefix S_;
 
 simpleroutine proc_exception_raise_reply (
 	reply: mach_port_send_t;
-	int: reply_code);
+	reply_code: int);
