@@ -24,11 +24,14 @@
 
 #include "store.h"
 
-/* Return a new store in STORE, which refers to the storage underlying
-   SOURCE.  CLASSES is used to select classes specified by the provider; if
-   it is 0, STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags.  A
-   reference to SOURCE is created (but may be destroyed with
-   store_close_source).  */
+/* Return a new store in STORE, which refers to the storage underlying SOURCE.
+   CLASSES is used to select classes specified by the provider; if it is 0,
+   STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags, with the
+   exception of STORE_INACTIVE, which merely indicates that no attempt should
+   be made to activate an inactive store; if STORE_INACTIVE is not specified,
+   and the store returned for SOURCE is inactive, an attempt is made to
+   activate it (failure of which causes an error to be returned).  A reference
+   to SOURCE is created (but may be destroyed with store_close_source).  */
 error_t
 store_create (file_t source, int flags,
 	      const struct store_class *const *classes,
@@ -53,9 +56,17 @@ store_create (file_t source, int flags,
     return err;
 
   err = store_decode (&enc, classes, store);
-
-  if (!err && flags)
-    store_set_flags (*store, flags);
+  if (! err)
+    {
+      if (flags & STORE_INACTIVE)
+	flags &= ~STORE_INACTIVE; /* Don't actually make store inactive.  */
+      else if ((*store)->flags & STORE_INACTIVE)
+	err = store_clear_flags (*store, STORE_INACTIVE);
+      if (!err && flags)
+	err = store_set_flags (*store, flags);
+      if (err)
+	store_free (*store);
+    }
 
   store_enc_dealloc (&enc);
 
