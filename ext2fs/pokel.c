@@ -2,6 +2,8 @@
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
