@@ -165,6 +165,9 @@ options_parse (struct options *options,
   /* Getopt is (currently) non-reentrant.  */
   mutex_lock (&getopt_lock);
 
+  /* Tell getopt to initialize.  */
+  optind = 0;
+
   if (flags & OPTIONS_PRINT_ERRS)
     opterr = 1;			/* Print error messages.  */
   else
@@ -173,7 +176,7 @@ options_parse (struct options *options,
       if (!(flags & OPTIONS_SKIP_ARG0))
 	/* getopt always skips ARGV[0], so we have to fake it out.  As long
 	   as opterr is 0, then it shouldn't actually try to access it.  */
-	argv--;
+	argv--, argc++;
     }
 
   /* Now use getopt on our coalesced options lists.  */
