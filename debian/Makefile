@@ -1,4 +1,4 @@
-# Makefile for Debian Hurd packaging directory
+# Makefile for Debian Hurd packaging directory 
 #   Copyright (C) 1999 Free Software Foundation, Inc.
 #   Gordon Matzigkeit <gord@fig.org>, 1999-03-17
 #
