@@ -26,6 +26,17 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.13  2001/03/31 23:01:01  roland
+ * 2001-03-31  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h: Fix obsolescent #endif syntax.
+ * 	* cthread_internals.h: Likewise.
+ * 	* cancel-cond.c: Likewise.
+ * 	* stack.c: Likewise.
+ * 	* cthreads.c: Likewise.
+ * 	* cprocs.c: Likewise.
+ * 	* call.c: Likewise.
+ *
  * Revision 1.12  2000/01/10 14:42:30  kettenis
  * 2000-01-10  Mark Kettenis  <kettenis@gnu.org>
  *
@@ -314,7 +325,7 @@ private spin_lock_t mutex_count_lock = SPIN_LOCK_INITIALIZER;
 #endif  /* STATISTICS */
 
 cproc_t cproc_list = NO_CPROC;		/* list of all cprocs */
-private cproc_list_lock = SPIN_LOCK_INITIALIZER;
+private spin_lock_t cproc_list_lock = SPIN_LOCK_INITIALIZER;
 					/* lock for above */
 private int cprocs_started = FALSE;	/* initialized? */
 private struct cthread_queue ready = QUEUE_INITIALIZER;
