@@ -328,7 +328,7 @@ ids_add (struct ids *ids, id_t id)
 {
   if (ids->alloced == ids->num)
     {
-      ids->alloced *= 2;
+      ids->alloced = ids->alloced * 2 + 1;
       ids->ids = realloc (ids->ids, ids->alloced * sizeof (id_t));
       if (ids->ids == NULL)
 	error(8, ENOMEM, "Can't allocate id list");
