@@ -31,6 +31,7 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   uid_t *gubuf, *ggbuf, *aubuf, *agbuf;
   error_t err;
+  int i;
 
   if (cred == 0)
     return EOPNOTSUPP;
@@ -39,8 +40,7 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   gubuf = gen_uids; ggbuf = gen_gids;
   aubuf = aux_uids; agbuf = aux_gids;
 
-  mutex_lock (&cred->po->np->lock);
-  newcred = diskfs_start_protid (cred->po);
+  newcred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
   err = auth_server_authenticate (diskfs_auth_server_port, 
 				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
@@ -53,7 +53,14 @@ trivfs_S_io_reauthenticate (struct protid *cred,
 				  &aux_gids, &auxgidlen);
   assert (!err);		/* XXX */
 
-  diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
+  newcred->isroot = 0;
+  for (i = 0; i < genuidlen; i++)
+    if (gen_uids[i] == 0)
+      newcred->isroot = 1;
+  err = io_restrict_auth (trivfs_underlying_node, &newcred->realnode,
+			  gen_uids, genuidlen, gen_gids, gengidlen);
+  if (err)
+    newcred->realnode = MACH_PORT_NULL;
 
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
@@ -69,3 +76,4 @@ trivfs_S_io_reauthenticate (struct protid *cred,
 		   auxgidlen * sizeof (uid_t));
   
   return 0;
+}
