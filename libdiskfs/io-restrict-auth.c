@@ -30,7 +30,7 @@ listmember (int *list, int query, int n)
 }
 
 /* Implement io_restrict_auth as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_restrict_auth (struct protid *cred,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newportpoly,

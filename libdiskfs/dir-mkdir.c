@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement dir_mkdir as found in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_dir_mkdir (struct protid *dircred,
 		    char *name,
 		    mode_t mode)

@@ -21,7 +21,7 @@
 #include fth_TH_dot_h
 
 /* Implement file_chauthor as dethcribed in <hurd/fth.defth>. */
-error_t
+kern_return_t
 dithkfth_TH_file_chauthor (struct protid *cred,
 			   uid_t author)
 {

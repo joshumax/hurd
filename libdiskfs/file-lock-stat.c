@@ -22,7 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 diskfs_S_file_lock_stat (struct protid *cred,
 			 int *mystatus,
 			 int *otherstatus)

@@ -20,7 +20,7 @@
 #include <string.h>
 
 /* Implement io_stat as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_stat (struct protid *cred,
 		  io_statbuf_t *statbuf)
 {

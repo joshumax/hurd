@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement file_utimes as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_utimes (struct protid *cred,
 		      time_value_t atime,
 		      time_value_t mtime)

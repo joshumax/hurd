@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 /* Implement io_clear_some_openmodes as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_clear_some_openmodes (struct protid *cred,
 				  int offbits)
 {

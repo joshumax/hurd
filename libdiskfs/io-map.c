@@ -19,7 +19,7 @@
 #include "io_S.h"
 
 /* Implement io_map as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_map (struct protid *cred,
 		 memory_object_t *rdobj,
 		 mach_msg_type_name_t *rdtype,

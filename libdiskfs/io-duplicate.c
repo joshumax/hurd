@@ -19,7 +19,7 @@
 #include "io_S.h"
 
 /* Implement io_duplicate as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_duplicate (struct protid *cred,
 		       mach_port_t *port,
 		       mach_msg_type_name_t *portpoly)

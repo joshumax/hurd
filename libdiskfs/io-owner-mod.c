@@ -19,7 +19,7 @@
 #include "io_S.h"
 
 /* Implement io_mod_owner as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_mod_owner (struct protid *cred,
 		       pid_t owner)
 {

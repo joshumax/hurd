@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 /* Implement file_truncate as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_truncate (struct protid *cred,
 			off_t size)
 {

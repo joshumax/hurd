@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 /* Implement io_readable as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_readable (struct protid *cred,
 		      int *amount)
 {

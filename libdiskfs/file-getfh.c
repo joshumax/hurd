@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement file_getfh as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_getfh (struct protid *cred,
 		     char **data,
 		     u_int *datalen)

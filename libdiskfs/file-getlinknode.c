@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement file_getlinknode as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_getlinknode (struct protid *cred,
 			   file_t *port,
 			   mach_msg_type_name_t *portpoly)

@@ -22,7 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "interrupt_S.h"
 
-error_t
+kern_return_t
 diskfs_S_interrupt_operation (mach_port_t handle)
 {
   return 0;

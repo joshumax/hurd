@@ -22,7 +22,7 @@
 #define diskfs_readonly 0
 
 /* Implement io_seek as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_seek (struct protid *cred,
 		  off_t offset,
 		  int whence,

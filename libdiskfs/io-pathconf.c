@@ -19,7 +19,7 @@
 #include "fs_S.h"
 
 /* Implement file_pathconf as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_pathconf (struct protid *cred,
 			int name,
 			int *value)
