@@ -1,3 +1,19 @@
+2003-02-15  Roland McGrath  <roland@frob.com>
+
+	* configure: New generated file, now in the repository.
+
+2002-10-23  Jeff Bailey  <jbailey@gnu.org>
+
+	Update for Autoconf 2.54.
+        * configure.in: Replace AC_FD_CC with AS_MESSAGE_LOG_FD.
+        (AC_PREREQ): Require Autoconf 2.54.
+        (AC_INIT): Update to no arguments syntax.  Call AC_CONFIG_SRCDIR.
+        (AC_OUTPUT): Update to no arguments syntax.  Call AC_CONFIG_FILES.
+        (AC_CHECK_TOOL, hurd_PROG_CC): Replace with ...
+        (AC_PROG_CC): ... this.
+        * aclocal.m4: Replace AC_FD_CC with AS_MESSAGE_LOG_FD.
+        (hurd_PROG_CC, hurd_PROG_CC_WORKS): Removed.
+
 2002-12-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (prog-subdirs): Add fatfs.
