@@ -1,8 +1,8 @@
 /* Hurdish w
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -325,10 +325,46 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
 	   tty, pid < 0 ? "pgrp" : "pid", pid < 0 ? -pid : pid);
 }
 
+static error_t
+fetch_boot_time (struct timeval *when)
+{
+  struct ps_context *context;
+  struct proc_stat *ps;
+  error_t err;
+
+  err = ps_context_create (getproc (), &context);
+  if (err)
+    error (2, err, "ps_context_create");
+
+  err = ps_context_find_proc_stat (context, 1, &ps);
+  if (err)
+    error (3, err, "ps_context_find_proc_stat");
+
+  err = proc_stat_set_flags (ps, PSTAT_TASK_BASIC);
+  if (!err && !(ps->flags & PSTAT_TASK_BASIC))
+    err = EGRATUITOUS;
+  if (err)
+    {
+      error (0, err, "cannot find boot time");
+      return err;
+    }
+  else
+    {
+      time_value_t *const tv = &proc_stat_task_basic_info (ps)->creation_time;
+      when->tv_sec = tv->seconds;
+      when->tv_usec = tv->microseconds;
+    }
+
+  ps_context_free (context);
+
+  return 0;
+}
+
 static void
 uptime (struct proc_stat_list *procs)
 {
-  struct stat st;
+  error_t err;
+  struct timeval boot_time;
   char uptime_rep[20], tod_rep[20];
   struct host_load_info *load;
   unsigned nusers = 0;
@@ -336,13 +372,12 @@ uptime (struct proc_stat_list *procs)
 
   proc_stat_list_for_each (procs, maybe_add_user);
 
-  /* Until we get a better way of finding out how long the system's been
-     up...  XXX */
-  if (stat ("/var/run/uptime", &st) != 0)
+  if (fetch_boot_time (&boot_time))
     strcpy (uptime_rep, "chuck");
   else
     {
-      struct timeval uptime = { now.tv_sec - st.st_ctime, 0 };
+      struct timeval uptime;
+      timersub (&now, &boot_time, &uptime);
       fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
     }
 
@@ -351,9 +386,9 @@ uptime (struct proc_stat_list *procs)
   if (tod_rep[0] == '0')
     tod_rep[0] = ' ';		/* Get rid of bletcherous leading 0.  */
 
-  errno = ps_host_load_info (&load);
-  if (errno)
-    error (0, errno, "ps_host_load_info");
+  err = ps_host_load_info (&load);
+  if (err)
+    error (0, err, "ps_host_load_info");
 
   printf ("%s  up %s,  %u user%s,  load averages: %.2f, %.2f, %.2f\n",
 	  tod_rep, uptime_rep, nusers, nusers == 1 ? "" : "s",
