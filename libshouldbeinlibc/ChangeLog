@@ -1,3 +1,10 @@
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* portinfo.h: Don't include <sys/types.h>, <sys/mman.h>.
+	This is an exported header, and its decls don't need them.
+	* portinfo.c: Include them here instead.
+	* xportinfo.c: And here.
+
 1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* ugids-argp.c (parse_opt): Clarify if-then-else structure by
@@ -5,7 +12,7 @@
 
 	* portinfo.h: Include <sys/types.h>.
 	* portxlate.c: Likewise.
-	* portinfo.c: (print_port_info): Cast first arg of munmap correctly. 
+	* portinfo.c: (print_port_info): Cast first arg of munmap correctly.
 	(print_task_ports_info): Likewise.
 	* xportinfo.c (print_xlated_task_ports_info): Likewise.
 	* idvec-auth.c (idvec_merge_auth): Likewise.

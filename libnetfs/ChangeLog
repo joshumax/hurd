@@ -1,6 +1,7 @@
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-get-storage-info.c: Add #include <sys/mman.h>.
+	* file-get-translator.c: Likewise.
 
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
