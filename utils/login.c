@@ -139,7 +139,7 @@ cat (mach_port_t node, char *str)
 	  {
 	    write (0, data, data_len);
 	    if (data != buf)
-	      vm_deallocate (mach_task_self (), (vm_address_t)data, data_len);
+	      munmap (data, data_len);
 	  }
     }
   if (err)
@@ -271,7 +271,7 @@ check_owned (process_t proc_server, pid_t pid, int *owned)
     {
       *owned = !(pi->state & PI_NOTOWNED);
       if (pi != &_pi)
-	vm_deallocate (mach_task_self (), (vm_address_t)pi, pi_size);
+	munmap (pi, pi_size);
     }
 
   return err;
@@ -296,7 +296,7 @@ kill_login (process_t proc_server, pid_t pid, int sig)
 	    if (pids[i] != self)
 	      kill (pids[i], sig);
 	  if (pids != _pids)
-	    vm_deallocate (mach_task_self (), (vm_address_t)pids, num_pids);
+	    munmap (pids, num_pids);
 	}
     }
   while (!err && num_pids > 0);

@@ -1,6 +1,6 @@
 /* Show files' passive translators.
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -85,8 +85,7 @@ main (int argc, char *argv[])
 		}
 
 	      if (trans != buf)
-		vm_deallocate (mach_task_self (),
-			       (vm_address_t)trans, trans_len);
+		munmap (trans, trans_len);
 
 	      status = 0;
 

@@ -1,3 +1,13 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* login.c (cat): Use munmap instead of vm_deallocate.
+	(check_owned): Likewise.
+	(kill_login): Likewise.
+	* storeread.c (main): Likewise.
+	* showtrans.c (main): Likewise.
+	* pids.c (add_fn_pids): Likewise.
+	* msgport.c (cmd_getenv): Likewise.
+	
 1999-07-01  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (INSTALL-addauth-ops, INSTALL-setauth-ops,

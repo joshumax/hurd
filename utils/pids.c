@@ -1,6 +1,6 @@
 /* Pid parsing/frobbing
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -65,8 +65,7 @@ add_fn_pids (pid_t **pids, size_t *num_pids, unsigned id,
       else
 	err = ENOMEM;
       if (new_pids != _new_pids)
-	vm_deallocate (mach_task_self (), (vm_address_t)new_pids,
-		       num_new_pids * sizeof (pid_t));
+	munmap (new_pids, num_new_pids * sizeof (pid_t));
     }
 
   return err;

@@ -1,6 +1,6 @@
 /* Send messages to selected processes
 
-   Copyright (C) 1998 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999 Free Software Foundation, Inc.
 
    Written by Jose M. Moya <josem@gnu.org>
 
@@ -125,7 +125,7 @@ cmd_getenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 	printf ("%d: %s\n", pid, p);
     }
   if (data != buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)data, len);
+    munmap (data, len);
   return err;
 }
 

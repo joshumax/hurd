@@ -1,6 +1,6 @@
 /* Write portions of a store to stdout
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -54,7 +54,7 @@ main (int argc, char **argv)
       if (write (1, data, data_len) < 0)
 	error (6, errno, "stdout");
       if (data != buf)
-	vm_deallocate (mach_task_self (), (vm_address_t)data, data_len);
+	munmap (data, data_len);
     }
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)
