@@ -50,8 +50,12 @@ test -r /etc/hostname && hostname `cat /etc/hostname`
 echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
-(cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -r {} \; )
-(cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
+if test -d /tmp; then
+  (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -r {} \; )
+fi
+if test -d /var/run; then
+  (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
+fi
 echo done
 
 #echo -n restoring pty permissions...
