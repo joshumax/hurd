@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -58,7 +58,7 @@ iohelp_fetch_shared_data (void *arg)
 	  cred->po->np->dn_set_mtime = 1;
 	  mod = 1;
 	}
-      if (cred->mapped->accessed)
+      if (cred->mapped->accessed && ! _diskfs_noatime)
 	{
 	  cred->po->np->dn_set_atime = 1;
 	  mod = 1;

@@ -29,11 +29,6 @@ diskfs_set_node_times (struct node *np)
 {
   struct timeval t;
 
-  if (_diskfs_noatime		/* Globally disabled for the filesystem.  */
-      && !np->dn_set_mtime
-      && !np->dn_set_ctime)
-    np->dn_set_atime = 0;
-
   if (!np->dn_set_mtime && !np->dn_set_atime && !np->dn_set_ctime)
     return;
 

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -45,7 +45,7 @@ _diskfs_rdwr_internal (struct node *np,
     {
       if (dir)
 	np->dn_set_mtime = 1;
-      else
+      else if (! _diskfs_noatime)
 	np->dn_set_atime = 1;
     }
 
@@ -61,7 +61,7 @@ _diskfs_rdwr_internal (struct node *np,
     {
       if (dir)
 	np->dn_set_mtime = 1;
-      else
+      else if (!_diskfs_noatime)
 	np->dn_set_atime = 1;
     }
 
