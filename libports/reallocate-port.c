@@ -31,6 +31,8 @@ ports_reallocate_port (void *portstruct)
   int dropref = 0;
 
   mutex_lock (&_ports_lock);
+  assert (pi->port_right);
+
   err = mach_port_mod_refs (mach_task_self (), pi->port_right, 
 			    MACH_PORT_RIGHT_RECEIVE, -1);
   assert_perror (err);
