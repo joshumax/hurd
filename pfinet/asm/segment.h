@@ -3,19 +3,19 @@
 
 #include <sys/types.h>
 
-#define get_fs_long(addr) get_user_long((int *)(addr))
-unsigned long get_user_long (const int *addr);
+#define get_fs_long(addr) (*(long *)(addr))
+#define get_user_long(addr) (*(long *)(addr))
 
-#define get_fs_byte(addr) get_user_byte((char *)(addr))
-char get_user_byte (const char *addr);
+#define get_fs_byte(addr) (*(char *)(addr))
+#define get_user_byte(addr) (*(char *)(addr))
 
-#define put_fs_long(x,addr) put_user_long((x),(int *)(addr))
-void put_user_long (unsigned long, int *);
+#define put_fs_long(x,addr) (*(long *)(addr) = (x))
+#define put_user_long(x,addr) (*(long *)(addr) = (x)
 
-#define put_fs_byte(x,addr) put_user_byte ((x),(char *)(addr))
-void put_user_byte (char, char *);
+#define put_fs_byte(x,addr) (*(char *)(addr) = (x))
+#define put_user_byte(x,addr) (*(char *)(addr) = (x))
 
-void memcpy_fromfs (void *, void *, size_t);
-void memcpy_tofs (void *, void *, size_t);
+#define memcpy_fromfs(a,b,s) (memcpy (a, b, s))
+#define memcpy_tofs(a,b,s) (memcpy (a, b, s))
 
 #endif
