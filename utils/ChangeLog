@@ -1,3 +1,8 @@
+Fri Mar 12 15:22:02 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* login.c (add_utmp_entry): Properly call setutent and endutent
+	around the getutline call.
+
 1999-03-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* portinfo.c (main): Grok -E and inhibit error msg for

@@ -187,7 +187,9 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 	{
 	  struct utmp *old_utmp;
 	  strncpy (utmp.ut_line, basename (tty), sizeof (utmp.ut_line));
+	  setutent ();
 	  old_utmp = getutline (&utmp);
+	  endutent ();
 	  if (old_utmp)
 	    {
 	      if (! host)
