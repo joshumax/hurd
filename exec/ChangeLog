@@ -1,7 +1,7 @@
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* main.c (S_exec_init): Don't use MOVE_SEND in Hurd RPC.
-
+	
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exec.c (do_exec): Use ports_get_send_right.
