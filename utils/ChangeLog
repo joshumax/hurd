@@ -1,3 +1,8 @@
+2003-10-26  Roland McGrath  <roland@frob.com>
+
+	* rpctrace.c (docs, args_doc): Make arrays, not pointers.
+	(doc): Remove "\v.".  Reported by Alfred M. Szmidt <ams@kemisten.nu>.
+
 2002-06-16  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* vmstat.c (vm_state_refresh): Use memset instead of bzero.
@@ -19,10 +24,10 @@
 2002-09-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console-ncurses.c (cons_vcons_set_scroll_lock): New function.
-	
+
 	* console-ncurses.c (console_switch): Keep a reference to the port
 	instead refering to it by number.
-	
+
 	* console-ncurses.c: New global variable global_lock.
 	(main): Initialize global_lock.
 	(cons_vcons_activate): Removed.
