@@ -19,12 +19,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-#include "ufs.h"
-#include <device/device.h>
-#include <stdio.h>
-#include <errno.h>
-#include <assert.h>
-
 /* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
 error_t
 dev_write_sync (daddr_t addr,
