@@ -1,3 +1,16 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* spec.c (ps_emit_past_time, ps_emit_minutes): Fix return type of
+	getter fn (int to void).
+
+	* context.c (ps_context_free): Don't call ihash_free on PC->procs
+	twice!  Instead, call it on ttys, ttys_by_cttyid, and users.
+
+	* spec.c (ps_get_start_time, ps_start_time_getter): New function and
+	constant to report task_basic_info.creation_time time stamp via
+	"start_time" spec.
+	(specs): Add "Start" fmt for it.
+
 1998-10-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fmt.c (_fmt_create): Add braces to silence gcc warning.

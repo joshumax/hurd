@@ -1,3 +1,12 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* w.c (fetch_boot_time): New function.  Use libps to get
+	task_basic_info for PID 1 (init); its creation_time is "boot time".
+	(uptime): Use it, instead of stat'ing /var/run/uptime.
+
+	* ps.c (output_fmts): Add %start and %time specs before %command
+	in "user" (ps -u) format.
+
 1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* portinfo.c (parse_task): Fail with appropriate error message if the
