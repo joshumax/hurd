@@ -32,6 +32,17 @@ pager_change_attributes (struct pager *p,
   
   mutex_lock (&p->interlock);
 
+  /* If there's nothing to do we might be able to return.  However,
+     if the user asked us to wait, and there are pending changes,
+     then we have to do the work anyway because we must follow the
+     pending change.  */
+  if (p->may_cache == may_cache && p->copy_strategy == copy_strategy
+      && ! (p->attribute_requests && wait))
+    {
+      mutex_unlock (&p->interlock);
+      return;
+    }
+
   p->may_cache = may_cache;
   p->copy_strategy = copy_strategy;
   
