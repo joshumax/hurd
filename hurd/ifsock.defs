@@ -21,3 +21,23 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* This protocol is a superset of the filesystem protocol.  */
 
+subsystem ifsock 20200;
+#include <hurd/hurd_types.defs>
+
+#ifdef IFSOCK_IMPORTS
+IFSOCK_IMPORTS
+#endif
+
+ifsock_getsockaddr (
+	file: file_t;
+	out sockaddr: mach_port_copy_send_t);
+
+ifsock_setsockaddr (
+	file: file_t;
+	sockaddr: mach_port_copy_send_t);
+
+ifsock_assume_responsibility (
+	master_sockaddr_port: mach_port_t;
+	fsys: mach_port_t;
+	realnode: mach_port_t;
+	dotdot_dir: mach_port_t);
