@@ -546,7 +546,7 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
       }
     else
       /* Just a totally shadowed option or null header; print nothing.  */
-      return;			
+      goto cleanup;		/* Just return, after cleaning up.  */
   else if (real->doc)
     /* Now the option documentation.  */
     {
@@ -568,11 +568,13 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
 
   line_wrap_set_lmargin (stream, 0); /* Don't follow the nl with spaces. */
   putc ('\n', stream);
-  line_wrap_set_lmargin (stream, old_lm);
-  line_wrap_set_wmargin (stream, old_wm);
 
   if (prev_entry)
     *prev_entry = entry;
+
+cleanup:
+  line_wrap_set_lmargin (stream, old_lm);
+  line_wrap_set_wmargin (stream, old_wm);
 }
 
 /* Output a long help message about the options in HOL to STREAM.  */
