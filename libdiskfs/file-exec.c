@@ -51,7 +51,7 @@ diskfs_S_file_exec (struct protid *cred,
     return EOPNOTSUPP;
   
   np = cred->po->np;
-  if ((cred->po->flags & O_EXEC) == 0)
+  if ((cred->po->openstat & O_EXEC) == 0)
     return EBADF;
   if (!((np->dn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((np->dn_stat.st_mode & S_IUSEUNK)
@@ -60,10 +60,11 @@ diskfs_S_file_exec (struct protid *cred,
   
   /* Handle S_ISUID and S_ISGID uid substitution. */
   /* XXX We should change the auth handle here too. */
-  if (((np->dn_stat.st_mode & S_ISUID)
-       && !diskfs_isuid (np->dn_stat.st_uid, cred))
-      || ((np->dn_stat.st_mode & S_ISGID)
-	  && !diskfs_groupmember (np->dn_stat.st_gid, cred)))
+  if ((((np->dn_stat.st_mode & S_ISUID)
+	&& !diskfs_isuid (np->dn_stat.st_uid, cred))
+       || ((np->dn_stat.st_mode & S_ISGID)
+	   && !diskfs_groupmember (np->dn_stat.st_gid, cred)))
+      && !diskfs_isuid (0, cred))
     flags |= EXEC_SECURE|EXEC_NEWTASK;
 
   if (diskfs_access (np, S_IREAD, cred))
