@@ -142,7 +142,6 @@ struct pager;
 
 /* Port classes we manage */
 extern struct port_class *diskfs_protid_class;
-extern struct port_class *diskfs_transboot_class;
 extern struct port_class *diskfs_control_class;
 extern struct port_class *diskfs_execboot_class;
 extern struct port_class *diskfs_initboot_class;
