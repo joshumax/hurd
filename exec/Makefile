@@ -29,7 +29,5 @@ DIST_FILES = core.c gcore.c hashexec.c
 
 include ../Makeconf
 
-vpath lib%.a $(crossdir)/lib
-
 CPPFLAGS += -DGZIP # -DBFD
 
