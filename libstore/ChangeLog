@@ -1,3 +1,13 @@
+1997-07-24  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* device.c (store_device_create): Treat devices that can't do
+	device_get_status as zero-length.
+	(dev_map): Pass 0 for OFFSET and SIZE arguments to device_map --
+	mach ignores them, and we often can't supply meaningful values.
+	* make.c (_store_create): If BLOCK_SIZE is zero, make sure there
+	are no runs.
+	* derive.c (_store_derive): Let BSIZE be zero.
+
 1997-07-21  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.c (store_parsed_append_args): Correctly unparse complex
