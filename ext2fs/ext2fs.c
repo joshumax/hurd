@@ -251,7 +251,7 @@ main (int argc, char **argv)
   /* Map the entire disk. */
   create_disk_pager ();
 
-  pokel_init (&sblock_pokel, disk_pager->p, disk_image);
+  pokel_init (&global_pokel, disk_pager->p, disk_image);
 
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
