@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include "misc.h"
 #include "fs_S.h"
 
 error_t
@@ -30,8 +31,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
   struct protid *newpi;
 
   mutex_lock (&diruser->po->np->lock);
-  err = netfs_attempt_mkfile (diruser->credential, diruser->po->np,
-			      flags, mode &np);
+  err = netfs_attempt_mkfile (diruser->credential, diruser->po->np, mode, &np);
 
   if (!err)
     {
@@ -43,7 +43,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
       *newfile = ports_get_right (newpi);
       *newfiletype = MACH_MSG_TYPE_COPY_SEND;
       ports_port_deref (newpi);
-      mutex_unlock (&np->lock);
+      netfs_nput (np);
       return 0;
     }
   else
