@@ -641,7 +641,8 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 				  &ps->thread_wait, &ps->thread_rpc);
 	  have |= PSTAT_THREAD_WAIT;
 	}
-      else if ((have & PSTAT_NUM_THREADS) && ps->num_threads > 3)
+      else if (!(have & PSTAT_NO_MSGPORT)
+	       && (have & PSTAT_NUM_THREADS) && ps->num_threads > 3)
 	/* More than 3 threads (1 user thread + libc signal thread +
 	   possible itimer thread) always results in this value for the
 	   process's thread_wait field.  For fewer threads, we should
