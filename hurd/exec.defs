@@ -34,7 +34,8 @@ routine exec_exec ( /* Better name, Roland??
 	dtable: portarray_t;
 	portarray: portarray_t;
 	intarray: intarray_t;
-	deallocnames: mach_port_name_array_t);
+	deallocnames: mach_port_name_array_t;
+	destroynames: mach_port_name_array_t);
 
 /* This call is made by a new task to its bootstrap port to get its
    startup ports and information.  */
@@ -52,8 +53,8 @@ routine exec_startup (
 	out portarray: portarray_t;
 	out intarray: intarray_t);
 
-/* This call is made by the bootstrap filesystem to give the
-   exec server a port to startup, whence it can get all else.  */
-routine exec_boot_init (
+/* This call is made by the bootstrapping filesystem to give the
+   execserver its auth handle.  */
+routine exec_here_is_auth (
 	execserver: mach_port_t;
-	init: startup_t);
+	auth_handle: auth_t);
