@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <mach/notify.h>
 #include <stdlib.h>
+#include <hurd/msg.h>
 
 #include "startup_reply.h"
 #include "startup_S.h"
@@ -442,7 +443,7 @@ launch_system (void)
 }
 
 
-error_t
+kern_return_t
 S_startup_procinit (startup_t server,
 		    mach_port_t reply,
 		    mach_msg_type_name_t reply_porttype,
@@ -472,7 +473,7 @@ S_startup_procinit (startup_t server,
 
 /* Called by the auth server when it starts up.  */
 
-error_t
+kern_return_t
 S_startup_authinit (startup_t server,
 		    mach_port_t reply,
 		    mach_msg_type_name_t reply_porttype,
@@ -496,18 +497,18 @@ S_startup_authinit (startup_t server,
   return MIG_NO_REPLY;
 }
     
-error_t
+kern_return_t
 S_startup_essential_task (mach_port_t server,
 			  task_t task,
 			  mach_port_t excpt,
-			  char *name)
+			  char *name,
+			  mach_port_t credential)
 {
   struct ess_task *et;
   mach_port_t prev;
 
-  /* When this interface is fixed to include the priv host port,
-     we should validate that.  XXX */
-
+  if (credential != host_priv)
+    return EPERM;
   /* Record this task as essential.  */
   et = malloc (sizeof (struct ess_task));
   if (et == NULL)
@@ -532,10 +533,11 @@ S_startup_essential_task (mach_port_t server,
      if the task tries to get wedged on a fault.  */
   task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
 
+  mach_port_deallocate (mach_task_self (), credential);
   return 0;
 }
 
-error_t
+kern_return_t
 S_startup_request_notification (mach_port_t server,
 				mach_port_t notify)
 {
@@ -555,7 +557,7 @@ S_startup_request_notification (mach_port_t server,
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
 {
@@ -587,7 +589,7 @@ do_mach_notify_dead_name (mach_port_t notify,
   return 0;
 }
 
-error_t
+kern_return_t
 S_startup_reboot (mach_port_t server,
 		  mach_port_t refpt,
 		  int code)
@@ -600,33 +602,33 @@ S_startup_reboot (mach_port_t server,
 }
 
 
-error_t
+kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
 			       mach_port_t rights)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 do_mach_notify_send_once (mach_port_t notify)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
 {
   return EOPNOTSUPP;
 }
 
-error_t 
+kern_return_t 
 do_mach_notify_port_deleted (mach_port_t notify,
 			     mach_port_t name)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 do_mach_notify_msg_accepted (mach_port_t notify,
 			     mach_port_t name)
 {
