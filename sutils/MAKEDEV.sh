@@ -135,7 +135,7 @@ function mkdev {
 	st $I root 640 /hurd/storeio $B
 	;;
 
-      [hrs]d*)
+      [hrsc]d*)
 	case "$B" in
 	[a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9] | [a-z][a-z][0-9]s[1-9][a-z] | [a-z][a-z][0-9])
 	  st $I root 640 /hurd/storeio $B
