@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,8 +22,8 @@ COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
 	inhibit-term.o lock-completed.o lock-object.o mark-error.o \
 	 no-senders.o object-init.o object-terminate.o pagemap.o \
 	 pager-create.o pager-flush.o pager-shutdown.o pager-sync.o \
-	 reference.o stubs.o seqnos.o demuxer.o chg-compl.o pager-attr.o
-OBJS = $(COBJS) memory_objectServer.o
+	 stubs.o seqnos.o demuxer.o chg-compl.o pager-attr.o
+OBJS = $(COBJS) memory_objectServer.o notifyServer.o
 SRCS = $(subst .o,.c,$(COBJS))
 LCLHDRS = pager.h priv.h
 REMHDRS = ../hurd/ports.h
