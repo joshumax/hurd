@@ -22,6 +22,7 @@
 #include <malloc.h>
 #include <wchar.h>
 #include <hurd/ihash.h>
+#include <string.h>
 
 #include "vga-hw.h"
 #include "vga.h"
@@ -196,7 +197,7 @@ dynafont_new (bdf_font_t font, int size, dynafont_t *dynafont)
 }
 
 
-/* Release a dynafont object and its associated resources.  */ 
+/* Release a dynafont object and its associated resources.  */
 void
 dynafont_free (dynafont_t df)
 {

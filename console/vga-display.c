@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <iconv.h>
 #include <argp.h>
+#include <string.h>
 
 #include <sys/io.h>
 #include <sys/mman.h>
@@ -264,7 +265,7 @@ vga_display_scroll (void *console, int amount)
 	}
       mutex_unlock (&vga_lock);
     }
-  mutex_unlock (&cons->lock);  
+  mutex_unlock (&cons->lock);
   return 0;
 }
 
@@ -290,7 +291,7 @@ limit_cursor (struct emu *emu)
     emu->x = emu->width - 1;
   else if (emu->x < 0)
     emu->x = 0;
-  
+
   if (emu->y >= emu->height)
     emu->y = emu->height - 1;
   else if (emu->y < 0)
@@ -483,7 +484,7 @@ handle_esc_bracket (struct emu *emu, char op)
 			emu->params[0] ?: 1, emu->attr | ' ');
       break;
     case '@':			/* insert character(s): <ich1>, <ich> */
-      screen_scroll_right (emu->screen, emu->x, emu->y, 
+      screen_scroll_right (emu->screen, emu->x, emu->y,
 			   emu->width - emu->x, 1,
 			   emu->params[0] ?: 1, emu->attr | ' ');
       break;
@@ -570,7 +571,7 @@ vga_display_output_one (struct vga_display_console *cons, wchar_t chr)
 	      }
 	    else
 	      {
-		if (cons->current_line == cons->video_buffer_lines - 1)	
+		if (cons->current_line == cons->video_buffer_lines - 1)
 		  cons->current_line = 0;
 		else
 		  cons->current_line++;
@@ -647,7 +648,7 @@ vga_display_output_one (struct vga_display_console *cons, wchar_t chr)
 	      int charval = dynafont_lookup (cons->df, chr);
 	      int line = (cons->current_line + cons->cursor_y)
 		% cons->video_buffer_lines;
-	      
+
 	      cons->video_buffer[(line * cons->width + cons->cursor_x) * 2]
 		= charval & 0xff;
 	      cons->video_buffer[(line * cons->width + cons->cursor_x) * 2 + 1]
@@ -790,7 +791,7 @@ vga_display_output (void *console, char **buffer, size_t *length)
       /* First process all successfully converted characters.  */
       for (i = 0; i < CONV_OUTBUF_SIZE - outsize; i++)
 	vga_display_output_one (cons, outbuf[i]);
-      
+
       if (nconv == (size_t) -1)
 	{
 	  /* Conversion didn't work out.  */

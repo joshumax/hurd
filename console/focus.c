@@ -1,5 +1,6 @@
 #include <argp.h>
 #include <cthreads.h>
+#include <string.h>
 
 #include "console.h"
 #include "input.h"
