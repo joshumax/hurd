@@ -235,6 +235,11 @@ int diskfs_shortcut_fifo;
    filesystem format supports shortcutting ifsock translation. */
 int diskfs_shortcut_ifsock;
 
+/* The user may define this variable, otherwise it has a default value of 30.
+   diskfs_set_sync_interval is called with this value when the first diskfs
+   thread is started up (in diskfs_spawn_first_threa).   */
+extern int diskfs_default_sync_interval;
+
 /* The user must define this function.  Set *STATFSBUF with
    appropriate values to reflect the current state of the filesystem.  */
 error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
@@ -901,6 +906,13 @@ error_t diskfs_shutdown (int flags);
 error_t diskfs_execboot_fsys_startup (mach_port_t port, mach_port_t ctl,
 				      mach_port_t *real,
 				      mach_msg_type_name_t *realpoly);
+
+/* Establish a thread to sync the filesystem every INTERVAL seconds, or
+   never, if INTERVAL is zero.  If an error occurs creating the thread, it is
+   returned, otherwise 0.  Subsequent calls will create a new thread and
+   (eventually) get rid of the old one; the old thread won't do any more
+   syncs, regardless.  */
+error_t diskfs_set_sync_interval (int interval);
 
 /* The ports library requires the following to be defined; the diskfs
    library provides a definition.  See <hurd/ports.h> for the
