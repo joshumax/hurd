@@ -38,6 +38,7 @@ kern_return_t
 trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 		       mach_port_t reply_port,
 		       mach_msg_type_name_t reply_port_type,
+		       mach_port_t dotdot,
 		       uid_t *uids, u_int nuids,
 		       uid_t *gids, u_int ngids,
 		       int flags,
@@ -131,6 +132,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       cntl->openstail = pendo;
       
       ports_done_with_port (cntl);
+      mach_port_deallocate (mach_task_self (), dotdot);
       return MIG_NO_REPLY;
     }
   else
@@ -139,6 +141,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       *retry_name = '\0';
       *newpt = ports_get_right (cred);
       *newpttype = MACH_MSG_TYPE_MAKE_SEND;
+      mach_port_deallocate (mach_task_self (), dotdot);
       return 0;
     }
 }
