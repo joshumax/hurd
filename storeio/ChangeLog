@@ -1,3 +1,8 @@
+1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_io_read): Return EINVAL instead of EBADF.
+	(trivfs_S_io_map): Return EINVAL if CRED cannot be read or written.
+
 1997-07-21  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add iohelp.
