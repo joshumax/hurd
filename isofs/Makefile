@@ -1,5 +1,5 @@
 
-#   Copyright (C) 1997 Free Software Foundation
+#   Copyright (C) 1997, 2000 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,6 +24,6 @@ LCLHDRS = iso9660.h isofs.h rr.h
 DIST_FILES = EXTENSIONS
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
 
 include ../Makeconf

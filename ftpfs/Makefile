@@ -1,6 +1,6 @@
 # Makefile for ftpfs
 # 
-#   Copyright (C) 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -25,6 +25,6 @@ SRCS = ftpfs.c fs.c host.c netfs.c dir.c conn.c ccache.c node.c ncache.c
 LCLHDRS = ftpfs.h ccache.h
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = netfs fshelp iohelp ports threads ihash ftpconn shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp threads ports ihash ftpconn shouldbeinlibc
 
 include ../Makeconf

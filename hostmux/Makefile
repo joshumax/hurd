@@ -1,6 +1,6 @@
 # Makefile for hostmux
 # 
-#   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
+#   Copyright (C) 1997, 1999, 2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -25,6 +25,6 @@ SRCS = hostmux.c mux.c leaf.c node.c stubs.c
 LCLHDRS = hostmux.h
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = netfs fshelp iohelp ports threads ihash shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
 
 include ../Makeconf
