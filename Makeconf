@@ -126,9 +126,9 @@ ifeq ($(makemode),utilities)
 endif
 
 ifeq ($(makemode),library)
+ linktarg := $(libname).so.$(hurd-version)
  clean := yes
- cleantarg := $(libname).a $(libname).so $(libname)_p.a
- linktarg := $(libname).so
+ cleantarg := $(libname).a $(libname)_p.a $(libname).so $(linktarg)
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
