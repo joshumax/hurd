@@ -168,14 +168,14 @@ load_image (task_t t,
       struct exec a;
       Elf32_Ehdr e;
     } hdr;
-  char msg[] = "cannot open bootstrap file";
+  char msg[] = ": cannot open bootstrap file\n";
 
-
-  fd = useropen (file, 0, 0);
+  fd = useropen (file, O_RDONLY, 0);
 
   if (fd == -1)
     {
-      write (2, msg, sizeof (msg));
+      write (2, file, strlen (file));
+      write (2, msg, sizeof msg - 1);
       task_terminate (t);
       host_exit (1);
     }
@@ -268,7 +268,7 @@ mach_port_t
 boot_script_read_file (const char *filename)
 {
   static const char msg[] = ": cannot open\n";
-  int fd = useropen (filename, 0, 0);
+  int fd = useropen (filename, O_RDONLY, 0);
   host_stat_t st;
   error_t err;
   mach_port_t memobj;
@@ -453,7 +453,7 @@ main (int argc, char **argv, char **envp)
     static const char filemsg[] = "Can't open boot script";
     int amt, fd, err;
 
-    fd = open (bootscript, 0, 0);
+    fd = open (bootscript, O_RDONLY, 0);
     if (fd < 0)
       {
 	write (2, filemsg, sizeof (filemsg));
