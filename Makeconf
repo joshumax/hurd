@@ -107,14 +107,16 @@ CFLAGS += -Wall -g
 # Installation
 ifeq ($(doinst),one)
 all: $(target)
-install: $(target)
-	$(INSTALL_BIN) $(target) $(installationdir)/$(target)
+install: $(installationdir)/$(target)
+$(installationdir)/$(target): $(target)
+	$(INSTALL_BIN) $< $@
 endif
 
 ifeq ($(doinst),many)
 all: $(targets)
-install: $(targets)
-	for i in $(targets) ; do $(INSTALL_BIN) $$i $(installationdir)/$$i ; done
+install: $(addprefix $(installationdir)/,$(targets))
+$(addprefix $(installationdir)/,$(targets)): %(installationdir)/%: %
+	$(INSTALL_BIN) $< $@
 endif
 
 ifeq ($(makemode),library)
