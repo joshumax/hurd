@@ -592,8 +592,6 @@ hol_help (struct hol *hol, FILE *stream)
 static void
 hol_usage (struct hol *hol, FILE *stream)
 {
-  int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
-
   if (hol->num_entries > 0)
     {
       unsigned nentries;
@@ -618,7 +616,7 @@ hol_usage (struct hol *hol, FILE *stream)
       if (snao_end > short_no_arg_opts)
 	{
 	  *snao_end++ = 0;
-	  fprintf (stream, "[-%s]", short_no_arg_opts);
+	  fprintf (stream, " [-%s]", short_no_arg_opts);
 	}
 
       /* Now a list of short options *with* arguments.  */
@@ -631,11 +629,20 @@ hol_usage (struct hol *hol, FILE *stream)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  fprintf (stream, "[-%c[%s]]",
+		  fprintf (stream, " [-%c[%s]]",
 			   opt->key, opt->arg ?: real->arg);
 		else
-		  fprintf (stream, "[-%c %s]",
-			   opt->key, opt->arg ?: real->arg);
+		  {
+		    const char *arg = opt->arg ?: real->arg;
+		    /* Manually do line wrapping so that it (probably) won't
+		       get wrapped at the embedded space.  */
+		    if (line_wrap_point (stream) + 6 + strlen (arg)
+			>= line_wrap_rmargin (stream))
+		      putc ('\n', stream);
+		    else
+		      putc (' ', stream);
+		    fprintf (stream, "[-%c %s]", opt->key, arg);
+		  }
 	      return 0;
 	    }
 	  hol_entry_short_iterate (entry, func3);
@@ -651,19 +658,18 @@ hol_usage (struct hol *hol, FILE *stream)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  fprintf (stream, "[--%s[=%s]]",
+		  fprintf (stream, " [--%s[=%s]]",
 			   opt->name, opt->arg ?: real->arg);
 		else
-		  fprintf (stream, "[--%s=%s]",
+		  fprintf (stream, " [--%s=%s]",
 			   opt->name, opt->arg ?: real->arg);
 	      else
-		fprintf (stream, "[--%s]", opt->name);
+		fprintf (stream, " [--%s]", opt->name);
 	      return 0;
 	    }
 	  hol_entry_long_iterate (entry, func4);
 	}
     }
-  line_wrap_set_wmargin (stream, old_wm);
 }
 
 /* Make a HOL containing all levels of options in ARGP.  */
@@ -686,7 +692,16 @@ argp_args_usage (const struct argp *argp, FILE *stream)
   const struct argp **children = argp->children;
   const char *doc = argp->args_doc;
   if (doc)
-    fprintf (stream, "%s", doc);
+    {
+      /* Manually do line wrapping so that it (probably) won't get wrapped at
+	 any embedded spaces.  */
+      if (line_wrap_point (stream) + 1 + strlen (doc)
+	  >= line_wrap_rmargin (stream))
+	putc ('\n', stream);
+      else
+	putc (' ', stream);
+      fputs (doc, stream);
+    }
   if (children)
     while (*children)
       argp_args_usage (*children++, stream);
@@ -735,6 +750,9 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE))
     /* Print a short `Usage:' message.  */
     {
+      int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
+      int old_lm = line_wrap_set_lmargin (stream, USAGE_INDENT);
+
       fprintf (stream, "Usage: %s", program_invocation_name);
       if (flags & ARGP_HELP_SHORT_USAGE)
 	/* Just show where the options go.  */
@@ -746,6 +764,10 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
 	/* Actually print the options.  */
 	hol_usage (hol, stream);
       argp_args_usage (argp, stream);
+
+      line_wrap_set_wmargin (stream, old_wm);
+      line_wrap_set_lmargin (stream, old_lm);
+
       putc ('\n', stream);
       first = 0;
     }
