@@ -21,8 +21,8 @@
 #include <strings.h>
 #include "ext2fs.h"
 
-spin_lock_t pager_list_lock = SPIN_LOCK_INITIALIZER;
-struct user_pager_info *file_pager_list;
+/* A ports bucket to hold pager ports.  */
+static struct port_bucket *pager_bucket;
 
 spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 
@@ -556,13 +556,13 @@ diskfs_file_update (struct node *node, int wait)
   spin_lock (&node_to_page_lock);
   upi = node->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node_to_page_lock);
   
   if (upi)
     {
       pager_sync (upi->p, wait);
-      pager_unreference (upi->p);
+      ports_port_deref (upi->p);
     }
   
   pokel_sync (&node->dn->indir_pokel, wait);
@@ -602,27 +602,48 @@ pager_clear_user_data (struct user_pager_info *upi)
       spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
-
-      spin_lock (&pager_list_lock);
-      *upi->prevp = upi->next;
-      if (upi->next)
-	upi->next->prevp = upi->prevp;
-      spin_unlock (&pager_list_lock);
     }
 
   free (upi);
 }
+
+/* This will be called when the ports library wants to drop weak references.
+   The pager library creates no weak references itself.  If the user doesn't
+   either, then it's OK for this function to do nothing.  */
+void
+pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
+{
+}
 
 /* ---------------------------------------------------------------- */
+
+/* A top-level function for the paging thread that just services paging
+   requests.  */
+static void
+service_paging_requests (any_t foo __attribute__ ((unused)))
+{
+  for (;;)
+    ports_manage_port_operations_multithread (pager_bucket, pager_demuxer,
+					      1000 * 60 * 2, 1000 * 60 * 10,
+					      1, MACH_PORT_NULL);
+}
 
 /* Create a the DISK pager, initializing DISKPAGER, and DISKPAGERPORT */
 void
 create_disk_pager ()
 {
+  pager_bucket = ports_create_bucket ();
+
+  /* Make a thread to service paging requests.  */
+  cthread_detach (cthread_fork ((cthread_fn_t)service_paging_requests,
+				(any_t)0));
+
   disk_pager = malloc (sizeof (struct user_pager_info));
   disk_pager->type = DISK;
   disk_pager->node = 0;
-  disk_pager->p = pager_create (disk_pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+  disk_pager->p =
+    pager_create (disk_pager, pager_bucket,
+		  MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
   disk_pager_port = pager_get_port (disk_pager->p);
   mach_port_insert_right (mach_task_self (), disk_pager_port, disk_pager_port,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -647,16 +668,9 @@ diskfs_get_filemap (struct node *node)
       upi->type = FILE_DATA;
       upi->node = node;
       diskfs_nref_light (node);
-      upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+      upi->p =
+	pager_create (upi, pager_bucket, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       node->dn->fileinfo = upi;
-
-      spin_lock (&pager_list_lock);
-      upi->next = file_pager_list;
-      upi->prevp = &file_pager_list;
-      if (upi->next)
-	upi->next->prevp = &upi->next;
-      file_pager_list = upi;
-      spin_unlock (&pager_list_lock);
     }
   right = pager_get_port (node->dn->fileinfo->p);
   spin_unlock (&node_to_page_lock);
@@ -677,13 +691,13 @@ drop_pager_softrefs (struct node *node)
   spin_lock (&node_to_page_lock);
   upi = node->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node_to_page_lock);
 
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
   if (upi)
-    pager_unreference (upi->p);
+    ports_port_deref (upi->p);
 }
 
 /* Call this when we should turn on caching because it's no longer
@@ -696,13 +710,13 @@ allow_pager_softrefs (struct node *node)
   spin_lock (&node_to_page_lock);
   upi = node->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node_to_page_lock);
   
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
   if (upi)
-    pager_unreference (upi->p);
+    ports_port_deref (upi->p);
 }
 
 /* Call this to find out the struct pager * corresponding to the
@@ -717,48 +731,18 @@ diskfs_get_filemap_pager_struct (struct node *node)
   return node->dn->fileinfo->p;
 }
 
-/* Call function FUNC (which takes one argument, a pager) on each pager, with
-   all file pagers being processed before the disk pager.  Make the calls
-   while holding no locks. */
-static void
-pager_traverse (void (*func)(struct user_pager_info *))
-{
-  struct user_pager_info *p;
-  struct item {struct item *next; struct user_pager_info *p;} *list = 0;
-  struct item *i;
-  
-  spin_lock (&pager_list_lock);
-  for (p = file_pager_list; p; p = p->next)
-    /* XXXXXXX THIS CHECK IS A HACK TO MAKE A RACE WITH DEPARTING PAGERS
-       RARER, UNTIL MIB FIXES PORTS TO HAVE SOFT REFERENCES!!!! XXXXX */
-    if (((struct port_info *)p->p)->refcnt > 0)
-    {
-      i = alloca (sizeof (struct item));
-      i->next = list;
-      list = i;
-      pager_reference (p->p);
-      i->p = p;
-    }
-  spin_unlock (&pager_list_lock);
-  
-  for (i = list; i; i = i->next)
-    {
-      (*func)(i->p);
-      pager_unreference (i->p->p);
-    }
-  
-  (*func)(disk_pager);
-}
-
 static struct ext2_super_block final_sblock;
 
 /* Shutdown all the pagers. */
 void
 diskfs_shutdown_pager ()
 {
-  void shutdown_one (struct user_pager_info *p)
+  error_t shutdown_one (void *v_p)
     {
-      pager_shutdown (p->p);
+      struct user_pager_info *p = v_p;
+      if (p != disk_pager)
+	pager_shutdown (p->p);
+      return 0;
     }
 
   write_all_disknodes ();
@@ -768,21 +752,25 @@ diskfs_shutdown_pager ()
   bcopy (sblock, &final_sblock, sizeof (final_sblock));
   sblock = &final_sblock;
 
-  pager_traverse (shutdown_one);
+  ports_bucket_iterate (pager_bucket, shutdown_one);
+  pager_shutdown (disk_pager->p);
 }
 
 /* Sync all the pagers. */
 void
 diskfs_sync_everything (int wait)
 {
-  void sync_one (struct user_pager_info *p)
+  error_t sync_one (void *v_p)
     {
+      struct user_pager_info *p = v_p;
       if (p != disk_pager)
 	pager_sync (p->p, wait);
-      else
-	pokel_sync (&global_pokel, wait);
+      return 0;
     }
   
   write_all_disknodes ();
-  pager_traverse (sync_one);
+  ports_bucket_iterate (pager_bucket, sync_one);
+
+  /* Do things on the the disk pager.  */
+  pokel_sync (&global_pokel, wait);
 }
