@@ -63,8 +63,8 @@ main (int argc,
     }
 
   pfinet_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[1] = ports_create_class (trivfs_clean_protid, 0);
-  trivfs_cntl_portclasses[1] = ports_create_class (trivfs_clean_cntl, 0);
+  trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
+  trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
   addrport_class = ports_create_class (clean_addrport, 0);
   socketport_class = ports_create_class (clean_socketport, 0);
   trivfs_fsid = getpid ();
