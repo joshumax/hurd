@@ -117,7 +117,7 @@ add_utmp_entry (char *args, unsigned args_len, int tty_fd)
   extern void login (struct utmp *); /* in libutil */
   struct utmp utmp;
   char bogus_tty[sizeof (_PATH_TTY) + 2];
-  char *tty = ttyname (0), *tail;
+  char *tty = ttyname (0);
 
   if (! tty)
     {
@@ -125,9 +125,9 @@ add_utmp_entry (char *args, unsigned args_len, int tty_fd)
       tty = bogus_tty;
     }
 
-  tail = rindex (tty, '/');
-  if (tail)
-    tty = tail + 1;
+  if (strncmp (tty, _PATH_DEV, sizeof (_PATH_DEV) - 1) == 0)
+    /* Remove a prefix of `/dev/'.  */
+    tty += sizeof (_PATH_DEV) - 1;
 
   bzero (&utmp, sizeof (utmp));
 
@@ -183,8 +183,7 @@ main(int argc, char *argv[])
   mach_port_t ports[INIT_PORT_MAX]; /* Init ports for the new process.  */
   int ints[INIT_INT_MAX];	/* Init ints for it.  */
   mach_port_t dtable[3];	/* File descriptors passed. */
-  mach_port_t auth;		/* The auth port for the new shell.  */
-  mach_port_t auth_server = getauth ();
+  mach_port_t auth;		/* The new shell's authentication.  */
   mach_port_t proc_server = getproc ();
 
   /* Returns a copy of the io/proc object PORT reauthenticated in AUTH.  If an
@@ -273,8 +272,15 @@ main(int argc, char *argv[])
 	case 'A': add_entry (&args_defs, &args_defs_len, arg); break;
 	case '0': sh_arg0 = arg; break;
 	case 'h': envz_add (&args, &args_len, "VIA", arg); break;
-	case 'f': no_passwd = 1; break;
 	case 'z': no_utmp = 1; break;
+	case 'f':
+	  /* Don't ask for a password, but also remove the effect of any 
+	     setuid/gid bits on this executable.  There ought to be a way to
+	     combine these two calls.  XXX  */
+	  seteuid (getuid ());
+	  setegid (getgid ());
+	  no_passwd = 1;
+	  break;
 
 	case ARGP_KEY_ARG:
 	  if (saw_user_arg)
@@ -319,7 +325,7 @@ main(int argc, char *argv[])
 	      /* Add aux-ids instead of real ones.  */
 	      {
 		idvec_add (aux_uids, pw->pw_uid);
-		idvec_add (aux_uids, pw->pw_gid);
+		idvec_add (aux_gids, pw->pw_gid);
 	      }
 	    else
 	      {
@@ -522,7 +528,7 @@ main(int argc, char *argv[])
     error (21, err, "consing arguments");
 
   err =
-    auth_makeauth (auth_server, 0, MACH_MSG_TYPE_COPY_SEND, 0,
+    auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
 		   uids->ids, uids->num, aux_uids->ids, aux_uids->num,
 		   gids->ids, gids->num, aux_gids->ids, aux_gids->num,
 		   &auth);
@@ -530,10 +536,9 @@ main(int argc, char *argv[])
     error (3, err, "Can't authenticate");
 
   proc_make_login_coll (proc_server);
-  if (aux_uids->num > 0)
-    proc_setowner (proc_server, aux_uids->ids[0]);
-  else if (uids->num > 0)
+  if (uids->num > 0)
     proc_setowner (proc_server, uids->ids[0]);
+  /* XXX else clear the owner, once there's a proc call to do it.  */
 
   /* Output the message of the day.  */
   hushlogin = envz_get (args, args_len, "HUSHLOGIN");
