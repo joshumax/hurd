@@ -306,12 +306,38 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 {
   *ports_type = MACH_MSG_TYPE_COPY_SEND;
 
-  if (! cred)
+  if (! cred || ! cred->po->hook)
     return EOPNOTSUPP;
   else
     {
       error_t err;
-      struct store *store = ((struct open *)cred->po->hook)->dev->store;
+      struct dev *dev = ((struct open *)cred->po->hook)->dev;
+      struct store *store = dev->store;
+
+      if (dev->enforced && !(store->flags & STORE_ENFORCED))
+	{
+	  /* The --enforced switch tells us not to let anyone
+	     get at the device, no matter how trustable they are.  */
+	  size_t name_len = (store->name ? strlen (store->name) + 1 : 0);
+	  int i;
+	  *num_ports = 0;
+	  i = 0;
+	  (*ints)[i++] = STORAGE_OTHER;
+	  (*ints)[i++] = store->flags;
+	  (*ints)[i++] = store->block_size;
+	  (*ints)[i++] = 1;	/* num_runs */
+	  (*ints)[i++] = name_len;
+	  (*ints)[i++] = 0;	/* misc_len */
+	  *num_ints = i;
+	  i = 0;
+	  (*offsets)[i++] = 0;
+	  (*offsets)[i++] = store->size;
+	  *num_offsets = i;
+	  if (store->name)
+	    memcpy (*data, store->name, name_len);
+	  *data_len = name_len;
+	  return 0;
+	}
 
       if (!cred->isroot
 	  && !store_is_securely_returnable (store, cred->po->openmodes))
