@@ -1,0 +1,57 @@
+/* Definitions for the database of logged-in users
+   Copyright (C) 1994 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem utmp 36000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef UTMP_IMPORTS
+UTMP_IMPORTS
+#endif
+
+/* For each logged in user, a file is conventionally created in the 
+   directory /utmp with the name of the user, a hyphen, and a small
+   integer.  (The suffix is there to distinguish multiple logons
+   of the same user.)  On each such node an active translator should
+   be found which implements this interface.  */
+
+/* Send an immediate message to the user */
+routine utmp_bleep_user (
+	utmp: file_t;
+	message: data_t);
+
+/* Return a human-readable string describing the user's physical location. */
+routine utmp_location (
+	utmp: file_t;
+	out location: data_t);
+
+/* Return the pathname(s) of the user's input device(s).  */
+routine utmp_input_devices (
+	utmp: file_t;
+	out devices: data_t);
+
+/* Return the process collection ID for the user's login collection. */
+routine utmp_login_collection (
+	utmp: file_t;
+	out id: pid_t);
+
+/* Return the user's idle time. */
+routine utmp_idle_time (
+	utmp: file_t;
+	out idle: time_value_t);
