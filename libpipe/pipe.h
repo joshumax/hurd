@@ -138,7 +138,20 @@ pipe_wait (struct pipe *pipe, int noblock, int data_only)
     }
   return 0;
 }
- 
+
+/* Waits for PIPE to be readable, or an error to occurr.  This call only
+   returns once threads waiting using pipe_wait have been woken and given a
+   chance to read, and if there is still data available thereafter.  If
+   DATA_ONLY is true, then `control' packets are ignored.  */
+extern inline error_t
+pipe_select (struct pipe *pipe, int data_only)
+{
+  while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
+    if (hurd_condition_wait (&pipe->pending_selects, &pipe->lock))
+	return EINTR;
+  return 0;
+}
+
 /* Wake up all threads waiting on PIPE, which should be locked.  */
 void pipe_kick (struct pipe *pipe);
 
