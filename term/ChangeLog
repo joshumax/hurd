@@ -1,3 +1,7 @@
+2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* main.c (main): Don't use MAKE_SEND in Hurd RPC.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* devio.c (devio_abandon_physical_output): Use ports_get_send_right.
