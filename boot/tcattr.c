@@ -297,6 +297,49 @@ Cambridge, MA 02139, USA.  */
 #define TIOCGLTC        _IOR('t',116,struct ltchars)/* get local special chars */
 
 
+#if	defined(TIOCGETC) || defined(TIOCSETC)
+/* Type of ARG for TIOCGETC and TIOCSETC requests.  */
+struct tchars
+{
+  char t_intrc;			/* Interrupt character.  */
+  char t_quitc;			/* Quit character.  */
+  char t_startc;		/* Start-output character.  */
+  char t_stopc;			/* Stop-output character.  */
+  char t_eofc;			/* End-of-file character.  */
+  char t_brkc;			/* Input delimiter character.  */
+};
+
+#define	_IOT_tchars	/* Hurd ioctl type field.  */ \
+  _IOT (_IOTS (char), 6, 0, 0, 0, 0)
+#endif
+
+#if	defined(TIOCGLTC) || defined(TIOCSLTC)
+/* Type of ARG for TIOCGLTC and TIOCSLTC requests.  */
+struct ltchars
+{
+  char t_suspc;			/* Suspend character.  */
+  char t_dsuspc;		/* Delayed suspend character.  */
+  char t_rprntc;		/* Reprint-line character.  */
+  char t_flushc;		/* Flush-output character.  */
+  char t_werasc;		/* Word-erase character.  */
+  char t_lnextc;		/* Literal-next character.  */
+};
+
+#define	_IOT_ltchars	/* Hurd ioctl type field.  */ \
+  _IOT (_IOTS (char), 6, 0, 0, 0, 0)
+#endif
+
+/* Type of ARG for TIOCGETP and TIOCSETP requests (and gtty and stty).  */
+struct sgttyb
+{
+  char sg_ispeed;		/* Input speed.  */
+  char sg_ospeed;		/* Output speed.  */
+  char sg_erase;		/* Erase character.  */
+  char sg_kill;			/* Kill character.  */
+  short int sg_flags;		/* Mode flags.  */
+};
+
+
 
 
 const speed_t __bsd_speeds[] =
@@ -443,6 +486,8 @@ tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
   return 0;
 }
 
+
+#undef tcgetattr
 
 /* Put the state of FD into *TERMIOS_P.  */
 int
