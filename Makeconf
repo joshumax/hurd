@@ -143,8 +143,14 @@ else
  _objs = $(OBJS)
 endif
 
+# Determine which sort of library we should link against from whether -static
+# is used in LDFLAGS.
+__libext=.so
+__libext-static=.a
+_libext=$(__libext$(findstring -static,$(LDFLAGS) $($@-LDFLAGS)))
+
 $(target): %: $(_objs) $(OTHERLIBS)
-	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),-Wl,-L$(dir $(lib)) $(patsubst lib%,-l%,$(notdir $(basename $(lib))))) '-Wl,-)'
+	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),$(basename $(lib))$(_libext)) '-Wl,-)'
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
@@ -153,7 +159,7 @@ $(libname).a: $(OBJS)
 	$(RANLIB) $@
 
 $(libname).so: $(patsubst %.o,%_pic.o,$(OBJS))
-	$(CC) -shared $(CFLAGS) -o $(libname).so $+
+	$(CC) -shared $(CFLAGS) -Wl,-soname=$(libname) -o $(libname).so $+
 endif
 
 # Making a snapshot
