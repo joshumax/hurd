@@ -339,14 +339,14 @@ struct ext2_super_block {
 	u32	s_free_inodes_count;	/* Free inodes count */
 	u32	s_first_data_block;	/* First Data Block */
 	u32	s_log_block_size;	/* Block size */
-	__s32	s_log_frag_size;	/* Fragment size */
+	s32	s_log_frag_size;	/* Fragment size */
 	u32	s_blocks_per_group;	/* # Blocks per group */
 	u32	s_frags_per_group;	/* # Fragments per group */
 	u32	s_inodes_per_group;	/* # Inodes per group */
 	u32	s_mtime;		/* Mount time */
 	u32	s_wtime;		/* Write time */
 	u16	s_mnt_count;		/* Mount count */
-	__s16	s_max_mnt_count;	/* Maximal mount count */
+	s16	s_max_mnt_count;	/* Maximal mount count */
 	u16	s_magic;		/* Magic signature */
 	u16	s_state;		/* File system state */
 	u16	s_errors;		/* Behaviour when detecting errors */
