@@ -164,6 +164,9 @@ pfatal (char *fmt, ...)
 {
   va_list args;
   int ret;
+
+  if (preen && device_name)
+    printf ("%s: ", device_name);
   
   va_start (args, fmt);
   ret = vprintf (fmt, args);
@@ -181,6 +184,9 @@ errexit (char *fmt, ...)
 {
   va_list args;
 
+  if (preen && device_name)
+    printf ("%s: ", device_name);
+
   va_start (args, fmt);
   vprintf (fmt, args);
   va_end (args);
@@ -196,10 +202,22 @@ pwarn (char *fmt, ...)
   va_list args;
   int ret;
 
+  if (preen && device_name)
+    printf ("%s: ", device_name);
+
   va_start (args, fmt);
   ret = vprintf (fmt, args);
   va_end (args);
+
   return ret;
+}
+
+/* Print how a problem was fixed in preen mode.  */
+void
+pfix (char *fix)
+{
+  if (preen)
+    printf (" (%s)\n", fix);
 }
 
 /* Ask the user a question; return 1 if the user says yes, and 0
@@ -244,27 +262,40 @@ reply (char *question)
 
 /* Print a helpful description of the given inode number. */
 void
-pinode (ino_t ino)
+pinode (ino_t ino, char *fmt, ...)
 {
-  struct dinode dino;
-  struct passwd *pw;
-  char *p;
+  if (fmt)
+    {
+      va_list args;
+      va_start (args, fmt);
+      vprintf (fmt, args);
+      va_end (args);
+      putchar (' ');
+    }
 
-  printf (" I=%d ", ino);
   if (ino < ROOTINO || ino > maxino)
-    return;
-  getinode (ino, &dino);
-  
-  printf (" OWNER=");
-  pw = getpwuid (dino.di_uid);
-  if (pw)
-    printf ("%s ", pw->pw_name);
+    printf (" NODE I=%d", ino);
   else
-    printf ("%lu ", dino.di_uid);
+    {
+      char *p;
+      struct dinode dino;
+      struct passwd *pw;
+
+      getinode (ino, &dino);
+
+      printf ("%s I=%d", (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE",
+	      ino);
+
+      pw = getpwuid (dino.di_uid);
+      if (pw)
+	printf (" OWNER=%s", pw->pw_name);
+      else
+	printf (" OWNER=%lu", dino.di_uid);
   
-  printf (" MODE=%o\n", DI_MODE (&dino));
-  printf ("SIZE=%llu ", dino.di_size);
-  p = ctime (&dino.di_mtime.ts_sec);
-  printf ("MTIME=%12.12s %4.4s ", &p[4], &p[20]);
+      printf (" MODE=%o", DI_MODE (&dino));
+      printf (" SIZE=%llu ", dino.di_size);
+      p = ctime (&dino.di_mtime.ts_sec);
+      printf (" MTIME=%12.12s %4.4s", &p[4], &p[20]);
+    }
 }
 
