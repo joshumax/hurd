@@ -130,17 +130,9 @@ _diskfs_init_completed ()
   
   notify = ports_get_right (pi);
   ports_port_deref (pi);
-  err = mach_port_insert_right (mach_task_self (), notify, notify,
-				MACH_MSG_TYPE_MAKE_SEND);
-  if (err)
-    {
-      mach_port_deallocate (mach_task_self (), init);
-      goto errout;
-    }
-  
   asprintf (&name, "%s %s", program_invocation_short_name, 
 	    diskfs_device_arg);
-  err = startup_request_notification (init, notify, name);
+  err = startup_request_notification (init, notify, MACH_PORT_MAKE_SEND, name);
   free (name);
   if (err)
     goto errout;
