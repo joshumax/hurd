@@ -24,7 +24,7 @@ FSSRCS= dir-chg.c dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-access.c file-chauthor.c file-chflags.c file-chg.c \
 	file-chmod.c file-chown.c file-exec.c file-get-fs-opts.c \
 	file-get-trans.c file-get-transcntl.c file-getcontrol.c \
-	file-getfh.c file-getlinknode.c file-inv-trans.c file-lock-stat.c \
+	file-getfh.c file-getlinknode.c file-lock-stat.c \
 	file-lock.c file-set-size.c file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-utimes.c file-reparent.c
 IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
