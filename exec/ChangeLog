@@ -1,3 +1,8 @@
+1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hashexec.c (check_hashbang): Trim trailing blanks after interpreter
+	argument.
+
 1998-09-05  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
 
  	* do-bunzip2.c: New file.
@@ -6,7 +11,7 @@
  	* Makefile (bzip2-objects): New variable.
  	(OBJS): Add bzip2-objects.
  	(CPPFLAGS): Add -DBZIP2.
-	
+
 1999-04-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exec.c (do_exec): Implement EXEC_SIGTRAP flag.
