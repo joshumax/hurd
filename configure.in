@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.22 2001/10/12 00:04:58 marcus Exp $])
+AC_REVISION([$Id: configure.in,v 1.23 2001/12/22 20:45:48 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -20,10 +20,21 @@ none) AC_MSG_ERROR([
 esac
 
 case "$host_cpu" in
-i?86) asm_syntax=i386 ;;
-*) AC_MSG_ERROR([unsupported CPU type]) ;;
+i?86)
+  asm_syntax=i386
+  ;;
+powerpc)
+  asm_syntax=ppc
+  ;;
+*)
+  asm_syntax="$host_cpu"
+  ;;
 esac
 AC_SUBST(asm_syntax)
+
+test -r "$srcdir/libthreads/$asm_syntax/cthreads.h" || {
+  AC_MSG_WARN([unsupported CPU type $host_cpu])
+}
 
 AC_ARG_ENABLE(profile,
 [  --disable-profile	  do not build profiled libraries and programs])
