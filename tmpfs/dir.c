@@ -1,5 +1,5 @@
 /* Directories for tmpfs.
-   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
+   Copyright (C) 2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -51,7 +51,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 
 error_t
 diskfs_get_directs (struct node *dp, int entry, int n,
-		    char **data, u_int *datacnt,
+		    char **data, size_t *datacnt,
 		    vm_size_t bufsiz, int *amt)
 {
   struct tmpfs_dirent *d;
@@ -198,7 +198,7 @@ diskfs_lookup_hard (struct node *dp,
       else
         {
 	  mutex_unlock (&dp->lock);
-          err = diskfs_cached_lookup ((int) dddn, np);
+          err = diskfs_cached_lookup ((int) dddn, dp, np);
 
 	  if (type == (LOOKUP|SPEC_DOTDOT))
 	    diskfs_nrele (dp);
@@ -220,7 +220,7 @@ diskfs_lookup_hard (struct node *dp,
 	  ds->prevp = prevp;
 
 	if (np)
-	  return diskfs_cached_lookup ((ino_t) d->dn, np);
+	  return diskfs_cached_lookup ((ino_t) d->dn, dp, np);
 	else
 	  return 0;
       }
