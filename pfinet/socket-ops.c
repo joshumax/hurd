@@ -378,9 +378,11 @@ S_socket_getopt (struct sock_user *user,
   __mutex_lock (&global_lock);
   become_task (user);
 
+  int len = *datalen;
   err = - (level == SOL_SOCKET ? sock_getsockopt
 	   : *user->sock->ops->getsockopt)
-    (user->sock, level, option, *data, datalen);
+    (user->sock, level, option, *data, &len);
+  *datalen = len;
 
   __mutex_unlock (&global_lock);
 
