@@ -1,6 +1,11 @@
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* boot-start.c (diskfs_start_bootstrap): Twiddle boot-time messages.
+
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* boot-start.c (_diskfs_boot_privports): Renamed from diskfs_*.
+
 	* priv.h: Declare it.
 	* console.c (diskfs_console_stdio): Change caller.
 
