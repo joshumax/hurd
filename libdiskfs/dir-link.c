@@ -33,7 +33,7 @@ diskfs_S_dir_link (struct protid *filecred,
     return EOPNOTSUPP;
   
   np = filecred->po->np;
-  if (readonly)
+  if (diskfs_readonly)
     return EROFS;
   
   if (!dircred)
@@ -46,11 +46,15 @@ diskfs_S_dir_link (struct protid *filecred,
   mutex_lock (&np->lock);
 
   if (S_ISDIR (np->dn_stat.st_mode))
-    error = EISDIR;
-  else if (np->dn_stat.st_nlink == LINK_MAX - 1)
-    error = EMLINK;
-  if (error)
-    goto out;
+    {
+      error = EISDIR;
+      goto out;
+    }
+  else if (np->dn_stat.st_nlink == diskfs_link_max - 1)
+    {
+      error = EMLINK;
+      goto out;
+    }
 
   error = diskfs_lookup (dnp, name, CREATE, 0, ds, dircred);
 
@@ -60,7 +64,7 @@ diskfs_S_dir_link (struct protid *filecred,
     error = EEXIST;
   if (error != ENOENT)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (dnp, ds);
       goto out;
     }
   
