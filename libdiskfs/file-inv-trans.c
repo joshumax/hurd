@@ -54,7 +54,8 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
   
  repeat_transcheck:
   /* Ignore O_NOTRANS in the following check */
-  if (np->istranslated || np->translator.control != MACH_PORT_NULL)
+  if ((np->dn_stat.st_mode & S_IPTRANS)
+      || np->translator.control != MACH_PORT_NULL)
     {
       mach_port_t control = np->translator.control;
 
