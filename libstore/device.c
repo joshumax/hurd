@@ -87,13 +87,89 @@ dev_open (const char *name, int flags,
 {
   return store_device_open (name, flags, store);
 }
+
+static error_t
+dopen (const char *name, device_t *device)
+{
+  device_t dev_master;
+  int open_flags = D_WRITE | D_READ;
+  error_t err = get_privileged_ports (0, &dev_master);
+  if (! err)
+    {
+      err = device_open (dev_master, open_flags, (char *)name, device);
+      mach_port_deallocate (mach_task_self (), dev_master);
+    }
+  return err;
+}
+
+static void
+dclose (struct store *store)
+{
+  mach_port_deallocate (mach_task_self (), store->port);
+  store->port = MACH_PORT_NULL;
+}
+
+/* Return 0 if STORE's range is enforce by the kernel, otherwise an error.  */
+static error_t
+enforced (struct store *store)
+{
+  size_t sizes[DEV_GET_SIZE_COUNT];
+  size_t sizes_len = DEV_GET_SIZE_COUNT;
+  error_t err =
+    device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
+
+  if (err)
+    return err;
+
+  assert (sizes_len == DEV_GET_SIZE_COUNT);
+
+  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
+      || (store->runs[0].length !=
+	  sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
+    return EINVAL;
+
+  return 0;
+}
+
+static error_t
+dev_set_flags (struct store *store, int flags)
+{
+  if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
+    return EINVAL;
+  if (! ((store->flags | flags) & STORE_INACTIVE))
+    if (store->num_runs >= 0 || store->runs[0].start != 0)
+      return EINVAL;
+    else if (flags & STORE_ENFORCED)
+      {
+	error_t err = enforced (store);
+	if (err)
+	  return err;
+      }
+  if (flags & STORE_INACTIVE)
+    dclose (store);
+  store->flags |= flags;	/* When inactive, anything goes.  */
+  return 0;
+}
+
+static error_t
+dev_clear_flags (struct store *store, int flags)
+{
+  error_t err = 0;
+  if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
+    err = EINVAL;
+  if (!err && (flags & STORE_INACTIVE))
+    err = store->name ? dopen (store->name, &store->port) : ENODEV;
+  if (! err)
+    store->flags &= ~flags;
+  return err;
+}
 
 struct store_class
 store_device_class =
 {
   STORAGE_DEVICE, "device", dev_read, dev_write,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode,
-  0, 0, 0, 0, 0, dev_open
+  dev_set_flags, dev_clear_flags, 0, 0, 0, dev_open
 };
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
@@ -135,21 +211,19 @@ _store_device_create (device_t device, int flags, size_t block_size,
 error_t
 store_device_open (const char *name, int flags, struct store **store)
 {
-  device_t dev_master, device;
-  int open_flags = ((flags & STORE_HARD_READONLY) ? 0 : D_WRITE) | D_READ;
-  error_t err = get_privileged_ports (0, &dev_master);
-
-  if (err)
-    return err;
-
-  err = device_open (dev_master, open_flags, (char *)name, &device);
-  mach_port_deallocate (mach_task_self (), dev_master);
+  device_t device;
+  error_t err = dopen (name, &device);
   if (! err)
     {
       err = store_device_create (device, flags, store);
+      if (! err)
+	{
+	  err = store_set_name (*store, name);
+	  if (err)
+	    store_free (*store);
+	}
       if (err)
 	mach_port_deallocate (mach_task_self (), device);
     }
-
   return err;
 }
