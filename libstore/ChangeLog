@@ -1,3 +1,44 @@
+Tue Oct  8 14:31:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* kids.c (store_set_child_flags, store_clear_child_flags): New funcs.
+	* store.h (store_set_child_flags, store_clear_child_flags): New decls.
+	* stripe.c (stripe_set_flags, stripe_clear_flags): Remove functions.
+	* remap.c (store_remap_class): Init set_flags & clear_flags fields.
+	* stripe.c (store_ileave_class, store_concat_class): Likewise.
+
+	* clone.c (store_clone): Copy name field.
+
+Mon Oct  7 14:56:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* device.c (dev_set_flags, dev_clear_flags): New functions.
+	(store_device_class): Add dev_set_flags & dev_clear_flags.
+	(dopen, dclose, enforced): New functions.
+	(store_device_open): Use dopen.
+	* store.h <fcntl.h>: New include.
+	* stripe.c (stripe_set_flags, stripe_clear_flags): New functions.
+	(store_ileave_create, store_concat_create): Add common backend
+	flags from children to parent's flags.
+
+Sat Oct  5 00:23:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* create.c (store_create): Add special handling of STORE_INACTIVE
+	in FLAGS.
+
+Fri Oct  4 23:44:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* create.c (store_create): Free *STORE when store_set_flags fails.
+
+	* store.h (STORE_INNOCUOUS, STORE_INACTIVE): New macros.
+	(store_is_securely_returnable): New function.
+	* zero.c (store_zero_create): Set STORE_INNOCUOUS flags.
+
+Fri Sep 27 17:01:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* remap.c (store_remap): Zero SOURCE->end before calling _store_derive.
+	Turn off STORE_ENFORCED flag in source if munging it.
+
+	* device.c (store_device_open): Set *STORE's name appropriately.
+
 Tue Sep 24 15:15:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* zero.c <limits.h>: New include.

@@ -1,5 +1,11 @@
 Tue Oct  8 14:44:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* w.c (w_fetch): Set HAVE bits even if the values are `nominal'.
+	Correctly propagate PS->inapp bits.
+	(_w_specs): Add PS_FMT_FIELD_COLON_MOD to Idle's flags.
+	(main): Initialize dependencies field of USER_HOOKS to w_deps.
+	(w_deps): New function.
+
 	* storeinfo.c (print_store): Correctly print unknown flags.
 	Don't ever print STORE_INACTIVE flag.
 
@@ -7,7 +13,7 @@ Mon Oct  7 15:48:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeinfo.c (main): Use STORE_INACTIVE flag to store_create.
 
-THU Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+Thu Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (name_to_option): Correct test for malloc failure.
 	(get_memobj_hit_ratio): Renamed from get_cache_hit_ratio.

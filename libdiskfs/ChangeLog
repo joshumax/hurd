@@ -1,3 +1,7 @@
+Mon Oct  7 14:50:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Return ENOTDIR if NP isn't a dir.
+
 Tue Sep 24 23:51:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-version.c (_print_version): Follow version string with newline.
