@@ -78,7 +78,7 @@ diskfs_truncate (struct node *np,
       mach_port_deallocate (mach_task_self (), obj);
     }
   
-  mutex_lock (&np->dn->datalock);
+  rwlock_writer_lock (&np->dn->datalock, np->dn);
 
   /* Update the size now.  If we crash, fsck can finish freeing the
      blocks. */
@@ -96,6 +96,7 @@ diskfs_truncate (struct node *np,
     {
       daddr_t first2free;
 
+      mutex_lock (&sinmaplock);
       if (!np->dn->sinloc)
 	sin_map (np);
 
@@ -122,6 +123,7 @@ diskfs_truncate (struct node *np,
 
       if (!np->dn->fileinfo)
 	sin_unmap (np);
+      mutex_unlock (&sinmaplock);
     }
 
   /* Prune the blocks mapped directly from the inode */
@@ -168,7 +170,7 @@ diskfs_truncate (struct node *np,
   else
     np->allocsize = blkroundup (length);
 
-  mutex_unlock (&np->dn->datalock);
+  rwlock_writer_unlock (&np->dn->datalock, np->dn);
 
   /* Now we can allow delayed copies again */
   if (np->dn->fileinfo)
@@ -183,7 +185,7 @@ diskfs_truncate (struct node *np,
 static void
 dindir_drop (struct node *np)
 {
-  mutex_lock (&np->dn->dinlock);
+  rwlock_writer_lock (&np->dn->dinlock, np->dn);
   
   pager_flush_some (dinpager->p, np->dn->number * sblock->fs_bsize,
 		    sblock->fs_bsize, 1);
@@ -195,7 +197,7 @@ dindir_drop (struct node *np)
       np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
     }
 
-  mutex_unlock (&np->dn->dinlock);
+  rwlock_writer_unlock (&np->dn->dinlock, np->dn);
 }
   
 
@@ -208,7 +210,7 @@ sindir_drop (struct node *np,
 {
   int idx;
   
-  mutex_lock (&np->dn->sinlock);
+  rwlock_writer_lock (&np->dn->sinlock, np->dn);
   
   pager_flush_some (np->dn->sininfo->p, first * sblock->fs_bsize,
 		    (last - first + 1) * sblock->fs_bsize, 1);
@@ -216,6 +218,7 @@ sindir_drop (struct node *np,
   /* Drop indirect blocks found in the double indirect block */
   if (last > 1)
     {
+      mutex_lock (&dinmaplock);
       if (!np->dn->dinloc)
 	din_map (np);
       for (idx = first; idx = last; idx++)
@@ -231,8 +234,11 @@ sindir_drop (struct node *np,
       /* If we no longer need the double indirect block, drop it. */
       if (first <= 1)
 	dindir_drop (np);
+
+      mutex_lock (&dinmaplock);
       if (!np->dn->sininfo)
 	din_unmap (np);
+      mutex_unlock (&dinmaplock);
     }
   
   /* Drop the block from the inode if we don't need it any more */
@@ -242,7 +248,7 @@ sindir_drop (struct node *np,
       dinodes[np->dn->number].di_ib[INDIR_SINGLE] = 0;
       np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
     }
-  mutex_unlock (&np->dn->sinlock);
+  rwlock_writer_unlock (&np->dn->sinlock, np->dn);
 }
 
 /* Write something to each page from START to END inclusive of memory
@@ -296,7 +302,7 @@ diskfs_grow (struct node *np,
   if (end <= np->allocsize)
     return 0;
   
-  mutex_lock (&np->dn->datalock);
+  rwlock_writer_lock (&np->dn->datalock, np->dn);
 
   /* This deallocation works for the calls to alloc, but not for
      realloccg.  I'm not sure how to prune the fragment down, especially if
@@ -404,6 +410,7 @@ diskfs_grow (struct node *np,
   else
     {
       /* Make user the sindir area is mapped at the right size. */
+      mutex_lock (&sinmaplock);
       if (np->dn->sinloc)
 	{
 	  sin_remap (np, end);
@@ -429,6 +436,7 @@ diskfs_grow (struct node *np,
 	}
       if (!np->dn->fileinfo)
 	sin_unmap (np);
+      mutex_unlock (&sinmaplock);
     }
 
   if (np->conch.holder)
@@ -436,7 +444,7 @@ diskfs_grow (struct node *np,
   
  out:
   diskfs_end_catch_exception ();
-  mutex_unlock (&np->dn->datalock);
+  rwlock_writer_unlock (&np->dn->datalock, np->dn);
 
   /* Do the pokes and zeros that we requested before; they have to be
      done here because we can't cause a page while holding datalock. */
