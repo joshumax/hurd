@@ -832,6 +832,7 @@ diskfs_get_directs (struct node *dp,
       if (entryp->d_ino)
 	{
 	  bcopy (bufp, datap, DIRSIZ (entryp->d_namlen));
+	  ((struct direct *)bufp)->d_reclen = DIRSIZ (entryp->d_namlen);
 	  i++;
 	  datap += DIRSIZ (entryp->d_namlen);
 	}
