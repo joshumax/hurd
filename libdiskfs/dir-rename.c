@@ -32,7 +32,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
 {
   struct node *fdp, *tdp, *fnp, *tnp, *tmpnp;
   error_t err;
-  volatile int isdir;
+  int isdir;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   
   if (!fromcred)
