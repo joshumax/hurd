@@ -80,6 +80,8 @@ mach_port_t bootport;
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
 
+mach_port_t default_ports[INIT_PORT_MAX];
+
 char **global_argv;
 
 /* Read a string from stdin into BUF.  */
@@ -191,13 +193,44 @@ run (char *server, mach_port_t *ports, task_t *task)
   printf ("started %s\n", prog);
 }
 
+/* Run FILENAME as root. */
+void
+run_for_real (char *filename)
+{
+  file_t file;
+  error_t err;
+
+  file = path_lookup (filename, O_EXEC, 0);
+  if (file == MACH_PORT_NULL)
+    perror (filename);
+  else
+    {
+      task_t task;
+      task_create (mach_task_self (), 0, &task);
+      proc_child (procserver, task);
+      proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
+      printf ("Pausing for %s\n", filename);
+      getchar ();
+      err = file_exec (file, task, 0,
+		       NULL, 0, /* No args.  */
+		       NULL, 0, /* No env.  */
+		       NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No dtable.  */
+		       default_ports, MACH_MSG_TYPE_COPY_SEND,
+		       INIT_PORT_MAX,
+		       NULL, 0, /* No info in init ints.  */
+		       NULL, 0, NULL, 0);
+      mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
+      mach_port_deallocate (mach_task_self (), task);
+    }
+  mach_port_deallocate (mach_task_self (), file);
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
   extern int startup_server (); /* XXX */
   int err;
   int i;
-  mach_port_t ports[INIT_PORT_MAX];
   mach_port_t consdev;
   
   global_argv = argv;
@@ -228,21 +261,21 @@ main (int argc, char **argv, char **envp)
     switch (i)
       {
       case INIT_PORT_CRDIR:
-	ports[i] = getcrdir ();
+	default_ports[i] = getcrdir ();
 	break;
       case INIT_PORT_CWDIR:
-	ports[i] = getcwdir ();
+	default_ports[i] = getcwdir ();
 	break;
       case INIT_PORT_BOOTSTRAP:
-	ports[i] = startup;
+	default_ports[i] = startup;
 	break;
       default:
-	ports[i] = MACH_PORT_NULL;
+	default_ports[i] = MACH_PORT_NULL;
 	break;
       }
   
-  run ("/hurd/proc", ports, &proctask);
-  run ("/hurd/auth", ports, &authtask);
+  run ("/hurd/proc", default_ports, &proctask);
+  run ("/hurd/auth", default_ports, &authtask);
   
   /* Wait for messages.  When both auth and proc have started, we
      run launch_system which does the rest of the boot. */
@@ -273,6 +306,8 @@ launch_system (void)
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
 
+  default_ports[INIT_PORT_AUTH] = authserver;
+
   /* Tell the proc server our msgport and where our args and
      environment are.  */
   proc_setmsgport (procserver, startup, &old);
@@ -286,6 +321,7 @@ launch_system (void)
 			  authserver))
     perror ("fsys_init");
   
+  run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
 }
 
