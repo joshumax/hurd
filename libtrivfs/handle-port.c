@@ -19,14 +19,18 @@
 
 mach_port_t
 trivfs_handle_port (mach_port_t realnode, 
-		    int cntltype,
-		    int protidtype)
+		    struct port_class *control_class,
+		    struct port_bucket *control_bucket,
+		    struct port_class *protid_class,
+		    struct port_bucket *protid_bucket)
 {
   struct trivfs_control *cntl;
   
-  cntl = ports_allocate_port (sizeof (struct trivfs_control), cntltype);
+  cntl = ports_allocate_port (control_bucket, 
+			      sizeof (struct trivfs_control), control_class);
   cntl->underlying = realnode;
-  cntl->protidtypes = protidtype;
+  cntl->protid_class = protid_class;
+  cntl->protid_bucket = protid_bucket;
   mutex_init (&cntl->lock);
   return ports_get_right (cntl);
 }
