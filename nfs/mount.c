@@ -68,7 +68,7 @@ mount_root (char *name, char *host)
   
   /* Fetch the reply port and clean the RPC  */
   port = ntohl (*p++);
-  addr->sin_port = htons (port); /* note that htons and ntohl are not inverses  */
+  addr->sin_port = htons (port); /* note: htons and ntohl aren't inverses  */
   free (rpcbuf);
   
   /* Now talking to the mount program, fetch the file handle
