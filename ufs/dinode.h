@@ -1,3 +1,20 @@
+/* 
+   Copyright (C) 1994 Free Software Foundation
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
 /*
  * Copyright (c) 1982, 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -55,12 +72,13 @@
 #define	NIADDR	3			/* Indirect addresses in inode. */
 
 struct dinode {
-	u_short		di_mode;	/*   0: IFMT and permissions. */
+	u_short		di_model;	/*   0: IFMT and permissions. */
 	short		di_nlink;	/*   2: File link count. */
-	union {
-		u_short	oldids[2];	/*   4: Ffs: old user and group ids. */
-		ino_t	inumber;	/*   4: Lfs: inode number. */
-	} di_u;
+	union
+	  {
+	    u_long      diu_author;	/*   4: File author */
+	    u_short     diu_oldids[2];   /*   Old format uid and gid */
+	  } di_u;
 	u_quad_t	di_size;	/*   8: File byte count. */
 	struct timespec	di_atime;	/*  16: Last access time. */
 	struct timespec	di_mtime;	/*  24: Last modified time. */
@@ -72,8 +90,14 @@ struct dinode {
 	long		di_gen;		/* 108: Generation number. */
 	u_long		di_uid;		/* 112: File owner. */
 	u_long		di_gid;		/* 116: File group. */
-	long		di_spare[2];	/* 120: Reserved; currently unused */
+	u_short		di_modeh;	/* 120: Mode high bits */
+	u_short		di_spare;	/* 122: unused */
+	long		di_trans;	/* 124: filesystem translator */
 };
+
+#define di_author di_u.diu_author /* GNU extension */
+#define di_ouid di_u.diu_oldids[0]
+#define di_ogid di_u.diu_oldids[1]
 
 /*
  * The di_db fields may be overlaid with other information for
@@ -82,9 +106,6 @@ struct dinode {
  * dev_t value. Short symbolic links place their path in the
  * di_db area.
  */
-#define	di_inumber	di_u.inumber
-#define	di_ogid		di_u.oldids[1]
-#define	di_ouid		di_u.oldids[0]
 #define	di_rdev		di_db[0]
 #define	di_shortlink	di_db
 #define	MAXSYMLINKLEN	((NDADDR + NIADDR) * sizeof(daddr_t))
