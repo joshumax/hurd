@@ -42,6 +42,10 @@ VPATH += $(srcdir)/$(machine)
 
 include ../Makeconf
 
+# The threads library was written by CMU.  If you've ever experienced
+# what that means, you'll understand this line.
+CFLAGS := $(filter-out -Wall,$(CFLAGS))
+
 install: $(includedir)/cthreads.h
 $(includedir)/cthreads.h: cthreads.h
 	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h
