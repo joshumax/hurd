@@ -30,6 +30,7 @@ diskfs_make_node (struct disknode *dn)
   np->dn_set_ctime = 0;
   np->dn_set_atime = 0;
   np->dn_set_mtime = 0;
+  np->dn_stat_dirty = 0;
   
   mutex_init (&np->lock);
   np->references = 1;
