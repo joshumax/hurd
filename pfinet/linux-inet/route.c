@@ -68,7 +68,7 @@ static struct rtable *rt_loopback = NULL;
  *	Remove a routing table entry.
  */
 
-static void rt_del(unsigned long dst, char *devname)
+void rt_del(unsigned long dst, char *devname)
 {
 	struct rtable *r, **rp;
 	unsigned long flags;
