@@ -1,9 +1,7 @@
 /* Store wire decoding
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
 #include <malloc.h>
@@ -160,6 +158,8 @@ error_t
 store_decode (struct store_enc *enc, const struct store_class *const *classes,
 	      struct store **store)
 {
+  const struct store_class *const *cl;
+
   if (enc->cur_int >= enc->num_ints)
     /* The first int should always be the type.  */
     return EINVAL;
@@ -167,14 +167,12 @@ store_decode (struct store_enc *enc, const struct store_class *const *classes,
   if (! classes)
     classes = store_std_classes;
 
-  while (*classes)
-    if ((*classes)->id == enc->ints[enc->cur_int])
-      if ((*classes)->decode)
-	return (*(*classes)->decode) (enc, classes, store);
+  for (cl = classes; *classes; cl ++)
+    if ((*cl)->id == enc->ints[enc->cur_int])
+      if ((*cl)->decode)
+	return (*(*cl)->decode) (enc, classes, store);
       else
 	return EOPNOTSUPP;
-    else
-      classes++;
 
   return EINVAL;
 }
