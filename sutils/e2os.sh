@@ -1,7 +1,7 @@
 #!/bin/sh
 # Set/get the `creator_os' field of an ext2fs partition
 #
-# Copyright (C) 1996 Free Software Foundation, Inc.
+# Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 #
 # Written by Miles Bader <miles@gnu.ai.mit.edu>
 #
@@ -132,7 +132,7 @@ if test "$OS"; then
   sbset $SB_OS "$OS"
 
   # Write the superblock
-  $DD 2>"$ERRS" if="$SB" of="$DEVICE" bs=1k seek=1 count=1 \
+  $DD 2>"$ERRS" if="$SB" of="$DEVICE" bs=1k seek=1 count=1 conv=notrunc \
   || { $SED 1>&2 "s;^$DD:;$0:;" "$ERRS"; exit 6; }
 else
   # Print the os field.
