@@ -110,7 +110,10 @@ void _pipe_no_readers (struct pipe *pipe)
 	  pipe->flags |= PIPE_BROKEN;
 	  if (pipe->readers)
 	    /* Wake up writers for the bad news... */
-	    condition_broadcast (&pipe->pending_writes);
+	    {
+	      condition_broadcast (&pipe->pending_writes);
+	      condition_broadcast (&pipe->pending_write_selects);
+	    }
 	}
       mutex_unlock (&pipe->lock);
     }
