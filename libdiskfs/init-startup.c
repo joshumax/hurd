@@ -46,7 +46,12 @@ diskfs_startup_diskfs (mach_port_t bootstrap)
       mach_port_deallocate (mach_task_self (), bootstrap);
     }
   else
-    realnode = MACH_PORT_NULL;
+    {
+      realnode = MACH_PORT_NULL;
+
+      /* We are the bootstrap filesystem; do special boot-time setup.  */
+      diskfs_start_bootstrap ();
+    }
 
   if (diskfs_default_sync_interval)
     /* Start 'em sync'n */
