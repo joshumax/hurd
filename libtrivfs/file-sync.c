@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-diskfs_S_file_sync (struct protid *cred,
+diskfs_S_file_sync (struct trivfs_protid *cred,
 		    int wait)
 {
   return cred ? file_sync (cred->realnode, wait) : EOPNOTSUPP;
