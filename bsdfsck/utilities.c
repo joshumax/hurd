@@ -33,14 +33,14 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)utilities.c	8.1 (Berkeley) 6/5/93";*/
-static char *rcsid = "$Id: utilities.c,v 1.1 1994/08/23 19:29:26 mib Exp $";
+static char *rcsid = "$Id: utilities.c,v 1.2 1994/08/23 20:18:15 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +52,7 @@ long	diskreads, totalreads;	/* Disk cache statistics */
 ftypeok(dp)
 	struct dinode *dp;
 {
-	switch (dp->di_mode & IFMT) {
+	switch (DI_MODE(dp) & IFMT) {
 
 	case IFDIR:
 	case IFREG:
@@ -65,7 +65,7 @@ ftypeok(dp)
 
 	default:
 		if (debug)
-			printf("bad file type 0%o\n", dp->di_mode);
+			printf("bad file type 0%o\n", DI_MODE(dp));
 		return (0);
 	}
 }
