@@ -1,3 +1,7 @@
+1999-06-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ttys.c: Include "ttys.h".
+
 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (kill_multi_user): Suggest `ps -AlM' in error message.
