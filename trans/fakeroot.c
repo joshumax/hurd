@@ -163,6 +163,8 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
     st.st_mode = np->nn_stat.st_mode;
 
   np->nn_stat = st;
+  np->nn_translated = S_ISLNK (st.st_mode) ? S_IFLNK : 0;
+
   return 0;
 }
 
