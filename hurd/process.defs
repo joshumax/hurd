@@ -28,8 +28,6 @@ subsystem process 24000;
 PROCESS_IMPORTS
 #endif
 
-type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
 
 /*** Host management ***/
 
@@ -121,7 +119,7 @@ routine proc_child (
 /* Atomically change the message port of a process.  */
 routine proc_setmsgport (
 	process: process_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	newmsgport: mach_port_t;
 	out oldmsgport: mach_port_move_send_t);
 
@@ -171,7 +169,7 @@ routine proc_get_arg_locations (
 /* INTR */
 routine proc_getmsgport (
 	process: process_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	pid: pid_t;
 	out msgport: mach_port_t);
 
@@ -183,7 +181,7 @@ routine proc_getmsgport (
 /* INTR */
 routine proc_wait (
 	process: process_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	pid: pid_t;
 	options: int;
 	out status: int;
