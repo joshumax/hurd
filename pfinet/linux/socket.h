@@ -16,4 +16,7 @@
 
 #define SOL_IP 0 /* XXX */
 
+#define SO_NO_CHECK 11
+#define SO_PRIORITY 12
+
 #endif
