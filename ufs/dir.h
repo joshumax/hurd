@@ -92,9 +92,11 @@ struct	directory_entry {
 #if (BYTE_ORDER == LITTLE_ENDIAN)
 #define DIRECT_NAMLEN(dp) (direct_symlink_extension || swab_disk	    \
 			   ? (dp)->d_namlen 				    \
-			   : (dp)->(dp)->d_type)
+			   : (dp)->d_type)
 #else
-#define DIRECT_NAMLEN(dp) ((dp)->d_namlen)
+#define DIRECT_NAMLEN(dp) (!direct_symlink_extension && swab_disk	    \
+			   ? (dp)->d_type				    \
+			   : (dp)->d_namlen)
 #endif
 
 /*
