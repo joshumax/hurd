@@ -1,5 +1,5 @@
 /* Definitions for shared IO control pages
-   Copyright (C) 1992, 1993 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -78,8 +78,12 @@ struct shared_io
 
   /* These are set by both the IO server and the user: */
 
-  /* These have meanings just like io_map; -1 is used to indicate an
-     impossible value.  */
+  /* If the read and write objects returned by io_map are the same,
+     then use the xx_file_pointer for read, write, and seek.  If the
+     read and write objects are not the same, then use the 
+     rd_file_pointer for read and the wr_file_pointer for write.
+     Normally in this case the seekable value will be false.  
+     The unused file pointers will be set to -1 by the I/O server. */
   off_t rd_file_pointer; 
   off_t wr_file_pointer;
   off_t xx_file_pointer;
