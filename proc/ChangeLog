@@ -1,3 +1,12 @@
+2000-03-12  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mgt.c (allocate_proc): Don't do mach_port_request_notification here.
+	(proc_death_notify): New function, do it here instead.
+	(complete_proc): Call proc_death_notify.
+	* main.c (main): Call proc_death_notify on STARTUP_PROC after
+	we have set its task port.
+	* proc.h: Declare proc_death_notify.
+
 2000-01-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* info.c (get_string): New arg, pass back length of string.
