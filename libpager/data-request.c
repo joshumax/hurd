@@ -30,6 +30,7 @@ seqnos_memory_object_data_request (mach_port_t object,
   error_t err;
   void *page;
   location_t loc;
+  void *cookie;
   vm_size_t size, iosize;
   int write_lock;
   int extra_zeroes;
@@ -110,10 +111,11 @@ seqnos_memory_object_data_request (mach_port_t object,
   if (doerror)
     goto error_read;
 
-  err = pager_find_address (p->upi, offset, &loc, &size, &iosize, &write_lock);
+  err = pager_find_address (p->upi, offset, &loc, &cookie,
+			    &size, &iosize, &write_lock);
 
   if (!err)
-    error = pager_read_page (loc, &page, iosize, &extra_zeroes);
+    error = pager_read_page (loc, cookie, &page, iosize, &extra_zeroes);
 
   if (err)
     goto error_read;
