@@ -109,9 +109,9 @@ function mkdev {
       [pt]ty[pqrstuvwxyzPQRST]?)
 	# Make one pty, both the master and slave halves.
 	local id="${I:3}"
-	st pty$id root 640 /hurd/term ${DEVDIR}/pty$id \
+	st pty$id root 666 /hurd/term ${DEVDIR}/pty$id \
 				      pty-master ${DEVDIR}/tty$id
-	st tty$id root 640 /hurd/term ${DEVDIR}/tty$id \
+	st tty$id root 666 /hurd/term ${DEVDIR}/tty$id \
 				      pty-slave ${DEVDIR}/pty$id
 	;;
       [pt]ty[pqrstuvwxyzPQRST])

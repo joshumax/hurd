@@ -1,3 +1,9 @@
+1999-09-14  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* MAKEDEV.sh (mkdev): pty master and slave nodes should have mode
+	666, not 640.  Reported by Marcus Brinkmann
+	<Marcus.Brinkmann@ruhr-uni-bochum.de>. 
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* clookup.c: Add #include <sys/mman.h>.
