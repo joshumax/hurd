@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,9 +24,12 @@ struct protid *
 netfs_make_protid (struct peropen *po, struct netcred *cred)
 {
   struct protid *pi;
-  
-  pi = ports_allocate_port (netfs_port_bucket, sizeof (struct protid),
-			    netfs_protid_class);
+
+  errno = ports_create_port (netfs_protid_class, netfs_port_bucket, 
+			     sizeof (struct protid, &pi));
+  if (errno)
+    return 0;
+
   po->refcnt++;
   pi->po = po;
   pi->credential = cred;
