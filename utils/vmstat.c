@@ -261,11 +261,15 @@ ensure_def_pager_info (struct vm_state *state)
 	}
     }
 
-  err = default_pager_info (state->def_pager, &state->def_pager_info);
-  if (err)
-    error (0, err, "default_pager_info");
-
-  return (err == 0);
+  if (state->def_pager == MACH_PORT_NULL)
+    return 0;
+  else
+    {
+      err = default_pager_info (state->def_pager, &state->def_pager_info);
+      if (err)
+	error (0, err, "default_pager_info");
+      return (err == 0);
+    }
 }
 
 static val_t
