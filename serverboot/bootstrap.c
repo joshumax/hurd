@@ -35,7 +35,10 @@
 #include <stdio.h>
 
 #include "../boot/boot_script.h"
-#include "translate_root.h"
+
+/* Use this device if no root specified.  */
+#define DEFAULT_ROOT "hd0a"
+
 
 #if 0
 /*
@@ -114,7 +117,9 @@ safe_gets (char *str, int maxlen)
 {
   char *c;
   c = index (fgets (str, maxlen, stdin), '\n');
-  *c = '\0';
+  if (c)
+    *c = '\0';
+  printf ("\r\n");
 }
 
 printf_init (device_t master)
@@ -167,8 +172,6 @@ main(argc, argv)
 	char			*flag_string;
 
 	boolean_t		ask_boot_script = 0;
-
-	static char		new_root[16];
 
 	/*
 	 * Use 4Kbyte cthread wait stacks.
@@ -232,14 +235,14 @@ main(argc, argv)
 	 */
 
 	if (index(flag_string, 'a')) {
+	    static char		new_root[16];
+
 		printf("root device? [%s] ", root_name);
-                safe_gets(new_root, sizeof(new_root));
+		safe_gets(new_root, sizeof(new_root));
+
+		if (new_root[0] != '\0')
+			strcpy (root_name, new_root);
 	}
-
-	if (new_root[0] == '\0')
-		strcpy(new_root, root_name);
-
-	root_name = translate_root(new_root);
 
 	(void) strbuild(boot_script_name,
 			"/dev/",
@@ -323,9 +326,9 @@ main(argc, argv)
 
 	if (index (flag_string, 'd'))
 	  {
-	    char c;
+	    char xx[5];
 	    printf ("Hit return to boot...");
-	    safe_gets (&c, 1);
+	    safe_gets (xx, sizeof xx);
 	  }
 
 	/*
