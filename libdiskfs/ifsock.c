@@ -119,7 +119,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	  mach_port_request_notification (mach_task_self (), sockaddr,
 					  MACH_NOTIFY_DEAD_NAME, 1,
 					  cred->pi.port_right, 
-					  MACH_PORT_MAKE_SEND_ONCE,
+					  MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					  &old);
 	  if (old != MACH_PORT_NULL)
 	    mach_port_deallocate (mach_task_self (), old);
