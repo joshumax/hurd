@@ -1,3 +1,7 @@
+Fri Nov  1 18:12:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rpc.c (conduct_rpc): Unlock OUTSTANDING_LOCK if write fails.
+
 Wed Oct 30 18:25:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_statfs): Convert incoming numbers from
