@@ -62,7 +62,7 @@ device_meths = {dev_read, dev_write};
 error_t
 store_device_create (device_t device, struct store **store)
 {
-  off_t runs[2];
+  struct store_run run;
   size_t sizes[DEV_GET_SIZE_COUNT], block_size;
   size_t sizes_len = DEV_GET_SIZE_COUNT;
   error_t err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
@@ -73,16 +73,16 @@ store_device_create (device_t device, struct store **store)
   assert (sizes_len == DEV_GET_SIZE_COUNT);
 
   block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
-  runs[0] = 0;
-  runs[1] = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
+  run.start = 0;
+  run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
 
-  return _store_device_create (device, block_size, runs, 2, store);
+  return _store_device_create (device, block_size, &run, 1, store);
 }
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t
 _store_device_create (device_t device, size_t block_size,
-		      const off_t *runs, size_t num_runs,
+		      const struct store_run *runs, size_t num_runs,
 		      struct store **store)
 {
   *store = _make_store (STORAGE_DEVICE, &device_meths, device, block_size,
