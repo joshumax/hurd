@@ -1,5 +1,5 @@
 /* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,7 +44,7 @@ get_hypermetadata (void)
     }
   if (sblock->fs_bsize < sizeof (struct fs))
     {
-      fprintf (stderr, "Block size %ld is too small (min is %ld bytes)\n",
+      fprintf (stderr, "Block size %ld is too small (min is %Zd bytes)\n",
 	       sblock->fs_bsize, sizeof (struct fs));
       exit (1);
     }
@@ -52,7 +52,7 @@ get_hypermetadata (void)
   if (sblock->fs_maxsymlinklen > (long)MAXSYMLINKLEN)
     {
       fprintf (stderr, "Max shortcut symlinklen %ld is too big (max is %ld)\n",
-	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
+	       sblock->fs_maxsymlinklen, (long)MAXSYMLINKLEN);
       exit (1);
     }
 
