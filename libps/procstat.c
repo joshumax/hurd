@@ -177,6 +177,10 @@ add_preconditions (ps_flags_t flags)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
     flags |= PSTAT_PROC_INFO | PSTAT_THREAD_BASIC;
+  if (flags & PSTAT_OWNER)
+    flags |= PSTAT_OWNER_UID;
+  if (flags & PSTAT_OWNER_UID)
+    flags |= PSTAT_PROC_INFO;
   if (flags & PSTAT_SUSPEND_COUNT)
     /* We just request the resources require for both the thread and task
        versions, as the extraneous info won't be possible to aquire anyway. */
@@ -684,9 +688,23 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   MP_MGET(PSTAT_UMASK, PSTAT_TASK,
 	  msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
 
+  if ((need & PSTAT_OWNER_UID) && (have & PSTAT_PROC_INFO))
+    {
+      if (ps->proc_info->state & PI_NOTOWNED)
+	ps->owner_uid = -1;
+      else
+	ps->owner_uid = ps->proc_info->owner;
+      have |= PSTAT_OWNER_UID;
+    }
+
   /* A ps_user_t object for the process's owner.  */
-  if ((need & PSTAT_OWNER) && (have & PSTAT_PROC_INFO))
-    if (! ps_context_find_user(ps->context, ps->proc_info->owner, &ps->owner))
+  if ((need & PSTAT_OWNER) && (have & PSTAT_OWNER_UID))
+    if (ps->owner_uid < 0)
+      {
+	ps->owner = 0;
+	have |= PSTAT_OWNER;
+      }
+    else if (! ps_context_find_user(ps->context, ps->owner_uid, &ps->owner))
       have |= PSTAT_OWNER;
 
   /* A ps_tty_t for the process's controlling terminal, or NULL if it
