@@ -68,7 +68,7 @@ struct changes
 #define DISPLAY_CHANGE_SCREEN_CUR_LINE 4
 #define DISPLAY_CHANGE_SCREEN_SCR_LINES 8
 #define DISPLAY_CHANGE_MATRIX 16
-  int which;
+  unsigned int which;
 };
 
 struct cursor
@@ -330,58 +330,65 @@ display_notice_filechange (display_t display, enum file_changed_type type,
 }
 
 static void
-display_flush_filechange (display_t display, int type)
+display_flush_filechange (display_t display, unsigned int type)
 {
   struct cons_display *user = display->user;
 
   if (type & DISPLAY_CHANGE_CURSOR_POS
       || type & DISPLAY_CHANGE_CURSOR_STATUS)
     {
-      off_t start = -1;
-      off_t end = -1;
+      off_t start;
+      off_t len = 0;
 
       if (type & DISPLAY_CHANGE_CURSOR_POS
-	  || display->changes.cursor.col != user->cursor.col
-	  || display->changes.cursor.row != user->cursor.row)
+	  && display->changes.which & DISPLAY_CHANGE_CURSOR_POS
+	  && (display->changes.cursor.col != user->cursor.col
+	      || display->changes.cursor.row != user->cursor.row))
 	{
 	  start = offsetof (struct cons_display, cursor.col);
-	  end = start + 2 * sizeof (wchar_t) - 1;
+	  len += 2;
 	}
       if (type & DISPLAY_CHANGE_CURSOR_STATUS
-	  || display->changes.cursor.status != user->cursor.status)
+	  && display->changes.which & DISPLAY_CHANGE_CURSOR_STATUS
+	  && display->changes.cursor.status != user->cursor.status)
 	{
-	  if (start == -1)
+	  if (!len)
 	    start = offsetof (struct cons_display, cursor.status);
-	  end = start + 1 * sizeof (wchar_t) - 1;
+	  len += 1;
 	}
-      if (start != -1)
-	display_notice_filechange (display, FILE_CHANGED_WRITE, start, end);
+      if (len)
+	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
+				   start + len * sizeof (wchar_t) - 1);
     }
 
   if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
       || type & DISPLAY_CHANGE_SCREEN_SCR_LINES)
     {
-      off_t start = -1;
-      off_t end = -1;
+      off_t start;
+      off_t len = 0;
 
       if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
-	  || display->changes.screen.cur_line != user->screen.cur_line)
+	  && display->changes.which & DISPLAY_CHANGE_SCREEN_CUR_LINE
+	  && display->changes.screen.cur_line != user->screen.cur_line)
 	{
 	  start = offsetof (struct cons_display, screen.cur_line);
-	  end = start + 1 * sizeof (wchar_t) - 1;
+	  len += 2;
 	}
       if (type & DISPLAY_CHANGE_SCREEN_SCR_LINES
-	  || display->changes.screen.scr_lines != user->screen.scr_lines)
+	  && display->changes.which & DISPLAY_CHANGE_SCREEN_SCR_LINES
+	  && display->changes.screen.scr_lines != user->screen.scr_lines)
 	{
-	  if (start == -1)
+	  if (!len)
 	    start = offsetof (struct cons_display, screen.scr_lines);
-	  end = start + 1 * sizeof (wchar_t) - 1;
+	  len += 1;
 	}
-      if (start != -1)
-	display_notice_filechange (display, FILE_CHANGED_WRITE, start, end);
+      if (len)
+	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
+				   start + len * sizeof (wchar_t) - 1);
     }
 
-  if (type & DISPLAY_CHANGE_MATRIX)
+  if (type & DISPLAY_CHANGE_MATRIX
+      && display->changes.which & DISPLAY_CHANGE_MATRIX)
     {
       display_notice_filechange (display, FILE_CHANGED_WRITE,
 				 sizeof (struct cons_display)
@@ -398,7 +405,7 @@ display_flush_filechange (display_t display, int type)
 static void
 display_record_filechange (display_t display, off_t start, off_t end)
 {
-  if (!display->changes.which & DISPLAY_CHANGE_MATRIX)
+  if (!(display->changes.which & DISPLAY_CHANGE_MATRIX))
     {
       display->changes.start = start;
       display->changes.end = end;
@@ -456,10 +463,10 @@ display_record_filechange (display_t display, off_t start, off_t end)
 	}
       /* Now reverse the rotation.  */
       start += rotate;
-      if (start > size)
+      if (start >= size)
 	start -= size;
       end += rotate;
-      if (end > size)
+      if (end >= size)
 	end -= size;
 
       if (disjunct)
@@ -576,8 +583,8 @@ screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
 }
 
 static void
-screen_shift_left (display_t display, size_t row1, size_t col1, size_t row2,
-		   size_t col2, size_t shift, wchar_t chr, char attr)
+screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
+		   size_t row2, size_t shift, wchar_t chr, char attr)
 {
   struct cons_display *user = display->user;
   off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
@@ -602,6 +609,8 @@ screen_shift_left (display_t display, size_t row1, size_t col1, size_t row2,
       while (dst <= end)
 	user->_matrix[dst++ % size] = chr;
 
+      display_record_filechange (display, start, end);
+#if 0
       display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
 				 sizeof (struct cons_display)
@@ -613,14 +622,15 @@ screen_shift_left (display_t display, size_t row1, size_t col1, size_t row2,
 				 + (end - shift + 1) * sizeof (wchar_t),
 				 sizeof (struct cons_display)
 				 + (end + 1) * sizeof (wchar_t) - 1);
+#endif
     }
   else
     screen_fill (display, col1, row1, col2, row2, chr, attr);
 }
 
 static void
-screen_shift_right (display_t display, size_t row1, size_t col1, size_t row2,
-		    size_t col2, size_t shift, wchar_t chr, char attr)
+screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
+		    size_t row2, size_t shift, wchar_t chr, char attr)
 {
   struct cons_display *user = display->user;
   off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
@@ -645,6 +655,8 @@ screen_shift_right (display_t display, size_t row1, size_t col1, size_t row2,
       while (dst >= start)
 	user->_matrix[dst-- % size] = chr;
 
+      display_record_filechange (display, start, end);
+#if 0
       display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
       display_notice_filechange (display, FILE_CHANGED_EXTEND,
 				 sizeof (struct cons_display)
@@ -656,6 +668,7 @@ screen_shift_right (display_t display, size_t row1, size_t col1, size_t row2,
 				 + (end - shift + 1) * sizeof (wchar_t),
 				 sizeof (struct cons_display)
 				 + (end + 1) * sizeof (wchar_t) - 1);
+#endif
     }
   else
     screen_fill (display, col1, row1, col2, row2, chr, attr);

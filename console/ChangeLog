@@ -1,3 +1,14 @@
+2002-06-15  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (struct changes): Change type of WHICH from int to
+	unsigned int.
+	(display_flush_filechanges): Likewise for argument TYPE.  Fix a
+	zillion bugs.
+	(display_record_filechange): Fix half a zillion bugs.
+	(screen_shift_left): Fix order of arguments.  Just flag a normal
+	write change for the whole region, instead trying to be clever.
+	(screen_shift_right): Likewise.
+		
 2002-06-14  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (struct changes): New structure to temporarily hold
