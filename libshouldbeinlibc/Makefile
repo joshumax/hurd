@@ -22,12 +22,15 @@ makemode := library
 libname = libshouldbeinlibc
 SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c argp-ba.c \
 	argp-fmtstream.c argp-fs-xinl.c argp-xinl.c argp-eexst.c \
-	termsize.c idvec.c idvec-auth.c timefmt.c exec-reauth.c \
+	termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
 	canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
 	xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c \
-	idvec-funcs.c maptime-funcs.c
+	idvec.c idvec-auth.c idvec-funcs.c \
+	idvec-impgids.c idvec-verify.c idvec-rep.c \
+	ugids.c ugids-argp.c ugids-rep.c ugids-verify.c ugids-subtract.c \
+	ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c
 installhdrs = argp.h idvec.h timefmt.h maptime.h \
-	wire.h portinfo.h portxlate.h cacheq.h
+	wire.h portinfo.h portxlate.h cacheq.h ugids.h
 LCLHDRS = $(installhdrs) argp-fmtstream.h argp-namefrob.h
 installhdrsubdir = .
 
