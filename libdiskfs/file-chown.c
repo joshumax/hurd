@@ -1,5 +1,5 @@
 /* libdiskfs implementetation of fs.defs: file_chown
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,11 +32,15 @@ diskfs_S_file_chown (struct protid *cred,
 			      || !diskfs_groupmember (gid, cred))
 			     && !diskfs_isuid (0, cred)))
 		       err = EPERM;
-		     else
+		     else 
 		       {
-			 np->dn_stat.st_uid = uid;
-			 np->dn_stat.st_gid = gid;
-			 np->dn_set_ctime = 1;
+			 err = diskfs_validate_owner_change (np, uid);
+			 if (!err)
+			   {
+			     np->dn_stat.st_uid = uid;
+			     np->dn_stat.st_gid = gid;
+			     np->dn_set_ctime = 1;
+			   }
 		       }
 		   }));
 }
