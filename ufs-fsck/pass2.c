@@ -93,10 +93,11 @@ pass2 ()
 	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
 	      pinode (0, dnp->i_number, "REF TO UNALLOCATED NODE IN");
-	      if (reply ("REMOVE"))
+	      if (preen || reply ("REMOVE"))
 		{
 		  dp->d_ino = 0;
 		  mod = 1;
+		  pfix ("REMOVED");
 		  continue;
 		}
 	    }
