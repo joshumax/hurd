@@ -1,3 +1,20 @@
+1999-06-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* runsystem.sh: New file.
+	* Makefile (targets, special-targets): Add runsystem.
+	(runsystem): New target.
+
+1999-06-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* runttys.c: New file.c
+	* Makefile (targets, SRCS): Add runttys, runttys.c.
+	(runttys): New target.
+	(runttys-LDLIBS): New variable, -lutil.
+
+	* console-run.c: New file.
+	* Makefile (targets, SRCS): Add console-run, console-run.c.
+	(console-run): New target.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rc.sh: Don't create /var/run/uptime.  It's no longer used.

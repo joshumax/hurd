@@ -1,3 +1,20 @@
+1999-06-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c [SPLIT_INIT] (child_pid, child_task): New variables.
+	(process_signal, start_child, launch_something, launch_system): New
+	functions.
+	[! SPLIT_INIT] (system_state, shell_pid, rc_pid, launch_single_user,
+	process_rc_script, launch_multi_user, launch_system, kill_everyone,
+	kill_multi_user, process_signal): Variables and functions put inside
+	#ifndef SPLIT_INIT.
+	* stubs.c: New file, modified from ../proc/stubs.c.
+	* Makefile (SRCS): Remove ttys.c here.
+	[$(split-init) = yes] (SRCS): Add stubs.c
+	[$(split-init) = yes] (init-CPPFLAGS): New variable, -DSPLIT_INIT.
+	[$(split-init) = no] (SRCS): Add ttys.c only here.
+	[$(split-init) = no] (LDLIBS): Put defn (-lutil) under this test.
+	(split-init): New variable to turn on split-init, commented out.
+
 1999-06-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (booted): New variable.
