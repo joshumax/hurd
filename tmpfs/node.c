@@ -394,6 +394,8 @@ diskfs_truncate (struct node *np, off_t size)
   if (default_pager == MACH_PORT_NULL)
     return EIO;
 
+  np->dn_stat.st_size = size;
+
   size = round_page (size);
 
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
@@ -405,7 +407,6 @@ diskfs_truncate (struct node *np, off_t size)
 
   adjust_used (size - np->allocsize);
   np->dn_stat.st_blocks += (size - np->allocsize) / 512;
-  np->dn_stat.st_size = size;
   np->allocsize = size;
 
   return 0;
