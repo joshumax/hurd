@@ -115,17 +115,17 @@ page_read_file_direct (struct file_direct *fdp,
   assert (offset + (size >> fdp->bshift) <= fdp->fd_size);
 
   /* Find the run containing the beginning of the page.  */
-  for (r = fdp->runs; r->length > offset; ++r)
+  for (r = fdp->runs; offset > r->length; ++r)
     offset -= r->length;
 
   if (offset + (size >> fdp->bshift) <= r->length)
     /* The first run contains the whole page.  */
-    return device_read (fdp->device, 0,
-			r->start + offset, size >> fdp->bshift,
-			(char **) addr, size_read);
+    return device_read (fdp->device, 0, r->start + offset,
+			size, (char **) addr, size_read);
 
   /* Read the first part of the run.  */
-  err = device_read (fdp->device, 0, r->start + offset, r->length - offset,
+  err = device_read (fdp->device, 0, r->start + offset,
+		     (r->length - offset) << fdp->bshift,
 		     (char **) addr, &nread);
   if (err)
     return err;
@@ -136,12 +136,13 @@ page_read_file_direct (struct file_direct *fdp,
     {
       readloc += nread;
       offset += nread >> fdp->bshift;
-      if (r->length > offset)
+      if (offset > r->length)
 	offset -= r++->length;
 
       /* We always get another out-of-line page, so we have to copy
 	 out of that page and deallocate it.  */
-      err = device_read (fdp->device, 0, r->start + offset, r->length - offset,
+      err = device_read (fdp->device, 0, r->start + offset,
+			 (r->length - offset) << fdp->bshift,
 			 &page, &nread);
       if (err)
 	{
@@ -178,13 +179,13 @@ page_write_file_direct(struct file_direct *fdp,
   assert (offset + (size >> fdp->bshift) <= fdp->fd_size);
 
   /* Find the run containing the beginning of the page.  */
-  for (r = fdp->runs; r->length > offset; ++r)
+  for (r = fdp->runs; offset > r->length; ++r)
     offset -= r->length;
 
   if (offset + (size >> fdp->bshift) <= r->length)
     /* The first run contains the whole page.  */
-    return device_write (fdp->device, 0,
-			 r->start + offset, (char *) addr, size, &wrote);
+    return device_write (fdp->device, 0, r->start + offset,
+			 (char *) addr, size, size_written);
 
   /* Write the first part of the run.  */
   err = device_write (fdp->device, 0,
@@ -201,14 +202,14 @@ page_write_file_direct(struct file_direct *fdp,
 
       addr += wrote;
       offset += wrote >> fdp->bshift;
-      if (r->length > offset)
+      if (offset > r->length)
 	offset -= r++->length;
 
-      segsize = (r->length - offset) >> fdp->bshift;
+      segsize = (r->length - offset) << fdp->bshift;
       if (segsize > size)
 	segsize = size;
-      err = device_write (fdp->device, 0,
-			  r->start + offset, (char *) addr, segsize, &wrote);
+      err = device_write (fdp->device, 0, r->start + offset,
+			  (char *) addr, segsize, &wrote);
       if (err)
 	{
 	  vm_deallocate (mach_task_self (),

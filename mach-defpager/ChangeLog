@@ -1,3 +1,13 @@
+2001-06-05  Mark Kettenis  <kettenis@gnu.org>
+
+	* setup.c (page_read_file_direct): Fix logic to find the run that
+	contains the data to be read.  Use size in bytes instead of blocks
+	when calling device_read.
+	(page_write_file_direct): Fix logic to find the run that contains
+	the data to be written.  Pass SIZE_WRITTEN to device_write call
+	instead of &WROTE when writing a whole page.  Correctly calculate
+	SEGSIZE.  
+
 2001-02-28  Roland McGrath  <roland@frob.com>
 
 	* main.c (main): Instead of calling daemon, do the work ourselves but
