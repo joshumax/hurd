@@ -16,6 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := .
+makemode := misc
 
 include Makeconf
 
@@ -23,7 +24,7 @@ lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
 	      libthreads
 prog-subdirs = auth boot exec fstests init.trim mkbootfs \
 	       proc term ufs pflocal pipes dev.trim utils trans
-other-subdirs = hurd i386 doc init tmpfs dev ext2fs
+other-subdirs = hurd doc init tmpfs dev ext2fs
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = ext2fs
 
