@@ -121,24 +121,33 @@ void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
 
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
-   fsys_startup.  CONTROL_TYPE is the ports library type for the control
-   port, and PROTID_TYPE is the type for ports representing opens of this
-   node.  If CONTROL isn't NULL, the trivfs control port is return in it.  If
-   any error occurs sending fsys_startup, it is returned, otherwise 0.
-   FLAGS specifies how to open the underlying node (O_*).  */
-error_t trivfs_startup(mach_port_t bootstrap, int flags,
+   fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports
+   library to create the control port, and PROTID_CLASS & PROTID_BUCKET are
+   used when creating ports representing opens of this node.  If CONTROL
+   isn't NULL, the trivfs control port is return in it.  If any error occurs
+   sending fsys_startup, it is returned, otherwise 0.  FLAGS specifies how to
+   open the underlying node (O_*).  */
+error_t trivfs_startup (mach_port_t bootstrap, int flags,
+			struct port_class *control_class,
+			struct port_bucket *control_bucket,
+			struct port_class *protid_class,
+			struct port_bucket *protid_bucket,
+			struct trivfs_control **control);
+
+/* Create a new trivfs control port, with underlying node UNDERLYING, and
+   return it in CONTROL.  CONTROL_CLASS & CONTROL_BUCKET are passed to
+   the ports library to create the control port, and PROTID_CLASS &
+   PROTID_BUCKET are used when creating ports representing opens of this
+   node.  */
+error_t
+trivfs_create_control (mach_port_t underlying,
 		       struct port_class *control_class,
 		       struct port_bucket *control_bucket,
 		       struct port_class *protid_class,
 		       struct port_bucket *protid_bucket,
 		       struct trivfs_control **control);
 
-/* Call this to create a new control port and return a receive right
-   for it; exactly one send right must be created from the returned
-   receive right.  UNDERLYING is the underlying port, such as fsys_startup
-   returns as the realnode.  PROTIDTYPE is the ports type to be used
-   for ports that refer to this underlying node.  CNTLTYPE is the ports type
-   to be used for the control port for this node. */
+/* Backwards compatibility.  Use trivfs_create_control.  */
 mach_port_t trivfs_handle_port (mach_port_t underlying, 
 				struct port_class *control_class,
 				struct port_bucket *control_bucket,
