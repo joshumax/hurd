@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -18,9 +18,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include "netfs.h"
 #include <stdio.h>
+#include <error.h>
 #include <hurd/fsys.h>
+#include "netfs.h"
 
 mach_port_t
 netfs_startup (mach_port_t bootstrap, int flags)
@@ -29,10 +30,7 @@ netfs_startup (mach_port_t bootstrap, int flags)
   struct port_info *newpi;
   
   if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "Must be started as a translator...\n");
-      exit (1);
-    }
+    error (10, 0, "Must be started as a translator");
 
   errno = ports_create_port (netfs_control_class, netfs_port_bucket,
 			     sizeof (struct port_info), &newpi);
@@ -43,10 +41,9 @@ netfs_startup (mach_port_t bootstrap, int flags)
       ports_port_deref (newpi);
     }
   if (errno)
-    {
-      perror ("Translator startup failure: fsys_startup");
-      exit (1);
-    }
+    error (11, errno, "Translator startup failure: fsys_startup");
+
   mach_port_deallocate (mach_task_self (), bootstrap);
+
   return realnode;
 }
