@@ -1,3 +1,17 @@
+1997-06-24  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh: Use bash fancy variables instead of various programs.
+	Try to get the correct devdir even if it's not the cwd.
+	Add new options --verbose/-v and --dry-run/-n.
+	(cmd): New function.
+	(st, mkdir): Use cmd to execute any real commands.
+
+1997-06-23  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh: Add the --devdir/-D option.
+	Use the basename of $I instead of $I for various things.
+	Correctly put derived names in the same directory as the arg.
+
 1997-06-21  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* e2os.sh: Use conv=notrunc when writing the superblock back to
