@@ -128,7 +128,7 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
   if (need & W_PSTAT_IDLE)
     {
       struct stat stat;
-      ps_tty_t tty = ps->tty;
+      struct ps_tty *tty = ps->tty;
 
       hook->idle.tv_usec = 0;
       if (io_stat (tty->port, &stat) == 0)
@@ -157,48 +157,48 @@ w_cleanup (struct proc_stat *ps)
 }
 
 static void
-w_get_idle (proc_stat_t ps, struct timeval *tv)
+w_get_idle (struct proc_stat *ps, struct timeval *tv)
 {
   struct w_hook *hook = ps->hook;
   *tv = hook->idle;
 }
-struct ps_getter w_idle_getter =
+const struct ps_getter w_idle_getter =
 {"idle_time", W_PSTAT_IDLE, w_get_idle};
 
 static void
-w_get_login (proc_stat_t ps, struct timeval *tv)
+w_get_login (struct proc_stat *ps, struct timeval *tv)
 {
   struct w_hook *hook = ps->hook;
   tv->tv_usec = 0;
   tv->tv_sec = hook ? hook->utmp.ut_time : 0;
 }
-struct ps_getter w_login_getter =
+const struct ps_getter w_login_getter =
 {"login_time", 0, w_get_login};
 
 static void
-w_get_user (proc_stat_t ps, char **user, unsigned *user_len)
+w_get_user (struct proc_stat *ps, char **user, unsigned *user_len)
 {
   struct w_hook *hook = ps->hook;
   *user = hook->utmp.ut_name;
   *user_len = ((char *)memchr (*user, 0, UT_NAMESIZE) ?: *user) - *user;
 }
-struct ps_getter w_user_getter =
+const struct ps_getter w_user_getter =
 {"user", 0, w_get_user};
 
 static void
-w_get_host (proc_stat_t ps, char **host, unsigned *host_len)
+w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
 {
   struct w_hook *hook = ps->hook;
   *host = hook->host;
   *host_len = strlen (*host);
 }
-struct ps_getter w_host_getter =
+const struct ps_getter w_host_getter =
 {"host", W_PSTAT_HOST, w_get_host};
 
 extern error_t ps_emit_time (), ps_emit_string (), ps_emit_minutes ();
 extern int ps_cmp_times (), ps_cmp_strings ();
 
-struct ps_fmt_spec _w_specs[] =
+const struct ps_fmt_spec _w_specs[] =
 {
   {"USER",  0, UT_NAMESIZE, &w_user_getter, ps_emit_string, ps_cmp_strings},
   {"LOGIN", "LOGIN@", -7,   &w_login_getter, /*ps_emit_time*/ps_emit_minutes,    ps_cmp_times},
@@ -288,7 +288,7 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
 
 /* Read into PROCS from the utmp file called NAME.  */
 static void
-read_utmp_procs (proc_stat_list_t procs, char *name)
+read_utmp_procs (struct proc_stat_list *procs, char *name)
 {
   int rd, fd;
   struct utmp buf[64];
@@ -314,13 +314,13 @@ read_utmp_procs (proc_stat_list_t procs, char *name)
 }
 
 static void
-uptime (proc_stat_list_t procs)
+uptime (struct proc_stat_list *procs)
 {
   struct stat st;
   char uptime_rep[20], tod_rep[20];
   struct host_load_info *load;
   unsigned nusers = 0;
-  int maybe_add_user (proc_stat_t ps) { if (ps->hook) nusers++; return 0; }
+  int maybe_add_user (struct proc_stat *ps) { if (ps->hook) nusers++; return 0; }
 
   proc_stat_list_for_each (procs, maybe_add_user);
 
@@ -330,7 +330,7 @@ uptime (proc_stat_list_t procs)
     strcpy (uptime_rep, "chuck");
   else
     {
-      struct timeval uptime = { st.st_ctime, 0 };
+      struct timeval uptime = { now.tv_sec - st.st_ctime, 0 };
       fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
     }
 
@@ -355,12 +355,12 @@ void
 main(int argc, char *argv[])
 {
   error_t err;
-  ps_context_t context;
+  struct ps_context *context;
   int output_width = -1;
   char *fmt_string = DEFAULT_FMT_STRING, *sort_key_name = NULL;
-  bool sort_reverse = 0, print_heading = 1, show_entries = 1, show_uptime = 1;
-  bool squash_bogus_fields = 1, squash_nominal_fields = 1;
-  proc_stat_list_t procs;
+  int sort_reverse = 0, print_heading = 1, show_entries = 1, show_uptime = 1;
+  int squash_bogus_fields = 1, squash_nominal_fields = 1;
+  struct proc_stat_list *procs;
 #if 0
   char *tty_names = 0;
   unsigned num_tty_names = 0;
@@ -368,7 +368,7 @@ main(int argc, char *argv[])
 #endif
   struct ps_user_hooks ps_hooks = { 0, w_fetch, w_cleanup };
 
-  int has_hook (proc_stat_t ps) { return ps->hook != 0; }
+  int has_hook (struct proc_stat *ps) { return ps->hook != 0; }
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
