@@ -35,7 +35,7 @@ fetch_jiffies ()
     }
   while (secs != mapped_time->check_seconds);
   
-  j = (long long) secs * HZ + ((long long) usecs * HZ) / 1000;
+  j = (long long) secs * HZ + ((long long) usecs * HZ) / 1000000;
   return j - root_jiffies;
 }
 
