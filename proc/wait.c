@@ -174,7 +174,8 @@ S_proc_wait (struct proc *p,
   
   for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
     {
-      if (z->parent == p && waiting_parent_cares (p, z->pid, z->pgrp))
+      if (z->parent == p && waiter_cares (pid, p->p_pgrp->pg_pgid,
+					  z->pid, z->pgrp))
 	{
 	  *status = z->exit_status;
 	  bzero (ru, sizeof (struct rusage));
