@@ -29,7 +29,7 @@ libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
 
 # Finding binaries
-include ../Maketools
+include $(hurdsource)/Maketools
 
 gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
 libgcc := -lgcc
