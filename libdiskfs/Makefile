@@ -119,7 +119,7 @@ fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
 ifsock_S.h ifsockServer.c: $(includedir)/hurd/ifsock.defs \
 		$(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/ifsock.defs \
-	| $(MIGCOM) -sheader ifsock_S.h -header /dev/hull -user /dev/null
+	| $(MIGCOM) -sheader ifsock_S.h -header /dev/null -user /dev/null
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/notify.defs \
