@@ -42,7 +42,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
 
   dp->dn_stat.st_nlink++;	/* for `.' */
   dp->dn_set_ctime = 1;
-  err = diskfs_lookup (dp, ".", CREATE, &foo, ds, &lookupcred, 1, 0);
+  err = diskfs_lookup (dp, ".", CREATE, &foo, ds, &lookupcred);
   assert (err == ENOENT);
   err = diskfs_direnter (dp, ".", dp, ds, cred);
   if (err)
@@ -54,7 +54,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
-  err = diskfs_lookup (dp, "..", CREATE, &foo, ds, &lookupcred, 1, 0);
+  err = diskfs_lookup (dp, "..", CREATE, &foo, ds, &lookupcred);
   assert (err == ENOENT);
   err = diskfs_direnter (dp, "..", pdp, ds, cred);
   if (err)
