@@ -62,7 +62,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       return EINVAL;
     }
 
-  if (np->istranslated || fshelp_translated (&np->transbox))
+  if ((np->dn_stat.st_mode & S_IPTRANS) || fshelp_translated (&np->transbox))
     {
       diskfs_drop_dirstat (dnp, ds);
       diskfs_nput (np);
