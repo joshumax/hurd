@@ -23,18 +23,13 @@ subsystem core 32000;
 
 #include <hurd/hurd_types.defs>
 
-/* Dump a core file for TASK in the file `core' in COREDIR.
-   HOST is the Mach host port for TASK.
+/* Dump a core file for TASK in FILE.  HOST is the Mach host port for TASK.
    SIGNO and SIGCODE indicate the signal that caused the process to dump core.
-   LIMIT is the resource limit on the size of core files.
-   If the core file would be bigger than this, it is not written.
-   MODE gives the permissions for the core file.  */
+   */
 
 routine core_dump_task (
 	coreserver: mach_port_t;
 	task: task_t;
 	host: host_t;
-	coredir: file_t;
-	signo: int; sigcode: int;
-	limit: int;
-	mode: int);
+	file: file_t;
+	signo: int; sigcode: int);
