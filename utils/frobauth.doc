@@ -1,0 +1,83 @@
+  -- Hurd process authentication frobbing commands --
+
+addauth -- Adds additional authority to selected processes, without changing
+  their identity (unless they previously had none)
+rmauth -- Removes authority
+setauth -- Changes the identity and authority of selected processes
+su -- Changes the identity and authority of selected processes, saving enough
+  authority to later undo the change
+unsu -- Attempts to undo the results of a previous su command
+
+Examples:
+
+As these commands effective existing processes rather than creating
+subshells, the following are all typed to the same shell.
+
+Starting with the ids I get from logging in as miles (the `ids' command shows
+all the ids in the process it was invoked from):
+
+  (utils) ids -tn
+  euids=miles egids=10 auids=miles,miles agids=10,10
+
+Note that first euid/egids is the traditional unix effective uid/gid, and,
+for instance, determines what identity files are created with; the 1st and
+2nd auids/agids are the posix `real' and `saved' ids.  Now I add root
+authority:
+
+  (utils) addauth root
+  Password:
+  (utils) ids -tn 
+  euids=miles,root egids=10,wheel auids=miles,miles agids=10,10
+
+The main id is still miles, but an effective root id is also present, meaning
+that the process has root privileges.  The traditional `id' command hasn't
+yet been changed to print extended hurd ids, so it only knows about the
+additional group:
+
+  (utils) id
+  uid=9427(miles) gid=10 groups=10,0(wheel)
+
+Removing root puts us back where we started:
+
+  (utils) rmauth root
+  (utils) ids -tn
+  euids=miles egids=10 auids=miles,miles agids=10,10
+
+Now if we use su instead, it actually changes our process's identity (but
+note that the old ids are still around as available ids -- this means they
+the only privilege they grant is to become effective ids):
+
+  (utils) su 
+  Password:
+  (utils) ids -tn
+  euids=root egids=wheel auids=root,root,miles,miles agids=wheel,wheel,10,10
+  (utils) id
+  uid=0(root) gid=0(wheel) groups=0(wheel)
+
+We can undo the su with unsu:
+
+  (utils) unsu
+  (utils) ids -tn
+  euids=miles egids=10 auids=miles,miles agids=10,10
+
+Now lets su again, to a different user:
+
+  (utils) su thomas
+  Password:
+  (utils) ids -tn
+  euids=thomas egids=11 auids=thomas,thomas,miles,miles agids=11,11,10,10
+
+If we now use another su command, instead of su, we can swap our identity;
+we don't need a password to do this, since the old ids are still there as
+available ids.
+
+  (utils) su miles
+  (utils) ids -tn
+  euids=miles egids=10 auids=miles,miles,thomas,thomas agids=10,10,11,11
+
+Now if we give unsu, we'll become thomas for good (this same effect may be
+had in one step with the `su --no-save' or `setauth' commands):
+
+  (utils) unsu
+  (utils) ids -tn
+  euids=thomas egids=11 auids=thomas,thomas agids=11,11
