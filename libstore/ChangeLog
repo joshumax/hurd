@@ -1,7 +1,13 @@
+1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr.c (store_write, store_read): Carefully avoid scaling run
+	lengths from blocks to bytes except when we're already sure the
+	run's size in bytes won't overflow size_t.
+
 1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* argp.c (store_parsed_open): Add more braces to clarify if-else
-	structure. 
+	structure.
 
 	* encode.c: Include <sys/mman.h>
 	* zero.c: Likewise.
@@ -18,7 +24,7 @@
 	* copy.c: Likewise.
 	* gunzip.c: Likewise.
 	* bunzip2.c: Likewise.
-	
+
 1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* bunzip2.c (bunzip2): Use mmap instead of vm_allocate.
