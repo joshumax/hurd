@@ -50,7 +50,14 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 
   /* NUM_FS_BLOCKS counts down the blocks in the file that we've not
      enumerated yet; when it hits zero, we can stop.  */
-  num_fs_blocks = node->dn_stat.st_blocks >> log2_stat_blocks_per_fs_block;
+  if (node->dn_stat.st_size < node->dn_stat.st_blocks * 512)
+    /* The value indicated by st_blocks is too big (because it includes
+       indirect blocks), so use the size of the file.  */
+    num_fs_blocks =
+      (node->dn_stat.st_size + block_size - 1) >> log2_block_size;
+  else
+    num_fs_blocks = node->dn_stat.st_blocks >> log2_stat_blocks_per_fs_block;
+
   while (num_fs_blocks-- > 0)
     {
       block_t block;
@@ -111,9 +118,11 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 	    err = EACCES;
 	}
       if (! err)
-	err = store_return (file_store, ports, num_ports, ints, num_ints,
-			    offsets, num_offsets, data, data_len);
-      *ports_type = MACH_MSG_TYPE_MAKE_SEND;
+	{
+	  *ports_type = MACH_MSG_TYPE_COPY_SEND;
+	  err = store_return (file_store, ports, num_ports, ints, num_ints,
+			      offsets, num_offsets, data, data_len);
+	}
       store_free (file_store);
     }
 
