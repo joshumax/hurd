@@ -1,3 +1,32 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* opts-std-startup.c (startup_options): Move -C above "Boot options:",
+	give it a docstring.  Docstrings for --bootflags, --boot-command.
+	(_diskfs_boot_command): New variable.
+	(startup_options, parse_startup_opt): New option --boot-command,
+	consumes remaining args to set _diskfs_boot_command.
+	* priv.h: Declare _diskfs_boot_command.
+	* boot-start.c (diskfs_start_bootstrap): If diskfs_exec_server_task is
+	null, assume we are running as the boot command and have a root with
+	/servers/exec.
+	If _diskfs_boot_command is set, start that command in place of init.
+	If can't lookup initname, print error msg and loop to prompt.
+	Put a newline before "Init name" prompt.
+	After starting exec server, try to set active trans on /servers/exec.
+	(diskfs_boot_getpriv): New function: if _hurd_host_priv
+	is null, use fsys_getpriv on our bootstrap port.
+	(parent_task): New static variable, set there with fsys_getpriv call.
+	(diskfs_S_fsys_init): If diskfs_exec_server_task is null, don't do
+	anything with it; instead register parent_task as our child
+	and send an fsys_init to our parent on our bootstrap port.
+	* console.c (diskfs_console_stdio): Call diskfs_boot_privports before
+	get_privileged_ports if diskfs_boot_flags is set.
+
+1998-12-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-exec.c (diskfs_S_file_exec): If exec server port is stale, try
+	once to look up a new one.
+
 1998-12-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot-parse.c: File removed (it has been obsolete since 1995).

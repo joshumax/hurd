@@ -1,3 +1,8 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ext2fs.c (main): Pass ARGP_IN_ORDER flag to argp_parse because
+	diskfs options need it.
+
 1998-12-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* inode.c (diskfs_write_disknode): Add braces to silence warning.
