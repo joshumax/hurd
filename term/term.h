@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -180,7 +180,7 @@ qavail (struct queue *q)
 }
 
 /* Flush all the characters from Q. */
-extern inline int
+extern inline void
 clear_queue (struct queue *q)
 {
   q->susp = 0;
@@ -196,7 +196,7 @@ extern inline quoted_char
 dequeue_quote (struct queue *q)
 {
   int beep = 0;
-  
+
   assert (qsize (q));
   if (q->susp && (qsize (q) < q->lowat))
     {
@@ -231,7 +231,7 @@ enqueue_internal (struct queue **qp, quoted_char c)
 
   if (q->ce - q->array == q->arraylen)
     q = *qp = reallocate_queue (q);
-  
+
   *q->ce++ = c;
 
   if (qsize (q) == 1)
@@ -257,7 +257,7 @@ extern inline void
 enqueue_quote (struct queue **qp, char c)
 {
   enqueue_internal (qp, c | QUEUE_QUOTE_MARK);
-}  
+}
 
 /* Return the unquoted version of a quoted_char. */
 extern inline char
@@ -280,7 +280,7 @@ queue_erase (struct queue *q)
 {
   short answer;
   int beep = 0;
-  
+
   assert (qsize (q));
   answer = *--q->ce;
   if (q->susp && (qsize (q) < q->lowat))
@@ -317,9 +317,9 @@ void ptyio_init (void);
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */
-error_t pty_io_write (struct trivfs_protid *, char *, 
+error_t pty_io_write (struct trivfs_protid *, char *,
 		      mach_msg_type_number_t, mach_msg_type_number_t *);
-error_t pty_io_read (struct trivfs_protid *, char **, 
+error_t pty_io_read (struct trivfs_protid *, char **,
 		     mach_msg_type_number_t *, mach_msg_type_number_t);
 error_t pty_io_readable (int *);
 error_t pty_io_select (struct trivfs_protid *, mach_port_t, int *, int *);
