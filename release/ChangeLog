@@ -1,5 +1,8 @@
 Mon Aug  5 11:44:30 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* SETUP: Put `r' before BOOT_DEV in call to INSTALL-GRUB-MBR.
+	Repair syntax of test to see if BOOT_DEV is valid.
+
 	* Makefile (dist-links): Use correct pathnames for `ln' commands;
 	use -f.  Repair touch command to avoid {}.
 

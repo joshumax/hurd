@@ -2,7 +2,7 @@ Checklist for Hurd releases.
 
 *   Symlinks in /bin; esp. sh, awk, more, cc.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
-o   Make sure /i486-gnu contains hard links, not copies.
+*   Make sure /i486-gnu contains hard links, not copies.
 *   Make sure we are using Hurd versions of su and uptime, not sh-utils.
 *   Make sure we are using Hurd fsck, not e2fs.
 *   Make install-dist from release dir.
@@ -11,11 +11,11 @@ o   Make sure /i486-gnu contains hard links, not copies.
 *   Make sure nethack is clean
 o   Source code for Hurd and libc must be released.
 *   Make sure everything listed in SOURCES is on prep.
-o   Remove .stamp files from binary tree.
-o   Chown everything root.wheel, mode 755/644.
-o   Chown /games games.games.
-o   Check permissions on set[gu]id files in binary tree.
+*   Remove .stamp files from binary tree.
+*   Chown everything root.wheel, mode 755/644.
+*   Chown /games games.games.
+*   Check permissions on set[gu]id files in binary tree.
        (login, ps, w, vmstat, rsh, rlogin, games/lib/nethack/nethack)
-o   Check each directory for bogus cruft files.
-o   Especially delete .bash_history, .gnunfs*, and .stamp files.
+*   Check each directory for bogus cruft files.
+*   Especially delete .bash_history, .gnunfs*, and .stamp files.
 o   Verify installation on bare machine.

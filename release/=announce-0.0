@@ -27,7 +27,7 @@ version 0.0 GNU system corresponding to this Hurd release.  This
 release runs only on PC-AT compatible systems with i[345]86
 processors.
 
-The GNU Hurd, plus MACH, is a kernel, not an operating system.  The
+The GNU Hurd, plus Mach, is a kernel, not an operating system.  The
 GNU operating system, like the Unix operating system, consists of many
 components, including kernel, libraries, compilers, assembler, shell,
 parser generators, utilities, window system, editors, text formatters,
@@ -37,11 +37,11 @@ system, and we've been writing various components of it ever since.
 This release uses the `UK22' version of the Mach kernel, as
 distributed by the University of Utah.  It is too difficult to prepare
 a detailed list of supported devices at this point.  Common disk
-controllers and ethernet cards are surely supported.
+controllers and ethernet cards are generally supported.
 
 This release does not contain the X Window System.
 
-This release may be found by anonymous FTP from prep.ai.mit.edu
+This release may be fetched by anonymous FTP from prep.ai.mit.edu
 [18.159.42] in the directory /pub/gnu/gnu-0.0/.
 
 In that directory, you should find the following files:
@@ -49,15 +49,29 @@ In that directory, you should find the following files:
 README
 SOURCES
 INSTALL-binary
-grub-boot.image (1.4 MB, not compressed)
-gnu-0.0.tar.gz (about XXX MB compressed)
+grub-boot.image		(about 1.4 MB, not compressed)
+gnu-0.0.tar.gz		(about 56.9 MB compressed)
+gnu-0.0-stripped.tar.gz	(about 26.2 MB compressed)
 
 SOURCES contains a complete list describing the sources for the
 binaries found in the image.  INSTALL-binary contains complete
-installation instructions for this release.  gnu-0.0.tar.gz holds the
-image of complete system.  (The files README, SOURCES, and
-INSTALL-binary are also found in the root directory of the gnu-0.0
-release.)
+installation instructions for this release.  
+
+(The files README, SOURCES, and INSTALL-binary are also found in the
+root directory of the gnu-0.0 release.)
+
+gnu-0.0.tar.gz holds the image of the complete system.  It unpacks
+into a directory that requires approximately 233 MB of disk space.
+
+gnu-0.0-stripped.tar.gz holds the same contents as gnu-0.0, except
+that executable programs have been stripped to save space, and the
+libraries have had debugging symbols stripped to save space and speed
+linking.  It unpacks into a directory that requires about 85.5 MB of
+disk space.
+
+We recommend using the unstripped image, or you will be unable to
+debug anything.  Surely there are bugs.  So fetch the unstripped
+image, at least to have around.
 
 grub-boot.image is an image of a 3.5" floppy disk that you will need
 in order to complete part of the installation instructions.
@@ -68,13 +82,25 @@ autoconf, automake, bash, bc, binutils, bison, cpio, cvs, diffutils,
 doschk, e2fsprogs, ed, emacs, fileutils, findutils, flex, from, gawk,
 gcal, gcc, gdb, gdbm, gettext, glibc, gmp, gperf, grep, grub, gzip,
 hello, hurd, indent, inetutils, less, mach, make, m4, miscfiles,
-ncurses, nvi, patch, ptx, rcs, readline, recode, sed, serverboot,
-sharutils, shellutils, tar, termcap, termutils, texinfo, textutils,
-time, wdiff.
+ncurses, nethack, nvi, patch, ptx, rcs, readline, recode, sed,
+serverboot, sharutils, shellutils, tar, termcap, termutils, texinfo,
+textutils, time, wdiff.
 
 
 ------
 
+
 Here are md5sum checksums for the files mentioned in this message:
 
+b5f888bab3eb193fe97a00a141324c9d  INSTALL-binary
+345dcd826747d7b11fc78f4db162d75b  README
+1a5744bb4ed3448045fa6d24153d65fe  SOURCES
+
+
+
 8338c619d860b71bc4128c9c0fd39d63  grub-boot.image
+
+
+-----
+
+Br. Thomas Bushnell, n/BSG

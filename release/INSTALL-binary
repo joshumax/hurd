@@ -6,9 +6,7 @@ GNU Version 0.0
 This is the Hurd.  Welcome.
 
 This directory contains i386 binaries for the Hurd and various
-programs built to run under it.  All program binaries are stripped to
-save disk space; the installed libraries have the debugging
-information stripped to speed linking.
+programs built to run under it.  
 
 See the file SOURCES to see where each package came from.  Remember
 that you must adhere to the GNU General Public License and the GNU
@@ -51,24 +49,29 @@ file onto a fresh floppy with the command:
   dd if=grub-boot.image of=/dev/fd0 bs=512
 This is your `grub boot floppy', referred to below.
 
-Unpack the binary distribution onto a fresh disk partition, which needs
-to be BSD FFS format.  The boot loader we use (GRUB) does not yet
-understand how to boot from a Linux ext2fs filesystem, though this is
-expected to change very soon.
+Unpack the binary distribution onto a fresh disk partition, which
+needs to be BSD FFS format.  We have not prepared instructions for
+setting up the system from an existing Linux-based system because of
+time pressures.  But all the tools and pieces should work for the more
+stalwart souls to try it.
 
-Ideally, you should make a new disk, labelling it with the BSD
-`disklabel' command.  
+Start with a system already running BSD:
 
-Make the A partition large enough to hold the entire Hurd binary
-image, and then some, and make a B partition for swap.  Use newfs to
-make a filesystem on the A partition, mount it, and extract the entire
-Hurd image into it.  Make sure you do this as root, and remember to
-give tar the `p' option.
+  You should ideally use a fresh disk, labelling it with the BSD
+  `disklabel' command.
 
-If you do not have a system running BSD, you can fetch the NetBSD
-install floppies and do this step using them.  (You do not need to
-install NetBSD itself.)  See the instruction subroutine labelled
-`Installing from NetBSD boot floppies' and follow them.
+  Make the A partition large enough to hold the entire Hurd binary
+  image, and then some, and make a B partition for swap.  Use newfs to
+  make a filesystem on the A partition, mount it, and extract the
+  entire Hurd image into it.  Make sure you do this as root, and
+  remember to give tar the `p' option.
+  
+If you do not have a system running BSD, you can install using the
+NetBSD boot floppies:
+
+  Unpack the entire Hurd image somewhere accessible by NFS.  Then see
+  the instruction subroutine in this file labelled `Installing from
+  NetBSD boot floppies' and follow them.
 
 We plan to have our own boot floppies soon, which will make this all a
 fair bit easier.

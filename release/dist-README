@@ -5,9 +5,7 @@ This is the Hurd.  Welcome.
 This is the complete GNU system, version 0.0.  
 
 This directory contains i386 binaries for the Hurd and various
-programs built to run under it.  All program binaries are stripped to
-save disk space; the installed libraries have the debugging
-information stripped to speed linking.
+programs built to run under it.  
 
 See the file SOURCES to see where each package came from.  Remember
 that you must adhere to the GNU General Public License and the GNU
