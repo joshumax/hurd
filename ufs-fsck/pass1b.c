@@ -1,5 +1,5 @@
 /* Pass 1b of fsck -- scan inodes for references to duplicate blocks
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -48,10 +48,8 @@ pass1b ()
 	    {
 	      if (dlp->dup == bno)
 		{
-		  if (!dupblk)
-		    printf ("I=%d HAD DUPLICATE BLOCKS\n", number);
 		  dupblk++;
-		  printf ("DUPLICATE BLOCK %ld\n", bno);
+		  warning (0, "DUPLICATE BLOCK %ld\n", bno);
 		  dlp->dup = duphead->dup;
 		  duphead->dup = bno;
 		  duphead = duphead->next;
@@ -78,7 +76,7 @@ pass1b ()
 	    allblock_iterate (dp, checkblock);
 	    if (dupblk)
 	      {
-		printf ("I=%d has %d DUPLICATE BLOCKS\n", number, dupblk);
+		problem (1, "I=%d HAS %d DUPLICATE BLOCKS", number, dupblk);
 		if (reply ("CLEAR"))
 		  {
 		    clear_inode (number, dp);
