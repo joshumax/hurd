@@ -27,6 +27,7 @@ SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 	tty.c user.c write.c
 LCLHDRS=ps.h
 installhdrs=ps.h
+installhdrsubdir = .
 
 OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
 
