@@ -33,14 +33,14 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)pass2.c	8.2 (Berkeley) 2/27/94";*/
-static char *rcsid = "$Id: pass2.c,v 1.1 1994/08/23 19:29:24 mib Exp $";
+static char *rcsid = "$Id: pass2.c,v 1.2 1994/08/23 20:17:45 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 #include <stdlib.h>
 #include <string.h>
 #include "fsck.h"
@@ -92,8 +92,13 @@ pass2()
 		if (reply("FIX") == 0)
 			errexit("");
 		dp = ginode(ROOTINO);
+#if 0
 		dp->di_mode &= ~IFMT;
 		dp->di_mode |= IFDIR;
+#else
+		dp->dp_model &= ~IFMT;
+		dp->dp_model |= IFDIR;
+#endif		
 		inodirty();
 		break;
 
@@ -144,7 +149,12 @@ pass2()
 			}
 		}
 		bzero((char *)&dino, sizeof(struct dinode));
+#if 0
 		dino.di_mode = IFDIR;
+#else
+		dino.di_modeh = 0;
+		dino.di_model = IFDIR;
+#endif
 		dp->di_size = inp->i_isize;
 		bcopy((char *)&inp->i_blks[0], (char *)&dp->di_db[0],
 			(size_t)inp->i_numblks);
@@ -371,7 +381,7 @@ again:
 				break;
 			dp = ginode(dirp->d_ino);
 			statemap[dirp->d_ino] =
-			    (dp->di_mode & IFMT) == IFDIR ? DSTATE : FSTATE;
+			    (DI_MODE(dp) & IFMT) == IFDIR ? DSTATE : FSTATE;
 			lncntp[dirp->d_ino] = dp->di_nlink;
 			goto again;
 
