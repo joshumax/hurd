@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <mach/notify.h>
 
 error_t
 S_io_write (struct sock_user *user,
@@ -233,11 +233,12 @@ S_io_clear_some_openmodes (struct sock_user *user,
 
 error_t
 S_io_select (struct sock_user *user,
-	     int *select_type,
-	     int *id_tag)
+	     mach_port_t reply, mach_msg_type_name_t reply_type,
+	     int *select_type, int *id_tag)
 {
   int avail = 0;
   int cancel = 0;
+  int requested_notify = 0;
   select_table table;
   struct select_table_elt *elt, *nxt;
 
@@ -273,7 +274,15 @@ S_io_select (struct sock_user *user,
 		  ? SELECT_URG : 0);
     
       if (!avail)
-	cancel = hurd_condition_wait (&table.master_condition, &global_lock);
+	{
+	  if (! requested_notify)
+	    {
+	      ports_interrupt_self_on_notification (user, reply,
+						    MACH_NOTIFY_DEAD_NAME);
+	      requested_notify = 1;
+	    }
+	  cancel = hurd_condition_wait (&table.master_condition, &global_lock);
+	}
 
       /* Drop the conditions implications and structures allocated in the
 	 select table. */
