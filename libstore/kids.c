@@ -88,7 +88,8 @@ store_encode_children (const struct store *store, struct store_enc *enc)
    positions in CHILDREN.  */
 error_t
 store_decode_children (struct store_enc *enc, int num_children,
-		       struct store_class *classes, struct store **children)
+		       const struct store_class *const *classes,
+		       struct store **children)
 {
   int i;
   error_t err = 0;
