@@ -34,7 +34,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
     return EOPNOTSUPP;
   
   dnp = dircred->po->np;
-  if (diskfs_readonly)
+  if (diskfs_check_readonly ())
     return EROFS;
 
   mutex_lock (&dnp->lock);
