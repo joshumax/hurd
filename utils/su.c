@@ -451,13 +451,11 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
    string PASSWORD, 0 if not.  Return 1 without asking for a password if
    run by uid 0 or if PASSWORD is an empty password, and always under -r.
    Always prints a message before returning 0.  */
-
-asm (".weak crypt");
-
 int
 check_password (const char *name, const char *password)
 {
-  extern char *crypt (const char *string, const char salt[2]);
+  extern char *crypt (const char *string, const char salt[2])
+    __attribute__ ((weak));
   char *unencrypted, *encrypted;
   static char *prompt = NULL;
 

@@ -359,8 +359,6 @@ dog (time_t timeout, pid_t pid, char **argv)
     }
 }
 
-asm (".weak crypt");
-
 void
 main(int argc, char *argv[])
 {
@@ -515,7 +513,8 @@ main(int argc, char *argv[])
   void verify_passwd (const char *name, const char *password,
 		      uid_t id, int is_group)
     {
-      extern char *crypt (const char *string, const char salt[2]);
+      extern char *crypt (const char *string, const char salt[2]) 
+	__attribute__ ((weak));
       char *prompt, *unencrypted, *encrypted;
 
       if (!password || !*password

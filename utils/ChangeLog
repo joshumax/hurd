@@ -1,3 +1,9 @@
+Wed Jul 31 14:24:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* login.c (main/verify_passwd): Declare crypt weak in a portable
+	way.
+	* su.c (check_password): Likewise.
+	
 Tue Jul 30 14:49:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* login.c (main/verify_passwd): If government is broken, don't use
