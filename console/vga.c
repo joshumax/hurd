@@ -25,6 +25,7 @@
 #include <sys/io.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "vga-hw.h"
 #include "vga.h"
@@ -41,7 +42,7 @@ vga_init (void)
   error_t err;
   int fd;
 
-  if (io_perm (VGA_MIN_REG, VGA_MAX_REG - VGA_MIN_REG + 1, 1) < 0)
+  if (ioperm (VGA_MIN_REG, VGA_MAX_REG - VGA_MIN_REG + 1, 1) < 0)
     return errno;
 
   fd = open ("/dev/mem", O_RDWR);
