@@ -159,6 +159,13 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		  minor = strtol (arg, 0, 0);
 
+		  error = diskfs_validate_rdev_change (np, 
+						       makedev (major, minor));
+		  if (error)
+		    {
+		      mutex_unlock (&np->lock);
+		      return error;
+		    }
 		  np->dn_stat.st_rdev = makedev (major, minor);
 		}
 
