@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -55,6 +55,7 @@ netfs_S_file_exec (struct protid *cred,
   gid_t gid;
   mode_t mode;
   int suid, sgid;
+  mach_port_t right;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -124,14 +125,15 @@ netfs_S_file_exec (struct protid *cred,
       struct protid *newpi =
 	netfs_make_protid (netfs_make_peropen (np, O_READ, cred->po),
 			   iohelp_dup_iouser (cred->user));
+      right = port_get_send_right (newpi);
       err = exec_exec (_netfs_exec, 
-		       ports_get_right (newpi),
-		       MACH_MSG_TYPE_MAKE_SEND,
+		       right, MACH_MSG_TYPE_COPY_SEND,
 		       task, flags, argv, argvlen, envp, envplen, 
 		       fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
 		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		       intarray, intarraylen, deallocnames, deallocnameslen,
 		       destroynames, destroynameslen);
+      mach_port_deallocate (mach_task_self (), newpi);
       ports_port_deref (newpi);
     }
 

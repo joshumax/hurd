@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -26,7 +26,7 @@
 mach_port_t
 netfs_startup (mach_port_t bootstrap, int flags)
 {
-  mach_port_t realnode;
+  mach_port_t realnode, right;
   struct port_info *newpi;
   
   if (bootstrap == MACH_PORT_NULL)
@@ -36,8 +36,10 @@ netfs_startup (mach_port_t bootstrap, int flags)
 			     sizeof (struct port_info), &newpi);
   if (!errno)
     {
-      errno = fsys_startup (bootstrap, flags, ports_get_right (newpi),
-			    MACH_MSG_TYPE_MAKE_SEND, &realnode);
+      right = ports_get_send_right (newpi);
+      errno = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_COPY_SEND,
+			    &realnode);
+      mach_port_deallocate (mach_task_self (), right);
       ports_port_deref (newpi);
     }
   if (errno)
