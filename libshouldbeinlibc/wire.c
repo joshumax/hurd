@@ -1,5 +1,5 @@
 /* Function to wire down text and data (including from shared libraries)
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,6 +29,9 @@ loaded (void)
 {
   Elf32_Dyn *d;
 
+  if (&_DYNAMIC == 0)		/* statically linked */
+    return 0;
+
   for (d = _DYNAMIC; d->d_tag != DT_NULL; ++d)
     if (d->d_tag == DT_DEBUG)
       {
@@ -46,7 +49,7 @@ map_extent (struct link_map *map)
   /* Find the last load cmd; they are in ascending p_vaddr order.  */
   Elf32_Word n = map->l_phnum;
   while (n-- > 0 && map->l_phdr[n].p_type != PT_LOAD);
-  return map->l_phdr[n].p_vaddr + map->l_phdr[n].p_filesz;
+  return map->l_phdr[n].p_vaddr + map->l_phdr[n].p_memsz;
 }
 
 /* Wire down all memory currently allocated at START for LEN bytes;
@@ -70,7 +73,7 @@ wire_segment_internal (vm_address_t start,
   do
     {
       addr = start;
-      err = vm_region (mach_task_self (), &addr, &size, &protection, 
+      err = vm_region (mach_task_self (), &addr, &size, &protection,
 		       &max_protection, &inheritance, &shared, &object_name,
 		       &offset);
       if (err)
@@ -80,25 +83,25 @@ wire_segment_internal (vm_address_t start,
       	 extends beyond the LEN, prune it. */
       if (addr + size > start + len)
 	size = len - (addr - start);
-      
+
       /* Set protection to allow all access possible */
       vm_protect (mach_task_self (), addr, size, 0, max_protection);
-      
+
       /* Generate write faults */
-      for (poke = (char *) addr; 
-	   (vm_address_t) poke < addr + size; 
+      for (poke = (char *) addr;
+	   (vm_address_t) poke < addr + size;
 	   poke += vm_page_size)
 	*poke = *poke;
 
       /* Wire pages */
       vm_wire (host_priv, mach_task_self (), addr, size, max_protection);
-      
+
       /* Set protection back to what it was */
       vm_protect (mach_task_self (), addr, size, 0, protection);
 
 
       mach_port_deallocate (mach_task_self (), object_name);
-      
+
       len -= (addr - start) + size;
       start = addr + size;
     }
@@ -112,7 +115,7 @@ wire_segment (vm_address_t start,
 {
   mach_port_t host, device;
   error_t error;
-  
+
   error = get_privileged_ports (&host, &device);
   if (!error)
     {
@@ -132,17 +135,17 @@ wire_task_self ()
   mach_port_t host, device;
   error_t error;
   extern char _edata, _etext, __data_start;
-  
+
   error = get_privileged_ports (&host, &device);
   if (error)
     return;
-  
+
   map = loaded ();
   if (!map)
     {
       extern void _start ();
       vm_address_t text_start = (vm_address_t) &_start;
-      wire_segment_internal (text_start, 
+      wire_segment_internal (text_start,
 			     (vm_size_t) (&_etext - text_start),
 			     host);
       wire_segment_internal ((vm_address_t) &__data_start,
@@ -156,4 +159,3 @@ wire_task_self ()
   mach_port_deallocate (mach_task_self (), host);
   mach_port_deallocate (mach_task_self (), device);
 }
-
