@@ -18,13 +18,13 @@
 dir := exec
 makemode := server
 
-SRCS = exec.c main.c hostarch.c unzip.c util.c inflate.c
-OBJS = main.o hostarch.o exec.o execServer.o \
+SRCS = exec.c main.c hashexec.o hostarch.c unzip.c util.c inflate.c
+OBJS = main.o hostarch.o exec.o hashexec.o execServer.o \
        $(gzip-objects)
 gzip-objects = unzip.o util.o inflate.o
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
-DIST_FILES = core.c gcore.c hashexec.c
+DIST_FILES = core.c gcore.c
 #OTHERLIBS = -lbfd -liberty
 
 exec-MIGSFLAGS = -imacros execmutations.h
