@@ -1,8 +1,8 @@
 /* Inode management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
 
-   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -221,7 +221,7 @@ read_node (struct node *np)
 
   st->st_nlink = di->i_links_count;
   st->st_size = di->i_size;
-  st->st_gen = di->i_version;
+  st->st_gen = di->i_generation;
 
   st->st_atime = di->i_atime;
   st->st_mtime = di->i_mtime;
@@ -274,8 +274,18 @@ read_node (struct node *np)
   info->i_frag_size = di->i_fsize;
   info->i_osync = 0;
   info->i_file_acl = di->i_file_acl;
-  info->i_dir_acl = di->i_dir_acl;
-  info->i_version = di->i_version;
+  if (S_ISDIR (st->st_mode))
+    info->i_dir_acl = di->i_dir_acl;
+  else
+    {
+      info->i_dir_acl = 0;
+      info->i_high_size = di->i_size_high;
+      if (info->i_high_size)	/* XXX */
+	{
+	  ext2_warning ("cannot handle large file inode %d", np->cache_id);
+	  return EFBIG;
+	}
+    }
   info->i_block_group = inode_group_num (np->cache_id);
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
@@ -284,13 +294,12 @@ read_node (struct node *np)
   /* Set to a conservative value.  */
   dn->last_page_partially_writable = 0;
 
-  if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+  if (S_ISCHR (st->st_mode) || S_ISBLK (st->st_mode))
     st->st_rdev = di->i_block[0];
   else
     {
-      int block;
-      for (block = 0; block < EXT2_N_BLOCKS; block++)
-	info->i_data[block] = di->i_block[block];
+      memcpy (info->i_data, di->i_block,
+	      EXT2_N_BLOCKS * sizeof info->i_data[0]);
       st->st_rdev = 0;
     }
 
@@ -394,6 +403,8 @@ write_node (struct node *np)
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
+      struct ext2_inode_info *info = &np->dn->info;
+
       assert (!diskfs_readonly);
 
       ext2_debug ("writing inode %d to disk", np->cache_id);
@@ -402,7 +413,7 @@ write_node (struct node *np)
       if (err)
 	return NULL;
 
-      di->i_version = st->st_gen;
+      di->i_generation = st->st_gen;
 
       /* We happen to know that the stat mode bits are the same
 	 as the ext2fs mode bits. */
@@ -446,14 +457,18 @@ write_node (struct node *np)
       di->i_blocks = st->st_blocks;
 
       /* Convert generic flags in ST->st_flags to ext2-specific flags in DI
-         (but don't mess with ext2 flags we don't know about).  */
-      di->i_flags &= ~(EXT2_APPEND_FL | EXT2_NODUMP_FL | EXT2_IMMUTABLE_FL);
+         (but don't mess with ext2 flags we don't know about).  The original
+	 set was copied from DI into INFO by read_node, but might have been
+	 modified for ext2fs-specific reasons; so we use INFO->i_flags
+	 to start with, and then apply the flags in ST->st_flags.  */
+      info->i_flags &= ~(EXT2_APPEND_FL | EXT2_NODUMP_FL | EXT2_IMMUTABLE_FL);
       if (st->st_flags & UF_APPEND)
-	di->i_flags |= EXT2_APPEND_FL;
+	info->i_flags |= EXT2_APPEND_FL;
       if (st->st_flags & UF_NODUMP)
-	di->i_flags |= EXT2_NODUMP_FL;
+	info->i_flags |= EXT2_NODUMP_FL;
       if (st->st_flags & UF_IMMUTABLE)
-	di->i_flags |= EXT2_IMMUTABLE_FL;
+	info->i_flags |= EXT2_IMMUTABLE_FL;
+      di->i_flags = info->i_flags;
 
       if (!(st->st_mode & S_IPTRANS) && sblock->s_creator_os == EXT2_OS_HURD)
 	di->i_translator = 0;
@@ -640,7 +655,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 	ext2_new_block ((np->dn->info.i_block_group
 			 * EXT2_BLOCKS_PER_GROUP (sblock))
 			+ sblock->s_first_data_block,
-			0, 0);
+			0, 0, 0);
       if (blkno == 0)
 	{
 	  diskfs_end_catch_exception ();
