@@ -15,6 +15,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <mach.h>
+#include <hurd.h>
+#include <libpager.h>
+#include <libports.h>
+
 struct pager
 {
   struct port_info port;
@@ -67,6 +72,9 @@ enum page_errors
   PAGE_EIO,
   PAGE_EDQUOT,
 };
+
+int page_errors[];
+
 
 /* Pagemap format */
 /* These are binary state bits */
