@@ -112,7 +112,7 @@ struct bottomhalf
 };
 
 struct bottomhalf *bottom;
-extern struct bottomhalf *devio_bottom;
+extern struct bottomhalf devio_bottom;
 
 
 /* Character queues */
