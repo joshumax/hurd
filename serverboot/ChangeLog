@@ -1,3 +1,13 @@
+1999-03-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* def_pager_setup.c (default_pager_setup): #if 0 out unused function.
+
+	* default_pager.c (default_pager_paging_file): Pass 0 for new
+	LINUX_SIGNATURE arg to add_paging_file.
+
+	* bootstrap.c (main: scrript_paging_file): Pass LINUX_SIGNATURE arg
+	through to add_paging_file.
+
 1999-02-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* def_pager_setup.c (add_paging_file): New arg CHECK_LINUX_SIGNATURE,
