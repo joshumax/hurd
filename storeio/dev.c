@@ -154,7 +154,7 @@ dev_open (struct store_parsed *name, int flags, int inhibit_cache,
       return err;
     }
 
-  new->buf = mmap (0, new->store->block_size, PROT_READ|PROT_WRITE, 
+  new->buf = mmap (0, new->store->block_size, PROT_READ|PROT_WRITE,
 		   MAP_ANON, 0, 0);
   if (new->buf == (void *) -1)
     {
@@ -371,17 +371,16 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
   int allocated_buf = 0;
   error_t ensure_buf ()
     {
-      error_t err;
       if (*len < whole_amount)
 	{
-	  *buf = mmap (0, whole_amount, PROT_READ|PROT_WRITE,
-		       MAP_ANON, 0, 0);
-	  if (*buf != (void *) -1)
-	    allocated_buf = 1;
+	  void *new = mmap (0, whole_amount, PROT_READ|PROT_WRITE,
+			    MAP_ANON, 0, 0);
+	  if (new == (void *) -1)
+	    return errno;
+	  *buf = new;
+	  allocated_buf = 1;
 	}
-      else
-	err = 0;
-      return err;
+      return 0;
     }
   error_t buf_read (size_t buf_offs, size_t io_offs, size_t len)
     {
