@@ -16,37 +16,31 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <hurd/ioserver.h>
 
 /* Write current values into the shared page.  Callers must have the
    share lock on the shared page, as well as the inode toplock.
    This is called by the conch management facilities of libioserver
    as well as by us. */
-error_t
+void
 ioserver_put_shared_data (void *arg)
 {
   struct protid *cred = arg;
-  error_t error;
   
-  if (!(error = catch_exception ()))
-    {
-      cred->mapped->append_mode = (cred->po->openstat & O_APPEND);
-      cred->mapped->eof_notify = 0;
-      cred->mapped->do_sigio = 0;
-      cred->mapped->use_file_size = 1;
-      cred->mapped->use_read_size = 0;
-      cred->mapped->seekable = 1;
-      cred->mapped->use_prenotify_size = 1;
-      cred->mapped->use_postnotify_size = 0;
-      cred->mapped->prenotify_size = cred->po->ip->i_allocsize;
+  cred->mapped->append_mode = (cred->po->openstat & O_APPEND);
+  cred->mapped->eof_notify = 0;
+  cred->mapped->do_sigio = 0;
+  cred->mapped->use_file_size = 1;
+  cred->mapped->use_read_size = 0;
+  cred->mapped->seekable = 1;
+  cred->mapped->use_prenotify_size = 1;
+  cred->mapped->use_postnotify_size = 0;
+  cred->mapped->prenotify_size = cred->po->np->allocsize;
       
-      cred->mapped->xx_file_pointer = cred->po->filepointer;
-      cred->mapped->rd_file_pointer = -1;
-      cred->mapped->wr_file_pointer = -1;
-      cred->mapped->file_size = cred->po->ip->di->di_size;
-      cred->mapped->written = 0;
-      cred->mapped->accessed = 0;
-      
-      end_catch_exception ();
-    }
-  return error;
+  cred->mapped->xx_file_pointer = cred->po->filepointer;
+  cred->mapped->rd_file_pointer = -1;
+  cred->mapped->wr_file_pointer = -1;
+  cred->mapped->file_size = cred->po->ip->dn_stat.st_size;
+  cred->mapped->written = 0;
+  cred->mapped->accessed = 0;
 }
