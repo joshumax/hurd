@@ -1,5 +1,5 @@
 /* Pass one of GNU fsck -- count blocks and verify inodes
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -63,7 +63,8 @@ pass1 ()
       int wasbad = 0;
 
       /* Check to see if this block is in range */
-      if (outofrange = check_range (bno, nfrags))
+      outofrange = check_range (bno, nfrags);
+      if (outofrange)
 	{
 	  blkerror = 1;
 	  wasbad = 1;
