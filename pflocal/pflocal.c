@@ -18,7 +18,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <trivfs.h>
+#include <stdio.h>
+#include <getopt.h>
+#include <error.h>
+
+#include <hurd/hurd_types.h>
+#include <hurd/trivfs.h>
 
 #include "pflocal.h"
 
@@ -103,10 +108,6 @@ void main(int argc, char *argv[])
 		   NULL);
   if (err)
     error(3, err, "Contacting parent");
-
-  /* Open the device only when necessary.  */
-  device = NULL;
-  mutex_init(&device_lock);
 
   /* Launch. */
   ports_manage_port_operations_multithread (pflocal_port_bucket,
