@@ -26,6 +26,14 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.10  1998/07/20 06:59:14  roland
+ * 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* i386/csw.S (cproc_prepare): Take address of cthread_body as third
+ * 	arg, so we don't have to deal with PIC magic to find its address
+ * 	without producing a text reloc.
+ * 	* cprocs.c (cproc_create): Pass &cthread_body to cproc_prepare.
+ *
  * Revision 1.9  1996/11/18 23:54:51  thomas
  * Mon Nov 18 16:36:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  *
@@ -347,31 +355,8 @@ void cthread_wire()
 	register cproc_t p = cproc_self();
 	kern_return_t r;
 
-	/*
-	 * A wired thread has a port associated with it for all
-	 * of its wait/block cases.  We also prebuild a wakeup
-	 * message.
-	 */
-
-	if (p->wired == MACH_PORT_NULL) {
-		MACH_CALL(mach_port_allocate(mach_task_self(),
-					     MACH_PORT_RIGHT_RECEIVE,
-					     &p->wired), r);
-		MACH_CALL(mach_port_insert_right(mach_task_self(),
-						 p->wired, p->wired,
-						 MACH_MSG_TYPE_MAKE_SEND), r);
-		p->msg.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, 0);
-		p->msg.msgh_size = 0; /* initialized in call */
-		p->msg.msgh_remote_port = p->wired;
-		p->msg.msgh_local_port = MACH_PORT_NULL;
-		p->msg.msgh_kind = MACH_MSGH_KIND_NORMAL;
-		p->msg.msgh_id = 0;
-#ifdef STATISTICS
-		spin_lock(&wired_lock);
-		cthread_wired++;
-		spin_unlock(&wired_lock);
-#endif STATISTICS
-	}
+	/* In GNU, we wire all threads on creation (in cproc_alloc).  */
+	assert (p->wired != MACH_PORT_NULL);
 }
 
 /*
@@ -381,8 +366,10 @@ void cthread_wire()
 void cthread_unwire()
 {
 	register cproc_t p = cproc_self();
-	kern_return_t r;
 
+	/* This is bad juju in GNU, where all cthreads must be wired.  */
+	abort();
+#if 0
 	if (p->wired != MACH_PORT_NULL) {
 		MACH_CALL(mach_port_mod_refs(mach_task_self(), p->wired,
 					     MACH_PORT_RIGHT_SEND, -1), r);
@@ -395,12 +382,14 @@ void cthread_unwire()
 		spin_unlock(&wired_lock);
 #endif STATISTICS
 	}
+#endif
 }
 
 private cproc_t
 cproc_alloc()
 {
 	register cproc_t p = (cproc_t) malloc(sizeof(struct cproc));
+	kern_return_t r;
 
 	p->incarnation = NO_CTHREAD;
 #if 0
@@ -409,9 +398,31 @@ cproc_alloc()
 #endif
 
 	spin_lock_init(&p->lock);
-	p->wired = MACH_PORT_NULL;
 	p->state = CPROC_RUNNING;
 	p->busy = 0;
+
+	/*
+	 * In GNU, every cthread must be wired.  So we just
+	 * initialize P->wired on creation.
+	 *
+	 * A wired thread has a port associated with it for all
+	 * of its wait/block cases.  We also prebuild a wakeup
+	 * message.
+	 */
+
+	MACH_CALL(mach_port_allocate(mach_task_self(),
+				     MACH_PORT_RIGHT_RECEIVE,
+				     &p->wired), r);
+	MACH_CALL(mach_port_insert_right(mach_task_self(),
+					 p->wired, p->wired,
+					 MACH_MSG_TYPE_MAKE_SEND), r);
+	p->msg.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, 0);
+	p->msg.msgh_size = 0; /* initialized in call */
+	p->msg.msgh_remote_port = p->wired;
+	p->msg.msgh_local_port = MACH_PORT_NULL;
+	p->msg.msgh_kind = MACH_MSGH_KIND_NORMAL;
+	p->msg.msgh_id = 0;
+
 	spin_lock(&cproc_list_lock);
 	p->list = cproc_list;
 	cproc_list = p;
