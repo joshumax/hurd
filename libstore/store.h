@@ -68,9 +68,9 @@ struct store
   size_t size;
 
   /* Log_2 (BLOCK_SIZE) or 0 if not a power of 2. */
-  int log2_block_size;
+  unsigned log2_block_size;
   /* Log_2 (VM_PAGE_SIZE / BLOCK_SIZE); only valid if LOG2_BLOCK_SIZE is.  */
-  int log2_blocks_per_page;
+  unsigned log2_blocks_per_page;
 
   /* Random flags.  */
   int flags;
@@ -91,15 +91,18 @@ struct store
    <hurd/hurd_types.h>.  XXX synchronize these values.  */
 
 /* Flags that reflect something immutable about the object.  */
-#define STORE_IMMUTABLE_FLAGS	0xFF
+#define STORE_IMMUTABLE_FLAGS	0x00FF
 
 /* Flags implemented by generic store code.  */
-#define STORE_READONLY		0x100	/* No writing allowed. */
-#define STORE_GENERIC_FLAGS	STORE_READONLY
+#define STORE_READONLY		0x0100	/* No writing allowed. */
+#define STORE_NO_FILEIO		0x0200	/* If store_create can't fetch store
+					   information, don't create a store
+					   using file io instead.  */
+#define STORE_GENERIC_FLAGS	(STORE_READONLY | STORE_NO_FILEIO)
 
 /* Flags implemented by each backend.  */
-#define STORE_HARD_READONLY	0x200	/* Can't be made writable.  */
-#define STORE_ENFORCED		0x400	/* Range is enforced by device.  */
+#define STORE_HARD_READONLY	0x0400	/* Can't be made writable.  */
+#define STORE_ENFORCED		0x0800	/* Range is enforced by device.  */
 #define STORE_BACKEND_SPEC_BASE	0x1000 /* Here up are backend-specific */
 #define STORE_BACKEND_FLAGS	(STORE_HARD_READONLY | STORE_ENFORCED \
 				 | ~(STORE_BACKEND_SPEC_BASE - 1))
@@ -168,6 +171,14 @@ error_t store_create (file_t source, int flags, struct store_class *classes,
 		      struct store **store);
 
 void store_free (struct store *store);
+
+/* Open the file NAME, and return a new store in STORE, which refers to the
+   storage underlying it.  CLASSES is used to select classes specified by the
+   provider; if it is 0, STORE_STD_CLASSES is used.  FLAGS is set with
+   store_set_flags.  A reference to the open file is created (but may be
+   destroyed with store_close_source).  */
+error_t store_open (char *name, int flags, struct store_class *classes,
+		    struct store **store);
 
 /* Allocate a new store structure with class CLASS, and the various other
    fields initialized to the given parameters.  */
@@ -392,29 +403,24 @@ error_t store_std_leaf_decode (struct store_enc *enc,
 
 /* An argument parser that may be used for parsing a simple command line
    specification for stores.  The accompanying input parameter must be a
-   pointer to a structure of type struct store_argp_param.  */
+   pointer to a location in which to store the resulting pointer to a struct
+   store_parsed.  */
 extern struct argp store_argp;
 
-/* Structure used to pass in arguments and return the result from
-   STORE_ARGP.  */
-struct store_argp_params
-{
-  /* An initial set of flags desired to be set.  */
-  int flags;
+/* The result of parsing a store, which should be enough information to open
+   it, or return the arguments.  */
+struct store_parsed;
 
-  /* If true, don't attempt use store_file_create to create a store on files
-     upon which store_create has failed.  */
-  int no_file_io : 1;
+/* Free all resources used by PARSED.  */
+void store_parsed_free (struct store_parsed *parsed);
 
-  /* If true, then fill in ARGS & ARGS_LEN with appropiate arguments.  */
-  int return_args : 1;
+/* Open PARSED, and return the corresponding store in STORE.  */
+error_t store_parsed_open (const struct store_parsed *parsed, int flags,
+			   struct store_class *classes,
+			   struct store **store);
 
-  /* Parsed store returned here.  */
-  struct store *result;
-
-  /* Arguments used to specify this store, in argz format.  */
-  char *args;
-  size_t args_len;
-};
+/* Add the arguments  PARSED, and return the corresponding store in STORE.  */
+error_t store_parsed_append_args (const struct store_parsed *parsed,
+				  char **args, size_t *args_len);
 
 #endif /* __STORE_H__ */
