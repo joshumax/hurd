@@ -1,0 +1,82 @@
+/* Definitions for pfinet-specific calls
+   Copyright (C) 1996 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem pfinet 21000;
+
+#include <hurd/hurd_types.defs>
+
+INTR_INTERFACE
+
+/* Add a route entry for DESTINATION through GATEWAY.  All outgoing IP
+   addresses A for which (A & MASK) == DESTINATION will be directed
+   through GATEWAY.  What BSD calls `host routes' are just where
+   MASK is all one bits.  */
+routine pfinet_add_route (
+	socket_t ignored;
+	int gateway;
+	int destination;
+	int mask);
+
+/* Delete a route entry; the parameters much exactly match a preceding
+   pfinet_add_route call. */
+routine pfinet_delete_route (
+	socket_t ignored;
+	int gateway;
+	int destination;
+	int mask);
+
+/* Return the current contents of the routing table.  GATEWAY,
+   DESTINATION, MASK, REDIRECT, and WIRED are parallel arrays with one element
+   each for each route.  GATEWAY, DESTINATION, and MASK refer to the
+   parameters of the pfinet_add_route call.  REDIRECT is set for 
+   internally generated routes.  WIRED is set for permanent routes
+   associated with live interfaces. */
+routine pfinet_get_routes (
+	socket_t ignored;
+	intarray_t gateway;
+	intarray_t destination;
+	intarray_t mask;
+	data_t redirect;
+	data_t wired);
+   
+/* Add a new interface specification.  NAME is the kernel device name
+   corresponding to the interface.  ADDR is our address on that 
+   interface.  DEST is the address of the peers we can talk to on the
+   interface, such that if (X & MASK) == DEST for some address X,
+   then it should be directly reachable on this interface. 
+   A wired routing entry will be added for this interface.  */
+routine pfinet_add_interface (
+	socket_t ignored;
+	string_t name;
+   	int addr;
+	int dest;
+	int mask;
+	int type);
+
+/* Delete an interface specification.  The parameters must exactly
+   match those of a preceding pfinet_add_interface call. */
+routine pfinet_delete_interface (
+	socket_t ignored;
+	string_t name;
+	int addr;
+	int dest;
+	int mask;
+	int type);
+
+
