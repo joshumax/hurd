@@ -78,14 +78,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
     diskfs_node_update (np, 1);
 
   if (np->dn_stat.st_nlink == 0)
-    {
-      error = fshelp_fetch_control (&np->transbox, &control);
-      if (!error)
-	{
-	  fsys_goaway (control, FSYS_GOAWAY_UNLINK);
-	  mach_port_deallocate (mach_task_self (), control);
-	}
-    }
+    fshelp_fetch_control (&np->transbox, &control);
 
   /* This check is necessary because we might get here on an error while 
      checking the mode on something which happens to be `.'. */
@@ -94,5 +87,12 @@ diskfs_S_dir_unlink (struct protid *dircred,
   else
     diskfs_nput (np);
   mutex_unlock (&dnp->lock);
+
+  if (control)
+    {
+      fsys_goaway (control, FSYS_GOAWAY_UNLINK);
+      mach_port_deallocate (mach_task_self (), control);
+    }
+
   return error;
 }
