@@ -101,7 +101,10 @@ store_write (struct store *store,
   off_t base;
   struct store_run *run, *runs_end;
   int block_shift = store->log2_block_size;
-  store_write_meth_t write = store->meths->write;
+  store_write_meth_t write = store->class->write;
+
+  if (store->flags & STORE_READONLY)
+    return EROFS;		/* XXX */
 
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
   if (addr < 0)
@@ -167,7 +170,7 @@ store_read (struct store *store,
   off_t base;
   struct store_run *run, *runs_end;
   int block_shift = store->log2_block_size;
-  store_read_meth_t read = store->meths->read;
+  store_read_meth_t read = store->class->read;
 
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
   if (addr < 0)
