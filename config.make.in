@@ -39,6 +39,7 @@ AR = @AR@
 RANLIB = @RANLIB@
 MIG = @MIG@
 MIGCOM = $(MIG) -cc cat - /dev/null
+AWK = @AWK@
 
 # Compilation flags.  Append these to the definitions already made by
 # the specific Makefile.
