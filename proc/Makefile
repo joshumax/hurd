@@ -41,7 +41,7 @@ proc: $(OBJS)
 	$(link)
 
 install: proc $(hurdroot)
-	cp proc $(hurdroot)/hurd/proc
+	$(INSTALL_BIN) proc $(hurdroot)/hurd/proc
 
 $(OBJS): proc.h proc_S.h
 notify.o: notify_S.h
