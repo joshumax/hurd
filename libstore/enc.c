@@ -1,6 +1,6 @@
 /* Store wire encoding/decoding
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -60,25 +60,18 @@ store_enc_dealloc (struct store_enc *enc)
 	}
 
       if (enc->ports != enc->init_ports)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t)enc->ports,
-		       enc->num_ports * sizeof (*enc->ports));
+	munmap (enc->ports, enc->num_ports * sizeof (*enc->ports));
     }
 
   if (enc->ints && enc->num_ints > 0 && enc->ints != enc->init_ints)
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t)enc->ints,
-		   enc->num_ints * sizeof (*enc->ints));
+    munmap (enc->ints, enc->num_ints * sizeof (*enc->ints));
 
   if (enc->offsets && enc->num_offsets > 0
       && enc->offsets != enc->init_offsets)
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t)enc->offsets,
-		   enc->num_offsets * sizeof (*enc->offsets));
+    munmap (enc->offsets, enc->num_offsets * sizeof (*enc->offsets));
 
   if (enc->data && enc->data_len > 0 && enc->data != enc->init_data)
-    vm_deallocate (mach_task_self (),
-		   (vm_address_t)enc->data, enc->data_len);
+    munmap (enc->data, enc->data_len);
 
   /* For good measure...  */
   bzero (enc, sizeof (*enc));

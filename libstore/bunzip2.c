@@ -101,8 +101,7 @@ bunzip2 (struct store *from, void **buf, size_t *buf_len)
 	      if (new_in_buf != in_buf)
 		{
 		  if (in_buf_len > 0)
-		    vm_deallocate (mach_task_self (),
-				   (vm_address_t)in_buf, in_buf_len);
+		    munmap (in_buf, in_buf_len);
 		  in_buf = new_in_buf;
 		  in_buf_len = new_in_buf_len;
 		}
@@ -146,8 +145,7 @@ bunzip2 (struct store *from, void **buf, size_t *buf_len)
 		/* Copy the old buffer into the start of the new & free it. */
 		bcopy (old_buf, new_buf, out_buf_offs);
 
-	      vm_deallocate (mach_task_self (),
-			     (vm_address_t)old_buf, old_buf_len);
+	      munmap (old_buf, old_buf_len);
 
 	      *buf = new_buf;
 	    }
@@ -193,20 +191,19 @@ bunzip2 (struct store *from, void **buf, size_t *buf_len)
   mutex_unlock (&bunzip2_lock);
 
   if (in_buf_len > 0)
-    vm_deallocate (mach_task_self (), (vm_address_t)in_buf, in_buf_len);
+    munmap (in_buf, in_buf_len);
 
   if (zerr)
     {
       if (*buf_len > 0)
-	vm_deallocate (mach_task_self (), (vm_address_t)*buf, *buf_len);
+	munmap (*buf, *buf_len);
     }
   else if (out_buf_offs < *buf_len)
     /* Trim the output buffer to be the right length.  */
     {
       size_t end = round_page (out_buf_offs);
       if (end < *buf_len)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t)(*buf + end), *buf_len - end);
+	munmap (*buf + end, *buf_len - end);
       *buf_len = out_buf_offs;
     }
 
@@ -226,7 +223,7 @@ store_bunzip2_create (struct store *from, int flags, struct store **store)
     {
       err = store_buffer_create (buf, buf_len, flags, store);
       if (err)
-	vm_deallocate (mach_task_self (), (vm_address_t)buf, buf_len);
+	munmap (buf, buf_len);
       else
 	store_free (from);
     }

@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -211,8 +211,7 @@ store_read (struct store *store,
 	      if (seg_buf != buf_end)
 		{
 		  bcopy (seg_buf, buf_end, seg_buf_len);
-		  vm_deallocate (mach_task_self (),
-				 (vm_address_t)seg_buf, seg_buf_len);
+		  munmap (seg_buf, seg_buf_len);
 		}
 	      buf_end += seg_buf_len;
 	      amount -= seg_buf_len;
@@ -261,16 +260,12 @@ store_read (struct store *store,
       if (whole_buf != *buf)
 	{
 	  if (err)
-	    vm_deallocate (mach_task_self (),
-			   (vm_address_t)whole_buf, whole_buf_len);
+	    munmap (whole_buf, whole_buf_len);
 	  else
 	    {
 	      vm_size_t unused = whole_buf_len - round_page (*len);
 	      if (unused)
-		vm_deallocate (mach_task_self (),
-			       (vm_address_t)whole_buf + whole_buf_len
-			       - unused,
-			       unused);
+		munmap (whole_buf + whole_buf_len - unused, unused);
 	      *buf = whole_buf;
 	    }
 	}

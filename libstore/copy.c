@@ -1,6 +1,6 @@
 /* Copy store backend
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -114,7 +114,7 @@ void
 copy_cleanup (struct store *store)
 {
   if (store->size > 0)
-    vm_deallocate (mach_task_self (), (vm_address_t)store->hook, store->size);
+    munmap (store->hook, store->size);
 }
 
 /* Copy any format-dependent fields in FROM to TO; if there's some reason

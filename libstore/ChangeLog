@@ -1,3 +1,13 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* bunzip2.c (bunzip2): Use munmap instead of vm_deallocate.
+	(store_bunzip2_create): Likewise.
+	* rdwr.c (store_read): Likewise.
+	* gunzip.c (gunzip): Likewise.
+	(store_gunzip_create): Likewise.
+	* enc.c (store_enc_dealloc): Likewise.
+	* copy.c (copy_cleanup): Likewise.
+
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* remap.c (remap_open): Don't multiply by 512.  Offsets and sizes are
