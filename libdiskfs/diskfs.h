@@ -68,7 +68,6 @@ struct node
   struct disknode *dn;
 
   struct stat dn_stat;
-  int istranslated;
 
   /* Stat has been modified if one of the following four fields
      is nonzero.  Also, if one of the dn_set_?time fields is nonzero,
