@@ -1,0 +1,22 @@
+# This is the directory holding ar and ranlib
+tooldir := /usr/local/i386-mach/bin
+
+# This is a machine on which to run MiG.  (MiG writes CPU dependent code,
+# so MiG has to be run on a machine that's the same as the one that will 
+# run the eventual code.)  If you are not doing cross-compilation, then
+# you need to set MIGCOM and MIG below to the plain pathnames of those
+# two programs respectively.
+mighost := ernst
+
+# Set these options to the GCC compiler spec (the correct value
+# can be found in /usr/local/lib/lib-gcc).
+CCTARGET=i386-mach
+CCVERSION=2.5.8
+CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
+
+CC=gcc $(CCTYPE) -O6 -pipe
+MIGCOM=rsh $(mighost) cd $(hurdsource)/$(dir) \; /usr/local/lib/migcom 
+CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
+MIG=rsh $(mighost) cd $(hurdsource)/$(dir) \; mig
+AR=$(tooldir)/ar
+RANLIB=$(tooldir)/ranlib
