@@ -57,7 +57,10 @@ static int
 exec_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   extern int exec_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
-  return exec_server (inp, outp) || trivfs_demuxer (inp, outp);
+  extern int exec_startup_server (mach_msg_header_t *, mach_msg_header_t *);
+  return (exec_startup_server (inp, outp) ||
+	  exec_server (inp, outp) ||
+	  trivfs_demuxer (inp, outp));
 }
 
 
