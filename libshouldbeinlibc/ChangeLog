@@ -3,6 +3,7 @@
 	* portinfo.h: Add #include <sys/mman.h> for munmap decl.
 	* fsysops.c: Likewise.
 	* idvec-auth.c: Likewise.
+	* portxlate.c: Likewise.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
