@@ -71,42 +71,22 @@ free_hook (struct store_parse_hook *h, int free_stores)
 }
 
 static error_t
-open_machdev (char *name, struct store_parse_hook *h, struct store **s)
-{
-  device_t dev_master, device;
-  int open_flags = (h->params->readonly ? 0 : D_WRITE) | D_READ;
-  error_t err = get_privileged_ports (0, &dev_master);
-
-  if (err)
-    return err;
-
-  err = device_open (dev_master, open_flags, name, &device);
-
-  mach_port_deallocate (mach_task_self (), dev_master);
-
-  err = store_device_create (device, s);
-  if (err)
-    mach_port_deallocate (mach_task_self (), device);
-
-  return err;
-}
-
-static error_t
 open_file (char *name, struct store_parse_hook *h, struct store **s)
 {
   error_t err;
-  int open_flags = h->params->readonly ? O_RDONLY : O_RDWR;
+  int flags = h->params->flags;
+  int open_flags = (flags & STORE_HARD_READONLY) ? O_RDONLY : O_RDWR;
   file_t node = file_name_lookup (name, open_flags, 0);
 
   if (node == MACH_PORT_NULL)
     return errno;
 
-  err = store_create (node, s);
+  err = store_create (node, flags, 0, s);
   if (err)
     {
       if (! h->params->no_file_io)
 	/* Try making a store that does file io to NODE.  */
-	err = store_file_create (node, s);
+	err = store_file_create (node, flags, s);
       if (err)
 	mach_port_deallocate (mach_task_self (), node);
     }
@@ -153,7 +133,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_ARG:
       /* A store device to use!  */
       if (h->machdev)
-	err = open_machdev (arg, h, &s);
+	err = store_device_open (arg, h->params->flags, &s);
       else
 	err = open_file (arg, h, &s);
       if (err)
@@ -203,14 +183,16 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	s = h->stores[0];	/* Just a single store.  */
       else if (h->interleave)
 	err =
-	  store_ileave_create (h->stores, h->num_stores, h->interleave, &s);
+	  store_ileave_create (h->stores, h->num_stores, h->interleave,
+			       h->params->flags, &s);
       else if (h->layer)
 	{
 	  free_hook (h, 1);
 	  ERR (EINVAL, "--layer not implemented");
 	}
       else
-	err = store_concat_create (h->stores, h->num_stores, &s);
+	err =
+	  store_concat_create (h->stores, h->num_stores, h->params->flags, &s);
 
       free_hook (h, err);
       if (! err)
