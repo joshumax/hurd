@@ -22,10 +22,12 @@
 kern_return_t
 diskfs_S_dir_link (struct protid *dircred,
 		   struct protid *filecred,
-		   char *name)
+		   char *name,
+		   int excl)
 {
-  struct node *np;
-  struct node *dnp;
+  struct node *np;		/* node being linked */
+  struct node *tnp;		/* node being deleted implicitly */
+  struct node *dnp;		/* directory of new entry */
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t error;
 
@@ -50,45 +52,76 @@ diskfs_S_dir_link (struct protid *dircred,
   dnp = dircred->po->np;
   mutex_lock (&dnp->lock);
 
-  /* This lock is safe since a non-directory is inherently a leaf */
-  mutex_lock (&np->lock);
-
-  if (np->dn_stat.st_nlink == diskfs_link_max - 1)
+  /* Lookup new location */
+  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
+  if (!error && excl)
     {
-      error = EMLINK;
-      goto out;
+      error = EEXIST;
+      diskfs_nput (tnp);
     }
-
-  error = diskfs_lookup (dnp, name, CREATE, 0, ds, dircred);
-
-  if (error == EAGAIN)
-    error = EEXIST;
-  if (!error)
-    error = EEXIST;
-  if (error != ENOENT)
+  if (error && error != ENOENT)
     {
       diskfs_drop_dirstat (dnp, ds);
-      goto out;
+      mutex_unlock (&dnp->lock);
+      return error;
+    }
+
+  if (np == tnp)
+    {
+      diskfs_drop_dirstat (dnp, ds);
+      mutex_unlock (&dnp->lock);
+      mutex_unlock (&tnp->lock);
+      mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
+      return 0;
     }
   
+  if (tnp && S_ISDIR (tnp->dn_stat.st_mode))
+    {
+      diskfs_drop_dirstat (dnp, ds);
+      mutex_unlock (&dnp->lock);
+      mutex_unlock (&tnp->lock);
+      return EISDIR;
+    }
+  
+  /* Create new entry for NP */
+
+  /* This is safe because NP is not a directory (thus not DNP) and
+     not TNP and is a leaf. */
+  mutex_lock (&np->lock);
+  
+  /* Increment link count */
+  if (np->dn_stat.st_nlink == diskfs_link_max - 1)
+    {
+      diskfs_drop_dirstat (dnp, ds);
+      mutex_unlock (&np->lock);
+      mutex_unlock (&dnp->lock);
+      return EMLINK;
+    }
   np->dn_stat.st_nlink++;
   np->dn_set_ctime = 1;
-  
   diskfs_node_update (np, 1);
-
-  error =  diskfs_direnter (dnp, name, np, ds, dircred);
-  if (error)
+  
+  /* Attach it */
+  if (tnp)
     {
-      np->dn_stat.st_nlink--;
-      np->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (np, 1);
+      assert (!excl);
+      error = diskfs_dirrewrite (dp, tnp, np, name, ds);
+      if (!error)
+	{
+	  /* Deallocate link on TNP */
+	  tnp->dn_stat.st_nlink--;
+	  tnp->dn_set_ctime = 1;
+	  if (diskfs_synchronous)
+	    diskfs_node_update (tnp, 1);
+	}
+      diskfs_nput (tnp);
     }
-
+  else
+    error = diskfs_direnter (dp, name, np, ds, dircred);
+  
   if (diskfs_synchronous)
-    diskfs_node_update (dnp, 1);
-
- out:
+    diskfs_node_update (dp, 1);
+  
   mutex_unlock (&dnp->lock);
   mutex_unlock (&np->lock);
   if (!error)
