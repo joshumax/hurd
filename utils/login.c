@@ -517,7 +517,9 @@ main(int argc, char *argv[])
 		      uid_t id, int is_group)
     {
       extern char *crypt (const char *string, const char salt[2]);
+#ifndef HAVE_CRYPT
 #pragma weak crypt
+#endif
       char *prompt, *unencrypted, *encrypted;
 
       if (!password || !*password
