@@ -294,6 +294,10 @@ relink:
 # is specified in someone's dependency list.   
 ../%.a ../%.so: FORCE
 	$(MAKE) -C $(dir $@) libs
+
+# Tell make where to find other -l libraries that we use
+vpath -l% $(libdir)/
+
 
 # Default rule to build PIC object files.
 %_pic.o: %.c
