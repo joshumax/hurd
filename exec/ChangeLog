@@ -1,3 +1,9 @@
+1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (main): Arg parsing added.
+	(argp_program_version): New variable.
+	Include <argp.h>.
+
 Mon Jan 20 16:16:33 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* hashexec.c (check_hashbang): `preempter' -> `preemptor'.
