@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include "notify_S.h"
 
 error_t
 ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
