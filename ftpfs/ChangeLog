@@ -1,4 +1,6 @@
 1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* host.c (split_server_name): Enable password parsing.
+
 	* dir.c (lookup): Initialize the NODE field.
 
