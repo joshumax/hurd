@@ -20,7 +20,7 @@
 
 
 /* Create a and return new node structure with DN as its physical disknode.
-   The node will have one user reference.  */
+   The node will have one hard reference and no light references.  */
 struct node *
 diskfs_make_node (struct disknode *dn)
 {
@@ -34,6 +34,7 @@ diskfs_make_node (struct disknode *dn)
   
   mutex_init (&np->lock);
   np->references = 1;
+  np->light_references = 0;
   np->owner = 0;
   
   fshelp_init_trans_link (&np->translator);
