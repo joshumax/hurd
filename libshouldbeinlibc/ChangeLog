@@ -1,5 +1,8 @@
 Wed Jun  4 15:05:10 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp.h, argp-help.c, argp-parse.c: Sync with libc version (there
+	were minor whitespace differences, etc).
+
 	* argp-help.c (_help): Use uparams.usage_indent instead of the
 	USAGE_INDENT macro.
 
