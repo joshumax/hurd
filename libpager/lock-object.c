@@ -1,5 +1,5 @@
 /* Synchronous wrapper for memory_object_lock_request
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,8 +38,6 @@ _pager_lock_object (struct pager *p,
       mutex_unlock (&p->interlock);
       return;
     }
-  
-  sync = 0;			/* XXX */
 
   if (sync)
     {
