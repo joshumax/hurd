@@ -25,7 +25,7 @@
    that, and we can do allocation (orreturn ENOSPC if necessary. */
 kern_return_t
 diskfs_S_io_prenotify (struct protid *cred,
-		       vm_offset_t start,
+		       vm_offset_t start __attribute__ ((unused)),
 		       vm_offset_t end)
 {
   struct node *np;
