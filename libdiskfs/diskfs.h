@@ -97,6 +97,8 @@ struct node
   off_t allocsize;
 
   int cache_id;
+
+  int author_tracks_uid;
 };
 
 /* Possibly lookup types for diskfs_lookup call */
