@@ -1,5 +1,5 @@
 /* Reply half of wait
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -57,6 +57,7 @@ simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
 	in status: int;
+	in sigcode: int;
 	in rusage: rusage_t;
 	in pid_status: pid_t);
 
