@@ -16,33 +16,17 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := libioserver
-
-include ../Makeconf
+makemode := library
 
 SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	initialize_conch.c verify_user_conch.c
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
-TAGSHDRS = ioserver.h
+LCLHDRS = ioserver.h 
+libname = libioserver
+installhdrs = ioserver.h
 
-DIST_FILES = $(SRCS) Makefile ioserver.h ChangeLog
-
-all: libioserver.a
-
-libioserver.a: $(OBJS)
-	rm -f libioserver.a
-	$(AR) r $@ $^
-
-$(hurdinst)/lib/libioserver.a: libioserver.a
-	cp libioserver.a $@
-	$(RANLIB) $@
-
-$(includedir)/hurd/ioserver.h: ioserver.h
-	cp $< $@
-
-install: $(hurdinst)/lib/libioserver.a $(includedir)/hurd/ioserver.h
+include ../Makeconf
 
 $(OBJS): ioserver.h
 
-clean:
-	rm -f libioserver.a *.o
