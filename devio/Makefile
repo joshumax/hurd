@@ -1,6 +1,6 @@
 # Makefile for devio
 # 
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -26,11 +26,11 @@ DIST_FILES = MAKEDEV
 
 OBJS = $(SRCS:.c=.o)
 
-devio: $(OBJS) ../libtrivfs/libtrivfs.a ../libpager/libpager.a ../libports/libports.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
-
 include ../Makeconf
+
+devio: $(OBJS) ../libtrivfs/libtrivfs.a ../libpager/libpager.a ../libports/libports.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 install: $(prefix)/dev/MAKEDEV
 
 $(prefix)/dev/MAKEDEV: MAKEDEV
-	$(INSTALL_PROGRAM) MAKEDEV $(prefix)/dev/MAKEDEV
+	$(INSTALL_PROGRAM) $(srcdir)/MAKEDEV $(prefix)/dev/MAKEDEV
