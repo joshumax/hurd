@@ -21,17 +21,8 @@
 #include <strings.h>
 #include <stdio.h>
 
-/* Filesystem blocks of inodes per cylinder group */
-static int infsb_pcg;
-
 spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
 struct user_pager_info *filepagerlist;
-
-static void enqueue_pager (struct user_pager_info *);
-static void dequeue_pager (struct user_pager_info *);
-static daddr_t indir_alloc (struct node *, int, int);
-
-struct mutex pagernplock = MUTEX_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -62,10 +53,8 @@ find_address (struct user_pager_info *upi,
     }
   else 
     {
-      int vblkno = lblkno (sblock, offset);
-      int fsbaddr;
-      struct node *volatile np;
-      error_t err;
+      struct iblock_spec indirs[NINDIR + 1];
+      struct node *np;
   
       np = upi->np;
       
@@ -74,9 +63,8 @@ find_address (struct user_pager_info *upi,
 
       if (offset >= np->allocsize)
 	{
-	  err = EIO;
 	  rwlock_reader_unlock (&np->dn->allocptrlock);
-	  return err;
+	  return EIO;
 	}
       
       if (offset + __vm_page_size > np->allocsize)
@@ -84,47 +72,19 @@ find_address (struct user_pager_info *upi,
       else
 	*disksize = __vm_page_size;
       
-      if (err = diskfs_catch_exception ())
+      err = fetch_indir_spec (np, lblkno (offset), indirs);
+      if (err)
+	rwlock_reader_unlock (&np->dn->allocptrlock);
+      else
 	{
-	  rwlock_reader_unlock (&np->dn->allocptrlock);
-	  return err;
+	  if (indirs[0].bno)
+	    *addr = (fsbtodb (sblock, indirs[0].bno)
+		     + blkoff (sblkc, offset) / DEV_BSIZE);
+	  else
+	    *addr = 0;
 	}
       
-      if (vblkno < NDADDR)
-	fsbaddr = dinodes[np->dn->number].di_db[vblkno];
-      else
-	{
-	  vblkno -= NDADDR;
-	  assert (vblkno < np->dn->sinloclen);
-	  int alloc = 1;
-	  
-	  /* It's in the INDIR_DOUBLE area */
-	  if (vblkno >= sblock->fs_bsize / sizeof (daddr_t))
-	    {
-	      /* Check if the double indirect block is allocated. */
-	      if (dinodes[np->dn->number].di_ib[INDIR_DOUBLE] == 0)
-		alloc = 0;
-
-	      /* Check if the appropriate single indirect block is
-		 allocated. */
-	      else if (np->dinloc[vblkno / sblock->fs_bsize - 1] == 0)
-		alloc = 0;
-	    }
-	  else
-	    if (dinodes[np->dn->number].di_ib[INDIR_SINGLE] == 0)
-	      alloc = 0;
-	      
-	  fsbaddr = alloc ? np->dn->sinloc[vblkno - NDADDR] : 0;
-	}
-      diskfs_end_catch_exception ();
-
-      if (fsbaddr)
-	*addr = (fsbtodb (sblock, fsbaddr)
-		 + blkoff (sblock, offset) / DEV_BSIZE);
-      else
-	*addr = 0;
-   
-      return 0;
+      return err;
     }
 }
 
@@ -208,14 +168,20 @@ pager_unlock_page (struct user_pager_info *pager,
 {
   struct node *np;
   error_t err;
-  daddr_t vblkno;
-  daddr_t *slot, *table;
-  daddr_t newblk;
-  struct disknode *dn;
+  struct iblock_spec indirs[NINDIR + 1];
+  daddr_t bno;
+
+  /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
+     synchronously.  We do this on newly allocated indirect
+     blocks before setting the pointer to them to ensure that an
+     indirect block absolutely never points to garbage. */
+  void zero_disk_block (int bno)
+    {
+      bzero (indir_block (bno), sblock->fs_bsize);
+      sync_disk_blocks (bno, sblock->fs_bsize, 1);
+    };
 
   /* Problem--where to get cred values for allocation here? */
-
-  vblkno = lblkno (address);
 
   printf ("Unlock page request, Object %#x\tOffset %#x...", pager, address);
   fflush (stdout);
@@ -238,60 +204,106 @@ pager_unlock_page (struct user_pager_info *pager,
       return EIO;
     }
     
-  if (diskfs_catch_exception ())
+  err = fetch_indir_spec (np, lblkno (address), indirs);
+  if (err)
     {
       rwlock_writer_unlock (&dn->allocptrlock);
       return EIO;
     }
 
-  if (vblkno < NDADDR)
+  /* See if we need a triple indirect block; fail if we do. */
+  assert (indirs[0].offset == -1 
+	  || indirs[1].offset == -1 
+	  || indirs[2].offset == -1);
+  
+  /* Check to see if this block is allocated. */
+  if (indirs[0].bno == 0)
     {
-      slot = &dinodes[np->dn->number].di_db[vblkno];
-      table = dinodes[np->dn->number].di_db;
-    }
-  else
-    {
-      assert (vblkno - NDADDR < np->dn->sinloclen);
-      slot = &np->dn->sinloc[vblkno - NDADDR];
-      table = np->dn->sinloc;
-    }
+      if (indirs[0].offset == -1)
+	{
+	  err = ffs_alloc (np, lblkno (address),
+			   ffs_blkpref (np, lblkno (address),
+					lblkno (address), di->di_db),
+			   sblock->fs_bsize, &bno, 0);
+	  if (err)
+	    goto out;
+	  assert (lblkno (address) < NDADDR);
+	  indirs[0].bno = di->di_db[lblkno (address)] = bno;
+	}
+      else
+	{
+	  daddr_t *siblock;
 	  
-  if (*slot)
-    {
-      diskfs_end_catch_exception ();
-      rwlock_write_unlock (&dn->allocptrlock);
-      return 0;
-    }
-
-	  else
+	  /* We need to set siblock to the single indirect block
+	     array; see if the single indirect block is allocated. */
+	  if (indirs[1].bno == 0)
 	    {
-	      ffs_alloc (np, vblkno, 
-			 ffs_blkpref (np, vblkno, slot - table, table),
-			 sblock->fs_bsize, &newblk, 0);
-	      if (newblk)
+	      if (indirs[1].offset == -1)
 		{
-		  *slot = newblk;
-		  err = 0;
+		  err = ffs_alloc (np, lblkno (address),
+				   ffs_blkpref (np, lblkno (address),
+						INDIR_SINGLE, di->di_ib),
+				   sblock->fs_bsize, &bno, 0);
+		  if (err)
+		    goto out;
+		  zero_disk_block (bno);
+		  indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
 		}
 	      else
-		err = ENOSPC;
+		{
+		  daddr_t *diblock;
+	      
+		  /* We need to set diblock to the double indirect
+		     block array; see if the double indirect block is
+		     allocated. */
+		  if (indirs[2].bno == 0)
+		    {
+		      /* This assert because triple indirection is
+			 not supported. */
+		      assert (indirs[2].offset == -1);
+		      
+		      err = ffs_alloc (np, lblkno (address),
+				       ffs_blkpref (np, lblkno (address),
+						    INDIR_DOUBLE, di->di_ib),
+				       sblock->fs_bsize, &bno, 0);
+		      if (err)
+			goto out;
+		      zero_disk_block (bno);
+		      indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
+		    }
+
+		  diblock = indir_block (indirs[2].bno);
+		  
+		  /* Now we can allocate the single indirect block */
+		  
+		  err = ffs_alloc (np, lblkno (address),
+				   ffs_blkpref (np, lblkno (address),
+						indirs[1].offset, diblock),
+				   sblock->fs_bsize, &bno, 0);
+		  if (err)
+		    goto out;
+		  zero_disk_block (bno);
+		  indirs[1].bno = diblock[indirs[1].offset] = bno;
+		}
 	    }
-	  mutex_unlock (&sinmaplock);
-	  diskfs_end_catch_exception ();
+	  
+	  siblock = indir_block (indirs[1].bno);
+
+	  /* Now we can allocate the data block. */
+
+	  err = ffs_alloc (np, lblkno (address),
+			   ffs_blkpref (np, lblkno (address),
+					indirs[0].offset, siblock),
+			   sblock->fs_bsize, &bno, 0);
+	  if (err)
+	    goto out;
+	  indirs[0].bno = siblock[indirs[0].offset] = bno;
 	}
-      rwlock_writer_unlock (&np->dn->datalock, np->dn);
-      break;
-      
-    default:
-      err = 0;
     }
   
-  if (err)
-    printf ("denied\n");
-  else
-    printf ("succeeded\n");
-  fflush (stdout);
-  
+ out:
+  diskfs_end_catch_exception ();
+  rwlock_writer_unlock (&np->dn->datalock, np->dn);
   return err;
 }
 
@@ -302,51 +314,15 @@ pager_report_extent (struct user_pager_info *pager,
 		     vm_address_t *offset,
 		     vm_size_t *size)
 {
+  assert (pager->type == DISK || pager->type == FILE_DATA);
+
   *offset = 0;
-  switch (pager->type)
-    {
-    case DINODE:
-      *size = sblock->fs_ipg * sblock->fs_ncg * sizeof (struct dinode);
-      break;
-      
-    case CG:
-      *size = sblock->fs_bsize * sblock->fs_ncg;
-      break;
-      
-    case DINDIR:
-      *size = sblock->fs_ipg * sblock->fs_ncg * sblock->fs_bsize;
-      break;
 
-    case SINDIR:
-      {
-	/* This computation is known to sin_remap below, as
-	   is the static `*offset = 0' assignment above. */
-
-	int sizet;
-
-	/* sizet = disk size of the file */
-	sizet = pager->np->allocsize;
-
-	/* sizet = number of fs blocks in file */
-	sizet = (sizet + sblock->fs_bsize - 1) / sblock->fs_bsize;
-
-	/* sizet = number of fs blocks not list in di_db */
-	sizet -= NDADDR;
-
-	/* sizet = space to hold that many pointers */
-	sizet *= sizeof (daddr_t);
-
-	/* And that's the size of the sindir area for the file. */
-	*size = sizet;
-      }
-      break;
-      
-    case FILE_DATA:
-      *size = pager->np->allocsize;
-      break;
-    }
+  if (pager->type == DISK)
+    *size = diskpagersize;
+  else
+    *size = pager->np->allocsize;
   
-  *size = round_page (*size);
   return 0;
 }
 
@@ -355,192 +331,15 @@ pager_report_extent (struct user_pager_info *pager,
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  struct node *np = upi->np;
-
-  switch (upi->type)
-    {
-    case FILE_DATA:
-      mutex_lock (&sinmaplock);
-      mutex_lock (&pagernplock);
-      np->dn->fileinfo = 0;
-      mutex_unlock (&pagernplock);
-      if (np->dn->sinloc)
-	sin_unmap (np);
-      mutex_unlock (&sinmaplock);
-      break;
-      
-    case SINDIR:
-      mutex_lock (&dinmaplock);
-      mutex_lock (&pagernplock);
-      np->dn->sininfo = 0;
-      mutex_unlock (&pagernplock);
-      if (np->dn->dinloc)
-	din_unmap (np);
-      mutex_unlock (&dinmaplock);
-      break;
-      
-    case DINDIR:
-      dinpager = 0;
-      return;
-    case CG:
-      cgpager = 0;
-      return;
-    case DINODE:
-      dinodepager = 0;
-      return;
-    }
-
-  if (np)
-    diskfs_nrele_light (np);
-  dequeue_pager (upi);
+  assert (upi->type == FILE_DATA);
+  diskfs_nrele_light (upi->np);
+  *upi->prevp = upi->next;
+  if (upi->next)
+    upi->next->prevp = upi->prevp;
   free (upi);
 }
 
 
-/* This is called (with sinmaplock held) to map the contents of the
-   single indirect blocks of node NP. */
-void
-sin_map (struct node *np)
-{
-  int err;
-  struct user_pager_info *upi;
-  mach_port_t port;
-  vm_address_t offset;
-  vm_size_t extent;
-  
-  assert (!np->dn->sinloc);
-
-  mutex_lock (&pagernplock);
-  if (np->dn->sininfo)
-    {
-      upi = np->dn->sininfo;
-      port = pager_get_port (upi->p);
-      mach_port_insert_right (mach_task_self (), port, port,
-			      MACH_MSG_TYPE_MAKE_SEND);
-    }
-  else
-    {
-      upi = malloc (sizeof (struct user_pager_info));
-      upi->type = SINDIR;
-      upi->np = np;
-      diskfs_nref_light (np);
-
-      upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-      np->dn->sininfo = upi;
-      enqueue_pager (upi);
-      port = pager_get_port (upi->p);
-      mach_port_insert_right (mach_task_self (), port, port,
-			      MACH_MSG_TYPE_MAKE_SEND); 
-    }
-  pager_report_extent (upi, &offset, &extent);
-  
-  err = vm_map (mach_task_self (), (vm_address_t *)&np->dn->sinloc, 
-		extent, 0, 1, port, offset, 0, VM_PROT_READ|VM_PROT_WRITE,
-		VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-  mach_port_deallocate (mach_task_self (), port);
-  
-  assert (!err);
-  np->dn->sinloclen = extent / sizeof (daddr_t);
-
-  diskfs_register_memory_fault_area (np->dn->sininfo->p, offset, 
-				     np->dn->sinloc, extent);
-  mutex_unlock (&pagernplock);
-}
-
-/* This is caled when a file (NP) grows (to size NEWSIZE) to see
-   if the single indirect mapping needs to grow to.  sinmaplock
-   must be held.
-   The caller must set ip->i_allocsize to reflect newsize. */
-void
-sin_remap (struct node *np,
-	   int newsize)
-{
-  struct user_pager_info *upi;
-  int err;
-  vm_address_t offset;
-  vm_size_t size;
-  mach_port_t port;
-
-  mutex_lock (&pagernplock);
-  upi = np->dn->sininfo;
-
-  pager_report_extent (upi, &offset, &size);
-  
-  /* This is the same calculation as in pager_report_extent
-     for the SINDIR case.  */
-  newsize = (newsize + sblock->fs_bsize - 1) / sblock->fs_bsize;
-  newsize -= NDADDR;
-  newsize *= sizeof (daddr_t);
-  newsize = round_page (newsize);
- 
-  assert (newsize >= size);
-  if (newsize != size)
-    {
-      diskfs_unregister_memory_fault_area (np->dn->sinloc, size);
-      vm_deallocate (mach_task_self (), (u_int) np->dn->sinloc, size);
-      
-      port = pager_get_port (upi->p);
-      mach_port_insert_right (mach_task_self (), port, port,
-			      MACH_MSG_TYPE_MAKE_SEND);
-      err = vm_map (mach_task_self (), (u_int *)&np->dn->sinloc, newsize,
-		    0, 1, port, 0, 0, VM_PROT_READ|VM_PROT_WRITE,
-		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-      mach_port_deallocate (mach_task_self (), port);
-      assert (!err);
-      np->dn->sinloclen = newsize / sizeof (daddr_t);
-      diskfs_register_memory_fault_area (np->dn->sininfo->p, 0,
-					 np->dn->sinloc, newsize);
-    }
-  mutex_unlock (&pagernplock);
-}
-
-/* This is called (with sinmaplock set) to unmap the
-   single indirect block mapping of node NP. */
-void
-sin_unmap (struct node *np)
-{
-  vm_offset_t start;
-  vm_size_t len;
-  
-  assert (np->dn->sinloc);
-  pager_report_extent (np->dn->sininfo, &start, &len);
-  diskfs_unregister_memory_fault_area (np->dn->sinloc, len);
-  vm_deallocate (mach_task_self (), (u_int) np->dn->sinloc, len);
-  np->dn->sinloclen = 0;
-  np->dn->sinloc = 0;
-}
-
-/* This is called (with dinmaplock set) to map the contents
-   of the double indirect block of node NP. */
-void
-din_map (struct node *np)
-{
-  int err;
-  
-  assert (!np->dn->dinloc);
-  
-  err = vm_map (mach_task_self (), (vm_address_t *)&np->dn->dinloc,
-		sblock->fs_bsize, 0, 1, dinport, 
-		np->dn->number * sblock->fs_bsize, 0,
-		VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE,
-		VM_INHERIT_NONE);
-  assert (!err);
-  np->dn->dinloclen = sblock->fs_bsize / sizeof (daddr_t);
-  diskfs_register_memory_fault_area (dinpager->p,
-				     np->dn->number * sblock->fs_bsize,
-				     np->dn->dinloc, sblock->fs_bsize);
-}
-
-/* This is called (with dinmaplock set) to unmap the double
-   indirect block mapping of node NP. */
-void
-din_unmap (struct node *np)
-{
-  diskfs_unregister_memory_fault_area (np->dn->dinloc, sblock->fs_bsize);
-  vm_deallocate (mach_task_self (), (u_int) np->dn->dinloc, sblock->fs_bsize);
-  np->dn->dinloclen = 0;
-  np->dn->dinloc = 0;
-}
 
 /* Initialize the pager subsystem. */
 void
@@ -602,89 +401,22 @@ pager_init ()
 			  MACH_MSG_TYPE_MAKE_SEND);
 }
 
-/* Allocate one indirect block for NP.  TYPE is either INDIR_DOUBLE or
-   INDIR_SINGLE; IND is (for INDIR_SINGLE) the index of the block
-   (The first block is 0, the next 1, etc.).  */
-static daddr_t
-indir_alloc (struct node *np,
-	     int type,
-	     int ind)
-{
-  daddr_t bn;
-  daddr_t lbn;
-  int error;
-
-  switch (type)
-    {
-    case INDIR_DOUBLE:
-      lbn = NDADDR + sblock->fs_bsize / sizeof (daddr_t);
-      break;
-    case INDIR_SINGLE:
-      if (ind == 0)
-	lbn = NDADDR;
-      else
-	lbn = NDADDR + ind * sblock->fs_bsize / sizeof (daddr_t);
-      break;
-    default:
-      assert (0);
-    }
-  
-  if (error = ffs_alloc (np, NDADDR,
-			 ffs_blkpref (np, lbn, 0, (daddr_t *)0),
-			 sblock->fs_bsize, &bn, 0))
-    return 0;
-
-  /* We do this write synchronously so that the inode never
-     points at an indirect block full of garbage */
-  if (dev_write_sync (fsbtodb (sblock, bn), zeroblock, sblock->fs_bsize))
-    {
-      ffs_blkfree (np, bn, sblock->fs_bsize);
-      return 0;
-    }
-  else
-    return bn;
-}
-
-/* Write a single dinode (NP->dn->number) to disk.  This might sync more 
-   than actually necessary; it's really just an attempt to avoid syncing 
-   all the inodes.  Return immediately if WAIT is clear. */
-void
-sync_dinode (struct node *np,
-	     int wait)
-{
-  vm_offset_t offset, offsetpg;
-  
-  offset = np->dn->number * sizeof (struct dinode);
-  offsetpg = offset / __vm_page_size;
-  offset = offsetpg * __vm_page_size;
-
-  pager_sync_some (dinodepager->p, offset, __vm_page_size, wait);
-}
-
 /* This syncs a single file (NP) to disk.  Wait for all I/O to complete
    if WAIT is set.  NP->lock must be held.  */
 void
 diskfs_file_update (struct node *np,
 		    int wait)
 {
-  mutex_lock (&pagernplock);
   if (np->dn->fileinfo)
     pager_sync (np->dn->fileinfo->p, wait);
-  mutex_unlock (&pagernplock);
 
-  mutex_lock (&pagernplock);
-  if (np->dn->sininfo)
-      pager_sync (np->dn->sininfo->p, wait);
-  mutex_unlock (&pagernplock);
-
-  pager_sync_some (dinpager->p, np->dn->number * sblock->fs_bsize,
-		   sblock->fs_bsize, wait);
+  /* XXX FIXME sync indirect blocks XXX */
 
   diskfs_node_update (np, wait);
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
-   NP must be locked.  The toplock must be locked. */
+   NP must be locked.  */
 mach_port_t
 diskfs_get_filemap (struct node *np)
 {
@@ -697,7 +429,6 @@ diskfs_get_filemap (struct node *np)
 	      && (!direct_symlink_extension 
 		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
 
-  mutex_lock (&pagernplock);
   if (!np->dn->fileinfo)
     {
       upi = malloc (sizeof (struct user_pager_info));
@@ -706,7 +437,15 @@ diskfs_get_filemap (struct node *np)
       diskfs_nref_light (np);
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
-      enqueue_pager (upi);
+      ports_port_ref (p);
+
+      spin_lock (&pagerlistlock);
+      upi->next = filepagerlist;
+      upi->prevp = &filepagerlist;
+      if (upi->next)
+	upi->next->prevp = &upi->next;
+      filepagerlist = upi;
+      spin_unlock (&pagerlistlock);
     }
   right = pager_get_port (np->dn->fileinfo->p);
   mutex_unlock (&pagernplock);
@@ -721,17 +460,9 @@ diskfs_get_filemap (struct node *np)
 void
 drop_pager_softrefs (struct node *np)
 {
-  if (MAY_CACHE)
-    {
-      mutex_lock (&pagernplock);
-      if (np->dn->fileinfo)
-	pager_change_attributes (np->dn->fileinfo->p, 0,
-				 MEMORY_OBJECT_COPY_DELAY, 0);
-      if (np->dn->sininfo)
-	pager_change_attributes (np->dn->sininfo->p, 0,
-				 MEMORY_OBJECT_COPY_DELAY, 0);
-      mutex_unlock (&pagernplock);
-    }
+  if (MAY_CACHE && np->dn->fileinfo)
+    pager_change_attributes (np->dn->fileinfo->p, 0,
+			     MEMORY_OBJECT_COPY_DELAY, 0);
 }
 
 /* Call this when we should turn on caching because it's no longer
@@ -739,67 +470,19 @@ drop_pager_softrefs (struct node *np)
 void
 allow_pager_softrefs (struct node *np)
 {
-  if (MAY_CACHE)
-    {
-      mutex_lock (&pagernplock);
-      if (np->dn->fileinfo)
-	pager_change_attributes (np->dn->fileinfo->p, 1,
-				 MEMORY_OBJECT_COPY_DELAY, 0);
-      if (np->dn->sininfo)
-	pager_change_attributes (np->dn->sininfo->p, 1,
-				 MEMORY_OBJECT_COPY_DELAY, 0);
-      mutex_unlock (&pagernplock);
-    }
+  if (MAY_CACHE && np->dn->fileinfo)
+    pager_change_attributes (np->dn->fileinfo->p, 1,
+			     MEMORY_OBJECT_COPY_DELAY, 0);
 }
 
 /* Call this to find out the struct pager * corresponding to the
    FILE_DATA pager of inode IP.  This should be used *only* as a subsequent
    argument to register_memory_fault_area, and will be deleted when 
-   the kernel interface is fixed. */
+   the kernel interface is fixed.  NP must be locked.  */
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *np)
 {
-  struct pager *p;
-  mutex_unlock (&pagernplock);
-  p = np->dn->fileinfo->p;
-  mutex_unlock (&pagernplock);
-  return p;
-}
-
-/* Add pager P to the appropriate list (filelist or sinlist) of pagers
-   of its type.  */
-static void
-enqueue_pager (struct user_pager_info *p)
-{
-  struct user_pager_info **listp;
-
-  if (p->type == FILE_DATA)
-    listp = &filelist;
-  else if (p->type == SINDIR)
-    listp = &filelist;
-  else
-    return;
-  
-  spin_lock (&pagerlistlock);
-  
-  p->next = *listp;
-  p->prevp = listp;
-  *listp = p;
-  if (p->next)
-    p->next->prevp = &p->next;
-  
-  spin_unlock (&pagerlistlock);
-}
-
-/* Remove pager P from the linked list it was placed on with enqueue_pager. */
-static void
-dequeue_pager (struct user_pager_info *p)
-{
-  spin_lock (&pagerlistlock);
-  if (p->next)
-    p->next->prevp = p->prevp;
-  *p->prevp = p->next;
-  spin_unlock (&pagerlistlock);
+  return np->dn->fileinfo->p;
 }
 
 /* Call function FUNC (which takes one argument, a pager) on each pager, with
