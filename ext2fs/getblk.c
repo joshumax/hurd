@@ -154,7 +154,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 	      create ? "" : "no", hint, goal, *result);
 
   if (!*result)
-    return EIO;
+    return ENOSPC;
 
   node->dn->info.i_data[nr] = *result;
 
@@ -203,7 +203,7 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 
   *result = ext2_alloc_block (node, goal, zero);
   if (!*result)
-    return EIO;			/* XXX? */
+    return ENOSPC;
 
   ((u32 *)bh)[nr] = *result;
 
