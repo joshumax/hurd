@@ -1,7 +1,7 @@
 /* Store I/O
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -626,22 +626,6 @@ error_t store_parsed_append_args (const struct store_parsed *parsed,
 /* Make a string describing PARSED, and return it in malloced storage in
    NAME.  */
 error_t store_parsed_name (const struct store_parsed *parsed, char **name);
-
-/* XXX Hacks to avoid touching hurd/hurd_types.h; these should be merged into
-   that file the next time it is updated (in enum storage_types). XXX  */
-#define STORAGE_REMAP (STORAGE_LAYER + 1) /* new type */
-#define STORAGE_COPY  (STORAGE_REMAP + 1) /* " */
-#define STORAGE_ZERO  STORAGE_NULL        /* renaming of STORAGE_NULL  */
 
-/* Doc for STORAGE_REMAP & STORAGE_COPY:
-   STORAGE_REMAP is a layer on top of another store that remaps its blocks
-   STORAGE_COPY is a memory snapshot of another store
-   ...
-    remap  - 	     TY, FL, NR      	     NR * (OFFS, LEN)  -	 1
-      (BS and SIZE are that of the child)
-    copy   -         TY, FL, SIZE	     -		       DATA	 -
-      (DATA is preceeded by padding to the next page boundary, and is
-       SIZE bytes long itself)
-*/
 
 #endif /* __STORE_H__ */
