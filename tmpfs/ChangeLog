@@ -1,5 +1,7 @@
 2002-03-23  Roland McGrath  <roland@frob.com>
 
+	* tmpfs.c (main): Don't release REALNODE.
+
 	* node.c: Include "default_pager_U.h", not <mach/default_pager.h>.
 	(diskfs_truncate): Return early if page-rounded size is unchanged.
 	Call default_pager_object_set_size on the memory object.
