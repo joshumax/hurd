@@ -1,6 +1,6 @@
 # Makefile for libstore
 # 
-#   Copyright (C) 1995 Free Software Foundation
+#   Copyright (C) 1995, 1996 Free Software Foundation
 #   Written by Miles Bader <miles@gnu.ai.mit.edu>
 #
 #   This file is part of the GNU Hurd.
@@ -23,12 +23,14 @@ dir := libstore
 makemode := library
 
 libname = libstore
-SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c
+SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c \
+	storeread.c storecat.c
 LCLHDRS=store.h
 installhdrs=store.h
 
 OBJS = $(SRCS:.c=.o)
 
 storeread: storeread.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
+storecat: storecat.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
 
 include ../Makeconf
