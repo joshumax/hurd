@@ -20,6 +20,7 @@
 
 #include <cthreads.h>
 #include <assert.h>
+#include <errno.h>
 
 #undef MDMBUF
 #undef ECHO
