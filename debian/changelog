@@ -1,3 +1,17 @@
+hurd (20001204) unstable; urgency=low
+
+  * New snapshot from CVS, with a couple of bug fixes:
+    pfinet: Don't leak references.
+    ext2fs, ufs: Avoid a dn_set_?time vs sync thread race.
+    Corretly deny too long filenames.
+    nfsd: Fix a couple of memory leaks.
+
+  * Additional patchs:
+    libdiskfs: Don't crash when symlink target is the empty string.
+    streamdev, kbd, mouse: New translators for X and klog device.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon,  4 Dec 2000 15:18:39 +0100
+
 hurd (20001127) unstable; urgency=low
 
   * New snapshot from CVS, really fixes isofs now.

@@ -62,14 +62,15 @@ config: stamp-config
 stamp-config: configure
 	$(checkdir)
 	-mkdir build
-	cd build && ../configure --build=$(DEB_BUILD_GNU_TYPE) \
+	cd build && ../configure --disable-profile \
+	  --build=$(DEB_BUILD_GNU_TYPE) \
 	  --host=$(DEB_HOST_GNU_TYPE) --prefix=
 	touch stamp-config
 
 all build: config stamp-build 
 stamp-build:
 	$(checkdir)
-	cd build && $(MAKE) no_prof=t
+	cd build && $(MAKE)
 # XXX-doc
 	cd build && $(MAKE) -C doc hurd.info
 	cd build && $(MAKE) -C doc hurd.ps

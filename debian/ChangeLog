@@ -1,3 +1,10 @@
+2001-01-09  Marcus Brinkmann  <marcus@gnu.org>
+
+	* changelog: Update to reflect Debian upgrade.
+
+	* rules: Use --disable-profile wih configure instead no_prof=t
+	with make.
+
 2000-11-27  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update to reflect Debian upgrade.
