@@ -22,18 +22,22 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_dir_mkdir (struct protid *user, char *name, mode_t mode)
+netfs_S_dir_link (struct protid *diruser, struct protid *fileuser, char *name)
 {
   error_t err;
-
-  if (!user)
+  
+  if (!diruser)
     return EOPNOTSUPP;
   
-  mode &= ~(S_IFMT|S_ISPARE|S_ISVTX);
-  mode |= S_IFDIR;
-
-  mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_mkdir (user->credential, user->po->np, name, mode);
-  mutex_unlock (&user->po->np->lock);
+  if (!fileuser)
+    return EXDEV;
+  
+  /* Note that nothing is locked here */
+  err = netfs_attempt_link (diruser->credential, diruser->po->np, 
+			    fileuser->po->np, name);
+  if (!err)
+    mach_port_deallocate (mach_task_self (), fileuser->pi.port_right);
   return err;
 }
+
+  
