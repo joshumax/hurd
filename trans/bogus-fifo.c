@@ -79,7 +79,7 @@ main (int argc, char **argv)
        (1) the pipe is empty (which we can check), and (2) there are no other
        users (which we can't).  If we just drop our ref to the pipe, there
        still could be a writer holding a ref to it.  */
-    mach_msg_server_timeout (fsys_server, 0, fsys, MACH_RCV_TIMEOUT, 0);
+    mach_msg_server_timeout (fsys_server, 0, fsys, 0, 0);
 }
 
 /* ---------------------------------------------------------------- */
