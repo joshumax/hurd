@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1993,94,95,96,97,98,99,2001 Free Software Foundation, Inc.
+#   Copyright (C) 1993-1999,2001,2002 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@ prog-subdirs = auth proc exec init term \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons nfsd boot serverboot console \
 	       hostmux usermux ftpfs trans \
-	       utils sutils ufs-fsck ufs-utils \
+	       console-client utils sutils ufs-fsck ufs-utils \
 	       benchmarks fstests
 
 # Other directories

@@ -1,4 +1,4 @@
-/* console-ncurses.c -- A console client based on ncurses.
+/* ncursesw.c - The ncursesw console driver.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
@@ -16,39 +16,38 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#include <argp.h>
+#include <assert.h>
 #include <errno.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <wchar.h>
-#include <error.h>
-#include <assert.h>
 
 /* The makefiles make sure that this program is compiled with
    -I${prefix}/ncursesw.  */
 #include <curses.h>
 
 #include <cthreads.h>
-
 #include <hurd/console.h>
-#include <hurd/cons.h>
 
-#include <version.h>
-
-struct mutex ncurses_lock;
-
-const char *cons_client_name = "console-ncurses";
-const char *cons_client_version = HURD_VERSION;
+#include "driver.h"
 
 
+/* ncurses is not thread-safe.  This lock protects all calls into the
+   ncurses library.  */
+struct mutex ncurses_lock;
+
+/* Forward declaration.  */
+static struct display_ops ncursesw_display_ops;
+static struct input_ops ncursesw_input_ops;
+static struct bell_ops ncursesw_bell_ops;
+
 struct curses_kc_to_cons_kc
 {
   int curses;
   char *cons;
 };
 
-struct curses_kc_to_cons_kc keycodes[] =
+static struct curses_kc_to_cons_kc keycodes[] =
   {
     { KEY_BREAK, NULL },		/* XXX */
     { KEY_DOWN, CONS_KEY_DOWN },
@@ -152,7 +151,7 @@ struct curses_kc_to_cons_kc keycodes[] =
     { KEY_UNDO, NULL }		/* XXX Undo key.  */
   };
 
-int
+static int
 ucs4_to_altchar (wchar_t chr, chtype *achr)
 {
   switch (chr)
@@ -259,67 +258,7 @@ ucs4_to_altchar (wchar_t chr, chtype *achr)
   return 1;
 }
 
-struct mutex global_lock;
-static vcons_t active_vcons = NULL;
-
-error_t
-console_switch (int id, int delta)
-{
-  error_t err = 0;
-  vcons_t vcons;
-  vcons_t new_vcons;
-
-  /* We must give up our global lock before we can call back into
-     libcons.  This is because cons_switch will lock CONS, and as
-     other functions in libcons lock CONS while calling back into our
-     functions which take the global lock (like cons_vcons_add), we
-     would deadlock.  So we acquire a reference for VCONS to make sure
-     it isn't deallocated while we are outside of the global lock.  We
-     also know that */
-
-  mutex_lock (&global_lock);
-  vcons = active_vcons;
-  if (vcons)
-    ports_port_ref (vcons);
-  mutex_unlock (&global_lock);
-
-  err = cons_switch (vcons, id, delta, &new_vcons);
-  if (!err)
-    {
-      mutex_lock (&global_lock);
-      if (active_vcons != new_vcons)
-        {
-          cons_vcons_close (active_vcons);
-          active_vcons = new_vcons;
-        }
-      mutex_unlock (&new_vcons->lock);
-      ports_port_deref (vcons);
-      mutex_unlock (&global_lock);
-    }
-  return err;
-}
-
-
-void
-cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
-{
-  error_t err = 0;
-  mutex_lock (&global_lock);
-  if (!active_vcons)
-    {
-      vcons_t vcons;
-      err = cons_vcons_open (cons, vcons_entry, &vcons);
-      if (!err)
-        {
-          vcons_entry->vcons = vcons;
-	  active_vcons = vcons;
-	  mutex_unlock (&vcons->lock);
-	}
-    }
-  mutex_unlock (&global_lock);
-}
-
-any_t
+static any_t
 input_loop (any_t unused)
 {
   int fd = 0;
@@ -411,28 +350,12 @@ input_loop (any_t unused)
 	    }
 	  mutex_unlock (&ncurses_lock);
 	  if (size)
-	    {
-	      mutex_lock (&global_lock);
-	      if (active_vcons)
-		{
-		  do
-		    {
-		      ret = write (active_vcons->input, buf, size);
-		      if (ret > 0)
-			{
-			  size -= ret;
-			  buf += ret;
-			}
-		    }
-		  while (size && (ret != -1 || errno == EINTR));
-		}
-	      mutex_unlock (&global_lock);
-	    }
+	    console_input (buf, size);
 	}
     }
 }
 
-inline attr_t
+static inline attr_t
 conchar_attr_to_attr (conchar_attr_t attr)
 {
   return ((attr.intensity == CONS_ATTR_INTENSITY_BOLD
@@ -444,13 +367,13 @@ conchar_attr_to_attr (conchar_attr_t attr)
 	  | (attr.concealed ? A_INVIS : 0));
 }
 
-inline short
+static inline short
 conchar_attr_to_color_pair (conchar_attr_t attr)
 {
   return COLOR_PAIR (attr.bgcol << 3 | attr.fgcol);
 }
 
-void
+static void
 mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 {
   cchar_t chr;
@@ -502,122 +425,104 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 } 
 
 
-void
-cons_vcons_update (vcons_t vcons)
+static error_t
+ncursesw_update (void *handle)
 {
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    refresh ();
-  mutex_unlock (&global_lock);
+  mutex_lock (&ncurses_lock);
+  refresh ();
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
-void
-cons_vcons_set_cursor_pos (vcons_t vcons, uint32_t col, uint32_t row)
+
+static error_t
+ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 {
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      move (row, col);
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
+  mutex_lock (&ncurses_lock);
+  move (row, col);
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
-void
-cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status)
+
+static error_t
+ncursesw_set_cursor_status (void *handle, uint32_t status)
 {
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      curs_set (status ? (status == 1 ? 1 : 2) : 0);
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
+  mutex_lock (&ncurses_lock);
+  curs_set (status ? (status == 1 ? 1 : 2) : 0);
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
-void
-cons_vcons_scroll (vcons_t vcons, int delta)
+
+static error_t
+ncursesw_scroll (void *handle, int delta)
 {
+  /* XXX We don't support scrollback for now.  */
   assert (delta >= 0);
 
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      idlok (stdscr, TRUE);
-      scrollok (stdscr, TRUE);
-      scrl (delta);
-      idlok (stdscr, FALSE);
-      scrollok (stdscr, FALSE);
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
+  mutex_lock (&ncurses_lock);
+  idlok (stdscr, TRUE);
+  scrollok (stdscr, TRUE);
+  scrl (delta);
+  idlok (stdscr, FALSE);
+  scrollok (stdscr, FALSE);
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
-void
-cons_vcons_write (vcons_t vcons, conchar_t *str, size_t length,
-		  uint32_t col, uint32_t row)
+
+static error_t
+ncursesw_write (void *handle, conchar_t *str, size_t length,
+		uint32_t col, uint32_t row)
 {
   int x;
   int y;
 
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      getyx (stdscr, y, x);
-      mvwputsn (str, length, col, row);
-      wmove (stdscr, y, x);
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
+  mutex_lock (&ncurses_lock);
+  getyx (stdscr, y, x);
+  mvwputsn (str, length, col, row);
+  wmove (stdscr, y, x);
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
-void
-cons_vcons_beep (vcons_t vcons)
-{
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      beep ();
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
-}
 
-void
-cons_vcons_flash (vcons_t vcons)
+static error_t
+ncursesw_flash (void *handle)
 {
-  mutex_lock (&global_lock);
-  if (vcons == active_vcons)
-    {
-      mutex_lock (&ncurses_lock);
-      flash ();
-      mutex_unlock (&ncurses_lock);
-    }
-  mutex_unlock (&global_lock);
-}
-
-void
-cons_vcons_set_scroll_lock (vcons_t vcons, int onoff)
-{
+  mutex_lock (&ncurses_lock);
+  flash ();
+  mutex_unlock (&ncurses_lock);
+  return 0;
 }
 
 
-int
-main (int argc, char *argv[])
+/* Bell driver operations.  */
+error_t
+ncursesw_beep (void *handle)
+{
+  mutex_lock (&ncurses_lock);
+  beep ();
+  mutex_unlock (&ncurses_lock);
+  return 0;
+}
+
+
+
+static error_t
+ncursesw_driver_init (void **handle, int no_exit,
+		      int argc, char *argv[], int *next)
+{
+  mutex_init (&ncurses_lock);
+  return 0;
+}
+
+static error_t
+ncursesw_driver_start (void *handle)
 {
   error_t err;
   int i;
-
-  /* Parse our command line.  This shouldn't ever return an error.  */
-  argp_parse (&cons_startup_argp, argc, argv, 0, 0, 0);
-
-  mutex_init (&ncurses_lock);
-  mutex_init (&global_lock);
 
   initscr ();
   start_color ();
@@ -631,18 +536,76 @@ main (int argc, char *argv[])
   timeout (1);
   keypad (stdscr, TRUE);
 
-  cthread_detach (cthread_fork (input_loop, NULL));
-
-  err = cons_init ();
+  err = driver_add_display (&ncursesw_display_ops, NULL);
   if (err)
-   {
-     endwin ();
-     error (5, err, "Console library initialization failed");
-   }
+    {
+      endwin ();
+      return err;
+    }
+  err = driver_add_input (&ncursesw_input_ops, NULL);
+  if (err)
+    {
+      err = driver_remove_display (&ncursesw_display_ops, NULL);
+      endwin ();
+      return err;
+    }
+  err = driver_add_bell (&ncursesw_bell_ops, NULL);
+  if (err)
+    {
+      err = driver_remove_input (&ncursesw_input_ops, NULL);
+      err = driver_remove_display (&ncursesw_display_ops, NULL);
+      endwin ();
+      return err;
+    }
 
-  cons_server_loop ();
+  cthread_detach (cthread_fork (input_loop, NULL));
+  endwin ();
 
-  /* Never reached.  */
+  return err;
+}
+
+/* Destroy the display HANDLE.  */
+static error_t
+ncursesw_driver_fini (void *handle, int force)
+{
+  /* XXX Cancel the input thread.  */
+  mutex_lock (&ncurses_lock);
+  driver_remove_display (&ncursesw_display_ops, NULL);
+  driver_remove_input (&ncursesw_input_ops, NULL);
+  driver_remove_bell (&ncursesw_bell_ops, NULL);
+  mutex_unlock (&ncurses_lock);
+
   endwin ();
   return 0;
 }
+
+
+struct driver_ops driver_ncursesw_ops =
+  {
+    ncursesw_driver_init,
+    ncursesw_driver_start,
+    ncursesw_driver_fini,
+  };
+
+static struct display_ops ncursesw_display_ops =
+  {
+    ncursesw_set_cursor_pos,
+    ncursesw_set_cursor_status,
+    ncursesw_scroll,
+    ncursesw_write,
+    ncursesw_update,
+    ncursesw_flash,
+    NULL
+  };
+
+static struct input_ops ncursesw_input_ops =
+  {
+    NULL,
+    NULL
+  };
+
+static struct bell_ops ncursesw_bell_ops =
+  {
+    ncursesw_beep,
+    NULL
+  };

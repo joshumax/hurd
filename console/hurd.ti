@@ -33,7 +33,7 @@ hurd|The GNU Hurd console server,
 	cuu1=\E[A, cuu=\E[%p1%dA,
 # Set horizontal (vertical) cursor position to P1.
 	hpa=\E[%i%p1%dG, vpa=\E[%i%p1%dd,
-# Save (restore) cursor position.  XXX Linux has \E7 (\E8).
+# Save (restore) cursor position.
 	sc=\E7, rc=\E8,
 # XXX When we support this.
 # Set the scrolling region to lines P1 to P2.

@@ -1,0 +1,6 @@
+2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile, bdf.c, bdf.h, bell.h, console.c, display.h, driver.c,
+	driver.h, generic-speaker.c, input.h, pc-kbd.c, timer.c, timer.h,
+	unicode.h, vga.c, vga-dynacolor.c, vga-dynacolor.h, vga-dynafont.c,
+	vga-dynafont.h, vga-hw.h, vga-support.c, vga-support.h: New file.

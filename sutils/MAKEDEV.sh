@@ -88,8 +88,13 @@ function mkdev {
       std)
 	mkdev console tty null zero full fd time mem klog shm
 	;;
-      console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
+      console|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
+      vcs)
+        st $I root 600 /hurd/console;;
+      tty[1-9][0-9]|tty[1-9])
+        st $I root 600 /hurd/term ${DEVDIR}/$I hurdio \
+	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
       null)
 	st $I root 666 /hurd/null;;
       full)
