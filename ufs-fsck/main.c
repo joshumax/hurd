@@ -108,7 +108,8 @@ main (int argc, char **argv)
 	  /* Fall through */
 	case ARGP_KEY_NO_ARGS:
 	  argp_usage (state);
-	default:  return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }
