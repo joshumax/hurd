@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -127,6 +127,7 @@ pq_queue (struct pq *pq, unsigned type, void *source)
       packet->ports = 0;
       packet->num_ports = packet->ports_alloced = 0;
       packet->buf_start = packet->buf_end = packet->buf;
+      packet->buf_vm_alloced = 0;
     }
   else
     pq->free = packet->next;
