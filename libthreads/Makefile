@@ -25,7 +25,7 @@ include ../Makeconf
 # done in libc.
 generic-sources = call.c cprocs.c cthread_data.c cthreads.c \
 		  malloc.c stack.c sync.c
-machine-sources = csw.s thread.c
+machine-sources = csw.S thread.c
 sources = $(generic-sources) $(addprefix $(machine)/,$(machine-sources))
 objects = $(addsuffix .o,$(basename $(notdir $(sources))))
 headers = cthreads.h
@@ -49,10 +49,13 @@ $(hurdinst)/lib/libthreads.a: libthreads.a
 	cp libthreads.a $@
 	$(RANLIB) $@
 
-$(headers)/cthreads.h: cthreads.h
+$(hurdinst)/include/cthreads.h: cthreads.h
 	cp $< $@
 
-install: $(hurdinst)/lib/libthreads.a $(headers)/cthreads.h 
+$(hurdinst)/lib/malloc.o: malloc.o
+	cp $< $@
+
+install: $(hurdinst)/lib/libthreads.a $(hurdinst)/include/cthreads.h $(hurdinst)/lib/malloc.o
 
 $(objects): cthreads.h cthread_internals.h options.h \
 	 i386/asm.h
