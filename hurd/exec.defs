@@ -1,5 +1,5 @@
 /* Interface definitions for the exec servers
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -58,7 +58,7 @@ routine exec_startup (
 routine exec_init (
 	execserver: mach_port_t;
 	auth_handle: auth_t;
-	proc_server: process_t);
+	proc_server: mach_port_send_t);
 
 simpleroutine exec_setexecdata (
 	execserver: mach_port_t;
