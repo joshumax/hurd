@@ -53,7 +53,6 @@ usage(status)
   -k, --keep-active          Keep any currently running active translator\n\
                              when setting the passive translator\n\
   -L, --dereference          If a translator exists, put the new one on top\n\
-  -t, --list                 Show FILE's passive translator\n\
       --help                 Give this help list\n\
 ");
     }
@@ -71,7 +70,6 @@ static struct option options[] =
   {"create", no_argument, 0, 'c'},
   {"force", no_argument, 0, 'f'},
   {"dereference", no_argument, 0, 'L'},
-  {"list", no_argument, 0, 't'},
   {"help", no_argument, 0, '?'},
   {0, 0, 0, 0}
 };
@@ -100,8 +98,8 @@ main(int argc, char *argv[])
   int flags = FS_TRANS_SET | FS_TRANS_EXCL;
 
   /* Various option flags.  */
-  int passive = 0, active = 0, create = 0, force = 0, deref = 0, list = 0;
-  int keep_active = 0;
+  int passive = 0, active = 0;
+  int create = 0, force = 0, deref = 0, keep_active = 0;
 
   /* Parse our options...  */
   while ((opt = getopt_long(argc, argv, "+" SHORT_OPTIONS, options, 0)) != EOF)
@@ -113,16 +111,15 @@ main(int argc, char *argv[])
       case 'k': keep_active = 1; break;
       case 'c': create = 1; break;
       case 'L': deref = 1; break;
-      case 't': list = 1; break;
       case '?': usage(0);
-      default:  usage(1);
+      default:  usage(-1);
       }
 
   if (optind == argc)
     {
       fprintf(stderr,
 	      "%s: Missing filename argument\n", program_invocation_name);
-      usage(1);
+      usage(-1);
     }
 
   node_name = argv[optind++];
@@ -137,44 +134,28 @@ main(int argc, char *argv[])
   if (node == MACH_PORT_NULL)
     error(1, errno, "%s", node_name);
 
-  if (list)
-    /* Print out NODE's translator instead of setting it.  */
-    {
-      char buf[1024], *trans = buf;
-      int len = sizeof(buf);
+  err = argz_create(argv + optind, &argz, &argz_len);
+  if (err)
+    error(3, err, "Can't create argz vector");
 
-      err = file_get_translator(node, &trans, &len);
-      if (err)
-	error(2, err, "%s", node_name);
+  if (active && argz_len > 0)
+    err = start_translator(node, argz, argz_len, 60000, &active_control);
+  if (err)
+    error(4, err, "%s", argz);
 
-      argz_stringify(trans, len);
-      printf("%s\n", trans);
-    }
-  else
-    {
-      err = argz_create(argv + optind, &argz, &argz_len);
-      if (err)
-	error(3, err, "Can't create argz vector");
+  if (force)
+    /* Kill any existing translators.  */
+    flags &= ~FS_TRANS_EXCL;
 
-      if (active && argz_len > 0)
-	err = start_translator(node, argz, argz_len, 60000, &active_control);
-      if (err)
-	error(4, err, "%s", argz);
-
-      if (force)
-	/* Kill any existing translators.  */
-	flags &= ~FS_TRANS_EXCL;
-
-      err =
-	file_set_translator(node,
-			    passive ? flags : 0,
-			    (active || !keep_active) ? flags : 0,
-			    0,
-			    argz, argz_len,
-			    active_control, MACH_MSG_TYPE_MOVE_SEND);
-      if (err)
-	error(5, err, "%s", node_name);
-    }
+  err =
+    file_set_translator(node,
+			passive ? flags : 0,
+			(active || !keep_active) ? flags : 0,
+			0,
+			argz, argz_len,
+			active_control, MACH_MSG_TYPE_MOVE_SEND);
+  if (err)
+    error(5, err, "%s", node_name);
 
   exit(0);
 }
