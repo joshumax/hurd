@@ -26,6 +26,14 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.9  1998/07/20 06:58:28  roland
+ * 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* i386/csw.S (cproc_prepare): Take address of cthread_body as third
+ * 	arg, so we don't have to deal with PIC magic to find its address
+ * 	without producing a text reloc.
+ * 	* cprocs.c (cproc_create): Pass &cthread_body to cproc_prepare.
+ *
  * Revision 1.8  1997/04/04 01:31:16  thomas
  * Thu Apr  3 20:29:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  *
@@ -78,7 +86,8 @@
  *
  */
 #define ELF
-#define __ELF__
+#undef	__ELF__
+#define __ELF__ 1
 #include <mach/i386/asm.h>
 
 #ifdef	PIC
