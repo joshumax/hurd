@@ -1,3 +1,7 @@
+2001-06-15  Roland McGrath  <roland@frob.com>
+
+	* exec.c (do_exec: user_fd): Add a user ref to returned port.
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c: Change hurd version name from proc to exec.
