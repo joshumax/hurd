@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -41,6 +41,7 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 {
   uid_t *newuids, *newgids;
   int i, newnuids, newngids;
+  struct protid *newpi;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -56,10 +57,10 @@ diskfs_S_io_restrict_auth (struct protid *cred,
       newgids[newngids++] = cred->gids[i];
       
   mutex_lock (&cred->po->np->lock);
-  *newport = (ports_get_right 
-	      (diskfs_make_protid (cred->po, newuids, newnuids, newgids,
-				  newngids)));
+  newpi = diskfs_make_protid (cred->po, newuids, newnuids, newgids, newngids);
+  *newport = ports_get_right (newpi);
   mutex_unlock (&cred->po->np->lock);
   *newportpoly = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
   return 0;
 }
