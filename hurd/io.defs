@@ -174,7 +174,7 @@ routine io_stat (
 simpleroutine io_reauthenticate (
 	auth_object: io_t;
 	RPT
-	rend_int: int);
+	rendezvous2: mach_port_send_t);
 
 /* Return another port which has been restricted to do only those
    things which both the current user and the newly specified user can
