@@ -86,7 +86,8 @@ diskfs_enter_cache (struct node *dir, struct node *np, char *name)
   /* Add the new entry at the front */
   lc->next = lookup_cache_head;
   lc->prev = 0;
-  lc->next->prev = lc;
+  if (lc->next)
+    lc->next->prev = lc;
   lookup_cache_head = lc;
   if (!lc->next)
     lookup_cache_tail = lc;
