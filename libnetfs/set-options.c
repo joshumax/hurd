@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "priv.h"
+#include "netfs.h"
 
 static const struct argp_option
 std_runtime_options[] =
@@ -26,10 +26,16 @@ std_runtime_options[] =
   {0, 0}
 };
 
+static error_t
+parse_runtime_opt (int key, char *arg, struct argp_state *state)
+{
+  return EINVAL;
+}
+
 error_t
 netfs_set_options (int argc, char **argv)
 {
-  const struct argp argp = { std_runtime_options, parse_opt, 0, 0, 0 };
+  const struct argp argp = { std_runtime_options, parse_runtime_opt, 0, 0, 0 };
 
   /* Call the user option parsing routine, giving it our set of options to do
      with as it pleases.  */
