@@ -38,11 +38,8 @@ include ../Makeconf
 
 all: boot # uxboot
 
-device.defs:
-	echo '#include <device/device.defs>' | $(CC) -E - > $@
-
 ourdevice.defs: device.defs
-	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
+	$(CPP) $(CPPFLAGS) -x c $< | sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' > $@
 
 boot: ../libthreads/libthreads.so
 
