@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_request for pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -72,7 +72,9 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
       goto allow_term_out;
     }
 
-  _pager_pagemap_resize (p, offset + length);
+  err = _pager_pagemap_resize (p, offset + length);
+  if (err)
+    goto release_out;		/* Can't do much about the actual error.  */
 
   /* If someone is paging this out right now, the disk contents are
      unreliable, so we have to wait.  It is too expensive (right now) to
