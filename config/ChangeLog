@@ -1,3 +1,9 @@
+Mon May 26 23:11:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login-.bashrc (sush): Alias renamed from su.
+	* root-.profile: Say to use `su' rather than `sush root'.
+	* login-README: Refer to sush rather than su.
+
 Thu Sep 19 16:56:52 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (install): Depend on installation directories directly;
