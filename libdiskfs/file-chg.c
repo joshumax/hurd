@@ -18,6 +18,7 @@
 #include "priv.h"
 #include "fs_S.h"
 
+kern_return_t
 diskfs_S_file_notice_changes (struct protid *cred,
 			      mach_port_t notify)
 {
