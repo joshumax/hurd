@@ -542,7 +542,7 @@ struct ps_fmt_spec
 
 /* An array of struct ps_fmt_spec, suitable for use with find_ps_fmt_spec, 
    containing specs for most values in a proc_stat_t.  */
-struct ps_fmt_spec ps_std_fmt_specs[];
+extern struct ps_fmt_spec ps_std_fmt_specs[];
 
 /* Searches for a spec called NAME in SPECS (an array of struct ps_fmt_spec)
    and returns it if found, otherwise NULL.  */
