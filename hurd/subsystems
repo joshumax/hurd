@@ -16,6 +16,7 @@ be used in the Hurd and are defined by Mach non-kernel source.
 * mach_port	 3200	Port name and IPC frobbing
 * mach4		 4000	PC sampling
 fs		20000	Filesystem nodes
+fs_notify	20500	Notification callbacks from fs servers to their clients
 io		21000	Generic IO
 fsys		22000	Filesystem control operations
 msg		23000	Calls made on process message ports
