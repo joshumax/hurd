@@ -20,7 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell and Roland McGrath.  */
 
-subsystem startup 29100;	/* Must 100 more than startup subsystem.  */
+subsystem startup_reply 29100;	/* Must 100 more than startup subsystem.  */
 
 #include <hurd/hurd_types.defs>
 
