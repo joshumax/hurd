@@ -169,7 +169,7 @@ ffs_isblock(fs, cp, h)
 		mask = 0x01 << (h & 0x7);
 		return ((cp[h >> 3] & mask) == mask);
 	default:
-		panic("ffs_isblock");
+		assert (0);
 	}
 }
 
