@@ -95,7 +95,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   ngen_uids = naux_uids = 50;
   ngen_gids = naux_gids = 50;
 
-  err = auth_server_authenticate (authserver, p->p_reqport,
+  err = auth_server_authenticate (authserver, ports_get_right (p),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  rendport, MACH_MSG_TYPE_MOVE_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
@@ -210,15 +210,12 @@ S_proc_reassign (struct proc *p,
 
   /* For security, we need use the request port from STUBP, and
      not inherit this state. */
-  mach_port_mod_refs (mach_task_self (), p->p_reqport,
-		      MACH_PORT_RIGHT_RECEIVE, -1);
-  p->p_reqport = stubp->p_reqport;
-  stubp->p_reqport = MACH_PORT_NULL; /* Protect from process_has_exited.  */
-  mach_port_mod_refs (mach_task_self (), p->p_reqport,
-		      MACH_PORT_RIGHT_RECEIVE, 1);
+  ports_reallocate_from_external (p, ports_claim_right (stubp));
 
+  /* Redirect the task-death notification to the new receive right. */
   mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_reqport,
+				  MACH_NOTIFY_DEAD_NAME, 1, 
+				  ports_get_right (p),
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
@@ -325,6 +322,14 @@ S_proc_dostop (struct proc *p,
   return 0;
 }
 
+/* Clean state of E before it is deallocated */
+void
+exc_clean (void *arg)
+{
+  struct exc *e = arg;
+  mach_port_deallocate (mach_task_self (), e->forwardport);
+}
+
 /* Implement proc_handle_exceptions as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_handle_exceptions (struct proc *p,
@@ -334,23 +339,19 @@ S_proc_handle_exceptions (struct proc *p,
 			  thread_state_t new_state,
 			  mach_msg_type_number_t statecnt)
 {
-  struct exc *e = malloc (sizeof (struct exc)
-			  + (statecnt * sizeof (natural_t)));
-  mach_port_t foo;
+  struct exc *e;
+    error_t err;
 
-  mach_port_request_notification (mach_task_self (), msgport,
-				  MACH_NOTIFY_NO_SENDERS, 1, msgport,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
+  err = ports_import_port (exc_class, proc_bucket, msgport, 
+			   (sizeof (struct exc)
+			    + (statecnt * sizeof (natural_t))), &e);
+  if (err)
+    return err;
 
-  mach_port_move_member (mach_task_self (), msgport, request_portset);
-  e->excport = msgport;
   e->forwardport = forwardport;
   e->flavor = flavor;
   e->statecnt = statecnt;
   bcopy (new_state, e->thread_state, statecnt * sizeof (natural_t));
-  add_exc_to_hash (e);
   return 0;
 }
 
@@ -369,15 +370,18 @@ S_proc_exception_raise (mach_port_t excport,
 {
   error_t err;
   struct proc *p;
-  struct exc *e = exc_find (excport);
+  struct exc *e = ports_lookup_port (proc_bucket, excport, exc_class);
   if (!e)
     return EOPNOTSUPP;
 
   p = task_find (task);
   if (! p)
-    /* Bogus RPC.  */
-    return EINVAL;
-
+    {
+      /* Bogus RPC.  */
+      ports_port_deref (e);
+      return EINVAL;
+    }
+  
   /* Try to forward the message.  */
   err = proc_exception_raise (e->forwardport,
 			      reply, reply_type, MACH_SEND_NOTIFY,
@@ -395,6 +399,7 @@ S_proc_exception_raise (mach_port_t excport,
 	 the faulting thread's state to run its recovery code, which should
 	 dequeue that message.  */
       err = thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
+      ports_port_deref (e);
       return MIG_NO_REPLY;
 
     default:
@@ -416,8 +421,10 @@ S_proc_exception_raise (mach_port_t excport,
       /* Nuke the task; we will get a notification message and report it
 	 died with SIGNO.  */
       task_terminate (task);
+      ports_port_deref (e);
       return 0;
     }
+  
 }
 
 /* Implement proc_getallpids as described in <hurd/proc.defs>. */
@@ -460,7 +467,6 @@ struct proc *
 new_proc (task_t task)
 {
   struct proc *p;
-  mach_port_t foo;
 
   /* Because these have a reference count of one before starting,
      they can never be freed, so we're safe. */
@@ -478,20 +484,10 @@ new_proc (task_t task)
      all other processes inherit from init here (though proc_child
      will move them to their actual parent usually).  */
 
-  p = malloc (sizeof (struct proc));
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-		      &p->p_reqport);
-  mach_port_move_member (mach_task_self (), p->p_reqport,
-			 request_portset);
+  ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
 
   p->p_pid = genpid ();
   p->p_task = task;
-  mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_reqport,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
-
 
   switch (p->p_pid)
     {
@@ -581,6 +577,7 @@ new_proc (task_t task)
   p->p_deadmsg = (p->p_pid == 1);
   p->p_checkmsghangs = 0;
   p->p_msgportwait = 0;
+  p->p_dead = 0;
 
   if (p->p_pid > 1)
     {
@@ -591,8 +588,9 @@ new_proc (task_t task)
   return p;
 }
 
-/* The task associated with process P has died.  Free everything, and
-   record our presence in the zombie table, then return wait if necessary. */
+/* The task associated with process P has died.  Drop most state,
+   and then record us as dead.  Our parent will eventually complete the
+   deallocation. */
 void
 process_has_exited (struct proc *p)
 {
@@ -600,12 +598,8 @@ process_has_exited (struct proc *p)
 
   prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
 
-  mach_port_mod_refs (mach_task_self (), p->p_reqport,
-		      MACH_PORT_RIGHT_RECEIVE, -1);
-
-  remove_proc_from_hash (p);
-
-  mach_port_deallocate (mach_task_self (), p->p_task);
+  /* Nuke external send rights and the (possible) associated reference */
+  ports_destroy_right (p);
 
   if (!--p->p_login->l_refcnt)
     free (p->p_login);
@@ -642,7 +636,21 @@ process_has_exited (struct proc *p)
       p->p_ochild->p_prevsib = &startup_proc->p_ochild;
     }
 
-  reparent_zombies (p);
+  if (p->p_waiting || p->p_msgportwait)
+    condition_broadcast (&p->p_wakeup);
+
+  p->p_dead = 1;
+}
+
+void
+complete_exit (struct proc *p)
+{
+  assert (p->p_dead);
+  assert (p->p_waited);
+  
+  remove_proc_from_hash (p);
+  if (p->p_task != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), p->p_task);
 
   /* Remove us from our parent's list of children. */
   if (p->p_sib)
@@ -651,18 +659,12 @@ process_has_exited (struct proc *p)
 
   leave_pgrp (p);
 
-  mach_port_deallocate (mach_task_self (), p->p_msgport);
-
-  if (p->p_waiting)
-    mach_port_deallocate (mach_task_self (),
-			  p->p_continuation.wait_c.reply_port);
-  if (p->p_msgportwait)
-    mach_port_deallocate (mach_task_self (),
-			  p->p_continuation.getmsgport_c.reply_port);
-
-  free (p);
+  /* Drop the reference we created long ago in new_proc.  The only
+     other references that ever show up are those for RPC args, which
+     will shortly vanish (because we are p_dead, those routines do
+     nothing).  */
+ ports_port_deref (p);
 }
-
 
 /* Get the list of all tasks from the kernel and start adding them.
    If we encounter TASK, then don't do any more and return its proc.
