@@ -84,6 +84,11 @@ _cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
 	|| (scrolling < 0
 	    && (uint32_t) (-scrolling) < vcons->state.screen.height))
       cons_vcons_scroll (vcons, scrolling);
+    else if ((scrolling > 0 && scrolling == vcons->state.screen.height)
+	|| (scrolling < 0
+	    && (uint32_t) (-scrolling) == vcons->state.screen.height))
+      cons_vcons_clear (vcons, vcons->state.screen.width
+			* vcons->state.screen.height, 0, 0);
 
     vis_start = vcons->state.screen.width
       * (new_cur_line % vcons->state.screen.lines);

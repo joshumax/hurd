@@ -1,5 +1,12 @@
 2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
 
+	* cons.h: Add prototype for cons_vcons_clear.
+	* file-changed.c (cons_S_file_changed): Prepare all areas we write
+	to with cons_vcons_clear (unless we use cons_vcons_scroll
+	already).
+	* vcons-refresh.c (cons_vcons_refresh): Likewise.
+	* vcons-scrollback.c (_cons_vcons_scrollback): Likewise.
+
 	* opts-std-startup.c (parse_startup_opt): Use argp_error instead
 	argp_usage for error.  Replace case for ARGP_KEY_END with case for
 	ARGP_KEY_NO_ARGS.

@@ -37,6 +37,8 @@ cons_vcons_refresh (vcons_t vcons)
   vcons->state.flags = vcons->display->flags;
   vcons->state.changes.written = vcons->display->changes.written;
 
+  cons_vcons_clear (vcons, vcons->state.screen.width
+		    * vcons->state.screen.height, 0, 0);
   cons_vcons_write (vcons, vcons->state.screen.matrix
 		    + (vcons->state.screen.cur_line % vcons->state.screen.lines)
 		    * vcons->state.screen.width,

@@ -162,6 +162,10 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 			    scrolling = vcons->state.screen.height;
 			  if (scrolling < vcons->state.screen.height)
 			    cons_vcons_scroll (vcons, scrolling);
+			  else
+			    cons_vcons_clear (vcons, vcons->state.screen.width
+					      * vcons->state.screen.height,
+					      0, 0);
 			  vis_start = vcons->state.screen.width
 			    * (cur_disp_line % vcons->state.screen.lines);
 			  start = (((cur_disp_line % vcons->state.screen.lines)
@@ -299,6 +303,9 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	      
 	      if (start != -1)
 		{
+		  cons_vcons_clear (vcons, end - start + 1,
+				    start_rel % vcons->state.screen.width,
+				    start_rel / vcons->state.screen.width);
 		  cons_vcons_write (vcons, vcons->state.screen.matrix + start,
 				    end < size
 				    ? end - start + 1
@@ -314,6 +321,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 				      / vcons->state.screen.width);
 		  if (end2 != -1)
 		    {
+		      cons_vcons_clear (vcons, end2 - rotate + 1, 0, 0);
 		      cons_vcons_write (vcons,
 					vcons->state.screen.matrix + rotate,
 					end2 < size

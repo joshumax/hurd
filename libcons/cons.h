@@ -136,6 +136,15 @@ extern const char *cons_client_version;
    version specification that should be printed for --version. */
 extern char *cons_extra_version;
 
+/* The user must define this function.  Deallocate the scarce
+   resources (like font glyph slots, colors etc) in the LENGTH entries
+   of the screen matrix starting from position COL and ROW.  This call
+   is immediately followed by calls to cons_vcons_write that cover the
+   same area.  If there are no scarce resources, the caller might do
+   nothing.  */
+void cons_vcons_clear (vcons_t vcons, size_t length,
+		       uint32_t col, uint32_t row);
+
 /* The user must define this function.  Write LENGTH characters
    starting from STR on the virtual console VCONS, which is locked,
    starting from position COL and ROW.  */
@@ -165,10 +174,10 @@ void cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status);
    prepare a full refresh of the screen.  In the latter case the user
    should not really perform any scrolling.  Instead it might
    deallocate limited resources (like display glyph slots and palette
-   colors) if that helps to perform the subsequent write.  It goes
-   without saying that the same deallocation, if any, should be
-   performed on the area that will be filled with the scrolled in
-   content.
+   colors) if that helps to perform the subsequent write, just like
+   cons_vcons_clear.  It goes without saying that the same
+   deallocation, if any, should be performed on the area that will be
+   filled with the scrolled in content.
 
    XXX Possibly need a function to invalidate scrollback buffer, or in
    general to signal a switch of the console so state can be reset.
