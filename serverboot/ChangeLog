@@ -1,3 +1,14 @@
+1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bootstrap.c (main): Remove vars HAD_A_PARITION, DOING_DEFAULT_PAGER.
+	Remove $(default-pager) boot script tag.  We always stick around and
+	act as the default pager (this was already the case, just removed some
+	dead code).  Don't print anything about having no swap partitions,
+	since that is a fine way to boot (just use swapon later).
+
+	* default_pager.c (new_partition): Print out partition name and size
+	when no signature.
+
 1998-09-06  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
 
 	* bunzip2.c: New file.
@@ -7,16 +18,16 @@
 	* Makefile (SRCS): Add bunzip2.c.
 	(UNZIP_OBJS): Add do-bunzip2.o.
 	(CPPFLAGS): Add -DGZIP, -DBZIP2 and -DSMALL_BZIP2.
-	
+
 1998-09-03  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
 
-	* gunzip.c: New file. 
+	* gunzip.c: New file.
 	Copy libstore/gunzip.c and modify for use in serverboot.
 	* load.c (struct stuff): Add members, image_addr and image_size.
 	(mem_read) (mem_read_exec): New functions.
 	(boot_script_exec_cmd): Add gzexe feature.
 	* Makefile: Add unzip stuffs.
-	
+
 1999-03-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* def_pager_setup.c (default_pager_setup): #if 0 out unused function.
