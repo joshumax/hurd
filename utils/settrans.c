@@ -83,7 +83,7 @@ main(int argc, char *argv[])
   error_t err;
 
   /* The filesystem node we're putting a translator on.  */
-  char *node_name;
+  char *node_name = 0;
   file_t node;
 
   /* The translator's arg vector, in '\0' separated format.  */
@@ -102,9 +102,21 @@ main(int argc, char *argv[])
   int create = 0, force = 0, deref = 0, keep_active = 0;
 
   /* Parse our options...  */
-  while ((opt = getopt_long(argc, argv, "+" SHORT_OPTIONS, options, 0)) != EOF)
+  while ((opt = getopt_long(argc, argv, "-" SHORT_OPTIONS, options, 0)) != EOF)
     switch (opt)
       {
+      case 1:
+	if (node_name)
+	  /* We've already read the node name, this must be the translator.  */
+	  {
+	    err = argz_create(argv + optind - 1, &argz, &argz_len);
+	    if (err)
+	      error(3, err, "Can't create argz vector");
+	    optind = argc;	/* stop parsing */
+	  }
+	else
+	  node_name = optarg;
+	break;
       case 'a': active = 1; break;
       case 'p': passive = 1; break;
       case 'f': force = 1; break;
@@ -114,15 +126,6 @@ main(int argc, char *argv[])
       case '?': usage(0);
       default:  usage(-1);
       }
-
-  if (optind == argc)
-    {
-      fprintf(stderr,
-	      "%s: Missing filename argument\n", program_invocation_name);
-      usage(-1);
-    }
-
-  node_name = argv[optind++];
 
   if (!active && !passive)
     passive = 1;
@@ -134,14 +137,12 @@ main(int argc, char *argv[])
   if (node == MACH_PORT_NULL)
     error(1, errno, "%s", node_name);
 
-  err = argz_create(argv + optind, &argz, &argz_len);
-  if (err)
-    error(3, err, "Can't create argz vector");
-
   if (active && argz_len > 0)
-    err = start_translator(node, argz, argz_len, 60000, &active_control);
-  if (err)
-    error(4, err, "%s", argz);
+    {
+      err = start_translator(node, argz, argz_len, 60000, &active_control);
+      if (err)
+	error(4, err, "%s", argz);
+    }
 
   if (force)
     /* Kill any existing translators.  */
