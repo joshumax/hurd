@@ -21,3 +21,7 @@
 #include <device/device.h>
 
 extern device_t master_device;
+
+void incoming_net_packet (void);
+
+extern struct proto_ops *proto_ops;
