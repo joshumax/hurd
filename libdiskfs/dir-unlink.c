@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <hurd/fsys.h>
 
 /* Implement dir_unlink as described in <hurd/fs.defs>. */
 kern_return_t
@@ -65,6 +66,8 @@ diskfs_S_dir_unlink (struct protid *dircred,
   mutex_lock (&np->translator.lock);
   if (np->translator.control != MACH_PORT_NULL)
     {
+      mach_port_t control;
+      
       /* There is a running active translator here.  Give it a push.
 	 If it squeaks, then return an error.  If it consents, then
 	 clear the active translator spec (unless it's been changed
