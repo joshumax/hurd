@@ -4,6 +4,7 @@ Priority: required
 Maintainer: GNU Hurd Maintainers <bug-hurd@gnu.org>
 Standards-Version: 3.5.5.0
 Build-Depends: file, mig, texinfo, tetex-bin, autoconf
+Uploaders: Marcus Brinkmann <brinkmd@debian.org>
 
 Package: hurd
 Priority: required

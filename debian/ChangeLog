@@ -1,3 +1,7 @@
+2002-08-04  Marcus Brinkmann  <marcus@gnu.org>
+
+	* control (Uploaders): New field, suggested by Jeff Bailey.
+
 2002-08-03  Jeff Bailey  <jbailey@gnu.org>
 
 	* rules: Symlinks should point to relative location, not absolute.
