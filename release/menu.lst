@@ -1,0 +1,11 @@
+timeout= 30
+
+title= hurd
+root= hd(0,a)
+kernel= /boot/kernel
+module= /boot/serverboot
+
+title= hurd (single user)
+root= hd(0,a)
+kernel= /boot/kernel -s
+module= /boot/serverboot
