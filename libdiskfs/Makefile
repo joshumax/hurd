@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -54,7 +54,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
-	interruptServer.o fsys_replyUser.o ourmsgUser.o ifsockServer.o
+	interruptServer.o fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 notify-MIGSFLAGS = -DSEQNOS
 
 OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
@@ -75,16 +75,14 @@ boot-start.o: fsys_reply_U.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
 $(subst .c,.o,$(IFSOCKSRCS)): ifsock_S.h
-dir-chg.o: ourmsg_U.h
+dir-chg.o: ourfs_notify_U.h
 
 notify-nosenders.o ports-clean.o: ../hurd/pager.h
 
 $(OBJS): priv.h diskfs.h ../hurd/ioserver.h ../hurd/ports.h ../hurd/fshelp.h
 file-chauthor.o: lithp.h
 
-# The reason for -Dout= is to prevent errors for get_init_port,
-# get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.
-ourmsg_U.h ourmsgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(includedir)/hurd/msg.defs \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourmsgUser.c -header ourmsg_U.h
+ourfs_notify_U.h ourfs_notifyUser.c: $(includedir)/hurd/fs_notify.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine $(includedir)/hurd/fs_notify.defs \
+	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourfs_notifyUser.c -header ourfs_notify_U.h
