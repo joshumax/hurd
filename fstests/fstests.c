@@ -57,9 +57,9 @@ main ()
     printf ("Error on sync: %d\n", err);
 #endif
 
-  if (err = dir_rename (root, "CREATED", root, "newname"))
-    printf ("Error on rename %d\n", err);
-
+  dir_unlink (root, "newdir");
+  dir_rmdir (root, "newdir");
+  dir_mkdir (root, "newdir", 0666);
   file_syncfs (root, 1, 0);
 
   printf ("All done.\n");
