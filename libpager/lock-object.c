@@ -15,18 +15,19 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
 
 /* Request a lock from the kernel.  Parameters are as for
    memory_object_lock_request.  If SYNC is set, then wait for
    the operation to fully complete before returning.  */
 void
-lock_object (struct pager *p, 
-	     vm_offset_t offset,
-	     vm_size_t size,
-	     int should_return,
-	     int should_flush,
-	     vm_prot_t lock_value,
-	     int sync)
+_pager_lock_object (struct pager *p, 
+		    vm_offset_t offset,
+		    vm_size_t size,
+		    int should_return,
+		    int should_flush,
+		    vm_prot_t lock_value,
+		    int sync)
 {
   struct lock_request *lr = 0;
 
