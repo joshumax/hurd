@@ -38,19 +38,18 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c \
 
 OTHERSRCS=demuxer.c protid-clean.c protid-dup.c cntl-create.c \
 	cntl-clean.c migsupport.c times.c startup.c open.c \
-	runtime-argp.c set-options.c get-options.c
+	runtime-argp.c set-options.c append-args.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 
 MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 
-HURDLIBS=ports
+libname = libtrivfs
+HURDLIBS = ports shouldbeinlibc
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
 MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix trivfs_
-libname = libtrivfs
 installhdrs = trivfs.h
 
 include ../Makeconf
-
