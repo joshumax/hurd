@@ -1,3 +1,8 @@
+Mon Jul  7 16:25:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* file-exec.c: Include <fcntl.h> instead of <fcntlbits.h>.
+  	Suggested by Marcus G. Daniels (marcus@cathcart.sysc.pdx.edu).
+
 Mon Jun 30 17:26:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* diskfs.h (diskfs_hard_readonly): New variable.

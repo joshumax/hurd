@@ -22,7 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "fs_S.h"
 #include <sys/stat.h>
-#include <fcntlbits.h>
+#include <fcntl.h>
 #include <hurd/exec.h>
 #include <hurd/paths.h>
 #include <string.h>

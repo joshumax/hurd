@@ -208,7 +208,7 @@ extern int diskfs_link_max;
 extern int diskfs_maxsymlinks;
 
 /* This variable is defined by diskfs; the suer should set it if
-   the filesystem media cannot be made writeable. */
+   the filesystem media cannot be made writeable. */
 extern int diskfs_hard_readonly;
 
 /* The user must define this variable.  Set this to be the node
