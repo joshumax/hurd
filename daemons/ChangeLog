@@ -1,12 +1,16 @@
+1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rc.sh: Do `swapon -a' first thing.
+
 Tue Mar  9 13:18:14 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* lmail.c (OPT_REMOVE): New macro.
 	(options): Don't recognize -r as an alias for --remove, but
-	recognize it separately as a hidden alias.  
+	recognize it separately as a hidden alias.
  	(main / parse_opt): Make -d do nothing.
-	Make -r an alias for -f.  Have OPT_REMOVE do the removal thing. 
+	Make -r an alias for -f.  Have OPT_REMOVE do the removal thing.
 	Reported by Mark Kettenis (kettenis@wins.uva.nl).
-	
+
 1998-12-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* lmail.c (deliver, main): Add braces to silence gcc warning.
