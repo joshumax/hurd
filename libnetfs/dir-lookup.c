@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -115,29 +115,41 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  
     retry_lookup:
       
-      if (dnp == netfs_root_node
+      if ((dnp == netfs_root_node || dnp == diruser->po->shadow_root)
 	  && filename[0] == '.' && filename[1] == '.' && filename[2] == '\0')
-	{
-	  /* Lookup of .. from root */
-	  if (diruser->po->dotdotport != MACH_PORT_NULL)
-	    {
-	      *do_retry = FS_RETRY_REAUTH;
-	      *retry_port = diruser->po->dotdotport;
-	      *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
-	      if (!lastcomp)
-		strcpy (retry_name, nextname);
-	      error = 0;
-	      mutex_unlock (&dnp->lock);
-	      goto out;
-	    }
-	  else
-	    /* We are global root */
-	    {
-	      error = 0;
-	      np = dnp;
-	      netfs_nref (np);
-	    }
-	}
+	if (dnp == diruser->po->shadow_root)
+	  /* We're at the root of a shadow tree.  */
+	  {
+	    *do_retry = FS_RETRY_REAUTH;
+	    *retry_port = diruser->po->shadow_root_parent;
+	    *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+	    if (! lastcomp)
+	      strcpy (retry_name, nextname);
+	    error = 0;
+	    mutex_unlock (&dnp->lock);
+	    goto out;
+	  }
+	else if (diruser->po->root_parent != MACH_PORT_NULL)
+	  /* We're at a real translator root; even if DIRUSER->po has a
+	     shadow root, we can get here if its in a directory that was
+	     renamed out from under it...  */
+	  {
+	    *do_retry = FS_RETRY_REAUTH;
+	    *retry_port = diruser->po->root_parent;
+	    *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+	    if (!lastcomp)
+	      strcpy (retry_name, nextname);
+	    error = 0;
+	    mutex_unlock (&dnp->lock);
+	    goto out;
+	  }
+	else
+	  /* We are global root */
+	  {
+	    error = 0;
+	    np = dnp;
+	    netfs_nref (np);
+	  }
       else
 	/* Attempt a lookup on the next pathname component. */
 	error = netfs_attempt_lookup (diruser->user, dnp, filename, &np);
@@ -228,10 +240,9 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  newpi = 
-	    netfs_make_protid (netfs_make_peropen (dnp, 0,
-						   diruser->po->dotdotport),
-			       iohelp_create_iouser (make_idvec (), 
-						   make_idvec ()));
+	    netfs_make_protid (netfs_make_peropen (dnp, 0, diruser->po),
+			       iohelp_create_iouser (make_idvec (),
+						     make_idvec ()));
 	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
@@ -239,7 +250,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 	  
-	  error = fshelp_fetch_root (&np->transbox, &diruser->po->dotdotport,
+	  error = fshelp_fetch_root (&np->transbox, diruser->po,
 				     dirport, 
 				     diruser->user,
 				     lastcomp ? flags : 0,
@@ -368,8 +379,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   
   flags &= ~OPENONLY_STATE_MODES;
   
-  newpi = netfs_make_protid (netfs_make_peropen (np, flags,
-						 diruser->po->dotdotport),
+  newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
 			     iohelp_dup_iouser (diruser->user));
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
