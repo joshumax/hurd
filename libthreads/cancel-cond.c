@@ -1,5 +1,5 @@
 /* Modified condition_wait that checks for cancellation.
-Copyright (C) 1995 Free Software Foundation, Inc.
+Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 This file is part of the GNU C Library.
 
 The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@ Cambridge, MA 02139, USA.  */
 #include <hurd/signal.h>
 #include <cthreads.h>
 #include "cthread_internals.h"
+#include <assert.h>
 
 /* Just like condition_wait, but cancellable.  Returns true if cancelled.  */
 int
@@ -35,6 +36,8 @@ hurd_condition_wait (condition_t c, mutex_t m)
   struct hurd_sigstate *ss = _hurd_self_sigstate ();
   cproc_t p = cproc_self ();
   int cancel;
+
+  assert (ss->intr_port == MACH_PORT_NULL); /* Sanity check for signal bugs. */
 
   p->state = CPROC_CONDWAIT | CPROC_SWITCHING;
 
