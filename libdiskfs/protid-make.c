@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <string.h>
 
 /* Build and return a protid which has no user identification for 
    peropen PO.  The node PO->np must be locked.  */
