@@ -16,10 +16,17 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := trans
-makemode := misc
+makemode := servers
 
 SRCS = ifsock.c symlink.c
+targets = symlink ifsock
 
 include ../Makeconf
 
+symlink: symlink.o fsysServer.o
+	$(CC) $(CFLAGS) -o symlink $^
+symlink.o: fsys_S.h
 
+ifsock: ifsock.o $(libtrivfs) $(libports) ifsockServer.o
+	$(CC) $(CFLAGS) -o ifsock $^
+ifsock.o: ifsock_S.h ../hurd/trivfs.h ../hurd/ports.h
