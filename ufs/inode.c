@@ -154,6 +154,7 @@ diskfs_try_dropping_softrefs (struct node *np)
 void
 diskfs_lost_hardrefs (struct node *np)
 {
+#ifdef notanymore
   struct port_info *pi;
   struct pager *p;
   
@@ -195,6 +196,7 @@ diskfs_lost_hardrefs (struct node *np)
       else
 	spin_unlock (&_libports_portrefcntlock);
     }
+#endif
 }
 
 /* A new hard reference to a node has been created; it's now OK to
