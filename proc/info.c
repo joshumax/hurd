@@ -44,7 +44,6 @@ S_proc_pid2task (struct proc *callerp,
   
   if (!check_uid (callerp, p->p_owner))
     return EPERM;
-  
   *t = p->p_task;
 
   return 0;
