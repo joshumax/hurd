@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -89,6 +89,7 @@ diskfs_drop_node (struct node *np)
   if (np->sockaddr)
     mach_port_deallocate (mach_task_self (), np->sockaddr);
 
+  _diskfs_purge_cache (np);
   diskfs_node_norefs (np);
   spin_unlock (&diskfs_node_refcnt_lock);
 }
