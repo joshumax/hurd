@@ -33,6 +33,7 @@ OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 #LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
 LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
 	 $(libfshelp) $(libdiskfs) $(libthreads) $(libports)
+#LIBS = $(LIBPARTS)
 
 LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
 
@@ -40,7 +41,7 @@ all: ufs
 
 # Don't use $^ in this rule; it will omit the duplicates in $(LIBS).
 ufs: $(OBJS) $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS) 
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 # -Xlinker --no-keep-memory
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
