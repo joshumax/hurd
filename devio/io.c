@@ -330,3 +330,45 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred, int wait, int dochildren)
       return dev_sync(((struct open *)cred->po->hook)->dev, wait);
     }
 }
+
+/* ---------------------------------------------------------------- */
+
+typedef int run_elem_t;
+
+error_t
+trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
+				run_elem_t **runs, unsigned *runs_len,
+				char *dev_name, mach_port_t *dev_port,
+				mach_msg_type_name_t *dev_port_type,
+				char **misc, unsigned *misc_len)
+{
+  error_t err;
+  if (!cred)
+    err = EOPNOTSUPP;
+  else
+    {
+      struct dev *dev = ((struct open *)cred->po->hook)->dev;
+
+      err = vm_allocate (mach_task_self (),
+			 (vm_address_t *)runs, 2 * sizeof (run_elem_t), 1);
+      if (!err)
+	{
+	  *class = STORAGE_DEVICE;
+
+	  (*runs)[0] = 0;
+	  (*runs)[1] = dev->size / dev->dev_block_size;
+	  *runs_len = 2;
+
+	  strcpy (dev_name, dev->name);
+
+	  if (cred->isroot)
+	    *dev_port = dev->port;
+	  else
+	    *dev_port = MACH_PORT_NULL;
+	  *dev_port_type = MACH_MSG_TYPE_COPY_SEND;
+
+	  *misc_len = 0;
+	}
+    }
+  return err;
+}
