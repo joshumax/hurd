@@ -1,5 +1,10 @@
 Wed Feb 19 18:48:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-pv.c (argp_program_version): Make const.
+	* argp-ba.c (argp_program_bug_address): Make const.
+	* argp-ex2.c, argp-ex3.c, argp-ex4.c (argp_program_version,
+	argp_program_bug_address): Make const.
+
 	* argp-parse.c (argp_default_parser): Set STATE->name for OPT_PROGNAME.
 	(parser_init): Use the basename for PARSER->state.name.
 	* argp-help.c (__argp_error, __argp_failure, __argp_state_help): 

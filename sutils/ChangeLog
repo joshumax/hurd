@@ -1,3 +1,7 @@
+Wed Feb 19 23:08:04 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* halt.c, reboot.c, fsck.c (argp_program_version): Make const.
+
 Wed Feb  5 11:50:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fstab.c (fstypes_get): Improve error behavior a bit.
