@@ -201,14 +201,11 @@ $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
 
-$(libdir)/$(libname)_p.a: $(libname)_p.a
-	$(INSTALL_DATA) $(libname)_p.a $(libdir)/$(libname)_p.a
-	$(RANLIB) $(libdir)/$(libname)_p.a
-$(libdir)/$(libname).a: $(libname).a
-	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
-	$(RANLIB) $(libdir)/$(libname).a
+$(addprefix $(libdir)/$(libname),_p.a .a): $(libdir)/%: %
+	$(INSTALL_DATA) $< $@
+	$(RANLIB) $@
 $(libdir)/$(libname).so: $(libname).so
-	$(INSTALL_DATA) $(libname).so $(libdir)/$(libname).so
+	$(INSTALL_DATA) $< $@
 
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
