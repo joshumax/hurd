@@ -1,6 +1,6 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997,1998,2001,2002,2003 Free Software Foundation, Inc.
+   Copyright (C) 1997,1998,2001,2002,2003,2004 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -53,8 +53,6 @@ store_find_class (const char *name, const char *clname_end,
      If a dynamically-linked program has its own "store_std_classes"
      section, e.g. by -lstore_TYPE objects included in the link, this will
      be just that section and libstore.so itself is covered below.  */
-# pragma weak __start_store_std_classes
-# pragma weak __stop_store_std_classes
   for (cl = __start_store_std_classes; cl < __stop_store_std_classes; ++cl)
     if (strlen ((*cl)->name) == (clname_end - name)
 	&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)

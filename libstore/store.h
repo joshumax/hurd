@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02,04 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -630,8 +630,9 @@ extern const struct store_class store_mvol_class;
     __attribute__ ((unused, section ("store_std_classes"))) \
     = { &store_##name##_class }
 
-extern const struct store_class *const __start_store_std_classes[];
-extern const struct store_class *const __stop_store_std_classes[];
+
+extern const struct store_class *const __start_store_std_classes[] __attribute__ ((weak));
+extern const struct store_class *const __stop_store_std_classes[] __attribute__ ((weak));
 
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
