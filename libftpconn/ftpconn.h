@@ -198,10 +198,17 @@ error_t ftp_conn_open (struct ftp_conn *conn);
 
 void ftp_conn_close (struct ftp_conn *conn);
 
+/* Create a new ftp connection as specified by PARAMS, and return it in CONN;
+   HOOKS contains customization hooks used by the connection.  Neither PARAMS
+   nor HOOKS is copied, so a copy of it should be made if necessary before
+   calling this function; if it should be freed later, a FINI hook may be
+   used to do so.  */
 error_t ftp_conn_create (const struct ftp_conn_params *params,
 			 const struct ftp_conn_hooks *hooks,
 			 struct ftp_conn **conn);
 
+/* Free the ftp connection CONN, closing it first, and freeing all resources
+   it uses.  */
 void ftp_conn_free (struct ftp_conn *conn);
 
 /* Start a transfer command CMD (and optional args ...), returning a file
@@ -288,5 +295,28 @@ error_t ftp_conn_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 error_t ftp_conn_get_stats (struct ftp_conn *conn,
 			    const char *name, int force_dir,
 			    ftp_conn_add_stat_fun_t add_stat, void *hook);
+
+/* The type of the function called by ...get_names to add each new name.
+   NAME is the name in question and HOOK is as passed into ...get_stats.  */
+typedef error_t (*ftp_conn_add_name_fun_t) (const char *name, void *hook);
+
+/* Start an operation to get a list of filenames in the directory NAME, and
+   return a file-descriptor for reading on, and a state structure in STATE
+   suitable for passing to cont_get_names.  */
+error_t ftp_conn_start_get_names (struct ftp_conn *conn,
+				  const char *name, int *fd, void **state);
+
+/* Read filenames from FD, calling ADD_NAME for each new NAME (HOOK is passed
+   to ADD_NAME).  FD and STATE should be returned from start_get_stats.  If
+   this function returns EAGAIN, then it should be called again to finish the
+   job (possibly after calling select on FD); if it returns 0, then it is
+   finishe,d and FD and STATE are deallocated.  */
+error_t ftp_conn_cont_get_names (struct ftp_conn *conn, int fd, void *state,
+				 ftp_conn_add_name_fun_t add_name, void *hook);
+
+/* Get a list of names in the directory NAME, calling ADD_NAME for each one
+   (HOOK is passed to ADD_NAME).  This function may block.  */
+error_t ftp_conn_get_names (struct ftp_conn *conn, const char *name, 
+			    ftp_conn_add_name_fun_t add_name, void *hook);
 
 #endif /* __FTPCONN_H__ */
