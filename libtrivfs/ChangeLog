@@ -1,3 +1,7 @@
+Mon Sep 23 17:20:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* trivfs.h (trivfs_append_args): Make ARGZ_LEN `size_t *'.
+
 Thu Sep 19 18:00:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add shouldbeinlibc.
