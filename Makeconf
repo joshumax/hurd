@@ -175,6 +175,9 @@ endif
 endif
 
 # Installation
+ifneq ($(makemode),library)
+
+# not library
 ifndef targets
 targets = $(target)
 endif
@@ -184,8 +187,10 @@ all: $(install-targets)
 install: $(installationdir) $(addprefix $(installationdir)/,$(install-targets))
 $(addprefix $(installationdir)/,$(installable)): $(installationdir)/%: %
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
+else
 
-ifeq ($(makemode),library)
+# library (several parts, library itself, headers, etc.)
+
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)

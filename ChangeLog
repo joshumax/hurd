@@ -1,5 +1,9 @@
 1999-09-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
+	* Makeconf [Installation section]: Last change (9 Sep 1999) broke
+	this.  Separate more clearly the library and non-library install
+	rules. 
+
 	* Makefile ($(prog-subdirs) $(lib-subdirs), %-lndist, %-clean,
 	%-relink, %-objs, %-install, %-install-headers, %-TAGS, %.d): Pass
 	-e to sub-make, so that explicit prefix= args (etc.) get passed
