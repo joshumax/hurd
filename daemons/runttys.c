@@ -406,7 +406,7 @@ main ()
   if (fail)
     return fail;
 
-  if (setsid ())
+  if (setsid () == -1)
     error (0, errno, "setsid");
 
   sa.sa_handler = sighup;
