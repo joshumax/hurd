@@ -54,7 +54,7 @@ _pager_mark_next_request_error(struct pager *pager,
       break;
     }
   
-  for (p = pager->pagemap; p < pager->pagemap + length; p++)
+  for (p = pager->pagemap + offset; p < pager->pagemap + offset + length; p++)
     *p = SET_PM_NEXTERROR (*p, page_error);
 }
 
@@ -92,7 +92,7 @@ _pager_mark_object_error(struct pager *pager,
       break;
     }
   
-  for (p = pager->pagemap; p < pager->pagemap + length; p++)
+  for (p = pager->pagemap + offset; p < pager->pagemap + offset + length; p++)
     *p = SET_PM_ERROR (*p, page_error);
 }
 
@@ -107,9 +107,8 @@ pager_get_error (struct pager *p,
   mutex_lock (&p->interlock);
   _pager_pagemap_resize (p, addr);
   
-  err = _pager_page_errors[PM_ERROR(addr/__vm_page_size)];
+  err = _pager_page_errors[PM_ERROR(p->pagemap[addr/__vm_page_size])];
 
   mutex_unlock (&p->interlock);
   return err;
 }
-
