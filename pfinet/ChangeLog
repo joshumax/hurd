@@ -1,3 +1,7 @@
+1997-08-25  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-ops.c (S_io_write): Negate linux error codes before returning.
+
 1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* linux-inet/tcp.c (tcp_conn_request): SK->err holds errno values,
