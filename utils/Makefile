@@ -20,13 +20,14 @@ makemode := utilities
 
 targets = shd ps settrans showtrans sync su mount fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
-	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir
+	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
+	storeread
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c addauth.c rmauth.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
-	unsu.c ftpcp.c ftpdir.c
+	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
@@ -54,14 +55,15 @@ addauth rmauth setauth su unsu: frobauth.o
 rmauth setauth su unsu: frobauth-mod.o
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 
-storeinfo: ../libstore/libstore.a
+storeinfo storecat storeread: ../libstore/libstore.a
 ftpcp ftpdir: ../libftpconn/libftpconn.a
 
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w ids settrans sync showtrans fsysopts storeinfo login vmstat portinfo \
-  devprobe vminfo addauth rmauth setauth su unsu ftpcp ftpdir: \
+  devprobe vminfo addauth rmauth setauth su unsu ftpcp ftpdir storeread \
+  storecat: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
