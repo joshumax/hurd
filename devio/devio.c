@@ -32,7 +32,6 @@
 
 #include "open.h"
 #include "dev.h"
-#include "ptypes.h"
 
 #ifdef MSG
 #define DEBUG(what) \
@@ -42,7 +41,22 @@
 #else
 #define DEBUG(what) 0
 #endif
+
+/* ---------------------------------------------------------------- */
 
+/* The port class of our file system control pointer.  */
+struct port_class *fsys_port_class;
+/* The port class of the (only) root file port for the opened device.  */
+struct port_class *root_port_class;
+
+/* A bucket to put all our ports in.  */
+struct port_bucket *port_bucket;
+
+/* Trivfs noise.  */
+struct port_class *trivfs_protid_portclasses[1];
+struct port_class *trivfs_cntl_portclasses[1];
+int trivfs_protid_nportclasses = 1;
+int trivfs_cntl_nportclasses = 1;
 
 /* ---------------------------------------------------------------- */
 
@@ -92,7 +106,6 @@ static struct option options[] =
   {"serial", no_argument, 0, 's'},
   {0, 0, 0, 0}
 };
-
 
 /* ---------------------------------------------------------------- */
 
@@ -152,8 +165,18 @@ void main(int argc, char *argv[])
   if (bootstrap == MACH_PORT_NULL)
     error(2, 0, "Must be started as a translator");
   
+  fsys_port_class = ports_create_class (trivfs_clean_cntl, 0);
+  root_port_class = ports_create_class (trivfs_clean_protid, 0);
+  port_bucket = ports_create_bucket ();
+  trivfs_protid_portclasses[0] = root_port_class;
+  trivfs_cntl_portclasses[0] = fsys_port_class;
+
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap, PT_FSYS, PT_NODE, NULL);
+  err =
+    trivfs_startup(bootstrap,
+		   fsys_port_class, port_bucket,
+		   root_port_class, port_bucket,
+		   NULL);
   if (err)
     error(3, err, "Contacting parent");
 
@@ -162,7 +185,8 @@ void main(int argc, char *argv[])
   mutex_init(&device_lock);
 
   /* Launch. */
-  ports_manage_port_operations_multithread ();
+  ports_manage_port_operations_multithread (port_bucket, trivfs_demuxer,
+					    30*1000, 5*60*1000, 0, 0);
 
   exit(0);
 }
@@ -209,30 +233,6 @@ close_hook(struct trivfs_peropen *peropen)
   if (peropen->hook)
     open_free(peropen->hook);
 }
-
-static void
-close_device(int aquire_lock)
-{
-  DEBUG(fprintf(debug, "Closing device\n"));
-  if (aquire_lock)
-    mutex_lock(&device_lock);
-  if (device)
-    {
-      dev_close(device);
-      device = NULL;
-    }
-  if (aquire_lock)
-    mutex_unlock(&device_lock);
-}
-
-static void
-clean_exit(int status, int aquire_lock)
-{
-  DEBUG(fprintf(debug, "Cleaning up and exiting (status = %d)...\n", status));
-  close_device(aquire_lock);
-  DEBUG({fprintf(debug, "Bye!\n"); fclose(debug); debug = NULL;});
-  exit(0);
-}
 
 /* ---------------------------------------------------------------- */
 /* Trivfs hooks  */
@@ -245,11 +245,6 @@ int trivfs_support_write = 1;
 int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ | O_WRITE;
-
-int trivfs_protid_porttypes[] = {PT_NODE};
-int trivfs_cntl_porttypes[] = {PT_FSYS};
-int trivfs_protid_nporttypes = 1;
-int trivfs_cntl_nporttypes = 1;
 
 void
 trivfs_modify_stat (struct stat *st)
@@ -288,20 +283,52 @@ trivfs_modify_stat (struct stat *st)
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
+trivfs_goaway (int flags, mach_port_t realnode,
+	       struct port_class *fsys_port_class,
+	       struct port_class *file_port_class)
 {
-  DEBUG(fprintf(debug, "trivfs_goaway(0x%x, %d, %d, %d)\n",
-		flags, realnode, ctltype, pitype));
+  int force = (flags & FSYS_GOAWAY_FORCE);
+  int nosync = (flags & FSYS_GOAWAY_NOSYNC);
+
+  DEBUG(fprintf(debug, "trivfs_goaway(0x%x, %d)\n", flags, realnode));
 
   mutex_lock(&device_lock);
-  if (device == NULL || (flags & FSYS_GOAWAY_FORCE))
-    /* Go away immediately.  */
-    if (flags & FSYS_GOAWAY_NOSYNC)
-	/* Don't clean up.  */
-      exit(0);
-    else
-      clean_exit(0, FALSE);
-  mutex_lock(&device_lock);
+
+  if (device == NULL)
+    exit (0);
+
+  /* Wait until all pending rpcs are done.  */
+  ports_inhibit_class_rpcs (root_port_class);
+
+  if (force && nosync)
+    /* Exit with extreme prejudice.  */
+    exit (0);
+
+  if (!force && ports_count_class (root_port_class) > 0)
+    /* Still users, so don't exit.  */
+    goto busy;
+
+  if (!nosync)
+    /* Sync the device here, if necessary, so that closing it won't result in
+       any I/O (which could get hung up trying to use one of our pagers).  */
+    dev_sync (device, 1);
+
+  /* devpager_shutdown may sync the pagers as side-effect (if NOSYNC is 0),
+     so we put that first in this test.  */
+  if (dev_stop_paging (device, nosync) || force)
+    /* Bye-bye.  */
+    {
+      if (!nosync)
+	/* If NOSYNC is true, we don't close DEV, as that could cause data to
+	   be written back.  */
+	dev_close (device);
+      exit (0);
+    }
+
+ busy:
+  /* Allow normal operations to proceed.  */
+  ports_enable_class (root_port_class);
+  mutex_unlock(&device_lock);
 
   /* Complain that there are still users.  */
   return EBUSY;
@@ -344,65 +371,8 @@ trivfs_S_fsys_syncfs (struct trivfs_control *cntl,
   else
     return 0;
 }
-
-/* ---------------------------------------------------------------- */
-/* Ports hooks  */
 
-void (*ports_cleanroutines[])(void *) =
-{
-  [PT_FSYS] = trivfs_clean_cntl,
-  [PT_NODE] = trivfs_clean_protid,
-};
-
-int
-ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
-{
-  int ok;
-#ifdef MSG
-  static int next_msg_num = 0;
-  int msg_num;
-#endif
-
-  DEBUG(msg_num = next_msg_num++;
-	fprintf(debug, "port_demuxer(%d) [%d]\n", inp->msgh_id, msg_num););
-
-  ok = pager_demuxer(inp, outp) || trivfs_demuxer(inp, outp);
-
-  DEBUG(fprintf(debug, "port_demuxer(%d) [%d] done!\n", inp->msgh_id,msg_num));
-
-  return ok;
-}
-
-/* This will be called whenever there have been no requests to the server for
-   a significant period of time.  NHARD is the number of live hard ports;
-   NSOFT is the number of live soft ports.  This function is called while an
-   internal lock is held, so it cannot reliably call any other functions of
-   the ports library. */
 void
-ports_notice_idle (int nhard, int nsoft)
+thread_cancel (thread_t foo __attribute__ ((unused)))
 {
-  DEBUG(fprintf(debug, "ports_notice_idle(%d, %d)\n", nhard, nsoft));
-  if (nhard == 0)
-    clean_exit(0, TRUE);
-}
-
-/* This will be called whenever there are no hard ports or soft ports
-   allocated.  This function is called while an internal lock is held, so it
-   cannot reliably call any other functions of the ports library. */
-void
-ports_no_live_ports ()
-{
-  DEBUG(fprintf(debug, "ports_no_live_ports()\n"));
-  clean_exit(0, TRUE);
-}
-
-/* This will be called whenever there are no hard ports allocated but there
-   are still some soft ports.  This function is called while an internal lock
-   is held, so it cannot reliably call any other functions of the ports
-   library. */
-void
-ports_no_hard_ports ()
-{
-  DEBUG(fprintf(debug, "ports_no_hard_ports()\n"));
-  close_device(TRUE);
 }
