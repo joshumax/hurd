@@ -1,5 +1,7 @@
 2001-12-29  Roland McGrath  <roland@frob.com>
 
+	* nbd.c (nbdopen): Fix in last change.
+
 	* nbd.c (NBD_IO_MAX): New macro.
 	(nbd_write): Write in chunks no larger than NBD_IO_MAX.
 	(nbd_read): Cap AMOUNT to NBD_IO_MAX.
