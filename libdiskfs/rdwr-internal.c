@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -62,7 +62,7 @@ _diskfs_rdwr_internal (struct node *np,
       err = vm_map (mach_task_self (), (u_int *)&window, 8 * __vm_page_size, 
 		    0, 1, memobj, winoff, 0, VM_PROT_READ|VM_PROT_WRITE, 
 		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-      assert (!err);
+      assert_perror (err);
       diskfs_register_memory_fault_area (diskfs_get_filemap_pager_struct (np), 
 					 winoff, window, 8 * __vm_page_size);
       
