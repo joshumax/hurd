@@ -272,6 +272,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   error_t err;
   int sex, block;
   struct node *np;
+  struct stat *st;
   ino_t inum;
 
   assert (!diskfs_readonly);
@@ -285,13 +286,14 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   if (err)
     return err;
 
-  if (np->dn_stat.st_blocks)
+  st = &np->dn_stat;
+
+  if (st->st_blocks)
     {
-      ext2_warning("Free inode %d had %d blocks", inum, np->dn_stat.st_blocks);
-      np->dn_stat.st_blocks = 0;
+      ext2_warning("Free inode %d had %d blocks", inum, st->st_blocks);
+      st->st_blocks = 0;
       np->dn_set_ctime = 1;
     }
-
   /* Zero out the block pointers in case there's some noise left on disk.  */
   for (block = 0; block < EXT2_N_BLOCKS; block++)
     if (np->dn->info.i_data[block] != 0)
@@ -299,8 +301,15 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 	np->dn->info.i_data[block] = 0;
 	np->dn_set_ctime = 1;
       }
+  if (np->allocsize)
+    {
+      ext2_warning ("Free inode %d had a size of %ld", inum, st->st_size);
+      st->st_size = 0;
+      np->allocsize = 0;
+      np->dn_set_ctime = 1;
+    }
 
-  np->dn_stat.st_flags = 0;
+  st->st_flags = 0;
 
   /*
    * Set up a new generation number for this inode.
@@ -309,7 +318,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   sex = diskfs_mtime->seconds;
   if (++next_generation < (u_long)sex)
     next_generation = sex;
-  np->dn_stat.st_gen = next_generation;
+  st->st_gen = next_generation;
   spin_unlock (&generation_lock);
 
   alloc_sync (np);
