@@ -40,5 +40,9 @@ ports_end_rpc (void *port, struct rpc_info *info)
       || (!_ports_total_rpcs && (_ports_flags & _PORTS_INHIBIT_WAIT)))
     condition_broadcast (&_ports_block);
 
+  /* Clear the cancellation flag for this thread since the current 
+     RPC is now finished anwhow. */
+  hurd_check_cancel ();
+
   mutex_unlock (&_ports_lock);
 }
