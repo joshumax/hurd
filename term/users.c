@@ -876,11 +876,13 @@ S_tioctl_tiocdrain (io_t port)
   if (!(cred->po->openmodes & O_WRITE))
     {
       mutex_unlock (&global_lock);
+      ports_port_deref (cred);
       return EBADF;
     }
   
   err = drain_output ();
   mutex_unlock (&global_lock);
+  ports_port_deref (cred);
   return err;
 }
 
@@ -916,7 +918,6 @@ S_tioctl_tiocswinsz (io_t port,
     }
 
   mutex_unlock (&global_lock);
-
   return err;
 }
 
