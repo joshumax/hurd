@@ -22,20 +22,20 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 
 int
-ports_demuxer (mach_msg_header_t *inp,
-	       mach_msg_header_t *outp)
+trivfs_demuxer (mach_msg_header_t *inp,
+		mach_msg_header_t *outp)
 {
-  int fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
+  int trivfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
+  int trivfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
+  int trivfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  int trivfs_notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  int trivfs_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return (io_server (inp, outp)
-	  || fs_server (inp, outp)
-	  || notify_server (inp, outp)
-	  || fsys_server (inp, outp)
-	  || interrupt_server (inp, outp));
+  return (trivfs_io_server (inp, outp)
+	  || trivfs_fs_server (inp, outp)
+	  || trivfs_notify_server (inp, outp)
+	  || trivfs_fsys_server (inp, outp)
+	  || trivfs_interrupt_server (inp, outp));
 }
 
   
