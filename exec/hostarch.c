@@ -1,0 +1,131 @@
+/* Determine the BFD (or a.out) architecture and machine flavor
+   from a Mach host port.  Used by the exec and core servers.
+   Copyright (C) 1992 Free Software Foundation, Inc.
+   Written by Roland McGrath.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#include <mach.h>
+#include <errno.h>
+
+#ifdef	BFD
+#include <bfd.h>
+#else
+#include <a.out.h>
+#endif
+
+error_t
+#ifdef	BFD
+bfd_mach_host_arch_mach (host_t host,
+			 bfd_architecture *arch,
+			 bfd_machine *machine)
+#else
+aout_mach_host_machine (host_t, int *host_machine)
+#endif
+{
+  error_t err;
+  struct host_basic_info hostinfo;
+
+  if (err = host_info (host, HOST_BASIC_INFO,
+		       &hostinfo, sizeof (hostinfo)))
+    return err;
+
+#ifdef	BFD
+  *machine = hostinfo.cpu_subtype;
+#endif
+  switch (hostinfo.cpu_type)
+    {
+    case CPU_TYPE_MC68020:
+#ifdef	BFD
+      *arch = bfd_arch_m68k;
+      *machine = 68020;
+#else
+    case CPU_TYPE_MC68030:
+    case CPU_TYPE_MC68040:
+      *host_machine = M_68020;
+#endif
+      break;
+#ifdef	BFD
+    case CPU_TYPE_MC68030:
+      *arch = bfd_arch_m68k;
+      *machine = 68030;
+      break;
+    case CPU_TYPE_MC68040:
+      *arch = bfd_arch_m68k;
+      *machine = 68040;
+      break;
+
+    case CPU_TYPE_NS32032:
+      *arch = bfd_arch_ns32k;
+      *machine = 32032;
+      break;
+    case CPU_TYPE_NS32332:
+      *arch = bfd_arch_ns32k;
+      *machine = 32332;
+      break;
+    case CPU_TYPE_NS32532:
+      *arch = bfd_arch_ns32k;
+      *machine = 32532;
+      break;
+
+    case CPU_TYPE_ROMP:
+      *arch = bfd_arch_romp;
+      break;
+
+    case CPU_TYPE_I860:
+      *arch = bfd_arch_i860;
+      break;
+
+    case CPU_TYPE_MIPS:
+      *arch = bfd_arch_mips;
+      break;
+
+    case CPU_TYPE_VAX:
+      *arch = bfd_arch_vax;
+      break;
+
+    case CPU_TYPE_MC88000:
+      *arch = bfd_arch_m88k;
+      break;
+#endif
+
+    case CPU_TYPE_SPARC:
+#ifdef	BFD
+      *arch = bfd_arch_sparc;
+#else
+      *host_machine = M_SPARC;
+#endif
+      break;
+
+    case CPU_TYPE_I386:
+#ifdef	BFD
+      *arch = bfd_arch_i386;
+#else
+      *host_machine = M_I386;
+#endif
+      break;
+
+    default:
+#ifdef	BFD
+      return ENOEXEC;
+#else
+      *host_machine = 0;
+#endif
+    }
+
+  return 0;
+}
