@@ -85,12 +85,10 @@ _pager_lock_object (struct pager *p,
 
       if (should_flush)
 	{
-	  mutex_lock (&p->interlock);
 	  _pager_pagemap_resize (p, offset + size);
 	  pm_entries = &p->pagemap[offset / __vm_page_size];
 	  for (i = 0; i < size / vm_page_size; i++)
 	    pm_entries[i] &= ~PM_INCORE;
-	  mutex_unlock (&p->interlock);
 	}
     }
 
