@@ -1,6 +1,6 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -68,6 +68,13 @@
 
 /* How long to wait after starting window specs before starting getty */
 #define WINDOW_DELAY 3		/* seconds */
+
+
+/* Multiboot command line used to start the kernel,
+   a single string of space-separated words.
+   XXX should have an option passed from kernel/serverboot to set this
+   */
+char *kernel_command_line = "(kernel)";
 
 const char *argp_program_version = STANDARD_HURD_VERSION (init);
 
@@ -79,6 +86,8 @@ options[] =
   {"init-name",   'n', 0, 0 },
   {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
   {"query",       'q', 0, 0, "Ask for the names of servers to start"},
+  {"kernel-command-line",
+   		  'K', "COMMAND-LINE", 0, "Multiboot command line string"},
   {0,             'x', 0, OPTION_HIDDEN},
   {0}
 };
@@ -331,6 +340,8 @@ reboot_system (int flags)
 void
 crash_system (void)
 {
+  printf("spinning...\n");
+  while (1);
   reboot_system (CRASH_FLAGS);
 }
 
@@ -769,6 +780,12 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'f': fakeboot = 1; break;
     case 'x': /* NOP */ break;
     default: return ARGP_ERR_UNKNOWN;
+
+    case 'K':
+      kernel_command_line = arg;
+      /* XXX When this is really in use,
+	 this should do some magical parsing for options.  */
+      break;
     }
   return 0;
 }
@@ -1134,6 +1151,132 @@ open_console ()
   return term;
 }
 
+
+/* Frobnicate the kernel task and the proc server's idea of it (PID 2),
+   so the kernel command line can be read as for a normal Hurd process.  */
+
+void
+frob_kernel_process (void)
+{
+  error_t err;
+  int argc, i;
+  char *argz, *entry;
+  size_t argzlen;
+  size_t windowsz;
+  vm_address_t mine, his;
+  task_t task;
+  process_t proc, kbs;
+
+  err = proc_pid2task (procserver, 2, &task);
+  if (err)
+    {
+      error (0, err, "cannot get kernel task port");
+      return;
+    }
+  err = proc_task2proc (procserver, task, &proc);
+  if (err)
+    {
+      error (0, err, "cannot get kernel task's proc server port");
+      mach_port_deallocate (mach_task_self (), task);
+      return;
+    }
+
+  err = task_get_bootstrap_port (task, &kbs);
+  assert_perror (err);
+  if (kbs == MACH_PORT_NULL)
+    {
+      /* The kernel task has no bootstrap port set, so we are presumably
+	 the first Hurd to boot.  Install the kernel task's proc port from
+	 this Hurd's proc server as the task bootstrap port.  Additional
+	 Hurds will see this.  */
+
+      err = task_set_bootstrap_port (task, proc);
+      if (err)
+	error (0, err, "cannot set kernel task's bootstrap port");
+
+      if (fakeboot)
+	error (0, 0, "warning: --fake-boot specified but I see no other Hurd");
+    }
+  else
+    {
+      /* The kernel task has a bootstrap port set.  Perhaps it is its proc
+	 server port from another Hurd.  If so, propagate the kernel
+	 argument locations from that Hurd rather than diddling with the
+	 kernel task ourselves.  */
+
+      vm_address_t kargv, kenvp;
+      err = proc_get_arg_locations (kbs, &kargv, &kenvp);
+      mach_port_deallocate (mach_task_self (), kbs);
+      if (err)
+	error (0, err, "kernel task bootstrap port (ignoring)");
+      else
+	{
+	  err = proc_set_arg_locations (proc, kargv, kenvp);
+	  if (err)
+	    error (0, err, "cannot propagate original kernel command line");
+	  else
+	    {
+	      mach_port_deallocate (mach_task_self (), proc);
+	      mach_port_deallocate (mach_task_self (), task);
+	      if (! fakeboot)
+		error (0, 0, "warning: "
+		       "I see another Hurd, but --fake-boot was not given");
+	      return;
+	    }
+	}
+    }
+
+
+  /* The variable `kernel_command_line' contains the multiboot command line
+     used to boot the kernel, a single string of space-separated words.
+
+     We will slice that up into words, and then write into the kernel task
+     a page containing a canonical argv array and argz of those words.  */
+
+  err = argz_create_sep (kernel_command_line, ' ', &argz, &argzlen);
+  assert_perror (err);
+  argc = argz_count (argz, argzlen);
+
+  windowsz = round_page (((argc + 1) * sizeof (char *)) + argzlen);
+
+  err = vm_allocate (mach_task_self (), &mine, windowsz, 1);
+  assert_perror (err);
+  err = vm_allocate (mach_task_self (), &his, windowsz, 1);
+  if (err)
+    {
+      error (0, err, "cannot allocate %Zu bytes in kernel task", windowsz);
+      free (argz);
+      mach_port_deallocate (mach_task_self (), proc);
+      mach_port_deallocate (mach_task_self (), task);
+      return;
+    }
+
+  for (i = 0, entry = argz; entry != NULL;
+       ++i, entry = argz_next (argz, argzlen, entry))
+    ((char **) mine)[i] = ((char *) &((char **) his)[argc + 1]
+			   + (entry - argz));
+  ((char **) mine)[argc] = NULL;
+  memcpy (&((char **) mine)[argc + 1], argz, argzlen);
+
+  free (argz);
+
+  /* We have the data all set up in our copy, now just write it over.  */
+  err = vm_write (task, his, mine, windowsz);
+  mach_port_deallocate (mach_task_self (), task);
+  vm_deallocate (mach_task_self (), mine, windowsz);
+  if (err)
+    {
+      error (0, err, "cannot write command line into kernel task");
+      return;
+    }
+
+  /* The argument vector is set up in the kernel task at address HIS.
+     Finally, we can inform the proc server where to find it.  */
+  err = proc_set_arg_locations (proc, his, his + (argc * sizeof (char *)));
+  mach_port_deallocate (mach_task_self (), proc);
+  if (err)
+    error (0, err, "proc_set_arg_locations for kernel task");
+}
 
 /** Single and multi user transitions **/
 
@@ -1534,6 +1677,7 @@ S_startup_essential_task (mach_port_t server,
 	  startup_essential_task_reply (reply, replytype, 0);
 
 	  init_stdarrays ();
+	  frob_kernel_process ();
 
 	  if (bootstrap_args & RB_SINGLE)
 	    launch_single_user ();
