@@ -132,10 +132,10 @@ diskfs_set_hypermetadata (int wait, int clean)
   if (!err)
     {  
       bcopy (csum, (void *) buf, sblock->fs_cssize);
-      (wait ? dev_write_sync : dev_write) (fsbtodb (sblock, sblock->fs_csaddr),
-					   buf, bufsize);
+      dev_write_sync (fsbtodb (sblock, sblock->fs_csaddr), buf, bufsize);
       csum_dirty = 0;
     }
+  vm_deallocate (mach_task_self (), buf, bufsize);
   
   spin_unlock (&alloclock);
 }
