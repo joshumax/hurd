@@ -1,3 +1,8 @@
+1999-05-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* users.c (trivfs_S_file_chown): Either arg being -1 means don't
+	change that id.
+
 1999-03-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* devio.c (initial_open): Fix typos.
