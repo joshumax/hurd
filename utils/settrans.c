@@ -161,6 +161,10 @@ main(int argc, char *argv[])
 
   if (active && argz_len > 0)
     {
+      /* Error during file lookup; we use this to avoid duplicating error
+	 messages.  */
+      error_t open_err = 0;
+
       /* The callback to start_translator opens NODE as a side effect.  */
       error_t open_node (int flags,
 			 mach_port_t *underlying,
@@ -174,7 +178,10 @@ main(int argc, char *argv[])
 
 	  node = file_name_lookup (node_name, flags | lookup_flags, 0666);
 	  if (node == MACH_PORT_NULL)
-	    return errno;
+	    {
+	      open_err = errno;
+	      return open_err;
+	    }
 
 	  *underlying = node;
 	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
@@ -184,7 +191,9 @@ main(int argc, char *argv[])
       err = fshelp_start_translator (open_node, argz, argz, argz_len, timeout,
 				     &active_control);
       if (err)
-	error(4, err, "%s", argz);
+	/* If ERR is due to a problem opening the translated node, we print
+	   that name, otherwise, the name of the translator.  */
+	error(4, err, "%s", (err == open_err) ? node_name : argz);
     }
   else
     {
