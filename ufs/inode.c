@@ -487,19 +487,19 @@ diskfs_write_disknode (struct node *np, int wait)
 /* Implement the diskfs_set_statfs callback from the diskfs library;
    see <hurd/diskfs.h> for the interface description.  */
 error_t
-diskfs_set_statfs (struct fsys_statfsbuf *st)
+diskfs_set_statfs (struct statfs *st)
 {
-  st->fsys_stb_type = FSTYPE_UFS;
-  st->fsys_stb_iosize = sblock->fs_bsize;
-  st->fsys_stb_bsize = sblock->fs_fsize;
-  st->fsys_stb_blocks = sblock->fs_dsize;
-  st->fsys_stb_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
-		       + sblock->fs_cstotal.cs_nffree);
-  st->fsys_stb_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)
-			- (sblock->fs_dsize - st->fsys_stb_bfree));
-  st->fsys_stb_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
-  st->fsys_stb_ffree = sblock->fs_cstotal.cs_nifree;
-  st->fsys_stb_fsid = getpid ();
+  st->f_type = FSTYPE_UFS;
+  st->f_bsize = sblock->fs_bsize;
+  st->f_blocks = sblock->fs_dsize * sblock->fs_frag;
+  st->f_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
+		 + sblock->fs_cstotal.cs_nffree);
+  st->f_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)
+		  - (sblock->fs_dsize - st->fsys_stb_bfree));
+  st->f_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
+  st->f_ffree = sblock->fs_cstotal.cs_nifree;
+  st->f_fsid = getpid ();
+  st->f_namelen = 0;
   return 0;
 }
 
