@@ -147,6 +147,8 @@ install libs: add-to-librecord
 add-to-librecord: $(targets)
 install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(libdir) $(includedir)
 
+install-hdrs:$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) $(includedir)
+
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
 # it never needs to be repeated for a particular header.
@@ -174,6 +176,7 @@ endif
 
 # Provide default.
 install:
+install-hdrs:
 
 # Making installation directories
 $(installationdirlist): %:
