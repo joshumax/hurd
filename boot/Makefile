@@ -18,9 +18,9 @@
 dir := boot
 makemode := utility
 
-SRCS = boot.c tcattr.c sigvec.S syscall.S
-OBJS = boot.o notifyServer.o execServer.o ourdeviceServer.o ioServer.o \
-       io_replyUser.o device_replyUser.o sigvec.o syscall.o \
+SRCS = mach-crt0.c boot.c tcattr.c sigvec.S syscall.S
+OBJS = mach-crt0.o boot.o notifyServer.o execServer.o ourdeviceServer.o \
+       ioServer.o io_replyUser.o device_replyUser.o sigvec.o syscall.o \
        termServer.o tcattr.o bootstrapServer.o
 HURDLIBS = libthreads
 target = boot
@@ -29,7 +29,7 @@ DISTFILES=frank1.ld frankemul.ld
 
 include ../Makeconf
 
-LDFLAGS += -Wl,-T -Wl,frank1.ld
+LDFLAGS += -nostartfiles -Wl,-T -Wl,frank1.ld
 
 #install: /usr/local/bin/boot
 #
