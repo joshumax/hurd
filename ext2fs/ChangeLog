@@ -1,3 +1,7 @@
+2000-10-01  Roland McGrath  <roland@frob.com>
+
+	* inode.c (write_node): Use memcpy instead of a loop.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
@@ -11,7 +15,7 @@
 	pager_flush_some.
 
 2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
-	
+
 	* truncate.c (trunc_indirect): Before freeing an indirect block,
 	remove it from the disk pager's kernel cache.
 
