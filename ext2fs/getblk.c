@@ -86,13 +86,17 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
       ext2_debug ("preallocation miss (%lu/%lu)",
 		  alloc_hits, ++alloc_attempts);
       ext2_discard_prealloc (node);
-      if (S_ISREG (node->dn_stat.st_mode))
-	result =
-	  ext2_new_block (goal,
-			  &node->dn->info.i_prealloc_count,
-			  &node->dn->info.i_prealloc_block);
-      else
-	result = ext2_new_block (goal, 0, 0);
+      result = ext2_new_block
+	(goal,
+	 S_ISREG (node->dn_stat.st_mode)
+	 ? (sblock->s_prealloc_blocks ?: EXT2_DEFAULT_PREALLOC_BLOCKS)
+	 : (S_ISDIR (node->dn_stat.st_mode)
+	    && EXT2_HAS_COMPAT_FEATURE(sblock,
+				       EXT2_FEATURE_COMPAT_DIR_PREALLOC))
+	 ? sblock->s_prealloc_dir_blocks
+	 : 0,
+	 &node->dn->info.i_prealloc_count,
+	 &node->dn->info.i_prealloc_block);
     }
 #else
   result = ext2_new_block (goal, 0, 0);
