@@ -1,3 +1,17 @@
+hurd (20000703) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * exec/hashexec.c (check_hashbang: Fix off by one error in line 178.
+  Patch by Kalle Olavi Niemital.
+  
+ -- Marcus Brinkmann <bug-hurd@gnu.org>  Mon,  3 Jul 2000 00:44:47 +0200
+
+hurd (20000130) unstable; urgency=low
+
+  * New snapshot from CVS. Closes: Bug#54282, Bug#40302, Bug#56076.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 30 Jan 2000 14:55:39 +0100
+
 hurd (19991209) unstable; urgency=low
 
   * New snapshot from CVS.

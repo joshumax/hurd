@@ -39,6 +39,7 @@ STAMPS_TO_CLEAN	= stamp-build stamp-config
 
 install_file	= install -o root -g root -m 644
 install_program	= install -s -o root -g root -m 755
+install_script  = install -o root -g root -m 755
 make_directory	= install -d -o root -g root -m 755
 
 define checkdir
@@ -172,10 +173,14 @@ binary-arch: build
 
 	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
 	$(install_file)		debian/shlibs debian/tmp/DEBIAN/shlibs
-	$(install_program)	debian/postinst debian/tmp/DEBIAN/postinst
-	$(install_program)	debian/prerm debian/tmp/DEBIAN/prerm
+	$(install_script)	debian/postinst debian/tmp/DEBIAN/postinst
+	$(install_script)	debian/prerm debian/tmp/DEBIAN/prerm
 
-	dpkg-shlibdeps          -p$(package) debian/tmp/bin/* debian/tmp/libexec/* debian/tmp/hurd/* debian/tmp/sbin/*
+	# Filter out scripts.
+	dpkg-shlibdeps		-p$(package) `for f in debian/tmp/bin/* \
+				debian/tmp/libexec/* debian/tmp/hurd/* \
+				debian/tmp/sbin/* ; do head -n1 $$f \
+				| sed -n -e '/^#!/!a\'$$'\n'$$f ; done`
 	dpkg-gencontrol         -p$(package) -Pdebian/tmp
 	chown -R root.root      debian/tmp
 	dpkg --build            debian/tmp ..
