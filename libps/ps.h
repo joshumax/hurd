@@ -400,7 +400,7 @@ struct proc_stat
 /* This is a constant string holding a single character for each possible bit
    in a proc_stats STATE field, in order from bit zero.  These are intended
    for printing a user-readable summary of a process's state. */
-char *proc_stat_state_tags;
+extern char *proc_stat_state_tags;
 
 /* Process info accessor functions.
 
