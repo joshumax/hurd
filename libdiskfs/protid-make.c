@@ -15,16 +15,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "protid.h"
+#include "priv.h"
 
 /* Build and return a protid which has no user identification for 
    peropen PO.  The node PO->np must be locked.  */
 struct protid *
-fshelp_start_protid (struct peropen *po)
+diskfs_start_protid (struct peropen *po)
 {
   struct protid *cred;
 
-  cred = ports_allocate_port (sizeof (struct protid), fshelp_protid_port_type);
+  cred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
   po->refcnt++;
   cred->po = po;
   cred->shared_object = MACH_PORT_NULL;
@@ -35,7 +35,7 @@ fshelp_start_protid (struct peropen *po)
 /* Finish building protid CRED started with diskfs_start_protid;
    the uid set is UID (length NUIDS); the gid set is GID (length NGIDS). */
 void
-fshelp_finish_protid (struct protid *cred, uid_t *uids, int nuids,
+diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
 		      gid_t *gids, int ngids)
 {
   if (!uids)
@@ -63,7 +63,7 @@ fshelp_finish_protid (struct protid *cred, uid_t *uids, int nuids,
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
    PO->np must be locked. */
 struct protid *
-fshelp_make_protid (struct peropen *po, uid_t *uids, int nuids,
+diskfs_make_protid (struct peropen *po, uid_t *uids, int nuids,
 		    uid_t *gids, int ngids)
 {
   struct protid *cred = diskfs_start_protid (po);
