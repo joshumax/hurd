@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include "mapped-time.h"
 #include <assert.h>
+#include <mach.h>
 
 extern unsigned long intr_count;
 #define jiffies (fetch_jiffies ())
@@ -23,6 +24,7 @@ struct task_struct
   int blocked;
   int state;
   int isroot;
+  thread_t thread;
 };
 
 /* FLAGS in task_struct's. */
@@ -31,15 +33,14 @@ struct task_struct
 #define TASK_INTERRUPTIBLE 1
 #define TASK_RUNNING 2
 
-extern inline int suser ()
+extern inline int
+suser ()
 {
   return current->isroot;
 };
 
 void wake_up_interruptible (struct wait_queue **);
 void interruptible_sleep_on (struct wait_queue **);
-void add_wait_queue (struct wait_queue **, struct wait_queue *);
-void remove_wait_queue (struct wait_queue **, struct wait_queue *);
 
 void select_wait (struct wait_queue **, select_table *);
 
