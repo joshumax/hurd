@@ -1,3 +1,24 @@
+2002-06-25  Roland McGrath  <roland@frob.com>
+
+	* term.h (struct bottomhalf): New member `fini'.
+	* hurdio.c (hurdio_fini): New function.
+	(hurdio_bottom): Use it.
+	* devio.c (devio_fini): New function.
+	(devio_bottom): Use it.
+	* ptyio.c (ptyio_bottom): Add 0 entry for `fini'.
+
+	* main.c (trivfs_runtime_argp): New variable.
+	(options): Add --name/-N and --type/-T options.
+	(parse_opt): Collect parsed options in temporary storage and apply
+	them only at final success.  For T_HURDIO, allow absent arg.
+	For non-startup parsing call, allow any missing args.
+	(tty_type_names): New const variable.
+	(trivfs_append_args): New function.
+	(main): Open underlying node with O_RDWR.
+	* hurdio.c (wait_for_dtr): If tty_arg is null, use termctl->underlying
+	instead of opening a node by name.
+	(hurdio_desert_dtr): If tty_arg is null, don't deallocate ioport.
+
 2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
 
 	* term.h (struct bottomhalf): New member GWINSZ.
@@ -9,7 +30,7 @@
 	(TIOC_CAP_GWINSZ): New symbol.
 	* users.c (open_hook): Call GWINSZ of bottom layer after
 	establishing the carrier.
-	
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* ptyio.c (pty_io_readable): int -> size_t in argument type.
