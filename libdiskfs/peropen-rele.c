@@ -27,7 +27,7 @@ diskfs_release_peropen (struct peropen *po)
       mutex_unlock (&po->np->lock);
       return;
     }
-  diskfs_nput (np);
+  diskfs_nput (po->np);
   free (po);
 }
 
