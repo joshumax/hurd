@@ -25,7 +25,7 @@ diskfs_make_peropen (struct node *np, int flags)
   struct peropen *po = malloc (sizeof (struct peropen));
   diskfs_nref (np);
   po->filepointer = 0;
-  po->flock_status = LOCK_UN;
+  po->lock_status = LOCK_UN;
   po->refcnt = 0;
   po->openstat = flags;
   po->np = np;
