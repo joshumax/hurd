@@ -194,7 +194,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		}
 	      newmode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
-	      error = validate_mode_change (np, newmode);
+	      error = diskfs_validate_mode_change (np, newmode);
 	      if (!error)
 		{
 		  np->dn_stat.st_mode = newmode;
