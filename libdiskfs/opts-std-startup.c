@@ -60,9 +60,9 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
     case 'w':
       diskfs_readonly = 0; break;
     case 'S':
-      nosuid = 1; break;
+      _diskfs_nosuid = 1; break;
     case 'E':
-      noexec = 1; break;
+      _diskfs_noexec = 1; break;
     case 's':
       if (arg == NULL)
 	diskfs_synchronous = 1;
