@@ -32,7 +32,7 @@ IOSRCS=io-async-icky.c \
 	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
 	io-select.c io-stat.c io-stubs.c io-write.c io-version.c
 
-FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c
+FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c fsys-forward.c
 
 NOTIFYSRCS=nosenders.c notify-stubs.c
 
@@ -48,7 +48,6 @@ MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o \
 
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
-REMHDRS = ../hurd/ports.h
 MIGSFLAGS=-imacros fsmutations.h
 MIGCOMSFLAGS = -prefix trivfs_
 libname = libtrivfs
