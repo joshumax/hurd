@@ -73,6 +73,31 @@ enum val_type
   PCENT,			/* Append `%'.  */
 };
 
+/* Return the `nominal' width of a field of type TYPE, in units of SIZE_UNITS.  */
+static size_t
+val_width (val_t val, enum val_type type, size_t size_units)
+{
+  size_t vwidth (val_t val)
+    {
+      size_t w = 1;
+      if (val < 0)
+	w++, val = -val;
+      while (val > 9)
+	w++, val /= 10;
+      return w;
+    }
+  if (type == PCENT)
+    return vwidth (val) + 1;
+  else if ((type == SIZE || type == PAGESZ) && size_units == 0)
+    return val > 1000 ? 5 : vwidth (val) + 1;
+  else
+    {
+      if ((type == SIZE || type == PAGESZ) && size_units > 0)
+	val /= size_units;
+      return vwidth (val);
+    }
+}
+
 /* Print a number of type TYPE.  If SIZE_UNITS is non-zero, then values of
    type SIZE are divided by that amount and printed without a suffix.  FWIDTH
    is the width of the field to print it in, right-justified.  If SIGN is
@@ -107,6 +132,10 @@ print_val (val_t val, enum val_type type,
     }
 }
 
+/* Special values for val_t ranges.  */
+#define VAL_MAX_MEM   -1	/* up to the system memory size */
+#define VAL_MAX_SWAP  -2	/* up to the system swap size */
+
 /* How this field changes with time.  */
 enum field_change_type
 {
@@ -135,6 +164,9 @@ struct field
      If this is anything but `DIMLESS', then it can be overriden by the
      user.  */
   enum val_type type;
+
+  /* The `maximum value' this field can have -- used for field widths.  */
+  val_t max;
 
   /* True if we display this field by default (user can always override). */
   int standard :1;
@@ -200,7 +232,7 @@ vm_state_get_field (struct vm_state *state, const struct field *field)
 }
 
 static val_t
-get_cache_hit_ratio (struct vm_state *state, const struct field *field)
+get_memobj_hit_ratio (struct vm_state *state, const struct field *field)
 {
   return state->vmstats.hits * 100 / state->vmstats.lookups;
 }
@@ -274,47 +306,51 @@ get_swap_active (struct vm_state *state, const struct field *field)
 /* Returns the byte offset of the field FIELD in a vm_statistics structure. */
 #define _F(field_name)  offsetof (struct vm_statistics, field_name)
 
+#define K 1024
+#define M (1024*K)
+#define G (1024LL*M)
+
 /* vm_statistics fields we know about.  */
 static const struct field fields[] =
 {
-  {"pagesize",	   " pgsz", "System pagesize",
-   CONST,PAGESZ, 1,_F(pagesize)},
-  {"size",	   " size", "Usable physical memory",
-   CONST,SIZE, 1,0,get_size},
-  {"free",	   " free", "Unused physical memory",
-   VARY, SIZE, 1,_F(free_count)},
-  {"active",	   " actv", "Physical memory in active use",
-   VARY, SIZE, 1,_F(active_count)},
+  {"pagesize",	   "pgsz", "System pagesize",
+   CONST, PAGESZ, 16*K,		1, _F (pagesize) },
+  {"size",	   "size", "Usable physical memory",
+   CONST, SIZE,   VAL_MAX_MEM,	1, 0, get_size },
+  {"free",	   "free", "Unused physical memory",
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (free_count) },
+  {"active",	   "actv", "Physical memory in active use",
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (active_count) },
   {"inactive", 	   "inact", "Physical memory in the inactive queue",
-   VARY, SIZE, 1,_F(inactive_count)},
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (inactive_count) },
   {"wired",    	   "wired", "Unpageable physical memory",
-   VARY, SIZE, 1,_F(wire_count)},
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (wire_count) },
   {"zero filled",  "zeroed","Cumulative zero-filled pages",
-   CUMUL,SIZE, 1,_F(zero_fill_count)},
+   CUMUL, SIZE,   90*G,		1, _F (zero_fill_count) },
   {"reactivated",  "react", "Cumulative reactivated inactive pages",
-   CUMUL,SIZE, 1,_F(reactivations)},
+   CUMUL, SIZE,   900*M,	1, _F (reactivations) },
   {"pageins",	   "pgins", "Cumulative pages paged in",
-   CUMUL,SIZE, 1,_F(pageins)},
+   CUMUL, SIZE,   90*G,		1, _F (pageins) },
   {"pageouts",	   "pgouts","Cumulative pages paged out",
-   CUMUL,SIZE, 1,_F(pageouts)},
+   CUMUL, SIZE,   90*G,		1, _F (pageouts) },
   {"page faults",  "pfaults","Cumulative page faults",
-   CUMUL,COUNT,1,_F(faults)},
+   CUMUL, COUNT,  99999999,	1, _F (faults) },
   {"cow faults",   "cowpfs", "Cumulative copy-on-write page faults",
-   CUMUL,COUNT,1,_F(cow_faults)},
-  {"cache lookups","clkups", "...",
-   CUMUL,COUNT,0,_F(lookups)},
-  {"cache hits",   "chits",  "...",
-   CUMUL,COUNT,0,_F(hits)},
-  {"cache hit ratio","chrat","...",
-   VARY,PCENT,1,-1,get_cache_hit_ratio},
+   CUMUL, COUNT,  9999999,	1, _F (cow_faults) },
+  {"memobj lookups","lkups","Memory-object lookups",
+   CUMUL, COUNT,  999999,	0, _F (lookups) },
+  {"memobj hits",   "hits", "Memory-object lookups with active pagers",
+   CUMUL, COUNT,  999999,	0, _F (hits) },
+  {"memobj hit ratio","hrat","Percentage of memory-object lookups with active pagers",
+   VARY, PCENT,   99,		1, -1, get_memobj_hit_ratio },
   {"swap size",	   "swsize", "Size of the default-pager swap area",
-   CONST,SIZE, 1,0,get_swap_size},
+   CONST, SIZE,   VAL_MAX_SWAP,	1, 0 ,get_swap_size },
   {"swap active",  "swactv", "Default-pager swap area in use",
-   VARY, SIZE, 0,0,get_swap_active},
+   VARY,  SIZE,   VAL_MAX_SWAP,	0, 0 ,get_swap_active },
   {"swap free",	   "swfree", "Default-pager swap area available for swapping",
-   VARY, SIZE, 1,0,get_swap_free},
+   VARY,  SIZE,   VAL_MAX_SWAP,	1, 0 ,get_swap_free },
   {"swap pagesize","swpgsz", "Units used for swapping to the default pager",
-   CONST,PAGESZ, 0,0,get_swap_page_size},
+   CONST, PAGESZ, 16*K,		0, 0 ,get_swap_page_size },
   {0}
 };
 #undef _F
@@ -323,7 +359,7 @@ static const struct field fields[] =
 static char *name_to_option (const char *name)
 {
   char *opt = strdup (name), *p;
-  if (! opt)
+  if (opt)
     for (p = opt; *p; p++)
       if (*p == ' ')
 	*p = '-';
@@ -359,7 +395,7 @@ main (int argc, char **argv)
 	  case 'H': print_heading = 0; break;
 	  case 'b': size_units = 1; break;
 	  case 'v': size_units = -1; break;
-	  case 'k': size_units = 1024; break;
+	  case 'k': size_units = K; break;
 
 	  case ARGP_KEY_ARG:
 	    terse = 1;
@@ -420,9 +456,9 @@ main (int argc, char **argv)
 	output_fields |= (1 << (field - fields));
 
   /* Returns an appropiate SIZE_UNITS for printing FIELD.  */
-#define SIZE_UNITS(field)							\
-  (size_units >= 0								\
-   ? size_units									\
+#define SIZE_UNITS(field)						      \
+  (size_units >= 0							      \
+   ? size_units								      \
    : ((field)->type == PAGESZ ? 0 : state.vmstats.pagesize))
 
     /* Prints SEP if the variable FIRST is 0, otherwise, prints START (if
@@ -431,7 +467,13 @@ main (int argc, char **argv)
     (first ? (first = 0, (start && fputs (start, stdout))) : fputs (sep, stdout))
 #define PVAL(val, field, width, sign) \
     print_val (val, (field)->type, SIZE_UNITS (field), width, sign)
-	
+    /* Intuit the likely maximum field width of FIELD.  */
+#define FWIDTH(field)							      \
+    val_width ((field)->max == VAL_MAX_MEM ? get_size (&state, field)	      \
+	       : (field)->max == VAL_MAX_SWAP ? get_swap_size (&state, field) \
+	       : (field)->max,						      \
+	       (field)->type, SIZE_UNITS (field))
+
   /* Actually fetch the statistics.  */
   bzero (&state, sizeof (state)); /* Initialize STATE.  */
   err = vm_state_refresh (&state);
@@ -461,6 +503,9 @@ main (int argc, char **argv)
 
       do
 	{
+	  int num;
+	  size_t fwidths[num_fields];
+
 	  if (first_hdr)
 	    first_hdr = 0;
 	  else
@@ -487,13 +532,30 @@ main (int argc, char **argv)
 		puts (")");
 	    }
 
+	  /* Calculate field widths.  */
+	  for (field = fields, num = 0; field->name; field++, num++)
+	    if (output_fields & (1 << (field - fields)))
+	      {
+		fwidths[num] = FWIDTH (field);
+		if (count != 1 && size_units == 0
+		    && field->change_type == CUMUL && field->type == SIZE)
+		  /* We may be printing a `+' prefix for field changes, and
+		     since this is using the mostly constant-width SIZE
+		     notation, individual changes may be the same width as
+		     appropriated for absolute values -- so reserver another
+		     column for the `+' character.  */
+		  fwidths[num]++;
+		if (fwidths[num] < strlen (field->hdr))
+		  fwidths[num] = strlen (field->hdr);
+	      }
+
 	  if (print_heading)
 	    {
-	      for (field = fields, first = 1; field->name; field++)
+	      for (field = fields, num = 0, first = 1; field->name; field++, num++)
 		if (output_fields & (1 << (field - fields)))
 		  {
 		    PSEP (" ", 0);
-		    fputs (field->hdr, stdout);
+		    fprintf (stdout, "%*s", fwidths[num], field->hdr);
 		  }
 	      putchar ('\n');
 	    }
@@ -501,15 +563,14 @@ main (int argc, char **argv)
 	  prev_state = state;
 
 	  for (repeats = 0
-	       ; count && repeats < hdr_interval && count
+	       ; count && repeats < hdr_interval
 	       ; repeats++, count--)
 	    {
 	      /* Output the fields.  */
-	      for (field = fields, first = 1; field->name; field++)
+	      for (field = fields, num = 0, first = 1; field->name; field++, num++)
 		if (output_fields & (1 << (field - fields)))
 		  {
 		    int sign = 0;
-		    int width = strlen (field->hdr);
 		    val_t val = vm_state_get_field (&state, field);
 
 		    if (repeats && field->change_type == CUMUL)
@@ -519,7 +580,7 @@ main (int argc, char **argv)
 		      }
 
 		    PSEP (" ", 0);
-		    PVAL (val, field, width, sign);
+		    PVAL (val, field, fwidths[num], sign);
 		  }
 	      putchar ('\n');
 
@@ -539,7 +600,7 @@ main (int argc, char **argv)
   else
     /* Verbose output.  */
     {
-      int max_name_width = 0;
+      int max_width = 0;
 
       if (print_prefix < 0)
 	/* By default, only print a prefix if there are multiple fields. */
@@ -550,9 +611,9 @@ main (int argc, char **argv)
 	for (field = fields; field->name; field++)
 	  if (output_fields & (1 << (field - fields)))
 	    {
-	      int name_len = strlen (field->name);
-	      if (name_len > max_name_width)
-		max_name_width = name_len;
+	      int width = strlen (field->name) + FWIDTH (field);
+	      if (width > max_width)
+		max_width = width;
 	    }
 
       for (field = fields; field->name; field++)
@@ -562,8 +623,8 @@ main (int argc, char **argv)
 	    int fwidth = 0;
 	    if (print_prefix)
 	      {
-		printf ("%s:", field->name);
-		fwidth = max_name_width + 5 - strlen (field->name);
+		printf ("%s: ", field->name);
+		fwidth = max_width - strlen (field->name);
 	      }
 	    PVAL (val, field, fwidth, 0);
 	    putchar ('\n');
