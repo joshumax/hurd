@@ -48,6 +48,9 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@
 CFLAGS += @CFLAGS@
 LDFLAGS += @LDFLAGS@
 
+# `yes' or `no' to indicate if ld --version-script is available.
+VERSIONING = @VERSIONING@
+
 # If a separate libcrypt is available, use it.
 LIBCRYPT = @LIBCRYPT@
 
