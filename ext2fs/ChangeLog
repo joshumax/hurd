@@ -1,5 +1,11 @@
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* dir.c (file_type_ext2): #if 0 out.
+	(diskfs_direnter_hard): #if 0 out code to set file_type field in
+	directory entries.  Instead, always set it to zero.
+
+1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* bitmap.c (ffz): Subtract one from (1-origin) result of ffs to get
 	our (0-origin) result.
 
