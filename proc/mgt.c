@@ -172,9 +172,12 @@ S_proc_child (struct proc *parentp,
   parentp->p_ochild = childp;
 
   /* Process group structure. */  
-  leave_pgrp (childp);
-  childp->p_pgrp = parentp->p_pgrp;
-  join_pgrp (childp);
+  if (childp->p_pgrp != parentp->p_pgrp)
+    {
+      leave_pgrp (childp);
+      childp->p_pgrp = parentp->p_pgrp;
+      join_pgrp (childp);
+    }
 
   childp->p_parentset = 1;
   if (childp->p_msgport)
