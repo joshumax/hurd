@@ -1,3 +1,8 @@
+2001-12-29  Roland McGrath  <roland@frob.com>
+
+	* netfs.c (netfs_attempt_statfs): Implement this,
+	returning all zeros except for f_type and f_fsid.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* fs.c (ftpfs_create): Move braces around to avoid warning.
