@@ -42,15 +42,15 @@ main ()
   root = _hurd_ports[INIT_PORT_CRDIR].port;
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
-  err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666, &retry,
-		       pathbuf, &filetowrite);
-
-  if (err)
+  if (err = dir_unlink (root, "CREATED"))
+    printf ("Error on unlink: %d\n", err);
+  else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
+				&retry, pathbuf, &filetowrite))
     printf ("Error on pathtrans: %d\n", err);
   else if (err = io_write (filetowrite, string, strlen (string), -1, &written))
     printf ("Error on write: %d\n", err);
   else if (written != strlen (string))
-    printf ("Short write: %d\n");
+    printf ("Short write: %d\n", written);
   else if (err = file_syncfs (filetowrite, 1, 0))
     printf ("Error on sync: %d\n", err);
 
