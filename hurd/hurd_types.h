@@ -192,8 +192,9 @@ typedef int *procinfo_t;
 #define PI_STOPPED 0x00000001	/* Proc server thinks is stopped  */
 #define PI_EXECED  0x00000002	/* Has called proc_exec */
 #define PI_ORPHAN  0x00000008	/* Process group is orphaned */
+#define PI_NOMSG   0x00000010	/* Process has no message port */
 #define PI_SESSLD  0x00000020	/* Session leader */
-#define PI_NOREG   0x00000040	/* Hasn't been registered */
+#define PI_NOTOWNED 0x0000040	/* Process has no owner */
 #define PI_NOPARENT 0x0000080	/* Hasn't identified a parent */
 
 /* Types of ports the terminal driver can run on top of. */
