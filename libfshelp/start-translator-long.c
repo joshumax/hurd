@@ -113,9 +113,9 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
   struct fsys_startup_reply reply;
 
   /* Wait for the fsys_startup message...  */
-  err = mach_msg(&request.head, (MACH_RCV_MSG 
-				 | (timeout ? MACH_RCV_TIMEOUT : 0)),
-		 0, sizeof(request), port, timeout, MACH_PORT_NULL);
+  err = mach_msg (&request.head, (MACH_RCV_MSG | MACH_RCV_INTERRUPT
+				  | (timeout ? MACH_RCV_TIMEOUT : 0)),
+		  0, sizeof(request), port, timeout, MACH_PORT_NULL);
   if (err)
     return err;
 
