@@ -1,3 +1,21 @@
+2002-04-30  Marcus Brinkmann  <marcus@gnu.org>
+
+       * priv.h: Add OPT_NO_INHERIT_DIR_GROUP and OPT_INHERIT_DIR_GROUP.
+       (_diskfs_no_inherit_dir_group): New declaration.
+       * node-create.c (_diskfs_no_inherit_dir_group): New variable.
+       (diskfs_create_node): Implement SysV group behaviour.
+       * opts-common.c (diskfs_common_options): Add
+       --no-inherit-dir-group (--nogrpdir, --sysvgroups) and
+       --inherit-dir-group (--grpdir, --bsdgroups).
+       * opts-append-std.c (diskfs_append_std_options): Add
+       --no-inherit-dir-group if set.
+       * opts-std-startup.c (parse_startup_opt): Add toggle for
+       _diskfs_no_inherit_dir_group.
+       * opts-std-runtime.c (struct parse_hook): Add noinheritdirgroup.
+       (set_opts): Handle H->noinheritdirgroup.
+       (parse_opt): Initialize H->noinheritdirgroup.  Handle
+       OPT_NO_INHERIT_DIR_GROUP and OPT_INHERIT_DIR_GROUP.
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* init-startup.c (_diskfs_init_completed): Use error, not

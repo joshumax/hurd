@@ -32,7 +32,8 @@ std_runtime_options[] =
 
 struct parse_hook
 {
-  int readonly, sync, sync_interval, remount, nosuid, noexec, noatime;
+  int readonly, sync, sync_interval, remount, nosuid, noexec, noatime,
+    noinheritdirgroup;
 };
 
 /* Implement the options in H, and free H.  */
@@ -79,6 +80,8 @@ set_opts (struct parse_hook *h)
     _diskfs_noexec = h->noexec;
   if (h->noatime != -1)
     _diskfs_noatime = h->noatime;
+  if (h->noinheritdirgroup != -1)
+    _diskfs_no_inherit_dir_group = h->noinheritdirgroup;
 
   free (h);
 
@@ -101,6 +104,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case OPT_SUID_OK: h->nosuid = 0; break;
     case OPT_EXEC_OK: h->noexec = 0; break;
     case OPT_ATIME: h->noatime = 0; break;
+    case OPT_NO_INHERIT_DIR_GROUP: h->noinheritdirgroup = 1; break;
+    case OPT_INHERIT_DIR_GROUP: h->noinheritdirgroup = 0; break;
     case 'n': h->sync_interval = 0; h->sync = 0; break;
     case 's':
       if (arg)
@@ -124,7 +129,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  h->sync = diskfs_synchronous;
 	  h->sync_interval = -1;
 	  h->remount = 0;
-	  h->nosuid = h->noexec = h->noatime = -1;
+	  h->nosuid = h->noexec = h->noatime = h->noinheritdirgroup = -1;
 
 	  /* We know that we have one child, with which we share our hook.  */
 	  state->child_inputs[0] = h;

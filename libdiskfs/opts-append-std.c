@@ -42,6 +42,8 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
     err = argz_add (argz, argz_len, "--no-exec");
   if (!err && _diskfs_noatime)
     err = argz_add (argz, argz_len, "--no-atime");
+  if (!err && _diskfs_no_inherit_dir_group)
+    err = argz_add (argz, argz_len, "--no-inherit-dir-group");
 
   if (! err)
     {

@@ -82,6 +82,8 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       TOGGLE (_diskfs_nosuid, 'S', OPT_SUID_OK);
       TOGGLE (_diskfs_noexec, 'E', OPT_EXEC_OK);
       TOGGLE (_diskfs_noatime, 'A', OPT_ATIME);
+      TOGGLE (_diskfs_no_inherit_dir_group, OPT_INHERIT_DIR_GROUP,
+	      OPT_NO_INHERIT_DIR_GROUP);
 #undef	TOGGLE
 
     case 's':

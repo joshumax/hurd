@@ -17,6 +17,11 @@
 
 #include "priv.h"
 
+/* This enables SysV style group behaviour.  New nodes inherit the GID
+   of the user creating them unless the SGID bit is set of the parent
+   directory.  */
+int _diskfs_no_inherit_dir_group;
+
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
    CRED identifies the user responsible for the call.  If NAME is nonzero,
@@ -70,9 +75,40 @@ diskfs_create_node (struct node *dir,
   if (np->author_tracks_uid)
     np->dn_stat.st_author = newuid;
 
-  newgid = dir->dn_stat.st_gid;
-  if (!idvec_contains (cred->user->gids, newgid))
-    mode &= ~S_ISGID;
+  if (!_diskfs_no_inherit_dir_group)
+    {
+      newgid = dir->dn_stat.st_gid;
+      if (!idvec_contains (cred->user->gids, newgid))
+       mode &= ~S_ISGID;
+    }
+  else
+    {
+      if (dir->dn_stat.st_mode & S_ISGID)
+       {
+         /* If the parent dir has the sgid bit set, inherit its gid.
+            If the new node is a directory, also inherit the sgid bit
+            set.  */
+         newgid = dir->dn_stat.st_gid;
+         if (S_ISDIR (mode))
+           mode |= S_ISGID;
+         else
+           {
+             if (!idvec_contains (cred->user->gids, newgid))
+               mode &= ~S_ISGID;
+           }
+       }
+      else
+       {
+         if (cred->user->gids->num)
+           newgid = cred->user->gids->ids[0];
+         else
+           {
+             newgid = dir->dn_stat.st_gid;
+             mode &= ~S_ISGID;
+           }
+       }
+    }
+
   err = diskfs_validate_group_change (np, newgid);
   if (err)
     goto change_err;

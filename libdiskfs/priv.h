@@ -35,6 +35,11 @@ extern int _diskfs_nosuid, _diskfs_noexec;
 /* This relaxes the requirement to set `st_atime'.  */
 extern int _diskfs_noatime;
 
+/* This enables SysV style group behaviour.  New nodes inherit the GID
+   of the user creating them unless the SGID bit is set of the parent
+   directory.  */
+extern int _diskfs_no_inherit_dir_group;
+
 /* This is the -C argument value.  */
 extern char *_diskfs_chroot_directory;
 
@@ -51,6 +56,8 @@ extern const struct argp_option diskfs_common_options[];
 #define OPT_SUID_OK	600	/* --suid-ok */
 #define OPT_EXEC_OK	601	/* --exec-ok */
 #define OPT_ATIME	602	/* --atime */
+#define OPT_NO_INHERIT_DIR_GROUP	603	/* --no-inherit-dir-group */
+#define OPT_INHERIT_DIR_GROUP		604	/* --inherit-dir-group */
 
 /* Common value for diskfs_common_options and diskfs_default_sync_interval. */
 #define DEFAULT_SYNC_INTERVAL 5
