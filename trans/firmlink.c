@@ -50,6 +50,7 @@ static const char doc[] = "A translator for firmlinks"
 /* Link parameters.  */
 static char *target = 0;	/* What we translate too.  */
 
+/* Parse a single option/argument.  */
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
@@ -89,6 +90,8 @@ main (int argc, char **argv)
   exit (0);
 }
 
+/* Return in LINK the node that TARGET_NAME resolves to, with its parent
+   replaced by PARENT.  FLAGS are the flags to open TARGET_NAME with.  */
 static error_t
 firmlink (mach_port_t parent, const char *target_name, int flags,
 	  mach_port_t *link)
@@ -124,6 +127,8 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ;
 
+/* Return the root node of our file system:  A firmlink to TARGET, unless
+   TARGET doesn't exist, in which case we return a symlink-like node.  */
 static error_t
 getroot (struct trivfs_control *cntl,
 	 mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
@@ -163,6 +168,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_mode |= S_IFLNK;
 }
 
+/* Shutdown the filesystem.  */
 error_t
 trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
