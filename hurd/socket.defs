@@ -147,7 +147,7 @@ routine socket_recv_inband (
 routine socket_recv_outofband (
 	sock: socket_t;
 	out addr: addr_port_t;
-	inout flags: int;
+	flags: int;
 	out data: outofband_data_t;
 	out ports: fd_array_t;
 	out control: inband_data_t;
