@@ -77,9 +77,9 @@ struct crasher
 struct port_class *crasher_portclass;
 
 /* If the process referred to by proc port USERPROC is not orphaned,
-   then send SIGSTOP to all the other members of its pgrp. */
+   then send SIGTSTP to all the other members of its pgrp.  */
 void
-stop_pgrp (process_t userproc)
+stop_pgrp (process_t userproc, mach_port_t cttyid)
 {
   pid_t pid, pgrp;
   int orphaned;
@@ -92,15 +92,21 @@ stop_pgrp (process_t userproc)
   if (err)
     return;
 
-  /* Use userproc so that if it's just died we get an error and don't
-     do anything. */
+  /* Use USERPROC so that if it's just died we get an error and don't do
+     anything. */
   err = proc_getpgrppids (userproc, pgrp, &pids, &numpids);
   if (err)
     return;
-  
+
   for (i = 0; i < numpids; i++)
     if (pids[i] != pid)
-      kill (pids[i], SIGSTOP);
+      {
+	mach_port_t msgport;
+	if (proc_getmsgport (userproc, pids[i], &msgport))
+	  continue;
+	msg_sig_post (msgport, SIGTSTP, 0, cttyid);
+	mach_port_deallocate (mach_task_self (), msgport);
+      }
   if (pids != pids_)
     vm_deallocate (mach_task_self (), (vm_address_t) pids, numpids);
 }
@@ -109,7 +115,7 @@ stop_pgrp (process_t userproc)
 kern_return_t
 S_crash_dump_task (mach_port_t port,
 		   mach_port_t reply_port, mach_msg_type_name_t reply_type,
-		   task_t task, file_t core_file, 
+		   task_t task, file_t core_file,
 		   int signo, int sigcode, int sigerror,
 		   natural_t exc, natural_t code, natural_t subcode,
 		   mach_port_t ctty_id)
@@ -139,7 +145,7 @@ S_crash_dump_task (mach_port_t port,
 	    {
 	      mach_port_t msgport;
 
-	      stop_pgrp (user_proc);
+	      stop_pgrp (user_proc, ctty_id);
 
 	      /* Install our port as the crasher's msgport.
 		 We will wait for signals to resume (crash) it.  */
@@ -286,7 +292,7 @@ S_msg_sig_post_untraced (mach_port_t port,
 }
 
 error_t
-dump_core (task_t task, file_t core_file, 
+dump_core (task_t task, file_t core_file,
 	   int signo, long int sigcode, int sigerror)
 {
   return ENOSYS;		/* XXX */
@@ -609,7 +615,7 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 		   string_t desc, int *rpc)
 { return EBUSY; }
 error_t
-S_msg_describe_ports (mach_port_t msgport, mach_port_t refport, 
+S_msg_describe_ports (mach_port_t msgport, mach_port_t refport,
 		      mach_port_t *ports, mach_msg_type_number_t nports,
 		      char **desc, mach_msg_type_number_t *desclen)
 { return EBUSY; }
