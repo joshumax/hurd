@@ -1,5 +1,5 @@
 /* Authentication server.
-   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99,2002 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -269,6 +269,8 @@ struct pending
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_user_authenticate (struct authhandle *userauth,
+			  mach_port_t reply,
+			  mach_msg_type_name_t reply_type,
 			  mach_port_t rendezvous,
 			  mach_port_t *newport,
 			  mach_msg_type_name_t *newporttype)
