@@ -2151,7 +2151,13 @@ S_term_get_nodename (io_t arg,
   if (!cred)
     return EOPNOTSUPP;
 
-  strcpy (name, (char *)cred->po->cntl->hook ?: "");
+  if (!cred->po->cntl->hook)
+    {
+      ports_port_deref (cred);
+      return ENOENT;
+    }
+
+  strcpy (name, (char *)cred->po->cntl->hook);
 
   ports_port_deref (cred);
   return 0;
@@ -2184,6 +2190,34 @@ S_term_set_filenode (io_t arg,
   ports_port_deref (cred);
 
   return EINVAL;
+}
+
+kern_return_t
+S_term_get_peername (io_t arg,
+		     char *name)
+{
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, 0);
+  struct trivfs_control *peer;
+  
+  if (!cred || (cred->pi.class != tty_class && cred->pi.class != pty_class))
+    {
+      if (cred)
+	ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+  
+  peer = (cred->pi.class == tty_class) ? ptyctl : termctl;
+
+  if (bottom != ptyio_bottom || !peer->hook)
+    {
+      port_port_deref (cred);
+      return ENOENT;
+    }
+  
+  strcpy (name, (char *) peer->hook);
+  ports_port_deref (cred);
+
+  return 0;
 }
 
 kern_return_t

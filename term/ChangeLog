@@ -1,3 +1,10 @@
+Mon Mar 15 14:58:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* users.c (S_term_get_peername): Implement new RPC.
+	
+	* users.c (S_term_get_nodename): Return ENOENT if the name is not
+	set. 
+
 1999-03-13  Mark Kettenis  <kettenis@gnu.org>
 
 	* users.c (po_destroy_hook): Only reset state and hardware if
