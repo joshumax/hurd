@@ -28,12 +28,9 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
 			    int rendint)
 {
   struct trivfs_protid *newcred;
-  uid_t *gen_uids = alloca (sizeof (uid_t) * 20);
-  uid_t *gen_gids = alloca (sizeof (uid_t) * 20);
-  uid_t *aux_uids = alloca (sizeof (uid_t) * 20);
-  uid_t *aux_gids = alloca (sizeof (uid_t) * 20);
+  uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
+  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
-  uid_t *gubuf, *ggbuf, *aubuf, *agbuf;
   error_t err;
   int i;
   auth_t auth;
@@ -42,11 +39,12 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
-  gubuf = gen_uids; ggbuf = gen_gids;
-  aubuf = aux_uids; agbuf = aux_gids;
+  gen_uids = gubuf;
+  gen_gids = ggbuf;
+  aux_uids = aubuf;
+  aux_gids = agbuf;
 
-  newcred = ports_allocate_port (sizeof (struct trivfs_protid), 
-				 trivfs_protid_porttype);
+  newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
   auth = getauth ();
   err = auth_server_authenticate (auth, 
 				  ports_get_right (cred),
@@ -65,12 +63,24 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   for (i = 0; i < genuidlen; i++)
     if (gen_uids[i] == 0)
       newcred->isroot = 1;
-  newcred->cntl = cred->cntl;
-  ports_port_ref (newcred->cntl);
-  err = io_restrict_auth (newcred->cntl->underlying, &newcred->realnode,
+
+  newcred->uids = malloc (genuidlen * sizeof (uid_t));
+  newcred->gids = malloc (gengidlen * sizeof (uid_t));
+  bcopy (gen_uids, newcred->uids, genuidlen * sizeof (uid_t));
+  bcopy (gen_gids, newcred->gids, gengidlen * sizeof (uid_t));
+  newcred->nuids = genuidlen;
+  newcred->ngids = gengidlen;
+  
+  newcred->po = cred->po;
+  newcred->po->refcnt++;
+  
+  err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
 			  gen_uids, genuidlen, gen_gids, gengidlen);
   if (err)
     newcred->realnode = MACH_PORT_NULL;
+
+  if (trivfs_protid_create_hook)
+    (*trivfs_protid_create_hook) (newcred);
 
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
