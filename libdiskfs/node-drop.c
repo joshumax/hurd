@@ -64,7 +64,7 @@ diskfs_drop_node (struct node *np)
   else
     diskfs_node_update (np, diskfs_synchronous);
 
-  fshelp_drop_transbox (&np-transbox);
+  fshelp_drop_transbox (&np->transbox);
 
   if (np->dirmod_reqs)
     {
