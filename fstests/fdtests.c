@@ -23,21 +23,24 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
 
-void
+int
 main ()
 {
-  int fd
-  char pathbuf[1024];
+  int fd;
+  FILE *fp;
+  static const char string[] = "Did this get into the file?\n";
   int written;
   
   stderr = stdout = mach_open_devstream (getdport (1), "w");
 
   if (unlink (root, "CREATED") < 0 && errno != ENOENT)
     printf ("Error on unlink: %d\n", errno);
+
   fd = open ("CREATED", O_WRITE | O_CREAT, 0666);
   if (fd < 0)
-    printf ("Error on open: %d\n", errno);
+    printf ("Error on poen: %d\n", errno);
   written = write (fd, string, strlen (string));
   if (written < 0)
     printf ("Error on write: %d\n", errno);
@@ -46,6 +49,24 @@ main ()
   else if (sync ())
     printf ("Error on sync: %d\n", errno);
 
+
+  fp = fopen ("CREATED", "r");
+  if (! fp)
+    perror ("fopen");
+  else
+    {
+      char *line = NULL;
+      size_t len = 0;
+      ssize_t n = getline (&line, &len, fp);
+      if (n < 0)
+	perror ("getline");
+      else
+	printf ("Read %d bytes: %.*s", n, line);
+      free (line);
+    }
+  
   printf ("All done.\n");
   malloc (0);
+
+  return 0;
 }
