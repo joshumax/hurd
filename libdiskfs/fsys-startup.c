@@ -27,22 +27,18 @@ kern_return_t
 diskfs_S_fsys_startup (mach_port_t port,
 		       mach_port_t ctl,
 		       mach_port_t *real,
-		       mach_msg_type_name_t *realpoly,
-		       mach_port_t *dotdot,
-		       mach_msg_type_name_t *dotdotpoly)
+		       mach_msg_type_name_t *realpoly)
 {
   struct port_info *pi = ports_check_port_type (port, PT_TRANSBOOT);
   error_t err;
   
   if (pi)
     {
-      err = fshelp_handle_fsys_startup (pi, ctl, real, realpoly,
-					dotdot, dotdotpoly);
+      err = fshelp_handle_fsys_startup (pi, ctl, real, realpoly);
       ports_done_with_port (pi);
       return err;
     }
   else
-    return diskfs_execboot_fsys_startup (port, ctl, real, realpoly,
-					 dotdot, dotdotpoly);
+    return diskfs_execboot_fsys_startup (port, ctl, real, realpoly);
 }
 
