@@ -83,6 +83,15 @@ error_t idvec_insert_new (struct idvec *idvec, unsigned pos, uid_t id);
    idvec_add_new().  */
 error_t idvec_merge_ids (struct idvec *idvec, uid_t *ids, unsigned num);
 
+/* Remove any occurances of ID in IDVEC after position POS>  Returns true if
+   anything was done.  */
+int idvec_remove (struct idvec *idvec, unsigned pos, uid_t id);
+
+/* Insert ID at position POS in IDVEC, remoint any instances of ID previously
+   present at POS or after.  ENOMEM is returned if there's not enough memory,
+   otherwise 0.  */
+error_t idvec_insert_only (struct idvec *idvec, unsigned pos, uid_t id);
+
 /* EFF and AVAIL should be idvec's corresponding to a processes effective and
    available ids.  ID replaces the first id in EFF, and what it replaces is
    preserved by adding it to AVAIL (if not already present).  If SECURE is
