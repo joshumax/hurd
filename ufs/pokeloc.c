@@ -1,5 +1,5 @@
 /* Remember where we've written the disk to speed up sync
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -20,7 +20,7 @@
 
 #include "ufs.h"
 
-struct pokeloc 
+struct pokeloc
 {
   vm_offset_t offset;
   vm_size_t length;
@@ -36,7 +36,7 @@ record_poke (void *loc, vm_size_t length)
 {
   struct pokeloc *pl = malloc (sizeof (struct pokeloc));
   vm_offset_t offset;
-  
+
   offset = loc - disk_image;
   pl->offset = trunc_page (offset);
   pl->length = round_page (offset + length) - pl->offset;
@@ -71,11 +71,11 @@ void
 sync_disk (int wait)
 {
   struct pokeloc *pl, *tmp;
-  
+
   spin_lock (&pokelistlock);
   for (pl = pokelist; pl; pl = tmp)
     {
-      pager_sync_some (diskpager->p, pl->offset, pl->length, wait);
+      pager_sync_some (disk_pager, pl->offset, pl->length, wait);
       tmp = pl->next;
       free (pl);
     }
