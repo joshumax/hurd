@@ -71,11 +71,11 @@ trivfs_S_fsys_getfile (struct trivfs_control *cntl,
 }
 
 kern_return_t
-trivfs_S_fsys_mod_readonly (struct trivfs_control *cntl,
-			    mach_port_t reply,
-			    mach_msg_type_name_t replytype,
-			    int mod,
-			    int force)
+trivfs_S_fsys_set_options (struct trivfs_control *cntl,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype,
+			   char *data, mach_msg_type_number_t len,
+			   int do_children)
 {
   return EOPNOTSUPP;
 }

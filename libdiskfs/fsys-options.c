@@ -21,11 +21,11 @@
 #include "priv.h"
 #include "fsys_S.h"
 
-/* Implement fsys_mod_readonly as described in <hurd/fsys.defs>. */
+/* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_mod_readonly (fsys_t control,
-			    int val,
-			    int force)
+diskfs_S_fsys_set_options (fsys_t fsys,
+			   char *data, mach_msg_type_number_t len,
+			   int do_children)
 {
   return EOPNOTSUPP;
 }

@@ -1703,9 +1703,9 @@ S_fsys_syncfs (fsys_t fsys,
 }
 
 kern_return_t
-S_fsys_mod_readonly (fsys_t fsys,
-		     int readonly,
-		     int force)
+S_fsys_set_options (fsys_t fsys,
+		    char *data, mach_msg_type_number_t len,
+		    int do_children)
 {
   return EOPNOTSUPP;
 }

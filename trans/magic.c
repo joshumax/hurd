@@ -108,9 +108,9 @@ S_fsys_syncfs (mach_port_t control,
 }
 
 error_t
-S_fsys_mod_readonly (mach_port_t control,
-		     int val,
-		     int force)
+S_fsys_set_options (mach_port_t control,
+		    char *data, mach_msg_type_number_t len,
+		    int do_children)
 {
   return EOPNOTSUPP;
 }
