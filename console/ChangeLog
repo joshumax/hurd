@@ -1,3 +1,23 @@
+2002-08-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (display_create): Likewise.  Set
+	DISPLAY->attr.attr_def instead the color versions.
+	(struct attr): Remove fgcol_def, bgcol_def, and add attr_def.
+	(handle_esc_bracket_m): Set all attributes to their defaults for
+	case 0.  Set default color using default attribute for case 49 and
+	case 39.
+	(display_output_one): Likewise.
+	* console.c (options): Add --attribute option.
+	(parse_opt): Parse --attribute option.  Bail out with argp_error
+	on error.
+	(netfs_append_args): ...
+	(struct cons): Replace foreground and background with new
+	attribute member.
+	(vcons_lookup): Pass CONS->attribute to display_create instead
+	CONS->foreground and CONS->background.
+	(main): Set default colors and attributes.
+	(parse_attributes): New function.
+
 2002-08-28  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (screen_fill): Take CUR_LINES modulo LINES.

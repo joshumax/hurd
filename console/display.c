@@ -125,8 +125,7 @@ typedef struct output *output_t;
 
 struct attr
 {
-  unsigned int bgcol_def;
-  unsigned int fgcol_def;
+  conchar_attr_t attr_def;
   conchar_attr_t current;
   /* True if in alternate character set (ASCII graphic) mode.  */
   unsigned int altchar;
@@ -978,9 +977,7 @@ handle_esc_bracket_m (attr_t attr, int code)
     {
     case 0:
       /* All attributes off: <sgr0>.  */
-      memset (&attr->current, 0, sizeof (conchar_attr_t));
-      attr->current.fgcol = attr->fgcol_def;
-      attr->current.bgcol = attr->bgcol_def;
+      attr->current = attr->attr_def;
       attr->altchar = 0;
       break;
     case 1:
@@ -1041,7 +1038,7 @@ handle_esc_bracket_m (attr_t attr, int code)
       break;
     case 39:
       /* Default foreground color; ANSI?.  */
-      attr->current.fgcol = attr->fgcol_def;
+      attr->current.fgcol = attr->attr_def.fgcol;
       break;
     case 40 ... 47:
       /* Set background color: <setab>.  */
@@ -1049,7 +1046,7 @@ handle_esc_bracket_m (attr_t attr, int code)
       break;
     case 49:
       /* Default background color; ANSI?.  */
-      attr->current.bgcol = attr->bgcol_def;
+      attr->current.bgcol = attr->attr_def.bgcol;
       break;
     }
 }
@@ -1519,9 +1516,7 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	case L'M':		/* ECMA-48 <RIS>.  */
 	  /* Reset: <rs2>.  */
-	  * (uint32_t *) &display->attr.current = 0;
-	  display->attr.current.bgcol = display->attr.bgcol_def;
-	  display->attr.current.fgcol = display->attr.fgcol_def;
+	  display->attr.current = display->attr.attr_def;
 	  display->attr.altchar = 0;
 	  user->cursor.status = CONS_CURSOR_NORMAL;
 	  /* Fall through.  */
@@ -1681,7 +1676,7 @@ display_init (void)
    being ENCODING.  */
 error_t
 display_create (display_t *r_display, const char *encoding,
-		int foreground, int background)
+		conchar_attr_t def_attr)
 {
   error_t err = 0;
   display_t display;
@@ -1704,10 +1699,8 @@ display_create (display_t *r_display, const char *encoding,
   display->notify_port->display = display;
 
   mutex_init (&display->lock);
-  display->attr.bgcol_def = background;
-  display->attr.fgcol_def = foreground;
-  display->attr.current.bgcol = display->attr.bgcol_def;
-  display->attr.current.fgcol = display->attr.fgcol_def;
+  display->attr.attr_def = def_attr;
+  display->attr.current = display->attr.attr_def;
   err = user_create (display, width, height, lines, L' ',
 		     display->attr.current);
   if (err)

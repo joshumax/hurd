@@ -31,7 +31,7 @@ void display_init (void);
 /* Create a new virtual console display, with the system encoding
    being ENCODING and the default colors being FOREGROUND and BACKGROUND.  */
 error_t display_create (display_t *r_display, const char *encoding,
-			int foreground, int background);
+			conchar_attr_t attr);
 
 /* Destroy the display DISPLAY.  */
 void display_destroy (display_t display);

@@ -55,6 +55,13 @@ int netfs_maxsymlinks = 16;	/* Arbitrary.  */
 volatile struct mapped_time_value *console_maptime;
 
 #define DEFAULT_ENCODING "ISO-8859-1"
+#define DEFAULT_INTENSITY CONS_ATTR_INTENSITY_NORMAL
+#define DEFAULT_UNDERLINED 0
+#define DEFAULT_BLINKING 0
+#define DEFAULT_REVERSED 0
+#define DEFAULT_CONCEALED 0
+/* For the help output.  */
+#define DEFAULT_ATTRIBUTE_NAME "normal"
 #define DEFAULT_FOREGROUND CONS_COLOR_WHITE
 /* For the help output.  */
 #define DEFAULT_FOREGROUND_NAME "white"
@@ -109,10 +116,9 @@ struct cons
   vcons_t vcons_list;
   /* The encoding.  */
   char *encoding;
-  /* Default foreground and background colors.  */
-  int foreground;
-  int background;
-
+  /* Default attributes.  */
+  conchar_attr_t attribute;
+  
   /* Requester of directory modification notifications.  */
   struct modreq *dirmod_reqs;
   unsigned int dirmod_tick;
@@ -215,7 +221,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
 
   mutex_init (&vcons->lock);
   err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING,
-			cons->foreground, cons->background);
+			cons->attribute);
   if (err)
     {
       free (vcons->name);
@@ -1294,10 +1300,12 @@ static const char *color_names[CONS_COLOR_MAX + 1] =
 
 static const struct argp_option options[] =
 {
-  { "foreground",'f', "COLOR", 0, "Set foreground color to"
+  { "foreground", 'f', "COLOR", 0, "Set foreground color to"
     " COLOR (default `" DEFAULT_FOREGROUND_NAME "')" },
-  { "background",'b', "COLOR", 0, "Set background color to"
+  { "background", 'b', "COLOR", 0, "Set background color to"
     " COLOR (default `" DEFAULT_BACKGROUND_NAME "')" },
+  { "attribute", 'a', "ATTR[,...]", 0, "Set further default attributes"
+    " (default `" DEFAULT_ATTRIBUTE_NAME "')" },
   { "encoding",	'e', "NAME", 0, "Set encoding of virtual consoles to"
     " NAME (default `" DEFAULT_ENCODING "')" },
   {0}
@@ -1333,9 +1341,71 @@ parse_color (const char *name, int *number)
 }
 
 static error_t
+parse_attributes (const char *name, conchar_attr_t *attr)
+{
+  while (*name)
+    {
+      int value = 1;
+
+      if (!strncmp (name, "not-", 4))
+	{
+	  value = 0;
+	  name += 4;
+	}
+
+      if (!strncmp (name, "normal", 6))
+	{
+	  name += 6;
+	  if (value != 1)
+	    return EINVAL;
+	  attr->intensity = CONS_ATTR_INTENSITY_NORMAL;
+	}
+      else if (!strncmp (name, "bold", 4))
+	{
+	  name += 4;
+	  if (value != 1)
+	    return EINVAL;
+	  attr->intensity = CONS_ATTR_INTENSITY_BOLD;
+	}
+      else if (!strncmp (name, "dim", 3))
+	{
+	  name += 3;
+	  if (value != 1)
+	    return EINVAL;
+	  attr->intensity = CONS_ATTR_INTENSITY_DIM;
+	}
+      else if (!strncmp (name, "underlined", 10))
+	{
+	  name += 10;
+	  attr->underlined = value;
+	}
+      else if (!strncmp (name, "blinking", 8))
+	{
+	  name += 8;
+	  attr->blinking = value;
+	}
+      else if (!strncmp (name, "concealed", 9))
+	{
+	  name += 9;
+	  attr->concealed = value;
+	}
+      else
+	return EINVAL;
+
+      if (name[0] == ',')
+	name++;
+      else if (name[0] != '\0')
+	return EINVAL;
+    }
+  return 0;
+}
+
+static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
   cons_t cons = state->input;
+  error_t err;
+  int color = 0;
 
   switch (opt)
     {
@@ -1354,9 +1424,24 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case 'f':
-      return parse_color (arg, &cons->foreground);
+      err = parse_color (arg, &color);
+      cons->attribute.fgcol = color;
+      if (err)
+	argp_error (state, "Invalid color name: %s", arg);
+      break;
+
     case 'b':
-      return parse_color (arg, &cons->background);
+      err = parse_color (arg, &color);
+      cons->attribute.bgcol = color;
+      if (err)
+	argp_error (state, "Invalid color name: %s", arg);
+      break;
+
+    case 'a':
+      err = parse_attributes (arg, &cons->attribute);
+      if (err)
+	argp_error (state, "Invalid attribute specifier: %s", arg);
+      break;
 
     case 'e':
       /* XXX Check validity of encoding.  Can we perform all necessary
@@ -1382,6 +1467,11 @@ netfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err = 0;
   cons_t cons = netfs_root_node->nn->cons;
+  /* The longest possible is 61 characters long:
+     "normal,not-underlined,not-blinking,not-reversed,not-concealed".  */
+  char attr_str[80] = "--attribute=";
+  char *attr = &attr_str[12];
+  char *attrp = attr;
 
   if (cons->encoding && strcmp (cons->encoding, DEFAULT_ENCODING))
     {
@@ -1392,24 +1482,75 @@ netfs_append_args (char **argz, size_t *argz_len)
       else
 	err = errno;
     }
-  if (cons->foreground != DEFAULT_FOREGROUND)
+  if (!err && cons->attribute.fgcol != DEFAULT_FOREGROUND)
     {
       char *buf;
-      asprintf (&buf, "--foreground=%s", color_names[cons->foreground]);
+      asprintf (&buf, "--foreground=%s", color_names[cons->attribute.fgcol]);
       if (buf)
 	err = argz_add (argz, argz_len, buf);
       else
 	err = errno;
     }      
-  if (cons->background != DEFAULT_BACKGROUND)
+  if (!err && cons->attribute.bgcol != DEFAULT_BACKGROUND)
     {
       char *buf;
-      asprintf (&buf, "--background=%s", color_names[cons->background]);
+      asprintf (&buf, "--background=%s", color_names[cons->attribute.bgcol]);
       if (buf)
 	err = argz_add (argz, argz_len, buf);
       else
 	err = errno;
-    }      
+    }
+  if (!err && cons->attribute.intensity != DEFAULT_INTENSITY)
+    {
+      if (attrp != attr)
+	*(attrp++) = ',';
+      switch (cons->attribute.intensity)
+	{
+	case CONS_ATTR_INTENSITY_NORMAL:
+	  attrp = stpcpy (attrp, "normal");
+	  break;
+	case CONS_ATTR_INTENSITY_BOLD:
+	  attrp = stpcpy (attrp, "bold");
+	  break;
+	case CONS_ATTR_INTENSITY_DIM:
+	  attrp = stpcpy (attrp, "dim");
+	  break;
+	}
+    }
+  if (!err && cons->attribute.underlined != DEFAULT_UNDERLINED)
+    {
+      if (attrp != attr)
+	*(attrp++) = ',';
+      if (!cons->attribute.underlined)
+	attrp = stpcpy (attrp, "not-");
+      attrp = stpcpy (attrp, "underlined");
+    }
+  if (!err && cons->attribute.blinking != DEFAULT_BLINKING)
+    {
+      if (attrp != attr)
+	*(attrp++) = ',';
+      if (!cons->attribute.blinking)
+	attrp = stpcpy (attrp, "not-");
+      attrp = stpcpy (attrp, "blinking");
+    }
+  if (!err && cons->attribute.reversed != DEFAULT_REVERSED)
+    {
+      if (attrp != attr)
+	*(attrp++) = ',';
+      if (!cons->attribute.reversed)
+	attrp = stpcpy (attrp, "not-");
+      attrp = stpcpy (attrp, "reversed");
+    }
+  if (!err && cons->attribute.concealed != DEFAULT_CONCEALED)
+    {
+      if (attrp != attr)
+	*(attrp++) = ',';
+      if (!cons->attribute.concealed)
+	attrp = stpcpy (attrp, "not-");
+      attrp = stpcpy (attrp, "concealed");
+    }
+  if (!err && attrp != attr)
+    err = argz_add (argz, argz_len, attr_str);
   return err;
 }
 
@@ -1750,8 +1891,13 @@ main (int argc, char **argv)
     error (1, ENOMEM, "Cannot create console structure");
   mutex_init (&cons->lock);
   cons->encoding = NULL;
-  cons->foreground = DEFAULT_FOREGROUND;
-  cons->background = DEFAULT_BACKGROUND;
+  cons->attribute.intensity = DEFAULT_INTENSITY;
+  cons->attribute.underlined = DEFAULT_UNDERLINED;
+  cons->attribute.blinking = DEFAULT_BLINKING;
+  cons->attribute.reversed = DEFAULT_REVERSED;
+  cons->attribute.concealed = DEFAULT_CONCEALED;
+  cons->attribute.fgcol = DEFAULT_FOREGROUND;
+  cons->attribute.bgcol = DEFAULT_BACKGROUND;
   cons->vcons_list = NULL;
   cons->dirmod_reqs = NULL;
   cons->dirmod_tick = 0;
