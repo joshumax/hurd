@@ -14,26 +14,52 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   
 
-/* A string identifying this release of the GNU Hurd. */
-#define HURD_VERSION "0.0"
-
-/* The versions of all the programs that go into making up this
-   version.  These are *not* computed by including files local
-   to those programs to ensure that they are permanently linked
-   to the definition of HURD_VERNSION above. */
-
-struct 
+/* Each version of the Hurd defines a set of versions for the servers
+   that make it up.  Each server is identified by one of these
+   structures.  */
+struct hurd_server_version
 {
-  char *name;
-  char *version
-} hurd_server_versions =
-{
-  "auth", "0.0",
-  "exec", "0.0",
-  "init", "0.0",
-  "proc", "0.0",
-  "ufs", "0.0",
+  char *name;			/* The name of the server */
+  char *version;		/* The servers's version */
 };
 
-  
+/* A version of the Hurd is therefore defined by its version number
+   (which is incremented for each distribution) and its release number
+   (which refers to the interfaces in the hurd directory, and is found
+   in <hurd/hurd_types.h> as HURD_RELEASE) and by a list of hurd_vers
+   structures defining servers that were distributed with that
+   version. */
+struct hurd_version
+{
+  char *hurdrelease;
+  char *hurdversion;
+  int nservers;
+  struct hurd_vers[0];
+};
+
+/* And these are the standard lists referred to above. */
+#ifdef HURD_VERSION_DEFINE
+
+struct hurd_version hurd_versions[] = 
+{
+  {
+    /* Hurd version 0.0 pre-alpha; not frozen yet */
+    "0.0 pre-alpha",
+    "0.0 pre-alpha",
+    5,
+    {"auth", "0.0 pre-alpha"},
+    {"proc", "0.0 pre-alpha"},
+    {"ufs", "0.0 pre-alpha"},
+    {"init", "0.0 pre-alpha"},
+    {"exec", "0.0 pre-alpha"},
+  }
+};
+
+int nhurd_versions = sizeof hurd_versions / sizeof *hurd_versions;
+
+#endif
+    
+
+      
