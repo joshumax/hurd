@@ -73,22 +73,3 @@ strprefix(s1, s2)
 	}
 	return (TRUE);
 }
-
-/*
- * Return a pointer to the first occurence of 'c' in
- * string s, or 0 if none.
- */
-char *
-index(s, c)
-	char *s;
-	char  c;
-{
-	char cc;
-
-	while ((cc = *s) != c) {
-	    if (cc == 0)
-		return 0;
-	    s++;
-	}
-	return s;
-}
