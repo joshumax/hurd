@@ -578,9 +578,19 @@ int localbits;
 void
 init_termstate ()
 {
-  term_modes[3] |= ICANON;
+  struct sgttyb sgb;
+  int bits;
   ioctl (0, TIOCGETP, &term_sgb);
   ioctl (0, TIOCLGET, &localbits);
+  /* Enter raw made.  Rather than try and interpret these bits,
+     we just do what emacs does in .../emacs/src/sysdep.c for
+     an old style terminal driver. */
+  bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
+  ioctl (0, TIOCLSET, &bits);
+  sgb = term_sgb;
+  sgb.flags &= ~ECHO;
+  sgb.flags |= RAW | ANYP;
+  ioctl (0, TIOCSETN, &sgb);
 }
 
 kern_return_t 
