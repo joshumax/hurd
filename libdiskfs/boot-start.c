@@ -63,6 +63,7 @@ diskfs_start_bootstrap (char **argv)
   char *exec_argv;
   int exec_argvlen;
   struct port_info *bootinfo;
+  struct protid *rootpi;
 
   saved_argv = argv;
 
@@ -76,15 +77,18 @@ diskfs_start_bootstrap (char **argv)
   assert (diskfs_exec_ctl);
 
   /* Create the port for current and root directory.  */
-  root_pt = (ports_get_right
-	     (diskfs_make_protid
-	      (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC,
-				    MACH_PORT_NULL),
-	       0,0,0,0)));
+  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
+						    O_READ | O_EXEC,
+						    MACH_PORT_NULL),
+			       0,0,0,0);
+  root_pt = ports_get_right (rootpi);
+
   /* Get us a send right to copy around.  */
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
+  ports_port_deref (rootpi);
+  
   /* Contact the exec server.  */
   err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
 		      idlist, 3, idlist, 3, 0, 
@@ -209,7 +213,8 @@ diskfs_S_exec_startup (mach_port_t port,
   device_t con;
   struct ufsport *upt;
   char exec_argv[] = "[BOOT EXECSERVER]";
-
+  struct protid *rootpi;
+  
   if (!(upt = ports_lookup_port (diskfs_port_bucket, port, 
 				 diskfs_execboot_class)))
     return EOPNOTSUPP;
@@ -242,12 +247,12 @@ diskfs_S_exec_startup (mach_port_t port,
   *intarrayP = NULL;
   *intarraylen = 0;
 
-  rootport = (ports_get_right 
-	      (diskfs_make_protid
-	       (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC,
-				     MACH_PORT_NULL),
-		0,0,0,0)));
-
+  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
+						    O_READ | O_EXEC,
+						    MACH_PORT_NULL),
+			       0,0,0,0);
+  rootport = ports_get_right (rootpi);
+  ports_port_deref (rootpi);
   portarray[INIT_PORT_CWDIR] = rootport;
   portarray[INIT_PORT_CRDIR] = rootport;
   portarray[INIT_PORT_AUTH] = MACH_PORT_NULL;
@@ -332,7 +337,8 @@ diskfs_S_fsys_init (mach_port_t port,
   process_t execprocess;
   error_t err;
   mach_port_t root_pt;
-
+  struct protid *rootpi;
+  
   pt = ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
   if (!pt)
     return EOPNOTSUPP;
@@ -372,11 +378,13 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
-  root_pt = (ports_get_right
-	     (diskfs_make_protid
-	      (diskfs_make_peropen (diskfs_root_node, O_READ|O_WRITE|O_EXEC,
-				    MACH_PORT_NULL),
-	       0,0,0,0)));
+  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
+						    O_READ|O_WRITE|O_EXEC,
+						    MACH_PORT_NULL),
+			       0,0,0,0);
+  root_pt = ports_get_right (rootpi);
+  ports_port_deref (rootpi);
+
   /* We need two send rights, for the crdir and cwdir slots.  */
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
