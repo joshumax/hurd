@@ -1,5 +1,5 @@
 /* pager.c - Pager for fatfs.
-   Copyright (C) 1997, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999, 2002, 2003 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -36,7 +36,7 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 #define MAY_CACHE 1
 #endif
 
-#define STAT_INC(field) /* nop */0
+#define STAT_INC(field) (void) 0
 
 #define MAX_FREE_PAGE_BUFS 32
 
@@ -178,9 +178,11 @@ file_pager_read_small_page (struct node *node, vm_offset_t page,
   if (!err)
     {
       err = store_read (store,
-			(fat_first_cluster_byte(cluster) +
-			 (page % bytes_per_cluster)) >> store->log2_block_size,
+			FAT_FIRST_CLUSTER_BLOCK(cluster)
+			+ ((page % bytes_per_cluster)
+			  >> store->log2_block_size),
 			vm_page_size, (void **) buf, &read);
+
       if (read != vm_page_size)
 	err = EIO;
     }
@@ -215,7 +217,7 @@ file_pager_read_huge_page (struct node *node, vm_offset_t page,
     {
       if (num_pending_clusters > 0)
         {
-          size_t dev_block = fat_first_cluster_byte(pending_clusters) >> store->log2_block_size;
+          size_t dev_block = FAT_FIRST_CLUSTER_BLOCK(pending_clusters);
           size_t amount = num_pending_clusters << log2_bytes_per_cluster;
 	  /* The buffer we try to read into; on the first read, we pass in a
 	     size of zero, so that the read is guaranteed to allocate a new
@@ -317,7 +319,8 @@ pending_clusters_write (struct pending_clusters *pc)
   if (pc->num > 0)
     {
       error_t err;
-      size_t dev_block = fat_first_cluster_byte(pc->cluster) >> store->log2_block_size;
+      size_t dev_block = FAT_FIRST_CLUSTER_BLOCK(pc->cluster);
+
       size_t length = pc->num << log2_bytes_per_cluster, amount;
 
       if (pc->offs > 0)
@@ -477,10 +480,10 @@ file_pager_write_small_page (struct node *node, vm_offset_t offset, void *buf)
 
   if (!err)
     {
-      err = store_write (store,
-			 (fat_first_cluster_byte(cluster) +
-			  (offset % bytes_per_cluster)) >> store->log2_block_size,
-			  (void **) buf, vm_page_size, &write);
+      err = store_write (store, FAT_FIRST_CLUSTER_BLOCK(cluster)
+			+ ((offset % bytes_per_cluster)
+			   >> store->log2_block_size),
+			(void **) buf, vm_page_size, &write);
       if (write != vm_page_size)
 	err = EIO;
     }

@@ -1,5 +1,5 @@
 /* fat.c - Support for FAT filesystems.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -151,8 +151,8 @@ fat_read_sblock (void)
     error (1, 0, "Number of total sectors is zero");
 
   if (bytes_per_sector & (store->block_size - 1))
-    error (1, 0, "Block size of filesystem is not a multiple of the block size "
-	   "of the store");
+    error (1, 0, "Block size of filesystem is not
+          " a multiple of the block size of the store");
 
   if (read_word (sblock->reserved_sectors) == 0)
     error (1, 0, "Number of reserved sectors is zero");
@@ -164,14 +164,13 @@ fat_read_sblock (void)
   if (sectors_per_fat == 0)
     error (1, 0, "Number of sectors per fat is zero");
 
-  nr_of_root_dir_sectors = ((read_word (sblock->nr_of_root_dirents) * FAT_DIR_REC_LEN)
-		      - 1) / bytes_per_sector + 1;
-  if (nr_of_root_dir_sectors & (sectors_per_cluster - 1))
-    error (1, 0, "Number of root dir sectors is not a multiple of sectors_per_cluster");
+  nr_of_root_dir_sectors = ((read_word (sblock->nr_of_root_dirents) *
+			    FAT_DIR_REC_LEN) - 1) / bytes_per_sector + 1;
 
   first_root_dir_byte = (read_word (sblock->reserved_sectors)
     + (sblock->nr_of_fat_tables * sectors_per_fat)) << log2_bytes_per_sector;
-  first_data_sector = (first_root_dir_byte >> log2_bytes_per_sector) + nr_of_root_dir_sectors;
+  first_data_sector = (first_root_dir_byte >> log2_bytes_per_sector)
+    + nr_of_root_dir_sectors;
   first_data_byte = first_data_sector << log2_bytes_per_sector;
 
   nr_of_clusters = (total_sectors - first_data_sector) / sectors_per_cluster;

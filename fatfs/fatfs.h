@@ -1,5 +1,5 @@
 /* fatfs.h - Interface for fatfs.
-   Copyright (C) 1997, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999, 2002, 2003 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -95,12 +95,16 @@ extern vm_address_t zerocluster;
 extern struct dirrect dr_root_node;
 
 
+#define LOG2_BLOCKS_PER_CLUSTER
+ (log2_bytes_per_cluster - store->logs2_block_size)
+
 #define round_cluster(offs)					\
   ((((offs) + bytes_per_cluster - 1)				\
     >> log2_bytes_per_cluster) << log2_bytes_per_cluster)
 
-#define fat_first_cluster_byte(cluster) \
- (first_data_byte + ((cluster - 2) << log2_bytes_per_cluster))
+#define FAT_FIRST_CLUSTER_BLOCK(cluster) \
+  (((cluster - 2) << LOG2_BLOCKS_PER_CLUSTER) +
+   (first_data_byte >> store->log2_block_size))
 
 void drop_pager_softrefs (struct node *);
 void allow_pager_softrefs (struct node *);

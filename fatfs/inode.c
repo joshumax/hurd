@@ -329,8 +329,8 @@ read_node (struct node *np, vm_address_t buf)
       st->st_mode = S_IFDIR | 0777;
       /* When we read in the node the first time, diskfs_root_node is
 	 zero.  */
-      if (diskfs_root_node == 0 ||
-	  (np == diskfs_root_node && (fat_type == FAT12 || fat_type == FAT16)))
+      if ((diskfs_root_node == 0 || np == diskfs_root_node) &&
+          (fat_type = FAT12 || fat_type == FAT16))
 	{
 	  st->st_size = read_dword (dr->file_size);
 	  np->allocsize = nr_of_root_dir_sectors << log2_bytes_per_sector;

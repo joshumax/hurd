@@ -1,3 +1,25 @@
+2003-07-14  Marco Gerards  <metgerards@student.han.nl>
+
+	* fat.c (fat_read_sblock): Don't test if the root dir size is a
+	multiple of sectors_per_cluster.  Reported by Barry deFreese
+	(bddebian@cox.net).
+
+	* fatfs.h (LOG2_BLOCKS_PER_CLUSTER): New macro.
+	(FAT_FIRST_CLUSTER_BLOCK): Likewise.
+	(fat_first_cluster_byte): Macro removed.
+
+	* inode.c (read_node): Correctly setup diskfs_root_node for FAT32
+	filesystems.
+
+	* pager.c (fat_getcluster): Check for reading beyond allocsize
+	correctly for file systems with a clustersize > vm_page_size.
+	(file_pager_read_small_page): Don't use byte offsets when
+	calculating the block.
+	(file_pager_read_huge_page): Likewise.
+	(pending_clusters_write): Likewise.
+	(file_pager_write_small_page): Likewise.
+	(STAT_INC): Cast to void to suppress warning.
+
 2003-04-26  Marco Gerards  <metgerards@student.han.nl>
 
 	* dir.c (diskfs_get_directs): Consider ENTRY when adding
