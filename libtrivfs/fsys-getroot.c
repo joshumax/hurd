@@ -73,17 +73,21 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (err)
     return err;
 
-  file_check_access (new_realnode, &perms);
-  if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
-      != (flags & (O_READ|O_WRITE|O_EXEC)))
-    err = EACCES;
-
   uvec = make_idvec ();
   gvec = make_idvec ();
   idvec_set_ids (uvec, uids, nuids);
   idvec_set_ids (gvec, gids, ngids);
-  user = iohelp_create_iouser (uvec, gvec);
-  
+  user = iohelp_create_iouser (uvec, gvec); /* XXX check return value?  */
+
+  /* Validate permissions.  */
+  if (! trivfs_check_access_hook)
+    file_check_access (new_realnode, &perms);
+  else
+    (*trivfs_check_access_hook) (cntl, user, new_realnode, &perms);
+  if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
+      != (flags & (O_READ|O_WRITE|O_EXEC)))
+    err = EACCES;
+
   if (!err && trivfs_check_open_hook)
     err = (*trivfs_check_open_hook) (cntl, user, flags);
   if (!err)

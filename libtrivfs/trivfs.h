@@ -100,6 +100,15 @@ extern int trivfs_cntl_nportclasses;
    nothing.  */
 void trivfs_modify_stat (struct trivfs_protid *cred, struct stat *);
 
+/* If this variable is set, it is called to find out what access this
+   file permits to USER instead of checking the underlying node.
+   REALNODE is the underlying node, and CNTL is the trivfs control
+   object.  The access permissions are returned in ALLOWED.  */
+error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
+				     struct iouser *user,
+				     mach_port_t realnode,
+				     int *allowed);
+
 /* If this variable is set, it is called every time an open happens.
    USER and FLAGS are from the open; CNTL identifies the
    node being opened.  This call need not check permissions on the underlying

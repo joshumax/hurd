@@ -49,7 +49,11 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
 
   /* Validate permissions */
-  file_check_access (cred->realnode, &perms);
+  if (! trivfs_check_access_hook)
+    file_check_access (cred->realnode, &perms);
+  else
+    (*trivfs_check_access_hook) (cred->po->cntl, cred->user,
+				 cred->realnode, &perms);
   if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
       != (flags & (O_READ|O_WRITE|O_EXEC)))
     return EACCES;

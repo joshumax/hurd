@@ -1,3 +1,11 @@
+1999-02-06  Mark Kettenis  <kettenis@gnu.org>
+
+	* trivfs.h (trivfs_check_access_hook): New variable.
+	* fsys-getroot.c (trivfs_S_fsys_getroot): Use
+	trivfs_check_acces_hook.
+	* dir-lookup.c (trivfs_S_dir_lookup): Likewise.
+	* file-access.c (trivfs_S_file_check_access): Likewise.
+
 1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-revoke.c: Add reply, reply_type args.

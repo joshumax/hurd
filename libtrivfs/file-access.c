@@ -25,7 +25,12 @@ trivfs_S_file_check_access (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
+
+  if (! trivfs_check_access_hook)
+    file_check_access (cred->realnode, allowed);
   else
-    return file_check_access (cred->realnode, allowed);
+    (*trivfs_check_access_hook) (cred->po->cntl, cred->user,
+				 cred->realnode, allowed);
+  
   return 0;
 }
