@@ -20,23 +20,22 @@
 dir := sutils
 makemode := utilities
 
-targets = $(special-targets) reboot halt fsck swapon swapoff
-special-targets = e2os MAKEDEV losetup
+progs = reboot halt fsck swapon swapoff
+scripts = e2os MAKEDEV losetup
+targets = $(special-targets) $(progs)
+special-targets = $(scripts)
 installationdir = $(sbindir)
-SCRIPTS = e2os.sh MAKEDEV.sh losetup.sh
-SRCS = reboot.c halt.c fsck.c fstab.c clookup.c swapon.c swapoff.c $(SCRIPTS)
+SRCS = $(progs:=.c) $(scripts:=.sh)
 LCLHDRS = fstab.h
 
-OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
+OBJS = $(progs:=.c)
 HURDLIBS = store shouldbeinlibc
 
 include ../Makeconf
 
 fsck: fstab.o clookup.o
 swapon swapoff: ../libstore/libstore.a
-reboot halt fsck swapon swapoff: ../libshouldbeinlibc/libshouldbeinlibc.a
-
-$(filter-out $(special-targets), $(targets)): %: %.o
+$(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
 install: $(prefix)/dev $(prefix)/dev/MAKEDEV
 $(prefix)/dev/MAKEDEV:
