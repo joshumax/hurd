@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
 /* Called by the ports library when we have been idle for
    ten minutes. */
 void
@@ -23,7 +25,7 @@ ports_notice_idle (int nhard, int nsoft)
   spin_lock (&_diskfs_control_lock);
   if (nhard > _diskfs_ncontrol_ports)
     {
-      spin_unlock (&diskfs_control_lock);
+      spin_unlock (&_diskfs_control_lock);
       return;
     }
   spin_unlock (&_diskfs_control_lock);
