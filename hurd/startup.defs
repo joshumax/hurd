@@ -67,8 +67,5 @@ routine startup_procinit (
    to give to the startup server.  */
 routine startup_authinit (
 	server: startup_t;
-	auth: mach_port_make_send_t);
-
-routine startup_authinit2 (
-	server: startup_t;
+	auth: mach_port_make_send_t;
 	out proc: mach_port_move_send_t);
