@@ -54,10 +54,10 @@ MIGSTUBS= ioServer.o fsServer.o fsysServer.o ifsockServer.o
 
 OBJS=$(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-fsys-MIGSFLAGS = -imacros mutations.h
-fs-MIGSFLAGS = -imacros mutations.h
-io-MIGSFLAGS = -imacros mutations.h
-ifsock-MIGSFLAGS = -imacros mutations.h
+fsys-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+fs-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+ifsock-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 MIGCOMSFLAGS = -prefix netfs_
 
 
