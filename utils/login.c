@@ -580,9 +580,13 @@ main(int argc, char *argv[])
   /* Parse our options.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
-  /* Check passwords where necessary.  */
-  err = ugids_verify_make_auth (&ugids, &parent_uids, &parent_gids, 0, 0,
-				0, 0, &auth);
+  /* Check passwords where necessary.  If no_passwd is set, then our parent
+     guarantees identity itself (where it is allowed), but otherwise
+     we want every UID fully checked.  */
+  err = ugids_verify_make_auth (&ugids, 
+				no_passwd ? &parent_uids : 0, 
+				no_passwd ? &parent_gids : 0,
+				0, 0, 0, 0, &auth);
   if (err == EACCES)
     fail (5, 0, "Invalid password", 0);
   else if (err)
