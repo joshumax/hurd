@@ -150,7 +150,8 @@ ifeq ($(makemode),library)
  linktarg := $(libname).so.$(hurd-version)
 
  clean := yes
- cleantarg := $(linktarg) $(addprefix $(libname),.a _p.a _pic.a .so)
+ cleantarg := $(linktarg) $(addprefix $(libname),.a _p.a _pic.a \
+						 .so .so.$(hurd-version))
 
  targets := $(libname).a $(libname).so
  ifneq ($(no_pic),t)
@@ -255,6 +256,8 @@ $(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: ../config.make
 	echo '#include "../$(dir)/$*"' > $@
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
+# Make sure we make those before compiling, since -MG will be unhelpful.
+$(patsubst %.o,%.d,$(filter %.o,$(OBJS))): $(INSTALLED_LOCAL_HEADERS)
 
 # The installed local headers referring to our own files will use
 # relative names with ../$(dir) and make won't notice that's us.
