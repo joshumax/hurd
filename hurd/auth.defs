@@ -1,5 +1,5 @@
 /* Definitions for the authentication server
-   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -25,30 +25,32 @@ subsystem auth 25000;
 AUTH_IMPORTS
 #endif
 
+INTR_INTERFACE
+
 /* Throughout, uid's and gid's are passed as arrays.  One of these
-   arrays is called the "genuine" ids; these id's should be used to
+   arrays is called the "effective" ids; these id's should be used to
    compute whether a given user is permitted a given operation.  The
-   other array is called the "auxiliary" ids; these should not be used
-   for such computation (though they can be turned into genuine ids
-   when calling auth_makeauth).  The first auxiliary id is
+   other array is called the "available" ids; these should not be used
+   for such computation (though they can be turned into effective ids
+   when calling auth_makeauth).  The first available id is
    conventionally called the "real" id, and the second the "saved" id.  */
 
 /* Given an authentication handle, return the identification. */
 routine auth_getids (
 	handle: auth_t;
-	out gen_uids: idarray_t;
-	out aux_uids: idarray_t;
-	out gen_gids: idarray_t;
-	out aux_gids: idarray_t);
+	out euids: idarray_t;
+	out auids: idarray_t;
+	out egids: idarray_t;
+	out agids: idarray_t);
 
 /* Create a new authentication handle.  */
 routine auth_makeauth (
 	handle: auth_t;
 	other_handles: portarray_t;
-	gen_uids: idarray_t;
-	aux_uids: idarray_t;
-	gen_gids: idarray_t;
-	aux_gids: idarray_t;
+	euids: idarray_t;
+	auids: idarray_t;
+	egids: idarray_t;
+	agids: idarray_t;
 	out newhandle: mach_port_make_send_t);
 
 /* Called by a user in a reauthentication transaction.  The rendezvous
@@ -57,11 +59,10 @@ routine auth_makeauth (
    the server.  */
 routine auth_user_authenticate (
 	handle: auth_t;
-	sreplyport reply_port: sreply_port_t;
 	rendezvous: mach_port_t;
 	rendezvous2: mach_port_send_t;
 	out newport: mach_port_send_t);
-   
+
 /* Called by a server in a reauthentication transaction.  The
    rendezvous port is used to match the request up with the user's
    auth_user_authenticate call.  The newport is passed to the user
@@ -69,13 +70,13 @@ routine auth_user_authenticate (
    is returned.  */
 routine auth_server_authenticate (
 	handle: auth_t;
-	sreplyport reply_port: sreply_port_t;
+	sreplyport reply: mach_port_poly_t;
 	rendezvous: mach_port_send_t;
 	rendezvous2: mach_port_send_t;
-	newport: mach_port_send_t;
-	out gen_uids: idarray_t;
-	out aux_uids: idarray_t;
-	out gen_gids: idarray_t;
-	out aux_gids: idarray_t);
+	newport: mach_port_poly_t;
+	out euids: idarray_t;
+	out auids: idarray_t;
+	out egids: idarray_t;
+	out agids: idarray_t);
 
 
