@@ -80,13 +80,12 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
   error_t err;
   int have = ps->flags;		/* flags set in ps */
   int need;			/* flags not set in ps, but desired to be */
+  process_t server = ps_context_server(ps->context);
 
   /* Implement any inter-flag dependencies: if the new flags in FLAGS depend
      on some other set of flags to be set, make sure those are also in
      FLAGS. */
 
-  if (flags & PSTAT_TTY_NAME)
-    flags |= PSTAT_TTY;
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK))
@@ -94,7 +93,7 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
     }
-  if (flags & (PSTAT_THREAD_INFO | PSTAT_STATE))
+  if (flags & (PSTAT_THREAD_INFO | PSTAT_STATE | PSTAT_OWNER))
     flags |= PSTAT_INFO;
   if (flags & PSTAT_TASK_EVENTS_INFO)
     flags |= PSTAT_TASK;
@@ -115,21 +114,17 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
       err))
 
   /* The process's process port.  */
-  MGET(PSTAT_PROCESS, PSTAT_PID,
-       proc_pid2proc(ps->server, ps->pid, &ps->process));
+  MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc(server, ps->pid, &ps->process));
   /* The process's task port.  */
-  MGET(PSTAT_TASK, PSTAT_PID,
-       proc_pid2task(ps->server, ps->pid, &ps->task));
+  MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
   /* The process's libc msg port (see <hurd/msg.defs>).  */
-  MGET(PSTAT_MSGPORT, PSTAT_PID,
-       proc_getmsgport(ps->server, ps->pid, &ps->msgport));
+  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
 
   /* the process's struct procinfo as returned by proc_getprocinfo.  */
   if ((need & PSTAT_INFO) && (have & PSTAT_PID))
     {
       ps->info_size = 0;
-      if (proc_getprocinfo(ps->server,
-			   ps->pid, (int **)&ps->info, &ps->info_size)
+      if (proc_getprocinfo(server, ps->pid, (int **)&ps->info, &ps->info_size)
 	  == 0)
 	have |= PSTAT_INFO;
     }
@@ -242,7 +237,7 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
   if ((need & PSTAT_ARGS) && (have & PSTAT_PID))
     {
       ps->args_len = 0;
-      if (proc_getprocargs(ps->server, ps->pid, &ps->args, &ps->args_len))
+      if (proc_getprocargs(server, ps->pid, &ps->args, &ps->args_len))
 	ps->args_len = 0;
       else
 	have |= PSTAT_ARGS;
@@ -270,42 +265,16 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
   MGET(PSTAT_UMASK, PSTAT_MSGPORT | PSTAT_TASK,
        msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
 
-  /* A file_t port for the process's controlling terminal, or
-     MACH_PORT_NULL if the process has no controlling terminal.  */
+  /* A ps_user_t object for the process's owner.  */
+  if ((need & PSTAT_OWNER) && (have & PSTAT_INFO))
+    if (ps_context_find_user(ps->context, ps->info->owner, &ps->owner) == 0)
+      have |= PSTAT_OWNER;
+
+  /* A ps_tty_t for the process's controlling terminal, or NULL if it
+     doesn't have one.  */
   if ((need & PSTAT_TTY) && (have & PSTAT_CTTYID))
-    if (ps->cttyid == MACH_PORT_NULL)
-      {
-	/* cttyid == NULL is a positive assertion that there is no
-	   controlling tty */
-	ps->tty = MACH_PORT_NULL;
-	have |= PSTAT_TTY;
-      }
-    else if (termctty_open_terminal(ps->cttyid, 0, &ps->tty) == 0)
+    if (ps_context_find_tty_by_cttyid(ps->context, ps->cttyid, &ps->tty) == 0)
       have |= PSTAT_TTY;
-
-  /* A filename pointing to TTY, or NULL if the process has no controlling
-     terminal, or "?" if we cannot determine the name.  */
-  if ((need & PSTAT_TTY_NAME) && (have & PSTAT_TTY))
-    {
-      if (ps->tty == MACH_PORT_NULL)
-	ps->tty_name = NULL;
-      else
-	{
-	  string_t buf;
-
-	  if (term_get_nodename(ps->tty, &buf) != 0)
-	    /* There is a terminal there, but we can't figure out its name.  */
-	    strcpy(buf, "?");
-
-	  ps->tty_name = NEWVEC(char, strlen(buf) + 1);
-	  if (ps->tty_name == NULL)
-	    return FALSE;
-	  else
-	    strcpy(ps->tty_name, buf);
-	}
-
-      have |= PSTAT_TTY_NAME;
-    }
 
   ps->flags = have;
 
@@ -315,7 +284,7 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
 /* ---------------------------------------------------------------- */
 /* Discard PS and any resources it holds.  */
 void 
-proc_stat_free(ps)
+_proc_stat_free(ps)
      proc_stat_t ps;
 {
   /* Free the mach port PORT if FLAG is set in PS's flags.  */
@@ -345,17 +314,15 @@ proc_stat_free(ps)
   MFREEVM(PSTAT_TASK_EVENTS_INFO,
 	  task_events_info, task_events_info_size,
 	  &ps->task_events_info_buf, char);
-  if (ps->flags & PSTAT_TTY_NAME)
-    FREE(ps->tty_name);
 
   FREE(ps);
 }
 
-/* Returns in PS a new proc_stat_t for the process PID at the process server
-   SERVER.  If a memory allocation error occurs, ENOMEM is returned,
+/* Returns in PS a new proc_stat_t for the process PID at the process context
+   CONTEXT.  If a memory allocation error occurs, ENOMEM is returned,
    otherwise 0.  */
 error_t
-proc_stat_create(int pid, process_t server, proc_stat_t *ps)
+_proc_stat_create(int pid, ps_context_t context, proc_stat_t *ps)
 {
   *ps = NEW(struct proc_stat);
   if (*ps == NULL)
@@ -363,7 +330,7 @@ proc_stat_create(int pid, process_t server, proc_stat_t *ps)
 
   (*ps)->pid = pid;
   (*ps)->flags = PSTAT_PID;
-  (*ps)->server = server;
+  (*ps)->context = context;
 
   return 0;
 }
@@ -411,6 +378,8 @@ proc_stat_thread_create(proc_stat_t ps, int index, proc_stat_t *thread_ps)
 
       tps->thread_origin = ps;
       tps->thread_index = index;
+
+      tps->context = ps->context;
 
       *thread_ps = tps;
 
