@@ -1,5 +1,9 @@
 Sat Feb 22 00:00:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* io-stat.c (diskfs_S_io_stat): Mark shadow roots with S_IROOT.
+	* io-identity.c (diskfs_S_io_identity): Return different fsys ids
+	for different shadow roots.
+
 	* peropen-rele.c (diskfs_release_peropen): Don't deadlock if PO's
 	shadow_root is also it's node.
 	* file-reparent.c (diskfs_S_file_reparent): Don't release a
