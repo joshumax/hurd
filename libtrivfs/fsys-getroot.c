@@ -27,9 +27,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 kern_return_t
 trivfs_S_fsys_getroot (struct trivfs_control *cntl,
-		       int flags,
 		       uid_t *uids, u_int nuids,
 		       uid_t *gids, u_int ngids,
+		       int flags,
+		       retry_type *do_retry,
+		       char *retry_name,
 		       mach_port_t *newpt,
 		       mach_msg_type_name_t *newpttype)
 {
@@ -73,6 +75,8 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (cred);
 
+  *do_retry = FS_RETRY_NONE;
+  *retry_name = '\0';
   *newpt = ports_get_right (cred);
   *newpttype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
