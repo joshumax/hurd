@@ -32,10 +32,16 @@ DIST_FILES = README $(dist-files) $(tool-files)
 include ../Makeconf
 
 ifneq ($(dist-root),)
-install-dist:
+install-dist: dist-links
 	cp INSTALL-binary $(dist-root)/
 	cp dist-README $(dist-root)/README
 	cp SETUP $(dist-root)/SETUP
+
+dist-links:
+	mkdir -p $(dist-root)/servers/socket
+	touch $(dist-root)/servers/socket/{1,2}
+	ln $(dist-root)/servers/socket/1 /servers/socket/local
+	ln $(dist-root)/servers/socket/2 /servers/socket/inet
 endif
 
 ifneq ($(tool-root),)
