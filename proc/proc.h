@@ -153,7 +153,6 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 /* Forward declarations */
 void complete_wait (struct proc *, int);
-void initprimes (void);
 int nextprime (int);
 int check_uid (struct proc *, uid_t);
 void addalltasks (void);
