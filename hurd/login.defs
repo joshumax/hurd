@@ -17,41 +17,42 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-subsystem utmp 36000;
+subsystem login 36000;
 
 #include <hurd/hurd_types.defs>
 
-#ifdef UTMP_IMPORTS
-UTMP_IMPORTS
+#ifdef LOGIN_IMPORTS
+LOGIN_IMPORTS
 #endif
 
 /* For each logged in user, a file is conventionally created in the 
-   directory /utmp with the name of the user, a hyphen, and a small
-   integer.  (The suffix is there to distinguish multiple logons
-   of the same user.)  On each such node an active translator should
-   be found which implements this interface.  */
+   directory `/var/logins' with the name of the user, a hyphen, and a small
+   integer.  (The suffix is there to distinguish multiple logons of the
+   same user.)  On each such node an active translator should be found
+   which implements this interface.  */
 
-/* Send an immediate message to the user */
-routine utmp_bleep_user (
-	utmp: file_t;
+/* Send an immediate message to the user.  */
+routine login_message_user (
+	login: file_t;
 	message: data_t);
 
-/* Return a human-readable string describing the user's physical location. */
-routine utmp_location (
-	utmp: file_t;
+/* Return a human-readable string describing the user's physical location.  */
+routine login_get_location (
+	login: file_t;
 	out location: data_t);
 
-/* Return the pathname(s) of the user's input device(s).  */
-routine utmp_input_devices (
-	utmp: file_t;
+/* Return how much time has passed since the user last used an input device. */
+routine login_get_idle_time (
+	login: file_t;
+	out idletime: time_value_t);
+
+/* Return a list of file names for input devices being used, separated by null
+   characters.  This call is optional; clients should not depend on it.  */
+routine login_get_input_devices (
+	login: file_t;
 	out devices: data_t);
 
 /* Return the process collection ID for the user's login collection. */
-routine utmp_login_collection (
-	utmp: file_t;
+routine login_get_login_collection (
+	login: file_t;
 	out id: pid_t);
-
-/* Return the user's idle time. */
-routine utmp_idle_time (
-	utmp: file_t;
-	out idle: time_value_t);
