@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -112,6 +112,8 @@ int newinofmt;
 int preen;
 
 int readfd, writefd;
+
+int fix_denied;
 
 int fsmodified;
 
