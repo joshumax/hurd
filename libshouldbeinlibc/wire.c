@@ -1,5 +1,5 @@
 /* Function to wire down text and data (including from shared libraries)
-   Copyright (C) 1996,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,99,2000,01 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -60,7 +60,11 @@ map_extent (struct link_map *map)
   /* In fact, LIB == MAP, but doing it this way makes it entirely kosher.  */
   void *lib = dlopen (map->l_name, RTLD_NOLOAD);
   if (lib == 0)
-    error (2, 0, "cannot dlopen %s: %s", map->l_name, dlerror ());
+    {
+      error (2, 0, "cannot dlopen %s: %s", map->l_name, dlerror ());
+      /* NOTREACHED */
+      return 0;
+    }
   else
     {
       /* Find the _end symbol's runtime address and subtract the load base.  */
