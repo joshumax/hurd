@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -62,6 +62,8 @@ diskfs_S_io_prenotify (struct protid *cred,
     }
   
   err = diskfs_grow (np, end, cred);
+  if (diskfs_synchronous)
+    diskfs_node_update (np, 1);
  out:
   mutex_unlock (&np->lock);
   return err;
