@@ -33,7 +33,10 @@ diskfs_drop_node (struct node *np)
       if (np->istranslated)
 	diskfs_set_translator (np, 0, 0, 0);
 
-      if (np->allocsize != 0)
+      if (np->allocsize != 0
+	  || (diskfs_create_symlink_hook 
+	      && S_ISLNK (np->dn_stat.st_mode)
+	      && np->dn_stat.st_size))
 	{
 	  /* If the node needs to be truncated, then a complication
 	     arises, because truncation might require gaining
