@@ -22,6 +22,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <device/device.h>
 
+mach_port_t diskfs_host_priv;
+mach_port_t diskfs_master_device;
+mach_port_t diskfs_default_pager;
+mach_port_t diskfs_control_port;
+struct mapped_time_value diskfs_mtime;
+
+spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
+
 /* Call this after arguments have been parsed to initialize the
    library.  */ 
 void 
@@ -49,6 +57,8 @@ diskfs_init_diskfs (void)
   
   assert (diskfs_host_priv != MACH_PORT_NULL); /* XXX */
   assert (diskfs_master_device != MACH_PORT_NULL); /* XXX */
+
+  ports_wire_threads = diskfs_host_priv;
 
   diskfs_control_port =
     ((struct port_info *)ports_allocate_port(sizeof (struct port_info),
