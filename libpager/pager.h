@@ -148,5 +148,5 @@ pager_report_extent (struct user_pager_info *pager,
 
 /* The user must define this function.  This is called when a pager is
    being deallocated after all extant send rights have been destroyed.  */
-error_t
+void
 pager_clear_user_data (struct user_pager_info *pager);
