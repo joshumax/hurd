@@ -46,9 +46,9 @@ timer_function (any_t timerp)
 
   if (!err)
     {
-      begin_interrupt ();
+      mutex_lock (&global_lock);
       (*timer->function)(timer->data);
-      end_interrupt ();
+      mutex_unlock (&global_lock);
     }
 }
 
@@ -81,10 +81,10 @@ del_timer (struct timer_list *timer)
 
   thread_suspend (thread);
 
-  /* Test again, because it might have run and completed the mach_msg after
-     we tested above and before we suspended, and we don't want to abort
-     the mach_port_destroy and certainly not anything inside the timer function\
-     which might have started running. */
+  /* Test again, because it might have run and completed the mach_msg
+     after we tested above and before we suspended, and we don't want
+     to abort the mach_port_destroy and certainly not anything inside
+     the timer function\ which might have started running. */
   if (timer->thread)
     thread_abort (thread);
 
