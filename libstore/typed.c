@@ -26,8 +26,12 @@
 
 /* Open the store indicated by NAME, which should consist of a store type
    name followed by a ':' and any type-specific name, returning the new store
-   in STORE.  CLASSES is used to select classes specified by the type name;
-   if it is 0, STORE_STD_CLASSES is used.  */
+   in STORE.  If NAME doesn't contain a `:', then it will be interpreted as
+   either a class name, if such a class occurs in CLASSES, or a filename,
+   which is opened by calling store_open on NAME; a `:' at the end or the
+   beginning of NAME unambiguously causes the remainder to be treated as a
+   class-name or a filename, respectively.  CLASSES is used to select classes
+   specified by the type name; if it is 0, STORE_STD_CLASSES is used.  */
 error_t
 store_typed_open (const char *name, int flags,
 		  const struct store_class *const *classes,
@@ -35,6 +39,10 @@ store_typed_open (const char *name, int flags,
 {
   const struct store_class *const *cl;
   const char *clname_end = strchr (name, ':');
+
+  if (clname_end == name)
+    /* Open NAME with store_open.  */
+    return store_open (name + 1, flags, classes, store);
 
   if (! clname_end)
     clname_end = name + strlen (name);
@@ -47,14 +55,27 @@ store_typed_open (const char *name, int flags,
       break;
 
   if (! *cl)
-    return EINVAL;
+    /* No class with the given name found.  */
+    if (*clname_end)
+      /* NAME really should be a class name, which doesn't exist.  */
+      return EINVAL;
+    else
+      /* Try opening NAME by querying it as a file instead.  */
+      return store_open (name, flags, classes, store);
 
   if (! (*cl)->open)
+    /* CL cannot be opened.  */
     return EOPNOTSUPP;
 
   if (*clname_end)
-    clname_end++;		/* Skip the ':' */
+    /* Skip the ':' separating the class-name from the device name.  */
+    clname_end++;
 
+  if (! *clname_end)
+    /* The class-specific portion of the name is empty, so make it *really*
+       empty.  */
+    clname_end = 0;
+  
   return (*(*cl)->open) (clname_end, flags, classes, store);
 }
 
