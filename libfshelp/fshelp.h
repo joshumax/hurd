@@ -131,11 +131,9 @@ fshelp_translated (struct transbox *box)
 
 /* Atomically replace the existing active translator port for this box
    with NEWACTIVE.  If EXCL is non-zero then don't frob an existing
-   active; return EBUSY instead.  If GOAWAY is non-zero, then
-   sent fsys_goaway to it with FLAGS.  */
+   active; return EBUSY instead.  */
 error_t fshelp_set_active (struct transbox *box,
-			   fsys_t newactive,
-			   int excl, int goaway, int flags);
+			   fsys_t newactive, int excl);
 
 /* Fetch the control port to make a request on it.  It's a bad idea
    to do fsys_getroot with the result; use fetch_root instead. */
