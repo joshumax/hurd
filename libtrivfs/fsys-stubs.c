@@ -37,8 +37,8 @@ kern_return_t
 trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
-		       mach_port_t *host,
-		       mach_port_t *dev,
+		       mach_port_t *host, mach_msg_type_name_t *host_privPoly,
+		       mach_port_t *dev, mach_msg_type_name_t *devPoly,
 		       mach_port_t *fstask)
 {
   return EOPNOTSUPP;
