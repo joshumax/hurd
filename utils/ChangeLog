@@ -1,5 +1,9 @@
 2002-05-12  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.sh: Inside the chroot'd fakeauth environment,
+	run a shell that chdir's to what was our original current
+	directory (by name) before exec'ing the user's command.
+
 	* fakeauth.c (main): Don't use posix_spawnp.  Use _hurd_exec instead.
 
 2002-05-06  Marcus Brinkmann  <marcus@gnu.org>
