@@ -6,4 +6,11 @@ typedef unsigned char __u8;
 typedef unsigned short __u16;
 typedef unsigned long __u32;
 
+/* Hackery */
+struct inode
+{
+  uid_t i_uid;
+};
+
+
 #endif
