@@ -24,6 +24,7 @@ kern_return_t
 diskfs_S_io_select (struct protid *cred,
 		    int type, 
 		    mach_port_t port,
+		    mach_msg_type_name_t porttype,
 		    int tag,
 		    int *possible)
 {
