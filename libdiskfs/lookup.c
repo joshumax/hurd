@@ -73,6 +73,51 @@ diskfs_lookup (struct node *dp,
 	       struct dirstat *ds,
 	       struct protid *cred)
 {
-  return diskfs_lookup_hard (dp, name, type, np, ds, cred);
+  error_t err;
+  struct node *ournp, **npp;
+  
+  npp = np ? : &ournp;
+  
+  if (!S_ISDIR (dp->dn_stat.st_mode))
+    {
+      diskfs_null_dirstat (ds);
+      return ENOTDIR;
+    }
+  err = diskfs_access (dp, S_IEXEC, cred);
+  if (err)
+    {
+      diskfs_null_dirstat (ds);
+      return err;
+    }
+
+  if (type == LOOKUP)
+    {
+      /* Check the cache first */
+      *np = diskfs_check_cache (dp, name);
+      if (*np == (struct node *)-1)
+	{
+	  *np = 0;
+	  return ENOENT;
+	}
+      else if (*np)
+	{
+	  diskfs_null_dirstat (ds);
+	  return 0;
+	}
+    }
+  
+  err = diskfs_lookup_hard (dp, name, type, npp, ds, cred);
+  if (err && err != ENOENT)
+    return err;
+  
+  if (type == RENAME
+      || (type == CREATE && err == ENOENT)
+      || (type == REMOVE && err != ENOENT))
+    err = diskfs_checkdirmod (dp, *npp, cred);
+
+  if (*npp && !np)
+    diskfs_nput (*npp);
+
+  return err;
 }
 
