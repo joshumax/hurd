@@ -74,7 +74,7 @@ trunc_direct (struct node * node, unsigned long length)
       if (!block)
 	continue;
 
-      bh = bptr(block);
+      bh = block_image(block);
 
       if (i < direct_block)
 	goto repeat;
@@ -121,7 +121,7 @@ trunc_indirect (struct node * node, unsigned long length,
   if (!block)
     return 0;
 
-  ind_bh = bptr (block);
+  ind_bh = block_image (block);
   if (!ind_bh) {
     *p = 0;
     return 0;
@@ -137,7 +137,7 @@ trunc_indirect (struct node * node, unsigned long length,
       if (!block)
 	continue;
 
-      bh = bptr (block);
+      bh = block_image (block);
       if (i < indirect_block)
 	goto repeat;
 
@@ -199,7 +199,7 @@ trunc_dindirect (struct node * node, unsigned long length,
   if (!block)
     return 0;
 
-  dind_bh = bptr (block);
+  dind_bh = block_image (block);
   if (!dind_bh)
     {
       *p = 0;
@@ -251,7 +251,7 @@ trunc_tindirect (struct node * node, unsigned long length)
   if (!(block = *p))
     return 0;
 
-  tind_bh = bptr (block);
+  tind_bh = block_image (block);
   if (!tind_bh)
     {
       *p = 0;
