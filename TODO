@@ -42,12 +42,13 @@ See `tasks', the exported task list.
 *** Change servers to be mom-ish
 
 ** libc:
+*** implement revoke. !!!
+*** when a session leader _exits, it should SIGHUP, TIOCDRAIN, and revoke. !!!
 *** convert to use libio (note exec needs conversion too) !!!
 *** Version of tmpfile that takes a directory
 *** Hurd versions of tmpfile that don't create transient files !
 *** flink
 *** make sure profiling works !!
-*** implement revoke once io_revoke is added. !!
 *** add chflags flags to appropriate header(s)
 *** declare reboot() somewhere.
 *** extra commas in enums in socket.h and errnos.h.
