@@ -149,7 +149,8 @@ struct group
 
   /* These fields are swapped into and out of the state structure when
      calling this group's parser.  */
-  void *hook, **child_hooks;
+  void *input, **child_inputs;
+  void *hook;
 };
 
 /* Parse the options strings in ARGC & ARGV according to the argp in
@@ -160,7 +161,7 @@ struct group
    returned.  */
 error_t
 argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
-	    int *end_index, void **hook)
+	    int *end_index, void *input)
 {
   error_t err = 0;
   /* True if we think using getopt is still useful; if false, then
@@ -183,10 +184,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   struct group *egroup;
   /* A pointer for people to use for iteration over GROUPS.  */
   struct group *group;
-  /* An vector containing storage for the CHILD_HOOKS field in all groups.  */
-  void **child_hooks;
+  /* An vector containing storage for the CHILD_INPUTS field in all groups.  */
+  void **child_inputs;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0, 0, 0 };
+  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0, 0, 0, 0 };
 
   /* Call GROUP's parser with KEY and ARG, swapping any group-specific info
      from STATE before calling, and back into state afterwards.  If GROUP has
@@ -197,7 +198,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	{
 	  error_t err;
 	  state.hook = group->hook;
-	  state.child_hooks = group->child_hooks;
+	  state.input = group->input;
+	  state.child_inputs = group->child_inputs;
 	  state.arg_num = group->args_processed;
 	  err = (*group->parser)(key, arg, &state);
 	  group->hook = state.hook;
@@ -292,7 +294,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     struct option *long_end;
     unsigned long_len = 0;
     unsigned num_groups = 0;
-    unsigned num_child_hooks = 0;
+    unsigned num_child_inputs = 0;
 
     /* For ARGP, increments NUM_GROUPS by the total number of argp structures
        descended from it, and SHORT_LEN & LONG_LEN by the maximum lengths of
@@ -320,7 +322,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  while (*children)
 	    {
 	      calc_lengths (*children++);
-	      num_child_hooks++;
+	      num_child_inputs++;
 	    }
       }
 
@@ -391,17 +393,18 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    group->args_processed = 0;
 	    group->parent = parent;
 	    group->parent_index = parent_index;
+	    group->input = 0;
 	    group->hook = 0;
-	    group->child_hooks = 0;
+	    group->child_inputs = 0;
 
 	    if (children)
-	      /* Assign GROUP's CHILD_HOOKS field a slice from CHILD_HOOKS.  */
+	      /* Assign GROUP's CHILD_INPUTS field a slice from CHILD_INPUTS.*/
 	      {
 		unsigned num_children = 0;
 		while (children[num_children])
 		  num_children++;
-		group->child_hooks = child_hooks;
-		child_hooks += num_children;
+		group->child_inputs = child_inputs;
+		child_inputs += num_children;
 	      }
 
 	    parent = group++;
@@ -432,19 +435,19 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     long_end->name = NULL;
 
     groups = alloca ((num_groups + 1) * sizeof (struct group));
-    child_hooks = alloca (num_child_hooks * sizeof (void *));
+    child_inputs = alloca (num_child_inputs * sizeof (void *));
 
     egroup = convert_options (state.argp, 0, 0, groups);
   }
 
   /* Call each parser for the first time, giving it a chance to propagate
      values to child parsers.  */
-  groups->hook = hook ? *hook : 0;
+  groups->input = input;
   for (group = groups ; group < egroup && (!err || err == EINVAL); group++)
     {
       if (group->parent)
-	/* If is a child parser, get its initial hook value from the parent. */
-	group->hook = group->parent->child_hooks[group->parent_index];
+	/* If a child parser, get the initial input value from the parent. */
+	group->input = group->parent->child_inputs[group->parent_index];
       err = group_parse (group, ARGP_KEY_INIT, 0);
     }
   if (err == EINVAL)
@@ -578,16 +581,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       for (group = egroup - 1
 	   ; group >= groups && (!err || err == EINVAL)
 	   ; group--)
-	{
-	  err = group_parse (group, ARGP_KEY_SUCCESS, 0);
-	  if (group->parent)
-	    /* Pass back any value from the child to its parent.  */
-	    group->parent->child_hooks[group->parent_index] = group->hook;
-	}
+	err = group_parse (group, ARGP_KEY_SUCCESS, 0);
       if (err == EINVAL)
 	err = 0;		/* Some parser didn't understand.  */
-      if (!err && hook)
-	*hook = groups->hook;	/* Return the final value to the user.  */
     }
 
   return err;
