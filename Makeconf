@@ -6,7 +6,13 @@ all:
 hurdinst := /home/hm1/hurdinst
 
 # This is the directory which serves as root for the Hurd.
-hurdroot := /home/hm1/hurdroot
+hostname := $(shell hostname)
+hurdroot-douglas.gnu.ai.mit.edu = /home/hm2/hurdroot
+hurdroot-ernst.gnu.ai.mit.edu = home/hm1/hurdroot
+hurdroot := $(hurdroot-$(hostname))
+
+# This is the device with the filesystem mounted as $(hurdroot)
+hurdrootdev := /dev/hd0f
 
 # This is the directory containing the top-level Hurd source (and this file).
 hurdsource := /home/hm1/gnu/hurd
@@ -42,6 +48,20 @@ define link
 $(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
+
+
+# Mounting $(hurdroot)
+ifeq ($(hurdroot),)
+$(hurdroot): force
+	echo Cannot do install on this machine.
+	false
+else
+$(hurdroot): $(hurdroot)/mounted
+$(hurdroot)/mounted:
+	fsck -p $(hurdrootdev)
+	mount $(hurdrootdev)
+endif
+
 
 # Making a snapshot
 
