@@ -32,7 +32,8 @@ ports_transfer_right (void *tostruct,
   int dereffrompi = 0;
   int dereftopi = 0;
   int hassendrights = 0;
-  
+  error_t err;
+
   mutex_lock (&_ports_lock);
 
   /* Fetch the port in FROMPI and clear its use */
@@ -57,7 +58,7 @@ ports_transfer_right (void *tostruct,
 				MACH_PORT_RIGHT_RECEIVE, -1);
       if ((topi->flags & PORT_HAS_SENDRIGHTS) && !hassendrights)
 	{
-	  derreftopi = 1;
+	  dereftopi = 1;
 	  topi->flags &= ~PORT_HAS_SENDRIGHTS;
 	}
       else if (((topi->flags & PORT_HAS_SENDRIGHTS) == 0) && hassendrights)
@@ -82,10 +83,11 @@ ports_transfer_right (void *tostruct,
   mutex_unlock (&_ports_lock);
   
   /* Take care of any lowered reference counts. */
-  if (derreffrompi)
+  if (dereffrompi)
     ports_port_deref (frompi);
-  if (derreftopi)
+  if (dereftopi)
     ports_port_deref (topi);
+  return 0;
 }
 
 
