@@ -359,6 +359,8 @@ dog (time_t timeout, pid_t pid, char **argv)
     }
 }
 
+asm (".weak crypt");
+
 void
 main(int argc, char *argv[])
 {
@@ -531,13 +533,14 @@ main(int argc, char *argv[])
 	prompt = "Password:";
 
       unencrypted = getpass (prompt);
-#ifdef government_not_broken
-      encrypted = crypt (unencrypted, password);
-      /* Paranoia may destroya.  */
-      memset (unencrypted, 0, strlen (unencrypted));
-#else
-      encrypted = unencrypted;
-#endif      
+      if (crypt)
+	{
+	  encrypted = crypt (unencrypted, password);
+	  /* Paranoia may destroya.  */
+	  memset (unencrypted, 0, strlen (unencrypted));
+	}
+      else
+	encrypted = unencrypted;
 
       if (name)
 	free (prompt);

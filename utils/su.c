@@ -452,6 +452,8 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
    run by uid 0 or if PASSWORD is an empty password, and always under -r.
    Always prints a message before returning 0.  */
 
+asm (".weak crypt");
+
 int
 check_password (const char *name, const char *password)
 {
@@ -464,12 +466,13 @@ check_password (const char *name, const char *password)
 
   asprintf (&prompt, "%s's Password:", name);
   unencrypted = getpass (prompt);
-#ifdef government_not_broken
-  encrypted = crypt (unencrypted, password);
-  memset (unencrypted, 0, strlen (unencrypted)); /* Paranoia may destroya.  */
-#else
-  encrypted = unencrypted;
-#endif  
+  if (crypt)
+    {
+      encrypted = crypt (unencrypted, password);
+      memset (unencrypted, 0, strlen (unencrypted)); /* Paranoia may destroya.  */
+    }
+  else  
+    encrypted = unencrypted;
 
   if (!strcmp (encrypted, password))
     return 1;
