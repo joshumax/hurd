@@ -25,7 +25,7 @@ OBJS=fstests.o
 
 fstests: $(OBJS); $(link)
 
-install: fstests
+install: fstests $(hurdroot)
 	cp fstests $(hurdroot)/hurd/init
 
 clean: 
