@@ -35,7 +35,7 @@ diskfs_S_dir_link (struct protid *dircred,
     return EOPNOTSUPP;
   
   np = filecred->po->np;
-  if (diskfs_readonly)
+  if (diskfs_check_readonly ())
     return EROFS;
   
   if (!dircred)
