@@ -1,3 +1,17 @@
+2000-02-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* socket.c (make_sock_user): Take new argument CONSUME.
+	* pfinet.h: Update decl.
+	* io-ops.c (S_io_reauthenticate, S_io_restrict_auth, S_io_duplicate):
+	Callers changed, these all pass false.
+	* socket-ops.c (S_socket_create, S_socket_accept): Callers changed,
+	these ones pass true.
+
+	* glue-include/linux/socket.h (memcpy_fromiovec): Update *IOV to
+	consume bytes copied from the available buffer.
+	(memcpy_tokerneliovec): Likewise.
+	(memcpy_toiovec): Just call memcpy_tokerneliovec.
+
 2000-02-05  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* linux-src (many files): Merge Linux 2.2.13 and 2.2.14 code.
