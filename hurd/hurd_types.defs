@@ -218,6 +218,7 @@ type utsname_t = struct[5 * _UTSNAME_LENGTH] of char;
 
 import <sys/types.h>;
 import <sys/stat.h>;
+import <sys/statfs.h>;
 import <sys/resource.h>;
 import <sys/utsname.h>;
 import <hurd/hurd_types.h>;
