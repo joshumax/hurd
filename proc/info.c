@@ -304,13 +304,14 @@ S_proc_getprocinfo (struct proc *callerp,
 		    pid_t pid,
 		    int flags,
 		    int **piarray,
-		    u_int *piarraylen)
+		    u_int *piarraylen,
+		    char **noise, unsigned *noise_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
   int nthreads;
   thread_t *thds;
-  error_t err;
+  error_t err = 0;
   size_t structsize;
   int i;
   int didalloc = 0;
@@ -354,11 +355,11 @@ S_proc_getprocinfo (struct proc *callerp,
      | (!p->p_pgrp->pg_orphcnt ? PI_ORPHAN : 0)
      | (p->p_msgport == MACH_PORT_NULL ? PI_NOMSG : 0)
      | (p->p_pgrp->pg_session->s_sid == p->p_pid ? PI_SESSLD : 0)
-     | (p->p_noonwer ? PI_NOTOWNED : 0)
+     | (p->p_noowner ? PI_NOTOWNED : 0)
      | (!p->p_parentset ? PI_NOPARENT : 0)
      | (p->p_traced ? PI_TRACED : 0)
      | (p->p_msgportwait ? PI_GETMSG : 0)
-     | (p->p_loginleader ? PI_LODINLD : 0));
+     | (p->p_loginleader ? PI_LOGINLD : 0));
   pi->owner = p->p_owner;
   pi->ppid = p->p_parent->p_pid;
   pi->pgrp = p->p_pgrp->pg_pgid;
@@ -381,7 +382,7 @@ S_proc_getprocinfo (struct proc *callerp,
   
   for (i = 0; i < nthreads; i++)
     {
-      pi->threadinfos[i].dead = 0;
+      pi->threadinfos[i].died = 0;
       if (flags & PI_FETCH_THREAD_BASIC)
 	{
 	  thcount = THREAD_BASIC_INFO_COUNT;
@@ -390,7 +391,7 @@ S_proc_getprocinfo (struct proc *callerp,
 			     &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
-	      pi->threadinfos[i].dead = 1;
+	      pi->threadinfos[i].died = 1;
 	      continue;
 	    }
 	  if (err && err != MACH_SEND_INVALID_DEST)
@@ -406,7 +407,7 @@ S_proc_getprocinfo (struct proc *callerp,
 			       &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
-	      pi->threadinfos[i].dead = 1;
+	      pi->threadinfos[i].died = 1;
 	      continue;
 	    }
 	  if (err && err != ESRCH)
@@ -428,6 +429,10 @@ S_proc_getprocinfo (struct proc *callerp,
     }
   if (err && didalloc)
     vm_deallocate (mach_task_self (), (u_int) *piarray, structsize);
+
+  if (!err)
+    /* Don't return anything for now.  */
+    *noise_len = 0;
 
   return err;
 }
