@@ -80,7 +80,7 @@ check_uid (struct proc *p, uid_t uid)
 
 
 /* Implement proc_reathenticate as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_reauthenticate (struct proc *p, int id)
 {
   error_t err;
@@ -127,7 +127,7 @@ S_proc_reauthenticate (struct proc *p, int id)
 }
 
 /* Implement proc_child as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_child (struct proc *parentp,
 	    task_t childt)
 {
@@ -185,7 +185,7 @@ S_proc_child (struct proc *parentp,
 }
 
 /* Implement proc_reassign as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_reassign (struct proc *p,
 		 task_t newt)
 {
@@ -240,7 +240,7 @@ S_proc_reassign (struct proc *p,
 }
 
 /* Implement proc_setowner as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setowner (struct proc *p,
 	       uid_t owner)
 {
@@ -253,7 +253,7 @@ S_proc_setowner (struct proc *p,
 }
 
 /* Implement proc_getpids as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getpids (struct proc *p,
 	      pid_t *pid,
 	      pid_t *ppid,
@@ -266,7 +266,7 @@ S_proc_getpids (struct proc *p,
 }
 
 /* Implement proc_setprocargs as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setprocargs (struct proc *p,
 		  int argv,
 		  int envp)
@@ -277,7 +277,7 @@ S_proc_setprocargs (struct proc *p,
 }
 
 /* Implement proc_dostop as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_dostop (struct proc *p,
 	     thread_t contthread)
 {
@@ -300,7 +300,7 @@ S_proc_dostop (struct proc *p,
 }
 
 /* Implement proc_handle_exceptions as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_handle_exceptions (struct proc *p,
 			  mach_port_t msgport,
 			  mach_port_t forwardport,
@@ -332,7 +332,7 @@ S_proc_handle_exceptions (struct proc *p,
 /* Called on exception ports provided to proc_handle_exceptions.  Do
    the thread_set_state requested by proc_handle_exceptions and then
    send an exception_raise message as requested. */
-error_t
+kern_return_t
 S_proc_exception_raise (mach_port_t excport,
 			mach_port_t reply,
 			mach_msg_type_name_t replyname,
@@ -359,7 +359,7 @@ S_proc_exception_raise (mach_port_t excport,
 /* Called by proc_handle_exception clients after they have received
    the exception_raise we send in S_proc_exception_raise.  Reply to
    the agent that generated the exception raise. */
-error_t
+kern_return_t
 S_proc_exception_raise_reply (mach_port_t excport,
 			      int replycode)
 {
@@ -373,7 +373,7 @@ S_proc_exception_raise_reply (mach_port_t excport,
 }
 
 /* Implement proc_getallpids as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getallpids (struct proc *p,
 		   pid_t **pids,
 		   u_int *pidslen)
@@ -565,7 +565,6 @@ process_has_exited (struct proc *p)
      of our list onto init's. */
   if (p->p_ochild)
     {
-      int last;
       struct proc *tp;		/* will point to the last one */
       
       /* first tell them their parent is changing */
