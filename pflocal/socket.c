@@ -94,8 +94,14 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
     {
       struct sock *sock = user->sock;
       struct connq *cq = peer->listen_queue;
-      if (cq)
-	/* Only connect with sockets that are actually listening.  */
+
+      if (sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
+	/* For connectionless protocols, connect() just sets where writes
+	   will go, so the destination need not be doing an accept.  */
+	err = sock_connect (sock, peer);
+      else if (cq)
+	/* For connection-oriented protocols, only connect with sockets that
+           are actually listening.  */
 	{
 	  mutex_lock (&sock->lock);
 	  if (sock->connect_queue)
@@ -126,6 +132,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	}
       else
 	err = ECONNREFUSED;
+
       sock_deref (peer);
     }
 
@@ -262,55 +269,75 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	       char *control, size_t control_len,
 	       size_t *amount)
 {
-  error_t err;
+  error_t err = 0;
   struct pipe *pipe;
-  struct sock *dest_sock;
+  struct sock *sock, *dest_sock;
   struct addr *source_addr;
 
-  if (!user || !dest_addr)
+  if (!user)
     return EOPNOTSUPP;
+
+  sock = user->sock;
 
   if (flags & MSG_OOB)
     /* BSD local sockets don't support OOB data.  */
     return EOPNOTSUPP;
 
-  err = addr_get_sock (dest_addr, &dest_sock);
-  if (err)
-    return err;
+  if (dest_addr)
+    {
+      err = addr_get_sock (dest_addr, &dest_sock);
+      if (err)
+	return err;
+      if (sock->pipe_class != dest_sock->pipe_class)
+	/* Sending to a different type of socket!  */
+	err = EINVAL;		/* ? XXX */
+    }
+  else
+    dest_sock = 0;
 
-  if (user->sock->read_pipe->class != dest_sock->read_pipe->class)
-    /* Sending to a different type of socket!  */
-    err = EINVAL;		/* ? XXX */
+  /* We could provide a source address for all writes, but we
+     only do so for connectionless sockets because that's the
+     only place it's required, and it's more efficient not to.  */
+  if (!err && sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
+    err = sock_get_addr (sock, &source_addr);
+  else
+    source_addr = NULL;
 
-  if (!err)
-    err = sock_get_addr (user->sock, &source_addr);
   if (!err)
     {
-      /* Grab the destination socket's read pipe directly, and stuff data
-	 into it.  This is not quite the usage sock_acquire_read_pipe was
-	 intended for, but it will work, as the only inappropiate errors
-	 occur on a broken pipe, which shouldn't be possible with the sort of
-	 sockets with which we can use socket_send...  XXXX */
-      err = sock_acquire_read_pipe (dest_sock, &pipe);
+      if (dest_sock)
+	/* Grab the destination socket's read pipe directly, and stuff data
+	   into it.  This is not quite the usage sock_acquire_read_pipe was
+	   intended for, but it will work, as the only inappropiate errors
+	   occur on a broken pipe, which shouldn't be possible with the sort of
+	   sockets with which we can use socket_send...  XXXX */
+	err = sock_acquire_read_pipe (dest_sock, &pipe);
+      else
+	/* No address, must be a connected socket...  */
+	err = sock_acquire_write_pipe (sock, &pipe);
+	
       if (!err)
 	{
-	  err = pipe_send (pipe, user->sock->flags & SOCK_NONBLOCK,
+	  err = pipe_send (pipe, sock->flags & SOCK_NONBLOCK,
 			   source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
 	  pipe_release_writer (pipe);
-	  if (err)
-	    /* The send failed, so free any resources it would have consumed
-	       (mig gets rid of memory, but we have to do everything else). */
-	    {
-	      ports_port_deref (source_addr);
-	      while (num_ports-- > 0)
-		mach_port_deallocate (mach_task_self (), *ports++);
-	    }
+	}
+
+      if (err)
+	/* The send failed, so free any resources it would have consumed
+	   (mig gets rid of memory, but we have to do everything else). */
+	{
+	  if (source_addr)
+	    ports_port_deref (source_addr);
+	  while (num_ports-- > 0)
+	    mach_port_deallocate (mach_task_self (), *ports++);
 	}
     }
 
-  sock_deref (dest_sock);
+  if (dest_sock)
+    sock_deref (dest_sock);
 
   return err;
 }
