@@ -249,11 +249,12 @@ int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ | O_WRITE;
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
-  struct dev *dev = device;
+  struct dev *dev = cred->po->hook;
 
   if (dev)
+    /* An open device.  */
     {
       vm_size_t size = dev->size;
 
@@ -285,14 +286,10 @@ trivfs_modify_stat (struct stat *st)
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode,
-	       struct port_class *fsys_port_class,
-	       struct port_class *file_port_class)
+trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   int force = (flags & FSYS_GOAWAY_FORCE);
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
-
-  DEBUG(fprintf(debug, "trivfs_goaway(0x%x, %d)\n", flags, realnode));
 
   mutex_lock(&device_lock);
 
