@@ -18,6 +18,7 @@
 #include "priv.h"
 #include <mach/notify.h>
 
+/* Shutdown pager P and prevent any future paging activity on it.  */
 void
 pager_shutdown (struct pager *p)
 {
