@@ -1,19 +1,42 @@
-.globl _sigreturn
-_sigreturn:
+/* Temporary....
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#include <i386/asm.h>
+
+.text
+ENTRY(sigreturn)
 	movl $0x67,%eax
 	lcall $0x7,$0x0
+	jb error
 	ret
-
-.globl __sigreturn
-__sigreturn:
+ENTRY(_sigreturn)
 	addl $0xc,%esp
-	call _sigreturn
+	call EXT(sigreturn)
 	ret
-
-.globl _sigvec
-_sigvec:
+ENTRY(sigvec)
 	movl $0x6c,%eax
-	movl $__sigreturn,%edx
+	movl $EXT(_sigreturn),%edx
 	orl $0x80000000,%edx
 	lcall $0x7,$0x0
+	jb error
 	ret
+error:
+        movl %eax,EXT(errno)
+        movl $-1,%eax
+        ret
