@@ -60,6 +60,17 @@ bfloppy.ext2: mkfsimage bfloppy.copy
 	./mkfsimage $@ --owner=root.wheel				\
 	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy-special.copy
+
+# Temporarily use two boot floppies until we add compression in appropriate places.
+bfloppy1.ext2: mkfsimage bfloppy1.copy
+	./mkfsimage $@ --owner=root.wheel				\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy1.copy
+bfloppy2.ext2: mkfsimage bfloppy2.copy
+	./mkfsimage $@ --owner=root.wheel				\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy2.copy		\
+	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy2-special.copy
+
 rfloppy.ext2.gz: mkfsimage rfloppy.copy
 	./mkfsimage $@ --compress --owner=root.wheel			\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/rfloppy.copy
+	  $(bfloppy-src) --copy-rules=$(srcdir)/rfloppy.copy		\
+	  $(srcdir)      --copy-rules=$(srcdir)/rfloppy-special.copy
