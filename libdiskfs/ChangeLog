@@ -1,3 +1,7 @@
+Mon Jun 29 18:54:23 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* lookup.c (diskfs_lookup): If NAME is empty, return an error.
+
 Tue May 12 12:08:35 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* file-get-trans.c (diskfs_S_file_get_translator) [S_ISCHR ||
