@@ -1,3 +1,11 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* init.c (reboot_mach): Use ERR, not errno.
+	(run): Likewise.
+	(lauch_core_servers): Likewise.
+	(run_for_real): Use MACH_PORT_NULL explicitly.
+	(start_child): Likewise.
+
 2002-01-02  Roland McGrath  <roland@frob.com>
 
 	* init.c [KERN_INVALID_LEDGER]:

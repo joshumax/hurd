@@ -1,3 +1,12 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* ifsock.c (main): Use ERR, not errno.
+	* symlink.c: Include <error.h> and <errno.h>.
+	(main): Use err, not fprintf and exit.  Use error, not perror and
+	exit.  Use err, not error.  Check for MACH_PORT_NULL
+	explicitly. Check for proper usage of symlink before checking if
+	symlink is started as a translator.
+
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* crash.c: Add `corelimit' parameter to `dump_core' forward decl.

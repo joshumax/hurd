@@ -1,3 +1,9 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* halt.c (main): Use error, not perror.
+	* reboot.c (main): Likewise.
+	* update.c (main): Use error, not perror and exit.
+
 2002-03-23  Roland McGrath  <roland@frob.com>
 
 	* MAKEDEV.sh (mkdev: shm): Change tmpfs size argument to 50%.

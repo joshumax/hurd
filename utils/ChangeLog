@@ -1,3 +1,11 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* rpctrace.c (parse_msgid_list): Use ERR, not errno.
+	* shd.c (reap): Use error, not perror.
+	(command): Likewise.
+	(main): Likewise.
+	(run): Use error, not perror.  Use ERR, not errno.
+
 2002-01-30  Roland McGrath  <roland@frob.com>
 
 	* rpctrace.c (struct msgid_info): New type.

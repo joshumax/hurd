@@ -1,3 +1,10 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* fsys.c (init_filesystems): Use error, not fprintf.  Use
+	MACH_PORT_NULL explicitly.
+	(write_filesystems): Use error, not fprintf.  Use ERR, not errno.
+	* main.c (main): Use error, not perror and exit.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* ops.c: Include <string.h> for decls of built-ins.

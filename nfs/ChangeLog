@@ -1,3 +1,9 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* main.c (main): Use error, not perror and exit.  Use ERR, not errno.
+	* mount.c (mount_root): Likewise.
+	* rpc.c (rpc_receive_thread): Use error, not perror.
+
 2002-01-03  Roland McGrath  <roland@frob.com>
 
 	* storage-info.c (netfs_file_get_storage_info): Set *PORTS_TYPE.
