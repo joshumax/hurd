@@ -162,9 +162,6 @@ error_t ports_create_port (struct port_class *class,
 			   struct port_bucket *bucket,
 			   size_t size,
 			   void *result);
-/* This is obsolete.  Use ports_create_port.  */
-void *ports_allocate_port (struct port_bucket *bucket, size_t size, 
-			   struct port_class *class);
    
 /* For an existing RECEIVE right, create and return in RESULT a new port
    structure; BUCKET, SIZE, and CLASS args are as for ports_create_port. */
@@ -172,10 +169,6 @@ error_t ports_import_port (struct port_class *class,
 			   struct port_bucket *bucket,
 			   mach_port_t port, size_t size,
 			   void *result);
-/* This is obsolete.  Use ports_import_port.  */
-void *ports_intern_external_port (struct port_bucket *bucket,
-				  mach_port_t receive, size_t size, 
-				  struct port_class *class);
 
 /* Destroy the receive right currently associated with PORT and allocate
    a new one. */
