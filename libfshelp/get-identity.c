@@ -1,5 +1,5 @@
 /* Helper function for io_identity
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -26,7 +26,7 @@
 static struct port_class *idclass = 0;
 static struct mutex idlock = MUTEX_INITIALIZER;
 
-struct idspec 
+struct idspec
 {
   struct port_info pi;
   ino_t fileno;
@@ -50,7 +50,7 @@ fshelp_get_identity (struct port_bucket *bucket,
   error_t check_port (void *arg)
     {
       struct idspec *i = arg;
-      if (i->pi.class == idclass && i->fileno == fileno)
+      if (i->fileno == fileno)
 	{
 	  *pt = ports_get_right (i);
 	  return 1;
@@ -64,15 +64,15 @@ fshelp_get_identity (struct port_bucket *bucket,
     id_initialize ();
 
   *pt = MACH_PORT_NULL;
-  
-  ports_bucket_iterate (bucket, check_port);
+
+  ports_class_iterate (idclass, check_port);
 
   if (*pt != MACH_PORT_NULL)
     {
       mutex_unlock (&idlock);
       return 0;
     }
-  
+
   err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
   if (err)
     {
@@ -80,11 +80,9 @@ fshelp_get_identity (struct port_bucket *bucket,
       return err;
     }
   i->fileno = fileno;
-  
+
   *pt = ports_get_right (i);
   ports_port_deref (i);
   mutex_unlock (&idlock);
   return 0;
 }
-
-  
