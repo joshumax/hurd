@@ -801,6 +801,14 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	  node->dn->pager =
 	    pager_create (upi, pager_bucket, MAY_CACHE,
 			  MEMORY_OBJECT_COPY_DELAY);
+	  if (node->dn->pager == 0)
+	    {
+	      diskfs_nrele_light (node);
+	      free (upi);
+	      spin_unlock (&node_to_page_lock);
+	      return MACH_PORT_NULL;
+	    }
+
 	  right = pager_get_port (node->dn->pager);
 	  ports_port_deref (node->dn->pager);
 	}

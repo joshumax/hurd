@@ -1,6 +1,6 @@
 /* File truncation
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -233,9 +233,15 @@ force_delayed_copies (struct node *node, off_t length)
       
       pager_change_attributes (pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
       obj = diskfs_get_filemap (node, VM_PROT_READ);
-      poke_pages (obj, round_page (length), round_page (node->allocsize));
-      mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (pager, round_page(length), node->allocsize - length, 1);
+      if (obj != MACH_PORT_NULL)
+	{
+	  /* XXX should cope with errors from diskfs_get_filemap */
+	  poke_pages (obj, round_page (length), round_page (node->allocsize));
+	  mach_port_deallocate (mach_task_self (), obj);
+	  pager_flush_some (pager, round_page(length), 
+			    node->allocsize - length, 1);
+	}
+      
       ports_port_deref (pager);
     }
 }

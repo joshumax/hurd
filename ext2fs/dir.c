@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -153,6 +153,10 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   /* Map in the directory contents. */
   memobj = diskfs_get_filemap (dp, prot);
+
+  if (memobj == MACH_PORT_NULL)
+    return errno;
+
   buf = 0;
   /* We allow extra space in case we have to do an EXTEND. */
   buflen = round_page (dp->dn_stat.st_size + DIRBLKSIZ);
@@ -716,6 +720,10 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   int hit = 0;			/* Found something in the directory.  */
   memory_object_t memobj = diskfs_get_filemap (dp, VM_PROT_READ);
   
+  if (memobj == MACH_PORT_NULL)
+    /* XXX should reflect error properly. */
+    return 0;
+
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
 		1, memobj, 0, 0, VM_PROT_READ, VM_PROT_READ, 0);
   mach_port_deallocate (mach_task_self (), memobj);

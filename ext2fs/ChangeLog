@@ -1,3 +1,14 @@
+Wed Aug 20 14:28:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir.c (diskfs_lookup_hard): Cope with error return from
+	diskfs_get_filemap. 
+	(diskfs_dirempty): Cope (poorly) with error return from
+	diskfs_get_filemap. 
+	* truncate.c (force_delayed_copies): Likewise.
+
+	* pager.c (diskfs_get_filemap): If pager_create fails, return
+	error to caller.
+
 Mon Jun 30 17:34:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ext2fs.c (diskfs_readonly): Delete variable definition.
