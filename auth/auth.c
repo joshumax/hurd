@@ -1,5 +1,5 @@
 /* Authentication server.
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -137,7 +137,7 @@ S_auth_makeauth (struct authhandle *auth,
   /* Fetch the auth structures for all the ports passed in. */
   for (i = 0; i < nauths; i++)
     auths[i + 1] = auth_port_to_handle (authpts[i]);
-  
+
   ++nauths;
 
   /* Verify that the union of the handles passed in either contains euid 0
@@ -460,9 +460,14 @@ main (int argc, char **argv)
   idvec_merge (&firstauth->agids, &firstauth->auids);
 
   /* Fetch our bootstrap port and contact the bootstrap filesystem.  */
-  task_get_bootstrap_port (mach_task_self (), &boot);
-  startup_authinit (boot, ports_get_right (firstauth),
-		    MACH_MSG_TYPE_MAKE_SEND, &proc);
+  err = task_get_bootstrap_port (mach_task_self (), &boot);
+  assert_perror (err);
+  if (boot == MACH_PORT_NULL)
+    error (2, 0, "auth server can only be run by init during boot");
+  err = startup_authinit (boot, ports_get_right (firstauth),
+			  MACH_MSG_TYPE_MAKE_SEND, &proc);
+  if (err)
+    error (2, err, "cannot contact init for bootstrap");
 
   /* Register ourselves with the proc server and then start signals.  */
   proc_getprivports (proc, &hostpriv, &masterdev);
