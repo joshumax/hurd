@@ -22,7 +22,7 @@
 /* Implement file_truncate as described in <hurd/fs.defs>. */
 error_t
 diskfs_S_file_truncate (struct protid *cred,
-			int size)
+			off_t size)
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
