@@ -320,11 +320,11 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       
       if (!entry->d_reclen
 	  || entry->d_reclen % 4
-	  || entry->d_namlen > MAXNAMLEN
+	  || DIRECT_NAMLEN (entry) > MAXNAMLEN
 	  || currentoff + entry->d_reclen > blockaddr + DIRBLKSIZ
-	  || entry->d_name[entry->d_namlen]
-	  || DIRSIZ (entry->d_namlen) > entry->d_reclen
-	  || memchr (entry->d_name, '\0', entry->d_namlen))
+	  || entry->d_name[DIRECT_NAMLEN (entry)]
+	  || DIRSIZ (DIRECT_NAMLEN (entry)) > entry->d_reclen
+	  || memchr (entry->d_name, '\0', DIRECT_NAMLEN (entry)))
 	{
 	  fprintf (stderr, "Bad directory entry: inode: %ld offset: %d\n",
 		  dp->dn->number, currentoff - blockaddr);
@@ -338,7 +338,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  if (entry->d_ino == 0)
 	    thisfree = entry->d_reclen;
 	  else
-	    thisfree = entry->d_reclen - DIRSIZ (entry->d_namlen);
+	    thisfree = entry->d_reclen - DIRSIZ (DIRECT_NAMLEN (entry));
 	  
 	  if (thisfree >= needed)
 	    {
@@ -365,7 +365,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       if (entry->d_ino)
 	nentries++;
 
-      if (entry->d_namlen == namelen
+      if (DIRECT_NAMLEN (entry) == namelen
 	  && entry->d_name[0] == name[0]
 	  && entry->d_ino
 	  && !bcmp (entry->d_name, name, namelen))
@@ -441,7 +441,9 @@ diskfs_direnter(struct node *dp,
       assert (ds->entry->d_ino == 0 && ds->entry->d_reclen >= needed);
       
       ds->entry->d_ino = np->dn->number;
-      ds->entry->d_namlen = namelen;
+      DIRECT_NAMLEN (ds->entry) = namelen;
+      if (direct_symlink_extension)
+	ds->d_type = IFTODT (np->dn->dn_stat.st_mode);
       bcopy (name, ds->entry->d_name, namelen + 1);
 
       break;
@@ -449,14 +451,16 @@ diskfs_direnter(struct node *dp,
     case SHRINK:
       /* We are supposed to take the extra space at the end
 	 of this slot. */
-      oldneeded = DIRSIZ (ds->entry->d_namlen);
+      oldneeded = DIRSIZ (DIRECT_NAMLEN (ds->entry));
       assert (ds->entry->d_reclen - oldneeded >= needed);
       
       new = (struct direct *) ((vm_address_t) ds->entry + oldneeded);
 
       new->d_ino = np->dn->number;
       new->d_reclen = ds->entry->d_reclen - oldneeded;
-      new->d_namlen = namelen;
+      DIRECT_NAMLEN (new) = namelen;
+      if (direct_symlink_extension)
+	ds->d_type = IFTODT (np->dn->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       
       ds->entry->d_reclen = oldneeded;
@@ -481,7 +485,7 @@ diskfs_direnter(struct node *dp,
 	      assert (fromoff >= tooff);
 
 	      bcopy (from, to, fromreclen);
-	      to->d_reclen = DIRSIZ (to->d_namlen);
+	      to->d_reclen = DIRSIZ (DIRECT_NAMLEN (to));
 
 	      tooff += to->d_reclen;
 	    }
@@ -494,7 +498,9 @@ diskfs_direnter(struct node *dp,
       new = (struct direct *) tooff;
       new->d_ino = np->dn->number;
       new->d_reclen = totfreed;
-      new->d_namlen = namelen;
+      DIRECT_NAMLEN (new) = namelen;
+      if (direct_symlink_extension)
+	new->d_type = IFTODT (np->dn->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       break;
 
@@ -514,7 +520,9 @@ diskfs_direnter(struct node *dp,
 
       new->d_ino = np->dn->number;
       new->d_reclen = DIRBLKSIZ;
-      new->d_namlen = namelen;
+      DIRECT_NAMLEN (new) = namelen;
+      if (direct_symlink_extension)
+	new->d_type = IFTODT (np->dn->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       break;
       
@@ -611,6 +619,8 @@ diskfs_dirrewrite(struct node *dp,
   assert (ds->stat == HERE_TIS);
   
   ds->entry->d_ino = np->dn->number;
+  if (direct_symlink_extension)
+    ds->entry->d_type = IFTODT (np->dn->dn_stat.st_mode);
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
@@ -651,7 +661,7 @@ diskfs_dirempty(struct node *dp,
       entry = (struct direct *) curoff;
 
       if (entry->d_ino != 0
-	  && (entry->d_namlen > 2
+	  && (DIRECT_NAMLEN (entry) > 2
 	      || entry->d_name[0] != '.'
 	      || (entry->d_name[1] != '.'
 		  && entry->d_name[1] != '\0')))
@@ -831,10 +841,10 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->d_ino)
 	{
-	  bcopy (bufp, datap, DIRSIZ (entryp->d_namlen));
-	  ((struct direct *)bufp)->d_reclen = DIRSIZ (entryp->d_namlen);
+	  bcopy (bufp, datap, DIRSIZ (DIRECT_NAMLEN (entryp)));
+	  ((struct direct *)bufp)->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
 	  i++;
-	  datap += DIRSIZ (entryp->d_namlen);
+	  datap += DIRSIZ (DIRECT_NAMLEN (entryp));
 	}
 
       bufp += entryp->d_reclen;
