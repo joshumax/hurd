@@ -1,3 +1,12 @@
+2001-08-20  Roland McGrath  <roland@frob.com>
+
+	* init.c (kernel_command_line): Variable removed.
+	(options, parse_opt): Remove -K option.
+	(frob_kernel_process): Collect arguments from &global_argv[1]
+	instead of slicing up kernel_command_line.
+	(start_child): Take a second arg, if non-null more arguments for PROG.
+	(launch_something): Change caller.  On first try, pass &global_argv[1].
+
 2001-07-02  Roland McGrath  <roland@frob.com>
 
 	* init.c (reboot_system): Don't pass null pointer to RPC out param.

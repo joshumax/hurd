@@ -1,3 +1,35 @@
+2001-08-20  Roland McGrath  <roland@frob.com>
+
+	* opts-std-startup.c: diskfs_boot_flags -> diskfs_boot_command_line.
+	(OPT_BOOT_CMDLINE): Renamed from OPT_BOOTFLAGS.
+	(startup_options): --bootflags -> --multiboot-command-line
+	(parse_startup_opt): Parse it.
+	* diskfs.h: diskfs_boot_flags -> diskfs_boot_command_line.
+	(diskfs_boot_filesystem): New macro.
+	* init-main.c (diskfs_init_main): Use it.
+	* init-init.c (diskfs_init_diskfs): Likewise.
+	* console.c (diskfs_console_stdio): Likewise.
+	* boot-start.c (_diskfs_boot_privports): Likewise.
+	(diskfs_start_bootstrap): Split boot_command_line into words and pass
+	those arguments to init instead of diskfs_bootflags.
+
+	* opts-std-startup.c (_diskfs_boot_pause): New variable.
+	(OPT_BOOT_PAUSE): New macro.
+	(startup_options): Add --boot-debug-pause.
+	(parse_startup_opt): Parse it.
+
+	* diskfs.h: Declare it.
+	* boot-start.c (diskfs_start_bootstrap, start_execserver): Use it.
+
+	* boot-start.c (diskfs_boot_init_program): New variable.
+	* diskfs.h: Declare it.
+	* boot-start.c (default_init): Variable removed.
+	(diskfs_start_bootstrap): Use diskfs_boot_init_program instead
+	of default_init or prompting under -i.
+	* opts-std-startup.c (OPT_BOOT_INIT_PROGRAM): New macro.
+	(startup_options): Add --boot-init-program.
+	(parse_startup_opt): Parse it.
+
 2001-06-21  Neal H Walfield  <neal@cs.uml.edu>
 
 	* file-getcontrol.c (diskfs_S_file_getcontrol):  When checking

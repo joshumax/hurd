@@ -1,3 +1,7 @@
+2001-08-20  Roland McGrath  <roland@frob.com>
+
+	* hurd.boot: Change --bootflags to --multiboot-command-line.
+
 2001-06-24  Mark Kettenis  <kettenis@gnu.org>
 
 	* configure.in: Add check for getgrouplist.
