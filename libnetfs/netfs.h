@@ -86,6 +86,15 @@ struct node
   struct dirmod *dirmod_reqs;
 };
 
+/* Attached to exported file identity ports to hold a reference to
+   the associated node. */
+struct identity
+{
+  struct port_info pi;
+  struct node *np;
+};
+
+
 /* The user must define this function.  Make sure that NP->nn_stat is
    filled with current information.  CRED identifies the user
    responsible for the operation.  */
@@ -318,11 +327,13 @@ struct peropen *netfs_make_peropen (struct node *, int, mach_port_t);
 void netfs_drop_node (struct node *);
 void netfs_release_protid (void *);
 void netfs_release_peropen (struct peropen *);
+void netfs_release_identity (void *);
 int netfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 error_t netfs_shutdown (int);
 
 extern struct port_class *netfs_protid_class;
 extern struct port_class *netfs_control_class;
+extern struct port_class *netfs_identity_class;
 extern struct port_bucket *netfs_port_bucket;
 extern struct node *netfs_root_node;
 extern mach_port_t netfs_fsys_identity;
