@@ -154,9 +154,11 @@ int afinet_get_info(char *buffer, char **start, off_t offset, int length)
 	extern int socket_get_info(char *, char **, off_t, int);
 #ifndef _HURD_
 	extern struct proto packet_prot;
+	int len  = socket_get_info(buffer,start,offset,length);
+#else
+	int len = 0;
 #endif
 
-	int len  = socket_get_info(buffer,start,offset,length);
 
 	len += sprintf(buffer+len,"SOCK_ARRAY_SIZE=%d\n",SOCK_ARRAY_SIZE);
 	len += sprintf(buffer+len,"TCP: inuse %d highest %d\n",
