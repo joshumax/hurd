@@ -1,0 +1,46 @@
+/* Interface definitions for process startup.
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* Written by Roland McGrath.  */
+
+subsystem exec_startup 30500;
+
+#include <hurd/hurd_types.defs>
+
+/* This call is made by a new task to its bootstrap port to get its
+   startup ports and information.  */
+
+routine exec_startup_get_info (
+	bootstrap: mach_port_t;
+	/* These describe the entry point and program header data
+	   of the user program loaded into the task.  */
+	out user_entry: vm_address_t;
+	out phdr_data: vm_address_t;
+	out phdr_size: vm_size_t;
+	/* These are the base address and size of the initial stack
+	   allocated by the exec server.   */
+	out stack_base: vm_address_t;
+	out stack_size: vm_size_t;
+	/* The rest of the information is that passed by exec_exec.  */
+	out flags: int;
+	out argv: data_t, dealloc;
+	out envp: data_t, dealloc;
+	out dtable: portarray_t, dealloc;
+	out portarray: portarray_t, dealloc;
+	out intarray: intarray_t, dealloc);
