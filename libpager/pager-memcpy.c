@@ -170,8 +170,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   void fault (int signo, long int sigcode, struct sigcontext *scp)
     {
       assert (scp->sc_error == EKERN_MEMORY_ERROR);
-      err = pager_get_error (pager,
-			     (sigcode - window + offset) / vm_page_size);
+      err = pager_get_error (pager, sigcode - window + offset);
       n -= sigcode - window;
       vm_deallocate (mach_task_self (), window, window_size);
       longjmp (buf, 1);
