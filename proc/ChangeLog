@@ -1,3 +1,8 @@
+2002-06-05  Roland McGrath  <roland@frob.com>
+
+	* info.c (S_proc_getprocinfo): If PI_FETCH_TASKEVENTS is set in *FLAGS,
+	fill in PI->taskevents using task_info with TASK_EVENTS_INFO.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* host.c (S_proc_setexecdata, S_proc_getexecdata): u_int -> size_t

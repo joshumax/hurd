@@ -1,3 +1,11 @@
+2002-06-05  Roland McGrath  <roland@frob.com>
+
+	* procstat.c (fetch_procinfo): Use PI_FETCH_TASKEVENTS.
+	(add_preconditions): PSTAT_TASK_EVENTS no longer needs PSTAT_TASK.
+	(PSTAT_PROCINFO_TASK): Add PSTAT_TASK_EVENTS to the mask.
+	(PSTAT_PROCINFO_MERGE): Here too.
+	(proc_stat_set_flags): Don't use task_info for PSTAT_TASK_EVENTS.
+
 2002-06-04  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* spec.c (sprint_frac_value): Added case for values between 1000 and

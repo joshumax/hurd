@@ -1,3 +1,8 @@
+2002-06-05  Roland McGrath  <roland@frob.com>
+
+	* hurd_types.h (struct procinfo): New member `taskevents'.
+	(PI_FETCH_TASKEVENTS): New macro.
+
 2002-05-23  Roland McGrath  <roland@frob.com>
 
 	* newterm.defs: Add routine keywords.
