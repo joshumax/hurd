@@ -1,5 +1,5 @@
 /* MiG type declarations for Hurd interfaces
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -143,7 +143,7 @@ serverprefix SERVERPREFIX;
 
 type data_t = array[] of char;
 type string_t = c_string[1024]; /* XXX */
-type io_statbuf_t = struct[28] of int;
+type io_statbuf_t = struct[32] of int;
 type uid_t = int;
 type gid_t = int;
 type mode_t = int;
