@@ -4,6 +4,8 @@
 #include <cthreads.h>
 #include <sys/types.h>
 
+#define intr_count (_fetch_intr_count ())
+
 /* This lock is held when "interrupts" are disabled. */
 extern struct mutex global_interrupt_lock;
 
@@ -64,6 +66,14 @@ end_interrupt ()
   /* Likewise a resumption? */
 }
 
-
+/* Return one if we are in interrupt code. */
+extern inline 
+_fetch_intr_count ()
+{
+  u_long locked;
+ 
+  _real_save_flags (&locked);
+  return locked;
+}
 
 #endif
