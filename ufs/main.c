@@ -287,6 +287,6 @@ diskfs_init_completed ()
 
   
 void
-thread_cancel (mach_thread_t foo __attribute__ ((unused)))
+thread_cancel (thread_t foo __attribute__ ((unused)))
 {
 }
