@@ -1,5 +1,9 @@
 Wed Aug  7 11:39:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* main.c (index_file): New var.
+	(index_file_name): Initialize from index_file.
+	(main): Don't initialize index_file_name here.
+	
 	* ops.c (op_null, op_getattr, op_setattr, op_lookup, op_readlink,
 	count_read_buffersize, op_read, op_write, op_create, op_remove,
 	op_rename, op_link, op_symlink, op_mkdir, op_rmdir,

@@ -27,13 +27,9 @@
 
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
-char *index_file_name;
-
-#ifdef makefiles_not_broken
-#define STATEDIR # LOCALSTATEDIR
-#else
-#define STATEDIR "/var"
-#endif
+#define INDEX_FILE_NAME(dir) # dir "/state/misc/nfsd.index"
+static char index_file[] = INDEX_FILE_NAME (LOCALSTATEDIR);
+char *index_file_name = index_file;
 
 int
 main (int argc, char **argv)
@@ -53,8 +49,6 @@ main (int argc, char **argv)
   if (!nthreads)
     nthreads = 4;
   
-  asprintf (&index_file_name, "%s/state/misc/nfsd.index", STATEDIR);
-
   authserver = getauth ();
   maptime_map (0, 0, &mapped_time);
 
