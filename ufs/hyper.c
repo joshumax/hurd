@@ -19,12 +19,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <error.h>
+#include <hurd/store.h>
 
 static int ufs_clean;		/* fs clean before we started writing? */
 
 static int oldformat;
 
-vm_address_t zeroblock;
+void *zeroblock;
 
 struct fs *sblock;
 struct csum *csum;
@@ -137,7 +138,8 @@ get_hypermetadata (void)
 
   /* Free previous values.  */
   if (zeroblock)
-    vm_deallocate (mach_task_self (), zeroblock, sblock->fs_bsize);
+    vm_deallocate (mach_task_self(),
+		   (vm_address_t)zeroblock, sblock->fs_bsize);
   if (csum)
     free (csum);
 
@@ -190,13 +192,13 @@ get_hypermetadata (void)
     {
       error (0, 0,
 	     "%s: warning: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck",
-	     diskfs_device_arg);
+	     diskfs_disk_name);
       if (! diskfs_readonly)
 	{
 	  diskfs_readonly = 1;
 	  error (0, 0,
 		 "%s: MOUNTED READ-ONLY; MUST USE `fsysopts --writable'",
-		 diskfs_device_arg);
+		 diskfs_disk_name);
 	}
     }
 
@@ -247,18 +249,17 @@ get_hypermetadata (void)
   if (swab_disk)
     swab_csums (csum);
 
-  if ((diskfs_device_size << diskfs_log2_device_block_size)
-      < sblock->fs_size * sblock->fs_fsize)
+  if (store->size < sblock->fs_size * sblock->fs_fsize)
     {
       fprintf (stderr,
-	       "Disk size (%ld) less than necessary "
+	       "Disk size (%Zd) less than necessary "
 	       "(superblock says we need %ld)\n",
-	       diskfs_device_size << diskfs_log2_device_block_size,
-	       sblock->fs_size * sblock->fs_fsize);
+	       store->size, sblock->fs_size * sblock->fs_fsize);
       exit (1);
     }
 
-  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
+  vm_allocate (mach_task_self (),
+	       (vm_address_t *)&zeroblock, sblock->fs_bsize, 1);
 
   /* If the filesystem has new features in it, don't pay attention to
      the user's request not to use them. */
@@ -279,8 +280,6 @@ get_hypermetadata (void)
 error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
-  vm_address_t buf;
-  vm_size_t bufsize;
   error_t err;
 
   spin_lock (&alloclock);
@@ -289,26 +288,36 @@ diskfs_set_hypermetadata (int wait, int clean)
     {
       /* Copy into a page-aligned buffer to avoid bugs in kernel device
          code. */
+      void *buf = 0;
+      size_t read = 0;
+      size_t bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
 
-      bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
-
-      err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
-				     &buf, bufsize);
+      err = store_read (store, fsbtodb (sblock, sblock->fs_csaddr), bufsize,
+			&buf, &read);
       if (err)
 	return err;
-      
-      bcopy (csum, (void *) buf, sblock->fs_cssize);
-      if (swab_disk)
-	swab_csums ((struct csum *)buf);
-      err = diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
-				      buf, bufsize);
-      vm_deallocate (mach_task_self (), buf, bufsize);
+      else if (read != bufsize)
+	err = EIO;
+      else
+	{
+	  size_t wrote;
+	  bcopy (csum, buf, sblock->fs_cssize);
+	  if (swab_disk)
+	    swab_csums ((struct csum *)buf);
+	  err = store_write (store, fsbtodb (sblock, sblock->fs_csaddr),
+			     buf, bufsize, &wrote);
+	  if (!err && wrote != bufsize)
+	    err = EIO;
+	}
+
+      vm_deallocate (mach_task_self (), (vm_address_t)buf, read);
       
       if (err)
 	{
 	  spin_unlock (&alloclock);
 	  return err;
 	}
+
       csum_dirty = 0;
     }
 
@@ -384,8 +393,7 @@ void
 diskfs_readonly_changed (int readonly)
 {
   vm_protect (mach_task_self (),
-	      (vm_address_t)disk_image,
-	      diskfs_device_size << diskfs_log2_device_block_size,
+	      (vm_address_t)disk_image, store->size,
 	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
   if (readonly)
