@@ -54,13 +54,17 @@ include ../Makeconf
 install: $(installed_conf) $(installed_links) $(installed_logins) \
 	$(installed_rootdots)
 
+$(installed_rootdots): $(prefix)/root
+$(installed_logins): $(sysconfdir)/login
+
+$(prefix)/root $(sysconfdir)/login: %:
+	mkdir -p $@
+
 $(installed_rootdots): $(prefix)/root/%: root-%
-	mkdir -p $(prefix)/root
-	$(INSTALL_DATA) $< $(prefix)/$*
+	$(INSTALL_DATA) $< $(prefix)/root/$*
 
 $(installed_logins): $(sysconfdir)/login/%: login-%
-	mkdir -p $(sysconfdir)/login
-	$(INSTALL_DATA) $< $(sysconfdir)/$*
+	$(INSTALL_DATA) $< $(sysconfdir)/login/$*
 
 $(installed_conf): $(sysconfdir)/%: %
 	$(INSTALL_DATA) $< $(sysconfdir)/$*
