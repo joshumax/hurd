@@ -87,6 +87,7 @@ static int _debug = 0;
 #define FSCK_F_FORCE	0x8
 #define FSCK_F_SILENT	0x10
 #define FSCK_F_VERBOSE	0x20	/* Not passed down.  */
+#define FSCK_F_WRITABLE	0x40	/* Not passed down.  */
 
 static int got_sigquit = 0, got_sigint = 0;
 
@@ -104,7 +105,7 @@ struct fsck
 {
   struct fs *fs;		/* Filesystem being fscked.  */
   int pid;			/* Pid for process.  */
-  int was_readonly :1;		/* The fs was readonly before we made it so. */
+  int make_writable :1;		/* Make writable after fscking if possible.  */
   struct fsck *next, **self;
 };
 
@@ -186,7 +187,7 @@ static int
 fscks_start_fsck (struct fscks *fscks, struct fs *fs)
 {
   error_t err;
-  int mounted, was_readonly;
+  int mounted, make_writable;
   struct fsck *fsck;
 
   if (got_sigint)
@@ -206,16 +207,29 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
   
   if (mounted)
     {
+      int readonly;
+
       fs_debug (fs, "Checking readonly state");
-      err = fs_readonly (fs, &was_readonly);
+      err = fs_readonly (fs, &readonly);
       CK (err, "%s: Cannot check readonly state", fs->mntent.mnt_dir);
-      if (! was_readonly)
+
+      if (! readonly)
 	{
 	  fs_debug (fs, "Making readonly");
 	  err = fs_set_readonly (fs, 1);
 	  CK (err, "%s: Cannot make readonly", fs->mntent.mnt_dir);
 	}
+
+      make_writable = !readonly
+	|| ((fscks->flags & FSCK_F_WRITABLE) && hasmntopt (&fs->mntent, "rw"));
+      if (make_writable)
+	{
+	  fs_debug (fs, "Will make writable after fscking if possible");
+	  make_writable = 1;
+	}
     }
+  else
+    make_writable = 0;
 
 #undef CK
 
@@ -229,7 +243,7 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
     }
 
   fsck->fs = fs;
-  fsck->was_readonly = was_readonly;
+  fsck->make_writable = make_writable;
   fsck->next = fscks->running;
   if (fsck->next)
     fsck->next->self = &fsck->next;
@@ -245,19 +259,18 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
 
 /* Cleanup after fscking with FSCK.  If REMOUNT is true, ask the filesystem
    to remount itself (to incorporate changes made by the fsck program).  If
-   RESTORE_WRITABLE is true, then if the filesystem was mounted writable
-   prior to fscking, make it writable once more (after remounting if
-   applicable).  */
+   MAKE_WRITABLE is true, then if the filesystem should be made writable, do
+   so (after remounting if applicable).  */
 static void
-fsck_cleanup (struct fsck *fsck, int remount, int restore_writable)
+fsck_cleanup (struct fsck *fsck, int remount, int make_writable)
 {
   error_t err = 0;
   struct fs *fs = fsck->fs;
 
   *fsck->self = fsck->next;	/* Remove from chain.  */
 
-  fs_debug (fs, "Cleaning up after fsck (remount = %d, restore_writable = %d)",
-	    remount, restore_writable);
+  fs_debug (fs, "Cleaning up after fsck (remount = %d, make_writable = %d)",
+	    remount, make_writable);
 
   if (fs->mounted > 0)
     /* It's currently mounted; if the fsck modified the device, tell the
@@ -270,7 +283,7 @@ fsck_cleanup (struct fsck *fsck, int remount, int restore_writable)
 	  if (err)
 	    error (0, err, "%s: Cannot remount", fs->mntent.mnt_dir);
 	}
-      if (!err && !fsck->was_readonly && restore_writable)
+      if (!err && make_writable && fsck->make_writable)
 	{
 	  fs_debug (fs, "Making writable");
 	  err = fs_set_readonly (fs, 0);
@@ -321,9 +334,9 @@ fscks_wait (struct fscks *fscks)
 	if (fsck->pid == pid)
 	  {
 	    int remount = (status != 0);
-	    int restore_writable = (status == 0 || FSCK_EX_IS_FIXED (status));
+	    int make_writable = (status == 0 || FSCK_EX_IS_FIXED (status));
 	    fs_debug (fsck->fs, "Fsck finished (status = %d)", status);
-	    fsck_cleanup (fsck, remount, restore_writable);
+	    fsck_cleanup (fsck, remount, make_writable);
 	    fscks->free_slots++;
 	    break;
 	  }
@@ -427,6 +440,8 @@ options[] =
   {"fstab",	 't', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
   {"parallel",   'l', "NUM",  0, "Limit the number of parallel checks to NUM"},
   {"verbose",	 'v', 0,      0, "Print informational messages"},
+  {"writable",   'w', 0,      0,
+     "Make RW filesystems writable after fscking, if possible"},
   {"debug",	 'D', 0,      OPTION_HIDDEN },
   {"search-fmts",'S', "FMTS", 0,
      "`:' separated list of formats to use for finding fsck programs"},
@@ -464,6 +479,7 @@ main (int argc, char **argv)
 	case 'f': flags |= FSCK_F_FORCE; break;
 	case 's': flags |= FSCK_F_SILENT; break;
 	case 'v': flags |= FSCK_F_VERBOSE; break;
+	case 'w': flags |= FSCK_F_WRITABLE; break;
 	case 't': fstab_path = arg; break; 
 	case 'D': _debug = 1; break;
 	case 'l':
