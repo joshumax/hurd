@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -16,19 +16,10 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := benchmarks
+makemode := utility
+
+SRCS = forks.c
+target = forks
 
 include ../Makeconf
-CCTARGET=i386-gnu
 
-DIST_FILES = forks.c
-
-all: forks
-
-install: $(hurdroot) forks
-	$(INSTALL_BIN) forks $(hurdroot)/bin/forks
-
-clean:
-	rm -f forks *.o
-
-relink: 
-	rm -f forks
