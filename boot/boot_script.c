@@ -4,11 +4,9 @@
 
 #include <mach.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "boot_script.h"
-
-
-extern void *malloc (int size);
-extern void free (void *ptr);
 
 
 /* This structure describes a symbol.  */
@@ -68,8 +66,6 @@ static int symtab_alloc = 0;
 
 /* Next available slot in `symtab'.  */
 static int symtab_index = 0;
-
-void memset (void *str, char c, int size);
 
 /* Create a task.  */
 static int
@@ -113,7 +109,7 @@ prompt_resume_task (struct cmd *cmd, int *val)
     }
 
   return 0;
-}  
+}
 
 static int
 read_file (struct cmd *cmd, int *val)
@@ -495,7 +491,7 @@ boot_script_parse_line (char *cmdline)
 	    }
 	}
     }
-  
+
 
  bad:
   free_cmd (cmd, 1);
