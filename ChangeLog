@@ -1,3 +1,8 @@
+2001-10-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* configure.in: If parted/parted.h is found, define
+	HAVE_PARTED_PARTED_H explicitely.
+
 2001-08-25  Roland McGrath  <roland@frob.com>
 
 	* configure.in: Add a check for Parted's libraries.

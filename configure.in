@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.21 2001/08/26 00:10:50 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.22 2001/10/12 00:04:58 marcus Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -128,7 +128,9 @@ parted=$with_parted
 save_LIBS=
 LIBS=
 test $parted = no || {
-  AC_CHECK_HEADER(parted/parted.h, , parted=no)
+  AC_CHECK_HEADER(parted/parted.h,
+    [AC_DEFINE(HAVE_PARTED_PARTED_H)],
+    parted=no)
 }
 test $parted = no || {
   AC_CHECK_LIB(uuid, uuid_generate, , parted=no)
