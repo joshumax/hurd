@@ -116,7 +116,9 @@ error_t trivfs_startup(mach_port_t bootstrap,
    to be used for the control port for this node. */
 mach_port_t trivfs_handle_port (mach_port_t underlying, 
 				struct port_class *control_class,
-				struct port_class *protid_class);
+				struct port_bucket *control_bucket
+				struct port_class *protid_class,
+				struct port_bucket *protid_bucket);
 
 /* Install these as libports cleanroutines for trivfs_protid_class
    and trivfs_cntl_class respectively. */
