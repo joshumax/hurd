@@ -1,0 +1,16 @@
+libshouldbeinlibc 0.2 hurd
+libftpconn 0.2 hurd
+libports 0.2 hurd
+libmom 0.2 hurd
+libthreads 0.2 hurd
+libhurdbugaddr 0.2 hurd
+libstore 0.2 hurd
+libihash 0.2 hurd
+libpipe 0.2 hurd
+libtrivfs 0.2 hurd
+libpager 0.2 hurd
+libnetfs 0.2 hurd
+libiohelp 0.2 hurd
+libfshelp 0.2 hurd
+libps 0.2 hurd
+libdiskfs 0.2 hurd
