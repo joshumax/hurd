@@ -113,6 +113,10 @@ char **save_argv;
 static mach_port_t *std_ports;
 static int *std_ints;
 static size_t std_nports, std_nints;
+
+/* Communication between S_exec_init and S_exec_setexecdata */
+static mach_port_t essentialstartupport, essentialhostport;
+
 
 #ifdef	BFD
 /* Return a Hurd error code corresponding to the most recent BFD error.  */
@@ -795,6 +799,33 @@ servercopy (void **arg, u_int argsize, boolean_t argcopy)
   return 0;
 }
 
+/* Put PORT into *SLOT.  If *SLOT isn't already null, then 
+   mach_port_deallocate it first.  If AUTHENTICATE is not null, then
+   do an io_reauthenticate transaction to determine the port to put in
+   *SLOT.  If CONSUME is set, then don't create a new send right;
+   otherwise do.  (It is an error for both CONSUME and AUTHENTICATE to be 
+   set.) */
+static void
+set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
+	       int consume)
+{
+  int pid = getpid ();
+  
+  if (*slot != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), *slot);
+  if (authenticate && port)
+    {
+      io_reauthenticate (port, pid);
+      auth_user_authenticate (authenticate, port, pid, slot);
+    }
+  else
+    {
+      *slot = port;
+      if (!consume && port)
+	mach_port_mod_refs (mach_task_self (), port, MACH_PORT_RIGHT_SEND, 1);
+    }
+}
+
 static error_t
 do_exec (mach_port_t execserver,
 	 file_t file,
@@ -813,6 +844,11 @@ do_exec (mach_port_t execserver,
   task_t newtask = MACH_PORT_NULL;
   thread_t thread = MACH_PORT_NULL;
   struct bootinfo *boot = 0;
+  int secure, defaults;
+
+  /* Catch this error now, rather than later */
+  if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
+    return EIEIO;
 
   if (oldtask != MACH_PORT_NULL && (e.error = task_suspend (oldtask)))
     return e.error;
@@ -965,59 +1001,62 @@ do_exec (mach_port_t execserver,
 				    &unused);
   }
 
-  if (flags & EXEC_SECURE)
+  secure = (flags & EXEC_SECURE);
+  
+  defaults = (flags & EXEC_DEFAULTS);
+  
+  if ((secure || defaults) && nports < INIT_PORT_MAX)
     {
-#ifdef notyet
+      /* Allocate a new vector that is big enough.  */
+      vm_allocate (mach_task_self (),
+		   (vm_address_t *) &boot->portarray,
+		   INIT_PORT_MAX * sizeof (mach_port_t),
+		   1);
+      memcpy (boot->portarray, portarray,
+	      nports * sizeof (mach_port_t));
+      vm_deallocate (mach_task_self (), (vm_address_t) portarray,
+		     nports * sizeof (mach_port_t));
+      nports = INIT_PORT_MAX;
+    }
+
+  /* Note that the paretheses on this first test are defferent from the others
+     below it. */
+  if ((secure || defaults) && !boot->portarray[INIT_PORT_AUTH])
+    set_init_port (std_ports[INIT_PORT_AUTH], 
+		   &boot->portarray[INIT_PORT_AUTH], 0, 0);
+  if (secure || (defaults && !boot->portarray[INIT_PORT_PROC]))
+    {
       mach_port_t new;
       if (e.error = __USEPORT (PROC, proc_task2proc (port, newtask, &new)))
 	goto bootout;
 
-      if (nports < INIT_PORT_MAX)
-	{
-	  /* Allocate a new vector that is big enough.  */
-	  vm_allocate (mach_task_self (),
-		       (vm_address_t *) &boot->portarray,
-		       INIT_PORT_MAX * sizeof (mach_port_t),
-		       1);
-	  memcpy (boot->portarray, portarray,
-		  nports * sizeof (mach_port_t));
-	  vm_deallocate (mach_task_self (), (vm_address_t) portarray,
-			 nports * sizeof (mach_port_t));
-	  nports = INIT_PORT_MAX;
-	}
-
-      mach_port_deallocate (mach_task_self (),
-			    boot->portarray[INIT_PORT_PROC]);
-      boot->portarray[INIT_PORT_PROC] = new;
-      mach_port_deallocate (mach_task_self (),
-			    boot->portarray[INIT_PORT_CRDIR]);
-      boot->portarray[INIT_PORT_CRDIR]
-	= std_ports ? std_ports[INIT_PORT_CRDIR] : MACH_PORT_NULL;
-      mach_port_deallocate (mach_task_self (),
-			    boot->portarray[INIT_PORT_CWDIR]);
-      boot->portarray[INIT_PORT_CWDIR]
-	= std_ports ? std_ports[INIT_PORT_CWDIR] : MACH_PORT_NULL;
-
-      if (nints < INIT_INT_MAX)
-	{
-	  /* Allocate a new vector that is big enough.  */
-	  vm_allocate (mach_task_self (),
-		       (vm_address_t *) &boot->intarray,
-		       INIT_INT_MAX * sizeof (int),
-		       1);
-	  memcpy (boot->intarray, intarray, nints * sizeof (int));
-	  vm_deallocate (mach_task_self (), (vm_address_t) intarray,
-			 nints * sizeof (int));
-	  nints = INIT_INT_MAX;
-	}
-
-      boot->intarray[INIT_UMASK]
-	= std_ints ? std_ints[INIT_UMASK] : CMASK;
-#else
-      abort ();
-#endif      
+      set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
+    }
+  if (secure || (defaults && !boot->portarray[INIT_PORT_CRDIR]))
+    set_init_port (std_ports[INIT_PORT_CRDIR],
+		   &boot->portarray[INIT_PORT_CRDIR], 
+		   boot->portarray[INIT_PORT_AUTH], 0);
+  if (secure || (defaults && !boot->portarray[INIT_PORT_CWDIR]))
+    set_init_port (std_ports[INIT_PORT_CWDIR],
+		   &boot->portarray[INIT_PORT_CWDIR],
+		   boot->portarray[INIT_PORT_AUTH], 0);
+  
+  if ((secure || defaults) && nints < INIT_INT_MAX)
+    {
+      /* Allocate a new vector that is big enough.  */
+      vm_allocate (mach_task_self (),
+		   (vm_address_t *) &boot->intarray,
+		   INIT_INT_MAX * sizeof (int),
+		   1);
+      memcpy (boot->intarray, intarray, nints * sizeof (int));
+      vm_deallocate (mach_task_self (), (vm_address_t) intarray,
+		     nints * sizeof (int));
+      nints = INIT_INT_MAX;
     }
 
+  if (secure)
+    boot->intarray[INIT_UMASK] = std_ints ? std_ints[INIT_UMASK] : CMASK;
+      
   if (nports > INIT_PORT_PROC)
     proc_mark_exec (boot->portarray[INIT_PORT_PROC]);
 
@@ -1201,8 +1240,21 @@ S_exec_setexecdata (mach_port_t me,
   std_ints = ints;
   std_nints = nints;
 
+  /* At this point, the exec server is fully intialized.  Send
+     a message to startup that will clue it in so that it knows. */
+  if (essentialstartupport)
+    {
+      startup_essential_task (essentialstartupport, mach_task_self (), 
+			      MACH_PORT_NULL, "exec", essentialhostport);
+      mach_port_deallocate (mach_task_self (), essentialstartupport);
+      mach_port_deallocate (mach_task_self (), essentialhostport);
+      essentialstartupport = essentialhostport = 0;
+    }
+  
   return 0;
 }
+
+
 
 /* fsys server.  */
 
@@ -1416,20 +1468,23 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
       err = proc_getmsgport (proc, 1, &startup);
       if (!err)
 	{
-	  startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-				  "exec", host_priv);
-	  mach_port_deallocate (mach_task_self (), startup);
+	  essentialstartupport = startup;
+	  essentialhostport = host_priv;
 	}
-      mach_port_deallocate (mach_task_self (), host_priv);
+      else
+	mach_port_deallocate (mach_task_self (), host_priv);
     }
       
-#if 0
   /* Have the proc server notify us when the canonical ints and ports change.
      The notification comes as a normal RPC on the message port, which
      the C library's signal thread handles.  */
   __USEPORT (PROC, proc_execdata_notify (port, execserver));
-#endif
 
+  /* Don't call startup_essential_task here.  Init knows that once
+     we call that we are all set up; we actually aren't all set up
+     until we receive the execdata back from proc in response to
+     proc_execdata_notify.  So, the call to startup_essential_task
+     is done in S_exec_setexecdata. */
   return 0;
 }
 
