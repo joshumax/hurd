@@ -312,11 +312,20 @@ diskfs_set_hypermetadata (int wait, int clean)
       sblock->fs_clean = 1;
       sblock_dirty = 1;
     }
+  else if (!clean && sblock->fs_clean)
+    {
+      /* Clear the clean flag */
+      sblock->fs_clean = 0;
+      sblock_dirty = 1;
+      wait = 1;			/* must be synchronous */
+    }
 
   spin_unlock (&alloclock);
 
   /* Update the superblock if necessary (clean bit was just set).  */
   copy_sblock ();
+
+  sync_disk (wait);
 }
 
 /* Copy the sblock into the disk */
@@ -359,16 +368,6 @@ copy_sblock ()
       sblock_dirty = 0;
     }
 
-  if (!diskfs_readonly && sblock->fs_clean)
-    {
-      /* We just sync'd with the clean flag set, but we are still a
-	 writable filesystem.  Clear the flag in core, but don't write the
-	 superblock yet.  This should ensure that the flag will be written
-	 as clear as soon as we make any modifications.  */
-      sblock->fs_clean = 0;
-      sblock_dirty = 1;
-    }
-
   spin_unlock (&alloclock);
 
   diskfs_end_catch_exception ();
@@ -393,11 +392,6 @@ diskfs_readonly_changed (int readonly)
 
   strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
 
-  if (sblock->fs_clean)
-    sblock->fs_clean = 0;
-  else
+  if (!sblock->fs_clean)
     error (0, 0, "WARNING: UNCLEANED FILESYSTEM NOW WRITABLE");
-
-  sblock_dirty = 1;
-  diskfs_set_hypermetadata (1, 0);
 }
