@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -46,7 +46,9 @@ S_io_write (struct sock_user *user,
 				   user->sock->userflags);
   mutex_unlock (&global_lock);
 
-  if (err >= 0)
+  if (err < 0)
+    err = -err;
+  else
     {
       *amount = err;
       err = 0;
