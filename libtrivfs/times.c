@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ trivfs_set_atime (struct trivfs_control *cntl)
   io_stat (cntl->underlying, &st);
   mtime.seconds = st.st_mtime;
   mtime.microseconds = st.st_mtime_usec;
-  host_get_time (mach_host_self (), &atime);
+  atime.microseconds = -1;
   file_utimes (cntl->underlying, atime, mtime);
   return 0;
 }
@@ -42,7 +42,7 @@ trivfs_set_mtime (struct trivfs_control *cntl)
   io_stat (cntl->underlying, &st);
   atime.seconds = st.st_atime;
   atime.microseconds = st.st_atime_usec;
-  host_get_time (mach_host_self (), &mtime);
+  mtime.microseconds = -1;
   file_utimes (cntl->underlying, atime, mtime);
   return 0;
 }
