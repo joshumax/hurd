@@ -173,6 +173,7 @@ main(int argc, char *argv[])
   ps_fmt_t fmt;
   proc_stat_list_t procset;
   process_t cur_proc = getproc();
+  ps_context_t context;
   int cur_pid = getpid();
   char *fmt_string = "default", *sort_key_name = NULL;
   int filter_mask =
@@ -182,7 +183,11 @@ main(int argc, char *argv[])
 
   program_invocation_short_name = argv[0];
 
-  err = proc_stat_list_create(cur_proc, &procset);
+  err = ps_context_create(cur_proc, &context);
+  if (err)
+    error(1, err, "ps_context_create");
+
+  err = proc_stat_list_create(context, &procset);
   if (err)
     error(1, err, "proc_stat_list_create");
 
