@@ -32,6 +32,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 {
   struct node *np;
   error_t error;
+  mach_port_t control = MACH_PORT_NULL;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -46,13 +47,33 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   mutex_lock (&np->lock);
 
-  if (error = diskfs_isowner (np, cred))
+  error = diskfs_isowner (np, cred);
+  if (error)
     {
       mutex_unlock (&np->lock);
       return error;
     }
 
-  /* Handle exclusive bits */
+  if (active_flags & FS_TRANS_SET)
+    {
+      error = fshelp_fetch_control (&np->transbox, &control);
+      if (error)
+	{
+	  mutex_unlock (&np->lock);
+	  return error;
+	}
+  
+      if (control != MACH_PORT_NULL && (active_flags & FS_TRANS_EXCL == 0))
+	{
+	  mutex_unlock (&np->lock);
+	  error = fsys_goaway (control, killtrans_flags);
+	  if (error)
+	    return error;
+	  mutex_lock (&np->lock);
+	}
+    }
+  
+  /* Handle exclusive passive bit *first*.  */
   if ((passive_flags & FS_TRANS_SET)
       && (passive_flags & FS_TRANS_EXCL)
       && np->istranslated)
@@ -61,32 +82,17 @@ diskfs_S_file_set_translator (struct protid *cred,
       return EBUSY;
     }
   
-  if ((active_flags & FS_TRANS_SET)
-      && (active_flags & FS_TRANS_EXCL)
-      && np->transbox.active != MACH_PORT_NULL)
-    {
-      mutex_unlock (&np->lock);
-      return EBUSY;
-    }
-  
   if (active_flags & FS_TRANS_SET)
     {
-      if (active != np->transbox.active
-	  && np->transbox.active != MACH_PORT_NULL)
+      error = fshelp_set_active (&np->transbox, active,
+				 active_flags & FS_TRANS_EXCL);
+      if (error)
 	{
-	  mach_port_t control;
-
-	  error = fshelp_fetch_control (&np->transbox, &control);
 	  mutex_unlock (&np->lock);
-	  if (!error)
-	    error = fsys_goaway (control, killtrans_flags);
-	  if (error)
-	    return error;
-	  mutex_lock (&np->lock);
+	  return error;
 	}
-      fshelp_set_active (&np->transbox, active);
     }
-  
+
   /* Set passive translator */
   if (passive_flags & FS_TRANS_SET)
     {
