@@ -106,6 +106,13 @@ mig_init(initial)
 	}
 }
 
+void
+__mig_init (initial)
+     register cproc_t initial;
+{
+  mig_init (initial);
+}
+
 /*
  * Called by mig interface code whenever a reply port is needed.
  */
@@ -128,6 +135,12 @@ mig_get_reply_port()
 	}
 
 	return reply_port;
+}
+
+mach_port_t
+__mig_get_reply_port()
+{
+  return mig_get_reply_port();
 }
 
 /*
@@ -154,4 +167,10 @@ mig_dealloc_reply_port()
 
 	(void) mach_port_mod_refs(mach_task_self(), reply_port,
 				  MACH_PORT_RIGHT_RECEIVE, -1);
+}
+
+void
+__mig_dealloc_reply_port ()
+{
+  mig_dealloc_reply_port ();
 }
