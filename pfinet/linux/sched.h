@@ -20,15 +20,24 @@ struct task_struct
   int timeout;
   int signal;
   int blocked;
+  int state;
+  int isroot;
 };
 
 /* FLAGS in task_struct's. */
 #define PF_EXITING 1
+/* STATE in task_struct's. */
+#define TASK_INTERRUPTIBLE 1
+#define TASK_RUNNING 2
 
 void wake_up_interruptible (struct wait_queue **);
 void interruptible_sleep_on (struct wait_queue **);
+void add_wait_queue (struct wait_queue **, struct wait_queue *);
+void remove_wait_queue (struct wait_queue **, struct wait_queue *);
 
 void select_wait (struct wait_queue **, select_table *);
+
+void schedule (void);
 
 #define SEL_IN SELECT_READ
 #define SEL_OUT SELECT_WRITE
