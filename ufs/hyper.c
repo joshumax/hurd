@@ -40,4 +40,31 @@ get_hypermetadata (void)
   assert (!err);
 }
 
- 
+/* Write the superblock and cg summary info to disk.  If WAIT is set,
+   we must wait for everything to hit the disk; if CLEAN is set, then
+   mark the clean bit.  */
+void
+diskfs_set_hypermetadata (int wait, int clean)
+{
+  error_t (*writefn) (daddr_t, vm_address_t, vm_size_t);
+  writefn = (wait ? dev_write_sync : dev_write);
+  
+  (*writefn)(fsbtodb (sblock->fs_csaddr), (vm_address_t) csum,
+	     sblock->fs_fsize * howmany (sblock->fs_cssize,
+					 sblock->fs_fssize));
+
+  if (clean)
+    sblock->fs_clean = 1;
+  if (sblock->fs_postblformat == FS_42POSTBLFMT)
+    {
+      char sblockcopy[SBSIZE];
+      bcopy (sblock, sblockcopy, SBSIZE);
+      ((struct fs *)sblockcopy)->fs_nrpos = -1;
+      (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
+    }
+  else
+    (*writefn) (SBLOCK, (vm_address_t) sblock, SBSIZE);
+  sblock->fs_clean = 0;
+}
+
+
