@@ -15,6 +15,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef __TRIVFS_H__
+#define __TRIVFS_H__
+
+#include <errno.h>
+#include <cthreads.h>		/* for mutexes &c */
+#include <sys/types.h>		/* for uid_t &c */
+#include <mach/mach.h>
+#include <hurd/ports.h>
 
 struct trivfs_protid
 {
@@ -143,3 +151,5 @@ error_t trivfs_set_atime (struct trivfs_control *cntl);
 
 /* Call this to set mtime for the node to the current time. */
 error_t trivfs_set_mtime (struct trivfs_control *cntl);
+
+#endif /* __TRIVFS_H__ */
