@@ -1906,8 +1906,12 @@ S_fsys_init (fsys_t fsys,
   return EOPNOTSUPP;
 }
 
-
-
+kern_return_t
+S_fsys_forward (fsys_t fsys, mach_port_t requestor,
+		char *argv, mach_msg_type_name_t argvlen)
+{
+  return EOPNOTSUPP;
+}
 
 /* RPC sent on the bootstrap port.  */
 
