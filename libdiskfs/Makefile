@@ -39,9 +39,9 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	rdwr-internal.c init-init.c init-startup.c init-first.c \
-	boot-parse.c boot-start.c demuxer.c exc.c node-times.c shutdown.c \
+	boot-start.c demuxer.c exc.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c opts-set.c opts-std-startup.c \
-	opts-runtime-def.c trans-callback.c
+	opts-runtime-def.c trans-callback.c filedev.c machdev.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h
@@ -51,8 +51,10 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o execServer.o \
 	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-fsys-MIGSFLAGS = -DREPLY_PORTS
-MIGSFLAGS = -imacros fsmutations.h
+fsys-MIGSFLAGS = -imacros fsmutations.h -DREPLY_PORTS
+fs-MIGSFLAGS = -imacros fsmutations.h
+io-MIGSFLAGS = -imacros fsmutations.h
+ifsock-MIGSFLAGS = -imacros fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
