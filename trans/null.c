@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,15 +32,6 @@
 #include <limits.h>
 #include <argp.h>
 
-struct port_class *control_class;
-struct port_class *node_class;
-struct port_bucket *port_bucket;
-
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
-
 char *argp_program_version = STANDARD_HURD_VERSION (null);
 
 void
@@ -48,28 +39,22 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
+  struct trivfs_control *fsys;
   const struct argp argp = { 0, 0, 0, "Endless sink and null source" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
-
-  control_class = ports_create_class (trivfs_clean_cntl, 0);
-  node_class = ports_create_class (trivfs_clean_protid, 0);
-  port_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[0] = node_class;
-  trivfs_cntl_portclasses[0] = control_class;
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error(1, 0, "Must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap, 0, control_class, port_bucket,
-		       node_class, port_bucket, NULL);
+  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
   if (err)
-    error(3, err, "trivfs_startup");
+    error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_one_thread (port_bucket, trivfs_demuxer, 0);
+  ports_manage_port_operations_one_thread (fsys->pi.bucket, trivfs_demuxer, 0);
 
   exit(0);
 }
