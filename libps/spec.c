@@ -218,6 +218,30 @@ ps_get_sleep(proc_stat_t ps)
 struct ps_getter ps_sleep_getter =
 {"sleep", PSTAT_THREAD_INFO, (vf) ps_get_sleep};
 
+static int 
+ps_get_susp_count(proc_stat_t ps)
+{
+  return proc_stat_suspend_count(ps);
+}
+struct ps_getter ps_susp_count_getter =
+{"susp_count", PSTAT_SUSPEND_COUNT, (vf) ps_get_susp_count};
+
+static int 
+ps_get_proc_susp_count(proc_stat_t ps)
+{
+  return proc_stat_info(ps)->taskinfo.suspend_count;
+}
+struct ps_getter ps_proc_susp_count_getter =
+{"proc_susp_count", PSTAT_INFO, (vf) ps_get_proc_susp_count};
+
+static int 
+ps_get_thread_susp_count(proc_stat_t ps)
+{
+  return proc_stat_thread_basic_info(ps)->suspend_count;
+}
+struct ps_getter ps_thread_susp_count_getter =
+{"thread_susp_count", PSTAT_SUSPEND_COUNT, (vf) ps_get_thread_susp_count};
+
 static ps_tty_t
 ps_get_tty(proc_stat_t ps)
 {
@@ -739,6 +763,9 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"%CPU",   &ps_cpu_frac_getter,    ps_emit_percent,	ps_cmp_floats,	-4},
   {"State",  &ps_state_getter,	     ps_emit_state,	NULL,	4},
   {"Sleep",  &ps_sleep_getter,	     ps_emit_int,	ps_cmp_ints,	-2},
+  {"Susp",   &ps_susp_count_getter,  ps_emit_int,	ps_cmp_ints,	-2},
+  {"PSusp",  &ps_proc_susp_count_getter, ps_emit_int,	ps_cmp_ints,	-2},
+  {"TSusp",  &ps_thread_susp_count_getter, ps_emit_int,	ps_cmp_ints,	-2},
   {"TTY",    &ps_tty_getter,	     ps_emit_tty_name,	ps_cmp_strings,	 2},
   {"PgFlts", &ps_page_faults_getter, ps_emit_int,	ps_cmp_ints,	-5},
   {"COWFlts",&ps_cow_faults_getter,  ps_emit_int,	ps_cmp_ints,	-5},
