@@ -420,7 +420,7 @@ launch_system (void)
   mach_port_t old;
   mach_port_t authproc, fsproc;
   char shell[] = "/bin/sh";
-  char pipes[] = "/hurd/pipes\0/servers/sockets/1";
+  char pipes[] = "/hurd/pipes\0/servers/socket/1";
   
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0, 
