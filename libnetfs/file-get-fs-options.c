@@ -34,23 +34,29 @@ netfs_S_file_get_fs_options (struct protid *user,
 			     char **data, mach_msg_type_number_t *data_len)
 {
   error_t err;
-  char *argz;
-  size_t argz_len;
+  char *argz = 0;
+  size_t argz_len = 0;
 
   if (! user)
     return EOPNOTSUPP;
 
+  err = argz_add (&argz, &argz_len, program_invocation_name);
+  if (! err)
+    {
 #if NOT_YET
-  rwlock_reader_lock (&netfs_fsys_lock);
+      rwlock_reader_lock (&netfs_fsys_lock);
 #endif
-  err = netfs_get_options (&argz, &argz_len);
+      err = netfs_append_args (&argz, &argz_len);
 #if NOT_YET
-  rwlock_reader_unlock (&netfs_fsys_lock);
+      rwlock_reader_unlock (&netfs_fsys_lock);
 #endif
+    }
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
     err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
+  else
+    free (argz);
 
   return err;
 }
