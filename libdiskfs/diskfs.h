@@ -473,17 +473,6 @@ error_t diskfs_reload_global_state ();
    DISKFS_READONLY true.  */
 error_t diskfs_node_reload (struct node *node);
 
-/* The user may define this function, in which case it is called when the the
-   filesystem receives a set-options request.  ARGC and ARGV are the
-   arguments given, and STANDARD_ARGP is a pointer to a struct argp
-   containing the info necessary to parse `standard' diskfs runtime options.
-   The user may chain this onto the end of his own argp structure and call
-   argp_parse, or ignore it completely (or indeed, just call argp_parse on it
-   -- which is the behavior of the default implementation of this function.
-   EINVAL is returned if an unknown option is encountered.  */
-error_t diskfs_parse_runtime_options (int argc, char **argv,
-				      const struct argp *standard_argp);
-
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to set a symlink.  If it returns EINVAL or isn't set,
    then the normal method (writing the contents into the file data) is
@@ -1032,20 +1021,37 @@ error_t diskfs_execboot_fsys_startup (mach_port_t port, int flags,
    syncs, regardless.  */
 error_t diskfs_set_sync_interval (int interval);
 
-/* Parse and execute the runtime options in ARGC and ARGV.  EINVAL is
-   returned if some option is unrecognized.  */
-error_t diskfs_set_options (int argc, char **argv);
+/* Parse and execute the runtime options in ARGZ & ARGZ_LEN.  EINVAL is
+   returned if some option is unrecognized.  The default definition of this
+   routine will parse them using DISKFS_RUNTIME_ARGP, which see.  */
+error_t diskfs_set_options (char *argz, size_t argz_len);
 
 /* Return an argz string describing the current options.  Fill *ARGZ
    with a pointer to newly malloced storage holding the list and *LEN
-   to the length of that storage. */
+   to the length of that storage.  The default definition of this routine
+   simply initializes *ARGZ and *ARGZ_LEN to 0 and calls
+   diskfs_append_std_options.  */
 error_t diskfs_get_options (char **argz, unsigned *argz_len);
 
-/* A pointer to an argp structure for the standard diskfs command line
-   arguments.  The user may call argp_parse on this to parse the command
-   line, chain it onto the end of his own argp structure, or ignore it
-   completely.  */
-extern const struct argp *diskfs_startup_argp;
+/* If this is defined or set to an argp structure, it will be used by the
+   default diskfs_set_options to handle runtime option parsing.  The default
+   definition is initialized to a pointer to DISKFS_STD_RUNTIME_ARGP.  */
+extern struct argp *diskfs_runtime_argp;
+
+/* An argp for the standard diskfs runtime options.  The default definition
+   of DISKFS_RUNTIME_ARGP points to this, although if the user redefines
+   that, he may chain this onto his argp as well.  */
+extern const struct argp diskfs_std_runtime_argp;
+
+/* An argp structure for the standard diskfs command line arguments.  The
+   user may call argp_parse on this to parse the command line, chain it onto
+   the end of his own argp structure, or ignore it completely.  */
+extern const struct argp diskfs_std_startup_argp;
+
+/* *Appends* to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
+   diskfs option state (note that unlike diskfs_get_options, ARGZ & ARGZ_LEN
+   must already have a sane value).  */
+error_t diskfs_append_std_options (char **argz, unsigned *argz_len);
 
 /* Demultiplex incoming messages on ports created by libdiskfs.  */
 int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
@@ -1063,7 +1069,7 @@ int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    arguments, that also parses a device argument.  The user may call
    argp_parse on this to parse the command line, chain it onto the end of his
    own argp structure, or ignore it completely.  */
-extern const struct argp *diskfs_device_startup_argp;
+extern const struct argp diskfs_std_device_startup_argp;
 
 /* The following two are set by the preceding argument parser:  */
 /* The device specifier given on the command line.  */
