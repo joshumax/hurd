@@ -16,9 +16,25 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 GCC_EXEC_PREFIX=/usr/local/lib/gcc-
-MIGCOM=../mig/migcom
 MK_INCLUDES=/usr1/mk/release/i386_mach/latest/include
-CPPFLAGS=-nostdinc -I. -I.. -I${MK_INCLUDES} -D__USE_GNU -D__GNU_SYSTEM
+CC=gcc
+MACHSA_LIB=/usr1/mk/release/i386_mach/latest/lib/libmach_sa.a
+MIGCOM=../mig/migcom
+CTHREAD_LIB=/usr1/mk/release/i386_mach/latest/lib/libthreads.a
+CPPFLAGS=-nostdinc -I. -I.. -I${MK_INCLUDES} \
+	 -D__USE_GNU -D__GNU_SYSTEM
+CFLAGS=-Wall -O -g
 
-headers: fs.h io.h auth.h fsys.h misc.h name.h process.h socket.h term.h
+AUTHMIGOPTS="-DAUTH_INTRAN=idblockptr_t convert_auth_to_idblock (auth_t)"
 
+OFILES=auth.o authServer.o auth_replyUser.o
+
+auth.o: auth.h auth_reply.h
+
+auth.h authServer.c: ../hurd/auth.defs ../hurd/hurd_types.defs
+	$(GCC_EXEC_PREFIX)cpp $(CPPFLAGS) $(AUTHMIGOPTS) ../hurd/auth.defs \
+	| $(MIGCOM) -sheader auth.h -header /dev/null -user /dev/null
+
+auth_reply.h auth_replyUser.c: ../hurd/auth_reply.defs ../hurd/hurd_types.defs
+	$(GCC_EXEC_PREFIX)cpp $(CPPFLAGS) ../hurd/auth_reply.defs \
+	| $(MIGCOM) -server /dev/null
