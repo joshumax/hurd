@@ -23,17 +23,16 @@ subsystem newterm 27000;
 
 #include <hurd/hurd_types.defs>
 
-/* Create a new terminal thingie on top of a mach device_t port.  */
+/* Create a new terminal thingie with no bottom half.  (You need to do
+   one of term_on_* before this can be used for I/O.) */
 newterm_from_device (
 	newterm: mach_port_t;
-	machdev: device_t;
 	out terminal: io_t);
 
-/* Create a new terminal thingie on top of a hurd IO port.  */
-newterm_from_hurdio (
+/* Register a terminal as a node in the filesystem.  */
+newterm_makenode (
 	newterm: mach_port_t;
-	hurddev: io_t;
-	out terminal: io_t);
-
-/* Create a new terminal thingie and BSD-style pseudo-tty master side. */
-newterm_from_n
+	terminal: io_t;
+	mode: mode_t;
+	server_picks_name: int;
+	name: string_t);
