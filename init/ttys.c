@@ -29,6 +29,8 @@
 #include <ttyent.h>
 #include <utmp.h>
 
+#include "ttys.h"
+
 
 extern pid_t run_for_real (char *filename, char *args, int arglen,
 			   mach_port_t ctty, int setsid); /* init.c */
