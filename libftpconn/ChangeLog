@@ -1,3 +1,14 @@
+1997-08-15  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fname.c (ftp_conn_append_name, ftp_conn_basename): Make sure
+	CONN's SYSHOOKS field is valid before using it.
+	* ftpconn.h (struct ftp_conn): Add SYSHOOKS_VALID field.
+	(ftp_conn_validate_syshooks): New inline function.
+	* open.c (ftp_conn_sysify): Set SYSHOOKS_VALID.
+
+	* set-type.c (ftp_conn_set_type): If there's no connection, don't
+	open a new one, just save the type for later.
+
 1997-08-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* names.c (ftp_conn_cont_get_names): Check for interrupts.
