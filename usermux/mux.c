@@ -22,6 +22,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <pwd.h>
+#include <sys/mman.h>
 
 #include "usermux.h"
 
