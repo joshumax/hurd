@@ -67,6 +67,10 @@ for I; do
 	  exit 0;;
 	--version|-V |--versio|--versi|--vers|--ver|--ve|--v)
 	  echo "STANDARD_HURD_VERSION_sush_"; exit 0;;
+	-)
+	  : ;;
+	--)
+	  break;;
 	-*)
 	  echo 1>&2 "$0: unrecognized option \`$1'"
 	  echo 1>&2 "Try \`$0 --help' or \`$0 --usage' for more information";
