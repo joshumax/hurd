@@ -1,6 +1,6 @@
 /* Get the disklabel from a device node
 
-   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,99,2001 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -43,7 +43,7 @@ fd_get_device (int fd, device_t *device)
   if (node == MACH_PORT_NULL)
     return errno;
 
-  err = store_create (node, 0, 0, &store);
+  err = store_create (node, 0, 0, &store); /* consumes NODE on success */
   if (! err)
     {
       if (store->class->id != STORAGE_DEVICE
@@ -63,8 +63,8 @@ fd_get_device (int fd, device_t *device)
 	}
       store_free (store);
     }
-
-  mach_port_deallocate (mach_task_self (), node);
+  else
+    mach_port_deallocate (mach_task_self (), node);
 
   return err;
 }
