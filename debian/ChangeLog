@@ -1,0 +1,6 @@
+1999-03-17  Gordon Matzigkeit  <gord@trick.fig.org>
+
+	* servers.boot: Clarify the default-pager description, and
+          add a default `$(default-pager)' line.
+
+	* Makefile: New file.

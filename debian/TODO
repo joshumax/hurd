@@ -1,5 +1,11 @@
 * daemons/rc
-* splitting in multiple packages
-* postinst script for translators
 
-shlibdeps!
+* Split into multiple packages, so that we can provide virtual
+  packages that correspond closer to the existing Debian GNU/Linux
+  ones.
+
+* A postinstallation script which sets up translators correctly.
+
+* Library dependencies.
+
+* Do something with the Texinfo documentation.

@@ -1,7 +1,7 @@
-hurd (19990221-1) unstable; urgency=low
+hurd (19990317) unstable; urgency=low
 
-  * New version from CVS.
   * Put shared library symlinks into the hurd-dev package.
+  * Clarify instructions in provided servers.boot.
 
  --
 
