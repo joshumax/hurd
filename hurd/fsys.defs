@@ -126,4 +126,4 @@ routine fsys_forward (
 routine fsys_get_options (
 	server: fsys_t;
 	RPT
-	out options: data_t);
+	out options: data_t, dealloc);

@@ -1,3 +1,15 @@
+2001-07-11  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fs.defs (routine file_get_storage_info): Add dealloc to all out
+	parameters (PORTS, INTS, OFFSETS, DATA).
+	(routine file_get_fs_options): Add dealloc to out parameter OPTIONS.
+
+	* fsys.defs (routine fsys_get_options): Add dealloc to out
+	parameter OPTIONS.
+
+	* process.defs (routine proc_getprocinfo): Add dealloc to out
+	paramter PROCINFO.
+
 2001-06-15  Neal H Walfield  <neal@cs.uml.edu>
 
 	* hurd_types.h: New macro, FS_TRANS_ORPHAN.

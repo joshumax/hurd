@@ -1,5 +1,5 @@
 /* Definitions for process server interface
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97,2001 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -261,7 +261,7 @@ routine proc_getprocinfo (
 	process: process_t;
 	which: pid_t;
 	inout flags: int;
-	out procinfo: procinfo_t;
+	out procinfo: procinfo_t, dealloc;
 	out threadwaits: data_t, dealloc);
 
 routine proc_getprocargs (

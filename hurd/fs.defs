@@ -177,10 +177,10 @@ routine file_syncfs (
 routine file_get_storage_info (
 	file: file_t;
 	RPT
-	out ports: portarray_t;
-	out ints: intarray_t;
-	out offsets: off_array_t;
-	out data: data_t);
+	out ports: portarray_t, dealloc;
+	out ints: intarray_t, dealloc;
+	out offsets: off_array_t, dealloc;
+	out data: data_t, dealloc);
 
 /* Return the node for hard links to this potentially translated file.
    This returns a potentially unauthenticated node.  */
@@ -343,7 +343,7 @@ routine file_get_translator_cntl (
 routine file_get_fs_options (
 	file: file_t;
 	RPT
-	out options: data_t);
+	out options: data_t, dealloc);
 
 /* Return a new file, NEW_FILE, with the same semantics as FILE, but
    with lookups of `..' (if FILE is a directory) redirected to PARENT.  */
