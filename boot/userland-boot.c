@@ -80,3 +80,16 @@ boot_script_free_task (task_t task, int aborting)
   else
     mach_port_deallocate (mach_task_self (), task);
 }
+
+int
+boot_script_insert_right (struct cmd *cmd , mach_port_t port)
+{
+  error_t err = mach_port_insert_right (cmd->task,
+					port, port, MACH_MSG_TYPE_COPY_SEND);
+  if (err)
+    {
+      error (0, err, "%s: task_resume", cmd->path);
+      return BOOT_SCRIPT_MACH_ERROR;
+    }
+  return 0;
+}
