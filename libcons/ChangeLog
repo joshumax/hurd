@@ -1,3 +1,12 @@
+2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* opts-std-startup.c (OPT_NO_JUMP_DOWN_ON_INPUT): New macro.
+	(OPT_NO_JUMP_DOWN_ON_OUTPUT): Likewise.
+	(_cons_jump_down_on_input): Default to 1.
+	(startup_options): Add new options --no-jump-down-on-input and
+	--no-jump-down-on-output.
+	(parse_startup_opt): Handle these new options.
+
 2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
 
 	* cons.h: Add prototype for cons_vcons_clear.

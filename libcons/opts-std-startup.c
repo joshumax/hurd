@@ -25,9 +25,11 @@
 
 
 /* Option keys for long-only options in diskfs_common_options.  */
-#define OPT_SLACK		600	/* --slack */
-#define OPT_JUMP_DOWN_ON_INPUT	601	/* --jump-down-on-input */
-#define OPT_JUMP_DOWN_ON_OUTPUT	602	/* --jump-down-on-output */
+#define OPT_SLACK			600	/* --slack */
+#define OPT_JUMP_DOWN_ON_INPUT		601	/* --jump-down-on-input */
+#define OPT_NO_JUMP_DOWN_ON_INPUT	602	/* --no-jump-down-on-input */
+#define OPT_JUMP_DOWN_ON_OUTPUT		603	/* --jump-down-on-output */
+#define OPT_NO_JUMP_DOWN_ON_OUTPUT	604	/* --no-jump-down-on-output */
 
 /* Common value for diskfs_common_options and diskfs_default_sync_interval. */
 #define DEFAULT_SLACK 100
@@ -40,7 +42,7 @@
 int _cons_slack = DEFAULT_SLACK;
 
 /* If we jump down on input.  */
-int _cons_jump_down_on_input;
+int _cons_jump_down_on_input = 1;
 
 /* If we jump down on output.  */
 int _cons_jump_down_on_output;
@@ -54,9 +56,13 @@ startup_options[] =
   { "slack", OPT_SLACK, "RECORDS", 0, "Max number of records the client is"
     " allowed to lag behind the server (default " DEFAULT_SLACK_STRING ")" },
   { "jump-down-on-input", OPT_JUMP_DOWN_ON_INPUT, NULL, 0,
+    "End scrollback when something is entered (default)" },
+  { "no-jump-down-on-input", OPT_NO_JUMP_DOWN_ON_INPUT, NULL, 0,
     "End scrollback when something is entered" },
   { "jump-down-on-output", OPT_JUMP_DOWN_ON_OUTPUT, NULL, 0,
     "End scrollback when something is printed" },
+  { "no-jump-down-on-output", OPT_NO_JUMP_DOWN_ON_OUTPUT, NULL, 0,
+    "End scrollback when something is printed (default)" },
   { 0, 0 }
 };
 
@@ -77,8 +83,16 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       _cons_jump_down_on_input = 1;
       break;
 
+    case OPT_NO_JUMP_DOWN_ON_INPUT:
+      _cons_jump_down_on_input = 0;
+      break;
+
     case OPT_JUMP_DOWN_ON_OUTPUT:
       _cons_jump_down_on_output = 1;
+      break;
+
+    case OPT_NO_JUMP_DOWN_ON_OUTPUT:
+      _cons_jump_down_on_output = 0;
       break;
 
     case ARGP_KEY_ARG:
