@@ -52,6 +52,12 @@ volatile struct mapped_time_value *console_maptime;
 #define DEFAULT_ENCODING "ISO-8859-1"
 
 
+/* A handle for a console device.  */
+typedef struct cons *cons_t;
+
+/* A handle for a virtual console device.  */
+typedef struct vcons *vcons_t;
+
 struct vcons
 {
   /* Protected by cons->lock.  */
@@ -75,8 +81,6 @@ struct vcons
   struct node *disp_node;
   struct node *inpt_node;
 };
-/* A handle for a virtual console device.  */
-typedef struct vcons *vcons_t;
 
 struct cons
 {
@@ -93,8 +97,6 @@ struct cons
   /* A template for the stat information of all nodes.  */
   struct stat stat_template;
 };
-/* A handle for a console device.  */
-typedef struct cons *cons_t;
 
 
 /* Lookup the virtual console with number ID in the console CONS,
@@ -1051,11 +1053,14 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
       ssize_t amt = *len;
       assert (np == vcons->disp_node);
 
-      if (amt > np->nn_stat.st_size)
-	amt = np->nn_stat.st_size;
-      amt = display_read (vcons->display,
-			  /* cred->po->openstat & O_NONBLOCK */ 0,
-			  offset, data, amt);
+      if (offset + amt > np->nn_stat.st_size)
+	amt = np->nn_stat.st_size - offset;
+      if (amt < 0)
+	amt = 0;
+      else
+	amt = display_read (vcons->display,
+			    /* cred->po->openstat & O_NONBLOCK */ 0,
+			    offset, data, amt);
       if (amt == -1)
 	err = errno;
       else
@@ -1163,6 +1168,24 @@ netfs_S_io_map (struct protid *cred,
  error:
   mutex_unlock (&np->lock);
   return errno;
+}
+
+
+kern_return_t
+netfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->disp_node)
+    return EOPNOTSUPP;
+
+  return display_notice_changes (vcons->display, notify);
 }
 
 

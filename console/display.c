@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <stddef.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -36,6 +37,8 @@
 #include <hurd.h>
 #include <hurd/pager.h>
 
+#include "ourfs_notify_U.h"
+
 #ifndef __STDC_ISO_10646__
 #error It is required that wchar_t is UCS-4.
 #endif
@@ -46,8 +49,8 @@
 
 struct cursor
 {
-  u_int32_t saved_x;
-  u_int32_t saved_y;
+  uint32_t saved_x;
+  uint32_t saved_y;
 };
 typedef struct cursor *cursor_t;
 
@@ -114,6 +117,13 @@ struct user_pager_info
   struct pager *p;
 };
 
+/* Pending directory and file modification requests.  */
+struct modreq
+{
+  mach_port_t port;
+  struct modreq *next;
+};
+
 struct display
 {
   /* The lock for the virtual console display structure.  */
@@ -133,6 +143,9 @@ struct display
   struct user_pager_info *upi;  
   memory_object_t memobj;
   size_t memobj_size;
+
+  /* A list of ports to send file change notifications to.  */
+  struct modreq *filemod_reqs;
 };
 
 
@@ -159,8 +172,6 @@ pager_clear_user_data (struct user_pager_info *upi)
   free (upi);
 }
 
-/* XXX This is not good enough.  We actually need to provide a backing
-   store.  */
 error_t
 pager_read_page (struct user_pager_info *pager, vm_offset_t page,
                  vm_address_t *buf, int *writelock)
@@ -178,7 +189,8 @@ pager_write_page (struct user_pager_info *pager,
                   vm_offset_t page,
                   vm_address_t buf)
 {
-  /* XXX Implement me.  */
+  /* XXX Implement me.  Just store away the page, and release it when
+     releasing the pager.  */
   assert (0);
 }
 
@@ -220,14 +232,79 @@ service_paging_requests (any_t arg)
 }    
 
 
+/* Free the list of modification requests MR */
+static void
+free_modreqs (struct modreq *mr)
+{
+  struct modreq *tmp;
+  for (; mr; mr = tmp)
+    {
+      mach_port_deallocate (mach_task_self (), mr->port);
+      tmp = mr->next;
+      free (mr);
+    }
+}
+
+error_t
+display_notice_changes (display_t display, mach_port_t notify)
+{
+  error_t err;
+  struct modreq *req;
+
+  mutex_lock (&display->lock);
+  err = nowait_file_changed (notify, FILE_CHANGED_NULL, 0, 0);
+  if (err)
+    {
+      mutex_unlock (&display->lock);
+      return err;
+    }
+  req = malloc (sizeof (struct modreq));
+  if (!req)
+    {
+      mutex_unlock (&display->lock);
+      return errno;
+    }
+  req->port = notify;
+  req->next = display->filemod_reqs;
+  display->filemod_reqs = req;
+  mutex_unlock (&display->lock);
+  return 0;
+}
+
+/* Requires DISPLAY to be locked.  */
+void
+display_notice_filechange (display_t display, enum file_changed_type type,
+			   off_t start, off_t end)
+{
+  error_t err;
+  struct modreq **preq;
+
+  preq = &display->filemod_reqs;
+  while (*preq)
+    {
+      struct modreq *req = *preq;
+      err = nowait_file_changed (req->port, type, start, end);
+      if (err)
+        {
+	  /* Remove notify port.  */
+          *preq = req->next;
+          mach_port_deallocate (mach_task_self (), req->port);
+          free (req);
+        }
+      else
+        preq = &req->next;
+    }
+}
+
+
 static error_t
-user_create (display_t display, u_int32_t width, u_int32_t height,
-	     u_int32_t lines)
+user_create (display_t display, uint32_t width, uint32_t height,
+	     uint32_t lines)
 {
   error_t err;
   struct cons_display *user;
   display->memobj_size = round_page (sizeof (struct cons_display) +
-				   sizeof (u_int32_t) * width * lines);
+				   sizeof (uint32_t) * width * lines);
 
   display->upi = malloc (sizeof (struct user_pager_info));
   if (!display->upi)
@@ -270,7 +347,7 @@ user_create (display_t display, u_int32_t width, u_int32_t height,
   user->screen.lines = lines;
   user->screen.cur_line = 0;
   user->screen.scr_lines = 0;
-  user->screen.matrix = sizeof (struct cons_display) / sizeof (u_int32_t);
+  user->screen.matrix = sizeof (struct cons_display) / sizeof (uint32_t);
   user->cursor.col = 0;
   user->cursor.row = 0;
   user->cursor.status = CONS_CURSOR_NORMAL;
@@ -289,103 +366,124 @@ user_destroy (display_t display)
 }
 
 
-#define MATRIX_POS(user,x,y) ((user)->_matrix \
-    + (((user)->screen.cur_line + (y)) % (user)->screen.height) \
-    * (user)->screen.width + (x))
-
 static void
-screen_fill (display_t display, size_t x, size_t y, size_t w, size_t h,
-	     wchar_t chr, char attr)
+screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
+	     size_t row2, wchar_t chr, char attr)
 {
   struct cons_display *user = display->user;
-  wchar_t *matrixp = MATRIX_POS (user, x, y);
+  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
+  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t size = user->screen.width * user->screen.lines;
 
-  while (h--)
+  if (start >= size && end >= size)
     {
-      /* XXX Set attribute flags.  */
-      wmemset (matrixp, L' ', w);
-      matrixp += user->screen.width;
+      start -= size;
+      end -= size;
     }
 
-  /* XXX Flag screen change, but here or where else?  */
+  if (end < size)
+    {
+      wmemset (user->_matrix + start, chr, end - start + 1);
+      display_notice_filechange (display, FILE_CHANGED_WRITE,
+				 sizeof (struct cons_display)
+				 + start * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (end + 1) * sizeof (wchar_t) - 1);
+    }
+  else
+    {
+      wmemset (user->_matrix + start, chr, size - start);
+      wmemset (user->_matrix, chr, end - size + 1);
+      display_notice_filechange (display, FILE_CHANGED_WRITE,
+				 sizeof (struct cons_display)
+				 + start * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (end - size + 1) * sizeof (wchar_t) - 1);
+    }
 }
 
 static void
-screen_scroll_up (display_t display, size_t x, size_t y, size_t w, size_t h,
-		  int amt, wchar_t chr, char attr)
+screen_shift_left (display_t display, size_t row1, size_t col1, size_t row2,
+		   size_t col2, size_t shift, wchar_t chr, char attr)
 {
   struct cons_display *user = display->user;
-  wchar_t *matrixp = MATRIX_POS (user, x, y);
+  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
+  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t size = user->screen.width * user->screen.lines;
 
-  if (amt < 0)
-    return;
-
-  while (h-- > amt)
+  if (start >= size && end >= size)
     {
-      wmemcpy (matrixp, matrixp + amt * user->screen.width, w);
-      matrixp += user->screen.width;
+      start -= size;
+      end -= size;
     }
-  screen_fill (display, x, y, w, h, chr, attr);
+
+  if (start + shift <= end)
+    {
+      /* Use a loop to copy the data.  Using wmemmove and wmemset on
+	 the chunks is tiresome, as there are many cases.  */
+      off_t src = start + shift;
+      off_t dst = start;
+
+      while (src <= end)
+	user->_matrix[dst++ % size] = user->_matrix[src++ % size];
+      while (dst <= end)
+	user->_matrix[dst++ % size] = chr;
+
+      display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
+				 sizeof (struct cons_display)
+				 + start * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (start + shift) * sizeof (wchar_t) - 1);
+      display_notice_filechange (display, FILE_CHANGED_EXTEND,
+				 sizeof (struct cons_display)
+				 + (end - shift + 1) * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (end + 1) * sizeof (wchar_t) - 1);
+    }
+  else
+    screen_fill (display, col1, row1, col2, row2, chr, attr);
 }
 
 static void
-screen_scroll_down (display_t display, size_t x, size_t y, size_t w, size_t h,
-		    int amt, wchar_t chr, char attr)
+screen_shift_right (display_t display, size_t row1, size_t col1, size_t row2,
+		    size_t col2, size_t shift, wchar_t chr, char attr)
 {
   struct cons_display *user = display->user;
-  wchar_t *matrixp = MATRIX_POS (user, x, y + h - 1);
+  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
+  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t size = user->screen.width * user->screen.lines;
 
-  if (amt < 0)
-    return;
-
-  while (h-- > amt)
+  if (start >= size && end >= size)
     {
-      wmemcpy (matrixp, matrixp - amt * user->screen.width, w);
-      matrixp -= user->screen.width;
+      start -= size;
+      end -= size;
     }
-  screen_fill (display, x, y, w, h, chr, attr);
-}
 
-static void
-screen_scroll_left (display_t display, size_t x, size_t y, size_t w, size_t h,
-		    int amt, wchar_t chr, char attr)
-{
-  struct cons_display *user = display->user;
-  wchar_t *matrixp = MATRIX_POS (user, x, y);
-  int i;
-
-  if (amt < 0)
-    return;
-  if (amt > w)
-    amt = w;
-
-  for (i = 0; i < y + h; i++)
+  if (start + shift <= end)
     {
-      wmemmove (matrixp, matrixp + amt, w - amt);
-      matrixp += user->screen.width;
+      /* Use a loop to copy the data.  Using wmemmove and wmemset on
+	 the chunks is tiresome, as there are many cases.  */
+      off_t src = end - shift;
+      off_t dst = end;
+
+      while (src >= start)
+	user->_matrix[dst-- % size] = user->_matrix[src-- % size];
+      while (dst >= start)
+	user->_matrix[dst-- % size] = chr;
+
+      display_notice_filechange (display, FILE_CHANGED_EXTEND,
+				 sizeof (struct cons_display)
+				 + start * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (start + shift) * sizeof (wchar_t) - 1);
+      display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
+				 sizeof (struct cons_display)
+				 + (end - shift + 1) * sizeof (wchar_t),
+				 sizeof (struct cons_display)
+				 + (end + 1) * sizeof (wchar_t) - 1);
     }
-  screen_fill (display, x + w - amt, y, amt, h, chr, attr);
-}
-
-static void
-screen_scroll_right (display_t display, size_t x, size_t y, size_t w, size_t h,
-		     int amt, wchar_t chr, char attr)
-{
-  struct cons_display *user = display->user;
-  wchar_t *matrixp = MATRIX_POS (user, x, y);
-  int i;
-
-  if (amt < 0)
-    return;
-  if (amt > w)
-    amt = w;
-
-  for (i = 0; i < y + h; i++)
-    {
-      wmemmove (matrixp + amt, matrixp, w - amt);
-      matrixp += user->screen.width;
-    }
-  screen_fill (display, x, y, amt, h, chr, attr);
+  else
+    screen_fill (display, col1, row1, col2, row2, chr, attr);
 }
 
 
@@ -607,26 +705,19 @@ handle_esc_bracket (display_t display, char op)
 	case 0:
 	  /* Clear to end of screen: <ed>.  */
 	  screen_fill (display, user->cursor.col, user->cursor.row,
-		       user->screen.width - user->cursor.col, 1, L' ',
-		       display->attr.current);
-	  screen_fill (display, 0, user->cursor.row + 1,
-		       user->screen.width,
-		       user->screen.height - user->cursor.row,
-			L' ', display->attr.current);
+		       user->screen.width - 1, user->screen.height - 1,
+		       L' ', display->attr.current);
 	  break;
 	case 1:
 	  /* Clear to beginning of screen.  */
 	  screen_fill (display, 0, 0,
-		       user->screen.width, user->cursor.row,
-		       L' ', display->attr.current);
-	  screen_fill (display, 0, user->cursor.row,
-		       user->cursor.col + 1, 1,
+		       user->cursor.col, user->cursor.row,
 		       L' ', display->attr.current);
 	  break;
 	case 2:
 	  /* Clear entire screen.  */
 	  screen_fill (display, 0, 0,
-		       user->screen.width, user->screen.height,
+		       user->screen.width - 1, user->screen.height - 1,
 		       L' ', display->attr.current);
 	  break;
 	}
@@ -637,73 +728,70 @@ handle_esc_bracket (display_t display, char op)
 	case 0:
 	  /* Clear to end of line: <el>.  */
 	  screen_fill (display, user->cursor.col, user->cursor.row,
-		       user->screen.width - user->cursor.col, 1,
+		       user->screen.width - 1, user->cursor.row,
 		       L' ', display->attr.current);
 	  break;
 	case 1:
 	  /* Clear to beginning of line: <el1>.  */
 	  screen_fill (display, 0, user->cursor.row,
-		       user->cursor.col + 1, 1,
+		       user->cursor.col, user->cursor.row,
 		       L' ', display->attr.current);
 	  break;
 	case 2:
 	  /* Clear entire line.  */
 	  screen_fill (display, 0, user->cursor.row,
-		       user->screen.width, 1,
+		       user->screen.width - 1, user->cursor.row,
 		       L' ', display->attr.current);
 	  break;
 	}
       break;
     case 'L':
       /* Insert line(s): <il1>, <il>.  */
-      screen_scroll_down (display, 0, user->cursor.row,
-			  user->screen.width,
-			  user->screen.height - user->cursor.row,
-			  parse->params[0] ?: 1,
+      screen_shift_right (display, 0, user->cursor.row,
+			  user->screen.width - 1, user->screen.height - 1,
+			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
     case 'M':
       /* Delete line(s): <dl1>, <dl>.  */
-      screen_scroll_up (display, 0, user->cursor.row,
-			user->screen.width,
-			user->screen.height - user->cursor.row,
-			parse->params[0] ?: 1,
-			L' ', display->attr.current);
+      screen_shift_left (display, 0, user->cursor.row,
+			 user->screen.width - 1, user->screen.height - 1,
+			 (parse->params[0] ?: 1) * user->screen.width,
+			 L' ', display->attr.current);
       break;
     case '@':
       /* Insert character(s): <ich1>, <ich>.  */
-      screen_scroll_right (display, user->cursor.col,
-			   user->cursor.row,
-			   user->screen.width - user->cursor.col, 1,
-			   parse->params[0] ?: 1,
-			   L' ', display->attr.current);
-      break;
-    case 'P':
-      /* Delete character(s): <dch1>, <dch>.  */
-      screen_scroll_left (display, user->cursor.col,
-			  user->cursor.row,
-			  user->screen.width - user->cursor.col, 1,
+      screen_shift_right (display, user->cursor.col, user->cursor.row,
+			  user->screen.width - 1, user->cursor.row,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
+    case 'P':
+      /* Delete character(s): <dch1>, <dch>.  */
+      screen_shift_left (display, user->cursor.col, user->cursor.row,
+			 user->screen.width - 1, user->cursor.row,
+			 parse->params[0] ?: 1,
+			 L' ', display->attr.current);
+      break;
     case 'S':
       /* Scroll up: <ind>, <indn>.  */
-      screen_scroll_up (display, 0, 0,
-			user->screen.width, user->screen.height,
-			parse->params[0] ?: 1,
-			L' ', display->attr.current);
+      screen_shift_left (display, 0, 0,
+			 user->screen.width - 1, user->screen.height - 1,
+			 (parse->params[0] ?: 1) * user->screen.width,
+			 L' ', display->attr.current);
       break;
     case 'T':
       /* Scroll down: <ri>, <rin>.  */
-      screen_scroll_down (display, 0, 0,
+      screen_shift_right (display, 0, 0,
 			  user->screen.width, user->screen.height,
-			  parse->params[0] ?: 1,
+			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
     case 'X':
       /* Erase character(s): <ech>.  */
       screen_fill (display, user->cursor.col, user->cursor.row,
-		   parse->params[0] ?: 1, 1,
+		   /* XXX limit ? */user->cursor.col + parse->params[0] ?: 1,
+		   user->cursor.row,
 		   L' ', display->attr.current);
       break;
     }
@@ -754,6 +842,12 @@ display_output_one (display_t display, wchar_t chr)
   struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
 
+  uint32_t old_cursor_col = user->cursor.col;
+  uint32_t old_cursor_row = user->cursor.row;
+  uint32_t old_cursor_status = user->cursor.status;
+  uint32_t old_cur_line = user->screen.cur_line;
+  uint32_t old_scr_lines = user->screen.scr_lines;
+
   void newline (void)
     {
       if (user->cursor.row < user->screen.height - 1)
@@ -768,12 +862,12 @@ display_output_one (display_t display, wchar_t chr)
 
 	  /* XXX Set attribute flags.  */
 	  screen_fill (display, 0, user->screen.height - 1,
-		       user->screen.width, 1, L' ', user->screen.width);
+		       user->screen.width - 1, user->screen.height - 1,
+		       L' ', user->screen.width);
 	  if (user->screen.scr_lines <
 	      user->screen.lines - user->screen.height)
 	    user->screen.scr_lines++;
 	  /* XXX Flag current line change.  */
-	  /* XXX Flag change of last line.  */
 	  /* XXX Possibly flag change of length of scroll back buffer.  */
 	}
     }
@@ -831,10 +925,15 @@ display_output_one (display_t display, wchar_t chr)
 	  {
 	    int line = (user->screen.cur_line + user->cursor.row)
 	      % user->screen.lines;
-
+	    int idx = line * user->screen.width + user->cursor.col;
 	    /* XXX Set attribute flags.  */
-	    user->_matrix[line * user->screen.width
-			  + user->cursor.col] = chr;
+	    user->_matrix[idx] = chr;
+
+	    display_notice_filechange (display, FILE_CHANGED_WRITE,
+				       sizeof (struct cons_display)
+				       + idx * sizeof (wchar_t),
+				       sizeof (struct cons_display)
+				       + (idx + 1) * sizeof (wchar_t) - 1);
 
 	    user->cursor.col++;
 	    if (user->cursor.col == user->screen.width)
@@ -856,7 +955,7 @@ display_output_one (display_t display, wchar_t chr)
 	case L'c':
 	  /* Clear screen and home cursor: <clear>.  */
 	  screen_fill (display, 0, 0,
-		       user->screen.width, user->screen.height,
+		       user->screen.width - 1, user->screen.height - 1,
 		       L' ', display->attr.current);
 	  user->cursor.col = user->cursor.row = 0;
 	  /* XXX Flag cursor change.  */
@@ -903,6 +1002,35 @@ display_output_one (display_t display, wchar_t chr)
     default:
       abort ();
     }
+
+  if (old_cursor_col != user->cursor.col || old_cursor_row != user->cursor.row)
+    display_notice_filechange (display, FILE_CHANGED_WRITE,
+			       offsetof (struct cons_display, cursor.col),
+			       (old_cursor_status == user->cursor.status
+			       ? offsetof (struct cons_display, cursor.row)
+			       : offsetof (struct cons_display, cursor.row))
+			       + sizeof (wchar_t) - 1);
+  else if (old_cursor_status != user->cursor.status)
+    display_notice_filechange (display, FILE_CHANGED_WRITE,
+			       offsetof (struct cons_display, cursor.status),
+			       offsetof (struct cons_display, cursor.status)
+			       + sizeof (wchar_t) - 1);
+  if (old_cur_line != user->screen.cur_line)
+    display_notice_filechange (display, FILE_CHANGED_WRITE,
+			       offsetof (struct cons_display, screen.cur_line),
+			       (old_scr_lines == user->screen.scr_lines
+				? offsetof (struct cons_display,
+					    screen.cur_line)
+				: offsetof (struct cons_display,
+					    screen.scr_lines))
+			       + sizeof (wchar_t) - 1);
+  else if (old_scr_lines != user->screen.scr_lines)
+    display_notice_filechange (display, FILE_CHANGED_WRITE,
+			       offsetof (struct cons_display,
+					 screen.scr_lines),
+			       offsetof (struct cons_display,
+					 screen.scr_lines)
+			       + sizeof (wchar_t) - 1);
 }
 
 /* Output LENGTH bytes starting from BUFFER in the system encoding.
@@ -996,6 +1124,8 @@ display_create (display_t *r_display, const char *encoding)
 void
 display_destroy (display_t display)
 {
+  if (display->filemod_reqs)
+    free_modreqs (display->filemod_reqs);
   output_deinit (&display->output);
   user_destroy (display);
   free (display);

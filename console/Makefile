@@ -25,9 +25,12 @@ target = console
 
 SRCS = console.c display.c input.c
 LCLHDRS = console.h display.h input.h
+DIST_FILES = ourfs_notify.defs
+
+MIGSTUBS = ourfs_notifyUser.o
 
 HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
-OBJS = $(subst .c,.o,$(SRCS))
+OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
 # This is the old monolithic version of the console server.
 #SRCS = main.c vcons.c focus.c vga-display.c vga.c dynafont.c bdf.c

@@ -1,3 +1,36 @@
+2002-06-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (DIST_FILES): New target.
+	(MIGSTUBS): Likewise.
+	(OBJS): Add $(MIGSTUBS).
+	* ourfs_notify.defs: New file.
+	* console.c: Diddle order of typedefs.
+	(netfs_attempt_read): Clip AMT to bytes left to read before
+	calling display_read.
+	(netfs_S_file_notice_changes): New function.
+	* console.h: Include <stdint.h>, not <sys/types.h>.
+	Change all types from u_int32_t to uint32_t.
+	* display.c: Include <stddef.h> and "outfs_notify_U.h".  Change
+	all u_int_32 types to uint32_t.
+	(struct modreq): New structure.
+	(struct display): New member filemod_reqs.
+	(free_modreqs): New function.
+	(display_notice_changes): Likewise.
+	(display_notice_filechange): Likewise.
+	(display_destroy): Free filemod_reqs member of DISPLAY.
+	(MATRIX_POS): Macro removed.
+	(screen_fill): Rewritten.
+	(screen_shift_left): New function.
+	(screen_shift_right): Likewise.
+	(screen_scroll_up): Function removed.
+	(screen_scroll_down): Likewise.
+	(screen_scroll_left): Likewise.
+	(screen_scroll_right): Likewise.
+	(handle_esc_bracket): Use new screen_* functions.
+	(display_output_one): Store old cursor and screen attributes, and
+	if they have been changed, send file change notifications.
+	* display.h: New prototype for display_notice_changes.
+
 2002-06-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.c: Include <argz.h>.  Do not include "console.h", but

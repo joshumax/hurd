@@ -60,6 +60,8 @@ mach_port_t display_get_filemap (display_t display, vm_prot_t prot);
 ssize_t display_read (display_t display, int nonblock, off_t off,
 		      char *data, size_t len);
 
+error_t display_notice_changes (display_t display, mach_port_t notify);
+
 /* Resume the output on the display DISPLAY.  */
 void display_start_output (display_t display);
 
