@@ -1,3 +1,80 @@
+Thu Sep 19 18:02:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add store.
+
+Wed Sep 18 15:30:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_S_file_get_storage_info): Narrow scope of RUN.
+
+	* consts.c (diskfs_extra_version): New variable.
+
+	* main.c (main): Remove CLASSES argument to store_parsed_open.
+	Use STORE_PARAMS variable to get result from parsing STORE_ARGP.
+	Don't force COMPAT_GNU on bootstrap filesystems (it's the default
+	anyway).
+
+Mon Sep 16 13:27:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (ufs.static ufs): Add ../libstore/libstore.a.
+
+	* hyper.c (zeroblock): Change type to `void *'.
+	(get_hypermetadata): Cast ZEROBLOCK when vm_{de,}allocating.
+	* ufs.h (zeroblock): Change type to `void *'.
+	* sizes.c (diskfs_truncate): Don't cast ZEROBLOCK to diskfs_node_rw.
+	(block_extended, diskfs_grow): Do cast it to offer_data.
+
+	* main.c (main): Don't set DISKFS_USE_MACH_DEVICE (which is no longer).
+
+	* inode.c (diskfs_S_file_get_storage_info): Coalesce adjacent
+	blocks when constructing RUNS.
+	Set *PORTS_TYPE, not *STORAGE_PORT_TYPE.
+	* inode.c (diskfs_S_file_getfh): Variable ERR removed.
+
+	* sizes.c (indir_release): Use DISKFS_DISK_PAGER instead of DISK_PAGER.
+	* ufs.h (sync_disk_blocks): Likewise.
+	* pokeloc.c (sync_disk): Likewise.
+	* main.c (diskfs_reload_global_state): Likewise.
+	* pager.c (create_disk_pager, diskfs_shutdown_pager,
+	diskfs_sync_everything): Likewise.
+	* main.c <argp.h>, <hurd/store.h>: New includes.
+	* hyper.c, pager.c, inode.c <hurd/store.h>: New include.
+	(get_hypermetadata): Use %Zd for printfing size_t.
+	(diskfs_set_hypermetadata): Return EIO for incomplete writes.
+	Cast BUF when calling vm_deallocate.
+
+	* dir.c (diskfs_direnter_hard): Initialize OLDSIZE to shut up gcc.
+
+Sat Sep 14 20:38:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ufs.h (store, store_parsed, disk_image): New declarations.
+
+	* pager.c (thread_function): Function removed.
+	(create_disk_pager): Create PAGER_BUCKET.
+	Use diskfs_start_disk_pager instead of disk_pager_setup.
+	(disk_image): New variable.
+
+	* main.c (store, store_parsed, diskfs_disk_name): New variables.
+	(parse_opt): Propagate our input to the first child parser.
+	(diskfs_append_args): New function.
+	(diskfs_get_options): Function removed.
+	(startup_parents): Use DISKFS_STORE_STARTUP_ARGP instead of
+	DISKFS_STD_DEVICE_STARTUP_ARGP.
+
+	* hyper.c (get_hypermetadata): Use DISKFS_DISK_NAME instead of
+	DISKFS_DEVICE_ARG.
+	* main.c (main): Likewise.
+
+	* hyper.c (get_hypermetadata, diskfs_readonly_changed): Use
+	fields in STORE instead of DISKFS_DEVICE_* variables.
+	* inode.c (diskfs_S_file_get_storage_info): Likewise.
+	* pager.c (pager_report_extent): Likewise.
+	* main.c (main): Likewise.
+	* pager.c (pager_read_page, pager_write_page, pager_unlock_page):
+	Use store_{read,write} instead of diskfs_device_{read,write}_sync.
+	* hyper.c (diskfs_set_hypermetadata): Likewise.
+	* inode.c (diskfs_S_file_get_storage_info): Rewrite to use
+	libstore functions (still has NDADDR block limit, though).
+
 Thu Sep 12 16:36:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
