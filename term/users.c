@@ -1514,9 +1514,6 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (cred->pi.class == pty_class)
-    return pty_io_get_openmodes (cred, bits);
-
   mutex_lock (&global_lock);
   *bits = cred->po->openmodes;
   mutex_unlock (&global_lock);
@@ -1535,9 +1532,6 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (cred->pi.class == pty_class)
-    return pty_io_set_all_openmodes (cred, bits);
-
   mutex_lock (&global_lock);
   cred->po->openmodes &= ~HONORED_STATE_MODES;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
@@ -1554,9 +1548,6 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (cred->pi.class == pty_class)
-    return pty_io_set_some_openmodes (cred, bits);
-
   mutex_lock (&global_lock);
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
   mutex_unlock (&global_lock);
@@ -1571,9 +1562,6 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-
-  if (cred->pi.class == pty_class)
-    return pty_io_clear_some_openmodes (cred, bits);
 
   mutex_lock (&global_lock);
   cred->po->openmodes &= ~(bits & HONORED_STATE_MODES);
@@ -1590,9 +1578,6 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (cred->pi.class == pty_class)
-    return pty_io_mod_owner (owner);
-
   mutex_lock (&global_lock);
   termflags &= ~NO_OWNER;
   foreground_id = owner;
@@ -1608,9 +1593,6 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-
-  if (cred->pi.class == pty_class)
-    return pty_io_get_owner (owner);
 
   mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
@@ -1630,9 +1612,6 @@ trivfs_S_io_get_async_icky (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-
-  if (cred->pi.class == pty_class)
-    return pty_io_get_async_icky (cred, id, idtype);
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1655,9 +1634,6 @@ trivfs_S_io_async (struct trivfs_protid *cred,
   struct async_req *ar;
   if (!cred)
     return EOPNOTSUPP;
-
-  if (cred->pi.class == pty_class)
-    return pty_io_async (cred, notify, id, idtype);
 
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))

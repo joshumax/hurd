@@ -291,14 +291,4 @@ error_t pty_io_write (struct trivfs_protid *, char *,
 error_t pty_io_read (struct trivfs_protid *, char **, 
 		     mach_msg_type_number_t *, mach_msg_type_number_t);
 error_t pty_io_readable (int *);
-error_t pty_io_get_openmodes (struct trivfs_protid *, int *);
-error_t pty_io_set_all_openmodes (struct trivfs_protid *, int);
-error_t pty_io_set_some_openmodes (struct trivfs_protid *, int);
-error_t pty_io_clear_some_openmodes (struct trivfs_protid *, int);
-error_t pty_io_mod_owner (pid_t);
-error_t pty_io_get_owner (pid_t *);
-error_t pty_io_get_async_icky (struct trivfs_protid *, 
-			       mach_port_t *, mach_msg_type_name_t *);
-error_t pty_io_async (struct trivfs_protid *, mach_port_t, mach_port_t *,
-		      mach_msg_type_name_t *);
 error_t pty_io_select (struct trivfs_protid *, int *, int *);
