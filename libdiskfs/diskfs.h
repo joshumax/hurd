@@ -57,6 +57,7 @@ struct node
   struct disknode *dn;
 
   struct stat dn_stat;
+  int istranslated;
 
   /* Stat has been modified if one of the following four fields
      is nonzero.  Also, if one of the dn_set_?time fields is nonzero,
@@ -321,10 +322,6 @@ error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
 error_t diskfs_get_directs (struct node *dp, int entry, int n,
 			    char **data, u_int *datacnt, 
 			    vm_size_t bufsiz, int *amt);
-
-/* The user must define this function.  For locked node NP, return nonzero
-   iff there is a translator program defined for the node.  */
-int diskfs_node_translated (struct node *np);
 
 /* The user must define this function.  For locked node NP (for which
    diskfs_node_translated is true) look up the name of its translator.
