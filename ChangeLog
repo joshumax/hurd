@@ -1,3 +1,10 @@
+2001-11-15  Neal H Walfield  <neal@cs.uml.edu>
+
+	* Makeconf (TAGS) [configured]: Create tags for MiG generated files.
+        * Makefile (TAGS): Generate dependencies respecting broken
+        code markers, i.e. based on $(working-prog-subdirs) and not
+        $(prog-subdirs).
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* configure.in (asm_syntax): Grok "powerpc" value for $host_cpu.
