@@ -149,6 +149,7 @@ ftp_conn_sysify (struct ftp_conn *conn)
 	  (*conn->hooks->choose_syshooks) (conn, txt);
 	else
 	  ftp_conn_choose_syshooks (conn, txt);
+	conn->syshooks_valid = 1;
       }
     else
       err = unexpected_reply (conn, reply, txt, 0);
