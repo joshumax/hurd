@@ -183,8 +183,14 @@ pi_destroy_hook (struct trivfs_protid *cred)
     return;
 
   mutex_lock (&global_lock);
-  if (cred->hook && !--((struct protid_hook *)cred->hook)->refcnt)
-    free (cred->hook);
+  if (cred->hook)
+    {
+      assert (((struct protid_hook *)cred->hook)->refcnt > 0);
+      if (--((struct protid_hook *)cred->hook)->refcnt == 0)
+	/* XXX don't free for now, so we can try and catch a multiple-freeing
+	   bug.  */
+	/* free (cred->hook) */;
+    }
   mutex_unlock (&global_lock);
 }
 void (*trivfs_protid_destroy_hook) (struct trivfs_protid *) = pi_destroy_hook;
@@ -579,9 +585,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
-  mutex_unlock (&global_lock);
-
   call_asyncs ();
+
+  mutex_unlock (&global_lock);
 
   return !*datalen && cancel ? EINTR : 0;
 }
