@@ -25,6 +25,16 @@
 #include "nfs.h"
 #include <netinet/in.h>
 #include <unistd.h>
+#include <maptime.h>
+
+int stat_timeout = 3;
+int cache_timeout = 3;
+int initial_transmit_timeout = 1;
+int max_transmit_timeout = 30;
+int soft_retries = 3;
+int mounted_soft = 1;
+int read_size = 8192;
+int write_size = 8192;
 
 int
 main ()
@@ -48,6 +58,13 @@ main ()
       addr.sin_port = htons (ntohs (addr.sin_port) - 1);
       ret = bind (main_udp_socket, (struct sockaddr *)&addr, 
 		  sizeof (struct sockaddr_in));
+      if (ret == -1 && errno == EPERM)
+	{
+	  /* We aren't allowed privileged ports; no matter;
+	     let the server deny us later if it wants. */
+	  ret = 0;
+	  break;
+	}
     }
   while ((ret == -1) && (errno == EADDRINUSE));
   if (ret == -1)
@@ -56,25 +73,9 @@ main ()
       exit (1);
     }
 
-  soft_mount_retries = 3;
-
-  {
-    mach_port_t host, dev_master, timedev, obj;
-    errno = get_privileged_ports (&host, &dev_master);
-    if (errno)
-      {
-	perror ("getting privileged ports");
-	exit (1);
-      }
-    device_open (dev_master, 0, "time", &timedev);
-    device_map (timedev, VM_PROT_READ, 0, 
-		sizeof (mapped_time_value_t), &obj, 0);
-    vm_map (mach_task_self (), (vm_address_t *)&mapped_time,
-	    sizeof (mapped_time_value_t), 0, 1, obj, 0, 0, VM_PROT_READ,
-	    VM_PROT_READ, VM_INHERIT_NONE);
-    mach_port_deallocate (mach_task_self (), timedev);
-    mach_port_deallocate (mach_task_self (), obj);
-  }
+  errno = maptime_map (0, 0, &mapped_time);
+  if (errno)
+    perror ("mapping time");
 
   cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
   cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));
