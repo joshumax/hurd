@@ -188,9 +188,13 @@ page_write_file_direct(struct file_direct *fdp,
     offset -= r->length;
 
   if (offset + (size >> fdp->bshift) <= r->length)
-    /* The first run contains the whole page.  */
-    return device_write (fdp->device, 0, r->start + offset,
-			 (char *) addr, size, size_written);
+    {
+      /* The first run contains the whole page.  */
+      err = device_write (fdp->device, 0, r->start + offset,
+			  (char *) addr, size, &wrote);
+      *size_written = wrote;
+      return err;
+    }
 
   /* Write the first part of the run.  */
   err = device_write (fdp->device, 0,
