@@ -38,9 +38,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/shared.h>
 #include <hurd/fsys.h>
 #include <hurd/exec.h>
-#include "exec_server.h"
+#include "exec_S.h"
 #include "fsys_S.h"
-
+#include "notify_S.h"
 
 /* Default: BFD or a.out?  */
 #if	!defined (BFD) && !defined (AOUT)
