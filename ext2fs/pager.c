@@ -87,9 +87,8 @@ get_page_buf ()
     {
       error_t err;
       spin_unlock (&free_page_bufs_lock);
-      err = vm_allocate (mach_task_self (),
-			 (vm_address_t *)&buf, vm_page_size, 1);
-      if (err)
+      buf = mmap (0, vm_page_size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf == (void *) -1)
 	buf = 0;
     }
   else

@@ -45,10 +45,9 @@ allocate_mod_map (void)
       error_t err;
       /* One bit per filesystem block.  */
       mod_map_size = sblock->s_blocks_count >> 3;
-      err =
-	vm_allocate (mach_task_self (),
-		     (vm_address_t *)&modified_global_blocks, mod_map_size, 1);
-      assert_perror (err);
+      modified_global_blocks = mmap (0, mod_map_size, PROT_READ|PROT_WRITE,
+				     MAP_ANON, 0, 0);
+      assert (modified_global_blocks != (void *) -1);
     }
   else
     modified_global_blocks = 0;
@@ -154,7 +153,8 @@ get_hypermetadata (void)
   diskfs_end_catch_exception ();
 
   /* A handy source of page-aligned zeros.  */
-  vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
+  zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ|PROT_WRITE,
+				   MAP_ANON, 0, 0);
 }
 
 error_t
@@ -193,8 +193,7 @@ diskfs_readonly_changed (int readonly)
 
   (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
 
-  vm_protect (mach_task_self (), (vm_address_t)disk_image,
-	      store->size, 0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
+  mprotect (disk_image, store->size, PROT_READ | (readonly ? 0 : PROT_WRITE));
 
   if (!readonly && !(sblock->s_state & EXT2_VALID_FS))
     ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
