@@ -28,6 +28,10 @@
 #include <utmp.h>
 #include <pwd.h>
 #include <grp.h>
+#include <netdb.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <sys/fcntl.h>
 
@@ -36,23 +40,37 @@
 #include <envz.h>
 #include <idvec.h>
 #include <error.h>
+#include <hurd/lookup.h>
 
+extern error_t
+exec_reauth (auth_t auth, int secure, int must_reauth,
+	     mach_port_t *ports, unsigned num_ports,
+	     mach_port_t *fds, unsigned num_fds);
+
+extern error_t
+hurd_file_name_path_lookup (error_t (*use_init_port)
+			    (int which,
+			     error_t (*operate) (mach_port_t)),
+			    file_t (*get_dtable_port) (int fd),
+			    const char *file_name, const char *path,
+			    int flags, mode_t mode,
+			    file_t *result);
+
 #define DEFAULT_NOBODY "login"
-#define DEFAULT_UMASK 0
 
 #define _PATH_MOTD "/etc/motd"	/* XXX */
-
-/* Which shell to use if we can't find the default one.  */
-#define FAILURE_SHELL _PATH_BSHELL
 
 /* Defaults for various login parameters.  */
 char *default_args[] = {
   "SHELL=" _PATH_BSHELL,
+  "BACKUP_SHELL=" _PATH_BSHELL, /* shell to use if we can't exec SHELL.  */
   "HOME=/etc/login",
   "USER=login",
+  "UMASK=0",
   "NAME=Not logged in",
   "HUSHLOGIN=.hushlogin",	/* Looked up relative new home dir.  */
   "MOTD=" _PATH_MOTD,
+  "PATH=" _PATH_DEFPATH,
   0
 };
 /* Default values for the new environment.  */
@@ -62,8 +80,8 @@ char *default_env[] = {
 };
 
 /* Which things are copied from the login parameters into the environment. */
-char *copied_args[] = { "SHELL", "HOME", "NAME", "VIA", 0 };
-
+char *copied_args[] = { "SHELL", "HOME", "NAME", "VIA", "VIA_ADDR", "PATH", 0 };
+
 static struct argp_option options[] =
 {
   {"arg0",	'0', "ARG",   0, "Make ARG the shell's argv[0]"},
@@ -77,14 +95,18 @@ static struct argp_option options[] =
   {"avail-user",'U', "USER",  0, "Add USER to the available uids"},
   {"group",     'g', "GROUP", 0, "Add GROUP to the effective groups"},
   {"avail-group",'G',"GROUP", 0, "Add GROUP to the available groups"},
-  {"umask",	'm', "MASK",  0, "Use a umask of MASK"},
+  {"no-login",  'L', 0,       0, "Don't modify the shells argv[0] to look"
+     " like a login shell"},
   {"nobody",	'n', "USER",  0, "Use USER's passwd entry to fetch the default"
      " login params if there are no uids (default `" DEFAULT_NOBODY "')"}, 
   {"inherit-environ", 'p', 0, 0, "Inherit the parent's environment"},
-  {"via",	'h',  "HOST", 0, "This login is from HOST"},
+  {"via",	'h', "HOST",  0, "This login is from HOST"},
   {"no-passwd", 'f', 0,       0, "Don't ask for passwords"},
   {"no-utmp",   'z', 0,       0, "Don't put an entry in utmp"},
   {"paranoid",  'P', 0,       0, "Don't admit that a user doesn't exist"},
+  {"keep",      'k', 0,       0, "Keep the old available ids, and save the old"
+     "effective ids as available ids"},
+  {"shell-arg", 'S', 0,       0, "Use the first shell arg as the shell to invoke"},
   {"retry",     'R', "SHELL", OPTION_ARG_OPTIONAL,
      "Re-exec SHELL (default login) with no users after non-fatal errors"}, 
   {0, 0}
@@ -94,33 +116,71 @@ static char *doc =
 "To give args to the shell without specifying a user, use - for USER.\n"
 "Current login parameters include HOME, SHELL, USER, NAME, and ROOT.";
 
-/* Outputs whatever can be read from file descriptor FD to standard output,
-   and then close it.  If FD is < 0, assumes an error happened, and prints an
-   error message using ERRNO and STR.  */
+/* Outputs whatever can be read from the io_t NODE to standard output, and
+   then close it.  If NODE is MACH_PORT_NULL, assumes an error happened, and
+   prints an error message using ERRNO and STR.  */
 static void
-cat (int fd, char *str)
+cat (mach_port_t node, char *str)
 {
-  int rd = fd < 0 ? -1 : 1;
-  while (rd > 0)
-    {
-      char buf[4096];
-      rd = read (fd, buf, sizeof (buf));
-      if (rd > 0)
-	write (0, buf, rd);
+  error_t err;
+  if (node == MACH_PORT_NULL)
+    err = errno;
+  else
+    for (;;)
+      {
+	char buf[1024], *data = buf;
+	mach_msg_type_number_t data_len = sizeof (buf);
+
+	err = io_read (node, &data, &data_len, -1, 16384);
+	if (err || data_len == 0)
+	  break;
+	else
+	  {
+	    write (0, data, data_len);
+	    if (data != buf)
+	      vm_deallocate (mach_task_self (), (vm_address_t)data, data_len);
+	  }
     }
-  if (rd < 0)
+  if (err)
     error (0, errno, "%s", str);
 }
 
+/* Returns the host from the umtp entry for the current tty, or 0.  The
+   return value is in a static buffer.  */
+static char *
+get_utmp_host ()
+{
+  static struct utmp utmp;
+  int tty = ttyslot ();
+  char *host = 0;
+
+  if (tty > 0)
+    {
+      int fd = open (_PATH_UTMP, O_RDONLY);
+      if (fd >= 0)
+	{
+	  lseek (fd, (off_t)(tty * sizeof (struct utmp)), L_SET);
+	  if (read (fd, &utmp, sizeof utmp) == sizeof utmp
+	      && *utmp.ut_name && *utmp.ut_line && *utmp.ut_host)
+	    host = utmp.ut_host;
+	  close (fd);
+	}
+    }
+
+  return host;
+}
+
 /* Add a utmp entry based on the parameters in ARGS & ARGS_LEN, from tty
-   TTY_FD.  */
+   TTY_FD.  If INHERIT_HOST is true, the host parameters in ARGS aren't to be
+   trusted, so try to get the host from the existing utmp entry (this only
+   works if re-logging in during an existing session).  */
 static void
-add_utmp_entry (char *args, unsigned args_len, int tty_fd)
+add_utmp_entry (char *args, unsigned args_len, int tty_fd, int inherit_host)
 {
   extern void login (struct utmp *); /* in libutil */
   struct utmp utmp;
   char bogus_tty[sizeof (_PATH_TTY) + 2];
-  char *tty = ttyname (0);
+  char *tty = ttyname (0), *host;
 
   if (! tty)
     {
@@ -137,19 +197,76 @@ add_utmp_entry (char *args, unsigned args_len, int tty_fd)
   time (&utmp.ut_time);
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
-  strncpy (utmp.ut_host, envz_get (args, args_len, "VIA") ?: "",
-	   sizeof (utmp.ut_host));
   strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
 
+  if (inherit_host)
+    host = get_utmp_host ();
+  else
+    {
+      host = envz_get (args, args_len, "VIA");
+      if (host && strlen (host) > sizeof (utmp.ut_host))
+	host = envz_get (args, args_len, "VIA_ADDR") ?: host;
+    }
+  strncpy (utmp.ut_host, host ?: "", sizeof (utmp.ut_host));
+
   login (&utmp);
+}
+
+/* Lookup the host HOST, and add entries for VIA (the host name), and
+   VIA_ADDR (the dotted decimal address) to ARGS & ARGS_LEN.  */
+static error_t
+add_canonical_host (char **args, unsigned *args_len, char *host)
+{
+  struct hostent *he = gethostbyname (host);
+
+  if (he)
+    {
+      char *addr = 0;
+
+      /* Try and get an ascii version of the numeric host address.  */
+      switch (he->h_addrtype)
+	{
+	case AF_INET:
+	  addr = strdup (inet_ntoa (*(struct in_addr *)he->h_addr));
+	  break;
+	}
+
+      if (addr && strcmp (he->h_name, addr) == 0)
+	/* gethostbyname() cheated!  Lookup the host name via the address
+	   this time to get the actual host name.  */
+	he = gethostbyaddr (he->h_addr, he->h_length, he->h_addrtype);
+
+      if (he)
+	host = he->h_name;
+
+      if (addr)
+	{
+	  envz_add (args, args_len, "VIA_ADDR", addr);
+	  free (addr);
+	}
+    }
+
+  return envz_add (args, args_len, "VIA", host);
+}
+
+/* Add the `=' separated environment entry ENTRY to ENV & ENV_LEN, exiting
+   with an error message if we can't.  */
+static void
+add_entry (char **env, unsigned *env_len, char *entry)
+{
+  char *name = strsep (&entry, "=");
+  error_t err = envz_add (env, env_len, name, entry);
+  if (err)
+    error (8, err, "Adding %s", entry);
 }
 
 void 
 main(int argc, char *argv[])
 {
-  int i, fd;
+  int i;
+  io_t node;
+  char *arg, *path;
   error_t err = 0;
-  int umask = DEFAULT_UMASK;
   char *nobody = DEFAULT_NOBODY; /* Where to get params if there is no user. */
   char *args = 0;		/* The login parameters */
   unsigned args_len = 0;
@@ -169,69 +286,50 @@ main(int argc, char *argv[])
   int saw_user_arg = 0;		/* True if we've seen the USER argument.  */
   int no_passwd = 0;		/* Don't bother verifying what we're doing.  */
   int no_utmp = 0;		/* Don't put an entry in utmp.  */
+  int no_login = 0;		/* Don't prepend `-' to the shells argv[0].  */
   int retry = 0;		/* For some failures, exec a login shell.  */
   int paranoid = 0;		/* Admit no knowledge.  */
+  int shell_arg = 0;		/* If there are shell args, use the first as
+				   the shell name. */
   char *retry_shell = 0;	/* Optionally use this shell for retries.  */
-  struct idvec *uids = make_idvec (); /* The UIDs of the new shell.  */
-  struct idvec *gids = make_idvec (); /* The GIDs.  */
-  struct idvec *aux_uids = make_idvec (); /* The aux UIDs of the new shell.  */
-  struct idvec *aux_gids = make_idvec (); /* The aux GIDs.  */
+  struct idvec *eff_uids = make_idvec (); /* The UIDs of the new shell.  */
+  struct idvec *eff_gids = make_idvec (); /* The EFF_GIDs.  */
+  struct idvec *avail_uids = make_idvec (); /* The aux UIDs of the new shell.  */
+  struct idvec *avail_gids = make_idvec (); /* The aux EFF_GIDs.  */
+  struct idvec *parent_uids = make_idvec (); /* Parent uids, -SETUID. */
+  struct idvec *parent_gids = make_idvec (); /* Parent gids, -SETGID. */
   char *shell = 0;		/* The shell program to run.  */
-  char *home = 0;		/* The new home directory.  */
-  char *root = 0;		/* The optional new root directory.  */
-  char *hushlogin = 0;		/* The hushlogin file.  */
   char *sh_arg0 = 0;		/* The shell's argv[0].  */
   char *sh_args = 0;		/* The args to the shell.  */
   unsigned sh_args_len = 0;
-  mach_port_t exec_node;	/* The shell executable.  */
-  mach_port_t home_node;	/* The home directory node.  */
-  mach_port_t root_node;	/* The root node.  */
+  mach_port_t exec;		/* The shell executable.  */
+  mach_port_t cwd;		/* The child's CWD.  */
+  mach_port_t root;		/* The child's root directory.  */
   mach_port_t ports[INIT_PORT_MAX]; /* Init ports for the new process.  */
   int ints[INIT_INT_MAX];	/* Init ints for it.  */
-  mach_port_t dtable[3];	/* File descriptors passed. */
+  mach_port_t fds[3];		/* File descriptors passed. */
   mach_port_t auth;		/* The new shell's authentication.  */
   mach_port_t proc_server = getproc ();
-
-  /* Returns a copy of the io/proc object PORT reauthenticated in AUTH.  If an
-     error occurs, NAME is used to print an error message, and the program
-     exited.  */
-  mach_port_t
-    reauth (mach_port_t port, int is_proc, auth_t auth, char *name)
-      {
-	if (port)
-	  {
-	    mach_port_t rend = mach_reply_port (), new_port;
-	    error_t err =
-	      is_proc ?
-		proc_reauthenticate (port, rend, MACH_MSG_TYPE_MAKE_SEND)
-		  : io_reauthenticate (port, rend, MACH_MSG_TYPE_MAKE_SEND);
-
-	    if (err)
-	      error (12, err, "reauthenticating %s", name);
-
-	    err =
-	      auth_user_authenticate (auth, port,
-				      rend, MACH_MSG_TYPE_MAKE_SEND,
-				      &new_port);
-	    if (err)
-	      error (13, err, "reauthenticating %s", name);
-
-	    if (is_proc)
-	      /* proc_reauthenticate modifies the existing port.  */
-	      {
-		/* We promised to make a copy, so do so... */
-		mach_port_mod_refs (mach_task_self (), MACH_PORT_RIGHT_SEND,
-				    port, 1);
-		if (new_port != MACH_PORT_NULL)
-		  mach_port_deallocate (mach_task_self (), new_port);
-	      }
-	    else
-	      port = new_port;
-
-	    mach_port_destroy (mach_task_self (), rend);
-	  }
-	return port;
-      }
+  mach_port_t parent_auth = getauth ();
+
+  /* These three functions are to do child-authenticated lookups.  See
+     <hurd/lookup.h> for an explanation.  */
+  error_t use_child_init_port (int which, error_t (*operate)(mach_port_t))
+    {
+      return (*operate)(ports[which]);
+    }
+  mach_port_t get_child_fd_port (int fd)
+    {
+      return fd < 0 || fd > 2 ? __hurd_fail (EBADF) : fds[fd];
+    }
+  mach_port_t child_lookup (char *name, char *path, int flags)
+    {
+      mach_port_t port = MACH_PORT_NULL;
+      errno =
+	hurd_file_name_path_lookup (use_child_init_port, get_child_fd_port,
+				    name, path, flags, 0, &port);
+      return port;
+    }
 
   /* Print an error message with FMT, STR and ERR.  Then, if RETRY is on,
      exec a default login shell, otherwise exit with CODE (must be non-0).  */
@@ -252,50 +350,89 @@ main(int argc, char *argv[])
       main (retry_argc, retry_argv);
       exit (code);		/* But if it does... */
     }
-
-  /* Add the `=' separated environment entry ENTRY to ENV & ENV_LEN, exiting
-     with an error message if we can't.  */
-  void add_entry (char **env, unsigned *env_len, char *entry)
+
+  /* Make sure that the parent_[ug]ids are filled in.  To make them useful
+     for su'ing, each is the avail ids with all effective ids but the first
+     appended; this gets rid of the effect of login being suid, and is useful
+     as the new process's avail id list (e.g., the real id is right).   */
+  void need_parent_ids ()
     {
-      char *name = strsep (&entry, "=");
-      err = envz_add (env, env_len, name, entry);
-      if (err)
-	error (8, err, "Adding %s", entry);
-    }
-
-  /* Make sure the user should be allowed to do this.  */
-  void verify_passwd (const char *name, const char *password)
-    {
-      if (! no_passwd && password && *password)
+      if (parent_uids->num == 0 && parent_gids->num == 0)
 	{
-	  extern char *crypt (const char salt[2], const char *string);
-	  char *prompt, *unencrypted, *encrypted;
-
-	  if (name)
-	    asprintf (&prompt, "Password for %s:", name);
-	  else
-	    prompt = "Password:";
-
-	  unencrypted = getpass (prompt);
-	  encrypted = crypt (unencrypted, password);
-	  /* Paranoia may destroya.  */
-	  memset (unencrypted, 0, strlen (unencrypted));
-
-	  if (name)
-	    free (prompt);
-
-	  if (strcmp (encrypted, password) != 0)
-	    fail (50, 0, "Incorrect password", 0);
+	  struct idvec *p_eff_uids = make_idvec ();
+	  struct idvec *p_eff_gids = make_idvec ();
+	  if (!p_eff_uids || !p_eff_gids)
+	    err = ENOMEM;
+	  if (! err)
+	    err = idvec_merge_auth (p_eff_uids, parent_uids,
+				    p_eff_gids, parent_gids,
+				    parent_auth);
+	  if (! err)
+	    {
+	      idvec_delete (p_eff_uids, 0); /* Counteract setuid. */
+	      idvec_delete (p_eff_gids, 0);
+	      err = idvec_merge (parent_uids, p_eff_uids);
+	      if (! err)
+		err = idvec_merge (parent_gids, p_eff_gids);
+	    }
+	  if (err)
+	    error (39, err, "Can't get uids");
 	}
     }
 
+  /* Returns true if the *caller* of this login program has UID.  */
+  int parent_has_uid (uid_t uid)
+    {
+      need_parent_ids ();
+      return idvec_contains (parent_uids, uid);
+    }
+
+  /* Returns true if the *caller* of this login program has GID.  */
+  int parent_has_gid (gid_t gid)
+    {
+      need_parent_ids ();
+      return idvec_contains (parent_gids, gid);
+    }
+
+  /* Make sure the user should be allowed to do this.  */
+  void verify_passwd (const char *name, const char *password,
+		      uid_t id, int is_group)
+    {
+      extern char *crypt (const char salt[2], const char *string);
+      char *prompt, *unencrypted, *encrypted;
+
+      if (!password || !*password
+	  || idvec_contains (is_group ? eff_gids : eff_uids, id)
+	  || idvec_contains (is_group ? avail_gids : avail_uids, id)
+	  || (no_passwd
+	      && (parent_has_uid (0)
+		  || is_group ? parent_has_uid (id) : parent_has_gid (id))))
+	return;			/* Already got this one.  */
+
+      if (name)
+	asprintf (&prompt, "Password for %s%s:",
+		  is_group ? "group " : "", name);
+      else
+	prompt = "Password:";
+
+      unencrypted = getpass (prompt);
+      encrypted = crypt (unencrypted, password);
+      /* Paranoia may destroya.  */
+      memset (unencrypted, 0, strlen (unencrypted));
+
+      if (name)
+	free (prompt);
+
+      if (strcmp (encrypted, password) != 0)
+	fail (50, 0, "Incorrect password", 0);
+    }
+
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
       switch (key)
 	{
 	case 'n': nobody = arg; break;
-	case 'm': umask = strtoul (arg, 0, 8); break;
 	case 'p': inherit_environ = 1; break;
 	case 'x': no_args = 1; break;
 	case 'X': no_environ = 1; break;
@@ -304,17 +441,18 @@ main(int argc, char *argv[])
 	case 'a': add_entry (&args, &args_len, arg); break;
 	case 'A': add_entry (&args_defs, &args_defs_len, arg); break;
 	case '0': sh_arg0 = arg; break;
-	case 'h': envz_add (&args, &args_len, "VIA", arg); break;
+	case 'h': add_canonical_host (&args, &args_len, arg); break;
 	case 'z': no_utmp = 1; break;
+	case 'L': no_login = 1; break;
+	case 'f': no_passwd = 1; break;
 	case 'R': retry = 1; retry_shell = arg; break;
 	case 'P': paranoid = 1; break;
-	case 'f':
-	  /* Don't ask for a password, but also remove the effect of any 
-	     setuid/gid bits on this executable.  There ought to be a way to
-	     combine these two calls.  XXX  */
-	  seteuid (getuid ());
-	  setegid (getgid ());
-	  no_passwd = 1;
+	case 'S': shell_arg = 1; break;
+
+	case 'k':
+	  need_parent_ids ();
+	  idvec_merge (avail_uids, parent_uids);
+	  idvec_merge (avail_gids, parent_gids);
 	  break;
 
 	case ARGP_KEY_ARG:
@@ -330,7 +468,7 @@ main(int argc, char *argv[])
 	  if (strcmp (arg, "-") == 0)
 	    arg = 0;		/* Just like there weren't any args at all.  */
 	  /* Fall through to deal with adding the user.  */
-
+
 	case 'u':
 	case 'U':
 	case ARGP_KEY_NO_ARGS:
@@ -344,8 +482,8 @@ main(int argc, char *argv[])
 	    /* True if this is the user arg and there were no user options. */
 	    int only_user =
 	      (key == ARGP_KEY_ARG
-	       && uids->num == 0 && aux_uids->num == 0
-	       && gids->num == 0 && aux_gids->num == 0);
+	       && eff_uids->num == 0 && avail_uids->num <= parent_uids->num
+	       && eff_gids->num == 0 && avail_gids->num <= parent_gids->num);
 
 	    if (! pw)
 	      if (! arg)
@@ -355,26 +493,24 @@ main(int argc, char *argv[])
 		/* In paranoid mode, we don't admit we don't know about a
 		   user, so we just ask for a password we we know the user
 		   can't supply.  */
-		verify_passwd (only_user ? 0 : user, "*");
+		verify_passwd (only_user ? 0 : user, "*", -1, 0);
 	      else
 		fail (10, 0, "%s: Unknown user", user);
 
-	    if (arg
-		&& ! idvec_contains (uids, pw->pw_uid)
-		&& ! idvec_contains (aux_uids, pw->pw_uid))
-	      /* Check for a password, but only if we haven't already, and
-		 it's not nobody.  */
-	      verify_passwd (only_user ? 0 : pw->pw_name, pw->pw_passwd);
+	    if (arg)
+	      /* If it's not nobody, make sure we're authorized.  */
+	      verify_passwd (only_user ? 0 : pw->pw_name, pw->pw_passwd,
+			     pw->pw_uid, 0);
 
 	    if (key == 'U')
-	      /* Add aux-ids instead of real ones.  */
+	      /* Add available ids instead of effective ones.  */
 	      {
-		idvec_add (aux_uids, pw->pw_uid);
-		idvec_add (aux_gids, pw->pw_gid);
+		idvec_add_new (avail_uids, pw->pw_uid);
+		idvec_add_new (avail_gids, pw->pw_gid);
 	      }
 	    else
 	      {
-		if (key == ARGP_KEY_ARG || uids->num == 0)
+		if (key == ARGP_KEY_ARG || eff_uids->num == 0)
 		  /* If it's the argument (as opposed to option) specifying a
 		     user, or the first option user, then we get defaults for
 		     various things from the password entry.  */
@@ -385,22 +521,22 @@ main(int argc, char *argv[])
 		    envz_add (&passwd, &passwd_len, "USER", pw->pw_name);
 		  }
 		if (arg)	/* A real user.  */
-		  {
-		    idvec_add (uids, pw->pw_uid);
-		    idvec_add (gids, pw->pw_gid);
-
-		    if (key == ARGP_KEY_ARG)
-		      /* The real user arg; make sure this is the first id in
-			 the aux ids set (i.e. the `real' id).  */
-		      {
-			idvec_insert (aux_uids, 0, pw->pw_uid);
-			idvec_insert (aux_gids, 0, pw->pw_gid);
-		      }
-		  }
+		  if (key == ARGP_KEY_ARG)
+		    /* The main user arg, make sure it goes at the
+		       beginning.  */
+		    {
+		      idvec_insert_only (eff_uids, 0, pw->pw_uid);
+		      idvec_insert_only (eff_gids, 0, pw->pw_gid);
+		    }
+		  else
+		    {
+		      idvec_add_new (eff_uids, pw->pw_uid);
+		      idvec_add_new (eff_gids, pw->pw_gid);
+		    }
 	      }
 	  }
 	  break;
-
+
 	case 'g':
 	case 'G':
 	  {
@@ -408,13 +544,8 @@ main(int argc, char *argv[])
 	      isdigit (*arg) ? getgrgid (atoi (arg)) : getgrnam (arg);
 	    if (! gr)
 	      fail (11, 0, "%s: Unknown group", arg);
-
-	    if (! idvec_contains (gids, gr->gr_gid)
-		&& ! idvec_contains (aux_gids, gr->gr_gid))
-	      /* Check for a password, but only if we haven't already.  */
-	      verify_passwd (gr->gr_name, gr->gr_passwd);
-
-	    idvec_add (key == 'g' ? gids : aux_gids, gr->gr_gid);
+	    verify_passwd (gr->gr_name, gr->gr_passwd, gr->gr_gid, 1);
+	    idvec_add_new (key == 'g' ? eff_gids : avail_gids, gr->gr_gid);
 	  }
 	  break;
 
@@ -423,12 +554,12 @@ main(int argc, char *argv[])
       return 0;
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
-
+
   /* Don't allow logins if the nologin file exists.  */
-  fd = open (_PATH_NOLOGIN, O_RDONLY);
-  if (fd >= 0)
+  node = file_name_lookup (_PATH_NOLOGIN, O_RDONLY, 0);
+  if (node != MACH_PORT_NULL)
     {
-      cat (fd, _PATH_NOLOGIN);
+      cat (node, _PATH_NOLOGIN);
       exit (40);
     }
 
@@ -443,7 +574,7 @@ main(int argc, char *argv[])
 
   /* Parse our options.  */
   argp_parse (&argp, argc, argv, 0, 0);
-
+
   /* Now that we've parsed the command line, put together all these
      environments we've gotten from various places.  There are two targets:
      (1) the login parameters, and (2) the child environment.
@@ -471,56 +602,121 @@ main(int argc, char *argv[])
     err = envz_merge (&args, &args_len, args_defs, args_defs_len, 0);
   if (err)
     error (24, err, "merging parameters");
-
-  /* Verify the shell and home dir parameters.  We make a copy of SHELL, as
-     we may frob ARGS ahead, and mess up where it's pointing.  */
-  shell = strdup (envz_get (args, args_len, "SHELL"));
-  home = envz_get (args, args_len, "HOME");
-  root = envz_get (args, args_len, "ROOT");
-
-  exec_node = file_name_lookup (shell, O_EXEC, 0);
-  if (exec_node == MACH_PORT_NULL)
+
+  /* Make sure the new process has a real uid/gid (we add the ids twice, for
+     posix compatibility, once for the real id, and again for the saved).  */
+  if (avail_uids->num == 0 && eff_uids->num > 0)
     {
+      idvec_add (avail_uids, eff_uids->ids[0]);
+      idvec_add (avail_uids, eff_uids->ids[0]);
+    }
+  if (avail_gids->num == 0 && eff_gids->num > 0)
+    {
+      idvec_add (avail_gids, eff_gids->ids[0]);
+      idvec_add (avail_gids, eff_gids->ids[0]);
+    }
+
+  err =
+    auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
+		   eff_uids->ids, eff_uids->num,
+		   avail_uids->ids, avail_uids->num,
+		   eff_gids->ids, eff_gids->num,
+		   avail_gids->ids, avail_gids->num,
+		   &auth);
+  if (err)
+    fail (3, err, "Authentication failure", 0);
+
+  proc_make_login_coll (proc_server);
+  if (eff_uids->num > 0)
+    proc_setowner (proc_server, eff_uids->ids[0]);
+  /* XXX else clear the owner, once there's a proc call to do it.  */
+
+  /* Now start constructing the exec arguments.  */
+  bzero (ints, sizeof (*ints) * INIT_INT_MAX);
+  arg = envz_get (args, args_len, "UMASK");
+  ints[INIT_UMASK] = arg && *arg ? strtoul (arg, 0, 8) : umask (0);
+
+  for (i = 0; i < 3; i++)
+    fds[i] = getdport (i);
+
+  for (i = 0; i < INIT_PORT_MAX; i++)
+    ports[i] = MACH_PORT_NULL;
+  ports[INIT_PORT_PROC] = getproc ();
+  ports[INIT_PORT_CRDIR] = getcrdir ();	/* May be replaced below. */
+  ports[INIT_PORT_CWDIR] = getcwdir ();	/*  "  */
+
+  /* Now reauthenticate all of the ports we're passing to the child.  */
+  err = exec_reauth (auth, 0, 1, ports, INIT_PORT_MAX, fds, 3);
+  if (err)
+    error (40, err, "Port reauth failure");
+
+  /* These are the default values for the child's root/cwd.  We don't want to
+     modify PORTS just yet, because we use it to do child-authenticated
+     lookups.  */
+  root = ports[INIT_PORT_CRDIR];
+  cwd = ports[INIT_PORT_CWDIR];
+
+  /* Find the shell executable (we copy the name, as ARGS may be changed).  */
+  if (shell_arg && sh_args && *sh_args)
+    /* Special case for su mode: get the shell from the args if poss.  */
+    {
+      shell = strdup (sh_args);
+      argz_delete (&sh_args, &sh_args_len, sh_args); /* Get rid of it. */
+    }
+  else
+    {
+      arg = envz_get (args, args_len, "SHELL");
+      if (arg && *arg)
+	shell = strdup (arg);
+      else
+	shell = 0;
+    }
+
+  path = envz_get (args, args_len, "PATH");
+  exec = shell ? child_lookup (shell, path, O_EXEC) : MACH_PORT_NULL;
+  if (exec == MACH_PORT_NULL)
+    {
+      char *backup = envz_get (args, args_len, "BACKUP_SHELL");
       err = errno;		/* Save original lookup errno. */
 
-      if (strcmp (shell, FAILURE_SHELL) != 0)
-	exec_node = file_name_lookup (FAILURE_SHELL, O_EXEC, 0);
+      if (backup && *backup && (!shell || strcmp (shell, backup) != 0))
+	exec = child_lookup (backup, path, O_EXEC);
 
       /* Give the error message, but only exit if we couldn't default. */
-      if (exec_node == MACH_PORT_NULL)
+      if (exec == MACH_PORT_NULL)
 	fail (1, err, "%s", shell);
       else
 	error (0, err, "%s", shell);
 
       /* If we get here, we looked up the default shell ok.  */
-      shell = FAILURE_SHELL;
+      shell = strdup (backup);
       error (0, 0, "Using SHELL=%s", shell);
       envz_add (&args, &args_len, "SHELL", shell);
+      err = 0;			/* Don't emit random err msgs later!  */
     }
+
+  /* Now maybe change the cwd/root in the child.  */
 
-  if (home && *home)
+  arg = envz_get (args, args_len, "HOME");
+  if (arg && *arg)
     {
-      home_node = file_name_lookup (home, O_RDONLY, 0);
-      if (home_node == MACH_PORT_NULL)
+      cwd = child_lookup (arg, 0, O_RDONLY);
+      if (cwd == MACH_PORT_NULL)
 	{
-	  error (0, errno, "%s", home);
+	  error (0, errno, "%s", arg);
 	  error (0, 0, "Using HOME=/");
-	  home_node = getcrdir ();
 	  envz_add (&args, &args_len, "HOME", "/");
 	}
     }
-  else
-    home_node = getcwdir ();
 
-  if (root && *root)
+  arg = envz_get (args, args_len, "ROOT");
+  if (arg && *arg)
     {
-      root_node = file_name_lookup (root, O_RDONLY, 0);
-      if (root_node == MACH_PORT_NULL)
-	fail (40, errno, "%s", root);
+      root = child_lookup (arg, 0, O_RDONLY);
+      if (root == MACH_PORT_NULL)
+	fail (40, errno, "%s", arg);
     }
-  else
-    root_node = getcrdir ();
-
+
   /* Build the child environment.  */
   if (! no_args)
     /* We can't just merge ARGS, because it may contain the parent
@@ -549,7 +745,7 @@ main(int argc, char *argv[])
   if (! err)
     err = envz_merge (&env, &env_len, env_defs, env_defs_len, 0);
   if (err)
-    error (24, err, "building environment");
+    error (24, err, "Can't build environment");
 
   if (! sh_arg0)
     /* The shells argv[0] defaults to the basename of the shell.  */
@@ -560,80 +756,62 @@ main(int argc, char *argv[])
       else
 	shell_base = shell;
 
-      sh_arg0 = malloc (strlen (shell_base) + 2);
-      if (! sh_arg0)
-	err = ENOMEM;
+      if (no_login)
+	sh_arg0 = shell_base;
       else
-	/* Prepend the name with a `-', as is the odd custom.  */
 	{
-	  sh_arg0[0] = '-';
-	  strcpy (sh_arg0 + 1, shell_base);
+	  sh_arg0 = malloc (strlen (shell_base) + 2);
+	  if (! sh_arg0)
+	    err = ENOMEM;
+	  else
+	    /* Prepend the name with a `-', as is the odd custom.  */
+	    {
+	      sh_arg0[0] = '-';
+	      strcpy (sh_arg0 + 1, shell_base);
+	    }
 	}
     }
   if (! err)
     err = argz_insert (&sh_args, &sh_args_len, sh_args, sh_arg0);
   if (err)
-    error (21, err, "consing arguments");
-
-  err =
-    auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
-		   uids->ids, uids->num, aux_uids->ids, aux_uids->num,
-		   gids->ids, gids->num, aux_gids->ids, aux_gids->num,
-		   &auth);
-  if (err)
-    fail (3, err, "Authentication failure", 0);
-
-  proc_make_login_coll (proc_server);
-  if (uids->num > 0)
-    proc_setowner (proc_server, uids->ids[0]);
-  /* XXX else clear the owner, once there's a proc call to do it.  */
-
-  /* Output the message of the day.  */
-  hushlogin = envz_get (args, args_len, "HUSHLOGIN");
-  if (hushlogin && *hushlogin)
+    error (21, err, "Error building shell args");
+
+  /* Maybe output the message of the day.  Note that we we the child's
+     authentication to do it, so that this program can't be used to read
+     arbitrary files!  */
+  arg = envz_get (args, args_len, "MOTD");
+  if (arg && *arg)
     {
-      mach_port_t hush_login_node =
-	file_name_lookup_under (home_node, hushlogin, O_RDONLY, 0);
-      if (hush_login_node == MACH_PORT_NULL)
+      char *hush = envz_get (args, args_len, "HUSHLOGIN");
+      mach_port_t hush_node =
+	(hush && *hush) ? child_lookup (hush, 0, O_RDONLY) : MACH_PORT_NULL;
+      if (hush_node == MACH_PORT_NULL)
 	{
-	  char *motd = envz_get (args, args_len, "MOTD");
-	  if (motd && *motd)
-	    {
-	      fd = open (motd, O_RDONLY);
-	      if (fd >= 0)
-		cat (fd, motd);
-	    }
+	  mach_port_t motd_node = child_lookup (arg, 0, O_RDONLY);
+	  if (motd_node != MACH_PORT_NULL)
+	    cat (motd_node, arg);
 	}
       else
-	mach_port_deallocate (mach_task_self (), hush_login_node);
+	mach_port_deallocate (mach_task_self (), hush_node);
     }
+
+  /* Now that we don't need to use PORTS for lookups anymore, put the correct
+     ROOT and CWD in.  */
+  ports[INIT_PORT_CRDIR] = root;
+  ports[INIT_PORT_CWDIR] = cwd;
 
   /* Get rid of any accumulated null entries in env.  */
   envz_strip (&env, &env_len);
 
-  bzero (ints, sizeof (*ints) * INIT_INT_MAX);
-  ints[INIT_UMASK] = umask;
-
-  dtable[0] = reauth (getdport (0), 0, auth, "standard input");
-  dtable[1] = reauth (getdport (1), 0, auth, "standard output");
-  dtable[2] = reauth (getdport (2), 0, auth, "standard error");
-
-  for (i = 0; i < INIT_PORT_MAX; i++)
-    ports[i] = MACH_PORT_NULL;
-  ports[INIT_PORT_CRDIR] = reauth (root_node, 0, auth, "root directory");
-  ports[INIT_PORT_CWDIR] = reauth (home_node, 0, auth, "home directory");
-  ports[INIT_PORT_AUTH] = auth;
-  ports[INIT_PORT_PROC] = reauth (proc_server, 1, auth, "process port");
-
   /* No more authentications to fail, so cross our fingers and add our utmp
      entry.  */
   if (! no_utmp)
-    add_utmp_entry (args, args_len, 0);
+    add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
 
-  err = file_exec (exec_node, mach_task_self (),
+  err = file_exec (exec, mach_task_self (),
 		   EXEC_NEWTASK | EXEC_DEFAULTS | EXEC_SECURE,
 		   sh_args, sh_args_len, env, env_len,
-		   dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+		   fds, MACH_MSG_TYPE_COPY_SEND, 3,
 		   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 		   ints, INIT_INT_MAX,
 		   0, 0, 0, 0);
