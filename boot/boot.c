@@ -57,6 +57,10 @@ mach_port_t php_child_name, psmdp_child_name;
 task_t child_task;
 mach_port_t bootport;
 
+int boot_like_kernel;
+int boot_like_cmudef;
+int boot_like_hurd;
+
 int console_mscount;
 
 vm_address_t fs_stack_base;
@@ -69,7 +73,7 @@ char *fsname;
 char *bootstrap_args;
 char *bootdevice = DEFAULT_BOOTDEVICE;
 
-/* We can't include <unistd.h> for this, because that will fight with
+/* We can't include <unistd.h> for this, because that will fight witho
    our definitions of syscalls below. */
 int syscall (int, ...);
 
@@ -214,13 +218,25 @@ request_server (mach_msg_header_t *inp,
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
 /*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
+  extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return (exec_server (inp, outp)
-	  || io_server (inp, outp)
-	  || device_server (inp, outp)
-	  || notify_server (inp, outp)
-	  || term_server (inp, outp)
-/*	  || tioctl_server (inp, outp) */);
+  if (inp->msgh_local_port == bootport && boot_like_cmudef)
+    {
+      if (in->msgh_id == 999999)
+	{
+	  bootstrap_compat (inp, outp);
+	  return 1;
+	}
+      else
+	return bootstrap_server (inp, outp);
+    }
+  else
+    return (exec_server (inp, outp)
+	    || io_server (inp, outp)
+	    || device_server (inp, outp)
+	    || notify_server (inp, outp)
+	    || term_server (inp, outp)
+/*	    || tioctl_server (inp, outp) */);
 }
 
 vm_address_t
@@ -313,6 +329,13 @@ main (int argc, char **argv, char **envp)
 	bootdevice = argv[3];
     }
 
+  if (index (bootstrap_args, 'k'))
+    boot_like_kernel = 1;
+  else if (index (bootstrap_args, 'p'))
+    boot_like_cmudef = 1;
+  else
+    boot_like_hurd = 1;
+
   task_create (mach_task_self (), 0, &newtask);
   
   startpc = load_image (newtask, bootfile);
@@ -336,29 +359,38 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &bootport);
-  mach_port_move_member (mach_task_self (), bootport, receive_set);
+  if (boot_like_cmudef || boot_like_hurd)
+    {
+      mach_port_allocate (mach_task_self (), 
+			  MACH_PORT_RIGHT_RECEIVE, &bootport);
+      mach_port_move_member (mach_task_self (), bootport, receive_set);
 
-  mach_port_insert_right (mach_task_self (), bootport, bootport, 
-			  MACH_MSG_TYPE_MAKE_SEND);
-  task_set_bootstrap_port (newtask, bootport);
-  mach_port_deallocate (mach_task_self (), bootport);
+      mach_port_insert_right (mach_task_self (), bootport, bootport, 
+			      MACH_MSG_TYPE_MAKE_SEND);
+      task_set_bootstrap_port (newtask, bootport);
+      mach_port_deallocate (mach_task_self (), bootport);
 
 #if 0
-  mach_port_request_notification (mach_task_self (), newtask, 
-				  MACH_NOTIFY_DEAD_NAME, 1, bootport, 
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
+      mach_port_request_notification (mach_task_self (), newtask, 
+				      MACH_NOTIFY_DEAD_NAME, 1, bootport, 
+				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+      if (foo)
+	mach_port_deallocate (mach_task_self (), foo);
 #endif
+    }
+
   child_task = newtask;
 
-  php_child_name = 100;
-  psmdp_child_name = 101;
-  mach_port_insert_right (newtask, php_child_name, privileged_host_port,
-			  MACH_MSG_TYPE_COPY_SEND);
-  mach_port_insert_right (newtask, psmdp_child_name, pseudo_master_device_port,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  if (boot_like_kernel || boot_like_hurd)
+    {
+      php_child_name = 100;
+      psmdp_child_name = 101;
+      mach_port_insert_right (newtask, php_child_name, privileged_host_port,
+			      MACH_MSG_TYPE_COPY_SEND);
+      mach_port_insert_right (newtask, psmdp_child_name,
+			      pseudo_master_device_port,
+			      MACH_MSG_TYPE_MAKE_SEND);
+    }
 
   foo = 1;
   init_termstate ();
@@ -367,9 +399,19 @@ main (int argc, char **argv, char **envp)
   sigvec (SIGMSG, &vec, 0);
   sigvec (SIGEMSG, &vec, 0);
   
+  if (boot_like_hurd)
+    __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
+			 &fs_stack_size);
+  else if (boot_like_kernel) 
+    set_mach_stack_args (newtask, newthread, (char *)startpc,
+			 "[BOOTSTRAP fs]", bootstrap_flags, php_child_name,
+			 psmdp_child_name, bootdevice, 0);
+  else
+    set_mach_stack_args (newtask, newthread, (char *)startpc,
+			 "[BOOTSTRAP fs]", bootstrap_flags,
+			 bootdevice, "/", 0);
+
   thread_create (newtask, &newthread);
-  __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
-		       &fs_stack_size);
 
   if (index (bootstrap_args, 'd'))
     {
@@ -388,6 +430,192 @@ main (int argc, char **argv, char **envp)
   
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
 }
+
+/* Set up stack args the Mach way */
+void
+set_mach_stack_args (task_t user_task,
+		     thread_t user_thread,
+		     char *startpc,
+		     va_alist)
+{
+  /* This code is lifted from .../mk/bootstrap/load.c. */
+  va_list			argv_ptr;
+  char *			arg_ptr;
+  
+  int			arg_len;
+  int			arg_count;
+  char *			arg_pos;
+  unsigned int		arg_item_len;
+
+	/*
+	 * Calculate the size of the argument list.
+	 */
+	va_start(argv_ptr);
+	arg_len = 0;
+	arg_count = 0;
+	for (;;) {
+	    arg_ptr = va_arg(argv_ptr, char *);
+	    if (arg_ptr == (char *)0)
+		break;
+	    arg_count++;
+	    arg_len += strlen(arg_ptr) + 1;	/* space for '\0' */
+	}
+	va_end(argv_ptr);
+	/*
+	 * Add space for:
+	 *    arg_count
+	 *    pointers to arguments
+	 *    trailing 0 pointer
+	 *    dummy 0 pointer to environment variables
+	 *    and align to integer boundary
+	 */
+	arg_len += sizeof(integer_t) + (2 + arg_count) * sizeof(char *);
+	arg_len = (arg_len + (sizeof(integer_t) - 1)) & ~(sizeof(integer_t)-1);
+
+  
+  /* This small piece is from .../mk/bootstrap/i386/exec.c. */
+  {
+	vm_offset_t	stack_start;
+	vm_offset_t	stack_end;
+	struct i386_thread_state	regs;
+	unsigned int		reg_size;
+
+	/*
+	 * Add space for 5 ints to arguments, for
+	 * PS program. XXX
+	 */
+	arg_size += 5 * sizeof(int);
+
+	/*
+	 * Allocate stack.
+	 */
+	stack_end = VM_MAX_ADDRESS;
+	stack_start = VM_MAX_ADDRESS - STACK_SIZE;
+	(void)vm_allocate(user_task,
+			  &stack_start,
+			  (vm_size_t)(stack_end - stack_start),
+			  FALSE);
+
+	reg_size = i386_THREAD_STATE_COUNT;
+	(void)thread_get_state(user_thread,
+				i386_THREAD_STATE,
+				(thread_state_t)&regs,
+				&reg_size);
+
+	regs.eip = startpc;
+	regs.uesp = (int)((stack_end - arg_size) & ~(sizeof(int)-1));
+
+	(void)thread_set_state(user_thread,
+				i386_THREAD_STATE,
+				(thread_state_t)&regs,
+				reg_size);
+
+	arg_pos = regs.uesp;
+      }    
+
+	/*
+	 * Copy out the arguments.
+	 */
+	{
+	    vm_offset_t	u_arg_start;
+				/* user start of argument list block */
+	    vm_offset_t	k_arg_start;
+				/* kernel start of argument list block */
+	    vm_offset_t u_arg_page_start;
+				/* user start of args, page-aligned */
+	    vm_size_t	arg_page_size;
+				/* page_aligned size of args */
+	    vm_offset_t	k_arg_page_start;
+				/* kernel start of args, page-aligned */
+
+	    register
+	    char **	k_ap;	/* kernel arglist address */
+	    char *	u_cp;	/* user argument string address */
+	    register
+	    char *	k_cp;	/* kernel argument string address */
+	    register
+	    int		i;
+
+	    /*
+	     * Get address of argument list in user space
+	     */
+	    u_arg_start = (vm_offset_t)arg_pos;
+
+	    /*
+	     * Round to page boundaries, and allocate kernel copy
+	     */
+	    u_arg_page_start = trunc_page(u_arg_start);
+	    arg_page_size = (vm_size_t)(round_page(u_arg_start + arg_len)
+					- u_arg_page_start);
+
+	    result = vm_allocate(mach_task_self(),
+				 &k_arg_page_start,
+				 (vm_size_t)arg_page_size,
+				 TRUE);
+	    if (result)
+		panic("boot_load_program: arg size");
+
+	    /*
+	     * Set up addresses corresponding to user pointers
+	     * in the kernel block
+	     */
+	    k_arg_start = k_arg_page_start + (u_arg_start - u_arg_page_start);
+
+	    k_ap = (char **)k_arg_start;
+
+	    /*
+	     * Start the strings after the arg-count and pointers
+	     */
+	    u_cp = (char *)u_arg_start + arg_count * sizeof(char *)
+					+ 2 * sizeof(char *)
+					+ sizeof(integer_t);
+	    k_cp = (char *)k_arg_start + arg_count * sizeof(char *)
+					+ 2 * sizeof(char *)
+					+ sizeof(integer_t);
+
+	    /*
+	     * first the argument count
+	     */
+	    *k_ap++ = (char *)(natural_t)arg_count;
+
+	    /*
+	     * Then the strings and string pointers for each argument
+	     */
+	    va_start(argv_ptr);
+	    for (i = 0; i < arg_count; i++) {
+		arg_ptr = va_arg(argv_ptr, char *);
+		arg_item_len = strlen(arg_ptr) + 1; /* include trailing 0 */
+
+		/* set string pointer */
+		*k_ap++ = u_cp;
+
+		/* copy string */
+		bcopy(arg_ptr, k_cp, arg_item_len);
+		k_cp += arg_item_len;
+		u_cp += arg_item_len;
+	    }
+	    va_end(argv_ptr);
+
+	    /*
+	     * last, the trailing 0 argument and a null environment pointer.
+	     */
+	    *k_ap++ = (char *)0;
+	    *k_ap   = (char *)0;
+
+	    /*
+	     * Now write all of this to user space.
+	     */
+	    (void) vm_write(user_task,
+			    u_arg_page_start,
+			    k_arg_page_start,
+			    arg_page_size);
+
+	    (void) vm_deallocate(mach_task_self(),
+				 k_arg_page_start,
+				 arg_page_size);
+	}
+}
+
 
 void
 msg_thread()
@@ -503,6 +731,82 @@ read_reply ()
   free (qr);
 }
 
+/*
+ *	Handle bootstrap requests.
+ */
+/* These two functions from .../mk/bootstrap/default_pager.c. */
+
+kern_return_t
+do_bootstrap_privileged_ports(bootstrap, hostp, devicep)
+	mach_port_t bootstrap;
+	mach_port_t *hostp, *devicep;
+{
+	*hostp = privileged_host_port;
+	*devicep = pseudo_master_device_port;
+	return KERN_SUCCESS;
+}
+
+void
+bootstrap_compat(in, out)
+	mach_msg_header_t *in, *out;
+{
+	mig_reply_header_t *reply = (mig_reply_header_t *) out;
+	mach_msg_return_t mr;
+
+	struct imsg {
+		mach_msg_header_t	hdr;
+		mach_msg_type_t		port_desc_1;
+		mach_port_t		port_1;
+		mach_msg_type_t		port_desc_2;
+		mach_port_t		port_2;
+	} imsg;
+
+	/*
+	 * Send back the host and device ports.
+	 */
+
+	imsg.hdr.msgh_bits = MACH_MSGH_BITS_COMPLEX |
+		MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(in->msgh_bits), 0);
+	/* msgh_size doesn't need to be initialized */
+	imsg.hdr.msgh_remote_port = in->msgh_remote_port;
+	imsg.hdr.msgh_local_port = MACH_PORT_NULL;
+	/* msgh_seqno doesn't need to be initialized */
+	imsg.hdr.msgh_id = in->msgh_id + 100;	/* this is a reply msg */
+
+	imsg.port_desc_1.msgt_name = MACH_MSG_TYPE_COPY_SEND;
+	imsg.port_desc_1.msgt_size = (sizeof(mach_port_t) * 8);
+	imsg.port_desc_1.msgt_number = 1;
+	imsg.port_desc_1.msgt_inline = TRUE;
+	imsg.port_desc_1.msgt_longform = FALSE;
+	imsg.port_desc_1.msgt_deallocate = FALSE;
+	imsg.port_desc_1.msgt_unused = 0;
+
+	imsg.port_1 = privileged_host_port;
+
+	imsg.port_desc_2 = imsg.port_desc_1;
+
+	imsg.port_2 = pseudo_master_device_port;
+
+	/*
+	 * Send the reply message.
+	 * (mach_msg_server can not do this, because the reply
+	 * is not in standard format.)
+	 */
+
+	mr = mach_msg(&imsg.hdr, MACH_SEND_MSG,
+		      sizeof imsg, 0, MACH_PORT_NULL,
+		      MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+	if (mr != MACH_MSG_SUCCESS)
+		(void) mach_port_deallocate(default_pager_self,
+					    imsg.hdr.msgh_remote_port);
+
+	/*
+	 * Tell mach_msg_server to do nothing.
+	 */
+
+	reply->RetCode = MIG_NO_REPLY;
+}
+
 
 /* Implementation of exec interface */
 
@@ -582,6 +886,9 @@ S_exec_startup (mach_port_t port,
   mach_port_t *portarray;
   int *intarray, nc;
   char argv[100];
+
+  if (!boot_like_hurd)
+    return EOPNOTSUPP;
 
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
