@@ -1,3 +1,12 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* main.c (diskfs_append_args): Fix argument type.
+	(main): Use %z format modifier for size_t arg.
+	* dir.c (dirscanblock): Use %z format modifier for vm_address_t arg.
+	(diskfs_dirempty): int -> vm_address_t
+	(count_dirents): int -> size_t
+	(diskfs_get_directs): u_int -> size_t
+
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* Makefile (ufs.static): Depend on
