@@ -55,6 +55,12 @@ endif
 # This sets up variables for build tools and installation directories.
 include $(..)config.make
 
+# Test build options set by configure.
+ifeq (no,$(build-profiled))
+no_prof = t
+endif
+
+
 # Flags for compilation.
 # It is important to have this inclusion first; that picks up our
 # library header files locally rather than from installed copies.
@@ -147,7 +153,7 @@ BUGADDR_REF = -uargp_program_bug_address
 # Installation
 ifeq ($(doinst),one)
 all: $(target)
-install: $(installationdir) $(installationdir)/$(target) 
+install: $(installationdir) $(installationdir)/$(target)
 $(installationdir)/$(target): $(target)
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 endif
@@ -163,9 +169,9 @@ ifeq ($(makemode),library)
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(libdir) $(includedir)/$(installhdrsubdir) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
+install: $(libdir) $(includedir)/$(installhdrsubdir) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
-install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
+install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
 $(includedir)/$(installhdrsubdir): $(includedir)
 	@$(MKINSTALLDIRS) $@
@@ -318,7 +324,7 @@ relink:
 # We record which libraries have been built in this run in the file
 # $(librecord).  That file contains a series of lines like
 # `../libfoo/libfoo.a ../libfoo/libfoo.so: ; /bin/true'
-# that serve to inhibit the pattern rule which follows from doing anything. 
+# that serve to inhibit the pattern rule which follows from doing anything.
 # Above, when we make `libs' in library directories, we always append
 # to $(librecord), so that future make invocations don't bother repeating
 # the effort.
@@ -341,7 +347,7 @@ relink:
 
 # Building libraries from other directories.  We force both libraries to be
 # built if either is, because it will use the appropriate one even if the other
-# is specified in someone's dependency list.   
+# is specified in someone's dependency list.
 #../%.a ../%.so: FORCE
 #	$(MAKE) -C $(dir $@) libs
 
@@ -426,7 +432,9 @@ ifneq ($(no_deps),t)
 
 ifneq ($(makemode),library)
 ifneq ($(prof-depend),t)
+ifneq ($(no_prof),t)
 -include $(addsuffix .prof_d,$(target)) /dev/null
+endif
 endif
 endif
 
@@ -488,4 +496,3 @@ endef
 %: %.sh $(top_srcdir)/sh-version.sed
 	sed -f $(top_srcdir)/sh-version.sed < $< > $@
 	chmod +x $@
-
