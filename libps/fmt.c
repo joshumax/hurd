@@ -214,7 +214,7 @@ ps_fmt_free(ps_fmt_t fmt)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count)
+ps_fmt_write_titles (ps_fmt_t fmt, ps_stream_t stream)
 {
   error_t err = 0;
   ps_fmt_field_t field = ps_fmt_fields(fmt);
@@ -226,7 +226,7 @@ ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count)
       int pfx_len = ps_fmt_field_prefix_length(field);
 
       if (pfx_len > 0)
-	err = ps_write_string(pfx, pfx_len, stream, count);
+	err = ps_stream_write (stream, pfx, pfx_len);
 
       if (ps_fmt_field_fmt_spec(field) != NULL && !err)
 	{
@@ -236,7 +236,7 @@ ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count)
 	  if (title == NULL)
 	    title = "??";
 
-	  err = ps_write_field(title, width, stream, count);
+	  err = ps_stream_write_field (stream, title, width);
 	}
 
       field++;
@@ -250,8 +250,7 @@ ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps,
-		       FILE *stream, unsigned *count)
+ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps, ps_stream_t stream)
 {
   error_t err = 0;
   ps_fmt_field_t field = ps_fmt_fields(fmt);
@@ -265,7 +264,7 @@ ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps,
       int pfx_len = ps_fmt_field_prefix_length(field);
 
       if (pfx_len > 0)
-	err = ps_write_string(pfx, pfx_len, stream, count);
+	err = ps_stream_write (stream, pfx, pfx_len);
 
       if (spec != NULL && !err)
 	{
@@ -278,11 +277,11 @@ ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps,
 	    {
 	      int (*output_fn)() = (int (*)())ps_fmt_spec_output_fn(spec);
 	      ps_getter_t getter = ps_fmt_spec_getter(spec);
-	      err = output_fn(ps, getter, width, stream, count);
+	      err = output_fn(ps, getter, width, stream);
 	    }
 	  else
 	    /* Nope, just print spaces.  */
-	    err = ps_write_spaces(ABS(width), stream, count);
+	    err = ps_stream_space (stream, ABS(width));
 	}
 
       field++;
