@@ -159,7 +159,7 @@ install: $(libdir) $(includedir)/$(installhdrsubdir) $(addprefix $(libdir)/,$(ta
 install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)) 
 
 $(includedir)/$(installhdrsubdir): $(includedir)
-	$(MKINSTALLDIRS) $@
+	@$(MKINSTALLDIRS) $@
 
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
@@ -192,7 +192,7 @@ install-headers:
 
 # Making installation directories
 $(installationdirlist): %:
-	$(MKINSTALLDIRS) $@
+	@$(MKINSTALLDIRS) $@
 
 # Building the target
 ifeq ($(OBJS),)
