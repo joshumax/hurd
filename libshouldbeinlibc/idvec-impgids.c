@@ -84,7 +84,11 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 	if (! cache)
 	  err = ENOMEM;
 	else
-	  err = idvec_add_new (cache, pw->pw_gid);
+	  {
+	    err = idvec_add_new (cache, pw->pw_gid);
+	    if (err)
+	      idvec_free (cache);
+	  }
 #endif
 
 	if (! err)
