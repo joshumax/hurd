@@ -308,7 +308,8 @@ S_io_get_openmodes (struct sock_user *user, int *bits)
     return EOPNOTSUPP;
   flags = user->sock->flags;
   *bits =
-      (flags & SOCK_NONBLOCK ? O_NONBLOCK : 0)
+      O_APPEND			/* pipes always append */
+    | (flags & SOCK_NONBLOCK ? O_NONBLOCK : 0)
     | (flags & SOCK_SHUTDOWN_READ ? 0 : O_READ)
     | (flags & SOCK_SHUTDOWN_WRITE ? 0 : O_WRITE);
   return 0;
@@ -319,14 +320,14 @@ S_io_set_all_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
-debug (user->sock, "lock");
+
   mutex_lock (&user->sock->lock);
-  if (bits & SOCK_NONBLOCK)
+  if (bits & O_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
   else
     user->sock->flags &= ~SOCK_NONBLOCK;
-debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
+
   return 0;
 }
 
@@ -335,12 +336,12 @@ S_io_set_some_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
-debug (user->sock, "lock");
+
   mutex_lock (&user->sock->lock);
-  if (bits & SOCK_NONBLOCK)
+  if (bits & O_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
-debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
+
   return 0;
 }
 
@@ -349,12 +350,12 @@ S_io_clear_some_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
-debug (user->sock, "lock");
+
   mutex_lock (&user->sock->lock);
-  if (bits & SOCK_NONBLOCK)
+  if (bits & O_NONBLOCK)
     user->sock->flags &= ~SOCK_NONBLOCK;
-debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
+
   return 0;
 }
 
