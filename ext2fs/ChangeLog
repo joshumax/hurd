@@ -1,3 +1,8 @@
+2002-01-03  Roland McGrath  <roland@frob.com>
+
+	* inode.c (write_node): Never clear i_translator here.
+	That is only done by diskfs_set_translator.
+
 2001-11-21  Roland McGrath  <roland@frob.com>
 
 	* inode.c (read_node): Just always call getpid for the fsid value.
