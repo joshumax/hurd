@@ -136,8 +136,10 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 					  0, &control);
       for (i = 0; i <= STDERR_FILENO; i++)
 	mach_port_deallocate (mach_task_self (), fds[i]);
+
       for (i = 0; i < INIT_PORT_MAX; i++)
-	mach_port_deallocate (mach_task_self (), ports[i]);
+	if (i != INIT_PORT_CWDIR)
+	  mach_port_deallocate (mach_task_self (), ports[i]);
       
       mutex_lock (box->lock);
       
