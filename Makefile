@@ -34,7 +34,7 @@ working-prog-subdirs := $(filter-out \
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf Maketools README NEWS missing tasks INSTALL
 
-all: $(addsuffix -all,$(working-prog-subdirs))
+all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
 %-all: 
 	$(MAKE) -C $* all
@@ -65,6 +65,6 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subd
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
-install: $(addsuffix -install,$(working-prog-subdirs))
+install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs))
 
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
