@@ -115,33 +115,36 @@ open_hook (struct trivfs_control *cntl,
     }
 
   /* Wait for carrier to turn on. */
-  while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
-	 && !(flags & O_NONBLOCK)
-	 && !cancel)
+  if (flags & (O_READ|O_WRITE))
     {
-      err = (*bottom->assert_dtr) ();
-      if (err)
+      while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
+	     && !(flags & O_NONBLOCK)
+	     && !cancel)
+	{
+	  err = (*bottom->assert_dtr) ();
+	  if (err)
+	    {
+	      mutex_unlock (&global_lock);
+	      return err;
+	    }
+	  cancel = hurd_condition_wait (&carrier_alert, &global_lock);
+	}
+      
+      if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
 	{
 	  mutex_unlock (&global_lock);
-	  return err;
+	  return EWOULDBLOCK;
 	}
-      cancel = hurd_condition_wait (&carrier_alert, &global_lock);
-    }
+      if (cancel)
+	{
+	  mutex_unlock (&global_lock);
+	  return EINTR;
+	}
   
-  if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
-    {
-      mutex_unlock (&global_lock);
-      return EWOULDBLOCK;
+      termflags |= TTY_OPEN;
+      if (!(termstate.c_cflag & CIGNORE))
+	(*bottom->set_bits) ();
     }
-  if (cancel)
-    {
-      mutex_unlock (&global_lock);
-      return EINTR;
-    }
-  
-  termflags |= TTY_OPEN;
-  if (!(termstate.c_cflag & CIGNORE))
-    (*bottom->set_bits) ();
 
   mutex_unlock (&global_lock);
   return 0;
