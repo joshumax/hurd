@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -52,14 +52,26 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  newuids = alloca (sizeof (uid_t) * cred->nuids);
-  newgids = alloca (sizeof (uid_t) * cred->ngids);
-  for (i = newnuids = 0; i < cred->nuids; i++)
-    if (listmember (uids, cred->uids[i], nuids))
-      newuids[newnuids++] = cred->uids[i];
-  for (i = newngids = 0; i < cred->gids[i]; i++)
-    if (listmember (gids, cred->gids[i], ngids))
-      newgids[newngids++] = cred->gids[i];
+  if (cred->isroot)
+    /* CRED has root access, and so may use any ids.  */
+    {
+      newuids = uids;
+      newnuids = nuids;
+      newgids = gids;
+      newngids = ngids;
+    }
+  else
+    /* Otherwise, use any of the requested ids that CRED already has.  */
+    {
+      newuids = alloca (sizeof (uid_t) * cred->nuids);
+      newgids = alloca (sizeof (uid_t) * cred->ngids);
+      for (i = newnuids = 0; i < cred->nuids; i++)
+	if (listmember (uids, cred->uids[i], nuids))
+	  newuids[newnuids++] = cred->uids[i];
+      for (i = newngids = 0; i < cred->gids[i]; i++)
+	if (listmember (gids, cred->gids[i], ngids))
+	  newgids[newngids++] = cred->gids[i];
+    }
 
   err = ports_create_port (cred->po->cntl->protid_class,
 			   cred->po->cntl->protid_bucket,
