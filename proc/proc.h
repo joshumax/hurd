@@ -70,7 +70,9 @@ struct proc
 	{
 	  mach_port_t reply_port;
 	  mach_msg_type_name_t reply_port_type;
-	  struct proc *msgp;
+	  struct proc *waiting;
+	  struct proc **procs;
+	  int nprocs;
 	} getmsgport_c;
     } p_continuation;
   
@@ -90,6 +92,7 @@ struct proc
   int p_checkmsghangs:1;	/* someone is currently hanging on us */
   int p_msgportwait:1;		/* blocked in getmsgport */
   int p_noowner:1;		/* has no owner known */
+  int p_loginleader:1;		/* leader of login collection */
 };
 
 typedef struct proc *pstruct_t;
@@ -126,6 +129,18 @@ struct ids
   int i_refcnt;
 };
 
+struct exc
+{
+  mach_port_t excport;
+  mach_port_t forwardport;
+  int flavor;
+  mach_port_t replyport;
+  mach_msg_type_name_t replyporttype;
+  mach_msg_type_number_t statecnt;
+  void **hashloc;
+  natural_t thread_state[0];
+};
+
 mach_port_t authserver;
 struct proc *self_proc;		/* process 0 (us) */
 struct proc *startup_proc;	/* process 1 (init) */
@@ -140,6 +155,7 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 /* Forward declarations */
 void complete_wait (struct proc *, int);
+void initprimes (void);
 int nextprime (int);
 int check_uid (struct proc *, uid_t);
 void addalltasks (void);
@@ -156,12 +172,14 @@ void check_message_dying (struct proc *, struct proc *);
 void message_port_dead (struct proc *);
 
 void add_proc_to_hash (struct proc *);
+void add_exc_to_hash (struct exc *);
 void remove_proc_from_hash (struct proc *);
 void add_pgrp_to_hash (struct pgrp *);
 void add_session_to_hash (struct session *);
 void remove_session_from_hash (struct session *);
 void remove_pgrp_from_hash (struct pgrp *);
-
+void remove_exc_from_hash (struct exc *);
+struct exc *exc_find (mach_port_t);
 struct proc *pid_find (int);
 struct proc *task_find (task_t);
 struct proc *task_find_nocreate (task_t);
