@@ -24,10 +24,6 @@ pass4()
   
   for (number = ROOTINO; number < lastino; number++)
     {
-      /* If it's correct, then there's nothing to do */
-      if (linkcount[number] == linkfound[number]
-	  && (!!(inodestate[number] == UNALLOC) == !linkfound[number]))
-
       if (linkfound[number] && inodestate[number] != UNALLOC)
 	{
 	  if (linkcount[number] != linkfound[number])
@@ -48,8 +44,60 @@ pass4()
 		}
 	    }
 	}
-      else if (inodestate[number
+      else if (linkfound[number] && inodestate[number] == UNALLOC)
 	{
+	  /* This can't happen because we never count links to unallocated
+	     nodes. */
+	  errexit ("LINK RECORDED FOR UNALLOCATED NODE");
+	}
+      else if (!linkfound[number] && inodestate[number] != UNALLOC)
+	{
+	  /* No links to allocated node.  If the size is zero, then
+	     we want to clear it; if the size is positive, then we
+	     want to reattach in. */
+	  struct dinode dino;
 	  
+	  getinode (number, &dino);
+
+	  if (dino.st_size)
+	    {
+	      /* This can't happen for dirctories because pass 3 should
+		 already have reset them up.  */
+	      if ((DI_MODE (&dino) & IFMT) == IFDIR)
+		errexit ("NO LINKS TO NONZERO DIRECTORY");
+	      
+	      pwarn ("UNREF FILE");
+	      pinode (number);
+	      if (preen)
+		printf (" (RECONNECTED)");
+	      if (preen || reply ("RECONNECT"))
+		linkup (number, 0);
+	    }
+	  else
+	    {
+	      pwarn ("UNREF %s", 
+		     (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE");
+	      pinode (number);
+	      if (preen)
+		printf (" (CLEARED)");
+	      if (preen || reply ("CLEAR"))
+		{
+		  inodestate[number] = UNALLOC;
+		  clear_inode (number, &dino);
+		}
+	    }
+	}
+    }
+}      
+
+
+		  
+		     
+	  
+
+	      
+
+
+
 		  
 		  
