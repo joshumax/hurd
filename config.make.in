@@ -16,6 +16,8 @@ sbindir = $(exec_prefix)/sbin
 includedir = $(exec_prefix)/include
 infodir = $(prefix)/info
 sysconfdir = $(prefix)/etc
+localstatedir = $(prefix)/var
+sharedstatedir = $(prefix)/com
 
 # How to run compilation tools.
 CC = @CC@
