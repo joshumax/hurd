@@ -519,10 +519,10 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 
   if (first)
     /* Didn't print any switches, what's up?  */
-    if (! oshort (real) && ! real->name)
+    if (!oshort (real) && !real->name && real->doc)
       /* This is a group header, print it nicely.  */
       {
-	if (real->doc)
+	if (*real->doc)
 	  {
 	    line_newline (line, 0); /* Precede with a blank line.  */
 	    line_indent_to (line, HEADER_COL);
@@ -532,7 +532,7 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 	  *sep_groups = 1;	/* Separate subsequent groups. */
       }
     else
-      /* Just a totally shadowed option, don't print anything.  */
+      /* Just a totally shadowed option or null header; print nothing.  */
       return;			
   else if (real->doc)
     /* Now the option documentation.  */
