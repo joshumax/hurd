@@ -271,7 +271,7 @@ pass1 ()
 		break;
 		
 	      default:
-		pfatal ("UNKNOWN FILE TYPE I=%d (MODE=%uo)\n",
+		pfatal ("UNKNOWN FILE TYPE I=%d (MODE=%ol)\n",
 			number, mode);
 		if (reply ("CLEAR"))
 		  {
