@@ -33,7 +33,8 @@ routine exec_exec ( /* Better name, Roland??
 	envp: data_t, servercopy;
 	dtable: portarray_t;
 	portarray: portarray_t;
-	intarray: intarray_t);
+	intarray: intarray_t;
+	deallocnames: mach_port_name_array_t);
 
 /* This call is made by a new task to its bootstrap port to get its
    startup ports and information.  */
