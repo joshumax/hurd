@@ -1,9 +1,7 @@
 /* Mach device store backend
 
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -95,15 +93,20 @@ dopen (const char *name, device_t *device, int *mod_flags)
   error_t err = get_privileged_ports (0, &dev_master);
   if (! err)
     {
-      err = device_open (dev_master, D_WRITE | D_READ, (char *)name, device);
-      if (err == ED_READ_ONLY)
+      if (*mod_flags & STORE_HARD_READONLY)
+	err = device_open (dev_master, D_READ, (char *)name, device);
+      else
 	{
-	  err = device_open (dev_master, D_READ, (char *)name, device);
-	  if (! err)
-	    *mod_flags |= STORE_HARD_READONLY;
+	  err = device_open (dev_master, D_WRITE | D_READ, (char *)name, device);
+	  if (err == ED_READ_ONLY)
+	    {
+	      err = device_open (dev_master, D_READ, (char *)name, device);
+	      if (! err)
+		*mod_flags |= STORE_HARD_READONLY;
+	    }
+	  else if (! err)
+	    *mod_flags &= ~STORE_HARD_READONLY;
 	}
-      else if (! err)
-	*mod_flags &= ~STORE_HARD_READONLY;
       mach_port_deallocate (mach_task_self (), dev_master);
     }
   return err;
@@ -218,9 +221,9 @@ _store_device_create (device_t device, int flags, size_t block_size,
 		      const struct store_run *runs, size_t num_runs,
 		      struct store **store)
 {
-  *store =
-    _make_store (&store_device_class, device, flags, block_size, runs, num_runs, 0);
-  return *store ? 0 : ENOMEM;
+  return
+    _store_create (&store_device_class, device, flags, block_size,
+		   runs, num_runs, 0, store);
 }
 
 /* Open the device NAME, and return the corresponding store in STORE.  */
