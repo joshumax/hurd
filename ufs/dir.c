@@ -104,6 +104,9 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   type &= ~SPEC_DOTDOT;
   
   namelen = strlen (name);
+
+  if (namelen > MAXNAMLEN)
+    return ENAMETOOLONG;
   
   if (!S_ISDIR (dp->dn_stat.st_mode))
     return ENOTDIR;
@@ -506,6 +509,8 @@ diskfs_direnter(struct node *dp,
 
     case EXTEND:
       /* Extend the file. */
+      assert (needed <= DIRBLKSIZ);
+      
       while (dp->dn_stat.st_size + DIRBLKSIZ > dp->allocsize)
 	if (err = diskfs_grow (dp, dp->dn_stat.st_size + DIRBLKSIZ, cred))
 	  {
@@ -864,7 +869,8 @@ diskfs_get_directs (struct node *dp,
 	  struct olddirect *userd;
 	  userd = (struct olddirect *)datap;
 	  userd->d_ino = entryp->d_ino;
-	  userd->d_reclen = userd->d_namlen = DIRECT_NAMLEN (entryp);
+	  userd->d_namlen = DIRECT_NAMLEN (entryp);
+	  userd->d_reclen = DIRSIZ (userd->d_namlen);
 	  bcopy (entryp->d_name, userd->d_name, DIRECT_NAMLEN (entryp) + 1);
 #endif	  
 	  i++;
