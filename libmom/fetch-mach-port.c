@@ -23,11 +23,5 @@
 mach_port_t
 mom_fetch_mach_port (struct mom_port_ref *obj)
 {
-  mach_port_t ret;
-  
-  spin_lock (&obj->lock);
-  assert (obj->refcnt);
-  ret = obj->port;
-  spin_unlock (&obj->lock);
-  return ret;
+  return obj->port;
 }
