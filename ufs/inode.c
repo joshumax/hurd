@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -492,6 +492,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       ffs_blkfree (np, blkno, sblock->fs_bsize);
       di->di_trans = 0;
       record_poke (di, sizeof (struct dinode));
+      np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
       np->istranslated = 0;
       np->dn_set_ctime = 1;
     }
