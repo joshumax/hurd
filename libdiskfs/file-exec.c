@@ -25,7 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntlbits.h>
 #include <hurd/exec.h>
 
-error_t 
+kern_return_t 
 diskfs_S_file_exec (struct protid *cred,
 	     task_t task,
 	     int flags,
@@ -75,7 +75,7 @@ diskfs_S_file_exec (struct protid *cred,
 		    (diskfs_make_protid
 		     (diskfs_make_peropen (np, O_READ),
 		      cred->uids, cred->nuids, cred->gids, cred->ngids))),
-		   MACH_PORT_MAKE_SEND,
+		   MACH_MSG_TYPE_MAKE_SEND,
 		   task, flags, argv, argvlen, envp, envplen, 
 		   fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
 		   portarray, MACH_MSG_TYPE_MOVE_SEND, portarraylen,
