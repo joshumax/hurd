@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -92,7 +92,7 @@ diskfs_start_bootstrap (char **argv)
   err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
 		      idlist, 3, idlist, 3, 0, 
 		      &retry, retry_name, &diskfs_exec);
-  assert (!err);
+  assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (retry_name[0] == '\0');
   assert (diskfs_exec);
@@ -130,7 +130,7 @@ diskfs_start_bootstrap (char **argv)
   err = dir_lookup (root_pt, initname, O_READ, 0,
 		    &retry, pathbuf, &startup_pt);
   
-  assert (!err);
+  assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
@@ -180,7 +180,7 @@ diskfs_start_bootstrap (char **argv)
   mach_port_deallocate (mach_task_self (), bootpt);
   if (initnamebuf != default_init)
     free (initnamebuf);
-  assert (!err);
+  assert_perror (err);
 }
 
 /* We look like an execserver to the execserver itself; it makes this
@@ -345,7 +345,7 @@ diskfs_S_fsys_init (mach_port_t port,
      for the library itself. */
   err = mach_port_mod_refs (mach_task_self (),
 			    authhandle, MACH_PORT_RIGHT_SEND, +1);
-  assert (!err);
+  assert_perror (err);
 
   if (diskfs_auth_server_port != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
@@ -353,7 +353,7 @@ diskfs_S_fsys_init (mach_port_t port,
 
   assert (exectask != MACH_PORT_NULL);
   err = proc_task2proc (procserver, exectask, &execprocess);
-  assert (!err);
+  assert_perror (err);
 
   /* Declare that the exec server is our child. */
   proc_child (procserver, exectask);
