@@ -19,6 +19,7 @@
 #include <hurd.h>
 #include "proc.h"
 #include "process_reply.h"
+#include <hurd/startup.h>
 #include <assert.h>
 #include <stdlib.h>
 
@@ -41,8 +42,9 @@ check_message_return (struct proc *p, void *availpaddr)
 
 error_t
 S_proc_setmsgport (struct proc *p,
-		 mach_port_t msgport,
-		 mach_port_t *oldmsgport)
+		   mach_port_t reply, mach_msg_type_name_t replytype,
+		   mach_port_t msgport,
+		   mach_port_t *oldmsgport)
 {
   *oldmsgport = p->p_msgport;
   p->p_msgport = msgport;
@@ -51,11 +53,15 @@ S_proc_setmsgport (struct proc *p,
     prociterate (check_message_return, p);
   p->p_checkmsghangs = 0;
 
+  /* init is single-threaded.  Reply to it before we expect it
+     to service requests.  */
+  proc_setmsgport_reply (reply, replytype, 0, p->p_msgport);
+
   if (p == startup_proc)
     startup_essential_task (msgport, mach_task_self (), MACH_PORT_NULL,
 			    "proc", master_host_port);
       
-  return 0;
+  return MIG_NO_REPLY;
 }
 
 /* Check to see if process P is blocked trying to get the message port of 
