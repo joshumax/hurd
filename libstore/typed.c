@@ -1,6 +1,6 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997,98,2001,02,03 Free Software Foundation, Inc.
+   Copyright (C) 1997,1998,2001,2002,2003 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -64,32 +64,44 @@ store_find_class (const char *name, const char *clname_end,
      and examine each one's "store_std_classes" section.  */
 # pragma weak _r_debug
 # pragma weak dlsym
+# pragma weak dlopen
+# pragma weak dlclose
 # pragma weak dlerror
   if (dlsym)
     {
       struct link_map *map;
       for (map = _r_debug.r_map; map != 0; map = map->l_next)
 	{
-	  const struct store_class *const *start;
-	  const struct store_class *const *stop;
+	  const struct store_class *const *start, *const *stop;
+
+	  /* We cannot just use MAP directly because it may not have been
+	     opened by dlopen such that its data structures are fully set
+	     up for dlsym.  */
+	  void *module = dlopen (map->l_name, RTLD_NOLOAD);
+	  if (module == 0)
+	    {
+	      (void) dlerror (); /* Required to avoid a leak! */
+	      continue;
+	    }
+
 	  start = dlsym (map, "__start_store_std_classes");
 	  if (start == 0)
+	    (void) dlerror ();	/* Required to avoid a leak! */
+	  else if (start != __start_store_std_classes) /*  */
 	    {
-	      (void) dlerror ();	/* Required to avoid a leak! */
-	      continue;
+	      stop = dlsym (map, "__stop_store_std_classes");
+	      if (stop == 0)
+		(void) dlerror (); /* Required to avoid a leak! */
+	      else
+		for (cl = start; cl < stop; ++cl)
+		  if (strlen ((*cl)->name) == (clname_end - name)
+		      && strncmp (name, (*cl)->name, (clname_end - name)) == 0)
+		    {
+		      dlclose (module);
+		      return *cl;
+		    }
 	    }
-	  if (start == __start_store_std_classes)
-	    continue;
-	  stop = dlsym (map, "__stop_store_std_classes");
-	  if (stop == 0)
-	    {
-	      (void) dlerror ();	/* Required to avoid a leak! */
-	      continue;
-	    }
-	  for (cl = start; cl < stop; ++cl)
-	    if (strlen ((*cl)->name) == (clname_end - name)
-		&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
-	      return *cl;
+	  dlclose (module);
 	}
     }
 
