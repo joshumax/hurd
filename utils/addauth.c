@@ -36,7 +36,7 @@
 #include <error.h>
 #include <version.h>
 
-#include "psout.h"
+#include "parse.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (ps);
 
@@ -68,93 +68,6 @@ char *args_doc = "USER...";
 char *doc =
 "Add USER to the userids of the selected processes"
 "\vBy default, all processes in the current login collection are selected";
-
-/* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
-   empty and DEFAULT_ADD_FN isn't NULL, then call DEFAULT_ADD_FN instead. */
-static void
-_parse_strlist (char *arg,
-		void (*add_fn)(const char *str), void (*default_add_fn)(),
-		const char *type_name)
-{
-  if (arg)
-    while (isspace(*arg))
-      arg++;
-
-  if (arg == NULL || *arg == '\0')
-    if (default_add_fn)
-      (*default_add_fn)();
-    else
-      error(7, 0, "Empty %s list", type_name);
-  else
-    {
-      char *end = arg;
-
-      void mark_end()
-	{
-	  *end++ = '\0';
-	  while (isspace(*end))
-	    end++;
-	}
-      void parse_element()
-	{
-	  if (*arg == '\0')
-	    error(7, 0, "Empty element in %s list", type_name);
-	  (*add_fn)(arg);
-	  arg = end;
-	}
-
-      while (*end != '\0')
-	switch (*end)
-	  {
-	  case ' ': case '\t':
-	    mark_end();
-	    if (*end == ',')
-	      mark_end();
-	    parse_element();
-	    break;
-	  case ',':
-	    mark_end();
-	    parse_element();
-	    break;
-	  default:
-	    end++;
-	  }
-
-      parse_element();
-    }
-}
-
-/* For each numeric string in the comma-separated list in ARG, call ADD_FN;
-   if ARG is empty and DEFAULT_FN isn't NULL, then call DEF_FN to get a number,
-   and call ADD_FN on that, otherwise signal an error.  If any member of the
-   list isn't a number, and LOOKUP_FN isn't NULL, then it is called to return
-   an integer for the string.  LOOKUP_FN should signal an error itself it
-   there's some problem parsing the string.  */
-static void
-parse_numlist (char *arg,
-	       void (*add_fn)(unsigned num),
-	       int (*default_fn)(),
-	       int (*lookup_fn)(const char *str),
-	       const char *type_name)
-{
-  void default_num_add() { (*add_fn)((*default_fn)()); }
-  void add_num_str(const char *str)
-    {
-      const char *p;
-      for (p = str; *p != '\0'; p++)
-	if (!isdigit(*p))
-	  {
-	    if (lookup_fn)
-	      (*add_fn)((*lookup_fn)(str));
-	    else
-	      error (7, 0, "%s: Invalid %s", p, type_name);
-	    return;
-	  }
-      (*add_fn)(atoi(str));
-    }
-  _parse_strlist(arg, add_num_str, default_fn ? default_num_add : 0,
-		 type_name);
-}
 
 static process_t proc_server;
 
@@ -325,29 +238,38 @@ int i;
       if (crypt)
 	{
 	  encrypted = crypt (unencrypted, password);
-	  /* Paranoia may destroya.  */
-	  memset (unencrypted, 0, strlen (unencrypted));
-
 	  if (! encrypted)
 	    /* Something went wrong.  */
-	    error (51, errno, "Password encryption failed");
+	    {
+	      /* Paranoia may destroya.  */
+	      memset (unencrypted, 0, strlen (unencrypted));
+	      error (51, errno, "Password encryption failed");
+	    }
 	}
       else
 	encrypted = unencrypted;
 
       if (strcmp (encrypted, password) == 0)
-	return;			/* password O.K. */
+	{
+	  memset (unencrypted, 0, strlen (unencrypted));
+	  return;			/* password O.K. */
+	}
 
-      if (id == 0 && !is_group && parent_has_gid (0) && parent_uids->num > 0
-	  && parent_uids->ids[0] != 0)
+      if (id == 0 && !is_group && parent_has_gid (0)
+	  && (parent_uids->num == 0 || parent_uids->ids[0] != 0))
 	/* Special hack: a user attempting to gain root access can use
 	   their own password (instead of root's) if they're in group 0. */
 	{
 	  struct passwd *pw = getpwuid (parent_uids->ids[0]);
+
+	  encrypted = crypt (unencrypted, pw->pw_passwd);
+	  memset (unencrypted, 0, strlen (unencrypted));
+
 	  if (pw && strcmp (encrypted, pw->pw_passwd) == 0)
 	    return;
 	}
 
+      memset (unencrypted, 0, strlen (unencrypted));
       error (50, 0, "Incorrect password");
     }
 
