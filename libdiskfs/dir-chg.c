@@ -15,9 +15,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "fs_S.h"
+
 kern_return_t
-S_dir_notice_changes (struct protid *cred,
-		      mach_port_t notify)
+diskfs_S_dir_notice_changes (struct protid *cred,
+			     mach_port_t notify)
 {
   return EOPNOTSUPP;
 }
