@@ -1,3 +1,8 @@
+2001-09-28  Roland McGrath  <roland@frob.com>
+
+	* decode.c (store_std_leaf_decode): Actually copy data into MISC.
+	Don't call malloc for it when MISC_LEN is zero, just store null.
+
 2001-09-27  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (store_nbd_open): Divide reported size by block size.
