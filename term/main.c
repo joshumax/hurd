@@ -60,8 +60,8 @@ main (int argc, char **argv)
   
   trivfs_add_control_port_class (&tty_cntl_class);
   trivfs_add_control_port_class (&pty_cntl_class);
-  trivfs_add_protid_port_class (&tty_cntl_class);
-  trivfs_add_protid_port_class (&pty_cntl_class);
+  trivfs_add_protid_port_class (&tty_class);
+  trivfs_add_protid_port_class (&pty_class);
 
   cttyid_class = ports_create_class (0, 0);
 
