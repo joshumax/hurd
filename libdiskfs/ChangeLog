@@ -1,3 +1,10 @@
+Tue Nov 19 18:21:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (struct node): Add author_tracks_uid field.
+	* file-chown.c (diskfs_S_file_chown): If NP->author_tracks_uid,
+	modify NP->dn_stat.st_author as well.
+	* node-create.c (diskfs_create_node): Likewise.
+
 Mon Nov 18 17:02:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* diskfs.h (struct node): Remove istranslated field.
