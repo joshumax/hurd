@@ -205,18 +205,6 @@ check_open_hook (struct trivfs_control *trivfs_control,
   return err;
 }
 
-error_t
-trivfs_S_file_check_access (struct trivfs_protid *cred,
-			    mach_port_t reply, mach_msg_type_name_t reply_type,
-			    int *allowed)
-{
-  if (! cred)
-    return EOPNOTSUPP;
-  else
-    return file_check_access (cred->realnode, allowed);
-  return 0;
-}
-
 static error_t
 open_hook (struct trivfs_peropen *peropen)
 {

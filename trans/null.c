@@ -102,17 +102,6 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   exit (0);
 }
-
-error_t
-trivfs_S_file_check_access (struct trivfs_protid *cred,
-			    mach_port_t reply, mach_msg_type_name_t reply_type,
-			    int *allowed)
-{
-  if (! cred)
-    return EOPNOTSUPP;
-  else
-    return file_check_access (cred->realnode, allowed);
-}
 
 /* Return objects mapping the data underlying this memory object.  If
    the object can be read then memobjrd will be provided; if the
