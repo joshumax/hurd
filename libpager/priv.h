@@ -141,5 +141,6 @@ void _pager_lock_object (struct pager *, vm_offset_t, vm_size_t, int, int,
 			 vm_prot_t, int);
 void _pager_free_structure (struct pager *);
 void _pager_clean (void *arg);
+void _pager_real_dropweak (void *arg);
 
    
