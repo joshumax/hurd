@@ -33,6 +33,7 @@ intr		33000	Interruption
 ifsock		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
 tape		35000	Special control operations for magtapes
 login		36000	Database of logged-in users
+pfinet		37000   Internet configuration calls
 <ioctl space>  100000-	First subsystem of ioctl class 'f' (lowest class)
 tioctl	       156000	Ioctl class 't' (terminals)
 tioctl	       156200     (continued)
