@@ -316,7 +316,7 @@ read_utmp_procs (proc_stat_list_t procs, char *name)
 static void
 uptime (proc_stat_list_t procs)
 {
-  struct timeval uptime;
+  struct stat st;
   char uptime_rep[20], tod_rep[20];
   struct host_load_info *load;
   unsigned nusers = 0;
@@ -324,8 +324,15 @@ uptime (proc_stat_list_t procs)
 
   proc_stat_list_for_each (procs, maybe_add_user);
 
-  /* What do we do??? XXX */
-  bzero (&uptime, sizeof (uptime));
+  /* Until we get a better way of finding out how long the system's been
+     up...  XXX */
+  if (stat ("/var/run/uptime", &st) != 0)
+    strcpy (uptime_rep, "chuck");
+  else
+    {
+      struct timeval uptime = { st.st_ctime, 0 };
+      fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
+    }
 
   strftime (tod_rep, sizeof (tod_rep), "%r", localtime (&now.tv_sec));
   if (tod_rep[0] == '0')
@@ -334,8 +341,6 @@ uptime (proc_stat_list_t procs)
   errno = ps_host_load_info (&load);
   if (errno)
     error (0, errno, "ps_host_load_info");
-
-  fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
 
   printf ("%s  up %s,  %u user%s,  load averages: %.2f, %.2f, %.2f\n",
 	  tod_rep, uptime_rep, nusers, nusers == 1 ? "" : "s",
