@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -99,7 +99,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   if (tnp == fnp)
     {
       diskfs_drop_dirstat (tdp, ds);
-      diskfs_nrele (tnp);
+      diskfs_nput (tnp);
       mutex_unlock (&tdp->lock);
       if (fdp != tdp)
 	mutex_unlock (&fdp->lock);
