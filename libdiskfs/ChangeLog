@@ -1,3 +1,7 @@
+1998-12-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot-parse.c: File removed (it has been obsolete since 1995).
+
 1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* trans-callback.c (_diskfs_translator_callback1_fn): Use size_t*
