@@ -21,24 +21,32 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "fs_S.h"
-#include "io_S.h"
 
 kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
 		      char **data,
 		      u_int *datacnt,
-		      off_t offset,
-		      off_t *nextoffset,
-		      int amt)
+		      int entry,
+		      int nentries,
+		      vm_size_t bufsiz,
+		      int *amt)
 {
   error_t err;
+  struct node *np;
 
-  if (offset == -1)
-    return EINVAL;
+  if (!cred)
+    return EOPNOTSUPP;
 
-  err = diskfs_S_io_read (cred, data, datacnt, offset, amt);
-  if (!err)
-    *nextoffset = offset + *datacnt;
+  np = cred->po->np;
+  mutex_lock (&np->lock);
+  if ((np->dn_stat.st_mode & S_IFMT) != S_IFDIR)
+    {
+      mutex_unlock (&np->lock);
+      return ENOTDIR;
+    }
+
+  err = diskfs_get_directs (np, entry, nentries, data, datacnt, bufsiz, amt);
+  mutex_unlock (&np->lock);
   return err;
 }
 
