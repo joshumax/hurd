@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,99,2002 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -112,7 +112,7 @@ read_sblock ()
 
 /* Override the standard diskfs routine so we can add our own output.  */
 error_t
-diskfs_append_args (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err;
 

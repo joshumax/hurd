@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,99,2001,02 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -221,7 +221,7 @@ diskfs_get_directs (struct node *dp,
 		    int entry,
 		    int nentries,
 		    char **data,
-		    u_int *datacnt,
+		    size_t *datacnt,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
@@ -333,7 +333,7 @@ diskfs_get_directs (struct node *dp,
 	  if (datap - *data + reclen > allocsize)
 	    {
 	      vm_address_t newdata;
-	      
+
 	      vm_allocate (mach_task_self (), &newdata,
 			   (ouralloc
 			    ? (allocsize *= 2)
