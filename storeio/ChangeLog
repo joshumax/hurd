@@ -1,5 +1,7 @@
 1997-07-16  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* pager.c (pager_read_page): Initialize READ to 0.
+
 	* pager.c (dev_get_memory_object): Implement correctly.
 	(dev_stop_paging): Work entirely by flushing user pagers; don't kill pager.
 	(pager_clear_user_data): Zero our pointer to the pager.
