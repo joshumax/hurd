@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -206,7 +206,11 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
     goto lose;
 
   /* Create the task for the translator.  */
-  err = task_create (mach_task_self (), 0, &task);
+  err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		     NULL, 0,	/* OSF Mach */
+#endif
+		     0, &task);
   if (err)
     goto lose;
 
