@@ -321,9 +321,12 @@ S_proc_getprocinfo (struct proc *callerp,
   if (!p)
     return ESRCH;
   
- if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
-	      | PI_FETCH_THREAD_WAITS))
-   flags |= PI_FETCH_THREADS;
+  /* Avoid nasty blockage; awaiting further thought.  XXX */
+  flags &= ~PI_FETCH_THREAD_WAITS;
+
+  if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
+	       | PI_FETCH_THREAD_WAITS))
+    flags |= PI_FETCH_THREADS;
 
   if (flags & PI_FETCH_THREADS)
     {
