@@ -279,14 +279,19 @@ load_image (task_t t,
 	if (ph->p_type == PT_LOAD)
 	  {
 	    vm_address_t buf;
-	    vm_size_t bufsz = round_page (ph->p_filesz);
+	    vm_size_t offs = ph->p_offset & (ph->p_align - 1);
+	    vm_size_t bufsz = round_page (ph->p_filesz + offs);
+
 	    vm_allocate (mach_task_self (), &buf, bufsz, 1);
+
 	    lseek (fd, ph->p_offset, SEEK_SET);
-	    read (fd, buf + (ph->p_offset & (ph->p_align - 1)), ph->p_filesz);
+	    read (fd, buf + offs, ph->p_filesz);
+
 	    ph->p_memsz = ((ph->p_vaddr + ph->p_memsz + ph->p_align - 1)
 			   & ~(ph->p_align - 1));
 	    ph->p_vaddr &= ~(ph->p_align - 1);
 	    ph->p_memsz -= ph->p_vaddr;
+
 	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
 	    vm_write (t, ph->p_vaddr, buf, bufsz);
 	    vm_deallocate (mach_task_self (), buf, bufsz);
