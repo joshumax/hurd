@@ -1643,22 +1643,15 @@ S_exec_exec (struct trivfs_protid *protid,
 #if 0
   if (!(flags & EXEC_SECURE))
     {
-      const char envar[] = "\0EXECSERVERS=";
-      char *p = NULL;
-      if (envplen >= sizeof (envar) &&
-	  !memcmp (&envar[1], envp, sizeof (envar) - 2))
-	p = envp - 1;
-      else
-	p = memmem (envp, envplen, envar, sizeof (envar) - 1);
-      if (p != NULL)
+      char *env_server_list = envz_get (envp, envplen, "EXECSERVERS");
+
+      if (env_server_list)
 	{
-	  size_t len;
-	  char *list;
 	  int tried = 0;
-	  p += sizeof (envar) - 1;
-	  len = strlen (p) + 1;
-	  list = alloca (len);
-	  memcpy (list, p, len);
+	  size_t len = strlen (p) + 1;
+	  char *list = alloca (len);
+
+	  memcpy (list, env_server_list, len);
 	  while ((p = strsep (&list, ":")))
 	    {
 	      file_t server;
