@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
-#include "dinode.h"
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -156,6 +155,8 @@ void
 diskfs_lost_hardrefs (struct node *np)
 {
   struct port_info *pi;
+  struct pager *p;
+  
   /* Check and see if there is a pager which has only
      one reference (ours).  If so, then drop that reference,
      breaking the cycle.  The complexity in this routine
@@ -164,7 +165,7 @@ diskfs_lost_hardrefs (struct node *np)
   if (np->dn->fileinfo)
     {
       spin_lock (&_libports_portrefcntlock);
-      pi = np->dn->fileinfo->p;
+      pi = (struct port_info *) np->dn->fileinfo->p;
       if (pi->refcnt == 1)
 	{
 	  
@@ -500,25 +501,26 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 error_t
 diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 {
-  XXX FIXME
   error_t err;
   daddr_t blkno;
-  char *buf;
   u_int datalen;
+  void *transloc;
 
   err = diskfs_catch_exception ();
   if (err)
     return err;
+
   blkno = (dino (np->dn->number))->di_trans;
-  
   assert (blkno);
-  bcopy (disk_image + fsaddr (sblock, blkno), buf, sblock->fs_bsize);
-  diskfs_end_catch_exception ();
+  transloc = disk_image + fsaddr (sblock, blkno);
   
-  datalen = *(u_int *)buf;
+  datalen = *(u_int *)transloc;
   if (datalen > *namelen)
     vm_allocate (mach_task_self (), (vm_address_t *) namep, datalen, 1);
-  bcopy (buf + sizeof (u_int), *namep, datalen);
+  bcopy (transloc + sizeof (u_int), *namep, datalen);
+
+  diskfs_end_catch_exception ();
+
   *namelen = datalen;
   return 0;
 }
