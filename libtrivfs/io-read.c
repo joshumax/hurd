@@ -16,10 +16,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
+#include <assert.h>
 
-error_t
-trivfs_S_io_read (struct protid *cred,
-		  char *data,
+kern_return_t
+trivfs_S_io_read (struct trivfs_protid *cred,
+		  char **data,
 		  u_int *datalen,
 		  off_t off,
 		  int amt)
