@@ -19,7 +19,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-error_t
+#include "priv.h"
+#include "interrupt_S.h"
+
+kern_return_t
 trivfs_S_interrupt_operation (mach_port_t handle)
 {
   return 0;
