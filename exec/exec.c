@@ -224,7 +224,7 @@ load_section (void *section, struct execdata *u)
 	  if (! u->error && off != 0)
 	    {
 	      vm_address_t page = 0;
-	      page = (vm_address_t) mmap (0, vm_page_size, 
+	      page = (vm_address_t) mmap (0, vm_page_size,
 					  PROT_READ|PROT_WRITE, MAP_ANON,
 					  0, 0);
 	      u->error = (page == -1) ? errno : 0;
@@ -325,6 +325,7 @@ load_section (void *section, struct execdata *u)
 						     PROT_READ|PROT_WRITE,
 						     MAP_ANON, 0, 0);
 		      u->error = (ourpage == -1) ? errno : 0;
+		    }
 		}
 	      if (u->error)
 		{
