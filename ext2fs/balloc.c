@@ -66,7 +66,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
       return;
     }
 
-  ext2_debug ("freeing block %lu[%d]\n", block, count);
+  ext2_debug ("freeing block %lu[%lu]\n", block, count);
 
   block_group = (block - sblock->s_first_data_block) /
     sblock->s_blocks_per_group;
