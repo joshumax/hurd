@@ -3,6 +3,7 @@
 	* symlink.c (S_fsys_getroot, S_fsys_getfile): u_int -> size_t
 	* streamio.c (device_open_reply): size_t -> int for dev_status_t
 	* crash.c (S_msg_report_wait): int -> mach_msg_id_t
+	(S_crash_dump_task): int -> integer_t
 
 2002-05-26  Marcus Brinkmann  <marcus@gnu.org>
 
