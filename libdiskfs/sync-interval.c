@@ -112,8 +112,14 @@ periodic_sync (int interval)
 	  if (! diskfs_readonly)
 	    {
 	      rwlock_reader_lock (&diskfs_fsys_lock);
-	      diskfs_sync_everything (0);
-	      diskfs_set_hypermetadata (0, 0);
+	      /* Only sync if we need to, to avoid clearing the clean flag
+		 when it's just been set.  Any other thread doing a sync
+		 will have held the lock while it did its work.  */
+	      if (_diskfs_diskdirty)
+		{
+		  diskfs_sync_everything (0);
+		  diskfs_set_hypermetadata (0, 0);
+		}
 	      rwlock_reader_unlock (&diskfs_fsys_lock);
 	    }
 	  ports_end_rpc (pi, &link);
