@@ -55,7 +55,7 @@ find_address (struct user_pager_info *upi,
       struct iblock_spec indirs[NIADDR + 1];
       struct node *np;
   
-      np = upi->u.np;
+      np = upi->np;
       
       rwlock_reader_lock (&np->dn->allocptrlock);
       *nplock = &np->dn->allocptrlock;
@@ -194,7 +194,7 @@ pager_unlock_page (struct user_pager_info *pager,
   if (pager->type == DISK)
     return 0;
   
-  np = pager->u.np;
+  np = pager->np;
   dn = np->dn;
   di = dino (dn->number);
 
@@ -345,7 +345,7 @@ pager_report_extent (struct user_pager_info *pager,
   if (pager->type == DISK)
     *size = diskpagersize;
   else
-    *size = pager->u.np->allocsize;
+    *size = pager->np->allocsize;
   
   return 0;
 }
@@ -357,9 +357,9 @@ pager_clear_user_data (struct user_pager_info *upi)
 {
   assert (upi->type == FILE_DATA);
   spin_lock (&node2pagelock);
-  upi->u.np->dn->fileinfo = 0;
+  upi->np->dn->fileinfo = 0;
   spin_unlock (&node2pagelock);
-  diskfs_nrele_light (upi->u.np);
+  diskfs_nrele_light (upi->np);
   *upi->prevp = upi->next;
   if (upi->next)
     upi->next->prevp = upi->prevp;
@@ -374,7 +374,7 @@ create_disk_pager ()
 {
   diskpager = malloc (sizeof (struct user_pager_info));
   diskpager->type = DISK;
-  diskpager->u.np = 0;
+  diskpager->np = 0;
   diskpager->p = pager_create (diskpager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
   diskpagerport = pager_get_port (diskpager->p);
   mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
@@ -432,7 +432,7 @@ diskfs_get_filemap (struct node *np)
     {
       upi = malloc (sizeof (struct user_pager_info));
       upi->type = FILE_DATA;
-      upi->u.np = np;
+      upi->np = np;
       diskfs_nref_light (np);
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
