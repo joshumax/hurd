@@ -269,6 +269,9 @@ boot_script_parse_line (char *cmdline)
   /* Extract command name.  Ignore line if it lacks a command.  */
   for (p = cmdline; *p == ' ' || *p == '\t'; p++)
     ;
+  if (*p == '#')
+    /* Ignore comment line.  */
+    return 0;
   for (q = p; *q && *q != ' ' && *q != '\t' && *q != '\n'; q++)
     ;
   if (p == q)
