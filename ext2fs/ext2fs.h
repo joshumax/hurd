@@ -133,13 +133,20 @@ struct disknode
   /* Links on hash list. */
   struct node *hnext, **hprevp;
 
+  /* Lock to lock while fiddling with this inode's block allocation info.  */
   struct rwlock alloc_lock;
 
-  struct pokel pokel;
+  /* Where changes to our indirect blocks are added.  */
+  struct pokel indir_pokel;
 
+  /* Random extra info used by the ext2 routines.  */
   struct ext2_inode_info info;
 
   struct user_pager_info *fileinfo;
+
+  /* True if the last page of the file has been made writable, but is only
+     partially allocated.  */
+  int last_page_partially_writable;
 };  
 
 struct user_pager_info 
@@ -387,8 +394,8 @@ record_indir_poke (struct node *node, void *ptr)
   if (global_block_modified (boffs_block (boffs)))
  {
  printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
-	 (boffs), node->dn->number, &node->dn->pokel);
-    pokel_add (&node->dn->pokel, boffs_ptr(boffs), block_size);
+	 (boffs), node->dn->number, &node->dn->indir_pokel);
+    pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
   }
 }
 
@@ -420,7 +427,7 @@ alloc_sync (struct node *np)
 	{
  printf ("Alloc sync inode %d\n", np->dn->number);
 	  diskfs_node_update (np, 1);
-	  pokel_sync (&np->dn->pokel, 1);
+	  pokel_sync (&np->dn->indir_pokel, 1);
 	}
 else  printf ("Alloc sync 0\n");
       sync_global_data ();
