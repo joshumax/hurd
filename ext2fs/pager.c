@@ -224,8 +224,8 @@ create_disk_pager ()
   disk_pager->type = DISK;
   disk_pager->np = 0;
   disk_pager->p = pager_create (disk_pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  disk_pagerport = pager_get_port (disk_pager->p);
-  mach_port_insert_right (mach_task_self (), disk_pagerport, disk_pagerport,
+  disk_pager_port = pager_get_port (disk_pager->p);
+  mach_port_insert_right (mach_task_self (), disk_pager_port, disk_pager_port,
 			  MACH_MSG_TYPE_MAKE_SEND);
 }  
 
