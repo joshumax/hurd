@@ -189,7 +189,6 @@ bogus_speed_to_real_speed (int bspeed)
     }
 }
 
-      
 /* If there are characters on the output queue and no
    pending output requests, then send them. */
 void
@@ -222,7 +221,7 @@ start_output ()
      whee.... */
   err = device_write_request_inband (phys_device, phys_reply_writes, D_NOWAIT,
 				     0, pending_output, npending_output);
-  
+
   if (err == MACH_SEND_INVALID_DEST)
     desert_dtr ();
   else if (!err)
@@ -296,11 +295,12 @@ device_read_reply_inband (mach_port_t replypt,
       mutex_unlock (&global_lock);
       return 0;
     }
-  
+
   /* D_NOWAIT does not actually prevent blocks; it merely causes
      D_WOULD_BLOCK errors when carrier drops. */
   err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
 				    0, vm_page_size);
+  
   if (err)
     desert_dtr ();
   else 
@@ -444,6 +444,7 @@ device_open_reply (mach_port_t replyport,
 
   err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
 				    0, vm_page_size);
+
   input_pending = 1;
   report_carrier_on ();
   if (err)
