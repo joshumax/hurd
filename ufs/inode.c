@@ -155,6 +155,7 @@ diskfs_try_dropping_softrefs (struct node *np)
 void
 diskfs_lost_hardrefs (struct node *np)
 {
+  struct port_info *pi;
   /* Check and see if there is a pager which has only
      one reference (ours).  If so, then drop that reference,
      breaking the cycle.  The complexity in this routine
@@ -163,9 +164,9 @@ diskfs_lost_hardrefs (struct node *np)
   if (np->dn->fileinfo)
     {
       spin_lock (&_libports_portrefcntlock);
-      if (np->dn->fileinfo->p->pi.refcnt == 1)
+      pi = np->dn->fileinfo->p;
+      if (pi->refcnt == 1)
 	{
-	  struct pager *p;
 	  
 	  /* The only way to get a new reference to the pager
 	     in this state is to call diskfs_get_filemap; this
@@ -216,7 +217,7 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = !! di->di_translator;
+  np->istranslated = !! di->di_trans;
 
   st->st_fstype = FSTYPE_UFS;
   st->st_fsid = pid;
@@ -499,6 +500,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 error_t
 diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 {
+  XXX FIXME
   error_t err;
   daddr_t blkno;
   char *buf;
