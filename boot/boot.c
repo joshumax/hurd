@@ -1750,7 +1750,7 @@ S_io_identity (mach_port_t obj,
 	       mach_msg_type_name_t *idtype,
 	       mach_port_t *fsid,
 	       mach_msg_type_name_t *fsidtype,
-	       int *fileno)
+	       ino_t *fileno)
 {
   return EOPNOTSUPP;
 }
