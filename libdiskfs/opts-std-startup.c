@@ -102,10 +102,12 @@ static const struct argp startup_common_argp =
 /* This may be used with argp_parse to parse standard diskfs startup
    options, possible chained onto the end of a user argp structure.  */
 static const struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
-static const struct argp startup_argp =
-  { startup_options, parse_startup_opt, 0, 0, startup_argp_parents };
 
-const struct argp *diskfs_startup_argp = &startup_argp;
+const struct argp
+diskfs_std_startup_argp =
+{
+  startup_options, parse_startup_opt, 0, 0, startup_argp_parents
+};
 
 /* ---------------------------------------------------------------- */
 
@@ -137,8 +139,8 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_NO_ARGS:
-      fprintf (stderr, "%s: No device specified\n", program_invocation_name);
-      argp_help (state->argp, stderr, ARGP_HELP_STD_ERR); /* exits */
+      argp_error (state, "No device specified");
+      return EINVAL;
 
     default:
       return ARGP_ERR_UNKNOWN;
@@ -147,9 +149,9 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
   return 0;
 }
 
-static const struct argp *dev_startup_argp_parents[] = { &startup_argp, 0 };
-static const struct argp dev_startup_argp =
+static const struct argp *dev_startup_argp_parents[] =
+  { &diskfs_std_startup_argp, 0 };
+
+const struct argp diskfs_std_device_startup_argp = 
   { dev_startup_options, parse_dev_startup_opt, "DEVICE", 0,
       dev_startup_argp_parents };
-
-const struct argp *diskfs_device_startup_argp = &dev_startup_argp;
