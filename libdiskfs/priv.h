@@ -52,6 +52,11 @@ extern const struct argp_option diskfs_common_options[];
 #define OPT_EXEC_OK	601	/* --exec-ok */
 #define OPT_ATIME	602	/* --atime */
 
+/* Common value for diskfs_common_options and diskfs_default_sync_interval. */
+#define DEFAULT_SYNC_INTERVAL 5
+#define DEFAULT_SYNC_INTERVAL_STRING STRINGIFY(DEFAULT_SYNC_INTERVAL)
+#define STRINGIFY(x) STRINGIFY_1(x)
+#define STRINGIFY_1(x) #x
 
 /* Diskfs thinks the disk is dirty if this is set. */
 extern int _diskfs_diskdirty;

@@ -34,7 +34,7 @@ const struct argp_option diskfs_common_options[] =
   {"sync",     's', "INTERVAL", OPTION_ARG_OPTIONAL,
      "If INTERVAL is supplied, sync all data not actually written to disk"
      " every INTERVAL seconds, otherwise operate in synchronous mode (the"
-     " default is to sync every 30 seconds)"},
+     " default is to sync every " DEFAULT_SYNC_INTERVAL_STRING " seconds)"},
   {"no-sync",  'n',  0, 0, "Don't automatically sync data to disk"},
   {"nosync", 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
   {"no-suid",  'S', 0, 0, "Don't permit set-uid or set-gid execution"},

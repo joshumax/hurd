@@ -18,4 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-int diskfs_default_sync_interval = 5;
+#include "priv.h"
+
+int diskfs_default_sync_interval = DEFAULT_SYNC_INTERVAL;
