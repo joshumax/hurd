@@ -243,22 +243,22 @@ struct ext2_inode {
 	u32	i_faddr;		/* Fragment address */
 	union {
 		struct {
-			__u8	l_i_frag;	/* Fragment number */
-			__u8	l_i_fsize;	/* Fragment size */
+			u8	l_i_frag;	/* Fragment number */
+			u8	l_i_fsize;	/* Fragment size */
 			u16	i_pad1;
 			u32	l_i_reserved2[2];
 		} linux2;
 		struct {
-			__u8	h_i_frag;	/* Fragment number */
-			__u8	h_i_fsize;	/* Fragment size */
+			u8	h_i_frag;	/* Fragment number */
+			u8	h_i_fsize;	/* Fragment size */
 			u16	h_i_mode_high;
 			u16	h_i_uid_high;
 			u16	h_i_gid_high;
 			u32	h_i_author;
 		} hurd2;
 		struct {
-			__u8	m_i_frag;	/* Fragment number */
-			__u8	m_i_fsize;	/* Fragment size */
+			u8	m_i_frag;	/* Fragment number */
+			u8	m_i_fsize;	/* Fragment size */
 			u16	m_pad1;
 			u32	m_i_reserved2[2];
 		} masix2;
