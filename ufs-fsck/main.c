@@ -60,7 +60,7 @@ nice_size (long frags)
       u++;
     }
 
-  asprintf (&rep, "%#.4g%c", num, *u);
+  asprintf (&rep, num >= 1000 ? "%.0f%c" : "%.3g%c", num, *u);
 
   return rep;
 }
