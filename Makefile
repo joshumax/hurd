@@ -31,7 +31,7 @@ prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet daemons
-other-subdirs = hurd doc config
+other-subdirs = hurd doc config release
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist =
 working-prog-subdirs := $(filter-out \
