@@ -46,10 +46,12 @@ static char *default_init = "hurd/init";
 
 static void start_execserver ();
 
+static char **saved_argv;
+
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  */
 void
-diskfs_start_bootstrap (void)
+diskfs_start_bootstrap (char **argv)
 {
   mach_port_t root_pt, startup_pt, bootpt;
   retry_type retry;
@@ -64,6 +66,8 @@ diskfs_start_bootstrap (void)
   char *initname, *initnamebuf;
   char *argv;
   int argvlen;
+
+  saved_argv = argv;
 
   /* Get the execserver going and wait for its fsys_startup */
   mutex_init (&execstartlock);
@@ -324,14 +328,11 @@ diskfs_S_fsys_init (mach_port_t port,
      anything which might attempt to send an RPC to init.  */
   fsys_init_reply (reply, replytype, 0);
 
-  /* Allocate our reference here; _hurd_port_set will consume a reference
+  /* Allocate our reference here; _hurd_init will consume a reference
      for the library itself. */
   err = mach_port_mod_refs (mach_task_self (),
 			    authhandle, MACH_PORT_RIGHT_SEND, +1);
   assert (!err);
-
-  _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
-  _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle);
 
   if (diskfs_auth_server_port != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
@@ -351,6 +352,34 @@ diskfs_S_fsys_init (mach_port_t port,
   /* We don't need this anymore. */
   mach_port_deallocate (mach_task_self (), exectask);
   exectask = MACH_PORT_NULL;
+
+  if (_hurd_ports)
+    {
+      /* We already have a portarray, because somebody responded to
+	 exec_startup on our initial bootstrap port, even though we are
+	 supposedly the bootstrap program.  The losing `boot' that runs on
+	 UX does this.  */
+      _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver); /* Consume. */
+      _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle); /* Consume. */
+      _hurd_proc_init (saved_argv);
+    }
+  else
+    {
+      /* We have no portarray or intarray because there was
+	 no exec_startup data; _hurd_init was never called.
+	 We now have the crucial ports, so create a portarray
+	 and call _hurd_init.  */
+      mach_port_t *portarray;
+      unsigned int i;
+      __vm_allocate (__mach_task_self (), (vm_address_t *) &portarray,
+		     INIT_PORT_MAX * sizeof *portarray, 1);
+      if (MACH_PORT_NULL != (mach_port_t) 0)
+	for (i = 0; i < INIT_PORT_MAX; ++i)
+	  portarray[i] = MACH_PORT_NULL;
+      portarray[INIT_PORT_PROC] = procserver;
+      portarray[INIT_PORT_AUTH] = authhandle;
+      _hurd_init (0, saved_argv, portarray, INIT_PORT_MAX, NULL, 0);
+    }  
 
   diskfs_init_completed ();
 
