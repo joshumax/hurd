@@ -1,8 +1,8 @@
 /* Fetching and storing the hypermetadata (superblock and bg summary info)
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -100,7 +100,7 @@ get_hypermetadata (void)
 		block_size);
 
   if (store->size < (sblock->s_blocks_count << log2_block_size))
-    ext2_panic ("disk size (%d bytes) too small; superblock says we need %d",
+    ext2_panic ("disk size (%ld bytes) too small; superblock says we need %d",
 		store->size, sblock->s_blocks_count << log2_block_size);
 
   /* Set these handy variables.  */

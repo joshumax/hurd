@@ -1,8 +1,8 @@
 /* Block allocation routines
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
-   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -45,7 +45,7 @@
 
 #define in_range(b, first, len) ((b) >= (first) && (b) <= (first) + (len) - 1)
 
-void 
+void
 ext2_free_blocks (block_t block, unsigned long count)
 {
   char *bh;
@@ -60,7 +60,7 @@ ext2_free_blocks (block_t block, unsigned long count)
       (block + count) > sblock->s_blocks_count)
     {
       ext2_error ("freeing blocks not in datazone - "
-		  "block = %lu, count = %lu", block, count);
+		  "block = %u, count = %lu", block, count);
       spin_unlock (&global_lock);
       return;
     }
@@ -72,7 +72,7 @@ ext2_free_blocks (block_t block, unsigned long count)
   bit = (block - sblock->s_first_data_block) % sblock->s_blocks_per_group;
   if (bit + count > sblock->s_blocks_per_group)
     ext2_panic ("freeing blocks across group boundary - "
-		"block = %lu, count = %lu",
+		"block = %u, count = %lu",
 		block, count);
   gdp = group_desc (block_group);
   bh = bptr (gdp->bg_block_bitmap);
@@ -82,7 +82,7 @@ ext2_free_blocks (block_t block, unsigned long count)
       in_range (block, gdp->bg_inode_table, itb_per_group) ||
       in_range (block + count - 1, gdp->bg_inode_table, itb_per_group))
     ext2_panic ("freeing blocks in system zones - "
-		"block = %lu, count = %lu",
+		"block = %u, count = %lu",
 		block, count);
 
   for (i = 0; i < count; i++)
@@ -108,7 +108,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 /*
  * ext2_new_block uses a goal block to assist allocation.  If the goal is
  * free, or there is a free block within 32 blocks of the goal, that block
- * is allocated.  Otherwise a forward search is made for a free block; within 
+ * is allocated.  Otherwise a forward search is made for a free block; within
  * each block group the search first looks for an entire free byte in the block
  * bitmap, and then for any free bit if that fails.
  */
@@ -170,7 +170,7 @@ repeat:
       if (j)
 	{
 	  /*
-	     * The goal was occupied; search forward for a free 
+	     * The goal was occupied; search forward for a free
 	     * block within the next 32 blocks
 	   */
 	  lmap = ((((unsigned long *) bh)[j >> 5]) >>
@@ -198,7 +198,7 @@ repeat:
        * of the goal: do a search forward through the block groups,
        * searching in each group first for an entire free byte in
        * the bitmap and then for any free bit.
-       * 
+       *
        * Search first in the remainder of the current group; then,
        * cyclicly search through the rest of the groups.
        */
@@ -223,7 +223,7 @@ repeat:
   ext2_debug ("bit not found in block group %d", i);
 
   /*
-     * Now search the rest of the groups.  We assume that 
+     * Now search the rest of the groups.  We assume that
      * i and gdp correctly point to the last group visited.
    */
   for (k = 0; k < groups_count; k++)
@@ -256,7 +256,7 @@ repeat:
     }
 
 search_back:
-  /* 
+  /*
      * We have succeeded in finding a free byte in the block
      * bitmap.  Now search backwards up to 7 bits to find the
      * start of this group of free blocks.
@@ -348,7 +348,7 @@ got_block:
   return j;
 }
 
-unsigned long 
+unsigned long
 ext2_count_free_blocks ()
 {
 #ifdef EXT2FS_DEBUG
@@ -379,14 +379,14 @@ ext2_count_free_blocks ()
 #endif
 }
 
-static inline int 
+static inline int
 block_in_use (block_t block, unsigned char *map)
 {
   return test_bit ((block - sblock->s_first_data_block) %
 		   sblock->s_blocks_per_group, map);
 }
 
-void 
+void
 ext2_check_blocks_bitmap ()
 {
   char *bh;

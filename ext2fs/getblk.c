@@ -1,8 +1,8 @@
 /* File block to disk block mapping routines
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
 
-   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,14 +38,14 @@
 #include <string.h>
 #include "ext2fs.h"
 
-/* 
+/*
  * ext2_discard_prealloc and ext2_alloc_block are atomic wrt. the
  * superblock in the same manner as are ext2_free_blocks and
  * ext2_new_block.  We just wait on the super rather than locking it
  * here, since ext2_new_block will do the necessary locking and we
  * can't block until then.
  */
-void 
+void
 ext2_discard_prealloc (struct node *node)
 {
 #ifdef EXT2_PREALLOCATE
@@ -235,7 +235,7 @@ ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
       addr_per_block * addr_per_block +
       addr_per_block * addr_per_block * addr_per_block)
     {
-      ext2_warning ("block > big: %lu", block);
+      ext2_warning ("block > big: %u", block);
       return EIO;
     }
   /*
