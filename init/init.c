@@ -74,6 +74,9 @@ mach_msg_type_name_t procreplytype, authreplytype;
 mach_port_t authserver;
 mach_port_t procserver;
 
+/* Our bootstrap port, on which we call fsys_getpriv and fsys_init. */
+mach_port_t bootport;
+
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
 
@@ -135,17 +138,6 @@ crash (void)
   reboot_system (CRASH_FLAGS);
 }
 
-/* The RPC server demultiplexer.  */
-static int
-request_server (mach_msg_header_t *inp,
-		mach_msg_header_t *outp)
-{
-  extern int notify_server (), startup_server ();
-  
-  return (notify_server (inp, outp) ||
-	  startup_server (inp, outp));
-}
-
 /* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS. 
    Set TASK to be the task port of the new image. */
 void
@@ -172,6 +164,8 @@ run (char *server, mach_port_t *ports, task_t *task)
       else
 	{
 	  task_create (mach_task_self (), 0, task);
+	  printf ("Pausing for %s\n", prog);
+	  getchar ();
 	  err = file_exec (file, *task, 0,
 			   NULL, 0, /* No args.  */
 			   NULL, 0, /* No env.  */
@@ -200,8 +194,8 @@ run (char *server, mach_port_t *ports, task_t *task)
 int
 main (int argc, char **argv, char **envp)
 {
+  extern int startup_server (); /* XXX */
   int err;
-  mach_port_t bootport;
   int i;
   mach_port_t ports[INIT_PORT_MAX];
   mach_port_t consdev;
@@ -225,7 +219,10 @@ main (int argc, char **argv, char **envp)
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
   assert (!err);
-  
+  err = mach_port_insert_right (mach_task_self (), startup, startup,
+				MACH_MSG_TYPE_MAKE_SEND);
+  assert (!err);
+
   /* Set up the set of ports we will pass to the programs we exec. */
   for (i = 0; i < INIT_PORT_MAX; i++)
     switch (i)
@@ -251,7 +248,7 @@ main (int argc, char **argv, char **envp)
      run launch_system which does the rest of the boot. */
   while (1)
     {
-      err = mach_msg_server (request_server, 0, startup);
+      err = mach_msg_server (startup_server, 0, startup);
       assert (!err);
     }
 }
@@ -284,20 +281,10 @@ launch_system (void)
   proc_setprocargs (procserver, (int) global_argv, (int) environ);
 
   /* Give the bootstrap FS its proc and auth ports.  */
-  {
-    fsys_t fsys;
-
-    if (errno = file_getcontrol (getcrdir (), &fsys))
-      perror ("file_getcontrol (root)");
-    else
-      {
-	proc_task2proc (procserver, fstask, &fsproc);
-	if (errno = fsys_init (fsys, fsproc, MACH_MSG_TYPE_MOVE_SEND,
-			       authserver))
-	  perror ("fsys_init");
-	mach_port_deallocate (mach_task_self (), fsys);
-      }
-  }
+  proc_task2proc (procserver, fstask, &fsproc);
+  if (errno =  fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
+			  authserver))
+    perror ("fsys_init");
   
   printf ("Init has completed.\n");
 }
@@ -357,3 +344,28 @@ S_startup_authinit (startup_t server,
   return MIG_NO_REPLY;
 }
     
+/* Unimplemented stubs */
+error_t
+S_startup_essential_task (mach_port_t server,
+			  task_t task,
+			  mach_port_t excpt,
+			  char *name)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_startup_request_notification (mach_port_t server,
+				mach_port_t notify)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_startup_reboot (mach_port_t server,
+		  mach_port_t refpt,
+		  int code)
+{
+  return EOPNOTSUPP;
+}
+
