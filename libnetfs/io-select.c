@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,8 +23,7 @@
 
 error_t
 netfs_S_io_select (struct protid *user,
-		   int *type,
-		   int *tag)
+		   int *type)
 {
   if (!user)
     return EOPNOTSUPP;
