@@ -1,3 +1,8 @@
+Fri Aug 16 19:20:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* priv.h (end_using_protid_port): Only call ports_port_deref if
+	CRED is set.
+
 Fri Jul 26 14:34:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-exec.c (netfs_S_file_exec): Unlock NP before we attempt to

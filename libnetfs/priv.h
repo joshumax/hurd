@@ -31,5 +31,6 @@ begin_using_protid_port (file_t port)
 extern inline void
 end_using_protid_port (struct protid *cred)
 {
-  ports_port_deref (cred);
+  if (cred)
+    ports_port_deref (cred);
 }
