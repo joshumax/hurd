@@ -1,3 +1,8 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* devio.c: Add #undef's for B19200, B38400, B57600, B115200, in case
+	they are defined in <device/tty_status.h> too.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* users.c: Include <hurd/fshelp.h> for fshelp_isowner decl.
