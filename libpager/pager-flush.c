@@ -26,7 +26,7 @@ pager_flush (struct pager *p, int wait)
   
   pager_report_extent (p->upi, &offset, &len);
   
-  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_NONE, 1
+  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_NONE, 1,
 	       VM_PROT_NONE, wait);
 }
 
@@ -34,10 +34,10 @@ pager_flush (struct pager *p, int wait)
 /* Have the kernel write back some pages of a pager; if WAIT is set,
    then wait for them to be finally written before returning. */
 void
-pager_sync_some (struct pager *p, vm_address_t offset,
+pager_flush_some (struct pager *p, vm_address_t offset,
 		 vm_size_t size, int wait)
 {
-  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
-	       VM_PROT_NO_CHANGE, wait);
+  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_NONE, 1,
+	       VM_PROT_NONE, wait);
 }
   
