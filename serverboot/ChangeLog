@@ -1,3 +1,10 @@
+2003-05-07  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* strfcns.c: #include <stdarg.h> instead of <varargs.h>.
+	(strbuild): Use <stdarg.h>-style for handling variable argument
+	list.
+	* load.c: Don't #include <varargs.h>.
+
 2002-07-03  Roland McGrath  <roland@frob.com>
 
 	* elf-load.c (exec_load): Fix e_machine checking.
