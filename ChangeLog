@@ -1,3 +1,9 @@
+2001-11-14  Roland McGrath  <roland@frob.com>
+
+	* Makeconf: Include config.make only if it exists.
+	(configured): Set this if we included config.make.
+	[! configured]: Set no_deps=t.
+
 2001-10-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* configure.in: If parted/parted.h is found, define
