@@ -1,3 +1,8 @@
+Mon Sep 30 23:15:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* write.c (noise_write, noise_len): Correctly calculate the length
+	of a character printed using an octal escape.
+
 Thu Sep 12 16:23:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
