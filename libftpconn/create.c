@@ -50,6 +50,9 @@ ftp_conn_create (const struct ftp_conn_params *params,
   new->params = params;
   new->hooks = hooks;
   new->syshooks_valid = 0;
+  new->use_passive = 1;
+  new->actv_data_addr = 0;
+  new->actv_data_conn_queue = -1;
   new->cwd = 0;
   new->type = 0;
   bzero (&new->syshooks, sizeof new->syshooks);
@@ -79,5 +82,7 @@ ftp_conn_free (struct ftp_conn *conn)
     free (conn->line);
   if (conn->reply_txt)
     free (conn->reply_txt);
+  if (conn->actv_data_addr)
+    free (conn->actv_data_addr);
   free (conn);
 }
