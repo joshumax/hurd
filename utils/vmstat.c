@@ -199,7 +199,7 @@ vm_state_refresh (struct vm_state *state)
     return err;
 
   /* Mark the info as invalid, but leave DEF_PAGER alone.  */
-  bzero (&state->def_pager_info, sizeof state->def_pager_info);
+  memset (&state->def_pager_info, 0, sizeof state->def_pager_info);
 
   return 0;
 }
@@ -431,7 +431,7 @@ main (int argc, char **argv)
   /* Construct an options vector for them.  */
   field_opts_size = ((num_fields + 1) * sizeof (struct argp_option));
   field_opts = alloca (field_opts_size);
-  bzero (field_opts, field_opts_size);
+  memset (field_opts, 0, field_opts_size);
 
   for (field = fields; field->name; field++)
     {
@@ -443,7 +443,7 @@ main (int argc, char **argv)
       opt->doc = field->doc;
       opt->group = 2;
     }
-  /* No need to terminate FIELD_OPTS because the bzero above's done so.  */
+  /* No need to terminate FIELD_OPTS because the memset above has done so.  */
 
   field_argp.options = field_opts;
 
@@ -476,7 +476,7 @@ main (int argc, char **argv)
 	       (field)->type, SIZE_UNITS (field))
 
   /* Actually fetch the statistics.  */
-  bzero (&state, sizeof (state)); /* Initialize STATE.  */
+  memset (&state, 0, sizeof (state)); /* Initialize STATE.  */
   err = vm_state_refresh (&state);
   if (err)
     error (2, err, "vm_state_refresh");

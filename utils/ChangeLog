@@ -1,3 +1,8 @@
+2002-06-16  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* vmstat.c (vm_state_refresh): Use memset instead of bzero.
+	(main): Likewise.
+
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console-ncurses.c: File removed (the ncursesw console client is
