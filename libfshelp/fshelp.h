@@ -23,6 +23,11 @@
    presumes that you are using the iohelp library as well.  It
    is divided into separate facilities which may be used independently.  */
 
+#include <errno.h>
+#include <mach.h>
+#include <hurd/hurd_types.h>
+#include <cthreads.h>
+
 
 /* Passive translator linkage */
 /* These routines are self-contained and start passive translators,
@@ -104,7 +109,8 @@ fshelp_fetch_root (struct transbox *transbox, file_t dotdot,
 		   uid_t uids, int uids_len,
 		   uid_t gids, int gids_len,
 		   int flags, fshelp_callback_t callback,
-		   mach_port_t *root);
+		   retry_type *retry, char *retryname,
+		   mach_port_t *root, mach_msg_type_name_t *root_type);
 
 void
 fshelp_transbox_init (struct transbox *transbox,
