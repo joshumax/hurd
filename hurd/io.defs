@@ -29,17 +29,6 @@ subsystem io 21000;
 IO_IMPORTS
 #endif
 
-#ifdef REPLY_PORTS
-type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
-#define RPTDECL	sreplyport reply: reply_port_t
-#define RPT	RPTDECL;
-#define RPTLAST	; RPTDECL
-#else
-#define RPTLAST
-#define RPT
-#endif
-
 
 /* Write data to an IO object.  If offset is -1, write at the object
    maintained file pointer.  If the object is not seekable, offset is
