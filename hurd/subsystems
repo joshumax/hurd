@@ -26,6 +26,7 @@ socket 		26000	Sockets
 newterm		27000	Creation of terminal processing thingies
 term		28000	Terminal-specific operations
 startup		29000	System initialization and destruction
+startup_notify	29500	Callbacks from startup server
 exec		30000	Process execution
 exec_startup	30500	Process startup communication
 crash		32000	Program crash handling (core dumps)
