@@ -801,6 +801,50 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   return 0;
 }
 
+error_t
+trivfs_S_io_revoke (struct trivfs_protid *cred)
+{
+  struct stat st;
+  
+  error_t
+    iterator_function (void *port)
+    {
+      struct trivfs_proted *user = port;
+      
+      if ((user.class == cred.class) && (user != cred))
+	ports_destroy_right (user);
+      return 0;
+    }
+
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+
+  if (!cred->isroot)
+    {
+      /* XXX */
+      st.st_uid = term_owner;
+      st.st_gid = term_group;
+  
+      err = fshelp_isowner (&st, cred->user);
+      if (err)
+	{
+	  mutex_unlock (&global_lock);
+	  return err;
+	}
+    }
+  
+  ports_bucket_iterate (term_bucket, iterator_function);
+
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+      
+      
+
+
 /* TIOCMODG ioctl -- Get modem state */
 kern_return_t
 S_tioctl_tiocmodg (io_t port,
