@@ -90,7 +90,7 @@ struct ucred {
 };
 
 
-extern inline int
+extern inline int		/* Does not modify IOV.  */
 memcpy_fromiovecend (unsigned char *kdata, struct iovec *iov,
 		     int offset, int len)
 {
@@ -98,25 +98,28 @@ memcpy_fromiovecend (unsigned char *kdata, struct iovec *iov,
   memcpy (kdata, iov->iov_base + offset, len);
   return 0;
 }
-extern inline int
+extern inline int		/* Modifies IOV to consume LEN bytes.  */
 memcpy_fromiovec (unsigned char *kdata, struct iovec *iov, int len)
 {
   assert (len <= iov->iov_len);
   memcpy (kdata, iov->iov_base, len);
+  iov->iov_base += len;
+  iov->iov_len -= len;
   return 0;
 }
-extern inline int
-memcpy_toiovec (struct iovec *iov, unsigned char *kdata, int len)
-{
-  assert (len <= iov->iov_len);
-  memcpy (iov->iov_base, kdata, len);
-  return 0;
-}
-extern inline void
+extern inline void		/* Modifies IOV to consume LEN bytes.  */
 memcpy_tokerneliovec (struct iovec *iov, unsigned char *kdata, int len)
 {
   assert (len <= iov->iov_len);
   memcpy (iov->iov_base, kdata, len);
+  iov->iov_base += len;
+  iov->iov_len -= len;
+}
+extern inline int		/* Modifies IOV to consume LEN bytes.  */
+memcpy_toiovec (struct iovec *iov, unsigned char *kdata, int len)
+{
+  memcpy_tokerneliovec (iov, kdata, len);
+  return 0;
 }
 
 extern int csum_partial_copy_fromiovecend(unsigned char *kdata,
