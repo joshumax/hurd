@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include <string.h>
+#include <fcntl.h>
 
 /* Actually read or write a file.  The file size must already permit
    the requested access.  NP is the file to read/write.  DATA is a buffer
@@ -36,7 +37,8 @@ _diskfs_rdwr_internal (struct node *np,
   int winoff;
   volatile int cc;
   memory_object_t memobj;
-  int err = 0;
+  vm_prot_t prot = dir ? (VM_PROT_READ | VM_PROT_WRITE) : VM_PROT_READ;
+  error_t err = 0;
 
   if (dir)
     assert (!diskfs_readonly);
@@ -49,7 +51,7 @@ _diskfs_rdwr_internal (struct node *np,
 	np->dn_set_atime = 1;
     }
   
-  memobj = diskfs_get_filemap (np);
+  memobj = diskfs_get_filemap (np, prot);
   
   while (amt > 0)
     {
@@ -60,8 +62,7 @@ _diskfs_rdwr_internal (struct node *np,
 	 vax has a 1024 pagesize and with 8k blocks that seems like a
 	 reasonable number. */
       err = vm_map (mach_task_self (), (u_int *)&window, 8 * __vm_page_size, 
-		    0, 1, memobj, winoff, 0, VM_PROT_READ|VM_PROT_WRITE, 
-		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
+		    0, 1, memobj, winoff, 0, prot, prot, VM_INHERIT_NONE);
       assert_perror (err);
       diskfs_register_memory_fault_area (diskfs_get_filemap_pager_struct (np), 
 					 winoff, window, 8 * __vm_page_size);
