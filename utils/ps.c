@@ -426,7 +426,7 @@ main(int argc, char *argv[])
 	      const char *name = ps_tty_name (tty);
 	      const char *short_name = ps_tty_short_name(tty);
 
-	      while (try = argz_next (tty_names, num_tty_names, try))
+	      while ((try = argz_next (tty_names, num_tty_names, try)))
 		if ((name && strcmp (try, name) == 0)
 		    || (short_name && strcmp (try, short_name) == 0))
 		  return TRUE;
