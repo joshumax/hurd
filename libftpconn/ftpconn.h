@@ -1,8 +1,8 @@
 /* Manage an ftp connection
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -60,7 +60,7 @@ struct ftp_conn_syshooks
      of the host referenced by the PASV reply contained in TXT.  */
   error_t (*pasv_addr) (struct ftp_conn *conn, const char *txt,
 			struct sockaddr **addr);
-  
+
   /* Look at the error string in TXT, and try to guess an error code to
      return.  If POSS_ERRS is non-zero, it contains a list of errors
      that are likely to occur with the previous command, terminated with 0.
@@ -238,7 +238,6 @@ error_t ftp_conn_open (struct ftp_conn *conn);
 
 void ftp_conn_close (struct ftp_conn *conn);
 
-#ifdef __OPTIMIZE__
 /* Makes sure that CONN's syshooks are set according to the remote system
    type.  */
 FTP_CONN_EI error_t
@@ -250,7 +249,6 @@ ftp_conn_validate_syshooks (struct ftp_conn *conn)
     /* Opening the connection should set the syshooks.  */
     return ftp_conn_open (conn);
 }
-#endif /* __OPTIMIZE__ */
 
 /* Create a new ftp connection as specified by PARAMS, and return it in CONN;
    HOOKS contains customization hooks used by the connection.  Neither PARAMS
@@ -365,7 +363,7 @@ error_t ftp_conn_cont_get_names (struct ftp_conn *conn, int fd, void *state,
 
 /* Get a list of names in the directory NAME, calling ADD_NAME for each one
    (HOOK is passed to ADD_NAME).  This function may block.  */
-error_t ftp_conn_get_names (struct ftp_conn *conn, const char *name, 
+error_t ftp_conn_get_names (struct ftp_conn *conn, const char *name,
 			    ftp_conn_add_name_fun_t add_name, void *hook);
 
 /* Give a name which refers to a directory file, and a name in that
