@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,6 +23,7 @@
 #include "pfinet.h"
 
 struct mutex global_lock = MUTEX_INITIALIZER;
+struct mutex packet_queue_lock = MUTEX_INITIALIZER;
 
 struct task_struct current_contents;
 struct task_struct *current = &current_contents;

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -33,6 +33,7 @@ void incoming_net_packet (void);
 extern struct proto_ops *proto_ops;
 
 struct mutex global_lock;
+struct mutex packet_queue_lock;
 
 struct port_bucket *pfinet_bucket;
 struct port_class *addrport_class;
