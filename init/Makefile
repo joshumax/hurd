@@ -21,14 +21,14 @@ include ../Makeconf
 
 DIST_FILES = Makefile init.c
 
-OBJS = init.o startupServer.o startup_replyUser.o
+OBJS = init.o startupServer.o startup_replyUser.o notifyServer.o
 
 all: init
 
 init: $(OBJS)
 	$(link)
 
-init.o: startup_S.h startup_reply.h
+init.o: startup_S.h startup_reply.h notify_S.h
 
 install: init $(hurdroot)
 	cp init $(hurdroot)/hurd/init
@@ -41,6 +41,10 @@ startup_S.h startupServer.c: $(headers)/hurd/startup.defs $(headers)/hurd/hurd_t
 startup_reply.h startup_replyUser.c: $(headers)/hurd/startup_reply.defs $(headers)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) $(headers)/hurd/startup_reply.defs \
 	| $(MIGCOM) -server /dev/null
+
+notify_S.h notifyServer.c: $(headers)/mach/notify.defs
+	$(CPP) $(CPPFLAGS)  $(headers)/mach/notify.defs \
+	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
 
 clean:
 	rm -f init *.o
