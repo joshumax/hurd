@@ -39,7 +39,11 @@ diskfs_S_dir_rename (struct protid *fromcred,
     return EOPNOTSUPP;
 
   /* Verify that tocred really is a port to us. */
-  if (!tocred)
+  if (! tocred)
+    return EXDEV;
+
+  if (tocred->po->shadow_root != fromcred->po->shadow_root)
+    /* Same translator, but in different shadow trees.  */
     return EXDEV;
 
   if (diskfs_check_readonly ())
@@ -53,8 +57,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
      will prevent anyone from deleting it before we create
      the new link. */
   mutex_lock (&fdp->lock);
-  err = diskfs_lookup (fdp, fromname, LOOKUP, &fnp, 0, fromcred,
-		       fromcred->po->depth, 0);
+  err = diskfs_lookup (fdp, fromname, LOOKUP, &fnp, 0, fromcred);
   mutex_unlock (&fdp->lock);
   if (err == EAGAIN)
     err = EINVAL;
@@ -102,8 +105,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* Link the node into the new directory. */
   mutex_lock (&tdp->lock);
   
-  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred,
-		       tocred->po->depth, 0);
+  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   if (err == EAGAIN)
     err = EINVAL;
   else if (!err && excl)
@@ -186,8 +188,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
      fdp locked (nor could we), so someone else might have already
      removed it. */
   mutex_lock (&fdp->lock);
-  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred,
-		       fromcred->po->depth, 0);
+  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   if (err)
     {
       diskfs_drop_dirstat (tdp, ds);
