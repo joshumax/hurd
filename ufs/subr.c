@@ -41,8 +41,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
  *	@(#)ufs_subr.c	7.13 (Berkeley) 6/28/90
  */
 
+#include "ufs.h"
+#include "fs.h"
 
-#include <assert.h>
 
 extern	int around[9];
 extern	int inside[9];
