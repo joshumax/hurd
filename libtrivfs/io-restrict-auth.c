@@ -34,8 +34,11 @@ trivfs_S_io_restrict_auth (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  newcred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
+  newcred = ports_allocate_port (sizeof (struct protid), 
+				 trivfs_protid_porttype);
   newcred->isroot = 0;
+  newcred->cntl = cred->cntl;
+  ports_port_ref (newcred->cntl);
   if (cred->isroot)
     {
       for (i = 0; i < nuids; i++)
