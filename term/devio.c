@@ -59,8 +59,7 @@ static int npending_output;
 static struct port_class *phys_reply_class;
 
 /* The Mach device_t representing the terminal. */
-/* XXX static */
-device_t phys_device = MACH_PORT_NULL;
+static device_t phys_device = MACH_PORT_NULL;
 
 /* The ports we get replies on for device calls. */
 static mach_port_t phys_reply_writes = MACH_PORT_NULL;
