@@ -336,9 +336,8 @@ S_proc_getprocinfo (struct proc *callerp,
   else
     nthreads = 0;
 
-  structsize = (sizeof (struct procinfo)
-		+ nthreads * sizeof (struct thread_basic_info)
-		+ nthreads * sizeof (struct thread_sched_info));
+  structsize =
+    sizeof (struct procinfo) + nthreads * sizeof (pi->threadinfos[0]);
 
   if (structsize / sizeof (int) > *piarraylen)
     {
