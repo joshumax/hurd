@@ -1,3 +1,9 @@
+Tue Nov 19 18:28:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (read_disknode): If SBLOCK->fs_inodefmt < FS_44INODEFMT,
+	set ST->st_author to st->st_uid, and NP->author_tracks_uid to true.
+	(diskfs_validate_author_change): New function.
+
 Mon Nov 18 17:10:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (read_disknode): When setting ST->st_mode, Clear

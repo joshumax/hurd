@@ -1,3 +1,8 @@
+Tue Nov 19 18:30:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (read_node): If SBLOCK->s_creator_os != EXT2_OS_HURD,
+	set NP->author_tracks_uid to true.
+
 Mon Nov 18 17:14:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ialloc.c (diskfs_alloc_node): Clear S_IPTRANS bit in ST->st_mode
