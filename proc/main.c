@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -66,13 +66,16 @@ main (int argc, char **argv, char **envp)
 
   initialize_version_info ();
 
-  task_get_bootstrap_port (mach_task_self (), &boot);
+  err = task_get_bootstrap_port (mach_task_self (), &boot);
+  assert_perror (err);
+  if (boot == MACH_PORT_NULL)
+    error (2, 0, "proc server can only be run by init during boot");
 
   proc_bucket = ports_create_bucket ();
   proc_class = ports_create_class (0, 0);
   generic_port_class = ports_create_class (0, 0);
   exc_class = ports_create_class (exc_clean, 0);
-  ports_create_port (generic_port_class, proc_bucket, 
+  ports_create_port (generic_port_class, proc_bucket,
 		     sizeof (struct port_info), &genport);
   generic_port = ports_get_right (genport);
 
@@ -85,7 +88,7 @@ main (int argc, char **argv, char **envp)
 			  startup_port, MACH_MSG_TYPE_MAKE_SEND);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
 			  &authserver, &master_host_port, &master_device_port);
-  assert (!err);
+  assert_perror (err);
   mach_port_deallocate (mach_task_self (), startup_port);
 
   mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
@@ -102,13 +105,13 @@ main (int argc, char **argv, char **envp)
   /* Give ourselves good scheduling performance, because we are so
      important. */
   err = thread_get_assignment (mach_thread_self (), &pset);
-  assert (!err);
+  assert_perror (err);
   err = host_processor_set_priv (master_host_port, pset, &psetcntl);
-  assert (!err);
+  assert_perror (err);
   thread_max_priority (mach_thread_self (), psetcntl, 0);
-  assert (!err);
+  assert_perror (err);
   err = task_priority (mach_task_self (), 2, 1);
-  assert (!err);
+  assert_perror (err);
 
   mach_port_deallocate (mach_task_self (), pset);
   mach_port_deallocate (mach_task_self (), psetcntl);
