@@ -25,10 +25,10 @@ error_t
 netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
 		    struct protid *todiruser, char *toname)
 {
-  errort err;
+  error_t err;
   
   if (!fromdiruser)
-    return EOPRONSUPP;
+    return EOPNOTSUPP;
 
   if (!todiruser)
     return EXDEV;
@@ -38,8 +38,6 @@ netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
 			      fromname, todiruser->po->np, toname);
   if (!err)
     mach_port_deallocate (mach_task_self (), todiruser->pi.port_right);
+  return err;
 }
-
-  
-  
 
