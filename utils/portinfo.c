@@ -49,7 +49,7 @@ static const struct argp_option options[] = {
   {"receive",	'r', 0, 0, "Show ports with receive rights"},
   {"send",	's', 0, 0, "Show ports with send rights"},
   {"send-once",	'o', 0, 0, "Show ports with send once rights"},
-  {"dead-names",'d', 0, 0, "Show ports with dead name rights"},
+  {"dead-names",'d', 0, 0, "Show dead names"},
   {"port-sets",	'p', 0, 0, "Show port sets"},
 
   {0,0,0,0, "Translating port names between tasks:", 3},
@@ -142,7 +142,7 @@ main (int argc, char **argv)
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
-	  argp_error (state, "No process specified");
+	  argp_usage (state);
 	  return EINVAL;
 
 	case ARGP_KEY_ARG:
