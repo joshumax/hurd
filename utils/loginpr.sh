@@ -6,13 +6,15 @@
 # pseudo-user `login'.
 #
 
-prompt='
-login: '
+prompt='login: '
 user=''
 
-while [ ! "$user" ]; do
+test "$_LOGIN_RETRY" && echo ''
+unset _LOGIN_RETRY
+
+until [ "$user" ]; do
   echo -n "$prompt"
   read user args || exit 0
 done
 
-exec login "$@" --paranoid --retry="$0" "$user" $args
+exec login "$@" -p --paranoid -R-aSHELL="$0" -R-aMOTD -R-p -R-e_LOGIN_RETRY=yes "$user" $args
