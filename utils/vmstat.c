@@ -24,12 +24,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <version.h>
 
 #include <mach.h>
 #include <mach/vm_statistics.h>
 #include <mach/default_pager.h>
 #include <hurd.h>
+#include <hurd/paths.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (vmstat);
 
@@ -245,19 +247,32 @@ ensure_def_pager_info (struct vm_state *state)
       mach_port_t host;
 
       err = get_privileged_ports (&host, 0);
-      if (err)
+      if (err == EPERM)
 	{
-	  error (0, err, "get_privileged_ports");
-	  return 0;
+	  /* We are not root, so try opening the /servers file.  */
+	  state->def_pager = file_name_lookup (_SERVERS_DEFPAGER, O_READ, 0);
+	  if (state->def_pager == MACH_PORT_NULL)
+	    {
+	      error (0, errno, _SERVERS_DEFPAGER);
+	      return 0;
+	    }
 	}
-
-      err = vm_set_default_memory_manager (host, &state->def_pager);
-      mach_port_deallocate (mach_task_self (), host);
-
-      if (err)
+      if (state->def_pager == MACH_PORT_NULL)
 	{
-	  error (0, err, "vm_set_default_memory_manager");
-	  return 0;
+	  if (err)
+	    {
+	      error (0, err, "get_privileged_ports");
+	      return 0;
+	    }
+
+	  err = vm_set_default_memory_manager (host, &state->def_pager);
+	  mach_port_deallocate (mach_task_self (), host);
+
+	  if (err)
+	    {
+	      error (0, err, "vm_set_default_memory_manager");
+	      return 0;
+	    }
 	}
     }
 
