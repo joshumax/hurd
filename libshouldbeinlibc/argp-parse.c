@@ -316,8 +316,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	/* A long option.  We use shifts instead of masking for extracting
 	   the user value in order to preserve the sign.  */
 	err =
-	  (*groups[group_key - 1].parser)(((opt << GROUP_BITS) >> GROUP_BITS),
-					  optarg, &state);
+	  group_parse (&groups[group_key - 1],
+		       (opt << GROUP_BITS) >> GROUP_BITS, optarg);
+
       return err;
     }
 
