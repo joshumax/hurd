@@ -404,6 +404,9 @@ pager_report_extent (struct user_pager_info *pager,
 
     case SINDIR:
       {
+	/* This computation is known to sin_remap below, as
+	   is the static `*offset = 0' assignment above. */
+
 	int sizet;
 
 	/* sizet = disk size of the file */
@@ -564,13 +567,13 @@ sin_remap (struct node *np,
       port = pager_get_port (upi->p);
       mach_port_insert_right (mach_task_self (), port, port,
 			      MACH_MSG_TYPE_MAKE_SEND);
-      err = vm_map (mach_task_self (), (u_int *)&np->dn->sinloc, size,
+      err = vm_map (mach_task_self (), (u_int *)&np->dn->sinloc, newsize,
 		    0, 1, port, 0, 0, VM_PROT_READ|VM_PROT_WRITE,
 		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
       mach_port_deallocate (mach_task_self (), port);
       assert (!err);
       diskfs_register_memory_fault_area (np->dn->sininfo->p, 0,
-					 np->dn->sinloc, size);
+					 np->dn->sinloc, newsize);
     }
   mutex_unlock (&pagernplock);
 }
