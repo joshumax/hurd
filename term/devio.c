@@ -502,41 +502,39 @@ device_open_reply (mach_port_t replyport,
 static void
 devio_set_bits ()
 {
-  struct tty_status ttystat;
-  int cnt = TTY_STATUS_COUNT;
+  if (!(termstate.c_cflag & CIGNORE) && phys_device != MACH_PORT_NULL)
+    {
+      struct tty_status ttystat;
+      int cnt = TTY_STATUS_COUNT;
 
-  assert (!(termstate.c_cflag & CIGNORE));
-
-  if (phys_device == MACH_PORT_NULL)
-    return;
-
-  /* Find the current state. */
-  device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
-  if (termstate.__ispeed)
-    real_speed_to_bogus_speed (termstate.__ispeed, &ttystat.tt_ispeed);
-  if (termstate.__ospeed)
-    real_speed_to_bogus_speed (termstate.__ospeed, &ttystat.tt_ospeed);
+      /* Find the current state. */
+      device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
+      if (termstate.__ispeed)
+	real_speed_to_bogus_speed (termstate.__ispeed, &ttystat.tt_ispeed);
+      if (termstate.__ospeed)
+	real_speed_to_bogus_speed (termstate.__ospeed, &ttystat.tt_ospeed);
   
-  /* Try and set it. */
-  device_set_status (phys_device, TTY_STATUS,
-		     (dev_status_t) &ttystat, TTY_STATUS_COUNT);
+      /* Try and set it. */
+      device_set_status (phys_device, TTY_STATUS,
+			 (dev_status_t) &ttystat, TTY_STATUS_COUNT);
 
-  /* And now make termstate match reality. */
-  cnt = TTY_STATUS_COUNT;
-  device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
-  termstate.__ispeed = bogus_speed_to_real_speed (ttystat.tt_ispeed);
-  termstate.__ospeed = bogus_speed_to_real_speed (ttystat.tt_ospeed);
+      /* And now make termstate match reality. */
+      cnt = TTY_STATUS_COUNT;
+      device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
+      termstate.__ispeed = bogus_speed_to_real_speed (ttystat.tt_ispeed);
+      termstate.__ospeed = bogus_speed_to_real_speed (ttystat.tt_ospeed);
   
-  /* Mach forces us to use the normal stop bit convention:
-     two bits at 110 bps; 1 bit otherwise. */
-  if (termstate.__ispeed == 110)
-    termstate.c_cflag |= CSTOPB;
-  else
-    termstate.c_cflag &= ~CSTOPB;
+      /* Mach forces us to use the normal stop bit convention:
+	 two bits at 110 bps; 1 bit otherwise. */
+      if (termstate.__ispeed == 110)
+	termstate.c_cflag |= CSTOPB;
+      else
+	termstate.c_cflag &= ~CSTOPB;
   
-  /* Mach only supports 8 bit channels.  So wark the CSIZE to conform. */
-  termstate.c_cflag = ((termstate.c_cflag & ~CSIZE)
-		       | ((termstate.c_cflag & PARENB) ? CS7 : CS8));
+      /* Mach only supports 8 bit channels.  So wark the CSIZE to conform. */
+      termstate.c_cflag = ((termstate.c_cflag & ~CSIZE)
+			   | ((termstate.c_cflag & PARENB) ? CS7 : CS8));
+    }
 }
   
 static void
