@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.4  1995/04/04 21:04:29  roland
+ * (mutex_lock_solid, mutex_unlock_solid): Renamed to __*.
+ * (_cthread_mutex_lock_routine, _cthread_mutex_unlock_routine): Variables
+ * removed.
+ *
  * Revision 1.3  1994/05/19  04:55:30  roland
  * entered into RCS
  *
@@ -773,18 +778,61 @@ condition_wait(c, m)
 	mutex_lock(m);
 }
 
+/* Declare that IMPLICATOR should consider IMPLICATAND's waiter queue
+   to be an extension of its own queue.  It is an error for either
+   condition to be deallocated as long as the implication persists. */
 void
+condition_implies (condition_t implicator, condition_t implicatand)
+{
+  struct cond_imp *imp;
+  
+  imp = malloc (sizeof (struct cond_imp));
+  imp->implicatand = implicatand;
+  imp->next = implicator->implies;
+  implicator->implies = imp;
+}
+
+/* Declare that the implication relationship from IMPLICATOR to
+   IMPLICATAND should cease. */
+void
+condition_unimplies (condition_t implicator, condition_t implicatand)
+{
+  struct cond_imp **impp;
+  
+  for (impp = &implicator->implies; *impp; impp = (*impp)->next)
+    {
+      if ((*impp)->implicatand == implicatand)
+	{
+	  struct cond_imp *tmp = *impp;
+	  *impp = (*impp)->next;
+	  free (tmp);
+	  return;
+	}
+    }
+}
+
+/* Signal one waiter on C.  If there were no waiters at all, return
+   0, else return 1. */
+int
 cond_signal(c)
 	register condition_t c;
 {
 	register cproc_t p;
+	struct cond_imp *imp;
 
 	spin_lock(&c->lock);
 	cthread_queue_deq(&c->queue, cproc_t, p);
 	spin_unlock(&c->lock);
 	if (p != NO_CPROC) {
 		cproc_ready(p,0);
+		return 1;
 	}
+	else {
+		for (imp = c->implications; imp; imp = imp->next)
+			if (cond_signal (imp->implicatand))
+				return 1;
+        }
+	return 0;
 }
 
 void
@@ -793,6 +841,7 @@ cond_broadcast(c)
 {
 	register cproc_t p;
 	struct cthread_queue blocked_queue;
+	struct cond_imp *imp;
 
 	cthread_queue_init(&blocked_queue);
 
@@ -813,6 +862,9 @@ cond_broadcast(c)
 			break;
 		cproc_ready(p,0);
 	}
+
+	for (imp = c->implications; imp; imp = imp->next)
+		condition_broadcast (imp->implicatand);
 }
 
 void
