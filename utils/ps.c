@@ -1,6 +1,6 @@
 /* Show process information.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -94,14 +94,14 @@ static const struct argp_option options[] =
   {"tail",	 0,       0,      OPTION_ALIAS},
   {"width",      'w',     "WIDTH",OA, "If WIDTH is given, try to format the"
                                       " output for WIDTH columns, otherwise,"
-				      " remove the default limit"}, 
+				      " remove the default limit"},
   {0, 0}
 };
 
 static const char doc[] =
 "Show information about processes PID... (default all `interesting' processes)"
 "\vThe USER, LID, PID, PGRP, and SID arguments may also be comma separated"
-" lists.  The System V options -u and -g may be accessed with -O and -G."; 
+" lists.  The System V options -u and -g may be accessed with -O and -G.";
 
 #define FILTER_OWNER		0x01
 #define FILTER_NOT_LEADER	0x02
@@ -162,7 +162,7 @@ lookup_user (const char *name, struct argp_state *state)
   return pw->pw_uid;
 }
 
-void 
+int
 main(int argc, char *argv[])
 {
   error_t err;
@@ -189,7 +189,7 @@ main(int argc, char *argv[])
   pid_t *pids = 0;		/* User-specified pids.  */
   size_t num_pids = 0;
   struct pids_argp_params pids_argp_params = { &pids, &num_pids, 1 };
-    
+
   /* Add a user who's processes should be printed out.  */
   error_t add_uid (uid_t uid, struct argp_state *state)
     {
@@ -438,5 +438,5 @@ main(int argc, char *argv[])
 	 output_width, print_heading,
 	 squash_bogus_fields, squash_nominal_fields, top);
 
-  exit (0);
+  return 0;
 }

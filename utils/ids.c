@@ -1,6 +1,6 @@
 /* Show all hurd ids
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -47,7 +47,7 @@ static char *doc = "Show hurd uids/gids."
 
 /* ---------------------------------------------------------------- */
 
-void 
+int
 main(int argc, char *argv[])
 {
   error_t err;
@@ -192,5 +192,5 @@ main(int argc, char *argv[])
 		   show_eff ? "available" : 0);
     }
 
-  exit (0);
+  return 0;
 }

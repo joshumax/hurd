@@ -1,6 +1,6 @@
 /* Set options in a running filesystem
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -49,7 +49,7 @@ static char *doc = "Get or set command line options for running translator FILES
 
 /* ---------------------------------------------------------------- */
 
-void 
+int
 main(int argc, char *argv[])
 {
   error_t err;
@@ -124,5 +124,5 @@ main(int argc, char *argv[])
       puts (argz);
     }
 
-  exit(0);
+  return 0;
 }

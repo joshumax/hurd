@@ -1,6 +1,6 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -67,7 +67,7 @@ static char *doc = "Set the passive/active translator on NODE."
 
 /* ---------------------------------------------------------------- */
 
-void 
+int
 main(int argc, char *argv[])
 {
   error_t err;
@@ -210,5 +210,5 @@ main(int argc, char *argv[])
   if (err)
     error(5, err, "%s", node_name);
 
-  exit(0);
+  return 0;
 }

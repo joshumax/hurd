@@ -1,6 +1,6 @@
 /* Show where a file exists
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -182,7 +182,7 @@ print_store (struct store *store, int level, unsigned what)
       print_store (store->children[i], level + 1, what);
 }
 
-void 
+int
 main(int argc, char *argv[])
 {
   int deref = 0, print_prefix = -1;
@@ -251,5 +251,5 @@ main(int argc, char *argv[])
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  exit(0);
+  return 0;
 }

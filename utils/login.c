@@ -1,6 +1,6 @@
 /* Hurdish login
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -365,7 +365,7 @@ dog (time_t timeout, pid_t pid, char **argv)
     }
 }
 
-void
+int
 main(int argc, char *argv[])
 {
   int i;
@@ -857,7 +857,7 @@ main(int argc, char *argv[])
 
   /* No more authentications to fail, so cross our fingers and add our utmp
      entry.  */
-  
+
   if (pid == sid)
     /* Only add utmp entries for the session leader.  */
     add_utmp_entry (args, args_len, !idvec_contains (&parent_uids, 0));
@@ -885,5 +885,5 @@ main(int argc, char *argv[])
   if (err)
     error(5, err, "%s", shell);
 
-  exit(0);
+  return 0;
 }

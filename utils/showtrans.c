@@ -1,6 +1,6 @@
 /* Show files' passive translators.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -49,7 +49,7 @@ static char *doc = "Show the passive translator of FILE..."
 
 /* ---------------------------------------------------------------- */
 
-void 
+int
 main (int argc, char *argv[])
 {
   /* The default exit status -- changed to 0 if we find any translators.  */
@@ -139,5 +139,5 @@ main (int argc, char *argv[])
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  exit (status);
+  return status;
 }
