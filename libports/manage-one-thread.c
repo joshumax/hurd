@@ -1,6 +1,6 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Writtenb by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
 
@@ -39,7 +39,7 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
       if (pi)
 	{
-	  err = ports_begin_rpc (pi, &link);
+	  err = ports_begin_rpc (pi, inp->msgh_id, &link);
 	  if (err)
 	    {
 	      mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
@@ -66,5 +66,3 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 				   timeout ? MACH_RCV_TIMEOUT : 0, timeout);
   while (err != MACH_RCV_TIMED_OUT);
 }
-
-      
