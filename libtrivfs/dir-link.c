@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,7 +21,7 @@
 kern_return_t
 trivfs_S_dir_link (struct trivfs_protid *dir, 
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   struct trivfs_protid *file, char *name)
+		   struct trivfs_protid *file, char *name, int excl)
 {
   if (!file)
     return EOPNOTSUPP;
