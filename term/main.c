@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -53,7 +53,7 @@ main (int argc, char **argv)
   struct port_class *ourclass, *ourcntlclass;
   struct port_class *peerclass, *peercntlclass;
   struct trivfs_control **ourcntl, **peercntl;
-  mach_port_t bootstrap;
+  mach_port_t bootstrap, right;
   enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type;
   struct stat st;
 
@@ -150,10 +150,12 @@ main (int argc, char **argv)
 	errno = trivfs_create_control (file, peercntlclass, term_bucket,
 				       peerclass, term_bucket, peercntl);
       if (! errno)
-	errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
-				     0, 0, 0,
-				     ports_get_right (*peercntl),
-				     MACH_MSG_TYPE_MAKE_SEND);
+	{
+	  right = ports_get_send_right (*peercntl);
+	  errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
+				     0, 0, 0, right, MACH_MSG_TYPE_COPY_SEND);
+	  mach_port_deallocate (mach_task_self (), right);
+	}
 
       if (errno)
 	{
