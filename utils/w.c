@@ -401,6 +401,7 @@ main(int argc, char *argv[])
 	case 'u': show_entries = 0; break;
 	case 'U': show_uptime = 0; break;
 	case 'n': raw_hosts = 1; break;
+	case 'w': output_width = arg ? atoi (arg) : 0; break;
 
 	case ARGP_KEY_ARG:
 	  break;
