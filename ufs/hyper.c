@@ -25,8 +25,6 @@ static int oldformat = 0;
 void
 get_hypermetadata (void)
 {
-  error_t err;
-  
   sblock = malloc (SBSIZE);
 
   assert (!diskfs_catch_exception ());
@@ -118,6 +116,8 @@ diskfs_set_hypermetadata (int wait, int clean)
 void
 copy_sblock ()
 {
+  int clean = 1;		/* XXX wrong... */
+  
   assert (!diskfs_catch_exception ());
 
   spin_lock (&alloclock);
