@@ -22,6 +22,7 @@
 #include <hurd/hurd_types.h>
 #include <string.h>
 #include <hurd/ports.h>
+#include <termios.h>
 #include "term.h"
 
 /* Set if we need a wakeup when tty output has been done */
