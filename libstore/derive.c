@@ -1,6 +1,6 @@
 /* Calculation of various derived store fields
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -41,7 +41,7 @@ _store_derive (struct store *store)
       if (runs[0] >= 0)
 	store->blocks += runs[1];
       runs += 2;
-      runs_len--;
+      runs_len -= 2;
     }
 
   /* LOG2_BLOCK_SIZE */
