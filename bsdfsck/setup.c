@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)setup.c	8.2 (Berkeley) 2/21/94";*/
-static char *rcsid = "$Id: setup.c,v 1.2 1994/08/23 20:03:11 mib Exp $";
+static char *rcsid = "$Id: setup.c,v 1.3 1994/08/25 15:22:35 mib Exp $";
 #endif /* not lint */
 
 #define DKTYPENAMES
@@ -43,7 +43,7 @@ static char *rcsid = "$Id: setup.c,v 1.2 1994/08/23 20:03:11 mib Exp $";
 #include "../ufs/fs.h"
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/disklabel.h>
+/* #include <sys/disklabel.h> */
 #include <sys/file.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -62,7 +62,7 @@ setup(dev)
 {
 	long cg, size, asked, i, j;
 	long bmapsize;
-	struct disklabel *lp;
+/*	struct disklabel *lp; */
 	off_t sizepb;
 	struct stat statb;
 	struct fs proto;
@@ -100,9 +100,11 @@ setup(dev)
 	asblk.b_un.b_buf = malloc(SBSIZE);
 	if (sblk.b_un.b_buf == NULL || asblk.b_un.b_buf == NULL)
 		errexit("cannot allocate space for superblock\n");
+#if 0
 	if (lp = getdisklabel((char *)NULL, fsreadfd))
 		dev_bsize = secsize = lp->d_secsize;
 	else
+#endif
 		dev_bsize = secsize = DEV_BSIZE;
 	/*
 	 * Read in the superblock, looking for alternates if necessary
@@ -391,6 +393,16 @@ badsb(listerr, s)
 	pfatal("BAD SUPER BLOCK: %s\n", s);
 }
 
+/* XXX */
+calcsb (dev, devfd, fs)
+     char *dev;
+     int devfd;
+     struct fs *fs;
+{
+  return 0;
+}
+
+#if 0
 /*
  * Calculate a prototype superblock based on information in the disk label.
  * When done the cgsblock macro can be calculated and the fs_ncg field
@@ -465,3 +477,4 @@ getdisklabel(s, fd)
 	}
 	return (&lab);
 }
+#endif
