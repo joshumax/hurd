@@ -363,6 +363,7 @@ main(int argc, char *argv[])
   unsigned num_tty_names = 0, tty_names_alloced = 0;
   proc_stat_list_t procset;
   ps_context_t context;
+  ps_stream_t output;
   ps_fmt_t fmt;
   char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
@@ -691,20 +692,24 @@ main(int argc, char *argv[])
       ps_fmt_squash (fmt, nominal);
     }
 
+  err = ps_stream_create (stdout, &output);
+  if (err)
+    error (5, err, "Can't make output stream");
+
   if (print_heading)
     if (proc_stat_list_num_procs(procset) > 0)
       {
-	err = ps_fmt_write_titles(fmt, stdout, NULL);
+	err = ps_fmt_write_titles (fmt, output);
 	if (err)
 	  error(0, err, "Can't print titles");
-	putc('\n', stdout);
+	ps_stream_newline (output);
       }
     else
       error(0, 0, "No applicable processes");
 
-  err = proc_stat_list_fmt(procset, fmt, stdout, NULL);
+  err = proc_stat_list_fmt (procset, fmt, output);
   if (err)
-    error(5, err, "Couldn't output process status");
+    error (5, err, "Couldn't output process status");
 
   exit(0);
 }
