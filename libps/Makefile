@@ -31,7 +31,6 @@ installhdrsubdir = .
 
 OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
 
-MIGCOMUFLAGS=-subrprefix __
 msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
 term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
 
