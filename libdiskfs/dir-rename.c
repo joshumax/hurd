@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_rename
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -53,8 +53,11 @@ diskfs_S_dir_rename (struct protid *fromcred,
      will prevent anyone from deleting it before we create
      the new link. */
   mutex_lock (&fdp->lock);
-  err = diskfs_lookup (fdp, fromname, LOOKUP, &fnp, 0, fromcred);
+  err = diskfs_lookup (fdp, fromname, LOOKUP, &fnp, 0, fromcred,
+		       fromcred->po->depth, 0);
   mutex_unlock (&fdp->lock);
+  if (err == EAGAIN)
+    err = EINVAL;
   if (err)
     return err;
 
@@ -99,8 +102,11 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* Link the node into the new directory. */
   mutex_lock (&tdp->lock);
   
-  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
-  if (!err && excl)
+  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred,
+		       tocred->po->depth, 0);
+  if (err == EAGAIN)
+    err = EINVAL;
+  else if (!err && excl)
     {
       err = EEXIST;
       diskfs_nput (tnp);
@@ -180,7 +186,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
      fdp locked (nor could we), so someone else might have already
      removed it. */
   mutex_lock (&fdp->lock);
-  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
+  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred,
+		       fromcred->po->depth, 0);
   if (err)
     {
       diskfs_drop_dirstat (tdp, ds);
