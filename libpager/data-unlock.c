@@ -19,7 +19,8 @@
 #include "memory_object.h"
 #include <stdio.h>
 
-/* Called by the kernel to request a lock on memory. */
+/* Implement kernel requests for access as described in 
+   <mach/memory_object.defs>. */
 kern_return_t
 _pager_seqnos_memory_object_data_unlock (mach_port_t object, 
 					 mach_port_seqno_t seqno,
