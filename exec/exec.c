@@ -930,6 +930,7 @@ check_gzip (struct execdata *earg)
       return;
     }
 
+  rewind (&e->stream);
   if (get_method (0) != 0)
     {
       /* Not a happy gzip file.  */
@@ -970,7 +971,8 @@ check_gzip (struct execdata *earg)
   e->stream.__bufp = e->stream.__buffer;
   e->stream.__seen = 1;
 
-  e->error = 0;
+  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
+  e->error = e->bfd ? 0 : b2he (ENOEXEC);
 }
 
 
