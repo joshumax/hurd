@@ -231,6 +231,7 @@ nbdopen (const char *name, int *mod_flags,
   char **ap;
   struct nbd_startup ns;
   ssize_t cc;
+  size_t ofs;
 
   /* First we have to parse the store name to get the host name and TCP
      port number to connect to and the block size to use.  */
@@ -276,10 +277,11 @@ nbdopen (const char *name, int *mod_flags,
   for (ap = he->h_addr_list; *ap != 0; ++ap)
     {
       sin.sin_addr = *(const struct in_addr *) *ap;
+      errno = 0;
       if (connect (sock, &sin, sizeof sin) == 0 || errno == ECONNREFUSED)
 	break;
     }
-  if (*ap != 0)			/* last connect failed */
+  if (errno != 0)		/* last connect failed */
     {
       error_t err = errno;
       close (sock);
@@ -287,15 +289,19 @@ nbdopen (const char *name, int *mod_flags,
     }
 
   /* Read the startup packet, which tells us the size of the store.  */
+  ofs = 0;
+  do {
+    cc = read (sock, (char *) &ns + ofs, sizeof ns - ofs);
+    if (cc < 0)
+      {
+	error_t err = errno;
+	close (sock);
+	return err;
+      }
+    ofs += cc;
+  } while (cc > 0 && ofs < sizeof ns);
 
-  cc = read (sock, &ns, sizeof ns);
-  if (cc < 0)
-    {
-      error_t err = errno;
-      close (sock);
-      return err;
-    }
-  if (cc != sizeof ns
+  if (cc < sizeof ns
       || memcmp (ns.magic, NBD_INIT_MAGIC, sizeof ns.magic) != 0)
     {
       close (sock);
