@@ -1,11 +1,11 @@
 /* Reply half of wait
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1991, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -28,12 +28,19 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 
 skip; skip;  /* get/set hostid */
 skip; skip;  /* get/set hostname */
+skip; /* getprivports */
+skip; /* getallpids */
+skip; skip; /* set/get execdata */
+skip; /* execdata_notify */
+
+skip; /* reauthenticate */
+skip; /* child */
+skip; /* setmsgport */
+skip; /* reassign */
+skip; /* setowner */
 skip; /* getpids */
-skip; /* reauth */
-skip; /* register */
-skip; /* setports */
-skip; /* setsigport */
-skip; skip; skip; /* kill, cttykill, setctty */
+skip; /* setprocargs */
+skip; /* getmsgport */
 
 simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
@@ -41,4 +48,5 @@ simpleroutine proc_wait_reply (
 	in status: int;
 	in rusage: rusage_t;
 	in pid_status: pid_t);
+
 
