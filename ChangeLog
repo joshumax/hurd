@@ -1,3 +1,12 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* version.h.in (STANDARD_HURD_VERSION): Remove EXTRA argument,
+	because cpp 3.0 is not removing any token before ##args that is
+	not a single comma, in order to be more C99 compliant.
+	(_SHV_SEP): Removed.
+	(STANDARD_HURD_VERSION_EXTRA): New macro that does the job of the
+	old macro with an extra argument.
+
 2002-04-27  Roland McGrath  <roland@frob.com>
 
 	* configure.in: Match $host_cpu of powerpc*, not just powerpc.
