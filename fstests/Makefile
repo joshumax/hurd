@@ -31,7 +31,7 @@ fdtests: $(OBJS) $(libc); $(link)
 
 
 install: $(testprog) $(hurdroot)
-	cp $< $(hurdroot)/hurd/init
+	cp $< $(hurdroot)/bin/sh
 
 clean: 
 	rm -f fstests fstests.o
