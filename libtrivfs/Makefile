@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -29,7 +29,7 @@ FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
 
 IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
 	io-modes-off.c io-modes-on.c io-modes-set.c io-owner-get.c \
-	io-owner-mod.c io-pathconf.c io-read.c io-readable.c \
+	io-owner-mod.c io-pathconf.c io-read.c io-readable.c io-revoke.c \
 	io-reauthenticate.c io-restrict-auth.c io-seek.c io-select.c \
 	io-stat.c io-stubs.c io-write.c io-version.c io-identity.c
 
