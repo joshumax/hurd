@@ -1,3 +1,10 @@
+2002-03-10  Neal H Walfield  <neal@cs.uml.edu>
+
+	* mux.c (lookup_addrinfo): Renamed from lookup_hostent.  Change HE
+	from a struct hostent to a struct addrinfo.
+	(lookup_host): Use lookup_addrinfo, not lookup_hostent.
+	Reported by James A. Morrison <ja2morri@uwaterloo.ca>.
+
 2001-08-01  Marcus Brinkmann  <marcus@gnu.org>
 
 	* mux.c (free_name): Swap order of memory releases.
