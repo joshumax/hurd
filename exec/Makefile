@@ -1,4 +1,4 @@
-# Copyright (C) 1993,94,95,96,98,99,2000 Free Software Foundation, Inc.
+# Copyright (C) 1993,94,95,96,98,99,2000,01 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ bzip2-objects = do-bunzip2.o
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
 #targets = exec exec.static
-DIST_FILES = core.c gcore.c elfcore.c
+DIST_FILES = core.c elfcore.c
 #OTHERLIBS = -lbfd -liberty
 HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
 
