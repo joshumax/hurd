@@ -33,10 +33,12 @@ FSYS_IMPORTS
 
 /* Sent by filesystem on its bootstrap port upon startup.
    REALNODE is the node this filesystem is the translator for,
-   with all permissions.  */
+   opened with flags FLAGS (O_NOTRANS is assumed even if not
+   provided). */
 routine fsys_startup (
 	bootstrap: mach_port_t;
 	RPT
+	openflags: int;
 	control_port: mach_port_send_t;
 	out realnode: mach_port_send_t);
 
