@@ -47,7 +47,9 @@ diskfs_S_io_read (struct protid *cred,
   if (off == -1)
     off = cred->po->filepointer;
 
-  if (off + maxread > np->dn_stat.st_size)
+  if (off > np->dn_stat.st_size)
+    maxread = 0;
+  else if (off + maxread > np->dn_stat.st_size)
     maxread = np->dn_stat.st_size - off;
   
   if (maxread > *datalen)
