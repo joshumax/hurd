@@ -153,6 +153,8 @@ HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
 #			   -L$(dir $(lib)) \
 #			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
 
+LDFLAGS += -static
+
 # Building the target
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
