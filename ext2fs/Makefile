@@ -18,7 +18,7 @@
 dir := ext2fs
 makemode := server
 
-SRCS alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
+SRCS = alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c
 OBJS = $(SRCS:.c=.o) exec_server_image.o
 LCLHDRS = ext2fs.h fs.h ext2_fs.h ext2_fs_sb.h ext2_fs_i.h
