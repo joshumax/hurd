@@ -33,12 +33,14 @@
 
 static struct argp_option options[] =
 {
-  {"dereference", 'L', 0, 0, "if FILE is a symbolic link, follow it"},
-  {"recursive",   'R', 0, 0, "pass these options to any child translators"},
+  {"dereference", 'L', 0, 0, "If FILESYS is a symbolic link, follow it"},
+  {"recursive",   'R', 0, 0, "Pass these options to any child translators"},
   {0, 0, 0, 0}
 };
-
-static char *args_doc = "FILESYS OPTIONS...";
+static char *args_doc = "FILESYS FS_OPTION...";
+static char *doc = "The legal values for FS_OPTION depends on FILESYS, but\
+ some common ones are: --readonly, --writable, --remount, --sync[=INTERVAL],\
+ and --nosync.";
 
 /* ---------------------------------------------------------------- */
 
@@ -70,11 +72,11 @@ main(int argc, char *argv[])
 	  err = argz_create (state->argv + state->index, &argz, &argz_len);
 	  if (err)
 	    error(3, err, "Can't create options vector");
-	  state->index = state->argc; /* Skip all the rest of the arguments */
+	  state->index = state->argc; /* stop parsing */
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
-	  argp_help (state->argp, stderr, ARGP_HELP_STD_USAGE); /* exits */
+	  argp_usage (state->argp); /* exits */
 
 	case 'R': recursive = 1; break;
 	case 'L': deref = 1; break;
@@ -84,7 +86,7 @@ main(int argc, char *argv[])
       return 0;
     }
 
-  struct argp argp = {options, parse_opt, args_doc};
+  struct argp argp = {options, parse_opt, args_doc, doc};
 
   argp_parse (&argp, argc, argv, 0, 0);
 
