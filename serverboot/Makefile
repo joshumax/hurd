@@ -27,7 +27,7 @@ LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h \
 	disk_inode.h file_io.h minix_super.h mach-exec.h
 target = serverboot
 HURDLIBS = threads
-installationdir = $(prefix)/boot
+installationdir = $(bootdir)
 
 UNZIP_OBJS = unzip.o inflate.o util.o do-bunzip2.o
 OBJS = $(subst .c,.o,$(SRCS)) \
