@@ -73,8 +73,8 @@ diskfs_get_file_device (char *name,
   if (!err && (start || size))
     /* Extract the device block addresses.  */
     {
-      size_t runs_len = ints[3];
-      if (runs_len != 2)
+      size_t num_runs = ints[3];
+      if (num_runs != 1)
 	/* We can't handle anything but a contiguous set of blocks.  */
 	err = ENODEV;		/* XXX */
       else
