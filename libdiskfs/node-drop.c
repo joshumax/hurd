@@ -35,6 +35,9 @@ diskfs_drop_node (struct node *np)
       diskfs_node_update (np, 1);
       diskfs_free_node (np, savemode);
     }
+  else
+    diskfs_node_update (np, 0);
+
   diskfs_node_norefs (np);
 }
 
