@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -22,15 +22,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 
 error_t
-diskfs_S_fsys_getfile (mach_port_t fsys,
-		       uid_t *gen_uids,
-		       u_int ngen_uids,
-		       uid_t *gen_gids,
-		       u_int ngen_gids,
-		       char *handle,
-		       u_int handlelen,
-		       mach_port_t *file,
-		       mach_msg_type_name_t *filetype)
+diskfs_S_fsys_getfile (mach_port_t fsys __attribute__ ((unused)),
+		       uid_t *gen_uids __attribute__ ((unused)),
+		       u_int ngen_uids __attribute__ ((unused)),
+		       uid_t *gen_gids __attribute__ ((unused)),
+		       u_int ngen_gids __attribute__ ((unused)),
+		       char *handle __attribute__ ((unused)),
+		       u_int handlelen __attribute__ ((unused)),
+		       mach_port_t *file __attribute__ ((unused)),
+		       mach_msg_type_name_t *filetype __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
