@@ -38,9 +38,14 @@ the line which looks like:
   /dev/sd0b $(add-paging-file) $(default-pager)
 
 `sd0b' is the paging device.  Replace this with the correct device
-name (this is a mach partition name; see step III below for a bit
-about partition naming), or comment out the line if you don't want
-paging.
+name (this is a mach partition name), or comment out the line if you
+don't want paging.  Note that you don't have to do anything to
+initialize swap partitions, unlike Linux.
+
+You also need to edit the file boot/boot-menu.grub.  Change both root
+specifications to match your partition.  Note that these
+specifications say `hd' for scsi disks, and have a slightly different
+syntax.  
 
 Fsck and unmount the new partition before using it, to make sure it's
 clean.
@@ -62,6 +67,7 @@ You may want to switch to using grub entirely; it is able to most
 other kernels too.  Full instructions are available on at
 http://www.uruk.org/grub, or in the grub source (which you should find
 wherever you picked up this binary release).
+
 
 
 STEP IV:
