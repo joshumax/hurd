@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -35,6 +35,8 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&cred->po->cntl->lock);
+
   newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
   newcred->realnode = cred->realnode;
   newcred->isroot = cred->isroot;
@@ -50,6 +52,8 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
 		      MACH_PORT_RIGHT_SEND, 1);
 
   newcred->hook = cred->hook;
+
+  mutex_unlock (&cred->po->cntl->lock);
   
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (newcred);
