@@ -16,15 +16,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-trivfs_S_file_lock (struct protid *cred, int flags)
+trivfs_S_file_lock (struct trivfs_protid *cred, int flags)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-trivfs_S_file_lock_stat (struct protid *cred, int *mystatus, int *otherstat)
+trivfs_S_file_lock_stat (struct trivfs_protid *cred,
+			 int *mystatus, int *otherstat)
 {
   return EOPNOTSUPP;
 }
