@@ -39,6 +39,8 @@ struct port_bucket *pfinet_bucket;
 struct port_class *addrport_class;
 struct port_class *socketport_class;
 
+mach_port_t fsys_identity;
+
 extern struct device ether_dev;
 
 /* A port on SOCK.  Multiple sock_user's can point to the same socket. */
