@@ -24,12 +24,23 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 error_t
 trivfs_S_io_duplicate (struct protid *cred,
 		       mach_port_t *newport,
-		       mach_msg_type_name_t newporttype)
+		       mach_msg_type_name_t *newporttype)
 {
   struct protid *newcred;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  newcred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
-  
+  newcred = ports_allocate_port (sizeof (struct protid), 
+				 trivfs_protid_porttype);
+  newcred->realnode = cred->realnode;
+  newcred->isroot = cred->isroot;
+  newcred->cntl = cred->cntl;
+  ports_port_ref (newcred->cntl);
+  mach_port_mod_refs (mach_task_self (), newcred->realnode, 
+		      MACH_PORT_RIGHT_SEND, 1);
+  *newport = ports_get_right (newcred);
+  *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+  return 0;
+}
+
