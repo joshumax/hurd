@@ -28,6 +28,7 @@ Checklist for binary image filesystems
 *   Make sure there is only a stubby resolv.conf in the distribution.
 *   Make sure /etc/fstab has no active members
 *   Make sure nethack is clean
+*   Make sure localtime is Factory
 *   Source code for Hurd and libc must be released.
 *   Make sure everything listed in SOURCES is on prep.
 *   Remove .stamp files from binary tree.

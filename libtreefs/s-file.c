@@ -1,6 +1,6 @@
 /* File_t rpc stubs; see <hurd/fs.defs> for more info
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -62,7 +62,7 @@ treefs_S_file_chmod (struct treefs_protid *cred, mode_t mode)
 {
   if (!cred)
     return EOPNOTSUPP;
-  mode &= ~(S_IFMT | S_ISPARE);
+  mode &= ~(S_IFMT | S_ISPARE | S_ITRANS);
   return treefs_s_file_chmod (cred, mode);
 }
 

@@ -13,7 +13,7 @@ Mark with * when installation into /gd4/gnu-0.2 has been done.
 * automake (1.0) (useless w/out perl)
 * bash (2.0)
 * bc  (1.04)
-* binutils (2.8)
+binutils (2.8.1)
 * bison (1.25)
 * cpio (2.4.2)
 * cvs (1.9)
@@ -30,7 +30,6 @@ Mark with * when installation into /gd4/gnu-0.2 has been done.
   [ Comment out basename in find/defs.h and find/util.c.
     Define _GNU_SOURCE at front of find/pred.c.
     Define ARG_MAX to be 20480 before its first use. ]
-finger (1.37) [what's the correct configuration?]
 * flex  (2.5.4)
 * from (special source)
 * g77 (0.5.19.1)
@@ -45,9 +44,9 @@ finger (1.37) [what's the correct configuration?]
 glibc (2.0.4)
 [glibc-crypt (2.0.4)]
 * gmp (2.0.2)
-- gnat (3.09)
-gnuchess (4.0.pl77) [ in src/Makefile, use 'prefix=' ]
+* gnuchess (4.0.pl77) [ in src/Makefile, use 'prefix=' ]
 gnumach (1.1.1) [ wait to decide what devices to include ]
+* gnugo (1.2)
 * grep (2.0)
 * grub (0.4)
 * gzip (1.2.4)
@@ -58,6 +57,12 @@ hurd (0.2)
 * inetutils (1.3a)
 * less (332)
 * libg++ (2.7.2)
+* lynx (2.7)
+  [ Set defaults appropriately for GNU in userdefs.h. ]
+  [ In WWW/Library/Implementation/HTTCP.c add #ifndef __GNU__ around
+    the sys_errlist test and #ifdef __GNU__ around the strerror case
+    in HTInetStatus. ]
+ 
 * m4 (1.4)
 * make (3.75) [ use latest getloadavg ]
 * miscfiles (1.1)
@@ -108,52 +113,4 @@ hurd (0.2)
 * time (1.7)
 * wdiff (0.5)
 
-
-apache
-calc
-cfengine
-clisp
-common lisp
-dejagnu
-dld
-elib
-es
-enscript
-ffcall
-fontutils
-generic nqs
-gforth
-git
-gnans
-gnats
-gnumath
-gnuplot
-gnuserv
-hyperbole
-id utils
-ispell
-jacal
-lynx
-maxima
-meta-hmtl
-mc
-nih class library
-oaklisp
-objective c library
-octave
-oleo
-p2c
-pcl
-rc
-roxen
-screen
-shogi
-smalltalk
-superopt
-sneps
-tile-forth
-ucblogo
-uucp
-wget
-wn
 
