@@ -38,13 +38,6 @@
 /* A communications end-point suitable for sending RPC's to servers. */
 struct mom_port_ref;		/* layout defined in mom-kerndep.h */
 
-/* Add a reference to to port reference OBJ. */
-error_t mom_add_ref (struct mom_port_ref *obj);
-
-/* Drop a reference from port reference OBJ.  If this is the last reference,
-   then OBJ should no longer be used for further mom operations. */
-error_t mom_drop_ref (struct mom_port_ref *obj);
-
 /* Create a new port reference that refers to the same underlying channel
    as OBJ.  Fill *NEW with the new reference.  NEW should be otherwise
    unused memory.  The new reference will have a refcount of one (as if
