@@ -1,3 +1,9 @@
+1999-09-04  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* pager.c (file_pager_write_page): Don't report errors on writes
+	that extend past NODE->allocsize.  This avoids a race between sync
+	and truncate.  Reported by Mark Kettenis <kettenis@wins.uva.nl>.
+
 1999-08-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2_fs.h, ext2_fs_i.h: Replaced with Linux 2.3.14 versions.

@@ -374,10 +374,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   pending_blocks_init (&pb, buf);
 
   if (offset >= node->allocsize)
-    {
-      err = EIO;
-      left = 0;
-    }
+    left = 0;
   else if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
