@@ -193,7 +193,7 @@ diskfs_lost_hardrefs (struct node *np)
 	  p = np->dn->fileinfo->p;
 	  np->dn->fileinfo = 0;
 	  diskfs_nref (np);
-	  pager_unreference (p);
+	  ports_port_deref (p);
 
 	  assert (np->references == 1 && np->light_references == 0);
 
@@ -370,12 +370,15 @@ write_node (struct node *np)
     return NULL;
 }
 
-/* Write all active disknodes into the ext2_inode pager. */
-void
-write_all_disknodes ()
+/* For each active node, call FUN.  The node is to be locked around the call
+   to FUN.  If FUN returns non-zero for any node, then immediately stop, and
+   return that value.  */
+error_t
+diskfs_node_iterate (error_t (*fun)(struct node *))
 {
+  error_t err = 0;
   int n, num_nodes = 0;
-  struct node *np, **node_list, **p;
+  struct node *node, **node_list, **p;
   
   spin_lock (&diskfs_node_refcnt_lock);
 
@@ -386,16 +389,16 @@ write_all_disknodes ()
      individual node locks).  */
 
   for (n = 0; n < INOHSZ; n++)
-    for (np = nodehash[n]; np; np = np->dn->hnext)
+    for (node = nodehash[n]; node; node = node->dn->hnext)
       num_nodes++;
 
   node_list = alloca (num_nodes * sizeof (struct node *));
   p = node_list;
   for (n = 0; n < INOHSZ; n++)
-    for (np = nodehash[n]; np; np = np->dn->hnext)
+    for (node = nodehash[n]; node; node = node->dn->hnext)
       {
-	*p++ = np;
-	np->references++;
+	*p++ = node;
+	node->references++;
       }
 
   spin_unlock (&diskfs_node_refcnt_lock);
@@ -403,24 +406,42 @@ write_all_disknodes ()
   p = node_list;
   while (num_nodes-- > 0)
     {
+      node = *p++;
+      if (!err)
+	{
+	  mutex_lock (&node->lock);
+	  err = (*fun)(node);
+	  mutex_unlock (&node->lock);
+	}
+      diskfs_nrele (node);
+    }
+
+  return err;
+}
+
+/* Write all active disknodes into the ext2_inode pager. */
+void
+write_all_disknodes ()
+{
+  error_t write_one_disknode (struct node *node)
+    {
       struct ext2_inode *di;
 
-      np = *p++;
-      mutex_lock (&np->lock);
-
-      diskfs_set_node_times (np);
+      diskfs_set_node_times (node);
 
       /* Sync the indirect blocks here; they'll all be done before any
 	 inodes.  Waiting for them shouldn't be too bad.  */
-      pokel_sync (&np->dn->indir_pokel, 1);
+      pokel_sync (&node->dn->indir_pokel, 1);
 
       /* Update the inode image.  */
-      di = write_node (np);
+      di = write_node (node);
       if (di)
 	record_global_poke (di);
 
-      diskfs_nput (np);
+      return 0;
     }
+
+  diskfs_node_iterate (write_one_disknode);
 }
 
 /* Sync the info in NP->dn_stat and any associated format-specific
