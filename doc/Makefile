@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1994, 1998 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -18,6 +18,41 @@
 dir := doc
 makemode := misc
 
-DIST_FILES = hurd.texi navigating
+DIST_FILES = navigating gpl.texinfo hurd.texi version.texi \
+	hurd.info $(wildcard hurd.info*)
+targets = hurd.info
+
+DVIPS = dvips
 
 include ../Makeconf
+
+# For each .info file we need a .d file.
+-include $(subst .info,.d,$(filter %.info,$(targets))) /dev/null
+
+# Build dependencies from included files.
+%.d: %.texi
+	set -e; (echo "$*.info $*.dvi: \\"; grep '^@include ' $< | \
+		 sed -e 's/^[^ 	]*[ 	]*\([^ 	]*\).*$$/	\1 \\/'; \
+		 echo) > $@.new
+	mv -f $@.new $@
+
+%.info: %.texi
+	@cd $(srcdir) && rm -f $@ $@-[0-9] $@-[0-9][0-9]
+	cd $(srcdir) && $(MAKEINFO) $(notdir $<)
+
+.PRECIOUS: %.dvi
+%.dvi: %.texi
+	TEXINPUTS=$(srcdir):$$TEXINPUTS \
+	  MAKEINFO='$(MAKEINFO) -I $(srcdir)' $(TEXI2DVI) $<
+
+%.ps: %.dvi
+	$(DVIPS) $< -o $@
+
+# A header which contains the latest package version.
+$(srcdir)/version.texi: $(top_srcdir)/version.h
+	set -e; (echo "@c version.texi - automatically generated from ../version.h"; \
+	         grep '^#define HURD_VERSION' $< | \
+		 sed 's/^[^"]*"\([^"]*\).*$$/@set VERSION \1/') > $@.new
+	mv -f $@.new $@
+
+all: $(targets)
