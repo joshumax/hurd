@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -79,6 +79,8 @@ ethernet_open (struct device *dev)
   readptname = ports_get_right (readpt);
   mach_port_insert_right (mach_task_self (), readptname, readptname,
 			  MACH_MSG_TYPE_MAKE_SEND);
+
+  mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
 
   device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
 
