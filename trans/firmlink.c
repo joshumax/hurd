@@ -34,7 +34,6 @@ const char *argp_program_version = STANDARD_HURD_VERSION (firmlink);
 
 static const struct argp_option options[] =
 {
-  { "invisible", 'i', 0,     0, "Don't resemble a symlink" },
   { 0 }
 };
 
@@ -50,14 +49,11 @@ static const char doc[] = "A translator for firmlinks"
 
 /* Link parameters.  */
 static char *target = 0;	/* What we translate too.  */
-static int invisible = 0;	/* Return a link node to O_NOLINK opens?  */
 
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
-  if (key == 'i')
-    invisible = 1;
-  else if (key == ARGP_KEY_ARG && state->arg_num == 0)
+  if (key == ARGP_KEY_ARG && state->arg_num == 0)
     target = arg;
   else if (key == ARGP_KEY_ARG || key == ARGP_KEY_NO_ARGS)
     argp_usage (state);
@@ -66,7 +62,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
-static struct argp argp = { 0, parse_opt, args_doc, doc };
+static struct argp argp = { options, parse_opt, args_doc, doc };
 
 void
 main (int argc, char **argv)
@@ -137,14 +133,13 @@ getroot (struct trivfs_control *cntl,
 	 retry_type *do_retry, char *retry_name,
 	 mach_port_t *node, mach_msg_type_name_t *node_type)
 {
-  error_t err;
+  error_t err = firmlink (dotdot, target, flags, node);
 
-  if ((flags & O_NOLINK) && !invisible)
-    /* Cons up our own node.  */
+  if (err == ENOENT)
+    /* No target?  Act like a link.  */
     return EAGAIN;
 
-  err = firmlink (dotdot, target, flags, node);
-  if (!err)
+  if (! err)
     {
       *node_type = MACH_MSG_TYPE_MOVE_SEND;
       *do_retry = FS_RETRY_REAUTH;
