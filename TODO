@@ -22,6 +22,9 @@ See `tasks', the exported task list.
 
 * Libraries
 
+** general:
+*** fsys_get_options should return: prog name in argv[0]; non-option program args, e.g. the diskfs device, or nfs mount
+
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
 *** Change libports and libpager to be mom-ish
