@@ -23,7 +23,7 @@ makemode := misc
 
 # Files that go into the root of binary distributions
 dist-files = INSTALL-binary dist-README SETUP INSTALL-GRUB-MBR servers.boot \
-	boot-menu.grub COPYING.LIB
+	menu.lst COPYING.LIB
 
 # Tools for making images
 tool-files = tool-Makefile install-stripped
@@ -39,8 +39,7 @@ install-dist: dist-links
 	cp $(srcdir)/SETUP $(dist-root)/SETUP
 	cp $(srcdir)/INSTALL-GRUB-MBR $(dist-root)/INSTALL-GRUB-MBR
 	cp $(srcdir)/servers.boot $(dist-root)/boot/servers.boot
-	cp $(srcdir)/boot-menu.grub $(dist-root)/boot/boot-menu.grub
-	ln -f $(dist-root)/boot/boot-menu.grub $(dist-root)/etc/boot-menu.grub
+	cp $(srcdir)/menu.lst $(dist-root)/boot/grub/menu.lst
 	cp $(top_srcdir)/COPYING $(dist-root)/share/misc/COPYING
 	cp $(srcdir)/COPYING.LIB $(dist-root)/share/misc/COPYING.LIB
 
