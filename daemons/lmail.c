@@ -308,7 +308,7 @@ process (int in, char *in_name, int out, char *out_name, struct params *params)
     }
   while (blk_len > 0);
 
-  if (ex == 0)
+  if (! ex)
     ex = bwrite (out, out_name, "\n", 1); /* Append a blank line.  */
 
   bfree (blk, blk_len);
@@ -382,8 +382,12 @@ deliver (int msg, char *msg_name, char *rcpt, int flags, struct params *params)
     }
 
   if (fd >= 0)
-    if (close (fd) < 0 && !ex)
-      ex = SYSERR ("%s", mbox);
+    {
+      if (fsync (fd) < 0 && !ex)
+	ex = SYSERR ("%s", mbox);
+      if (close (fd) < 0 && !ex)
+	ex = SYSERR ("%s", mbox);
+    }
   free (mbox);
 
   return ex;
@@ -415,7 +419,7 @@ cache (int in, char *in_name, struct params *params, int *cached)
     return SYSERR ("%s", _PATH_TMP);
 
   ex = process (in, in_name, fd, _PATH_TMP, params);
-  if (ex == 0)
+  if (! ex)
     *cached = fd;
   else
     close (fd);
@@ -498,7 +502,7 @@ main (int argc, char **argv)
       int cached;		/* Temporary processed input file.  */
 
       ex = cache (in, file ?: "-", &params, &cached);
-      if (ex == 0)
+      if (! ex)
 	while (rcpt < argc)
 	  {
 	    /* Deliver to one recipient.  */
@@ -513,12 +517,12 @@ main (int argc, char **argv)
 	    if (ex != EX_TEMPFAIL)
 	      if (rex == EX_TEMPFAIL)
 		ex = EX_TEMPFAIL;
-	      else if (ex == 0)
+	      else if (! ex)
 		ex = rex;
 	  }
     }
 
-  if (file && remove && ex == 0)
+  if (file && remove && !ex)
     unlink (file);
 
   exit (ex);
