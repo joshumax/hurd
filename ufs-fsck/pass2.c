@@ -160,9 +160,9 @@ pass2 ()
 	      else
 		{
 		  problem (1, "INCORRECT NODE TYPE IN DIRECTORY (I=%d)");
-		  if (reply ("FIX"))
+		  if (reply ("CLEAR"))
 		    {
-		      dp->d_type = typemap[dp->d_ino];
+		      dp->d_type = 0;
 		      mod = 1;
 		    }
 		}
