@@ -1341,8 +1341,6 @@ S_tioctl_tiocgpgrp (io_t port,
     }
 
   mutex_lock (&global_lock);
-
-  mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
     ret = ENOTTY;		/* that's what BSD says... */
   else
