@@ -1,6 +1,6 @@
 /* Get standard diskfs run-time options
 
-   Copyright (C) 1995, 96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96,97,98,99,2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -26,7 +26,7 @@
 #include "priv.h"
 
 error_t
-diskfs_append_std_options (char **argz, unsigned *argz_len)
+diskfs_append_std_options (char **argz, size_t *argz_len)
 {
   error_t err;
   extern int diskfs_sync_interval;

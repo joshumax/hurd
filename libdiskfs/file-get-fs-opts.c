@@ -1,8 +1,7 @@
 /* Get run-time file system options
 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,98,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -27,7 +26,7 @@
 
 error_t
 diskfs_S_file_get_fs_options (struct protid *cred,
-			      char **data, unsigned *data_len)
+			      char **data, size_t *data_len)
 {
   error_t err;
   char *argz = 0;

@@ -25,9 +25,9 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newportpoly,
 			   uid_t *uids,
-			   u_int nuids,
+			   size_t nuids,
 			   gid_t *gids,
-			   u_int ngids)
+			   size_t ngids)
 {
   error_t err;
   struct iouser *user;

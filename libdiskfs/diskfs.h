@@ -376,7 +376,7 @@ error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
    then there is no limit on *DATACNT; if N is -1, then there is no limit
    on AMT. */
 error_t diskfs_get_directs (struct node *dp, int entry, int n,
-			    char **data, u_int *datacnt,
+			    char **data, size_t *datacnt,
 			    vm_size_t bufsiz, int *amt);
 
 /* The user must define this function.  For locked node NP (for which
@@ -900,7 +900,7 @@ error_t diskfs_set_options (const char *argz, size_t argz_len);
 /* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
    list of the arguments to this translator.  The default definition of this
    routine simply calls diskfs_append_std_options.  */
-error_t diskfs_append_args (char **argz, unsigned *argz_len);
+error_t diskfs_append_args (char **argz, size_t *argz_len);
 
 /* If this is defined or set to an argp structure, it will be used by the
    default diskfs_set_options to handle runtime option parsing.  The default
@@ -927,7 +927,7 @@ extern const struct argp diskfs_store_startup_argp;
 /* *Appends* to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
    diskfs option state (note that unlike diskfs_get_options, ARGZ & ARGZ_LEN
    must already have a sane value).  */
-error_t diskfs_append_std_options (char **argz, unsigned *argz_len);
+error_t diskfs_append_std_options (char **argz, size_t *argz_len);
 
 /* Demultiplex incoming messages on ports created by libdiskfs.  */
 int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);

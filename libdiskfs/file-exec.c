@@ -33,19 +33,19 @@ diskfs_S_file_exec (struct protid *cred,
 		    task_t task,
 		    int flags,
 		    char *argv,
-		    u_int argvlen,
+		    size_t argvlen,
 		    char *envp,
-		    u_int envplen,
+		    size_t envplen,
 		    mach_port_t *fds,
-		    u_int fdslen,
+		    size_t fdslen,
 		    mach_port_t *portarray,
-		    u_int portarraylen,
+		    size_t portarraylen,
 		    int *intarray,
-		    u_int intarraylen,
+		    size_t intarraylen,
 		    mach_port_t *deallocnames,
-		    u_int deallocnameslen,
+		    size_t deallocnameslen,
 		    mach_port_t *destroynames,
-		    u_int destroynameslen)
+		    size_t destroynameslen)
 {
   struct node *np;
   uid_t uid;

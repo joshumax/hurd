@@ -1,6 +1,6 @@
 /* Return a file handle (for nfs server support)
 
-   Copyright (C) 1997, 1999 Free Software Foundation
+   Copyright (C) 1997,99,2002 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -26,7 +26,7 @@
 
 /* Return an NFS file handle for CRED in FH & FN_LEN.  */
 error_t
-diskfs_S_file_getfh (struct protid *cred, char **fh, unsigned *fh_len)
+diskfs_S_file_getfh (struct protid *cred, char **fh, size_t *fh_len)
 {
   struct node *node;
   union diskfs_fhandle *f;

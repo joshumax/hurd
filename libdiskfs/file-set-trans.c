@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992,93,94,95,96,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      int active_flags,
 			      int killtrans_flags,
 			      char *passive,
-			      u_int passivelen,
+			      size_t passivelen,
 			      fsys_t active)
 {
   struct node *np;
