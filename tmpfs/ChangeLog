@@ -1,3 +1,7 @@
+2001-05-01  Neal H Walfield  <neal@cs.uml.edu>
+
+        * tmpfs.c (main): Set diskfs_root_node->dn_stat.st_nlink to 2.
+
 2001-04-15  Neal H Walfield  <neal@cs.uml.edu>
 
 	* dir.c (diskfs_get_directs): Total rewrite.
