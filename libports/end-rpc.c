@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -43,6 +43,10 @@ ports_end_rpc (void *port, struct rpc_info *info)
       || (!pi->class->rpcs && (pi->class->flags & PORT_CLASS_INHIBIT_WAIT))
       || (!_ports_total_rpcs && (_ports_flags & _PORTS_INHIBIT_WAIT)))
     condition_broadcast (&_ports_block);
+
+  /* This removes the current thread's rpc (which should be INFO) from the
+     ports interrupted list.  */
+  ports_self_interrupted ();
 
   /* Clear the cancellation flag for this thread since the current 
      RPC is now finished anwhow. */
