@@ -57,9 +57,9 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   struct ext2_group_desc *gdp;
   ino_t inum = np->dn->number;
 
-  assert (!diskfs_readonly)
+  assert (!diskfs_readonly);
 
-  ext2_debug ("freeing inode %lu\n", inum);
+  ext2_debug ("freeing inode %u\n", inum);
 
   spin_lock (&global_lock);
 
@@ -320,9 +320,7 @@ unsigned long
 ext2_count_free_inodes ()
 {
 #ifdef EXT2FS_DEBUG
-  struct ext2_super_block *es;
   unsigned long desc_count, bitmap_count, x;
-  int bitmap_nr;
   struct ext2_group_desc *gdp;
   int i;
 
@@ -335,7 +333,7 @@ ext2_count_free_inodes ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = count_free (gdp->bg_inode_bitmap, sblock->s_inodes_per_group / 8);
+      x = count_free (bptr (gdp->bg_inode_bitmap), sblock->s_inodes_per_group / 8);
       printf ("group %d: stored = %d, counted = %lu\n", i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
     }
