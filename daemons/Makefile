@@ -34,6 +34,6 @@ include ../Makeconf
 %: %.sh
 	cp $< $@ && chmod +w $@
 
-getty: -lutil
+getty: ../libshouldbeinlibc/libshouldbeinlibc.a -lutil
 
 $(filter-out $(special-targets), $(targets)): %: %.o
