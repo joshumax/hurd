@@ -36,7 +36,7 @@ main ()
 
   while (hold);
     
-  bootstrap = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
   
   main_udp_socket = socket (PF_INET, SOCK_DGRAM, 0);
