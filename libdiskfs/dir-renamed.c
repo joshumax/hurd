@@ -177,8 +177,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 	  tnp->dn_set_ctime = 1;
 	}
       diskfs_clear_directory (tnp, tdp, tocred);
-      /* diskfs_clear_directory will sync both tnp and tdp for us
-	 if we are synchronous. */
+      if (diskfs_synchronous)
+	diskfs_file_update (tnp, 1);
     }
   else
     {
