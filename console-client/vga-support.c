@@ -322,6 +322,14 @@ vga_set_font_height (int height)
 }
 
 
+/* Get the font height in pixel.  Can be 8 or 9.  */
+int
+vga_get_font_width (void)
+{
+  outb (VGA_SEQ_CLOCK_MODE_ADDR, VGA_SEQ_ADDR_REG);
+  return (inb (VGA_SEQ_DATA_REG) & VGA_SEQ_CLOCK_MODE_8) ? 8 : 9;
+}
+
 /* Set the font height in pixel.  WIDTH can be 8 or 9.  */
 void
 vga_set_font_width (int width)

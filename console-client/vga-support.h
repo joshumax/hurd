@@ -57,6 +57,9 @@ void vga_select_font_buffer (int font_buffer, int font_buffer_supp);
 /* Set the font height in pixel.  */
 void vga_set_font_height (int height);
 
+/* Get the font height in pixel.  Can be 8 or 9.  */
+int vga_get_font_width (void);
+
 /* Set the font height in pixel.  WIDTH can be 8 or 9.  */
 void vga_set_font_width (int width);
 

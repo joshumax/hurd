@@ -309,7 +309,7 @@ create_system_font (void)
   bdf_error_t bdferr;
   bdf_font_t font;
   unsigned char bitmap[VGA_FONT_SIZE][VGA_FONT_HEIGHT];	/* 8kB on stack.  */
-  int width = 9;	/* XXX Find out if we are in 8 or 9 pixel mode.  */
+  int width = vga_get_font_width ();
   int i;
 
   /* Add the glyph at position POS to the font for character

@@ -1,3 +1,10 @@
+2002-09-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vga-support.c (vga_get_font_width): New function.
+	* vga-support.h: Add prototype for vga_get_font_width.
+	* vga-dynafont.c (create_system_font): Call vga_get_font_width to
+	determine real font width.
+
 2002-09-22  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pc-kbd.c (sc_to_kc): Implement Meta-Backspace combinations.
