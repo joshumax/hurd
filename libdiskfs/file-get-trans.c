@@ -16,6 +16,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <hurd/paths.h>
+#include <string.h>
 #include "fs_S.h"
 
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
@@ -33,10 +35,33 @@ diskfs_S_file_get_translator (struct protid *cred,
   np = cred->po->np;
 
   mutex_lock (&np->lock);
-  if (!diskfs_node_translated (np))
-    error = EINVAL;
+
+  /* First look for short-circuited translators. */
+  if (S_ISLNK (np->dn_stat.st_mode))
+    {
+      int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
+      int amt;
+      assert (diskfs_shortcut_symlink);
+      if (len  > *translen)
+	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
+      bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
+      error = diskfs_node_rdwr (np, *trans + sizeof _HURD_SYMLINK,
+				0, np->dn_stat.st_size, 0, cred, &amt);
+      if (!error)
+	{
+	  assert (amt == np->dn_stat.st_size);
+	  (*trans)[sizeof _HURD_SYMLINK + np->dn_stat.st_size] = '\0';
+	}
+    }
+  /* XXX should also do IFCHR, IFBLK, IFIFO, and IFSOCK here. */
   else
-    error = diskfs_get_translator (np, trans, translen);
+    {
+      if (!diskfs_node_translated (np))
+	error = EINVAL;
+      else
+	error = diskfs_get_translator (np, trans, translen);
+    }
+  
   mutex_unlock (&np->lock);
 
   return error;
