@@ -87,10 +87,15 @@ vpath %.c $(addprefix $(srcdir)/linux-src/net/,core ethernet ipv4)
 vpath %.c $(srcdir)/linux-src/arch/$(asm_syntax)/lib
 vpath %.S $(srcdir)/linux-src/arch/$(asm_syntax)/lib
 
-CPPFLAGS += '-D_HURD_SYSTYPE="$(asm_syntax)"'	\
-	    -imacros $(srcdir)/config.h		\
+CPPFLAGS += -imacros $(srcdir)/config.h		\
 	    -I$(srcdir)/glue-include		\
 	    -I$(srcdir)/linux-src/include
+
+asm/checksum.h: ../config.status
+	mkdir -p $(@D)
+	echo > $@.new \
+	     '#include "../linux-src/include/asm-$(asm_syntax)/checksum.h"'
+	mv -f $@.new $@
 
 io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
