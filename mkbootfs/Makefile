@@ -24,3 +24,8 @@ mkbootfs: mkbootfs.c
 
 clean:
 	rm -f mkbootfs *.o
+
+# Relink should do nothing here because this program does not use
+# the Hurd libraries.
+relink:
+
