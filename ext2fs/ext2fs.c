@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <error.h>
+#include <argz.h>
 #include "ext2fs.h"
 
 /* ---------------------------------------------------------------- */
@@ -48,13 +49,88 @@ int diskfs_readonly = 0;
 
 struct node *diskfs_root_node;
 
+#ifdef EXT2FS_DEBUG
+
+int ext2_debug_flag = 0;
+
+/* Ext2fs-specific options.  */
+static const struct argp_option
+options[] =
+{
+  {"debug", 'D', 0, 0, "Toggle debugging output" },
+  {0}
+};
+
+/* Parse a command line option.  */
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'D':
+      state->hook = (void *)1;	/* Do it at the end */
+      break;
+
+    case ARGP_KEY_INIT:
+      state->hook = 0;
+      break;
+    case ARGP_KEY_SUCCESS:
+      /* All options parse successfully, so implement ours if possible.  */
+      if (state->hook)
+	ext2_debug_flag = !ext2_debug_flag;
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
+/* Add our startup arguments to the standard diskfs set.  */
+static const struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
+static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
+
+/* Similarly at runtime.  */
+static const struct argp *runtime_parents[] = {&diskfs_std_runtime_argp, 0};
+static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_parents};
+
+struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
+
+/* Override the standard diskfs routine so we can add our own output.  */
+error_t
+diskfs_get_options (char **argz, unsigned *argz_len)
+{
+  error_t err;
+
+  *argz = 0;
+  *argz_len = 0;
+
+  /* Get the standard things.  */
+  err = diskfs_append_std_options (argz, argz_len);
+
+  if (!err && ext2_debug_flag)
+    {
+      err = argz_add (argz, argz_len, "--debug");
+      if (err)
+	free (argz);		/* Deallocate what diskfs returned.  */
+    }
+
+  return err;
+}
+
+#else /* !EXT2FS_DEBUG */
+
+#define startup_argp diskfs_std_device_startup_argp
+
+#endif /* EXT2FS_DEBUG */
+
 void
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap = MACH_PORT_NULL;
 
-  argp_parse (&diskfs_std_device_startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&startup_argp, argc, argv, 0, 0, 0);
 
   diskfs_console_stdio ();
 
