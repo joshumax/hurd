@@ -120,9 +120,6 @@ number *and* partition.  Something like `sd0a' or `rd1f' is called
 for.
 
 
-
-
-
 *** setup network
 
 If you want to use the network, set it up thus:
@@ -141,6 +138,10 @@ changed while pfinet is running by using fsysopts, e.g.:
 
      fsysopts /servers/socket/2 --netmask=MM.MM.MM.MM
 
+Make sure you edit /etc/resolv.conf and/or /etc/hosts for the
+nameserver to work properly. 
+
+
 
 *** mounting partitions
 
@@ -148,8 +149,7 @@ You can mount a partition (say hd0a) by saying:
 
      settrans /mnt /hurd/ufs /dev/rhd0a
 
-The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a'
-during step VI.A.
+The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a'.
 
 (This is equivalent to Unixy `mount /dev/hd0a /mnt'.)
 
@@ -170,6 +170,7 @@ For more information on settrans, see the end of this file.
 
 
 *** mounting nfs
+
 NFS mounts, not surprisingly, are done thus:
 
   settrans /mnt /hurd/nfs /remote/file/system remote.host.org
@@ -180,10 +181,21 @@ NFS supports many options; use `/hurd/nfs --help' to see them all.
 
 *** edit configuration files
 
-Edit the password file (/etc/passwd) appropriately, and add any serial
-lines you have terminals on to /etc/ttys.
+Edit the password file (/etc/passwd) appropriately.
+
+Add any serial lines you have terminals on to /etc/ttys.
+
 Set your hostname with `echo foo.bar.baz > /etc/hostname'.  This will
 then be permanent until you change the file.
+
+Edit /etc/fstab according to the disk mounts you've installed; this
+will control which partitions `df' prints and which partitions get
+`fsck' run for them at boot time.
+
+Edit /etc/hosts if you want to.
+
+Edit resolv.conf to provide for name service appropriate to your
+location. 
 
 
 Once you've completed these steps, you can reboot the system multi
