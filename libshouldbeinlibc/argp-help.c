@@ -524,7 +524,8 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
       {
 	if (*real->doc)
 	  {
-	    line_newline (line, 0); /* Precede with a blank line.  */
+	    if (prev_entry && *prev_entry)
+	      line_newline (line, 0); /* Precede with a blank line.  */
 	    line_indent_to (line, HEADER_COL);
 	    line_fill (line, real->doc, HEADER_COL);
 	  }
