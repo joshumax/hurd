@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -205,5 +205,9 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 		    mach_port_t *ports, mach_msg_type_number_t num_ports,
 		    mach_port_t *fds, mach_msg_type_number_t num_fds,
 		    int *secure);
+
+/* Invoke ARGP with data from DATA & LEN, in the standard way.  */
+error_t fshelp_set_options (struct argp *argp, int flags,
+			    char *data, mach_msg_type_number_t len);
 
 #endif
