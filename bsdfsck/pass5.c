@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)pass5.c	8.2 (Berkeley) 2/2/94";*/
-static char *rcsid = "$Id: pass5.c,v 1.2 1994/08/23 20:02:44 mib Exp $";
+static char *rcsid = "$Id: pass5.c,v 1.3 1994/08/26 18:03:07 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,6 +42,44 @@ static char *rcsid = "$Id: pass5.c,v 1.2 1994/08/23 20:02:44 mib Exp $";
 #include "../ufs/fs.h"
 #include <string.h>
 #include "fsck.h"
+
+/* From ../ufs/subr.c: */
+
+/*
+ * Update the frsum fields to reflect addition or deletion 
+ * of some frags.
+ */
+void
+ffs_fragacct(fs, fragmap, fraglist, cnt)
+        struct fs *fs;
+	int fragmap;
+	long fraglist[];
+	int cnt;
+{
+	int inblk;
+	register int field, subfield;
+	register int siz, pos;
+
+	inblk = (int)(fragtbl[fs->fs_frag][fragmap]) << 1;
+	fragmap <<= 1;
+	for (siz = 1; siz < fs->fs_frag; siz++) {
+		if ((inblk & (1 << (siz + (fs->fs_frag % NBBY)))) == 0)
+			continue;
+		field = around[siz];
+		subfield = inside[siz];
+		for (pos = siz; pos <= fs->fs_frag; pos++) {
+			if ((fragmap & field) == subfield) {
+				fraglist[siz] += cnt;
+				pos += siz;
+				field <<= siz;
+				subfield <<= siz;
+			}
+			field <<= 1;
+			subfield <<= 1;
+		}
+	}
+}
+
 
 pass5()
 {
