@@ -1,3 +1,30 @@
+2002-06-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.h: Update all CONS_KEY_* macros to match other terminfo
+	definitions (like "linux", "screen", "gnome").  Add CONS_CHAR_*
+	macros for terminal graphic characters.
+
+	* display.c (struct attr): New member ALTCHAR to flag usage of
+	alternate character set.
+	(display_notice_filechange): Make static.
+	(handle_escape_bracket_m): Set ALTCHAR to 0 when resetting.
+	Support new modes 10 and 11 to disable and enable ALTCHAR.
+	(limit_cursor): New function, moved to global scope from ...
+	(handle_escape_bracket): ... here.
+	(linefeed): New function, moved to global scope from ...
+	(display_output_one): ... here.
+	(horizontal_tab): New function.
+	(handle_escape_bracket): Add alias \E[' to \E[G for VT100
+	compatibility.  Add capability \E[a (horizontal cursor position
+	relative) for ECMA-48 compatibility.  Add capabilities \E[I
+	(horizontal tab) and \E[Z (backward tabulation) for ECMA-48
+	compatibility.  Move capabilities \E[s and \E[u to ...
+	(display_output_one): ... here as \E7 and \E8 for VT100
+	compatibility.
+	(altchar_to_ucs4): New function.
+	(display_output_one): Use altchar_to_ucs4 when in altchar mode.
+	Add \EM (reset) capability.
+
 2002-06-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.c (new_node): Adjust size of display node.

@@ -123,6 +123,8 @@ struct attr
   unsigned int bgcol_def;
   unsigned int fgcol_def;
   conchar_attr_t current;
+  /* True if in alternate character set (ASCII graphic) mode.  */
+  unsigned int altchar;
 };
 typedef struct attr *attr_t;
 
@@ -296,7 +298,7 @@ display_notice_changes (display_t display, mach_port_t notify)
 }
 
 /* Requires DISPLAY to be locked.  */
-void
+static void
 display_notice_filechange (display_t display, enum file_changed_type type,
 			   off_t start, off_t end)
 {
@@ -391,7 +393,6 @@ display_flush_filechange (display_t display, unsigned int type)
     }
 }
 
-
 /* Record a change in the matrix ringbuffer.  */
 static void
 display_record_filechange (display_t display, off_t start, off_t end)
@@ -470,7 +471,6 @@ display_record_filechange (display_t display, off_t start, off_t end)
       display->changes.end = end;
     }
 }
-      
 	    
 
 static void
@@ -737,6 +737,7 @@ handle_esc_bracket_m (attr_t attr, int code)
       memset (&attr->current, 0, sizeof (conchar_attr_t));
       attr->current.fgcol = attr->fgcol_def;
       attr->current.bgcol = attr->bgcol_def;
+      attr->altchar = 0;
       break;
     case 1:
       /* Bold on: <bold>.  */
@@ -761,6 +762,14 @@ handle_esc_bracket_m (attr_t attr, int code)
     case 8:
       /* Concealed on: <invis>.  */
       attr->current.concealed = 1;
+      break;
+    case 10:
+      /* Alternate character set mode off: <rmacs>.  */
+      attr->altchar = 0;
+      break;
+    case 11:
+      /* Alternate character set mode on: <smacs>.  */
+      attr->altchar = 1;
       break;
     case 22:
       /* Normal intensity.  */
@@ -801,27 +810,71 @@ handle_esc_bracket_m (attr_t attr, int code)
     }
 }
 
+static
+void limit_cursor (display_t display)
+{
+  struct cons_display *user = display->user;
+
+  if (user->cursor.col >= user->screen.width)
+    user->cursor.col = user->screen.width - 1;
+  else if (user->cursor.col < 0)
+    user->cursor.col = 0;
+      
+  if (user->cursor.row >= user->screen.height)
+    user->cursor.row = user->screen.height - 1;
+  else if (user->cursor.row < 0)
+    user->cursor.row = 0;
+  
+  /* XXX Flag cursor change.  */
+}
+
+
+static void
+linefeed (display_t display)
+{
+  struct cons_display *user = display->user;
+
+  if (user->cursor.row < user->screen.height - 1)
+    {
+      user->cursor.row++;
+      /* XXX Flag cursor update.  */
+    }
+  else
+    {
+      user->screen.cur_line++;
+      user->screen.cur_line %= user->screen.lines;
+
+      screen_fill (display, 0, user->screen.height - 1,
+		   user->screen.width - 1, user->screen.height - 1,
+		   L' ', display->attr.current);
+      if (user->screen.scr_lines <
+	  user->screen.lines - user->screen.height)
+	user->screen.scr_lines++;
+      /* XXX Flag current line change.  */
+      /* XXX Possibly flag change of length of scroll back buffer.  */
+    }
+}
+
+static void
+horizontal_tab (display_t display)
+{
+  struct cons_display *user = display->user;
+
+  user->cursor.col = (user->cursor.col | 7) + 1;
+  if (user->cursor.col >= user->screen.width)
+    {
+      user->cursor.col = 0;
+      linefeed (display);
+    }
+  /* XXX Flag cursor update.  */
+}
+
 static void
 handle_esc_bracket (display_t display, char op)
 {
   struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
   int i;
-
-  static void limit_cursor (void)
-    {
-      if (user->cursor.col >= user->screen.width)
-	user->cursor.col = user->screen.width - 1;
-      else if (user->cursor.col < 0)
-	user->cursor.col = 0;
-      
-      if (user->cursor.row >= user->screen.height)
-	user->cursor.row = user->screen.height - 1;
-      else if (user->cursor.row < 0)
-	user->cursor.row = 0;
-
-      /* XXX Flag cursor change.  */
-    }
 
   switch (op)
     {
@@ -830,18 +883,24 @@ handle_esc_bracket (display_t display, char op)
       /* Cursor position: <cup>.  */
       user->cursor.col = (parse->params[1] ?: 1) - 1;
       user->cursor.row = (parse->params[0] ?: 1) - 1;
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'G':		/* ECMA-48 <CHA>.  */
     case '`':		/* ECMA-48 <HPA>.  */
+    case '\'':		/* VT100.  */
       /* Horizontal cursor position: <hpa>.  */
       user->cursor.col = (parse->params[0] ?: 1) - 1;
-      limit_cursor ();
+      limit_cursor (display);
+      break;
+    case 'a':		/* ECMA-48 <HPR>.  */
+      /* Horizontal cursor position relative.  */
+      user->cursor.col += (parse->params[1] ?: 1) - 1;
+      limit_cursor (display);
       break;
     case 'd':		/* ECMA-48 <VPA>.  */
-      /* Vertical cursor position: <hpa>.  */
+      /* Vertical cursor position: <vpa>.  */
       user->cursor.row = (parse->params[0] ?: 1) - 1;
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'F':		/* ECMA-48 <CPL>.  */
       /* Beginning of previous line.  */
@@ -851,7 +910,7 @@ handle_esc_bracket (display_t display, char op)
     case 'k':		/* ECMA-48 <VPB>.  */
       /* Cursor up: <cuu>, <cuu1>.  */
       user->cursor.row -= (parse->params[0] ?: 1);
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'E':		/* ECMA-48 <CNL>.  */
       /* Beginning of next line.  */
@@ -861,29 +920,17 @@ handle_esc_bracket (display_t display, char op)
     case 'e':		/* ECMA-48 <VPR>.  */
       /* Cursor down: <cud1>, <cud>.  */
       user->cursor.row += (parse->params[0] ?: 1);
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'C':		/* ECMA-48 <CUF>.  */
       /* Cursor right: <cuf1>, <cuf>.  */
       user->cursor.col += (parse->params[0] ?: 1);
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'D':		/* ECMA-48 <CUB>.  */
       /* Cursor left: <cub>, <cub1>.  */
       user->cursor.col -= (parse->params[0] ?: 1);
-      limit_cursor ();
-      break;
-    case 's':
-      /* Save cursor position: <sc>.  */
-      display->cursor.saved_x = user->cursor.col;
-      display->cursor.saved_y = user->cursor.row;
-      break;
-    case 'u':
-      /* Restore cursor position: <rc>.  */
-      user->cursor.col = display->cursor.saved_x;
-      user->cursor.row = display->cursor.saved_y;
-      /* In case the screen was larger before:  */
-      limit_cursor ();
+      limit_cursor (display);
       break;
     case 'h':
       /* Reset mode.  */
@@ -895,11 +942,11 @@ handle_esc_bracket (display_t display, char op)
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_hl (display, parse->params[i], 1);
       break;
-    case 'm':		/* ECME-48 <SGR>.  */
+    case 'm':		/* ECMA-48 <SGR>.  */
       for (i = 0; i < parse->nparams; i++)
 	handle_esc_bracket_m (&display->attr, parse->params[i]);
       break;
-    case 'J':		/* ECME-48 <ED>.  */
+    case 'J':		/* ECMA-48 <ED>.  */
       switch (parse->params[0])
 	{
 	case 0:
@@ -922,7 +969,7 @@ handle_esc_bracket (display_t display, char op)
 	  break;
 	}
       break;
-    case 'K':		/* ECME-48 <EL>.  */
+    case 'K':		/* ECMA-48 <EL>.  */
       switch (parse->params[0])
 	{
 	case 0:
@@ -945,55 +992,90 @@ handle_esc_bracket (display_t display, char op)
 	  break;
 	}
       break;
-    case 'L':		/* ECME-48 <IL>.  */
+    case 'L':		/* ECMA-48 <IL>.  */
       /* Insert line(s): <il1>, <il>.  */
       screen_shift_right (display, 0, user->cursor.row,
 			  user->screen.width - 1, user->screen.height - 1,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
-    case 'M':		/* ECME-48 <DL>.  */
+    case 'M':		/* ECMA-48 <DL>.  */
       /* Delete line(s): <dl1>, <dl>.  */
       screen_shift_left (display, 0, user->cursor.row,
 			 user->screen.width - 1, user->screen.height - 1,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
-    case '@':		/* ECME-48 <ICH>.  */
+    case '@':		/* ECMA-48 <ICH>.  */
       /* Insert character(s): <ich1>, <ich>.  */
       screen_shift_right (display, user->cursor.col, user->cursor.row,
 			  user->screen.width - 1, user->cursor.row,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
-    case 'P':		/* ECME-48 <DCH>.  */
+    case 'P':		/* ECMA-48 <DCH>.  */
       /* Delete character(s): <dch1>, <dch>.  */
       screen_shift_left (display, user->cursor.col, user->cursor.row,
 			 user->screen.width - 1, user->cursor.row,
 			 parse->params[0] ?: 1,
 			 L' ', display->attr.current);
       break;
-    case 'S':		/* ECME-48 <SU>.  */
+    case 'S':		/* ECMA-48 <SU>.  */
       /* Scroll up: <ind>, <indn>.  */
       screen_shift_left (display, 0, 0,
 			 user->screen.width - 1, user->screen.height - 1,
 			 (parse->params[0] ?: 1) * user->screen.width,
 			 L' ', display->attr.current);
       break;
-    case 'T':		/* ECME-48 <SD>.  */
+    case 'T':		/* ECMA-48 <SD>.  */
       /* Scroll down: <ri>, <rin>.  */
       screen_shift_right (display, 0, 0,
 			  user->screen.width, user->screen.height,
 			  (parse->params[0] ?: 1) * user->screen.width,
 			  L' ', display->attr.current);
       break;
-    case 'X':		/* ECME-48 <ECH>.  */
+    case 'X':		/* ECMA-48 <ECH>.  */
       /* Erase character(s): <ech>.  */
       screen_fill (display, user->cursor.col, user->cursor.row,
 		   /* XXX limit ? */user->cursor.col + (parse->params[0] ?: 1),
 		   user->cursor.row,
 		   L' ', display->attr.current);
       break;
+    case 'I':		/* ECMA-48 <CHT>.  */
+      /* Horizontal tab.  */
+      if (!parse->params[0])
+	parse->params[0] = 1;
+      while (parse->params[0]--)
+	horizontal_tab (display);
+      break;
+    case 'Z':		/* ECMA-48 <CBT>.  */
+      /* Cursor backward tabulation: <cbt>.  */
+      if (parse->params[0] > user->screen.height * (user->screen.width / 8))
+	{
+	  user->cursor.col = 0;
+	  user->cursor.row = 0;
+	}
+      else
+	{
+	  int i = parse->params[0] ?: 1;
+
+	  while (i--)
+	    {
+	      if (user->cursor.col == 0)
+		{
+		  if (user->cursor.row == 0)
+		    break;
+		  else
+		    {
+		      user->cursor.col = user->screen.width - 1;
+		      user->cursor.row--;
+		    }
+		}
+	      else
+		user->cursor.col--;
+	      user->cursor.col &= ~7;
+	    }
+	}
     }
 }
 
@@ -1035,35 +1117,87 @@ handle_esc_bracket_question (display_t display, char op)
     }
 }
 
+static wchar_t
+altchar_to_ucs4 (wchar_t chr)
+{
+  /* Alternative character set frobbing.  */
+  switch (chr)
+    {
+    case L'+':
+      return CONS_CHAR_RARROW;
+    case L',':
+      return CONS_CHAR_LARROW;
+    case L'-':
+      return CONS_CHAR_UARROW;
+    case L'.':
+      return CONS_CHAR_DARROW;
+    case L'0':
+      return CONS_CHAR_BLOCK;
+    case L'I':
+      return CONS_CHAR_LANTERN;
+    case L'`':
+      return CONS_CHAR_DIAMOND;
+    case L'a':
+      return CONS_CHAR_CKBOARD;
+    case L'f':
+      return CONS_CHAR_DEGREE;
+    case L'g':
+      return CONS_CHAR_PLMINUS;
+    case L'h':
+      return CONS_CHAR_BOARD;
+    case L'j':
+      return CONS_CHAR_LRCORNER;
+    case L'k':
+      return CONS_CHAR_URCORNER;
+    case L'l':
+      return CONS_CHAR_ULCORNER;
+    case L'm':
+      return CONS_CHAR_LLCORNER;
+    case L'n':
+      return CONS_CHAR_PLUS;
+    case L'o':
+      return CONS_CHAR_S1;
+    case L'p':
+      return CONS_CHAR_S3;
+    case L'q':
+      return CONS_CHAR_HLINE;
+    case L'r':
+      return CONS_CHAR_S7;
+    case L's':
+      return CONS_CHAR_S9;
+    case L't':
+      return CONS_CHAR_LTEE;
+    case L'u':
+      return CONS_CHAR_RTEE;
+    case L'v':
+      return CONS_CHAR_BTEE;
+    case L'w':
+      return CONS_CHAR_TTEE;
+    case L'x':
+      return CONS_CHAR_VLINE;
+    case L'y':
+      return CONS_CHAR_LEQUAL;
+    case L'z':
+      return CONS_CHAR_GEQUAL;
+    case L'{':
+      return CONS_CHAR_PI;
+    case L'|':
+      return CONS_CHAR_NEQUAL;
+    case L'}':
+      return CONS_CHAR_STERLING;
+    case L'~':
+      return CONS_CHAR_BULLET;
+    default:
+      return chr;
+    }
+}
+
 /* Display must be locked.  */
 static void
 display_output_one (display_t display, wchar_t chr)
 {
   struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
-
-  void linefeed (void)
-    {
-      if (user->cursor.row < user->screen.height - 1)
-	{
-	  user->cursor.row++;
-	  /* XXX Flag cursor update.  */
-	}
-      else
-	{
-	  user->screen.cur_line++;
-	  user->screen.cur_line %= user->screen.lines;
-
-	  screen_fill (display, 0, user->screen.height - 1,
-		       user->screen.width - 1, user->screen.height - 1,
-		       L' ', display->attr.current);
-	  if (user->screen.scr_lines <
-	      user->screen.lines - user->screen.height)
-	    user->screen.scr_lines++;
-	  /* XXX Flag current line change.  */
-	  /* XXX Possibly flag change of length of scroll back buffer.  */
-	}
-    }
 
   switch (parse->state)
     {
@@ -1080,7 +1214,7 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	case L'\n':
 	  /* Line feed.  */
-	  linefeed ();
+	  linefeed (display);
 	  break;
 	case L'\b':
 	  /* Backspace.  */
@@ -1100,13 +1234,7 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	case L'\t':
 	  /* Horizontal tab: <ht> */
-	  user->cursor.col = (user->cursor.col | 7) + 1;
-	  if (user->cursor.col >= user->screen.width)
-	    {
-	      user->cursor.col = 0;
-	      linefeed ();
-	    }
-	  /* XXX Flag cursor update.  */
+	  horizontal_tab (display);
 	  break;
 	case L'\033':
 	  parse->state = STATE_ESC;
@@ -1119,7 +1247,9 @@ display_output_one (display_t display, wchar_t chr)
 	    int line = (user->screen.cur_line + user->cursor.row)
 	      % user->screen.lines;
 	    int idx = line * user->screen.width + user->cursor.col;
-	    user->_matrix[idx].chr = chr;
+
+	    user->_matrix[idx].chr = display->attr.altchar
+	      ? altchar_to_ucs4 (chr) : chr;
 	    user->_matrix[idx].attr = display->attr.current;
 
 	    display_record_filechange (display, idx, idx);
@@ -1127,7 +1257,7 @@ display_output_one (display_t display, wchar_t chr)
 	    if (user->cursor.col == user->screen.width)
 	      {
 		user->cursor.col = 0;
-		linefeed ();
+		linefeed (display);
 	      }
 	  }
 	  break;
@@ -1140,6 +1270,13 @@ display_output_one (display_t display, wchar_t chr)
 	case L'[':
 	  parse->state = STATE_ESC_BRACKET_INIT;
 	  break;
+	case L'M':		/* ECMA-48 <RIS>.  */
+	  /* Reset: <rs2>.  */
+	  * (uint32_t *) &display->attr.current = 0;
+	  display->attr.current.bgcol = display->attr.bgcol_def;
+	  display->attr.current.fgcol = display->attr.fgcol_def;
+	  display->attr.altchar = 0;
+	  /* Fall through.  */
 	case L'c':
 	  /* Clear screen and home cursor: <clear>.  */
 	  screen_fill (display, 0, 0,
@@ -1152,7 +1289,19 @@ display_output_one (display_t display, wchar_t chr)
 	case L'E':		/* ECMA-48 <NEL>.  */
 	  /* Newline.  */
 	  user->cursor.col = 0;
-	  linefeed ();
+	  linefeed (display);
+	  break;
+	case L'7':		/* VT100: Save cursor and attributes.  */
+	  /* Save cursor position: <sc>.  */
+	  display->cursor.saved_x = user->cursor.col;
+	  display->cursor.saved_y = user->cursor.row;
+	  break;
+	case L'8':		/* VT100: Restore cursor and attributes.  */
+	  /* Restore cursor position: <rc>.  */
+	  user->cursor.col = display->cursor.saved_x;
+	  user->cursor.row = display->cursor.saved_y;
+	  /* In case the screen was larger before:  */
+	  limit_cursor (display);
 	  break;
 	default:
 	  /* Unsupported escape sequence.  */
@@ -1244,6 +1393,7 @@ display_output_some (display_t display, char **buffer, size_t *length)
   display_flush_filechange (display, ~0);
   return err;
 }
+
 
 void
 display_init (void)
@@ -1257,6 +1407,7 @@ display_init (void)
   cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
                                 (any_t)pager_bucket));
 }
+
 
 /* Create a new virtual console display, with the system encoding
    being ENCODING.  */

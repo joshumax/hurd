@@ -94,27 +94,114 @@ struct cons_display
 };
 
 
-#define CONS_KEY_UP		"\e[A"		/* Cursor up.  */
-#define CONS_KEY_DOWN		"\e[B"		/* Cursor down.  */
-#define CONS_KEY_RIGHT		"\e[C"		/* Cursor right.  */
-#define CONS_KEY_LEFT		"\e[D"		/* Cursor left.  */
-#define CONS_KEY_HOME		"\e[H"		/* Home key.  */
+/* The console server will use the following UCS-4 characters for the
+   specified terminal graphic characters.  If the display driver is
+   UCS-4 capabable, it can print them without interpretation.  */
+
+/* ACS_BLOCK maps to FULL BLOCK.  */
+#define CONS_CHAR_BLOCK		((wchar_t) 0x2588)
+/* ACS_DIAMOND maps to BLACK DIAMOND.  */
+#define CONS_CHAR_DIAMOND	((wchar_t) 0x25c6)
+/* ACS_CKBOARD maps to MEDIUM SHADE.  */
+#define CONS_CHAR_CKBOARD	((wchar_t) 0x2592)
+/* ACS_BOARD maps to LIGHT SHADE.  */
+#define CONS_CHAR_BOARD		((wchar_t) 0x2591)
+/* ACS_BULLET maps to BULLET (Linux maps it to MIDDLE DOT 0x00b7).  */
+#define CONS_CHAR_BULLET	((wchar_t) 0x2022)
+/* ACS_STERLING maps to POUND STERLING.  */
+#define CONS_CHAR_STERLING	((wchar_t) 0x00a3)
+/* ACS_DEGREE maps to DEGREE SIGN.  */
+#define CONS_CHAR_DEGREE	((wchar_t) 0x00b0)
+/* ACS_PLMINUS maps to PLUS-MINUS SIGN.  */
+#define CONS_CHAR_PLMINUS	((wchar_t) 0x00b1)
+/* ACS_PI maps to GREEK SMALL LETTER PI.  */
+#define CONS_CHAR_PI		((wchar_t) 0x03c0)
+/* ACS_LANTERN maps to BLACK HOURGLASS.  XXX Is this appropriate?  */
+#define CONS_CHAR_LANTERN	((wchar_t) 0x29d7)
+
+/* ACS_RARROW maps to RIGHTWARDS ARROW.  */
+#define CONS_CHAR_RARROW	((wchar_t) 0x2192)
+/* ACS_LARROW maps to LEFTWARDS ARROW.  */
+#define CONS_CHAR_LARROW	((wchar_t) 0x2190)
+/* ACS_UARROW maps to UPWARDS ARROW.  */
+#define CONS_CHAR_UARROW	((wchar_t) 0x2191)
+/* ACS_DARROW maps to DOWNWARDS ARROW.  */
+#define CONS_CHAR_DARROW	((wchar_t) 0x2193)
+
+/* ACS_LRCORNER maps to BOX DRAWINGS LIGHT UP AND LEFT.  */
+#define CONS_CHAR_LRCORNER	((wchar_t) 0x2518)
+/* ACS_URCORNER maps to BOX DRAWINGS LIGHT DOWN AND LEFT.  */
+#define CONS_CHAR_URCORNER	((wchar_t) 0x2510)
+/* ACS_ULCORNER maps to BOX DRAWINGS LIGHT DOWN AND RIGHT.  */
+#define CONS_CHAR_ULCORNER	((wchar_t) 0x250c)
+/* ACS_LLCORNER maps to BOX DRAWINGS LIGHT UP AND RIGHT.  */
+#define CONS_CHAR_LLCORNER	((wchar_t) 0x2514)
+/* ACS_PLUS maps to BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL.  */
+#define CONS_CHAR_PLUS		((wchar_t) 0x253c)
+/* ACS_HLINE maps to BOX DRAWINGS LIGHT HORIZONTAL.  */
+#define CONS_CHAR_HLINE		((wchar_t) 0x2500)
+/* ACS_LTEE maps to BOX DRAWINGS LIGHT VERTICAL AND RIGHT.  */
+#define CONS_CHAR_LTEE		((wchar_t) 0x251c)
+/* ACS_RTEE maps to BOX DRAWINGS LIGHT VERTICAL AND LEFT.  */
+#define CONS_CHAR_RTEE		((wchar_t) 0x2524)
+/* ACS_BTEE maps to BOX DRAWINGS LIGHT UP AND HORIZONTAL.  */
+#define CONS_CHAR_BTEE		((wchar_t) 0x2534)
+/* ACS_TTEE maps to BOX DRAWINGS LIGHT DOWN AND HORIZONTAL.  */
+#define CONS_CHAR_TTEE		((wchar_t) 0x252c)
+/* ACS_VLINE maps to BOX DRAWINGS LIGHT VERTICAL.  */
+#define CONS_CHAR_VLINE		((wchar_t) 0x2502)
+
+/* ACS_S1 maps to HORIZONTAL SCAN LINE-1.  */
+#define CONS_CHAR_S1		((wchar_t) 0x23ba)
+/* ACS_S3 maps to HORIZONTAL SCAN LINE-3.  */
+#define CONS_CHAR_S3		((wchar_t) 0x23bb)
+/* ACS_S7 maps to HORIZONTAL SCAN LINE-1.  */
+#define CONS_CHAR_S7		((wchar_t) 0x23bc)
+/* ACS_S9 maps to HORIZONTAL SCAN LINE-1.  */
+#define CONS_CHAR_S9		((wchar_t) 0x23bd)
+
+/* ACS_NEQUAL maps to NOT EQUAL TO.  */
+#define CONS_CHAR_NEQUAL	((wchar_t) 0x2260)
+/* ACS_LEQUAL maps to LESS-THAN OR EQUAL TO.  */
+#define CONS_CHAR_LEQUAL	((wchar_t) 0x2264)
+/* ACS_GEQUAL maps to GREATER-THAN OR EQUAL TO.  */
+#define CONS_CHAR_GEQUAL	((wchar_t) 0x2265)
+
+
+
+/* The input driver should emit these escape sequences for special
+   keys which don't represent characters in UTF-8.  */
+#define CONS_KEY_UP		"\eOA"		/* Cursor up.  */
+#define CONS_KEY_DOWN		"\eOB"		/* Cursor down.  */
+#define CONS_KEY_RIGHT		"\eOC"		/* Cursor right.  */
+#define CONS_KEY_LEFT		"\eOD"		/* Cursor left.  */
 #define CONS_KEY_BACKSPACE	"\177"		/* Backspace key.  */
 #define CONS_KEY_F1		"\eOP"		/* Function key 1.  */
 #define CONS_KEY_F2		"\eOQ"		/* Function key 2.  */
 #define CONS_KEY_F3		"\eOR"		/* Function key 3.  */
 #define CONS_KEY_F4		"\eOS"		/* Function key 4.  */
-#define CONS_KEY_F5		"\eOT"		/* Function key 5.  */
-#define CONS_KEY_F6		"\eOU"		/* Function key 6.  */
-#define CONS_KEY_F7		"\eOV"		/* Function key 7.  */
-#define CONS_KEY_F8		"\eOW"		/* Function key 8.  */
-#define CONS_KEY_F9		"\eOX"		/* Function key 9.  */
-#define CONS_KEY_F10		"\eOY"		/* Function key 10.  */
-#define CONS_KEY_DC		"\e[9"		/* Delete character.  */
-#define CONS_KEY_NPAGE		"\e[U"		/* Next page.  */
-#define CONS_KEY_PPAGE		"\e[V"		/* Previous page.  */
+#define CONS_KEY_F5		"\e[15~"	/* Function key 5.  */
+#define CONS_KEY_F6		"\e[17~"	/* Function key 6.  */
+#define CONS_KEY_F7		"\e[18~"	/* Function key 7.  */
+#define CONS_KEY_F8		"\e[19~"	/* Function key 8.  */
+#define CONS_KEY_F9		"\e[20~"	/* Function key 9.  */
+#define CONS_KEY_F10		"\e[21~"	/* Function key 10.  */
+#define CONS_KEY_F11		"\e[23~"	/* Function key 11.  */
+#define CONS_KEY_F12		"\e[24~"	/* Function key 12.  */
+#define CONS_KEY_F13		"\e[25~"	/* Function key 13.  */
+#define CONS_KEY_F14		"\e[26~"	/* Function key 14.  */
+#define CONS_KEY_F15		"\e[28~"	/* Function key 15.  */
+#define CONS_KEY_F16		"\e[29~"	/* Function key 16.  */
+#define CONS_KEY_F17		"\e[31~"	/* Function key 17.  */
+#define CONS_KEY_F18		"\e[32~"	/* Function key 18.  */
+#define CONS_KEY_F19		"\e[33~"	/* Function key 19.  */
+#define CONS_KEY_F20		"\e[34~"	/* Function key 20.  */
+#define CONS_KEY_HOME		"\e[1~"		/* Home key.  */
+#define CONS_KEY_IC		"\e[2~"		/* Insert char mode.  */
+#define CONS_KEY_DC		"\e[3~"		/* Delete character.  */
+#define CONS_KEY_END		"\e[4~"		/* End key.  */
+#define CONS_KEY_PPAGE		"\e[5~"		/* Previous page.  */
+#define CONS_KEY_NPAGE		"\e[6~"		/* Next page.  */
 #define CONS_KEY_BTAB		"\e[Z"		/* Back tab key.  */
-#define CONS_KEY_IC		"\e[@"		/* Insert char mode.  */
-#define CONS_KEY_END		"\e[Y"		/* End key.  */
 
 #endif	/* _HURD_CONSOLE_H */
