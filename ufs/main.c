@@ -34,7 +34,7 @@ static void
 warp_root (void)
 {
   error_t err;
-  err = iget (2, &diskfs_root_node);
+  err = diskfs_cached_lookup (2, &diskfs_root_node);
   assert (!err);
   mutex_unlock (&diskfs_root_node->lock);
 }
