@@ -28,7 +28,7 @@
 
 #include <error.h>
 #include <argz.h>
-#include <start-trans.h>
+#include <hurd/fshelp.h>
 
 /* ---------------------------------------------------------------- */
 
@@ -142,7 +142,9 @@ main(int argc, char *argv[])
 
   if (active && argz_len > 0)
     {
-      err = start_translator(node, argz, argz_len, 60000, &active_control);
+      err = fshelp_start_translator (node, MACH_MSG_TYPE_COPY_SEND,
+				     argz, argz, argz_len, 60000,
+				     &active_control);
       if (err)
 	error(4, err, "%s", argz);
     }
