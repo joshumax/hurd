@@ -25,9 +25,13 @@
 #include "store.h"
 
 /* Return a new store in STORE, which refers to the storage underlying
-   SOURCE.  A reference to SOURCE is created (but may be destroyed with
+   SOURCE.  CLASSES is used to select classes specified by the provider; if
+   it is 0, STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags.  A
+   reference to SOURCE is created (but may be destroyed with
    store_close_source).  */
-error_t store_create (file_t source, struct store **store)
+error_t
+store_create (file_t source, int flags, struct store_class *classes,
+	      struct store **store)
 {
   error_t err;
   struct store_enc enc;
@@ -47,7 +51,10 @@ error_t store_create (file_t source, struct store **store)
   if (err)
     return err;
 
-  err = store_decode (&enc, store);
+  err = store_decode (&enc, classes, store);
+
+  if (!err && flags)
+    store_set_flags (*store, flags);
 
   store_enc_dealloc (&enc);
 
