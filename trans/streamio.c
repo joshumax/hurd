@@ -66,7 +66,7 @@ struct buffer
 };
 
 /* Create a new buffer structure with SIZE, returning the pointer.  */
-extern inline struct buffer *
+static inline struct buffer *
 create_buffer (size_t size)
 {
   struct buffer *new = malloc (sizeof (struct buffer) + size);
@@ -80,28 +80,28 @@ create_buffer (size_t size)
 }
 
 /* Return the size of B.  */
-extern inline size_t
+static inline size_t
 buffer_size (struct buffer *b)
 {
   return b->tail - b->head;
 }
 
 /* Return how much characters can be read from B.  */
-extern inline size_t
+static inline size_t
 buffer_readable (struct buffer *b)
 {
   return buffer_size (b);
 }
 
 /* Return how much characters can be written to B.  */
-extern inline size_t
+static inline size_t
 buffer_writable (struct buffer *b)
 {
   return b->size - buffer_size (b);
 }
 
 /* Flush B.  */
-extern inline void
+static inline void
 clear_buffer (struct buffer *b)
 {
   if (b == 0)
@@ -111,7 +111,7 @@ clear_buffer (struct buffer *b)
 }
 
 /* Read up to LEN bytes from B to DATA, returning the amount actually read.  */
-extern inline size_t
+static inline size_t
 buffer_read (struct buffer *b, void *data, size_t len)
 {
   size_t max = buffer_size (b);
@@ -136,7 +136,7 @@ buffer_read (struct buffer *b, void *data, size_t len)
 }
 
 /* Write LEN bytes from DATA to B, returning the amount actually written.  */
-extern inline size_t
+static inline size_t
 buffer_write (struct buffer *b, void *data, size_t len)
 {
   size_t size = buffer_writable (b);
