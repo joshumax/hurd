@@ -328,7 +328,7 @@ current_lid()
 }
 
 /* Returns the UID for the user called NAME.  */
-static uid_t
+static int
 lookup_user(char *name)
 {
   struct passwd *pw = getpwnam(name);
