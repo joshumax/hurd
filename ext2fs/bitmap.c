@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#define ffz(word)	(ffs (~(word)) - 1)
+#define ffz(word)	(ffs (~(word)))
 
 /*
  *  linux/fs/ext2/bitmap.c (&c)
