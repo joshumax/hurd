@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -25,6 +25,7 @@
 #include <hurd/ports.h>
 #include <linux/netdevice.h>
 #include <hurd/trivfs.h>
+#include <sys/mman.h>
 
 extern device_t master_device;
 
@@ -67,12 +68,12 @@ void setup_ethernet_device (char *);
 void become_task_protid (struct trivfs_protid *);
 void become_task (struct sock_user *);
 struct sock_user *make_sock_user (struct socket *, int, int);
-error_t make_sockaddr_port (struct socket *, int, 
+error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);
 void init_devices (void);
 void init_time (void);
 void inet_proto_init (struct net_proto *);
-void ip_rt_add (short, u_long, u_long, u_long, struct device *, 
+void ip_rt_add (short, u_long, u_long, u_long, struct device *,
 		u_short, u_long);
 void ip_rt_del (u_long, struct device *);
 int tcp_readable (struct sock *);
