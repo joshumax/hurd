@@ -20,14 +20,11 @@ dir := libshouldbeinlibc
 makemode := library
 
 libname = libshouldbeinlibc
-SRCS = error.c argz.c options.c argp-parse.c argp-help.c line.c
-LCLHDRS = error.h argz.h rwlock.h options.h argp.h line.h
+SRCS = argz.c options.c argp-parse.c argp-help.c line.c
+LCLHDRS = argz.h rwlock.h options.h argp.h line.h
 installhdrs = $(LCLHDRS)
 installhdrsubdir = .
 
 OBJS = $(SRCS:.c=.o)
-
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
-CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
 
 include ../Makeconf
