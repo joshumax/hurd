@@ -19,9 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <malloc.h>
-#include <string.h>		/* for bcopy */
+#include <string.h>
 #include <stddef.h>
-#include <assert.h>
 
 #include "pq.h"
 
@@ -147,17 +146,18 @@ pq_queue (struct pq *pq, unsigned type, void *source)
 
 /* ---------------------------------------------------------------- */
 
-/* Returns a size to which a packet can be set, which will be at least GOAL,
-   but perhaps more.  */
+/* Returns a legal size to which PACKET can be set allowing enough room for
+   EXTRA bytes more than what's already in it, and perhaps more.  */
 size_t
-packet_size_adjust (size_t goal)
+packet_new_size (struct packet *packet, size_t extra)
 {
-  if (goal > PACKET_SIZE_LARGE)
-    /* Round GOAL up to a page boundary (OLD_LEN should already be).  */
-    return round_page (goal);
+  size_t new_len = (packet->buf_end - packet->buf) + extra;
+  if (packet->buf_vm_alloced || new_len >= PACKET_SIZE_LARGE)
+    /* Round NEW_LEN up to a page boundary (OLD_LEN should already be).  */
+    return round_page (new_len);
   else
     /* Otherwise, just round up to a multiple of 512 bytes.  */
-    return (goal + 511) & ~511;
+    return (new_len + 511) & ~511;
 }
 
 /* Try to extend PACKET to be NEW_LEN bytes long, which should be greater
@@ -178,7 +178,6 @@ packet_extend (struct packet *packet, size_t new_len)
     /* A vm_alloc'd packet.  */
     {
       char *extension = packet->buf + old_len;
-
       /* Try to allocate memory at the end of our current buffer.  */
       if (vm_allocate (mach_task_self (),
 		       (vm_address_t *)&extension, new_len - old_len, 0) != 0)
@@ -348,57 +347,52 @@ packet_read (struct packet *packet,
 	     char **data, size_t *data_len, size_t amount)
 {
   char *start = packet->buf_start;
+  char *end = packet->buf_end;
 
-  if (amount > packet->buf_end - start)
-    amount = packet->buf_end - start;
+  if (amount > end - start)
+    amount = end - start;
 
   if (amount > 0)
     {
-      if (packet->buf_vm_alloced && amount > vm_page_size)
+      if (packet->buf_vm_alloced && amount >= vm_page_size)
 	/* We can return memory from BUF directly without copying.  */
 	{
 	  char *buf = packet->buf;
-	  char *end = packet->buf_end;
 
-	  /* Return the buffer directly.  */
-	  *data = start;
-
-	  if (buf > start)
+	  if (buf + vm_page_size <= start)
 	    /* BUF_START has been advanced past the start of the buffer
 	       (perhaps by a series of small reads); as we're going to assume
 	       everything before START is gone, make sure we deallocate any
 	       memory on pages before those we return to the user.  */
-	    {
-	      char *first_page = (char *)trunc_page (start);
-	      if (first_page > buf)
-		vm_deallocate (mach_task_self (),
-			       (vm_address_t)buf, first_page - buf);
-	    }
+	    vm_deallocate (mach_task_self (),
+			   (vm_address_t)buf,
+			   trunc_page (start) - (vm_address_t)buf);
 
-	  if (start + amount < end)
+	  *data = start;	/* Return the buffer directly.  */
+	  start += amount;	/* Advance the read point.  */
+
+	  if (start < end)
 	    /* Since returning a partial page actually means returning the
 	       whole page, we have to be careful not to grab past the page
-	       boundary before the end of the data we want, unless the rest
-	       of the page is unimportant.  */
-	    amount = (char *)trunc_page (start + amount) - start;
-
-	  /* Advance the read point.  */
-	  start = (char *)round_page (start + amount);
-
-	  if (start > end)
-	    /* Make sure BUF_START is never beyond BUF_END (page-aligning the
-	       new BUF_START may have move it past).  */
+	       boundary before the end of the data we want.  */
 	    {
-	      packet->buf_end = start;
-	      packet->buf_len = 0; /* Pin at 0, despite moving past the end. */
+	      char *non_aligned_start = start;
+	      start = (char *)trunc_page (start);
+	      amount -= non_aligned_start - start;
 	    }
 	  else
-	    /* Adjust BUF_LEN to reflect what the read has consumed.  */
-	    packet->buf_len -= start - buf;
+	    /* This read will be up to the end of the buffer, so we can just
+	       consume any space on the page following BUF_END (vm_alloced
+	       buffers are always allocated in whole pages).  */
+	    {
+	      start = (char *)round_page (start);
+	      packet->buf_end = start; /* Ensure BUF_START <= BUF_END.  */
+	    }
 
 	  /* We've actually consumed the memory at the start of BUF.  */
 	  packet->buf = start;
 	  packet->buf_start = start;
+	  packet->buf_len -= start - buf;
 	}
       else
 	/* Just copy the data the old fashioned way....  */
