@@ -1,3 +1,19 @@
+2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
+
+        * pager.c (MAX_FREE_PAGE_BUFS): Remove obsolete macro.
+        (FREE_PAGE_BUFS): New macro.
+
+        (free_page_bufs_lock): Make this global variable local to
+        get_page_buf.
+        (free_page_bufs): Likewise.
+        (num_free_page_bufs): Likewise.
+
+        (get_page_buf): Reimplement using a new caching algorithm
+        based on preallocation of COW zero pages.
+        (free_page_buf): Likewise.
+
+        (find_block): Documentation fixes.
+	
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* Makefile (ext2fs.static): Depend on
