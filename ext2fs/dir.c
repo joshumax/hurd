@@ -411,7 +411,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  ext2_warning ("bad directory entry: inode: %d offset: %zd",
+	  ext2_warning ("bad directory entry: inode: %Ld offset: %zd",
 			dp->cache_id,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
@@ -531,7 +531,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   vm_address_t fromoff, tooff;
   int totfreed;
   error_t err;
-  off_t oldsize = 0;
+  size_t oldsize = 0;
 
   assert (ds->type == CREATE);
 
@@ -601,6 +601,12 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       assert (needed <= DIRBLKSIZ);
 
       oldsize = dp->dn_stat.st_size;
+      if ((off_t)(oldsize + DIRBLKSIZ) != dp->dn_stat.st_size)
+	{
+	  /* We can't possibly map the whole directory in.  */
+	  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+	  return EOVERFLOW;
+	}
       while (oldsize + DIRBLKSIZ > dp->allocsize)
 	{
 	  err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred);
@@ -1049,7 +1055,7 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->rec_len == 0)
 	{
-	  ext2_warning ("zero length directory entry: inode: %d offset: %zd",
+	  ext2_warning ("zero length directory entry: inode: %Ld offset: %zd",
 			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
@@ -1063,7 +1069,7 @@ diskfs_get_directs (struct node *dp,
 	}
       else if (bufp - buf > DIRBLKSIZ)
 	{
-	  ext2_warning ("directory entry too long: inode: %d offset: %zd",
+	  ext2_warning ("directory entry too long: inode: %Ld offset: %zd",
 			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
 	  return EIO;
