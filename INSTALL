@@ -70,7 +70,7 @@ Building the Hurd, GNUmach, and libc together
 
 5. Configure the Hurd with `configure'.
 
-6. In the Hurd directory, type `make install-hdrs no_deps=t'.
+6. In the Hurd directory, type `make install-headers no_deps=t'.
 
 7. Configure libc.
 
@@ -89,7 +89,7 @@ Building the Hurd and libc together
 1. `cd' to the directory containing the Hurd's source code and type
    `./configure' to configure the Hurd.
 
-2. Type `make install-hdrs no_deps=t' to install the Hurd's header files.
+2. Type `make install-headers no_deps=t' to install the Hurd's header files.
 
 3. Follow the instructions in the GNU C Library for configuring and
    installing GNU libc.
