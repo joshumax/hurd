@@ -1,6 +1,6 @@
 # Makefile for pflocal
 # 
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h
 MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
-MIGSFLAGS = -imacros mig-mutate.h
+MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 pflocal: $(OBJS) ../libpipe/libpipe.a ../libtrivfs/libtrivfs.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
