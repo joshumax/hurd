@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -2122,9 +2122,7 @@ send_signal (int signo)
 
   if (!(termflags & NO_OWNER))
     {
-      right = ports_get_right (cttyid);
-      mach_port_insert_right (mach_task_self (), right, right,
-			      MACH_MSG_TYPE_MAKE_SEND);
+      right = ports_get_send_right (cttyid);
       report_sig_start ();
       mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, signo, right);
