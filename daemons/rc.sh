@@ -44,9 +44,6 @@ fi
 
 touch /var/run/uptime
 
-# Until new hostname functions are in place
-test -r /etc/hostname && hostname `cat /etc/hostname`
-
 echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
