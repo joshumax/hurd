@@ -1,5 +1,5 @@
 /* Definitions for pfinet-specific calls
-   Copyright (C) 1999 Free Software Foundation
+   Copyright (C) 1999, 2000 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-subsystem pfinet 21000;
+subsystem pfinet 37000;
 
 #include <hurd/hurd_types.defs>
 
@@ -27,35 +27,13 @@ SOCKET_IMPORTS
 
 INTR_INTERFACE
 
-
-/* Register a new interface.  This call is made on the main socket
-   rendezvous port (/servers/socket/pfinet). */
-routine pfinet_register_interface (
-	server: pf_t;
-	name: string_t;
-	address: int;	/* in net byte order */
-	network: int;	/* in net byte order */
-	mask: int;	/* in net byte order */
-	broadcast: int; /* in net byte order */
-	mac_hdr_len: int;
-	xmit: mach_port_send_t;
-	out recv: mach_port_send_t);
-
-/* Process an incoming packet.  This is made on the RECVXMIT port returned
-   by a previous call to pfinet_register_interface. */
-simpleroutine pfinet_recv (
-	rx: mach_port_t;
-	packet: data_t);
-
-/* Sent by pfinet TO an interface for each packet that needs to be sent.
-   The first mac_hdr_len bytes of the buffer are unfilled; the actual
-   IP packet begins that many bytes in. */
-simpleroutine pfinet_xmit (
-	tx: mach_port_t;
-	is_broadcast: int;
-	packet: data_t);
-
-
-
-
-
+/* Return a list of interfaces as expected by the SIOCGIFCONF ioctl.
+   The maximum number of bytes returned can be given in AMOUNT, but if
+   AMOUNT is negative, all interfaces will be returned. Always
+   succeeds (and interface list will be truncated to fit into AMOUNT
+   space) for BSD compatibility.  */
+routine pfinet_siocgifconf (
+	port: io_t;
+	amount: int;
+	out buf: data_t, dealloc
+);

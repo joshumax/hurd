@@ -1,3 +1,11 @@
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ioctl_types.h: Include <net/if.h>, define types sockaddr_t and
+	ifname_t for iioctl.defs.
+	* iioctl.defs: New file for network interface ioctls.
+	* pfinet.defs: Remove old RPCs, fix subsystem number, add RPC for
+	SIOCGIFCONF.
+
 2000-11-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd_types.h: Doc fix reported by Neal H Walfield

@@ -401,7 +401,8 @@ static __inline__ int inet_abc_len(u32 addr)
 
 error_t
 configure_device (struct device *dev,
-		  uint32_t addr, uint32_t netmask, uint32_t peer)
+		  uint32_t addr, uint32_t netmask, uint32_t peer,
+		  uint32_t broadcast)
 {
   struct in_device *in_dev = dev->ip_ptr;
   struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
@@ -441,13 +442,17 @@ configure_device (struct device *dev,
       ifa->ifa_address = peer;
     }
 
+  if (broadcast != INADDR_NONE)
+    ifa->ifa_broadcast = broadcast;
+
   return - (inet_set_ifa (dev, ifa)
 	    ?: dev_change_flags (dev, dev->flags | IFF_UP));
 }
 
 void
 inquire_device (struct device *dev,
-		uint32_t *addr, uint32_t *netmask, uint32_t *peer)
+		uint32_t *addr, uint32_t *netmask, uint32_t *peer,
+		uint32_t *broadcast)
 {
   struct in_device *in_dev = dev->ip_ptr;
   struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
@@ -457,9 +462,10 @@ inquire_device (struct device *dev,
       *addr = ifa->ifa_local;
       *netmask = ifa->ifa_mask;
       *peer = ifa->ifa_address;
+      *broadcast = ifa->ifa_broadcast;
     }
   else
-    *addr = *netmask = *peer = INADDR_NONE;
+    *addr = *netmask = *peer = *broadcast = INADDR_NONE;
 }
 
 #else
@@ -700,6 +706,9 @@ inet_gifconf(struct device *dev, char *buf, int len)
 		else
 			strcpy(ifr.ifr_name, dev->name);
 
+#ifdef _HURD_
+		(*(struct sockaddr_in *) &ifr.ifr_addr).sin_len = sizeof (struct sockaddr_in);
+#endif
 		(*(struct sockaddr_in *) &ifr.ifr_addr).sin_family = AF_INET;
 		(*(struct sockaddr_in *) &ifr.ifr_addr).sin_addr.s_addr = ifa->ifa_local;
 

@@ -18,10 +18,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <sys/stat.h>
 #include <hurd/trivfs.h>
 #include <string.h>
 #include <stddef.h>
 #include <fcntl.h>
+#include <hurd/fshelp.h>
 
 #include "pfinet.h"
 #include "socket_S.h"
@@ -42,6 +44,7 @@ S_socket_create (struct trivfs_protid *master,
   struct sock_user *user;
   struct socket *sock;
   error_t err;
+  int isroot;
 
   if (!master)
     return EOPNOTSUPP;
@@ -63,12 +66,26 @@ S_socket_create (struct trivfs_protid *master,
 
   sock->type = sock_type;
 
+  isroot = master->isroot;
+  if (!isroot)
+    {
+      struct stat st;
+
+      /* XXX */
+      st.st_uid = pfinet_owner;
+      st.st_gid = pfinet_group;
+
+      err = fshelp_isowner (&st, master->user);
+      if (! err)
+	isroot = 1;
+    }
+  
   err = - (*net_families[PF_INET]->create) (sock, protocol);
   if (err)
     sock_release (sock);
   else
     {
-      user = make_sock_user (sock, master->isroot, 0, 1);
+      user = make_sock_user (sock, isroot, 0, 1);
       *port = ports_get_right (user);
       *porttype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (user);

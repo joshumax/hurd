@@ -33,7 +33,8 @@
 
 /* devinet.c */
 extern error_t configure_device (struct device *dev,
-                                 uint32_t addr, uint32_t netmask, uint32_t peer);
+                                 uint32_t addr, uint32_t netmask,
+				 uint32_t peer, uint32_t broadcast);
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -59,6 +60,8 @@ pfinet_demuxer (mach_msg_header_t *inp,
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int pfinet_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int iioctl_server (mach_msg_header_t *, mach_msg_header_t *);
 
   /* We have several classes in one bucket, which need to be demuxed
      differently.  */
@@ -70,11 +73,15 @@ pfinet_demuxer (mach_msg_header_t *inp,
       
       return (io_server (inp, outp)
 	      || socket_server (inp, outp)
+	      || pfinet_server (inp, outp)
+	      || iioctl_server (inp, outp)
 	      || trivfs_demuxer (inp, outp)
 	      || startup_notify_server (inp, outp));
     }
   else
     return (socket_server (inp, outp)
+	    || pfinet_server (inp, outp)
+	    || iioctl_server (inp, outp)
 	    || trivfs_demuxer (inp, outp)
 	    || startup_notify_server (inp, outp));
 }
@@ -221,6 +228,7 @@ main (int argc,
 {
   error_t err;
   mach_port_t bootstrap;
+  struct stat st;
 
   pfinet_bucket = ports_create_bucket ();
   trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
@@ -255,7 +263,8 @@ main (int argc,
 
   /* ifconfig lo up 127.0.0.1 netmask 0xff000000 */
   configure_device (&loopback_dev,
-		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET), htonl (INADDR_NONE));
+		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET),
+		    htonl (INADDR_NONE), htonl (INADDR_NONE));
 
   __mutex_unlock (&global_lock);
 
@@ -275,9 +284,25 @@ main (int argc,
 
   err = trivfs_startup (bootstrap, 0,
 			trivfs_cntl_portclasses[0], pfinet_bucket,
-			trivfs_protid_portclasses[0], pfinet_bucket, 0);
+			trivfs_protid_portclasses[0], pfinet_bucket,
+			&pfinetctl);
+
   if (err)
     error (1, err, "contacting parent");
+
+  /* Initialize status from underlying node.  */
+  err = io_stat (pfinetctl->underlying, &st);
+  if (err)
+    {
+      /* We cannot stat the underlying node.  Fallback to the defaults.  */
+      pfinet_owner = pfinet_group = 0;
+      err = 0;
+    }
+  else
+    {
+      pfinet_owner = st.st_uid;
+      pfinet_group = st.st_gid;
+    }
 
   /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,

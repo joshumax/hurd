@@ -146,7 +146,11 @@ atomic_t dev_lockct = ATOMIC_INIT(0);
  *	Our notifier list
  */
 
+#ifdef _HURD_
+struct notifier_block *netdev_chain=NULL;
+#else
 static struct notifier_block *netdev_chain=NULL;
+#endif
 
 /*
  *	Device drivers call our routines to queue packets here. We empty the
@@ -1103,7 +1107,11 @@ static int dev_ifname(struct ifreq *arg)
  *	Thus we will need a 'compatibility mode'.
  */
 
+#ifdef _HURD_
+int dev_ifconf(char *arg)
+#else
 static int dev_ifconf(char *arg)
+#endif
 {
 	struct ifconf ifc;
 	struct device *dev;

@@ -54,6 +54,15 @@ struct sock_addr
   struct sockaddr address;
 };
 
+/* Trivfs control structure for pfinet.  */
+struct trivfs_control *pfinetctl;
+
+/* Owner of the underlying node.  */
+uid_t pfinet_owner;
+
+/* Group of the underlying node.  */
+uid_t pfinet_group;
+
 void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (char *, struct device **);

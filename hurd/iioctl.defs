@@ -1,0 +1,172 @@
+/* Definitions for interface ioctls
+   Copyright (C) 2000 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+
+#include <hurd/hurd_types.defs>
+
+INTR_INTERFACE
+
+/* Ioctl class `i'; the subsystem is derived from calculations in
+   <ioctls.h>. */
+subsystem iioctl 112000; /* XXX */
+
+import <hurd/ioctl_types.h>; /* XXX */
+
+/* This is the first arg for a struct ifreq_something as specified by the
+   definition of _IOT_ifreq_something in <net/if.h>.  */
+type ifname_t = array[16] of char;	/* IFNAMSIZ is 16.  */
+
+/* This is the second arg of struct ifreq as specified by the
+   definition of _IOT_ifreq in <net/if.h>. */
+type sockaddr_t = struct[16] of char;	/* sizeof(struct sockaddr) is 16.  */
+
+skip; skip; skip; skip; /* 0 1 2 3 unused */
+skip; skip; skip; skip; /* 4 5 6 7 unused */
+skip; skip; skip; skip; /* 8 9 10 11 unused */
+
+/* 12 SIOCSIFADDR */
+routine iioctl_siocsifaddr (
+	reqport: io_t;
+	ifnam: ifname_t;
+	addr: sockaddr_t);
+
+skip; /* 13 unused */
+
+/* 14 SIOCSIFDSTADDR */
+routine iioctl_siocsifdstaddr (
+	reqport: io_t;
+	ifnam: ifname_t;
+	dstaddr: sockaddr_t);
+
+skip; /* 15 unused */
+
+/* 16 SIOCSIFFLAGS */
+routine iioctl_siocsifflags (
+	reqport: io_t;
+	ifnam: ifname_t;
+	flags: short);
+
+/* 17 SIOCGIFFLAGS */
+routine iioctl_siocgifflags (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout flags: short);
+
+skip; /* 18 unused */
+
+/* 19 SIOCSIFBRDADDR */
+routine iioctl_siocsifbrdaddr (
+	reqport: io_t;
+	ifnam: ifname_t;
+	brdaddr: sockaddr_t);
+
+skip; skip; /* 20 21 unused */
+
+/* 22 SIOCSIFNETMASK */
+routine iioctl_siocsifnetmask (
+	reqport: io_t;
+	ifnam: ifname_t;
+	netmask: sockaddr_t);
+
+/* 23 SIOCGIFMETRIC */
+routine iioctl_siocgifmetric (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout metric: int);
+
+/* 24 SIOCSIFMETRIC */
+routine iioctl_siocsifmetric (
+	reqport: io_t;
+	ifnam: ifname_t;
+	metric: int);
+
+/* 25 SIOCDIFADDR */
+routine iioctl_siocdifaddr (
+	reqport: io_t;
+	ifnam: ifname_t;
+	addr: sockaddr_t);
+
+skip; skip; skip; skip; /* 26 27 28 29 unused */
+skip; skip; skip; /* 30 31 32 unused */
+
+/* 33 SIOCGIFADDR */
+routine iioctl_siocgifaddr (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout addr: sockaddr_t);
+
+/* 34 SIOCGIFDSTADDR */
+routine iioctl_siocgifdstaddr (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout dstaddr: sockaddr_t);
+
+/* 35 SIOCGIFBRDADDR */
+routine iioctl_siocgifbrdaddr (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout brdaddr: sockaddr_t);
+
+skip; /* 36 SIOCGIFCONF -- implemented in C library */
+
+/* 37 SIOCGIFNETMASK */
+routine iioctl_siocgifnetmask (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout netmask: sockaddr_t);
+
+skip; skip; skip; skip; /* 38, 39, 40, 41 unused */
+skip; skip; skip; skip; /* 42, 43, 44, 45 unused */
+skip; skip; skip; skip; /* 46, 47, 48, 49 unused */
+skip; /* 50 unused */
+
+/* 51 SIOCGIFMTU */
+routine iioctl_siocgifmtu (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout mtu: int);
+
+/* 52 SIOCSIFMTU */
+routine iioctl_siocsifmtu (
+	reqport: io_t;
+	ifnam: ifname_t;
+	mtu: int);
+
+skip; skip; skip; skip; /* 53, 54, 55, 56 unused */
+skip; skip; skip; skip; /* 57, 58, 59, 60 unused */
+skip; skip; skip; skip; /* 61, 62, 63, 64 unused */
+skip; skip; skip; skip; /* 65, 66, 67, 68 unused */
+skip; skip; skip; skip; /* 69, 70, 71, 72 unused */
+skip; skip; skip; skip; /* 73, 74, 75, 76 unused */
+skip; skip; skip; skip; /* 77, 78, 79, 80 unused */
+skip; skip; skip; skip; /* 81, 82, 83, 84 unused */
+skip; skip; skip; skip; /* 85, 86, 87, 88 unused */
+skip; /* 89 unused */
+
+/* 90 SIOCGIFINDEX */
+routine iioctl_siocgifindex (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout index: int);
+
+/* 91 SIOCGIFNAME */
+routine iioctl_siocgifname (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout index: int);

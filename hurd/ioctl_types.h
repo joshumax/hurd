@@ -26,4 +26,8 @@ typedef cc_t ccs_t[NCCS];
 #include <sys/ioctl.h>
 typedef struct winsize winsize_t;
 
+#include <net/if.h>
+typedef struct sockaddr sockaddr_t;
+typedef char ifname_t[16];
+
 #endif	/* hurd/ioctl_types.h */

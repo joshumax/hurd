@@ -320,7 +320,7 @@ S_io_reauthenticate (struct sock_user *user,
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
-  int i;
+  int i, j;
   auth_t auth;
   mach_port_t newright;
 
@@ -357,9 +357,16 @@ S_io_reauthenticate (struct sock_user *user,
   if (err)
     newuser->isroot = 0;
   else
+    /* Check permission as fshelp_isowner would do.  */
     for (i = 0; i < genuidlen; i++)
-      if (gen_uids[i] == 0)
-	newuser->isroot = 1;
+      {
+	if (gen_uids[i] == 0 || gen_uids[i] == pfinet_owner)
+	  newuser->isroot = 1;
+	if (gen_uids[i] == pfinet_group)
+	  for (j = 0; j < gengidlen; j++)
+	    if (gen_gids[j] == pfinet_group)
+	      newuser->isroot = 1;
+      }
 
   mach_port_move_member (mach_task_self (), newuser->pi.port_right,
 			 pfinet_bucket->portset);
@@ -390,7 +397,7 @@ S_io_restrict_auth (struct sock_user *user,
 		    u_int gidslen)
 {
   struct sock_user *newuser;
-  int i = 0;
+  int i, j;
   int isroot;
 
   if (!user)
@@ -400,9 +407,16 @@ S_io_restrict_auth (struct sock_user *user,
 
   isroot = 0;
   if (user->isroot)
-    for (i = 0; i < uidslen && !isroot; i++)
-      if (uids[i] == 0)
-	isroot = 1;
+    /* Check permission as fshelp_isowner would do.  */
+    for (i = 0; i < uidslen; i++)
+      {
+	if (uids[i] == 0 || uids[i] == pfinet_owner)
+	  isroot = 1;
+	if (uids[i] == pfinet_group)
+	  for (j = 0; j < gidslen; j++)
+	    if (gids[j] == pfinet_group)
+	      isroot = 1;
+      }
 
   newuser = make_sock_user (user->sock, isroot, 0, 0);
   *newobject = ports_get_right (newuser);

@@ -45,9 +45,11 @@ extern error_t enumerate_devices (error_t (*fun) (struct device *dev));
 
 /* devinet.c */
 extern error_t configure_device (struct device *dev, uint32_t addr,
-				 uint32_t netmask, uint32_t peer);
+				 uint32_t netmask, uint32_t peer,
+				 uint32_t broadcast);
 extern void inquire_device (struct device *dev, uint32_t *addr,
-			    uint32_t *netmask, uint32_t *peer);
+			    uint32_t *netmask, uint32_t *peer,
+			    uint32_t *broadcast);
 
 /* Pfinet options.  Used for both startup and runtime.  */
 static const struct argp_option options[] =
@@ -248,7 +250,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
 	  {
-	    err = configure_device (in->device, in->address, in->netmask, in->peer);
+	    err = configure_device (in->device, in->address, in->netmask,
+				    in->peer, INADDR_NONE);
 	    if (err)
 	      FAIL (err, 16, 0, "cannot configure interface");
 	  }
@@ -333,9 +336,9 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
   error_t add_dev_opts (struct device *dev)
     {
       error_t err = 0;
-      uint32_t addr, mask, peer;
+      uint32_t addr, mask, peer, broad;
 
-      inquire_device (dev, &addr, &mask, &peer);
+      inquire_device (dev, &addr, &mask, &peer, &broad);
 
 #define ADD_OPT(fmt, args...)						\
   do { char buf[100];							\

@@ -1,3 +1,49 @@
+2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pfinet-ops.c: New file to implement hurd/pfinet.defs.
+
+	* iioctl-ops.c: New file to implement iioctl.defs.
+	* linux-src/net/core/dev.c: If _HURD_, don't define netdev_chain as
+	static.
+
+	* glue-include/linux/if.h: New file, to avoid conflict between
+	<net/if.h> (imported by iioctl.defs) and linux version of it.
+
+	* main.c (pfinet_demuxer): Prototype pfinet_server and
+	iioctl_server, use them.
+
+	* pfinet.h: New global variables pfinetctl, pfinet_owner
+	and pfinet_group.
+	* main.c (main): New variable ST. Request pfinetctl from
+	trivfs_startup. Use it to determine the owner and group
+	of the underlying node.
+	* io-ops.c (S_io_reauthenticate): New index variable j. Set
+	newuser->isroot also for owners of the underlying file and
+	group owners.
+	(S_io_restrict_auth): Likewise.
+	* socket-ops.c: Include <sys/stat.h> and <hurd/fshelp.h>.
+	(S_socket_create): New variable isroot. If master->isroot is
+	not set, use fshelp_isowner to check ownership and if to set it.
+	Pass isroot to make_sock_user instead master->isroot.
+
+	* linux-src/net/ipv4/devinet.c (configure_device): Accept new parameter
+	BROADCAST, set ifa_broadcast if this is not INADDR_NONE.
+	(inquire_device): Accept new parameter broadcast, set it.
+	* main.c: Add new paramter to prototype of configure_device.
+	(main): Add new parameter to call to configure_device.
+	* options.c: Add new parameters to prototypes of configure_device
+	and inquire_device.
+	(trivfs_append_args): Define new variable BROAD, use its address
+	as the new parameter for inquire_device.
+
+	* linux-src/net/core/dev.c (dev_ifconf): Don't declare static
+	if _HURD_.
+	* linux-src/net/ipv4/devinet.c (inet_gifconf): If _HURD_, set
+	sin_len member.
+
+	* Makefile (MIGSRCS): Add pfinetServer.c and iioctlServer.c.
+	(SRCS): Add pfinet-ops.c, iioctl-ops.c.
+
 2001-01-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* options.c (parse_opt): Set err to 0 if it was ESRCH.
