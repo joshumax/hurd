@@ -141,9 +141,12 @@ error_t addr_create (struct addr **addr);
    sock will have one reference added to it.  */
 error_t addr_get_sock (struct addr *addr, struct sock **sock);
 
+/* Prepare for socket creation.  */
+error_t sock_global_init ();
+
 /* Try to shutdown any active sockets, returning EBUSY if we can't.  Assumes
    RPCS's have been disabled.  */
-error_t sock_goaway (int flags);
+error_t sock_global_shutdown (int flags);
 
 extern struct port_class *sock_user_port_class;
 extern struct port_class *addr_port_class;
