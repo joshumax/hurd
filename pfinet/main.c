@@ -19,21 +19,73 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "pfinet.h"
+#include <unistd.h>
 
-#define pfinet_demuxer ethernet_demuxer
+int trivfs_fstype = FSTYPE_MISC;
+int trivfs_fsid;
+int trivfs_support_read = 0;
+int trivfs_support_write = 0;
+int trivfs_support_exec = 0;
+int trivfs_allow_open = 0;
+struct port_class *trivfs_protid_portclasses[1];
+int trivfs_protid_nportclasses = 1;
+struct port_class *trivfs_cntl_portclasses[1];
+int trivfs_cntl_nportclasses = 1;
+
+int 
+pfinet_demuxer (mach_msg_header_t *inp,
+		mach_msg_header_t *outp)
+{
+  extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
+  
+  return (ethernet_demuxer (inp, outp)
+	  || io_server (inp, outp)
+	  || socket_server (inp, outp)
+	  || trivfs_demuxer (inp, outp));
+}
 
 int
-main ()
+main (int argc,
+      char **argv)
 {
+  mach_port_t bootstrap;
+  error_t err;
+
+  /* Talk to parent and link us in. */
+
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  if (bootstrap == MACH_PORT_NULL)
+    {
+      fprintf (stderr, "%s: Must be started as a translator\n",
+	       argv[0]);
+      exit (1);
+    }
+
   pfinet_bucket = ports_create_bucket ();
-  
+  trivfs_protid_portclasses[1] = ports_create_class (trivfs_clean_protid, 0);
+  trivfs_cntl_portclasses[1] = ports_create_class (trivfs_clean_cntl, 0);
+  addrport_class = ports_create_class (clean_addrport, 0);
+  socketport_class = ports_create_class (clean_socketport, 0);
+  trivfs_fsid = getpid ();
+
+  err = trivfs_startup (bootstrap, 0,
+			trivfs_cntl_portclasses[0], pfinet_bucket,
+			trivfs_protid_portclasses[0], pfinet_bucket, 0);
+  if (err)
+    {
+      perror ("contacting parent");
+      exit (1);
+    }
+
+  /* Generic initialization */ 
+
   init_devices ();
   init_mapped_time ();
-
   setup_ethernet_device ();
-  
-  /* Call initialization routines */
   inet_proto_init (0);
+
+  /* XXX Simulate what should be user-level initialization */
 
   /* Simulate SIOCSIFADDR call. */
   {
@@ -61,11 +113,25 @@ main ()
 	       0, &ether_dev, 0, 0);
   }
 
+
   /* Turn on device. */
   dev_open (&ether_dev);
 
+  /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,
 					    pfinet_demuxer,
 					    0, 0, 1, 0);
   return 0;
+}
+
+void
+trivfs_modify_stat (struct trivfs_protid *cred,
+		    struct stat *st)
+{
+}
+
+error_t
+trivfs_goaway (struct trivfs_control *cntl, int flags)
+{
+  return EBUSY;
 }
