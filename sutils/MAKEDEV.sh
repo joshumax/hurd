@@ -5,9 +5,9 @@
 
 PATH=/bin:/usr/bin
 
-ECHO=:		# Change to "echo" to echo commands
-EXEC=""		# Change to ":" to suppress command execution
-export ECHO EXEC
+ECHO=:		# Change to "echo" to echo commands.
+EXEC=""		# Change to ":" to suppress command execution.
+DEVDIR=`pwd`	# Reset below by -D/--devdir command line option.
 
 while :; do
   case "$1" in
@@ -68,30 +68,28 @@ function st {
   fi
 }
 
-case ${DEVDIR+set} in
-  set) export DEVDIR;;
-  *)   _CWD="`pwd`";;
-esac
+function lose {
+  local line
+  for line; do
+    echo 1>&2 "$0: $line"
+  done
+  exit 1
+}
 
 function mkdev {
   local I
   for I; do
-    local B="${I##*/}"
-    case "$B" in
+    case "$I" in
+      /* | */*)
+        lose "Device names cannot contain directories" \
+	     "Change to target directory and run $0 from there."
+	;;
+
       std)
-        local dir="`dirname $I`"
-	mkdev $dir/console $dir/tty $dir/null $dir/zero $dir/fd $dir/time
+	mkdev console tty null zero fd time
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
-	local dn	# runtime device name
-	case "${DEVDIR+set}" in
-	  set) dn="$DEVDIR/$B";;
-	  "")  case "$I" in
-		 /*)  dn="$I";;
-		 *)   dn="$_CWD/$I";;
-	       esac;;
-        esac
-	st $I root 600 /hurd/term $dn device $B;;
+	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
       null)
 	st $I root 666 /hurd/null;;
       zero)
@@ -99,57 +97,72 @@ function mkdev {
       tty)
 	st $I root 666 /hurd/magic tty;;
       fd)
-        local dir="`dirname $I`"
 	st $I root 666 /hurd/magic fd
-	cmd ln -f -s fd/0 $dir/stdin
-	cmd ln -f -s fd/1 $dir/stdout
-	cmd ln -f -s fd/2 $dir/stderr
+	cmd ln -f -s fd/0 stdin
+	cmd ln -f -s fd/1 stdout
+	cmd ln -f -s fd/2 stderr
 	;;
       'time')
 	st $I root 644 /hurd/storeio time ;;
 
       # ptys
       [pt]ty[pqrstuvwxyzPQRST]?)
-	# Make one pty, both the master and slave halves
-	local id="${B:3}"
-        local dir="`dirname $I`"
-	local dd
-	case "${DEVDIR+set}" in
-	  set) dd="$DEVDIR";;
-	  "")  case "$I" in
-		 /*)  dd="$dir";;
-		 */*) dd="$_CWD/$dir";;
-		 *)   dd="$_CWD";;
-	       esac;;
-        esac
-	st $dir/pty$id root 640 /hurd/term $dd/pty$id pty-master $dd/tty$id
-	st $dir/tty$id root 640 /hurd/term $dd/tty$id pty-slave $dd/pty$id
+	# Make one pty, both the master and slave halves.
+	local id="${I:3}"
+	st pty$id root 640 /hurd/term ${DEVDIR}/pty$id \
+				      pty-master ${DEVDIR}/tty$id
+	st tty$id root 640 /hurd/term ${DEVDIR}/tty$id \
+				      pty-slave ${DEVDIR}/pty$id
 	;;
       [pt]ty[pqrstuvwxyzPQRST])
-	# Make a bunch of ptys
+	# Make a bunch of ptys.
 	mkdev ${I}0 ${I}1 ${I}2 ${I}3 ${I}4 ${I}5 ${I}6 ${I}7
 	mkdev ${I}8 ${I}9 ${I}a ${I}b ${I}c ${I}d ${I}e ${I}f
 	;;
 
       fd*|mt*)
-	st $I root 640 /hurd/storeio $B
+	st $I root 640 /hurd/storeio $I
 	;;
 
       [hrsc]d*)
-	case "$B" in
-	[a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9] | [a-z][a-z][0-9]s[1-9][a-z] | [a-z][a-z][0-9])
-	  st $I root 640 /hurd/storeio $B
+        local n="${I#?d}"
+	local major="${n%%[!0-9]*}"
+	if [ -z "$major" ]; then
+	  lose "$I: Invalid device name: must supply a device number"
+	fi
+	local minor="${n##$major}"
+	case "$minor" in
+	'') ;;		# Whole disk
+	[a-z]) ;;	# BSD partition syntax, no slice syntax
+	s[1-9]*)	# Slice syntax.
+	  local slicestuff="${minor#s}"
+	  local slice="${slicestuff%%[!0-9]*}"
+	  local rest="${slicestuff##$slice}"
+	  case "$slice" in
+	  [1-9] | [1-9][0-9]) ;;
+	  *)
+	    lose "$I: Invalid slice number \`$slice'"
+	    ;;
+	  esac
+	  case "$rest" in
+	  '') ;;	# Whole slice
+	  [a-z]) ;;	# BSD partition after slice
+	  *)
+	    lose "$I: Invalid partition \`$rest'"
+	    ;;
+	  esac
 	  ;;
 	*)
-	  echo 1>&2 $0: $B: Invalid device name: must supply a device number
-	  exit 1
+	  lose "$I: Invalid slice or partition syntax"
 	  ;;
 	esac
+
+	# The device name passed all syntax checks, so finally use it!
+	st $I root 640 /hurd/storeio $I
 	;;
 
       *)
-	echo >&2 $0: $B: Unknown device name
-	exit 1
+	lose "$I: Unknown device name"
 	;;
     esac
   done
