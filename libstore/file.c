@@ -31,11 +31,11 @@
 
 static error_t
 file_read (struct store *store,
-	   off_t addr, size_t index, mach_msg_type_number_t amount,
-	   char **buf, mach_msg_type_number_t *len)
+	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
   size_t bsize = store->block_size;
-  error_t err = io_read (store->port, buf, len, addr * bsize, amount);
+  error_t err = io_read (store->port, (char **)buf, len, addr * bsize, amount);
+#if 0
   char rep_buf[20];
   if (err)
     strcpy (rep_buf, "-");
@@ -46,15 +46,16 @@ file_read (struct store *store,
   fprintf (stderr, "; file_read (%ld, %d, %d) [%d] => %s, %s, %d\n",
 	   addr, index, amount, store->block_size, err ? strerror (err) : "-",
 	   rep_buf, err ? 0 : *len);
+#endif
   return err;
 }
 
 static error_t
 file_write (struct store *store,
-	   off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
-	   mach_msg_type_number_t *amount)
+	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
 {
   size_t bsize = store->block_size;
+#if 0
   char rep_buf[20];
   if (len > sizeof rep_buf - 3)
     sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
@@ -62,6 +63,7 @@ file_write (struct store *store,
     sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
   fprintf (stderr, "; file_write (%ld, %d, %s, %d)\n",
 	   addr, index, rep_buf, len);
+#endif
   return io_write (store->port, buf, len, addr * bsize, amount);
 }
 
@@ -82,10 +84,11 @@ _STORE_STD_CLASS (file_class);
 
 static error_t
 file_byte_read (struct store *store,
-		off_t addr, size_t index, mach_msg_type_number_t amount,
-		char **buf, mach_msg_type_number_t *len)
+		off_t addr, size_t index, size_t amount,
+		void **buf, size_t *len)
 {
-  error_t err = io_read (store->port, buf, len, addr, amount);
+  error_t err = io_read (store->port, (char **)buf, len, addr, amount);
+#if 0
   char rep_buf[20];
   if (err)
     strcpy (rep_buf, "-");
@@ -96,15 +99,16 @@ file_byte_read (struct store *store,
   fprintf (stderr, "; file_byte_read (%ld, %d, %d) => %s, %s, %d\n",
 	   addr, index, amount, err ? strerror (err) : "-",
 	   rep_buf, err ? 0 : *len);
+#endif
   return err;
 }
 
 static error_t
 file_byte_write (struct store *store,
-		 off_t addr, size_t index,
-		 char *buf, mach_msg_type_number_t len,
-		 mach_msg_type_number_t *amount)
+		 off_t addr, size_t index, void *buf, size_t len,
+		 size_t *amount)
 {
+#if 0
   char rep_buf[20];
   if (len > sizeof rep_buf - 3)
     sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
@@ -112,6 +116,7 @@ file_byte_write (struct store *store,
     sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
   fprintf (stderr, "; file_byte_write (%ld, %d, %s, %d)\n",
 	   addr, index, rep_buf, len);
+#endif
   return io_write (store->port, buf, len, addr, amount);
 }
 
