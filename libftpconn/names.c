@@ -31,8 +31,6 @@ struct get_names_state
   size_t name_alloced;		/* Allocated size of NAME (>= NAME_LEN).  */
   int name_partial;		/* True if NAME isn't complete.  */
 
-  char *dir;			/* Directory being listed.  */
-
   size_t buf_len;		/* Length of contents in BUF.  */
   char buf[7000];
 };
@@ -49,19 +47,6 @@ ftp_conn_start_get_names (struct ftp_conn *conn,
 
   if (! s)
     return ENOMEM;
-
-  if (conn->syshooks.fix_nlist_name)
-    /* We only need save the directory name if calling this hook.  */
-    {
-      s->dir = strdup (name);
-      if (! s->dir)
-	{
-	  free (s);
-	  return ENOMEM;
-	}
-    }
-  else
-    s->dir = 0;
 
   err = ftp_conn_start_list (conn, name, fd);
 
@@ -156,12 +141,12 @@ ftp_conn_cont_get_names (struct ftp_conn *conn, int fd, void *state,
 
       if (nl)
 	{
-	  /* Fixup any screwy names returned by the server.  */
 	  char *name = s->name;
 
-	  if (conn->syshooks.fix_nlist_name)
+	  if (conn->syshooks.basename)
+	    /* Fixup any screwy names returned by the server.  */
 	    {
-	      err = (*conn->syshooks.fix_nlist_name) (conn, s->dir, &name);
+	      err = (*conn->syshooks.basename) (conn, &name);
 	      if (err)
 		goto finished;
 	    }
@@ -211,8 +196,6 @@ finished:
      return.  */
   if (s->name)
     free (s->name);
-  if (s->dir)
-    free (s->dir);
   free (s);
   close (fd);
 
