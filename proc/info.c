@@ -359,11 +359,16 @@ S_proc_getprocinfo (struct proc *callerp,
   mach_msg_type_number_t waits_used = 0;
   u_int tkcount, thcount;
   struct proc *tp;
+  task_t task;			/* P's task port.  */
+  mach_port_t msgport;		/* P's msgport, or MACH_PORT_NULL if none.  */
 
   /* No need to check CALLERP here; we don't use it. */
 
   if (!p)
     return ESRCH;
+
+  task = p->p_task;
+  msgport = p->p_deadmsg ? MACH_PORT_NULL : p->p_msgport;
 
   if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
 	       | PI_FETCH_THREAD_WAITS))
@@ -413,12 +418,14 @@ S_proc_getprocinfo (struct proc *callerp,
 
   pi->nthreads = nthreads;
 
+  /* Release GLOBAL_LOCK around time consuming bits, and more importatantly,
+     potential calls to P's msgport, which can block.  */
+  mutex_unlock (&global_lock);
+
   if (flags & PI_FETCH_TASKINFO)
     {
       tkcount = TASK_BASIC_INFO_COUNT;
-      err = task_info (p->p_task, TASK_BASIC_INFO, (int *)&pi->taskinfo,
-		       &tkcount);
-
+      err = task_info (task, TASK_BASIC_INFO, (int *)&pi->taskinfo, &tkcount);
       if (err == MACH_SEND_INVALID_DEST)
 	err = ESRCH;
     }
@@ -460,14 +467,14 @@ S_proc_getprocinfo (struct proc *callerp,
       if (flags & PI_FETCH_THREAD_WAITS)
 	{
 	  /* See what thread I is waiting on.  */
-	  if (p->p_msgport == MACH_PORT_NULL || p->p_deadmsg)
+	  if (msgport == MACH_PORT_NULL)
 	    flags &= ~PI_FETCH_THREAD_WAITS; /* Can't return much... */
 	  else
 	    {
 	      string_t desc;
 	      size_t desc_len;
 
-	      if (msg_report_wait (p->p_msgport, thds[i],
+	      if (msg_report_wait (msgport, thds[i],
 				   desc, &pi->threadinfos[i].rpc_block))
 		desc[0] = '\0'; /* Don't know.  */
 
@@ -503,7 +510,7 @@ S_proc_getprocinfo (struct proc *callerp,
 		    }
 		}
 
-	      if (waits_used + desc_len + 1 > *waits_len)
+	      if (waits_used + desc_len + 1 <= *waits_len)
 		/* Append DESC to WAITS.  */
 		{
 		  bcopy (desc, *waits + waits_used, desc_len);
@@ -527,6 +534,9 @@ S_proc_getprocinfo (struct proc *callerp,
     vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
   else
     *waits_len = waits_used;
+
+  /* Reacquire GLOBAL_LOCK to make the central locking code happy.  */
+  mutex_lock (&global_lock);
 
   return err;
 }
