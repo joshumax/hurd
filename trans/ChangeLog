@@ -1,3 +1,7 @@
+1997-09-04  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* null.c (main): Fix typo.
+
 Wed Aug 20 14:07:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* crash.c (main): New args for
