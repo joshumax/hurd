@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -144,18 +144,16 @@ routine io_get_icky_async_id (
 	RPT
 	out icky_async_id_port: mach_port_send_t);
 
-/* Select_type is the or of SELECT_READ, SELECT_WRITE, and SELECT_URG.
-   If any of the requested types of IO are immediately possible, the
-   appropriate types are set in SELECT_RESULT, and RETURN_PORT is
-   destroyed.  If IO is not immediately possible, SELECT_RESULT is zero,
-   and an io_select_done call (see msg.defs) will be sent to RETURN_PORT
-   when IO becomes possible.  RETURN_PORT should be a send-once right.  */
+/* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
+   Block until one of the indicated types of i/o can be done "quickly".
+   ID_TAG is returned as passed; it is just for the convenience of the user in
+   matching up reply messages with specific requests it sent.  */
+/* INTR */
 routine io_select (
 	io_object: io_t;
 	RPT
 	select_type: int;
-	return_port: mach_port_poly_t;
-	id_tag: int;
+	inout id_tag: int;	/* Returned as passed.  */
 	out select_result: int);
 
 /* Return the current status of the object.  Not all the fields of the
