@@ -445,7 +445,7 @@ pty_io_readable (int *amt)
 /* Validation has already been done by trivfs_S_io_select. */
 error_t
 pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
-	       int *type, int *idtag)
+	       int *type)
 {
   int avail = 0;
   

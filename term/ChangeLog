@@ -1,3 +1,9 @@
+2002-01-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* users.c (trivfs_S_io_select): Remove IDTAG argument.
+	Also in invocation of pty_io_select.
+	* ptyio.c (pty_io_select): Likewise.
+
 2002-01-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* devio.c (bogus_speed_to_real_speed): Handle B57600, B115200 if

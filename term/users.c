@@ -1998,14 +1998,13 @@ error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply,
 		    mach_msg_type_name_t reply_type,
-		    int *type,
-		    int *idtag)
+		    int *type)
 {
   if (!cred)
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_select (cred, reply, type, idtag);
+    return pty_io_select (cred, reply, type);
 
   if ((cred->po->openmodes & O_READ) == 0)
     *type &= ~SELECT_READ;

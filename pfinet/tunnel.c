@@ -449,8 +449,7 @@ error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
                     mach_port_t reply,
                     mach_msg_type_name_t reply_type,
-                    int *type,
-                    int *idtag)
+                    int *type)
 {
   struct tunnel_device *tdev;
 
