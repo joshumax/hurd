@@ -491,9 +491,9 @@ main(int argc, char *argv[])
 	    {
 	      size_t len = strlen (arg) + 1;
 	      arg_hack_buf = realloc (arg_hack_buf, 1 + len);
-	      state->argv[--state->index] = arg_hack_buf;
-	      state->argv[state->index][0] = '-';
-	      memcpy (&state->argv[state->index][1], arg, len);
+	      state->argv[--state->next] = arg_hack_buf;
+	      state->argv[state->next][0] = '-';
+	      memcpy (&state->argv[state->next][1], arg, len);
 	      break;
 	    }
 	  /* Otherwise, fall through and treat the arg as a process id.  */
