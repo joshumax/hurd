@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.7  1996/10/24 19:30:10  thomas
+ * Mon Oct 21 22:05:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+ *
+ * 	* i386/csw.S (CALL_MCOUNT): New macro.
+ * 	(cproc_swtich, cproc_start_wait, cproc_prepare): Use CALL_MCOUNT.
+ *
  * Revision 1.6  1996/08/29 17:44:42  thomas
  * *** empty log message ***
  *
@@ -67,6 +73,7 @@
  * 
  */
 #define ELF
+#define __ELF__
 #include <mach/i386/asm.h>
 
 #ifdef	PIC
