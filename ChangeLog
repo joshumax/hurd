@@ -1,3 +1,8 @@
+1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* configure.in (enable_static_progs): Move sed translation of commas
+	to spaces out of case stmt, so it applies to default too.
+
 1999-09-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf [$(makemode) != misc]: Use this to protect linking rules,
