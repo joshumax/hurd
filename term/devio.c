@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -374,9 +374,7 @@ devio_abandon_physical_output ()
 
   mach_port_deallocate (mach_task_self (), phys_reply_writes);
   ports_reallocate_port (phys_reply_writes_pi);
-  phys_reply_writes = ports_get_right (phys_reply_writes_pi);
-  mach_port_insert_right (mach_task_self (), phys_reply_writes,
-			  phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
+  phys_reply_writes = ports_get_send_right (phys_reply_writes_pi);
 
   device_set_status (phys_device, TTY_FLUSH, &val, TTY_FLUSH_COUNT);
   npending_output = 0;
@@ -427,9 +425,7 @@ initial_open ()
   if (err)
     return err;
 
-  phys_reply = ports_get_right (phys_reply_pi);
-  mach_port_insert_right (mach_task_self (), phys_reply, phys_reply,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  phys_reply = ports_get_send_right (phys_reply_pi);
 
   err = device_open_request (device_master, phys_reply,
 			     D_READ|D_WRITE, pterm_name);
@@ -531,9 +527,7 @@ device_open_reply (mach_port_t replyport,
 	  mutex_unlock (&global_lock);
 	  return err;
 	}
-      phys_reply_writes = ports_get_right (phys_reply_writes_pi);
-      mach_port_insert_right (mach_task_self (), phys_reply_writes,
-			      phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
+      phys_reply_writes = ports_get_send_right (phys_reply_writes_pi);
 
       /* Schedule our first read */
       err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
