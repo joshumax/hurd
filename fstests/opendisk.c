@@ -19,8 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+#include <device/device.h>
+#include <errno.h>
+#include <hurd.h>
+#include <stdio.h>
 
-main (argc, argv)
+main (int argc, char **argv)
 {
   mach_port_t hostpriv, devicemaster;
   mach_port_t device;
