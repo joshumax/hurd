@@ -93,3 +93,6 @@ rwlock_init (struct rwlock *lock)
   lock->readers_waiting = 0;
   lock->writers_waiting = 0;
 }
+
+#define RWLOCK_INITIALIZER \
+  { MUTEX_INITIALIZER, CONDITION_INITIALIZER, 0, 0, 0 }
