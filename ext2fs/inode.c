@@ -283,10 +283,13 @@ read_disknode (struct node *np)
     }
   else
     /* Allocsize should be zero for anything except directories, files, and
-       long symlinks.  */
+       long symlinks.  These are the only things allowed to have any blocks
+       allocated as well, although st_size may be zero for any type (cases
+       where st_blocks=0 and st_size>0 include fast symlinks, and, under
+       linux, some devices).  */
     {
       np->allocsize = 0;
-      assert (st->st_size == 0 || S_ISLNK (st->st_mode));
+      assert (st->st_blocks == 0);
     }
 
   return 0;
