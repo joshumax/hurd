@@ -45,7 +45,7 @@ store_set_children (struct store *store,
 
   return 0;
 }
-
+
 /* Calls the allocate_encoding method in each child store of STORE,
    propagating any errors.  If any child does not hae such a method,
    EOPNOTSUPP is returned.  */
@@ -99,5 +99,53 @@ store_decode_children (struct store_enc *enc, int num_children,
     /* Deallocate anything we've already created.  */
     while (--i >= 0)
       store_free (children[i]);
+  return err;
+}
+
+/* Set FLAGS in all children of STORE, and if successfull, add FLAGS to
+   STORE's flags.  */
+error_t
+store_set_child_flags (struct store *store, int flags)
+{
+  int i;
+  error_t err = 0;
+  int old_child_flags[store->num_children];
+
+  for (i = 0; i < store->num_children && !err; i++)
+    {
+      old_child_flags[i] = store->children[i]->flags;
+      err = store_set_flags (store->children[i], flags);
+    }
+
+  if (err)
+    while (i > 0)
+      store_clear_flags (store->children[--i], flags & ~old_child_flags[i]);
+  else
+    store->flags |= flags;
+
+  return err;
+}
+
+/* Clear FLAGS in all children of STORE, and if successfull, remove FLAGS from
+   STORE's flags.  */
+error_t
+store_clear_child_flags (struct store *store, int flags)
+{
+  int i;
+  error_t err = 0;
+  int old_child_flags[store->num_children];
+
+  for (i = 0; i < store->num_children && !err; i++)
+    {
+      old_child_flags[i] = store->children[i]->flags;
+      err = store_clear_flags (store->children[i], flags);
+    }
+
+  if (err)
+    while (i > 0)
+      store_set_flags (store->children[--i], flags & ~old_child_flags[i]);
+  else
+    store->flags &= ~flags;
+
   return err;
 }
