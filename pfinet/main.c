@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -41,8 +41,7 @@ pfinet_demuxer (mach_msg_header_t *inp,
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return (ethernet_demuxer (inp, outp)
-	  || io_server (inp, outp)
+  return (io_server (inp, outp)
 	  || socket_server (inp, outp)
 	  || trivfs_demuxer (inp, outp));
 }
