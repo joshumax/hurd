@@ -44,12 +44,18 @@ idvec_free_wrapper (struct idvec *idvec)
   free (idvec);
 }
 
-void 
-idvec_free (struct idvec *idvec)
+void
+idvec_free_contents (struct idvec *idvec)
 {
   if (idvec->alloced)
     free (idvec->ids);
-  free (idvec);
+}
+
+void
+idvec_free (struct idvec *idvec)
+{
+  idvec_free_contents (idvec);
+  idvec_free_wrapper (idvec);
 }
 
 /* Ensure that IDVEC has enough spaced allocated to hold NUM ids, thus
