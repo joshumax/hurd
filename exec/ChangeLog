@@ -1,3 +1,7 @@
+1999-04-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (do_exec): Implement EXEC_SIGTRAP flag.
+
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (S_exec_init): Deallocate PROCSERVER port when finished.
