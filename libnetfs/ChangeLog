@@ -1,3 +1,27 @@
+Fri Feb 28 21:14:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-reparent.c (netfs_S_file_reparent): Implement.
+
+Sun Feb 23 16:27:34 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-mkfile.c (netfs_S_dir_mkfile): Pass context arg to
+	netfs_make_peropen instead of parent node.
+	* file-exec.c (netfs_S_file_exec): Likewise.
+	* dir-lookup.c (netfs_S_dir_lookup): Implement shadow root .. traversal.
+	Use context po argument to netfs_make_peropen & as cookie to
+	fshelp_fetch_root, instead of parent node.
+	* fsys-getroot.c (netfs_S_fsys_getroot): Add PEROPEN_CONTEXT
+	variable, and pass it to netfs_make_peropen & fshelp_fetch_root.
+	* netfs.h (struct peropen): Add shadow_root_parent & shadow_root fields.
+	Removed depth field.  Rename dotdotnode field to root_parent.
+	(netfs_make_peropen): Add and use CONTEXT parameter.
+	* make-peropen.c (netfs_make_peropen): Add and use CONTEXT parameter.
+	* release-peropen.c (netfs_release_peropen): Finalize new state.
+
+Wed Feb 19 23:58:40 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-read.c (netfs_S_io_read): Support reading from symlinks.
+
 Fri Feb 14 12:34:11 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-reparent.c (diskfs_S_file_reparent): New function, from
