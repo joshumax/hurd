@@ -40,7 +40,7 @@ all:
 
 
 # Root of installation and source directories
-prefix := /home/gd4/hurd-cross/hurd-image
+prefix := /home/gd4/hurdinst
 exec_prefix := $(prefix)
 srcdir := /home/gd4/gnu/hurd
 
