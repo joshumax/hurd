@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fsys_S.h"
 
 kern_return_t
-trivfs_S_fsys_startup (mach_port_t fsys,
+trivfs_S_fsys_startup (struct trivfs_control *cntl,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
 		       mach_port_t *realnodetype,
@@ -34,7 +34,7 @@ trivfs_S_fsys_startup (mach_port_t fsys,
 }
 
 kern_return_t
-trivfs_S_fsys_getpriv (mach_port_t fsys,
+trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
 		       mach_port_t *host,
 		       mach_port_t *dev,
 		       mach_port_t *fstask)
@@ -43,7 +43,7 @@ trivfs_S_fsys_getpriv (mach_port_t fsys,
 }
 
 kern_return_t
-trivfs_S_fsys_init (mach_port_t fsys,
+trivfs_S_fsys_init (struct trivfs_cntl *,
 		    mach_port_t proc,
 		    mach_msg_type_name_t proctype,
 		    mach_port_t auth,
@@ -53,7 +53,7 @@ trivfs_S_fsys_init (mach_port_t fsys,
 }
 
 kern_return_t
-trivfs_S_fsys_getfile (mach_port_t fsys,
+trivfs_S_fsys_getfile (struct trivfs_cntl *,
 		       uid_t *genuids,
 		       u_int ngenuids,
 		       uid_t *gengids,
