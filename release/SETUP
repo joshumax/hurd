@@ -1,6 +1,18 @@
 #!/bin/bash
 # Setup critical hurd translators
 
+BOOT_DEV="$1"
+if [ ! "$BOOT_DEV" ]; then
+  echo "No boot device specified.  Here are some possible devices to use:"
+  /bin/devprobe sd0 hd0 sd1 hd1
+  echo -n "Boot device? "
+  read BOOT_DEV
+fi
+
+if [ "$BOOT_DEV" -a ! /bin/devprobe -s "$BOOT_DEV" ]; then
+  echo 2>&1 "$0: $BOOT_DEV: No such device known"
+fi
+
 set -v
 
 # Make sure the filesystem is writable
@@ -13,6 +25,18 @@ fsysopts / --writable
 # Setup crucial devices
 cd /dev
 /bin/sh ./MAKEDEV std ptyp ptyq
+
+set +v
+
+if test "$BOOT_DEV"; then
+  /bin/sh ./MAKEDEV "$BOOT_DEV"
+  echo -n "Install grub as main boot record on $BOOT_DEV? [y] "
+  read yn
+  case "$yn" in
+    "" | "[yY]*")
+      /bin/sh /INSTALL-GRUB-MBR /dev/$BOOT_DEV;;
+  esac
+fi
 
 echo 'Hit ^C now for shell prompt or RET to reboot'
 read response
