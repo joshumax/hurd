@@ -29,6 +29,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 					    vm_offset_t offset,
 					    vm_size_t length)
 {
+  error_t err = 0;
   struct pager *p;
   struct lock_request *lr;
 
@@ -41,17 +42,17 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
       return EOPNOTSUPP;
     }
 
+  mutex_lock (&p->interlock);
+  _pager_wait_for_seqno (p, seqno);
+
   if (control != p->memobjcntl)
     {
       printf ("lock_completed: bad control port\n");
-      ports_port_deref (p);
-      return EPERM;
+      err = EPERM;
+      goto out;
     }
 
   mach_port_deallocate (mach_task_self (), control);
-
-  mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
 
   for (lr = p->lock_requests; lr; lr = lr->next)
     if (lr->start == offset && lr->end == offset + length)
@@ -67,9 +68,10 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
     barf ("orphaned lock_request: p %#x <port = %d>; offset %#x; length %#x\n",
 	  (int) p, p->port.port_right, offset, length);
       
+ out:
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
   ports_port_deref (p);
 
-  return 0;
+  return err;
 }
