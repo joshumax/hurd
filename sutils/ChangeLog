@@ -1,3 +1,7 @@
+1997-06-25  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh (mkdev): Add missing `ln' to command for stderr.
+
 1997-06-24  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh: Use bash fancy variables instead of various programs.
