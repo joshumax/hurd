@@ -74,4 +74,8 @@ trivfs_S_io_sigio (struct trivfs_protid *cred)
   return EOPNOTSUPP;
 }
 
-		       
+kern_return_t
+trivfs_S_io_readnotify (struct trivfs_protid *cred)
+{
+  return EOPNOTSUPP;
+}
