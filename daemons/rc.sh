@@ -15,6 +15,7 @@ then
 	dev=`echo $fsargs | sed 's/^.* \([^ ]*\)$/\1/' `
 	type=`echo $fsargs | sed 's/^\/hurd\/\(.*\)\.static.*$/\1/' `
 
+	fsysopts / -r
 	fsck.$type -p /dev/r$dev
 
 	case $? in
