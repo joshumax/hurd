@@ -119,28 +119,26 @@ extern unsigned long name_cache_init(unsigned long start, unsigned long end);
 #define IS_RDONLY(inode) (((inode)->i_sb) && ((inode)->i_sb->s_flags & MS_RDONLY))
 #define IS_APPEND(inode) ((inode)->i_flags & S_APPEND)
 #define IS_IMMUTABLE(inode) ((inode)->i_flags & S_IMMUTABLE)
+
+/* ---------------------------------------------------------------- */
 
-struct super_block
-{
-  void *s_dev;			/* actually a point to the disk image */
-  char *s_devname;
-  mach_port_t s_device_port;
+struct user_pager_info *diskpager;
+mach_port_t diskpagerport;
+off_t diskpagersize;
 
-  struct user_pager_info *s_pager;
-  mach_port_t s_pager_port;
-  off_t s_pager_size;
+void *disk_image;
+char *devname;
+mach_port_t ext2fs_device;
 
-  spin_lock_t file_pagers_lock;
+/* Our in-core copy of the super-block.  */
+struct ext2_super_block *sblock;
+/* What to lock if changing the super block.  */
+spin_lock_t sb_lock;
+/* Where the super-block is on the disk.  */
+char *disk_sblock;
 
-  unsigned long s_blocksize;
-  struct mutex s_lock;
-  unsigned char s_dirt;
-  unsigned long s_flags;
-  unsigned long s_magic;
-  union {
-    struct ext2_sb_info ext2_sb;
-  } u;
-};
+/* The filesystem block-size.  */
+unsigned long block_size;
 
 /* ---------------------------------------------------------------- */
 
@@ -150,17 +148,6 @@ spin_lock_t alloclock;
 
 spin_lock_t gennumberlock;
 u_long nextgennumber;
-
-/* ---------------------------------------------------------------- */
-
-/* The compat_mode specifies whether or not we write
-   extensions onto the disk. */
-enum compat_mode
-{
-  COMPAT_GNU = 0,
-  COMPAT_LINUX = 1
-} compat_mode;
-
 
 /* ---------------------------------------------------------------- */
 
@@ -175,6 +162,61 @@ enum compat_mode
 #define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
 #define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
 
-#define bread(void *dev, long block, long amount) \
-  ((char *)(vm_addres_t)dev + block * DEV_BSIZE)
+#define bread(long block, long amount) \
+  ((char *)diskimage + block * DEV_BSIZE)
 #define brelse(char *bh) ((void)0)
+
+
+/* Functions for looking inside disk_image */
+
+/* Returns a pointer to the disk block BLOCK.  */
+#define baddr(block) (((char *)disk_image) + (block) * DEV_BSIZE)
+
+/* Get the descriptor for the block group inode INUM is in.  */
+extern inline struct ext2_group_desc *
+block_group(unsigned long block_group)
+{
+  int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
+  unsigned long group_desc = bg_num / desc_per_block;
+  unsigned long desc = bg_num % desc_per_block;
+  return ((struct ext2_group_desc *)baddr(sb_block_num + group_desc)) + desc;
+}
+
+/* Convert an inode number to the dinode on disk. */
+extern inline struct ext2_inode *
+dino (ino_t inum)
+{
+  unsigned long bg_num = (inum - 1) / sblock->s_inodes_per_group;
+  struct ext2_group_desc *bg = block_group(bg_num);
+  unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
+  unsigned long block = bg.bg_inode_table + (bg_num / inodes_per_block);
+  return ((struct ext2_inode *)baddr(block)) + inum % inodes_per_block;
+}
+
+/* Convert a indirect block number to a daddr_t table. */
+extern inline daddr_t *
+indir_block (daddr_t bno)
+{
+  return (daddr_t *) (disk_image + fsaddr (sblock, bno));
+}
+
+/* Convert a cg number to the cylinder group. */
+extern inline struct cg *
+cg_locate (int ncg)
+{
+  return (struct cg *) (disk_image + fsaddr (sblock, cgtod (sblock, ncg)));
+}
+
+/* Sync part of the disk */
+extern inline void
+sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
+{
+  pager_sync_some (diskpager->p, fsaddr (sblock, blkno), nbytes, wait);
+}
+
+/* Sync an disk inode */
+extern inline void
+sync_dinode (int inum, int wait)
+{
+  sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
+}
