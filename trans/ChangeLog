@@ -1,5 +1,8 @@
 2002-05-18  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.c (netfs_S_file_exec): Call check_openmodes and extract a
+	ref to the send right with the node locked.
+
 	* fakeroot.c (new_node): Get a reference on NP to return to the caller.
 	(netfs_attempt_mkfile): Unlock before new_node call.
 	(new_node): Take new arg LOCKED, says idport_ihash_lock already held.
