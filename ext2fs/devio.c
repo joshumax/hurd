@@ -31,7 +31,7 @@ dev_write_sync (daddr_t addr,
 {
   int foo;
   assert (!diskfs_readonly);
-  if (device_write (ext2fs_device, 0, addr, (io_buf_ptr_t) data, len, &foo)
+  if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &foo)
       || foo != len)
     return EIO;
   return 0;
@@ -45,7 +45,7 @@ dev_write (daddr_t addr,
 	   long len)
 {
   assert (!diskfs_readonly);
-  if (device_write_request (ext2fs_device, MACH_PORT_NULL, 0, addr,
+  if (device_write_request (device_port, MACH_PORT_NULL, 0, addr,
 			    (io_buf_ptr_t) data, len))
     return EIO;
   return 0;
@@ -61,7 +61,7 @@ dev_read_sync (daddr_t addr,
 	       long len)
 {
   int foo;
-  deverr = device_read (ext2fs_device, 0, addr, len, (io_buf_ptr_t *)data,
+  deverr = device_read (device_port, 0, addr, len, (io_buf_ptr_t *)data,
 			(u_int *)&foo);
   if (deverr || foo != len)
     return EIO;
