@@ -23,7 +23,7 @@
 kern_return_t
 diskfs_S_io_select (struct protid *cred,
 		    int *type, 
-		    int *tag)
+		    int *tag __attribute__ ((unused)))
 {
   if (!cred)
     return EOPNOTSUPP;
