@@ -32,6 +32,10 @@
 #include "ps.h"
 #include "common.h"
 
+/* XXX */
+static char *get_syscall_name (int num) { return 0; }
+static char *get_rpc_name (mach_msg_id_t it) { return 0; }
+
 /* ---------------------------------------------------------------- */
 /* Getter definitions */
 
@@ -126,13 +130,14 @@ ps_get_state(proc_stat_t ps)
 const struct ps_getter ps_state_getter =
 {"state", PSTAT_STATE, (vf) ps_get_state};
 
-static int 
-ps_get_rpc(proc_stat_t ps)
+static void
+ps_get_wait (proc_stat_t ps, char **wait, int *rpc)
 {
-  return proc_stat_thread_rpc(ps);
+  *wait = ps->thread_wait;
+  *rpc = ps->thread_rpc;
 }
-const struct ps_getter ps_rpc_getter =
-{"RPC", PSTAT_THREAD_RPC, (vf) ps_get_rpc};
+const struct ps_getter ps_wait_getter =
+{"wait", PSTAT_THREAD_WAIT, ps_get_wait};
 
 static int 
 ps_get_vsize(proc_stat_t ps)
@@ -522,7 +527,7 @@ ps_emit_string0 (proc_stat_t ps, ps_getter_t getter, int width,
     {
       if (s0len > sizeof static_buf)
 	{
-	  buf = malloc(s0len + 1);
+	  buf = malloc (s0len + 1);
 	  if (buf == NULL)
 	    return ENOMEM;
 	}
@@ -542,7 +547,7 @@ ps_emit_string0 (proc_stat_t ps, ps_getter_t getter, int width,
     }
 
   {
-    error_t err = ps_stream_write_field (stream, buf, width);
+    error_t err = ps_stream_write_trunc_field (stream, buf, width);
     if (buf != static_buf)
       free(buf);
     return err;
@@ -560,10 +565,8 @@ ps_emit_string (proc_stat_t ps, ps_getter_t getter, int width,
 
   if (str == NULL)
     str = "";
-  else if (width != 0 && len > ABS(width))
-    str[ABS(width)] = '\0';
 
-  return ps_stream_write_field (stream, str, width);
+  return ps_stream_write_trunc_field (stream, str, width);
 }
 
 error_t
@@ -635,6 +638,73 @@ ps_emit_state (proc_stat_t ps, ps_getter_t getter, int width,
   return ps_stream_write_field (stream, buf, width);
 }
 
+error_t
+ps_emit_wait (proc_stat_t ps, ps_getter_t getter, int width,
+	      ps_stream_t stream)
+{
+  int rpc;
+  char *wait;
+  char buf[80];
+
+  G(getter, void)(ps, &wait, &rpc);
+
+  if (wait == 0)
+    return ps_stream_write_field (stream, "?", width);
+  else if (*wait == 0)
+    return ps_stream_write_field (stream, "-", width);
+  else if (strcmp (wait, "kernel") == 0)
+    /* A syscall.  RPC is actually the syscall number.  */
+    {
+      extern char *get_syscall_name (int num);
+      char *name = get_syscall_name (rpc);
+      if (! name)
+	{
+	  sprintf (buf, "syscall:%d", -rpc);
+	  name = buf;
+	}
+      return ps_stream_write_trunc_field (stream, name, width);
+    }
+  else if (rpc)
+    /* An rpc (with msg id RPC); WAIT describes the dest port.  */
+    {
+      char port_name_buf[20];
+      extern char *get_rpc_name (mach_msg_id_t num);
+      char *name = get_rpc_name (rpc);
+
+      /* See if we should give a more useful name for the port.  */
+      if (strcmp (wait, "init#0") == 0)
+	wait = "cwdir";		/* Current directory */
+      else if (strcmp (wait, "init#1") == 0)
+	wait = "crdir";		/* Root directory */
+      else if (strcmp (wait, "init#2") == 0)
+	wait = "auth";		/* Auth port */
+      else if (strcmp (wait, "init#3") == 0)
+	wait = "proc";		/* Proc port */
+      else if (strcmp (wait, "init#4") == 0)
+	wait = "bootstrap";	/* Bootstrap port */
+      else
+	/* See if we can shorten the name to fit better.  We happen know that
+	   all currently returned keys are unique in the first character. */
+	{
+	  char *sep = index (wait, '#');
+	  if (sep && sep > wait)
+	    {
+	      snprintf (port_name_buf, sizeof port_name_buf,
+			"%c%s", wait[0], sep);
+	      wait = port_name_buf;
+	    }
+	}
+
+      if (name)
+	snprintf (buf, sizeof buf, "%s:%s", wait, name);
+      else
+	snprintf (buf, sizeof buf, "%s:%d", wait, rpc);
+
+      return ps_stream_write_trunc_field (stream, buf, width);
+    }
+  else
+    return ps_stream_write_field (stream, wait, width);
+}
 /* ---------------------------------------------------------------- */
 /* comparison functions */
 
@@ -871,8 +941,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0},
   {"State",	0,	4,
    &ps_state_getter,	   ps_emit_state,   0,   	   0},
-  {"RPC",	0,	-6,
-   &ps_rpc_getter,         ps_emit_nz_int,  ps_cmp_ints,   ps_nominal_zint},
+  {"Wait",	0,	10,
+   &ps_wait_getter,        ps_emit_wait,    0,		   0},
   {"Sleep",	0,	-2,
    &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {"Susp",	0,	-2,
