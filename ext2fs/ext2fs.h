@@ -29,8 +29,18 @@
 #include <rwlock.h>
 
 #define __hurd__		/* Enable some hurd-specific fields.  */
+
+/* Types used by the ext2 header files.  */
+typedef u_int32_t __u32;
+typedef int32_t   __s32;
+typedef u_int16_t __u16;
+typedef int16_t   __s16;
+typedef u_int8_t  __u8;
+typedef int8_t    __s8;
+
 #include "ext2_fs.h"
 #include "ext2_fs_i.h"
+
 #undef __hurd__
 
 /* Define this if memory objects should not be cached by the kernel.
@@ -42,7 +52,7 @@
 int printf (const char *fmt, ...);
 
 /* A block number.  */
-typedef u32 block_t;
+typedef __u32 block_t;
 
 /* ---------------------------------------------------------------- */
 
