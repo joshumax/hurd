@@ -1,6 +1,6 @@
 /* Careful filename lookup
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -159,10 +159,10 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
   num_gids = getgroups (num_gids, gids);
   if (num_gids < 0)
     return errno;
-  
+
   /* Look things up ...  */
-  err = __hurd_file_name_lookup (&_hurd_ports_use, &__getdport, lookup,
-				 name, flags, mode & ~_hurd_umask,
+  err = __hurd_file_name_lookup (&_hurd_ports_use, &getdport, lookup,
+				 name, flags, mode & ~getumask (),
 				 &node);
 
   return err ? (__hurd_fail (err), MACH_PORT_NULL) : node;
