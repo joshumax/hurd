@@ -32,7 +32,7 @@ diskfs_S_io_stat (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   ioserver_get_conch (&np->conch);
-  if (diskfs_syncronous)
+  if (diskfs_synchronous)
     diskfs_node_update (np, 1);
   else
     diskfs_set_node_times (np);
