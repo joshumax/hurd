@@ -182,6 +182,25 @@ main(argc, argv)
       return 0;
     }
 
+  void prompt_for_root ()
+    {
+      static char new_root[MAXPATHLEN/2];
+
+      if (!root_name)
+	root_name = "UNKNOWN";
+      printf ("Root device name? [%s] ", root_name);
+      safe_gets(new_root, sizeof(new_root));
+
+      if (new_root[0] != '\0') {
+	root_name = new_root;
+	(void) strbuild(boot_script_name,
+			"/dev/",
+			root_name,
+			"/boot/servers.boot",
+			(char *)0);
+      }
+    }
+
   register kern_return_t	result;
   struct file scriptf;
 
@@ -190,6 +209,7 @@ main(argc, argv)
 	char			*flag_string;
 
 	boolean_t		ask_boot_script = 0;
+	boolean_t		ask_root_name = 0;
 
 	/*
 	 * Use 4Kbyte cthread wait stacks.
@@ -247,22 +267,14 @@ main(argc, argv)
 	 * root device was specificed, ask for the root device.
 	 */
 
-	if (!root_name || root_name [0] == '\0' || index(flag_string, 'a')) {
-	    static char		new_root[MAXPATHLEN/2];
-
-		printf("root device? [%s] ", root_name);
-		safe_gets(new_root, sizeof(new_root));
-
-		if (new_root[0] != '\0')
-		  root_name = new_root;
-	}
+	if (!root_name || root_name [0] == '\0' || index(flag_string, 'a'))
+	  prompt_for_root ();
 
 	(void) strbuild(boot_script_name,
 			"/dev/",
 			root_name,
 			"/boot/servers.boot",
 			(char *)0);
-
 	/*
 	 * If the '-q' (query) switch was specified, ask for the
 	 * server boot script.
@@ -272,6 +284,9 @@ main(argc, argv)
 	    ask_boot_script = TRUE;
 
 	while (TRUE) {
+	  if (ask_root_name)
+	    prompt_for_root ();
+
 	    if (ask_boot_script) {
 		char new_boot_script[MAXPATHLEN];
 
@@ -284,10 +299,18 @@ main(argc, argv)
 	    result = open_file(bootstrap_master_device_port,
 			       boot_script_name,
 			       &scriptf);
+	    if (result == D_NO_SUCH_DEVICE)
+	      {
+		printf ("Root device `%s' does not exist!\n", root_name);
+		ask_root_name = ask_boot_script = TRUE;
+		continue;
+	      }
+	    else
+	      ask_root_name = FALSE;
 	    if (result != 0) {
-		printf("Can't open server boot script %s: %d\n",
+		printf("Can't open server boot script %s: %s\n",
 			boot_script_name,
-			result);
+			strerror (result));
 		ask_boot_script = TRUE;
 		continue;
 	    }
