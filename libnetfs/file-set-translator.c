@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -78,7 +78,7 @@ netfs_S_file_set_translator (struct protid *user,
       && (passive_flags & FS_TRANS_EXCL))
     {
       err = netfs_validate_stat (np, user->user);
-      if (!err && np->istranslated)
+      if (!err && (np->nn_stat.st_mode & S_IPTRANS))
 	err = EBUSY;
       if (err)
 	goto out;
