@@ -23,7 +23,7 @@ const char *const mach_cpu_types[] =
     [CPU_TYPE_ALPHA] = "alpha",
   };
 
-const char *const mach_cpu_subtypes[][] =
+const char *const mach_cpu_subtypes[][32] =
   {
     [CPU_TYPE_VAX] =
       {
