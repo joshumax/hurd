@@ -23,7 +23,7 @@
 #include "priv.h"
 
 error_t
-diskfs_get_options (char **argz, unsigned *argz_len)
+_diskfs_get_options (char **argz, unsigned *argz_len)
 {
   extern int diskfs_sync_interval;
 
