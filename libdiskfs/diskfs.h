@@ -318,9 +318,8 @@ error_t diskfs_get_directs (struct node *dp, int entry, int n,
 
 /* The user must define this function.  For locked node NP (for which
    diskfs_node_translated is true) look up the name of its translator.
-   If the length is <= *NAMELEN, then store the name into **NAMEP; otherwise
-   set *NAMEP to newly vm_allocate'd storage holding the name.  Set
-   *NAMELEN to the length of the name.  */
+   Store the name into newly malloced storage; set *NAMELEN to the 
+   total length.  */
 error_t diskfs_get_translator (struct node *np, char **namep, u_int *namelen);
 
 /* The user must define this function.  For locked node NP, set
