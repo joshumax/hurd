@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -21,14 +21,14 @@ makemode := utilities
 targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread ping msgport rpctrace mount gcore
+	storeread ping msgport rpctrace mount gcore fakeauth
 special-targets = loginpr sush uptime
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c \
-	rpctrace.c mount.c gcore.c
+	rpctrace.c mount.c gcore.c fakeauth.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
@@ -70,7 +70,17 @@ ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-rpctrace: ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
+rpctrace: ../libthreads/libthreads.a \
+	  ../libports/libports.a ../libihash/libihash.a
+
+fakeauth: authServer.o auth_requestUser.o interruptServer.o \
+	  ../libthreads/libthreads.a \
+	  ../libports/libports.a ../libihash/libihash.a \
+	  ../libshouldbeinlibc/libshouldbeinlibc.a
+auth-MIGSFLAGS = -imacros $(srcdir)/../auth/authmutations.h
+fakeauth-CPPFLAGS = -I$(srcdir)/../auth
+authServer-CPPFLAGS = -I$(srcdir)/../auth
+auth_requestUser-CPPFLAGS = -I$(srcdir)/../auth
 
 mount: ../sutils/fstab.o ../sutils/clookup.o \
        $(foreach L,fshelp ports,../lib$L/lib$L.a)
