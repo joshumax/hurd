@@ -19,8 +19,7 @@ include ../Makeconf
 
 VPATH=.:../machine
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o syscall.o \
-	boot_machdep.o
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o boot_machdep.o
 
 boot: $(OBJS)
 	$(link)
