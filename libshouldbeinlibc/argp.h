@@ -229,6 +229,9 @@ struct argp
 #define ARGP_KEY_HELP_HEADER	0x2000003 /* Option header string. */
 #define ARGP_KEY_HELP_EXTRA	0x2000004 /* After all other documentation;
 					     TEXT is NULL for this key.  */
+/* Explanatory note emitted when duplicate option arguments have been
+   suppressed.  */
+#define ARGP_KEY_HELP_DUP_ARGS_NOTE 0x2000005 
 
 /* When an argp has a non-zero CHILDREN field, it should point to a vector of
    argp_child structures, each of which describes a subsidiary argp.  */
@@ -382,7 +385,7 @@ extern void (*argp_program_version_hook) __P ((FILE *__stream,
    argp_help if the ARGP_HELP_BUG_ADDR flag is set (as it is by various
    standard help messages), embedded in a sentence that says something like
    `Report bugs to ADDR.'.  */
-extern char *argp_program_bug_address;
+__const extern char *argp_program_bug_address;
 
 /* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* a Usage: message. */
@@ -430,22 +433,22 @@ extern void __argp_help __P ((__const struct argp *__argp, FILE *__stream,
 
 /* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
    from the set ARGP_HELP_*.  */
-extern void argp_state_help __P ((struct argp_state *__state, FILE *__stream,
-				  unsigned __flags));
-extern void __argp_state_help __P ((struct argp_state *__state, FILE *__stream,
-				    unsigned __flags));
+extern void argp_state_help __P ((__const struct argp_state *__state,
+				  FILE *__stream, unsigned __flags));
+extern void __argp_state_help __P ((__const struct argp_state *__state,
+				    FILE *__stream, unsigned __flags));
 
 /* Possibly output the standard usage message for ARGP to stderr and exit.  */
-extern void argp_usage __P ((struct argp_state *__state));
-extern void __argp_usage __P ((struct argp_state *__state));
+extern void argp_usage __P ((__const struct argp_state *__state));
+extern void __argp_usage __P ((__const struct argp_state *__state));
 
 /* If appropriate, print the printf string FMT and following args, preceded
    by the program name and `:', to stderr, and followed by a `Try ... --help'
    message, then exit (1).  */
-extern void argp_error __P ((struct argp_state *__state, __const char *__fmt,
-			     ...))
+extern void argp_error __P ((__const struct argp_state *__state,
+			     __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 2, 3)));
-extern void __argp_error __P ((struct argp_state *__state,
+extern void __argp_error __P ((__const struct argp_state *__state,
 			       __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 2, 3)));
 
@@ -457,11 +460,13 @@ extern void __argp_error __P ((struct argp_state *__state,
    difference between this function and argp_error is that the latter is for
    *parsing errors*, and the former is for other problems that occur during
    parsing but don't reflect a (syntactic) problem with the input.  */
-extern void argp_failure __P ((struct argp_state *__state, int __status,
-			       int __errnum, __const char *__fmt, ...))
+extern void argp_failure __P ((__const struct argp_state *__state,
+			       int __status, int __errnum,
+			       __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 4, 5)));
-extern void __argp_failure __P ((struct argp_state *__state, int __status,
-				 int __errnum, __const char *__fmt, ...))
+extern void __argp_failure __P ((__const struct argp_state *__state,
+				 int __status, int __errnum,
+				 __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 4, 5)));
 
 /* Returns true if the option OPT is a valid short option.  */
@@ -494,7 +499,7 @@ extern void *__argp_input __P ((__const struct argp *argp,
 #endif
 
 ARGP_EI void
-__argp_usage (struct argp_state *__state)
+__argp_usage (__const struct argp_state *__state)
 {
   __argp_state_help (__state, stderr, ARGP_HELP_STD_USAGE);
 }
