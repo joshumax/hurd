@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: stack.c,v $
+ * Revision 1.5  1995/12/10 13:41:30  roland
+ * (addr_range_check, probe_stack): Functions #if 0'd out.
+ * (stack_init): Don't call probe_stack or frob old stack at all.
+ * Default cthread_stack_size to 16 pages if it is zero.
+ *
  * Revision 1.4  1994/05/05 16:00:09  roland
  * entered into RCS
  *
@@ -282,9 +287,9 @@ probe_stack(stack_bottom, stack_top)
 #endif
 
 /* For GNU: */
-unsigned long int __hurd_threadvar_stack_mask;
-unsigned long int __hurd_threadvar_stack_offset;
-unsigned int __hurd_threadvar_max;
+extern unsigned long int __hurd_threadvar_stack_mask;
+extern unsigned long int __hurd_threadvar_stack_offset;
+extern unsigned int __hurd_threadvar_max;
 
 vm_offset_t
 stack_init(p)
