@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/hurd_types.h>
 #include <hurd.h>
 #include <hurd/startup.h>
+#include <assert.h>
 
 #include "proc.h"
 
@@ -50,6 +51,7 @@ main ()
 {
   mach_port_t boot;
   mach_port_t authhandle;
+  error_t err;
 
   task_get_bootstrap_port (mach_task_self (), &boot);
 
@@ -59,8 +61,12 @@ main ()
   self_proc = new_proc (mach_task_self ()); /* proc 0 is the procserver */
   startup_proc = new_proc (MACH_PORT_NULL); /* proc 1 is init */
 
-  startup_procinit (boot, startup_proc->p_reqport, &startup_proc->p_task,
-		    &authhandle, &master_host_port, &master_device_port);
+  mach_port_insert_right (mach_task_self (), startup_proc->p_reqport,
+			  startup_proc->p_reqport, MACH_MSG_TYPE_MAKE_SEND);
+  err = startup_procinit (boot, startup_proc->p_reqport, &startup_proc->p_task,
+			  &authhandle, &master_host_port, &master_device_port);
+  assert (!err);
+  mach_port_deallocate (mach_task_self (), startup_proc->p_reqport);
 
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle);
   mach_port_deallocate (mach_task_self (), boot);
