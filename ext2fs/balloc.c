@@ -77,7 +77,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
 		"Block = %lu, count = %lu",
 		block, count);
   gdp = group_desc (block_group);
-  bh = baddr (gdp->bg_block_bitmap);
+  bh = bptr (gdp->bg_block_bitmap);
 
   if (check_strict &&
       (in_range (gdp->bg_block_bitmap, block, count) ||
@@ -161,7 +161,7 @@ repeat:
       if (j)
 	goal_attempts++;
 #endif
-      bh = baddr (gdp->bg_block_bitmap);
+      bh = bptr (gdp->bg_block_bitmap);
 
       ext2_debug ("goal is at %d:%d.\n", i, j);
 
@@ -246,7 +246,7 @@ repeat:
       spin_unlock (&sblock_lock);
       return 0;
     }
-  bh = baddr (gdp->bg_block_bitmap);
+  bh = bptr (gdp->bg_block_bitmap);
   r = memscan (bh, 0, sblock->s_blocks_per_group >> 3);
   j = (r - bh) << 3;
   if (j < sblock->s_blocks_per_group)
@@ -326,7 +326,7 @@ got_block:
       goto sync_out;
     }
 
-  bh = baddr (j);
+  bh = bptr (j);
   memset (bh, 0, block_size);
   pokel_add (&sblock_pokel, bh, block_size);
 
@@ -363,7 +363,7 @@ ext2_count_free_blocks ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      x = count_free (baddr (gdb->bg_block_bitmap), block_size);
+      x = count_free (bptr (gdb->bg_block_bitmap), block_size);
       printk ("group %d: stored = %d, counted = %lu\n",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
@@ -405,7 +405,7 @@ ext2_check_blocks_bitmap ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      bh = baddr (gdp->bg_block_bitmap);
+      bh = bptr (gdp->bg_block_bitmap);
 
       if (!test_bit (0, bh))
 	ext2_error ("ext2_check_blocks_bitmap",
