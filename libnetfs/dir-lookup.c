@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -162,7 +162,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  mutex_lock (&dnp->lock);
 	  error = netfs_attempt_create_file (diruser->user, dnp,
 					     filename, mode, &np);
-	  newnode = 1;
 
 	  /* If someone has already created the file (between our lookup
 	     and this create) then we just got EEXIST.  If we are
@@ -172,6 +171,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      mutex_lock (&dnp->lock);
 	      goto retry_lookup;
 	    }
+
+	  newnode = 1;
 	}
 
       /* All remaining errors get returned to the user */

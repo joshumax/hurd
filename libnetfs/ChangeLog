@@ -1,3 +1,8 @@
+Thu Mar  4 07:18:21 1999  Joel N. Weber II  <devnull@theobromine.ai.mit.edu>
+
+	* dir-lookup.c (netfs_S_dir_lookup): Only set newnode to 1 if the
+	lookup does not need to be retried as a result of getting EEXIST.
+
 1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-revoke.c (netfs_S_io_revoke): Use ports_class_iterate.
