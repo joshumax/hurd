@@ -198,9 +198,6 @@ sweep (struct ftpfs_dir *dir)
 	delete (e, dir);
 }
 
-/* Inode numbers.  */
-ino_t ftpfs_next_inode = 2;
-
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET.
    True is returned if successful, or false if there was a memory allocation
    error.  TIMESTAMP is used to record the time of this update.  */
@@ -209,11 +206,12 @@ update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
 	      const char *symlink_target, time_t timestamp)
 {
   ino_t ino;
+  struct ftpfs *fs = e->dir->fs;
 
   if (e->stat.st_ino)
     ino = e->stat.st_ino;
   else
-    ino = ftpfs_next_inode++;
+    ino = fs->next_inode++;
 
   e->name_timestamp = timestamp;
 
@@ -234,6 +232,8 @@ update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
 
   /* The st_ino field is always valid.  */
   e->stat.st_ino = ino;
+  e->stat.st_fsid = fs->fsid;
+  e->stat.st_fstype = FSTYPE_FTP;
 }
 
 /* Add the timestamp TIMESTAMP to the set used to detect bulk stats, and
