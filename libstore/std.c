@@ -1,6 +1,6 @@
 /* List of standard store classes
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,7 +25,7 @@
 const struct store_class *const
 store_std_classes[] = 
 {
-  &store_device_class, &store_file_class, &store_zero_class,
+  &store_device_class, &store_file_class, &store_zero_class, &store_task_class,
   &store_ileave_class, &store_concat_class, &store_remap_class,
   &store_query_class, 0
 };
