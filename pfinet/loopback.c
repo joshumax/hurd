@@ -1,5 +1,5 @@
 /* Loopback "device" for pfinet
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -30,26 +30,26 @@ int
 loopback_xmit (struct sk_buff *skb, struct device *dev)
 {
   int done;
-  
+
   if (!skb || !dev)
     return 0;
-  
+
   if (dev->tbusy)
     return 1;
-  
+
   dev->tbusy;
-  
+
   done = dev_rint (skb->data, skb->len, 0, dev);
   dev_kfree_skb (skb, FREE_WRITE);
-  
+
   while (done != 1)
     done = dev_rint (0, 0, 0, dev);
 
   dev->tbusy = 0;
   return 0;
 }
-   
-int
+
+u_int16_t
 loopback_type_trans (struct sk_buff *skb, struct device *dev)
 {
   return htons (ETH_P_IP);
@@ -60,11 +60,11 @@ void
 setup_loopback_device (char *name)
 {
   int i;
-  
+
   loopback_dev.name = name;
   for (i = 0; i < DEV_NUMBUFFS; i++)
     skb_queue_head_init (&loopback_dev.buffs[i]);
-  
+
   loopback_dev.open = 0;
   loopback_dev.stop = 0;
   loopback_dev.hard_start_xmit = loopback_xmit;
@@ -73,7 +73,7 @@ setup_loopback_device (char *name)
   loopback_dev.type_trans = loopback_type_trans;
   loopback_dev.get_stats = 0;
   loopback_dev.set_multicast_list = 0;
-  
+
   loopback_dev.type = 0;
   loopback_dev.addr_len = 0;
   loopback_dev.flags = IFF_LOOPBACK | IFF_BROADCAST | IFF_UP;
@@ -94,6 +94,3 @@ setup_loopback_device (char *name)
   ip_rt_add (RTF_HOST, loopback_dev.pa_addr, 0xffffffff, 0, &loopback_dev,
 	     loopback_dev.mtu, 0);
 }
-
-
-
