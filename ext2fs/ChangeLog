@@ -1,3 +1,9 @@
+2004-01-10  Roberto Reale  <rreale@iol.it>
+
+	* ext2fs.h (ext2_getblk): Fix typo in comment.
+	* getblk.c (ext2_getblk): Likewise.
+	* dir.c (diskfs_get_directs): Likewise.
+
 2002-10-08  Roland McGrath  <roland@frob.com>
 
 	* ext2fs.h (struct disknode): New member `info_i_translator'.
