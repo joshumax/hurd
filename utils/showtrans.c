@@ -22,105 +22,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
+#include <argp.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 #include <error.h>
 #include <argz.h>
-
-/* ---------------------------------------------------------------- */
 
-#define USAGE "Usage: %s [OPTION...] FILE...\n" 
-
-#define SHORT_OPTIONS "hs?"
-
-static void
-usage(status)
-     int status;
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	      program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -p, --prefix               always display `FILENAME: ' before translators\n\
-  -P, --no-prefix            never display `FILENAME: ' before translators\n\
-  -s, --silent               no output; useful when checking error status\n\
-      --help                 give this help list\n\
-");
-    }
-
-  exit(status);
-}
-
-static struct option options[] =
-{
-  {"prefix", no_argument, 0, 'p'},
-  {"no-prefix", no_argument, 0, 'P'},
-  {"silent", no_argument, 0, 's'},
-  {"quiet", no_argument, 0, 's'},
-  {"help", no_argument, 0, '&'},
-  {0, 0, 0, 0}
+  {"prefix",    'p', 0, 0, "always display `FILENAME: ' before translators"},
+  {"no-prefix", 'P', 0, 0, "never display `FILENAME: ' before translators"},
+  {"silent",    's', 0, 0, "no output; useful when checking error status"},
+  {"quiet",     'q', 0, OPTION_ALIAS | OPTION_HIDDEN},
+  {0, 0}
 };
+
+static char *args_doc = "FILE...";
+
+static char *doc = "If there are no args, the translator on the node attached \
+to standard input is printed.  A FILE argument of `-' also does this.";
 
 /* ---------------------------------------------------------------- */
 
 void 
-main(int argc, char *argv[])
+main (int argc, char *argv[])
 {
-  int opt;
-  /* The default exits status -- changed to 0 if we find any translators.  */
+  /* The default exit status -- changed to 0 if we find any translators.  */
   int status = 1;
-  /* Some option flags.  */
+  /* Some option flags.  -1 for PRINT_PREFIX means use the default.  */
   int print_prefix = -1, silent = 0;
 
-  /* Parse our options...  */
-  while ((opt = getopt_long(argc, argv, "+" SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 'p': print_prefix = 1; break;
-      case 'P': print_prefix = 0; break;
-      case 's': silent = 1; break;
-      case '&': usage(0); break;
-      default:  usage(-1); break;
-      }
-
-  if (print_prefix < 0)
-    /* By default, only print a filename prefix if there are multiple files. */
-    print_prefix = (argc > optind + 1);
-
-  while (optind != argc)
+  /* If NODE is MACH_PORT_NULL, prints an error message and exits, otherwise
+     prints the translator on NODE, possibly prefixed by `NAME:', and
+     deallocates NODE.  */
+  void print_node_trans (file_t node, char *name)
     {
-      char *node_name = argv[optind++];
-      file_t node = file_name_lookup(node_name, O_NOTRANS, 0);
-
       if (node == MACH_PORT_NULL)
-	error(0, errno, "%s", node_name);
+	error (0, errno, "%s", name);
       else
 	{
 	  char buf[1024], *trans = buf;
-	  int trans_len = sizeof(buf);
-	  error_t err = file_get_translator(node, &trans, &trans_len);
+	  int trans_len = sizeof (buf);
+	  error_t err = file_get_translator (node, &trans, &trans_len);
 
 	  switch (err)
 	    {
 	    case 0:
 	      /* Make the '\0's in TRANS printable.  */
-	      argz_stringify(trans, trans_len);
+	      argz_stringify (trans, trans_len);
 
 	      if (!silent)
 		if (print_prefix)
-		  printf("%s: %s\n", node_name, trans);
+		  printf ("%s: %s\n", name, trans);
 		else
-		  puts(trans);
+		  puts (trans);
 
 	      if (trans != buf)
-		vm_deallocate(mach_task_self(),
-			      (vm_address_t)trans, trans_len);
+		vm_deallocate (mach_task_self (),
+			       (vm_address_t)trans, trans_len);
 
 	      status = 0;
 
@@ -129,16 +89,47 @@ main(int argc, char *argv[])
 	    case EINVAL:
 	      /* NODE just doesn't have a translator.  */
 	      if (!silent && print_prefix)
-		puts(node_name);
+		puts (name);
 	      break;
 
 	    default:
-	      error(0, err, "%s", node_name);
+	      error (0, err, "%s", name);
 	    }
 
-	  mach_port_deallocate(mach_task_self(), node);
+	  mach_port_deallocate (mach_task_self (), node);
 	}
     }
 
-  exit(status);
+  /* Parse a command line option.  */
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
+    {
+      switch (key)
+	{
+	case ARGP_KEY_NO_ARGS:	/* The end of the argument list */
+	case ARGP_KEY_ARG:	/* A FILE argument */
+	  if (print_prefix < 0)
+	    /* By default, only print a prefix if there are multiple files. */
+	    print_prefix = (argc > state->index + 1);
+
+	  if (arg && strcmp (arg, "-") != 0)
+	    print_node_trans (file_name_lookup (arg, O_NOTRANS, 0), arg);
+	  else
+	    print_node_trans (getdport (0), "-");
+	  break;
+
+	  /* Options. */
+	case 'p': print_prefix = 1; break;
+	case 'P': print_prefix = 0; break;
+	case 's': case 'q': silent = 1; break;
+
+	default:  return EINVAL;
+	}
+      return 0;
+    }
+
+  struct argp argp = {options, parse_opt, args_doc, doc};
+
+  argp_parse (&argp, argc, argv, 0, 0);
+
+  exit (status);
 }
