@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.27 2002/01/02 02:07:37 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.28 2002/01/19 23:44:37 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -79,27 +79,7 @@ AC_SUBST(CFLAGS) AC_SUBST(CPPFLAGS) AC_SUBST(LDFLAGS)
 AC_CHECK_LIB(crypt, crypt, LIBCRYPT=-lcrypt)
 AC_SUBST(LIBCRYPT)
 
-# See if mig groks `retcode'.
-AC_CACHE_CHECK(whether $MIG supports the retcode keyword, hurd_cv_mig_retcode,
-[cat > conftest.defs <<\EOF
-#include <mach/std_types.defs>
-#include <mach/mach_types.defs>
-subsystem foobar 1000;
-type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
-	ctype: mach_port_t;
-simpleroutine foobar_reply (
-	reply_port: reply_port_t;
-	err: kern_return_t, RetCode);
-EOF
-if AC_TRY_COMMAND([CC="${CC}" ${MIG-false} -n conftest.defs 1>&AC_FD_CC]); then
-  hurd_cv_mig_retcode=yes
-else
-  hurd_cv_mig_retcode=no
-fi
-rm -f conftest*])
-if test $hurd_cv_mig_retcode = yes; then
-  AC_DEFINE(HAVE_MIG_RETCODE)
-fi
+hurd_MIG_RETCODE
 
 # See if --version-script is available.
 AC_CACHE_CHECK(for ld --version-script, hurd_cv_ld_version_script_option, [dnl

@@ -71,3 +71,26 @@ AC_MSG_RESULT($ac_cv_prog_cc_cross)
 AC_SUBST(cross_linkable)
 cross_compiling=$ac_cv_prog_cc_cross
 ])
+
+AC_DEFUN([hurd_MIG_RETCODE], [dnl
+# See if mig groks `retcode'.
+AC_CACHE_CHECK(whether $MIG supports the retcode keyword, hurd_cv_mig_retcode,
+[cat > conftest.defs <<\EOF
+#include <mach/std_types.defs>
+#include <mach/mach_types.defs>
+subsystem foobar 1000;
+type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
+	ctype: mach_port_t;
+simpleroutine foobar_reply (
+	reply_port: reply_port_t;
+	err: kern_return_t, RetCode);
+EOF
+if AC_TRY_COMMAND([CC="${CC}" ${MIG-false} -n conftest.defs 1>&AC_FD_CC]); then
+  hurd_cv_mig_retcode=yes
+else
+  hurd_cv_mig_retcode=no
+fi
+rm -f conftest*])
+if test $hurd_cv_mig_retcode = yes; then
+  AC_DEFINE(HAVE_MIG_RETCODE)
+fi])
