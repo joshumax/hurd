@@ -36,6 +36,9 @@ struct trans_link
 
   /* This indicates that someone has already started up the translator */
   int starting;
+
+  /* Linked list of all translators */
+  struct trans_link *next, **prevp;
 };
 
 /* The user must define this variable.  This is the libports type for
@@ -53,7 +56,7 @@ void fshelp_init_trans_link (struct trans_link *LINK);
    (and must be provided to the fshelp_start_translator call).  This
    should return the name of a receive right from which exactly one
    send right will be created.  */
-void fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
+mach_port_t fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
 
 /* Call this when the control field of a translator is null and you
    want to have the translator started so you can talk to it.  LINK is
@@ -70,8 +73,8 @@ void fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
    be a mutex which you hold; it is assumed that the trans_link
    structure will not be changed unless this is held. */
 error_t fshelp_start_translator (struct trans_link *link, char *name, 
-				 void *dir, void *node, uid_t uid, gid_t gid,
-				 struct mutex *lock);
+				 int namelen, void *dir, void *node, 
+				 uid_t uid, gid_t gid, struct mutex *lock);
 
 /* The user must define this function.  This will be called for the
    DIR and NODE arguments to fshelp_start_translator when the library
@@ -100,4 +103,14 @@ error_t fshelp_handle_fsys_startup (void *portstruct, mach_port_t ctl,
    for ports of type fshelp_transboot_port_type. */
 void fshelp_transboot_clean (void *arg);
 
+/* Call function FUNC for each translator that has completed its
+   startup.  The arguments to FUNC are the translator and ARG 
+   respectively.  */
+void fshelp_translator_iterate (void (*func)(struct trans_link *, void *),
+				void *arg);
 
+/* A trans_link structure is being deallocated; clean up any state
+   we need to. */
+void fshelp_kill_translator (struct trans_link *link);
+
+					     
