@@ -1,5 +1,5 @@
-/*
-   Copyright (C) 1994, 2001 Free Software Foundation, Inc.
+/* A test for the Hurd timer and getchar
+   Copyright (C) 1994,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,6 +19,8 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <error.h>
 
 void
 alarm_handler (int signo)
@@ -28,7 +30,7 @@ alarm_handler (int signo)
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
   struct itimerval real_timer;
 
@@ -40,10 +42,7 @@ main()
   signal (SIGALRM, alarm_handler);
 
   if (setitimer (ITIMER_REAL, &real_timer, 0) < 0)
-    {
-      perror ("Setting timer");
-      exit (1);
-    }
+    error (1, errno, "Setting timer");
 
   while (1)
     {
@@ -52,10 +51,7 @@ main()
       fflush (stdout);
       c = getchar ();
       if (ferror (stdin))
-	{
-	  perror ("getchar");
-	  exit (1);
-	}
+	error (1, errno, "getchar");
       if (c == EOF)
 	{
 	  puts ("Saw EOF.  Pausing (no input)...");
