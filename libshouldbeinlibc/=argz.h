@@ -37,4 +37,15 @@ void argz_extract (char *argz, int len, char **argv);
    except the last into the character SEP.  */
 void argz_stringify(char *argz, int len, int sep);
 
+/* Add BUF, of length BUF_LEN to the argz vector in ARGZ & ARGZ_LEN.  */
+error_t
+argz_append (char **argz, unsigned *argz_len, char *buf, unsigned buf_len);
+
+/* Add STR to the argz vector in ARGZ & ARGZ_LEN.  This should be moved into
+   argz.c in libshouldbelibc.  */
+error_t argz_add (char **argz, unsigned *argz_len, char *str);
+
+/* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
+void argz_remove (char **argz, unsigned *argz_len, char *entry);
+
 #endif /* __ARGZ_H__ */
