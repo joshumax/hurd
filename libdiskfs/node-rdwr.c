@@ -55,7 +55,7 @@ diskfs_node_rdwr (struct node *np,
 	amt = np->dn_stat.st_size - off;
     }
 
-  err = _diskfs_rdwr_internal (np, data, off, amt, dir);
+  err = _diskfs_rdwr_internal (np, data, off, amt, dir, 0);
   if (!err && amtread)
     *amtread = amt;
 

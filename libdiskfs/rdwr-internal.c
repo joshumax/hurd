@@ -23,13 +23,14 @@
    to write from or fill on read.  OFFSET is the absolute address (-1
    not permitted here); AMT is the size of the read/write to perform;
    DIR is set for writing and clear for reading.  The inode must
-   be locked.  */
+   be locked.  If NOTIME is set, then don't update the mtime or atime. */
 error_t
 _diskfs_rdwr_internal (struct node *np,
 		       char *volatile data,
 		       volatile int offset, 
 		       volatile int amt, 
-		       int dir)
+		       int dir,
+		       int notime)
 {
   char *window;
   int winoff;
@@ -40,7 +41,7 @@ _diskfs_rdwr_internal (struct node *np,
   if (dir)
     assert (!diskfs_readonly);
 
-  if (!diskfs_readonly)
+  if (!diskfs_readonly && !notime)
     {
       if (dir)
 	np->dn_set_mtime = 1;
@@ -89,7 +90,7 @@ _diskfs_rdwr_internal (struct node *np,
     }
   assert (amt == 0 || err);
 
-  if (!diskfs_readonly)
+  if (!diskfs_readonly && !notime)
     {
       if (dir)
 	np->dn_set_mtime = 1;
