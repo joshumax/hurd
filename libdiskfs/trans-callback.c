@@ -50,13 +50,13 @@ static error_t
 _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
 				 int flags,
 				 mach_port_t *underlying,
-				 mach_msg_type_name_t underlying_type)
+				 mach_msg_type_name_t *underlying_type)
 {
   struct node *np = cookie1;
   mach_port_t *dotdot = cookie2;
   struct protid *newpi = 
     diskfs_make_protid (diskfs_make_peropen (np, flags, *dotdot),
-			np->dn_stat.st_uid, 1, np->dn_stat.st_gid, 1);
+			&np->dn_stat.st_uid, 1, &np->dn_stat.st_gid, 1);
 
   *underlying = ports_get_right (newpi);
   *underlying_type = MACH_MSG_TYPE_MAKE_SEND;
