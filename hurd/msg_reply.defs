@@ -47,6 +47,7 @@ skip; /* msg_get_environment */
 skip; /* msg_set_environment */
 skip; /* msg_get_env_variable */
 skip; /* msg_set_env_variable */
+skip; /* Obsolete io_select_done.  */
 skip; /* msg_startup_dosync */
 
 simpleroutine msg_sig_post_untraced_reply (
