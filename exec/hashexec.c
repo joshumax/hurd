@@ -24,16 +24,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <unistd.h>
 #include <envz.h>
 
-extern error_t hurd_file_name_path_lookup (error_t (*use_init_port)
-					   (int which,
-					    error_t (*operate) (mach_port_t)),
-					   file_t (*get_dtable_port) (int fd),
-					   const char *file_name,
-					   const char *path,
-					   int flags, mode_t mode,
-					   file_t *result,
-					   char **prefixed_name);
-
 /* This is called to check E for a #! interpreter specification.  E has
    already been prepared (successfully) and checked (unsuccessfully).  If
    we return success, our caller just returns success for the RPC; we must
@@ -127,7 +117,7 @@ check_hashbang (struct execdata *e,
   /* Look up NAME on behalf of the client.  */
   inline error_t lookup (const char *name, int flags, mach_port_t *result)
     {
-      return hurd_file_name_lookup (&user_port, &user_fd,
+      return hurd_file_name_lookup (&user_port, &user_fd, 0,
 				    name, flags, 0, result);
     }
 
@@ -226,7 +216,7 @@ check_hashbang (struct execdata *e,
 		      confstr (_CS_PATH, path, len);
 		    }
 
-		  err = hurd_file_name_path_lookup (user_port, user_fd,
+		  err = hurd_file_name_path_lookup (user_port, user_fd, 0,
 						    name, path, O_EXEC, 0,
 						    &name_file, &pfxed_name);
 		  if (!err && pfxed_name)
