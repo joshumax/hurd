@@ -1,6 +1,6 @@
 /* Root usermux node
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -147,14 +147,13 @@ get_dirents (struct node *dir,
 	    }
 
 	  if (err)
-	    vm_deallocate (mach_task_self (), (vm_address_t)*data, size);
+	    munmap (*data, size);
 	  else
 	    {
 	      vm_address_t alloc_end = (vm_address_t)(*data + size);
 	      vm_address_t real_end = round_page (p);
 	      if (alloc_end > real_end)
-		vm_deallocate (mach_task_self (),
-			       real_end, alloc_end - real_end);
+		munmap ((caddr_t) real_end, alloc_end - real_end);
 	      *data_len = p - *data;
 	      *data_entries = count;
 	    }
@@ -192,8 +191,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
       if (cached_data_len > 0)
 	/* Free the old cache.  */
 	{
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t)cached_data, cached_data_len);
+	  munmap (cached_data, cached_data_len);
 	  cached_data = 0;
 	  cached_data_len = 0;
 	}
