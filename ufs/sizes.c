@@ -39,11 +39,12 @@ diskfs_truncate (struct node *np,
 {
   int offset;
   struct dinode *di = dino (np->dn->number);
-  int blocksfreed = 0;
+  volatile int blocksfreed = 0;
   error_t err;
   int i;
   struct iblock_spec indirs[NIADDR + 1];
-  daddr_t lbn;
+  volatile daddr_t lbn;
+  struct user_pager_info *upi;
 
   if (length >= np->dn_stat.st_size)
     return 0;
@@ -89,19 +90,26 @@ diskfs_truncate (struct node *np,
      immediately.  (We are changing the data implicitly to zeros
      and doing it without the kernels immediate knowledge;
      this forces us to help out the kernel thusly.) */
-  if (np->dn->fileinfo)
+  spin_lock (&node2pagelock);
+  upi = np->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node2pagelock);
+  
+  if (upi)
     {
       mach_port_t obj;
       
-      pager_change_attributes (np->dn->fileinfo->p, MAY_CACHE,
+      pager_change_attributes (upi->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_NONE, 1);
       obj = diskfs_get_filemap (np);
       mach_port_insert_right (mach_task_self (), obj, obj,
 			      MACH_MSG_TYPE_MAKE_SEND);
       poke_pages (obj, round_page (length), round_page (np->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (np->dn->fileinfo->p, round_page (length),
+      pager_flush_some (upi->p, round_page (length),
 			np->allocsize - length, 1);
+      pager_unreference (upi->p);
     }
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
@@ -118,9 +126,10 @@ diskfs_truncate (struct node *np,
   /* err XXX */
   
   /* We don't support triple indirs */
-  assert (indirs[0].offset == -1 
-	  || indirs[1].offset == -1
-	  || indirs[2].offset == -1);
+  assert (indirs[3].offset == -2);
+
+  err = diskfs_catch_exception ();
+  /* err XXX */
 
   /* BSD carefully finds out how far to clear; it's vastly simpler
      to just clear everything after the new last block. */
@@ -252,9 +261,17 @@ diskfs_truncate (struct node *np,
   diskfs_end_catch_exception ();
 
   /* Now we can permit delayed copies again. */
-  if (np->dn->fileinfo)
-    pager_change_attributes (np->dn->fileinfo->p, MAY_CACHE,
-			     MEMORY_OBJECT_COPY_DELAY, 0);
+  spin_lock (&node2pagelock);
+  upi = np->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node2pagelock);
+  if (upi)
+    {
+      pager_change_attributes (upi->p, MAY_CACHE,
+			       MEMORY_OBJECT_COPY_DELAY, 0);
+      pager_unreference (upi->p);
+    }
   
   return err;
 }
