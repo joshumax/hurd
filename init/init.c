@@ -307,7 +307,7 @@ run_for_real (char *filename)
   getchar ();
   err = file_exec (file, task, 0,
 		   NULL, 0, /* No args.  */
-		   "", 1, /* No env.  */
+		   NULL, 0, /* No env.  */
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
 		   INIT_PORT_MAX,
