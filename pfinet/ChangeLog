@@ -1,3 +1,8 @@
+1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* linux-inet/tcp.c (tcp_conn_request): SK->err holds errno values,
+	not linux negative errno return vals.
+
 Wed Aug 20 14:05:52 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): New args for
