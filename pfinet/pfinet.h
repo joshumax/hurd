@@ -57,14 +57,14 @@ struct sock_addr
 };
 
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
-void setup_ethernet_device (void);
+void setup_ethernet_device (char *);
 void become_task_protid (struct trivfs_protid *);
 void become_task (struct sock_user *);
 struct sock_user *make_sock_user (struct socket *, int);
 error_t make_sockaddr_port (struct socket *, int, 
 			    mach_port_t *, mach_msg_type_name_t *);
 void init_devices (void);
-void init_mapped_time (void);
+void init_time (void);
 void inet_proto_init (struct net_proto *);
 void ip_rt_add (short, u_long, u_long, u_long, struct device *, 
 		u_short, u_long);
