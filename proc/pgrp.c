@@ -1,5 +1,5 @@
 /* Session and process group manipulation 
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -308,8 +308,8 @@ S_proc_setpgrp (struct proc *callerp,
       join_pgrp (p);
     }
   else
-    nowait_proc_newids (p->p_msgport, p->p_task, p->p_parent->p_pid,
-			pg->pg_pgid, !pg->pg_orphcnt);
+    nowait_msg_proc_newids (p->p_msgport, p->p_task, p->p_parent->p_pid,
+			    pg->pg_pgid, !pg->pg_orphcnt);
   
   return 0;
 }
