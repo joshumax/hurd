@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@ dir := libtrivfs
 makemode := library
 
 FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
-	dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
+	dir-rename.c dir-rmdir.c dir-unlink.c dir-reparent.c file-chauthor.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c \
 	file-getlinknode.c file-lock.c file-set-trans.c file-statfs.c \

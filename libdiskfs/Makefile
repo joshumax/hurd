@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,14 +19,14 @@ dir := libdiskfs
 makemode := library
 
 libname = libdiskfs
-FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c \
-	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
-	file-get-trans.c file-get-transcntl.c file-getfh.c file-getlinknode.c \
-	file-get-fs-opts.c \
-	file-set-trans.c file-statfs.c file-sync.c file-syncfs.c \
-	file-set-size.c file-utimes.c file-getcontrol.c file-lock.c \
-	file-chmod.c dir-readdir.c file-lock-stat.c file-exec.c dir-chg.c \
-	file-chg.c file-access.c file-inv-trans.c
+FSSRCS= dir-chg.c dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
+	dir-readdir.c dir-rename.c dir-reparent.c dir-rmdir.c dir-unlink.c \
+	file-access.c file-chauthor.c file-chflags.c file-chg.c \
+	file-chmod.c file-chown.c file-exec.c file-get-fs-opts.c \
+	file-get-trans.c file-get-transcntl.c file-getcontrol.c \
+	file-getfh.c file-getlinknode.c file-inv-trans.c file-lock-stat.c \
+	file-lock.c file-set-size.c file-set-trans.c file-statfs.c \
+	file-sync.c file-syncfs.c file-utimes.c
 IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c \
 	io-interrupt.c io-map-cntl.c io-map.c io-modes-get.c io-modes-off.c \
 	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c \
