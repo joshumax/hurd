@@ -33,7 +33,21 @@
  *	Added CONDITION_NAMED_INITIALIZER and MUTEX_NAMED_INITIALIZER1
  * 	macros. They take one argument: a name string.
  *
- * $Log:	cthreads.h,v $
+ * $Log: cthreads.h,v $
+ * Revision 1.18  2002/05/27 02:50:10  roland
+ * 2002-05-26  Roland McGrath  <roland@frob.com>
+ *
+ * 	Changes merged from CMU MK83a version:
+ * 	* cthreads.h, options.h: Various cleanups.
+ * 	* call.c, cthread_data.c, sync.c, mig_support.c: Likewise.
+ * 	* i386/cthreads.h, i386/thread.c, i386/lock.s: Likewise.
+ * 	* cthread_internals.h: Add decls for internal functions.
+ * 	(struct cproc): Use vm_offset_t for stack_base and stack_size members.
+ * 	Use natural_t for context member.
+ * 	* cprocs.c: Use prototypes for all defns.
+ * 	* cthreads.c: Likewise.
+ * 	(cthread_exit): Cast any_t to integer_t before int.
+ *
  * Revision 2.17  93/05/10  19:43:11  rvb
  * 	Removed include of stdlib.h and just define malloc
  * 	[93/04/27            mrt]
@@ -375,7 +389,7 @@ typedef struct mutex {
 	MACRO_END
 #define	mutex_set_name(m, x)	((m)->name = (x))
 #define	mutex_name(m)		((m)->name != 0 ? (m)->name : "?")
-#define	mutex_clear(m)		/* nop */???
+#define	mutex_clear(m)		mutex_init(m)
 #define	mutex_free(m)		free((m))
 
 #define mutex_try_lock(m) spin_try_lock(&(m)->held)
@@ -470,6 +484,12 @@ extern int	cond_signal(condition_t _cond);
 extern void	cond_broadcast(condition_t _cond);
 
 extern void	condition_wait(condition_t _cond, mutex_t _mutex);
+extern int	hurd_condition_wait(condition_t _cond, mutex_t _mutex);
+
+extern void	condition_implies(condition_t _implicator,
+				  condition_t _implicatand);
+extern void	condition_unimplies(condition_t _implicator,
+				    condition_t _implicatand);
 
 /*
  * Threads.
