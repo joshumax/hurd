@@ -1,3 +1,9 @@
+Thu Oct 10 10:53:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* peropen-rele.c (diskfs_release_peropen): Before freeing PO,
+ 	release any user lock it's holding.
+	<sys/file.h>: New include.
+	
 Mon Oct  7 14:50:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-rmdir.c (diskfs_S_dir_rmdir): Return ENOTDIR if NP isn't a dir.
