@@ -14,11 +14,6 @@ Priorities:
 
 See `tasks', the exported task list.
 
-* RMS dictates:
-** O_RDONLY==0
-** "user-friendly" naming scheme for /dev
-
-* Settle termcap v. curses with rms et. al.
 * Contents of =pending-changes.
 * Make sure all the pieces of the Hurd have adequate version stuff. !
 * syslogify everything !
@@ -31,6 +26,7 @@ See `tasks', the exported task list.
 * Internationalization !
 * Use hostid in /etc/rc and mention it in installation instructions,
   when suitable sh-utils is released.
+* "user-friendly" naming scheme for /dev
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 
@@ -138,8 +134,13 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
-** term: find a way to reduce duplicate signals from repeated VINTR input
 ** magic: `ls -ld /dev/fd' and `test -d /dev/fd' should work.
+
+** term:
+*** find a way to reduce duplicate signals from repeated VINTR input
+*** when a session leader exits, netbsd SIGHUP's the terminal, drains output,
+    and then revokes it.  (See Posix.1-1996, p. 184, l. 64-68.)
+*** when a session leader sets the ospeed to 0, netbsd SIGHUP's the termianl.
 
 ** exec:
 *** convert stdio magic to use libio (when libc converts) !!!
@@ -276,11 +277,6 @@ deeming
 
 * Next release:
 ** transparent FTP working
-** our own bootable floppies
-** fdisk
-** cdrom with extensions working
-** libc 2.1
-** Have floppy nsswitch.conf use default feature when glibc 2.1 is in use.
 ** proc leaks dead names massively.
 ** something is still soaking up wired pages on lengthy compiles
 ** password server; eliminate other checkers of passwords
