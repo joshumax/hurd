@@ -42,8 +42,8 @@ routine startup_essential_task (
 
 /* This call registers a task as "notified", which means that if the
    system is going down, we should told about it and get a chance to
-   run.  A startup_dosync message (see msg.defs) will be sent to the
-   notify port. */
+   run.  A startup_dosync message (see startup_notify.defs) will be
+   sent to the notify port. */
 routine startup_request_notification (
 	server: startup_t;
 	notify_port: mach_port_t);
