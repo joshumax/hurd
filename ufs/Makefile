@@ -16,48 +16,27 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := ufs
-
-include ../Makeconf
-
-VPATH=.:../machine
+makemode := server
 
 SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
 	sizes.c subr.c tables.c 
-
-TAGSLIBS=libdiskfs libports libpager libioserver libfshelp libthreads
-
-DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h ChangeLog
-
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
+LCLHDRS = ufs.h fs.h dinode.h dir.h
+REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
+		../hurd/ioserver.h ../hurd/fshelp.h
+HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
+	libfshelp libdiskfs libthreads libports
+#HURDLIBS = libdiskfs libports libpager libioserver libfshelp
+target = ufs
 
-#LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
-LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
-	 $(libfshelp) $(libdiskfs) $(libthreads) $(libports)
-#LIBS = $(LIBPARTS)
-
-LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
-
-all: ufs
-
-# Don't use $^ in this rule; it will omit the duplicates in $(LIBS).
-ufs: $(OBJS) $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-# -Xlinker --no-keep-memory
+include ../Makeconf
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	rsh $(mighost) -n cd `pwd` \; \
 	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
 
-install: 
-
-clean:
-	rm -f *.o ufs
-relink:
-	rm -f ufs
-
 $(OBJS): ufs.h 
-$(OBJS): $(addprefix $(includedir)/hurd/,diskfs.h pager.h ioserver.h \
-				         fshelp.h ports.h)
+$(OBJS): $(REMHDRS)
 alloc.o: fs.h dinode.h
 consts.o: dinode.h
 dir.o: dir.h
@@ -68,17 +47,6 @@ pager.o: fs.h dinode.h
 sizes.o: fs.h dinode.h
 subr.o: fs.h
 tables.o: fs.h
-
-$(hurdinst)/lib/libdiskfscombined.a: $(LIBPARTS)
-	-mkdir foo
-	cd foo; $(AR) x $(libdiskfs)
-	cd foo; $(AR) x $(libports)
-	cd foo; $(AR) x $(libpager)
-	cd foo; $(AR) x $(libioserver)
-	cd foo; $(AR) x $(libfshelp)
-	cd foo; $(AR) cr $(hurdinst)/lib/libdiskfscombined.a *
-	rm -rf foo
-	$(RANLIB) $(hurdinst)/lib/libdiskfscombined.a
 
 $(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
 	$(MAKE) -C $(@D) $(@F)
