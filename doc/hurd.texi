@@ -590,4 +590,22 @@ another) while holding the conch except for those specified in this
 chapter.  Such calls may block indefinitely or fail silently.
 
 
+@node File interface
+@chapter File interface
+
+This chapter documents the interface for operating on files.
+
+@menu
+* Changing Status::             Changing the owner (etc.) of a file
+* Program Execution::           Executing files
+* File locking::                Implementing the flock call
+* File frobbing::               Other active calls on files
+* Opening files::               Looking up files in directories
+* Modifying directories::       Creating and deleting nodes
+* Notifications::               File and directory change callbacks
+* Translators::                 How to set and get translators
+@end menu
+
+
+
 @bye
