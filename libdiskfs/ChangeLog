@@ -1,3 +1,7 @@
+Thu Jul 24 12:57:26 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (find_cache): Grammar doc fix.
+
 1997-07-10  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-std-runtime.c (parse_opt): Turn off synchronous mode when

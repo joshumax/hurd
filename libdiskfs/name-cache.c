@@ -1,6 +1,6 @@
 /* Directory name lookup caching
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG, & Miles Bader.
 
    This file is part of the GNU Hurd.
@@ -70,7 +70,7 @@ struct stats partial_stats [NPARTIALS];
 
 
 /* If there's an entry for NAME, of length NAME_LEN, in directory DIR in the
-   cache, return it's entry, otherwise 0.  CACHE_LOCK must be held.  */
+   cache, return its entry, otherwise 0.  CACHE_LOCK must be held.  */
 static struct lookup_cache *
 find_cache (struct node *dir, const char *name, size_t name_len)
 {
