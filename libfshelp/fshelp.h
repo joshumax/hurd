@@ -102,6 +102,10 @@ void fshelp_transboot_clean (void *arg);
 void fshelp_translator_iterate (void (*func)(struct trans_link *, void *),
 				void *arg);
 
+/* Set the active translator port to null and clear state.  Deallocate
+   our send right on the translator control port. */
+void fshelp_translator_drop (struct trans_link *link);
+
 /* A trans_link structure is being deallocated; clean up any state
    we need to. */
 void fshelp_kill_translator (struct trans_link *link);
