@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 93, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,97,98,99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,10 +24,6 @@
 
 #include "priv.h"
 #include "fs_S.h"
-
-/* XXX - Temporary hack; this belongs in a header file, probably types.h. */
-#define major(x) ((int)(((unsigned) (x) >> 8) & 0xff))
-#define minor(x) ((int)((x) & 0xff))
 
 /* Implement dir_lookup as described in <hurd/fs.defs>. */
 kern_return_t

@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,9 +19,6 @@
 #include "fs_S.h"
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
-
-/* XXX - Temporary */
-#define makedev(maj,min) ((((maj)&0xFF)<<8)+((min)&0xFF))
 
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 kern_return_t
@@ -159,7 +156,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		  minor = strtol (arg, 0, 0);
 
-		  error = diskfs_validate_rdev_change (np, 
+		  error = diskfs_validate_rdev_change (np,
 						       makedev (major, minor));
 		  if (error)
 		    {
