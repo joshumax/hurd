@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#inlcude "io_S.h"
 
 error_t
 netfs_S_io_read (struct protid *user,
@@ -40,10 +41,22 @@ netfs_S_io_read (struct protid *user,
     }
   *datalen = amount;
 
+  mutex_lock (&user->po->np->lock);
   err = netfs_attempt_read (user->credential, user->po->np, 
-			    offset, datalen, *data);
+			    offset == -1 ? user->po->filepointer : offset, 
+			    datalen, *data);
+  if (offset == -1 && !err)
+    user->po->filepointer += *datalen;
+  mutex_unlock (&user->po->np->lock);
+
   if (err && alloced)
     vm_deallocate (mach_task_self (), (vm_address_t) *data, amount);
+
+  if (!err && alloced && (round_page (*datalen) < round_page (amount)))
+    vm_deallocate (mach_task_self (), 
+		   (vm_address_t) *data + round_page (*datalen),
+		   round_page (amount) - round_page (*datalen));
+
   return err;
 }
 
