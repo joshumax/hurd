@@ -207,6 +207,9 @@ struct proc_stat
     thread_basic_info_data_t thread_basic_info;
     thread_sched_info_data_t thread_sched_info;
 
+    /* Exec flags (see EXEC_* in <hurd/hurd_types.h>).  */
+    int exec_flags;
+
     /* A bitmask summarizing the scheduling state of this process and all its
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
     int state;
@@ -268,6 +271,7 @@ struct proc_stat
 #define PSTAT_TTY		0x4000 /* A ps_tty_t for the proc's terminal.*/
 #define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner.  */
 #define PSTAT_UMASK		0x10000 /* The proc's current umask.  */
+#define PSTAT_EXEC_FLAGS	0x20000	/* The process's exec flags.  */
 
 #define PSTAT_NUM_THREADS PSTAT_INFO
 
@@ -289,6 +293,7 @@ struct proc_stat
 #define PSTAT_STATE_NOMSG    0x2000	/* m no msg port */
 #define PSTAT_STATE_NOPARENT 0x4000	/* p no parent */
 #define PSTAT_STATE_ORPHANED 0x8000	/* o orphaned */
+#define PSTAT_STATE_TRACED   0x10000    /* x traced */
 
 
 /* This is a constant string holding a single character for each possible bit
