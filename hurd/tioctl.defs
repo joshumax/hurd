@@ -1,5 +1,5 @@
 /* Definitions for terminal ioctls
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -126,7 +126,8 @@ routine tioctl_tiocdrain (
 
 /* 95 TIOCSIG */
 routine tioctl_tiocsig (
-	port: io_t);
+	port: io_t;
+	signal: int);
 
 /* 96 TIOCEXT */
 routine tioctl_tiocext (
