@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -20,7 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
 #include "priv.h"
-#include <hurd/signal.h>
+#include <hurd/sigpreempt.h>
 #include <unistd.h>
 
 /* This is called to check E for a #! interpreter specification.  E has
@@ -164,21 +164,17 @@ check_hashbang (struct execdata *e,
 
   if (! e->error)
     {
-      /* This code is in a local function here for convenience.  Some things in
-	 this function need to be protected against faults while accessing ARGV
-	 and ENVP; below, we register to preempt signals on these fault areas
-	 before calling prepare_args, and unregister afterwards.  When such a
-	 fault is detected, the handler does `longjmp (args_faulted, 1)'.  */
-
       jmp_buf args_faulted;
-
-      inline void prepare_args (void)
+      void fault_handler (int signo)
+	{ longjmp (args_faulted, 1); }
+      error_t setup_args (struct hurd_signal_preempter *preempter)
 	{
-
 	  char *file_name = NULL;
 	  size_t namelen;
 
-	  if (! (flags & EXEC_SECURE))
+	  if (setjmp (args_faulted))
+	    file_name = NULL;
+	  else if (! (flags & EXEC_SECURE))
 	    {
 	      /* Try to figure out the file's name.  We guess that if ARGV[0]
 		 contains a slash, it might be the name of the file; and that
@@ -193,29 +189,12 @@ check_hashbang (struct execdata *e,
 	      fsid_t file_fsid;
 	      ino_t file_fileno;
 
-	      error = io_stat (file, &st); /* XXX insecure */
-	      if (error)
-		goto out;
-	      file_fstype = st.st_fstype;
-	      file_fsid = st.st_fsid;
-	      file_fileno = st.st_ino;
-
-	      if (memchr (argv, '\0', argvlen) == NULL)
+	      /* Search $PATH for NAME, opening a port NAME_FILE on it.
+		 This is encapsulated in a function so we can catch faults
+		 reading the user's environment.  */
+	      error_t search_path (struct hurd_signal_preempter *preempter)
 		{
-		  name = alloca (argvlen + 1);
-		  bcopy (argv, name, argvlen);
-		  name[argvlen] = '\0';
-		}
-	      else
-		name = argv;
-
-	      if (strchr (name, '/') != NULL)
-		error = lookup (name, 0, &name_file);
-	      else if (! setjmp (args_faulted))
-		{
-		  /* Search PATH for it.  If we fault accessing ENVP, setjmp
-		     will return again, nonzero this time, and we give up.  */
-
+		  error_t error;
 		  const char envar[] = "\0PATH=";
 		  char *path, *p;
 		  if (envplen >= sizeof (envar) &&
@@ -270,8 +249,32 @@ check_hashbang (struct execdata *e,
 			  break;
 			}
 		    } while ((p = path) != NULL);
+
+		  return p ? error : ENOENT;
+		}
+
+	      error = io_stat (file, &st); /* XXX insecure */
+	      if (error)
+		goto out;
+	      file_fstype = st.st_fstype;
+	      file_fsid = st.st_fsid;
+	      file_fileno = st.st_ino;
+
+	      if (memchr (argv, '\0', argvlen) == NULL)
+		{
+		  name = alloca (argvlen + 1);
+		  bcopy (argv, name, argvlen);
+		  name[argvlen] = '\0';
 		}
 	      else
+		name = argv;
+
+	      if (strchr (name, '/') != NULL)
+		error = lookup (name, 0, &name_file);
+	      else if ((error = hurd_catch_signal
+			(sigmask (SIGBUS) | sigmask (SIGSEGV),
+			 (vm_address_t) envp, (vm_address_t) envp + envplen,
+			 &search_path, SIG_ERR)))
 		name_file = MACH_PORT_NULL;
 
 	      if (!error && name_file != MACH_PORT_NULL)
@@ -319,16 +322,16 @@ check_hashbang (struct execdata *e,
 
 	  namelen = strlen (file_name) + 1;
 
+	  new_argvlen = argvlen + len + namelen;
+	  e->error = vm_allocate (mach_task_self (),
+				  (vm_address_t *) &new_argv,
+				  new_argvlen, 1);
+	  if (e->error)
+	    return e->error;
+
 	  if (! setjmp (args_faulted))
 	    {
-	      /* XXX leaks below if fault */
 	      char *other_args;
-	      new_argvlen = argvlen + len + namelen;
-	      e->error = vm_allocate (mach_task_self (),
-				      (vm_address_t *) &new_argv,
-				      new_argvlen, 1);
-	      if (e->error)
-		return;
 	      other_args = memccpy (new_argv, argv, '\0', argvlen);
 	      p = &new_argv[other_args ? other_args - new_argv : argvlen];
 	      if (arg)
@@ -345,51 +348,19 @@ check_hashbang (struct execdata *e,
 	  else
 	    {
 	      /* We got a fault reading ARGV.  So don't use it.  */
-	      static const char loser[]
-		= "**fault in exec server reading argv[0]**";
-	      new_argvlen = sizeof (loser) + len + namelen;
-	      new_argv = alloca (argvlen);
-	      memcpy (new_argv, loser, sizeof (loser));
-	      memcpy (new_argv + sizeof (loser), arg, len);
-	      memcpy (new_argv + sizeof (loser) + len, file_name, namelen);
+	      char *n = stpncpy (new_argv,
+				 "**fault in exec server reading argv[0]**",
+				 argvlen);
+	      memcpy (memcpy (n, arg, len) + len, file_name, namelen);
 	    }
+
+	  return 0;
 	}
 
-      /* Preempt SIGSEGV signals for the address ranges of ARGV and ENVP.
-	 When such a signal arrives, `preempter' is called to decide what
-	 handler to run; it always returns `handler', which is then invoked
-	 as a normal signal handler.  Our handler always simply longjmps to
-	 ARGS_FAULTED.  */
-
-      void handler (int sig)
-	{
-	  longjmp (args_faulted, 1);
-	}
-      const thread_t mythread = hurd_thread_self ();
-      sighandler_t preempter (thread_t thread,
-			      int signo, long int sigcode, int sigerror)
-	{
-	  return thread == mythread ? handler : SIG_DFL;
-	}
-
-      struct hurd_signal_preempt argv_preempter, envp_preempter;
-
-      /* Register the preemptions.  */
-      hurd_preempt_signals (&argv_preempter, SIGSEGV,
-			    (long int) argv, (long int) argv + argvlen - 1,
-			    preempter);
-      hurd_preempt_signals (&envp_preempter, SIGSEGV,
-			    (long int) envp, (long int) envp + envplen - 1,
-			    preempter);
-
-      /* Do the work.  Everywhere we might get a page fault inside ARGV or
-	 ENVP, is inside the zero-return case of an `if' on setjmp
-	 (ARGS_FAULTED).  */
-      prepare_args ();
-
-      /* Unregister the preemptions.  */
-      hurd_unpreempt_signals (&argv_preempter, SIGSEGV);
-      hurd_unpreempt_signals (&envp_preempter, SIGSEGV);
+      /* Set up the arguments.  */
+      hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
+			 (vm_address_t) argv, (vm_address_t) argv + argvlen,
+			 &setup_args, &fault_handler);
     }
 
   /* We are now done reading the script file.  */
