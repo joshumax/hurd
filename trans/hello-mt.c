@@ -1,5 +1,5 @@
 /* hello-mt.c - A trivial single-file translator, multithreaded version
-   Copyright (C) 1998, 1999, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1998,99,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -123,8 +123,8 @@ close_hook (struct trivfs_peropen *peropen)
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  vm_address_t *data, mach_msg_type_number_t *data_len,
-		  off_t offs, mach_msg_type_number_t amount)
+		  char **data, mach_msg_type_number_t *data_len,
+		  loff_t offs, mach_msg_type_number_t amount)
 {
   struct open *op;
 
@@ -154,8 +154,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     {
       /* Possibly allocate a new buffer. */
       if (*data_len < amount)
-	*data = (vm_address_t) mmap (0, amount, PROT_READ|PROT_WRITE,
-				     MAP_ANON, 0, 0);
+	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*data == MAP_FAILED)
+	{
+	  mutex_unlock (&op->lock);
+	  rwlock_reader_unlock (&contents_lock);
+	  return ENOMEM;
+	}
 
       /* Copy the constant data into the buffer. */
       memcpy ((char *) *data, contents + offs, amount);

@@ -474,8 +474,8 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  vm_address_t *data, mach_msg_type_number_t *data_len,
-		  off_t offs, mach_msg_type_number_t amount)
+		  char **data, mach_msg_type_number_t *data_len,
+		  loff_t offs, mach_msg_type_number_t amount)
 {
   error_t err;
 
@@ -513,8 +513,8 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   vm_address_t data, mach_msg_type_number_t data_len,
-		   off_t offs, mach_msg_type_number_t *amount)
+		   char *data, mach_msg_type_number_t data_len,
+		   loff_t offs, mach_msg_type_number_t *amount)
 {
   error_t err;
 
@@ -662,7 +662,7 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
 error_t
 trivfs_S_file_sync (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int wait)
+		    int wait, int omit_metadata)
 {
   error_t err;
 
