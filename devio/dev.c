@@ -56,9 +56,15 @@ dev_open(char *name, int flags, int block_size, struct dev **dev)
   if (*dev == NULL)
     return ENOMEM;
 
+  (*dev)->name = malloc (strlen (name) + 1);
+  if ((*dev)->name)
+    strcpy ((*dev)->name, name);
+  else
+    err = ENOMEM;
+
   (*dev)->port = MACH_PORT_NULL;
 
-  if (device_master == MACH_PORT_NULL)
+  if (!err && device_master == MACH_PORT_NULL)
     err = get_privileged_ports(NULL, &device_master);
 
 #ifdef FAKE
