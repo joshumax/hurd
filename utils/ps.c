@@ -186,6 +186,19 @@ main(int argc, char *argv[])
   bool sort_reverse = FALSE, print_heading = TRUE, squash_bogus_fields = TRUE;
   bool show_threads = FALSE;
 
+  /* Handle an argument that is a process ID.  */
+  void pid_arg (const char *arg)
+    {
+      int pid = atoi (arg);
+
+      if (pid == 0 && strcmp (arg, "0") != 0)
+	error(3, 0, "%s: invalid process id", argv[optind]);
+
+      err = proc_stat_list_add_pid(procset, pid);
+      if (err)
+	error(3, err, "%d: can't add process id", pid);
+    }
+
   program_name = program_invocation_short_name;
 
   err = ps_context_create(cur_proc, &context);
@@ -196,9 +209,24 @@ main(int argc, char *argv[])
   if (err)
     error(1, err, "proc_stat_list_create");
 
-  while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
+  while ((opt = getopt_long(argc, argv, "-" SHORT_OPTIONS, options, 0)) != EOF)
     switch (opt)
       {
+      case 1:
+	/* Non-option argument.  */
+	if (isdigit (optarg[0]))
+	  pid_arg (optarg);
+	else
+	  {
+	    /* Old-fashioned `ps' syntax takes options without the leading
+	       dash.  Prepend a dash and feed back to getopt.  */
+	    size_t len = strlen (optarg) + 1;
+	    argv[--optind] = alloca (1 + len);
+	    argv[optind][0] = '-';
+	    memcpy (&argv[optind][1], optarg, len);
+	  }
+	break;
+
       case 'a':
 	filter_mask &= ~FILTER_OWN; break;
       case 'g':
@@ -276,18 +304,8 @@ main(int argc, char *argv[])
   }
 
   while (argv[optind] != NULL)
-    {
-      int pid = atoi(argv[optind]);
+    pid_arg (argv[optind++]);
 
-      if (pid == 0 && strcmp(argv[optind], "0") != 0)
-	error(3, 0, "%s: invalid process id", argv[optind]);
-
-      err = proc_stat_list_add_pid(procset, pid);
-      if (err)
-	error(3, err, "%d: can't add process id", pid);
-
-      optind++;
-    }
 
   if (proc_stat_list_num_procs(procset) == 0)
     {
