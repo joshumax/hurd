@@ -60,50 +60,6 @@ stripe_write (struct store *store,
 }
 
 error_t
-stripe_set_flags (struct store *store, int flags)
-{
-  int i;
-  error_t err = 0;
-  int old_flags[store->num_children];
-
-  for (i = 0; i < store->num_children && !err; i++)
-    {
-      old_flags[i] = store->children[i]->flags;
-      err = store_set_flags (store->children[i], flags);
-    }
-
-  if (err)
-    while (i > 0)
-      store_clear_flags (store->children[--i], flags & ~old_flags[i]);
-  else
-    store->flags |= flags;
-
-  return err;
-}
-
-error_t
-stripe_clear_flags (struct store *store, int flags)
-{
-  int i;
-  error_t err = 0;
-  int old_flags[store->num_children];
-
-  for (i = 0; i < store->num_children && !err; i++)
-    {
-      old_flags[i] = store->children[i]->flags;
-      err = store_clear_flags (store->children[i], flags);
-    }
-
-  if (err)
-    while (i > 0)
-      store_set_flags (store->children[--i], flags & ~old_flags[i]);
-  else
-    store->flags &= ~flags;
-
-  return err;
-}
-
-error_t
 stripe_remap (struct store *source,
 	      const struct store_run *runs, size_t num_runs,
 	      struct store **store)
@@ -153,7 +109,7 @@ store_ileave_class =
 {
   STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write,
   ileave_allocate_encoding, ileave_encode, ileave_decode,
-  0, 0, 0, 0, stripe_remap
+  store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap
 };
 
 error_t
@@ -196,7 +152,7 @@ store_concat_class =
 {
   STORAGE_CONCAT, "concat", stripe_read, stripe_write,
   concat_allocate_encoding, concat_encode, concat_decode,
-  0, 0, 0, 0, stripe_remap
+  store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap
 };
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
