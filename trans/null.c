@@ -71,7 +71,7 @@ main (int argc, char **argv)
     error(1, 0, "must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap, control_class, port_bucket,
+  err = trivfs_startup(bootstrap, 0, control_class, port_bucket,
 		       node_class, port_bucket, NULL);
   if (err)
     error(3, err, "Contacting parent");

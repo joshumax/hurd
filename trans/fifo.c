@@ -130,7 +130,7 @@ main (int argc, char **argv)
     error(1, 0, "must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap,
+  err = trivfs_startup(bootstrap, 0,
 		       fsys_port_class, port_bucket,
 		       fifo_port_class, port_bucket,
 		       NULL);
