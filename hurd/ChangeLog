@@ -1,6 +1,8 @@
 2002-01-01  Roland McGrath  <roland@frob.com>
 
-	* auth_reply.defs: RetCode -> RETCODE
+	* hurd_types.defs (RETURN_CODE_ARG): New macro, definition
+	depends on [HAVE_MIG_RETCODE].
+	* auth_reply.defs: Replace return code args with that.
 	* crash_reply.defs: Likewise.
 	* fsys_reply.defs: Likewise.
 	* io_reply.defs: Likewise.

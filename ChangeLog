@@ -1,6 +1,6 @@
 2002-01-01  Roland McGrath  <roland@frob.com>
 
-	* configure.in: Make that "-DRETCODE=".
+	* configure.in: If mig supports `retcode', define HAVE_MIG_RETCODE.
 
 2001-12-31  Roland McGrath  <roland@frob.com>
 
