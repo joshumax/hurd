@@ -1,6 +1,6 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -40,9 +40,9 @@ char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 
 static struct argp_option options[] =
 {
-  {"active",      'a', 0, 0, "Set NODE's active translator", 1},
-  {"passive",     'p', 0, 0, "Set NODE's passive translator"},
-  {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
+  {"active",      'a', 0, 0, "Set NODE's active translator" },
+  {"passive",     'p', 0, 0, "Set NODE's passive translator" },
+  {"create",      'c', 0, 0, "Create NODE if it doesn't exist" },
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
   {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
      " wait for a newline on stdin before completing the startup handshake"},
@@ -54,7 +54,7 @@ static struct argp_option options[] =
   {"goaway",      'g', 0, 0, "Make the active translator go away"},
   {"keep-active", 'k', 0, 0, "Leave the existing active translator running"},
 
-  {0,0,0,0, "When an active translator is told to go away:", 2},
+  {0,0,0,0, "When an active translator is told to go away:"},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
   {"force",       'f', 0, 0, "If it doesn't want to die, force it"},
   {"nosync",      'S', 0, 0, "Don't sync it before killing it"},
