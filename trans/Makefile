@@ -33,8 +33,8 @@ crash: crashServer.o crash_replyUser.o msgServer.o
 crash: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a ../libports/libports.a
-null ifsock fifo new-fifo devport firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
+null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-fwd null ifsock fifo new-fifo devport firmlink: ../libthreads/libthreads.a
+fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
 
 $(targets): %: %.o
