@@ -22,8 +22,6 @@
 
 #include <hurd/ports.h>
 
-#include "notify_S.h"
-
 #include "debug.h"
 
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
@@ -41,13 +39,11 @@ sock_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   extern int socket_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
   extern int io_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
-  extern int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   return
     socket_server (inp, outp)
       || io_server (inp, outp)
-      || interrupt_server (inp, outp)
-      || notify_server (inp, outp);
+      || ports_interrupt_server (inp, outp)
+      || ports_notify_server (inp, outp);
 }
 
 /* Handle socket requests while there are sockets around.  */
@@ -88,50 +84,4 @@ ensure_sock_server ()
       cthread_detach (cthread_fork ((cthread_fn_t)handle_sock_requests,
 				    (any_t)0));
     }
-}
-
-/* ---------------------------------------------------------------- */
-/* Notify stubs.  */
-
-error_t
-do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
-{
-  void *pi = ports_lookup_port (sock_port_bucket, port, 0);
-debug (pi, "count: %u, refs: %d",
-       count, (pi ? ((struct port_info *)pi)->refcnt : 0));
-  if (!pi)
-    return EOPNOTSUPP;
-  ports_no_senders (pi, count);
-  ports_port_deref (pi);
-  return 0;
-}
-
-error_t
-do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name)
-{
-  return 0;
-}
-
-error_t
-do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t name)
-{
-  return 0;
-}
-
-error_t
-do_mach_notify_port_destroyed (mach_port_t notify, mach_port_t name)
-{
-  return 0;
-}
-
-error_t
-do_mach_notify_send_once (mach_port_t notify)
-{
-  return 0;
-}
-
-error_t
-do_mach_notify_dead_name (mach_port_t notify, mach_port_t deadport)
-{
-  return 0;
 }
