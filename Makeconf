@@ -27,6 +27,7 @@ libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
 libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
+libtrivfs := $(hurdinst)/lib/libtrivfs.a
 malloc := $(hurdinst)/lib/libmalloc.a
 
 # Finding binaries
@@ -111,6 +112,13 @@ $(libfshelp): FORCE
 	$(MAKE) -C $(hurdsource)/libfshelp $(libfshelp)
 $(includedir)/hurd/fshelp.h: FORCE
 	$(MAKE) -C $(hurdsource)/libfshelp $(includedir)/hurd/fshelp.h
+endif
+
+ifneq ($(strip $(dir)),libtrivfs)
+$(libtrivfs): FORCE
+	$(MAKE) -C $(hurdsource)/libtrivfs $(libtrivfs)
+$(includedir)/hurd/trivfs.h: FORCE
+	$(MAKE) -C $(hurdsource)/libtrivfs $(includedir)/hurd/trivfs.h
 endif
 
 ifneq ($(strip $(dir)),libthreads)
