@@ -1,3 +1,7 @@
+Fri Jul 19 12:34:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* pfinet.h (make_sock_user): Include new parm in declaration.
+
 Thu Jul 18 23:19:07 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* misc.c (make_sock_user): New parm `noinstall'; if it's set use
