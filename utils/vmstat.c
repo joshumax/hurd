@@ -45,24 +45,24 @@ struct field {
 #define FOFFS(field)  offsetof (struct vm_statistics, field)
 
 /* vm_statistics fields we know about.  */
-static struct field fields[] = {
+static const struct field fields[] = {
   { "pagesize",	   "Pagesize",	     "pgsz",	FOFFS (pagesize) },
   { "free",	   "Free pages",     "free",	FOFFS (free_count) },
   { "active",	   "Active pages",   "actv",	FOFFS (active_count) },
-  { "inactive",	   "Inactive pages", "inact",	FOFFS (inactive_count) },
-  { "wired",	   "Wired pages",    "wired",	FOFFS (wire_count) },
-  { "zero-filled", "Zero'd pages",   "zero",	FOFFS (zero_fill_count) },
+  { "inactive",	   "Inactive pages", "inac",	FOFFS (inactive_count) },
+  { "wired",	   "Wired pages",    "wire",	FOFFS (wire_count) },
+  { "zero-filled", "Zeroed pages",   "zeroed",	FOFFS (zero_fill_count) },
   { "reactivations","Reactivations", "react",	FOFFS (reactivations) },
-  { "pageins",	   "Pageins",	     "pgin",	FOFFS (pageins) },
-  { "pageouts",    "Pageouts",	     "pgout",	FOFFS (pageouts) },
-  { "faults",	   "Faults",	     "faults",  FOFFS (faults) },
-  { "cow-faults",  "Cow faults",     "cowf",	FOFFS (cow_faults) },
-  { "cache-lookups","Cache lookups", "clkup",	FOFFS (lookups) },
+  { "pageins",	   "Pageins",	     "pgins",	FOFFS (pageins) },
+  { "pageouts",    "Pageouts",	     "pgouts",	FOFFS (pageouts) },
+  { "faults",	   "Faults",	     "pfaults",  FOFFS (faults) },
+  { "cow-faults",  "Cow faults",     "cowpfs",	FOFFS (cow_faults) },
+  { "cache-lookups","Cache lookups", "clkups",	FOFFS (lookups) },
   { "cache-hits",  "Cache hits",     "chits",	FOFFS (hits) },
   {0}
 };
 
-static struct argp_option options[] = {
+static const struct argp_option options[] = {
   {"terse",	't',	0, 0, "Use short one-line output format", 1 },
   {"no-header", 'H',    0, 0, "Don't print a descriptive header line"},
   {"prefix",    'p', 0, 0, "Always display a description before stats"},
@@ -73,14 +73,14 @@ static struct argp_option options[] = {
 
   {0}
 };
-static char *args_doc = 0;
-static char *doc = 0;
+static const char *args_doc = 0;
+static const char *doc = 0;
 
 int
 main (int argc, char **argv)
 {
   error_t err;
-  struct field *field;
+  const struct field *field;
   struct vm_statistics stats;
   int num_fields = 0;		/* Number of vm_fields known. */
   unsigned long output_fields = 0; /* A bit per field, from 0. */
@@ -107,8 +107,8 @@ main (int argc, char **argv)
   struct argp_option *field_opts;
   int field_opts_size;
   struct argp field_argp = { 0, parse_opt };
-  struct argp *parents[] = { &field_argp, 0 };
-  struct argp argp = { options, parse_opt, args_doc, doc, parents };
+  const struct argp *parents[] = { &field_argp, 0 };
+  const struct argp argp = { options, parse_opt, args_doc, doc, parents };
 
   /* See how many fields we know about.  */
   for (field = fields; field->name; field++)
@@ -198,9 +198,9 @@ main (int argc, char **argv)
       for (field = fields; field->name; field++)
 	if (output_fields & (1 << (field - fields)))
 	  if (print_prefix)
-	    printf ("%s: %*d\n",
+	    printf ("%s:%*d\n",
 		    field->desc,
-		    max_desc_width + 6 - strlen (field->desc),
+		    max_desc_width + 5 - strlen (field->desc),
 		    *(integer_t *)((char *)&stats + field->offs));
 	  else
 	    printf ("%d\n", *(integer_t *)((char *)&stats + field->offs));
