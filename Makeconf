@@ -43,6 +43,8 @@ libdir := $(exec_prefix)/lib
 infodir := $(prefix)/info
 includedir := $(prefix)/include
 
+libthreads-libsubst=../libthreads/libthreads.a
+
 # END CONFIGURATION AREA
 
 
@@ -83,6 +85,9 @@ ifeq ($(makemode),library)
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
+ ifndef targets
+  targets = $(libname).a $(libname).so
+ endif
 endif
 
 
@@ -116,8 +121,9 @@ $(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
 endif
 
 ifeq ($(makemode),library)
-all: $(libname).a $(libname).so
-install: $(libdir)/$(libname).a $(libdir)/$(libname).so $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+all: libs
+libs: $(targets)
+install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
@@ -149,8 +155,12 @@ __libext=.so
 __libext-static=.a
 _libext=$(__libext$(findstring -static,$(LDFLAGS) $($@-LDFLAGS)))
 
+libsubst=$(basename ${lib})$(_libext)
+libsubst-override=${$(notdir $(basename ${lib}))-libsubst}
+_libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
+
 $(target): %: $(_objs) $(OTHERLIBS)
-	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),$(basename $(lib))$(_libext)) '-Wl,-)'
+	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ '-Wl,-(' $(filter %.o,$^) $(foreach lib,$(filter-out %.o,$+),${_libsubst}) '-Wl,-)'
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
@@ -201,7 +211,7 @@ relink:
 # built if either is, because it will use the appropriate one even if the other
 # is specified in someone's dependency list. 
 ../%.a ../%.so: FORCE
-	$(MAKE) -C $(dir $@) $(notdir $(@:.so=.a)) $(notdir $(@:.a=.so))
+	$(MAKE) -C $(dir $@) libs
 
 # Default rule to build PIC object files.
 %_pic.o: %.c
