@@ -525,7 +525,7 @@ new_proc (task_t task)
   p->p_waiting = 0;
   p->p_traced = 0;
   p->p_nostopcld = 0;
-  p->p_deadmsg = 0;
+  p->p_deadmsg = (p->p_pid == 1);
   p->p_checkmsghangs = 0;
   p->p_msgportwait = 0;
   p->p_noowner = 1;
