@@ -2,5 +2,5 @@
 
 #include <cthreads.h>
 
-#define _EXTERN_INLINE /* Define the real functions.  */
+#define _RWLOCK_DEFINE_FUNCTIONS /* Define the real functions.  */
 #include <rwlock.h>
