@@ -1,5 +1,5 @@
 /* Interface definitions for the exec servers.
-   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1991,92,93,94,95,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -34,11 +34,11 @@ routine exec_exec (
 	file: mach_port_send_t;
 	oldtask: task_t;
 	flags: int;
-	argv: data_t, servercopy;
-	envp: data_t, servercopy;
-	dtable: portarray_t, servercopy;
-	portarray: portarray_t, servercopy;
-	intarray: intarray_t, servercopy;
+	argv: data_t SCP;
+	envp: data_t SCP;
+	dtable: portarray_t SCP;
+	portarray: portarray_t SCP;
+	intarray: intarray_t SCP;
 	deallocnames: mach_port_name_array_t;
 	destroynames: mach_port_name_array_t);
 
@@ -53,5 +53,5 @@ routine exec_init (
 
 simpleroutine exec_setexecdata (
 	execserver: file_t;
-	ports: portarray_t, servercopy;
-	ints: intarray_t, servercopy);
+	ports: portarray_t SCP;
+	ints: intarray_t SCP);
