@@ -40,8 +40,10 @@ include ../Makeconf
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.
-ourmsg_U.h ourmsgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(includedir)/hurd/msg.defs \
+ourmsg_U.h ourmsgUser.c: ourmsg.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= ourmsg.defs \
 	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourmsgUser.c -header ourmsg_U.h
 
-
+ourmsg.defs: $(includedir)/hurd/msg.defs
+	rm -f $@
+	ln -s $< $@
