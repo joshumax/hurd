@@ -34,7 +34,7 @@ OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
 # We need this to find <cthreads.h> in the source directory.
-CPPFLAGS = -I. -I$(hurdsource)/libthreads
+CPPFLAGS = -I. -I$(srcdir)/libthreads
 
 libname = libthreads
 
