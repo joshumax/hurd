@@ -1,3 +1,10 @@
+1998-12-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* open.c (store_open): Like file.c:fiopen, catch EACCES or EROFS
+	and try to open read-only.
+
+	* file.c (fiopen): Treat EROFS same as EACCES.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* flags.c (store_clear_flags): Add braces to silence gcc warning.
