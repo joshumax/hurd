@@ -27,6 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Implement fsys_getroot as described in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_getroot (fsys_t controlport,
+		       mach_port_t dotdot,
 		       uid_t *uids,
 		       u_int nuids,
 		       uid_t *gids,
@@ -66,7 +67,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
       if (childcontrol == MACH_PORT_NULL)
 	{
-	  if (error = diskfs_start_translator (diskfs_root_node, _diskfs_dotdot_file))
+	  if (error = diskfs_start_translator (diskfs_root_node, dotdot))
 	    {
 	      mutex_unlock (&diskfs_root_node->lock);
 	      return error;
@@ -79,7 +80,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
       mutex_unlock (&diskfs_root_node->lock);
       
-      error = fsys_getroot (childcontrol, uids, nuids, gids, ngids,
+      error = fsys_getroot (childcontrol, dotdot, MACH_MSG_TYPE_COPY_SEND,
+			    uids, nuids, gids, ngids,
 			    flags, retry, retryname, returned_port);
       if (error == MACH_SEND_INVALID_DEST)
 	{
@@ -130,7 +132,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       else
 	{
 	  *retry = FS_RETRY_REAUTH;
-	  *returned_port = _diskfs_dotdot_file;
+	  *returned_port = dotdot;
 	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	  strcpy (retryname, pathbuf);
 	  return 0;
@@ -178,7 +180,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   *returned_port = (ports_get_right 
 		    (diskfs_make_protid
-		     (diskfs_make_peropen (diskfs_root_node, flags, _diskfs_dotdot_file),
+		     (diskfs_make_peropen (diskfs_root_node, flags, dotdot),
 		      uids, nuids, gids, ngids)));
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
 
