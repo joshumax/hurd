@@ -20,11 +20,14 @@
 dir := sutils
 makemode := utilities
 
-targets = reboot halt fsck
-SRCS = reboot.c halt.c fsck.c fstab.c clookup.c
+targets = reboot halt fsck e2os
+special-targets = e2os
 installationdir = $(sbindir)
+SCRIPTS = e2os.sh
+SRCS = reboot.c halt.c fsck.c fstab.c clookup.c $(SCRIPTS)
+LCLHDRS = fstab.h
 
-OBJS = $(SRCS:.c=.o)
+OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
 
 include ../Makeconf
 
