@@ -69,6 +69,7 @@ store_std_leaf_decode (struct store_enc *enc,
       name = strdup (enc->data + enc->cur_data);
       if (! name)
 	return ENOMEM;
+      enc->cur_data += name_len;
     }
   else
     name = 0;
@@ -83,6 +84,7 @@ store_std_leaf_decode (struct store_enc *enc,
 	  return ENOMEM;
 	}
       memcpy (misc, enc->data + enc->cur_data + name_len, misc_len);
+      enc->cur_data += misc_len;
     }
   else
     misc = 0;

@@ -150,7 +150,8 @@ store_concat_class =
 {
   STORAGE_CONCAT, "concat", stripe_read, stripe_write,
   concat_allocate_encoding, concat_encode, concat_decode,
-  store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap
+  store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap,
+  store_concat_open
 };
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
@@ -241,7 +242,7 @@ store_concat_create (struct store * const *stores, size_t num_stores,
 
   err = _store_create (&store_concat_class, MACH_PORT_NULL,
 		       flags | common_flags, block_size,
-		       runs, num_stores * 2, 0, store);
+		       runs, num_stores, 0, store);
   if (! err)
     {
       err = store_set_children (*store, stores, num_stores);

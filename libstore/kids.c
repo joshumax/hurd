@@ -59,7 +59,7 @@ store_allocate_child_encodings (const struct store *store,
     {
       struct store *k = store->children[i];
       if (k->class->allocate_encoding)
-	(*k->class->allocate_encoding) (store, enc);
+	(*k->class->allocate_encoding) (k, enc);
       else
 	err = EOPNOTSUPP;
     }
@@ -77,7 +77,7 @@ store_encode_children (const struct store *store, struct store_enc *enc)
     {
       struct store *k = store->children[i];
       if (k->class->encode)
-	(*k->class->encode) (store, enc);
+	(*k->class->encode) (k, enc);
       else
 	err = EOPNOTSUPP;
     }

@@ -1,3 +1,14 @@
+2002-03-11  Marcus Brinkmann  <marcus@gnu.org>
+
+	* stripe.c (store_concat_class): Add store_concat_open.
+	(store_concat_create): Do not multiply NUM_STORES with 2 to get
+	the number of runs.
+	* kids.c (store_allocate_child_encodings): Call allocate_encoding
+	on child store K, not on STORE.
+	(store_encode_children): Likewise.
+	* decode.c (store_std_leaf_decode): Increment ENC->cur_data by
+	NAME_LEN and MISC_LEN as appropriate.
+
 2002-03-05  Roland McGrath  <roland@frob.com>
 
 	* device.c (dev_map): Pass proper OFFSET and SIZE params to device_map.
