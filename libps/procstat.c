@@ -79,7 +79,7 @@ thread_state (thread_basic_info_t bi)
 #define PSTAT_PROCINFO \
   (PSTAT_PROC_INFO | PSTAT_TASK_BASIC | PSTAT_NUM_THREADS \
    | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT \
-   | PSTAT_THREAD_WAIT)
+   | PSTAT_THREAD_WAITS)
 /* The set of things we get from procinfo that's thread dependent.  */
 #define PSTAT_PROCINFO_THREAD \
  (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED \
@@ -237,7 +237,8 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
   (PSTAT_NUM_THREADS | PSTAT_SUSPEND_COUNT | PSTAT_THREAD_BASIC)
 
 /* Those flags that need the msg port, perhaps implicitly.  */
-#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_WAITS)
+#define PSTAT_USES_MSGPORT \
+  (PSTAT_MSGPORT | PSTAT_THREAD_WAIT | PSTAT_THREAD_WAITS)
 
 /* Return true when there's some condition indicating that we shouldn't use
    PS's msg port.  For this routine to work correctly, PS's flags should
@@ -448,7 +449,7 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
 	    }
 
 	  /* Advance NEXT_WAIT to the next wait string.  */
-	  next_wait += strnlen (next_wait, left);
+	  next_wait += strnlen (next_wait, left) + 1;
 	}
 }
 
@@ -492,15 +493,11 @@ char *
 get_thread_wait (char *waits, size_t waits_len, unsigned n)
 {
   char *wait = waits;
-  while (n && wait)
+  while (n-- && wait)
     if (wait >= waits + waits_len)
       wait = 0;
     else
-      {
-	wait = memchr (wait, '\0', waits_len - (wait - waits));
-	if (wait)
-	  wait++;
-      }
+      wait += strnlen (wait, waits + waits_len - wait) + 1;
   return wait;
 }
 
@@ -579,7 +576,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
      PSTAT_MSGPORT.  */
 #define MP_MGET(flag, precond, call) \
   ({ error_t err = MGET (flag, (precond) | PSTAT_MSGPORT, call); \
-     if (err) suppress_msgport (); \
+     if (err == EMACH_RCV_TIMED_OUT) suppress_msgport (); \
      err; \
    })
 
@@ -654,11 +651,11 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 					&ps->thread_wait, &ps->thread_rpc);
 		have |= PSTAT_THREAD_WAIT;
 	      }
-	    else if ((have & PSTAT_NUM_THREADS) && ps->num_threads > 2)
-	      /* More than 2 threads (1 user thread) always results in this
-		 value for the process's thread_wait field.  For the 2 thread
-		 case, we should have fetched thread_waits info and hit the
-		 previous case.  */
+	    else if ((have & PSTAT_NUM_THREADS) && ps->num_threads > 3)
+	      /* More than 3 threads (1 user thread + libc signal thread +
+		 possible itimer thread) always results in this value for the
+		 process's thread_wait field.  For fewer threads, we should
+		 have fetched thread_waits info and hit the previous case.  */
 	      {
 		ps->thread_wait = "*";
 		ps->thread_rpc = 0;
