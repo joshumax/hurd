@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -411,7 +411,9 @@ read_symlink_hook (struct node *np,
     return err;
   
   bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
-  np->dn_set_atime = 1;
+
+  if (! diskfs_readonly)
+    np->dn_set_atime = 1;
 
   diskfs_end_catch_exception ();
   return 0;
