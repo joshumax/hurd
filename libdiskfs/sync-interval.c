@@ -1,6 +1,6 @@
 /* Support for periodic syncing
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -49,12 +49,17 @@ diskfs_set_sync_interval (int interval)
 {
   error_t err = 0;
 
-  if (!pi)
-    pi = ports_allocate_port (diskfs_port_bucket,
-			      sizeof (struct port_info),
-			      diskfs_control_class);
+  if (! pi)
+    {
+      err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+			       sizeof (struct port_info), &pi);
+      if (err)
+	return err;
+    }
 
-  ports_inhibit_port_rpcs (pi);
+  err = ports_inhibit_port_rpcs (pi);
+  if (err)
+    return err;
 
   /* Here we just set the new thread; any existing thread will notice when it
      wakes up and go away silently.  */
@@ -88,11 +93,12 @@ periodic_sync (int interval)
 {
   for (;;)
     {
+      error_t err;
       struct rpc_info link;
 
       /* This acts as a lock against creation of a new sync thread
 	 while we are in the process of syncing.  */
-      ports_begin_rpc (pi, &link);
+      err = ports_begin_rpc (pi, 0, &link);
 
       if (periodic_sync_thread != cthread_self ())
 	{
@@ -101,12 +107,14 @@ periodic_sync (int interval)
 	  return;
 	}
 
-      rwlock_reader_lock (&diskfs_fsys_lock);
-      diskfs_sync_everything (0);
-      diskfs_set_hypermetadata (0, 0);
-      rwlock_reader_unlock (&diskfs_fsys_lock);
-
-      ports_end_rpc (pi, &link);
+      if (! err)
+	{
+	  rwlock_reader_lock (&diskfs_fsys_lock);
+	  diskfs_sync_everything (0);
+	  diskfs_set_hypermetadata (0, 0);
+	  rwlock_reader_unlock (&diskfs_fsys_lock);
+	  ports_end_rpc (pi, &link);
+	}
 
       /* Wait until next time.  */
       sleep (interval);
