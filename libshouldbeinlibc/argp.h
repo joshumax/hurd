@@ -27,6 +27,11 @@
 #include <errno.h>
 #include <ctype.h>
 #include <getopt.h>
+
+#ifndef ARGP_EI
+#define ARGP_EI extern inline
+#endif
+
 
 /* A description of a particular option.  A pointer to an array of
    these is passed in the OPTIONS field of an argp structure.  Each option
@@ -327,7 +332,7 @@ extern void argp_help (const struct argp *argp, FILE *stream, unsigned flags,
 void argp_state_help (struct argp_state *state, FILE *stream, unsigned flags);
 
 /* Possibly output the standard usage message for ARGP to stderr and exit.  */
-extern inline void
+ARGP_EI void
 argp_usage (struct argp_state *state)
 {
   argp_state_help (state, stderr, ARGP_HELP_STD_USAGE);
@@ -352,7 +357,7 @@ void argp_failure (struct argp_state *state,
      __attribute__ ((format (printf, 4, 5)));
 
 /* Returns true if the option OPT is a valid short option.  */
-extern inline int
+ARGP_EI int
 _option_is_short (const struct argp_option *opt)
 {
   int key = opt->key;
@@ -361,7 +366,7 @@ _option_is_short (const struct argp_option *opt)
 
 /* Returns true if the option OPT is in fact the last (unused) entry in an
    options array.  */
-extern inline int
+ARGP_EI int
 _option_is_end (const struct argp_option *opt)
 {
   return !opt->key && !opt->name && !opt->doc && !opt->group;

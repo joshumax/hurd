@@ -1,3 +1,12 @@
+Mon Oct 21 22:00:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* argp.h: Add extern inline protection.
+	* idvec.h: Likewise.
+	* maptime.h: Likewise.
+	* argp.c, idvec-funcs.c, maptime-funcs.c: New files.
+	* Makefile (SRCS): Add argp.c, idvec-funcs.c, and
+	maptime-funcs.c. 
+
 Mon Oct 14 18:06:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-parse.c (argp_parse): Don't consume non-option arguments

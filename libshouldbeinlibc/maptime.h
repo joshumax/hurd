@@ -21,6 +21,10 @@
 #ifndef __MAPTIME_H__
 #define __MAPTIME_H__
 
+#ifndef MAPTIME_EI
+#define MAPTIME_EI extern inline
+#endif
+
 #include <mach/time_value.h>
 
 /* Return the mach mapped time page in MTIME.  If USE_MACH_DEV is false, then
@@ -32,7 +36,7 @@ error_t maptime_map (int use_mach_dev, char *dev_name,
 		     volatile struct mapped_time_value **mtime);
 
 /* Read the current time from MTIME into TV.  This should be very fast.  */
-static inline void
+MAPTIME_EI void
 maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv)
 {
   do

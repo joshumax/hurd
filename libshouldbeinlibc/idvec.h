@@ -25,6 +25,10 @@
 #include <errno.h>
 #include <hurd/hurd_types.h>
 
+#ifndef IDVEC_EI
+#define IDVEC_EI extern inline
+#endif
+
 struct idvec
 {
   uid_t *ids;
@@ -44,7 +48,7 @@ void idvec_free_wrapper (struct idvec *idvec);
 void idvec_free (struct idvec *idvec);
 
 /* Mark IDVEC as not containing any ids.  */
-extern inline void
+IDVEC_EI void
 idvec_clear (struct idvec *idvec)
 {
   idvec->num = 0;
