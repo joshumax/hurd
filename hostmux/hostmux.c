@@ -142,6 +142,18 @@ main (int argc, char **argv)
   netfs_root_node->nn_stat.st_mode =
     S_IFDIR | (ul_stat.st_mode & ~S_IFMT & ~S_ITRANS);
 
+  /* If the underlying node isn't a directory, propagate read permission to
+     execute permission since we need that for lookups.  */
+  if (! S_ISDIR (ul_stat.st_mode))
+    {
+      if (ul_stat.st_mode & S_IRUSR)
+	netfs_root_node->nn_stat.st_mode |= S_IXUSR;
+      if (ul_stat.st_mode & S_IRGRP)
+	netfs_root_node->nn_stat.st_mode |= S_IXGRP;
+      if (ul_stat.st_mode & S_IROTH)
+	netfs_root_node->nn_stat.st_mode |= S_IXOTH;
+    }
+
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		hostmux_maptime);
   
