@@ -102,7 +102,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
   /* Print a parsing error message and (if exiting is turned off) return the
      error code ERR.  */
-#define ERR(err, fmt, args...) \
+#define PERR(err, fmt, args...) \
   do { argp_error (state, fmt , ##args); return err; } while (0)
 
   switch (opt)
@@ -114,19 +114,19 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case 'i':
       if (h->layer)
-	ERR (EINVAL, "--layer and --interleave are exclusive");
+	PERR (EINVAL, "--layer and --interleave are exclusive");
       if (h->interleave)
 	/* Actually no reason why we couldn't support this.... */
-	ERR (EINVAL, "--interleave specified multiple times");
+	PERR (EINVAL, "--interleave specified multiple times");
 
       h->interleave = atoi (arg);
       if (! h->interleave)
-	ERR (EINVAL, "%s: Bad value for --interleave", arg);
+	PERR (EINVAL, "%s: Bad value for --interleave", arg);
       break;
 
     case 'l':
       if (h->interleave)
-	ERR (EINVAL, "--layer and --interleave are exclusive");
+	PERR (EINVAL, "--layer and --interleave are exclusive");
       h->layer = 1;
       break;
 
@@ -137,7 +137,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       else
 	err = open_file (arg, h, &s);
       if (err)
-	ERR (err, "%s: %s", arg, strerror (err));
+	{
+	  /* Use error instead of ERR because it's not a parsing error.  */
+	  int exit_status = (state->flags & ARGP_NO_EXIT) ? 0 : 1;
+	  error (exit_status, err, "%s", arg);
+	  return err;
+	}
       else
 	{
 	  struct store **stores = realloc (h->stores, h->num_stores + 1);
@@ -173,7 +178,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       if (h->num_stores == 0)
 	{
 	  free_hook (h, 1);
-	  ERR (EINVAL, "No store specified");
+	  PERR (EINVAL, "No store specified");
 	}
 
       if (state->input == 0)
@@ -188,7 +193,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       else if (h->layer)
 	{
 	  free_hook (h, 1);
-	  ERR (EINVAL, "--layer not implemented");
+	  PERR (EINVAL, "--layer not implemented");
 	}
       else
 	err =
