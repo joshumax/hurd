@@ -185,6 +185,9 @@ struct user_pager_info
 
 #include <hurd/diskfs-pager.h>
 
+/* Set up the disk pager.  */
+void create_disk_pager (void);
+
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
 void drop_pager_softrefs (struct node *node);
