@@ -37,6 +37,7 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   error_t err;
   int i;
   auth_t auth;
+  mach_port_t newright;
 
   if (cred == 0)
     return EOPNOTSUPP;
@@ -47,50 +48,74 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
-  err = ports_create_port (cred->po->cntl->protid_class,
-			   cred->po->cntl->protid_bucket,
-			   sizeof (struct trivfs_protid), 
-			   &newcred);
+  do
+    err = ports_create_port (cred->po->cntl->protid_class,
+			     cred->po->cntl->protid_bucket,
+			     sizeof (struct trivfs_protid), 
+			     &newcred);
+  while (err == EINTR);
   if (err)
     return err;
 
   auth = getauth ();
-  err = auth_server_authenticate (auth, 
-				  rendport,
-				  MACH_MSG_TYPE_COPY_SEND,
-				  ports_get_right (newcred),
-				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen, 
-				  &aux_uids, &auxuidlen,
-				  &gen_gids, &gengidlen,
-				  &aux_gids, &auxgidlen);
+  newright = ports_get_right (newcred);
+  err = mach_port_insert_right (mach_task_self (), newright, newright,
+				MACH_MSG_TYPE_MAKE_SEND);
+  assert_perror (err);
+  do
+    err = auth_server_authenticate (auth, 
+				    rendport,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    newright,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    &gen_uids, &genuidlen, 
+				    &aux_uids, &auxuidlen,
+				    &gen_gids, &gengidlen,
+				    &aux_gids, &auxgidlen);
+  while (err == EINTR);
   mach_port_deallocate (mach_task_self (), rendport);
-  assert (!err);		/* XXX */
+  mach_port_deallocate (mach_task_self (), newright);
   mach_port_deallocate (mach_task_self (), auth);
 
-  newcred->isroot = 0;
-  for (i = 0; i < genuidlen; i++)
-    if (gen_uids[i] == 0)
-      newcred->isroot = 1;
-
-  newcred->uids = malloc (genuidlen * sizeof (uid_t));
-  newcred->gids = malloc (gengidlen * sizeof (uid_t));
-  bcopy (gen_uids, newcred->uids, genuidlen * sizeof (uid_t));
-  bcopy (gen_gids, newcred->gids, gengidlen * sizeof (uid_t));
-  newcred->nuids = genuidlen;
-  newcred->ngids = gengidlen;
+  if (err)
+    {
+      newcred->isroot = 0;
+      newcred->uids = malloc (1);
+      newcred->gids = malloc (1);
+      newcred->nuids = 0;
+      newcred->ngids = 0;
+    }
+  else
+    {
+      newcred->isroot = 0;
+      for (i = 0; i < genuidlen; i++)
+	if (gen_uids[i] == 0)
+	  newcred->isroot = 1;
+      
+      newcred->uids = malloc (genuidlen * sizeof (uid_t));
+      newcred->gids = malloc (gengidlen * sizeof (uid_t));
+      bcopy (gen_uids, newcred->uids, genuidlen * sizeof (uid_t));
+      bcopy (gen_gids, newcred->gids, gengidlen * sizeof (uid_t));
+      newcred->nuids = genuidlen;
+      newcred->ngids = gengidlen;
+    }
+  
   newcred->hook = cred->hook;
   
   mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
   mutex_unlock (&cred->po->cntl->lock);
-
-  err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
-			  gen_uids, genuidlen, gen_gids, gengidlen);
+  
+  do
+    err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
+			    gen_uids, genuidlen, gen_gids, gengidlen);
+  while (err == EINTR);
   if (!err && trivfs_protid_create_hook)
     {
-      err = (*trivfs_protid_create_hook) (newcred);
+      do
+	err = (*trivfs_protid_create_hook) (newcred);
+      while (err == EINTR);
       if (err)
 	mach_port_deallocate (mach_task_self (), newcred->realnode);
     }
