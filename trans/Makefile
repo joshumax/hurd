@@ -33,7 +33,7 @@ symlink.o: fsys_S.h
 magic: magic.o fsysServer.o error.o
 magic.o: fsys_S.h
 
-null: null.o error.o $(libtrivfs) $(libports)
+null: null.o error.o $(libtrivfs) $(libports) $(libihash)
 null.o: ../hurd/trivfs.h ../hurd/ports.h
 
 ifsock: ifsock.o error.o $(libtrivfs) $(libports) $(libihash) ifsockServer.o
