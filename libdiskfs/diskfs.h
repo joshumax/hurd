@@ -958,6 +958,11 @@ error_t diskfs_set_sync_interval (int interval);
    returned if some option is unrecognized.  */
 error_t diskfs_set_options (int argc, char **argv);
 
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage. */
+error_t diskfs_get_options (char **argz, unsigned *argz_len);
+
 /* A pointer to an argp structure for the standard diskfs command line
    arguments.  The user may call argp_parse on this to parse the command
    line, chain it onto the end of his own argp structure, or ignore it
