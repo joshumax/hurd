@@ -37,7 +37,7 @@ netfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   mutex_lock (&node->lock);
   new_cred =
     netfs_make_protid (netfs_make_peropen (node, cred->po->openstat, cred->po),
-		       cred->user);
+		       iohelp_dup_iouser (cred->user));
   mutex_unlock (&node->lock);
 
   if (new_cred)
