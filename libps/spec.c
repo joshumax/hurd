@@ -574,8 +574,8 @@ ps_emit_args (struct proc_stat *ps, struct ps_fmt_field *field,
 
   FG (field, void)(ps, &s0, &s0len);
 
-  if (s0 == NULL)
-    *buf = '\0';
+  if (!s0 || s0len == 0 )
+    strcpy (buf, "-");
   else
     {
       if (s0len > sizeof static_buf)
@@ -616,8 +616,8 @@ ps_emit_string (struct proc_stat *ps, struct ps_fmt_field *field,
 
   FG (field, void)(ps, &str, &len);
 
-  if (str == NULL)
-    str = "";
+  if (!str || len == 0)
+    str = "-";
 
   return ps_stream_write_trunc_field (stream, str, field->width);
 }
@@ -853,6 +853,16 @@ ps_nominal_zint (struct proc_stat *ps, const struct ps_getter *getter)
   return G (getter, int)(ps) == 0;
 }
 
+/* Neither is an empty string.  */
+int
+ps_nominal_string (struct proc_stat *ps, const struct ps_getter *getter)
+{
+  char *str;
+  size_t len;
+  G (getter, char *)(ps, &str, &len);
+  return !str || len == 0 || (len == 1 && *str == '-');
+}
+
 /* Priorities are similar, but have to be converted to the unix nice scale
    first.  */
 int
@@ -1059,9 +1069,9 @@ static const struct ps_fmt_spec specs[] =
   {"LColl",	0,	-5, -1, 0,
    &ps_login_col_getter,   ps_emit_int,     ps_cmp_ints,   0},
   {"Args",	0,	 0, -1, 0,
-   &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,0},
+   &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Arg0",	0,	0, -1, 0,
-   &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,0},
+   &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
   {"Time",	0,	-8, 2, 0,
    &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
   {"UTime",	0,	-8, 2, 0,
