@@ -30,10 +30,15 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  inhibit-all-rpcs.c resume-port-rpcs.c resume-class-rpcs.c \
  resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpc.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
- enable-class.c enable-bucket.c bucket-iterate.c stubs.c
+ enable-class.c enable-bucket.c bucket-iterate.c stubs.c \
+ notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
+ notify-msg-accepted.c notify-port-deleted.c notify-send-once.c
+
 LCLHDRS = ports.h
 installhdrs = ports.h
 
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o) notifyServer.o
+ 
+MIGCOMSFLAGS = -prefix ports_
 
 include ../Makeconf
