@@ -36,17 +36,23 @@ extern struct port_bucket *pager_bucket; /* Ports bucket used by pagers.  */
 extern struct pager *disk_pager; /* Pager backing to the disk.  */
 extern void *disk_image;	/* Region mapping entire disk from it.  */
 
+struct disk_image_user
+  {
+    jmp_buf env;
+    struct disk_image_user *next;
+  };
+
 /* Return zero now.  Return a second time with a nonzero error_t
    if this thread faults accessing `disk_image' before calling
    `diskfs_end_catch_exception' (below).  */
 #define diskfs_catch_exception()					      \
 ({									      \
-    jmp_buf *env = alloca (sizeof (jmp_buf));				      \
+    struct disk_image_user *diu = alloca (sizeof *diu);			      \
     error_t err;							      \
-    assert (cthread_data (cthread_self ()) == 0);			      \
-    err = setjmp (*env);						      \
+    diu->next = (void *) cthread_data (cthread_self ());		      \
+    err = setjmp (diu->env);						      \
     if (err == 0)							      \
-      cthread_set_data (cthread_self (), env);				      \
+      cthread_set_data (cthread_self (), diu);				      \
     err;								      \
 })
 
@@ -54,8 +60,8 @@ extern void *disk_image;	/* Region mapping entire disk from it.  */
    Any unexpected fault hereafter will crash the program.  */
 #define diskfs_end_catch_exception()					      \
 ({									      \
-    assert (cthread_data (cthread_self ()) != 0);			      \
-    cthread_set_data (cthread_self (), 0);				      \
+    struct disk_image_user *diu = (void *) cthread_data (cthread_self ());    \
+    cthread_set_data (cthread_self (), diu->next);			      \
 })
 
 
