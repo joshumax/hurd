@@ -45,8 +45,9 @@ INTSRCS=interrupt.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c     \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c	    \
-	rdwr-internal.c trans-destroy.c trans-start.c init-init.c           \
-	init-first.c init-loop.c boot-parse.c boot-start.c ports-clean.c    \
+	rdwr-internal.c trans-destroy.c trans-start.c init-init.c	    \
+	init-startup.c init-first.c init-loop.c				    \
+	boot-parse.c boot-start.c ports-clean.c				    \
 	ports-consts.c pager-consts.c ports-demuxer.c exc.c node-times.c    \
 	trans-sync.c shutdown.c ports-noports.c ports-soft.c ports-idle.c
 
