@@ -36,10 +36,10 @@ $(hurdinst)/lib/libioserver.a: libioserver.a
 	cp libioserver.a $@
 	$(RANLIB) $@
 
-$(headers)/hurd/ioserver.h: ioserver.h
+$(includedir)/hurd/ioserver.h: ioserver.h
 	cp $< $@
 
-install: $(hurdinst)/lib/libioserver.a $(headers)/hurd/ioserver.h
+install: $(hurdinst)/lib/libioserver.a $(includedir)/hurd/ioserver.h
 
 $(OBJS): ioserver.h
 
