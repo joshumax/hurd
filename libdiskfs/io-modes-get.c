@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_get_all_openmodes as described in <hurd/io.defs>. */
 error_t
@@ -30,4 +31,4 @@ S_io_get_all_openmodes (struct protid *cred,
   mutex_unlock (&cred->po->ip->lock);
   return err;
 }
-v
+
