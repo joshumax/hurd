@@ -31,6 +31,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 {
   error_t err;
   struct node *np;
+  unsigned restart_tries = 0;
   
   /* Make sure this is a socket */
   if (!cred)
@@ -89,6 +90,16 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
       
       /* Create an address for the node */
       err = socket_fabricate_address (server, AF_LOCAL, &sockaddr);
+      if ((err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED)
+	  && restart_tries++ == 0)
+	/* The PF_LOCAL server died; try to restart it.  */
+	{
+	  spin_lock (&pflocalserverlock);
+	  if (pflocalserver == server)
+	    pflocalserver = MACH_PORT_NULL;
+	  spin_unlock (&pflocalserverlock);
+	  goto retry;
+	}
       if (err)
 	{
 	  mutex_unlock (&np->lock);
