@@ -48,6 +48,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <ttyent.h>
 #include <argz.h>
 #include <utmp.h>
+#include <maptime.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -533,7 +534,7 @@ init_ttys (void)
 
   if (!setttyent ())
     {
-      perror (_PATH_TTYS);
+      error (0, errno, "%s", _PATH_TTYS);
       return 1;
     }
   while ((tt = getttyent ()))
@@ -660,7 +661,7 @@ reread_ttys (void)
 
   if (!setttyent ())
     {
-      perror (_PATH_TTYS);
+      error (0, errno, "%s", _PATH_TTYS);
       return;
     }
   
@@ -921,8 +922,7 @@ init_stdarrays ()
 				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
 				     std_int_array, INIT_INT_MAX));
 }
-
-
+
 /* Open /dev/console.  If it isn't there, or it isn't a terminal, then
    create /tmp/console and put the terminal on it.  If we get EROFS,
    in trying to create /tmp/console then as a last resort, put the
@@ -937,6 +937,7 @@ open_console ()
 #define TERMINAL_SECOND_TRY "/hurd/term\0/tmp\0device\0console"
   static char *terminal;
   int try;
+  size_t argz_len;
   mach_port_t term;
   static char *termname;
   int fd;
@@ -986,11 +987,13 @@ open_console ()
       if (try == 1)
 	{
 	  terminal = TERMINAL_FIRST_TRY;
+	  argz_len = sizeof TERMINAL_FIRST_TRY;
 	  try = 2;
 	}
       else if (try == 2)
 	{
 	  terminal = TERMINAL_SECOND_TRY;
+	  argz_len = sizeof TERMINAL_SECOND_TRY;
 	  try = 3;
 	}
       else
@@ -1000,8 +1003,7 @@ open_console ()
 	  
       /* The callback to start_translator opens TERM as a side effect.  */
       errno =
-	fshelp_start_translator (open_node,
-				 terminal, terminal, sizeof terminal, 3000,
+	fshelp_start_translator (open_node, terminal, terminal, argz_len, 3000,
 				 &control);
       if (errno)
 	{
