@@ -19,6 +19,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell and Roland McGrath.  */
 
+/* This is probably more include files than I've ever seen before for
+   one file. */
 #include <hurd.h>
 #include <hurd/fs.h>
 #include <hurd/fsys.h>
@@ -93,6 +95,9 @@ struct ess_task
 /* These are linked lists of all of the registered items.  */
 struct ess_task *ess_tasks;
 struct ntfy_task *ntfy_tasks;
+
+/* Mapped time */
+volatile struct mapped_time_value *mapped_time;
 
 /* All the ttys in /etc/ttys. */
 struct terminal 
@@ -1144,6 +1149,9 @@ launch_multi_user ()
 {
   int fail;
   
+  if (!mapped_time)
+    maptime_map (1, 0, &mapped_time);
+
   fail = init_ttys ();
   if (fail)
     launch_single_user ();
