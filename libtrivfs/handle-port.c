@@ -15,12 +15,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <priv.h>
+
 mach_port_t
 trivfs_handle_port (mach_port_t realnode)
 {
   struct trivfs_control *cntl;
   
-  cntl = ports_allocate_port (sizeof (struct control), trivfs_cntl_porttype);
+  cntl = ports_allocate_port (sizeof (struct trivfs_control),
+			      trivfs_cntl_porttype);
   cntl->underlying = realnode;
   return ports_get_right (cntl);
 }
