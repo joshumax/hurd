@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-#include <getopt.h>
+#include <argp.h>
 #include <hurd/ps.h>
 #include <unistd.h>
 
@@ -33,61 +33,69 @@
 
 /* ---------------------------------------------------------------- */
 
-static void
-usage(status)
-     int status;
+/* Long options without corresponding short ones.  -1 is EOF.  */
+#define OPT_LOGIN	-2
+#define OPT_SESS	-3
+#define OPT_SORT	-4
+#define OPT_FMT		-5
+#define OPT_HELP	-6
+#define OPT_PGRP	-7
+
+#define OA OPTION_ARG_OPTIONAL
+
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_short_name);
-  else
-    {
-      printf("Usage: %s [OPTION...] [PID...]\n",
-	     program_invocation_short_name);
-      printf("\
-\n\
-  -a, --all-users            List other users' processes\n\
-      --fmt=FMT              Use the output-format FMT\n\
-                             FMT may be `default', `user', `vmem', `long',\n\
-                             `jobc', `full', `hurd', `hurd-long',\n\
-                             or a custom format-string\n\
-  -d                         List all processes except process group leaders\n\
-  -e, --all                  List all processes\n\
-  -f                         Use the `full' output-format\n\
-  -g                         Include session leaders\n\
-  -H, --no-header            Don't print a descriptive header line\n\
-  -j                         Use the `jobc' output-format\n\
-  -l                         Use the `long' output-format\n\
-      --login[=LID]          Add the processes from the login collection LID\n\
-                             (which defaults that of the current process)\n\
-  -M, --no-msg-port          Don't show info that uses a process's msg port\n\
-  -n, --nominal-fields       Don't elide fields containing `uninteresting' data\n\
-  -oUSER, --owner=USER       Show processes owned by USER\n\
-  -pPID, --pid=PID           List the process PID\n\
-      --pgrp=PGRP            List processes in the process group PGRP\n\
-  -P, --no-parent            Include processes without parents\n\
-  -Q, --all-fields           Don't elide unusable fields (normally if there's\n\
-                             some reason ps can't print a field for any\n\
-                             process, it's removed from the output entirely)\n\
-  -r, --reverse              Reverse the order of any sort\n\
-      --session[=SID]        Add the processes from the session SID (which\n\
-                             defaults to the sid of the current process)\n\
-      --sort=FIELD           Sort the output with respect to FIELD\n\
-  -s, --threads              Show the threads for each process\n\
-  -tTTY, --tty=TTY           Only show processes who's controlling tty is TTY\n\
-  -u                         Use the `user' output-format\n\
-  -v                         Use the `vmem' output-format\n\
-  -w			     (ignored)\n\
-  -x                         Include orphaned processes\n\
-\n\
-The USER, LID, PID, PGRP, and SID arguments may also be comma separated lists.\n\
-The System V options -u and -g may be accessed with -o and --pgrp.\n\
-");
-    }
+  {"all-users",  'a',     0,      0,  "List other users' processes"},
+  {"fmt",        OPT_FMT, "FMT",  0,  "Use the output-format FMT FMT may be"
+                                      " `default', `user', `vmem', `long',"
+				      " `jobc', `full', `hurd', `hurd-long',"
+				      " or a custom format-string"},
+  {0,            'd',     0,      0,  "List all processes except process group"
+                                      " leaders"},
+  {"all",        'a',     0,      0,  "List all processes"},
+  {0,            'f',     0,      0,  "Use the `full' output-format"},
+  {0,            'g',     0,      0,  "Include session leaders"},
+  {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
+  {0,            'j',     0,      0,  "Use the `jobc' output-format"},
+  {0,            'l',     0,      0,  "Use the `long' output-format"},
+  {"login",      OPT_LOGIN,"LID", OA, "Add the processes from the login"
+                                      " collection LID (which defaults that of"
+                                      " the current process)"},
+  {"lid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
+  {"no-msg-port",'M',     0,      0,  "Don't show info that uses a process's"
+                                      " msg port"},
+  {"nominal-fields",'n',  0,      0,  "Don't elide fields containing"
+                                      " `uninteresting' data"},
+  {"owner",      'o',     "USER", 0,  "Show processes owned by USER"},
+  {"pid",        'p',     "PID",  0,  "List the process PID"},
+  {"pgrp",       OPT_PGRP,"PGRP", 0,  "List processes in process group PGRP"},
+  {"no-parent",  'P',     0,      0,  "Include processes without parents"},
+  {"all-fields", 'Q',     0,      0,  "Don't elide unusable fields (normally"
+                                      " if there's some reason ps can't print"
+                                      " a field for any process, it's removed"
+                                      " from the output entirely)"},
+  {"reverse",    'r',     0,      0,  "Reverse the order of any sort"},
+  {"session",    OPT_SESS,"SID",  OA, "Add the processes from the session SID"
+                                      " (which defaults to the sid of the"
+                                      " current process)"},
+  {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
+  {"sort",       OPT_SORT,"FIELD", 0, "Sort the output with respect to FIELD"},
+  {"threads",    's',     0,      0,  "Show the threads for each process"},
+  {"tty",        't',     "TTY",  OA, "Only show processes who's controlling"
+                                      " terminal is TTY"},
+  {0,            'u',     0,      0,  "Use the `user' output-format"},
+  {0,            'v',     0,      0,  "Use the `vmem' output-format"},
+  {0,            'w',     0,      0,  "(ignored)"},
+  {0,            'x',     0,      0,  "Include orphaned processes"},
+  {0, 0}
+};
 
-  exit(status);
-}
+char *args_doc = "[PID...]";
 
+char *doc = "The USER, LID, PID, PGRP, and SID arguments may also be comma \
+separated lists.  The System V options -u and -g may be accessed with -o and \
+--pgrp.";
+
 int 
 parse_enum(char *arg, char **choices, char *kind, bool allow_mismatches)
 {
@@ -103,26 +111,24 @@ parse_enum(char *arg, char **choices, char *kind, bool allow_mismatches)
 	if (strncmp(*p, arg, arglen) == 0)
 	  if (partial_match >= 0)
 	    {
-	      fprintf(stderr, "%s: ambiguous %s", arg, kind);
-	      usage(1);
+	      fprintf(stderr, "%s: Ambiguous %s", arg, kind);
+	      argp_help (0, stderr, ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR);
 	    }
 	  else
 	    partial_match = p - choices;
 	p++;
       }
 
-  if (partial_match >= 0 || allow_mismatches)
-    return partial_match;
-  else
+  if (partial_match < 0 && !allow_mismatches)
     {
       fprintf(stderr, "%s: Invalid %s", arg, kind);
-      usage(1);
+      argp_help (0, stderr, ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR);
       return 0;
     }
+
+  return partial_match;
 }
-
-/* ---------------------------------------------------------------- */
-
+
 #define FILTER_OWNER		0x01
 #define FILTER_NSESSLDR		0x02
 #define FILTER_CTTY    		0x04
@@ -135,41 +141,6 @@ enum procsets
 };
 char *procset_names[] =
 {"all", "session", "login", 0};
-
-/* Long options without corresponding short ones.  -1 is EOF.  */
-#define OPT_LOGIN	-2
-#define OPT_SESSION	-3
-#define OPT_SORT	-4
-#define OPT_FMT		-5
-#define OPT_HELP	-6
-#define OPT_PGRP	-7
-
-#define SHORT_OPTIONS "adefgHjlMno:p:PQrst::uvwx"
-
-static struct option options[] =
-{
-  {"all", no_argument, 0, 'e'},
-  {"all-users", no_argument, 0, 'a'},
-  {"all-fields", no_argument, 0, 'Q'},
-  {"fmt", required_argument, 0, OPT_FMT},
-  {"help", no_argument, 0, OPT_HELP},
-  {"login", optional_argument, 0, OPT_LOGIN},
-  {"lid", optional_argument, 0, OPT_LOGIN},
-  {"no-header", no_argument, 0, 'H'},
-  {"no-msg-port", no_argument, 0, 'M'},
-  {"no-squash", no_argument, 0, 'Q'},
-  {"no-parent", no_argument, 0, 'P'},
-  {"nominal-fields", no_argument, 0, 'n'},
-  {"owner", required_argument, 0, 'o'},
-  {"pgrp", required_argument, 0, OPT_PGRP},
-  {"session", optional_argument, 0, OPT_SESSION},
-  {"sid", optional_argument, 0, OPT_SESSION},
-  {"threads", no_argument, 0, 's'},
-  {"tty", optional_argument, 0, 't'},
-  {"reverse", no_argument, 0, 'r'},
-  {"sort", required_argument, 0, OPT_SORT},
-  {0, 0, 0, 0}
-};
 
 /* The names of various predefined output formats.  */
 char *fmt_names[] =
@@ -342,8 +313,12 @@ lookup_user(char *name)
 void 
 main(int argc, char *argv[])
 {
-  int opt;
   error_t err;
+  /* A buffer used for rewriting old-style ps command line arguments that
+     need a dash prepended for the parser to understand them.  It gets
+     realloced for each successive arg that needs it, on the assumption that
+     args don't get parsed multiple times.  */
+  char *arg_hack_buf = 0;
   unsigned num_uids = 0, uids_alloced = 1;
   uid_t *uids = malloc(sizeof(uid_t) * num_uids);
   unsigned num_tty_names = 0, tty_names_alloced = 1;
@@ -467,6 +442,94 @@ main(int argc, char *argv[])
       return ps_tty_name(tty);
     }
 
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
+    {
+      switch (key)
+	{
+	case ARGP_KEY_ARG:			/* Non-option argument.  */
+	  if (!isdigit (*arg))
+	    /* Old-fashioned `ps' syntax takes options without the leading
+	       dash.  Prepend a dash and feed back to getopt.  */
+	    {
+	      size_t len = strlen (arg) + 1;
+	      arg_hack_buf = realloc (arg_hack_buf, 1 + len);
+	      state->argv[--state->index] = arg_hack_buf;
+	      state->argv[state->index][0] = '-';
+	      memcpy (&state->argv[state->index][1], arg, len);
+	      break;
+	    }
+	  /* Otherwise, fall through and treat the arg as a process id.  */
+	case 'p':
+	  parse_numlist(arg, add_pid, NULL, NULL, "PID");
+	  break;
+
+	case 'a':
+	  filter_mask &= ~(FILTER_OWNER | FILTER_NSESSLDR); break;
+	case 'd':
+	  filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
+	case 'e':
+	  filter_mask = 0; break;
+	case 'g':
+	  filter_mask &= ~FILTER_NSESSLDR; break;
+	case 'x':
+	  filter_mask &= ~FILTER_UNORPHANED; break;
+	case 'P':
+	  filter_mask &= ~FILTER_PARENTED; break;
+	case 'f':
+	  fmt_string = "full"; break;
+	case 'u':
+	  fmt_string = "user"; break;
+	case 'v':
+	  fmt_string = "vmem"; break;
+	case 'j':
+	  fmt_string = "jobc"; break;
+	case 'l':
+	  fmt_string = "long"; break;
+	case 'M':
+	  no_msg_port = TRUE; break;
+	case 'H':
+	  print_heading = FALSE; break;
+	case 'Q':
+	  squash_bogus_fields = squash_nominal_fields = FALSE; break;
+	case 'n':
+	  squash_nominal_fields = FALSE; break;
+	case 's':
+	  show_threads = TRUE; break;
+	case OPT_FMT:
+	  fmt_string = arg; break;
+	case OPT_SORT:
+	  sort_key_name = arg; break;
+	case 'r':
+	  sort_reverse = TRUE; break;
+
+	case 't':
+	  parse_strlist(arg, add_tty_name, current_tty_name, "tty");
+	  break;
+	case 'o':
+	  parse_numlist(arg, add_uid, NULL, lookup_user, "user");
+	  break;
+	case OPT_SESS:
+	  parse_numlist(arg, add_sid, current_sid, NULL, "session id");
+	  break;
+	case OPT_LOGIN:
+	  parse_numlist(arg, add_lid, current_lid, NULL, "login collection");
+	  break;
+	case OPT_PGRP:
+	  parse_numlist(arg, add_pgrp, NULL, NULL, "process group");
+	  break;
+
+	case 'w':
+	  /* Ignored; just here to make BSD users less unhappy.  */
+	  break;
+
+	default:
+	  return EINVAL;
+	}
+      return 0;
+    }
+
+  struct argp argp = { options, parse_opt, args_doc, doc};
+
   proc_server = getproc();
 
   err = ps_context_create(proc_server, &context);
@@ -477,93 +540,8 @@ main(int argc, char *argv[])
   if (err)
     error(1, err, "proc_stat_list_create");
 
-  /* Parse our options.  */
-  while ((opt = getopt_long(argc, argv, "-" SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 1:			/* Non-option argument.  */
-	if (!isdigit(*optarg))
-	  /* Old-fashioned `ps' syntax takes options without the leading dash.
-	     Prepend a dash and feed back to getopt.  */
-	  {
-	    size_t len = strlen (optarg) + 1;
-	    argv[--optind] = alloca (1 + len);
-	    argv[optind][0] = '-';
-	    memcpy (&argv[optind][1], optarg, len);
-	    break;
-	  }
-	/* Otherwise, fall through and treat the arg as a process id.  */
-      case 'p':
-	parse_numlist(optarg, add_pid, NULL, NULL, "PID");
-	break;
-
-      case 'a':
-	filter_mask &= ~(FILTER_OWNER | FILTER_NSESSLDR); break;
-      case 'd':
-	filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
-      case 'e':
-	filter_mask = 0; break;
-      case 'g':
-	filter_mask &= ~FILTER_NSESSLDR; break;
-      case 'x':
-	filter_mask &= ~FILTER_UNORPHANED; break;
-      case 'P':
-	filter_mask &= ~FILTER_PARENTED; break;
-      case 'f':
-	fmt_string = "full"; break;
-      case 'u':
-	fmt_string = "user"; break;
-      case 'v':
-	fmt_string = "vmem"; break;
-      case 'j':
-	fmt_string = "jobc"; break;
-      case 'l':
-	fmt_string = "long"; break;
-      case 'M':
-	no_msg_port = TRUE; break;
-      case 'H':
-	print_heading = FALSE; break;
-      case 'Q':
-	squash_bogus_fields = squash_nominal_fields = FALSE; break;
-      case 'n':
-	squash_nominal_fields = FALSE; break;
-      case 's':
-	show_threads = TRUE; break;
-      case OPT_FMT:
-	fmt_string = optarg; break;
-      case OPT_SORT:
-	sort_key_name = optarg; break;
-      case 'r':
-	sort_reverse = TRUE; break;
-
-      case 't':
-	parse_strlist(optarg, add_tty_name, current_tty_name, "tty");
-	break;
-      case 'o':
-	parse_numlist(optarg, add_uid, NULL, lookup_user, "user");
-	break;
-      case OPT_SESSION:
-	parse_numlist(optarg, add_sid, current_sid, NULL, "session id");
-	break;
-      case OPT_LOGIN:
-	parse_numlist(optarg, add_lid, current_lid, NULL, "login collection");
-	break;
-      case OPT_PGRP:
-	parse_numlist(optarg, add_pgrp, NULL, NULL, "process group");
-	break;
-
-      case 'w':
-	/* Ignored; just here to make BSD users less unhappy.  */
-	break;
-
-      case OPT_HELP:
-	usage(0);
-      default:
-	usage(1);
-      }
-
-  while (argv[optind] != NULL)
-    parse_numlist(argv[optind++], add_pid, NULL, NULL, "PID");
+  /* Parse our command line.  This shouldn't ever return an error.  */
+  argp_parse (&argp, argc, argv, 0, 0);
 
   if (num_uids == 0 && (filter_mask & FILTER_OWNER))
     add_uid(getuid());
