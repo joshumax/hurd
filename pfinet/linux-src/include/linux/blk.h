@@ -64,6 +64,11 @@ extern int ez_init(void);
 extern int bpcd_init(void);
 extern int ps2esdi_init(void);
 
+#ifdef CONFIG_ARCH_S390
+extern int mdisk_init(void);
+extern int dasd_init(void);
+#endif /* CONFIG_ARCH_S390 */
+
 extern void set_device_ro(kdev_t dev,int flag);
 void add_blkdev_randomness(int major);
 
@@ -366,6 +371,23 @@ static void floppy_off(unsigned int nr);
 #define DEVICE_NAME "nbd"
 #define DEVICE_REQUEST do_nbd_request
 #define DEVICE_NR(device) (MINOR(device))
+#define DEVICE_ON(device) 
+#define DEVICE_OFF(device)
+
+
+#elif (MAJOR_NR == MDISK_MAJOR)
+
+#define DEVICE_NAME "mdisk"
+#define DEVICE_REQUEST mdisk_request
+#define DEVICE_NR(device) (MINOR(device))
+#define DEVICE_ON(device) 
+#define DEVICE_OFF(device)
+
+#elif (MAJOR_NR == DASD_MAJOR)
+
+#define DEVICE_NAME "dasd"
+#define DEVICE_REQUEST do_dasd_request
+#define DEVICE_NR(device) (MINOR(device) >> PARTN_BITS)
 #define DEVICE_ON(device) 
 #define DEVICE_OFF(device)
 

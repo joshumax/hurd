@@ -140,6 +140,19 @@ struct hfs_hdr_layout {
 			*order[HFS_HDR_MAX];	/* 'descr' ordered by offset */
 };
 
+/* header layout for netatalk's v1 appledouble file format */
+struct hfs_nat_hdr {
+	hfs_lword_t	magic;
+	hfs_lword_t	version;
+	hfs_byte_t	homefs[16];
+	hfs_word_t	entries;
+	hfs_byte_t	descrs[12*5];
+	hfs_byte_t	real_name[255];	/* id=3 */
+	hfs_byte_t	comment[200];	/* id=4 XXX: not yet implemented */
+	hfs_byte_t	old_info[16];	/* id=7 */
+	hfs_u8		finderinfo[32]; /* id=9 */
+};
+
 /* 
  * Default header layout for Netatalk and AppleDouble
  */
@@ -161,7 +174,6 @@ struct hfs_dbl_hdr {
 	hfs_u8          short_name[12]; /* id=13 */
 	hfs_u8          prodosi[8];     /* id=11 */
 };
-
 
 /* finder metadata for CAP */
 struct hfs_cap_info {

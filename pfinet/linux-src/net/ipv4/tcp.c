@@ -5,7 +5,7 @@
  *
  *		Implementation of the Transmission Control Protocol(TCP).
  *
- * Version:	$Id: tcp.c,v 1.140.2.4 1999/08/09 03:13:12 davem Exp $
+ * Version:	$Id: tcp.c,v 1.140.2.5 1999/09/23 19:21:16 davem Exp $
  *
  * Authors:	Ross Biro, <bir7@leland.Stanford.Edu>
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -1798,6 +1798,8 @@ extern void __skb_cb_too_small_for_tcp(int, int);
 void __init tcp_init(void)
 {
 	struct sk_buff *skb = NULL;
+	unsigned long goal;
+	int order;
 
 	if(sizeof(struct tcp_skb_cb) > sizeof(skb->cb))
 		__skb_cb_too_small_for_tcp(sizeof(struct tcp_skb_cb),
@@ -1823,4 +1825,43 @@ void __init tcp_init(void)
 						NULL, NULL);
 	if(!tcp_timewait_cachep)
 		panic("tcp_init: Cannot alloc tcp_tw_bucket cache.");
+
+	/* Size and allocate TCP hash tables. */
+	goal = num_physpages >> (20 - PAGE_SHIFT);
+	for (order = 0; (1UL << order) < goal; order++)
+		;
+	do {
+		tcp_ehash_size = (1UL << order) * PAGE_SIZE /
+			sizeof(struct sock *);
+		tcp_ehash = (struct sock **)
+			__get_free_pages(GFP_ATOMIC, order);
+	} while (tcp_ehash == NULL && --order >= 0);
+
+	if (!tcp_ehash)
+		panic("Failed to allocate TCP established hash table\n");
+	memset(tcp_ehash, 0, tcp_ehash_size * sizeof(struct sock *));
+
+	goal = (((1UL << order) * PAGE_SIZE) / sizeof(struct tcp_bind_bucket *));
+	if (goal > (64 * 1024)) {
+		/* Don't size the bind-hash larger than the port
+		 * space, that is just silly.
+		 */
+		goal = (((64 * 1024) * sizeof(struct tcp_bind_bucket *)) / PAGE_SIZE);
+		for (order = 0; (1UL << order) < goal; order++)
+			;
+	}
+
+	do {
+		tcp_bhash_size = (1UL << order) * PAGE_SIZE /
+			sizeof(struct tcp_bind_bucket *);
+		tcp_bhash = (struct tcp_bind_bucket **)
+			__get_free_pages(GFP_ATOMIC, order);
+	} while (tcp_bhash == NULL && --order >= 0);
+
+	if (!tcp_bhash)
+		panic("Failed to allocate TCP bind hash table\n");
+	memset(tcp_bhash, 0, tcp_bhash_size * sizeof(struct tcp_bind_bucket *));
+
+	printk("TCP: Hash tables configured (ehash %d bhash %d)\n",
+	       tcp_ehash_size, tcp_bhash_size);
 }

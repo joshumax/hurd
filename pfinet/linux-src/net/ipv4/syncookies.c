@@ -9,7 +9,7 @@
  *      as published by the Free Software Foundation; either version
  *      2 of the License, or (at your option) any later version.
  * 
- *  $Id: syncookies.c,v 1.7.2.1 1999/08/08 08:43:13 davem Exp $
+ *  $Id: syncookies.c,v 1.7.2.3 1999/12/07 03:11:07 davem Exp $
  *
  *  Missing: IPv6 support. 
  */
@@ -184,8 +184,10 @@ cookie_v4_check(struct sock *sk, struct sk_buff *skb, struct ip_options *opt)
 			    req->af.v4_req.loc_addr,
 			    sk->ip_tos | RTO_CONN,
 			    0)) { 
-	    tcp_openreq_free(req);
-	    return NULL; 
+		if (req->af.v4_req.opt)
+			kfree(req->af.v4_req.opt);
+		tcp_openreq_free(req);
+		return NULL; 
 	}
 
 	/* Try to redo what tcp_v4_send_synack did. */

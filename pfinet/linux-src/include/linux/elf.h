@@ -74,6 +74,10 @@ typedef __u64	Elf64_Word;
  */
 #define EM_ALPHA	0x9026
 
+/*
+ * This is an interim value for S390 architecture
+ */
+#define EM_S390         0xA390
 
 /* This is the info that is needed to parse the dynamic section of the file */
 #define DT_NULL		0

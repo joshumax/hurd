@@ -658,7 +658,7 @@ u32 inet_select_addr(struct device *dev, u32 dst, int scope)
 			addr = ifa->ifa_local;
 	} endfor_ifa(in_dev);
 	
-	if (addr || scope >= RT_SCOPE_LINK)
+	if (addr)
 		return addr;
 
 	/* Not loopback addresses on loopback should be preferred
@@ -670,7 +670,9 @@ u32 inet_select_addr(struct device *dev, u32 dst, int scope)
 			continue;
 
 		for_primary_ifa(in_dev) {
-			if (ifa->ifa_scope <= scope)
+			if (!IN_DEV_HIDDEN(in_dev) &&
+			    ifa->ifa_scope <= scope &&
+			    ifa->ifa_scope != RT_SCOPE_LINK)
 				return ifa->ifa_local;
 		} endfor_ifa(in_dev);
 	}
@@ -923,7 +925,7 @@ int devinet_sysctl_forward(ctl_table *ctl, int write, struct file * filp,
 static struct devinet_sysctl_table
 {
 	struct ctl_table_header *sysctl_header;
-	ctl_table devinet_vars[12];
+	ctl_table devinet_vars[13];
 	ctl_table devinet_dev[2];
 	ctl_table devinet_conf_dir[2];
 	ctl_table devinet_proto_dir[2];
@@ -962,6 +964,9 @@ static struct devinet_sysctl_table
          &proc_dointvec},
         {NET_IPV4_CONF_LOG_MARTIANS, "log_martians",
          &ipv4_devconf.log_martians, sizeof(int), 0644, NULL,
+         &proc_dointvec},
+	{NET_IPV4_CONF_HIDDEN, "hidden",
+         &ipv4_devconf.hidden, sizeof(int), 0644, NULL,
          &proc_dointvec},
 	 {0}},
 

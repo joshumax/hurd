@@ -68,7 +68,7 @@ extern int nr_free_pages;
 extern atomic_t nr_async_pages;
 extern struct inode swapper_inode;
 extern unsigned long page_cache_size;
-extern int buffermem;
+extern long buffermem;
 
 /* Incomplete types for prototype declarations: */
 struct task_struct;
@@ -91,8 +91,8 @@ extern void rw_swap_page_nolock(int, unsigned long, char *, int);
 extern void swap_after_unlock_page (unsigned long entry);
 
 /* linux/mm/page_alloc.c */
-extern void swap_in(struct task_struct *, struct vm_area_struct *,
-		    pte_t *, unsigned long, int);
+extern int swap_in(struct task_struct *, struct vm_area_struct *,
+		   pte_t *, unsigned long, int);
 
 
 /* linux/mm/swap_state.c */

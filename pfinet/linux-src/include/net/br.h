@@ -19,7 +19,16 @@
 #define Forwarding	3			  /* (4 4 4)	 */
 #define Blocking	4			  /* (4.4.1)	 */
 
-#define No_of_ports 8
+
+/* MAG Yich! Easiest way of giving a configurable number of ports
+ * If you want more than 32, change BR_MAX_PORTS and recompile brcfg!
+ */
+#define BR_MAX_PORTS (32)
+#if CONFIG_BRIDGE_NUM_PORTS > BR_MAX_PORTS
+#undef CONFIG_BRIDGE_NUM_PORTS
+#define CONFIG_BRIDGE_NUM_PORTS BR_MAX_PORTS
+#endif
+#define No_of_ports CONFIG_BRIDGE_NUM_PORTS
 /* arbitrary choice, to allow the code below to compile */
 
 #define All_ports (No_of_ports + 1)
@@ -147,6 +156,7 @@ typedef struct {
 	unsigned int     top_change;		  /* (4.5.3.12)	 */
 	unsigned short   topology_change_time;	  /* (4.5.3.13)	 */
 	unsigned short   hold_time;		  /* (4.5.3.14)	 */
+	unsigned int	 instance;
 } Bridge_data;
 
 /** Port Parameters (4.5.5) **/
@@ -160,7 +170,10 @@ typedef struct {
 	unsigned short   designated_port;	  /* (4.5.5.7)	 */
 	unsigned int     top_change_ack;	  /* (4.5.5.8)	 */
 	unsigned int     config_pending;	  /* (4.5.5.9)	 */
-	struct device *dev;	
+        bridge_id_t      ifmac; 
+        unsigned int     admin_state;
+	char             ifname[IFNAMSIZ]; /* Make life easier for brcfg */
+        struct device *dev;	
 	struct fdb *fdb;	/* head of per port fdb chain */
 } Port_data;
 
@@ -245,13 +258,14 @@ typedef struct {
 struct br_stat {
 	unsigned int flags;
 	Bridge_data bridge_data;
-	Port_data port_data[No_of_ports];
 	unsigned int policy;
 	unsigned int exempt_protocols;
 	unsigned short protocols[BR_MAX_PROTOCOLS];
 	unsigned short prot_id[BR_MAX_PROT_STATS];	/* Protocol encountered */
 	unsigned int prot_counter[BR_MAX_PROT_STATS];	/* How many packets ? */
 	br_stats_counter packet_cnts;
+	unsigned int	num_ports;
+	Port_data port_data[BR_MAX_PORTS + 1];
 };
 
 /* defined flags for br_stat.flags */
@@ -274,7 +288,7 @@ struct br_cf {
 #define	BRCMD_SET_BRIDGE_PRIORITY	5	/* arg1 = priority */
 #define	BRCMD_SET_PORT_PRIORITY	6	/* arg1 = port, arg2 = priority */
 #define	BRCMD_SET_PATH_COST	7	/* arg1 = port, arg2 = cost */
-#define	BRCMD_DISPLAY_FDB	8	/* arg1 = port */
+#define	BRCMD_DISPLAY_FDB	8
 #define	BRCMD_ENABLE_DEBUG	9
 #define	BRCMD_DISABLE_DEBUG	10
 #define BRCMD_SET_POLICY	11	/* arg1 = default policy (1==bridge all) */
@@ -283,14 +297,19 @@ struct br_cf {
 #define BRCMD_DISABLE_PROT_STATS 14
 #define BRCMD_ZERO_PROT_STATS	15
 #define BRCMD_TOGGLE_STP	16
+#define BRCMD_IF_ENABLE		17	/* arg1 = if_index */
+#define BRCMD_IF_DISABLE	18	/* arg1 = if_index */
+#define BRCMD_SET_IF_PRIORITY	19	/* arg1 = if_index, arg2 = priority */
+#define	BRCMD_SET_IF_PATH_COST	20	/* arg1 = if_index, arg2 = cost */
 
 /* prototypes of exported bridging functions... */
 
+#ifdef __KERNEL__
 void br_init(void);
 int br_receive_frame(struct sk_buff *skb);	/* 3.5 */
 int br_tx_frame(struct sk_buff *skb);
+int brg_init(void);
 int br_ioctl(unsigned int cmd, void *arg);
-int br_protocol_ok(unsigned short protocol);
 void requeue_fdb(struct fdb *node, int new_port);
 
 struct fdb *br_avl_find_addr(unsigned char addr[6]);
@@ -298,8 +317,15 @@ struct fdb *br_avl_insert (struct fdb * new_node);
 void sprintf_avl (char **pbuffer, struct fdb * tree, off_t *pos,int* len, off_t offset, int length);
 int br_tree_get_info(char *buffer, char **start, off_t offset, int length, int dummy);
 void br_avl_delete_by_port(int port);
+int br_call_bridge(struct sk_buff *skb, unsigned short type);
+void br_spacedevice_register(void);
+
 /* externs */
 
 extern struct br_stat br_stats;
 extern Port_data port_info[];
 
+#endif
+
+
+ 

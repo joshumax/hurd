@@ -16,6 +16,7 @@ struct ipv4_devconf
 	int	log_martians;
 	int	forwarding;
 	int	mc_forwarding;
+	int	hidden;
 	void	*sysctl;
 };
 
@@ -40,6 +41,7 @@ struct in_device
 
 #define IN_DEV_LOG_MARTIANS(in_dev)	(ipv4_devconf.log_martians || (in_dev)->cnf.log_martians)
 #define IN_DEV_PROXY_ARP(in_dev)	(ipv4_devconf.proxy_arp || (in_dev)->cnf.proxy_arp)
+#define IN_DEV_HIDDEN(in_dev)		((in_dev)->cnf.hidden && ipv4_devconf.hidden)
 #define IN_DEV_SHARED_MEDIA(in_dev)	(ipv4_devconf.shared_media || (in_dev)->cnf.shared_media)
 #define IN_DEV_TX_REDIRECTS(in_dev)	(ipv4_devconf.send_redirects || (in_dev)->cnf.send_redirects)
 #define IN_DEV_SEC_REDIRECTS(in_dev)	(ipv4_devconf.secure_redirects || (in_dev)->cnf.secure_redirects)

@@ -1,23 +1,32 @@
 /*****************************************************************************
-* router.h	Definitions for the WAN Multiprotocol Router Module.
+* wanrouter.h	Definitions for the WAN Multiprotocol Router Module.
 *		This module provides API and common services for WAN Link
 *		Drivers and is completely hardware-independent.
 *
-* Author:	Gene Kozin	<genek@compuserve.com>
-*		Jaspreet Singh	<jaspreet@sangoma.com>
+* Author: 	Nenad Corbic <ncorbic@sangoma.com>
+*		Gideon Hack 	
 *
-* Copyright:	(c) 1995-1997 Sangoma Technologies Inc.
+* Copyright:	(c) 1995-1999 Sangoma Technologies Inc.
 *
 *		This program is free software; you can redistribute it and/or
 *		modify it under the terms of the GNU General Public License
 *		as published by the Free Software Foundation; either version
 *		2 of the License, or (at your option) any later version.
 * ============================================================================
+* Oct 04, 1999  Nenad Corbic 	Updated for 2.1.0 release
+* Jun 02, 1999  Gideon Hack	Added support for the S514 adapter.
+* Jul 20, 1998	David Fong	Added Inverse ARP options to 'wanif_conf_t'
+* Jun 12, 1998	David Fong	Added Cisco HDLC support.
+* Dec 16, 1997	Jaspreet Singh	Moved 'enable_IPX' and 'network_number' to
+*				'wanif_conf_t'
+* Dec 05, 1997	Jaspreet Singh	Added 'pap', 'chap' to 'wanif_conf_t'
+*				Added 'authenticator' to 'wan_ppp_conf_t'
 * Nov 06, 1997	Jaspreet Singh	Changed Router Driver version to 1.1 from 1.0
 * Oct 20, 1997	Jaspreet Singh	Added 'cir','bc','be' and 'mc' to 'wanif_conf_t'
 *				Added 'enable_IPX' and 'network_number' to 
 *				'wan_device_t'.  Also added defines for
-*				UDP PACKET TYPE, Interrupt test, critical values*				for RACE conditions.
+*				UDP PACKET TYPE, Interrupt test, critical values
+*				for RACE conditions.
 * Oct 05, 1997	Jaspreet Singh	Added 'dlci_num' and 'dlci[100]' to 
 *				'wan_fr_conf_t' to configure a list of dlci(s)
 *				for a NODE 
@@ -28,6 +37,12 @@
 * Jan 16, 1997	Gene Kozin	router_devlist made public
 * Jan 02, 1997	Gene Kozin	Initial version (based on wanpipe.h).
 *****************************************************************************/
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= 0x020100
+#define LINUX_2_1
+#endif
+
 #ifndef	_ROUTER_H
 #define	_ROUTER_H
 
@@ -50,6 +65,10 @@ enum router_ioctls
 	ROUTER_USER_MAX	= (ROUTER_IOCTL<<8)+31
 };
 
+/* identifiers for displaying proc file data for dual port adapters */
+#define PROC_DATA_PORT_0 0x8000	/* the data is for port 0 */
+#define PROC_DATA_PORT_1 0x8001	/* the data is for port 1 */
+
 /* NLPID for packet encapsulation (ISO/IEC TR 9577) */
 #define	NLPID_IP	0xCC	/* Internet Protocol Datagram */
 #define	NLPID_SNAP	0x80	/* IEEE Subnetwork Access Protocol */
@@ -62,12 +81,14 @@ enum router_ioctls
 #define	WAN_IFNAME_SZ	15	/* max length of the interface name */
 #define	WAN_DRVNAME_SZ	15	/* max length of the link driver name */
 #define	WAN_ADDRESS_SZ	31	/* max length of the WAN media address */
+#define USED_BY_FIELD	8	/* max length of the used by field */
 
 /* Defines for UDP PACKET TYPE */
 #define UDP_PTPIPE_TYPE 	0x01
 #define UDP_FPIPE_TYPE		0x02
-#define UDP_DRVSTATS_TYPE 	0x03
-#define UDP_INVALID_TYPE  	0x04
+#define UDP_CPIPE_TYPE		0x03
+#define UDP_DRVSTATS_TYPE 	0x04
+#define UDP_INVALID_TYPE  	0x05
 
 /* Command return code */
 #define CMD_OK		0		/* normal firmware return code */
@@ -145,7 +166,25 @@ typedef struct wan_ppp_conf
 	unsigned auth_retry;	/* max. retry */
 	unsigned auth_options;	/* authentication opt. */
 	unsigned ip_options;	/* IP options */
+	char	authenticator;	/* AUTHENTICATOR or not */
+	char	ip_mode;	/* Static/Host/Peer */
 } wan_ppp_conf_t;
+
+/*----------------------------------------------------------------------------
+ * CHDLC-specific link-level configuration.
+ */
+typedef struct wan_chdlc_conf
+{
+	unsigned char ignore_dcd;	/* Protocol options:		*/
+	unsigned char ignore_cts;	/*  Ignore these to determine	*/
+	unsigned char ignore_keepalive;	/*  link status (Yes or No)	*/
+	unsigned char hdlc_streaming;	/*  hdlc_streaming mode (Y/N) */
+	unsigned keepalive_tx_tmr;	/* transmit keepalive timer */
+	unsigned keepalive_rx_tmr;	/* receive  keepalive timer */
+	unsigned keepalive_err_margin;	/* keepalive_error_tolerance */
+	unsigned slarp_timer;		/* SLARP request timer */
+} wan_chdlc_conf_t;
+
 
 /*----------------------------------------------------------------------------
  * WAN device configuration. Passed to ROUTER_SETUP IOCTL.
@@ -160,18 +199,21 @@ typedef struct wandev_conf
 	unsigned msize;		/* dual-port memory size */
 	int irq;		/* interrupt request level */
 	int dma;		/* DMA request level */
+        char S514_CPU_no[1];	/* S514 PCI adapter CPU number ('A' or 'B') */
+        unsigned PCI_slot_no;	/* S514 PCI adapter slot number */
+	char comm_port;		/* Communication Port (PRI=0, SEC=1) */ 
 	unsigned bps;		/* data transfer rate */
 	unsigned mtu;		/* maximum transmit unit size */
         unsigned udp_port;      /* UDP port for management */
 	unsigned char ttl;	/* Time To Live for UDP security */
+	unsigned char ft1;	/* FT1 Configurator Option */
         char interface;		/* RS-232/V.35, etc. */
 	char clocking;		/* external/internal */
 	char line_coding;	/* NRZ/NRZI/FM0/FM1, etc. */
 	char station;		/* DTE/DCE, primary/secondary, etc. */
 	char connection;	/* permanent/switched/on-demand */
+	char read_mode;		/* read mode: Polling or interrupt */
 	unsigned hw_opt[4];	/* other hardware options */
-	unsigned char enable_IPX;	/* Enable or Disable IPX */
-	unsigned long network_number;	/* Network Number for IPX */
 	unsigned reserved[4];
 				/****** arbitrary data ***************/
 	unsigned data_size;	/* data buffer size */
@@ -181,6 +223,7 @@ typedef struct wandev_conf
 		wan_x25_conf_t x25;	/* X.25 configuration */
 		wan_ppp_conf_t ppp;	/* PPP configuration */
 		wan_fr_conf_t fr;	/* frame relay configuration */
+		wan_chdlc_conf_t chdlc;	/* Cisco HDLC configuration */
 	} u;
 } wandev_conf_t;
 
@@ -188,6 +231,9 @@ typedef struct wandev_conf
 #define	WANCONFIG_X25	101	/* X.25 link */
 #define	WANCONFIG_FR	102	/* frame relay link */
 #define	WANCONFIG_PPP	103	/* synchronous PPP link */
+#define WANCONFIG_CHDLC	104	/* Cisco HDLC Link */
+#define WANCONFIG_BSC	105	/* BiSync Streaming */
+#define WANCONFIG_HDLC	106	/* HDLC Support */
 
 /*
  * Configuration options defines.
@@ -230,9 +276,29 @@ typedef struct wandev_conf
 #define	WANOPT_ONDEMAND		2	/* activate DTR only before sending */
 
 /* frame relay in-channel signalling */
-#define	WANOPT_FR_ANSI		0	/* ANSI T1.617 Annex D */
-#define	WANOPT_FR_Q933		1	/* ITU Q.933A */
-#define	WANOPT_FR_LMI		2	/* LMI */
+#define	WANOPT_FR_ANSI		1	/* ANSI T1.617 Annex D */
+#define	WANOPT_FR_Q933		2	/* ITU Q.933A */
+#define	WANOPT_FR_LMI		3	/* LMI */
+
+/* PPP IP Mode Options */
+#define	WANOPT_PPP_STATIC	0
+#define	WANOPT_PPP_HOST		1
+#define	WANOPT_PPP_PEER		2
+
+/* CHDLC Protocol Options */
+/* DF Commmented out for now.
+
+#define WANOPT_CHDLC_NO_DCD		IGNORE_DCD_FOR_LINK_STAT
+#define WANOPT_CHDLC_NO_CTS		IGNORE_CTS_FOR_LINK_STAT
+#define WANOPT_CHDLC_NO_KEEPALIVE	IGNORE_KPALV_FOR_LINK_STAT
+*/
+
+/* Port options */
+#define WANOPT_PRI 0
+#define WANOPT_SEC 1
+/* read mode */
+#define	WANOPT_INTR	0
+#define WANOPT_POLL	1
 
 /*----------------------------------------------------------------------------
  * WAN Link Status Info (for ROUTER_STAT IOCTL).
@@ -274,7 +340,8 @@ enum wan_states
 	WAN_DISCONNECTED,	/* link/channel is disconnected */
 	WAN_CONNECTING,		/* connection is in progress */
 	WAN_CONNECTED,		/* link/channel is operational */
-	WAN_LIMIT		/* for verification only */
+	WAN_LIMIT,		/* for verification only */
+	WAN_DUALPORT		/* for Dual Port cards */
 };
 
 /* 'modem_status' masks */
@@ -292,13 +359,35 @@ typedef struct wanif_conf
 	unsigned config_id;		/* configuration identifier */
 	char name[WAN_IFNAME_SZ+1];	/* interface name, ASCIIZ */
 	char addr[WAN_ADDRESS_SZ+1];	/* media address, ASCIIZ */
+	char usedby[USED_BY_FIELD];	/* used by API or WANPIPE */
 	unsigned idle_timeout;		/* sec, before disconnecting */
 	unsigned hold_timeout;		/* sec, before re-connecting */
 	unsigned cir;			/* Committed Information Rate fwd,bwd*/
 	unsigned bc;			/* Committed Burst Size fwd, bwd */
 	unsigned be;			/* Excess Burst Size fwd, bwd */ 
+	unsigned char enable_IPX;	/* Enable or Disable IPX */
+	unsigned char inarp;		/* Send Inverse ARP requests Y/N */
+	unsigned inarp_interval;	/* sec, between InARP requests */
+	unsigned long network_number;	/* Network Number for IPX */
 	char mc;			/* Multicast on or off */
-	int reserved[8];		/* reserved for future extensions */
+	char pap;			/* PAP enabled or disabled */
+	char chap;			/* CHAP enabled or disabled */
+	unsigned char userid[511];	/* List of User Id */
+	unsigned char passwd[511];	/* List of passwords */
+	unsigned char sysname[31];	/* Name of the system */
+	unsigned char ignore_dcd;	/* Protocol options: */
+	unsigned char ignore_cts;	/*  Ignore these to determine */
+	unsigned char ignore_keepalive;	/*  link status (Yes or No) */
+	unsigned char hdlc_streaming;	/*  Hdlc streaming mode (Y/N) */
+	unsigned keepalive_tx_tmr;	/* transmit keepalive timer */
+	unsigned keepalive_rx_tmr;	/* receive  keepalive timer */
+	unsigned keepalive_err_margin;	/* keepalive_error_tolerance */
+	unsigned slarp_timer;		/* SLARP request timer */
+	unsigned char ttl;		/* Time To Live for UDP security */
+	char interface;			/* RS-232/V.35, etc. */
+	char clocking;			/* external/internal */
+	unsigned bps;			/* data transfer rate */
+	unsigned mtu;			/* maximum transmit unit size */
 } wanif_conf_t;
 
 #ifdef	__KERNEL__
@@ -308,7 +397,6 @@ typedef struct wanif_conf
 #include <linux/proc_fs.h>	/* proc filesystem pragmatics */
 #include <linux/inet.h>		/* in_aton(), in_ntoa() prototypes */
 #include <linux/netdevice.h>	/* support for network drivers */
-
 /*----------------------------------------------------------------------------
  * WAN device data space.
  */
@@ -317,9 +405,12 @@ typedef struct wan_device
 	unsigned magic;			/* magic number */
 	char* name;			/* -> WAN device name (ASCIIZ) */
 	void* private;			/* -> driver private data */
+	unsigned config_id;		/* Configuration ID */
 					/****** hardware configuration ******/
 	unsigned ioport;		/* adapter I/O port base #1 */
-	void * maddr;			/* dual-port memory address */
+	char S514_cpu_no[1];		/* PCI CPU Number */
+	unsigned char S514_slot_no;	/* PCI Slot Number */
+	unsigned long maddr;		/* dual-port memory address */
 	unsigned msize;			/* dual-port memory size */
 	int irq;			/* interrupt request level */
 	int dma;			/* DMA request level */
@@ -333,24 +424,31 @@ typedef struct wan_device
 	char line_coding;		/* NRZ/NRZI/FM0/FM1, etc. */
 	char station;			/* DTE/DCE, primary/secondary, etc. */
 	char connection;		/* permanent/switched/on-demand */
+	char signalling;		/* Signalling RS232 or V35 */
+	char read_mode;			/* read mode: Polling or interrupt */
+	char new_if_cnt;                /* Number of interfaces per wanpipe */ 
+	char del_if_cnt;		/* Number of times del_if() gets called */
+	unsigned char piggyback;        /* Piggibacking a port */
 	unsigned hw_opt[4];		/* other hardware options */
-	unsigned char enable_IPX;	/* Enable or Disable IPX */
-	unsigned long network_number;	/* Network Number for IPX */
 					/****** status and statistics *******/
 	char state;			/* device state */
-	unsigned modem_status;		/* modem status */
+	char api_status;		/* device api status */
+#ifdef LINUX_2_1
+	struct net_device_stats stats; 	/* interface statistics */
+#else
 	struct enet_statistics stats;	/* interface statistics */
+#endif
 	unsigned reserved[16];		/* reserved for future use */
 	unsigned critical;		/* critical section flag */
 					/****** device management methods ***/
-	int (*setup) (struct wan_device* wandev, wandev_conf_t* conf);
-	int (*shutdown) (struct wan_device* wandev);
-	int (*update) (struct wan_device* wandev);
-	int (*ioctl) (struct wan_device* wandev, unsigned cmd,
+	int (*setup) (struct wan_device *wandev, wandev_conf_t *conf);
+	int (*shutdown) (struct wan_device *wandev);
+	int (*update) (struct wan_device *wandev);
+	int (*ioctl) (struct wan_device *wandev, unsigned cmd,
 		unsigned long arg);
-	int (*new_if) (struct wan_device* wandev, struct device* dev,
-		wanif_conf_t* conf);
-	int (*del_if) (struct wan_device* wandev, struct device* dev);
+	int (*new_if) (struct wan_device *wandev, struct device *dev,
+		wanif_conf_t *conf);
+	int (*del_if) (struct wan_device *wandev, struct device *dev);
 					/****** maintained by the router ****/
 	struct wan_device* next;	/* -> next device */
 	struct device* dev;		/* list of network interfaces */
@@ -359,23 +457,20 @@ typedef struct wan_device
 } wan_device_t;
 
 /* Public functions available for device drivers */
-extern int register_wan_device(wan_device_t* wandev);
-extern int unregister_wan_device(char* name);
-unsigned short wanrouter_type_trans(struct sk_buff* skb, struct device* dev);
-int wanrouter_encapsulate(struct sk_buff* skb, struct device* dev);
+extern int register_wan_device(wan_device_t *wandev);
+extern int unregister_wan_device(char *name);
+unsigned short wanrouter_type_trans(struct sk_buff *skb, struct device *dev);
+int wanrouter_encapsulate(struct sk_buff *skb, struct device *dev);
 
 /* Proc interface functions. These must not be called by the drivers! */
-extern int wanrouter_proc_init (void);
-extern void wanrouter_proc_cleanup (void);
-extern int wanrouter_proc_add (wan_device_t* wandev);
-extern int wanrouter_proc_delete (wan_device_t* wandev);
-extern int wanrouter_ioctl(
-	struct inode* inode, struct file* file,
-	unsigned int cmd, unsigned long arg)
-;
+extern int wanrouter_proc_init(void);
+extern void wanrouter_proc_cleanup(void);
+extern int wanrouter_proc_add(wan_device_t *wandev);
+extern int wanrouter_proc_delete(wan_device_t *wandev);
+extern int wanrouter_ioctl( struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
 
 /* Public Data */
-extern wan_device_t* router_devlist;	/* list of registered devices */
+extern wan_device_t *router_devlist;	/* list of registered devices */
 
 #endif	/* __KERNEL__ */
 #endif	/* _ROUTER_H */

@@ -40,11 +40,12 @@
  * 23-Jul-1999: Fixed small fragment security exposure opened on 15-May-1998.
  *              John McDonald <jm@dataprotect.com>
  *              Thomas Lopatic <tl@dataprotect.com>
+ * 21-Oct-1999: Applied count fix by Emanuele Caratti <wiz@iol.it> --RR
  */
 
 /*
  *
- * The origina Linux port was done Alan Cox, with changes/fixes from
+ * The original Linux port was done Alan Cox, with changes/fixes from
  * Pauline Middlelink, Jos Vos, Thomas Quinot, Wouter Gadeyne, Juan
  * Jose Ciarlante, Bernd Eckenfels, Keith Owens and others.
  * 
@@ -86,6 +87,7 @@
 #include <net/udp.h>
 #include <net/sock.h>
 #include <net/icmp.h>
+#include <net/ip_masq.h>
 #include <linux/netlink.h>
 #include <linux/init.h>
 #include <linux/firewall.h>
@@ -228,6 +230,7 @@ struct ip_reent
 {
 	struct ip_chain *prevchain;	/* Pointer to referencing chain */
 	struct ip_fwkernel *prevrule;	/* Pointer to referencing rule */
+	unsigned int count;
 	struct ip_counters counters;
 };
 
@@ -488,7 +491,10 @@ static int find_special(ip_chainlabel label, int *answer)
                 static int enabled = 0;
 
                 if(!enabled)
+                {
+                	enabled=1;
                         sysctl_ip_always_defrag++;
+                }
 		*answer = FW_REDIRECT;
 		return 1;
 #endif
@@ -729,8 +735,8 @@ ip_fw_check(struct iphdr *ip,
 	else FWC_HAVE_LOCK(fwc_rlocks);
 
 	f = chain->chain;
+	count = 0;
 	do {
-		count = 0;
 		for (; f; f = f->next) {
 			count++;
 			if (ip_rule_match(f,rif,ip,
@@ -768,10 +774,12 @@ ip_fw_check(struct iphdr *ip,
 				else {
 					f->branch->reent[slot].prevchain 
 						= chain;
+					f->branch->reent[slot].count = count;
 					f->branch->reent[slot].prevrule 
 						= f->next;
 					chain = f->branch;
 					f = chain->chain;
+					count = 0;
 				}
 			}
 			else if (f->simplebranch == FW_SKIP) 
@@ -790,6 +798,7 @@ ip_fw_check(struct iphdr *ip,
 			if (chain->reent[slot].prevchain) {
 				struct ip_chain *tmp = chain;
 				f = chain->reent[slot].prevrule;
+				count = chain->reent[slot].count;
 				chain = chain->reent[slot].prevchain;
 				tmp->reent[slot].prevchain = NULL;
 			}

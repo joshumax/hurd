@@ -19,7 +19,7 @@
 #define LP_NOPA  0x0010
 #define LP_ERR   0x0020
 #define LP_ABORT 0x0040
-#define LP_CAREFUL 0x0080 /* obsoleted -arca */
+#define LP_CAREFUL 0x0080
 #define LP_ABORTOPEN 0x0100
 #define	LP_TRUST_IRQ 0x0200
 

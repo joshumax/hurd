@@ -97,6 +97,7 @@
  *		Alan Cox	:	Multicast routing hooks
  *		Jos Vos		:	Do accounting *before* call_in_firewall
  *	Willy Konynenberg	:	Transparent proxying support
+ *             Stephan Uphoff   :       Check IP header length field
  *
  *  
  *
@@ -421,12 +422,19 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
 	if (skb->len < sizeof(struct iphdr))
 		goto inhdr_error; 
+
+	if (skb->len < (iph->ihl << 2))
+		goto inhdr_error;
+
 	if (iph->ihl < 5 || iph->version != 4 || ip_fast_csum((u8 *)iph, iph->ihl) != 0)
 		goto inhdr_error; 
 
 	{
 	__u32 len = ntohs(iph->tot_len); 
 	if (skb->len < len)
+		goto inhdr_error; 
+
+	if (len <  (iph->ihl << 2))
 		goto inhdr_error; 
 
 	/*

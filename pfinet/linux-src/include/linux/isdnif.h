@@ -1,4 +1,4 @@
-/* $Id: isdnif.h,v 1.31 1999/09/06 07:29:36 fritz Exp $
+/* $Id: isdnif.h,v 1.32 1999/10/11 22:03:00 keil Exp $
  *
  * Linux ISDN subsystem
  *
@@ -22,6 +22,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
  * $Log: isdnif.h,v $
+ * Revision 1.32  1999/10/11 22:03:00  keil
+ * COMPAT_NEED_UACCESS (no include in isdn_compat.h)
+ *
  * Revision 1.31  1999/09/06 07:29:36  fritz
  * Changed my mail-address.
  *

@@ -24,7 +24,9 @@
 #ifndef _LINUX_NETDEVICE_H
 #define _LINUX_NETDEVICE_H
 
+#ifdef __KERNEL__
 #include <linux/config.h>
+#endif
 #include <linux/if.h>
 #include <linux/if_ether.h>
 #include <linux/if_packet.h>
@@ -266,6 +268,9 @@ struct device
 	struct Qdisc		*qdisc_list;
 	unsigned long		tx_queue_len;	/* Max frames per queue allowed */
 
+	/* Bridge stuff */
+	int			bridge_port_id;		
+	
 	/* Pointers to interface service routines.	*/
 	int			(*open)(struct device *dev);
 	int			(*stop)(struct device *dev);

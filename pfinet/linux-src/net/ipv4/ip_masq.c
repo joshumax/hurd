@@ -10,6 +10,9 @@
  *	See ip_fw.c for original log
  *
  * Fixes:
+ *	Joseph Gooch		:	Modified ip_fw_masquerade() to do a ip_route_output()
+ *	 (help by Dan Drown)	:	to choose the proper local address.
+ *	 (and Alexey)		:
  *	Juan Jose Ciarlante	:	Modularized application masquerading (see ip_masq_app.c)
  *	Juan Jose Ciarlante	:	New struct ip_masq_seq that holds output/input delta seq.
  *	Juan Jose Ciarlante	:	Added hashed lookup by proto,maddr,mport and proto,saddr,sport
@@ -787,6 +790,8 @@ void ip_masq_put(struct ip_masq *ms)
 	}
 }
 
+extern int sysctl_ip_always_defrag;
+
 static void masq_expire(unsigned long data)
 {
 	struct ip_masq *ms = (struct ip_masq *)data;
@@ -839,6 +844,7 @@ static void masq_expire(unsigned long data)
 	 */
 	if (atomic_read(&ms->refcnt) == 1) {
 		kfree_s(ms,sizeof(*ms));
+		sysctl_ip_always_defrag--;
 		MOD_DEC_USE_COUNT;
 		goto masq_expire_out;
 	}
@@ -879,8 +885,6 @@ static __u16 get_next_mport(void)
  *
  * 	Be careful, it can be called from u-space
  */
-
-extern int sysctl_ip_always_defrag;
 
 struct ip_masq * ip_masq_new(int proto, __u32 maddr, __u16 mport, __u32 saddr, __u16 sport, __u32 daddr, __u16 dport, unsigned mflags)
 {
@@ -1139,6 +1143,23 @@ int ip_fw_masquerade(struct sk_buff **skb_p, __u32 maddr)
 		 *	invalid packets.
 		 */
 		return -1;
+	}
+
+	/* Lets determine our maddr now, shall we? */
+	if (maddr == 0) {
+		struct rtable *rt;
+		struct rtable *skb_rt = (struct rtable*)skb->dst;
+		struct device *skb_dev = skb_rt->u.dst.dev;
+
+		if (ip_route_output(&rt, iph->daddr, 0, RT_TOS(iph->tos)|RTO_CONN, skb_dev?skb_dev->ifindex:0)) {
+			/* Fallback on old method */
+			/* This really shouldn't happen... */
+			maddr = inet_select_addr(skb_dev, skb_rt->rt_gateway, RT_SCOPE_UNIVERSE);
+		} else {
+			/* Route lookup succeeded */
+			maddr = rt->rt_src;
+			ip_rt_put(rt);
+		}
 	}
 
 	switch (iph->protocol) {
