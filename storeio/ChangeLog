@@ -3,6 +3,11 @@
 	* dev.c: Add #include <sys/mman.h> for munmap decl.
 	* pager.c: Likewise.
 
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dev.c (dev_open): Use mmap instead of vm_allocate.
+	(dev_read): Likewise.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dev.c (dev_buf_fill): Use munmap instead of vm_deallocate.

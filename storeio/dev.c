@@ -154,8 +154,9 @@ dev_open (struct store_parsed *name, int flags, int inhibit_cache,
       return err;
     }
 
-  if (vm_allocate (mach_task_self (),
-		   (vm_address_t *)&new->buf, new->store->block_size, 1))
+  new->buf = mmap (0, new->store->block_size, PROT_READ|PROT_WRITE, 
+		   MAP_ANON, 0, 0);
+  if (new->buf == (void *) -1)
     {
       store_free (new->store);
       free (new);
@@ -373,9 +374,9 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
       error_t err;
       if (*len < whole_amount)
 	{
-	  err = vm_allocate (mach_task_self (),
-			     (vm_address_t *)buf, whole_amount, 1);
-	  if (! err)
+	  *buf = mmap (0, whole_amount, PROT_READ|PROT_WRITE,
+		       MAP_ANON, 0, 0);
+	  if (*buf != (void *) -1)
 	    allocated_buf = 1;
 	}
       else
