@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-
 /* This routine is used in pass 1 to initialize DIRARRAY and DIRSORTED.
    Copy information from DP (for number NUMBER) into a newly allocated
    dirinfo structure and add it to the arrays. */
@@ -63,3 +62,128 @@ record_directory (struct dinode *dp, ino_t number)
 }
 
 
+/* Link node INO into lost+found.  If PARENT is positive then INO is
+   a directory, and PARENT is the number of `..' as found in INO.
+   If PARENT is zero then INO is a directory without any .. entry. */
+void
+linkup (ino_t ino, ino_t parent)
+{
+  struct dinode lfdino;
+  char tempnam[MAXNAMLEN];
+
+  if (lfdir == 0)
+    {
+      struct dinode rootdino;
+      getinode (ROOTINO, &rootdino);
+      
+      scan_dir (lfname, &lfdir);
+      if (lfdir == 0)
+	{
+	  pwarn ("NO lost+found DIRECTORY");
+	  if (preen || reply ("CREATE"))
+	    {
+	      lfdir = allocdir (ROOTINO, 0, lfmode);
+	      if (lfdir != 0)
+		{
+		  if (makeentry (ROOTINO, lfdir, lfname))
+		    {
+		      if (preen)
+			printf (" (CREATED)");
+		    }
+		  else
+		    {
+		      freedir (lfdir, ROOTINO);
+		      lfdir = 0;
+		      if (preen)
+			printf ("\n");
+		    }
+		}
+	    }
+	  if (!lfdir)
+	    {
+	      pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
+	      printf ("\n\n");
+	      return;
+	    }
+	}
+    }
+  
+  getinode (lfdir, &lfdino);
+  if ((DI_MODE (&lfdino) & IFMT) != IFDIR)
+    {
+      ino_t oldlfdir;
+      
+      pfatal ("lost+found IS NOT A DIRECTORY");
+      if (!reply ("REALLOCATE"))
+	return;
+      
+      oldlfdir = lfdir;
+
+      lfdir = allocdir (ROOTINO, 0, lfmode);
+      if (!lfdir)
+	{
+	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
+	  printf ("\n\n");
+	  return;
+	}
+      if (!changeino (ROOTINO, lfname, lfdir))
+	{
+	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
+	  printf ("\n\n");
+	  return;
+	}
+      
+      /* One less link to the old one */
+      linkfound[oldlfdir]--;
+  
+      getinode (lfdir, &lfdino);
+  }
+  
+  if (inodestate[lfdir] != DIR && inodestate[lfdir] != (DIR|DIR_REF))
+    {
+      pfatal ("SORRY.  lost+found DIRECTORY NOT ALLOCATED.\n\n");
+      return;
+    }
+  lftempnam (tempname, ino);
+  if (makeentry (lfdir, ino, tempname))
+    {
+      pfatal("SORRY. NO SPACE IN lost+found DIRECTORY");
+      printf("\n\n");
+      return;
+    }
+  linkfound[ino]++;
+  
+  if (parent >= 0)
+    {
+      /* Reset `..' in ino */
+      if (parent)
+	{
+	  if (!changeino (ino, "..", lfdir))
+	    {
+	      pfatal ("CANNOT ADJUST .. link I=%lu", ino);
+	      return;
+	    }
+	  /* Forget about link to old parent */
+	  linkfound[parent]--;
+	}
+      else if (!makeentry (ino, lfdir, ".."))
+	{
+	  pfatal ("CANNOT CREAT .. link I=%lu", ino);
+	  return;
+	}
+      
+      /* Account for link to lost+found; update inode directly
+	 here to avoid confusing warning later. */
+      linkfound[lfdir]++;
+      lfdino.di_nlink++;
+      write_inode (lfdir, &lfdino);
+      
+      pwarn ("DIR I=%lu CONNECTED. ", ino);
+      if (parentdir)
+	printf ("PARENT WAS I=%lu\n", parentdir);
+      if (!preen)
+	printf ("\n");
+    }
+}
+
+  
