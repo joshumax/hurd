@@ -31,6 +31,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <cthreads.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -49,6 +50,7 @@ mach_port_t receive_set;
 mach_port_t pseudo_console;
 auth_t authserver;
 
+spin_lock_t queuelock = SPIN_LOCK_INITIALIZER;
 
 mach_port_t php_child_name, psmdp_child_name;
 
@@ -270,6 +272,7 @@ load_image (task_t t,
 
 
 void read_reply ();
+void msg_thread ();
 
 int
 main (int argc, char **argv, char **envp)
@@ -375,14 +378,22 @@ main (int argc, char **argv, char **envp)
     }
   thread_resume (newthread);
   
+  cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
+				(any_t) 0));
+  
   while (1)
     {
-      mach_msg_server_timeout (request_server, 0, receive_set,
-			       MACH_RCV_TIMEOUT, 0);
-      getpid ();
+      sigpause (0);
     }
   
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
+}
+
+void
+msg_thread()
+{
+  while (1)
+    mach_msg_server (request_server, 0, receive_set);
 }
 
 
@@ -410,6 +421,8 @@ queue_read (enum read_type type,
 	    int amount)
 {
   struct qr *qr;
+
+  spin_lock (&queuelock);
   
   qr = malloc (sizeof (struct qr));
   qr->type = type;
@@ -421,6 +434,8 @@ queue_read (enum read_type type,
     qrtail->next = qr;
   else
     qrhead = qrtail = qr;
+
+  spin_unlock (&queuelock);
 }
 
 /* Reply to a queued read. */
@@ -432,12 +447,20 @@ read_reply ()
   char * buf;
   int amtread;
 
+  spin_lock (&queuelock);
+  
   if (!qrhead)
-    return;
+    {
+      spin_unlock (&queuelock);
+      return;
+    }
+  
   qr = qrhead;
   qrhead = qr->next;
   if (qr == qrtail)
     qrtail = 0;
+
+  spin_unlock (&queuelock);
   
   ioctl (0, FIONREAD, &avail);
   if (!avail)
