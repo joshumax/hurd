@@ -88,7 +88,7 @@ error_t idvec_insert_new (struct idvec *idvec, unsigned pos, uid_t id);
 
 /* Set the ids in IDVEC to IDS (NUM elements long); delete whatever
    the previous ids were. */
-error_t idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num);
+error_t idvec_set_ids (struct idvec *idvec, uid_t *ids, unsigned num);
 
 /* Like idvec_set_ids, but get the new ids from new. */
 error_t idvec_set (struct idvec *idvec, struct idvec *new);

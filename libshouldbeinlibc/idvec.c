@@ -169,8 +169,8 @@ idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num)
   err = idvec_ensure (idvec, num);
   if (!err)
     {
-      bcopy (ids, idvec->ids);
-      ids->num = num;
+      bcopy (ids, idvec->ids, num * sizeof (id_t));
+      idvec->num = num;
     }
   return err;
 }  
