@@ -27,7 +27,6 @@ I386SRCS := i386/csw.S i386/thread.c
 
 # In GNU machine/cthreads.h is omitted; that work is done in libc headers.
 LCLHDRS := cthread_internals.h options.h cthreads.h
-I386HDRS := i386/asm.h
 
 OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 
@@ -45,7 +44,7 @@ VPATH = $(machine)
 
 include ../Makeconf
 
-$(OBJS): cthreads.h cthread_internals.h options.h i386/asm.h
+$(OBJS): cthreads.h cthread_internals.h options.h
 
 install: install-cthreads.h
 install-cthreads.h: cthreads.h
