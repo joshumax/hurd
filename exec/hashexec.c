@@ -145,10 +145,18 @@ check_hashbang (struct execdata *e,
   /* Find the name of the interpreter.  */
   p = ibuf + strspn (ibuf, " \t");
   interp = strsep (&p, " \t");
-  /* Skip remaining blanks, and the rest of the line is the argument.  */
-  p += strspn (p, " \t");
-  arg = p;
-  len = interp_len - (arg - ibuf);
+
+  if (p)
+    /* Skip remaining blanks, and the rest of the line is the argument.  */
+    {
+      p += strspn (p, " \t");
+      arg = p;
+      len = interp_len - (arg - ibuf);
+    }
+  else
+    /* There is no argument.  */
+    len = 0;
+
   if (len == 0)
     arg = NULL;
   else
