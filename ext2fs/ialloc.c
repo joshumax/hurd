@@ -288,9 +288,6 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   if (err)
     return err;
 
-  if (np->dn_stat.st_mode)
-    ext2_panic("diskfs_alloc_node", "Duplicate inode: %d", inum);
-
   if (np->dn_stat.st_blocks)
     {
       ext2_warning("diskfs_alloc_node",
