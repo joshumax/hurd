@@ -30,7 +30,6 @@
 weak_alias (__argp_fmtstream_putc, argp_fmtstream_putc)
 weak_alias (__argp_fmtstream_puts, argp_fmtstream_puts)
 weak_alias (__argp_fmtstream_write, argp_fmtstream_write)
-weak_alias (__argp_fmtstream_printf, argp_fmtstream_printf)
 weak_alias (__argp_fmtstream_set_lmargin, argp_fmtstream_set_lmargin)
 weak_alias (__argp_fmtstream_set_rmargin, argp_fmtstream_set_rmargin)
 weak_alias (__argp_fmtstream_set_wmargin, argp_fmtstream_set_wmargin)
