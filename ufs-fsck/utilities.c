@@ -57,13 +57,14 @@ getinode (ino_t ino, struct dinode *di)
   daddr_t iblk;
 
   if (!lastifrag)
-    lastifrag = malloc (sblock->fs_fsize);
+    lastifrag = malloc (sblock->fs_bsize);
   
   iblk = ino_to_fsba (sblock, ino);
   if (iblk != lastifragaddr)
-    readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_fsize);
+    readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_bsize);
   lastifragaddr = iblk;
-  bcopy (lastifrag + ino_to_fsbo (sblock, ino), di, sizeof (struct dinode));
+  bcopy (lastifrag + ino_to_fsbo (sblock, ino) * sizeof (struct dinode), 
+	 di, sizeof (struct dinode));
 }
 
 /* Write inode number INO from DINODE. */
@@ -74,10 +75,11 @@ write_inode (ino_t ino, struct dinode *di)
   
   iblk = ino_to_fsba (sblock, ino);
   if (iblk != lastifragaddr)
-    readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_fsize);
+    readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_bsize);
   lastifragaddr = iblk;
-  bcopy (di, lastifrag + ino_to_fsbo (sblock, ino), sizeof (struct dinode));
-  writeblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_fsize);
+  bcopy (di, lastifrag + ino_to_fsbo (sblock, ino) * sizeof (struct dinode),
+	 sizeof (struct dinode));
+  writeblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_bsize);
 }
 
 /* Clear inode number INO and zero DI. */
