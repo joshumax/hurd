@@ -2664,6 +2664,20 @@ default_pager_thread_privileges()
 }
 
 any_t
+default_pager_default_thread (arg)
+     any_t arg;
+{
+ 	for (;;) {
+		kr = mach_msg_server(default_pager_demux_default,
+				     default_pager_msg_size_default,
+				     default_pager_default_set);
+		panic(my_name, kr);
+	}
+}
+
+
+
+any_t
 default_pager_thread(arg)
 	any_t	arg;
 {
@@ -2876,13 +2890,8 @@ default_pager()
 
 	printf ("dp6\n");
 
-	for (;;) {
-	  printf ("dp7\n");
-		kr = mach_msg_server(default_pager_demux_default,
-				     default_pager_msg_size_default,
-				     default_pager_default_set);
-		panic(my_name, kr);
-	}
+	cthread_fork (default_pager_default_thread, 0);
+	cthread_exit (cthread_self ());
 }
 
 /*

@@ -1,3 +1,10 @@
+Wed Apr  9 13:57:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* default_pager.c (default_pager_default_thread): New function.
+	(default_pager): Fork default_pager_default_thread instead of
+	doing it here to avoid the possibility that we are on a tiny
+	stack.  Current thread dies.
+
 Thu Apr  3 20:00:58 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* elf-load.c (exec_load): Include <elf.h> instead of
