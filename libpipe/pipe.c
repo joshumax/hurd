@@ -81,7 +81,7 @@ pipe_kick (struct pipe *pipe)
   mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
 }
 
-/* Take any actions necessary when PIPE aquires its first writer.  */
+/* Take any actions necessary when PIPE acquires its first writer.  */
 void _pipe_first_writer (struct pipe *pipe)
 {
   if (! (pipe->class->flags & PIPE_CLASS_CONNECTIONLESS))

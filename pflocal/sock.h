@@ -89,12 +89,12 @@ struct sock
    additional reference, or an error saying why it's not possible.  NULL may
    also be returned in PIPE with a 0 error, meaning that EOF should be
    returned.  SOCK mustn't be locked.  */
-error_t sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe);
+error_t sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe);
 
 /* Returns the pipe that SOCK is writing to in PIPE, locked and with an
    additional reference, or an error saying why it's not possible.  SOCK
    mustn't be locked.  */
-error_t sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe);
+error_t sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe);
 
 /* Connect together the previously unconnected sockets SOCK1 and SOCK2.  */
 error_t sock_connect (struct sock *sock1, struct sock *sock2);
