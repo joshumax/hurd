@@ -41,6 +41,11 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
     error = ENOTEMPTY;
+  else if (np && !S_ISDIR (np->dn_stat.st_mode))
+    {
+      diskfs_nput (np);
+      error = ENOTDIR;
+    }
   if (error)
     {
       mutex_unlock (&dnp->lock);
