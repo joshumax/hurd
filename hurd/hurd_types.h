@@ -74,7 +74,6 @@ typedef struct stat io_statbuf_t;
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
 /* These two are passed through by the exec server but not examined by it.  */
 #define	EXEC_STACK_ARGS	0x00000010 /* Use arguments from stack, not RPC.  */
-#define	EXEC_INHERITED	(EXEC_TRACED) /* Flags inherited by later execs.  */
 
 /* Bits for flags in fs.defs:file_set_translator call: */
 #define FS_TRANS_FORCE     0x00000001 /* Must use translator(no sht circuit) */
