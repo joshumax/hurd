@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -21,12 +21,28 @@
 #include "fsck.h"
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <error.h>
 
 static char sblockbuf[SBSIZE];
 struct fs *sblock = (struct fs *)sblockbuf;
 
 /* A string identifying what we're trying to check.  */
 char *device_name = 0;
+
+daddr_t maxfsblock;
+int maxino;
+int direct_symlink_extension;
+
+int newinofmt;
+
+int readfd, writefd;
+
+int fix_denied = 0;
+
+int fsmodified = 0;
+
+int lfdir;
 
 /* Get ready to run on device with pathname DEV. */
 int
@@ -40,13 +56,13 @@ setup (char *dev)
 
   if (stat (dev, &st) == -1)
     {
-      perror (dev);
+      error (0, errno, "%s", dev);
       return 0;
     }
   if (!S_ISCHR (st.st_mode))
     {
-      pfatal ("%s is not a character device", dev);
-      if (!reply ("CONTINUE"))
+      problem (1, "%s is not a character device", dev);
+      if (! reply ("CONTINUE"))
 	return 0;
     }
   if (preen == 0)
@@ -58,13 +74,13 @@ setup (char *dev)
       readfd = open (dev, O_RDONLY);
       if (readfd == -1)
 	{
-	  perror (dev);
+	  error (0, errno, "%s", dev);
 	  return 0;
 	}
       writefd = -1;
       nowrite = 1;
       if (preen)
-	pfatal ("NO WRITE ACCESS");
+	warning (1, "NO WRITE ACCESS");
       printf (" (NO WRITE)");
     }
   else
@@ -81,33 +97,33 @@ setup (char *dev)
 
   if (sblock->fs_magic != FS_MAGIC)
     {
-      pfatal ("BAD MAGIC NUMBER");
+      warning (1, "BAD MAGIC NUMBER");
       return 0;
     }
   if (sblock->fs_ncg < 1)
     {
-      pfatal ("NCG OUT OF RANGE");
+      warning (1, "NCG OUT OF RANGE");
       return 0;
     }
   if (sblock->fs_cpg < 1)
     {
-      pfatal ("CPG OUT OF RANGE");
+      warning (1, "CPG OUT OF RANGE");
       return 0;
     }
   if (sblock->fs_ncg * sblock->fs_cpg < sblock->fs_ncyl
       || (sblock->fs_ncg - 1) * sblock->fs_cpg >= sblock->fs_ncyl)
     {
-      pfatal ("NCYL INCONSISTENT WITH NCG AND CPG");
+      warning (1, "NCYL INCONSISTENT WITH NCG AND CPG");
       return 0;
     }
   if (sblock->fs_sbsize > SBSIZE)
     {
-      pfatal ("SBLOCK SIZE PREPONTEROUSLY LARGE");
+      warning (1, "SBLOCK SIZE PREPONTEROUSLY LARGE");
       return 0;
     }
   if (sblock->fs_optim != FS_OPTTIME && sblock->fs_optim != FS_OPTSPACE)
     {
-      pfatal ("UNDEFINED OPTIMIZATION IN SUPERBLOCK");
+      problem (1, "UNDEFINED OPTIMIZATION IN SUPERBLOCK");
       if (reply ("SET TO DEFAULT"))
 	{
 	  sblock->fs_optim = FS_OPTTIME;
@@ -116,36 +132,42 @@ setup (char *dev)
     }
   if (sblock->fs_minfree < 0 || sblock->fs_minfree > 99)
     {
-      pfatal ("IMPOSSIBLE MINFREE=%ld IN SUPERBLOCK", sblock->fs_minfree);
-      if (reply ("SET TO DEFAULT"))
+      problem (0, "IMPOSSIBLE MINFREE=%ld IN SUPERBLOCK", sblock->fs_minfree);
+      if (preen || reply ("SET TO DEFAULT"))
 	{
 	  sblock->fs_minfree = 10;
 	  changedsb = 1;
+	  pfix ("SET TO DEFAULT");
 	}
+      else
+	pfail (0);
     }
   if (sblock->fs_interleave < 1
       || sblock->fs_interleave > sblock->fs_nsect)
     {
-      pwarn ("IMPOSSIBLE INTERLEAVE=%ld IN SUPERBLOCK", sblock->fs_interleave);
+      problem (0, "IMPOSSIBLE INTERLEAVE=%ld IN SUPERBLOCK",
+	       sblock->fs_interleave);
       if (preen || reply ("SET TO DEFAULT"))
 	{
-	  if (preen)
-	    printf (" (SET TO DEFAULT)");
 	  sblock->fs_interleave = 1;
 	  changedsb = 1;
+	  pfix ("SET TO DEFAULT");
 	}
+      else
+	pfail (0);
     }
   if (sblock->fs_npsect < sblock->fs_nsect
       || sblock->fs_npsect > sblock->fs_nsect * 2)
     {
-      pwarn ("IMPOSSIBLE NPSECT=%ld IN SUPERBLOCK", sblock->fs_npsect);
+      problem (0, "IMPOSSIBLE NPSECT=%ld IN SUPERBLOCK", sblock->fs_npsect);
       if (preen || reply ("SET TO DEFAULT"))
 	{
-	  if (preen)
-	    printf (" (SET TO DEFAULT)");
 	  sblock->fs_npsect = sblock->fs_nsect;
 	  changedsb = 1;
+	  pfix ("SET TO DEFAULT");
 	}
+      else
+	pfail (0);
     }
   if (sblock->fs_inodefmt >= FS_44INODEFMT)
     newinofmt = 1;
