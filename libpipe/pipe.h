@@ -77,15 +77,6 @@ struct pipe
 
   struct mutex lock;
 
-  /* When a pipe receives an interrupt, we want to wake up all pending read
-     threads, and have them realize they've been interrupted; reads that
-     happen after the interrupt shouldn't return EINTR.  When a thread waits
-     on this pipe's PENDING_READS condition, it remembers this sequence
-     number; any interrupt bumps this number and broadcasts on the condition.
-     A reader thread will try to read from the pipe only if the sequence
-     number is the same as when it went to sleep. */
-  unsigned long interrupt_seq_num;
-
   /* A queue of incoming packets, of type either PACKET_TYPE_DATA or
      PACKET_TYPE_CONTROL.  Each data packet represents one datagram for
      protocols that maintain record boundaries.  Control packets always
@@ -140,11 +131,9 @@ pipe_wait (struct pipe *pipe, int noblock, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
     {
-      unsigned seq_num = pipe->interrupt_seq_num;
       if (noblock)
 	return EWOULDBLOCK;
-      condition_wait (&pipe->pending_reads, &pipe->lock);
-      if (seq_num != pipe->interrupt_seq_num)
+      if (hurd_condition_wait (&pipe->pending_reads, &pipe->lock))
 	return EINTR;
     }
   return 0;
