@@ -1,5 +1,5 @@
 /* Node state and file contents for tmpfs.
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <stddef.h>
-
 #include "tmpfs.h"
+#include <stddef.h>
 #include <stdlib.h>
+#include <mach/default_pager.h>
 
 unsigned int num_files;
 static unsigned int gen;
@@ -493,4 +493,17 @@ vm_prot_t
 diskfs_max_user_pager_prot ()
 {
   return VM_PROT_READ;		/* Probable lie that lets us go read-only.  */
+}
+
+error_t
+diskfs_S_file_get_storage_info (struct protid *cred,
+				mach_port_t **ports,
+				mach_msg_type_name_t *ports_type,
+				mach_msg_type_number_t *num_ports,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets,
+				mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
+{
+  return EOPNOTSUPP;
 }
