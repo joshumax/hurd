@@ -64,16 +64,12 @@ main (int argc, char *argv[])
     error (52, err, "Cannot get invoking authentication");
 
   /* Check passwords.  */
-  err = ugids_verify (&frobauth.ugids, &have_uids, &have_gids, 0);
-  if (err == EINVAL)
+  err = ugids_verify_make_auth (&frobauth.ugids, &have_uids, &have_gids, 0, 0,
+				0, 0, &auth);
+  if (err == EACCES)
     error (15, 0, "Invalid password");
   else if (err)
-    error (16, err, "Cannot verify authentication");
-
-  /* Make an auth port with the new ids.  */
-  err = ugids_make_auth (&frobauth.ugids, MACH_PORT_NULL, &auth);
-  if (err)
-    error (3, err, "Authentication failure");
+    error (16, err, "Authentication failure");
 
   if (frobauth.verbose)
     /* A string showing which ids we will add.  */

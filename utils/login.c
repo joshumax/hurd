@@ -581,11 +581,12 @@ main(int argc, char *argv[])
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   /* Check passwords where necessary.  */
-  err = ugids_verify (&ugids, &parent_uids, &parent_gids, 0);
-  if (err == EINVAL)
+  err = ugids_verify_make_auth (&ugids, &parent_uids, &parent_gids, 0, 0,
+				0, 0, &auth);
+  if (err == EACCES)
     fail (5, 0, "Invalid password", 0);
   else if (err)
-    error (5, err, "Checking passwords");
+    error (5, err, "Authentication failure");
 
   /* Now that we've parsed the command line, put together all these
      environments we've gotten from various places.  There are two targets:
@@ -641,10 +642,6 @@ main(int argc, char *argv[])
 
     free (passwd);
   }
-
-  err = ugids_make_auth (&ugids, MACH_PORT_NULL, &auth);
-  if (err)
-    fail (3, err, "Authentication failure", 0);
 
   err = proc_getsid (proc_server, pid, &sid);
   assert_perror (err);		/* This should never fail.  */
