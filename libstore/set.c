@@ -48,27 +48,6 @@ store_set_runs (struct store *store, const struct store_run *runs, unsigned num_
   return 0;
 }
 
-/* Set STORE's current children list to (a copy of) CHILDREN and NUM_CHILDREN.  */
-error_t
-store_set_children (struct store *store,
-		    struct store *const *children, unsigned num_children)
-{
-  unsigned size = num_children * sizeof (struct store_run);
-  struct store **copy = malloc (size);
-
-  if (!copy)
-    return ENOMEM;
-
-  if (store->children)
-    free (store->children);
-
-  bcopy (children, copy, size);
-  store->children = copy;
-  store->num_children = num_children;
-
-  return 0;
-}
-
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t
 store_set_name (struct store *store, const char *name)
