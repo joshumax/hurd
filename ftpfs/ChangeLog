@@ -1,3 +1,7 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* fs.c (ftpfs_create): Move braces around to avoid warning.
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ftpfs.c: Include <version.h>.  Add global variable
