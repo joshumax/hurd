@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -32,10 +32,10 @@ isonamematch (char *dirname, size_t dnamelen, char *username, size_t unamelen)
   /* Special representations for `.' and `..' */
   if (dnamelen == 1 && dirname[0] == '\0')
     return unamelen == 1 && username[0] == '.';
-  
+
   if (dnamelen == 1 && dirname[0] == '\1')
     return unamelen == 2 && username[0] == '.' && username[1] == '.';
-  
+
   if (unamelen > dnamelen)
     return 0;
 
@@ -44,13 +44,13 @@ isonamematch (char *dirname, size_t dnamelen, char *username, size_t unamelen)
       /* A prefix has matched.  Check if it's acceptable. */
       if (dnamelen == unamelen)
 	return 1;
-      
+
       /* User has ommitted the version number */
       if (dirname[unamelen] == ';')
 	return 1;
-      
+
       /* User has ommitted an empty extension */
-      if (dirname[unamelen] == '.' 
+      if (dirname[unamelen] == '.'
 	  && (dirname[unamelen+1] == '\0' || dirname[unamelen+1] == ';'))
 	return 1;
     }
@@ -61,7 +61,7 @@ isonamematch (char *dirname, size_t dnamelen, char *username, size_t unamelen)
 /* Implement the diskfs_lookup callback from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification. */
 error_t
-diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 		    struct node **npp, struct dirstat *ds, struct protid *cred)
 {
   error_t err = 0;
@@ -71,7 +71,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   void *buf;
   void *blockaddr;
   struct rrip_lookup rr;
-  
+
   if ((type == REMOVE) || (type == RENAME))
     assert (npp);
 
@@ -80,7 +80,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   spec_dotdot = type & SPEC_DOTDOT;
   type &= ~SPEC_DOTDOT;
-  
+
   namelen = strlen (name);
 
   /* This error is constant, but the errors for CREATE and REMOVE depend
@@ -89,7 +89,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
     return EROFS;
 
   buf = disk_image + (dp->dn->file_start << store->log2_block_size);
-  
+
   for (blockaddr = buf;
        blockaddr < buf + dp->dn_stat.st_size;
        blockaddr += logical_sector_size)
@@ -102,14 +102,14 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       if (err != ENOENT)
 	return err;
     }
-  
+
   if ((!err && type == REMOVE)
       || (err == ENOENT && type == CREATE))
     err = EROFS;
-  
+
   if (err)
     return err;
-  
+
   /* Load the inode */
   if (namelen == 2 && name[0] == '.' && name[1] == '.')
     {
@@ -139,7 +139,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
     }
   else
     err = load_inode (npp, record, &rr);
-  
+
   release_rrip (&rr);
   return err;
 }
@@ -148,7 +148,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 /* Scan one logical sector of directory contents (at address BLKADDR)
    for NAME of length NAMELEN.  Return its address in *RECORD. */
 static error_t
-dirscanblock (void *blkaddr, char *name, size_t namelen, 
+dirscanblock (void *blkaddr, char *name, size_t namelen,
 	      struct dirrect **record, struct rrip_lookup *rr)
 {
   struct dirrect *entry;
@@ -163,9 +163,9 @@ dirscanblock (void *blkaddr, char *name, size_t namelen,
        currentoff += reclen)
     {
       entry = (struct dirrect *) currentoff;
-      
+
       reclen = entry->len;
-      
+
       /* Validate reclen */
       if (reclen == 0
 	  || reclen < sizeof (struct dirrect)
@@ -173,11 +173,11 @@ dirscanblock (void *blkaddr, char *name, size_t namelen,
 	break;
 
       entry_namelen = entry->namelen;
-      
+
       /* More validation */
       if (reclen < sizeof (struct dirrect) + entry_namelen)
 	break;
-      
+
       /* Check to see if the name maches the directory entry. */
       if (isonamematch (entry->name, entry_namelen, name, namelen))
 	matchnormal = 1;
@@ -186,14 +186,14 @@ dirscanblock (void *blkaddr, char *name, size_t namelen,
 
       /* Now scan for RRIP fields */
       matchrr = rrip_match_lookup (entry, name, namelen, rr);
-      
+
       /* Ignore RE entries */
       if (rr->valid & VALID_RE)
 	{
 	  release_rrip (rr);
 	  continue;
 	}
-      
+
       /* See if the name matches */
       if (((rr->valid & VALID_NM) && matchrr)
 	  || (!(rr->valid & VALID_NM) && matchnormal))
@@ -236,7 +236,7 @@ diskfs_get_directs (struct node *dp,
       vm_allocate (mach_task_self (), (vm_address_t *) data, allocsize, 1);
       ouralloc = 1;
     }
-  
+
   err = diskfs_catch_exception ();
   if (err)
     {
@@ -246,12 +246,12 @@ diskfs_get_directs (struct node *dp,
     }
 
   /* Skip to ENTRY */
-  dirbuf = disk_image + (dp->dn->file_start << store->log2_block_size); 
+  dirbuf = disk_image + (dp->dn->file_start << store->log2_block_size);
   bufp = dirbuf;
   for (i = 0; i < entry; i ++)
     {
       struct rrip_lookup rr;
-      
+
       ep = (struct dirrect *) bufp;
       rrip_lookup (ep, &rr, 0);
 
@@ -281,7 +281,7 @@ diskfs_get_directs (struct node *dp,
 	bufp = (void *) (((long) bufp & ~(logical_sector_size - 1))
 			 + logical_sector_size);
     }
-  
+
   /* Now copy entries one at a time */
   i = 0;
   datap = *data;
@@ -290,7 +290,7 @@ diskfs_get_directs (struct node *dp,
 	 && ((void *) bufp - dirbuf < dp->dn_stat.st_size))
     {
       struct rrip_lookup rr;
-      char *name;
+      const char *name;
       size_t namlen, reclen;
       off_t file_start;
 
@@ -329,31 +329,31 @@ diskfs_get_directs (struct node *dp,
 
       reclen = sizeof (struct dirent) + namlen;
       reclen = (reclen + 3) & ~3;
-      
+
       /* Expand buffer if necessary */
       if (datap - *data + reclen > allocsize)
 	{
 	  vm_address_t newdata;
 
-	  vm_allocate (mach_task_self (), &newdata, 
+	  vm_allocate (mach_task_self (), &newdata,
 		       (ouralloc
 			? (allocsize *= 2)
 			: (allocsize = vm_page_size * 2)), 1);
 	  bcopy ((void *) *data, (void *)newdata, datap - *data);
-	  
+
 	  if (ouralloc)
-	    vm_deallocate (mach_task_self (), (vm_address_t) *data, 
+	    vm_deallocate (mach_task_self (), (vm_address_t) *data,
 			   allocsize / 2);
-	 
+
  	  datap = (char *) newdata + (datap - *data);
 	  *data = (char *) newdata;
 	  ouralloc = 1;
 	}
-	  
+
       userp = (struct dirent *) datap;
 
       /* Fill in entry */
-      
+
       err = calculate_file_start (ep, &file_start, &rr);
       if (err)
 	{
@@ -362,14 +362,14 @@ diskfs_get_directs (struct node *dp,
 	    vm_deallocate (mach_task_self (), (vm_address_t) *data, allocsize);
 	  return err;
 	}
-	
+
       userp->d_fileno = file_start;
       userp->d_type = DT_UNKNOWN;
       userp->d_reclen = reclen;
       userp->d_namlen = namlen;
       bcopy (name, userp->d_name, namlen);
       userp->d_name[namlen] = '\0';
-      
+
       /* And move along */
       release_rrip (&rr);
       datap = datap + reclen;
@@ -392,7 +392,7 @@ diskfs_get_directs (struct node *dp,
       && round_page (datap - *data) < round_page (allocsize))
     vm_deallocate (mach_task_self (), round_page (datap),
 		   round_page (allocsize) - round_page (datap - *data));
-  
+
   /* Return */
   *amt = i;
   *datacnt = datap - *data;
@@ -417,7 +417,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 
 error_t
 diskfs_direnter_hard(struct node *dp,
-		     char *name,
+		     const char *name,
 		     struct node *np,
 		     struct dirstat *ds,
 		     struct protid *cred)
@@ -433,7 +433,7 @@ diskfs_dirremove_hard(struct node *dp,
 }
 
 error_t
-diskfs_dirrewrite_hard(struct node *dp, 
+diskfs_dirrewrite_hard(struct node *dp,
 		       struct node *np,
 		       struct dirstat *ds)
 {
