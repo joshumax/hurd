@@ -1,0 +1,30 @@
+# This is the amount grub waits before booting the default entry
+timeout= 5
+
+# Tell which entry to boot by default.  Note that this is origin zero
+# from the beginning of the file.  
+default= 0
+
+# Note that to GRUB, all hard disks are `hd' and all floppy disks are `fd'.
+# To Mach, SCSI disks are `sd' and IDE type disks are `hd'.  Use
+# GRUB names in the `root' command and prefixing filenames.  Use a 
+# Mach name as the `root' arg for the kernel, and whenever running the Hurd.
+
+
+# These two entries are for SCSI disks
+# Entry 0:
+title= fd0
+root=   (fd0)
+kernel= /boot/gnumach.gz root=fd0
+module= /boot/serverboot.gz
+pause=Insert boot-floppy #2 and hit RETURN...
+
+# Installation steps for GRUB hard disk boot blocks
+# Entry 4:
+title=	Install grub from floppy onto hard disk
+install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
+
+# Entry 5:
+title=  Reinstall grub from hard disk to itself
+install= (hd0)/boot/grub/stage1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
+

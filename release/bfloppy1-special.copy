@@ -1,0 +1,1 @@
+rename boot/grub/menu.lst copy bfloppy1.grub

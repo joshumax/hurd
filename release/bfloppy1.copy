@@ -1,0 +1,7 @@
+mkdir boot
+mkdir boot/grub
+gzip objcopy boot/gnumach
+gzip objcopy boot/serverboot
+copy boot/grub/stage1
+copy boot/grub/stage2
+copy boot/grub/ffs_stage1_5
