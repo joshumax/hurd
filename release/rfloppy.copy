@@ -19,6 +19,7 @@ objcopy bin/chmod
 objcopy bin/chown
 objcopy bin/cp
 objcopy bin/dd
+objcopy bin/ed
 objcopy bin/devprobe
 objcopy bin/fsysopts
 objcopy bin/ftp
@@ -26,7 +27,6 @@ objcopy bin/gzip
 objcopy bin/ln
 objcopy bin/ls
 objcopy bin/mv
-objcopy bin/ps
 objcopy bin/settrans
 objcopy bin/showtrans
 objcopy bin/sync
@@ -50,11 +50,11 @@ objcopy hurd/storeio
 objcopy hurd/ufs
 
 copy sbin/MAKEDEV
-objcopy sbin/fsck.ufs
 objcopy sbin/halt
 objcopy sbin/mkfs.ext2
 objcopy sbin/mkfs.ufs
 objcopy sbin/reboot
+objcopy sbin/fdisk
 
 touch servers/exec
 mkdir servers/socket
@@ -90,9 +90,6 @@ copy lib/libmachuser.so
 copy lib/libmachuser.so.*
 objcopy lib/libmachuser-*.so
 objcopy lib/libnetfs.so
-copy lib/libnss_db.so
-copy lib/libnss_db.so.*
-objcopy lib/libnss_db-*.so
 copy lib/libnss_dns.so
 copy lib/libnss_dns.so.*
 objcopy lib/libnss_dns-*.so
@@ -102,7 +99,6 @@ objcopy lib/libnss_files-*.so
 objcopy lib/libpager.so
 objcopy lib/libpipe.so
 objcopy lib/libports.so
-objcopy lib/libps.so
 copy lib/libresolv.so
 copy lib/libresolv.so.*
 objcopy lib/libresolv-*.so
