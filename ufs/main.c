@@ -19,86 +19,14 @@
 #include "ufs.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <error.h>
 #include <device/device.h>
-#include <hurd/startup.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 
 char *ufs_version = "0.0 pre-alpha";
 
-/* ---------------------------------------------------------------- */
-
-#define USAGE "Usage: %s [OPTION...] DEVICE\n"
-
-static void
-usage(int status)
-{
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -r, --readonly             disable writing to DEVICE\n\
-  -w, --writable             enable writing to DEVICE\n\
-  -s, --sync[=INTERVAL]      with an argument, sync every INTERVAL seconds,\n\
-                             otherwise operate in synchronous mode\n\
-  -n, --nosync               never sync the filesystem\n\
-      --help                 display this help and exit\n\
-      --version              output version information and exit\n\
-");
-    }
-  exit (status);
-}
-
-#define SHORT_OPTS ""
-
-static struct option long_opts[] =
-{
-  {"help", no_argument, 0, '?'},
-  {0, 0, 0, 0}
-};
-
-static error_t
-parse_opt (int opt, char *arg)
-{
-  /* We currently only deal with one option... */
-  switch (opt)
-    {
-    case '?':
-      usage (0);		/* never returns */
-    default:
-      return EINVAL;
-    }
-  return 0;
-}
-
-/* Parse the arguments for ufs when started as a translator. */
-char *
-trans_parse_args (int argc, char **argv)
-{
-  int argind;			/* ARGV index of the first argument.  */
-  struct options options =
-    { SHORT_OPTS, long_opts, parse_opt, diskfs_standard_startup_options };
-
-  /* Parse our command line.  */
-  if (options_parse (&options, argc, argv, OPTIONS_PRINT_ERRS, &argind))
-    usage (1);
-
-  if (argc - argind != 1)
-    {
-      fprintf (stderr, USAGE, program_invocation_name);
-      usage (1);
-    }
-
-  return argv[argind];
-}
-
-/* ---------------------------------------------------------------- */
-
 struct node *diskfs_root_node;
 
 /* Set diskfs_root_node to the root inode. */
@@ -112,7 +40,7 @@ warp_root (void)
 }
 
 /* XXX */
-struct mutex printf_lock;
+struct mutex printf_lock = MUTEX_INITIALIZER;
 int printf (const char *fmt, ...)
 {
   va_list arg;
@@ -126,86 +54,50 @@ int printf (const char *fmt, ...)
 }
 
 int diskfs_readonly;
-
-void
+
+int
 main (int argc, char **argv)
 {
-  mach_port_t bootstrap;
   error_t err;
-  int sizes[DEV_GET_SIZE_COUNT];
-  u_int sizescnt = 2;
+  off_t disk_size;
+  mach_port_t bootstrap;
 
-  mutex_init (&printf_lock);	/* XXX */
+  argp_parse (diskfs_device_startup_argp, argc, argv, 0, 0);
 
-  if (getpid () > 0)
+  /* This must come after the args have been parsed, as this is where the
+     host priv ports are set for booting.  */
+  diskfs_console_stdio ();
+
+  if (diskfs_boot_flags)
     {
-      /* We are in a normal Hurd universe, started as a translator.  */
-
-      ufs_device_name = trans_parse_args (argc, argv);
-
-      {
-	/* XXX let us see errors */
-	int fd = open ("/dev/console", O_RDWR);
-	while (fd >= 0 && fd < 2)
-	  fd = dup(fd);
-	if (fd > 2)
-	  close (fd);
-      }
+      /* We are the bootstrap filesystem.  */
+      bootstrap = MACH_PORT_NULL;
+      diskfs_use_mach_device = 1;
+      compat_mode = COMPAT_GNU;
     }
   else
     {
-      /* We are the bootstrap filesystem.  */
-      ufs_device_name = diskfs_parse_bootargs (argc, argv);
-      compat_mode = COMPAT_GNU;
+      task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      if (bootstrap == MACH_PORT_NULL)
+	error (2, 0, "Must be started as a translator");
     }
   
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  
-  /* Initialize the diskfs library.  This must come before
-     any other diskfs call.  */
+  /* Initialize the diskfs library.  Must come before any other diskfs call. */
   diskfs_init_diskfs ();
-  
-  do
-    {
-      char *line = 0;
-      size_t linesz = 0;
-      ssize_t len;
-      
-      err = device_open (diskfs_master_device, 
-			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 ufs_device_name, &ufs_device);
-      if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
-	{
-	  /* Prompt the user to give us another name rather
-	     than just crashing */
-	  printf ("Cannot open device %s\n", ufs_device_name);
-	  printf ("Open instead: ");
-	  fflush (stdout);
-	  len = getline (&line, &linesz, stdin);
-	  if (len > 2)
-	    ufs_device_name = line;
-	}
-    }
-  while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
-	  
-  if (err)
-    {
-      perror (ufs_device_name);
-      exit (1);
-    }
 
-  /* Check to make sure device sector size is reasonable. */
-  err = device_get_status (ufs_device, DEV_GET_SIZE, sizes, &sizescnt);
-  assert (sizescnt == DEV_GET_SIZE_COUNT);
-  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
-    {
-      fprintf (stderr, "Bad device record size %d (should be %d)\n",
-	       sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
-      exit (1);
-    }
-  
-  diskpagersize = sizes[DEV_GET_SIZE_DEVICE_SIZE];
-  assert (diskpagersize >= SBSIZE + SBOFF);
+  err = diskfs_device_open ();
+  if (err)
+    error (3, err, "%s", diskfs_device_arg);
+
+  if (diskfs_device_block_size != DEV_BSIZE)
+    error (4, err, "%s: Bad device record size %d (should be %d)",
+	   diskfs_device_arg, diskfs_device_block_size, DEV_BSIZE);
+  if (diskfs_log2_device_block_size == 0)
+    error (4, err, "%s: Device block size (%d) not a power of 2",
+	   diskfs_device_arg, diskfs_device_block_size);
+
+  disk_size = diskfs_device_size << diskfs_log2_device_block_size;
+  assert (disk_size >= SBSIZE + SBOFF);
 
   /* Map the entire disk. */
   create_disk_pager ();
@@ -214,7 +106,7 @@ main (int argc, char **argv)
   diskfs_spawn_first_thread ();
 
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		diskpagersize, 0, 1, diskpagerport, 0, 0, 
+		disk_size, 0, 1, diskpagerport, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
 		VM_INHERIT_NONE);
@@ -222,13 +114,12 @@ main (int argc, char **argv)
 
   get_hypermetadata ();
 
-  if (diskpagersize < sblock->fs_size * sblock->fs_fsize)
+  if (disk_size < sblock->fs_size * sblock->fs_fsize)
     {
       fprintf (stderr, 
-	       "Disk size (%d) less than necessary "
+	       "Disk size (%ld) less than necessary "
 	       "(superblock says we need %ld)\n",
-	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
-	       sblock->fs_size * sblock->fs_fsize);
+	       disk_size, sblock->fs_size * sblock->fs_fsize);
       exit (1);
     }
 
@@ -258,38 +149,10 @@ main (int argc, char **argv)
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
      outside world.  */
-  (void) diskfs_startup_diskfs (bootstrap);
-
-  if (bootstrap == MACH_PORT_NULL)
-    /* We are the bootstrap filesystem; do special boot-time setup.  */
-    diskfs_start_bootstrap (argv);
+  diskfs_startup_diskfs (bootstrap);
   
   /* And this thread is done with its work. */
   cthread_exit (0);
-}
 
-
-void
-diskfs_init_completed ()
-{
-  mach_port_t proc, startup;
-  error_t err;
-
-  proc = getproc ();
-  proc_register_version (proc, diskfs_host_priv, "ufs", HURD_RELEASE,
-			 ufs_version);
-  err = proc_getmsgport (proc, 1, &startup);
-  if (!err)
-    {
-      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      "ufs", diskfs_host_priv);
-      mach_port_deallocate (mach_task_self (), startup);
-    }
-  mach_port_deallocate (mach_task_self (), proc);
-}
-
-  
-void
-thread_cancel (thread_t foo __attribute__ ((unused)))
-{
+  return 0;
 }
