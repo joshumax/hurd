@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,12 +21,13 @@
 
 /* Implement fs.defs:file_invoke_translator as described in <hurd/fs.defs>. */
 kern_return_t
-diskfs_S_file_invoke_translator (struct protid *cred,
-				 int flags,
-				 retry_type *retry,
-				 char *retry_name,
-				 mach_port_t *retrypt,
-				 mach_msg_type_name_t *retrypttype)
+diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
+				 int flags __attribute__ ((unused)),
+				 retry_type *retry __attribute__ ((unused)),
+				 char *retry_name __attribute__ ((unused)),
+				 mach_port_t *retrypt __attribute__ ((unused)),
+				 mach_msg_type_name_t *retrypttype 
+				   __attribute__ ((unused)))
 {
 #if 0
   /* XXX */
