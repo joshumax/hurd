@@ -18,6 +18,7 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
+#include <options.h>
 #include <assert.h>
 
 /* Each user port referring to a file points to one of these
@@ -449,6 +450,17 @@ struct pager *diskfs_get_filemap_pager_struct (struct node *np);
    It is called by the library after the filesystem has a normal 
    environment (complete with auth and proc ports). */
 void diskfs_init_completed ();
+
+/* The user may define this function, in which case it is called when the
+   the filesystem receives a set-options request.  ARGC and ARGV are the
+   arguments given, and STANDARD_OPTIONS is a pointer to a struct options
+   containing the info necessary to parse `standard' diskfs options.  The
+   user may chain this onto the end of his own options structure and call
+   options_parse, or ignore it completely (or indeed, just call options_parse
+   on it -- which is the behavior of the default implementation of this
+   function.  EINVAL is returned if an unknown option is encountered.  */
+error_t diskfs_parse_runtime_options (int argc, char **argv,
+				      struct options *standard_options);
 
 /* It is assumed that the user will use the Hurd pager library; if not
    you need to redefine ports_demuxer and 
@@ -913,6 +925,16 @@ error_t diskfs_execboot_fsys_startup (mach_port_t port, mach_port_t ctl,
    (eventually) get rid of the old one; the old thread won't do any more
    syncs, regardless.  */
 error_t diskfs_set_sync_interval (int interval);
+
+/* Parse and execute the runtime options in ARGC and ARGV.  EINVAL is
+   returned if some option is unrecognized.  */
+error_t diskfs_set_options (int argc, char **argv);
+
+/* A pointer to an options structure for the standard diskfs command line
+   options.  The user may call options_parse on this to parse the command
+   line, chain it onto the end of his own options structure, or ignore it
+   completely.  */
+extern struct options *diskfs_standard_startup_options;
 
 /* The ports library requires the following to be defined; the diskfs
    library provides a definition.  See <hurd/ports.h> for the
