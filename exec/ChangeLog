@@ -1,3 +1,9 @@
+2002-05-01  Roland McGrath  <roland@frob.com>
+
+	* elfcore.c [ALPHA_THREAD_STATE]
+	(ELF_MACHINE, fetch_thread_regset, fetch_thread_fpregset):
+	New definitions for Alpha CPU.
+
 2002-04-27  Roland McGrath  <roland@frob.com>
 
 	* priv.h: Include <link.h> to get ElfW macro.

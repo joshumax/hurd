@@ -1,3 +1,7 @@
+2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* auth.c (S_auth_server_authenticate): Take reply port args.
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* auth.c (main): New variable ARGP defining a doc string.

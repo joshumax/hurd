@@ -1,3 +1,7 @@
+2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* mount.c: Include <error.h>.
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* main.c (main): Use error, not perror and exit.  Use ERR, not errno.

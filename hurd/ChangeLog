@@ -1,3 +1,18 @@
+2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* auth.defs (auth_user_authenticate): Add sreplyport argument.
+	* auth_request.defs: New file.
+
+2002-02-17  Roland McGrath  <roland@frob.com>
+
+	* hurd_types.h (after #include <mach/thread_info.h>)
+	[! THREAD_SCHED_INFO]: Include <mach/policy.h> for OSF Mach
+	scheduler definitions.
+	(struct procinfo) [TASK_SCHED_TIMESHARE_INFO]:
+	Add new member `timeshare_base_info'.
+	(struct procinfo.threadinfos) [! THREAD_SCHED_INFO]:
+	Use `struct policy_infos' in place of `struct thread_sched_info'.
+
 2002-03-23  Roland McGrath  <roland@frob.com>
 
 	* default_pager.defs (default_pager_object_set_size): New RPC.

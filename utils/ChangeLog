@@ -1,3 +1,16 @@
+2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* fakeauth.c: New file.
+	* Makefile (fakeauth): New target.
+	(targets): Add it.
+	(SRCS): Add fakeauth.c.
+	(auth-MIGSFLAGS, fakeauth-CPPFLAGS, authServer-CPPFLAGS,
+	auth_requestUser-CPPFLAGS): New variables.
+
+	* shd.c: Include <error.h> for `error' decl.
+
+	* Makefile (rpctrace): Put libthreads before libports.
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* rpctrace.c (parse_msgid_list): Use ERR, not errno.

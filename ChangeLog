@@ -1,3 +1,8 @@
+2002-04-27  Roland McGrath  <roland@frob.com>
+
+	* configure.in: Match $host_cpu of powerpc*, not just powerpc.
+	Match $host_cpu of alpha* to set asm_syntax=alpha.
+
 2002-03-21  Roland McGrath  <roland@frob.com>
 
 	* Makeconf ($(libname).so.$(hurd-version)): Reorder link arguments so
