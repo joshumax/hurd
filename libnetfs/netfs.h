@@ -19,16 +19,32 @@
    implementations.  It is analogous to the diskfs library provided for 
    disk-based filesystems.  */
 
+struct node
+{
+  struct node *next, **prevp;
+  
+  struct netnode *nn;
 
-/* The user must define this function.  Request the operation encoded
-   in OPERATION.  Return a 32-bit unique ID for the operation.  When
-   the operation completes, call netfs_operation_complete. */
-int netfs_start_operation (struct operation *operation);
+  struct stat nn_stat;
+  int nn_stat_valid;
+  
+  struct mutex lock;
+  
+  int references;
+  int light_references;
+  
+  mach_port_t sockaddr;
+  
+  int owner;
+  
+  struct trans_link translator;
 
-/* When an operation has completed, call this routine with the same
-   32-bit ID that was used in the call to netfs_start_operation.  (The
-   ID will be validated by the library, so there is no need for the
-   user to check it if it is externally generated.)  */
-void netfs_operation_complete (int id);
+  struct lock_box userlock;
 
+  struct dirmod *dirmod_reqs;
+};
 
+/* The user must define this function.  If NP->nn_stat_valid is false,
+   then fill N->nn_stat with current information.  CRED identifies
+   the user responsible for the operation.  */
+error_t netfs_validate_stat (struct node *NP, struct protid *cred);

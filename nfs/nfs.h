@@ -16,5 +16,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+struct netnode 
+{
+  nfsv2_fhandle_t handle;
+};
 
+struct netcred
+{
+  struct rpc_auth auth;
+};
 
