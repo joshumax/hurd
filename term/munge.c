@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -681,19 +681,23 @@ rescan_inputq ()
 
   n = qsize (inputq);
   buf = alloca (n * sizeof (quoted_char));
-  bcopy (inputq->cs, buf, n * sizeof (quoted_char));
+  memcpy (buf, inputq->cs, n * sizeof (quoted_char));
   clear_queue (inputq);
 
   for (i = 0; i < n; i++)
     input_character (unquote_char (buf[i]));
 }
 
-void
+
+error_t
 drop_output ()
 {
-  clear_queue (outputq);
-  (*bottom->abandon_physical_output) ();
+  error_t err = (*bottom->abandon_physical_output) ();
+  if (!err)
+    clear_queue (outputq);
+  return err;
 }
+
 
 error_t
 drain_output ()

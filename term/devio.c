@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -98,20 +98,20 @@ static int output_stopped;
 static int char_size_mask_xxx = 0xff;
 
 /* Forward */
-static void devio_desert_dtr ();
+static error_t devio_desert_dtr ();
 
-static void init_devio (void) __attribute__ ((constructor));
-static void
-init_devio ()
+static error_t
+devio_init (void)
 {
   mach_port_t host_priv;
   error_t err;
 
   err = get_privileged_ports (&host_priv, &device_master);
   if (err)
-    error (1, err, "Getting priviliged ports");
+    return err;
   mach_port_deallocate (mach_task_self (), host_priv);
   phys_reply_class = ports_create_class (0, 0);
+  return 0;
 }
 
 /* XXX Convert a real speed to a bogus Mach speed.  Return
@@ -237,7 +237,7 @@ bogus_speed_to_real_speed (int bspeed)
 
 /* If there are characters on the output queue and no
    pending output requests, then send them. */
-static void
+static error_t
 devio_start_output ()
 {
   char *cp;
@@ -247,7 +247,7 @@ devio_start_output ()
   size = qsize (outputq);
 
   if (!size || output_pending || (termflags & USER_OUTPUT_SUSP))
-    return;
+    return 0;
 
   if (output_stopped)
     {
@@ -278,6 +278,7 @@ devio_start_output ()
     devio_desert_dtr ();
   else if (!err)
     output_pending = 1;
+  return 0;
 }
 
 error_t
@@ -368,19 +369,21 @@ device_read_reply_inband (mach_port_t replypt,
   return 0;
 }
 
-static void
+static error_t
 devio_set_break ()
 {
   device_set_status (phys_device, TTY_SET_BREAK, 0, 0);
+  return 0;
 }
 
-static void
+static error_t
 devio_clear_break ()
 {
   device_set_status (phys_device, TTY_CLEAR_BREAK, 0, 0);
+  return 0;
 }
 
-static void
+static error_t
 devio_abandon_physical_output ()
 {
   int val = D_WRITE;
@@ -388,7 +391,7 @@ devio_abandon_physical_output ()
   /* If this variable is clear, then carrier is gone, so we
      have nothing to do. */
   if (!phys_reply_writes_pi)
-    return;
+    return 0;
 
   mach_port_deallocate (mach_task_self (), phys_reply_writes);
   ports_reallocate_port (phys_reply_writes_pi);
@@ -397,9 +400,10 @@ devio_abandon_physical_output ()
   device_set_status (phys_device, TTY_FLUSH, &val, TTY_FLUSH_COUNT);
   npending_output = 0;
   output_pending = 0;
+  return 0;
 }
 
-static void
+static error_t
 devio_suspend_physical_output ()
 {
   if (!output_stopped)
@@ -407,11 +411,13 @@ devio_suspend_physical_output ()
       device_set_status (phys_device, TTY_STOP, 0, 0);
       output_stopped = 1;
     }
+  return 0;
 }
 
-static void
+static error_t
 devio_notice_input_flushed ()
 {
+  return 0;
 }
 
 static int
@@ -460,7 +466,7 @@ initial_open ()
   return err;
 }
 
-static void
+static error_t
 devio_desert_dtr ()
 {
   int bits;
@@ -471,6 +477,7 @@ devio_desert_dtr ()
 		     (dev_status_t) &bits, TTY_MODEM_COUNT);
 
   report_carrier_off ();
+  return 0;
 }
 
 static error_t
@@ -580,20 +587,20 @@ device_open_reply (mach_port_t replyport,
 /* Adjust physical state on the basis of the terminal state.
    Where it isn't possible, mutate terminal state to match
    reality. */
-static void
-devio_set_bits ()
+static error_t
+devio_set_bits (struct termios *state)
 {
-  if (!(termstate.c_cflag & CIGNORE) && phys_device != MACH_PORT_NULL)
+  if (!(state->c_cflag & CIGNORE) && phys_device != MACH_PORT_NULL)
     {
       struct tty_status ttystat;
       int cnt = TTY_STATUS_COUNT;
 
       /* Find the current state. */
       device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
-      if (termstate.__ispeed)
-	real_speed_to_bogus_speed (termstate.__ispeed, &ttystat.tt_ispeed);
-      if (termstate.__ospeed)
-	real_speed_to_bogus_speed (termstate.__ospeed, &ttystat.tt_ospeed);
+      if (state->__ispeed)
+	real_speed_to_bogus_speed (state->__ispeed, &ttystat.tt_ispeed);
+      if (state->__ospeed)
+	real_speed_to_bogus_speed (state->__ospeed, &ttystat.tt_ospeed);
 
       /* Try and set it. */
       device_set_status (phys_device, TTY_STATUS,
@@ -602,19 +609,19 @@ devio_set_bits ()
       /* And now make termstate match reality. */
       cnt = TTY_STATUS_COUNT;
       device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
-      termstate.__ispeed = bogus_speed_to_real_speed (ttystat.tt_ispeed);
-      termstate.__ospeed = bogus_speed_to_real_speed (ttystat.tt_ospeed);
+      state->__ispeed = bogus_speed_to_real_speed (ttystat.tt_ispeed);
+      state->__ospeed = bogus_speed_to_real_speed (ttystat.tt_ospeed);
 
       /* Mach forces us to use the normal stop bit convention:
 	 two bits at 110 bps; 1 bit otherwise. */
-      if (termstate.__ispeed == 110)
-	termstate.c_cflag |= CSTOPB;
+      if (state->__ispeed == 110)
+	state->c_cflag |= CSTOPB;
       else
-	termstate.c_cflag &= ~CSTOPB;
+	state->c_cflag &= ~CSTOPB;
 
       /* Figure out how to munge input, since we are unable to actually
 	 affect what the hardware does. */
-      switch (termstate.c_cflag & CSIZE)
+      switch (state->c_cflag & CSIZE)
 	{
 	case CS5:
 	  char_size_mask_xxx = 0x1f;
@@ -633,12 +640,13 @@ devio_set_bits ()
 	  char_size_mask_xxx = 0xff;
 	  break;
 	}
-      if (termstate.c_cflag & PARENB)
+      if (state->c_cflag & PARENB)
 	char_size_mask_xxx |= 0x80;
     }
+  return 0;
 }
 
-static void
+static error_t
 devio_mdmctl (int how, int bits)
 {
   int oldbits, newbits;
@@ -661,20 +669,24 @@ devio_mdmctl (int how, int bits)
 
   device_set_status (phys_device, TTY_MODEM,
 		     (dev_status_t) &newbits, TTY_MODEM_COUNT);
+
+  return 0;
 }
 
-static int
-devio_mdmstate ()
+static error_t
+devio_mdmstate (int *state)
 {
   int bits, cnt;
 
   cnt = TTY_MODEM_COUNT;
   device_get_status (phys_device, TTY_MODEM, (dev_status_t) &bits, &cnt);
-  if (cnt != TTY_MODEM_COUNT)
-    return 0;
+  if (cnt == TTY_MODEM_COUNT)
+    *state = bits;
   else
-    return bits;
+    *state = 0;
+  return 0;
 }
+
 
 /* Unused stubs */
 kern_return_t
@@ -747,8 +759,10 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 }
 
 
-struct bottomhalf devio_bottom =
+const struct bottomhalf devio_bottom =
 {
+  TERM_ON_MACHDEV,
+  devio_init,
   devio_start_output,
   devio_set_break,
   devio_clear_break,

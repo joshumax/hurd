@@ -1,3 +1,91 @@
+2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
+
+	* term.h: Include `hurd/hurd_types.h'.
+	(struct bottomhalf): Change the return types of the following
+	members from void to error_t: abandon_physical_output,
+	suspend_physical_output, notice_input_flushed, desert_dtr,
+	set_break, clear_break, start_output, set_bits (which now takes an
+	struct termios * as argument), mdmctl and mdmstate (which now
+	takes an int * as argument).  Add new members init and type.
+	(bottom): Define as const.
+	(devio_bottom, ptyio_bottom): Declare as const.
+	(drop_output): Change return type from void to error_t.
+	(ptyio_init): Remove prototype.
+	* devio.c (devio_abandon_physical_output): Change return value to
+	error_t, and return 0.
+	(devio_suspend_physical_output): Likewise.
+	(devio_notice_input_flushed): Likewise.
+	(devio_desert_dtr): Likewise.
+	(devio_set_break): Likewise.
+	(devio_clear_break): Likewise.
+	(devio_start_output): Likewise.
+	(devio_set_bits): Likewise.
+	(devio_mdmctl): Likewise.
+	(devio_mdmstate): Likewise.
+        (init_devio): Rename to ...
+	(devio_init): ... this.  Do not give constructor attribute.
+	Change return type to error_t, and return an error value, rather
+	than bailing out.  Declare as static.
+	(devio_bottom): Add type TERM_ON_MACHDEV and init function
+	devio_init.
+	(devio_set_bits): Accept new argument STATE and use that to work
+	out the terminal state, rather than changing the global termstate.
+	(devio_mdmstate): Accept new argument STATE and use that to return
+	the bits.
+	* ptyio.c: Do not include `hurd/hurd_types.h'.
+	(ptyio_suspend_physical_output): Change return value to error_t,
+	and return 0.  Likewise.
+	(ptyio_notice_input_flushed): Likewise.
+	(ptyio_desert_dtr): Likewise.
+	(ptyio_set_bits): Likewise.
+	(ptyio_set_break): Likewise.
+	(ptyio_clear_break): Likewise.
+	(ptyio_mdmctl): Likewise.
+	(ptyio_start_output): Likewise.
+	(ptyio_abandon_physical_output): Likewise.
+	(ptyio_mdmstate): Likewise, and accept new argument STATE.
+	(ptyio_init): Declare as static and change return type to error_t.
+	(ptyio_bottom): Add type TERM_ON_MASTERPTY and init function
+	ptyio_init.
+	(ptyio_set_bits): Accept new argument STATE and use that to work
+	out the terminal state, rather than changing the global termstate.
+	(ptyio_mdmstate): Accept new argument STATE and use that to return
+	the bits.
+	* munge.c (drop_output): Change return value to error_t.  Only
+	clear queue if there was no error.
+	* users.c (S_term_get_bottom_type): Just return bottom->type.
+	(set_state): Rework logic to take possible errors into account,
+	and to delay changing the termstate until we know that we won't
+	fail.
+	(S_tioctl_tiocflush): Return errors properly, and clear queue only
+	if notice_input_flushed succeeded.
+	(open_hook): Save error value of set_bits.  Save old termflags and
+	restore them if if set_bits failed.  Call set_bits with correct
+	arguments.
+	(S_tioctl_tiocmods): Set err to result of mdmctl.
+	(S_tioctl_tiocmset): Likewise.
+	(S_tioctl_tiocmbic): Likewise.
+	(S_tioctl_tiocmbis): Likewise.
+	(S_tioctl_tioccdtr): Likewise.
+	(S_tioctl_tiocsdtr): Likewise.
+	(S_tioctl_tioccbrk): Likewise for clear_break.
+	(S_tioctl_tiocsbrk): Likewise for set_break.
+	(S_tioctl_tiocstart): Likewise for start_output.  Save old
+	termflags and restore them if if start_output failed.
+	(S_tioctl_tiocstop): Likewise for stop_output.
+	(S_trivfs_io_write): Abort the operation if start_output fails.
+	Do not call start_output if it just failed, or if there was no
+	data to be written.
+	* main.c (main): Initialize bottom handler (rather than special
+	casing this for ptyio).
+
+	* users.c (open_hook): Use memcpy instead bcopy and memset instead
+	bzero.
+	(S_tioctl_tiocgeta): Likewise.
+	(set_state): Likewise.
+	(open_hook): Likewise.
+	* munge.c (rescan_inputq): Likewise.
+	
 2002-01-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* users.c (trivfs_S_io_select): Remove IDTAG argument.

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -152,7 +152,7 @@ open_hook (struct trivfs_control *cntl,
 
   if (!(termflags & TTY_OPEN))
     {
-      bzero (&termstate, sizeof termstate);
+      memset (&termstate, 0, sizeof termstate);
 
       /* This is different from BSD: we don't turn on ISTRIP,
 	 and we use CS8 rather than CS7|PARENB.  */
@@ -162,9 +162,9 @@ open_hook (struct trivfs_control *cntl,
 			    | ECHOE|ECHOKE|ECHOCTL);
       termstate.c_cflag |= CREAD | CS8 | HUPCL;
 
-      bcopy (ttydefchars, termstate.c_cc, NCCS);
+      memcpy (termstate.c_cc, ttydefchars, NCCS);
 
-      bzero (&window_size, sizeof window_size);
+      memset (&window_size, 0, sizeof window_size);
 
       termflags |= NO_OWNER;
     }
@@ -212,8 +212,13 @@ open_hook (struct trivfs_control *cntl,
 
   if (!err)
     {
-      termflags |= TTY_OPEN;
-      (*bottom->set_bits) ();
+      struct termios state = termstate;
+      err = (*bottom->set_bits) (&state);
+      if (!err)
+	{
+	  termstate = state;
+	  termflags |= TTY_OPEN;
+	}
     }
 
   mutex_unlock (&global_lock);
@@ -560,6 +565,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 {
   int i;
   int cancel;
+  error_t err = 0;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -595,9 +601,14 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     {
       while (!qavail (outputq) && !cancel)
 	{
-	  (*bottom->start_output) ();
-	  if (!qavail (outputq))
-	    cancel = hurd_condition_wait (outputq->wait, &global_lock);
+	  err = (*bottom->start_output) ();
+	  if (err)
+	    cancel = 1;
+	  else
+	    {
+	      if (!qavail (outputq))
+		cancel = hurd_condition_wait (outputq->wait, &global_lock);
+	    }
 	}
       if (cancel)
 	break;
@@ -607,7 +618,8 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   *amt = i;
 
-  (*bottom->start_output) ();
+  if (!err && datalen)
+    (*bottom->start_output) ();
 
   trivfs_set_mtime (termctl);
 
@@ -615,7 +627,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   mutex_unlock (&global_lock);
 
-  return ((cancel && datalen && !*amt) ? EINTR : 0);
+  return ((cancel && datalen && !*amt) ? (err ?: EINTR) : 0);
 }
 
 /* Called for user reads from the terminal. */
@@ -882,6 +894,8 @@ S_tioctl_tiocmodg (io_t port,
 		   int *state)
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+  error_t err = 0;
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -893,11 +907,11 @@ S_tioctl_tiocmodg (io_t port,
     }
 
   mutex_lock (&global_lock);
-  *state = (*bottom->mdmstate) ();
+  err = (*bottom->mdmstate) (state);
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
-  return 0;
+  return err;
 }
 
 /* TIOCMODS ioctl -- Set modem state */
@@ -922,10 +936,7 @@ S_tioctl_tiocmods (io_t port,
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_SET, state);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_SET, state);
 
   mutex_unlock (&global_lock);
 
@@ -1001,8 +1012,8 @@ S_tioctl_tiocflush (io_t port,
 		    int flags)
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+  error_t err = 0;
 
-  error_t err;
   if (!cred)
     return EOPNOTSUPP;
 
@@ -1024,14 +1035,13 @@ S_tioctl_tiocflush (io_t port,
 
       if (flags & O_READ)
 	{
-	  clear_queue (inputq);
-	  (*bottom->notice_input_flushed) ();
+	  err = (*bottom->notice_input_flushed) ();
+	  if (!err)
+	    clear_queue (inputq);
 	}
 
-      if (flags & O_WRITE)
-	drop_output ();
-
-      err = 0;
+      if (!err && (flags & O_WRITE))
+	err = drop_output ();
     }
 
   mutex_unlock (&global_lock);
@@ -1063,7 +1073,7 @@ S_tioctl_tiocgeta (io_t port,
   modes[1] = termstate.c_oflag;
   modes[2] = termstate.c_cflag;
   modes[3] = termstate.c_lflag;
-  bcopy (termstate.c_cc, ccs, NCCS);
+  memcpy (ccs, termstate.c_cc, NCCS);
   speeds[0] = termstate.__ispeed;
   speeds[1] = termstate.__ospeed;
   mutex_unlock (&global_lock);
@@ -1084,6 +1094,7 @@ set_state (io_t port,
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
   int oldlflag;
+  struct termios state;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -1105,42 +1116,47 @@ set_state (io_t port,
     {
       if (cred->pi.class == pty_class)
 	{
+	  err = (*bottom->abandon_physical_output) ();
+	  if (err)
+	    goto leave;
 	  clear_queue (outputq);
-	  (*bottom->abandon_physical_output) ();
 	}
 
       if (draino)
 	{
 	  err = drain_output ();
 	  if (err)
-	    {
-	      mutex_unlock (&global_lock);
-	      ports_port_deref (cred);
-	      return err;
-	    }
+	    goto leave;
 	}
 
       if (flushi)
 	{
+	  err = (*bottom->notice_input_flushed) ();
+	  if (err)
+	    goto leave;
 	  clear_queue (inputq);
-	  (*bottom->notice_input_flushed) ();
 	}
 
-      oldlflag = termstate.c_lflag;
-      termstate.c_iflag = modes[0];
-      termstate.c_oflag = modes[1];
-      termstate.c_cflag = modes[2];
-      termstate.c_lflag = modes[3];
-      bcopy (ccs, termstate.c_cc, NCCS);
-      termstate.__ispeed = speeds[0];
-      termstate.__ospeed = speeds[1];
+      state = termstate;
+      state.c_iflag = modes[0];
+      state.c_oflag = modes[1];
+      state.c_cflag = modes[2];
+      state.c_lflag = modes[3];
+      memcpy (state.c_cc, ccs, NCCS);
+      state.__ispeed = speeds[0];
+      state.__ospeed = speeds[1];
 
       if (external_processing)
-	termstate.c_lflag |= EXTPROC;
+	state.c_lflag |= EXTPROC;
       else
-	termstate.c_lflag &= ~EXTPROC;
+	state.c_lflag &= ~EXTPROC;
 
-      (*bottom->set_bits) ();
+      err = (*bottom->set_bits) (&state);
+      if (err)
+	goto leave;
+
+      oldlflag = termstate.c_lflag;
+      termstate = state;
 
       if (oldlflag & ICANON)
 	{
@@ -1152,15 +1168,13 @@ set_state (io_t port,
 	  if (termstate.c_lflag & ICANON)
 	    rescan_inputq ();
 	}
-      err = 0;
     }
 
+ leave:
   mutex_unlock (&global_lock);
-
   ports_port_deref (cred);
   return err;
 }
-
 
 
 /* TIOCSETA -- Set termios state */
@@ -1354,6 +1368,7 @@ S_tioctl_tiocmget (io_t port,
 		   int *bits)
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
+  error_t err = 0;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -1366,11 +1381,11 @@ S_tioctl_tiocmget (io_t port,
     }
 
   mutex_lock (&global_lock);
-  *bits = (*bottom->mdmstate) ();
+  err = (*bottom->mdmstate) (bits);
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
-  return 0;
+  return err;
 }
 
 /* TIOCMSET -- Set all modem bits */
@@ -1395,10 +1410,7 @@ S_tioctl_tiocmset (io_t port,
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_SET, bits);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_SET, bits);
 
   mutex_unlock (&global_lock);
   ports_port_deref (cred);
@@ -1427,10 +1439,7 @@ S_tioctl_tiocmbic (io_t port,
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_BIC, bits);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_BIC, bits);
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -1460,10 +1469,7 @@ S_tioctl_tiocmbis (io_t port,
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_BIS, bits);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_BIS, bits);
   mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
@@ -1492,9 +1498,12 @@ S_tioctl_tiocstart (io_t port)
     err = EBADF;
   else
     {
+      int old_termflags = termflags;
+
       termflags &= ~USER_OUTPUT_SUSP;
-      (*bottom->start_output) ();
-      err = 0;
+      err = (*bottom->start_output) ();
+      if (err)
+	termflags = old_termflags;
     }
   mutex_unlock (&global_lock);
 
@@ -1524,9 +1533,11 @@ S_tioctl_tiocstop (io_t port)
     err = EBADF;
   else
     {
+      int old_termflags = termflags;
       termflags |= USER_OUTPUT_SUSP;
-      (*bottom->suspend_physical_output) ();
-      err = 0;
+      err = (*bottom->suspend_physical_output) ();
+      if (err)
+	termflags = old_termflags;
     }
   mutex_unlock (&global_lock);
 
@@ -1690,10 +1701,7 @@ S_tioctl_tioccdtr (io_t port)
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_BIC, TIOCM_DTR);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_BIC, TIOCM_DTR);
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -1721,10 +1729,7 @@ S_tioctl_tiocsdtr (io_t port)
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->mdmctl) (MDMCTL_BIS, TIOCM_DTR);
-      err = 0;
-    }
+    err = (*bottom->mdmctl) (MDMCTL_BIS, TIOCM_DTR);
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -1752,10 +1757,7 @@ S_tioctl_tioccbrk (io_t port)
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->clear_break) ();
-      err = 0;
-    }
+    err = (*bottom->clear_break) ();
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -1783,10 +1785,7 @@ S_tioctl_tiocsbrk (io_t port)
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
-    {
-      (*bottom->set_break) ();
-      err = 0;
-    }
+    err = (*bottom->set_break) ();
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -2237,10 +2236,7 @@ S_term_get_bottom_type (io_t arg,
     return EOPNOTSUPP;
 
   ports_port_deref (cred);
-  if (bottom == &devio_bottom)
-    *ttype = TERM_ON_MACHDEV;
-  else
-    *ttype = TERM_ON_MASTERPTY;
+  *ttype = bottom->type;
   return 0;
 }
 

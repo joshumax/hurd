@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -19,7 +19,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <sys/ioctl.h>
-#include <hurd/hurd_types.h>
 #include <string.h>
 #include <hurd/ports.h>
 #include <unistd.h>
@@ -56,11 +55,12 @@ static int ptyopen = 0;
 static int nptyperopens = 0;
 
 
-void
-ptyio_init ()
+static error_t
+ptyio_init (void)
 {
   condition_implies (inputq->wait, &pty_select_wakeup);
   condition_implies (&pty_read_wakeup, &pty_select_wakeup);
+  return 0;
 }
     
 error_t
@@ -138,7 +138,7 @@ wake_reader ()
 
 /* Lower half for tty node */
 
-static void 
+static error_t
 ptyio_start_output ()
 {
   if (packet_mode && output_stopped && (!(termflags & USER_OUTPUT_SUSP)))
@@ -148,9 +148,10 @@ ptyio_start_output ()
       output_stopped = 0;
     }
   wake_reader ();
+  return 0;
 }
 
-static void
+static error_t
 ptyio_abandon_physical_output ()
 {
   if (packet_mode)
@@ -158,9 +159,10 @@ ptyio_abandon_physical_output ()
       control_byte |= TIOCPKT_FLUSHWRITE;
       wake_reader ();
     }
+  return 0;
 }
 
-static void
+static error_t
 ptyio_suspend_physical_output ()
 {
   if (packet_mode)
@@ -170,6 +172,7 @@ ptyio_suspend_physical_output ()
       output_stopped = 1;
       wake_reader ();
     }
+  return 0;
 }
 
 static int 
@@ -179,7 +182,7 @@ ptyio_pending_output_size ()
   return 0;
 }
 
-static void
+static error_t
 ptyio_notice_input_flushed ()
 {
   if (packet_mode)
@@ -187,6 +190,7 @@ ptyio_notice_input_flushed ()
       control_byte |= TIOCPKT_FLUSHREAD;
       wake_reader ();
     }
+  return 0;
 }
 
 static error_t 
@@ -196,22 +200,23 @@ ptyio_assert_dtr ()
   return 0;
 }
 
-static void 
+static error_t 
 ptyio_desert_dtr ()
 {
   dtr_on = 0;
   wake_reader ();
+  return 0;
 }
 
-static void 
-ptyio_set_bits ()
+static error_t 
+ptyio_set_bits (struct termios *state)
 {
   if (packet_mode)
     {
       int wakeup = 0;
-      int stop = ((termstate.c_iflag & IXON) 
-		  && CCEQ (termstate.c_cc[VSTOP], CHAR_DC3)
-		  && CCEQ (termstate.c_cc[VSTART], CHAR_DC1));
+      int stop = ((state->c_iflag & IXON) 
+		  && CCEQ (state->c_cc[VSTOP], CHAR_DC3)
+		  && CCEQ (state->c_cc[VSTART], CHAR_DC1));
   
       if (external_processing)
 	{
@@ -237,33 +242,40 @@ ptyio_set_bits ()
       if (wakeup)
 	wake_reader ();
     }
+  return 0;
 }
 
 /* These do nothing.  In BSD the associated ioctls get errors, but
    I'd rather just ignore them. */
-static void 
+static error_t 
 ptyio_set_break ()
-{
-}
-
-static void 
-ptyio_clear_break ()
-{
-}
-
-static void
-ptyio_mdmctl (int a, int b)
-{
-}
-
-static int
-ptyio_mdmstate ()
 {
   return 0;
 }
 
-struct bottomhalf ptyio_bottom =
+static error_t
+ptyio_clear_break ()
 {
+  return 0;
+}
+
+static error_t
+ptyio_mdmctl (int a, int b)
+{
+  return 0;
+}
+
+static error_t
+ptyio_mdmstate (int *state)
+{
+  *state = 0;
+  return 0;
+}
+
+const struct bottomhalf ptyio_bottom =
+{
+  TERM_ON_MASTERPTY,
+  ptyio_init,
   ptyio_start_output,
   ptyio_set_break,
   ptyio_clear_break,

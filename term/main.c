@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 2000, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -194,8 +194,12 @@ main (int argc, char **argv)
   
   outputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   
-  if (bottom == &ptyio_bottom)
-    ptyio_init ();
+  errno = (*bottom->init) ();
+  if (errno)
+    {
+      perror ("Initializing bottom handler");
+      exit (1);
+    }
 
   condition_init (&carrier_alert);
   condition_init (&select_alert);

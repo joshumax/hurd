@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <hurd/hurd_types.h>
 
 #undef MDMBUF
 #undef ECHO
@@ -140,22 +141,24 @@ mode_t term_mode;
 /* Functions a bottom half defines */
 struct bottomhalf
 {
-  void (*start_output) (void);
-  void (*set_break) (void);
-  void (*clear_break) (void);
-  void (*abandon_physical_output) (void);
-  void (*suspend_physical_output) (void);
+  enum term_bottom_type type;
+  error_t (*init) (void);
+  error_t (*start_output) (void);
+  error_t (*set_break) (void);
+  error_t (*clear_break) (void);
+  error_t (*abandon_physical_output) (void);
+  error_t (*suspend_physical_output) (void);
   int (*pending_output_size) (void);
-  void (*notice_input_flushed) (void);
+  error_t (*notice_input_flushed) (void);
   error_t (*assert_dtr) (void);
-  void (*desert_dtr) (void);
-  void (*set_bits) (void);
-  void (*mdmctl) (int, int);
-  int (*mdmstate) (void);
+  error_t (*desert_dtr) (void);
+  error_t (*set_bits) (struct termios *state);
+  error_t (*mdmctl) (int how, int bits);
+  error_t (*mdmstate) (int *state);
 };
 
-struct bottomhalf *bottom;
-extern struct bottomhalf devio_bottom, ptyio_bottom;
+const struct bottomhalf *bottom;
+extern const struct bottomhalf devio_bottom, ptyio_bottom;
 
 
 /* Character queues */
@@ -313,7 +316,7 @@ void report_carrier_error (error_t);
 
 
 /* Other decls */
-void drop_output (void);
+error_t drop_output (void);
 void send_signal (int);
 error_t drain_output ();
 void output_character (int);
@@ -321,9 +324,6 @@ void copy_rawq (void);
 void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
-
-/* Call this before using ptyio_bottom.  */
-void ptyio_init (void);
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */
