@@ -632,6 +632,7 @@ process_has_exited (struct proc *p)
   if (p->p_dead)
     return;
 
+  p->p_waited = 0;
   alert_parent (p);
 
   if (p->p_msgport)
