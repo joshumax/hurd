@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -71,7 +71,8 @@ void dev_close (struct dev *dev);
 
 /* Returns in MEMOBJ the port for a memory object backed by the storage on
    DEV.  Returns 0 or the error code if an error occurred.  */
-error_t dev_get_memory_object(struct dev *dev, memory_object_t *memobj);
+error_t dev_get_memory_object(struct dev *dev, vm_prot_t prot,
+			      memory_object_t *memobj);
 
 /* Try to stop all paging activity on DEV, returning true if we were
    successful.  If NOSYNC is true, then we won't write back any (kernel)
