@@ -613,7 +613,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   transloc = disk_image + fsaddr (sblock, blkno);
 
   datalen = *(u_int *)transloc;
-  if (datalen > sblock->fs_bsize)
+  if (datalen > sblock->fs_bsize - sizeof (u_int))
     err = EFTYPE;
   else
     {

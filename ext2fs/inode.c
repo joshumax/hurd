@@ -726,7 +726,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
-  if (datalen > block_size)
+  if (datalen > block_size - 2)
     err = EFTYPE;		/* ? */
   else
     {
