@@ -19,15 +19,15 @@
 
 /* Create and return a new pager with user info UPI.  */
 struct pager *
-pager_create (struct user_pager_info *upi, 
+pager_create (struct user_pager_info *upi,
 	      struct port_bucket *bucket,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy)
 {
   struct pager *p;
-  
+
   p = ports_allocate_port (bucket, sizeof (struct pager), _pager_class);
-  
+
   p->upi = upi;
   p->pager_state = NOTINIT;
   mutex_init (&p->interlock);
@@ -48,7 +48,10 @@ pager_create (struct user_pager_info *upi,
   return p;
 }
 
-  
+#include "linkwarn.h"
+link_warning (pager_create, "lousy interface can't return errno")
+
+
 /* This causes the function to be run at startup by compiler magic. */
 static void create_class (void) __attribute__ ((constructor));
 
@@ -59,4 +62,4 @@ create_class ()
   (void) &create_class;		/* Avoid warning */
 }
 
-				     
+
