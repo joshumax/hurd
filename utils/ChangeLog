@@ -1,3 +1,8 @@
+2000-10-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* devprobe.c (main): Call device_close before freeing the device
+	port.
+
 2000-07-27  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* portinfo.c: Comment out unimplemented argument

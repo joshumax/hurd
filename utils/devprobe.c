@@ -75,6 +75,8 @@ main (int argc, char **argv)
 	  if (err == 0)
 	    /* Got it.  */
 	    {
+	      device_close (device);
+
 	      /* Free the device port we got.  */
 	      mach_port_deallocate (mach_task_self (), device);
 
