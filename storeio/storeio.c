@@ -104,7 +104,7 @@ void main (int argc, char *argv[])
 	  }
 	  break;
 	case ARGP_KEY_INIT:
-	  state->child_inputs[0] = &store_name; break;
+	  state->child_inputs[0] = state->input; break;
 	default:
 	  return ARGP_ERR_UNKNOWN;
 	}
@@ -112,8 +112,10 @@ void main (int argc, char *argv[])
     }
   const struct argp *kids[] = { &store_argp, 0 };
   const struct argp argp = { options, parse_opt, args_doc, doc, kids };
+  struct store_argp_params store_params = { default_type: "device" };
 
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, &store_params);
+  store_name = store_params.result;
 
   if (readonly)
     /* Catch illegal writes at the point of open.  */
@@ -148,7 +150,29 @@ void main (int argc, char *argv[])
 
   exit (0);
 }
+
+error_t
+trivfs_append_args (struct trivfs_control *trivfs_control,
+		    char **argz, size_t argz_len)
+{
+  error_t err = 0;
+  char buf[40];
 
+  if (rdev)
+    {
+      snprintf (buf, sizeof buf, "--rdev=%d,%d", (rdev >> 8), rdev & 0xFF);
+      err = argz_add (argz, argz_len, buf);
+    }
+
+  if (! err)
+    err = argz_add (argz, argz_len, readonly ? "--readonly" : "--writable");
+
+  if (! err)
+    err = store_parsed_append_args (store_name, argz, argz_len);
+
+  return err;
+}
+
 /* Called whenever someone tries to open our node (even for a stat).  We
    delay opening the kernel device until this point, as we can usefully
    return errors from here.  */
