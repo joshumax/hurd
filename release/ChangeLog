@@ -1,3 +1,9 @@
+Thu Jul 18 18:27:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* SETUP: Install grub with INSTALL-GRUB-MBR if desired.
+
+	* INSTALL-GRUB-MBR: Fix quoting in last echo.
+
 Wed Jul 17 00:17:05 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* INSTALL-binary: Yet more changes.
