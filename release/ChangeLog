@@ -1,3 +1,7 @@
+Tue Sep 17 14:36:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* SETUP: Don't prepend `r' to $BOOT_DEV when invoking INSTALL-GRUB-MBR.
+
 Fri Aug 16 10:50:01 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* SETUP: Set `PATH'.
