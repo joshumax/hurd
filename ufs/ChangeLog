@@ -1,3 +1,14 @@
+Mon Nov 18 17:10:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (read_disknode): When setting ST->st_mode, Clear
+	S_ITRANS bits, and set S_IPTRANS if necessary.  Don't set
+	NP->istranslated anymore.
+	(diskfs_set_translator): Frob S_IPTRANS bit in mode bits instead
+	of NP->istranslated.
+	(write_node): Don't write any bits in S_ITRANS to disk.
+	* alloc.c (ffs_alloc): Use S_IPTRANS in NP->dn_stat.st_mode
+	instead of NP->istranslated.
+
 Sat Nov 16 17:21:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* inode.c (diskfs_S_fsys_getfile): Delete var `fakecred'.  
