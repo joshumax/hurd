@@ -888,6 +888,7 @@ init_stdarrays ()
   mach_port_t ref;
   mach_port_t *std_port_array;
   int *std_int_array;
+  int i;
 
   std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
   std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
@@ -919,8 +920,10 @@ init_stdarrays ()
   std_int_array[INIT_UMASK] = CMASK;
 
   __USEPORT (PROC, proc_setexecdata (port, std_port_array,
-				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
+				     MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 				     std_int_array, INIT_INT_MAX));
+  for (i = 0; i < INIT_PORT_MAX; i++)
+    mach_port_deallocate (mach_task_self (), std_port_array[i]);
 }
 
 /* Open /dev/console.  If it isn't there, or it isn't a terminal, then
@@ -1013,7 +1016,8 @@ open_console ()
 	}
 	  
       errno = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
-				   control, MACH_MSG_TYPE_MOVE_SEND);
+				   control, MACH_MSG_TYPE_COPY_SEND);
+      mach_port_deallocate (mach_task_self (), control);
       if (errno)
 	{
 	  error (0, errno, "%s", termname);
