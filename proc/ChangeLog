@@ -1,3 +1,7 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (main): Use ports_get_send_right.
+
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mgt.c (S_proc_exception_raise): Check for

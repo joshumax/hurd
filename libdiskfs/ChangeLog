@@ -1,3 +1,15 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Use ports_get_send_right.
+
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Use
+	ports_get_send_right.
+
+	* boot-start.c (diskfs_start_bootstrap): Use ports_get_send_right.
+	(diskfs_execboot_fsys_startup): Use ports_get_send_right.
+	(diskfs_S_fsys_init): Use ports_get_send_right.
+	(start_execserver): Use ports_get_send_right.
+
 2000-02-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-exec.c (diskfs_S_file_exec): Give the new peropen for the exec

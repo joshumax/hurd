@@ -1,5 +1,9 @@
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* get-send-right.c: New file.
+	* ports.h: Declare ports_get_send_right.
+	* Makefile (SRCS): Add get-send-right.c.
+
 	* get-right.c (gdb_loses): Remove global variable.
 	(ports_get_right): Use a local instead.
 

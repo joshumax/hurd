@@ -1,3 +1,8 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Use
+	ports_get_send_right.
+
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-write.c: Include <fcntl.h>.

@@ -1,3 +1,7 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-ops.c (S_io_reauthenticate): Use ports_get_send_right.
+
 2000-02-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Call configure_device on loopback_dev.

@@ -1,3 +1,11 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* devio.c (devio_abandon_physical_output): Use ports_get_send_right.
+	(initial_open): Use ports_get_send_right.
+	(device_open_reply): Use ports_get_send_right.
+
+	* users.c (send_signal): Use ports_get_send_right.
+
 1999-10-04  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* term.h, devio.c, users.c: Revert previous change.  Do it this
@@ -18,7 +26,7 @@
 	* users.c (open_hook): If NO_DEVICE flag set, return ENXIO immediately.
 	If we put out an open request, check for that bit as well as
 	NO_CARRIER changing in termflags and diagnose with ENXIO.
-	
+
 	* Makefile (device_replyServer-CPPFLAGS): New variable, turn off
 	TypeCheck for this stub.  This is necessary for error replies to get
 	through to our server-side functions in devio.c.

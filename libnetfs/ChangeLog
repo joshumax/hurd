@@ -1,3 +1,11 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-reauthenticate.c (netfs_S_io_reauthenticate): Use
+	ports_get_send_right.
+
+	* dir-lookup.c (netfs_S_dir_lookup): Use ports_get_send_right.
+	Deallocate DIRPORT after fshelp_fetch_root.
+
 2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-lookup.c (netfs_S_dir_lookup): Follow symlink despite flags if
