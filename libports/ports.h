@@ -162,6 +162,18 @@ error_t ports_create_port (struct port_class *class,
 			   struct port_bucket *bucket,
 			   size_t size,
 			   void *result);
+
+/* Just like ports_create_port, except don't actually put the port
+   into the portset underlying BUCKET.  This is intended to be used
+   for cases where the port right must be given out before the port is
+   fully initialized; with this call you are guaranteed that no RPC
+   service will occur on the port until you have finished initializing
+   it and installed it into the portset yourself. */
+error_t
+ports_create_port_noinstall (struct port_class *class,
+			     struct port_bucket *bucket,
+			     size_t size,
+			     void *result);
    
 /* For an existing RECEIVE right, create and return in RESULT a new port
    structure; BUCKET, SIZE, and CLASS args are as for ports_create_port. */
@@ -376,5 +388,7 @@ extern int _ports_flags;
 #define _PORTS_BLOCKED		PORTS_BLOCKED
 #define _PORTS_INHIBIT_WAIT	PORTS_INHIBIT_WAIT
 void _ports_complete_deallocate (struct port_info *);
+error_t _ports_create_port_internal (struct port_class *, struct port_bucket *,
+				     size_t, void *, int);
 
 #endif

@@ -1,3 +1,21 @@
+Mon Aug 12 11:13:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfs.c (nfs_error_trans): Repair syntax.
+
+Thu Aug  8 18:48:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfs.h (protocol_version): New variable.
+	* mount.c (protocol_version): Define and initialize to `2'.
+
+	* rpcsvc/nfs_prot.h (enum nfsstat): Added new nfsv3 error codes:
+	NFSERR_XDEV, NFSERR_INVAL, NFSERR_MLINK, NFSERR_REMOTE,
+	NFSERR_BADHANDLE, NFSERR_NOT_SYNC, NFSERR_BAD_COOKIE,
+	NFSERR_NOTSUPP, NFSERR_TOOSMALL, NFSERR_SERVERFAULT,
+	NFSERR_BADTYPE, NFSERR_JUKEBOX.
+	(NFSERR_TRYLATER): New macro.
+	* nfs.c (nfs_error_trans): Understand v3 error codes if we are
+	runnnig v3.
+
 Wed Jul 31 13:25:00 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_statfs): Use NFSPROC_STATFS, not SETATTR to

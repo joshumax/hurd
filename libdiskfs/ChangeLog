@@ -1,4 +1,14 @@
+Thu Aug  8 18:18:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* readonly.c: Include <error.h>.
+
 Wed Aug  7 13:53:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* readonly.c (diskfs_check_readonly): If we get an error from
+	diskfs_hypermetadata, then switch to readonly.
+	* diskfs.h (diskfs_set_hypermetadata): Require an error code return.
+	* dev-io.c (diskfs_device_write_sync): If we get D_READ_ONLY, then
+	return EROFS to the caller instead of EIO.
 
 	* node-create.c (diskfs_create_node): New files always copy GID
 	from their parent; that's NetBSD's behavior, and it's good enough

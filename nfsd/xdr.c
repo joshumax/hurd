@@ -139,7 +139,7 @@ encode_statfs (int *p, struct statfs *st)
 
 /* Return an NFS error corresponding to Hurd error ERR. */
 int
-nfs_error_trans (error_t err)
+nfs_error_trans (error_t err, int version)
 {
   switch (err)
     {
@@ -153,7 +153,6 @@ nfs_error_trans (error_t err)
       return NFSERR_NOENT;
       
     case EIO:
-    default:
       return NFSERR_IO;
       
     case ENXIO:
@@ -194,6 +193,24 @@ nfs_error_trans (error_t err)
       
     case ESTALE:
       return NFSERR_STALE;
+
+    default:
+      if (version == 2)
+	return NFSERR_IO;
+      else switch (err)
+	{
+	case EXDEV:
+	  return NFSERR_XDEV;
+	  
+	case EINVAL:
+	  return NFSERR_INVAL;
+	  
+	case EOPNOTSUPP:
+	  return NFSERR_NOTSUPP; /* are we sure here? */
+	  
+	default:
+	  return NFSERR_IO;
+	}
     }
 }      
       

@@ -142,6 +142,9 @@ extern short nfs_port;
    portmapper. */
 extern int nfs_port_override;
 
+/* Which NFS protocol version we are using */
+extern int protocol_version;
+
 
 /* Count how many four-byte chunks it takss to hold LEN bytes. */
 #define INTSIZE(len) (((len)+3)>>2)

@@ -40,7 +40,7 @@
 #define CHAR_USER_QUOTE '\377'	/* break quoting, etc. */
 
 /* This bit specifies control */
-#define CTRL_BIT 0x20
+#define CTRL_BIT 0x40
 
 /* XXX These belong in <termios.h> */
 #define ILCASE (1 << 14)

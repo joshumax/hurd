@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <fcntl.h>
+#include <error.h>
 
 #include "priv.h"
 
@@ -29,13 +30,23 @@ int _diskfs_diskdirty;
 int
 diskfs_check_readonly ()
 {
+  error_t err;
+  
   if (diskfs_readonly)
     return 1;
   else
     {
       if (!_diskfs_diskdirty)
 	{
-	  diskfs_set_hypermetadata (1, 0);
+	  err = diskfs_set_hypermetadata (1, 0);
+	  if (err)
+	    {
+	      error (0, 0, 
+		     "%s: MEDIA NOT WRITABLE; switching to READ-ONLY",
+		     diskfs_device_arg);
+	      diskfs_readonly = 1;
+	      return 1;
+	    }
 	  _diskfs_diskdirty = 1;
 	}
       return 0;

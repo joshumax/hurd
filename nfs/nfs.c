@@ -401,8 +401,39 @@ nfs_error_trans (int error)
       return ESTALE;
 		  
     case NFSERR_WFLUSH:
-    default:
+      /* Not known in v3, but we just give EINVAL for unknown errors
+	 so it's the same. */
       return EINVAL;
+
+    default:
+      if (protocol_version == 2)
+	return EINVAL;
+      else
+	switch (error)
+	  {
+	  case NFSERR_XDEV:
+	    return EXDEV;
+	    
+	  case NFSERR_INVAL:
+	  case NFSERR_REMOTE:	/* not sure about this one */
+	  default:
+	    return EINVAL;
+	    
+	  case NFSERR_MLINK:
+	    return EMLINK;
+	    
+	  case NFSERR_NOTSUPP:
+	    return EOPNOTSUPP;
+
+	  case NFSERR_BADHANDLE:
+	  case NFSERR_NOT_SYNC:
+	  case NFSERR_BAD_COOKIE:
+	  case NFSERR_TOOSMALL:
+	  case NFSERR_SERVERFAULT: /* perhaps EIO instead?? */
+	  case NFSERR_BADTYPE:
+	  case NFSERR_JUKEBOX:	/* ??? */
+	    /* These indicate bugs in the client, so EGRATUITOUS is right. */
+	    return EGRATUITOUS;
+	  }
     }
 }
-

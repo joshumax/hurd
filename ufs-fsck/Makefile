@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := fsck
+dir := ufs-fsck
 makemode := utility
 
 SRCS = dir.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \

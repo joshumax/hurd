@@ -22,17 +22,30 @@ enum nfsstat {
 	NFSERR_NXIO = 6,
 	NFSERR_ACCES = 13,
 	NFSERR_EXIST = 17,
+	NFSERR_XDEV = 18,	/* v3 only */
 	NFSERR_NODEV = 19,
 	NFSERR_NOTDIR = 20,
 	NFSERR_ISDIR = 21,
+	NFSERR_INVAL = 22,	/* v3 only */
 	NFSERR_FBIG = 27,
 	NFSERR_NOSPC = 28,
 	NFSERR_ROFS = 30,
+	NFSERR_MLINK = 31,	/* v3 only */
 	NFSERR_NAMETOOLONG = 63,
 	NFSERR_NOTEMPTY = 66,
 	NFSERR_DQUOT = 69,
 	NFSERR_STALE = 70,
-	NFSERR_WFLUSH = 99,
+	NFSERR_REMOTE = 71,	/* v3 only */
+	NFSERR_WFLUSH = 99,	/* v2 only */
+	NFSERR_BADHANDLE = 10001, /* v3 only */
+	NFSERR_NOT_SYNC = 10002, /* v3 only */
+	NFSERR_BAD_COOKIE = 10003, /* v3 only */
+	NFSERR_NOTSUPP = 10004,	/* v3 only */
+	NFSERR_TOOSMALL = 10005, /* v3 only */
+	NFSERR_SERVERFAULT = 10006, /* v3 only */
+	NFSERR_BADTYPE = 10007,	/* v3 only */
+	NFSERR_JUKEBOX = 10008,	/* v3 only */
+#define NFSERR_TRYLATER NFSERR_JUKEBOX
 };
 typedef enum nfsstat nfsstat;
 bool_t xdr_nfsstat();

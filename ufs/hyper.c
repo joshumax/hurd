@@ -276,7 +276,7 @@ get_hypermetadata (void)
    taken from ordinary data blocks and might not be an even number
    of pages; in that case writing it through the pager would nuke whatever
    pages came after it on the disk and were backed by file pagers. */
-void
+error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
   vm_address_t buf;
@@ -294,16 +294,22 @@ diskfs_set_hypermetadata (int wait, int clean)
 
       err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
 				     &buf, bufsize);
-      if (!err)
+      if (err)
+	return err;
+      
+      bcopy (csum, (void *) buf, sblock->fs_cssize);
+      if (swab_disk)
+	swab_csums ((struct csum *)buf);
+      err = diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
+				      buf, bufsize);
+      vm_deallocate (mach_task_self (), buf, bufsize);
+      
+      if (err)
 	{
-	  bcopy (csum, (void *) buf, sblock->fs_cssize);
-	  if (swab_disk)
-	    swab_csums ((struct csum *)buf);
-	  diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
-				    buf, bufsize);
-	  csum_dirty = 0;
-	  vm_deallocate (mach_task_self (), buf, bufsize);
+	  spin_unlock (&alloclock);
+	  return err;
 	}
+      csum_dirty = 0;
     }
 
   if (clean && ufs_clean && !sblock->fs_clean)
@@ -326,6 +332,7 @@ diskfs_set_hypermetadata (int wait, int clean)
   copy_sblock ();
 
   sync_disk (wait);
+  return 0;
 }
 
 /* Copy the sblock into the disk */

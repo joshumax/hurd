@@ -292,8 +292,8 @@ relink:
 # Building libraries from other directories.  We force both libraries to be
 # built if either is, because it will use the appropriate one even if the other
 # is specified in someone's dependency list.   
-../%.a ../%.so: FORCE
-	$(MAKE) -C $(dir $@) libs
+#../%.a ../%.so: FORCE
+#	$(MAKE) -C $(dir $@) libs
 
 # Tell make where to find other -l libraries that we use
 vpath libutil.% $(libdir)/

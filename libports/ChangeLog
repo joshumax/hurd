@@ -1,3 +1,8 @@
+Wed Aug  7 15:28:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ports.h (_ports_create_port_internal,
+	ports_create_port_noinstall): New declarations.
+
 Thu Jul 18 22:59:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (SRCS): Add create-port-noinstall.c and create-internal.c.

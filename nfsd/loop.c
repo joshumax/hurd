@@ -195,7 +195,7 @@ server_loop (int fd)
       if (proc->process_error && err)
 	{
 	  r = errloc;
-	  *r++ = htonl (nfs_error_trans (err));
+	  *r++ = htonl (nfs_error_trans (err, version));
 	}
       
       cred_rele (cred);

@@ -1,5 +1,5 @@
 /* Device input and output
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -29,10 +29,15 @@ error_t
 diskfs_device_write_sync (off_t addr, vm_address_t data, size_t len)
 {
   int written;
+  error_t err;
+  
   assert (!diskfs_readonly);
-  if (device_write (diskfs_device, 0, diskfs_device_start + addr,
-		    (io_buf_ptr_t) data, len, &written)
-      || written != len)
+  err = device_write (diskfs_device, 0, diskfs_device_start + addr,
+		      (io_buf_ptr_t) data, len, &written);
+  
+  if (err == D_READ_ONLY)
+    return EROFS;
+  else if (err || written != len)
     return EIO;
   return 0;
 }

@@ -1,3 +1,7 @@
+Mon Aug 12 11:39:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (dir): Now ufs-fsck.
+
 Tue Jul 23 19:32:09 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (allocino): `struct timespec' now uses a field prefix

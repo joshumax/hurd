@@ -29,6 +29,6 @@ installationdir = $(sbindir)
 
 include ../Makeconf
 
-CPPFLAGS += -DLOCALSTATEDIR=$(localstatedir)
+CPPFLAGS += -DLOCALSTATEDIR=\"$(localstatedir)\"
 
 nfsd: ../libthreads/libthreads.a ../libshouldbeinlibc/libshouldbeinlibc.a

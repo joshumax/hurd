@@ -18,6 +18,8 @@ abort auth_user_authenticate when it's dead.
 
 Add io_revoke.
 
+Add optional timeout arg to msg.defs.
+
 
 Not user visible:
 

@@ -116,7 +116,7 @@ void server_loop (int);
 extern struct proctable nfstable, mounttable, pmaptable;
 
 /* xdr.c */
-int nfs_error_trans (error_t);
+int nfs_error_trans (error_t, int);
 int *encode_fattr (int *, struct stat *);
 int *decode_name (int *, char **);
 int *encode_fhandle (int *, char *);

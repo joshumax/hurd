@@ -1,3 +1,24 @@
+Mon Aug 12 11:12:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* init.c (setup_terminal): Declare LINE.
+	(add_terminal): Don't declare LINE.
+
+Thu Aug  8 16:34:06 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* init.c (setup_terminal): New function.
+	(add_terminal): Use setup_terminal.
+	(reread_ttys): When turning an existent terminal spec on, call
+	setup_terminal before startup_terminal.
+
+	* init.c (struct terminal): New member `read'.
+	(shutdown_terminal): New function.
+	(reread_ttys): Use shutdown_terminal instead of doing it by hand.
+	Keep track of which ttys we used to know about are no longer in
+	/etc/ttys, and treat them as now `off'.
+	
+	* init.c (kill_everyone): `continue' in the essential task case
+	didn't go back to the main loop; fix it up correctly.
+
 Tue Jul 16 11:55:09 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* init.c (process_signal): Set WUNTRACED in call to waitpid.

@@ -1,5 +1,7 @@
 Mon Aug 12 11:04:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* term.h (CTRL_BIT): Correct value is 0x40, not 0x20.
+
 	* munge.c (poutput): Compute tab width using the same loop
 	strategy as output_character and output_width.
 

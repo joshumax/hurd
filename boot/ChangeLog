@@ -1,3 +1,10 @@
+Mon Aug 12 11:11:08 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (ourdevice.defs): Find device.defs under
+	install_includedir now.
+	
+	* Makefile (all): No longer build uxboot by default.
+
 Thu Aug  1 14:38:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* boot_script.h (safe_gets): Declare second parm as type `int'.

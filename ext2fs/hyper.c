@@ -144,7 +144,7 @@ get_hypermetadata (void)
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
 }
 
-void
+error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
   if (clean && ext2fs_clean && !(sblock->s_state & EXT2_VALID_FS))
@@ -168,6 +168,9 @@ diskfs_set_hypermetadata (int wait, int clean)
    }
 
   sync_global (wait);
+
+  /* Should check writability here and return EROFS if necessary. XXX */
+  return 0;
 }
 
 void

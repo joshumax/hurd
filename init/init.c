@@ -113,6 +113,7 @@ struct terminal
   
   int on;
   int pid;
+  int read;
   
   char *name;
 };
@@ -474,26 +475,12 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
 
 /** /etc/ttys support **/
 
-
-/* Add a new terminal spec for TT and return it. */
-struct terminal *
-add_terminal (struct ttyent *tt)
+/* Set up the getty and window fields of terminal spec T corresponding
+   to line TT. */
+void
+setup_terminal (struct terminal *t, struct ttyent *tt)
 {
-  struct terminal *t;
   char *line;
-  
-  if (nttys >= ttyslen)
-    {
-      ttys = realloc (ttys, (ttyslen * 2) * sizeof (struct ttyent));
-      bzero (&ttys[nttys], ttyslen);
-      ttyslen *= 2;
-    }
-      
-  t = &ttys[nttys];
-  nttys++;
-
-  t->name = malloc (strlen (tt->ty_name) + 1);
-  strcpy (t->name, tt->ty_name);
 
   if (t->getty_argz)
     free (t->getty_argz);
@@ -509,16 +496,37 @@ add_terminal (struct ttyent *tt)
 			 &t->window_argz, &t->window_argz_len);
       else
 	t->window_argz = 0;
-      t->on = 1;
     }
   else
-    {
       t->getty_argz = t->window_argz = 0;
-      t->on = 0;
+}  
+
+
+/* Add a new terminal spec for TT and return it. */
+struct terminal *
+add_terminal (struct ttyent *tt)
+{
+  struct terminal *t;
+  
+  if (nttys >= ttyslen)
+    {
+      ttys = realloc (ttys, (ttyslen * 2) * sizeof (struct ttyent));
+      bzero (&ttys[nttys], ttyslen);
+      ttyslen *= 2;
     }
+      
+  t = &ttys[nttys];
+  nttys++;
+
+  t->name = malloc (strlen (tt->ty_name) + 1);
+  strcpy (t->name, tt->ty_name);
+
+  setup_terminal (t, tt);
+  if (t->getty_argz)
+    t->on = 1;
+
   return t;
 }
-  
 
 /* Read /etc/ttys and initialize ttys array.  Return non-zero if we fail. */
 int
@@ -649,22 +657,34 @@ restart_terminal (int pid)
       }
 }  
 
+/* Shutdown the things running on terminal spec T. */
+void
+shutdown_terminal (struct terminal *t)
+{
+  kill (t->pid, SIGHUP);
+  /* revoke?? */;
+}
+
 /* Re-read /etc/ttys.  If a line has turned off, kill what's there.
-   If a line has turned on, start it.  If an on line has changed,
-   kill it, and then restart it. */
+   If a line has turned on, start it.  */
 void
 reread_ttys (void)
 {
   struct ttyent *tt;
   struct terminal *t;
   int on;
-
+  int i;
+  
   if (!setttyent ())
     {
       error (0, errno, "%s", _PATH_TTYS);
       return;
     }
   
+  /* Mark all the lines not yet read */
+  for (i = 0; i < nttys; i++)
+    ttys[i].read = 0;
+
   while ((tt = getttyent ()))
     {
       if (!tt->ty_name)
@@ -678,11 +698,12 @@ reread_ttys (void)
 	  if (t->on && !on)
 	    {
 	      t->on = 0;
-	      kill (t->pid, SIGHUP);
+	      shutdown_terminal (t);
 	    }
 	  else if (!t->on && on)
 	    {
 	      t->on = 1;
+	      setup_terminal (t, tt);
 	      startup_terminal (t);
 	    }
 	}
@@ -692,8 +713,18 @@ reread_ttys (void)
 	  if (on)
 	    startup_terminal (t);
 	}
+
+      t->read = 1;
     }
   endttyent ();
+
+  /* Scan tty entries; any that were not found and were on, turn off. */
+  for (i = 0; i < nttys; i++)
+    if (!ttys[i].read && ttys[i].on)
+      {
+	ttys[i].on = 0;
+	shutdown_terminal (&ttys[i]);
+      }
 }
 
 
@@ -1213,8 +1244,10 @@ kill_everyone (int signo)
 		  {
 		    /* Skip this one */
 		    mach_port_deallocate (mach_task_self (), tk);
-		    continue;
+		    break;
 		  }
+	      if (es)
+		continue;
 	      
 	      /* Kill it */
 	      if (signo == SIGKILL)

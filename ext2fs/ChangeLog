@@ -1,3 +1,7 @@
+Mon Aug 12 11:18:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* hyper.c (diskfs_set_hypermetadata): Return an error code now.
+
 Fri Aug  2 12:10:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (diskfs_write_disknode): If WAIT is false, still record

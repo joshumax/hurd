@@ -59,6 +59,8 @@ short nfs_port = NFS_PORT;
 /* True iff NFS_PORT should be used even if portmapper present. */
 int nfs_port_override = 0;
 
+int protocol_version = 2;
+
 /* Set up an RPC for procedure PROCNUM for talking to the portmapper.
    Allocate storage with malloc and point *BUF at it; caller must free
    this when done.  Return the address where the args for the

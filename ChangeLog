@@ -1,3 +1,8 @@
+Mon Aug 12 12:51:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf: Comment out the lines that cause recursive makes into
+	library subdirs.
+
 Thu Aug  8 13:14:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* configure.in: Add AC_SUBST for `install_prefix'.

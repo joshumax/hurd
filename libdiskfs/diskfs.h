@@ -364,7 +364,7 @@ error_t diskfs_grow (struct node *np, off_t size, struct protid *cred);
    metadata.  If CLEAN is nonzero, then after this is written the
    filesystem will be absolutely clean, and the non-paged metadata can
    so indicate.  */
-void diskfs_set_hypermetadata (int wait, int clean);
+error_t diskfs_set_hypermetadata (int wait, int clean);
 
 /* The user must define this function.  Allocate a new node to be of
    mode MODE in locked directory DP (don't actually set the mode or

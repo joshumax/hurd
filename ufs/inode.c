@@ -498,8 +498,8 @@ error_t
 diskfs_set_statfs (struct statfs *st)
 {
   st->f_type = FSTYPE_UFS;
-  st->f_bsize = sblock->fs_bsize;
-  st->f_blocks = sblock->fs_dsize * sblock->fs_frag;
+  st->f_bsize = sblock->fs_fsize;
+  st->f_blocks = sblock->fs_dsize;
   st->f_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
 		 + sblock->fs_cstotal.cs_nffree);
   st->f_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)

@@ -2,7 +2,7 @@ Sources for binaries in Hurd version 0.0.
 
 
 The following packages were built from the sources of the indicated
-version in ftp://prep.gnu.ai.edu/pub.gnu according to the provided
+version in ftp://prep.gnu.ai.edu/pub/gnu according to the provided
 instructions without modification:
 
 autoconf (2.10)

@@ -1,5 +1,16 @@
+Mon Aug 12 13:43:46 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* hyper.c (diskfs_set_hypermetadata): Bother to return 0 at end of
+	function.
+
 Wed Aug  7 13:00:30 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* inode.c (diskfs_set_statfs): Compute st->f_blocks correctly; set
+	bsize to be fs_fsize, not fs_bsize.
+
+	* hyper.c (diskfs_set_hypermetadata): Return an error as
+	appropriate. 
+	
 	* inode.c (struct ufs_fhandle): Layout filehandle more like Unixy
 	NFSD. 
  	(diskfs_S_file_getfh): Bother to clear unused parts of a

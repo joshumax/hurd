@@ -27,8 +27,7 @@
 
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
-#define INDEX_FILE_NAME(dir) # dir "/state/misc/nfsd.index"
-static char index_file[] = INDEX_FILE_NAME (LOCALSTATEDIR);
+static char index_file[] = LOCALSTATEDIR "/state/misc/nfsd.index";
 char *index_file_name = index_file;
 
 int
@@ -79,11 +78,11 @@ main (int argc, char **argv)
   init_filesystems ();
 
   cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
-				pmap_udp_socket));
+				(any_t) pmap_udp_socket));
   
   while (nthreads--)
     cthread_detach (cthread_fork ((cthread_fn_t) server_loop, 
-				  main_udp_socket));
+				  (any_t) main_udp_socket));
   
   for (;;)
     {

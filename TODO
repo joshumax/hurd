@@ -23,7 +23,9 @@ See `tasks', the exported task list.
 * Libraries
 
 ** general:
-*** fsys_get_options should return: prog name in argv[0]; non-option program args, e.g. the diskfs device, or nfs mount
+*** fsys_get_options should return: prog name in argv[0]; non-option 
+    program args, e.g. the diskfs device, or nfs mount 
+*** Enable compilation without -O
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
@@ -42,7 +44,6 @@ See `tasks', the exported task list.
     special-case interrupt_operation.
 *** Drop wire parms to manage-operations; instead have a new-thread hook
     function.
-*** Add ports_create_port_noinstall to ports.h.
 
 ** libstore:
 *** test it and make diskfs use it.
@@ -69,9 +70,7 @@ See `tasks', the exported task list.
    getopt into more primitive functions, which both argp and getopt
    can call.
 
-
 ** libdiskfs
-*** detect write-protected media and turn on diskfs_readonly
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
     routines and then share common code.
@@ -116,7 +115,6 @@ See `tasks', the exported task list.
 ** libps
 *** Wizzior columnation (autosizing?)
 *** Make getters more robust.
-
 
 * Servers
 ** write default pager
@@ -185,8 +183,7 @@ See `tasks', the exported task list.
 *** Write core files.
 
 ** init
-*** SIGHUP and SIGQUIT don't seem to do the right thing.
-
+*** SIGHUP and SIGTERM don't seem to do the right thing.
 
 * Utilities
 ** Write a real mount program.
@@ -205,7 +202,6 @@ See `tasks', the exported task list.
     and child_lookup() doesn't supply more than fds 0-2).
 ** fsck should use (not-yet-added) fsys_get_options returned device instead 
    of /etc/fstab.
-
 
 ** ps:
 *** ps should timeout quickly (one second?) on non-responsive message ports.
