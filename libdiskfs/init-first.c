@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -36,7 +36,7 @@ master_thread_function (any_t foo __attribute__ ((unused)))
 						diskfs_demuxer,
 						thread_timeout,
 						server_timeout,
-						1, MACH_PORT_NULL);
+						0);
       err = diskfs_shutdown (0);
     }
   while (err);

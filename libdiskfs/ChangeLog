@@ -1,3 +1,9 @@
+Wed Aug 20 14:03:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* disk-pager.c (service_paging_requests): New args for
+	ports_manage_port_operations_multithread. 
+	* init-first.c (master_thread_function): Likewise.
+
 1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* filedev.c, machdev.c: Files removed.

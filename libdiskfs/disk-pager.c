@@ -40,8 +40,8 @@ service_paging_requests (any_t arg)
   for (;;)
     ports_manage_port_operations_multithread (pager_bucket,
 					      pager_demuxer,
-					      1000 * 60 * 2, 1000 * 60 * 10,
-					      1, MACH_PORT_NULL);
+					      1000 * 60 * 2, 
+					      1000 * 60 * 10, 0);
 }
 
 void
