@@ -19,6 +19,8 @@ libthreads := $(hurdinst)/lib/libthreads.a
 libports := $(hurdinst)/lib/libports.a
 libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
+libfshelp := $(hurdinst)/lib/libfshelp.a
+libdiskfs := $(hurdinst)/lib/libdiskfs.a
 gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/include
 
 # Flags for compilation
@@ -76,6 +78,20 @@ $(libpager): FORCE
 	$(MAKE) -C $(hurdsource)/libpager $(libpager)
 $(headers)/hurd/pager.h: FORCE
 	$(MAKE) -C $(hurdsource)/libpager $(headers)/hurd/pager.h
+endif
+
+ifneq ($(strip $(dir)),libdiskfs)
+$(libdiskfs): FORCE
+	$(MAKE) -C $(hurdsource)/libdiskfs $(libdiskfs)
+$(headers)/hurd/diskfs.h: FORCE
+	$(MAKE) -C $(hurdsource)/libdiskfs $(headers)/hurd/diskfs.h
+endif
+
+ifneq ($(strip $(dir)),libfshelp)
+$(libfshelp): FORCE
+	$(MAKE) -C $(hurdsourc)/libfshelp $(libfshelp)
+$(headers)/hurd/fshelp.h: FORCE
+	$(MAKE) -C $(hurdsource)/libfshelp $(headers)/hurd/fshelp.h
 endif
 
 FORCE:
