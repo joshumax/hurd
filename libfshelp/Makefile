@@ -20,10 +20,12 @@ dir := libfshelp
 include ../Makeconf
 
 SRCS = fsys-startup.c init-trans.c trans-start.c transboot-clean.c \
-	kill-trans.c trans-iter.c lock-acquire.c lock-init.c
+	kill-trans.c trans-iter.c lock-acquire.c lock-init.c \
+	protid-make.c protid-rele.c peropen-make.c peropen-rele.c
 
 OBJS = fsys-startup.o init-trans.o trans-start.o transboot-clean.o \
-	kill-trans.o trans-iter.o lock-acquire.o lock-init.o
+	kill-trans.o trans-iter.o lock-acquire.o lock-init.o \
+	protid-make.c protid-rele.c peropen-make.c peropen-rele.c
 
 DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h
 
@@ -45,6 +47,9 @@ fsys-startup.o init-trans.o trans-start.o transboot-clean.o: trans.h
 kill-trans.o trans-iter.o: trans.h
 
 lock-acquire.o lock-init.o: locks.h
+
+protid-make.c protid-rele.c peropen-make.c peropen-rele.c: protid.h
+
 
 .PHONY: clean install
 
