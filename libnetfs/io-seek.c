@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <unistd.h>
 #include "netfs.h"
 #include "io_S.h"
 
@@ -27,6 +28,8 @@ netfs_S_io_seek (struct protid *user,
 		 int whence,
 		 off_t *newoffset)
 {
+  error_t err;
+
   if (!user)
     return EOPNOTSUPP;
 
