@@ -88,12 +88,10 @@ swab_sblock (struct fs *sblock)
   sblock->fs_cgrotor = swab_long (sblock->fs_cgrotor);
   sblock->fs_cpc = swab_long (sblock->fs_cpc);
   sblock->fs_contigsumsize = swab_long (sblock->fs_contigsumsize);
-  sblock->fs_maysymlinksen = swab_long (sblock->fs_maysymlinksen);
+  sblock->fs_maxsymlinklen = swab_long (sblock->fs_maxsymlinklen);
   sblock->fs_inodefmt = swab_long (sblock->fs_inodefmt);
-  sblock->fs_maxfilesize.val[0] = swab_long (sblock->fs_maxfilesize.val[0]);
-  sblock->fs_maxfilesize.val[1] = swab_long (sblock->fs_maxfilesize.val[1]);
-  sblock->fs_qbmask.val[0] = swab_long (sblock->fs_qbmask.val[0]);
-  sblock->fs_qbmask.val[1] = swab_long (sblock->fs_qbmask.val[1]);
+  sblock->fs_maxfilesize = swab_long_long (sblock->fs_maxfilesize);
+  sblock->fs_qbmask = swab_long_long (sblock->fs_qbmask);
   sblock->fs_state = swab_long (sblock->fs_state);
   sblock->fs_postblformat = swab_long (sblock->fs_postblformat);
   sblock->fs_nrpos = swab_long (sblock->fs_nrpos);
@@ -110,7 +108,7 @@ swab_sblock (struct fs *sblock)
     for (i = 0; i < sblock->fs_cpc; i++)
       for (j = 0; j < sblock->fs_nrpos; j++)
 	fs_postbl(sblock, j)[i] 
-	  = swab_short (sblock->fs_postbl (sblock, j)[i]);
+	  = swab_short (fs_postbl (sblock, j)[i]);
 
   /* The rot table is all chars */
 }
@@ -120,7 +118,7 @@ swab_csums (struct csum *csum)
 {
   int i;
   
-  for (i = 0; i < fs_ncg; i++)
+  for (i = 0; i < sblock->fs_ncg; i++)
     {
       csum[i].cs_ndir = swab_long (csum[i].cs_ndir);
       csum[i].cs_nbfree = swab_long (csum[i].cs_nbfree);
