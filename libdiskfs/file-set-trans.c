@@ -87,7 +87,7 @@ diskfs_S_file_set_translator (struct protid *cred,
   /* Handle exclusive passive bit *first*.  */
   if ((passive_flags & FS_TRANS_SET)
       && (passive_flags & FS_TRANS_EXCL)
-      && np->istranslated)
+      && (np->dn_stat.st_mode & S_IPTRANS))
     {
       mutex_unlock (&np->lock);
       return EBUSY;
