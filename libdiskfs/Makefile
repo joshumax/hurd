@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ FSSRCS= dir-chg.c dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-getfh.c file-getlinknode.c file-inv-trans.c file-lock-stat.c \
 	file-lock.c file-set-size.c file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-utimes.c file-reparent.c
-IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c \
+IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
 	io-interrupt.c io-map-cntl.c io-map.c io-modes-get.c io-modes-off.c \
 	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c \
 	io-pathconf.c io-prenotify.c io-read.c io-readable.c io-identity.c \
