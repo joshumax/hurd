@@ -273,7 +273,7 @@ S_exec_startup (mach_port_t port,
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
   nc = sprintf (argv, "[BOOTSTRAP]%c-x%c%d%c%d%c%s", '\0', '\0',
-		php_child_name, '\0', psmdp_child_name, '\0', "hd0e");
+		php_child_name, '\0', psmdp_child_name, '\0', "hd0f");
 
   if (nc > *argvlen)
     vm_allocate (mach_task_self (), (vm_address_t *)argvP, nc, 1);
