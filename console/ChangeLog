@@ -1,3 +1,8 @@
+2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (handle_esc_bracket_m): Really disable italics on
+	<ritm>.
+
 2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.ti: Add capabilities <sitm>, <ritm>, <gsbom>, <grbom>.

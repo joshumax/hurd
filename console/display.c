@@ -1034,7 +1034,7 @@ handle_esc_bracket_m (attr_t attr, int code)
       break;
     case 23:
       /* Italic off: <ritm>.  */
-      attr->current.italic = 1;
+      attr->current.italic = 0;
       break;
     case 24:
       /* Underline off: <rmul>.  */
