@@ -108,7 +108,10 @@ _pager_do_write_request (mach_port_t object,
       pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
 #else
   for (i = 0; i < npages; i++)
-    pm_entries[i] += PM_PAGINGOUT;
+    pm_entries[i] |= PM_PAGINGOUT;
+  if (!kcopy)
+    for (i = 0; i < npages; i++)
+      pm_entries[i] &= ~PM_INCORE;
 #endif
 
   /* If this write occurs while a lock is pending, record
