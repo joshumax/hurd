@@ -2,6 +2,10 @@
 
 	* io.c: Add #include <sys/mman.h> for munmap decl.
 
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* pf.c (S_socket_whatis_address): Use mmap instead of vm_allocate.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io.c (TRASH_IDS): Use munmap instead of vm_deallocate.

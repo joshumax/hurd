@@ -113,7 +113,7 @@ S_socket_whatis_address (struct addr *addr,
 
   *sockaddr_type = AF_LOCAL;
   if (*sockaddr_len < addr_len)
-    vm_allocate (mach_task_self (), (vm_address_t *) sockaddr, addr_len, 1);
+    *sockaddr = mmap (0, addr_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   ((struct sockaddr *) *sockaddr)->sa_len = addr_len;
   ((struct sockaddr *) *sockaddr)->sa_family = *sockaddr_type;
   ((struct sockaddr *) *sockaddr)->sa_data[0] = 0;
