@@ -1,3 +1,14 @@
+2001-08-15  Roland McGrath  <roland@frob.com>
+
+	* sizes.c: New file, a list of prime numbers useful for table sizes.
+	* priv.h (_ihash_sizes, _ihash_nsizes): Declare.
+	(_ihash_nextprime): Don't.
+	* ihash.c (ihash_add): Select sizes from the _ihash_sizes array
+	instead of using _ihash_nextprime.
+	* Makefile: Clean up whitespace, reorder all the variable definitions.
+	(SRCS): Remove primes.c, add sizes.c instead.
+	(OBJS): Define dynamically.
+
 1999-03-07  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* primes.c: Fix last change.
