@@ -32,8 +32,7 @@ routine fsys_startup (
 	bootstrap: mach_port_t;
 	RPT
 	control_port: mach_port_send_t;
-	out realnode: mach_port_send_t;
-	out dotdot_node: mach_port_send_t);
+	out realnode: mach_port_send_t);
 
 /* Filesystem should go away.  Bye.  */
 routine fsys_goaway (
@@ -46,13 +45,15 @@ routine fsys_goaway (
    meaningful).  DO_RETRY, RETRY_NAME, and RESULT are as
    for dir_pathtrans.  The port should be authenticated with GEN_UIDS
    and GEN_GIDS (except, of course, for FS_RETRY_REAUTH and 
-   FS_RETRY_MAGICAL). */ 
+   FS_RETRY_MAGICAL).  DOTDOT_NODE is an unauthenticated port for the
+   directory in which this root is located.  */ 
 routine fsys_getroot(
 	fsys: fsys_t;
 	RPT
 #ifdef	FSYS_GETROOT_UREPLY
 	ureplyport ureply: mig_reply_port_t;
 #endif
+	dotdot_node: mach_port_send_t;
 	gen_uids: idarray_t;
 	gen_gids: idarray_t;
 	flags: int;
