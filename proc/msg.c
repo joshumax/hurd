@@ -18,7 +18,7 @@
 #include <mach.h>
 #include <hurd.h>
 #include "proc.h"
-#include "process_reply.h"
+#include "process_reply_U.h"
 #include <hurd/startup.h>
 #include <assert.h>
 #include <stdlib.h>
