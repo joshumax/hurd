@@ -156,7 +156,7 @@ main(int argc, char *argv[])
 				  "--chroot must be followed by a command");
 		      return EINVAL;
 		    }
-		  break;
+		  return 0;
 		}
 	      ++state->next;
 	    }

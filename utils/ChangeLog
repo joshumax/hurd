@@ -1,3 +1,8 @@
+2002-05-06  Marcus Brinkmann  <marcus@gnu.org>
+
+	* settrans.c (main): Return 0 instead of using break (which only
+	gets us out of the while loop).
+
 2002-05-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeauth.c (main): Add ARGP_IN_ORDER to argp_parse invocation.
