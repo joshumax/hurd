@@ -1,3 +1,7 @@
+Thu Jul 18 18:54:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* tty.c (ps_tty_abbrevs): Add an entry for /dev/comX -> cX.
+
 Thu Jul 18 00:45:25 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (LCLHDRS): Remove ps_msg.h and ps_term.h.
