@@ -1,3 +1,15 @@
+1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* bootstrap.c: Don't include "translate_root.h".
+	(main): Don't call translate_root.
+	Pass more than a single character to safe_gets.
+	(DEFAULT_ROOT): New macro.
+	(safe_gets): Make sure a newline exists before removing it.
+	Ensure that the cursor moves to the beginning of the next line.
+	* translate_root.c, translate_root.h: Files removed.
+	* Makefile (SRCS): Remove translate_root.c.
+	(LCLHDRS): Remove translate_root.h.
+
 Fri Jun 20 15:37:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* bootstrap.c (main/script_paging_file): Instead of returning an

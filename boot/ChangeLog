@@ -1,3 +1,8 @@
+1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* boot_script.c (prompt_resume_task): Pass more than a single
+	character buffer to safe_gets.
+
 1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* boot.c (bootscript): Made global.
