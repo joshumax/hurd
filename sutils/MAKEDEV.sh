@@ -86,12 +86,14 @@ function mkdev {
 	;;
 
       std)
-	mkdev console tty null zero fd time mem
+	mkdev console tty null zero full fd time mem
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
       null)
 	st $I root 666 /hurd/null;;
+      full)
+	st $I root 666 /hurd/null --full;;
       zero)
 	st $I root 666 /hurd/storeio -Tzero;;
       tty)
