@@ -50,6 +50,7 @@ _CWD=${_CWD:-`pwd`}
 export _CWD
 
 function mkdev {
+  local I
   for I; do
     case "$I" in
       std)
