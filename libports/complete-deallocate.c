@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -28,7 +28,14 @@ _ports_complete_deallocate (struct port_info *pi)
 {
   assert ((pi->flags & PORT_HAS_SENDRIGHTS) == 0);
 
-  ihash_locp_remove (pi->bucket->htable, pi->hentry);
+  if (pi->port_right)
+    {
+      ihash_locp_remove (pi->bucket->htable, pi->hentry);
+      mach_port_mod_refs (mach_task_self (), pi->port_right,
+			  MACH_PORT_RIGHT_RECEIVE, -1);
+      pi->port_right = MACH_PORT_NULL;
+    }
+
   *pi->prevp = pi->next;
   if (pi->next)
     pi->next->prevp = pi->prevp;
@@ -36,9 +43,6 @@ _ports_complete_deallocate (struct port_info *pi)
   pi->bucket->count--;
   pi->class->count--;
 
-  mach_port_mod_refs (mach_task_self (), pi->port_right,
-		      MACH_PORT_RIGHT_RECEIVE, -1);
-  pi->port_right = MACH_PORT_NULL;
   mutex_unlock (&_ports_lock);
 
   if (pi->class->clean_routine)
