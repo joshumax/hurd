@@ -1,5 +1,9 @@
 2001-12-29  Roland McGrath  <roland@frob.com>
 
+	* nbd.c (NBD_IO_MAX): New macro.
+	(nbd_write): Write in chunks no larger than NBD_IO_MAX.
+	(nbd_read): Cap AMOUNT to NBD_IO_MAX.
+
 	* nbd.c (nbd_validate_name): Skip : before port number.
 	(nbdopen): Fix test after connect loop.
 	Use multiple read calls as needed to get the whole connection header.
