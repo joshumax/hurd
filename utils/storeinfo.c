@@ -31,6 +31,8 @@
 #include <hurd/fs.h>
 #include <hurd/store.h>
 
+char *argp_program_version = "storeinfo 1.0 (GNU " HURD_RELEASE ")";
+
 static struct argp_option options[] =
 {
   {"kind",        'k', 0, 0, "Print the type of store behind FILE"},

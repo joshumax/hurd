@@ -30,6 +30,8 @@
 #include <argz.h>
 #include <hurd/fshelp.h>
 
+char *argp_program_version = "settrans 1.0 (GNU " HURD_RELEASE ")";
+
 #define DEFAULT_TIMEOUT 60
 
 #define _STRINGIFY(arg) #arg

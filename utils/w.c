@@ -47,6 +47,8 @@
 extern char *canon_host (char *host);
 extern char *shared_domain (char *host1, char *host2);
 extern char *localhost ();
+
+char *argp_program_version = "w 1.0 (GNU " HURD_RELEASE ")";
 
 /* Long options without corresponding short ones.  -1 is EOF.  */
 #define OPT_SORT	-4

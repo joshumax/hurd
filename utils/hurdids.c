@@ -30,6 +30,8 @@
 #include <error.h>
 #include <hurd/id.h>
 
+char *argp_program_version = "hurdids 1.0 (GNU " HURD_RELEASE ")";
+
 static struct argp_option options[] =
 {
   {"effective", 'e', 0, 0, "Show effective ids"},

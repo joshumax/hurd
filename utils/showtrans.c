@@ -29,6 +29,8 @@
 #include <error.h>
 #include <argz.h>
 
+char *argp_program_version = "showtrans 1.0 (GNU " HURD_RELEASE ")";
+
 static struct argp_option options[] =
 {
   {"prefix",    'p', 0, 0, "Always display `FILENAME: ' before translators"},

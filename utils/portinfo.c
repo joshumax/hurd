@@ -34,6 +34,8 @@
 #include <portinfo.h>
 #include <portxlate.h>
 
+char *argp_program_version = "portinfo 1.0 (GNU " HURD_RELEASE ")";
+
 static const struct argp_option options[] = {
   {0,0,0,0,0, 1},
   {"verbose",	'v', 0, 0, "Give more detailed information"},

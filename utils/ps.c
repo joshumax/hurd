@@ -31,6 +31,8 @@
 #include <ps.h>
 #include <error.h>
 #include "psout.h"
+
+char *argp_program_version = "ps 1.0 (GNU " HURD_RELEASE ")";
 
 /* Long options without corresponding short ones.  -1 is EOF.  */
 #define OPT_LOGIN	-2

@@ -31,6 +31,8 @@
 
 #include <hurd/fsys.h>
 
+char *argp_program_version = "fsysopts 1.0 (GNU " HURD_RELEASE ")";
+
 static struct argp_option options[] =
 {
   {"dereference", 'L', 0, 0, "If FILESYS is a symbolic link, follow it"},
