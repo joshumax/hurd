@@ -315,7 +315,10 @@ pty_io_read (struct trivfs_protid *cred,
       char *cp = *data;
 
       if (packet_mode || user_ioctl_mode)
-	*cp++ = TIOCPKT_DATA;
+	{
+	  *cp++ = TIOCPKT_DATA;
+	  --size;
+	}
       while (size--)
 	*cp++ = dequeue (outputq);
     }
