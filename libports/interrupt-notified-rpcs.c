@@ -32,22 +32,25 @@ void
 ports_interrupt_notified_rpcs (void *object,
 			       mach_port_t port, mach_msg_id_t what)
 {
-  struct ports_notify *np;
+  if (_ports_notifications)
+    {
+      struct ports_notify *np;
 
-  mutex_lock (&_ports_lock);
-  for (np = _ports_notifications; np; np = np->next)
-    if (np->port == port && np->what == what)
-      {
-	struct rpc_notify *req;
-	for (req = np->reqs; req; req = req->next_req)
-	  if (req->pending)
-	    {
-	      req->pending--;
-	      hurd_thread_cancel (req->rpc->thread);
-	    }
-	break;
-      }
-  mutex_unlock (&_ports_lock);
+      mutex_lock (&_ports_lock);
+      for (np = _ports_notifications; np; np = np->next)
+	if (np->port == port && np->what == what)
+	  {
+	    struct rpc_notify *req;
+	    for (req = np->reqs; req; req = req->next_req)
+	      if (req->pending)
+		{
+		  req->pending--;
+		  hurd_thread_cancel (req->rpc->thread);
+		}
+	    break;
+	  }
+      mutex_unlock (&_ports_lock);
+    }
 }
 
 static void
