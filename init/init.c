@@ -235,7 +235,6 @@ crash_system (void)
 void
 run (char *server, mach_port_t *ports, task_t *task)
 {
-  error_t err;
   char buf[BUFSIZ];
   char *prog = server;
 
@@ -255,22 +254,26 @@ run (char *server, mach_port_t *ports, task_t *task)
 	perror (prog);
       else
 	{
+	  char *progname;
 	  task_create (mach_task_self (), 0, task);
 	  printf ("Pausing for %s\n", prog);
 	  getchar ();
-	  err = file_exec (file, *task, 0,
-			   NULL, 0, /* No args.  */
-			   "", 1, /* No env.  */
-			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			   NULL, 0, /* No info in init ints.  */
-			   NULL, 0, NULL, 0);
-	  if (!err)
+	  progname = strrchr (prog, '/');
+	  if (progname)
+	    ++progname;
+	  else
+	    progname = prog;
+	  errno = file_exec (file, *task, 0,
+			     progname, strlen (progname) + 1, /* Args.  */
+			     "", 1, /* No env.  */
+			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			     NULL, 0, /* No info in init ints.  */
+			     NULL, 0, NULL, 0);
+	  if (!errno)
 	    break;
 
-#ifdef notyet
-	  hurd_perror (prog, err);
-#endif
+	  perror (prog);
 	}
 
       printf ("File name for server %s (or nothing to reboot): ", server);
@@ -292,7 +295,8 @@ run_for_real (char *filename)
   error_t err;
   char buf[512];
   task_t task;
-  
+  char *progname;
+
   do
     {
       printf ("File name [%s]: ", filename);
@@ -309,8 +313,13 @@ run_for_real (char *filename)
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
   printf ("Pausing for %s\n", filename);
   getchar ();
+  progname = strrchr (filename, '/');
+  if (progname)
+    ++progname;
+  else
+    progname = filename;
   err = file_exec (file, task, 0,
-		   NULL, 0, /* No args.  */
+		   progname, strlen (progname) + 1, /* Args.  */
 		   NULL, 0, /* No env.  */
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
@@ -428,17 +437,13 @@ launch_system (void)
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
-  /* Tell the proc server our msgport.  */
-  proc_setmsgport (procserver, startup, &old);
-  if (old)
-    mach_port_deallocate (mach_task_self (), old);
   proc_register_version (procserver, host_priv, "init", HURD_RELEASE,
 			 init_version);
 
   /* Give the bootstrap FS its proc and auth ports.  */
   proc_task2proc (procserver, fstask, &fsproc);
-  if (errno =  fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
-			  authserver))
+  if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
+			 authserver))
     perror ("fsys_init");
 
   /* Declare that the filesystem and auth are our children. */
@@ -448,6 +453,13 @@ launch_system (void)
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
   fflush (stdout);
+
+  /* Tell the proc server our msgport.  Be sure to do this last.  Once we
+     have done this RPC, proc assumes it can send us requests, so we cannot
+     block on proc again before accepting more RPC requests!  */
+  proc_setmsgport (procserver, startup, &old);
+  if (old)
+    mach_port_deallocate (mach_task_self (), old);
 }
 
 
