@@ -51,9 +51,11 @@ main (int argc,
 {
   mach_port_t bootstrap;
   error_t err;
+  volatile int hold = 1;
+
+  while (hold);
 
   /* Talk to parent and link us in. */
-
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     {
