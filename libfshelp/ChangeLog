@@ -1,3 +1,9 @@
+Sun Oct 13 21:46:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lock-acquire.c (fshelp_acquire_lock): Return success, not EBADF,
+ 	when unlocking a file which we don't have locked; this is netbsd's
+ 	behavior.
+
 Thu Oct 10 17:12:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* lock-acquire.c (fshelp_acquire_lock): Use hurd_condition_wait so
