@@ -89,7 +89,7 @@ stop_pgrp (process_t userproc, mach_port_t cttyid)
   int i;
 
   err = proc_getpids (userproc, &pid, &pgrp, &orphaned);
-  if (err)
+  if (err || orphaned)
     return;
 
   /* Use USERPROC so that if it's just died we get an error and don't do
@@ -97,7 +97,7 @@ stop_pgrp (process_t userproc, mach_port_t cttyid)
   err = proc_getpgrppids (userproc, pgrp, &pids, &numpids);
   if (err)
     return;
-
+  
   for (i = 0; i < numpids; i++)
     if (pids[i] != pid)
       {
