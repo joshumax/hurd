@@ -230,6 +230,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  free (tty_arg);
 	  tty_arg = strdup (v->arg);
 	  error_t err = (*bottom->init) ();
+	  if (err == 0 && (termflags & TTY_OPEN))
+	    err = (*bottom->assert_dtr) ();
 	  mutex_unlock (&global_lock);
 	  return err;
 	}
