@@ -1,3 +1,9 @@
+1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devport.c: File removed.
+	* Makefile (targets): Remove devport.
+	(SRCS): Remove devport.c.
+
 1997-07-15  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* magic.c (main): Actually parse the arg.

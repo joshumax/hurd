@@ -1,3 +1,12 @@
+1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* maptime.c (maptime_map): For the device-file case, don't use
+	wierd file_get_storage_info method for getting device port, just
+	use io_map to get a memory object directly from the file.
+
+	* argz-replace.c: New file (until the libc version is more widely available).
+	* Makefile (SRCS): Add argz-replace.c (temporarily).
+
 1997-06-21 17:35  Ulrich Drepper  <drepper@cygnus.com>
 
 	* argp.h: Remove extra #endif.  Pretty print.
