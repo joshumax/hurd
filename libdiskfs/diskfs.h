@@ -18,7 +18,7 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#include <options.h>
+#include <argp.h>
 #include <assert.h>
 #include <unistd.h>
 #include <hurd/ports.h>
@@ -121,6 +121,11 @@ extern mach_port_t diskfs_default_pager; /* send right */
 extern mach_port_t diskfs_exec_ctl;	/* send right */
 extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
+
+/* The command line diskfs was started, set by the default argument parser.
+   If you don't use it, set this yourself.  This is only used for bootstrap
+   file systems, to give the procserver.  */
+extern char **diskfs_argv;
 
 /* When this is a bootstrap filesystem, the command line options passed from
    the kernel.  If not a bootstrap filesystem, it is 0, so it can be used to
@@ -441,16 +446,16 @@ struct pager *diskfs_get_filemap_pager_struct (struct node *np);
    environment (complete with auth and proc ports). */
 void diskfs_init_completed ();
 
-/* The user may define this function, in which case it is called when the
-   the filesystem receives a set-options request.  ARGC and ARGV are the
-   arguments given, and STANDARD_OPTIONS is a pointer to a struct options
-   containing the info necessary to parse `standard' diskfs options.  The
-   user may chain this onto the end of his own options structure and call
-   options_parse, or ignore it completely (or indeed, just call options_parse
-   on it -- which is the behavior of the default implementation of this
-   function.  EINVAL is returned if an unknown option is encountered.  */
+/* The user may define this function, in which case it is called when the the
+   filesystem receives a set-options request.  ARGC and ARGV are the
+   arguments given, and STANDARD_ARGP is a pointer to a struct argp
+   containing the info necessary to parse `standard' diskfs runtime options.
+   The user may chain this onto the end of his own argp structure and call
+   argp_parse, or ignore it completely (or indeed, just call argp_parse on it
+   -- which is the behavior of the default implementation of this function.
+   EINVAL is returned if an unknown option is encountered.  */
 error_t diskfs_parse_runtime_options (int argc, char **argv,
-				      struct options *standard_options);
+				      struct argp *standard_argp);
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to set a symlink.  If it returns EINVAL or isn't set,
@@ -511,9 +516,8 @@ void diskfs_spawn_first_thread (void);
 
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  If you call this, then the library will call
-   diskfs_init_completed once it has a valid proc and auth port.
-   ARGV (the address) is supplied to the proc server.  */
-void diskfs_start_bootstrap (char **argv);
+   diskfs_init_completed once it has a valid proc and auth port. */
+void diskfs_start_bootstrap ();
 
 /* Last step of init is to call this, which never returns.  */
 void diskfs_main_request_loop (void);
@@ -917,11 +921,11 @@ error_t diskfs_set_sync_interval (int interval);
    returned if some option is unrecognized.  */
 error_t diskfs_set_options (int argc, char **argv);
 
-/* A pointer to an options structure for the standard diskfs command line
-   options.  The user may call options_parse on this to parse the command
-   line, chain it onto the end of his own options structure, or ignore it
+/* A pointer to an argp structure for the standard diskfs command line
+   arguments.  The user may call argp_parse on this to parse the command
+   line, chain it onto the end of his own argp structure, or ignore it
    completely.  */
-extern struct options *diskfs_standard_startup_options;
+extern struct argp *diskfs_startup_argp;
 
 /* Demultiplex incoming messages on ports created by libdiskfs.  */
 int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
@@ -930,7 +934,66 @@ int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    fsys, interrupt, and notify interfaces.  All the server routines
    have the prefix `diskfs_S_'; `in' arguments of type file_t or io_t
    appear as `struct protid *' to the stub.  */
+
+/* The following are optional convenience routines and global variable, which
+   can be used by any user program that uses a mach device to hold the
+   underlying filesystem.  */
 
+/* A pointer to an argp structure for the standard diskfs command line
+   arguments, that also parses a device argument.  The user may call
+   argp_parse on this to parse the command line, chain it onto the end of his
+   own argp structure, or ignore it completely.  */
+extern struct argp *diskfs_device_startup_argp;
+
+/* The following two are set by the preceding argument parser:  */
+/* The device specifier given on the command line.  */
+extern char *diskfs_device_arg;
+/* True if --machdev was specified, meaning that DISKFS_DEVICE_ARG names a
+   mach device and not a filesystem device node.  */
+extern int diskfs_use_mach_device;
+
+/* Uses the values of DISKFS_DEVICE_ARG and DISKFS_USE_MACH_DEVICE, and
+   attempts to open the device and set the values of DISKFS_DEVICE,
+   DISKFS_DEVICE_NAME, DISKFS_DEVICE_START, DISKFS_DEVICE_SIZE, and
+   DISKFS_DEVICE_BLOCK_SIZE.  */
+extern error_t diskfs_device_open ();
+
+/* A mach device port for the device we're using.  */
+extern mach_port_t diskfs_device;
+
+/* The mach device name of DISKFS_DEVICE.  May be 0 if unknown.  */
+extern char *diskfs_device_name;
+
+/* The first valid block of DISKFS_DEVICE, in units of
+   DISKFS_DEVICE_BLOCK_SIZE.  */
+extern off_t diskfs_device_start;
+
+/* The usable size of DISKFS_DEVICE, in units of DISKFS_DEVICE_BLOCK_SIZE.  */
+extern off_t diskfs_device_size;
+
+/* The unit of addressing for DISKFS_DEVICE.  */ 
+extern unsigned diskfs_device_block_size;
+
+/* Some handy calculations based on DISKFS_DEVICE_BLOCK_SIZE.  */
+/* Log base 2 of DEVICE_BLOCK_SIZE, or 0 if it's not a power of two.  */
+extern unsigned diskfs_log2_device_block_size;
+/* Log base 2 of the number of device blocks in a vm page.  This number is
+   only valid if DISKFS_LOG2_DEVICE_BLOCK_SIZE is not 0.  */
+extern unsigned diskfs_log2_device_blocks_per_page;
+
+/* Write disk block ADDR with DATA of LEN bytes to DISKFS_DEVICE, waiting for
+   completion.  ADDR is offset by DISKFS_DEVICE_START.  If an error occurs,
+   EIO is returned.  */
+error_t diskfs_device_write_sync (off_t addr, vm_address_t data, size_t len);
+
+/* Read disk block ADDR from DISKFS_DEVICE; put the address of the data in
+   DATA; read LEN bytes.  Always *DATA should be a full page no matter what.
+   ADDR is offset by DISKFS_DEVICE_START.  If an error occurs, EIO is
+   returned.  */
+error_t diskfs_device_read_sync (off_t addr, vm_address_t *data, size_t len);
+
+/* Make errors go somewhere reasonable.  */
+void diskfs_console_stdio ();
 
 /* Exception handling */
 
