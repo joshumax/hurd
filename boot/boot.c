@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -73,6 +73,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd.h>
 
 static struct termios orig_tty_state;
+static int isig;
 
 static void
 init_termstate ()
@@ -84,6 +85,8 @@ init_termstate ()
 
   orig_tty_state = tty_state;
   cfmakeraw (&tty_state);
+  if (isig)
+    tty_state.c_lflag |= ISIG;
 
   if (tcsetattr (0, 0, &tty_state) < 0)
     error (11, errno, "tcsetattr");
@@ -354,6 +357,11 @@ boot_script_exec_cmd (mach_port_t task, char *path, int argc,
   struct i386_thread_state regs;
 
   write (2, path, strlen (path));
+  for (i = 1; i < argc; ++i)
+    {
+      write (2, " ", 1);
+      write (2, argv[i], strlen (argv[i]));
+    }
   write (2, "\r\n", 2);
 
   startpc = load_image (task, path);
@@ -400,6 +408,8 @@ static struct argp_option options[] =
     "Boot in single user mode" },
   { "pause" ,      'd', 0, 0,
     "Pause for user confirmation at various times during booting" },
+  { "isig",      'I', 0, 0,
+    "Do not disable terminal signals, so you can suspend and interrupt boot."},
   { 0 }
 };
 static char args_doc[] = "BOOT-SCRIPT";
@@ -413,6 +423,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
       size_t len;
 
     case 'D':  useropen_dir = arg; break;
+
+    case 'I':  isig = 1; break;
 
     case 's': case 'd':
       len = strlen (bootstrap_args);
