@@ -3,7 +3,11 @@ Thu Nov  5 15:26:50 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 	* hashexec.c (check_hashbang): Keep INTERP_LEN with a the correct
 	value (bytes of memory holding INTERP) for later use.
 	(check_hashbang: setup_args): Set argv[0] from the interpreter
-	name, not copied from the existing command line.	
+	name, not copied from the existing command line.
+
+1998-10-26  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hashexec.c: Use mach_* instead of __mach_*.
 
 1998-07-15  Roland McGrath  <roland@baalperazim.frob.com>
 
