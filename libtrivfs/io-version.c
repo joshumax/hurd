@@ -18,13 +18,13 @@
 #include "priv.h"
 
 kern_return_t 
-trivfs_S_trivfs_io_server_version (mach_port_t obj,
-				   mach_port_t reply,
-				   mach_msg_type_name_t replytype,
-				   char *name,
-				   int *maj,
-				   int *min,
-				   int *edit)
+trivfs_S_io_server_version (mach_port_t obj,
+			    mach_port_t reply,
+			    mach_msg_type_name_t replytype,
+			    char *name,
+			    int *maj,
+			    int *min,
+			    int *edit)
 {
   return EOPNOTSUPP;
 }
