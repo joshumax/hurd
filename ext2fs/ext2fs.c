@@ -35,6 +35,7 @@
 /* ---------------------------------------------------------------- */
 
 int diskfs_link_max = EXT2_LINK_MAX;
+int diskfs_name_max = EXT2_NAME_LEN;
 int diskfs_maxsymlinks = 8;
 int diskfs_shortcut_symlink = 1;
 int diskfs_shortcut_chrdev = 1;
