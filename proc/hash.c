@@ -1,5 +1,5 @@
 /* Hash table functions
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -27,7 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/resource.h>
 
 #include "proc.h"
-#include "ihash.h"
+#include <hurd/ihash.h>
 
 static struct ihash pghash, pidhash, taskhash, porthash, sidhash;
 static struct ihash exchash;
