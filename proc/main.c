@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -37,13 +37,11 @@ message_demuxer (mach_msg_header_t *inp,
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int proc_excrepl_server (mach_msg_header_t *, mach_msg_header_t *);
 
   return (process_server (inp, outp)
 	  || notify_server (inp, outp)
 	  || interrupt_server (inp, outp)
-	  || proc_exc_server (inp, outp)
-	  || proc_excrepl_server (inp, outp));
+	  || proc_exc_server (inp, outp));
 }
 
 int
@@ -81,7 +79,7 @@ main (int argc, char **argv, char **envp)
 
   add_proc_to_hash (self_proc);
   add_proc_to_hash (startup_proc);
-  
+
   /* Set our own argv and envp locations.  */
   self_proc->p_argv = (int) argv;
   self_proc->p_envp = (int) envp;
@@ -104,13 +102,13 @@ main (int argc, char **argv, char **envp)
     extern void _start ();
     extern char _edata, _etext, __data_start;
     vm_address_t text_start = (vm_address_t) &_start;
-    err = vm_wire (master_host_port, mach_task_self (), 
+    err = vm_wire (master_host_port, mach_task_self (),
 		   (vm_address_t) text_start,
 		   (vm_size_t) (&_etext - text_start),
 		   VM_PROT_READ|VM_PROT_EXECUTE);
-    err = vm_wire (master_host_port, mach_task_self (), 
+    err = vm_wire (master_host_port, mach_task_self (),
 		   (vm_address_t) &__data_start,
-		   (vm_size_t) (&_edata - &__data_start), 
+		   (vm_size_t) (&_edata - &__data_start),
 		   VM_PROT_READ|VM_PROT_WRITE);
   }
 
