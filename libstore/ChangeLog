@@ -1,3 +1,66 @@
+1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rdwr.c (store_read): Limit reads to the amount available.
+
+	* store.h (store_typed_open_class): Renamed from store_typed_class.
+	* std.c (store_std_classes): Use store_typed_open_class instead of
+	store_typed_class.
+
+	* Makefile (SRCS): Remove storeread.c & storecat.c.
+	(storeread, storecat): Rules removed.
+	* storeread.c, storecat.c: Moved to ../utils.
+	
+1997-06-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (struct store): BLOCKS & SIZE are off_t, not size_t.
+	(store_zero_create): SIZE is off_t, not size_t.
+	* zero.c (store_zero_create, zero_open): Likewise.
+
+	* storecat.c (main): Update use of argp.
+	* storeread.c (main): DATA is void *.
+
+	* Makefile (UTILS_OBJS): Variable removed.
+	(UNZIP_OBJS): New variable.
+	(OBJS): Don't use $(UTILS_OBJS).  Do use $(UNZIP_OBJS).
+	(VPATH, CPPFLAGS): Search for stuff in ../exec for unzip junk.
+
+	* derive.c: Include <assert.h>
+	(_store_derive): Assert that block_size & blocks_per_page are
+	powers of two (which should be enforced elsewhere).
+	
+	* make.c (_store_create): Renamed from _make_store.
+	Return an error_t code, and add an additional argument STORE to
+	return the new store; all uses changed.
+	* store.h (_make_store): Likewise.
+
+	* Makefile (SRCS): Add typed.c, copy.c, and gunzip.c.
+
+	* typed.c: New file
+	* store.h (store_gunzip_class, store_typed_class): New declarations.
+	* std.c (store_std_classes): Add store_copy_class,
+	store_gunzip_class, and store_typed_class.
+
+	* kids.c (store_open_children, store_children_name): New functions.
+	* stripe.c (store_concat_open): New function.
+	(store_concat_create): Set the store name if possible.
+	* store.h (store_concat_open, store_children_name,
+	store_open_children): New declaration.
+	* rdwr.c (store_read): Deallocate memory returned when reading
+	part of a multiple-segment read.
+
+1997-06-17  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* copy.c, gunzip.c: New files.
+	* store.h (store_copy_class): New declaration.
+	(store_copy_create, store_copy_open, store_buffer_create,
+	store_gunzip_create, store_gunzip_open): New declarations.
+	
+	* decode.c (store_decode): Pass the original value of CLASSES to
+	any decode method, not our search tail.
+
+	* device.c (dopen): If *MOD_FLAGS already contains
+	STORE_HARD_READONLY, don't ever try to open for reading.
+
 Fri Feb 21 23:31:34 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* device.c (dopen): Add MOD_FLAGS param, and detect read-only devices.
