@@ -39,10 +39,12 @@ all:
 hurdinst := /home/gd3/hurdinst
 
 # This is the directory which serves as root for the Hurd.
-hostname := $(shell hostname)
 hurdroot-douglas.gnu.ai.mit.edu = /home/hm2/hurdroot
 hurdroot-ernst.gnu.ai.mit.edu = /home/hm1/hurdroot
+ifndef hurdroot
+hostname := $(shell hostname)
 hurdroot := $(hurdroot-$(hostname))
+endif
 
 # This is the device with the filesystem mounted as $(hurdroot)
 hurdrootdev := /dev/hd0f
