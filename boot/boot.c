@@ -203,17 +203,17 @@ int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
-  extern int S_exec_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int exec_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int S_io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int S_notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int S_term_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int S_tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return (S_exec_server (inp, outp)
+  return (exec_server (inp, outp)
 	  || S_io_server (inp, outp)
 	  || device_server (inp, outp)
-	  || S_notify_server (inp, outp)
+	  || notify_server (inp, outp)
 	  || S_term_server (inp, outp)
 	  || S_tioctl_server (inp, outp));
 }
