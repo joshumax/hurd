@@ -31,29 +31,32 @@
 /* ---------------------------------------------------------------- */
 
 static bool 
-ps_own_p(proc_stat_t ps)
+ps_own_p (proc_stat_t ps)
 {
-  static int own_uid = -1;
-  if (own_uid < 0)
-    own_uid = getuid();
-  return own_uid == proc_stat_proc_info(ps)->owner;
+  static int own_uid = -2;	/* -1 means no uid at all.  */
+  if (own_uid == -2)
+    own_uid = getuid ();
+  return own_uid >= 0 && own_uid == proc_stat_owner_uid (ps);
 }
 struct ps_filter ps_own_filter =
-{"own", PSTAT_PROC_INFO, ps_own_p};
+{"own", PSTAT_OWNER_UID, ps_own_p};
 
 static bool 
-ps_not_sess_leader_p(proc_stat_t ps)
+ps_not_leader_p (proc_stat_t ps)
 {
-  return !(proc_stat_state(ps) & PSTAT_STATE_P_SESSLDR);
+  return
+    !(proc_stat_state(ps) & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
 }
-struct ps_filter ps_not_sess_leader_filter =
-{"not-sess-leader", PSTAT_STATE, ps_not_sess_leader_p};
+struct ps_filter ps_not_leader_filter =
+{"not-sess-leader", PSTAT_STATE, ps_not_leader_p};
 
 static bool 
 ps_unorphaned_p(proc_stat_t ps)
 {
   int state = proc_stat_state(ps);
-  return !(state & PSTAT_STATE_P_ORPHAN) || (state & PSTAT_STATE_P_SESSLDR);
+  return
+    !(state & PSTAT_STATE_P_ORPHAN)
+      || (state & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
 }
 struct ps_filter ps_unorphaned_filter =
 {"unorphaned", PSTAT_STATE, ps_unorphaned_p};
