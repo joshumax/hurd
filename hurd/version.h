@@ -1,5 +1,5 @@
 /* Hurd version calculation
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -50,7 +50,7 @@ struct hurd_version
 struct hurd_version hurd_versions[] = 
 {
   {
-    /* Hurd version 0.0 pre-alpha; not frozen yet */
+    /* Hurd version 0.0 pre-alpha; frozen May 3, 1996. */
     "0.0 pre-alpha",
     "0.0 pre-alpha",
     5,
@@ -60,6 +60,19 @@ struct hurd_version hurd_versions[] =
       {"ufs", "0.0 pre-alpha"},
       {"init", "0.0 pre-alpha"},
       {"exec", "0.0 pre-alpha"},
+    }
+  },
+  {
+    /* Hurd version 0.0.  Not frozen yet. */
+    "0.0",
+    "0.0",
+    5,
+    {
+      {"auth", "0.0"},
+      {"proc", "0.0"},
+      {"ufs", "0.0"},
+      {"init", "0.0"},
+      {"exec", "0.0"},
     }
   }
 };
