@@ -167,6 +167,9 @@ char *fmts[] =
   "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS=rsize ~%CPU ~User=utime ~System=stime ~Args"
 };
 
+/* Required by `error' functions. */
+char *program_name;
+
 void 
 main(int argc, char *argv[])
 {
@@ -183,7 +186,7 @@ main(int argc, char *argv[])
   bool sort_reverse = FALSE, print_heading = TRUE, squash_bogus_fields = TRUE;
   bool show_threads = FALSE;
 
-  program_invocation_short_name = argv[0];
+  program_name = program_invocation_short_name;
 
   err = ps_context_create(cur_proc, &context);
   if (err)
