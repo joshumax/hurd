@@ -28,6 +28,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
   struct node *np;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t error;
+  mach_port_t control = MACH_PORT_NULL;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -36,8 +37,6 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (diskfs_readonly)
     return EROFS;
 
- retry:
-  
   mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
@@ -63,41 +62,15 @@ diskfs_S_dir_unlink (struct protid *dircred,
       return EISDIR;
     }
 
-  mutex_lock (&np->translator.lock);
-  if (np->translator.control != MACH_PORT_NULL)
+  /* If this is the last link to the node, then give the translator a 
+     push when we do the unlink.  Here we fetch the control port.  */
+  if (np->dn_stat.st_nlink == 1)
     {
-      mach_port_t control;
-      
-      /* There is a running active translator here.  Give it a push.
-	 If it squeaks, then return an error.  If it consents, then
-	 clear the active translator spec (unless it's been changed
-	 in the interim) and repeat the lookup above.  */
-
-      control = np->translator.control;
-      mach_port_mod_refs (mach_task_self (), control, MACH_PORT_RIGHT_SEND, 1);
-
-      mutex_unlock (&np->translator.lock);
-      diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
-      mutex_unlock (&np->lock);
-      
-      error = fsys_goaway (control, FSYS_GOAWAY_UNLINK);
+      error = fshelp_fetch_control (&np->transbox, &control);
       if (error)
-	return error;
-      
-      mutex_lock (&np->lock);
-      mutex_lock (&np->translator.lock);
-      if (np->translator.control == control)
-	fshelp_translator_drop (&np->translator);
-      mutex_unlock (&np->translator.lock);
-      diskfs_nput (np);
-      
-      mach_port_deallocate (mach_task_self (), control);
-
-      goto retry;
+	control = MACH_PORT_NULL;
     }
-  mutex_unlock (&np->translator.lock);
-
+  
   error = diskfs_dirremove (dnp, ds);
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
@@ -112,6 +85,16 @@ diskfs_S_dir_unlink (struct protid *dircred,
   np->dn_set_ctime = 1;
   if (diskfs_synchronous)
     diskfs_node_update (np, 1);
+
+  if (np->dn_stat.st_nlink == 0)
+    {
+      error = fshelp_fetch_control (&np->transbox, &control);
+      if (!error)
+	{
+	  fsys_goaway (control, FSYS_GOAWAY_UNLINK);
+	  mach_port_deallocate (mach_task_self (), control);
+	}
+    }
 
   /* This check is necessary because we might get here on an error while 
      checking the mode on something which happens to be `.'. */
