@@ -54,11 +54,9 @@ void
 alert_parent (struct proc *p)
 {
   struct zombie *z;
-  
-  /* Don't allow init to exit */
-  assert (p->p_parent);
+  error_t err;
 
-  nowait_sig_post (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
+  send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
   if (!p->p_exiting)
     p->p_status = W_EXITCODE (0, SIGKILL);
@@ -66,7 +64,10 @@ alert_parent (struct proc *p)
   if (p->p_parent->p_waiting)
     {
       struct wait_c *w = &p->p_parent->p_continuation.wait_c;
-      if (w->pid == p->p_pid || w->pid == -p->p_pgrp->pg_pgid || w->pid == 0)
+      if ((w->pid == p->p_pid)
+	  || (w->pid == -p->p_pgrp->pg_pgid)
+	  || (w->pid == WAIT_ANY)
+	  || ((w->pid == WAIT_MYPGRP) && (p->p_pgrp == p->p_parent->p_pgrp)))
 	{
 	  struct rusage ru;
       
@@ -108,7 +109,11 @@ reparent_zombies (struct proc *p)
       if (initwoken || !startup_proc->p_waiting)
 	continue;
 
-      if (w->pid == z->pid || w->pid == -z->pgrp || w->pid == 0)
+      if ((w->pid == z->pid)
+	  || (w->pid == -z->pgrp)
+	  || (w->pid == WAIT_ANY)
+	  || ((w->pid == WAIT_MYPGRP)
+	      && (z->pgrp == startup_proc->p_pgrp->pg_pgid)))
 	{
 	  proc_wait_reply (w->reply_port, w->reply_port_type, 0,
 			   z->exit_status, z->ru, z->pid);
@@ -150,7 +155,10 @@ S_proc_wait (struct proc *p,
   for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
     {
       if (z->parent == p
-	  && (pid == z->pid || pid == -z->pgrp || pid == 0))
+	  && ((pid == z->pid)
+	      || (pid == -z->pgrp)
+	      || (pid == WAIT_ANY)
+	      || ((pid == WAIT_MYPGRP) && (p->p_pgrp->pg_pgid == z->pgrp))))
 	{
 	  *status = z->exit_status;
 	  bzero (ru, sizeof (struct rusage));
@@ -187,19 +195,22 @@ S_proc_wait (struct proc *p,
       int had_a_match = !pid;
 
       for (child = p->p_ochild; child; child = child->p_sib)
-	{
-	  if (child->p_pgrp->pg_pgid == -pid)
+	if ((pid == WAIT_ANY)
+	    || (child->p_pgrp->pg_pgid == -pid)
+	    || ((pid == WAIT_MYPGRP) && (child->p_pgrp == p->p_pgrp)))
+	  {
 	    had_a_match = 1;
-	  if (child->p_stopped && !child->p_waited
-	      && ((options & WUNTRACED) || child->p_traced))
-	    {
-	      child->p_waited = 1;
-	      *status = child->p_status;
-	      bzero (ru, sizeof (struct rusage));
-	      *pid_status = child->p_pid;
-	      return 0;
-	    }
-	}
+	    if (child->p_stopped && !child->p_waited
+		&& ((options & WUNTRACED) || child->p_traced))
+	      {
+		child->p_waited = 1;
+		*status = child->p_status;
+		bzero (ru, sizeof (struct rusage));
+		*pid_status = child->p_pid;
+		return 0;
+	      }
+	  }
+
       if (!had_a_match)
 	return ESRCH;
     }
@@ -248,7 +259,7 @@ S_proc_mark_stop (struct proc *p,
     }
 
   if (!p->p_parent->p_nostopcld)
-    nowait_sig_post (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
+    send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
   return 0;
 }
