@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -110,32 +110,12 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 
 /* Zero the specified region but don't crash the server if it faults.  */
 
+#include <hurd/sigpreempt.h>
+
 static error_t
 safe_bzero (void *ptr, size_t size)
 {
-  jmp_buf env;
-  void fault (int signo) { longjmp (env, 1); }
-  thread_t thisthread = hurd_thread_self ();
-  volatile error_t error;
-  sighandler_t preempt (thread_t thread, int signo,
-			long int sigcode, int sigerror)
-    {
-      if (thread == thisthread)
-	{
-	  error = sigerror ?: EIO;
-	  return &fault;
-	}
-      return SIG_DFL;
-    }
-  struct hurd_signal_preempt preempter;
-  hurd_preempt_signals (&preempter, SIGSEGV,
-			(long int) ptr, (long int) (ptr + size),
-			&preempt);
-  error = 0;
-  if (! setjmp (env))
-    bzero (ptr, size);
-  hurd_unpreempt_signals (&preempter, SIGSEGV);
-  return error;
+  return hurd_safe_memset (ptr, 0, size);
 }
 
 
