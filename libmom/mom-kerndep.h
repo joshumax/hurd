@@ -40,4 +40,5 @@ error_t mom_mach_port_set (struct mom_port_ref *obj, mach_port_t port);
    long as the user has a reference to OBJ.  */
 mach_port_t mom_fetch_mach_port (struct mom_port_ref *obj);
 
-
+/* Turn a Mach error number into a Mom error number. */
+mom_error_t mom_error_translate_mach (error_t macherr);
