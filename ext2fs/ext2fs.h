@@ -117,7 +117,7 @@ struct user_pager_info
 
 struct user_pager_info *disk_pager;
 mach_port_t disk_pagerport;
-off_t disk_pagersize;
+off_t disk_pager_size;
 
 void *disk_image;
 char *devname;
