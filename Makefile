@@ -27,11 +27,11 @@ include $(srcdir)/Makeconf
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libpager \
 	      libfshelp libdiskfs libtrivfs libthreads libps \
 	      libnetfs libpipe libstore libmom
-prog-subdirs = auth boot exec fstests init.trim \
+prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet
-other-subdirs = hurd doc init
+other-subdirs = hurd doc config
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist =
 working-prog-subdirs := $(filter-out \
