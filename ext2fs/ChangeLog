@@ -1,3 +1,11 @@
+2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
+
+	(diskfs_synchronous): Removing superfuous zero initializer.
+	(store): Likewise.
+	(store_parsed): Likewise.
+	(diskfs_disk_name): Likewise.
+	(ext2_debug_flag): Likewise.
+
 2002-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* pager.c (diskfs_grow): Fix inverted logic.

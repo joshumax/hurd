@@ -47,17 +47,17 @@ char *diskfs_server_name = "ext2fs";
 char *diskfs_server_version = HURD_VERSION;
 char *diskfs_extra_version = "GNU Hurd; ext2 " EXT2FS_VERSION;
 
-int diskfs_synchronous = 0;
+int diskfs_synchronous;
 
 struct node *diskfs_root_node;
 
-struct store *store = 0;
-struct store_parsed *store_parsed = 0;
+struct store *store;
+struct store_parsed *store_parsed;
 
-char *diskfs_disk_name = 0;
+char *diskfs_disk_name;
 
 #ifdef EXT2FS_DEBUG
-int ext2_debug_flag = 0;
+int ext2_debug_flag;
 #endif
 
 /* Ext2fs-specific options.  */
