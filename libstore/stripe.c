@@ -45,8 +45,7 @@ stripe_read (struct store *store,
 	     off_t addr, size_t index, mach_msg_type_number_t amount,
 	     char **buf, mach_msg_type_number_t *len)
 {
-  struct store **stripes = store->hook;
-  struct store *stripe = stripes[index];
+  struct store *stripe = store->children[index];
   return store_read (stripe, addr_adj (addr, store, stripe), amount, buf, len);
 }
 
@@ -55,28 +54,13 @@ stripe_write (struct store *store,
 	      off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
 	      mach_msg_type_number_t *amount)
 {
-  struct store **stripes = store->hook;
-  struct store *stripe = stripes[index];
+  struct store *stripe = store->children[index];
   return
     store_write (stripe, addr_adj (addr, store, stripe), buf, len, amount);
 }
 
-static error_t
-stripe_clone (const struct store *from, struct store *to)
-{
-  size_t num_stripes = from->runs_len / 2;
-
-  to->hook = malloc (sizeof (struct store *) * num_stripes);
-  if (to->hook == 0)
-    return ENOMEM;
-
-  bcopy (from->hook, to->hook, num_stripes * sizeof (struct store *));
-
-  return 0;
-}
-
 static struct store_meths
-stripe_meths = {stripe_read, stripe_write, 0, 0, 0, stripe_clone};
+stripe_meths = {stripe_read, stripe_write, 0, 0, 0, 0};
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
@@ -84,24 +68,20 @@ stripe_meths = {stripe_read, stripe_write, 0, 0, 0, stripe_clone};
    consumed -- that is, will be freed when this store is (however, the
    *array* STRIPES is copied, and so should be freed by the caller).  */
 error_t
-store_ileave_create (struct store * const *stripes, size_t num_stripes,
+store_ileave_create (struct store *const *stripes, size_t num_stripes,
 		     off_t interleave, struct store **store)
 {
   size_t i;
-  error_t err = EINVAL;		/* default error */
+  error_t err;
   off_t block_size = 1, min_end = 0;
-  off_t runs[num_stripes * 2];
-  struct store *cstripes = malloc (sizeof (struct store *) * num_stripes);
-
-  if (cstripes == 0)
-    return ENOMEM;
+  struct store_run runs[num_stripes];
 
   /* Find a common block size.  */
   for (i = 0; i < num_stripes; i++)
     block_size = lcm (block_size, stripes[i]->block_size);
 
   if (interleave < block_size || (interleave % block_size) != 0)
-    goto barf;
+    return EINVAL;
 
   interleave /= block_size;
 
@@ -110,8 +90,8 @@ store_ileave_create (struct store * const *stripes, size_t num_stripes,
        /* The stripe's end adjusted to the common block size.  */
       off_t end = stripes[i]->end;
 
-      runs[i * 2] = 0;
-      runs[i * 2 + 1] = interleave;
+      runs[i].start = 0;
+      runs[i].length = interleave;
 
       if (stripes[i]->block_size != block_size)
 	end /= (block_size / stripes[i]->block_size);
@@ -124,21 +104,16 @@ store_ileave_create (struct store * const *stripes, size_t num_stripes,
     }
 
   *store = _make_store (0, &stripe_meths, MACH_PORT_NULL, block_size,
-			runs, num_stripes * 2, min_end);
+			runs, num_stripes, min_end);
   if (! *store)
-    {
-      err = ENOMEM;
-      goto barf;
-    }
+    return ENOMEM;
 
   (*store)->wrap_dst = interleave;
-  (*store)->hook = cstripes;
-  bcopy (stripes, cstripes, num_stripes * sizeof *stripes);
 
-  return 0;
+  err = store_set_children (*store, stripes, num_stripes);
+  if (err)
+    store_free (*store);
 
- barf:
-  free (cstripes);
   return err;
 }
 
@@ -151,13 +126,9 @@ store_concat_create (struct store * const *stores, size_t num_stores,
 		     struct store **store)
 {
   size_t i;
-  error_t err = EINVAL;		/* default error */
+  error_t err;
   off_t block_size = 1;
-  off_t runs[num_stores * 2];
-  struct store *cstripes = malloc (sizeof (struct store *) * num_stores);
-
-  if (cstripes == 0)
-    return ENOMEM;
+  struct store_run runs[num_stores];
 
   /* Find a common block size.  */
   for (i = 0; i < num_stores; i++)
@@ -165,24 +136,18 @@ store_concat_create (struct store * const *stores, size_t num_stores,
 
   for (i = 0; i < num_stores; i++)
     {
-      runs[i * 2] = 0;
-      runs[i * 2 + 1] = stores[i]->end;
+      runs[i].start = 0;
+      runs[i].length = stores[i]->end;
     }
 
   *store = _make_store (0, &stripe_meths, MACH_PORT_NULL, block_size,
 			runs, num_stores * 2, 0);
   if (! *store)
-    {
-      err = ENOMEM;
-      goto barf;
-    }
+    return ENOMEM;
 
-  (*store)->hook = cstripes;
-  bcopy (stores, cstripes, num_stores * sizeof *stores);
+  err = store_set_children (*store, stores, num_stores);
+  if (err)
+    store_free (*store);
 
-  return 0;
-
- barf:
-  free (cstripes);
   return err;
 }
