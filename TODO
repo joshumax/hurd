@@ -220,7 +220,6 @@ See `tasks', the exported task list.
 
 ** storeio:
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
-*** Get rid of global DEVICE variable and use the trivfs control hack
 *** Serverify, ala new-fifo.
 *** implement io_revoke !
 
