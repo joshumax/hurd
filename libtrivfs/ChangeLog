@@ -1,3 +1,7 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (trivfs_S_dir_lookup): Fix brainos in last change.
+
 Tue Jul 14 16:47:28 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* dir-lookup.c (trivfs_S_dir_lookup): In null-pathname case, this
@@ -59,7 +63,7 @@ Tue Nov 19 22:36:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Mon Nov 18 18:13:42 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* io-stat.c (trivfs_S_io_stat): Make the mode specify IFCHR by
-	default. 
+	default.
 
 Sat Nov 16 17:20:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -68,7 +72,7 @@ Sat Nov 16 17:20:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Thu Nov 14 13:13:10 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* io-restrict-auth.c (trivfs_S_io_restrict_auth): idvec_set ->
- 	idvec_set_ids.  Fix unrelated typos.  
+ 	idvec_set_ids.  Fix unrelated typos.
 
 	* protid-dup.c (trivfs_protid_dup): Use iouser_dup_iouser instead
 	of copying old arrays by hand.
@@ -96,7 +100,7 @@ Wed Nov  6 23:40:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* trivfs.h (struct trivfs_protid): Delete members `uids', `gids',
  	`nuids', and `ngids'.  Replace with `user'.
-	(trivfs_check_open_hook): Delete args `uids', `nuids', `gids', 
+	(trivfs_check_open_hook): Delete args `uids', `nuids', `gids',
 	`ngids'.  Replace with new arg `user'.  All callers changed.
 	(trivfs_open): Likewise.
 	* open.c (trivfs_open): Change to match new declaration.
@@ -233,7 +237,7 @@ Thu May  9 15:32:38 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* Makefile (OTHERSRCS): Delete handle-port.c.
 	* trivfs.h (trivfs_handle_port): Delete declaration.
 	* handle-port.c: Delete file.
-	
+
 Thu May  9 12:16:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-select.c (trivfs_S_io_select): Remove TAG arg.
@@ -810,6 +814,3 @@ Wed Jun 15 16:58:02 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 	CRED->gids.
 	* fsys-getroot.c (trivfs_S_fsys_getroot): Initialize uids
 	and gids.
-
-
-
