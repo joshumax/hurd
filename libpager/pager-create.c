@@ -32,7 +32,6 @@ pager_create (struct user_pager_info *upi)
   p->lock_requests = 0;
   p->memobjcntl = MACH_PORT_NULL;
   p->memobjname = MACH_PORT_NULL;
-  p->mscount = 0;
   p->seqno = -1;
   p->noterm = 0;
   p->termwaiting = 0;
