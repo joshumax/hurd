@@ -21,7 +21,7 @@ makemode := server
 
 SRCS = balloc.c bitmap.c devio.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c
-OBJS = $(SRCS:.c=.o) error.o exec_server_image.o
+OBJS = $(SRCS:.c=.o) error.o
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
@@ -34,14 +34,7 @@ vpath %.c ../lib
 
 include ../Makeconf
 
-exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
-	rsh $(mighost) -n cd `pwd` \; \
-	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
-
 $(OBJS): ext2fs.h ext2_fs.h ext2_fs_i.h
 $(OBJS): $(REMHDRS)
-
-$(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
-	$(MAKE) -C $(@D) $(@F)
 
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR

@@ -20,7 +20,7 @@ makemode := server
 
 SRCS = alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c
-OBJS = $(SRCS:.c=.o) exec_server_image.o
+OBJS = $(SRCS:.c=.o)
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
@@ -31,10 +31,6 @@ LDFLAGS = -Wl,--no-keep-memory
 target = ufs
 
 include ../Makeconf
-
-exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
-	rsh $(mighost) -n cd `pwd` \; \
-	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
 
 $(OBJS): ufs.h 
 $(OBJS): $(REMHDRS)
@@ -48,6 +44,3 @@ pager.o: fs.h dinode.h
 sizes.o: fs.h dinode.h
 subr.o: fs.h
 tables.o: fs.h
-
-$(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
-	$(MAKE) -C $(@D) $(@F)
