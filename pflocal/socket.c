@@ -45,7 +45,7 @@ S_socket_connect2 (struct sock_user *user1, struct sock_user *user2)
 
   return err;
 }
-
+
 /* Make sure we have a queue to listen on.  */
 static error_t
 ensure_connq (struct sock *sock)
@@ -53,31 +53,10 @@ ensure_connq (struct sock *sock)
   error_t err = 0;
 debug (sock, "lock");
   mutex_lock (&sock->lock);
-  if (!sock->connq)
-    err = connq_create (&sock->connq);
+  if (!sock->listen_queue)
+    err = connq_create (&sock->listen_queue);
 debug (sock, "unlock");
   mutex_unlock (&sock->lock);
-  return err;
-}
-
-error_t
-S_socket_connect (struct sock_user *user, struct addr *addr)
-{
-  error_t err;
-  struct sock *peer;
-
-  if (! user)
-    return EOPNOTSUPP;
-  if (! addr)
-    return EADDRNOTAVAIL;
-
-  err = addr_get_sock (addr, &peer);
-  if (!err)
-    {
-      err = sock_connect (user->sock, peer);
-      sock_deref (peer);
-    }
-
   return err;
 }
 
@@ -92,7 +71,70 @@ S_socket_listen (struct sock_user *user, int queue_limit)
     return EINVAL;
   err = ensure_connq (user->sock);
   if (!err)
-    err = connq_set_length (user->sock->connq, queue_limit);
+    err = connq_set_length (user->sock->listen_queue, queue_limit);
+  return err;
+}
+
+error_t
+S_socket_connect (struct sock_user *user, struct addr *addr)
+{
+  error_t err;
+  struct sock *peer;
+
+  if (! user)
+    return EOPNOTSUPP;
+  if (! addr)
+    return ECONNREFUSED;
+
+debug (user, "in");
+  err = addr_get_sock (addr, &peer);
+  if (!err)
+    {
+      struct sock *sock = user->sock;
+      struct connq *cq = peer->listen_queue;
+      if (cq)
+	/* Only connect with sockets that are actually listening.  */
+	{
+debug (sock, "(sock) lock");
+	  mutex_lock (&sock->lock);
+	  if (sock->connect_queue)
+	    /* SOCK is already doing a connect.  */
+	    err = EALREADY;
+	  else if (sock->flags & SOCK_CONNECTED)
+	    /* SOCK_CONNECTED is only set for connection-oriented sockets,
+	       which can only ever connect once.  [If we didn't do this test
+	       here, it would eventually fail when it the listening socket
+	       tried to accept our connection request.]  */
+	    err = EISCONN;
+	  else
+	    {
+	      /* Assert that we're trying to connect, so anyone else trying
+	         to do so will fail with EALREADY.  */
+debug (sock, "(sock) connect_queue: %p", cq);
+	      sock->connect_queue = cq;
+debug (sock, "(sock) unlock");
+	      mutex_unlock (&sock->lock); /* Unlock SOCK while waiting.  */
+
+debug (cq, "(cq) connect: %p", sock);
+	      /* Try to connect.  */
+	      err = connq_connect (cq, sock->flags & SOCK_NONBLOCK, sock);
+
+	      /* We can safely set CONNECT_QUEUE to NULL, as no one else can
+		 set it until we've done so.  */
+debug (sock, "(sock) lock");
+	      mutex_lock (&sock->lock);
+debug (sock, "(sock) connect_queue: NULL");
+	      sock->connect_queue = NULL;
+	    }
+debug (sock, "(sock) unlock");
+	  mutex_unlock (&sock->lock);
+	}
+      else
+	err = ECONNREFUSED;
+      sock_deref (peer);
+    }
+
+debug (user, "out");
   return err;
 }
 
@@ -118,7 +160,7 @@ S_socket_accept (struct sock_user *user,
       struct sock *peer_sock;
 
       err =
-	connq_listen (sock->connq, sock->flags & SOCK_NONBLOCK,
+	connq_listen (sock->listen_queue, sock->flags & SOCK_NONBLOCK,
 		      &req, &peer_sock);
       if (!err)
 	{
@@ -257,8 +299,15 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 			   control, control_len, ports, num_ports,
 			   amount);
 	  pipe_release (pipe);
+	  if (err)
+	    /* The send failed, so free any resources it would have consumed
+	       (mig gets rid of memory, but we have to do everything else). */
+	    {
+	      ports_port_deref (source_addr);
+	      while (num_ports-- > 0)
+		mach_port_deallocate (mach_task_self (), *ports++);
+	    }
 	}
-      ports_port_deref (source_addr);
     }
 
   sock_deref (dest_sock);
