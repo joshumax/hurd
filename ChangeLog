@@ -1,3 +1,7 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (prog-subdirs): Reordered with vague topical grouping.
+
 1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf ($(libdir) installation rules): Use automatic variables.

@@ -1,3 +1,8 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* inode.c (diskfs_set_statfs): Remove __ from struct statfs members.
+	Use bzero first instead of setting individual fields to zero.
+
 1998-12-21  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* inode.c (diskfs_set_statfs): Fill in statfs members with

@@ -1,5 +1,14 @@
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* inode.c (diskfs_set_statfs): Remove __ from struct members.
+
+1998-12-21  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* inode.c (diskfs_set_statfs): Fill in statfs members that are
+	used to implement statvfs.
+
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* main.c (main): Pass ARGP_IN_ORDER flag to argp_parse because
 	diskfs options need it.
 
