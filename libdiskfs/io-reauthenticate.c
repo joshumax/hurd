@@ -20,7 +20,7 @@
 
 /* Implement io_reathenticate as described in <hurd/io.defs>. */
 error_t
-S_io_reauthenticate (struct protid *cred, 
+diskfs_S_io_reauthenticate (struct protid *cred, 
 		     int rend_int)
 {
   struct protid *newcred;
