@@ -1,3 +1,33 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* firmlink.c (trivfs_S_io_read): Fix type of DATA argument.
+	* streamio.c (trivfs_S_io_read): Likewise.
+	(trivfs_S_io_write): Likewise.
+	* hello.c (trivfs_S_io_read): Likewise.
+	* hello-mt.c (trivfs_S_io_read): Likewise.
+	* null.c (trivfs_S_io_read): Likewise.
+	(trivfs_S_io_write): Likewise.
+	(trivfs_S_file_set_size): Add reply port args.
+
+	* hello.c (trivfs_S_io_read): off_t -> loff_t
+	* hello-mt.c (trivfs_S_io_read): Likewise.
+	* streamio.c (trivfs_S_io_read, trivfs_S_io_write): Likewise.
+	(trivfs_S_file_sync): Add missing arg.
+
+	* new-fifo.c (trivfs_S_io_map): Add reply port args.
+	(trivfs_S_io_select): Remove bogus last arg.
+
+	* fifo.c (trivfs_S_io_map): Add reply port args.
+	(trivfs_S_io_select): Remove bogus last arg.
+
+	* null.c (trivfs_S_io_map): Add reply port args.
+	(trivfs_S_io_read, trivfs_S_io_write): off_t -> loff_t
+	(trivfs_S_file_set_size): Likewise.
+	(trivfs_S_io_select): Remove bogus last arg.
+
+	* firmlink.c (trivfs_S_io_read): off_t -> loff_t
+	(trivfs_S_io_select): Remove bogus last arg.
+
 2002-06-09  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.c (new_node): Use ino_t for io_identity argument.

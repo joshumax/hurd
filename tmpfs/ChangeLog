@@ -1,5 +1,7 @@
 2002-06-13  Roland McGrath  <roland@frob.com>
 
+	* dir.c (diskfs_lookup_hard): Cast int to intptr_t before ino_t.
+
 	* dir.c (diskfs_lookup_hard): int -> ino_t
 
 2002-06-08  Roland McGrath  <roland@frob.com>

@@ -1,3 +1,9 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* io.c (trivfs_S_io_read, trivfs_S_io_write): off_t -> loff_t.
+	Fix DATA argument type.
+	(trivfs_S_file_sync): Add missing last arg.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* pager.c (pager_read_page, pager_write_page): int -> size_t
