@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
+#   Copyright (C) 1994,95,96,99,2001 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,28 +18,12 @@
 dir := init
 makemode := server
 
-# Set this to something other than `yes' to get the old Hurd init
-# that has BSD-style rc and ttys functionality rolled in.
-# The option for this old style may go away at some point in the future;
-# if you want BSD style, best to use runttys (in daemons) instead.
-split-init = yes
-
-SRCS = init.c
+SRCS = init.c stubs.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
        startup_notifyUser.o
-LCLHDRS = ttys.h
 target = init
 HURDLIBS = shouldbeinlibc
-
-ifeq (yes,$(split-init))
-init-CPPFLAGS = -DSPLIT_INIT
-SRCS += stubs.c
-else
-SRCS += ttys.c
-LDLIBS = -lutil
-HURDLIBS += ports fshelp
-endif
 
 include ../Makeconf
 
