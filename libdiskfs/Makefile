@@ -82,8 +82,6 @@ $(subst .c,.o,$(INTSRCS)): interrupt_S.h
 $(subst .c,.o,$(IFSOCKSRCS)): ifsock_S.h
 dir-chg.o: ourfs_notify_U.h
 
-notify-nosenders.o ports-clean.o: ../hurd/pager.h
-
 $(OBJS): priv.h diskfs.h ../hurd/ioserver.h ../hurd/ports.h ../hurd/fshelp.h
 file-chauthor.o: lithp.h
 
