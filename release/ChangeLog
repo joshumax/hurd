@@ -1,3 +1,16 @@
+1997-06-27  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rfloppy.group, rfloppy.passwd, rfloppy-special.copy: New files.
+	* rfloppy.copy: Add etc/protocols & etc/services.
+	Put dev & lib at end (since they're big & monotonous).
+	* Makefile (rfloppy.ext2.gz): Copy from $(srcdir) using
+	rfloppy-special.copy.
+
+	* mkfsimage.sh: Get rid of debugging noise.
+	Use the tar --same-owner option work around a bug with tar
+	not preserving ownership when the current user isn't root.
+	Don't pre-touch `makedev's.
+
 1997-06-25  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mkfsimage.sh: Correct parsing of delayed translator specs.
