@@ -27,4 +27,5 @@ int diskfs_shortcut_fifo = 1;
 int diskfs_shortcut_ifsock = 1;
 char *diskfs_server_name = "ufs";
 char *diskfs_server_version = HURD_VERSION;
+char *diskfs_extra_version = "GNU Hurd";
 int diskfs_synchronous = 0;
