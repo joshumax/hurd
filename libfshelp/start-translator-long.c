@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -160,6 +160,11 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 		  sizeof(reply), 0,
 		  request.head.msgh_remote_port,
 		  MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+  if (err == MACH_SEND_INTERRUPTED
+      && reply.realnodeType.msgt_name == MACH_MSG_TYPE_MOVE_SEND)
+    /* For MACH_SEND_INTERRUPTED, we'll have pseudo-received the message
+       and might have to clean up a generated send right.  */
+    mach_port_deallocate (mach_task_self (), reply.realnode);
 
   if (reply.RetCode)
     /* Make our error return be the earlier one.  */
@@ -172,7 +177,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
-			      mach_port_t *fds, 
+			      mach_port_t *fds,
 			      mach_msg_type_name_t fds_type, int fds_len,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
