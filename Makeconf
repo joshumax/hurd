@@ -31,5 +31,5 @@ endef
 
 define link-with-threads
 $(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
-$^ $(libthreads) $(libc) -lgcc $(libc)
+$^ $(libthreads) $(libc) -lgcc
 endef
