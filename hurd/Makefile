@@ -1,4 +1,4 @@
-test:
-	mig -I../ fs.defs
-	mig -I../ io.defs
-	mig -I../ fsys.defs
+foo:
+	mig fs.defs
+	mig fsys.defs
+	mig io.defs
