@@ -72,7 +72,7 @@ main (int argc, char **argv)
 		argp_failure (state, 3, err, "Can't get device master port");
 	    }
 
-	  err = device_open (device_master, 0, arg, &device);
+	  err = device_open (device_master, D_READ, arg, &device);
 	  if (err == 0)
 	    /* Got it.  */
 	    {
