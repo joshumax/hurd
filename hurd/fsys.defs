@@ -90,9 +90,9 @@ routine fsys_set_options (
 routine fsys_getpriv (
 	fsys: fsys_t;
 	RPT
-	out host_priv: mach_port_t;
-	out device_master: mach_port_t;
-	out fstask: task_t);
+	out host_priv: mach_port_send_t;
+	out device_master: mach_port_send_t;
+	out fstask: mach_port_send_t);
 
 routine fsys_init (
 	fsys: fsys_t;
