@@ -34,3 +34,5 @@ include ../Makeconf
 	cp $< $@
 
 getty: -lutil
+
+$(filter-out $(special-targets), $(targets)): %: %.o
