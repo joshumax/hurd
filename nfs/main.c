@@ -175,38 +175,25 @@ static char *args_doc = "REMOTE_FS [HOST]";
 static char *doc = "If HOST is not specified, an attempt is made to extract"
 " it from REMOTE_FS, using either the `HOST:FS' or `FS@HOST' notations.";
 
-/* Called when the the filesystem receives a set-options request.  ARGC and
-   ARGV are the arguments given, and STANDARD_ARGP is a pointer to a struct
-   argp containing the info necessary to parse `standard' netfs runtime
-   options.  The user may chain this onto the end of his own argp structure
-   and call argp_parse, or ignore it completely (or indeed, just call
-   argp_parse on it -- which is the behavior of the default implementation of
-   this function.  EINVAL is returned if an unknown option is encountered.  */
-error_t
-netfs_parse_runtime_options (int argc, char **argv,
-			     const struct argp *standard_argp)
-{
-  const struct argp *argp_parents[] = { standard_argp, 0 };
-  struct argp argp =
-    { common_options, parse_common_opt, 0, 0, argp_parents };
+static const struct argp *
+runtime_argp_parents[] = { &netfs_std_runtime_argp, 0 };
+static struct argp
+runtime_argp = { common_options, parse_common_opt, 0, 0, runtime_argp_parents };
 
-  return
-    argp_parse (&argp, argc, argv,
-		ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
-		0, 0);
-}
+/* Use by netfs_set_options to handle runtime option parsing.  */
+struct argp *netfs_runtime_argp = &runtime_argp;
 
-/* Called when the the filesystem receives a get-options request.  ARGZ &
-   ARGZ_LEN will contain information on `standard' netfs options; the user
-   may extend them (probably by using argz_add), or ignore them, in which
-   case case ARGZ should be freed, as it is malloced.  The default
-   implementation simply leaves ARGZ & ARGZ_LEN unmodified and returns sucess
-   (0).  */
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage.  */
 error_t
-netfs_unparse_runtime_options (char **argz, size_t *argz_len)
+netfs_get_options (char **argz, size_t *argz_len)
 {
   char buf[80];
   error_t err = 0;
+
+  *argz = 0;
+  *argz_len = 0;
 
 #define FOPT(fmt, arg) \
   do { \
@@ -229,6 +216,9 @@ netfs_unparse_runtime_options (char **argz, size_t *argz_len)
   FOPT ("--cache-timeout=%d", cache_timeout);
   FOPT ("--init-transmit-timeout=%d", initial_transmit_timeout);
   FOPT ("--max-transmit-timeout=%d", max_transmit_timeout);
+
+  if (! err)
+    err = netfs_append_std_options (argz, argz_len);
 
   if (err)
     free (argz);
@@ -326,7 +316,8 @@ int
 main (int argc, char **argv)
 {
   struct argp common_argp = { common_options, parse_common_opt };
-  const struct argp *argp_parents[] = { &common_argp, netfs_startup_argp, 0 };
+  const struct argp *argp_parents[] =
+    { &common_argp, &netfs_std_startup_argp, 0 };
   struct argp argp =
     { startup_options, parse_startup_opt, args_doc, doc, argp_parents };
   mach_port_t bootstrap;
