@@ -26,7 +26,7 @@ ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 ifndef BUILD_CC
 export BUILD_CC := $(CC)
 endif
-CC=gcc $(CCTYPE) -O2 -pipe
+CC=$(CCTARGET)-gcc $(CCTYPE) -O2 -pipe
 ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=/usr/local/i386-gnu/lib/migcom
 MIG=$(tooldir)/mig
