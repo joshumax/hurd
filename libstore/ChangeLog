@@ -1,3 +1,7 @@
+2002-01-01  Roland McGrath  <roland@frob.com>
+
+	* nbd.c (htonll): Make this a macro using bswap_64 from <byteswap.h>.
+
 2001-12-31  Roland McGrath  <roland@frob.com>
 
 	* url.c (url_decode): Don't clobber *ENC in the dummy run.
