@@ -101,8 +101,8 @@ ext2_free_blocks (unsigned long block, unsigned long count)
 	}
     }
 
-  pokel_add (&sblock_pokel, bh, block_size);
-  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
+  pokel_add (&global_pokel, bh, block_size);
+  pokel_add (&global_pokel, gdp, sizeof *gdp);
 
   sblock_dirty = 1;
   spin_unlock (&global_lock);
@@ -315,7 +315,7 @@ got_block:
 
   j = tmp;
 
-  pokel_add (&sblock_pokel, bh, block_size);
+  pokel_add (&global_pokel, bh, block_size);
 
   if (j >= sblock->s_blocks_count)
     {
@@ -328,13 +328,13 @@ got_block:
 
   bh = bptr (j);
   memset (bh, 0, block_size);
-  pokel_add (&sblock_pokel, bh, block_size);
+  pokel_add (&global_pokel, bh, block_size);
 
   ext2_debug ("allocating block %d. "
 	      "Goal hits %d of %d.\n", j, goal_hits, goal_attempts);
 
   gdp->bg_free_blocks_count--;
-  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
+  pokel_add (&global_pokel, gdp, sizeof *gdp);
 
   sblock->s_free_blocks_count--;
   sblock_dirty = 1;
