@@ -15,5 +15,22 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-mach_port_t fs_control_port;	/* receive right */
+extern mach_port_t fs_control_port;	/* receive right */
 
+/* Called by MiG to translate ports into struct protid *.  
+   fsmutations.h arranges for this to happen for the io and
+   fs interfaces. */
+extern inline struct protid *
+begin_using_protid_port (file_t port)
+{
+  return ports_check_port_type (port, PT_PROTID);
+}
+
+/* Called by MiG after server routines have been run; this
+   balances begin_using_protid_port, and is arranged for the io
+   and fs interfaces by fsmutations.h. */
+extern inline void
+diskfs_end_using_protid_port (struct protid *cred)
+{
+  ports_done_with_port (cred);
+}
