@@ -84,6 +84,8 @@ struct node
 
   struct conch conch;
 
+  struct dirmod *dirmod_reqs;
+
   off_t allocsize;
 };
 
@@ -95,6 +97,14 @@ enum lookup_type
   REMOVE,
   RENAME,
 };
+
+/* Pending directory modification request */
+struct dirmod
+{
+  mach_port_t port;
+  struct dirmod *next;
+};
+
 
 /* Special flag for diskfs_lookup. */
 #define SPEC_DOTDOT 0x10000000
@@ -244,7 +254,9 @@ error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
    unsuccessful call to diskfs_lookup of type CREATE or RENAME; DP
    has been locked continuously since that call and DS is as that call
    set it, NP is locked.   CRED identifies the user responsible
-   for the call (to be used only to validate directory growth).  */
+   for the call (to be used only to validate directory growth). 
+   The routine should call diskfs_notice_dirchange if DP->dirmod_reqs
+   is nonzero.  */
 error_t diskfs_direnter (struct node *dp, char *name, 
 			 struct node *np, struct dirstat *ds,
 			 struct protid *cred);
@@ -253,14 +265,16 @@ error_t diskfs_direnter (struct node *dp, char *name,
    a successful call to diskfs_lookup of type RENAME; this call should change
    the name found in directory DP to point to node NP instead of its previous
    referent.  DP has been locked continuously since the call to diskfs_lookup
-   and DS is as that call set it; NP is locked.  */
+   and DS is as that call set it; NP is locked.  This routine should call 
+   diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
 error_t diskfs_dirrewrite (struct node *dp, struct node *np,
 			     struct dirstat *ds);
 
 /* The user must define this function.  This will only be called after a
    successful call to diskfs_lookup of type REMOVE; this call should remove
    the name found from the directory DS.  DP has been locked continuously since
-   the call to diskfs_lookup and DS is as that call set it.  */
+   the call to diskfs_lookup and DS is as that call set it.  This routine 
+   should call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
 error_t diskfs_dirremove (struct node *dp, struct dirstat *ds);
 
 /* The user must define this function.  DS has been set by a previous
@@ -276,7 +290,9 @@ error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
    the entries; that pointer currently points to *DATACNT bytes.  If
    it isn't big enough, vm_allocate into *DATA.  Set *DATACNT with the
    total size used.  Fill AMT with the number of entries copied.  
-   Regardless, never copy more than BUFSIZ bytes.  */
+   Regardless, never copy more than BUFSIZ bytes.  If BUFSIZ is 0,
+   then there is no limit on *DATACNT; if N is -1, then there is no limit
+   on AMT. */
 error_t diskfs_get_directs (struct node *dp, int entry, int n,
 			    char **data, u_int *datacnt, 
 			    vm_size_t bufsiz, int *amt);
@@ -630,6 +646,16 @@ diskfs_node_rdwr (struct node *np, char *data, off_t off,
 		  int *amtread);
 
 
+/* Send notifications to users who have requested them with
+   dir_notice_changes for directory DP.  The type of modification and
+   affected name are TYPE and NAME respectively.  This should be
+   called by diskfs_direnter, diskfs_dirremove, and diskfs_dirrewrite,
+   and anything else that changes the directory, after the change is
+   fully completed.  */
+void
+diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
+			 char *name);
+
 /* Create a new node structure with DS as its physical disknode. 
    The new node will have one hard reference and no light references.  */
 struct node *diskfs_make_node (struct disknode *dn);
@@ -679,9 +705,11 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 		    struct node **newnode, struct protid *cred,
 		    struct dirstat *ds);
 
-/* Start the translator on node IP; the directory we found IP in
-   is DIP; both are locked. */
-error_t diskfs_start_translator (struct node *np, struct node *dnp);
+/* Start the translator on node NP.  NP is locked.  The node referenced
+   by DIR must not be locked.  NP will be unlocked during the execution
+   of this function, and then relocked before return.  The authentication
+   of DIR is ignored, so it may be anything convenient.  */
+error_t diskfs_start_translator (struct node *np, file_t dir);
 
 /* Create and return a protid for an existing peropen.  The uid set is
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
