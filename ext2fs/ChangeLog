@@ -1,3 +1,7 @@
+2002-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* pager.c (diskfs_grow): Fix inverted logic.
+
 2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
 
         * pager.c (MAX_FREE_PAGE_BUFS): Remove obsolete macro.
