@@ -21,8 +21,8 @@
 #include <hurd/ports.h>
 #include <idvec.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/wait.h>
-#include <spawn.h>
 #include <assert.h>
 #include <argp.h>
 #include <error.h>
@@ -385,8 +385,33 @@ believe it has restricted them to different identities or no identity at all.\
     error (2, errno, "Cannot switch to fake auth handle");
   mach_port_deallocate (mach_task_self (), authport);
 
-  if (posix_spawnp (&child, argv[argi], NULL, NULL, &argv[argi], environ))
-    error (3, errno, "cannot run %s", argv[1]);
+  /* We cannot use fork because it doesn't do the right thing with our send
+     rights that point to our own receive rights, i.e. the new auth port.
+     Since posix_spawn might be implemented with fork (prior to glibc 2.3),
+     we cannot use that simple interface either.  We use _hurd_exec
+     directly to effect what posix_spawn does in the simple case.  */
+  {
+    task_t newtask;
+    file_t execfile = file_name_lookup (argv[argi], O_EXEC, 0);
+    if (execfile == MACH_PORT_NULL)
+      error (3, errno, "%s", argv[argi]);
+
+    err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+			 NULL, 0,	/* OSF Mach */
+#endif
+			 0, &newtask);
+    if (err)
+      error (3, err, "cannot create child task");
+    child = task2pid (newtask);
+    if (child < 0)
+      error (3, errno, "task2pid");
+    err = _hurd_exec (newtask, execfile, &argv[argi], environ);
+    mach_port_deallocate (mach_task_self (), newtask);
+    mach_port_deallocate (mach_task_self (), execfile);
+    if (err)
+      error (3, err, "cannot execute %s", argv[argi]);
+  }
 
   if (waitpid (child, &status, 0) != child)
     error (4, errno, "waitpid on %d", child);
