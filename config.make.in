@@ -20,12 +20,6 @@ sysconfdir = $(prefix)/etc
 localstatedir = $(prefix)/var
 sharedstatedir = $(prefix)/com
 
-# Where the installation dir is to be found during compilation
-install_prefix = @install_prefix@
-
-# Where to find libc header files during compilation
-install_includedir = $(install_prefix)/include
-
 # All of those directories together:
 installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \
 	$(includedir) $(libexecdir) $(infodir) $(sysconfdir) \

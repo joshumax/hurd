@@ -1,12 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.6 1996/08/08 18:54:32 thomas Exp $])
+AC_REVISION([$Id: configure.in,v 1.7 1996/08/13 18:10:06 thomas Exp $])
 AC_PREREQ(2.4)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
 AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.
-
-test "x$install_prefix" = xNONE && install_prefix='$prefix'
-AC_SUBST(install_prefix)
 
 AC_CANONICAL_HOST
 case "$host_os" in

@@ -330,9 +330,23 @@ vpath libutil.% $(libdir)/
 	| $(MIGCOM) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) \
 		    -user $*User.c -server /dev/null -header $*_U.h
 
-
 # Where to find .defs files.
-vpath %.defs $(top_srcdir)/hurd $(install_includedir)/mach $(install_includedir)/device
+vpath %.defs $(top_srcdir)/hurd
+
+# These we want to find in the libc include directory...
+mach_defs_names = bootstrap default_pager default_pager_helper exc mach mach4 \
+	mach_host mach_norma mach_port mach_timer_reply memory_object \
+	memory_object_default norma_task notify
+device_defs_names = dev_forward device device_reply device_request
+
+mach_defs = $(addsuffix .defs,$(mach_defs_names))
+device_defs = $(addsuffix .defs,$(device_defs_names))
+
+$(mach_defs): %.defs:
+	echo '#include <mach/$@>' > $@
+$(device_defs): %.defs:
+	echo '#include <device/$@>' > $@
+
 
 FORCE:
 

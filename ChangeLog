@@ -1,3 +1,14 @@
+Tue Aug 13 14:05:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (vpath %.defs): Remove reference for mach and device
+	headers. 
+	(mach_defs_names, device_defs,names, mach_defs, device_defs): New
+	variables. 
+	($(mach_defs), $(device_defs)): New rules.
+	* config.make.in (install_prefix, install_includedir): Delete
+	variables. 
+	* configure.in (install_prefix): Delete AC_SUBST.
+
 Mon Aug 12 12:51:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf: Comment out the lines that cause recursive makes into
