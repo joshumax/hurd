@@ -92,20 +92,6 @@ endif
 
 
 
-# Hurd libraries
-#libthreads := $(srcdir)/libthreads/libthreads.a
-#libports := $(srcdir)/libports/libports.a
-#libioserver := $(srcdir)/libioserver/libioserver.a
-#libpager := $(srcdir)/libpager/libpager.a
-#libfshelp := $(srcdir)/libfshelp/libfshelp.a
-#libdiskfs := $(srcdir)/libdiskfs/libdiskfs.a
-#libtrivfs := $(srcdir)/libtrivfs/libtrivfs.a
-#libnetserv := $(srcdir)/libnetserv/libnetserv.a
-#libps := $(srcdir)/libps/libps.a
-#libihash := $(srcdir)/libihash/libihash.a
-alllibs := libthreads libports libioserver libpager libfshelp libdiskfs\
-	libtrivfs libnetserv libps libihash
-
 # Finding binaries
 include $(srcdir)/Maketools
 
@@ -210,7 +196,7 @@ relink:
 # Subdependencies
 
 # Building Hurd libraries
-$(foreach lib,$(alllibs),$(srcdir)/$(lib)/%.a): FORCE
+$(HURDLIBS-files): FORCE
 	$(MAKE) -C $(dir $@) $(notdir $@)
 
 
