@@ -27,7 +27,7 @@
 
 #include "pfinet.h"
 
-#define ethername "el1"
+#define ethername "ul0"
 
 device_t ether_port;
 
