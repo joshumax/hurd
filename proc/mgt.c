@@ -34,7 +34,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "proc.h"
 #include "process_S.h"
-#include "ourmsg_U.h"
+#include "mutated_ourmsg_U.h"
 #include "proc_exc_S.h"
 #include "proc_exc_U.h"
 #include <hurd/signal.h>
@@ -87,6 +87,9 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
   u_int ngen_uids, naux_uids, ngen_gids, naux_gids;
 
+  if (!p)
+    return EOPNOTSUPP;
+
   gen_uids = gubuf;
   aux_uids = aubuf;
   gen_gids = ggbuf;
@@ -94,6 +97,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 
   ngen_uids = naux_uids = 50;
   ngen_gids = naux_gids = 50;
+
 
   err = auth_server_authenticate (authserver, ports_get_right (p),
 				  MACH_MSG_TYPE_MAKE_SEND,
@@ -132,6 +136,9 @@ S_proc_child (struct proc *parentp,
 	      task_t childt)
 {
   struct proc *childp = task_find (childt);
+
+  if (!parentp)
+    return EOPNOTSUPP;
 
   if (!childp)
     return ESRCH;
@@ -196,6 +203,9 @@ S_proc_reassign (struct proc *p,
   struct proc *stubp = task_find (newt);
   mach_port_t foo;
 
+  if (!p)
+    return EOPNOTSUPP;
+
   if (!stubp)
     return ESRCH;
 
@@ -208,14 +218,13 @@ S_proc_reassign (struct proc *p,
   mach_port_deallocate (mach_task_self (), p->p_task);
   p->p_task = newt;
 
-  /* For security, we need use the request port from STUBP, and
-     not inherit this state. */
-  ports_reallocate_from_external (p, ports_claim_right (stubp));
+  /* For security, we need use the request port from STUBP */
+  ports_transfer_right (p, stubp);
 
   /* Redirect the task-death notification to the new receive right. */
   mach_port_request_notification (mach_task_self (), p->p_task,
 				  MACH_NOTIFY_DEAD_NAME, 1, 
-				  ports_get_right (p),
+				  p->p_pi.port_right,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
@@ -236,6 +245,8 @@ S_proc_reassign (struct proc *p,
   /* Destroy stubp */
   stubp->p_task = 0;		/* block deallocation */
   process_has_exited (stubp);
+  stubp->p_waited = 1;		/* fake out complete_exit */
+  complete_exit (stubp);
 
   add_proc_to_hash (p);
 
@@ -247,6 +258,9 @@ kern_return_t
 S_proc_setowner (struct proc *p,
 		 uid_t owner)
 {
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (! check_uid (p, owner))
     return EPERM;
 
@@ -262,6 +276,8 @@ S_proc_getpids (struct proc *p,
 		pid_t *ppid,
 		int *orphaned)
 {
+  if (!p)
+    return EOPNOTSUPP;
   *pid = p->p_pid;
   *ppid = p->p_parent->p_pid;
   *orphaned = !p->p_pgrp->pg_orphcnt;
@@ -274,6 +290,8 @@ S_proc_set_arg_locations (struct proc *p,
 			  vm_address_t argv,
 			  vm_address_t envp)
 {
+  if (!p)
+    return EOPNOTSUPP;
   p->p_argv = argv;
   p->p_envp = envp;
   return 0;
@@ -298,6 +316,9 @@ S_proc_dostop (struct proc *p,
   thread_t threadbuf[2], *threads = threadbuf;
   unsigned int nthreads = 2, i;
   error_t err;
+
+  if (!p)
+    return EOPNOTSUPP;
 
   err = task_suspend (p->p_task);
   if (err)
@@ -341,6 +362,8 @@ S_proc_handle_exceptions (struct proc *p,
 {
   struct exc *e;
     error_t err;
+
+  /* No need to check P here; we don't use it. */
 
   err = ports_import_port (exc_class, proc_bucket, msgport, 
 			   (sizeof (struct exc)
@@ -444,6 +467,8 @@ S_proc_getallpids (struct proc *p,
     {
       *(*(pid_t **)loc)++ = p->p_pid;
     }
+
+  /* No need to check P here; we don't use it. */
 
   add_tasks (0);
 
@@ -601,7 +626,17 @@ new_proc (task_t task)
 void
 process_has_exited (struct proc *p)
 {
+  /* We have already died; this can happen since both proc_reassign
+     and dead-name notifications could result in two calls to this
+     routine for the same process.  */
+  if (p->p_dead)
+    return;
+
   alert_parent (p);
+
+  if (p->p_msgport)
+    mach_port_deallocate (mach_task_self (), p->p_msgport);
+  p->p_msgport = MACH_PORT_NULL;
 
   prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
 
@@ -672,7 +707,7 @@ complete_exit (struct proc *p)
      other references that ever show up are those for RPC args, which
      will shortly vanish (because we are p_dead, those routines do
      nothing).  */
- ports_port_deref (p);
+  ports_port_deref (p);
 }
 
 /* Get the list of all tasks from the kernel and start adding them.
