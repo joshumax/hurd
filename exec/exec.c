@@ -1032,6 +1032,18 @@ do_exec (mach_port_t execserver,
 
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
     }
+  else if (oldtask != newtask && oldtask != MACH_PORT_NULL 
+	   && nports > INIT_PORT_PROC
+	   && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
+    {
+      mach_port_t new;
+      /* This task port refers to the old task; use it to fetch a new
+	 one for the new task.  */
+      if (e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
+				    newtask, &new))
+	goto bootout;
+      set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
+    }
   if (secure || (defaults
 		 && boot->portarray[INIT_PORT_CRDIR] == MACH_PORT_NULL))
     set_init_port (std_ports[INIT_PORT_CRDIR],
@@ -1070,25 +1082,28 @@ do_exec (mach_port_t execserver,
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
     {
-#if 0
       /* The program is on its way.  The old task can be nuked.  */
       process_t proc;
+      process_t psrv;
+
       /* Use the canonical proc server if secure, or there is none other.
 	 When not secure, it is nice to let processes associate with
 	 whatever proc server turns them on, regardless of which exec
 	 itself is using.  */
-      process_t psrv = ((nports > INIT_PORT_PROC && !(flags & EXEC_SECURE)) ?
-			boot->portarray[INIT_PORT_PROC] : procserver);
-      /* XXX there is a race here for SIGKILLing the process.  */
-      if (! proc_task2proc (procserver, oldtask, &proc))
+      if ((flags & EXEC_SECURE)
+	  || nports <= INIT_PORT_PROC
+	  || boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL)
+	psrv = procserver;
+      else
+	psrv = boot->portarray[INIT_PORT_PROC];
+
+      /* XXX there is a race here for SIGKILLing the process. -roland
+         I don't think it matters.  -mib */
+      if (! proc_task2proc (psrv, oldtask, &proc))
 	{
-	  /* XXX check for errors?? */
 	  proc_reassign (proc, newtask);
 	  mach_port_deallocate (mach_task_self (), proc);
 	}
-#endif
-      e.error = EINVAL;
-      goto bootout;
     }
 
   newtask = MACH_PORT_NULL;
