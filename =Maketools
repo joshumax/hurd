@@ -26,15 +26,14 @@ export BUILD_CC := $(CC)
 endif
 CC=gcc $(CCTYPE) -O2 -pipe
 ifeq (,$(wildcard /usr/local/lib/migcom))
-MIGCOM=rsh $(mighost) cd `pwd` \; umask `umask` \; /usr/local/lib/migcom 
+MIGCOM=/usr/local/i386-gnu/lib/migcom
+MIG=$(tooldir)/mig
 else
 MIGCOM=/usr/local/lib/migcom
+MIG=mig
 endif
 CPP=$(CC) -E -x c
 export CPP
-# I put a /usr/local/bin/mig on the hp300s that will run $CPP locally and
-# rsh to ernst to run migcom. --roland
-MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
