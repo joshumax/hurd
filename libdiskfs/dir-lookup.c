@@ -255,9 +255,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (error)
 	    goto out;
 
-	  dirport = ports_get_right (newpi);
-	  mach_port_insert_right (mach_task_self (), dirport, dirport,
-				  MACH_MSG_TYPE_MAKE_SEND);
+	  dirport = ports_get_send_right (newpi);
 	  ports_port_deref (newpi);
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
