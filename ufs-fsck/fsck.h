@@ -81,7 +81,7 @@ struct dirinfo
   ino_t i_parent;		/* inode entry of parent */
   ino_t i_dotdot;		/* inode number of `..' */
   ino_t i_dot;			/* inode number of `.' */
-  size_t i_isize;		/* size of inode */
+  u_int i_isize;		/* size of inode */
   u_int i_numblks;		/* size of block array in bytes */
   daddr_t i_blks[0];		/* array of inode block addresses */
 };
