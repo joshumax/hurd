@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,19 +24,16 @@
    SEQNO is the sequence number of the message dequeue.  */
 error_t
 diskfs_do_seqnos_mach_notify_no_senders (mach_port_t notify,
-					 mach_port_seqno_t seqno,
+					 mach_port_seqno_t seqno __attribute__ ((unused)),
 					 mach_port_mscount_t mscount)
 {
   struct port_info *pt;
 
-  pt = ports_get_port (notify);
+  pt = ports_lookup_port (diskfs_port_bucket, notify, 0);
 
-  if (pt->type == PT_PAGER)
-    pager_no_senders ((struct pager *)pt, seqno, mscount);
-  else
-    ports_no_senders (pt, mscount);
+  ports_no_senders (pt, mscount);
 
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   
   return 0;
 }
