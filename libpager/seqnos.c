@@ -17,8 +17,9 @@
 
 #include "priv.h"
 
-/* Wait until all preceding messages on this port have
-   had a chance to be honored. */
+/* The message with seqno SEQNO has just been dequeued for pager P;
+   wait until all preceding messages have had a chance and then
+   return.  */
 void
 _pager_wait_for_seqno (struct pager *p,
 		int seqno)
@@ -31,7 +32,9 @@ _pager_wait_for_seqno (struct pager *p,
   p->seqno = seqno;
 }
 
-/* Allow the next message in. */
+
+/* Allow the next message for pager P (potentially blocked in
+   _pager_wait_for_seqno) to be handled.  */
 void
 _pager_release_seqno (struct pager *p)
 {
