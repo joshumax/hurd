@@ -1,3 +1,4 @@
 test:
-	mig fs.defs
-	mig io.defs
+	mig -I../ fs.defs
+	mig -I../ io.defs
+	mig -I../ fsys.defs
