@@ -1,3 +1,9 @@
+2002-07-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* stack.c (stack_init): Put back in setting of the
+	__hurd_threadvar_stack_mask and __hurd_threadvar_stack_offset
+	variables (which got lost in the merge).
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* cthreads.h: Do not define WAIT_DEBUG to affect inlines.
