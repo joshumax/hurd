@@ -35,6 +35,8 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (diskfs_readonly)
     return EROFS;
 
+ retry:
+  
   mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
@@ -59,6 +61,39 @@ diskfs_S_dir_unlink (struct protid *dircred,
       mutex_unlock (&dnp->lock);
       return EISDIR;
     }
+
+  mutex_lock (&np->translator.lock);
+  if (np->translator.control != MACH_PORT_NULL)
+    {
+      /* There is a running active translator here.  Give it a push.
+	 If it squeaks, then return an error.  If it consents, then
+	 clear the active translator spec (unless it's been changed
+	 in the interim) and repeat the lookup above.  */
+
+      control = np->translator.control;
+      mach_port_mod_refs (mach_task_self (), control, MACH_PORT_RIGHT_SEND, 1);
+
+      mutex_unlock (&np->translator.lock);
+      diskfs_drop_dirstat (dnp, ds);
+      mutex_unlock (&dnp->lock);
+      mutex_unlock (&np->lock);
+      
+      error = fsys_goaway (control, FSYS_GOAWAY_UNLINK);
+      if (error)
+	return error;
+      
+      mutex_lock (&np->lock);
+      mutex_lock (&np->translator.lock);
+      if (np->translator.control == control)
+	fshelp_translator_drop (&np->translator);
+      mutex_unlock (&np->translator.lock);
+      diskfs_nput (np);
+      
+      mach_port_deallocate (mach_task_self (), control);
+
+      goto retry;
+    }
+  mutex_unlock (&np->translator.lock);
 
   error = diskfs_dirremove (dnp, ds);
   if (diskfs_synchronous)
