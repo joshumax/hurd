@@ -122,8 +122,10 @@ void *memscan(void *buf, unsigned char ch, unsigned len);
 
 /* ---------------------------------------------------------------- */
 
+/* ext2fs specific per-file data.  */
 struct disknode 
 {
+  /* The inode number of this file.  */
   ino_t number;
 
   /* For a directory, this array holds the number of directory entries in
@@ -142,11 +144,18 @@ struct disknode
   /* Random extra info used by the ext2 routines.  */
   struct ext2_inode_info info;
 
+  /* The upi structure for this file's file pager.  */
   struct user_pager_info *fileinfo;
 
   /* True if the last page of the file has been made writable, but is only
      partially allocated.  */
   int last_page_partially_writable;
+
+  /* True if the last block of this file (the one ending at allocsize bytes)
+     has actually been allocated.  We must eventually do so to maintain a
+     consistent on-disk state, but delaying it can improveme allocation, and
+     it's an inconsistency easily fixed by fsck.  */
+  int last_block_allocated;
 };  
 
 struct user_pager_info 
