@@ -128,14 +128,11 @@ get_hypermetadata (void)
   ext2fs_clean = sblock->s_state & EXT2_VALID_FS;
   if (! ext2fs_clean)
     {
-      /* XXX syslog */
-      error (0, 0, "%s: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck",
-	     diskfs_device_arg);
+      ext2_warning ("FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck");
       if (! diskfs_readonly)
 	{
 	  diskfs_readonly = 1;
-	  error (0, 0, "%s: MOUNTED READ-ONLY; MUST USE `fsysopts --writable'",
-		 diskfs_device_arg);
+	  ext2_warning ("MOUNTED READ-ONLY; MUST USE `fsysopts --writable'");
 	}
     }
 
@@ -185,8 +182,6 @@ diskfs_readonly_changed (int readonly)
 	  sync_super_block ();
 	}
       else
-	/* XXX syslog */
-	error (0, 0, "%s: WARNING: UNCLEANED FILESYSTEM NOW WRITABLE",
-	       diskfs_device_arg);
+	ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
     }
 }
