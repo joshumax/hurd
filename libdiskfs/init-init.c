@@ -80,10 +80,10 @@ diskfs_init_diskfs (void)
 
   diskfs_auth_server_port = getauth ();
 
-  diskfs_protid_class = ports_create_class (diskfs_protid_rele);
-  diskfs_control_class = ports_create_class (_diskfs_control_clean);
-  diskfs_initboot_class = ports_create_class (0);
-  diskfs_execboot_class = ports_create_class (0);
+  diskfs_protid_class = ports_create_class (diskfs_protid_rele, 0);
+  diskfs_control_class = ports_create_class (_diskfs_control_clean, 0);
+  diskfs_initboot_class = ports_create_class (0, 0);
+  diskfs_execboot_class = ports_create_class (0, 0);
   diskfs_port_bucket = ports_create_bucket ();
 }
 
