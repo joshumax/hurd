@@ -72,20 +72,14 @@ struct nbd_reply
 
 /* i/o functions.  */
 
-static inline uint64_t
-htonll (uint64_t x)
-{
 #if BYTE_ORDER == BIG_ENDIAN
-  return x;
+# define htonll(x)	(x)
 #elif BYTE_ORDER == LITTLE_ENDIAN
-  union { uint64_t ll; uint32_t l[2]; } u;
-  u.l[0] = htonl ((uint32_t) (x >> 32));
-  u.l[1] = htonl ((uint32_t) x);
-  return u.ll;
+# include <byteswap.h>
+# define htonll(x)	(bswap_64 (x))
 #else
 # error what endian?
 #endif
-}
 #define ntohll htonll
 
 
