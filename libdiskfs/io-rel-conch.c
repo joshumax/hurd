@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_release_conch as described in <hurd/io.defs>. */
 error_t
