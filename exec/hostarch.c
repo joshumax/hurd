@@ -35,8 +35,8 @@ bfd_mach_host_arch_mach (host_t host,
   struct host_basic_info hostinfo;
   mach_msg_type_number_t hostinfocnt = HOST_BASIC_INFO_COUNT;
 
-  if (err = host_info (host, HOST_BASIC_INFO,
-		       (natural_t *) &hostinfo, &hostinfocnt))
+  err = host_info (host, HOST_BASIC_INFO, (natural_t *) &hostinfo, &hostinfocnt);
+  if (err)
     return err;
 
   *machine = hostinfo.cpu_subtype;
