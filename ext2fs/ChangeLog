@@ -1,3 +1,14 @@
+Thu Aug 15 14:55:01 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (diskfs_edit_version): Change to `1'.
+	(diskfs_version_extra): New variable.
+	* inode.c (read_disknode): Change assertion to allow non-zero
+	st_size for anything, but assert that st_blocks == 0 for any case
+	where we set allocsize to 0.
+	* truncate.c (diskfs_truncate): Allow any sort of node to have a
+	size without any blocks (as linux apparently does this sometimes
+	with devices).
+
 Wed Aug 14 14:03:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.c (diskfs_minor_version): Change to `2'.

@@ -1,3 +1,9 @@
+Thu Aug 15 16:07:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (diskfs_extra_version): New (weak) reference.
+	(_print_version): Use DISKFS_EXTRA_VERSION.  Tweak edit version.
+	Fix type of EV.
+
 Thu Aug 15 16:38:41 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* io-identity.c (diskfs_S_io_identity): Don't hold lock around
