@@ -1,9 +1,7 @@
 /* Store allocation/deallocation
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <malloc.h>
 
@@ -26,42 +24,53 @@
 
 /* Allocate a new store structure with meths METHS, and the various other
    fields initialized to the given parameters.  */
-struct store *
-_make_store (const struct store_class *class,
-	     mach_port_t port, int flags, size_t block_size,
-	     const struct store_run *runs, size_t num_runs, off_t end)
+error_t
+_store_create (const struct store_class *class,
+	       mach_port_t port, int flags, size_t block_size,
+	       const struct store_run *runs, size_t num_runs, off_t end,
+	       struct store **store)
 {
   if (block_size & (block_size - 1))
-    return 0;			/* block size not a power of two.  */
+    return EINVAL;		/* block size not a power of two.  */
   else
     {
-      struct store *store = malloc (sizeof (struct store));
-      if (store)
+      struct store *new = malloc (sizeof (struct store));
+      if (new)
 	{
-	  store->name = 0;
-	  store->port = port;
-	  store->runs = 0;
-	  store->num_runs = 0;
-	  store->wrap_src = 0;
-	  store->wrap_dst = 0;
-	  store->flags = flags;
-	  store->end = end;
-	  store->block_size = block_size;
-	  store->source = MACH_PORT_NULL;
-	  store->blocks = 0;
-	  store->size = 0;
-	  store->log2_block_size = 0;
-	  store->log2_blocks_per_page = 0;
-	  store->misc = 0;
-	  store->hook = 0;
-	  store->children = 0;
-	  store->num_children = 0;
+	  error_t err;
 
-	  store->class = class;
+	  new->name = 0;
+	  new->port = port;
+	  new->runs = 0;
+	  new->num_runs = 0;
+	  new->wrap_src = 0;
+	  new->wrap_dst = 0;
+	  new->flags = flags;
+	  new->end = end;
+	  new->block_size = block_size;
+	  new->source = MACH_PORT_NULL;
+	  new->blocks = 0;
+	  new->size = 0;
+	  new->log2_block_size = 0;
+	  new->log2_blocks_per_page = 0;
+	  new->misc = 0;
+	  new->hook = 0;
+	  new->children = 0;
+	  new->num_children = 0;
 
-	  store_set_runs (store, runs, num_runs); /* Calls _store_derive() */
+	  new->class = class;
+
+	  /* store_set_runs calls _store_derive to derive other fields. */
+	  err = store_set_runs (new, runs, num_runs);
+	  if (err)
+	    free (new);
+	  else
+	    *store = new;
+
+	  return err;
 	}
-      return store;
+      else
+	return ENOMEM;
     }
 }
 
