@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)pass1.c	8.1 (Berkeley) 6/5/93";*/
-static char *rcsid = "$Id: pass1.c,v 1.3 1994/09/01 19:19:17 mib Exp $";
+static char *rcsid = "$Id: pass1.c,v 1.4 1994/10/05 16:53:12 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -101,11 +101,12 @@ checkinode(inumber, idesc)
 	dp = getnextinode(inumber);
 	mode = DI_MODE(dp) & IFMT;
 	if (mode == 0) {
+		/* Check for DI_TRANS here is a GNU Hurd addition. */
 		if (bcmp((char *)dp->di_db, (char *)zino.di_db,
 			NDADDR * sizeof(daddr_t)) ||
 		    bcmp((char *)dp->di_ib, (char *)zino.di_ib,
 			NIADDR * sizeof(daddr_t)) ||
-		    DI_MODE(dp) || dp->di_size) {
+		    DI_MODE(dp) || dp->di_size || dp->di_trans) {
 			pfatal("PARTIALLY ALLOCATED INODE I=%lu", inumber);
 			if (reply("CLEAR") == 1) {
 				dp = ginode(inumber);
