@@ -360,8 +360,10 @@ leave_pgrp (struct proc *p)
 	{
 	  if (ip->p_stopped)
 	    dosignal = 1;
-	  nowait_proc_newids (ip->p_msgport, ip->p_task, ip->p_pid,
-		       ip->p_parent->p_pid, 1);
+	  nowait_proc_newids (ip->p_msgport, ip->p_task, 
+			      ip->p_parent->p_pid,
+			      ip->p_pid,
+			      1);
 	}
       if (dosignal)
 	for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
@@ -387,4 +389,7 @@ join_pgrp (struct proc *p)
   if (p->p_parent->p_pgrp != pg
       && p->p_parent->p_pgrp->pg_session == pg->pg_session)
     pg->pg_orphcnt++;
+
+  nowait_proc_newids (p->p_msgport, p->p_task,
+		      p->p_parent->p_pid, pg->pg_pgid, !pg->pg_orphcnt);
 }
