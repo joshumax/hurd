@@ -15,6 +15,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
+#include <string.h>
+
 /* Called by the kernel to write data to the backing store */
 kern_return_t
 _pager_seqnos_memory_object_data_return (mach_port_t object, 
@@ -35,7 +40,9 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   struct lock_request *lr;
   struct lock_list {struct lock_request *lr;
 		    struct lock_list *next;} *lock_list, *ll;
-
+  int write_lock;
+  int wakeup;
+  
   if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
   
@@ -156,6 +163,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 
   mutex_unlock (&p->interlock);
 
+  /* XXX can this really be done earlier inside pager_write_page? */
   /* Now it is OK for the file size to change, so we can release our lock.  */
   if (slp)
     {
