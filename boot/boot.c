@@ -536,6 +536,33 @@ main (int argc, char **argv, char **envp)
       host_exit (1);
     }
 
+  /* Turn each `FOO=BAR' word in the command line into a boot script
+     variable ${FOO} with value BAR.  */
+  {
+    int len = strlen (kernel_command_line) + 1;
+    char *s = memcpy (alloca (len), kernel_command_line, len);
+    char *word;
+
+    while ((word = strsep (&s, " \t")) != 0)
+      {
+       char *eq = strchr (word, '=');
+       if (eq == 0)
+         continue;
+       *eq++ = '\0';
+       err = boot_script_set_variable (word, VAL_STR, (int) eq);
+       if (err)
+         {
+           char *msg;
+           asprintf (&msg, "cannot set boot-script variable %s: %s\n",
+                     word, boot_script_error_string (err));
+           assert (msg);
+           write (2, msg, strlen (msg));
+           free (msg);
+           host_exit (1);
+         }
+      }
+  }
+
   /* Parse the boot script.  */
   {
     char *p, *line;
