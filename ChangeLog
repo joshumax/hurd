@@ -1,3 +1,8 @@
+1999-01-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* configure.in: Add AC_PROG_AWK.
+	* config.make.in (AWK): New variable, substituted by configure.
+
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (prog-subdirs): Reordered with vague topical grouping.
