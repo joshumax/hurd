@@ -66,6 +66,16 @@ pager_flush_some (struct pager *pager,
 		  vm_size_t len,
 		  int wait);
 
+/* Change the attributes of the memory object underlying pager PAGER.
+   Args MAY_CACHE and COPY_STRATEGY are as for 
+   memory_object_change_atributes.  Wait for the kernel to report completion
+   off WAIT is set.*/
+void
+pager_change_attributes (struct pager *pager,
+			 boolean_t may_cache,
+			 memory_object_copy_strategy_t copy_strategy,
+			 int wait);
+
 /* Return the port (receive right) for requests to the pager.  It is
    absolutely necessary that a new send right be created from this
    receive right.  */
@@ -112,6 +122,13 @@ pager_unreference (struct pager *p);
    to allocate_port by the pager system.  */
 extern int pager_port_type;
 
+/* The user must define this function.  Describe for pager PAGER 
+   the may_cache and copy_strategy attributes for memory_object_ready. */
+void
+pager_report_attributes (struct user_pager_info *pager,
+			 boolean_t *may_cache,
+			 memory_object_copy_strategy_t *copy_strategy);
+
 /* The user must define this function.  For pager PAGER, read one
    page from offset PAGE.  Set *BUF to be the address of the page,
    and set *WRITE_LOCK if the page must be provided read-only. 
@@ -121,7 +138,6 @@ pager_read_page (struct user_pager_info *pager,
 		 vm_offset_t page,
 		 vm_address_t *buf,
 		 int *write_lock);
-
 
 /* The user must define this function.  For pager PAGER, synchronously
    write one page from BUF to offset PAGE.  In addition, vm_deallocate 
