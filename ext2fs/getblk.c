@@ -150,7 +150,7 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = block;
   node->dn_set_ctime = 1;
-  node->dn_stat.st_blocks += blocks;
+  node->dn_stat.st_blocks += blocks << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
@@ -208,7 +208,7 @@ block_getblk (struct node *node,
   node->dn_set_ctime = 1;
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = block;
-  node->dn_stat.st_blocks += blocks;
+  node->dn_stat.st_blocks += blocks << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
   return 0;
