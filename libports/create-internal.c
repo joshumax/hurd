@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -48,7 +48,9 @@ _ports_create_port_internal (struct port_class *class,
   pi = malloc (size);
   if (! pi)
     {
-      mach_port_deallocate (mach_task_self (), port);
+      err = mach_port_mod_refs (mach_task_self (), port,
+				MACH_PORT_RIGHT_RECEIVE, -1);
+      assert_perror (err);
       return ENOMEM;
     }
 
@@ -94,7 +96,12 @@ _ports_create_port_internal (struct port_class *class,
   mutex_unlock (&_ports_lock);
   
   if (install)
-    mach_port_move_member (mach_task_self (), pi->port_right, bucket->portset);
+    {
+      err = mach_port_move_member (mach_task_self (), pi->port_right,
+				   bucket->portset);
+      if (err)
+	goto lose;
+    }
 
   *(void **)result = pi;
   return 0;
@@ -103,7 +110,9 @@ _ports_create_port_internal (struct port_class *class,
   err = EINTR;
  lose:
   mutex_unlock (&_ports_lock);
-  mach_port_mod_refs (mach_task_self (), port, MACH_PORT_RIGHT_RECEIVE, -1);
+  err = mach_port_mod_refs (mach_task_self (), port,
+			    MACH_PORT_RIGHT_RECEIVE, -1);
+  assert_perror (err);
   free (pi);
 
   return err;
