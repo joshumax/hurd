@@ -1,3 +1,9 @@
+1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-link.c (diskfs_S_dir_link): Fix error checks on ports.
+	If DIRCRED (receiver port) is bad, return EOPNOTSUPP.
+	If FILECRED (argument port) is bad, return EXDEV (after EROFS check).
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot-start.c (diskfs_S_exec_startup_get_info): Typo in last change.
