@@ -176,8 +176,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  && np != dnp)
 	{
 	  mach_port_t control;
-	  uid_t *uids = 0, *gids;
-	  int nuids, ngids;
+	  uid_t *uids = 0, *gids = 0;
+	  int nuids = 0, ngids = 0;
 	  file_t dirfile = MACH_PORT_NULL;
 
 	  /* Be very careful not to hold an inode lock while fetching
