@@ -3,6 +3,13 @@
 XXX this needs much work, trolling through ChangeLogs.
 
 * sync -> syncfs, takes args
+
+* Default pager (serverboot) understands Linux (mkswap) signature pages.
+  New boot script function $(add-raw-paging-file) inhibits looking for the
+  signature page.  New function $(add-linux-paging-file) checks for the
+  page and refuses to use the swap partition or paging file if there is no
+  valid Linux signature page.
+
 
 9 June 1997
 Version 0.2
