@@ -1,5 +1,5 @@
 /* Server for S_IFSOCK nodes
-   Copyright (C) 1994, 1995, 2001 Free Software Foundation
+   Copyright (C) 1994, 1995, 2001, 02 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -89,8 +89,8 @@ main (int argc, char **argv)
     address_port = MACH_PORT_NULL;
   else
     {
-      errno = socket_fabricate_address (pflocal, AF_LOCAL, &address_port);
-      if (errno)
+      err = socket_fabricate_address (pflocal, AF_LOCAL, &address_port);
+      if (err)
 	address_port = MACH_PORT_NULL;
       mach_port_deallocate (mach_task_self (), pflocal);
     }

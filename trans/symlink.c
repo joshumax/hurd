@@ -1,5 +1,5 @@
 /* Translator for S_IFLNK nodes
-   Copyright (C) 1994, 2000, 2001 Free Software Foundation
+   Copyright (C) 1994, 2000, 2001, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,6 +21,8 @@
 #include <string.h>
 #include <hurd/fsys.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <error.h>
 #include "fsys_S.h"
 
 mach_port_t realnode;
@@ -38,14 +40,7 @@ main (int argc, char **argv)
 {
   mach_port_t bootstrap;
   mach_port_t control;
-  error_t error;
-
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "%s must be started as a translator\n", argv[0]);
-      exit (1);
-    }
+  error_t err;
 
   if (argc != 2)
     {
@@ -53,21 +48,23 @@ main (int argc, char **argv)
       exit (1);
     }
 
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  if (bootstrap == MACH_PORT_NULL)
+    error (1, 0, "Must be started as a translator");
+
   linktarget = argv[1];
 
   /* Reply to our parent */
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
   mach_port_insert_right (mach_task_self (), control, control,
 			  MACH_MSG_TYPE_MAKE_SEND);
-  error =
+  err =
     fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_COPY_SEND, &realnode);
   mach_port_deallocate (mach_task_self (), control);
   mach_port_deallocate (mach_task_self (), bootstrap);
-  if (error)
-    {
-      perror ("Starting up translator");
-      exit (1);
-    }
+  if (err)
+    error (1, err, "Starting up translator");
+
   io_restrict_auth (realnode, &realnodenoauth, 0, 0, 0, 0);
   mach_port_deallocate (mach_task_self (), realnode);
 
@@ -75,9 +72,9 @@ main (int argc, char **argv)
   while (1)
     {
       /* The timeout here is 10 minutes */
-      error = mach_msg_server_timeout (fsys_server, 0, control,
-				       MACH_RCV_TIMEOUT, 1000 * 60 * 10);
-      if (error == MACH_RCV_TIMED_OUT)
+      err = mach_msg_server_timeout (fsys_server, 0, control,
+				     MACH_RCV_TIMEOUT, 1000 * 60 * 10);
+      if (err == MACH_RCV_TIMED_OUT)
 	exit (0);
     }
 }
