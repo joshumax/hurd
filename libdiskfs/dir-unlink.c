@@ -39,7 +39,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   mutex_lock (&dnp->lock);
 
-  error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred, 0, 0);
+  error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
     error = EISDIR;
   if (error)
