@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_select as described in <hurd/io.defs>. */
 error_t
@@ -29,6 +30,7 @@ diskfs_S_io_select (struct protid *cred,
     return EOPNOTSUPP;
   
   /* Select is always possible */
+  /* XXX should check open modes. */
   mach_port_deallocate (mach_task_self (), port);
   *possible = type;
   return 0;
