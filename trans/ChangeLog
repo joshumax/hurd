@@ -1,3 +1,9 @@
+1997-07-14  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* magic.c (argp_program_version, args_doc, doc): New variables.
+	(main): Use argp to parse args.
+	Add new includes <argp.h> & <version.h>.
+
 Fri Feb 28 20:00:14 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (fwd null ifsock fifo new-fifo devport firmlink):
