@@ -161,20 +161,36 @@ error_t idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
 
 /* Add to GIDS those group ids implied by the users in UIDS.  */
 error_t idvec_merge_implied_gids (struct idvec *gids, const struct idvec *uids);
-
+
 /* Make sure the user has the right to the ids in UIDS and GIDS, given that
    we know he already has HAVE_UIDS and HAVE_GIDS, asking for passwords (with
-   GETPASS, which defaults to the standard libc function getpass) where
-   necessary; any of the arguments may be 0, which is treated the same as if
-   they were empty.  0 is returned if access should be allowed, otherwise
-   EINVAL if an incorrect password was entered, or an error relating to
-   resource failure.  Any uid/gid < 0 will be guaranteed to fail regardless
-   of what the user types.  */
+   GETPASS_FN) where necessary; any of the arguments may be 0, which is
+   treated the same as if they were empty.  0 is returned if access should be
+   allowed, otherwise EINVAL if an incorrect password was entered, or an
+   error relating to resource failure.  Any uid/gid < 0 will be guaranteed to
+   fail regardless of what the user types.  GETPASS_FN should ask for a
+   password from the user, and return it in malloced storage; it defaults to
+   using the standard libc function getpass.  If VERIFY_FN is 0, then the
+   users password will be encrypted with crypt and compared with the
+   password/group entry's encrypted password, otherwise, VERIFY_FN will be
+   called to check the entered password's validity; it should return 0 if the
+   given password is correct, or an error code.  The common arguments to
+   GETPASS_FN and VERIFY_FN are: ID, the user/group id; IS_GROUP, true if its
+   a group, or false if a user; PWD_OR_GRP, a pointer to either the passwd or
+   group entry for ID, and HOOK, containing the appropriate hook passed into
+   idvec_verify.  */
 error_t idvec_verify (const struct idvec *uids, const struct idvec *gids,
 		      const struct idvec *have_uids,
 		      const struct idvec *have_gids,
-		      char *(*getpass_fn)(const char *prompt));
-
+		      char *(*getpass_fn) (const char *prompt,
+					   uid_t id, int is_group,
+					   void *pwd_or_grp, void *hook),
+		      void *getpass_hook,
+		      error_t (*verify_fn) (const char *password,
+					    uid_t id, int is_group,
+					    void *pwd_or_grp, void *hook),
+		      void *verify_hook);
+
 /* Return a string representation of the ids in IDVEC, each id separated by
    the string SEP (default ",").  SHOW_VALUES and SHOW_NAMES reflect how each
    id is printed (if SHOW_NAMES is true values are used where names aren't
