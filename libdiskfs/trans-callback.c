@@ -32,6 +32,7 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
   struct node *np = cookie1;
   mach_port_t *dotdot = cookie2;
   error_t err;
+  struct protid *newpi;
 
   if (!np->istranslated)
     return ENOENT;
@@ -43,15 +44,17 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
   *uid = np->dn_stat.st_uid;
   *gid = np->dn_stat.st_gid;
   
-  *underlying = (ports_get_right
-		 (diskfs_make_protid
-		  (diskfs_make_peropen (np, 
-					(O_READ|O_EXEC
-					 | (diskfs_readonly ? O_WRITE : 0)),
-					*dotdot),
-		   uid, 1, gid, 1)));
+  newpi = diskfs_make_protid (diskfs_make_peropen (np, 
+						   (O_READ|O_EXEC
+						    | (diskfs_readonly 
+						       ? O_WRITE : 0)),
+						   *dotdot),
+			      uid, 1, gid, 1);
+
+  *underlying = ports_get_right (newpi);
   mach_port_insert_right (mach_task_self (), *underlying, *underlying,
 			  MACH_MSG_TYPE_MAKE_SEND);
+  ports_port_deref (newpi);
   return 0;
 }
 
