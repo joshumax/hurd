@@ -30,6 +30,8 @@ struct trivfs_protid
   uid_t *uids, *gids;
   int nuids, ngids;
   int isroot;
+  /* REALNODE will be null if this protid wasn't fully created (currently
+     only in the case where trivfs_protid_create_hook returns an error).  */
   mach_port_t realnode;		/* restricted permissions */
   void *hook;			/* for user use */
   struct trivfs_peropen *po;
@@ -92,11 +94,11 @@ error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
-void (*trivfs_protid_create_hook) (struct trivfs_protid *);
+error_t (*trivfs_protid_create_hook) (struct trivfs_protid *);
 
 /* If this variable is set, it is called every time a new peropen
    structure is created and initialized. */
-void (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
+error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
 
 /* If this variable is set, it is called every time a protid structure
    is about to be destroyed. */
@@ -137,6 +139,22 @@ void trivfs_clean_cntl (void *);
 
 /* This demultiplees messages for trivfs ports. */
 int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+
+/* Return a new protid pointing to a new peropen in CRED, with REALNODE as
+   the underlying node reference, with the given identity, and open flags in
+   FLAGS.  CNTL is the trivfs control object.  */
+error_t trivfs_open (struct trivfs_control *fsys,
+		     uid_t *uids, unsigned num_uids,
+		     gid_t *gids, unsigned num_gids,
+		     unsigned flags,
+		     mach_port_t realnode,
+		     struct trivfs_protid **cred);
+
+/* Return a duplicate of CRED in DUP, sharing the same peropen and hook.  A
+   non-null hook may be used to detect that this is a duplicate by
+   trivfs_peropen_create_hook.  */
+error_t trivfs_protid_dup (struct trivfs_protid *cred,
+			   struct trivfs_protid **dup);
 
 /* The user must define this function.  Someone wants the filesystem
    to go away.  FLAGS are from the set FSYS_GOAWAY_*; REALNODE,
