@@ -32,7 +32,7 @@ all: exec
 exec: $(OBJS)
 	$(link)
 
-exec.o: exec_server.h
+exec.o: exec_server.h fsys_S.h notify_S.h 
 
 exec.o hostarch.o: a.out.h
 
@@ -48,10 +48,10 @@ exec_server.h execServer.c: $(includedir)/hurd/exec.defs $(includedir)/hurd/hurd
 	| $(MIGCOM) -sheader exec_server.h -header /dev/null -user /dev/null
 
 
-fsysServer.c: $(includedir)/hurd/fsys.defs $(includedir)/hurd/hurd_types.defs
+fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs $(includedir)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  $(includedir)/hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
 
-notifyServer.c: $(includedir)/mach/notify.defs
+notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS)  $(includedir)/mach/notify.defs \
 	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
