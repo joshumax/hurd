@@ -20,14 +20,18 @@ dir := libioserver
 include ../Makeconf
 
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
-	initialize_conch.o server_get_conch.o
+	initialize_conch.o verify_user_conch.o
 
 # Make sure we get local copies of the headers we install.
 CPPFLAGS := -I. $(CPPFLAGS)
 
-all: libioserver.a($OBJS)
+all: libioserver.a(__.SYMDEF)
 
-$(hurdinst)/lib/libioserver.a: libioserver.a($OBJS)
+libioserver.a(__.SYMDEF): $(OBJS)
+	ar r $@ $?
+	ranlib $@
+
+$(hurdinst)/lib/libioserver.a: libioserver.a(__.SYMDEF)
 	cp libioserver.a $@
 	ranlib $@
 
