@@ -1,0 +1,8 @@
+1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile, main.c: New files for new this directory `mach-defpager'.
+	This is a standalone Hurd program version of the Mach default pager,
+	with the bulk of the source code coming from ../serverboot.
+	This program /hurd/mach-defpager is started like a normal daemon,
+	i.e. from rc or whatever, rather than being the first task.
+	* ChangeLog: New file, mentioning itself in this sentence.
