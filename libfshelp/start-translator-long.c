@@ -165,7 +165,9 @@ fshelp_start_translator_long (file_t underlying,
 {
   error_t err;
   file_t executable;
-  mach_port_t bootstrap, task, prev_notify, proc, saveport;
+  mach_port_t bootstrap = MACH_PORT_NULL;
+  mach_port_t task = MACH_PORT_NULL;
+  mach_port_t prev_notify, proc, saveport;
   int ports_moved = 0;
 
   /* Find the translator itself.  Since argz has zero-separated elements, we
@@ -212,19 +214,23 @@ fshelp_start_translator_long (file_t underlying,
     default:
       abort ();
     }
+
   saveport = ports[INIT_PORT_BOOTSTRAP];
   ports[INIT_PORT_BOOTSTRAP] = bootstrap;
 
   /* Try and exec the translator in TASK...  */
-  err = file_exec (executable, task, EXEC_DEFAULTS, argz, argz_len,
-		   0, 0,
-		   fds, fds_type, fds_len,
-		   ports, ports_type, ports_len,
-		   ints, ints_len, 0, 0, 0, 0);
+  err = file_exec (executable, task, MACH_MSG_TYPE_MOVE_SEND, EXEC_DEFAULTS,
+		   argz, argz_len, 0, 0, 0, 0,
+		   fds, fds_type, fds_len, 0,
+		   ports, ports_type, ports_len, 0,
+		   ints, ints_len, 0, 0, 0, 0, 0, 0, 0);
+  ports_moved = 1;
+  task = MACH_PORT_NULL;	/* record that we've sent it */
+
   if (ports_type == MACH_MSG_TYPE_COPY_SEND)
     mach_port_deallocate (mach_task_self (), bootstrap);
   ports[INIT_PORT_BOOTSTRAP] = saveport;
-  ports_moved = 1;
+
   if (err)
     goto lose;
 
