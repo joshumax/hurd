@@ -1,3 +1,7 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* store.h: Remove defns of STORAGE_*, now in <hurd/hurd_types.h>.
+
 1998-12-21  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* open.c (store_open): Like file.c:fiopen, catch EACCES or EROFS

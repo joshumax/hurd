@@ -1,3 +1,8 @@
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hurd_types.h (enum file_storage_class): New values STORAGE_REMAP,
+	STORAGE_COPY; moved with their comments from libstore/store.h.
+
 1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hurd_types.defs: Include <bits/utsname.h> instead of
