@@ -39,7 +39,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
  start_over:
 
   if (box->active != MACH_PORT_NULL)
-    assert (box->flags & TRANSBOX_STARTING == 0);
+    assert ((box->flags & TRANSBOX_STARTING) == 0);
   else
     {
       mach_port_t underlying;
