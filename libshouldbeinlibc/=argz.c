@@ -92,9 +92,9 @@ argz_extract (char *argz, int len, char **argv)
 /* ---------------------------------------------------------------- */
 
 /* Make '\0' separated arg vector ARGZ printable by converting all the '\0's
-   except the last into spaces.  */
+   except the last into the character SEP.  */
 void
-argz_stringify(char *argz, int len)
+argz_stringify(char *argz, int len, int sep)
 {
   while (len > 0)
     {
@@ -102,6 +102,6 @@ argz_stringify(char *argz, int len)
       argz += part_len;
       len -= part_len + 1;
       if (len > 0)
-	*argz++ = ' ';
+	*argz++ = sep;
     }
 }

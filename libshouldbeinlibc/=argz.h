@@ -34,7 +34,7 @@ int argz_count (char *argz, int len);
 void argz_extract (char *argz, int len, char **argv);
 
 /* Make '\0' separated arg vector ARGZ printable by converting all the '\0's
-   except the last into spaces.  */
-void argz_stringify(char *argz, int len);
+   except the last into the character SEP.  */
+void argz_stringify(char *argz, int len, int sep);
 
 #endif /* __ARGZ_H__ */
