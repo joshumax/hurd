@@ -1,3 +1,7 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* crash.c (stop_pgrp): Use munmap instead of vm_deallocate.
+
 1999-06-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* crash.c (options): Add --dump-core as alias for --core-file.

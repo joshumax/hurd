@@ -126,7 +126,7 @@ stop_pgrp (process_t userproc, mach_port_t cttyid)
 	mach_port_deallocate (mach_task_self (), msgport);
       }
   if (pids != pids_)
-    vm_deallocate (mach_task_self (), (vm_address_t) pids, numpids);
+    munmap (pids, numpids);
 }
 
 
