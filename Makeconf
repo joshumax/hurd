@@ -66,7 +66,7 @@ else
 top_srcdirinc=-I$(top_srcdir)
 endif
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE
-CFLAGS += -Wall -g -O3
+CFLAGS += -Wall -g -O3 -DEWOULDBLOCK=EAGAIN
 
 
 # Local programs:
