@@ -303,7 +303,7 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
       else if (state->arg_num == 1)
 	host = arg;
       else
-	return EINVAL;
+	return ARGP_ERR_UNKNOWN;
       break;
 
     case ARGP_KEY_END:
@@ -315,7 +315,7 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
       argp_error (state, "No REMOTE_FS specified");
 
     default:
-      return EINVAL;
+      return ARGP_ERR_UNKNOWN;
     }
   return 0;
 }
