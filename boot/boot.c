@@ -584,9 +584,9 @@ init_termstate ()
 
 kern_return_t 
 S_tioctl_tiocgeta (mach_port_t port,
-		 int modes[],
-		 char ccs[],
-		 int speeds[])
+		   int modes[],
+		   char ccs[],
+		   int speeds[])
 {
   /* Emacs reads the terminal state in one of two cases:
      1) Checking whether or not a preceding tiocseta succeeded;
