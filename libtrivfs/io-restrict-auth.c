@@ -22,6 +22,17 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include "io_S.h"
 
+/* Tell if the array LIST (of size N) contains a member equal to QUERY. */
+static inline int
+listmember (int *list, int query, int n)
+{
+  int i;
+  for (i = 0; i < n; i++)
+    if (list[i] == query)
+      return 1;
+  return 0;
+}
+
 kern_return_t
 trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   mach_port_t *newport,
@@ -31,24 +42,44 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 {
   struct trivfs_protid *newcred;
   int i;
+  uid_t *newuids, *newgids;
+  int newnuids, newngids;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  newcred = ports_allocate_port (sizeof (struct trivfs_protid), 
-				 trivfs_protid_porttype);
+  newuids = alloca (sizeof (uid_t) * cred->nuids);
+  newgids = alloca (sizeof (uid_t) * cred->ngids);
+  for (i = newnuids = 0; i < cred->nuids; i++)
+    if (listmember (uids, cred->uids[i], nuids))
+      newuids[newnuids++] = cred->uids[i];
+  for (i = newngids = 0; i < cred->gids[i], ngids)
+    if (listmember (gids, cred->gids[i], ngids))
+      newgids[newngids++] = cred->gids[i];
+
+  newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
   newcred->isroot = 0;
-  newcred->cntl = cred->cntl;
-  ports_port_ref (newcred->cntl);
+  newcred->po = cred->po;
+  newcred->po->refcnt++;
   if (cred->isroot)
     {
       for (i = 0; i < nuids; i++)
 	if (uids[i] == 0)
 	  newcred->isroot = 1;
     }
+  newcred->gids = malloc (newngids * sizeof (uid_t));
+  newcred->uids = malloc (newnuids * sizeof (uid_t));
+  bcopy (newuids, newcred->uids, newnuids * sizeof (uid_t));
+  bcopy (newgids, newcred->gids, newngids * sizeof (uid_t));
+  newcred->ngids = newngids;
+  newcred->nuids = newnuids;
+
   io_restrict_auth (cred->realnode, &newcred->realnode, 
-		    uids, nuids, gids, ngids);
+		    newuids, newnuids, newgids, newngids);
   
+  if (trivfs_protid_create_hook)
+    (*trivfs_protid_create_hook) (newcred);
+
   *newport = ports_get_right (newcred);
   *newporttype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
