@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <error.h>
 #include <argp.h>
 #include <argz.h>
+#include <sys/mman.h>
 
 #include "crash_S.h"
 #include "crash_reply_U.h"
