@@ -336,21 +336,28 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
   flags = O_RDWR|O_EXEC;
   file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-  if (file == MACH_PORT_NULL && (errno == EACCES
+  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
 				 || errno == EROFS || errno == EISDIR))
     {
       flags = O_RDWR;
       file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
-  if (file == MACH_PORT_NULL && (errno == EACCES
+  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
 				 || errno == EROFS || errno == EISDIR))
     {
       flags = O_READ|O_EXEC;
       file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
-  if (file == MACH_PORT_NULL && errno == EACCES)
+  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
+				 || errno == EISDIR))
     {
       flags = O_READ;
+      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
+    }
+  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
+				 || errno == EISDIR))
+    {
+      flags = 0;
       file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
   *np = 0;
