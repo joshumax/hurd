@@ -48,9 +48,11 @@
 #define	SO_BSDCOMPAT 192
 
 /* Maximum queue length specifiable by listen.  */
+#ifndef SOMAXCONN
 #define SOMAXCONN	128
+#endif
 
-/* XXX */
+#ifndef CMSG_DATA
 #define msg_control	msg_accrights
 #define msg_controllen	msg_accrightslen
 struct cmsghdr { int cmsg_garbage; };
@@ -65,7 +67,11 @@ put_cmsg(struct msghdr *msg, int level, int type, int len, void *data)
 #define CMSG_DATA(cmsg)		(0)
 #define CMSG_ALIGN(size)	(0)
 #define CMSG_LEN(size) 		(0)
-
+#else
+static inline int
+put_cmsg(struct msghdr *msg, int level, int type, int len, void *data)
+{ return 0; }
+#endif
 
 #define MSG_NOSIGNAL	0
 #define MSG_ERRQUEUE	0
