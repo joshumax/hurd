@@ -31,6 +31,9 @@ headers = cthreads.h
 malloc-sources = malloc.c
 malloc-objects = $(addsuffix .o,$(basename $(notdir $(malloc-sources))))
 
+SRCS = $(sources)
+TAGSHDRS=$(headers)
+
 DIST_FILES = $(generic-sources) $(headers) \
 	     cthread_internals.h options.h \
 	     ChangeLog Makefile $(malloc-sources)
