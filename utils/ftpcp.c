@@ -283,6 +283,24 @@ ebasename (struct epoint *e, const char *composite, char **base)
     }
 }
 
+static void
+append_basename (struct epoint *dst, struct epoint *src)
+{
+  char *bname;
+  error_t err = ebasename (src, src->file, &bname);
+
+  if (err)
+    error (33, err, "%s: Cannot find basename", src->name);
+
+  err = eappend (dst, dst->file, bname, &dst->file);
+  if (err)
+    error (34, err, "%s: Cannot append name component", dst->name);
+
+  err = eappend (dst, dst->name, bname, &dst->name);
+  if (err)
+    error (35, err, "%s: Cannot append name component", dst->name);
+}
+
 int 
 main (int argc, char **argv)
 {
@@ -335,6 +353,13 @@ main (int argc, char **argv)
   if (rd.conn && wr.conn)
     {
       err = ftp_conn_rmt_copy (rd.conn, rd.file, wr.conn, wr.file);
+      if (err == EISDIR)
+	/* The destination name is a directory; try again with the source
+	   basename appended.  */
+	{
+	  append_basename (&wr, &rd);
+	  err = ftp_conn_rmt_copy (rd.conn, rd.file, wr.conn, wr.file);
+	}
       if (err)
 	error (30, err, "Remote copy");
     }
@@ -351,19 +376,7 @@ main (int argc, char **argv)
 	/* The destination name is a directory; try again with the source
 	   basename appended.  */
 	{
-	  char *bname;
-
-	  err = ebasename (&rd, rd.file, &bname);
-	  if (err)
-	    error (33, err, "%s: Cannot find basename", rd.name);
-
-	  err = eappend (&wr, wr.file, bname, &wr.file);
-	  if (err)
-	    error (34, err, "%s: Cannot append name component", wr.name);
-	  err = eappend (&wr, wr.name, bname, &wr.name);
-	  if (err)
-	    error (35, err, "%s: Cannot append name component", wr.name);
-
+	  append_basename (&wr, &rd);
 	  err = eopen_wr (&wr, &wr_fd);
 	}
       if (err)
