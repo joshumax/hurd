@@ -1,3 +1,8 @@
+1999-10-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* sync-interval.c (periodic_sync): With diskfs_fsys_lock reader lock
+	held, check _diskfs_diskdirty and don't sync if not dirty.
+
 1999-10-14  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* opts-std-startup.c (TOGGLE): Fix `off' case.
