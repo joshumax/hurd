@@ -421,6 +421,10 @@ launch_system (void)
   device_master = 0;
 #endif
 
+  /* Declare that the filesystem and auth are our children. */
+  proc_child (procserver, fstask);
+  proc_child (procserver, authtask);
+
   proc_task2proc (procserver, authtask, &authproc);
   startup_authinit_reply (authreply, authreplytype, 0, authproc, 
 			  MACH_MSG_TYPE_MOVE_SEND);
@@ -446,10 +450,6 @@ launch_system (void)
 			 authserver))
     perror ("fsys_init");
 
-  /* Declare that the filesystem and auth are our children. */
-  proc_child (procserver, fstask);
-  proc_child (procserver, authtask);
-  
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
   fflush (stdout);
