@@ -21,6 +21,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 subsystem auth_reply 25100;	/* must mach auth.defs + 100 */
 
+#include <hurd/hurd_types.defs>
+
+type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
+	ctype: mach_port_t;
+
 skip; /* auth_getids */
 skip; /* auth_makeauth */
 
