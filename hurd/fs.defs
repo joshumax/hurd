@@ -158,7 +158,8 @@ routine file_syncfs (
 routine file_get_storage_info (
 	file: file_t;
 	out class: int;
-	out addresses: intarray_t;
+	out addresses: off_array_t;
+	out address_units: size_t;
 	out storage_name: string_t;
 	out storage_port: mach_port_send_t;
 	out storage_misc: data_t);
@@ -229,14 +230,14 @@ routine dir_unlink (
  
 /* Create a hard link.
 
-   If OLDFILE and NEWDIRECTORY are not implemented by the same filesystem,
+   If DIR and FILE are not implemented by the same filesystem,
    EXDEV should be returned.  If the two filesystems, however can
    inter-operate and guarantee the appropriate Posix semantics, they can
    communicate by a private protocol and allow hard links between them.  */
 routine dir_link (
-	oldfile: file_t;
-	newdirectory: file_t;
-	newname: string_t);
+	dir: file_t;
+	file: file_t;
+	name: string_t);
 
 /* Rename file -- comments similar to those for dir_link apply here
    about EXDEV. */
