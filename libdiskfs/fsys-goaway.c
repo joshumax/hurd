@@ -20,10 +20,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "fsys_S.h"
+#include "fsys_reply_U.h"
 
 /* Implement fsys_goaway as described in <hurd/fsys.defs>. */
 error_t
 diskfs_S_fsys_goaway (fsys_t controlport,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      int flags)
 {
   struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
@@ -40,8 +44,7 @@ diskfs_S_fsys_goaway (fsys_t controlport,
   if (ret == 0)
     {
       /* We are supposed to exit, but first notify the caller. */
-      /* XXX But this isn't happening yet, because it means too
-	 much pain. */
+      fsys_goaway_reply (reply, reply_type, 0);
       exit (0);
     }
 
