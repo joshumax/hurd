@@ -294,7 +294,9 @@ run (char *server, mach_port_t *ports, task_t *task)
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).
-   Return the task that we started. */
+   Return the task that we started.  If CTTY is set, then make 
+   that the controlling terminal of the new process and put it in
+   its own login collection.  */
 task_t
 run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 {
@@ -334,6 +336,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
       term_getctty (ctty, &default_ports[INIT_PORT_CTTYID]);
       proc_task2pid (procserver, task, &pid);
       io_mod_owner (ctty, -pid);
+      proc_make_login_coll (default_ports[INIT_PORT_PROC]);
     }
   if (bootstrap_args & RB_KDB)
     {
@@ -360,7 +363,6 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 			    default_ports[INIT_PORT_CTTYID]);
       default_ports[INIT_PORT_CTTYID] = MACH_PORT_NULL;
     }
-      
   mach_port_deallocate (mach_task_self (), file);
   return err ? MACH_PORT_NULL : task;
 }
