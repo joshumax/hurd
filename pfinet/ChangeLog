@@ -1,3 +1,8 @@
+Fri Apr 25 10:46:49 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* options.c (trivfs_append_args): Renamed from trivfs_get_options.
+	Don't initialize ARGZ/ARGZ_LEN.
+
 Tue Feb  4 16:53:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* socket-ops.c (S_socket_send): Don't deref ADDR if it's 0.
