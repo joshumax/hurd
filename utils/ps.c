@@ -238,7 +238,7 @@ _parse_strlist (char *arg,
 static void
 parse_strlist (char *arg,
 	       void (*add_fn)(char *str),
-	       char *(*default_fn)(),
+	       const char *(*default_fn)(),
 	       char *type_name)
 {
   void default_str_add() { (*add_fn)((*default_fn)()); }
