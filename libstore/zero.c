@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "store.h"
 
@@ -124,7 +125,10 @@ zero_open (const char *name, int flags,
       return store_zero_create (size, flags, store);
     }
   else
-    return store_zero_create (~(size_t)0, flags, store);
+    {
+      off_t max_offs = ~((off_t)1 << (CHAR_BIT * sizeof (off_t) - 1));
+      return store_zero_create (max_offs, flags, store);
+    }
 }
 
 static error_t
