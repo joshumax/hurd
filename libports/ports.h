@@ -1,5 +1,5 @@
 /* Ports library for server construction
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -26,13 +26,21 @@
 #include <hurd.h>
 #include <mach/notify.h>
 
+/* These are global values for common flags used in the various structures.
+   Not all of these are meaningful in all flag fields.  */
+#define PORTS_INHIBITED		0x0100 /* block RPC's */
+#define PORTS_BLOCKED		0x0200 /* if INHIBITED, someone is blocked */
+#define PORTS_INHIBIT_WAIT	0x0400 /* someone wants to start inhibit */
+#define PORTS_NO_ALLOC		0x0800 /* block allocation */
+#define PORTS_ALLOC_WAIT	0x1000 /* someone wants to allocate */
+
 struct port_info
 {
   struct port_class *class;
   int refcnt;
   int weakrefcnt;
   mach_port_mscount_t mscount;
-  mach_msg_seqno_t cancel_threshhold;
+  mach_msg_seqno_t cancel_threshold;
   int flags;
   mach_port_t port_right;
   struct rpc_info *current_rpcs;
@@ -42,9 +50,9 @@ struct port_info
 };
 /* FLAGS above are the following: */
 #define PORT_HAS_SENDRIGHTS	0x0001 /* send rights extant */
-#define PORT_INHIBITED		0x0002 /* block RPCs */
-#define PORT_BLOCKED		0x0004 /* if INHIBITED, someone is blocked */
-#define PORT_INHIBIT_WAIT	0x0008 /* someone wants to start inihibt */
+#define PORT_INHIBITED		PORTS_INHIBITED
+#define PORT_BLOCKED		PORTS_BLOCKED
+#define PORT_INHIBIT_WAIT	PORTS_INHIBIT_WAIT
 
 struct port_bucket
 {
@@ -56,11 +64,11 @@ struct port_bucket
   struct port_bucket *next;
 };
 /* FLAGS above are the following: */
-#define PORT_BUCKET_INHIBITED	0x0001 /* block RPC's */
-#define PORT_BUCKET_BLOCKED	0x0002 /* if INHIBITED, someone is blocked */
-#define PORT_BUCKET_INHIBIT_WAIT 0x004 /* someone wants to start inhibit */
-#define PORT_BUCKET_NO_ALLOC	0x0008 /* block allocation */
-#define PORT_BUCKET_ALLOC_WAIT  0x0010 /* someone wants to allocate */
+#define PORT_BUCKET_INHIBITED	PORTS_INHIBITED
+#define PORT_BUCKET_BLOCKED	PORTS_BLOCKED
+#define PORT_BUCKET_INHIBIT_WAIT PORTS_INHIBIT_WAIT
+#define PORT_BUCKET_NO_ALLOC	PORTS_NO_ALLOC
+#define PORT_BUCKET_ALLOC_WAIT	PORTS_ALLOC_WAIT
 
 struct port_class
 {
@@ -70,13 +78,14 @@ struct port_class
   int count;
   void (*clean_routine) (void *);
   void (*dropweak_routine) (void *);
+  struct ports_msg_id_range *uninhibitable_rpcs;
 };
 /* FLAGS are the following: */
-#define PORT_CLASS_INHIBITED	0x0001 /* block RPCs */
-#define PORT_CLASS_BLOCKED	0x0002 /* if INHIBITED, someone is blocked */
-#define PORT_CLASS_INHIBIT_WAIT	0x0004 /* someone wants to start INHIBIT */
-#define PORT_CLASS_NO_ALLOC	0x0008 /* block allocation */
-#define PORT_CLASS_ALLOC_WAIT   0x0010 /* someone wants to allocate */
+#define PORT_CLASS_INHIBITED	PORTS_INHIBITED
+#define PORT_CLASS_BLOCKED	PORTS_BLOCKED
+#define PORT_CLASS_INHIBIT_WAIT	PORTS_INHIBIT_WAIT
+#define PORT_CLASS_NO_ALLOC	PORTS_NO_ALLOC
+#define PORT_CLASS_ALLOC_WAIT	PORTS_ALLOC_WAIT
 
 struct rpc_info
 {
@@ -120,6 +129,17 @@ extern struct rpc_notify *_ports_free_rpc_notifies;
 /* Remove RPC from the list of notified rpcs, cancelling any pending
    notifications.  _PORTS_LOCK should be held.  */
 void _ports_remove_notified_rpc (struct rpc_info *rpc);
+
+struct ports_msg_id_range
+{
+  mach_msg_id_t start, end;
+  struct ports_msg_id_range *next;
+};
+
+/* This is the initial value for the uninhibitable_rpcs field in new
+   port_class structures.  The user may define this variable; the default
+   value contains only an entry for interrupt_operation.  */
+extern struct ports_msg_id_range *ports_default_uninhibitable_rpcs;
 
 /* Port creation and port right frobbing */
 
@@ -135,14 +155,24 @@ struct port_bucket *ports_create_bucket (void);
 struct port_class *ports_create_class (void (*clean_routine)(void *),
 				       void (*dropweak_routine)(void *));
 
-/* Create and return a new port in BUCKET and CLASS; SIZE bytes will
-   be allocated to hold the port structure and whatever private data
-   the user desires. */
+/* Create and return in RESULT a new port in CLASS and BUCKET; SIZE bytes
+   will be allocated to hold the port structure and whatever private data the
+   user desires.  */
+error_t ports_create_port (struct port_class *class,
+			   struct port_bucket *bucket,
+			   size_t size,
+			   void *result);
+/* This is obsolete.  Use ports_create_port.  */
 void *ports_allocate_port (struct port_bucket *bucket, size_t size, 
 			   struct port_class *class);
    
-/* For an existing RECEIVE right, create and return a new port structure;
-   BUCKET, SIZE, and CLASS args are as for ports_allocate_port. */
+/* For an existing RECEIVE right, create and return in RESULT a new port
+   structure; BUCKET, SIZE, and CLASS args are as for ports_create_port. */
+error_t ports_import_port (struct port_class *class,
+			   struct port_bucket *bucket,
+			   mach_port_t port, size_t size,
+			   void *result);
+/* This is obsolete.  Use ports_import_port.  */
 void *ports_intern_external_port (struct port_bucket *bucket,
 				  mach_port_t receive, size_t size, 
 				  struct port_class *class);
@@ -226,7 +256,8 @@ typedef int (*ports_demuxer_type)(mach_msg_header_t *inp,
    allocated by the caller and will be used to hold dynamic state. 
    If this RPC should be abandoned, return EDIED; otherwise we
    return zero. */
-error_t ports_begin_rpc (void *port, struct rpc_info *info);
+error_t ports_begin_rpc (void *port, mach_msg_id_t msg_id,
+			 struct rpc_info *info);
 
 /* Call this when an RPC is concluding.  Args must be as for the
    paired call to ports_begin_rpc. */
@@ -261,16 +292,16 @@ void ports_manage_port_operations_multithread (struct port_bucket *bucket,
    
 /* Interrupt any pending RPC on PORT.  Wait for all pending RPC's to
    finish, and then block any new RPC's starting on that port. */
-void ports_inhibit_port_rpcs (void *port);
+error_t ports_inhibit_port_rpcs (void *port);
 
 /* Similar to ports_inhibit_port_rpcs, but affects all ports in CLASS. */
-void ports_inhibit_class_rpcs (struct port_class *class);
+error_t ports_inhibit_class_rpcs (struct port_class *class);
 
 /* Similar to ports_inhibit_port_rpcs, but affects all ports in BUCKET. */
-void ports_inhibit_bucket_rpcs (struct port_bucket *bucket);
+error_t ports_inhibit_bucket_rpcs (struct port_bucket *bucket);
 
 /* Similar to ports_inhibit_port_rpcs, but affects all ports whatsoever. */
-void ports_inhibit_all_rpcs (void);
+error_t ports_inhibit_all_rpcs (void);
 
 /* Reverse the effect of a previous ports_inhibit_port_rpcs for this PORT,
    allowing blocked RPC's to continue. */
@@ -286,7 +317,7 @@ void ports_resume_bucket_rpcs (struct port_bucket *bucket);
 void ports_resume_all_rpcs (void);
 
 /* Cancel (with thread_cancel) any RPC's in progress on PORT. */
-void ports_interrupt_rpc (void *port);
+void ports_interrupt_rpcs (void *port);
 
 /* Arrange for hurd_cancel to be called on RPC's thread if OBJECT gets notified
    that any of the things in COND have happened to PORT.  RPC should be an
@@ -335,9 +366,9 @@ extern struct condition _ports_block;
 extern struct port_bucket *_ports_all_buckets;
 extern int _ports_total_rpcs;
 extern int _ports_flags;
-#define _PORTS_INHIBITED	0x01
-#define _PORTS_BLOCKED		0x02
-#define _PORTS_INHIBIT_WAIT	0x04
+#define _PORTS_INHIBITED	PORTS_INHIBITED
+#define _PORTS_BLOCKED		PORTS_BLOCKED
+#define _PORTS_INHIBIT_WAIT	PORTS_INHIBIT_WAIT
 void _ports_complete_deallocate (struct port_info *);
 
 #endif
