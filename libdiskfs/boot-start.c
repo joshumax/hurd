@@ -503,7 +503,7 @@ start_execserver (void)
   execboot_info = ports_allocate_port (diskfs_port_bucket,
 				       sizeof (struct port_info),
 				       diskfs_execboot_class);
-  right = ports_get_right (execboot_info)
+  right = ports_get_right (execboot_info);
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
   ports_port_deref (execboot_info);
