@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.20 2001/12/02 22:06:54 roland Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.21 2002/06/11 21:43:19 roland Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -1279,7 +1279,7 @@ iput(ip, ino)
 	sblock.fs_cstotal.cs_nifree--;
 	fscs[0].cs_nifree--;
 	if (ino >= sblock.fs_ipg * sblock.fs_ncg)
-	  deverr (32, 0, "fsinit: inode value out of range (%d)", ino);
+	  deverr (32, 0, "fsinit: inode value out of range (%Ld)", ino);
 	d = fsbtodb(&sblock, ino_to_fsba(&sblock, ino));
 	rdfs(d, sblock.fs_bsize, buf);
 	buf[ino_to_fsbo(&sblock, ino)] = *ip;
