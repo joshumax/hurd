@@ -1,5 +1,5 @@
 /* Map the disk image and handle faults accessing it.
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -24,10 +24,10 @@
 struct pager *diskfs_disk_pager;
 
 static void fault_handler (int sig, long int sigcode, struct sigcontext *scp);
-static struct hurd_signal_preempter preempter =
+static struct hurd_signal_preemptor preemptor =
   {
   signals: sigmask (SIGSEGV) | sigmask (SIGBUS),
-  preempter: NULL,
+  preemptor: NULL,
   handler: (sighandler_t) &fault_handler,
   };
 
@@ -75,10 +75,10 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
   if (err)
     error (2, err, "cannot vm_map whole disk");
 
-  /* Set up the signal preempter to catch faults on the disk image.  */
-  preempter.first = (vm_address_t) *image;
-  preempter.last = ((vm_address_t) *image + size);
-  hurd_preempt_signals (&preempter);
+  /* Set up the signal preemptor to catch faults on the disk image.  */
+  preemptor.first = (vm_address_t) *image;
+  preemptor.last = ((vm_address_t) *image + size);
+  hurd_preempt_signals (&preemptor);
 
   /* We have the mapping; we no longer need the send right.  */
   mach_port_deallocate (mach_task_self (), disk_pager_port);
