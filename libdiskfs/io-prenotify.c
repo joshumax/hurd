@@ -53,17 +53,16 @@ diskfs_S_io_prenotify (struct protid *cred,
   
   if (end < np->allocsize)
     {
-      /* The user is either foolin' with us, or has the wrong
-	 prenotify size, hence the diagnostic. */
-      printf ("io_prenotify: unnecessary call\n");
+      /* The user didn't need to do this, so we'll make sure they
+	 have the right shared page info.  */
       spin_lock (&cred->mapped->lock);
-      err = ioserver_put_shared_data (cred);
+      ioserver_put_shared_data (cred);
       spin_unlock (&cred->mapped->lock);
       goto out;
     }
   
   err = diskfs_grow (np, end, cred);
  out:
-  mutex_unlock (&np->i_toplock);
+  mutex_unlock (&np->lock);
   return err;
 }
