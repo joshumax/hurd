@@ -25,7 +25,7 @@ LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 include ../Makeconf
 
 # XXX not ideal
-install: $(includedir)/hurd \
+install-hdrs install: $(includedir)/hurd \
 	 $(patsubst $(srcdir)/%,$(includedir)/hurd/%,$(hdrs))
 $(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
 $(includedir)/hurd:;mkdir -p $@
