@@ -21,14 +21,7 @@
 dir := include
 makemode := misc
 
-hdrs = $(wildcard $(srcdir)/*.h)
-DIST_FILES = $(hdrs)
-LCLHDRS = 
+DIST_FILES = $(notdir $(wildcard $(srcdir)/*.h))
 
 include ../Makeconf
 
-# XXX not ideal
-install-hdrs install: $(includedir) \
-	 $(patsubst $(srcdir)/%,$(includedir)/%,$(hdrs))
-$(includedir)/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
-$(includedir):;mkdir -p $@
