@@ -56,6 +56,7 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
 	interruptServer.o fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 
 notify-MIGSFLAGS = -DSEQNOS
+fsys_reply-MIGUFLAGS = -DREPLY_PORTS
 
 OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS)) argz.o options.o
 
