@@ -48,4 +48,7 @@ error_t argz_add (char **argz, unsigned *argz_len, char *str);
 /* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
 void argz_remove (char **argz, unsigned *argz_len, char *entry);
 
+/* Insert ENTRY into ARGZ & ARGZ_LEN at position N.  */
+error_t argz_insert (char **argz, unsigned *argz_len, unsigned n, char *entry);
+
 #endif /* __ARGZ_H__ */
