@@ -92,7 +92,10 @@ ports_interrupt_rpc_on_notification (void *object,
       break;
 
   if (req)
-    free (new_req);
+    {
+      new_req->next = _ports_free_rpc_notifies;
+      _ports_free_rpc_notifies = new_req;
+    }
   else
     {
       req = new_req;
