@@ -28,14 +28,6 @@ diskfs_S_io_select (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->np->lock);
-  if (((*type & SELECT_READ) && !(cred->po->openstat & O_READ))
-      || ((*type & SELECT_WRITE) && !(cred->po->openstat & O_WRITE)))
-    {
-      mutex_unlock (&cred->po->np->lock);
-      return EBADF;
-    }
-  mutex_unlock (&cred->po->np->lock);
   *type &= ~SELECT_URG;
   return 0;
 }
