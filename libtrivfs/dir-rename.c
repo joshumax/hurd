@@ -16,9 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-trivfs_S_dir_rename (struct protid *cred, char *name,
-		     struct protid *cred2, char *name)
+kern_return_t
+trivfs_S_dir_rename (struct trivfs_protid *cred, char *name,
+		     struct trivfs_protid *cred2, char *name2)
 {
   if (!cred)
     return EOPNOTSUPP;
