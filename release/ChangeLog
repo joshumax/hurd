@@ -1,3 +1,8 @@
+1997-06-17  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mksmallso, mkemptyso: New files.
+	* Makefile (tool-files): add mksmallso & mkemptyso.
+
 Wed Jun 11 12:05:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (dist-links): Create /servers/exec node.
