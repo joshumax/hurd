@@ -1,3 +1,12 @@
+2000-01-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mapped-time.h: Include <maptime.h>.
+	(fill_timeval): Function removed.
+	(fetch_jiffies): Use maptime_read.
+	* timer-emul.c (init_time): Use maptime_map and maptime_read.
+	* linux/sched.h (fetch_xtime): Use maptime_read.
+	* linux/time.h (do_gettimeofday): Likewise.
+
 1999-10-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* socket-ops.c (S_socket_getopt): Implement the call.
