@@ -70,6 +70,9 @@ io_state_sync(struct io_state *ios, struct dev *dev)
 	  err =
 	    dev_write(dev, ios->buffer, dev->block_size, &ios->location);
 	}
+
+      /* Remember that there's nothing left in the buffer.  */
+      ios->buffer_use = 0;
     }
 
   return err;
