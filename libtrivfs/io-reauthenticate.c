@@ -71,6 +71,7 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   bcopy (gen_gids, newcred->gids, gengidlen * sizeof (uid_t));
   newcred->nuids = genuidlen;
   newcred->ngids = gengidlen;
+  newcred->hook = cred->hook;
   
   newcred->po = cred->po;
   newcred->po->refcnt++;
