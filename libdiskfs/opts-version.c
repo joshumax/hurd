@@ -22,7 +22,7 @@
 
 #include "priv.h"
 
-static error_t
+static void
 _print_version (FILE *stream, struct argp_state *state)
 {
   if (argp_program_version)
@@ -34,7 +34,6 @@ _print_version (FILE *stream, struct argp_state *state)
     fprintf (stream, "%s %d.%d (GNU %s)\n",
 	     diskfs_server_name, diskfs_major_version, diskfs_minor_version,
 	     HURD_RELEASE);
-  return 0;
 }
 
 void (*argp_program_version_hook) (FILE *stream, struct argp_state *state)
