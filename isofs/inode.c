@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
@@ -549,17 +549,12 @@ diskfs_set_statfs (struct statfs *st)
 {
   /* There is no easy way to determine the number of files on an
      ISO 9660 filesystem.  */
+  bzero (st, sizeof *st);
   st->f_type = FSTYPE_ISO9660;
   st->f_bsize = logical_block_size;
   st->f_blocks = isonum_733 (sblock->vol_sp_size);
-  st->f_bfree = 0;
-  st->f_bavail = 0;
-  st->f_files = 0;
-  st->f_ffree = 0;
   st->f_fsid = getpid ();
-  st->f_namelen = 0;
-  st->__f_favail = 0;
-  st->__f_frsize = logical_block_size;
+  st->f_frsize = logical_block_size;
   return 0;
 }
 
