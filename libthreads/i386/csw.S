@@ -58,25 +58,25 @@
  * void cproc_switch(int *cur, int *next, int *lock)
  */
 ENTRY(cproc_switch)
-	pushl	%ebp		/ save ebp
-	movl	%esp,%ebp	/ set frame pointer to get arguments
-	pushl	%ebx		/ save ebx
-	pushl	%esi		/      esi
-	pushl	%edi		/      edi
-	movl	B_ARG0,%eax	/ get cur
-	movl	%esp,(%eax)	/ save current esp
-	movl	B_ARG2,%edx	/ get address of lock before switching
-				/ stacks
-	movl	B_ARG1,%eax	/ get next
-	movl	(%eax),%esp	/ get new stack pointer
-	xorl	%eax,%eax	/ unlock
-	xchgl	%eax,(%edx)	/ the lock - now old thread can run
+	pushl	%ebp		/* save ebp */
+	movl	%esp,%ebp	/* set frame pointer to get arguments */
+	pushl	%ebx		/* save ebx */
+	pushl	%esi		/*      esi */
+	pushl	%edi		/*      edi */
+	movl	B_ARG0,%eax	/* get cur */
+	movl	%esp,(%eax)	/* save current esp */
+	movl	B_ARG2,%edx	/* get address of lock before switching */
+				/* stacks */
+	movl	B_ARG1,%eax	/* get next */
+	movl	(%eax),%esp	/* get new stack pointer */
+	xorl	%eax,%eax	/* unlock */
+	xchgl	%eax,(%edx)	/* the lock - now old thread can run */
 	
-	popl	%edi		/ restore di
-	popl	%esi		/	  si
-	popl	%ebx		/	  bx
-	popl	%ebp		/     and bp (don`t use "leave" - bp
-				/	      still points to old stack)
+	popl	%edi		/* restore di */
+	popl	%esi		/*	  si */
+	popl	%ebx		/*	  bx */
+	popl	%ebp		/*     and bp (don`t use "leave" - bp */
+				/*	      still points to old stack) */
 	ret
 
 /*
@@ -89,21 +89,21 @@ ENTRY(cproc_switch)
  *			 int *lock)
  */
 ENTRY(cproc_start_wait)
-	pushl	%ebp		/ save ebp
-	movl	%esp,%ebp	/ set frame pointer
-	pushl	%ebx		/ save ebx
-	pushl	%esi		/      esi
-	pushl	%edi		/      edi
-	movl	B_ARG0,%eax	/ get cur
-	movl	%esp,(%eax)	/ save current esp
-	movl	B_ARG1,%eax	/ get child thread
-	movl	B_ARG3,%edx	/ point to lock before switching stack
-	movl	B_ARG2,%esp	/ get new stack
-	pushl	%eax		/ push child thread as argument
-	movl	$0,%ebp		/ (clear frame pointer)
-	xorl	%eax,%eax	/ unlock
-	xchgl	%eax,(%edx)	/ the lock - now old thread can run
-	call	_cproc_waiting	/ call cproc_waiting
+	pushl	%ebp		/* save ebp */
+	movl	%esp,%ebp	/* set frame pointer */
+	pushl	%ebx		/* save ebx */
+	pushl	%esi		/*      esi */
+	pushl	%edi		/*      edi */
+	movl	B_ARG0,%eax	/* get cur */
+	movl	%esp,(%eax)	/* save current esp */
+	movl	B_ARG1,%eax	/* get child thread */
+	movl	B_ARG3,%edx	/* point to lock before switching stack */
+	movl	B_ARG2,%esp	/* get new stack */
+	pushl	%eax		/* push child thread as argument */
+	movl	$0,%ebp		/* (clear frame pointer) */
+	xorl	%eax,%eax	/* unlock */
+	xchgl	%eax,(%edx)	/* the lock - now old thread can run */
+	call	_cproc_waiting	/* call cproc_waiting */
 	/*NOTREACHED*/
 
 /*
@@ -114,26 +114,26 @@ ENTRY(cproc_start_wait)
  * void cproc_prepare(cproc_t child, int *context, int stack)
  */
 ENTRY(cproc_prepare)
-	pushl	%ebp		/ save ebp
-	movl	%esp,%ebp	/ set frame pointer
-	movl	B_ARG2,%edx	/ get child`s stack
+	pushl	%ebp		/* save ebp */
+	movl	%esp,%ebp	/* set frame pointer */
+	movl	B_ARG2,%edx	/* get child`s stack */
 	subl	$28,%edx
-				/ make room for context:
-				/ 0   saved edi ()
-				/ 4   saved esi ()
-				/ 8   saved ebx ()
-				/ 12  saved ebp ()
-				/ 16  return PC from cproc_switch
-				/ 20  return PC from cthread_body
-				/ 24  argument to cthread_body
-	movl	$0,12(%edx)	/ clear frame pointer
+				/* make room for context: */
+				/* 0   saved edi () */
+				/* 4   saved esi () */
+				/* 8   saved ebx () */
+				/* 12  saved ebp () */
+				/* 16  return PC from cproc_switch */
+				/* 20  return PC from cthread_body */
+				/* 24  argument to cthread_body */
+	movl	$0,12(%edx)	/* clear frame pointer */
 	movl	$_cthread_body,16(%edx)
-				/ resume at cthread_body
-	movl	$0,20(%edx)	/ fake return address from cthread_body
-	movl	B_ARG0,%ecx	/ get child thread pointer
-	movl	%ecx,24(%edx)	/ set as argument to cthread_body
-	movl	B_ARG1,%ecx	/ get pointer to context
-	movl	%edx,(%ecx)	/ save context
+				/* resume at cthread_body */
+	movl	$0,20(%edx)	/* fake return address from cthread_body */
+	movl	B_ARG0,%ecx	/* get child thread pointer */
+	movl	%ecx,24(%edx)	/* set as argument to cthread_body */
+	movl	B_ARG1,%ecx	/* get pointer to context */
+	movl	%edx,(%ecx)	/* save context */
 	leave
 	ret
 
