@@ -20,11 +20,45 @@
 struct trivfs_protid *
 _trivfs_begin_using_protid (mach_port_t port)
 {
-  return ports_check_port_type (port, trivfs_protid_porttype);
+  if (trivfs_protid_nporttypes > 1)
+    {
+      struct port_info *pi = ports_get_port (port);
+      int i;
+      for (i = 0; i < trivfs_protid_nporttypes, i++)
+	if (pi->type == trivfs_protid_porttypes[i])
+	  return (struct trivfs_protid *) pi;
+      ports_done_with_port (port);
+      return 0;
+    }
+  else
+    return ports_check_port_type (port, trivfs_protid_porttypes[0]);
 }
 
 void 
 _trivfs_end_using_protid (struct trivfs_protid *cred)
+{
+  ports_done_with_port (cred);
+}
+
+struct trivfs_control *
+_trivfs_begin_using_control (mach_port_t port)
+{
+  if (trivfs_control_nporttypes > 1)
+    {
+      struct port_info *pi = ports_get_port (port);
+      int i;
+      for (i = 0; i < trivfs_control_nporttypes, i++)
+	if (pi->type == trivfs_control_porttypes[i])
+	  return (struct trivfs_control *) pi;
+      ports_done_with_port (port);
+      return 0;
+    }
+  else
+    return ports_check_port_type (port, trivfs_control_porttypes[0]);
+}
+
+void 
+_trivfs_end_using_control (struct trivfs_control *cred)
 {
   ports_done_with_port (cred);
 }
