@@ -24,8 +24,7 @@
 #include <hurd.h>
 
 error_t
-fshelp_start_translator (mach_port_t underlying, 
-			 mach_msg_type_name_t underlying_type,
+fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
 			 char *name, char *argz, int argz_len,
 			 int timeout, fsys_t *control)
 {
@@ -45,7 +44,7 @@ fshelp_start_translator (mach_port_t underlying,
   ports[INIT_PORT_AUTH] = getauth ();
   fds[STDERR_FILENO] = getdport (STDERR_FILENO);
   
-  return fshelp_start_translator_long (underlying, underlying_type,
+  return fshelp_start_translator_long (underlying_open_fn,
 				       name, argz, argz_len,
 				       fds, MACH_MSG_TYPE_MOVE_SEND,
 				       STDERR_FILENO + 1,
@@ -54,6 +53,3 @@ fshelp_start_translator (mach_port_t underlying,
 				       ints, INIT_INT_MAX,
 				       timeout, control);
 }
-
-  
-		 
