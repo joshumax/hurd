@@ -38,7 +38,8 @@ routine startup_essential_task (
 	server: startup_t;
 	task: task_t;
         excpt: mach_port_move_receive_t;
-	name: string_t);
+	name: string_t;
+	credential: host_priv_t);
 
 /* This call registers a task as "notified", which means that if the
    system is going down, we should told about it and get a chance to
@@ -76,3 +77,15 @@ routine startup_authinit (
 	sreplyport reply_port: reply_port_t;
 	auth: mach_port_send_t;
 	out proc: mach_port_send_t);
+
+/* Return a uname structure for the currently running system. */
+routine startup_uname (server: startup_t;
+		       out uname: utsname_t);
+
+/* Tell the startup server who we are for inclusion in the uname string. */
+routine startup_register_version (
+	server: startup_t;
+	credential: host_priv_t;
+	name: string_t;
+	release: string_t;
+	version: string_t);
