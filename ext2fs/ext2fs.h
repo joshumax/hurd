@@ -141,9 +141,6 @@ void *memscan(void *buf, unsigned char ch, unsigned len);
 /* ext2fs specific per-file data.  */
 struct disknode
 {
-  /* The inode number of this file.  */
-  ino_t number;
-
   /* For a directory, this array holds the number of directory entries in
      each DIRBLKSIZE piece of the directory. */
   int *dirents;
@@ -312,10 +309,6 @@ dino (ino_t inum)
 
 /* Write all active disknodes into the inode pager. */
 void write_all_disknodes ();
-
-/* Fetch inode INUM, set *NPP to the node structure; gain one user reference
-   and lock the node.  */
-error_t iget (ino_t inum, struct node **npp);
 
 /* Lookup node INUM (which must have a reference already) and return it
    without allocating any new references. */
