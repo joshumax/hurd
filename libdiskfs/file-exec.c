@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -245,12 +245,22 @@ diskfs_S_file_exec (struct protid *cred,
 		     (diskfs_make_peropen (np, O_READ, cred->po->dotdotport),
 		      cred->uids, cred->nuids,
 		      cred->gids, cred->ngids))),
-		   MACH_MSG_TYPE_MAKE_SEND,
+		   MACH_MSG_TYPE_MOVE_SEND,
 		   task, flags, argv, argvlen, envp, envplen, 
-		   fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
-		   portarray, MACH_MSG_TYPE_MOVE_SEND, portarraylen,
+		   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		   intarray, intarraylen, deallocnames, deallocnameslen,
 		   destroynames, destroynameslen);
-  mach_port_deallocate (mach_task_self (), task);
-  return err;
+  if (!err)
+    {
+      int i;
+      
+      mach_port_deallocate (mach_task_self (), task);
+      for (i = 0; i < fdslen; i++)
+	mach_port_deallocate (mach_task_self (), fds[i]);
+      for (i = 0; i < portarraylen; i++)
+	mach_port_deallocate (mach_task_self (), portarray[i]);
+    }
+
+  return err; 
 }
