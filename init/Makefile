@@ -25,5 +25,8 @@ target = init
 
 init: $(OBJS) ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
+mung_msg_S.h: msg_S.h
+	sed 's/msg_server/mung_msg_server/' < $< > $@
+
 include ../Makeconf
 
