@@ -1,8 +1,7 @@
 /* Print task vm information
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,98,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -183,35 +182,35 @@ main (int argc, char **argv)
 	  if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
 	    {
 	      if (hex)
-		printf ("          [%#x] (hole)\n", addr - hole_addr);
+		printf ("          [%#zx] (hole)\n", addr - hole_addr);
 	      else
-		printf ("          [%d] (hole)\n", addr - hole_addr);
+		printf ("          [%zd] (hole)\n", addr - hole_addr);
 	    }
 	  else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
 	    {
 	      if (hex)
-		printf ("%#10x (hole)\n", addr - hole_addr);
+		printf ("%#10zx (hole)\n", addr - hole_addr);
 	      else
-		printf ("%10u (hole)\n", addr - hole_addr);
+		printf ("%10zu (hole)\n", addr - hole_addr);
 	    }
 	}
 
       if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
 	if (hex)
-	  printf ("%#10x[%#x]", addr, size);
+	  printf ("%#10zx[%#zx]", addr, size);
 	else
-	  printf ("%10u[%d]", addr, size);
+	  printf ("%10zu[%zd]", addr, size);
       else if ((what & (W_ADDRS|W_SIZES)) == W_ADDRS)
 	if (hex)
-	  printf ("%#10x", addr);
+	  printf ("%#10zx", addr);
 	else
-	  printf ("%10u", addr);
+	  printf ("%10zu", addr);
       else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
 	{
 	  if (hex)
-	    printf ("%#10x", size);
+	    printf ("%#10zx", size);
 	  else
-	    printf ("%10u", size);
+	    printf ("%10zu", size);
 	}
       if (what & W_DETAILS)
 	{
@@ -227,9 +226,9 @@ main (int argc, char **argv)
 	  if (offs != 0)
 	    {
 	      if (hex)
-		printf (", offs=%#x", offs);
+		printf (", offs=%#zx", offs);
 	      else
-		printf (", offs=%d", offs);
+		printf (", offs=%zd", offs);
 	    }
 	  putchar (')');
 	}
