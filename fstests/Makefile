@@ -19,22 +19,25 @@ dir := fstests
 
 include ../Makeconf
 
-DIST_FILES = fstests.c Makefile fdtests.c ChangeLog
+DIST_FILES = fstests.c Makefile fdtests.c ChangeLog timertest.c
 
-OBJS=fdtests.o #fstests.o
+#OBJS=fdtests.o 
+#OBJS=fstests.o
+OBJS=timertest.o
 
-all: fdtests
+all: timertest
 
 fstests: $(OBJS) $(libc); $(link)
 fdtests: $(OBJS) $(libc); $(link)
+timertest: $(OBJS) $(libc); $(link)
 
 
-install: fdtests $(hurdroot) #fstests
-	cp fdtests $(hurdroot)/bin/fdtests
+install:  $(hurdroot) timertest #fstests fdtests
+#	cp fdtests $(hurdroot)/bin/fdtests
 #	cp fstests $(hurdroot)/bin/fstests
-
+	cp timertest $(hurdroot)/bin/timertest
 
 clean: 
-	rm -f fstests 
+	rm -f fstests fdtests timertest *.o
 relink:
-	rm -f fstests
+	rm -f fstests fdtests timertest
