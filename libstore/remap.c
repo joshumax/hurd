@@ -115,6 +115,14 @@ remap_open (const char *name, int flags,
 	  if (endp == p)	/* Syntax "+5,+7" means "0+5,0+7".  */
 	    runs[nruns].start = 0;
 	  p = endp + 1;
+	  if (p == end || *p == ',')
+	    {
+	      /* Syntax "100+" means block 100 to the end of the store.
+		 Since we don't know the size yet, we use -1 as a marker
+		 for the code below.  */
+	      runs[nruns++].length = (off_t) -1;
+	      break;
+	    }
 	  runs[nruns].length = strtoul (p, &endp, 0);
 	  if (endp == p)
 	    return EINVAL;
@@ -129,10 +137,17 @@ remap_open (const char *name, int flags,
 	++p;
     } while (p < end);
 
-
   err = store_typed_open (end + 1, flags, classes, &from);
   if (!err)
     {
+      /* Check for any runs marked as "through the end of the store"
+	 and update them to use the actual size of the store.  */
+      size_t i;
+      for (i = 0; i < nruns; ++i)
+	if (runs[i].length == (off_t) -1)
+	  runs[i].length = from->blocks - runs[i].start;
+
+      /* Now do the remapping according to RUNS.  */
       err = store_remap (from, runs, nruns, store);
       if (err)
 	store_free (from);
