@@ -419,11 +419,7 @@ load_section (enum section section, struct execdata *u)
 	    return;
 	}
 
-      if (mapstart > addr
-#ifdef	BFD
-	  && (sec->flags & SEC_HAS_CONTENTS)
-#endif
-	  )
+      if (mapstart > addr)
 	{
 	  /* Zero space in the section before the first page boundary.  */
 	  vm_address_t overlap_page = trunc_page (addr);
