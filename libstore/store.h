@@ -23,6 +23,12 @@
 #ifndef __STORE_H__
 #define __STORE_H__
 
+#include <sys/types.h>
+
+#include <mach.h>
+#include <device/device.h>
+#include <hurd/hurd_types.h>
+
 struct store
 {
   /* If this store was created using store_create, the file from which we got
@@ -34,19 +40,20 @@ struct store
 
   /* Address ranges in the underlying storage which make up our contiguous
      address space.  In units of BLOCK_SIZE, below.  */
-  off_t *runs;
+  off_t *runs;			/* Malloced */
   unsigned runs_len;
 
   /* Handles for the underlying storage.  */
-  char *name;
-  mach_port_t port;
+  char *name;			/* Malloced */
+  mach_port_t port;		/* Send right */
 
   /* The size of a `block' on this storage.  */
   size_t block_size;
 
-  /* The number of blocks in this storage.  */
+  /* The number of blocks (of size BLOCK_SIZE) in this storage.  */
   size_t blocks;
-  size_t size;			/* Just BLOCKS * BLOCK_SIZE */
+  /* The number of bytes in this storage, including holes.  */
+  size_t size;
 
   /* Log_2 (BLOCK_SIZE) or 0 if not a power of 2. */
   int log2_block_size;
@@ -59,11 +66,12 @@ struct store
 };
 
 typedef error_t (*store_write_meth_t)(struct store *store,
-				      off_t addr, char *buf, size_t len,
-				      size_t *amount);
+				      off_t addr,
+				      char *buf, mach_msg_type_number_t len,
+				      mach_msg_type_number_t *amount);
 typedef error_t (*store_read_meth_t)(struct store *store,
-				     off_t addr, size_t amount,
-				     char **buf, size_t *len);
+				     off_t addr, mach_msg_type_number_t amount,
+				     char **buf, mach_msg_type_number_t *len);
 
 struct store_meths
 {
@@ -80,25 +88,40 @@ struct store_meths
    store_close_source).  */
 error_t store_create (file_t source, struct store **store);
 
-/* Return a new store in STORE referring to the mach device DEVICE.  */
+/* Return a new store in STORE referring to the mach device DEVICE.  Consumes
+   the send right DEVICE.  */
 error_t store_device_create (device_t device, struct store **store);
+
+/* Like store_device_create, but doesn't query the device for information.   */
+error_t _store_device_create (device_t device,
+			      off_t *runs, unsigned runs_len,
+			      size_t block_size,
+			      struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
    store_create, this will always use file i/o, even it would be possible to
    be more direct.  This may work in more cases, for instance if the file has
-   holes.  */
+   holes.  Consumes the send right FILE.  */
 error_t store_file_create (file_t file, struct store **store);
 
-error_t store_destroy (struct store *store);
+/* Like store_file_create, but doesn't query the file for information.  */
+error_t _store_file_create (file_t file,
+			    off_t *runs, unsigned runs_len,
+			    size_t block_size,
+			    struct store **store);
+
+void store_free (struct store *store);
 
 /* If STORE was created using store_create, remove the reference to the
    source from which it was created.  */
-error_t store_close_source (struct store *store);
+void store_close_source (struct store *store);
 
 error_t store_write (struct store *store,
 		     off_t addr, char *buf, size_t len, size_t *amount);
 error_t store_read (struct store *store,
 		    off_t addr, size_t amount, char **buf, size_t *len);
+
+#if 0
 
 /* Return a memory object paging on STORE.  [among other reasons,] this may
    fail because store contains non-contiguous regions on the underlying
@@ -117,5 +140,21 @@ error_t store_map_source (struct store *store, vm_prot_t prot, ...,
    resulting memory object in PAGER.  */
 error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 			    mach_port_t *pager)
+
+#endif
+
+/* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
+error_t store_set_runs (struct store *store, off_t *runs, unsigned runs_len);
+
+/* Sets the name associated with STORE to a copy of NAME.  */
+error_t store_set_name (struct store *store, char *name);
+
+/* Fills in the values of the various fields in STORE that are derivable from
+   the set of runs & the block size.  */
+void _store_derive (struct store *store);
+
+/* Allocate a new store structure of class CLASS, with meths METHS.  */
+struct store *
+_make_store (enum file_storage_class class, struct store_meths *meths);
 
 #endif /* __STORE_H__ */
