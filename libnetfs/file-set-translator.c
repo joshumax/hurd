@@ -19,16 +19,18 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include <hurd/paths.h>
+#include <hurd/fsys.h>
 
 error_t 
 netfs_S_file_set_translator (struct protid *user,
-			     int pflags, int aflags,
-			     int gflags, char *passive,
+			     int passive_flags, int active_flags,
+			     int killtrans_flags, char *passive,
 			     mach_msg_type_number_t passivelen,
 			     mach_port_t active)
 {
   struct node *np;
-  error_t err;
+  error_t err = 0;
   uid_t *uids, *gids;
   int nuids, ngids;
   int i;
@@ -49,10 +51,8 @@ netfs_S_file_set_translator (struct protid *user,
   if (active_flags & FS_TRANS_SET)
     {
       /* Validate--user must be owner */
-      err = netfs_interpret_credential (user->credential, &uids, &nuids,
+      netfs_interpret_credential (user->credential, &uids, &nuids,
 					&gids, &ngids);
-      if (err)
-	goto out;
       err = netfs_validate_stat (np, user->credential);
       if (err)
 	goto out;
@@ -60,7 +60,7 @@ netfs_S_file_set_translator (struct protid *user,
       for (i = 0; i < nuids; i++)
 	if (uids[i] == 0 || uids[i] == np->nn_stat.st_uid)
 	  break;
-      if (i == uids)
+      if (i == nuids)
 	{
 	  mutex_unlock (&np->lock);
 	  return EBUSY;
@@ -81,13 +81,15 @@ netfs_S_file_set_translator (struct protid *user,
 	  mutex_lock (&np->lock);
 	}
     }
-  
+
   if ((passive_flags & FS_TRANS_SET)
-      && (passive_flags & FS_TRANS_EXCL)
-      && np->istranslated)
+      && (passive_flags & FS_TRANS_EXCL))
     {
-      mutex_unlock (&np->lock);
-      return EBUSY;
+      err = netfs_validate_stat (np, user->credential);
+      if (!err && np->istranslated)
+	err = EBUSY;
+      if (err)
+	goto out;
     }
   
   if (active_flags & FS_TRANS_SET)
@@ -105,15 +107,15 @@ netfs_S_file_set_translator (struct protid *user,
 	{
 	  /* Short circuited translators */
 
-	  if (netfs_shortcut_symlink && !strcmp (passive, _HURD_SYMLINK))
+	  if (!strcmp (passive, _HURD_SYMLINK))
 	    newmode = S_IFLNK;
-	  else if (netfs_shortcut_chrdev && !(strcmp (passive, _HURD_CHRDEV)))
+	  else if (!(strcmp (passive, _HURD_CHRDEV)))
 	    newmode = S_IFCHR;
-	  else if (netfs_shortcut_blkdev && !strcmp (passive, _HURD_BLKDEV))
+	  else if (!strcmp (passive, _HURD_BLKDEV))
 	    newmode = S_IFBLK;
-	  else if (netfs_shortcut_fifo && !strcmp (passive, _HURD_FIFO))
+	  else if (!strcmp (passive, _HURD_FIFO))
 	    newmode = S_IFIFO;
-	  else if (netfs_shortcut_ifsock && !strcmp (passive, _HURD_IFSOCK))
+	  else if (!strcmp (passive, _HURD_IFSOCK))
 	    newmode = S_IFSOCK;
 	}
       
@@ -176,7 +178,8 @@ netfs_S_file_set_translator (struct protid *user,
 	  
 	case 0:
 	fallback:
-	  error = netfs_set_translator (np, passive, passivelen, cred);
+	  err = netfs_set_translator (user->credential, np, 
+				      passive, passivelen);
 	  break;
 	}
     }
