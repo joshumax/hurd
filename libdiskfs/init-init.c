@@ -56,10 +56,7 @@ diskfs_init_diskfs (void)
 	mach_port_deallocate (mach_task_self (), dev);
     }
   
-  assert (diskfs_host_priv != MACH_PORT_NULL); /* XXX */
   assert (diskfs_master_device != MACH_PORT_NULL); /* XXX */
-
-  ports_wire_threads = diskfs_host_priv;
 
   diskfs_control_port = ports_allocate_port(sizeof (struct port_info), PT_CTL);
   ports_port_ref (diskfs_control_port);
@@ -69,7 +66,7 @@ diskfs_init_diskfs (void)
   
   device_open (diskfs_master_device, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t), &obj, 0);
-  vm_map (mach_task_self (), (vm_address_t *)diskfs_mtime,
+  vm_map (mach_task_self (), (vm_address_t *)&diskfs_mtime,
 	  sizeof (mapped_time_value_t), 0, 1, obj, 0, 0, VM_PROT_READ,
 	  VM_PROT_READ, VM_INHERIT_NONE);
   mach_port_deallocate (mach_task_self (), timedev);
