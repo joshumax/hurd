@@ -22,6 +22,7 @@
 #include <spin-lock.h>
 #include <assert.h>
 #include <cthreads.h>
+#include <mach/message.h>
 
 void
 ports_manage_port_operations_multithread (struct port_bucket *bucket,
@@ -39,12 +40,22 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 
   int
   internal_demuxer (mach_msg_header_t *inp,
-		    mach_msg_header_t *outp)
+		    mach_msg_header_t *outheadp)
     {
       int spawn = 0;
       int status;
       struct port_info *pi;
       struct rpc_info link;
+      register mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
+      static const mach_msg_type_t RetCodeType = {
+		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
+		/* msgt_size = */		32,
+		/* msgt_number = */		1,
+		/* msgt_inline = */		TRUE,
+		/* msgt_longform = */		FALSE,
+		/* msgt_deallocate = */		FALSE,
+		/* msgt_unused = */		0
+	};
 
       spin_lock (&lock);
       assert (nreqthreads);
@@ -61,26 +72,43 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	  spin_unlock (&lock);
 	  cthread_detach (cthread_fork ((cthread_fn_t) thread_function, 0));
 	}
+      
+      /* Fill in default response. */
+      outp->Head.msgh_bits 
+	= MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(inp->msgh_bits), 0);
+      outp->Head.msgh_size = sizeof *outp;
+      outp->Head.msgh_remote_port = inp->msgh_remote_port;
+      outp->Head.msgh_local_port = MACH_PORT_NULL;
+      outp->Head.msgh_seqno = 0;
+      outp->Head.msgh_id = inp->msgh_id + 100;
+      outp->RetCodeType = RetCodeType;
+      outp->RetCode = MIG_BAD_ID;
 
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
       if (pi)
 	{
 	  error_t err = ports_begin_rpc (pi, inp->msgh_id, &link);
 	  if (err)
-	    status = 0;
+	    {
+	      outp->RetCode = err;
+	      status = 1;
+	    }
 	  else
 	    {
 	      mutex_lock (&_ports_lock);
 	      if (inp->msgh_seqno < pi->cancel_threshold)
 		hurd_thread_cancel (link.thread);
 	      mutex_unlock (&_ports_lock);
-	      status = demuxer (inp, outp);
+	      status = demuxer (inp, outheadp);
 	      ports_end_rpc (pi, &link);
 	    }
 	  ports_port_deref (pi);
 	}
       else
-	status = 0;
+	{
+	  outp->RetCode = EOPNOTSUPP;
+	  status = 1;
+	}
 
       spin_lock (&lock);
       nreqthreads++;
