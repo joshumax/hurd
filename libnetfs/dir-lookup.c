@@ -172,9 +172,10 @@ netfs_S_dir_lookup (struct protid *diruser,
       if (error)
 	goto out;
 	     
-#if 0
-      /* If this is translated, start the translator (if necessary)
-	 and return. */
+      error = netfs_validate_stat (np, diruser->credential);
+      if (error)
+	goto out;
+
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
 	  && (np->istranslated
 	      || S_ISFIFO (np->nn_stat.st_mode)
@@ -280,9 +281,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 		}
 	    }
 	}
-#endif
-      
-      netfs_validate_stat (np, diruser->credential);
       
       if (S_ISLNK (np->nn_stat.st_mode)
 	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
