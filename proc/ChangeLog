@@ -1,3 +1,7 @@
+1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (main): Remove commented-out wire_task_self call, #include.
+
 1999-06-05  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mgt.c (create_startup_proc): Don't call add_proc_to_hash here.
