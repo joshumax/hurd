@@ -23,6 +23,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
+#include <sys/statvfs.h>
 
 /* these flags aren't actually defined by a header file yet, so temporarily
    disable them if necessary.  */
@@ -600,6 +602,8 @@ diskfs_set_statfs (struct statfs *st)
   st->f_ffree = sblock->s_free_inodes_count;
   st->f_fsid = getpid ();
   st->f_namelen = 0;
+  st->f_favail = st->f_ffree;
+  st->f_frsize = frag_size;
   return 0;
 }
 
