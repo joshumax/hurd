@@ -178,121 +178,123 @@ typedef unsigned ps_flags_t;
 typedef unsigned ps_state_t;
 
 struct proc_stat
-  {
-    /* Which process server this is from.  */
-    struct ps_context *context;
+{
+  /* Which process server this is from.  */
+  struct ps_context *context;
 
-    /* The proc's process id; if <0 then this is a thread, not a process.  */
-    pid_t pid;
+  /* The proc's process id; if <0 then this is a thread, not a process.  */
+  pid_t pid;
 
-    /* Flags describing which fields in this structure are valid.  */
-    ps_flags_t flags;
-    ps_flags_t failed;		/* flags that we tried to set and couldn't.  */
+  /* Flags describing which fields in this structure are valid.  */
+  ps_flags_t flags;
+  ps_flags_t failed;		/* flags that we tried to set and couldn't.  */
+  ps_flags_t inapp;		/* flags that don't apply to this procstat;
+				   subset of FAILED.  */
 
-    /* Thread fields -- these are valid if PID < 0.  */
-    struct proc_stat *thread_origin; /* A proc_stat for the task we're in.  */
-    unsigned thread_index;	/* Which thread in our proc we are.  */
+  /* Thread fields -- these are valid if PID < 0.  */
+  struct proc_stat *thread_origin; /* A proc_stat for the task we're in.  */
+  unsigned thread_index;	/* Which thread in our proc we are.  */
 
-    /* A process_t port for the process.  */
-    process_t process;
+  /* A process_t port for the process.  */
+  process_t process;
 
-    /* The mach task port for the process.  */
-    task_t task;
+  /* The mach task port for the process.  */
+  task_t task;
 
-    /* A libc msgport for the process.  This port is responded to by the
-       process itself (usually by the c library); see <hurd/msg.defs> for the
-       standard set of rpcs you can send to this port.  Accordingly, you
-       cannot depend on a timely (or any) reply to messages sent here --
-       program carefully!  */
-    mach_port_t msgport;
+  /* A libc msgport for the process.  This port is responded to by the
+     process itself (usually by the c library); see <hurd/msg.defs> for the
+     standard set of rpcs you can send to this port.  Accordingly, you
+     cannot depend on a timely (or any) reply to messages sent here --
+     program carefully!  */
+  mach_port_t msgport;
 
-    /* A pointer to the process's procinfo structure (as returned by
-       proc_getinfo; see <hurd/hurd_types.h>).  Vm_alloced.  */
-    struct procinfo *proc_info;
-    /* The size of the info structure for deallocation purposes.  */
-    unsigned proc_info_size;
+  /* A pointer to the process's procinfo structure (as returned by
+     proc_getinfo; see <hurd/hurd_types.h>).  Vm_alloced.  */
+  struct procinfo *proc_info;
+  /* The size of the info structure for deallocation purposes.  */
+  unsigned proc_info_size;
 
-    /* If present, these are just pointers into the proc_info structure.  */
-    unsigned num_threads;
-    task_basic_info_t task_basic_info;
+  /* If present, these are just pointers into the proc_info structure.  */
+  unsigned num_threads;
+  task_basic_info_t task_basic_info;
 
-    /* For a thread, the obvious structures; for a process, summaries of the
-       proc's thread_{basic,sched}_info_t structures: sizes and cumulative
-       times are summed, prioritys and delta time are averaged.  The
-       run_states are added by having running thread take precedence over
-       waiting ones, and if there are any other incompatible states, simply
-       using a bogus value of -1.  Malloced. */
-    thread_basic_info_t thread_basic_info;
-    thread_sched_info_t thread_sched_info;
+  /* For a thread, the obvious structures; for a process, summaries of the
+     proc's thread_{basic,sched}_info_t structures: sizes and cumulative
+     times are summed, prioritys and delta time are averaged.  The
+     run_states are added by having running thread take precedence over
+     waiting ones, and if there are any other incompatible states, simply
+     using a bogus value of -1.  Malloced. */
+  thread_basic_info_t thread_basic_info;
+  thread_sched_info_t thread_sched_info;
 
-    /* For a blocked thread, these next fields describe how it's blocked.  */
-    
-    /* A string (pointing into the thread_waits field of the parent
-       procstat), describing what's being blocked on.  If "KERNEL", a system
-       call (not mach_msg), and thread_rpc is the system call number.
-       Otherwise if thread_rpc isn't zero, this string describes the port the
-       rpc is on; if thread_rpc is 0, this string describes a non-rpc event. */
-    char *thread_wait;
-    /* The rpc that it's blocked on.  For a process the rpc blocking the
-       first blocked thread (if any).  0 means no block. */
-    mach_msg_id_t thread_rpc;
+  /* For a blocked thread, these next fields describe how it's blocked.  */
 
-    /* Storage for child-thread waits.  */
-    char *thread_waits;
-    size_t thread_waits_len;
+  /* A string (pointing into the thread_waits field of the parent
+     procstat), describing what's being blocked on.  If "KERNEL", a system
+     call (not mach_msg), and thread_rpc is the system call number.
+     Otherwise if thread_rpc isn't zero, this string describes the port the
+     rpc is on; if thread_rpc is 0, this string describes a non-rpc event. */
+  char *thread_wait;
+  /* The rpc that it's blocked on.  For a process the rpc blocking the
+     first blocked thread (if any).  0 means no block. */
+  mach_msg_id_t thread_rpc;
 
-    /* The task or thread suspend count (whatever this proc_stat refers to). */
-    int suspend_count;
+  /* Storage for child-thread waits.  */
+  char *thread_waits;
+  size_t thread_waits_len;
 
-    /* A bitmask summarizing the scheduling state of this process and all its
-       threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
-    ps_state_t state;
+  /* The task or thread suspend count (whatever this proc_stat refers to). */
+  int suspend_count;
 
-    /* A ps_user object for the owner of this process, or NULL if none.  */
-    struct ps_user *owner;
-    int owner_uid;		/* The corresponding UID, or -1.  */
+  /* A bitmask summarizing the scheduling state of this process and all its
+     threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
+  ps_state_t state;
 
-    /* The process's argv, as a string with each element separated by '\0'.  */
-    char *args;
-    /* The length of ARGS.  */
-    unsigned args_len;
+  /* A ps_user object for the owner of this process, or NULL if none.  */
+  struct ps_user *owner;
+  int owner_uid;		/* The corresponding UID, or -1.  */
 
-    /* Virtual memory statistics for the process, as returned by task_info;
-       see <mach/task_info.h> for a description of task_events_info_t.  */
-    task_events_info_t task_events_info;
-    task_events_info_data_t task_events_info_buf;
-    unsigned task_events_info_size;
+  /* The process's argv, as a string with each element separated by '\0'.  */
+  char *args;
+  /* The length of ARGS.  */
+  unsigned args_len;
 
-    /* Flags showing whether a field is vm_alloced or malloced.  */
-    unsigned proc_info_vm_alloced : 1;
-    unsigned thread_waits_vm_alloced : 1;
-    unsigned args_vm_alloced : 1;
+  /* Virtual memory statistics for the process, as returned by task_info;
+     see <mach/task_info.h> for a description of task_events_info_t.  */
+  task_events_info_t task_events_info;
+  task_events_info_data_t task_events_info_buf;
+  unsigned task_events_info_size;
 
-    /* Various libc ports:  */
+  /* Flags showing whether a field is vm_alloced or malloced.  */
+  unsigned proc_info_vm_alloced : 1;
+  unsigned thread_waits_vm_alloced : 1;
+  unsigned args_vm_alloced : 1;
 
-    /* The process's ctty id port, or MACH_PORT_NULL if the process has no
-       controlling terminal.  Note that this is just a magic cookie; we use
-       it to fetch a port to the actual terminal -- it's not useful for much
-       else.  */
-    mach_port_t cttyid;
+  /* Various libc ports:  */
 
-    /* A port to the process's current working directory.  */
-    mach_port_t cwdir;
+  /* The process's ctty id port, or MACH_PORT_NULL if the process has no
+     controlling terminal.  Note that this is just a magic cookie; we use
+     it to fetch a port to the actual terminal -- it's not useful for much
+     else.  */
+  mach_port_t cttyid;
 
-    /* The process's auth port, which we can use to determine who the process
-       is authenticated as.  */
-    mach_port_t auth;
+  /* A port to the process's current working directory.  */
+  mach_port_t cwdir;
 
-    /* The process's umask, which controls which protection bits won't be set
-       when creating a file.  */
-    unsigned umask;
+  /* The process's auth port, which we can use to determine who the process
+     is authenticated as.  */
+  mach_port_t auth;
 
-    /* A ps_tty object for the process's controlling terminal.  */
-    struct ps_tty *tty;
+  /* The process's umask, which controls which protection bits won't be set
+     when creating a file.  */
+  unsigned umask;
 
-    /* A hook for the user to use.  */
-    void *hook;
-  };
+  /* A ps_tty object for the process's controlling terminal.  */
+  struct ps_tty *tty;
+
+  /* A hook for the user to use.  */
+  void *hook;
+};
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
    information is currently valid.  */
@@ -730,24 +732,29 @@ struct ps_fmt_field
 
 /* PS_FMT */
 struct ps_fmt
-  {
-    /* A pointer to an array of struct ps_fmt_fields holding the individual
-       fields to be formatted.  */
-    struct ps_fmt_field *fields;
-    /* The (valid) length of the fields array.  */
-    unsigned num_fields;
+{
+  /* A pointer to an array of struct ps_fmt_fields holding the individual
+     fields to be formatted.  */
+  struct ps_fmt_field *fields;
+  /* The (valid) length of the fields array.  */
+  unsigned num_fields;
 
-    /* A set of proc_stat flags describing what a proc_stat needs to hold in 
-       order to print out every field in the fmt.  */
-    ps_flags_t needs;
+  /* A set of proc_stat flags describing what a proc_stat needs to hold in 
+     order to print out every field in the fmt.  */
+  ps_flags_t needs;
 
-    /* Storage for various strings pointed to by the fields.  */
-    char *src;
-    size_t src_len;		/* Size of SRC.  */
+  /* Storage for various strings pointed to by the fields.  */
+  char *src;
+  size_t src_len;		/* Size of SRC.  */
 
-    /* The string displayed by default for fields that have no valid value. */
-    char *inval;
-  };
+  /* The string displayed by default for fields that aren't appropriate for
+     this procstat. */
+  char *inapp;
+
+  /* The string displayed by default for fields which are appropiate, but
+     couldn't be fetched due to some error.  */
+  char *error;
+};
 
 /* Accessor macros: */
 #define ps_fmt_fields(fmt) ((fmt)->fields)
