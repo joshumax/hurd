@@ -29,7 +29,7 @@ trivfs_S_fsys_goaway (mach_port_t fsys,
   error_t err;
   struct port_info *pi;
   
-  pi = ports_check_type (fsys, trivfs_cntl_porttype);
+  pi = ports_check_port_type (fsys, trivfs_cntl_porttype);
   if (!pi)
     return EOPNOTSUPP;
 
