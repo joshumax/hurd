@@ -24,6 +24,7 @@ void
 diskfs_drop_node (struct node *np)
 {
   mode_t savemode;
+
   fshelp_kill_translator (&np->translator);
   if (np->dn_stat.st_nlink == 0)
     {
@@ -45,6 +46,11 @@ diskfs_drop_node (struct node *np)
 	  np->references++;
 	  spin_unlock (&diskfs_node_refcnt_lock);
 	  diskfs_truncate (np, 0);
+	  
+	  /* Force allocsize to zero; if truncate consistently fails this
+	     will at least prevent an infinite loop in this routine. */
+	  np->allocsize = 0;
+	  
 	  diskfs_nput (np);
 	  return;
 	}
