@@ -170,19 +170,15 @@ routine file_syncfs (
 	wait: int;
 	do_children: int);
 
-/* Return information on the storage used to hold this file. 
-   See <hurd/hurd_types.h> for valid values of the CLASS field,
-   and the meanings of the other fields for a particular type. */
+/* Return information on the storage used to hold this file.  See the comment
+   for enum file_storage_class in <hurd/hurd_types.h> the details.  */
 routine file_get_storage_info (
 	file: file_t;
 	RPT
-	out class: int;
-	out addresses: off_array_t;
-	out address_units: size_t;
-	out storage_name: string_t;
-	out storage_port: mach_port_send_t;
-	out storage_misc: data_t;
-	out flags: int);
+	out ports: port_array_t;
+	out ints: intarray_t;
+	out offsets: off_array_t;
+	out data: data_t);
 
 /* Return the node for hard links to this potentially translated file.
    This returns a potentially unauthenticated node.  */
