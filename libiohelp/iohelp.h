@@ -64,4 +64,33 @@ void iohelp_fetch_shared_data (void *);
 void iohelp_put_shared_data (void *);
 
 
+
+/* User identification */
+
+struct iouser
+{
+  struct idvec *uids, *gids;
+  void *hook; /* Never used by iohelp library */
+};
+
+/* Return a copy of IOUSER. */
+struct iouser *iohelp_dup_iouser (struct iouser *iouser);
+
+/* Free a reference to IOUSER. */
+void iohelp_free_iouser (struct iouser *iouser);
+
+/* Create a new IOUSER for the specified idvecs */
+struc iouser *iohelp_create_iouser (struct idvec *uids, struct idvec *gids);
+
+/* Conduct a reauthentication transaction, returning a new iouser.
+   AUTHSERVER is the I/O servers auth port.  The rendezvous port
+   provided by the user is REND_PORT.  If the transaction cannot be
+   completed, return zero, unless PERMIT_FAILURE is non-zero.  If
+   PERMIT_FAILURE is nonzero, then should the transaction fail, return
+   an iouser that has no ids.  The new port to be sent to the user is
+   newright.  */
+struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
+			      mach_port_t newright, int permit_failure);
+   
+
 #endif

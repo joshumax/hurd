@@ -1,3 +1,19 @@
+Wed Nov  6 19:26:14 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Add iouser-create.c, iouser-dup.c
+	iouser-reauth.c, and iouser-free.c.
+	(OBJS): Compute automatically.
+	
+	* iohelp.h (iohelp_create_user): New function.
+	* iouser-create.c: New file.
+
+Tue Nov  5 21:51:24 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* iohelp.h (struct iouser): New type.
+	(iohelp_dup_iouser, iohelp_free_iouser, iohelp_reauth): New
+	functions. 
+	* iouser-dup.c, iouser-reauth.c, iouser-free.c: New files.
+
 Thu Sep 12 16:18:46 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
