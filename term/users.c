@@ -760,6 +760,12 @@ set_state (io_t port,
       bcopy (ccs, termstate.c_cc, NCCS);
       termstate.__ispeed = speeds[0];
       termstate.__ospeed = speeds[1];
+
+      if (external_processing)
+	termstate.c_lflag |= EXTPROC;
+      else
+	termstate.c_lflag &= ~EXTPROC;
+
       if (!(termstate.c_cflag & CIGNORE))
 	(*bottom->set_bits) ();
       if (oldlflag & ICANON)
