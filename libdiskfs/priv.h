@@ -15,6 +15,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <mach.h>
+#include <hurd.h>
+#include "diskfs.h"
+
 extern mach_port_t fs_control_port;	/* receive right */
 
 spin_lock_t _diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
