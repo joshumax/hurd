@@ -1,3 +1,32 @@
+Tue Feb 18 19:47:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* cntl-create.c (trivfs_create_control): Put the actual port
+	creation call back in!
+
+Fri Feb 14 02:10:50 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dyn-classes.c: New file.
+	* cntl-create.c (trivfs_create_control): Possibly allocate and add
+	the port classes/buckets to the list of ones recognized by trivfs.
+	* migsupport.c
+	(trivfs_begin_using_protid): Support dynamic protid port classes.
+	(trivfs_begin_using_control): Support dynamic control port classes.
+	* cntl-clean.c (trivfs_clean_cntl): Clean up dynamic port
+	classes/buckets.
+	* trivfs.h (trivfs_add_control_port_class,
+	trivfs_add_protid_port_class, trivfs_add_port_bucket,
+	trivfs_remove_control_port_class, trivfs_remove_protid_port_class,
+	trivfs_remove_port_bucket): New declarations.
+	Doc fixes.
+	* priv.h (trivfs_dynamic_protid_port_classes,
+	trivfs_num_dynamic_protid_port_classes,
+	trivfs_dynamic_control_port_classes,
+	trivfs_num_dynamic_control_port_classes,
+	trivfs_dynamic_port_buckets, trivfs_num_dynamic_port_buckets):
+	New declarations.
+	* Makefile (OTHERSRCS): Add dyn-classes.c, protid-classes.c, &
+	cntl-classes.c.
+
 Thu Feb 13 18:30:45 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* trivfs.h (trivfs_getroot_hook): New declaration.
