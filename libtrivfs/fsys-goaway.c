@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fsys_S.h>
 
 kern_return_t
-trivfs_S_fsys_goaway (struct trivfs_control *cntl,
+trivfs_S_fsys_goaway (struct trivfs_control *cred,
 		      int flags)
 {
   error_t err;
