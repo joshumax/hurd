@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -318,6 +318,7 @@ S_proc_getprocinfo (struct proc *callerp,
   int i, j;
   int didalloc = 0;
   u_int tkcount, thcount;
+  struct proc *tp;
 
   if (!p)
     return ESRCH;
@@ -351,6 +352,9 @@ S_proc_getprocinfo (struct proc *callerp,
   pi->ppid = p->p_parent->p_pid;
   pi->pgrp = p->p_pgrp->pg_pgid;
   pi->session = p->p_pgrp->pg_session->s_sid;
+  for (tp = p; !tp->p_loginleader; tp = tp->p_parent)
+    assert (tp);
+  pi->logincollection = tp->p_pid;
   
   pi->nthreads = nthreads;
   
