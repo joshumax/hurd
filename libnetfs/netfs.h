@@ -77,8 +77,6 @@ struct node
   struct netnode *nn;
 
   struct stat nn_stat;
-
-  int istranslated;
   
   struct mutex lock;
   
@@ -134,11 +132,18 @@ error_t netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
 error_t netfs_attempt_mkdev (struct iouser *cred, struct node *np,
 			     mode_t type, dev_t indexes);
 
-/* The user must define this function.  Attempt to set the passive
+/* The user may define this function.  Attempt to set the passive
    translator record for FILE to ARGZ (of length ARGZLEN) for user
    CRED. */
 error_t netfs_set_translator (struct iouser *cred, struct node *np,
 			      char *argz, size_t argzlen);
+
+/* The user may define this function (but should define it together with
+   netfs_set_translator).  For locked node NODE with S_IPTRANS set in its
+   mode, look up the name of its translator.  Store the name into newly
+   malloced storage, and return it in *ARGZ; set *ARGZ_LEN to the total
+   length.  */
+error_t netfs_get_translator (struct node *node, char **argz, size_t *argz_len);
 
 /* The user must define this function.  This should attempt a chflags
    call for the user specified by CRED on node NODE, to change the
