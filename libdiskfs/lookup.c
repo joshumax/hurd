@@ -73,7 +73,7 @@ diskfs_lookup (struct node *dp,
 	       struct dirstat *ds,
 	       struct protid *cred)
 {
-  error_t err;
+  error_t err, err2;
   
   if (type == REMOVE || type == RENAME)
     assert (np);
@@ -113,8 +113,14 @@ diskfs_lookup (struct node *dp,
   if (type == RENAME
       || (type == CREATE && err == ENOENT)
       || (type == REMOVE && err != ENOENT))
-    err = diskfs_checkdirmod (dp, *np, cred);
+    {
+      err2 = diskfs_checkdirmod (dp, *np, cred);
+      return err2;
+    }
 
+  if ((type == LOOKUP || type == CREATE) && !err && np)
+    diskfs_enter_cache (dp, *np, name);
+    
   return err;
 }
 
