@@ -1,3 +1,14 @@
+1997-06-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fshelp.h (fshelp_touch): New function.
+	(TOUCH_ATIME, TOUCH_MTIME, TOUCH_CTIME): New macros.
+	Include <maptime.h>.
+	
+1997-06-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fshelp.h (fshelp_fetch_root_callback1_t): Chage ARGZ_LEN to type
+	size_t.
+
 Fri Nov 15 14:43:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* fshelp.h (fshelp_access): Uh, shift bits the right direction.
