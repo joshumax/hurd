@@ -20,10 +20,12 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <hurd/paths.h>
+#include <string.h>
 
 error_t
 netfs_S_file_get_translator (struct protid *user,
-			     char **translator,
+			     char **trans,
 			     mach_msg_type_number_t *translen)
 {
   struct node *np;
@@ -45,7 +47,6 @@ netfs_S_file_get_translator (struct protid *user,
   if (S_ISLNK (np->nn_stat.st_mode))
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1;
-      int amt;
 
       if (len  > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
@@ -59,31 +60,26 @@ netfs_S_file_get_translator (struct protid *user,
 	  *translen = len;
 	}
     }
-  else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
+  else if (S_ISCHR (np->nn_stat.st_mode) || S_ISBLK (np->nn_stat.st_mode))
     {
       char *buf;
       unsigned int buflen;
 
-      if (S_ISCHR (np->dn_stat.st_mode))
-	assert (diskfs_shortcut_chrdev);
-      else
-	assert (diskfs_shortcut_blkdev);
-
       buflen = asprintf (&buf, "%s%c%d%c%d", 
-			 (S_ISCHR (np->dn_stat.st_mode) 
+			 (S_ISCHR (np->nn_stat.st_mode) 
 			  ? _HURD_CHRDEV
 			  : _HURD_BLKDEV),
-			 '\0', (np->dn_stat.st_rdev >> 8) & 0377,
-			 '\0', (np->dn_stat.st_rdev) & 0377);
+			 '\0', (np->nn_stat.st_rdev >> 8) & 0377,
+			 '\0', (np->nn_stat.st_rdev) & 0377);
       buflen++;			/* terminating nul */
       
       if (buflen > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
       bcopy (buf, *trans, buflen);
       *translen = buflen;
-      error = 0;
+      err = 0;
     }
-  else if (S_ISFIFO (np->dn_stat.st_mode))
+  else if (S_ISFIFO (np->nn_stat.st_mode))
     {
       unsigned int len;
       
@@ -92,9 +88,9 @@ netfs_S_file_get_translator (struct protid *user,
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
       bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
       *translen = len;
-      error = 0;
+      err = 0;
     }
-  else if (S_ISSOCK (np->dn_stat.st_mode))
+  else if (S_ISSOCK (np->nn_stat.st_mode))
     {
       unsigned int len;
       
@@ -103,7 +99,13 @@ netfs_S_file_get_translator (struct protid *user,
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
       bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
       *translen = len;
-      error = 0;
+      err = 0;
     }
+  else
+    err = EINVAL;
+  
+  mutex_unlock (&np->lock);
+
+  return err;
 }
 
