@@ -18,23 +18,22 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "sock.h"
+#include <sys/socket.h>
 
-/* temp XXX */
-#include <mach/mach.h>
-typedef mach_port_t pf_t;
+#include "sock.h"
+#include "pipe.h"
 
 #include "socket_S.h"
 
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
+error_t
 S_socket_create (mach_port_t pf,
 		 int sock_type, int protocol,
 		 mach_port_t *port, mach_msg_type_name_t *port_type)
 {
   error_t err;
   struct sock *sock;
-  struct sock_user *user;
   struct pipe_class *pipe_class;
   
   if (protocol != 0)
@@ -61,21 +60,25 @@ S_socket_create (mach_port_t pf,
   return err;
 }
 
+error_t
 S_socket_create_address (mach_port_t pf,
 			 int sockaddr_type,
-			 char *data, unsigned data_len,
+			 char *data, size_t data_len,
 			 mach_port_t *addr_port,
-			 mach_msg_type_name_t *addr_port_type)
+			 mach_msg_type_name_t *addr_port_type,
+			 int binding)
 {
   return EOPNOTSUPP;
 }
 
+error_t
 S_socket_fabricate_address (mach_port_t pf,
 			    int sockaddr_type,
 			    mach_port_t *addr_port,
 			    mach_msg_type_name_t *addr_port_type)
 {
   error_t err;
+  struct addr *addr;
 
   if (sockaddr_type != AF_LOCAL)
     return EAFNOSUPPORT;
@@ -90,9 +93,10 @@ S_socket_fabricate_address (mach_port_t pf,
   return 0;
 }
 
-S_socket_whatis_address (mach_port_t pf,
+error_t
+S_socket_whatis_address (struct addr *addr,
 			 int *sockaddr_type,
-			 char **sockaddr, unsigned *sockaddr_len)
+			 char **sockaddr, size_t *sockaddr_len)
 {
   return EOPNOTSUPP;
 }
