@@ -30,16 +30,22 @@ trivfs_S_file_get_fs_options (struct trivfs_protid *cred,
 			      char **data, mach_msg_type_number_t *len)
 {
   error_t err;
-  char *argz;
-  size_t argz_len;
+  char *argz = 0;
+  size_t argz_len = 0;
 
   if (! cred)
     return EOPNOTSUPP;
 
-  err = trivfs_get_options (cred->po->cntl, &argz, &argz_len);
+  err = argz_add (&argz, &argz_len, program_invocation_name);
+  if (err)
+    return err;
+
+  err = trivfs_append_args (cred->po->cntl, &argz, &argz_len);
   if (! err)
     /* Put ARGZ into vm_alloced memory for the return trip.  */
     err = fshelp_return_malloced_buffer (argz, argz_len, data, len);
+  else
+    free (argz);
 
   return err;
 }
