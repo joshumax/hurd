@@ -1,3 +1,11 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* pids.c: Add #include <sys/mman.h> for munmap decl.
+	* showtrans.c: Likewise.
+	* login.c: Likewise.
+	* storeread.c: Likewise.
+	* msgport.c: Likewise.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* login.c (cat): Use munmap instead of vm_deallocate.
@@ -7,12 +15,12 @@
 	* showtrans.c (main): Likewise.
 	* pids.c (add_fn_pids): Likewise.
 	* msgport.c (cmd_getenv): Likewise.
-	
+
 1999-07-01  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (INSTALL-addauth-ops, INSTALL-setauth-ops,
 	INSTALL-su-ops): Removed.  These programs don't have to be
-	installed suid-root anymore. 
+	installed suid-root anymore.
 	* frobauth-mod.c (frobauth_modify): Do not try to set the owner of
 	the processes we're frobbing.  The process set their owner
 	themselves when we pass them their new authentication.
