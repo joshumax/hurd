@@ -149,7 +149,7 @@ pass2 ()
 	    {
 	      if (type == typemap[dp->d_ino])
 		{
-		  problem (0, "NODE TYPE FIELD SET IN DIRECTORY (I=%d) [NOT IMPLEMENTED IN HURD]");
+		  problem (0, "NODE TYPE FIELD SET IN DIRECTORY [NOT IMPLEMENTED IN HURD]");
 		  if (preen || reply ("CLEAR"))
 		    {
 		      dp->d_type = 0;
@@ -159,7 +159,7 @@ pass2 ()
 		}
 	      else
 		{
-		  problem (1, "INCORRECT NODE TYPE IN DIRECTORY (I=%d)");
+		  problem (1, "INCORRECT NODE TYPE IN DIRECTORY");
 		  if (reply ("CLEAR"))
 		    {
 		      dp->d_type = 0;
