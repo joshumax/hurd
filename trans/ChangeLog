@@ -1,5 +1,9 @@
 2002-05-05  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.c (netfs_attempt_lookup): Check io_identity result for our
+	own fsys identity port; on match, look up the existing node for the
+	port to ourselves.
+
 	* fakeroot.c (netfs_attempt_lookup): Unlock DIR before doing RPCs.
 
 2002-05-03  Marcus Brinkmann  <marcus@gnu.org>
