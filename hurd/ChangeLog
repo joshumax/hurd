@@ -1,3 +1,7 @@
+2004-03-30  Marco Gerards  <metgerards@student.han.nl>
+
+	* console.h (CONS_MOUSE_OFFSET_BASE): Redefined to 0x20.
+
 2003-02-15  Roland McGrath  <roland@frob.com>
 
 	* configure.ac: New file.

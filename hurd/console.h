@@ -282,7 +282,7 @@ struct cons_display
 #define CONS_MOUSE_MOD_CTRL	0x10
 
 /* Screen positions are offset by this value.  */
-#define CONS_MOUSE_OFFSET_BASE	0x21
+#define CONS_MOUSE_OFFSET_BASE	0x20
 
 #define CONS_MOUSE_EVENT_LENGTH 6
 #define CONS_MOUSE_EVENT_PREFIX "\e[M"
