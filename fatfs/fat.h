@@ -1,5 +1,5 @@
 /* fat.h - Support for FAT filesystems interfaces.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -353,10 +353,9 @@ read_dword (unsigned char *addr)
 #if BYTE_ORDER == LITTLE_ENDIAN
   return *(unsigned int *)addr;
 #elif BYTE_ORDER == BIG_ENDIAN
-  return *(unsigned int *)(addr + 4);
+  return bswap_32 (*(unsigned int *) addr);
 #else
-  return
-    addr[0] | (addr[1] << 8) | (addr[2] << 16) | (addr[3] << 24);
+#error unknown byte order
 #endif
 }
 
@@ -366,9 +365,9 @@ read_word (unsigned char *addr)
 #if BYTE_ORDER == LITTLE_ENDIAN
   return *(unsigned short *)addr;
 #elif BYTE_ORDER == BIG_ENDIAN
-  return *(unsigned short *)addr + 2;
+  return bswap_16 (*(unsigned int *) addr);
 #else
-  return addr[0] | (addr[1] << 8);
+#error unknown byte order
 #endif
 }
 
@@ -378,12 +377,9 @@ write_dword (unsigned char *addr, unsigned int value)
 #if BYTE_ORDER == LITTLE_ENDIAN
   *(unsigned int *)addr = value;
 #elif BYTE_ORDER == BIG_ENDIAN
-#error unknown byte order
+  *(unsigned int *)addr = bswap_32 (value);
 #else
-  addr[0] = value & 0xff;
-  addr[1] = (value >> 8) & 0xff;
-  addr[2] = (value >> 16) & 0xff;
-  addr[3] = (value >> 24) & 0xff;
+#error unknown byte order
 #endif
 }
 
@@ -393,10 +389,9 @@ write_word (unsigned char *addr, unsigned int value)
 #if BYTE_ORDER == LITTLE_ENDIAN
   *(unsigned short *)addr = value;
 #elif BYTE_ORDER == BIG_ENDIAN
-#error unknown byte order
+  *(unsigned int *)addr = bswap_16 (value);
 #else
-  addr[0] = value & 0xff;
-  addr[1] = (value >> 8) & 0xff;
+#error unknown byte order
 #endif
 }
 
