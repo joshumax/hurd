@@ -21,9 +21,9 @@
 dir := newfs
 makemode := utility
 
-SRCS = mkfs.c newfs.c
-OBJS = mkfs.o newfs.o
-target = newfs
+SRCS = mkfs.c # newfs.c
+OBJS = mkfs.o # newfs.o
+target = mkfs
 
 include ../Makeconf
 
