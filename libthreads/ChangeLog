@@ -7,6 +7,7 @@
 	* cthreads.c: Likewise.
 	* cprocs.c: Likewise.
 	* call.c: Likewise.
+	* i386/thread.c: Likewise.
 
 2001-02-25  Roland McGrath  <roland@frob.com>
 
