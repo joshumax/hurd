@@ -1,3 +1,41 @@
+2000-12-26  Neal H Walfield <neal@cs.uml.edu>
+
+	* cache.c: Change cache/hash table size to 509, a prime.  Use
+	memcpy/memcmp not bcopy/bcmp.  Verify return value from malloc and
+	check the result of rpc transaction _and_ do not act if failed.
+	* main.c: Correct the wording of the help messages.  Do not
+	bother initializing global variable to 0.  Use memcpy/memcmp not
+	bcopy/bcmp.  Verify return value from malloc and check the result
+	of rpc transaction _and_ do not act if failed.
+	* mount.c: Check return values of initialize_rpc.  Use
+	memcpy/memcmp not bcopy/bcmp.  Verify return value from malloc and
+	strdup.  Correct comments.
+	(mount_root): Check result of connect.  Handle errors
+	consistently.  Reverse loops that are if (! c) {} else when
+	appropriate.
+	* mount.h: Protect header with #ifdef.
+	* name-cache.c: Correct dangerous NPARTIALS macro.  Use
+	memcpy/memcmp not bcopy/bcmp.
+	(find_cache): Use PARTIAL_THRESH, not the constant.
+	* nfs-spec.h: Protect header with #ifdef.
+	* nfs.c: Use memcpy/memcmp not bcopy/bcmp.
+	* nfs.h: Likewise.
+        * ops.c (netfs_attempt_mkdir): Check return values of initialize_rpc.
+	Use memcpy/memcmp not bcopy/bcmp.  Verify return value from malloc and
+	check the result of rpc transaction _and_ do not act if failed.
+	(netfs_attempt_link): Unlock the directory before the rpc transaction.
+	Check the result of rpc transaction _and_ do not act if failed.
+        * pager.c: Remove, we do not use it.
+	* rpc.c:  Use memcpy/memcmp not bcopy/bcmp.  Verify return value from
+	malloc and check the result of rpc transaction _and_ do not act if
+	failed.
+	(initialize_rpc): Use AUTH_NONE, not the depreciated
+	AUTH_NULL.  Return sane values on failure.
+	(generate_xid): Make inline.
+	(link_rpc): New function.  Complements unlink_rpc.
+	(conduct_rpc): Use link_rpc.
+	(rpc_receive_thread): Reroll to a single loop.
+
 2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ops.c (netfs_attempt_mkdir): Add casts -1 -> (struct iouser *) -1

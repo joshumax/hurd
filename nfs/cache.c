@@ -23,8 +23,11 @@
 #include <string.h>
 #include <netinet/in.h>
 
-/* Hash table containing all the nodes currently active. */
-#define CACHESIZE 512
+/* Hash table containing all the nodes currently active.
+   XXX Was 512, however, a prime is much nice for the hash
+   function. 509 is nice as not only is it prime, it keeps
+   the array within a page or two */
+#define CACHESIZE 509
 static struct node *nodehash [CACHESIZE];
 
 /* Compute and return a hash key for NFS file handle DATA of LEN bytes. */
@@ -44,7 +47,8 @@ hash (int *data, size_t len)
 /* Lookup the file handle P (length LEN) in the hash table.  If it is
    not present, initialize a new node structure and insert it into the
    hash table.  Whichever course, a new reference is generated and the
-   node is returned in *NPP.  */
+   node is returned in *NPP; the lock on the node, (*NPP)->LOCK, is
+   held.  */
 void
 lookup_fhandle (void *p, size_t len, struct node **npp)
 {
@@ -58,7 +62,7 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
   for (np = nodehash[h]; np; np = np->nn->hnext)
     {
       if (np->nn->handle.size != len
-	  || bcmp (np->nn->handle.data, p, len) != 0)
+	  || memcmp (np->nn->handle.data, p, len) != 0)
 	continue;
       
       np->references++;
@@ -68,9 +72,12 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
       return;
     }
   
+  /* Could not find it */
   nn = malloc (sizeof (struct netnode));
+  assert (nn);
+
   nn->handle.size = len;
-  bcopy (p, nn->handle.data, len);
+  memcpy (nn->handle.data, p, len);
   nn->stat_updated = 0;
   nn->dtrans = NOT_POSSIBLE;
   nn->dead_dir = 0;
@@ -112,8 +119,9 @@ forked_node_delete (any_t arg)
 };
 
 /* Called by libnetfs when node NP has no more references.  (See
-   <hurd/libnetfs.h> for details.  Just clear local state and remove
-   from the hash table. */
+   <hurd/libnetfs.h> for details.  Just clear its local state and
+   remove it from the hash table.  Called and expected to leave with
+   NETFS_NODE_REFCNT_LOCK held. */
 void
 netfs_node_norefs (struct node *np)
 {
@@ -122,6 +130,7 @@ netfs_node_norefs (struct node *np)
       struct fnd *args;
 
       args = malloc (sizeof (struct fnd));
+      assert (args);
 
       np->references++;
       spin_unlock (&netfs_node_refcnt_lock);
@@ -153,7 +162,7 @@ netfs_node_norefs (struct node *np)
 
 /* Change the file handle used for node NP to be the handle at P.
    Make sure the hash table stays up to date.  Return the address
-   after the hnadle. */
+   after the handle.  The lock on the node should be held. */
 int *
 recache_handle (int *p, struct node *np)
 {
@@ -165,14 +174,17 @@ recache_handle (int *p, struct node *np)
   else
     len = ntohl (*p++);
   
+  /* Unlink it */
   spin_lock (&netfs_node_refcnt_lock);
   *np->nn->hprevp = np->nn->hnext;
   if (np->nn->hnext)
     np->nn->hnext->nn->hprevp = np->nn->hprevp;
 
+  /* Change the name */
   np->nn->handle.size = len;
-  bcopy (p, np->nn->handle.data, len);
+  memcpy (np->nn->handle.data, p, len);
   
+  /* Reinsert it */
   h = hash (p, len);
   np->nn->hnext = nodehash[h];
   if (np->nn->hnext)
@@ -182,5 +194,4 @@ recache_handle (int *p, struct node *np)
   spin_unlock (&netfs_node_refcnt_lock);
   return p + len / sizeof (int);
 }
-
 

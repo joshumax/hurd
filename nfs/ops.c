@@ -25,9 +25,9 @@
 #include <unistd.h>
 #include <maptime.h>
 
-/* We have fresh stat information for NP; the fattr structure is at
-   P.  Update our entry.  Return the address of the next int after
-   the fattr structure.  */
+/* We have fresh stat information for NP; the file attribute (fattr)
+   structure is at P.  Update our entry.  Return the address of the next
+   int after the fattr structure.  */
 int *
 register_fresh_stat (struct node *np, int *p)
 {
@@ -83,12 +83,12 @@ register_fresh_stat (struct node *np, int *p)
 int *
 process_returned_stat (struct node *np, int *p, int mod)
 {
-  int attrs_exist;
-
   if (protocol_version == 2)
     return register_fresh_stat (np, p);
   else
     {
+      int attrs_exist;
+      
       attrs_exist = ntohl (*p++);
       if (attrs_exist)
 	p = register_fresh_stat (np, p);
@@ -144,6 +144,9 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
 
   p = nfs_initialize_rpc (NFSPROC_GETATTR (protocol_version),
 			  (struct iouser *) -1, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
 
   err = conduct_rpc (&rpcbuf, &p);
@@ -168,6 +171,9 @@ netfs_attempt_chown (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, gid);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_ids (p, uid, gid);
   if (protocol_version == 3)
@@ -210,6 +216,8 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
       err = netfs_validate_stat (np, cred);
       if (err)
 	return err;
+
+      /* Has the file type changed? (e.g. from symlink to directory) */
       if ((mode & S_IFMT) != (np->nn_stat.st_mode & S_IFMT))
 	{
 	  char *f = 0;
@@ -242,6 +250,9 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_mode (p, mode);
   if (protocol_version == 3)
@@ -291,6 +302,9 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_times (p, 
 			      atime ?: &current, 
@@ -322,6 +336,9 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_size (p, size);
   if (protocol_version == 3)
@@ -344,12 +361,9 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
      does have the file open for writing.  */
   if (err == EACCES)
     {
-      err = netfs_validate_stat (np, cred);
-      if (!err && np->nn_stat.st_size == size)
+      int error = netfs_validate_stat (np, cred);
+      if (!error && np->nn_stat.st_size == size)
 	err = 0;
-      else
-	/* Never mind, put the old error back */
-	err = EACCES;
     }
 
   free (rpcbuf);
@@ -367,6 +381,9 @@ netfs_attempt_statfs (struct iouser *cred, struct node *np,
   error_t err;
 
   p = nfs_initialize_rpc (NFS2PROC_STATFS, cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
 
   err = conduct_rpc (&rpcbuf, &p);
@@ -429,6 +446,9 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 
       p = nfs_initialize_rpc (NFSPROC_READ (protocol_version),
 			      cred, 0, &rpcbuf, np, -1);
+      if (! p)
+        return errno;
+
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = htonl (offset);
       *p++ = htonl (thisamt);
@@ -458,7 +478,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 	  else
 	    eof = (trans_len < thisamt);
 
-	  bcopy (p, data, trans_len);
+	  memcpy (data, p, trans_len);
 	  free (rpcbuf);
 
 	  data += trans_len;
@@ -495,6 +515,9 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 
       p = nfs_initialize_rpc (NFSPROC_WRITE (protocol_version),
 			      cred, thisamt, &rpcbuf, np, -1);
+      if (! p)
+        return errno;
+
       p = xdr_encode_fhandle (p, &np->nn->handle);
       if (protocol_version == 2)
 	*p++ = 0;
@@ -524,24 +547,23 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 		/* assume it wrote the whole thing */
 		count = thisamt;
 
-	      free (rpcbuf);
 	      amt -= count;
 	      data += count;
 	      offset += count;
 	    }
 	}
 
+      free (rpcbuf);
+
       if (err == EINTR && amt != *len)
 	{
 	  *len -= amt;
-	  free (rpcbuf);
 	  return 0;
 	}
 
       if (err)
 	{
 	  *len = 0;
-	  free (rpcbuf);
 	  return err;
 	}
     }
@@ -564,12 +586,17 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
 
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &dir->nn->handle);
   p = xdr_encode_string (p, name);
 
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
+
+  free (rpcbuf);
 
   if (!err)
     return EEXIST;
@@ -604,13 +631,16 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
 
   /* Remember the directory handle for later cache use. */
 
   dirlen = np->nn->handle.size;
-  bcopy (np->nn->handle.data, dirhandle, dirlen);
+  memcpy (dirhandle, np->nn->handle.data, dirlen);
 
   mutex_unlock (&np->lock);
 
@@ -630,7 +660,7 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
 	  if (*newnp)
 	    mutex_unlock (&(*newnp)->lock);
 	  mutex_lock (&np->lock);
-	  p = process_returned_stat (np, p, 0);
+	  p = process_returned_stat (np, p, 0); /* XXX Do we have to lock np? */
 	  mutex_unlock (&np->lock);
 	  if (*newnp)
 	    mutex_lock (&(*newnp)->lock);
@@ -672,6 +702,9 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_MKDIR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
   p = xdr_encode_create_state (p, mode, owner);
@@ -680,17 +713,20 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
 
-  p = xdr_decode_fhandle (p, &newnp);
-  p = process_returned_stat (newnp, p, 1);
+  if (!err)
+    {
+      p = xdr_decode_fhandle (p, &newnp);
+      p = process_returned_stat (newnp, p, 1);
 
-  /* Did we set the owner correctly?  If not, try, but ignore failures. */
-  if (!netfs_validate_stat (newnp, (struct iouser *) -1)
-      && newnp->nn_stat.st_uid != owner)
-    netfs_attempt_chown ((struct iouser *) -1, newnp, owner,
-			 newnp->nn_stat.st_gid);
+      /* Did we set the owner correctly?  If not, try, but ignore failures. */
+      if (!netfs_validate_stat (newnp, (struct iouser *) -1)
+          && newnp->nn_stat.st_uid != owner)
+        netfs_attempt_chown ((struct iouser *) -1, newnp, owner,
+			     newnp->nn_stat.st_gid);
 
-  /* We don't actually return this. */
-  netfs_nput (newnp);
+      /* We don't actually return this. */
+      netfs_nput (newnp);
+    }
 
   free (rpcbuf);
   return err;
@@ -712,6 +748,9 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_RMDIR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
 
@@ -758,6 +797,12 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_LINK (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
+      if (! p)
+	{
+          mutex_unlock (&dir->lock);
+          return errno;
+	}
+
       mutex_unlock (&dir->lock);
 
       mutex_lock (&np->lock);
@@ -783,6 +828,12 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_SYMLINK (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
+      if (! p)
+	{
+          mutex_unlock (&dir->lock);
+          return errno;
+	}
+
       p = xdr_encode_fhandle (p, &dir->nn->handle);
       mutex_unlock (&dir->lock);
 
@@ -825,6 +876,11 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 		 fhandle, so we have to fetch one now. */
 	      p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 				      cred, 0, &rpcbuf, dir, -1);
+	      if (! p)
+		{
+		  mutex_unlock (&dir->lock);
+		  return errno;
+		}
 	      p = xdr_encode_fhandle (p, &dir->nn->handle);
 	      p = xdr_encode_string (p, name);
 
@@ -880,6 +936,12 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
 	  p = nfs_initialize_rpc (NFSPROC_CREATE (protocol_version),
 				  cred, 0, &rpcbuf, dir, -1);
+          if (! p)
+	    {
+	      mutex_unlock (&dir->lock);
+              return errno;
+            }
+
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
 	  mutex_unlock (&dir->lock);
@@ -898,21 +960,31 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
 	  mutex_lock (&dir->lock);
 	  purge_lookup_cache (dir, name, strlen (name));
+	  mutex_unlock (&dir->lock); /* XXX Should this really be after the
+					_lengthy_ (blocking) conduct_rpc? */
 	  err = conduct_rpc (&rpcbuf, &p);
 	  if (!err)
 	    err = nfs_error_trans (ntohl (*p++));
-	  mutex_unlock (&dir->lock);
 
-	  mutex_lock (&np->lock);
-	  p = recache_handle (p, np);
-	  register_fresh_stat (np, p);
-	  mutex_unlock (&np->lock);
+	  if (!err)
+	    {
+	      mutex_lock (&np->lock);
+	      p = recache_handle (p, np);
+	      register_fresh_stat (np, p);
+	      mutex_unlock (&np->lock);
+	    }
+
 	  free (rpcbuf);
 	}
-      else
+      else /* protocol_version != 2 */
 	{
 	  mutex_lock (&dir->lock);
 	  p = nfs_initialize_rpc (NFS3PROC_MKNOD, cred, 0, &rpcbuf, dir, -1);
+	  if (! p)
+	    {
+	      mutex_unlock (&dir->lock);
+	      return errno;
+	    }
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
 	  mutex_unlock (&dir->lock);
@@ -996,13 +1068,17 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
   /* This is the best we can do. */
 
   name = malloc (50);
+  if (! name)
+    return ENOMEM;
 
   do
     {
       sprintf (name, ".nfstmpgnu.%d", n++);
       err = netfs_attempt_create_file (cred, dir, name, mode, newnp);
       if (err == EEXIST)
-	mutex_lock (&dir->lock);
+	mutex_lock (&dir->lock);  /* XXX is this right? does create need this
+				     and drop this on error? Doesn't look
+				     like it. */
     }
   while (err == EEXIST);
 
@@ -1059,6 +1135,9 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_CREATE (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
   if (protocol_version == 3)
@@ -1149,6 +1228,13 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       mutex_unlock (&dir->lock);
 
       newname = malloc (50);
+      if (! newname)
+	{
+	  mutex_lock (&dir->lock);
+	  netfs_nrele (np);         /* XXX Is this the correct thing to do? */
+	  return ENOMEM;
+	}
+
       do
 	{
 	  sprintf (newname, ".nfs%xgnu.%d", (int) np, n++);
@@ -1186,6 +1272,9 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
 
   p = nfs_initialize_rpc (NFSPROC_REMOVE (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &dir->nn->handle);
   p = xdr_encode_string (p, name);
 
@@ -1250,6 +1339,12 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
   purge_lookup_cache (fromdir, fromname, strlen (fromname));
   p = nfs_initialize_rpc (NFSPROC_RENAME (protocol_version),
 			  cred, 0, &rpcbuf, fromdir, -1);
+  if (! p)
+    {
+      mutex_unlock (&fromdir->lock);
+      return errno;
+    }
+
   p = xdr_encode_fhandle (p, &fromdir->nn->handle);
   p = xdr_encode_string (p, fromname);
   mutex_unlock (&fromdir->lock);
@@ -1264,7 +1359,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
   if (!err)
     {
       err = nfs_error_trans (ntohl (*p++));
-      if (protocol_version == 3)
+      if (protocol_version == 3)  /* XXX Should we add `&& !err' ? */
 	{
 	  mutex_lock (&fromdir->lock);
 	  p = process_wcc_stat (fromdir, p, !err);
@@ -1294,6 +1389,9 @@ netfs_attempt_readlink (struct iouser *cred, struct node *np,
 
   p = nfs_initialize_rpc (NFSPROC_READLINK (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
+  if (! p)
+    return errno;
+
   p = xdr_encode_fhandle (p, &np->nn->handle);
 
   err = conduct_rpc (&rpcbuf, &p);
@@ -1343,7 +1441,7 @@ netfs_report_access (struct iouser *cred,
 
   if (protocol_version == 2)
     {
-      /* Hope the server means the same thing be the bits as we do. */
+      /* Hope the server means the same thing for the bits as we do. */
       *types = 0;
       if (fshelp_access (&np->nn_stat, S_IREAD, cred) == 0)
 	*types |= O_READ;
@@ -1373,6 +1471,9 @@ netfs_report_access (struct iouser *cred,
 	}
 
       p = nfs_initialize_rpc (NFS3PROC_ACCESS, cred, 0, &rpcbuf, np, -1);
+      if (! p)
+	return errno;
+
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = htonl (ACCESS3_READ | write_check | execute_check);
 
@@ -1380,7 +1481,9 @@ netfs_report_access (struct iouser *cred,
       if (!err)
 	{
 	  err = nfs_error_trans (ntohl (*p++));
-	  p = process_returned_stat (np, p, 0);
+	  p = process_returned_stat (np, p, 0);   /* XXX Should this be
+						     protected by the
+						     if (!err) ? */
 	  if (!err)
 	    {
 	      ret = ntohl (*p++);
@@ -1554,7 +1657,11 @@ fetch_directory (struct iouser *cred, struct node *dir,
   int isnext;
 
   bufmalloced = read_size;
+
   buf = malloc (bufmalloced);
+  if (! buf)
+    return ENOMEM;
+
   bp = buf;
   cookie = 0;
   eof = 0;
@@ -1565,6 +1672,12 @@ fetch_directory (struct iouser *cred, struct node *dir,
       /* Fetch new directory entries */
       p = nfs_initialize_rpc (NFSPROC_READDIR (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
+      if (! p)
+	{
+	  free (buf);
+	  return errno;
+	}
+
       p = xdr_encode_fhandle (p, &dir->nn->handle);
       *p++ = cookie;
       *p++ = ntohl (read_size);
@@ -1600,6 +1713,7 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	      char *newbuf;
 
 	      newbuf = realloc (buf, bufmalloced *= 2);
+	      assert (newbuf);
 	      if (newbuf != buf)
 		bp = newbuf + (bp - buf);
 	      buf = newbuf;
@@ -1681,7 +1795,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
 	 && thisentry < totalentries;)
       {
 	struct dirent *entry = (struct dirent *) bp;
-	bcopy (bp, userdp, entry->d_reclen);
+	memcpy (userdp, bp, entry->d_reclen);
 	bp += entry->d_reclen;
 	userdp += entry->d_reclen;
 	entries_copied++;

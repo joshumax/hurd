@@ -20,6 +20,9 @@
 
 /* These constants define the RPC mount protocol; see RFC 1094. */
 
+#ifndef NFS_MOUNT_H
+#define NFS_MOUNT_H
+
 #define MOUNTPROG 100005
 #define MOUNTVERS 1
 
@@ -33,3 +36,5 @@
 #define MOUNTPROC_UMNT 3
 #define MOUNTPROC_UMNTALL 4
 #define MOUNTPROC_EXPORT 5
+
+#endif /* NFS_MOUNT_H */

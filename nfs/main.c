@@ -34,13 +34,13 @@
 extern char *localhost ();
 
 /* Default number of times to retry RPCs when mounted soft. */
-#define DEFAULT_SOFT_RETRIES  3	
+#define DEFAULT_SOFT_RETRIES  3
 
 /* Default number of seconds to timeout cached stat information. */
 #define DEFAULT_STAT_TIMEOUT  3
 
 /* Default number of seconds to timeout cached file contents. */
-#define DEFAULT_CACHE_TIMEOUT 3	
+#define DEFAULT_CACHE_TIMEOUT 3
 
 /* Default number of seconds to timeout cache positive dir hits. */
 #define DEFAULT_NAME_CACHE_TIMEOUT 3
@@ -49,10 +49,10 @@ extern char *localhost ();
 #define DEFAULT_NAME_CACHE_NEG_TIMEOUT 3
 
 /* Default maximum number of bytes to read at once. */
-#define DEFAULT_READ_SIZE     8192 
+#define DEFAULT_READ_SIZE     8192
 
 /* Default maximum number of bytes to write at once. */
-#define DEFAULT_WRITE_SIZE    8192 
+#define DEFAULT_WRITE_SIZE    8192
 
 
 /* Number of seconds to timeout cached stat information. */
@@ -114,8 +114,8 @@ static const struct argp_option common_options[] =
 {
   {0,0,0,0,0,1},
   {"soft",		    OPT_SOFT,	   "RETRIES", OPTION_ARG_OPTIONAL,
-     "File system requests will eventually fail, after RETRIES tries if"
-     " specified, otherwise " _D(SOFT_RETRIES)},
+     "File system requests will eventually fail, after RETRIES tries"
+     " (default " _D(SOFT_RETRIES) ")" },
   {"hard",		    OPT_HARD, 0, 0,
      "Retry file systems requests until they succeed"},
 
@@ -134,10 +134,10 @@ static const struct argp_option common_options[] =
      "Timeout for cached file data (default " _D(CACHE_TIMEOUT) ")"},
   {"name-cache-timeout",    OPT_NCACHE_TO, "SEC", 0,
      "Timeout for positive directory cache entries (default " 
-   _D(NAME_CACHE_TIMEOUT) ")"},
+     _D(NAME_CACHE_TIMEOUT) ")"},
   {"name-cache-neg-timeout", OPT_NCACHE_NEG_TO, "SEC", 0,
      "Timeout for negative directory cache entires (default "
-   _D(NAME_CACHE_NEG_TIMEOUT) ")"},
+      _D(NAME_CACHE_NEG_TIMEOUT) ")"},
   {"init-transmit-timeout", OPT_INIT_TR_TO,"SEC", 0}, 
   {"max-transmit-timeout",  OPT_MAX_TR_TO, "SEC", 0}, 
 
@@ -197,7 +197,7 @@ static const struct argp_option startup_options[] = {
 static char *args_doc = "REMOTE_FS [HOST]";
 static char *doc = "Hurd nfs translator"
 "\vIf HOST is not specified, an attempt is made to extract"
-" it from REMOTE_FS, using either the `HOST:FS' or `FS@HOST' notations.";
+" it from REMOTE_FS using either the `HOST:FS' or `FS@HOST' notations.";
 
 static const struct argp_child
 runtime_argp_children[] = { {&netfs_std_runtime_argp}, {0} };
@@ -205,12 +205,12 @@ static struct argp
 runtime_argp = { common_options, parse_common_opt, 0, 0,
 		 runtime_argp_children };
 
-/* Use by netfs_set_options to handle runtime option parsing.  */
+/* Used by netfs_set_options to handle runtime option parsing.  */
 struct argp *netfs_runtime_argp = &runtime_argp;
 
 /* Where to find the remote filesystem.  */
-static char *remote_fs = 0;
-static char *host = 0;
+static char *remote_fs; /* = 0; */
+static char *host; /* = 0; */
 
 /* Return an argz string describing the current options.  Fill *ARGZ
    with a pointer to newly malloced storage holding the list and *LEN
@@ -272,6 +272,8 @@ extract_nfs_args (char *spec, char **remote_fs, char **host)
   char *sep;
 
   spec = strdup (spec);		/* So we can trash it.  */
+  if (! spec)
+    return NULL;
 
   sep = index (spec, ':');
   if (sep)

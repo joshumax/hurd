@@ -1,3 +1,6 @@
+#ifndef NFS_NFS_SPEC_H
+#define NFS_NFS_SPEC_H
+
 #define NFS_PORT 2049
 #define NFS_MAXDATA 8192
 #define NFS_MAXPATHLEN 1024
@@ -162,3 +165,4 @@ enum createmode
 #define NFS3PROC_PATHCONF 20
 #define NFS3PROC_COMMIT 21
 
+#endif /* NFS_NFS_SPEC_H */

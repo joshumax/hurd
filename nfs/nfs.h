@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef NFS_NFS_H
+#define NFS_NFS_H
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -26,11 +29,11 @@ struct fhandle
 {
   size_t size;
 
-  /* Leave enough room for the biggest possible fhandle. */
+  /* Leave enough room for the largest possible fhandle. */
   char data[NFS3_FHSIZE];
 };
 
-/* One of these exists for private data needed by the client for each
+/* There exists one of there for the private data needed by each client
    node. */
 struct netnode
 {
@@ -66,8 +69,8 @@ struct netnode
   struct user_pager_info *fileinfo;
 
   /* If this node has been renamed by "deletion" then
-     this is the directory and name in that directory which
-     is holding the node */
+     this is the directory and the name in that directory
+     which is holding the node */
   struct node *dead_dir;
   char *dead_name;
 };
@@ -150,7 +153,7 @@ extern int nfs_port_override;
 extern int protocol_version;
 
 
-/* Count how many four-byte chunks it takss to hold LEN bytes. */
+/* Count how many four-byte chunks it takes to hold LEN bytes. */
 #define INTSIZE(len) (((len)+3)>>2)
 
 
@@ -193,3 +196,5 @@ void enter_lookup_cache (char *, size_t, struct node *, char *);
 void purge_lookup_cache (struct node *, char *, size_t);
 struct node *check_lookup_cache (struct node *, char *);
 void purge_lookup_cache_node (struct node *);
+
+#endif /* NFS_NFS_H */

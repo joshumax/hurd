@@ -87,13 +87,13 @@ mount_initialize_rpc (int procnum, void **buf)
 }
 
 /* Using the mount protocol, lookup NAME at host HOST.
-   Return a node for it or null for an error. */
+   Return a node for it or null for an error.  If an
+   error occurs, a message is automatically sent to stderr. */
 struct node *
 mount_root (char *name, char *host)
 {
   struct sockaddr_in addr;
   struct hostent *h;
-  struct servent *s;
   int *p;
   void *rpcbuf;
   int port;
@@ -103,6 +103,14 @@ mount_root (char *name, char *host)
   /* Lookup the portmapper port number */
   if (pmap_service_name)
     {
+      struct servent *s;
+
+      /* XXX This will always fail! pmap_service_name will always be "sunrpc"
+         What should pmap_service_name really be?  By definition the second
+	 argument is either "tcp" or "udp"  Thus, is this backwards
+	 (as service_name suggests)?  If so, should it read:
+             s = getservbyname (pmap_service_name, "udp");
+         or is there something I am missing here? */
       s = getservbyname ("sunrpc", pmap_service_name);
       if (s)
 	pmapport = s->s_port;
@@ -121,17 +129,29 @@ mount_root (char *name, char *host)
     }
 
   addr.sin_family = h->h_addrtype;
-  bcopy (h->h_addr_list[0], &addr.sin_addr, h->h_length);
+  memcpy (&addr.sin_addr, h->h_addr_list[0], h->h_length);
   addr.sin_port = pmapport;
 
-  connect (main_udp_socket,
-	   (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
-
-  if (!mount_port_override)
+  if (mount_port_override)
+    addr.sin_port = htons (mount_port);
+  else
     {
       /* Formulate and send a PMAPPROC_GETPORT request
 	 to lookup the mount program on the server.  */
+      if (connect (main_udp_socket, (struct sockaddr *)&addr,
+	           sizeof (struct sockaddr_in)) == -1)
+	{
+	  perror ("server mount program");
+	  return 0;
+	}
+
       p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
+      if (! p)
+	{
+	  perror ("creating rpc packet");
+	  return 0;
+	}
+
       *p++ = htonl (MOUNTPROG);
       *p++ = htonl (MOUNTVERS);
       *p++ = htonl (IPPROTO_UDP);
@@ -146,38 +166,43 @@ mount_root (char *name, char *host)
 	addr.sin_port = htons (mount_port);
       else
 	{
-	  free (rpcbuf);
 	  perror ("portmap of mount");
-	  return 0;
+	  goto error_with_rpcbuf;
 	}
       free (rpcbuf);
     }
-  else
-    addr.sin_port = htons (mount_port);
 
-
-  /* Now talking to the mount program, fetch the file handle
+  /* Now, talking to the mount program, fetch a file handle
      for the root. */
-  connect (main_udp_socket,
-	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
+  if (connect (main_udp_socket, (struct sockaddr *) &addr,
+	       sizeof (struct sockaddr_in)) == -1)
+    {
+      perror ("connect");
+      goto error_with_rpcbuf;
+    }
+
   p = mount_initialize_rpc (MOUNTPROC_MNT, &rpcbuf);
+  if (! p)
+    {
+      perror ("rpc");
+      goto error_with_rpcbuf;
+    }
+
   p = xdr_encode_string (p, name);
   errno = conduct_rpc (&rpcbuf, &p);
   if (errno)
     {
-      free (rpcbuf);
       perror (name);
-      return 0;
+      goto error_with_rpcbuf;
     }
   /* XXX Protocol spec says this should be a "unix error code"; we'll
-     pretend that an NFS error code is what's meant, the numbers match
+     pretend that an NFS error code is what's meant; the numbers match
      anyhow.  */
   errno = nfs_error_trans (htonl (*p++));
   if (errno)
     {
-      free (rpcbuf);
       perror (name);
-      return 0;
+      goto error_with_rpcbuf;
     }
 
   /* Create the node for root */
@@ -185,13 +210,25 @@ mount_root (char *name, char *host)
   free (rpcbuf);
   mutex_unlock (&np->lock);
 
-  if (!nfs_port_override)
+  if (nfs_port_override)
+    port = nfs_port;
+  else
     {
-      /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
+      /* Send another PMAPPROC_GETPORT request to lookup the nfs server. */
       addr.sin_port = pmapport;
-      connect (main_udp_socket,
-	       (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
+      if (connect (main_udp_socket, (struct sockaddr *) &addr,
+	           sizeof (struct sockaddr_in)) == -1)
+	{
+	  perror ("connect");
+	  return 0;
+	}
+
       p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
+      if (! p)
+	{
+	  perror ("rpc");
+	  goto error_with_rpcbuf;
+	}
       *p++ = htonl (NFS_PROGRAM);
       *p++ = htonl (NFS_VERSION);
       *p++ = htonl (IPPROTO_UDP);
@@ -203,18 +240,24 @@ mount_root (char *name, char *host)
 	port = nfs_port;
       else
 	{
-	  free (rpcbuf);
 	  perror ("portmap of nfs server");
-	  return 0;
+	  goto error_with_rpcbuf;
 	}
       free (rpcbuf);
     }
-  else
-    port = nfs_port;
 
   addr.sin_port = htons (port);
-  connect (main_udp_socket,
-	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
+  if (connect (main_udp_socket, (struct sockaddr *) &addr,
+	       sizeof (struct sockaddr_in)) == -1)
+    {
+      perror ("connect");
+      return 0;
+    }
 
   return np;
+
+error_with_rpcbuf:
+  free (rpcbuf);
+
+  return 0;
 }

@@ -24,7 +24,7 @@
 #include <cacheq.h>
 
 
-/* Maximum number of names to cache at once */
+/* Maximum number of names to cache at any given time */
 #define MAXCACHE 200
 
 /* Maximum length of file name we bother caching */
@@ -73,7 +73,7 @@ static struct stats
 } statistics;
 
 #define PARTIAL_THRESH 100
-#define NPARTIALS MAXCACHE / PARTIAL_THRESH
+#define NPARTIALS (MAXCACHE / PARTIAL_THRESH)
 struct stats partial_stats [NPARTIALS];
 
 
@@ -93,19 +93,19 @@ find_cache (char *dir, size_t len, const char *name, size_t name_len)
     if (c->name_len == name_len
 	&& c->dir_cache_len == len
 	&& c->name[0] == name[0] 
-	&& bcmp (c->dir_cache_fh, dir, len) == 0
+	&& memcmp (c->dir_cache_fh, dir, len) == 0
 	&& strcmp (c->name, name) == 0)
       {
-	c->stati = i / 100;
+	c->stati = i / PARTIAL_THRESH;
 	return c;
       }
   
   return 0;
 }
 
-/* Node NP has just been found in DIR with NAME.  If NP is null, that
-   means that this name has been confirmed as absent in the directory.
-   DIR is the fhandle of the directory; its length is LEN.  */
+/* Node NP has just been found in DIR with NAME.  If NP is null, this
+   name has been confirmed as absent in the directory.  DIR is the
+   fhandle of the directory and LEN is its length.  */
 void
 enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
 {
@@ -127,7 +127,7 @@ enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
   c = find_cache (dir, len, name, name_len) ?: lookup_cache.lru;
 
   /* Fill C with the new entry.  */
-  bcopy (dir, c->dir_cache_fh, len);
+  memcpy (c->dir_cache_fh, dir, len);
   c->dir_cache_len = len;
   if (c->np)
     netfs_nrele (c->np);
@@ -158,7 +158,8 @@ purge_lookup_cache (struct node *dp, char *name, size_t namelen)
 
       if (c->name_len == namelen
 	  && c->dir_cache_len == dp->nn->handle.size
-	  && bcmp (c->dir_cache_fh, dp->nn->handle.data, c->dir_cache_len) == 0
+	  && memcmp (c->dir_cache_fh, dp->nn->handle.data,
+	             c->dir_cache_len) == 0
 	  && strcmp (c->name, name) == 0)
 	{
 	  if (c->np)
@@ -237,11 +238,12 @@ register_miss ()
 
 
 
-/* Scan the cache looking for NAME inside DIR.  If we don't know
-   anything entry at all, then return 0.  If the entry is confirmed to
-   not exist, then return -1.  Otherwise, return NP for the entry, with
-   a newly allocated reference.  For any return value but 0, unlock
-   DP before returning.  */
+/* Scan the cache looking for NAME inside DIR.  If we know nothing
+   about the entry, then return 0.  If the entry is confirmed to not
+   exist, then return -1.  Otherwise, return NP for the entry, with
+   a newly allocated reference.  For all return values other than 0,
+   unlock DIR->LOCK before returning.  For positive hits, lock the
+   returned node. */
 struct node *
 check_lookup_cache (struct node *dir, char *name)
 {

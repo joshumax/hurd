@@ -28,7 +28,7 @@
 #include <rpc/rpc_msg.h>
 #include <rpc/auth_unix.h>
 
-#undef malloc			/* Get rid protection.  */
+#undef malloc			/* Get rid of the sun block */
 
 #include <netinet/in.h>
 #include <assert.h>
@@ -43,7 +43,7 @@ struct rpc_list
   void *reply;
 };
 
-/* A list of all the pending RPCs. */
+/* A list of all pending RPCs. */
 static struct rpc_list *outstanding_rpcs;
 
 /* Wake up this condition when an outstanding RPC has received a reply
@@ -56,7 +56,7 @@ static struct mutex outstanding_lock = MUTEX_INITIALIZER;
 
 
 /* Generate and return a new transaction ID. */
-static int
+static inline int
 generate_xid ()
 {
   static int nextxid;
@@ -67,21 +67,30 @@ generate_xid ()
   return nextxid++;
 }
 
-/* Set up an RPC for procdeure RPC_PROC, for talking to the server
+/* Set up an RPC for procdeure RPC_PROC for talking to the server
    PROGRAM of version VERSION.  Allocate storage with malloc and point
    *BUF at it; caller must free this when done.  Allocate at least LEN
-   bytes more than the usual amount for an RPC.  Initialize the RPC
-   credential structure with UID, GID, and SECOND_GID.  (Any of those
-   may be -1 to indicate that it does not apply; exactly or two of UID
-   and GID must be -1, however.) */
+   bytes more than the usual amount for the RPC.  Initialize the RPC
+   credential structure with UID, GID, and SECOND_GID;  any of these
+   may be -1 to indicate that it does not apply, however, exactly zero
+   or two of UID and GID must be -1.  The returned address is a pointer
+   to the start of the payload.  If NULL is returned, an error occured
+   and the code is set in errno. */
 int *
 initialize_rpc (int program, int version, int rpc_proc, 
 		size_t len, void **bufp, 
 		uid_t uid, gid_t gid, gid_t second_gid)
 {
-  void *buf = malloc (len + 1024);
+  void *buf;
   int *p, *lenaddr;
   struct rpc_list *hdr;
+
+  buf = malloc (len + 1024);
+  if (! buf)
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
 
   /* First the struct rpc_list bit. */
   hdr = buf;
@@ -99,40 +108,44 @@ initialize_rpc (int program, int version, int rpc_proc,
   
   assert ((uid == -1) == (gid == -1));
 
-  if (uid != -1)
+  if (uid == -1)
     {
+      /* No authentication */
+      *p++ = htonl (AUTH_NONE);
+      *p++ = 0;
+    }
+  else
+    {
+      /* Unixy authentication */
       *p++ = htonl (AUTH_UNIX);
+      /* The length of the message.  We do not yet know what this
+         is, so, just remember where we should put it when we know */
       lenaddr = p++;
       *p++ = htonl (mapped_time->seconds);
       p = xdr_encode_string (p, hostname);
       *p++ = htonl (uid);
       *p++ = htonl (gid);
-      if (second_gid != -1)
+      if (second_gid == -1)
+	*p++ = 0;
+      else
 	{
 	  *p++ = htonl (1);
 	  *p++ = htonl (second_gid);
 	}
-      else
-	*p++ = 0;
       *lenaddr = htonl ((p - (lenaddr + 1)) * sizeof (int));
-    }
-  else
-    {
-      *p++ = htonl (AUTH_NULL);
-      *p++ = 0;
     }
         
   /* VERF field */
-  *p++ = htonl (AUTH_NULL);
+  *p++ = htonl (AUTH_NONE);
   *p++ = 0;
   
   *bufp = buf;
   return p;
 }
 
-/* Remove HDR from the list of pending RPC's.  rpc_list_lock must be
-   held */
-static void
+/* Remove HDR from the list of pending RPC's.  The rpc_list's lock
+   (OUTSTANDING_LOCK) must be held */
+static inline void
 unlink_rpc (struct rpc_list *hdr)
 {
   *hdr->prevp = hdr->next;
@@ -140,12 +153,24 @@ unlink_rpc (struct rpc_list *hdr)
     hdr->next->prevp = hdr->prevp;
 }
 
+/* Insert HDR at the head of the LIST.  The rpc_list's lock
+   (OUTSTANDING_LOCK) must be held */
+static inline void
+link_rpc (struct rpc_list **list, struct rpc_list *hdr)
+{
+  hdr->next = *list;
+  if (hdr->next)
+    hdr->next->prevp = &hdr->next;
+  hdr->prevp = list;
+  *list = hdr;
+}
+
 /* Send the specified RPC message.  *RPCBUF is the initialized buffer
-   from a previous initialize_rpc call; *PP points past the filled
-   in args.  Set *PP to the address of the reply contents themselves.
-   The user will be expected to free *RPCBUF (which will have changed)
-   when done with the reply contents.  The old value of *RPCBUF will
-   be freed by this routine. */
+   from a previous initialize_rpc call; *PP, the payload, points past
+   the filledin args.  Set *PP to the address of the reply contents
+   themselves.  The user will be expected to free *RPCBUF (which will
+   have changed) when done with the reply contents.  The old value of
+   *RPCBUF will be freed by this routine. */
 error_t
 conduct_rpc (void **rpcbuf, int **pp)
 {
@@ -162,12 +187,7 @@ conduct_rpc (void **rpcbuf, int **pp)
   
   mutex_lock (&outstanding_lock);
 
-  /* Link it in */
-  hdr->next = outstanding_rpcs;
-  if (hdr->next)
-    hdr->next->prevp = &hdr->next;
-  hdr->prevp = &outstanding_rpcs;
-  outstanding_rpcs = hdr;
+  link_rpc (&outstanding_rpcs, hdr);
 
   xid = * (int *) (*rpcbuf + sizeof (struct rpc_list));
 
@@ -209,9 +229,12 @@ conduct_rpc (void **rpcbuf, int **pp)
 	  return EINTR;
 	}
 
+      /* hdr->reply will have been filled in by rpc_receive_thread,
+         if it has been filled in, then the rpc has been fulfilled,
+         otherwise, retransmit and continue to wait */
       if (!hdr->reply)
 	{
-	  timeout *=2;
+	  timeout *= 2;
 	  if (timeout > max_transmit_timeout)
 	    timeout = max_transmit_timeout;
 	}
@@ -224,10 +247,12 @@ conduct_rpc (void **rpcbuf, int **pp)
   *rpcbuf = hdr->reply;
   free (hdr);
 
-  /* Process the reply, dissecting errors.  When we're done, set *PP to
-     the rpc return contents, if there is no error. */
+  /* Process the reply, dissecting errors.  When we're done and if
+     there is no error, set *PP to the rpc return contents */ 
   p = (int *) *rpcbuf;
   
+  /* If the transmition id does not match that in the message,
+     something strange happened in rpc_receive_thread */
   assert (*p == xid);
   p++;
   
@@ -315,7 +340,8 @@ conduct_rpc (void **rpcbuf, int **pp)
   return err;
 }
 
-/* Dedicated thread to wakeup rpc_wakeup once a second. */
+/* Dedicated thread to signal those waiting on rpc_wakeup
+   once a second. */
 void
 timeout_service_thread ()
 {
@@ -333,48 +359,52 @@ timeout_service_thread ()
 void
 rpc_receive_thread ()
 {
-  int cc;
   void *buf;
-  struct rpc_list *r;
-  int xid;
+
+  /* Allocate a receive buffer */
+  buf = malloc (1024 + read_size);
+  assert (buf);
 
   while (1)
     {
-      buf = malloc (1024 + read_size);
+      int cc = read (main_udp_socket, buf, 1024 + read_size);
+      if (cc == -1)
+        {
+          perror ("nfs read");
+          continue;
+        }
+      else
+        {
+          struct rpc_list *r;
+          int xid = *(int *)buf;
 
-      do
-	{
-	  cc = read (main_udp_socket, buf, 1024 + read_size);
-	  if (cc == -1)
-	    {
-	      perror ("nfs read");
-	      r = 0;
+          mutex_lock (&outstanding_lock);
+
+          /* Find the rpc that we just fulfilled */
+          for (r = outstanding_rpcs; r; r = r->next)
+    	    {
+    	      if (* (int *) &r[1] == xid)
+	        {
+	          unlink_rpc (r);
+	          r->reply = buf;
+	          condition_broadcast (&rpc_wakeup);
+		  break;
+	        }
 	    }
-	  else
-	    {
-	      xid = *(int *)buf;
-	      mutex_lock (&outstanding_lock);
-	      for (r = outstanding_rpcs; r; r = r->next)
-		{
-		  if (* (int *) &r[1] == xid)
-		    {
-		      /* Remove it from the list */
-		      *r->prevp = r->next;
-		      if (r->next)
-			r->next->prevp = r->prevp;
-
-		      r->reply = buf;
-		      condition_broadcast (&rpc_wakeup);
-		      break;
-		    }
-		}
-#if notanymore
-	      if (!r)
-		fprintf (stderr, "NFS dropping reply xid %d\n", xid);
+#if 0
+	  if (! r)
+	    fprintf (stderr, "NFS dropping reply xid %d\n", xid);
 #endif
-	      mutex_unlock (&outstanding_lock);
+	  mutex_unlock (&outstanding_lock);
+
+	  /* If r is not null then we had a message from a pending
+	     (i.e. known) rpc.  Thus, it was fulfilled and if we
+	     want to get another request, a new buffer is needed */
+	  if (r)
+	    {
+              buf = malloc (1024 + read_size);
+              assert (buf);
 	    }
-	}
-      while (!r);
+        }
     }
 }

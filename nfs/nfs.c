@@ -154,7 +154,7 @@ xdr_encode_data (int *p, char *data, size_t len)
 
   p[nints] = 0;
   *p++ = htonl (len);
-  bcopy (data, p, len);
+  memcpy (p, data, len);
   return p + nints;
 }
 
@@ -379,6 +379,7 @@ xdr_decode_fhandle (int *p, struct node **npp)
   size_t len;
 
   len = protocol_version == 2 ? NFS2_FHSIZE : ntohl (*p++);
+  /* Enter into cache */
   lookup_fhandle (p, len, npp);
   return p + len / sizeof (int);
 }
