@@ -1,22 +1,26 @@
+1999-03-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mgt.c (S_proc_reassign): Remove unused variable FOO.
+
 1999-03-11  Mark Kettenis  <kettenis@gnu.org>
 
 	* notify.c (do_mach_notify_dead_name): Remove unnecessary braces.
-	
+
 	* msg.c (S_proc_setmsgport): Remove unused variable FOO.
 	(S_proc_getmsgport): Only check if the message port is still alive
 	if it is not MACH_PORT_NULL.  Use mach_port_type instead of
 	mach_port_get_refs to check if the port is dead.
-	
+
 	* mgt.c (S_proc_reassign): Use mach_port_destroy to release the
 	old task port.
-	
+
 Tue Mar  9 13:11:43 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* notify.c (do_mach_notify_dead_name): Don't check against
 	P->p_msgport anymore.
 	* msg.c (message_port_dead): Delete function.
 	(S_proc_setmsgport): Don't request a dead-name notification
-	anymore. 
+	anymore.
 	(S_proc_getmsgport): Check to see if P->p_msgport is dead before
 	returning it.
 	* mgt.c (S_proc_reassign): Only use mach_port_deallocate to
@@ -27,7 +31,7 @@ Tue Mar  9 13:11:43 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 	* mgt.c (S_proc_reassign): It's not necessary to re-request the
 	task-death notification; we've moved both the task right and the
 	proc port that gets the notification, so delete that.
-	
+
 	* mgt.c (S_proc_reassign): Use mach_port_destroy instead of
 	mach_port_deallocate to release P->p_msgport, for the same reasons
 	as the changes below.
@@ -36,7 +40,7 @@ Sun Mar  7 18:19:07 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* mgt.c (process_has_exited): Use mach_port_destroy instead of
  	mach_port_deallocate to release P->p_msgport.
-	(complete_exit): Likewise for P->p_task.  
+	(complete_exit): Likewise for P->p_task.
 	These changes eliminate a race; we are destroying the receiver of
  	the dead-name notifications on these ports, but if that means we
  	lose a notification, then the ref-count on the name will get
