@@ -1,3 +1,7 @@
+2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
+
+	* diskfs.h (diskfs_boot_filesystem): Documentation fix.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* sync-interval.c (diskfs_set_sync_interval): Cast int to intptr_t

@@ -149,9 +149,11 @@ extern mach_port_t diskfs_fsys_identity;
    file systems, to give the procserver.  */
 extern char **diskfs_argv;
 
-/* When this is a bootstrap filesystem, the multiboot kernel command line
-   passed from the kernel.  If not a bootstrap filesystem, it is 0, so it
-   can be used to distinguish between the two cases.  */
+/* When this is a bootstrap filesystem, the multiboot kernel command
+   line passed from the kernel.  If not a bootstrap filesystem, it is
+   0.  As such, it can be used to distinguish between the two cases.
+   Note: this is only valid after the arguments have been parsed by,
+   for example, diskfs_init_main.  */
 extern const char *diskfs_boot_command_line;
 #define diskfs_boot_filesystem()	(diskfs_boot_command_line != 0)
 
