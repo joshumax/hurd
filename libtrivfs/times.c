@@ -15,33 +15,36 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
 
-void
+error_t
 trivfs_set_atime (struct trivfs_control *cntl)
 {
   struct stat st;
   time_value_t atime;
   time_value_t mtime;
   
-  io_stat (cntl->realnode, &st);
+  io_stat (cntl->underlying, &st);
   mtime.seconds = st.st_mtime;
   mtime.microseconds = st.st_mtime_usec;
   host_get_time (mach_host_self (), &atime);
-  file_utimes (cntl->realnode, atime, mtime);
+  file_utimes (cntl->underlying, atime, mtime);
+  return 0;
 }
 
-void
+error_t
 trivfs_set_mtime (struct trivfs_control *cntl)
 {
   struct stat st;
   time_value_t atime;
   time_value_t mtime;
 
-  io_stat (cntl->realnode, &st);
+  io_stat (cntl->underlying, &st);
   atime.seconds = st.st_atime;
   atime.microseconds = st.st_atime_usec;
   host_get_time (mach_host_self (), &mtime);
-  file_utimes (cntl->realnode, atime, mtime);
+  file_utimes (cntl->underlying, atime, mtime);
+  return 0;
 }
 
 
