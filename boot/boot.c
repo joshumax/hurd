@@ -637,6 +637,12 @@ main (int argc, char **argv, char **envp)
 			  MACH_MSG_TYPE_MAKE_SEND);
   mach_port_move_member (mach_task_self (), pseudo_master_device_port,
 			 receive_set);
+  mach_port_request_notification (mach_task_self (), pseudo_master_device_port,
+				  MACH_NOTIFY_NO_SENDERS, 1,
+				  pseudo_master_device_port,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &pseudo_console);
@@ -750,6 +756,8 @@ main (int argc, char **argv, char **envp)
       }
     free (buf);
   }
+
+  mach_port_deallocate (mach_task_self (), pseudo_master_device_port);
 
   cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
 				(any_t) 0));
@@ -1468,13 +1476,13 @@ ds_device_read_inband (device_t device,
   if (avail)
     {
       *datalen = read (0, data, bytes_wanted);
-      spin_lock (&readlock);
+      spin_unlock (&readlock);
       sigsetmask (mask);
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
-      spin_lock (&readlock);
+      spin_unlock (&readlock);
       queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
       sigsetmask (mask);
       return MIG_NO_REPLY;
@@ -1589,20 +1597,35 @@ kern_return_t
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
+  static int no_console;
   mach_port_t foo;
+  if (notify == pseudo_master_device_port)
+    {
+      if (no_console)
+	goto bye;
+      pseudo_master_device_port = MACH_PORT_NULL;
+      return 0;
+    }
   if (notify == pseudo_console)
     {
-      if (mscount == console_mscount)
+      if (mscount == console_mscount &&
+	  pseudo_master_device_port == MACH_PORT_NULL)
 	{
+	bye:
 	  restore_termstate ();
-write (2, "bye\n", 4);
+	  write (2, "bye\n", 4);
 	  uxexit (0);
 	}
       else
 	{
+	  no_console = (mscount == console_mscount);
+
 	  mach_port_request_notification (mach_task_self (), pseudo_console,
 					  MACH_NOTIFY_NO_SENDERS,
-					  console_mscount, pseudo_console,
+					  console_mscount == mscount
+					  ? mscount + 1
+					  : console_mscount,
+					  pseudo_console,
 					  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
 	  if (foo != MACH_PORT_NULL)
 	    mach_port_deallocate (mach_task_self (), foo);
