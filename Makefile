@@ -90,7 +90,7 @@ TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 clean-misc:
 
 distclean: clean
-	rm -f config.make config.log config.status
+	rm -f config.make config.log config.status config.cache
 ifneq (.,${srcdir})
 	rm -f Makefile
 endif
