@@ -243,6 +243,5 @@ List for version 0.2 binary release
 * nfsd?
 * released libc
 * Arrange GCC not to install assert.h on GNU.
-* zero (/dev/null) doesn't do access right; probably many in trans/ too.
 * recompile libraries after libc release
 * complete `extern inline' proofing of header files.

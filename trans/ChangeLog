@@ -1,3 +1,12 @@
+Tue Sep 24 15:39:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* null.c (provide_zeros): Variable removed.
+	(trivfs_S_io_read): Don't return zeros anymore.
+	(trivfs_S_io_readable): Always return 0.
+	(argp_program_version): New variable.
+	(main): Use argp for argument parsing.
+	(trivfs_S_file_check_access): New function.
+
 Thu Sep 12 16:39:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

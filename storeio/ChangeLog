@@ -1,3 +1,8 @@
+Tue Sep 24 15:52:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (trivfs_S_file_check_access): New function.
+	(check_open_hook): Return EROFS if O_WRITE on a readonly device.
+
 Mon Sep 23 17:21:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeio.c (trivfs_append_args): Make ARGZ_LEN of type `size_t *'.
