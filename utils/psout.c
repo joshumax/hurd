@@ -119,13 +119,20 @@ psout (struct proc_stat_list *procs,
     }
 
   if (top)
-    /* Restrict output to the top TOP entries.  */
+    /* Restrict output to the top TOP entries, if TOP is positive, or the
+       bottom -TOP entries, if it is negative.  */
     {
       int filter (struct proc_stat *ps)
 	{
 	  return --top >= 0;
 	}
-      proc_stat_list_filter1 (procs, filter, 0, 0);
+      if (top < 0)
+	{
+	  top += procs->num_procs;
+	  proc_stat_list_filter1 (procs, filter, 0, 1);
+	}
+      else
+	proc_stat_list_filter1 (procs, filter, 0, 0);
     }
 
   /* Finally, output all the processes!  */
