@@ -1,4 +1,11 @@
+1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* wiring.c (wire_all_memory): Touch pages before wiring.
+
 1999-11-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (default_pager_initialize): Use MACH_PORT_VALID to
+	check old DMM port, rather than just checking for MACH_PORT_NULL.
 
 	* strfcns.c (index): Function removed.
 

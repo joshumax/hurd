@@ -1,3 +1,9 @@
+1999-11-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* device.c (dev_error): New static function.
+	Translate all expected D_* codes into POSIX codes.
+	(dev_read, dev_write, dev_open): Use it.
+
 1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rdwr.c (store_read, store_write): Fix asserts in last change.

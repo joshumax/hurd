@@ -1,3 +1,19 @@
+1999-11-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io.c (trivfs_S_file_get_storage_info): Fail with EOPNOTSUPP when
+	there is no store open.
+
+	* storeio.c (check_open_hook): Don't check for D_NO_SUCH_DEVICE here.
+	Translation to ENXIO now done in libstore.
+
+	* dev.h (struct dev): New member `enforced'.
+	* storeio.c (enforce_store): New variable.
+	(options, parse_opt, trivfs_append_args): Grok new option
+	--enforced/-e to set enforce_store.
+	(check_open_hook): Set DEVICE->enforced from enforce_store.
+	* io.c (trivfs_S_file_get_storage_info): If DEV->enforced is set
+	and the store flags lack STORE_ENFORCED, then return STORAGE_OTHER.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io.c: Reverted changes related to io_map_segment.
