@@ -28,6 +28,7 @@ ports_demuxer (mach_msg_header_t *inp,
   int exec_server (mach_msg_header_t *, mach_msg_header_t *);
   int pager_demuxer (mach_msg_header_t *, mach_msg_header_t *);
   int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
+  int ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (io_server (inp, outp)
 	  || pager_demuxer (inp, outp)
@@ -35,7 +36,8 @@ ports_demuxer (mach_msg_header_t *inp,
 	  || seqnos_notify_server (inp, outp)
 	  || fsys_server (inp, outp)
 	  || exec_server (inp, outp)
-	  || interrupt_server (inp, outp));
+	  || interrupt_server (inp, outp)
+	  || ifsock_server (inp, outp));
 }
 
   
