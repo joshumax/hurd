@@ -21,8 +21,8 @@
 
 /* Implement io_set_all_openmodes as described in <hurd/io.defs>. */
 error_t
-S_io_set_all_openmodes (struct protid *cred,
-			int newbits)
+diskfs_S_io_set_all_openmodes (struct protid *cred,
+			       int newbits)
 {
   if (!cred)
     return EOPNOTSUPP;
