@@ -1,3 +1,16 @@
+Wed Apr 22 16:29:18 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* ping.c: New file.  Originally P.D. from US Army; then modified
+	by BSD, then added to Linux.  Taken from Linux ping and adapted
+	for Hurd and submitted for inclusion by Kunihiro Ishiguro
+	(kunihiro@zebra.org). 
+	* Makefile (targets): Add `ping'.
+	(SRCS): Add `ping.c'.
+	(ping-CPPFLAGS): New variable, to find <linux/icmp.h> in the
+	pfinet sources.
+	(INSTALL-ping-ops): Install ping suid root.
+	(ping): Depend on `../libthreads/libthreads.a'.
+
 1997-09-29  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* unsu.c (argp_program_version): Use correct program name.
