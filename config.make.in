@@ -26,6 +26,7 @@ infodir = @infodir@
 sysconfdir = @sysconfdir@
 localstatedir = @localstatedir@
 sharedstatedir = @sharedstatedir@
+datadir = @datadir@
 
 # All of those directories together:
 installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \
