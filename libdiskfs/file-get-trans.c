@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_get_translator
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -40,7 +40,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   /* First look for short-circuited translators. */
   if (S_ISLNK (np->dn_stat.st_mode))
     {
-      int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
+      unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
       int amt;
       assert (diskfs_shortcut_symlink);
       if (len  > *translen)
@@ -66,7 +66,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
     {
       char *buf;
-      int buflen;
+      unsigned int buflen;
 
       if (S_ISCHR (np->dn_stat.st_mode))
 	assert (diskfs_shortcut_chrdev);
@@ -89,7 +89,7 @@ diskfs_S_file_get_translator (struct protid *cred,
     }
   else if (S_ISFIFO (np->dn_stat.st_mode))
     {
-      int len;
+      unsigned int len;
       
       len = sizeof _HURD_FIFO;
       if (len > *translen)
@@ -100,7 +100,7 @@ diskfs_S_file_get_translator (struct protid *cred,
     }
   else if (S_ISSOCK (np->dn_stat.st_mode))
     {
-      int len;
+      unsigned int len;
       
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
