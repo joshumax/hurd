@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <argp.h>
 #include "netfs.h"
 
 const struct argp netfs_std_runtime_argp = { 0 };
