@@ -25,7 +25,7 @@ makemode := misc
 # to overwrite an existing file.  Print a warning for such files.
 # If override_conf is set to `t' then install even on top of existing
 # files.
-SYSCONFFILES = rc protocols services shells motd ttys
+SYSCONFFILES = protocols services shells motd ttys
 installed_conf = $(addprefix $(sysconfdir)/$(SYSCONFFILES))
 
 ifeq ($(override_conf),t)
