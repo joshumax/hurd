@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Return the next prime greater than or equal to n. */
+/* Return the next prime greater than or equal to N. */
 int 
 nextprime (int n)
 {
@@ -29,6 +29,8 @@ nextprime (int n)
   int *m;
   int i, j;
   
+  /* You are not expected to understand this. */
+
   if (!q)
     {
       /* Init */
@@ -42,8 +44,9 @@ nextprime (int n)
 
   while (n > q[l - 1])
     {
-      /* Grow q */
+      /* Grow */
 
+      /* Alloc */
       p = q[l-1] * q[l-1];
       m = alloca (sizeof (int) * p);
       bzero (m, sizeof (int) * p);
@@ -66,7 +69,7 @@ nextprime (int n)
 	}
     }
   
-  /* Binary search */
+  /* Search */
   i = 0;
   j = l - 1;
   p = j / 2;
