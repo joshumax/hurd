@@ -1,3 +1,16 @@
+1997-07-03  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rfloppy.copy: Remove bin/ps, lib/libps.so, sbin/fsck.ufs, & sbin/libnss_db*.
+
+1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rfloppy.copy: Add bin/ed, sbin/fdisk.
+	* Makefile: Make floppy targets depend on the appropriate .copy files.
+
+	* bfloppy1.copy, bfloppy1-special.copy, bfloppy2.copy,
+	bfloppy2-special.copy, bfloppy1.grub, bfloppy1.boot: New files.
+	* Makefile (bfloppy1.ext2, bfloppy2.ext2): New targets.
+
 1997-06-27  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rfloppy.group, rfloppy.passwd, rfloppy-special.copy: New files.
