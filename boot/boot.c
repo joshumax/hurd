@@ -34,7 +34,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "notify_S.h"
 #include "exec_S.h"
-#include "device_S.h"
+#include "ourdevice_S.h"
 #include "io_S.h"
 #include "device_reply_U.h"
 #include "io_reply_U.h"
@@ -204,18 +204,18 @@ request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
   extern int exec_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int S_io_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int S_term_server (mach_msg_header_t *, mach_msg_header_t *);
-/*  extern int S_tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
+  extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
+/*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
   
   return (exec_server (inp, outp)
-	  || S_io_server (inp, outp)
+	  || io_server (inp, outp)
 	  || device_server (inp, outp)
 	  || notify_server (inp, outp)
-	  || S_term_server (inp, outp)
-/*	  || S_tioctl_server (inp, outp) */);
+	  || term_server (inp, outp)
+/*	  || tioctl_server (inp, outp) */);
 }
 
 vm_address_t
