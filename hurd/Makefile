@@ -27,7 +27,7 @@ INSTHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h  \
 include ../Makeconf
 
 install-hdrs install: $(includedir)/hurd \
-	$(addprefix $(includedir)/hurd,$(INSTHDRS))
+	$(addprefix $(includedir)/hurd/,$(INSTHDRS))
 
 $(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
 
