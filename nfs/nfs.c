@@ -167,7 +167,7 @@ int *
 xdr_encode_create_state (int *p, 
 			 mode_t mode)
 {
-  *p++ = mode;
+  *p++ = htonl (hurd_mode_to_nfs_mode (mode));
   *p++ = -1;			/* uid */
   *p++ = -1;			/* gid */
   *p++ = 0;			/* size */
@@ -178,6 +178,20 @@ xdr_encode_create_state (int *p,
   return p;
 }
 
+int *
+xdr_encode_sattr_stat (int *p,
+		       struct stat *st)
+{
+  *p++ = htonl (st->st_mode);
+  *p++ = htonl (st->st_uid);
+  *p++ = htonl (st->st_gid);
+  *p++ = htonl (st->st_size);
+  *p++ = htonl (st->st_atime);
+  *p++ = htonl (st->st_atime_usec);
+  *p++ = htonl (st->st_mtime);
+  *p++ = htonl (st->st_mtime_usec);
+  return p;
+}
 
 /* Decode *P into a stat structure; return the address of the
  following data. */
@@ -204,11 +218,6 @@ xdr_decode_fattr (int *p, struct stat *st)
   st->st_mtime_usec = ntohl (*p++);
   st->st_ctime = ntohl (*p++);
   st->st_ctime_usec = ntohl (*p++);
-
-  st->st_fstype = FSTYPE_NFS;
-  st->st_gen = 0;		/* ??? */
-  st->st_author = st->st_uid;	/* ??? */
-  st->st_flags = 0;		/* ??? */
 
   return p;
 
