@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,10 @@ diskfs_S_io_stat (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   ioserver_get_conch (&np->conch);
-  diskfs_set_node_times (np);
+  if (diskfs_syncronous)
+    diskfs_node_update (np, 1);
+  else
+    diskfs_set_node_times (np);
   bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
   mutex_unlock (&np->lock);
   return 0;
