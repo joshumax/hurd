@@ -20,3 +20,14 @@
 
 #define MOUNT_RPC_PROGRAM 100005
 #define MOUNT_RPC_VERSION 1
+
+/* Obnoxious arbitrary limits */
+#define MOUNT_MNTPATHLEN 1024
+#define MOUNT_MNTNAMLEN 255
+
+#define MOUNTPROC_NULL 0
+#define MOUNTPROC_MNT 1
+#define MOUNTPROC_DUMP 2
+#define MOUNTPROC_UMNT 3
+#define MOUNTPROC_UMNTALL 4
+#define MOUNTPROC_EXPORT 5
