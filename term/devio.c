@@ -459,9 +459,11 @@ device_open_reply (mach_port_t replyport,
   assert (phys_reply_writes == MACH_PORT_NULL);
   assert (phys_reply_writes_pi == 0);
   phys_device = device;
-  phys_reply_writes_pi = ports_allocate_port (term_bucket, 
-					      sizeof (struct port_info),
-					      phys_reply_class);
+  errno = ports_create_port (phys_reply_class, term_bucket, 
+			     sizeof (struct port_info),
+			     &phys_reply_writes_pi);
+  if (errno)
+    return errno;
   phys_reply_writes = ports_get_right (phys_reply_writes_pi);
   mach_port_insert_right (mach_task_self (), phys_reply_writes,
 			  phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
