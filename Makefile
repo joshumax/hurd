@@ -41,10 +41,10 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 	$(MAKE) -C $* all
 
 %-lndist: hurd-snap
-	$(MAKE) -C $* lndist
+	$(MAKE) -C $* lndist no_deps=t
 
 %-clean:
-	$(MAKE) -C $* clean
+	$(MAKE) -C $* clean no_deps=t
 
 %-relink:
 	$(MAKE) -C $* relink
@@ -53,7 +53,7 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 	$(MAKE) -C $* install
 
 %-TAGS:
-	$(MAKE) -C $* TAGS
+	$(MAKE) -C $* TAGS no_deps=t
 
 hurd-snap:
 	mkdir hurd-snap
