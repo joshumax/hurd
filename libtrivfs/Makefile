@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+#
+#   Copyright (C) 1994,95,96,97,99,2001 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,7 +24,7 @@ FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c \
 	file-getlinknode.c file-lock.c file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-set-size.c file-utimes.c file-exec.c \
-	file-access.c dir-chg.c file-chg.c file-inv.c file-get-storage-info.c \
+	file-access.c dir-chg.c file-chg.c file-get-storage-info.c \
 	file-get-fs-options.c file-reparent.c
 
 IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
