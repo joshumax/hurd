@@ -1,0 +1,94 @@
+/* Test program for argp argument parser
+
+   Copyright (C) 1997 Free Software Foundation, Inc.
+
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with the GNU C Library; see the file COPYING.LIB.  If
+   not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+   Cambridge, MA 02139, USA.  */
+
+#include <argp.h>
+
+char *argp_program_version = "argp-test 1.0";
+
+#define OPT_PGRP -1
+#define OPT_SESS -2
+
+struct argp_option options[] =
+{
+  {"pid",       'p',      "PID",  0,
+     "List the process PID"},
+  {"pgrp",      OPT_PGRP, "PGRP", 0,
+     "List processes in the process group PGRP"},
+  {"no-parent", 'P',	      0,     0,
+     "Include processes without parents"},
+  {0,           'x',       0,     OPTION_ALIAS},
+  {"all-fields",'Q',       0,     0,
+     "Don't elide unusable fields (normally if there's some reason ps \
+can't print a field for any process, it's removed from the output entirely)"},
+  {"reverse",   'r',       0,     0,
+     "Reverse the order of any sort"},
+  {"gratuitously-long-reverse-option", 0, 0, OPTION_ALIAS},
+  {"session",   OPT_SESS,  "SID", OPTION_ARG_OPTIONAL,
+     "Add the processes from the session SID (which defaults to the sid of \
+the current process)"},
+
+  {0,0,0,0, "Here are some more options:"},
+  {"foonly", 'f', "ZOT", 0, "Glork a foonly"},
+  {"zaza", 'z', 0, 0, "Snit a zar"},
+
+  {0}
+};
+
+static const char args_doc[] = "STRING...";
+static const char doc[] = "Test program for argp.";
+
+static error_t 
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case ARGP_KEY_NO_ARGS:
+      printf ("NO ARGS\n"); break;
+    case ARGP_KEY_ARG:
+      printf ("ARG: %s\n", arg); break;
+    case 'p': case 'P': case OPT_PGRP: case 'x': case 'Q':
+    case 'r': case OPT_SESS:
+      {
+	char buf[10];
+	if (isprint (key))
+	  sprintf (buf, "%c", key);
+	else
+	  sprintf (buf, "%d", key);
+	if (arg)
+	  printf ("KEY %s: %s\n", buf, arg);
+	else
+	  printf ("KEY %s\n", buf);
+	break;
+      }
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
+static struct argp argp = { options, parse_opt, args_doc, doc };
+
+int
+main (int argc, char **argv)
+{
+  argp_parse (&argp, argc, argv, 0, 0, 0);
+  return 0;
+}
