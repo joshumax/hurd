@@ -26,6 +26,14 @@
 /*
  * HISTORY
  * $Log: malloc.c,v $
+ * Revision 1.5  1996/03/06 23:51:04  miles
+ * [MCHECK] (struct header): New type.
+ * (union header): Only define if !MCHECK.
+ * (HEADER_SIZE, HEADER_NEXT, HEADER_FREE, HEADER_CHECK): New macros.
+ * [MCHECK] (MIN_SIZE): Add correct definition for this case.
+ * (more_memory, malloc, free, realloc):
+ *   Use above macros, and add appropiate checks & frobs in MCHECK case.
+ *
  * Revision 1.4  1994/05/05 11:21:42  roland
  * entered into RCS
  *
@@ -108,6 +116,7 @@ typedef struct header {
 #define HEADER_FREE(h) ((h)->u.fl)
 #define HEADER_CHECK(h) ((h)->check)
 #define MIN_SIZE	16
+#define LOG2_MIN_SIZE	4
 
 #else /* ! MCHECK */
 
@@ -120,6 +129,7 @@ typedef union header {
 #define HEADER_NEXT(h) ((h)->next)
 #define HEADER_FREE(h) ((h)->fl)
 #define MIN_SIZE	8	/* minimum block size */
+#define LOG2_MIN_SIZE	3
 
 #endif /* MCHECK */
 
@@ -132,10 +142,10 @@ typedef struct free_list {
 } *free_list_t;
 
 /*
- * Free list with index i contains blocks of size 2^(i+3) including header.
- * Smallest block size is 8, with 4 bytes available to user.
- * Size argument to malloc is a signed integer for sanity checking,
- * so largest block size is 2^31.
+ * Free list with index i contains blocks of size 2 ^ (i + LOG2_MIN_SIZE)
+ * including header.  Smallest block size is MIN_SIZE, with MIN_SIZE -
+ * HEADER_SIZE bytes available to user.  Size argument to malloc is a signed
+ * integer for sanity checking, so largest block size is 2^31.
  */
 #define NBUCKETS	29
 
@@ -326,16 +336,29 @@ realloc(old_base, new_size)
 		return 0;
 	}
 	/*
-	 * Free list with index i contains blocks of size 2^(i+3) including header.
+	 * Free list with index i contains blocks of size
+	 * 2 ^ (i + * LOG2_MIN_SIZE) including header.
 	 */
-	old_size = (1 << (i+3)) - HEADER_SIZE;
+	old_size = (1 << (i + LOG2_MIN_SIZE)) - HEADER_SIZE;
+
+	if (new_size <= old_size
+	    && new_size > (((old_size + HEADER_SIZE) >> 1) - HEADER_SIZE))
+	  /* The new size still fits in the same block, and wouldn't fit in
+	     the next smaller block!  */
+	  return old_base;
+
 	/*
 	 * Allocate new block, copy old bytes, and free old block.
 	 */
 	new_base = malloc(new_size);
-	if (new_base != 0)
-		bcopy(old_base, new_base, (int) (old_size < new_size ? old_size : new_size));
-	free(old_base);
+	if (new_base)
+	  bcopy(old_base, new_base,
+		(int) (old_size < new_size ? old_size : new_size));
+
+	if (new_base || new_size == 0)
+	  /* Free OLD_BASE, but only if the malloc didn't fail.  */
+	  free (old_base);
+
 	return new_base;
 }
 
