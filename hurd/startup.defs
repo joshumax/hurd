@@ -1,5 +1,5 @@
 /* Definitions for startup server interface
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -63,8 +63,7 @@ routine startup_procinit (
 	server: startup_t;
 	sreplyport reply_port: reply_port_t;
 	startup_proc: process_t;
-	fs_proc: process_t;
-	auth_proc: process_t;
+	out startup_task: task_t;
 	out auth: auth_t;
 	out host_priv: mach_port_move_send_t;
 	out device_master: mach_port_move_send_t);
