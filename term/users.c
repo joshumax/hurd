@@ -369,7 +369,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_write (data, datalen, amt);
+    return pty_io_write (cred, data, datalen, amt);
 
   mutex_lock (&global_lock);
 
@@ -441,7 +441,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_read (data, datalen, amount);
+    return pty_io_read (cred, data, datalen, amount);
 
   mutex_lock (&global_lock);
   
