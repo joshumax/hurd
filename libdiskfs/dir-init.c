@@ -26,16 +26,17 @@ diskfs_init_dir (struct node *dp, struct node *pdp)
 {
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   struct node *foo;
+  error_t err;
   
   /* New links */
-  if (pdp->dn_stat.st_nlink == LINK_MAX - 1)
+  if (pdp->dn_stat.st_nlink == diskfs_link_max - 1)
     return EMLINK;
 
-  np->dn_stat.st_nlink++;	/* for `.' */
-  np->dn_set_ctime = 1;
-  err = diskfs_lookup (np, ".", CREATE, &foo, dirds, cred);
+  dp->dn_stat.st_nlink++;	/* for `.' */
+  dp->dn_set_ctime = 1;
+  err = diskfs_lookup (dp, ".", CREATE, &foo, ds, cred);
   assert (err == ENOENT);
-  err = diskfs_direnter (np, ".", np, dirds, cred);
+  err = diskfs_direnter (dp, ".", dp, ds, cred);
   if (err)
     {
       np->dn_stat.st_nlink--;
@@ -45,14 +46,15 @@ diskfs_init_dir (struct node *dp, struct node *pdp)
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
-  err = diskfs_lookup (np, "..", CREATE, &foo, dirds, cred);
+  err = diskfs_lookup (np, "..", CREATE, &foo, ds, cred);
   assert (err == ENOENT);
-  err = diskfs_direnter (np, "..", dir, dirds, cred);
+  err = diskfs_direnter (np, "..", pdp, ds, cred);
   if (err)
     {
       pdp->dn_stat.st_nlink--;
       pdp->dn_set_ctime = 1;
       return err;
     }
-  diskfs_node_update (dir, 1);
+  diskfs_node_update (dp, 1);
+  return 0;
 }
