@@ -27,10 +27,11 @@ DIST_FILES = core.c gcore.c hashexec.c
 
 all:
 
-vpath lib%.a $(crossdir)/lib
 exec: -lbfd -liberty
 
 include ../Makeconf
+
+vpath lib%.a $(crossdir)/lib
 
 CPPFLAGS += -DBFD # -DA_OUT_H=\"./a.out.h\"
 
