@@ -19,13 +19,13 @@ dir := libtrivfs
 makemode := library
 
 FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
-	dir-rename.c dir-rmdir.c dir-unlink.c dir-reparent.c file-chauthor.c \
+	dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c \
 	file-getlinknode.c file-lock.c file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-set-size.c file-utimes.c file-exec.c \
 	file-access.c dir-chg.c file-chg.c file-inv.c file-get-storage-info.c \
-	file-get-fs-options.c
+	file-get-fs-options.c file-reparent.c
 
 IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
 	io-modes-off.c io-modes-on.c io-modes-set.c io-owner-get.c \
