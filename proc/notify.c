@@ -34,12 +34,20 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* We ask for dead name notifications to detect when tasks and
    message ports die.  Both notifications get sent to the process
-   port.  */
+   port.   */
 kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t deadport)
 {
-  struct proc *p = reqport_find (notify);
+  struct proc *p;
+
+  if (notify == generic_port)
+    {
+      check_dead_execdata_notify (deadport);
+      return 0;
+    }
+
+  p = reqport_find (notify);
   
   if (!p)
     return EOPNOTSUPP;
