@@ -118,5 +118,27 @@ void fshelp_translator_iterate (void (*func)(struct trans_link *, void *),
    we need to. */
 void fshelp_kill_translator (struct trans_link *link);
 
+
+
+/* Flock handling. */
+struct lock_box
+{
+  int type;
+  struct condition wait;
+  int waiting;
+  int shcount;
+};
+
+/* Call when a user makes a request to acquire an lock via file_lock.
+   There should be one lock box per object and one int per open; these
+   are passed as arguments BOX and USER respectively.  FLAGS are as
+   per file_lock.  MUT is a mutex which will be held whenever this
+   routine is called, to lock BOX->wait.  */ 
+error_t fshelp_acquire_lock (struct lock_box *box, int *user, 
+			     struct mutex *mut, int flags);
+
+  
+
+
 					     
 #endif
