@@ -854,7 +854,9 @@ trivfs_S_io_revoke (struct trivfs_protid *cred,
 
   mutex_unlock (&global_lock);
 
+  ports_inhibit_bucket_rpcs (term_bucket);
   ports_bucket_iterate (term_bucket, iterator_function);
+  ports_resume_bucket_rpcs (term_bucket);
 
   return 0;
 }
