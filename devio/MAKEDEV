@@ -13,7 +13,7 @@ export _CWD
 for I; do
   case "$I" in
     std)
-      $0 console tty null zero # fd
+      $0 console tty null zero fd
       ;;
     console|tty[0-9]?|tty[0-9a-f])
       $ST $I /hurd/term $_CWD/$I device $I;;
