@@ -1,3 +1,7 @@
+1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* store.h (struct store_class): Add const to type of `name' member.
+
 1999-11-14  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* device.c (dev_error): New static function.

@@ -1,3 +1,10 @@
+1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dev.c (dev_read, dev_write): In DEV->inhibit_cache case,
+	handle zero (i.e. unknown) block_size by treating it as 1.
+	Use shift and bitwise-and rather than multiply and modulus
+	for block size arithmetic, since it's a known power of two.
+
 1999-11-14  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io.c (trivfs_S_file_get_storage_info): Fail with EOPNOTSUPP when

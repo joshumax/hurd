@@ -1,3 +1,7 @@
+1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeinfo.c (print_store: pstr): Add const to parameter type.
+
 1999-11-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mount.c: New file.

@@ -1,5 +1,9 @@
 1999-11-19  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* MAKEDEV.sh (mkdev: time): Use --no-cache flag.
+	(mkdev: mem): New storeio device.
+	(mkdev: std): Add mem to standard list.
+
 	* Makefile (progs, scripts): New variables.
 	(targets, special-targets, SRCS, OBJS): Define in terms of those.
 	(libshouldbeinlibc dep rule): Replaced with static pattern rule
