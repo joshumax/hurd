@@ -1,3 +1,24 @@
+Wed Jul 31 14:23:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main/verify_passwd): Use #pragma weak instead of
+	__attribute__ ((weak)).
+	* su.c (check_password): Likewise.
+
+	* login.c (options): Change --inherit-environ to --preserve-environment.
+	Change --no-environ to --no-environment-args.
+	Change --environ to --envvar and --environ-default to --envvar-default.
+	* ps.c (options, main): Change --fmt to --format/-F.
+	Change --posix-fmt/-o to --posix-format/-o.
+	Change --sort to --sort/-s.
+	Change --pgrp to --pgrp/-G.
+	Change --login to --login/-L.
+	Change --threads/-s to --threads/-T.
+	Change --session to --session/-S.
+	(OPT_FMT, OPT_SORT, OPT_PGRP, OPT_LOGIN, OPT_SESS): Macros removed.
+	* w.c (options, main): Change --fmt to --format/-F.
+	Change --sort to --sort/-s.
+	(OPT_FMT, OPT_SORT): Macros removed.
+
 Wed Jul 31 14:24:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* login.c (main/verify_passwd): Declare crypt weak in a portable
