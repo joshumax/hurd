@@ -26,7 +26,7 @@ OBJS = $(SRCS:.c=.o) \
        startup_notifyUser.o
 LCLHDRS = ttys.h
 target = init
-HURDLIBS=ports fshelp shouldbeinlibc
+HURDLIBS = shouldbeinlibc
 
 ifeq (yes,$(split-init))
 init-CPPFLAGS = -DSPLIT_INIT
@@ -34,6 +34,7 @@ SRCS += stubs.c
 else
 SRCS += ttys.c
 LDLIBS = -lutil
+HURDLIBS += ports fshelp
 endif
 
 include ../Makeconf
