@@ -1,6 +1,6 @@
 /* Local mail delivery
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -36,7 +36,7 @@
 
 #define OPT_FILE -5
 
-char *argp_program_version = STANDARD_HURD_VERSION (mail.local);
+const char *argp_program_version = STANDARD_HURD_VERSION (mail.local);
 
 static const struct argp_option
 options[] =

@@ -1,5 +1,5 @@
 /* Authentication server.
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -33,7 +33,7 @@
 #include "auth_S.h"
 #include "auth_reply_U.h"
 
-char *argp_program_version = STANDARD_HURD_VERSION(auth);
+const char *argp_program_version = STANDARD_HURD_VERSION(auth);
 
 
 /* Auth handles are server ports with sets of ids.  */
