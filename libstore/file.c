@@ -20,7 +20,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <hurd/io.h>
 
 #include "store.h"
 
@@ -40,7 +40,25 @@ file_write (struct store *store,
 }
 
 static struct store_meths
-file_meths = {dev_read, dev_write};
+file_meths = {file_read, file_write};
+
+static error_t
+file_byte_read (struct store *store, off_t addr, mach_msg_type_number_t amount,
+		char **buf, mach_msg_type_number_t *len)
+{
+  return io_read (store->port, buf, len, addr, amount);
+}
+
+static error_t
+file_byte_write (struct store *store,
+		 off_t addr, char *buf, mach_msg_type_number_t len,
+	   mach_msg_type_number_t *amount)
+{
+  return io_write (store->port, buf, len, addr, amount);
+}
+
+static struct store_meths
+file_byte_meths = {file_byte_read, file_byte_write};
 
 /* Return a new store in STORE referring to the mach file FILE.  Consumes
    the send right FILE.  */
@@ -48,29 +66,29 @@ error_t
 store_file_create (file_t file, struct store **store)
 {
   off_t runs[2];
-  size_t sizes[DEV_GET_SIZE_COUNT], block_size;
-  unsigned sizes_len = DEV_GET_SIZE_COUNT;
-  error_t err = file_get_status (file, DEV_GET_SIZE, sizes, &sizes_len);
+  struct stat stat;
+  error_t err = io_stat (file, &stat);
 
   if (err)
     return err;
 
-  assert (sizes_len == DEV_GET_SIZE_COUNT);
-
-  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
   runs[0] = 0;
-  runs[1] = sizes[DEV_GET_SIZE_FILE_SIZE] / block_size;
+  runs[1] = stat.st_size;
 
-  return _store_file_create (file, runs, 2, block_size, store);
+  return _store_file_create (file, 1, runs, 2, store);
 }
 
-/* Like store_file_create, but doesn't query the file for information.   */
+/* Like store_file_create, but doesn't query the file for information.  */
 error_t
-_store_file_create (file_t file,
-		      off_t *runs, unsigned runs_len, size_t block_size,
-		      struct store **store)
+_store_file_create (file_t file, size_t block_size,
+		    off_t *runs, unsigned runs_len,
+		    struct store **store)
 {
-  *store = _make_store (STORAGE_FILE, &file_meths, file, block_size,
-			runs, runs_len);
+  if (block_size == 1)
+    *store = _make_store (STORAGE_HURD_FILE, &file_byte_meths, file, 1,
+			  runs, runs_len);
+  else
+    *store = _make_store (STORAGE_HURD_FILE, &file_meths, file, block_size,
+			  runs, runs_len);
   return *store ? 0 : ENOMEM;
 }
