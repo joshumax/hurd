@@ -75,7 +75,8 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subd
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
-install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs))
+install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs)) \
+	$(addsuffix -install,$(other-subdirs))
 
 lndist: cp-linked-files
 
