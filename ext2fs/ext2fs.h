@@ -166,12 +166,6 @@ struct disknode
   /* True if the last page of the file has been made writable, but is only
      partially allocated.  */
   int last_page_partially_writable;
-
-  /* True if the last block of this file (the one ending at allocsize bytes)
-     has actually been allocated.  We must eventually do so to maintain a
-     consistent on-disk state, but delaying it can improveme allocation, and
-     it's an inconsistency easily fixed by fsck.  */
-  int last_block_allocated;
 };
 
 struct user_pager_info
