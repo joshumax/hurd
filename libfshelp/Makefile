@@ -27,7 +27,7 @@ SRCS =	lock-acquire.c lock-init.c \
 	exec-reauth.c \
 	set-options.c \
 	return-buffer.c
-LCLHDRS = fshelp.h locks.h
+LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
 
 OBJS = $(subst .c,.o,$(SRCS))
