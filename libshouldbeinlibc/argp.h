@@ -82,9 +82,11 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 /* There are no more command line arguments at all.  */
 #define ARGP_KEY_END		1
 /* Because it's common to want to do some special processing if there aren't
-   any non-option args, user parsers are called with this key if there
-   weren't any non-option arguments, before calling it again with
-   ARGP_KEY_END.  */
+   any non-option args, user parsers are called with this key if there they
+   didn't get a chance to process any non-option arguments; note that having
+   been given a non-option arg and returned EINVAL counts.  Called just
+   before ARGP_KEY_END (where more general validity checks on previously
+   parsed arguments can take place).  */
 #define ARGP_KEY_NO_ARGS	2
 
 /* An argp structure contains a set of getopt options declarations, a
@@ -140,11 +142,6 @@ struct argp_state
 
   /* The flags supplied to argp_parse.  May be modified.  */
   unsigned flags;
-
-  /* Set to true after a non-option arg has been processed successfully and
-     used to decide whether to call user parsers with ARGP_KEY_NO_ARGS (which
-     see).  May be modified.  */
-  int processed_arg;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
