@@ -22,7 +22,9 @@
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
-error_t 
+#define makedev(maj,min) ((((maj)&0xFF)<<8)+((min)&0xFF))
+
+error_t
 netfs_S_file_set_translator (struct protid *user,
 			     int passive_flags, int active_flags,
 			     int killtrans_flags, char *passive,

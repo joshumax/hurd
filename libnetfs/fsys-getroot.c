@@ -21,6 +21,7 @@
 #include "netfs.h"
 #include "fsys_S.h"
 #include "misc.h"
+#include "callbacks.h"
 #include <fcntl.h>
 
 error_t
