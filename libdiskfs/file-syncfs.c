@@ -24,11 +24,25 @@ diskfs_S_file_syncfs (struct protid *cred,
 		      int wait,
 		      int dochildren)
 {
+  error_t 
+    helper (struct node *np)
+      {
+	error_t error;
+	
+	error = fshelp_fetch_control (np, &control);
+	if (!error && control != MACH_PORT_NULL)
+	  {
+	    fsys_syncfs (control, wait, 1);
+	    mach_port_deallocate (mach_task_self (), control);
+	  }
+	return 0;
+      }
+  
   if (!cred)
     return EOPNOTSUPP;
 
   if (dochildren)
-    diskfs_sync_translators (wait);
+    diskfs_node_iterate (helper);
 
   if (diskfs_synchronous)
     wait = 1;
