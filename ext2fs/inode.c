@@ -451,7 +451,6 @@ write_node (struct node *np)
 	}
 
       di->i_links_count = st->st_nlink;
-      di->i_size = st->st_size;
 
       di->i_atime = st->st_atime;
       di->i_mtime = st->st_mtime;
@@ -461,8 +460,6 @@ write_node (struct node *np)
       di->i_mtime.ts_nsec = st->st_mtime_usec * 1000;
       di->i_ctime.ts_nsec = st->st_ctime_usec * 1000;
 #endif
-
-      di->i_blocks = st->st_blocks;
 
       /* Convert generic flags in ST->st_flags to ext2-specific flags in DI
          (but don't mess with ext2 flags we don't know about).  The original
@@ -478,11 +475,20 @@ write_node (struct node *np)
 	info->i_flags |= EXT2_IMMUTABLE_FL;
       di->i_flags = info->i_flags;
 
-      if (!(st->st_mode & S_IPTRANS) && sblock->s_creator_os == EXT2_OS_HURD)
-	di->i_translator = 0;
-
-      /* Set dtime non-zero to indicate a deleted file.  */
-      di->i_dtime = (st->st_mode ? 0 : di->i_mtime);
+      if (st->st_mode == 0)
+	/* Set dtime non-zero to indicate a deleted file.
+	   We don't clear i_size, i_blocks, and i_translator in this case,
+	   to give "undeletion" utilities a chance.  */
+	di->i_dtime = di->i_mtime;
+      else
+	{
+	  di->i_dtime = 0;
+	  di->i_size = st->st_size;
+	  di->i_blocks = st->st_blocks;
+	  if (!(st->st_mode & S_IPTRANS)
+	      && sblock->s_creator_os == EXT2_OS_HURD)
+	    di->i_translator = 0;
+	}
 
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
 	di->i_block[0] = st->st_rdev;
