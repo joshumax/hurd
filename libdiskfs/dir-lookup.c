@@ -132,7 +132,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      *retry = FS_RETRY_REAUTH;
 	      *returned_port = dircred->po->dotdotport;
 	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-	      strcpy (retryname, nextname);
+	      if (!lastcomp)
+		strcpy (retryname, nextname);
 	      error = 0;
 	      goto out;
 	    }
