@@ -41,6 +41,8 @@ find_address (struct user_pager_info *upi,
 	      int *disksize,
 	      struct rwlock **nplock)
 {
+  error_t err;
+  
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
   if (upi->type == DISK)
@@ -52,7 +54,7 @@ find_address (struct user_pager_info *upi,
     }
   else 
     {
-      struct iblock_spec indirs[NINDIR + 1];
+      struct iblock_spec indirs[NIADDR + 1];
       struct node *np;
   
       np = upi->np;
@@ -71,14 +73,14 @@ find_address (struct user_pager_info *upi,
       else
 	*disksize = __vm_page_size;
       
-      err = fetch_indir_spec (np, lblkno (offset), indirs);
+      err = fetch_indir_spec (np, lblkno (sblock, offset), indirs);
       if (err)
 	rwlock_reader_unlock (&np->dn->allocptrlock);
       else
 	{
 	  if (indirs[0].bno)
 	    *addr = (fsbtodb (sblock, indirs[0].bno)
-		     + blkoff (sblkc, offset) / DEV_BSIZE);
+		     + blkoff (sblkoc, offset) / DEV_BSIZE);
 	  else
 	    *addr = 0;
 	}
@@ -167,8 +169,9 @@ pager_unlock_page (struct user_pager_info *pager,
 {
   struct node *np;
   error_t err;
-  struct iblock_spec indirs[NINDIR + 1];
+  struct iblock_spec indirs[NIADDR + 1];
   daddr_t bno;
+  struct disknode *dn;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
      synchronously.  We do this on newly allocated indirect
@@ -199,11 +202,11 @@ pager_unlock_page (struct user_pager_info *pager,
     {
       printf ("attempt to unlock at last block denied\n");
       fflush (stdout);
-      rwlock_writer_unlock (&np->dn->datalock, np->dn);
+      rwlock_writer_unlock (&dn->allocptrlock);
       return EIO;
     }
     
-  err = fetch_indir_spec (np, lblkno (address), indirs);
+  err = fetch_indir_spec (np, lblkno (sblock, address), indirs);
   if (err)
     {
       rwlock_writer_unlock (&dn->allocptrlock);
@@ -220,14 +223,14 @@ pager_unlock_page (struct user_pager_info *pager,
     {
       if (indirs[0].offset == -1)
 	{
-	  err = ffs_alloc (np, lblkno (address),
-			   ffs_blkpref (np, lblkno (address),
-					lblkno (address), di->di_db),
+	  err = ffs_alloc (np, lblkno (sblock, address),
+			   ffs_blkpref (np, lblkno (sblock, address),
+					lblkno (sblock, address), di->di_db),
 			   sblock->fs_bsize, &bno, 0);
 	  if (err)
 	    goto out;
-	  assert (lblkno (address) < NDADDR);
-	  indirs[0].bno = di->di_db[lblkno (address)] = bno;
+	  assert (lblkno (sblock, address) < NDADDR);
+	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
 	}
       else
 	{
@@ -239,8 +242,8 @@ pager_unlock_page (struct user_pager_info *pager,
 	    {
 	      if (indirs[1].offset == -1)
 		{
-		  err = ffs_alloc (np, lblkno (address),
-				   ffs_blkpref (np, lblkno (address),
+		  err = ffs_alloc (np, lblkno (sblock, address),
+				   ffs_blkpref (np, lblkno (sblock, address),
 						INDIR_SINGLE, di->di_ib),
 				   sblock->fs_bsize, &bno, 0);
 		  if (err)
@@ -261,8 +264,9 @@ pager_unlock_page (struct user_pager_info *pager,
 			 not supported. */
 		      assert (indirs[2].offset == -1);
 		      
-		      err = ffs_alloc (np, lblkno (address),
-				       ffs_blkpref (np, lblkno (address),
+		      err = ffs_alloc (np, lblkno (sblock, address),
+				       ffs_blkpref (np, lblkno (sblock,
+								address),
 						    INDIR_DOUBLE, di->di_ib),
 				       sblock->fs_bsize, &bno, 0);
 		      if (err)
@@ -276,8 +280,8 @@ pager_unlock_page (struct user_pager_info *pager,
 		  
 		  /* Now we can allocate the single indirect block */
 		  
-		  err = ffs_alloc (np, lblkno (address),
-				   ffs_blkpref (np, lblkno (address),
+		  err = ffs_alloc (np, lblkno (sblock, address),
+				   ffs_blkpref (np, lblkno (sblock, address),
 						indirs[1].offset, diblock),
 				   sblock->fs_bsize, &bno, 0);
 		  if (err)
@@ -292,12 +296,15 @@ pager_unlock_page (struct user_pager_info *pager,
 
 	  /* Now we can allocate the data block. */
 
-	  err = ffs_alloc (np, lblkno (address),
-			   ffs_blkpref (np, lblkno (address),
+	  err = ffs_alloc (np, lblkno (sblock, address),
+			   ffs_blkpref (np, lblkno (sblock, address),
 					indirs[0].offset, siblock),
 			   sblock->fs_bsize, &bno, 0);
 	  if (err)
 	    goto out;
+
+	  dev_write_sync (fsbtodb (bno), zeroblock, sblock->fs_bsize);
+
 	  indirs[0].bno = siblock[indirs[0].offset] = bno;
 	}
     }
