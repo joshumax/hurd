@@ -113,7 +113,7 @@ routine file_lock (
 /* Return current lock status.  Mystatus tells what kind of lock the
    caller has; otherstatus tells what kind of lock anyone has
    (including the caller).  */
- routine file_lock_stat (
+routine file_lock_stat (
 	lock_file: file_t;
 	out mystatus: int;
 	out otherstatus: int);
