@@ -95,7 +95,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
   /* Get the contents of NP off disk.  */
   err = read_disknode (np);
   
-  if (!diskfs_readonly && !np->dn_stat.st_gen)
+  if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
       spin_lock (&generation_lock);
       if (++next_generation < diskfs_mtime->seconds)
