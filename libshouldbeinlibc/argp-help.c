@@ -762,7 +762,7 @@ void argp_help (const struct argp *argp, FILE *stream,
 	/* Just show where the options go.  */
 	{
 	  if (hol->num_entries > 0)
-	    fputs (" [OPTIONS...]", stream);
+	    fputs (" [OPTION...]", stream);
 	}
       else
 	/* Actually print the options.  */
