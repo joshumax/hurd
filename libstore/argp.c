@@ -139,8 +139,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       if (err)
 	{
 	  /* Use error instead of ERR because it's not a parsing error.  */
-	  int exit_status = (state->flags & ARGP_NO_EXIT) ? 0 : 1;
-	  error (exit_status, err, "%s", arg);
+	  if (! (state->flags & ARGP_NO_ERRS))
+	    {
+	      int exit_status = (state->flags & ARGP_NO_EXIT) ? 0 : 1;
+	      error (exit_status, err, "%s", arg);
+	    }
 	  return err;
 	}
       else
