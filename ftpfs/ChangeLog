@@ -1,3 +1,8 @@
+1997-08-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (sweep): Don't delete entries that have the NOENT flag set.
+	(refresh_dir): Ensure there are entries for `.' and `..'.
+
 1997-08-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir.c (struct new_entry_state): DIR_PFX & DIR_PFX_LEN fields removed.

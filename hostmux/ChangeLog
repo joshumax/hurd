@@ -1,3 +1,8 @@
+1997-08-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mux.c (netfs_attempt_lookup): Handle `.' and `..' lookups.
+	(netfs_get_dirents): Add entries for `.' and `..'.
+
 1997-08-07  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* hostmux.c (main): Use ARGP_IN_ORDER to parse args.
