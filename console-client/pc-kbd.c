@@ -149,7 +149,7 @@ enum scancode
 
 /* In set 2 function keys don't have a logical order.  This macro can
    determine if a function key was pressed.  */
-#define IS_FUNC_KEY(c) ((sc >= SC_F9 && sc <= SC_F4 ||    \
+#define IS_FUNC_KEY(c) ((sc >= SC_F9 && sc <= SC_F4) ||    \
 			sc == SC_F7 || sc == SC_F11)
 
 /* Codes which can follow SC_EXTENDED1.  */

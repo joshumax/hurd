@@ -1,3 +1,7 @@
+2002-11-25  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pc-kbd.c (IS_FUNC_KEY): Fix last change.
+
 2002-11-21  Marco Gerards  <metgerards@student.han.nl>
 
 	* pc-kbd.c (IS_FUNC_KEY): New macro.
