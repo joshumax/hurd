@@ -27,9 +27,11 @@ io-MIGSFLAGS=-DREPLY_PORTS
 
 include ../Makeconf
 
+CPPFLAGS += -DDEFAULT_BOOTDEVICE=\"$(notdir $(hurdrootdev))\"
+
 install: /usr/local/bin/boot
 
-/usr/local/bin/boot:
+/usr/local/bin/boot: boot
 	cp boot /usr/local/bin/boot
 
 boot.o: notify_S.h exec_S.h ourdevice_S.h io_S.h device_reply_U.h \
