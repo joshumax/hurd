@@ -19,7 +19,8 @@ dir := init.trim
 makemode := server
 
 SRCS = init.c
-OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o
+OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
+	startup_notifyUser.o
 target = init
 
 init: $(OBJS) ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a
