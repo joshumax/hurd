@@ -1,5 +1,5 @@
 /* Format of a filesystem on disk (superblock and cylinder groups)
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -423,10 +423,10 @@ struct	ocg {
 /*
  * Determining the size of a file block in the file system.
  */
-#define blksize(ip, lbn) \
-	(((lbn) >= NDADDR || (ip)->i_allocsize >= ((lbn) + 1) << sblock->fs_bshift) \
+#define blksize(np, lbn) \
+	(((lbn) >= NDADDR || (np)->allocsize >= ((lbn) + 1) << sblock->fs_bshift) \
 	    ? sblock->fs_bsize \
-	    : (fragroundup(blkoff((ip)->i_allocsize))))
+	    : (fragroundup(blkoff((np)->allocsize))))
 #define dblksize(dip, lbn) \
 	(((lbn) >= NDADDR || (dip)->di_size >= ((lbn) + 1) << sblock->fs_bshift) \
 	    ? sblock->fs_bsize \
