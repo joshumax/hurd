@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -30,6 +30,8 @@ subsystem fsys 22000;
 #ifdef FSYS_IMPORTS
 FSYS_IMPORTS
 #endif
+
+INTR_INTERFACE
 
 /* Sent by filesystem on its bootstrap port upon startup.
    REALNODE is the node this filesystem is the translator for,
