@@ -18,7 +18,7 @@
 dir := utils
 makemode := utilities
 
-SRCS = sh.o ps.o su.o
+SRCS = sh.c ps.c su.c
 targets = sh ps su
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
