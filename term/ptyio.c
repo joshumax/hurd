@@ -464,12 +464,17 @@ S_tioctl_tiocsig (io_t port,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&global_lock);
+
   drop_output ();
   clear_queue (inputq);
   clear_queue (rawq);
   ptyio_notice_input_flushed ();
   send_signal (sig);
+
+  mutex_unlock (&global_lock);
   ports_port_deref (cred);
+
   return 0;
 }
 
@@ -484,6 +489,8 @@ S_tioctl_tiocpkt (io_t port,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&global_lock);
+
   if (!!mode == !!packet_mode)
     err = 0;
   else if (mode && user_ioctl_mode)
@@ -494,7 +501,10 @@ S_tioctl_tiocpkt (io_t port,
       control_byte = 0;
       err = 0;
     }
+
+  mutex_unlock (&global_lock);
   ports_port_deref (cred);
+
   return err;
 }
 
@@ -509,6 +519,8 @@ S_tioctl_tiocucntl (io_t port,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&global_lock);
+
   if (!!mode == !!user_ioctl_mode)
     err = 0;
   else if (mode && packet_mode)
@@ -519,7 +531,10 @@ S_tioctl_tiocucntl (io_t port,
       control_byte = 0;
       err = 0;
     }
+
+  mutex_unlock (&global_lock);
   ports_port_deref (cred);
+
   return err;
 }
 
