@@ -29,7 +29,7 @@ pager_demuxer (mach_msg_header_t *inp,
 					  mach_msg_header_t *outp);
   extern int _pager_seqnos_notify_server (mach_msg_header_t *inp,
 					  mach_msg_header_t *outp);
-  
+
   int result = _pager_seqnos_memory_object_server (inp, outp)
     || _pager_seqnos_notify_server (inp, outp);
   if (!result)
@@ -39,15 +39,14 @@ pager_demuxer (mach_msg_header_t *inp,
       p = ports_lookup_port (0, inp->msgh_remote_port, _pager_class);
       if (p)
 	{
+	  /* Synchronize our bookkeeping of the port's seqno with
+	     the one consumed by this bogus message.  */
 	  mutex_lock (&p->interlock);
-	  _pager_wait_for_seqno (p, seqno);
-	  _pager_release_seqno (p, seqno);
+	  _pager_wait_for_seqno (p, inp->msgh_seqno);
+	  _pager_release_seqno (p, inp->msgh_seqno);
 	  mutex_unlock (&p->interlock);
 	  ports_port_deref (p);
 	}
     }
   return result;
 }
-
-
-
