@@ -31,7 +31,7 @@
 static struct node *nodehash[INOHSZ];
 static error_t read_disknode (struct node *np);
 
-spin_lock_t gennumberlock = SPIN_LOCK_INITIALIZER;
+spin_lock_t generation_lock = SPIN_LOCK_INITIALIZER;
 
 /* Initialize the inode hash table. */
 void
@@ -92,11 +92,11 @@ iget (ino_t inum, struct node **npp)
   
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
-      spin_lock (&gennumberlock);
+      spin_lock (&generation_lock);
       if (++nextgennumber < diskfs_mtime->seconds)
 	nextgennumber = diskfs_mtime->seconds;
       np->dn_stat.st_gen = nextgennumber;
-      spin_unlock (&gennumberlock);
+      spin_unlock (&generation_lock);
       np->dn_set_ctime = 1;
     }
   
