@@ -258,7 +258,7 @@ add_entry (char **env, unsigned *env_len, char *entry)
     error (8, err, "Adding %s", entry);
 }
 
-void 
+void
 main(int argc, char *argv[])
 {
   int i;
@@ -847,6 +847,16 @@ main(int argc, char *argv[])
      entry.  */
   if (! no_utmp)
     add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
+
+  if (eff_uids->num | eff_gids->num)
+    {
+      /* Change the terminal to be owned by the user.  */
+      err = chown (tty,
+		   eff_uids->num ? eff_uids->ids[0] : -1,
+		   eff_gids->num ? eff_gids->ids[0] : -1);
+      if (err)
+	error (0, err, "chown: %s", tty);
+    }
 
   err = file_exec (exec, mach_task_self (),
 		   EXEC_NEWTASK | EXEC_DEFAULTS | EXEC_SECURE,
