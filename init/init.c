@@ -335,10 +335,10 @@ static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
-  extern int notify_server (), startup_server ();
+  extern int notify_server (), S_startup_server ();
   
   return (notify_server (inp, outp) ||
-	  startup_server (inp, outp));
+	  S_startup_server (inp, outp));
 }
 
 int
