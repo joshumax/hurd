@@ -18,23 +18,19 @@
 dir := libpager
 makemode := library
 
-COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
-	inhibit-term.o lock-completed.o lock-object.o mark-error.o \
-	 no-senders.o object-init.o object-terminate.o pagemap.o \
-	 pager-create.o pager-flush.o pager-shutdown.o pager-sync.o \
-	 stubs.o seqnos.o demuxer.o chg-compl.o pager-attr.o clean.o \
-	dropweak.o notify-stubs.o get-upi.o
-OBJS = $(COBJS) memory_objectServer.o notifyServer.o
-SRCS = $(subst .o,.c,$(COBJS))
-LCLHDRS = pager.h priv.h
-REMHDRS = ../hurd/ports.h
 libname = libpager
+SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
+	inhibit-term.c lock-completed.c lock-object.c mark-error.c \
+	no-senders.c object-init.c object-terminate.c pagemap.c \
+	pager-create.c pager-flush.c pager-shutdown.c pager-sync.c \
+	stubs.c seqnos.c demuxer.c chg-compl.c pager-attr.c clean.c \
+	dropweak.c notify-stubs.c get-upi.c
+LCLHDRS = pager.h priv.h
 installhdrs = pager.h
+
+OBJS = $(SRCS:.c=.o) memory_objectServer.o notifyServer.o
 
 MIGSFLAGS = -DSEQNOS
 MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf
-
-
-
