@@ -476,14 +476,12 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
 /* ---------------------------------------------------------------- */
 
-/* Truncate file.  */
 error_t
-trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
 {
-  return 0;
+  return size == 0 ? 0 : EINVAL;
 }
-
-/* ---------------------------------------------------------------- */
+
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
