@@ -65,6 +65,7 @@ diskfs_truncate (struct node *np,
       diskfs_end_catch_exception ();
       np->dn_stat.st_size = length;
       np->dn_set_ctime = np->dn_set_mtime = 1;
+      diskfs_node_update (np, 1);
       return 0;
     }
 
@@ -343,9 +344,67 @@ indir_release (struct node *np, daddr_t bno, int level)
   return count;
 }
 
-
-
 
+/* Offer data at BUF from START of LEN bytes of file NP. */
+void
+offer_data (struct node *np,
+	    off_t start,
+	    size_t len,
+	    vm_address_t buf)
+{
+  vm_address_t addr;
+  
+  len = round_page (size);
+  
+  assert (start % vm_page_size == 0);
+  
+  assert (np->dn->fileinfo);
+  for (addr = start; addr < start + len; addr += vm_page_size)
+    pager_offer_page (np->dn->fileinfo->p, 1, 0, start, buf + (addr - start));
+}
+
+/* Logical block LBN of node NP has been extended with ffs_realloccg.
+   It used to be allocated at OLD_PBN and is now at NEW_PBN.  The old
+   size was OLD_SIZE; it is now NEW_SIZE bytes long.  Arrange for the data
+   on disk to be kept consistent, and free the old block if it has moved. */
+void
+block_extended (struct node *np, 
+		daddr_t lbn,
+		daddr_t old_pbn,
+		daddr_t new_pbn,
+		size_t old_size,
+		size_t new_size)
+{
+  vm_address_t buf;
+  daddr_t off;
+
+  /* Make sure that any pages of this block which just became allocated
+     don't get paged in from disk. */
+  if (round_page (old_size) < round_page (new_size))
+    offer_data (np, lbn * sblock->fs_bsize + round_page (old_size), 
+		round_page (new_size) - round_page (old_size), zeroblock);
+
+  if (old_pbn != new_pbn)
+    {
+      /* Fetch the old data for the part that has moved and offer it
+	 to the kernel, to make sure it's paged in before
+	 we deallocate the old block.  */
+      for (off = 0; off < round_page (old_size); off += vm_page_size)
+	{
+	  diskfs_device_read_sync (fsbtodb (old_pbn) + off / DEV_BSIZE,
+				   (void *) &buf, vm_page_size);
+	  /* If this page is the last one, then zero the excess first */
+	  if (off + vm_page_size > old_size)
+	    bzero (buf + old_size - off, vm_page_size - (old_size - off));
+	  offer_data (np, lbn * sblock->fs_bsize + off, vm_page_size, buf);
+	}
+      
+      /* And deallocate the old block */
+      ffs_blkfree (np, old_pbn, old_size);
+    }
+}  
+
+
 /* Implement the diskfs_grow callback; see <hurd/diskfs.h> for the
    interface description. */
 error_t
@@ -357,8 +416,7 @@ diskfs_grow (struct node *np,
   int size, osize;
   error_t err;
   struct dinode *di = dino (np->dn->number);
-  off_t poke_off = 0;
-  size_t poke_len = 0;
+  mach_port_t pagerpt;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO,
      synchronously.  We do this on newly allocated indirect
@@ -375,6 +433,9 @@ diskfs_grow (struct node *np,
     return 0;
 
   assert (!diskfs_readonly);
+
+  /* This reference will ensure that NP->dn->fileinfo stays allocated. */
+  pagerpt = diskfs_get_filemap (np, VM_PROT_WRITE|VM_PROT_READ);
 
   /* The new last block of the file. */
   lbn = lblkno (sblock, end - 1);
@@ -411,16 +472,7 @@ diskfs_grow (struct node *np,
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 
-	  diskfs_device_write_sync (fsbtodb (sblock, bno) + btodb (osize),
-			  zeroblock, sblock->fs_bsize - osize);
-
-	  if (bno != old_pbn)
-	    {
-	      /* Make sure the old contents get written out
-		 to the new address by poking the pages. */
-	      poke_off = olbn * sblock->fs_bsize;
-	      poke_len = osize;
-	    }
+	  block_extended (np, olbn, old_pbn, bno, osize, sblock->fs_bsize);
 	}
     }
 
@@ -446,18 +498,7 @@ diskfs_grow (struct node *np,
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 
-	  diskfs_device_write_sync (fsbtodb (sblock, bno) + btodb (osize),
-			  zeroblock, size - osize);
-
-	  if (bno != old_pbn)
-	    {
-	      assert (!poke_len);
-
-	      /* Make sure the old contents get written out to
-		 the new address by poking the pages. */
-	      poke_off = lbn * sblock->fs_bsize;
-	      poke_len = osize;
-	    }
+	  block_extended (np, lbn, old_pbn, bno, osize, size);
 	}
       else
 	{
@@ -471,8 +512,8 @@ diskfs_grow (struct node *np,
 	  di->di_db[lbn] = bno;
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
-
-	  diskfs_device_write_sync (fsbtodb (sblock, bno), zeroblock, size);
+	  
+	  offer_data (np, lbn * sblock->fs_bsize, size, zeroblock);
 	}
     }
   else
@@ -562,11 +603,11 @@ diskfs_grow (struct node *np,
 	goto out;
       indirs[0].bno = siblock[indirs[0].offset] = bno;
       record_poke (siblock, sblock->fs_bsize);
-      diskfs_device_write_sync (fsbtodb (sblock, bno),
-				zeroblock, sblock->fs_bsize);
+      offer_data (np, lbn, sblock->fs_bsize, zeroblock);
     }
 
  out:
+  mach_port_deallocate (mach_task_self (), pagerpt);
   if (!err)
     {
       int newallocsize;
@@ -579,20 +620,6 @@ diskfs_grow (struct node *np,
     }
 
   rwlock_writer_unlock (&np->dn->allocptrlock);
-
-  /* If we expanded a fragment, then POKE_LEN will be set.
-     We need to poke the requested amount of the memory object
-     so that the kernel will write out the data to the new location
-     at a suitable time. */
-  if (poke_len)
-    {
-      mach_port_t obj;
-
-      obj = diskfs_get_filemap (np, VM_PROT_READ | VM_PROT_WRITE);
-      poke_pages (obj, trunc_page (poke_off),
-		  round_page (poke_off + poke_len));
-      mach_port_deallocate (mach_task_self (), obj);
-    }
 
   return err;
 }
