@@ -139,7 +139,7 @@ static void
 bfree (char *blk, size_t blk_len)
 {
   if (blk_len > 0)
-    vm_deallocate (mach_task_self (), (vm_address_t)blk, blk_len);
+    munmap (blk, blk_len);
 }
 
 /* Read up to MAX chars from IN into BLK & BLK_LEN, which may be reused or
