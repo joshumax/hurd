@@ -139,7 +139,8 @@ main (int argc, char **argv)
   mach_port_t bootstrap = MACH_PORT_NULL;
   struct store_argp_params store_params = { 0 };
 
-  argp_parse (&startup_argp, argc, argv, 0, 0, &store_params);
+  /* XXX diskfs's --boot-command needs us to use ARGP_IN_ORDER */
+  argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, &store_params);
   store_parsed = store_params.result;
 
   err = store_parsed_name (store_parsed, &diskfs_disk_name);
