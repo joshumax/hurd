@@ -227,6 +227,3 @@ See `tasks', the exported task list.
 
 ** Compile released libc.
 ** Make the release version of SOURCES.
-** ext2fs: shutdown doesn't sync properly?
-    [Create a file, then (settrans -a) won't write it, but if you do sync
-     first, everything's fine; the code doesn't look too different...]
