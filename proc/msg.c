@@ -82,6 +82,32 @@ check_message_dying (struct proc *p, struct proc *dyingp)
     }
 }
 
+/* Check if the message port of process P has died.  Return nonzero if
+   this has indeed happened.  */
+int
+check_msgport_death (struct proc *p)
+{
+  /* Only check if the message port passed away, if we know that it
+     was ever alive.  */
+  if (p->p_msgport != MACH_PORT_NULL)
+    {
+      mach_port_type_t type;
+      error_t err;
+      
+      err = mach_port_type (mach_task_self (), p->p_msgport, &type);
+      if (err || (type & MACH_PORT_TYPE_DEAD_NAME))
+	{
+	  /* The port appears to be dead; throw it away. */
+	  mach_port_deallocate (mach_task_self (), p->p_msgport);
+	  p->p_msgport = MACH_PORT_NULL;
+	  p->p_deadmsg = 1;
+	  return 1;
+	}
+    }
+
+  return 0;
+}
+
 error_t
 S_proc_getmsgport (struct proc *callerp,
 		   mach_port_t reply_port,
@@ -113,23 +139,8 @@ restart:
   if (!p)
     return ESRCH;
 
-  /* Only check if the message port passed away, if we know that it
-     was ever alive.  */
-  if (p->p_msgport != MACH_PORT_NULL)
-    {
-      mach_port_type_t type;
-      error_t err;
-      
-      err = mach_port_type (mach_task_self (), p->p_msgport, &type);
-      if (err || (type & MACH_PORT_TYPE_DEAD_NAME))
-	{
-	  /* The port appears to be dead; throw it away. */
-	  mach_port_deallocate (mach_task_self (), p->p_msgport);
-	  p->p_msgport = MACH_PORT_NULL;
-	  p->p_deadmsg = 1;
-	  goto restart;
-	}
-    }
+  if (check_msgport_death (p))
+    goto restart;
   
   *msgport = p->p_msgport;
 

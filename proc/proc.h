@@ -165,6 +165,7 @@ int genpid ();
 void abort_getmsgport (struct proc *);
 int zombie_check_pid (pid_t);
 void check_message_dying (struct proc *, struct proc *);
+int check_msgport_death (struct proc *);
 void check_dead_execdata_notify (mach_port_t);
 
 void add_proc_to_hash (struct proc *);

@@ -376,7 +376,9 @@ S_proc_getprocinfo (struct proc *callerp,
     return ESRCH;
 
   task = p->p_task;
-  msgport = p->p_deadmsg ? MACH_PORT_NULL : p->p_msgport;
+
+  check_msgport_death (p);
+  msgport = p->p_msgport;
 
   if (*flags & PI_FETCH_THREAD_DETAILS)
     *flags |= PI_FETCH_THREADS;

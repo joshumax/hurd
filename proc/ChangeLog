@@ -1,3 +1,11 @@
+1999-05-01  Mark Kettenis  <kettenis@gnu.org>
+
+	* msg.c (check_msgport_death): New function.
+	(S_proc_getmsgport): Use it.
+	* proc.h (check_msgport_death): Provide prototype.
+	* info.c (S_proc_getprocinfo): Call check_msgport_death to make
+	sure that our knowledge about P's message port is up to date.
+	
 1999-05-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c: Include <error.h>.
