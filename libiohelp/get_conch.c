@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,12 +15,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ioserver.h"
+#include "iohelp.h"
 
 /* The conch must be locked when calling this routine. */
 /* Remove any current holder of conch C. */
 void
-ioserver_get_conch (struct conch *c)
+iohelp_get_conch (struct conch *c)
 {
   struct shared_io *user_sh;
   
@@ -44,7 +44,7 @@ ioserver_get_conch (struct conch *c)
 	case USER_COULD_HAVE_CONCH:
 	  user_sh->conch_status = USER_HAS_NOT_CONCH;
 	  spin_unlock (&user_sh->lock);
-	  ioserver_fetch_shared_data (c->holder);
+	  iohelp_fetch_shared_data (c->holder);
 	  break;
 	  
 	case USER_HAS_NOT_CONCH:

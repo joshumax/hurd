@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,13 +15,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ioserver.h"
+#include "iohelp.h"
 #include <errno.h>
 
 /* Check to see if the user identified by USER has conch C; if not,
    return an error, else, return 0.  */
 error_t
-ioserver_verify_user_conch (struct conch *c, void *user)
+iohelp_verify_user_conch (struct conch *c, void *user)
 {
   struct shared_io *user_sh;
   
