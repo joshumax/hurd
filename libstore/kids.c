@@ -1,9 +1,7 @@
 /* Managing sub-stores
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <malloc.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "store.h"
 
@@ -148,4 +147,137 @@ store_clear_child_flags (struct store *store, int flags)
     store->flags &= ~flags;
 
   return err;
+}
+
+/* Parse multiple store names in NAME, and open each individually, returning
+   all in the vector STORES, and the number in NUM_STORES.  The syntax is
+   simply a single character, followed by each individual store name (which
+   are in the store_typed_open syntax -- the type name, a ':', and the store
+   name) separated by that same character, with the whole list optionally
+   terminated by the same. */
+error_t
+store_open_children (const char *name, int flags,
+		     const struct store_class *const *classes,
+		     struct store ***stores, size_t *num_stores)
+{
+  /* Character separating individual names.  */
+  char sep = *name;
+
+  if (sep)
+    /* Parse a list of store specs separated by SEP.  */
+    {
+      int k;
+      const char *p, *end;
+      error_t err = 0;
+      size_t count = 0;
+
+      /* First, see how many there are.  */
+      for (p = name; p && p[1]; p = strchr (p + 1, sep))
+	count++;
+
+      /* Make a vector to hold them.  */
+      *stores = malloc (count * sizeof (struct store *));
+      *num_stores = count;
+      if (! *stores)
+	return ENOMEM;
+
+      bzero (*stores, count * sizeof (struct store *));
+
+      /* Open each child store.  */
+      for (p = name, k = 0; !err && p && p[1]; p = end, k++)
+	{
+	  char *kname;
+
+	  end = strchr (p + 1, sep);
+	  if (end)
+	    kname = strndup (p + 1, end - p - 1);
+	  else
+	    kname = strdup (p + 1);
+	  if (kname)
+	    {
+	      err = store_typed_open (kname, flags, classes, &(*stores)[k]);
+	      free (kname);
+	    }
+	  else
+	    err = ENOMEM;
+	}
+
+      if (err)
+	/* Failure opening some child, deallocate what we've done so far.  */
+	{
+	  while (--k >= 0)
+	    store_free ((*stores)[k]);
+	  free (*stores);
+	}
+
+      return err;
+    }
+  else
+    /* Empty list.  */
+    {
+      *stores = 0;
+      *num_stores = 0;
+      return 0;
+    }
+}
+
+/* Try to come up with a name for the children in STORE, combining the names
+   of each child in a way that could be used to parse them with
+   store_open_children.  This is done heuristically, and so may not succeed.
+   If a child doesn't have a  name, EINVAL is returned.  */
+error_t
+store_children_name (const struct store *store, char **name)
+{
+  static char try_seps[] = "@+=,._%|;^!~'&";
+  struct store **kids = store->children;
+  size_t num_kids = store->num_children;
+
+  if (num_kids == 0)
+    {
+      *name = strdup ("");
+      return *name ? 0 : ENOMEM;
+    }
+  else
+    {
+      int k;
+      char *s;			/* Current separator in search for one.  */
+      int fail;			/* If we couldn't use *S as as sep. */
+      size_t total_len = 0;	/* Length of name we will return.  */
+
+      /* Detect children without names, and calculate the total length of the
+	 name we will return (which is the sum of the lengths of the child
+	 names plus room for the types and separator characters.  */
+      for (k = 0; k < num_kids; k++)
+	if (!kids[k] || !kids[k]->name)
+	  return EINVAL;
+	else
+	  total_len +=
+	    /* separator + type name + type separator + child name */
+	    1 + strlen (kids[k]->class->name) + 1 + strlen (kids[k]->name);
+
+      /* Look for a separator character from those in TRY_SEPS that doesn't
+	 occur in any of the the child names.  */
+      for (s = try_seps, fail = 1; *s && fail; s++)
+	for (k = 0, fail = 0; k < num_kids && !fail; k++)
+	  if (strchr (kids[k]->name, *s))
+	    fail = 1;
+
+      if (*s)
+	/* We found a usable separator!  */
+	{
+	  char *p = malloc (total_len + 1);
+
+	  if (! p)
+	    return ENOMEM;
+	  *name = p;
+
+	  for (k = 0; k < num_kids; k++)
+	    p +=
+	      sprintf (p, "%c%s:%s", *s, kids[k]->class->name, kids[k]->name);
+
+	  return 0;
+	}
+      else
+	return EGRATUITOUS;
+    }
 }
