@@ -27,7 +27,7 @@ trivfs_S_dir_readdir (struct trivfs_protid *cred,
 		      int entry,
 		      int nentries,
 		      vm_size_t bufsiz,
-		      int *amount)
+		      vm_size_t *amount)
 {
   return cred ? ENOTDIR : EOPNOTSUPP;
 }
