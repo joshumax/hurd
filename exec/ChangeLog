@@ -1,3 +1,9 @@
+1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exectrans.c (trivfs_support_write, trivfs_support_exec): Variables
+	removed.
+	(trivfs_allow_open): Set to just O_READ.
+
 1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (exec.static-LDFLAGS): Variable removed.
