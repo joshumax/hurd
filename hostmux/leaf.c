@@ -1,7 +1,7 @@
 /* Hostmux leaf node functions
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -111,6 +111,7 @@ create_host_node (struct hostmux *mux, struct hostmux_name *name,
       new->nn_stat.st_mode = (S_IFLNK | 0666);
       new->nn_stat.st_size = strlen (name->canon);
     }
+  new->nn_translated = new->nn_stat.st_mode;
 
   fshelp_touch (&new->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		hostmux_maptime);

@@ -112,7 +112,7 @@ main (int argc, char **argv)
 
   /* Parse our command line arguments.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
-    
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
 
@@ -147,6 +147,7 @@ main (int argc, char **argv)
   netfs_root_node->nn_stat.st_ino = 2;
   netfs_root_node->nn_stat.st_mode =
     S_IFDIR | (ul_stat.st_mode & ~S_IFMT & ~S_ITRANS);
+  netfs_root_node->nn_translated = 0;
 
   /* If the underlying node isn't a directory, propagate read permission to
      execute permission since we need that for lookups.  */
@@ -162,7 +163,7 @@ main (int argc, char **argv)
 
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		hostmux_maptime);
-  
+
   for (;;)			/* ?? */
     netfs_server_loop ();
 }
