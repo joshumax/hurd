@@ -19,9 +19,9 @@ dir := init.trim
 makemode := server
 
 SRCS = init.c
-OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o
+OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o
 target = init
 
 include ../Makeconf
 
-init.o: startup_reply_U.h startup_S.h notify_S.h
+init.o: startup_reply_U.h startup_S.h notify_S.h msg_S.h
