@@ -32,6 +32,7 @@ intr		33000	Interruption
 ifsock		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
 tape		35000	Special control operations for magtapes
 tioctl	       156000	Ioctl class 't' (terminals)
+tioctl	       156200     (continued)
 * mach_norma   555000	NORMA machine additions; sort of deprecated right now
 * norma_task   666000   NORMA remote execution
 ? dp_helper    888888	pager -> fileserver; asking for more paging space
