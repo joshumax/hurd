@@ -339,6 +339,11 @@ static void
 devio_abandon_physical_output ()
 {
   int val = D_WRITE;
+
+  /* If this variable is clear, then carrier is gone, so we
+     have nothing to do. */
+  if (!phys_reply_writes_pi)
+    return;
   
   mach_port_deallocate (mach_task_self (), phys_reply_writes);
   ports_reallocate_port (phys_reply_writes_pi);
