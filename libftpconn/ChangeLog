@@ -1,3 +1,12 @@
+Wed May 14 15:22:17 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* open.c (ftp_conn_login): Correct defaulting of username.
+
+Tue May 13 16:37:18 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* unix.c (ftp_conn_unix_cont_get_stats): Clean up our ftp transfer
+	when we're done.
+
 Mon May 12 10:57:54 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* unix.c (ftp_conn_unix_cont_get_stats): Only abort when
