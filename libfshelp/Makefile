@@ -16,8 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := libfshelp
-
-include ../Makeconf
+makemode := library
 
 SRCS = handle-startup.c init-trans.c start-trans.c transboot-clean.c \
 	kill-trans.c trans-iter.c lock-acquire.c lock-init.c trans-cntl.c \
@@ -27,33 +26,15 @@ OBJS = handle-startup.o init-trans.o start-trans.o transboot-clean.o \
 	kill-trans.o trans-iter.o lock-acquire.o lock-init.o trans-cntl.o \
 	trans-drop.o
 
-TAGSHDRS = trans.h fshelp.h locks.h
+LCLHDRS = trans.h fshelp.h locks.h
+REMHDRS = ../hurd/ports.h
+libname = libfshelp
+installhdrs = fshelp.h
 
-DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h ChangeLog
+include ../Makeconf
 
-all: libfshelp.a
-
-libfshelp.a: $(OBJS)
-	rm -f libfshelp.a
-	$(AR) r $@ $^
-
-$(hurdinst)/lib/libfshelp.a: libfshelp.a
-	cp libfshelp.a $@
-	$(RANLIB) $@
-
-$(includedir)/hurd/fshelp.h: fshelp.h
-	cp $< $@
-
-$(OBJS): fshelp.h $(includedir)/hurd/ports.h
+$(OBJS): fshelp.h ../hurd/ports.h
 handle-startup.o init-trans.o start-trans.o transboot-clean.o: trans.h
 trans-cntl.o kill-trans.o trans-iter.o: trans.h
-
 lock-acquire.o lock-init.o: locks.h
 
-
-.PHONY: clean install
-
-clean:
-	rm -f libfshelp.a *.o
-
-install: $(hurdinst)/lib/libfshelp.a $(includedir)/hurd/fshelp.h
