@@ -39,7 +39,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "device_reply.h"
 #include "io_repl.h"
 #include "term_S.h"
-#include "tioctl_S.h"
+/* #include "tioctl_S.h" */
 
 #include <hurd/auth.h>
 
@@ -208,14 +208,14 @@ request_server (mach_msg_header_t *inp,
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int S_term_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int S_tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
+/*  extern int S_tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
   
   return (exec_server (inp, outp)
 	  || S_io_server (inp, outp)
 	  || device_server (inp, outp)
 	  || notify_server (inp, outp)
 	  || S_term_server (inp, outp)
-	  || S_tioctl_server (inp, outp));
+/*	  || S_tioctl_server (inp, outp) */);
 }
 
 vm_address_t
@@ -593,6 +593,7 @@ init_termstate ()
   ioctl (0, TIOCSETN, &sgb);
 }
 
+#ifdef notanymore
 #include <termios.h>
 #undef tcgetattr
 #undef tcsetattr
@@ -701,7 +702,7 @@ S_tioctl_tiocsetaf (mach_port_t port,
 {
   return S_tioctl_tiocseta (port, modes, ccs, speeds);
 }
-
+#endif /* notanymore */
 
 
 /* Implementation of device interface */
