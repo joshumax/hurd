@@ -103,7 +103,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   int retry_dotdot = 0;
   memory_object_t memobj;
   vm_address_t buf = 0;
-  vm_size_t buflen;
+  vm_size_t buflen = 0;
   int blockaddr;
   int idx;
   
