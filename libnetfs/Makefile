@@ -48,7 +48,7 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 
-LCLHDRS = netfs.h callbacks.h misc.h modes.h mutations.h priv.h
+LCLHDRS = netfs.h callbacks.h misc.h modes.h mutations.h priv.h execserver.h
 installhdrs=netfs.h
 
 MIGSTUBS= ioServer.o fsServer.o fsysServer.o ifsockServer.o
