@@ -76,8 +76,7 @@ poke_pages (memory_object_t obj,
 
 #define DIRECT_BLOCK(length) \
   ((length + block_size - 1) >> log2_block_size)
-#define INDIRECT_BLOCK(length, offset) \
-  ((int)DIRECT_BLOCK(length) - offset)
+#define INDIRECT_BLOCK(length, offset) ((int)DIRECT_BLOCK(length) - offset)
 #define DINDIRECT_BLOCK(length, offset) \
   (((int)DIRECT_BLOCK(length) - offset) / addr_per_block)
 #define TINDIRECT_BLOCK(length) \
@@ -90,10 +89,12 @@ trunc_direct (struct node * node, unsigned long length)
 {
   u32 block;
   int i;
-  char * bh;
   unsigned long block_to_free = 0;
   unsigned long free_count = 0;
   int direct_block = DIRECT_BLOCK(length);
+
+  ext2_debug ("truncating direct blocks from %lu, block %d",
+	      length, direct_block);
 
   for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++)
     {
@@ -101,71 +102,10 @@ trunc_direct (struct node * node, unsigned long length)
       if (!block)
 	continue;
 
-      bh = bptr(block);
-
       node->dn->info.i_data[i] = 0;
 
       node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       node->dn_stat_dirty = 1;
-
-      if (free_count == 0) {
-	block_to_free = block;
-	free_count++;
-      } else if (free_count > 0 && block_to_free == block - free_count)
-	free_count++;
-      else {
-	ext2_free_blocks (block_to_free, free_count);
-	block_to_free = block;
-	free_count = 1;
-      }
-
-#if 0
-      ext2f_free_blocks (block, 1);
-#endif
-    }
-
-  if (free_count > 0)
-    ext2_free_blocks (block_to_free, free_count);
-}
-
-/* ---------------------------------------------------------------- */
-
-static void
-trunc_indirect (struct node * node, unsigned long length,
-		int offset, u32 * p)
-{
-  int i, block;
-  char * bh;
-  char * ind_bh;
-  u32 * ind;
-  unsigned long block_to_free = 0;
-  unsigned long free_count = 0;
-  int indirect_block = INDIRECT_BLOCK (length, offset);
-
-  block = *p;
-  if (!block)
-    return;
-
-  ind_bh = bptr (block);
-  if (!ind_bh) {
-    *p = 0;
-    return;
-  }
-
-  for (i = indirect_block ; i < addr_per_block ; i++)
-    {
-      if (i < 0)
-	i = 0;
-
-      ind = (u32 *)ind_bh + i;
-      block = *ind;
-      if (!block)
-	continue;
-
-      bh = bptr (block);
-
-      *ind = 0;
-      record_indir_poke (node, ind_bh);
 
       if (free_count == 0)
 	{
@@ -180,13 +120,65 @@ trunc_indirect (struct node * node, unsigned long length,
 	  block_to_free = block;
 	  free_count = 1;
 	}
+    }
 
-#if 0
-      ext2_free_blocks (block, 1);
-#endif
+  if (free_count > 0)
+    ext2_free_blocks (block_to_free, free_count);
+}
+
+/* ---------------------------------------------------------------- */
 
-      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      node->dn_stat_dirty = 1;
+static void
+trunc_indirect (struct node * node, unsigned long length, int offset, u32 * p)
+{
+  int i, block;
+  char * ind_bh;
+  u32 * ind;
+  int modified = 0;
+  unsigned long block_to_free = 0;
+  unsigned long free_count = 0;
+  int indirect_block = INDIRECT_BLOCK (length, offset);
+
+  if (indirect_block < 0)
+    indirect_block = 0;
+
+  ext2_debug ("truncating indirect (offs = %d) blocks from %lu, block %d",
+	      offset, length, indirect_block);
+
+  block = *p;
+  if (!block)
+    return;
+
+  ind_bh = bptr (block);
+
+  for (i = indirect_block ; i < addr_per_block ; i++)
+    {
+      ind = (u32 *)ind_bh + i;
+      block = *ind;
+
+      if (block)
+	{
+	  *ind = 0;
+
+	  if (free_count == 0)
+	    {
+	      block_to_free = block;
+	      free_count++;
+	    }
+	  else if (free_count > 0 && block_to_free == block - free_count)
+	    free_count++;
+	  else
+	    {
+	      ext2_free_blocks (block_to_free, free_count);
+	      block_to_free = block;
+	      free_count = 1;
+	    }
+
+	  node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
+	  node->dn_stat_dirty = 1;
+
+	  modified = 1;
+	}
     }
 
   if (free_count > 0)
@@ -196,6 +188,7 @@ trunc_indirect (struct node * node, unsigned long length,
   for (i = 0; i < addr_per_block; i++)
     if (*(ind++))
       break;
+
   if (i >= addr_per_block)
     {
       block = *p;
@@ -204,6 +197,8 @@ trunc_indirect (struct node * node, unsigned long length,
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
+  else if (modified)
+    record_indir_poke (node, ind_bh);
 }
 
 /* ---------------------------------------------------------------- */
@@ -215,32 +210,32 @@ trunc_dindirect (struct node * node, unsigned long length,
   int i, block;
   char * dind_bh;
   u32 * dind;
+  int modified = 0;
   int dindirect_block = DINDIRECT_BLOCK (length, offset);
+
+  if (dindirect_block < 0)
+    dindirect_block = 0;
+
+  ext2_debug ("truncating dindirect (offs = %d) blocks from %lu, block %d",
+	      offset, length, dindirect_block);
 
   block = *p;
   if (!block)
     return;
 
   dind_bh = bptr (block);
-  if (!dind_bh)
+
+  for (i = dindirect_block ; i < addr_per_block ; i++)
     {
-      *p = 0;
-      return;
+      dind = i + (u32 *) dind_bh;
+      block = *dind;
+
+      if (!block)
+	{
+	  trunc_indirect (node, length, offset + (i * addr_per_block), dind);
+	  modified = 1;
+	}
     }
-
-  for (i = dindirect_block ; i < addr_per_block ; i++) {
-    if (i < 0)
-      i = 0;
-
-    dind = i + (u32 *) dind_bh;
-    block = *dind;
-    if (!block)
-      continue;
-
-    trunc_indirect (node, length, offset + (i * addr_per_block), dind);
-
-    record_indir_poke (node, dind_bh);
-  }
 
   dind = (u32 *) dind_bh;
   for (i = 0; i < addr_per_block; i++)
@@ -255,6 +250,8 @@ trunc_dindirect (struct node * node, unsigned long length,
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
+  else if (modified)
+    record_indir_poke (node, dind_bh);
 }
 
 /* ---------------------------------------------------------------- */
@@ -265,7 +262,14 @@ trunc_tindirect (struct node * node, unsigned long length)
   int i, block;
   char * tind_bh;
   u32 * tind, * p;
+  int modified = 0;
   int tindirect_block = TINDIRECT_BLOCK (length);
+
+  if (tindirect_block < 0)
+    tindirect_block = 0;
+
+  ext2_debug ("truncating tindirect blocks from %lu, block %d",
+	      length, tindirect_block);
 
   p = node->dn->info.i_data + EXT2_TIND_BLOCK;
   if (!(block = *p))
@@ -280,16 +284,13 @@ trunc_tindirect (struct node * node, unsigned long length)
 
   for (i = tindirect_block ; i < addr_per_block ; i++)
     {
-      if (i < 0)
-	i = 0;
-
       tind = i + (u32 *) tind_bh;
       trunc_dindirect(node, length,
 		      (EXT2_NDIR_BLOCKS
 		       + addr_per_block
 		       + (i + 1) * addr_per_block * addr_per_block),
 		      tind);
-      record_indir_poke (node, tind_bh);
+      modified = 1;
     }
 
   tind = (u32 *) tind_bh;
@@ -305,6 +306,8 @@ trunc_tindirect (struct node * node, unsigned long length)
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
+  else if (modified)
+    record_indir_poke (node, tind_bh);
 }
 
 /* ---------------------------------------------------------------- */
@@ -367,16 +370,8 @@ diskfs_truncate (struct node *node, off_t length)
 {
   error_t err;
   int offset;
-  mode_t mode = node->dn_stat.st_mode;
 
   assert (!diskfs_readonly);
-
-  if (S_ISDIR(mode))
-    return EISDIR;
-  if (!S_ISREG(mode))
-    return EINVAL;
-  if (IS_APPEND(node) || IS_IMMUTABLE(node))
-    return EINVAL;
 
   if (length >= node->dn_stat.st_size)
     return 0;
@@ -418,7 +413,14 @@ diskfs_truncate (struct node *node, off_t length)
 		       EXT2_ADDR_PER_BLOCK(sblock),
 		       (u32 *) &node->dn->info.i_data[EXT2_DIND_BLOCK]);
       trunc_tindirect (node, length);
-      node->allocsize = trunc_block (length + block_size - 1);
+
+      node->allocsize = round_block (length);
+
+      /* Set our end-of-file variables to a pessimistic state -- it won't
+	 hurt if they are wrong.  */
+      node->dn->last_block_allocated = 0;
+      node->dn->last_page_partially_writable =
+	trunc_page (node->allocsize) != node->allocsize;
     }
 
   node->dn_set_mtime = 1;
