@@ -163,14 +163,36 @@ pass2 ()
 	  /* Account for the inode in the linkfound map */
 	  if (inodestate[dp->d_ino] != UNALLOC)
 	    linkfound[dp->d_ino]++;
-	  
-	  /* If this is `.' or `..' then note the value for 
-	     later examination.  */
-	  if (dp->d_namlen == 1 && dp->d_name[0] == '.')
-	    dnp->i_dot = dp->d_ino;
-	  if (dp->d_namlen == 2
-	      && dp->d_name[0] == '.' && dp->d_name[1] == '.')
-	    dnp->i_dotdot = dp->d_ino;
+
+	   if (inodestate[dp->d_ino] == DIRECTORY
+	      || inodestate[dp->d_ino] == BADDIR)
+	    {
+	      if (dp->d_namlen == 1 && dp->d_name[0] == '.')
+		dnp->i_dot = dp->d_ino;
+	      else if (dp->d_namlen == 2
+		       && dp->d_name[0] == '.' && dp->d_name[1] == '.')
+		dnp->i_dotdot = dp->d_ino;
+	      else
+		{
+		  struct dirinfo *targetdir;
+		  targetdir = lookup_directory (dp->d_ino);
+		  if (targetdir->i_parent)
+		    {
+		      printf ("EXTRANEOUS LINK %s TO DIR I=%ld", dp->d_name,
+			      dp->d_ino);
+		      pwarn ("FOUND IN DIR I=%d", dnp->i_number);
+		      if (preen || reply ("REMOVE"))
+			{
+			  if (preen)
+			    printf (" (REMOVED)");
+			  dp->d_ino = 0;
+			  mod = 1;
+			}
+		    }
+		  else
+		    targetdir->i_parent = dnp->i_number;
+		}
+	    }
 	}
       return mod;
     }
