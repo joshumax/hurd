@@ -23,10 +23,10 @@
    We set the prenotify size to be the allocated size of the file;
    then users are forced to call this routine before writing past
    that, and we can do allocation (orreturn ENOSPC if necessary. */
-error_t
+kern_return_t
 diskfs_S_io_prenotify (struct protid *cred,
-		       int start,
-		       int end)
+		       vm_offset_t start,
+		       vm_offset_t end)
 {
   struct node *np;
   int err = 0;
