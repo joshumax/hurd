@@ -43,7 +43,6 @@ clri: clri.o
 sync: sync.o
 reboot: reboot.o
 halt: halt.o
-fsysopts: fsysopts.o
 
 mount: mount.sh
 	cp $< $@
