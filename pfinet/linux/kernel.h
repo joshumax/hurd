@@ -9,11 +9,6 @@
 int getname (const char *, char **);
 void putname (char *);
 
-extern inline int suser ()
-{
-  return current->isroot;
-};
-
 
 int kill_proc (int, int, int);
 int kill_pg (int, int, int);
