@@ -4,7 +4,7 @@
    and forward the request to the server if they find one, otherwise doing
    the translation themselves.
 
-   Copyright (C) 1995, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -34,14 +34,14 @@ main (int argc, char **argv)
 
   if (argc < 2 || *argv[1] == '-')
     {
-      fprintf(stderr, "Usage: %s SERVER [TRANS_NAME [TRANS_ARG...]]",
-	      program_invocation_name);
-      exit(1);
+      fprintf (stderr, "Usage: %s SERVER [TRANS_NAME [TRANS_ARG...]]\n",
+	       program_invocation_name);
+      return 1;
     }
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    error(2, 0, "must be started as a translator");
+    error (2, 0, "must be started as a translator");
 
   err = fshelp_delegate_translation (argv[1], bootstrap, argv + 2);
   if (err)
