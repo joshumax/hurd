@@ -1,3 +1,17 @@
+1999-09-08  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dir.c (diskfs_get_directs): Initialize `err' to shut gcc up.
+
+1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dir.c (diskfs_lookup_hard): Pass additional parameter to
+	diskfs_get_filemap. 
+	(diskfs_dirempty): Likewise.
+	* sizes.c (diskfs_truncate): Likewise.
+	(block_extended): Likewise.
+	(diskfs_grow): Likewise.
+	* pager.c (diskfs_get_filemap): Accept additional parameter.
+
 1999-09-04  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* pager.c (find_address): If !ISREAD, then don't return errors for

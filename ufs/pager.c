@@ -547,10 +547,12 @@ flush_node_pager (struct node *node)
 /* Call this to create a FILE_DATA pager and return a send right.
    NP must be locked.  PROT is the max protection desired.  */
 mach_port_t
-diskfs_get_filemap (struct node *np, vm_prot_t prot)
+diskfs_get_filemap (struct node *np, int index, vm_prot_t prot)
 {
   struct user_pager_info *upi;
   mach_port_t right;
+
+  assert (index == 0);		/* XXX */
 
   assert (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)

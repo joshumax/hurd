@@ -103,7 +103,7 @@ diskfs_truncate (struct node *np,
 
       pager_change_attributes (upi->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_NONE, 1);
-      obj = diskfs_get_filemap (np, VM_PROT_READ | VM_PROT_WRITE);
+      obj = diskfs_get_filemap (np, 0, VM_PROT_READ | VM_PROT_WRITE);
       if (obj != MACH_PORT_NULL)
 	{
 	  /* XXX should cope with errors from diskfs_get_filemap */
@@ -403,7 +403,7 @@ block_extended (struct node *np,
       volatile int *pokeaddr;
 
       /* Map in this part of the file */
-      mapobj = diskfs_get_filemap (np, VM_PROT_WRITE | VM_PROT_READ);
+      mapobj = diskfs_get_filemap (np, 0, VM_PROT_WRITE | VM_PROT_READ);
 
       /* XXX Should cope with errors from diskfs_get_filemap and back
          out the operation here. */
@@ -484,7 +484,7 @@ diskfs_grow (struct node *np,
   assert (!diskfs_readonly);
 
   /* This reference will ensure that NP->dn->fileinfo stays allocated. */
-  pagerpt = diskfs_get_filemap (np, VM_PROT_WRITE|VM_PROT_READ);
+  pagerpt = diskfs_get_filemap (np, 0, VM_PROT_WRITE|VM_PROT_READ);
 
   if (pagerpt == MACH_PORT_NULL)
     return errno;

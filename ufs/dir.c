@@ -144,7 +144,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
     ds->stat = LOOKING;
 
   /* Map in the directory contents. */
-  memobj = diskfs_get_filemap (dp, prot);
+  memobj = diskfs_get_filemap (dp, 0, prot);
 
   if (memobj == MACH_PORT_NULL)
     return errno;
@@ -730,7 +730,7 @@ diskfs_dirempty(struct node *dp,
   memory_object_t memobj;
   error_t err;
 
-  memobj = diskfs_get_filemap (dp, VM_PROT_READ);
+  memobj = diskfs_get_filemap (dp, 0, VM_PROT_READ);
 
   if (memobj == MACH_PORT_NULL)
     /* XXX should reflect error properly */
@@ -839,7 +839,7 @@ diskfs_get_directs (struct node *dp,
   char buf[DIRBLKSIZ];
   char *bufp;
   int bufvalid;
-  error_t err;
+  error_t err = 0;
   int i;
   char *datap;
   struct directory_entry *entryp;
