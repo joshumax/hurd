@@ -20,9 +20,10 @@
 /* Locked node DP is a new directory; add whatever links are necessary
    to give it structure; its parent is the (locked) node PDP. 
    This routine may not call diskfs_lookup on PDP.  The new directory
-   must be clear within the meaning of diskfs_dirempty.  */
+   must be clear within the meaning of diskfs_dirempty. 
+   CRED identifies the user making the call.  */
 error_t
-diskfs_init_dir (struct node *dp, struct node *pdp)
+diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
 {
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   struct node *foo;
@@ -39,16 +40,16 @@ diskfs_init_dir (struct node *dp, struct node *pdp)
   err = diskfs_direnter (dp, ".", dp, ds, cred);
   if (err)
     {
-      np->dn_stat.st_nlink--;
-      np->dn_set_ctime = 1;
+      dp->dn_stat.st_nlink--;
+      dp->dn_set_ctime = 1;
       return err;
     }
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
-  err = diskfs_lookup (np, "..", CREATE, &foo, ds, cred);
+  err = diskfs_lookup (dp, "..", CREATE, &foo, ds, cred);
   assert (err == ENOENT);
-  err = diskfs_direnter (np, "..", pdp, ds, cred);
+  err = diskfs_direnter (dp, "..", pdp, ds, cred);
   if (err)
     {
       pdp->dn_stat.st_nlink--;
