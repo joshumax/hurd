@@ -1,3 +1,8 @@
+2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ftpfs.c: Include <version.h>.  Add global variable
+	ARGP_PROGRAM_VERSION.  Add period to DOC.
+
 2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dir.c (ftpfs_dir_create): Fix last change (calloc invocation).

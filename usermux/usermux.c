@@ -25,7 +25,11 @@
 #include <sys/time.h>
 #include <hurd/paths.h>
 
+#include <version.h>
+
 #include "usermux.h"
+
+const char *argp_program_version = STANDARD_HURD_VERSION (usermux);
 
 int netfs_maxsymlinks = 25;
 
@@ -54,7 +58,7 @@ static const struct argp_option options[] =
 };
 static const char args_doc[] = "[TRANSLATOR [ARG...]]";
 static const char doc[] =
-  "A translator for invoking user-specific translators"
+  "A translator for invoking user-specific translators."
   "\vThis translator appears like a directory in which user names can be"
   " looked up, and will start TRANSLATOR to service each resulting node."
   "  If no pattern occurs in the translator specification, the users's"

@@ -200,9 +200,9 @@ static struct argp_option options[] =
 };
 
 static const char args_doc[] = "DEVICE";
-static const char doc[] = "Translator for stream devices";
+static const char doc[] = "Translator for stream devices.";
 
-const char *argp_program_version = STANDARD_HURD_VERSION (streamdev);
+const char *argp_program_version = STANDARD_HURD_VERSION (streamio);
 
 
 static char *stream_name;

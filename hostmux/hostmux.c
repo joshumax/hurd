@@ -24,7 +24,11 @@
 #include <error.h>
 #include <sys/time.h>
 
+#include <version.h>
+
 #include "hostmux.h"
+
+const char *argp_program_version = STANDARD_HURD_VERSION (hostmux);
 
 int netfs_maxsymlinks = 25;
 
@@ -43,7 +47,7 @@ static const struct argp_option options[] =
 };
 static const char args_doc[] = "TRANSLATOR [ARG...]";
 static const char doc[] =
-  "A translator for invoking host-specific translators"
+  "A translator for invoking host-specific translators."
   "\vThis translator appears like a directory in which hostnames can be"
   " looked up, and will start TRANSLATOR to service each resulting node.";
 

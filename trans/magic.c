@@ -36,7 +36,7 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (magic);
 static char args_doc[] = "MAGIC";
-static char doc[] = "A translator that returns the magic retry result MAGIC";
+static char doc[] = "A translator that returns the magic retry result MAGIC.";
 static const struct argp_option options[] =
 {
   {"directory",	'd', 0,		0, "Provide virtual (empty) directory node"},

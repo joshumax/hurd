@@ -36,7 +36,11 @@
 #include <hurd/pipe.h>
 #include <hurd/paths.h>
 
+#include <version.h>
+
 #define DEFAULT_SERVER _SERVERS "fifo";
+
+const char *argp_program_version = STANDARD_HURD_VERSION (new-fifo);
 
 struct port_bucket *port_bucket;
 struct port_class *fifo_port_class, *server_port_class, *fsys_port_class;
@@ -164,7 +168,7 @@ fifo_trans_parse_args (struct fifo_trans *trans, int argc, char **argv,
 	}
       return 0;
     }
-  struct argp argp = {options, parse_opt};
+  struct argp argp = {options, parse_opt, 0, "A translator for fifos." };
   return argp_parse (&argp, argc, argv, print_errs ? 0 : ARGP_SILENT, 0, 0);
 }
 

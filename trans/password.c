@@ -67,7 +67,7 @@ main (int argc, char *argv[])
   error_t err;
   mach_port_t bootstrap;
   struct trivfs_control *fsys;
-  const struct argp argp = { 0, 0, 0, "Hurd standard password server" };
+  const struct argp argp = { 0, 0, 0, "Hurd standard password server." };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
   

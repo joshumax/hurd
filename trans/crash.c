@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,2001 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -27,10 +27,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <argz.h>
 #include <sys/mman.h>
 
+#include <version.h>
+
 #include "crash_S.h"
 #include "crash_reply_U.h"
 #include "msg_S.h"
 
+
+const char *argp_program_version = STANDARD_HURD_VERSION (crash);
 
 process_t procserver;		/* Our proc port, for easy access.  */
 

@@ -26,6 +26,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (hello);
+
 /* The message we return when we are read.  */
 static const char hello[] = "Hello, world!\n";
 static char *contents = (char *) hello;
@@ -244,7 +248,8 @@ trivfs_append_args (struct trivfs_control *fsys,
   return err;
 }
 
-static struct argp hello_argp = { options, parse_opt, 0, 0 };
+static struct argp hello_argp =
+{ options, parse_opt, 0, "A translator providing a warm greeting." };
 
 /* Setting this variable makes libtrivfs use our argp to
    parse options passed in an fsys_set_options RPC.  */

@@ -1,3 +1,22 @@
+2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fifo.c: Make version string say `fifo', not `null'.
+	Add period to doc text in ARGP.
+	* firmlink.c: Add period to doc text in ARGP_DOC, convert
+	semi-colon to colon.
+	* magic.c (options): Add period to DOC.
+	* new-fifo.c (fifo_trans_parse_args): Add doc string to ARGP.
+	Include <version.h>, new global variable ARGP_PROGRAM_VERSION.
+	* crash.c: Include <version.h>, add global variable
+	ARGP_PROGRAM_VERSION.
+	* hello.c: Include <version.h>, add global variable
+	ARGP_PROGRAM_VERSION.
+	(hello_argp): Add doc string.
+	* hello-mt.c: Likewise.
+	* streamio.c: Add period to DOC.  Change streamdev to streamio in
+	version string.
+	* password.c (main): Add period to doc string in ARGP.
+
 2001-01-17  Neal H Walfield  <neal@cs.uml.edu>
 
 	* pump.c (start_pfinet): Conform to new fshelp_start_translator

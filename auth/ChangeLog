@@ -1,3 +1,8 @@
+2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* auth.c (main): New variable ARGP defining a doc string.
+	Pass address of ARGP to argp_parse().
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib

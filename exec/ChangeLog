@@ -1,3 +1,8 @@
+2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* main.c: Change hurd version name from proc to exec.
+	(main): Add period to doc string.
+
 2000-10-01  Roland McGrath  <roland@frob.com>
 
 	* exec.c: Comments.

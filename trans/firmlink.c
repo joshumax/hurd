@@ -39,8 +39,8 @@ static const struct argp_option options[] =
 };
 
 static const char args_doc[] = "TARGET";
-static const char doc[] = "A translator for firmlinks"
-"\vA firmlink is sort of half-way between a symbolic link and a hard link;"
+static const char doc[] = "A translator for firmlinks."
+"\vA firmlink is sort of half-way between a symbolic link and a hard link:"
 "\n"
 "\nLike a symbolic link, it is `by name', and contains no actual reference to"
 " the target.  However, the lookup returns a node which will redirect parent"

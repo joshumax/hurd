@@ -25,7 +25,7 @@
 #include <argp.h>
 #include <version.h>
 
-const char *argp_program_version = STANDARD_HURD_VERSION (proc);
+const char *argp_program_version = STANDARD_HURD_VERSION (exec);
 
 #ifdef BFD
 bfd_arch_info_type host_bfd_arch_info;
@@ -107,7 +107,7 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
-  struct argp argp = { 0, 0, 0, "Hurd standard exec server" };
+  struct argp argp = { 0, 0, 0, "Hurd standard exec server." };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 

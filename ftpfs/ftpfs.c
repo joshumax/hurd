@@ -25,12 +25,16 @@
 #include <argz.h>
 #include <netdb.h>
 
+#include <version.h>
+
 #include <hurd/netfs.h>
 
 #include "ftpfs.h"
 
+const char *argp_program_version = STANDARD_HURD_VERSION (ftpfs);
+
 static char *args_doc = "REMOTE_FS [SERVER]";
-static char *doc = "Hurd ftp filesystem translator"
+static char *doc = "Hurd ftp filesystem translator."
 "\vIf SERVER is not specified, an attempt is made to extract"
 " it from REMOTE_FS, using `SERVER:FS' notation."
 "  SERVER can be a hostname, in which case anonymous ftp is used,"

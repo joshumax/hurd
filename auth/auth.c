@@ -451,8 +451,9 @@ main (int argc, char **argv)
   process_t proc;
   mach_port_t hostpriv, masterdev;
   struct authhandle *firstauth;
+  struct argp argp = { 0, 0, 0, "Hurd standard authentication server." };
 
-  argp_parse (0, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   auth_bucket = ports_create_bucket ();
   authhandle_portclass = ports_create_class (&destroy_authhandle, 0);

@@ -1,3 +1,8 @@
+2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hostmux.c: Include <version.h>.  Add global variable
+	ARGP_PROGRAM_VERSION.  Add period to DOC.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
