@@ -686,7 +686,7 @@ argp_args_usage (const struct argp *argp, FILE *stream)
   const struct argp **children = argp->children;
   const char *doc = argp->args_doc;
   if (doc)
-    add_usage_item (stream, "%s", doc);
+    fprintf (stream, "%s", doc);
   if (children)
     while (*children)
       argp_args_usage (*children++, stream);
@@ -713,11 +713,11 @@ argp_doc (const struct argp *argp, FILE *stream)
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
-void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
+void argp_help (const struct argp *argp, FILE *streamarg, unsigned flags)
 {
   int first = 1;
   struct hol *hol = 0;
-  FILE *stream = line_wrap_stream (stream, 0, RMARGIN, 0);
+  FILE *stream = line_wrap_stream (streamarg, 0, RMARGIN, 0);
 
   assert (stream);
 
