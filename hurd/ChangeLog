@@ -1,3 +1,13 @@
+1999-01-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile: Add rules for generating prototype ?ioctl.defs files from
+	a list of C headers that define the ioctl request macros.
+	(DIST_FILES): Add ioctl-tmpl.sym ioctl.awk gensym.awk.
+	* gensym.awk, ioctl-decode.h, ioctl-tmpl.sym, ioctl.awk: New files
+	supporting those rules.
+
+	* ioctls.defs: New file.
+
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hurd_types.h (enum file_storage_class): New values STORAGE_REMAP,
