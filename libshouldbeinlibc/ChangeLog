@@ -1,3 +1,7 @@
+2002-02-06  Roland McGrath  <roland@frob.com>
+
+	* Makefile (CFLAGS): Don't add -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H.
+
 2001-06-24  Mark Kettenis  <kettenis@gnu.org>
 
 	* idvec-impgids.c (_merge_implied_gids) [HAVE_GETGROUPLIST]:
