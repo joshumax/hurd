@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993 Free Software Foundation
+#   Copyright (C) 1993, 1994 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,7 +20,8 @@ dir := .
 include Makeconf
 
 LIB_SUBDIRS = libioserver libports
-PROG_SUBDIRS = auth boot exec fstests hello ifsock init mkbootfs proc term ufs
+PROG_SUBDIRS = auth boot exec fstests hello ifsock init mkbootfs proc term \
+	ufs init.trim
 OTHER_SUBDIRS = hurd i386
 SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
 
