@@ -341,6 +341,21 @@ error_t _store_device_create (device_t device, int flags, size_t block_size,
 /* Open the device NAME, and return the corresponding store in STORE.  */
 error_t store_device_open (const char *name, int flags, struct store **store);
 
+/* Return a new store in STORE which contains a remap store of partition
+   PART from the contents of SOURCE; SOURCE is consumed.  */
+error_t store_part_create (struct store *source, int index, int flags,
+                          struct store **store);
+
+/* Open the part NAME.  NAME consists of a partition number, a ':', a another
+   store class name, a ':' and a name for to by passed to the store class.
+   E.g. "2:device:hd0" would open the second partition on a DEVICE store
+   named "hd0".  FLAGS indicate how to open the store.  CLASSES is used to
+   select classes specified by the type NAME; if it is 0, STORE_STD_CLASSES
+   is used.  The new store is returned in *STORE.  */
+error_t store_part_open (const char *name, int flags,
+                        const struct store_class *const *classes,
+                        struct store **store);
+
 /* Return a new store in STORE referring to the file FILE.  Unlike
    store_create, this will always use file i/o, even it would be possible to
    be more direct.  This may work in more cases, for instance if the file has
@@ -478,6 +493,7 @@ error_t store_mvol_create (struct store *phys,
 extern const struct store_class *const store_std_classes[];
 
 extern const struct store_class store_device_class;
+extern const struct store_class store_part_class;
 extern const struct store_class store_file_class;
 extern const struct store_class store_task_class;
 extern const struct store_class store_zero_class;
