@@ -105,6 +105,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   if (agbuf != aux_gids)
     vm_deallocate (mach_task_self (), (u_int) aux_gids,
 		   auxgidlen * sizeof (uid_t));
-  
+
+
+  ports_port_deref (newcred);
   return 0;
 }
