@@ -1,3 +1,9 @@
+Thu Sep 26 14:09:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfsd.h (enum_t): New type.
+
+	* cache.c: Don't inclide <rpc/auth_unix.h>.
+
 Thu Sep 12 16:52:13 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

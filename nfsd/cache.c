@@ -33,7 +33,6 @@
 #define malloc spoogie_woogie	/* ugh^2. */
 #include <rpc/types.h>
 #include <rpc/auth.h>
-#include <rpc/auth_unix.h>
 #undef malloc
 
 #define IDHASH_TABLE_SIZE 1024

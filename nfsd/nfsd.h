@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 typedef int bool_t;
+typedef int enum_t;
 
 #include <sys/types.h>
 #include <sys/socket.h>
