@@ -95,7 +95,7 @@ extern vm_address_t zerocluster;
 extern struct dirrect dr_root_node;
 
 
-#define LOG2_BLOCKS_PER_CLUSTER
+#define LOG2_BLOCKS_PER_CLUSTER					\
  (log2_bytes_per_cluster - store->logs2_block_size)
 
 #define round_cluster(offs)					\

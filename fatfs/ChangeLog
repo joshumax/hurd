@@ -1,3 +1,7 @@
+2003-07-29  Jeff Bailey  <jbailey@nisa.net>
+
+	* fatfs.h (LOG2_BLOCKS_PER_CLUSTER): Fix typo.
+
 2003-07-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pager.c (find_cluster): Round to cluster size rather than adding
