@@ -41,8 +41,8 @@ LIBS = $(libthreads)
 
 all: proc
 
-proc: $(OBJS)
-	$(link)
+proc: $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^
 
 install: proc $(hurdroot)
 	$(INSTALL_BIN) proc $(hurdroot)/hurd/proc
