@@ -43,15 +43,15 @@ clean:
 relink:
 	rm -f exec
 
-exec_server.h execServer.c: $(headers)/hurd/exec.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ $(headers)/hurd/exec.defs \
+exec_server.h execServer.c: $(includedir)/hurd/exec.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ $(includedir)/hurd/exec.defs \
 	| $(MIGCOM) -sheader exec_server.h -header /dev/null -user /dev/null
 
 
-fsysServer.c: $(headers)/hurd/fsys.defs $(headers)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  $(headers)/hurd/fsys.defs \
+fsysServer.c: $(includedir)/hurd/fsys.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  $(includedir)/hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
 
-notifyServer.c: $(headers)/mach/notify.defs
-	$(CPP) $(CPPFLAGS)  $(headers)/mach/notify.defs \
+notifyServer.c: $(includedir)/mach/notify.defs
+	$(CPP) $(CPPFLAGS)  $(includedir)/mach/notify.defs \
 	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
