@@ -1963,7 +1963,7 @@ main (int argc, char **argv)
   cons->node = netfs_root_node;
   cons->underlying = netfs_startup (bootstrap, O_READ);
   if (cons->underlying == MACH_PORT_NULL)
-    error (4, err, "Cannot get underlying node");
+    error (4, 0, "Cannot get underlying node");
 
   err = io_stat (cons->underlying, &ul_stat);
   if (err)
