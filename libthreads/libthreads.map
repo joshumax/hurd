@@ -2,9 +2,11 @@
    It is in the form of a linker script, to be including as an input
    file in the link command, rather than with --version-script.  */
 
-  /* We only define these symbols when built against a libio-using libc,
-     which we presume will be 2.2 that is expecting our lockfile.c hooks.
-     For now, the rest of the library's symbols remain unversioned.  */
+/* We only use this file when we build against a libio-using libc,
+   which we presume will be 2.2 that is expecting our lockfile.c
+   hooks.  Therefore the flockfile functions are added to the
+   GLIBC_2.2 version node.  The rest of the library's symbols will use
+   HURD_CTHREADS_0.3.  */
 
 VERSION
 {
