@@ -1,5 +1,10 @@
 Fri Oct  4 12:30:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* ptyio.c (pty_open_hook): Reinitialize pty variables.
+
+	* ptyio.c (pty_io_select): Return SELECT_READ if the slave isn't open.
+	(pty_io_read): If the slave isn't open, return EOF.
+
 	* users.c (set_state, open_hook): Call (*BOTTOM)->set_bits
 	unconditionally.
 	* devio.c (devio_set_bits): Only execute guts if CIGNORE isn't set.
