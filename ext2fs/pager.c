@@ -1,6 +1,6 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -395,7 +395,7 @@ static error_t
 disk_pager_read_page (vm_offset_t page, void **buf, int *writelock)
 {
   error_t err;
-  size_t length = vm_page_size, read;
+  size_t length = vm_page_size, read = 0;
   vm_size_t dev_end = store->size;
 
   if (page + vm_page_size > dev_end)
