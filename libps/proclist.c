@@ -28,11 +28,11 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Creates a new proc_stat_list_t for processes from SERVER, which is
+/* Creates a new proc_stat_list_t for processes from CONTEXT, which is
    returned in PP, and returns 0, or else returns ENOMEM if there wasn't
    enough memory.  */
 error_t
-proc_stat_list_create(process_t server, proc_stat_list_t *pp)
+proc_stat_list_create(ps_context_t context, proc_stat_list_t *pp)
 {
   *pp = NEW(struct proc_stat_list);
   if (*pp == NULL)
@@ -41,7 +41,7 @@ proc_stat_list_create(process_t server, proc_stat_list_t *pp)
   (*pp)->proc_stats = 0;
   (*pp)->num_procs = 0;
   (*pp)->alloced = 0;
-  (*pp)->server = server;
+  (*pp)->context = context;
 
   return 0;
 }
@@ -50,10 +50,7 @@ proc_stat_list_create(process_t server, proc_stat_list_t *pp)
 void 
 proc_stat_list_free(proc_stat_list_t pp)
 {
-  int i;
-  for (i = 0; i < pp->num_procs; i++)
-    if (pp->proc_stats[i] != NULL)
-      proc_stat_free(pp->proc_stats[i]);
+  proc_stat_list_remove_threads(pp);
   FREE(pp->proc_stats);
   FREE(pp);
 }
@@ -104,14 +101,9 @@ proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs)
 
 	  if (proc_stat_list_pid_proc_stat(pp, pid) == NULL)
 	    {
-	      err = proc_stat_create(pid, pp->server, end);
+	      err = ps_context_find_proc_stat(pp->context, pid, end);
 	      if (err)
-		/* Whoops, back out what we've done so far.  */
-		{
-		  while (end > pp->proc_stats + pp->num_procs)
-		    proc_stat_free(*--end);
-		  return err;
-		}
+		return err;
 	      else
 		end++;
 	    }
@@ -123,7 +115,7 @@ proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs)
     }
 }
 
-/* Add a proc_stat_t for the process designated by PID at PP's proc server to
+/* Add a proc_stat_t for the process designated by PID at PP's proc context to
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
@@ -140,7 +132,9 @@ proc_stat_list_add_pid(proc_stat_list_t pp, int pid)
 	    return err;
 	}
 
-      err = proc_stat_create(pid, pp->server, &pp->proc_stats[pp->num_procs]);
+      err =
+	ps_context_find_proc_stat(pp->context,
+				  pid, &pp->proc_stats[pp->num_procs]);
       if (err)
 	return err;
 
@@ -173,13 +167,13 @@ proc_stat_list_pid_proc_stat(proc_stat_list_t pp, int pid)
 
 /* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
    already in PP; the resulting order of proc_stat_t's in PP is undefined.
-   If MERGEE and PP point to different proc servers, EINVAL is returned.  If a
+   If MERGEE and PP point to different proc contexts, EINVAL is returned.  If a
    memory allocation error occurs, ENOMEM is returned.  Otherwise 0 is
    returned, and MERGEE is freed.  */
 error_t
 proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
 {
-  if (pp->server != mergee->server)
+  if (pp->context != mergee->context)
     return EINVAL;
   else
     {
@@ -220,7 +214,7 @@ proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
    which mig will vm_allocate space for them) */
 #define STATICPIDS 200
 
-/* Add to PP entries for all processes at its server.  If an error occurs,
+/* Add to PP entries for all processes at its context.  If an error occurs,
    the system error code is returned, otherwise 0.  */
 error_t
 proc_stat_list_add_all(proc_stat_list_t pp)
@@ -228,7 +222,7 @@ proc_stat_list_add_all(proc_stat_list_t pp)
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
 
-  err = proc_getallpids(pp->server, &pids, &num_procs);
+  err = proc_getallpids(ps_context_server(pp->context), &pids, &num_procs);
   if (err)
     return err;
 
@@ -241,7 +235,7 @@ proc_stat_list_add_all(proc_stat_list_t pp)
 }
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
-   its server.  If an error occurs, the system error code is returned,
+   its context.  If an error occurs, the system error code is returned,
    otherwise 0.  */
 error_t
 proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id)
@@ -249,7 +243,8 @@ proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id)
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
 
-  err = proc_getloginpids(pp->server, login_id, &pids, &num_procs);
+  err = proc_getloginpids(ps_context_server(pp->context), login_id,
+			  &pids, &num_procs);
   if (err)
     return err;
 
@@ -262,7 +257,7 @@ proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id)
 }
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
-   server.  If an error occurs, the system error code is returned, otherwise
+   context.  If an error occurs, the system error code is returned, otherwise
    0.  */
 error_t
 proc_stat_list_add_session(proc_stat_list_t pp, int session_id)
@@ -270,7 +265,8 @@ proc_stat_list_add_session(proc_stat_list_t pp, int session_id)
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
 
-  err = proc_getsessionpids(pp->server, session_id, &pids, &num_procs);
+  err = proc_getsessionpids(ps_context_server(pp->context), session_id,
+			    &pids, &num_procs);
   if (err)
     return err;
 
@@ -344,10 +340,8 @@ proc_stat_list_filter1(proc_stat_list_t pp,
 
       if (!proc_stat_has(ps, flags) || !!predicate(ps) != invert)
 	*kept++ = ps;
-      else
-	/* Implicitly delete PS from PP by not putting it in the KEPT
-	   sequence.  */
-	proc_stat_free(ps);
+      /* ... otherwise implicitly delete PS from PP by not putting it in the
+	 KEPT sequence.  */
     }
 
   pp->num_procs = kept - procs;
@@ -558,4 +552,14 @@ proc_stat_list_add_threads(proc_stat_list_t pp)
     }
 
   return 0;
+}
+
+error_t
+proc_stat_list_remove_threads(proc_stat_list_t pp)
+{
+  bool is_thread(proc_stat_t ps)
+    {
+      return proc_stat_is_thread(ps);
+    }
+  return proc_stat_list_filter1(pp, is_thread, 0, FALSE);
 }
