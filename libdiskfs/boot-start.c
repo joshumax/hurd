@@ -404,7 +404,8 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Don't start this until now so that exec is fully authenticated
      with proc. */
-  exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
+  exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), execprocess);
 
   /* We don't need this anymore. */
   mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
