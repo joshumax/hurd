@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Make standard devices
+#
+
+PATH=/bin
+
+for I; do
+  case "$I" in
+    std)
+      settrans -cf console /hurd/term console
+
+      settrans -cf tty /hurd/magic tty
+
+      settrans -cf null /hurd/null
+      settrans -cf zero /hurd/null -z
+
+      #settrans -cf stdin /hurd/magic fd/0
+      #settrans -cf stdout /hurd/magic fd/1
+      #settrans -cf stderr /hurd/magic fd/2
+      ;;
+
+   fd*|mt*)
+      settrans -cf r$I /hurd/devio $I
+      settrans -cf $I /hurd/devio -b $I
+      ;;
+
+   rd*|sd*|hd*)
+      if expr $I : '[a-z]*[0-9][0-9]*\([a-z]*\)' > /dev/null; then
+        settrans -cf r$I /hurd/devio $I
+        settrans -cf $I /hurd/devio -b $I
+      else
+	echo 1>&2 $0: $I: Must supply a device number and partition
+	exit 1
+      fi
+      ;;
+
+    *)
+      echo $0: $I: Unknown device
+ esac
+done
