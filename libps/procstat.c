@@ -147,7 +147,7 @@ merge_procinfo (process_t server, pid_t pid,
   if (*pi_size > 0)
     /* There was old information, try merging it. */
     {
-      if ((need & PSTAT_TASK_BASIC) && ~(have & PSTAT_TASK_BASIC))
+      if (have & PSTAT_TASK_BASIC)
 	/* Task info */
 	bcopy (&(*pi)->taskinfo, &new_pi->taskinfo,
 	       sizeof (struct task_basic_info));
@@ -176,7 +176,7 @@ add_preconditions (ps_flags_t flags)
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
-    flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
+    flags |= PSTAT_PROC_INFO | PSTAT_THREAD_BASIC;
   if (flags & PSTAT_SUSPEND_COUNT)
     /* We just request the resources require for both the thread and task
        versions, as the extraneous info won't be possible to aquire anyway. */
@@ -195,12 +195,15 @@ add_preconditions (ps_flags_t flags)
 }
 
 /* Those flags that should be set before calling should_suppress_msgport.  */
-#define SHOULD_SUPPRESS_MSGPORT_FLAGS \
+#define PSTAT_TEST_MSGPORT \
   (PSTAT_NUM_THREADS | PSTAT_SUSPEND_COUNT | PSTAT_THREAD_BASIC)
+
+/* Those flags that need the msg port, perhaps implicitly.  */
+#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_RPC)
 
 /* Return true when there's some condition indicating that we shouldn't use
    PS's msg port.  For this routine to work correctly, PS's flags should
-   contain as many flags in SHOULD_SUPPRESS_MSGPORT_FLAGS as possible.  */
+   contain as many flags in PSTAT_TEST_MSGPORT as possible.  */
 static int
 should_suppress_msgport (proc_stat_t ps)
 {
@@ -224,7 +227,7 @@ should_suppress_msgport (proc_stat_t ps)
 
 /* Returns FLAGS with PSTAT_MSGPORT turned off and PSTAT_NO_MSGPORT on.  */
 #define SUPPRESS_MSGPORT_FLAGS(flags) \
-   (((flags) & ~PSTAT_MSGPORT) | PSTAT_NO_MSGPORT)
+   (((flags) & ~PSTAT_USES_MSGPORT) | PSTAT_NO_MSGPORT)
 
 /* ---------------------------------------------------------------- */
 
@@ -279,11 +282,18 @@ summarize_thread_basic_info (struct procinfo *pi)
 	tbi->system_time.seconds += bi->system_time.seconds;
 	tbi->system_time.microseconds += bi->system_time.microseconds;
 
+	tbi->base_priority += bi->base_priority;
+	tbi->cur_priority += bi->cur_priority;
+
 	num_threads++;
       }
 
   if (num_threads > 0)
-    tbi->sleep_time /= num_threads;
+    {
+      tbi->sleep_time /= num_threads;
+      tbi->base_priority /= num_threads;
+      tbi->cur_priority /= num_threads;
+    }
 
   tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
   tbi->user_time.microseconds %= 1000000;
@@ -314,6 +324,8 @@ summarize_thread_sched_info (struct procinfo *pi)
 	thread_sched_info_t si = &pi->threadinfos[i].pis_si;
 	tsi->base_priority += si->base_priority;
 	tsi->cur_priority += si->cur_priority;
+	tsi->max_priority += si->max_priority;
+	tsi->depress_priority += si->depress_priority;
 	num_threads++;
       }
 
@@ -321,6 +333,8 @@ summarize_thread_sched_info (struct procinfo *pi)
     {
       tsi->base_priority /= num_threads;
       tsi->cur_priority /= num_threads;
+      tsi->max_priority /= num_threads;
+      tsi->depress_priority /= num_threads;
     }
 
   return tsi;
@@ -429,10 +443,10 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   no_msgport_flags = add_preconditions (SUPPRESS_MSGPORT_FLAGS (flags));
   flags = add_preconditions (flags);
 
-  if (flags & PSTAT_MSGPORT)
+  if (flags & PSTAT_USES_MSGPORT)
     /* Add in some values that we can use to determine whether the msgport
        shouldn't be used.  */
-    flags |= add_preconditions (SHOULD_SUPPRESS_MSGPORT_FLAGS);
+    flags |= add_preconditions (PSTAT_TEST_MSGPORT);
 
   need = flags & ~have;
 
@@ -464,10 +478,19 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
    })
 
   /* the process's struct procinfo as returned by proc_getprocinfo.  */
-  if ((need & PSTAT_PROCINFO) != (have & PSTAT_PROCINFO))
+  if ((need & PSTAT_PROCINFO) & ~(have & PSTAT_PROCINFO))
     if (have & PSTAT_PID)
       {
-	error_t err =
+	error_t err;
+
+	if (!(have & PSTAT_PROCINFO))
+	  /* Never got any before; zero out our pointers.  */
+	  {
+	    ps->proc_info = 0;
+	    ps->proc_info_size = 0;
+	  }
+
+	err =
 	  merge_procinfo (server, ps->pid, need, have,
 			  &ps->proc_info, &ps->proc_info_size);
 	if (!err)
@@ -478,14 +501,23 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 
 	    have |= added;
 
-	    /* Update dependent fields.  */
-	    if (added & PSTAT_TASK_BASIC)
+	    /* Update dependent fields.  We redo these even if we've already
+	       gotten them, as the information will be newer.  */
+	    if (have & PSTAT_TASK_BASIC)
 	      ps->task_basic_info = &pi->taskinfo;
-	    if (added & PSTAT_THREAD_BASIC)
-	      ps->thread_basic_info = summarize_thread_basic_info (pi);
-	    if (added & PSTAT_THREAD_SCHED)
-	      ps->thread_sched_info = summarize_thread_sched_info (pi);
-	    if (added & PSTAT_THREAD_RPC)
+	    if (have & PSTAT_THREAD_BASIC)
+	      {
+		if (! (added & PSTAT_THREAD_BASIC))
+		  free (ps->thread_basic_info);
+		ps->thread_basic_info = summarize_thread_basic_info (pi);
+	      }
+	    if (have & PSTAT_THREAD_SCHED)
+	      {
+		if (! (added & PSTAT_THREAD_BASIC))
+		  free (ps->thread_sched_info);
+		ps->thread_sched_info = summarize_thread_sched_info (pi);
+	      }
+	    if (have & PSTAT_THREAD_RPC)
 	      ps->thread_rpc = summarize_thread_rpcs (pi);
 
 	    if (have & PSTAT_PROCINFO_THREAD)
