@@ -40,7 +40,7 @@ diskfs_S_file_set_translator (struct protid *cred,
   if (!(passive_flags & FS_TRANS_SET) && !(active_flags & FS_TRANS_SET))
     return 0;
 
-  if (passive[passivelen - 1])
+  if (passive && passive[passivelen - 1])
     return EINVAL;
 
   np = cred->po->np;
