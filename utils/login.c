@@ -280,7 +280,6 @@ main(int argc, char *argv[])
   int no_environ = 0;		/* If false, use the env as default params. */
   int no_args = 0;		/* If false, put login params in the env. */
   int inherit_environ = 0;	/* True if we shouldn't clear our env.  */
-  int saw_user_arg = 0;		/* True if we've seen the USER argument.  */
   int no_passwd = 0;		/* Don't bother verifying what we're doing.  */
   int no_utmp = 0;		/* Don't put an entry in utmp.  */
   int no_login = 0;		/* Don't prepend `-' to the shells argv[0].  */
@@ -470,15 +469,16 @@ main(int argc, char *argv[])
 	  break;
 
 	case ARGP_KEY_ARG:
-	  if (saw_user_arg)
+	  if (state->arg_num > 0)
 	    {
-	      err = argz_add (&sh_args, &sh_args_len, arg);
+	      err = argz_create (state->argv + state->next - 1,
+				 &sh_args, &sh_args_len);
+	      state->next = state->argc; /* Consume all args */
 	      if (err)
 		error (9, err, "Adding %s", arg);
 	      break;
 	    }
 
-	  saw_user_arg = 1;
 	  if (strcmp (arg, "-") == 0)
 	    arg = 0;		/* Just like there weren't any args at all.  */
 	  /* Fall through to deal with adding the user.  */
@@ -617,7 +617,7 @@ main(int argc, char *argv[])
   err = argz_create (environ, &parent_env, &parent_env_len);
 
   /* Parse our options.  */
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0);
 
   /* Now that we've parsed the command line, put together all these
      environments we've gotten from various places.  There are two targets:
