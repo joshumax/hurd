@@ -361,6 +361,7 @@ S_io_reauthenticate (struct sock_user *user,
   error_t err;
   int i;
   auth_t auth;
+  mach_port_t newright;
 
   if (!user)
     return EOPNOTSUPP;
@@ -375,22 +376,31 @@ S_io_reauthenticate (struct sock_user *user,
   newuser = make_sock_user (user->sock, 0);
   
   auth = getauth ();
-  err = auth_server_authenticate (auth, 
-				  rend,
-				  MACH_MSG_TYPE_COPY_SEND,
-				  ports_get_right (newuser),
-				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen, 
-				  &aux_uids, &auxuidlen,
-				  &gen_gids, &gengidlen,
-				  &aux_gids, &auxgidlen);
+  newright = ports_get_right (newuser);
+  err = mach_port_insert_right (mach_task_self (), newright, newright,
+				MACH_MSG_TYPE_MAKE_SEND);
+  assert_perror (err);
+  do
+    err = auth_server_authenticate (auth, 
+				    rend,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    newright,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    &gen_uids, &genuidlen, 
+				    &aux_uids, &auxuidlen,
+				    &gen_gids, &gengidlen,
+				    &aux_gids, &auxgidlen);
+  while (err == EINTR);
   mach_port_deallocate (mach_task_self (), rend);
-  assert (!err);		/* XXX */
+  mach_port_deallocate (mach_task_self (), newright);
   mach_port_deallocate (mach_task_self (), auth);
 
-  for (i = 0; i < genuidlen; i++)
-    if (gen_uids[i] == 0)
-      newuser->isroot = 1;
+  if (err)
+    newuser->isroot = 0;
+  else
+    for (i = 0; i < genuidlen; i++)
+      if (gen_uids[i] == 0)
+	newuser->isroot = 1;
   mutex_unlock (&global_lock);
 
   ports_port_deref (newuser);
