@@ -453,8 +453,8 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
 	    }
 	  
 	  /* Make sure GID is legitimate */
-	  for (i = 0; i < cred->ngids; i++)
-	    if (cred->gids[i] == gid || cred->isroot)
+	  for (i = 0; i < cred->ngids || cred->isroot; i++)
+	    if (cred->isroot || cred->gids[i] == gid)
 	      {
 		/* Make the change */
 		term_owner = uid;
