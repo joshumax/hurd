@@ -530,7 +530,7 @@ int
 main (int argc, char **argv, char **envp)
 {
   mach_port_t foo;
-  char usagemsg[] = "Usage: boot [SWITCHES] SCRIPT ROOT-DEVICE\n";
+  static const char usagemsg[] = "Usage: boot [SWITCHES] SCRIPT ROOT-DEVICE\n";
   char *buf = 0;
   char *bootscript;
   int i, len;
@@ -595,7 +595,7 @@ main (int argc, char **argv, char **envp)
       || boot_script_set_variable ("root-device", VAL_STR, (int) bootdevice)
       || boot_script_set_variable ("boot-args", VAL_STR, (int) bootstrap_args))
     {
-      char msg[] = "error setting variable";
+      static const char msg[] = "error setting variable";
 
       write (2, msg, strlen (msg));
       uxexit (1);
@@ -604,7 +604,7 @@ main (int argc, char **argv, char **envp)
   /* Parse the boot script.  */
   {
     char *p, *line;
-    char filemsg[] = "Can't open boot script";
+    static const char filemsg[] = "Can't open boot script";
     int amt, fd, err;
 
     fd = open (bootscript, 0, 0);
@@ -648,6 +648,9 @@ main (int argc, char **argv, char **envp)
 	    str = boot_script_error_string (err);
 	    i = strlen (str);
 	    write (2, str, i);
+	    write (2, " in `", 5);
+	    write (2, line, strlen (line));
+	    write (2, "'\n", 2);
 	    uxexit (1);
 	  }
 	if (p == buf + amt)
@@ -658,7 +661,7 @@ main (int argc, char **argv, char **envp)
 
   if (index (bootstrap_args, 'd'))
     {
-      char msg[] = "Pausing. . .";
+      static const char msg[] = "Pausing. . .";
       char c;
       write (2, msg, sizeof (msg) - 1);
       read (0, &c, 1);
