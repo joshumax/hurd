@@ -1,4 +1,10 @@
 Wed May  7 12:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* unix.c (struct get_stats_state): Add NAME_LEN & NAME_ALLOCED fields.
+	(ftp_conn_unix_cont_get_stats): Retain S's name buffer between
+	entries, only growing it when needed; leave any copying to the client.
+	* ftpconn.h (ftp_conn_add_stat_fun_t): Make first 3 params const.
+	Update comment to say they should be copied if retained.
+
 	* Makefile (installhdrsubdir): New variable.
 
