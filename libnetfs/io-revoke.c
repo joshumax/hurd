@@ -48,15 +48,13 @@ netfs_S_io_revoke (struct protid *cred)
   err = netfs_validate_stat (np, cred->user);
   if (!err)
     err = fshelp_isowner (&np->nn_stat, cred->user);
-  if (err)
-    {
-      mutex_unlock (&np->lock);
-      return err;
-    }
-
-  ports_bucket_iterate (netfs_port_bucket, iterator_function);
 
   mutex_unlock (&np->lock);
+
+  if (err)
+    return err;
+
+  ports_bucket_iterate (netfs_port_bucket, iterator_function);
 
   return 0;
 }
