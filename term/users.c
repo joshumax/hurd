@@ -119,7 +119,7 @@ open_hook (struct trivfs_control *cntl,
 	 && !(flags & O_NONBLOCK)
 	 && !cancel)
     {
-      err = assert_dtr ();
+      err = (*bottom->assert_dtr) ();
       if (err)
 	{
 	  mutex_unlock (&global_lock);
@@ -141,7 +141,7 @@ open_hook (struct trivfs_control *cntl,
   
   termflags |= TTY_OPEN;
   if (!(termstate.c_cflag & CIGNORE))
-    set_bits ();
+    (*bottom->set_bits) ();
 
   mutex_unlock (&global_lock);
   return 0;
@@ -199,7 +199,7 @@ po_destroy_hook (struct trivfs_peropen *po)
       
       /* Possibly drop carrier */
       if ((termstate.c_cflag & HUPCL) || (termflags & NO_CARRIER))
-	desert_dtr ();
+	(*bottom->desert_dtr) ();
 
       termflags &= ~TTY_OPEN;
     }
@@ -394,7 +394,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     {
       while (!qavail (outputq) && !cancel)
 	{
-	  start_output ();
+	  (*bottom->start_output) ();
 	  if (!qavail (outputq))
 	    cancel = hurd_condition_wait (outputq->wait, &global_lock);
 	}
@@ -406,7 +406,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   *amt = i;
 
-  start_output ();
+  (*bottom->start_output) ();
 
   trivfs_set_mtime (termctl);
 
@@ -546,7 +546,7 @@ S_tioctl_tiocmodg (io_t port,
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
-  *state = mdmstate ();
+  *state = (*bottom->mdmstate) ();
   mutex_unlock (&global_lock);
   
   ports_port_deref (cred);
@@ -738,7 +738,7 @@ set_state (io_t port,
       termstate.__ispeed = speeds[0];
       termstate.__ospeed = speeds[1];
       if (!(termstate.c_cflag & CIGNORE))
-	set_bits ();
+	(*bottom->set_bits) ();
       if (oldlflag & ICANON)
 	{
 	  if (!(termstate.c_lflag & ICANON))
@@ -950,7 +950,7 @@ S_tioctl_tiocmget (io_t port,
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
-  *bits = mdmstate ();
+  *bits = (*bottom->mdmstate) ();
   mutex_unlock (&global_lock);
   
   ports_port_deref (cred);
@@ -973,7 +973,7 @@ S_tioctl_tiocmset (io_t port,
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_SET, bits);
+      (*bottom->mdmctl) (MDMCTL_SET, bits);
       err = 0;
     }
   
@@ -998,7 +998,7 @@ S_tioctl_tiocmbic (io_t port,
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_BIC, bits);
+      (*bottom->mdmctl) (MDMCTL_BIC, bits);
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1023,7 +1023,7 @@ S_tioctl_tiocmbis (io_t port,
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_BIS, bits);
+      (*bottom->mdmctl) (MDMCTL_BIS, bits);
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1136,7 +1136,7 @@ S_tioctl_tiocoutq (io_t port,
     err = EBADF;
   else
     {
-      *queue_size = qsize (outputq) + pending_output_size ();
+      *queue_size = qsize (outputq) + (*bottom->pending_output_size) ();
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1212,7 +1212,7 @@ S_tioctl_tioccdtr (io_t port)
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_BIC, TIOCM_DTR);
+      (*bottom->mdmctl) (MDMCTL_BIC, TIOCM_DTR);
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1236,7 +1236,7 @@ S_tioctl_tiocsdtr (io_t port)
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_BIS, TIOCM_DTR);
+      (*bottom->mdmctl) (MDMCTL_BIS, TIOCM_DTR);
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1260,7 +1260,7 @@ S_tioctl_tioccbrk (io_t port)
     err = EBADF;
   else
     {
-      clear_break ();
+      (*bottom->clear_break) ();
       err = 0;
     }
   mutex_unlock (&global_lock);
@@ -1284,7 +1284,7 @@ S_tioctl_tiocsbrk (io_t port)
     err = EBADF;
   else
     {
-      set_break ();
+      (*bottom->set_break) ();
       err = 0;
     }
   mutex_unlock (&global_lock);
