@@ -6,6 +6,7 @@
 
 #include <endian.h>
 #include <byteswap.h>
+#include <hurd.h>		/* gets other includes that need BYTE_ORDER */
 
 #define BO_cvt(bits, from, to, x) \
   ((from) == (to) ? (u_int##bits##_t) (x) : bswap_##bits (x))
