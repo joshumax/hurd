@@ -1,3 +1,9 @@
+2002-05-16  Roland McGrath  <roland@frob.com>
+
+	* configure.in (asm_syntax): Add patterns for all the flavors we have
+	pfinet/linux-src/include/asm-* directories for: arm, m68k, mips,
+	sparc, sparc64.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* version.h.in (STANDARD_HURD_VERSION): Remove EXTRA argument,
