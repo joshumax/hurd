@@ -1,13 +1,10 @@
 \input texinfo  @c -*-texinfo-*-
-@setfilename hurd.texi
+@setfilename hurd.info
 
-@ifinfo
-@format
-START-INFO-DIR-ENTRY
+@dircategory Kernel
+@direntry
 * Hurd: (hurd).                 The interfaces of the GNU Hurd.
-END-INFO-DIR-ENTRY
-@end format
-@end ifinfo
+@end direntry
 
 @ifinfo
 Copyright @copyright{} 1994 Free Software Foundation, Inc.
@@ -74,10 +71,6 @@ examined.
 @menu
 * I/O interface::           The interface for reading and writing
                             I/O channels
-@ignore
-* Shared I/O::              The interface for doing input and output
-                            using shared memory
-@end ignore
 * File interface::          The interface for modifying file-specific
                             characteristics
 * Filesystem interface::    Interfaces supported to control file-servers
@@ -85,18 +78,17 @@ examined.
 
 * Ports library::           A library to manage port rights for servers
 * Iohelp library::          A library to implement some common parts
-                            of the I/O and shared I/O interfaces.
+                            of the I/O and shared I/O interfaces
 * Fshelp library::          A library to implement some common parts
-                            of the file interface.
+                            of the file interface
 * Pager library::           A library to implement complex
-                            multi-threaded pagers.
+                            multi-threaded pagers
 * Diskfs library::          A library to do almost all the work of
-                            implementing a disk-based filesystem.
+                            implementing a disk-based filesystem
 * Trivfs library::          A library to do the work of handling the
                             file protocol for directory-less
-                            filesystems.
-* Mapped data::             Getting memory objects referring to the
-                            data of an I/O object.
+                            filesystems
+@end menu
 
 @node I/O interface
 @chapter I/O interface
@@ -110,13 +102,13 @@ and are described later.  The present chapter discusses RPC-based I/O
 operations.
 
 @menu
-* I/O object ports::              How ports to I/O objects work
-* Simple operations::             Read, write, and seek
-* Open modes::                    State bits that affect pieces of
-                                  operation
-* Asynchronous I/O::              How to get notified when I/O is possible
-* Information queries::           How to implement io_stat and 
-                                  io_server_version
+* I/O object ports::        How ports to I/O objects work
+* Simple operations::       Read, write, and seek
+* Open modes::              State bits that affect pieces of operation
+* Asynchronous I/O::        How to get notified when I/O is possible
+* Information queries::     How to implement io_stat and io_server_version
+* Mapped data::             Getting memory objects referring to the
+                            data of an I/O object
 @end menu
 
 @node I/O object ports
@@ -150,10 +142,10 @@ servers give out ports in response to the socket_create and
 socket_accept calls.)  However, the I/O protocol provides methods of
 obtaining new ports that refer to the same underlying object as another
 port.  In response to all of these calls, all underlying state
-(including, but not limited to, the default file poirter, open mode
+(including, but not limited to, the default file pointer, open mode
 bits, and underlying object) must be shared between the old and new
 ports.  In the following descriptions of these calls, the term
-"identical" means this kind of sharing.  All these calls must return
+``identical'' means this kind of sharing.  All these calls must return
 send-rights to a newly-constructed Mach port.
 
 The io_duplicate call simply returns another port which is identical
@@ -216,12 +208,12 @@ should return ESPIPE to the io_seek call.
 
 On seekable objects, io_seek changes the default file pointer for reads
 and writes.  (See the C library manual for the interpretation of the
-WHENCE and OFFSET arguments.)  It returns the new offset as modified by
-io_seek.
+@var{whence} and @var{offset} arguments.)  It returns the new offset as
+modified by io_seek.
 
 The io_readable interface returns the amount of data which can be
-immediately read.  For the special technical meaning of "immediately",
-see the description of asynchronous I/O.  (*Note: Asynchronous I/O.)
+immediately read.  For the special technical meaning of ``immediately'',
+see @ref{Asynchronous I/O}.
 
 @node Open modes
 @section Open modes
@@ -235,14 +227,14 @@ read/modify/write of the openmodes.
 The O_APPEND bit, when set, changes the behavior of io_write when it
 uses the default file pointer on seekable objects.  When io_write is
 done on a port with the O_APPEND bit set, is must set the filepointer to
-one more than the "maximum correct value" (described below) before doing
+one more than the ``maximum correct value'' (described below) before doing
 the write (which would then increment the file pointer as usual).  The
 server must atomically bind this update to the actual data write with
 respect to other users of io_read, io_write, and io_seek.
 
-A "correct value" for the file pointer which, when provided to io_read,
+A ``correct value'' for the file pointer which, when provided to io_read,
 will successfully return at least one byte of data and not end-of-file.
-The "maximum correct value" referred to in the description of O_APPEND
+The ``maximum correct value'' referred to in the description of O_APPEND
 is the maximum such correct value.  (For ordinary files [see the
 description of the file protocol for more information] this is the same
 as the current file size.)
@@ -254,7 +246,7 @@ The O_NONBLOCK bit, when set, prevents read and write from blocking.
 They should copy such data as is immediately available.  If no data is
 immediately available they should return EWOULDBLOCK.
 
-The definition of "immediate" is more or less server dependent.  Some
+The definition of ``immediate'' is more or less server dependent.  Some
 servers (disk-based file servers, most notably) regard all data as
 immediatebly available.  The one criterion is that something which must
 happen immediately may not wait for any user-synchronizable event.  
@@ -282,7 +274,7 @@ addition, everytime a user calls io_read or io_write on a non-seekable
 object, or at the default file pointer on a seekable object, another
 signal should be sent to each user if I/O is still possible.
 
-Some objects may also define "urgent" conditions.  Such servers should
+Some objects may also define ``urgent'' conditions.  Such servers should
 send the SIGURG signal to each registered async user anytime an urgent
 condition appears.  After any RPC that has the possibility of clearing
 the urgent condition, the server should again send the signal to all
@@ -346,7 +338,7 @@ the optimal size, and to use offsets which are multiples of the optimal
 size
 
 In addition, objects which are seekable should set st_size to the
-"maximum correct value" described above in the description of the
+``maximum correct value'' described above in the description of the
 O_APPEND flag.
 
 The st_uid and st_gid fields are unrelated to the ``owner'' as described
@@ -363,7 +355,7 @@ Servers may optionally implement the io_map call.  The ports returned by
 io_map must implement the XP kernel interface and be suitable as
 arguments to vm_map.
 
-Seekable objects must allow access from 0 to the "maximum correct value"
+Seekable objects must allow access from 0 to the ``maximum correct value''
 described for O_APPEND.  Whether they provide access beyond such a point
 is server dependent; in addition, the meaning of such an object for a
 non-seekable object is server dependent.  
@@ -377,9 +369,13 @@ described in the next chapter should not get any memory faults except as
 explicitly permitted by the next chapter.
 @end ignore
 
+@c FIXME: here is a huge section which is completely ignored
 @ignore
 @node Shared I/O
 @chapter Shared I/O
+
+@c * Shared I/O::          The interface for doing input and output
+@c                         using shared memory
 
 I/O servers may, optionally, provide the services described in this
 chapter in addition to the generic services described in the previous
@@ -387,10 +383,9 @@ chapter.  These facilities allow users to read and write I/O objects
 without making RPC's to the server in most circumstances.  
 
 @menu
-* Rules::               The rules users must obey in using
-                        shared I/O.
-* Examples::            Examples of the way different types
-                        of servers could implement shared I/O.
+* Rules::                   The rules users must obey in using shared I/O
+* Examples::                Examples of the way different types of servers
+                            could implement shared I/O
 @end menu
 
 @node Rules
@@ -417,15 +412,14 @@ server should return EBUSY, at which point the user should call
 io_duplicate to obtain a new port, and call io_map_cntl there.
 
 @menu
-* Conch::                       How access to the shared page is mediated
-* Access rules::                Where in the io_map memory objects users
-                                may peek and poke
-* Behavior modification::       Modifications of behavior
-* Status notifications::        Calls users should make at certain
-                                times to keep the server abreast of the
-                                current state of the object
-* Violations::                  When the rules are broken
-
+* Conch::                   How access to the shared page is mediated
+* Access rules::            Where in the io_map memory objects users may
+                            peek and poke
+* Status notification::     Calls users should make at certain times to
+                            keep the server abreast of the current state
+                            of the object
+* Behavior modification::   Modifications of behavior
+* Violations::              When the rules are broken
 @end menu
 
 @node Conch
@@ -502,7 +496,7 @@ a particular access.  In that case, the user may access the object to
 the end of its virtual address space.
 
 If use_file_size is set, the user may increase the file_size, but may
-not decrease it, to indicate the new "maximum correct value" as
+not decrease it, to indicate the new ``maximum correct value'' as
 described for O_APPEND.  Normally when users write beyond the current
 file_size they should extend it at least to the end of the write.
 
@@ -532,7 +526,7 @@ advance them at all may prevent the read_size or prenotify_size from
 being increased.
 
 If the server sets eof_notify, then the user may attempt to have the
-file_size to be increased by calling io_eofnotify after "noticing" the
+file_size to be increased by calling io_eofnotify after ``noticing'' the
 current file size limit.  io_eofnotify must return immediately, but need
 not actually increase the file_size or clear user_file_size.  (However,
 if it is impossible for io_eofnotify to ever do anything, then the
@@ -598,6 +592,13 @@ have such modifications ignored.
 Users may not call any server functions (whether in the I/O protocol or
 another) while holding the conch except for those specified in this
 chapter.  Such calls may block indefinitely or fail silently.
+
+@node Examples
+@section Examples
+
+FIXME: Examples of the way different types of servers could implement
+shared I/O
+
 @end ignore
 
 @node File interface
@@ -606,22 +607,22 @@ chapter.  Such calls may block indefinitely or fail silently.
 This chapter documents the interface for operating on files.
 
 @menu
-* File Overview::               Basic concepts for the file interface
-* Changing Status::             Changing the owner (etc.) of a file
-* Program Execution::           Executing files
-* File locking::                Implementing the flock call
-* File frobbing::               Other active calls on files
-* Opening files::               Looking up files in directories
-* Modifying directories::       Creating and deleting nodes
-* Notifications::               File and directory change callbacks
-* Translators::                 How to set and get translators
+* File overview::           Basic concepts for the file interface
+* Changing status::         Changing the owner (etc.) of a file
+* Program execution::       Executing files
+* File locking::            Implementing the flock call
+* File frobbing::           Other active calls on files
+* Opening files::           Looking up files in directories
+* Modifying directories::   Creating and deleting nodes
+* Notifications::           File and directory change callbacks
+* Translators::             How to set and get translators
 @end menu
 
-@node File Overview
-@section File Overview
+@node File overview
+@section File overview
 
 The file interface is a superset of the I/O interface (@pxref{I/O
-Interface}).  Servers which provide the file interface are required to
+interface}).  Servers which provide the file interface are required to
 support the I/O interface as well.  All objects reachable in the
 filesystem are expected to provide the file interface, even if they do
 not contain data.  (The trivfs library make it easy to do so for
@@ -653,8 +654,8 @@ ftp), then the call should return EOPNOTSUPP.  If it is merely difficult
 to implement a call, it is much better to figure out a way to implement
 it as a series of operations rather than returning errors to the user.
 
-@node Changing Status
-@section Changing Status
+@node Changing status
+@section Changing status
 
 There are several RPC's avalaible for users to change much of the status
 information associated with a file.  (The information is returned by the
@@ -709,7 +710,7 @@ proper for the file server to ever respond ENOEXEC in response to the
 file_exec RPC.
 
 If either the setuid or setgid bits are set, the server needs to
-construct a new authentication handle with the additional new ID's.
+construct a new authentication handle with the additional new id's.
 Then all the ports passed to file_exec need to be reauthenticated with
 the new handle.  If the fileserver is unable to make the new
 authentication handle (for example, because it is not running as root)
@@ -728,7 +729,80 @@ setuid/setgid) should be sent to the execserver with exec_exec.
 Whatever error code exec_exec returns should returned to the caller of
 file_exec.
 
+@node File locking
+@section File locking
 
+FIXME: Implementing the flock call
 
+@node File frobbing
+@section File frobbing
+
+FIXME: Other active calls on files
+
+@node Opening files
+@section Opening files
+
+FIXME: Looking up files in directories
+
+@node Modifying directories
+@section Modifying directories
+
+FIXME: Creating and deleting nodes
+
+@node Notifications
+@section Notifications
+
+FIXME: File and directory change callbacks
+
+@node Translators
+@section Translators
+
+FIXME: How to set and get translators
+
+@node Filesystem interface
+@chapter Filesystem interface
+
+FIXME: interfaces supported to control file-servers
+
+@node Socket interface
+@chapter Socket interface
+
+FIXME: Interfaces used for manipulating sockets
+
+@node Ports library
+@chapter Ports library
+
+FIXME: A library to manage port rights for servers
+
+@node Iohelp library
+@chapter Iohelp library
+
+FIXME: A library to implement some common parts of the I/O and shared
+I/O interfaces
+
+@node Fshelp library
+@chapter Fshelp library
+
+FIXME: A library to implement some common parts of the file interface
+
+@node Pager library
+@chapter Pager library
+
+FIXME: A library to implement complex multi-threaded pagers
+
+@node Diskfs library
+@chapter Diskfs library
+
+FIXME: A library to do almost all the work of implementing a disk-based
+filesystem
+
+@node Trivfs library
+@chapter Trivfs library
+
+FIXME: A library to do the work of handling the file protocol for
+directory-less filesystems
 
 @bye
+@c Local variables:
+@c texinfo-column-for-description: 28
+@c End:
