@@ -1,6 +1,6 @@
 /* Main entry point for the ext2 file system translator
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -169,9 +169,6 @@ main (int argc, char **argv)
 
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
     ext2_panic ("superblock won't fit on the device!");
-  if (store->log2_block_size == 0)
-    ext2_panic ("device block size (%u) not a power of two",
-		store->block_size);
   if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%u) greater than page size (%d)",
 		store->block_size, vm_page_size);
