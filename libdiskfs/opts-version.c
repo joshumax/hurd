@@ -34,10 +34,10 @@ _print_version (FILE *stream, struct argp_state *state)
        that take precedence over the default.  */
     fputs (argp_program_version, stream);
   else if (diskfs_extra_version && *diskfs_extra_version)
-    fprintf (stream, "%s (%s) %s",
+    fprintf (stream, "%s (%s) %s\n",
 	     diskfs_server_name, diskfs_extra_version, diskfs_server_version);
   else
-    fprintf (stream, "%s %s", diskfs_server_name, diskfs_server_version);
+    fprintf (stream, "%s %s\n", diskfs_server_name, diskfs_server_version);
 
   /* And because diskfs is big and huge, put our information out too. */
   fputs (STANDARD_HURD_VERSION (libdiskfs) "\n", stream);
