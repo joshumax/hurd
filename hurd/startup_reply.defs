@@ -1,6 +1,6 @@
 /* Server-reply definitions for startup server interface
    NOTE: All changes here must be reflected in startup.defs.
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -23,6 +23,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 subsystem startup 29100;	/* Must 100 more than startup subsystem.  */
 
 #include <hurd/hurd_types.defs>
+
+type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
+	ctype: mach_port_t;
 
 #ifdef STARTUP_IMPORTS
 STARTUP_IMPORTS
