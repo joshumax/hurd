@@ -85,3 +85,22 @@ store_enc_dealloc (struct store_enc *enc)
   /* For good measure...  */
   bzero (enc, sizeof (*enc));
 }
+
+/* Copy out the parameters from ENC into the given variables suitably for
+   returning from a file_get_storage_info rpc, and deallocate ENC.  */
+void
+store_enc_return (struct store_enc *enc,
+		  mach_port_t **ports, mach_msg_type_number_t *num_ports,
+		  int **ints, mach_msg_type_number_t *num_ints,
+		  off_t **offsets, mach_msg_type_number_t *num_offsets,
+		  char **data, mach_msg_type_number_t *data_len)
+{
+  *ports = enc->ports;
+  *num_ports = enc->num_ports;
+  *ints = enc->ints;
+  *num_ints = enc->num_ints;
+  *offsets = enc->offsets;
+  *num_offsets = enc->num_offsets;
+  *data = enc->data;
+  *data_len = enc->data_len;
+}
