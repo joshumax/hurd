@@ -72,6 +72,7 @@ register_fresh_stat (struct node *np, int *p)
   np->nn_stat.st_gen = 0;
   np->nn_stat.st_author = np->nn_stat.st_uid;
   np->nn_stat.st_flags = 0;
+  np->nn_translated = np->nn_stat.st_mode & S_IFMT;
 
   return ret;
 }
