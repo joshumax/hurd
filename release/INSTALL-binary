@@ -20,6 +20,7 @@ however: Making it prettier and easier is one of our more important
 priorities. 
 
 
+
 STEP I:
 
 Fetch the file `grub-boot.image' from the FTP site.  It should be
@@ -33,78 +34,23 @@ to be BSD FFS format.  The boot loader we use (GRUB) does not yet
 understand how to boot from a Linux ext2fs filesystem, though this is
 expected to change very soon.
 
-Make the disk partition with newfs or mkfs on your favorite BSD
-system.  Then unpack the binaries with tar onto that partition.  It is
-strongly suggested that you dedicate a new disk to the Hurd.  If you
-have BSD, but you don't understand how to set up disks, it will
-probably be easier to use NetBSD boot floppies.
+Ideally, you should make a new disk, labelling it with the BSD
+`disklabel' command.  Make sure you leave cylinder 0 unused; the A
+partition should start at cylinder 1.
 
-If you do not have a system running BSD, the NetBSD 2-floppy install
-set contains enough tools to make a new filesystem using newfs and
-copy to it from nfs.  You can fetch these floppies from ftp.netbsd.org
-in the directory /pub/NetBSD/arch/i386/floppies.  The NetBSD install
-script will start automatically when you boot from the floppies, and
-we suggest you use it in order to partition and set up your disk.
+Make the A partition large enough to hold the entire Hurd binary
+image, and then some, and make a B partition for swap.  Use newfs to
+make a filesystem on the A partition, mount it, and extract the entire
+Hurd image into it.
 
-We plan to have our own boot floppies soon.
+If you do not have a system running BSD, you can fetch the NetBSD
+install floppies and do this step using them.  (You do not need to
+install NetBSD itself.)  See the instruction subroutine labelled
+`Installing from NetBSD boot floppies' and follow them.
 
-Here are detailed instructions for this step, assuming you are using
-NetBSD boot floppies, and you have the Hurd binary snapshot unpacked
-somewhere accessible via nfs.  It is assumed here that your machine's
-network address is MY-ADDR and that the nfs server's address is
-SERVER-ADDR.  The nfs mountpoint on the server is presumed to be
-SERVER-DIR.  (MY-ADDR and SERVER-ADDR should be IP addresses in dot
-notation, not hostnames.)  Your server and your new machine need to be
-on the same network.
-      
-If you installing this way, you probably want to do STEP II first,
-because your nfs server probably has more convenient editors than the
-NetBSd boot floppies.  The boot floppies have only ed.
+We plan to have our own boot floppies soon, which will make this all a
+fair bit easier.
 
-I.A.  Fetch the netbsd boot floppies.
-I.B.  Boot the `kernel' floppy, and switch to the `filesystem' floppy
-      when instructed.
-I.C.  Proceed through the NetBSD automated installation script.
-      When you are asked if you want to view the boot messages again, 
-      say yes.  Then answer the disk geometry questions correctly,
-      copying from what was printed at boot time.
-I.D.  Tell the script that you want to use cylinders, not sectors,
-      in specifying sizes.
-I.E.  VERY IMPORTANT: Make the size of your `NetBSD' portion one
-      cylinder less than the total amount listed.  If the script 
-      tells you that you have 3045 cylinders, then say you want the
-      NetBSD portion to be 3044 cylinders long.
-I.F.  VERY IMPORTANT: Tell the script that your `NetBSD' portion
-      should start at cylinder 1.  Not 0.  1.
-I.G.  Then allocate however much disk you want to your root partition
-      and to your swap partition.  The root partition must be big
-      enough to hold the entire Hurd binary snapshot; it is strongly
-      recommended that you make it a fair bit bigger than that.  It is
-      quite satisfactory to use only one filesystem partition in the
-      Hurd. 
-I.H.  If you specify partitions beyond the root partition and swap,
-      the script will ask you for a `mount point'.  Type anything you
-      like, it won't matter.
-I.I.  Affirm to the over-eagerly questioning script that you really do
-      want to smash your disk.  NetBSD will proceed to create
-      filesystems on all the partitions you specified in I.G-H.
-I.J.  When the script says "populating ..." hit ^C.  You are now done
-      with the script.
-      
-I.K.  cd to /mnt.  For each mount point that was gratuitously created
-      in step I.H, say `umount NAME'.  Then say `rm -rf * .*'.  Make
-      sure you are really in /mnt.  This will delete whatever NetBSD
-      has put on your new partition.
-I.L.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
-      printed by the kernel when it booted; type `more /kern/msgbuf'
-      if you want to see those messages again.  (Sometimes ifconfig
-      says that something is "offline".  Ignore it.)
-I.M.  Mount the NFS server partition with the conveniente command
-      `mount SERVER-ADDR:SERVER-DIR /mnt2'.
-I.N.  Copy the Hurd onto your disk with the command 
-      (cd /mnt2; tar cf - .) | (cd mnt; tar xfpv -)
-I.O.  Don't shutdown NetBSD yet.  If you haven't done STEP II yet,
-      then do it now; otherwise go on to STEP III.
 
 
 STEP II:
@@ -139,6 +85,7 @@ Mach should load, and then the Hurd should start, saying something like:
    bash# 
 
 
+
 STEP IV:
 
 When GNU boots the first time, you might see some confusing messages,
@@ -169,6 +116,7 @@ NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
   extensions.)
 
 
+
 STEP V:
 
 If you want to be able to boot this disk without using the floppy each
@@ -183,6 +131,7 @@ The menu that grub provides is found in /boot/grub/menu.lst.  You can
 edit that file to change what options the menu provides.  (You can
 change the one on the floppy by mounting the filesystem it contains
 and editing the file there.)
+
 
 
 STEP VI:
@@ -384,3 +333,88 @@ You can always reenable it later, if you like, by typing the command
 
 Core dumps are not yet supported.
 
+
+
+
+Subroutine: Installing from NetBSD boot floppies
+
+If you do not have a system running BSD, the NetBSD 2-floppy install
+set contains enough tools to make a new filesystem using newfs and
+copy to it from nfs.  You can fetch these floppies from ftp.netbsd.org
+in the directory /pub/NetBSD/arch/i386/floppies.  The NetBSD install
+script will start automatically when you boot from the floppies, and
+we suggest you use it in order to partition and set up your disk.
+
+Here are detailed instructions for this step, assuming you are using
+NetBSD boot floppies, and you have the Hurd binary snapshot unpacked
+somewhere accessible via nfs.  It is assumed here that your machine's
+network address is MY-ADDR and that the nfs server's address is
+SERVER-ADDR.  The nfs mountpoint on the server is presumed to be
+SERVER-DIR.  (MY-ADDR and SERVER-ADDR should be IP addresses in dot
+notation, not hostnames.)  Your server and your new machine need to be
+on the same network.
+      
+If you installing this way, you probably want to do STEP II first,
+because your nfs server probably has more convenient editors than the
+NetBSD boot floppies.  The boot floppies have only ed.
+
+A.  Fetch the netbsd boot floppies from
+    ftp://ftp.netbsd.org/pub/NetBSD/arch/i386/floppies.  Put the
+    images onto floppy disks using the instructions found on the FTP
+    site. 
+
+B.  Boot the `kernel' floppy, and switch to the `filesystem' floppy
+    when instructed.
+
+C.  Proceed through the NetBSD automated installation script.
+    When you are asked if you want to view the boot messages again, 
+    say yes.  Then answer the disk geometry questions correctly,
+    copying from what was printed at boot time.
+
+D.  Tell the script that you want to use cylinders, not sectors,
+    in specifying sizes.
+
+E.  VERY IMPORTANT: Make the size of your `NetBSD' portion one
+    cylinder less than the total amount listed.  If the script 
+    tells you that you have 3045 cylinders, then say you want the
+    NetBSD portion to be 3044 cylinders long.
+
+F.  VERY IMPORTANT: Tell the script that your `NetBSD' portion
+    should start at cylinder 1.  Not 0.  1.
+
+G.  Then allocate however much disk you want to your root partition
+    and to your swap partition.  The root partition must be big
+    enough to hold the entire Hurd binary snapshot; it is strongly
+    recommended that you make it a fair bit bigger than that.  It is
+    quite satisfactory to use only one filesystem partition in the
+    Hurd. 
+
+H.  If you specify partitions beyond the root partition and swap,
+    the script will ask you for a `mount point'.  Type anything you
+    like, it won't matter.
+
+I.  Affirm to the over-eagerly questioning script that you really do
+    want to smash your disk.  NetBSD will proceed to create
+    filesystems on all the partitions you specified in I.G-H.
+
+J.  When the script says "populating ..." hit ^C.  You are now done
+    with the script.
+    
+K.  cd to /mnt.  For each mount point that was gratuitously created
+    in step I.H, say `umount NAME'.  Then say `rm -rf * .*'.  Make
+    sure you are really in /mnt.  This will delete whatever NetBSD
+    has put on your new partition.
+
+L.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
+    printed by the kernel when it booted; type `more /kern/msgbuf'
+    if you want to see those messages again.  (Sometimes ifconfig
+    says that something is "offline".  Ignore it.)
+
+M.  Mount the NFS server partition with the conveniente command
+    `mount SERVER-ADDR:SERVER-DIR /mnt2'.
+
+N.  Copy the Hurd onto your disk with the command 
+    (cd /mnt2; tar cf - .) | (cd mnt; tar xfpv -)
+
+O.  If you haven't done STEP II yet, then do it now; otherwise go on
+    to STEP III.
