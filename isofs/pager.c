@@ -165,6 +165,13 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	upi->np = np;
 	diskfs_nref_light (np);
 	upi->p = pager_create (upi, pager_bucket, 1, MEMORY_OBJECT_COPY_DELAY);
+	if (upi->p == 0)
+	  {
+	    diskfs_nrele_light (np);
+	    free (upi);
+	    spin_unlock (&node2pagelock);
+	    return MACH_PORT_NULL;
+	  }
 	np->dn->fileinfo = upi;
 	right = pager_get_port (np->dn->fileinfo->p);
 	ports_port_deref (np->dn->fileinfo->p);

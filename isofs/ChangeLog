@@ -1,3 +1,8 @@
+Wed Aug 20 14:29:11 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* pager.c (diskfs_get_filemap): If pager_create fails, return
+	error to caller.
+
 Tue Aug 19 14:20:09 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* rr.c (rrip_work) [SL]: Component length field does not include
