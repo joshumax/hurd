@@ -76,13 +76,18 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       if (pi)
 	{
 	  ports_begin_rpc (pi, &link);
+	  mutex_lock (&_ports_lock);
 	  if (inp->msgh_seqno < pi->cancel_threshhold)
 	    {
 	      cancel_rpc (inp, outp);
 	      status = 1;
+	      mutex_unlock (&_ports_lock);
 	    }
 	  else
-	    status = demuxer (inp, outp);
+	    {
+	      mutex_unlock (&_ports_lock);
+	      status = demuxer (inp, outp);
+	    }
 	  ports_end_rpc (pi, &link);
 	  ports_port_deref (pi);
 	}
