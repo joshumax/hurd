@@ -1,11 +1,22 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* priv.h (EXECDATA_STREAM): Define this only #ifdef BFD.
+	The non-BFD exec server is now completely independent of stdio magic;
+	it uses only those interfaces documented in the C library manual,
+	which are provided both by old GNU stdio and by GNU libio.
+	Resurrecting the BFD exec server will require using magic again,
+	for which libio-specific magic needs to be written.
+
+	* exec.c [! EXECDATA_STREAM] (prepare_stream): Replace no-op with real
+	function to initialize map_* members to zero.
+
 	* priv.h (EXECDATA_STREAM): New macro, always defined for now.
 	(struct execdata) [! EXECDATA_STREAM]: Add members
 	map_buffer, map_bsize, map_fsize, map_filepos in place of stream.
 	(map_buffer, map_filepos, map_set_fsize): New macros for accessing
 	those or stream.
 	[! EXECDATA_STREAM] (map_fsize, map_vsize): Define using new members.
+
 	* exec.c (map): Rewritten purely using those accessor macros.
 	(input_room): Set the __target, __bufp, __error, and __eof members,
 	which are no longer set by map.
