@@ -66,7 +66,9 @@ ftp_conn_rmt_transfer (struct ftp_conn *src_conn,
 					  ftp_conn_poss_file_errs);
 
 	      if (err)
-		ftp_conn_abort (src_conn);
+		/* Ftp servers seem to hang trying to abort at this point, so
+		   just close the connection entirely.  */
+		ftp_conn_close (src_conn);
 	      else
 		err = ftp_conn_finish_transfer (src_conn);
 	    }
