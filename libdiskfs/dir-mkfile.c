@@ -37,7 +37,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   
   if (!cred)
     return EOPNOTSUPP;
-  if (diskfs_readonly)
+  if (diskfs_check_readonly ())
     return EROFS;
   dnp = cred->po->np;
   mutex_lock (&dnp->lock);
