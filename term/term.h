@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <stdint.h>
 
 #undef MDMBUF
 #undef ECHO
@@ -66,7 +65,7 @@
 struct termios termstate;
 
 /* Other state with the following bits: */
-uint_fast32_t termflags;
+long termflags;
 
 #define USER_OUTPUT_SUSP  0x00000001 /* user has suspended output */
 #define TTY_OPEN	  0x00000002 /* someone has us open */
@@ -79,7 +78,6 @@ uint_fast32_t termflags;
 #define EXCL_USE          0x00000100 /* user accessible exclusive use */
 #define NO_OWNER          0x00000200 /* there is no foreground_id */
 #define ICKY_ASYNC	  0x00000400 /* some user has set O_ASYNC */
-#define	NO_DEVICE	  0x00000800 /* the device does not exist */
 
 #define QUEUE_LOWAT 100
 #define QUEUE_HIWAT 300
@@ -311,6 +309,7 @@ queue_erase (struct queue *q)
 int input_character (int);
 void report_carrier_on (void);
 void report_carrier_off (void);
+void report_carrier_error (error_t);
 
 
 /* Other decls */

@@ -500,32 +500,23 @@ device_open_reply (mach_port_t replyport,
 
   assert (open_pending != NOTPENDING);
 
+  if (returncode != 0)
+    {
+      report_carrier_error (returncode);
+
+      mach_port_deallocate (mach_task_self (), phys_reply);
+      phys_reply = MACH_PORT_NULL;
+      ports_port_deref (phys_reply_pi);
+      phys_reply_pi = 0;
+
+      open_pending = NOTPENDING;
+      mutex_unlock (&global_lock);
+      return 0;
+    }
+
   if (open_pending == INITIAL)
     {
       /* Special handling for the first open */
-
-      if (returncode != 0)
-	{
-	  /* Note that DEVICE is total garbage (not a real port name at all!)
-	     in this case.  */
-
-	  if (returncode == D_NO_SUCH_DEVICE)
-	    /* Record that the device does not exist.  */
-	    termflags |= NO_DEVICE;
-
-	  /* Bogus. */
-	  report_carrier_on ();
-	  report_carrier_off ();
-
-	  mach_port_deallocate (mach_task_self (), phys_reply);
-	  phys_reply = MACH_PORT_NULL;
-	  ports_port_deref (phys_reply_pi);
-	  phys_reply_pi = 0;
-
-	  open_pending = NOTPENDING;
-	  mutex_unlock (&global_lock);
-	  return 0;
-	}
 
       assert (phys_device == MACH_PORT_NULL);
       assert (phys_reply_writes == MACH_PORT_NULL);

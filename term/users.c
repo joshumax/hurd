@@ -72,6 +72,8 @@ static int sigs_in_progress;
 static struct condition input_sig_wait = CONDITION_INITIALIZER;
 static int input_sig_wakeup;
 
+static error_t carrier_error;
+
 /* Attach this on the hook of any protid that is a ctty. */
 struct protid_hook
 {
@@ -144,18 +146,9 @@ open_hook (struct trivfs_control *cntl,
     return pty_open_hook (cntl, user, flags);
 
   if ((flags & (O_READ|O_WRITE)) == 0)
-    /* Not asking for a port that can do i/o (just stat or chmod or whatnot),
-       so there is nothing else we need to think about.  */
     return 0;
 
   mutex_lock (&global_lock);
-
-  if (termflags & NO_DEVICE)
-    {
-      /* We previously discovered that the underlying device doesn't exist.  */
-      mutex_unlock (&global_lock);
-      return ENXIO;
-    }
 
   if (!(termflags & TTY_OPEN))
     {
@@ -203,19 +196,10 @@ open_hook (struct trivfs_control *cntl,
     }
 
   /* Wait for carrier to turn on. */
-  while ((termflags & (NO_CARRIER|NO_DEVICE)) == NO_CARRIER
-	 && !(termstate.c_cflag & CLOCAL)
+  while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
 	 && !(flags & O_NONBLOCK)
 	 && !cancel)
     cancel = hurd_condition_wait (&carrier_alert, &global_lock);
-
-  if (termflags & NO_DEVICE)
-    {
-      /* The open of the underlying device returned an error indicating
-	 that no such device exists.  */
-      mutex_unlock (&global_lock);
-      return ENXIO;
-    }
 
   if (cancel)
     {
@@ -223,11 +207,17 @@ open_hook (struct trivfs_control *cntl,
       return EINTR;
     }
 
-  termflags |= TTY_OPEN;
-  (*bottom->set_bits) ();
+  err = carrier_error;
+  carrier_error = 0;
+
+  if (!err)
+    {
+      termflags |= TTY_OPEN;
+      (*bottom->set_bits) ();
+    }
 
   mutex_unlock (&global_lock);
-  return 0;
+  return err;
 }
 error_t (*trivfs_check_open_hook) (struct trivfs_control *,
 				   struct iouser *, int)
@@ -2159,6 +2149,13 @@ void
 report_carrier_on ()
 {
   termflags &= ~NO_CARRIER;
+  condition_broadcast (&carrier_alert);
+}
+
+void
+report_carrier_error (error_t err)
+{
+  carrier_error = err;
   condition_broadcast (&carrier_alert);
 }
 
