@@ -18,3 +18,26 @@ along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
+
+subsystem process_reply 24100;   /* must match process.defs + 100 */
+
+#include <hurd/hurd_types.defs>
+
+type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
+	ctype: mach_port_t;
+
+skip; skip;  /* get/set hostid */
+skip; skip;  /* get/set hostname */
+skip; /* getpids */
+skip; /* reauth */
+skip; /* register */
+skip; /* setsigport */
+skip; skip; skip; /* kill, cttykill, setctty */
+
+simpleroutine proc_wait_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	in status: int;
+	in rusage: rusage_t;
+	in pid_status: pid_t);
+
