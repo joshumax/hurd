@@ -27,8 +27,6 @@
 #include <malloc.h>
 #include <ctype.h>
 
-extern char *__progname, *__progname_full;
-
 #include "argp.h"
 #include "argp-fmtstream.h"
 #include "argp-namefrob.h"
@@ -1255,7 +1253,7 @@ __argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 	flags |= ARGP_HELP_LONG_ONLY;
 
       __argp_help (state ? state->argp : 0, stream, flags,
-		   state ? state->name : __progname_full);
+		   state ? state->name : program_invocation_name);
 
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
@@ -1284,7 +1282,7 @@ __argp_error (struct argp_state *state, const char *fmt, ...)
 	{
 	  va_list ap;
 
-	  fputs (__progname_full, stream);
+	  fputs (state ? state->name : program_invocation_name, stream);
 	  putc (':', stream);
 	  putc (' ', stream);
 
@@ -1320,7 +1318,7 @@ __argp_failure (struct argp_state *state, int status, int errnum,
 
       if (stream)
 	{
-	  fputs (state ? state->name : __progname_full, stream);
+	  fputs (state ? state->name : program_invocation_name, stream);
 
 	  if (fmt)
 	    {
