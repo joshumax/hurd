@@ -1,3 +1,67 @@
+Fri Sep 13 14:33:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (store_parsed_append_args, store_parsed_open, struct
+	store_parsed): Use `device' instead of `machdev'.
+
+	* encode.c (store_return): Only call store_enc_dealloc upon failure.
+	(store_std_leaf_allocate_encoding): NUM_OFFSETS is NUM_RUNS * 2.
+
+	* enc.c (store_enc_return): Don't call store_enc_dealloc.
+
+Thu Sep 12 17:23:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storecat.c (main): Limit reads to 1M, and iterate until done.
+	Use store_parsed_name to get store name for errors.
+	Add program description.
+
+	* store.h (STORAGE_REMAP, STORAGE_ZERO): New macros (temporary, to
+	avoid touching hurd/hurd_types.h).
+
+1996-09-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* remap.c (store_remap): Call _store_derive after changing runs.
+
+	* argp.c (store_parsed_name): New function.
+
+Wed Sep 11 12:38:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* decode.c (store_with_decoded_runs): New function.
+	(store_std_leaf_decode): Call it.
+	* store.h (store_with_decoded_runs): New declaration.
+	
+	* stripe.c (ileave_class, concat_class): Initialize the REMAP field.
+	(stripe_remap): New function.
+	* store.h (store_remap_create): New declaration.
+	* zero.c (zero_remap): New function.
+	(zero_class): Initialize remap field with zero_remap.
+	* Makefile (SRCS): Add remap.c.
+
+	* zero.c: New file, from null.c.
+	* null.c: File removed.
+	* store.h (store_zero_create): Renamed from store_null_create.
+	* Makefile (SRCS): Replace null.c by zero.c.
+
+Tue Sep 10 17:05:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* remap.c: New file.
+	* store.h (struct store_class): Add remap field.
+	(store_remap): New declaration.
+
+	* encode.c (store_return): New function.
+	* enc.c (store_enc_return, store_return): New functions.
+	* store.h (store_enc_return, store_return): New declarations.
+
+Mon Sep  9 12:32:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rdwr.c (store_write, store_read): Use void * for buffers, not char *.
+	* device.c (dev_write, dev_read): Likewise.
+	* file.c (file_read, file_write, file_byte_read, file_byte_write):
+	Likewise.
+	* stripe.c (stripe_read, stripe_write): Likewise.
+	* null.c (null_read, null_write): Likewise.
+	* store.h (store_write_meth_t, store_read_meth_t, store_read,
+	store_write): Make type of buffer void *, not char *.
+
 Sun Sep  8 14:14:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* device.c (dev_read, dev_write): Don't print debugging messages.
