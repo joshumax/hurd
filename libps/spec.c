@@ -283,13 +283,13 @@ struct ps_getter ps_zero_fills_getter =
 #define G(g,type)((type (*)())ps_getter_function(g))
 
 error_t
-ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
 {
   return ps_write_int_field(G(getter, int)(ps), width, stream, count);
 }
 
 error_t
-ps_emit_priority(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+ps_emit_priority(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
 {
   return
     ps_write_int_field(MACH_PRIORITY_TO_NICE(G(getter, int)(ps)),
@@ -298,7 +298,7 @@ ps_emit_priority(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, in
 
 error_t
 ps_emit_num_blocks(proc_stat_t ps, ps_getter_t getter, int width, FILE
-		   *stream, int *count)
+		   *stream, unsigned *count)
 {
   char buf[20];
   sprintf(buf, "%d", G(getter, int)(ps) / 1024);
@@ -339,7 +339,7 @@ sprint_frac_value(char *buf,
 
 error_t
 ps_emit_percent(proc_stat_t ps, ps_getter_t getter,
-		int width, FILE *stream, int *count)
+		int width, FILE *stream, unsigned *count)
 {
   char buf[20];
   float perc = G(getter, float)(ps) * 100;
@@ -357,7 +357,7 @@ ps_emit_percent(proc_stat_t ps, ps_getter_t getter,
 /* prints its value nicely */
 error_t
 ps_emit_nice_int(proc_stat_t ps, ps_getter_t getter,
-		 int width, FILE *stream, int *count)
+		 int width, FILE *stream, unsigned *count)
 {
   char buf[20];
   int value = G(getter, int)(ps);
@@ -426,7 +426,7 @@ sprint_long_time(char *buf, int seconds, int width)
 
 error_t
 ps_emit_nice_seconds(proc_stat_t ps, ps_getter_t getter,
-		     int width, FILE *stream, int *count)
+		     int width, FILE *stream, unsigned *count)
 {
   char buf[20];
   time_value_t tv;
@@ -484,7 +484,7 @@ append_fraction(char *buf, int frac, int digits, int width)
 
 error_t
 ps_emit_seconds(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream,
-		int *count)
+		unsigned *count)
 {
   int max = (width == 0 ? 999 : ABS(width));
   char buf[20];
@@ -518,14 +518,14 @@ ps_emit_seconds(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream,
 }
 
 error_t
-ps_emit_uid(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+ps_emit_uid(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
 {
   ps_user_t u = G(getter, ps_user_t)(ps);
   return ps_write_int_field(ps_user_uid(u), width, stream, count);
 }
 
 error_t
-ps_emit_uname(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+ps_emit_uname(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
 {
   ps_user_t u = G(getter, ps_user_t)(ps);
   struct passwd *pw = ps_user_passwd(u);
@@ -538,7 +538,7 @@ ps_emit_uname(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *
 /* prints a string with embedded nuls as spaces */
 error_t
 ps_emit_string0(proc_stat_t ps, ps_getter_t getter,
-		int width, FILE *stream, int *count)
+		int width, FILE *stream, unsigned *count)
 {
   char *s0, *p, *q;
   int s0len;
@@ -583,7 +583,7 @@ ps_emit_string0(proc_stat_t ps, ps_getter_t getter,
 
 error_t
 ps_emit_string(proc_stat_t ps, ps_getter_t getter,
-	       int width, FILE *stream, int *count)
+	       int width, FILE *stream, unsigned *count)
 {
   char *str;
   int len;
@@ -600,45 +600,16 @@ ps_emit_string(proc_stat_t ps, ps_getter_t getter,
 
 error_t
 ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
-		 int width, FILE *stream, int *count)
+		 int width, FILE *stream, unsigned *count)
 {
-  struct tty_abbrev { char *pfx, *subst; };
-  struct tty_abbrev abbrevs[] =
-  {
-    { "/tmp/console", "oc" },	/* temp hack */
-    { "/dev/console", "co"},
-    { "/dev/tty",     ""},
-    { "/dev/pty",     ""},
-    { "/dev/",	      ""},
-    { 0 }
-  };
-  char buf[20], *name;
+  char *name = "-";
   ps_tty_t tty = G(getter, ps_tty_t)(ps);
 
-  if (tty == NULL)
-    name = "-";
-  else
+  if (tty)
     {
-      name = ps_tty_name(tty);
+      name = ps_tty_short_name(tty);
       if (name == NULL || *name == '\0')
 	name = "?";
-      else
-	{
-	  struct tty_abbrev *abbrev = abbrevs;
-	  while (abbrev->pfx != NULL)
-	    {
-	      int pfx_len = strlen(abbrev->pfx);
-	      if (strncmp(name, abbrev->pfx, pfx_len) == 0)
-		{
-		  strcpy(buf, abbrev->subst);
-		  strcat(buf, name + pfx_len);
-		  name = buf;
-		  break;
-		}
-	      else
-		abbrev++;
-	    }
-	}
     }
 
   return ps_write_field(name, width, stream, count);
@@ -646,7 +617,7 @@ ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
 
 error_t
 ps_emit_state(proc_stat_t ps, ps_getter_t getter,
-	      int width, FILE *stream, int *count)
+	      int width, FILE *stream, unsigned *count)
 {
   char *tags;
   int state = G(getter, int)(ps);
@@ -657,7 +628,7 @@ ps_emit_state(proc_stat_t ps, ps_getter_t getter,
 
   /* If any thread is running, don't mention sleeping or idle threads --
      presumably *some* work is getting done... */
-  if (state & PSTAT_STATE_RUNNING)
+  if (state & (PSTAT_STATE_RUNNING | PSTAT_STATE_STOPPED))
     state &= ~(PSTAT_STATE_SLEEPING | PSTAT_STATE_IDLE);
   if (state & PSTAT_STATE_IDLE)
     state &= ~PSTAT_STATE_SLEEPING;
