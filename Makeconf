@@ -39,29 +39,17 @@
 all:
 
 
-# This is the directory into which Hurd cross-building tools are placed
-hurdinst := /home/gd3/hurdinst
+# Root of installation and source directories
+prefix := /home/gd4/hurdinst
+exec_prefix := /home/gd4/hurdinst
+srcdir := /home/gd4/gnu/hurd
 
-# This is the directory which serves as root for the Hurd.
-hurdroot-douglas.gnu.ai.mit.edu = /home/hm2/hurdroot
-hurdroot-ernst.gnu.ai.mit.edu = /home/hm1/hurdroot
-ifndef hurdroot
-hostname := $(shell hostname)
-hurdroot := $(hurdroot-$(hostname))
-endif
-
-# This is the device with the filesystem mounted as $(hurdroot)
-hurdrootdev := /dev/hd0f
-
-# This is the directory containing the top-level Hurd source (and this file).
-hurdsource := /home/gd3/gnu/hurd
-
-# Where to find various things for compilation:
-
-includedir := $(hurdinst)/include
-
-startup := $(hurdinst)/lib/crt0.o
-libc := $(hurdinst)/lib/libc.a
+# Where to install things
+hurddir := $(exec_prefix)/hurd
+bindir := $(exec_prefix)/bin
+libdir := $(exec_prefix)/lib
+infodir := $(prefix)/info
+includedir := $(prefix)/include
 
 # END CONFIGURATION AREA
 
@@ -71,28 +59,28 @@ libc := $(hurdinst)/lib/libc.a
 
 ifeq ($(makemode),server)
  doinst := one
- installationdir := $(hurdroot)/hurd
+ installationdir := $(hurddir)
  clean := yes
  cleantarg := $(target)
 endif
 
 ifeq ($(makemode),utility)
  doinst := one
- installationdir := $(hurdroot)/bin
+ installationdir := $(bindir)
  clean := yes
  cleantarg := $(target)
 endif
 
 ifeq ($(makemode),servers)
  doinst := many
- installationdir := $(hurdroot)/hurd
+ installationdir := $(hurddir)
  clean := yes
  cleantarg := $(targets)
 endif
 
 ifeq ($(makemode),utilities)
  doinst := many
- installationdir := $(hurdroot)/bin
+ installationdir := $(bindir)
  clean := yes
  cleantarg := $(targets)
 endif
@@ -105,26 +93,26 @@ endif
 
 
 # Hurd libraries
-libthreads := $(hurdsource)/libthreads/libthreads.a
-libports := $(hurdsource)/libports/libports.a
-libioserver := $(hurdsource)/libioserver/libioserver.a
-libpager := $(hurdsource)/libpager/libpager.a
-libfshelp := $(hurdsource)/libfshelp/libfshelp.a
-libdiskfs := $(hurdsource)/libdiskfs/libdiskfs.a
-libtrivfs := $(hurdsource)/libtrivfs/libtrivfs.a
-libnetserv := $(hurdsource)/libnetserv/libnetserv.a
-libps := $(hurdsource)/libps/libps.a
+libthreads := $(srcdir)/libthreads/libthreads.a
+libports := $(srcdir)/libports/libports.a
+libioserver := $(srcdir)/libioserver/libioserver.a
+libpager := $(srcdir)/libpager/libpager.a
+libfshelp := $(srcdir)/libfshelp/libfshelp.a
+libdiskfs := $(srcdir)/libdiskfs/libdiskfs.a
+libtrivfs := $(srcdir)/libtrivfs/libtrivfs.a
+libnetserv := $(srcdir)/libnetserv/libnetserv.a
+libps := $(srcdir)/libps/libps.a
 alllibs := libthreads libports libioserver libpager libfshelp libdiskfs\
 	libtrivfs libnetserv libps
 
 # Finding binaries
-include $(hurdsource)/Maketools
+include $(srcdir)/Maketools
 
 # Flags for compilation.  
 # It is important to have this inclusion first; that picks up our 
 # library header files locally rather than from installed copies.
 # Append to any value set by the specific Makefile.
-CPPFLAGS += -I$(hurdsource)
+CPPFLAGS += -I$(srcdir)
 CFLAGS += -Wall -Wno-parentheses -g
 
 
@@ -149,8 +137,8 @@ install: $(libname).a $(installhdrs)
   ifdef installhdrs
 	$(INSTALL_DATA) $(installhdrs) $(includedir)/hurd/
   endif
-	$(INSTALL_DATA) $(libname).a $(hurdinst)/lib/$(libname).a
-	ranlib $(hurdinst)/lib/$(libname).a
+	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
+	ranlib $(libdir)/$(libname).a
 endif
 
 # Provide default.
@@ -181,14 +169,14 @@ endif
 
 # Making a snapshot
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
-lndist: $(distfiles) $(hurdsource)/hurd-snap/$(dir) FORCE
-	ln $(distfiles) $(hurdsource)/hurd-snap/$(dir)
+lndist: $(distfiles) $(srcdir)/hurd-snap/$(dir) FORCE
+	ln $(distfiles) $(srcdir)/hurd-snap/$(dir)
  
 ifeq ($(dir),.)
 $(hurdsource)/hurd-snap/$(dir):
 else
 $(hurdsource)/hurd-snap/$(dir):
-	mkdir $(hurdsource)/hurd-snap/$(dir)
+	mkdir $(srcdir)/hurd-snap/$(dir)
 endif
 
 # TAGS files
@@ -215,20 +203,8 @@ relink:
 
 # Subdependencies
 
-# Mounting $(hurdroot)
-ifeq ($(hurdroot),)
-$(hurdroot): FORCE
-	@echo Cannot do install on this machine.
-	false
-else
-$(hurdroot): $(hurdroot)/mounted
-$(hurdroot)/mounted:
-	fsck -p $(hurdrootdev)
-	mount $(hurdrootdev)
-endif
-
 # Building Hurd libraries
-$(foreach lib,$(alllibs),$(hurdsource)/$(lib)/%.a): FORCE
+$(foreach lib,$(alllibs),$(srcdir)/$(lib)/%.a): FORCE
 	$(MAKE) -C $(dir $@) $(notdir $@)
 
 
@@ -245,8 +221,8 @@ $(foreach lib,$(alllibs),$(hurdsource)/$(lib)/%.a): FORCE
 #	foo-MIGCOMUFLAGS   same, but only for interface `foo'
 #	CPPFLAGS	   flags to CPP
 
-hurddefs := $(notdir $(basename $(wildcard $(hurdsource)/hurd/*.defs)))
-ht := $(hurdsource)/hurd/hurd_types.defs
+hurddefs := $(notdir $(basename $(wildcard $(srcdir)/hurd/*.defs)))
+ht := $(srcdir)/hurd/hurd_types.defs
 
 # Implicit rules for building server and user stubs from mig .defs files.
 %_S.h %Server.c: %.defs
@@ -260,7 +236,7 @@ ht := $(hurdsource)/hurd/hurd_types.defs
 
 
 # Where to find .defs files.
-vpath %.defs $(hurdsource)/hurd:$(includedir)/mach:$(includedir)/device
+vpath %.defs $(srcdir)/hurd:$(crossheaders)/mach:$(crossheaders)/device
 
 # Files generated from the Hurd .defs files depend on hurd_types.defs.
 $(foreach if,$(hurddefs),$(if)_S.h $(if)Server.c $(if)_U.h $(if)User.c): $(ht)
