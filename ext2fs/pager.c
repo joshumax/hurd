@@ -136,8 +136,6 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       if (err)
 	break;
 
-      RECORD_LAST (node->dn, LAST_READ, page);
-
       if (block != pending_blocks + num_pending_blocks)
 	{
 	  err = do_pending_reads ();
@@ -291,9 +289,6 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
       err = find_block (node, offset, &block, &lock);
       if (err)
 	break;
-
-      RECORD_LAST (node->dn, LAST_WRITE, offset);
-
       assert (block);
       pending_blocks_add (&pb, block);
       offset += block_size;
@@ -432,8 +427,6 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
       rwlock_writer_lock (&dn->alloc_lock);
 
-      RECORD_LAST (dn, LAST_UNLOCK, page);
-
       partial_page = (page + vm_page_size > node->allocsize);
 
       err = diskfs_catch_exception ();
@@ -506,8 +499,6 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
       struct disknode *dn = node->dn;
 
       rwlock_writer_lock (&dn->alloc_lock);
-
-      RECORD_LAST (dn, LAST_GROW, size);
 
       old_size = node->allocsize;
       new_size = round_block (size);
