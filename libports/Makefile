@@ -21,6 +21,7 @@
 dir := libports
 makemode := library
 
+libname = libports
 SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  reallocate-port.c reallocate-from-external.c destroy-right.c \
  lookup-port.c port-ref.c port-ref-weak.c port-deref.c port-deref-weak.c \
@@ -30,12 +31,9 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpc.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
  enable-class.c enable-bucket.c bucket-iterate.c stubs.c
-
-OBJS = $(subst .c,.o,$(SRCS))
 LCLHDRS = ports.h
-REMHDRS = ../libihash/ihash.h
-libname = libports
 installhdrs = ports.h
 
-include ../Makeconf
+OBJS = $(SRCS:.c=.o)
 
+include ../Makeconf
