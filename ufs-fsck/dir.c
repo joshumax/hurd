@@ -37,7 +37,7 @@ record_directory (struct dinode *dp, ino_t number)
   
   dnp->i_number = number;
   dnp->i_parent = dnp->i_dotdot = 0;
-  dnp->i_isize = dnp->i_isize;
+  dnp->i_isize = dp->di_size;
   dnp->i_numblks = blks * sizeof (daddr_t);
   bcopy (dp->di_db, dnp->i_blks, blks);
   
@@ -129,14 +129,15 @@ searchdir (ino_t dir, char *name, ino_t *ino)
      NAME.  Return 1 if we should keep looking at more
      blocks.  */
   int
-  checkdirblock (daddr_t bno, int nfrags)
+  checkdirblock (daddr_t bno, int nfrags, off_t offset)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
       
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
-	   bufp - buf < nfrags * sblock->fs_fsize;
+	   bufp - buf < nfrags * sblock->fs_fsize
+	   && offset + (bufp - buf) + DIRBLKSIZ <= dino.di_size;
 	   bufp += DIRBLKSIZ)
 	{
 	  check1block (bufp);
@@ -199,14 +200,15 @@ changeino (ino_t dir, char *name, ino_t ino)
      contains NAME.  Return 1 if we should keep looking
      at more blocks. */
   int
-  checkdirblock (daddr_t bno, int nfrags)
+  checkdirblock (daddr_t bno, int nfrags, off_t offset)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
       
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
-	   bufp - buf < nfrags * sblock->fs_fsize;
+	   bufp - buf < nfrags * sblock->fs_fsize
+	   && offset + (bufp - buf) + DIRBLKSIZ <= dino.di_size;
 	   bufp += DIRBLKSIZ)
 	{
 	  if (check1block (bufp))
@@ -328,14 +330,15 @@ makeentry (ino_t dir, ino_t ino, char *name)
      contains NAME.  Return 1 if we should keep looking
      at more blocks. */
   int
-  checkdirblock (daddr_t bno, int nfrags)
+  checkdirblock (daddr_t bno, int nfrags, off_t offset)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
       
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
-	   bufp - buf < nfrags * sblock->fs_fsize;
+	   bufp - buf < nfrags * sblock->fs_fsize
+	   && offset + (bufp - buf) + DIRBLKSIZ <= dino.di_size;
 	   bufp += DIRBLKSIZ)
 	{
 	  if (check1block (bufp))
