@@ -83,6 +83,7 @@ routine socket_create_address (
 /* Create an address without any sockaddr.  */
 routine socket_fabricate_address (
 	sock: socket_t;
+	sockaddr_type: int;
 	out addr: mach_port_send_t);
 
 /* Find the sockaddr name of an address. */
