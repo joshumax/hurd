@@ -1,10 +1,13 @@
 Wed Feb 19 18:48:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-parse.c (argp_default_parser): Set STATE->name for OPT_PROGNAME.
+	(parser_init): Use the basename for PARSER->state.name.
+	* argp-help.c (__argp_error, __argp_failure, __argp_state_help): 
+	Use PROGRAM_INVOCATION_SHORT_NAME instead of PROGRAM_INVOCATION_NAME.
+	
 	* argp-parse.c (parser_init): Set PARSER->state.flags.
-	Don't pass FLAGS argument to parser_convert.
 	Make check whether PARSER has the prog name in argv[0] at the
 	proper place.
-	(parser_convert): Remove FLAGS argument & use PARSER->state.flags.
 
 Mon Feb 17 13:33:11 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
