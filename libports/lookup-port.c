@@ -35,8 +35,11 @@ ports_lookup_port (struct port_bucket *bucket,
     pi = ihash_find (bucket->htable, port);
   else
     for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
-      if (pi = ihash_find (bucket->htable, port))
-	break;
+      {
+	pi = ihash_find (bucket->htable, port);
+	if (pi)
+	  break;
+      }
   
   if (pi && class && pi->class != class)
     pi = 0;
