@@ -210,8 +210,8 @@ should return ESPIPE to the io_seek call.
 
 On seekable objects, io_seek changes the default file pointer for reads
 and writes.  (See the C library manual for the interpretation of the
-WHENCE and OFFSET arguments, and why the grammatically incorrect term
-`whence' is used.)  It returns the new offset as modified by io_seek.
+WHENCE and OFFSET arguments.)  It returns the new offset as modified by
+io_seek.
 
 The io_readable interface returns the amount of data which can be
 immediately read.  For the special technical meaning of "immediately",
