@@ -1,5 +1,15 @@
 2001-08-17  Roland McGrath  <roland@frob.com>
 
+	* userland-boot.c (boot_script_insert_right): Take new result
+	parameter for send right name in target task.
+	(boot_script_insert_task_port): New function.
+	* boot_script.h: Update those two decls.
+	(VAL_TASK): New macro.
+	* boot_script.c (VAL_SYM, VAL_FUNC): Increase these constants.
+	(builtin_symbols): Use VAL_TASK for "task-create".
+	(boot_script_exec): Update caller of boot_script_insert_right.
+	Treat VAL_TASK like VAL_PORT, but call boot_script_insert_task_port.
+
 	* boot_script.h: size_t -> unsigned int
 	* boot_script.c: Don't #include <string.h>.
 
