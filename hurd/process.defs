@@ -49,12 +49,12 @@ routine proc_gethostid (
    FQDN for the machine.  */
 routine proc_sethostname (
 	process: process_t;
-	hostname: string_t);
+	hostname: data_t);
 
 /* Get the hostname.  */
 routine proc_gethostname (
 	process: process_t;
-	out hostname: string_t);
+	out hostname: data_t);
 
 /* Get the privileged host port and the device master port.  */
 routine proc_getprivports (
