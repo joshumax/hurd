@@ -28,6 +28,9 @@ makemode := misc
 SYSCONFFILES = protocols services shells motd ttys hostname fstab passwd
 installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
+LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
+installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
+
 # Mere symlinks are installed for these
 LINKEDCONFFILES = rc
 installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
@@ -39,7 +42,11 @@ else
 override_spec = 
 endif
 
-install: $(installed_conf) $(installed_links)
+install: $(installed_conf) $(installed_links) $(installed_logins)
+$(installed_logins): $(sysconfdir)/login/%: login-%
+	mkdir -p $(sysconfdir)/login
+	$(INSTALL_DATA) $< $(sysconfdir)/$*
+
 $(installed_conf): $(sysconfdir)/%: %
 	$(INSTALL_DATA) $< $(sysconfdir)/$*
 
