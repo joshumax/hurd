@@ -129,6 +129,7 @@ diskfs_truncate (struct node *np,
       
       for (idx = first2free; idx <= olastblock; idx ++)
 	{
+	  assert (idx - NDADDR < np->dn->sinloclen);
 	  if (np->dn->sinloc[idx - NDADDR])
 	    {
 	      ffs_blkfree (np, np->dn->sinloc[idx - NDADDR], sblock->fs_bsize);
@@ -247,6 +248,7 @@ sindir_drop (struct node *np,
 	din_map (np);
       for (idx = first; idx = last; idx++)
 	{
+	  assert (idx - 1 < np->dn->dinloclen);
 	  if (np->dn->dinloc[idx - 1])
 	    {
 	      ffs_blkfree (np, np->dn->dinloc[idx - 1], sblock->fs_bsize);
@@ -449,6 +451,7 @@ diskfs_grow (struct node *np,
 	}
       
       lbn -= NDADDR;
+      assert (lbn < np->dn->sinloclen);
       if (!np->dn->sinloc[lbn])
 	{
 	  err = ffs_alloc (np, lbn, ffs_blkpref (np, lbn + NDADDR, lbn, 
@@ -501,8 +504,10 @@ diskfs_grow (struct node *np,
 		    round_page (poke_off2 + poke_len2));
       mach_port_deallocate (mach_task_self (), obj);
     }
-  
+
+#if 0  
   diskfs_file_update (np, 0);
+#endif
 
   return err;
 }  
