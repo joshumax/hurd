@@ -5,6 +5,12 @@ timeout= 30
 # from the beginning of the file.  
 default= 0
 
+# Note that to GRUB, all hard disks are `hd' and all floppy disks are `fd'.
+# To Mach, SCSI disks are `sd' and IDE type disks are `hd'.  Use
+# GRUB names in the `root' command and prefixing filenames.  Use a 
+# Mach name as the `root' arg for the kernel, and whenever running the Hurd.
+
+
 # These two entries are for SCSI disks
 # Entry 0:
 title= hurd (sd0a multi-user)
