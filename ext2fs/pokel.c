@@ -82,9 +82,10 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
   spin_unlock (&pokel->lock);
 }
 
-/* Sync all the modified pieces of disk */
+/* Move all pending pokes from POKEL into its free list.  If SYNC is true,
+   otherwise do nothing.  */
 void
-pokel_sync (struct pokel *pokel, int wait)
+_pokel_exec (struct pokel *pokel, int sync, int wait)
 {
   struct poke *pl, *pokes, *last = NULL;
   
@@ -94,10 +95,11 @@ pokel_sync (struct pokel *pokel, int wait)
   spin_unlock (&pokel->lock);
 
   for (pl = pokes; pl; last = pl, pl = pl->next)
-    {
-      ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
-      pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
-    }
+    if (sync)
+      {
+	ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
+	pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
+      }
 
   if (last)
     {
@@ -106,4 +108,18 @@ pokel_sync (struct pokel *pokel, int wait)
       pokel->free_pokes = pokes;
       spin_unlock (&pokel->lock);
     }
+}
+
+/* Sync all the modified pieces of disk */
+void
+pokel_sync (struct pokel *pokel, int wait)
+{
+  _pokel_exec (pokel, 1, wait);
+}
+
+/* Flush (that is, drop on the ground) all pending pokes in POKEL.  */
+void
+pokel_flush (struct pokel *pokel)
+{
+  _pokel_exec (pokel, 0, 0);
 }
