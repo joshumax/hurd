@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993, 94, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -483,7 +483,7 @@ main (int argc, char **argv, char **envp)
 
   if (root_store->class == &store_device_class && root_store->name
       && (root_store->flags & STORE_ENFORCED)
-      && root_store->num_runs == 1 && store->runs[0].start == 0)
+      && root_store->num_runs == 1 && root_store->runs[0].start == 0)
     /* Let known device nodes pass through directly.  */
     bootdevice = root_store->name;
   else
