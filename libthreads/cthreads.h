@@ -220,7 +220,12 @@ int	NEVER;
  */
 
 extern int cthread_init();
+#if 0
+/* This prototype is broken for GNU.  */
 extern any_t calloc C_ARG_DECLS((unsigned n, unsigned size));
+#else
+#include <stdlib.h>
+#endif
 
 /*
  * Queues.
@@ -320,7 +325,8 @@ typedef struct mutex {
 	struct cthread_queue queue;
 } *mutex_t;
 
-#define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER, SPIN_LOCK_INITIALIZER}
+/* Rearranged accordingly for GNU: */
+#define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER }
 
 #define	mutex_alloc()		((mutex_t) calloc(1, sizeof(struct mutex)))
 #define	mutex_init(m) \
