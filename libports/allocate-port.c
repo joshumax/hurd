@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -21,8 +21,8 @@
 #include "ports.h"
 
 /* Backward compatibility.  */
-void *ports_allocate_port (struct port_bucket *bucket, 
-			   size_t size, 
+void *ports_allocate_port (struct port_bucket *bucket,
+			   size_t size,
 			   struct port_class *class)
 {
   void *result;
@@ -30,3 +30,9 @@ void *ports_allocate_port (struct port_bucket *bucket,
     result = 0;
   return result;
 }
+
+
+#include "linkwarn.h"
+
+link_warning (ports_allocate_port,
+	      "ports_allocate_port is obsolete; use ports_create_port instead")

@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -46,17 +46,17 @@ diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
     nuids = 1;
   if (!gids)
     ngids = 1;
-  
+
   cred->uids = malloc (nuids * sizeof (uid_t));
   cred->gids = malloc (ngids * sizeof (uid_t));
   cred->nuids = nuids;
   cred->ngids = ngids;
-  
+
   if (uids)
     bcopy (uids, cred->uids, nuids * sizeof (uid_t));
   else
     *cred->uids = 0;
-  
+
   if (gids)
     bcopy (gids, cred->gids, ngids * sizeof (uid_t));
   else
@@ -86,3 +86,6 @@ diskfs_make_protid (struct peropen *po, uid_t *uids, int nuids,
     cred = 0;
   return cred;
 }
+
+#include "linkwarn.h"
+obsolete (diskfs_make_protid, diskfs_create_protid)

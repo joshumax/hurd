@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
 
 /* Backwards compatibility.  Use trivfs_create_control.  */
 mach_port_t
-trivfs_handle_port (mach_port_t realnode, 
+trivfs_handle_port (mach_port_t realnode,
 		    struct port_class *control_class,
 		    struct port_bucket *control_bucket,
 		    struct port_class *protid_class,
@@ -41,3 +41,6 @@ trivfs_handle_port (mach_port_t realnode,
 
   return right;
 }
+
+#include "linkwarn.h"
+obslete (trivfs_handle_port, trivfs_create_control)

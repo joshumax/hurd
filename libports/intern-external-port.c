@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -31,3 +31,7 @@ void *ports_intern_external_port (struct port_bucket *bucket,
     result = 0;
   return result;
 }
+
+#include "linkwarn.h"
+link_warning (ports_intern_external_port,
+	      "ports_intern_external_port is obsolete; use ports_import_port")
