@@ -1,6 +1,6 @@
 /* Hierarchial argument parsing, layered over getopt
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -72,12 +72,26 @@ struct argp_option
 
 /* The argument associated with this option is optional.  */
 #define OPTION_ARG_OPTIONAL	0x1
+
 /* This option isn't displayed in any help messages.  */
 #define OPTION_HIDDEN	       	0x2
+
 /* This option is an alias for the closest previous non-alias option.  This
    means that it will be displayed in the same help entry, and will inherit
    fields other than NAME and KEY from the aliased option.  */
 #define OPTION_ALIAS		0x4
+
+/* This option isn't actually an option (and so should be ignored by the
+   actual option parser), but rather an arbitrary piece of documentation that
+   should be displayed in much the same manner as the options.  If this flag
+   is set, then the option NAME field is displayed unmodified (e.g., no `--'
+   prefix is added) at the left-margin (where a *short* option would normally
+   be displayed), and the documentation string in the normal place.  For
+   purposes of sorting, any leading whitespace and puncuation is ignored,
+   except that if the first non-whitespace character is not `-', this entry
+   is displayed after all options (and OPTION_DOC entries with a leading `-')
+   in the same group.  */
+#define OPTION_DOC		0x8
 
 struct argp;			/* fwd declare this type */
 struct argp_state;		/* " */
@@ -246,13 +260,13 @@ struct argp_state
    ARGP_NO_ERRS is set) the first element of the argument vector is
    skipped for option parsing purposes, as it corresponds to the program name
    in a command line.  */
-#define ARGP_PARSE_ARGV0    0x1
+#define ARGP_PARSE_ARGV0  0x01
 
 /* Don't print error messages for unknown options to stderr; unless this flag
    is set, ARGP_PARSE_ARGV0 is ignored, as ARGV[0] is used as the program
    name in the error messages.  This flag implies ARGP_NO_EXIT (on the
    assumption that silent exiting upon errors is bad behaviour).  */
-#define ARGP_NO_ERRS   0x2
+#define ARGP_NO_ERRS	0x02
 
 /* Don't parse any non-option args.  Normally non-option args are parsed by
    calling the parse functions with a key of ARGP_KEY_ARG, and the actual arg
@@ -264,18 +278,21 @@ struct argp_state
    last time with a key of ARGP_KEY_END.  This flag needn't normally be set,
    as the normal behavior is to stop parsing as soon as some argument can't
    be handled.  */
-#define ARGP_NO_ARGS   0x4
+#define ARGP_NO_ARGS	0x04
 
 /* Parse options and arguments in the same order they occur on the command
    line -- normally they're rearranged so that all options come first. */
-#define ARGP_IN_ORDER  0x8
+#define ARGP_IN_ORDER	0x08
 
 /* Don't provide the standard long option --help, which causes usage and
       option help information to be output to stdout, and exit (0) called. */
-#define ARGP_NO_HELP   0x10
+#define ARGP_NO_HELP	0x10
 
 /* Don't exit on errors (they may still result in error messages).  */
-#define ARGP_NO_EXIT   0x20
+#define ARGP_NO_EXIT	0x20
+
+/* Use the gnu getopt `long-only' rules for parsing arguments.  */
+#define ARGP_LONG_ONLY	0x40
 
 /* Turns off any message-printing/exiting options.  */
 #define ARGP_SILENT    (ARGP_NO_EXIT | ARGP_NO_ERRS | ARGP_NO_HELP)
@@ -323,6 +340,8 @@ extern char *argp_program_bug_address;
 #define ARGP_HELP_POST_DOC	0x20 /* doc string following long help.  */
 #define ARGP_HELP_DOC		(ARGP_HELP_PRE_DOC | ARGP_HELP_POST_DOC)
 #define ARGP_HELP_BUG_ADDR	0x40 /* bug report address */
+#define ARGP_HELP_LONG_ONLY	0x80 /* modify output appropriately to
+					reflect ARGP_LONG_ONLY mode.  */
 
 /* These ARGP_HELP flags are only understood by argp_state_help.  */
 #define ARGP_HELP_EXIT_ERR	0x100 /* Call exit(1) instead of returning.  */
