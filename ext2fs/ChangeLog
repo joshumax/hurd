@@ -1,3 +1,8 @@
+Tue Jun  3 17:18:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (read_node): Don't assert that st_blocks is zero for
+	non-dir/file/long-symlink inodes.
+
 Tue Nov 19 18:30:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (read_node): If SBLOCK->s_creator_os != EXT2_OS_HURD,
