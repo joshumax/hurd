@@ -29,6 +29,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
+  mach_port_t newright;
   
   if (!user)
     return EOPNOTSUPP;
@@ -41,20 +42,31 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   
   mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, 0);
-  err = auth_server_authenticate (netfs_auth_server_port,
-				  rend_port,
-				  MACH_MSG_TYPE_COPY_SEND,
-				  ports_get_right (newpi),
-				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen,
-				  &aux_uids, &auxuidlen,
-				  &gen_gids, &gengidlen,
-				  &aux_uids, &auxuidlen);
-  mach_port_deallocate (mach_task_self (), rend_port);
+
+  newright = ports_get_right (newpi);
+  err = mach_port_insert_right (mach_task_self (), newpi, newpi,
+				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
-  
-  newpi->credential = netfs_make_credential (gen_uids, genuidlen,
-					     gen_gids, gengidlen);
+  do
+    err = auth_server_authenticate (netfs_auth_server_port,
+				    rend_port,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    newright,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    &gen_uids, &genuidlen,
+				    &aux_uids, &auxuidlen,
+				    &gen_gids, &gengidlen,
+				    &aux_uids, &auxuidlen);
+  while (err == EINTR);
+  mach_port_deallocate (mach_task_self (), rend_port);
+  mach_port_deallocate (mach_task_self (), newright);
+
+  if (err)
+    newpi->credential = netfs_make_credential (0, 0, 0, 0);
+  else
+    newpi->credential = netfs_make_credential (gen_uids, genuidlen,
+					       gen_gids, gengidlen);
+
   mutex_unlock (&user->po->np->lock);
   ports_port_deref (newpi);
 
