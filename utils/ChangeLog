@@ -1,3 +1,7 @@
+Thu Feb  6 01:40:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (w_get_host): Don't use strlen on it if *HOST is 0.
+
 Mon Dec 16 20:52:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* psout.c (psout): Use last N processes if TOP is negative.
