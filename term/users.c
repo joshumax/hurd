@@ -78,8 +78,8 @@ struct protid_hook
 void
 init_users ()
 {
-  errno = ports_create_port (term_bucket, sizeof (struct port_info),
-			     cttyid_class, &cttyid);
+  errno = ports_create_port (cttyid_class, term_bucket,
+			     sizeof (struct port_info), &cttyid);
   if (errno)
     {
       perror ("Allocating cttyid");
