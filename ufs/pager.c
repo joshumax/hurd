@@ -117,8 +117,10 @@ pager_read_page (struct user_pager_info *pager,
     }
   else
     {
+#if 0
       printf ("Write-locked pagein Object %#x\tOffset %#x\n", pager, page);
       fflush (stdout);
+#endif
       vm_allocate (mach_task_self (), buf, __vm_page_size, 1);
       *writelock = 1;
     }
@@ -187,8 +189,10 @@ pager_unlock_page (struct user_pager_info *pager,
 
   /* Problem--where to get cred values for allocation here? */
 
+#if 0
   printf ("Unlock page request, Object %#x\tOffset %#x...", pager, address);
   fflush (stdout);
+#endif
 
   if (pager->type == DISK)
     return 0;
@@ -210,6 +214,13 @@ pager_unlock_page (struct user_pager_info *pager,
     }
     
   err = fetch_indir_spec (np, lblkno (sblock, address), indirs);
+  if (err)
+    {
+      rwlock_writer_unlock (&dn->allocptrlock);
+      return EIO;
+    }
+
+  err = diskfs_catch_exception ();
   if (err)
     {
       rwlock_writer_unlock (&dn->allocptrlock);
