@@ -1,7 +1,7 @@
 /*
  * SyncLink Multiprotocol Serial Adapter Driver
  *
- * ==FILEDATE 19990523==
+ * ==FILEDATE 19990810==
  *
  * Copyright (C) 1998 by Microgate Corporation
  * 
@@ -50,8 +50,9 @@
 #define BIT31	0x80000000
 
 
-#define HDLC_MAX_FRAME_SIZE	4096
+#define HDLC_MAX_FRAME_SIZE	65535
 #define MAX_ASYNC_TRANSMIT	4096
+#define MAX_ASYNC_BUFFER_SIZE	4096
 
 #define ASYNC_PARITY_NONE		0
 #define ASYNC_PARITY_EVEN		1
@@ -68,12 +69,12 @@
 #define HDLC_FLAG_AUTO_RTS		0x0080
 #define HDLC_FLAG_RXC_DPLL		0x0100
 #define HDLC_FLAG_RXC_BRG		0x0200
-#define HDLC_FLAG_RXC_TXCPIN	0x8000
-#define HDLC_FLAG_RXC_RXCPIN	0x0000
+#define HDLC_FLAG_RXC_TXCPIN		0x8000
+#define HDLC_FLAG_RXC_RXCPIN		0x0000
 #define HDLC_FLAG_TXC_DPLL		0x0400
 #define HDLC_FLAG_TXC_BRG		0x0800
-#define HDLC_FLAG_TXC_TXCPIN	0x0000
-#define HDLC_FLAG_TXC_RXCPIN	0x0008
+#define HDLC_FLAG_TXC_TXCPIN		0x0000
+#define HDLC_FLAG_TXC_RXCPIN		0x0008
 #define HDLC_FLAG_DPLL_DIV8		0x1000
 #define HDLC_FLAG_DPLL_DIV16		0x2000
 #define HDLC_FLAG_DPLL_DIV32		0x0000
@@ -81,6 +82,7 @@
 
 #define HDLC_CRC_NONE			0
 #define HDLC_CRC_16_CCITT		1
+#define HDLC_CRC_32_CCITT		2
 
 #define HDLC_TXIDLE_FLAGS		0
 #define HDLC_TXIDLE_ALT_ZEROS_ONES	1
@@ -132,7 +134,7 @@ typedef struct _MGSL_PARAMS
 	unsigned char	encoding;	/* NRZ, NRZI, etc. */
 	unsigned long	clock_speed;	/* external clock speed in bits per second */
 	unsigned char	addr_filter;	/* receive HDLC address filter, 0xFF = disable */
-	unsigned short	crc_type;	/* None, CRC16 or CRC16-CCITT */
+	unsigned short	crc_type;	/* None, CRC16-CCITT, or CRC32-CCITT */
 	unsigned char	preamble_length;
 	unsigned char	preamble;
 

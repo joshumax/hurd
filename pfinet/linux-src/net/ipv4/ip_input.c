@@ -154,6 +154,7 @@
 
 struct ip_mib ip_statistics={2,IPDEFTTL,};	/* Forwarding=No, Default TTL=64 */
 
+int sysctl_ip_always_defrag = 0;
 
 /*
  *	Handle the issuing of an ioctl() request
@@ -169,11 +170,6 @@ int ip_ioctl(struct sock *sk, int cmd, unsigned long arg)
 			return(-EINVAL);
 	}
 }
-
-
-#if defined(CONFIG_IP_TRANSPARENT_PROXY) && !defined(CONFIG_IP_ALWAYS_DEFRAG)
-#define CONFIG_IP_ALWAYS_DEFRAG 1
-#endif
 
 /*
  *	0 - deliver
@@ -235,18 +231,17 @@ int ip_local_deliver(struct sk_buff *skb)
 	unsigned char hash;
 	int flag = 0;
 
-#ifndef CONFIG_IP_ALWAYS_DEFRAG
 	/*
 	 *	Reassemble IP fragments.
 	 */
 
-	if (iph->frag_off & htons(IP_MF|IP_OFFSET)) {
+        if (sysctl_ip_always_defrag == 0 &&
+            (iph->frag_off & htons(IP_MF|IP_OFFSET))) {
 		skb = ip_defrag(skb);
 		if (!skb)
 			return 0;
 		iph = skb->nh.iph;
 	}
-#endif
 
 #ifdef CONFIG_IP_MASQUERADE
 	/*
@@ -443,16 +438,15 @@ int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 	__skb_trim(skb, len);
 	}
 	
-#ifdef CONFIG_IP_ALWAYS_DEFRAG
 	/* Won't send ICMP reply, since skb->dst == NULL. --RR */
-	if (iph->frag_off & htons(IP_MF|IP_OFFSET)) {
+        if (sysctl_ip_always_defrag != 0 &&
+            iph->frag_off & htons(IP_MF|IP_OFFSET)) {
 		skb = ip_defrag(skb);
 		if (!skb)
 			return 0;
 		iph = skb->nh.iph;
 		ip_send_check(iph);
 	}
-#endif
 
 #ifdef CONFIG_FIREWALL
 	/*

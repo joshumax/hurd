@@ -525,7 +525,8 @@ gotit:
 
 static inline __u32 tcp_v4_init_sequence(struct sock *sk, struct sk_buff *skb)
 {
-	return secure_tcp_sequence_number(sk->saddr, sk->daddr,
+	return secure_tcp_sequence_number(skb->nh.iph->daddr,
+					  skb->nh.iph->saddr,
 					  skb->h.th->dest,
 					  skb->h.th->source);
 }
@@ -1866,7 +1867,7 @@ do_rewrite:
 	/* Ouch!, this should not happen. */
 	if (!sk->saddr || !sk->rcv_saddr) {
 		printk(KERN_WARNING "tcp_v4_rebuild_header(): not valid sock addrs: "
-		       "saddr=%08lX rcv_saddr=%08lX\n",
+		       "saddr=%08X rcv_saddr=%08X\n",
 		       ntohl(sk->saddr), 
 		       ntohl(sk->rcv_saddr));
 		return 0;

@@ -3,7 +3,7 @@
  *
  *	Does (reverse-masq) forwarding based on skb->fwmark value
  *
- *	$Id: ip_masq_mfw.c,v 1.3.2.1 1999/07/02 10:10:03 davem Exp $
+ *	$Id: ip_masq_mfw.c,v 1.3.2.3 1999/09/22 16:33:26 davem Exp $
  *
  * Author:	Juan Jose Ciarlante   <jjciarla@raiz.uncu.edu.ar>
  *		  based on Steven Clarke's portfw
@@ -216,6 +216,7 @@ static int mfw_delhost(struct ip_masq_mfw *mfw, struct ip_mfw_user *mu)
 			(!mu->rport || h->port == mu->rport)) {
 			/* HIT */
 			atomic_dec(&mfw->nhosts);
+			e = h->list.prev;
 			list_del(&h->list);
 			kfree_s(h, sizeof(*h));
 			MOD_DEC_USE_COUNT;
@@ -687,7 +688,7 @@ static struct ip_masq * mfw_in_create(const struct sk_buff *skb, const struct ip
 			/* 	
 			 *	Only open TCP tunnel if SYN+!ACK packet
 			 */
-			if (!tph.th->syn && tph.th->ack)
+			if (!tph.th->syn || tph.th->ack)
 				return NULL;
 		case IPPROTO_UDP:
 			break;

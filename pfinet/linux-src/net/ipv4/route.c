@@ -717,8 +717,8 @@ void ip_rt_redirect(u32 old_gw, u32 daddr, u32 new_gw,
 reject_redirect:
 #ifdef CONFIG_IP_ROUTE_VERBOSE
 	if (IN_DEV_LOG_MARTIANS(in_dev) && net_ratelimit())
-		printk(KERN_INFO "Redirect from %lX/%s to %lX ignored."
-		       "Path = %lX -> %lX, tos %02x\n",
+		printk(KERN_INFO "Redirect from %X/%s to %X ignored."
+		       "Path = %X -> %X, tos %02x\n",
 		       ntohl(old_gw), dev->name, ntohl(new_gw),
 		       ntohl(saddr), ntohl(daddr), tos);
 #endif

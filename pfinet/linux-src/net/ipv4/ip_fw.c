@@ -422,7 +422,7 @@ static void dump_packet(const struct iphdr *ip,
 			printk("%d ",f->ipfw.fw_redirpt);
 	}
 
-	printk("%s PROTO=%d %ld.%ld.%ld.%ld:%hu %ld.%ld.%ld.%ld:%hu"
+	printk("%s PROTO=%d %d.%d.%d.%d:%hu %d.%d.%d.%d:%hu"
 	       " L=%hu S=0x%2.2hX I=%hu F=0x%4.4hX T=%hu",
 	       ifname, ip->protocol,
 	       (ntohl(ip->saddr)>>24)&0xFF,
@@ -484,6 +484,11 @@ static int find_special(ip_chainlabel label, int *answer)
 		return 1;
 #ifdef CONFIG_IP_TRANSPARENT_PROXY
 	} else if (strcmp(label,IP_FW_LABEL_REDIRECT) == 0) {
+                extern int sysctl_ip_always_defrag;
+                static int enabled = 0;
+
+                if(!enabled)
+                        sysctl_ip_always_defrag++;
 		*answer = FW_REDIRECT;
 		return 1;
 #endif
@@ -1537,7 +1542,7 @@ static int dump_rule(char *buffer,
 
 	len=sprintf(buffer,
 		    "%9s "			/* Chain name */
-		    "%08lX/%08lX->%08lX/%08lX "	/* Source & Destination IPs */
+		    "%08X/%08X->%08X/%08X "	/* Source & Destination IPs */
 		    "%.16s "			/* Interface */
 		    "%X %X "			/* fw_flg and fw_invflg fields */
 		    "%u "			/* Protocol */

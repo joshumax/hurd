@@ -59,6 +59,9 @@ typedef struct {
 	unsigned long *res_in, *res_out, *res_ex;
 } fd_set_bits;
 
+/*
+ * How many longwords for "nr" bits?
+ */
 #define FDS_BITPERLONG	(8*sizeof(long))
 #define FDS_LONGS(nr)	(((nr)+FDS_BITPERLONG-1)/FDS_BITPERLONG)
 #define FDS_BYTES(nr)	(FDS_LONGS(nr)*sizeof(long))
@@ -87,17 +90,14 @@ int get_fd_set(unsigned long nr, void *ufdset, unsigned long *fdset)
 static inline
 void set_fd_set(unsigned long nr, void *ufdset, unsigned long *fdset)
 {
-	if (ufdset) {
-		nr = FDS_BYTES(nr);
-		__copy_to_user(ufdset, fdset, nr);
-	}
+	if (ufdset)
+		__copy_to_user(ufdset, fdset, FDS_BYTES(nr));
 }
 
 static inline
 void zero_fd_set(unsigned long nr, unsigned long *fdset)
 {
-	nr = FDS_BYTES(nr);
-	memset(fdset, 0, nr);
+	memset(fdset, 0, FDS_BYTES(nr));
 }
 
 extern int do_select(int n, fd_set_bits *fds, long *timeout);

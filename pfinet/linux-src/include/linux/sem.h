@@ -61,7 +61,7 @@ struct  seminfo {
 };
 
 #define SEMMNI  128             /* ?  max # of semaphore identifiers */
-#define SEMMSL  32              /* <= 512 max num of semaphores per id */
+#define SEMMSL  250              /* <= 512 max num of semaphores per id */
 #define SEMMNS  (SEMMNI*SEMMSL) /* ? max # of semaphores in system */
 #define SEMOPM  32	        /* ~ 100 max num of ops per semop call */
 #define SEMVMX  32767           /* semaphore maximum value */

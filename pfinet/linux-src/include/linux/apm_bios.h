@@ -130,6 +130,7 @@ extern int		apm_display_unblank(void);
 #define APM_NOT_ENGAGED		0x0b
 #define APM_BAD_FUNCTION        0x0c
 #define APM_RESUME_DISABLED	0x0d
+#define APM_NO_ERROR		0x53
 #define APM_BAD_STATE		0x60
 #define APM_NO_EVENTS		0x80
 #define APM_NOT_PRESENT		0x86

@@ -1,7 +1,7 @@
 /*
  * sysctl_net_ipv4.c: sysctl interface to net IPV4 subsystem.
  *
- * $Id: sysctl_net_ipv4.c,v 1.38.2.1 1999/08/08 08:43:14 davem Exp $
+ * $Id: sysctl_net_ipv4.c,v 1.38.2.2 1999/09/22 16:33:30 davem Exp $
  *
  * Begun April 1, 1996, Mike Shaver.
  * Added /proc/sys/net/ipv4 directory entry (empty =) ). [MS]
@@ -40,6 +40,9 @@ extern int sysctl_ipfrag_time;
 
 /* From ip_output.c */
 extern int sysctl_ip_dynaddr;
+
+/* From ip_input.c */
+extern int sysctl_ip_always_defrag;
 
 /* From ip_masq.c */
 extern int sysctl_ip_masq_debug;
@@ -141,6 +144,8 @@ ctl_table ipv4_table[] = {
 	 &sysctl_ipfrag_low_thresh, sizeof(int), 0644, NULL, &proc_dointvec},
 	{NET_IPV4_DYNADDR, "ip_dynaddr",
 	 &sysctl_ip_dynaddr, sizeof(int), 0644, NULL, &proc_dointvec},
+        {NET_IPV4_ALWAYS_DEFRAG, "ip_always_defrag",
+         &sysctl_ip_always_defrag, sizeof(int), 0644, NULL, &proc_dointvec},
 #ifdef CONFIG_IP_MASQUERADE
 	{NET_IPV4_IP_MASQ_DEBUG, "ip_masq_debug",
 	 &sysctl_ip_masq_debug, sizeof(int), 0644, NULL, &proc_dointvec},

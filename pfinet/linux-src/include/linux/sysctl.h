@@ -103,7 +103,8 @@ enum
 	KERN_MSGMAX=35,         /* int: Maximum size of a messege */
 	KERN_MSGMNB=36,         /* int: Maximum message queue size */
 	KERN_MSGPOOL=37,         /* int: Maximum system message pool size */
-	KERN_SYSRQ=38		/* int: Sysreq enable */
+	KERN_SYSRQ=38,		/* int: Sysreq enable */
+	KERN_SHMALL=41		/* int: maximum size of shared memory */
 };
 
 
@@ -224,7 +225,8 @@ enum
 	NET_IPV4_ICMP_PARAMPROB_RATE=62,
 	NET_IPV4_ICMP_ECHOREPLY_RATE=63,
 	NET_IPV4_ICMP_IGNORE_BOGUS_ERROR_RESPONSES=64,
-	NET_IPV4_IGMP_MAX_MEMBERSHIPS=65
+	NET_IPV4_IGMP_MAX_MEMBERSHIPS=65,
+	NET_IPV4_ALWAYS_DEFRAG=67
 };
 
 enum {

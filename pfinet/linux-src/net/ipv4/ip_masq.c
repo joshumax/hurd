@@ -880,6 +880,8 @@ static __u16 get_next_mport(void)
  * 	Be careful, it can be called from u-space
  */
 
+extern int sysctl_ip_always_defrag;
+
 struct ip_masq * ip_masq_new(int proto, __u32 maddr, __u16 mport, __u32 saddr, __u16 sport, __u32 daddr, __u16 dport, unsigned mflags)
 {
         struct ip_masq *ms, *mst;
@@ -910,6 +912,7 @@ struct ip_masq * ip_masq_new(int proto, __u32 maddr, __u16 mport, __u32 saddr, _
                 return NULL;
         }
 	MOD_INC_USE_COUNT;
+	sysctl_ip_always_defrag++;
         memset(ms, 0, sizeof(*ms));
 	INIT_LIST_HEAD(&ms->s_list);
 	INIT_LIST_HEAD(&ms->m_list);
@@ -1057,6 +1060,7 @@ struct ip_masq * ip_masq_new(int proto, __u32 maddr, __u16 mport, __u32 saddr, _
 mport_nono:
         kfree_s(ms, sizeof(*ms));
 
+	sysctl_ip_always_defrag--;
 	MOD_DEC_USE_COUNT;
         return NULL;
 }
@@ -2280,7 +2284,7 @@ static int ip_msqhst_procinfo(char *buffer, char **start, off_t offset,
 		 *	nor cli()  8)
 		 */
 
-		sprintf(temp,"%s %08lX:%04X %08lX:%04X %04X %08X %6d %6d %7lu",
+		sprintf(temp,"%s %08X:%04X %08X:%04X %04X %08X %6d %6d %7lu",
 			masq_proto_name(ms->protocol),
 			ntohl(ms->saddr), ntohs(ms->sport),
 			ntohl(ms->daddr), ntohs(ms->dport),
