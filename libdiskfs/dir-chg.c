@@ -24,17 +24,24 @@ diskfs_S_dir_notice_changes (struct protid *cred,
 			     mach_port_t notify)
 {
   struct dirmod *req;
+  struct node *np;
   
   if (!cred)
     return EOPNOTSUPP;
 
+  np = cred->po->np;
   req = malloc (sizeof (struct dirmod));
-  mutex_lock (&cred->po->np->lock);
+  mutex_lock (&np->lock);
+  if (!S_ISDIR (np->dn_stat.st_mode))
+    {
+      mutex_unlock (&np->lock);
+      return ENOTDIR;
+    }
   req->port = notify;
-  req->next = cred->po->np->dirmod_reqs;
-  cred->po->np->dirmod_reqs = req;
+  req->next = np->dirmod_reqs;
+  np->dirmod_reqs = req;
   nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
-  mutex_unlock (&cred->po->np->lock);
+  mutex_unlock (&np->lock);
   return 0;
 }
 
