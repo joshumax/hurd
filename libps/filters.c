@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pwd.h>
+#include <unistd.h>
 
 #include "ps.h"
 #include "common.h"
