@@ -19,7 +19,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-error_t
+#include "priv.h"
+#include "fsys_S.h"
+
+kern_return_t
 trivfs_S_fsys_startup (mach_port_t fsys,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
@@ -30,7 +33,7 @@ trivfs_S_fsys_startup (mach_port_t fsys,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 trivfs_S_fsys_getpriv (mach_port_t fsys,
 		       mach_port_t *host,
 		       mach_port_t *dev)
@@ -38,7 +41,7 @@ trivfs_S_fsys_getpriv (mach_port_t fsys,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 trivfs_S_fsys_init (mach_port_t fsys,
 		    mach_port_t proc,
 		    mach_port_t auth)
