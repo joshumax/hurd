@@ -32,12 +32,13 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
  enable-class.c enable-bucket.c bucket-iterate.c stubs.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
- notify-msg-accepted.c notify-port-deleted.c notify-send-once.c
+ notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \
+ interrupt-operation.c
 
 LCLHDRS = ports.h
 installhdrs = ports.h
 
-OBJS = $(SRCS:.c=.o) notifyServer.o
+OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
  
 MIGCOMSFLAGS = -prefix ports_
 
