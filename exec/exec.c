@@ -231,7 +231,7 @@ load_section (void *section, struct execdata *u)
 	      u->error = (page == -1) ? errno : 0;
 	      if (! u->error)
 		{
-		  memcpy ((void *) page,
+		  memcpy ((void *) page, /* XXX/fault */
 			  (void *) (contents + (size - off)),
 			  off);
 		  u->error = vm_write (u->task, mapstart + (size - off),
@@ -337,7 +337,7 @@ load_section (void *section, struct execdata *u)
 	      const void *contents = map (u, filepos, readsize);
 	      if (!contents)
 		goto maplose;
-	      memcpy (readaddr, contents, readsize);
+	      memcpy (readaddr, contents, readsize); /* XXX/fault */
 	    }
 	  u->error = vm_write (u->task, overlap_page, ourpage, size);
 	  if (u->error == KERN_PROTECTION_FAILURE)
@@ -423,6 +423,11 @@ load_section (void *section, struct execdata *u)
     }
 }
 
+/* XXX all accesses of the mapped data need to use fault handling
+   to abort the RPC when mapped file data generates bad page faults.
+   I've marked some accesses with XXX/fault comments.
+   --roland  */
+
 void *
 map (struct execdata *e, off_t posn, size_t len)
 {
@@ -433,15 +438,17 @@ map (struct execdata *e, off_t posn, size_t len)
       && posn + len - map_filepos (e) <= map_fsize (e))
     /* The current mapping window covers it.  */
     offset = posn & (map_vsize (e) - 1);
-  else if (e->file_data != NULL)
-    /* The current "mapping window" is in fact the whole file contents.
-       So if it's not in there, it's not in there.  */
+  else if (posn + len > size)
+    /* The requested data wouldn't fit in the file.  */
     return NULL;
   else if (e->filemap == MACH_PORT_NULL)
     {
       /* No mapping for the file.  Read the data by RPC.  */
       char *buffer = map_buffer (e);
       mach_msg_type_number_t nread = map_vsize (e);
+
+      assert (e->file_data == NULL); /* Must be first or second case.  */
+
       /* Read as much as we can get into the buffer right now.  */
       e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
       if (e->error)
@@ -610,7 +617,9 @@ map (struct execdata *e, off_t posn, size_t len)
 }
 #endif
 
-/* stdio input-room function.  */
+/* stdio input-room function.
+   XXX/fault in the stdio case (or libio replacement), i.e. for bfd
+   (if ever revived), need to check all the mapping fault issues  */
 static int
 input_room (FILE *f)
 {
@@ -844,7 +853,7 @@ check_elf (struct execdata *e)
     }
 
   if (*(Elf32_Word *) ehdr != ((union { Elf32_Word word;
-				       unsigned char string[SELFMAG]; })
+				        unsigned char string[SELFMAG]; })
 			       { string: ELFMAG }).word)
     {
       e->error = ENOEXEC;
@@ -883,6 +892,8 @@ check_elf (struct execdata *e)
   e->info.elf.phdr = phdr;
 }
 
+/* Copy MAPPED_PHDR into E->info.elf.phdr, filling in
+   E->interp.phdr, *PHDR_ADDR, and *PHDR_SIZE in the process.  */
 static void
 check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
 		vm_address_t *phdr_addr, vm_size_t *phdr_size)
@@ -919,7 +930,7 @@ check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
 static void
 check (struct execdata *e)
 {
-  check_elf (e);
+  check_elf (e);		/* XXX/fault */
 #ifdef BFD
   if (e->error == ENOEXEC)
     {
@@ -1113,7 +1124,7 @@ check_gzip (struct execdata *earg)
 	  return -1;
 	}
       n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
-      memcpy (buf, contents, n);
+      memcpy (buf, contents, n); /* XXX/fault */
       return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
@@ -1219,7 +1230,7 @@ check_bzip2 (struct execdata *earg)
 	  return -1;
 	}
       n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
-      memcpy (buf, contents, n);
+      memcpy (buf, contents, n); /* XXX/fault */
       return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
@@ -1683,6 +1694,7 @@ do_exec (file_t file,
 		}
 	      return boot->dtable[fd];
 	    }
+				/* XXX/fault */
 	  e.error = hurd_file_name_lookup (&user_port, &user_fd, 0,
 					   name, O_READ, 0, &interp.file);
 	}
