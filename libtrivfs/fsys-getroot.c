@@ -34,7 +34,7 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 {
   struct trivfs_protid *cred;
   int i;
-  struct control *cntl;
+  struct trivfs_control *cntl;
 
   cntl = ports_check_port_type (fsys, trivfs_cntl_porttype);
   if (!cntl)
