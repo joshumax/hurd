@@ -221,9 +221,11 @@ pass5 ()
 
       /* Walk through each inode, accounting for it in
 	 the inode map and in newcg->cg_cs. */
+      /* In this loop, J is the inode number, and I is the
+	 inode number relative to this CG. */
       j = sblock->fs_ipg * c;
       for (i = 0; i < sblock->fs_ipg; j++, i++)
-	switch (inodestate[i])
+	switch (inodestate[j])
 	  {
 	  case DIRECTORY:
 	  case DIRECTORY | DIR_REF:
@@ -238,7 +240,7 @@ pass5 ()
 	    break;
 
 	  default:
-	    errexit ("UNKNOWN STATE I=%d", i);
+	    errexit ("UNKNOWN STATE I=%d", j);
 	  }
       /* Account for inodes 0 and 1 */
       if (c == 0)
@@ -250,6 +252,8 @@ pass5 ()
       
       /* Walk through each data block, accounting for it in 
 	 the block map and in newcg->cg_cs. */
+      /* In this look, D is the block number and I is the
+	 block number relative to this CG. */
       for (i = 0, d = dbase;
 	   d < dmax;
 	   d += sblock->fs_frag, i += sblock->fs_frag)
