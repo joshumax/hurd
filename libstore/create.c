@@ -1,7 +1,7 @@
 /* Store creation
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -65,6 +65,9 @@ store_create (file_t source, int flags,
       if (err)
 	store_free (*store);
     }
+  else if (err == EINVAL && (flags &~ STORE_INACTIVE) == STORE_NO_FILEIO)
+    /* Open a generic "unknown" store that can regurgitate this encoding.  */
+    err = store_unknown_decode (&enc, classes, store);
 
   store_enc_dealloc (&enc);
 

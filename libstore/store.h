@@ -428,6 +428,14 @@ error_t store_url_open (const char *name, int flags,
 			const struct store_class *const *classes,
 			struct store **store);
 
+/* Return a new store of type "unknown" that holds a copy of the
+   given encoding.  The name of the store is taken from ENC->data.
+   Future calls to store_encode/store_return will produce exactly
+   the encoding supplied here.  All i/o operations fail with EFTYPE.  */
+error_t store_unknown_decode (struct store_enc *enc,
+			      const struct store_class *const *classes,
+			      struct store **store);
+
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
    integer multiple of each stripe's block size.  The stores in STRIPES are
@@ -534,6 +542,7 @@ extern const struct store_class store_gunzip_class;
 extern const struct store_class store_bunzip2_class;
 extern const struct store_class store_typed_open_class;
 extern const struct store_class store_url_open_class;
+extern const struct store_class store_unknown_class;
 
 /* The following are not included in STORE_STD_CLASSES.  */
 extern const struct store_class store_mvol_class;
