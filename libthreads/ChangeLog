@@ -1,3 +1,7 @@
+2000-01-10  Mark Kettenis  <kettenis@gnu.org>
+
+	* cprocs.c: Include <assert.h>
+
 2000-01-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* cprocs.c (cproc_alloc): Initialize P->wired and P->msg here (code
