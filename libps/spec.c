@@ -1,6 +1,6 @@
 /* Access, formatting, & comparison routines for printing process info.
 
-   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -731,7 +731,6 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
   else if (strcmp (wait, "kernel") == 0)
     /* A syscall.  RPC is actually the syscall number.  */
     {
-      extern char *get_syscall_name (int num);
       char *name = get_syscall_name (rpc);
       if (! name)
 	{
@@ -744,7 +743,6 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
     /* An rpc (with msg id RPC); WAIT describes the dest port.  */
     {
       char port_name_buf[20];
-      extern char *get_rpc_name (mach_msg_id_t num);
       char *name = get_rpc_name (rpc);
 
       /* See if we should give a more useful name for the port.  */
