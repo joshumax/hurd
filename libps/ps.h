@@ -23,10 +23,140 @@
 
 #include <hurd/hurd_types.h>
 #include <mach/mach.h>
+#include <pwd.h>
+#include <ihash.h>
 
 #ifndef bool
 #define bool int
 #endif
+
+/* ---------------------------------------------------------------- */
+/* A PS_USER_T hold info about a particular user.  */
+
+typedef struct ps_user *ps_user_t;
+
+/* Possible states a ps_user's passwd can be in: valid, not fet */
+enum ps_user_passwd_state
+  { PS_USER_PASSWD_OK, PS_USER_PASSWD_PENDING, PS_USER_PASSWD_ERROR };
+
+struct ps_user
+{
+  /* Which user this refers to.  */
+  int uid;
+
+  /* The status */
+     enum ps_user_passwd_state passwd_state;
+     
+  /* The user's password file entry.  Only valid if PASSWD_STATE ==
+     PS_USER_PASSWD_OK.  */
+  struct passwd passwd;
+
+  /* String storage for strings pointed to by ENTRY.  */
+  char *storage;
+};
+
+#define ps_user_uid(u) ((u)->uid)
+
+/* Create a ps_user_t for the user referred to by UID, returning it in U.
+   If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
+error_t ps_user_create(int uid, ps_user_t *u);
+
+/* Free U and any resources it consumes.  */
+void ps_user_free(ps_user_t u);
+
+/* Returns the password file entry (struct passwd, from <pwd.h>) for the user
+   referred to by U, or NULL if it can't be gotten.  */
+struct passwd *ps_user_passwd(ps_user_t u);
+
+/* Returns the user name for the user referred to by U, or NULL if it can't
+   be gotten.  */
+char *ps_user_name(ps_user_t u);
+
+/* ---------------------------------------------------------------- */
+/* A ps_tty_t holds information about a terminal.  */
+
+typedef struct ps_tty *ps_tty_t;
+
+/* Possible states a ps_tty's name can be in: valid, not fetched yet,
+   couldn't fetch.  */
+enum ps_tty_name_state
+  { PS_TTY_NAME_OK, PS_TTY_NAME_PENDING, PS_TTY_NAME_ERROR };
+
+struct ps_tty {
+  /* Which tty this refers to.  */
+  file_t port;
+  
+  /* The name of the tty, if we could figure it out.  */
+  char *name;
+  /* What state the name is in.  */
+  enum ps_tty_name_state name_state;
+};
+
+#define ps_tty_port(tty) ((tty)->port)
+
+/* Create a ps_tty_t for the tty referred to by PORT, returning it in TTY.
+   If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
+error_t ps_tty_create(file_t port, ps_tty_t *tty);
+
+/* Frees TTY and any resources it consumes.  */
+void ps_tty_free(ps_tty_t tty);
+
+/* Returns the name of the tty, or NULL if it can't be figured out.  */
+char *ps_tty_name(ps_tty_t tty);
+
+/* ---------------------------------------------------------------- */
+/* A ps_contex_t holds various information resulting from querying a
+   particular process server, in particular a group of proc_stats, ps_users,
+   and ps_ttys.  This information sticks around until the context is freed
+   (subsets may be created by making proc_stat_lists).  */
+
+typedef struct ps_context *ps_context_t;
+typedef struct proc_stat *proc_stat_t;
+
+struct ps_context
+{
+  /* The process server our process info is from.  */
+  process_t server;
+
+  /* proc_stat_t's for every process we know about, indexed by process id.  */
+  ihash_t procs;
+
+  /* ps_tty_t's for every tty we know about, indexed by the terminal port.  */
+  ihash_t ttys;
+
+  /* ps_tty_t's for every tty we know about, indexed by their ctty id port
+     (from libc).  */
+  ihash_t ttys_by_cttyid;
+
+  /* ps_user_t's for every user we know about, indexed by user-id.  */
+  ihash_t users;
+};
+
+#define ps_context_server(pc) ((pc)->server)
+
+/* Returns in PC a new ps_context_t for the proc server SERVER.  If a memory
+   allocation error occurs, ENOMEM is returned, otherwise 0.  */
+error_t ps_context_create(process_t server, ps_context_t *pc);
+
+/* Frees PC and any resources it consumes.  */
+void ps_context_free(ps_context_t pc);
+
+/* Find a proc_stat_t for the process referred to by PID, and return it in
+   PS.  If an error occurs, it is returned, otherwise 0.  */
+error_t ps_context_find_proc_stat(ps_context_t pc, int pid, proc_stat_t *ps);
+
+/* Find a ps_tty_t for the terminal referred to by the port TTY_PORT, and
+   return it in TTY.  If an error occurs, it is returned, otherwise 0.  */
+error_t ps_context_find_tty(ps_context_t pc, int tty_port, ps_tty_t *tty);
+
+/* Find a ps_tty_t for the terminal referred to by the ctty id port
+   CTTYID_PORT, and return it in TTY.  If an error occurs, it is returned,
+   otherwise 0.  */
+error_t ps_context_find_tty_by_cttyid(ps_context_t pc,
+				      int cttyid_port, ps_tty_t *tty);
+
+/* Find a ps_user_t for the user referred to by UID, and return it in U.  */
+error_t ps_context_find_user(ps_context_t pc, int uid, ps_user_t *u);
 
 /* ---------------------------------------------------------------- */
 /*
@@ -34,12 +164,10 @@
    which info is dependent on its FLAGS field.
  */
 
-typedef struct proc_stat *proc_stat_t;
-
 struct proc_stat
   {
     /* Which process server this is from.  */
-    process_t server;
+    ps_context_t context;
 
     /* The proc's process id; if <0 then this is a thread, not a process.  */
     int pid;
@@ -82,6 +210,9 @@ struct proc_stat
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
     int state;
 
+    /* A ps_user_t object for the owner of this process.  */
+    ps_user_t owner;
+
     /* The process's argv, as a string with each element separated by '\0'.  */
     char *args;
     /* The length of ARGS.  */
@@ -112,12 +243,8 @@ struct proc_stat
        when creating a file.  */
     int umask;
 
-    /* A file_t port for the process's controlling terminal, or
-       MACH_PORT_NULL if the process has no controlling terminal.  */
-    mach_port_t tty;
-    /* A filename pointing to TTY, or NULL if the process has no controlling
-       terminal, or "?" if we cannot determine the name.  */
-    char *tty_name;
+    /* A ps_tty_t object for the process's controlling terminal.  */
+    ps_tty_t tty;
   };
 
 
@@ -137,8 +264,8 @@ struct proc_stat
 #define PSTAT_CTTYID		0x0800 /* The process's CTTYID port.  */
 #define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD.  */
 #define PSTAT_AUTH		0x2000 /* The proc's auth port.  */
-#define PSTAT_TTY		0x4000 /* A file_t for the proc's terminal.  */
-#define PSTAT_TTY_NAME		0x8000 /* The name of the proc's terminal.  */
+#define PSTAT_TTY		0x4000 /* A ps_tty_t for the proc's terminal.*/
+#define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner.  */
 #define PSTAT_UMASK		0x10000 /* The proc's current umask.  */
 
 #define PSTAT_NUM_THREADS PSTAT_INFO
@@ -198,23 +325,25 @@ char *proc_stat_state_tags;
 #define proc_stat_state(ps) ((ps)->state)
 #define proc_stat_cttyid(ps) ((ps)->cttyid)
 #define proc_stat_cwdir(ps) ((ps)->cwdir)
+#define proc_stat_owner(ps) ((ps)->owner)
 #define proc_stat_auth(ps) ((ps)->auth)
 #define proc_stat_umask(ps) ((ps)->umask)
 #define proc_stat_tty(ps) ((ps)->tty)
-#define proc_stat_tty_name(ps) ((ps)->tty_name)
 #define proc_stat_task_events_info(ps) ((ps)->task_events_info)
 #define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
 
 /* True if PS refers to a thread and not a process.  */
 #define proc_stat_is_thread(ps) ((ps)->pid < 0)
 
-/* Returns in PS a new proc_stat_t for the process PID at the process server
-   SERVER.  If a memory allocation error occurs, ENOMEM is returned,
-   otherwise 0.  */
-error_t proc_stat_create(int pid, process_t server, proc_stat_t *ps);
+/* Returns in PS a new proc_stat_t for the process PID in the ps context PC.
+   If a memory allocation error occurs, ENOMEM is returned, otherwise 0.
+   Users shouldn't use this routine, use pc_context_find_proc_stat instead.  */
+error_t _proc_stat_create(int pid, ps_context_t context, proc_stat_t *ps);
 
-/* Frees PS and any memory/ports it references */
-void proc_stat_free(proc_stat_t ps);
+/* Frees PS and any memory/ports it references.  Users shouldn't use this
+   routine; proc_stat_ts are normally freed only when their ps_context goes
+   away.  */
+void _proc_stat_free(proc_stat_t ps);
 
 /* Adds FLAGS to PS's flags, fetching information as necessary to validate
    the corresponding fields in PS.  Afterwards you must still check the flags
@@ -484,18 +613,18 @@ struct proc_stat_list
        processes).  */
     int alloced;
 
-    /* Returns the proc server that these processes are from.  */
-    process_t server;
+    /* Returns the proc context that these processes are from.  */
+    ps_context_t context;
   };
 
 /* Accessor macros: */
 #define proc_stat_list_num_procs(pp) ((pp)->num_procs)
-#define proc_stat_list_server(pp) ((pp)->server)
+#define proc_stat_list_context(pp) ((pp)->context)
 
-/* Creates a new proc_stat_list_t for processes from SERVER, which is
+/* Creates a new proc_stat_list_t for processes from CONTEXT, which is
    returned in PP, and returns 0, or else returns ENOMEM if there wasn't
    enough memory.  */
-error_t proc_stat_list_create(process_t server, proc_stat_list_t *pp);
+error_t proc_stat_list_create(ps_context_t context, proc_stat_list_t *pp);
 
 /* Free PP, and any resources it consumes.  */
 void proc_stat_list_free(proc_stat_list_t pp);
@@ -511,29 +640,29 @@ proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, int pid);
    resulting proc_stat_list_t, and so may be subsequently freed.  */
 error_t proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs);
 
-/* Add a proc_stat_t for the process designated by PID at PP's proc server to
+/* Add a proc_stat_t for the process designated by PID at PP's proc context to
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t proc_stat_list_add_pid(proc_stat_list_t pp, int pid);
 
 /* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
    already in PP; the resulting order of proc_stat_t's in PP is undefined.
-   If MERGEE and PP point to different proc servers, EINVAL is returned.  If a
+   If MERGEE and PP point to different proc contexts, EINVAL is returned.  If a
    memory allocation error occurs, ENOMEM is returned.  Otherwise 0 is
    returned, and MERGEE is freed.  */
 error_t proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee);
 
-/* Add to PP entries for all processes at its server.  If an error occurs,
+/* Add to PP entries for all processes at its context.  If an error occurs,
    the system error code is returned, otherwise 0.  */
 error_t proc_stat_list_add_all(proc_stat_list_t pp);
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
-   its server.  If an error occurs, the system error code is returned,
+   its context.  If an error occurs, the system error code is returned,
    otherwise 0.  */
 error_t proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id);
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
-   server.  If an error occurs, the system error code is returned, otherwise
+   context.  If an error occurs, the system error code is returned, otherwise
    0.  */
 error_t proc_stat_list_add_session(proc_stat_list_t pp, int session_id);
 
@@ -599,6 +728,8 @@ error_t proc_stat_list_find_bogus_flags(proc_stat_list_t pp, int *flags);
    order of the thread entries themselves may change.  If a fatal error
    occurs, the error code is returned, otherwise 0.  */
 error_t proc_stat_list_add_threads(proc_stat_list_t pp);
+
+error_t proc_stat_list_remove_threads(proc_stat_list_t pp);
 
 /* ---------------------------------------------------------------- */
 
