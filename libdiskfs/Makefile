@@ -74,6 +74,11 @@ vpath %.c ../lib
 include ../Makeconf
 
 # We don't use those, so we're safe in breaking them.
-ourfs_notify_U.h ourfs_notifyUser.c: $(includedir)/hurd/fs_notify.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine $(includedir)/hurd/fs_notify.defs \
+ourfs_notify_U.h ourfs_notifyUser.c: ourfs_notify.defs $(includedir)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine ourfs_notify.defs \
 	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourfs_notifyUser.c -header ourfs_notify_U.h
+
+ourfs_notify.defs: $(includedir)/hurd/fs_notify.defs
+	rm -f $@
+	ln $< $@
+
