@@ -1,5 +1,6 @@
-/* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994 Free Software Foundation
+/* Fetching and storing the hypermetadata (superblock and bg summary info).
+
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,94 +16,61 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ufs.h"
 #include <string.h>
 #include <stdio.h>
+#include "ext2fs.h"
 
-static int oldformat = 0;
+#define SBSIZE (sizeof (struct ext2_super_block))
 
 void
 get_hypermetadata (void)
 {
   sblock = malloc (SBSIZE);
 
+  disk_sblock = baddr(1);
+
   assert (!diskfs_catch_exception ());
-  bcopy (disk_image + SBOFF, sblock, SBSIZE);
+  bcopy (disk_sblock, sblock, SBSIZE);
   diskfs_end_catch_exception ();
   
-  if (sblock->fs_magic != FS_MAGIC)
+  if (sblock->s_magic != EXT2_SUPER_MAGIC
+#ifdef EXT2FS_PRE_02B_COMPAT
+      && sblock->s_magic != EXT2_PRE_02B_MAGIC
+#endif
+      )
+    ext2_panic("Bad magic number %#lx (should be %#x)",
+	       sblock->s_magic, EXT2_SUPER_MAGIC);
+
+  block_size = EXT2_MIN_BLOCK_SIZE << sblock->s_log_block_size;
+  if (block_size != BLOCK_SIZE
+      && (sb->s_block_size == 1024 || sb->s_block_size == 2048
+	  || sb->s_block_size == 4096))
     {
-      fprintf (stderr, "Bad magic number %#lx (should be %#x)\n",
-	       sblock->fs_magic, FS_MAGIC);
-      exit (1);
-    }
-  if (sblock->fs_bsize > 8192)
-    {
-      fprintf (stderr, "Block size %ld is too big (max is 8192 bytes)\n",
-	       sblock->fs_bsize);
-      exit (1);
-    }
-  if (sblock->fs_bsize < sizeof (struct fs))
-    {
-      fprintf (stderr, "Block size %ld is too small (min is %ld bytes)\n",
-	       sblock->fs_bsize, sizeof (struct fs));
-      exit (1);
+      int offset = (sb_block_num * BLOCK_SIZE) % block_size;
+      unsigned long logical_sb_block_num =
+	(sb_block_num * BLOCK_SIZE) / block_size;
+
+      disk_sblock = baddr(logical_sb_block_num) + offset;
+
+      assert (!diskfs_catch_exception ());
+      bcopy (disk_sblock, sblock, SBSIZE);
+      diskfs_end_catch_exception ();
+
+      if (sblock->s_magic != EXT2_SUPER_MAGIC)
+	ext2_panic("Bad magic number %#lx (should be %#x)"
+		   " in logical superblock!",
+		   sblock->s_magic, EXT2_SUPER_MAGIC);
     }
 
-  if (sblock->fs_maxsymlinklen > (long)MAXSYMLINKLEN)
-    {
-      fprintf (stderr, "Max shortcut symlinklen %ld is too big (max is %ld)\n",
-	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
-      exit (1);
-    }
+  if (block_size > 8192)
+    ext2_panic("Block size %ld is too big (max is 8192 bytes)", block_size);
+  if (block_size < SBSIZE)
+    ext2_panic ("Block size %ld is too small (min is %ld bytes)",
+		block_size, SBSIZE);
 
-  assert ((__vm_page_size % DEV_BSIZE) == 0);
+  assert ((vm_page_size % DEV_BSIZE) == 0);
   assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
-  assert (__vm_page_size <= sblock->fs_bsize);
-
-  /* If this is an old filesystem, then we have some more
-     work to do; some crucial constants might not be set; we
-     are therefore forced to set them here.  */
-
-  if (sblock->fs_npsect < sblock->fs_nsect)
-    sblock->fs_npsect = sblock->fs_nsect;
-
-  if (sblock->fs_interleave < 1)
-    sblock->fs_interleave = 1;
-
-  if (sblock->fs_postblformat == FS_42POSTBLFMT)
-    sblock->fs_nrpos = 8;
-
-  if (sblock->fs_inodefmt < FS_44INODEFMT)
-    {
-      quad_t sizepb = sblock->fs_bsize;
-      int i;
-
-      oldformat = 1;
-      sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
-      for (i = 0; i < NIADDR; i++)
-	{
-	  sizepb *= NINDIR (sblock);
-	  sblock->fs_maxfilesize += sizepb;
-	}
-      sblock->fs_qbmask = ~sblock->fs_bmask;
-      sblock->fs_qfmask = ~sblock->fs_fmask;
-    }
-
-  /* Find out if we support the 4.4 symlink/dirtype extension */
-  if (sblock->fs_maxsymlinklen > 0)
-    direct_symlink_extension = 1;
-  else
-    direct_symlink_extension = 0;
-
-  csum = malloc (fsaddr (sblock, howmany (sblock->fs_cssize, 
-					  sblock->fs_fsize)));
-  
-  assert (!diskfs_catch_exception ());
-  bcopy (disk_image + fsaddr (sblock, sblock->fs_csaddr),
-	 csum,
-	 fsaddr (sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
-  diskfs_end_catch_exception ();
+  assert (vm_page_size <= sblock->fs_bsize);
 }
 
 /* Write the csum data.  This isn't backed by a pager because it is
@@ -112,6 +80,7 @@ get_hypermetadata (void)
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
+#if 0
   vm_address_t buf;
   vm_size_t bufsize;
   error_t err;
@@ -138,6 +107,7 @@ diskfs_set_hypermetadata (int wait, int clean)
     }
   
   spin_unlock (&alloclock);
+#endif
 }
 
 /* Copy the sblock into the disk */
@@ -152,42 +122,23 @@ copy_sblock ()
 
   if (clean && !diskfs_readonly)
     {
-      sblock->fs_clean = 1;
+      sblock->s_state |= EXT2_VALID_FS;
       sblock_dirty = 1;
     }
 
   if (sblock_dirty)
     {
-      if (sblock->fs_postblformat == FS_42POSTBLFMT
-	  || oldformat)
-	{
-	  char sblockcopy[SBSIZE];
-	  struct fs *sbcopy = (struct fs *)sblockcopy;
-	  bcopy (sblock, sblockcopy, SBSIZE);
-	  if (sblock->fs_postblformat == FS_42POSTBLFMT)
-	    sbcopy->fs_nrpos = -1;
-	  if (oldformat)
-	    {
-	      sbcopy->fs_maxfilesize = -1;
-	      sbcopy->fs_qbmask = -1;
-	      sbcopy->fs_qfmask = -1;
-	    }
-	  bcopy (sbcopy, disk_image + SBOFF, SBSIZE);
-	}
-      else
-	bcopy (sblock, disk_image + SBOFF, SBSIZE);
-      record_poke (disk_image + SBOFF, SBSIZE);
+      bcopy (sblock, disk_sblock, SBSIZE);
+      record_poke (disk_sblock, SBSIZE);
       sblock_dirty = 0;
     }
 
   if (clean && !diskfs_readonly)
     {
-      sblock->fs_clean = 0;
+      sblock->s_state &= ~EXT2_VALID_FS;
       sblock_dirty = 1;
     }
 
   spin_unlock (&alloclock);
   diskfs_end_catch_exception ();
 }
-
-
