@@ -1,9 +1,7 @@
 /* Mach file store backend
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <stdio.h>
 #include <string.h>
@@ -158,15 +156,11 @@ _store_file_create (file_t file, int flags, size_t block_size,
 		    struct store **store)
 {
   if (block_size == 1)
-    *store = _make_store (&store_file_byte_class,
-			  file, flags, 1, runs, num_runs, 0);
-  else if ((block_size & (block_size - 1)) == 0)
-    *store =
-      _make_store (&store_file_class,
-		   file, flags, block_size, runs, num_runs, 0);
+    return _store_create (&store_file_byte_class,
+			  file, flags, 1, runs, num_runs, 0, store);
   else
-    return EINVAL;		/* block size not a power of two */
-  return *store ? 0 : ENOMEM;
+    return _store_create (&store_file_class,
+			  file, flags, block_size, runs, num_runs, 0, store);
 }
 
 /* Open the file NAME, and return the corresponding store in STORE.  */
