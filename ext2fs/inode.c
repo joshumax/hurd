@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -312,10 +312,7 @@ read_node (struct node *np)
        allocated as well, although st_size may be zero for any type (cases
        where st_blocks=0 and st_size>0 include fast symlinks, and, under
        linux, some devices).  */
-    {
-      np->allocsize = 0;
-      assert (st->st_blocks == 0);
-    }
+    np->allocsize = 0;
 
   return 0;
 }
