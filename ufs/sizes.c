@@ -49,6 +49,7 @@ diskfs_truncate (struct node *np,
   if (length >= np->dn_stat.st_size)
     return 0;
 
+  diskfs_check_readonly ();
   assert (!diskfs_readonly);
 
   /* First check to see if this is a kludged symlink; if so
@@ -469,6 +470,7 @@ diskfs_grow (struct node *np,
   if (end <= np->allocsize)
     return 0;
 
+  diskfs_check_readonly ();
   assert (!diskfs_readonly);
 
   /* This reference will ensure that NP->dn->fileinfo stays allocated. */
