@@ -16,6 +16,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+#ifndef _HURD_PAGER_
+#define _HURD_PAGER_
+
 /* This is a user-dependent type which represents a location of
    a single page. */
 typedef void *location_t;
@@ -150,3 +153,5 @@ pager_report_extent (struct user_pager_info *pager,
    being deallocated after all extant send rights have been destroyed.  */
 void
 pager_clear_user_data (struct user_pager_info *pager);
+
+#endif
