@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */
 static inline int
@@ -54,10 +55,10 @@ diskfs_S_io_restrict_auth (struct protid *cred,
     if (listmember (gids, cred->gids[i], ngids))
       newgids[newngids++] = cred->gids[i];
       
-  mutex_lock (&cred->po->ip->i_toplock);
-  *newport = (make_protid (cred->po, newuids, newnuids, newgids,
-			   newngids))->fspt.pi.port;
-  mutex_unlock (&cred->po->ip->i_toplock);
+  mutex_lock (&cred->po->np->lock);
+  *newport = (diskfs_make_protid (cred->po, newuids, newnuids, newgids,
+				  newngids))->fspt.pi.port;
+  mutex_unlock (&cred->po->np->lock);
   *newportpoly = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
