@@ -423,7 +423,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
 #ifdef EXT2FS_DEBUG
 	  if (dn->last_page_partially_writable)
-	    ext2_debug ("made page %u[%u] in inode %d partially writable",
+	    ext2_debug ("made page %u[%lu] in inode %d partially writable",
 			page, node->allocsize - page, dn->number);
 	  else
 	    ext2_debug ("made page %u[%u] in inode %d writable",
@@ -454,7 +454,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
       error_t err;
       struct disknode *dn = node->dn;
       vm_offset_t old_size = node->allocsize;
-      vm_offset_t new_size = trunc_block (size) + block_size;
+      vm_offset_t new_size = round_block (size);
 
       ext2_debug ("growing inode %d to %u bytes (from %u)", dn->number,
 		  new_size, old_size);
