@@ -1,7 +1,10 @@
 1997-06-21  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* e2os.sh: Use conf=notrunc when writing the superblock back to
+	* e2os.sh: Use conv=notrunc when writing the superblock back to
 	the filesystem device, in case it's a file and not a real device.
+
+	* e2os.sh: If $OD & $AWK don't exist, try to get them from
+	/usr/bin, so that this script works under linux too.
 
 Fri Feb 28 21:27:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
