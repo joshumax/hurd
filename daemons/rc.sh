@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 PATH=/bin:/sbin
 
 swapon -a
@@ -51,27 +51,30 @@ if test -d /tmp; then
 
   # Forcibly remove all translators in the directory.
   # It is then safe to attempt to remove files and descend directories.
+  # All parameters must begin with "./".
   function remove_translators() {
     local f
     for f; do
-      f="./$f"
       settrans -pagfS "$f"
       if [ -L "$f" ] || [ ! -d "$f" ]; then
 	rm "$f"
       else
-	remove_translators "$f"
+	remove_translators "$f"/* "$f"/.[!.] "$f"/.??*
 	rmdir "$f"
       fi
     done
   }
 
   (cd /tmp
+   shopt -s nullglob
    for f in * .[!.] .??*; do
      case "$f" in
      'lost+found'|'quotas') ;;
-     *) remove_translators "$f"
+     *) remove_translators "./$f"
      esac
    done)
+
+  unset -f remove_translators  # because it relies on nullglob
 
 fi
 if test -d /var/run; then
