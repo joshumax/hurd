@@ -49,16 +49,21 @@ static char sccsid[] = "@(#)clri.c	8.2 (Berkeley) 9/23/93";
 #include <sys/param.h>
 #include <sys/time.h>
 
-#include <ufs/ufs/dinode.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/fs.h"
 
-#include <err.h>
+
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#define MAXPHYS (64 * 1024)
+#define DEV_BSIZE 512
+
 
 int
 main(argc, argv)
@@ -83,9 +88,15 @@ main(argc, argv)
 
 	/* get the superblock. */
 	if ((fd = open(fs, O_RDWR, 0)) < 0)
-		err(1, "%s", fs);
+	  {
+	    perror (fs);
+	    exit (1);
+	  }
 	if (lseek(fd, (off_t)(SBLOCK * DEV_BSIZE), SEEK_SET) < 0)
-		err(1, "%s", fs);
+	  {
+	    perror (fs);
+	    exit (1);
+	  }
 	if (read(fd, sblock, sizeof(sblock)) != sizeof(sblock)) {
 		(void)fprintf(stderr,
 		    "clri: %s: can't read the superblock.\n", fs);
@@ -118,9 +129,15 @@ main(argc, argv)
 
 		/* seek and read the block */
 		if (lseek(fd, offset, SEEK_SET) < 0)
-			err(1, "%s", fs);
+		  {
+		    perror (fs);
+		    exit (1);
+		  }
 		if (read(fd, ibuf, bsize) != bsize)
-			err(1, "%s", fs);
+		  {
+		    perror (fs);
+		    exit (1);
+		  }
 
 		/* get the inode within the block. */
 		ip = &ibuf[ino_to_fsbo(sbp, inonum)];
@@ -132,9 +149,15 @@ main(argc, argv)
 
 		/* backup and write the block */
 		if (lseek(fd, (off_t)-bsize, SEEK_CUR) < 0)
-			err(1, "%s", fs);
+		  {
+		    perror (fs);
+		    exit (1);
+		  }
 		if (write(fd, ibuf, bsize) != bsize)
-			err(1, "%s", fs);
+		  {
+		    perror (fs);
+		    exit (1);
+		  }
 		(void)fsync(fd);
 	}
 	(void)close(fd);
