@@ -1,3 +1,11 @@
+2004-09-26  Roland McGrath  <roland@frob.com>
+
+	* priv.h (struct execdata.info.elf): New field `phdr_addr'.
+	* exec.c (check_elf): Set E->info.elf.phdr_addr here from e_phoff.
+	(check_elf_phdr): Don't check for PT_PHDR, remove last two args.
+	(do_exec): Update callers.  Set BOOT->phdr_addr and BOOT->phdr_size
+	using info saved by check_elf.
+
 2004-02-11  Roland McGrath  <roland@frob.com>
 
 	* exec.c (servercopy): Change signature to avoid casted arguments.
