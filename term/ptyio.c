@@ -294,6 +294,11 @@ pty_io_read (struct trivfs_protid *cred,
   while (!control_byte
 	 && (!qsize (outputq) || (termflags & USER_OUTPUT_SUSP)))
     {
+      if (cred->po->openmodes & O_NONBLOCK)
+	{
+	  mutex_unlock (&global_lock);
+	  return EWOULDBLOCK;
+	}
       pty_read_blocked = 1;
       if (hurd_condition_wait (&pty_read_wakeup, &global_lock))
 	{
@@ -368,7 +373,14 @@ pty_io_write (struct trivfs_protid *cred,
     {
       /* Wait for the queue to be empty */
       while (qsize (inputq) && !cancel)
-	cancel = hurd_condition_wait (inputq->wait, &global_lock);
+	{
+	  if (cred->po->openmodes & O_NONBLOCK)
+	    {
+	      mutex_unlock (&global_lock);
+	      return EWOULDBLOCK;
+	    }
+	  cancel = hurd_condition_wait (inputq->wait, &global_lock);
+	}
       if (cancel)
 	{
 	  mutex_unlock (&global_lock);
