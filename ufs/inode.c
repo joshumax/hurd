@@ -45,7 +45,7 @@ inode_init ()
 /* Fetch inode INUM, set *NPP to the node structure; 
    gain one user reference and lock the node.  */
 error_t 
-iget (ino_t inum, struct node **npp)
+diskfs_cached_lookup (int inum, struct node **npp)
 {
   struct disknode *dn;
   struct node *np;
