@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994,95,96,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,99, 2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -65,8 +65,8 @@ struct pager
   struct pending_init *init_head, *init_tail;
 #endif
 
-  char *pagemap;
-  int pagemapsize;
+  short *pagemap;
+  int pagemapsize;		/* number of elements in PAGEMAP */
 };
 
 struct lock_request
@@ -108,11 +108,12 @@ extern int _pager_page_errors[];
 
 /* Pagemap format */
 /* These are binary state bits */
-/* #define PM_INIT       0x80	data has been written */
-#define PM_INCORE     0x80	/* kernel might have a copy */
-#define PM_PAGINGOUT  0x40	/* being written to disk */
-#define PM_PAGEINWAIT 0x20	/* provide data back when write done */
-#define PM_INVALID    0x10	/* data on disk is irrevocably wrong */
+#define PM_WRITEWAIT  0x0200	/* queue wakeup once write is done */
+#define PM_INIT       0x0100    /* data has been written */
+#define PM_INCORE     0x0080	/* kernel might have a copy */
+#define PM_PAGINGOUT  0x0040	/* being written to disk */
+#define PM_PAGEINWAIT 0x0020	/* provide data back when write done */
+#define PM_INVALID    0x0010	/* data on disk is irrevocably wrong */
 
 /* These take values of enum page_errors */
 

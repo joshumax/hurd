@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_request for pager library
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,7 +30,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
 					  vm_prot_t access)
 {
   struct pager *p;
-  char *pm_entry;
+  short *pm_entry;
   int doread, doerror;
   error_t err;
   vm_address_t page;

@@ -1,3 +1,29 @@
+2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* priv.h (PM_WRITEWAIT): New pagemap bit.
+	* data-return.c (_pager_do_write_request): Don't proceed with a
+	pageout if one is already in progress.  Once we finish, wake up
+	any potential PM_WRITEWAIT waiters.
+
+	* priv.h (PM_INIT): Provide value again.
+	* data-return.c (_pager_do_write_request): Track PM_INIT again.
+
+	* priv.h (struct pager): Make pagemap consist of 16-bit elements
+	instead of only 8 bits.
+	* data-request.c (_pager_seqnos_memory_object_data_request):
+	Make PM_ENTRY a short pointer.
+	* data-return.c (_pager_do_write_request): Make PM_ENTRIES a short
+	pointer.	
+	* lock-object.c (_pager_lock_object): Make PM_ENTRIES a short
+	pointer. 
+	* mark-error.c (_pager_mark_next_request_error): Make P a short
+	pointer.  
+	(_pager_mark_object_error): Likewise.
+	* offer-page.c (pager_offer_page): Make PM_ENTRY a short pointer.
+	* object-terminate.c (_pager_free_structure): Interpret
+	pagemapsize correctly.
+	* pagemap.c (_pager_pagemap_resize): Likewise.
+
 2000-01-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* pager-memcpy.c (pager_memcpy): Short-circuit return for zero size.

@@ -1,5 +1,5 @@
 /* Synchronous wrapper for memory_object_lock_request
-   Copyright (C) 1993, 1994, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996, 1997, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -89,7 +89,7 @@ _pager_lock_object (struct pager *p,
 	  _pager_pagemap_resize (p, offset + size);
 	  if (p->pagemapsize > pm_offs)
 	    {
-	      char *pm_entries = &p->pagemap[pm_offs];
+	      short *pm_entries = &p->pagemap[pm_offs];
 	      vm_offset_t bound = size / vm_page_size;
 
 	      if (bound > p->pagemapsize)

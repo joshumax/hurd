@@ -32,7 +32,7 @@ _pager_mark_next_request_error(struct pager *pager,
 			       error_t error)
 {
   int page_error;
-  char *p;
+  short *p;
 
   offset /= __vm_page_size;
   length /= __vm_page_size;
@@ -70,7 +70,7 @@ _pager_mark_object_error(struct pager *pager,
 			 error_t error)
 {
   int page_error = 0;
-  char *p;
+  short *p;
 
   offset /= __vm_page_size;
   length /= __vm_page_size;

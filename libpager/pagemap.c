@@ -1,5 +1,5 @@
 /* Pagemap manipulation for pager library
-   Copyright (C) 1994, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994, 1997, 1999, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -31,12 +31,13 @@ _pager_pagemap_resize (struct pager *p, vm_address_t off)
       void *newaddr;
       int newsize = round_page (off);
 
-      newaddr = mmap (0, newsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      newaddr = mmap (0, newsize * sizeof (*p->pagemap), 
+		      PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       err = (newaddr == (void *) -1) ? errno : 0;
       if (! err)
 	{
-	  bcopy (p->pagemap, newaddr, p->pagemapsize);
-	  munmap (p->pagemap, p->pagemapsize);
+	  bcopy (p->pagemap, newaddr, p->pagemapsize * sizeof (*p->pagemap));
+	  munmap (p->pagemap, p->pagemapsize * sizeof (*p->pagemap));
 	  p->pagemap = newaddr;
 	  p->pagemapsize = newsize;
 	}

@@ -1,5 +1,5 @@
 /* Wrapper for unsolicited memory_object_data_supply
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -32,7 +32,7 @@ pager_offer_page (struct pager *p,
 
   if (_pager_pagemap_resize (p, offset + vm_page_size))
     {
-      char *pm_entry = &p->pagemap[offset / vm_page_size];
+      short *pm_entry = &p->pagemap[offset / vm_page_size];
 
       while (*pm_entry & PM_INCORE)
 	{

@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_return for pager library
-   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -37,7 +37,7 @@ _pager_do_write_request (mach_port_t object,
 			 int initializing)
 {
   struct pager *p;
-  char *pm_entries;
+  short *pm_entries;
   int npages, i;
   error_t *pagerrs;
   struct lock_request *lr;
@@ -90,8 +90,21 @@ _pager_do_write_request (mach_port_t object,
 
   pm_entries = &p->pagemap[offset / __vm_page_size];
 
+  /* Make sure there are no other in-progress writes for any of these
+     pages before we begin.  This imposes a little more serialization
+     than we really have to require (because *all* future writes on
+     this object are going to wait for seqno while we wait for the
+     previous write), but the case is relatively infrequent.  */
+ retry:
+  for (i = 0; i < npages; i++)
+    if (pm_entries[i] & PM_PAGINGOUT)
+      {
+	pm_entries[i] |= PM_WRITEWAIT;
+	condition_wait (&p->wakeup, &p->interlock);
+	goto retry;
+      }
+  
   /* Mark these pages as being paged out.  */
-#if 0
   if (initializing)
     {
       assert (npages <= 32);
@@ -106,13 +119,10 @@ _pager_do_write_request (mach_port_t object,
   else
     for (i = 0; i < npages; i++)
       pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
-#else
-  for (i = 0; i < npages; i++)
-    pm_entries[i] |= PM_PAGINGOUT;
+
   if (!kcopy)
     for (i = 0; i < npages; i++)
       pm_entries[i] &= ~PM_INCORE;
-#endif
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
@@ -149,10 +159,14 @@ _pager_do_write_request (mach_port_t object,
   _pager_pagemap_resize (p, offset + length);
   pm_entries = &p->pagemap[offset / __vm_page_size];
 
+  wakeup = 0;
   for (i = 0; i < npages; i++)
     {
       if (omitdata & (1 << i))
 	continue;
+      
+      if (pm_entries[i] & PM_WRITEWAIT)
+	wakeup = 1;
       
       if (pagerrs[i] && ! (pm_entries[i] & PM_PAGEINWAIT))
 	/* The only thing we can do here is mark the page, and give
@@ -174,13 +188,13 @@ _pager_do_write_request (mach_port_t object,
 	munmap ((caddr_t) (data + (vm_page_size * i)), 
 		vm_page_size);
 
-      pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT);
+      pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT | PM_WRITEWAIT);
     }
 
-  wakeup = 0;
   for (ll = lock_list; ll; ll = ll->next)
     if (!--ll->lr->pending_writes && !ll->lr->locks_pending)
       wakeup = 1;
+
   if (wakeup)
     condition_broadcast (&p->wakeup);
 
