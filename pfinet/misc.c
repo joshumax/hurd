@@ -27,9 +27,8 @@ make_sock_user (struct socket *sock, int isroot)
 {
   struct sock_user *user;
   
-  errno = ports_create_port (pfinet_bucket,
-			     sizeof (struct sock_user),
-			     socketport_class, &user);
+  errno = ports_create_port (socketport_class, pfinet_bucket,
+			     sizeof (struct sock_user), &user);
   if (errno)
     return 0;
   
