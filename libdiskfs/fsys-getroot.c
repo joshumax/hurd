@@ -68,7 +68,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       error = fshelp_fetch_root (&diskfs_root_node->transbox,
 				 &dotdot, dotdot, uids, nuids,
 				 gids, ngids, flags, 
-				 _diskfs_translator_callback,
+				 _diskfs_translator_callback1,
+				 _diskfs_translator_callback2,
 				 retry, retryname, returned_port);
       if (error != ENOENT)
 	{
