@@ -208,8 +208,17 @@ void complete_exit (struct proc *);
 void initialize_version_info (void);
 
 void send_signal (mach_port_t, int, mach_port_t);
-
-
-
+
+/* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get
+   its task port &c).  If PROC2 has an owner, then PROC1 must have that uid;
+   otherwise, both must be in the same login collection.  */
+extern inline int
+check_owner (struct proc *proc1, struct proc *proc2)
+{
+  return
+    proc2->p_noowner
+      ? proc1->p_login == proc2->p_login
+      : check_uid (proc1, proc2->p_owner);
+}
 
 #endif
