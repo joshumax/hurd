@@ -37,10 +37,10 @@
 */
 
 /* Return the current host port.  */
-host_t 
+mach_port_t
 ps_get_host ()
 {
-  static host_t host = MACH_PORT_NULL;
+  static mach_port_t host = MACH_PORT_NULL;
   if (host == MACH_PORT_NULL)
     host = mach_host_self ();
   return host;
@@ -59,7 +59,7 @@ ps_host_basic_info (host_basic_info_t *info)
   if (!initialized)
     {
       int size = sizeof (buf);
-      error_t err = host_info (ps_get_host (), HOST_BASIC_INFO, 
+      error_t err = host_info (ps_get_host (), HOST_BASIC_INFO,
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;
@@ -83,7 +83,7 @@ ps_host_sched_info (host_sched_info_t *info)
   if (!initialized)
     {
       int size = sizeof (buf);
-      error_t err = host_info (ps_get_host (), HOST_SCHED_INFO, 
+      error_t err = host_info (ps_get_host (), HOST_SCHED_INFO,
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;

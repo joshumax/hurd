@@ -1,8 +1,8 @@
 /* Routines to gather and print process information.
 
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -1026,7 +1026,7 @@ int proc_stat_list_spec_nominal (struct proc_stat_list *pp,
    information on the data types these routines return.  */
 
 /* Return the current host port.  */
-host_t ps_get_host ();
+mach_port_t ps_get_host ();
 
 /* Return a pointer to basic info about the current host in HOST_INFO.  Since
    this is static global information we just use a static buffer.  If a
