@@ -47,7 +47,7 @@ ports_lookup_port (struct port_bucket *bucket,
   if (pi)
     pi->refcnt++;
 
-  mutex_lock (&_ports_lock);
+  mutex_unlock (&_ports_lock);
   
   return pi;
 }
