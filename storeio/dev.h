@@ -50,8 +50,12 @@ struct dev
      indicates that there is no owner.  */
   pid_t owner;
 
-  /* This lock protects `store' and `owner'.  The other members never
-     change after creation, except for those locked by io_lock (below).  */
+  /* The number of active opens.  */
+  int nperopens;
+
+  /* This lock protects `store', `owner' and `nperopens'.  The other
+     members never change after creation, except for those locked by
+     io_lock (below).  */
   struct mutex lock;
 
   /* Nonzero iff the --no-cache flag was given.

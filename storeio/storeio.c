@@ -233,18 +233,34 @@ check_open_hook (struct trivfs_control *trivfs_control,
 static error_t
 open_hook (struct trivfs_peropen *peropen)
 {
+  error_t err = 0;
   struct dev *const dev = peropen->cntl->hook;
+
   if (dev->store)
-    return open_create (dev, (struct open **)&peropen->hook);
-  else
-    return 0;
+    {
+      mutex_lock (&dev->lock);
+      if (dev->nperopens++ == 0)
+	err = store_clear_flags (dev->store, STORE_INACTIVE);
+      mutex_unlock (&dev->lock);
+      if (!err)
+	err = open_create (dev, (struct open **)&peropen->hook);
+    }
+  return err;
 }
 
 static void
 close_hook (struct trivfs_peropen *peropen)
 {
+  struct dev *const dev = peropen->cntl->hook;
+
   if (peropen->hook)
-    open_free (peropen->hook);
+    {
+      mutex_lock (&dev->lock);
+      if (--dev->nperopens == 0)
+	store_set_flags (dev->store, STORE_INACTIVE);
+      mutex_unlock (&dev->lock);
+      open_free (peropen->hook);
+    }
 }
 
 /* ---------------------------------------------------------------- */

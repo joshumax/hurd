@@ -1,3 +1,13 @@
+2001-02-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dev.h (struct dev): New member nperopens.
+	* storeio.c (open_hook): Hold device lock and check if this is the
+	first open.  If yes, activate the store.
+	(close_hook): Hold global_lock and check if this was the last
+	open.  If yes, inactivate the store.
+	* dev.c (dev_open): Open the store with STORE_INACTIVE
+	(in store_parsed_open as well as in store_create).
+
 2001-01-17  Roland McGrath  <roland@frob.com>
 
 	* dev.c (dev_buf_discard): Don't check AMOUNT if store_write failed.

@@ -145,14 +145,15 @@ dev_open (struct dev *dev)
       /* This means we had no store arguments.
 	 We are to operate on our underlying node. */
       err = store_create (storeio_fsys->underlying,
-			  dev->readonly ? STORE_READONLY : 0,
+			  STORE_INACTIVE | (dev->readonly ? STORE_READONLY : 0),
 			  0, &dev->store);
 
     }
   else
     /* Open based on the previously parsed store arguments.  */
     err = store_parsed_open (dev->store_name,
-			     dev->readonly ? STORE_READONLY : 0,
+			     STORE_INACTIVE
+			     | (dev->readonly ? STORE_READONLY : 0),
 			     &dev->store);
   if (err)
     return err;
