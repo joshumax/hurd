@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 
 /* Implement io_reathenticate as described in <hurd/io.defs>. */
 kern_return_t
-diskfs_S_io_reauthenticate (struct protid *cred, 
+diskfs_S_io_reauthenticate (struct protid *cred,
 			    mach_port_t rend_port)
 {
   struct protid *newcred;
@@ -46,14 +46,12 @@ diskfs_S_io_reauthenticate (struct protid *cred,
       return err;
     }
 
-  err = auth_server_authenticate (diskfs_auth_server_port, 
-				  ports_get_right (cred),
-				  MACH_MSG_TYPE_MAKE_SEND,
+  err = auth_server_authenticate (diskfs_auth_server_port,
 				  rend_port,
 				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen, 
+				  &gen_uids, &genuidlen,
 				  &aux_uids, &auxuidlen,
 				  &gen_gids, &gengidlen,
 				  &aux_gids, &auxgidlen);
@@ -76,6 +74,6 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   if (agbuf != aux_gids)
     vm_deallocate (mach_task_self (), (u_int) aux_gids,
 		   auxgidlen * sizeof (uid_t));
-  
+
   return 0;
 }
