@@ -55,6 +55,7 @@ startup_options[] =
   {0,0,0,0, "Boot options:", -2},
   {"multiboot-command-line", OPT_BOOT_CMDLINE, "ARGS", 0,
    "Required for bootstrap filesystem, the multiboot kernel command line"},
+  {"bootflags", 0, 0, OPTION_ALIAS|OPTION_HIDDEN},
   {"boot-init-program",  OPT_BOOT_INIT_PROGRAM,  "FILE", 0,
    "For bootstrap filesystem, init program to run (default " _HURD_INIT ")"},
   {"boot-debug-pause",  OPT_BOOT_PAUSE,	         0, 0,
@@ -106,7 +107,7 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
     case OPT_BOOT_INIT_PROGRAM:
       diskfs_boot_init_program = arg; break;
     case OPT_BOOT_PAUSE:
-      _diskfs_boot_pause = 1;
+      _diskfs_boot_pause = 1; break;
     case 'C':
       _diskfs_chroot_directory = arg; break;
 
