@@ -161,6 +161,9 @@ pass1 ()
   for (number = 0, cg = 0; cg < sblock->fs_ncg; cg++)
     for (i = 0; i < sblock->fs_ipg; i++, number++)
       {
+	if (!(number % 1000))
+	  printf ("I=%d\n", number);
+
 	if (number < ROOTINO)
 	  continue;
 	
