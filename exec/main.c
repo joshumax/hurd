@@ -136,7 +136,7 @@ main (int argc, char **argv)
   execboot_portclass = ports_create_class (deadboot, NULL);
 
   /* Reply to our parent.  */
-  err = trivfs_startup (bootstrap,
+  err = trivfs_startup (bootstrap, 0,
 			trivfs_cntl_portclasses[0], port_bucket,
 			trivfs_protid_portclasses[0], port_bucket,
 			&fsys);
