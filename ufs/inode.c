@@ -680,10 +680,11 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   *class = STORAGE_DEVICE;
   *block_size = DEV_BSIZE;
 
-  strcpy (storage_name, ufs_device_name);
+  if (diskfs_device_name)
+    strcpy (storage_name, diskfs_device_name);
   
   if (diskfs_isuid (0, cred))
-    *storage_port = ufs_device;
+    *storage_port = diskfs_device;
   else
     *storage_port = MACH_PORT_NULL;
   *storage_port_type = MACH_MSG_TYPE_COPY_SEND;
