@@ -1,3 +1,8 @@
+Thu May  1 18:40:53 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* bootstrap.c (cthread_stack_size): Don't set special value here;
+	use the default.
+
 Fri Apr 18 16:44:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* wiring.c (__vm_allocate): New function.

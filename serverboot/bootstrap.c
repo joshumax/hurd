@@ -37,6 +37,7 @@
 #include "../boot/boot_script.h"
 #include "translate_root.h"
 
+#if 0
 /*
  *	Use 8 Kbyte stacks instead of the default 64K.
  *	Use 4 Kbyte waiting stacks instead of the default 8K.
@@ -45,6 +46,7 @@
 vm_size_t	cthread_stack_size = 16 * 1024;
 #else
 vm_size_t	cthread_stack_size = 8 * 1024;
+#endif
 #endif
 
 extern
