@@ -35,7 +35,6 @@ spin_lock_t periodic_sync_lock = SPIN_LOCK_INITIALIZER;
 /* The filesystem control port to which we send our sync requests.  */
 mach_port_t control_port;
 
-/* ---------------------------------------------------------------- */
 
 static void periodic_sync ();
 
@@ -55,7 +54,8 @@ diskfs_set_sync_interval (int interval)
     {
       control_port =
 	ports_get_right (ports_allocate_port
-			 (sizeof (struct port_info), PT_CTL));
+			 (diskfs_port_bucket, sizeof (struct port_info), 
+			  diskfs_control_class));
       err =
 	mach_port_insert_right (mach_task_self (),
 				control_port, control_port,
