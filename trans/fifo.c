@@ -158,83 +158,92 @@ open_hook (struct trivfs_peropen *po)
   error_t err = 0;
   int flags = po->openmodes;
 
+  if (flags & (O_READ | O_WRITE))
+    {
+      mutex_lock (&active_fifo_lock);
+
 /* Wait until the active fifo has changed so that CONDITION is true.  */
-#define WAIT(condition) 						     \
+#define WAIT(condition, noblock_err)					     \
   while (!err && !(condition)) 						     \
     if (flags & O_NONBLOCK) 						     \
-      err = EWOULDBLOCK; 						     \
+      {			 						     \
+        err = noblock_err; 						     \
+        break;		 						     \
+      }			 						     \
     else if (hurd_condition_wait (&active_fifo_changed, &active_fifo_lock))  \
       err = EINTR;
 
-  mutex_lock (&active_fifo_lock);
-
-  if (flags & O_READ)
-    /* When opening for read, what we do depends on what mode this server is
-       running in.  The default (if ONE_READER is set) is to only allow one
-       reader at a time, with additional opens for read blocking here until
-       the old reader goes away; otherwise, we allow multiple readers.  If
-       WAIT_FOR_WRITER is true, then once we've created a fifo, we also block
-       until someone opens it for writing; otherwise, the first read will
-       block until someone writes something.  */
-    {
-      if (one_reader)
-	/* Wait until there isn't any active fifo, so we can make one. */
-	WAIT (!active_fifo || !active_fifo->readers);
-
-      if (!err && active_fifo == NULL)
-	/* No other readers, and indeed, no fifo; make one.  */
-	err = pipe_create (fifo_pipe_class, &active_fifo);
-      if (!err)
+      if (flags & O_READ)
+	/* When opening for read, what we do depends on what mode this server
+	   is running in.  The default (if ONE_READER is set) is to only
+	   allow one reader at a time, with additional opens for read
+	   blocking here until the old reader goes away; otherwise, we allow
+	   multiple readers.  If WAIT_FOR_WRITER is true, then once we've
+	   created a fifo, we also block until someone opens it for writing;
+	   otherwise, the first read will block until someone writes
+	   something.  */
 	{
-	  pipe_add_reader (active_fifo);
-	  condition_broadcast (&active_fifo_changed);
-	  /* We'll unlock ACTIVE_FIFO_LOCK below; the writer code won't make
-	     us block because we've ensured that there's a reader for it.  */
+	  if (one_reader)
+	    /* Wait until there isn't any active fifo, so we can make one. */
+	    WAIT (!active_fifo || !active_fifo->readers, EWOULDBLOCK);
 
-	  if (wait_for_writer)
-	    /* Wait until there's a writer.  */
+	  if (!err && active_fifo == NULL)
+	    /* No other readers, and indeed, no fifo; make one.  */
 	    {
-	      WAIT (active_fifo->writers);
-	      if (err)
-		/* Back out the new pipe creation.  */
+	      err = pipe_create (fifo_pipe_class, &active_fifo);
+	      if (! err)
+		active_fifo->flags &= ~PIPE_BROKEN; /* Avoid immediate EOF. */
+	    }
+	  if (!err)
+	    {
+	      pipe_add_reader (active_fifo);
+	      condition_broadcast (&active_fifo_changed);
+	      /* We'll unlock ACTIVE_FIFO_LOCK below; the writer code won't
+		 make us block because we've ensured that there's a reader
+		 for it.  */
+
+	      if (wait_for_writer)
+		/* Wait until there's a writer.  */
 		{
-		  pipe_remove_reader (active_fifo);
-		  active_fifo = NULL;
-		  condition_broadcast (&active_fifo_changed);
+		  WAIT (active_fifo->writers, 0);
+		  if (err)
+		    /* Back out the new pipe creation.  */
+		    {
+		      pipe_remove_reader (active_fifo);
+		      active_fifo = NULL;
+		      condition_broadcast (&active_fifo_changed);
+		    }
 		}
 	    }
-	  else
-	    /* Otherwise prevent an immediate eof.  */
-	    active_fifo->flags &= ~PIPE_BROKEN;
 	}
-    }
 
-  if (!err && (flags & O_WRITE))
-    /* Open the active_fifo for writing.  If WAIT_FOR_READER is true, then we
-       block until there's someone to read what we wrote, otherwise, if
-       there's no fifo, we create one, which we just write into and leave it
-       for someone to read later.  */
-    {
-      if (wait_for_reader)
-	/* Wait until there's a fifo to write to.  */
-	WAIT (active_fifo && active_fifo->readers);
-      if (!err && active_fifo == NULL)
-	/* No other readers, and indeed, no fifo; make one.  */
+      if (!err && (flags & O_WRITE))
+	/* Open the active_fifo for writing.  If WAIT_FOR_READER is true,
+	   then we block until there's someone to read what we wrote,
+	   otherwise, if there's no fifo, we create one, which we just write
+	   into and leave it for someone to read later.  */
 	{
-	  err = pipe_create (fifo_pipe_class, &active_fifo);
+	  if (wait_for_reader)
+	    /* Wait until there's a fifo to write to.  */
+	    WAIT (active_fifo && active_fifo->readers, ENXIO);
+	  if (!err && active_fifo == NULL)
+	    /* No other readers, and indeed, no fifo; make one.  */
+	    {
+	      err = pipe_create (fifo_pipe_class, &active_fifo);
+	      if (!err)
+		active_fifo->flags &= ~PIPE_BROKEN;
+	    }
 	  if (!err)
-	    active_fifo->flags &= ~PIPE_BROKEN;
+	    {
+	      pipe_add_writer (active_fifo);
+	      condition_broadcast (&active_fifo_changed);
+	    }
 	}
-      if (!err)
-	{
-	  pipe_add_writer (active_fifo);
-	  condition_broadcast (&active_fifo_changed);
-	}
+
+      po->hook = active_fifo;
+
+      mutex_unlock (&active_fifo_lock);
     }
-
-  po->hook = active_fifo;
-
-  mutex_unlock (&active_fifo_lock);
 
   return err;
 }
@@ -242,7 +251,7 @@ open_hook (struct trivfs_peropen *po)
 static void
 close_hook (struct trivfs_peropen *po)
 {
-  int was_active, going_away = 0;
+  int was_active, detach = 0;
   int flags = po->openmodes;
   struct pipe *pipe = po->hook;
 
@@ -253,10 +262,10 @@ close_hook (struct trivfs_peropen *po)
   was_active = (active_fifo == pipe);
 
   if (was_active)
-    {
-      /* We're the last reader; when we're gone there is no more joy.  */
-      going_away = ((flags & O_READ) && pipe->readers == 1);
-    }
+    /* See if PIPE should cease to be the user-visible face of this fifo.  */
+    detach =
+      ((flags & O_READ) && pipe->readers == 1)
+	|| ((flags & O_WRITE) && pipe->writers == 1);
   else
     /* Let others have their fun.  */
     mutex_unlock (&active_fifo_lock);
@@ -269,7 +278,7 @@ close_hook (struct trivfs_peropen *po)
 
   if (was_active)
     {
-      if (going_away)
+      if (detach)
 	active_fifo = NULL;
       condition_broadcast (&active_fifo_changed);
       mutex_unlock (&active_fifo_lock);
@@ -305,6 +314,8 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
       st->st_blocks = st->st_size >> 9;
       mutex_unlock (&pipe->lock);
     }
+  else
+    st->st_size = st->st_blocks = 0;
 
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
@@ -441,7 +452,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  pipe = cred->hook;
+  pipe = cred->po->hook;
 
   if (*select_type & SELECT_READ)
     if (cred->po->openmodes & O_READ)
@@ -518,7 +529,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 /* ---------------------------------------------------------------- */
 
 error_t
-trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t reply_type,
+			off_t size)
 {
   return size == 0 ? 0 : EINVAL;
 }
