@@ -78,6 +78,19 @@ struct transbox
    fshelp_fetch_root should not need to create them on every call, since
    usually there will be an existing active translator. */
 
+/* This routine is called by fshelp_fetch_root to fetch more
+   information.  Return the owner and group of the underlying
+   translated file in *UID and *GID; return an unauthenticated
+   node for the file itself in *UNDERLYING, and point *ARGZ at
+   the entire passive translator spec for the file (setting
+   *ARGZ_LEN to the length.)   If there is no passive 
+   translator, then return ENOENT.  */
+typedef void (*fshelp_callback_t) (void *cookie,
+				   mach_port_t *underlying,
+				   uid_t *uid, gid_t *gid, 
+				   char **argz, int *argz_len);
+
+
 /* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
    for the directory in which we are looking; UIDS (length UIDS_LEN)
    and GIDS (length GIDS_LEN) are the ids of the user responsible for
@@ -97,18 +110,6 @@ void
 fshelp_transbox_init (struct transbox *transbox,
 		      struct mutex *lock,
 		      void *cookie);
-
-/* This routine is called by fshelp_fetch_root to fetch more
-   information.  Return the owner and group of the underlying
-   translated file in *UID and *GID; return an unauthenticated
-   node for the file itself in *UNDERLYING, and point *ARGZ at
-   the entire passive translator spec for the file (setting
-   *ARGZ_LEN to the length.)   If there is no passive 
-   translator, then return ENOENT.  */
-typedef void (*fshelp_callback_t) (void *cookie,
-				   mach_port_t *underlying,
-				   uid_t *uid, gid_t *gid, 
-				   char **argz, int *argz_len);
 
 /* Return true iff there is an active translator on this box */
 extern inline int
