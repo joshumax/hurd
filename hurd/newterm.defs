@@ -1,5 +1,5 @@
 /* Creation of terminal processors
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -25,12 +25,12 @@ subsystem newterm 27000;
 
 /* Create a new terminal thingie with no bottom half.  (You need to do
    one of term_on_* before this can be used for I/O.) */
-newterm_from_device (
+routine newterm_from_device (
 	newterm: mach_port_t;
 	out terminal: io_t);
 
 /* Register a terminal as a node in the filesystem.  */
-newterm_makenode (
+routine newterm_makenode (
 	newterm: mach_port_t;
 	terminal: io_t;
 	mode: mode_t;
