@@ -39,7 +39,7 @@ hash (void *fhandle)
 }
 
 struct node *
-lookup_fhandle (void *fhandle, struct node *dir)
+lookup_fhandle (void *fhandle)
 {
   struct node *np;
   struct netnode *nn;
@@ -60,9 +60,7 @@ lookup_fhandle (void *fhandle, struct node *dir)
   nn = malloc (sizeof (struct netnode));
   bcopy (fhandle, nn->handle, NFS_FHSIZE);
   nn->stat_updated = 0;
-  if (dir)
-    dir->references++;
-  nn->dir = dir;
+  nn->dtrans = NOT_POSSIBLE;
   
   np = netfs_make_node (nn);
   mutex_lock (&np->lock);
@@ -79,7 +77,6 @@ lookup_fhandle (void *fhandle, struct node *dir)
 void
 netfs_node_norefs (struct node *np)
 {
-  struct node *dir;
   if (np->nn->dead_dir)
     {
       struct node *dir;
@@ -105,15 +102,35 @@ netfs_node_norefs (struct node *np)
     }
   else
     {
-      dir = np->nn->dir;
       *np->nn->hprevp = np->nn->hnext;
       if (np->nn->hnext)
 	np->nn->hnext->nn->hprevp = np->nn->hprevp;
+      if (np->nn->dtrans == SYMLINK)
+	free (np->nn->transarg.name);
       free (np->nn);
       free (np);
-
-      spin_unlock (&netfs_node_refcnt_lock);
-      netfs_nrele (dir);
-      spin_lock (&netfs_node_refcnt_lock);
     }
 }
+
+void
+recache_handle (struct node *np, void *handle)
+{
+  int h;
+  
+  spin_lock (&netfs_node_refcnt_lock);
+  *np->nn->hprevp = np->nn->hnext;
+  if (np->nn->hnext)
+    np->nn->hnext->nn->hprevp = np->nn->hprevp;
+  
+  bcopy (handle, np->nn->handle, NFS_FHSIZE);
+  
+  h = hash (handle);
+  np->nn->hnext = nodehash[h];
+  if (np->nn->hnext)
+    np->nn->hnext->nn->hprevp = &np->nn->hnext;
+  np->nn->hprevp = &nodehash[h];
+  
+  spin_unlock (&netfs_node_refcnt_lock);
+}
+
+
