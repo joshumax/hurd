@@ -996,10 +996,13 @@ ds_device_write (device_t device,
       return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else if (device == pseudo_root)
-    return
-      (store_write (root_store, recnum, data, datalen, bytes_written) == 0
-       ? D_SUCCESS
-       : D_IO_ERROR);
+    {
+      size_t wrote;
+      if (store_write (root_store, recnum, data, datalen, &wrote) != 0)
+	return D_IO_ERROR;
+      *bytes_written = wrote;
+      return D_SUCCESS;
+    }
   else
     return D_NO_SUCH_DEVICE;
 }
@@ -1030,10 +1033,13 @@ ds_device_write_inband (device_t device,
       return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else if (device == pseudo_root)
-    return
-      (store_write (root_store, recnum, data, datalen, bytes_written) == 0
-       ? D_SUCCESS
-       : D_IO_ERROR);
+    {
+      size_t wrote;
+      if (store_write (root_store, recnum, data, datalen, &wrote) != 0)
+	return D_IO_ERROR;
+      *bytes_written = wrote;
+      return D_SUCCESS;
+    }
   else
     return D_NO_SUCH_DEVICE;
 }
