@@ -1,3 +1,29 @@
+2002-11-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.c (main): Pass ERR to error invocation.
+	* generic-speaker.c (generic_spaker_beep): Use currently active
+	beep's next pointer, instead index 0.
+	* pc-kbd.c: New global variables led_state and gnumach_v1_compat.
+	(enum scancode): Change to set 2 encoding.
+	(enum scancode_x1): Likewise.
+	(enum scancode_x2): New type.
+	(sc_to_kc): Change to set 2 encoding.
+	(sc_x1_to_kc): Likewise.
+	(sc_set1_to_set2): New variable.
+	(sc_set1_to_set2_x1): Likewise.
+	(gnumach_v1_input_next): New function.
+	(update_leds): Likewise.
+	(input_next): Likewise.
+	(input_loop): Use input_next or gnumach_v1_input_next to read next
+	key code.
+	(pc_kbd_start): Add support for current GNU Mach @>=kbd interface.
+	Call update_leds and toggle led_state.
+	(pc_kbd_fini): Add support for current GNU Mach.
+	(pc_kbd_set_scroll_lock_status): Toggle led_state and call
+	update_leds.
+	* vga-support.c (vga_init): Add support for current GNU Mach's I/O
+	permission bitmap handling and its mem device.
+
 2002-09-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* vga-support.c (vga_get_font_width): New function.

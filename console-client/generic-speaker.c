@@ -441,7 +441,7 @@ generic_speaker_beep (void *handle)
   if (timer_remove (&generic_speaker_timer))
     beep_off ();
   generic_speaker_timer.fnc_data = beep[active_beep];
-  beep[0]->next = &beep[active_beep]->note[1];
+  beep[active_beep]->next = &beep[active_beep]->note[1];
   beep_on (beep[active_beep]->note[0].pitch);
   generic_speaker_timer.expires = fetch_jiffies ()
     + (60 * HZ * beep[active_beep]->note[0].duration

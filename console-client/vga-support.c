@@ -76,59 +76,70 @@ error_t
 vga_init (void)
 {
   error_t err;
-#if OSKIT_MACH
   int fd;
-#else
-  device_t device_master = MACH_PORT_NULL;
-  memory_object_t kd_mem = MACH_PORT_NULL;
-  static device_t kd_device = MACH_PORT_NULL;
-  vm_address_t mapped;
-#endif
 
-#if OSKIT_MACH
+  /* Acquire I/O port access.  */
   if (ioperm (VGA_MIN_REG, VGA_MAX_REG - VGA_MIN_REG + 1, 1) < 0)
     {
-      free (vga_state);
-      return errno;
+      /* GNU Mach v1 is broken in that it doesn't implement an I/O
+	 perm interface and just allows all tasks to access any I/O
+	 port.  */
+      if (errno != EMIG_BAD_ID && errno != ENOSYS)
+	{
+	  free (vga_state);
+	  return errno;
+	}
     }
 
   fd = open ("/dev/mem", O_RDWR);
-  if (fd < 0)
+  if (fd >= 0)
+    {
+      vga_videomem = mmap (0, VGA_VIDEO_MEM_LENGTH, PROT_READ | PROT_WRITE,
+			   MAP_SHARED, fd, VGA_VIDEO_MEM_BASE_ADDR);
+      err = errno;
+      close (fd);
+      if (vga_videomem == (void *) -1)
+	return err;
+    }
+  else if (errno == ENXIO)
+    {
+      /* GNU Mach v1 does not provide /dev/mem, but allows direct
+	 memory access to the video memory through the special "kd"
+	 kernel device.  */
+      device_t device_master = MACH_PORT_NULL;
+      memory_object_t kd_mem = MACH_PORT_NULL;
+      static device_t kd_device = MACH_PORT_NULL;
+      vm_address_t mapped;
+
+      err = get_privileged_ports (0, &device_master);
+      if (err)
+	return err;
+
+      err = device_open (device_master, D_WRITE, "kd", &kd_device);
+      if (err)
+	return err;
+
+      err = device_map (kd_device, VM_PROT_READ | VM_PROT_WRITE,
+			VIDMMAP_BEGIN - VIDMMAP_KDOFS, VIDMMAP_SIZE,
+			&kd_mem, 0);
+      if (err)
+	return err;
+
+      err = vm_map (mach_task_self (), &mapped, VIDMMAP_SIZE,
+		    0, 1, kd_mem, VIDMMAP_BEGIN - VIDMMAP_KDOFS, 0,
+		    VM_PROT_READ | VM_PROT_WRITE, VM_PROT_READ | VM_PROT_WRITE,
+		    VM_INHERIT_NONE);
+      if (err)
+	return err;
+
+      vga_videomem = (char *) mapped;
+      assert (vga_videomem != NULL);
+
+      mach_port_deallocate (mach_task_self (), device_master);
+      mach_port_deallocate (mach_task_self (), kd_mem);
+    }
+  else
     return errno;
-  vga_videomem = mmap (0, VGA_VIDEO_MEM_LENGTH, PROT_READ | PROT_WRITE,
-		       MAP_SHARED, fd, VGA_VIDEO_MEM_BASE_ADDR);
-  err = errno;
-  close (fd);
-  if (vga_videomem == (void *) -1)
-    return err;
-#else
-  err = get_privileged_ports (0, &device_master);
-  if (err)
-    return err;
-
-  err = device_open (device_master, D_WRITE, "kd", &kd_device);
-  if (err)
-    return err;
-
-  err = device_map (kd_device, VM_PROT_READ | VM_PROT_WRITE,
-                    VIDMMAP_BEGIN - VIDMMAP_KDOFS, VIDMMAP_SIZE,
-                    &kd_mem, 0);
-  if (err)
-    return err;
-
-  err = vm_map (mach_task_self (), &mapped, VIDMMAP_SIZE,
-                0, 1, kd_mem, VIDMMAP_BEGIN - VIDMMAP_KDOFS, 0,
-                VM_PROT_READ | VM_PROT_WRITE, VM_PROT_READ | VM_PROT_WRITE,
-                VM_INHERIT_NONE);
-  if (err)
-    return err;
-
-  vga_videomem = (char *) mapped;
-  assert (vga_videomem != NULL);
-
-  mach_port_deallocate (mach_task_self (), device_master);
-  mach_port_deallocate (mach_task_self (), kd_mem);
-#endif
 
   /* Save the current state.  */
   vga_state = malloc (sizeof (*vga_state));

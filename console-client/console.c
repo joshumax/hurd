@@ -442,7 +442,7 @@ main (int argc, char *argv[])
 
   err = driver_start (&errname);
   if (err)
-    error (1, 0, "Starting driver %s failed", errname);
+    error (1, err, "Starting driver %s failed", errname);
     
   mutex_init (&global_lock);
 
