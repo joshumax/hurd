@@ -26,8 +26,7 @@
 #include <stdarg.h>
 #include <malloc.h>
 #include <ctype.h>
-
-#include <line.h>
+#include <linewrap.h>
 
 #include "argp.h"
 
@@ -447,19 +446,30 @@ hol_append (struct hol *hol, struct hol *more)
     }
 }
 
-/* Print help for ENTRY to LINE.  *LAST_ENTRY should contain the last entry
+/* Inserts enough spaces to make sure STREAM is at column COL.  */
+static void
+indent_to (FILE *stream, unsigned col)
+{
+  int needed = col - line_wrap_point (stream);
+  while (needed > 0)
+    putc (' ', stream);
+}
+
+/* Print help for ENTRY to STREAM.  *LAST_ENTRY should contain the last entry
    printed before this, or null if it's the first, and if ENTRY is in a
    different group, and *SEP_GROUPS is true, then a blank line will be
    printed before any output.  *SEP_GROUPS is also set to true if a
    user-specified group header is printed.  */
 static void
-hol_entry_help (struct hol_entry *entry, struct line *line,
+hol_entry_help (struct hol_entry *entry, FILE *stream,
 		struct hol_entry **prev_entry, int *sep_groups)
 {
   unsigned num;
   int first = 1;		/* True if nothing's been printed so far.  */
   const struct argp_option *real = entry->opt, *opt;
   char *so = entry->short_options;
+  int old_lm = line_wrap_set_lmargin (stream, 0);
+  int old_wm = line_wrap_set_wmargin (stream, 0);
 
   /* Inserts a comma if this isn't the first item on the line, and then makes
      sure we're at least to column COL.  Also clears FIRST.  */
@@ -470,15 +480,12 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 	  if (sep_groups && *sep_groups
 	      && prev_entry && *prev_entry
 	      && entry->group != (*prev_entry)->group)
-	    line_newline (line, 0);
+	    putc ('\n', stream);
 	  first = 0;
 	}
       else
-	{
-	  line_putc (line, ',');
-	  line_putc (line, ' ');
-	}
-      line_indent_to (line, col);
+	fputs (", ", stream);
+      indent_to (stream, col);
     }
 
   /* If the option REAL has an argument, we print it in using the printf
@@ -488,12 +495,13 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
     {
       if (real->arg)
 	if (real->flags & OPTION_ARG_OPTIONAL)
-	  line_printf (line, opt_fmt, real->arg);
+	  fprintf (stream, opt_fmt, real->arg);
 	else
-	  line_printf (line, req_fmt, real->arg);
+	  fprintf (stream, req_fmt, real->arg);
     }
 
   /* First emit short options.  */
+  line_wrap_set_wmargin (stream, SHORT_OPT_COL); /* For truly bizarre cases. */
   for (opt = real, num = entry->num; num > 0; opt++, num--)
     if (oshort (opt) && opt->key == *so)
       /* OPT has a valid (non shadowed) short option.  */
@@ -501,22 +509,24 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 	if (ovisible (opt))
 	  {
 	    comma (SHORT_OPT_COL);
-	    line_putc (line, '-');
-	    line_putc (line, *so);
+	    putc ('-', stream);
+	    putc (*so, stream);
 	    arg (" %s", "[%s]");
 	  }
 	so++;
       }
 
   /* Now, long options.  */
+  line_wrap_set_wmargin (stream, LONG_OPT_COL);
   for (opt = real, num = entry->num; num > 0; opt++, num--)
     if (opt->name && ovisible (opt))
       {
 	comma (LONG_OPT_COL);
-	line_printf (line, "--%s", opt->name);
+	fprintf (stream, "--%s", opt->name);
 	arg ("=%s", "[=%s]");
       }
 
+  line_wrap_set_lmargin (stream, 0);
   if (first)
     /* Didn't print any switches, what's up?  */
     if (!oshort (real) && !real->name && real->doc)
@@ -525,9 +535,11 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 	if (*real->doc)
 	  {
 	    if (prev_entry && *prev_entry)
-	      line_newline (line, 0); /* Precede with a blank line.  */
-	    line_indent_to (line, HEADER_COL);
-	    line_fill (line, real->doc, HEADER_COL);
+	      putc ('\n', stream); /* Precede with a blank line.  */
+	    indent_to (stream, HEADER_COL);
+	    line_wrap_set_lmargin (stream, HEADER_COL);
+	    line_wrap_set_wmargin (stream, HEADER_COL);
+	    fputs (real->doc, stream);
 	  }
 	if (sep_groups)
 	  *sep_groups = 1;	/* Separate subsequent groups. */
@@ -538,28 +550,34 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
   else if (real->doc)
     /* Now the option documentation.  */
     {
-      unsigned col = line_column (line);
+      unsigned col = line_wrap_point (stream);
       const char *doc = real->doc;
 
-      if (col > OPT_DOC_COL + 3)
-	line_newline (line, OPT_DOC_COL);
-      else if (col >= OPT_DOC_COL)
-	line_printf (line, "   ");
-      else
-	line_indent_to (line, OPT_DOC_COL);
+      line_wrap_set_lmargin (stream, OPT_DOC_COL);
+      line_wrap_set_wmargin (stream, OPT_DOC_COL);
 
-      line_fill (line, doc, OPT_DOC_COL);
+      if (col > OPT_DOC_COL + 3)
+	putc ('\n', stream);
+      else if (col >= OPT_DOC_COL)
+	fprintf (stream, "   ");
+      else
+	indent_to (stream, OPT_DOC_COL);
+
+      fputs (doc, stream);
     }
 
-  line_newline (line, 0);
+  line_wrap_set_lmargin (stream, 0); /* Don't follow the nl with spaces. */
+  putc ('\n', stream);
+  line_wrap_set_lmargin (stream, old_lm);
+  line_wrap_set_wmargin (stream, old_wm);
 
   if (prev_entry)
     *prev_entry = entry;
 }
 
-/* Output a long help message about the options in HOL to LINE.  */
+/* Output a long help message about the options in HOL to STREAM.  */
 static void
-hol_help (struct hol *hol, struct line *line)
+hol_help (struct hol *hol, FILE *stream)
 {
   unsigned num;
   struct hol_entry *entry;
@@ -567,35 +585,15 @@ hol_help (struct hol *hol, struct line *line)
   int sep_groups = 0;		/* True if we should separate different
 				   sections with blank lines.   */
   for (entry = hol->entries, num = hol->num_entries; num > 0; entry++, num--)
-    hol_entry_help (entry, line, &last_entry, &sep_groups);
+    hol_entry_help (entry, stream, &last_entry, &sep_groups);
 }
 
-/* Add the formatted output from FMT &c to LINE, preceded by a space if it
-   fits on the same line, otherwise starting on a new line and indented by
-   USAGE_INDENT spaces.  */
+/* Print a short usage description for the arguments in HOL to STREAM.  */
 static void
-add_usage_item (struct line *line, char *fmt, ...)
+hol_usage (struct hol *hol, FILE *stream)
 {
-  va_list ap;
-  unsigned len;
-  static char item[RMARGIN + 1];
+  int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
 
-  va_start (ap, fmt);
-  vsnprintf (item, sizeof (item), fmt, ap);
-  va_end (ap);
-
-  len = strlen (item);
-  if (line_left (line, len + 1) >= 0)
-    line_putc (line, ' ');
-  else
-    line_newline (line, USAGE_INDENT);
-  line_puts (line, item);
-}
-
-/* Print a short usage description for the arguments in HOL to LINE.  */
-static void
-hol_usage (struct hol *hol, struct line *line)
-{
   if (hol->num_entries > 0)
     {
       unsigned nentries;
@@ -620,7 +618,7 @@ hol_usage (struct hol *hol, struct line *line)
       if (snao_end > short_no_arg_opts)
 	{
 	  *snao_end++ = 0;
-	  add_usage_item (line, "[-%s]", short_no_arg_opts);
+	  fprintf (stream, "[-%s]", short_no_arg_opts);
 	}
 
       /* Now a list of short options *with* arguments.  */
@@ -633,11 +631,11 @@ hol_usage (struct hol *hol, struct line *line)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  add_usage_item (line, "[-%c[%s]]",
-				   opt->key, opt->arg ?: real->arg);
+		  fprintf (stream, "[-%c[%s]]",
+			   opt->key, opt->arg ?: real->arg);
 		else
-		  add_usage_item (line, "[-%c %s]",
-				   opt->key, opt->arg ?: real->arg);
+		  fprintf (stream, "[-%c %s]",
+			   opt->key, opt->arg ?: real->arg);
 	      return 0;
 	    }
 	  hol_entry_short_iterate (entry, func3);
@@ -653,18 +651,19 @@ hol_usage (struct hol *hol, struct line *line)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  add_usage_item (line, "[--%s[=%s]]",
-				   opt->name, opt->arg ?: real->arg);
+		  fprintf (stream, "[--%s[=%s]]",
+			   opt->name, opt->arg ?: real->arg);
 		else
-		  add_usage_item (line, "[--%s=%s]",
-				   opt->name, opt->arg ?: real->arg);
+		  fprintf (stream, "[--%s=%s]",
+			   opt->name, opt->arg ?: real->arg);
 	      else
-		add_usage_item (line, "[--%s]", opt->name);
+		fprintf (stream, "[--%s]", opt->name);
 	      return 0;
 	    }
 	  hol_entry_long_iterate (entry, func4);
 	}
     }
+  line_wrap_set_wmargin (stream, old_wm);
 }
 
 /* Make a HOL containing all levels of options in ARGP.  */
@@ -679,36 +678,37 @@ argp_hol (const struct argp *argp)
   return hol;
 }
 
-/* Print all the non-option args documented in ARGP to LINE.  Any output is
+/* Print all the non-option args documented in ARGP to STREAM.  Any output is
    preceded by a space.  */
 static void
-argp_args_usage (const struct argp *argp, struct line *line)
+argp_args_usage (const struct argp *argp, FILE *stream)
 {
   const struct argp **children = argp->children;
   const char *doc = argp->args_doc;
   if (doc)
-    add_usage_item (line, "%s", doc);
+    add_usage_item (stream, "%s", doc);
   if (children)
     while (*children)
-      argp_args_usage (*children++, line);
+      argp_args_usage (*children++, stream);
 }
 
-/* Print the documentation for ARGP to LINE.  Each separate bit of
+/* Print the documentation for ARGP to STREAM.  Each separate bit of
    documentation is preceded by a blank line.  */
 static void
-argp_doc (const struct argp *argp, struct line *line)
+argp_doc (const struct argp *argp, FILE *stream)
 {
   const struct argp **children = argp->children;
   const char *doc = argp->doc;
   if (doc)
     {
-      line_newline (line, 0);
-      line_fill (line, doc, 0);
-      line_freshline (line, 0);
+      putc ('\n', stream);
+      fputs (doc, stream);
+      if (line_wrap_point (stream) > line_wrap_lmargin (stream))
+	putc ('\n', stream);
     }
   if (children)
     while (*children)
-      argp_doc (*children++, line);
+      argp_doc (*children++, stream);
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
@@ -717,14 +717,9 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
 {
   int first = 1;
   struct hol *hol = 0;
-  struct line *line = make_line (stream, RMARGIN);
+  FILE *stream = line_wrap_stream (stream, 0, RMARGIN, 0);
 
-  /* `paragraph break' -- print a blank line if there's any output so far.  */
-  void pbreak ()
-    {
-      if (! first)
-	line_newline (line, 0);
-    }
+  assert (stream);
 
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG))
     {
@@ -740,25 +735,25 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE))
     /* Print a short `Usage:' message.  */
     {
-      line_printf (line, "Usage: %s", program_invocation_name);
+      fprintf (stream, "Usage: %s", program_invocation_name);
       if (flags & ARGP_HELP_SHORT_USAGE)
 	/* Just show where the options go.  */
 	{
 	  if (hol->num_entries > 0)
-	    line_puts (line, " [OPTIONS...]");
+	    fputs (" [OPTIONS...]", stream);
 	}
       else
 	/* Actually print the options.  */
-	hol_usage (hol, line);
-      argp_args_usage (argp, line);
-      line_newline (line, 0);
+	hol_usage (hol, stream);
+      argp_args_usage (argp, stream);
+      putc ('\n', stream);
       first = 0;
     }
 
   if (flags & ARGP_HELP_SEE)
     {
-      line_printf (line, "Try `%s --help' for more information.\n",
-		   program_invocation_name);
+      fprintf (stream, "Try `%s --help' for more information.\n",
+	       program_invocation_name);
       first = 0;
     }
 
@@ -768,19 +763,20 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
       /* Print info about all the options.  */
       if (hol->num_entries > 0)
 	{
-	  pbreak ();
-	  hol_help (hol, line);
+	  if (! first)
+	    putc ('\n', stream);
+	  hol_help (hol, stream);
 	  first = 0;
 	}
 
       /* Finally, print any documentation strings at the end.  */
-      argp_doc (argp, line);
+      argp_doc (argp, stream);
     }
 
   if (hol)
     hol_free (hol);
 
-  line_free (line);
+  line_unwrap_stream (stream);
 }
 
 /* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
