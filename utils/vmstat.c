@@ -35,17 +35,13 @@
 char *argp_program_version = STANDARD_HURD_VERSION (vmstat);
 
 static const struct argp_option options[] = {
-  {"terse",	't', 0, 0, "Use short one-line output format", 1 },
+  {"terse",	't', 0, 0, "Use short one-line output format"},
   {"no-header", 'H', 0, 0, "Don't print a descriptive header line"},
   {"prefix",    'p', 0, 0, "Always display a description before stats"},
   {"no-prefix", 'P', 0, 0, "Never display a description before stats"},
   {"pages",     'v', 0, 0, "Display sizes in pages"},
   {"kilobytes", 'k', 0, 0, "Display sizes in 1024 byte blocks"},
   {"bytes",     'b', 0, 0, "Display sizes in bytes"},
-
-  /* A header for all the individual field options.  */
-  { 0,0,0,0, "Selecting which statistics to show:", 2},
-
   {0}
 };
 static const char *args_doc = "[PERIOD [COUNT [HEADER_INTERVAL]]]";
@@ -420,8 +416,9 @@ main (int argc, char **argv)
   struct argp_option *field_opts;
   int field_opts_size;
   struct argp field_argp = { 0, parse_opt };
-  const struct argp *parents[] = { &field_argp, 0 };
-  const struct argp argp = { options, parse_opt, args_doc, doc, parents };
+  const struct argp_child children[] =
+    {{&field_argp, 0, "Selecting which statistics to show:"}, {0}};
+  const struct argp argp = { options, parse_opt, args_doc, doc, children };
 
   /* See how many fields we know about.  */
   for (field = fields; field->name; field++)
