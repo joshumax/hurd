@@ -20,8 +20,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "ufs.h"
-#include "fs.h"
-#include "dinode.h"
 #include <string.h>
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
@@ -30,6 +28,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define MAY_CACHE 1
 #endif
 
+static int free_indir (struct node *np, daddr_t bno, int level);
+static void poke_pages (memory_object_t, vm_offset_t, vm_offset_t);
 
 /* Implement the diskfs_truncate callback; sse <hurd/diskfs.h> for the
    interface description. */
@@ -41,7 +41,10 @@ diskfs_truncate (struct node *np,
   daddr_t lastiblock[NIADDR], lastblock, bn;
   struct dinode *di = dino (np->dn->number);
   int blocksfreed = 0;
-  
+  error_t err;
+  int level;
+  int i;
+
   if (length >= np->dn_stat.st_size)
     return 0;
 
@@ -72,13 +75,14 @@ diskfs_truncate (struct node *np,
       int savesize = np->allocsize;
       
       np->allocsize = length;	/* temporary */
-      bsize = blksize (sblock, np, lbkno (sblock, length));
+      bsize = blksize (sblock, np, lblkno (sblock, length));
       np->allocsize = savesize;
-      diskfs_node_rdwr (np, zeroblock, length, bsize - offset, 1, 0, 0);
+      diskfs_node_rdwr (np, (void *) zeroblock, length, 
+			bsize - offset, 1, 0, 0);
       diskfs_file_update (np, 1);
     }
 
-  rwlock_writer_lock (&np->allocptrlock);
+  rwlock_writer_lock (&np->dn->allocptrlock);
 
   /* Now flush all the data past the new size from the kernel.
      Also force any delayed copies of this data to take place
@@ -87,6 +91,8 @@ diskfs_truncate (struct node *np,
      this forces us to help out the kernel thusly.) */
   if (np->dn->fileinfo)
     {
+      mach_port_t obj;
+      
       pager_change_attributes (np->dn->fileinfo->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_NONE, 1);
       obj = diskfs_get_filemap (np);
@@ -94,23 +100,20 @@ diskfs_truncate (struct node *np,
 			      MACH_MSG_TYPE_MAKE_SEND);
       poke_pages (obj, round_page (length), round_page (np->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (np->fileinfo->p, round_page (length),
+      pager_flush_some (np->dn->fileinfo->p, round_page (length),
 			np->allocsize - length, 1);
     }
 
   /* Calculate index into node's block list of direct
      and indirect blocks which we want to keep.  Lastblock
      is -1 when the file is truncated to 0. */
-  lastblock = lblkno (sblock, length + sblock->fs_bsize - 1) - 1;
+  lastblock = lblkno (sblock, length - 1);
   lastiblock[INDIR_SINGLE] = lastblock - NDADDR;
   lastiblock[INDIR_DOUBLE] = lastiblock[INDIR_SINGLE] - NINDIR (sblock);
   lastiblock[INDIR_TRIPLE] = (lastiblock[INDIR_DOUBLE]
 			      - NINDIR (sblock) * NINDIR (sblock));
   
-  /* Normalize to -1 indicating that this block will not be needed. */
-  for (level = INDIR_TRIPLE; level >= INDIR_SINGLE; level--)
-    if (lastiblock[level] < 0)
-      lastiblock[level] = -1;
+  /* lastiblock will now be negative for elements that we should free. */
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
@@ -124,13 +127,13 @@ diskfs_truncate (struct node *np,
   err = diskfs_catch_exception ();
   if (err)
     {
-      rwlock_writer_unlock (&np->allocptrlock);
+      rwlock_writer_unlock (&np->dn->allocptrlock);
       return err;
     }
 
   /* Indirect blocks first. */
   for (level = INDIR_TRIPLE; level >= INDIR_SINGLE; level--)
-    if (lastiblock[level] == -1 && di->di_ib[level])
+    if (lastiblock[level] < 0 && di->di_ib[level])
       {
 	int count;
 	count = free_indir (np, di->di_ib[level], level);
@@ -143,27 +146,27 @@ diskfs_truncate (struct node *np,
     {
       long bsize;
 
-      bn = dn->di_db[i];
+      bn = di->di_db[i];
       if (bn == 0)
 	continue;
 
       bsize = blksize (sblock, np, i);
-      ffs_blkfree (sblock, bn, bsize);
+      ffs_blkfree (np, bn, bsize);
       blocksfreed += btodb (bsize);
 
-      dn->di_db[i] = 0;
+      di->di_db[i] = 0;
     }
 
   /* Finally, check to see if the new last direct block is 
      changing size; if so release any frags necessary. */
   if (lastblock >= 0
-      && dn->di_db[lastblock])
+      && di->di_db[lastblock])
     {
-      bn = dn->di_db[lastblock];
       long oldspace, newspace;
       
+      bn = di->di_db[lastblock];
       oldspace = blksize (sblock, np, lastblock);
-      np->allocsize = length;
+      np->allocsize = fragroundup (sblock, length);
       newspace = blksize (sblock, np, lastblock);
       
       assert (newspace);
@@ -172,18 +175,18 @@ diskfs_truncate (struct node *np,
 	{
 	  bn += numfrags (sblock, newspace);
 	  ffs_blkfree (np, bn, oldspace - newspace);
-	  blocksfreed += btodb (oldspace - newspace)
+	  blocksfreed += btodb (oldspace - newspace);
 	}
     }
   else
-    np->allocsize = length;
+    np->allocsize = fragroundup (sblock, length);
   
   diskfs_end_catch_exception ();
 
   np->dn_set_ctime = 1;
   diskfs_node_update (np, 1);
 
-  rwlock_writer_unlock (&np->allocptrlock);
+  rwlock_writer_unlock (&np->dn->allocptrlock);
 
   /* Now we can permit delayed copies again. */
   if (np->dn->fileinfo)
@@ -202,7 +205,7 @@ free_indir (struct node *np, daddr_t bno, int level)
   int count = 0;
   daddr_t *addrs;
   int i;
-  struct indir_dirty *d, *prev, *nxt;
+  struct dirty_indir *d, *prev, *next;
   
   assert (bno);
   
@@ -216,7 +219,7 @@ free_indir (struct node *np, daddr_t bno, int level)
 	    count += btodb (sblock->fs_bsize);
 	  }
 	else
-	  count += free_indir (addrs[i], level - 1);
+	  count += free_indir (np, addrs[i], level - 1);
       }
   
   /* Subtlety: this block is no longer necessary; the information
@@ -227,12 +230,12 @@ free_indir (struct node *np, daddr_t bno, int level)
      the block from the kernel's memory, making sure we do it
      synchronously--and BEFORE we attach it to the free list
      with ffs_blkfree.  */
-  pager_flush_some (diskpager->p, fsaddr (bno), sblock->fs_bsize, 1);
+  pager_flush_some (diskpager->p, fsaddr (sblock, bno), sblock->fs_bsize, 1);
 
   /* We should also take this block off the inode's list of 
      dirty indirect blocks if it's there. */
   prev = 0;
-  d = np->dirty;
+  d = np->dn->dirty;
   while (d)
     {
       next = d->next;
@@ -241,7 +244,7 @@ free_indir (struct node *np, daddr_t bno, int level)
 	  if (prev)
 	    prev->next = next;
 	  else
-	    np->dirty = next;
+	    np->dn->dirty = next;
 	  free (d);
 	}
       else
@@ -292,7 +295,7 @@ diskfs_grow (struct node *np,
   assert (!diskfs_readonly);
 
   /* The new last block of the file. */
-  lbn = lblkno (sblock, end + sblock->fs_bsize - 1) - 1;
+  lbn = lblkno (sblock, end - 1);
 
   /* This is the size of that block if it is in the NDADDR array. */
   size = fragroundup (sblock, blkoff (sblock, end));
@@ -302,7 +305,7 @@ diskfs_grow (struct node *np,
   rwlock_writer_lock (&np->dn->allocptrlock);
 
   /* The old last block of the file. */
-  olbn = lbkno (sblock, np->allocsize + sblock->fs_bsize - 1) - 1;
+  olbn = lblkno (sblock, np->allocsize - 1);
   
   /* This is the size of that block if it is in the NDADDR array. */
   osize = fragroundup (sblock, blkoff (sblock, np->allocsize));
@@ -315,24 +318,24 @@ diskfs_grow (struct node *np,
     {
       if (osize < sblock->fs_bsize)
 	{
-	  daddr_t olb_pbn, bno;
-	  err = ffs_realloccg (np, nb,
+	  daddr_t old_pbn, bno;
+	  err = ffs_realloccg (np, olbn,
 				 ffs_blkpref (np, lbn, lbn, di->di_db),
 				 osize, sblock->fs_bsize, &bno, cred);
 	  if (err)
 	    goto out;
-	  old_pbn = di->di_db
-	  di->di_db[nb] = bno;
+	  old_pbn = di->di_db[olbn];
+	  di->di_db[olbn] = bno;
 	  np->dn_set_ctime = 1;
 	  
-	  dev_write_sync (fsbtodb (bno) + btodb (osize),
+	  dev_write_sync (fsbtodb (sblock, bno) + btodb (osize),
 			  zeroblock, sblock->fs_bsize - osize);
 
-	  if (pbn != old_pbn)
+	  if (bno != old_pbn)
 	    {
 	      /* Make sure the old contents get written out
 		 to the new address by poking the pages. */
-	      poke_off = nb * sblock->fs_bsize;
+	      poke_off = olbn * sblock->fs_bsize;
 	      poke_len = osize;
 	    }
 	}
@@ -357,12 +360,12 @@ diskfs_grow (struct node *np,
 	    goto out;
 	  
 	  di->di_db[lbn] = bno;
-	  np->dn_sat_ctime = 1;
+	  np->dn_set_ctime = 1;
 	  
-	  dev_write_sync (fsbtodb (bno) + btodb (osize),
+	  dev_write_sync (fsbtodb (sblock, bno) + btodb (osize),
 			  zeroblock, size - osize);
 
-	  if (pbn != old_pbn)
+	  if (bno != old_pbn)
 	    {
 	      assert (!poke_len);
 	      
@@ -381,17 +384,17 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 	  
-	  di->di_db[lbn] = pbn;
+	  di->di_db[lbn] = bno;
 	  np->dn_set_ctime = 1;
 
-	  dev_write_sync (fsbtodb (bno), zeroblock, size);
+	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, size);
 	}
     }
   else
     {
-      struct iblock_spec indirs[NINDIR + 1];
-      int i;
+      struct iblock_spec indirs[NIADDR + 1];
       daddr_t *siblock;
+      daddr_t bno;
       
       /* Count the number of levels of indirection. */
       err = fetch_indir_spec (np, lbn, indirs);
@@ -435,7 +438,7 @@ diskfs_grow (struct node *np,
 		  /* This assert because triple indirection is not
 		     supported. */
 		  assert (indirs[2].offset == -1);
-		  err = ffs_alloc (np, lbn
+		  err = ffs_alloc (np, lbn,
 				   ffs_blkpref (np, lbn, 
 						INDIR_DOUBLE, di->di_ib),
 				   sblock->fs_bsize, &bno, 0);
@@ -446,7 +449,7 @@ diskfs_grow (struct node *np,
 		}
 	      
 	      diblock = indir_block (indirs[2].bno);
-	      mark_indir_dirty (indirs[2].bno);
+	      mark_indir_dirty (np, indirs[2].bno);
 	      
 	      /* Now we can allocate the single indirect block */
 	      err = ffs_alloc (np, lbn, 
@@ -466,11 +469,11 @@ diskfs_grow (struct node *np,
       /* Now we can allocate the data block. */
       err = ffs_alloc (np, lbn, 
 		       ffs_blkpref (np, lbn, indirs[0].offset, siblock),
-		       sblock->fn_bsize, &bno, 0);
+		       sblock->fs_bsize, &bno, 0);
       if (err)
 	goto out;
       indirs[0].bno = siblock[indirs[0].offset] = bno;
-      dev_write_sync (fsbtodb (bno), zeroblock, sblock->fs_bsize);
+      dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
     }
   
  out:
@@ -485,7 +488,7 @@ diskfs_grow (struct node *np,
       np->allocsize = newallocsize;
     }
 
-  rwlock_writer_unlock (&np->allocptrlock);
+  rwlock_writer_unlock (&np->dn->allocptrlock);
 
   /* If we expanded a fragment, then POKE_LEN will be set.
      We need to poke the requested amount of the memory object
@@ -493,8 +496,10 @@ diskfs_grow (struct node *np,
      at a suitable time. */
   if (poke_len)
     {
+      mach_port_t obj;
+      
       obj = diskfs_get_filemap (np);
-      mach_port_insert_reght (mach_task_self (), obj, obj,
+      mach_port_insert_right (mach_task_self (), obj, obj,
 			      MACH_MSG_TYPE_MAKE_SEND);
       poke_pages (obj, trunc_page (poke_off),
 		  round_page (poke_off + poke_len));
@@ -502,5 +507,34 @@ diskfs_grow (struct node *np,
     }
 
   return err;
+}
+
+/* Write something to each page from START to END inclusive of memory
+   object OBJ, but make sure the data doesns't actually change. */
+static void
+poke_pages (memory_object_t obj,
+	    vm_offset_t start,
+	    vm_offset_t end)
+{
+  vm_address_t addr, poke;
+  vm_size_t len;
+  error_t err;
+  
+  while (start < end)
+    {
+      len = 8 * vm_page_size;
+      if (len > end - start)
+	len = end - start;
+      addr = 0;
+      err = vm_map (mach_task_self (), &addr, len, 0, 1, obj, start, 0,
+		    VM_PROT_WRITE|VM_PROT_READ, VM_PROT_READ|VM_PROT_WRITE, 0);
+      if (!err)
+	{
+	  for (poke = addr; poke < addr + len; poke += vm_page_size)
+	    *(volatile int *)poke = *(volatile int *)poke;
+	  vm_deallocate (mach_task_self (), addr, len);
+	}
+      start += len;
+    }
 }
 
