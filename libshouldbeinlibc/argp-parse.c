@@ -285,7 +285,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   mutex_lock (&getopt_lock);
 
   /* Tell getopt to initialize.  */
-  optind = state.index = 0;
+  optind = state.next = 0;
 
   if (state.flags & ARGP_NO_ERRS)
     {
@@ -307,7 +307,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 
       err = EINVAL;		/* until otherwise asserted */
 
-      state.index = optind;	/* Store OPTIND in STATE while calling user
+      state.next = optind;	/* Store OPTIND in STATE while calling user
 				   functions.  */
 
       if (opt == 1)
@@ -325,7 +325,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		err = 0;
 	      break;
 	    }
-	  else if (state.index >= optind)
+	  else if (state.next >= optind)
 	    /* Remember that we successfully processed a non-option
 	       argument -- but only if the user hasn't gotten tricky and set
 	       the clock back.  */
@@ -353,18 +353,18 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	  (*groups[group_key - 1].parser)(((opt << GROUP_BITS) >> GROUP_BITS),
 					  optarg, &state);
 
-      optind = state.index;	/* Put it back in OPTIND for getopt.  */
+      optind = state.next;	/* Put it back in OPTIND for getopt.  */
 
       if (err)
 	break;
     }
 
   if (opt == EOF)
-    state.index = optind;	/* Only update INDEX if getopt just failed. */
+    state.next = optind;	/* Only update NEXT if getopt just failed. */
 
   mutex_unlock (&getopt_lock);
 
-  if (!err && !state.argv[state.index])
+  if (!err && !state.argv[state.next])
     /* We successfully parsed all arguments!  Call all the parsers again,
        just a few more times... */
     {
@@ -380,7 +380,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
     }
 
   if (end_index)
-    *end_index = state.index;
+    *end_index = state.next;
 
   if (err && !(state.flags & ARGP_NO_HELP))
     {
