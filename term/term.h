@@ -287,7 +287,8 @@ void init_users (void);
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */
 error_t pty_io_write (char *, unsigned int, int *);
-error_t pty_io_read (char **, unsigned int, int);
+error_t pty_io_read (struct trivfs_protid *, char **, 
+		     mach_msg_type_number_t *, mach_msg_type_number_t);
 error_t pty_io_readable (int *);
 error_t pty_io_get_openmodes (struct trivfs_protid *, int *);
 error_t pty_io_set_all_openmodes (struct trivfs_protid *, int);
