@@ -112,7 +112,7 @@ Hurd work (these are brief descriptions; thomas can give more information):
 
 !!!
   * We need some existing shell programs changed to do Hurd things:
-  like id, su, ls, tar, cpio, etc.  Some of this work has already been
+  like ls, tar, cpio, etc.  Some of this work has already been
   done, but more is still needed.
 
 !!!

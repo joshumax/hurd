@@ -29,7 +29,7 @@
 
 #include "frobauth.h"
 
-const char *argp_program_version = STANDARD_HURD_VERSION (setauth);
+bconst char *argp_program_version = STANDARD_HURD_VERSION (setauth);
 
 #define OPT_NO_SAVE 1
 

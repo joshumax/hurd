@@ -1,6 +1,6 @@
 /* Default treefs_s_dir_lookup hook
 
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1998 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -55,8 +55,6 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 
   if (path[0] == '\0')
     {
-      mustbedir = 1;
-
       /* Set things up in the state expected by the code from gotit: on. */
       dir = 0;
       node = h->po->node;
