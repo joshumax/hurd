@@ -47,8 +47,9 @@ struct zombie
 
 static struct zombie *zombie_list;
 
-/* A process is dying.  Check if the parent is waiting for us to exit;
-   if so wake it up, otherwise, enter us as a zombie. */
+/* A process is dying.  Send SIGCHLD to the parent.  Check if the parent is
+   waiting for us to exit; if so wake it up, otherwise, enter us as a
+   zombie.  */
 void
 alert_parent (struct proc *p)
 {
@@ -56,6 +57,8 @@ alert_parent (struct proc *p)
   
   /* Don't allow init to exit */
   assert (p->p_parent);
+
+  nowait_sig_post (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
   if (!p->p_exiting)
     p->p_status = W_EXITCODE (0, SIGKILL);
