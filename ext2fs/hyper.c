@@ -20,17 +20,13 @@
 #include <stdio.h>
 #include "ext2fs.h"
 
-#define SBSIZE (sizeof (struct ext2_super_block))
-
 void
 get_hypermetadata (void)
 {
-  sblock = malloc (SBSIZE);
-
-  disk_sblock = baddr(1);
+  sblock = malloc (SBLOCK_SIZE);
 
   assert (!diskfs_catch_exception ());
-  bcopy (disk_sblock, sblock, SBSIZE);
+  bcopy (disk_image + SBLOCK_OFFS, sblock, SBLOCK_SIZE);
   diskfs_end_catch_exception ();
   
   if (sblock->s_magic != EXT2_SUPER_MAGIC
@@ -38,39 +34,27 @@ get_hypermetadata (void)
       && sblock->s_magic != EXT2_PRE_02B_MAGIC
 #endif
       )
-    ext2_panic("Bad magic number %#lx (should be %#x)",
+    ext2_panic("get_hypermetadata",
+	       "Bad magic number %#x (should be %#x)",
 	       sblock->s_magic, EXT2_SUPER_MAGIC);
 
   block_size = EXT2_MIN_BLOCK_SIZE << sblock->s_log_block_size;
-  if (block_size != BLOCK_SIZE
-      && (sb->s_block_size == 1024 || sb->s_block_size == 2048
-	  || sb->s_block_size == 4096))
-    {
-      int offset = (sb_block_num * BLOCK_SIZE) % block_size;
-      unsigned long logical_sb_block_num =
-	(sb_block_num * BLOCK_SIZE) / block_size;
-
-      disk_sblock = baddr(logical_sb_block_num) + offset;
-
-      assert (!diskfs_catch_exception ());
-      bcopy (disk_sblock, sblock, SBSIZE);
-      diskfs_end_catch_exception ();
-
-      if (sblock->s_magic != EXT2_SUPER_MAGIC)
-	ext2_panic("Bad magic number %#lx (should be %#x)"
-		   " in logical superblock!",
-		   sblock->s_magic, EXT2_SUPER_MAGIC);
-    }
 
   if (block_size > 8192)
-    ext2_panic("Block size %ld is too big (max is 8192 bytes)", block_size);
-  if (block_size < SBSIZE)
-    ext2_panic ("Block size %ld is too small (min is %ld bytes)",
-		block_size, SBSIZE);
+    ext2_panic("get_hypermetadata",
+	       "Block size %ld is too big (max is 8192 bytes)", block_size);
+  if (block_size < SBLOCK_SIZE)
+    ext2_panic ("get_hypermetadata",
+		"Block size %ld is too small (min is %ld bytes)",
+		block_size, SBLOCK_SIZE);
 
   assert ((vm_page_size % DEV_BSIZE) == 0);
-  assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
-  assert (vm_page_size <= sblock->fs_bsize);
+  assert ((block_size % DEV_BSIZE) == 0);
+
+  if (block_size < vm_page_size)
+    ext2_panic ("get_hypermetadata",
+		"Block size (%d) isn't a multiple of page size (%ld)",
+		block_size, vm_page_size);
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / sizeof (struct ext2_inode);
@@ -79,14 +63,14 @@ get_hypermetadata (void)
   if (frag_size)
     frags_per_block = block_size / frag_size;
   else
-    ext2_panic("Frag size is zero!");
+    ext2_panic("get_hypermetadata", "Frag size is zero!");
 
   groups_count =
     ((sblock->s_blocks_count - sblock->s_first_data_block +
       sblock->s_blocks_per_group - 1)
      / sblock->s_blocks_per_group);
 
-  itb_per_group = sblock->inodes_per_group / inodes_per_block;
+  itb_per_group = sblock->s_inodes_per_group / inodes_per_block;
   desc_per_block = block_size / sizeof (struct ext2_group_desc);
   addr_per_block = block_size / sizeof (u32);
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
@@ -137,7 +121,7 @@ copy_sblock ()
   
   assert (!diskfs_catch_exception ());
 
-  spin_lock (&alloclock);
+  spin_lock (&sblock_lock);
 
   if (clean && !diskfs_readonly)
     {
@@ -147,8 +131,8 @@ copy_sblock ()
 
   if (sblock_dirty)
     {
-      bcopy (sblock, disk_sblock, SBSIZE);
-      record_poke (disk_sblock, SBSIZE);
+      bcopy (sblock, disk_image + SBLOCK_OFFS, SBLOCK_SIZE);
+      pokel_add (&sblock_pokel, disk_image + SBLOCK_OFFS, SBLOCK_SIZE);
       sblock_dirty = 0;
     }
 
@@ -158,6 +142,6 @@ copy_sblock ()
       sblock_dirty = 1;
     }
 
-  spin_unlock (&alloclock);
+  spin_unlock (&sblock_lock);
   diskfs_end_catch_exception ();
 }
