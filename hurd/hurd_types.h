@@ -157,6 +157,8 @@ enum file_storage_class
   STORAGE_HURD_FILE,
   STORAGE_HURD_FILE_MUTATED,
   STORAGE_NETWORK,
+  STORAGE_MEMORY,
+  STORAGE_MEMORY_MUTATED,
 };
 /* STORAGE_DEVICE implies that:
     
@@ -169,7 +171,7 @@ enum file_storage_class
    The even members of ADDRESSES specify the physical addresses of the
    data of the file, in order (in units appropriate as a RECNUM to
    device_read/write) .  The odd members specify the lengths (in
-   bytes) of the storage at the preceding address.  An address of zero
+   bytes) of the storage at the preceding address.  An address of -1
    identifies a hole, a length of zero should be ignored along with
    the preceding address.
 
@@ -190,15 +192,21 @@ enum file_storage_class
 
    ADDRESSES are pairs of address pairs; the even numbers are off_t
    offsets from the start of the file and the odd numbers are the
-   length of the segment.  Zero addresses are holes; zero lengths
+   length of the segment.  -1 addresses are holes; zero lengths
    should be ignored.
 
    STORAGE_MISC may contain additional type-specific information. 
 */
 
-/* STORAGE_HURD_FILE_MUTATED is like STORAGE_DEVICE, except that the
+/* STORAGE_HURD_FILE_MUTATED is like STORAGE_HURD_FILE, except that the
    data as written to STORAGE_PORT/NAME may be different (because of
    compression, for example) than the contents of the file. */
+
+/* STORAGE_MEMORY is like STORAGE_HURD_FILE, except that the data is found
+   in the virtual address space of the task identified by STORAGE_PORT. 
+
+/* STORAGE_MEMORY_MUTATED is like STORAGE_MEMORY, except that the data
+   may be mutated in storage.  */
 
 /* STORAGE_NETWORK means that the file is stored elsewhere on the
    network; all the remaining fields contan type-specific information. */
