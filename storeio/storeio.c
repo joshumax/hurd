@@ -222,7 +222,7 @@ check_open_hook (struct trivfs_control *trivfs_control,
       err = dev_open (dev);
       if (err && (flags & (O_READ|O_WRITE)) == 0)
 	/* If we're not opening for read or write, then just ignore the
-	   error, as this allows stat to word correctly.  XXX  */
+	   error, as this allows stat to work correctly.  XXX  */
 	err = 0;
     }
   mutex_unlock (&dev->lock);
@@ -287,7 +287,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
     /* An open device.  */
     {
       struct store *store = open->dev->store;
-      vm_size_t size = store->size;
+      store_offset_t size = store->size;
 
       if (store->block_size > 1)
 	st->st_blksize = store->block_size;

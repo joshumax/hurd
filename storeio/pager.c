@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <strings.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/mman.h>
 
 #include "dev.h"
@@ -53,7 +54,7 @@ pager_read_page (struct user_pager_info *upi,
   if (!err && want < vm_page_size)
     /* Zero anything we didn't read.  Allocation only happens in page-size
        multiples, so we know we can write there.  */
-    bzero ((char *)*buf + want, vm_page_size - want);
+    memset ((char *)*buf + want, '\0', vm_page_size - want);
 
   *writelock = (store->flags & STORE_READONLY);
 
