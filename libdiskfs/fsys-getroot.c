@@ -45,6 +45,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   if (!pt)
     return EOPNOTSUPP;
 
+  flags &= O_HURD;
+
   mutex_lock (&diskfs_root_node->lock);
     
   /* This code is similar (but not the same as) the code in
@@ -159,11 +161,17 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       return error;
     }
   
-  flags &= ~(O_READ | O_WRITE | O_EXEC); /* XXX wrong  */
+  if ((flags & O_NOATIME)
+      && (diskfs_isowner (diskfs_root_node, &pseudocred) == EPERM))
+    flags &= ~O_NOATIME;
 
+  flags &= ~OPENONLY_STATE_MODES;
+
+  /* XXX Shouldn't use _diskfs_dotdot_file here; that should be an arg. */
   *returned_port = (ports_get_right 
 		    (diskfs_make_protid
-		     (diskfs_make_peropen (diskfs_root_node, flags),
+		     (diskfs_make_peropen (diskfs_root_node, flags,
+					   _diskfs_dotdot_file),
 		      uids, nuids, gids, ngids)));
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
 
