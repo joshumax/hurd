@@ -82,8 +82,7 @@ diskfs_truncate (struct node *np,
       np->allocsize = length;	/* temporary */
       bsize = blksize (sblock, np, lblkno (sblock, length));
       np->allocsize = savesize;
-      diskfs_node_rdwr (np, (void *) zeroblock, length,
-			bsize - offset, 1, 0, 0);
+      diskfs_node_rdwr (np, zeroblock, length, bsize - offset, 1, 0, 0);
       diskfs_file_update (np, 1);
     }
 
@@ -321,7 +320,7 @@ indir_release (struct node *np, daddr_t bno, int level)
      the block from the kernel's memory, making sure we do it
      synchronously--and BEFORE we attach it to the free list
      with ffs_blkfree.  */
-  pager_flush_some (disk_pager, fsaddr (sblock, bno), sblock->fs_bsize, 1);
+  pager_flush_some (diskfs_disk_pager, fsaddr (sblock, bno), sblock->fs_bsize, 1);
 
   /* We should also take this block off the inode's list of
      dirty indirect blocks if it's there. */
@@ -389,7 +388,8 @@ block_extended (struct node *np,
      don't get paged in from disk. */
   if (round_page (old_size) < round_page (new_size))
     offer_data (np, lbn * sblock->fs_bsize + round_page (old_size), 
-		round_page (new_size) - round_page (old_size), zeroblock);
+		round_page (new_size) - round_page (old_size),
+		(vm_address_t)zeroblock);
 
   if (old_pbn != new_pbn)
     {
@@ -553,7 +553,8 @@ diskfs_grow (struct node *np,
 	    goto out;
 
 	  
-	  offer_data (np, lbn * sblock->fs_bsize, size, zeroblock);
+	  offer_data (np, lbn * sblock->fs_bsize, size,
+		      (vm_address_t)zeroblock);
 	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
@@ -647,7 +648,8 @@ diskfs_grow (struct node *np,
 		       sblock->fs_bsize, &bno, 0);
       if (err)
 	goto out;
-      offer_data (np, lbn * sblock->fs_bsize, sblock->fs_bsize, zeroblock);
+      offer_data (np, lbn * sblock->fs_bsize, sblock->fs_bsize,
+		  (vm_address_t)zeroblock);
       indirs[0].bno = bno;
       write_disk_entry (siblock[indirs[0].offset], bno);
       record_poke (siblock, sblock->fs_bsize);
