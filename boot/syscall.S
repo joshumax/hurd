@@ -19,13 +19,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-#include <sysdep.h>
-
 /* This does not handle errors */
 
-ENTRY(syscall)
+.text
+	.globl _syscall
+	.align 4
+_syscall:
 	pop %ecx
 	pop %eax
 	push %ecx
-	.byte 0x9a, 0, 0, 0, 0, 7 0;
+	.byte 0x9a, 0, 0, 0, 0, 7, 0
 	ret
