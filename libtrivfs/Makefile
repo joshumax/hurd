@@ -18,7 +18,7 @@
 dir := libtrivfs
 makemode := library
 
-FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c \
+FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c \
 	dir-readdir.c dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c file-getlinknode.c\
@@ -32,7 +32,7 @@ IOSRCS=io-async-icky.c \
 	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
 	io-select.c io-stat.c io-stubs.c io-write.c io-version.c
 
-FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c
+FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c
 
 NOTIFYSRCS=nosenders.c notify-stubs.c
 
