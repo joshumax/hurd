@@ -58,6 +58,16 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
   if (dir->nn->name)
     err = ENOTDIR;
+  else if (strcmp (name, ".") == 0)
+    /* Current directory -- just add an additional reference to DIR and
+       return it.  */
+    {
+      netfs_nref (dir);
+      *node = dir;
+      err = 0;
+    }
+  else if (strcmp (name, "..") == 0)
+    err = EAGAIN;
   else
     err = lookup_host (dir->nn->mux, name, node);
 
@@ -84,30 +94,48 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   size_t size = 0;		/* Total size of our return block.  */
   struct hostmux_name *first_name, *nm;
 
+  /* Add the length of a directory entry for NAME to SIZE and return true,
+     unless it would overflow MAX_DATA_LEN or NUM_ENTRIES, in which case
+     return false.  */
+  int bump_size (const char *name)
+    {
+      if (num_entries == -1 || count < num_entries)
+	{
+	  size_t new_size = size + DIRENT_LEN (strlen (name));
+	  if (max_data_len > 0 && new_size > max_data_len)
+	    return 0;
+	  size = new_size;
+	  count++;
+	  return 1;
+	}
+      else
+	return 0;
+    }
+
   if (dir->nn->name)
     return ENOTDIR;
 
   rwlock_reader_lock (&dir->nn->mux->names_lock);
 
   /* Find the first entry.  */
-  for (first_name = dir->nn->mux->names;
-       first_name && first_entry > 0;
+  for (first_name = dir->nn->mux->names, count = 0;
+       first_name && first_entry > count;
        first_name = first_name->next)
     if (first_name->node)
-      first_entry--;
+      count++;
+
+  count = 0;
+
+  /* Make space for the `.' and `..' entries.  */
+  if (first_entry == 0)
+    bump_size (".");
+  if (first_entry <= 1)
+    bump_size ("..");
 
   /* See how much space we need for the result.  */
-  for (nm = first_name, count = 0;
-       nm && (num_entries == -1 || count < num_entries);
-       nm = nm->next)
-    if (nm->node)
-      {
-	size_t new_size = size + DIRENT_LEN (strlen (nm->name));
-	if (max_data_len > 0 && new_size > max_data_len)
-	  break;
-	size = new_size;
-	count++;
-      }
+  for (nm = first_name; nm; nm = nm->next)
+    if (nm->node && !bump_size (nm->name))
+      break;
 
   /* Allocate it.  */
   err = vm_allocate (mach_task_self (), (vm_address_t *) data, size, 1);
@@ -116,37 +144,54 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
     {
       char *p = *data;
 
+      int add_dir_entry (const char *name, ino_t fileno, int type)
+	{
+	  if (num_entries == -1 || count < num_entries)
+	    {
+	      struct dirent hdr;
+	      size_t name_len = strlen (name);
+	      size_t sz = DIRENT_LEN (name_len);
+
+	      if (sz > size)
+		return 0;
+	      else
+		size -= sz;
+
+	      hdr.d_fileno = fileno;
+	      hdr.d_reclen = sz;
+	      hdr.d_type = type;
+	      hdr.d_namlen = name_len;
+
+	      memcpy (p, &hdr, DIRENT_NAME_OFFS);
+	      strcpy (p + DIRENT_NAME_OFFS, name);
+	      p += sz;
+
+	      count++;
+
+	      return 1;
+	    }
+	  else
+	    return 0;
+	}
+
       *data_len = size;
       *data_entries = count;
 
-      /* See how much space we need for the result.  */
-      for (nm = first_name, count = 0;
-	   nm && (num_entries == -1 || count < num_entries);
-	   nm = nm->next)
-	if (nm->node)
-	  {
-	    struct dirent hdr;
-	    size_t name_len = strlen (nm->name);
-	    size_t sz = DIRENT_LEN (name_len);
+      count = 0;
 
-	    if (sz > size)
-	      break;
-	    else
-	      size -= sz;
+      /* Add `.' and `..' entries.  */
+      if (first_entry == 0)
+	add_dir_entry (".", 2, DT_DIR);
+      if (first_entry <= 1)
+	add_dir_entry ("..", 2, DT_DIR);
 
-	    hdr.d_fileno = nm->fileno;
-	    hdr.d_reclen = sz;
-	    hdr.d_type =
-	      (strcmp (nm->canon, nm->name) == 0 ? DT_REG : DT_LNK);
-	    hdr.d_namlen = name_len;
-
-	    memcpy (p, &hdr, DIRENT_NAME_OFFS);
-	    strcpy (p + DIRENT_NAME_OFFS, nm->name);
-	    p += sz;
-
-	    count++;
-	  }
-
+      /* Fill in the real directory entries.  */
+      for (nm = first_name; nm; nm = nm->next)
+	if (nm->node
+	    && !add_dir_entry (nm->name, nm->fileno,
+			       strcmp (nm->canon, nm->name) == 0
+			         ? DT_REG : DT_LNK))
+	  break;
     }
 
   rwlock_reader_unlock (&dir->nn->mux->names_lock);
