@@ -1,5 +1,5 @@
 /* Message port manipulations
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -63,12 +63,6 @@ S_proc_setmsgport (struct proc *p,
     prociterate (check_message_return, p);
   p->p_checkmsghangs = 0;
 
-  mach_port_request_notification (mach_task_self (), msgport, 
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
-  
   if (p == startup_proc)
     /* Init is single threaded, so we can't delay our reply for
        the essential task RPC; spawn a thread to do it. */
@@ -98,10 +92,13 @@ S_proc_getmsgport (struct proc *callerp,
 {
   int cancel;
   struct proc *p = pid_find_allow_zombie (pid);
+  error_t err;
+  mach_port_urefs_t refs;
 
   if (!callerp)
     return EOPNOTSUPP;
-  
+
+restart:  
   while (p && p->p_deadmsg && !p->p_dead)
     {
       callerp->p_msgportwait = 1;
@@ -119,15 +116,19 @@ S_proc_getmsgport (struct proc *callerp,
   if (!p)
     return ESRCH;
 
-  *msgport = p->p_msgport;
-  return 0;
-}
+  err = mach_port_get_refs (mach_task_self (), p->p_msgport, 
+			    MACH_PORT_RIGHT_SEND, &refs);
+  if (err || !refs)
+    {
+      /* The port appears to be dead; throw it away. */
+      mach_port_deallocate (mach_task_self (), p->p_msgport);
+      p->p_msgport = MACH_PORT_NULL;
+      p->p_deadmsg = 1;
+      goto restart;
+    }
 
-void
-message_port_dead (struct proc *p)
-{
-  mach_port_deallocate (mach_task_self (), p->p_msgport);
-  p->p_msgport = MACH_PORT_NULL;
-  p->p_deadmsg = 1;
+  *msgport = p->p_msgport;
+
+  return 0;
 }
 

@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -165,7 +165,6 @@ int genpid ();
 void abort_getmsgport (struct proc *);
 int zombie_check_pid (pid_t);
 void check_message_dying (struct proc *, struct proc *);
-void message_port_dead (struct proc *);
 void check_dead_execdata_notify (mach_port_t);
 
 void add_proc_to_hash (struct proc *);

@@ -57,13 +57,7 @@ do_mach_notify_dead_name (mach_port_t notify,
       return EOPNOTSUPP;
     }
 
-  if (p->p_msgport == deadport)
-    {
-      message_port_dead (p);
-      ports_port_deref (p);
-      return 0;
-    }
-  else if (p->p_task == deadport)
+  if (p->p_task == deadport)
     {
       process_has_exited (p);
       ports_port_deref (p);

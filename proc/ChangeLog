@@ -1,5 +1,17 @@
 Tue Mar  9 13:11:43 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
+	* notify.c (do_mach_notify_dead_name): Don't check against
+	P->p_msgport anymore.
+	* msg.c (message_port_dead): Delete function.
+	(S_proc_setmsgport): Don't request a dead-name notification
+	anymore. 
+	(S_proc_getmsgport): Check to see if P->p_msgport is dead before
+	returning it.
+	* mgt.c (S_proc_reassign): Only use mach_port_deallocate to
+	release P->msgport.
+	(process_has_exited): Likewise.
+	* proc.h (message_port_dead): Delete prototype.
+
 	* mgt.c (S_proc_reassign): It's not necessary to re-request the
 	task-death notification; we've moved both the task right and the
 	proc port that gets the notification, so delete that.

@@ -229,7 +229,7 @@ S_proc_reassign (struct proc *p,
      destroy them. */
   if (p->p_msgport != MACH_PORT_NULL)
     {
-      mach_port_destroy (mach_task_self (), p->p_msgport);
+      mach_port_deallocate (mach_task_self (), p->p_msgport);
       p->p_msgport = MACH_PORT_NULL;
       p->p_deadmsg = 1;
     }
@@ -644,7 +644,7 @@ process_has_exited (struct proc *p)
     alert_parent (p);
 
   if (p->p_msgport)
-    mach_port_destroy (mach_task_self (), p->p_msgport);
+    mach_port_deallocate (mach_task_self (), p->p_msgport);
   p->p_msgport = MACH_PORT_NULL;
 
   prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
