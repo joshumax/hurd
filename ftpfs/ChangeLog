@@ -1,3 +1,17 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ftpfs.h: Include <hurd/ihash.h>.
+	(struct ftpfs): Change type of INODE_MAPPINGS to struct
+	hurd_ihash.
+	(struct ftpfs_dir_entry): Change type of INODE_LOCP to
+	hurd_ihash_locp_t.
+	* node.c (ftpfs_create_node): Call hurd_ihash_add, not ihash_add.
+	(netfs_node_norefs): Call hurd_ihash_locp_remove, not
+	ihash_locp_remove.
+	* fs.c: Include <stddef.h>.
+	(ftpfs_create): Call hurd_ihash_init, not hurd_ihash_create.
+	Call hurd_ihash_destroy on error.
+
 2002-10-18  Moritz Schulte  <moritz@duesseldorf.ccc.de>
 
         * dir.c (ftpfs_dir_lookup): Initialize NES.entry.

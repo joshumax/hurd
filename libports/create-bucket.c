@@ -1,5 +1,5 @@
 /* Create a port bucket
-   Copyright (C) 1995, 1997, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997, 2001, 2003 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include <stddef.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <hurd/ihash.h>
@@ -46,16 +47,7 @@ ports_create_bucket ()
       return NULL;
     }
 
-  err = ihash_create (&ret->htable);
-  if (err)
-    {
-      errno = err;
-      mach_port_mod_refs (mach_task_self (), ret->portset,
-			  MACH_PORT_RIGHT_PORT_SET, -1);
-      free (ret);
-      return NULL;
-    }
-
+  hurd_ihash_init (&ret->htable, offsetof (struct port_info, hentry));
   ret->rpcs = ret->flags = ret->count = 0;
 
   mutex_lock (&_ports_lock);

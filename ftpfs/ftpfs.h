@@ -25,6 +25,7 @@
 #include <cthreads.h>
 #include <ftpconn.h>
 #include <maptime.h>
+#include <hurd/ihash.h>
 
 /* Anonymous types.  */
 struct ccache;
@@ -58,7 +59,7 @@ struct ftpfs_dir_entry
   /* When the presence/absence of this file was last checked.  */
   time_t name_timestamp;
 
-  void **inode_locp;		/* Used for removing this entry */
+  hurd_ihash_locp_t inode_locp;	/* Used for removing this entry */
 
   int noent : 1;		/* A negative lookup result.  */
   int valid : 1;		/* Marker for GC'ing.  */
@@ -173,7 +174,7 @@ struct ftpfs
   int fsid;
 
   /* A hash table mapping inode numbers to directory entries.  */
-  struct ihash *inode_mappings;
+  struct hurd_ihash inode_mappings;
   spin_lock_t inode_mappings_lock;
 
   struct ftpfs_params params;

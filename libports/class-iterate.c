@@ -19,7 +19,6 @@
 
 #include "ports.h"
 #include <cthreads.h>
-#include <hurd/ihash.h>
 
 error_t
 ports_class_iterate (struct port_class *class,

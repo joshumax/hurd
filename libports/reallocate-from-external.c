@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2003 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -44,7 +44,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
 			    MACH_PORT_RIGHT_RECEIVE, -1);
   assert_perror (err);
 
-  ihash_locp_remove (pi->bucket->htable, pi->hentry);
+  hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
   
   if ((pi->flags & PORT_HAS_SENDRIGHTS) && !stat.mps_srights)
     {
@@ -61,7 +61,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   pi->cancel_threshold = 0;
   pi->mscount = stat.mps_mscount;
   
-  ihash_add (pi->bucket->htable, receive, pi, &pi->hentry);
+  hurd_ihash_add (&pi->bucket->htable, receive, pi);
   mutex_unlock (&_ports_lock);
   
   mach_port_move_member (mach_task_self (), receive, pi->bucket->portset);

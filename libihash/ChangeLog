@@ -1,3 +1,11 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ihash.c: Rewritten.
+	* ihash.h: Rewritten.
+	* Makefile (SRCS): Remove sizes.c.
+	(LCLHDRS): Remove priv.h.
+	* primes.c, sizes.c, priv.h: Files removed.
+
 2001-08-15  Roland McGrath  <roland@frob.com>
 
 	* sizes.c: New file, a list of prime numbers useful for table sizes.

@@ -32,6 +32,7 @@
 #include <version.h>
 #include <sys/wait.h>
 #include <inttypes.h>
+#include <stddef.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 
@@ -63,7 +64,8 @@ msgid_ihash_cleanup (void *element, void *arg)
   free (info);
 }
 
-static struct ihash msgid_ihash = { cleanup: msgid_ihash_cleanup };
+static struct hurd_ihash msgid_ihash
+  = HURD_IHASH_INITIALIZER (HURD_IHASH_NO_LOCP);
 
 /* Parse a file of RPC names and message IDs as output by mig's -list
    option: "subsystem base-id routine n request-id reply-id".  Put each
@@ -102,9 +104,9 @@ parse_msgid_list (const char *filename)
 	    error (1, errno, "malloc");
 	  info->name = name;
 	  info->subsystem = subsystem;
-	  err = ihash_add (&msgid_ihash, msgid, info, NULL);
+	  err = hurd_ihash_add (&msgid_ihash, msgid, info);
 	  if (err)
-	    error (1, err, "ihash_add");
+	    error (1, err, "hurd_ihash_add");
 	}
     }
 
@@ -118,7 +120,7 @@ parse_msgid_list (const char *filename)
 static const struct msgid_info *
 msgid_info (mach_msg_id_t msgid)
 {
-  const struct msgid_info *info = ihash_find (&msgid_ihash, msgid);
+  const struct msgid_info *info = hurd_ihash_find (&msgid_ihash, msgid);
   if (info == 0 && (msgid / 100) % 2 == 1)
     {
       /* This message ID is not in the table, and its number makes it
@@ -126,7 +128,7 @@ msgid_info (mach_msg_id_t msgid)
 	 ID of the corresponding RPC request and synthesize a name from
 	 that.  Then stash that name in the table so the next time the
 	 lookup will match directly.  */
-      info = ihash_find (&msgid_ihash, msgid - 100);
+      info = hurd_ihash_find (&msgid_ihash, msgid - 100);
       if (info != 0)
 	{
 	  struct msgid_info *reply_info = malloc (sizeof *info);
@@ -135,7 +137,7 @@ msgid_info (mach_msg_id_t msgid)
 	      reply_info->subsystem = strdup (info->subsystem);
 	      reply_info->name = 0;
 	      asprintf (&reply_info->name, "%s-reply", info->name);
-	      ihash_add (&msgid_ihash, msgid, reply_info, NULL);
+	      hurd_ihash_add (&msgid_ihash, msgid, reply_info);
 	      info = reply_info;
 	    }
 	  else
@@ -186,7 +188,7 @@ struct traced_info
 
     struct			/* For a send right wrapper.  */
     {
-      void **locp;		/* position in the traced_names hash table */
+      hurd_ihash_locp_t locp;	/* position in the traced_names hash table */
     } send;
 
     struct			/* For a send-once right wrapper.  */
@@ -205,7 +207,8 @@ struct traced_info
 
 static struct traced_info *freelist;
 
-ihash_t traced_names;
+struct hurd_ihash traced_names
+  = HURD_IHASH_INITIALIZER (offsetof (struct traced_info, u.send.locp));
 struct port_class *traced_class;
 struct port_bucket *traced_bucket;
 FILE *ostream;
@@ -261,7 +264,7 @@ new_send_wrapper (mach_port_t right, mach_port_t *wrapper_right)
   /* Store it in the reverse-lookup hash table, so we can
      look up this same right again to find the wrapper port.
      The entry in the hash table holds a weak ref on INFO.  */
-  err = ihash_add (traced_names, info->forward, info, &info->u.send.locp);
+  err = hurd_ihash_add (&traced_names, info->forward, info);
   assert_perror (err);
   ports_port_ref_weak (info);
   assert (info->u.send.locp != 0);
@@ -327,7 +330,7 @@ traced_dropweak (void *pi)
   assert (info->u.send.locp);
 
   /* Remove INFO from the hash table.  */
-  ihash_locp_remove (traced_names, info->u.send.locp);
+  hurd_ihash_locp_remove (&traced_names, info->u.send.locp);
   ports_port_deref_weak (info);
 
   /* Deallocate the forward port, so the real port also sees no-senders.  */
@@ -360,7 +363,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type)
     {
     case MACH_MSG_TYPE_PORT_SEND:
       /* See if we are already tracing this port.  */
-      info = ihash_find (traced_names, *right);
+      info = hurd_ihash_find (&traced_names, *right);
       if (info)
 	{
 	  /* We are already tracing this port.  We will pass on a right
@@ -414,7 +417,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type)
 	mach_port_t rr;		/* B */
 	char *name;
 
-	info = ihash_find (traced_names, *right);
+	info = hurd_ihash_find (&traced_names, *right);
 	if (info)
 	  {
 	    /* This is a receive right that we have been tracing sends to.  */
@@ -442,8 +445,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type)
 	assert_perror (err);
 	info->forward = rr;
 
-	err = ihash_add (traced_names, info->forward, info,
-			 &info->u.send.locp);
+	err = hurd_ihash_add (&traced_names, info->forward, info);
 	assert_perror (err);
 	ports_port_ref_weak (info);
 
@@ -1104,8 +1106,7 @@ main (int argc, char **argv, char **envp)
   traced_bucket = ports_create_bucket ();
   traced_class = ports_create_class (0, &traced_dropweak);
 
-  err = ihash_create (&traced_names);
-  assert_perror (err);
+  hurd_ihash_set_cleanup (&msgid_ihash, msgid_ihash_cleanup, 0);
 
   /* Spawn a single thread that will receive intercepted messages, print
      them, and interpose on the ports they carry.  The access to the

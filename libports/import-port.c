@@ -76,7 +76,7 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
       goto loop;
     }
 
-  err = ihash_add (bucket->htable, port, pi, &pi->hentry);
+  err = hurd_ihash_add (&bucket->htable, port, pi);
   if (err)
     goto lose;
 

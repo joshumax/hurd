@@ -30,7 +30,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 			     struct port_class *class,
 			     error_t (*fun)(void *))
 {
-  /* This is obsecenely ineffecient.  ihash and ports need to cooperate
+  /* This is obscenely ineffecient.  ihash and ports need to cooperate
      more closely to do it effeciently. */
   struct item
     {
@@ -40,7 +40,8 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
   struct item *i, *nxt;
   error_t err;
 
-  error_t enqueue (void *arg)
+  mutex_lock (&_ports_lock);
+  HURD_IHASH_ITERATE (&bucket->htable, arg)
     {
       struct port_info *const pi = arg;
       struct item *j;
@@ -53,11 +54,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 	  list = j;
 	  pi->refcnt++;
 	}
-      return 0;
     }
-
-  mutex_lock (&_ports_lock);
-  ihash_iterate (bucket->htable, enqueue);
   mutex_unlock (&_ports_lock);
 
   err = 0;

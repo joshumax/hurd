@@ -35,7 +35,7 @@ ports_claim_right (void *portstruct)
     return ret;
 
   mutex_lock (&_ports_lock);
-  ihash_locp_remove (pi->bucket->htable, pi->hentry);
+  hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
   err = mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
   assert_perror (err);
   pi->port_right = MACH_PORT_NULL;

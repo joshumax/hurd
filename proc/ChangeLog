@@ -1,5 +1,30 @@
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
+	* proc.h: Include <hurd/ihash.h>.
+	(struct proc): Change type of members p_pidhashloc and
+	p_taskhashloc to hurd_ihash_locp_t.
+	(struct pgrp): Likewise for pg_hashloc.
+	(struct session): Likewise for s_hashloc.
+	* hash.c: Change type of pghash, pidhash, taskhash and sidhash to
+	struct hurd_ihash and initialize them with HURD_IHASH_INITIALIZER.
+	Include stddef.h.
+	(pid_find): Call hurd_ihash_find instead ihash_find.
+	(pid_find_allow_zombie): Likewise.
+	(task_find): Likewise.
+	(task_find_nocreate): Likewise.
+	(pgrp_find): Likewise.
+	(session_find): Likewise.
+	(add_proc_to_hash): Call hurd_ihash_add instead ihash_add.
+	(add_pgrp_to_hash): Likewise.
+	(add_session_to_hash): Likewise.
+	(remove_pgrp_from_hash): Call hurd_ihash_locp_remove instead
+	ihash_locp_remove, and provide hash table pointer.
+	(remove_proc_from_hash): Likewise.
+	(remove_session_from_hash): Likewise.
+	(prociterate): Use HURD_IHASH_ITERATE instead ihash_iterate.
+
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
 	* mgt.c (S_proc_dostop): Revert last change.
 
 2003-06-16  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>

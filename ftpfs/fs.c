@@ -1,6 +1,6 @@
 /* Fs operations
 
-   Copyright (C) 1997,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2001, 2003 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <stddef.h>
 #include <string.h>
 
 #include <hurd/ihash.h>
@@ -59,24 +60,25 @@ ftpfs_create (char *rmt_path, int fsid,
   new->ftp_params = ftp_params;
   new->ftp_hooks = ftp_hooks;
 
-  err = ihash_create (&new->inode_mappings);
+  hurd_ihash_init (&new->inode_mappings,
+		   offsetof (struct ftpfs_dir_entry, inode_locp));
   spin_lock_init (&new->inode_mappings_lock);
 
-  if (! err)
+  super_root = netfs_make_node (0);
+  if (! super_root)
+    err = ENOMEM;
+  else
     {
-      super_root = netfs_make_node (0);
-      if (! super_root)
-	err = ENOMEM;
-      else
-	{
-	  err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
-	  if (! err)
-	    err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
-	}
+      err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
+      if (! err)
+	err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
     }
 
   if (err)
-    free (new);
+    {
+      hurd_ihash_destroy (&new->inode_mappings);
+      free (new);
+    }
   else
     *fs = new;
 

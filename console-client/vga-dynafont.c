@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <stddef.h>
 #include <assert.h>
 #include <malloc.h>
 #include <wchar.h>
@@ -65,7 +66,7 @@ struct mapped_character
   wchar_t character;
 
   /* Used by libihash for fast removal of elements.  */
-  void **locp;
+  hurd_ihash_locp_t locp;
 };
 
 
@@ -88,7 +89,7 @@ struct dynafont
 
   /* A hash containing a pointer to a struct mapped_character for each
      UCS-4 character we map to a VGA font index.  */
-  ihash_t charmap;
+  struct hurd_ihash charmap;
 
   /* The struct mapped_characters are preallocated for all vga font
      index values.  This points to an array of SIZE such elements.  */
@@ -468,7 +469,6 @@ error_t
 dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
 	      bdf_font_t font_bold_italic, int size, dynafont_t *dynafont)
 {
-  error_t err = 0;
   dynafont_t df;
   struct bdf_glyph *glyph = NULL;
 
@@ -491,17 +491,10 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
   df->font_bold_italic = font_bold_italic;
   df->size = size;
   df->cursor_standout = 0;
-  err = ihash_create (&df->charmap);
-  if (err)
-    {
-      free (df);
-      return err;
-    }
 
   df->charmap_data = calloc (size, sizeof (struct mapped_character));
   if (!df->charmap_data)
     {
-      ihash_free (df->charmap);
       free (df);
       return ENOMEM;
     }
@@ -509,11 +502,13 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
   df->vga_font = malloc (sizeof (vga_font_glyph) * size);
   if (!df->vga_font)
     {
-      ihash_free (df->charmap);
       free (df->charmap_data);
       free (df);
       return ENOMEM;
     }
+
+  hurd_ihash_init (&df->charmap, offsetof (struct mapped_character, locp));
+
   if (df->font->bbox.width == 9)
     {
       /* 32 from 256 font slots are for horizontal line graphic
@@ -556,8 +551,7 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
 		  + df->font->bbox.height, 0, 32 - df->font->bbox.height);
 
 	/* Update the hash table.  */
-	ihash_add (df->charmap, UNICODE_REPLACEMENT_CHARACTER,
-		   chr, &chr->locp);
+	hurd_ihash_add (&df->charmap, UNICODE_REPLACEMENT_CHARACTER, chr);
       }
     else
       {
@@ -582,7 +576,7 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
   }
 
   *dynafont = df;
-  return err;
+  return 0;
 }
 
 
@@ -600,7 +594,7 @@ dynafont_free (dynafont_t df)
     bdf_destroy (df->font_bold);
   if (df->font_bold_italic)
     bdf_destroy (df->font_bold_italic);
-  ihash_free (df->charmap);
+  hurd_ihash_destroy (&df->charmap);
   free (df->charmap_data);
   free (df->vga_font);
   free (df);
@@ -757,8 +751,8 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
 			  wchar_t wide_chr, wchar_t attr, int *rpos)
 {
   /* When hashing the character, we mix in the font attribute.  */
-  struct mapped_character *chr = ihash_find (df->charmap,
-					     (int) (wide_chr | attr));
+  struct mapped_character *chr = hurd_ihash_find (&df->charmap,
+						  (int) (wide_chr | attr));
   int lgc;
   struct bdf_glyph *glyph;
   int pos;
@@ -867,8 +861,8 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
 			   VGA_FONT_HEIGHT);
   /* Update the hash table.  */
   if (chr->locp)
-    ihash_locp_remove (df->charmap, chr->locp);
-  ihash_add (df->charmap, (int) (wide_chr | attr), chr, &chr->locp);
+    hurd_ihash_locp_remove (&df->charmap, chr->locp);
+  hurd_ihash_add (&df->charmap, (int) (wide_chr | attr), chr);
   *rpos = pos;
   return 1;
 }
@@ -1000,7 +994,11 @@ dynafont_change_font (dynafont_t df, bdf_font_t font)
 	  /* The glyph is not used.  If it is mapped, we need to
 	     remove the mapping to invalidate the glyph.  */
 	  if (df->charmap_data[i].locp)
-	    ihash_locp_remove (df->charmap, df->charmap_data[i].locp);
+	    {
+	      
+	      hurd_ihash_locp_remove (&df->charmap, df->charmap_data[i].locp);
+	      df->charmap_data[i].locp = NULL;
+	    }
 	}
 
       else

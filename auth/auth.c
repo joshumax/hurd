@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mach.h>
@@ -250,14 +251,10 @@ S_auth_makeauth (struct authhandle *auth,
 
 /* Transaction handling.  */
 
-/* Table of pending transactions keyed on RENDEZVOUS.  */
-struct ihash *pending_users, *pending_servers;
-struct mutex pending_lock = MUTEX_INITIALIZER;
-
 /* A pending transaction.  */
 struct pending
   {
-    void **locp;		/* Position in one of the ihash tables.  */
+    hurd_ihash_locp_t locp;	/* Position in one of the ihash tables.  */
     struct condition wakeup;    /* The waiter is blocked on this condition.  */
 
     /* The user's auth handle.  */
@@ -266,6 +263,13 @@ struct pending
     /* The port to pass back to the user.  */
     mach_port_t passthrough;
   };
+
+/* Table of pending transactions keyed on RENDEZVOUS.  */
+struct hurd_ihash pending_users
+  = HURD_IHASH_INITIALIZER (offsetof (struct pending, locp));
+struct hurd_ihash pending_servers
+  = HURD_IHASH_INITIALIZER (offsetof (struct pending, locp));
+struct mutex pending_lock = MUTEX_INITIALIZER;
 
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
@@ -287,7 +291,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
   mutex_lock (&pending_lock);
 
   /* Look for this port in the server list.  */
-  s = ihash_find (pending_servers, rendezvous);
+  s = hurd_ihash_find (&pending_servers, rendezvous);
   if (s)
     {
       /* Found it!  Extract the port.  */
@@ -295,7 +299,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
       *newporttype = MACH_MSG_TYPE_MOVE_SEND;
 
       /* Remove it from the pending list.  */
-      ihash_locp_remove (pending_servers, s->locp);
+      hurd_ihash_locp_remove (&pending_servers, s->locp);
 
       /* Give the server the auth port and wake the RPC up.
 	 We need to add a ref in case the port dies.  */
@@ -315,7 +319,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
       struct pending u;
       error_t err;
 
-      err = ihash_add (pending_users, rendezvous, &u, &u.locp);
+      err = hurd_ihash_add (&pending_users, rendezvous, &u);
       if (! err)
 	{
 	  /* Store the user auth port and wait for the server RPC to wake
@@ -326,7 +330,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	  if (hurd_condition_wait (&u.wakeup, &pending_lock))
 	    /* We were interrupted; remove our record.  */
 	    {
-	      ihash_locp_remove (pending_users, u.locp);
+	      hurd_ihash_locp_remove (&pending_users, u.locp);
 	      err = EINTR;
 	    }
 	}
@@ -373,11 +377,11 @@ S_auth_server_authenticate (struct authhandle *serverauth,
   mutex_lock (&pending_lock);
 
   /* Look for this port in the user list.  */
-  u = ihash_find (pending_users, rendezvous);
+  u = hurd_ihash_find (&pending_users, rendezvous);
   if (u)
     {
       /* Remove it from the pending list.  */
-      ihash_locp_remove (pending_users, u->locp);
+      hurd_ihash_locp_remove (&pending_users, u->locp);
 
       /* Found it!  We must add a ref because the one held by the
 	 user RPC might die as soon as we unlock pending_lock.  */
@@ -397,7 +401,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
       struct pending s;
       error_t err;
 
-      err = ihash_add (pending_servers, rendezvous, &s, &s.locp);
+      err = hurd_ihash_add (&pending_servers, rendezvous, &s);
       if (! err)
 	{
 	  /* Store the new port and wait for the user RPC to wake us up.  */
@@ -407,7 +411,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 	  if (hurd_condition_wait (&s.wakeup, &pending_lock))
 	    /* We were interrupted; remove our record.  */
 	    {
-	      ihash_locp_remove (pending_servers, s.locp);
+	      hurd_ihash_locp_remove (&pending_servers, s.locp);
 	      err = EINTR;
 	    }
 	}
@@ -493,12 +497,6 @@ main (int argc, char **argv)
 			  hostpriv);
   mach_port_deallocate (mach_task_self (), boot);
   mach_port_deallocate (mach_task_self (), hostpriv);
-
-  /* Allocate the hash tables.  */
-  err = ihash_create (&pending_users);
-  assert_perror (err);
-  err = ihash_create (&pending_servers);
-  assert_perror (err);
 
   /* Be a server.  */
   while (1)

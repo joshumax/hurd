@@ -1,5 +1,5 @@
 /* Transfer the receive right from one port structure to another
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2003 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -41,7 +41,7 @@ ports_transfer_right (void *tostruct,
   port = frompi->port_right;
   if (port != MACH_PORT_NULL)
     {
-      ihash_locp_remove (frompi->bucket->htable, frompi->hentry);
+      hurd_ihash_locp_remove (&frompi->bucket->htable, frompi->hentry);
       frompi->port_right = MACH_PORT_NULL;
       if (frompi->flags & PORT_HAS_SENDRIGHTS)
 	{
@@ -54,7 +54,7 @@ ports_transfer_right (void *tostruct,
   /* Destroy the existing right in TOPI. */
   if (topi->port_right != MACH_PORT_NULL)
     {
-      ihash_locp_remove (topi->bucket->htable, topi->hentry);
+      hurd_ihash_locp_remove (&topi->bucket->htable, topi->hentry);
       err = mach_port_mod_refs (mach_task_self (), topi->port_right,
 				MACH_PORT_RIGHT_RECEIVE, -1);
       assert_perror (err);
@@ -77,7 +77,7 @@ ports_transfer_right (void *tostruct,
   
   if (port)
     {
-      ihash_add (topi->bucket->htable, port, topi, &topi->hentry);
+      hurd_ihash_add (&topi->bucket->htable, port, topi);
       if (topi->bucket != frompi->bucket)
         {
 	  err = mach_port_move_member (mach_task_self (), port,

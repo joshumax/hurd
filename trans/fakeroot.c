@@ -1,5 +1,5 @@
 /* fakeroot -- a translator for faking actions that aren't really permitted
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <hurd/netfs.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <argp.h>
@@ -40,7 +41,7 @@ static auth_t fakeroot_auth_port;
 
 struct netnode
 {
-  void **idport_locp;		/* easy removal pointer in idport ihash */
+  hurd_ihash_locp_t idport_locp;/* easy removal pointer in idport ihash */
   mach_port_t idport;		/* port from io_identity */
   int openmodes;		/* O_READ | O_WRITE | O_EXEC */
   file_t file;			/* port on real file */
@@ -55,7 +56,8 @@ struct netnode
 #define FAKE_REFERENCE	(1 << 4) /* got node_norefs with st_nlink > 0 */
 
 struct mutex idport_ihash_lock = MUTEX_INITIALIZER;
-struct ihash idport_ihash;
+struct hurd_ihash idport_ihash
+  = HURD_IHASH_INITIALIZER (offsetof (struct netnode, idport_locp));
 
 
 /* Make a new virtual node.  Always consumes the ports.  */
@@ -102,7 +104,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     {
       if (!locked)
 	mutex_lock (&idport_ihash_lock);
-      err = ihash_add (&idport_ihash, nn->idport, *np, &nn->idport_locp);
+      err = hurd_ihash_add (&idport_ihash, nn->idport, *np);
       if (!err)
 	netfs_nref (*np);	/* Return a reference to the caller.  */
       mutex_unlock (&idport_ihash_lock);
@@ -149,7 +151,7 @@ netfs_node_norefs (struct node *np)
       mutex_unlock (&idport_ihash_lock);
       return;
     }
-  ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
+  hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
   mutex_unlock (&idport_ihash_lock);
   mach_port_deallocate (mach_task_self (), np->nn->file);
   mach_port_deallocate (mach_task_self (), np->nn->idport);
@@ -299,7 +301,7 @@ netfs_S_dir_lookup (struct protid *diruser,
       else
 	{
 	  mutex_lock (&idport_ihash_lock);
-	  np = ihash_find (&idport_ihash, idport);
+	  np = hurd_ihash_find (&idport_ihash, idport);
 	  if (np != 0)
 	    {
 	      /* We already know about this node.  */

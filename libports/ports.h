@@ -24,6 +24,7 @@
 #include <mach.h>
 #include <stdlib.h>
 #include <hurd.h>
+#include <hurd/ihash.h>
 #include <mach/notify.h>
 
 /* These are global values for common flags used in the various structures.
@@ -45,7 +46,7 @@ struct port_info
   mach_port_t port_right;
   struct rpc_info *current_rpcs;
   struct port_bucket *bucket;
-  void **hentry;
+  hurd_ihash_locp_t hentry;
   struct port_info *next, **prevp; /* links on port_class list */
 };
 /* FLAGS above are the following: */
@@ -57,7 +58,7 @@ struct port_info
 struct port_bucket
 {
   mach_port_t portset;
-  struct ihash *htable;
+  struct hurd_ihash htable;
   int rpcs;
   int flags;
   int count;

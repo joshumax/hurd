@@ -34,39 +34,23 @@
 error_t
 ps_context_create (process_t server, struct ps_context **pc)
 {
-  error_t err_procs, err_ttys, err_ttys_by_cttyid, err_users;
-
   *pc = NEW (struct ps_context);
   if (*pc == NULL)
     return ENOMEM;
 
   (*pc)->server = server;
   (*pc)->user_hooks = 0;
-  err_procs = ihash_create (&(*pc)->procs);
-  err_ttys = ihash_create (&(*pc)->ttys);
-  err_ttys_by_cttyid = ihash_create (&(*pc)->ttys_by_cttyid);
-  err_users = ihash_create (&(*pc)->users);
+  hurd_ihash_init (&(*pc)->procs, HURD_IHASH_NO_LOCP);
+  hurd_ihash_init (&(*pc)->ttys, HURD_IHASH_NO_LOCP);
+  hurd_ihash_init (&(*pc)->ttys_by_cttyid, HURD_IHASH_NO_LOCP);
+  hurd_ihash_init (&(*pc)->users, HURD_IHASH_NO_LOCP);
 
-  if (err_procs || err_ttys || err_ttys_by_cttyid)
-    /* Some allocation error occurred, backout any successful ones and fail. */
-    {
-      if (!err_procs) ihash_free ((*pc)->procs);
-      if (!err_users) ihash_free ((*pc)->users);
-      if (!err_ttys)  ihash_free ((*pc)->ttys);
-      if (!err_ttys_by_cttyid) ihash_free ((*pc)->ttys_by_cttyid);
-      free (*pc);
-      return ENOMEM;
-    }
-
-  ihash_set_cleanup ((*pc)->procs,
-		    (void (*)(void *, void *arg))_proc_stat_free,
-		    NULL);
-  ihash_set_cleanup ((*pc)->ttys,
-		    (void (*)(void *, void *arg))ps_tty_free,
-		    NULL);
-  ihash_set_cleanup ((*pc)->users,
-		    (void (*)(void *, void *arg))ps_user_free,
-		    NULL);
+  hurd_ihash_set_cleanup (&(*pc)->procs,
+			  (hurd_ihash_cleanup_t) _proc_stat_free, NULL);
+  hurd_ihash_set_cleanup (&(*pc)->ttys,
+			  (hurd_ihash_cleanup_t) ps_tty_free, NULL);
+  hurd_ihash_set_cleanup (&(*pc)->users,
+			  (hurd_ihash_cleanup_t) ps_user_free, NULL);
 
   return 0;
 }
@@ -75,12 +59,13 @@ ps_context_create (process_t server, struct ps_context **pc)
 void
 ps_context_free (struct ps_context *pc)
 {
-  ihash_free (pc->procs);
-  ihash_free (pc->ttys);
-  ihash_free (pc->ttys_by_cttyid);
-  ihash_free (pc->users);
+  hurd_ihash_destroy (&pc->procs);
+  hurd_ihash_destroy (&pc->ttys);
+  hurd_ihash_destroy (&pc->ttys_by_cttyid);
+  hurd_ihash_destroy (&pc->users);
   free (pc);
 }
+
 
 /* ---------------------------------------------------------------- */
 
@@ -89,15 +74,16 @@ ps_context_free (struct ps_context *pc)
    (CREATE should return either an error-code or 0 if no error occurs), and
    cache it in HT.  */
 static error_t
-lookup (int id, ihash_t ht, error_t (*create)(int id, void **), void **value)
+lookup (int id, hurd_ihash_t ht, error_t (*create)(int id, void **),
+	void **value)
 {
-  *value = ihash_find (ht, id);
+  *value = hurd_ihash_find (ht, id);
   if (*value == NULL)
     {
       error_t err = create (id, value);
       if (err)
 	return err;
-      ihash_add (ht, id, *value, NULL);
+      hurd_ihash_add (ht, id, *value);
     }
   return 0;
 }
@@ -111,7 +97,7 @@ ps_context_find_proc_stat (struct ps_context *pc, pid_t pid, struct proc_stat **
     {
       return _proc_stat_create (pid, pc, (struct proc_stat **)value);
     }
-  return lookup (pid, pc->procs, create, (void **)ps);
+  return lookup (pid, &pc->procs, create, (void **)ps);
 }
 
 /* Find a ps_tty for the terminal referred to by the port TTY_PORT, and
@@ -121,9 +107,9 @@ ps_context_find_tty (struct ps_context *pc, mach_port_t tty_port,
 		     struct ps_tty **tty)
 {
   return lookup (tty_port,
-		pc->ttys,
-		(error_t (*)(int id, void **result))ps_tty_create,
-		(void **)tty);
+		 &pc->ttys,
+		 (error_t (*)(int id, void **result))ps_tty_create,
+		 (void **)tty);
 }
 
 /* Find a ps_tty for the terminal referred to by the ctty id port
@@ -151,7 +137,7 @@ ps_context_find_tty_by_cttyid (struct ps_context *pc, mach_port_t cttyid_port,
 	}
     }
 
-  return lookup (cttyid_port, pc->ttys_by_cttyid, create, (void **)tty);
+  return lookup (cttyid_port, &pc->ttys_by_cttyid, create, (void **)tty);
 }
 
 /* Find a ps_user for the user referred to by UID, and return it in U.  */
@@ -159,7 +145,7 @@ error_t
 ps_context_find_user (struct ps_context *pc, uid_t uid, struct ps_user **u)
 {
   return lookup (uid,
-		pc->users,
-		(error_t (*)(int id, void **result))ps_user_create,
-		(void **)u);
+		 &pc->users,
+		 (error_t (*)(int id, void **result))ps_user_create,
+		 (void **) u);
 }

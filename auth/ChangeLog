@@ -1,3 +1,14 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* auth.c: Include <stddef.h>.
+	(pending_users, pending_server): Change type to struct hurd_ihash,
+	initialize with HURD_IHASH_INITIALIZER.
+	(struct pending): Change type of member LOCP to hurd_ihash_locp_t.
+	(S_auth_user_authenticate): Use hurd_ihash_* functions instead
+	ihash_*.
+	(S_auth_server_authenticate): Likewise.
+	(main): Do not allocate the hash tables.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* auth.c (S_auth_getids): u_int -> size_t

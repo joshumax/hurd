@@ -125,17 +125,17 @@ struct ps_context
   process_t server;
 
   /* proc_stats for every process we know about, indexed by process id.  */
-  ihash_t procs;
+  struct hurd_ihash procs;
 
   /* ps_ttys for every tty we know about, indexed by the terminal port.  */
-  ihash_t ttys;
+  struct hurd_ihash ttys;
 
   /* ps_ttys for every tty we know about, indexed by their ctty id port
      (from libc).  */
-  ihash_t ttys_by_cttyid;
+  struct hurd_ihash ttys_by_cttyid;
 
   /* A ps_user for every user we know about, indexed by user-id.  */
-  ihash_t users;
+  struct hurd_ihash users;
 
   /* Functions that can be set to extend the behavior of proc_stats.  */
   struct ps_user_hooks *user_hooks;

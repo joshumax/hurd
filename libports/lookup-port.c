@@ -32,11 +32,11 @@ ports_lookup_port (struct port_bucket *bucket,
   mutex_lock (&_ports_lock);
 
   if (bucket)
-    pi = ihash_find (bucket->htable, port);
+    pi = hurd_ihash_find (&bucket->htable, port);
   else
     for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
       {
-	pi = ihash_find (bucket->htable, port);
+	pi = hurd_ihash_find (&bucket->htable, port);
 	if (pi)
 	  break;
       }

@@ -61,7 +61,7 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
 		ftpfs_maptime);
 
   spin_lock (&nn->fs->inode_mappings_lock);
-  ihash_add (nn->fs->inode_mappings, e->stat.st_ino, new, &e->inode_locp);
+  hurd_ihash_add (&nn->fs->inode_mappings, e->stat.st_ino, new);
   spin_unlock (&nn->fs->inode_mappings_lock);
 
   e->node = new;
@@ -92,7 +92,7 @@ netfs_node_norefs (struct node *node)
 
   /* Remove this entry from the set of known inodes.  */
   spin_lock (&nn->fs->inode_mappings_lock);
-  ihash_locp_remove (nn->fs->inode_mappings, nn->dir_entry->inode_locp);
+  hurd_ihash_locp_remove (&nn->fs->inode_mappings, nn->dir_entry->inode_locp);
   spin_unlock (&nn->fs->inode_mappings_lock);
 
   if (nn->contents)

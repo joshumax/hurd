@@ -1,3 +1,15 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fakeroot.c: Include <stddef.h>.
+	(struct netnode): Change type of member idport_locp
+	to hurd_ihash_locp_t.
+	(idport_ihash): Change type to struct hurd_ihash and initialize
+	with HURD_IHASH_INITIALIZER.
+	(new_node): Call hurd_ihash_add instead of ihash_add.
+	(netfs_node_norefs): Call hrd_ihash_locp_remove instead
+	ihash_locp_remove.
+	(netfs_S_dir_lookup): Call hurd_ihash_find instead ihash_find.
+
 2003-09-05  Greg Buchholz <greg@sleepingsquirrel.org>
 
 	* fifo.c, new-fifo.c, null.c (trivfs_S_io_map): Change return value to

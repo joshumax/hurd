@@ -1,3 +1,33 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ports.h (struct port_bucket): Change type of HTABLE to struct
+	hurd_ihash.
+	(struct port_info): Change type of HENTRY to hurd_ihash_locp_t.
+	* lookup-port.c (ports_lookup_port): Use hurd_ihash_find instead
+	ihash_find.
+	* bucket-iterate.c (_ports_bucket_class_iterate): Use
+	HURD_IHASH_ITERATE instead ihash_iterate.
+	* inhibit-all-rpcs.c (ports_inhibit_all_rpcs): Likewise.
+	* inhibit-bucket-rpcs.c (ports_inhibit_bucket_rpcs): Likewise.
+	* create-internal.c (_ports_create_port_internal): Use
+	hurd_ihash_add instead ihash_add.
+	* import-port.c (ports_import_port): Likewise.
+	* reallocate-from-external.c (ports_reallocate_from_external):
+	Likewise.
+	* reallocate-port.c (ports_reallocate_port): Likewise.
+	* transfer-right.c (ports_transfer_right): Likewise.
+	* create-bucket.c: Include <stddef.h>.
+	(ports_create_bucket): Use hurd_ihash_init instead hurd_ihash_create.
+	* class-iterate.c: Do not include <hurd/ihash.h>.
+	* claim-right.c (ports_claim_right): Call hurd_ihash_locp_remove
+	instead ihash_locp_remove.
+	* complete-deallocate.c (_ports_complete_deallocate): Likewise.
+	* destroy-right.c (ports_destroy_right): Likewise.
+	* reallocate-from-external.c (ports_reallocate_from_external):
+	Likewise.
+	* reallocate-port.c (ports_reallocate_port): Likewise.
+	* transfer-right.c (ports_transfer_right): Likewise.
+
 2001-03-29  Neal H Walfield  <neal@cs.uml.edu>
 
         * claim-right.c (ports_claim_right):  Include errno.h and

@@ -30,7 +30,7 @@ _ports_complete_deallocate (struct port_info *pi)
 
   if (pi->port_right)
     {
-      ihash_locp_remove (pi->bucket->htable, pi->hentry);
+      hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
       mach_port_mod_refs (mach_task_self (), pi->port_right,
 			  MACH_PORT_RIGHT_RECEIVE, -1);
       pi->port_right = MACH_PORT_NULL;

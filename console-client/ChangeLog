@@ -1,3 +1,18 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vga-dynafont.c: Include <stddef.h>.
+	(struct mapped_character): Change type of LOCP to
+	hurd_ihash_locp_t.
+	(struct dynafont): Change type of CHARMAP to struct hurd_ihash.
+	(dynafont_new): Use hurd_ihash_init instead of ihash_create.
+	Remove variable ERR.  Call hurd_ihash_add instead of ihash_add.
+	(dynafont_free): Call hurd_ihash_destroy, no ihash_free.
+	(dynafont_lookup_internal): Use hurd_ihash_find, not ihash_find.
+	(dynafont_lookup_internal): Call hurd_ihash_locp_remove instead
+	ihash_locp_remove, and hurd_ihash_add instead ihash_add.
+	(dynafont_change_font): Likewise.  Clean out LOCP if character is
+	unmapped.	
+
 2004-02-02  Marco Gerards  <metgerards@student.han.nl>
 
 	* pc-kbd.c (KDSETLEDS): New macro.

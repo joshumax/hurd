@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <hurd/ports.h>
+#include <hurd/ihash.h>
 #include <cthreads.h>
 
 struct proc
@@ -35,8 +36,8 @@ struct proc
   struct proc *p_gnext, **p_gprevp; /* process group */
 
   /* Hash table pointers that point here */
-  void **p_pidhashloc;		/* by pid */
-  void **p_taskhashloc;		/* by task port */
+  hurd_ihash_locp_t p_pidhashloc;		/* by pid */
+  hurd_ihash_locp_t p_taskhashloc;		/* by task port */
 
   /* Identification of this process */
   task_t p_task;
@@ -89,7 +90,7 @@ typedef struct proc *pstruct_t;
 
 struct pgrp
 {
-  void **pg_hashloc;
+  hurd_ihash_locp_t pg_hashloc;
   struct proc *pg_plist;	/* member processes */
   struct pgrp *pg_next, **pg_prevp; /* list of pgrps in session */
   pid_t pg_pgid;
@@ -99,7 +100,7 @@ struct pgrp
 
 struct session
 {
-  void **s_hashloc;
+  hurd_ihash_locp_t s_hashloc;
   pid_t s_sid;
   struct pgrp *s_pgrps;		/* list of member pgrps */
   mach_port_t s_sessionid;	/* receive right */

@@ -82,7 +82,7 @@ _ports_create_port_internal (struct port_class *class,
       goto loop;
     }
 
-  err = ihash_add (bucket->htable, port, pi, &pi->hentry);
+  err = hurd_ihash_add (&bucket->htable, port, pi);
   if (err)
     goto lose;
 

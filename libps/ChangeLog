@@ -1,3 +1,19 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ps.h (struct ps_context): Change type of members procs, ttys,
+	ttys_by_cttyid and users to struct hurd_ihash.
+	* context.c (ps_context_create): Remove variables err_procs,
+	err_ttys, err_ttys_by_cttyid and err_users.  Use hurd_ihash_init
+	instead of ihash_create.  Call hurd_ihash_set_cleanup and the
+	hurd_ihash_cleanup_t type instead of ihash_set_cleanup.
+	(ps_context_free): Call hurd_ihash_destroy instead of ihash_free.
+	(lookup): Call hurd_ihash_find instead ihash_find, hurd_ihash_add
+	instead ihash_add.
+	(ps_context_find_proc_stat): Take pointer of hash object.
+	(ps_context_find_tty): Likewise.
+	(ps_context_find_tty_by_cttyid): Likewise.
+	(ps_context_find_user): Likewise.
+
 2002-06-09  Roland McGrath  <roland@frob.com>
 
 	* Makefile (installhdrs): List just ps.h, not common.h as well.

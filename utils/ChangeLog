@@ -1,3 +1,19 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rpctrace.c: Include <stddef.h>.
+	(struct traced_info): Change type of LOCP to hurd_ihash_locp_t.
+	(msgid_ihash): Change type to struct hurd_ihash, and initialize
+	with HURD_IHASH_INITIALIZER, don't set cleanup here.
+	(traced_names): Likewise.
+	(main): Call hurd_ihash_set_cleanup for msgid_ihash.  Don't create
+	traced_names.
+	(parse_msgid_list): Call hurd_ihash_add instead ihash_add.
+	(new_send_wrapper): Likewise.
+	(msgid_info): Likewise.  Call hurd_ihash_find instead ihash_find.
+	(rewrite_right): Likewise.
+	(traced_dropweak): Call hurd_ihash_locp_remove instead
+	ihash_locp_remove.
+
 2003-10-26  Roland McGrath  <roland@frob.com>
 
 	* storeread.c (doc, arg_doc): Make arrays, not pointers; make const.
