@@ -21,7 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 subsystem term 28000;
 
-#include <hurd/hurd_types.defs>
+#include <hurd/hurd.defs>
 
 /* Make a virtual terminal.  Slave will look like a Posix terminfo.
    Master should be connected to a hardware terminal or its
