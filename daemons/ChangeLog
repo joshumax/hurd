@@ -1,3 +1,10 @@
+Tue Oct 22 15:47:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lmail.c (options): Make -l/--use-lock-file hidden, as we don't
+ 	support it anyway (we just leave it here in case someone does
+ 	implement it, so they'll know the right option to use for
+ 	compatibility).
+
 Thu Oct 17 11:06:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* lmail.c (deliver): fsync the user's mailbox after delivery.
