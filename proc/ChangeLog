@@ -1,3 +1,14 @@
+Sun Mar  7 18:19:07 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* mgt.c (process_has_exited): Use mach_port_destroy instead of
+ 	mach_port_deallocate to release P->p_msgport.
+	(complete_exit): Likewise for P->p_task.  
+	These changes eliminate a race; we are destroying the receiver of
+ 	the dead-name notifications on these ports, but if that means we
+ 	lose a notification, then the ref-count on the name will get
+ 	incremented and we can't re-decrement it since we never hear the
+ 	notification.
+
 1999-03-06  Mark Kettenis  <kettenis@gnu.org>
 
 	* notify.c (do_mach_notify_dead_name): Deallocate reference to

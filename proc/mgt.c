@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -652,7 +652,7 @@ process_has_exited (struct proc *p)
     alert_parent (p);
 
   if (p->p_msgport)
-    mach_port_deallocate (mach_task_self (), p->p_msgport);
+    mach_port_destroy (mach_task_self (), p->p_msgport);
   p->p_msgport = MACH_PORT_NULL;
 
   prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
@@ -717,7 +717,7 @@ complete_exit (struct proc *p)
 
   remove_proc_from_hash (p);
   if (p->p_task != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), p->p_task);
+    mach_port_destroy (mach_task_self (), p->p_task);
 
   /* Remove us from our parent's list of children. */
   if (p->p_sib)
