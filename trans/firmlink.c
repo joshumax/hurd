@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <argp.h>
 #include <error.h>
+#include <sys/mman.h>
 
 #include <hurd/trivfs.h>
 
@@ -218,8 +219,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       if (start + amount > max)
 	amount = max - start;
       if (amount > *data_len)
-	*data = (vm_address_t) mmap (0, amount, PROT_READ|PROT_WRITE, 
-				     MAP_ANON, 0, 0);
+	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       err = (*data == -1) ? errno : 0;
       if (!err && amount > 0)
 	{
