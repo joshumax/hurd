@@ -31,6 +31,7 @@ core		32000	Core dumping
 intr		33000	Interruption
 ifsock		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
 tape		35000	Special control operations for magtapes
+utmp		36000	Database of logged-in users
 tioctl	       156000	Ioctl class 't' (terminals)
 tioctl	       156200     (continued)
 * mach_norma   555000	NORMA machine additions; sort of deprecated right now
