@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -62,8 +62,10 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 
   newcred = ports_allocate_port (sizeof (struct trivfs_protid), cred->pi.type);
   newcred->isroot = 0;
+  mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
+  mutex_unlock (&cred->po->cntl->lock);
   if (cred->isroot)
     {
       for (i = 0; i < nuids; i++)
