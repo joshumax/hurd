@@ -1,3 +1,8 @@
+2000-01-16  Mark Kettenis  <kettenis@gnu.org>
+
+	* pager.c (file_pager_write_page): Lock NODE->dn->alloc_lock
+	before accessing NODE->allocsize.  Fixes Debian bug #40302.
+
 1999-10-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2fs.c (diskfs_name_max): New variable.
