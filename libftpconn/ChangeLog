@@ -1,3 +1,14 @@
+1997-09-04  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpconn.h (struct ftp_conn): Remove ACTV_DATA_CONN_QUEUE field.
+	* create.c (ftp_conn_create): Don't initialize CONN->actv_data_conn_queue.
+	* open.c (ftp_conn_close): Don't cleanup CONN->actv_data_conn_queue.
+	* xfer.c (ftp_conn_start_open_actv_data): Always generate a new data
+	connection (it doesn't work to always listen on a single address).
+	(ftp_conn_finish_open_actv_data): Close the listen queue after
+	looking for a connection.
+	(ftp_conn_abort_open_actv_data): Close the data queue socket.
+
 1997-09-02  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* xfer.c (ftp_conn_start_open_actv_data): If necessary, reopen the
