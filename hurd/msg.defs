@@ -210,3 +210,12 @@ routine msg_clear_some_exec_flags (
 	process: mach_port_t;
 	refport: mach_port_t;
 	flags: int);
+
+/* Return a string describing why THREAD is waiting.  (THREAD should
+   be interpreted as an index into the threads as ordered by the
+   kernel in task_threads.)  If the thread is not waiting, or the reason
+   is unknown, return an empty string.  */
+routine msg_report_wait (
+	process: mach_port_t;
+	thread: int;
+	out wait_reason: string_t);
