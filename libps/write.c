@@ -25,6 +25,85 @@
 
 #include "ps.h"
 #include "common.h"
+
+/* True if CH is a `control character'.  */
+#define iscntl(ch) ((unsigned)(ch) < 32)
+
+/* *BEG and NEW - 1 are the bounds of a buffer, which write to S (the last
+   character just before NEW isn't included, because something different
+   about it is what caused the flush), and update *BEG to be NEW.  True is
+   returned if a write error occurs.  */
+static int
+flush (char **beg, char *new, FILE *s)
+{
+  char *b = *beg;
+  if (new > b)
+    *beg = new;
+  if (new - 1 > b)
+    {
+      size_t len = new - 1 - b;
+      int ret = fwrite (b, 1, len, s);
+      if (ret < len)
+	return 1;
+    }
+  return 0;
+}
+
+/* Write T to S, up to MAX characters (unless MAX == 0), making sure not to
+   write any unprintable characters.  */ 
+error_t
+noise_write (unsigned char *t, ssize_t max, FILE *s)
+{
+  int ch;
+  char *ok = t;
+  size_t len = 0;
+
+  while ((ch = *t++) && (max < 0 || len < max))
+    if (isgraph (ch) || ch == ' ')
+      len++;
+    else
+      {
+	int is_cntl = iscntl (ch);
+
+	if (flush (&ok, t, s))
+	  return errno;
+
+	len += (is_cntl ? 2 : 3);
+	if (max >= 0 && len > max)
+	  break;
+
+	if (is_cntl)
+	  fprintf (s, "^%c", ch + 'A');
+	else
+	  fprintf (s, "\\%03o", ch);
+      }
+
+  if (flush (&ok, t, s))
+    return errno;
+
+  return 0;
+}
+
+/* Return what noise_write would write with arguments of T and MAX.  */
+size_t
+noise_len (char *t, ssize_t max)
+{
+  int ch;
+  size_t len = 0;
+
+  while ((ch = *t++) && (max == 0 || len < max))
+    if (isgraph (ch) || ch == ' ')
+      len++;
+    else
+      {
+	size_t rep_len = iscntl (ch) ? 2 : 3;
+	if (max >= 0 && rep_len + len > max)
+	  break;
+	len += rep_len;
+      }
+
+  return len;
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -34,14 +113,11 @@
 error_t
 ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
 {
-  size_t len = strlen(string);
-
-  if (max_len >= 0 && len > max_len)
-    len = max_len;
+  size_t len = noise_len (string, max_len);
 
   if (len > 0)
     {
-      size_t output;
+      error_t err;
       ssize_t spaces_needed = stream->spaces;
 
       stream->spaces = 0;
@@ -58,9 +134,9 @@ ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
 	}
       stream->spaces = spaces_needed;
 
-      output = fwrite (string, 1, len, stream->stream);
-      if (output == 0)
-	return errno;
+      err = noise_write (string, len, stream->stream);
+      if (err)
+	return err;
 
       stream->pos += len;
     }
@@ -106,18 +182,13 @@ error_t
 _ps_stream_write_field (ps_stream_t stream, char *buf, size_t max_width,
 		       int width)
 {
-  size_t len;
   error_t err;
+  size_t len;
 
   while (isspace (*buf))
     buf++;
 
-  len = strlen (buf);
-  while (isspace (buf[len - 1]))
-    len--;
-
-  if (max_width >= 0 && len > max_width)
-    len = max_width;
+  len = noise_len (buf, max_width);
 
   if (width > 0)
     {
