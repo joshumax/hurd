@@ -178,6 +178,7 @@ str2flags (const char *str)
 	case 'a': flags |= O_APPEND;		break;
 	default:
 	  /* ignore */
+	  break;
 	}
       ++str;
     }
