@@ -184,12 +184,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
 	  if (np != dnp)
-	    mutex_unlock (&dnp-lock);
+	    mutex_unlock (&dnp->lock);
 	  
 	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
 				     dirport, dircred->uids, dircred->nuids,
 				     dircred->gids, dircred->ngids, 
 				     lastcomp ? flags : 0,
+				     _diskfs_translator_callback,
 				     retry, retryname, returned_port);
 
 	  if (error != ENOENT)
