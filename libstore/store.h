@@ -29,6 +29,12 @@
 #include <device/device.h>
 #include <hurd/hurd_types.h>
 
+/* A portion of a store.  If START == -1, it's a hole.  */
+struct store_run
+{
+  off_t start, length;
+};
+
 struct store
 {
   /* If this store was created using store_create, the file from which we got
@@ -40,7 +46,7 @@ struct store
 
   /* Address ranges in the underlying storage which make up our contiguous
      address space.  In units of BLOCK_SIZE, below.  */
-  off_t *runs;			/* Malloced */
+  struct store_run *runs;	/* Malloced */
   size_t num_runs;		/* Length of RUNS.  */
 
   /* Maximum valid offset.  This is the same as SIZE, but in blocks.  */
@@ -131,7 +137,7 @@ error_t store_device_create (device_t device, struct store **store);
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t _store_device_create (device_t device, size_t block_size,
-			      const off_t *runs, size_t num_runs,
+			      const struct store_run *runs, size_t num_runs,
 			      struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
@@ -142,7 +148,7 @@ error_t store_file_create (file_t file, struct store **store);
 
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t _store_file_create (file_t file, size_t block_size,
-			    const off_t *runs, size_t num_runs,
+			    const struct store_run *runs, size_t num_runs,
 			    struct store **store);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
@@ -167,10 +173,16 @@ void store_free (struct store *store);
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths,
 	     mach_port_t port, size_t block_size,
-	     const off_t *runs, size_t num_runs, off_t end);
+	     const struct store_run *runs, size_t num_runs, off_t end);
 
 /* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
-error_t store_set_runs (struct store *store, const off_t *runs, size_t num_runs);
+error_t store_set_runs (struct store *store,
+			const struct store_run *runs, size_t num_runs);
+
+/* Set STORE's current children to (a copy of) CHILDREN and NUM_CHILDREN
+   (note that just the vector CHILDREN is copied, not the actual children).  */
+error_t store_set_children (struct store *store,
+			    struct store *const *children, size_t num_children);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t store_set_name (struct store *store, const char *name);
@@ -280,7 +292,7 @@ error_t store_default_leaf_encode (struct store *store, struct store_enc *enc);
 error_t store_default_leaf_decode (struct store_enc *enc,
 				   error_t (*create)(mach_port_t port,
 						     size_t block_size,
-						     const off_t *runs,
+						     const struct store_run *runs,
 						     size_t num_runs,
 						     struct store **store),
 				   struct store **store);
