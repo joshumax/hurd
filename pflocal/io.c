@@ -114,37 +114,11 @@ S_io_write (struct sock_user *user,
 error_t
 S_interrupt_operation (mach_port_t port)
 {
-  struct sock *sock;
-  struct pipe *pipe;
   struct sock_user *user = ports_lookup_port (sock_port_bucket, port, 0);
-
   if (!user)
     return EOPNOTSUPP;
-
-  sock = user->sock;
-
-  /* Interrupt anyone trying to connect or listening for connections.  */
-  if (sock->listen_queue)
-    connq_interrupt (sock->listen_queue);
-
-  /* Interrupt SOCK's pending connection.  */
-  mutex_lock (&sock->lock);
-  if (sock->connect_queue)
-      connq_interrupt_sock (sock->connect_queue, sock);
-  mutex_unlock (&sock->lock);
-
-  /* Interrupt pending reads on this socket.  We don't bother with writes
-     since they never block.  */
-  if (sock_acquire_read_pipe (sock, &pipe) == 0)
-    {
-      /* Indicate to currently waiting threads they've been interrupted.  */
-      pipe->interrupt_seq_num++;
-      pipe_kick (pipe);
-      pipe_release_reader (pipe);
-    }
-
+  ports_interrupt_rpc (user);
   ports_port_deref (user);
-
   return 0;
 }
 
