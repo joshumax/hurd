@@ -109,7 +109,6 @@ S_proc_pid2proc (struct proc *callerp,
   return 0;
 }
 
-#ifdef notyet
 
 /* Read a string starting at address ADDR in task T; set *STR to point at
    newly malloced storage holding it.  */
@@ -134,22 +133,23 @@ get_string (task_t t,
   if (err)
     return err;
 
-  /* Scan for a null */
-  for (c = (char *)(data + (addr - readaddr));
-       c < (char *)(data + readlen);
-       c++)
-    if (*(char *)c == '\0')
-      {
-	c++;			/* include the null */
-	*str = malloc (c - (char *)(data + (addr - readaddr)));
+  /* Scan for a null.  */
+  c = memchr ((char *) (data + (addr - readaddr)), '\0',
+	      readlen - (addr - readaddr));
+  if (c == NULL)
+    err = KERN_INVALID_ADDRESS;
+  else
+    {
+      c++;			/* Include the null.  */
+      *str = malloc (c - (char *)(data + (addr - readaddr)));
+      if (*str == NULL)
+	err = ENOMEM;
+      else
 	bcopy ((char *)(data + (addr - readaddr)), *str,
 	       c - (char *)(data + (addr - readaddr)));
-      }
-
-  if (*str == 0)
-    err = KERN_INVALID_ADDRESS;
+    }
   
-  vm_deallocate (mach_task_self (), data, (vm_address_t)&readlen);
+  vm_deallocate (mach_task_self (), data, readlen);
   return err;
 }
 
@@ -174,25 +174,31 @@ get_vector (task_t task,
   if (err)
     return err;
 
-  /* Scan for a null */
+  /* Scan for a null.  */
+  *vec = 0;
   /* This will lose sometimes on machines with unfortunate alignment
      restrictions. XXX */
-  for (t = (int *)(data + (addr - readaddr)); 
-       t < (vm_address_t *)(data + readlen);
-       t += sizeof (int))
-    if (*(int *)t == 0)
+  for (t = (vm_address_t *) (data + (addr - readaddr)); 
+       t < (vm_address_t *) (data + readlen);
+       ++t)
+    if (*t == 0)
       {
-	t += 4;			/* include the null */
-	*vec = malloc ((char *)t - (char *)(data + (addr - readaddr)) 
-		       + sizeof (int));
+	++t;			/* Include the null.  */
+	*vec = malloc ((char *)t - (char *)(data + (addr - readaddr)));
+	if (*vec == NULL)
+	  {
+	    err = ENOMEM;
+	    break;
+	  }
 	bcopy ((char *)(data + (addr - readaddr)), *vec,
 	       (char *)t - (char *)(data + (addr - readaddr)));
+	break;
       }
 
-  if (*vec == 0)
+  if (!err && *vec == 0)
     err = KERN_INVALID_ADDRESS;
   
-  vm_deallocate (mach_task_self (), data, (vm_address_t)readlen);
+  vm_deallocate (mach_task_self (), data, readlen);
   return err;
 }  
 
@@ -204,22 +210,22 @@ get_string_array (task_t t,
 		  vm_address_t *buf,
 		  u_int *buflen)
 {
-  int totstringlen;
   char *bp;
-  int *vector;
+  int *vector, *vp;
   error_t err;
   vm_address_t origbuf = *buf;
-  
+
   err = get_vector (t, loc, &vector);
   if (err)
     return err;
   
-  while (*vector)
+  bp = (char *) *buf;
+  for (vp = vector; *vp; ++vp)
     {
       char *string;
       int len;
 
-      err = get_string (t, *vector, &string);
+      err = get_string (t, *vp, &string);
       if (err)
 	{
 	  free (vector);
@@ -229,7 +235,7 @@ get_string_array (task_t t,
 	}
       
       len = strlen (string) + 1;
-      if (len > (bp - *(char **)buf))
+      if (len > (char *) *buf + *buflen - bp)
 	{
 	  vm_address_t newbuf;
 	  
@@ -254,10 +260,10 @@ get_string_array (task_t t,
       free (string);
     }
   free (vector);
-  *buflen = (vm_address_t)bp - *buf;
+  *buflen = bp - (char *) *buf;
   return 0;
 }
-#endif /* notyet */
+
 
 /* Implement proc_getprocargs as described in <hurd/proc.defs>. */
 kern_return_t
@@ -266,16 +272,12 @@ S_proc_getprocargs (struct proc *callerp,
 		  char **buf,
 		  u_int *buflen)
 {
- #ifdef notyet
   struct proc *p = pid_find (pid);
   
   if (!p)
     return ESRCH;
   
-  return get_string_array (p->p_task, p->p_argv, buflen, buf);
-#else
-  return EOPNOTSUPP;
-#endif
+  return get_string_array (p->p_task, p->p_argv, (vm_address_t *) buf, buflen);
 }
 
 /* Implement proc_getprocenv as described in <hurd/proc.defs>. */
