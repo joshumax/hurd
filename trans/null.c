@@ -24,8 +24,8 @@
 #include <hurd/fsys.h>
 
 #include <stdio.h>
+#include <unistd.h>
 #include <error.h>
-#include <assert.h>
 #include <string.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -44,8 +44,7 @@ void
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t bootstrap, control, realnode;
-  struct trivfs_control *trivfs_control;
+  mach_port_t bootstrap;
   
   if (argc == 2 &&
       (strcmp(argv[1], "-z") == 0 || strcmp(argv[1], "--zero") == 0))
@@ -60,20 +59,10 @@ main (int argc, char **argv)
   if (bootstrap == MACH_PORT_NULL)
     error(1, 0, "must be started as a translator");
 
-  _libports_initialize();
-
   /* Reply to our parent */
-  control = trivfs_handle_port (MACH_PORT_NULL, PT_CTL, PT_NODE);
-  err = fsys_startup (bootstrap, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
+  err = trivfs_startup(bootstrap, PT_CTL, PT_NODE, NULL);
   if (err)
-    error(1, err, "starting translator");
-
-  /* Install the returned realnode for trivfs's use */
-  trivfs_control = ports_check_port_type (control, PT_CTL);
-  assert (trivfs_control);
-  ports_change_hardsoft (trivfs_control, 1);
-  trivfs_control->underlying = realnode;
-  ports_done_with_port (trivfs_control);
+    error(3, err, "Contacting parent");
 
   /* Launch. */
   ports_manage_port_operations_onethread ();
@@ -85,7 +74,7 @@ main (int argc, char **argv)
 /* Trivfs hooks  */
 
 int trivfs_fstype = FSTYPE_DEV;
-int trivfs_fsid = 0; /* ??? */
+int trivfs_fsid = 0;
 
 int trivfs_support_read = 1;
 int trivfs_support_write = 1;
@@ -102,8 +91,6 @@ void
 trivfs_modify_stat (struct stat *st)
 {
   st->st_blksize = vm_page_size;
-
-  st->st_fstype = FSTYPE_DEV;
 
   st->st_size = 0;
   st->st_blocks = 0;
