@@ -48,9 +48,9 @@ struct pipe_class
 #define PIPE_CLASS_CONNECTIONLESS	0x1 /* A non-stream protocol.  */
 
 /* Some pre-defined pipe_classes.  */
-struct pipe_class *stream_pipe_class;
-struct pipe_class *dgram_pipe_class;
-struct pipe_class *seqpacket_pipe_class;
+extern struct pipe_class *stream_pipe_class;
+extern struct pipe_class *dgram_pipe_class;
+extern struct pipe_class *seqpack_pipe_class;
 
 /* A unidirectional data pipe; it transfers data from READER to WRITER.  */
 struct pipe
