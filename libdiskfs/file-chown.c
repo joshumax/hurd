@@ -39,15 +39,20 @@ diskfs_S_file_chown (struct protid *cred,
 		       err = EPERM;
 		     else
 		       {
-			 err = diskfs_validate_owner_change (np, uid);
-			 if (!err)
+			 if (uid != (uid_t) -1)
+			   err = diskfs_validate_owner_change (np, uid);
+			 if (!err && gid != (gid_t) -1)
 			   err = diskfs_validate_group_change (np, gid);
 			 if (!err)
 			   {
-			     np->dn_stat.st_uid = uid;
-			     np->dn_stat.st_gid = gid;
-			     if (np->author_tracks_uid)
-			       np->dn_stat.st_author = uid;
+			     if (uid != (uid_t) -1)
+			       {
+				 np->dn_stat.st_uid = uid;
+				 if (np->author_tracks_uid)
+				   np->dn_stat.st_author = uid;
+			       }
+			     if (gid != (gid_t) -1)
+			       np->dn_stat.st_gid = gid;
 			     np->dn_set_ctime = 1;
 			     if (np->filemod_reqs)
 			       diskfs_notice_filechange(np,
