@@ -40,12 +40,15 @@ struct frobauth
 
 /* For every pid in FROBAUTH, call MODIFY to change its argument UGIDS from
    the current authentication to what it should be; CHANGE is whatever ids
-   the user specified.  If the user specifies the --verbose flags, PRINT_INFO
-   is called after successfully installing the new authentication in each
-   process, to print a message about what happened.  True is returned if no
-   errors occur, although most errors do not cause termination, and error
-   messages are printed for them.  */
+   the user specified.  AUTHS, of length NUM_AUTHS, should be a vector of
+   auth ports giving whatever additional authentication is needed (besides
+   the process's current authentication).  If the user specifies the
+   --verbose flags, PRINT_INFO is called after successfully installing the
+   new authentication in each process, to print a message about what
+   happened.  True is returned if no errors occur, although most errors do
+   not cause termination, and error messages are printed for them.  */
 error_t frobauth_modify (struct frobauth *frobauth,
+			 const auth_t *auths, size_t num_auths,
 			 error_t (*modify) (struct ugids *ugids,
 					    const struct ugids *change,
 					    pid_t pid, void *hook),
