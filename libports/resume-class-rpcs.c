@@ -30,7 +30,7 @@ ports_resume_class_rpcs (struct port_class *class)
   class->flags &= ~PORT_CLASS_INHIBITED;
   if (class->flags | PORT_CLASS_BLOCKED)
     {
-      class->flags &= ~PORT_BLOCKED;
+      class->flags &= ~PORT_CLASS_BLOCKED;
       condition_broadcast (&_ports_block);
     }
   mutex_unlock (&_ports_lock);
