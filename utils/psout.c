@@ -28,7 +28,7 @@
 
 void
 psout (struct proc_stat_list *procs,
-       char *fmt_string, struct ps_fmt_specs *specs,
+       char *fmt_string, int posix_fmt, struct ps_fmt_specs *specs,
        char *sort_key_name, int sort_reverse,
        int output_width, int print_heading,
        int squash_bogus_fields, int squash_nominal_fields)
@@ -37,9 +37,13 @@ psout (struct proc_stat_list *procs,
   struct ps_stream *output;
   struct ps_fmt *fmt;
 
-  err = ps_fmt_create (fmt_string, specs, &fmt);
+  err = ps_fmt_create (fmt_string, posix_fmt, specs, &fmt);
   if (err)
-    error (4, err, "Can't create output format");
+    {
+      char *problem;
+      ps_fmt_creation_error (fmt_string, posix_fmt, specs, &problem);
+      error (4, err, "%s", problem);
+    }
 
   if (squash_bogus_fields)
     /* Remove any fields that we can't print anyway (because of system
@@ -57,9 +61,10 @@ psout (struct proc_stat_list *procs,
   if (squash_nominal_fields)
     /* Remove any fields that contain only `uninteresting' information.  */
     {
-      int nominal (struct ps_fmt_spec *spec)
+      int nominal (struct ps_fmt_field *field)
 	{
-	  return proc_stat_list_spec_nominal (procs, spec);
+	  return !(field->flags & PS_FMT_FIELD_KEEP)
+	    && proc_stat_list_spec_nominal (procs, field->spec);
 	}
       ps_fmt_squash (fmt, nominal);
     }
@@ -67,7 +72,7 @@ psout (struct proc_stat_list *procs,
   if (sort_key_name)
     /* Sort on the given field. */
     {
-      struct ps_fmt_spec *sort_key;
+      const struct ps_fmt_spec *sort_key;
 
       if (*sort_key_name == '-')
 	/* Sort in reverse.  */
