@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_prenotify as described in <hurd/io.defs>. 
 
@@ -61,7 +62,7 @@ diskfs_S_io_prenotify (struct protid *cred,
       goto out;
     }
   
-  err =  file_extend (np, end, cred);
+  err = diskfs_grow (np, end, cred);
  out:
   mutex_unlock (&np->i_toplock);
   return err;
