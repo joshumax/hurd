@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -49,6 +49,11 @@ diskfs_S_io_write (struct protid *cred,
       if (cred->po->openstat & O_APPEND)
 	cred->po->filepointer = np->dn_stat.st_size;
       off = cred->po->filepointer;
+    }
+  if (off < 0)
+    {
+      err = EINVAL;
+      goto out;
     }
 
   err = 0;
