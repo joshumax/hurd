@@ -49,7 +49,7 @@ struct peropen
   int lock_status;
   int refcnt;
   int openstat;
-  mach_port_t dotdotport;
+  mach_port_t dotdotport;	/* dotdot from ROOT through this peropen */
   struct node *np;
 };
 
@@ -847,9 +847,7 @@ error_t diskfs_shutdown (int flags);
    are all as for fsys_startup in <hurd/fsys.defs>.  */
 error_t diskfs_execboot_fsys_startup (mach_port_t port, mach_port_t ctl,
 				      mach_port_t *real,
-				      mach_msg_type_name_t *realpoly,
-				      mach_port_t *dotdot_node,
-				      mach_msg_type_name_t *dotdot_node_poly);
+				      mach_msg_type_name_t *realpoly);
 
 /* The ports library requires the following to be defined; the diskfs
    library provides a definition.  See <hurd/ports.h> for the
