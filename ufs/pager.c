@@ -646,8 +646,7 @@ diskfs_max_user_pager_prot ()
 	  if (upi->type == FILE_DATA)
 	    max_prot |= upi->max_prot;
 	  /* Stop iterating if MAX_PROT is as filled as it's going to get. */
-	  return
-	    (max_prot == (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE)) ? 1 : 0;
+	  return max_prot == (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE);
 	}
 
       block_caching ();		/* Make any silly pagers go away. */
