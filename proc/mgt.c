@@ -208,19 +208,21 @@ S_proc_reassign (struct proc *p,
   task_terminate (p->p_task);
   mach_port_deallocate (mach_task_self (), p->p_task);
   p->p_task = newt;
-  mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_reqport,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
 
   /* For security, we need use the request port from STUBP, and 
      not inherit this state. */
   mach_port_mod_refs (mach_task_self (), p->p_reqport,
 		      MACH_PORT_RIGHT_RECEIVE, -1);
   p->p_reqport = stubp->p_reqport;
+  stubp->p_reqport = MACH_PORT_NULL; /* Protect from process_has_exited.  */
   mach_port_mod_refs (mach_task_self (), p->p_reqport,
 		      MACH_PORT_RIGHT_RECEIVE, 1);
+
+  mach_port_request_notification (mach_task_self (), p->p_task,
+				  MACH_NOTIFY_DEAD_NAME, 1, p->p_reqport,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo)
+    mach_port_deallocate (mach_task_self (), foo);
 
   /* Enqueued messages might refer to the old task port, so
      destroy them. */
