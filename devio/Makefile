@@ -1,3 +1,4 @@
+# Makefile for devio
 # 
 #   Copyright (C) 1995 Free Software Foundation, Inc.
 #
@@ -21,22 +22,15 @@ makemode := server
 target = devio
 SRCS = dev.c iostate.c window.c devio.c open.c devpager.c io.c rdwr.c mem.c
 LCLHDRS = dev.h iostate.h window.h open.h ptypes.h mem.h
-HURDLIBS = libtrivfs libpager libports libfshelp libthreads libihash
 DIST_FILES = MAKEDEV
 
-OBJS = $(SRCS:.c=.o) error.o
+OBJS = $(SRCS:.c=.o)
 
-CPPFLAGS += -I../lib
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
-
-CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
-
-vpath %.c ../lib
+devio: $(OBJS) ../libtrivfs/libtrivfs.a ../libpager/libpager.a ../libports/libports.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
 install: $(prefix)/dev/MAKEDEV
 
 $(prefix)/dev/MAKEDEV: MAKEDEV
-	$(INSTALL_DATA) MAKEDEV $(prefix)/dev/MAKEDEV
-	chmod +x $(prefix)/dev/MAKEDEV
+	$(INSTALL_PROGRAM) MAKEDEV $(prefix)/dev/MAKEDEV
