@@ -1,5 +1,5 @@
 /* Translator for S_IFLNK nodes
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -55,8 +55,11 @@ main (int argc, char **argv)
 
   /* Reply to our parent */
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
+  mach_port_insert_right (mach_task_self (), control, control,
+			  MACH_MSG_TYPE_MAKE_SEND);
   error =
-    fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
+    fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_COPY_SEND, &realnode);
+  mach_port_deallocate (mach_task_self (), control);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (error)
     {

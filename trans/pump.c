@@ -1,5 +1,5 @@
 /* Initialize an Ethernet interface
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2000 Free Software Foundation, Inc.
    Written by Thomas Bushnell, BSG.
 
    This file is part of the GNU Hurd.
@@ -258,7 +258,8 @@ start_pfinet (char *argz, int argz_len)
 			     0, FS_TRANS_SET,
 			     FSYS_GOAWAY_FORCE,
 			     argz, argz_len,
-			     control, MACH_MSG_TYPE_MOVE_SEND);
+			     control, MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), control);
 
   /* Force the C library to forget about any old cached server
      access port. */
