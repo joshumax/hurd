@@ -126,7 +126,6 @@ int diskfs_readonly;
 void
 main (int argc, char **argv)
 {
-  char *devname;
   mach_port_t bootstrap;
   error_t err;
   int sizes[DEV_GET_SIZE_COUNT];
@@ -138,7 +137,7 @@ main (int argc, char **argv)
     {
       /* We are in a normal Hurd universe, started as a translator.  */
 
-      devname = trans_parse_args (argc, argv);
+      ufs_device_name = trans_parse_args (argc, argv);
 
       {
 	/* XXX let us see errors */
@@ -152,7 +151,7 @@ main (int argc, char **argv)
   else
     {
       /* We are the bootstrap filesystem.  */
-      devname = diskfs_parse_bootargs (argc, argv);
+      ufs_device_name = diskfs_parse_bootargs (argc, argv);
       compat_mode = COMPAT_GNU;
     }
   
@@ -170,24 +169,24 @@ main (int argc, char **argv)
       
       err = device_open (diskfs_master_device, 
 			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 devname, &ufs_device);
+			 ufs_device_name, &ufs_device);
       if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
 	{
 	  /* Prompt the user to give us another name rather
 	     than just crashing */
-	  printf ("Cannot open device %s\n", devname);
+	  printf ("Cannot open device %s\n", ufs_device_name);
 	  printf ("Open instead: ");
 	  fflush (stdout);
 	  len = getline (&line, &linesz, stdin);
 	  if (len > 2)
-	    devname = line;
+	    ufs_device_name = line;
 	}
     }
   while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
 	  
   if (err)
     {
-      perror (devname);
+      perror (ufs_device_name);
       exit (1);
     }
 
