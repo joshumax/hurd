@@ -85,6 +85,11 @@ thread_state (thread_basic_info_t bi)
  (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED \
   | PSTAT_THREAD_WAIT | PSTAT_THREAD_WAITS)
 
+/* The set of things in PSTAT_PROCINFO that we will not attempt to refetch on
+   subsequent getprocinfo calls.  */
+#define PSTAT_PROCINFO_MERGE    PSTAT_TASK_BASIC
+#define PSTAT_PROCINFO_REFETCH  (PSTAT_PROCINFO - PSTAT_PROCINFO_MERGE)
+
 /* Fetches process information from the set in PSTAT_PROCINFO, returning it
    in PI & PI_SIZE.  NEED is the information, and HAVE is the what we already
    have.  */
@@ -145,16 +150,33 @@ merge_procinfo (process_t server, pid_t pid,
 {
   /* We always re-fetch any thread-specific info, as the set of threads could
      have changed since the last time we did this, and we can't tell.  */
-  ps_flags_t really_need = need | (*have & PSTAT_PROCINFO_THREAD);
-  ps_flags_t really_have = *have & ~PSTAT_PROCINFO_THREAD;
-  struct procinfo *new_pi;
+  ps_flags_t really_need = need | (*have & ~PSTAT_PROCINFO_REFETCH);
+  ps_flags_t really_have = *have & ~PSTAT_PROCINFO_REFETCH;
+  struct procinfo *new_pi, *old_pi, old_pi_save;
   size_t new_pi_size = 0;
   char *new_waits = 0;
   size_t new_waits_len = 0;
-  error_t err =
-    fetch_procinfo (server, pid, really_need, &really_have,
-		    &new_pi, &new_pi_size,
-		    &new_waits, &new_waits_len);
+  error_t err;
+
+  if (*pi_size == sizeof (struct procinfo))
+    /* The old info is small, so just copy it into a temp structure so we can
+       use the the old procinfo storage as a destination for the NEW procinfo
+       to avoid vm_allocing more space for it.  */
+    {
+      old_pi_save = **pi;
+      old_pi = &old_pi_save;
+      new_pi = *pi;
+      new_pi_size = *pi_size;
+    }
+  else
+    {
+      old_pi = *pi;
+      new_pi_size = 0;
+    }
+
+  err = fetch_procinfo (server, pid, really_need, &really_have,
+			&new_pi, &new_pi_size,
+			&new_waits, &new_waits_len);
 
   if (err)
     return err;
@@ -162,13 +184,14 @@ merge_procinfo (process_t server, pid_t pid,
   if (*pi_size > 0)
     /* There was old information, try merging it. */
     {
-      if (*have & PSTAT_TASK_BASIC)
+      if (really_have & PSTAT_TASK_BASIC)
 	/* Task info */
-	bcopy (&(*pi)->taskinfo, &new_pi->taskinfo,
+	bcopy (&old_pi->taskinfo, &new_pi->taskinfo,
 	       sizeof (struct task_basic_info));
       /* That's it for now.  */
 
-      vm_deallocate (mach_task_self (), (vm_address_t)*pi, *pi_size);
+      if (new_pi != *pi)
+	vm_deallocate (mach_task_self (), (vm_address_t)*pi, *pi_size);
     }
   if (*waits_len > 0)
     vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
@@ -176,9 +199,7 @@ merge_procinfo (process_t server, pid_t pid,
   /* Update what thread info we have -- this may *decrease*, as all
      previously fetched thread-info is out-of-date now, so we have to make do
      with whatever we've fetched this time.  */
-  *have =
-    (*have & ~(PSTAT_PROCINFO_THREAD | PSTAT_PROC_INFO) )
-     | (really_have & (PSTAT_PROCINFO_THREAD | PSTAT_PROC_INFO));
+  *have = really_have;
 
   *pi = new_pi;
   *pi_size = new_pi_size;
@@ -609,7 +630,10 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 				      &ps->proc_info, &ps->proc_info_size,
 				      0, 0);
 		if (! err)
-		  need &= ~PSTAT_NUM_THREADS;
+		  {
+		    need &= ~PSTAT_NUM_THREADS;
+		    ps->num_threads = count_threads (ps->proc_info);
+		  }
 	      }
 	    if ((have & PSTAT_NUM_THREADS) && ps->num_threads <= 3)
 	      /* Perhaps only 1 user thread -- thread-wait info may be
