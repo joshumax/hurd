@@ -46,18 +46,22 @@ diskfs_S_io_reauthenticate (struct protid *cred,
       return err;
     }
 
-  err = auth_server_authenticate (diskfs_auth_server_port,
-				  rend_port,
-				  MACH_MSG_TYPE_MOVE_SEND,
-				  ports_get_right (newcred),
-				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen,
-				  &aux_uids, &auxuidlen,
-				  &gen_gids, &gengidlen,
-				  &aux_gids, &auxgidlen);
-  assert_perror (err);		/* XXX */
-
-  diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
+  do
+    err = auth_server_authenticate (diskfs_auth_server_port,
+				    rend_port,
+				    MACH_MSG_TYPE_MOVE_SEND,
+				    ports_get_right (newcred),
+				    MACH_MSG_TYPE_MAKE_SEND,
+				    &gen_uids, &genuidlen,
+				    &aux_uids, &auxuidlen,
+				    &gen_gids, &gengidlen,
+				    &aux_gids, &auxgidlen);
+  while (err == EINTR);
+    
+  if (err)
+    diskfs_finish_protid (newcred, 0, 0, 0, 0);
+  else
+    diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
   mutex_unlock (&cred->po->np->lock);
 
   ports_port_deref (newcred);
