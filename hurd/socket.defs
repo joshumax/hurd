@@ -1,5 +1,5 @@
 /* Definitions for socket interface
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -79,8 +79,7 @@ routine socket_create_address (
 	server: mach_port_t;	/* Can be either pf_t or socket_t.  */
 	sockaddr_type: int;
 	sockaddr: data_t;
-	out addr: mach_port_send_t;
-	binding: int);
+	out addr: mach_port_send_t);
 
 /* Create an address without any sockaddr.  */
 routine socket_fabricate_address (
