@@ -124,7 +124,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  h->sync = diskfs_synchronous;
 	  h->sync_interval = -1;
 	  h->remount = 0;
-	  h->nosuid = h->noexec = -1;
+	  h->nosuid = h->noexec = h->noatime = -1;
 
 	  /* We know that we have one child, with which we share our hook.  */
 	  state->child_inputs[0] = h;
