@@ -20,9 +20,9 @@
 dir := daemons
 makemode := utilities
 
-targets = rc getty
+targets = rc getty mail.local
 special-targets = rc
-SRCS = rc.sh getty.c
+SRCS = rc.sh getty.c lmail.c
 installationdir = $(libexecdir)
 
 HURDLIBS=shouldbeinlibc
@@ -31,9 +31,6 @@ getty-LDLIBS = -lutil
 
 include ../Makeconf
 
-getty: ../libshouldbeinlibc/libshouldbeinlibc.a
-
-$(filter-out $(special-targets), $(targets)): %: %.o
-
-%: %.sh
-	cp $< $@ && chmod +w $@
+rc: rc.sh
+getty: getty.o ../libshouldbeinlibc/libshouldbeinlibc.a
+mail.local: lmail.o ../libshouldbeinlibc/libshouldbeinlibc.a
