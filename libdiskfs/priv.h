@@ -82,9 +82,6 @@ extern int _diskfs_ncontrol_ports;
 /* Lock for _diskfs_ncontrol_ports. */
 extern spin_lock_t _diskfs_control_lock;
 
-/* Only temporary, until fsys_getroot/fsys_startup interface is fixed. */ 
-extern file_t _diskfs_dotdot_file;
-
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
    (without waiting) and unlocks everything, and then returns
