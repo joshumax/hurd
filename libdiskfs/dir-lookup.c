@@ -245,6 +245,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				     _diskfs_translator_callback2,
 				     retry, retryname, returned_port);
 
+	  /* fetch_root copies DIRPORT for success, so we always should
+	     deallocate our send right.  */
+	  mach_port_deallocate (mach_task_self (), dirport);
+
 	  if (error != ENOENT)
 	    {
 	      diskfs_nrele (dnp);
