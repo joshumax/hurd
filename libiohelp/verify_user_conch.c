@@ -18,6 +18,8 @@
 #include "ioserver.h"
 #include <errno.h>
 
+/* Check to see if the user identified by USER has conch C; if not,
+   return an error, else, return 0.  */
 error_t
 verify_user_conch (struct conch *c, void *user)
 {
