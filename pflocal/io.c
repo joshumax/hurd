@@ -28,32 +28,47 @@ S_io_read (struct sock_user *user,
 	   char **data, mach_msg_type_number_t *data_len,
 	   off_t offset, mach_msg_type_number_t amount)
 {
-  error_t err = 0;
-  unsigned readable;
+  error_t err;
   struct pipe *pipe;
 
   if (!user)
     return EOPNOTSUPP;
 
-  pipe = sock_aquire_read_pipe (user->sock);
-  if (pipe == NULL)
-    return EBADF;
-  
-  while ((readable = pipe_readable (pipe)) == 0 && pipe->writer)
+  err = sock_aquire_read_pipe (user->sock, &pipe);
+  if (!err && pipe)
     {
-      unsigned seq_num = pipe->interrupt_seq_num;
-      condition_wait (&pipe->pending_reads, &pipe->lock);
-      if (seq_num != pipe->interrupt_seq_num)
-	{
-	  pipe_release (pipe);
-	  return EINTR;
-	}
+      err =
+	pipe_read (pipe, sock->flags & SOCK_NONBLOCK, data, data_len, amount);
+      pipe_release (pipe);
     }
+  else
+    /* Return EOF [harmless if there's an error].  */
+    *data_len = 0;
 
-  if (readable)
-    err = pipe_read (pipe, data, data_len, amount);
-  if (readable && !err)
-    timestamp (&pipe->read_time);
+  return err;
+}
+
+/* Write data to an IO object.  If offset is -1, write at the object
+   maintained file pointer.  If the object is not seekable, offset is
+   ignored.  The amount successfully written is returned in amount.  A
+   given user should not have more than one outstanding io_write on an
+   object at a time; servers implement congestion control by delaying
+   responses to io_write.  Servers may drop data (returning ENOBUFS)
+   if they recevie more than one write when not prepared for it.  */
+error_t
+S_io_write (struct sock_user *user,
+	    char *data, mach_msg_type_number_t data_len,
+	    off_t offset, mach_msg_type_number_t *amount)
+{
+  error_t err;
+  struct pipe *pipe;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  err = sock_aquire_write_pipe (user->sock, &pipe);
+  if (!err)
+    err = pipe_write (pipe, data, data_len, amount);
 
   pipe_release (pipe);
   return err;
@@ -71,31 +86,14 @@ S_interrupt_operation (struct sock_user *user)
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
-  pipe = sock_aquire_read_pipe (user->sock);
-  if (pipe != NULL)
+  if (sock_aquire_read_pipe (user->sock, &pipe) == 0 && pipe != NULL)
     {
       /* Indicate to currently waiting threads they've been interrupted.  */
       pipe->interrupt_seq_num++;
-
-      /* Now wake them all up for the bad news... */
-      condition_broadcast (&pipe->pending_reads, &pipe->lock);
-      mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      condition_broadcast (&pipe->pending_selects, &pipe->lock);
-      mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-
+      pipe_kick (pipe);
       pipe_release (pipe);
     }
 
-  return 0;
-}
-
-S_io_get_openmodes (struct sock_user *user, int *bits)
-{
-  if (!user)
-    return EOPNOTSUPP;
-  *bits =
-    (user->sock->read_pipe ? O_READ : 0)
-      | (user->sock->write_pipe ? O_WRITE : 0);
   return 0;
 }
 
@@ -105,17 +103,21 @@ S_io_get_openmodes (struct sock_user *user, int *bits)
 error_t 
 S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
 {
-  error_t err = 0;
+  error_t err;
+  struct pipe *pipe;
 
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
-  if (user->sock->read_pipe)
-    *amount = pipe_readable (user->sock->read_pipe);
-  else
-    err = EBADF;
-  mutex_unlock (&user->sock->lock);
+  err = sock_aquire_read_pipe (user->sock, &pipe);
+  if (!err)
+    if (pipe == NULL)
+      *amount = 0;
+    else
+      {
+	*amount = pipe_readable (user->sock->read_pipe);
+	pipe_release (pipe);
+      }
 
   return err;
 }
@@ -155,51 +157,6 @@ S_io_duplicate (struct sock_user *user,
   return 0;
 }
 
-/* Write data to an IO object.  If offset is -1, write at the object
-   maintained file pointer.  If the object is not seekable, offset is
-   ignored.  The amount successfully written is returned in amount.  A
-   given user should not have more than one outstanding io_write on an
-   object at a time; servers implement congestion control by delaying
-   responses to io_write.  Servers may drop data (returning ENOBUFS)
-   if they recevie more than one write when not prepared for it.  */
-error_t
-S_io_write (struct sock_user *user,
-	    char *data, mach_msg_type_number_t data_len,
-	    off_t offset, mach_msg_type_number_t *amount)
-{
-  error_t err = 0;
-  struct pipe *pipe;
-
-  if (!user)
-    return EOPNOTSUPP;
-
-  pipe = sock_aquire_write_pipe (user->sock);
-  if (pipe == NULL)
-    return EBADF;
-  
-  if (pipe->reader == NULL)
-    err = EPIPE;
-  if (!err)
-    err = pipe_write(pipe, data, data_len, amount);
-  if (!err)
-    {
-      timestamp (&pipe->write_time);
-      
-      /* And wakeup anyone that might be interested in it.  */
-      condition_signal (&pipe->pending_reads, &pipe->lock);
-      mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      
-      /* Only wakeup selects if there's still data available.  */
-      if (pipe_readable (pipe))
-	{
-	  condition_signal (&pipe->pending_selects, &pipe->lock);
-	  mutex_lock (&pipe->lock); /* Get back the lock on PIPE.  */
-	}
-    }
-
-  pipe_release (pipe);
-  return 0;
-}
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
@@ -209,61 +166,74 @@ S_io_write (struct sock_user *user,
 error_t
 S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 {
+  error_t err = 0;
   struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
 
+  *select_type |= ~SELECT_URG;	/* We never return these.  */
+
   sock = user->sock;
   mutex_lock (&sock->lock);
 
-  *select_type |= ~SELECT_URG;
-
-  if ((*select_type & SELECT_WRITE) && !sock->write_pipe)
+  if (sock->connq)
+    /* Sock is used for accepting connections, not I/O.  For these, you can
+       only select for reading, which will block until a connection request
+       comes along.  */
     {
       mutex_unlock (&sock->lock);
-      return EBADF;
-    }
-  /* Otherwise, pipes are always writable... */
 
-  if (*select_type & SELECT_READ)
-    {
-      struct pipe *pipe = sock->read_pipe;
-      if (pipe)
-	pipe_aquire (pipe);
-
-      /* We unlock SOCK here, as it's not subsequently used, and we might
-	 go to sleep waiting for readable data.  */
-      mutex_unlock (&sock->lock);
-
-      if (!pipe)
+      if (*select_type & SELECT_WRITE)
+	/* Meaningless for a non-i/o socket.  */
 	return EBADF;
 
-      if (! pipe_readable (pipe))
-	/* Nothing to read on PIPE yet...  */
-	if (*select_type & ~SELECT_READ)
-	  /* But there's other stuff to report, so return that.  */
-	  *select_type &= ~SELECT_READ;
-	else
-	  /* The user only cares about reading, so wait until something is
-	     readable.  */
-	  while (! pipe_readable (pipe) && pipe->writer)
-	    {
-	      unsigned seq_num = pipe->interrupt_seq_num;
-	      condition_wait (&pipe->pending_reads, &pipe->lock);
-	      if (seq_num != pipe->interrupt_seq_num)
-		{
-		  pipe_release (pipe);
-		  return EINTR;
-		}
-	    }
-
-      pipe_release (pipe);
+      if (*select_type & SELECT_READ)
+	/* Wait for a connect.  Passing in NULL for REQ means that the
+	   request won't be dequeued.  */
+	return 
+	  connq_listen (sock->connq, sock->flags & SOCK_NONBLOCK, NULL, NULL);
     }
   else
-    mutex_unlock (&sock->lock);
+    /* Sock is a normal read/write socket.  */
+    {
+      if ((*select_type & SELECT_WRITE) && !sock->write_pipe)
+	{
+	  mutex_unlock (&sock->lock);
+	  return EBADF;
+	}
+      /* Otherwise, pipes are always writable... */
 
-  return 0;
+      if (*select_type & SELECT_READ)
+	{
+	  struct pipe *pipe = sock->read_pipe;
+	  if (pipe)
+	    pipe_aquire (pipe);
+
+	  /* We unlock SOCK here, as it's not subsequently used, and we might
+	     go to sleep waiting for readable data.  */
+	  mutex_unlock (&sock->lock);
+
+	  if (!pipe)
+	    return EBADF;
+
+	  if (! pipe_readable (pipe))
+	    /* Nothing to read on PIPE yet...  */
+	    if (*select_type & ~SELECT_READ)
+	      /* But there's other stuff to report, so return that.  */
+	      *select_type &= ~SELECT_READ;
+	    else
+	      /* The user only cares about reading, so wait until something is
+		 readable.  */
+	      err = pipe_wait (pipe, 0);
+
+	  pipe_release (pipe);
+	}
+      else
+	mutex_unlock (&sock->lock);
+    }
+
+  return err;
 }
 
 /* Return the current status of the object.  Not all the fields of the
@@ -302,4 +272,158 @@ S_io_stat (struct sock_user *user, struct stat *st)
   copy_time (&sock->change_time, &st->st_ctime, &st->ctime_usec);
 
   return 0;
+}
+
+error_t
+S_io_get_openmodes (struct sock_user *user, int *bits)
+{
+  unsigned flags;
+  if (!user)
+    return EOPNOTSUPP;
+  flags = user->sock->flags;
+  *bits =
+      (flags & SOCK_NONBLOCK ? O_NONBLOCK : 0)
+    | (flags & SOCK_SHUTDOWN_READ ? 0 : O_READ)
+    | (flags & SOCK_SHUTDOWN_WRITE ? 0 : O_WRITE);
+  return 0;
+}
+
+error_t
+S_io_set_all_openmodes (struct sock_user *user, int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  mutex_lock (&user->sock->lock);
+  if (bits & SOCK_NONBLOCK)
+    user->sock->flags |= SOCK_NONBLOCK;
+  else
+    user->sock->flags &= ~SOCK_NONBLOCK;
+  mutex_unlock (user->sock->lock);
+  return 0;
+}
+
+error_t
+S_io_set_some_openmodes (struct sock_user *user, int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  mutex_lock (&user->sock->lock);
+  if (bits & SOCK_NONBLOCK)
+    user->sock->flags |= SOCK_NONBLOCK;
+  mutex_unlock (user->sock->lock);
+  return 0;
+}
+
+error_t
+S_io_clear_some_openmodes (struct sock_user *user, int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  mutex_lock (&user->sock->lock);
+  if (bits & SOCK_NONBLOCK)
+    user->sock->flags &= ~SOCK_NONBLOCK;
+  mutex_unlock (user->sock->lock);
+  return 0;
+}
+
+/* Stubs for currently unsupported rpcs.  */
+
+error_t
+S_io_async(struct sock_user *user,
+	   mach_port_t notify_port,
+	   mach_port_t *async_id_port,
+	   mach_msg_type_name_t *async_id_port_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_mod_owner(struct sock_user *user, pid_t owner)
+{
+  return EOPNOTSUPP;
+}
+
+error_t 
+S_io_get_owner(struct sock_user *user, pid_t *owner)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_icky_async_id (struct sock_user *user,
+			mach_port_t *icky_async_id_port,
+			mach_msg_type_name_t *icky_async_id_port_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_map (struct sock_user *user,
+	  mach_port_t *memobj_rd, mach_msg_type_name_t *memobj_rd_type,
+	  mach_port_t *memobj_wt, mach_msg_type_name_t *memobj_wt_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_map_cntl (struct sock_user *user,
+	       mach_port_t *mem, mach_msg_type_name_t *mem_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_conch (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_release_conch (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_eofnotify (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_prenotify (struct sock_user *user, vm_offset_t start, vm_offset_t end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_postnotify (struct sock_user *user, vm_offset_t start, vm_offset_t end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_readsleep (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_readnotify (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+
+error_t
+S_io_sigio (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_server_version (struct sock_user *user,
+		     char *name, int *maj, int *min, int *edit)
+{
+  return EOPNOTSUPP;
 }
