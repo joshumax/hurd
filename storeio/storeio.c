@@ -18,17 +18,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <hurd.h>
-#include <hurd/ports.h>
-#include <hurd/pager.h>
-#include <hurd/trivfs.h>
-#include <hurd/fsys.h>
-
 #include <stdio.h>
 #include <error.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <argp.h>
+
+#include <hurd.h>
+#include <hurd/ports.h>
+#include <hurd/trivfs.h>
+#include <version.h>
 
 #include "open.h"
 #include "dev.h"
@@ -58,6 +57,8 @@ static struct argp_option options[] =
 };
 static char *args_doc = 0;
 static char *doc = "Translator for devices and other stores";
+
+char *argp_program_version = STANDARD_HURD_VERSION (storeio);
 
 /* ---------------------------------------------------------------- */
 
