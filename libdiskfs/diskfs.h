@@ -308,6 +308,10 @@ error_t diskfs_dirrewrite_hard (struct node *dp, struct node *np,
    the call to diskfs_lookup and DS is as that call set it.  */
 error_t diskfs_dirremove_hard (struct node *dp, struct dirstat *ds);
 
+/* The user must define this function.  Initialize DS such that
+   diskfs_drop_dirstat will ignore it. */
+void diskfs_null_dirstat (struct dirstat *ds);
+
 /* The user must define this function.  DS has been set by a previous
    call to diskfs_lookup on directory DP; this function is
    guaranteed to be called if none of
