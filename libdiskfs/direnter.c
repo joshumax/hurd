@@ -44,5 +44,6 @@ diskfs_direnter (struct node *dp,
     diskfs_notice_dirchange (dp, DIR_CHANGED_NEW, name);
 
   diskfs_enter_cache (dp, np, name);
+  return 0;
 }  
   
