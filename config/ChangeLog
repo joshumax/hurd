@@ -1,3 +1,8 @@
+Sat Jul 20 02:13:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ttys (console): Change type to `pc3'.
+	(com0): Renamed from tty00.
+
 Fri Jul 19 11:02:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* root-.profile: Don't \ ' inside "s.
