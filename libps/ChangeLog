@@ -1,3 +1,8 @@
+Fri Feb 28 18:11:28 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fmt.c (ps_fmt_squash): Deal with FIELD->spec being NULL when
+	advancing over a field.
+
 Fri Nov 15 19:14:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* procstat.c (proc_stat_set_flags): Allow the user fetch hook to
