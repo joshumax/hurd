@@ -183,6 +183,7 @@ See `tasks', the exported task list.
 *** Try to write directories with 512-byte record boundaries. !!
 *** Maybe file_pager_write_page should be able to accurately reproduce holes
 *** Add byte-swapping. !!
+*** If the target of a symlink is the empty string, stat seems to spin forever !!!
 
 ** crash
 *** Write core files. !!

@@ -1,36 +1,130 @@
-  === Hey, Emacs!  This is -*- Text -*- !!! ===
-Last update 11 Apr 1996 by Michael I. Bushnell, p/BSG (mib@gnu.ai.mit.edu).
+Cross-compiling the GNU Hurd                             -*- Outline -*-
+Last update 1998-06-01  Gordon Matzigkeit  <gord@gnu.org>.
+Previous update 1996-04-11  Thomas Bushnell, n/BSG  <thomas@gnu.org>.
 
-
+* Introduction
 These are instructions for building the Hurd as in cross-development
 environment.  Unless you are building the Hurd on an already running
 Hurd system, you will need these directions to build the Hurd from any
 other kind of system.  Even if you are using a Mach system (Lites,
 say) you will *STILL* need to follow these directions; this is still
-cross-compilation.  
+cross-compilation.
 
+IMPORTANT: If you are not prepared to fix bugs without begging other
+people for help, or you lack patience, then this process is *not for
+you*!  Go get a binary distribution... downloading 80MB of files over
+a 9600 baud PPP connection takes far less time and effort than
+cross-compiling, especially when you consider that the size of the
+source code for all the packages in the Hurd binary distribution is
+larger than the distribution itself.
 
+You will need *at least* 500 MB of free disk space for the build
+process.  More is always better.
 
-I:
+NOTE: On the other hand, do not be sloppy with any of these
+instructions, until you have tried following them exactly, and they
+didn't work for you the first time. There are all sorts of pitfalls
+and untested paths, so it is better not to be creative with things
+(like trying to install the cross-compiler somewhere other than
+/usr/local).  Expect random problems if you deviate from these
+instructions.  You have been warned.
 
-First you must have GCC and binutils installed.  We use GCC 2.7.2 and
-recent Cygnus binutils snapshots.  You need to configure binutils and
-GCC for the i486-gnu target.  In order to build the GNU C library for
-the Hurd, you will need gawk installed.  You should install GCC and
-binutils as the instructions for these programs indicate.  The Hurd
-makefiles depend on having them installed correctly as
-cross-development tools.  Even if you are building the Hurd on a 486,
-even if it's running a different Mach-based OS, you are still cross
-compiling.  Don't attempt to use tools that have been configured for
-something other than i486-gnu.
+In other words, follow these instructions closely, but not blindly.
 
-Install things in /usr/local, as the Makefiles do by default.  If you
-change $(prefix) when installing the cross-development tools, then
-random problems might happen.  I cannot stress to highly that you are
-much better off doing things in the ordinary default way.
+You may wish to create build logs, so that you can trace any problems
+after you let a compilation run unattended.  To do this, background
+and redirect all make output to a file (i.e. `nohup make -k >&
+make.out &').  If you wish to monitor the build, you can use a command
+like `tail -f make.out'.  After the build completes, simply search the
+log for `***' (i.e. `grep '\*\*\*' make.out'), and you'll find any
+errors.
 
+* Cross-compiler tools
 
-II:
+First you must install a cross-GCC and binutils.  Currently, GCC 2.8.1
+and binutils version 2.9.1 are the minimum suggested versions.
+
+Even if you are building the Hurd on a 586, even if it's running a
+different Mach-based OS, you are still cross-compiling.  Don't attempt
+to use tools that have been configured for something other than
+i586-gnu (unless, of course, you are trying to port the Hurd to a
+different processor).
+
+** Binutils
+
+The cross-binutils installation is quite straightforward.  Just
+configure, build and install them with commands like:
+
+$ [cd to top of binutils source tree]
+$ mkdir obj
+$ cd obj
+$ ../configure --prefix=/usr/local --target=i586-gnu
+[...]
+$ make
+[...]
+$ su
+Password:
+# make install
+[...]
+#
+
+The above instructions show you how to create a new build
+subdirectory, `obj', and then configure and build the package there.
+You should get used to this process, because some of the Hurd packages
+will not build properly in any other way.
+
+This installation should be smooth.  If you see any strange errors
+during the build process, you should investigate them, since they are
+probably bugs.
+
+** GCC (attempt #1)
+
+Bootstrapping a GCC cross-compiler is only slightly more difficult
+than installing a cross-binutils.  GCC has a few interdependencies
+with the Hurd libc, such as the creation of the `libgcc2.a' library.
+
+Therefore, the first time you try compiling and installing GCC, you
+will need to kludge things so that you can get a mostly-working
+compiler, then come back and redo them to get a fully-working
+compiler.
+
+There is a bug when creating a cross-compiler on certain platforms.
+In order to avoid this bug, you should copy a working `float.h' header
+file from a known working GCC installation for the same processor.  On
+a GNU/Linux machine using gcc-2.7.2.1, `float.h' can be found in
+`/usr/lib/gcc-lib/i386-linux/2.7.2.1/include/float.h'.  In general,
+you can find it in
+`$(prefix)/lib/gcc-lib/$(host)/$(VERSION)/include/float.h'.  You will
+need to copy this file into the `include' subdirectory of the unpacked
+GCC distribution, overwriting the old `include/float.h' if it exists.
+
+The build process should look something like the following.  Be sure
+to use the `-k' and `LANGUAGES=c' make arguments this time around, or
+else the build will fail in random places:
+
+$ [cd to top of gcc source tree]
+$ cp /usr/lib/gcc-lib/i386-linux/2.7.2.1/include/float.h include/float.h
+$ mkdir obj
+$ cd obj
+$ ../configure --prefix=/usr/local --target=i586-gnu --with-gnu-as --with-gnu-ld
+[...]
+$ make -k CFLAGS="-g -O2" LANGUAGES=c
+[... fails while trying to build libgcc2.a]
+$ su
+Password:
+# make -k install LANGUAGES=c
+[again, fails on libgcc2.a]
+#
+
+If the build fails anywhere except on libgcc2, you have a problem.
+Investigate it.  Otherwise, you should now have a mostly-working
+cross-compiler suite in /usr/local.
+
+NOTE: Do not delete the GCC compile tree.  You will need it later in
+order to finish the installation.  If you choose to delete it, you
+will have to repeat this step in its entirety.
+
+* Set up the Hurd root
 
 You need space to "install" the compiled Hurd, its libraries, include
 files, and binaries that will run on the Hurd.  In these instructions,
@@ -40,72 +134,188 @@ are finished.
 
 This space needs to be accessible to the machine doing the
 cross-compilation, because the libc and include files that go in the
-Hurd's root filesystem are also the ones that are needed during
+Hurd's root filesystem are the same ones that are needed during
 cross-compilation.
 
 We strongly advise that this directory not be put in /usr/local.  This
-will tend to cause confusion.
+will tend to cause confusion.  It would be a good idea to create a new
+filesystem, and mount it on your cross-compilation machine as /hurd.
 
-If you followed the directions in (I) above, then in
-/usr/local/i486-gnu you already have a number of cross-development
-tools.  (ar, ranlib, ld, as and so forth.)  This is the place where
-the compiler looks for cross-development stuff.  So now make two
-symlinks, named /usr/local/i486-gnu/include and
-/usr/local/i486-gnu/lib, and point them at foo/include and foo/lib,
-where `foo' is the name of you Hurd installation staging area.  If you
-don't do this, you will lose.  Do it now.
+If you followed the directions above, then in /usr/local/i586-gnu you
+already have a number of cross-development tools (ar, ranlib, ld, as
+and so forth).  This is the place where the compiler looks for
+cross-development stuff.  So now make two symlinks, named
+/usr/local/i586-gnu/include and /usr/local/i586-gnu/lib, and point
+them at /hurd/include and /hurd/lib, where `/hurd' is the name of your
+Hurd installation staging area.
+
+If /usr/local/i586-gnu/include or /usr/local/i586-gnu/lib already
+exists, you should move their contents to your Hurd installation
+staging area before creating the symlinks.
+
+If you don't do these steps, you will lose.  Do them now.
+
+* Install Mach
+
+Get the latest gnumach distribution, and configure it to cross
+compile.  You should read the README in order to determine which
+device driver options you should use.  You should also specify your
+current build platform... in the following example, we are
+cross-compiling from an i586-linux-gnu machine:
+
+$ [cd to top of gnumach source tree]
+$ mkdir obj
+$ cd obj
+$ CC=i586-gnu-gcc ../configure --build=i586-linux-gnu --host=i586-gnu \
+  --enable-com --enable-floppy --enable-ide --enable-aha152x
+[...]
+$ make
+[...]
+$ su
+Password:
+# make install prefix=/hurd
+[...]
+#
+
+Besides building the Mach kernel, this step installs several Mach
+headers and interface files into the staging area.  These files are
+required for cross-compilation.
+
+* Install a cross-MiG
+
+This process can be confusing, because there are so many different
+varieties of cross-compilers:
+
+1) When you were building Mach, above, the build process needed a MiG
+which can could run on the build machine, but create code for GNU.
+This is called `local-mig' in the Mach Makefiles.
+
+2) Then, when you installed Mach, you also installed a MiG which can
+run on GNU and create code for GNU.  This is called `cross-mig' in the
+Makefiles.
+
+3) Now, you need to install a version of MiG like #1, so that you can
+use it to build the C library and the Hurd.  Unfortunately, the shell
+script wrapper used in #1 is not appropriate for installation, so you
+need to generate Yet-Another-MiG:
+
+# make install-local-mig prefix=/usr/local
+[...]
+#
+
+Be sure to set the `prefix' variable as indicated, or you will
+accidentally clobber the MiG you installed in the previous step.
+
+* Build the GNU C library
+
+In order to build the GNU C library for the Hurd, you will need recent
+versions of several tools, including gawk.  See the glibc INSTALL file
+for more details.
+
+** Install Hurd headers
+
+The Hurd interface definitions and include files need to be visible to
+the cross-compiler so that the C library can use them.
+
+$ [cd to top of hurd source tree]
+$ mkdir obj
+$ cd obj
+$ ../configure --build=i586-linux-gnu --host=i586-gnu \
+  --prefix=/hurd --disable-profile
+[...]
+$ su
+Password:
+# make install-headers no_deps=t
+[...]
+#
+
+This step may spout a few warning messages, but you don't need to
+worry about them, because you aren't interested in compiling any of
+the Hurd (yet).
 
 
-III:
+** Build and install C library
 
-You should get MiG from the Utah mach4 distribution, and build it to
-cross compile.  Set MIG appropriately in Maketools (usually to
-"i486-gnu-mig").  Install it as /usr/local/i486-gnu/bin/mig, install
-migcom as /usr/local/i486-gnu/lib/migcom.  (Note that the last
-pathname, because of the symlink you made in step II, is actually
-somewhere in the Hurd installation staging area directory.  This is
-strictly wrong, because the running Hurd won't be able to use that
-migcom.  Don't worry, just remember when you boot the Hurd that this
-one program won't work quite right.  We intend to fix this later.)
+Configure, compile, and install the core GNU C library (note that we
+reset the `install_root' variable instead of `prefix'):
+
+$ [cd to top of glibc source tree]
+$ mkdir obj
+$ cd obj
+$ ../configure --build=i586-linux-gnu --host=i586-gnu \
+   --prefix= --enable-add-ons=crypt --disable-profile
+[...]
+$ make -k
+[... fails when trying to link programs]
+$ su
+Password:
+# make -k install install_root=/hurd
+[... again, fails]
+#
+
+This process fails because the cross-GCC you installed is missing
+libgcc2.a, which is required to link working programs.  Do not delete
+the libc source files... you will need them again very soon.
+
+** Finish GCC install
+
+If you were silly, and deleted the GCC source tree, you need to go
+back to the first GCC build step and follow those instructions again
+(which should successfully build and install the entire C
+cross-compiler).
+
+Otherwise, there are now enough headers to finish installing the GCC
+cross-compiler, so do it:
+
+$ [cd to top of gcc source tree]
+$ cd obj
+$ make -k
+[...]
+$ su
+Password:
+# make -k install
+[...]
+#
+
+This time there should be no failures.
+
+** Finish libc install
+
+Now there is a fully-working GCC, so the libc programs can be built.
+Continue the build process:
+
+$ [cd to top of glibc source tree]
+$ cd obj
+$ make -k
+[...]
+$ su
+Password:
+# make -k install install_root=/hurd
+[...]
+#
+
+There should be no errors or warnings from this step.
 
 
-IV:
+* Install the Hurd
 
-MAKE VERY SURE that gcc, for all Hurd work, does not use a gcc include
-directory with fixincludes processed files.  Your special GCC include
-directory should have *only* GCC include files.  GCC should do this by
-default, but you might want to check in
-/usr/local/lib/gcc-lib/i486-gnu/CCVERSION/include to make sure.
+Since you already configured the Hurd in a previous step, you can now
+build and install it:
 
+$ [cd to top of hurd source tree]
+$ cd obj
+$ make -k
+[...]
+$ su
+Password:
+# make -k install prefix=/hurd
+[...]
+#
 
-V:
-
-Now, make the GNU C library.  Please read its own installation
-instructions, but here is a brief summary.
-
-Configure the GNU library with a command like:
-
-configure i486-gnu --with-mach=FOO --with-hurd=BAR --prefix=BAZ
-
-FOO should be the top level source directory of your Mach source.
-BAR should be the top level Hurd source directory.
-BAZ should be the installation staging area you have chosen.
-
-Build and install the library with `make install'.
+This step should complete with no problems.
 
 
-VI:
-
-Configure the Hurd with a command like:
-
-"CC=gcc -b i486-gnu" configure i486-gnu --prefix=BAZ
-
-BAZ is, again, the name of your installation staging area.
-
-Build and install the Hurd with `make install'.
-
-
-VII:
+* Final details
 
 Now in your Hurd staging area are the complete binaries for the Hurd
 and its programs, and the C library and its associated programs.  You
@@ -114,6 +324,5 @@ have no shell yet.  In general, you can build most GNU packages
 without too much hassle using your cross compilers.  In this way you
 can build up as much of a binary distribution as you like.
 
-See the file `INSTALL-binary' for instructions on running your new
-binaries.
-
+See the file `INSTALL-binary' for instructions on bootstrapping and
+running your new binaries.

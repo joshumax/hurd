@@ -115,6 +115,10 @@ Hurd work (these are brief descriptions; thomas can give more information):
   like id, su, ls, tar, cpio, etc.  Some of this work has already been
   done, but more is still needed.
 
+!!!
+  * Extend bash to call shell functions when various Hurdish async
+  events happen.
+
   * Handy shell programs to send msgport msgs, and change default init
     ports and ints.
 

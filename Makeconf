@@ -349,19 +349,26 @@ relink:
 vpath libutil.% $(libdir)/
 
 
+# Default rules to build standard object files.
+%.o: %.c
+	$(COMPILE.c) $($*-CPPFLAGS) $< -o $@
+
+%.o: %.S
+	$(COMPILE.S) $($*-CPPFLAGS) $< -o $@
+
 # Default rules to build PIC object files.
 %_pic.o: %.c
-	$(COMPILE.c) $< -DPIC -fPIC -o $@
+	$(COMPILE.c) $($*-CPPFLAGS) $< -DPIC -fPIC -o $@
 
 %_pic.o: %.S
-	$(COMPILE.S) $< -DPIC -o $@
+	$(COMPILE.S) $($*-CPPFLAGS) $< -DPIC -o $@
 
 # Default rules to build profiled object files.
 %_p.o: %.c
-	$(COMPILE.c) $< -DPROF -pg -o $@
+	$(COMPILE.c) $($*-CPPFLAGS) $< -DPROF -pg -o $@
 
 %_p.o: %.S
-	$(COMPILE.S) $< -DPROF -o $@
+	$(COMPILE.S) $($*-CPPFLAGS) $< -DPROF -o $@
 
 # How to build RPC stubs
 
@@ -466,7 +473,7 @@ $(target): %: FORCE
 endif
 
 define make-deps
-set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
+set -e; $(CC) $(CFLAGS) $(CPPFLAGS) $($*-CPPFLAGS) -M -MG $<  | \
 sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $*_p.o $@:/' \
 	     -e 's% [^ ]*/gcc-lib/[^ ]*\.h%%g'
 mv -f $@.new $@
