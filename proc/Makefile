@@ -63,7 +63,7 @@ proc_exc_S.h proc_excUser.c proc_excServer.c proc_exc.h: proc_exc.defs
 	$(CPP) $(CPPFLAGS) proc_exc.defs \
 	| $(MIGCOM) -sheader proc_exc_S.h
 
-proc_excrepl_S.h proc_excreplUser.c proc_excreplServer.c proc_excrepl.h:
+proc_excrepl_S.h proc_excreplUser.c proc_excreplServer.c proc_excrepl.h: proc_excrepl.defs
 	$(CPP) $(CPPFLAGS) proc_excrepl.defs \
 	| $(MIGCOM) -sheader proc_excrepl_S.h
 
