@@ -166,9 +166,9 @@ S_fsys_getfile (mach_port_t control,
 
 error_t
 S_fsys_getpriv (mach_port_t control,
-	      mach_port_t *hostpriv,
-	      mach_port_t *devmaster,
-	      task_t *fstask)
+		mach_port_t *host_priv, mach_msg_type_name_t *host_priv_type,
+		mach_port_t *dev_master, mach_msg_type_name_t *dev_master_type,
+		task_t *fs_task, mach_msg_type_name_t *fs_task_type)
 {
   return EOPNOTSUPP;
 }
