@@ -216,8 +216,10 @@ relink:
 
 # Default rule to build PIC object files.
 %_pic.o: %.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -fPIC $< -o $@
+	$(COMPILE.c) $< -DPIC -fPIC -o $@
 
+%_pic.o: %.S
+	$(COMPILE.S) $< -DPIC -o $@
 
 # How to build RPC stubs
 
