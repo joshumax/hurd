@@ -119,14 +119,14 @@ struct vm_state;		/* fwd */
 
 struct field
 {
-  /* Name of the field; used for the option name.  */
+  /* Name of the field.  */
   char *name;
-
-  /* A descriptive title used for long output format.  */
-  char *desc;
 
   /* Terse header used for the columnar style output.  */
   char *hdr;
+
+  /* A description of this field (for user help).  */
+  char *doc;
 
   /* Type of this field.  */
   enum field_change_type change_type;
@@ -277,28 +277,58 @@ get_swap_active (struct vm_state *state, const struct field *field)
 /* vm_statistics fields we know about.  */
 static const struct field fields[] =
 {
-  {"pagesize",	   "Pagesize",	   " pgsz",  CONST,PAGESZ, 1,_F(pagesize)},
-  {"size",	   "Size",	   " size",  CONST,SIZE, 1,0,get_size},
-  {"free",	   "Free",	   " free",  VARY, SIZE, 1,_F(free_count)},
-  {"active",	   "Active",	   " actv",  VARY, SIZE, 1,_F(active_count)},
-  {"inactive",	   "Inactive", 	   "inact",  VARY, SIZE, 1,_F(inactive_count)},
-  {"wired",	   "Wired",    	   "wired",  VARY, SIZE, 1,_F(wire_count)},
-  {"zero-filled",  "Zeroed",	   "zeroed", CUMUL,SIZE, 1,_F(zero_fill_count)},
-  {"reactivated",  "Reactivated",  "react",  CUMUL,SIZE, 1,_F(reactivations)},
-  {"pageins",	   "Pageins",	   "pgins",  CUMUL,SIZE, 1,_F(pageins)},
-  {"pageouts",     "Pageouts",	   "pgouts", CUMUL,SIZE, 1,_F(pageouts)},
-  {"faults",	   "Faults",	   "pfaults",CUMUL,COUNT,1,_F(faults)},
-  {"cow-faults",  "Cow faults",    "cowpfs", CUMUL,COUNT,1,_F(cow_faults)},
-  {"cache-lookups","Cache lookups","clkups", CUMUL,COUNT,0,_F(lookups)},
-  {"cache-hits",   "Cache hits",   "chits",  CUMUL,COUNT,0,_F(hits)},
-  {"cache-hit-ratio","Cache hit ratio","chrat",VARY,PCENT,1,-1,get_cache_hit_ratio},
-  {"swap-size",    "Swap size",	   "swsize", CONST,SIZE, 1,0,get_swap_size},
-  {"swap-active",  "Swap active",  "swactv", VARY, SIZE, 0,0,get_swap_active},
-  {"swap-free",    "Swap free",	   "swfree", VARY, SIZE, 1,0,get_swap_free},
-  {"swap-pagesize","Swap pagesize","swpgsz", CONST,PAGESZ, 0,0,get_swap_page_size},
+  {"pagesize",	   " pgsz", "System pagesize",
+   CONST,PAGESZ, 1,_F(pagesize)},
+  {"size",	   " size", "Usable physical memory",
+   CONST,SIZE, 1,0,get_size},
+  {"free",	   " free", "Unused physical memory",
+   VARY, SIZE, 1,_F(free_count)},
+  {"active",	   " actv", "Physical memory in active use",
+   VARY, SIZE, 1,_F(active_count)},
+  {"inactive", 	   "inact", "Physical memory in the inactive queue",
+   VARY, SIZE, 1,_F(inactive_count)},
+  {"wired",    	   "wired", "Unpageable physical memory",
+   VARY, SIZE, 1,_F(wire_count)},
+  {"zero filled",  "zeroed","Cumulative zero-filled pages",
+   CUMUL,SIZE, 1,_F(zero_fill_count)},
+  {"reactivated",  "react", "Cumulative reactivated inactive pages",
+   CUMUL,SIZE, 1,_F(reactivations)},
+  {"pageins",	   "pgins", "Cumulative pages paged in",
+   CUMUL,SIZE, 1,_F(pageins)},
+  {"pageouts",	   "pgouts","Cumulative pages paged out",
+   CUMUL,SIZE, 1,_F(pageouts)},
+  {"page faults",  "pfaults","Cumulative page faults",
+   CUMUL,COUNT,1,_F(faults)},
+  {"cow faults",   "cowpfs", "Cumulative copy-on-write page faults",
+   CUMUL,COUNT,1,_F(cow_faults)},
+  {"cache lookups","clkups", "...",
+   CUMUL,COUNT,0,_F(lookups)},
+  {"cache hits",   "chits",  "...",
+   CUMUL,COUNT,0,_F(hits)},
+  {"cache hit ratio","chrat","...",
+   VARY,PCENT,1,-1,get_cache_hit_ratio},
+  {"swap size",	   "swsize", "Size of the default-pager swap area",
+   CONST,SIZE, 1,0,get_swap_size},
+  {"swap active",  "swactv", "Default-pager swap area in use",
+   VARY, SIZE, 0,0,get_swap_active},
+  {"swap free",	   "swfree", "Default-pager swap area available for swapping",
+   VARY, SIZE, 1,0,get_swap_free},
+  {"swap pagesize","swpgsz", "Units used for swapping to the default pager",
+   CONST,PAGESZ, 0,0,get_swap_page_size},
   {0}
 };
 #undef _F
+
+/* Convert a field name to the corresponding user-option.  */
+static char *name_to_option (const char *name)
+{
+  char *opt = strdup (name), *p;
+  if (! opt)
+    for (p = opt; *p; p++)
+      if (*p == ' ')
+	*p = '-';
+  return opt;
+}
 
 int
 main (int argc, char **argv)
@@ -371,9 +401,9 @@ main (int argc, char **argv)
       int which = field - fields;
       struct argp_option *opt = &field_opts[which];
 
-      opt->name = field->name;
+      opt->name = name_to_option (field->name);
       opt->key = -1 - which;	/* options are numbered -1 ... -(N - 1).  */
-      opt->doc = field->desc;
+      opt->doc = field->doc;
       opt->group = 2;
     }
   /* No need to terminate FIELD_OPTS because the bzero above's done so.  */
@@ -449,7 +479,7 @@ main (int argc, char **argv)
 		    else
 		      {
 			PSEP (", ", "(");
-			printf ("%s: ", field->desc);
+			printf ("%s: ", field->name);
 			PVAL (val, field, 0, 0);
 		      }
 		  }
@@ -509,7 +539,7 @@ main (int argc, char **argv)
   else
     /* Verbose output.  */
     {
-      int max_desc_width = 0;
+      int max_name_width = 0;
 
       if (print_prefix < 0)
 	/* By default, only print a prefix if there are multiple fields. */
@@ -520,9 +550,9 @@ main (int argc, char **argv)
 	for (field = fields; field->name; field++)
 	  if (output_fields & (1 << (field - fields)))
 	    {
-	      int desc_len = strlen (field->desc);
-	      if (desc_len > max_desc_width)
-		max_desc_width = desc_len;
+	      int name_len = strlen (field->name);
+	      if (name_len > max_name_width)
+		max_name_width = name_len;
 	    }
 
       for (field = fields; field->name; field++)
@@ -532,8 +562,8 @@ main (int argc, char **argv)
 	    int fwidth = 0;
 	    if (print_prefix)
 	      {
-		printf ("%s:", field->desc);
-		fwidth = max_desc_width + 5 - strlen (field->desc);
+		printf ("%s:", field->name);
+		fwidth = max_name_width + 5 - strlen (field->name);
 	      }
 	    PVAL (val, field, fwidth, 0);
 	    putchar ('\n');
