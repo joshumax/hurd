@@ -10,21 +10,14 @@ then
 	echo Automatic boot in progress...
 	date
 
-	# Find the filesystem by a kludge, and extract the root device name.
-	fsargs=`ps -MaxHww --fmt=%command | grep exec-server-task | head -1`
-	dev=`echo $fsargs | sed 's/^.* \([^ ]*\)$/\1/' `
-	type=`echo $fsargs | sed 's/^\/hurd\/\(.*\)\.static.*$/\1/' `
-
-	fsysopts / -r
-	fsck.$type -p /dev/r$dev
+	/sbin/fsck -p
 
 	case $? in
 	# Successful completion
 	0)
 		;;
-	# Filesystem modified
+	# Filesystem modified (but ok now)
 	1 | 2)
-		fsysopts / -uw
 		;;
 	# Fsck couldn't fix it. 
 	4 | 8)
