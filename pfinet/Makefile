@@ -26,11 +26,12 @@ LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
 	tcp.c timer.c udp.c utils.c
 OBJS= $(subst .c,.o,$(LINUXSRCS))
 
-vpath $(LINUXSRCS) linux
+vpath %.c linux
 
 target = pfinet
 
 include ../Makeconf
 
 CPPFLAGS += -Ilinux
+
 
