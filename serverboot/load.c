@@ -217,9 +217,9 @@ boot_script_exec_cmd (task_t user_task,
 	st.aout_strtab_size = 0;
 	result = exec_load(prog_read, prog_read_exec, &st, &info);
 	if (result)
-		panic("(bootstrap) exec_load %s: error %d", namebuf, result);
+		panic("(serverboot) exec_load %s: error %d", namebuf, result);
 #if 0
-	printf("(bootstrap): loaded %s; entrypoint %08x\n", namebuf, info.entry);
+	printf("(serverboot): loaded %s; entrypoint %08x\n", namebuf, info.entry);
 #endif
 
 	/*
@@ -234,7 +234,7 @@ boot_script_exec_cmd (task_t user_task,
 	 * Read symbols from the executable file.
 	 */
 #if 0
-	printf("(bootstrap): loading symbols from %s\n", namebuf);
+	printf("(serverboot): loading symbols from %s\n", namebuf);
 	read_symtab_from_file(&file, bootstrap_master_host_port, user_task, namebuf, &st);
 #endif
 
