@@ -21,7 +21,9 @@ include ../Makeconf
 
 DIST_FILES = fstests.c Makefile fdtests.c
 
-fstests: fstests.o; $(link)
+OBJS=fstests.o
+
+fstests: $(OBJS); $(link)
 
 install: fstests
 	cp fstests $(hurdroot)/hurd/init
