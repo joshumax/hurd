@@ -36,6 +36,15 @@ diskfs_S_fsys_goaway (fsys_t controlport,
   /* XXX FSYS_GOAWAY_NOWAIT not implemented. */
   
   ret = diskfs_shutdown (flags);
+
+  if (ret == 0)
+    {
+      /* We are supposed to exit, but first notify the caller. */
+      /* XXX But this isn't happening yet, because it means too
+	 much pain. */
+      exit (0);
+    }
+
   ports_port_deref (pt);
   return ret;
 }
