@@ -108,7 +108,7 @@ void _pipe_no_readers (struct pipe *pipe)
       if (! pipe_is_connless (pipe))
 	{
 	  pipe->flags |= PIPE_BROKEN;
-	  if (pipe->readers)
+	  if (pipe->writers)
 	    /* Wake up writers for the bad news... */
 	    {
 	      condition_broadcast (&pipe->pending_writes);
