@@ -1,3 +1,16 @@
+1999-10-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* term.h (NO_DEVICE): New macro, bit for termflags.
+	(termflags): Change type to uint_fast32_t.
+	* devio.c (device_open_reply): For D_NO_SUCH_DEVICE error reply, set
+	NO_DEVICE flag in termflags.
+	* users.c (open_hook): If NO_DEVICE flag set, return ENXIO immediately.
+	If we put out an open request, check for that bit as well as
+	NO_CARRIER changing in termflags and diagnose with ENXIO.
+	* Makefile (device_replyServer-CPPFLAGS): New variable, turn off
+	TypeCheck for this stub.  This is necessary for error replies to get
+	through to our server-side functions in devio.c.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* users.c: Reverted changes related to io_map_segment.
