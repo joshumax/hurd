@@ -32,6 +32,7 @@ trivfs_handle_port (mach_port_t realnode,
   cntl->underlying = realnode;
   cntl->protid_class = protid_class;
   cntl->protid_bucket = protid_bucket;
+  cntl->hook = 0;
   mutex_init (&cntl->lock);
   right = ports_get_right (cntl);
   ports_port_deref (cntl);
