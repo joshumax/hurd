@@ -23,6 +23,7 @@
 #include <hurd/startup.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 char *ufs_version = "0.0 pre-alpha";
 
@@ -102,10 +103,10 @@ main (int argc, char **argv)
 
   mutex_init (&printf_lock);	/* XXX */
 
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  
-  if (bootstrap)
+  if (getpid () > 0)
     {
+      /* We are in a normal Hurd universe, started as a translator.  */
+
       devname = trans_parse_args (argc, argv);
 
       {
@@ -120,9 +121,12 @@ main (int argc, char **argv)
     }
   else
     {
+      /* We are the bootstrap filesystem.  */
       devname = diskfs_parse_bootargs (argc, argv);
       compat_mode = COMPAT_GNU;
     }
+  
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   /* Initialize the diskfs library.  This must come before
      any other diskfs call.  */
