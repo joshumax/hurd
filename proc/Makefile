@@ -31,6 +31,8 @@ OBJS = wait.o hash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
 
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
        primes.c cpu-types.c stubs.c
+TAGSHDRS = proc.h
+TAGSLIBS = libthreads
 
 DIST_FILES = $(SRCS) proc.h Makefile proc_exc.defs proc_excrepl.defs \
 		ChangeLog
