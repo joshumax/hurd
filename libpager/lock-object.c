@@ -66,7 +66,7 @@ _pager_lock_object (struct pager *p,
   
   memory_object_lock_request (p->memobjcntl, offset, size, should_return,
 			      should_flush, lock_value, 
-			      sync ? p->port.port : MACH_PORT_NULL);
+			      sync ? p->port.port_right : MACH_PORT_NULL);
   
   if (sync)
     {

@@ -31,7 +31,7 @@ pager_shutdown (struct pager *p)
   p->pager_state = SHUTDOWN;
 
   /* Cancel the pending no-senders notification. */
-  mach_port_request_notification (mach_task_self (), p->port.port, 
+  mach_port_request_notification (mach_task_self (), p->port.port_right, 
 				  MACH_NOTIFY_NO_SENDERS, 0, MACH_PORT_NULL,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &port);
   
