@@ -113,18 +113,26 @@ the following:
 
 A: cd to /dev give the command `./MAKEDEV ptyp ptyq'.
 
-   Also add any disk device you have; you must specify both unit
-   number *and* partition.  Something like `sd0a' or `rd1f' is called
-   for.
+Also add any disk device you have; you must specify both unit
+number *and* partition.  Something like `sd0a' or `rd1f' is called
+for.
 
 
 B: If you want to use the network, set it up thus:
-   
-     settrans /servers/socket/inet NN.NN.NN.NN eth0 MM.MM.MM.MM
+     
+     settrans /servers/socket/2 \
+	/hurd/pfinet --interface=eth0 --address=NN.NN.NN.NN \
+                     --gateway=GG.GG.GG.GG --netmask=MM.MM.MM.MM
 
-   where NN.NN.NN.NN is your IP address (not hostname, IP address).
-   MM.MM.MM.MM is the address of an IP gateway.  If your host is
-   isolated, then you can omit that arg.
+where NN.NN.NN.NN is your IP address (not hostname, IP address).  GG.GG.GG.GG
+is the address of an IP gateway, and MM.MM.MM.MM the netmask for the local
+subnet.  If your host is isolated, then you can omit the gateway, and the
+netmask argument is optional if you don't use subnetting.
+
+Pfinet currently only supports a single active interface.  Parameters may be
+changed while pfinet is running by using fsysopts, e.g.:
+
+     fsysopts /servers/socket/2 --netmask=MM.MM.MM.MM
 
 
 C: You can mount a partition (say hd0a) by saying:
@@ -175,12 +183,28 @@ MISCELLANEOUS NOTES:
 
 Fscking:
 
-XXX MILES -- Please insert arg summary here XXX
+/sbin/fsck is a wrapper that invokes filesystem-specific backend programs for
+each particular type of filesystem; these backends do the actual work (they
+can be found in the same directory, with names like /sbin/fsck.ufs and
+/sbin/fsck.ext2).
+
+/sbin/fsck will currently only work with filesystems that have entries in the
+file `/etc/fstab'; for those, it will try to be intelligent about making
+active filesystems readonly before fscking them, and telling them to
+incorporate any changes that result (the backend fsck programs do not know
+anything about active filesystems).  However, it is up to the user to make
+sure that /etc/fstab accurately reflects reality.
+
+/etc/fstab is the same as in most unix systems -- any filesystems that are
+there and have a non-zero pass number will be automatically fscked during a
+multi-user boot.
+
+You'll certainly want to make an entry in /etc/fstab for the device that
+corresponds to your root filesystem (and make a device entry for it using
+MAKEDEV, as described above).
 
 
 GDB:
-
-XXX MILE -- Please verify
 
 The version of gdb included in this release has various features not used by
 most systems, in particular, the `thread' and `info thread' commands.
@@ -197,21 +221,25 @@ The `portinfo' program is also very useful for debugging.
 
 SETTRANS:
 
-
 In all these cases, note that all the args after `/mnt' are a command
 line being sent to the filesystem program when it starts.  The syntax
 of settrans is:
 
   settrans [settrans-option-args] file command-line
 
-settrans itself also supports several args.  (Use settrans --help for
-a summary.)  To see the args supported by a ufs or ext2fs, say
-`/hurd/ufs --help' or `/hurd/ext2fs --help'.
+settrans itself also supports several args.  (Use settrans --help for a
+summary.)  To see the args supported by a ufs or ext2fs, say `/hurd/ufs
+--help' or `/hurd/ext2fs --help'.  Once a filesystem is running, some options
+may be changed at runtime using the `fsysopts FSYS' command, where FSYS is
+the mount point (note that there is currently no easy way of finding out
+which ones).
 
 The mounts created this way are not transient--they will last across
 reboots, being recorded directly on disk.  To get rid of one, say:
 `settrans /mnt' with no further args.  The command `showtrans /mnt'
-will show you where it's at right now.
+will show you where it's at right now.  However, note that to have them
+automatically fscked, you'll have to make entries in /etc/fstab (see
+`fscking', above).
 
 You probably want to add all such mounts to fstab, so that the
 relevant disks are checked with fsck automatically on reboot, and so
