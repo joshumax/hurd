@@ -1,8 +1,8 @@
 /* Show process information.
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -54,7 +54,7 @@ static const struct argp_option options[] =
   {0,            'u',     0,      0,  "Use the `user' output-format"},
   {0,            'v',     0,      0,  "Use the `vmem' output-format"},
 
-  {0,0,0,0, "Process filtering (by default, other user's"
+  {0,0,0,0, "Process filtering (by default, other users'"
    " processes, threads, and process-group leaders are not shown):", 2},
   {"all-users",  'a',     0,      0,  "List other users' processes"},
   {0,            'd',     0,      0,  "List all processes except process group"
