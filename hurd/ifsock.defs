@@ -21,7 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* This protocol is a superset of the filesystem protocol.  */
 
-subsystem ifsock 20200;
+subsystem ifsock 34000;
 #include <hurd/hurd_types.defs>
 
 #ifdef IFSOCK_IMPORTS
