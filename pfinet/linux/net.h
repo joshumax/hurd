@@ -73,6 +73,9 @@ struct socket {
   short			type;		/* SOCK_STREAM, ...		*/
   socket_state		state;
   long			flags;
+#ifdef _HURD_
+  int			userflags; /* O_* */
+#endif
   struct proto_ops	*ops;		/* protocols do most everything	*/
   void			*data;		/* protocol data		*/
   struct socket		*conn;		/* server socket connected to	*/
