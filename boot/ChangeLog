@@ -1,3 +1,8 @@
+1999-03-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (main): Only use real device name if root_store is for an
+	enforced single run starting at the beginning of the device.
+
 1999-03-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (main): Add newline to error msg.
