@@ -99,8 +99,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   ngen_gids = naux_gids = 50;
 
 
-  err = auth_server_authenticate (authserver, ports_get_right (p),
-				  MACH_MSG_TYPE_MAKE_SEND,
+  err = auth_server_authenticate (authserver, 
 				  rendport, MACH_MSG_TYPE_MOVE_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 				  &gen_uids, &ngen_uids,
@@ -256,16 +255,23 @@ S_proc_reassign (struct proc *p,
 /* Implement proc_setowner as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,
-		 uid_t owner)
+		 uid_t owner, 
+		 int clear)
 {
   if (!p)
     return EOPNOTSUPP;
   
-  if (! check_uid (p, owner))
-    return EPERM;
+  if (clear)
+    p->p_noowner = 1;
+  else
+    {
+      if (! check_uid (p, owner))
+	return EPERM;
 
-  p->p_owner = owner;
-  p->p_noowner = 0;
+      p->p_owner = owner;
+      p->p_noowner = 0;
+    }
+  
   return 0;
 }
 
@@ -414,8 +420,8 @@ S_proc_exception_raise (mach_port_t excport,
 
   switch (err)
     {
-      int signo, error;
-      long int sigcode;
+      struct hurd_signal_detail hsd;
+      int signo;
 
     case 0:
       /* We have successfully forwarded the exception message.  Now reset
@@ -436,10 +442,13 @@ S_proc_exception_raise (mach_port_t excport,
 
       /* Translate the exception code into a signal number
 	 and mark the process has dying that way.  */
-      _hurd_exception2signal (exception, code, subcode,
-			      &signo, &sigcode, &error);
+      hsd.exc = exception;
+      hsd.exc_code = code;
+      hsd.exc_subcode = subcode;
+      _hurd_exception2signal (&hsd, &signo);
       p->p_exiting = 1;
       p->p_status = W_EXITCODE (0, signo);
+      p->p_sigcode = hsd.subcode;
 
       /* Nuke the task; we will get a notification message and report it
 	 died with SIGNO.  */
