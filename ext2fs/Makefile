@@ -19,7 +19,7 @@
 dir := ext2fs
 makemode := servers
 
-target = ext2fs ext2fs.static
+targets = ext2fs ext2fs.static
 SRCS = balloc.c bitmap.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c
 OBJS = $(SRCS:.c=.o)
