@@ -1,3 +1,22 @@
+1997-06-26  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_type): Fill in name_prefix field.
+	(store_parsed_open): Apply it to any names we open.
+
+1997-06-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_type): New function.
+	(parse_opt): Use parse_type to parse the -T option.
+	(struct store_parsed): Add NAME_PREFIX field.
+	(store_parsed_free): Free it.
+	(store_parsed_append_args): Emit it.
+	(store_parsed_open): Use it in opens.
+
+	* typed.c (store_typed_open): If NAME doesn't contain a `:'
+	separator, try to use it as either a class name or a file name.
+	Interpret a trailing or leading `:' as unambiguously referring to
+	a class-name or a filename, respectively.
+
 1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rdwr.c (store_read): Limit reads to the amount available.
