@@ -136,8 +136,11 @@ diskfs_get_options (char **argz, unsigned *argz_len)
 
   if (!err && compat_mode != COMPAT_GNU)
     {
-      char *mode = (compat_mode == COMPAT_BSD42) ? "4.2" : "4.4";
-      err = argz_add (argz, argz_len, mode);
+      err =
+	argz_add (argz, argz_len,
+		  ((compat_mode == COMPAT_BSD42)
+		   ? "--compat=4.2"
+		   : "--compat=4.4"));
       if (err)
 	free (argz);		/* Deallocate what diskfs returned.  */
     }
