@@ -1,5 +1,5 @@
 /* Directory management routines
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -96,7 +96,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   int retry_dotdot = 0;
   memory_object_t memobj;
   vm_address_t buf = 0;
-  vm_size_t buflen;
+  vm_size_t buflen = 0;
   int blockaddr;
   int idx;
   
@@ -520,11 +520,14 @@ diskfs_direnter(struct node *dp,
       
       oldsize = dp->dn_stat.st_size;
       while (oldsize + DIRBLKSIZ > dp->allocsize)
-	if (err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred))
-	  {
-	    vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
-	    return err;
-	  }
+	{
+	  err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred);
+	  if (err)
+	    {
+	      vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+	      return err;
+	    }
+	}
 
       new = (struct directory_entry *) (ds->mapbuf + oldsize);
 
