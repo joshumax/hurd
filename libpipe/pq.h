@@ -23,6 +23,7 @@
 
 #include <errno.h>
 #include <stddef.h>		/* for size_t */
+#include <string.h>
 #include <mach/mach.h>
 
 struct packet
@@ -119,22 +120,51 @@ int packet_extend (struct packet *packet, size_t new_len);
    returned.  */
 error_t packet_realloc (struct packet *packet, size_t new_len);
 
+/* Try to make space in PACKET for AMOUNT more bytes without growing the
+   buffer, returning true if we could do it.  */
+extern inline int
+packet_fit (struct packet *packet, size_t amount)
+{
+  char *buf = packet->buf, *end = packet->buf_end;
+  size_t buf_len = packet->buf_len;
+  size_t left = buf + buf_len - end; /* Free space at the end of the buffer. */
+
+  if (amount > left)
+    {
+      char *start = packet->buf_start;
+      size_t cur_len = end - start; /* Amount of data currently in the buf.  */
+
+      if (buf_len - cur_len >= amount
+	  && cur_len < PACKET_SIZE_LARGE && cur_len < (buf_len >> 2))
+	/* If we could fit the data in by moving what's already in the
+	   buffer, and there's not too much there, and it represents less
+	   than 25% of the buffer size, then move the data instead of growing
+	   the buffer. */
+	{
+	  bcopy (start, buf, cur_len);
+	  packet->buf_start = buf;
+	  packet->buf_end = buf + cur_len;
+	}
+      else
+	return 0;		/* We failed... */
+    }
+
+  return 1;
+}
+
 /* Make sure that PACKET has room for at least AMOUNT more bytes, or return
    the reason why not.  */
 extern inline error_t
 packet_ensure (struct packet *packet, size_t amount)
 {
-  size_t new_len;
-  size_t left = packet->buf + packet->buf_len - packet->buf_end;
-
-  if (amount < left)
-    return 0;
-
-  new_len = packet_new_size (packet, amount);
-  if (packet_extend (packet, new_len))
-    return 0;
-  else
-    return packet_realloc (packet, new_len);
+  if (! packet_fit (packet, amount))
+    /* We must make the buffer bigger.  */
+    {
+      size_t new_len = packet_new_size (packet, amount);
+      if (! packet_extend (packet, new_len))
+	return packet_realloc (packet, new_len);
+    }
+  return 0;
 }
 
 /* Make sure that PACKET has room for at least AMOUNT more bytes, *only* if
@@ -144,17 +174,14 @@ packet_ensure (struct packet *packet, size_t amount)
 extern inline int
 packet_ensure_efficiently (struct packet *packet, size_t amount)
 {
-  size_t new_len;
-  size_t left = packet->buf + packet->buf_len - packet->buf_end;
-
-  if (amount < left)
-    return 1;
-
-  new_len = packet_new_size (packet, amount);
-  if (packet_extend (packet, new_len))
-    return 1;
-  if ((packet->buf_end - packet->buf_start) < PACKET_SIZE_LARGE)
-    return packet_realloc (packet, new_len) == 0;
+  if (! packet_fit (packet, amount))
+    {
+      size_t new_len = packet_new_size (packet, amount);
+      if (packet_extend (packet, new_len))
+	return 1;
+      if ((packet->buf_end - packet->buf_start) < PACKET_SIZE_LARGE)
+	return packet_realloc (packet, new_len) == 0;
+    }
   return 0;
 }
 
