@@ -16,4 +16,10 @@ VERSION
     local:
       _cthreads_flockfile; _cthreads_funlockfile; _cthreads_ftrylockfile;
     };
+
+  HURD_CTHREADS_0.3
+    {
+    global:
+      *;
+    };
 };

@@ -27,10 +27,6 @@
 
 #ifdef _STDIO_USES_IOSTREAM
 
-#undef _IO_flockfile
-#undef _IO_funlockfile
-#undef _IO_ftrylockfile
-
 void
 _cthreads_flockfile (_IO_FILE *fp)
 {
@@ -43,7 +39,7 @@ _cthreads_flockfile (_IO_FILE *fp)
     }
   else
     {
-      __mutex_lock (&fp->_lock->mutex);
+      mutex_lock (&fp->_lock->mutex);
       assert (fp->_lock->owner == 0);
       fp->_lock->owner = self;
       assert (fp->_lock->count == 0);
@@ -58,7 +54,7 @@ _cthreads_funlockfile (_IO_FILE *fp)
     {
       assert (fp->_lock->owner == cthread_self ());
       fp->_lock->owner = 0;
-      __mutex_unlock (&fp->_lock->mutex);
+      mutex_unlock (&fp->_lock->mutex);
     }
 }
 
@@ -72,7 +68,7 @@ _cthreads_ftrylockfile (_IO_FILE *fp)
       assert (fp->_lock->count != 0);
       ++fp->_lock->count;
     }
-  else if (__mutex_try_lock (&fp->_lock->mutex))
+  else if (mutex_try_lock (&fp->_lock->mutex))
     {
       assert (fp->_lock->owner == 0);
       fp->_lock->owner = self;
@@ -86,16 +82,20 @@ _cthreads_ftrylockfile (_IO_FILE *fp)
   return 1;
 }
 
-#define strong_alias(src, dst)	asm (".globl " #dst "; " #dst " = " #src)
-#define weak_alias(src, dst)	asm (".weak " #dst  "; " #dst " = " #src)
 
-weak_alias (_cthreads_flockfile, _IO_flockfile);
-weak_alias (_cthreads_funlockfile, _IO_funlockfile);
-weak_alias (_cthreads_ftrylockfile, _IO_ftrylockfile);
+# undef 	_IO_flockfile
+# undef 	_IO_funlockfile
+# undef 	_IO_ftrylockfile
+# pragma weak	_IO_flockfile	= _cthreads_flockfile
+# pragma weak	_IO_funlockfile	= _cthreads_funlockfile
+# pragma weak	_IO_ftrylockfile= _cthreads_ftrylockfile
 
-weak_alias (_cthreads_flockfile, flockfile);
-weak_alias (_cthreads_funlockfile, funlockfile);
-weak_alias (_cthreads_ftrylockfile, ftrylockfile);
+# undef		flockfile
+# undef		funlockfile
+# undef		ftrylockfile
+# pragma weak	flockfile	= _cthreads_flockfile
+# pragma weak	funlockfile	= _cthreads_funlockfile
+# pragma weak	ftrylockfile	= _cthreads_ftrylockfile
 
 
 #endif /* _STDIO_USES_IOSTREAM */
