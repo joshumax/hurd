@@ -65,7 +65,7 @@ routine del_auth (
 	uids: intarray_t;
 	gids: intarray_t);
 
-/* These four calls fetch and store the ports and other information
+/* These eight calls fetch and store the ports and other information
    that were passed to the process at exec time (see hurd_types.h).
    The REFPORT can be the task port or the auth port.  */
 
@@ -123,11 +123,11 @@ routine set_dtable (
 	process: mach_port_t;
 	dtable: portarray_t);
 
+/* These two calls fetch and store a single file descriptor.  */
+
 routine get_fd (
 	process: mach_port_t;
 	out fd: mach_port_t);
-
-/* These two calls fetch and store a single file descriptor.  */
 
 routine set_fd (
 	process: mach_port_t;
