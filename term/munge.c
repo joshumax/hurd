@@ -75,7 +75,7 @@ output_character (int c)
 	  poutput ('\r');
 	  poutput ('\n');
 	}
-      else if ((oflag & OXTABS) && c == '\t')
+      else if (!external_processing && (oflag & OXTABS) && c == '\t')
 	{
 	  poutput (' ');
 	  while (output_psize % 8)
@@ -179,6 +179,8 @@ char const char_parity[] =
 static inline int
 echo_p (char c, int quoted)
 {  
+  if (external_processing)
+    return 0;
   return ((termstate.c_lflag & ECHO)
 	  || (c == '\n' && (termstate.c_lflag & ECHONL) && !quoted));
 }
@@ -361,7 +363,7 @@ input_character (int c)
     c &= 0x7f;
 
   /* Handle LNEXT right away */
-  if (termflags & LAST_LNEXT)
+  if (!external_processing && (termflags & LAST_LNEXT))
     {
       enqueue_quote (qp, c);
       echo_char (c, 0, 1);
@@ -369,16 +371,16 @@ input_character (int c)
     }
   
   /* Mutate ILCASE */
-  if ((iflag & ILCASE) && isalpha(c))
+  if (!external_processing && (iflag & ILCASE) && isalpha(c))
     {
       if (termflags & LAST_SLASH)
 	erase_1 (0);	/* remove the slash from input */
       else
 	c = isupper(c) ? tolower (c) : c;
     }
-  
+      
   /* IEXTEN control chars */
-  if (lflag & IEXTEN)
+  if (!external_processing && (lflag & IEXTEN))
     {
       if (CCEQ (cc[VLNEXT], c))
 	{
@@ -404,7 +406,7 @@ input_character (int c)
     }
   
   /* Signals */
-  if (lflag & ISIG)
+  if (!external_processing && (lflag & ISIG))
     {
       if (CCEQ (cc[VINTR], c) || CCEQ (cc[VQUIT], c))
 	{
@@ -439,7 +441,7 @@ input_character (int c)
     }
   
   /* IXON */
-  if (iflag & IXON)
+  if (!external_processing && (iflag & IXON))
     {
       if (CCEQ (cc[VSTOP], c))
 	{
@@ -456,19 +458,23 @@ input_character (int c)
 	goto alldone;
     }
   
-  /* Newline and carriage-return frobbing */
-  if (c == '\r')
+  if (!external_processing)
     {
-      if (iflag & ICRNL)
-	c = '\n';
-      else if (iflag & IGNCR)
-	goto alldone;
+      /* Newline and carriage-return frobbing */
+      if (c == '\r')
+	{
+	  if (iflag & ICRNL)
+	    c = '\n';
+	  else if (iflag & IGNCR)
+	    goto alldone;
+	}
+      else if ((c == '\n') && (iflag & INLCR))
+	c = '\r';
+  
     }
-  else if ((c == '\n') && (iflag & INLCR))
-    c = '\r';
   
   /* Canonical mode processing */
-  if (lflag & ICANON)
+  if (!external_processing && (lflag & ICANON))
     {
       if (CCEQ (cc[VERASE], c))
 	{
