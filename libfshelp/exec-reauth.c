@@ -1,9 +1,9 @@
 /* Setuid reauthentication for exec
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2002 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>,
-     from the original by Michael I. Bushnell p/BSG  <mib@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>,
+     from the original by Michael I. Bushnell p/BSG  <mib@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -83,7 +83,7 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 
       /* STEP 3: Attempt to create this new auth handle. */
       err = auth_makeauth (auth, &ports[INIT_PORT_AUTH],
-			   MACH_MSG_TYPE_COPY_SEND, 1, 
+			   MACH_MSG_TYPE_COPY_SEND, 1,
 			   eff_uids->ids, eff_uids->num,
 			   avail_uids->ids, avail_uids->num,
 			   eff_gids->ids, eff_gids->num,
@@ -113,7 +113,7 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 	    goto abandon_suid;
 
 	  /* Trrrry again...  */
-	  err = auth_makeauth (auth, 0, MACH_MSG_TYPE_COPY_SEND, 1, 
+	  err = auth_makeauth (auth, 0, MACH_MSG_TYPE_COPY_SEND, 1,
 			       eff_uids->ids, eff_uids->num,
 			       avail_uids->ids, avail_uids->num,
 			       eff_gids->ids, eff_gids->num,
@@ -130,8 +130,8 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
       /* Re-authenticate the exec parameters.  */
       exec_reauth (newauth, _secure, 0, ports, num_ports, fds, num_fds);
 
-      proc_setowner (ports[INIT_PORT_PROC], 
-		     eff_uids->num > 0 ? eff_uids->ids[0] : 0, 
+      proc_setowner (ports[INIT_PORT_PROC],
+		     eff_uids->num > 0 ? eff_uids->ids[0] : 0,
 		     !eff_uids->num);
 
     abandon_suid:
@@ -145,7 +145,7 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 	idvec_free (avail_gids);
     }
 
-  if (_secure && secure)
+  if (secure)
     *secure = _secure;
 
   return err;
