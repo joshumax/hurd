@@ -159,12 +159,18 @@ struct ftpfs
   /* Root of filesystem.  */
   struct node *root;
 
+  /* A pool of ftp connections for server threads to use.  */
   struct ftpfs_conn *free_conns;
   struct ftpfs_conn *conns;
   spin_lock_t conn_lock;
 
+  /* Parameters for making new ftp connections.  */
   struct ftp_conn_params *ftp_params;
   struct ftp_conn_hooks *ftp_hooks;
+
+  /* Inode numbers are assigned sequentially in order of creation.  */
+  ino_t next_inode;
+  int fsid;
 
   /* A hash table mapping inode numbers to directory entries.  */
   struct ihash *inode_mappings;
@@ -185,7 +191,7 @@ extern volatile struct mapped_time_value *ftpfs_maptime;
   ({ struct timeval tv; maptime_read (ftpfs_maptime, &tv); tv.tv_sec; })
 
 /* Create a new ftp filesystem with the given parameters.  */
-error_t ftpfs_create (char *rmt_root,
+error_t ftpfs_create (char *rmt_root, int fsid,
 		      struct ftp_conn_params *ftp_params,
 		      struct ftp_conn_hooks *ftp_hooks,
 		      struct ftpfs_params *params,
