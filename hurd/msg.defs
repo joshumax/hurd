@@ -64,3 +64,31 @@ routine del_auth (
 	task: task_t;
 	uids: intarray_t;
 	gids: intarray_t);
+
+/* These four calls fetch and store the ports and other information
+   that were passed to the process at exec time (see hurd_types.h).
+   The REFPORT can be the task port or the auth port.  */
+
+routine get_init_port (
+	process: mach_port_t;
+	task: task_t;
+	which: int;
+	out port: mach_port_t);
+
+routine set_init_port (
+	process: mach_port_t;
+	task: task_t;
+	which: int;
+	port: mach_port_t);
+
+routine get_init_int (
+	process: mach_port_t;
+	task: task_t;
+	which: int;
+	out value: int);
+
+routine set_init_int (
+	process: mach_port_t;
+	task: task_t;
+	which: int;
+	value: int);
