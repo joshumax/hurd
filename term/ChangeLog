@@ -1,5 +1,9 @@
 Fri Oct  4 12:30:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* users.c (set_state, open_hook): Call (*BOTTOM)->set_bits
+	unconditionally.
+	* devio.c (devio_set_bits): Only execute guts if CIGNORE isn't set.
+
 	* ptyio.c (pty_io_read, pty_io_write): Honor O_NONBLOCK.
 
 Wed Oct  2 10:49:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
