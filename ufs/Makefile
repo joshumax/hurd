@@ -26,7 +26,7 @@ REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
 #HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
 #	libfshelp libdiskfs libthreads libports
-HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
+HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads libihash
 LDFLAGS = -Wl,--no-keep-memory
 target = ufs
 
