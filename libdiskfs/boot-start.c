@@ -33,7 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 mach_port_t diskfs_exec_ctl;
 mach_port_t diskfs_exec;
-extern task_t diskfs_execserver_task;
+extern task_t diskfs_exec_server_task;
 
 static struct mutex execstartlock;
 static struct condition execstarted;
@@ -43,6 +43,22 @@ static char *default_init = "hurd/init";
 static void start_execserver ();
 
 static char **saved_argv;
+
+static mach_port_t
+get_console ()
+{
+  mach_port_t device_master, console;
+  error_t err = get_privileged_ports (0, &device_master);
+
+  if (err)
+    return MACH_PORT_NULL;
+
+  err = device_open (device_master, D_WRITE | D_READ, "console", &console);
+  if (err)
+    return MACH_PORT_NULL;
+
+  return console;
+}
 
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  */
@@ -56,7 +72,6 @@ diskfs_start_bootstrap (char **argv)
   uid_t idlist[] = {0, 0, 0};
   mach_port_t portarray[INIT_PORT_MAX];
   mach_port_t fdarray[3];	/* XXX */
-  mach_port_t con;		/* XXX */
   task_t newt;
   error_t err;
   char *initname, *initnamebuf;
@@ -102,7 +117,7 @@ diskfs_start_bootstrap (char **argv)
   /* Execute the startup server.  */
   initnamebuf = NULL;
   initname = default_init;
-  if (diskfs_bootflags & RB_INITNAME)
+  if (index (diskfs_boot_flags, 'i'))
     {
       size_t bufsz;
       ssize_t len;
@@ -150,20 +165,14 @@ diskfs_start_bootstrap (char **argv)
   portarray[INIT_PORT_CTTYID] = MACH_PORT_NULL;
   portarray[INIT_PORT_BOOTSTRAP] = bootpt;
   
-/* XXX */
-  device_open (diskfs_master_device, D_WRITE | D_READ, "console", &con);
+  fdarray[0] = fdarray[1] = fdarray[2] = get_console (); /* XXX */
 
-  fdarray[0] = con;
-  fdarray[1] = con;
-  fdarray[2] = con;
-/* XXX */
-  exec_argvlen = asprintf (&exec_argv, "%s%c%s%c",
-			   initname, '\0',
-			   diskfs_bootflagarg, '\0');
+  exec_argvlen =
+    asprintf (&exec_argv, "%s%c%s%c", initname, '\0', diskfs_boot_flags, '\0');
 
   err = task_create (mach_task_self (), 0, &newt);
   assert_perror (err);
-  if (diskfs_bootflags & RB_KDB)
+  if (index (diskfs_boot_flags, 'd'))
     {
       printf ("pausing for init...\n");
       getc (stdin);
@@ -208,9 +217,7 @@ diskfs_S_exec_startup (mach_port_t port,
 		       u_int *intarraylen)
 {
   mach_port_t *portarray, *dtable;
-/*  char *argv, *envp; */
   mach_port_t rootport;
-  device_t con;
   struct ufsport *upt;
   struct protid *rootpi;
   
@@ -237,6 +244,7 @@ diskfs_S_exec_startup (mach_port_t port,
 		 (3 * sizeof (mach_port_t)), 1);
   dtable = *dtableP;
   *dtablelen = 3;
+  dtable[0] = dtable[1] = dtable[2] = get_console (); /* XXX */
   
   *intarrayP = NULL;
   *intarraylen = 0;
@@ -255,14 +263,6 @@ diskfs_S_exec_startup (mach_port_t port,
   portarray[INIT_PORT_BOOTSTRAP] = port; /* use the same port */
 
   *portarraypoly = MACH_MSG_TYPE_MAKE_SEND;
-
-/* XXX */
-  device_open (diskfs_master_device, D_WRITE | D_READ, "console", &con);
-
-  dtable[0] = con;
-  dtable[1] = con;
-  dtable[2] = con;
-/* XXX */
 
   *dtablepoly = MACH_MSG_TYPE_COPY_SEND;
 
@@ -300,22 +300,29 @@ diskfs_execboot_fsys_startup (mach_port_t port,
    in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_getpriv (mach_port_t port,
-		       mach_port_t reply,
-		       mach_msg_type_name_t replytype,
-		       mach_port_t *hostpriv,
-		       mach_port_t *device_master,
-		       mach_port_t *fstask)
+		       mach_port_t reply, mach_msg_type_name_t reply_type,
+		       mach_port_t *host_priv, mach_msg_type_name_t *hp_type,
+		       mach_port_t *dev_master, mach_msg_type_name_t *dm_type,
+		       mach_port_t *fstask, mach_msg_type_name_t *task_type)
 {
-  struct port_info *pt;
-  if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
-				diskfs_initboot_class)))
+  error_t err;
+  struct port_info *init_bootstrap_port =
+    ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
+
+  if (!init_bootstrap_port)
     return EOPNOTSUPP;
   
-  *hostpriv = diskfs_host_priv;
-  *device_master = diskfs_master_device;
-  *fstask = mach_task_self ();
-  ports_port_deref (pt);
-  return 0;
+  err = get_privileged_ports (host_priv, dev_master);
+  if (!err)
+    {
+      *fstask = mach_task_self ();
+      *hp_type = *dm_type = MACH_MSG_TYPE_MOVE_SEND;
+      *task_type = MACH_MSG_TYPE_COPY_SEND;
+    }
+
+  ports_port_deref (init_bootstrap_port);
+
+  return err;
 }
 
 /* Called by init to give us ports to the procserver and authserver as
@@ -355,20 +362,20 @@ diskfs_S_fsys_init (mach_port_t port,
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
   diskfs_auth_server_port = authhandle;
 
-  assert (diskfs_execserver_task != MACH_PORT_NULL);
-  err = proc_task2proc (procserver, diskfs_execserver_task, &execprocess);
+  assert (diskfs_exec_server_task != MACH_PORT_NULL);
+  err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
   assert_perror (err);
 
   /* Declare that the exec server is our child. */
-  proc_child (procserver, diskfs_execserver_task);
+  proc_child (procserver, diskfs_exec_server_task);
 
   /* Don't start this until now so that exec is fully authenticated 
      with proc. */
   exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
 
   /* We don't need this anymore. */
-  mach_port_deallocate (mach_task_self (), diskfs_execserver_task);
-  diskfs_execserver_task = MACH_PORT_NULL;
+  mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
+  diskfs_exec_server_task = MACH_PORT_NULL;
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
@@ -489,10 +496,10 @@ static void
 start_execserver (void)
 {
   mach_port_t right;
-  extern task_t diskfs_execserver_task;	/* Set in boot-parse.c.  */
+  extern task_t diskfs_exec_server_task; /* Set in opts-std-startup.c.  */
   struct port_info *execboot_info;
 
-  assert (diskfs_execserver_task != MACH_PORT_NULL);
+  assert (diskfs_exec_server_task != MACH_PORT_NULL);
 
   execboot_info = ports_allocate_port (diskfs_port_bucket,
 				       sizeof (struct port_info),
@@ -501,15 +508,15 @@ start_execserver (void)
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
   ports_port_deref (execboot_info);
-  task_set_special_port (diskfs_execserver_task, TASK_BOOTSTRAP_PORT, right);
+  task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
   mach_port_deallocate (mach_task_self (), right);
 
-  if (diskfs_bootflags & RB_KDB)
+  if (index (diskfs_boot_flags, 'd'))
     {
       printf ("pausing for exec\n");
       getc (stdin);
     }
-  task_resume (diskfs_execserver_task);
+  task_resume (diskfs_exec_server_task);
 
   printf (" exec");
   fflush (stdout);
