@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 95, 96, 98 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 95, 96, 98, 1999 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,12 +22,13 @@ libname = libfshelp
 SRCS =	lock-acquire.c lock-init.c \
 	start-translator-long.c start-translator.c \
 	fetch-root.c transbox-init.c set-active.c fetch-control.c \
-	drop-transbox.c \
+	drop-transbox.c translated.c \
 	delegate.c \
 	exec-reauth.c \
 	set-options.c \
 	get-identity.c \
-	fshelp.c
+	perms-isowner.c perms-access.c perms-checkdirmod.c \
+	touch.c
 LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
 

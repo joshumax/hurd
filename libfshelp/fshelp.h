@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,10 +30,6 @@
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
-
-#ifndef FSHELP_EI
-#define FSHELP_EI extern inline
-#endif
 
 
 /* Passive translator linkage */
@@ -141,11 +137,7 @@ fshelp_transbox_init (struct transbox *transbox,
 		      void *cookie);
 
 /* Return true iff there is an active translator on this box */
-FSHELP_EI int
-fshelp_translated (struct transbox *box)
-{
-  return (box->active != MACH_PORT_NULL);
-}
+int fshelp_translated (struct transbox *box);
 
 /* Atomically replace the existing active translator port for this box
    with NEWACTIVE.  If EXCL is non-zero then don't frob an existing
@@ -240,64 +232,21 @@ error_t fshelp_set_options (struct argp *argp, int flags,
 /* Check to see whether USER should be considered the owner of the
    file identified by ST.  If so, return zero; otherwise return an
    appropriate error code. */
-FSHELP_EI error_t
-fshelp_isowner (struct stat *st, struct iouser *user)
-{
-  /* Permitted if the user has the owner UID, the superuser UID, or if
-     the user is in the group of the file and has the group ID as
-     their user ID.  */
-  if (idvec_contains (user->uids, st->st_uid)
-      || idvec_contains (user->uids, 0)
-      || (idvec_contains (user->gids, st->st_gid)
-	  && idvec_contains (user->uids, st->st_gid)))
-    return 0;
-  else
-    return EPERM;
-}
-
+error_t fshelp_isowner (struct stat *st, struct iouser *user);
 
 /* Check to see whether the user USER can operate on a file identified
    by ST.  OP is one of S_IREAD, S_IWRITE, and S_IEXEC.  If the access
    is permitted, return zero; otherwise return an appropriate error
    code.  */
-FSHELP_EI error_t
-fshelp_access (struct stat *st, int op, struct iouser *user)
-{
-  int gotit;
-  if (idvec_contains (user->uids, 0))
-    gotit = 1;
-  else if (user->uids->num == 0 && (st->st_mode & S_IUSEUNK))
-    gotit = st->st_mode & (op << S_IUNKSHIFT);
-  else if (!fshelp_isowner (st, user))
-    gotit = st->st_mode & op;
-  else if (idvec_contains (user->gids, st->st_gid))
-    gotit = st->st_mode & (op >> 3);
-  else
-    gotit = st->st_mode & (op >> 6);
-  return gotit ? 0 : EACCES;
-}
+error_t fshelp_access (struct stat *st, int op, struct iouser *user);
 
 /* Check to see whether USER is allowed to modify DIR with respect to
    existing file ST.  (If there is no existing file, pass 0 for ST.)
    If the access is permissable return 0; otherwise return an
    appropriate error code.  */
-FSHELP_EI error_t
-fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)
-{
-  error_t err;
+error_t fshelp_checkdirmod (struct stat *dir, struct stat *st, 
+			    struct iouser *user);
 
-  /* The user must be able to write the directory. */
-  err = fshelp_access (dir, S_IWRITE, user);
-  if (err)
-    return err;
-
-  /* If the directory is sticky, the user must own either it or the file.  */
-  if ((dir->st_mode & S_ISVTX) && st
-      && fshelp_isowner (dir, user) && fshelp_isowner (st, user))
-    return EACCES;
-
-  return 0;
-}
 
 /* Timestamps to change.  */
 #define TOUCH_ATIME 0x1
@@ -306,29 +255,6 @@ fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)
 
 /* Change the stat times of NODE as indicated by WHAT (from the set TOUCH_*)
    to the current time.  */
-FSHELP_EI void
-fshelp_touch (struct stat *st, unsigned what,
-	      volatile struct mapped_time_value *maptime)
-{
-  struct timeval tv;
-
-  maptime_read (maptime, &tv);
-
-  if (what & TOUCH_ATIME)
-    {
-      st->st_atime = tv.tv_sec;
-      st->st_atime_usec = tv.tv_usec;
-    }
-  if (what & TOUCH_CTIME)
-    {
-      st->st_ctime = tv.tv_sec;
-      st->st_ctime_usec = tv.tv_usec;
-    }
-  if (what & TOUCH_MTIME)
-    {
-      st->st_mtime = tv.tv_sec;
-      st->st_mtime_usec = tv.tv_usec;
-    }
-}
-
+void fshelp_touch (struct stat *st, unsigned what,
+		   volatile struct mapped_time_value *maptime);
 #endif

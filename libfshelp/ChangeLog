@@ -1,3 +1,18 @@
+1999-07-01  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* translated.c: New file; guts from fshelp.h.
+	* perms-isowner.c: Likewise.
+	* perms-access.c: Likewise.
+	* prems-checkdirmod.c: Likewise.
+	* touch.c: Likewise.
+	* fshelp.h (fshelp_translated, fshelp_isowner, fshelp_access,
+	fshelp_checkdirmod, fshelp_touch): Replace inline definitions with
+	ordinary declarations. 
+	(FSHELP_EI): Removed macro.
+	* fshelp.c: Deleted file.
+	* Makefile (SRCS): Added translated.c, perms-isowner.c,
+	perms-access.c, perms-checkdirmod.c, touch.c.  Removed fshelp.c. 
+	
 Wed Apr 28 03:06:19 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fetch-root.c (fshelp_fetch_root): Don't deallocate the
