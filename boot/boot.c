@@ -40,7 +40,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <version.h>
 
 #include "notify_S.h"
-#include "exec_S.h"
 #include "ourdevice_S.h"
 #include "io_S.h"
 #include "device_reply_U.h"
@@ -381,7 +380,7 @@ boot_script_exec_cmd (void *hook,
 	  stack_end - trunc_page ((vm_offset_t) arg_pos));
 
   thread_create (task, &thread);
-#ifdef I386_THREAD_STATE
+#ifdef i386_THREAD_STATE_COUNT
   {
     struct i386_thread_state regs;
     reg_size = i386_THREAD_STATE_COUNT;
@@ -392,7 +391,7 @@ boot_script_exec_cmd (void *hook,
     thread_set_state (thread, i386_THREAD_STATE,
 		      (thread_state_t) &regs, reg_size);
   }
-#elif ALPHA_THREAD_STATE
+#elif defined(ALPHA_THREAD_STATE_COUNT)
   {
     struct alpha_thread_state regs;
     reg_size = ALPHA_THREAD_STATE_COUNT;
