@@ -20,7 +20,7 @@
 #include <assert.h>
 
 kern_return_t
-trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
 {
   assert (!trivfs_support_write);
   return EOPNOTSUPP;
