@@ -25,7 +25,7 @@ LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
 	proc.c protocol.c raw.c route.c skbuff.c sock.c \
 	tcp.c timer.c udp.c utils.c
 UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
-SRCS = sched.c timer-emul.c devices.c
+SRCS = sched.c timer-emul.c devices.c socket.c
 HURDLIBS=libthreads
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
 
