@@ -1,3 +1,7 @@
+2000-10-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* wire.c: Include <error.h>.
+
 2000-10-29  Roland McGrath  <roland@frob.com>
 
 	* wire.c (map_extent): Pass second arg of RTLD_NOLOAD to dlopen.
