@@ -67,6 +67,8 @@ main (int argc, char **argv)
   trivfs_protid_portclasses[0] = tty_class;
   trivfs_cntl_portclasses[0] = tty_cntl_class;
 
+  init_users ();
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   if (bootstrap == MACH_PORT_NULL)
@@ -125,8 +127,7 @@ main (int argc, char **argv)
     }      
 
   bzero (&termstate, sizeof (termstate));
-  termflags = NO_CARRIER;
-  output_psize = 0;
+  termflags = NO_CARRIER | NO_OWNER;
   mutex_init (&global_lock);
 
   inputq = create_queue (256, 100, 300);
