@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -25,14 +25,16 @@ LCLHDRS = a.out.h a.out.gnu.h gzip.h crypt.h tailor.h
 target = exec
 DIST_FILES = core.c gcore.c hashexec.c
 
+all:
+
+vpath lib%.a $(crossdir)/lib
+exec: -lbfd -liberty
+
 include ../Makeconf
 
-CFLAGS += -DA_OUT_H=\"./a.out.h\"
+CPPFLAGS += -DBFD # -DA_OUT_H=\"./a.out.h\"
 
-exec.o bfdexec.o: fsys_S.h notify_S.h exec_S.h
-
+exec.o: exec.c fsys_S.h notify_S.h exec_S.h 
 exec.o hostarch.o: a.out.h a.out.gnu.h
-
-bfdexec: bfdhostarch.o -lbfd
 
 unzip.o util.o inflate.o: gzip.h crypt.h tailor.h
