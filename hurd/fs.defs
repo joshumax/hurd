@@ -250,7 +250,7 @@ routine dir_mkfile (
 	directory: file_t;
 	flags: int;
 	mode: mode_t;
-	out mach_port_send_t newnode);
+	out newnode: mach_port_send_t);
 
 /* To get or set the translator currently running on a file, use
    file_set_translator, file_get_translator, or
