@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -98,7 +98,7 @@ extern int trivfs_cntl_nportclasses;
    stat (as returned from the underlying node) for presentation to
    callers of io_stat.  It is permissable for this function to do
    nothing.  */
-void trivfs_modify_stat (struct trivfs_protid *cred, struct stat *);
+void trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *);
 
 /* If this variable is set, it is called to find out what access this
    file permits to USER instead of checking the underlying node.
