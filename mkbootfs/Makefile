@@ -16,20 +16,17 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := mkbootfs
-include ../Makeconf
+makemode := misc
 
-DIST_FILES = mkbootfs.c Makefile ChangeLog
 SRCS = mkbootfs.c
 
+include ../Makeconf
+
 all: mkbootfs
+
 mkbootfs: mkbootfs.c
 	rsh $(mighost) -n cd `pwd` \; gcc mkbootfs.c -o mkbootfs
 
 clean:
 	rm -f mkbootfs *.o
 
-# Relink should do nothing here because this program does not use
-# the Hurd libraries.
-relink:
-
-install:
