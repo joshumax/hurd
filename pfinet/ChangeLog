@@ -1,3 +1,9 @@
+Fri Apr 24 15:43:07 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* io-ops.c (S_io_select): When returning EINTR after cancellation,
+	deallocate REPLY because the stub won't do it for us.  Reported by
+	UCHIYAMA Yasushi (uch@nop.or.jp).
+
 1997-08-25  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-ops.c (S_io_write): Negate linux error codes before returning.
