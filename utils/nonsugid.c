@@ -1,8 +1,7 @@
 /* Get our ids, minus any setuid result
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,9 +22,10 @@
 #include <hurd.h>
 
 /* Make sure that the [UG]IDS are filled in.  To make them useful for
-   su'ing, each is the avail ids with all effective ids but the first
-   appended; this gets rid of the effect of being suid, and is useful as a
-   new process's avail id list (e.g., the real id is right).  */
+   su'ing, each is the avail ids with the saved set-ID removed, and all
+   effective ids but the first appended; this gets rid of the effect of
+   being suid, and is useful as a new process's avail id list (e.g., the
+   real id is right).  */
 error_t
 get_nonsugid_ids (struct idvec *uids, struct idvec *gids)
 {
@@ -46,9 +46,12 @@ get_nonsugid_ids (struct idvec *uids, struct idvec *gids)
 	err = idvec_merge_auth (p_eff_uids, uids, p_eff_gids, gids, auth);
       if (! err)
 	{
-	  idvec_delete (p_eff_uids, 0); /* Counteract setuid. */
+	  idvec_delete (p_eff_uids, 0); /* Remove effective ID from setuid.  */
 	  idvec_delete (p_eff_gids, 0);
-	  err = idvec_merge (uids, p_eff_uids);
+	  idvec_delete (uids, 1); /* Remove saved set-ID from setuid.  */
+	  idvec_delete (gids, 1);
+	  if (! err)
+	    err = idvec_merge (uids, p_eff_uids);
 	  if (! err)
 	    err = idvec_merge (gids, p_eff_gids);
 	}
