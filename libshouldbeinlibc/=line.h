@@ -1,6 +1,6 @@
 /* Simple output formatting functions
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -106,13 +106,13 @@ line_putc (struct line *line, int ch)
 
 /* Adds the text in STR to LINE, wrapping words as necessary to fit.  LMARGIN
    is the left margin used when wrapping.  */
-void line_fill (struct line *line, char *str, unsigned lmargin);
+void line_fill (struct line *line, const char *str, unsigned lmargin);
 
 /* Add STR, of length LEN, to LINE.  */
-void line_write (struct line *line, char *str, unsigned len);
+void line_write (struct line *line, const char *str, unsigned len);
 
 /* Add STR to LINE.  */
-extern inline void line_puts (struct line *line, char *str)
+extern inline void line_puts (struct line *line, const char *str)
 {
   line_write (line, str, strlen (str));
 }
