@@ -226,11 +226,11 @@ force_delayed_copies (struct node *node, off_t length)
   if (pager)
     ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
- 
+
   if (pager)
     {
       mach_port_t obj;
-      
+
       pager_change_attributes (pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
       obj = diskfs_get_filemap (node, VM_PROT_READ);
       if (obj != MACH_PORT_NULL)
@@ -238,10 +238,10 @@ force_delayed_copies (struct node *node, off_t length)
 	  /* XXX should cope with errors from diskfs_get_filemap */
 	  poke_pages (obj, round_page (length), round_page (node->allocsize));
 	  mach_port_deallocate (mach_task_self (), obj);
-	  pager_flush_some (pager, round_page(length), 
+	  pager_flush_some (pager, round_page(length),
 			    node->allocsize - length, 1);
 	}
-      
+
       ports_port_deref (pager);
     }
 }
@@ -269,7 +269,7 @@ enable_delayed_copies (struct node *node)
 /* The user must define this function.  Truncate locked node NODE to be SIZE
    bytes long.  (If NODE is already less than or equal to SIZE bytes
    long, do nothing.)  If this is a symlink (and diskfs_shortcut_symlink
-   is set) then this should clear the symlink, even if 
+   is set) then this should clear the symlink, even if
    diskfs_create_symlink_hook stores the link target elsewhere.  */
 error_t
 diskfs_truncate (struct node *node, off_t length)
@@ -322,7 +322,7 @@ diskfs_truncate (struct node *node, off_t length)
   node->dn_set_ctime = 1;
   diskfs_node_update (node, 1);
 
-  err = diskfs_catch_exception();
+  err = diskfs_catch_exception ();
   if (!err)
     {
       block_t end = boffs_block (round_block (length)), offs;
@@ -348,6 +348,8 @@ diskfs_truncate (struct node *node, off_t length)
 	 won't hurt if is wrong.  */
       node->dn->last_page_partially_writable =
 	trunc_page (node->allocsize) != node->allocsize;
+
+      diskfs_end_catch_exception ();
     }
 
   node->dn_set_mtime = 1;
