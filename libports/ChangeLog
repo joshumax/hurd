@@ -1,3 +1,25 @@
+2001-03-29  Neal H Walfield  <neal@cs.uml.edu>
+
+        * claim-right.c (ports_claim_right):  Include errno.h and
+        assert.h.  Add assertions.  Clean up the logic.
+
+        * create-bucket.c (ports_create_bucket): Include errno.h
+        and stdlib.h.  Do not include assert.h.  Turn assertions
+        into errors that set errno and return NULL.
+        * create-class.c (ports_create_class): Likewise.
+
+        * create-internal.c (_ports_create_internal): On error, do
+        not deallocate a send right, but a receive right.
+
+        * init.c: Do not initialize global variables to 0.
+        * interrupt-notified-rpcs.c: Likewise.
+
+        * port-deref.c (ports_port_deref): Simplify logic.
+
+        * reallocate-port.c (ports_reallocate_port): Assert return from
+        mach_port_move_member.
+        * transfer-right.c (ports_transfer_right): Likewise.
+
 2001-03-26  Roland McGrath  <roland@frob.com>
 
 	* intern-external-port.c, allocate-port.c: Dead files removed
