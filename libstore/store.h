@@ -421,6 +421,13 @@ error_t store_typed_open (const char *name, int flags,
 			  const struct store_class *const *classes,
 			  struct store **store);
 
+/* Similar to store_typed_open, but NAME must be in URL format,
+   i.e. a class name followed by a ':' and any type-specific name.
+   A leading ':' or no ':' at all is invalid syntax.  */
+error_t store_url_open (const char *name, int flags,
+			const struct store_class *const *classes,
+			struct store **store);
+
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
    integer multiple of each stripe's block size.  The stores in STRIPES are
@@ -526,6 +533,7 @@ extern const struct store_class store_copy_class;
 extern const struct store_class store_gunzip_class;
 extern const struct store_class store_bunzip2_class;
 extern const struct store_class store_typed_open_class;
+extern const struct store_class store_url_open_class;
 
 /* The following are not included in STORE_STD_CLASSES.  */
 extern const struct store_class store_mvol_class;
