@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -22,8 +22,6 @@
 #include <string.h>
 #include <idvec.h>
 
-typedef uid_t id_t;
-
 /* Return a new, empty, idvec, or NULL if there wasn't enough memory.  */
 struct idvec *
 make_idvec ()
@@ -67,7 +65,7 @@ idvec_ensure (struct idvec *idvec, unsigned num)
 {
   if (num > idvec->alloced)
     {
-      id_t *_ids = realloc (idvec->ids, num * sizeof (id_t));
+      uid_t *_ids = realloc (idvec->ids, num * sizeof (uid_t));
       if (! _ids)
 	return ENOMEM;
       idvec->ids = _ids;
@@ -86,9 +84,9 @@ idvec_grow (struct idvec *idvec, unsigned inc)
 
 /* Returns true if IDVEC contains ID, at or after position POS.  */
 int
-idvec_tail_contains (const struct idvec *idvec, unsigned pos, id_t id)
+idvec_tail_contains (const struct idvec *idvec, unsigned pos, uid_t id)
 {
-  id_t *ids = idvec->ids, *end = ids + idvec->num, *p = ids + pos;
+  uid_t *ids = idvec->ids, *end = ids + idvec->num, *p = ids + pos;
   while (p < end)
     if (*p++ == id)
       return  1;
@@ -98,7 +96,7 @@ idvec_tail_contains (const struct idvec *idvec, unsigned pos, id_t id)
 /* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
    enough memory, or 0.  */
 error_t
-idvec_insert (struct idvec *idvec, unsigned pos, id_t id)
+idvec_insert (struct idvec *idvec, unsigned pos, uid_t id)
 {
   error_t err = 0;
   unsigned num = idvec->num;
@@ -112,11 +110,11 @@ idvec_insert (struct idvec *idvec, unsigned pos, id_t id)
 
   if (! err)
     {
-      id_t *ids = idvec->ids;
+      uid_t *ids = idvec->ids;
       if (pos < num)
-	bcopy (ids + pos, ids + pos + 1, (num - pos) * sizeof (id_t));
+	bcopy (ids + pos, ids + pos + 1, (num - pos) * sizeof (uid_t));
       else if (pos > num)
-	bzero (ids + num, (pos - num) * sizeof (id_t));
+	bzero (ids + num, (pos - num) * sizeof (uid_t));
       ids[pos] = id;
       idvec->num = new_num;
     }
@@ -127,7 +125,7 @@ idvec_insert (struct idvec *idvec, unsigned pos, id_t id)
 /* Add ID onto the end of IDVEC, returning ENOMEM if there's not enough memory,
    or 0.  */
 error_t
-idvec_add (struct idvec *idvec, id_t id)
+idvec_add (struct idvec *idvec, uid_t id)
 {
   return idvec_insert (idvec, idvec->num, id);
 }
@@ -135,7 +133,7 @@ idvec_add (struct idvec *idvec, id_t id)
 /* If IDVEC doesn't contain ID, add it onto the end, returning ENOMEM if
    there's not enough memory; otherwise, do nothing.  */
 error_t
-idvec_add_new (struct idvec *idvec, id_t id)
+idvec_add_new (struct idvec *idvec, uid_t id)
 {
   if (idvec_contains (idvec, id))
     return 0;
@@ -146,7 +144,7 @@ idvec_add_new (struct idvec *idvec, id_t id)
 /* If IDVEC doesn't contain ID at position POS or after, insert it at POS,
    returning ENOMEM if there's not enough memory; otherwise, do nothing.  */
 error_t
-idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
+idvec_insert_new (struct idvec *idvec, unsigned pos, uid_t id)
 {
   if (idvec_tail_contains (idvec, pos, id))
     return 0;
@@ -157,18 +155,18 @@ idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
 /* Set the ids in IDVEC to IDS (NUM elements long); delete whatever
    the previous ids were. */
 error_t
-idvec_set_ids (struct idvec *idvec, const id_t *ids, unsigned num)
+idvec_set_ids (struct idvec *idvec, const uid_t *ids, unsigned num)
 {
   error_t err;
 
   err = idvec_ensure (idvec, num);
   if (!err)
     {
-      bcopy (ids, idvec->ids, num * sizeof (id_t));
+      bcopy (ids, idvec->ids, num * sizeof (uid_t));
       idvec->num = num;
     }
   return err;
-}  
+}
 
 /* Like idvec_set_ids, but get the new ids from new. */
 error_t
@@ -180,7 +178,7 @@ idvec_set (struct idvec *idvec, const struct idvec *new)
 /* Adds each id in the vector IDS (NUM elements long) to IDVEC, as long as it
    wasn't previously in IDVEC.  */
 error_t
-idvec_merge_ids (struct idvec *idvec, const id_t *ids, unsigned num)
+idvec_merge_ids (struct idvec *idvec, const uid_t *ids, unsigned num)
 {
   error_t err = 0;
   unsigned num_old = idvec->num;
@@ -207,12 +205,12 @@ idvec_merge (struct idvec *idvec, const struct idvec *new)
 /* Remove any occurances of ID in IDVEC after position POS.
    Returns true if anything was done.  */
 int
-idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
+idvec_remove (struct idvec *idvec, unsigned pos, uid_t id)
 {
   if (pos < idvec->num)
     {
       int left = idvec->num - pos;
-      id_t *ids = idvec->ids + pos, *targ = ids;
+      uid_t *ids = idvec->ids + pos, *targ = ids;
       while (left--)
 	{
 	  if (*ids != id)
@@ -232,7 +230,7 @@ idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
     return 0;
 }
 
-/* Remove all ids in SUB from IDVEC, returning true if anything was done. */ 
+/* Remove all ids in SUB from IDVEC, returning true if anything was done. */
 int
 idvec_subtract (struct idvec *idvec, const struct idvec *sub)
 {
@@ -248,11 +246,11 @@ idvec_subtract (struct idvec *idvec, const struct idvec *sub)
 int
 idvec_keep (struct idvec *idvec, const struct idvec *keep)
 {
-  id_t *old = idvec->ids, *new = old, *end = old + idvec->num;
+  uid_t *old = idvec->ids, *new = old, *end = old + idvec->num;
 
   while (old < end)
     {
-      id_t id = *old++;
+      uid_t id = *old++;
       if (idvec_contains (keep, id))
 	{
 	  if (old != new)
@@ -277,10 +275,10 @@ idvec_delete (struct idvec *idvec, unsigned pos)
   unsigned num = idvec->num;
   if (pos < num)
     {
-      id_t *ids = idvec->ids;
+      uid_t *ids = idvec->ids;
       idvec->num = --num;
       if (num > pos)
-	bcopy (ids + pos + 1, ids + pos, (num - pos) * sizeof (id_t));
+	bcopy (ids + pos + 1, ids + pos, (num - pos) * sizeof (uid_t));
     }
 }
 
@@ -288,7 +286,7 @@ idvec_delete (struct idvec *idvec, unsigned pos)
    present at POS or after.  ENOMEM is returned if there's not enough memory,
    otherwise 0.  */
 error_t
-idvec_insert_only (struct idvec *idvec, unsigned pos, id_t id)
+idvec_insert_only (struct idvec *idvec, unsigned pos, uid_t id)
 {
   if (idvec->num > pos && idvec->ids[pos] == id)
     return 0;
@@ -306,7 +304,7 @@ idvec_insert_only (struct idvec *idvec, unsigned pos, id_t id)
    *SECURE is set to true.  ENOMEM is returned if a malloc fails, otherwise
    0.  The return parameters are only touched if this call succeeds.  */
 error_t
-idvec_setid (struct idvec *eff, struct idvec *avail, id_t id, int *secure)
+idvec_setid (struct idvec *eff, struct idvec *avail, uid_t id, int *secure)
 {
   error_t err;
   /* True if ID was not previously present in either EFF or AVAIL.  */

@@ -1,6 +1,6 @@
 /* Idvec functions that interact with an auth server
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -23,8 +23,6 @@
 
 #include "idvec.h"
 
-typedef uid_t id_t;
-
 /* Add to all of EFF_UIDS, AVAIL_UIDS, EFF_GIDS, AVAIL_GIDS (as if with
    idvec_merge_ids()) the ids associated with the auth port AUTH.  Any of
    these parameters may be NULL if that information isn't desired.  */
@@ -34,11 +32,11 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
 		  auth_t auth)
 {
   error_t err;
-  id_t eff_uid_buf[10], avail_uid_buf[20];
-  id_t *_eff_uids = eff_uid_buf, *_avail_uids = avail_uid_buf;
+  uid_t eff_uid_buf[10], avail_uid_buf[20];
+  uid_t *_eff_uids = eff_uid_buf, *_avail_uids = avail_uid_buf;
   int num_eff_uids = 10, num_avail_uids = 20;
-  id_t eff_gid_buf[10], avail_gid_buf[20];
-  id_t *_eff_gids = eff_gid_buf, *_avail_gids = avail_gid_buf;
+  uid_t eff_gid_buf[10], avail_gid_buf[20];
+  uid_t *_eff_gids = eff_gid_buf, *_avail_gids = avail_gid_buf;
   int num_eff_gids = 10, num_avail_gids = 20;
 
   err = auth_getids (auth,
