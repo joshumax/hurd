@@ -266,7 +266,9 @@ routine dir_mkfile (
    this call succeed.  If existing is not MACH_PORT_NULL, then there
    is already a translator for this file, and it should be used, with
    the program specified by NAME to be used only if the EXISTING port
-   dies.
+   dies.  If TRANSLATOR is empty, then EXISTING is registered and the
+   node becomes untranslated if EXISTING becomes dead.  If TRANSLATOR 
+   is empty and EXISTING is null, then nothing happens.
 
    Some filesystems understand some translators directly and
    short-circuit the creation of the translator by the normal process.
