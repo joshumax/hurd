@@ -41,6 +41,8 @@ diskfs_S_file_chown (struct protid *cred,
 			   {
 			     np->dn_stat.st_uid = uid;
 			     np->dn_stat.st_gid = gid;
+			     if (np->author_tracks_uid)
+			       np->dn_stat.st_author = uid;
 			     np->dn_set_ctime = 1;
 			   }
 		       }
