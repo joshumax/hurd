@@ -1,3 +1,8 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* cache.c (create_cached_handle): Use munmap instead of
+	vm_deallocate. 
+
 1998-12-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* loop.c (server_loop): Cosmetic.

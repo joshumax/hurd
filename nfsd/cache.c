@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -383,7 +383,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   if (bp != fhandle + sizeof (int))
     {
       bcopy (bp, fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int));
-      vm_deallocate (mach_task_self (), (vm_address_t) bp, handlelen);
+      munmap (bp, handlelen);
     }
 
   /* Cache it */
