@@ -1,3 +1,8 @@
+Thu Apr 10 13:25:12 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_set_size): Short circuit EACCES to cover
+	one important case.
+
 Fri Feb 21 16:47:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (netfs_append_args): Present the remote filesystem as a

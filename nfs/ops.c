@@ -323,6 +323,23 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
 	p = process_wcc_stat (np, p, !err);
     }
   
+  /* If we got EACCES, but the user has the file open for writing,
+     then the NFS protocol has screwed us.  There's nothing we can do,
+     except in the important case of opens with
+     O_TRUNC|O_CREAT|O_WRONLY|O_EXCL where the new mode does not allow
+     writing.  RCS, for example, uses this to create lock files.  So permit
+     cases where the O_TRUNC isn't doing anything to succeed if the user
+     does have the file open for writing.  */
+  if (err == EACCES && (cred->po->openstat & O_WRITE))
+    {
+      err = netfs_validate_stat (np, cred);
+      if (!err && np->nn_stat.st_size == size)
+	err = 0;
+      else
+	/* Never mind, put the old error back */
+	err = EACCES;
+    }
+
   free (rpcbuf);
   return err;
 }
