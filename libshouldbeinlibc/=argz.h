@@ -48,7 +48,42 @@ error_t argz_add (char **argz, unsigned *argz_len, char *str);
 /* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
 void argz_remove (char **argz, unsigned *argz_len, char *entry);
 
-/* Insert ENTRY into ARGZ & ARGZ_LEN at position N.  */
-error_t argz_insert (char **argz, unsigned *argz_len, unsigned n, char *entry);
+/* Insert ENTRY into ARGZ & ARGZ_LEN before BEFORE, which should be an
+   existing entry in ARGZ; if BEFORE is NULL, ENTRY is appended to the end.
+   Since ARGZ's first entry is the same as ARGZ, argz_insert (ARGZ, ARGZ_LEN,
+   ARGZ, ENTRY) will insert ENTRY at the beginning of ARGZ.  If BEFORE is not
+   in ARGZ, EINVAL is returned, else if memory can't be allocated for the new
+   ARGZ, ENOMEM is returned, else 0.  */
+error_t
+argz_insert (char **argz, unsigned *argz_len, char *before, char *entry);
+
+/* Returns the next entry in ARGZ & ARGZ_LEN after ENTRY, or NULL if there
+   are no more.  If entry is NULL, then the first entry is returned.  This
+   behavior allows two convenient iteration styles: 
+
+    char *entry = 0;
+    while (entry = argz_next (argz, argz_len, entry))
+      ...;
+
+   or
+
+    char *entry;
+    for (entry = argz; entry; entry = argz_next (argz, argz_len, entry))
+      ...;
+*/
+extern inline char *
+argz_next (char *argz, unsigned argz_len, char *entry)
+{
+  if (entry)
+    if (entry >= argz + argz_len)
+      return 0;
+    else
+      return entry + strlen (entry) + 1;
+  else
+    if (argz_len > 0)
+      return argz;
+    else
+      return 0;
+}
 
 #endif /* __ARGZ_H__ */
