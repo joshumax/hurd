@@ -1,7 +1,6 @@
 /* Idvec functions that interact with an auth server
 
-   Copyright (C) 1995, 1998, 1999, 2001 Free Software Foundation, Inc.
-
+   Copyright (C) 1995,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -35,10 +34,10 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
   error_t err;
   uid_t eff_uid_buf[10], avail_uid_buf[20];
   uid_t *_eff_uids = eff_uid_buf, *_avail_uids = avail_uid_buf;
-  int num_eff_uids = 10, num_avail_uids = 20;
+  size_t num_eff_uids = 10, num_avail_uids = 20;
   uid_t eff_gid_buf[10], avail_gid_buf[20];
   uid_t *_eff_gids = eff_gid_buf, *_avail_gids = avail_gid_buf;
-  int num_eff_gids = 10, num_avail_gids = 20;
+  size_t num_eff_gids = 10, num_avail_gids = 20;
 
   err = auth_getids (auth,
 		     &_eff_uids, &num_eff_uids, &_avail_uids, &num_avail_uids,
