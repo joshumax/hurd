@@ -34,13 +34,9 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   struct pager *p;
   char *pm_entry;
   error_t err;
-  vm_size_t size, iosize;
-  location_t loc;
-  void *cookie;
   struct lock_request *lr;
   struct lock_list {struct lock_request *lr;
 		    struct lock_list *next;} *lock_list, *ll;
-  int write_lock;
   int wakeup;
   
   if (!(p = check_port_type (object, pager_port_type)))
@@ -91,11 +87,9 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 
   pm_entry = &p->pagemap[offset / __vm_page_size];
 
-  if (*pm_entry & PM_PAGINGOUT)
-    panic ("double pageout");
-   
   /* Mark this page as being paged out.  */
   *pm_entry |= PM_PAGINGOUT;
+
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
@@ -118,17 +112,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   _pager_release_seqno (p);
   mutex_unlock (&p->interlock);
 
-  err = pager_find_address (p->upi, offset, &loc, &cookie,
-			    &size, &iosize, &write_lock);
-
-  if (!err)
-    {
-      /* We throw away data in the page that extends beyond iosize; data
-	 that is between size and iosize gets zeroed before being written. */
-      if (size != iosize)
-	bzero (data + size, iosize - size);
-      err = pager_write_page (loc, cookie, data, iosize);
-    }
+  err = pager_write_page (p->upi, offset, data);
 
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
@@ -162,16 +146,6 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   _pager_allow_termination (p);
 
   mutex_unlock (&p->interlock);
-
-  /* XXX can this really be done earlier inside pager_write_page? */
-  /* Now it is OK for the file size to change, so we can release our lock.  */
-  if (slp)
-    {
-      mutex_lock (slp);
-      if (!--(*slip))
-	condition_broadcast (slc);
-      mutex_unlock (slp);
-    }
 
  out:
   done_with_port (p);
