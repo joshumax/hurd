@@ -1557,7 +1557,7 @@ S_io_reauthenticate (mach_port_t object,
   unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
 
   if (! auth_server_authenticate (authserver,
-				  rend, MACH_MSG_TYPE_MOVE_SEND,
+				  rend, MACH_MSG_TYPE_COPY_SEND,
 				  object, MACH_MSG_TYPE_MAKE_SEND,
 				  &gu, &gulen,
 				  &au, &aulen,
@@ -1569,6 +1569,7 @@ S_io_reauthenticate (mach_port_t object,
       mig_deallocate ((vm_address_t) gg, gglen * sizeof *gu);
       mig_deallocate ((vm_address_t) au, aulen * sizeof *gu);
     }
+  mach_port_deallocate (mach_task_self (), rend);
 
   return 0;
 }
