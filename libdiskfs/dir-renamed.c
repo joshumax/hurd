@@ -92,7 +92,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     mutex_lock (&tdp->lock);
   
   /* 1: Lookup target; if it exists, make sure it's an empty directory. */
-  mutex_lock (&tdp->lock);
   ds = buf;
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   
