@@ -26,6 +26,18 @@
 /*
  * HISTORY
  * $Log: thread.c,v $
+ * Revision 1.5  2001/03/31 23:03:03  roland
+ * 2001-03-31  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h: Fix obsolescent #endif syntax.
+ * 	* cthread_internals.h: Likewise.
+ * 	* cancel-cond.c: Likewise.
+ * 	* stack.c: Likewise.
+ * 	* cthreads.c: Likewise.
+ * 	* cprocs.c: Likewise.
+ * 	* call.c: Likewise.
+ * 	* i386/thread.c: Likewise.
+ *
  * Revision 1.4  2001/02/26 04:15:27  roland
  * 2001-02-25  Roland McGrath  <roland@frob.com>
  *
@@ -66,7 +78,7 @@
  */
 
 #ifndef	lint
-static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.5 2001/03/31 23:03:03 roland Exp $";
+static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.6 2001/12/22 21:02:31 roland Exp $";
 #endif	/* not lint */
 
 
@@ -122,7 +134,5 @@ cproc_setup(child, thread, routine)
 int
 cthread_sp()
 {
-	int x;
-
-	return (int) &x;
+	return (int) __thread_stack_pointer ();
 }
