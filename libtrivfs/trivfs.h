@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -146,13 +146,6 @@ trivfs_create_control (mach_port_t underlying,
 		       struct port_class *protid_class,
 		       struct port_bucket *protid_bucket,
 		       struct trivfs_control **control);
-
-/* Backwards compatibility.  Use trivfs_create_control.  */
-mach_port_t trivfs_handle_port (mach_port_t underlying, 
-				struct port_class *control_class,
-				struct port_bucket *control_bucket,
-				struct port_class *protid_class,
-				struct port_bucket *protid_bucket);
 
 /* Install these as libports cleanroutines for trivfs_protid_class
    and trivfs_cntl_class respectively. */
