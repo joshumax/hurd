@@ -1,6 +1,6 @@
 /* Some ps_filter_t's to restrict proc_stat_list's in various ways.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -76,3 +76,16 @@ ps_parent_p(proc_stat_t ps)
 }
 struct ps_filter ps_parent_filter =
 {"parent", PSTAT_STATE, ps_parent_p};
+
+static bool
+ps_alive_p (proc_stat_t ps)
+{
+  ps_flags_t test_flag =
+    proc_stat_is_thread (ps) ? PSTAT_THREAD_BASIC : PSTAT_PROC_INFO;
+  if (proc_stat_has (ps, test_flag))
+    return 1;
+  proc_stat_set_flags (ps, test_flag);
+  return proc_stat_has (ps, test_flag);
+}
+struct ps_filter ps_alive_filter =
+{"alive", 0, ps_alive_p};
