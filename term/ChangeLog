@@ -1,3 +1,13 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* ptyio.c (pty_io_readable): int -> size_t in argument type.
+	* term.h: Update decl.
+	* users.c (trivfs_S_io_write): int -> size_t in AMT argument type.
+	(trivfs_S_io_readable): Likewise.
+	(trivfs_S_io_read): Likewise.  Also u_int -> size_t, off_t -> loff_t.
+	(trivfs_S_io_write): Likewise.
+	(trivfs_S_io_map): Add reply port args.
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* devio.c (device_open_reply): int -> size_t
