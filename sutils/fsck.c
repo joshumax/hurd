@@ -54,6 +54,16 @@
 
 #include "fstab.h"
 
+/* for debugging  */
+static int _debug = 0;
+#define debug(fmt, args...)							\
+  do { if (_debug) {								\
+ 	 fprintf (stderr, "[%s: ", __FUNCTION__);				\
+	 fprintf (stderr, fmt , ##args);					\
+	 fprintf (stderr, "]\n"); } } while (0)
+#define fs_debug(fs, fmt, args...)						\
+  debug ("%s: " fmt, (fs)->mntent.mnt_dir , ##args)
+
 #define FSCK_SEARCH_FMTS "/sbin/fsck.%s"
 
 /* Exit codes we return.  */
@@ -139,16 +149,6 @@ fs_start_fsck (struct fs *fs, int flags)
   *argp++ = fs->mntent.mnt_fsname;
   *argp = 0;
 
-  if (flags & FSCK_F_VERBOSE)
-    {
-      char *argz;
-      size_t argz_len;
-      argz_create (argv, &argz, &argz_len);
-      argz_stringify (argz, argz_len, ' ');
-      puts (argz);
-      free (argz);
-    }
-
   pid = fork ();
   if (pid < 0)
     {
@@ -161,6 +161,18 @@ fs_start_fsck (struct fs *fs, int flags)
     {
       execv (type->program, argv);
       exit (FSCK_EX_EXEC);	/* Exec failed. */
+    }
+
+  if ((flags & FSCK_F_VERBOSE) || _debug)
+    {
+      char *argz;
+      size_t argz_len;
+      argz_create (argv, &argz, &argz_len);
+      argz_stringify (argz, argz_len, ' ');
+      fs_debug (fs, "Spawned pid %d: %s", pid, argz);
+      if (flags & FSCK_F_VERBOSE)
+	puts (argz);
+      free (argz);
     }
 
   return pid;
@@ -180,20 +192,26 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
   if (got_sigint)
     /* We got SIGINT, so we pretend that all fscks got a signal without even
        attempting to run them.  */
-    return FSCK_EX_SIGNAL;
+    {
+      fs_debug (fs, "Forcing signal");
+      return FSCK_EX_SIGNAL;
+    }
 
 #define CK(err, fmt, args...) \
     do { if (err) { error (0, err, fmt , ##args); return FSCK_EX_ERROR; } } while (0)
 
+  fs_debug (fs, "Checking mounted state");
   err = fs_mounted (fs, &mounted);
   CK (err, "%s: Cannot check mounted state", fs->mntent.mnt_dir);
   
   if (mounted)
     {
+      fs_debug (fs, "Checking readonly state");
       err = fs_readonly (fs, &was_readonly);
       CK (err, "%s: Cannot check readonly state", fs->mntent.mnt_dir);
       if (! was_readonly)
 	{
+	  fs_debug (fs, "Making readonly");
 	  err = fs_set_readonly (fs, 1);
 	  CK (err, "%s: Cannot make readonly", fs->mntent.mnt_dir);
 	}
@@ -238,18 +256,23 @@ fsck_cleanup (struct fsck *fsck, int remount, int restore_writable)
 
   *fsck->self = fsck->next;	/* Remove from chain.  */
 
+  fs_debug (fs, "Cleaning up after fsck (remount = %d, restore_writable = %d)",
+	    remount, restore_writable);
+
   if (fs->mounted > 0)
     /* It's currently mounted; if the fsck modified the device, tell the
        running filesystem to remount it.  Also we may make it writable.  */
     {
       if (remount)
 	{
+	  fs_debug (fs, "Remounting");
 	  err = fs_remount (fs);
 	  if (err)
 	    error (0, err, "%s: Cannot remount", fs->mntent.mnt_dir);
 	}
       if (!err && !fsck->was_readonly && restore_writable)
 	{
+	  fs_debug (fs, "Making writable");
 	  err = fs_set_readonly (fs, 0);
 	  if (err)
 	    error (0, err, "%s: Cannot make writable", fs->mntent.mnt_dir);
@@ -273,8 +296,13 @@ fscks_wait (struct fscks *fscks)
     {
       next = fsck->next;
       if (fsck->pid == 0)
-	fsck_cleanup (fsck, 0, 1);
+	{
+	  fs_debug (fsck->fs, "Pruning failed fsck");
+	  fsck_cleanup (fsck, 0, 1);
+	}
     }
+
+  debug ("Waiting...");
 
   do 
     pid = wait (&wstatus);
@@ -294,6 +322,7 @@ fscks_wait (struct fscks *fscks)
 	  {
 	    int remount = (status != 0);
 	    int restore_writable = (status == 0 || FSCK_EX_IS_FIXED (status));
+	    fs_debug (fsck->fs, "Fsck finished (status = %d)", status);
 	    fsck_cleanup (fsck, remount, restore_writable);
 	    fscks->free_slots++;
 	    break;
@@ -349,28 +378,34 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
   for (pass = 1; pass >= 0; pass = fstab_next_pass (fstab, pass))
     /* Submit all filesystems in the given pass, up to MAX_PARALLEL at a
        time. */
-    for (fs = fstab->entries; fs; fs = fs->next)
-      if (fs->mntent.mnt_passno == pass)
-	/* FS is applicable for this pass.  */
-	{
-	  struct fstype *type;
-	  error_t err = fs_type (fs, &type);
+    {
+      debug ("Pass %d", pass);
+      for (fs = fstab->entries; fs; fs = fs->next)
+	if (fs->mntent.mnt_passno == pass)
+	  /* FS is applicable for this pass.  */
+	  {
+	    struct fstype *type;
+	    error_t err = fs_type (fs, &type);
 
-	  if (err)
-	    {
-	      error (0, err, "%s: Cannot find fsck program (type %s)",
-		     fs->mntent.mnt_dir, fs->mntent.mnt_type);
-	      merge_status (FSCK_EX_ERROR);
-	    }
-	  else if (type->program)
-	    /* This is a fsckable filesystem.  */
-	    {
-	      while (fscks->free_slots == 0)
-		/* No room; wait for another fsck to finish.  */
-		merge_status (fscks_wait (fscks));
-	      merge_status (fscks_start_fsck (fscks, fs));
-	    }
-	}
+	    if (err)
+	      {
+		error (0, err, "%s: Cannot find fsck program (type %s)",
+		       fs->mntent.mnt_dir, fs->mntent.mnt_type);
+		merge_status (FSCK_EX_ERROR);
+	      }
+	    else if (type->program)
+	      /* This is a fsckable filesystem.  */
+	      {
+		fs_debug (fs, "Fsckable; free_slots = %d", fscks->free_slots);
+		while (fscks->free_slots == 0)
+		  /* No room; wait for another fsck to finish.  */
+		  merge_status (fscks_wait (fscks));
+		merge_status (fscks_start_fsck (fscks, fs));
+	      }
+	    else
+	      fs_debug (fs, "Not fsckable");
+	  }
+    }
 
   free (fscks);
 
@@ -386,14 +421,16 @@ options[] =
   {"fstab",	 't', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
   {"parallel",   'l', "NUM",  0, "Limit the number of parallel checks to NUM"},
   {"verbose",	 'v', 0,      0, "Print informational messages"},
+  {"debug",	 'D', 0,      OPTION_HIDDEN },
   {"search-fmts",'S', "FMTS", 0,
      "`:' separated list of formats to use for finding fsck programs"},
   {0, 0, 0, 0, "In --preen mode, the following also apply:", 2},
   {"force",	 'f', 0,      0, "Check even if clean"},
   {"silent",     's', 0,      0, "Only print diagostic messages"},
+  {"quiet",      'q', 0,      OPTION_ALIAS | OPTION_HIDDEN },
   {0, 0}
 };
-static const char *args_doc = "DEVICE";
+static const char *args_doc = "[ DEVICE|FSYS... ]";
 static const char *doc = 0;
 
 int
@@ -402,13 +439,14 @@ main (int argc, char **argv)
   error_t err;
   struct fstab *fstab, *check;
   struct fstypes *types;
+  int status;			/* exit status */
   int flags = 0;
   char *names = 0;
   size_t names_len = 0;
   char *search_fmts = FSCK_SEARCH_FMTS;
   size_t search_fmts_len = sizeof FSCK_SEARCH_FMTS;
   char *fstab_path = _PATH_MNTTAB;
-  int max_parallel = -1;
+  int max_parallel = -1;	/* -1 => use default */
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
@@ -421,6 +459,7 @@ main (int argc, char **argv)
 	case 's': flags |= FSCK_F_SILENT; break;
 	case 'v': flags |= FSCK_F_VERBOSE; break;
 	case 't': fstab_path = arg; break; 
+	case 'D': _debug = 1; break;
 	case 'l':
 	  max_parallel = atoi (arg);
 	  if (! max_parallel)
@@ -451,17 +490,19 @@ main (int argc, char **argv)
   if (err)
     error (101, err, "fstab_create");
 
-  err = fstab_read (fstab, _PATH_MNTTAB);
+  debug ("Reading %s...", fstab_path);
+  err = fstab_read (fstab, fstab_path);
   if (err)
-    error (103, err, "%s", _PATH_MNTTAB);
+    error (103, err, "%s", fstab_path);
 
   if (names)
     /* Fsck specified filesystems; also look at /var/run/mtab.  */
     {
       char *name;
 
+      debug ("Reading %s...", _PATH_MOUNTED);
       err = fstab_read (fstab, _PATH_MOUNTED);
-      if (err)
+      if (err && err != ENOENT)
 	error (104, err, "%s", _PATH_MOUNTED);
 
       err = fstab_create (types, &check);
@@ -473,6 +514,7 @@ main (int argc, char **argv)
 	  struct fs *fs = fstab_find (fstab, name);
 	  if (! fs)
 	    error (106, 0, "%s: Unknown device or filesystem", name);
+	  fs_debug (fs, "Adding to checked filesystems");
 	  fstab_add_fs (check, fs, 0);
 	}
     }
@@ -496,6 +538,7 @@ main (int argc, char **argv)
      got a signal.  */
   signal (SIGINT, sigint);
 
+  debug ("Fscking...");
   status = fsck (check, flags, max_parallel);
   if (got_sigquit && status < FSCK_EX_QUIT)
     status = FSCK_EX_QUIT;
