@@ -32,7 +32,7 @@ store_clone (struct store *from, struct store **to)
   error_t err = 0;
   struct store *c =
     _make_store (from->class, from->meths, from->port, from->block_size,
-		 from->runs, from->runs_len, from->end);
+		 from->runs, from->num_runs, from->end);
 
   if (! c)
     return ENOMEM;

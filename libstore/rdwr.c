@@ -33,7 +33,7 @@ store_find_first_run (struct store *store, off_t addr,
 		      off_t **runs, off_t **runs_end,
 		      off_t *base, size_t *index)
 {
-  off_t *tail = store->runs, *tail_end = tail + store->runs_len;
+  off_t *tail = store->runs, *tail_end = tail + store->num_runs;
   off_t wrap_src = store->wrap_src;
 
   if (addr >= wrap_src && addr < store->end)

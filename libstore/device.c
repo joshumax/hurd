@@ -82,10 +82,10 @@ store_device_create (device_t device, struct store **store)
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t
 _store_device_create (device_t device, size_t block_size,
-		      const off_t *runs, size_t runs_len,
+		      const off_t *runs, size_t num_runs,
 		      struct store **store)
 {
   *store = _make_store (STORAGE_DEVICE, &device_meths, device, block_size,
-			runs, runs_len, 0);
+			runs, num_runs, 0);
   return *store ? 0 : ENOMEM;
 }

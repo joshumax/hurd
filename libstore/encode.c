@@ -30,9 +30,9 @@ error_t
 store_default_leaf_allocate_encoding (struct store *store,
 				      struct store_enc *enc)
 {
-  enc->ports_len++;
-  enc->ints_len += 6;
-  enc->offsets_len += store->runs_len;
+  enc->num_ports++;
+  enc->num_ints += 6;
+  enc->num_offsets += store->num_runs;
   if (store->name)
     enc->data_len += strlen (store->name) + 1;
   enc->data_len += store->misc_len;
@@ -50,11 +50,11 @@ store_default_leaf_encode (struct store *store, struct store_enc *enc)
   enc->ints[enc->cur_int++] = store->class;
   enc->ints[enc->cur_int++] = store->flags;
   enc->ints[enc->cur_int++] = store->block_size;
-  enc->ints[enc->cur_int++] = store->runs_len;
+  enc->ints[enc->cur_int++] = store->num_runs;
   enc->ints[enc->cur_int++] = name_len;
   enc->ints[enc->cur_int++] = store->misc_len;
 
-  for (i = 0; i < store->runs_len; i++)
+  for (i = 0; i < store->num_runs; i++)
     enc->offsets[enc->cur_offset++] = store->runs[i];
 
   if (store->name)
@@ -83,31 +83,31 @@ store_encode (const struct store *store, struct store_enc *enc)
   struct store_meths *meths = store->meths;
   /* We zero each vector length for the allocate_encoding method to work, so
      save the old values.  */
-  mach_msg_type_number_t init_ports_len = enc->ports_len;
-  mach_msg_type_number_t init_ints_len = enc->ints_len;
-  mach_msg_type_number_t init_offsets_len = enc->offsets_len;
+  mach_msg_type_number_t init_num_ports = enc->num_ports;
+  mach_msg_type_number_t init_num_ints = enc->num_ints;
+  mach_msg_type_number_t init_num_offsets = enc->num_offsets;
   mach_msg_type_number_t init_data_len = enc->data_len;
 
   if (!meths->allocate_encoding || !meths->encode)
     return EOPNOTSUPP;
 
-  enc->ports_len = 0;
-  enc->ints_len = 0;
-  enc->offsets_len = 0;
+  enc->num_ports = 0;
+  enc->num_ints = 0;
+  enc->num_offsets = 0;
   enc->data_len = 0;
   err = (*meths->allocate_encoding) (store, enc);
   if (err)
     return err;
 
-  if (enc->ports_len > init_ports_len)
+  if (enc->num_ports > init_num_ports)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ports, enc->ports_len, 1);
-  if (!err && enc->ints_len > init_ints_len)
+		       (vm_address_t *)&enc->ports, enc->num_ports, 1);
+  if (!err && enc->num_ints > init_num_ints)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ints, enc->ints_len, 1);
-  if (!err && enc->offsets_len > init_offsets_len)
+		       (vm_address_t *)&enc->ints, enc->num_ints, 1);
+  if (!err && enc->num_offsets > init_num_offsets)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->offsets, enc->offsets_len, 1);
+		       (vm_address_t *)&enc->offsets, enc->num_offsets, 1);
   if (!err && enc->data_len > init_data_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->data, enc->data_len, 1);

@@ -29,13 +29,13 @@ _store_derive (struct store *store)
 {
   unsigned i;
   off_t *runs = store->runs;
-  unsigned runs_len = store->runs_len;
+  unsigned num_runs = store->num_runs;
   size_t bsize = store->block_size;
 
   /* BLOCK & SIZE */
   store->blocks = 0;
 
-  for (i = 0; i < runs_len; i += 2)
+  for (i = 0; i < num_runs; i += 2)
     {
       store->wrap_src += runs[i + 1];
       if (runs[i] >= 0)
@@ -54,7 +54,7 @@ _store_derive (struct store *store)
 
       store->blocks *= num_iters;
 
-      for (i = 0; i < runs_len; i += 2)
+      for (i = 0; i < num_runs; i += 2)
 	if (last_part_base + runs[i + 1] < store->end)
 	  {
 	    store->blocks += store->end - (last_part_base + runs[i + 1]);

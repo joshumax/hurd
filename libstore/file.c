@@ -125,15 +125,15 @@ store_file_create (file_t file, struct store **store)
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t
 _store_file_create (file_t file, size_t block_size,
-		    const off_t *runs, size_t runs_len,
+		    const off_t *runs, size_t num_runs,
 		    struct store **store)
 {
   if (block_size == 1)
     *store = _make_store (STORAGE_HURD_FILE, &file_byte_meths, file, 1,
-			  runs, runs_len, 0);
+			  runs, num_runs, 0);
   else if ((block_size & (block_size - 1)) == 0)
     *store = _make_store (STORAGE_HURD_FILE, &file_meths, file, block_size,
-			  runs, runs_len, 0);
+			  runs, num_runs, 0);
   else
     return EINVAL;		/* block size not a power of two */
   return *store ? 0 : ENOMEM;

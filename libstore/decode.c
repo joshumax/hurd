@@ -32,7 +32,7 @@ store_default_leaf_decode (struct store_enc *enc,
 			   error_t (*create)(mach_port_t port,
 					     size_t block_size,
 					     const off_t *runs,
-					     size_t runs_len,
+					     size_t num_runs,
 					     struct store **store),
 			   struct store **store)
 {
@@ -43,7 +43,7 @@ store_default_leaf_decode (struct store_enc *enc,
   size_t block_size, num_runs, name_len, misc_len;
   
   /* Make sure there are enough encoded ints and ports.  */
-  if (enc->cur_int + 6 > enc->ints_len || enc->cur_port + 1 > enc->ports_len)
+  if (enc->cur_int + 6 > enc->num_ints || enc->cur_port + 1 > enc->num_ports)
     return EINVAL;
 
   /* Read encoded ints.  */
@@ -55,7 +55,7 @@ store_default_leaf_decode (struct store_enc *enc,
   misc_len = enc->ints[enc->cur_int++];
 
   /* Make sure there are enough encoded offsets and data.  */
-  if (enc->cur_offset + num_runs * 2 > enc->offsets_len
+  if (enc->cur_offset + num_runs * 2 > enc->num_offsets
       || enc->cur_data + name_len + misc_len > enc->data_len)
     return EINVAL;
 
@@ -94,7 +94,7 @@ store_default_leaf_decode (struct store_enc *enc,
 error_t
 store_decode (struct store_enc *enc, struct store **store)
 {
-  if (enc->cur_int >= enc->ints_len)
+  if (enc->cur_int >= enc->num_ints)
     /* The first int should always be the type.  */
     return EINVAL;
 

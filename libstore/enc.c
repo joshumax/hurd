@@ -29,19 +29,19 @@
    allocated).  */
 void
 store_enc_init (struct store_enc *enc,
-		mach_port_t *ports, mach_msg_type_number_t ports_len,
-		int *ints, mach_msg_type_number_t ints_len,
-		off_t *offsets, mach_msg_type_number_t offsets_len,
+		mach_port_t *ports, mach_msg_type_number_t num_ports,
+		int *ints, mach_msg_type_number_t num_ints,
+		off_t *offsets, mach_msg_type_number_t num_offsets,
 		char *data, mach_msg_type_number_t data_len)
 {
   bzero (enc, sizeof (*enc));
 
   enc->ports = enc->init_ports = ports;
-  enc->ports_len = ports_len;
+  enc->num_ports = num_ports;
   enc->ints = enc->init_ints = ints;
-  enc->ints_len = ints_len;
+  enc->num_ints = num_ints;
   enc->offsets = enc->init_offsets = offsets;
-  enc->offsets_len = offsets_len;
+  enc->num_offsets = num_offsets;
   enc->data = enc->init_data = data;
   enc->data_len = data_len;
 }
@@ -51,10 +51,10 @@ store_enc_init (struct store_enc *enc,
 void
 store_enc_dealloc (struct store_enc *enc)
 {
-  if (enc->ports && enc->ports_len > 0)
+  if (enc->ports && enc->num_ports > 0)
     /* For ports, we must deallocate each port as well.  */
     {
-      while (enc->cur_port < enc->ports_len)
+      while (enc->cur_port < enc->num_ports)
 	{
 	  mach_port_t port = enc->ports[enc->cur_port++];
 	  if (port != MACH_PORT_NULL)
@@ -64,19 +64,19 @@ store_enc_dealloc (struct store_enc *enc)
       if (enc->ports != enc->init_ports)
 	vm_deallocate (mach_task_self (),
 		       (vm_address_t)enc->ports,
-		       enc->ports_len * sizeof (*enc->ports));
+		       enc->num_ports * sizeof (*enc->ports));
     }
 
-  if (enc->ints && enc->ints_len > 0 && enc->ints != enc->init_ints)
+  if (enc->ints && enc->num_ints > 0 && enc->ints != enc->init_ints)
     vm_deallocate (mach_task_self (),
 		   (vm_address_t)enc->ints,
-		   enc->ints_len * sizeof (*enc->ints));
+		   enc->num_ints * sizeof (*enc->ints));
 
-  if (enc->offsets && enc->offsets_len > 0
+  if (enc->offsets && enc->num_offsets > 0
       && enc->offsets != enc->init_offsets)
     vm_deallocate (mach_task_self (),
 		   (vm_address_t)enc->offsets,
-		   enc->offsets_len * sizeof (*enc->offsets));
+		   enc->num_offsets * sizeof (*enc->offsets));
 
   if (enc->data && enc->data_len > 0 && enc->data != enc->init_data)
     vm_deallocate (mach_task_self (),

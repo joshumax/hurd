@@ -25,11 +25,11 @@
 
 #include "store.h"
 
-/* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
+/* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
 error_t
-store_set_runs (struct store *store, const off_t *runs, unsigned runs_len)
+store_set_runs (struct store *store, const off_t *runs, unsigned num_runs)
 {
-  unsigned size = runs_len * sizeof (off_t);
+  unsigned size = num_runs * sizeof (off_t);
   off_t *copy = malloc (size);
 
   if (!copy)
@@ -40,7 +40,7 @@ store_set_runs (struct store *store, const off_t *runs, unsigned runs_len)
 
   bcopy (runs, copy, size);
   store->runs = copy;
-  store->runs_len = runs_len;
+  store->num_runs = num_runs;
 
   if (store->block_size > 0)
     _store_derive (store);
