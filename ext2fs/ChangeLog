@@ -1,3 +1,8 @@
+2000-03-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir.c (diskfs_get_directs): Don't allocate buffer for *DATA until
+	after scanning for ENTRY and possibly returning EOF.
+
 2000-02-05  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2_fs.h: Update from Linux 2.3.42 version (ext2_fs_i.h unchanged).
