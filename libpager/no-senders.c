@@ -31,7 +31,7 @@ pager_no_senders (struct pager *p,
 {
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
   
   ports_no_senders (p, mscount);
@@ -44,11 +44,24 @@ void
 pager_clean (void *arg)
 {
   struct pager *p = arg;
-  
+#ifdef KERNEL_INIT_RACE
+  struct pending_init *i, *tmp;
+#endif  
+
   if (p->pager_state != NOTINIT)
     {
       mutex_lock (&p->interlock);
       _pager_free_structure (p);
+#ifdef KERNEL_INIT_RACE
+      for (i = p->init_head; i; i = tmp)
+	{
+	  mach_port_deallocate (mach_task_self (), i->control);
+	  mach_port_deallocate (mach_task_self (), i->name);
+	  tmp = i->next;
+	  free (i);
+	}
+#endif
+      mutex_unlock (&p->interlock);
     }
   
   pager_clear_user_data (p->upi);
