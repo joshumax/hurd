@@ -24,6 +24,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 kern_return_t
 trivfs_S_fsys_startup (mach_port_t bootport,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
 		       mach_port_t *realnodetype,
@@ -35,6 +37,8 @@ trivfs_S_fsys_startup (mach_port_t bootport,
 
 kern_return_t
 trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
 		       mach_port_t *host,
 		       mach_port_t *dev,
 		       mach_port_t *fstask)
@@ -44,16 +48,18 @@ trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
 
 kern_return_t
 trivfs_S_fsys_init (struct trivfs_control *control,
+		    mach_port_t reply,
+		    mach_msg_type_name_t replytype,
 		    mach_port_t proc,
-		    mach_msg_type_name_t proctype,
-		    mach_port_t auth,
-		    mach_msg_type_name_t authtype)
+		    auth_t auth)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
 trivfs_S_fsys_getfile (struct trivfs_control *cntl,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
 		       uid_t *genuids,
 		       u_int ngenuids,
 		       uid_t *gengids,
