@@ -383,15 +383,18 @@ swaponoff (const char *file, int add)
 	      return 0;
 	    }
 	}
-      if (err)
-	error (12, err, "Cannot get privileged ports");
+      else
+	{
+	  if (err)
+	    error (12, err, "Cannot get privileged ports");
 
-      err = vm_set_default_memory_manager (host, &def_pager);
-      mach_port_deallocate (mach_task_self (), host);
-      if (err)
-	error (13, err, "Cannot get default pager port");
-      if (def_pager == MACH_PORT_NULL)
-	error (14, 0, "No default pager (memory manager) is running!");
+	  err = vm_set_default_memory_manager (host, &def_pager);
+	  mach_port_deallocate (mach_task_self (), host);
+	  if (err)
+	    error (13, err, "Cannot get default pager port");
+	  if (def_pager == MACH_PORT_NULL)
+	    error (14, 0, "No default pager (memory manager) is running!");
+	}
     }
 
   if (old_protocol)
