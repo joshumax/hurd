@@ -160,6 +160,8 @@ S_proc_child (struct proc *parentp,
      and place us under our new parent.  Sanity check to make sure
      parent is currently init. */
   assert (childp->p_parent == startup_proc);
+  if (childp->p_sib)
+    childp->p_sib->p_prevsib = childp->p_prevsib;
   *childp->p_prevsib = childp->p_sib;
   
   childp->p_parent = parentp;
@@ -563,16 +565,23 @@ process_has_exited (struct proc *p)
      of our list onto init's. */
   if (p->p_ochild)
     {
+      int last;
       struct proc *tp;		/* will point to the last one */
       
       /* first tell them their parent is changing */
       for (tp = p->p_ochild; tp->p_sib; tp = tp->p_sib)
+	{
+	  if (tp->p_msgport != MACH_PORT_NULL)
+	    nowait_proc_newids (tp->p_msgport, tp->p_task, 1, 
+				tp->p_pgrp->pg_pgid, !tp->p_pgrp->pg_orphcnt);
+	  tp->p_parent = startup_proc;
+	}
+      if (tp->p_msgport != MACH_PORT_NULL)
 	nowait_proc_newids (tp->p_msgport, tp->p_task, 1, tp->p_pgrp->pg_pgid,
 			    !tp->p_pgrp->pg_orphcnt);
-      nowait_proc_newids (tp->p_msgport, tp->p_task, 1, tp->p_pgrp->pg_pgid,
-		   !tp->p_pgrp->pg_orphcnt);
+      tp->p_parent = startup_proc;
 
-      /* And now nappend the list. */
+      /* And now nappend the lists. */
       tp->p_sib = startup_proc->p_ochild;
       if (tp->p_sib)
 	tp->p_sib->p_prevsib = &tp->p_sib;
@@ -583,6 +592,8 @@ process_has_exited (struct proc *p)
   reparent_zombies (p);
   
   /* Remove us from our parent's list of children. */
+  if (p->p_sib)
+    p->p_sib->p_prevsib = p->p_prevsib;
   *p->p_prevsib = p->p_sib;
   
   leave_pgrp (p);
