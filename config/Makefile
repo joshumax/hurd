@@ -25,24 +25,18 @@ makemode := misc
 # to overwrite an existing file.  Print a warning for such files.
 # If override_conf is set to `t' then install even on top of existing
 # files.
-SYSCONFFILES = protocols services shells motd ttys fstab passwd \
-	group resolv.conf
+SYSCONFFILES = motd ttys
+
 installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
 installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
 
-ROOTDOTS = .bash_login .bashrc .profile
-installed_rootdots = $(addprefix $(prefix)/root/,$(ROOTDOTS))
-
-DIST_FILES=$(SYSCONFFILES) \
-	$(addprefix login-,$(LOGINDOTS)) \
-	$(addprefix root-,$(ROOTDOTS))
+DIST_FILES=$(SYSCONFFILES) $(addprefix login-,$(LOGINDOTS))
 
 FORCE:
 
 ifeq ($(override_conf),t)
-$(installed_rootdots): FORCE
 $(installed_conf): FORCE
 endif
 
@@ -50,13 +44,11 @@ $(installed_logins): FORCE
 
 include ../Makeconf
 
-install: $(prefix)/root $(sysconfdir) $(sysconfdir)/login $(installed_conf) $(installed_logins) $(installed_rootdots)
+install: $(sysconfdir) $(sysconfdir)/login \
+	 $(installed_conf) $(installed_logins)
 
-$(prefix)/root $(sysconfdir)/login: %:
+$(sysconfdir)/login: %:
 	mkdir -p $@
-
-$(installed_rootdots): $(prefix)/root/%: root-%
-	$(INSTALL_DATA) $< $(prefix)/root/$*
 
 $(installed_logins): $(sysconfdir)/login/%: login-%
 	$(INSTALL_DATA) $< $(sysconfdir)/login/$*
