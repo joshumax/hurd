@@ -37,11 +37,13 @@
 #ifndef lint
 static char copyright[] =
 "@(#) Copyright (c) 1990, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
+	The Regents of the University of California.  All rights reserved.\n"
+__attribute__ ((unused));
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "@(#)clri.c	8.2 (Berkeley) 9/23/93";
+static char sccsid[] = "@(#)clri.c	8.2 (Berkeley) 9/23/93"
+__attribute__ ((unused));
 #endif /* not lint */
 
 /* Modified by Michael I. Bushnell for GNU Hurd. */
@@ -106,7 +108,7 @@ main(argc, argv)
 	sbp = (struct fs *)sblock;
 	if (sbp->fs_magic != FS_MAGIC) {
 		(void)fprintf(stderr,
-		    "clri: %s: superblock magic number 0x%x, not 0x%x.\n",
+		    "clri: %s: superblock magic number 0x%lux, not 0x%x.\n",
 		    fs, sbp->fs_magic, FS_MAGIC);
 		exit(1);
 	}
