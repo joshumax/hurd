@@ -20,9 +20,10 @@
 #include <mach/default_pager.h>
 
 /* Implement io_map_cntl as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_map_cntl (struct protid *cred,
-		      memory_object_t *ctlobj)
+		      memory_object_t *ctlobj,
+		      mach_msg_type_name_t *ctlobj_type)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -39,6 +40,7 @@ diskfs_S_io_map_cntl (struct protid *cred,
       cred->mapped->conch_status = USER_HAS_NOT_CONCH;
       spin_lock_init (&cred->mapped->lock);
       *ctlobj = cred->shared_object;
+      *ctlobj_type = MACH_MSG_TYPE_COPY_SEND;
       mutex_unlock (&cred->po->np->lock);
       return 0;
     }

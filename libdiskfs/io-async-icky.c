@@ -19,10 +19,12 @@
 #include "io_S.h"
 
 /* Implement io_get_icky_async_id as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_get_icky_async_id (struct protid *cred,
-			       mach_port_t *idport)
+			       mach_port_t *idport,
+			       mach_msg_type_name_t *idport_type)
 {
   *idport = MACH_PORT_NULL;
+  *idport_type = MACH_MSG_TYPE_COPY_SEND;
   return 0;
 }
