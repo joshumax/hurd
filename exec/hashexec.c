@@ -217,8 +217,7 @@ check_hashbang (struct execdata *e,
 	      error_t search_path (struct hurd_signal_preempter *preempter)
 		{
 		  error_t err;
-		  char const *path
-		    = envz_get (envp, envplen, "PATH"), *pfxed_name;
+		  char *path = envz_get (envp, envplen, "PATH"), *pfxed_name;
 
 		  if (! path)
 		    {
