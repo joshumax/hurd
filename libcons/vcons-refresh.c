@@ -1,5 +1,5 @@
 /* vcons-refresh.c - Redraw a virtual console.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -41,8 +41,8 @@ cons_vcons_refresh (vcons_t vcons)
   if (vcons->state.screen.scr_lines < vcons->scrolling)
     vcons->scrolling = vcons->scrolling;
 
-  cons_vcons_clear (vcons, vcons->state.screen.width
-		    * vcons->state.screen.height, 0, 0);
+  cons_vcons_set_dimension (vcons, vcons->state.screen.width,
+			    vcons->state.screen.height);
 
   if (vcons->state.screen.cur_line >= vcons->scrolling)
     start = vcons->state.screen.cur_line - vcons->scrolling;

@@ -1,3 +1,9 @@
+2003-08-11  Marco Gerards  <metgerards@student.han.nl>
+
+	* cons.h (cons_vcons_set_dimension): New prototype.
+	* vcons-refresh.c (cons_vcons_refresh): Call
+	cons_vcons_set_dimension instead of cons_vcons_clear.
+
 2003-08-01  Marco Gerards  <metgerards@student.han.nl>
 
 	* opts-std-startup.c: Include <string.h>.

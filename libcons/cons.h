@@ -1,5 +1,5 @@
 /* cons.h - Definitions for cons helper and callback functions.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -230,6 +230,14 @@ error_t cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons);
 /* Enter SIZE bytes from the buffer BUF into the virtual console
    VCONS.  */
 error_t cons_vcons_input (vcons_t vcons, char *buf, size_t size);
+
+/* The user must define this function.  Clear the existing screen
+   matrix and set the size of the screen matrix to the dimension COL x
+   ROW.  This call will be immediately followed by a call to
+   cons_vcons_write that covers the whole new screen matrix.  */
+error_t cons_vcons_set_dimension (vcons_t vcons,
+				  uint32_t col, uint32_t row);
+);
 
 typedef enum
   {
