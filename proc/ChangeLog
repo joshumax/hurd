@@ -1,3 +1,18 @@
+1999-06-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* proc.h (struct proc): Use unsigned int for flag bitfields.
+
+	* mgt.c (allocate_proc, complete_proc): New functions, broken
+	out of new_proc.  Remove magic handling of PIDs 0 and 1.
+	(new_proc): Now just call those two.  Made static.
+	(create_startup_proc): New function, also broken out of old new_proc.
+	Do special setup for PID 1 (init) proc structure here.
+	* proc.h: Update decls.
+	* main.c (main): Use create_startup_proc for startup_proc, and
+	allocate_proc + complete_proc (with PID 0) for self_proc.
+
+	* mgt.c (make_ids): Add const to arguments.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mgt.c (add_tasks): Skip invalid (null) rights in tasks array.

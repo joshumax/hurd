@@ -1,3 +1,19 @@
+1999-06-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (request_dead_name): New function.
+	(S_startup_request_notification, S_startup_essential_task): Use it.
+	(run): Request dead-name notification for new task.
+	(main): Request dead-name notification for FSTASK.
+	(do_mach_notify_dead_name): If system_state is INITIAL, recognize
+	FSTASK, AUTHTASK, PROCTASK specifically and crash with appropriate msg.
+
+1999-06-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (launch_core_servers): Use proc_child on the proc server task
+	to register it with itself as our child.  Snarf its proc port and use
+	proc_mark_exec do remove that unsightly `f', as we do for the other
+	bootstrap processes.
+
 1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (frob_kernel_process): If no --kernel-command-line option,
