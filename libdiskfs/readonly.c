@@ -1,6 +1,6 @@
 /* Change to/from read-only
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,7 +33,7 @@ int
 diskfs_check_readonly ()
 {
   error_t err;
-  
+
   if (diskfs_readonly)
     return 1;
   else
@@ -43,7 +43,7 @@ diskfs_check_readonly ()
 	  err = diskfs_set_hypermetadata (1, 0);
 	  if (err)
 	    {
-	      error (0, 0, 
+	      error (0, 0,
 		     "%s: MEDIA NOT WRITABLE; switching to READ-ONLY",
 		     diskfs_disk_name ?: "-");
 	      diskfs_hard_readonly = diskfs_readonly = 1;
@@ -76,15 +76,13 @@ diskfs_set_readonly (int readonly)
 	    {
 	      error_t peropen_writable (void *pi)
 		{
-		  if (((struct port_info *)pi)->class == diskfs_protid_class
-		      && (((struct protid *)pi)->po->openstat & O_WRITE))
-		    return EBUSY;
-		  else
-		    return 0;
+		  struct protid *const cred = pi;
+		  return (cred->po->openstat & O_WRITE) ? EBUSY : 0;
 		}
 
 	      /* Any writable open files?  */
-	      err = ports_bucket_iterate (diskfs_port_bucket, peropen_writable);
+	      err = ports_class_iterate (diskfs_protid_class,
+					 peropen_writable);
 
 	      /* Any writable pagers?  */
 	      if (!err && (diskfs_max_user_pager_prot () & VM_PROT_WRITE))

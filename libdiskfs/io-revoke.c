@@ -31,8 +31,7 @@ diskfs_S_io_revoke (struct protid *cred)
     {
       struct protid *user = port;
 
-      if ((user->pi.class == diskfs_protid_class)
-	  && (user != cred)
+      if ((user != cred)
 	  && (user->po->np == np))
 	ports_destroy_right (user);
       return 0;
@@ -53,7 +52,7 @@ diskfs_S_io_revoke (struct protid *cred)
     return err;
 
   ports_inhibit_bucket_rpcs (diskfs_port_bucket);
-  ports_bucket_iterate (diskfs_port_bucket, iterator_function);
+  ports_class_iterate (diskfs_protid_class, iterator_function);
   ports_resume_bucket_rpcs (diskfs_port_bucket);
 
   return 0;
