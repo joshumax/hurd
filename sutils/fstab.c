@@ -269,7 +269,7 @@ _fs_check_mounted (struct fs *fs)
 	       the mntent, but oh well, nothing we can do about that.]  */
 	    {
 	      err = file_get_translator_cntl (mount_point, &fs->fsys);
-	      if (err ==  EINVAL || err == EOPNOTSUPP)
+	      if (err ==  EINVAL || err == EOPNOTSUPP || err == ENXIO)
 		/* Either the mount point doesn't exist, or wasn't mounted.  */
 		{
 		  fs->fsys = MACH_PORT_NULL;
