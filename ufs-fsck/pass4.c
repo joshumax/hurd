@@ -24,6 +24,8 @@ void
 pass4()
 {
   ino_t number;
+  /* True if any reconnect attempt failed, in which case we don't try again. */
+  int reconn_failed = 0;
   
   for (number = ROOTINO; number < maxino; number++)
     {
@@ -31,19 +33,15 @@ pass4()
 	{
 	  if (linkcount[number] != linkfound[number])
 	    {
-	      struct dinode dino;
-	      getinode (number, &dino);
-	      pwarn ("LINK COUNT %s", 
-		     (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE");
-	      pinode (number);
-	      printf (" COUNT %d SHOULD BE %d", linkcount[number],
-		      linkfound[number]);
-	      if (preen)
-		printf (" (ADJUSTED)");
+	      pinode (number, "LINK COUNT %d SHOULD BE %d IN",
+		      linkcount[number], linkfound[number]);
 	      if (preen || reply ("ADJUST"))
 		{
+		  struct dinode dino;
+		  getinode (number, &dino);
 		  dino.di_nlink = linkfound[number];
 		  write_inode (number, &dino);
+		  pfix ("ADJUSTED");
 		}
 	    }
 	}
@@ -59,48 +57,31 @@ pass4()
 	     we want to clear it; if the size is positive, then we
 	     want to reattach in. */
 	  struct dinode dino;
+
+	  pinode (number, "UNREF");
 	  
 	  getinode (number, &dino);
-
-	  if (dino.di_size)
+	  if (dino.di_size && !reconn_failed)
 	    {
 	      /* This can't happen for dirctories because pass 3 should
 		 already have reset them up.  */
 	      if ((DI_MODE (&dino) & IFMT) == IFDIR)
 		errexit ("NO LINKS TO NONZERO DIRECTORY");
 	      
-	      pwarn ("UNREF FILE");
-	      pinode (number);
-	      if (preen)
-		printf (" (RECONNECTED)");
 	      if (preen || reply ("RECONNECT"))
-		linkup (number, -1);
+		reconn_failed = !linkup (number, -1);
+	      if (!reconn_failed)
+		pfix ("RECONNECTED");
 	    }
-	  else
+	  if (dino.di_size == 0 || reconn_failed)
 	    {
-	      pwarn ("UNREF %s", 
-		     (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE");
-	      pinode (number);
-	      if (preen)
-		printf (" (CLEARED)");
 	      if (preen || reply ("CLEAR"))
 		{
 		  inodestate[number] = UNALLOC;
 		  clear_inode (number, &dino);
 		}
+	      pfix ("CLEARED");
 	    }
 	}
     }
 }      
-
-
-		  
-		     
-	  
-
-	      
-
-
-
-		  
-		  
