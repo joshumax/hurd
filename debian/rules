@@ -1,0 +1,150 @@
+#!/usr/bin/make -f
+############################ -*- Mode: Makefile -*- ###########################
+## rules ---
+## Author           : Marcus Brinkmann <brinkmd@debian.org>
+## Created On       : Sat,  1 Aug 1998 21:33:31 +0200
+## Created On Node  : localhost
+## Last Modified By : Marcus Brinkmann
+## Last Modified On : Mon,  4 Jan 1999 03:37:08 +0100
+## Last Machine Used: localhost
+## Update Count     : 1
+## Status           : Unknown, Use with caution!
+## HISTORY          :
+## Description      :
+##
+###############################################################################
+
+# The name of the package (for example, `emacs').
+package   := hurd
+BUILDARCH := $(DEB_BUILD_GNU_TYPE)
+HOSTARCH := $(DEB_HOST_GNU_TYPE)
+
+# Configuration variables (these should be pretty generic)
+CC = cc
+CFLAGS = -O2 -g -pipe -Wall
+LDFLAGS = -s
+PREFIX = /usr
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man
+DOCDIR = $(PREFIX)/doc/$(package)
+
+#  Package specific stuff.  The idea is to try to make the rules
+#  generic (gradually).
+
+FILES_TO_CLEAN	= debian/files include/*.h
+DIRS_TO_CLEAN	= debian/tmp debian/$(package)-dev build
+STAMPS_TO_CLEAN	= stamp-build
+
+install_file	= install -o root -g root -m 644
+install_program	= install -s -o root -g root -m 755
+make_directory	= install -d -o root -g root -m 755
+
+define checkdir
+	test -f debian/rules
+endef
+
+define checkroot
+	@test 0 = "`id -u`" || (echo need root priviledges; exit 1)
+endef
+
+all build: stamp-build
+
+configure:
+	aclocal
+	autoconf
+
+stamp-build: configure
+	$(checkdir)
+	mkdir build
+	cd build && ../configure --build=$(BUILDARCH) --host=$(HOSTARCH) --prefix=
+# go and fetch a few beers now...
+	cd build && $(MAKE) no_prof=t
+	touch stamp-build
+
+clean:
+	$(checkdir)
+	-cd build && make clean no_deps=t
+	-rm -f  $(FILES_TO_CLEAN) $(STAMPS_TO_CLEAN)
+	-rm -rf $(DIRS_TO_CLEAN)
+	for NAME in hurd/*.h; do \
+	  if [ -L $$NAME ] ; then \
+	    rm -f $$NAME ; \
+	  fi \
+	done
+	-rm -f core `find . \( -name '*.o' -name '*.orig' -o -name '*.rej' -o -name '*~' \
+                -o -name '*.bak' -o -name '#*#' -o -name '.*.orig' \
+                -o -name '.*.rej' -o -name '.SUMS' \) -print`
+
+binary: binary-indep binary-arch
+
+# Build architecture-independent files here.
+binary-arch: build
+	$(checkdir)
+	$(checkroot)
+	-rm -rf			debian/{tmp,$(package)-dev}
+
+# first the general install
+	$(make_directory)	debian/tmp/boot
+	cd build && $(MAKE)	install prefix=`pwd`/../debian/tmp no_prof=t
+# kill the profiling libs
+	-rm -f			debian/tmp/lib/*_p.a
+# probably we'll make debug packages later, for now, strip'em
+	-strip --strip-unneeded	debian/tmp/lib/lib*.so
+	-strip --strip-debug	debian/tmp/lib/lib*.a
+	-strip --strip-all	debian/tmp/bin/*
+	-strip --strip-all	debian/tmp/sbin/*
+	-strip --strip-all	debian/tmp/boot/*
+	-strip --strip-all	debian/tmp/hurd/*
+	-strip --strip-all	debian/tmp/libexec/*
+	chmod			0644 debian/tmp/lib/lib*.a
+	chmod			0755 debian/tmp/include debian/tmp/include/hurd debian/tmp/lib debian/tmp/hurd debian/tmp/bin debian/tmp/sbin debian/tmp/dev debian/tmp/libexec
+
+# now distribute the files
+# first the source package
+	$(make_directory)	debian/$(package)-dev/{DEBIAN,usr/{doc,bin,lib}}
+	ln -s			$(package) debian/$(package)-dev/usr/doc/$(package)-dev
+	mv			debian/tmp/include debian/$(package)-dev/usr/.
+	mv			debian/tmp/lib/*.a debian/$(package)-dev/usr/lib/.
+	# Create development library links.
+	for file in `cd debian/tmp/lib && ls *.so.*`; do \
+	  linkname=`echo "$$file" | sed 's/\..*$/.so/'`; \
+	  ln -sf /lib/$$file debian/$(package)-dev/usr/lib/$$linkname; \\
+	done
+	rm -f debian/tmp/lib/*.so
+
+	dpkg-gencontrol		-p$(package)-dev -Pdebian/$(package)-dev
+	chown -R root.root	debian/$(package)-dev
+	dpkg --build		debian/$(package)-dev ..
+
+# now the shared libs and other stuff
+	$(make_directory)	debian/tmp/{DEBIAN,usr/doc/$(package)}
+# kill some nonsense
+	rm -fr			debian/tmp/root
+	-rm -f			debian/tmp/etc/*
+# Only found in CVS, not the distribution.
+#	$(install_file)		BUGS debian/tmp$(DOCDIR)
+#	$(install_file)		TODO debian/tmp$(DOCDIR)
+	$(install_file)		INSTALL debian/tmp$(DOCDIR)
+	$(install_file)		NEWS debian/tmp$(DOCDIR)
+	$(install_file)		README debian/tmp$(DOCDIR)
+	$(install_file)		tasks debian/tmp$(DOCDIR)
+	$(install_file)		ChangeLog debian/tmp$(DOCDIR)/changelog
+	$(install_file)		debian/README.Debian debian/tmp$(DOCDIR)
+	$(install_file)		debian/changelog debian/tmp$(DOCDIR)/changelog.Debian
+	gzip -9frq		debian/tmp$(DOCDIR)/.
+	$(install_file)		debian/copyright debian/tmp$(DOCDIR)
+
+	$(install_file)		debian/servers.boot debian/tmp/boot/servers.boot
+	$(make_directory)	debian/tmp/servers
+
+	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
+
+	dpkg-shlibdeps          -p$(package) debian/tmp/bin/* debian/tmp/libexec/* debian/tmp/hurd/* debian/tmp/sbin/*
+	dpkg-gencontrol         -p$(package) -Pdebian/tmp
+	chown -R root.root      debian/tmp
+	dpkg --build            debian/tmp ..
+
+binary-indep: build
+# We have nothing to do here.
+
+.PHONY: build clean binary-indep binary-arch binary

@@ -1,0 +1,66 @@
+hurd (19990221-1) unstable; urgency=low
+
+  * New version from CVS.
+  * Put shared library symlinks into the hurd-dev package.
+
+ --
+
+hurd (19990212-2) unstable; urgency=low
+
+  * debian/control: Added Depends line for Hurd.
+  * Update docs to reflect new group maintainership.
+  * debian/copyright: Hurd libraries are *not* under the LGPL, so add a
+    clarifying note.
+  * Put static libraries and header files into /usr/lib and /usr/include
+    for people without the /usr symlink.
+
+ -- Gordon Matzigkeit <bug-hurd@gnu.org>  Wed, 17 Feb 1999 15:40:44 -0600
+
+hurd (19990212-1) unstable; urgency=low
+
+  * New upstream version from CVS.
+  * Deleted old libthreads... there's no going back now.
+
+ -- Gordon Matzigkeit <gord@debian.org>  Fri, 12 Feb 1999 03:25:55 -0600
+
+hurd (19981204-1) unstable; urgency=low
+
+  * New upstream release, supposed to work with glibc 2.0.106.
+  * Commented out use of old libthreads.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 20 Dec 1998 04:24:40 +0100
+
+hurd (19980915-2) unstable; urgency=low
+
+  * exec/hashexec.c: Applied patch by Thomas Bushnell to fix make.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri,  6 Nov 1998 23:10:11 +0100
+
+hurd (19980915-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/rules: Strip all binaries.
+  * debian/TODO: New file.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu,  8 Oct 1998 03:34:40 +0200
+
+hurd (19980716-2) unstable; urgency=low
+
+  * Reverted libthreads to provide threadsafe malloc, as we use older
+    version of glibc2 for now.
+  * Do not remove size 0 files in 'rules clean', because hurd depends on
+    them.
+  * Do not build profiling libraries.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue,  4 Aug 1998 21:58:55 +0200
+
+hurd (19980716-1) unstable; urgency=low
+
+  * Initial Version.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue,  4 Aug 1998 21:58:55 +0200
+
+Local variables:
+mode: debian-changelog
+add-log-mailing-address: "bug-hurd@gnu.org"
+End:
