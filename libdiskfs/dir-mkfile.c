@@ -1,5 +1,5 @@
-/*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+/* libdiskfs implementation of fs.defs: dir_mkfile
+   Copyright (C) 1994,95,96,97,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -34,7 +34,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   struct node *dnp, *np;
   error_t err;
   struct protid *newpi;
-  
+
   if (!cred)
     return EOPNOTSUPP;
   if (diskfs_check_readonly ())
@@ -52,8 +52,8 @@ diskfs_S_dir_mkfile (struct protid *cred,
       mutex_unlock (&dnp->lock);
       return err;
     }
-  
-  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
+
+  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX | S_ITRANS);
   mode |= S_IFREG;
   err = diskfs_create_node (dnp, 0, mode, &np, cred, 0);
   mutex_unlock (&dnp->lock);
@@ -66,7 +66,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
 
   if (err)
     return err;
-  
+
   flags &= (O_READ | O_WRITE | O_EXEC);
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, cred->po),
 			      cred->user, &newpi);
@@ -81,5 +81,3 @@ diskfs_S_dir_mkfile (struct protid *cred,
 
   return err;
 }
-
-  

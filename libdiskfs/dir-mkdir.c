@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_mkdir
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -31,7 +31,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   if (!dircred)
     return EOPNOTSUPP;
-  
+
   dnp = dircred->po->np;
   if (diskfs_check_readonly ())
     return EROFS;
@@ -51,7 +51,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
       return error;
     }
 
-  mode &= ~(S_ISPARE | S_IFMT);
+  mode &= ~(S_ISPARE | S_IFMT | S_ITRANS);
   mode |= S_IFDIR;
 
   error = diskfs_create_node (dnp, name, mode, &np, dircred, ds);

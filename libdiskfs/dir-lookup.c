@@ -183,7 +183,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  if (error == ENOENT)
 	    {
-	      mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
+	      mode &= ~(S_IFMT | S_ISPARE | S_ISVTX | S_ITRANS);
 	      mode |= S_IFREG;
 	      error = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
 	      if (diskfs_synchronous)
