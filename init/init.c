@@ -1,21 +1,21 @@
-/* Somewhat primitive version of init
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+/* Start and maintain hurd core servers and system run state
 
-This file is part of the GNU Hurd.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell and Roland McGrath.  */
 
@@ -50,6 +50,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <utmp.h>
 #include <maptime.h>
 #include <version.h>
+#include <argp.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -67,8 +68,23 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* How long to wait after starting window specs before starting getty */
 #define WINDOW_DELAY 3		/* seconds */
+
+const char *argp_program_version = STANDARD_HURD_VERSION (init);
 
+static struct argp_option
+options[] =
+{
+  {"single-user", 's', 0, 0, "Startup system in single-user mode"},
+  {"debug",       'd', 0, 0 },
+  {"init-name",   'n', 0, 0 },
+  {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
+  {"query",       'q', 0, 0, "Ask for the names of servers to start"},
+  {0,             'x', 0, OPTION_HIDDEN},
+  {0}
+};
 
+char doc[] = "Start and maintain hurd core servers and system run state";
+
 /* Current state of the system. */
 enum 
 {
@@ -133,7 +149,7 @@ mach_port_t startup;
 mach_port_t host_priv, device_master;
 
 /* Args to bootstrap, expressed as flags */
-int bootstrap_args;
+int bootstrap_args = 0;
 
 /* Set if something determines we should no longer pass the `autoboot'
    flag to _PATH_RUNCOM. */
@@ -729,7 +745,6 @@ reread_ttys (void)
 
 /** Main program and setup **/
 
-
 static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
@@ -741,12 +756,31 @@ demuxer (mach_msg_header_t *inp,
 	  startup_server (inp, outp));
 }
 
+static int
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'q': bootstrap_args |= RB_ASKNAME; break;
+    case 's': bootstrap_args |= RB_SINGLE; break;
+    case 'd': bootstrap_args |= RB_KDB; break;
+    case 'n': bootstrap_args |= RB_INITNAME; break;
+    case 'f': fakeboot = 1; break;
+    case 'x': /* NOP */ break;
+    default: return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
   volatile int err;
   int i;
   mach_port_t consdev;
+  struct argp argp = { options, parse_opt, 0, doc };
+
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   global_argv = argv;
 
@@ -756,16 +790,6 @@ main (int argc, char **argv, char **envp)
   bootstrap_args = 0;
   if (argc >= 2)
     {
-      if (index (argv[1], 'q'))
-	bootstrap_args |= RB_ASKNAME;
-      if (index (argv[1], 's'))
-	bootstrap_args |= RB_SINGLE;
-      if (index (argv[1], 'd'))
-	bootstrap_args |= RB_KDB;
-      if (index (argv[1], 'n'))
-	bootstrap_args |= RB_INITNAME;
-      if (index (argv[1], 'f'))
-	fakeboot = 1;
     }
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
