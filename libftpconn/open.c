@@ -191,7 +191,7 @@ ftp_conn_open (struct ftp_conn *conn)
   ftp_addr.sin_addr = *(struct in_addr *)conn->params->addr;
   ftp_addr.sin_port = ftp_port;
 
-  if (connect (csock, &ftp_addr, sizeof ftp_addr) < 0)
+  if (connect (csock, (struct sockaddr *)&ftp_addr, sizeof ftp_addr) < 0)
     {
       err = errno;
       close (csock);
