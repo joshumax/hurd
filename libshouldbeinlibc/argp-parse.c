@@ -1,4 +1,4 @@
-/* Hierarchial argument parsing, layered over getopt.
+/* Hierarchial argument parsing, layered over getopt
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
@@ -17,6 +17,10 @@
    License along with the GNU C Library; see the file COPYING.LIB.  If not,
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <string.h>
