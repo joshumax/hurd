@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -1836,6 +1836,9 @@ send_signal (int signo)
 void
 report_carrier_off ()
 {
+  clear_queue (inputq);
+  (*bottom->notice_input_flushed) ();
+  drop_output ();
   termflags |= NO_CARRIER;
   if (!(termstate.c_cflag & CLOCAL))
     send_signal (SIGHUP);
