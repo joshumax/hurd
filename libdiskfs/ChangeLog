@@ -1,3 +1,9 @@
+Sat Feb 13 04:29:29 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* peropen-make.c (diskfs_make_peropen): If there is no existing
+	context, then set the shadow_root iff we are a chrooted virtual
+	root filesystem.
+
 1999-02-12  Gordon Matzigkeit  <gord@trick.fig.org>
 
 	* init-startup.c (diskfs_startup_diskfs): Release the virtual

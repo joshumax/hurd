@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1997 Free Software Foundation
+   Copyright (C) 1994, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -50,8 +50,8 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context)
   else
     {
       po->root_parent = MACH_PORT_NULL;
-      po->shadow_root = 0;
       po->shadow_root_parent = MACH_PORT_NULL;
+      po->shadow_root = _diskfs_chroot_directory ? diskfs_root_node : 0;
     }
 
   diskfs_nref (np);
