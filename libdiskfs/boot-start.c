@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/fsys.h>
 #include <stdio.h>
 #include <hurd/exec.h>
+#include <hurd/paths.h>
 #include <fcntl.h>
 #include <device/device.h>
 #include <sys/reboot.h>
@@ -279,14 +280,30 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 			      mach_msg_type_name_t *realpoly)
 {
   struct port_info *pt;
-  
+  struct diskfs_protid *rootpi;
+  mach_port_t rootport;
+  error_t err;
+
   if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
   
-  *real = MACH_PORT_NULL;
-  *realpoly = MACH_MSG_TYPE_COPY_SEND;
-  
+  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
+						    O_READ | O_EXEC,
+						    MACH_PORT_NULL),
+			       0,0,0,0);
+  rootport = ports_get_right (rootpi);
+  mach_port_insert_right (mach_task_self (), rootport, rootport,
+			  MACH_MSG_TYPE_MAKE_SEND);
+  ports_port_deref (rootpi);
+
+  err = hurd_file_name_lookup (rootport, rootport, _SERVERS_EXEC,
+			       O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, real);
+  assert_perror (err);
+  *realpoly = MACH_MSG_TYPE_MOVE_SEND;
+
+  mach_port_deallocate (mach_task_self (), rootport);
+
   diskfs_exec_ctl = ctl;
 
   mutex_lock (&execstartlock);
