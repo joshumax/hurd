@@ -48,7 +48,8 @@ static const struct argp_option options[] = {
   {0}
 };
 static const char *args_doc = "[PERIOD [COUNT [HEADER_INTERVAL]]]";
-static const char *doc = "If PERIOD is supplied, then terse mode is"
+static const char *doc = "Show system virtual memory statistics"
+"\vIf PERIOD is supplied, then terse mode is"
 " selected, and the output repeated every PERIOD seconds, with cumulative"
 " fields given the difference from the last output.  If COUNT is given"
 " and non-zero, only that many lines are output.  HEADER_INTERVAL"

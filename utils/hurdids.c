@@ -43,7 +43,7 @@ static struct argp_option options[] =
   {0}
 };
 static char *args_doc = 0;
-static char *doc = 0;
+static char *doc = "Show hurd uids/gids.";
 
 /* ---------------------------------------------------------------- */
 

@@ -61,7 +61,8 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "NODE [TRANSLATOR ARG...]";
-static char *doc = "By default the passive translator is set.";
+static char *doc = "Set the passive/active translator on NODE."
+"\vBy default the passive translator is set.";
 
 /* ---------------------------------------------------------------- */
 

@@ -42,9 +42,9 @@ static struct argp_option options[] =
 };
 
 static char *args_doc = "FILE...";
-
-static char *doc = "A FILE argument of `-' prints the translator on the node \
-attached to standard input.";
+static char *doc = "Show the passive translator of FILE..."
+"\vA FILE argument of `-' prints the translator on the node"
+" attached to standard input.";
 
 /* ---------------------------------------------------------------- */
 

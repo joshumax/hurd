@@ -55,8 +55,8 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "[USER...]";
-static char *doc =
- "A USER specified as an argument adds (or removes) that user's groups as"
+static char *doc = "Modify authentication of existing processes"
+ "\vA USER specified as an argument adds (or removes) that user's groups as"
  " well.  When removing groups implied by such an argument, the groups to"
  " which uids remaining in the process after any we remove are ignored."
 "\nUids and groups specified with options are used as-is.";

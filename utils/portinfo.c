@@ -72,7 +72,8 @@ static const struct argp_option options[] = {
 };
 static const char *args_doc = "PID [NAME...]";
 static const char *doc =
-"If no port NAMEs are given, all ports in process PID are reported (if"
+"Show information about mach ports NAME... (default all ports) in process PID."
+"\vIf no port NAMEs are given, all ports in process PID are reported (if"
 " translation is used, then only those common to both processes).  NAMEs"
 " may be specified in hexadecimal or octal by using a 0x or 0 prefix.";
 

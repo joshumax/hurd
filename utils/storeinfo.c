@@ -48,7 +48,8 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "FILE...";
-static char *doc = "With no FILE arguments, the file attached to standard \
+static char *doc = "Show information about storage used by FILE..."
+"\vWith no FILE arguments, the file attached to standard \
 input is used.  The fields to be printed are separated by colons, in this \
 order: PREFIX: KIND: NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS.  If the store is a \
 composite one and --children is specified, children are printed on lines \

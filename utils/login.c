@@ -108,6 +108,7 @@ static struct argp_option options[] =
 };
 static char *args_doc = "[USER [ARG...]]";
 static char *doc =
+"Exec a program with uids and/or the environment changed appropriately.\v"
 "To give args to the shell without specifying a user, use - for USER.\n"
 "Current login parameters include HOME, SHELL, USER, NAME, and ROOT.";
 

@@ -71,7 +71,7 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "[USER...]";
-static char *doc = 0;
+static char *doc = "Show logged in users and what they are doing";
 
 /* The current time of day.  */
 static struct timeval now;

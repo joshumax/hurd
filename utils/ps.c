@@ -90,10 +90,10 @@ static const struct argp_option options[] =
 };
 
 char *args_doc = "[PID...]";
-
-char *doc = "The USER, LID, PID, PGRP, and SID arguments may also be comma \
-separated lists.  The System V options -u and -g may be accessed with -O and \
---pgrp.";
+char *doc =
+"Show information about processes PID... (default all `interesting' processes)"
+"\vThe USER, LID, PID, PGRP, and SID arguments may also be comma separated"
+" lists.  The System V options -u and -g may be accessed with -O and -G."; 
 
 int 
 parse_enum(char *arg, char **choices, char *kind, int allow_mismatches)

@@ -40,7 +40,8 @@ static struct argp_option options[] =
   {0, 0, 0, 0}
 };
 static char *args_doc = "FILESYS [FS_OPTION...]";
-static char *doc = "The legal values for FS_OPTION depends on FILESYS, but\
+static char *doc = "Get or set command line options for running translator FILESYS."
+"\vThe legal values for FS_OPTION depends on FILESYS, but\
  some common ones are: --readonly, --writable, --remount, --sync[=INTERVAL],\
  and --nosync.\n\nIf no options are supplied, FILESYS's existing options\
  are printed";
