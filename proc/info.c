@@ -270,12 +270,14 @@ get_string_array (task_t t,
 	}
 
       len = strlen (string) + 1;
-      if (len > (char *) *buf + *buflen - bp)
+      if (len > *(char **)buf + *buflen - bp)
 	{
 	  vm_address_t newbuf;
+	  vm_size_t prev_len = bp - *(char **)buf;
 	  vm_size_t newsize = *buflen * 2;
-	  if (newsize < len)
-	    newsize = len;
+
+	  if (newsize < prev_len + len)
+	    newsize = prev_len + len;
 
 	  err = vm_allocate (mach_task_self (), &newbuf, newsize, 1);
 	  if (err)
@@ -287,14 +289,15 @@ get_string_array (task_t t,
 	      return err;
 	    }
 
-	  bcopy (*(char **) buf, (char *) newbuf, bp - (char *) *buf);
-	  bp = newbuf + (bp - *buf);
+	  bcopy (*(char **) buf, (char *) newbuf, prev_len);
+	  bp = (char *)newbuf + prev_len;
 	  if (*buf != origbuf)
 	    vm_deallocate (mach_task_self (), *buf, *buflen);
 
 	  *buf = newbuf;
 	  *buflen = newsize;
 	}
+
       bcopy (string, bp, len);
       bp += len;
       free (string);
