@@ -20,8 +20,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <malloc.h>
+
 #include "store.h"
 
+/* Allocate a new store structure of class CLASS, with meths METHS.  */
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths)
 {
@@ -46,7 +49,7 @@ _make_store (enum file_storage_class class, struct store_meths *meths)
 }
 
 void
-_store_free (struct store *store)
+store_free (struct store *store)
 {
   if (store->port)
     mach_port_deallocate (mach_task_self (), store->port);
