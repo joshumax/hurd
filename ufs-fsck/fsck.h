@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1994,95,96,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -59,7 +59,7 @@ char *blockmap;
 extern char *device_name;
 
 
-/* Command line flags */ 
+/* Command line flags */
 int nowrite;			/* all questions fail */
 int noquery;			/* all questions succeed */
 
@@ -81,7 +81,7 @@ struct dirinfo
   ino_t i_parent;		/* inode entry of parent */
   ino_t i_dotdot;		/* inode number of `..' */
   ino_t i_dot;			/* inode number of `.' */
-  ino_t i_isize;		/* size of inode */
+  size_t i_isize;		/* size of inode */
   u_int i_numblks;		/* size of block array in bytes */
   daddr_t i_blks[0];		/* array of inode block addresses */
 };
@@ -121,7 +121,7 @@ extern int fix_denied;
 
 extern int fsmodified;
 
-extern int lfdir;
+extern ino_t lfdir;
 
 /* Total number of files found on the partition.  */
 extern daddr_t num_files;
@@ -145,7 +145,7 @@ extern char *lfname;
 #define DI_MODE(dp) (((dp)->di_modeh << 16) | (dp)->di_model)
 
 
-     
+
 int setup (char *);
 void pass1 (), pass1b (), pass2 (), pass3 (), pass4 (), pass5 ();
 
