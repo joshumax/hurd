@@ -1,3 +1,20 @@
+1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* boot.c (bootscript): Made global.
+	(parse_opt): New function.
+	(options, doc, args_doc): New variables.
+	(bootscript_args): Now an array.
+	(ds_device_open, ds_device_close, ds_device_write,
+	ds_device_write_inband, ds_device_read, ds_device_read_inband,
+	ds_device_get_status, ds_device_set_status, ds_device_map,
+	ds_xxx_device_set_filter, ds_xxx_device_get_status,
+	ds_xxx_device_set_status, ds_device_set_filter):
+	Handle "pseudo-root" device.
+	(pseudo_root, root_store): New variables.
+	(main): Use argp to parse args, and implement the pseudo-root device.
+	Include <argp.h> & <hurd/store.h>
+	* Makefile (HURDLIBS): Include libstore & libshouldbeinlibc.
+
 Thu Apr 10 11:53:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* boot.c: Don't include varargs.h.

@@ -1,3 +1,8 @@
+1997-06-21  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* e2os.sh: Use conf=notrunc when writing the superblock back to
+	the filesystem device, in case it's a file and not a real device.
+
 Fri Feb 28 21:27:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsck.c (fsck_cleanup): Correctly remove from fscks chain.
