@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 98 Free Software Foundation, Inc.
+   Copyright (C) 1997, 98, 99 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -36,6 +36,7 @@ char *diskfs_extra_version = "GNU Hurd";
 int diskfs_synchronous = 0;
 
 int diskfs_link_max = INT_MAX;
+int diskfs_name_max = 255;	/* see iso9660.h: struct dirrect::namelen */
 int diskfs_maxsymlinks = 8;
 
 /* This filesystem is never capable of writing.  */
