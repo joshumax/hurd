@@ -342,7 +342,7 @@ S_proc_getprocenv (struct proc *callerp,
 kern_return_t
 S_proc_getprocinfo (struct proc *callerp,
 		    pid_t pid,
-		    int flags,
+		    int *flags,
 		    int **piarray,
 		    u_int *piarraylen,
 		    char **waits, mach_msg_type_number_t *waits_len)
@@ -370,11 +370,11 @@ S_proc_getprocinfo (struct proc *callerp,
   task = p->p_task;
   msgport = p->p_deadmsg ? MACH_PORT_NULL : p->p_msgport;
 
-  if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
+  if (*flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
 	       | PI_FETCH_THREAD_WAITS))
-    flags |= PI_FETCH_THREADS;
+    *flags |= PI_FETCH_THREADS;
 
-  if (flags & PI_FETCH_THREADS)
+  if (*flags & PI_FETCH_THREADS)
     {
       err = task_threads (p->p_task, &thds, &nthreads);
       if (err == MACH_SEND_INVALID_DEST)
@@ -422,7 +422,7 @@ S_proc_getprocinfo (struct proc *callerp,
      potential calls to P's msgport, which can block.  */
   mutex_unlock (&global_lock);
 
-  if (flags & PI_FETCH_TASKINFO)
+  if (*flags & PI_FETCH_TASKINFO)
     {
       tkcount = TASK_BASIC_INFO_COUNT;
       err = task_info (task, TASK_BASIC_INFO, (int *)&pi->taskinfo, &tkcount);
@@ -433,7 +433,7 @@ S_proc_getprocinfo (struct proc *callerp,
   for (i = 0; i < nthreads; i++)
     {
       pi->threadinfos[i].died = 0;
-      if (flags & PI_FETCH_THREAD_BASIC)
+      if (*flags & PI_FETCH_THREAD_BASIC)
 	{
 	  thcount = THREAD_BASIC_INFO_COUNT;
 	  err = thread_info (thds[i], THREAD_BASIC_INFO,
@@ -448,7 +448,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	    break;
 	}
 
-      if (flags & PI_FETCH_THREAD_SCHED)
+      if (*flags & PI_FETCH_THREAD_SCHED)
 	{
 	  thcount = THREAD_SCHED_INFO_COUNT;
 	  if (!err)
@@ -464,11 +464,11 @@ S_proc_getprocinfo (struct proc *callerp,
 	    break;
 	}
 
-      if (flags & PI_FETCH_THREAD_WAITS)
+      if (*flags & PI_FETCH_THREAD_WAITS)
 	{
 	  /* See what thread I is waiting on.  */
 	  if (msgport == MACH_PORT_NULL)
-	    flags &= ~PI_FETCH_THREAD_WAITS; /* Can't return much... */
+	    *flags &= ~PI_FETCH_THREAD_WAITS; /* Can't return much... */
 	  else
 	    {
 	      string_t desc;
@@ -496,7 +496,7 @@ S_proc_getprocinfo (struct proc *callerp,
 				     (vm_address_t *)&new_waits, new_len,1);
 		  if (err)
 		    /* Just don't return any more waits information.  */
-		    flags &= ~PI_FETCH_THREAD_WAITS;
+		    *flags &= ~PI_FETCH_THREAD_WAITS;
 		  else
 		    {
 		      if (waits_used > 0)
@@ -523,7 +523,7 @@ S_proc_getprocinfo (struct proc *callerp,
       mach_port_deallocate (mach_task_self (), thds[i]);
     }
 
-  if (flags & PI_FETCH_THREADS)
+  if (*flags & PI_FETCH_THREADS)
     {
       vm_deallocate (mach_task_self (),
 		     (vm_address_t)thds, nthreads * sizeof (thread_t));
