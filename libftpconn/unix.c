@@ -27,7 +27,9 @@
 #include <grp.h>
 #include <sys/time.h>
 #include <netinet/in.h>
+#ifdef HAVE_HURD_HURD_TYPES_H
 #include <hurd/hurd_types.h>
+#endif
 
 #include <ftpconn.h>
 
@@ -108,8 +110,9 @@ strlaxcmp (const char *p, const char *q)
 /* Try to convert an error message in TXT into an error code.  POSS_ERRS
    contains a list of likely errors to try; if no other clue is found, the
    first thing in poss_errs is returned.  */
-error_t ftp_conn_unix_interp_err (struct ftp_conn *conn, const char *txt,
-				  const error_t *poss_errs)
+error_t
+ftp_conn_unix_interp_err (struct ftp_conn *conn, const char *txt,
+			  const error_t *poss_errs)
 {
   const char *p;
   const error_t *e;
@@ -140,6 +143,9 @@ struct get_stats_state
   size_t name_alloced;		/* Allocated size of NAME (>= NAME_LEN).  */
   int name_partial;		/* True if NAME isn't complete.  */
 
+  int contents;			/* Are we looking for directory contents?  */
+  int added_slash;		/* Did we prefix the name with `./'?  */
+
   struct stat stat;		/* Last read stat info.  */
 
   int start;			/* True if at beginning of output.  */
@@ -148,43 +154,65 @@ struct get_stats_state
   char buf[7000];
 };
 
-/* Start an operation to get a list of file-stat structures for NAME (this
-   is often similar to ftp_conn_start_dir, but with OS-specific flags), and
+
+
+/* Start an operation to get a list of file-stat structures for NAME (this is
+   often similar to ftp_conn_start_dir, but with OS-specific flags), and
    return a file-descriptor for reading on, and a state structure in STATE
-   suitable for passing to cont_get_stats.  FORCE_DIR controls what happens if
-   NAME refers to a directory: if FORCE_DIR is false, STATS will contain
-   entries for all files *in* NAME, and if FORCE_DIR is true, it will
-   contain just a single entry for NAME itself (or an error will be
-   returned when this isn't possible).  */
+   suitable for passing to cont_get_stats.  If CONTENTS is true, NAME must
+   refer to a directory, and the contents will be returned, otherwise, the
+   (single) result will refer to NAME.  */
 error_t
 ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
-			       const char *name, int force_dir,
+			       const char *name, int contents,
 			       int *fd, void **state)
 {
   error_t err;
+  size_t req_len;
+  char *req;
   struct get_stats_state *s = malloc (sizeof (struct get_stats_state));
+  const char *flags = contents ? "-A" : "-Ad";
+  const char *slash = strchr (name, '/');
 
   if (! s)
     return ENOMEM;
 
-  if (force_dir)
+  if (strcspn (name, "*? \t\n{}$`\\\"'") < strlen (name))
+    /* NAME contains some metacharacters, which makes the behavior of various
+       ftp servers unpredictable, so punt.  */
     {
-      char *dir_op;
-
-      if (asprintf (&dir_op, "-d %s", name) <= 0)
-	return errno;
-
-      err = ftp_conn_start_dir (conn, dir_op, fd);
-
-      free (dir_op);
+      free (s);
+      return EINVAL;
     }
-  else
-    err = ftp_conn_start_dir (conn, name, fd);
+
+  /* We pack the ls options and the name into the list argument, in REQ,
+     which will do the right thing on most unix ftp servers.  */
+
+  /* Space needed for REQ.  */
+  req_len = strlen (flags) + 1 + strlen (name) + 1;
+
+  /* If NAME doesn't contain a slash, we prepend `./' to it so that we can
+     tell from the results whether it's a directory or not.  */
+  if (! slash)
+    req_len += 2;
+
+  req = malloc (req_len);
+  if (! req)
+    return ENOMEM;
+
+  snprintf (req, req_len, "%s %s%s", flags, slash ? "" : "./", name);
+
+  /* Make the actual request.  */
+  err = ftp_conn_start_dir (conn, req, fd);
+
+  free (req);
 
   if (err)
     free (s);
   else
     {
+      s->contents = contents;
+      s->added_slash = !slash;
       s->name = 0;
       s->name_len = s->name_alloced = 0;
       s->name_partial = 0;
@@ -226,7 +254,9 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
 
   bzero (stat, sizeof *stat);
 
+#ifdef FSTYPE_FTP
   stat->st_fstype = FSTYPE_FTP;
+#endif
 
   /* File format (S_IFMT) bits.  */
   switch (*p++)
@@ -309,12 +339,12 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
 
 #define SKIP_WS() \
   while (isspace (*p)) p++;
-#define PARSE_INT() ({								\
-    unsigned u = strtoul (p, &e, 10);						\
-    if (e == p || isalnum (*e))							\
-      return EGRATUITOUS;							\
-    p = e;									\
-    u;										\
+#define PARSE_INT() ({							      \
+    unsigned u = strtoul (p, &e, 10);					      \
+    if (e == p || isalnum (*e))						      \
+      return EGRATUITOUS;						      \
+    p = e;								      \
+    u;									      \
   })
  
   /* Link count.  */
@@ -341,7 +371,10 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
 
       p = e;
     }
+
+#ifdef HAVE_STAT_ST_AUTHOR
   stat->st_author = stat->st_uid;
+#endif
 
   /* File group.  */
   SKIP_WS ();
@@ -539,12 +572,13 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 
       if (nl)
 	{
+	  char *name = s->name;
 	  char *symlink_target = 0;
 
 	  if (S_ISLNK (s->stat.st_mode))
 	    /* A symlink, see if we can find the link target.  */
 	    {
-	      symlink_target = strstr (s->name, " -> ");
+	      symlink_target = strstr (name, " -> ");
 	      if (symlink_target)
 		{
 		  *symlink_target = '\0';
@@ -552,9 +586,25 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 		}
 	    }
 
+	  if (strchr (name, '/'))
+	    if (s->contents)
+	      /* We know that the name originally request had a slash in it
+		 (because we added one if necessary), so if a name in the
+		 listing has one too, it can't be the contents of a
+		 directory; if this is the case and we wanted the contents,
+		 this must not be a directory.  */
+	      {
+		err = ENOTDIR;
+		goto finished;
+	      }
+	    else if (s->added_slash)
+	      /* S->name must be the same name we passed; if we added a `./'
+		 prefix, removed it so the client gets back what it passed.  */
+	      name += 2;
+
 	  /* Call the callback function to process the current entry; it is
 	     responsible for freeing S->name and SYMLINK_TARGET.  */
-	  err = (*add_stat) (s->name, &s->stat, symlink_target, hook);
+	  err = (*add_stat) (name, &s->stat, symlink_target, hook);
 	  if (err)
 	    goto finished;
 
@@ -596,6 +646,9 @@ finished:
     free (s->name);
   free (s);
   close (fd);
+
+  if (err && rd > 0)
+    ftp_conn_abort (conn);
 
   return err;
 }
