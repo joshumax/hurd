@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995,96,98,99,2000,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -431,6 +431,13 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 	    }
 	  return err;
 	}
+    }
+
+  if (dev->store->size > 0 && offs == dev->store->size)
+    {
+      /* Reading end of file.  */
+      *len = 0;
+      return 0;
     }
 
   if (dev->inhibit_cache)
