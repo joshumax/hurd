@@ -1,3 +1,16 @@
+2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* stubs.c (struct msg_sig_post_request): New type, broken out of
+	send_signal, where it was anonymous.
+	(struct msg_spec): Type removed.
+	(blocking_message_send): Change type to any_t -> any_t.
+	Don't call cthread_wire; it's a no-op in GNU anyway.
+	Just return instead of calling cthread_exit.
+	Argument is now a pointer to struct msg_sig_post_request.
+	Check mach_msg return value for sanity assert.
+	(send_signal): Make MESSAGE auto instead of static, use new type name.
+	This problem tracked down by Mark Kettenis <kettenis@gnu.org>.
+
 2000-03-12  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mgt.c (allocate_proc): Don't do mach_port_request_notification here.
