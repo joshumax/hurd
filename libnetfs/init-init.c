@@ -23,6 +23,12 @@
 
 spin_lock_t netfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
+struct node *netfs_root_node = 0;
+struct port_bucket *netfs_port_bucket = 0;
+struct port_class *netfs_protid_class = 0;
+struct port_class *netfs_control_class = 0;
+auth_t netfs_auth_server_port = 0;
+
 void
 netfs_init ()
 {
