@@ -1,3 +1,10 @@
+2000-02-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ext2_fs.h: Update from Linux 2.3.42 version (ext2_fs_i.h unchanged).
+	* inode.c (check_high_bits): In accordance with Linux 2.3.42 behavior,
+	permit 32-bit uids on non-hurd filesystems unless i_dtime is zero
+	(which indicates an extra old Linux ext2 implementation I guess).
+
 2000-01-16  Mark Kettenis  <kettenis@gnu.org>
 
 	* pager.c (file_pager_write_page): Lock NODE->dn->alloc_lock
