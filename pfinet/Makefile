@@ -61,7 +61,7 @@ ipv4-srcs	:= af_inet.c						      \
 LINUXSRCS	= $(core-srcs) $(ethernet-srcs) $(ipv4-srcs) \
 		  $(notdir $(wildcard $(addprefix \
 			   $(srcdir)/linux-src/arch/$(asm_syntax)/lib/,\
-			   $(arch-lib-srcs))))
+			   $(arch-lib-srcs) $(arch-lib-srcs:.c=.S))))
 SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
 		  io-ops.c socket-ops.c misc.c time.c options.c loopback.c \
 		  kmem_cache.c stubs.c dummy.c tunnel.c pfinet-ops.c \
