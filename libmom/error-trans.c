@@ -25,13 +25,13 @@ mom_error_translate_mach (error_t macherr)
 {
   switch (macherr)
     {
-    case MACH_SEND_INVALID_DEST:
+    case EMACH_SEND_INVALID_DEST:
       return EMOM_INVALID_DEST;
       
-    case MACH_SEND_INVALID_RIGHT:
+    case EMACH_SEND_INVALID_RIGHT:
       return EMOM_INVALID_REF;
       
-    case MIG_SERVER_DIED:
+    case EMIG_SERVER_DIED:
       return EMOM_SERVER_DIED;
       
     default:
