@@ -1,5 +1,5 @@
 /* Fault-safe copy into or out of pager-backed memory.
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   size_t to_copy = *size;
   error_t err;
 
-  error_t copy (struct hurd_signal_preempter *preempter)
+  error_t copy (struct hurd_signal_preemptor *preemptor)
     {
       while (to_copy > 0)
 	{
@@ -61,9 +61,9 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	  if (err)
 	    return 0;
 
-	  /* Realign the fault preempter for the new mapping window.  */
-	  preempter->first = window;
-	  preempter->last = window + windowsize;
+	  /* Realign the fault preemptor for the new mapping window.  */
+	  preemptor->first = window;
+	  preemptor->last = window + windowsize;
 
 	  if (prot == VM_PROT_READ)
 	    memcpy (other, (const void *) window + pageoff,
