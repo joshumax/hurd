@@ -409,6 +409,30 @@ void diskfs_new_hardrefs (struct node *np);
    the directory, then this routine should fail). */
 int diskfs_dirempty (struct node *dp, struct protid *cred);
 
+/* The user may define this function.  Return 0 if NP's mode can
+   be changed to MODE; otherwise return an error code.  */
+error_t diskfs_validate_mode_change (struct node *np, mode_t mode);
+
+/* The user may define this function.  Return 0 if NP's owner can be
+   changed to UID; otherwise return an error code. */
+error_t diskfs_validate_owner_change (struct node *np, uid_t uid);
+
+/* The user may define this function.  Return 0 if NP's group can be
+   changed to GID; otherwise return an error code. */
+error_t diskfs_validate_group_change (struct node *np, gid_t gid);
+
+/* The user may define this function.  Return 0 if NP's author can be
+   changed to AUTHOR; otherwise return an error code. */
+error_t diskfs_validate_author_change (struct node *np, uid_t author);
+
+/* The user may define this function.  Return 0 if NP's flags can be
+   changed to FLAGS; otherwise return an error code. */
+error_t diskfs_validate_flags_change (struct node *np, int flags);
+
+/* The user may define this function.  Return 0 if NP's rdev can be
+   changed to RDEV; otherwise return an error code. */
+error_t diskfs_validate_rdev_change (struct node *np, dev_t rdev);
+
 /* The user must define this function.  Sync the info in NP->dn_stat
    and any associated format-specific information to disk.  If WAIT is true,
    then return only after the physicial media has been completely updated. */
