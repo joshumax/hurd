@@ -5,6 +5,9 @@
 
 #define printk printf
 
+int getname (const char *, char **);
+void putname (char *);
+
 int suser (void);
 
 
