@@ -143,18 +143,18 @@ struct ps_getter ps_rsize_getter =
 static int 
 ps_get_cur_priority(proc_stat_t ps)
 {
-  return proc_stat_thread_sched_info(ps)->cur_priority;
+  return proc_stat_thread_basic_info(ps)->cur_priority;
 }
 struct ps_getter ps_cur_priority_getter =
-{"cur_priority", PSTAT_THREAD_SCHED, (vf) ps_get_cur_priority};
+{"cur_priority", PSTAT_THREAD_BASIC, (vf) ps_get_cur_priority};
 
 static int 
 ps_get_base_priority(proc_stat_t ps)
 {
-  return proc_stat_thread_sched_info(ps)->base_priority;
+  return proc_stat_thread_basic_info(ps)->base_priority;
 }
 struct ps_getter ps_base_priority_getter =
-{"base_priority", PSTAT_THREAD_SCHED, (vf) ps_get_base_priority};
+{"base_priority", PSTAT_THREAD_BASIC, (vf) ps_get_base_priority};
 
 static int 
 ps_get_max_priority(proc_stat_t ps)
