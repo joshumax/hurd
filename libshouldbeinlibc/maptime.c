@@ -68,6 +68,7 @@ maptime_map (int use_mach_dev, char *dev_name,
 
   if (! err)
     {
+      *mtime = 0;
       err =
 	vm_map (mach_task_self (), (vm_address_t *)mtime, sizeof *mtime, 0, 1,
 		memobj, 0, 0, VM_PROT_READ, VM_PROT_READ, VM_INHERIT_NONE);
