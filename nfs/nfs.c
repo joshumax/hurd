@@ -20,6 +20,62 @@
 
 #include "nfs.h"
 
+#include <string.h>
+#include <netinet/in.h>
+
+/* Convert an NFS mode to a Hurd mode */
+mode_t
+nfs_mode_to_hurd_mode (int type, int mode)
+{
+  int hurdmode;
+  
+  switch (type)
+    {
+    case NFDIR:
+      hurdmode = S_IFDIR;
+      break;
+
+    case NFCHR:
+      hurdmode = S_IFCHR;
+      break;
+
+    case NFBLK:
+      hurdmode = S_IFBLK;
+      break;
+
+    case NFREG:
+    case NFNON:
+    case NFBAD:
+    default:
+      hurdmode = S_IFREG;
+      break;
+      
+    case NFLNK:
+      hurdmode = S_IFLNK;
+      break;
+
+    case NFSOCK:
+      hurdmode = S_IFSOCK;
+      break;
+
+    case NFFIFO:
+      hurdmode = S_IFIFO;
+      break;
+    }
+  
+  hurdmode |= mode & ~NFSMODE_FMT;
+  return hurdmode;
+}
+
+/* Convert a Hurd mode to an NFS mode */
+int
+hurd_mode_to_nfs_mode (mode_t mode)
+{
+  /* This function is used only for chmod; just trim the bits that NFS
+     doesn't support. */
+  return mode & 07777;
+}
+
 /* Each of these functions copies its second arg to *P, converting it
    to XDR representation along the way.  They then return the address after
    the copied value. */
@@ -34,11 +90,11 @@ xdr_encode_fhandle (int *p, void *fhandle)
 int *
 xdr_encode_data (int *p, char *data, size_t len)
 {
-  int nints = INTLEN (len);
+  int nints = INTSIZE (len);
   
   p[nints] = 0;
   *p++ = htonl (len);
-  bcopy (string, p, len);
+  bcopy (data, p, len);
   return p + nints;
 }
 
@@ -53,7 +109,7 @@ xdr_encode_string (int *p, char *string)
 int *
 xdr_encode_sattr_mode (int *p, mode_t mode)
 {
-  *p++ = htonl (sattr->mode);
+  *p++ = htonl (hurd_mode_to_nfs_mode (mode));
   *p++ = -1;			/* uid */
   *p++ = -1;			/* gid */
   *p++ = -1;			/* size */
@@ -118,7 +174,7 @@ xdr_encode_create_state (int *p,
   *p++ = -1;			/* atime usec */
   *p++ = -1;			/* mtime sec */
   *p++ = -1;			/* mtime usec */
-  return p
+  return p;
 }
 
 
@@ -131,7 +187,7 @@ xdr_decode_fattr (int *p, struct stat *st)
   
   type = ntohl (*p++);
   mode = ntohl (*p++);
-  st->st_mode = nfsv2mode_to_hurdmode (type, mode);
+  st->st_mode = nfs_mode_to_hurd_mode (type, mode);
   st->st_nlink = ntohl (*p++);
   st->st_uid = ntohl (*p++);
   st->st_gid = ntohl (*p++);
@@ -176,7 +232,7 @@ xdr_decode_string (int *p, char *buf)
   len = ntohl (*p++);
   bcopy (p, buf, len);
   buf[len] = '\0';
-  return p + INTLEN (len);
+  return p + INTSIZE (len);
 }
 
 
@@ -205,7 +261,7 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 	    uid = cred->uids[0];
 	  else
 	    {
-	      netfs_validate_state (np, 0);
+	      netfs_validate_stat (np, 0);
 	      if (cred_has_uid (cred, np->nn_stat.st_uid))
 		uid = np->nn_stat.st_uid;
 	      else
@@ -239,7 +295,7 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
   else
     uid = gid = second_gid = -1;
 
-  return initialize_rpc (program, version, rpc_proc, len, bufp,
+  return initialize_rpc (NFS_PROGRAM, NFS_VERSION, rpc_proc, len, bufp,
 			 uid, gid, second_gid);
 }
 
@@ -264,7 +320,7 @@ nfs_error_trans (int error)
       return ENXIO;
 		  
     case NFSERR_ACCES:
-      return EACCESS;
+      return EACCES;
 		  
     case NFSERR_EXIST:
       return EEXIST;
