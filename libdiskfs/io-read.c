@@ -42,7 +42,7 @@ diskfs_S_io_read (struct protid *cred,
 
   mutex_lock (&np->lock);
 
-  ioserver_get_conch (&np->conch);
+  iohelp_get_conch (&np->conch);
 
   if (off == -1)
     off = cred->po->filepointer;
