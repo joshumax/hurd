@@ -1,26 +1,27 @@
 /* Modify the current authentication selected processes
 
    Copyright (C) 1997 Free Software Foundation, Inc.
-
    Written by Miles Bader <miles@gnu.ai.mit.edu>
+   This file is part of the GNU Hurd.
 
-   This program is free software; you can redistribute it and/or
+   The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
    your option) any later version.
 
-   This program is distributed in the hope that it will be useful, but
+   The GNU Hurd is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <hurd.h>
 #include <error.h>
 
@@ -28,13 +29,16 @@
 
 /* For every pid in FROBAUTH, call MODIFY to change its argument UGIDS from
    the current authentication to what it should be; CHANGE is whatever ids
-   the user specified.  If the user specifies the --verbose flags, PRINT_INFO
-   is called after successfully installing the new authentication in each
-   process, to print a message about what happened.  True is returned if no
-   errors occur, although most errors do not cause termination, and error
-   messages are printed for them.  */
+   the user specified.  AUTHS, of length NUM_AUTHS, should be a vector of
+   auth ports giving whatever additional authentication is needed (besides
+   the process's current authentication).  If the user specifies the
+   --verbose flags, PRINT_INFO is called after successfully installing the
+   new authentication in each process, to print a message about what
+   happened.  True is returned if no errors occur, although most errors do
+   not cause termination, and error messages are printed for them.  */
 error_t
 frobauth_modify (struct frobauth *frobauth,
+		 const auth_t *auths, size_t num_auths,
 		 error_t (*modify) (struct ugids *ugids,
 				    const struct ugids *change,
 				    pid_t pid, void *hook),
@@ -46,8 +50,12 @@ frobauth_modify (struct frobauth *frobauth,
 {
   int i;
   int ok = 1;
+  size_t num_all_auths = num_auths + 1;
+  auth_t all_auths[num_all_auths];
   pid_t cur_pid = getpid ();
   process_t proc_server = getproc ();
+
+  bcopy (auths, all_auths, num_auths * sizeof *auths);
 
   /* Map MODIFY over all pids.  */
   for (i = 0; i < frobauth->num_pids; i++)
@@ -100,8 +108,14 @@ frobauth_modify (struct frobauth *frobauth,
 			    if (! frobauth->dry_run)
 			      {
 				auth_t new_auth;
-				err =
-				  ugids_make_auth (&new, old_auth, &new_auth);
+
+				/* Add the PID's old authentication to that
+				   supplied by the calller.  */
+				all_auths[num_all_auths - 1] = old_auth;
+
+				err = ugids_make_auth (&new,
+						       all_auths, num_all_auths,
+						       &new_auth);
 				if (err)
 				  error (0, err,
 					 "%d: Authentication failure", pid);
