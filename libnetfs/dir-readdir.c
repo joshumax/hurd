@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,99,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -31,7 +31,7 @@ netfs_S_dir_readdir (struct protid *user,
 		     int entry,
 		     int nentries,
 		     vm_size_t bufsiz,
-		     int *amt)
+		     vm_size_t *amt)
 {
   error_t err;
   struct node *np;
