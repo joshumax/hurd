@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fsys_S.h"
 
 /* Implement fsys_getroot as described in <hurd/fsys.defs>. */
-error_t
+kern_return_t
 diskfs_S_fsys_getroot (fsys_t controlport,
 		       int flags,
 		       uid_t *uids,
