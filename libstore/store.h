@@ -307,15 +307,10 @@ void store_close_source (struct store *store);
 
 /* Return a memory object paging on STORE.  If this call fails with
    EOPNOTSUPP, you can try calling some of the routines below to get a pager.  */
-error_t store_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj);
+error_t store_map (const struct store *store, vm_prot_t prot,
+		   mach_port_t *memobj);
 
 #if 0
-
-/* Returns a memory object paging on the file from which STORE was created.
-   If STORE wasn't created using store_create, or the source was destroyed
-   using store_close_source, this will fail.  */
-error_t store_map_source (struct store *store, vm_prot_t prot, ...,
-			  mach_port_t *memobj)
 
 /* Create a new pager and paging threads paging on STORE, and return the
    resulting memory object in PAGER.  */
