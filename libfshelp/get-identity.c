@@ -82,6 +82,7 @@ fshelp_get_identity (struct port_bucket *bucket,
   
   *pt = ports_get_right (i);
   ports_port_deref (i);
+  mutex_unlock (&idlock);
   return 0;
 }
 
