@@ -238,9 +238,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    netfs_make_protid (netfs_make_peropen (dnp, 0, diruser->po),
 			       iohelp_create_iouser (make_idvec (),
 						     make_idvec ()));
-	  dirport = ports_get_right (newpi);
-	  mach_port_insert_right (mach_task_self (), dirport, dirport,
-				  MACH_MSG_TYPE_MAKE_SEND);
+	  dirport = ports_get_send_right (newpi);
 	  ports_port_deref (newpi);
 
 	  error = fshelp_fetch_root (&np->transbox, diruser->po,
@@ -252,6 +250,9 @@ netfs_S_dir_lookup (struct protid *diruser,
 				      : short_circuited_callback1),
 				     _netfs_translator_callback2,
 				     do_retry, retry_name, retry_port);
+	  /* fetch_root copies DIRPORT for success, so we always should
+	     deallocate our send right.  */
+	  mach_port_deallocate (mach_task_self (), dirport);
 
 	  if (error != ENOENT)
 	    {
