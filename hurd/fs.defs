@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface. 
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -144,7 +144,8 @@ routine file_syncfs (
 /* INTR */
 routine file_pathconf (
 	file: file_t;
-	out pathconf: pathconf_t);
+	name: int;
+	out value: int);
 
 /* Return the node for hard links to this potentially translated file.
    This returns an unauthenticated node.  */
