@@ -299,7 +299,6 @@ routine io_readsleep (
 routine io_sigio (
 	io_object: io_t RPTLAST);
 
-
 /* Return Posix.1 pathconf information.  */
 routine io_pathconf (
 	io_object: io_t;
@@ -307,10 +306,11 @@ routine io_pathconf (
 	name: int;
 	out value: int);
 
-
-/* Return success iff TEST is an io port open on the same object as IO_OBJECT.
-   Otherwise return EINVAL.  */
-routine io_verify_identity (
+/* Return the identity port for the object underlying IO_OBJECT.
+   Different I/O ports for the same object all have the same identity
+   port.  */
+routine io_identity (
 	io_object: io_t;
 	RPT
-	test: io_t);
+	out idport: mach_port_send_t);
+
