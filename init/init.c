@@ -59,7 +59,7 @@
 #include "mung_msg_S.h"
 
 /* host_reboot flags for when we crash.  */
-#define CRASH_FLAGS	RB_AUTOBOOT
+int crash_flags = RB_AUTOBOOT;
 
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
 
@@ -82,10 +82,11 @@ static struct argp_option
 options[] =
 {
   {"single-user", 's', 0, 0, "Startup system in single-user mode"},
-  {"debug",       'd', 0, 0 },
-  {"init-name",   'n', 0, 0 },
-  {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
   {"query",       'q', 0, 0, "Ask for the names of servers to start"},
+  {"init-name",   'n', 0, 0 },
+  {"crash-debug",  'H', 0, 0, "On system crash, go to kernel debugger"},
+  {"debug",       'd', 0, 0 },
+  {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
   {"kernel-command-line",
    		  'K', "COMMAND-LINE", 0, "Multiboot command line string"},
   {0,             'x', 0, OPTION_HIDDEN},
@@ -238,7 +239,7 @@ reboot_mach (int flags)
 void
 crash_mach (void)
 {
-  reboot_mach (CRASH_FLAGS);
+  reboot_mach (crash_flags);
 }
 
 /* Notify all tasks that have requested shutdown notifications */
@@ -340,9 +341,7 @@ reboot_system (int flags)
 void
 crash_system (void)
 {
-  printf("spinning...\n");
-  while (1);
-  reboot_system (CRASH_FLAGS);
+  reboot_system (crash_flags);
 }
 
 
@@ -778,6 +777,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'd': bootstrap_args |= RB_KDB; break;
     case 'n': bootstrap_args |= RB_INITNAME; break;
     case 'f': fakeboot = 1; break;
+    case 'H': crash_flags = RB_DEBUGGER; break;
     case 'x': /* NOP */ break;
     default: return ARGP_ERR_UNKNOWN;
 
