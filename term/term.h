@@ -282,3 +282,19 @@ void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
 
+/* kludge--these are pty versions of trivfs_S_io_* functions called by
+   the real functions in users.c to do work for ptys.  */
+error_t pty_io_write (char *, unsigned int, int *);
+error_t pty_io_read (char **, unsigned int, int);
+error_t pty_io_readable (int *);
+error_t pty_io_get_openmodes (struct trivfs_protid *, int *);
+error_t pty_io_set_all_openmodes (struct trivfs_protid *, int);
+error_t pty_io_set_some_openmodes (struct trivfs_protid *, int);
+error_t pty_io_clear_some_openmodes (struct trivfs_protid *, int);
+error_t pty_io_mod_owner (pid_t);
+error_t pty_io_get_owner (pid_t *);
+error_t pty_io_get_async_icky (struct trivfs_protid *, 
+			       mach_port_t *, mach_msg_type_name_t *);
+error_t pty_io_async (struct trivfs_protid *, mach_port_t, mach_port_t *,
+		      mach_msg_type_name_t *);
+error_t pty_io_select (struct trivfs_protid *, int *, int *);
