@@ -129,8 +129,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 
   /* Map in the directory contents. */
   memobj = diskfs_get_filemap (dp);
-  mach_port_insert_right (mach_task_self (), memobj, memobj,
-			  MACH_MSG_TYPE_MAKE_SEND);
   buf = 0;
   /* We allow extra space in case we have to do an EXTEND. */
   buflen = round_page (dp->dn_stat.st_size + DIRBLKSIZ);
@@ -655,8 +653,6 @@ diskfs_dirempty(struct node *dp,
   error_t err;
 
   memobj = diskfs_get_filemap (dp);
-  mach_port_insert_right (mach_task_self (), memobj, memobj,  
-			  MACH_MSG_TYPE_MAKE_SEND);
   buf = 0;
   
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
