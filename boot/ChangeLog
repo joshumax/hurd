@@ -1,3 +1,8 @@
+2001-08-17  Roland McGrath  <roland@frob.com>
+
+	* boot_script.h: size_t -> unsigned int
+	* boot_script.c: Don't #include <string.h>.
+
 2001-08-16  Roland McGrath  <roland@frob.com>
 
 	* userland-boot.c (boot_script_insert_right): New function.
