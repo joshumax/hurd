@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+/*
+   Copyright (C) 1994,95,96,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,13 +25,16 @@ struct node *
 diskfs_make_node (struct disknode *dn)
 {
   struct node *np = malloc (sizeof (struct node));
-  
+
+  if (np == 0)
+    return 0;
+
   np->dn = dn;
   np->dn_set_ctime = 0;
   np->dn_set_atime = 0;
   np->dn_set_mtime = 0;
   np->dn_stat_dirty = 0;
-  
+
   mutex_init (&np->lock);
   np->references = 1;
   np->light_references = 0;
@@ -40,11 +43,10 @@ diskfs_make_node (struct disknode *dn)
 
   np->dirmod_reqs = 0;
   np->filemod_reqs = 0;
-  
+
   fshelp_transbox_init (&np->transbox, &np->lock, np);
   iohelp_initialize_conch (&np->conch, &np->lock);
   fshelp_lock_init (&np->userlock);
-  
 
   return np;
 }
