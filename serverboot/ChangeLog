@@ -1,3 +1,13 @@
+1997-07-15  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* bootstrap.c (main): Rearrange default pager initialization.
+
+	* bootstrap.c (safe_gets): Use strchr instead of index.
+	: Include <string.h>
+
+	* bootstrap.c (main): Change "(bootstrap)" to "(serverboot)" in msgs.
+	* load.c (boot_script_exec_cmd): Likewise.
+
 1997-07-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* bootstrap.c (main): Don't exit when no paging partition.
