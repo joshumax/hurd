@@ -30,15 +30,20 @@
 
 /* ---------------------------------------------------------------- */
 
-/* An internal version of ps_fmt_create that also returns a string describing
-   why EINVAL was returned.  */
+/* An internal version of ps_fmt_create that takes various extra args.  If
+   POSIX is true, parse a posix-std format string.  If ERR_STRING is non-0
+   and EINVAL is returned, then a malloced string will be returned in
+   ERR_STRING describing why.  */
 static error_t
-_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
-	     char **err_string)
+_fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
+	     struct ps_fmt **fmt, char **err_string)
 {
   struct ps_fmt *new_fmt;
   int needs = 0;
   int fields_alloced = 10;
+  /* Initial values for CLR_FLAGS & INV_FLAGS, so the user may specify
+     string-wide defaults.  */
+  int global_clr_flags = 0, global_inv_flags = 0;
   struct ps_fmt_field *fields = NEWVEC (struct ps_fmt_field, fields_alloced);
   struct ps_fmt_field *field = fields; /* current last field */
 
@@ -83,12 +88,21 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
 	  field = fields + offs;
 	}
 
-      /* Find the text to be reproduced verbatim between the last field and
-	 the next one; we'll add this a prefix to FIELD.  */
-      field->pfx = src;
-      while (*src != '\0' && *src != '~')
-	src++;
-      field->pfx_len = src - field->pfx;
+      if (posix)
+	/* Posix fields are always adjacent to one another.  */
+	{
+	  field->pfx = " ";
+	  field->pfx_len = 1;
+	}
+      else
+	/* Find the text to be reproduced verbatim between the last field and
+	   the next one; we'll add this a prefix to FIELD.  */
+	{
+	  field->pfx = src;
+	  while (*src != '\0' && *src != '%')
+	    src++;
+	  field->pfx_len = src - field->pfx;
+	}
 
       field->spec = NULL;
       field->title = NULL;
@@ -99,8 +113,31 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
 	{
 	  char *name;
 	  int sign = 1;
-	  int explicit_width = FALSE; /* True if the width set from SRC.  */
+	  int explicit_width = 0, explicit_precision = 0;
+	  int quoted_name = 0;	/* True if the name is quoted with { ... }. */
 	  char *spec_start = src++;
+	  /* Modifications to the spec's flags -- the bits in CLR_FLAGS are
+	     cleared from it, and then the bits in INV_FLAGS are inverted.  */
+	  int clr_flags = global_clr_flags, inv_flags = global_inv_flags;
+
+	  /* Set modifiers.   */
+	  while (*src == '@' || *src == ':' || *src == '!' || *src == '?')
+	    if (*src == '@')
+	      inv_flags ^= PS_FMT_FIELD_AT_MOD;	/* Toggle */
+	    else if (*src == ':')
+	      inv_flags ^= PS_FMT_FIELD_COLON_MOD; /* Toggle */
+	    else if (*src == '^')
+	      inv_flags ^= PS_FMT_FIELD_UPCASE_TITLE; /* Toggle */
+	    else if (*src == '!')
+	      {			/* Set */
+		clr_flags |= PS_FMT_FIELD_KEEP;
+		inv_flags |= PS_FMT_FIELD_KEEP;
+	      }
+	    else if (*src == '?')
+	      {			/* Clear */
+		clr_flags |= PS_FMT_FIELD_KEEP;
+		inv_flags &= ~PS_FMT_FIELD_KEEP;
+	      }
 
 	  /* Read an explicit field width.  */
 	  field->width = 0;
@@ -112,30 +149,67 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
 	      explicit_width = TRUE;
 	    }
 
-	  /* Skip `/' between optional width and spec name.  */
-	  if (*src == '/')
-	    src++;
+	  /* Read an explicit field precision.  */
+	  field->precision = 0;
+	  if (*src == '.')
+	    while (isdigit (*++src))
+	      {
+		field->precision = field->precision * 10 + (*src - '0');
+		explicit_precision = 1;
+	      }
 
-	  /* The name of the spec, or `TITLE=NAME'.  */
-	  name = src;
-	  while (*src != '\0' && !isspace (*src) && *src != '/' && *src != '=')
-	    src++;
-
-	  if (*src == '=')
-	    /* A title different from the spec name; the actual name follows
-	       the `='.  */
+	  /* Skip `{' between optional width and spec name.  */
+	  if (*src == '{')
 	    {
-	      field->title = name;
-	      *src++ = '\0';
+	      src++;
+	      quoted_name = 1;
+	    }
+	  else if (!isalnum (*src) && *src != '_')
+	    /* This field spec doesn't have a name, so use its flags fields
+	       to set the global ones, and skip it.  */
+	    {
+	      global_clr_flags = clr_flags;
+	      global_inv_flags = inv_flags;
+	      continue;
+	    }
 
-	      /* Now read the real name.  */
-	      name = src;
-	      while (*src != '\0' && !isspace (*src) && *src != '/')
+	  name = src;
+
+	  if (posix)
+	    /* Posix-style field spec: `NAME' or `NAME=TITLE'.  Only commas
+	       can separate fields.  */
+	    {
+	      int stop = quoted_name ? '}' : ',';
+	      while (*src != '\0' && *src != stop && *src != '=')
 		src++;
+	      if (*src == '=')
+		/* An explicit title.  */
+		{
+		  *src++ = '\0'; /* NUL-terminate NAME.  */
+		  field->title = src;
+		  while (*src != '\0' && *src != stop)
+		    src++;
+		}
+	    }
+	  else
+	    /* A gnu-style field spec: `NAME' or `NAME:TITLE'.  */
+	    {
+	      while (quoted_name
+		     ? (*src != '\0' && *src != '}' && *src != ':')
+		     : (isalnum (*src) || *src == '_'))
+		src++;
+	      if (quoted_name && *src == ':')
+		/* An explicit title.  */
+		{
+		  *src++ = '\0'; /* NUL-terminate SRC.  */
+		  field->title = src;
+		  while (*src != '\0' && *src != '}')
+		    src++;
+		}
 	    }
 
 	  /* Now that we've parsed everything in this spec, move the whole
-	     thing down one byte (trashing the leading `~') so that we have
+	     thing down one byte (trashing the leading `%') so that we have
 	     room to NUL-terminate the name for which we're searching.  We
 	     also adjust any pointers into this spec-string accordingly.  */
 	  bcopy (spec_start + 1, spec_start, src - spec_start - 1);
@@ -165,17 +239,25 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
 	    if (field->spec->title)
 	      field->title = field->spec->title; /* But the spec has one.  */
 	    else
-	      field->title = name; /* Just use the field name.  */
+	      field->title = field->spec->name; /* Just use the field name.  */
 
 	  /* Add FIELD's required pstat_flags to FMT's set */
 	  needs |= ps_getter_needs (ps_fmt_spec_getter (field->spec));
 
-	  if (!explicit_width)
-	    field->width = ps_fmt_spec_width (field->spec);
+	  if (! explicit_width)
+	    field->width = field->spec->width;
+	  if (! explicit_precision)
+	    field->width = field->spec->precision;
 
-	  /* Skip optional trailing `/' after the spec name.  */
-	  if (*src == '/')
+	  field->flags = (field->spec->flags & ~clr_flags) ^ inv_flags;
+	  
+	  if (quoted_name && *src == '}')
+	    /* Skip optional trailing `}' after the spec name.  */
 	    src++;
+	  if (posix)
+	    /* Inter-field whitespace isn't significant for posix formats. */
+	    while (isspace (*src))
+	      src++;
 
 	  /* Remember the width's sign (we put it here after possibly using a
 	     default width so that the user may include a `-' with no width
@@ -197,7 +279,7 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
   new_fmt->fields = fields;
   new_fmt->num_fields = field - fields;
   new_fmt->needs = needs;
-  new_fmt->inval = 0;
+  new_fmt->inval = posix ? "-" : 0;
 
   *fmt = new_fmt;
 
@@ -207,21 +289,24 @@ _fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
 /* Make a PS_FMT_T by parsing the string SRC, searching for any named
    field specs in FMT_SPECS, and returning the result in FMT.  If a memory
    allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
-   field name, EINVAL is returned.  Otherwise 0 is returned.  See ps.h for an
+   field name, EINVAL is returned.  Otherwise 0 is returned.  If POSIX is
+   true, a posix-style format string is parsed, otherwise see ps.h for an
    explanation of how FMT is derived from SRC.  */
 error_t
-ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
+ps_fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
+	       struct ps_fmt **fmt)
 {
-  return _fmt_create (src, fmt_specs, fmt, 0);
+  return _fmt_create (src, posix, fmt_specs, fmt, 0);
 }
 
 /* Given the same arguments as a previous call to ps_fmt_create that returned
    an error, this function returns a malloced string describing the error.  */
 void
-ps_fmt_creation_error (char *src, struct ps_fmt_specs *fmt_specs, char **error)
+ps_fmt_creation_error (char *src, int posix, struct ps_fmt_specs *fmt_specs,
+		       char **error)
 {
   struct ps_fmt *fmt;
-  error_t err = _fmt_create (src, fmt_specs, &fmt, error);
+  error_t err = _fmt_create (src, posix, fmt_specs, &fmt, error);
   if (err != EINVAL)		/* ? */
     asprintf (error, "%s", strerror (err));
   if (! err)
@@ -237,8 +322,6 @@ ps_fmt_free (struct ps_fmt *fmt)
   FREE (fmt);
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Write an appropiate header line for FMT, containing the titles of all its
    fields appropiately aligned with where the values would be printed, to
    STREAM (without a trailing newline).  If count is non-NULL, the total
@@ -261,13 +344,20 @@ ps_fmt_write_titles (struct ps_fmt *fmt, struct ps_stream *stream)
 
       if (ps_fmt_field_fmt_spec (field) != NULL && !err)
 	{
-	  const char *title = ps_fmt_field_title (field);
+	  const char *title = ps_fmt_field_title (field) ?: "??";
 	  int width = ps_fmt_field_width (field);
 
-	  if (title == NULL)
-	    title = "??";
-
-	  err = ps_stream_write_field (stream, title, width);
+	  if (field->flags & PS_FMT_FIELD_UPCASE_TITLE)
+	    {
+	      int len = strlen (title), i;
+	      char upcase_title[len + 1];
+	      for (i = 0; i < len; i++)
+		upcase_title[i] = toupper (title[i]);
+	      upcase_title[len] = '\0';
+	      err = ps_stream_write_field (stream, upcase_title, width);
+	    }
+	  else
+	    err = ps_stream_write_field (stream, title, width);
 	}
 
       field++;
@@ -275,7 +365,7 @@ ps_fmt_write_titles (struct ps_fmt *fmt, struct ps_stream *stream)
 
   return err;
 }
-
+
 /* Format a description as instructed by FMT, of the process described by PS
    to STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
@@ -321,14 +411,12 @@ ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps, struct ps_stre
   return err;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Remove those fields from FMT for which the function FN, when called on the
-   field's format spec, returns true.  Appropiate inter-field characters are
-   also removed: those *following* deleted fields at the beginning of the
-   fmt, and those *preceeding* deleted fields *not* at the beginning. */
+   field, returns true.  Appropiate inter-field characters are also removed:
+   those *following* deleted fields at the beginning of the fmt, and those
+   *preceeding* deleted fields *not* at the beginning. */
 void
-ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(const struct ps_fmt_spec *spec))
+ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(struct ps_fmt_field *field))
 {
   int nfields = fmt->num_fields;
   struct ps_fmt_field *fields = fmt->fields, *field = fields;
@@ -337,76 +425,70 @@ ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(const struct ps_fmt_spec *spec))
   ps_flags_t need = 0;
 
   while ((field - fields) < nfields)
-    {
-      const struct ps_fmt_spec *spec = field->spec;
+    if (field->spec != NULL && (*fn)(field))
+      /* Squash this field! */
+      {
+	/* Save the old prefix, in case we're deleting the first field,
+	   and need to prepend it to the next field.  */
+	const char *beg_pfx = field->pfx; 
+	int beg_pfx_len = field->pfx_len;
 
-      if (spec != NULL && (*fn)(spec))
-	/* Squash this field! */
-	{
-	  /* Save the old prefix, in case we're deleting the first field,
-	     and need to prepend it to the next field.  */
-	  const char *beg_pfx = field->pfx; 
-	  int beg_pfx_len = field->pfx_len;
+	nfields--;
 
-	  nfields--;
+	/* Shift down all following fields over this one.  */
+	if (nfields > 0)
+	  bcopy (field + 1, field,
+		(nfields - (field - fields)) * sizeof *field);
 
-	  /* Shift down all following fields over this one.  */
-	  if (nfields > 0)
-	    bcopy (field + 1, field,
-		  (nfields - (field - fields)) * sizeof *field);
-
-	  if (field == fields)
-	    /* This is the first field, so move its prefix to the
-	       following field (overwriting that field's prefix).  This
-	       is to ensure that the beginning of the format string is
-	       preserved in preference to the middle, as it is more
-	       likely to be significant.  */
-	    {
-	      if (nfields == 0)
-		/* no following fields, so just make a new end field (we're
-		   sure to have room, as we just vacated a space).  */
-		{
-		  nfields++;
-		  field->pfx = beg_pfx;
-		  field->pfx_len = beg_pfx_len;
-		  field->spec = NULL;
-		}
-	      else if (field->spec == NULL)
-		/* One following field with only a prefix -- the suffix
-		   of the format string.  Tack the prefix on before the
-		   suffix so we preserve both the beginning and the end
-		   of the format string.  We know there's space in our
-		   copy of the source string, because we've just squashed
-		   a field which took at least that much room (as it
-		   previously contained the same prefix).  */
-		{
-		  field->pfx -= beg_pfx_len;
-		  field->pfx_len += beg_pfx_len;
-		  bcopy (beg_pfx, (char *)field->pfx, beg_pfx_len);
-		}
-	      else
-		/* otherwise just replace the next field's prefix with
-		   the beginning one */
-		{
-		  field->pfx = beg_pfx;
-		  field->pfx_len = beg_pfx_len;
-		}
-	    }
-	}
-      else
-	/* don't squash this field, just move to the next one */
-	{
-	  need |= ps_getter_needs (ps_fmt_spec_getter (spec));
-	  field++;
-	}
-    }
+	if (field == fields)
+	  /* This is the first field, so move its prefix to the
+	     following field (overwriting that field's prefix).  This
+	     is to ensure that the beginning of the format string is
+	     preserved in preference to the middle, as it is more
+	     likely to be significant.  */
+	  {
+	    if (nfields == 0)
+	      /* no following fields, so just make a new end field (we're
+		 sure to have room, as we just vacated a space).  */
+	      {
+		nfields++;
+		field->pfx = beg_pfx;
+		field->pfx_len = beg_pfx_len;
+		field->spec = NULL;
+	      }
+	    else if (field->spec == NULL)
+	      /* One following field with only a prefix -- the suffix
+		 of the format string.  Tack the prefix on before the
+		 suffix so we preserve both the beginning and the end
+		 of the format string.  We know there's space in our
+		 copy of the source string, because we've just squashed
+		 a field which took at least that much room (as it
+		 previously contained the same prefix).  */
+	      {
+		field->pfx -= beg_pfx_len;
+		field->pfx_len += beg_pfx_len;
+		bcopy (beg_pfx, (char *)field->pfx, beg_pfx_len);
+	      }
+	    else
+	      /* otherwise just replace the next field's prefix with
+		 the beginning one */
+	      {
+		field->pfx = beg_pfx;
+		field->pfx_len = beg_pfx_len;
+	      }
+	  }
+      }
+    else
+      /* don't squash this field, just move to the next one */
+      {
+	need |= ps_getter_needs (ps_fmt_spec_getter (field->spec));
+	field++;
+      }
 
   fmt->num_fields = nfields;
   fmt->needs = need;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Remove those fields from FMT which would need the proc_stat flags FLAGS.
    Appropiate inter-field characters are also removed: those *following*
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
@@ -414,16 +496,14 @@ ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(const struct ps_fmt_spec *spec))
 void
 ps_fmt_squash_flags (struct ps_fmt *fmt, ps_flags_t flags)
 {
-  int squashable_spec (const struct ps_fmt_spec *spec)
+  int squashable_field (struct ps_fmt_field *field)
     {
-      return ps_getter_needs (ps_fmt_spec_getter (spec)) & flags;
+      return field->spec->getter->needs & flags;
     }
 
-  ps_fmt_squash (fmt, squashable_spec);
+  ps_fmt_squash (fmt, squashable_field);
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Try and restrict the number of output columns in FMT to WIDTH.  */
 void
 ps_fmt_set_output_width (struct ps_fmt *fmt, int width)
