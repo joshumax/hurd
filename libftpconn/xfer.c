@@ -1,8 +1,7 @@
 /* Start/stop data channel transfer
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -34,7 +33,7 @@ ftp_conn_start_open_actv_data (struct ftp_conn *conn, int *data)
   /* DCQ is a socket on which to listen for data connections from the server. */
   int dcq;
   struct sockaddr *addr = conn->actv_data_addr;
-  size_t addr_len = sizeof *addr;
+  socklen_t addr_len = sizeof *addr;
 
   if (! addr)
     /* Generate an address for the data connection (which we must know,
@@ -105,7 +104,7 @@ static error_t
 ftp_conn_finish_open_actv_data (struct ftp_conn *conn, int *data)
 {
   struct sockaddr_in rmt_addr;
-  size_t rmt_addr_len = sizeof rmt_addr;
+  socklen_t rmt_addr_len = sizeof rmt_addr;
   int real = accept (*data, &rmt_addr, &rmt_addr_len);
 
   close (*data);
