@@ -36,10 +36,14 @@ message_demuxer (mach_msg_header_t *inp,
   extern int process_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int proc_excrepl_server (mach_msg_header_t *, mach_msg_header_t *);
 
   return (process_server (inp, outp)
 	  || notify_server (inp, outp)
-	  || interrupt_server (inp, outp));
+	  || interrupt_server (inp, outp)
+	  || proc_exc_server (inp, outp)
+	  || proc_excrepl_server (inp, outp));
 }
 
 void
@@ -47,6 +51,8 @@ main ()
 {
   mach_port_t boot;
   mach_port_t authhandle;
+
+  initprimes ();
 
   task_get_bootstrap_port (mach_task_self (), &boot);
 
