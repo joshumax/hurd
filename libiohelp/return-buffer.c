@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <mach.h>
+#include <sys/mman.h>
 
 #include "iohelp.h"
 

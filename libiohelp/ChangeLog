@@ -1,3 +1,10 @@
+1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* return-buffer.c: Include <sys/mman.h>.
+
+	* iouser-reauth.c (iohelp_reauth): Cast first arg to munmap
+	correctly. 
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* iouser-reauth.c: Add #include <sys/mman.h> for munmap decl.

@@ -82,13 +82,13 @@ struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
     err = idvec_set_ids (new->gids, gen_gids, gengidlen);
 
   if (gubuf != gen_uids)
-    munmap (gen_uids, genuidlen * sizeof (uid_t));
+    munmap ((caddr_t) gen_uids, genuidlen * sizeof (uid_t));
   if (ggbuf != gen_gids)
-    munmap (gen_gids, gengidlen * sizeof (uid_t));
+    munmap ((caddr_t) gen_gids, gengidlen * sizeof (uid_t));
   if (aubuf != aux_uids)
-    munmap (aux_uids, auxuidlen * sizeof (uid_t));
+    munmap ((caddr_t) aux_uids, auxuidlen * sizeof (uid_t));
   if (agbuf != aux_gids)
-    munmap (aux_gids, auxgidlen * sizeof (uid_t));
+    munmap ((caddr_t) aux_gids, auxgidlen * sizeof (uid_t));
 
   if (err)
     {
