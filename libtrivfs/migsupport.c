@@ -54,7 +54,7 @@ _trivfs_begin_using_control (mach_port_t port)
       return 0;
     }
   else
-    return ports_lookup_port (0, port, trivfs_cntl_porttypes[0]);
+    return ports_lookup_port (0, port, trivfs_cntl_portclasses[0]);
 }
 
 void 
