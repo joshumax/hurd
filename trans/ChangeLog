@@ -1,3 +1,16 @@
+1999-08-31  Marcus Brinkmann <Marcus.Brinkmann@ruhr-uni-bochum.de>
+
+	* crash.c (trivfs_modify_stat): Remove redundant fstype setting.
+	* password.c (trivfs_modify_stat): Likewise.
+
+	* bogus-fifo.c (main): Deallocate bootstrap port after using it.
+	* fifo.c (main): Likewise.
+	* firmlink.c (main): Likewise.
+	* ifsock.c (main): Likewise.
+	* magic.c (main): Likewise.
+	* null.c (main): Likewise.
+	* symlink.c (main): Likewise.
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* firmlink.c: Add #include <sys/mman.h>.
