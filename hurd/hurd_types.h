@@ -23,6 +23,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/std_types.h>	/* For mach_port_t et al. */
 #include <sys/types.h>		/* For pid_t and uid_t.  */
 
+/* A string identifying this release of the GNU Hurd. */
+#define HURD_RELEASE "0.0"
+
 typedef mach_port_t file_t;
 typedef mach_port_t fsys_t;
 typedef mach_port_t io_t;
