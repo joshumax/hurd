@@ -47,15 +47,11 @@ routine auth_getids (
 /* Create a new authentication handle.  */
 routine auth_makeauth (
 	handle: auth_t;
+	other_handles: portarray_t;
 	gen_uids: idarray_t;
 	aux_uids: idarray_t;
 	gen_gids: idarray_t;
 	aux_gids: idarray_t;
-	out newhandle: mach_port_make_send_t);
-
-routine auth_combine (
-	handle1: auth_t;
-	handle2: auth_t;
 	out newhandle: mach_port_make_send_t);
 
 /* Called by a user in a reauthentication transaction.  The rendezvous
