@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1999 Free Software Foundation
    Written by Thomas Bushnell, BSG.
 
@@ -21,11 +21,12 @@
 
 /* Implement io_revoke as described in <hurd/io.defs>. */
 kern_return_t
-trivfs_S_io_revoke (struct trivfs_protid *cred)
+trivfs_S_io_revoke (struct trivfs_protid *cred,
+		    mach_port_t reply, mach_msg_type_name_t reply_type)
 {
   /* Revoke of the underlying node is actually generally right,
      because that will cause actual calls to fail.  In any case,
-     we don't have the ability to check permissions ourselves 
+     we don't have the ability to check permissions ourselves
      correctly. */
 
   return cred ? io_revoke (cred->realnode) : EOPNOTSUPP;
