@@ -8,9 +8,9 @@
 # Now the exec server; to load the dynamically-linked exec server program,
 # we have the boot loader in fact load and run ld.so, which in turn
 # loads and runs /hurd/exec.  This task is created, and its task port saved
-# in ${exec-task} to be passed to the fs above, but it is left suspended; 
+# in ${exec-task} to be passed to the fs above, but it is left suspended;
 # the fs will resume the exec task once it is ready.
 /lib/ld.so.1 /hurd/exec $(exec-task=task-create)
 
 # default pager
-/dev/sd0b $(add-paging-file) $(default-pager)
+/dev/sd0b $(add-paging-file)
