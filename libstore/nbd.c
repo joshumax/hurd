@@ -192,7 +192,7 @@ nbd_read (struct store *store,
 
   err = read_reply (store, req.handle);
   if (err == 0)
-    err = io_read (store->port, (char **) buf, &cc, (off_t) -1, amount);
+    err = io_read (store->port, (char **) buf, len, (off_t) -1, amount);
   return err;
 }
 
