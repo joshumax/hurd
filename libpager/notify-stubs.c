@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "notify_S.h"
+#include <errno.h>
 
 error_t
 _pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify 
