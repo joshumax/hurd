@@ -24,7 +24,7 @@
 #include <hurd/diskfs.h>
 #include <assert.h>
 #include "fs.h"
-
+#include "dinode.h"
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
@@ -218,7 +218,7 @@ dino (ino_t inum)
   return (struct dinode *)
     (disk_image 
      + fsaddr (sblock, ino_to_fsba (sblock, inum))
-     + ino_to_fsbo (sblock, inum));
+     + ino_to_fsbo (sblock, inum) * sizeof (struct dinode));
 }
 
 /* Convert a indirect block number to a daddr_t table. */
@@ -256,6 +256,10 @@ void ffs_blkfree(struct node *, daddr_t bno, long size);
 daddr_t ffs_blkpref (struct node *, daddr_t, int, daddr_t *);
 error_t ffs_realloccg(struct node *, daddr_t, daddr_t,
 		  int, int, daddr_t *, struct protid *);
+
+/* From bmap.c */
+error_t fetch_indir_spec (struct node *, daddr_t, struct iblock_spec *);
+void mark_indir_dirty (struct node *, daddr_t);
 
 /* From devio.c: */
 error_t dev_write_sync (daddr_t addr, vm_address_t data, long len);
