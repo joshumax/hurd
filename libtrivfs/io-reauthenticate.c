@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -51,13 +51,15 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   newright = ports_get_send_right (newcred);
   assert (newright != MACH_PORT_NULL);
 
-  newcred->user = iohelp_reauth (auth, rendport, newright, 1);
+  err = iohelp_reauth (&newcred->user, auth, rendport, newright, 1);
+  mach_port_deallocate (mach_task_self (), rendport);
+  mach_port_deallocate (mach_task_self (), auth);
+  if (err)
+    return err;
+
+  mach_port_deallocate (mach_task_self (), newright);
   if (idvec_contains (newcred->user->uids, 0))
     newcred->isroot = 1;
-
-  mach_port_deallocate (mach_task_self (), rendport);
-  mach_port_deallocate (mach_task_self (), newright);
-  mach_port_deallocate (mach_task_self (), auth);
 
   newcred->hook = cred->hook;
 

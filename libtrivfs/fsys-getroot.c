@@ -44,7 +44,6 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   mach_port_t new_realnode;
   struct trivfs_protid *cred;
   struct iouser *user;
-  struct idvec *uvec, *gvec;
 
   if (!cntl)
     return EOPNOTSUPP;
@@ -75,11 +74,9 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (err)
     return err;
 
-  uvec = make_idvec ();
-  gvec = make_idvec ();
-  idvec_set_ids (uvec, uids, nuids);
-  idvec_set_ids (gvec, gids, ngids);
-  user = iohelp_create_iouser (uvec, gvec); /* XXX check return value?  */
+  err = iohelp_create_complex_iouser (&user, uids, nuids, gids, ngids);
+  if (err)
+    return err;
 
   /* Validate permissions.  */
   if (! trivfs_check_access_hook)
