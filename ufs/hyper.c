@@ -82,11 +82,15 @@ get_hypermetadata (void)
   ufs_clean = sblock->fs_clean;
   if (! ufs_clean)
     {
-      error (0, 0, "warning: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck");
+      error (0, 0,
+	     "%s: warning: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck",
+	     diskfs_device_arg);
       if (! diskfs_readonly)
 	{
 	  diskfs_readonly = 1;
-	  error (0, 0, "MOUNTED READ-ONLY; MUST USE `fsysopts --writable'");
+	  error (0, 0,
+		 "%s: MOUNTED READ-ONLY; MUST USE `fsysopts --writable'",
+		 diskfs_device_arg);
 	}
     }
 
