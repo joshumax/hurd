@@ -1,3 +1,8 @@
+Fri Nov 15 19:05:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (read_utmp_procs): Function removed.
+	(main): Use utmp.h functions for reading utmp.
+
 Thu Oct 24 15:00:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (options): Remove header for run-time supplied fields.
