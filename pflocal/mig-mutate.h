@@ -20,12 +20,12 @@
 
 #define IO_INTRAN sock_user_t begin_using_sock_user_port (io_t)
 #define IO_DESTRUCTOR end_using_sock_user_port (sock_user_t)
+
 #define IO_IMPORTS import "mig-decls.h";
 
 #define SOCKET_INTRAN sock_user_t begin_using_sock_user_port (socket_t)
 #define SOCKET_DESTRUCTOR end_using_sock_user_port (sock_user_t)
-#define SOCKET_IMPORTS import "mig-decls.h";
+#define ADDRPORT_INTRAN addr_t begin_using_addr_port (addr_port_t)
+#define ADDRPORT_DESTRUCTOR end_using_addr_port (addr_t)
 
-#define ADDR_INTRAN addr_t begin_using_addr_port (addr_t)
-#define ADDR_DESTRUCTOR end_using_addr_port (addr_t)
-#define ADDR_IMPORTS import "mig-decls.h";
+#define SOCKET_IMPORTS import "mig-decls.h";
