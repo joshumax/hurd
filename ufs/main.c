@@ -66,9 +66,13 @@ static error_t
 parse_opt (int opt, char *arg)
 {
   /* We currently only deal with one option... */
-  if (opt != '?')
-    return EINVAL;
-  usage (0);			/* never returns */
+  switch (opt)
+    {
+    case '?':
+      usage (0);		/* never returns */
+    default:
+      return EINVAL;
+    }
   return 0;
 }
 
