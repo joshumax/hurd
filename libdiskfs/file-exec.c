@@ -24,6 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/stat.h>
 #include <fcntlbits.h>
 #include <hurd/exec.h>
+#include <hurd/paths.h>
 
 kern_return_t 
 diskfs_S_file_exec (struct protid *cred,
