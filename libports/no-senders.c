@@ -30,6 +30,9 @@ ports_no_senders (void *portstruct,
   int dealloc;
   mach_port_t old;
   
+  ports_interrupt_notified_rpcs (portstruct, pi->port_right,
+				 MACH_NOTIFY_NO_SENDERS);
+
   mutex_lock (&_ports_lock);
   if ((pi->flags & PORT_HAS_SENDRIGHTS) == 0)
     {
