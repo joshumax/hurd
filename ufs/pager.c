@@ -528,7 +528,7 @@ diskfs_shutdown_pager ()
   error_t shutdown_one (struct pager *p)
     {
       /* Make sure the disk pager is done last. */
-      if (p->upi != diskpager)
+      if (p != diskpager->p)
 	pager_shutdown (p);
       return 0;
     }
@@ -546,7 +546,7 @@ diskfs_sync_everything (int wait)
   error_t sync_one (struct pager *p)
     {
       /* Make sure the disk pager is done last. */
-      if (p != diskpager)
+      if (p != diskpager->p)
 	pager_sync (p, wait);
       return 0;
     }
