@@ -19,9 +19,9 @@ dir := fsck
 makemode := utility
 
 SRCS = dir.c inode.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
-	pass5.c preen.c setup.c utilities.c
+	pass5.c setup.c utilities.c # preen.c
 OBJS = dir.o inode.o main.o pass1.o pass1b.o pass2.o pass3.o pass4.o \
-	pass5.o preen.o setup.o utilities.o
+	pass5.o setup.o utilities.o # preen.o
 target = fsck
 
 include ../Makeconf
