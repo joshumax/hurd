@@ -1,3 +1,11 @@
+2002-01-04  Roland McGrath  <roland@frob.com>
+
+	* msgport.c (str2flags): Use const in argument type; make static.
+	Set O_CREAT for "w" mode.  Grok "a" to set O_APPEND.
+	(cmd_setfd): Always call str2flags, giving it a default string.
+	(cmd_stdin, cmd_stdout, cmd_stderr): Likewise.
+	(cmd_options): Update doc strings.
+
 2002-01-02  Roland McGrath  <roland@frob.com>
 
 	* rpctrace.c (traced_spawn) [KERN_INVALID_LEDGER]:
