@@ -110,7 +110,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       
       if (pathbuf[0] == '/')
 	{
-	  *retry = FS_RETRY_NORMAL;
+	  *retry = FS_RETRY_MAGICAL;
 	  *returned_port = MACH_PORT_NULL;
 	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	  strcpy (retryname, pathbuf);
