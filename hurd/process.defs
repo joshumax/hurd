@@ -294,8 +294,7 @@ routine proc_getloginpids (
 	id: pid_t;
 	out pids: pidarray_t, dealloc);
 
-/* These next two should not actually be used; they are here 
-   for "historic reasons."  You are not expected to understand this. */
+/* You are not expected to understand this. */
 routine proc_setlogin (
 	process: process_t;
 	logname: string_t);
