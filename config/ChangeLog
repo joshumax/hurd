@@ -1,3 +1,9 @@
+1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* inetd.conf: Removed.  We don't install inetd, so we have no business
+	installing inetd.conf.
+	* Makefile (SYSCONFFILES): Remove inetd.conf.
+
 Sat Mar  6 15:46:17 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* group, passwd: Revert preceding change.
@@ -138,11 +144,11 @@ Thu Jun 20 14:46:39 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (SYSCONFFILES): Removed `rc'.
 	* rc: Removed to daemons/rc.sh.
-	
+
 Wed Jun 19 15:25:15 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* rc: Print date before running fsck.  Comment out pty permission
-	frobbing. 
+	frobbing.
 
 Tue Jun 18 22:40:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
