@@ -1,11 +1,11 @@
 /* Interface definitions for the exec servers
-   Copyright (C) 1991, 1992 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -46,7 +46,7 @@ routine exec_startup (
 	out intarray: intarray_t);
 
 /* This call is made by the bootstrap filesystem to give the
-   exec server a port to init, whence it can get all else.  */
+   exec server a port to startup, whence it can get all else.  */
 routine exec_boot_init (
 	execserver: mach_port_t;
 	init: startup_t);
