@@ -49,6 +49,25 @@ diskfs_truncate (struct node *np,
   if (length >= osize)
     return 0;
 
+  /* Check to see if this is a kludged symlink. */
+  if (direct_symlink_extension && S_ISLNK (np->dn_stat.st_mode)
+      && osize < sblock->fs_maxsymlinklen)
+    {
+      error_t err;
+      
+      /* Prune it here */
+      err = diskfs_catch_exception ();
+      if (err)
+	return err;
+      
+      bzero (dinodes[np->dn->number].di_shortlink + length,
+	     osize - length);
+      diskfs_end_catch_exception ();
+      np->dn_stat.st_size = length;
+      np->dn_set_ctime = 1;
+      np->dn_set_mtime = 1;
+    }
+
   /* Calculate block number of last block */
   lastblock = lblkno (length + sblock->fs_bsize - 1) - 1;
   olastblock = lblkno (osize + sblock->fs_bsize - 1) - 1;
@@ -109,7 +128,7 @@ diskfs_truncate (struct node *np,
 	{
 	  if (np->dn->sinloc[idx - NDADDR])
 	    {
-	      blkfree (np->dn->sinloc[idx - NDADDR], sblock->fs_bsize);
+	      ffs_blkfree (np, np->dn->sinloc[idx - NDADDR], sblock->fs_bsize);
 	      np->dn->sinloc[idx - NDADDR] = 0;
 	      np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
 	      np->dn_stat_dirty = 1;
@@ -138,7 +157,7 @@ diskfs_truncate (struct node *np,
 	    bsize = blksize (np, idx);
 	  else
 	    bsize = sblock->fs_bsize;
-	  blkfree (bn, bsize);
+	  ffs_blkfree (np, bn, bsize);
 	  np->dn_stat.st_blocks -= bsize / DEV_BSIZE;
 	  np->dn_stat_dirty = 1;
 	}
@@ -158,7 +177,7 @@ diskfs_truncate (struct node *np,
 	  if (oldspace - newspace)
 	    {
 	      bn += numfrags (newspace);
-	      blkfree (bn, oldspace - newspace);
+	      ffs_blkfree (np, bn, oldspace - newspace);
 	      np->dn_stat.st_blocks -= (oldspace - newspace) / DEV_BSIZE;
 	      np->dn_stat_dirty = 1;
 	    }
@@ -192,7 +211,8 @@ dindir_drop (struct node *np)
 
   if (dinodes[np->dn->number].di_ib[INDIR_DOUBLE])
     {
-      blkfree (dinodes[np->dn->number].di_ib[INDIR_DOUBLE], sblock->fs_bsize);
+      ffs_blkfree (np, dinodes[np->dn->number].di_ib[INDIR_DOUBLE], 
+		   sblock->fs_bsize);
       dinodes[np->dn->number].di_ib[INDIR_DOUBLE] = 0;
       np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
     }
@@ -225,7 +245,7 @@ sindir_drop (struct node *np,
 	{
 	  if (np->dn->dinloc[idx - 1])
 	    {
-	      blkfree (np->dn->dinloc[idx - 1], sblock->fs_bsize);
+	      ffs_blkfree (np, np->dn->dinloc[idx - 1], sblock->fs_bsize);
 	      np->dn->dinloc[idx - 1] = 0;
 	      np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
 	    }
@@ -244,7 +264,8 @@ sindir_drop (struct node *np,
   /* Drop the block from the inode if we don't need it any more */
   if (first == 0 && dinodes[np->dn->number].di_ib[INDIR_SINGLE])
     {
-      blkfree (dinodes[np->dn->number].di_ib[INDIR_SINGLE], sblock->fs_bsize);
+      ffs_blkfree (np, dinodes[np->dn->number].di_ib[INDIR_SINGLE], 
+		   sblock->fs_bsize);
       dinodes[np->dn->number].di_ib[INDIR_SINGLE] = 0;
       np->dn_stat.st_blocks -= sblock->fs_bsize / DEV_BSIZE;
     }
@@ -312,7 +333,7 @@ diskfs_grow (struct node *np,
   if (err = diskfs_catch_exception())
     {
       if (dealloc_on_error)
-	blkfree (dealloc_on_error, dealloc_size);
+	ffs_blkfree (np, dealloc_on_error, dealloc_size);
       goto out;
     }
 
@@ -334,8 +355,8 @@ diskfs_grow (struct node *np,
       if (osize < sblock->fs_bsize && osize > 0)
 	{
 	  daddr_t old_pbn;
-	  err = realloccg (np, nb,
-			   blkpref (np, nb, (int)nb, 
+	  err = ffs_realloccg (np, nb,
+			   ffs_blkpref (np, nb, (int)nb, 
 				    dinodes[np->dn->number].di_db),
 			   osize, sblock->fs_bsize, &pbn, cred);
 	  if (err)
@@ -372,8 +393,8 @@ diskfs_grow (struct node *np,
 	    osize = sblock->fs_bsize;
 	  if (size > osize)
 	    {
-	      err = realloccg (np, lbn, 
-			       blkpref (np, lbn, lbn, 
+	      err = ffs_realloccg (np, lbn, 
+			       ffs_blkpref (np, lbn, lbn, 
 					dinodes[np->dn->number].di_db),
 			       osize, size, &pbn, cred);
 	      if (err)
@@ -396,9 +417,10 @@ diskfs_grow (struct node *np,
 	}
       else
 	{
-	  err = alloc (np, lbn,
-		       blkpref (np, lbn, lbn, dinodes[np->dn->number].di_db),
-		       size, &pbn, cred);
+	  err = ffs_alloc (np, lbn,
+			   ffs_blkpref (np, lbn, lbn,
+				    dinodes[np->dn->number].di_db),
+			   size, &pbn, cred);
 	  if (err)
 	    goto out;
 	  dealloc_on_error = pbn;
@@ -425,9 +447,9 @@ diskfs_grow (struct node *np,
       lbn -= NDADDR;
       if (!np->dn->sinloc[lbn])
 	{
-	  err = alloc (np, lbn, blkpref (np, lbn + NDADDR, lbn, 
-					 np->dn->sinloc),
-		       sblock->fs_bsize, &pbn, cred);
+	  err = ffs_alloc (np, lbn, ffs_blkpref (np, lbn + NDADDR, lbn, 
+					     np->dn->sinloc),
+			   sblock->fs_bsize, &pbn, cred);
 	  if (err)
 	    goto out;
 	  dealloc_on_error = pbn;
