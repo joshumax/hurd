@@ -1,3 +1,7 @@
+2003-08-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* zero.c: Do not include <assert.h>.
+
 2003-07-21  Ognyan Kulev  <ogi@mfmi.uni-sofia.bg>
 
 	* rdwr.c (store_write): Return EINVAL when LEN is not aligned to
