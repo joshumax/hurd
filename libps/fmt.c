@@ -288,7 +288,8 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   new_fmt->fields = fields;
   new_fmt->num_fields = field - fields;
   new_fmt->needs = needs;
-  new_fmt->inval = posix ? "-" : 0;
+  new_fmt->inapp = posix ? "-" : 0;
+  new_fmt->error = "?";
 
   *fmt = new_fmt;
 
@@ -358,7 +359,8 @@ ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy)
   new->num_fields = fmt->num_fields;
   new->src = src;
   new->src_len = fmt->src_len;
-  new->inval = fmt->inval;
+  new->inapp = fmt->inapp;
+  new->error = fmt->error;
   *copy = new;
 
   return 0;
@@ -418,7 +420,8 @@ ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps, struct ps_stre
   error_t err = 0;
   struct ps_fmt_field *field = ps_fmt_fields (fmt);
   int nfields = ps_fmt_num_fields (fmt);
-  int have = proc_stat_flags (ps);
+  ps_flags_t have = ps->flags;
+  ps_flags_t inapp = ps->inapp;
 
   while (nfields-- > 0 && !err)
     {
@@ -431,16 +434,20 @@ ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps, struct ps_stre
 
       if (spec != NULL && !err)
 	{
-	  int need = ps_getter_needs (ps_fmt_spec_getter (spec));
+	  ps_flags_t need = ps_getter_needs (ps_fmt_spec_getter (spec));
 
 	  /* do we have the resources to print this field? */
 	  if ((need & have) == need)
 	    /* Yup */
 	    err = (*spec->output_fn) (ps, field, stream);
+	  else if (need & ~have & inapp)
+	    /* This field is inappropriate for PS.  */
+	    err =
+	      ps_stream_write_field (stream, fmt->inapp ?: "", field->width);
 	  else
-	    /* Something to display in invalid fields.  */
-	    err = ps_stream_write_field (stream, fmt->inval ?: "",
-					 ps_fmt_field_width (field));
+	    /* This field is appropriate, but couldn't be fetched.  */
+	    err =
+	      ps_stream_write_field (stream, fmt->error ?: "", field->width);
 	}
 
       field++;
