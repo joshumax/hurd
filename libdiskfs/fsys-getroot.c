@@ -46,7 +46,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   mode_t type;
   struct protid *newpi;
   struct iouser user;
-  
+  struct peropen peropen_context = { root_parent: dotdot };
+
   if (!pt)
     return EOPNOTSUPP;
 
@@ -71,10 +72,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
        || fshelp_translated (&diskfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
-      struct diskfs_trans_callback_cookie2 cookie2 = { dotdot, 0 };
-
       error = fshelp_fetch_root (&diskfs_root_node->transbox,
-				 &cookie2, dotdot, &user, flags, 
+				 &peropen_context, dotdot, &user, flags, 
 				 _diskfs_translator_callback1,
 				 _diskfs_translator_callback2,
 				 retry, retryname, returned_port);
@@ -172,10 +171,13 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  error = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
-						     flags, dotdot, 0),
-				&user, &newpi);
+  error =
+    diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags,
+					       &peropen_context),
+			  &user, &newpi);
+
   mach_port_deallocate (mach_task_self (), dotdot);
+
   if (! error)
     {
       *retry = FS_RETRY_NORMAL;
