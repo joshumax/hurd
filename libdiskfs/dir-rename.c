@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_rename
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -196,6 +196,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   
   diskfs_nrele (tmpnp);
 
+  diskfs_purge_cache_node (fdp, fnp);
   err = diskfs_dirremove (fdp, ds);
   if (diskfs_synchronous)
     diskfs_node_update (fdp, 1);
