@@ -583,3 +583,109 @@ diskfs_shutdown_soft_ports ()
      (the only things that should be soft) XXX */
 }
 
+/* Return a description of the storage of the file. */
+/* In STORAGE_DATA are the following, in network byte order:
+
+   Inode number (4 bytes)
+   disk address of transator spec (4 bytes)
+   disk address of inode structure (4 bytes)
+   offset into inode block holding inode (4 bytes) */
+void
+diskfs_S_file_get_storage_info (struct protid *cred,
+				int *class,
+				int **addresses,
+				u_int *naddresses,
+				char *storage_name,
+				mach_port_t *storage_port,
+				mach_msg_type_name_t *storage_port_type,
+				char **storage_data,
+				u_int *storage_data_len)
+{
+  error_t err;
+  struct node *np;
+  int i;
+  struct dinode *di;
+  void *cp;
+  
+  np = cred->po->np;
+  mutex_lock (&np->lock);
+  
+  /* See if this file fits in the direct block pointers.  If not, punt
+     for now.  (Reading indir blocks is a pain, and I'm postponing
+     pain.)  XXX */
+
+  if (np->allocsize > NDADDR * sblock->fs_bsize)
+    {
+      mutex_unlock (&np->lock);
+      return EINVAL;
+    }
+  
+  if (*naddresses < NDADDR * 2)
+    vm_allocate (mach_task_self (), addresses, sizeof (int) * NDADDR * 2, 1);
+  else
+    bzero (addresses, *naddresses * 2 * sizeof (int));
+  *naddresses = NDADDR * 2;
+
+  if (*storage_data_len < 4 * sizeof (int))
+    vm_allocate (mach_task_self (), storage_data, sizeof (int) * 4, 1);
+  *storage_data_len = 4 * sizeof (int);
+
+  di = dino (np->dn->number);
+  
+  err = diskfs_catch_exception ();
+  if (err)
+    {
+      mutex_unlock (&np->lock);
+      return err;
+    }
+  
+  /* Copy the block pointers */
+
+  if (!direct_symlink_extension
+      || np->dn_stat.st_size >= sblock->fs_maxsymlinklen
+      || !S_ISLNK (np->dn_stat.st_mode))
+    {
+      for (i = 0; i < NDADDR; i++)
+	{
+	  addresses[2 * i] = fsbtodb (di->di_db[i]);
+	  if ((i + 1) * sblock->fs_bsize > np->allocsize)
+	    addresses[2 * i + 1] = np->allocsize - i * sblock->fs_bsize;
+	  else
+	    addresses[2 * i + 1] = sblock->fs_bsize;
+	}
+    }
+
+  /* Fill in the aux data */
+  cp = *storage_data;
+
+  *(int *)cp = htonl (np->dn->number);
+  cp += sizeof (int);
+  
+  *(int *)cp = htonl (di->di_trans);
+  cp += sizeof (int);
+  
+  *(int *)cp = htonl (fsbtodb (ino_to_fsba (sblock, np->dn->number)));
+  cp += sizeof (int);
+  
+  *(int *)cp = htonl (ino_to_fsbo (sblock, np->dn->number)
+		      * sizeof (struct dinode));
+  
+      
+  diskfs_end_catch_exception ();
+  
+  *class = STORAGE_DEVICE;
+  
+  strcpy (storage_name, ufs_device_name);
+  
+  if (diskfs_isuid (0, cred))
+    *storage_port = ufs_device;
+  else
+    *storage_port = MACH_PORT_NULL;
+  *storage_port_type = MACH_MSG_TYPE_COPY_SEND;
+  
+  mutex_unlock (&np->lock);
+  
+  return 0;
+}
+
+  
