@@ -1,7 +1,7 @@
 /* Usermux leaf node functions
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -133,6 +133,7 @@ create_user_node (struct usermux *mux, struct usermux_name *name,
       new->nn_stat.st_mode = (S_IFREG | S_IPTRANS | 0666);
       new->nn_stat.st_size = 0;
     }
+  new->nn_translated = new->nn_stat.st_mode;
 
   if (err)
     {

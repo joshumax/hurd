@@ -104,7 +104,7 @@ main (int argc, char **argv)
 
   /* Parse our command line arguments.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
-    
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
 
@@ -146,10 +146,11 @@ main (int argc, char **argv)
   netfs_root_node->nn_stat.st_ino = 2;
   netfs_root_node->nn_stat.st_mode =
     S_IFDIR | (ul_stat.st_mode & ~S_IFMT & ~S_ITRANS);
+  netfs_root_node->nn_translated = 0;
 
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		usermux_maptime);
-  
+
   for (;;)			/* ?? */
     netfs_server_loop ();
 }
