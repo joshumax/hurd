@@ -18,24 +18,211 @@ along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
-/* This subsystem is derived from calculations in <ioctls.h>. */
-subsystem tioctl NNN;
+#include <hurd/hurd_types.defs>
 
-/* MiG versions of TIOCSETA and TIOCGETA ioctls.  The format is that
-   specified by the definition of _IOT_termios as described in <termbits.h>. */
-type modes_t int[4];
-type ccs_t char[20];
-type speeds_t int[2];
+/* Ioctl class `t'; the subsystem is derived from calculations in
+   <ioctls.h>. */
+subsystem tioctl 6000; /* XXX */
+
+import "../hurd/ioctl_types.h"; /* XXX */
+
+/* These are the pieces of a struct termios as specified by the
+   definition of _IOT_termios in <termbits.h>. */
+type modes_t = array[4] of int;
+type ccs_t = array[20] of char;
+type speeds_t = array[2] of int;
+
+/* This is the arg for a struct winsize as specified by the
+   definition of _IOT_winsize in <sys/ioctl.h>. */
+type sizes_t = array[4] of short;
+
+skip; skip; skip; /* 0 1 2 unused */
+
+/* 3 TIOCMODG */
+#if 0
+routine tioctl_tiocmodg (
+	reqport: io_t;
+	out state: int);   
+#else
+skip;
+#endif
+
+#if 0
+/* 4 TIOCMODS */
+routine tioctl_tiocmods (
+	reqport: io_t;
+	state: int);
+#else
+skip;
+#endif
+
+skip; skip; skip; skip; /* 5 6 7 8 unused */
+skip; skip; skip; skip; /* 9 10 11 12 unused */
+
+#if 0
+/* 13 TIOCEXCL */
+routine tioctl_tiocexcl (
+	reqport: io_t);
+#else
+skip;
+#endif
+
+#if 0
+/* 14 TIOCNXCL */
+routine tioctl_tiocnxcl (
+	reqport: io_t);
+#else
+skip;
+#endif
+
+skip; /* 15 unused */
+
+#if 0
+/* 16 TIOCFLUSH */
+routine tioctl_tiocflush (
+	reqport: io_t;
+	queue_selector: int);
+#else
+skip;
+#endif
+
+skip; skip; /* 17 18 unused */
+
+/* 19 TIOCGETA */
+routine tioctl_tiocgeta (
+	port: io_t;
+	out modes: modes_t;
+	out ccs: ccs_t;
+	out speeds: speeds_t);
+   
+/* 20 TIOCSETA */
 routine tioctl_tiocseta (
 	port: io_t;
 	modes: modes_t;
 	ccs: ccs_t;
 	speeds: speeds_t);
 
-routine tioctl_tiocgeta (
+/* 21 TIOCSETAW */
+routine tioctl_tiocsetaw (
 	port: io_t;
-	out modes: modes_t;
-	out ccs: ccs_t;
-	out speeds: speeds_t);
+	modes: modes_t;
+	ccs: ccs_t;
+	speeds: speeds_t);
 
+/* 22 TIOCSETAF */
+routine tioctl_tiocsetaf (
+	port: io_t;
+	modes: modes_t;
+	ccs: ccs_t;
+	speeds: speeds_t);
 
+skip; skip; skip; /* 23 24 25 unused */
+   
+#if 0
+/* 26 TIOCGETD */
+routine tioctl_tiocgetd (
+	port: io_t;
+	out discipline: int);
+
+/* 27 TIOCSETD */
+routine tioctl_tiocsetd (
+	port: io_t;
+	discipline: int);
+
+skip; skip; /* 28 29 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 30-39 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 40-49 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 50-59 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 60-69 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 70-79 unused */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 80-89 unused */
+skip; skip; skip; skip; /* 90 91 92 93 unused */
+
+/* 94 TIOCDRAIN */
+routine tioctl_tiocdrain (
+	port: io_t);
+
+/* 95 TIOCSIG */
+routine tioctl_tiocsig (
+	port: io_t);
+
+/* 96 TIOCEXT */
+routine tioctl_tiocext (
+	port: io_t);
+
+skip; /* 97 TIOCSCTTY -- implemented in C library */
+skip; /* 98 TIOCCONS -- implemented in C library */
+#endif
+   
+#if 0 /* Can't go past 100 because MiG sucks. */   
+skip; skip; skip; /* 99 100 101 unused */
+
+/* 102 TIOCUCNTL */
+routine tioctl_tiocucntl (
+	port: io_t;
+	set_or_clear: int);
+
+/* 103 TIOCSWINSZ */
+routine tioctl_tiocswinsz (
+	port: io_t;
+	sizes: sizes_t);
+
+/* 104 TIOCGWINSZ */
+routine tioctl_tiocgwinsz (
+	port: io_t;
+	out sizes: sizes_t);		
+
+/* 105 TIOCREMOTE */
+routine tioctl_tiocremote (
+	port: io_t;
+	on_or_off: int);
+
+/* 106 TIOCMGET */
+routine tioctl_tiocmget (
+	port: io_t;
+	out bits: int);
+
+/* 107 TIOCMBIC */
+routine tioctl_tiocmbic (
+	port: io_t;
+	bits: int);
+
+/* 108 TIOCMBIS */
+routine tioctl_tiocmbis (
+	port: io_t;
+	bits: int);
+
+/* 109 TIOCMSET */
+routine tioctl_tiocmset (
+	port: io_t;
+	bits: int);
+
+/* 110 TIOCSTART */
+routine tioctl_tiocstart (
+	port: io_t);
+
+/* 111 TIOCSTOP */
+routine tioctl_tiocstop (
+	port: io_t);
+
+/* 112 TIOCPKT */
+routine tioctl_tiocpkt (
+	port: io_t;
+	on_or_off: int);
+
+skip; /* 113 TIOCNOTTY -- implemented in C library */
+
+/* 114 TIOCSTI */
+routine tioctl_tiocsti (
+	port: io_t;
+	datum: char);
+
+/* 115 TIOCOUTQ */
+routine tioctl_tiocoutq (
+	port: io_t;
+	out queue_size: int);
+
+skip; skip; /* 116 117 unused */
+
+/* Incomplete... */   
+#endif
