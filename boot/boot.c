@@ -404,6 +404,8 @@ main (int argc, char **argv, char **envp)
   sigvec (SIGMSG, &vec, 0);
   sigvec (SIGEMSG, &vec, 0);
   
+  thread_create (newtask, &newthread);
+
   if (boot_like_hurd)
     __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
 			 &fs_stack_size);
@@ -415,8 +417,6 @@ main (int argc, char **argv, char **envp)
     set_mach_stack_args (newtask, newthread, (char *)startpc,
 			 "[BOOTSTRAP fs]", bootstrap_args,
 			 bootdevice, "/", 0);
-
-  thread_create (newtask, &newthread);
 
   if (index (bootstrap_args, 'd'))
     {
@@ -794,6 +794,7 @@ bootstrap_compat(in, out)
 
 	imsg.port_desc_2 = imsg.port_desc_1;
 
+	imsg.port_desc_2.msgt_name = MACH_MSG_TYPE_MAKE_SEND;
 	imsg.port_2 = pseudo_master_device_port;
 
 	/*
