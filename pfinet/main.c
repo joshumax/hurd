@@ -20,6 +20,8 @@
 
 #include "pfinet.h"
 #include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -51,9 +53,12 @@ main (int argc,
 {
   mach_port_t bootstrap;
   error_t err;
-  volatile int hold = 1;
 
-  while (hold);
+  if (argc != 3)
+    {
+      fprintf (stderr, "Usage: %s host-addr ether-device-name\n", argv[0]);
+      exit (1);
+    }
 
   /* Talk to parent and link us in. */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
@@ -84,30 +89,25 @@ main (int argc,
 
   init_devices ();
   init_time ();
-  setup_ethernet_device ();
+  setup_ethernet_device (argv[2]);
   inet_proto_init (0);
 
   /* XXX Simulate what should be user-level initialization */
 
   /* Simulate SIOCSIFADDR call. */
   {
-      char addr[4];
+    char addr[4];
 
-      /* 128.52.46.37 is turing.gnu.ai.mit.edu. */
-      addr[0] = 128;
-      addr[1] = 52;
-      addr[2] = 46;
-      addr[3] = 37;
-      ether_dev.pa_addr = *(u_long *)addr;
-  
-      /* Mask is 255.255.255.0. */
-      addr[0] = addr[1] = addr[2] = 255;
-      addr[3] = 0;
-      ether_dev.pa_mask = *(u_long *)addr;
-  
-      ether_dev.family = AF_INET;
-      ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
-    }
+    ether_dev.pa_addr = inet_addr (argv[1]);
+    
+    /* Mask is 255.255.255.0. */
+    addr[0] = addr[1] = addr[2] = 255;
+    addr[3] = 0;
+    ether_dev.pa_mask = *(u_long *)addr;
+    
+    ether_dev.family = AF_INET;
+    ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
+  }
   
   /* Simulate SIOCADDRT call */
   {
