@@ -48,6 +48,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
+  mutex_lock (&global_lock);
+
   do
     err = ports_create_port (cred->po->cntl->protid_class,
 			     cred->po->cntl->protid_bucket,
@@ -123,6 +125,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   if (err)
     /* Signal that the user destroy hook shouldn't be called on NEWCRED.  */
     newcred->realnode = MACH_PORT_NULL;
+
+  mutex_unlock (&global_lock);
 
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
