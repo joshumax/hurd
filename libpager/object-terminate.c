@@ -87,7 +87,6 @@ _pager_free_structure (struct pager *p)
   int wakeup;
   struct lock_request *lr;
   struct attribute_request *ar;
-  struct anticipation *ant, *nxt;
 
   wakeup = 0;
   for (lr = p->lock_requests; lr; lr = lr->next)
@@ -107,14 +106,6 @@ _pager_free_structure (struct pager *p)
 
   mach_port_deallocate (mach_task_self (), p->memobjcntl);
   mach_port_deallocate (mach_task_self (), p->memobjname);
-
-  for (ant = p->anticipations; ant; ant = nxt)
-    {
-      vm_deallocate (mach_task_self (), ant->address, ant->len);
-      nxt = ant->next;
-      free (ant);
-    }
-  p->anticipations = 0;
 
   /* Free the pagemap */
   if (p->pagemapsize)
