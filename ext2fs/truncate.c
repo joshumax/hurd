@@ -1,6 +1,6 @@
 /* File truncation
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -271,6 +271,7 @@ diskfs_truncate (struct node *node, off_t length)
   error_t err;
   off_t offset;
 
+  diskfs_check_readonly ();
   assert (!diskfs_readonly);
 
   if (length >= node->dn_stat.st_size)
