@@ -23,11 +23,7 @@
 void
 mom_ref_destroy (struct mom_port_ref *obj)
 {
-  spin_lock (&obj->lock);
-  assert (obj->refcnt);
   mach_port_deallocate (mach_task_self (), obj->port);
-  obj->refcnt = 0;
-  spin_unlock (&obj->lock);
 }
 
   
