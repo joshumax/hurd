@@ -67,10 +67,10 @@ main(int argc, char *argv[])
 	{
 	case ARGP_KEY_ARG:
 	  node_name = arg;
-	  err = argz_create (state->argv + state->index, &argz, &argz_len);
+	  err = argz_create (state->argv + state->next, &argz, &argz_len);
 	  if (err)
 	    error(3, err, "Can't create options vector");
-	  state->index = state->argc; /* stop parsing */
+	  state->next = state->argc; /* stop parsing */
 	  break;
 
 	case 'R': recursive = 1; break;
@@ -102,7 +102,7 @@ main(int argc, char *argv[])
       err = fsys_set_options (fsys, argz, argz_len, recursive);
       if (err)
 	{
-	  argz_stringify (argz, argz_len);
+	  argz_stringify (argz, argz_len, ' ');
 	  error(5, err, "%s: %s", node_name, argz);
 	}
     }
@@ -111,7 +111,7 @@ main(int argc, char *argv[])
       err = file_get_fs_options (node, &argz, &argz_len);
       if (err)
 	error (5, err, "%s", node_name);
-      argz_stringify (argz, argz_len);
+      argz_stringify (argz, argz_len, ' ');
       puts (argz);
     }
 
