@@ -157,7 +157,7 @@ enum term_bottom_type
    STORAGE_HURD_FILE is a hurd file_t (as if a file were mapped)
    STORAGE_TASK is a task_t (the storage is in the vm of the task)
    STORAGE_MEMORY is a memory object port
-   STORAGE_NULL is a fixed-size constant source of zeros
+   STORAGE_ZERO is a fixed-size constant source of zeros
    STORAGE_INTERLEAVE is a set of other storage types interleaved at a fixed
     interval
    STORAGE_CONCAT is a set of other storage types concatenated end-to-end
