@@ -77,7 +77,8 @@ url_decode (struct store_enc *enc, const struct store_class *const *classes,
       *store = &dummy;
       return 0;
     }
-  error_t err = store_std_leaf_decode (enc, &dummy_create, &dummyptr);
+  struct store_enc dummy_enc = *enc;
+  error_t err = store_std_leaf_decode (&dummy_enc, &dummy_create, &dummyptr);
   if (err)
     return err;
 
