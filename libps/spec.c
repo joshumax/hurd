@@ -318,37 +318,39 @@ struct ps_getter ps_zero_fills_getter =
 #define G(g,type)((type (*)())ps_getter_function(g))
 
 error_t
-ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
+ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, ps_stream_t stream)
 {
-  return ps_write_int_field(G(getter, int)(ps), width, stream, count);
+  return ps_stream_write_int_field (stream, G(getter, int)(ps), width);
 }
 
 error_t
 ps_emit_nz_int (proc_stat_t ps, ps_getter_t getter, int width,
-		FILE *stream, unsigned *count)
+		ps_stream_t stream)
 {
   int value = G(getter, int)(ps);
   if (value)
-    return ps_write_int_field (value, width, stream, count);
+    return ps_stream_write_int_field  (stream, value, width);
   else
-    return ps_write_spaces (width, stream, count);
+    return ps_stream_space  (stream, width);
 }
 
 error_t
-ps_emit_priority(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
+ps_emit_priority (proc_stat_t ps, ps_getter_t getter, int width,
+		  ps_stream_t stream)
 {
   return
-    ps_write_int_field(MACH_PRIORITY_TO_NICE(G(getter, int)(ps)),
-		       width, stream, count);
+    ps_stream_write_int_field (stream,
+			       MACH_PRIORITY_TO_NICE (G(getter, int)(ps)),
+			       width);
 }
 
 error_t
-ps_emit_num_blocks(proc_stat_t ps, ps_getter_t getter, int width, FILE
-		   *stream, unsigned *count)
+ps_emit_num_blocks (proc_stat_t ps, ps_getter_t getter, int width,
+		    ps_stream_t stream)
 {
   char buf[20];
   sprintf(buf, "%d", G(getter, int)(ps) / 1024);
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 int 
@@ -384,8 +386,8 @@ sprint_frac_value(char *buf,
 }
 
 error_t
-ps_emit_percent(proc_stat_t ps, ps_getter_t getter,
-		int width, FILE *stream, unsigned *count)
+ps_emit_percent (proc_stat_t ps, ps_getter_t getter, int width,
+		 ps_stream_t stream)
 {
   char buf[20];
   float perc = G(getter, float)(ps) * 100;
@@ -397,13 +399,13 @@ ps_emit_percent(proc_stat_t ps, ps_getter_t getter,
   else
     sprintf(buf, "%d", (int) perc);
 
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 /* prints its value nicely */
 error_t
-ps_emit_nice_int(proc_stat_t ps, ps_getter_t getter,
-		 int width, FILE *stream, unsigned *count)
+ps_emit_nice_int (proc_stat_t ps, ps_getter_t getter, int width,
+		  ps_stream_t stream)
 {
   char buf[20];
   int value = G(getter, int)(ps);
@@ -420,7 +422,7 @@ ps_emit_nice_int(proc_stat_t ps, ps_getter_t getter,
   sprintf(buf + sprint_frac_value(buf, value, 1, frac, 3, ABS(width) - 1),
 	  "%c", *sfx);
 
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 #define MINUTE	60
@@ -471,8 +473,8 @@ sprint_long_time(char *buf, int seconds, int width)
 }
 
 error_t
-ps_emit_nice_seconds(proc_stat_t ps, ps_getter_t getter,
-		     int width, FILE *stream, unsigned *count)
+ps_emit_nice_seconds (proc_stat_t ps, ps_getter_t getter, int width,
+		      ps_stream_t stream)
 {
   char buf[20];
   time_value_t tv;
@@ -507,7 +509,7 @@ ps_emit_nice_seconds(proc_stat_t ps, ps_getter_t getter,
   else
     sprint_long_time(buf, tv.seconds, width);
 
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 static int 
@@ -529,8 +531,8 @@ append_fraction(char *buf, int frac, int digits, int width)
 }
 
 error_t
-ps_emit_seconds(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream,
-		unsigned *count)
+ps_emit_seconds (proc_stat_t ps, ps_getter_t getter, int width,
+		 ps_stream_t stream)
 {
   int max = (width == 0 ? 999 : ABS(width));
   char buf[20];
@@ -560,31 +562,32 @@ ps_emit_seconds(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream,
   else
     sprint_frac_value(buf, tv.seconds, 1, tv.microseconds, 6, max);
 
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 error_t
-ps_emit_uid(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
+ps_emit_uid (proc_stat_t ps, ps_getter_t getter, int width, ps_stream_t stream)
 {
   ps_user_t u = G(getter, ps_user_t)(ps);
-  return ps_write_int_field(ps_user_uid(u), width, stream, count);
+  return ps_stream_write_int_field (stream, ps_user_uid(u), width);
 }
 
 error_t
-ps_emit_uname(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, unsigned *count)
+ps_emit_uname (proc_stat_t ps, ps_getter_t getter, int width,
+	       ps_stream_t stream)
 {
   ps_user_t u = G(getter, ps_user_t)(ps);
   struct passwd *pw = ps_user_passwd(u);
   if (pw == NULL)
-    return ps_write_int_field(ps_user_uid(u), width, stream, count);
+    return ps_stream_write_int_field (stream, ps_user_uid(u), width);
   else
-    return ps_write_field(pw->pw_name, width, stream, count);
+    return ps_stream_write_field (stream, pw->pw_name, width);
 }
 
 /* prints a string with embedded nuls as spaces */
 error_t
-ps_emit_string0(proc_stat_t ps, ps_getter_t getter,
-		int width, FILE *stream, unsigned *count)
+ps_emit_string0 (proc_stat_t ps, ps_getter_t getter, int width,
+		 ps_stream_t stream)
 {
   char *s0, *p, *q;
   int s0len;
@@ -620,7 +623,7 @@ ps_emit_string0(proc_stat_t ps, ps_getter_t getter,
     }
 
   {
-    error_t err = ps_write_field(buf, width, stream, count);
+    error_t err = ps_stream_write_field (stream, buf, width);
     if (buf != static_buf)
       free(buf);
     return err;
@@ -628,8 +631,8 @@ ps_emit_string0(proc_stat_t ps, ps_getter_t getter,
 }
 
 error_t
-ps_emit_string(proc_stat_t ps, ps_getter_t getter,
-	       int width, FILE *stream, unsigned *count)
+ps_emit_string (proc_stat_t ps, ps_getter_t getter, int width,
+		ps_stream_t stream)
 {
   char *str;
   int len;
@@ -641,12 +644,12 @@ ps_emit_string(proc_stat_t ps, ps_getter_t getter,
   else if (width != 0 && len > ABS(width))
     str[ABS(width)] = '\0';
 
-  return ps_write_field(str, width, stream, count);
+  return ps_stream_write_field (stream, str, width);
 }
 
 error_t
-ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
-		 int width, FILE *stream, unsigned *count)
+ps_emit_tty_name (proc_stat_t ps, ps_getter_t getter, int width,
+		  ps_stream_t stream)
 {
   char *name = "-";
   ps_tty_t tty = G(getter, ps_tty_t)(ps);
@@ -658,7 +661,7 @@ ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
 	name = "?";
     }
 
-  return ps_write_field(name, width, stream, count);
+  return ps_stream_write_field (stream, name, width);
 }
 
 struct state_shadow
@@ -682,8 +685,8 @@ struct state_shadow state_shadows[] = {
 };
 
 error_t
-ps_emit_state(proc_stat_t ps, ps_getter_t getter,
-	      int width, FILE *stream, unsigned *count)
+ps_emit_state (proc_stat_t ps, ps_getter_t getter, int width,
+	       ps_stream_t stream)
 {
   char *tags;
   int raw_state = G(getter, int)(ps);
@@ -706,7 +709,7 @@ ps_emit_state(proc_stat_t ps, ps_getter_t getter,
 
   *p = '\0';
 
-  return ps_write_field(buf, width, stream, count);
+  return ps_stream_write_field (stream, buf, width);
 }
 
 /* ---------------------------------------------------------------- */
