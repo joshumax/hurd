@@ -28,8 +28,6 @@
 #include "ps.h"
 #include "common.h"
 
-/* ---------------------------------------------------------------- */
-
 /* An internal version of ps_fmt_create that takes various extra args.  If
    POSIX is true, parse a posix-std format string.  If ERR_STRING is non-0
    and EINVAL is returned, then a malloced string will be returned in
@@ -58,16 +56,16 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
     }
 
   /* Make a private copy of SRC so we can mutate it.  */
-  new_fmt->src = NEWVEC (char, strlen (src) + 1);
+  new_fmt->src_len = strlen (src) + 1;
+  new_fmt->src = strdup (src);
   if (new_fmt->src == NULL)
     {
       FREE (fields);
       FREE (new_fmt);
       return ENOMEM;
     }
-  strcpy (new_fmt->src, src);
-  src = new_fmt->src;
 
+  src = new_fmt->src;
   while (*src != '\0')
     {
       if (field - fields == fields_alloced)
@@ -331,6 +329,39 @@ ps_fmt_free (struct ps_fmt *fmt)
   FREE (fmt->src);
   FREE (fmt->fields);
   FREE (fmt);
+}
+
+/* Return a copy of FMT in COPY, or an error.  This is useful if, for
+   instance, you would like squash a format without destroying the original.  */
+error_t
+ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy)
+{
+  struct ps_fmt *new = NEW (struct ps_fmt);
+  struct ps_fmt_field *fields = NEWVEC (struct ps_fmt_field, fmt->num_fields);
+  char *src = malloc (fmt->src_len);
+
+  if (!new || !fields || !src)
+    {
+      if (new)
+	free (new);
+      if (fields)
+	free (fields);
+      if (src)
+	free (src);
+      return ENOMEM;
+    }
+
+  bcopy (fmt->src, src, fmt->src_len);
+  bcopy (fmt->fields, fields, fmt->num_fields * sizeof (struct ps_fmt_field));
+
+  new->fields = fields;
+  new->num_fields = fmt->num_fields;
+  new->src = src;
+  new->src_len = fmt->src_len;
+  new->inval = fmt->inval;
+  *copy = new;
+
+  return 0;
 }
 
 /* Write an appropiate header line for FMT, containing the titles of all its
