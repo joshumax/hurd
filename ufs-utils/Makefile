@@ -28,9 +28,10 @@ installationdir = $(sbindir)
 
 OBJS = $(SRCS:.c=.o)
 
-all: $(targets)
+include ../Makeconf
 
 mkfs.ufs: mkfs.o dlabel.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
-include ../Makeconf
+$(targets): %: %.o
+
 
