@@ -25,7 +25,10 @@
  */
 /*
  * HISTORY
- * $Log:	cthread_internals.h,v $
+ * $Log: cthread_internals.h,v $
+ * Revision 1.2  1994/05/05 10:58:01  roland
+ * entered into RCS
+ *
  * Revision 2.14  92/08/03  18:03:56  jfriedl
  * 	Made state element of struct cproc volatile.
  * 	[92/08/02            jfriedl]
@@ -162,6 +165,8 @@ typedef struct cproc {
 
 #define	NO_CPROC		((cproc_t) 0)
 #define	cproc_self()		((cproc_t) ur_cthread_self())
+
+int cproc_block ();
 
 #if 0
 /* This declaration conflicts with <stdlib.h> in GNU.  */
