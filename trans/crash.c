@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -103,10 +103,9 @@ S_crash_dump_task (mach_port_t port,
 	{
 	  struct crasher *c;
 
-	  c = ports_allocate_port (port_bucket, sizeof *c, crasher_portclass);
-	  if (! c)
-	    err = ENOMEM;
-	  else
+	  err = ports_create_port (port_bucket, sizeof *c,
+				   crasher_portclass, &c);
+	  if (! err)
 	    {
 	      /* Install our port as the crasher's msgport.
 		 We will wait for signals to resume (crash) it.  */

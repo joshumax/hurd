@@ -1196,10 +1196,10 @@ do_exec (file_t file,
 	ports_replaced[idx] = 1;
       }
 
-    boot = ports_allocate_port (port_bucket, sizeof *boot, execboot_portclass);
+    e.error = ports_create_port (port_bucket, sizeof *boot,
+				 execboot_portclass, &boot);
     if (boot == NULL)
       {
-	e.error = ENOMEM;
       stdout:
 	rwlock_reader_unlock (&std_lock);
 	goto out;

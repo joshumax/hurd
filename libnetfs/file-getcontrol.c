@@ -1,5 +1,5 @@
 /* Return the filesystem corresponding to a file
- 
+
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -27,6 +27,7 @@ netfs_S_file_getcontrol (struct protid *user,
 			 mach_port_t *control,
 			 mach_msg_type_name_t *controltype)
 {
+  error_t err;
   struct port_info *pi;
   uid_t *uids, *gids;
   int nuids, ngids;
@@ -34,26 +35,28 @@ netfs_S_file_getcontrol (struct protid *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&user->po->np->lock);
   netfs_interpret_credential (user->credential, &uids, &nuids, &gids, &ngids);
   mutex_unlock (&user->po->np->lock);
   free (gids);
-  
+
   for (i = 0; i < nuids; i++)
     if (uids[i] == 0)
       {
 	/* They've got root; give it to them. */
 	free (uids);
-	pi = ports_allocate_port (netfs_port_bucket,
-				  sizeof (struct port_info),
-				  netfs_control_class);
+	err = ports_create_port (netfs_port_bucket,
+				 sizeof (struct port_info),
+				 netfs_control_class, &pi);
+	if (err)
+	  return err;
 	*control = ports_get_right (pi);
 	*controltype = MACH_MSG_TYPE_MAKE_SEND;
 	ports_port_deref (pi);
 	return 0;
       }
-  
+
   /* Not got root. */
   free (uids);
   return EPERM;
