@@ -1,6 +1,6 @@
 /* Parse run-time options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -107,7 +107,7 @@ diskfs_S_fsys_get_options (fsys_t fsys,
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
-    err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
+    err = iohelp_return_malloced_buffer (argz, argz_len, data, data_len);
   else
     free (argz);
 

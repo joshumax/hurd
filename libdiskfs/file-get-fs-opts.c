@@ -1,6 +1,6 @@
 /* Get run-time file system options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -46,7 +46,7 @@ diskfs_S_file_get_fs_options (struct protid *cred,
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
-    err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
+    err = iohelp_return_malloced_buffer (argz, argz_len, data, data_len);
   else
     free (argz);
 
