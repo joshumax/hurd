@@ -93,7 +93,7 @@ into another language, under the above conditions for modified versions.
 @titlepage
 @finalout
 @title The GNU Hurd Reference Manual
-@author Thomas Bushnell
+@author Thomas Bushnell, BSG
 @author Gordon Matzigkeit
 @page
 
