@@ -1,8 +1,8 @@
 /* Routines to get global host info.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,8 +29,8 @@
 /* ---------------------------------------------------------------- */
 
 /*
-   The Basic & Sched info types are pretty static, so we cache them, but load
-   info is dynamic so we don't cache that.
+   The Basic & Sched info types are pretty must static so we cache them.
+   However, as load info is dynamic, we do not cache it.
 
    See <mach/host_info.h> for information on the data types these routines
    return.
@@ -46,13 +46,14 @@ ps_get_host ()
   return host;
 }
 
-/* Return a pointer to basic info about the current host in INFO.  Since
-   this is static global information we just use a static buffer.  If a
-   system error occurs, the error code is returned, otherwise 0.  */
+/* Return a pointer to the basic info about the current host in INFO.
+   Since this is static global information, we just use a static buffer.
+   If a system error occurs, the error code is returned, otherwise 0 is
+   returned.  */
 error_t
 ps_host_basic_info (host_basic_info_t *info)
 {
-  int initialized = FALSE;
+  static int initialized;
   static host_basic_info_data_t buf;
 
   if (!initialized)
@@ -62,20 +63,21 @@ ps_host_basic_info (host_basic_info_t *info)
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;
-      initialized = TRUE;
+      initialized = 1;
     }
 
   *info = &buf;
   return 0;
 }
 
-/* Return a pointer to scheduling info about the current host in INFO.
-   Since this is static global information we just use a static buffer.  If a
-   system error occurs, the error code is returned, otherwise 0.  */
+/* Return a pointer to the scheduling info about the current host in INFO.
+   Since this is static global information, we just use a static buffer.
+   If a system error occurs, the error code is returned, otherwise 0 is
+   returned.  */
 error_t
 ps_host_sched_info (host_sched_info_t *info)
 {
-  int initialized = FALSE;
+  static int initialized;
   static host_sched_info_data_t buf;
 
   if (!initialized)
@@ -85,17 +87,17 @@ ps_host_sched_info (host_sched_info_t *info)
 			      (host_info_t) &buf, &size);
       if (err)
 	return err;
-      initialized = TRUE;
+      initialized = 1;
     }
 
   *info = &buf;
   return 0;
 }
 
-/* Return a pointer to load info about the current host in INFO.  Since
-   this is global information we just use a static buffer (if someone desires
-   to keep old load info, they should copy the buffer we return a pointer
-   to).  If a system error occurs, the error code is returned, otherwise 0.  */
+/* Return a pointer to the load info about the current host in INFO.  Since
+   this is global information, we just use a static buffer (if someone desires
+   to keep old load info, they should copy the returned buffer).  If a system
+   error occurs, the error code is returned, otherwise 0 is returned.  */
 error_t
 ps_host_load_info (host_load_info_t *info)
 {

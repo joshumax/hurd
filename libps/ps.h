@@ -40,7 +40,7 @@ struct ps_user
   uid_t uid;
 
   /* The status */
-     enum ps_user_passwd_state passwd_state;
+  enum ps_user_passwd_state passwd_state;
 
   /* The user's password file entry.  Only valid if PASSWD_STATE ==
      PS_USER_PASSWD_OK.  */
