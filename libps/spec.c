@@ -599,12 +599,16 @@ struct state_shadow
 
 static const struct state_shadow
 state_shadows[] = {
+  /* If the process has no parent, it's not a hurd process, and various hurd
+     process bits are likely to be noise, so turn them off (but leave the
+     noparent bit on).  */
+  { PSTAT_STATE_P_NOPARENT,  (PSTAT_STATE_P_ATTRS & ~PSTAT_STATE_P_NOPARENT) },
   /* Don't show sleeping thread if one is running, or the process is stopped.*/
   { PSTAT_STATE_T_RUN | PSTAT_STATE_P_STOP,
     PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_IDLE | PSTAT_STATE_T_WAIT },
   /* Only show the longest sleep.  */
-  { PSTAT_STATE_T_IDLE,		PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_WAIT },
-  { PSTAT_STATE_T_SLEEP,	PSTAT_STATE_T_WAIT },
+  { PSTAT_STATE_T_IDLE,	     PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_WAIT },
+  { PSTAT_STATE_T_SLEEP,     PSTAT_STATE_T_WAIT },
   /* Turn off the thread stop bits if any thread is not stopped.  This is
      generally reasonable, as threads are often suspended to be frobed; if
      they're all suspended, then something's odd (probably in the debugger,
