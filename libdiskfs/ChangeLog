@@ -1,3 +1,15 @@
+Fri Jul 26 14:52:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-exec.c (diskfs_S_file_exec): Unlock NP before we attempt to
+ 	do setuid/setgid (which otherwise can deadlock during port reauth).
+	Pay attention to the error code returned by fshelp_exec_reauth,
+	and don't make NEWPI if it's an error.
+	Initialize ERR.
+
+Tue Jul 23 16:05:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (_print_version): Make return type void.
+
 Fri Jul 19 21:19:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* filedev.c (diskfs_get_file_device): INTS[3] contains the number
