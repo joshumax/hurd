@@ -1,3 +1,8 @@
+2000-03-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hostarch.c (elf_machine_matches_host): Don't recognize EM_486,
+	since newer <elf.h>'s don't define it any more.
+
 2000-02-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hashexec.c (check_hashbang: user_fd): Add a user ref to DTABLE[FD]
