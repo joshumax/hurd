@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,3 +23,11 @@
 
 spin_lock_t netfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
+void
+netfs_init ()
+{
+  netfs_protid_class = ports_create_class (netfs_release_protid, 0);
+  netfs_control_class = ports_create_class (0, 0);
+  netfs_port_bucket = ports_create_bucket ();
+  netfs_auth_server_port = getauth ();
+}
