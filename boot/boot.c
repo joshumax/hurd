@@ -90,20 +90,60 @@ void set_mach_stack_args ();
 
 /* These will prevent the Hurd-ish versions from being used */
 
+struct free_reply_port
+{
+  mach_port_t port;
+  struct free_reply_port *next;
+};
+static struct free_reply_port *free_reply_ports = NULL;
+static spin_lock_t free_reply_ports_lock = SPIN_LOCK_INITIALIZER;
+
 mach_port_t __mig_get_reply_port ()
 {
-  return __mach_reply_port ();
+  spin_lock (&free_reply_ports_lock);
+  if (free_reply_ports == NULL)
+    {
+      spin_unlock (&free_reply_ports_lock);
+      return __mach_reply_port ();
+    }
+  else
+    {
+      struct free_reply_port *frp = free_reply_ports;
+      mach_port_t reply_port = frp->port;
+      free_reply_ports = free_reply_ports->next;
+      spin_unlock (&free_reply_ports_lock);
+      free (frp);
+      return reply_port;
+    }
 }
 mach_port_t mig_get_reply_port ()
 {
-  return __mach_reply_port ();
+  return __mig_get_reply_port ();
+}
+void __mig_put_reply_port (mach_port_t port)
+{
+  struct free_reply_port *frp = malloc (sizeof (struct free_reply_port));
+  frp->port = port;
+  spin_lock (&free_reply_ports_lock);
+  frp->next = free_reply_ports;
+  free_reply_ports = frp;
+  spin_unlock (&free_reply_ports_lock);
+}
+void mig_put_reply_port (mach_port_t port)
+{
+  __mig_put_reply_port (port);
+}
+void __mig_dealloc_reply_port (mach_port_t port)
+{
+  __mach_port_mod_refs (__mach_task_self (), port,
+			MACH_PORT_RIGHT_RECEIVE, -1);
+}
+void mig_dealloc_reply_port (mach_port_t port)
+{
+  __mig_dealloc_reply_port (port);
 }
 void __mig_init (void *stack) {}
 void mig_init (void *stack) {}
-void __mig_dealloc_reply_port (mach_port_t port) {}
-void mig_dealloc_reply_port (mach_port_t port) {}
-void __mig_put_reply_port (mach_port_t port) {}
-void mig_put_reply_port (mach_port_t port) {}
 
 int
 task_by_pid (int pid)
