@@ -18,13 +18,12 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <string.h>		/* For bcopy() */
-
+#include <string.h>
 #include "priv.h"
 
 /* Return a duplicate of CRED in DUP, sharing the same peropen and hook.  A
    non-null hook may be used to detect that this is a duplicate by
-   trivfs_peropen_create_hook.  */
+   trivfs_protid_create_hook.  */
 error_t
 trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 {
