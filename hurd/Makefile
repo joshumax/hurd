@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -31,7 +31,8 @@ REMHDRS = ../libioserver/ioserver.h \
 	../libfshelp/fshelp.h \
 	../libdiskfs/diskfs.h \
 	../libtrivfs/trivfs.h \
-	../libthreads/cthreads.h
+	../libthreads/cthreads.h \
+	../libps/ps.h
 
 dohdrs:
 	ln -s $(REMHDRS) .
