@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -206,7 +206,7 @@ setup_tunnel_device (char *name, struct device **device)
 				 MACH_MSG_TYPE_COPY_SEND);
       mach_port_deallocate (mach_task_self (), right);
     }
-  
+
   if (err)
     error (2, err, "%s", tdev->dev.name);
 
@@ -236,7 +236,7 @@ check_open_hook (struct trivfs_control *cntl,
       break;
 
   if (tdev && flags != O_NORW)
-    {  
+    {
       if (tdev->user)
 	return EBUSY;
       else
@@ -277,8 +277,8 @@ void (*trivfs_protid_destroy_hook) (struct trivfs_protid *) = pi_destroy_hook;
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
                   mach_port_t reply, mach_msg_type_name_t reply_type,
-                  vm_address_t *data, mach_msg_type_number_t *data_len,
-                  off_t offs, mach_msg_type_number_t amount)
+                  char **data, mach_msg_type_number_t *data_len,
+                  loff_t offs, size_t amount)
 {
   struct tunnel_device *tdev;
   struct sk_buff *skb;
@@ -295,7 +295,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
   __mutex_lock (&tdev->lock);
-  
+
   while (skb_queue_len(&tdev->xq) == 0)
     {
       if (cred->po->openmodes & O_NONBLOCK)
@@ -315,16 +315,23 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   skb = skb_dequeue (&tdev->xq);
   assert(skb);
-  
+
   if (skb->len < amount)
     amount = skb->len;
   if (amount > 0)
     {
       /* Possibly allocate a new buffer. */
       if (*data_len < amount)
-	*data = (vm_address_t) mmap (0, amount, PROT_READ|PROT_WRITE,
-				     MAP_ANON, 0, 0);
-      
+	{
+	  *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (*data == MAP_FAILED)
+	    {
+	      dev_kfree_skb (skb);
+	      __mutex_unlock (&tdev->lock);
+	      return ENOMEM;
+	    }
+	}
+
       /* Copy the constant data into the buffer. */
       memcpy ((char *) *data, skb->data, amount);
     }
@@ -414,7 +421,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   __mutex_lock (&tdev->lock);
 
   /* XXX: Now return the length of the next entry in the queue.
-     From the BSD manual: 
+     From the BSD manual:
      The tunnel device, normally /dev/tunN, is exclusive-open (it cannot be
      opened if it is already open) and is restricted to the super-user.  A
      read() call will return an error (EHOSTDOWN) if the interface is not
@@ -611,11 +618,13 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
    mapping; they will set none of the ports and return an error.  Such
    objects can still be accessed by io_read and io_write.  */
 error_t
-trivfs_S_io_map(struct trivfs_protid *cred,
-                memory_object_t *rdobj,
-                mach_msg_type_name_t *rdtype,
-                memory_object_t *wrobj,
-                mach_msg_type_name_t *wrtype)
+trivfs_S_io_map (struct trivfs_protid *cred,
+		 mach_port_t reply,
+		 mach_msg_type_name_t replyPoly,
+		 memory_object_t *rdobj,
+		 mach_msg_type_name_t *rdtype,
+		 memory_object_t *wrobj,
+		 mach_msg_type_name_t *wrtype)
 {
   if (!cred)
     return EOPNOTSUPP;
