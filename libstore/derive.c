@@ -27,22 +27,44 @@
 void
 _store_derive (struct store *store)
 {
+  unsigned i;
   off_t *runs = store->runs;
   unsigned runs_len = store->runs_len;
   size_t bsize = store->block_size;
 
   /* BLOCK & SIZE */
   store->blocks = 0;
-  store->size = 0;
 
-  while (runs_len > 0)
+  for (i = 0; i < runs_len; i += 2)
     {
-      store->size += bsize * runs[1];
-      if (runs[0] >= 0)
-	store->blocks += runs[1];
-      runs += 2;
-      runs_len -= 2;
+      store->wrap += runs[i + 1];
+      if (runs[i] >= 0)
+	store->blocks += runs[i + 1];
     }
+
+  if (store->end == 0)
+    /* END not set; set it using the info from RUNS.  */
+    store->end = store->wrap;
+  else if (store->wrap < store->end)
+    /* A wrapped disk!  RUNS is repeated N times to reach END.  Adjust BLOCKS
+       to include all iterations.  */
+    {
+      size_t num_iters = store->end / store->wrap;
+      off_t last_part_base = num_iters * store->wrap;
+
+      store->blocks *= num_iters;
+
+      for (i = 0; i < runs_len; i += 2)
+	if (last_part_base + runs[i + 1] < store->end)
+	  {
+	    store->blocks += store->end - (last_part_base + runs[i + 1]);
+	    break;
+	  }
+	else if (runs[i] >= 0)
+	  store->blocks += runs[i + 1];
+    }
+
+  store->size = store->end * bsize;
 
   /* LOG2_BLOCK_SIZE */
   store->log2_block_size = 0;
