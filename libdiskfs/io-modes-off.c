@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <fcntl.h>
 
 /* Implement io_clear_some_openmodes as described in <hurd/io.defs>. */
 error_t
@@ -26,10 +27,9 @@ diskfs_S_io_clear_some_openmodes (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->ip->lock);
-  ioserver_get_conch (&np->conch);
-  if (!err)
-    cred->po->openstat &= ~(modes & HONORED_STATE_MODES);
-  mutex_unlock (&cred->po->ip->lock);
-  return err;
+  mutex_lock (&cred->po->np->lock);
+  ioserver_get_conch (&cred->po->np->conch);
+  cred->po->openstat &= ~(offbits & HONORED_STATE_MODES);
+  mutex_unlock (&cred->po->np->lock);
+  return 0;
 }
