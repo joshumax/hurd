@@ -67,11 +67,17 @@ associated C library calls.  It concentrates on requirements and advice
 for the writing of Hurd servers, as well as describing the libraries
 that come with the GNU Hurd.
 
+It is assumed that the reader of the manual is perusing the referenced
+MiG interface definitions and library header files for the section being
+examined.
+
 @menu
 * I/O interface::           The interface for reading and writing
                             I/O channels
+@ignore
 * Shared I/O::              The interface for doing input and output
                             using shared memory
+@end ignore
 * File interface::          The interface for modifying file-specific
                             characteristics
 * Filesystem interface::    Interfaces supported to control file-servers
@@ -141,7 +147,7 @@ In general, users get send-rights to I/O ports by some mechanism that is
 external to the I/O protocol.  (For example file servers give out I/O
 ports in response to the dir_pathtrans and fsys_getroot calls.  Socket
 servers give out ports in response to the socket_create and
-socket_accept calles.)  However, the I/O protocol provides methods of
+socket_accept calls.)  However, the I/O protocol provides methods of
 obtaining new ports that refer to the same underlying object as another
 port.  In response to all of these calls, all underlying state
 (including, but not limited to, the default file poirter, open mode
@@ -353,21 +359,25 @@ describing the version number of the server, as well as its name.
 @node Mapped data
 @section Mapped data
 
-Servers may optionally implement the io_map call; they may do so even if
-the do not implement the facilities described in the following chapter.
-The ports returned by io_map must implement the XP kernel interface and
-be suitable as arguments to vm_map.
+Servers may optionally implement the io_map call.  The ports returned by
+io_map must implement the XP kernel interface and be suitable as
+arguments to vm_map.
 
 Seekable objects must allow access from 0 to the "maximum correct value"
 described for O_APPEND.  Whether they provide access beyond such a point
 is server dependent; in addition, the meaning of such an object for a
-non-seekable object is server dependent.  However, servers which
+non-seekable object is server dependent.  
+
+@ignore 
+However, servers which
 implement the facilities of the next section must obey to certain
 requirements about which addresses in the memory objects provided by
 io_map must be valid.  Simply put, any user following the rules
 described in the next chapter should not get any memory faults except as
 explicitly permitted by the next chapter.
+@end ignore
 
+@ignore
 @node Shared I/O
 @chapter Shared I/O
 
@@ -588,7 +598,7 @@ have such modifications ignored.
 Users may not call any server functions (whether in the I/O protocol or
 another) while holding the conch except for those specified in this
 chapter.  Such calls may block indefinitely or fail silently.
-
+@end ignore
 
 @node File interface
 @chapter File interface
@@ -596,6 +606,7 @@ chapter.  Such calls may block indefinitely or fail silently.
 This chapter documents the interface for operating on files.
 
 @menu
+* File Overview::               Basic concepts for the file interface
 * Changing Status::             Changing the owner (etc.) of a file
 * Program Execution::           Executing files
 * File locking::                Implementing the flock call
@@ -605,6 +616,118 @@ This chapter documents the interface for operating on files.
 * Notifications::               File and directory change callbacks
 * Translators::                 How to set and get translators
 @end menu
+
+@node File Overview
+@section File Overview
+
+The file interface is a superset of the I/O interface (@pxref{I/O
+Interface}).  Servers which provide the file interface are required to
+support the I/O interface as well.  All objects reachable in the
+filesystem are expected to provide the file interface, even if they do
+not contain data.  (The trivfs library make it easy to do so for
+ordinary sorts of cases.  @xref{Trivfs library}.)
+
+The interface definitions for the file interface are found in
+<hurd/fs.defs>. 
+
+Files have various pieces of status information which are returned by
+io_stat (@pxref{Information queries}).  Most of this status information
+can be directly changed by various calls in the file interface; some of
+it should vary implicitly as the contents of the file change.
+
+Many of these calls have general rules associated with them describing
+how security and privilege should operate.  The diskfs (@pxref{Diskfs
+library}) implements these rules for disk-based filesystems.  (Trivfs
+based servers generally have no need to implement these rules at all.)
+We hope to move the implementation of these rules to the fshelp
+library.  
+
+In special cases, there may be a reason to implement a different
+security check from that specified here, or to implement a call to do
+something slightly different.  But such cases must be carefully
+considered; make sure that you will not confuse blameless user programs
+through excessive cleverness.
+
+If some operation cannot be implemented (for example, chauthor over
+ftp), then the call should return EOPNOTSUPP.  If it is merely difficult
+to implement a call, it is much better to figure out a way to implement
+it as a series of operations rather than returning errors to the user.
+
+@node Changing Status
+@section Changing Status
+
+There are several RPC's avalaible for users to change much of the status
+information associated with a file.  (The information is returned by the
+io_stat rpc; @ref{Information queries}.)
+
+All these operations are restricted to root and the owner of the file.
+When attempted by another user, they should return EPERM.
+
+The file_chown RPC changes the owner and group of the file.  Only root
+should be able to change the owner, and changing the group to a group
+the caller is not in should also be prohibited.  Violating either of
+these conditions should return EPERM.
+
+The file_chauthor RPC changes the author of the file.  It should be
+legitimate to change the author to any value without restriction.
+
+The file_chflags RPC changes the flags of the file.  It should be
+legitimate to change the flags to any value without restriction.  No
+standard meanings have been assigned to the flags yet, but we intend to
+do so.  Do not assume that the flags format we choose will map
+identically to that for some existing filesystem format.
+
+The file_utimes RPC changes the atime and mtime of the file.  Making
+this call must cause the ctime to be updated as well, even if no actual
+change to either the mtime or the atime occurs.  
+
+The file_set_size RPC is special; not only does it change the status
+word specifing the size of the file, but it also changes the actual
+contents of the file.   If the file size is being reduced it should
+release secondary storage associated with the previous contents of the
+file.  If the file is being extended, the new region added to the file
+must be zero filled.  Unlike the other RPC's in this section,
+file_set_size should be permitted to any user who is allowed to write
+the file.
+
+@node Program execution
+@section Program execution
+
+Execution of programs on the Hurd is done through file servers with the
+file_exec RPC.  The fileserver is expected to verify that the user is
+allowed to execute the file, make whatever modifications to the ports
+are necessary for setuid execution, and then invoke the standard
+execserver found on /servers/exec.
+
+This section specifically addresses what file servers are expected to
+do, with minimal attention to the other parts of the process.
+
+The file must be opened for execution; if it is not, EBADF should be
+returned In addition, at least one of the execute bits must be on.  A
+failure of this check should result in EACCES--not ENOEXEC.  It is not
+proper for the file server to ever respond ENOEXEC in response to the
+file_exec RPC.
+
+If either the setuid or setgid bits are set, the server needs to
+construct a new authentication handle with the additional new ID's.
+Then all the ports passed to file_exec need to be reauthenticated with
+the new handle.  If the fileserver is unable to make the new
+authentication handle (for example, because it is not running as root)
+it is not acceptable to return an error; in such a case the server
+should simply silently fail to implement the setuid/setgid semantics.
+
+If the setuid/setgid transformation adds a new uid or gid to the user's
+authentication handle that was not previously present (as opposed to
+merely reordering them) then the EXEC_SECURE and EXEC_NEWTASK flags
+should both be added in the call to exec_exec.
+
+The server then needs to open a new port onto the executed file which
+will not share any filepointers with the port the user passed in, opened
+with O_READ.  Finally, all the information (mutated appropriately for
+setuid/setgid) should be sent to the execserver with exec_exec.
+Whatever error code exec_exec returns should returned to the caller of
+file_exec.
+
 
 
 

@@ -24,7 +24,6 @@ SRCS = dev.c storeio.c open.c pager.c io.c
 LCLHDRS = dev.h open.h
 
 OBJS = $(SRCS:.c=.o)
+HURDLIBS = trivfs pager ports fshelp store threads ihash shouldbeinlibc
 
 include ../Makeconf
-
-storeio: $(OBJS) ../libtrivfs/libtrivfs.a ../libpager/libpager.a ../libports/libports.a ../libfshelp/libfshelp.a ../libstore/libstore.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a

@@ -241,7 +241,7 @@ endif
 
 # Providing directory dependencies
 directory-depend: $(..)$(dir).d
-$(..)$(dir).d: Makefile
+$(..)$(dir).d: $(srcdir)/Makefile
 	rm -f $@
 	echo $(dir): $(addprefix lib,$(HURDLIBS)) > $@
 

@@ -144,5 +144,5 @@ endif
 -include $(addsuffix .d,$(subdirs))
 
 # How to build them
-$(addsuffix .d,$(subdirs)): %.d: %/Makefile
+$(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
 	$(MAKE) -C $* directory-depend no_deps=t

@@ -1,5 +1,9 @@
 Thu Sep 19 16:53:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* Makefile ($(addsuffix .d,$(subdirs))): Depend on the makefile in
+	the source directory, not the build directory.
+	* Makeconf ($(..)$(dir).d): Likewise.
+
 	* Makeconf (install) [all variants]: Depend on installation
 	directory directly; don't make installed file depend on it.
 
