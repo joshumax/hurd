@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <dirent.h>
+
+#define swab_disk 0
+
 #include "../ufs/fs.h"
 #include "../ufs/dinode.h"
 #include "../ufs/dir.h"
@@ -101,25 +104,29 @@ struct dups *duplist;		/* head of dup list */
 struct dups *muldup;		/* end of unique duplicate dup block numbers */
 
 
-struct fs *sblock;
+extern struct fs *sblock;
 
-daddr_t maxfsblock;
-int maxino;
-int direct_symlink_extension;
+extern daddr_t maxfsblock;
+extern int maxino;
+extern int direct_symlink_extension;
 
-int newinofmt;
+extern int newinofmt;
 
-int preen;
+/* Terse automatic mode for noninteractive use; punts on severe problems.  */
+extern int preen;
 
-int readfd, writefd;
+extern int readfd, writefd;
 
-int fix_denied;
+extern int fix_denied;
 
-int fsmodified;
+extern int fsmodified;
 
-int lfdir;
+extern int lfdir;
 
-mode_t lfmode;
+/* Total number of files found on the partition.  */
+extern daddr_t num_files;
+
+extern mode_t lfmode;
 extern char *lfname;
 
 #define NBBY 8
@@ -167,10 +174,10 @@ void allblock_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
 void record_directory (struct dinode *, ino_t);
 struct dirinfo *lookup_directory (ino_t);
 
+void errexit (char *, ...) __attribute__ ((format (printf, 1, 2), noreturn));
+void warning (int, char *, ...)  __attribute__ ((format (printf, 2, 3)));
+void problem (int, char *, ...) __attribute__ ((format (printf, 2, 3)));
+void pinode (int, ino_t, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
+void pextend (char *, ...)  __attribute__ ((format (printf, 1, 2)));
+void pfix (char *fix), pfail (char *reason);
 int reply (char *);
-void pfix (char *fix);
-void pinode (ino_t, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-int pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
-int pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
-void errexit (char *, ...) __attribute__ ((format (printf, 1, 2),
-					   noreturn));
