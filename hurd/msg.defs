@@ -1,5 +1,5 @@
-/* Miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation
+/* RPCs which a friendly Hurd process will understand on its message port.
+   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -39,7 +39,7 @@ session ID (see proc_getsidport) CONT
 ctty port (see term_getctty)	INT, QUIT, TSTP, HUP
 async IO ID (see io_async)	URG, IO
 */
-routine sig_post (
+routine msg_sig_post (
 	process: mach_port_t;
 	sreplyport reply_port: sreply_port_t;
 	signal: int;
@@ -48,7 +48,7 @@ routine sig_post (
 /* The parent or the process group of a process has been changed, or
    the orphaned status has changed.  The task port is sent so that the
    recipient can know it's OK to honor the call.  */
-routine proc_newids (
+routine msg_proc_newids (
 	process: mach_port_t;
 	task: task_t;
 	ppid: pid_t;
@@ -56,13 +56,13 @@ routine proc_newids (
 	orphaned: int);
 
 /* Do a reauth after or-ing in new id's. */
-routine add_auth (
+routine msg_add_auth (
 	process: mach_port_t;
 	auth: auth_t);
 
 /* Do a reauth after removing auth information.  The task port is
    provided as an attempt at security.  */
-routine del_auth (
+routine msg_del_auth (
 	process: mach_port_t;
 	task: task_t;
 	uids: intarray_t;
@@ -72,71 +72,71 @@ routine del_auth (
    that were passed to the process at exec time (see hurd_types.h).
    The REFPORT can be the task port or the auth port.  */
 
-routine get_init_port (
+routine msg_get_init_port (
 	process: mach_port_t;
 	refport: mach_port_t;
 	which: int;
 	out port: mach_port_send_t);
 
-routine set_init_port (
+routine msg_set_init_port (
 	process: mach_port_t;
 	refport: mach_port_t;
 	which: int;
 	port: mach_port_send_t);
 
-routine get_init_ports (
+routine msg_get_init_ports (
 	process: mach_port_t;
 	refport: mach_port_t;
 	out ports: portarray_t, dealloc);
 
-routine set_init_ports (
+routine msg_set_init_ports (
 	process: mach_port_t;
 	refport: mach_port_t;
 	ports: portarray_t);
 
-routine get_init_int (
+routine msg_get_init_int (
 	process: mach_port_t;
 	refport: mach_port_t;
 	which: int;
 	out value: int);
 
-routine set_init_int (
+routine msg_set_init_int (
 	process: mach_port_t;
 	refport: mach_port_t;
 	which: int;
 	value: int);
 
-routine get_init_ints (
+routine msg_get_init_ints (
 	process: mach_port_t;
 	refport: mach_port_t;
 	out values: intarray_t, dealloc);
 
-routine set_init_ints (
+routine msg_set_init_ints (
 	process: mach_port_t;
 	refport: mach_port_t;
 	values: intarray_t);
 
 /* These two calls fetch and store the file descriptor table.  */
 
-routine get_dtable (
+routine msg_get_dtable (
 	process: mach_port_t;
 	refport: mach_port_t;
 	out dtable: portarray_t, dealloc);
 
-routine set_dtable (
+routine msg_set_dtable (
 	process: mach_port_t;
 	refport: mach_port_t;
 	dtable: portarray_t);
 
 /* These two calls fetch and store a single file descriptor.  */
 
-routine get_fd (
+routine msg_get_fd (
 	process: mach_port_t;
 	refport: mach_port_t;
 	fd: int;
 	out port: mach_port_send_t);
 
-routine set_fd (
+routine msg_set_fd (
 	process: mach_port_t;
 	refport: mach_port_t;
 	fd: int;
@@ -145,23 +145,23 @@ routine set_fd (
 /* These two calls fetch and store the whole environment,
    in "a=b\0c=d\0" form.  */
 
-routine get_environment (
+routine msg_get_environment (
 	process: mach_port_t;
 	out value: data_t, dealloc);
 
-routine set_environment (
+routine msg_set_environment (
 	process: mach_port_t;
 	refport: mach_port_t;
 	value: data_t);
 
 /* These two calls fetch and store a single environment variable.  */
 
-routine get_env_variable (
+routine msg_get_env_variable (
 	process: mach_port_t;
 	variable: string_t;
 	out value: data_t, dealloc);
 
-routine set_env_variable (
+routine msg_set_env_variable (
 	process: mach_port_t;
 	refport: mach_port_t;
 	variable: string_t;
@@ -171,32 +171,42 @@ routine set_env_variable (
 skip; /* Obsolete io_select_done.  */
 
 /* This is sent by the startup server when the system is going down.  */
-routine startup_dosync (
+routine msg_startup_dosync (
 	process: mach_port_t);
 
-/* This is sent by a filesystem (after being requested with 
-   dir_notice_changes) every time a directory is changed.
-   CHANGE identifies the sort of change that has occurred (see hurd_types.h);
-   NAME is the name that was changed.  */
-routine dir_changed (
-	notify_port: mach_port_t;
-	change: dir_changed_type_t;
-	name: string_t);
-
-/* This is sent by a filesystem (after being requested with
-   file_notice_changes) every time a file or its stat info is changed.
-   CHANGE identifies the sort of change that has occurred (see hurd_types.h);
-   START and END identify the affected regions of the file's data.  */
-routine file_changed (
-	notify_port: mach_port_t;
-	change: file_changed_type_t;
-	start: off_t;
-	end: off_t);
-
-/* Just like sig_post, but the receiver should ignore his trace bit
-   and deliver the signal normally even if traced.  */
-routine sig_post_untraced (
+/* Like msg_sig_post, but the receiver should ignore his trace bit
+   and deliver the signal normally even if traced, first resuming if
+   he was suspended.  */
+routine msg_sig_post_untraced (
 	process: mach_port_t;
 	sreplyport reply_port: sreply_port_t;
 	signal: int;
 	refport: mach_port_t);
+
+/* Get the exec flags of the process.  */
+
+routine msg_get_exec_flags (
+	process: mach_port_t;
+	refport: mach_port_t;
+	out flags: int);
+
+/* Set the exec flags value, or set or clear some flag bits.
+   Setting or clearing certain flag bits may cause associated actions.
+   For example, setting the EXEC_TRACED bit causes the program to
+   stop immediately as if it had received a `msg_sig_post_untraced'
+   with signal SIGTRAP.  */
+
+routine msg_set_all_exec_flags (
+	process: mach_port_t;
+	refport: mach_port_t;
+	flags: int);
+
+routine msg_set_some_exec_flags (
+	process: mach_port_t;
+	refport: mach_port_t;
+	flags: int);
+
+routine msg_clear_some_exec_flags (
+	process: mach_port_t;
+	refport: mach_port_t;
+	flags: int);
