@@ -1,5 +1,9 @@
 2001-06-15  Marcus Brinkmann  <marcus@gnu.org>
 
+	* rc: Merge in recent changes from daemons/rc.sh.
+
+2001-06-15  Marcus Brinkmann  <marcus@gnu.org>
+
 	* rc: Be more selective with what to clean from /var/run.
 	Patch by Moritz Schulte <moritz@chaosdorf.de>.
 
