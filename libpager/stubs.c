@@ -20,7 +20,7 @@
 #include "memory_object.h"
 #include <stdio.h>
 
-error_t
+kern_return_t
 _pager_seqnos_memory_object_copy (mach_port_t old,
 			   mach_port_seqno_t seq,
 			   memory_object_control_t old_ctl,
@@ -32,7 +32,7 @@ _pager_seqnos_memory_object_copy (mach_port_t old,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 _pager_seqnos_memory_object_data_write (mach_port_t old,
 				 mach_port_seqno_t seq,
 				 mach_port_t ctl,
@@ -44,20 +44,20 @@ _pager_seqnos_memory_object_data_write (mach_port_t old,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 _pager_seqnos_memory_object_supply_completed (mach_port_t obj,
 				       mach_port_seqno_t seq,
 				       mach_port_t ctl,
 				       vm_offset_t off,
 				       vm_size_t len,
-				       error_t result,
+				       kern_return_t result,
 				       vm_offset_t err_off)
 {
   printf ("m_o_supply_completed called\n");
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 _pager_seqnos_memory_object_change_completed (mach_port_t obj,
 				       mach_port_seqno_t seq,
 				       boolean_t maycache,
