@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 
+error_t
 diskfs_S_fsys_getfile (mach_port_t fsys,
 		       uid_t *gen_uids,
 		       u_int ngen_uids,
