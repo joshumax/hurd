@@ -30,13 +30,11 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Make a PS_FMT_T by parsing the string SRC, searching for any named
-   field specs in FMT_SPECS, and returning the result in FMT.  If a memory
-   allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
-   field name, EINVAL is returned.  Otherwise 0 is returned.  See ps.h for an
-   explanation of how FMT is derived from SRC.  */
-error_t
-ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
+/* An internal version of ps_fmt_create that also returns a string describing
+   why EINVAL was returned.  */
+static error_t
+_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt,
+	     char **err_string)
 {
   struct ps_fmt *new_fmt;
   int needs = 0;
@@ -149,12 +147,16 @@ ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
 	  src[-1] = '\0';
 
 	  field->spec = ps_fmt_specs_find (fmt_specs, name);
-	  if (!field->spec)
+	  if (! field->spec)
 	    /* Failed to find any named spec called NAME.  */
 	    {
+	      if (err_string)
+		asprintf (err_string, "%s: Unknown format spec", name);
+
 	      FREE (new_fmt->src);
 	      FREE (fields);
 	      FREE (new_fmt);
+
 	      return EINVAL;
 	    }
 
@@ -200,6 +202,30 @@ ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
   *fmt = new_fmt;
 
   return 0;
+}
+
+/* Make a PS_FMT_T by parsing the string SRC, searching for any named
+   field specs in FMT_SPECS, and returning the result in FMT.  If a memory
+   allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
+   field name, EINVAL is returned.  Otherwise 0 is returned.  See ps.h for an
+   explanation of how FMT is derived from SRC.  */
+error_t
+ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs, struct ps_fmt **fmt)
+{
+  return _fmt_create (src, fmt_specs, fmt, 0);
+}
+
+/* Given the same arguments as a previous call to ps_fmt_create that returned
+   an error, this function returns a malloced string describing the error.  */
+void
+ps_fmt_creation_error (char *src, struct ps_fmt_specs *fmt_specs, char **error)
+{
+  struct ps_fmt *fmt;
+  error_t err = _fmt_create (src, fmt_specs, &fmt, error);
+  if (err != EINVAL)		/* ? */
+    asprintf (error, "%s", strerror (err));
+  if (! err)
+    ps_fmt_free (fmt);
 }
 
 /* Free FMT, and any resources it consumes.  */
