@@ -1,5 +1,5 @@
 /* Main NFS server program
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,6 +24,7 @@
 #include <rpc/pmap_prot.h>
 #include <maptime.h>
 #include <hurd.h>
+#include <error.h>
 
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
@@ -47,7 +48,7 @@ main (int argc, char **argv)
     nthreads = atoi (argv[1]);
   if (!nthreads)
     nthreads = 4;
-  
+
   authserver = getauth ();
   maptime_map (0, 0, &mapped_time);
 
@@ -64,7 +65,7 @@ main (int argc, char **argv)
 	       sizeof (struct sockaddr_in));
   if (fail)
     error (1, errno, "Binding NFS socket");
-    
+
   fail = bind (pmap_udp_socket, (struct sockaddr *)&pmap_address,
 	       sizeof (struct sockaddr_in));
   if (fail)
@@ -74,11 +75,11 @@ main (int argc, char **argv)
 
   cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
 				(any_t) pmap_udp_socket));
-  
+
   while (nthreads--)
-    cthread_detach (cthread_fork ((cthread_fn_t) server_loop, 
+    cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
 				  (any_t) main_udp_socket));
-  
+
   for (;;)
     {
       sleep (1);

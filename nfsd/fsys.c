@@ -20,13 +20,14 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <error.h>
 #include <hurd.h>
 #include <fcntl.h>
 #include <string.h>
 
 #include "nfsd.h"
 
-struct fsys_spec 
+struct fsys_spec
 {
   fsys_t fsys;
   char *name;
@@ -58,10 +59,10 @@ init_filesystems (void)
       fsystable[i].fsys = MACH_PORT_NULL;
       fsystable[i].name = 0;
     }
-  
+
   if (!index_file_name)
     return;
-  
+
   index_file = fopen (index_file_name, "r");
   if (!index_file)
     {
@@ -77,7 +78,7 @@ init_filesystems (void)
 	  fclose (index_file);
 	  return;
 	}
-      
+
       if (nitems != 2)
 	{
 	  error (0, 0, "%s:%d Bad syntax", index_file_name, line);
@@ -87,7 +88,7 @@ init_filesystems (void)
       root = file_name_lookup (name, 0, 0);
       if (root == MACH_PORT_NULL)
 	{
-	  error (0, errno, "%s:%d Filesystem `%s'", 
+	  error (0, errno, "%s:%d Filesystem `%s'",
 		 index_file_name, line, name);
 	  free (name);
 	  continue;
@@ -95,7 +96,7 @@ init_filesystems (void)
 
       if (index >= fsystablesize)
 	{
-	  fsystable = (struct fsys_spec *) 
+	  fsystable = (struct fsys_spec *)
 	    realloc (fsystable, index * 2 * sizeof (struct fsys_spec));
 	  for (i = fsystablesize; i < index * 2; i++)
 	    {
@@ -107,7 +108,7 @@ init_filesystems (void)
 
       if (index + 1 > nfsys)
 	nfsys = index + 1;
-      
+
       fsystable[index].name = name;
       file_getcontrol (root, &fsystable[index].fsys);
       mach_port_deallocate (mach_task_self (), root);
@@ -125,7 +126,7 @@ write_filesystems (void)
 
   if (!index_file_name)
     return;
-  
+
   if (index_file_dir == MACH_PORT_NULL)
     {
       index_file_dir = file_name_split (index_file_name, &index_file_compname);
@@ -147,9 +148,9 @@ write_filesystems (void)
       index_file_dir = MACH_PORT_NULL;
       return;
     }
-  
+
   f = fopenport (newindex, "w");
-  
+
   for (i = 0; i < nfsys; i++)
     if (fsystable[i].name)
       fprintf (f, "%d %s\n", i, fsystable[i].name);
@@ -183,7 +184,7 @@ enter_filesystem (char *name, file_t root)
   for (i = 0; i < nfsys; i++)
     if (fsystable[i].name && !strcmp (fsystable[i].name, name))
       return i;
-  
+
   if (nfsys == fsystablesize)
     {
       fsystable = (struct fsys_spec *) realloc (fsystable,
@@ -206,4 +207,3 @@ enter_filesystem (char *name, file_t root)
 
   return nfsys - 1;
 }
-
