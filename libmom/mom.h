@@ -63,7 +63,7 @@ void mom_ref_destroy (struct mom_port_ref *obj);
 
 /* Memory management */
 
-/* Size of a physical page; mom memory management calls must be in
+/* Size of a "physical" page; mom memory management calls must be in
    aligned multiples of this value. */
 extern size_t mom_page_size;
 
