@@ -16,7 +16,7 @@ set -e
 
 # Install info files into the dir file.
 
-install-info --quiet --section "Hurd" "The Hurd" /usr/info/hurd.info.gz
+install-info --quiet --section "Hurd" "The Hurd" /usr/share/info/hurd.info.gz
 
 # Manage alternatives.
 

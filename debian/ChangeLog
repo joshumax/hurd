@@ -1,3 +1,9 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rules (INFODIR): Move to /share.
+	* postinst: Likewise.
+	Submitted by Guillem Jover <guillem.jover@menta.net>, Closes: #146797.
+
 2002-01-28  Marcus Brinkmann  <marcus@gnu.org>
 
 	* copyright: Remove Linuxism.

@@ -27,7 +27,7 @@ LDFLAGS = -s
 PREFIX = /usr
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man
-INFODIR = $(PREFIX)/info
+INFODIR = $(PREFIX)/share/info
 DOCDIR = $(PREFIX)/share/doc/$(package)
 
 #  Package specific stuff.  The idea is to try to make the rules
