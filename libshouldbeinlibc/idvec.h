@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -138,17 +138,19 @@ int idvec_remove (struct idvec *idvec, unsigned pos, uid_t id);
 /* Deleted the id at position POS in IDVEC.  */
 void idvec_delete (struct idvec *idvec, unsigned pos);
 
-/* Insert ID at position POS in IDVEC, remoint any instances of ID previously
+/* Insert ID at position POS in IDVEC, remove any instances of ID previously
    present at POS or after.  ENOMEM is returned if there's not enough memory,
    otherwise 0.  */
 error_t idvec_insert_only (struct idvec *idvec, unsigned pos, uid_t id);
 
-/* EFF and AVAIL should be idvec's corresponding to a process's effective and
-   available ids.  ID replaces the first id in EFF, and what it replaces is
-   preserved by adding it to AVAIL (if not already present).  If SECURE is
-   non-NULL, and ID was not previously present in either EFF or AVAIL, then
-   *SECURE is set to true.  ENOMEM is returned if a malloc fails, otherwise
-   0.  The return parameters are only touched if this call succeeds.  */
+/* EFF and AVAIL should be idvec's corresponding to a process's
+   effective and available ids.  ID replaces the first id in EFF, and,
+   if there are any IDs in AVAIL, replaces the second ID in AVAIL;
+   what it replaces in any case is preserved by adding it to AVAIL if
+   not already present.  In addition, the If SECURE is non-NULL, and
+   ID was not previously present in either EFF or AVAIL, then *SECURE
+   is set to true.  ENOMEM is returned if a malloc fails, otherwise 0.
+   The return parameters are only touched if this call succeeds.  */
 error_t idvec_setid (struct idvec *eff, struct idvec *avail, uid_t id,
 		     int *secure);
 

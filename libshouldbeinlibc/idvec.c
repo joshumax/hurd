@@ -326,7 +326,7 @@ idvec_setid (struct idvec *eff, struct idvec *avail, uid_t id, int *secure)
     err = idvec_add (eff, id);
 
   if (avail->num > 0 && !err)
-    err = idvec_insert_only (avail, id, 1);
+    err = idvec_insert_only (avail, 1, id);
   
   if (err)
     return err;

@@ -1,3 +1,9 @@
+1999-09-29  Mark Kettenis  <kettenis@gnu.org>
+
+	* idvec.c (idvec_setid): Switch last two arguments in call to
+	idvec_insert_only.
+	* idvec.h: Doc fix.
+	
 1999-09-27  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* idvec.c (idvec_setid): Implement Posix saved set-user id
