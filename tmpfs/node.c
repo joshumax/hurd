@@ -1,5 +1,5 @@
 /* Node state and file contents for tmpfs.
-   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
+   Copyright (C) 2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <hurd/hurd_types.h>
 #include <hurd/store.h>
-#include <mach/default_pager.h>
+#include "default_pager_U.h"
 
 unsigned int num_files;
 static unsigned int gen;
@@ -400,11 +400,22 @@ diskfs_truncate (struct node *np, off_t size)
   np->dn_stat.st_size = size;
 
   size = round_page (size);
+  if (size == np->allocsize)
+    return 0;
 
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
     {
-      /* XXX  We have no way to truncate the memory object.  */
-      return 0;
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      if (err == MIG_BAD_ID)
+	/* This is an old default pager.  We have no way to truncate the
+	   memory object.  Note that the behavior here will be wrong in
+	   two ways: user accesses past the end won't fault; and, more
+	   importantly, later growing the file won't zero the contents
+	   past the size we just supposedly truncated to.  For proper
+	   behavior, use a new default pager.  */
+	return 0;
+      if (err)
+	return err;
     }
   /* Otherwise it never had any real contents.  */
 
@@ -433,6 +444,16 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
 
   if (default_pager == MACH_PORT_NULL)
     return EIO;
+
+  if (np->dn->u.reg.memobj != MACH_PORT_NULL)
+    {
+      /* Increase the limit the memory object will allow to be accessed.  */
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      if (err == MIG_BAD_ID)	/* Old default pager, never limited it.  */
+	err = 0;
+      if (err)
+	return err;
+    }
 
   adjust_used (size - np->allocsize);
   np->dn_stat.st_blocks += (size - np->allocsize) / 512;
@@ -463,9 +484,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
      pager how big to make its bitmaps.  This is just an optimization for
      the default pager; the memory object can be expanded at any time just
      by accessing more of it.  (It also optimizes the case of empty files
-     so we might never make a memory object at all.)  If a user accesses
-     areas outside the bounds of the file, he will just get to diddle the
-     contents of the future larger file.  */
+     so we might never make a memory object at all.) */
   if (np->dn->u.reg.memobj == MACH_PORT_NULL)
     {
       error_t err = default_pager_object_create (default_pager,
@@ -477,6 +496,10 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  return MACH_PORT_NULL;
 	}
       assert (np->dn->u.reg.memobj != MACH_PORT_NULL);
+      /* A new-fangled default pager lets us prevent user accesses
+	 past the specified size of the file.  */
+      err = default_pager_object_set_size (np->dn->u.reg.memobj,
+					   np->allocsize);
     }
 
   /* XXX always writable */
