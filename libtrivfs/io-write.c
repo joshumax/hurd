@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,6 +28,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   off_t off,
 		   mach_msg_type_number_t *amt)
 {
+  if (!(trivfs_allow_open & O_WRITE))
+    return EBADF;
+
   assert (!trivfs_support_write);
   return EOPNOTSUPP;
 }
