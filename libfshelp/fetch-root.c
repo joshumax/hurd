@@ -25,7 +25,8 @@
 #include <hurd/fsys.h>
 
 error_t
-fshelp_fetch_root (struct transbox *box, file_t dotdot,
+fshelp_fetch_root (struct transbox *box, void *cookie,
+		   file_t dotdot,
 		   uid_t *uids, int uids_len,
 		   uid_t *gids, int gids_len,
 		   int flags, fshelp_callback_t callback,
@@ -73,7 +74,7 @@ fshelp_fetch_root (struct transbox *box, file_t dotdot,
 		  return ret;
 		}
 
-	    err = (*callback) (box->cookie, &underlying, &uid,
+	    err = (*callback) (box->cookie, cookie, &underlying, &uid,
 			       &gid, &argz, &argz_len);
 	    if (err)
 	      return err;
