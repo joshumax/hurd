@@ -1,3 +1,31 @@
+2002-03-23  Roland McGrath  <roland@frob.com>
+
+	Excised default pager functionality from serverboot.
+	* Makefile (SRCS): Move def_pager_setup.c default_pager.c kalloc.c to
+	(EXTRA_DIST): ... here.
+	(OBJS): Remove *Server.o from here.
+	(MIGSFLAGS): Variable removed.
+	* bootstrap.c (main): Replace paging-file boot-script functions with a
+	stub that prints an error.  No longer call partition_init,
+	default_pager_initialize, or default_pager.
+	(default_pager_bootstrap_port): Variable removed.
+	(main): Don't use it.
+	(default_pager_exception_port): Declaration removed.
+	(main): Don't use it.
+	* default_pager.c (default_pager_bootstrap_port): Variable removed.
+	(default_pager_demux_default): Don't use it.
+	(default_pager_initialize): Likewise.
+	(default_pager): Likewise.
+	(do_bootstrap_privileged_ports, bootstrap_compat): Functions removed.
+	[mips] (set_ras_address): Likewise.
+
+	* default_pager.c (pager_truncate): New function.
+	(struct dpager): New member `limit'.
+	(pager_alloc): Initialize it.
+	(default_pager_object_set_size): New function.
+	(seqnos_memory_object_lock_completed): Rewritten, no longer a stub.
+	(default_pager_demux_object): Try default_pager_server too.
+
 2001-11-24  Roland McGrath  <roland@frob.com>
 
 	* Makefile (installationdir): Use $(bootdir).

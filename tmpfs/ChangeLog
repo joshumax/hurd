@@ -1,3 +1,12 @@
+2002-03-23  Roland McGrath  <roland@frob.com>
+
+	* node.c: Include "default_pager_U.h", not <mach/default_pager.h>.
+	(diskfs_truncate): Return early if page-rounded size is unchanged.
+	Call default_pager_object_set_size on the memory object.
+	(diskfs_grow): Likewise.
+
+	* Makefile (OBJS): Add default_pagerUser.o here.
+
 2001-09-30  Roland McGrath  <roland@frob.com>
 
 	* node.c (diskfs_S_file_get_storage_info): Implement it to return

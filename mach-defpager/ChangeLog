@@ -1,7 +1,13 @@
 2002-03-23  Roland McGrath  <roland@frob.com>
 
+	* setup.c (default_pager_paging_storage): Fail if receiver port is not
+	default_pager_default_port.
+
+	* Makefile (OBJS): Add default_pager_replyUser.o here.
+
 	* main.c (default_pager_bootstrap_port): Declaration removed.
 	(main): Don't use it.
+	* Makefile (OBJS): Remove bootstrapServer.o from here.
 
 2001-06-05  Mark Kettenis  <kettenis@gnu.org>
 
