@@ -32,6 +32,7 @@ S_socket_create (struct trivfs_protid *master,
 		 mach_port_t *port,
 		 mach_msg_type_name_t *porttype)
 {
+  struct sock_user *user;
   struct socket *sock;
   error_t err;
   
@@ -61,8 +62,10 @@ S_socket_create (struct trivfs_protid *master,
     sock_release (sock);
   else
     {
-      *port = ports_get_right (make_sock_user (sock, master->isroot));
+      user = make_sock_user (sock, master->isroot);
+      *port = ports_get_right (user);
       *porttype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (user);
     }
   
   mutex_unlock (&global_lock);
@@ -104,6 +107,7 @@ S_socket_accept (struct sock_user *user,
 		 mach_port_t *addr_port,
 		 mach_msg_type_name_t *addr_port_type)
 {
+  struct sock_user *newuser;
   struct socket *sock, *newsock;
   error_t err;
 
@@ -141,9 +145,11 @@ S_socket_accept (struct sock_user *user,
   err = make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
   if (err)
     goto out;
-
-  *new_port = ports_get_right (make_sock_user (newsock, user->isroot));
+  
+  newuser = make_sock_user (newsock, user->isroot);
+  *new_port = ports_get_right (newuser);
   *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newuser);
 
  out:
   if (err && newsock)
@@ -184,6 +190,10 @@ S_socket_connect (struct sock_user *user,
   
   mutex_unlock (&global_lock);
   
+  /* MiG should do this for us, but it doesn't. */
+  if (!err)
+    mach_port_deallocate (mach_task_self (), addr->pi.port_right);
+
   return err;
 }
 
@@ -201,6 +211,10 @@ S_socket_bind (struct sock_user *user,
   err = (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
   mutex_unlock (&global_lock);
   
+  /* MiG should do this for us, but it doesn't. */
+  if (!err)
+    mach_port_deallocate (mach_task_self (), addr->pi.port_right);
+
   return err;
 }
 
@@ -267,6 +281,11 @@ S_socket_connect2 (struct sock_user *user1,
     }
   
   mutex_unlock (&global_lock);
+
+  /* MiG should do this for us, but it doesn't. */
+  if (!err)
+    mach_port_deallocate (mach_task_self (), user2->pi.port_right);
+
   return err;
 }
 
@@ -291,6 +310,7 @@ S_socket_create_address (mach_port_t server,
   
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (addr);
   return 0;
 }
 
@@ -393,6 +413,10 @@ S_socket_send (struct sock_user *user,
   
   mutex_unlock (&global_lock);
   
+  /* MiG should do this for us, but it doesn't. */
+  if (!err)
+    mach_port_deallocate (mach_task_self (), addr->pi.port_right);
+
   return err;
 }
 
