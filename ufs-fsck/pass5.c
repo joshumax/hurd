@@ -329,7 +329,7 @@ pass5 ()
 		  run = 0;
 		}
 
-	      if ((i & (NBBY - 1)) 1= (NBBY - 1))
+	      if ((i & (NBBY - 1)) != (NBBY - 1))
 		bit <<= 1;
 	      else
 		{
@@ -420,6 +420,16 @@ pass5 ()
 	}
     }
 
+  if (sblock->fs_clean == 0 && !fix_denied)
+    {
+      if (preen || reply ("MARK FILESYSTEM CLEAN"))
+	{
+	  pfix ("FILESYSTEM MARKED CLEAN");
+	  sblock->fs_clean = 1;
+	  writesb = 1;
+	}
+    }
+  
   if (writesb)
     writeblock (SBLOCK, sblock, SBSIZE);
 
