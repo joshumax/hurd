@@ -57,7 +57,7 @@ _treefs_node_start_translator (struct treefs_node *node,
 
   /* XXX this should use fshelp_start_translator_long. */
   err =
-    fshelp_start_translator (&node->active_trans, trans, trans_len,
+    fshelp_start_translator (&node->active_trans, NULL, trans, trans_len,
 			     parent_port, node_port, uid, gid);
 
   treefs_node_auth_unref (node, auth);

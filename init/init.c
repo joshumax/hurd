@@ -800,7 +800,8 @@ open_console ()
 
       error_t open_node (int flags,
 			 mach_port_t *underlying,
-			 mach_msg_type_name_t *underlying_type)
+			 mach_msg_type_name_t *underlying_type,
+			 task_t task, void *cookie)
 	{
 	  term = file_name_lookup (termname, flags | O_CREAT|O_NOTRANS, 0666);
 	  if (term == MACH_PORT_NULL)
@@ -837,8 +838,8 @@ open_console ()
 
       /* The callback to start_translator opens TERM as a side effect.  */
       errno =
-	fshelp_start_translator (open_node, terminal, terminal, argz_len, 3000,
-				 &control);
+	fshelp_start_translator (open_node, NULL, terminal, terminal,
+				 argz_len, 3000, &control);
       if (errno)
 	{
 	  error (0, errno, "%s", terminal);

@@ -25,8 +25,8 @@
 
 error_t
 fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
-			 char *name, char *argz, int argz_len,
-			 int timeout, fsys_t *control)
+			 void *cookie, char *name, char *argz,
+			 int argz_len, int timeout, fsys_t *control)
 {
   mach_port_t ports[INIT_PORT_MAX];
   mach_port_t fds[STDERR_FILENO + 1];
@@ -45,7 +45,7 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
   ports[INIT_PORT_AUTH] = getauth ();
   fds[STDERR_FILENO] = getdport (STDERR_FILENO);
 
-  err = fshelp_start_translator_long (underlying_open_fn,
+  err = fshelp_start_translator_long (underlying_open_fn, cookie,
 				      name, argz, argz_len,
 				      fds, MACH_MSG_TYPE_COPY_SEND,
 				      STDERR_FILENO + 1,

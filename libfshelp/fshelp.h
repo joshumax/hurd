@@ -42,7 +42,8 @@
    returns the node port.  */
 typedef error_t (*fshelp_open_fn_t) (int flags,
 				     file_t *node,
-				     mach_msg_type_name_t *node_type);
+				     mach_msg_type_name_t *node_type,
+				     task_t, void *cookie);
 
 /* Start a passive translator NAME with arguments ARGZ (length
    ARGZ_LEN).  Initialize the initports to PORTS (length PORTS_LEN),
@@ -54,7 +55,7 @@ typedef error_t (*fshelp_open_fn_t) (int flags,
    task's owner to OWNER_UID (or, if OWNER_UID is -1, then clear the
    new task's owner. */
 error_t
-fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
+fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn, void *cookie,
 			      char *name, char *argz, int argz_len,
 			      mach_port_t *fds,
 			      mach_msg_type_name_t fds_type, int fds_len,
@@ -69,7 +70,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
    are copied from our own state, fd[2] is copied from our own stderr,
    and the other fds are cleared.  */
 error_t
-fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
+fshelp_start_translator (fshelp_open_fn_t underlying_open_fn, void *cookie,
 			 char *name, char *argz, int argz_len,
 			 int timeout, fsys_t *control);
 

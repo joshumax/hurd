@@ -284,7 +284,8 @@ do_mount (struct fs *fs, int remount)
       /* The callback to start_translator opens NODE as a side effect.  */
       error_t open_node (int flags,
 			 mach_port_t *underlying,
-			 mach_msg_type_name_t *underlying_type)
+			 mach_msg_type_name_t *underlying_type,
+			 task_t task, void *cookie)
 	{
 	  node = file_name_lookup (fs->mntent.mnt_dir,
 				   flags | O_NOTRANS, 0666);
@@ -331,7 +332,7 @@ do_mount (struct fs *fs, int remount)
       /* Now we have a translator command line argz in FSOPTS.  */
 
       explain ("settrans -a");
-      err = fshelp_start_translator (open_node, fsopts,
+      err = fshelp_start_translator (open_node, NULL, fsopts,
 				     fsopts, fsopts_len, timeout,
 				     &active_control);
       /* If ERR is due to a problem opening the translated node, we print

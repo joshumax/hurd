@@ -29,6 +29,7 @@
 #include <error.h>
 #include <argz.h>
 #include <hurd/fshelp.h>
+#include <hurd/process.h>
 #include <version.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
@@ -170,11 +171,13 @@ main(int argc, char *argv[])
       /* The callback to start_translator opens NODE as a side effect.  */
       error_t open_node (int flags,
 			 mach_port_t *underlying,
-			 mach_msg_type_name_t *underlying_type)
+			 mach_msg_type_name_t *underlying_type,
+			 task_t task, void *cookie)
 	{
 	  if (pause)
 	    {
-	      fprintf (stderr, "Pausing...");
+	      fprintf (stderr, "Translator pid: %d\nPausing...", 
+	               task2pid (task));
 	      getchar ();
 	    }
 
@@ -190,8 +193,8 @@ main(int argc, char *argv[])
 
 	  return 0;
 	}
-      err = fshelp_start_translator (open_node, argz, argz, argz_len, timeout,
-				     &active_control);
+      err = fshelp_start_translator (open_node, NULL, argz, argz, argz_len,
+				     timeout, &active_control);
       if (err)
 	/* If ERR is due to a problem opening the translated node, we print
 	   that name, otherwise, the name of the translator.  */

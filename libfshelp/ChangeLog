@@ -1,3 +1,17 @@
+2001-01-17  Neal H Walfield  <neal@cs.uml.edu>
+
+	* fshelp.h: Add two new parameters to fshelp_open_fn_t:
+	a port to the new task and a cookie.
+	Add a new parameter, cookie, to fshelp_start_translator and 
+	fshelp_start_translator_long that will be passed to
+	fshelp_open_fn_t.
+
+	* fetch-root.c (fshelp_fetch_root): Conform to new
+	fshelp_start_translator_long semantics.
+	* start-translator-long.c (service_fsys_startup): Likewise.
+	(fshelp_start_translator_long): Likewise.
+	* start-translator.c (fshelp_start_translator): Likewise.
+
 2000-03-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* delegate.c (fshelp_delegate_translation): Add const to arg type.

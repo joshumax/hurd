@@ -84,7 +84,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	  return ret;
 	}
       error_t fetch_underlying (int flags, mach_port_t *underlying,
-				mach_msg_type_name_t *underlying_type)
+				mach_msg_type_name_t *underlying_type,
+				task_t task, void *cookie)
 	{
 	  return
 	    (*callback2) (box->cookie, cookie, flags,
@@ -130,7 +131,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
       fds[STDERR_FILENO] = reauth (getdport (STDERR_FILENO));
 
-      err = fshelp_start_translator_long (fetch_underlying,
+      err = fshelp_start_translator_long (fetch_underlying, NULL,
 					  argz, argz, argz_len,
 					  fds, MACH_MSG_TYPE_COPY_SEND,
 					  STDERR_FILENO + 1,

@@ -263,7 +263,6 @@ See `tasks', the exported task list.
 
 ** settrans:
 *** needs an option to make the active go away without using goaway. !
-*** -P should print the pid of the translator before pausing !
 
 ** ps:
 *** ps should timeout quickly (one second?) on non-responsive message ports. !

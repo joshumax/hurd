@@ -98,9 +98,9 @@ static const mach_msg_type_t realnodeType =
    translator died, and EDIED will be returned.  If an error occurs, the
    error code is returned, otherwise 0.  */
 static error_t
-service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
-		      mach_port_t port, long timeout,
-		      fsys_t *control)
+service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
+		      mach_port_t port, long timeout, fsys_t *control,
+		      task_t task)
 {
   error_t err;
   union
@@ -146,7 +146,8 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 
       reply.RetCode =
 	(*underlying_open_fn) (request.startup.flags,
-			       &reply.realnode, &realnode_type);
+			       &reply.realnode, &realnode_type, task,
+			       cookie);
 
       reply.realnodeType = realnodeType;
       reply.realnodeType.msgt_name = realnode_type;
@@ -176,8 +177,8 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
-			      char *name, char *argz, int argz_len,
-			      mach_port_t *fds,
+			      void *cookie, char *name, char *argz,
+			      int argz_len, mach_port_t *fds,
 			      mach_msg_type_name_t fds_type, int fds_len,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
@@ -276,7 +277,8 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 
   /* Ok, cool, we've got a running(?) program, now rendezvous with it if
      possible using the startup protocol on the bootstrap port... */
-  err = service_fsys_startup(underlying_open_fn, bootstrap, timeout, control);
+  err = service_fsys_startup(underlying_open_fn, cookie, bootstrap,
+			     timeout, control, task);
 
  lose:
   if (!ports_moved)

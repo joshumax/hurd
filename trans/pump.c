@@ -235,7 +235,8 @@ start_pfinet (char *argz, int argz_len)
 {
   error_t open_function (int flags,
 			 mach_port_t *underlying,
-			 mach_msg_type_name_t *underlying_type)
+			 mach_msg_type_name_t *underlying_type,
+			 task_t task, void *cookie)
     {
       int err;
       
@@ -248,7 +249,7 @@ start_pfinet (char *argz, int argz_len)
       return 0;
     }
   
-  err = fshelp_start_translator (open_function, 
+  err = fshelp_start_translator (open_function, NULL,
 				   _HURD_PFINET, argz, argz_len,
 				   60 * 1000, &control);
   if (err)

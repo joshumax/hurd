@@ -1,5 +1,5 @@
 /* Run a program on the console, trying hard to get the console open.
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -112,7 +112,8 @@ open_console (char **namep)
 
       error_t open_node (int flags,
 			 mach_port_t *underlying,
-			 mach_msg_type_name_t *underlying_type)
+			 mach_msg_type_name_t *underlying_type,
+			 task_t task, void *cookie)
 	{
 	  term = file_name_lookup (termname, flags | O_CREAT|O_NOTRANS, 0666);
 	  if (term == MACH_PORT_NULL)
@@ -141,8 +142,8 @@ open_console (char **namep)
 
 	  /* The callback to start_translator opens TERM as a side effect.  */
 	  errno =
-	    fshelp_start_translator (open_node, terminal, terminal, argz_len,
-				     3000, &control);
+	    fshelp_start_translator (open_node, NULL, terminal, terminal,
+				     argz_len, 3000, &control);
 	  if (errno)
 	    {
 	      error (0, errno, "%s", terminal);
