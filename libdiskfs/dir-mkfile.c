@@ -62,7 +62,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   flags &= (O_READ | O_WRITE | O_EXEC);
   *newnode = (ports_get_right
 	      (diskfs_make_protid 
-	       (diskfs_make_peropen (np, flags),
+	       (diskfs_make_peropen (np, flags, cred->po->dotdotport),
 		cred->uids, cred->nuids, 
 		cred->gids, cred->ngids)));
   *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
