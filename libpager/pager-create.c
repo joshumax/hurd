@@ -42,7 +42,6 @@ pager_create (struct user_pager_info *upi,
   p->noterm = 0;
   p->termwaiting = 0;
   p->waitingforseqno = 0;
-  p->anticipations = 0;
   p->pagemap = 0;
   p->pagemapsize = 0;
 
