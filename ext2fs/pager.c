@@ -35,34 +35,34 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 /* ---------------------------------------------------------------- */
 
 /* Find the location on disk of page OFFSET in NODE.  Return the disk block
-   in BLOCK (if unallocated, then return 0).  If *NODE_LOCK is set on return,
-   then release that mutex after I/O on the data has completed.  Set LENGTH
-   to be the amount of valid data on disk.  */
+   in BLOCK (if unallocated, then return 0).  If *LOCK is 0, then it a reader
+   lock is aquired on NODE's ALLOC_LOCK before doing anything, and left
+   locked after return -- even if an error is returned.  0 on success or an
+   error code otherwise is returned.  */
 static error_t
 find_block (struct node *node, vm_offset_t offset,
-	    daddr_t *block, int create,
-	    struct rwlock **node_lock)
+	    daddr_t *block, struct rwlock **lock)
 {
   error_t err;
   char *bptr;
 
-  if (!*node_lock)
+  if (!*lock)
     {
-      *node_lock = &node->dn->alloc_lock;
-      rwlock_reader_lock (*node_lock);
+      *lock = &node->dn->alloc_lock;
+      rwlock_reader_lock (*lock);
     }
 
   if (offset + block_size > node->allocsize)
     return EIO;
 
-  err = ext2_getblk (node, offset >> log2_block_size, create, &bptr);
+  err = ext2_getblk (node, offset >> log2_block_size, 0, &bptr);
   if (err == EINVAL)
     /* Don't barf yet if the node is unallocated.  */
     {
       *block = 0;
       err = 0;
     }
-  else
+  else if (err == 0)
     *block = bptr_block (bptr);
 
   return err;
@@ -79,7 +79,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 {
   error_t err;
   int offs = 0;
-  struct rwlock *node_lock = NULL;
+  struct rwlock *lock = NULL;
   int left = vm_page_size;
   daddr_t pending_blocks = 0;
   int num_pending_blocks = 0;
@@ -121,7 +121,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
     {
       daddr_t block;
 
-      err = find_block (node, page, &block, 0, &node_lock);
+      err = find_block (node, page, &block, &lock);
       if (err)
 	break;
 
@@ -142,7 +142,6 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	      err = vm_allocate (mach_task_self (), buf, vm_page_size, 1);
 	      if (err)
 		break;
-	      *writelock = 1;
 	    }
 	  bzero ((char *)*buf + offs, block_size);
 	  offs += block_size;
@@ -157,8 +156,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
   if (!err && num_pending_blocks > 0)
     do_pending_reads();
       
-  if (node_lock)
-    rwlock_reader_unlock (node_lock);
+  if (lock)
+    rwlock_reader_unlock (lock);
 
   return err;
 }
@@ -187,7 +186,7 @@ pending_blocks_write (struct pending_blocks *pb)
       daddr_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       int length = pb->num << log2_block_size;
 
-printf ("Writing %d pending block(s) at %d\n", pb->num, pb->block);
+printf ("Writing block %lu[%d]\n", pb->block, pb->num);
 
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
@@ -239,7 +238,6 @@ pending_blocks_add (struct pending_blocks *pb, daddr_t block)
       if (err)
 	return err;
       pb->block = block;
- printf ("Adding pending block %d\n", block);
     }
   pb->num++;
   return 0;
@@ -255,7 +253,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 {
   error_t err = 0;
   struct pending_blocks pb;
-  struct rwlock *node_lock = 0;
+  struct rwlock *lock = 0;
   u32 block;
   int left = vm_page_size;
 
@@ -264,13 +262,15 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   if (offset + left > node->allocsize)
     left = left > node->allocsize - offset;
 
- printf ("Writing file_pager page %d[%d]\n", offset, left);
+ printf ("Writing file_pager (inode %d) page %d[%d]\n",
+	 node->dn->number, offset, left);
 
   while (left > 0)
     {
-      err = find_block (node, offset, &block, 1, &node_lock);
+      err = find_block (node, offset, &block, &lock);
       if (err)
 	break;
+      assert (block);
       pending_blocks_add (&pb, block);
       offset += block_size;
       left -= block_size;
@@ -279,8 +279,8 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   if (!err)
     pending_blocks_write (&pb);
       
-  if (node_lock)
-    rwlock_reader_unlock (node_lock);
+  if (lock)
+    rwlock_reader_unlock (lock);
 
   return err;
 }
@@ -333,8 +333,6 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 	  modified = clear_bit (block, modified_global_blocks);
 	  spin_unlock (&modified_global_blocks_lock);
 
- printf ("Disk_pager block %d %s\n", block, (modified ? "modified" : "unmodified"));
-
 	  if (modified)
 	    /* This block's been modified, so write it out.  */
 	    err = pending_blocks_add (&pb, block);
@@ -384,11 +382,9 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
 
 /* ---------------------------------------------------------------- */
 
-/* Implement the pager_unlock_page callback from the pager library.  See 
-   <hurd/pager.h> for the interface description. */
+/* Make page PAGE writable.  */
 error_t
-pager_unlock_page (struct user_pager_info *pager,
-		   vm_offset_t address)
+pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 {
   if (pager->type == DISK)
     return 0;
@@ -396,16 +392,26 @@ pager_unlock_page (struct user_pager_info *pager,
     {
       error_t err;
       char *buf;
+      daddr_t block = page >> log2_block_size;
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
 
       rwlock_writer_lock (&dn->alloc_lock);
-
       err = diskfs_catch_exception ();
-      if (!err)
-	err = ext2_getblk(node, address >> log2_block_size, 1, &buf);
-      diskfs_end_catch_exception ();
 
+      if (!err)
+	{
+	  int left = vm_page_size;
+	  while (left > 0)
+	    {
+	      err = ext2_getblk(node, block++, 1, &buf);
+	      if (err)
+		break;
+	      left -= block_size;
+	    }
+	}
+
+      diskfs_end_catch_exception ();
       rwlock_writer_unlock (&dn->alloc_lock);
 
       return err;
@@ -413,6 +419,21 @@ pager_unlock_page (struct user_pager_info *pager,
 }
 
 /* ---------------------------------------------------------------- */
+
+/* The user must define this function.  Grow the disk allocated to locked node
+   NODE to be at least SIZE bytes, and set NODE->allocsize to the actual
+   allocated size.  (If the allocated size is already SIZE bytes, do
+   nothing.)  CRED identifies the user responsible for the call.  */
+error_t
+diskfs_grow (struct node *node, off_t size, struct protid *cred)
+{
+  assert (!diskfs_readonly);
+
+  if (size > node->allocsize)
+    node->allocsize = trunc_block (size) + block_size;
+  else
+    return 0;
+}
 
 /* Implement the pager_report_extent callback from the pager library.  See 
    <hurd/pager.h> for the interface description. */
@@ -635,4 +656,3 @@ diskfs_sync_everything (int wait)
   write_all_disknodes ();
   pager_traverse (sync_one);
 }
-  
