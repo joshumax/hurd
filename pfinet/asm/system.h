@@ -67,7 +67,7 @@ end_interrupt ()
 }
 
 /* Return one if we are in interrupt code. */
-extern inline 
+extern inline int
 _fetch_intr_count ()
 {
   u_long locked;
