@@ -326,7 +326,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || DIRSIZ (DIRECT_NAMLEN (entry)) > entry->d_reclen
 	  || memchr (entry->d_name, '\0', DIRECT_NAMLEN (entry)))
 	{
-	  fprintf (stderr, "Bad directory entry: inode: %ld offset: %d\n",
+	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
 		  dp->dn->number, currentoff - blockaddr);
 	  return ENOENT;
 	}
@@ -443,7 +443,7 @@ diskfs_direnter(struct node *dp,
       ds->entry->d_ino = np->dn->number;
       DIRECT_NAMLEN (ds->entry) = namelen;
       if (direct_symlink_extension)
-	ds->d_type = IFTODT (np->dn->dn_stat.st_mode);
+	ds->entry->d_type = IFTODT (np->dn_stat.st_mode);
       bcopy (name, ds->entry->d_name, namelen + 1);
 
       break;
@@ -460,7 +460,7 @@ diskfs_direnter(struct node *dp,
       new->d_reclen = ds->entry->d_reclen - oldneeded;
       DIRECT_NAMLEN (new) = namelen;
       if (direct_symlink_extension)
-	ds->d_type = IFTODT (np->dn->dn_stat.st_mode);
+	new->d_type = IFTODT (np->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       
       ds->entry->d_reclen = oldneeded;
@@ -500,7 +500,7 @@ diskfs_direnter(struct node *dp,
       new->d_reclen = totfreed;
       DIRECT_NAMLEN (new) = namelen;
       if (direct_symlink_extension)
-	new->d_type = IFTODT (np->dn->dn_stat.st_mode);
+	new->d_type = IFTODT (np->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       break;
 
@@ -522,7 +522,7 @@ diskfs_direnter(struct node *dp,
       new->d_reclen = DIRBLKSIZ;
       DIRECT_NAMLEN (new) = namelen;
       if (direct_symlink_extension)
-	new->d_type = IFTODT (np->dn->dn_stat.st_mode);
+	new->d_type = IFTODT (np->dn_stat.st_mode);
       bcopy (name, new->d_name, namelen + 1);
       break;
       
@@ -620,7 +620,7 @@ diskfs_dirrewrite(struct node *dp,
   
   ds->entry->d_ino = np->dn->number;
   if (direct_symlink_extension)
-    ds->entry->d_type = IFTODT (np->dn->dn_stat.st_mode);
+    ds->entry->d_type = IFTODT (np->dn_stat.st_mode);
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
