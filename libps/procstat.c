@@ -235,8 +235,7 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
     /* We got new memory vm_alloced by the getprocinfo, discard the old.  */
     {
       if (ps->proc_info_vm_alloced)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t)ps->proc_info, ps->proc_info_size);
+	munmap (ps->proc_info, ps->proc_info_size);
       else
 	free (ps->proc_info);
       ps->proc_info = new_pi;
@@ -254,8 +253,7 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	/* We got new memory vm_alloced by the getprocinfo, discard the old. */
 	{
 	  if (ps->thread_waits_vm_alloced)
-	    vm_deallocate (mach_task_self (),
-			   (vm_address_t)ps->thread_waits, ps->thread_waits_len);
+	    munmap (ps->thread_waits, ps->thread_waits_len);
 	  else
 	    free (ps->thread_waits);
 	  ps->thread_waits = new_waits;

@@ -1,3 +1,8 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* common.h (VMFREE): Use munmap instead of vm_deallocate.
+	* procstat.c (merge_procinfo): Likewise.
+
 1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ps.h (PSTAT_ENV): New macro.

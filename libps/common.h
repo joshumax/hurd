@@ -1,6 +1,6 @@
 /* Handy common functions for things in libps.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,7 +32,7 @@
     ((type *)realloc((void *)(old),(unsigned)(sizeof(type)*(len))))
 
 #define FREE(x) (void)free((void *)x)
-#define VMFREE(x, len) vm_deallocate(mach_task_self(), (vm_address_t)x, len)
+#define VMFREE(x, len) munmap((caddr_t)x, len)
 
 #ifndef FALSE
 #define FALSE 0
