@@ -30,18 +30,18 @@ ioserver_handle_io_get_conch (struct conch *c, void *user,
   if (c->holder == user)
     {
       if (user_sh->conch_status != USER_HAS_NOT_CONCH)
-	error = fetch_shared_data (user);
+	error = ioserver_fetch_shared_data (user);
       else
 	user_sh->accessed = user_sh->written = 0;
       
       if (!error)
-	error = put_shared_data (user);
+	error = ioserver_put_shared_data (user);
       if (!error)
 	user_sh->conch_status = USER_HAS_CONCH;
     }
   else
     {
-      error = get_conch (c);
+      error = ioserver_get_conch (c);
 
       if (!error)
 	{
@@ -50,7 +50,7 @@ ioserver_handle_io_get_conch (struct conch *c, void *user,
 	  if (user_sh->conch_status == USER_HAS_NOT_CONCH)
 	    user_sh->accessed = user_sh->written = 0;
 	  user_sh->conch_status = USER_HAS_CONCH;
-	  put_shared_data (user);
+	  ioserver_put_shared_data (user);
 	}
     }
   
