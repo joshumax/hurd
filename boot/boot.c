@@ -64,6 +64,9 @@ void init_termstate ();
 
 char *fsname;
 
+char *bootstrap_args;
+char *bootdevice = DEFAULT_BOOTDEVICE;
+
 /* We can't include <unistd.h> for this, because that will fight with
    our definitions of syscalls below. */
 int syscall (int, ...);
@@ -229,9 +232,17 @@ load_image (task_t t,
   vm_address_t base = 0x10000;
   int rndamount, amount;
   vm_address_t bsspagestart, bssstart;
+  char msg[] = "cannot open bootstrap file";
   int magic;
 
   fd = open (file, 0, 0);
+
+  if (fd == -1)
+    {
+      write (2, msg, sizeof (msg));
+      task_terminate (t);
+      uxexit (1);
+    }
   
   read (fd, &x, sizeof (struct exec));
   magic = N_MAGIC (x);
@@ -267,20 +278,43 @@ main (int argc, char **argv, char **envp)
   thread_t newthread;
   mach_port_t foo;
   vm_address_t startpc;
-  char msg[] = "Boot is here.\n";
+  char usagemsg[] = "Usage: boot [-qsdn] first-task [disk]";
+  char *bootfile;
   char c;
   struct sigvec vec = { read_reply, 0, 0};
-
-  write (1, msg, sizeof msg);
 
   privileged_host_port = task_by_pid (-1);
   master_device_port = task_by_pid (-2);
 
+  if (argc < 2
+      || argc > 4
+      || (argv[1][0] == '-' && argc < 3)
+      || (argv[1][0] != '-' && argc > 3))
+    {
+      write (2, usagemsg, sizeof usagemsg);
+      uxexit (1);
+    }
+
+  if (argv[1][0] != '-')
+    {
+      bootstrap_args = "-x";
+      if (argc == 3)
+	bootdevice = argv[2];
+      bootfile = argv[1];
+    }
+  else
+    {
+      bootstrap_args = argv[1];
+      bootfile = argv[2];
+      if (argc == 4)
+	bootdevice = argv[3];
+    }
+
   task_create (mach_task_self (), 0, &newtask);
   
-  startpc = load_image (newtask, argv[1]);
+  startpc = load_image (newtask, bootfile);
   
-  fsname = argv[1];
+  fsname = bootfile;
   
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
@@ -334,8 +368,11 @@ main (int argc, char **argv, char **envp)
   __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
 		       &fs_stack_size);
 
-  write (1, "pausing\n", 8);
-  read (0, &c, 1);
+  if (index (bootstrap_args, 'd'))
+    {
+      write (1, "pausing\n", 8);
+      read (0, &c, 1);
+    }
   thread_resume (newthread);
   
   while (1)
@@ -525,8 +562,9 @@ S_exec_startup (mach_port_t port,
 
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
-  nc = sprintf (argv, "[BOOTSTRAP %s]%c-x%c%d%c%d%c%s", fsname, '\0', '\0',
-		php_child_name, '\0', psmdp_child_name, '\0', "hd0f");
+  nc = sprintf (argv, "[BOOTSTRAP %s]%c%s%c%d%c%d%c%s", fsname, '\0', 
+		bootstrap_args, '\0', php_child_name, '\0', 
+		psmdp_child_name, '\0', bootdevice);
 
   if (nc > *argvlen)
     vm_allocate (mach_task_self (), (vm_address_t *)argvP, nc, 1);
@@ -591,6 +629,13 @@ init_termstate ()
   sgb.flags &= ~ECHO;
   sgb.flags |= RAW | ANYP;
   ioctl (0, TIOCSETN, &sgb);
+}
+
+void
+restore_termstate ()
+{
+  ioctl (0, TIOCLSET, &localbits);
+  ioctl (0, TIOCSETN, &term_sgb);
 }
 
 #ifdef notanymore
@@ -983,7 +1028,10 @@ do_mach_notify_no_senders (mach_port_t notify,
   if (notify == pseudo_console)
     {
       if (mscount == console_mscount)
-	uxexit (0);
+	{
+	  restore_termstate ();
+	  uxexit (0);
+	}
       else
 	{
 	  mach_port_request_notification (mach_task_self (), pseudo_console,
@@ -1186,6 +1234,7 @@ S_io_select (mach_port_t object,
 	     mach_msg_type_name_t reply_type,
 	     int type,
 	     mach_port_t ret,
+	     mach_msg_type_name_t rettype,
 	     int tag,
 	     int *result)
 {
@@ -1406,6 +1455,15 @@ S_io_sigio (mach_port_t obj,
 
 /* Implementation of the Hurd terminal driver interface, which we only
    support on the console device.  */
+
+kern_return_t
+S_termctty_open_terminal (mach_port_t object,
+			  int flags,
+			  mach_port_t *result,
+			  mach_msg_type_name_t *restype)
+{
+  return EOPNOTSUPP;
+}
 
 kern_return_t
 S_term_getctty (mach_port_t object,
