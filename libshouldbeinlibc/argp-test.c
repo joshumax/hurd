@@ -27,7 +27,7 @@
 #include <string.h>
 #include <argp.h>
 
-char *argp_program_version = "argp-test 1.0";
+const char *argp_program_version = "argp-test 1.0";
 
 struct argp_option sub_options[] =
 {
@@ -71,7 +71,7 @@ static char *
 sub_help_filter (int key, const char *text, void *input)
 {
   if (key == ARGP_KEY_HELP_EXTRA)
-    return strdup ("This is some extra text from the sub parser (note that it
+    return strdup ("This is some extra text from the sub parser (note that it \
 is preceded by a blank line).");
   else
     return (char *)text;

@@ -36,6 +36,7 @@
 # define _(msgid)       gettext (msgid)
 #else
 # define _(msgid)       (msgid)
+# define gettext(msgid) (msgid)
 #endif
 #endif
 

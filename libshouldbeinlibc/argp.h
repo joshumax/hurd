@@ -22,12 +22,18 @@
 #define __ARGP_H__
 
 #include <stdio.h>
-#include <errno.h>
 #include <ctype.h>
 #include <getopt.h>
 
+#define __need_error_t
+#include <errno.h>
+
 #ifndef __const
 #define __const const
+#endif
+
+#ifndef __error_t_defined
+typedef int error_t;
 #endif
 
 #ifndef __P
@@ -348,10 +354,10 @@ struct argp_state
    routine returned a non-zero value, it is returned; otherwise 0 is
    returned.  This function may also call exit unless the ARGP_NO_HELP flag
    is set.  INPUT is a pointer to a value to be passed in to the parser.  */
-error_t argp_parse __P ((__const struct argp *__argp,
+extern error_t argp_parse __P ((__const struct argp *__argp,
 			 int __argc, char **__argv, unsigned __flags,
 			 int *__arg_index, void *__input));
-error_t __argp_parse __P ((__const struct argp *__argp,
+extern error_t __argp_parse __P ((__const struct argp *__argp,
 			   int __argc, char **__argv, unsigned __flags,
 			   int *__arg_index, void *__input));
 
@@ -359,9 +365,9 @@ error_t __argp_parse __P ((__const struct argp *__argp,
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
-   will print this this string followed by a newline and exit (unless the
+   will print this string followed by a newline and exit (unless the
    ARGP_NO_EXIT flag is used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
-extern char *argp_program_version;
+extern const char *argp_program_version;
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
@@ -436,9 +442,11 @@ extern void __argp_usage __P ((struct argp_state *__state));
 /* If appropriate, print the printf string FMT and following args, preceded
    by the program name and `:', to stderr, and followed by a `Try ... --help'
    message, then exit (1).  */
-void argp_error __P ((struct argp_state *__state, __const char *__fmt, ...))
+extern void argp_error __P ((struct argp_state *__state, __const char *__fmt,
+			     ...))
      __attribute__ ((__format__ (__printf__, 2, 3)));
-void __argp_error __P ((struct argp_state *__state, __const char *__fmt, ...))
+extern void __argp_error __P ((struct argp_state *__state,
+			       __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 2, 3)));
 
 /* Similar to the standard gnu error-reporting function error(), but will
@@ -449,11 +457,11 @@ void __argp_error __P ((struct argp_state *__state, __const char *__fmt, ...))
    difference between this function and argp_error is that the latter is for
    *parsing errors*, and the former is for other problems that occur during
    parsing but don't reflect a (syntactic) problem with the input.  */
-void argp_failure __P ((struct argp_state *__state,
-			int __status, int __errnum, __const char *__fmt, ...))
+extern void argp_failure __P ((struct argp_state *__state, int __status,
+			       int __errnum, __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 4, 5)));
-void __argp_failure __P ((struct argp_state *__state,
-			  int __status, int __errnum, __const char *__fmt, ...))
+extern void __argp_failure __P ((struct argp_state *__state, int __status,
+				 int __errnum, __const char *__fmt, ...))
      __attribute__ ((__format__ (__printf__, 4, 5)));
 
 /* Returns true if the option OPT is a valid short option.  */
@@ -467,8 +475,10 @@ extern int __option_is_end __P ((__const struct argp_option *__opt));
 
 /* Return the input field for ARGP in the parser corresponding to STATE; used
    by the help routines.  */
-void *_argp_input (__const struct argp *argp, __const struct argp_state *state);
-void *__argp_input (__const struct argp *argp, __const struct argp_state *state);
+extern void *_argp_input __P ((__const struct argp *argp,
+			       __const struct argp_state *state));
+extern void *__argp_input __P ((__const struct argp *argp,
+				__const struct argp_state *state));
 
 #ifdef __OPTIMIZE__
 

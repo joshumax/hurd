@@ -744,7 +744,7 @@ struct pentry_state
 };
 
 /* If a user doc filter should be applied to DOC, do so.  */
-static char *
+static const char *
 filter_doc (const char *doc, int key, const struct argp *argp,
 	    struct pentry_state *pest)
 {
@@ -769,7 +769,7 @@ print_header (const char *str, const struct argp *argp,
 	      struct pentry_state *pest)
 {
   const char *tstr = gettext (str);
-  char *fstr = filter_doc (tstr, ARGP_KEY_HELP_HEADER, argp, pest);
+  const char *fstr = filter_doc (tstr, ARGP_KEY_HELP_HEADER, argp, pest);
 
   if (fstr)
     {
@@ -791,7 +791,7 @@ print_header (const char *str, const struct argp *argp,
     }
 
   if (fstr != tstr)
-    free (fstr);
+    free ((char *) fstr);
 }
 
 /* Inserts a comma if this isn't the first item on the line, and then makes
@@ -908,7 +908,7 @@ hol_entry_help (struct hol_entry *entry, const struct argp_state *state,
   else
     {
       const char *tstr = real->doc ? gettext (real->doc) : 0;
-      char *fstr = filter_doc (tstr, real->key, entry->argp, &pest);
+      const char *fstr = filter_doc (tstr, real->key, entry->argp, &pest);
       if (fstr && *fstr)
 	{
 	  unsigned col = __argp_fmtstream_point (stream);
@@ -926,7 +926,7 @@ hol_entry_help (struct hol_entry *entry, const struct argp_state *state,
 	  __argp_fmtstream_puts (stream, fstr);
 	}
       if (fstr && fstr != tstr)
-	free (fstr);
+	free ((char *) fstr);
 
       /* Reset the left margin.  */
       __argp_fmtstream_set_lmargin (stream, 0);
@@ -1173,7 +1173,7 @@ argp_doc (const struct argp *argp, const struct argp_state *state,
 	  int post, int pre_blank, int first_only,
 	  argp_fmtstream_t stream)
 {
-  char *text;
+  const char *text;
   const char *inp_text;
   void *input = 0;
   int anything = 0;
@@ -1204,7 +1204,7 @@ argp_doc (const struct argp *argp, const struct argp_state *state,
 			      inp_text, input);
     }
   else
-    text = (char *)inp_text;
+    text = (const char *) inp_text;
 
   if (text)
     {
@@ -1223,9 +1223,9 @@ argp_doc (const struct argp *argp, const struct argp_state *state,
     }
 
   if (text && text != inp_text)
-    free (text);		/* Free TEXT returned from the help filter.  */
+    free ((char *) text);	/* Free TEXT returned from the help filter.  */
   if (inp_text && inp_text_limit && argp->help_filter)
-    free ((char *)inp_text);	/* We copied INP_TEXT, so free it now.  */
+    free ((char *) inp_text);	/* We copied INP_TEXT, so free it now.  */
 
   if (post && argp->help_filter)
     /* Now see if we have to output a ARGP_KEY_HELP_EXTRA text.  */
@@ -1236,7 +1236,7 @@ argp_doc (const struct argp *argp, const struct argp_state *state,
 	  if (anything || pre_blank)
 	    __argp_fmtstream_putc (stream, '\n');
 	  __argp_fmtstream_puts (stream, text);
-	  free (text);
+	  free ((char *) text);
 	  if (__argp_fmtstream_point (stream)
 	      > __argp_fmtstream_lmargin (stream))
 	    __argp_fmtstream_putc (stream, '\n');
