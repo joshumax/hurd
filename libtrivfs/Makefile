@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -34,8 +34,8 @@ IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c fsys-forward.c
 
-OTHERSRCS=demuxer.c handle-port.c protid-clean.c protid-dup.c cntl-clean.c \
-	migsupport.c times.c startup.c open.c
+OTHERSRCS=demuxer.c handle-port.c protid-clean.c protid-dup.c cntl-create.c \
+	cntl-clean.c migsupport.c times.c startup.c open.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 
