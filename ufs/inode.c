@@ -221,9 +221,7 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = !! di->di_trans;
-
-  if (!fsidset)
+  if (! fsidset)
     {
       fsid = getpid ();
       fsidset = 1;
@@ -234,8 +232,10 @@ read_disknode (struct node *np)
   st->st_ino = np->dn->number;
   st->st_gen = read_disk_entry (di->di_gen);
   st->st_rdev = read_disk_entry(di->di_rdev);
-  st->st_mode = (read_disk_entry (di->di_model) 
-		 | (read_disk_entry (di->di_modeh) << 16));
+  st->st_mode = (((read_disk_entry (di->di_model) 
+		   | (read_disk_entry (di->di_modeh) << 16))
+		  & ~S_ITRANS)
+		 | (di->di_trans ? S_IPTRANS : 0));
   st->st_nlink = read_disk_entry (di->di_nlink);
   st->st_size = read_disk_entry (di->di_size);
 #ifdef notyet
@@ -326,12 +326,13 @@ write_node (struct node *np)
 
       if (compat_mode == COMPAT_GNU)
 	{
-	  write_disk_entry (di->di_model, st->st_mode & 0xffff);
-	  write_disk_entry (di->di_modeh, (st->st_mode >> 16) & 0xffff);
+	  mode_t mode = st->st_mode & ~S_ITRANS;
+	  write_disk_entry (di->di_model, mode & 0xffff);
+	  write_disk_entry (di->di_modeh, (mode >> 16) & 0xffff);
 	}
       else 
 	{
-	  write_disk_entry (di->di_model, st->st_mode & 0xffff);
+	  write_disk_entry (di->di_model, st->st_mode & 0xffff & ~S_ITRANS);
 	  di->di_modeh = 0;
 	}
 
@@ -557,7 +558,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       di->di_trans = 0;
       record_poke (di, sizeof (struct dinode));
       np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
-      np->istranslated = 0;
+      np->dn_stat.st_mode &= ~S_IPTRANS;
       np->dn_set_ctime = 1;
     }
   
@@ -569,7 +570,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       bcopy (buf, disk_image + fsaddr (sblock, blkno), sblock->fs_bsize);
       sync_disk_blocks (blkno, sblock->fs_bsize, 1);
 
-      np->istranslated = 1;
+      np->dn_stat.st_mode |= S_IPTRANS;
       np->dn_set_ctime = 1;
     }
   
