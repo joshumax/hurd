@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,13 +44,19 @@ diskfs_S_io_map (struct protid *cred,
     {
     case O_READ | O_WRITE:
       *wrobj = *rdobj = diskfs_get_filemap (node, VM_PROT_READ |VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+	goto error;
       mach_port_mod_refs (mach_task_self (), *rdobj, MACH_PORT_RIGHT_SEND, 1);
       break;
     case O_READ:
       *rdobj = diskfs_get_filemap (node, VM_PROT_READ);
+      if (*rdobj == MACH_PORT_NULL)
+	goto error;
       break;
     case O_WRITE:
       *wrobj = diskfs_get_filemap (node, VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+	goto error;
       break;
     }
   mutex_unlock (&node->lock);
@@ -59,4 +65,9 @@ diskfs_S_io_map (struct protid *cred,
   *wrtype = MACH_MSG_TYPE_MOVE_SEND;
 
   return 0;
+  
+error:
+  mutex_unlock (&node->lock);
+  return errno;
 }
+

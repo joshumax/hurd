@@ -1,5 +1,11 @@
 Wed Aug 20 14:03:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
+	* diskfs.h: Doc fix.
+
+	* io-map.c (diskfs_S_io_map): Cope with error return from
+	diskfs_get_filemap. 
+	* rdwr-internal.c (_diskfs_rdwr_internal): Likewise.
+
 	* disk-pager.c (service_paging_requests): New args for
 	ports_manage_port_operations_multithread. 
 	* init-first.c (master_thread_function): Likewise.
