@@ -1,3 +1,7 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* loopback.c (loopback_type_trans): Return u_int16_t.
+
 Fri Apr 24 15:43:07 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* io-ops.c (S_io_select): When returning EINTR after cancellation,
@@ -16,7 +20,7 @@ Fri Apr 24 15:43:07 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 Wed Aug 20 14:05:52 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): New args for
-	ports_manage_port_operations_multithread.  
+	ports_manage_port_operations_multithread.
 
 Fri Aug  8 11:47:08 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -84,7 +88,7 @@ Thu Jul 18 23:19:07 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* misc.c (make_sock_user): New parm `noinstall'; if it's set use
 	non-installing version of ports_create_port.  All callers
-	changed. 
+	changed.
 	* io-ops.c (S_io_reauthenticate): Install NEWUSER port right into
 	portset after it's fully initialized.
 
@@ -156,13 +160,13 @@ Thu Jun 20 22:39:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* options.c: Renamed from opts.c.
 	(parse_opt): Fix lots of typos.
 	(trivfs_get_options): New function.
-	(get_opts, trivfs_S_fsys_get_options, trivfs_S_file_get_fs_options): 
+	(get_opts, trivfs_S_fsys_get_options, trivfs_S_file_get_fs_options):
 	Functions removed.
 	<netinet/in.h>, <arpa/inet.h>: New includes.
 	* Makefile (pfinet): Depend on ../libfshelp/libfshelp.a &
 	../libshouldbeinlibc/libshouldbeinlibc.a.
 	(SRCS): Add options.c.
-	
+
 Thu Jun 20 19:47:40 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* main.c: Include <hurd/startup.h> and <string.h>.
@@ -319,4 +323,3 @@ Wed Aug 23 14:20:48 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
 
 	* Makefile (pfinet): Put all dependencies here.
 	(HURDLIBS): Removed.
-

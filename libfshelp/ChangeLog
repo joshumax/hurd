@@ -1,3 +1,8 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fshelp.h (fshelp_set_options): Use `const' for `char *' parameter.
+	* set-options.c (fshelp_set_options): Fix defn.
+
 1998-08-21  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (SRCS): Remove return-buffer.c.

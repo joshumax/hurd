@@ -1,3 +1,14 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ugids-verify-auth.c (ugids_verify_make_auth): Fix typos in
+	svma_state change of 1998-08-11.
+
+	* idvec.c, idvec-auth.c (id_t): Remove typedef; use uid_t everywhere.
+	The name `id_t' is coopted in libc now for the SVID `waitid' interface.
+
+	* Makefile (SRCS): Remove argz-replace.c and argp-*.c from the list.
+	(installhdrs): Remove argp.h from the list.
+
 1998-08-12  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* argz-replace.c: Removed, now in libcwhereitshouldbe.

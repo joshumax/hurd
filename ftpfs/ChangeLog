@@ -1,3 +1,7 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ftpfs.c (netfs_append_args): Use %ld for time_t and %Zu for size_t.
+
 1997-09-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (parse_runtime_opt): New function.
@@ -136,4 +140,3 @@
 	* host.c (split_server_name): Enable password parsing.
 
 	* dir.c (lookup): Initialize the NODE field.
-

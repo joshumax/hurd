@@ -1,3 +1,7 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* lmail.c: Include <time.h> and <sys/time.h>.
+
 1998-07-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* getty.c: Include <string.h> for basename decl.
