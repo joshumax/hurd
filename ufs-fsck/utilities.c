@@ -19,15 +19,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "fsck.h"
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
 
 /* Read disk block ADDR into BUF of SIZE bytes. */
 void
 readblock (daddr_t addr, void *buf, size_t size)
 {
   if (lseek (readfd, addr * DEV_BSIZE, L_SET) == -1)
-    errexit ("CANNOT SEEK TO BLOCK %d", addr);
+    errexit ("CANNOT SEEK TO BLOCK %ld", addr);
   if (read (readfd, buf, size) != size)
-    errexit ("CANNOT READ BLOCK %d", addr);
+    errexit ("CANNOT READ BLOCK %ld", addr);
 }
 
 /* Write disk block BLKNO from BUF of SIZE bytes. */
@@ -35,10 +38,10 @@ void
 writeblock (daddr_t addr, void *buf, size_t size)
 {
   if (lseek (writefd, addr * DEV_BSIZE, L_SET) == -1)
-    errexit ("CANNOT SEEK TO BLOCK %d", addr);
+    errexit ("CANNOT SEEK TO BLOCK %ld", addr);
   if (write (writefd, buf, size) != size)
-    errexit ("CANNOT READ BLOCK %d", addr);
-  fsmodified = 1
+    errexit ("CANNOT READ BLOCK %ld", addr);
+  fsmodified = 1;
 }
 
 /* Read inode number INO into DINODE. */
@@ -49,7 +52,7 @@ getinode (ino_t ino, struct dinode *di)
   char buf[sblock->fs_fsize];
 
   iblk = ino_to_fsba (sblock, ino);
-  readblock (fsbtodb (iblk), buf, sblock->fs_fsize);
+  readblock (fsbtodb (sblock, iblk), buf, sblock->fs_fsize);
   bcopy (buf + ino_to_fsbo (sblock, ino), di, sizeof (struct dinode));
 }
 
@@ -61,9 +64,9 @@ write_inode (ino_t ino, struct dinode *di)
   char buf[sblock->fs_fsize];
   
   iblk = ino_to_fsba (sblock, ino);
-  readblock (fsbtodb (iblk), buf, sblock->fs_fsize);
+  readblock (fsbtodb (sblock, iblk), buf, sblock->fs_fsize);
   bcopy (di, buf + ino_to_fsbo (sblock, ino), sizeof (struct dinode));
-  writeblock (fsbtodb (iblk, buf, sblock->fs_fsize));
+  writeblock (fsbtodb (sblock, iblk), buf, sblock->fs_fsize);
 }
 
 /* Clear inode number INO and zero DI. */
@@ -71,6 +74,74 @@ void
 clear_inode (ino_t ino, struct dinode *di)
 {
   bzero (di, sizeof (struct dinode));
-  write_inote (ino, di);
+  write_inode (ino, di);
 }
+
+/* Allocate and return a block and account for it in all the block
+   maps locally.  Don't trust or change the disk block maps.
+   The block should be NFRAGS fragments long.  */
+daddr_t
+allocblk (int nfrags)
+{
+  daddr_t i;
+  int j, k;
+  
+  if (nfrags <= 0 || nfrags > sblock->fs_frag)
+    return 0;
+  
+  /* Examine each block of the filesystem.  */
+  for (i = 0; i < maxfsblock - sblock->fs_frag; i += sblock->fs_frag)
+    {
+      /* For each piece of the block big enough to hold this frag... */
+      for (j = 0; j <= sblock->fs_frag - nfrags; j++)
+	{
+	  /* For each frag of this piece... */
+	  for (k = 0; k < nfrags; k++)
+	    if (testbmap (i + j + k))
+	      break;
+	  
+	  /* If one of the frags was allocated... */
+	  if (k < nfrags)
+	    {
+	      /* Skip at least that far (short cut) */
+	      j += k;
+	      continue;
+	    }
+	  
+	  /* It's free (at address i + j) */
+
+	  /* Mark the frags allocated in our map */
+	  for (k = 0; k < nfrags; k++)
+	    setbmap (i + j + k);
+	  
+	  return (i + j);
+	}
+    }
+  return 0;
+}
+
+/* Check if a block starting at BLK and extending for CNT 
+   fragments is out of range; if it is, then return 1; otherwise return 0. */
+int
+check_range (daddr_t blk, int cnt)
+{
+  int c;
+  
+  if ((unsigned)(blk + cnt) > maxfsblock)
+    return 1;
+  
+  c = dtog (sblock, blk);
+  if (blk < cgdmin (sblock, c))
+    {
+      if (blk + cnt > cgsblock (sblock, c))
+	return 1;
+    }
+  else
+    {
+      if (blk + cnt > cgbase (sblock, c + 1))
+	return 1;
+    }
+  
+  return 0;
+}  
 
