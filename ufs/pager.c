@@ -459,8 +459,16 @@ diskfs_get_filemap (struct node *np)
       upi->p = pager_create (upi, pager_bucket,
 			     MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
+      right = pager_get_port (np->dn->fileinfo->p);
+      ports_port_deref (np->dn->fileinfo->p);
     }
-  right = pager_get_port (np->dn->fileinfo->p);
+  else
+    /* There is a race condition here.  If there are no references
+       to NP->dn->fileinfo->p, then the clean routine might be
+       blocked trying to get into node2pagelock, and this call is
+       invalid.   XXX */
+    right = pager_get_port (np->dn->fileinfo->p);
+
   spin_unlock (&node2pagelock);
   
   mach_port_insert_right (mach_task_self (), right, right,

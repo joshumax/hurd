@@ -671,8 +671,12 @@ diskfs_get_filemap (struct node *node)
       upi->p =
 	pager_create (upi, pager_bucket, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       node->dn->fileinfo = upi;
+      right = pager_get_port (node->dn->fileinfo->p);
+      ports_port_deref (node->dn->fileinfo->p);
     }
-  right = pager_get_port (node->dn->fileinfo->p);
+  else
+    /* XXX race; see ufs/pager.c here. */
+    right = pager_get_port (node->dn->fileinfo->p);
   spin_unlock (&node_to_page_lock);
   
   mach_port_insert_right (mach_task_self (), right, right,
