@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -34,6 +34,9 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
   
   if (children)
     diskfs_sync_translators (wait);
+
+  if (diskfs_synchronous)
+    wait = 1;
   
   diskfs_sync_everything (wait);
   diskfs_set_hypermetadata (wait, 0);
