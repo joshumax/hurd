@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <sys/file.h>
 #include "priv.h"
 
 /* Decrement the reference count on a peropen structure. */
@@ -22,13 +23,20 @@ void
 diskfs_release_peropen (struct peropen *po)
 {
   mutex_lock (&po->np->lock);
+
   if (--po->refcnt)
     {
       mutex_unlock (&po->np->lock);
       return;
     }
+
   mach_port_deallocate (mach_task_self (), po->dotdotport);
+  if (po->lock_status != LOCK_UN)
+    fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
+			 &po->np->lock, LOCK_UN);
+
   diskfs_nput (po->np);
+
   free (po);
 }
 
