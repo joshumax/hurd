@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -34,11 +34,6 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ|O_WRITE;
 
-struct port_class *trivfs_protid_portclasses[2];
-struct port_class *trivfs_cntl_portclasses[2];
-int trivfs_protid_nportclasses = 2;
-int trivfs_cntl_nportclasses = 2;
-
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
@@ -63,16 +58,12 @@ main (int argc, char **argv)
 
   term_bucket = ports_create_bucket ();
   
-  tty_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
-  pty_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
-  tty_class = ports_create_class (trivfs_clean_protid, 0);
-  pty_class = ports_create_class (trivfs_clean_protid, 0);
+  trivfs_add_control_port_class (&tty_cntl_class);
+  trivfs_add_control_port_class (&pty_cntl_class);
+  trivfs_add_protid_port_class (&tty_cntl_class);
+  trivfs_add_protid_port_class (&pty_cntl_class);
+
   cttyid_class = ports_create_class (0, 0);
-  
-  trivfs_protid_portclasses[0] = tty_class;
-  trivfs_protid_portclasses[1] = pty_class;
-  trivfs_cntl_portclasses[0] = tty_cntl_class;
-  trivfs_cntl_portclasses[1] = pty_cntl_class;
 
   init_users ();
 
