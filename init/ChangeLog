@@ -1,3 +1,8 @@
+1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (frob_kernel_process): If no --kernel-command-line option,
+	try `getenv ("MULTIBOOT_CMDLINE")' before defaulting to "(kernel)".
+
 1999-06-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (CRASH_FLAGS): Macro removed.
