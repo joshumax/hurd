@@ -1,5 +1,7 @@
 Sat Aug 10 10:03:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* ps.c (options): Whoops, short option for --sort is -s.
+
 	* Makefile (LCLHDRS): New variable.
 
 Wed Jul 31 14:23:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
