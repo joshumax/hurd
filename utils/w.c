@@ -1,6 +1,6 @@
 /* Hurdish w
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -344,7 +344,7 @@ uptime (struct proc_stat_list *procs)
       fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
     }
 
-  strftime (tod_rep, sizeof (tod_rep), "%r", 
+  strftime (tod_rep, sizeof (tod_rep), "%r",
 	    localtime ((time_t *)&now.tv_sec));
   if (tod_rep[0] == '0')
     tod_rep[0] = ' ';		/* Get rid of bletcherous leading 0.  */
@@ -360,7 +360,7 @@ uptime (struct proc_stat_list *procs)
 	  (double)load->avenrun[2] / (double)LOAD_SCALE);
 }
 
-void
+int
 main(int argc, char *argv[])
 {
   error_t err;
@@ -446,7 +446,7 @@ main(int argc, char *argv[])
 
   /* Read the utmp file.  */
   setutent ();
-  while (ut = getutent ())
+  while ((ut = getutent ()) != NULL)
     add_utmp_procs (procs, ut);
   endutent ();
 
@@ -464,5 +464,5 @@ main(int argc, char *argv[])
 	   output_width, print_heading,
 	   squash_bogus_fields, squash_nominal_fields, 0);
 
-  exit(0);
+  return 0;
 }
