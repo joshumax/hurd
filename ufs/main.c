@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <argz.h>
 
 char *ufs_version = "0.0";
 
@@ -113,11 +114,11 @@ parse_opt (int key, char *arg, struct argp_state *state)
 }
 
 /* Add our startup arguments to the standard diskfs set.  */
-static struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
+static const struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
 static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
 
 /* Similarly at runtime.  */
-static struct argp *runtime_parents[] = {&diskfs_std_runtime_argp, 0};
+static const struct argp *runtime_parents[] = {&diskfs_std_runtime_argp, 0};
 static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_parents};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
