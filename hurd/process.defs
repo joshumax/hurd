@@ -1,0 +1,384 @@
+/* Definitions for process server interface
+   Copyright (C) 1992, 1993 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem process 24000;
+
+#include <hurd/hurd_types.defs>
+
+/* If any calls are added or deleted, modify process_reply.defs
+   to correspond. */
+
+#ifdef PROCESS_IMPORTS
+PROCESS_IMPORTS
+#endif
+
+type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
+	ctype: mach_port_t;
+
+/*** Host management ***/
+
+/* Set the hostid for the machine.  This should be unique among all
+   machines.  By convention, it is the "primary" IP address of the
+   machine.  */
+routine proc_sethostid (
+	process: process_t;
+	hostid: int);
+
+/* Get the host id.  */
+routine proc_gethostid (
+	process: process_t;
+	out hostid: int);
+
+/* Set the hostname for the machine.  By convention this is the DNS
+   FQDN for the machine.  */
+routine proc_sethostname (
+	process: process_t;
+	hostname: string_t);
+
+/* Get the hostname.  */
+routine proc_gethostname (
+	process: process_t;
+	out hostname: string_t);
+
+/* Get the privileged host port and the device master port.  */
+routine proc_getprivports (
+	process: process_t;
+	out host_priv: host_priv_t;
+	out device_master: device_t);
+
+/* Return all the pids of all live processes.  */
+routine proc_getallpids (
+	process: process_t;
+	out pidarray: pidarray_t);
+
+/* Set the "standard exec data", used by programs that want predefined
+   values for exec.  */
+routine proc_setexecdata (
+	process: process_t;
+	ports: portarray_t;
+	ints: intarray_t);
+
+/* Get the standard exec data */
+routine proc_getexecdata (
+	process: process_t;
+	out ports: portarray_t;
+	out ints: intarray_t);
+
+/* Request notification with exec_setexecdata on NOTIFY.  */
+routine proc_execdata_notify (
+	process: process_t;
+	notify: mach_port_send_t);
+
+
+/*** Process creation and simple management.  ***/
+
+/* There is a 1-1 relationship between tasks and processes; to create
+   a new process, just create a new task and use proc_task2proc. */
+
+/* Change the current authentication of the process.  The user should
+   follow this call with a call to auth_user_authenticate.  The
+   new_port passed back through the auth server will be
+   MACH_PORT_NULL.  */
+simpleroutine proc_reauthenticate (
+	process: process_t;
+	id: int);
+
+/* Declare that a task is a child of the caller.  The task's state
+   will then inherit from the caller.  This call can be made only once
+   per task. */
+routine proc_child (
+	process: process_t;
+	child: task_t);
+
+/* Atomically change the message port of a process.  */
+routine proc_setmsgport (
+	process: process_t;
+	newmsgport: mach_port_t;
+	out oldmsgport: mach_port_move_send_t);
+
+/* Cause a task to take over the pid and all other state from an
+   existing task, and kill the old task with task_terminate.  The
+   message port will be set to MACH_PORT_NULL.  This is principally
+   used for doing exec's with the EXEC_NEWTASK bit set.  The request
+   port assigned to NEWTASK does not change.  The new task cannot have
+   had proc_child called on its behalf, it cannot have a pgrp, a session,
+   a login name set with proc_setlogin, it cannot have called proc_child,
+   and it cannot have a message port.  */
+/* If this call is made for a process which is no longer alive or
+   does not exist, then newtask will be killed (and no error
+   is returned). */
+routine proc_reassign (
+	process: process_t;
+	newtask: task_t);
+
+/* Set the owner of the process.  The new owner must be within the
+   current authentication of the caller.  */
+routine proc_setowner (
+	process: process_t;
+	owner: uid_t);
+
+/* Get the process ID and the parent process ID, also find out if we
+   are orphaned.  */
+routine proc_getpids (
+	process: process_t;
+	out pid: pid_t;
+	out ppid: pid_t;
+	out orphaned: int);
+
+routine proc_setprocargs (
+	process: process_t;
+	argv: int;
+	envp: int);
+
+/* Fetch the message port of a process */
+/* INTR */
+routine proc_getmsgport (
+	process: process_t;
+	pid: pid_t;
+	out msgport: mach_port_t);
+
+/* Wait for a child process to exit.  If pid is zero, it waits for any
+   child.  If pid is negative, it waits for any process in the
+   specified process group.  If pid is positive, it waits for the
+   specified process.  The exit status and resource usage of the
+   process are returned in status and rusage respectively.  */
+/* INTR */
+routine proc_wait (
+	process: process_t;
+	sreplyport reply_port: reply_port_t;
+	pid: pid_t;
+	options: int;
+	out status: int;
+	out rusage: rusage_t;
+	out pid_status: pid_t);
+
+/* Have the process server stop all threads except contthread.  */
+routine proc_dostop (
+	process: process_t;
+	contthread: thread_t);
+
+/* Take over exception messages received on MSGPORT.  Any exception
+   messages received will be forwarded to FORWARDPORT.  In addition,
+   the thread causing the exception will be aborted (with thread_abort)
+   and have its state adjusted (as by thread_set_state).  */
+routine proc_handle_exceptions (
+	process: process_t;
+	msgport: mach_port_move_receive_t;
+	forwardport: mach_port_send_t;
+	flavor: int;
+	new_state: thread_state_t);
+
+
+
+/*** Mark bits.  Some of these (exec, traced, eg) modify small pieces 
+   of the proc server's behavior; others are purely informational. ***/
+
+/* Mark the process as stopped on a signal. */
+routine proc_mark_stop (
+	process: process_t;
+	signo: int);
+
+/* Mark the process as continued after a stop.  */
+routine proc_mark_cont (
+	process: process_t);
+
+/* Tell the process server that the process is going away.  If it dies
+   without calling this, it will look to the parent like the process
+   died with SIGKILL.  This call allows for a cleaner exit.  */
+routine proc_mark_exit (
+	process: process_t;
+	status: int);
+
+/* Inform the process server that the process has completed an exec.  */
+routine proc_mark_exec (
+	process: process_t);
+
+/* Inform the process server that the process has asked to be traced.
+   The only result of this is to change the behavior of wait by the 
+   parent slightly.  */
+routine proc_mark_traced (
+	process: process_t);
+
+/* Inform the process server whether SIGCHLD should be sent for stopped 
+   child processes.  */
+routine proc_mod_stopchild (
+	process: process_t;
+	doit: int);
+
+
+/*** Miscellaneous process information queries. ***/
+
+routine proc_pid2task (
+	process: process_t;
+	pid: pid_t;
+	out task: task_t);
+
+routine proc_task2pid (
+	process: process_t;
+	task: task_t;
+	out pid: pid_t);
+
+/* Return the procserver port for the specified task.  */
+routine proc_task2proc (
+	process: process_t;
+	task: task_t;
+	out proc: mach_port_make_send_t);
+
+routine proc_proc2task (
+	process: process_t;
+	out task: task_t);
+
+routine proc_pid2proc (
+	process: process_t;
+	pid: pid_t;
+	out proc: mach_port_make_send_t);
+
+routine proc_getprocinfo (
+	process: process_t;
+	which: pid_t;
+	out procinfo: procinfo_t);
+
+routine proc_getprocargs (
+	process: process_t;
+	which: pid_t;
+	out procargs: data_t);
+
+routine proc_getprocenv (
+	process: process_t;
+	which: pid_t;
+	out procenv: data_t);
+
+/* These next two should not actually be used; they are here 
+   for "historic reasons."  You are not expected to understand this. */
+routine proc_setlogin (
+	process: process_t;
+	logname: string_t);
+
+routine proc_getlogin (
+	process: process_t;
+	out logname: string_t);
+
+
+
+/*** Sessions and process groups.  ***/
+
+/* Create a new session.  The process's pgrp is set to its pid, and
+   becomes the session leader.  */
+routine proc_setsid (
+	process: process_t);
+
+/* Return the pid of a process's session leader.  */
+routine proc_getsid (
+	process: process_t;
+	pid: pid_t;
+	out sid: pid_t);
+
+/* Get the pgids of all the members of a session.  */
+routine proc_getsessionpids (
+	process: process_t;
+	sid: pid_t;
+	out pgidset: pidarray_t);
+
+/* Return a "session ID" port for the session of the caller.
+   This port is generally only available to members of the session.
+   (It has no listener, but is useful for identification purposes.)  */
+routine proc_getsidport (
+	process: process_t;
+	out sessport: mach_port_t);
+
+/* Set the process group of a process.  */
+routine proc_setpgrp (
+	process: process_t;
+	pid: pid_t;
+	pgrp: pid_t);
+
+/* Get the process group of a process.  */
+routine proc_getpgrp (
+	process: process_t;
+	pid: pid_t;
+	out pgrp: pid_t);
+
+/* Get the pids of all the members of a pgrp.  */
+routine proc_getpgrppids (
+	process: process_t;
+	pgrp: pid_t;
+	out pidset: pidarray_t);
+
+
+/*** Process collections ***/
+
+/* Create a new process collection.  Process collections are
+   completely orthogonal to the Posix concepts of process group and
+   session.  Process collections may be inheritable, which means that
+   child processes of members automatically become members themselves.
+   */
+routine proc_make_collection (
+	process: process_t;
+	inheritable: int;
+	out proccoll: proccoll_t);
+
+/* Add the caller to the indicated process collection.  */
+routine proc_add_collection (
+	process: process_t;
+	proccoll: proccoll_t);
+
+/* Remove the process from the indicated process collection.  */
+routine proc_remove_collection (
+	process: process_t;
+	proccoll: proccoll_t);
+
+/* Remove the process from all process collections.  */
+routine proc_remove_all_collections (
+	process: process_t);
+
+/* Return all the process collections of which we are a member.  */
+routine proc_get_collections (
+	process: process_t;
+	collections: portarray_t);
+
+/* Return all the pids of processes in a collection.  */
+routine proc_collection_members (
+	process: process_t;
+	proccoll: proccoll_t;
+	pids: intarray_t);
+
+/* Return a pseudo-collection port for a process group.  This is only
+   useful as an argument to proc_get_collports.  */
+routine proc_pgrp_pcoll (
+	process: process_t;
+	pgrp: pid_t;
+	out pcoll: proccoll_t);
+
+/* Return a pseudo-collection port for a session.  This is only useful
+   as an argument to proc_get_collports.  */
+routine proc_session_pcoll (
+	process: process_t;
+	session: pid_t;
+	out pcoll: proccoll_t);
+
+/* Return send rights to all the message ports of the members of the
+   collection or pseudo-collection.  These should not be saved for a
+   period of time, because processes are free to change their message
+   ports.  */
+/* INTR */
+routine proc_get_collports (
+	process: process_t;
+	proccoll: proccoll_t;
+	out pids: pidarray_t;
+	out msgports: portarray_t);
