@@ -24,8 +24,7 @@ SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
 	no-senders.c object-init.c object-terminate.c pagemap.c \
 	pager-create.c pager-flush.c pager-shutdown.c pager-sync.c \
 	stubs.c seqnos.c demuxer.c chg-compl.c pager-attr.c clean.c \
-	dropweak.c notify-stubs.c get-upi.c pager-memcpy.c pager-return.c \
-	anticipate.c
+	dropweak.c notify-stubs.c get-upi.c pager-memcpy.c pager-return.c
 LCLHDRS = pager.h priv.h
 installhdrs = pager.h
 
