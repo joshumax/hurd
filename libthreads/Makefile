@@ -23,26 +23,31 @@ include ../Makeconf
 
 # In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
 # all done in libc.
-generic-sources = call.c cprocs.c cthread_data.c cthreads.c \
-		  malloc.c stack.c 
+generic-sources = call.c cprocs.c cthread_data.c cthreads.c stack.c 
 machine-sources = csw.S thread.c
 sources = $(generic-sources) $(addprefix $(machine)/,$(machine-sources))
 objects = $(addsuffix .o,$(basename $(notdir $(sources))))
 headers = cthreads.h
+malloc-sources = malloc.c
+malloc-objects = $(addsuffix .o,$(basename $(notdir $(malloc-sources))))
 
 DIST_FILES = $(generic-sources) $(headers) \
 	     cthread_internals.h options.h \
-	     ChangeLog Makefile
+	     ChangeLog Makefile $(malloc-sources)
 
 # In GNU machine/cthreads.h is omitted; that work is done in libc headers.
 I386_DIST_FILES = $(addprefix i386/,$(machine-sources)) i386/asm.h
 
 VPATH = $(machine)
 
-all: libthreads.a
+all: libthreads.a libmalloc.a
 
 libthreads.a: $(objects)
 	rm -f libthreads.a
+	$(AR) r $@ $^
+
+libmalloc.a: $(malloc-objects)
+	rm -f libmalloc.a
 	$(AR) r $@ $^
 
 $(hurdinst)/lib/libthreads.a: libthreads.a
@@ -52,16 +57,17 @@ $(hurdinst)/lib/libthreads.a: libthreads.a
 $(hurdinst)/include/cthreads.h: cthreads.h
 	cp $< $@
 
-$(hurdinst)/lib/malloc.o: malloc.o
+$(hurdinst)/lib/libmalloc.a: libmalloc.a
 	cp $< $@
+	$(RANLIB) $@
 
-install: $(hurdinst)/lib/libthreads.a $(hurdinst)/include/cthreads.h $(hurdinst)/lib/malloc.o
+install: $(hurdinst)/lib/libthreads.a $(hurdinst)/include/cthreads.h $(hurdinst)/lib/libmalloc.a
 
 $(objects): cthreads.h cthread_internals.h options.h \
 	 i386/asm.h
 
 clean:
-	rm -f libthreads.a *.o
+	rm -f libthreads.a *.o libmalloc.a
 
 lndist: lndist-i386-files
 
