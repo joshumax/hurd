@@ -351,7 +351,8 @@ uptime (struct proc_stat_list *procs)
       fmt_named_interval (&uptime, 0, uptime_rep, sizeof (uptime_rep));
     }
 
-  strftime (tod_rep, sizeof (tod_rep), "%r", localtime (&now.tv_sec));
+  strftime (tod_rep, sizeof (tod_rep), "%r", 
+	    localtime ((time_t *)&now.tv_sec));
   if (tod_rep[0] == '0')
     tod_rep[0] = ' ';		/* Get rid of bletcherous leading 0.  */
 
