@@ -18,128 +18,157 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <netinet/in.h>
+#include <string.h>
+#include <netinet/in.h>			     /* htonl */
 
 #include "ext2fs.h"
 
 error_t
-diskfs_S_file_get_storage_info (struct protid *cred, int *class,
-				off_t **runs, unsigned *runs_len,
-				size_t *block_size,
-				char *dev_name, mach_port_t *dev_port,
-				mach_msg_type_name_t *dev_port_type,
-				char **misc, unsigned *misc_len,
-				int *flags)
+diskfs_S_file_get_storage_info (struct protid *cred,
+				mach_port_t **ports,
+				mach_msg_type_name_t *ports_type,
+				mach_msg_type_number_t *num_ports,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets,
+				mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
 {
   error_t err = 0;
-  block_t index = 0;
-  unsigned num_fs_blocks;
-  unsigned runs_alloced = 0;
-  off_t *run = 0;
-  struct node *node = cred->po->np;
+  size_t name_len =
+    (diskfs_device_name && *diskfs_device_name)
+      ? strlen (diskfs_device_name) + 1 : 0;
+  /* True when we've allocated memory for the corresponding vector.  */
+  int al_ports = 0, al_ints = 0, al_offsets = 0, al_data = 0;
 
-  *misc_len = sizeof (long) * 4;
-  err = vm_allocate (mach_task_self (), (vm_address_t *)misc, *misc_len, 1);
-  if (err)
-    return err;
+  if (! cred)
+    return EOPNOTSUPP;
 
-  mutex_lock (&node->lock);
+#define ENSURE_MEM(v, vl, alp, num)					    \
+  if (!err && *vl < num)						    \
+    {									    \
+      err = vm_allocate (mach_task_self (),				    \
+			 (vm_address_t *)v, num * sizeof (**v), 1);	    \
+      if (! err)							    \
+	{								    \
+	  *vl = num;							    \
+	  alp = 1;							    \
+	}								    \
+    }
 
-  num_fs_blocks = node->dn_stat.st_blocks >> log2_stat_blocks_per_fs_block;
-  while (num_fs_blocks > 0)
+  /* Two longs.  */
+#define MISC_LEN (sizeof (long) * 2)
+
+  ENSURE_MEM (ports, num_ports, al_ports, 1);
+  ENSURE_MEM (ints, num_ints, al_ints, 6);
+  ENSURE_MEM (data, data_len, al_data, name_len + MISC_LEN);
+  /* OFFSETS is more complex, and done below.  */
+
+  if (! err)
     {
-      block_t block;
+      block_t index = 0;
+      unsigned num_fs_blocks;
+      off_t *run = *num_offsets ? *offsets : 0;
+      struct node *node = cred->po->np;
 
-      err = ext2_getblk (node, index++, 0, &block);
-      if (err == EINVAL)
-	/* Either a hole, or past the end of the file.  */
-	{
-	  block = 0;
-	  err = 0;
-	}
-      if (err)
-	goto fail;
+      mutex_lock (&node->lock);
 
-      block <<= log2_dev_blocks_per_fs_block;
-      if (!run
-	  || ((block && run[0] >= 0)        /* Neither is a hole and... */
-	      ? (block != run[0] + run[1])  /* ... BLOCK doesn't follow RUN */
-	      : (block || run[0] >= 0)))    /* or ... one is, but not both */
-	/* Add a new run.  */
+      num_fs_blocks = node->dn_stat.st_blocks >> log2_stat_blocks_per_fs_block;
+      while (num_fs_blocks > 0)
 	{
-	  if (run)
-	    /* There are already some runs.  */
+	  block_t block;
+
+	  err = ext2_getblk (node, index++, 0, &block);
+	  if (err == EINVAL)
+	    /* Either a hole, or past the end of the file.  */
+	    {
+	      block = 0;
+	      err = 0;
+	    }
+	  else if (err)
+	    break;
+
+	  block <<= log2_dev_blocks_per_fs_block;
+	  if (!run
+	      || ((block && run[0] >= 0) /* Neither is a hole and... */
+		  ? (block != run[0] + run[1]) /* BLOCK doesn't follow RUN */
+		  : (block || run[0] >= 0))) /* or one is, but not both */
+	    /* Add a new run.  */
 	    {
 	      run += 2;
-	      if (run >= *runs + runs_alloced)
-		/* Add a new page to the end of the existing RUNS array.  */
-		{
-		  err = vm_allocate (mach_task_self (),
-				     (vm_address_t *)&run, vm_page_size, 0);
-		  if (err)
-		    goto fail;
-		  runs_alloced += vm_page_size / sizeof (off_t);
-		}
-	    }
-	  else
-	    /* Allocate the RUNS array for the first time.  */
-	    {
-	      err = vm_allocate (mach_task_self (),
-				 (vm_address_t *)runs, vm_page_size, 1);
-	      if (err)
-		goto fail;
-	      runs_alloced = vm_page_size / sizeof (off_t);
-	      run = *runs;
+	      if (!run || run >= *offsets + *num_offsets)
+		if (al_offsets)
+		  /* We've already allocated space for offsets; add a new
+		     page to the end of it.  */
+		  {
+		    err =
+		      vm_allocate (mach_task_self (),
+				   (vm_address_t *)&run, vm_page_size, 0);
+		    if (err)
+		      break;
+		    *num_offsets += vm_page_size / sizeof (off_t);
+		  }
+		else
+		  /* We've run out the space passed for inline offsets by
+		     the caller, so allocate our own memory and copy
+		     anything we've already stored.  */
+		  {
+		    off_t *old = *offsets;
+		    size_t old_len = *num_offsets;
+		    err =
+		      vm_allocate (mach_task_self (),
+				   (vm_address_t *)offsets,
+				   old_len * sizeof (off_t) + vm_page_size, 1);
+		    if (err)
+		      break;
+		    if (old_len)
+		      bcopy (old, *offsets, old_len * sizeof (off_t));
+		    *num_offsets = old_len + vm_page_size / sizeof (off_t);
+		    run = *offsets;
+		    al_offsets = 1;
+		  }
+
+	      run[0] = block ?: -1;	     /* -1 means a hole in OFFSETS */
+	      run[1] = 0;		     /* will get extended just below */
 	    }
 
-	  run[0] = block ?: -1;	/* -1 means a hole in RUNS */
-	  run[1] = 0;		/* will get extended just below */
+	  /* Increase the size of the current run by one filesystem block.  */
+	  run[1] += 1 << log2_dev_blocks_per_fs_block;
+
+	  num_fs_blocks--;
 	}
 
-      /* Increase the size of the current run by one filesystem block.  */
-      run[1] += 1 << log2_dev_blocks_per_fs_block;
+      /* Fill in PORTS.  Root gets device port, everyone else, nothing.  */
+      (*ports)[0] = diskfs_isuid (0, cred) ? diskfs_device : MACH_PORT_NULL;
+      *ports_type = MACH_MSG_TYPE_COPY_SEND;
 
-      num_fs_blocks--;
+      /* Fill in INTS.  */
+      (*ints)[0] = STORAGE_DEVICE;	     /* type */
+      (*ints)[1] = 0;			     /* flags */
+      (*ints)[2] = diskfs_device_block_size; /* block size */
+      (*ints)[3] = (run - *offsets) / 2;     /* num runs */
+      (*ints)[4] = name_len;
+      (*ints)[5] = MISC_LEN;
+
+      /* Fill in DATA.  */
+      if (name_len)
+	strcpy (*data, diskfs_device_name);
+      /* The following must be kept in sync with MISC_LEN.  */
+      ((long *)(*data + name_len))[0] = htonl (node->cache_id);
+      ((long *)(*data + name_len))[1] =
+	htonl (dino (node->cache_id)->i_translator);
+
+      mutex_unlock (&node->lock);
     }
-
-  if (run)
-    {
-      if (run[0] >= 0)
-	/* Include the current run, as long as it's not a hole.  */
-	run += 2;
-      else if ((off_t *)trunc_page (run) == run)
-	/* We allocated just *one* too many pages -- the last run is a hole. */
-	vm_deallocate (mach_task_self (), (vm_address_t)run, vm_page_size);
-      *runs_len = run - *runs;
-    }
-  else
-    *runs_len = 0;
-
-  ((long *)*misc)[0] = htonl (node->cache_id);
-  ((long *)*misc)[1] = htonl (dino (node->cache_id)->i_translator);
-
-  *class = STORAGE_DEVICE;
-  *flags = 0;
-
-  *block_size = diskfs_device_block_size;
-
-  strcpy (dev_name, diskfs_device_name);
-
-  if (diskfs_isuid (0, cred))
-    *dev_port = diskfs_device;
-  else
-    *dev_port = MACH_PORT_NULL;
-  *dev_port_type = MACH_MSG_TYPE_COPY_SEND;
-
- fail:
-  mutex_unlock (&node->lock);
 
   if (err)
     {
-      if (*runs_len > 0)
-	vm_deallocate (mach_task_self (), (vm_address_t)*runs,
-		       runs_alloced * sizeof (off_t));
-      vm_deallocate (mach_task_self (), (vm_address_t)*misc, *misc_len);
+#define DISCARD_MEM(v, vl, alp)						    \
+      if (alp)								    \
+	vm_deallocate (mach_task_self (), (vm_address_t)*v, *vl * sizeof **v);
+      DISCARD_MEM (ports, num_ports, al_ports);
+      DISCARD_MEM (ints, num_ints, al_ints);
+      DISCARD_MEM (offsets, num_offsets, al_offsets);
+      DISCARD_MEM (data, data_len, al_data);
     }
 
   return err;
