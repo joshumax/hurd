@@ -95,7 +95,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 	  entp->d_fileno = 2;
 	}
       else
-	entp->d_fileno = (ino_t) dp->dn->u.dir.dotdot;
+	entp->d_fileno = (ino_t) (uintptr_t) dp->dn->u.dir.dotdot;
       entp->d_type = DT_DIR;
       entp->d_namlen = 2;
       entp->d_name[0] = '.';
@@ -123,7 +123,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
       size_t rlen = (offsetof (struct dirent, d_name[1]) + d->namelen + 7) & ~7;
       if (rlen + (char *) entp - *data > bufsiz || (n >= 0 && i > n))
 	break;
-      entp->d_fileno = (ino_t) d->dn;
+      entp->d_fileno = (ino_t) (uintptr_t) d->dn;
       entp->d_type = DT_UNKNOWN;
       entp->d_namlen = d->namelen;
       memcpy (entp->d_name, d->name, d->namelen + 1);
@@ -220,7 +220,7 @@ diskfs_lookup_hard (struct node *dp,
 	  ds->prevp = prevp;
 
 	if (np)
-	  return diskfs_cached_lookup ((ino_t) d->dn, np);
+	  return diskfs_cached_lookup ((ino_t) (uintptr_t) d->dn, np);
 	else
 	  return 0;
       }

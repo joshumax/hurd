@@ -52,7 +52,7 @@ diskfs_alloc_node (struct node *dp, mode_t mode, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
 
   dn->type = IFTODT (mode & S_IFMT);
-  return diskfs_cached_lookup ((ino_t) dn, npp);
+  return diskfs_cached_lookup ((ino_t) (uintptr_t) dn, npp);
 }
 
 void
@@ -154,9 +154,9 @@ recompute_blocks (struct node *np)
 /* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
 error_t
-diskfs_cached_lookup (int inum, struct node **npp)
+diskfs_cached_lookup (ino_t inum, struct node **npp)
 {
-  struct disknode *dn = (void *) inum;
+  struct disknode *dn = (void *) (uintptr_t) inum;
   struct node *np;
 
   assert (npp);
@@ -175,7 +175,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       struct stat *st;
 
       np = diskfs_make_node (dn);
-      np->cache_id = (ino_t) dn;
+      np->cache_id = (ino_t) (uintptr_t) dn;
 
       spin_lock (&diskfs_node_refcnt_lock);
       dn->hnext = all_nodes;
@@ -191,7 +191,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       st->st_fsid = getpid ();
       st->st_blksize = vm_page_size;
 
-      st->st_ino = (ino_t) dn;
+      st->st_ino = (ino_t) (uintptr_t) dn;
       st->st_gen = dn->gen;
 
       st->st_size = dn->size;
