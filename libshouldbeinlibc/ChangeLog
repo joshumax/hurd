@@ -1,3 +1,8 @@
+1999-08-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mktime.c: File removed.  Current libc code is good.
+	* Makefile (SRCS): Remove mktime.c.
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* portinfo.h: Don't include <sys/types.h>, <sys/mman.h>.
