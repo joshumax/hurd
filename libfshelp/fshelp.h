@@ -34,6 +34,13 @@
    returning the control port.  They do not require multi threading
    or the ports library. */
 
+/* A callback used by the translator starting functions, which should be a
+   function that given some open flags, opens the appropiate file, and
+   returns the node port.  */
+typedef error_t (*fshelp_open_fn_t) (int flags,
+				     file_t *node,
+				     mach_msg_type_name_t *node_type);
+
 /* Start a passive translator NAME with arguments ARGZ (length
    ARGZ_LEN).  Initialize the initports to PORTS (length PORTS_LEN),
    the initints to INTS (length INTS_LEN), and the file descriptor
@@ -42,8 +49,7 @@
    milliseconds (if TIMEOUT > 0), return an appropriate error.  If the
    translator dies before responding, return EDIED.  */
 error_t
-fshelp_start_translator_long (mach_port_t underlying,
-			      mach_msg_type_name_t underlying_type,
+fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
 			      mach_port_t *fds, 
 			      mach_msg_type_name_t fds_type, int fds_len,
@@ -57,8 +63,7 @@ fshelp_start_translator_long (mach_port_t underlying,
    are copied from our own state, fd[2] is copied from our own stderr,
    and the other fds are cleared.  */
 error_t
-fshelp_start_translator (mach_port_t underlying, 
-			 mach_msg_type_name_t  underlying_type,
+fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
 			 char *name, char *argz, int argz_len,
 			 int timeout, fsys_t *control);
 
@@ -86,20 +91,26 @@ struct transbox
    fshelp_fetch_root should not need to create them on every call, since
    usually there will be an existing active translator. */
 
-/* This routine is called by fshelp_fetch_root to fetch more
-   information.  Return the owner and group of the underlying
-   translated file in *UID and *GID; return an unauthenticated
-   node for the file itself in *UNDERLYING, and point *ARGZ at
-   the entire passive translator spec for the file (setting
-   *ARGZ_LEN to the length.)   If there is no passive 
-   translator, then return ENOENT.   COOKIE1 is the cookie passed
-   in fshelp_transbox_init.  COOKIE2 is the cookie passed in the
-   call to fshelp_fetch_root.  */
-typedef error_t (*fshelp_callback_t) (void *cookie1, void *cookie2,
-				      mach_port_t *underlying,
-				      uid_t *uid, gid_t *gid, 
-				      char **argz, int *argz_len);
+/* This routine is called by fshelp_fetch_root to fetch more information.
+   Return the owner and group of the underlying translated file in *UID and
+   *GID; point *ARGZ at the entire passive translator spec for the file
+   (setting *ARGZ_LEN to the length.)  If there is no passive translator,
+   then return ENOENT.  COOKIE1 is the cookie passed in fshelp_transbox_init.
+   COOKIE2 is the cookie passed in the call to fshelp_fetch_root.  */
+typedef error_t (*fshelp_fetch_root_callback1_t) (void *cookie1, void *cookie2,
+						  uid_t *uid, gid_t *gid, 
+						  char **argz, int *argz_len);
 
+/* This routine is called by fshelp_fetch_root to fetch more information.
+   Return an unauthenticated node for the file itself in *UNDERLYING and
+   *UNDERLYING_TYPE (opened with FLAGS).  COOKIE1 is the cookie passed in
+   fshelp_transbox_init.  COOKIE2 is the cookie passed in the call to
+   fshelp_fetch_root.  */
+typedef error_t (*fshelp_fetch_root_callback2_t) (void *cookie1, void *cookie2,
+						  int flags,
+						  mach_port_t *underlying,
+						  mach_msg_type_name_t
+						  *underlying_type);
 
 /* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
    for the directory in which we are looking; UIDS (length UIDS_LEN)
@@ -114,7 +125,9 @@ fshelp_fetch_root (struct transbox *transbox, void *cookie,
 		   file_t dotdot, 
 		   uid_t *uids, int uids_len,
 		   uid_t *gids, int gids_len,
-		   int flags, fshelp_callback_t callback,
+		   int flags,
+		   fshelp_fetch_root_callback1_t callback1,
+		   fshelp_fetch_root_callback2_t callback2,
 		   retry_type *retry, char *retryname, mach_port_t *root);
 
 void
