@@ -1,3 +1,7 @@
+2001-07-20  Roland McGrath  <roland@frob.com>
+
+	* panic.c: Fix obsolescent #endif syntax.
+
 2001-03-31  Roland McGrath  <roland@frob.com>
 
 	* assert.h: Fix obsolescent #endif syntax.
