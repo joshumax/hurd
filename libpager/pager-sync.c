@@ -1,5 +1,5 @@
 /* Functions for sync.
-   Copyright (C) 1994, 1996 Free Software Foundation
+   Copyright (C) 1994, 1996, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,23 +23,21 @@
 void
 pager_sync (struct pager *p, int wait)
 {
-  vm_address_t offset;
-  vm_size_t len;
+  off_t start, end;
 
-  pager_report_extent (p->upi, &offset, &len);
-  
-  _pager_lock_object (p, offset, len, MEMORY_OBJECT_RETURN_ALL, 0,
-		      VM_PROT_NO_CHANGE, wait);
+  p->ops->report_extent ((struct user_pager_info *) p->upi, &start, &end);
+
+  pager_sync_some (p, start, end - start, wait);
 }
-
 
 /* Have the kernel write back some pages of a pager; if WAIT is set,
    then wait for them to be finally written before returning. */
 void
-pager_sync_some (struct pager *p, vm_address_t offset,
-		 vm_size_t size, int wait)
+pager_sync_some (struct pager *p, off_t start, off_t count,
+		 int wait)
 {
-  _pager_lock_object (p, offset, size, MEMORY_OBJECT_RETURN_ALL, 0,
+  mutex_lock (&p->interlock);
+  _pager_lock_object (p, start, count, MEMORY_OBJECT_RETURN_ALL, 0,
 		      VM_PROT_NO_CHANGE, wait);
+  mutex_unlock (&p->interlock);
 }
-  

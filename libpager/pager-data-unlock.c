@@ -1,6 +1,6 @@
-/* 
-   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+/* Mark pages as writable.
+   Copyright (C) 2002 Free Software Foundation, Inc.
+   Written by Neal H Walfield
 
    This file is part of the GNU Hurd.
 
@@ -18,26 +18,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+
 #include "priv.h"
 
-/* Have all dirty pages written back, and also flush the contents of
-   the kernel's cache. */
 void
-pager_return (struct pager *p, int wait)
+pager_data_unlock (struct pager *pager,
+		   off_t start, off_t count)
 {
-  off_t start, end;
-
-  p->ops->report_extent ((struct user_pager_info *) &p->upi, &start, &end);
-
-  pager_return_some (p, start, end - start, wait);
+  mutex_lock (&pager->interlock);
+  _pager_lock_object (pager, start, count,
+		     MEMORY_OBJECT_RETURN_NONE, 0,
+		     VM_PROT_NONE, 0);
+  mutex_unlock (&pager->interlock);
 }
-
-void
-pager_return_some (struct pager *p, off_t start, off_t count, int wait)
-{
-  mutex_lock (&p->interlock);
-  _pager_lock_object (p, start, count, MEMORY_OBJECT_RETURN_ALL, 1,
-		      VM_PROT_NO_CHANGE, wait);
-  mutex_unlock (&p->interlock);
-}
-

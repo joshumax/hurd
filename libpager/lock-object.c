@@ -1,5 +1,5 @@
 /* Synchronous wrapper for memory_object_lock_request
-   Copyright (C) 1993, 1994, 1996, 1997, 2000 Free Software Foundation
+   Copyright (C) 1993,94,96,97, 2000,02 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,14 +17,15 @@
 
 #include "priv.h"
 
-/* Request a lock from the kernel on pager P.  Parameters OFFSET,
-   SIZE, SHOULD_RETURN, SHOULD_FLUSH, and LOCK_VALUE are as for
-   memory_object_lock_request.  If SYNC is set, then wait for the
-   operation to fully complete before returning.  */
+/* Request a lock from the kernel on pager P starting at page START
+   for COUNT pages.  Parameters SHOULD_RETURN, SHOULD_FLUSH, and
+   LOCK_VALUE are as for memory_object_lock_request.  If SYNC is set,
+   then wait for the operation to fully complete before returning.
+   This must be called with P->interlock help.  */
 void
 _pager_lock_object (struct pager *p, 
-		    vm_offset_t offset,
-		    vm_size_t size,
+		    off_t start,
+		    off_t count,
 		    int should_return,
 		    int should_flush,
 		    vm_prot_t lock_value,
@@ -33,17 +34,13 @@ _pager_lock_object (struct pager *p,
   int i;
   struct lock_request *lr = 0;
 
-  mutex_lock (&p->interlock);
   if (p->pager_state != NORMAL)
-    {
-      mutex_unlock (&p->interlock);
-      return;
-    }
+    return;
 
   if (sync)
     {
       for (lr = p->lock_requests; lr; lr = lr->next)
-	if (lr->start == offset && lr->end == offset + size)
+	if (lr->start == start && lr->end == start + count)
 	  {
 	    lr->locks_pending++;
 	    lr->threads_waiting++;
@@ -52,8 +49,10 @@ _pager_lock_object (struct pager *p,
       if (!lr)
 	{
 	  lr = malloc (sizeof (struct lock_request));
-	  lr->start = offset;
-	  lr->end = offset + size;
+	  if (! lr)
+	    return;
+	  lr->start = start;
+	  lr->end = start + count;
 	  lr->pending_writes = 0;
 	  lr->locks_pending = 1;
 	  lr->threads_waiting = 1;
@@ -65,7 +64,8 @@ _pager_lock_object (struct pager *p,
 	}
     }
 
-  memory_object_lock_request (p->memobjcntl, offset, size, should_return,
+  memory_object_lock_request (p->memobjcntl, start * vm_page_size,
+			      count * vm_page_size, should_return,
 			      should_flush, lock_value, 
 			      sync ? p->port.port_right : MACH_PORT_NULL);
   
@@ -84,22 +84,14 @@ _pager_lock_object (struct pager *p,
 
       if (should_flush)
 	{
-	  vm_offset_t pm_offs = offset / __vm_page_size;
+	  short *pm_entries;
 
-	  _pager_pagemap_resize (p, offset + size);
-	  if (p->pagemapsize > pm_offs)
-	    {
-	      short *pm_entries = &p->pagemap[pm_offs];
-	      vm_offset_t bound = size / vm_page_size;
+	  _pager_pagemap_resize (p, start + count);
 
-	      if (bound > p->pagemapsize)
-		bound = p->pagemapsize;
+	  pm_entries = &p->pagemap[start];
 
-	      for (i = 0; i < bound; i++)
-		pm_entries[i] &= ~PM_INCORE;
-	    }
+	  for (i = 0; i < count; i++)
+	    pm_entries[i] &= ~PM_INCORE;
 	}
     }
-
-  mutex_unlock (&p->interlock);
 }

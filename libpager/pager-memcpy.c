@@ -37,7 +37,7 @@
    if there is no fault, returns 0 and *SIZE will be unchanged.  */
 error_t
 pager_memcpy (struct pager *pager, memory_object_t memobj,
-	      vm_offset_t offset, void *other, size_t *size,
+	      off_t offset, void *other, size_t *size,
 	      vm_prot_t prot)
 {
   error_t err;

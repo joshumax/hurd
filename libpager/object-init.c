@@ -1,5 +1,5 @@
 /* Implementation of memory_object_init for pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -37,7 +37,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
 
-  if (pagesize != __vm_page_size)
+  if (pagesize != vm_page_size)
     {
       printf ("incg init: bad page size");
       goto out;
@@ -47,6 +47,9 @@ _pager_seqnos_memory_object_init (mach_port_t object,
     {
 #ifdef KERNEL_INIT_RACE
       struct pending_init *i = malloc (sizeof (struct pending_init));
+      if (! i)
+	goto out;
+
       printf ("pager out-of-sequence init\n");
       i->control = control;
       i->name = name;

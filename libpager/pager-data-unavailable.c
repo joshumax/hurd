@@ -1,6 +1,6 @@
-/* 
-   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+/* Indicate that there is no allocated data for a given range.
+   Copyright (C) 2002 Free Software Foundation, Inc.
+   Written by Neal H Walfield.
 
    This file is part of the GNU Hurd.
 
@@ -18,26 +18,19 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+
 #include "priv.h"
 
-/* Have all dirty pages written back, and also flush the contents of
-   the kernel's cache. */
 void
-pager_return (struct pager *p, int wait)
+pager_data_unavailable (struct pager *pager,
+			off_t start, off_t npages)
 {
-  off_t start, end;
+  memory_object_data_unavailable (pager->memobjcntl,
+				 start * vm_page_size,
+				 npages * vm_page_size);
 
-  p->ops->report_extent ((struct user_pager_info *) &p->upi, &start, &end);
-
-  pager_return_some (p, start, end - start, wait);
+  mutex_lock (&pager->interlock);
+  _pager_pagemap_resize (pager, start + npages);
+  _pager_mark_object_error (pager, start, npages, 0);
+  mutex_unlock (&pager->interlock);
 }
-
-void
-pager_return_some (struct pager *p, off_t start, off_t count, int wait)
-{
-  mutex_lock (&p->interlock);
-  _pager_lock_object (p, start, count, MEMORY_OBJECT_RETURN_ALL, 1,
-		      VM_PROT_NO_CHANGE, wait);
-  mutex_unlock (&p->interlock);
-}
-

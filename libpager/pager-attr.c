@@ -21,7 +21,7 @@
 /* Change the attributes of the memory object underlying pager P.
    Args MAY_CACHE and COPY_STRATEGY are as for 
    memory_object_change_atributes.  Wait for the kernel to report completion
-   off WAIT is set.*/
+   if WAIT is set.*/
 void
 pager_change_attributes (struct pager *p,
  			 boolean_t may_cache,
@@ -65,6 +65,7 @@ pager_change_attributes (struct pager *p,
       if (!ar)
 	{
 	  ar = malloc (sizeof (struct attribute_request));
+	  assert (ar);
 	  ar->may_cache = may_cache;
 	  ar->copy_strategy = copy_strategy;
 	  ar->attrs_pending = 1;

@@ -1,6 +1,6 @@
-/* 
-   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+/* Indicate an error unlocking some pages.
+   Copyright (C) 2002 Free Software Foundation, Inc.
+   Written by Neal H Walfield
 
    This file is part of the GNU Hurd.
 
@@ -18,26 +18,24 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+
 #include "priv.h"
 
-/* Have all dirty pages written back, and also flush the contents of
-   the kernel's cache. */
 void
-pager_return (struct pager *p, int wait)
+pager_data_unlock_error (struct pager *pager,
+			 off_t start, off_t npages,
+			 error_t err)
 {
-  off_t start, end;
+  mutex_lock (&pager->interlock);
 
-  p->ops->report_extent ((struct user_pager_info *) &p->upi, &start, &end);
+  /* Flush the range and set a bit so that
+     m_o_data_request knows to issue an error.  */
+  _pager_lock_object (pager, start, npages,
+		     MEMORY_OBJECT_RETURN_NONE, 1,
+		     VM_PROT_WRITE, 1);
 
-  pager_return_some (p, start, end - start, wait);
+  _pager_pagemap_resize (pager, start + npages);
+  _pager_mark_next_request_error (pager, start, npages, err);
+
+  mutex_unlock (&pager->interlock);
 }
-
-void
-pager_return_some (struct pager *p, off_t start, off_t count, int wait)
-{
-  mutex_lock (&p->interlock);
-  _pager_lock_object (p, start, count, MEMORY_OBJECT_RETURN_ALL, 1,
-		      VM_PROT_NO_CHANGE, wait);
-  mutex_unlock (&p->interlock);
-}
-

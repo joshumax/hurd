@@ -24,7 +24,9 @@ SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
 	pager-create.c pager-flush.c pager-shutdown.c pager-sync.c \
 	stubs.c seqnos.c demuxer.c chg-compl.c pager-attr.c clean.c \
 	dropweak.c notify-stubs.c get-upi.c pager-memcpy.c pager-return.c \
-	offer-page.c
+	pager-data-read-error.c pager-data-unavailable.c \
+	pager-data-unlock.c pager-data-supply.c pager-data-unlock-error.c \
+	pager-data-write-error.c
 installhdrs = pager.h
 
 HURDLIBS= threads ports

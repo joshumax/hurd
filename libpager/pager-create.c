@@ -1,5 +1,5 @@
 /* Pager creation
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2001,02 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,18 +19,21 @@
 
 /* Create and return a new pager with user info UPI.  */
 struct pager *
-pager_create (struct user_pager_info *upi,
+pager_create (struct pager_ops *ops,
+	      size_t upi_size,
 	      struct port_bucket *bucket,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy)
 {
+  error_t err;
   struct pager *p;
 
-  errno = ports_create_port (_pager_class, bucket, sizeof (struct pager), &p);
-  if (errno)
+  err = ports_create_port (_pager_class, bucket,
+			   sizeof (struct pager) + upi_size, &p);
+  if (err)
     return 0;
 
-  p->upi = upi;
+  p->ops = ops;
   p->pager_state = NOTINIT;
   mutex_init (&p->interlock);
   condition_init (&p->wakeup);

@@ -1,5 +1,5 @@
 /* Implementation of memory_object_lock_completed for pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,12 +26,13 @@ kern_return_t
 _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 					    mach_port_seqno_t seqno,
 					    mach_port_t control,
-					    vm_offset_t offset,
+					    vm_offset_t start_address,
 					    vm_size_t length)
 {
   error_t err = 0;
   struct pager *p;
   struct lock_request *lr;
+  off_t start, npages;
 
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
@@ -49,8 +50,11 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 
   mach_port_deallocate (mach_task_self (), control);
 
+  start = start_address / vm_page_size;
+  npages = length / vm_page_size;
+
   for (lr = p->lock_requests; lr; lr = lr->next)
-    if (lr->start == offset && lr->end == offset + length)
+    if (lr->start == start && lr->end == start + npages)
       {
 	if (lr->locks_pending)
 	  --lr->locks_pending;

@@ -1,5 +1,5 @@
 /* Recording errors for pager library
-   Copyright (C) 1994, 1997 Free Software Foundation
+   Copyright (C) 1994, 1997, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,23 +20,21 @@
 
 int _pager_page_errors[] = {KERN_SUCCESS, ENOSPC, EIO, EDQUOT};
 
-/* Some error has happened indicating that the page cannot be written. 
-   (Usually this is ENOSPC or EDQOUT.)  On the next pagein which
-   requests write access, return the error to the kernel.  (This is 
+/* Some error has happened indicating that the page cannot be written.
+   (Usually this is ENOSPC or EDQOUT).  On the next pagein which
+   requests write access, return the error to the kernel.  (This is
    screwy because of the rules associated with m_o_lock_request.)
-   Currently the only errors permitted are ENOSPC, EIO, and EDQUOT.  */
+   Currently the only errors permitted are ENOSPC, EIO, and EDQUOT.
+   PAGER->interlock must be held during this call.  */
 void
 _pager_mark_next_request_error(struct pager *pager,
-			       vm_address_t offset,
-			       vm_size_t length,
+			       off_t start,
+			       off_t count,
 			       error_t error)
 {
   int page_error;
   short *p;
 
-  offset /= __vm_page_size;
-  length /= __vm_page_size;
-  
   switch (error)
     {
     case 0:
@@ -54,26 +52,25 @@ _pager_mark_next_request_error(struct pager *pager,
       break;
     }
   
-  for (p = pager->pagemap + offset; p < pager->pagemap + offset + length; p++)
+  for (p = pager->pagemap + start; p < pager->pagemap + start + count; p++)
     *p = SET_PM_NEXTERROR (*p, page_error);
 }
 
-/* We are returning a pager error to the kernel.  Write down
-   in the pager what that error was so that the exception handling
-   routines can find out.  (This is only necessary because the
-   XP interface is not completely implemented in the kernel.)
-   Again, only ENOSPC, EIO, and EDQUOT are permitted.  */
+/* We are returning a pager error to the kernel.  Write down in the
+   pager what that error was so that the exception handling routines
+   can find out.  (This is only necessary because the XP interface is
+   not completely implemented in the kernel.)  Again, only ENOSPC,
+   EIO, and EDQUOT are permitted.  PAGER->interlock must be held
+   during this call.  _pager_pagemap_resize should have been
+   called.  */
 void
 _pager_mark_object_error(struct pager *pager,
-			 vm_address_t offset,
-			 vm_size_t length,
+			 off_t start,
+			 off_t count,
 			 error_t error)
 {
   int page_error = 0;
   short *p;
-
-  offset /= __vm_page_size;
-  length /= __vm_page_size;
   
   switch (error)
     {
@@ -92,29 +89,27 @@ _pager_mark_object_error(struct pager *pager,
       break;
     }
   
-  for (p = pager->pagemap + offset; p < pager->pagemap + offset + length; p++)
+  for (p = pager->pagemap + start; p < pager->pagemap + start + count; p++)
     *p = SET_PM_ERROR (*p, page_error);
 }
 
 /* Tell us what the error (set with mark_object_error) for 
-   pager P is on page ADDR. */
+   pager P is on page PAGE. */
 error_t
-pager_get_error (struct pager *p, vm_address_t addr)
+pager_get_error (struct pager *p, off_t page)
 {
   error_t err;
   
   mutex_lock (&p->interlock);
 
-  addr /= vm_page_size;
-
-  /* If there really is no error for ADDR, we should be able to exted the
+  /* If there really is no error for PAGE, we should be able to extend the
      pagemap table; otherwise, if some previous operation failed because it
      couldn't extend the table, this attempt will *probably* (heh) fail for
      the same reason.  */
-  err = _pager_pagemap_resize (p, addr);
+  err = _pager_pagemap_resize (p, page);
 
   if (! err)
-    err = _pager_page_errors[PM_ERROR(p->pagemap[addr])];
+    err = _pager_page_errors[PM_ERROR(p->pagemap[page])];
 
   mutex_unlock (&p->interlock);
 

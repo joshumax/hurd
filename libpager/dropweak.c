@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -25,5 +25,6 @@ _pager_real_dropweak (void *arg)
 {
   struct pager *p = arg;
   
-  pager_dropweak (p->upi);
+  if (p->ops->dropweak)
+    p->ops->dropweak ((struct user_pager_info *) &p->upi);
 }

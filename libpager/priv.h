@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994-1997, 1999, 2000, 2011 Free Software Foundation, Inc.
+   Copyright (C) 1994-1997, 1999, 2000,02,11 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,6 +21,13 @@
 #include "pager.h"
 #include <hurd/ports.h>
 
+#if 0
+#include <stdio.h>
+#define DEBUG(fmt, args...) printf (__FUNCTION__ ": " fmt "\n" , ## args)
+#else
+#define DEBUG(fmt, args...)
+#endif
+
 /* Define this if you think the kernel is sending memory_object_init
    out of sequence with memory_object_terminate. */
 /* #undef KERNEL_INIT_RACE */
@@ -28,7 +35,8 @@
 struct pager
 {
   struct port_info port;
-  struct user_pager_info *upi;
+
+  struct pager_ops *ops;
 
   enum
     {
@@ -67,6 +75,8 @@ struct pager
 
   short *pagemap;
   int pagemapsize;		/* number of elements in PAGEMAP */
+
+  char upi[0];
 };
 
 struct lock_request
@@ -108,11 +118,10 @@ extern int _pager_page_errors[];
 
 /* Pagemap format */
 /* These are binary state bits */
-#define PM_WRITEWAIT  0x0200	/* queue wakeup once write is done */
-#define PM_INIT       0x0100    /* data has been written */
-#define PM_INCORE     0x0080	/* kernel might have a copy */
-#define PM_PAGINGOUT  0x0040	/* being written to disk */
-#define PM_PAGEINWAIT 0x0020	/* provide data back when write done */
+#define PM_WRITEWAIT  0x0100    /* queue wakeup once write is done */
+#define PM_INIT       0x0080    /* data has been written */
+#define PM_INCORE     0x0040    /* kernel might have a copy */
+#define PM_PAGINGOUT  0x0020    /* being written to disk */
 #define PM_INVALID    0x0010	/* data on disk is irrevocably wrong */
 
 /* These take values of enum page_errors */
@@ -136,12 +145,10 @@ void _pager_release_seqno (struct pager *, mach_port_seqno_t);
 void _pager_update_seqno (mach_port_t, mach_port_seqno_t);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
-error_t _pager_pagemap_resize (struct pager *, vm_address_t);
-void _pager_mark_next_request_error (struct pager *, vm_address_t,
-				     vm_size_t, error_t);
-void _pager_mark_object_error (struct pager *, vm_address_t,
-			       vm_size_t, error_t);
-void _pager_lock_object (struct pager *, vm_offset_t, vm_size_t, int, int,
+error_t _pager_pagemap_resize (struct pager *, off_t);
+void _pager_mark_next_request_error (struct pager *, off_t, off_t, error_t);
+void _pager_mark_object_error (struct pager *, off_t, off_t, error_t);
+void _pager_lock_object (struct pager *, off_t, off_t, int, int,
 			 vm_prot_t, int);
 void _pager_free_structure (struct pager *);
 void _pager_clean (void *arg);

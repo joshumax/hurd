@@ -25,12 +25,11 @@ kern_return_t
 _pager_seqnos_memory_object_data_unlock (mach_port_t object,
 					 mach_port_seqno_t seqno,
 					 mach_port_t control,
-					 vm_offset_t offset,
+					 vm_offset_t start,
 					 vm_size_t length,
 					 vm_prot_t access)
 {
   struct pager *p;
-  volatile int err;
 
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
@@ -58,31 +57,15 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       printf ("incg data unlock: not unlock writes\n");
       goto out;
     }
-  if (offset % __vm_page_size)
+  if (start % vm_page_size)
     {
       printf ("incg data unlock: misaligned request\n");
       goto out;
     }
-  if (length != __vm_page_size)
-    {
-      printf ("incg data unlock: bad length size %zd\n", length);
-      goto out;
-    }
 
-  err = pager_unlock_page (p->upi, offset);
+  p->ops->unlock (p, (struct user_pager_info *) &p->upi,
+		  start / vm_page_size, length / vm_page_size);
 
-  if (!err)
-    /* We can go ahead and release the lock.  */
-    _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 0,
-			VM_PROT_NONE, 0);
-  else
-    {
-      /* Flush the page, and set a bit so that m_o_data_request knows
-	 to issue an error.  */
-      _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 1,
-			  VM_PROT_WRITE, 1);
-      _pager_mark_next_request_error (p, offset, length, err);
-    }
  out:
   ports_port_deref (p);
   return 0;

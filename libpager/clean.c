@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -46,5 +46,6 @@ _pager_clean (void *arg)
       mutex_unlock (&p->interlock);
     }
 
-  pager_clear_user_data (p->upi);
+  if (p->ops->clear_user_data)
+    p->ops->clear_user_data ((struct user_pager_info *) &p->upi);
 }
