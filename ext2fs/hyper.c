@@ -48,13 +48,21 @@ get_hypermetadata (void)
 		"Block size %ld is too small (min is %ld bytes)",
 		block_size, SBLOCK_SIZE);
 
-  assert ((vm_page_size % DEV_BSIZE) == 0);
-  assert ((block_size % DEV_BSIZE) == 0);
+  log2_dev_blocks_per_fs_block = 0;
+  while ((device_block_size << log2_dev_blocks_per_fs_block) < block_size)
+    log2_dev_blocks_per_fs_block++;
+  if ((device_block_size << log2_dev_blocks_per_fs_block) != block_size)
+    ext2_panic("get_hypermetadata",
+	       "Block size %ld isn't a power-of-two multiple of the device"
+	       " block size (%d)!",
+	       block_size, device_block_size);
 
-  if (block_size < vm_page_size)
-    ext2_panic ("get_hypermetadata",
-		"Block size (%d) isn't a multiple of page size (%ld)",
-		block_size, vm_page_size);
+  log2_block_size = 0;
+  while ((1 << log2_block_size) < block_size)
+    log2_block_size++;
+  if ((1 << log2_block_size) != block_size)
+    ext2_panic("get_hypermetadata",
+	       "Block size %ld isn't a power of two!", block_size);
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / sizeof (struct ext2_inode);
