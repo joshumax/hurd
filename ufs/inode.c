@@ -240,12 +240,12 @@ read_disknode (struct node *np)
   st->st_mtimespec = di->di_mtime;
   st->st_ctimespec = di->di_ctime;
 #else
-  st->st_atime = read_disk_entry (di->di_atime.ts_sec);
-  st->st_atime_usec = read_disk_entry (di->di_atime.ts_nsec) / 1000;
-  st->st_mtime = read_disk_entry (di->di_mtime.ts_sec);
-  st->st_mtime_usec = read_disk_entry (di->di_mtime.ts_nsec) / 1000;
-  st->st_ctime = read_disk_entry (di->di_ctime.ts_sec);
-  st->st_ctime_usec = read_disk_entry (di->di_ctime.ts_nsec) / 1000;
+  st->st_atime = read_disk_entry (di->di_atime.tv_sec);
+  st->st_atime_usec = read_disk_entry (di->di_atime.tv_nsec) / 1000;
+  st->st_mtime = read_disk_entry (di->di_mtime.tv_sec);
+  st->st_mtime_usec = read_disk_entry (di->di_mtime.tv_nsec) / 1000;
+  st->st_ctime = read_disk_entry (di->di_ctime.tv_sec);
+  st->st_ctime_usec = read_disk_entry (di->di_ctime.tv_nsec) / 1000;
 #endif  
   st->st_blksize = sblock->fs_bsize;
   st->st_blocks = read_disk_entry (di->di_blocks);
@@ -353,12 +353,12 @@ write_node (struct node *np)
       di->di_mtime = st->st_mtimespec;
       di->di_ctime = st->st_ctimespec;
 #else
-      write_disk_entry (di->di_atime.ts_sec, st->st_atime);
-      write_disk_entry (di->di_atime.ts_nsec, st->st_atime_usec * 1000);
-      write_disk_entry (di->di_mtime.ts_sec, st->st_mtime);
-      write_disk_entry (di->di_mtime.ts_nsec, st->st_mtime_usec * 1000);
-      write_disk_entry (di->di_ctime.ts_sec, st->st_ctime);
-      write_disk_entry (di->di_ctime.ts_nsec, st->st_ctime_usec * 1000);
+      write_disk_entry (di->di_atime.tv_sec, st->st_atime);
+      write_disk_entry (di->di_atime.tv_nsec, st->st_atime_usec * 1000);
+      write_disk_entry (di->di_mtime.tv_sec, st->st_mtime);
+      write_disk_entry (di->di_mtime.tv_nsec, st->st_mtime_usec * 1000);
+      write_disk_entry (di->di_ctime.tv_sec, st->st_ctime);
+      write_disk_entry (di->di_ctime.tv_nsec, st->st_ctime_usec * 1000);
 #endif      
       write_disk_entry (di->di_blocks, st->st_blocks);
       write_disk_entry (di->di_flags, st->st_flags);
