@@ -63,6 +63,7 @@ struct proc
   /* Miscellaneous information */
   vm_address_t p_argv, p_envp;
   int p_status;			/* to return via wait */
+  int p_sigcode;
 
   int p_exec:1;			/* has called proc_mark_exec */
   int p_stopped:1;		/* has called proc_mark_stop */
