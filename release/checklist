@@ -13,7 +13,7 @@ o   Remove .stamp files from binary tree.
 o   Make everything root.wheel, mode 755/644.
 o   Make /games games.daemon.
 o   Check permissions on setuid files in binary tree.
-       (login, ps, w, rsh, rlogin, games/lib/nethack/nethack)
+       (login, ps, w, vmstat, rsh, rlogin, games/lib/nethack/nethack)
 o   Check each directory for bogus cruft files.
 o   Especially delete .bash_history, .gnunfs*, and .stamp files.
 o   Verify installation on bare machine.
