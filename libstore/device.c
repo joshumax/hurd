@@ -31,7 +31,7 @@
 static error_t
 dev_read (struct store *store,
 	  off_t addr, size_t index, mach_msg_type_number_t amount,
-	  char **buf, mach_msg_type_number_t *len)
+	  void **buf, mach_msg_type_number_t *len)
 {
 #if 1
   return device_read (store->port, 0, addr, amount, (io_buf_ptr_t *)buf, len);
@@ -53,7 +53,7 @@ dev_read (struct store *store,
 
 static error_t
 dev_write (struct store *store,
-	   off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
+	   off_t addr, size_t index, void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
 #if 1
