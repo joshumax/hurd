@@ -25,6 +25,10 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 
+#ifndef DISKFS_EI
+#define DISKFS_EI extern inline
+#endif
+
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library).  */
 struct protid
@@ -556,7 +560,7 @@ void diskfs_node_update (struct node *np, int wait);
 /* Add a hard reference to a node.  If there were no hard
    references previously, then the node cannot be locked
    (because you must hold a hard reference to hold the lock). */
-extern inline void
+DISKFS_EI void
 diskfs_nref (struct node *np)
 {
   int new_hardref;
@@ -575,7 +579,7 @@ diskfs_nref (struct node *np)
 /* Unlock node NP and release a hard reference; if this is the last
    hard reference and there are no links to the file then request
    soft references to be dropped.  */
-extern inline void
+DISKFS_EI void
 diskfs_nput (struct node *np)
 {
   int tried_drop_softrefs = 0;
@@ -625,7 +629,7 @@ diskfs_nput (struct node *np)
    hard reference in order to hold the lock).  If this is the last
    hard reference and there are no links, then request soft references
    to be dropped.  */
-extern inline void
+DISKFS_EI void
 diskfs_nrele (struct node *np)
 {
   int tried_drop_softrefs = 0;
@@ -665,7 +669,7 @@ diskfs_nrele (struct node *np)
 }
 
 /* Add a light reference to a node. */
-extern inline void
+DISKFS_EI void
 diskfs_nref_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
@@ -674,7 +678,7 @@ diskfs_nref_light (struct node *np)
 }
 
 /* Unlock node NP and release a light reference */
-extern inline void
+DISKFS_EI void
 diskfs_nput_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
@@ -692,7 +696,7 @@ diskfs_nput_light (struct node *np)
 /* Release a light reference on NP.  If NP is locked by anyone, then
    this cannot be the last reference (because you must hold a
    hard reference in order to hold the lock).  */
-extern inline void
+DISKFS_EI void
 diskfs_nrele_light (struct node *np)
 {
   spin_lock (&diskfs_node_refcnt_lock);
@@ -708,7 +712,7 @@ diskfs_nrele_light (struct node *np)
 }
 
 /* Return nonzero iff the user identified by CRED has uid UID. */
-extern inline int
+DISKFS_EI int
 diskfs_isuid (uid_t uid, struct protid *cred)
 {
   int i;
@@ -719,7 +723,7 @@ diskfs_isuid (uid_t uid, struct protid *cred)
 }
 
 /* Return nonzero iff the user identified by CRED has group GRP. */
-extern inline int
+DISKFS_EI int
 diskfs_groupmember (uid_t grp, struct protid *cred)
 {
   int i;
@@ -732,7 +736,7 @@ diskfs_groupmember (uid_t grp, struct protid *cred)
 /* Check to see if the user identified by CRED is permitted to do
    owner-only operations on node NP; if so, return 0; if not, return
    EPERM. */
-extern inline error_t
+DISKFS_EI error_t
 diskfs_isowner (struct node *np, struct protid *cred)
 {
   /* Permitted if the user is the owner, superuser, or if the user
@@ -749,7 +753,7 @@ diskfs_isowner (struct node *np, struct protid *cred)
 /* Check to see is the user identified by CRED is permitted to do
    operation OP on node NP.  Op is one of S_IREAD, S_IWRITE, or S_IEXEC.
    Return 0 if the operation is permitted and EACCES if not. */
-extern inline error_t
+DISKFS_EI error_t
 diskfs_access (struct node *np, int op, struct protid *cred)
 {
   int gotit;
@@ -771,7 +775,7 @@ diskfs_access (struct node *np, int op, struct protid *cred)
    as diskfs_access (dp, S_IWRITE, cred), except when the directory
    has the sticky bit set.  (If there is no existing file NP, then
    0 can be passed.)  */
-extern inline error_t
+DISKFS_EI error_t
 diskfs_checkdirmod (struct node *dp, struct node *np,
 		    struct protid *cred)
 {

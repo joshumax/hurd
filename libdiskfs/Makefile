@@ -47,7 +47,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	trans-callback.c readonly.c remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
-	validate-rdev.c validate-owner.c extra-version.c
+	validate-rdev.c validate-owner.c extra-version.c diskfs.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h diskfs-pager.h
 installhdrs = diskfs.h diskfs-pager.h

@@ -1,3 +1,9 @@
+Mon Oct 21 21:54:34 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* diskfs.h: Add extern inline protection.
+	* diskfs.c: New file.
+	* Makefile (OTHERSRCS): Add diskfs.c.
+
 Fri Oct 11 21:55:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Temporarily add O_EXLOCK and
