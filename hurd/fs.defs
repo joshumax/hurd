@@ -196,8 +196,8 @@ routine dir_pathtrans (
 routine dir_readdir (
 	dir: file_t;
 	out data: data_t;
-	offset: int;
-	out nextoffset: int;
+	offset: off_t;
+	out nextoffset: off_t;
 	amount: int);
 
 /* Create directory */
