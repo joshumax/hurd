@@ -425,7 +425,7 @@ diskfs_file_update (struct node *np,
   if (upi)
     {
       pager_sync (upi->p, wait);
-      port_port_deref (upi->p);
+      ports_port_deref (upi->p);
     }
   
   for (d = np->dn->dirty; d; d = tmp)
@@ -491,13 +491,13 @@ drop_pager_softrefs (struct node *np)
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
 
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
   if (upi)
-    pager_unreference (upi->p);
+    ports_port_deref (upi->p);
 }
 
 /* Call this when we should turn on caching because it's no longer
@@ -510,13 +510,13 @@ allow_pager_softrefs (struct node *np)
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
   
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
   if (upi)
-    pager_unreference (upi->p);
+    ports_port_deref (upi->p);
 }
 
 /* Call this to find out the struct pager * corresponding to the
@@ -547,7 +547,7 @@ pager_traverse (void (*func)(struct user_pager_info *))
       i = alloca (sizeof (struct item));
       i->next = list;
       list = i;
-      pager_reference (p->p);
+      ports_port_ref (p->p);
       i->p = p;
     }
   spin_unlock (&pagerlistlock);
@@ -555,7 +555,7 @@ pager_traverse (void (*func)(struct user_pager_info *))
   for (i = list; i; i = i->next)
     {
       (*func)(i->p);
-      pager_unreference (i->p->p);
+      ports_port_deref (i->p->p);
     }
   
   (*func)(diskpager);
