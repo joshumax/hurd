@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -18,7 +18,11 @@
 dir := .
 makemode := misc
 
-include Makeconf
+ifndef srcdir
+srcdir = .
+endif
+
+include $(srcdir)/Makeconf
 
 lib-subdirs = libshouldbeinlibc libihash libioserver libports libpager \
 	      libfshelp libdiskfs libtrivfs libthreads libps \
@@ -29,7 +33,7 @@ prog-subdirs = auth boot exec fstests init.trim \
 	       login nfs pfinet
 other-subdirs = hurd doc init
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
-subdirs-nodist = 
+subdirs-nodist =
 working-prog-subdirs := $(filter-out \
 			  $(patsubst %/,%,\
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
@@ -40,7 +44,7 @@ DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 
 all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
-%-all: 
+%-all:
 	$(MAKE) -C $* all
 
 %-lndist: hurd-snap
@@ -77,7 +81,7 @@ lndist: lndist-cthreads-h cp-linked-files
 
 lndist-cthreads-h:
 	ln -s libthreads/cthreads.h $(srcdir)/hurd-snap/cthreads.h
-	
+
 cp-linked-files:
 	cp $(srcdir)/install-sh $(srcdir)/hurd-snap/install-sh
 	cp $(srcdir)/config.guess $(srcdir)/hurd-snap/config.guess
