@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -50,8 +50,24 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <hurd/auth.h>
 
-#undef errno
-int errno;
+#ifdef UX
+
+#include "ux.h"
+
+#else  /* !UX */
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <hurd.h>
+
+#define host_fstat fstat
+typedef struct stat host_stat_t;
+#define host_exit exit
+
+#endif /* UX */
 
 mach_port_t privileged_host_port, master_device_port, defpager;
 mach_port_t pseudo_master_device_port;
@@ -79,247 +95,13 @@ char *fsname;
 char *bootstrap_args;
 char *bootdevice = "sd0a";
 
-extern void __mach_init ();
-void	(*mach_init_routine)() = __mach_init;
-
-#define sigmask(m) (1 << ((m)-1))
-
-
-/* We can't include <unistd.h> for this, because that will fight witho
-   our definitions of syscalls below. */
-int syscall (int, ...);
-
 void set_mach_stack_args ();
-
-/* These will prevent the Hurd-ish versions from being used */
-
-struct free_reply_port
-{
-  mach_port_t port;
-  struct free_reply_port *next;
-};
-static struct free_reply_port *free_reply_ports = NULL;
-static spin_lock_t free_reply_ports_lock = SPIN_LOCK_INITIALIZER;
-
-mach_port_t __mig_get_reply_port ()
-{
-  spin_lock (&free_reply_ports_lock);
-  if (free_reply_ports == NULL)
-    {
-      spin_unlock (&free_reply_ports_lock);
-      return __mach_reply_port ();
-    }
-  else
-    {
-      struct free_reply_port *frp = free_reply_ports;
-      mach_port_t reply_port = frp->port;
-      free_reply_ports = free_reply_ports->next;
-      spin_unlock (&free_reply_ports_lock);
-      free (frp);
-      return reply_port;
-    }
-}
-mach_port_t mig_get_reply_port ()
-{
-  return __mig_get_reply_port ();
-}
-void __mig_put_reply_port (mach_port_t port)
-{
-  struct free_reply_port *frp = malloc (sizeof (struct free_reply_port));
-  frp->port = port;
-  spin_lock (&free_reply_ports_lock);
-  frp->next = free_reply_ports;
-  free_reply_ports = frp;
-  spin_unlock (&free_reply_ports_lock);
-}
-void mig_put_reply_port (mach_port_t port)
-{
-  __mig_put_reply_port (port);
-}
-void __mig_dealloc_reply_port (mach_port_t port)
-{
-  mach_port_mod_refs (__mach_task_self (), port,
-		      MACH_PORT_RIGHT_RECEIVE, -1);
-}
-void mig_dealloc_reply_port (mach_port_t port)
-{
-  __mig_dealloc_reply_port (port);
-}
-void __mig_init (void *stack) {}
-void mig_init (void *stack) {}
-
-int
-task_by_pid (int pid)
-{
-  return syscall (-33, pid);
-}
-
-int
-write (int fd,
-       const void *buf,
-       int buflen)
-{
-  return syscall (4, fd, buf, buflen);
-}
-
-int
-read (int fd,
-      void *buf,
-      int buflen)
-{
-  return syscall (3, fd, buf, buflen);
-}
-
-int
-open (const char *name,
-      int flags,
-      int mode)
-{
-  return syscall (5, name, flags, mode);
-}
-
-struct uxstat
-  {
-    short int st_dev;		/* Device containing the file.	*/
-    __ino_t st_ino;		/* File serial number.		*/
-    unsigned short int st_mode;	/* File mode.  */
-    __nlink_t st_nlink;		/* Link count.  */
-    unsigned short int st_uid;	/* User ID of the file's owner.	*/
-    unsigned short int st_gid;	/* Group ID of the file's group.*/
-    short int st_rdev;		/* Device number, if device.  */
-    __off_t st_size;		/* Size of file, in bytes.  */
-    __time_t st_atime;		/* Time of last access.  */
-    unsigned long int st_atime_usec;
-    __time_t st_mtime;		/* Time of last modification.  */
-    unsigned long int st_mtime_usec;
-    __time_t st_ctime;		/* Time of last status change.  */
-    unsigned long int st_ctime_usec;
-    unsigned long int st_blksize; /* Optimal block size for I/O.  */
-    unsigned long int st_blocks; /* Number of 512-byte blocks allocated.  */
-    long int st_spare[2];
-  };
-int
-uxfstat (int fd, struct uxstat *buf)
-{
-  return syscall (62, fd, buf);
-}
-
-int
-close (int fd)
-{
-  return syscall (6, fd);
-}
-
-int
-lseek (int fd,
-       int off,
-       int whence)
-{
-  return syscall (19, fd, off, whence);
-}
-
-int
-uxexit (int code)
-{
-  return syscall (1, code);
-}
-
-int
-getpid ()
-{
-  return syscall (20);
-}
-
-int
-ioctl (int fd, int code, void *buf)
-{
-  return syscall (54, fd, code, buf);
-}
-#define IOCPARM_MASK 0x7f
-#define IOC_OUT 0x40000000
-#define IOC_IN 0x80000000
-#define _IOR(x,y,t) (IOC_OUT|((sizeof(t)&IOCPARM_MASK)<<16)|(x<<8)|y)
-#define _IOW(x,y,t) (IOC_IN|((sizeof(t)&IOCPARM_MASK)<<16)|(x<<8)|y)
-#define FIONREAD _IOR('f', 127, int)
-#define FIOASYNC _IOW('f', 125, int)
-#define TIOCGETP _IOR('t', 8, struct sgttyb)
-#define TIOCLGET _IOR('t', 124, int)
-#define TIOCLSET _IOW('t', 125, int)
-#define TIOCSETN _IOW('t', 10, struct sgttyb)
-#define LDECCTQ 0x4000
-#define LLITOUT 0x0020
-#define LPASS8  0x0800
-#define LNOFLSH 0x8000
-#define RAW 0x0020
-#define ANYP 0x00c0
-#define ECHO 8
-
-
-struct sgttyb
-{
-  char unused[4];
-  short flags;
-};
-
-
-#define SIGIO 23
-
-struct sigvec
-{
-  void (*sv_handler)();
-  int sv_mask;
-  int sv_flags;
-};
-
-int
-sigblock (int mask)
-{
-  return syscall (109, mask);
-}
-
-int
-sigsetmask (int mask)
-{
-  return syscall (110, mask);
-}
-
-int
-sigpause (int mask)
-{
-  return syscall (111, mask);
-}
-
-
-#if 0
-void
-sigreturn ()
-{
-  asm volatile ("movl $0x67,%eax\n"
-		"lcall $0x7, $0x0\n"
-		"ret");
-}
-
-void
-_sigreturn ()
-{
-  asm volatile ("addl $0xc, %%esp\n"
-		"call %0\n"
-		"ret"::"m" (sigreturn));
-}
-
-int
-sigvec (int sig, struct sigvec *vec, struct sigvec *ovec)
-{
-  asm volatile ("movl $0x6c,%%eax\n"
-		"movl %0, %%edx\n"
-		"orl $0x80000000, %%edx\n"
-		"lcall $0x7,$0x0\n"
-		"ret"::"g" (_sigreturn));
-}
-#else
-int sigvec ();
-#endif
 
+void safe_gets (char *buf, size_t buf_len)
+{
+  fgets (buf, buf_len, stdin);
+}
+
 char *useropen_dir;
 
 int
@@ -395,7 +177,7 @@ load_image (task_t t,
     {
       write (2, msg, sizeof (msg));
       task_terminate (t);
-      uxexit (1);
+      host_exit (1);
     }
 
   read (fd, &hdr, sizeof hdr);
@@ -487,7 +269,7 @@ boot_script_read_file (const char *filename)
 {
   static const char msg[] = ": cannot open\n";
   int fd = useropen (filename, 0, 0);
-  struct uxstat st;
+  host_stat_t st;
   error_t err;
   mach_port_t memobj;
   vm_address_t region;
@@ -496,12 +278,12 @@ boot_script_read_file (const char *filename)
   if (fd < 0)
     {
       write (2, msg, sizeof msg - 1);
-      uxexit (1);
+      host_exit (1);
     }
   else
     write (2, msg + sizeof msg - 2, 1);
 
-  uxfstat (fd, &st);
+  host_fstat (fd, &st);
 
   err = default_pager_object_create (defpager, &memobj,
 				     round_page (st.st_size));
@@ -509,7 +291,7 @@ boot_script_read_file (const char *filename)
     {
       static const char msg[] = "cannot create default-pager object\n";
       write (2, msg, sizeof msg - 1);
-      uxexit (1);
+      host_exit (1);
     }
 
   region = 0;
@@ -586,8 +368,7 @@ main (int argc, char **argv, char **envp)
   struct sigvec vec = { read_reply, 0, 0};
   char *newargs;
 
-  privileged_host_port = task_by_pid (-1);
-  master_device_port = task_by_pid (-2);
+  get_privileged_ports (&privileged_host_port, &master_device_port);
 
   defpager = MACH_PORT_NULL;
   vm_set_default_memory_manager (privileged_host_port, &defpager);
@@ -596,7 +377,7 @@ main (int argc, char **argv, char **envp)
     {
     usage:
       write (2, usagemsg, sizeof usagemsg);
-      uxexit (1);
+      host_exit (1);
     }
 
   if (!strcmp (argv[1], "-D"))
@@ -663,7 +444,7 @@ main (int argc, char **argv, char **envp)
       static const char msg[] = "error setting variable";
 
       write (2, msg, strlen (msg));
-      uxexit (1);
+      host_exit (1);
     }
 
   /* Parse the boot script.  */
@@ -676,7 +457,7 @@ main (int argc, char **argv, char **envp)
     if (fd < 0)
       {
 	write (2, filemsg, sizeof (filemsg));
-	uxexit (1);
+	host_exit (1);
       }
     p = buf = malloc (500);
     len = 500;
@@ -716,7 +497,7 @@ main (int argc, char **argv, char **envp)
 	    write (2, " in `", 5);
 	    write (2, line, strlen (line));
 	    write (2, "'\n", 2);
-	    uxexit (1);
+	    host_exit (1);
 	  }
 	if (p == buf + amt)
 	  break;
@@ -749,7 +530,7 @@ main (int argc, char **argv, char **envp)
 	int i = strlen (str);
 
 	write (2, str, i);
-	uxexit (1);
+	host_exit (1);
       }
     free (buf);
   }
@@ -1203,8 +984,8 @@ init_termstate ()
   bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
   ioctl (0, TIOCLSET, &bits);
   sgb = term_sgb;
-  sgb.flags &= ~ECHO;
-  sgb.flags |= RAW | ANYP;
+  sgb.sg_flags &= ~ECHO;
+  sgb.sg_flags |= RAW | ANYP;
   ioctl (0, TIOCSETN, &sgb);
 }
 
@@ -1285,8 +1066,8 @@ S_tioctl_tiocseta (mach_port_t port,
       bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
       ioctl (0, TIOCLSET, &bits);
       sgb = term_sgb;
-      sgb.flags &= ~ECHO;
-      sgb.flags |= RAW | ANYP;
+      sgb.sg_flags &= ~ECHO;
+      sgb.sg_flags |= RAW | ANYP;
       ioctl (0, TIOCSETN, &sgb);
     }
   else
@@ -1626,7 +1407,7 @@ do_mach_notify_no_senders (mach_port_t notify,
 	bye:
 	  restore_termstate ();
 	  write (2, "bye\n", 4);
-	  uxexit (0);
+	  host_exit (0);
 	}
       else
 	{
@@ -1659,7 +1440,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
 #if 0
   if (name == child_task && notify == bootport)
-    uxexit (0);
+    host_exit (0);
 #endif
   return EOPNOTSUPP;
 }
