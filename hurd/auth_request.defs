@@ -1,0 +1,36 @@
+/* Request-only side of auth interface
+   Copyright (C) 2002 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem auth_reply 25000;	/* must match auth.defs */
+
+#include <hurd/hurd_types.defs>
+
+skip; /* auth_getids */
+skip; /* auth_makeauth */
+
+simpleroutine auth_user_authenticate_request (
+	handle: auth_t;
+	ureplyport reply: mach_port_poly_t;
+	rendezvous: mach_port_send_t);
+
+simpleroutine auth_server_authenticate_request (
+	handle: auth_t;
+	ureplyport reply: mach_port_poly_t;
+	rendezvous: mach_port_send_t;
+	newport: mach_port_poly_t);

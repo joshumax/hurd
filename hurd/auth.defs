@@ -1,5 +1,5 @@
 /* Definitions for the authentication server
-   Copyright (C) 1991, 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1991,92,93,94,96,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -59,6 +59,7 @@ routine auth_makeauth (
    the server.  */
 routine auth_user_authenticate (
 	handle: auth_t;
+	sreplyport reply: mach_port_poly_t;
 	rendezvous: mach_port_send_t;
 	out newport: mach_port_send_t);
 
@@ -76,5 +77,3 @@ routine auth_server_authenticate (
 	out auids: idarray_t;
 	out egids: idarray_t;
 	out agids: idarray_t);
-
-
