@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -54,12 +54,15 @@ struct trivfs_control *fsys;
 
 enum crash_action
 {
-  crash_suspend,		/* default */
+  crash_unspecified,
+  crash_suspend,
   crash_kill,
   crash_corefile
 };
+#define CRASH_DEFAULT		crash_suspend
+#define CRASH_ORPHANS_DEFAULT	crash_corefile
 
-static enum crash_action crash_how;
+static enum crash_action crash_how, crash_orphans_how;
 
 
 error_t dump_core (task_t task, file_t core_file,
@@ -142,16 +145,33 @@ S_crash_dump_task (mach_port_t port,
 {
   error_t err;
   struct trivfs_protid *cred;
-  mach_port_t user_proc;
+  mach_port_t user_proc = MACH_PORT_NULL;
+  enum crash_action how;
 
   cred = ports_lookup_port (port_bucket, port, trivfs_protid_portclasses[0]);
   if (! cred)
     return EOPNOTSUPP;
 
-  switch (crash_how)
+  how = crash_how;
+  if (crash_how != crash_orphans_how)
     {
-    default:
-      return EGRATUITOUS;
+      /* We must ascertain if this is an orphan before deciding what to do.  */
+      err = proc_task2proc (procserver, task, &user_proc);
+      if (!err)
+	{
+	  pid_t pid, ppid;
+	  int orphan;
+	  err = proc_getpids (user_proc, &pid, &ppid, &orphan);
+	  if (!err && orphan)
+	    how = crash_orphans_how;
+	}
+    }
+
+  switch (how)
+    {
+    default:			/* NOTREACHED */
+      err = EGRATUITOUS;
+      break;
 
     case crash_suspend:
       /* Suspend the task first thing before being twiddling it.  */
@@ -159,7 +179,8 @@ S_crash_dump_task (mach_port_t port,
       if (err)
 	break;
 
-      err = proc_task2proc (procserver, task, &user_proc);
+      if (user_proc != MACH_PORT_NULL)
+	err = proc_task2proc (procserver, task, &user_proc);
       if (! err)
 	{
 	  struct crasher *c;
@@ -214,13 +235,12 @@ S_crash_dump_task (mach_port_t port,
 
     case crash_kill:
       {
-	mach_port_t user_proc;
-	err = proc_task2proc (procserver, task, &user_proc);
+	if (user_proc != MACH_PORT_NULL)
+	  err = 0;
+	else
+	  err = proc_task2proc (procserver, task, &user_proc);
 	if (!err)
-	  {
-	    err = proc_mark_exit (user_proc, W_EXITCODE (0, signo), sigcode);
-	    mach_port_deallocate (mach_task_self (), user_proc);
-	  }
+	  err = proc_mark_exit (user_proc, W_EXITCODE (0, signo), sigcode);
 	err = task_terminate (task);
 	if (!err)
 	  {
@@ -230,6 +250,9 @@ S_crash_dump_task (mach_port_t port,
 	  }
       }
     }
+
+  if (user_proc != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), user_proc);
 
   ports_port_deref (cred);
   return err;
@@ -412,28 +435,66 @@ dead_crasher (void *ptr)
 static const struct argp_option options[] =
 {
   {0,0,0,0,"These options specify the disposition of a crashing process:", 1},
-  {"suspend",	's', 0,		0, "Suspend the process", 1},
-  {"kill",	'k', 0,		0, "Kill the process", 1},
-  {"core-file", 'c', 0,		0, "Dump a core file", 1},
+  {"action",	'a', "ACTION",	0, "Action taken on crashing processes", 1},
+  {"orphan-action", 'O', "ACTION", 0, "Action taken on crashing orphans", 1},
+
+  {0,0,0,0,"These options are synonyms for --action=OPTION:", 2},
+  {"suspend",	's', 0,		0, "Suspend the process", 2},
+  {"kill",	'k', 0,		0, "Kill the process", 2},
+  {"core-file", 'c', 0,		0, "Dump a core file", 2},
   {"dump-core",   0, 0,		OPTION_ALIAS },
   {0}
 };
+static const char doc[] = "\
+Server to handle crashing tasks and dump core files or equivalent.\v\
+The ACTION values can be `suspend', `kill', or `core-file'.\n\
+If --orphan-action is not specified, the --action value is used for orphans.\
+The default is `--action=suspend --orphan-action=core-file'.";
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
+  error_t parse_action (enum crash_action *how)
+    {
+      if (!strcmp (arg, "suspend"))
+	*how = crash_suspend;
+      else if (!strcmp (arg, "kill"))
+	*how = crash_kill;
+      else if (!strcmp (arg, "core-file"))
+	*how = crash_corefile;
+      else
+	{
+	  argp_error (state,
+		      "action must be one of: suspend, kill, core-file");
+	  return EINVAL;
+	}
+      return 0;
+    }
+
   switch (opt)
     {
     default:
       return ARGP_ERR_UNKNOWN;
     case ARGP_KEY_INIT:
-    case ARGP_KEY_SUCCESS:
     case ARGP_KEY_ERROR:
       break;
+
+    case 'a':
+      return parse_action (&crash_how);
+    case 'O':
+      return parse_action (&crash_orphans_how);
 
     case 's': crash_how = crash_suspend;	break;
     case 'k': crash_how = crash_kill;		break;
     case 'c': crash_how = crash_corefile;	break;
+
+    case ARGP_KEY_SUCCESS:
+      if (crash_orphans_how == crash_unspecified)
+	crash_orphans_how = (crash_how == crash_unspecified
+			     ? CRASH_ORPHANS_DEFAULT : crash_how);
+      if (crash_how == crash_unspecified)
+	crash_how = CRASH_DEFAULT;
+      break;
     }
   return 0;
 }
@@ -456,7 +517,7 @@ trivfs_append_args (struct trivfs_control *fsys,
   return argz_add (argz, argz_len, opt);
 }
 
-struct argp crash_argp = { options, parse_opt, 0, 0 };
+struct argp crash_argp = { options, parse_opt, doc, 0 };
 struct argp *trivfs_runtime_argp = &crash_argp;
 
 
