@@ -1,3 +1,7 @@
+2002-05-20  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* paths.h (_SERVERS_STARTUP): Macro removed.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* msg.defs (msg_report_wait): int -> mach_msg_id_t
