@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include "netfs.h"
+#include <sys/file.h>
+
 struct peropen *
 netfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport)
 {
@@ -32,7 +35,7 @@ netfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport)
   if (dotdotport != MACH_PORT_NULL)
     mach_port_mod_refs (mach_task_self (), dotdotport, 
 			MACH_PORT_RIGHT_SEND, 1);
-  diskfs_nref (np);
+  netfs_nref (np);
   return po;
 }
 

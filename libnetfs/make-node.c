@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include <hurd/fshelp.h>
 
 struct node *
 netfs_make_node (struct netnode *nn)
@@ -32,7 +33,7 @@ netfs_make_node (struct netnode *nn)
   np->sockaddr = MACH_PORT_NULL;
   np->owner = 0;
 
-  fshelp_init_transbox (&np->transbox, &np->lock, np);
+  fshelp_transbox_init (&np->transbox, &np->lock, np);
   fshelp_lock_init (&np->userlock);
   
   return np;
