@@ -24,6 +24,24 @@
 
 #include "priv.h"
 
+int _diskfs_diskdirty;
+
+int
+diskfs_check_readonly ()
+{
+  if (diskfs_readonly)
+    return 1;
+  else
+    {
+      if (!_diskfs_diskdirty)
+	{
+	  diskfs_set_hypermetadata (0, 0);
+	  _diskfs_diskdirty = 1;
+	}
+      return 0;
+    }
+}
+
 /* Change an active filesystem between read-only and writable modes, setting
    the global variable DISKFS_READONLY to reflect the current mode.  If an
    error is returned, nothing will have changed.  The user should hold
@@ -61,6 +79,7 @@ diskfs_set_readonly (int readonly)
 		{
 		  diskfs_sync_everything (1);
 		  diskfs_set_hypermetadata (1, 1);
+		  _diskfs_diskdirty = 0;
 		}
 	    }
 
