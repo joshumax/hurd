@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
+
+void
 pass1b ()
 {
   struct dinode dino;
@@ -37,20 +40,20 @@ pass1b ()
       struct dups *dlp;
       int hadbad = 0;
       
-      for (nfrags; nfrags > 0; bno++, nfrags--)
+      for (; nfrags > 0; bno++, nfrags--)
 	{
-	  if (chkrange (blkno, 1))
+	  if (check_range (bno, 1))
 	    return RET_BAD;
 	  for (dlp = duphead; dlp; dlp = dlp->next)
 	    {
-	      if (dlp->dup == blkno)
+	      if (dlp->dup == bno)
 		{
 		  if (!dupblk)
-		    printf ("I=%lu HAD DUPLICATE BLOCKS\n", number);
+		    printf ("I=%d HAD DUPLICATE BLOCKS\n", number);
 		  dupblk++;
-		  printf ("DUPLICATE BLOCK %d\n", bno);
+		  printf ("DUPLICATE BLOCK %ld\n", bno);
 		  dlp->dup = duphead->dup;
-		  duphead->dup = blkno;
+		  duphead->dup = bno;
 		  duphead = duphead->next;
 		  hadbad = 1;
 		}
@@ -63,26 +66,29 @@ pass1b ()
 
   /* Call CHECKBLOCK for each block of each node, to see if it holds
      a block already found to be a duplicate. */
-  for (cg = 0; cg < sblock.fs_ncg; cg++)
-    for (i = 0; i < sblock.fs_ipg; i++, number++)
+  for (cg = 0; cg < sblock->fs_ncg; cg++)
+    for (i = 0; i < sblock->fs_ipg; i++, number++)
       {
 	if (number < ROOTINO)
 	  continue;
-	if (statemap[inumber] != UNALLOC)
+	if (inodestate[number] != UNALLOC)
 	  {
 	    getinode (number, dp);
 	    dupblk = 0;
 	    allblock_iterate (dp, checkblock);
 	    if (dupblk)
 	      {
-		printf ("I=%ld has %d DUPLICATE BLOCKS\n", number, dupblk);
+		printf ("I=%d has %d DUPLICATE BLOCKS\n", number, dupblk);
 		if (reply ("CLEAR"))
 		  {
 		    clear_inode (number, dp);
-		    inode_state[number] = UNALLOC;
+		    inodestate[number] = UNALLOC;
 		  }
-		else if (inodestate[number] == DIR)
+		else if (inodestate[number] == DIRECTORY)
 		  inodestate[number] = BADDIR;
+	      }
 	  }
       }
 }
+
+  
