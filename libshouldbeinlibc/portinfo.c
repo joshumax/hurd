@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -121,8 +121,7 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 		  for (i = 1; i < members_len; i++)
 		    fprintf (stream, hex_names ? ", %#x" : ", %u", members[i]);
 		  fprintf (stream, ")");
-		  vm_deallocate (mach_task_self (), (vm_address_t)members,
-				 members_len * sizeof *members);
+		  munmap (members, members_len * sizeof *members);
 		}
 	    }
 	  }
@@ -149,10 +148,8 @@ print_task_ports_info (task_t task, mach_port_type_t only,
     if (types[i] & only)
       print_port_info (names[i], types[i], task, show, stream);
 
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t)names, names_len * sizeof *names);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t)types, types_len * sizeof *types);
+  munmap (names, names_len * sizeof *names);
+  munmap (types, types_len * sizeof *types);
 
   return 0;
 }

@@ -1,6 +1,6 @@
 /* Some handy utility routines for fsys control ports
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -74,7 +74,7 @@ fsys_get_readonly (fsys_t fsys, int *readonly)
 
       if (opts != _opts)
 	/* Free out-of-line memory returned by fsys_get_options.  */
-	vm_deallocate (mach_task_self (), (vm_address_t)opts, opts_len);
+	munmap (opts, opts_len);
     }
 
   return err;

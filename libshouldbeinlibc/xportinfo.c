@@ -1,6 +1,6 @@
 /* Print information about a port, with the name translated between tasks
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -59,10 +59,8 @@ print_xlated_task_ports_info (struct port_name_xlator *x,
     if (types[i] & only)
       print_xlated_port_info (names[i], types[i], x, show, stream);
 
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t)names, names_len * sizeof *names);
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t)types, types_len * sizeof *types);
+  munmap (names, names_len * sizeof *names);
+  munmap (types, types_len * sizeof *types);
 
   return 0;
 }

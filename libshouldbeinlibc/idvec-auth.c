@@ -1,6 +1,6 @@
 /* Idvec functions that interact with an auth server
 
-   Copyright (C) 1995, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -66,13 +66,13 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
 
   /* Deallocate any out-of-line memory we got back.  */
   if (_eff_uids != eff_uid_buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)_eff_uids, num_eff_uids);
+    munmap (_eff_uids, num_eff_uids);
   if (_avail_uids != avail_uid_buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)_avail_uids, num_avail_uids);
+    munmap (_avail_uids, num_avail_uids);
   if (_eff_gids != eff_gid_buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)_eff_gids, num_eff_gids);
+    munmap (_eff_gids, num_eff_gids);
   if (_avail_gids != avail_gid_buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)_avail_gids, num_avail_gids);
+    munmap (_avail_gids, num_avail_gids);
 
   return err;
 }
