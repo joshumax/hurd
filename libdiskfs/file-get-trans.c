@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_get_translator
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1998 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,98,99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,10 +29,10 @@ diskfs_S_file_get_translator (struct protid *cred,
 {
   struct node *np;
   error_t error = 0;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
 
   mutex_lock (&np->lock);
@@ -43,12 +43,12 @@ diskfs_S_file_get_translator (struct protid *cred,
       unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
       int amt;
       assert (diskfs_shortcut_symlink);
-      if (len  > *translen)
+      if (len > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
       bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
 
       if (diskfs_read_symlink_hook)
-	error = (*diskfs_read_symlink_hook) (np, 
+	error = (*diskfs_read_symlink_hook) (np,
 					     *trans + sizeof _HURD_SYMLINK);
       if (!diskfs_read_symlink_hook || error == EINVAL)
 	{
@@ -62,6 +62,8 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  (*trans)[sizeof _HURD_SYMLINK + np->dn_stat.st_size] = '\0';
 	  *translen = len;
 	}
+      else if (len > *translen)
+	vm_deallocate (mach_task_self (), (vm_address_t *)trans, len);
     }
   else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
     {
@@ -73,14 +75,14 @@ diskfs_S_file_get_translator (struct protid *cred,
       else
 	assert (diskfs_shortcut_blkdev);
 
-      buflen = asprintf (&buf, "%s%c%d%c%d", 
-			 (S_ISCHR (np->dn_stat.st_mode) 
+      buflen = asprintf (&buf, "%s%c%d%c%d",
+			 (S_ISCHR (np->dn_stat.st_mode)
 			  ? _HURD_CHRDEV
 			  : _HURD_BLKDEV),
 			 '\0', (np->dn_stat.st_rdev >> 8) & 0377,
 			 '\0', (np->dn_stat.st_rdev) & 0377);
       buflen++;			/* terminating nul */
-      
+
       if (buflen > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
       bcopy (buf, *trans, buflen);
@@ -91,7 +93,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   else if (S_ISFIFO (np->dn_stat.st_mode))
     {
       unsigned int len;
-      
+
       len = sizeof _HURD_FIFO;
       if (len > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
@@ -102,7 +104,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   else if (S_ISSOCK (np->dn_stat.st_mode))
     {
       unsigned int len;
-      
+
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
@@ -122,7 +124,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  if (!error)
 	    {
 	      if (len > *translen)
-		vm_allocate (mach_task_self (), (vm_address_t *) trans, 
+		vm_allocate (mach_task_self (), (vm_address_t *) trans,
 			     len, 1);
 	      bcopy (string, *trans, len);
 	      *translen = len;
@@ -130,7 +132,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	    }
 	}
     }
-  
+
   mutex_unlock (&np->lock);
 
   return error;
