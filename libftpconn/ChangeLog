@@ -3,7 +3,7 @@
 	* unix.c: Include <libgen.h>.
 	(struct get_stats_state): New member: searched_name.
 	(ftp_conn_unix_start_get_stats): Return EINVAL if trying to list
-	the root node without listing it's content; set searched_name to
+	the root node without listing its content; set searched_name to
 	the dirname.
 	(ftp_conn_unix_cont_get_stats): If searching for the list info of
 	one entry, skip all other entries.
