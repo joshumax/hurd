@@ -203,7 +203,7 @@ open_console (char **namep)
   dup2 (0, 1);
   dup2 (0, 2);
 
-  if (setsid ())
+  if (setsid () == -1)
     error (0, errno, "setsid");
 
   /* Set the console to our pgrp.  */

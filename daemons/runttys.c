@@ -192,7 +192,7 @@ run (char **argv, int do_setsid)
     return pid;
   else
     {
-      if (do_setsid && setsid ())
+      if (do_setsid && setsid () == -1)
 	error (0, errno, "setsid");
 
       errno = 0;

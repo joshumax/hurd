@@ -1,3 +1,8 @@
+1999-09-18  Marcus Brinkmann  <Marcus.Brinkmann@ruhr-uni-bochum.de>
+
+	* runttys.c (run): Only call error if setsid returns -1.
+	* console-run.c (open_console): Likewise. 
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* console-run.c (open_console): Move first setting of TERMINAL and
