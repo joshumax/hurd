@@ -1,3 +1,8 @@
+2000-03-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* new-fifo.c (trivfs_protid_portclasses, trivfs_protid_nportclasses):
+	Fix to size 2.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* symlink.c (main): Don't use MAKE_SEND in Hurd RPC.
