@@ -1,5 +1,9 @@
 2001-06-06  Roland McGrath  <roland@frob.com>
 
+	* rpctrace.c (trace_and_forward): Assert that INFO has the same port
+	right type as the right we looked up.  Don't consider a message a
+	reply unless its receiver is a send-once right.
+
 	* rpctrace.c (print_reply_header): Don't call unfinished_line if
 	expected_reply_port is null, indicating the last line was finished as
 	a simpleroutine.
