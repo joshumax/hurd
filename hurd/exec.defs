@@ -1,5 +1,5 @@
 /* Interface definitions for the exec servers.
-   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -23,9 +23,12 @@ subsystem exec 30000;
 
 #include <hurd/hurd_types.defs>
 
-routine exec_exec ( /* Better name, Roland??
-		       No, it doesn't seem likely. */
-	execserver: mach_port_t;
+#ifdef EXEC_IMPORTS
+EXEC_IMPORTS
+#endif
+
+routine exec_exec (
+	execserver: file_t;
 	file: mach_port_send_t;
 	oldtask: task_t;
 	flags: int;
@@ -40,7 +43,7 @@ routine exec_exec ( /* Better name, Roland??
 /* This call is made by a new task to its bootstrap port to get its
    startup ports and information.  */
 routine exec_startup (
-	execserver: mach_port_t;
+	bootstrap: mach_port_t;
 	/* These are the base address and size of the initial stack
 	   allocated by the exec server.  The rest of the information
 	   is that passed by exec_exec.  */
@@ -56,11 +59,11 @@ routine exec_startup (
 /* This call is made by the bootstrapping filesystem to give the
    execserver its auth handle.  */
 routine exec_init (
-	execserver: mach_port_t;
+	execserver: file_t;
 	auth_handle: auth_t;
 	proc_server: mach_port_send_t);
 
 simpleroutine exec_setexecdata (
-	execserver: mach_port_t;
+	execserver: file_t;
 	ports: portarray_t, servercopy;
 	ints: intarray_t, servercopy);
