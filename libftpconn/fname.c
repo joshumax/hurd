@@ -30,7 +30,10 @@ ftp_conn_append_name (struct ftp_conn *conn,
 		      const char *dir, const char *name,
 		      char **composite)
 {
-  if (conn->syshooks.append_name)
+  error_t err = ftp_conn_validate_syshooks (conn);
+  if (err)
+    return err;
+  else if (conn->syshooks.append_name)
     return (*conn->syshooks.append_name) (conn, dir, name, composite);
   else
     return EOPNOTSUPP;
@@ -43,9 +46,13 @@ ftp_conn_append_name (struct ftp_conn *conn,
 error_t
 ftp_conn_basename (struct ftp_conn *conn, const char *composite, char **base)
 {
+  error_t err = ftp_conn_validate_syshooks (conn);
+
+  if (err)
+    return err;
+
   if (conn->syshooks.basename)
     {
-      error_t err;
       size_t in_size = strlen (composite) + 1;
       char *in = strdup (composite), *out = in;
 
