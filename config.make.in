@@ -4,6 +4,9 @@
 machine = @host_cpu@
 asm_syntax = @asm_syntax@
 
+# Build options.
+build-profiled = @enable_profile@
+
 # Prefix prepended to names of machine-independent installed files.
 prefix = @prefix@
 # Prefix prepended to names of machine-dependent installed files.
@@ -37,7 +40,7 @@ RANLIB = @RANLIB@
 MIG = @MIG@
 MIGCOM = $(MIG) -cc cat - /dev/null
 
-# Compilation flags.  Append these to the definitions already made by 
+# Compilation flags.  Append these to the definitions already made by
 # the specific Makefile.
 CPPFLAGS += @CPPFLAGS@ @DEFS@
 CFLAGS += @CFLAGS@
