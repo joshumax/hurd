@@ -1,6 +1,6 @@
 /* Write portions of a store to stdout
 
-   Copyright (C) 1996,97,99,2001,02,03 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001,02,03,04 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -109,6 +109,9 @@ main (int argc, char **argv)
 	  break;
 
 	case ARGP_KEY_END:
+	  if (!store)
+	    argp_usage (state);
+
 	  if (addr >= 0)
 	    dump (addr, -1);
 	  else if (! dumped)
