@@ -1,6 +1,6 @@
 /* Routines to gather and print process information.
 
-   Copyright (C) 1995,96,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -257,13 +257,13 @@ struct proc_stat
   /* The process's argv, as a string with each element separated by '\0'.  */
   char *args;
   /* The length of ARGS.  */
-  unsigned args_len;
+  size_t args_len;
 
   /* Virtual memory statistics for the process, as returned by task_info;
      see <mach/task_info.h> for a description of task_events_info_t.  */
   task_events_info_t task_events_info;
   task_events_info_data_t task_events_info_buf;
-  unsigned task_events_info_size;
+  size_t task_events_info_size;
 
   /* Flags showing whether a field is vm_alloced or malloced.  */
   unsigned proc_info_vm_alloced : 1;
@@ -300,7 +300,7 @@ struct proc_stat
   /* The process's envp, as a string with each element separated by '\0'.  */
   char *env;
   /* The length of ENV.  */
-  unsigned env_len;
+  size_t env_len;
 };
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
@@ -915,7 +915,7 @@ error_t proc_stat_list_merge (struct proc_stat_list *pp,
    returned in them.  */
 error_t proc_stat_list_add_all (struct proc_stat_list *pp,
 				struct proc_stat ***proc_stats,
-				unsigned *num_procs);
+				size_t *num_procs);
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
@@ -924,7 +924,7 @@ error_t proc_stat_list_add_all (struct proc_stat_list *pp,
 error_t proc_stat_list_add_login_coll (struct proc_stat_list *pp,
 				       pid_t login_id,
 				       struct proc_stat ***proc_stats,
-				       unsigned *num_procs);
+				       size_t *num_procs);
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
@@ -933,7 +933,7 @@ error_t proc_stat_list_add_login_coll (struct proc_stat_list *pp,
 error_t proc_stat_list_add_session (struct proc_stat_list *pp,
 				    pid_t session_id,
 				    struct proc_stat ***proc_stats,
-				    unsigned *num_procs);
+				    size_t *num_procs);
 
 /* Add to PP entries for all processes in the process group PGRP at its
    context.  If an error occurs, the system error code is returned, otherwise
@@ -941,7 +941,7 @@ error_t proc_stat_list_add_session (struct proc_stat_list *pp,
    resulting entries is returned in them.  */
 error_t proc_stat_list_add_pgrp (struct proc_stat_list *pp, pid_t pgrp,
 				 struct proc_stat ***proc_stats,
-				 unsigned *num_procs);
+				 size_t *num_procs);
 
 /* Try to set FLAGS in each proc_stat in PP (but they may still not be set
    -- you have to check).  If a fatal error occurs, the error code is

@@ -492,7 +492,7 @@ summarize_thread_states (struct procinfo *pi)
 /* Returns what's blocking the first blocked thread in PI in WAIT and RPC.  */
 static void
 summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
-			char **wait, int *rpc)
+			char **wait, mach_msg_id_t *rpc)
 {
   int i;
   char *next_wait = waits;

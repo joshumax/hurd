@@ -1,6 +1,6 @@
 /* Routines to get global host info.
 
-   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2001,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -58,7 +58,7 @@ ps_host_basic_info (host_basic_info_t *info)
 
   if (!initialized)
     {
-      int size = sizeof (buf);
+      size_t size = sizeof (buf);
       error_t err = host_info (ps_get_host (), HOST_BASIC_INFO,
 			      (host_info_t) &buf, &size);
       if (err)
@@ -82,7 +82,7 @@ ps_host_sched_info (host_sched_info_t *info)
 
   if (!initialized)
     {
-      int size = sizeof (buf);
+      size_t size = sizeof (buf);
       error_t err = host_info (ps_get_host (), HOST_SCHED_INFO,
 			      (host_info_t) &buf, &size);
       if (err)
@@ -102,7 +102,7 @@ error_t
 ps_host_load_info (host_load_info_t *info)
 {
   static host_load_info_data_t buf;
-  int size = sizeof (buf);
+  size_t size = sizeof (buf);
   error_t err = host_info (ps_get_host (), HOST_LOAD_INFO,
 			  (host_info_t) &buf, &size);
 
