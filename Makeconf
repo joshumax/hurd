@@ -118,6 +118,8 @@ endif
 
 # Standard targets
 
+.PHONY: all install libs relink clean
+
 # Installation
 ifeq ($(doinst),one)
 all: $(target)
