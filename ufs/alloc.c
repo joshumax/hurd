@@ -77,7 +77,7 @@ static void ffs_clusteracct (struct fs *, struct cg *, daddr_t, int);
 
 /* Sync all allocation information and nod eNP if diskfs_synchronous. */
 inline
-alloc_sync (struct diskfs_node *np)
+alloc_sync (struct node *np)
 {
   if (diskfs_syncronous)
     {
