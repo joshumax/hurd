@@ -1,3 +1,8 @@
+2001-10-14  Roland McGrath  <roland@frob.com>
+
+	* devio.c (real_speed_to_bogus_speed): Handle B57600, B115200 if they
+	are defined.  Reported by Diego Roversi <diegor@tiscalinet.it>.
+
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* users.c (S_termctty_open_terminal): Use iohelp_create_empty_iouser.
