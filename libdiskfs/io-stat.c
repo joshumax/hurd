@@ -25,7 +25,6 @@ diskfs_S_io_stat (struct protid *cred,
 		  io_statbuf_t *statbuf)
 {
   struct node *np;
-  mach_port_t atrans;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -41,12 +40,8 @@ diskfs_S_io_stat (struct protid *cred,
 
   bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
   statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
-  if (fshelp_fetch_control (&np->transbox, &atrans) == 0 
-      && atrans != MACH_PORT_NULL)
-    {
-      statbuf->st_mode |= S_IATRANS;
-      mach_port_deallocate (mach_task_self (), atrans);
-    }
+  if (fshelp_translated (&np->transbox))
+    statbuf->st_mode |= S_IATRANS;
   if (cred->po->shadow_root == np || np == diskfs_root_node)
     statbuf->st_mode |= S_IROOT;
     
