@@ -43,6 +43,9 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@
 CFLAGS += @CFLAGS@
 LDFLAGS += @LDFLAGS@
 
+# If a separate libcrypt is available, use it.
+LIBCRYPT = @LIBCRYPT@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
