@@ -1,3 +1,10 @@
+2004-09-03  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* store.h (__start_store_std_classes, __stop_store_std_classes):
+	Declare using __attribute__ ((weak)).
+	* typed.c (store_find_class): Removed `#pragma weak' for
+	`__stop_store_std_classes' and `__start_store_std_classes'.
+
 2003-08-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* zero.c: Do not include <assert.h>.
