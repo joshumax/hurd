@@ -30,37 +30,20 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
 		       mach_port_t *newport,
 		       mach_msg_type_name_t *newporttype)
 {
+  error_t err;
   struct trivfs_protid *newcred;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  newcred = ports_allocate_port (cred->po->cntl->protid_bucket,
-				 sizeof (struct trivfs_protid), 
-				 cred->po->cntl->protid_class);
-  newcred->realnode = cred->realnode;
-  newcred->isroot = cred->isroot;
-  mutex_lock (&cred->po->cntl->lock);
-  newcred->po = cred->po;
-  newcred->po->refcnt++;
-  mutex_unlock (&cred->po->cntl->lock);
-  newcred->uids = malloc (cred->nuids * sizeof (uid_t));
-  newcred->gids = malloc (cred->ngids * sizeof (gid_t));
-  bcopy (cred->uids, newcred->uids, cred->nuids * sizeof (uid_t));
-  bcopy (cred->gids, newcred->gids, cred->ngids * sizeof (uid_t));
-  newcred->nuids = cred->nuids;
-  newcred->ngids = cred->ngids;
-  mach_port_mod_refs (mach_task_self (), newcred->realnode, 
-		      MACH_PORT_RIGHT_SEND, 1);
+  err = trivfs_protid_dup (cred, &newcred);
+  if (!err)
+    {
+      *newport = ports_get_right (newcred);
+      *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newcred);
+    }
 
-  newcred->hook = cred->hook;
-
-  if (trivfs_protid_create_hook)
-    (*trivfs_protid_create_hook) (newcred);
-
-  *newport = ports_get_right (newcred);
-  *newporttype = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newcred);
-  return 0;
+  return err;
 }
 
