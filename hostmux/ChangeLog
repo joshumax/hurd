@@ -1,3 +1,10 @@
+2002-05-13  Roland McGrath  <roland@frob.com>
+
+	* mux.c (netfs_attempt_chmod): Handle MODE arg with no S_IFMT bits set.
+
+	* leaf.c (create_host_node): Set NEW->nn_translated appropriately.
+	* hostmux.c (main): Set netfs_root_node->nn_translated to zero.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hostmux.c (netfs_server_name, netfs_server_version): New

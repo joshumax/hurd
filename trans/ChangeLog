@@ -1,5 +1,7 @@
 2002-05-13  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.c (netfs_validate_stat): Set NP->nn_translated.
+
 	* fakeroot.c (netfs_S_file_exec): Don't lock the node (no need).
 	Don't use MACH_MSG_TYPE_MOVE_SEND.
 
