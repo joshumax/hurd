@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:file_getcontrol.c
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <hurd/fshelp.h>
 
 /* Implement file_getcontrol as described in <hurd/fs.defs>. */
 kern_return_t
@@ -24,28 +25,27 @@ diskfs_S_file_getcontrol (struct protid *cred,
 			  mach_port_t *control,
 			  mach_msg_type_name_t *controltype)
 {
-  int error = 0;
+  int error;
   struct port_info *newpi;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  if (!idvec_contains (cred->user->uids, 0))
-    error = EPERM;
-  else
-    {
-      error = ports_create_port (diskfs_control_class, diskfs_port_bucket,
-				 sizeof (struct port_info), &newpi);
-      if (! error)
-	{
-	  spin_lock (&_diskfs_control_lock);
-	  _diskfs_ncontrol_ports++;
-	  spin_unlock (&_diskfs_control_lock);
-	  *control = ports_get_right (newpi);
-	  *controltype = MACH_MSG_TYPE_MAKE_SEND;
-	  ports_port_deref (newpi);
-	}
-    }
+  error = fshelp_iscontroller (&diskfs_root_node->dn_stat, cred->user);
+  if (error)
+    return error;
 
-  return error;
+  error = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+			     sizeof (struct port_info), &newpi);
+  if (error)
+    return error;
+
+  spin_lock (&_diskfs_control_lock);
+  _diskfs_ncontrol_ports++;
+  spin_unlock (&_diskfs_control_lock);
+  *control = ports_get_right (newpi);
+  *controltype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
+
+  return 0;
 }
