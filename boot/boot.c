@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel. 
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -25,10 +25,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include <device/device.h>
 #include <a.out.h>
+#include <fcntlbits.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
 #include "device_S.h"
+#include "io_S.h"
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
@@ -191,7 +193,7 @@ main (int argc, char **argv, char **envp)
 			  MACH_MSG_TYPE_MAKE_SEND);
   
   thread_create (newtask, &newthread);
-  start_thread (newtask, newthread, startpc);
+  __mach_setup_thread (newtask, newthread, startpc);
 
   write (1, "pausing\n", 8);
   read (0, &c, 1);
@@ -518,4 +520,243 @@ do_mach_notify_dead_name (mach_port_t notify,
   if (name == child_task && notify == bootport)
     _exit (0);
 }
+
 
+/* Implementation of the Hurd I/O interface, which
+   we support for the console port only. */
+
+error_t
+S_io_write (mach_port_t object,
+	    char *data,
+	    u_int datalen,
+	    off_t offset,
+	    int *amtwritten)
+{
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  
+  *amtwritten = write (1, data, datalen);
+  return *amtwritten == -1 ? errno : 0;
+}
+
+error_t
+S_io_read (mach_port_t object,
+	   char **data,
+	   u_int *datalen,
+	   off_t offset,
+	   int amount)
+{
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  
+  if (amount > *datalen)
+    vm_allocate (mach_task_self (), amount, data, 1);
+  return read (0, *data, amount) == -1 ? errno : 0;
+}
+
+error_t 
+S_io_seek (mach_port_t object,
+	   off_t offset,
+	   int whence,
+	   off_t *newp)
+{
+  return object == pseudo_console ? ESPIPE : EOPNOTSUPP;
+}
+
+error_t
+S_io_readable (mach_port_t object,
+	       int *amt)
+{
+  return EOPNOTSUPP;
+}
+
+error_t 
+S_io_set_all_openmodes (mach_port_t object,
+			int bits)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_openmodes (mach_port_t object,
+		    int *modes)
+{
+  *modes = O_READ | O_WRITE;
+  return object == pseudo_console ? 0 : EOPNOTSUPP;
+}
+
+error_t
+S_io_set_some_openmodes (mach_port_t object,
+			 int bits)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_clear_some_openmodes (mach_port_t object,
+			   int bits)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_async (mach_port_t object,
+	    mach_port_t notify,
+	    mach_port_t *id)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_mod_owner (mach_port_t object,
+		pid_t owner)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_owner (mach_port_t object,
+		pid_t *owner)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_icky_async_id (mach_port_t object,
+			mach_port_t *id)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_select (mach_port_t object,
+	     int type,
+	     mach_port_t ret,
+	     int tag,
+	     int *result)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_stat (mach_port_t object,
+	   struct stat *st)
+{
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  
+  bzero (st, sizeof (struct stat));
+  st->st_blksize = 1024;
+  return 0;
+}
+
+error_t
+S_io_reauthenticate (mach_port_t object,
+		     int rendint)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_restrict_auth (mach_port_t object,
+		    mach_port_t *newobject,
+		    mach_msg_type_name_t *newobjtype,
+		    uid_t *uids,
+		    u_int *nuids,
+		    uid_t *gids,
+		    u_int *ngids)
+{
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  *newobject = pseudo_console;
+  *newobjtype = MACH_MSG_TYPE_MAKE_SEND;
+  return 0;
+}
+
+error_t
+S_io_duplicate (mach_port_t object,
+		mach_port_t *newobj,
+		mach_msg_type_name_t *newobjtype)
+{
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  *newobj = pseudo_console;
+  *newobjtype = MACH_MSG_TYPE_MAKE_SEND;
+  return 0;
+}
+
+error_t
+S_io_server_version (mach_port_t object,
+		     char *name,
+		     int *maj,
+		     int *min,
+		     int *edit)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_map (mach_port_t obj,
+	  mach_port_t *rd,
+	  mach_msg_type_name_t *rdtype,
+	  mach_port_t *wr,
+	  mach_msg_type_name_t *wrtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_map_cntl (mach_port_t obj,
+	       mach_port_t *mem,
+	       mach_msg_type_name_t *objtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_conch (mach_port_t obj)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_release_conch (mach_port_t obj)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_eofnotify (mach_port_t obj)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_prenotify (mach_port_t obj,
+		int start,
+		int end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_postnotify (mach_port_t obj,
+		 int start,
+		 int end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_readsleep (mach_port_t obj)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_sigio (mach_port_t obj)
+{
+  return EOPNOTSUPP;
+}
+
+    
