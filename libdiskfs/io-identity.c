@@ -1,5 +1,5 @@
 /* libdiskfs implementation of io_identity RPC
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -36,7 +36,7 @@ diskfs_S_io_identity (struct protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
   mutex_lock (&np->lock);
   inum = np->dn_stat.st_ino;
@@ -44,22 +44,24 @@ diskfs_S_io_identity (struct protid *cred,
 
   err = fshelp_get_identity (diskfs_port_bucket, inum, id);
   if (! err)
-    if (cred->po->shadow_root && cred->po->shadow_root != diskfs_root_node)
-      {
-	err = fshelp_get_identity (diskfs_port_bucket,
-				   cred->po->shadow_root->dn_stat.st_ino,
-				   fsys);
-	if (err)
-	  mach_port_deallocate (mach_task_self (), *id);
-      }
-    else
-      *fsys = diskfs_fsys_identity;      
+    {
+      if (cred->po->shadow_root && cred->po->shadow_root != diskfs_root_node)
+	{
+	  err = fshelp_get_identity (diskfs_port_bucket,
+				     cred->po->shadow_root->dn_stat.st_ino,
+				     fsys);
+	  if (err)
+	    mach_port_deallocate (mach_task_self (), *id);
+	}
+      else
+	*fsys = diskfs_fsys_identity;
+    }
   if (! err)
     {
       *idtype = MACH_MSG_TYPE_MAKE_SEND;
       *fsystype = MACH_MSG_TYPE_MAKE_SEND;
       *fileno = np->dn_stat.st_ino;
     }
-  
+
   return err;
 }

@@ -1,6 +1,6 @@
 /* Parse standard run-time options
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -58,10 +58,12 @@ set_opts (struct parse_hook *h)
     }
 
   if (h->readonly != diskfs_readonly)
-    if (err)
-      diskfs_set_readonly (h->readonly); /* keep the old error.  */
-    else
-      err = diskfs_set_readonly (h->readonly);
+    {
+      if (err)
+	diskfs_set_readonly (h->readonly); /* keep the old error.  */
+      else
+	err = diskfs_set_readonly (h->readonly);
+    }
 
   /* Change sync mode.  */
   if (h->sync)

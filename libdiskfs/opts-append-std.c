@@ -1,6 +1,6 @@
 /* Get standard diskfs run-time options
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -42,16 +42,18 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
     err = argz_add (argz, argz_len, "--no-exec");
 
   if (! err)
-    if (diskfs_synchronous)
-      err = argz_add (argz, argz_len, "--sync");
-    else if (diskfs_sync_interval == 0)
-      err = argz_add (argz, argz_len, "--no-sync");
-    else
-      {
-	char buf[80];
-	sprintf (buf, "--sync=%d", diskfs_sync_interval);
-	err = argz_add (argz, argz_len, buf);
-      }
+    {
+      if (diskfs_synchronous)
+	err = argz_add (argz, argz_len, "--sync");
+      else if (diskfs_sync_interval == 0)
+	err = argz_add (argz, argz_len, "--no-sync");
+      else
+	{
+	  char buf[80];
+	  sprintf (buf, "--sync=%d", diskfs_sync_interval);
+	  err = argz_add (argz, argz_len, buf);
+	}
+    }
 
   return err;
 }
