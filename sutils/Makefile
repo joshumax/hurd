@@ -20,32 +20,25 @@
 dir := sutils
 makemode := utilities
 
-targets = reboot halt fsck e2os
-special-targets = e2os
+targets = reboot halt fsck e2os MAKEDEV
+special-targets = e2os MAKEDEV
 installationdir = $(sbindir)
-SCRIPTS = e2os.sh
+SCRIPTS = e2os.sh MAKEDEV.sh
 SRCS = reboot.c halt.c fsck.c fstab.c clookup.c $(SCRIPTS)
 LCLHDRS = fstab.h
-DIST_FILES = MAKEDEV.sh
 
 OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
 HURDLIBS = shouldbeinlibc
 
 include ../Makeconf
 
-all: MAKEDEV
-install: $(prefix)/dev $(prefix)/dev/MAKEDEV
-
 fsck: fstab.o clookup.o
 reboot halt fsck: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-$(prefix)/dev/MAKEDEV: MAKEDEV
-	$(INSTALL_PROGRAM) MAKEDEV $(prefix)/dev/MAKEDEV
-
-%: %.sh $(top_srcdir)/sh-version.sed
-	sed -f $(top_srcdir)/sh-version.sed < $< > $@
-
+install: $(prefix)/dev $(prefix)/dev/MAKEDEV
+$(prefix)/dev/MAKEDEV:
+	ln -s ../sbin/MAKEDEV $@
 $(prefix)/dev:
-	$(MKINSTALLDIRS) $@
+	@$(MKINSTALLDIRS) $@
