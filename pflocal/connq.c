@@ -1,6 +1,6 @@
 /* Listen queue functions
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -124,7 +124,10 @@ connq_listen (struct connq *cq, int noblock,
   mutex_lock (&cq->lock);
 
   if (noblock && cq->head == cq->tail)
-    return EWOULDBLOCK;
+    {
+      mutex_unlock (&cq->lock);	  
+      return EWOULDBLOCK;
+    }
 
   cq->num_listeners++;
 
