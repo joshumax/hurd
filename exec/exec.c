@@ -4,7 +4,7 @@
 
    #ifdef BFD
    Can exec any executable format the BFD library understands
-   to be for this flavor of machine. [requires nonexistent BFD support]
+   to be for this flavor of machine.
    #endif
    #ifdef AOUT
    Can exec a.out format.
@@ -154,16 +154,10 @@ check_section (bfd *bfd, asection *sec, void *userdata)
   if (u->error)
     return;
 
-  if (!(sec->flags & SEC_ALLOC|SEC_LOAD) ||
+  if (!(sec->flags & (SEC_ALLOC|SEC_LOAD)) ||
       (sec->flags & SEC_NEVER_LOAD))
     /* Nothing to do for this section.  */
     return;
-
-  if (sec->flags & SEC_RELOC)
-    {
-      u->error = EINVAL;
-      return;
-    }
 
   addr = (vm_address_t) sec->vma;
 
