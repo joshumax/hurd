@@ -176,13 +176,6 @@ S_proc_child (struct proc *parentp,
   childp->p_pgrp = parentp->p_pgrp;
   join_pgrp (childp);
 
-  if (childp->p_argv == 0 && childp->p_envp == 0)
-    {
-      /* Inherit the argv and envp values from the parent.  */
-      childp->p_argv = parentp->p_argv;
-      childp->p_envp = parentp->p_envp;
-    }
-
   childp->p_parentset = 1;
   if (childp->p_msgport)
     nowait_proc_newids (childp->p_msgport, childp->p_task, 
