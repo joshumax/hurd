@@ -45,4 +45,4 @@ ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo \
 %: %.sh
 	cp $< $@
 
-$(targets): %: %.o
+$(filter-out $(special-targets), $(targets)): %: %.o
