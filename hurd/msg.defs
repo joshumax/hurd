@@ -1,5 +1,5 @@
 /* RPCs which a friendly Hurd process will understand on its message port.
-   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1991, 92, 93, 94, 95, 96 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -172,7 +172,8 @@ skip; /* Obsolete io_select_done.  */
 
 /* This is sent by the startup server when the system is going down.  */
 routine msg_startup_dosync (
-	process: mach_port_t);
+	process: mach_port_t;
+	waittime timeout: natural_t);
 
 /* Like msg_sig_post, but the receiver should ignore his trace bit
    and deliver the signal normally even if traced, first resuming if
