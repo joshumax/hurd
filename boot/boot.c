@@ -61,7 +61,32 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <termios.h>
+#include <error.h>
 #include <hurd.h>
+
+static struct termios orig_tty_state;
+
+static void
+init_termstate ()
+{
+  struct termios tty_state;
+
+  if (tcgetattr (0, &tty_state) < 0)
+    error (10, errno, "tcgetattr");
+
+  orig_tty_state = tty_state;
+  cfmakeraw (&tty_state);
+
+  if (tcsetattr (0, 0, &tty_state) < 0)
+    error (11, errno, "tcsetattr");
+}
+
+static void
+restore_termstate ()
+{
+  tcsetattr (0, 0, &orig_tty_state);
+}
 
 #define host_fstat fstat
 typedef struct stat host_stat_t;
@@ -89,6 +114,7 @@ vm_address_t fs_stack_base;
 vm_size_t fs_stack_size;
 
 void init_termstate ();
+void restore_termstate ();
 
 char *fsname;
 
@@ -958,48 +984,19 @@ bootstrap_compat(in, out)
 
 	reply->RetCode = MIG_NO_REPLY;
 }
-
 
+#ifdef notanymore
 /* Imlementiation of tioctl interface */
+
+#include <termios.h>
+#undef tcgetattr
+#undef tcsetattr
+
 /* This is bletcherously kludged to work with emacs in a fragile
    way. */
 int term_modes[4];
 char term_ccs[20];
 int term_speeds[2];
-struct sgttyb term_sgb;
-int localbits;
-
-#define ICANON (1 << 8)
-
-void
-init_termstate ()
-{
-  struct sgttyb sgb;
-  int bits;
-  ioctl (0, TIOCGETP, &term_sgb);
-  ioctl (0, TIOCLGET, &localbits);
-  /* Enter raw made.  Rather than try and interpret these bits,
-     we just do what emacs does in .../emacs/src/sysdep.c for
-     an old style terminal driver. */
-  bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
-  ioctl (0, TIOCLSET, &bits);
-  sgb = term_sgb;
-  sgb.sg_flags &= ~ECHO;
-  sgb.sg_flags |= RAW | ANYP;
-  ioctl (0, TIOCSETN, &sgb);
-}
-
-void
-restore_termstate ()
-{
-  ioctl (0, TIOCLSET, &localbits);
-  ioctl (0, TIOCSETN, &term_sgb);
-}
-
-#ifdef notanymore
-#include <termios.h>
-#undef tcgetattr
-#undef tcsetattr
 
 kern_return_t
 S_tioctl_tiocgeta (mach_port_t port,
@@ -1035,6 +1032,8 @@ S_tioctl_tiocgeta (mach_port_t port,
   return 0;
 #endif
 }
+
+#define ICANON (1 << 8)
 
 kern_return_t
 S_tioctl_tiocseta (mach_port_t port,
@@ -1105,9 +1104,9 @@ S_tioctl_tiocsetaf (mach_port_t port,
 {
   return S_tioctl_tiocseta (port, modes, ccs, speeds);
 }
+
 #endif /* notanymore */
-
-
+
 /* Implementation of device interface */
 
 kern_return_t
