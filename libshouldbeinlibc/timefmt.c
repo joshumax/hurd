@@ -176,7 +176,7 @@ add_field (int *secs, int unit, int *leading_zeros,
   int units = *secs / unit;
   if (units || (width >= min_width && *leading_zeros))
     {
-      *secs -= units;
+      *secs -= units * unit;
       *leading_zeros = 1;
       return
 	sprintf (buf,
