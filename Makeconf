@@ -39,6 +39,7 @@ srcdir := /home/gd4/gnu/hurd
 # Where to install things
 hurddir := $(exec_prefix)/hurd
 bindir := $(exec_prefix)/bin
+sbindir := $(exec_prefix)/sbin
 libdir := $(exec_prefix)/lib
 infodir := $(prefix)/info
 includedir := $(prefix)/include
@@ -60,7 +61,9 @@ endif
 
 ifeq ($(makemode),utility)
  doinst := one
- installationdir := $(bindir)
+ ifndef installationdir
+   installationdir := $(bindir)
+ endif
  clean := yes
  cleantarg := $(target)
 endif
@@ -74,7 +77,9 @@ endif
 
 ifeq ($(makemode),utilities)
  doinst := many
- installationdir := $(bindir)
+ ifndef installationdir
+   installationdir := $(bindir)
+ endif
  clean := yes
  cleantarg := $(targets)
 endif
