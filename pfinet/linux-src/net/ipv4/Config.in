@@ -1,0 +1,88 @@
+#
+# IP configuration
+#
+bool 'IP: multicasting' CONFIG_IP_MULTICAST
+bool 'IP: advanced router' CONFIG_IP_ADVANCED_ROUTER
+if [ "$CONFIG_IP_ADVANCED_ROUTER" = "y" ]; then
+  define_bool CONFIG_RTNETLINK y	
+  define_bool CONFIG_NETLINK y
+  bool 'IP: policy routing' CONFIG_IP_MULTIPLE_TABLES
+  bool 'IP: equal cost multipath' CONFIG_IP_ROUTE_MULTIPATH
+  bool 'IP: use TOS value as routing key' CONFIG_IP_ROUTE_TOS
+  bool 'IP: verbose route monitoring' CONFIG_IP_ROUTE_VERBOSE
+  bool 'IP: large routing tables' CONFIG_IP_ROUTE_LARGE_TABLES
+  if [ "$CONFIG_IP_MULTIPLE_TABLES" = "y" ]; then
+    bool 'IP: fast network address translation' CONFIG_IP_ROUTE_NAT
+  fi
+fi
+bool 'IP: kernel level autoconfiguration' CONFIG_IP_PNP
+if [ "$CONFIG_IP_PNP" = "y" ]; then
+  bool '      BOOTP support' CONFIG_IP_PNP_BOOTP
+  bool '      RARP support' CONFIG_IP_PNP_RARP
+# not yet ready..
+#  bool '      ARP support' CONFIG_IP_PNP_ARP		
+fi
+if [ "$CONFIG_FIREWALL" = "y" ]; then
+  bool 'IP: firewalling' CONFIG_IP_FIREWALL
+  if [ "$CONFIG_IP_FIREWALL" = "y" ]; then
+    if [ "$CONFIG_NETLINK" = "y" ]; then
+	bool 'IP: firewall packet netlink device' CONFIG_IP_FIREWALL_NETLINK
+	if [ "$CONFIG_IP_FIREWALL_NETLINK" = "y" ]; then
+	    define_bool CONFIG_NETLINK_DEV y
+	fi
+    fi
+    bool 'IP: always defragment (required for masquerading)' CONFIG_IP_ALWAYS_DEFRAG
+    if [ "$CONFIG_IP_MULTIPLE_TABLES" = "y" ]; then
+	bool 'IP: use FWMARK value as routing key' CONFIG_IP_ROUTE_FWMARK
+    fi
+  fi
+fi
+if [ "$CONFIG_IP_FIREWALL" = "y" ]; then
+  if [ "$CONFIG_IP_ALWAYS_DEFRAG" != "n" ]; then
+    bool 'IP: transparent proxy support' CONFIG_IP_TRANSPARENT_PROXY
+    bool 'IP: masquerading' CONFIG_IP_MASQUERADE
+    if [ "$CONFIG_IP_MASQUERADE" != "n" ]; then
+      comment 'Protocol-specific masquerading support will be built as modules.'
+      bool 'IP: ICMP masquerading' CONFIG_IP_MASQUERADE_ICMP
+      comment 'Protocol-specific masquerading support will be built as modules.'
+      if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+        bool 'IP: masquerading special modules support' CONFIG_IP_MASQUERADE_MOD 
+        if [ "$CONFIG_IP_MASQUERADE_MOD" = "y" ]; then
+          tristate 'IP: ipautofw masq support (EXPERIMENTAL)' CONFIG_IP_MASQUERADE_IPAUTOFW
+          tristate 'IP: ipportfw masq support (EXPERIMENTAL)' CONFIG_IP_MASQUERADE_IPPORTFW
+          tristate 'IP: ip fwmark masq-forwarding support (EXPERIMENTAL)' CONFIG_IP_MASQUERADE_MFW
+	fi
+      fi
+    fi
+  fi
+fi
+bool 'IP: optimize as router not host' CONFIG_IP_ROUTER
+tristate 'IP: tunneling' CONFIG_NET_IPIP
+tristate 'IP: GRE tunnels over IP' CONFIG_NET_IPGRE
+if [ "$CONFIG_IP_MULTICAST" = "y" ]; then
+  if [ "$CONFIG_NET_IPGRE" != "n" ]; then
+    bool 'IP: broadcast GRE over IP' CONFIG_NET_IPGRE_BROADCAST
+  fi
+  bool 'IP: multicast routing' CONFIG_IP_MROUTE
+  if [ "$CONFIG_IP_MROUTE" = "y" ]; then
+    bool 'IP: PIM-SM version 1 support' CONFIG_IP_PIMSM_V1
+    bool 'IP: PIM-SM version 2 support' CONFIG_IP_PIMSM_V2
+  fi
+fi
+bool 'IP: aliasing support' CONFIG_IP_ALIAS
+if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+  if [ "$CONFIG_RTNETLINK" = "y" ]; then
+    bool 'IP: ARP daemon support (EXPERIMENTAL)' CONFIG_ARPD
+  fi
+fi
+bool 'IP: TCP syncookie support (not enabled per default)' CONFIG_SYN_COOKIES
+comment '(it is safe to leave these untouched)'
+#bool 'IP: PC/TCP compatibility mode' CONFIG_INET_PCTCP
+tristate 'IP: Reverse ARP' CONFIG_INET_RARP
+#bool 'IP: Path MTU Discovery (normally enabled)' CONFIG_PATH_MTU_DISCOVERY
+#bool 'IP: Disable NAGLE algorithm (normally enabled)' CONFIG_TCP_NAGLE_OFF
+bool 'IP: Allow large windows (not recommended if <16Mb of memory)' CONFIG_SKB_LARGE
+#if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then 
+#bool 'IP: support experimental checksum copy to user for UDP'  CONFIG_UDP_DELAY_CSUM
+#fi
+
