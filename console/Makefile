@@ -23,7 +23,7 @@ makemode := server
 
 target = console
 SRCS = main.c console.c focus.c vga-display.c vga.c dynafont.c bdf.c
-LCLHDRS = focus.h input.h console.h display-drv.h vga.h vga-hw.h dynafont.h bdf.h \
+LCLHDRS = focus.h input-drv.h console.h display-drv.h vga.h vga-hw.h dynafont.h bdf.h \
 	mutations.h priv.h
 
 HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc

@@ -25,7 +25,7 @@
 
 #include "console.h"
 #include "display-drv.h"
-#include "input.h"
+#include "input-drv.h"
 
 
 struct vcons

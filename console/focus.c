@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "console.h"
-#include "input.h"
+#include "input-drv.h"
 #include "focus.h"
 
 struct argp_option focus_argp_options[] =

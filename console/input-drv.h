@@ -1,4 +1,4 @@
-/* input.h - The interface to an input driver.
+/* input-drv.h - The interface to an input driver.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 

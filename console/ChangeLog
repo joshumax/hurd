@@ -1,3 +1,11 @@
+2002-06-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* input.h: Renamed to ...
+	* input-drv.h: ... this.
+	* focus.c: Include "input-drv.h" instead "input.h".
+	* console.c: Likewise.
+	* Makefile (LCLHDRS): Rename input.h to input-drv.h.
+
 2002-06-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.h: New file.
