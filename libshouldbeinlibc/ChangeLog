@@ -1,5 +1,8 @@
 2000-10-29  Roland McGrath  <roland@frob.com>
 
+	* wire.c (map_extent): Pass second arg of RTLD_NOLOAD to dlopen.
+	(RTLD_NOLOAD): Define macro to zero if undefined.
+
 	* wire.c (map_extent): Rewrite using dlsym on library's _end symbol.
 
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
