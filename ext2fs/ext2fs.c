@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-#include "ufs.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <device/device.h>
@@ -24,9 +23,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "ext2fs.h"
 
-char *ufs_version = "0.0 pre-alpha";
-
+char *ext2fs_version = "0.0 pre-alpha";
 
 /* Parse the arguments for ext2fs when started as a translator. */
 char *
@@ -60,6 +59,8 @@ trans_parse_args (int argc, char **argv)
 
   return devname;
 }
+
+/* ---------------------------------------------------------------- */
 
 struct node *diskfs_root_node;
 
@@ -72,6 +73,8 @@ warp_root (void)
   assert (!err);
   mutex_unlock (&diskfs_root_node->lock);
 }
+
+/* ---------------------------------------------------------------- */
 
 /* XXX */
 struct mutex printf_lock;
@@ -87,6 +90,92 @@ int printf (const char *fmt, ...)
   return done;
 }
 
+static char error_buf[1024];
+
+void ext2_error (const char * function, const char * fmt, ...)
+{
+  va_list args;
+
+#if 0
+  if (!(sb->s_flags & MS_RDONLY))
+    {
+      sb->u.ext2_sb.s_mount_state |= EXT2_ERROR_FS;
+      sb->u.ext2_sb.s_es->s_state |= EXT2_ERROR_FS;
+      mark_buffer_dirty(sb->u.ext2_sb.s_sbh, 1);
+      sb->s_dirt = 1;
+    }
+#endif
+
+  va_start (args, fmt);
+  vfprintf (error_buf, fmt, args);
+  va_end (args);
+
+  mutex_lock(&printf_lock);
+
+  fprintf (stderr, "ext2fs: %s: %s: %s\n", devname, function, error_buf);
+
+#if 0
+  if (test_opt (sb, ERRORS_PANIC) ||
+      (sb->u.ext2_sb.s_es->s_errors == EXT2_ERRORS_PANIC &&
+       !test_opt (sb, ERRORS_CONT) && !test_opt (sb, ERRORS_RO)))
+    /* panic */
+    {
+      fprintf(stderr, "ext2fs: %s: exiting\n", sb->s_devname);
+      exit(99);
+    }
+
+  if (test_opt (sb, ERRORS_RO) ||
+      (sb->u.ext2_sb.s_es->s_errors == EXT2_ERRORS_RO &&
+       !test_opt (sb, ERRORS_CONT) && !test_opt (sb, ERRORS_PANIC))) {
+    fprintf (stderr, "ext2fs: %s: Remounting filesystem read-only\n",
+	     sb->s_devname);
+    sb->s_flags |= MS_RDONLY;
+  }
+#endif
+
+  mutex_unlock(&printf_lock);
+}
+
+void ext2_panic (const char * function, const char * fmt, ...)
+{
+  va_list args;
+
+#if 0
+  if (!(sb->s_flags & MS_RDONLY))
+    {
+      sb->u.ext2_sb.s_mount_state |= EXT2_ERROR_FS;
+      sb->u.ext2_sb.s_es->s_state |= EXT2_ERROR_FS;
+      mark_buffer_dirty(sb->u.ext2_sb.s_sbh, 1);
+      sb->s_dirt = 1;
+    }
+#endif
+
+  va_start (args, fmt);
+  vsprintf (error_buf, fmt, args);
+  va_end (args);
+
+  mutex_lock(&printf_lock);
+  fprintf(stderr, "ext2fs: %s: panic: %s: %s\n", devname, function, error_buf);
+  mutex_unlock(&printf_lock);
+
+  exit (0);
+}
+
+void ext2_warning (const char * function, const char * fmt, ...)
+{
+  va_list args;
+
+  va_start (args, fmt);
+  vsprintf (error_buf, fmt, args);
+  va_end (args);
+
+  mutex_lock(&printf_lock);
+  fprintf (stderr, "ext2fs: %s: %s: %s\n", devname, function, error_buf);
+  mutex_unlock(&printf_lock);
+}
+
+/* ---------------------------------------------------------------- */
+
 int diskfs_readonly;
 
 void
@@ -96,6 +185,7 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   error_t err;
   int sizes[DEV_GET_SIZE_COUNT];
+  struct super_block sb;
   u_int sizescnt = 2;
 
   mutex_init (&printf_lock);	/* XXX */
@@ -153,20 +243,14 @@ main (int argc, char **argv)
   while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
 	  
   if (err)
-    {
-      perror (devname);
-      exit (1);
-    }
+    error(1, errno, "%s", devname);
 
   /* Check to make sure device sector size is reasonable. */
   err = device_get_status (ext2fs_device, DEV_GET_SIZE, sizes, &sizescnt);
   assert (sizescnt == DEV_GET_SIZE_COUNT);
   if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
-    {
-      fprintf (stderr, "Bad device record size %d (should be %d)\n",
-	       sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
-      exit (1);
-    }
+    error(1, 0, "Bad device record size %d (should be %d)\n",
+	  sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
   
   diskpagersize = sizes[DEV_GET_SIZE_DEVICE_SIZE];
   assert (diskpagersize >= SBSIZE + SBOFF);
@@ -184,37 +268,14 @@ main (int argc, char **argv)
 		VM_INHERIT_NONE);
   assert (!err);
 
-  ext2_read_super(sblock, options, silent);
+  get_hypermetadata();
 
-#if 0
-  if (diskpagersize < sblock->fs_size * sblock->fs_fsize)
-    {
-      fprintf (stderr, 
-	       "Disk size (%d) less than necessary "
-	       "(superblock says we need %ld)\n",
+  if (diskpagersize < sblock->s_blocks_count * block_size)
+    ext2_panic("Disk size (%d) too small (superblock says we need %ld)",
 	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
-	       sblock->fs_size * sblock->fs_fsize);
-      exit (1);
-    }
-#endif
+	       sblock->s_blocks_count * block_size);
 
-  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
-
-  /* If the filesystem has new features in it, don't pay attention to
-     the user's request not to use them. */
-  if ((sblock->fs_inodefmt == FS_44INODEFMT
-       || direct_symlink_extension)
-      && compat_mode == COMPAT_BSD42)
-    /* XXX should syslog to this effect */
-    compat_mode = COMPAT_BSD44;
-
-  if (!diskfs_readonly)
-    {
-      sblock->fs_clean = 0;
-      strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
-      sblock_dirty = 1;
-      diskfs_set_hypermetadata (1, 0);
-    }
+  vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
 
   inode_init ();
 
@@ -253,5 +314,3 @@ diskfs_init_completed ()
     }
   mach_port_deallocate (mach_task_self (), proc);
 }
-
-  
