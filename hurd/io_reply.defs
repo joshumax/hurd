@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -90,6 +90,7 @@ simpleroutine io_get_icky_async_id_reply (
 simpleroutine io_select_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t;
+	id_tag: int;
 	select_result: int);
 
 simpleroutine io_stat_reply (
