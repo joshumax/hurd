@@ -1,6 +1,6 @@
 # Makefile for libshouldbeinlibc
 #
-#   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+#   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -32,8 +32,6 @@ installhdrs = idvec.h timefmt.h maptime.h \
 	      wire.h portinfo.h portxlate.h cacheq.h ugids.h
 LCLHDRS = $(installhdrs)
 installhdrsubdir = .
-
-CFLAGS += -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H
 
 OBJS = $(SRCS:.c=.o)
 
