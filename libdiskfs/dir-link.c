@@ -20,8 +20,8 @@
 
 /* Implement dir_link as described in <hurd/fs.defs>. */
 kern_return_t
-diskfs_S_dir_link (struct protid *filecred,
-		   struct protid *dircred,
+diskfs_S_dir_link (struct protid *dircred,
+		   struct protid *filecred,
 		   char *name)
 {
   struct node *np;
