@@ -27,6 +27,7 @@ diskfs_drop_node (struct node *np)
 
   if (np->dn_stat.st_nlink == 0)
     {
+      diskfs_check_readonly ();
       assert (!diskfs_readonly);
 
       if (np->istranslated)
