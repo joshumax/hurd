@@ -130,7 +130,7 @@ main (int argc, char **argv)
 				 &host_bfd.arch_info->mach);
 #endif
   err = mach_host_elf_machine (mach_host_self (), &elf_machine);
-  
+
   if (err)
     error (1, err, "Getting host architecture from Mach");
 
@@ -212,24 +212,6 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
     }
 }
 
-/* Attempt to set the active translator for the exec server so that
-   filesystems other than the bootstrap can find it. */
-void
-set_active_trans ()
-{
-  file_t execnode;
-
-  execnode = file_name_lookup (_SERVERS_EXEC, O_NOTRANS | O_CREAT, 0666);
-  if (execnode == MACH_PORT_NULL)
-    return;
-
-  file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0,
-		       ports_get_right (fsys), MACH_MSG_TYPE_MAKE_SEND);
-  /* Don't deallocate EXECNODE here.  If we drop the last reference,
-     a bug in ufs might throw away the active translator. XXX */
-}
-
-
 /* Sent by the bootstrap filesystem after the other essential
    servers have been started up.  */
 
@@ -237,7 +219,7 @@ kern_return_t
 S_exec_init (struct trivfs_protid *protid,
 	     auth_t auth, process_t proc)
 {
-  mach_port_t host_priv, dev_master, startup;
+  mach_port_t host_priv, startup;
   error_t err;
 
   if (! protid || ! protid->isroot)
@@ -249,30 +231,12 @@ S_exec_init (struct trivfs_protid *protid,
   /* Do initial setup with the proc server.  */
   _hurd_proc_init (save_argv, NULL, 0);
 
-  /* Set the active translator on /servers/exec. */
-  set_active_trans ();
-
   procserver = getproc ();
 
-  err = get_privileged_ports (&host_priv, &dev_master);
-  if (!err)
-    {
-      proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
-      mach_port_deallocate (mach_task_self (), dev_master);
-      err = proc_getmsgport (procserver, 1, &startup);
-      if (err)
-	{
-	  mach_port_deallocate (mach_task_self (), host_priv);
-	  host_priv = MACH_PORT_NULL;
-	}
-    }
-  else
-    host_priv = MACH_PORT_NULL;
-
+  /* Have the proc server notify us when the canonical ints and ports
+     change.  This will generate an immediate callback giving us the
+     initial boot-time canonical sets.  */
   {
-    /* Have the proc server notify us when the canonical ints and ports
-       change.  */
-
     struct trivfs_protid *cred;
     err = trivfs_open (fsys,
 		       iohelp_create_iouser (make_idvec (), make_idvec ()),
@@ -283,15 +247,22 @@ S_exec_init (struct trivfs_protid *protid,
 			  MACH_MSG_TYPE_MAKE_SEND);
   }
 
+  err = get_privileged_ports (&host_priv, NULL);
+  assert_perror (err);
+
+  proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
+
+  err = proc_getmsgport (procserver, 1, &startup);
+  assert_perror (err);
+
   /* Call startup_essential task last; init assumes we are ready to
      run once we call it. */
-  if (host_priv != MACH_PORT_NULL)
-    {
-      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      "exec", host_priv);
-      mach_port_deallocate (mach_task_self (), startup);
-      mach_port_deallocate (mach_task_self (), host_priv);
-    }
+  err = startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
+				"exec", host_priv);
+  assert_perror (err);
+  mach_port_deallocate (mach_task_self (), startup);
+
+  mach_port_deallocate (mach_task_self (), host_priv);
 
   return 0;
 }
