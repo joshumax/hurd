@@ -90,8 +90,8 @@ simpleroutine io_get_icky_async_id_reply (
 simpleroutine io_select_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t;
-	id_tag: int;
-	select_result: int);
+	select_result: int;
+	id_tag: int);
 
 simpleroutine io_stat_reply (
 	reply: reply_port_t;
