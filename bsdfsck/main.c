@@ -39,15 +39,15 @@ static char copyright[] =
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)main.c	8.2 (Berkeley) 1/23/94";*/
-static char *rcsid = "$Id: main.c,v 1.2 1994/08/23 20:00:23 mib Exp $";
+static char *rcsid = "$Id: main.c,v 1.3 1994/08/25 15:18:07 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <sys/mount.h>
+/*#include <sys/mount.h> */
 #include "../ufs/dinode.h"
 #include "../ufs/fs.h"
-#include <fstab.h>
+/* #include <fstab.h> */
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -125,10 +125,14 @@ main(argc, argv)
 			(void)checkfilesys(blockcheck(*argv++), 0, 0L, 0);
 		exit(0);
 	}
+	fprintf (stderr, "You must explicitly name the filesystem to check\n");
+	exit (1);
+#if 0
 	ret = checkfstab(preen, maxrun, docheck, checkfilesys);
 	if (returntosingle)
 		exit(2);
 	exit(ret);
+#endif
 }
 
 argtoi(flag, req, str, base)
@@ -145,6 +149,7 @@ argtoi(flag, req, str, base)
 	return (ret);
 }
 
+#if 0
 /*
  * Determine whether a filesystem should be checked.
  */
@@ -159,6 +164,7 @@ docheck(fsp)
 		return (0);
 	return (1);
 }
+#endif
 
 /*
  * Check the specified filesystem.
@@ -188,8 +194,10 @@ checkfilesys(filesys, mntpt, auxdata, child)
 	 */
 	if (preen == 0) {
 		printf("** Last Mounted on %s\n", sblock.fs_fsmnt);
+#if 0
 		if (hotroot)
 			printf("** Root file system\n");
+#endif
 		printf("** Phase 1 - Check Blocks and Sizes\n");
 	}
 	pass1();
@@ -289,6 +297,7 @@ checkfilesys(filesys, mntpt, auxdata, child)
 		return (0);
 	if (!preen)
 		printf("\n***** FILE SYSTEM WAS MODIFIED *****\n");
+#if 0
 	if (hotroot) {
 		struct statfs stfs_buf;
 		/*
@@ -315,5 +324,6 @@ checkfilesys(filesys, mntpt, auxdata, child)
 		sync();
 		return (4);
 	}
+#endif
 	return (0);
 }
