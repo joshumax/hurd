@@ -55,7 +55,7 @@ hurdsource := /home/gd3/gnu/hurd
 includedir := $(hurdinst)/include
 
 startup := $(hurdinst)/lib/crt0.o
-libc := $(patsubst %,$(hurdinst)/lib/lib%.a,c machuser hurduser c hurduser)
+libc := $(hurdinst)/lib/libc.a
 
 # END CONFIGURATION AREA
 
@@ -162,8 +162,8 @@ $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 #link-objects = $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
 # -lg avoids "No input files" error.
 link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),$(strip \
-	       $(startup) $(OBJS) -\( $(HURDLIBS-files) $(OTHERLIBS) -\) \
-	       -\( $(sort $(libc)) -lgcc -\))) -lg
+	       $(startup) $(OBJS) -\( $(HURDLIBS-files) $(OTHERLIBS) -\))) \
+	       $(libc) -lgcc -lg -v
 empty =
 comma = ,
 endif
