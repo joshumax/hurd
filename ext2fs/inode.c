@@ -198,7 +198,6 @@ static error_t
 read_node (struct node *np)
 {
   error_t err;
-  static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
   struct disknode *dn = np->dn;
   struct ext2_inode *di = dino (np->cache_id);
@@ -208,14 +207,8 @@ read_node (struct node *np)
   if (err)
     return err;
 
-  if (!fsidset)
-    {
-      fsid = getpid ();
-      fsidset = 1;
-    }
-
   st->st_fstype = FSTYPE_EXT2FS;
-  st->st_fsid = fsid;
+  st->st_fsid = getpid ();	/* This call is very cheap.  */
   st->st_ino = np->cache_id;
   st->st_blksize = vm_page_size * 2;
 
