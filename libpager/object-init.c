@@ -31,7 +31,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   struct pager *p;
 
   p = ports_lookup_port (0, object, _pager_class);
-  if (!p);
+  if (!p)
     return EOPNOTSUPP;
 
   if (pagesize != __vm_page_size)
