@@ -863,7 +863,7 @@ diskfs_get_directs (struct node *dp,
     allocsize = round_page (bufsiz);
 
   if (allocsize > *datacnt)
-    vm_allocate (mach_task_self (), (vm_address_t *) data, allocsize, 1);
+    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   /* Scan through the entries to find ENTRY.  If we encounter
      a -1 in the process then stop to fill it.  When we run

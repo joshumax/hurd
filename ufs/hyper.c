@@ -257,8 +257,7 @@ get_hypermetadata (void)
       exit (1);
     }
 
-  vm_allocate (mach_task_self (),
-	       (vm_address_t *)&zeroblock, sblock->fs_bsize, 1);
+  zeroblock = mmap (0, sblock->fs_bsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   /* If the filesystem has new features in it, don't pay attention to
      the user's request not to use them. */
@@ -397,9 +396,7 @@ diskfs_readonly_changed (int readonly)
 {
   (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
 
-  vm_protect (mach_task_self (),
-	      (vm_address_t)disk_image, store->size,
-	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
+  mprotect (disk_image, store->size, PROT_READ | (readonly ? 0 : PROT_WRITE));
 
   if (readonly)
     {

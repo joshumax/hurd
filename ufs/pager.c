@@ -1,5 +1,5 @@
 /* Pager for ufs
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -180,7 +180,8 @@ pager_read_page (struct user_pager_info *pager,
       printf ("Write-locked pagein Object %#x\tOffset %#x\n", pager, page);
       fflush (stdout);
 #endif
-      vm_allocate (mach_task_self (), buf, __vm_page_size, 1);
+      *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+				  MAP_ANON, 0, 0);
       *writelock = 1;
     }
 
