@@ -451,7 +451,7 @@ static void
 indent_to (FILE *stream, unsigned col)
 {
   int needed = col - line_wrap_point (stream);
-  while (needed > 0)
+  while (needed-- > 0)
     putc (' ', stream);
 }
 
@@ -727,8 +727,9 @@ argp_doc (const struct argp *argp, FILE *stream)
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
-   ARGP_HELP_*.  */
-void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
+   ARGP_HELP_*.  NAME is what to use wherever a `program name' is needed. */
+void argp_help (const struct argp *argp, FILE *stream,
+		unsigned flags, char *name)
 {
   int first = 1;
   struct hol *hol = 0;
@@ -753,7 +754,7 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
       int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
       int old_lm = line_wrap_set_lmargin (stream, USAGE_INDENT);
 
-      fprintf (stream, "Usage: %s", program_invocation_name);
+      fprintf (stream, "Usage: %s", name);
       if (flags & ARGP_HELP_SHORT_USAGE)
 	/* Just show where the options go.  */
 	{
@@ -774,8 +775,7 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
 
   if (flags & ARGP_HELP_SEE)
     {
-      fprintf (stream, "Try `%s --help' for more information.\n",
-	       program_invocation_name);
+      fprintf (stream, "Try `%s --help' for more information.\n", name);
       first = 0;
     }
 
@@ -808,7 +808,8 @@ argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 {
   if (!state || ! (state->flags & ARGP_NO_ERRS))
     {
-      argp_help (state ? state->argp : 0, stream, flags);
+      argp_help (state ? state->argp : 0, stream, flags,
+		 state ? state->name : program_invocation_name);
 
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
@@ -829,17 +830,57 @@ argp_error (struct argp_state *state, const char *fmt, ...)
   if (!state || ! (state->flags & ARGP_NO_ERRS))
     {
       va_list ap;
+      FILE *stream = state ? state->err_stream : stderr;
 
-      fputs (program_invocation_name, stderr);
-      putc (':', stderr);
-      putc (' ', stderr);
+      fputs (program_invocation_name, stream);
+      putc (':', stream);
+      putc (' ', stream);
 
       va_start (ap, fmt);
-      vfprintf (stderr, fmt, ap);
+      vfprintf (stream, fmt, ap);
       va_end (ap);
 
-      putc ('\n', stderr);
+      putc ('\n', stream);
 
-      argp_state_help (state, stderr, ARGP_HELP_STD_ERR);
+      argp_state_help (state, stream, ARGP_HELP_STD_ERR);
+    }
+}
+
+/* Similar to the standard gnu error-reporting function error(), but will
+   respect the ARGP_NO_EXIT and ARGP_NO_ERRS flags in STATE, and will print
+   to STATE->err_stream.  This is useful for argument parsing code that is
+   shared between program startup (when exiting is desired) and runtime
+   option parsing (when typically an error code is returned instead).  The
+   difference between this function and argp_error is that the latter is for
+   *parsing errors*, and the former is for other problems that occur during
+   parsing but don't reflect a (syntactic) problem with the input.  */
+void
+argp_failure (struct argp_state *state, int status, int errnum,
+	      const char *fmt, ...)
+{
+  if (!state || !(state->flags & ARGP_NO_ERRS))
+    {
+      va_list ap;
+      FILE *stream = state ? state->err_stream : stderr;
+
+      fputs (state ? state->name : program_invocation_name, stream);
+      putc (':', stream);
+      putc (' ', stream);
+
+      va_start (ap, fmt);
+      vfprintf (stream, fmt, ap);
+      va_end (ap);
+
+      if (errnum)
+	{
+	  putc (':', stream);
+	  putc (' ', stream);
+	  fputs (strerror (errnum), stream);
+	}
+
+      putc ('\n', stream);
+
+      if (status)
+	exit (status);
     }
 }
