@@ -308,15 +308,16 @@ main (int argc, char **argv)
 	  char *bname = basename (rd.file);
 	  size_t bname_len = strlen (bname);
 	  char *dir = wr.file;
-	  char *name = malloc (strlen (dir) + 1 + bname_len + 1);
+	  char *file = malloc (strlen (dir) + 1 + bname_len + 1);
+	  char *name = malloc (strlen (wr.name) + 1 + bname_len + 1);
 
-	  if (! name)
+	  if (!file || !name)
 	    error (99, ENOMEM, "%s", dir);
 
-	  strcpy (name, dir);
-	  strcat (name, "/");
-	  strcat (name, bname);
-	  wr.file = name;
+	  stpcpy (stpcpy (stpcpy (file, dir), "/"), bname);
+	  wr.file = file;
+	  stpcpy (stpcpy (stpcpy (name, wr.name), "/"), bname);
+	  wr.name = name;
 
 	  err = eopen_wr (&wr, &wr_fd);
 	}
