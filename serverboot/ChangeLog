@@ -1,3 +1,7 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* default_pager.c (part_id): Add const to argument type.
+
 2002-03-23  Roland McGrath  <roland@frob.com>
 
 	Excised default pager functionality from serverboot.

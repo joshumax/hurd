@@ -1,3 +1,10 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* cprocs.c (cproc_list_lock): Declare type as spin_lock_t.
+
+	* cthreads.h (cthread_sp): Cast to vm_address_t instead of int.
+	(mutex_unlock): Cast to void * instead of int.
+
 2002-03-24  Roland McGrath  <roland@frob.com>
 
 	* libthreads.map: Use GLIBC_2.2.6 set instead of GLIBC_2.2.

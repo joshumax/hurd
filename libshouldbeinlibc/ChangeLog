@@ -1,6 +1,7 @@
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* portinfo.c (print_port_info): Use %z formats for port names.
+	* xportinfo.c (print_xlated_port_info): Likewise.
 
 	* idvec-verify.c (verify_passwd): Cast to intptr_t before int.
 

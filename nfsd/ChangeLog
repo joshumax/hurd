@@ -1,3 +1,8 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* loop.c (server_loop): size_t -> socklen_t
+	* cache.c (fh_hash): int -> intptr_t
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* main.c: Include <error.h>.

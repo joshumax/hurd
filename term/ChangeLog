@@ -1,3 +1,7 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* main.c (main): Add a return after `error' call to clue compiler in.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* hurdio.c (hurdio_reader_loop): Add a return stmt.
