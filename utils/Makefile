@@ -19,14 +19,14 @@ dir := utils
 makemode := utilities
 
 targets = shd ps settrans showtrans clri sync reboot halt su mount fsysopts \
-	storeinfo login w hurdids loginpr sush vmstat
-special-targets = mount loginpr sush
+	storeinfo login w uptime hurdids loginpr sush vmstat
+special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c clri.c sync.c reboot.c halt.c showtrans.c \
-	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c psout.c\
-	hurdids.c vmstat.c
+	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
+	uptime.sh psout.c hurdids.c vmstat.c
 DIST_FILES = shd.ChangeLog
 
-OBJS = $(filter-out mount.sh,$(SRCS:.c=.o))
+OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 
 all: $(targets)
 
