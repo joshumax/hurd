@@ -55,4 +55,4 @@ device_S.h deviceServer.c: $(headers)/device/device.defs
 
 io_S.h ioServer.c: $(headers)/hurd/io.defs
 	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -user /dev/null -header /dev/null -sheader io_S.h
+	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null -sheader io_S.h
