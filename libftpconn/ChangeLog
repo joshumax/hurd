@@ -1,3 +1,7 @@
+1999-08-11  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* open.c (ftp_conn_sysify): Handle REPLY_NO_LOGIN from "syst".
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* unix.c (ftp_conn_unix_cont_get_stats): Add braces to silence gcc

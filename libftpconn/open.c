@@ -1,6 +1,6 @@
 /* Connection initiation
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -147,9 +147,10 @@ ftp_conn_sysify (struct ftp_conn *conn)
   if (! err)
     {
       if (reply == REPLY_SYSTYPE ||
-	  reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
+	  reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD || REPLY_NO_LOGIN)
 	{
-	  if (reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD)
+	  if (reply == REPLY_BAD_CMD || reply == REPLY_UNIMP_CMD
+	      || reply == REPLY_NO_LOGIN)
 	    txt = 0;
 	  if (conn->hooks && conn->hooks->choose_syshooks)
 	    (*conn->hooks->choose_syshooks) (conn, txt);
