@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -60,7 +60,7 @@ dist: hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs)))
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
 
-clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(prog-subdirs))
+clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs))
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
