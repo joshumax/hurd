@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <hurd/term.h>
 
 #include "ps.h"
 #include "common.h"
