@@ -48,7 +48,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "startup_reply_U.h"
 #include "startup_S.h"
 #include "notify_S.h"
-#include "msg_S.h"
+#include "mung_msg_S.h"
 
 /* host_reboot flags for when we crash.  */
 #define CRASH_FLAGS	RB_AUTOBOOT
@@ -1314,7 +1314,7 @@ do_mach_notify_msg_accepted (mach_port_t notify,
 kern_return_t
 S_msg_sig_post_untraced (mach_port_t msgport,
 			 mach_port_t reply, mach_msg_type_name_t reply_type,
-			 int signo, mach_port_t refport)
+			 int signo, int sigcode, mach_port_t refport)
 {
   if (refport != mach_task_self ())
     return EPERM;
@@ -1330,7 +1330,7 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 kern_return_t
 S_msg_sig_post (mach_port_t msgport,
 		mach_port_t reply, mach_msg_type_name_t reply_type,
-		int signo, mach_port_t refport)
+		int signo, int sigcode, mach_port_t refport)
 {
   if (refport != mach_task_self ())
     return EPERM;
