@@ -40,6 +40,9 @@ struct trans_link
   /* This indicates that someone has already started up the translator */
   int starting;
 
+  /* Error to return to user */
+  error_t error;
+
   /* Linked list of all translators */
   struct trans_link *next, **prevp;
 };
