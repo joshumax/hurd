@@ -1,10 +1,18 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir.c (diskfs_lookup_hard): Fix defn with `const'.
+	(diskfs_direnter_hard): Likewise.
+	(dirscanblock): Likewise.
+	* inode.c (diskfs_create_symlink_hook, create_symlink_hook): Likewise.
+	(diskfs_set_translator): Likewise.
+
 Wed Aug 20 14:34:24 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Cope with error return from
-	diskfs_get_filemap. 
+	diskfs_get_filemap.
 	* sizes.c (diskfs_grow): Likewise.
 	* dir.c (diskfs_dirempty): Cope (poorly) with error return from
-	diskfs_get_filemap. 
+	diskfs_get_filemap.
 	* sizes.c (diskfs_truncate): Likewise.
 	(block_extended): Likewise.
 
@@ -53,14 +61,14 @@ Mon Nov 18 17:10:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 Sat Nov 16 17:21:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* inode.c (diskfs_S_fsys_getfile): Delete var `fakecred'.  
+	* inode.c (diskfs_S_fsys_getfile): Delete var `fakecred'.
 	diskfs_access -> fshelp_access.
 	* alloc.c (ffs_alloc): diskfs_isuid -> idvec_contains.
 	(ffs_realloccg): Likewise.
 
 Thu Nov 14 16:43:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* inode.c (diskfs_S_file_getfh): diskfs_isuid -> idvec_contains. 
+	* inode.c (diskfs_S_file_getfh): diskfs_isuid -> idvec_contains.
 	(diskfs_S_fsys_getfile): Use idvecs and iousers.
 
 Thu Oct 24 16:07:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -157,21 +165,21 @@ Fri Sep  6 16:00:42 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* consts.c: Include <version.h>.
  	(diskfs_major_version, diskfs_minor_version, diskfs_edit_version):
-	Deleted variables. 
+	Deleted variables.
 	(diskfs_server_version): New variable.
 
 Thu Aug 29 16:07:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (diskfs_lookup_hard): When setting ds->stat to EXTEND, set
 	ds->idx by looking at the size of the file.  (IDX itself is no
-	longer at the end because of the change on Aug 16 1996.) 
+	longer at the end because of the change on Aug 16 1996.)
 
 Wed Aug 28 12:15:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (dirscanblock): Size dirents correctly when mallocing it.
 	(diskfs_direnter_hard): Be more careful when sizing or resizing
 	dirents.  Correctly set to -1 all the new entries we create after
-	realloc call.   
+	realloc call.
 
 Fri Aug 16 18:51:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -192,10 +200,10 @@ Wed Aug  7 13:00:30 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	bsize to be fs_fsize, not fs_bsize.
 
 	* hyper.c (diskfs_set_hypermetadata): Return an error as
-	appropriate. 
-	
+	appropriate.
+
 	* inode.c (struct ufs_fhandle): Layout filehandle more like Unixy
-	NFSD. 
+	NFSD.
  	(diskfs_S_file_getfh): Bother to clear unused parts of a
 	file handle so that they always compare equal.
 
@@ -296,8 +304,8 @@ Mon May  6 14:23:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 Fri May  3 09:15:33 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* sizes.c (block_extended): Rewrite code that moves pages
-	to be more efficient, and not deadlock too, using unlocked 
-	pagein permission feature (read "hack").  Return value 
+	to be more efficient, and not deadlock too, using unlocked
+	pagein permission feature (read "hack").  Return value
 	now indicates whether we expect a sync.
 	(diskfs_grow): If a call to block_extended returns nonzero,
 	then sync the file before returning.
@@ -339,9 +347,9 @@ Wed Apr 24 14:05:48 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
  	case where it was written on a little endian machine without the
  	extension.
 	(DIRECT_NAMLEN) [LITTLE_ENDIAN]: Deal with case correctly where it
-	was written without the extension on a big endian machine. 
+	was written without the extension on a big endian machine.
 	* dir.c (dirscanblock): Use read/write_disk_entry when reading or
- 	writing fields from directory entries.  
+ 	writing fields from directory entries.
 	(diskfs_direnter_hard): Likewise.
 	(diskfs_dirremove_hard): Likewise.
 	(diskfs_dirrewrite_hard): Likewise.
@@ -363,8 +371,8 @@ Tue Apr 23 11:28:42 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(swab_short, swab_long, swab_long_long): New functions.
 	(read_disk_entry, write_disk_entry): New macros.
 	* alloc.c (ffs_realloccg): Use read/write_disk_entry when
- 	reading/writing on-disk inode fields.  
-	* bmap.c (fetch_indir_spec): Likewise.  
+ 	reading/writing on-disk inode fields.
+	* bmap.c (fetch_indir_spec): Likewise.
 	* inode.c (read_disknode): Likewise.
 	(write_node): Likewise.
 	(diskfs_set_translator): Likewise.
@@ -380,11 +388,11 @@ Tue Apr 23 11:28:42 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(diskfs_grow): Likewise.
 	* pager.c (pager_unlock_page): Likewise.
 	* alloc.c: Include <string.h>
-	(ffs_blkpref): Use read_disk_entry when reading from BAP array. 
+	(ffs_blkpref): Use read_disk_entry when reading from BAP array.
 	(swab_cg, read_cg, release_cg): New functions.
 	(ffs_fragextend, ffs_alloccg, ffs_nodealloccg, ffs_blkfree,
-	diskfs_free_node): Use new cg access functions. 
-	
+	diskfs_free_node): Use new cg access functions.
+
 Thu Apr 18 14:50:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* sizes.c (diskfs_grow): New variable `pagerpt'.
@@ -439,7 +447,7 @@ Fri Mar 22 23:43:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Wed Mar 20 14:36:31 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Don't do initial or final permission
-	checking here. 
+	checking here.
 	* dir.c (diskfs_dirrewrite_hard): Renamed from diskfs_dirrewrite.
   	No longer call modification tracking routines.
 	(diskfs_dirremove_hard): Renamed from diskfs_dirremove.  No longer call
@@ -454,7 +462,7 @@ Mon Mar 18 19:50:41 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 Mon Mar 18 12:33:06 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
-	* pager.c (diskfs_max_user_pager_prot) [add_pager_max_prot]: 
+	* pager.c (diskfs_max_user_pager_prot) [add_pager_max_prot]:
 	(a == b) ? 1 : 0   ====>   (a == b).
 
 Fri Feb 23 15:27:05 1996  Roland McGrath  <roland@charlie-brown.gnu.ai.mit.edu>
@@ -1795,4 +1803,3 @@ Thu May  5 19:06:54 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 Thu May  5 07:39:38 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
 
 	* Makefile ($(OBJS)): Use $(includedir) instead of $(headers) in deps.
-
