@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,01 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -169,6 +169,16 @@ real_speed_to_bogus_speed (int rspeed, int *bspeed)
     case 38400:
       *bspeed = EXTB;
       break;
+#ifdef B57600
+    case 57600:
+      *bspeed = B57600;
+      break;
+#endif
+#ifdef B115200
+    case 115200:
+      *bspeed = B115200;
+      break;
+#endif
     default:
       return -1;
     }
