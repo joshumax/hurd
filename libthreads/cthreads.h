@@ -26,6 +26,17 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.16  2001/03/31 23:01:01  roland
+ * 2001-03-31  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h: Fix obsolescent #endif syntax.
+ * 	* cthread_internals.h: Likewise.
+ * 	* cancel-cond.c: Likewise.
+ * 	* stack.c: Likewise.
+ * 	* cthreads.c: Likewise.
+ * 	* cprocs.c: Likewise.
+ * 	* call.c: Likewise.
+ *
  * Revision 1.15  1999/06/13 18:54:42  roland
  * 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
  *
@@ -223,7 +234,7 @@
 #include <machine/cthreads.h>
 #else
 #include <machine-sp.h>
-#define cthread_sp()	((int) __thread_stack_pointer ())
+#define cthread_sp()	((vm_address_t) __thread_stack_pointer ())
 #endif
 
 #if	c_plusplus || __STDC__
@@ -397,7 +408,7 @@ extern void __mutex_unlock_solid (void *mutex); /* roland@gnu */
 #define mutex_unlock(m) \
 	MACRO_BEGIN \
 	if (spin_unlock(&(m)->held), \
-	    cthread_queue_head(&(m)->queue, int) != 0) { \
+	    cthread_queue_head(&(m)->queue, void *) != 0) { \
 		__mutex_unlock_solid(m); \
 	} \
 	MACRO_END
