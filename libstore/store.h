@@ -634,7 +634,7 @@ struct store_enc
   /* Each of the four vectors used.  All are vm_allocated.  */
   mach_port_t *ports;
   int *ints;
-  off_t *offsets;
+  loff_t *offsets;
   char *data;
 
   /* The sizes of the vectors.  */
@@ -648,7 +648,7 @@ struct store_enc
      version won't be deallocated.  */
   mach_port_t *init_ports;
   int *init_ints;
-  off_t *init_offsets;
+  loff_t *init_offsets;
   char *init_data;
 };
 
@@ -658,7 +658,7 @@ struct store_enc
 void store_enc_init (struct store_enc *enc,
 		     mach_port_t *ports, mach_msg_type_number_t num_ports,
 		     int *ints, mach_msg_type_number_t num_ints,
-		     off_t *offsets, mach_msg_type_number_t num_offsets,
+		     loff_t *offsets, mach_msg_type_number_t num_offsets,
 		     char *data, mach_msg_type_number_t data_len);
 
 /* Deallocate storage used by the fields in ENC (but nothing is done with ENC
@@ -670,7 +670,7 @@ void store_enc_dealloc (struct store_enc *enc);
 void store_enc_return (struct store_enc *enc,
 		       mach_port_t **ports, mach_msg_type_number_t *num_ports,
 		       int **ints, mach_msg_type_number_t *num_ints,
-		       off_t **offsets, mach_msg_type_number_t *num_offsets,
+		       loff_t **offsets, mach_msg_type_number_t *num_offsets,
 		       char **data, mach_msg_type_number_t *data_len);
 
 /* Encode STORE into the given return variables, suitably for returning from a
@@ -678,7 +678,7 @@ void store_enc_return (struct store_enc *enc,
 error_t store_return (const struct store *store,
 		      mach_port_t **ports, mach_msg_type_number_t *num_ports,
 		      int **ints, mach_msg_type_number_t *num_ints,
-		      off_t **offsets, mach_msg_type_number_t *num_offsets,
+		      loff_t **offsets, mach_msg_type_number_t *num_offsets,
 		      char **data, mach_msg_type_number_t *data_len);
 
 /* Encode STORE into ENC, which should have been prepared with
