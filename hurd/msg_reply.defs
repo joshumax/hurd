@@ -21,8 +21,11 @@ subsystem msg_reply 23100;		/* must match msg.defs + 100 */
 
 #include <hurd/hurd_types.defs>
 
+type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
+	ctype: mach_port_t;
+
 simpleroutine sig_post_reply (
-	reply_port: mach_port_t;
+	reply_port: reply_port_t;
 	in return_code: kern_return_t);
 
 /* Add the others as necessary.  */
