@@ -69,3 +69,13 @@ trivfs_S_fsys_getfile (struct trivfs_control *cntl,
 {
   return EOPNOTSUPP;
 }
+
+kern_return_t
+trivfs_S_fsys_mod_readonly (struct trivfs_control *cntl,
+			    mach_port_t reply,
+			    mach_msg_type_name_t replytype,
+			    int mod,
+			    int force)
+{
+  return EOPNOTSUPP;
+}

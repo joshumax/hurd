@@ -19,11 +19,12 @@
 #include "memory_object_S.h"
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 /* Worker function used by _pager_seqnos_memory_object_data_return
    and _pager_seqnos_memory_object_data_initialize.  All args are
    as for _pager_seqnos_memory_object_data_return; the additional
-   INITIALIZING arg identifies which function is calling us. *
+   INITIALIZING arg identifies which function is calling us. */
 kern_return_t
 _pager_do_write_request (mach_port_t object,
 			 mach_port_seqno_t seqno,
@@ -204,8 +205,8 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 					 int dirty,
 					 int kcopy)
 {
-  _pager_do_write_request (object, seqno, control, offset, data,
-			   length, dirty, kcopy, 0);
+  return _pager_do_write_request (object, seqno, control, offset, data,
+				  length, dirty, kcopy, 0);
 }
 
 			   
