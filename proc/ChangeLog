@@ -1,3 +1,7 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c: Include <device/device.h>.
+
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Set up console on stderr.

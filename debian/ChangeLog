@@ -1,3 +1,9 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rules (binary-arch): Don't remove root and etc dirs.
+
+	* conffiles: Add /etc/ttys.
+
 1999-04-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rules (binary-arch): Add etc, etc/login subdirs to chmod cmd.

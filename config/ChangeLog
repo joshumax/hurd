@@ -1,4 +1,18 @@
-1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* login-.bashrc: Alias su to login.
+
+1999-05-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* protocols, services, shells, passwd, group, resolv.conf, fstab,
+	  root-.bash_login, root-.bashrc, root-.profile: Files removed.
+	These files are not really Hurd-specific, and so should be installed
+	by some other package (and are in Debian).
+	* Makefile (SYSCONFFILES): Remove those files from the list.
+	(ROOTDOTS, installed_rootdots): Variables removed.
+	(DIST_FILES): Remove reference to $(ROOTDOTS).
+	(install): Remove dep on $(installed_rootdots).
+	($(installed_rootdots)): Rule removed.
 
 	* Makefile (SYSCONFFILES): Remove hostname.
 	* hostname: File removed (it was empty).  Current libc copes with

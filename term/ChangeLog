@@ -1,3 +1,14 @@
+1999-05-24  Mark Kettenis  <kettenis@gnu.org>
+
+	* devio.c: Include <assert.h>, <errno.h> and <error.h>.  Do
+	not include <stdio.h> and <sys/types.h>.
+	Reorganize the order of inclusion of the header files a bit and
+	document the baud-rate hackery.  Include <termios.h> explicitely.
+	(init_devio): Use new local variable ERR instead of ERRNO.  Use
+	error instead of perror and exit to report failure.
+	(devio_desert_dtr): Declare BITS as `int' instead of
+	`dev_status_t'.
+
 1999-05-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* users.c (trivfs_S_file_chown): Either arg being -1 means don't
