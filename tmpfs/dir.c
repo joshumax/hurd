@@ -1,5 +1,5 @@
 /* Directories for tmpfs.
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -150,22 +150,30 @@ diskfs_lookup_hard (struct node *dp,
     }
   if (namelen == 2 && name[0] == '.' && name[1] == '.')
     {
-      struct disknode *ddnp = dp->dn->u.dir.dotdot;
+      struct disknode *dddn = dp->dn->u.dir.dotdot;
+      struct node *ddnp = 0;
+      error_t err;
+
       assert (np != 0);
-      if (ddnp == 0)		/* root directory */
+      if (dddn == 0)		/* root directory */
 	return EAGAIN;
+
+      err = diskfs_cached_lookup ((int) dddn, &ddnp);
       switch (type)
 	{
 	case LOOKUP|SPEC_DOTDOT:
 	  diskfs_nput (dp);
 	default:
-	  diskfs_nref (ddnp);
-	  mutex_lock (&ddnp->lock);
+	  if (!err)
+	    {
+	      diskfs_nref (ddnp);
+	      mutex_lock (&ddnp->lock);
+	    }
 	case REMOVE|SPEC_DOTDOT:
 	case RENAME|SPEC_DOTDOT:
 	  *np = ddnp;
 	}
-      return 0;
+      return err;
     }
 
   for (d = *(prevp = &dp->dn->u.dir.entries); d != 0;
