@@ -27,6 +27,8 @@
 #include <string.h>
 #include <error.h>
 #include <argz.h>
+#include <argp.h>
+#include <hurd/store.h>
 #include <version.h>
 #include "ext2fs.h"
 
@@ -42,22 +44,29 @@ int diskfs_shortcut_ifsock = 1;
 
 char *diskfs_server_name = "ext2fs";
 char *diskfs_server_version = HURD_VERSION;
-char *diskfs_extra_version = "ext2 " EXT2FS_VERSION;
+char *diskfs_extra_version = "GNU Hurd; ext2 " EXT2FS_VERSION;
 
 int diskfs_synchronous = 0;
 int diskfs_readonly = 0;
 
 struct node *diskfs_root_node;
+
+struct store *store = 0;
+struct store_parsed *store_parsed = 0;
+
+char *diskfs_disk_name = 0;
 
 #ifdef EXT2FS_DEBUG
-
 int ext2_debug_flag = 0;
+#endif
 
 /* Ext2fs-specific options.  */
 static const struct argp_option
 options[] =
 {
+#ifdef EXT2FS_DEBUG
   {"debug", 'D', 0, 0, "Toggle debugging output" },
+#endif
   {0}
 };
 
@@ -67,17 +76,24 @@ parse_opt (int key, char *arg, struct argp_state *state)
 {
   switch (key)
     {
+#ifdef EXT2FS_DEBUG
     case 'D':
       state->hook = (void *)1;	/* Do it at the end */
       break;
+#endif
 
     case ARGP_KEY_INIT:
+      state->child_inputs[0] = state->input;
+#ifdef EXT2FS_DEBUG
       state->hook = 0;
+#endif
       break;
     case ARGP_KEY_SUCCESS:
       /* All options parse successfully, so implement ours if possible.  */
+#ifdef EXT2FS_DEBUG
       if (state->hook)
 	ext2_debug_flag = !ext2_debug_flag;
+#endif
       break;
 
     default:
@@ -85,9 +101,28 @@ parse_opt (int key, char *arg, struct argp_state *state)
     }
   return 0;
 }
+
+/* Override the standard diskfs routine so we can add our own output.  */
+error_t
+diskfs_append_args (char **argz, unsigned *argz_len)
+{
+  error_t err;
 
+  /* Get the standard things.  */
+  err = diskfs_append_std_options (argz, argz_len);
+
+#ifdef EXT2FS_DEBUG
+  if (!err && ext2_debug_flag)
+    err = argz_add (argz, argz_len, "--debug");
+#endif
+  if (! err)
+    err = store_parsed_append_args (store_parsed, argz, argz_len);
+
+  return err;
+}
+
 /* Add our startup arguments to the standard diskfs set.  */
-static const struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
+static const struct argp *startup_parents[] = { &diskfs_store_startup_argp, 0};
 static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
 
 /* Similarly at runtime.  */
@@ -96,41 +131,19 @@ static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_parents};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
-/* Override the standard diskfs routine so we can add our own output.  */
-error_t
-diskfs_get_options (char **argz, unsigned *argz_len)
-{
-  error_t err;
-
-  *argz = 0;
-  *argz_len = 0;
-
-  /* Get the standard things.  */
-  err = diskfs_append_std_options (argz, argz_len);
-
-  if (!err && ext2_debug_flag)
-    {
-      err = argz_add (argz, argz_len, "--debug");
-      if (err)
-	free (argz);		/* Deallocate what diskfs returned.  */
-    }
-
-  return err;
-}
-
-#else /* !EXT2FS_DEBUG */
-
-#define startup_argp diskfs_std_device_startup_argp
-
-#endif /* EXT2FS_DEBUG */
-
 void
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap = MACH_PORT_NULL;
+  struct store_argp_params store_params = { 0 };
 
-  argp_parse (&startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&startup_argp, argc, argv, 0, 0, &store_params);
+  store_parsed = store_params.result;
+
+  err = store_parsed_name (store_parsed, &diskfs_disk_name);
+  if (err)
+    error (2, err, "store_parsed_name");
 
   diskfs_console_stdio ();
 
@@ -147,19 +160,19 @@ main (int argc, char **argv)
   if (err)
     error (4, err, "init");
 
-  err = diskfs_device_open ();
+  err = store_parsed_open (store_parsed, diskfs_readonly ? STORE_READONLY : 0,
+			   &store);
   if (err)
-    error (3, err, "%s", diskfs_device_arg);
+    error (3, err, "%s", diskfs_disk_name);
 
-  if ((diskfs_device_size << diskfs_log2_device_block_size)
-      < SBLOCK_OFFS + SBLOCK_SIZE)
+  if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
     ext2_panic ("superblock won't fit on the device!");
-  if (diskfs_log2_device_block_size == 0)
+  if (store->log2_block_size == 0)
     ext2_panic ("device block size (%u) not a power of two",
-		diskfs_device_block_size);
-  if (diskfs_log2_device_blocks_per_page < 0)
+		store->block_size);
+  if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%u) greater than page size (%d)",
-		diskfs_device_block_size, vm_page_size);
+		store->block_size, vm_page_size);
 
   /* Map the entire disk. */
   create_disk_pager ();
@@ -167,7 +180,7 @@ main (int argc, char **argv)
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
 
-  pokel_init (&global_pokel, disk_pager, disk_image);
+  pokel_init (&global_pokel, diskfs_disk_pager, disk_image);
 
   get_hypermetadata();
 
@@ -194,46 +207,7 @@ error_t
 diskfs_reload_global_state ()
 {
   pokel_flush (&global_pokel);
-  pager_flush (disk_pager, 1);
+  pager_flush (diskfs_disk_pager, 1);
   get_hypermetadata ();
   return 0;
-}
-
-/* ---------------------------------------------------------------- */
-
-static spin_lock_t free_page_bufs_lock = SPIN_LOCK_INITIALIZER;
-static vm_address_t free_page_bufs = 0;
-
-/* Returns a single page page-aligned buffer.  */
-vm_address_t get_page_buf ()
-{
-  vm_address_t buf;
-
-  spin_lock (&free_page_bufs_lock);
-
-  buf = free_page_bufs;
-  if (buf == 0)
-    {
-      error_t err;
-      spin_unlock (&free_page_bufs_lock);
-      err = vm_allocate (mach_task_self (), &buf, vm_page_size, 1);
-      if (err)
-	buf = 0;
-    }
-  else
-    {
-      free_page_bufs = *(vm_address_t *)buf;
-      spin_unlock (&free_page_bufs_lock);
-    }
-
-  return buf;
-}
-
-/* Frees a block returned by get_page_buf.  */
-void free_page_buf (vm_address_t buf)
-{
-  spin_lock (&free_page_bufs_lock);
-  *(vm_address_t *)buf = free_page_bufs;
-  free_page_bufs = buf;
-  spin_unlock (&free_page_bufs_lock);
 }
