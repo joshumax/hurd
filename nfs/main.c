@@ -146,7 +146,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
     case OPT_MAX_TR_TO: max_transmit_timeout = atoi (arg); break;
 
     default:
-      return EINVAL;
+      return ARGP_ERR_UNKNOWN;
     }
   return 0;
 }
