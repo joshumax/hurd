@@ -752,7 +752,8 @@ main(int argc, char *argv[])
   if (err)
     fail (3, err, "Authentication failure", 0);
 
-  if (! no_login)
+  if (!no_login && parent_uids->num > 0)
+    /* Make a new login collection (but only for real users).  */
     {
       char *user = envz_get (args, args_len, "USER");
       if (user && *user)
