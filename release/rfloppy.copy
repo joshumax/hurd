@@ -9,6 +9,7 @@ mkdir lib
 mkdir sbin
 mkdir servers
 mkdir tmp
+mkdir mnt
 
 copy etc/protocols
 copy etc/services
@@ -55,11 +56,14 @@ objcopy sbin/mkfs.ext2
 objcopy sbin/mkfs.ufs
 objcopy sbin/reboot
 objcopy sbin/fdisk
+objcopy sbin/swapon
 
 touch servers/exec
 mkdir servers/socket
 settrans servers/socket/1 /hurd/pflocal
+symlink servers/socket/local servers/socket/1
 touch servers/socket/2
+symlink servers/socket/inet servers/socket/2
 
 copy lib/ld.so
 objcopy lib/ld.so.1
