@@ -34,7 +34,6 @@
  */
 
 #include "ufs.h"
-#include "fs.h"
 
 #if 0 /* Not needed in GNU Hurd ufs. */
 /*
