@@ -24,12 +24,13 @@ PROCMIGOPTS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 	"-DSERVERPREFIX=S_"
 
 OBJS = wait.o hash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
-	primes.o \
+	primes.o cpu-types.o \
 	processServer.o notifyServer.o process_replyUser.o msgUser.o \
 	interruptServer.o proc_excUser.o proc_excServer.o proc_excreplUser.o \
 	proc_excreplServer.o
 
-SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c primes.c
+SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
+       primes.c cpu-types.c
 
 DIST_FILES = $(SRCS) proc.h Makefile proc_exc.defs proc_excrepl.defs \
 		ChangeLog
