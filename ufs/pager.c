@@ -110,7 +110,7 @@ pager_read_page (struct user_pager_info *pager,
   
   if (addr)
     {
-      err = dev_read_sync (addr, (void *)buf, disksize);
+      err = diskfs_device_read_sync (addr, (void *)buf, disksize);
       if (!err && disksize != __vm_page_size)
 	bzero ((void *)(*buf + disksize), __vm_page_size - disksize);
       *writelock = 0;
@@ -148,7 +148,7 @@ pager_write_page (struct user_pager_info *pager,
     return err;
   
   if (addr)
-    err = dev_write_sync (addr, buf, disksize);
+    err = diskfs_device_write_sync (addr, buf, disksize);
   else
     {
       printf ("Attempt to write unallocated disk\n.");
@@ -321,7 +321,8 @@ pager_unlock_page (struct user_pager_info *pager,
 	  if (err)
 	    goto out;
 
-	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
+	  diskfs_device_write_sync (fsbtodb (sblock, bno),
+				    zeroblock, sblock->fs_bsize);
 
 	  indirs[0].bno = siblock[indirs[0].offset] = bno;
 	  record_poke (siblock, sblock->fs_bsize);
@@ -346,7 +347,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = diskpagersize;
+    *size = diskfs_device_size << diskfs_log2_device_block_size;
   else
     *size = pager->np->allocsize;
   
