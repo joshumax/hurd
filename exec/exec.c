@@ -1,5 +1,6 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02
+   	Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -1453,6 +1454,9 @@ do_exec (file_t file,
       e.error = task_create (((flags & EXEC_SECURE) ||
 			      oldtask == MACH_PORT_NULL) ?
 			     mach_task_self () : oldtask,
+#ifdef KERN_INVALID_LEDGER
+			       NULL, 0,	/* OSF Mach */
+#endif
 			     0, &newtask);
       if (e.error)
 	goto out;
