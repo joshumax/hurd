@@ -1,4 +1,4 @@
-/* libdiskfs implementation of fs.defs: file_pathconf
+/* libdiskfs implementation of io.defs: io_pathconf
    Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -16,17 +16,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
+#include "io_S.h"
 
-/* Implement file_pathconf as described in <hurd/fs.defs>. */
+/* Implement io_pathconf as described in <hurd/io.defs>. */
 kern_return_t
-diskfs_S_file_pathconf (struct protid *cred,
-			int name __attribute__ ((unused)),
-			int *value)
- {
+diskfs_S_io_pathconf (struct protid *cred,
+		      int name __attribute__ ((unused)), int *value)
+{
   if (!cred)
     return EOPNOTSUPP;
-  
   *value = 0; /* XXX */
   return 0;
 }
