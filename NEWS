@@ -63,6 +63,20 @@ or kill a crashing task. Core dumping is planned for but not
 implemented yet.  Users can set their own crash server using an
 environment variable.
 
+The new fakeroot translator appears to give transparent access to the
+underlying directory node.  However, all accesses are made using the
+credentials of the translator regardless of the client and the
+translator fakes success for chown and chmod operations, reporting the
+faked IDs and modes in later stat calls.
+
+The new fakeauth program runs a command with a fake authentication
+handle that claims to be root or any arbitrary identity derived from
+that handle, but in fact is always just a proxy for your real
+authentication handle.
+
+The features provided by the fakeroot translator and fakeauth are
+combined in the new fakeroot program.
+
 The proc server can show the start time of processes.
 
 * sync -> syncfs, takes args
