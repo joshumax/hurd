@@ -1,3 +1,12 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* fstests.c: Include <error.h>.
+	(main): Use error, not perror.
+	[HURDISH_TESTS]: Use this rather then having the code in question
+	#if 0'd out.
+	* timertest.c: Include <error.h> and <errno.h>
+	(main): Use error, not perror and exit.
+
 2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fstests.c (main): Call dir_lookup, not dir_pathtrans.

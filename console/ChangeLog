@@ -1,3 +1,7 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* main.c (main): Use error, not fprintf and exit.
+
 2002-03-17  Roland McGrath  <roland@frob.com>
 
 	* mutations.h (TIOCTL_IMPORTS): New macro.

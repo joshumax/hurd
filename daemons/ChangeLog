@@ -1,3 +1,7 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* console-run.c (open_console): Use ERR, not errno.
+
 2001-12-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* runsystem.sh: For now, this requires bash.
