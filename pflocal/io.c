@@ -18,7 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "pflocal.h"
+#include "sock.h"
+#include "pipe.h"
+#include "connq.h"
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
