@@ -70,7 +70,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   flags &= (O_READ | O_WRITE | O_EXEC);
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, 
 						   cred->po->dotdotport,
-						   cred->po->depth),
+						   cred->po->depth + 1),
 			      cred->user, &newpi);
   if (! err)
     {
