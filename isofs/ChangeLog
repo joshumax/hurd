@@ -1,3 +1,19 @@
+2000-11-27  Marcus Brinkmann  <marcus@gnu.org>
+
+	The last two changes introduced two new inode overlaps
+	(file_start was not shifted by store block size, and directories'
+	shifted file_start offset can be the same as the struct dirrect
+	offset of their first directory entry).
+
+	* inode.c (use_file_start_as_id): New function to determine
+	if to use file_start or struct dirrect * as node id.
+	The directory recognition code comes from read_disknode.
+	(cache_inode): Use use_file_start_as_id instead doing the work
+	ourselve. Shift file_start by store->log2_block_size.
+	(load_inode): Likewise.
+	* lookup.c (diskfs_get_directs): Likewise.
+	Declare use_file_start_id.
+
 2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	Fix hard link handling for non-zero length files.

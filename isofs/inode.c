@@ -77,6 +77,36 @@ inode_cache_find (off_t id, struct node **npp)
   *npp = 0;
 }
 
+
+/* Determine if we use file_start or struct dirrect * as node id.  */
+int
+use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
+{
+  /* If it is a directory, don't use file_start.  */
+  if (rr->valid & VALID_PX)
+    {
+      if (((rr->valid & VALID_MD) == 0) && (rr->mode & S_IFDIR))
+	return 0;
+    }
+  else
+    if ((rr->valid & VALID_MD) == 0)
+      {
+	/* If there are no periods, it's a directory. */
+	if (((rr->valid & VALID_NM) && !index (rr->name, '.'))
+	    || (!(rr->valid & VALID_NM) && !memchr (record->name, '.',
+						    record->namelen)))
+	  return 0;
+      }
+  if ((rr->valid & VALID_MD) && (rr->allmode & S_IFDIR))
+      return 0;
+      
+  /* If it is a symlink or a zero length file, don't use file_start.  */
+  if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
+    return 0;
+
+  return 1;
+}
+
 /* Enter NP into the cache.  The directory entry we used is DR, the
    cached Rock-Ridge info RR. diskfs_node_refcnt_lock must be held. */
 void
@@ -87,10 +117,10 @@ cache_inode (struct node *np, struct dirrect *record,
   struct node_cache *c = 0;
   off_t id;
 
-  if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
-    id = (off_t) ((void *) record - (void *) disk_image);
+  if (use_file_start_id (record, rr))
+    id = np->dn->file_start << store->log2_block_size;
   else
-    id = np->dn->file_start;
+    id = (off_t) ((void *) record - (void *) disk_image);
 
   /* First see if there's already an entry. */
   for (i = 0; i < node_cache_size; i++)
@@ -291,10 +321,10 @@ load_inode (struct node **npp, struct dirrect *record,
   spin_lock (&diskfs_node_refcnt_lock);
 
   /* First check the cache */
-  if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
-    inode_cache_find ((off_t) ((void *) record - (void *) disk_image), npp);
+  if (use_file_start_id (record, rr))
+    inode_cache_find (file_start << store->log2_block_size, npp);
   else
-    inode_cache_find (file_start, npp);
+    inode_cache_find ((off_t) ((void *) record - (void *) disk_image), npp);
 
   if (*npp)
     return 0;
@@ -328,10 +358,10 @@ read_disknode (struct node *np, struct dirrect *dr,
   struct stat *st = &np->dn_stat;
   st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
-  if (rl->valid & VALID_SL || isonum_733 (dr->size) == 0)
-    st->st_ino = (ino_t) ((void *) dr - (void *) disk_image);
+  if (use_file_start_id (dr, rl))
+    st->st_ino = (ino_t) np->dn->file_start << store->log2_block_size;
   else
-    st->st_ino = (ino_t) np->dn->file_start;
+    st->st_ino = (ino_t) ((void *) dr - (void *) disk_image);
   st->st_gen = 0;
   st->st_rdev = 0;
 

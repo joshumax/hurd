@@ -22,6 +22,9 @@
 #include <dirent.h>
 #include "isofs.h"
 
+/* From inode.c */
+int use_file_start_id (struct dirrect *record, struct rrip_lookup *rr);
+
 /* Forward */
 static error_t dirscanblock (void *, const char *, size_t,
 			     struct dirrect **, struct rrip_lookup *);
@@ -353,12 +356,10 @@ diskfs_get_directs (struct node *dp,
 
       /* Fill in entry */
 
-      if (rr.valid & VALID_SL || isonum_733 (ep->size) == 0)
-	userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
-      else
+      if (use_file_start_id (ep, &rr))
 	{
 	  off_t file_start;
-	
+	  
 	  err = calculate_file_start (ep, &file_start, &rr);
 	  if (err)
 	    {
@@ -368,8 +369,10 @@ diskfs_get_directs (struct node *dp,
 	      return err;
 	    }
 
-	  userp->d_fileno = file_start;
+	  userp->d_fileno = file_start << store->log2_block_size;
 	}
+      else
+	userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
 
       userp->d_type = DT_UNKNOWN;
       userp->d_reclen = reclen;
