@@ -24,7 +24,7 @@ ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 ifndef HOST_CC
 export HOST_CC := $(CC)
 endif
-CC=gcc $(CCTYPE) -O2 
+CC=gcc $(CCTYPE) -O2 -pipe
 ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=rsh $(mighost) cd `pwd` \; umask `umask` \; /usr/local/lib/migcom 
 else
