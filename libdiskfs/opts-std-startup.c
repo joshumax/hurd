@@ -1,6 +1,6 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -46,6 +46,9 @@ startup_options[] =
   {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
   {"exec-server-task",   OPT_EXEC_SERVER_TASK,   "PORT"},
   {"bootflags",          OPT_BOOTFLAGS,          "FLAGS"},
+  {"directory",		 'C',			 "DIRECTORY"},
+  {"virtual-root",	 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"chroot",		 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
 
   {0}
 };
@@ -84,6 +87,8 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       diskfs_exec_server_task = atoi (arg); break;
     case OPT_BOOTFLAGS:
       diskfs_boot_flags = arg; break;
+    case 'C':
+      _diskfs_chroot_directory = arg; break;
 
     case ARGP_KEY_END:
       diskfs_argv = state->argv; break;

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -40,13 +40,18 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 		       file_t *returned_port,
 		       mach_msg_type_name_t *returned_port_poly)
 {
-  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport, 
+  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
 					    diskfs_control_class);
   error_t error = 0;
   mode_t type;
   struct protid *newpi;
   struct iouser user;
-  struct peropen peropen_context = { root_parent: dotdot };
+  struct peropen peropen_context =
+  {
+    root_parent: dotdot,
+    shadow_root_parent: MACH_PORT_NULL,
+    shadow_root: _diskfs_chroot_directory ? diskfs_root_node : NULL /* XXX */
+  };
 
   if (!pt)
     return EOPNOTSUPP;
@@ -61,7 +66,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   rwlock_reader_lock (&diskfs_fsys_lock);
   mutex_lock (&diskfs_root_node->lock);
-    
+
   /* This code is similar (but not the same as) the code in
      dir-pathtrans.c that does the same thing.  Perhaps a way should
      be found to share the logic.  */
@@ -73,7 +78,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       && !(flags & O_NOTRANS))
     {
       error = fshelp_fetch_root (&diskfs_root_node->transbox,
-				 &peropen_context, dotdot, &user, flags, 
+				 &peropen_context, dotdot, &user, flags,
 				 _diskfs_translator_callback1,
 				 _diskfs_translator_callback2,
 				 retry, retryname, returned_port);
@@ -86,17 +91,17 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  return error;
 	}
-      
+
       /* ENOENT means the translator was removed in the interim. */
       error = 0;
     }
-  
+
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))
     {
       /* Handle symlink interpretation */
       char pathbuf[diskfs_root_node->dn_stat.st_size + 1];
       int amt;
-      
+
       if (diskfs_read_symlink_hook)
 	error = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
       if (!diskfs_read_symlink_hook || error == EINVAL)
@@ -112,7 +117,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	  drop_idvec ();
 	  return error;
 	}
-      
+
       if (pathbuf[0] == '/')
 	{
 	  *retry = FS_RETRY_MAGICAL;
@@ -134,24 +139,24 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	}
     }
 
-  if ((type == S_IFSOCK || type == S_IFBLK 
+  if ((type == S_IFSOCK || type == S_IFBLK
        || type == S_IFCHR || type == S_IFIFO)
       && (flags & (O_READ|O_WRITE|O_EXEC)))
     error = EOPNOTSUPP;
-  
+
   if (!error && (flags & O_READ))
     error = fshelp_access (&diskfs_root_node->dn_stat, S_IREAD, &user);
-  
+
   if (!error && (flags & O_EXEC))
     error = fshelp_access (&diskfs_root_node->dn_stat, S_IEXEC, &user);
-  
+
   if (!error && (flags & (O_WRITE)))
     {
       if (type == S_IFDIR)
 	error = EISDIR;
       else if (diskfs_check_readonly ())
 	error = EROFS;
-      else 
+      else
 	error = fshelp_access (&diskfs_root_node->dn_stat,
 			       S_IWRITE, &user);
     }
@@ -163,7 +168,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       drop_idvec ();
       return error;
     }
-  
+
   if ((flags & O_NOATIME)
       && (fshelp_isowner (&diskfs_root_node->dn_stat, &user)
 	  == EPERM))
@@ -186,7 +191,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (newpi);
     }
-  
+
   mutex_unlock (&diskfs_root_node->lock);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 

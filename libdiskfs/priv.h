@@ -1,5 +1,5 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,9 @@
 
 /* These inhibit setuid or exec. */
 extern int _diskfs_nosuid, _diskfs_noexec;
+
+/* This is the -C argument value.  */
+extern const char *_diskfs_chroot_directory;
 
 volatile struct mapped_time_value *_diskfs_mtime;
 
