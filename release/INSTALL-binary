@@ -258,6 +258,11 @@ Add any serial lines you have terminals on to /etc/ttys.
 Set your hostname with `echo foo.bar.baz > /etc/hostname'.  This will
 then be permanent until you change the file.
 
+Create a link from /etc/zoneinfo/localtime to the your timezone in
+etc/zoneinfo.  Something like the following command will do the trick:
+`ln /share/zoneinfo/US/Eastern /etc/localtime'.  Look at the directory
+/share/zoneinfo to see all the various possibilities.
+ 
 Edit /etc/fstab according to the disk mounts you've installed; this
 will control which partitions `df' prints and which partitions get
 `fsck' run for them at boot time.  It will not affect which partitions
