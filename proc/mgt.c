@@ -642,7 +642,8 @@ process_has_exited (struct proc *p)
     return;
 
   p->p_waited = 0;
-  alert_parent (p);
+  if (p->p_task != MACH_PORT_NULL)
+    alert_parent (p);
 
   if (p->p_msgport)
     mach_port_deallocate (mach_task_self (), p->p_msgport);
