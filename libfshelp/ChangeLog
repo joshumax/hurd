@@ -1,3 +1,7 @@
+1999-09-12  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* delegate.c (fshelp_delegate_translation): Free ARGZ after RPC.
+
 1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* set-options.c (fshelp_set_options): Explicitly cast first arg to
@@ -12,19 +16,19 @@
 	* touch.c: Likewise.
 	* fshelp.h (fshelp_translated, fshelp_isowner, fshelp_access,
 	fshelp_checkdirmod, fshelp_touch): Replace inline definitions with
-	ordinary declarations. 
+	ordinary declarations.
 	(FSHELP_EI): Removed macro.
 	* fshelp.c: Deleted file.
 	* Makefile (SRCS): Added translated.c, perms-isowner.c,
-	perms-access.c, perms-checkdirmod.c, touch.c.  Removed fshelp.c. 
-	
+	perms-access.c, perms-checkdirmod.c, touch.c.  Removed fshelp.c.
+
 Wed Apr 28 03:06:19 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fetch-root.c (fshelp_fetch_root): Don't deallocate the
 	INIT_PORT_CWDIR after starting the passive translator; we still
-	need to keep our reference around until the getroot call happens. 
+	need to keep our reference around until the getroot call happens.
 	Reported by Marcus Brinkmann (Marcus.Brinkmann@ruhr-uni-bochum.de).
-	
+
 Tue Apr 20 21:43:20 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fetch-root.c (fshelp_fetch_root): When starting a passive
