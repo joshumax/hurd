@@ -1,3 +1,16 @@
+Sat Feb 22 00:00:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* peropen-rele.c (diskfs_release_peropen): Don't deadlock if PO's
+	shadow_root is also it's node.
+	* file-reparent.c (diskfs_S_file_reparent): Don't release a
+	reference to any old shadow_root if it was == NODE.  Don't aquire
+	a new reference for NODE.
+
+Fri Feb 21 17:12:04 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-init.c (diskfs_init_dir): Use CRED->po as LOOKUPCRED's po,
+	so that root detection works (and doesn't crash).
+
 Thu Feb 20 00:43:38 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-read.c (diskfs_S_io_read): Support reading from sylinks.
