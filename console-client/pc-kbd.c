@@ -1,5 +1,5 @@
 /* pc-kbd.c - The PC Keyboard input driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -634,6 +634,9 @@ typedef struct {
 #define KDGKBDTYPE      _IOR('K', 2, int)       /* get keyboard type */
 #define KB_VANILLAKB    0
 
+#define KDSETLEDS      _IOW('K', 5, int)        /* set keyboard leds */
+
+
 /* End of Mach code.  */
 
 static enum scancode
@@ -676,22 +679,33 @@ gnumach_v1_input_next ()
 static void
 update_leds (void)
 {
-  char leds[2];
   error_t err;
-
-  /* GNU Mach v1 does not support setting the keyboard LEDs.  */
+  
   if (gnumach_v1_compat)
-    return;
+    {
+      int led = (led_state.scroll_lock ? 1 : 0)
+	| (led_state.num_lock ? 2 : 0)
+	| (led_state.caps_lock ? 4 : 0);
+      
+      err = device_set_status (kbd_dev, KDSETLEDS, &led, 1);
+      /* Just ignore the error, GNUMach 1.3 and older cannot set the
+	 keyboard LEDs.  */
+    }
+  else
+    {
+      char leds[2];
+      mach_msg_type_number_t data_cnt = 2;
 
-  leds[0] = '\xed';
-  leds[1] = (led_state.scroll_lock ? 1 : 0)
-    | (led_state.num_lock ? 2 : 0)
-    | (led_state.caps_lock ? 4 : 0);
-  mach_msg_type_number_t data_cnt = 2;
-  err = device_write_inband (kbd_dev, 0, -1, (void *) leds, 2, &data_cnt);
-  if (!err && data_cnt == 1)
-    err = device_write_inband (kbd_dev, 0, -1, (void *) &leds[1], 1,
-			       &data_cnt);
+      leds[0] = '\xed';
+      leds[1] = (led_state.scroll_lock ? 1 : 0)
+	| (led_state.num_lock ? 2 : 0)
+	| (led_state.caps_lock ? 4 : 0);
+      
+      err = device_write_inband (kbd_dev, 0, -1, (void *) leds, 2, &data_cnt);
+      if (!err && data_cnt == 1)
+	err = device_write_inband (kbd_dev, 0, -1, (void *) &leds[1], 1,
+				   &data_cnt);
+    }
 }
 
 static enum scancode
@@ -1014,7 +1028,7 @@ input_loop (any_t unused)
 		      size_t left = sizeof (buf) - size;
 		      char *inbuf = (char *) &state.direct;
 		      size_t inbufsize = sizeof (wchar_t);
-		      int nr;
+		      size_t nr;
 		      
 		      nr = iconv (cd, &inbuf, &inbufsize, &buffer, &left);
 		      if (nr == (size_t) -1)
