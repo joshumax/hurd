@@ -1,3 +1,8 @@
+2001-04-23  Neal H Walfield  <neal@cs.uml.edu>
+
+	* tmpfs.c (main): Pass diskfs_demuxer to
+	diskfs_spawn_first_thread to conform to new libdiskfs semantics.
+
 2001-05-05  Roland McGrath  <roland@frob.com>
 
 	* node.c (diskfs_truncate): Set st_size before rounding it up,

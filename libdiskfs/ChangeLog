@@ -1,3 +1,27 @@
+2001-04-22  Neal H Walfield  <neal@cs.uml.edu>
+
+	* Makefile (OTHERSRCS): Add extern-inline.c.
+	* diskfs.h (DISKFS_EXTERN_INLINE): New macro.
+	(diskfs_spawn_first_thread): Update prototype to include the
+	additional parameter, a demuxer.
+	(diskfs_begin_using_protid_port): Moved and renamed function
+	begin_using_protid_port from priv.h.
+	(diskfs_end_using_protid_port): Moved and renamed function
+	end_using_protid_port from priv.h.
+	* extern-inline.c: New file.
+	* fsmutations.h (FILE_INTRAN): Use new function name.
+	(FILE_DESTRUCTOR): Likewise.
+	(IO_INTRAN): Likewise.
+	(IO_DESTRUCTOR): Likewise.
+	* init-first.c: Include <hurd/ports.h>.
+	(master_thread_function): Unnamed parameter is now the demuxer.
+	Use that rather than diskfs_demuxer directly.
+	(diskfs_spawn_first_thread): New parameter DEMUXER.
+	* init-main.c (diskfs_init_main): Pass diskfs_demuxer to
+	diskfs_spawn_first_thread to conform to new semantics.
+	* priv.h (begin_using_protid_port): Moved to diskfs.h.
+	(end_using_protid_port): Likewise.
+
 2001-04-14  Neal H Walfield  <neal@cs.uml.edu>
 
 	* node-create.c (diskfs_create_node):  If we fail, set *NEWNODE
