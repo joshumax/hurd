@@ -40,7 +40,6 @@ new_pgrp (pid_t pgid,
   
   pg = malloc (sizeof (struct pgrp));
   pg->pg_plist = 0;
-  pg->pg_fakecoll = MACH_PORT_NULL;
   pg->pg_pgid = pgid;
   pg->pg_orphcnt = 0;
   
@@ -64,7 +63,6 @@ new_session (struct proc *p)
   sess = malloc (sizeof (struct session));
   sess->s_sid = p->p_pid;
   sess->s_pgrps = 0;
-  sess->s_fakecoll = MACH_PORT_NULL;
   sess->s_sessionid = MACH_PORT_NULL;
 
   add_session_to_hash (sess);
@@ -76,9 +74,6 @@ new_session (struct proc *p)
 static inline void
 free_session (struct session *s)
 {
-  if (s->s_fakecoll)
-    mach_port_mod_refs (mach_task_self (), s->s_fakecoll,
-			MACH_PORT_RIGHT_RECEIVE, 1);
   if (s->s_sessionid)
     mach_port_mod_refs (mach_task_self (), s->s_sessionid,
 			MACH_PORT_RIGHT_RECEIVE, 1);
@@ -90,9 +85,6 @@ free_session (struct session *s)
 static inline void
 free_pgrp (struct pgrp *pg)
 {
-  if (pg->pg_fakecoll)
-    mach_port_mod_refs (mach_task_self (), pg->pg_fakecoll,
-			MACH_PORT_RIGHT_RECEIVE, 1);
   *pg->pg_prevp = pg->pg_next;
   if (!pg->pg_session->s_pgrps)
     free_session (pg->pg_session);
@@ -144,12 +136,12 @@ S_proc_getsid (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_getsessionpgids as described in <hurd/proc.defs>. */
+/* Implement proc_getsessionpids as described in <hurd/proc.defs>. */
 error_t
-S_proc_getsessionpgids (struct proc *callerp,
-		      pid_t sid,
-		      pid_t **pids,
-		      u_int *npidsp)
+S_proc_getsessionpids (struct proc *callerp,
+		       pid_t sid,
+		       pid_t **pids,
+		       u_int *npidsp)
 {
   int count;
   struct pgrp *pg;
@@ -182,6 +174,78 @@ S_proc_getsessionpgids (struct proc *callerp,
       /* Set dealloc XXX */
     }
 
+  *npidsp = count;
+  return 0;
+}
+
+/* Implement proc_getsessionpgids as described in <hurd/process.defs>. */
+error_t
+S_proc_getsessionpgids (struct proc *callerp,
+			pid_t sid,
+			pid_t **pgids,
+			u_int *npgidsp)
+{
+  int count;
+  struct pgrp *pg;
+  struct session *s;
+  pid_t *pp = *pgids;
+  int npgids = *npgidsp;
+  
+  s = session_find (sid);
+  if (!s)
+    return ESRCH;
+  count = 0;
+
+  for (pg = s->s_pgrps; pg; pg = pg->pg_next)
+    if (++count <= npgids)
+      *pp++ = pg->pg_pgid;
+  
+  if (count > npgids)
+    /* They didn't all fit. */
+    {
+      vm_allocate (mach_task_self (), (vm_address_t *)pgids,
+		   count * sizeof (pid_t), 1);
+      pp = *pgids;
+      for (pg = s->s_pgrps; pg; pg = pg->pg_next)
+	*pp++ = pg->pg_pgid;
+      /* Dealloc ? XXX */
+    }
+  *npgidsp = count;
+  return 0;
+}
+
+/* Implement proc_getpgrppids as described in <hurd/process.defs>. */
+error_t
+S_proc_getpgrppids (struct proc *callerp,
+		    pid_t pgid,
+		    pid_t **pids,
+		    u_int *npidsp)
+{
+  int count;
+  struct proc *p;
+  struct pgrp *pg;
+  pid_t *pp = *pids;
+  int npids = *npidsp;
+  
+  pg = pgrp_find (pgid);
+  if (!pg)
+    return ESRCH;
+
+  count = 0;
+  for (p = pg->pg_plist; p; p = p->p_gnext)
+    if (++count <= npids)
+      *pp++ = p->p_pid;
+  
+  if (count > npids)
+    /* They didn't all fit. */
+    {
+      vm_allocate (mach_task_self (), (vm_address_t *)pids,
+		   count * sizeof (pid_t), 1);
+      pp = *pids;
+      for (p = pg->pg_plist; p; p = p->p_gnext)
+	*pp++ = p->p_pid;
+      /* Dealloc ? XXX */
+    }
   *npidsp = count;
   return 0;
 }
