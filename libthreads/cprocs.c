@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.5  1995/08/30 15:50:53  mib
+ * (cond_signal): If this condition has implications, see if one of them
+ * needs to be signalled when we have no waiters.
+ * (cond_broadcast): Signal the implications list too.
+ * (condition_implies, condition_unimplies): New functions.
+ *
  * Revision 1.4  1995/04/04 21:04:29  roland
  * (mutex_lock_solid, mutex_unlock_solid): Renamed to __*.
  * (_cthread_mutex_lock_routine, _cthread_mutex_unlock_routine): Variables
@@ -788,8 +794,8 @@ condition_implies (condition_t implicator, condition_t implicatand)
   
   imp = malloc (sizeof (struct cond_imp));
   imp->implicatand = implicatand;
-  imp->next = implicator->implies;
-  implicator->implies = imp;
+  imp->next = implicator->implications;
+  implicator->implications = imp;
 }
 
 /* Declare that the implication relationship from IMPLICATOR to
@@ -799,7 +805,7 @@ condition_unimplies (condition_t implicator, condition_t implicatand)
 {
   struct cond_imp **impp;
   
-  for (impp = &implicator->implies; *impp; impp = (*impp)->next)
+  for (impp = &implicator->implications; *impp; impp = (*impp)->next)
     {
       if ((*impp)->implicatand == implicatand)
 	{
