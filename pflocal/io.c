@@ -28,6 +28,7 @@
 #include <hurd/hurd_types.h>
 #include <hurd/auth.h>
 #include <hurd/pipe.h>
+#include <mach/notify.h>
 
 #include "sock.h"
 #include "connq.h"
@@ -172,7 +173,9 @@ S_io_duplicate (struct sock_user *user,
    is just for the convenience of the user in matching up reply messages with
    specific requests sent.  */
 error_t
-S_io_select (struct sock_user *user, int *select_type, int *id_tag)
+S_io_select (struct sock_user *user,
+	     mach_port_t reply, mach_msg_type_name_t reply_type,
+	     int *select_type, int *id_tag)
 {
   error_t err = 0;
   struct sock *sock;
@@ -183,7 +186,6 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
   *select_type &= SELECT_READ | SELECT_WRITE;
 
   sock = user->sock;
- debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   if (sock->listen_queue)
@@ -191,7 +193,6 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
        only select for reading, which will block until a connection request
        comes along.  */
     {
-      debug (sock, "unlock");
       mutex_unlock (&sock->lock);
 
       *select_type &= SELECT_READ;
@@ -199,46 +200,65 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
       if (*select_type & SELECT_READ)
 	/* Wait for a connect.  Passing in NULL for REQ means that the
 	   request won't be dequeued.  */
-	{debug (sock, "waiting for connection");
-	  return 
-	    connq_listen (sock->listen_queue,
-			  sock->flags & SOCK_NONBLOCK, NULL, NULL);
-	}
+	if (connq_listen (sock->listen_queue, 1, NULL, NULL) == 0)
+	  /* We can satisfy this request immediately. */
+	  return 0;
+	else
+	  /* Gotta wait...  */
+	  {
+	    ports_interrupt_self_on_port_death (user, reply);
+	    return connq_listen (sock->listen_queue, 0, NULL, NULL);
+	  }
     }
   else
     /* Sock is a normal read/write socket.  */
     {
       int valid;
-      int err_select = 0;
+      int ready = 0;
       struct pipe *read_pipe = sock->read_pipe;
       struct pipe *write_pipe = sock->write_pipe;
 
       if (! write_pipe)
-	err_select |= SELECT_WRITE;
+	ready |= SELECT_WRITE;
       if (! read_pipe)
-	err_select |= SELECT_READ;
-      err_select &= *select_type; /* Only keep things requested.  */
-      *select_type &= ~err_select;
+	ready |= SELECT_READ;
+      ready &= *select_type; /* Only keep things requested.  */
+      *select_type &= ~ready;
 
       valid = *select_type;
       if (valid & SELECT_READ)
-	pipe_add_reader (read_pipe);
+	{
+	  pipe_acquire_reader (read_pipe);
+	  if (pipe_wait_readable (read_pipe, 1, 1) != EWOULDBLOCK)
+	    ready |= SELECT_READ; /* Data immediately readable (or error). */
+	  mutex_unlock (&read_pipe->lock);
+	}
       if (valid & SELECT_WRITE)
-	pipe_add_writer (write_pipe);
+	{
+	  pipe_acquire_writer (write_pipe);
+	  if (pipe_wait_writable (write_pipe, 1) != EWOULDBLOCK)
+	    ready |= SELECT_WRITE; /* Data immediately writable (or error). */
+	  mutex_unlock (&write_pipe->lock);
+	}
 
       mutex_unlock (&sock->lock);
 
-      err = pipe_pair_select (read_pipe, write_pipe, select_type, 1);
+      if (ready)
+	/* No need to block, we've already got some results.  */
+	*select_type = ready;
+      else
+	/* Wait for something to change.  */
+	{
+	  ports_interrupt_self_on_port_death (user, reply);
+	  err = pipe_pair_select (read_pipe, write_pipe, select_type, 1);
+	}
 
       if (valid & SELECT_READ)
 	pipe_remove_reader (read_pipe);
       if (valid & SELECT_WRITE)
 	pipe_remove_writer (write_pipe);
-
-      *select_type |= err_select;
     }
 
-debug (sock, "out");
   return err;
 }
 
@@ -381,7 +401,6 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   if (err)
     return err;
 
-debug (user, "old: %p, new: %d", user, new_user_port);
   auth_server = getauth ();
   err =
     auth_server_authenticate (auth_server, ports_get_right (user), 
