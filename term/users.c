@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,6 +29,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <hurd/iohelp.h>
+#include <hurd/fshelp.h>
 #include "ourmsg_U.h"
 
 
@@ -89,7 +90,7 @@ init_users ()
       exit (1);
     }
 
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &async_icky_id);
   /* Add a send right, since hurd_sig_post needs one.  */
   mach_port_insert_right (mach_task_self (),
@@ -101,7 +102,7 @@ init_users ()
   mach_port_insert_right (mach_task_self (),
 			  async_id, async_id, MACH_MSG_TYPE_MAKE_SEND);
 }
-  
+
 
 static error_t
 open_hook (struct trivfs_control *cntl,
@@ -111,7 +112,7 @@ open_hook (struct trivfs_control *cntl,
   static int open_count = 0;	/* XXX debugging */
   int cancel = 0;
   error_t err;
-  
+
   if (cntl == ptyctl)
     return pty_open_hook (cntl, user, flags);
 
@@ -128,10 +129,10 @@ open_hook (struct trivfs_control *cntl,
 	 and we use CS8 rather than CS7|PARENB.  */
       termstate.c_iflag |= BRKINT | ICRNL | IMAXBEL | IXON | IXANY;
       termstate.c_oflag |= OPOST | ONLCR | OXTABS;
-      termstate.c_lflag |= (ECHO | ICANON | ISIG | IEXTEN 
+      termstate.c_lflag |= (ECHO | ICANON | ISIG | IEXTEN
 			    | ECHOE|ECHOKE|ECHOCTL);
       termstate.c_cflag |= CREAD | CS8 | HUPCL;
-  
+
       bcopy (ttydefchars, termstate.c_cc, NCCS);
 
       bzero (&window_size, sizeof window_size);
@@ -164,26 +165,26 @@ open_hook (struct trivfs_control *cntl,
 	  return err;
 	}
     }
-  
+
   /* Wait for carrier to turn on. */
   while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
 	 && !(flags & O_NONBLOCK)
 	 && !cancel)
     cancel = hurd_condition_wait (&carrier_alert, &global_lock);
-      
+
   if (cancel)
     {
       mutex_unlock (&global_lock);
       return EINTR;
     }
-  
+
   termflags |= TTY_OPEN;
   (*bottom->set_bits) ();
 
   mutex_unlock (&global_lock);
   return 0;
 }
-error_t (*trivfs_check_open_hook) (struct trivfs_control *, 
+error_t (*trivfs_check_open_hook) (struct trivfs_control *,
 				   struct iouser *, int)
      = open_hook;
 
@@ -192,12 +193,12 @@ pi_create_hook (struct trivfs_protid *cred)
 {
   if (cred->pi.class == pty_class)
     return 0;
-  
+
   mutex_lock (&global_lock);
   if (cred->hook)
     ((struct protid_hook *)cred->hook)->refcnt++;
   mutex_unlock (&global_lock);
-  
+
   return 0;
 }
 error_t (*trivfs_protid_create_hook) (struct trivfs_protid *) = pi_create_hook;
@@ -241,7 +242,7 @@ po_create_hook (struct trivfs_peropen *po)
 error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *) =
      po_create_hook;
 
-static void 
+static void
 po_destroy_hook (struct trivfs_peropen *po)
 {
   if (po->cntl == ptyctl)
@@ -264,7 +265,7 @@ po_destroy_hook (struct trivfs_peropen *po)
       (*bottom->notice_input_flushed) ();
 
       drain_output ();
-      
+
       /* Possibly drop carrier */
       if ((termstate.c_cflag & HUPCL) || (termflags & NO_CARRIER))
 	(*bottom->desert_dtr) ();
@@ -274,7 +275,7 @@ po_destroy_hook (struct trivfs_peropen *po)
 
   mutex_unlock (&global_lock);
 }
-void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *) 
+void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *)
      = po_destroy_hook;
 
 /* Tell if CRED can do foreground terminal operations */
@@ -282,14 +283,14 @@ static inline int
 fg_p (struct trivfs_protid *cred)
 {
   struct protid_hook *hook = cred->hook;
-  
+
   if (!hook || (termflags & NO_OWNER))
     return 1;
-  
+
   if (hook->pid == foreground_id
       || hook->pgrp == -foreground_id)
     return 1;
-  
+
   return 0;
 }
 
@@ -314,7 +315,7 @@ S_term_getctty (mach_port_t arg,
   struct trivfs_protid *cred = ports_lookup_port (term_bucket,
 						  arg, tty_class);
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -354,7 +355,7 @@ S_termctty_open_terminal (mach_port_t arg,
 
   if (!err)
     {
-      err = trivfs_open (termctl, 
+      err = trivfs_open (termctl,
 			 iohelp_create_iouser (make_idvec (), make_idvec ()),
 			 flags, new_realnode, &newcred);
       if (!err)
@@ -380,7 +381,7 @@ S_term_open_ctty (mach_port_t arg,
   error_t err;
   struct trivfs_protid *newcred;
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, tty_class);
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -415,7 +416,7 @@ S_term_open_ctty (mach_port_t arg,
 	  ports_port_deref (newcred);
 	}
     }
-  
+
   ports_port_deref (cred);
 
   return err;
@@ -432,7 +433,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
 {
   struct stat st;
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -441,7 +442,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
   /* XXX */
   st.st_uid = term_owner;
   st.st_gid = term_group;
-  
+
   if (!cred->isroot)
     {
       err = fshelp_isowner (&st, cred->user);
@@ -460,7 +461,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
   term_owner = uid;
   term_group = gid;
   err = 0;
-  
+
 out:
   mutex_unlock (&global_lock);
   return err;
@@ -475,33 +476,33 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 {
   error_t err;
   struct stat st;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (!cred->isroot)
     {
       /* XXX */
       st.st_uid = term_owner;
       st.st_gid = term_group;
-      
+
       err = fshelp_isowner (&st, cred->user);
       if (err)
 	goto out;
 
       mode &= S_ISVTX;
-      
+
       if (!idvec_contains (cred->user->uids, term_owner))
 	mode &= ~S_ISUID;
-      
+
       if (!idvec_contains (cred->user->gids, term_group))
 	mode &= ~S_ISUID;
     }
 
   term_mode = ((mode & ~S_IFMT & ~S_ITRANS & ~S_ISPARE) | S_IFCHR | S_IROOT);
   err = 0;
-  
+
 out:
   mutex_unlock (&global_lock);
   return err;
@@ -514,7 +515,7 @@ trivfs_S_file_check_access (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  
+
   /* XXX Do the right thing eventually. */
   *allowed = O_READ | O_WRITE;
   return 0;
@@ -534,7 +535,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 {
   int i;
   int cancel;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -550,18 +551,18 @@ trivfs_S_io_write (struct trivfs_protid *cred,
       mutex_unlock (&global_lock);
       return EBADF;
     }
-  
+
   if ((termstate.c_lflag & TOSTOP) && !fg_p (cred))
     {
       mutex_unlock (&global_lock);
       return EBACKGROUND;
     }
-  
+
   if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
     {
       mutex_unlock (&global_lock);
       return EIO;
-  
+
     }
 
   cancel = 0;
@@ -614,13 +615,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     return pty_io_read (cred, data, datalen, amount);
 
   mutex_lock (&global_lock);
-  
+
   if ((cred->po->openmodes & O_READ) == 0)
     {
       mutex_unlock (&global_lock);
       return EBADF;
     }
-  
+
   if (!fg_p (cred))
     {
       mutex_unlock (&global_lock);
@@ -636,7 +637,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	  *datalen = 0;
 	  return 0;
 	}
-      
+
       if (cred->po->openmodes & O_NONBLOCK)
 	{
 	  mutex_unlock (&global_lock);
@@ -680,13 +681,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   if (max > *datalen)
     vm_allocate (mach_task_self (), (vm_address_t *)data, max, 1);
-  
+
   cancel = 0;
   cp = *data;
   for (i = 0; i < max; i++)
     {
       char c = dequeue (inputq);
-      
+
       if (remote_input_mode)
 	*cp++ = c;
       else
@@ -695,7 +696,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	  if (!(termstate.c_lflag & ICANON)
 	      || !CCEQ (termstate.c_cc[VEOF], c))
 	    *cp++ = c;
-      
+
 	  /* If this is a break character, then finish now. */
 	  if ((termstate.c_lflag & ICANON)
 	      && (c == '\n'
@@ -703,7 +704,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  || CCEQ (termstate.c_cc[VEOL], c)
 		  || CCEQ (termstate.c_cc[VEOL2], c)))
 	    break;
-	  
+
 	  /* If this is the delayed suspend character, then signal now. */
 	  if ((termstate.c_lflag & ISIG)
 	      && CCEQ (termstate.c_cc[VDSUSP], c))
@@ -743,7 +744,7 @@ trivfs_S_io_pathconf (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  
+
   switch (name)
     {
     case _PC_LINK_MAX:
@@ -753,25 +754,25 @@ trivfs_S_io_pathconf (struct trivfs_protid *cred,
     case _PC_NO_TRUNC:
     default:
       return io_pathconf (cred->realnode, name, val);
-      
+
     case _PC_MAX_CANON:
       *val = rawq->hiwat;
       return 0;
-      
+
     case _PC_MAX_INPUT:
       *val = inputq->hiwat;
       return 0;
-      
+
     case _PC_CHOWN_RESTRICTED:
       /* We implement this locally, remember... */
       *val = 1;
       return 0;
-      
+
     case _PC_VDISABLE:
       *val = _POSIX_VDISABLE;
       return 0;
     }
-}    
+}
 
 
 error_t
@@ -819,7 +820,7 @@ S_tioctl_tiocmodg (io_t port,
   mutex_lock (&global_lock);
   *state = (*bottom->mdmstate) ();
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return 0;
 }
@@ -850,7 +851,7 @@ S_tioctl_tiocmods (io_t port,
       (*bottom->mdmctl) (MDMCTL_SET, state);
       err = 0;
     }
-  
+
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -894,7 +895,7 @@ S_tioctl_tiocnxcl (io_t port)
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -938,7 +939,7 @@ S_tioctl_tiocflush (io_t port,
     }
 
   mutex_lock (&global_lock);
-  
+
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err =  EBADF;
   else
@@ -962,7 +963,7 @@ S_tioctl_tiocflush (io_t port,
   ports_port_deref (cred);
   return err;
 }
-  
+
 /* TIOCGETA ioctl -- Get termios state */
 kern_return_t
 S_tioctl_tiocgeta (io_t port,
@@ -1020,12 +1021,12 @@ set_state (io_t port,
     }
 
   mutex_lock (&global_lock);
-  
+
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err =  EBADF;
   else if (!fg_p (cred))
     err = EBACKGROUND;
-  else  
+  else
     {
       if (cred->pi.class == pty_class)
 	{
@@ -1043,7 +1044,7 @@ set_state (io_t port,
 	      return err;
 	    }
 	}
-      
+
       if (flushi)
 	{
 	  clear_queue (inputq);
@@ -1078,7 +1079,7 @@ set_state (io_t port,
 	}
       err = 0;
     }
-  
+
   mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
@@ -1163,7 +1164,7 @@ S_tioctl_tiocsetd (io_t port,
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   mutex_unlock (&global_lock);
-  
+
   if (disc != 0)
     err = ENXIO;
   else
@@ -1179,7 +1180,7 @@ S_tioctl_tiocdrain (io_t port)
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 0);
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -1197,7 +1198,7 @@ S_tioctl_tiocdrain (io_t port)
       ports_port_deref (cred);
       return EBADF;
     }
-  
+
   err = drain_output ();
   mutex_unlock (&global_lock);
   ports_port_deref (cred);
@@ -1223,7 +1224,7 @@ S_tioctl_tiocswinsz (io_t port,
     }
 
   mutex_lock (&global_lock);
-  
+
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
@@ -1247,7 +1248,7 @@ S_tioctl_tiocswinsz (io_t port,
   return err;
 }
 
-/* TIOCGWINSZ -- Fetch window size */  
+/* TIOCGWINSZ -- Fetch window size */
 kern_return_t
 S_tioctl_tiocgwinsz (io_t port,
 		     struct winsize *size)
@@ -1292,11 +1293,11 @@ S_tioctl_tiocmget (io_t port,
   mutex_lock (&global_lock);
   *bits = (*bottom->mdmstate) ();
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return 0;
 }
-  
+
 /* TIOCMSET -- Set all modem bits */
 kern_return_t
 S_tioctl_tiocmset (io_t port,
@@ -1323,12 +1324,12 @@ S_tioctl_tiocmset (io_t port,
       (*bottom->mdmctl) (MDMCTL_SET, bits);
       err = 0;
     }
-  
+
   mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
-  
+
 /* TIOCMBIC -- Clear some modem bits */
 kern_return_t
 S_tioctl_tiocmbic (io_t port,
@@ -1443,7 +1444,7 @@ S_tioctl_tiocstop (io_t port)
       return EOPNOTSUPP;
     }
   mutex_lock (&global_lock);
-  
+
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
@@ -1453,11 +1454,11 @@ S_tioctl_tiocstop (io_t port)
       err = 0;
     }
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return err;
 }
-  
+
 /* TIOCSTI -- Simulate terminal input */
 kern_return_t
 S_tioctl_tiocsti (io_t port,
@@ -1490,7 +1491,7 @@ S_tioctl_tiocsti (io_t port,
       err = 0;
     }
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return err;
 }
@@ -1523,7 +1524,7 @@ S_tioctl_tiocoutq (io_t port,
       err = 0;
     }
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return err;
 }
@@ -1556,11 +1557,11 @@ S_tioctl_tiocspgrp (io_t port,
       err = 0;
     }
   mutex_unlock (&global_lock);
-  
+
   ports_port_deref (cred);
   return err;
 }
-  
+
 /* TIOCGPGRP --- fetch pgrp of terminal */
 kern_return_t
 S_tioctl_tiocgpgrp (io_t port,
@@ -1623,7 +1624,7 @@ S_tioctl_tioccdtr (io_t port)
   ports_port_deref (cred);
   return err;
 }
-  
+
 /* TIOCSDTR -- set DTR */
 kern_return_t
 S_tioctl_tiocsdtr (io_t port)
@@ -1816,7 +1817,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
   mutex_unlock (&global_lock);
   return 0;
 }
-  
+
 error_t
 trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
 			       mach_port_t reply,
@@ -1942,7 +1943,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     return 0;
 
   mutex_lock (&global_lock);
-  
+
   while (1)
     {
       if ((*type & SELECT_READ) && qsize (inputq))
@@ -2011,7 +2012,7 @@ call_asyncs (int dir)
       && (!(dir & O_WRITE) && qavail (outputq) == 0))
     /* Output isn't possible in the desired directions.  */
     return;
-  
+
   if ((termflags & ICKY_ASYNC) && !(termflags & NO_OWNER))
     {
       report_sig_start ();
@@ -2020,7 +2021,7 @@ call_asyncs (int dir)
       mutex_lock (&global_lock);
       report_sig_end ();
     }
-  
+
   for (ar = async_requests, prevp = &async_requests;
        ar;
        ar = nxt)
@@ -2085,7 +2086,7 @@ S_term_get_nodename (io_t arg,
 						  tty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   strcpy (name, (char *)cred->po->cntl->hook ?: "");
 
   ports_port_deref (cred);
@@ -2100,10 +2101,10 @@ S_term_set_nodename (io_t arg,
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, tty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (strcmp (name, (char *)cred->po->cntl->hook) != 0)
     err = EINVAL;
-  
+
   ports_port_deref (cred);
   return err;
 }
@@ -2112,7 +2113,7 @@ kern_return_t
 S_term_set_filenode (io_t arg,
 		     file_t filenode)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, 
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
 						  tty_class);
   if (!cred)
     return EOPNOTSUPP;
@@ -2125,7 +2126,7 @@ kern_return_t
 S_term_get_bottom_type (io_t arg,
 			int *ttype)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, 
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
 						  arg, tty_class);
   if (!cred)
     return EOPNOTSUPP;
@@ -2142,7 +2143,7 @@ kern_return_t
 S_term_on_machdev (io_t arg,
 		   device_t machdev)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, 
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
 						  tty_class);
   if (!cred)
     return EOPNOTSUPP;
