@@ -13,8 +13,20 @@ Library General Public when distributing this binary snapshot.  See
 /share/misc/COPYING and /share/misc/COPYING.LIB for copies of these
 licenses. 
 
+If you have noticed that these steps are rather long and a bit too
+complex, you are right.  But we didn't want to delay the release just
+in order to make the installation prettier.  You can rest assured,
+however: Making it prettier and easier is one of our more important
+priorities. 
+
 
 STEP I:
+
+Fetch the file `grub-boot.image' from the FTP site.  It should be
+in the same directory as the Hurd binary image tar file.  Copy this
+file onto a fresh floppy with the command:
+  dd if=grub-boot.image of=/dev/fd0 bs=512
+This is your `grub boot floppy', referred to below.
 
 Unpack the binary distribution onto a fresh disk partition, which needs
 to be BSD FFS format.  The boot loader we use (GRUB) does not yet
@@ -22,17 +34,83 @@ understand how to boot from a Linux ext2fs filesystem, though this is
 expected to change very soon.
 
 Make the disk partition with newfs or mkfs on your favorite BSD
-system.  Then unpack the binaries with tar onto that partition.  
+system.  Then unpack the binaries with tar onto that partition.  It is
+strongly suggested that you dedicate a new disk to the Hurd.  If you
+have BSD, but you don't understand how to set up disks, it will
+probably be easier to use NetBSD boot floppies.
 
-[If you do not have a system running BSD, the NetBSD 2-floppy install
+If you do not have a system running BSD, the NetBSD 2-floppy install
 set contains enough tools to make a new filesystem using newfs and
-copy to it from nfs.]
+copy to it from nfs.  You can fetch these floppies from ftp.netbsd.org
+in the directory /pub/NetBSD/arch/i386/floppies.  The NetBSD install
+script will start automatically when you boot from the floppies, and
+we suggest you use it in order to partition and set up your disk.
 
-   
+We plan to have our own boot floppies soon.
+
+Here are detailed instructions for this step, assuming you are using
+NetBSD boot floppies, and you have the Hurd binary snapshot unpacked
+somewhere accessible via nfs.  It is assumed here that your machine's
+network address is MY-ADDR and that the nfs server's address is
+SERVER-ADDR.  The nfs mountpoint on the server is presumed to be
+SERVER-DIR.  (MY-ADDR and SERVER-ADDR should be IP addresses in dot
+notation, not hostnames.)  Your server and your new machine need to be
+on the same network.
+      
+If you installing this way, you probably want to do STEP II first,
+because your nfs server probably has more convenient editors than the
+NetBSd boot floppies.  The boot floppies have only ed.
+
+I.A.  Fetch the netbsd boot floppies.
+I.B.  Boot the `kernel' floppy, and switch to the `filesystem' floppy
+      when instructed.
+I.C.  Proceed through the NetBSD automated installation script.
+      When you are asked if you want to view the boot messages again, 
+      say yes.  Then answer the disk geometry questions correctly,
+      copying from what was printed at boot time.
+I.D.  Tell the script that you want to use cylinders, not sectors,
+      in specifying sizes.
+I.E.  VERY IMPORTANT: Make the size of your `NetBSD' portion one
+      cylinder less than the total amount listed.  If the script 
+      tells you that you have 3045 cylinders, then say you want the
+      NetBSD portion to be 3044 cylinders long.
+I.F.  VERY IMPORTANT: Tell the script that your `NetBSD' portion
+      should start at cylinder 1.  Not 0.  1.
+I.G.  Then allocate however much disk you want to your root partition
+      and to your swap partition.  The root partition must be big
+      enough to hold the entire Hurd binary snapshot; it is strongly
+      recommended that you make it a fair bit bigger than that.  It is
+      quite satisfactory to use only one filesystem partition in the
+      Hurd. 
+I.H.  If you specify partitions beyond the root partition and swap,
+      the script will ask you for a `mount point'.  Type anything you
+      like, it won't matter.
+I.I.  Affirm to the over-eagerly questioning script that you really do
+      want to smash your disk.  NetBSD will proceed to create
+      filesystems on all the partitions you specified in I.G-H.
+I.J.  When the script says "populating ..." hit ^C.  You are now done
+      with the script.
+      
+I.K.  cd to /mnt.  For each mount point that was gratuitously created
+      in step I.H, say `umount NAME'.  Then say `rm -rf * .*'.  Make
+      sure you are really in /mnt.  This will delete whatever NetBSD
+      has put on your new partition.
+I.L.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
+      printed by the kernel when it booted; type `more /kern/msgbuf'
+      if you want to see those messages again.  (Sometimes ifconfig
+      says that something is "offline".  Ignore it.)
+I.M.  Mount the NFS server partition with the conveniente command
+      `mount SERVER-ADDR:SERVER-DIR /mnt2'.
+I.N.  Copy the Hurd onto your disk with the command 
+      (cd /mnt2; tar cf - .) | (cd mnt; tar xfpv -)
+I.O.  Don't shutdown NetBSD yet.  If you haven't done STEP II yet,
+      then do it now; otherwise go on to STEP III.
+
+
 STEP II:
 
-You probably need to change the device on which paging is done.  This
-is done in a file in the Hurd partition called `boot/servers.boot', on
+You might need to change the device on which paging is done.  This is
+done in a file in the Hurd partition called `boot/servers.boot', on
 the line which looks like:
 
   /dev/sd0b $(add-paging-file) $(default-pager)
@@ -42,38 +120,17 @@ name (this is a mach partition name), or comment out the line if you
 don't want paging.  Note that you don't have to do anything to
 initialize swap partitions, unlike Linux.
 
-You also need to edit the file boot/boot-menu.grub.  Change both root
-specifications to match your partition.  Note that these
-specifications say `hd' for scsi disks, and have a slightly different
-syntax.  
-
-Fsck and unmount the new partition before using it, to make sure it's
-clean.
 
 
 STEP III:
 
-Install the grub bootloader.  
-
-The instructions for installing grub are found in INSTALL-grub, which
-is a copy of the installation instructions at
-http://www.uruk.org/grub.
-
-We have included binaries for the various pieces of grub in /boot/grub
-on your Hurd partition.  So you can follow the grub installation
-instructions without needing to build the actual grub pieces.
-
-You may want to switch to using grub entirely; it is able to most
-other kernels too.  Full instructions are available on at
-http://www.uruk.org/grub, or in the grub source (which you should find
-wherever you picked up this binary release).
-
-
-
-STEP IV:
-
-Boot the system with grub.  You should get a grub boot menu with two
-entries, `hurd' and `hurd-single'.  Select hurd-single.
+You can now boot the Hurd.  Boot the grub boot floppy.  When the menu
+comes up, select one of the single user boot commands, depending on
+whether you have a SCSI disk (sd0) or an IDE type disk (hd0).  If you
+put the Hurd on something other than partition `a', then you will need
+to edit the boot commands appropriately before booting.  (Editing the
+commands using grub only affects what you boot that time, it does not
+affect what the floppy does the next time you boot it.)
 
 Mach should load, and then the Hurd should start, saying something like:
 
@@ -82,7 +139,7 @@ Mach should load, and then the Hurd should start, saying something like:
    bash# 
 
 
-STEP V:
+STEP IV:
 
 When GNU boots the first time, you might see some confusing messages,
 and you may notice that pipes don't work.
@@ -94,7 +151,7 @@ Hurd system, say
 
 This will set up some initial translators so that the system runs
 normally, and then offer to reboot the system.  When it comes back up,
-boot it single-user again, so that you can do step VI. 
+boot it single-user again, so that you can do step V. 
 
 NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
   
@@ -112,13 +169,29 @@ NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
   extensions.)
 
 
+STEP V:
+
+If you want to be able to boot this disk without using the floppy each
+time, then run the script /INSTALL-GRUB-MBR; give it the arg the name
+of your disk without any partition.  Something like
+
+/INSTALL-GRUB-MBR sd0
+
+is called for.
+
+The menu that grub provides is found in /boot/grub/menu.lst.  You can
+edit that file to change what options the menu provides.  (You can
+change the one on the floppy by mounting the filesystem it contains
+and editing the file there.)
+
+
 STEP VI:
 
 Now you have a Hurd system.  But in order to make it fully usable, do
 the following:
 
 
-*** making devices
+*** make devices
 cd to /dev and make devices.
 
 Say `MAKEDEV dev1 dev2 dev3 ...'.
@@ -159,7 +232,7 @@ nameserver to work properly.
 
 
 
-*** mounting partitions
+*** mount partitions
 
 You can mount a partition (say hd0a) by saying:
 
@@ -185,7 +258,7 @@ You can make it readonly thus:
 For more information on settrans, see the end of this file.
 
 
-*** mounting nfs
+*** mount nfs
 
 NFS mounts, not surprisingly, are done thus:
 
