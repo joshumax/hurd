@@ -1,3 +1,26 @@
+1999-10-09  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rules (BUILDARCH): Renamed to DEB_BUILD_GNU_TYPE.
+	(HOSTARCH): Renamed to DEB_HOST_GNU_TYPE.
+	(INFODIR): New variable.
+	(STAMPS_TO_CLEAN): Add stamp-config.
+	(configure): Depend on configure.in.
+	(config, stamp-config): New targets.
+	(stamp-build): Build info documentation.
+	(clean): Do not clean up build directory, it will be removed.
+	Clean documentation directory.
+	(binary-arch): Remove etc/motd.
+	Expand bash {,} syntax.
+	Gzip serverboot.
+	Install additional documentation formats.
+	Rename libexec/runsystem to libexec/runsystem.gnu.
+	Install postinst, prerm
+	(.PHONY): Add config.
+	
+	* postinst, prerm: New Files.
+	* shlibs,shlibs.local: Remove libmom.
+	* changelog: Update to reflect Debian uploads.
+
 1999-06-01  Marcus Brinkmann <brinkmd@debian.org>
 
 	* TODO: Remove entry about shared library dependencies (see below).
