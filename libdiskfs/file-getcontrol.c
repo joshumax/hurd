@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:file_getcontrol.c
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -34,15 +34,17 @@ diskfs_S_file_getcontrol (struct protid *cred,
     error = EPERM;
   else
     {
-      spin_lock (&_diskfs_control_lock);
-      _diskfs_ncontrol_ports++;
-      spin_unlock (&_diskfs_control_lock);
-      newpi = ports_allocate_port (diskfs_port_bucket,
-				   sizeof (struct port_info),
-				   diskfs_control_class);
-      *control = ports_get_right (newpi);
-      *controltype = MACH_MSG_TYPE_MAKE_SEND;
-      ports_port_deref (newpi);
+      error = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+				 sizeof (struct port_info), &newpi);
+      if (! error)
+	{
+	  spin_lock (&_diskfs_control_lock);
+	  _diskfs_ncontrol_ports++;
+	  spin_unlock (&_diskfs_control_lock);
+	  *control = ports_get_right (newpi);
+	  *controltype = MACH_MSG_TYPE_MAKE_SEND;
+	  ports_port_deref (newpi);
+	}
     }
 
   return error;
