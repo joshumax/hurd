@@ -1,6 +1,6 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -156,7 +156,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 
   if (!err && num_pending_blocks > 0)
     do_pending_reads();
-      
+
   if (lock)
     rwlock_reader_unlock (lock);
 
@@ -278,7 +278,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 
   if (!err)
     pending_blocks_write (&pb);
-      
+
   if (lock)
     rwlock_reader_unlock (lock);
 
@@ -293,7 +293,7 @@ disk_pager_read_page (vm_offset_t page, vm_address_t *buf, int *writelock)
   error_t err;
   int length = vm_page_size;
   vm_size_t dev_end = diskfs_device_size << diskfs_log2_device_block_size;
-  
+
   if (page + vm_page_size > dev_end)
     length = dev_end - page;
 
@@ -563,13 +563,13 @@ diskfs_file_update (struct node *node, int wait)
   if (pager)
     ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
-  
+
   if (pager)
     {
       pager_sync (pager, wait);
       ports_port_deref (pager);
     }
-  
+
   pokel_sync (&node->dn->indir_pokel, wait);
 
   diskfs_node_update (node, wait);
@@ -587,7 +587,7 @@ flush_node_pager (struct node *node)
   if (pager)
     ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
-  
+
   if (pager)
     {
       pager_flush (pager, 1);
@@ -612,7 +612,7 @@ pager_report_extent (struct user_pager_info *pager,
     *size = diskfs_device_size << diskfs_log2_device_block_size;
   else
     *size = pager->node->allocsize;
-  
+
   return 0;
 }
 
@@ -658,26 +658,15 @@ service_paging_requests (any_t foo __attribute__ ((unused)))
 					      1, MACH_PORT_NULL);
 }
 
-/* Create a the DISK pager, initializing DISKPAGER, and DISKPAGERPORT */
+/* Create the DISK pager.  */
 void
-create_disk_pager ()
+create_disk_pager (void)
 {
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
 
-  pager_bucket = ports_create_bucket ();
-
-  /* Make a thread to service paging requests.  */
-  cthread_detach (cthread_fork ((cthread_fn_t)service_paging_requests,
-				(any_t)0));
-
   upi->type = DISK;
-  disk_pager = 
-    pager_create (upi, pager_bucket, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-
-  disk_pager_port = pager_get_port (disk_pager);
-  mach_port_insert_right (mach_task_self (), disk_pager_port, disk_pager_port,
-			  MACH_MSG_TYPE_MAKE_SEND);
-}  
+  disk_pager_setup (upi);
+}
 
 /* Call this to create a FILE_DATA pager and return a send right.
    NODE must be locked.  */
@@ -714,7 +703,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	  upi->node = node;
 	  upi->max_prot = 0;
 	  diskfs_nref_light (node);
-	  node->dn->pager = 
+	  node->dn->pager =
 	    pager_create (upi, pager_bucket, MAY_CACHE,
 			  MEMORY_OBJECT_COPY_DELAY);
 	  right = pager_get_port (node->dn->pager);
@@ -723,12 +712,12 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
     }
   while (right == MACH_PORT_NULL);
   spin_unlock (&node_to_page_lock);
-  
+
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   return right;
-} 
+}
 
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
@@ -736,7 +725,7 @@ void
 drop_pager_softrefs (struct node *node)
 {
   struct pager *pager;
-  
+
   spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
@@ -755,13 +744,13 @@ void
 allow_pager_softrefs (struct node *node)
 {
   struct pager *pager;
-  
+
   spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
-  
+
   if (MAY_CACHE && pager)
     pager_change_attributes (pager, 1, MEMORY_OBJECT_COPY_DELAY, 0);
   if (pager)
@@ -770,7 +759,7 @@ allow_pager_softrefs (struct node *node)
 
 /* Call this to find out the struct pager * corresponding to the
    FILE_DATA pager of inode IP.  This should be used *only* as a subsequent
-   argument to register_memory_fault_area, and will be deleted when 
+   argument to register_memory_fault_area, and will be deleted when
    the kernel interface is fixed.  NODE must be locked.  */
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *node)
@@ -795,7 +784,7 @@ diskfs_shutdown_pager ()
     }
 
   write_all_disknodes ();
-  
+
   /* Because the superblock lives in the disk pager, we copy out the last
      known value just before we shut it down.  */
   bcopy (sblock, &final_sblock, sizeof (final_sblock));
@@ -816,7 +805,7 @@ diskfs_sync_everything (int wait)
 	pager_sync (p, wait);
       return 0;
     }
-  
+
   write_all_disknodes ();
   ports_bucket_iterate (pager_bucket, sync_one);
 
@@ -832,11 +821,11 @@ disable_caching ()
   error_t block_cache (void *arg)
     {
       struct pager *p = arg;
-      
+
       pager_change_attributes (p, 0, MEMORY_OBJECT_COPY_DELAY, 1);
       return 0;
     }
-  
+
   /* Loop through the pagers and turn off caching one by one,
      synchronously.  That should cause termination of each pager. */
   ports_bucket_iterate (pager_bucket, block_cache);
@@ -849,7 +838,7 @@ enable_caching ()
     {
       struct pager *p = arg;
       struct user_pager_info *upi = pager_get_upi (p);
-      
+
       pager_change_attributes (p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
 
       /* It's possible that we didn't have caching on before, because
@@ -887,7 +876,7 @@ diskfs_pager_users ()
       /* Give it a second; the kernel doesn't actually shutdown
 	 immediately.  XXX */
       sleep (1);
-  
+
       npagers = ports_count_bucket (pager_bucket);
       if (npagers <= 1)
 	return 0;
@@ -896,7 +885,7 @@ diskfs_pager_users ()
 	 and return failure. */
       enable_caching ();
     }
-  
+
   ports_enable_bucket (pager_bucket);
 
   return 1;
