@@ -1,6 +1,53 @@
 \input texinfo  @c -*-texinfo-*-
 @setfilename hurd.info
 
+@c FIXME: might it be useful to have a glossary?
+
+@c FIXME: Please use the active voice whenever possible.  There are
+@c a lot of sentences here that use passive voice, and it's therefore
+@c hard for me to tell who is doing what to whom.  I have not changed
+@c those sentences because I did not know what to make the subject and
+@c what the object.
+
+@c FIXME: Be consistent with mood -- that is, when writing the
+@c descriptions of functions, either write them all as declaratives (as
+@c in "This function twiddles the frobs.") or as imperatives (as in
+@c "Twiddle the frobs.").  As this now stands, some function definitions
+@c are imperative (such as ports_reallocate_port: `Destroy the receive right'), and some
+@c are declarative (such as ihash_set_cleanup: `Sets @var{ht}'s element
+@c cleanup function').  This inconsistency is confusing.  A particularly
+@c confusing example is the description of `pager_unlock_page': it reads
+@c `A page should be made writable.'
+
+@c FIXME: Might we want to use some sort of highlighting when we
+@c refer to libraries by an abbreviated version of their name?  For
+@c example, we often refer to `fshelp', by 
+@c which we mean the library `libfshelp.a'.  On those few occasions when
+@c we bother to spell out its full name, we use `@code', as we should;
+@c but when we abbreviate the name to `fshelp', we use no highlighting
+@c at all.  These un-highlighted abbreviated names look odd to me.
+
+@c FIXME: I think we should say `zero' instead of `NULL' or `NUL'.
+@c Currently, this document uses all three, which is confusing.
+
+@c FIXME: This document sometimes says something MUST be
+@c such-and-such, and other times says something SHOULD be
+@c such-and-such.  It's not clear if you're using `must' and `should'
+@c interchangeably, or if instead the really mean different things.
+@c (Similarly for `may', `do', and `does'.)  Also, when we say something
+@c MUST be such-and-such, I for one always wonder `what happens if it
+@c isn't'?  For example, the description of `diskfs_create_protid' says
+@c `The node @code{@var{po}->np} must be locked.'  I wonder `what
+@c happens if the node isn't locked?'  I imagine other programmers will
+@c wonder that too; in that case, perhaps the description should say
+@c `The node @code{@var{po}->np} must be locked; otherwise the function
+@c returns ENAUGHTY'.  A particularly confusing example is the paragraph
+@c in subsection I/O Object Ports, which begins `The uid and gid sets
+@c associated with a port may not be visibly shared  with other ports,
+@c nor may they ever change.  The server must fix the identification of
+@c a set of uids and gids with a particular port at the moment of the
+@c port's creation.'
+
 @c Get the Hurd version we are documenting.
 @include version.texi
 
@@ -133,7 +180,7 @@ Ports Library
 
 * Buckets and Classes::         Basic units of port organization.
 * Port Rights::                 Moving port rights to and from @code{libports}.
-* Port Metadata::               Managing port-releated information.
+* Port Metadata::               Managing port-related information.
 * Port References::             Guarding against leaks and lossage.
 * RPC Management::              Locking and interrupting RPC operations.
 
@@ -275,6 +322,9 @@ Mach microkernel to implement file systems, network protocols, file
 access control, and other features that are normally implemented by the
 Unix kernel or similar kernels (such as Linux).
 
+@c FIXME:  Might we want to define `server' and `Mach' in a
+@c glossary, and refer to those definitions here?
+
 @menu
 * Audience::                    The people for whom this manual is written.
 * Features::                    Reasons to install and use the Hurd.
@@ -291,10 +341,10 @@ This manual is designed to be useful to everybody who is interested in
 using, administering, or programming the Hurd.
 
 If you are an end-user and you are looking for help on running the Hurd,
-the first few chapters of this manual describes the essential parts of
+the first few chapters of this manual describe the essential parts of
 installing, starting up, and shutting down a Hurd workstation.  If you
 need help with a specific program, the best way to use this manual is to
-find it in the index and go directly to the appropriate section.  You
+find the program's name in the index and go directly to the appropriate section.  You
 may also wish to try running @kbd{@var{program} --help}, which will
 display a brief usage message for @var{program} (@pxref{Foundations}).
 
@@ -302,21 +352,23 @@ The rest of this manual is a technical discussion of the Hurd servers
 and their implementation, and would not be helpful until you want to
 learn how to modify the Hurd.
 
-This manual is organized according to subsystem, and each chapter begins
+This manual is organized according to the subsystems of the Hurd, and each chapter begins
 with descriptions of utilities and servers that are related to that
 subsystem.  If you are a system administrator, and you want to learn
 more about, say, the Hurd networking subsystem, you can skip to the
-networking chapter (@pxref{Networking}), and browse the related
+networking chapter (@pxref{Networking}), and read about the related
 utilities and servers.
 
-Programmers who are interested in learning how to modify Hurd servers or
-write new ones should begin by learning about a microkernel to which the
+Programmers who are interested in learning how to modify Hurd servers, or
+write new ones, should begin by learning about a microkernel to which the
 Hurd has been ported (currently only GNU Mach) and reading
 @ref{Foundations}.  You should then familiarize yourself with a
 subsystem that interests you by reading about existing servers and the
 libraries they use.  At that point, you should be able to study the
 source code of existing Hurd servers and understand how they use the
 Hurd libraries.
+
+@c FIXME: the footnote about RPC is not helpful.
 
 The final level of mastery is learning the RPC@footnote{Remote Procedure
 Call.  If you needed to ask, then you've got your work cut out for you
@@ -535,9 +587,9 @@ should send e-mail to the @email{bug-hurd@@gnu.org} mailing list in
 order to coordinate your efforts.  People on that list will give you
 advice on what to look out for, as well as helping you figure out a way
 that your cross-compilation can benefit Hurd development.  After that,
-don your bug-resistent suit, and read the @file{INSTALL-cross} file,
+don your bug-resistant suit, and read the @file{INSTALL-cross} file,
 which comes with the latest Hurd source code distribution.  The
-instructions in INSTALL-cross are usually out-of-date, but they contain
+instructions in @file{INSTALL-cross} are usually out-of-date, but they contain
 some useful hints buried amongst the errors.
 
 
@@ -590,8 +642,8 @@ the rest of the Hurd servers.  Rather than containing specific
 instructions for starting the Hurd, it follows general steps given in a
 user-supplied boot script.
 
-To bootstrap the Hurd, the microkernel must start this program as its
-first task, and to pass it appropriate arguments.  @code{serverboot} may
+To boot the Hurd, the microkernel must start @code{serverboot} as its
+first task, and pass it appropriate arguments.  @code{serverboot} may
 also be invoked while the Hurd is already running, which allows users to
 start their own complete sub-Hurds (@pxref{Recursive Bootstrap}).
 
@@ -694,6 +746,10 @@ running Hurds, so don't get any funny ideas.  When you're finished
 testing your new Hurd, then you can run the @code{halt} or @code{reboot}
 programs to return control to the parent Hurd.
 
+@c FIXME: the `don't get any funny ideas' comment is confusing.  Am
+@c I genuinely in some sort of danger if I contemplate sharing
+@c microkernel devices between two running Hurds?
+
 If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
 safe place to overwrite your old Hurd with the new one, and reboot back
@@ -716,7 +772,7 @@ Every Hurd program accepts the following optional arguments:
 @table @samp
 @item --help
 Display a brief usage message, then exit.  This message is not a
-substitute for reading program documentation, rather it provides useful
+substitute for reading program documentation; rather, it provides useful
 reminders about specific command-line options that a program
 understands.
 
@@ -753,13 +809,16 @@ the rest of the Hurd relies upon them quite heavily.
 All Hurd servers and libraries are aggressively multithreaded in order
 to take full advantage of any multiprocessing capabilities provided by
 the microkernel and the underlying hardware.  The Hurd threads library,
-@code{libthreads} contains the default Hurd thread implementation, which
+@code{libthreads}, contains the default Hurd thread implementation, which
 is declared in @code{<cthreads.h>}.
 
 Currently (April 1998), the Hurd uses cthreads, which have already been
 documented thoroughly by CMU.  Eventually, it will be migrated to use
 POSIX pthreads, which are documented in a lot of places.
 @c Thomas, 26-03-1998
+
+@c FIXME: it would be nice if we referred specifically to some of
+@c the places in which POSIX pthreads are documented.
 
 Every single library in the Hurd distribution (including the GNU C
 library) is completely thread-safe, and the Hurd servers themselves are
@@ -776,7 +835,7 @@ Open Group's version of the Mach microkernel.  The answer is ``no''.
 
 Currently (April 1998), the Hurd is quite dependent on the GNU Mach
 microkernel, which is a derivative of the University of Utah's Mach 4.
-However, the Hurd developers are all-too-aware of the limitations of
+However, the Hurd developers are all too aware of the limitations of
 Mach.
 
 @cindex MOM
@@ -819,7 +878,7 @@ The Hurd ports library, @code{libports}, fills that need.  The
 @menu
 * Buckets and Classes::         Basic units of port organization.
 * Port Rights::                 Moving port rights to and from @code{libports}.
-* Port Metadata::               Managing port-releated information.
+* Port Metadata::               Managing port-related information.
 * Port References::             Guarding against leaks and lossage.
 * RPC Management::              Locking and interrupting RPC operations.
 @end menu
@@ -912,7 +971,7 @@ get @code{EOPNOTSUPP} errors.
 Transfer the receive right from @var{frompt} to @var{topt}.
 @var{frompt} ends up with a destroyed right (as if
 @code{ports_destroy_right} were called) and @var{topt}'s old right is
-destroyed (as if @code{ports_reallocate_from_external} were called.
+destroyed (as if @code{ports_reallocate_from_external} were called).
 @end deftypefun
 
 @deftypefun mach_port_t ports_get_right (@w{void *@var{port}})
@@ -947,6 +1006,9 @@ searched.  If @var{class} is nonzero, then the lookup will fail if
 Call @var{fun} once for each port in @var{bucket}.
 @end deftypefun
 
+@c FIXME: does ports_bucket_iterate make any guarantees about the
+@c order in which the ports are traversed?  What if fun returns an
+@c error?  What happens to the return values from fun?
 
 @node Port References
 @subsection Port References
@@ -1014,6 +1076,8 @@ cancellations that are required in order to build robust servers.
 Type of MiG demuxer routines.
 @end deftypefn
 
+@c FIXME: Should I know what `MiG' means?
+
 @deftypefun error_t ports_begin_rpc (@w{void *@var{port}}, @w{mach_msg_id_t @var{msg_id}}, @w{struct rpc_info *@var{info}})
 Call this when an RPC is beginning on @var{port}.  @var{info} should be
 allocated by the caller and will be used to hold dynamic state.  If this
@@ -1035,7 +1099,7 @@ milliseconds.  Use only one thread (the calling thread).
 @deftypefun void ports_manage_port_operations_multithread (@w{struct port_bucket *@var{bucket}}, @w{ports_demuxer_type @var{demuxer}}, @w{int @var{thread_timeout}}, @w{int @var{global_timeout}}, @w{void (*@var{hook}) (void)})
 Begin handling operations for the ports in @var{bucket}, calling
 @var{demuxer} for each incoming message.  Return if @var{global_timeout}
-is nonzero and no messages have been receieved for @var{global_timeout}
+is nonzero and no messages have been received for @var{global_timeout}
 milliseconds.  Create threads as necessary to handle incoming messages
 so that no port is starved because of sluggishness on another port.  If
 @var{thread_timeout} is nonzero, then individual threads will die off
@@ -1126,7 +1190,7 @@ to @code{MACH_NOTIFY_DEAD_NAME}.
 @scindex ihash.h
 
 @code{libihash} provides integer-keyed hash tables, for arbitrary
-element data types.  This kind of hash tables are frequently used when
+element data types.  Such hash tables are frequently used when
 implementing sparse arrays or buffer caches.
 
 The following functions are declared in @code{<hurd/ihash.h>}:
@@ -1161,7 +1225,7 @@ error occurs, @code{ENOMEM} is returned, otherwise zero.
 
 @deftypefun {void *} ihash_find (@w{ihash_t @var{ht}}, @w{int @var{id}})
 Find and return the item in hash table @var{ht} with key @var{id}.
-Returns null the specified item doesn't exist.
+Returns null if the specified item doesn't exist.
 @end deftypefun
 
 @deftypefun error_t ihash_iterate (@w{ihash_t @var{ht}}, @w{error_t (*@var{fun}) (void *@var{value})})
@@ -1409,10 +1473,10 @@ dropped by the kernel.  If the page is currently in core, the kernel
 might ignore this call.
 @end deftypefun
 
-@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
+attributes@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
 Change the attributes of the memory object underlying pager @var{pager}.
 The @var{may_cache} and @var{copy_strategy} arguments are as for
-@code{memory_object_change_atributes}.  Wait for the kernel to report
+@code{memory_object_change_}.  Wait for the kernel to report
 completion if and only if @var{wait} is set.
 @end deftypefun
 
@@ -1436,7 +1500,7 @@ points to and the region at @var{offset} in the pager indicated by
 @var{pager} and @var{memobj}.  If @var{prot} is @code{VM_PROT_READ},
 copying is from the pager to @var{other}; if @var{prot} contains
 @code{VM_PROT_WRITE}, copying is from @var{other} into the pager.
-@code{*@var{size}} is always filled in the actual number of bytes
+@code{*@var{size}} is always filled in with the actual number of bytes
 successfully copied.  Returns an error code if the pager-backed memory
 faults; if there is no fault, returns zero and @code{*@var{size}} will
 be unchanged.
@@ -1468,14 +1532,14 @@ define the following functions:
 For pager @var{pager}, read one page from offset @var{page}.  Set
 @code{*@var{buf}} to be the address of the page, and set
 @code{*@var{write_lock}} if the page must be provided read-only.  The
-only permissable error returns are @code{EIO}, @code{EDQUOT}, and
+only permissible error returns are @code{EIO}, @code{EDQUOT}, and
 @code{ENOSPC}.
 @end deftypefun
 
 @deftypefun error_t pager_write_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{page}}, @w{vm_address_t @var{buf}})
 For pager @var{pager}, synchronously write one page from @var{buf} to
 offset @var{page}.  In addition, @code{vm_deallocate} (or equivalent)
-@var{buf}.  The only permissable error returns are @code{EIO},
+@var{buf}.  The only permissible error returns are @code{EIO},
 @code{EDQUOT}, and @code{ENOSPC}.
 @end deftypefun
 
@@ -1497,7 +1561,7 @@ rights have been destroyed.
 @deftypefun void pager_dropweak (@w{struct user_pager_info *@var{p}})
 This will be called when the ports library wants to drop weak
 references.  The pager library creates no weak references itself, so if
-the user doesn't either, then it is alright for this function to do
+the user doesn't either, then it is all right for this function to do
 nothing.
 @end deftypefun
 
@@ -1543,14 +1607,13 @@ with other ports, nor may they ever change.  The server must fix the
 identification of a set of uids and gids with a particular port at the
 moment of the port's creation.  The other characteristics of an I/O port
 may be shared with other users.  The I/O server interface does not
-generally specify in what way servers may share these other
-characteristics are shared (with the exception of the deprecated
+generally specify the way in which servers may share these other
+characteristics (with the exception of the deprecated
 @code{O_ASYNC} interface); however, the file and socket interfaces make
-further requirements about what sharing is expected and prohibited from
-occurring.
+further requirements about what sharing is required and what sharing is prohibited.
 
 In general, users get send rights to I/O ports by some mechanism that is
-external to the I/O protocol.  (For example fileservers give out I/O
+external to the I/O protocol.  (For example, fileservers give out I/O
 ports in response to the @code{dir_lookup} and @code{fsys_getroot}
 calls.  Socket servers give out ports in response to the
 @code{socket_create} and @code{socket_accept} calls.)  However, the I/O
@@ -1561,6 +1624,9 @@ pointer, open mode bits, and underlying object) must be shared between
 the old and new ports.  In the following descriptions of these calls,
 the term ``identical'' means this kind of sharing.  All these calls must
 return send rights to a newly-constructed Mach port.
+
+@c FIXME: should be say `Mach' above, or should we say
+@c `microkernel'?
 
 @findex io_duplicate
 The @code{io_duplicate} call simply returns another port which is
@@ -1607,15 +1673,15 @@ support writing, then the correct error is @code{EBADF}.
 
 @findex io_read
 Users read from I/O ports by calling the @code{io_read} RPC.  They
-specify the amount of data they wish to read and the offset.  The offset
+specify the amount of data they wish to read, and the offset.  The offset
 has the same meaning as for @code{io_write} above.  The server should
 return the data that was read.  If the call is interrupted after some
 data has been read (and the operation is not idempotent) then the server
-should return the amount read, even if less than the amount requested.
+should return the amount read, even if it was less than the amount requested.
 The server should return as much data as possible, but never more than
 requested by the user.  If there is no data, but there might be later,
-the call should block until data becomes available.  Indicate
-end-of-file conditions by returning zero bytes.  If the call is
+the call should block until data becomes available.  The server indicates
+end-of-file by returning zero bytes.  If the call is
 interrupted after some data has been read, but the call is idempotent,
 then the server may return @code{EINTR} rather than actually filling the
 buffer (taking care that any modifications of the default file pointer
@@ -1623,10 +1689,12 @@ have been reversed).  Preferably, however, servers should return data.
 
 There are two categories of objects: seekable and non-seekable.
 Seekable objects must accept arbitrary offset parameters in the
-@code{io_read} and @code{io_write} calls, and to implement the
-@code{io_seek} call.  Nonseekable objects must ignore the offset
+@code{io_read} and @code{io_write} calls, and must implement the
+@code{io_seek} call.  Non-seekable objects must ignore the offset
 parameters to @code{io_read} and @code{io_write}, and should return
 @code{ESPIPE} to the @code{io_seek} call.
+
+@c FIXME: should that last `should' be replaced with `must'?
 
 @findex io_seek
 On seekable objects, @code{io_seek} changes the default file pointer for
@@ -1670,7 +1738,7 @@ The @code{O_NONBLOCK} bit, when set, prevents read and write from
 blocking.  They should copy such data as is immediately available.  If
 no data is immediately available they should return @code{EWOULDBLOCK}.
 
-The definition of ``immediately'' is more-or-less server-dependent.
+The definition of ``immediately'' is more or less server-dependent.
 Some servers, notably stored filesystem servers (@pxref{Stored
 Filesystems}), regard all data as immediately available.  The one
 criterion is that something which must happen @dfn{immediately} may not
@@ -1699,7 +1767,7 @@ user everytime I/O becomes possible.  I/O is possible if at least one
 byte can be read or written immediately.  The definition of
 ``immediately'' must be the same as for the implementation of the
 @code{O_NONBLOCK} flag (@pxref{Open Modes}).  In addition, every time a
-user calls io_read or io_write on a non-seekable object, or at the
+user calls @code{io_read} or @code{io_write} on a non-seekable object, or at the
 default file pointer on a seekable object, another signal should be sent
 to each user if I/O is still possible.
 
@@ -1725,7 +1793,7 @@ definition of ``immediately'' must be the same for @code{io_select},
 @findex io_get_icky_async_id
 For compatibility with 4.2 and 4.3 BSD, the I/O interface provides a
 deprecated feature (known as @dfn{icky async I/O}).  The calls
-@code{io_mod_owner} and @code{io_get_owner} to set the ``owner'' of the
+@code{io_mod_owner} and @code{io_get_owner} set the ``owner'' of the
 object, providing either a pid or a pgrp (if the value is negative).
 This implies that only one process at a time can do icky I/O on a given
 object.  Whenever the I/O server is sending @code{sig_post} messages to
@@ -1742,7 +1810,7 @@ this by calling @code{io_get_icky_async_id}.
 Users may call @code{io_stat} to find out information about the I/O
 object.  Most of the fields of a @code{struct stat} are meaningful only
 for files.  All objects, however, must support the fields
-@code{st_fstype}, @var{st_fsid}, @var{st_ino}, @var{st_atime},
+@var{st_fstype}, @var{st_fsid}, @var{st_ino}, @var{st_atime},
 @var{st_atime_usec}, @var{st_mtime_user}, @var{st_ctime},
 @var{st_ctime_usec}, and @var{st_blksize}.
 
@@ -1753,7 +1821,7 @@ the underlying object across the entire system.
 microseconds, respectively, of the system clock at the last time the
 object was read with @code{io_read}.
 
-@var{st_mtime} and @var{st_mtime_usec} hold the second and microseconds,
+@var{st_mtime} and @var{st_mtime_usec} hold the seconds and microseconds,
 respectively, of the system clock at the last time the object was
 written with @code{io_write}.
 
@@ -1764,7 +1832,7 @@ operations.
 @var{st_ctime} and @var{st_ctime_usec} hold the seconds and
 microseconds, respectively, of the system clock at the last time
 permanent meta-data associated with the object was changed.  The exact
-operations which couse such an update are server-dependent, but must
+operations which cause such an update are server-dependent, but must
 include the creation of the object.
 
 The server is permitted to delay the actual update of these times until
@@ -1774,7 +1842,7 @@ stat is called; before the server stores the times on permanent media
 @var{st_blksize} gives the optimal I/O size in bytes for @code{io_read}
 and @code{io_write}; users should endeavor to read and write amounts
 which are multiples of the optimal size, and to use offsets which are
-multiples of the optimal size
+multiples of the optimal size.
 
 In addition, objects which are seekable should set @var{st_size} to the
 current file size as in the description of the @code{O_APPEND} flag
@@ -1841,7 +1909,7 @@ services the client's request.  The GNU C library makes this behaviour
 seamless from the client's perspective, so that standard Unix programs
 behave correctly under the Hurd.
 
-Translators run with the priviledges of the translated node's
+Translators run with the privileges of the translated node's
 @emph{owner}, so they cannot be used to compromise the security of the
 system.  This also means that @emph{any} user can write their own
 translators, and provide other users with arbitrary
@@ -1875,12 +1943,12 @@ filesystem interfaces, but it also provides a special Unix-domain socket
 RPC interface (FIXME xref).  Programs can fetch a port to this
 translator simply by calling @code{file_name_lookup} (FIXME xref) on
 @file{/servers/socket/1}@footnote{The number 1 corresponds to the
-@code{PF_LOCAL} C library socket domain constant.} then use Unix
-socket-specific RPC's on that port, rather than adhering to the file
+@code{PF_LOCAL} C library socket domain constant.}, then use Unix
+socket-specific RPCs on that port, rather than adhering to the file
 protocol.
 @end itemize
 
-This section focuses on the generic programs that need to be understood
+This section focuses on the generic programs that you need to understand
 in order to use existing translators.  Many other parts of this manual
 describe how you can write your own translators.
 
@@ -1942,8 +2010,8 @@ active in order to conserve system resources.
 
 Passive translators are stored on the underlying filesystem media, and
 so they persist between system reboots.  Not all filesystems support
-passive translators, due to limitations in their underlying media@dots{}
-consult the filesystem-specific documentation to see if they are
+passive translators, due to limitations in their underlying media.
+Consult the filesystem-specific documentation to see if they are
 supported.
 
 If you are setting the passive translator, and @var{node} already has an
@@ -2056,6 +2124,9 @@ Append to the malloced string @code{*@var{argz}} of length
 translator.
 @end deftypefun
 
+@c FIXME: Shouldn't `NUL-separated', above, be changed to
+@c `NUL-terminated' (or, as I prefer, `zero-terminated')?
+
 After your translator parses its command-line arguments, it should fetch
 its bootstrap port by using @code{task_get_bootstrap_port}.  If this
 port is @code{MACH_PORT_NULL}, then your program wasn't started as a
@@ -2104,6 +2175,9 @@ message-handling over to @code{trivfs_demuxer} and @code{libports}:
 These functions can be used as @code{intran} functions for a MiG port
 type to have the stubs called with either the control or protid pointer.
 @end deftypefun
+
+@c FIXME: `intran' needs to be explained, or else there needs to be
+@c a cross-reference there.
 
 @deftypefun void trivfs_end_using_control (@w{struct trivfs_control *@var{port}})
 @deftypefunx void trivfs_end_using_protid (@w{struct trivfs_protid *@var{port}})
@@ -2162,7 +2236,7 @@ is used only to validate opens, not actual operations.
 
 @deftypefun void trivfs_modify_stat (@w{struct trivfs_protid *@var{cred}}, @w{struct stat *@var{stbuf}})
 This should modify a @code{struct stat} (as returned from the underlying
-node) for presentation to callers of @code{io_stat}.  It is permissable
+node) for presentation to callers of @code{io_stat}.  It is permissible
 for this function to do nothing, but it must still be defined.
 @end deftypefun
 
@@ -2187,35 +2261,35 @@ them; rather, they may be redefined on a case-by-case basis.
 If you define these, they should be vectors (and the associated sizes)
 of port classes that will be translated into control and protid pointers
 for passing to RPCs, in addition to those passed to or created by
-@code{trivfs_create_control} (or @code{trivfs_startup}) will
+@code{trivfs_create_control} (or @code{trivfs_startup}), which will
 automatically be recognized.
 @end deftypevar
 
 @deftypefn {Variable} {error_t (*} trivfs_check_open_hook ) (@w{struct trivfs_control *@var{cntl}}, @w{struct iouser *@var{user}}, @w{int @var{flags}})
-If this variable is set, it is called every time an open happens.
+If this variable is non-zero, it will be called every time an open happens.
 @var{user} and @var{flags} are from the open; @var{cntl} identifies the
 node being opened.  This call need not check permissions on the
 underlying node.  This call can block as necessary, unless
 @code{O_NONBLOCK} is set in @var{flags}.  Any desired error can be
-returned, which will be reflected to the user and prevent the open from
+returned, which will be reflected to the user and will prevent the open from
 succeeding.
 @end deftypefn
 
 @deftypefn {Variable} {error_t (*} trivfs_protid_create_hook ) (@w{struct trivfs_protid *@var{prot}})
 @deftypefnx {Variable} {error_t (*} trivfs_peropen_create_hook ) (@w{struct trivfs_peropen *@var{perop}})
-If these variables are set, they is called every time a new protid or
+If these variables are non-zero, they will be called every time a new protid or
 peropen structure is created and initialized.
 @end deftypefn
 
 @deftypefn {Variable} {void (*} trivfs_protid_destroy_hook ) (@w{struct trivfs_protid *@var{prot}})
 @deftypefnx {Variable} {void (*} trivfs_peropen_destroy_hook ) (@w{struct trivfs_peropen *@var{perop}})
-If these variables is set, they are called every time a protid or
+If these variables is non-zero, they will be called every time a protid or
 peropen structure is about to be destroyed.
 @end deftypefn
 
 @deftypefn {Variable} {error_t (*} trivfs_getroot_hook ) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
-If this variable is set, it is called by @code{trivfs_S_fsys_getroot}
-before any other processing takes place; if the return value is
+If this variable is set, it will be called by @code{trivfs_S_fsys_getroot}
+before any other processing takes place.  If the return value is
 @code{EAGAIN}, normal trivfs getroot processing continues, otherwise the
 RPC returns with that return value.
 @end deftypefn
@@ -2228,10 +2302,11 @@ If you choose to allocate your own trivfs port classes and buckets, the
 following functions may come in handy:
 
 @deftypefun error_t trivfs_add_port_bucket (@w{struct port_bucket **@var{bucket}})
-Add the port bucket @code{*@var{bucket}} to the list of dynamically
+Add the port bucket @code{*@var{bucket}} to the list of dynamically-
 allocated port buckets; if @code{*@var{bucket}} is zero, an attempt is
 made to allocate a new port bucket, which is then stored in
 @code{*@var{bucket}}.
+@c FIXME: what if the allocation attempt fails?
 @end deftypefun
 
 @deftypefun void trivfs_remove_port_bucket (@w{struct port_bucket *@var{bucket}})
@@ -2269,12 +2344,13 @@ control port classes and protid port classes, respectively.
 @scindex libfshelp
 @scindex fshelp.h
 
-The fshelp library implements various things that are generic to most
+The fshelp library implements various things that are useful to most
 implementors of the file protocol.  It presumes that you are using the
 iohelp library as well.  @code{libfshelp} is divided into separate
 facilities which may be used independently.  These functions are
 declared in @code{<hurd/fshelp.h>}.
-
+@c FIXME: perhaps `useful to most implementors' should read `generic
+@c to most implementations'
 
 @menu
 * Passive Translator Linkage::  Invoking passive translators.
@@ -2292,8 +2368,8 @@ returning the control port.  They do not require multithreading or the
 ports library.
 
 @deftypefn {Typedef} {typedef error_t (*} fshelp_open_fn_t ) (@w{int @var{flags}}, @w{file_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
-A callback used by the translator starting functions, which should be a
-function that given some open flags, opens the appropiate file, and
+A callback used by the translator starting functions.
+Given some open flags, opens the appropriate file, and
 returns the node port.
 @end deftypefn
 
@@ -2415,10 +2491,10 @@ zero; otherwise return an appropriate error code.
 @deftypefun error_t fshelp_checkdirmod (@w{struct stat *@var{dir}}, @w{struct stat *@var{st}}, @w{struct iouser *@var{user}})
 Check to see whether @var{user} is allowed to modify @var{dir} with respect to
 existing file @var{st}.  If there is no existing file, then @var{st}
-should be set to zero.  If the access is permissable return zero;
+should be set to zero.  If the access is permissible, return zero;
 otherwise return an appropriate error code.
+@c FIXME: what does it mean to modify a directory with respect to an existing file?
 @end deftypefun
-
 
 @node Fshelp Misc
 @subsection Fshelp Misc
@@ -2429,8 +2505,8 @@ The following functions are completely standalone:
 Try to hand off responsibility from a translator to the server located
 on the node @var{server_name}.  @var{requestor} is the translator's
 bootstrap port, and @var{argv} is the command line.  If
-@var{server_name} is null, then a name is concocted by appending
-@code{argv[0]} to @code{_servers}.
+@var{server_name} is null, then a name is concocted by prepending
+@code{_servers} to @code{argv[0]} .
 @end deftypefun
 
 @deftypefun error_t fshelp_exec_reauth (@w{int @var{suid}}, @w{uid_t @var{uid}}, @w{int @var{sgid}}, @w{gid_t @var{gid}}, @w{auth_t @var{auth}}, error_t (*@var{get_file_ids}) (@w{struct idvec *@var{uids}}, @w{struct idvec *@var{gids}}), @w{mach_port_t *@var{ports}}, @w{mach_msg_type_number_t @var{num_ports}}, @w{mach_port_t *@var{fds}}, @w{mach_msg_type_number_t @var{num_fds}}, @w{int *@var{secure}})
@@ -2531,7 +2607,7 @@ through excessive cleverness.
 If some operation cannot be implemented (for example, @code{chauthor}
 over FTP), then the call should return @code{EOPNOTSUPP}.  If it is
 merely difficult to implement a call, it is much better to figure out a
-way to implement it as a series of operations rather than returning
+way to implement it as a series of operations rather than to return
 errors to the user.
 
 @node Changing Status
@@ -2572,7 +2648,7 @@ well, even if no actual change to either the @var{mtime} or the
 
 @findex file_set_size
 The @code{file_set_size} RPC is special; not only does it change the
-status word specifing the size of the file, but it also changes the
+status word specifying the size of the file, but it also changes the
 actual contents of the file.  If the file size is being reduced it
 should release secondary storage associated with the previous contents
 of the file.  If the file is being extended, the new region added to the
@@ -2596,7 +2672,7 @@ with minimal attention to the other parts of the process.  @xref{Running
 Programs}, for more general information.
 
 The file must be opened for execution; if it is not, @code{EBADF} should
-be returned In addition, at least one of the execute bits must be on.  A
+be returned.  In addition, at least one of the execute bits must be on.  A
 failure of this check should result in @code{EACCES}---not
 @code{ENOEXEC}.  It is not proper for the fileserver ever to respond to
 the @code{file_exec} RPC with @code{ENOEXEC}.
@@ -2611,7 +2687,7 @@ should simply silently fail to implement the setuid/setgid semantics.
 
 If the setuid/setgid transformation adds a new uid or gid to the user's
 authentication handle that was not previously present (as opposed to
-merely reordering them) then the @code{EXEC_SECURE} and
+merely reordering them), then the @code{EXEC_SECURE} and
 @code{EXEC_NEWTASK} flags should both be added in the call to
 @code{exec_exec}.
 
@@ -2733,7 +2809,7 @@ file'' distinction, since they are implemented by translators, just as
 regular files are.
 
 Nevertheless, the Hurd maintains this distinction, in order to provide
-backward-compatibility for Unix programs (which do not know about
+backward compatibility for Unix programs (which do not know about
 translators).  Studying the implementation of Hurd special files is a
 good way to introduce the idea of translators to people who are familiar
 with Unix.
@@ -2932,6 +3008,7 @@ Return a store in @var{store} that reflects the blocks in @var{runs} and
 simply modify @var{source} and return it.
 @end deftypefun
 
+@c FIXME: what does `is consumed' mean?
 
 @node Store I/O
 @subsection Store I/O
@@ -2953,6 +3030,9 @@ and @var{len} (which follows the usual Mach buffer-return semantics) to
 @var{store} at @var{addr}.  @var{addr} is in @var{blocks} (as defined by
 @code{@var{store}->block_size}).  Note that @var{len} is in bytes.
 @end deftypefun
+
+@c FIXME: should be say `Mach' above, or should we say
+@c `microkernel'?
 
 @deftypefun error_t store_write (@w{struct store *@var{store}}, @w{off_t @var{addr}}, @w{void *@var{buf}}, @w{size_t @var{len}}, @w{size_t *@var{amount}})
 Write @var{len} bytes from @var{buf} to @var{store} at @var{addr}.
@@ -3191,9 +3271,9 @@ the caller.
 @cindex interleaving disks
 @cindex disks, interleaving
 @deftypevar {extern const struct store_class} store_ileave_class
-This class provides a RAID-0@footnote{RAID is a @dfn{Redundant Array of
-Independent Disks}, which refers to the idea of using several disks in
-parallel in order to achieve increased capacity, redundancy and/or
+This class provides a RAID-0@footnote{``RAID'' stands for @dfn{Redundant Array of
+Independent Disks}: several disks used in
+parallel to achieve increased capacity, redundancy and/or
 performance.} storage mode (also called @dfn{disk striping}).  It
 creates a new virtual store by interleaving the contents of several
 different substores.
@@ -3237,7 +3317,7 @@ requires an application-specific callback.
 Return a new store in @var{store} that multiplexes multiple physical
 volumes from @var{phys} as one larger virtual volume.  @var{swap_vols}
 is a function that will be called whenever reads or writes refer to a
-block which is not on addressable on the currently active volume.
+block which is not addressable on the currently active volume.
 @var{phys} is consumed.
 @end deftypefun
 
@@ -3255,7 +3335,7 @@ and @var{runs_len} from @var{source}; @var{source} is consumed, but
 @var{runs} is not.  Unlike the @code{store_remap} function, this
 function always operates by creating a new store of type @samp{remap}
 which has @var{source} as a child, and so may be less efficient than
-@w{store_remap} for some types of stores.
+@code{store_remap} for some types of stores.
 @end deftypefun
 
 
@@ -3299,12 +3379,12 @@ Encode @var{store} into @var{enc}, which should have been prepared with
 @code{store_enc_init}, or return an error.  The contents of @var{enc}
 may then be returned as the value of @code{file_get_storage_info}; if
 for some reason this can't be done, @code{store_enc_dealloc} may be used
-to deallocate the mmemory used by the unsent vectors.
+to deallocate the memory used by the unsent vectors.
 @end deftypefun
 
 @deftypefun error_t store_decode (@w{struct store_enc *@var{enc}}, @w{const struct store_class *const *@var{classes}}, @w{struct store **@var{store}})
 Decode @var{enc}, either returning a new store in @var{store}, or an
-error.  @var{classes} the mapping from Hurd storage class ids to store
+error.  @var{classes} is the mapping from Hurd storage class ids to store
 classes; if it is zero, @var{store_std_classes} is used.  If nothing
 else is to be done with @var{enc}, its contents may then be freed using
 @code{store_enc_dealloc}.
@@ -3318,7 +3398,7 @@ method, @code{EOPNOTSUPP} is returned.
 
 @deftypefun error_t store_encode_children (@w{const struct store *@var{store}}, @w{struct store_enc *@var{enc}})
 Calls the encode method in each child store of @var{store}, propagating
-any errors.  If any child does not hae such a method, @code{EOPNOTSUPP}
+any errors.  If any child does not have such a method, @code{EOPNOTSUPP}
 is returned.
 @end deftypefun
 
@@ -3478,7 +3558,7 @@ You should not need to call the following function directly, since
 @code{diskfs_startup_diskfs} will do it for you, when appropriate:
 
 @deftypefun void diskfs_start_bootstrap (void)
-Start the Hurd bootstrap sequence as if we are the bootstrap filesystem
+Start the Hurd bootstrap sequence as if we were the bootstrap filesystem
 (that is, @code{diskfs_boot_flags} is nonzero).  All filesystem
 initialization must be complete before you call this function.
 @end deftypefun
@@ -3560,7 +3640,7 @@ The @code{io_identity} identity port for the filesystem.
 @end deftypevar
 
 @deftypevar {char **} diskfs_argv
-The command line diskfs was started, set by the default argument parser.
+The command line with which diskfs was started, set by the default argument parser.
 If you don't use it, set this yourself.  This is only used for bootstrap
 file systems, to give the procserver.
 @end deftypevar
@@ -3706,6 +3786,10 @@ after the change is fully completed.
 Create a new node structure with @var{ds} as its physical disknode.  The
 new node will have one hard reference and no light references.
 @end deftypefun
+
+@c FIXME: It's odd that `hard' and `light' seem to be opposites when
+@c we're talking about references.  Or is `weak' the opposite of `hard'?
+@c These terms need to be explained.
 
 These next node manipulation functions are not generally useful, but may
 come in handy if you need to redefine any diskfs functions.
@@ -4063,7 +4147,7 @@ it must be possible for the non-paged metadata to indicate that fact.
 @deftypefun void diskfs_write_disknode (@w{struct node *@var{np}}, @w{int @var{wait}})
 Write the information in @code{@var{np}->dn_stat} and any associated
 format-specific information to the disk.  If @var{wait} is true, then
-return only after the physicial media has been completely updated.
+return only after the physical media has been completely updated.
 @end deftypefun
 
 @deftypefun void diskfs_file_update (@w{struct node *@var{np}}, @w{int @var{wait}})
@@ -4099,11 +4183,11 @@ returns zero.
 @deftypefun void diskfs_sync_everything (@w{int @var{wait}})
 Sync all the pagers and write any data belonging on disk except for the
 hypermetadata.  If @var{wait} is true, then return only after the
-physicial media has been completely updated.
+physical media has been completely updated.
 @end deftypefun
 
 @deftypefun void diskfs_shutdown_pager (void)
-Shut down all pagers.  This is irreversable, and is done when the
+Shut down all pagers.  This is irreversible, and is done when the
 filesystem is exiting.
 @end deftypefun
 
@@ -4115,7 +4199,7 @@ The functions and variables described in this subsection already have
 default definitions in @code{libdiskfs}, so you are not forced to define
 them; rather, they may be redefined on a case-by-case basis.
 
-You should set the value of any option variables as soon as your program
+You should set the values of any option variables as soon as your program
 starts (before you make any calls to diskfs, such as argument parsing).
 
 @deftypevar int diskfs_hard_readonly
