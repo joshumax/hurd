@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,9 +44,9 @@ inode_init ()
     nodehash[n] = 0;
 }
 
-/* Fetch inode INUM, set *NPP to the node structure; 
+/* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
-error_t 
+error_t
 diskfs_cached_lookup (int inum, struct node **npp)
 {
   struct disknode *dn;
@@ -88,7 +88,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np);
-  
+
   if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
       spin_lock (&gennumberlock);
@@ -98,7 +98,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       spin_unlock (&gennumberlock);
       np->dn_set_ctime = 1;
     }
-  
+
   if (err)
     return err;
   else
@@ -114,13 +114,13 @@ struct node *
 ifind (ino_t inum)
 {
   struct node *np;
-  
+
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->dn->number != inum)
 	continue;
-      
+
       assert (np->references);
       spin_unlock (&diskfs_node_refcnt_lock);
       return np;
@@ -130,7 +130,7 @@ ifind (ino_t inum)
 
 /* The last reference to a node has gone away; drop
    it from the hash table and clean all state in the dn structure. */
-void      
+void
 diskfs_node_norefs (struct node *np)
 {
   *np->dn->hprevp = np->dn->hnext;
@@ -158,7 +158,7 @@ diskfs_lost_hardrefs (struct node *np)
 #ifdef notanymore
   struct port_info *pi;
   struct pager *p;
-  
+
   /* Check and see if there is a pager which has only
      one reference (ours).  If so, then drop that reference,
      breaking the cycle.  The complexity in this routine
@@ -170,17 +170,17 @@ diskfs_lost_hardrefs (struct node *np)
       pi = (struct port_info *) np->dn->fileinfo->p;
       if (pi->refcnt == 1)
 	{
-	  
+
 	  /* The only way to get a new reference to the pager
 	     in this state is to call diskfs_get_filemap; this
 	     can't happen as long as we hold NP locked.  So
 	     we can safely unlock _libports_portrefcntlock for
 	     the following call. */
 	  spin_unlock (&_libports_portrefcntlock);
-	  
+
 	  /* Right now the node is locked with no hard refs;
 	     this is an anomolous situation.  Before messing with
-	     the reference count on the file pager, we have to 
+	     the reference count on the file pager, we have to
 	     give ourselves a reference back so that we are really
 	     allowed to hold the lock.  Then we can do the
 	     unreference. */
@@ -216,7 +216,7 @@ read_disknode (struct node *np)
   struct stat *st = &np->dn_stat;
   struct dinode *di = dino (np->dn->number);
   error_t err;
-  
+
   err = diskfs_catch_exception ();
   if (err)
     return err;
@@ -232,7 +232,7 @@ read_disknode (struct node *np)
   st->st_ino = np->dn->number;
   st->st_gen = read_disk_entry (di->di_gen);
   st->st_rdev = read_disk_entry(di->di_rdev);
-  st->st_mode = (((read_disk_entry (di->di_model) 
+  st->st_mode = (((read_disk_entry (di->di_model)
 		   | (read_disk_entry (di->di_modeh) << 16))
 		  & ~S_ITRANS)
 		 | (di->di_trans ? S_IPTRANS : 0));
@@ -249,11 +249,11 @@ read_disknode (struct node *np)
   st->st_mtime_usec = read_disk_entry (di->di_mtime.tv_nsec) / 1000;
   st->st_ctime = read_disk_entry (di->di_ctime.tv_sec);
   st->st_ctime_usec = read_disk_entry (di->di_ctime.tv_nsec) / 1000;
-#endif  
+#endif
   st->st_blksize = sblock->fs_bsize;
   st->st_blocks = read_disk_entry (di->di_blocks);
   st->st_flags = read_disk_entry (di->di_flags);
-  
+
   if (sblock->fs_inodefmt < FS_44INODEFMT)
     {
       st->st_uid = read_disk_entry (di->di_ouid);
@@ -274,8 +274,8 @@ read_disknode (struct node *np)
   if (!S_ISBLK (st->st_mode) && !S_ISCHR (st->st_mode))
     st->st_rdev = 0;
 
-  if (S_ISLNK (st->st_mode) 
-      && direct_symlink_extension 
+  if (S_ISLNK (st->st_mode)
+      && direct_symlink_extension
       && st->st_size < sblock->fs_maxsymlinklen)
     np->allocsize = 0;
   else
@@ -319,7 +319,7 @@ write_node (struct node *np)
   struct stat *st = &np->dn_stat;
   struct dinode *di = dino (np->dn->number);
   error_t err;
-  
+
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
@@ -328,9 +328,9 @@ write_node (struct node *np)
       err = diskfs_catch_exception ();
       if (err)
 	return;
-  
+
       write_disk_entry (di->di_gen, st->st_gen);
-      
+
       if (S_ISBLK (st->st_mode) || S_ISCHR (st->st_mode))
 	write_disk_entry (di->di_rdev, st->st_rdev);
 
@@ -343,7 +343,7 @@ write_node (struct node *np)
 	  write_disk_entry (di->di_model, mode & 0xffff);
 	  write_disk_entry (di->di_modeh, (mode >> 16) & 0xffff);
 	}
-      else 
+      else
 	{
 	  write_disk_entry (di->di_model, st->st_mode & 0xffff & ~S_ITRANS);
 	  di->di_modeh = 0;
@@ -354,7 +354,7 @@ write_node (struct node *np)
 	  write_disk_entry (di->di_uid, st->st_uid);
 	  write_disk_entry (di->di_gid, st->st_gid);
 	}
-      
+
       if (sblock->fs_inodefmt < FS_44INODEFMT)
 	{
 	  write_disk_entry (di->di_ouid, st->st_uid & 0xffff);
@@ -376,38 +376,38 @@ write_node (struct node *np)
       write_disk_entry (di->di_mtime.tv_nsec, st->st_mtime_usec * 1000);
       write_disk_entry (di->di_ctime.tv_sec, st->st_ctime);
       write_disk_entry (di->di_ctime.tv_nsec, st->st_ctime_usec * 1000);
-#endif      
+#endif
       write_disk_entry (di->di_blocks, st->st_blocks);
       write_disk_entry (di->di_flags, st->st_flags);
-  
+
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
       record_poke (di, sizeof (struct dinode));
     }
-}  
+}
 
 /* See if we should create a symlink by writing it directly into
    the block pointer array.  Returning EINVAL tells diskfs to do it
    the usual way.  */
 static error_t
-create_symlink_hook (struct node *np, char *target)
+create_symlink_hook (struct node *np, const char *target)
 {
   int len = strlen (target);
   error_t err;
   struct dinode *di;
-  
+
   if (!direct_symlink_extension)
     return EINVAL;
-  
+
   assert (compat_mode != COMPAT_BSD42);
 
   if (len >= sblock->fs_maxsymlinklen)
     return EINVAL;
-  
+
   err = diskfs_catch_exception ();
   if (err)
     return err;
-  
+
   di = dino (np->dn->number);
   bcopy (target, di->di_shortlink, len);
   np->dn_stat.st_size = len;
@@ -418,25 +418,25 @@ create_symlink_hook (struct node *np, char *target)
   diskfs_end_catch_exception ();
   return 0;
 }
-error_t (*diskfs_create_symlink_hook)(struct node *, char *) 
+error_t (*diskfs_create_symlink_hook)(struct node *, const char *)
      = create_symlink_hook;
 
 /* Check if this symlink is stored directly in the block pointer array.
    Returning EINVAL tells diskfs to do it the usual way. */
-static error_t 
+static error_t
 read_symlink_hook (struct node *np,
 		   char *buf)
 {
   error_t err;
-  
-  if (!direct_symlink_extension 
+
+  if (!direct_symlink_extension
       || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)
     return EINVAL;
 
   err = diskfs_catch_exception ();
   if (err)
     return err;
-  
+
   bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
 
   if (! diskfs_check_readonly ())
@@ -456,7 +456,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   struct item *i;
   error_t err;
   int n;
-      
+
   /* Acquire a reference on all the nodes in the hash table
      and enter them into a list on the stack. */
   spin_lock (&diskfs_node_refcnt_lock);
@@ -496,10 +496,10 @@ write_all_disknodes ()
 	write_node (np);
 	return 0;
       }
-  
+
   diskfs_node_iterate (helper);
 }
-	
+
 void
 diskfs_write_disknode (struct node *np, int wait)
 {
@@ -530,7 +530,7 @@ diskfs_set_statfs (struct statfs *st)
 /* Implement the diskfs_set_translator callback from the diskfs
    library; see <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_set_translator (struct node *np, char *name, u_int namelen,
+diskfs_set_translator (struct node *np, const char *name, u_int namelen,
 		       struct protid *cred)
 {
   daddr_t blkno;
@@ -547,10 +547,10 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   err = diskfs_catch_exception ();
   if (err)
     return err;
-  
+
   di = dino (np->dn->number);
   blkno = read_disk_entry (di->di_trans);
-  
+
   if (namelen && !blkno)
     {
       /* Allocate block for translator */
@@ -574,7 +574,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       np->dn_stat.st_mode &= ~S_IPTRANS;
       np->dn_set_ctime = 1;
     }
-  
+
   if (namelen)
     {
       bcopy (&namelen, buf, sizeof (u_int));
@@ -586,7 +586,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       np->dn_stat.st_mode |= S_IPTRANS;
       np->dn_set_ctime = 1;
     }
-  
+
   diskfs_end_catch_exception ();
   return err;
 }
@@ -608,7 +608,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   blkno = read_disk_entry ((dino (np->dn->number))->di_trans);
   assert (blkno);
   transloc = disk_image + fsaddr (sblock, blkno);
-  
+
   datalen = *(u_int *)transloc;
   *namep = malloc (datalen);
   bcopy (transloc + sizeof (u_int), *namep, datalen);
@@ -649,13 +649,13 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   struct store *file_store;
   struct store_run runs[NDADDR];
   size_t num_runs = 0;
-  
+
   if (! cred)
     return EOPNOTSUPP;
 
   np = cred->po->np;
   mutex_lock (&np->lock);
-  
+
   /* See if this file fits in the direct block pointers.  If not, punt
      for now.  (Reading indir blocks is a pain, and I'm postponing
      pain.)  XXX */
@@ -679,7 +679,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 	for (i = 0; i < NDADDR; i++)
 	  {
 	    off_t start = fsbtodb (sblock, read_disk_entry (di->di_db[i]));
-	    off_t length = 
+	    off_t length =
 	      (((i + 1) * sblock->fs_bsize > np->allocsize)
 	       ? np->allocsize - i * sblock->fs_bsize
 	       : sblock->fs_bsize);
@@ -694,7 +694,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   diskfs_end_catch_exception ();
 
   mutex_unlock (&np->lock);
-  
+
   if (! err)
     err = store_clone (store, &file_store);
   if (! err)
