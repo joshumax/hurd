@@ -31,7 +31,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  int wire_cthreads,
 					  mach_port_t wire_threads)
 {
-  error_t err;
   int nreqthreads = 0;
   int totalthreads = 0;
   spin_lock_t lock = SPIN_LOCK_INITIALIZER;
@@ -74,6 +73,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   thread_function (int master)
     {
       int timeout;
+      error_t err;
       
       if (wire_threads)
 	thread_wire (wire_threads, hurd_thread_self (), 1);
