@@ -1,3 +1,11 @@
+Fri Oct 11 21:55:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Temporarily add O_EXLOCK and
+	O_SHLOCK to the set of retained flags, until they get added to O_HURD.
+	Turn off OPENONLY_STATE_MODES bits in the flags we pass to
+	diskfs_make_peropen, not everything *but* them!
+	* priv.h (OPENONLY_STATE_MODES): Add O_EXLOCK & O_SHLOCK.
+
 Thu Oct 10 17:22:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Frob lock in NEWPI->po, not PO.
