@@ -23,6 +23,8 @@ DIST_FILES = Makefile init.c ChangeLog
 
 OBJS = init.o startupServer.o startup_replyUser.o notifyServer.o
 
+SRCS = init.c
+
 all: init
 
 init: $(OBJS)
