@@ -1,3 +1,8 @@
+1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c: Include <error.h>.
+	(main): Failure to map MAPPED_TIME is a fatal error.
+
 1997-06-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ops.c (netfs_validate_stat): Don't clear NP->istranslated.

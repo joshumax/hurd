@@ -1,3 +1,9 @@
+1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_io_readable, trivfs_S_io_read, trivfs_S_io_map):
+	Return EBADF instead of EINVAL.
+	(trivfs_S_io_select): Don't bother returning EBADF.
+
 1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io.c (trivfs_S_io_read): Return EINVAL instead of EBADF.
