@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,14 +19,14 @@
 
 #define REPLY_PORTS
 
-#define FILE_INTRAN trivfs_protid_t _trivfs_begin_using_protid (file_t)
-#define FILE_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
+#define FILE_INTRAN trivfs_protid_t trivfs_begin_using_protid (file_t)
+#define FILE_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
 
-#define IO_INTRAN trivfs_protid_t _trivfs_begin_using_protid (io_t)
-#define IO_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
+#define IO_INTRAN trivfs_protid_t trivfs_begin_using_protid (io_t)
+#define IO_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
 
-#define FSYS_INTRAN trivfs_control_t _trivfs_begin_using_control (fsys_t)
-#define FSYS_DESTRUCTOR _trivfs_end_using_control (trivfs_control_t)
+#define FSYS_INTRAN trivfs_control_t trivfs_begin_using_control (fsys_t)
+#define FSYS_DESTRUCTOR trivfs_end_using_control (trivfs_control_t)
 
 #define FILE_IMPORTS import "priv.h";
 #define IO_IMPORTS import "priv.h";

@@ -18,7 +18,7 @@
 #include "priv.h"
 
 struct trivfs_protid *
-_trivfs_begin_using_protid (mach_port_t port)
+trivfs_begin_using_protid (mach_port_t port)
 {
   if (trivfs_protid_nportclasses > 1)
     {
@@ -35,13 +35,13 @@ _trivfs_begin_using_protid (mach_port_t port)
 }
 
 void 
-_trivfs_end_using_protid (struct trivfs_protid *cred)
+trivfs_end_using_protid (struct trivfs_protid *cred)
 {
   ports_port_deref (cred);
 }
 
 struct trivfs_control *
-_trivfs_begin_using_control (mach_port_t port)
+trivfs_begin_using_control (mach_port_t port)
 {
   if (trivfs_cntl_nportclasses > 1)
     {
@@ -58,7 +58,7 @@ _trivfs_begin_using_control (mach_port_t port)
 }
 
 void 
-_trivfs_end_using_control (struct trivfs_control *cred)
+trivfs_end_using_control (struct trivfs_control *cred)
 {
   ports_port_deref (cred);
 }
