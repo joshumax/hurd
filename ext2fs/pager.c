@@ -180,17 +180,20 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	    return EIO;
 
 	  if (new_buf != *buf + offs)
-	    /* The read went into a different buffer than the one we passed. */
-	    if (offs == 0)
-	      /* First read, make the returned page be our buffer.  */
-	      *buf = new_buf;
-	    else
-	      /* We've already got some buffer, so copy into it.  */
-	      {
-		bcopy (new_buf, *buf + offs, new_len);
-		free_page_buf (new_buf); /* Return NEW_BUF to our pool.  */
-		STAT_INC (file_pagein_freed_bufs);
-	      }
+	    {
+	      /* The read went into a different buffer than the one we
+                 passed. */
+	      if (offs == 0)
+		/* First read, make the returned page be our buffer.  */
+		*buf = new_buf;
+	      else
+		/* We've already got some buffer, so copy into it.  */
+		{
+		  bcopy (new_buf, *buf + offs, new_len);
+		  free_page_buf (new_buf); /* Return NEW_BUF to our pool.  */
+		  STAT_INC (file_pagein_freed_bufs);
+		}
+	    }
 
 	  offs += new_len;
 	  num_pending_blocks = 0;
