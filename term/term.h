@@ -329,7 +329,7 @@ void write_character (int);
 void init_users (void);
 
 extern char *tty_arg;
-extern int rdev;
+extern dev_t rdev;
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */

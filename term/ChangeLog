@@ -1,3 +1,7 @@
+2003-04-25  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* term.h (rdev): Change type to dev_t.
+
 2002-11-20  Roland McGrath  <roland@frob.com>
 
 	* main.c (parse_opt : case ARGP_KEY_SUCCESS): After initializing a new
