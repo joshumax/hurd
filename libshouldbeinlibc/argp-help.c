@@ -748,3 +748,25 @@ void argp_help (struct argp *argp, FILE *stream, unsigned flags)
   if (flags & ARGP_HELP_EXIT_OK)
     exit (0);
 }
+
+/* Print the printf string FMT and following args, preceded by the program
+   name and `:', to stderr, and followed by a `Try ... --help' message.  Then
+   exit (1).  */
+void argp_error (struct argp *argp, char *fmt, ...)
+{
+  /* Assert that argp_help doesn't return, which it doesn't, as we use it.  */
+  void argp_help (struct argp *, FILE *, unsigned) __attribute__ ((noreturn));
+  va_list ap;
+
+  fputs (program_invocation_name, stderr);
+  putc (':', stderr);
+  putc (' ', stderr);
+
+  va_start (ap, fmt);
+  vfprintf (stderr, fmt, ap);
+  va_end (ap);
+
+  putc ('\n', stderr);
+
+  argp_help (argp, stderr, ARGP_HELP_STD_ERR);
+}
