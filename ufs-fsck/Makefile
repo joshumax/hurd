@@ -27,7 +27,7 @@ OBJS = $(subst .c,.o,$(SRCS)) tables.o
 LCLHDRS = fsck.h
 target = fsck
 
+vpath tables.c ../ufs
+
 include ../Makeconf
 
-tables.o: ../ufs/tables.c
-	$(CC) $(CFLAGS) -c -o $@ $<
