@@ -1,6 +1,6 @@
 /* File store backend
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -66,7 +66,8 @@ fiopen (const char *name, file_t *file, int *mod_flags)
   else
     {
       *file = file_name_lookup (name, O_RDWR, 0);
-      if (*file == MACH_PORT_NULL && errno == EACCES)
+      if (*file == MACH_PORT_NULL
+	  && (errno == EACCES || errno == EROFS))
 	{
 	  *file = file_name_lookup (name, O_RDONLY, 0);
 	  if (*file != MACH_PORT_NULL)
@@ -96,7 +97,7 @@ enforced (struct store *store)
   else
     /* See if the the current (one) range is that the kernel is enforcing. */
     {
-      struct stat st; 
+      struct stat st;
       error_t err = io_stat (store->port, &st);
 
       if (!err
