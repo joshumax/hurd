@@ -1,0 +1,5 @@
+export PATH=/sbin:/bin:/local/bin
+
+. ~/.bashrc
+. ~/.profile
+
