@@ -1,8 +1,7 @@
-/* Word-wrapping and line-truncating streams
-
+/* Word-wrapping and line-truncating streams.
    Copyright (C) 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -15,9 +14,9 @@
    Library General Public License for more details.
 
    You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, write to the Free Software Foundation, Inc., 675 Mass Ave,
-   Cambridge, MA 02139, USA.  */
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 /* This package emulates glibc `line_wrap_stream' semantics for systems that
    don't have that.  If the system does have it, it is just a wrapper for
@@ -35,7 +34,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#if    (_LIBC - 0 && !defined (_USE_IN_LIBIO)) \
+#if    (_LIBC - 0 && !defined (USE_IN_LIBIO)) \
     || (defined (__GNU_LIBRARY__) && defined (HAVE_LINEWRAP_H))
 /* line_wrap_stream is available, so use that.  */
 #define ARGP_FMTSTREAM_USE_LINEWRAP
@@ -183,7 +182,7 @@ extern int __argp_fmtstream_ensure (argp_fmtstream_t __fs, size_t __amount);
 /* Inline versions of above routines.  */
 
 #if !_LIBC
-#define __argp_fmtstream_putc argp_fmtstream_putc 
+#define __argp_fmtstream_putc argp_fmtstream_putc
 #define __argp_fmtstream_puts argp_fmtstream_puts
 #define __argp_fmtstream_write argp_fmtstream_write
 #define __argp_fmtstream_set_lmargin argp_fmtstream_set_lmargin

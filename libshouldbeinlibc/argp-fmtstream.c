@@ -1,8 +1,7 @@
-/* Word-wrapping and line-truncating streams
-
+/* Word-wrapping and line-truncating streams.
    Copyright (C) 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -15,16 +14,12 @@
    Library General Public License for more details.
 
    You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, write to the Free Software Foundation, Inc., 675 Mass Ave,
-   Cambridge, MA 02139, USA.  */
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 /* This package emulates glibc `line_wrap_stream' semantics for systems that
    don't have that.  */
-
-/* Get some gnu features: isblank, vsnprintf  */
-#undef _GNU_SOURCE
-#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +45,7 @@
    replacing the whitespace before them with a newline and WMARGIN spaces.
    Otherwise, chars beyond RMARGIN are simply dropped until a newline.
    Returns NULL if there was an error.  */
-argp_fmtstream_t 
+argp_fmtstream_t
 __argp_make_fmtstream (FILE *stream,
 		       size_t lmargin, size_t rmargin, ssize_t wmargin)
 {
@@ -85,7 +80,7 @@ weak_alias (__argp_make_fmtstream, argp_make_fmtstream)
 #endif
 
 /* Flush FS to its stream, and free it (but don't close the stream).  */
-void 
+void
 __argp_fmtstream_free (argp_fmtstream_t fs)
 {
   __argp_fmtstream_update (fs);
@@ -308,7 +303,7 @@ __argp_fmtstream_ensure (struct argp_fmtstream *fs, size_t amount)
 
       /* Flush FS's buffer.  */
       __argp_fmtstream_update (fs);
-   
+
       wrote = fwrite (fs->buf, 1, fs->p - fs->buf, fs->stream);
       if (wrote == fs->p - fs->buf)
 	{

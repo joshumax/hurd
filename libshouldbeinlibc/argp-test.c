@@ -1,8 +1,7 @@
-/* Test program for argp argument parser
-
+/* Test program for argp argument parser.
    Copyright (C) 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -15,9 +14,9 @@
    Library General Public License for more details.
 
    You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, write to the Free Software Foundation, Inc., 675 Mass Ave,
-   Cambridge, MA 02139, USA.  */
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 #include <argp.h>
 
@@ -39,7 +38,7 @@ struct argp_option sub_options[] =
 static const char sub_args_doc[] = "STRING...\n-";
 static const char sub_doc[] = "\vThis is the doc string from the sub-arg-parser.";
 
-static error_t 
+static error_t
 sub_parse_opt (int key, char *arg, struct argp_state *state)
 {
   switch (key)
@@ -60,7 +59,7 @@ sub_parse_opt (int key, char *arg, struct argp_state *state)
     }
   return 0;
 }
-      
+
 static struct argp sub_argp = {
   sub_options, sub_parse_opt, sub_args_doc, sub_doc
 };
@@ -97,7 +96,7 @@ static const char doc[] = "Test program for argp."
  "\vThis doc string comes after the options."
  "\nHey!  Some manual formatting!";
 
-static error_t 
+static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
   switch (key)

@@ -1,24 +1,22 @@
-/* Hierarchial argument parsing help output
-
+/* Hierarchial argument parsing help output.
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
-   This file is part of the GNU Hurd.
-
-   The GNU Hurd is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2, or (at
-   your option) any later version.
-
-   The GNU Hurd is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   You should have received a copy of the GNU Library General Public
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 #include <stdlib.h>
 #include <string.h>
@@ -68,7 +66,7 @@
    indented slighly in a way that's supposed to make most long options appear
    to be in a separate column.
 
-   For example, the following output (from ps): 
+   For example, the following output (from ps):
 
      -p PID, --pid=PID          List the process PID
 	 --pgrp=PGRP            List processes in the process group PGRP
@@ -390,7 +388,8 @@ hol_entry_first_long (const struct hol_entry *entry)
 
 /* Returns the entry in HOL with the long option name NAME, or 0 if there is
    none.  */
-static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
+static struct hol_entry *
+hol_find_entry (struct hol *hol, const char *name)
 {
   struct hol_entry *entry = hol->entries;
   unsigned num_entries = hol->num_entries;
@@ -415,7 +414,7 @@ static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
 /* If an entry with the long option NAME occurs in HOL, set it's special
    sort position to GROUP.  */
 static void
-hol_set_group (struct hol *hol, char *name, int group)
+hol_set_group (struct hol *hol, const char *name, int group)
 {
   struct hol_entry *entry = hol_find_entry (hol, name);
   if (entry)
@@ -678,7 +677,7 @@ indent_to (argp_fmtstream_t stream, unsigned col)
    format REQ_FMT or OPT_FMT depending on whether it's a required or
    optional argument.  */
 static void
-arg (const struct argp_option *real, char *req_fmt, char *opt_fmt,
+arg (const struct argp_option *real, const char *req_fmt, const char *opt_fmt,
      argp_fmtstream_t stream)
 {
   if (real->arg)
@@ -806,7 +805,7 @@ hol_entry_help (struct hol_entry *entry, argp_fmtstream_t stream,
     }
   else
     /* A realy long option.  */
-    {      
+    {
       __argp_fmtstream_set_wmargin (stream, LONG_OPT_COL);
       for (opt = real, num = entry->num; num > 0; opt++, num--)
 	if (opt->name && ovisible (opt))
@@ -929,7 +928,7 @@ usage_long_opt (const struct argp_option *opt,
 
   if (! arg)
     arg = real->arg;
-    
+
   if (arg)
     if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
       __argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);

@@ -1,24 +1,22 @@
-/* Hierarchial argument parsing, layered over getopt
-
+/* Hierarchial argument parsing, layered over getopt.
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
-   This file is part of the GNU Hurd.
-
-   The GNU Hurd is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2, or (at
-   your option) any later version.
-
-   The GNU Hurd is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   You should have received a copy of the GNU Library General Public
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 #include <stdlib.h>
 #include <string.h>
@@ -204,7 +202,7 @@ static struct mutex getopt_lock = MUTEX_INITIALIZER;
    recursively.  If someday argp is changed not to use the non-reentrant
    getopt interface, we can get rid of this shit.  XXX */
 void
-_argp_unlock_xxx ()
+_argp_unlock_xxx (void)
 {
   UNLOCK_GETOPT;
 }
@@ -635,7 +633,7 @@ parser_finalize (struct parser *parser,
 
   return err;
 }
-  
+
 /* Call the user parsers to parse the non-option argument VAL, at the current
    position, returning any error.  */
 static error_t

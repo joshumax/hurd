@@ -1,34 +1,25 @@
-/* Hierarchial argument parsing, layered over getopt
-
+/* Hierarchial argument parsing, layered over getopt.
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
-   This file is part of the GNU Hurd.
-
-   The GNU Hurd is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2, or (at
-   your option) any later version.
-
-   The GNU Hurd is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   You should have received a copy of the GNU Library General Public
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 
 #ifndef __ARGP_H__
 #define __ARGP_H__
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#ifdef __GNU_LIBRARY__
-#include <sys/cdefs.h>
-#endif
 
 #include <stdio.h>
 #include <errno.h>
@@ -38,7 +29,19 @@
 #ifndef __const
 #define __const const
 #endif
+
+#ifndef __P
+# if (defined (__STDC__) && __STDC__) || defined (__cplusplus)
+#  define __P(args)	args
+# else
+#  define __P(args)	()
+# endif
+#endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /* A description of a particular option.  A pointer to an array of
    these is passed in the OPTIONS field of an argp structure.  Each option
    entry can correspond to one long option and/or one short option; more
@@ -115,7 +118,7 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 #define ARGP_ERR_UNKNOWN	E2BIG /* Hurd should never need E2BIG.  XXX */
 
 /* Special values for the KEY argument to an argument parsing function.
-   ARGP_ERR_UNKNOWN should be returned if they aren't understood.  
+   ARGP_ERR_UNKNOWN should be returned if they aren't understood.
 
    The sequence of keys to parser calls is either (where opt is a user key):
        ARGP_KEY_INIT (opt | ARGP_KEY_ARG)... ARGP_KEY_END
@@ -435,14 +438,14 @@ extern int __option_is_end __P ((__const struct argp_option *__opt));
 #ifdef __OPTIMIZE__
 
 #if !_LIBC
-#define __argp_usage argp_usage
-#define __argp_state_help argp_state_help
-#define __option_is_short _option_is_short
-#define __option_is_end _option_is_end
+# define __argp_usage argp_usage
+# define __argp_state_help argp_state_help
+# define __option_is_short _option_is_short
+# define __option_is_end _option_is_end
 #endif
 
 #ifndef ARGP_EI
-#define ARGP_EI extern inline
+# define ARGP_EI extern inline
 #endif
 
 ARGP_EI void
@@ -470,12 +473,16 @@ __option_is_end (__const struct argp_option *__opt)
 }
 
 #if !_LIBC
-#undef __argp_usage
-#undef __argp_state_help
-#undef __option_is_short
-#undef __option_is_end
+# undef __argp_usage
+# undef __argp_state_help
+# undef __option_is_short
+# undef __option_is_end
 #endif
 
 #endif /* __OPTIMIZE__ */
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* __ARGP_H__ */
