@@ -382,7 +382,9 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
 
 /* ---------------------------------------------------------------- */
 
-/* Make page PAGE writable.  */
+/* Make page PAGE writable, at least up to ALLOCSIZE.  This function and
+   diskfs_grow are the only places that blocks are actually added to the
+   file.  */
 error_t
 pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 {
@@ -391,7 +393,6 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
   else
     {
       error_t err;
-      char *buf;
       daddr_t block = page >> log2_block_size;
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
@@ -402,8 +403,18 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       if (!err)
 	{
 	  int left = vm_page_size;
+
+	  if (page + left > node->allocsize)
+	    /* Only actually create blocks up to allocsize; diskfs_grow will
+	       allocate the rest if called.  */
+	    {
+	      left = node->allocsize - page;
+	      dn->last_page_partially_writable = 1;
+	    }
+
 	  while (left > 0)
 	    {
+	      char *buf;
 	      err = ext2_getblk(node, block++, 1, &buf);
 	      if (err)
 		break;
@@ -430,10 +441,80 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
   assert (!diskfs_readonly);
 
   if (size > node->allocsize)
-    node->allocsize = trunc_block (size) + block_size;
+    {
+      error_t err;
+      struct disknode *dn = node->dn;
+      vm_offset_t old_size = node->allocsize;
+      vm_offset_t new_size = trunc_block (size) + block_size;
+
+      rwlock_writer_lock (&dn->alloc_lock);
+      err = diskfs_catch_exception ();
+
+      if (!err)
+	{
+	  if (dn->last_page_partially_writable)
+	    /* pager_unlock_page has been called on the last page of the
+	       file, but only part of the page was created, as the rest went
+	       past the end of the file.  As a result, we have to create the
+	       rest of the page to preserve the fact that blocks are only
+	       created by explicitly making them writable.  */
+	    {
+	      daddr_t block = old_size >> log2_block_size;
+	      int count = trunc_page (old_size) + vm_page_size - old_size;
+
+	      if (old_size + count > new_size)
+		count = new_size - old_size;
+	      else
+		/* This will take care the whole page.  */
+		dn->last_page_partially_writable = 0;
+
+	      while (count > 0)
+		{
+		  char *buf;
+		  err = ext2_getblk(node, block++, 1, &buf);
+		  if (err)
+		    break;
+		  count -= block_size;
+		}
+	    }
+	}
+
+      diskfs_end_catch_exception ();
+      rwlock_writer_unlock (&dn->alloc_lock);
+
+      return err;
+    }
   else
     return 0;
 }
+
+/* ---------------------------------------------------------------- */
+
+/* This syncs a single file (NODE) to disk.  Wait for all I/O to complete
+   if WAIT is set.  NODE->lock must be held.  */
+void
+diskfs_file_update (struct node *node, int wait)
+{
+  struct user_pager_info *upi;
+
+  spin_lock (&node_to_page_lock);
+  upi = node->dn->fileinfo;
+  if (upi)
+    pager_reference (upi->p);
+  spin_unlock (&node_to_page_lock);
+  
+  if (upi)
+    {
+      pager_sync (upi->p, wait);
+      pager_unreference (upi->p);
+    }
+  
+  pokel_sync (&node->dn->indir_pokel, wait);
+
+  diskfs_node_update (node, wait);
+}
+
+/* ---------------------------------------------------------------- */
 
 /* Implement the pager_report_extent callback from the pager library.  See 
    <hurd/pager.h> for the interface description. */
@@ -523,30 +604,6 @@ diskfs_get_filemap (struct node *node)
 
   return right;
 } 
-
-/* This syncs a single file (NODE) to disk.  Wait for all I/O to complete
-   if WAIT is set.  NODE->lock must be held.  */
-void
-diskfs_file_update (struct node *node, int wait)
-{
-  struct user_pager_info *upi;
-
-  spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    pager_reference (upi->p);
-  spin_unlock (&node_to_page_lock);
-  
-  if (upi)
-    {
-      pager_sync (upi->p, wait);
-      pager_unreference (upi->p);
-    }
-  
-  pokel_sync (&node->dn->pokel, wait);
-
-  diskfs_node_update (node, wait);
-}
 
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
