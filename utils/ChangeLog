@@ -1,3 +1,7 @@
+Sat Aug 10 10:03:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (LCLHDRS): New variable.
+
 Wed Jul 31 14:23:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* login.c (main/verify_passwd): Use #pragma weak instead of
