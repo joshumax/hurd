@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -81,17 +81,13 @@ struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
     err = idvec_set_ids (new->gids, gen_gids, gengidlen);
 
   if (gubuf != gen_uids)
-    vm_deallocate (mach_task_self (), (u_int) gen_uids,
-		   genuidlen * sizeof (uid_t));
+    munmap (gen_uids, genuidlen * sizeof (uid_t));
   if (ggbuf != gen_gids)
-    vm_deallocate (mach_task_self (), (u_int) gen_gids,
-		   gengidlen * sizeof (uid_t));
+    munmap (gen_gids, gengidlen * sizeof (uid_t));
   if (aubuf != aux_uids)
-    vm_deallocate (mach_task_self (), (u_int) aux_uids,
-		   auxuidlen * sizeof (uid_t));
+    munmap (aux_uids, auxuidlen * sizeof (uid_t));
   if (agbuf != aux_gids)
-    vm_deallocate (mach_task_self (), (u_int) aux_gids,
-		   auxgidlen * sizeof (uid_t));
+    munmap (aux_gids, auxgidlen * sizeof (uid_t));
 
   if (err)
     {

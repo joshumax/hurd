@@ -1,3 +1,8 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* iouser-reauth.c (iohelp_reauth): Use munmap instead of
+	vm_deallocate. 
+
 1998-08-21  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (SRCS): Add return-buffer.c.
