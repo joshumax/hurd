@@ -18,12 +18,20 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <sys/types.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "../ufs/fs.h"
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
 
 /* Type of an inode */
 enum inodetype
 {
   UNALLOC,			/* not allocated */
-  FILE,				/* allocated, not dir */
+  REG,				/* allocated, not dir */
   DIR,				/* dir */
   BADDIR,			/* dir with bad block pointers */
 };
@@ -43,6 +51,13 @@ nlink_t *linkfound;
 /* DT_foo type of each inode (set by pass 1) */
 char *typemap;
 
+
+enum contret
+{
+  RET_STOP,
+  RET_GOOD,
+  RET_BAD,
+};
 
 
 /* One of these structures is set up for each directory by
@@ -60,13 +75,62 @@ struct dirinfo
 };
 
 /* Array of all the dirinfo structures in inode number order */
-struct **dirarray;
+struct dirinfo **dirarray;
 
 /* Array of all thi dirinfo structures sorted by their first
    block address */
-struct **dirsorted;
+struct dirinfo **dirsorted;
 
 int dirarrayused;		/* number of directories */
 int dirarraysize;		/* alloced size of dirarray/dirsorted */
 
+struct dups {
+	struct dups *next;
+	daddr_t dup;
+};
+struct dups *duplist;		/* head of dup list */
+struct dups *muldup;		/* end of unique duplicate dup block numbers */
+
+
+char sblockbuf[SBSIZE];
+struct fs *sblock = (struct fs *)sblockbuf;
+
+daddr_t maxfsblock;
+int maxino;
+int direct_symlink_extension;
+
+int newinofmt;
+
+int preen;
+
+int readfd, writefd;
+
+int fsmodified;
+
+int lfdir;
+char lfname[] = "lost+found";
+mode_t lfmode = IFDIR | 0755;
+
+
+#define howmany(x,y) (((x)+((y)-1))/(y))
+#define roundup(x, y) ((((x)+((y)-1))/(y))*(y))
+#define DEV_BSIZE 512
+
+
+     
+int setup (char *);
+void pass1 (), pass1b (), pass2 (), pass3 (), pass4 (), pass5 ();
+
+void readblock (daddr_t, void *, size_t);
+void writeblock (daddr_t, void *, size_t);
+
+void getinode (ino_t, struct dinode *);
+void write_inode (ino_t, struct dinode *);
+void clear_inode (ino_t, struct dinode *);
+
+int reply (char *);
+void pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
+void errexit (char *, ...) __attribute__ ((format (printf, 1, 2),
+					   noreturn));
+void pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
 
