@@ -148,6 +148,7 @@ struct execdata
 	       After `check' this is a pointer into the mapping window.
 	       By `load' it is local alloca'd storage.  */
 	    ElfW(Phdr) *phdr;
+	    ElfW(Addr) phdr_addr;
 	    ElfW(Word) phnum;	/* Number of program header table elements.  */
 	    int anywhere;	/* Nonzero if image can go anywhere.  */
 	    vm_address_t loadbase; /* Actual mapping location.  */

@@ -889,13 +889,13 @@ check_elf (struct execdata *e)
       return;
     }
   e->info.elf.phdr = phdr;
+  e->info.elf.phdr_addr = ehdr->e_phoff;
 }
 
-/* Copy MAPPED_PHDR into E->info.elf.phdr, filling in
-   E->interp.phdr, *PHDR_ADDR, and *PHDR_SIZE in the process.  */
+/* Copy MAPPED_PHDR into E->info.elf.phdr, filling in E->interp.phdr
+   in the process.  */
 static void
-check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr,
-		vm_address_t *phdr_addr, vm_size_t *phdr_size)
+check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr)
 {
   const ElfW(Phdr) *phdr;
 
@@ -915,12 +915,6 @@ check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr,
       {
       case PT_INTERP:
 	e->interp.phdr = phdr;
-	break;
-      case PT_PHDR:
-	if (phdr_addr)
-	  *phdr_addr = phdr->p_vaddr & ~(phdr->p_align - 1);
-	if (phdr_size)
-	  *phdr_size = phdr->p_memsz;
 	break;
       case PT_LOAD:
 	/* Sanity check.  */
@@ -1341,8 +1335,6 @@ do_exec (file_t file,
   struct bootinfo *boot = 0;
   int *ports_replaced;
   int secure, defaults;
-  vm_address_t phdr_addr = 0;
-  vm_size_t phdr_size = 0;
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
   int oldtask_trashed = 0;	/* Have we trashed the old task?  */
@@ -1451,7 +1443,7 @@ do_exec (file_t file,
     {
       const ElfW(Phdr) *phdr = e.info.elf.phdr;
       e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (ElfW(Phdr)));
-      check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
+      check_elf_phdr (&e, phdr);
     }
 
   if (oldtask == MACH_PORT_NULL)
@@ -1735,7 +1727,7 @@ do_exec (file_t file,
 	      const ElfW(Phdr) *phdr = interp.info.elf.phdr;
 	      interp.info.elf.phdr = alloca (interp.info.elf.phnum *
 					     sizeof (ElfW(Phdr)));
-	      check_elf_phdr (&interp, phdr, NULL, NULL);
+	      check_elf_phdr (&interp, phdr);
 	    }
 	}
       e.error = interp.error;
@@ -1815,10 +1807,10 @@ do_exec (file_t file,
      the image so that a load-anywhere image gets the adjusted addresses.  */
 #ifdef BFD
   if (!e.bfd)
-    phdr_addr += e.info.elf.loadbase;
 #endif
-  boot->phdr_addr = phdr_addr;
-  boot->phdr_size = phdr_size;
+    e.info.elf.phdr_addr += e.info.elf.loadbase;
+  boot->phdr_addr = e.info.elf.phdr_addr;
+  boot->phdr_size = e.info.elf.phnum * sizeof (ElfW(Phdr));
   boot->user_entry = e.entry;	/* already adjusted in `load' */
 
   /* Create the initial thread.  */
