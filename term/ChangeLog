@@ -1,3 +1,7 @@
+1999-07-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* term.h (ILCASE, OLCASE): Use IUCLC, OLCUC if defined.
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* term.h: Add #include <sys/mman.h>.
