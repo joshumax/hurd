@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -1853,6 +1853,12 @@ S_io_identity (mach_port_t obj,
 	       mach_port_t *fsid,
 	       mach_msg_type_name_t *fsidtype,
 	       int *fileno)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_io_revoke (mach_port_t obj)
 {
   return EOPNOTSUPP;
 }
