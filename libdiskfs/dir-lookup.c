@@ -183,17 +183,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  mach_port_t dirport;
 	  
-	  /* A call backup function for short-circuited translators.
+	  /* A callback function for short-circuited translators.
 	     Symlink & ifsock are handled elsewhere.  */
-	  error_t short_circuited_callback (void *cookie1, void *cookie2,
-					    mach_port_t *underlying,
-					    uid_t *uid, gid_t *gid,
-					    char **argz, int *argz_len)
+	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
+					     uid_t *uid, gid_t *gid,
+					     char **argz, int *argz_len)
 	    {
 	      struct node *node = cookie1;
-	      mach_port_t *dotdot = cookie2;
-	      error_t err = 0;
-	      struct protid *newpi;
 
 	      switch (node->dn_stat.st_mode & S_IFMT)
 		{
@@ -218,24 +214,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	      *uid = node->dn_stat.st_uid;
 	      *gid = node->dn_stat.st_gid;
-  
-	      newpi =
-		diskfs_make_protid (diskfs_make_peropen (node, 
-							 (O_READ|O_EXEC
-/* For now, don't give translators write access to their underlying node.
-  The fsys_startup interface will soon make this irrelevant anyway.  */
-#ifdef XXX
-							  | (!diskfs_readonly 
-							     ? O_WRITE : 0)
-#endif
-							  ),
-							 *dotdot),
-				    uid, 1, gid, 1);
 
-	      *underlying = ports_get_right (newpi);
-	      mach_port_insert_right (mach_task_self (), *underlying,
-				      *underlying, MACH_MSG_TYPE_MAKE_SEND);
-	      ports_port_deref (newpi);
 	      return 0;
 	    }
 
@@ -257,8 +236,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				     dircred->gids, dircred->ngids, 
 				     lastcomp ? flags : 0,
 				     (node->istranslated
-				      ? _diskfs_translator_callback
-				      : short_circuited_callback),
+				      ? _diskfs_translator_callback1
+				      : short_circuited_callback1),
+				     _diskfs_translator_callback2,
 				     retry, retryname, returned_port);
 
 	  if (error != ENOENT)
