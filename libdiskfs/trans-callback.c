@@ -30,9 +30,14 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
 {
   struct node *np = cookie1;
   mach_port_t *dotdot = cookie2;
+  error_t err;
 
   if (!np->istranslated)
     return ENOENT;
+
+  err = diskfs_get_translator (np, argz, (u_int *) argz_len);
+  if (err)
+    return err;
 
   *uid = np->dn_stat.st_owner;
   *gid = np->dn_stat.st_group;
@@ -46,9 +51,8 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
 		   uid, 1, gid, 1)));
   mach_port_insert_right (mach_task_mself (), *underlying, *underlying,
 			  MACH_MSG_TYPE_MAKE_SEND);
-  
-  return diskfs_get_translator (np, argz, (u_int *) argz_len);
+  return 0;
 }
 
   
-  
+fshelp_callback_t _diskfs_translator_callback = _diskfs_translator_callback_fn;
