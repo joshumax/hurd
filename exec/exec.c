@@ -445,18 +445,18 @@ map (struct execdata *e, off_t posn, size_t len)
 {
   FILE *f = &e->stream;
   const size_t size = e->file_size;
-  size_t offset = 0;
+  size_t offset;
 
-  f->__target = posn;
-
-  if (e->filemap == MACH_PORT_NULL)
+  if ((f->__target & ~(f->__bufsize - 1)) == (posn & ~(f->__bufsize - 1)) &&
+      f->__buffer + (posn + len - f->__target) <= f->__get_limit)
+    /* The current mapping window covers it.  */
+    offset = posn & (f->__bufsize - 1);
+  else if (e->filemap == MACH_PORT_NULL)
     {
+      /* No mapping for the file.  Read the data by RPC.  */
       char *buffer = f->__buffer;
       mach_msg_type_number_t nread = f->__bufsize;
-      while (nread < len)
-	nread += __vm_page_size;
-      e->error = io_read (e->file, &buffer, &nread,
-			  f->__target, e->optimal_block);
+      e->error = io_read (e->file, &buffer, &nread, posn, len);
       if (e->error)
 	{
 	  errno = e->error;
@@ -466,19 +466,16 @@ map (struct execdata *e, off_t posn, size_t len)
       if (buffer != f->__buffer)
 	{
 	  /* The data was returned out of line.  Discard the old buffer.  */
-	  vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
-			 f->__bufsize);
+	  if (f->__bufsize != 0)
+	    vm_deallocate (mach_task_self (),
+			   (vm_address_t) f->__buffer, f->__bufsize);
 	  f->__buffer = buffer;
 	  f->__bufsize = round_page (nread);
 	}
 
+      f->__target = posn;
       f->__get_limit = f->__buffer + nread;
-
-      if (nread < len)
-	{
-	  f->__eof = 1;
-	  return NULL;
-	}
+      offset = 0;
     }
   else
     {
@@ -489,9 +486,8 @@ map (struct execdata *e, off_t posn, size_t len)
       f->__buffer = NULL;
 
       /* Make sure our mapping is page-aligned in the file.  */
-      offset = f->__target % vm_page_size;
-      if (offset != 0)
-	f->__target -= offset;
+      offset = posn & (vm_page_size - 1);
+      f->__target = trunc_page (posn);
       f->__bufsize = round_page (posn + len) - f->__target;
 
       /* Map the data from the file.  */
@@ -517,7 +513,7 @@ map (struct execdata *e, off_t posn, size_t len)
   f->__offset = f->__target;
   f->__bufp = f->__buffer + offset;
 
-  if (f->__bufp + len >= f->__get_limit)
+  if (f->__bufp + len > f->__get_limit)
     {
       f->__eof = 1;
       return NULL;
@@ -530,14 +526,7 @@ map (struct execdata *e, off_t posn, size_t len)
 static int
 input_room (FILE *f)
 {
-  struct execdata *e = f->__cookie;
-  if (f->__target >= e->file_size)
-    {
-      f->__eof = 1;
-      return EOF;
-    }
-
-  return (map (e, f->__target, 1) == NULL ? EOF :
+  return (map (f->__cookie, f->__target, 1) == NULL ? EOF :
 	  (unsigned char) *f->__bufp++);
 }
 
@@ -724,8 +713,14 @@ check_elf (struct execdata *e)
       return;
     }
 
+  /* Extract all this information now, while EHDR is mapped.
+     The `map' call below for the phdrs may reuse the mapping window.  */
   e->entry = ehdr->e_entry;
+  e->info.elf.anywhere = (ehdr->e_type == ET_DYN ||
+			  ehdr->e_type == ET_REL);
+  e->info.elf.loadbase = 0;
   e->info.elf.phnum = ehdr->e_phnum;
+
   phdr = map (e, ehdr->e_phoff, ehdr->e_phnum * sizeof (Elf32_Phdr));
   if (! phdr)
     {
@@ -734,10 +729,6 @@ check_elf (struct execdata *e)
       return;
     }
   e->info.elf.phdr = phdr;
-
-  e->info.elf.anywhere = (ehdr->e_type == ET_DYN ||
-			  ehdr->e_type == ET_REL);
-  e->info.elf.loadbase = 0;
 }
 
 static void
