@@ -1,7 +1,6 @@
 /* Fetching and storing the hypermetadata (superblock and bg summary info)
 
-   Copyright (C) 1994,95,96,99, 1999 Free Software Foundation, Inc.
-
+   Copyright (C) 1994,95,96,99,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -24,13 +23,13 @@
 #include <hurd/store.h>
 #include "ext2fs.h"
 
-vm_address_t zeroblock = 0;
-char *modified_global_blocks = 0;
+vm_address_t zeroblock;
+char *modified_global_blocks;
 
 static void
 allocate_mod_map (void)
 {
-  static vm_size_t mod_map_size = 0;
+  static vm_size_t mod_map_size;
 
   if (modified_global_blocks && mod_map_size)
     /* Get rid of the old one.  */
@@ -62,9 +61,6 @@ get_hypermetadata (void)
   error_t err = diskfs_catch_exception ();
   if (err)
     ext2_panic ("can't read superblock: %s", strerror (err));
-
-  if (zeroblock)
-    munmap ((caddr_t) zeroblock, block_size);
 
   sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
 
@@ -163,8 +159,8 @@ get_hypermetadata (void)
   group_desc_image = (struct ext2_group_desc *) bptr (bptr_block (sblock) + 1);
 
   /* A handy source of page-aligned zeros.  */
-  zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ|PROT_WRITE,
-				   MAP_ANON, 0, 0);
+  if (zeroblock == 0)
+    zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ, MAP_ANON, 0, 0);
 }
 
 error_t
