@@ -94,7 +94,7 @@ store_next_run (struct store *store, struct store_run *runs_end,
    in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t
 store_write (struct store *store,
-	     off_t addr, char *buf, size_t len, size_t *amount)
+	     off_t addr, void *buf, size_t len, size_t *amount)
 {
   error_t err;
   size_t index;
@@ -163,7 +163,7 @@ store_write (struct store *store,
    (as defined by STORE->block_size).  */
 error_t
 store_read (struct store *store,
-	    off_t addr, size_t amount, char **buf, size_t *len)
+	    off_t addr, size_t amount, void **buf, size_t *len)
 {
   error_t err;
   size_t index;
@@ -185,7 +185,7 @@ store_read (struct store *store,
       /* WHOLE_BUF and WHOLE_BUF_LEN will point to a buff that's large enough
 	 to hold the entire request.  This is initially whatever the user
 	 passed in, but we'll change it as necessary.  */
-      char *whole_buf = *buf, *buf_end;
+      void *whole_buf = *buf, *buf_end;
       size_t whole_buf_len = *len;
 
       /* Read LEN bytes from the store address ADDR into BUF_END.  BUF_END
@@ -195,7 +195,7 @@ store_read (struct store *store,
 	{
 	  /* SEG_BUF and SEG_LEN are the buffer for a particular bit of the
 	     whole (within one run). */
-	  char *seg_buf = buf_end;
+	  void *seg_buf = buf_end;
 	  size_t seg_buf_len = len;
 	  error_t err =
 	    (*read)(store, addr, index, len, &seg_buf, &seg_buf_len);
