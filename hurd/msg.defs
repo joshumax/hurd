@@ -43,6 +43,7 @@ routine msg_sig_post (
 	process: mach_port_t;
 	sreplyport reply_port: sreply_port_t;
 	signal: int;
+	sigcode: natural_t;
 	refport: mach_port_t);
 
 /* The parent or the process group of a process has been changed, or
@@ -169,11 +170,7 @@ routine msg_set_env_variable (
 	replace: boolean_t);
 
 skip; /* Obsolete io_select_done.  */
-
-/* This is sent by the startup server when the system is going down.  */
-routine msg_startup_dosync (
-	process: mach_port_t;
-	waittime timeout: natural_t);
+skip; /* Obsolete msg_startup_dosync.  */
 
 /* Like msg_sig_post, but the receiver should ignore his trace bit
    and deliver the signal normally even if traced, first resuming if
@@ -182,6 +179,7 @@ routine msg_sig_post_untraced (
 	process: mach_port_t;
 	sreplyport reply_port: sreply_port_t;
 	signal: int;
+	sigcode: natural_t;
 	refport: mach_port_t);
 
 /* Get the exec flags of the process.  */
@@ -192,10 +190,7 @@ routine msg_get_exec_flags (
 	out flags: int);
 
 /* Set the exec flags value, or set or clear some flag bits.
-   Setting or clearing certain flag bits may cause associated actions.
-   For example, setting the EXEC_TRACED bit causes the program to
-   stop immediately as if it had received a `msg_sig_post_untraced'
-   with signal SIGTRAP.  */
+   Setting or clearing certain flag bits may cause associated actions.  */
 
 routine msg_set_all_exec_flags (
 	process: mach_port_t;
