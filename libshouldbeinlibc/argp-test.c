@@ -113,7 +113,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case 'p': case 'P': case OPT_PGRP: case 'x': case 'Q':
-    case 'r': case OPT_SESS:
+    case 'r': case OPT_SESS: case 'f': case 'z':
       {
 	char buf[10];
 	if (isprint (key))
