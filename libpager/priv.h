@@ -20,6 +20,10 @@
 #include "pager.h"
 #include <hurd/ports.h>
 
+/* Define this if you think the kernel is sending memory_object_init
+   out of sequence with memory_object_terminate. */
+/* #undef KERNEL_INIT_RACE */
+
 struct pager
 {
   struct port_info port;
@@ -54,6 +58,12 @@ struct pager
   int termwaiting:1;
   int waitingforseqno:1;
   
+#ifdef KERNEL_INIT_RACE
+  /* Out of sequence object_init calls waiting for
+     terminations. */
+  struct pending_init *init_head, *init_tail;
+#endif
+
   char *pagemap;
   int pagemapsize;
 };
@@ -76,6 +86,15 @@ struct attribute_request
   int attrs_pending;
 };
 
+#ifdef KERNEL_INIT_RACE
+struct pending_init
+{
+  mach_port_t control;
+  mach_port_t name;
+  struct pending_init *next;
+};
+#endif
+
 enum page_errors
 {
   PAGE_NOERR,
@@ -85,7 +104,6 @@ enum page_errors
 };
 
 int _pager_page_errors[];
-
 
 /* Pagemap format */
 /* These are binary state bits */
@@ -108,7 +126,7 @@ int _pager_page_errors[];
 
 
 void _pager_wait_for_seqno (struct pager *, int);
-void _pager_release_seqno (struct pager *);
+void _pager_release_seqno (struct pager *, int);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 void _pager_pagemap_resize (struct pager *, vm_address_t);
