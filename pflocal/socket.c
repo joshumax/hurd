@@ -361,12 +361,12 @@ S_socket_recv (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  if (flags & MSG_OOB)
+  if (in_flags & MSG_OOB)
     /* BSD local sockets don't support OOB data.  */
-    return EOPNOTSUPP;
+    return EINVAL;		/* XXX */
 
-  flags =
-    0;
+  /* Fill in the pipe FLAGS from any corresponding ones in IN_FLAGS.  */
+  flags = 0;
 
   err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
@@ -401,8 +401,8 @@ S_socket_recv (struct sock_user *user,
 	*addr = MACH_PORT_NULL;
     }
 
-  out_flags =
-    0;
+  /* Fill in OUT_FLAGS from from any corresponding ones in FLAGS.  */
+  out_flags = 0;
 
   return err;
 }
