@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,21 +17,24 @@
 
 #include "iohelp.h"
 
-struct iouser *
-iohelp_dup_iouser (struct iouser *iouser)
+error_t
+iohelp_dup_iouser (struct iouser **clone, struct iouser *iouser)
 {
   struct iouser *new;
   error_t err = 0;
 
-  new = malloc (sizeof (struct iouser));
+  *clone = new = malloc (sizeof (struct iouser));
   if (!new)
-    return 0;
+    return ENOMEM;
 
   new->uids = make_idvec ();
   new->gids = make_idvec ();
   new->hook = 0;
   if (!new->uids || !new->gids)
-    goto lose;
+    {
+      err = ENOMEM;
+      goto lose;
+    }
 
   err = idvec_set (new->uids, iouser->uids);
   if (!err)
@@ -45,7 +48,9 @@ iohelp_dup_iouser (struct iouser *iouser)
       if (new->gids)
 	idvec_free (new->gids);
       free (new);
-      return 0;
+      *clone = 0;
+      return err;
     }
-  return new;
+
+  return 0;
 }

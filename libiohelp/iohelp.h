@@ -1,5 +1,5 @@
 /* Library providing helper functions for io servers.
-   Copyright (C) 1993, 94, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,96,98,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -75,24 +75,42 @@ struct iouser
   void *hook; /* Never used by iohelp library */
 };
 
-/* Return a copy of IOUSER. */
-struct iouser *iohelp_dup_iouser (struct iouser *iouser);
+/* Return a copy of IOUSER in CLONE.  On error, *CLONE is set to NULL.  */
+error_t iohelp_dup_iouser (struct iouser **clone, struct iouser *iouser);
 
 /* Free a reference to IOUSER. */
 void iohelp_free_iouser (struct iouser *iouser);
 
-/* Create a new IOUSER for the specified idvecs */
-struct iouser *iohelp_create_iouser (struct idvec *uids, struct idvec *gids);
+/* Create a new IOUSER in USER for the specified idvecs.  On error, *USER
+   is set to NULL.  */
+error_t iohelp_create_iouser (struct iouser **user, struct idvec *uids,
+			      struct idvec *gids);
 
-/* Conduct a reauthentication transaction, returning a new iouser.
-   AUTHSERVER is the I/O servers auth port.  The rendezvous port
+/* Create a new IOUSER in USER for the specified arrays.  On error, *USER
+   is set to NULL.  */
+error_t iohelp_create_complex_iouser (struct iouser **user,
+				      uid_t *uids, int nuids,
+				      gid_t *gids, int ngids);
+
+/* Create a new IOUSER in USER for the specified uid and gid.  On error,
+   *USER is set to NULL.  */
+error_t iohelp_create_simple_iouser (struct iouser **user, uid_t uid,
+				     gid_t gid);
+
+/* Create a new IOUSER in USER with no identity.  On error, *USER is set
+   to NULL.  */
+error_t iohelp_create_empty_iouser (struct iouser **user);
+
+/* Conduct a reauthentication transaction, returning a new iouser in
+   USER.  AUTHSERVER is the I/O servers auth port.  The rendezvous port
    provided by the user is REND_PORT.  If the transaction cannot be
    completed, return zero, unless PERMIT_FAILURE is non-zero.  If
    PERMIT_FAILURE is nonzero, then should the transaction fail, return
    an iouser that has no ids.  The new port to be sent to the user is
-   newright.  */
-struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
-			      mach_port_t newright, int permit_failure);
+   newright.  On error, *USER is set to NULL.  */
+error_t iohelp_reauth (struct iouser **user, auth_t authserver,
+		       mach_port_t rend_port, mach_port_t newright,
+		       int permit_failure);
 
 
 /* Puts data from the malloced buffer BUF, LEN bytes long, into RBUF & RLEN,

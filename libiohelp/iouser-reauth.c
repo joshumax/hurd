@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1999 Free Software Foundation
+   Copyright (C) 1996,99,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,8 +26,9 @@
    PERMIT_FAILURE is nonzero, then should the transaction fail, return
    an iouser that has no ids.  The new port to be sent to the user is
    newright.  */
-struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
-			      mach_port_t newright, int permit_failure)
+error_t iohelp_reauth (struct iouser **user,
+		       auth_t authserver, mach_port_t rend_port,
+		       mach_port_t newright, int permit_failure)
 {
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
@@ -35,9 +36,9 @@ struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
   error_t err;
   struct iouser *new;
 
-  new = malloc (sizeof (struct iouser));
+  *user = new = malloc (sizeof (struct iouser));
   if (!new)
-    return 0;
+    return ENOMEM;
 
   new->uids = make_idvec ();
   new->gids = make_idvec ();
@@ -48,7 +49,7 @@ struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
       if (new->gids)
 	idvec_free (new->gids);
       free (new);
-      return 0;
+      return ENOMEM;
     }
 
   genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
@@ -96,7 +97,10 @@ struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
       idvec_free (new->uids);
       idvec_free (new->gids);
       free (new);
-      return 0;
+      *user = 0;
+      return err;
     }
-  return new;
+
+  *user = new;
+  return 0;
 }

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,17 +17,95 @@
 
 #include "iohelp.h"
 
-struct iouser *
-iohelp_create_iouser (struct idvec *uids, struct idvec *gids)
+error_t
+iohelp_create_iouser (struct iouser **user, struct idvec *uids,
+		      struct idvec *gids)
 {
   struct iouser *new;
-  new = malloc (sizeof (struct iouser));
+  *user = new = malloc (sizeof (struct iouser));
   if (!new)
-    return 0;
+    return ENOMEM;
 
   new->uids = uids;
   new->gids = gids;
   new->hook = 0;
-  return new;
+
+  return 0;
 }
   
+#define E(err)				\
+	do {				\
+	  if (err)			\
+	    {				\
+	      *user = 0;		\
+	      if (! uids)		\
+		return err;		\
+	      idvec_free (uids);	\
+	      if (! gids)		\
+		return err;		\
+	      idvec_free (gids);	\
+		return err;		\
+	    }				\
+	  } while (0)
+
+error_t
+iohelp_create_empty_iouser (struct iouser **user)
+{
+  struct idvec *uids, *gids;
+
+  uids = make_idvec ();
+  if (! uids)
+    E (ENOMEM);
+
+  gids = make_idvec ();
+  if (! gids)
+    E (ENOMEM);
+
+  E (iohelp_create_iouser (user, uids, gids));
+
+  return 0;
+}
+
+error_t
+iohelp_create_simple_iouser (struct iouser **user, uid_t uid, gid_t gid)
+{
+  struct idvec *uids, *gids;
+
+  uids = make_idvec ();
+  if (! uids)
+    E (ENOMEM);
+
+  gids = make_idvec ();
+  if (! gids)
+    E (ENOMEM);
+
+  E (idvec_add (uids, uid));
+  E (idvec_add (gids, gid));
+
+  E (iohelp_create_iouser (user, uids, gids));
+
+  return 0;
+}
+
+error_t
+iohelp_create_complex_iouser (struct iouser **user,
+			      uid_t *uvec, int nuids,
+			      gid_t *gvec, int ngids)
+{
+  struct idvec *uids, *gids;
+
+  uids = make_idvec ();
+  if (! uids)
+    E (ENOMEM);
+
+  gids = make_idvec ();
+  if (! gids)
+    E (ENOMEM);
+
+  E (idvec_set_ids (uids, uvec, nuids));
+  E (idvec_set_ids (gids, gvec, ngids));
+
+  E (iohelp_create_iouser (user, uids, gids));
+
+  return 0;
+}
