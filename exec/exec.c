@@ -814,7 +814,7 @@ set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
   
   if (*slot != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), *slot);
-  if (authenticate && port)
+  if (authenticate != MACH_PORT_NULL && port != MACH_PORT_NULL)
     {
       io_reauthenticate (port, pid);
       auth_user_authenticate (authenticate, port, pid, slot);
@@ -822,7 +822,7 @@ set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
   else
     {
       *slot = port;
-      if (!consume && port)
+      if (!consume && port != MACH_PORT_NULL)
 	mach_port_mod_refs (mach_task_self (), port, MACH_PORT_RIGHT_SEND, 1);
     }
 }
@@ -1022,10 +1022,12 @@ do_exec (mach_port_t execserver,
 
   /* Note that the paretheses on this first test are defferent from the others
      below it. */
-  if ((secure || defaults) && !boot->portarray[INIT_PORT_AUTH])
+  if ((secure || defaults)
+      && boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
     set_init_port (std_ports[INIT_PORT_AUTH], 
 		   &boot->portarray[INIT_PORT_AUTH], 0, 0);
-  if (secure || (defaults && !boot->portarray[INIT_PORT_PROC]))
+  if (secure || (defaults 
+		 && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
     {
       mach_port_t new;
       if (e.error = __USEPORT (PROC, proc_task2proc (port, newtask, &new)))
@@ -1033,11 +1035,13 @@ do_exec (mach_port_t execserver,
 
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
     }
-  if (secure || (defaults && !boot->portarray[INIT_PORT_CRDIR]))
+  if (secure || (defaults
+		 && boot->portarray[INIT_PORT_CRDIR] == MACH_PORT_NULL))
     set_init_port (std_ports[INIT_PORT_CRDIR],
 		   &boot->portarray[INIT_PORT_CRDIR], 
 		   boot->portarray[INIT_PORT_AUTH], 0);
-  if (secure || (defaults && !boot->portarray[INIT_PORT_CWDIR]))
+  if (secure || (defaults && 
+		 boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL))
     set_init_port (std_ports[INIT_PORT_CWDIR],
 		   &boot->portarray[INIT_PORT_CWDIR],
 		   boot->portarray[INIT_PORT_AUTH], 0);
