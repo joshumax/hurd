@@ -258,12 +258,16 @@ dev_get_memory_object(struct dev *dev, memory_object_t *memobj)
     dev->pager =
       pager_create((struct user_pager_info *)dev, dev->pager_port_bucket,
 		   1, MEMORY_OBJECT_COPY_DELAY);
+  else
+    ports_port_ref (dev->pager);
   io_state_unlock(&dev->io_state);
 
   if (dev->pager == NULL)
     return ENODEV;		/* XXX ??? */
 
   *memobj = pager_get_port(dev->pager);
+  ports_port_deref (dev->pager); /* Drop our original ref on PAGER.  */
+
   if (*memobj != MACH_PORT_NULL)
     return
       mach_port_insert_right(mach_task_self(),
