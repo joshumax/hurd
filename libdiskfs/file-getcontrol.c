@@ -24,7 +24,7 @@ diskfs_S_file_getcontrol (struct protid *cred,
 			  mach_port_t *control,
 			  mach_msg_type_name_t *controltype)
 {
-  int error = 0;;
+  int error = 0;
   struct port_info *newpi;
   
   if (!cred)
