@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -30,16 +30,19 @@ netfs_S_io_read (struct protid *user,
 		 mach_msg_type_number_t amount)
 {
   error_t err;
+  off_t start;
+  struct node *node;
   int alloced = 0;
 
   if (!user)
     return EOPNOTSUPP;
 
+  node = user->po->np;
   mutex_lock (&user->po->np->lock);
 
   if ((user->po->openstat & O_READ) == 0)
     {
-      mutex_unlock (&user->po->np->lock);
+      mutex_unlock (&node->lock);
       return EBADF;
     }
 
@@ -50,12 +53,44 @@ netfs_S_io_read (struct protid *user,
     }
   *datalen = amount;
 
-  err = netfs_attempt_read (user->user, user->po->np, 
-			    offset == -1 ? user->po->filepointer : offset, 
-			    datalen, *data);
+  start = (offset == -1 ? user->po->filepointer : offset);
+
+  if (start < 0)
+    err = EINVAL;
+  else if (S_ISLNK (node->nn_stat.st_mode))
+    /* Read from a symlink.  */
+    {
+      off_t size = node->nn_stat.st_size;
+
+      if (start + amount > size)
+	amount = size - start;
+
+      if (start >= size)
+	{
+	  *datalen = 0;
+	  err = 0;
+	}
+      else if (amount < size || start > 0)
+	{
+	  char *whole_link = alloca (size);
+	  err = netfs_attempt_readlink (user->user, node, *data);
+	  if (! err)
+	    {
+	      memcpy (*data, whole_link + start, amount);
+	      *datalen = amount;
+	    }
+	}
+      else
+	err = netfs_attempt_readlink (user->user, node, *data);
+    }
+  else
+    /* Read from a normal file.  */
+    err = netfs_attempt_read (user->user, node, start, datalen, *data);
+
   if (offset == -1 && !err)
     user->po->filepointer += *datalen;
-  mutex_unlock (&user->po->np->lock);
+
+  mutex_unlock (&node->lock);
 
   if (err && alloced)
     vm_deallocate (mach_task_self (), (vm_address_t) *data, amount);
