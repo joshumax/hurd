@@ -18,10 +18,9 @@
 #include "priv.h"
 
 error_t
-trivfs_file_chauthor (struct protid *cred,
+trivfs_S_file_chauthor (struct protid *cred,
 		      uid_t auth)
 {
-  spin_lock (&trivfs_nodelock);
-  if (trivfs_isowner (cred))
-    {
-      trivfs_stat.st_author = 
+  return cred ? file_chauthor (cred->realnode, uid, gid) : EOPNOTSUPP;
+}
+
