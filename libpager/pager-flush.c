@@ -1,5 +1,5 @@
 /* Functions for flushing data
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@ pager_flush (struct pager *p, int wait)
   pager_report_extent (p->upi, &offset, &len);
   
   _pager_lock_object (p, offset, len, MEMORY_OBJECT_RETURN_NONE, 1,
-		      VM_PROT_NONE, wait);
+		      VM_PROT_NO_CHANGE, wait);
 }
 
 
@@ -40,6 +40,6 @@ pager_flush_some (struct pager *p, vm_address_t offset,
 		 vm_size_t size, int wait)
 {
   _pager_lock_object (p, offset, size, MEMORY_OBJECT_RETURN_NONE, 1,
-		      VM_PROT_NONE, wait);
+		      VM_PROT_NO_CHANGE, wait);
 }
   
