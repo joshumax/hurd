@@ -36,7 +36,7 @@ pager_demuxer (mach_msg_header_t *inp,
     {
       struct pager *p;
 
-      p = ports_lookup_port (0, inp->msgh_remote_port, _pager_class);
+      p = ports_lookup_port (0, inp->msgh_local_port, _pager_class);
       if (p)
 	{
 	  /* Synchronize our bookkeeping of the port's seqno with
