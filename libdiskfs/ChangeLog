@@ -1,3 +1,9 @@
+2001-08-22  Neal H Walfield  <neal@cs.uml.edu>
+
+        * opts-std-startup.c (startup_options): New compatibility
+        option: bootflags, a hidden alias to multiboot-command-line.
+        (parse_startup_opt): Bug fix.
+
 2001-08-20  Roland McGrath  <roland@frob.com>
 
 	* opts-std-startup.c: diskfs_boot_flags -> diskfs_boot_command_line.
