@@ -54,8 +54,8 @@
 
 #include <argp.h>
 
-char *argp_program_version = "argp-ex3 1.0";
-char *argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
+const char *argp_program_version = "argp-ex3 1.0";
+const char *argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
 
 static char doc[] =
   "Argp example #3 -- a program with options and arguments using argp";

@@ -18,8 +18,8 @@
 
 #include <argp.h>
 
-char *argp_program_version = "argp-ex2 1.0";
-char *argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
+const char *argp_program_version = "argp-ex2 1.0";
+const char *argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
 
 static char doc[] = "Argp example #2 -- a pretty minimal program using argp";
 
