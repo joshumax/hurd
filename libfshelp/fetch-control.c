@@ -24,9 +24,7 @@ error_t
 fshelp_fetch_control (struct transbox *box,
 		      mach_port_t *control)
 {
-  mutex_lock (&box->innerlock);	/* cancellation point XXX */
   *control = box->active;
   mach_port_mod_refs (mach_task_self (), *control, MACH_PORT_RIGHT_SEND, 1);
-  mutex_unlock (&box->innerlock);
   return 0;
 }
