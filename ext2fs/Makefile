@@ -25,6 +25,6 @@ SRCS = balloc.c bitmap.c devio.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
 OBJS = $(SRCS:.c=.o)
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
 
-ext2fs: $(OBJS) ../libdiskfs/libdiskfs.a ../libports/libports.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+ext2fs: $(OBJS) ../libdiskfs/libdiskfs.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
