@@ -238,8 +238,9 @@ struct proc_stat
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
     ps_state_t state;
 
-    /* A ps_user_t object for the owner of this process.  */
+    /* A ps_user_t object for the owner of this process, or NULL if none.  */
     ps_user_t owner;
+    int owner_uid;		/* The corresponding UID, or -1.  */
 
     /* The process's argv, as a string with each element separated by '\0'.  */
     char *args;
@@ -298,11 +299,12 @@ struct proc_stat
 #define PSTAT_AUTH	       0x20000 /* The proc's auth port */
 #define PSTAT_TTY	       0x40000 /* A ps_tty_t for the proc's terminal.*/
 #define PSTAT_OWNER	       0x80000 /* A ps_user_t for the proc's owner */
-#define PSTAT_UMASK	      0x100000 /* The proc's current umask */
-#define PSTAT_EXEC_FLAGS      0x200000 /* The process's exec flags */
+#define PSTAT_OWNER_UID	      0x100000 /* The uid of the the proc's owner */
+#define PSTAT_UMASK	      0x200000 /* The proc's current umask */
+#define PSTAT_EXEC_FLAGS      0x400000 /* The process's exec flags */
 
 /* Flag bits that don't correspond precisely to any field.  */
-#define PSTAT_NO_MSGPORT      0x400000 /* Don't use the msgport at all */
+#define PSTAT_NO_MSGPORT      0x800000 /* Don't use the msgport at all */
 
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
    bitmask of the following bits, describing the process's run state.  If you
@@ -393,6 +395,7 @@ char *proc_stat_state_tags;
 #define proc_stat_cttyid(ps) ((ps)->cttyid)
 #define proc_stat_cwdir(ps) ((ps)->cwdir)
 #define proc_stat_owner(ps) ((ps)->owner)
+#define proc_stat_owner_uid(ps) ((ps)->owner_uid)
 #define proc_stat_auth(ps) ((ps)->auth)
 #define proc_stat_umask(ps) ((ps)->umask)
 #define proc_stat_tty(ps) ((ps)->tty)
@@ -494,8 +497,8 @@ struct ps_filter
 
 /* A filter that retains only process's owned by getuid() */
 extern struct ps_filter ps_own_filter;
-/* A filter that retains only process's that aren't session leaders */
-extern struct ps_filter ps_not_sess_leader_filter;
+/* A filter that retains only process's that aren't session or login leaders */
+extern struct ps_filter ps_not_leader_filter;
 /* A filter that retains only process's with a controlling terminal */
 extern struct ps_filter ps_ctty_filter;
 /* A filter that retains only `unorphaned' process.  A process is unorphaned
