@@ -77,7 +77,7 @@ endif
 
 dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
 	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
-	tar cfz $(srcdir)/$(dirname)-$(version).tar.gz $(srcdir)/$(dirname)-$(version)
+	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
 	rm -rf $(srcdir)/$(dirname)-$(version)
 
 clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
