@@ -229,9 +229,6 @@ See `tasks', the exported task list.
 *** Add byte-swapping. !!
 *** If the target of a symlink is the empty string, stat seems to spin forever !!!
 
-** crash
-*** Write core files. !!
-
 ** arla -- port it
 
 
