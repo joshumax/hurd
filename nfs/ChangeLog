@@ -1,3 +1,9 @@
+Fri Oct  4 00:00:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mount.c: Add hacks to avoid idiotic sun definitions of TRUE,
+	FALSE, and malloc in <rpc/types.h>.
+	* nfs.h (bool_t, enum_t): Typedefs removed.
+
 Thu Oct  3 12:04:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_write): If we get EINTR after having
