@@ -1016,90 +1016,6 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 }
 #endif
 
-/*
- *	This routine computes a TCP checksum. 
- */
- 
-unsigned short tcp_check(struct tcphdr *th, int len,
-	  unsigned long saddr, unsigned long daddr)
-{     
-	unsigned long sum;
-   
-	if (saddr == 0) saddr = ip_my_addr();
-
-/*
- * stupid, gcc complains when I use just one __asm__ block,
- * something about too many reloads, but this is just two
- * instructions longer than what I want
- */
-	__asm__("
-	    addl %%ecx, %%ebx
-	    adcl %%edx, %%ebx
-	    adcl $0, %%ebx
-	    "
-	: "=b"(sum)
-	: "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_TCP*256)
-	: "bx", "cx", "dx" );
-	__asm__("
-	    movl %%ecx, %%edx
-	    cld
-	    cmpl $32, %%ecx
-	    jb 2f
-	    shrl $5, %%ecx
-	    clc
-1:	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    lodsl
-	    adcl %%eax, %%ebx
-	    loop 1b
-	    adcl $0, %%ebx
-	    movl %%edx, %%ecx
-2:	    andl $28, %%ecx
-	    je 4f
-	    shrl $2, %%ecx
-	    clc
-3:	    lodsl
-	    adcl %%eax, %%ebx
-	    loop 3b
-	    adcl $0, %%ebx
-4:	    movl $0, %%eax
-	    testw $2, %%dx
-	    je 5f
-	    lodsw
-	    addl %%eax, %%ebx
-	    adcl $0, %%ebx
-	    movw $0, %%ax
-5:	    test $1, %%edx
-	    je 6f
-	    lodsb
-	    addl %%eax, %%ebx
-	    adcl $0, %%ebx
-6:	    movl %%ebx, %%eax
-	    shrl $16, %%eax
-	    addw %%ax, %%bx
-	    adcw $0, %%bx
-	    "
-	: "=b"(sum)
-	: "0"(sum), "c"(len), "S"(th)
-	: "ax", "bx", "cx", "dx", "si" );
-
-  	/* We only want the bottom 16 bits, but we never cleared the top 16. */
-  
-  	return((~sum) & 0xffff);
-}
-
 
 
 void tcp_send_check(struct tcphdr *th, unsigned long saddr, 
@@ -5118,3 +5034,88 @@ struct proto tcp_prot = {
 	"TCP",
 	0, 0
 };
+
+/*
+ *	This routine computes a TCP checksum. 
+ */
+ 
+unsigned short tcp_check(struct tcphdr *th, int len,
+	  unsigned long saddr, unsigned long daddr)
+{     
+	unsigned long sum;
+   
+	if (saddr == 0) saddr = ip_my_addr();
+
+/*
+ * stupid, gcc complains when I use just one __asm__ block,
+ * something about too many reloads, but this is just two
+ * instructions longer than what I want
+ */
+	__asm__("
+	    addl %%ecx, %%ebx
+	    adcl %%edx, %%ebx
+	    adcl $0, %%ebx
+	    "
+	: "=b"(sum)
+	: "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_TCP*256)
+	: "bx", "cx", "dx" );
+	__asm__("
+	    movl %%ecx, %%edx
+	    cld
+	    cmpl $32, %%ecx
+	    jb 2f
+	    shrl $5, %%ecx
+	    clc
+1:	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    lodsl
+	    adcl %%eax, %%ebx
+	    loop 1b
+	    adcl $0, %%ebx
+	    movl %%edx, %%ecx
+2:	    andl $28, %%ecx
+	    je 4f
+	    shrl $2, %%ecx
+	    clc
+3:	    lodsl
+	    adcl %%eax, %%ebx
+	    loop 3b
+	    adcl $0, %%ebx
+4:	    movl $0, %%eax
+	    testw $2, %%dx
+	    je 5f
+	    lodsw
+	    addl %%eax, %%ebx
+	    adcl $0, %%ebx
+	    movw $0, %%ax
+5:	    test $1, %%edx
+	    je 6f
+	    lodsb
+	    addl %%eax, %%ebx
+	    adcl $0, %%ebx
+6:	    movl %%ebx, %%eax
+	    shrl $16, %%eax
+	    addw %%ax, %%bx
+	    adcw $0, %%bx
+	    "
+	: "=b"(sum)
+	: "0"(sum), "c"(len), "S"(th)
+	: "ax", "bx", "cx", "dx", "si" );
+
+  	/* We only want the bottom 16 bits, but we never cleared the top 16. */
+  
+  	return((~sum) & 0xffff);
+}
+

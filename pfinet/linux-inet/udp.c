@@ -152,77 +152,6 @@ void udp_err(int err, unsigned char *header, unsigned long daddr,
 }
 
 
-static unsigned short udp_check(struct udphdr *uh, int len, unsigned long saddr, unsigned long daddr)
-{
-	unsigned long sum;
-
-	__asm__(  "\t addl %%ecx,%%ebx\n"
-		  "\t adcl %%edx,%%ebx\n"
-		  "\t adcl $0, %%ebx\n"
-		  : "=b"(sum)
-		  : "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_UDP*256)
-		  : "cx","bx","dx" );
-
-	if (len > 3) 
-	{
-		__asm__("\tclc\n"
-			"1:\n"
-			"\t lodsl\n"
-			"\t adcl %%eax, %%ebx\n"
-			"\t loop 1b\n"
-			"\t adcl $0, %%ebx\n"
-			: "=b"(sum) , "=S"(uh)
-			: "0"(sum), "c"(len/4) ,"1"(uh)
-			: "ax", "cx", "bx", "si" );
-	}
-
-	/*
-	 *	Convert from 32 bits to 16 bits. 
-	 */
-
-	__asm__("\t movl %%ebx, %%ecx\n"
-		"\t shrl $16,%%ecx\n"
-	  	"\t addw %%cx, %%bx\n"
-	  	"\t adcw $0, %%bx\n"
-	  	: "=b"(sum)
-	  	: "0"(sum)
-	  	: "bx", "cx");
-	
-	/* 
-	 *	Check for an extra word. 
-	 */
-	 
-	if ((len & 2) != 0) 
-	{
-		__asm__("\t lodsw\n"
-			"\t addw %%ax,%%bx\n"
-			"\t adcw $0, %%bx\n"
-			: "=b"(sum), "=S"(uh)
-			: "0"(sum) ,"1"(uh)
-			: "si", "ax", "bx");
-  	}
-
-  	/*
-  	 *	Now check for the extra byte. 
-  	 */
-  	 
-	if ((len & 1) != 0) 
-	{
-		__asm__("\t lodsb\n"
-			"\t movb $0,%%ah\n"
-			"\t addw %%ax,%%bx\n"
-			"\t adcw $0, %%bx\n"
-			: "=b"(sum)
-			: "0"(sum) ,"S"(uh)
-			: "si", "ax", "bx");
-  	}
-
-  	/* 
-  	 *	We only want the bottom 16 bits, but we never cleared the top 16. 
-  	 */
-
-	return((~sum) & 0xffff);
-}
 
 /*
  *	Generate UDP checksums. These may be disabled, eg for fast NFS over ethernet
@@ -738,3 +667,74 @@ struct proto udp_prot = {
 	0, 0
 };
 
+static unsigned short udp_check(struct udphdr *uh, int len, unsigned long saddr, unsigned long daddr)
+{
+	unsigned long sum;
+
+	__asm__(  "\t addl %%ecx,%%ebx\n"
+		  "\t adcl %%edx,%%ebx\n"
+		  "\t adcl $0, %%ebx\n"
+		  : "=b"(sum)
+		  : "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_UDP*256)
+		  : "cx","bx","dx" );
+
+	if (len > 3) 
+	{
+		__asm__("\tclc\n"
+			"1:\n"
+			"\t lodsl\n"
+			"\t adcl %%eax, %%ebx\n"
+			"\t loop 1b\n"
+			"\t adcl $0, %%ebx\n"
+			: "=b"(sum) , "=S"(uh)
+			: "0"(sum), "c"(len/4) ,"1"(uh)
+			: "ax", "cx", "bx", "si" );
+	}
+
+	/*
+	 *	Convert from 32 bits to 16 bits. 
+	 */
+
+	__asm__("\t movl %%ebx, %%ecx\n"
+		"\t shrl $16,%%ecx\n"
+	  	"\t addw %%cx, %%bx\n"
+	  	"\t adcw $0, %%bx\n"
+	  	: "=b"(sum)
+	  	: "0"(sum)
+	  	: "bx", "cx");
+	
+	/* 
+	 *	Check for an extra word. 
+	 */
+	 
+	if ((len & 2) != 0) 
+	{
+		__asm__("\t lodsw\n"
+			"\t addw %%ax,%%bx\n"
+			"\t adcw $0, %%bx\n"
+			: "=b"(sum), "=S"(uh)
+			: "0"(sum) ,"1"(uh)
+			: "si", "ax", "bx");
+  	}
+
+  	/*
+  	 *	Now check for the extra byte. 
+  	 */
+  	 
+	if ((len & 1) != 0) 
+	{
+		__asm__("\t lodsb\n"
+			"\t movb $0,%%ah\n"
+			"\t addw %%ax,%%bx\n"
+			"\t adcw $0, %%bx\n"
+			: "=b"(sum)
+			: "0"(sum) ,"S"(uh)
+			: "si", "ax", "bx");
+  	}
+
+  	/* 
+  	 *	We only want the bottom 16 bits, but we never cleared the top 16. 
+  	 */
+
+	return((~sum) & 0xffff);
+}
