@@ -44,7 +44,7 @@ reap (pid_t waitfor)
       if (pid == -1)
 	{
 	  if (errno != ECHILD && errno != EWOULDBLOCK)
-	    perror ("waitpid");
+	    error (0, errno, "waitpid");
 	  return;
 	}
       else if (WIFEXITED (status))
@@ -69,6 +69,7 @@ run (char **argv, int fd0, int fd1)
 {
   file_t file;
   char *program;
+  error_t err;
 
   if (strchr (argv[0], '/') != NULL)
     program = argv[0];
@@ -84,7 +85,7 @@ run (char **argv, int fd0, int fd1)
   file = file_name_lookup (program, O_EXEC, 0);
   if (file == MACH_PORT_NULL)
     {
-      perror (program);
+      error (0, errno, program);
       return -1;
     }
   else
@@ -92,14 +93,14 @@ run (char **argv, int fd0, int fd1)
       task_t task;
       pid_t pid;
 
-      errno = task_create (mach_task_self (),
+      err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
-			   NULL, 0,	/* OSF Mach */
+			 NULL, 0,	/* OSF Mach */
 #endif
-			   0, &task);
-      if (errno)
+			 0, &task);
+      if (err)
 	{
-	  perror ("task_create");
+	  error (0, err, "task_create");
 	  pid = -1;
 	}
       else
@@ -113,12 +114,12 @@ run (char **argv, int fd0, int fd1)
 	      *save = dup (to);
 	      if (*save < 0)
 		{
-		  perror ("dup");
+		  error (0, errno, "dup");
 		  return -1;
 		}
 	      if (dup2 (from, to) != to)
 		{
-		  perror ("dup2");
+		  error (0, errno, "dup2");
 		  return -1;
 		}
 	      close (from);
@@ -130,7 +131,7 @@ run (char **argv, int fd0, int fd1)
 		return 0;
 	      if (dup2 (*save, to) != to)
 		{
-		  perror ("dup2");
+		  error (0, errno, "dup2");
 		  return -1;
 		}
 	      close (*save);
@@ -139,10 +140,13 @@ run (char **argv, int fd0, int fd1)
 
 	  pid = task2pid (task);
 	  if (pid == -1)
-	    perror ("task2pid"), pid = 0;
-	  errno = proc_child (proc, task);
-	  if (errno)
-	    perror ("proc_child");
+	    {
+	      error (0, errno, "task2pid");
+	      pid = 0;
+	    }
+	  err = proc_child (proc, task);
+	  if (err)
+	    error (0, err, "proc_child");
 	  if (pause_startup)
 	    {
 	      printf ("Pausing (child PID %d)...", pid);
@@ -154,24 +158,25 @@ run (char **argv, int fd0, int fd1)
 	      movefd (fd1, 1, &save1))
 	    return -1;
 
-	  errno = _hurd_exec (task, file, argv, environ);
+	  err = _hurd_exec (task, file, argv, environ);
 
 	  if (restorefd (fd0, 0, &save0) ||
 	      restorefd (fd1, 1, &save1))
 	    return -1;
 
-	  if (errno)
+	  if (err)
 	    {
-	      perror ("_hurd_exec");
-	      errno = task_terminate (task);
-	      if (errno)
-		perror ("task_terminate");
+	      error (0, err, "_hurd_exec");
+	      err = task_terminate (task);
+	      if (err)
+		error (0, err, "task_terminate");
 	    }
 	  mach_port_deallocate (mach_task_self (), task);
 
 	}
       mach_port_deallocate (mach_task_self (), file);
 
+      errno = err;
       return pid;
     }
 }
@@ -196,7 +201,7 @@ command (int argc, char **argv)
 	argv[i] = NULL;
 	if (pipe (fds))
 	  {
-	    perror ("pipe");
+	    error (0, errno, "pipe");
 	    return;
 	  }
 	pid = run (argv + start, fd0, fds[1]);
@@ -217,7 +222,7 @@ command (int argc, char **argv)
 
 
 int
-main ()
+main (int argc, char *argv[])
 {
   char *linebuf = NULL;
   size_t linebufsize = 0;
@@ -270,7 +275,7 @@ main ()
 	{
 	  if (feof (stdin))
 	    return 0;
-	  perror ("getline");
+	  error (0, errno, "getline");
 	  continue;
 	}
 
@@ -325,7 +330,7 @@ main ()
 	      if (argc != 2)
 		fprintf (stderr, "Usage: cd DIRECTORY\n");
 	      else if (chdir (argv[1]))
-		perror ("chdir");
+		error (0, errno, "chdir");
 	    }
 	  else if (!strcmp (argv[0], "exec"))
 	    {
@@ -347,7 +352,7 @@ main ()
 		  if (execv (program, &argv[1]) == 0)
 		    fprintf (stderr, "execv (%s) returned 0!\n", program);
 		  else
-		    perror ("execv");
+		    error (0, errno, "execv");
 		}
 	    }
 	  else if (!strcmp (argv[0], "setenv"))
@@ -355,7 +360,7 @@ main ()
 	      if (argc != 3)
 		fprintf (stderr, "Usage: setenv VAR VALUE\n");
 	      else if (setenv (argv[1], argv[2], 1))
-		perror ("setenv");
+		error (0, errno, "setenv");
 	    }
 	  else if (!strcmp (argv[0], "fork"))
 	    {
@@ -363,7 +368,7 @@ main ()
 	      switch (pid)
 		{
 		case -1:
-		  perror ("fork");
+		  error (0, errno, "fork");
 		  break;
 		case 0:
 		  printf ("I am the child, PID %d.\n", (int) getpid ());

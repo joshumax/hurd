@@ -79,6 +79,7 @@ parse_msgid_list (const char *filename)
   unsigned int lineno = 0;
   char *name, *subsystem;
   unsigned int msgid;
+  error_t err;
 
   fp = fopen (filename, "r");
   if (fp == 0)
@@ -103,9 +104,9 @@ parse_msgid_list (const char *filename)
 	    error (1, errno, "malloc");
 	  info->name = name;
 	  info->subsystem = subsystem;
-	  errno = ihash_add (&msgid_ihash, msgid, info, NULL);
-	  if (errno)
-	    error (1, errno, "ihash_add");
+	  err = ihash_add (&msgid_ihash, msgid, info, NULL);
+	  if (err)
+	    error (1, err, "ihash_add");
 	}
     }
 
