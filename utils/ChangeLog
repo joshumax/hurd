@@ -1,5 +1,8 @@
 2003-10-26  Roland McGrath  <roland@frob.com>
 
+	* storeread.c (doc, arg_doc): Make arrays, not pointers; make const.
+	(doc): Add leading short description line before \v.
+
 	* rpctrace.c (docs, args_doc): Make arrays, not pointers.
 	(doc): Remove "\v.".  Reported by Alfred M. Szmidt <ams@kemisten.nu>.
 
