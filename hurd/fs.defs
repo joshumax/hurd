@@ -1,5 +1,5 @@
-/* Definitions for the filesystem interface. 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation
+/* Definitions for the filesystem interface.
+   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -231,7 +231,7 @@ routine dir_lookup (
 routine dir_readdir (
 	dir: file_t;
 	RPT
-	out data: data_t, dealloc;
+	out data: data_t, dealloc[];
 	entry: int;
 	nentries: int;
 	bufsiz: vm_size_t;
@@ -255,13 +255,13 @@ routine dir_unlink (
 	directory: file_t;
 	RPT
 	name: string_t);
- 
+
 /* Create a hard link.
 
    If DIR and FILE are not implemented by the same filesystem,
    EXDEV should be returned.  If the two filesystems, however can
    inter-operate and guarantee the appropriate Posix semantics, they can
-   communicate by a private protocol and allow hard links between them. 
+   communicate by a private protocol and allow hard links between them.
    If EXCL is set, then fail if NAME already exists in DIR. */
 routine dir_link (
 	dir: file_t;
@@ -271,7 +271,7 @@ routine dir_link (
 	excl: int);
 
 /* Rename file -- comments similar to those for dir_link apply here
-   about EXDEV.  If EXCL is set, then fail if NEWNAME already exists in 
+   about EXDEV.  If EXCL is set, then fail if NEWNAME already exists in
    NEWDIRECTORY.  */
 routine dir_rename (
 	olddirectory: file_t;
@@ -284,7 +284,7 @@ routine dir_rename (
 /* Create a new file without linking it into the filesystem.  You
    still must have write permission on the specified directory, even
    though it will not actually be written.  Return in *newnode a port
-   to the file.  Flags are the same as for dir_pathtrans, but 
+   to the file.  Flags are the same as for dir_pathtrans, but
    O_CREAT and O_TRUNC are assumed even if not specified.  */
 routine dir_mkfile (
 	directory: file_t;
@@ -308,7 +308,7 @@ routine dir_notice_changes (
    FS_LOOKUP_NOTRANS) to stack a new translator on top of the existing
    one.  */
 
-/* Set a translator for future lookups to a file.  
+/* Set a translator for future lookups to a file.
 
    PASSIVE is the passive translator;
    ACTIVE is the active translator.
