@@ -237,15 +237,16 @@ main ()
   exec_init (getdport (0), getauth (),
 	     MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
 
-  {
-    int ttyd = open ("/dev/tty", O_RDWR|O_IGNORE_CTTY);
-    if (ttyd >= 0)
-      {
-	fcntl (ttyd, F_SETFD, FD_CLOEXEC);
-	stdin = fdopen (ttyd, "r");
-	stdout = stderr = fdopen (ttyd, "w");
-      }
-  }
+  if ((fcntl (0, F_GETFL) & O_READ) == 0)
+    {
+      int ttyd = open ("/dev/tty", O_RDWR|O_IGNORE_CTTY);
+      if (ttyd >= 0)
+	{
+	  fcntl (ttyd, F_SETFD, FD_CLOEXEC);
+	  stdin = fdopen (ttyd, "r");
+	  stdout = stderr = fdopen (ttyd, "w");
+	}
+    }
 
   atexit ((void (*) (void)) &sync);
 
