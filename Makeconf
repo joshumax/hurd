@@ -279,7 +279,6 @@ include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 # For each .o file we need a .d file.
 include $(subst .o,.d,$(OBJS)) /dev/null
 
-
 # Here is how to build those dependency files
 
 # Dependencies for fooServer.c files.
@@ -302,9 +301,15 @@ include $(subst .o,.d,$(OBJS)) /dev/null
 	sed -e 's/User\.c/_U\.h/' -e 's/migu_d/miguh_d/' < $< > $@
 
 # Here is how to make .d files from .c files
+ifeq ($(makemode),library)
+%.d: %.c
+	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
+	sed -e 's/$*\.o:/$*.o $*_pic.o $@:/' > $@)
+else
 %.d: %.c
 	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
 	sed -e 's/$*\.o:/$*.o $@:/' > $@)
+endif
 
 # Here is how to make .d files from .S files
 %.d: %.S
