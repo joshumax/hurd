@@ -1,3 +1,8 @@
+2001-01-03  Marcus Brinkmann  <marcus@gnu.org>
+
+	* options.c (parse_opt): Set err to 0 if it was ESRCH.
+	(or zero after anyway).
+
 2000-12-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c (pfinet_demuxer): New variable PI.

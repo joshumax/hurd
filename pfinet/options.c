@@ -287,6 +287,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 		err = - (*tb->tb_delete) (tb, &req.rtm, &rta, &req.nlh, 0);
 		if (err && err != ESRCH)
 		  FAIL (err, 17, 0, "cannot remove old default gateway");
+		err = 0;
 	      }
 	  }
 	else
