@@ -45,6 +45,7 @@ struct rtable
 extern void		ip_rt_flush(struct device *dev);
 extern void		ip_rt_add(short flags, unsigned long addr, unsigned long mask,
 			       unsigned long gw, struct device *dev, unsigned short mss, unsigned long window);
+extern void 		ip_rt_del(unsigned long dst, struct device *dev);
 extern struct rtable	*ip_rt_route(unsigned long daddr, struct options *opt, unsigned long *src_addr);
 extern struct rtable 	*ip_rt_local(unsigned long daddr, struct options *opt, unsigned long *src_addr);
 extern int		rt_get_info(char * buffer, char **start, off_t offset, int length);
