@@ -1,5 +1,5 @@
 /* Completion of memory_object_change_attributes
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,8 +30,8 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   struct pager *p;
   struct attribute_request *ar;
   
-
-  if (!(p = ports_check_port_type (obj, pager_port_type)))
+  p = ports_lookup_port (0, obj, _pager_class);
+  if (!p)
     {
       printf ("Bad change completed\n");
       return EOPNOTSUPP;
@@ -50,7 +50,7 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   
   _pager_release_seqno (p, seq);
   mutex_unlock (&p->interlock);
-  ports_done_with_port (p);
+  ports_port_deref (p);
   return 0;
 }
 
