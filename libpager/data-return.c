@@ -39,7 +39,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 		    struct lock_list *next;} *lock_list, *ll;
   int wakeup;
   
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
   
   /* sanity checks -- we don't do multi-page requests yet.  */
@@ -148,6 +148,6 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 }
