@@ -45,6 +45,10 @@ pager_create (struct user_pager_info *u_pager,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy);
 
+/* Return the user_pager_info struct associated with a pager. */
+struct user_pager_info *
+pager_get_upi (struct pager *p);
+
 /* Sync data from pager PAGER to backing store; wait for
    all the writes to complete iff WAIT is set. */
 void
