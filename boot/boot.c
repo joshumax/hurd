@@ -244,7 +244,7 @@ load_image (task_t t,
 
 	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
 	    vm_write (t, ph->p_vaddr, buf, bufsz);
-	    munmap ((caddr_h) buf, bufsz);
+	    munmap ((caddr_t) buf, bufsz);
 	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0,
 			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
 			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
