@@ -1,3 +1,9 @@
+1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bootstrap.c (main): Define $(serverboot) function for "serverboot
+	controls", control command replacing the pathname.  For command "die",
+	terminate ourselves after running the boot script, no default pager.
+
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* default_pager.c (new_partition): Fix arg order in printf for
