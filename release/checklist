@@ -1,10 +1,26 @@
-Checklist for Hurd releases.
+Order for building binary distribution:
+
+1) Make tools on build machine
+*   Build/install libc and header files from mach and hurd.
+*   Build/install gcc (just LANGUAGES=c)
+*   Build/install binutils.
+
+2) Make everything for release; install both on build machine and dist dir.
+*   Build/install binutils again (now using new as and ld).
+*   Build/install gcc again.  (only one stage necessary).
+*   Build/install libc again.
+*   Build/install everything else.
+
+
+Checklist for binary image filesystems
 
 *   Symlinks in /bin; esp. sh, awk, more, cc.
+*   Symlink /lib/libtermcap.a -> /lib/libncurses.a
 *   Check all symlinks to make sure they don't reference /gd4/hurdinst.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
+*   Make sure /include/obstack.h is from libc and not binutils.
 *   Make sure there is no /include/i386.
-*   Make sure /i486-gnu contains hard links, not copies.
+*   Make sure there is no /i486-gnu.
 *   Make sure we are using Hurd versions of su and uptime, not sh-utils.
 *   Make sure we are using Hurd fsck, not e2fs.
 *   Make install-dist from release dir.

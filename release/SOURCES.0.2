@@ -38,7 +38,7 @@ cfengine (1.3.19)
 * gawk  (3.0.0)  (don't use 3.0.2)
 * gcal (2.10)
 * gcc  (2.7.2.2) (includes patches from g77 0.5.19.1)
-C gdb (gdb-gnu-5)
+C gdb (gdb-gnu-5 special!)
 * gettext (0.10)
 glibc (2.0.2)
 glibc-crypt (??)
@@ -61,17 +61,18 @@ hurd (0.2)
 * ncurses (1.9.9g)
 nethack (??) (modified?)
 * nvi (1.71)
-patch (2.1) [ Comment out basename in backupfile.c. ]
+* patch (2.1) [ Comment out basename in backupfile.c. ]
 * perl (5.003)
 * ptx (0.4)
 * readline (2.0)
 * rcs (5.7)
 * recode (3.4.1)
-C sed  (2.05) [ compilation error ]
-- sendmail (8.8.5) (modified)
+* sed  (2.05) [ Change sed.c to include <errno.h> and also use
+		strerror instead sys_errlist in read_file().  ]
+* sendmail (8.8.5) [ with special! patch ]
 * sh-utils (1.16) [ use latest getloadavg.c ]
 * sharutils (4.2)
-tar (1.11.8)
+* tar (1.11o) [special!]
 * termutils (2.0)
 * texinfo (3.9)
   [ Omit OCRNL from the expression in which it occurs in

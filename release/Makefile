@@ -1,5 +1,5 @@
 # Makefile for Hurd release tools
-#   Copyright (C) 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -22,7 +22,7 @@ dir := release
 makemode := misc
 
 # Files that go into the root of binary distributions
-dist-files = INSTALL-binary dist-README SETUP INSTALL-GRUB-MBR servers.boot \
+dist-files = INSTALL-binary dist-README SETUP servers.boot \
 	menu.lst COPYING.LIB SOURCES.0.0
 
 # Tools for making images
@@ -38,7 +38,6 @@ install-dist: dist-links
 	cp $(srcdir)/dist-README $(dist-root)/README
 	cp $(srcdir)/SETUP $(dist-root)/SETUP
 	cp $(srcdir)/SOURCES.0.0 $(dist-root)/SOURCES
-	cp $(srcdir)/INSTALL-GRUB-MBR $(dist-root)/INSTALL-GRUB-MBR
 	cp $(srcdir)/servers.boot $(dist-root)/boot/servers.boot
 	cp $(srcdir)/menu.lst $(dist-root)/boot/grub/menu.lst
 	cp $(top_srcdir)/COPYING $(dist-root)/share/misc/COPYING

@@ -39,9 +39,12 @@ kernel=	/boot/kernel root=hd0a -s
 module=	/boot/serverboot
 
 
-# Installation step for GRUB hard disk boot blocks
+# Installation steps for GRUB hard disk boot blocks
 # Entry 4:
-title=	grub install
-root=	hd(0)
-install=hd(0,a)/boot/grub/stage2
+title=	Install grub from floppy onto hard disk
+install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0b8000 p
+
+# Entry 5:
+title=  Reinstall grub from hard disk to itself
+install= (hd0)/boot/grub/stage1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
 

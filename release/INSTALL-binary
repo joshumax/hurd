@@ -126,17 +126,12 @@ and you may notice that pipes don't work.
 In order to set up the translators for this to be a fully functional
 Hurd system, say
 
-  /bin/sh /SETUP disk
-
-where `disk' is the name of the disk to install the boot block on,
-without partition name, for example `sd0' or `hd0'.  (If you give no
-arg, it will ask you for the device to install the boot block on in
-case you forgot.  If you really don't want a boot block, just hit RET
-when it asks.)
+  /bin/sh /SETUP
 
 This will set up some initial translators so that the system runs
-normally, and then offer to reboot the system.  When it comes back up,
-boot it single-user again, so that you can do step V. 
+normally, and then offer to reboot the system.  When you get to the
+GRUB menu, do step V.
+
 
 NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
   
@@ -157,10 +152,11 @@ NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
 
 STEP V:
 
-Now boot from the floppy again.  This time, select the "grub install"
-option.  (If your disk isn't known as hd0 to grub, then you will need
-to edit the commands accordingly.)  Reset your PC and take the floppy
-disk out of the drive.  The hard disk should now boot successfully.
+Now boot from the floppy again.  This time, select the option to
+install grub from the floppy.  (If your disk isn't known as hd0 to
+grub, then you will need to edit the commands accordingly.)  Reset
+your PC and take the floppy disk out of the drive.  The hard disk
+should now boot successfully.
 
 Select the single-user boot menu option, and proceed to STEP VI.
 

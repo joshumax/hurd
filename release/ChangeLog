@@ -1,3 +1,14 @@
+Fri Apr 11 14:21:29 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* SETUP: Comment out frobbing of BOOT_DEV; grub does that on it's
+ 	own now.
+	* INSTALL-GRUB-MBR: Delete file.
+	* Makefile (dist-files): Omit INSTALL-GRUB-MBR.
+	(install-dist): Likewise.	
+	* menu.lst (title): Replace install entries with new versions.
+	* INSTALL-binary (STEP IV): Revised instructions to correspond to
+	new reality, with Grub 0.4.
+
 Tue Sep 24 16:47:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* servers.boot (/hurd/ufs.static): Change --machdev to -Tdevice.
