@@ -142,6 +142,7 @@ See `tasks', the exported task list.
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
     non-suid. !
 *** add timeouts to all the msg_* calls proc makes. !
+*** proc seems to acquire three dead-names per fork/exec/exit cycle !!!
 
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
