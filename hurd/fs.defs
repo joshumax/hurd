@@ -34,8 +34,7 @@ FILE_IMPORTS
    authentication changes associated with set[ug]id execution must be
    handled by the filesystem.  Filesystems normally implement this by
    using exec_newtask or exec_loadtask as appropriate.  */
-/* INTR */
-routine file_exec (
+INTR_ROUTINE (file_exec, (
 	exec_file: file_t;
 	exec_task: task_t;
 	flags: int;
@@ -45,14 +44,13 @@ routine file_exec (
 	portarray: portarray_t;
 	intarray: intarray_t;
 	deallocnames: mach_port_name_array_t;
-	destroynames: mach_port_name_array_t);
+	destroynames: mach_port_name_array_t))
 
 /* Change owner and/or group */
-/* INTR */
-routine file_chown (
+INTR_ROUTINE (file_chown, (
 	chown_file: file_t;
 	new_owner: uid_t;
-	new_group: gid_t);
+	new_group: gid_t))
 
 /*
 Whan that Aprill with hith thoureth thoote
@@ -74,41 +72,35 @@ Of Engelond to Cantebury they wende,
 The hooly blithful martyr for to theke,
 That hem hath holpen whan that they were theeke.
 */
-/* INTR */
-routine file_chauthor (
+INTR_ROUTINE (file_chauthor, (
 	chauth_file: file_t;
-	new_author: uid_t);
+	new_author: uid_t))
 
 /* Change mode bits */
-/* INTR */
-routine file_chmod (
+INTR_ROUTINE (file_chmod, (
 	chmod_file: file_t;
-	new_mode: mode_t);
+	new_mode: mode_t))
 
 /* Change file flags */
-/* INTR */
-routine file_chflags (
+INTR_ROUTINE (file_chflags, (
 	chflags_file: file_t;
-	new_flags: int);
+	new_flags: int))
 
 /* Change access and modify times */
-/* INTR */
-routine file_utimes (
+INTR_ROUTINE (file_utimes, (
 	utimes_file: file_t;
 	new_atime: time_value_t;
-	new_mtime: time_value_t);
+	new_mtime: time_value_t))
 
 /* Truncate file */
-/* INTR */
-routine file_truncate (
+INTR_ROUTINE (file_truncate, (
 	trunc_file: file_t;
-	new_size: off_t);
+	new_size: off_t))
 
 /* Apply/manipulate advisory lock */
-/* INTR */
-routine file_lock (
+INTR_ROUTINE (file_lock, (
 	lock_file: file_t;
-	flags: int);
+	flags: int))
 
 /* Return current lock status.  Mystatus tells what kind of lock the
    caller has; otherstatus tells what kind of lock anyone has
@@ -141,30 +133,26 @@ routine file_getcontrol (
 	out control: mach_port_send_t);
 
 /* Return filesystem status */
-/* INTR */
-routine file_statfs (
+INTR_ROUTINE (file_statfs, (
 	file: file_t;
-	out info: fsys_statfsbuf_t);
+	out info: fsys_statfsbuf_t))
 
 /* Sync the individual file */
-/* INTR */
-routine file_sync (
+INTR_ROUTINE (file_sync, (
 	file: file_t;
-	wait: int);
+	wait: int))
 
 /* Sync the entire filesystem */
-/* INTR */
-routine file_syncfs (
+INTR_ROUTINE (file_syncfs, (
 	file: file_t;
 	wait: int;
-	do_children: int);
+	do_children: int))
 
 /* Return Posix.1 pathconf information */
-/* INTR */
-routine file_pathconf (
+INTR_ROUTINE (file_pathconf, (
 	file: file_t;
 	name: int;
-	out value: int);
+	out value: int))
 
 /* Return the node for hard links to this potentially translated file.
    This returns a potentially unauthenticated node.  */
@@ -191,15 +179,14 @@ routine file_getfh (
    FS_RETRY_REAUTH, then the same procedure is followed as for
    FS_RETRY_NORMAL, except retry will need to be reauthenticated
    before use.  */
-/* INTR */
-routine dir_pathtrans (
+INTR_ROUTINE (dir_pathtrans, (
 	start_dir: file_t;
 	pathname: string_t;
 	flags: int;
 	mode: mode_t;
 	out do_retry: retry_type;
 	out retry_name: string_t;
-	out result: mach_port_send_t);
+	out result: mach_port_send_t))
 
 /* Read entries from the directory.  Each entry is identified
    by an index number starting at 0 and running through the file.  This
@@ -209,65 +196,59 @@ routine dir_pathtrans (
    is bigger than the index of the last entry, then 0 is returned in
    AMOUNT.  If BUFSIZE is nonzero, never return more than BUFSIZE bytes of
    data regardless.  */
-routine dir_readdir (
+INTR_ROUTINE (dir_readdir, (
 	dir: file_t;
 	out data: data_t;
 	entry: int;
 	nentries: int;
 	bufsiz: vm_size_t;
-	out amount: int);
+	out amount: int))
 
 /* Create directory */
-/* INTR */
-routine dir_mkdir (
+INTR_ROUTINE (dir_mkdir, (
 	directory: file_t;
 	name: string_t;
-	mode: mode_t);
+	mode: mode_t))
 
 /* Remove directory */
-/* INTR */
-routine dir_rmdir (
+INTR_ROUTINE (dir_rmdir, (
 	directory: file_t;
-	name: string_t);
+	name: string_t))
 
 /* Remove non-directory */
-/* INTR */
-routine dir_unlink (
+INTR_ROUTINE (dir_unlink, (
 	directory: file_t;
-	name: string_t);
+	name: string_t))
  
-/* Create hard link */ 
-/* If oldfile and newdirectory are not implemented by the same
-filesystem, POSIX_EXDEV should be returned.  If the two filesystems,
-however can inter-operate and guarantee the appropriate Posix
-semantics, they can communicate by a private protocol and allow hard
-links between them.  */
-/* INTR */
-routine dir_link (
+/* Create a hard link.
+
+   If OLDFILE and NEWDIRECTORY are not implemented by the same filesystem,
+   EXDEV should be returned.  If the two filesystems, however can
+   inter-operate and guarantee the appropriate Posix semantics, they can
+   communicate by a private protocol and allow hard links between them.  */
+INTR_ROUTINE (dir_link, (
 	oldfile: file_t;
 	newdirectory: file_t;
-	newname: string_t);
+	newname: string_t))
 
 /* Rename file -- comments similar to those for dir_link apply here
-   about POSIX_EXDEV. */
-/* INTR */
-routine dir_rename (
+   about EXDEV. */
+INTR_ROUTINE (dir_rename, (
 	olddirectory: file_t;
 	oldname: string_t;
 	newdirectory: file_t;
-	newname: string_t);
+	newname: string_t))
 
 /* Create a new file without linking it into the filesystem.  You
    still must have write permission on the specified directory, even
    though it will not actually be written.  Return in *newnode a port
    to the file.  Flags are the same as for dir_pathtrans, but 
    O_CREAT and O_TRUNC are assumed even if not specified.  */
-/* INTR */
-routine dir_mkfile (
+INTR_ROUTINE (dir_mkfile, (
 	directory: file_t;
 	flags: int;
 	mode: mode_t;
-	out newnode: mach_port_send_t);
+	out newnode: mach_port_send_t))
 
 /* Notice changes to directory DIR.  Send directory change notifications
    (see msg.defs) to PORT as they occur.  */
@@ -296,24 +277,31 @@ routine dir_notice_changes (
    Some filesystems understand some translators directly and
    short-circuit the creation of the translator by the normal process.
    To prevent this optimization, set FS_TRANS_FORCE.  */
-/* INTR */
-routine file_set_translator (
+INTR_ROUTINE (file_set_translator, (
 	file: file_t;
 	flags: int;
 	oldtrans_flags: int;
 	translator: data_t;
-	existing: mach_port_send_t);
+	existing: mach_port_send_t))
 
 /* Return the stored permanent translator for this file.  */
-/* INTR */
-routine file_get_translator (
+INTR_ROUTINE (file_get_translator, (
 	file: file_t;
-	out translator: data_t);
+	out translator: data_t))
 
 /* Return the translator control port to the
    active translator (if any) for this file.  */
-/* INTR */
-routine file_get_translator_cntl (
+INTR_ROUTINE (file_get_translator_cntl, (
 	file: file_t;
-	out translator_cntl: mach_port_send_t);
+	out translator_cntl: mach_port_send_t))
 
+/* Activate FILE's translator if necessary, and open a port to it with
+   FLAGS and retry protocol as for dir_pathtrans; if FLAGS contains
+   O_NOTRANS, this will start the translator set on FILE, but circumvent
+   the translator set on the resultant node.  */
+INTR_ROUTINE (file_invoke_translator, (
+	file: file_t;
+	flags: int;
+	out do_retry: retry_type;
+	out retry_name: string_t;
+	out result: mach_port_send_t))
