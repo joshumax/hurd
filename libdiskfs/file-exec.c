@@ -48,9 +48,12 @@ diskfs_S_file_exec (struct protid *cred,
 		    u_int destroynameslen)
 {
   struct node *np;
-  error_t err;
-  struct protid *newpi;
+  uid_t uid;
+  gid_t gid;
+  mode_t mode;
   int suid, sgid;
+  struct protid *newpi;
+  error_t err = 0;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -63,29 +66,23 @@ diskfs_S_file_exec (struct protid *cred,
   np = cred->po->np;
 
   mutex_lock (&np->lock);
+  mode = np->dn_stat.st_mode;
+  uid = np->dn_stat.st_uid;
+  gid = np->dn_stat.st_uid;
+  mutex_unlock (&np->lock);
 
   if ((cred->po->openstat & O_EXEC) == 0)
-    {
-      mutex_unlock (&np->lock);
-      return EBADF;
-    }
+    return EBADF;
   
-  if (!((np->dn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
-	|| ((np->dn_stat.st_mode & S_IUSEUNK)
-	    && (np->dn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
-    {
-      mutex_unlock (&np->lock);
-      return EACCES;
-    }
+  if (!((mode & (S_IXUSR|S_IXGRP|S_IXOTH))
+	|| ((mode & S_IUSEUNK) && (mode & (S_IEXEC << S_IUNKSHIFT)))))
+    return EACCES;
   
-  if ((np->dn_stat.st_mode & S_IFMT) == S_IFDIR)
-    {
-      mutex_unlock (&np->lock);
-      return EACCES;
-    }
+  if ((mode & S_IFMT) == S_IFDIR)
+    return EACCES;
 
-  suid = np->dn_stat.st_mode & S_ISUID;
-  sgid = np->dn_stat.st_mode & S_ISGID;
+  suid = mode & S_ISUID;
+  sgid = mode & S_ISGID;
   if (suid || sgid)
     {
       int secure = 0;
@@ -96,9 +93,10 @@ diskfs_S_file_exec (struct protid *cred,
 	    err = idvec_merge_ids (gids, cred->gids, cred->ngids);
 	  return err;
 	}
-      fshelp_exec_reauth (suid, np->dn_stat.st_uid, sgid, np->dn_stat.st_gid,
-			  diskfs_auth_server_port, get_file_ids,
-			  portarray, portarraylen, fds, fdslen, &secure);
+      err =
+	fshelp_exec_reauth (suid, uid, sgid, gid,
+			    diskfs_auth_server_port, get_file_ids,
+			    portarray, portarraylen, fds, fdslen, &secure);
       if (secure)
 	flags |= EXEC_SECURE | EXEC_NEWTASK;
     }
@@ -113,12 +111,12 @@ diskfs_S_file_exec (struct protid *cred,
     flags |= EXEC_NEWTASK;
 #endif
 
-  err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, 
-						   cred->po->dotdotport),
-			      cred->uids, cred->nuids,
-			      cred->gids, cred->ngids,
-			      &newpi);
-  mutex_unlock (&np->lock);
+  if (! err)
+    err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, 
+						     cred->po->dotdotport),
+				cred->uids, cred->nuids,
+				cred->gids, cred->ngids,
+				&newpi);
 
   if (! err)
     {
