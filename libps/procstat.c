@@ -110,7 +110,7 @@ fetch_procinfo (process_t server, pid_t pid,
   if (pi_flags || ((need & PSTAT_PROC_INFO) && !(have & PSTAT_PROC_INFO)))
     {
       error_t err =
-	proc_getprocinfo (server, pid, pi_flags, (procinfo_t *)pi, pi_size,
+	proc_getprocinfo (server, pid, &pi_flags, (procinfo_t *)pi, pi_size,
 			  waits, waits_len);
       return err;
     }
