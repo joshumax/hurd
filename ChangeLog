@@ -1,3 +1,8 @@
+2000-12-28  Roland McGrath  <roland@frob.com>
+
+	* Makeconf (mach_defs_names): Remove default_pager (replaced by our
+	own in hurd) and default_pager_helper (never used).
+
 2001-02-02  Roland McGrath  <roland@frob.com>
 
 	* Makefile (prog-subdirs): Add tmpfs.

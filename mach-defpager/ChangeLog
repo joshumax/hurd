@@ -1,3 +1,10 @@
+2001-02-28  Roland McGrath  <roland@frob.com>
+
+	* main.c (main): Instead of calling daemon, do the work ourselves but
+	synchronize with the child so that vm_set_default_memory_manager has
+	definitely been called before exit.
+	(nohandler): New function.
+
 2000-12-28  Roland McGrath  <roland@frob.com>
 
 	Override the shared code from serverboot for device access with
