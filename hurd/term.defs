@@ -54,7 +54,7 @@ matches the current owner (as set by io_mod_owner) or whose pgrp
 matches the owner in the same fashion.  A "background process" is one
 making a request over a port returned by term_become_ctty which is not
 a foreground process.  */ 
-routine term_become_ctty (
+routine term_open_ctty (
 	terminal: io_t;
 	pid: pid_t;
 	pgrp: pid_t;
