@@ -3,6 +3,8 @@
 	* node.c (diskfs_free_node): Reset hnext's hprevp.
 	(diskfs_node_norefs): Likewise.
 	(diskfs_cached_lookup): Fix insane code for finding existing node ptr.
+	(diskfs_get_filemap_pager_struct): Remove spurious assert.
+	(diskfs_get_filemap): Always add a reference to the send right.
 
 	* dir.c (diskfs_get_directs): When using st_size, calculate additional
 	space for . and .. entries.  Skip . and .. entries when ENTRY says to.
