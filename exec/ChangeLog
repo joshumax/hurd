@@ -1,3 +1,8 @@
+Sat Nov 23 16:26:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* priv.h (mach_host_elf_machine): New prototype.
+	* hostarch.c: Include "priv.h".
+
 Mon Nov 18 17:45:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* exec.c (load_section): If ANYWHERE, then make sure ADDR starts

@@ -125,6 +125,8 @@ struct execdata
       } info;
   };
 
+error_t mach_host_elf_machine (host_t, Elf32_Half *);
+
 void finish (struct execdata *, int dealloc_file_port);
 
 void check_hashbang (struct execdata *e,
