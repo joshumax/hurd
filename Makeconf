@@ -119,13 +119,14 @@ install: $(targets)
 endif
 
 ifeq ($(makemode),library)
-all: $(libname).a
-install: $(libname).a $(installhdrs)
+all: $(libname).a $(libname).so
+install: $(libname).a $(installhdrs) $(libname).so
   ifdef installhdrs
 	$(INSTALL_DATA) $(installhdrs) $(includedir)/hurd/
   endif
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
 	$(RANLIB) $(libdir)/$(libname).a
+	$(INSTALL_DATA) $(libname).so $(libdir)/$(libname).so
 endif
 
 # Provide default.
@@ -157,6 +158,9 @@ $(libname).a: $(OBJS)
 	rm -f $(libname).a
 	$(AR) r $@ $^
 	$(RANLIB) $@
+
+$(libname).so: $(patsubst %.o,%_pic.o,$(OBJS))
+	$(CC) -shared $(CFLAGS) -o $(libname).so $+
 endif
 
 # Making a snapshot
@@ -198,6 +202,11 @@ relink:
 # Building Hurd libraries
 $(HURDLIBS-files): FORCE
 	$(MAKE) -C $(dir $@) $(notdir $@)
+
+
+# Default rule to build PIC object files.
+%_pic.o: %.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -fPIC $< -o $@
 
 
 # How to build RPC stubs
