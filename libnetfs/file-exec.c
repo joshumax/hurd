@@ -51,7 +51,9 @@ netfs_S_file_exec (struct protid *cred,
 {
   struct node *np;
   error_t err;
-  struct protid *newpi;
+  uid_t uid;
+  gid_t gid;
+  mode_t mode;
   int suid, sgid;
   
   if (!cred)
@@ -61,40 +63,31 @@ netfs_S_file_exec (struct protid *cred,
     _netfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
   if (_netfs_exec == MACH_PORT_NULL)
     return EOPNOTSUPP;
+
+  if ((cred->po->openstat & O_EXEC) == 0)
+    return EBADF;
   
   np = cred->po->np;
 
   mutex_lock (&np->lock);
-
-  if ((cred->po->openstat & O_EXEC) == 0)
-    {
-      mutex_unlock (&np->lock);
-      return EBADF;
-    }
-
+  mode = np->nn_stat.st_mode;
+  uid = np->nn_stat.st_uid;
+  gid = np->nn_stat.st_gid;
   err = netfs_validate_stat (np, cred->credential);
-  if (err)
-    {
-      mutex_unlock (&np->lock);
-      return err;
-    }
-  
-  if (!((np->nn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
-	|| ((np->nn_stat.st_mode & S_IUSEUNK)
-	    && (np->nn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
-    {
-      mutex_unlock (&np->lock);
-      return EACCES;
-    }
-  
-  if ((np->nn_stat.st_mode & S_IFMT) == S_IFDIR)
-    {
-      mutex_unlock (&np->lock);
-      return EACCES;
-    }
+  mutex_unlock (&np->lock);
 
-  suid = np->nn_stat.st_mode & S_ISUID;
-  sgid = np->nn_stat.st_mode & S_ISGID;
+  if (err)
+    return err;
+  
+  if (!((mode & (S_IXUSR|S_IXGRP|S_IXOTH))
+	|| ((mode & S_IUSEUNK) && (mode & (S_IEXEC << S_IUNKSHIFT)))))
+    return EACCES;
+  
+  if ((mode & S_IFMT) == S_IFDIR)
+    return EACCES;
+
+  suid = mode & S_ISUID;
+  sgid = mode & S_ISGID;
   if (suid || sgid)
     {
       int secure = 0;
@@ -114,9 +107,10 @@ netfs_S_file_exec (struct protid *cred,
 	  free (gids);
 	  return err;
 	}
-      fshelp_exec_reauth (suid, np->nn_stat.st_uid, sgid, np->nn_stat.st_gid,
-			  netfs_auth_server_port, get_file_ids,
-			  portarray, portarraylen, fds, fdslen, &secure);
+      err = 
+	fshelp_exec_reauth (suid, uid, sgid, gid,
+			    netfs_auth_server_port, get_file_ids,
+			    portarray, portarraylen, fds, fdslen, &secure);
       if (secure)
 	flags |= EXEC_SECURE | EXEC_NEWTASK;
     }
@@ -131,13 +125,12 @@ netfs_S_file_exec (struct protid *cred,
     flags |= EXEC_NEWTASK;
 #endif
 
-  newpi = netfs_make_protid (netfs_make_peropen (np, O_READ, 
-						 cred->po->dotdotport),
-			     netfs_copy_credential (cred->credential));
-  mutex_unlock (&np->lock);
-
   if (! err)
     {
+      struct protid *newpi =
+	netfs_make_protid (netfs_make_peropen (np, O_READ,
+					       cred->po->dotdotport),
+			   netfs_copy_credential (cred->credential));
       err = exec_exec (_netfs_exec, 
 		       ports_get_right (newpi),
 		       MACH_MSG_TYPE_MAKE_SEND,
