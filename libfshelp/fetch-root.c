@@ -63,13 +63,13 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	    if (port == MACH_PORT_NULL)
 	      return port;
 
+	    if (port_type == MACH_MSG_TYPE_MAKE_SEND)
+	      mach_port_insert_right (mach_task_self (), port, port,port_type);
+
 	    rend = mach_reply_port ();
 	    err = io_reauthenticate (port, rend, 
 				     MACH_MSG_TYPE_MAKE_SEND);
 	    assert_perror (err);
-
-	    if (port_type == MACH_MSG_TYPE_MAKE_SEND)
-	      mach_port_insert_right (mach_task_self (), port, port,port_type);
 
 	    err = auth_user_authenticate (newauth, port, rend,
 					  MACH_MSG_TYPE_MAKE_SEND,
@@ -86,15 +86,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       error_t fetch_underlying (int flags, mach_port_t *underlying,
 				mach_msg_type_name_t *underlying_type)
 	{
-	  error_t err =
+	  return
 	    (*callback2) (box->cookie, cookie, flags,
 			  underlying, underlying_type);
-	  if (!err)
-	    {
-	      *underlying = reauth (*underlying, *underlying_type);
-	      *underlying_type = MACH_MSG_TYPE_MOVE_SEND;
-	    }
-	  return err;
 	}
       
       if (box->flags & TRANSBOX_STARTING)
