@@ -753,6 +753,7 @@ init_stdarrays ()
     mach_port_deallocate (mach_task_self (), std_port_array[i]);
 }
 
+#ifndef SPLIT_INIT
 /* Open /dev/console.  If it isn't there, or it isn't a terminal, then
    create /tmp/console and put the terminal on it.  If we get EROFS,
    in trying to create /tmp/console then as a last resort, put the
@@ -911,7 +912,7 @@ open_console ()
 
   return term;
 }
-
+#endif
 
 /* Frobnicate the kernel task and the proc server's idea of it (PID 2),
    so the kernel command line can be read as for a normal Hurd process.  */
