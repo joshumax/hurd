@@ -24,7 +24,7 @@ target = pflocal
 SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
 LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h
 
-MIGSTUBS = ioServer.o socketServer.o interruptServer.o notifyServer.o
+MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 MIGSFLAGS = -imacros mig-mutate.h
