@@ -103,6 +103,10 @@ struct queue *inputq, *rawq, *outputq;
 
 /* Plain pass-through input */
 int remote_input_mode;
+
+/* External processing mode */
+int external_processing;
+
 
 /* Functions a bottom half defines */
 struct bottomhalf
