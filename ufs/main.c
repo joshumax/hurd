@@ -133,7 +133,7 @@ main (int argc, char **argv)
       compat_mode = COMPAT_GNU;
     }
   
-  diskfs_init_diskfs ();
+  diskfs_init_diskfs (bootstrap);
   
   err = device_open (diskfs_master_device, 
 		     (diskfs_readonly ? 0 : D_WRITE) | D_READ,
