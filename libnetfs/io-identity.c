@@ -38,17 +38,6 @@ netfs_S_io_identity (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   
-  if (np->identity == MACH_PORT_NULL)
-    {
-      err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-				&np->identity);
-      if (err)
-	{
-	  mutex_unlock (&np->lock);
-	  return err;
-	}
-    }
-  
   err = netfs_validate_stat (np, cred->credential);
   if (err)
     {
@@ -56,7 +45,12 @@ netfs_S_io_identity (struct protid *cred,
       return err;
     }
 
-  *id = np->identity;
+  err = fshelp_get_identity (netfs_port_bucket, np->nn_stat.st_ino, &id);
+  if (err)
+    {
+      mutex_unlock (&np->lock);
+      return err;
+    }
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
   *fsys = netfs_fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
