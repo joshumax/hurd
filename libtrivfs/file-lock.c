@@ -26,6 +26,9 @@ trivfs_S_file_lock (struct protid *cred, int flags)
 {
   error_t err;
 
+  if (!cred)
+    return EOPNOTSUPP;
+
   mutex_lock (&lock);
   if (!inited)
     {
@@ -35,5 +38,18 @@ trivfs_S_file_lock (struct protid *cred, int flags)
   err = fshelp_acquire_lock (&lockbox, &cred->po->lock_status, &lock, flags);
   mutex_unlock (&lock);
   return err;
+}
+
+error_t
+trivfs_S_file_lock_stat (struct protid *cred, int *mystatus, int *otherstat)
+{
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&lock);
+  *mystatus = cred->po->lock_status;
+  *otherstat = lockbox.type;
+  mutex_unlock (&lock);
+  return 0;
 }
 
