@@ -1,3 +1,7 @@
+2002-05-13  Roland McGrath  <roland@frob.com>
+
+	* ps.h (proc_stat_state_tags): Make decl extern, not common.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* context.c (ps_context_find_tty_by_cttyid): int -> mach_port_t
