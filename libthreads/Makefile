@@ -80,5 +80,3 @@ lndist-i386-files: $(hurdsource)/hurd-snap/$(dir)/i386
 $(hurdsource)/hurd-snap/$(dir)/i386:
 	mkdir $(hurdsource)/hurd-snap/$(dir)/i386
 
-TAGS: $(sources) $(headers)
-	etags -T $^
