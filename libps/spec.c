@@ -26,7 +26,6 @@
 #include <hurd/resource.h>
 
 #include "ps.h"
-#include "pshost.h"
 #include "common.h"
 
 /* ---------------------------------------------------------------- */
