@@ -46,13 +46,13 @@ clean:
 relink:
 	rm -f exec
 
-exec_server.h execServer.c: $(includedir)/hurd/exec.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ $(includedir)/hurd/exec.defs \
+exec_server.h execServer.c: ../hurd/exec.defs ../hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ ../hurd/exec.defs \
 	| $(MIGCOM) -sheader exec_server.h -header /dev/null -user /dev/null
 
 
-fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  $(includedir)/hurd/fsys.defs \
+fsys_S.h fsysServer.c: ../hurd/fsys.defs ../hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  ../hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
