@@ -29,9 +29,9 @@ fstests: $(OBJS) $(libc); $(link)
 fdtests: $(OBJS) $(libc); $(link)
 
 
-install: fdtests fstests $(hurdroot)
+install: fdtests $(hurdroot) #fstests
 	cp fdtests $(hurdroot)/bin/fdtests
-	cp fstests $(hurdroot)/bin/fstests
+#	cp fstests $(hurdroot)/bin/fstests
 
 
 clean: 
