@@ -423,32 +423,3 @@ dev_read(struct dev *dev,
 
   return err;
 }
-
-/* ---------------------------------------------------------------- */
-
-/* Returns in MEMOBJ the port for a memory object backed by the storage on
-   DEV.  Returns 0 or the error code if an error occurred.  */
-error_t
-dev_get_memory_object(struct dev *dev, memory_object_t *memobj)
-{
-  if (dev_is(dev, DEV_SERIAL))
-    return ENODEV;
-
-  io_state_lock(&dev->io_state);
-  if (dev->pager == NULL)
-    dev->pager =
-      pager_create((struct user_pager_info *)dev, 1, MEMORY_OBJECT_COPY_DELAY);
-  io_state_unlock(&dev->io_state);
-
-  if (dev->pager == NULL)
-    return ENODEV;		/* XXX ??? */
-
-  *memobj = pager_get_port(dev->pager);
-  if (*memobj != MACH_PORT_NULL)
-    return
-      mach_port_insert_right(mach_task_self(),
-			     *memobj, *memobj,
-			     MACH_MSG_TYPE_MAKE_SEND);
-
-  return 0;
-}
