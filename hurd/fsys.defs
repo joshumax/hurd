@@ -77,14 +77,13 @@ routine fsys_syncfs (
 	wait: int;
 	do_children: int);
 
-/* Change the readonly status of the filesystem.  FORCE (when changing
-   from writeable to readonly) means that existing open ports for writing
-   should be ignored.  */
-routine fsys_mod_readonly (
+/* Pass a server-specific options string.  This usually includes flags
+   similar to command line options, e.g., --readonly, or --sync=30.  */ 
+routine fsys_set_options (
 	fsys: fsys_t;
 	RPT
-	readonly: int;
-	force: int);
+        options: data_t;
+	do_children: int);
 
 /* The following two calls are only implemented by bootstrap filesystems. */
 
