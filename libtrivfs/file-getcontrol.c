@@ -24,7 +24,7 @@ trivfs_S_file_getcontrol (struct protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  if (!trivfs_isuid (0, cred))
+  if (!cred->isroot)
     return EPERM;
   
   *cntl = ports_get_right (trivfs_control_port);
