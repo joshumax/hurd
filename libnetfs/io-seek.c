@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include "io_S.h"
 
 error_t
 netfs_S_io_seek (struct protid *user,
@@ -34,17 +35,18 @@ netfs_S_io_seek (struct protid *user,
     {
     case SEEK_SET:
       err = 0;
-      cred->po->filepointer = offset;
+      user->po->filepointer = offset;
       break;
 
     case SEEK_CUR:
       err = 0;
-      cred->po->filepointer += offset;
+      user->po->filepointer += offset;
       break;
       
     case SEEK_END:
-      err = 0;
-      cred->po->filepointer = cred->po->np->nn_stat.st_size + offset;
+      err = netfs_validate_stat (user->po->np, user);
+      if (!err)
+	user->po->filepointer = user->po->np->nn_stat.st_size + offset;
       break;
       
     default:
@@ -54,3 +56,4 @@ netfs_S_io_seek (struct protid *user,
   mutex_unlock (&user->po->np->lock);
   return err;
 }
+
