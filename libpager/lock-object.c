@@ -64,6 +64,11 @@ _pager_lock_object (struct pager *p,
 	}
     }
   
+  /* XXX */
+  if (sync)
+    printf ("Issuing lock request: p %#x; offset %#x; length %#x\n", 
+	    (int) p, offset, size);
+
   memory_object_lock_request (p->memobjcntl, offset, size, should_return,
 			      should_flush, lock_value, 
 			      sync ? p->port.port_right : MACH_PORT_NULL);
