@@ -160,39 +160,11 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
-  struct store_argp_params store_params = { 0 };
 
-  /* XXX diskfs's --boot-command needs us to use ARGP_IN_ORDER */
-  argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, &store_params);
-  store_parsed = store_params.result;
-
-  err = store_parsed_name (store_parsed, &diskfs_disk_name);
-  if (err)
-    error (2, err, "store_parsed_name");
-
-  /* This must come after the args have been parsed, as this is where the
-     host priv ports are set for booting.  */
-  diskfs_console_stdio ();
-
-  if (diskfs_boot_flags)
-      /* We are the bootstrap filesystem.  */
-    bootstrap = MACH_PORT_NULL;
-  else
-    {
-      task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      if (bootstrap == MACH_PORT_NULL)
-	error (2, 0, "Must be started as a translator");
-    }
-
-  /* Initialize the diskfs library.  Must come before any other diskfs call. */
-  err = diskfs_init_diskfs ();
-  if (err)
-    error (4, err, "init");
-
-  err = store_parsed_open (store_parsed, diskfs_readonly ? STORE_READONLY : 0,
-			   &store);
-  if (err)
-    error (3, err, "%s", diskfs_disk_name);
+  /* Initialize the diskfs library, parse arguments, and open the store.
+     This starts the first diskfs thread for us.  */
+  store = diskfs_init_main (&startup_argp, argc, argv,
+			    &store_parsed, &bootstrap);
 
   if (store->block_size > DEV_BSIZE)
     error (4, err, "%s: Bad device block size %d (should be <= %d)",
@@ -206,14 +178,8 @@ main (int argc, char **argv)
     log2_dev_blocks_per_dev_bsize++;
   log2_dev_blocks_per_dev_bsize -= store->log2_block_size;
 
-  if (store->flags & STORE_HARD_READONLY)
-    diskfs_readonly = diskfs_hard_readonly = 1;
-
   /* Map the entire disk. */
   create_disk_pager ();
-
-  /* Start the first request thread, to handle RPCs and page requests. */
-  diskfs_spawn_first_thread ();
 
   get_hypermetadata ();
 
