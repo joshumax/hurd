@@ -1,5 +1,6 @@
 /* Pager for ext2fs
-   Copyright (C) 1994 Free Software Foundation
+
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,9 +16,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ext2fs.h"
 #include <strings.h>
-#include <stdio.h>
+#include "ext2fs.h"
 
 spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
 struct user_pager_info *filepagerlist;
@@ -42,23 +42,18 @@ find_address (struct user_pager_info *upi,
 	      int *disksize,
 	      struct rwlock **nplock)
 {
-  error_t err;
-  
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
   if (upi->type == DISK)
     {
-      *disksize = __vm_page_size;
+      *disksize = vm_page_size;
       *addr = offset / DEV_BSIZE;
       *nplock = 0;
       return 0;
     }
   else 
     {
-      struct iblock_spec indirs[NIADDR + 1];
-      struct node *np;
-  
-      np = upi->np;
+      struct node *np = upi->np;
       
       rwlock_reader_lock (&np->dn->allocptrlock);
       *nplock = &np->dn->allocptrlock;
@@ -69,24 +64,12 @@ find_address (struct user_pager_info *upi,
 	  return EIO;
 	}
       
-      if (offset + __vm_page_size > np->allocsize)
+      if (offset + vm_page_size > np->allocsize)
 	*disksize = np->allocsize - offset;
       else
-	*disksize = __vm_page_size;
-      
-      err = fetch_indir_spec (np, lblkno (sblock, offset), indirs);
-      if (err)
-	rwlock_reader_unlock (&np->dn->allocptrlock);
-      else
-	{
-	  if (indirs[0].bno)
-	    *addr = (fsbtodb (sblock, indirs[0].bno)
-		     + blkoff (sblock, offset) / DEV_BSIZE);
-	  else
-	    *addr = 0;
-	}
-      
-      return err;
+	*disksize = vm_page_size;
+
+      return ext2_getblk(np, offset / block_size, 0, addr);
     }
 }
 
@@ -111,17 +94,13 @@ pager_read_page (struct user_pager_info *pager,
   if (addr)
     {
       err = dev_read_sync (addr, (void *)buf, disksize);
-      if (!err && disksize != __vm_page_size)
-	bzero ((void *)(*buf + disksize), __vm_page_size - disksize);
+      if (!err && disksize != vm_page_size)
+	bzero ((void *)(*buf + disksize), vm_page_size - disksize);
       *writelock = 0;
     }
   else
     {
-#if 0
-      printf ("Write-locked pagein Object %#x\tOffset %#x\n", pager, page);
-      fflush (stdout);
-#endif
-      vm_allocate (mach_task_self (), buf, __vm_page_size, 1);
+      vm_allocate (mach_task_self (), buf, vm_page_size, 1);
       *writelock = 1;
     }
       
@@ -151,11 +130,11 @@ pager_write_page (struct user_pager_info *pager,
     err = dev_write_sync (addr, buf, disksize);
   else
     {
-      printf ("Attempt to write unallocated disk\n.");
-      printf ("Object %p\tOffset %#x\n", pager, page);
-      fflush (stdout);
-      err = 0;			/* unallocated disk; 
-				   error would be pointless */
+      ext2_error("pager_write_page",
+		 "Attempt to write unallocated disk;"
+		 " object = %p; offset = 0x%x", pager, page);
+      /* unallocated disk; error would be pointless */
+      err = 0;
     }
     
   if (nplock)
@@ -170,168 +149,36 @@ error_t
 pager_unlock_page (struct user_pager_info *pager,
 		   vm_offset_t address)
 {
-  struct node *np;
-  error_t err;
-  struct iblock_spec indirs[NIADDR + 1];
-  daddr_t bno;
-  struct disknode *dn;
-  struct ext2_inode *di;
-
-  /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
-     synchronously.  We do this on newly allocated indirect
-     blocks before setting the pointer to them to ensure that an
-     indirect block absolutely never points to garbage. */
-  void zero_disk_block (int bno)
-    {
-      bzero (indir_block (bno), sblock->fs_bsize);
-      sync_disk_blocks (bno, sblock->fs_bsize, 1);
-    };
-
-  /* Problem--where to get cred values for allocation here? */
-
-#if 0
-  printf ("Unlock page request, Object %#x\tOffset %#x...", pager, address);
-  fflush (stdout);
-#endif
-
   if (pager->type == DISK)
     return 0;
-  
-  np = pager->np;
-  dn = np->dn;
-  di = dino (dn->number);
+  else
+    {
+      error_t err;
+      struct node *np = pager->np;
+      struct disknode *dn = np->dn;
+      int block_size_shift = EXT2_BLOCK_SIZE_BITS(sblock);
 
-  rwlock_writer_lock (&dn->allocptrlock);
+      rwlock_writer_lock (&dn->allocptrlock);
   
-  /* If this is the last block, we don't let it get unlocked. */
-  if (address + __vm_page_size
-      > blkroundup (sblock, np->allocsize) - sblock->fs_bsize)
-    {
-      printf ("attempt to unlock at last block denied\n");
-      fflush (stdout);
-      rwlock_writer_unlock (&dn->allocptrlock);
-      return EIO;
-    }
-    
-  err = fetch_indir_spec (np, lblkno (sblock, address), indirs);
-  if (err)
-    {
-      rwlock_writer_unlock (&dn->allocptrlock);
-      return EIO;
-    }
-
-  err = diskfs_catch_exception ();
-  if (err)
-    {
-      rwlock_writer_unlock (&dn->allocptrlock);
-      return EIO;
-    }
-
-  /* See if we need a triple indirect block; fail if we do. */
-  assert (indirs[0].offset == -1 
-	  || indirs[1].offset == -1 
-	  || indirs[2].offset == -1);
-  
-  /* Check to see if this block is allocated. */
-  if (indirs[0].bno == 0)
-    {
-      if (indirs[0].offset == -1)
+      /* If this is the last block, we don't let it get unlocked. */
+      if (address + vm_page_size
+	  > ((np->allocsize >> block_size_shift) << block_size_shift))
 	{
-	  err = ffs_alloc (np, lblkno (sblock, address),
-			   ffs_blkpref (np, lblkno (sblock, address),
-					lblkno (sblock, address), di->di_db),
-			   sblock->fs_bsize, &bno, 0);
-	  if (err)
-	    goto out;
-	  assert (lblkno (sblock, address) < NDADDR);
-	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
-	  record_poke (di, sizeof (struct ext2_inode));
+	  ext2_error ("pager_unlock_page",
+		      "attempt to unlock at last block denied\n");
+	  rwlock_writer_unlock (&dn->allocptrlock);
+	  return EIO;
 	}
-      else
-	{
-	  daddr_t *siblock;
-	  
-	  /* We need to set siblock to the single indirect block
-	     array; see if the single indirect block is allocated. */
-	  if (indirs[1].bno == 0)
-	    {
-	      if (indirs[1].offset == -1)
-		{
-		  err = ffs_alloc (np, lblkno (sblock, address),
-				   ffs_blkpref (np, lblkno (sblock, address),
-						INDIR_SINGLE, di->di_ib),
-				   sblock->fs_bsize, &bno, 0);
-		  if (err)
-		    goto out;
-		  zero_disk_block (bno);
-		  indirs[1].bno = di->di_ib[INDIR_SINGLE] = bno;
-		  record_poke (di, sizeof (struct ext2_inode));
-		}
-	      else
-		{
-		  daddr_t *diblock;
-	      
-		  /* We need to set diblock to the double indirect
-		     block array; see if the double indirect block is
-		     allocated. */
-		  if (indirs[2].bno == 0)
-		    {
-		      /* This assert because triple indirection is
-			 not supported. */
-		      assert (indirs[2].offset == -1);
-		      
-		      err = ffs_alloc (np, lblkno (sblock, address),
-				       ffs_blkpref (np, lblkno (sblock,
-								address),
-						    INDIR_DOUBLE, di->di_ib),
-				       sblock->fs_bsize, &bno, 0);
-		      if (err)
-			goto out;
-		      zero_disk_block (bno);
-		      indirs[2].bno = di->di_ib[INDIR_DOUBLE] = bno;
-		      record_poke (di, sizeof (struct ext2_inode));
-		    }
 
-		  diblock = indir_block (indirs[2].bno);
-		  mark_indir_dirty (np, indirs[2].bno);
-		  
-		  /* Now we can allocate the single indirect block */
-		  
-		  err = ffs_alloc (np, lblkno (sblock, address),
-				   ffs_blkpref (np, lblkno (sblock, address),
-						indirs[1].offset, diblock),
-				   sblock->fs_bsize, &bno, 0);
-		  if (err)
-		    goto out;
-		  zero_disk_block (bno);
-		  indirs[1].bno = diblock[indirs[1].offset] = bno;
-		  record_poke (diblock, sblock->fs_bsize);
-		}
-	    }
-	  
-	  siblock = indir_block (indirs[1].bno);
-	  mark_indir_dirty (np, indirs[1].bno);
+      err = diskfs_catch_exception ();
+      if (!err)
+	err = ext2_getblk(np, address / block_size, 1, &buf);
+      diskfs_end_catch_exception ();
 
-	  /* Now we can allocate the data block. */
+      rwlock_writer_unlock (&dn->allocptrlock);
 
-	  err = ffs_alloc (np, lblkno (sblock, address),
-			   ffs_blkpref (np, lblkno (sblock, address),
-					indirs[0].offset, siblock),
-			   sblock->fs_bsize, &bno, 0);
-	  if (err)
-	    goto out;
-
-	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
-
-	  indirs[0].bno = siblock[indirs[0].offset] = bno;
-	  record_poke (siblock, sblock->fs_bsize);
-	}
+      return err;
     }
-  
- out:
-  diskfs_end_catch_exception ();
-  rwlock_writer_unlock (&dn->allocptrlock);
-  return err;
 }
 
 /* Implement the pager_report_extent callback from the pager library.  See 
@@ -387,8 +234,7 @@ create_disk_pager ()
 /* This syncs a single file (NP) to disk.  Wait for all I/O to complete
    if WAIT is set.  NP->lock must be held.  */
 void
-diskfs_file_update (struct node *np,
-		    int wait)
+diskfs_file_update (struct node *np, int wait)
 {
   struct dirty_indir *d, *tmp;
   struct user_pager_info *upi;
@@ -407,7 +253,7 @@ diskfs_file_update (struct node *np,
   
   for (d = np->dn->dirty; d; d = tmp)
     {
-      sync_disk_blocks (d->bno, sblock->fs_bsize, wait);
+      sync_disk_image (d->bno, block_size, wait);
       tmp = d->next;
       free (d);
     }
