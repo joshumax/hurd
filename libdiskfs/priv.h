@@ -63,46 +63,6 @@ end_using_protid_port (struct protid *cred)
   ports_done_with_port (cred);
 }
 
-/* Add a reference to a node. */
-extern inline void
-diskfs_nref (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  np->references++;
-  spin_unlock (&diskfs_node_refcnt_lock);
-}
-
-/* Unlock node NP and release a reference */
-extern inline void
-diskfs_nput (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  np->references--;
-  if (np->references == 0)
-    {
-      diskfs_drop_node (np);
-      spin_unlock (&diskfs_node_refcnt_lock);
-    }
-  else
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
-    }
-}
-
-/* Release a reference on NP.  If NP is locked by anyone, then this cannot
-   be the last reference (because you must hold a reference in order to
-   hold the lock).  */
-extern inline void
-diskfs_nrele (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  np->references--;
-  if (np->references == 0)
-    diskfs_drop_node (np);
-  spin_unlock (&diskfs_node_refcnt_lock);
-}
-
 /* Actually read or write a file.  The file size must already permit
    the requested access.  NP is the file to read/write.  DATA is a buffer
    to write from or fill on read.  OFFSET is the absolute address (-1
