@@ -52,13 +52,13 @@ else
 # we slurp in all the Parted code we need and stuff it into one
 # object file along with our code that uses it.
 
-LDFLAGS-libstore.so += $(PARTED_LIBS)
+libstore.so-LDFLAGS += $(PARTED_LIBS)
 
 parted.o: part.o $(..)config.make
-	$(CC) -r -o $@ $< $(PARTED_LIBS)
+	$(CC) -nostdlib -r -o $@ $< $(PARTED_LIBS)
 
 parted_p.o: part_p.o $(..)config.make
-	$(CC) -r -o $@ $< $(PARTED_LIBS:=_p)
+	$(CC) -nostdlib -r -o $@ $< $(PARTED_LIBS:=_p)
 
 parted_pic.o: part_pic.o
 	ln -f $< $@
