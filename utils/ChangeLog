@@ -1,3 +1,7 @@
+1998-07-25  Jose M. Moya  <josem@gnu.org>
+
+	* msgport.c: Fixed to deallocate ports.
+
 1998-07-24  Jose M. Moya  <josem@gnu.org>
 
 	* msgport.c: New file.
