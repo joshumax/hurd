@@ -175,7 +175,6 @@ struct user_pager_info
       FILE_DATA,
     } type;
   struct pager *p;
-  struct user_pager_info *next, **prevp;
 };
 
 /* ---------------------------------------------------------------- */
