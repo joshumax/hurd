@@ -72,7 +72,10 @@ setid (int setid, uid_t id, int *secure,
       if (noldauxids == 0)
 	{
 	  if (noldgenids == 0)
-	    _auxids = _nauxids = 0;
+	    {
+	      _nauxids = 0;
+	      _auxids = 0;
+	    }
 	  else
 	    {
 	      _auxids = MALLOC_IDS (_nauxids = 1);
@@ -385,20 +388,17 @@ diskfs_S_file_exec (struct protid *cred,
       for (i = 0; i < fdslen; ++i)
 	reauth (&fds[i], 0);
       if (secure)
-	{
-	  /* Not worth doing these; the exec server will be 
-	     doing them again for us. */
-	  portarray[INIT_PORT_PROC] = MACH_PORT_NULL;
-	  portarray[INIT_PORT_CRDIR] = MACH_PORT_NULL;
-	}
+	/* Not worth doing; the exec server will just do it again.  */
+	portarray[INIT_PORT_CRDIR] = MACH_PORT_NULL;
       else
-	{
-	  reauth (&portarray[INIT_PORT_PROC], 1);
-	  reauth (&portarray[INIT_PORT_CRDIR], 0);
-	}
+	reauth (&portarray[INIT_PORT_CRDIR], 0);
+      reauth (&portarray[INIT_PORT_PROC], 1);
       reauth (&portarray[INIT_PORT_CWDIR], 0);
       mach_port_deallocate (mach_task_self (), portarray[INIT_PORT_AUTH]);
       portarray[INIT_PORT_AUTH] = newauth;
+
+      if (ngenuids > 0)
+	proc_setowner (portarray[INIT_PORT_PROC], genuids[0]);
 
       /* STEP 5: If we must be secure, then set the appropriate flags
 	 to tell the exec server so. */
