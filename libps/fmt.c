@@ -251,7 +251,7 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	  if (! explicit_width)
 	    field->width = field->spec->width;
 	  if (! explicit_precision)
-	    field->width = field->spec->precision;
+	    field->precision = field->spec->precision;
 
 	  field->flags = (field->spec->flags & ~clr_flags) ^ inv_flags;
 	  
@@ -394,19 +394,15 @@ ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps, struct ps_stre
       if (spec != NULL && !err)
 	{
 	  int need = ps_getter_needs (ps_fmt_spec_getter (spec));
-	  int width = ps_fmt_field_width (field);
 
 	  /* do we have the resources to print this field? */
 	  if ((need & have) == need)
 	    /* Yup */
-	    {
-	      int (*output_fn)() = (int (*)())ps_fmt_spec_output_fn (spec);
-	      const struct ps_getter *getter = ps_fmt_spec_getter (spec);
-	      err = output_fn (ps, getter, width, stream);
-	    }
+	    err = (*spec->output_fn) (ps, field, stream);
 	  else
 	    /* Something to display in invalid fields.  */
-	    err = ps_stream_write_field (stream, fmt->inval ?: "", width);
+	    err = ps_stream_write_field (stream, fmt->inval ?: "",
+					 ps_fmt_field_width (field));
 	}
 
       field++;
