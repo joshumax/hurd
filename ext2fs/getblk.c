@@ -60,6 +60,9 @@ ext2_discard_prealloc (struct node *node)
 #endif
 }
 
+/* Allocate a new block for the file NODE, as close to block GOAL as
+   possible, and return it, or 0 if none could be had.  If ZERO is true, then
+   zero the block (and add it to NODE's list of modified indirect blocks).  */
 static block_t
 ext2_alloc_block (struct node *node, block_t goal, int zero)
 {
@@ -99,7 +102,7 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
     {
       char *bh = bptr (result);
       bzero (bh, block_size);
-      record_global_poke (bh);
+      record_indir_poke (node, bh);
     }
 
   return result;
