@@ -1,6 +1,7 @@
 2002-03-17  Roland McGrath  <roland@frob.com>
 
 	* vga.c (vga_init): io_perm -> ioperm.
+	(vga_deinit): Likewise.
 
 	* dynafont.c: Include <string.h>.
 	* focus.c: Likewise.
