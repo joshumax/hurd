@@ -1,4 +1,0 @@
-HURD    Mark Kettenis   Netherlands 1973        1999-03-11
-Assigns past and future changes (trans/password.c, pfinet/ethernet.c,
-pfinet/options.c, minor revisions throughout).
-kettenis@gnu.org, kettenis@wins.uva.nl
