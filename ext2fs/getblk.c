@@ -1,5 +1,5 @@
 /*
- *  Mostly taken from: linux/fs/ext2/inode.c
+ *  Largely stolen from: linux/fs/ext2/inode.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -15,13 +15,6 @@
  *  Goal-directed block allocation by Stephen Tweedie (sct@dcs.ed.ac.uk), 1993
  */
 
-#define inode_bmap(node, nr) ((node)->dn.info.i_data[(nr)])
-static inline int 
-block_bmap (char *bh, int nr)
-{
-  return bh ? ((u32 *) bh)[nr] : 0;
-}
-
 /* 
  * ext2_discard_prealloc and ext2_alloc_block are atomic wrt. the
  * superblock in the same manner as are ext2_free_blocks and
@@ -30,7 +23,7 @@ block_bmap (char *bh, int nr)
  * can't block until then.
  */
 void 
-ext2_discard_prealloc (struct inode *inode)
+ext2_discard_prealloc (struct node *node)
 {
 #ifdef EXT2_PREALLOCATE
   if (node->dn->info.i_prealloc_count)
@@ -43,15 +36,13 @@ ext2_discard_prealloc (struct inode *inode)
 }
 
 static int 
-ext2_alloc_block (struct inode *inode, unsigned long goal)
+ext2_alloc_block (struct node *node, unsigned long goal)
 {
 #ifdef EXT2FS_DEBUG
   static unsigned long alloc_hits = 0, alloc_attempts = 0;
 #endif
   unsigned long result;
   char *bh;
-
-  wait_on_super (sblock);
 
 #ifdef EXT2_PREALLOCATE
   if (node->dn->info.i_prealloc_count &&
@@ -63,19 +54,12 @@ ext2_alloc_block (struct inode *inode, unsigned long goal)
       ext2_debug ("preallocation hit (%lu/%lu).\n",
 		  ++alloc_hits, ++alloc_attempts);
 
-      /* It doesn't matter if we block in getblk() since
-         we have already atomically allocated the block, and
-         are only clearing it now. */
-      if (!(bh = getblk (result, block_size)))
-	{
-	  ext2_error ("ext2_alloc_block", "cannot get block %lu", result);
-	  return 0;
-	}
+      bh = baddr(result);
       memset (bh, 0, block_size);
     }
   else
     {
-      ext2_discard_prealloc (inode);
+      ext2_discard_prealloc (node);
       ext2_debug ("preallocation miss (%lu/%lu).\n",
 		  alloc_hits, ++alloc_attempts);
       if (S_ISREG (node->dn_stat.mode))
@@ -93,85 +77,31 @@ ext2_alloc_block (struct inode *inode, unsigned long goal)
   return result;
 }
 
-
-int 
-ext2_bmap (struct inode *inode, int block)
-{
-  int i;
-  int addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
-
-  if (block < 0)
-    {
-      ext2_warning ("ext2_bmap", "block < 0");
-      return 0;
-    }
-  if (block >= EXT2_NDIR_BLOCKS + addr_per_block +
-      addr_per_block * addr_per_block +
-      addr_per_block * addr_per_block * addr_per_block)
-    {
-      ext2_warning ("ext2_bmap", "block > big");
-      return 0;
-    }
-  if (block < EXT2_NDIR_BLOCKS)
-    return inode_bmap (inode, block);
-  block -= EXT2_NDIR_BLOCKS;
-  if (block < addr_per_block)
-    {
-      i = inode_bmap (inode, EXT2_IND_BLOCK);
-      if (!i)
-	return 0;
-      return block_bmap (baddr (i), block);
-    }
-  block -= addr_per_block;
-  if (block < addr_per_block * addr_per_block)
-    {
-      i = inode_bmap (inode, EXT2_DIND_BLOCK);
-      if (!i)
-	return 0;
-      i = block_bmap (baddr (i), block / addr_per_block);
-      if (!i)
-	return 0;
-      return block_bmap (baddr (i), block & (addr_per_block - 1));
-    }
-  block -= addr_per_block * addr_per_block;
-  i = inode_bmap (inode, EXT2_TIND_BLOCK);
-  if (!i)
-    return 0;
-  i = block_bmap (baddr (i), block / (addr_per_block * addr_per_block));
-  if (!i)
-    return 0;
-  i = block_bmap (baddr (i), (block / addr_per_block) & (addr_per_block - 1));
-  if (!i)
-    return 0;
-  return block_bmap (baddr (i), block & (addr_per_block - 1));
-}
-
-static char *
-inode_getblk (struct inode *inode, int nr,
-	      int create, int new_block, int *err)
+static error_t
+inode_getblk (struct node *node, int nr,
+	      int create, int new_block, int *buf)
 {
   u32 *p;
   int tmp, goal = 0;
-  char *result;
   int blocks = block_size / 512;
 
   p = node->dn->info.i_data + nr;
+
 repeat:
   tmp = *p;
   if (tmp)
     {
-      result = getblk (tmp, block_size);
+      *buf = baddr(tmp);
       if (tmp == *p)
-	return result;
+	return 0;
       goto repeat;
     }
+
   if (!create || new_block >=
       (current->rlim[RLIMIT_FSIZE].rlim_cur >>
        EXT2_BLOCK_SIZE_BITS (sblock)))
-    {
-      *err = -EFBIG;
-      return NULL;
-    }
+    return EFBIG;
+
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
 
@@ -195,64 +125,56 @@ repeat:
 
   ext2_debug ("goal = %d.\n", goal);
 
-  tmp = ext2_alloc_block (inode, goal);
+  tmp = ext2_alloc_block (node, goal);
   if (!tmp)
-    return NULL;
-  result = getblk (tmp, block_size);
+    return EIO;
+
+  *buf = baddr(tmp);
   if (*p)
     {
       ext2_free_blocks (tmp, 1);
       goto repeat;
     }
+
   *p = tmp;
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = tmp;
   node->dn_set_ctime = 1;
   node->dn_stat.st_blocks += blocks;
-  if (IS_SYNC (inode) || node->dn->info.i_osync)
-    ext2_sync_inode (inode);
+
+  if (diskfs_synchronous || node->dn->info.i_osync)
+    ext2_sync_node (node);
   else
     node->dirty = 1;
-  return result;
+
+  return 0;
 }
 
-static char *
-block_getblk (struct inode *inode,
+error_t
+block_getblk (struct node *node,
 	      char *bh, int nr,
 	      int create, int blocksize,
-	      int new_block, int *err)
+	      int new_block, int **buf)
 {
   int tmp, goal = 0;
   u32 *p;
   char *result;
   int blocks = block_size / 512;
 
-  if (!bh)
-    return NULL;
-  if (!bh->b_uptodate)
-    {
-      ll_rw_block (READ, 1, &bh);
-      wait_on_buffer (bh);
-      if (!bh->b_uptodate)
-	return NULL;
-    }
   p = (u32 *) bh + nr;
+
 repeat:
   tmp = *p;
   if (tmp)
     {
-      result = getblk (bh->b_dev, tmp, blocksize);
+      *buf = baddr (tmp);
       if (tmp == *p)
-	return result;
+	return 0;
       goto repeat;
     }
   if (!create || new_block >=
-      (current->rlim[RLIMIT_FSIZE].rlim_cur >>
-       EXT2_BLOCK_SIZE_BITS (sblock)))
-    {
-      *err = -EFBIG;
-      return NULL;
-    }
+      (current->rlim[RLIMIT_FSIZE].rlim_cur >> EXT2_BLOCK_SIZE_BITS (sblock)))
+    return EFBIG;
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
   if (!goal)
@@ -268,94 +190,48 @@ repeat:
       if (!goal)
 	goal = bh->b_blocknr;
     }
-  tmp = ext2_alloc_block (inode, goal);
+  tmp = ext2_alloc_block (node, goal);
   if (!tmp)
-    return NULL;
+    return EIO;			/* XXX? */
 
-  result = getblk (bh->b_dev, tmp, blocksize);
+  *buf = baddr (tmp);
   if (*p)
     {
       ext2_free_blocks (tmp, 1);
       goto repeat;
     }
   *p = tmp;
-  mark_buffer_dirty (bh, 1);
-  if (IS_SYNC (inode) || node->dn->info.i_osync)
-    {
-      ll_rw_block (WRITE, 1, &bh);
-      wait_on_buffer (bh);
-    }
+
+  if (diskfs_synchronous || node->dn->info.i_osync)
+    sync_disk_image (bh, block_size);
+
   node->dn_set_ctime = 1;
   node->dn_stat.st_blocks += blocks;
   node->dirty = 1;
   node->dn->info.i_next_alloc_block = new_block;
   node->dn->info.i_next_alloc_goal = tmp;
 
-  return result;
+  return 0;
 }
 
-static int 
-block_getcluster (struct inode *inode, char *bh,
-		  int nr,
-		  int blocksize)
-{
-  u32 *p;
-  int firstblock = 0;
-  int result = 0;
-  int i;
-
-  /* Check to see if clustering possible here. */
-
-  if (!bh)
-    return 0;
-
-  if (nr % (PAGE_SIZE / block_size) != 0)
-    goto out;
-  if (nr + 3 > EXT2_ADDR_PER_BLOCK (sblock))
-    goto out;
-
-  for (i = 0; i < (PAGE_SIZE / block_size); i++)
-    {
-      p = (u32 *) bh + nr + i;
-
-      /* All blocks in cluster must already be allocated */
-      if (*p == 0)
-	goto out;
-
-      /* See if aligned correctly */
-      if (i == 0)
-	firstblock = *p;
-      else if (*p != firstblock + i)
-	goto out;
-    }
-
-  p = (u32 *) bh + nr;
-  result = generate_cluster (bh->b_dev, (int *) p, blocksize);
-
-out:
-  return result;
-}
-
-char *
-ext2_getblk (struct inode *inode, long block,
-	     int create, int *err)
+error_t
+ext2_getblk (struct node *node, long block, int create, char **buf)
 {
   char *bh;
   unsigned long b;
   unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
 
-  *err = -EIO;
   if (block < 0)
     {
       ext2_warning ("ext2_getblk", "block < 0");
-      return NULL;
+      return EIO;
     }
   if (block > EXT2_NDIR_BLOCKS + addr_per_block +
       addr_per_block * addr_per_block +
       addr_per_block * addr_per_block * addr_per_block)
     {
       ext2_warning ("ext2_getblk", "block > big");
-      return NULL;
+      return EIO;
     }
   /*
      * If this is a sequential block allocation, set the next_alloc_block
@@ -373,87 +249,44 @@ ext2_getblk (struct inode *inode, long block,
       node->dn->info.i_next_alloc_goal++;
     }
 
-  *err = -ENOSPC;
   b = block;
+
   if (block < EXT2_NDIR_BLOCKS)
-    return inode_getblk (inode, block, create, b, err);
+    return inode_getblk (node, block, create, b, buf);
+
   block -= EXT2_NDIR_BLOCKS;
   if (block < addr_per_block)
     {
-      bh = inode_getblk (inode, EXT2_IND_BLOCK, create, b, err);
-      return block_getblk (inode, bh, block, create,
-			   block_size, b, err);
+      err = inode_getblk (node, EXT2_IND_BLOCK, create, b, &bh);
+      if (!err)
+	err = block_getblk (node, bh, block, create, block_size, b, buf);
+      return err;
     }
+
   block -= addr_per_block;
   if (block < addr_per_block * addr_per_block)
     {
-      bh = inode_getblk (inode, EXT2_DIND_BLOCK, create, b, err);
-      bh = block_getblk (inode, bh, block / addr_per_block, create,
-			 block_size, b, err);
-      return block_getblk (inode, bh, block & (addr_per_block - 1),
-			   create, block_size, b, err);
+      err = inode_getblk (node, EXT2_DIND_BLOCK, create, b, &bh);
+      if (!err)
+	err = block_getblk (node, bh, block / addr_per_block, create,
+			    block_size, b, &bh);
+      if (!err)
+	err = block_getblk (node, bh, block & (addr_per_block - 1),
+			    create, block_size, b, buf);
+      return err;
     }
+
   block -= addr_per_block * addr_per_block;
-  bh = inode_getblk (inode, EXT2_TIND_BLOCK, create, b, err);
-  bh = block_getblk (inode, bh, block / (addr_per_block * addr_per_block),
-		     create, block_size, b, err);
-  bh = block_getblk (inode, bh, (block / addr_per_block) & (addr_per_block - 1),
-		     create, block_size, b, err);
-  return block_getblk (inode, bh, block & (addr_per_block - 1), create,
-		       block_size, b, err);
-}
-
-int 
-ext2_getcluster (struct inode *inode, long block)
-{
-  char *bh;
-  int err, create;
-  unsigned long b;
-  unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
-
-  create = 0;
-  err = -EIO;
-  if (block < 0)
-    {
-      ext2_warning ("ext2_getblk", "block < 0");
-      return 0;
-    }
-  if (block > EXT2_NDIR_BLOCKS + addr_per_block +
-      addr_per_block * addr_per_block +
-      addr_per_block * addr_per_block * addr_per_block)
-    {
-      ext2_warning ("ext2_getblk", "block > big");
-      return 0;
-    }
-
-  err = -ENOSPC;
-  b = block;
-  if (block < EXT2_NDIR_BLOCKS)
-    return 0;
-
-  block -= EXT2_NDIR_BLOCKS;
-
-  if (block < addr_per_block)
-    {
-      bh = inode_getblk (inode, EXT2_IND_BLOCK, create, b, &err);
-      return block_getcluster (inode, bh, block,
-			       block_size);
-    }
-  block -= addr_per_block;
-  if (block < addr_per_block * addr_per_block)
-    {
-      bh = inode_getblk (inode, EXT2_DIND_BLOCK, create, b, &err);
-      bh = block_getblk (inode, bh, block / addr_per_block, create,
-			 block_size, b, &err);
-      return block_getcluster (inode, bh, block & (addr_per_block - 1),
-			       block_size);
-    }
-  block -= addr_per_block * addr_per_block;
-  bh = inode_getblk (inode, EXT2_TIND_BLOCK, create, b, &err);
-  bh = block_getblk (inode, bh, block / (addr_per_block * addr_per_block),
-		     create, block_size, b, &err);
-  bh = block_getblk (inode, bh, (block / addr_per_block) & (addr_per_block - 1),
-		     create, block_size, b, &err);
-  return block_getcluster (inode, bh, block & (addr_per_block - 1),
-			   block_size);
+  err = inode_getblk (node, EXT2_TIND_BLOCK, create, b, bh);
+  if (!err)
+    err = block_getblk (node, bh, block / (addr_per_block * addr_per_block),
+			create, block_size, b, &bh);
+  if (!err)
+    err =
+      block_getblk (node, bh, (block / addr_per_block) & (addr_per_block - 1),
+		    create, block_size, b, &bh);
+  if (!err)
+    err = block_getblk (node, bh, block & (addr_per_block - 1), create,
+			block_size, b, buf);
+  return err;
 }
