@@ -1,3 +1,8 @@
+2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd.texi (Translators): Change isofs to iso9660fs
+	(ISO-9660 CD-ROM FS): Likewise.
+
 2002-04-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.texi: Fix section nesting in last change.

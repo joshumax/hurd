@@ -30,7 +30,7 @@ struct store *store = 0;
 struct store_parsed *store_parsed = 0;
 char *diskfs_disk_name = 0;
 
-char *diskfs_server_name = "isofs";
+char *diskfs_server_name = "iso9660fs";
 char *diskfs_server_version = HURD_VERSION;
 char *diskfs_extra_version = "GNU Hurd";
 int diskfs_synchronous = 0;

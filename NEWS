@@ -32,9 +32,9 @@ IP tunnel interface respectively.  It also supports all common network
 ioctls now.
 
 The Hurd can now access CD-ROMs containing an ISO9660 file format with
-the new isofs translator. Rock Ridge extensions are supported, as well
-as some GNU extensions to store GNU specific file system attributes in
-such filesystems.
+the new iso9660fs translator. Rock Ridge extensions are supported, as
+well as some GNU extensions to store GNU specific file system
+attributes in such filesystems.
 
 Two new translators, hello and hello-mt, illustrate how to implement
 simple trivfs based filesystems in the Hurd.

@@ -2067,7 +2067,7 @@ existing translators:
 @itemize @bullet
 @item
 Disk-based filesystem formats, such as @code{ext2fs}, @code{ufs}, and
-@code{isofs} (@pxref{Stored Filesystems}).
+@code{iso9660fs} (@pxref{Stored Filesystems}).
 
 @item
 Network filesystems, such as @code{nfs} and @code{ftpfs}
@@ -3725,7 +3725,7 @@ FIXME: finish
 
 @node ISO-9660 CD-ROM FS
 @section ISO-9660 CD-ROM FS
-@pindex isofs
+@pindex iso9660fs
 
 FIXME: finish
 

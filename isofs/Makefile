@@ -18,7 +18,7 @@
 dir := isofs
 makemode := server
 
-target = isofs
+target = iso9660fs
 SRCS = inode.c main.c lookup.c pager.c rr.c
 LCLHDRS = iso9660.h isofs.h rr.h 
 DIST_FILES = EXTENSIONS
