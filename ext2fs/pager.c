@@ -1,6 +1,6 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -117,7 +117,7 @@ free_page_buf (void *buf)
   else
     {
       spin_unlock (&free_page_bufs_lock);
-      vm_deallocate (mach_task_self (), (vm_address_t *)buf, vm_page_size);
+      vm_deallocate (mach_task_self (), (vm_address_t) buf, vm_page_size);
     }
 }
 
