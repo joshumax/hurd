@@ -32,7 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc_S.h"
 
 /* Implement S_proc_pid2task as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_pid2task (struct proc *callerp,
 	       pid_t pid,
 	       task_t *t)
@@ -51,7 +51,7 @@ S_proc_pid2task (struct proc *callerp,
 }
 
 /* Implement proc_task2pid as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_task2pid (struct proc *callerp,
 	       task_t t,
 	       pid_t *pid)
@@ -67,7 +67,7 @@ S_proc_task2pid (struct proc *callerp,
 }
 
 /* Implement proc_task2proc as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_task2proc (struct proc *callerp,
 		task_t t,
 		mach_port_t *outproc)
@@ -83,7 +83,7 @@ S_proc_task2proc (struct proc *callerp,
 }
 
 /* Implement proc_proc2task as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_proc2task (struct proc *p,
 		task_t *t)
 {
@@ -92,7 +92,7 @@ S_proc_proc2task (struct proc *p,
 }
 
 /* Implement proc_pid2proc as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_pid2proc (struct proc *callerp,
 	       pid_t pid,
 	       mach_port_t *outproc)
@@ -260,7 +260,7 @@ get_string_array (task_t t,
 #endif /* notyet */
 
 /* Implement proc_getprocargs as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getprocargs (struct proc *callerp,
 		  pid_t pid,
 		  char **buf,
@@ -279,7 +279,7 @@ S_proc_getprocargs (struct proc *callerp,
 }
 
 /* Implement proc_getprocenv as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getprocenv (struct proc *callerp,
 		 pid_t pid,
 		 char **buf,
@@ -298,7 +298,7 @@ S_proc_getprocenv (struct proc *callerp,
 }
 
 /* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getprocinfo (struct proc *callerp,
 		  pid_t pid,
 		  int **piarray,
@@ -375,7 +375,7 @@ S_proc_getprocinfo (struct proc *callerp,
 }
 
 /* Implement proc_make_login_coll as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_make_login_coll (struct proc *p)
 {
   p->p_loginleader = 1;
@@ -383,7 +383,7 @@ S_proc_make_login_coll (struct proc *p)
 }
 
 /* Implement proc_getloginid as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_getloginid (struct proc *callerp,
 		   pid_t pid,
 		   pid_t *leader)
@@ -402,7 +402,7 @@ S_proc_getloginid (struct proc *callerp,
 }
 
 /* Implement proc_getloginpids as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_getloginpids (struct proc *callerp,
 		     pid_t id,
 		     pid_t **pids,
@@ -450,7 +450,7 @@ S_proc_getloginpids (struct proc *callerp,
 }
 
 /* Implement proc_setlogin as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setlogin (struct proc *p,
 	       char *login)
 {
@@ -469,7 +469,7 @@ S_proc_setlogin (struct proc *p,
 }
 
 /* Implement proc_getlogin as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getlogin (struct proc *p,
 	       char *login)
 {
