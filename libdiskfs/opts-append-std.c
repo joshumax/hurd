@@ -31,35 +31,27 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
   error_t err;
   extern int diskfs_sync_interval;
 
-  if (nosuid)
-    err = argz_add (argz, argz_len, "--no-suid");
-  if (err)
-    return err;
-  
-  if (noexec)
-    err = argz_add (argz, argz_len, "--no-exec");
-  if (err)
-    return err;
-
   if (diskfs_readonly)
     err = argz_add (argz, argz_len, "--readonly");
   else
     err = argz_add (argz, argz_len, "--writable");
-  if (err)
-    return err;
 
-  if (diskfs_synchronous)
-    err = argz_add (argz, argz_len, "--sync");
-  else if (diskfs_sync_interval == 0)
-    err = argz_add (argz, argz_len, "--nosync");
-  else
-    {
-      char buf[80];
-      sprintf (buf, "--sync=%d", diskfs_sync_interval);
-      err = argz_add (argz, argz_len, buf);
-    }
-  if (err)
-    free (argz);		/* Free the first option allocated. */
+  if (!err && _diskfs_nosuid)
+    err = argz_add (argz, argz_len, "--no-suid");
+  if (!err && _diskfs_noexec)
+    err = argz_add (argz, argz_len, "--no-exec");
+
+  if (! err)
+    if (diskfs_synchronous)
+      err = argz_add (argz, argz_len, "--sync");
+    else if (diskfs_sync_interval == 0)
+      err = argz_add (argz, argz_len, "--no-sync");
+    else
+      {
+	char buf[80];
+	sprintf (buf, "--sync=%d", diskfs_sync_interval);
+	err = argz_add (argz, argz_len, buf);
+      }
 
   return err;
 }
