@@ -148,18 +148,20 @@ enum term_bottom_type
  TERM_ON_MASTERPTY,
 };
 
+/* Flags for file_get_storage_info. */
+#define STORAGE_MUTATED   0x00000001 /* data as stored is munged from file */
+
 /* Classes for file_get_storage_info. */
 enum file_storage_class
 {
   STORAGE_OTHER,
   STORAGE_DEVICE,
-  STORAGE_DEVICE_MUTATED,
   STORAGE_HURD_FILE,
-  STORAGE_HURD_FILE_MUTATED,
   STORAGE_NETWORK,
   STORAGE_MEMORY,
-  STORAGE_MEMORY_MUTATED,
+  STORAGE_TASK,
 };
+
 /* STORAGE_DEVICE implies that:
     
    STORAGE_PORT, if non-null, is a device_t holding the data.
@@ -178,10 +180,6 @@ enum file_storage_class
    STORAGE_MISC may contain additional type specific information.
    */
 
-/* STORAGE_DEVICE_MUTATED is like STORAGE_DEVICE, except that the data
-   as written to the device may be different (because of compression,
-   for example) than the contents of the file. */
-
 /* STORAGE_HURD_FILE implies that:
 
    STORAGE_PORT, if non-null, is a file_t holding the data.
@@ -198,15 +196,11 @@ enum file_storage_class
    STORAGE_MISC may contain additional type-specific information. 
 */
 
-/* STORAGE_HURD_FILE_MUTATED is like STORAGE_HURD_FILE, except that the
-   data as written to STORAGE_PORT/NAME may be different (because of
-   compression, for example) than the contents of the file. */
-
-/* STORAGE_MEMORY is like STORAGE_HURD_FILE, except that the data is found
+/* STORAGE_TASK is like STORAGE_HURD_FILE, except that the data is found
    in the virtual address space of the task identified by STORAGE_PORT. 
 
-/* STORAGE_MEMORY_MUTATED is like STORAGE_MEMORY, except that the data
-   may be mutated in storage.  */
+/* STORAGE_MEMORY is similar, except the data is found in the memory
+   object identified by STORAGE_PORT. */
 
 /* STORAGE_NETWORK means that the file is stored elsewhere on the
    network; all the remaining fields contan type-specific information. */
