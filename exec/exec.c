@@ -1145,7 +1145,6 @@ servercopy (void **arg, mach_msg_type_number_t argsize, boolean_t argcopy)
   if (argcopy)
     {
       /* ARG came in-line, so we must copy it.  */
-      error_t error;
       void *copy;
       copy = mmap (0, argsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (copy == (void *) -1)
@@ -1763,7 +1762,7 @@ do_exec (file_t file,
 	   SIGTRAP signal.  Don't bother to check for errors from the RPC
 	   here; for non-secure execs PROC may be the user's own proc
 	   server its confusion shouldn't make the exec fail.  */
-	   proc_mark_stop (proc, SIGTRAP, 0);
+	proc_mark_stop (proc, SIGTRAP, 0);
     }
 
   if (boot)
