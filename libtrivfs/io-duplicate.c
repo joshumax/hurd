@@ -47,6 +47,8 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
   mach_port_mod_refs (mach_task_self (), newcred->realnode, 
 		      MACH_PORT_RIGHT_SEND, 1);
 
+  newcred->hook = cred->hook;
+  
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (newcred);
 
