@@ -129,10 +129,32 @@ main (int argc, char **argv)
      any other diskfs call.  */
   diskfs_init_diskfs ();
   
-  err = device_open (diskfs_master_device, 
-		     (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-		     devname, &ufs_device);
-  assert (!err);
+  do
+    {
+      char *line = 0;
+      size_t linesz = 0;
+      ssize_t len;
+      
+      err = device_open (diskfs_master_device, 
+			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
+			 devname, &ufs_device);
+      if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
+	{
+	  /* Prompt the user to give us another name rather
+	     than just crashing */
+	  printf ("Cannot open device %s\n", devname);
+	  len = getline (&line, &linesz, stdin);
+	  if (len > 2)
+	    devname = line;
+	}
+    }
+  while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
+	  
+  if (err)
+    {
+      perror (devname);
+      exit (1);
+    }
 
   /* Check to make sure device sector size is reasonable. */
   err = device_get_status (ufs_device, DEV_GET_SIZE, sizes, &sizescnt);
