@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -55,6 +55,8 @@ diskfs_S_io_write (struct protid *cred,
   while (off + datalen > np->allocsize)
     {
       err = diskfs_grow (np, off + datalen, cred);
+      if (diskfs_synchronous)
+	diskfs_node_update (np, 1);
       if (err)
 	goto out;
     }
@@ -63,6 +65,8 @@ diskfs_S_io_write (struct protid *cred,
     {
       np->dn_stat.st_size = off + datalen;
       np->dn_set_ctime = 1;
+      if (diskfs_synchronous)
+	diskfs_node_update (np, 1);
     }
 
   *amt = datalen;
@@ -71,7 +75,8 @@ diskfs_S_io_write (struct protid *cred,
   if (!err && offset == -1)
     cred->po->filepointer += *amt;
 
-  if (!err && (cred->po->openstat & O_FSYNC))
+  if (!err
+      && ((cred->po->openstat & O_FSYNC) || diskfs_synchronous))
     diskfs_file_update (np, 1);
 
  out:
