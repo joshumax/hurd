@@ -18,10 +18,11 @@
 #include <libioserver.h>
 
 /* The conch must be locked when calling this routine. */
+/* Remove any current holder of the conch. */
 error_t
 _libioserver_internal_get_conch (struct conch *c)
 {
-  struct shared *user_sh;
+  struct shared_io *user_sh;
   int error = 0;
   
  again:
@@ -37,7 +38,7 @@ _libioserver_internal_get_conch (struct conch *c)
 	  /* fall through ... */
 	case USER_RELEASE_CONCH:
 	  spin_unlock (&user_sh->lock);
-	  condition_wait (&c->wait, &c->lock);
+	  condition_wait (&c->wait, c->lock);
 	  /* Anything can have happened */
 	  goto again;
 	  
