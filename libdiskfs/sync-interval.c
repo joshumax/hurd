@@ -1,8 +1,7 @@
 /* Support for periodic syncing
 
-   Copyright (C) 1995, 96, 99 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -68,7 +67,7 @@ diskfs_set_sync_interval (int interval)
   else
     {
       periodic_sync_thread =
-	cthread_fork ((cthread_fn_t)periodic_sync, (any_t)interval);
+	cthread_fork ((cthread_fn_t)periodic_sync, (any_t)(intptr_t)interval);
       if (periodic_sync_thread)
 	cthread_detach (periodic_sync_thread);
       else
