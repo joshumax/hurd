@@ -1,11 +1,11 @@
 /* Definitions for the authentication server
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1991, 1992 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -28,15 +28,23 @@ AUTH_IMPORTS
 type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 	ctype: mach_port_t;
 
+/* Throughout, uid's and gid's are passed as arrays.  Conventionally,
+   the first uid is the real uid and the second is the saved uid.
+   Neither of these should be used for permissions checking.
+   Similarly, the first gid is the real gid and the second gid is the
+   saved gid.  */
+
 /* Given an authentication handle, return the identification. */
 routine auth_getids (
 	handle: auth_t;
-	out id: idblock_t);
+	out uids: idarray_t;
+	out gids: idarray_t);
 
 /* Create a new authentication handle.  */
 routine auth_makeauth (
 	handle: auth_t;
-	id: idblock_t;
+	uids: idarray_t;
+	gids: idarray_t;
 	out newhandle: mach_port_make_send_t);
 
 routine auth_combine (
@@ -64,6 +72,7 @@ routine auth_server_authenticate (
 	sreplyport reply_port: reply_port_t;
 	rendezvous: mach_port_t;
 	newport: mach_port_t;
-	out id: idblock_t);
+	out uids: idarray_t;
+	out gids: idarray_t);
 
 
