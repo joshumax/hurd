@@ -34,7 +34,7 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
 	io-stubs.c io-write.c io-version.c io-sigio.c
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
-	fsys-readonly.c fsys-syncfs.c
+	fsys-options.c fsys-syncfs.c
 
 IFSOCKSRCS=ifsock.c
 
