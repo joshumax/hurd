@@ -22,6 +22,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <argz.h>
 #include "priv.h"
 
 error_t
@@ -29,19 +30,25 @@ diskfs_S_file_get_fs_options (struct protid *cred,
 			      char **data, unsigned *data_len)
 {
   error_t err;
-  char *argz;
-  size_t argz_len;
+  char *argz = 0;
+  size_t argz_len = 0;
 
   if (! cred)
     return EOPNOTSUPP;
 
+  err = argz_add (&argz, &argz_len, program_invocation_name);
+  if (err)
+    return err;
+
   rwlock_reader_lock (&diskfs_fsys_lock);
-  err = diskfs_get_options (&argz, &argz_len);
+  err = diskfs_append_args (&argz, &argz_len);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
     err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
+  else
+    free (argz);
 
   return err;
 }
