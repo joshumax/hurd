@@ -36,7 +36,7 @@ IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c     \
 	io-clear-some-openmodes.c io-mod-owner.c io-get-owner.c io-select.c   \
 	io-get-icky-async-id.c io-reauthenticate.c io-restrict-auth.c	      \
-	io-duplicate.c iostubs.c io-identity.c io-revoke.c
+	io-duplicate.c iostubs.c io-identity.c io-revoke.c io-pathconf.c
 
 FSYSSRCS= fsys-syncfs.c fsys-getroot.c fsys-get-options.c fsys-set-options.c \
 	fsysstubs.c 

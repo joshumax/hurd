@@ -1,3 +1,9 @@
+1999-09-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* fsstubs.c (netfs_S_io_pathconf): Delete function.
+	* io-pathconf.c: New file.
+	* Makefile (IOSRCS): Add io-pathconf.c.
+
 1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* iostubs.c (netfs_S_io_map_segment): New function.

@@ -1,6 +1,6 @@
 /* Unimplemented rpcs from <hurd/fs.defs>
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -47,14 +47,6 @@ netfs_S_file_getfh (struct protid *user,
 error_t
 netfs_S_ifsock_getsockaddr (struct protid *user,
 			    mach_port_t *address)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-netfs_S_io_pathconf (struct protid *user,
-		     int name,
-		     int *value)
 {
   return EOPNOTSUPP;
 }
