@@ -34,10 +34,10 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ|O_WRITE;
 
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
+struct port_class *trivfs_protid_portclasses[2];
+struct port_class *trivfs_cntl_portclasses[2];
+int trivfs_protid_nportclasses = 2;
+int trivfs_cntl_nportclasses = 2;
 
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -56,75 +56,115 @@ int
 main (int argc, char **argv)
 {
   file_t file;
+  struct port_class *ourclass, *ourcntlclass;
+  struct port_class *peerclass, *peercntlclass;
+  struct trivfs_control **ourcntl, **peercntl;
   mach_port_t ctlport, bootstrap;
+  enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type; 
 
   term_bucket = ports_create_bucket ();
   
   tty_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
+  pty_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
   tty_class = ports_create_class (trivfs_clean_protid, 0);
+  pty_class = ports_create_class (trivfs_clean_protid, 0);
   cttyid_class = ports_create_class (0, 0);
   
   trivfs_protid_portclasses[0] = tty_class;
+  trivfs_protid_portclasses[1] = pty_class;
   trivfs_cntl_portclasses[0] = tty_cntl_class;
+  trivfs_cntl_portclasses[1] = pty_cntl_class;
 
   init_users ();
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
+  if (argc != 4)
+    {
+      fprintf (stderr, "Usage: term ttyname type arg\n");
+      exit (1);
+    }
+
+  nodename = argv[1];
+
+  if (!strcmp (argv[2], "device"))
+    {
+      type = T_DEVICE;
+      ourclass = tty_class;
+      ourcntlclass = tty_cntl_class;
+      ourcntl = &termctl;
+      peerclass = 0;
+      peercntlclass = 0;
+      peercntl = 0;
+      pterm_name = argv[3];
+    }
+  else if (!strcmp (argv[2], "pty-master"))
+    {
+      type = T_PTYMASTER;
+      ourclass = pty_class;
+      ourcntlclass = pty_cntl_class;
+      ourcntl = &ptyctl;
+      peerclass = tty_class;
+      peercntlclass = tty_cntl_class;
+      peercntl = &termctl;
+    }
+  else if (!strcmp (argv[2], "pty-slave"))
+    {
+      type = T_PTYSLAVE;
+      ourclass = tty_class;
+      ourcntlclass = tty_cntl_class;
+      ourcntl = &termctl;
+      peerclass = pty_class;
+      peercntlclass = pty_cntl_class;
+      peercntl = 0;
+    }
+  else
+    {
+      fprintf (stderr, 
+	       "Allowable types are device, pty-master, and pty-slave.\n");
+      exit (1);
+    }
+  
   if (bootstrap == MACH_PORT_NULL)
     {
-      if (argc != 3)
-	{
-	  fprintf (stderr, "Usage: term mach-dev-name ttyname\n");
-	  exit (1);
-	}
-      pterm_name = argv[1];
-      nodename = argv[2];
-      
-      /* Install control port in filesystem */
-      file = file_name_lookup (nodename, O_CREAT|O_NOTRANS, 0666);
+      fprintf (stderr, "Must be started as a translator\n");
+      exit (1);
+    }
+  
+  /* Set our node */
+  ctlport = trivfs_handle_port (MACH_PORT_NULL, ourcntlclass, term_bucket,
+				ourclass, term_bucket);
+  errno = fsys_startup (bootstrap, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND, &file);
+  if (errno)
+    {
+      perror ("Starting translator");
+      exit (1);
+    }
+  *ourcntl = ports_lookup_port (term_bucket, ctlport, ourcntlclass);
+  assert (*ourcntl);
+  (*ourcntl)->underlying = file;
+
+  /* Set peer */
+  if (peerclass)
+    {
+      file = file_name_lookup (argv[3], O_CREAT|O_NOTRANS, 0666);
       if (file == MACH_PORT_NULL)
 	{
-	  perror (nodename);
+	  perror (argv[3]);
 	  exit (1);
 	}
-  
-      ctlport = trivfs_handle_port (file, tty_cntl_class, term_bucket,
-				    tty_class, term_bucket);
-      termctl = ports_lookup_port (term_bucket, ctlport, tty_cntl_class);
-      assert (termctl);
-
+      ctlport = trivfs_handle_port (file, peercntlclass, term_bucket,
+				    peerclass, term_bucket);
+      *peercntl = ports_lookup_port (term_bucket, ctlport, peercntlclass);
+      assert (*peercntl);
       errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
 				   0, 0, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND);
       if (errno)
 	{
-	  perror ("setting translator");
+	  perror (argv[3]);
 	  exit (1);
 	}
     }
-  else
-    {
-      if (argc < 2 || argc > 3)
-	{
-	  fprintf (stderr, "Usage (as translator): term mach-dev-name [ttyname]\n");
-	  exit (1);
-	}
-      pterm_name = argv[1];
-      nodename = (argv[2] ?: "");
-
-      ctlport = trivfs_handle_port (MACH_PORT_NULL, tty_cntl_class, 
-				    term_bucket, tty_class, term_bucket);
-      errno = fsys_startup (bootstrap, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND,
-			    &file);
-      if (errno)
-	{
-	  perror ("Starting translator");
-	  exit (1);
-	}
-      termctl = ports_lookup_port (term_bucket, ctlport, 0);
-      assert (termctl);
-      termctl->underlying = file;
-    }      
 
   bzero (&termstate, sizeof (termstate));
   termflags = NO_CARRIER | NO_OWNER;
