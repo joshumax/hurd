@@ -15,6 +15,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-int *modes_t, *speeds)t;
-short *sizes_t;
-char *ccs_t;
+typedef int *modes_t, *speeds_t;
+typedef short *sizes_t;
+typedef char *ccs_t;
