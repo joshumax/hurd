@@ -457,9 +457,11 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
   else
     tm.tm_year = PARSE_INT () - 1900;
 
+#if 0				/* Avoid kernel lossage while debugging XXX */
   stat->st_mtime = mktime (&tm);
   if (stat->st_mtime == (time_t)-1)
     return EGRATUITOUS;
+#endif
 
   /* atime and ctime are the same as mtime.  */
   stat->st_atime = stat->st_ctime = stat->st_mtime;
@@ -649,6 +651,8 @@ finished:
 
   if (err && rd > 0)
     ftp_conn_abort (conn);
+  else if (err)
+    ftp_conn_finish_transfer (conn);
   else
     err = ftp_conn_finish_transfer (conn);
 
