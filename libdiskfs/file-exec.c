@@ -122,7 +122,7 @@ diskfs_S_file_exec (struct protid *cred,
       int naux_gids = nold_aux_gids < 2 ? nold_aux_gids : 2;
       gid_t gen_gids[ngen_gids], aux_gids[naux_gids];
       
-      int i;
+      unsigned int i;
 
       /* Tell the exec server to use secure ports and a new task.  */
       flags |= EXEC_SECURE|EXEC_NEWTASK;
@@ -253,7 +253,7 @@ diskfs_S_file_exec (struct protid *cred,
 		   destroynames, destroynameslen);
   if (!err)
     {
-      int i;
+      unsigned int i;
       
       mach_port_deallocate (mach_task_self (), task);
       for (i = 0; i < fdslen; i++)
