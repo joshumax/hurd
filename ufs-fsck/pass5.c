@@ -1,5 +1,5 @@
 /* Pass 5 of GNU fsck -- check allocation maps and summaries
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -115,13 +115,30 @@ pass5 ()
 					     * sizeof (short));
       newcg->cg_freeoff = newcg->cg_iusedoff + howmany (sblock->fs_ipg, NBBY);
 
-      /* Only support sblock->fs_contigsumsize == 0 here */
-      /* If we supported clustered filesystems, then we would set 
-	 clustersumoff and clusteroff and nextfree off would be past
-	 them. */
-      newcg->cg_nextfreeoff = 
-	(newcg->cg_freeoff
-	 + howmany (sblock->fs_cpg * sblock->fs_spc / NSPF (sblock), NBBY));
+      if (sblock->fs_contigsumsize <= 0)
+	{
+	  newcg->cg_nextfreeoff = 
+	    (newcg->cg_freeoff
+	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPF (sblock),
+			NBBY));
+	}
+      else
+	{
+	  newcg->cg_clustersumoff = 
+	    (newcg->cg_freeoff
+	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPF (sblock), NBBY)
+	     - sizeof (long));
+	  newcg->cg_clustersumoff = 
+	    roundup (newcg->cg_clustersumoff, sizeof (long));
+	  newcg->cg_clusteroff = 
+	    (newcg->cg_clustersumoff 
+	     + (sblock->fs_contigsumsize + 1) * sizeof (long));
+	  newcg->cg_nextfreeoff = 
+	    (newcg->cg_clusteroff 
+	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPB (sblock), 
+			NBBY));
+	}
+
       newcg->cg_magic = CG_MAGIC;
 
       /* Set map sizes */
@@ -168,8 +185,8 @@ pass5 ()
       else
 	newcg->cg_ncyl = sblock->fs_cpg;
       newcg->cg_ndblk = dmax - dbase;
-      /* Don't set nclusterblks; we don't support that */
-
+      if (sblock->fs_contigsumsize > 0)
+	newcg->cg_nclusterblks = newcg->cg_ndblk / sblock->fs_frag;
       newcg->cg_cs.cs_ndir = 0;
       newcg->cg_cs.cs_nffree = 0;
       newcg->cg_cs.cs_nbfree = 0;
@@ -279,8 +296,8 @@ pass5 ()
 	      j = cbtocylno (sblock, i);
 	      cg_blktot(newcg)[j]++;
 	      cg_blks(sblock, newcg, j)[cbtorpos(sblock, i)]++;
-	      /* If we support clustering, then we'd account for this
-		 in the cluster map too. */
+	      if (sblock->fs_contigsumsize > 0)
+		setbit (cg_clustersfree (newcg), i / sblock->fs_frag);
 	    }
 	  else if (frags)
 	    {
@@ -292,6 +309,42 @@ pass5 ()
 	    }
 	}
       
+      if (sblock->fs_contigsumsize > 0)
+	{
+	  long *sump = cg_clustersum (newcg);
+	  u_char *mapp = cg_clustersfree (newcg);
+	  int map = *mapp++;
+	  int bit = 1;
+	  int run = 0;
+	  
+	  for (i = 0; i < newcg->cg_nclusterblks; i++)
+	    {
+	      if ((map & bit) != 0)
+		run++;
+	      else if (run)
+		{
+		  if (run > sblock->fs_contigsumsize)
+		    run = sblock->fs_contigsumsize;
+		  sump[run]++;
+		  run = 0;
+		}
+
+	      if ((i & (NBBY - 1)) 1= (NBBY - 1))
+		bit <<= 1;
+	      else
+		{
+		  map = *mapp++;
+		  bit = 1;
+		}
+	    }
+	  if (run != 0)
+	    {
+	      if (run > sblock->fs_contigsumsize)
+		run = sblock->fs_contigsumsize;
+	      sump[run]++;
+	    }
+	}
+
       /* Add this cylinder group's totals into the superblock's
 	 totals. */
       cstotal.cs_nffree += newcg->cg_cs.cs_nffree;
