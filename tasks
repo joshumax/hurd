@@ -1,4 +1,4 @@
-GNU Hurd Task List Version 1.19.  Last updated 15 April 1998.
+GNU Hurd Task List Version 1.20.  Last updated 26 October 1998.
 
 If you would like to work on one of these, please contact tb@mit.edu.
 It's important that you let me know what's being worked on, because
@@ -23,6 +23,12 @@ Mach 3.0 Work
 
 We now have our own distribution of the microkernel.  Please discuss
 proposed microkernel work there as well as with thomas@gnu.ai.mit.edu.
+
+!!!
+ * Mach 3.0 serial drivers support only a small subset of the
+   available possibilities in the Posix c_cflag termios field.  Fix
+   this, by adding a new device_set_status call that sets the whole
+   thing and not just the old limited possibilities.
 
 !!!
   * Mach 3.0 needs many new device drivers for popular PC devices.
