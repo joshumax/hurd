@@ -51,10 +51,19 @@ char *
 time_str (time_value_t *t)
 {
   char *ret = malloc (20);
-  int time;
+  int centiseconds;
+
+  if (t->microseconds >= 1000000)
+    {
+      t->seconds += t->microseconds / 1000000;
+      t->microseconds %= 1000000;
+    }
+  centiseconds = t->microseconds / (1000000 / 100);
   
-  time = t->seconds * 1000000 + t->microseconds;
-  sprintf (ret, "%.2f", (double)time / 1000000.0 );
+  sprintf (ret, "%d:%2d.%2d", 
+	   t->seconds / 60,	/* minutes */
+	   t->seconds % 60,	/* seconds */
+	   centiseconds);
   return ret;
 }
 
@@ -79,7 +88,6 @@ print_args_str (process_t proc, pid_t pid)
   vm_deallocate (mach_task_self (), (vm_address_t) args, nargs);
 }
   
-
 /* Very simple PS */
 int
 main ()
