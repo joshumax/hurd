@@ -1,5 +1,5 @@
 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -16,17 +16,18 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := ufs
-makemode := server
+makemode := servers
 
-target = ufs
+targets = ufs ufs.static
 SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 
 OBJS = $(SRCS:.c=.o)
 
-LDFLAGS += -static
-
-ufs: $(OBJS) ../libdiskfs/libdiskfs.a ../libports/libports.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+ufs.static-LDFLAGS += -static
 
 include ../Makeconf
+
+ufs.static ufs: $(OBJS) ../libdiskfs/libdiskfs.a ../libports/libports.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+
