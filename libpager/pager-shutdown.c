@@ -38,7 +38,7 @@ pager_shutdown (struct pager *p)
   mutex_unlock (&p->interlock);
   if (port)
     {
-      ports_done_with_port (p);		/* pretend send right has died */
+      ports_port_deref (p);
       mach_port_deallocate (mach_task_self (), port);
     }
 }
