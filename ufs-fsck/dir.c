@@ -384,6 +384,7 @@ makeentry (ino_t dir, ino_t ino, char *name)
 	{
 	  if (expanddir (&dino))
 	    {
+	      write_inode (ino, &dino);
 	      datablocks_iterate (&dino, checkdirblock);
 	      pfix ("EXPANDED");
 	    }
