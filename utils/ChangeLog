@@ -1,3 +1,7 @@
+2002-05-12  Roland McGrath  <roland@frob.com>
+
+	* fakeauth.c (main): Don't use posix_spawnp.  Use _hurd_exec instead.
+
 2002-05-06  Marcus Brinkmann  <marcus@gnu.org>
 
 	* settrans.c (main): Return 0 instead of using break (which only
@@ -8,7 +12,7 @@
 	* fakeauth.c (main): Add ARGP_IN_ORDER to argp_parse invocation.
 	(main: parse_opt): New function.
 	(main): Set parser in ARGP to parse_opt.
-	
+
 2002-05-04  Roland McGrath  <roland@frob.com>
 
 	* fakeauth.c (main): Update doc strings, clean up argp_parse call.
