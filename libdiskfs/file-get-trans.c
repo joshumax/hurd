@@ -114,7 +114,20 @@ diskfs_S_file_get_translator (struct protid *cred,
       if (!np->istranslated)
 	error = EINVAL;
       else
-	error = diskfs_get_translator (np, trans, translen);
+	{
+	  char *string;
+	  u_int len;
+	  error = diskfs_get_translator (np, &string, &len);
+	  if (!error)
+	    {
+	      if (len > *translen)
+		vm_allocate (mach_task_self (), (vm_address_t *) trans, 
+			     len, 1);
+	      bcopy (string, *trans, len);
+	      *translen = len;
+	      free (string);
+	    }
+	}
     }
   
   mutex_unlock (&np->lock);
