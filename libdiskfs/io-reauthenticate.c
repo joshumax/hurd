@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -51,7 +51,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
 				  &aux_uids, &auxuidlen,
 				  &gen_gids, &gengidlen,
 				  &aux_gids, &auxgidlen);
-  assert (!err);		/* XXX */
+  assert_perror (err);		/* XXX */
 
   diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
   mutex_unlock (&cred->po->np->lock);
