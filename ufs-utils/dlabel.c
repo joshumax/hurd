@@ -37,7 +37,7 @@ fd_get_device (int fd, device_t *device)
   if (node == MACH_PORT_NULL)
     return errno;
 
-  err = store_create (node, &store);
+  err = store_create (node, 0, 0, &store);
   if (! err)
     {
       if (store->class != STORAGE_DEVICE
