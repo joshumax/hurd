@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,7 +29,7 @@ diskfs_S_io_sigio (struct protid *cred)
     return EOPNOTSUPP;
   
   mutex_lock (&cred->po->np->lock);
-  if (cred->po->openstat & O_FSYNC)
+  if ((cred->po->openstat & O_FSYNC) || diskfs_synchronous)
     diskfs_file_update (cred->po->np, 1);
   mutex_unlock (&cred->po->np->lock);
   return 0;
