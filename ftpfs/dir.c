@@ -137,6 +137,7 @@ lookup (struct ftpfs_dir *dir, const char *name, int add)
 	{
 	  e->hv = hv;
 	  e->name = strdup (name);
+	  e->node = 0;
 	  e->dir = dir;
 	  e->stat_timestamp = 0;
 	  bzero (&e->stat, sizeof e->stat);
