@@ -31,7 +31,7 @@ _diskfs_translator_callback1_fn (void *cookie1, void *cookie2,
   error_t err;
   struct node *np = cookie1;
 
-  if (!np->istranslated)
+  if (! (np->dn_stat.st_mode & S_IPTRANS))
     return ENOENT;
 
   err = diskfs_get_translator (np, argz, (u_int *) argz_len);
