@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 
 #include <hurd/netfs.h>
 
@@ -79,7 +80,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
 	}
       else
 	flags |= TOUCH_ATIME;
-      
+
       if (mtime)
 	{
 	  node->nn_stat.st_mtime = mtime->tv_sec;
@@ -87,7 +88,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
 	}
       else
 	flags |= TOUCH_MTIME;
-  
+
       fshelp_touch (&node->nn_stat, flags, ftpfs_maptime);
     }
 
