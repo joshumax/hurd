@@ -1856,7 +1856,7 @@ S_term_get_nodename (io_t arg,
   if (!cred)
     return EOPNOTSUPP;
   
-  strcpy (name, nodename);
+  strcpy (name, (char *)cred->po->cntl->hook ?: "");
 
   ports_port_deref (cred);
   return 0;
@@ -1866,16 +1866,16 @@ kern_return_t
 S_term_set_nodename (io_t arg,
 		     char *name)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
-						  tty_class);
+  error_t err = 0;
+  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, tty_class);
   if (!cred)
     return EOPNOTSUPP;
+  
+  if (strcmp (name, (char *)cred->po->cntl->hook) != 0)
+    err = EINVAL;
+  
   ports_port_deref (cred);
-  
-  if (strcmp (name, nodename))
-    return EINVAL;
-  
-  return 0;
+  return err;
 }
 
 kern_return_t
