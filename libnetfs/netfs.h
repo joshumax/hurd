@@ -232,11 +232,9 @@ error_t netfs_attempt_read (struct netcred *cred, struct node *np,
 error_t netfs_attempt_write (struct netcred *cred, struct node *np,
 			     off_t offset, size_t *len, void *data);
 
-/* The user must define this function.  On entry, *TYPES identifies
-   the sorts of access which should be check.  Return the valid access
+/* The user must define this function.  Return the valid access
    types (bitwise OR of O_READ, O_WRITE, and O_EXEC) in *TYPES for
-   file NP and user CRED.  (In other words, this routine should only
-   turn off bits.  */
+   file NP and user CRED.   */
 void netfs_report_access (struct netcred *cred, struct node *np,
 			  int *types);
 
