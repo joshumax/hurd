@@ -772,9 +772,6 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   need = flags & ~have & ~ps->failed;
 
-  /* Returns true if some flag in FLAGS is `inapplicable'.  */
-#define INAPP(flags) (flags & (need & ~have) & ps->inapp)
-
   /* Returns true if (1) FLAGS is in NEED, and (2) the appropriate
      preconditions PRECOND are available; if only (1) is true, FLAG is added
      to the INAPP set if appropiate (to distinguish it from an error), and
@@ -790,7 +787,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
     else								      \
       {									      \
 	val = 0;							      \
-	if (INAPP (_precond))						      \
+	if (_precond & ps->inapp)					      \
 	  ps->inapp |= __flag;						      \
       }									      \
     val;								      \
@@ -830,10 +827,8 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
        later.  */
     have = set_procinfo_flags (ps, need & ~have & test_msgport_flags, have);
 
-  if (NEED (PSTAT_SUSPEND_COUNT, 
-	    ((have & PSTAT_PID)
-	     ? (have & PSTAT_TASK_BASIC)
-	     : (have & PSTAT_THREAD_BASIC))))
+  if (NEED (PSTAT_SUSPEND_COUNT,
+	    ((have & PSTAT_PID) ? PSTAT_TASK_BASIC : PSTAT_THREAD_BASIC)))
     {
       if (have & PSTAT_PID)
 	ps->suspend_count = ps->task_basic_info->suspend_count;
