@@ -1,3 +1,36 @@
+Sun Feb 16 00:04:07 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (space): New function.
+	(usage_argful_short_opt): Use space.
+	(argp_doc): Deal with help filters.  Add STATE param.
+	(argp_hol): Passin ARGP to make_hol, not ARGP->options.
+	(struct hol_entry): Add argp field.
+	(make_hol): Make this first parameter ARGP instead of OPT.  Set
+	each entry's argp field.
+	(filter_doc): New function.
+	(print_header): Filter STR if necesary.
+	(hol_add_cluster): Add ARGP argument.
+	(argp_hol): Pass ARGP to hol_add_cluster.
+	(struct hol_cluster): Add argp field.
+	(hol_entry_help): Add STATE param.  Do user filtering if necessary.
+	(struct pentry_state): Add state field.
+	(hol_help): Add STATE param.
+	(_help): Renamed from __argp_help.  Add STATE argument, which pass
+	on appropiately.
+	(__argp_help): Now a wrapper that calls _help.
+	(__argp_state_help): Call _help instead of __argp_help.
+
+	* argp-parse.c (parser_init): Set PARSER->state.pstate.
+	(struct group): Add argp field.
+	(convert_options): Set it.
+	(__argp_input): New function.
+	* argp-namefrob.h (__argp_input): New macro.
+
+Sat Feb 15 22:00:42 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (struct argp): Add help_filter field.
+	(struct argp_state): Add pstate field.
+	
 Fri Feb 14 18:00:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c, argp-parse.c [!_] (_): New macro.
