@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_stat as described in <hurd/io.defs>. */
 error_t
@@ -29,12 +30,9 @@ diskfs_S_io_stat (struct protid *cred,
     return EOPNOTSUPP;
   
   np = cred->po->np;
-  mutex_lock (&ip->lock);
-  error = ioserver_get_conch (&ip->i_conch);
-  if (!error)
-    bcopy (np->dn_stat, statbuf, sizeof (struct stat));
-
- out:
-  mutex_unlock (&ip->i_toplock);
+  mutex_lock (&np->lock);
+  ioserver_get_conch (&ip->conch);
+  bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
+  mutex_unlock (&np->lock);
   return error;
 }
