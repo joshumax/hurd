@@ -78,18 +78,6 @@
 #define __argp_fmtstream_wmargin argp_fmtstream_wmargin
 
 /* normal libc functions we call */
-#undef __getopt_long
-#define __getopt_long getopt_long
-#undef __getopt_long_only
-#define __getopt_long_only getopt_long_only
-#undef __optarg
-#define __optarg optarg
-#undef __opterr
-#define __opterr opterr
-#undef __optind
-#define __optind optind
-#undef __optopt
-#define __optopt optopt
 #undef __sleep
 #define __sleep sleep
 #undef __strcasecmp
