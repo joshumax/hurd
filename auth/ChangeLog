@@ -1,3 +1,8 @@
+Wed Aug 20 14:01:43 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* auth.c (main): New args for
+	ports_manage_port_operations_multithread. 
+
 Wed Feb 19 23:04:30 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* auth.c (argp_program_version): Make const.

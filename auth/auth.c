@@ -488,6 +488,5 @@ main (int argc, char **argv)
   while (1)
     ports_manage_port_operations_multithread (auth_bucket,
 					      auth_demuxer,
-					      30 * 1000, 0,
-					      0, MACH_PORT_NULL);
+					      30 * 1000, 0, 0);
 }
