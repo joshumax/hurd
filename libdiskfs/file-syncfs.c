@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <hurd/fsys.h>
 
 /* Implement file_syncfs as described in <hurd/fs.defs>. */
 kern_return_t
@@ -30,7 +31,7 @@ diskfs_S_file_syncfs (struct protid *cred,
 	error_t error;
 	mach_port_t control;
 	
-	error = fshelp_fetch_control (np, &control);
+	error = fshelp_fetch_control (&np->transbox, &control);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    fsys_syncfs (control, wait, 1);
