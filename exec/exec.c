@@ -179,6 +179,7 @@ load_section (void *section, struct execdata *u)
       if (! anywhere)
 	addr += u->info.elf.loadbase;
       else
+#if 0
 	switch (elf_machine)
 	  {
 	  case EM_386:
@@ -193,6 +194,7 @@ load_section (void *section, struct execdata *u)
 	  default:
 	    break;
 	  }
+#endif
       if (anywhere && addr < vm_page_size)
 	addr = vm_page_size;
     }
@@ -469,7 +471,7 @@ map (struct execdata *e, off_t posn, size_t len)
     {
       /* Deallocate the old mapping area.  */
       if (f->__buffer != NULL)
-	munmap ((vm_address_t) f->__buffer, f->__bufsize);
+	munmap (f->__buffer, f->__bufsize);
       f->__buffer = NULL;
 
       /* Make sure our mapping is page-aligned in the file.  */
@@ -720,13 +722,15 @@ check_elf (struct execdata *e)
       ehdr->e_ident[EI_DATA] != host_ELFDATA ||
       ehdr->e_ident[EI_VERSION] != EV_CURRENT ||
       ehdr->e_version != EV_CURRENT ||
-      ehdr->e_machine != elf_machine ||
       ehdr->e_ehsize < sizeof *ehdr ||
       ehdr->e_phentsize != sizeof (Elf32_Phdr))
     {
       e->error = ENOEXEC;
       return;
     }
+  e->error = elf_machine_matches_host (ehdr->e_machine);
+  if (e->error)
+    return;
 
   /* Extract all this information now, while EHDR is mapped.
      The `map' call below for the phdrs may reuse the mapping window.  */
