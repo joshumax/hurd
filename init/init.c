@@ -156,7 +156,11 @@ reboot_system (int flags)
       error_t err;
       printf ("init: notifying %p\n", (void *) n->notify_port);
       fflush (stdout);
+#ifdef notyet
       err = msg_startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
+#else
+      err = msg_startup_dosync (n->notify_port);
+#endif
       if (err && err != MACH_SEND_INVALID_DEST)
 	{
 	  printf ("init: %p complained: %s\n",
