@@ -817,6 +817,9 @@ ffs_fragextend(struct node *np,
 		fs->fs_cstotal.cs_nffree--;
 		csum[cg].cs_nffree--;
 	}
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 	fs->fs_fmod = 1;
 /*	bdwrite(bp); */
 	return (bprev);
@@ -892,6 +895,10 @@ ffs_alloccg(struct node *np,
 		csum[cg].cs_nffree += i;
 		fs->fs_fmod = 1;
 		cgp->cg_frsum[i]++;
+		
+		record_poke (cgp, sblock->fs_cgsize);
+		csum_dirty = 1;
+		sblock_dirty = 1;
 /* 		bdwrite(bp); */
 		return (bno);
 	}
@@ -909,6 +916,9 @@ ffs_alloccg(struct node *np,
 	cgp->cg_frsum[allocsiz]--;
 	if (frags != allocsiz)
 		cgp->cg_frsum[allocsiz - frags]++;
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 /* 	bdwrite(bp); */
 	return (cg * fs->fs_fpg + bno);
 }
@@ -1020,6 +1030,9 @@ gotit:
 	cg_blks(fs, cgp, cylno)[cbtorpos(fs, bno)]--;
 	cg_blktot(cgp)[cylno]--;
 	fs->fs_fmod = 1;
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 	return (cgp->cg_cgx * fs->fs_fpg + bno);
 }
 
@@ -1188,6 +1201,9 @@ gotit:
 		fs->fs_cstotal.cs_ndir++;
 		csum[cg].cs_ndir++;
 	}
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 /* 	bdwrite(bp); */
 	return (cg * fs->fs_ipg + ipref);
 }
@@ -1285,6 +1301,9 @@ ffs_blkfree(register struct node *np,
 			cg_blktot(cgp)[i]++;
 		}
 	}
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 	fs->fs_fmod = 1;
 /* 	bdwrite(bp); */
 }
@@ -1340,6 +1359,9 @@ diskfs_free_node (struct node *np, mode_t mode)
 		fs->fs_cstotal.cs_ndir--;
 		csum[cg].cs_ndir--;
 	}
+	record_poke (cgp, sblock->fs_cgsize);
+	csum_dirty = 1;
+	sblock_dirty = 1;
 	fs->fs_fmod = 1;
 /* 	bdwrite(bp); */
 }
