@@ -24,7 +24,7 @@ VPATH=.:../machine
 SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
 	sizes.c subr.c tables.c 
 
-DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
+DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h ChangeLog
 
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
