@@ -21,7 +21,7 @@ makemode := misc
 include Makeconf
 
 lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
-	      libthreads libps libnetserv libdirmgt libnetfs
+	      libthreads libps libnetserv libdirmgt libnetfs libihash
 prog-subdirs = auth boot exec fstests init.trim \
 	       proc term ufs pflocal pipes dev.trim utils trans fsck bsdfsck \
 	       devio newfs ext2fs benchmarks pfinet tmpfs defpager login nfs
