@@ -41,7 +41,7 @@ int trivfs_allow_open = O_READ|O_WRITE;
 
 /* The argument line options.  */
 char *tty_name;
-enum { T_NONE = 0, T_DEVICE, T_PTYMASTER, T_PTYSLAVE } tty_type;
+enum { T_NONE = 0, T_DEVICE, T_HURDIO, T_PTYMASTER, T_PTYSLAVE } tty_type;
 char *tty_arg;
 
 int
@@ -76,6 +76,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	{
 	  if (!strcmp (arg, "device"))
 	    tty_type = T_DEVICE;
+	  else if (!strcmp (arg, "hurdio"))
+	    tty_type = T_HURDIO;
 	  else if (!strcmp (arg, "pty-master"))
 	    tty_type = T_PTYMASTER;
 	  else if (!strcmp (arg, "pty-slave"))
@@ -100,6 +102,7 @@ static struct argp term_argp =
   { 0, parse_opt, "NAME TYPE ARG", "A translator that emulates a terminal.\v"\
     "Possible values for TYPE:\n"\
     "  device      Use Mach device ARG as bottom handler.\n"\
+    "  hurdio      Use file port ARG as bottom handler.\n"\
     "  pty-master  Master for slave at ARG.\n"\
     "  pty-slave   Slave for master at ARG.\n"\
     "\n"\
@@ -132,6 +135,16 @@ main (int argc, char **argv)
     {
     case T_DEVICE:
       bottom = &devio_bottom;
+      ourclass = tty_class;
+      ourcntlclass = tty_cntl_class;
+      ourcntl = &termctl;
+      peerclass = 0;
+      peercntlclass = 0;
+      peercntl = 0;
+      break;
+
+    case T_HURDIO:
+      bottom = &hurdio_bottom;
       ourclass = tty_class;
       ourcntlclass = tty_cntl_class;
       ourcntl = &termctl;

@@ -155,7 +155,7 @@ struct bottomhalf
 };
 
 const struct bottomhalf *bottom;
-extern const struct bottomhalf devio_bottom, ptyio_bottom;
+extern const struct bottomhalf devio_bottom, hurdio_bottom, ptyio_bottom;
 
 
 /* Character queues */

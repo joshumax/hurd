@@ -22,7 +22,7 @@ dir := term
 makemode := server
 
 target = term
-SRCS = devio.c munge.c users.c main.c ptyio.c
+SRCS = devio.c munge.c users.c main.c ptyio.c hurdio.c
 LCLHDRS = term.h
 DIST_FILES = ourmsg.defs
 

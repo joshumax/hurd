@@ -1,5 +1,15 @@
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
+	* hurdio.c: New file.
+	* Makefile (SRCS): Add hurdio.c.
+	* term.h: Add hurdio_bottom declaration.
+	* main.c: Add T_HURDIO to enum of tty_type.
+	(parse_opt): Add case for hurdio bottom handler.
+	(term_argp): Likewise.
+	(main): Likewise.
+
+2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
+
 	* main.c: Include `argp.h' and `version.h'.
 	(argp_program_version): New global variable.
 	(tty_name, tty_type, tty_arg): Likewise.
