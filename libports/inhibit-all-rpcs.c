@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -23,37 +23,52 @@
 #include <cthreads.h>
 #include <hurd/ihash.h>
 
-void
+error_t
 ports_inhibit_all_rpcs ()
 {
-  struct port_bucket *bucket;
-  int this_one = 0;
-  error_t interruptor (void *portstruct)
-    {
-      struct port_info *pi = portstruct;
-      struct rpc_info *rpc;
-
-      for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-	if (hurd_thread_cancel (rpc->thread) == EINTR)
-	  this_one = 1;
-      return 0;
-    }
+  error_t err = 0;
 
   mutex_lock (&_ports_lock);
 
-  for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
-    ihash_iterate (bucket->htable, interruptor);
-
-  while (_ports_total_rpcs > this_one)
+  if (_ports_flags & (_PORTS_INHIBITED | _PORTS_INHIBIT_WAIT))
+    err = EBUSY;
+  else
     {
-      _ports_flags |= _PORTS_INHIBIT_WAIT;
-      condition_wait (&_ports_block, &_ports_lock);
+      struct port_bucket *bucket;
+      int this_one = 0;
+      error_t interruptor (void *portstruct)
+	{
+	  struct rpc_info *rpc;
+	  struct port_info *pi = portstruct;
+
+	  for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
+	    if (hurd_thread_cancel (rpc->thread) == EINTR)
+	      this_one = 1;
+	  return 0;
+	}
+
+      for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
+	ihash_iterate (bucket->htable, interruptor);
+
+      while (_ports_total_rpcs > this_one)
+	{
+	  _ports_flags |= _PORTS_INHIBIT_WAIT;
+	  if (hurd_condition_wait (&_ports_block, &_ports_lock))
+	    /* We got cancelled.  */
+	    {
+	      err = EINTR;
+	      break;
+	    }
+	}
+
+      _ports_flags &= ~_PORTS_INHIBIT_WAIT;
+      if (! err)
+	_ports_flags |= _PORTS_INHIBITED;
     }
 
-  _ports_flags |= _PORTS_INHIBITED;
-  _ports_flags &= ~_PORTS_INHIBIT_WAIT;
-
   mutex_unlock (&_ports_lock);
+
+  return err;
 }
 
 
