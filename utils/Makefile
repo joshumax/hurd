@@ -68,7 +68,7 @@ ping: ../libthreads/libthreads.a
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w ids settrans sync showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth su unsu ftpcp ftpdir storeread \
-  storecat: \
+  storecat msgport: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o

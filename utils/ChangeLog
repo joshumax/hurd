@@ -1,3 +1,7 @@
+Mon Aug  3 17:10:05 1998  Joel N. Weber II  <devnull@theobromine.ai.mit.edu>
+
+	* Makefile (msgport): Add dependency on libshouldbeinlibc.
+
 1998-07-25  Jose M. Moya  <josem@gnu.org>
 
 	* msgport.c: Fixed to deallocate ports.
