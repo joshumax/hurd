@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -26,7 +26,7 @@
 static error_t
 _diskfs_translator_callback1_fn (void *cookie1, void *cookie2,
 				 uid_t *uid, gid_t *gid,
-				 char **argz, int *argz_len)
+				 char **argz, size_t *argz_len)
 {
   error_t err;
   struct node *np = cookie1;
