@@ -71,7 +71,7 @@ int
 ethernet_open (struct device *dev)
 {
   if (ether_port != MACH_PORT_NULL)
-    return 1;
+    return 0;
   
   etherreadclass = ports_create_class (0, 0);
   readpt = ports_allocate_port (pfinet_bucket, sizeof (struct port_info),
@@ -106,15 +106,6 @@ ethernet_demuxer (mach_msg_header_t *inp,
 	mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
       return 1;
     }
-  
-  if (ntohs (pkthdr->type) != HDR_ETHERNET)
-    return 1;
-
-  /* The total size is the size of the ethernet header (which had
-     better equal sizeof (struct ethhdr) and the data portion of the
-     frame.  So compute it. */
-  if (msg->header_type.msgt_number != ETH_HLEN)
-    return 1;
   
   datalen = ETH_HLEN 
     + msg->packet_type.msgt_number - sizeof (struct packet_header);
