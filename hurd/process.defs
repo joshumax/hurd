@@ -327,7 +327,8 @@ routine proc_getpgrppids (
    completely orthogonal to the Posix concepts of process group and
    session.  Process collections may be inheritable, which means that
    child processes of members automatically become members themselves.
-   */
+   The calling process is automatically a member of the new process 
+   collection. */
 routine proc_make_collection (
 	process: process_t;
 	inheritable: int;
@@ -338,7 +339,9 @@ routine proc_add_collection (
 	process: process_t;
 	proccoll: proccoll_t);
 
-/* Remove the process from the indicated process collection.  */
+/* Remove the process from the indicated process collection.  If this
+   is the only process in the collection, then the collection itself
+   is deallocated.  */
 routine proc_remove_collection (
 	process: process_t;
 	proccoll: proccoll_t);
@@ -350,13 +353,13 @@ routine proc_remove_all_collections (
 /* Return all the process collections of which we are a member.  */
 routine proc_get_collections (
 	process: process_t;
-	collections: portarray_t);
+	out collections: portarray_t);
 
 /* Return all the pids of processes in a collection.  */
 routine proc_collection_members (
 	process: process_t;
 	proccoll: proccoll_t;
-	pids: intarray_t);
+	out pids: intarray_t);
 
 /* Return a pseudo-collection port for a process group.  This is only
    useful as an argument to proc_get_collports.  */
