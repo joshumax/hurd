@@ -74,7 +74,8 @@ diskfs_init_diskfs (mach_port_t bootstrap)
       _diskfs_ncontrol_ports++;
       err = fsys_startup (bootstrap, 
 			  ports_get_right (ports_allocate_port 
-					   (sizeof (struct port_info), PT_CTL),
+					   (sizeof (struct port_info),
+					    PT_CTL)),
 			  MACH_MSG_TYPE_MAKE_SEND,
 			  &realnode);
       if (err)
