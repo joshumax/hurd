@@ -1,3 +1,14 @@
+1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir.c (file_type_ext2): New const variable, map DT_* -> EXT2_FT_*.
+	(diskfs_direnter_hard): Move initialization of directory entry content
+	fields out of switch; use memcpy or memmove as appropriate, instead of
+	bcopy.  Set file_type field in new directory entry to appropriate
+	type for the node, or to zero if the filesystem doesn't have the
+	EXT2_FEATURE_INCOMPAT_FILETYPE flag set.
+
+	* bitmap.c (ffz): Don't subtract one (duh).
+
 1999-10-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2fs.h (SBLOCK_LBLOCK): New macro, filesystem block number of sb.
