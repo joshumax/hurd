@@ -1,0 +1,286 @@
+/* Definitions for the filesystem interface. 
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+
+/* All these objects also implement the generic IO facilities. */
+
+subsystem fs 20000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef FILE_IMPORTS
+FILE_IMPORTS
+#endif
+
+/* Operations supported on all files */
+
+/* Overlay a task with a file.  Necessary initialization, including
+   authentication changes associated with set[ug]id execution must be
+   handled by the filesystem.  Filesystems normally implement this by
+   using exec_newtask or exec_loadtask as appropriate.  */
+/* INTR */
+routine file_exec (
+	exec_file: file_t;
+	exec_task: task_t;
+	flags: int;
+	argv: data_t;
+	envp: data_t;
+	fdarray: portarray_t;
+	portarray: portarray_t;
+	intarray: intarray_t);
+
+/* Change owner and/or group */
+/* INTR */
+routine file_chown (
+	chown_file: file_t;
+	new_owner: uid_t;
+	new_group: gid_t);
+
+/*
+Whan that Aprill with hith thoureth thoote
+The droghte of March hath perthed to the roote,
+And bathed every veyne in thwith licour,
+Of which vertu engendred is the flour;
+Whan Zephiruth eek with hith thweete breeth
+Inthpired hath in every holt and heeth
+The tender croppeth, and the yonge thonne
+Hath in the Ram his halve courth yronne,
+And thmale foweleth maken melodye,
+That thlepen all the nyght with open ye
+(Tho Priketh hem Nature in hir corageth),
+Thanne longen folk to goon on pligrimageth,
+And palmereth for to theken thtraunge thtrondeth,
+To ferne halweth, kowthe in thondry londeth:
+And thpethially, from every thireth ende
+Of Engelond to Cantebury they wende,
+The hooly blithful martyr for to theke,
+That hem hath holpen whan that they were theeke.
+*/
+/* INTR */
+routine file_chauthor (
+	chauth_file: file_t;
+	new_author: uid_t);
+
+/* Change mode bits */
+/* INTR */
+routine file_chmod (
+	chmod_file: file_t;
+	new_mode: mode_t);
+
+/* Change file flags */
+/* INTR */
+routine file_chflags (
+	chflags_file: file_t;
+	new_flags: int);
+
+/* Change access and modify times */
+/* INTR */
+routine file_utimes (
+	utimes_file: file_t;
+	new_atime: time_value_t;
+	new_mtime: time_value_t);
+
+/* Change current file offset */
+/* INTR */
+routine file_seek (
+	seek_file: file_t;
+	offset: int;
+	whence: int;
+	out newp: int);
+
+/* Truncate file */
+/* INTR */
+routine file_truncate (
+	trunc_file: file_t;
+	new_size: int);
+
+/* Apply/manipulate advisory lock */
+/* INTR */
+routine file_lock (
+	lock_file: file_t;
+	flags: int);
+
+/* Return current lock status.  Mystatus tells what kind of lock the
+   caller has; otherstatus tells what kind of lock anyone has
+   (including the caller).  */
+ routine file_lock_stat (
+	lock_file: file_t;
+	out mystatus: int;
+	out otherstatus: int);
+
+/* Return control port for this filesystem */
+routine file_getcontrol (
+	file: file_t;
+	out control: mach_port_make_send_t);
+
+/* Return filesystem status */
+/* INTR */
+routine file_statfs (
+	file: file_t;
+	out info: fsys_statfsbuf_t);
+
+/* Sync the individual file */
+/* INTR */
+routine file_sync (
+	file: file_t;
+	wait: int);
+
+/* Sync the entire filesystem */
+/* INTR */
+routine file_syncfs (
+	file: file_t;
+	wait: int;
+	do_children: int);
+
+/* Return Posix.1 pathconf information */
+/* INTR */
+routine file_pathconf (
+	file: file_t;
+	out pathconf: pathconf_t);
+
+/* Return the node for hard links to this potentially translated file.
+   This returns an unauthenticated node.  */
+routine file_getlinknode (
+	file: file_t;
+	out linknode: file_t);
+
+/* Return a file handle for this file.  This can be used by NFS and such.
+   It is not guaranteed that this call will work...if it doesn't, then this
+   filesystem cannot be NFS mounted.  */
+routine file_getfh (
+	file: file_t;
+	out filehandle: data_t);
+
+/* Operations supported on directories */
+
+/* Translate a pathname, following all symlinks.  Upon return, if
+   do_retry is FS_RETRY_NONE, then result is a port referencing the
+   pathname's target.  If do_retry is FS_RETRY_NORMAL, then the call
+   needs to be repeated.  If retry_name starts with a slash, then the
+   new call needs to be made to the caller's root directory (without
+   the leading slash).  If it does not start with a slash, then the
+   new call needs to be made to result.  If do_retry is
+   FS_RETRY_REAUTH, then the same procedure is followed as for
+   FS_RETRY_NORMAL, except retry will need to be reauthenticated
+   before use.  */
+/* INTR */
+routine dir_pathtrans (
+	start_dir: file_t;
+	pathname: string_t;
+	flags: int;
+	mode: mode_t;
+	out do_retry: retry_type;
+	out retry_name: string_t;
+	out result: file_t);
+
+/* Read dir entries from the directory.  Amount must be a multiple of
+   the block size of the file as returned by stat.  Offset should
+   either be zero or the value of nextoffset from a previous call to
+   dir_readdir for this file.  The retured data is an array of struct
+   direct's.  There is no necessary connection between the data
+   retured by dir_readdir and io_read on the same port.  However,
+   io_read generally returns information in some filesystem-specific
+   "raw format", possibly including more information than just
+   directory entries.  */
+routine dir_readdir (
+	dir: file_t;
+	out data: data_t;
+	offset: int;
+	out nextoffset: int;
+	amount: int);
+
+/* Create directory */
+/* INTR */
+routine dir_mkdir (
+	directory: file_t;
+	name: string_t;
+	mode: mode_t);
+
+/* Remove directory */
+/* INTR */
+routine dir_rmdir (
+	directory: file_t;
+	name: string_t);
+
+/* Remove non-directory */
+/* INTR */
+routine dir_unlink (
+	directory: file_t;
+	name: string_t);
+ 
+/* Create hard link */ 
+/* If oldfile and newdirectory are not implemented by the same
+filesystem, POSIX_EXDEV should be returned.  If the two filesystems,
+however can inter-operate and guarantee the appropriate Posix
+semantics, they can communicate by a private protocol and allow hard
+links between them.  */
+/* INTR */
+routine dir_link (
+	oldfile: file_t;
+	newdirectory: file_t;
+	newname: string_t);
+
+/* Rename file -- comments similar to those for dir_link apply here
+   about POSIX_EXDEV. */
+/* INTR */
+routine dir_rename (
+	olddirectory: file_t;
+	oldname: string_t;
+	newdirectory: file_t;
+	newname: string_t);
+
+/* To get or set the translator currently running on a file, use
+   file_set_translator, file_get_translator, or
+   file_get_translator_cntl on a port gotten with the
+   FS_LOOKUP_NOTRANS flag to dir_pathtrans.  You can send these RPCs
+   to a port to a translated node (looked up without
+   FS_LOOKUP_NOTRANS) to stack a new translator on top of the existing
+   one.  */
+
+/* Set a translator for future lookups to a file.  Any existing
+   translator is sent an fsys_goaway message with the flags coming
+   from oldtrans_flags.  Only if the old translator goes away will
+   this call succeed.  If existing is not MACH_PORT_NULL, then there
+   is already a translator for this file, and it should be used, with
+   the program specified by NAME to be used only if the EXISTING port
+   dies.
+
+   Some filesystems understand some translators directly and
+   short-circuit the creation of the translator by the normal process.
+   To prevent this optimization, set FS_TRANS_FORCE.  */
+/* INTR */
+routine file_set_translator (
+	file: file_t;
+	flags: int;
+	oldtrans_flags: int;
+	translator: data_t;
+	existing: mach_port_make_send_t);
+
+/* Return the stored permanent translator for this file.  */
+/* INTR */
+routine file_get_translator (
+	file: file_t;
+	out translator: data_t);
+
+/* Return the translator control port to the
+   active translator (if any) for this file.  */
+/* INTR */
+routine file_get_translator_cntl (
+	file: file_t;
+	out translator_cntl: fsys_t);
