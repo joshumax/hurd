@@ -21,8 +21,9 @@ Cambridge, MA 02139, USA.  */
 #include <cthreads.h>
 #include "cthread_internals.h"
 
+/* Just like condition_wait, but cancellable.  Returns true if cancelled.  */
 int
-hurd_condition_wait_cancel (condition_t c, mutex_t m)
+hurd_condition_wait (condition_t c, mutex_t m)
 {
   /* This function will be called by hurd_thread_cancel while we are blocked
      in the condition_wait.  We wake up all threads blocked on C,
