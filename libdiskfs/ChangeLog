@@ -1,3 +1,8 @@
+Mon Aug 12 15:54:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (_print_version): Print the edit version too if
+	it's non-zero.
+
 Thu Aug  8 18:18:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* readonly.c: Include <error.h>.
