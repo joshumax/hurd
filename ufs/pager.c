@@ -358,16 +358,18 @@ pager_report_extent (struct user_pager_info *pager,
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  assert (upi->type == FILE_DATA);
-  spin_lock (&node2pagelock);
-  upi->np->dn->fileinfo = 0;
-  spin_unlock (&node2pagelock);
-  diskfs_nrele_light (upi->np);
-  spin_lock (&pagerlistlock);
-  *upi->prevp = upi->next;
-  if (upi->next)
-    upi->next->prevp = upi->prevp;
-  spin_unlock (&pagerlistlock);
+  if (upi->type == FILE_DATA)
+    {
+      spin_lock (&node2pagelock);
+      upi->np->dn->fileinfo = 0;
+      spin_unlock (&node2pagelock);
+      diskfs_nrele_light (upi->np);
+      spin_lock (&pagerlistlock);
+      *upi->prevp = upi->next;
+      if (upi->next)
+	upi->next->prevp = upi->prevp;
+      spin_unlock (&pagerlistlock);
+    }
   free (upi);
 }
 
