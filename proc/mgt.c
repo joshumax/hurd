@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -42,29 +42,34 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Create a new id structure with the given genuine uids and gids. */
 static inline struct ids *
-make_ids (const uid_t *uids, size_t nuids, const uid_t *gids, size_t ngids)
+make_ids (const uid_t *uids, size_t nuids)
 {
   struct ids *i;
 
-  i = malloc (sizeof (struct ids));
+  i = malloc (sizeof (struct ids) + sizeof (uid_t) * nuids);;
+  if (! i)
+    return NULL;
+
   i->i_nuids = nuids;
-  i->i_ngids = ngids;
-  i->i_uids = malloc (sizeof (uid_t) * nuids);
-  i->i_gids = malloc (sizeof (uid_t) * ngids);
   i->i_refcnt = 1;
 
-  memcpy (i->i_uids, uids, sizeof (uid_t) * nuids);
-  memcpy (i->i_gids, gids, sizeof (uid_t) * ngids);
+  memcpy (&i->i_uids, uids, sizeof (uid_t) * nuids);
   return i;
+}
+
+static inline void
+ids_ref (struct ids *i)
+{
+  i->i_refcnt ++;
 }
 
 /* Free an id structure. */
 static inline void
-free_ids (struct ids *i)
+ids_rele (struct ids *i)
 {
-  free (i->i_uids);
-  free (i->i_gids);
-  free (i);
+  i->i_refcnt --;
+  if (i->i_refcnt == 0)
+    free (i);
 }
 
 /* Tell if process P has uid UID, or has root.  */
@@ -78,8 +83,7 @@ check_uid (struct proc *p, uid_t uid)
   return 0;
 }
 
-
-/* Implement proc_reathenticate as described in <hurd/proc.defs>. */
+/* Implement proc_reathenticate as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 {
@@ -96,9 +100,10 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   gen_gids = ggbuf;
   aux_gids = agbuf;
 
-  ngen_uids = naux_uids = 50;
-  ngen_gids = naux_gids = 50;
-
+  ngen_uids = sizeof (gubuf) / sizeof (uid_t);
+  naux_uids = sizeof (aubuf) / sizeof (uid_t);
+  ngen_gids = sizeof (ggbuf) / sizeof (uid_t);
+  naux_gids = sizeof (agbuf) / sizeof (uid_t);
 
   err = auth_server_authenticate (authserver,
 				  rendport, MACH_MSG_TYPE_COPY_SEND,
@@ -111,9 +116,10 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
     return err;
   mach_port_deallocate (mach_task_self (), rendport);
 
-  if (!--p->p_id->i_refcnt)
-    free_ids (p->p_id);
-  p->p_id = make_ids (gen_uids, ngen_uids, gen_gids, ngen_gids);
+  ids_rele (p->p_id);
+  p->p_id = make_ids (gen_uids, ngen_uids);
+  if (! p->p_id)
+    err = ENOMEM;
 
   if (gen_uids != gubuf)
     munmap (gen_uids, ngen_uids * sizeof (uid_t));
@@ -124,19 +130,20 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   if (aux_gids != agbuf)
     munmap (aux_gids, naux_gids * sizeof (uid_t));
 
-  return 0;
+  return err;
 }
 
-/* Implement proc_child as described in <hurd/proc.defs>. */
+/* Implement proc_child as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_child (struct proc *parentp,
 	      task_t childt)
 {
-  struct proc *childp = task_find (childt);
+  struct proc *childp;
 
   if (!parentp)
     return EOPNOTSUPP;
 
+  childp = task_find (childt);
   if (!childp)
     return ESRCH;
 
@@ -157,10 +164,9 @@ S_proc_child (struct proc *parentp,
   childp->p_owner = parentp->p_owner;
   childp->p_noowner = parentp->p_noowner;
 
-  if (!--childp->p_id->i_refcnt)
-    free_ids (childp->p_id);
+  ids_rele (childp->p_id);
+  ids_ref (parentp->p_id);
   childp->p_id = parentp->p_id;
-  childp->p_id->i_refcnt++;
 
   /* Process hierarchy.  Remove from our current location
      and place us under our new parent.  Sanity check to make sure
@@ -194,16 +200,17 @@ S_proc_child (struct proc *parentp,
   return 0;
 }
 
-/* Implement proc_reassign as described in <hurd/proc.defs>. */
+/* Implement proc_reassign as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_reassign (struct proc *p,
 		 task_t newt)
 {
-  struct proc *stubp = task_find (newt);
+  struct proc *stubp;
 
   if (!p)
     return EOPNOTSUPP;
 
+  stubp = task_find (newt);
   if (!stubp)
     return ESRCH;
 
@@ -218,7 +225,7 @@ S_proc_reassign (struct proc *p,
   mach_port_destroy (mach_task_self (), p->p_task);
   p->p_task = stubp->p_task;
 
-  /* For security, we need use the request port from STUBP */
+  /* For security, we need to use the request port from STUBP */
   ports_transfer_right (p, stubp);
 
   /* Enqueued messages might refer to the old task port, so
@@ -245,7 +252,7 @@ S_proc_reassign (struct proc *p,
   return 0;
 }
 
-/* Implement proc_setowner as described in <hurd/proc.defs>. */
+/* Implement proc_setowner as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,
 		 uid_t owner,
@@ -268,7 +275,7 @@ S_proc_setowner (struct proc *p,
   return 0;
 }
 
-/* Implement proc_getpids as described in <hurd/proc.defs>. */
+/* Implement proc_getpids as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getpids (struct proc *p,
 		pid_t *pid,
@@ -283,7 +290,7 @@ S_proc_getpids (struct proc *p,
   return 0;
 }
 
-/* Implement proc_set_arg_locations as described in <hurd/proc.defs>. */
+/* Implement proc_set_arg_locations as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_set_arg_locations (struct proc *p,
 			  vm_address_t argv,
@@ -296,7 +303,7 @@ S_proc_set_arg_locations (struct proc *p,
   return 0;
 }
 
-/* Implement proc_get_arg_locations as described in <hurd/proc.defs>. */
+/* Implement proc_get_arg_locations as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_get_arg_locations (struct proc *p,
 			  vm_address_t *argv,
@@ -307,13 +314,14 @@ S_proc_get_arg_locations (struct proc *p,
   return 0;
 }
 
-/* Implement proc_dostop as described in <hurd/proc.defs>. */
+/* Implement proc_dostop as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_dostop (struct proc *p,
 	       thread_t contthread)
 {
   thread_t threadbuf[2], *threads = threadbuf;
-  unsigned int nthreads = 2, i;
+  int nthreads = sizeof (threadbuf) / sizeof (thread_t);
+  int i;
   error_t err;
 
   if (!p)
@@ -328,7 +336,7 @@ S_proc_dostop (struct proc *p,
   for (i = 0; i < nthreads; i++)
     {
       if (threads[i] != contthread)
-	err = thread_suspend (threads[i]);
+	thread_suspend (threads[i]);
       mach_port_deallocate (mach_task_self (), threads[i]);
     }
   if (threads != threadbuf)
@@ -359,7 +367,7 @@ S_proc_handle_exceptions (struct proc *p,
 			  mach_msg_type_number_t statecnt)
 {
   struct exc *e;
-    error_t err;
+  error_t err;
 
   /* No need to check P here; we don't use it. */
 
@@ -372,7 +380,7 @@ S_proc_handle_exceptions (struct proc *p,
   e->forwardport = forwardport;
   e->flavor = flavor;
   e->statecnt = statecnt;
-  bcopy (new_state, e->thread_state, statecnt * sizeof (natural_t));
+  memcpy (e->thread_state, new_state, statecnt * sizeof (natural_t));
   ports_port_deref (e);
   return 0;
 }
@@ -429,12 +437,12 @@ S_proc_exception_raise (mach_port_t excport,
       /* FALLTHROUGH */
 
     case MACH_SEND_NOTIFY_IN_PROGRESS:
-      /* The port's queue is full, meaning the thread didn't receive
+      /* The port's queue is full; this means the thread didn't receive
 	 the exception message we forwarded last time it faulted.
 	 Declare that signal thread hopeless and the task crashed.  */
 
       /* Translate the exception code into a signal number
-	 and mark the process has dying that way.  */
+	 and mark the process as having died that way.  */
       hsd.exc = exception;
       hsd.exc_code = code;
       hsd.exc_subcode = subcode;
@@ -443,8 +451,8 @@ S_proc_exception_raise (mach_port_t excport,
       p->p_status = W_EXITCODE (0, signo);
       p->p_sigcode = hsd.code;
 
-      /* Nuke the task; we will get a notification message and report it
-	 died with SIGNO.  */
+      /* Nuke the task; we will get a notification message and report that
+	 it died with SIGNO.  */
       task_terminate (task);
       ports_port_deref (e);
 
@@ -478,7 +486,7 @@ S_proc_exception_raise (mach_port_t excport,
 
 }
 
-/* Implement proc_getallpids as described in <hurd/proc.defs>. */
+/* Implement proc_getallpids as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getallpids (struct proc *p,
 		   pid_t **pids,
@@ -504,8 +512,12 @@ S_proc_getallpids (struct proc *p,
   prociterate (count_up, &nprocs);
 
   if (nprocs > *pidslen)
-    *pids = mmap (0, nprocs * sizeof (pid_t), PROT_READ|PROT_WRITE,
-		  MAP_ANON, 0, 0);
+    {
+      *pids = mmap (0, nprocs * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		    MAP_ANON, 0, 0);
+      if (*pids == MAP_FAILED)
+        return ENOMEM;
+    }
 
   loc = *pids;
   prociterate (store_pid, &loc);
@@ -520,13 +532,16 @@ S_proc_getallpids (struct proc *p,
 struct proc *
 allocate_proc (task_t task)
 {
+  error_t err;
   struct proc *p;
 
   /* Pid 0 is us; pid 1 is init.  We handle those here specially;
      all other processes inherit from init here (though proc_child
      will move them to their actual parent usually).  */
 
-  ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
+  err = ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
+  if (err)
+    return NULL;
 
   p->p_task = task;
   p->p_msgport = MACH_PORT_NULL;
@@ -558,8 +573,10 @@ create_startup_proc (void)
 {
   static const uid_t zero;
   struct proc *p;
+  const char *rootsname = "root";
 
   p = allocate_proc (MACH_PORT_NULL);
+  assert (p);
 
   p->p_pid = 1;
 
@@ -572,12 +589,15 @@ create_startup_proc (void)
   p->p_deadmsg = 1;		/* Force initial "re-"fetch of msgport.  */
 
   p->p_noowner = 0;
-  p->p_id = make_ids (&zero, 1, &zero, 1);
+  p->p_id = make_ids (&zero, 1);
+  assert (p->p_id);
 
   p->p_loginleader = 1;
-  p->p_login = malloc (sizeof (struct login) + 5);
+  p->p_login = malloc (sizeof (struct login) + strlen (rootsname) + 1);
+  assert (p->p_login);
+
   p->p_login->l_refcnt = 1;
-  strcpy (p->p_login->l_name, "root");
+  strcpy (p->p_login->l_name, rootsname);
 
   boot_setsid (p);
 
@@ -611,19 +631,20 @@ complete_proc (struct proc *p, pid_t pid)
   /* Because these have a reference count of one before starting,
      they can never be freed, so we're safe. */
   static struct login *nulllogin;
-  static struct ids nullids = {0, 0, 0, 0, 1};
+  static struct ids nullids = { i_refcnt : 1, i_nuids : 0};
+  const char nullsname [] = "<none>";
 
   if (!nulllogin)
     {
-      nulllogin = malloc (sizeof (struct login) + 7);
+      nulllogin = malloc (sizeof (struct login) + sizeof (nullsname) + 1);
       nulllogin->l_refcnt = 1;
-      strcpy (nulllogin->l_name, "<none>");
+      strcpy (nulllogin->l_name, nullsname);
     }
 
   p->p_pid = pid;
 
+  ids_ref (&nullids);
   p->p_id = &nullids;
-  p->p_id->i_refcnt++;
 
   p->p_login = nulllogin;
   p->p_login->l_refcnt++;
@@ -655,8 +676,11 @@ complete_proc (struct proc *p, pid_t pid)
 static struct proc *
 new_proc (task_t task)
 {
-  struct proc *p = allocate_proc (task);
-  complete_proc (p, genpid ());
+  struct proc *p;
+  
+  p = allocate_proc (task);
+  if (p)
+    complete_proc (p, genpid ());
   return p;
 }
 
@@ -682,20 +706,19 @@ process_has_exited (struct proc *p)
 
   prociterate ((void (*) (struct proc *, void *))check_message_dying, p);
 
-  /* Nuke external send rights and the (possible) associated reference */
+  /* Nuke external send rights and the (possible) associated reference.  */
   ports_destroy_right (p);
 
   if (!--p->p_login->l_refcnt)
     free (p->p_login);
 
-  if (!--p->p_id->i_refcnt)
-    free_ids (p->p_id);
+  ids_rele (p->p_id);
 
   /* Reparent our children to init by attaching the head and tail
-     of our list onto init's. */
+     of our list onto init's.  */
   if (p->p_ochild)
     {
-      struct proc *tp;		/* will point to the last one */
+      struct proc *tp;		/* will point to the last one.  */
       int isdead = 0;
 
       /* first tell them their parent is changing */
@@ -715,7 +738,7 @@ process_has_exited (struct proc *p)
 				!tp->p_pgrp->pg_orphcnt);
       tp->p_parent = startup_proc;
 
-      /* And now nappend the lists. */
+      /* And now append the lists. */
       tp->p_sib = startup_proc->p_ochild;
       if (tp->p_sib)
 	tp->p_sib->p_prevsib = &tp->p_sib;
