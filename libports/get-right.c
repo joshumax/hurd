@@ -29,7 +29,13 @@ ports_get_right (void *port)
   mach_port_t foo;
   
   mutex_lock (&_ports_lock);
-  
+
+  if (pi->port_right == MACH_PORT_NULL)
+    {
+      mutex_unlock (&_ports_lock);
+      return MACH_PORT_NULL;
+    }
+      
   pi->mscount++;
   if ((pi->flags & PORT_HAS_SENDRIGHTS) == 0)
     {
