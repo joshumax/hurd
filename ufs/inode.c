@@ -594,8 +594,9 @@ diskfs_shutdown_soft_ports ()
 error_t
 diskfs_S_file_get_storage_info (struct protid *cred,
 				int *class,
-				int **addresses,
+				off_t **addresses,
 				u_int *naddresses,
+				size_t *block_size,
 				char *storage_name,
 				mach_port_t *storage_port,
 				mach_msg_type_name_t *storage_port_type,
@@ -677,7 +678,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   diskfs_end_catch_exception ();
   
   *class = STORAGE_DEVICE;
-  
+  *block_size = DEV_BSIZE;
+
   strcpy (storage_name, ufs_device_name);
   
   if (diskfs_isuid (0, cred))
