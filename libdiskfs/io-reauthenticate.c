@@ -28,6 +28,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
+  mach_port_t newright;
 
   if (cred == 0)
     return EOPNOTSUPP;
@@ -51,20 +52,23 @@ diskfs_S_io_reauthenticate (struct protid *cred,
       return err;
     }
 
+  newright = ports_get_right (newcred);
+  err = mach_port_insert_right (mach_task_self (), newright, newright,
+				MACH_MSG_TYPE_MAKE_SEND);
+  assert_perror (err);
   do
-    {
-      err = auth_server_authenticate (diskfs_auth_server_port,
-				      rend_port,
-				      MACH_MSG_TYPE_COPY_SEND,
-				      ports_get_right (newcred),
-				      MACH_MSG_TYPE_MAKE_SEND,
-				      &gen_uids, &genuidlen,
-				      &aux_uids, &auxuidlen,
-				      &gen_gids, &gengidlen,
-				      &aux_gids, &auxgidlen);
-    }
+    err = auth_server_authenticate (diskfs_auth_server_port,
+				    rend_port,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    newright,
+				    MACH_MSG_TYPE_COPY_SEND,
+				    &gen_uids, &genuidlen,
+				    &aux_uids, &auxuidlen,
+				    &gen_gids, &gengidlen,
+				    &aux_gids, &auxgidlen);
   while (err == EINTR);
   mach_port_deallocate (mach_task_self (), rend_port);
+  mach_port_deallocate (mach_task_self (), newright);
     
   if (err)
     diskfs_finish_protid (newcred, 0, 0, 0, 0);
