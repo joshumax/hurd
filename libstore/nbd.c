@@ -165,8 +165,8 @@ nbd_write (struct store *store,
 
 static error_t
 nbd_read (struct store *store,
-	  store_offset_t addr, size_t index, size_t amount, void **buf,
-	  size_t *len)
+	  store_offset_t addr, size_t index, size_t amount,
+	  void **buf, size_t *len)
 {
   struct nbd_request req =
   {
@@ -174,25 +174,98 @@ nbd_read (struct store *store,
     type: htonl (0),		/* READ */
   };
   error_t err;
-  mach_msg_type_number_t cc;
+  size_t ofs, chunk;
+  char *databuf, *piecebuf;
+  size_t databuflen, piecelen;
 
-  if (amount > NBD_IO_MAX)
-    amount = NBD_IO_MAX;
+  /* Send a request for the largest possible piece of remaining data and
+     read the first piece of its reply into PIECEBUF, PIECELEN.  The amount
+     requested can be found in CHUNK.  */
+  inline error_t request_chunk (char **buf, size_t *len)
+    {
+      mach_msg_type_number_t cc;
+
+      chunk = (amount - ofs) < NBD_IO_MAX ? (amount - ofs) : NBD_IO_MAX;
+
+      req.from = htonll (addr);
+      req.len = htonl (chunk);
+
+      /* Advance ADDR immediately, so it always points past what we've
+	 already requested.  */
+      addr += chunk;
+
+      return (io_write (store->port, (char *) &req, sizeof req, -1, &cc) ?
+	      : cc != sizeof req ? EIO
+	      : read_reply (store, req.handle) ?
+	      : io_read (store->port, buf, len, (off_t) -1, chunk));
+    }
 
   addr <<= store->log2_block_size;
 
-  req.from = htonll (addr);
-  req.len = htonl (amount);
-
-  err = io_write (store->port, (char *) &req, sizeof req, -1, &cc);
+  /* Read the first piece, which can go directly into the caller's buffer.  */
+  databuf = *buf;
+  databuflen = *len;
+  err = request_chunk (&databuf, &piecelen);
   if (err)
     return err;
-  if (cc != sizeof req)
-    return EIO;
+  if (databuflen >= amount)
+    {
+      /* That got it all.  We're done.  */
+      *buf = databuf;
+      *len = piecelen;
+      return 0;
+    }
 
-  err = read_reply (store, req.handle);
-  if (err == 0)
-    err = io_read (store->port, (char **) buf, len, (off_t) -1, amount);
+  /* We haven't read the entire amount yet.  */
+  ofs = 0;
+  do
+    {
+      /* Account for what we just read.  */
+      ofs += piecelen;
+      chunk -= piecelen;
+      if (ofs == amount)
+	{
+	  /* That got it all.  We're done.  */
+	  *buf = databuf;
+	  *len = ofs;
+	  return 0;
+	}
+
+      /* Now we'll read another piece of the data, hopefully
+	 into the latter part of the existing buffer.  */
+      piecebuf = databuf + ofs;
+      piecelen = databuflen - ofs;
+
+      if (chunk > 0)
+	/* We haven't finishing reading the last chunk we requested.  */
+	err = io_read (store->port, &piecebuf, &piecelen,
+		       (off_t) -1, chunk);
+      else
+	/* Request the next chunk from the server.  */
+	err = request_chunk (&piecebuf, &piecelen);
+
+      if (!err && piecebuf != databuf + ofs)
+	{
+	  /* Now we have two discontiguous pieces of the buffer.  */
+	  size_t newbuflen = round_page (databuflen + piecelen);
+	  char *newbuf = mmap (0, newbuflen,
+			       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (newbuf == MAP_FAILED)
+	    {
+	      err = errno;
+	      break;
+	    }
+	  memcpy (newbuf, databuf, ofs);
+	  memcpy (newbuf + ofs, piecebuf, piecelen);
+	  if (databuf != *buf)
+	    munmap (databuf, databuflen);
+	  databuf = newbuf;
+	  databuflen = newbuflen;
+	}
+    } while (! err);
+
+  if (databuf != *buf)
+    munmap (databuf, databuflen);
   return err;
 }
 
