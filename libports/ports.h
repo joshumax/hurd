@@ -190,6 +190,11 @@ void ports_reallocate_from_external (void *port, mach_port_t receive);
    may not be used. */
 void ports_destroy_right (void *port);
 
+/* Return the receive right currently associated with PORT.  The effects
+   on PORT are the same as in ports_destroy_right, except that the receive
+   right itself is not affected. */
+mach_port_t ports_claim_right (void *port);
+
 /* Return the name of the receive right associated with PORT.  The user
    is responsible for creating an ordinary  send right from this name.  */
 mach_port_t ports_get_right (void *port);
