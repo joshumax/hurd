@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -123,11 +123,12 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
    mapping; they will set none of the ports and return an error.  Such
    objects can still be accessed by io_read and io_write.  */
 kern_return_t
-trivfs_S_io_map(struct trivfs_protid *cred,
-		memory_object_t *rdobj,
-		mach_msg_type_name_t *rdtype,
-		memory_object_t *wrobj,
-		mach_msg_type_name_t *wrtype)
+trivfs_S_io_map (struct trivfs_protid *cred,
+		 mach_port_t reply, mach_msg_type_name_t replytype,
+		 memory_object_t *rdobj,
+		 mach_msg_type_name_t *rdtype,
+		 memory_object_t *wrobj,
+		 mach_msg_type_name_t *wrtype)
 {
   return EINVAL;		/* XXX should work! */
 }
@@ -138,9 +139,9 @@ trivfs_S_io_map(struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_read(struct trivfs_protid *cred,
 		 mach_port_t reply, mach_msg_type_name_t replytype,
-		 vm_address_t *data,
+		 char **data,
 		 mach_msg_type_number_t *datalen,
-		 off_t offs,
+		 loff_t offs,
 		 mach_msg_type_number_t amt)
 {
   if (!cred)
@@ -191,7 +192,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t replytype,
-		    int *type, int *tag)
+		    int *type)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -213,8 +214,8 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t replytype,
-		   vm_address_t data, mach_msg_type_number_t datalen,
-		   off_t offs, mach_msg_type_number_t *amt)
+		   char *data, mach_msg_type_number_t datalen,
+		   loff_t offs, mach_msg_type_number_t *amt)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -226,7 +227,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
 /* Truncate file.  */
 kern_return_t
-trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t replytype,
+			loff_t size)
 {
   return 0;
 }
