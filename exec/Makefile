@@ -23,7 +23,8 @@ VPATH=.:../machine
 
 CFLAGS := $(CFLAGS) -Dinline= -DA_OUT_H=\"./a.out.h\"
 
-DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c a.out.h
+DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c a.out.h \
+		ChangeLog
 OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
 
 all: exec
