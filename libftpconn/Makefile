@@ -32,7 +32,3 @@ OBJS = $(SRCS:.c=.o)
 CPPFLAGS += -DHAVE_HURD_HURD_TYPES_H -DHAVE_STAT_ST_AUTHOR
 
 include ../Makeconf
-
-ftpdir: ftpdir.o libftpconn.a -lshouldbeinlibc
-ftpcp: ftpcp.o libftpconn.a -lshouldbeinlibc
-
