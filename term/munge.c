@@ -594,7 +594,7 @@ alldone:
   /* Restart output */
   if ((iflag & IXANY) || (CCEQ (cc[VSTART], c)))
     termflags &= ~USER_OUTPUT_SUSP;
-  start_output ();
+  (*bottom->start_output) ();
 
   return flush;
 }
@@ -678,7 +678,7 @@ void
 drop_output ()
 {
   clear_queue (outputq);
-  abandon_physical_output ();
+  (*bottom->abandon_physical_output) ();
 }
 
 error_t
@@ -686,7 +686,7 @@ drain_output ()
 {
   int cancel = 0;
   
-  while ((qsize (outputq) || pending_output_size ())
+  while ((qsize (outputq) || (*bottom->pending_output_size) ())
 	 && (!(termflags & NO_CARRIER) || (termstate.c_cflag & CLOCAL))
 	 && !cancel)
     cancel = hurd_condition_wait (outputq->wait, &global_lock);
