@@ -1,3 +1,8 @@
+Wed Jun 11 14:17:25 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* inetd.conf, syslog.conf: New files.
+	* Makefile (SYSCONFFILES): Add inetd.conf and syslog.conf.
+
 Tue Jun 10 18:41:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (install): Repair typo.

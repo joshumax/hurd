@@ -26,7 +26,7 @@ makemode := misc
 # If override_conf is set to `t' then install even on top of existing
 # files.
 SYSCONFFILES = protocols services shells motd ttys hostname fstab passwd \
-	group resolv.conf
+	group resolv.conf inetd.conf syslog.conf
 installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
