@@ -11,7 +11,7 @@ Tue Jun  9 13:50:09 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 	malloc_fork_prepare since we are no longer providing our own
 	malloc in this library.
 	(cthread_fork_parent): Likewise, for malloc_fork_parent.
-	(cthread_fork_child): Likewize, for malloc_fork_child.
+	(cthread_fork_child): Likewise, for malloc_fork_child.
 
 Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
