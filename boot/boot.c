@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -1341,12 +1341,13 @@ ds_device_get_status (device_t device,
     return D_INVALID_OPERATION;
   else if (device == pseudo_root)
     if (flavor == DEV_GET_SIZE)
-      if (*statuslen != DEV_GET_SIZE_COUNT)
+      if (*statuslen < DEV_GET_SIZE_COUNT)
 	return D_INVALID_SIZE;
       else
 	{
 	  status[DEV_GET_SIZE_DEVICE_SIZE] = root_store->size;
 	  status[DEV_GET_SIZE_RECORD_SIZE] = root_store->block_size;
+	  *statuslen = DEV_GET_SIZE_COUNT;
 	  return D_SUCCESS;
 	}
     else
