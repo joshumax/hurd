@@ -777,7 +777,7 @@ S_msg_clear_some_exec_flags (mach_port_t process, mach_port_t refport,
 { return EBUSY; }
 error_t
 S_msg_report_wait (mach_port_t process, thread_t thread,
-		   string_t desc, int *rpc)
+		   string_t desc, mach_msg_id_t *rpc)
 { return EBUSY; }
 error_t
 S_msg_describe_ports (mach_port_t msgport, mach_port_t refport,

@@ -1,6 +1,6 @@
 /* A translator for handling stream devices.
 
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001,02 Free Software Foundation, Inc.
 
    Written by OKUJI Yoshinori <okuji@kuicr.kyoto-u.ac.jp>
 
@@ -801,7 +801,7 @@ dev_open (const char *name, dev_mode_t mode)
 kern_return_t
 device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
 {
-  size_t sizes[DEV_GET_SIZE_COUNT];
+  int sizes[DEV_GET_SIZE_COUNT];
   size_t sizes_len = DEV_GET_SIZE_COUNT;
   int amount;
 
