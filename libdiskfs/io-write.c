@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 95, 96 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,7 +24,7 @@ kern_return_t
 diskfs_S_io_write (struct protid *cred,
 		   char *data,
 		   mach_msg_type_number_t datalen,
-		   off_t offset, 
+		   off_t offset,
 		   mach_msg_type_number_t *amt)
 {
   struct node *np;
@@ -33,7 +33,7 @@ diskfs_S_io_write (struct protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
   if (!(cred->po->openstat & O_WRITE))
     return EBADF;
@@ -43,14 +43,14 @@ diskfs_S_io_write (struct protid *cred,
   assert (!S_ISDIR(np->dn_stat.st_mode));
 
   ioserver_get_conch (&np->conch);
-  
+
   if (off == -1)
     {
       if (cred->po->openstat & O_APPEND)
 	cred->po->filepointer = np->dn_stat.st_size;
       off = cred->po->filepointer;
     }
-  
+
   err = 0;
   while (off + (off_t) datalen > np->allocsize)
     {
@@ -60,7 +60,7 @@ diskfs_S_io_write (struct protid *cred,
       if (err)
 	goto out;
     }
-      
+
   if (off + (off_t) datalen > np->dn_stat.st_size)
     {
       np->dn_stat.st_size = off + datalen;
@@ -70,8 +70,12 @@ diskfs_S_io_write (struct protid *cred,
     }
 
   *amt = datalen;
-  err = _diskfs_rdwr_internal (np, data, off, datalen, 1, 0);
-  
+  err = _diskfs_rdwr_internal (np, data, off, amt, 1, 0);
+  if (*amt)
+    /* If we wrote any, just return a short write count with no error;
+       the next write attempt will hit the error again and diagnose it.  */
+    err = 0;
+
   if (!err && offset == -1)
     cred->po->filepointer += *amt;
 
