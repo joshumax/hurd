@@ -1,3 +1,8 @@
+2000-05-20  Mark Kettenis  <kettenis@gnu.org>
+
+	* configure.in: Add check for libio.  Only enable versioning if we
+	found libio.
+
 2000-03-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* configure.in (VERSIONING): New check for ld --version-script.
