@@ -22,7 +22,7 @@ dir := nfs
 makemode := server
 
 target = nfs
-LCLHDRS = nfs.h rpc.h
+LCLHDRS = nfs.h 
 SRCS = ops.c rpc.c mount.c cred.c nfs.c cache.c consts.c main.c
 OBJS = $(subst .c,.o,$(SRCS))
 
