@@ -345,7 +345,6 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	  /* The server RPC has set the port and signalled U.wakeup.  */
 	  *newport = u.passthrough;
 	  *newporttype = u.passthrough_type;
-	  mach_port_deallocate (mach_task_self (), ignored);
 	  mach_port_deallocate (mach_task_self (), rendezvous);
 	}
       return err;
