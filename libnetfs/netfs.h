@@ -1,6 +1,6 @@
-/* 
+/*
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2000 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2000,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,7 +25,7 @@
 #include <assert.h>
 
 /* This library supports client-side network file system
-   implementations.  It is analogous to the diskfs library provided for 
+   implementations.  It is analogous to the diskfs library provided for
    disk-based filesystems.  */
 
 struct argp;
@@ -33,13 +33,13 @@ struct argp;
 struct protid
 {
   struct port_info pi;
-  
+
   /* User identification */
   struct iouser *user;
-  
+
   /* Object this refers to */
   struct peropen *po;
-  
+
   /* Shared memory I/O information. */
   memory_object_t shared_object;
   struct shared_io *mapped;
@@ -68,22 +68,22 @@ struct peropen
 struct node
 {
   struct node *next, **prevp;
-  
+
   /* Protocol specific stuff; defined by user.  */
   struct netnode *nn;
 
   /* The stat information for this particular node.  */
   struct stat nn_stat;
-  
+
   struct mutex lock;
-  
+
   /* The number of references to this node.  */
   int references;
-  
+
   mach_port_t sockaddr;
 
   int owner;
-  
+
   struct transbox transbox;
 
   struct lock_box userlock;
@@ -184,7 +184,7 @@ error_t netfs_attempt_syncfs (struct iouser *cred, int wait);
    name was not found, then return ENOENT.  On any error, clear *NP.
    (*NP, if found, should be locked and a reference to it generated.
    This call should unlock DIR no matter what.)  */
-error_t netfs_attempt_lookup (struct iouser *user, struct node *dir, 
+error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
 			      char *name, struct node **np);
 
 /* The user must define this function.  Delete NAME in DIR (which is
@@ -196,7 +196,7 @@ error_t netfs_attempt_unlink (struct iouser *user, struct node *dir,
    directory FROMDIR to TODIR. Note that neither of the specific nodes
    are locked.  */
 error_t netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-			      char *fromname, struct node *todir, 
+			      char *fromname, struct node *todir,
 			      char *toname, int excl);
 
 /* The user must define this function.  Attempt to create a new
@@ -207,7 +207,7 @@ error_t netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 
 /* The user must define this function.  Attempt to remove directory
    named NAME in DIR (which is locked) for USER.  */
-error_t netfs_attempt_rmdir (struct iouser *user, 
+error_t netfs_attempt_rmdir (struct iouser *user,
 			     struct node *dir, char *name);
 
 
@@ -309,7 +309,7 @@ error_t netfs_set_options (char *argz, size_t argz_len);
 /* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
    list of the arguments to this translator.  The default definition of this
    routine simply calls netfs_append_std_options.  */
-error_t netfs_append_args (char **argz, unsigned *argz_len);
+error_t netfs_append_args (char **argz, size_t *argz_len);
 
 /* If this is defined or set to a pointer to an argp structure, it will be
    used by the default netfs_set_options to handle runtime option parsing.
