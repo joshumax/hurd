@@ -58,12 +58,13 @@ See `tasks', the exported task list.
 *** Put user-defined fns into a callback struct passed to pager_create.
 *** Make libpager paging interface able to read/write multiple pages at once.
 *** Check all users of pager-create.c to make sure they DTRT when it returns
-    null.
+    null.  (requires changing libdiskfs to deal with null
+    returns from diskfs_get_filemap).
 
 ** libshouldbeinlibc:
 *** Merge contents of libshouldbeinlibc that belong there into libc.
    Rename the rest to libhurdutil or somesuch.
-*** argp: finde some way to flag certain long options as only matching
+*** argp: find some way to flag certain long options as only matching
    exactly (add this as OPT_EXACT); use this on the built in option
    --program-name. 
 *** Rewrite argp to do its own parsing.  Preferably, split up libc's
@@ -90,8 +91,8 @@ See `tasks', the exported task list.
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
     routines. 
 *** fsys_get_options should return the disk name.
-*** Add `author_tracks_uid' flag to struct node, and use it in places that modify
-    author/uid.  Initialized to 0.
+*** Add `author_tracks_uid' flag to struct node, and use it in places 
+    that modify author/uid.  Initialized to 0.
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications?
@@ -125,6 +126,7 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
+** zero (/dev/null) doesn't do access right; probably many in trans/ too.
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
@@ -138,7 +140,7 @@ See `tasks', the exported task list.
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
     IP addresses.
-*** Register a shutdown notification to close TCP channels.
+*** Diagnose why shutdown doesn't close TCP channels properly or reliably.
 *** select for read on a UDP socket seems never to return.
 
 ** nfs
@@ -182,8 +184,6 @@ See `tasks', the exported task list.
 ** crash
 *** Write core files.
 
-** init
-*** SIGHUP and SIGTERM don't seem to do the right thing.
 
 * Utilities
 ** Write a real mount program.
@@ -194,7 +194,8 @@ See `tasks', the exported task list.
 ** Fix bash to turn on interrupts around syscalls more generally,
     especially chdir.
 ** Make su work.
-** Bug: `hostname' command with no /etc/hostname hangs the system with disk light going.
+** Bug: `hostname' command with no /etc/hostname hangs the system 
+   with disk light going.
 ** talk doesn't work
 ** login: Make --retry work correctly when invoked via a suid shell
     script by other than root (it doesn't now if the script specifies
@@ -202,6 +203,7 @@ See `tasks', the exported task list.
     and child_lookup() doesn't supply more than fds 0-2).
 ** fsck should use (not-yet-added) fsys_get_options returned device instead 
    of /etc/fstab.
+** Write/port the various helpful mach info programs in UX (vminfo, etc).
 
 ** ps:
 *** ps should timeout quickly (one second?) on non-responsive message ports.
@@ -220,9 +222,10 @@ See `tasks', the exported task list.
 *** Implement V3 nfs.
 *** Implement nqnfs.
 *** Add Hurd-specific calls.
+*** writes don't seem to work properly
 
 ** fsck.ufs -- zero-length directories and attachment into lost+found still 
-   don't work. 
+   don't work; link counts seem to be mangled.
 
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from
@@ -231,7 +234,3 @@ See `tasks', the exported task list.
 ** Add a startup timestamp to tasks, and have some way of fetching it.
 
 
-* TODO for version 0.0:
-
-** Compile released libc.
-** Make the release version of SOURCES.
