@@ -712,7 +712,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   error_t err = 0;
   daddr_t blkno;
   unsigned datalen;
-  void *transloc;
+  const void *transloc;
 
   assert (sblock->s_creator_os == EXT2_OS_HURD);
 
@@ -726,10 +726,16 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
-  *namep = malloc (datalen);
-  if (!*namep)
-    err = ENOMEM;
-  bcopy (transloc + 2, *namep, datalen);
+  if (datalen > block_size)
+    err = EFTYPE;		/* ? */
+  else
+    {
+      *namep = malloc (datalen);
+      if (!*namep)
+	err = ENOMEM;
+      else
+	memcpy (*namep, transloc + 2, datalen);
+    }
 
   diskfs_end_catch_exception ();
 

@@ -602,7 +602,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   error_t err;
   daddr_t blkno;
   u_int datalen;
-  void *transloc;
+  const void *transloc;
 
   err = diskfs_catch_exception ();
   if (err)
@@ -613,8 +613,15 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   transloc = disk_image + fsaddr (sblock, blkno);
 
   datalen = *(u_int *)transloc;
-  *namep = malloc (datalen);
-  bcopy (transloc + sizeof (u_int), *namep, datalen);
+  if (datalen > sblock->fs_bsize)
+    err = EFTYPE;
+  else
+    {
+      *namep = malloc (datalen);
+      if (*namep == NULL)
+	err = ENOMEM;
+      memcpy (*namep, transloc + sizeof (u_int), datalen);
+    }
 
   diskfs_end_catch_exception ();
 
