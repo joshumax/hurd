@@ -20,7 +20,7 @@ makemode := library
 
 SRCS =	lock-acquire.c lock-init.c \
 	start-translator-long.c start-translator.c \
-	fetch-root.c transbox-init.c translated.c set-active.c fetch-control.c drop-transbox.c
+	fetch-root.c transbox-init.c set-active.c fetch-control.c drop-transbox.c
 
 OBJS = $(subst .c,.o,$(SRCS))
 
