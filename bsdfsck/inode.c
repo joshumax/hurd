@@ -33,14 +33,14 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)inode.c	8.4 (Berkeley) 4/18/94";*/
-static char *rcsid = "$Id: inode.c,v 1.1 1994/08/23 19:29:21 mib Exp $";
+static char *rcsid = "$Id: inode.c,v 1.2 1994/08/23 20:12:34 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 #ifndef SMALL
 #include <pwd.h>
 #endif
@@ -64,7 +64,7 @@ ckinode(dp, idesc)
 		idesc->id_fix = DONTKNOW;
 	idesc->id_entryno = 0;
 	idesc->id_filesize = dp->di_size;
-	mode = dp->di_mode & IFMT;
+	mode = DI_MODE(dp) & IFMT;
 	if (mode == IFBLK || mode == IFCHR || (mode == IFLNK &&
 	    (dp->di_size < sblock.fs_maxsymlinklen ||
 	     (sblock.fs_maxsymlinklen == 0 && dp->di_blocks == 0))))
@@ -382,7 +382,7 @@ clri(idesc, type, flag)
 	dp = ginode(idesc->id_number);
 	if (flag == 1) {
 		pwarn("%s %s", type,
-		    (dp->di_mode & IFMT) == IFDIR ? "DIR" : "FILE");
+		    (DI_MODE(dp) & IFMT) == IFDIR ? "DIR" : "FILE");
 		pinode(idesc->id_number);
 	}
 	if (preen || reply("CLEAR") == 1) {
@@ -441,7 +441,7 @@ pinode(ino)
 	else
 #endif
 		printf("%u ", (unsigned)dp->di_uid);
-	printf("MODE=%o\n", dp->di_mode);
+	printf("MODE=%o\n", DI_MODE(dp));
 	if (preen)
 		printf("%s: ", cdevname);
 	printf("SIZE=%qu ", dp->di_size);
@@ -514,7 +514,12 @@ allocino(request, type)
 		statemap[ino] = USTATE;
 		return (0);
 	}
+#if 0
 	dp->di_mode = type;
+#else
+	dp->di_modeh = (type & 0xffff0000) >> 16;
+	dp->di_model = (type & 0x0000ffff);
+#endif	
 	(void)time(&dp->di_atime.ts_sec);
 	dp->di_mtime = dp->di_ctime = dp->di_atime;
 	dp->di_size = sblock.fs_fsize;
