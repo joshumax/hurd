@@ -186,10 +186,15 @@ diskfs_S_file_set_translator (struct protid *cred,
 		      return error;
 		    }
 		}
-	      np->dn_stat.st_mode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
-	      diskfs_node_update (np, 1);
+	      newmode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
+	      error = validate_mode_change (np, newmode);
+	      if (!error)
+		{
+		  np->dn_stat.st_mode = newmode;
+		  diskfs_node_update (np, 1);
+		}
 	      mutex_unlock (&np->lock);
-	      return 0;
+	      return error;
 	    }
 	}
       error = diskfs_set_translator (np, passive, passivelen, cred);
