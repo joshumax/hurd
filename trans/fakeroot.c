@@ -210,6 +210,8 @@ real_from_fake_mode (mode_t mode)
 error_t
 netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 {
+  if ((mode & S_IFMT) == 0)
+    mode |= np->nn_stat.st_mode & S_IFMT;
   if ((mode & S_IFMT) != (np->nn_stat.st_mode & S_IFMT))
     return EOPNOTSUPP;
   if (((mode | (mode << 3) | (mode << 6))
