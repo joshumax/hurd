@@ -1,3 +1,7 @@
+Tue Sep 24 23:51:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (_print_version): Follow version string with newline.
+
 Thu Sep 19 17:59:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): Add store.
