@@ -32,7 +32,7 @@ store_std_leaf_allocate_encoding (const struct store *store,
 {
   enc->num_ports++;
   enc->num_ints += 6;
-  enc->num_offsets += store->num_runs;
+  enc->num_offsets += store->num_runs * 2;
   if (store->name)
     enc->data_len += strlen (store->name) + 1;
   enc->data_len += store->misc_len;
@@ -123,5 +123,28 @@ store_encode (const struct store *store, struct store_enc *enc)
   if (err)
     store_enc_dealloc (enc);
 
+  return err;
+}
+
+/* Encode STORE into the given return variables, suitably for returning from a
+   file_get_storage_info rpc.  */
+error_t
+store_return (const struct store *store,
+	      mach_port_t **ports, mach_msg_type_number_t *num_ports,
+	      int **ints, mach_msg_type_number_t *num_ints,
+	      off_t **offsets, mach_msg_type_number_t *num_offsets,
+	      char **data, mach_msg_type_number_t *data_len)
+{
+  error_t err;
+  struct store_enc enc;
+
+  store_enc_init (&enc, *ports, *num_ports, *ints, *num_ints,
+		  *offsets, *num_offsets, *data, *data_len);
+  err = store_encode (store, &enc);
+  if (err)
+    store_enc_dealloc (&enc);
+  else
+    store_enc_return (&enc, ports, num_ports, ints, num_ints,
+		      offsets, num_offsets, data, data_len);
   return err;
 }
