@@ -26,7 +26,7 @@ LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
 	tcp.c timer.c udp.c utils.c
 UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
 SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c \
-	io-ops.c socket-ops.c misc.c time.c
+	io-ops.c socket-ops.c misc.c time.c options.c
 MIGSRCS = ioServer.c socketServer.c startup_notifyServer.c
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
 LCLHDRS= config.h mapped-time.h mutations.h pfinet.h
@@ -39,7 +39,9 @@ FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	notifier.h param.h route.h sched.h skbuff.h socket.h sockios.h stat.h \
 	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
 
-pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a \
+	../libthreads/libthreads.a ../libports/libports.a \
+	../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 vpath %.c $(srcdir)/linux-inet
 
