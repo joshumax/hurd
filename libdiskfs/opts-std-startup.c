@@ -40,15 +40,6 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 static struct argp_option
 startup_options[] =
 {
-  {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
-  {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
-  {"writable", 'w', 0, 0, "Use normal read/write behavior"},
-  {"rdwr",     0,   0, OPTION_ALIAS | OPTION_HIDDEN},
-  {"sync",     's', "INTERVAL", OPTION_ARG_OPTIONAL,
-     "If INTERVAL is supplied, sync all data not actually written to disk"
-     " every INTERVAL seconds, otherwise operate in synchronous mode (the"
-     " default is to sync every 30 seconds)"},
-  {"nosync",  'n',  0, 0, "Don't automatically sync data to disk"},
   {"version", 'V'},
 
   {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
@@ -103,10 +94,15 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
   return 0;
 }
 
+/* Suck in the common arguments.  */
+static struct argp startup_common_argp =
+  { diskfs_common_options, parse_startup_opt };
+
 /* This may be used with argp_parse to parse standard diskfs startup
    options, possible chained onto the end of a user argp structure.  */
+static struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
 static struct argp startup_argp =
-  { startup_options, parse_startup_opt };
+  { startup_options, parse_startup_opt, 0, 0, startup_argp_parents };
 
 struct argp *diskfs_startup_argp = &startup_argp;
 
@@ -152,6 +148,6 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
 static struct argp *dev_startup_argp_parents[] = { &startup_argp, 0 };
 static struct argp dev_startup_argp =
   { dev_startup_options, parse_dev_startup_opt, "DEVICE", 0,
-      &dev_startup_argp_parents };
+      dev_startup_argp_parents };
 
 struct argp *diskfs_device_startup_argp = &dev_startup_argp;
