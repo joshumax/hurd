@@ -66,13 +66,17 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
       if (childcontrol == MACH_PORT_NULL)
 	{
-	  if (error = diskfs_start_translator (diskfs_root_node, 
-					       diskfs_dotdot_file))
+	  if (error = diskfs_start_translator (diskfs_root_node, _diskfs_dotdot_file))
 	    {
 	      mutex_unlock (&diskfs_root_node->lock);
 	      return error;
 	    }
+	  childcontrol = diskfs_root_node->translator.control;
 	}
+
+      mach_port_mod_refs (mach_task_self (), childcontrol,
+			  MACH_PORT_RIGHT_SEND, 1);
+
       mutex_unlock (&diskfs_root_node->lock);
       
       error = fsys_getroot (childcontrol, uids, nuids, gids, ngids,
@@ -81,13 +85,15 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	{
 	  /* The server has died; unrecord the translator port
 	     and repeat the check. */
-	  mach_port_deallocate (mach_task_self (), childcontrol);
 	  mutex_lock (&diskfs_root_node->lock);
-	  diskfs_root_node->translator.control = MACH_PORT_NULL;
+	  if (diskfs_root_node->translator.control == childcontrol)
+	    fshelp_translator_drop (&diskfs_root_node->translator);
+	  mach_port_deallocate (mach_task_self (), childcontrol);
+	  error = 0;
 	  goto repeat_transcheck;
 	}
 
-      if (!error && returned_port != MACH_PORT_NULL)
+      if (!error && *returned_port != MACH_PORT_NULL)
 	*returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
       else
 	*returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
@@ -124,7 +130,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       else
 	{
 	  *retry = FS_RETRY_REAUTH;
-	  *returned_port = diskfs_dotdot_file;
+	  *returned_port = _diskfs_dotdot_file;
 	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	  strcpy (retryname, pathbuf);
 	  return 0;
@@ -170,11 +176,9 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  /* XXX Shouldn't use _diskfs_dotdot_file here; that should be an arg. */
   *returned_port = (ports_get_right 
 		    (diskfs_make_protid
-		     (diskfs_make_peropen (diskfs_root_node, flags,
-					   _diskfs_dotdot_file),
+		     (diskfs_make_peropen (diskfs_root_node, flags, _diskfs_dotdot_file),
 		      uids, nuids, gids, ngids)));
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
 
