@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
-#include "fs.h"
 #include "dinode.h"
 #include <strings.h>
 #include <stdio.h>
@@ -273,6 +272,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		    }
 
 		  diblock = indir_block (indirs[2].bno);
+		  mark_indir_dirty (indirs[2].bno);
 		  
 		  /* Now we can allocate the single indirect block */
 		  
@@ -288,6 +288,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	    }
 	  
 	  siblock = indir_block (indirs[1].bno);
+	  mark_indir_dirty (np, indirs[1].bno);
 
 	  /* Now we can allocate the data block. */
 
@@ -341,65 +342,18 @@ pager_clear_user_data (struct user_pager_info *upi)
 
 
 
-/* Initialize the pager subsystem. */
+/* Create a the DISK pager, initializing DISKPAGER, and DISKPAGERPORT */
 void
-pager_init ()
+create_disk_pager ()
 {
-  struct user_pager_info *upi;
-  vm_address_t offset;
-  vm_size_t size;
-  error_t err;
-
-    /* firewalls: */
-  assert ((DEV_BSIZE % sizeof (struct dinode)) == 0);
-  assert ((__vm_page_size % DEV_BSIZE) == 0);
-  assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
-  assert ((sblock->fs_ipg % sblock->fs_inopb) == 0);
-  assert (__vm_page_size <= sblock->fs_bsize);
-
-  infsb_pcg = sblock->fs_ipg / sblock->fs_inopb;
-
-  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
-
-  upi = malloc (sizeof (struct user_pager_info));
-  upi->type = DINODE;
-  upi->np = 0;
-  upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  dinodepager = upi;
-  dinodeport = pager_get_port (upi->p);
-  mach_port_insert_right (mach_task_self (), dinodeport, dinodeport,
+  diskpager = malloc (sizeof (struct user_pager_info));
+  diskpager->type = DISK;
+  diskpager->np = 0;
+  diskpager->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+  diskpagerport = pager_get_port (upi->p);
+  mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
 			  MACH_MSG_TYPE_MAKE_SEND);
-  pager_report_extent (upi, &offset, &size);
-  err = vm_map (mach_task_self (), (vm_address_t *)&dinodes, size,
-		0, 1, dinodeport, offset, 0, VM_PROT_READ|VM_PROT_WRITE,
-		VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-  assert (!err);
-  diskfs_register_memory_fault_area (dinodepager->p, 0, dinodes, size);
-  
-  upi = malloc (sizeof (struct user_pager_info));
-  upi->type = CG;
-  upi->np = 0;
-  upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  cgpager = upi;
-  cgport = pager_get_port (upi->p);
-  mach_port_insert_right (mach_task_self (), cgport, cgport,
-			  MACH_MSG_TYPE_MAKE_SEND);
-  pager_report_extent (upi, &offset, &size);
-  err = vm_map (mach_task_self (), &cgs, size,
-		0, 1, cgport, offset, 0, VM_PROT_READ|VM_PROT_WRITE,
-		VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-  assert (!err);
-  diskfs_register_memory_fault_area (cgpager->p, 0, (void *)cgs, size);
-
-  upi = malloc (sizeof (struct user_pager_info));
-  upi->type = DINDIR;
-  upi->np = 0;
-  upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  dinpager = upi;
-  dinport = pager_get_port (upi->p);
-  mach_port_insert_right (mach_task_self (), dinport, dinport,
-			  MACH_MSG_TYPE_MAKE_SEND);
-}
+}  
 
 /* This syncs a single file (NP) to disk.  Wait for all I/O to complete
    if WAIT is set.  NP->lock must be held.  */
@@ -407,10 +361,18 @@ void
 diskfs_file_update (struct node *np,
 		    int wait)
 {
+  struct indir_dirty *d, *tmp;
+  
   if (np->dn->fileinfo)
     pager_sync (np->dn->fileinfo->p, wait);
 
-  /* XXX FIXME sync indirect blocks XXX */
+  for (d = np->dn->dirty; d; d = tmp)
+    {
+      sync_disk_blocks (d->bno, sblock->fs_bsize, wait);
+      tmp = d->next;
+      free (d);
+    }
+  np->dn->dirty = 0;
 
   diskfs_node_update (np, wait);
 }
@@ -486,23 +448,17 @@ diskfs_get_filemap_pager_struct (struct node *np)
 }
 
 /* Call function FUNC (which takes one argument, a pager) on each pager, with
-   all file pagers being processed before sindir pagers, and then the dindir,
-   dinode, and cg pagers (in that order).  Make the calls while holding
-   no locks.  */
+   all file pagers being processed before the disk pager.  Make the calls
+   while holding no locks. */
 static void
 pager_traverse (void (*func)(struct user_pager_info *))
 {
   struct user_pager_info *p;
   struct item {struct item *next; struct user_pager_info *p;} *list = 0;
   struct item *i;
-  int looped;
   
-  /* Putting SINDIR's on first means they will be removed last; after
-  the FILE_DATA pagers.  */
   spin_lock (&pagerlistlock);
-  for (p = sinlist, looped = 0;
-       p || (!looped && (looped = 1, p = filelist));
-       p = p->next)
+  for (p = filepagerlit; p; p = p->next)
     {
       i = alloca (sizeof (struct item));
       i->next = list;
@@ -518,11 +474,8 @@ pager_traverse (void (*func)(struct user_pager_info *))
       pager_unreference (i->p->p);
     }
   
-  (*func)(dinpager);
-  (*func)(dinodepager);
-  (*func)(cgpager);
+  (*func)(diskpager);
 }
-	        
 
 /* Shutdown all the pagers. */
 void
