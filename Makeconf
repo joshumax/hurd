@@ -112,6 +112,15 @@ $(headers)/hurd/fshelp.h: FORCE
 	$(MAKE) -C $(hurdsource)/libfshelp $(headers)/hurd/fshelp.h
 endif
 
+ifneq ($(strip $(dir)),libthreads)
+$(libthreads): FORCE
+	$(MAKE) -C $(hurdsource)/libthreads $(libthreads)
+$(headers)/cthreads.h: FORCE
+	$(MAKE) -C $(hurdsource)/libthreads $(headers)/cthreads.h
+$(headers)/machine/cthreads.h: FORCE
+	$(MAKE) -C $(hurdsource)/libthreads $(headers)/machine/cthreads.h
+endif
+
 FORCE:
 
 
