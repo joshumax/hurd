@@ -1,4 +1,4 @@
-/* Routines for vectors of integers
+/* Routines for vectors of uids/gids
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
@@ -18,29 +18,30 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#ifndef __IVEC_H__
-#define __IVEC_H__
+#ifndef __IDVEC_H__
+#define __IDVEC_H__
 
+#include <sys/types.h>
 #include <errno.h>
 
-struct ivec 
+struct idvec 
 {
-  int *ints;
+  uid_t *ids;
   unsigned num, alloced;
 };
 
-/* Return a new ivec, or NULL if there wasn't enough memory.  */
-struct ivec *make_ivec ();
+/* Return a new idvec, or NULL if there wasn't enough memory.  */
+struct idvec *make_idvec ();
 
-/* Insert I into IVEC at position POS, returning ENOMEM if there wasn't
+/* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
    enough memory, or 0.  */
-error_t ivec_insert (struct ivec *ivec, unsigned pos, int i);
+error_t idvec_insert (struct idvec *idvec, unsigned pos, uid_t id);
 
-/* Add I onto the end of IVEC, returning ENOMEM if there's not enough memory,
+/* Add ID onto the end of IDVEC, returning ENOMEM if there's not enough memory,
    or 0.  */
-error_t ivec_add (struct ivec *ivec, int i);
+error_t idvec_add (struct idvec *idvec, uid_t id);
 
-/* Returns true if IVEC contains I.  */
-int ivec_contains (struct ivec *ivec, int i);
+/* Returns true if IDVEC contains ID.  */
+int idvec_contains (struct idvec *idvec, uid_t id);
 
-#endif /* __IVEC_H__ */
+#endif /* __IDVEC_H__ */
