@@ -394,21 +394,17 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
    return the types that are then available.  ID_TAG is returned as passed; it
-   is just for the convenience of the user in matching up reply messages with
+u   is just for the convenience of the user in matching up reply messages with
    specific requests sent.  */
 error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int *type, int *tag)
+		    int *select_type, int *tag)
 {
   if (!cred)
     return EOPNOTSUPP;
-  else if (((*type & SELECT_READ) && !(cred->po->openmodes & O_READ))
-	   || ((*type & SELECT_WRITE) && !(cred->po->openmodes & O_WRITE)))
-    return EBADF;
-  else
-    *type &= ~SELECT_URG;
-  return 0;
+  *select_type &= SELECT_READ | SELECT_WRITE;
+  return pipe_pair_select (cred->hook, cred->hook, select_type, 1);
 }
 
 /* ---------------------------------------------------------------- */
@@ -430,14 +426,20 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   if (!cred)
     err = EOPNOTSUPP;
-  else if (!(cred->po->openmodes & O_WRITE))
-    err = EBADF;
   else
     {
+      int flags = cred->po->openmodes;
       struct pipe *pipe = cred->po->hook;
-      mutex_lock (&pipe->lock);
-      err = pipe_write (pipe, NULL, data, data_len, amount);
-      mutex_unlock (&pipe->lock);
+
+      if (!(flags & O_WRITE))
+	err = EBADF;
+      else
+	{
+	  mutex_lock (&pipe->lock);
+	  err = pipe_write (pipe, flags & O_NONBLOCK, NULL,
+			    data, data_len, amount);
+	  mutex_unlock (&pipe->lock);
+	}
     }
 
   return err;
