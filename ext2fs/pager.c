@@ -19,6 +19,9 @@
 #include <strings.h>
 #include <stdio.h>
 
+spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
+struct user_pager_info *filepagerlist;
+
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
