@@ -593,12 +593,26 @@ init_termstate ()
   ioctl (0, TIOCSETN, &sgb);
 }
 
+#include <termios.h>
+#undef tcgetattr
+#undef tcsetattr
+
 kern_return_t 
 S_tioctl_tiocgeta (mach_port_t port,
 		   int modes[],
 		   char ccs[],
 		   int speeds[])
 {
+#if 1
+  union { struct termios t;
+	  struct { int modes[4]; char cc[20]; int speed[2]; } s; } u;
+  if (tcgetattr (0, &u.t))
+    return errno;
+  bcopy (u.s.modes, modes, sizeof u.s.modes);
+  bcopy (u.s.cc, ccs, sizeof u.s.cc);
+  bcopy (u.s.speed, speeds, sizeof u.s.speed);
+  return 0;
+#else
   /* Emacs reads the terminal state in one of two cases:
      1) Checking whether or not a preceding tiocseta succeeded;
      2) Finding out what the state of the terminal was on startup. 
@@ -615,14 +629,23 @@ S_tioctl_tiocgeta (mach_port_t port,
   speeds[0] = term_speeds[0];
   speeds[1] = term_speeds[1];
   return 0;
+#endif
 }
 
 kern_return_t
 S_tioctl_tiocseta (mach_port_t port,
-		 int modes[],
-		 char ccs[],
-		 int speeds[])
+		   int modes[],
+		   char ccs[],
+		   int speeds[])
 {
+#if 1
+  union { struct termios t;
+	  struct { int modes[4]; char cc[20]; int speed[2]; } s; } u;
+  memcpy (u.s.modes, modes, sizeof u.s.modes);
+  memcpy (u.s.cc, ccs, sizeof u.s.cc);
+  memcpy (u.s.speed, speeds, sizeof u.s.speed);
+  return tcsetattr (0, 0, &u.t) ? errno : 0;
+#else
   /* Emacs sets the termanal stet in one of two cases:
      1) Putting the terminal into raw mode for running;
      2) Restoring the terminal to its original state. 
@@ -658,6 +681,7 @@ S_tioctl_tiocseta (mach_port_t port,
   term_speeds[0] = speeds[0];
   term_speeds[1] = speeds[1];
   return 0;
+#endif
 }
 
 kern_return_t
