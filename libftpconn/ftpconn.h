@@ -81,6 +81,15 @@ struct ftp_conn_syshooks
      it returns 0, then it is finishe,d and FD and STATE are deallocated.  */
   error_t (*cont_get_stats) (struct ftp_conn *conn, int fd, void *state,
 			     ftp_conn_add_stat_fun_t add_stat, void *hook);
+
+  /* Some ftp servers return output from the nlist command that contains more
+     *than just the simple names.  This hook, if non-zero, should look at
+     *NAME and rewrite it to compensate, changing *NAME to point to the
+     *rewritten name.  If the result is not longer than the original, *NAME
+     *may be modified in place, otherwise a malloced string should be
+     *returned in *NAME, which will automatically be freed.  DIR is the name
+     *of the directory passed to the nlist command.  */
+  error_t (*fix_nlist_name) (struct ftp_conn *conn, char *dir, char **name);
 };
 
 /* Type parameter for the cntl_debug hook.  */
@@ -178,6 +187,9 @@ extern error_t ftp_conn_unix_cont_get_stats (struct ftp_conn *conn,
 					     int fd, void *state,
 					     ftp_conn_add_stat_fun_t add_stat,
 					     void *hook);
+
+extern error_t ftp_conn_unix_fix_nlist_name (struct ftp_conn *conn, char *dir,
+					     char **name);
 
 extern struct ftp_conn_syshooks ftp_conn_unix_syshooks;
 
