@@ -26,8 +26,6 @@
 
 #include <hurd/ports.h>
 
-#include "debug.h"
-
 struct pipe;
 struct pipe_class;
 
@@ -112,14 +110,11 @@ void _sock_norefs (struct sock *sock);
 extern inline void
 sock_deref (struct sock *sock)
 {
-  debug (sock, "lock, refs--");
   mutex_lock (&sock->lock);
   if (--sock->refs == 0)
     _sock_norefs (sock);
   else
-{debug (sock, "unlock");
     mutex_unlock (&sock->lock);
-}
 }
 
 /* Return a new socket just like TEMPLATE in SOCK.  */

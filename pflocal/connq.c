@@ -22,8 +22,6 @@
 
 #include "connq.h"
 
-#include "debug.h"
-
 /* A queue for queueing incoming connections.  */
 struct connq
 {
@@ -123,29 +121,20 @@ error_t
 connq_listen (struct connq *cq, int noblock,
 	      struct connq_request **req, struct sock **sock)
 {
-debug (cq, "in");
-debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   if (noblock && cq->head == cq->tail)
-{debug (cq, "ewouldblock");
     return EWOULDBLOCK;
-}
 
   cq->num_listeners++;
 
   while (cq->head == cq->tail)
-{debug (cq, "wait listeners");
     if (hurd_condition_wait (&cq->listeners, &cq->lock))
       {
-debug (cq, "eintr");
 	cq->num_listeners--;
-debug (cq, "unlock");
 	mutex_unlock (&cq->lock);	  
-debug (cq, "out");
 	return EINTR;
       }
-}
 
   if (req != NULL)
     /* Dequeue the next request, if desired.  */
@@ -158,10 +147,8 @@ debug (cq, "out");
 
   cq->num_listeners--;
 
-debug (cq, "unlock");
   mutex_unlock (&cq->lock);
 
-debug (cq, "out");
   return 0;    
 }
 
@@ -170,13 +157,10 @@ debug (cq, "out");
 void
 connq_request_complete (struct connq_request *req, error_t err)
 {
-debug (req, "lock");
   mutex_lock (&req->lock);
   req->err = err;
   req->completed = 1;
-debug (req, "signal, err: %d", err);
   condition_signal (&req->signal);
-debug (req, "unlock");
   mutex_unlock (&req->lock);
 }
 
@@ -189,17 +173,14 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
   error_t err = 0;
   unsigned next;
 
-debug (cq, "in");
-debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   /* Check for listeners after we've locked CQ for good.  */
   if ((noblock || cq->noqueue) && cq->num_listeners == 0)
-{debug (cq, "unlock");
-    mutex_unlock (&cq->lock);
-debug (cq, "ewouldblock");
-    return EWOULDBLOCK;
-}
+    {
+      mutex_unlock (&cq->lock);
+      return EWOULDBLOCK;
+    }
 
   next = qnext (cq, cq->tail);
   if (next == cq->tail)
@@ -216,22 +197,14 @@ debug (cq, "ewouldblock");
 
       /* Hold REQ.LOCK before we signal the condition so that we're sure
 	 to be woken up.  */
-debug (&req, "(req) lock");
       mutex_lock (&req.lock);
-
-debug (cq, "signal listeners");
       condition_signal (&cq->listeners);
-debug (cq, "unlock");
       mutex_unlock (&cq->lock);
 
       while (!req.completed)
-{debug (&req, "(req) wait");
 	condition_wait (&req.signal, &req.lock);
-}
-
       err = req.err;
 
-debug (&req, "(req) unlock");
       mutex_unlock (&req.lock);
     }
 
@@ -245,7 +218,6 @@ connq_compress (struct connq *cq)
   unsigned pos;
   unsigned comp_tail = cq->head;
 
-debug (cq, "compress queue");
   /* Now compress the queue to remove any null entries we put in.  */
   for (pos = cq->head; pos != cq->tail; pos = qnext (cq, pos))
     if (cq->queue[pos] != NULL)
@@ -265,8 +237,6 @@ debug (cq, "compress queue");
 error_t 
 connq_set_length (struct connq *cq, int length)
 {
-debug (cq, "in: %d", length);
-debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   if (length > cq->length)
@@ -296,9 +266,7 @@ debug (cq, "lock");
 
   cq->noqueue = 0;		/* Turn on queueing.  */
 
-debug (cq, "unlock");
   mutex_unlock (&cq->lock);
 
-debug (cq, "out");
   return 0;
 }
