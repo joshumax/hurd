@@ -24,11 +24,10 @@ SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs ports pager iohelp fshelp threads ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
 
 ufs.static-LDFLAGS += -static
 
 include ../Makeconf
 
 ufs.static ufs: $(OBJS) $(library_deps)
-
