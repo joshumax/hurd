@@ -398,13 +398,31 @@ block_extended (struct node *np,
 	 we deallocate the old block.  */
       for (off = 0; off < round_page (old_size); off += vm_page_size)
 	{
+
+	  /* There's *got* to be a better way to do this... */
+
+	  /* Force it out to disk */
+	  assert (np->fileinfo);
+	  pager_sync_some (np->fileinfo->p, lbn * sblock->fs_bsize + off,
+			   vm_page_size, 1);
+
+	  /* Read it back in */
 	  diskfs_device_read_sync (fsbtodb (sblock, old_pbn) + off / DEV_BSIZE,
 				   (void *) &buf, vm_page_size);
 	  /* If this page is the last one, then zero the excess first */
 	  if (off + vm_page_size > old_size)
 	    bzero ((void *)(buf + old_size - off),
 		   vm_page_size - (old_size - off));
+
+	  /* And make sure it's in core. */
 	  offer_data (np, lbn * sblock->fs_bsize + off, vm_page_size, buf);
+
+	  /* And now, make sure it's on disk.  (Why?  Because a previous
+	     write of this file, maybe even one from before we started
+	     running may have been fsynced.  We can't cause data already
+	     on disk to be lossy at any time in the future while we move it. */
+	  pager_sync_some (np->fileinfo->p, lbn * sblock->fs_bsize + off,
+			   vm_page_size, 1);
 	}
       
       /* And deallocate the old block */
@@ -475,12 +493,13 @@ diskfs_grow (struct node *np,
 				 osize, sblock->fs_bsize, &bno, cred);
 	  if (err)
 	    goto out;
+
+	  block_extended (np, olbn, old_pbn, bno, osize, sblock->fs_bsize);
+
 	  old_pbn = read_disk_entry (di->di_db[olbn]);
 	  write_disk_entry (di->di_db[olbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
-
-	  block_extended (np, olbn, old_pbn, bno, osize, sblock->fs_bsize);
 	}
     }
 
@@ -502,11 +521,11 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
+	  block_extended (np, lbn, old_pbn, bno, osize, size);
+
 	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
-
-	  block_extended (np, lbn, old_pbn, bno, osize, size);
 	}
       else
 	{
@@ -517,11 +536,11 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
+	  
+	  offer_data (np, lbn * sblock->fs_bsize, size, zeroblock);
 	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
-	  
-	  offer_data (np, lbn * sblock->fs_bsize, size, zeroblock);
 	}
     }
   else
@@ -612,10 +631,10 @@ diskfs_grow (struct node *np,
 		       sblock->fs_bsize, &bno, 0);
       if (err)
 	goto out;
+      offer_data (np, lbn * sblock->fs_bsize, sblock->fs_bsize, zeroblock);
       indirs[0].bno = bno;
       write_disk_entry (siblock[indirs[0].offset], bno);
       record_poke (siblock, sblock->fs_bsize);
-      offer_data (np, lbn * sblock->fs_bsize, sblock->fs_bsize, zeroblock);
     }
 
  out:
