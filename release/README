@@ -1,0 +1,13 @@
+As if the editor cared that this was -*- Text -*-.
+
+This directory contains tools and scripts useful in setting up Hurd
+binary distributions.  None of it is installed by default, but it's
+provided here for those who might find it helpful.
+
+Use `make install-dist dist-root=FOO' to install the files that go
+into the root of binary distributions.
+
+Use `make install-tools tool-root=FOO' to install the tools that are
+used to build binary distributions.
+
+

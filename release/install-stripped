@@ -1,0 +1,165 @@
+#! /usr/local/bin/bash
+
+# Shell script to copy files and directories, stripping things appropriately.
+# Executable programs are stripped completely, and library archives 
+# have debugging symbols removed.
+
+usage()
+{
+  echo >&2 "Usage: $0 [-N NEWER-THAN-FILE] SOURCE-DIR TARGET-DIR"
+  exit 1
+}
+
+# If non-null, only copy files newer than this file when copying directories.
+newer_than=''
+
+while :; do
+  case "$1" in
+    -N) newer_than="$2"; shift 2
+	if test -r "$newer_than"; then
+	  case "$newer_than" in [!/]*)
+	    newer_than=`pwd`/"$newer_than"
+	  esac
+	else
+	  # There is no such file, so don't try to use it
+	  newer_than=''
+	fi;;
+    -*) usage;;
+    *)  break;;
+  esac
+done
+
+if [ $# -lt 2 ]; then
+  usage
+fi
+
+OBJCOPY=${OBJCOPY:-i386-gnu-objcopy}
+
+check_inode()
+{
+  inode=`ls -dli "$1" | awk '{ print $1 }'`
+  eval "old_inode=\${inode_${inode}}"
+  eval "inode_${inode}=$2"
+}
+
+# Prints the files in DIR, only using those newer than $newer_than if
+# it's non-null
+dir_files()
+{
+  case "$newer_than" in
+    "") test='';;
+    *)  test="-newer $newer_than";;
+  esac
+
+  find $1 -maxdepth 1 \( ! -type d $test -print \) \
+    | sed "s@^$1/@@"
+}
+
+copy() 
+{
+  local from=$1
+  local to=$2
+
+  plaincopy()
+  {
+    rm -f $to
+    echo "$from -> $to"
+    ln -f $from $to 2>/dev/null || install -m 644 -c $from $to
+  }
+
+  objcopy()
+  {
+    if $OBJCOPY --strip-debug $from $to; then
+      echo "strip-debug $from -> $to"
+    else
+      plaincopy
+    fi
+  }
+
+  copysymlink ()
+  {
+    linkto="`ls -ld $from | awk '{ print $NF }'`"
+    if test -L $to; then
+      oldlinkto="`ls -ld $to | awk '{ print $NF }'`"
+    else
+      oldlinkto=not-the-value-of-any-real-symlink
+    fi
+
+    if test $linkto != $oldlinkto; then
+      rm -f $to
+      echo "making symlink $to -> $linkto"
+      ln -s $linkto $to
+    fi
+  }
+
+  makelocalhardlink ()
+  {
+    fromino=`ls -dli "$from" | awk '{ print $1 }'`
+    toino=`ls -dli "$to" | awk '{print $1 }'`
+    if test $fromino != $toino; then
+      echo "$to linked to $old_inode"
+      ln -f $old_inode $to
+    fi
+  }
+
+  check_inode $from $to
+
+# Not necessary; the other bits already do necessary deletion.
+#  test -d $to || { test -e $to && rm -f $to }
+
+  if test -L $from; then
+    copysymlink
+  elif test "$old_inode"; then
+    makelocalhardlink
+  elif test -d $from; then
+    if test ! -d $to; then
+      echo making $to
+      mkdir -p $to
+    fi
+    for file in `dir_files $from` ..; do
+      test "$file" = .. && continue
+      copy $from/$file $to/$file
+    done
+  else
+    case $from in
+    *.a)
+      read p l o g size rest <<foo
+`ls -l $from`
+foo
+# I've reenabled installing large libraries; please don't change
+# this without syncing with mib first.
+#      if test $size -gt 200000; then
+#        echo "skipping large library $from ($size)"
+#     else
+       objcopy
+#      fi
+      ;;
+    *.o | *.so | *.so.*)
+      objcopy
+      ;;
+    *) 
+      if test -x $from; then
+        if $OBJCOPY -S $from $to 2>/dev/null; then
+          echo "strip $from -> $to"
+        else
+          plaincopy
+        fi
+      else
+        plaincopy
+      fi
+      ;;
+    esac
+  fi
+}
+
+if [ $# -gt 2 ]; then
+  eval "todir=\${$#}"
+  test -d $todir || { echo >&2 With multiple args, last must be a directory.
+		      exit 1; }
+  while [ $# -gt 1 ]; do
+    copy $1 $todir/`basename $1`
+    shift
+  done
+else
+  copy $1 $2
+fi

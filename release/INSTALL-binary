@@ -1,0 +1,252 @@
+-*- Text -*-
+Instructions for bootstrapping the Hurd from binary images (i486).
+Last updated 17 Apr 95
+
+This directory contains i486 binaries for the Hurd and various
+programs built to run under it.  They were built with current GCC
+sources (generally 2.7.*) and recent binutils snapshot from
+ftp.cygnus.com:private/gas, configured for target `i486-gnu'.  All
+program binaries are stripped to save disk space; the installed
+libraries have the debugging information stripped to speed linking.
+
+
+STEP I:
+
+Unpack the binary distribution onto a fresh disk partition, which needs
+to be BSD FFS format.  The boot loader we use (GRUB) does not yet
+understand how to boot from a Linux ext2fs filesystem, though this is
+expected to change very soon.
+
+Make the disk partition with newfs or mkfs on your favorite BSD
+system.  Then unpack the binaries with tar onto that partition.  If
+you are building  your own binaries as described in INSTALL-cross, it
+is perfectly fine to use this partition as the Hurd installation
+staging area.
+
+[If you do not have a system running BSD, the NetBSD 2-floppy install set
+contains enough tools to make a new filesystem using newfs and copy to
+it from nfs.]
+
+If you're going to be booting native, you probably need to change the
+device on which paging is done.  This is done in a file in the hurd
+partition called `boot/servers.boot', on the line which looks like:
+
+  /dev/sd0b $(add-paging-file) $(default-pager)
+
+`sd0b' is the paging device.  Replace this with the correct device name
+(this is a mach partition name; see step II below for a bit about
+partition naming), or delete the line if you don't want paging.
+
+(CAVEAT: Hurd partitions, especially the root partition, may have
+filesystem extensions that BSD does not know about.  Most of these are
+ignored by the BSD kernel and filesystem tools.  One of them, `passive
+translators' (a/k/a non-transient mounts), is not understood by the
+BSD fsck.  If you run the BSD fsck on a Hurd partition with such
+translators, things might fail *massively*.  The Hurd version of fsck
+does not, of course, have any such problem.)
+
+Fsck and unmount the new partition before using it, to make sure it's clean.
+
+
+STEP II:
+
+Boot from this partition.
+
+There are currently two ways of booting the hurd that are know to work:
+
+A: Using the grub bootloader (written by Erich Boleyn <erich@uruk.org>):
+
+   Grub can load the mach4 kernel (version UK22), included with this binary
+   distribution.  Mach4-UK22 uses linux device drivers, which are generally
+   more functional than the previous mach ones (however the current build
+   mechanism for mach4 links in every linux driver, even unused ones, so the
+   kernel binary is very big).
+
+   To use grub, get the grub distribution (version 0.1 is known to work, and
+   these instructions are for that; the mach4-UK02p21 kernel included with
+   this distribution works only with grub version 0.0), and follow the
+   instructions to put grub on either a floppy disk or a bootable partition;
+   there should be a copy of the grub distribution in the same location you
+   found this hurd distribution.
+
+   Then reboot the system with grub, and answer the prompts like so:
+
+   1) `root-partition:' -- the partition where the hurd image is; this is
+      generally something like `hd(0,e)'.
+   
+   2) `kernel:' -- use:
+
+         /boot/kernel root=sd0e
+
+      and replace sd0e with the name of the root device.  Note that the
+      naming convention here is from mach, and is different than that used to
+      specify the root device in (1).  SCSI disks in mach are named `sd??'
+      and non-SCSI disks `hd??'.   [Also note that these may also be
+      different that the names used by whatever OS used to create the hurd
+      partition in the first place!]
+   
+   3) `module:' -- use:
+
+        /boot/serverboot
+   
+      for the first one, and then just hit return for the second to end the
+      list.
+   
+   4) Hit return to boot the system...
+
+   Mach should load, and then the Hurd should start, saying something like:
+
+     Hurd server bootstrap: ufs exec init proc auth.
+     Single-user bootstrap: term sh.
+     bash# 
+
+   Using this method, a script file called /boot/servers.boot is loaded
+   to specify how to start the initial hurd servers; this file probably
+   should be modified to specifiy the paging device, as in step I.
+
+B: Booting the hurd under another mach os, such as lites:
+
+   To do this you need to have an executable copy of the `uxboot'
+   program, which isn't included in the binary distribution.  However, if you
+   have the source distribution, it is built in the `boot' subdirectory (and
+   not installed).  Uxboot is not a hurd program, and is built using
+   strange linker magic; it currently works on either ux or lites, but it
+   maybe  Once you have uxboot, you can boot a hurd partition by
+   saying (while in the root of the source distribution build tree):
+
+     boot/uxboot hurd.boot sd0e
+
+   where sd0e is of course replaced by the mach device name of the partition
+   with the hurd binary distribution on it.  The file hurd.boot contains
+   specifics of how to boot, and may be changed, e.g., to use ext2fs instead
+   of ufs.
+
+
+STEP III:
+
+When GNU boots the first time, you might see some confusing messages,
+and you may notice that pipes don't work.
+
+Before you change anything, you may have to make the root filesystem
+writable -- if the clean bit wasn't set, it will have been made
+read-only automatically, printing obvious warning messages to that
+effect.  Since things aren't set up enough at this point to fsck it,
+just make it writable using the command
+
+  fsysopts / --writable
+
+In order to set up the translators for this to be a fully functional
+Hurd system, say
+
+  /bin/sh /SETUP
+
+Now run `sync' and then `halt'.  Boot the system again, and it should
+start up normally.
+
+
+STEP IV:
+
+Now you have a Hurd system.  Some things you will want to do before
+you get going are:
+
+A: cd to /dev and make useful devices.  At least pty's thus:
+   ./MAKEDEV ptyp ptyq 
+
+   Also add any disk device you have; you must specify both unit number
+   *and* partition.  Something like `sd0a' or `rd1f' is called for.
+
+B: If you want to use the network, set it up thus:
+   
+     settrans /servers/socket/2 NN.NN.NN.NN eth0
+
+   where NN.NN.NN.NN is your IP address (not hostname, IP address).
+   Gatewaying is not supported yet, you will only be able to talk to
+   hosts on your local net.
+
+C: You can mount a partition (say hd0a) by saying:
+
+     settrans /mnt /hurd/ufs /dev/rhd0a
+
+(This is equivalent to Unixy `mount /dev/hd0a /mnt'.)
+
+(Note that you are using the *RAW* device here.  In theory, it's
+irrelevant [and this is really only being used to get a name in a
+clever but strange way], but there are minor bugs in the non-raw
+versions, so don't try and use them.)
+
+If it's a Linux ext2 format disk, just do
+
+  settrans /mnt /hurd/ext2fs /dev/rhd0a
+
+You can make it readonly thus:
+
+  settrans /mnt /hurd/ufs -r /dev/rhd0a
+
+In all these cases, note that all the args after `/mnt' are a command
+line being sent to the filesystem program when it starts.  The syntax
+of settrans is:
+
+  settrans [settrans-option-args] file command-line
+
+settrans itself also supports several args.  (Use settrans --help for
+a summary.)  To see the args supported by a ufs or ext2fs, say
+`/hurd/ufs --help' or `/hurd/ext2fs --help'.
+
+The mounts created this way are not transient--they will last across
+reboots, being recorded directly on disk.  To get rid of one, say:
+`settrans /mnt' with no further args.  The command `showtrans /mnt'
+will show you where it's at right now.
+
+A temporary mount (which lasts only until the filesystem program is
+killed or the system is rebooted) can be accomplished by giving the -a
+option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
+(Note the placement of this option, as an arg to settrans, is
+different from the -r options you might give to the filesystem.)
+`showtrans' does not display these temporary mounts.
+
+NFS mounts, not surprisingly, are done thus:
+
+  settrans /mnt /hurd/nfs /remote/file/system remote.host.org
+
+(You may also use the host:fs and fs@host notations if you prefer.)
+NFS supports many options; use `/hurd/nfs --help' to see them all.
+
+You should also examine the /etc/rc script we've written; it's pretty
+specific to our use right now and you might want to make sure it makes
+sense for you.  Perhaps you will want to edit the password file too.
+
+
+MISCELLANEOUS NOTES:
+
+Fscking:
+
+The /sbin/fsck program does not currently work, so you have to use the
+individual fsck backends, /sbin/fsck.ufs & /sbin/fsck.ext2.  These programs
+do not know when a partition is in use by an active filesystem, so you must
+to be careful that the partition you're fscking is quiescent.  If it's not
+the root filesystem, you can shut it down with the command `settrans -a
+ROOTDIR' (ROOTDIR is the node where the filesystem translator is attached).
+To fsck the root filesystem, make sure it's readonly, which can be done using
+the command `fsysopts / --readonly'.  Once fsck has completed, if it wrote on
+the partition, the (still running) root filesystem must be informed of this
+fact, using the command `fsysopts / --remount --writable' (--remount tells
+the filesystem to reload all its data structures from disk); if fsck didn't
+actually change anything, you can leave out the --remount option.
+
+The /sbin/fsck.ufs program currently does not ever set the clean bit, so
+you're likely to find that the root filesystem is being declared dirty and
+forced readonly every time you boot.
+
+GDB:
+
+The version of gdb included in this release has various features not used by
+most systems, in particular, the `thread' and `info thread' commands.
+
+The hurd gdb can also debug running programs without halting them, which is
+useful to debug crucial system servers that can't be stopped without wedging
+the system.  To do this, give the commands `set task pause off', `set
+exceptions off', and `set signals off', before attaching to the process.  Of
+course, gdb may get confused because data structures are changing underneath
+it, but this generally works pretty well.
+
+The `portinfo' program is also very useful for debugging.

@@ -1,0 +1,18 @@
+-*- Text -*-
+
+Welcome to the GNU Hurd!
+
+
+For instructions on compiling and installing the GNU Hurd from an
+already running Hurd system, see the file `INSTALL'.
+
+For instructions on compiling and installing the GNU Hurd from any
+other kind of system (including any other Mach-based system) see the
+file INSTALL-cross.
+
+For instructions on installing binary images and setting up a Hurd
+system, see the file INSTALL-binary.  (These binary images could be
+the ones we distribute, or the ones you have built yourself as
+described in INSTALL-cross.)
+
+

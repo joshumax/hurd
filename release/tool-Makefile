@@ -1,0 +1,124 @@
+# Makefile for hurd image frobnication.
+
+export GNUTARGET=elf32-i386
+export OBJCOPY=i386-gnu-objcopy
+
+BF=bfloppy-image
+RF=rfloppy-image
+
+bfloppy-files = $(bfloppy-bootfs:%=hurd/%) $(bfloppy-bootprogs:%=boot/%) \
+	       lib/ld.so boot/servers.boot
+bfloppy-bootfs = ufs
+bfloppy-bootprogs = kernel bootstrap
+
+$(BF)/boot/servers.boot: hurd-image/boot/floppy.boot
+	-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	cp $< $@
+
+$(BF)/%/: hurd-image/%/
+	test -d $@ || mkdir -p $@
+$(BF)/%: hurd-image/%
+	-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	ln $< $@ || cp $< $@
+
+$(BF): $(bfloppy-files:%=$(BF)/%)
+$(BF).tar: $(bfloppy-files:%=$(BF)/%)
+	rm -f $@
+	cd $(BF); tar covf ../$@ $(^:$(BF)/%=%)
+
+rfloppy-files = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) \
+	        $(rfloppy-solib:%=lib/%.so) hurd/exec \
+	        lib/libc.so lib/libhurduser.so lib/libmachuser.so \
+		servers/exec servers/socket/1 \
+	        README tmp/ dev/MAKEDEV
+rfloppy-hurd = auth devio null init proc term
+rfloppy-progs = sh ls cat settrans # mkfs
+rfloppy-solib = libtrivfs libthreads libshouldbeinlibc libports	\
+	       libpager libioserver libihash libfshelp ld
+
+libc-satisfies = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) $(rfloppy-solib:%=lib/%.so)
+
+libc-obj-dir = /gd4/gnu/libc/i386
+smallso-LDFLAGS = -Wl,-rpath-link=/lib
+
+libc-USERS =
+libc-DEPS =
+
+$(RF)/lib/libc.so: hurd-image/lib/libc.so hurd-image/lib/libhurduser.so hurd-image/lib/libmachuser.so $(libc-satisfies:%=hurd-image/%)
+	mksmallso $(smallso-LDFLAGS) \
+	  $@ $(libc-obj-dir)/libc_pic.a '-Lhurd-image/lib -lhurduser -lmachuser' \
+	  $(filter-out $(firstword $^),$^)
+
+$(RF)/lib/libhurduser.so: $(RF)/lib/libc.so $(libc-satisfies:%=hurd-image/%)
+	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libhurduser_pic.a -Lhurd-image/lib -lmachuser $(filter-out $(firstword $^),$^)
+
+$(RF)/lib/libmachuser.so: $(RF)/lib/libc.so $(RF)/lib/libhurduser.so $(libc-satisfies:%=hurd-image/%)
+	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libmachuser_pic.a '' $(filter-out $(firstword $^),$^)
+
+$(addprefix $(RF)/,$(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%)): \
+  $(RF)/%: hurd-image/%
+	@test -d $(@D) || mkdir -p $(@D)
+	gzip -9v -c $< > $@.new
+	chmod 555 $@.new
+	mv -f $@.new $@
+
+$(RF)/%/: hurd-image/%/
+	test -d $@ || mkdir -p $@
+$(RF)/%: hurd-image/%
+	-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	ln $< $@ || cp $< $@
+
+$(RF): $(rfloppy-files:%=$(RF)/%)
+$(RF).tar: $(rfloppy-files:%=$(RF)/%)
+	rm -f $@
+	cd $(RF); tar covf ../$@ $(^:$(RF)/%=%)
+
+MOUNT_POINT = /mnt
+VND = vnd0
+VND_DEV = /dev/${VND}a
+VND_RDEV = /dev/r${VND}a
+MDEC = /usr/mdec
+
+floppy%-image.fs: /tmp/floppy%-image.fs; cp -f $< $@
+
+/tmp/floppy%-image.fs: floppy%-image.tar
+	dd if=/dev/zero of=$@.new bs=10k count=144
+	vnconfig -v -c ${VND_DEV} $@.new
+	disklabel -w -B -b ${MDEC}/fdboot -s ${MDEC}/bootfd ${VND} floppy3
+	newfs -O -m 0 -o space -i 5120 -c 80 ${VND_RDEV} floppy3
+	mount ${VND_DEV} ${MOUNT_POINT}
+	tar -f $< -C ${MOUNT_POINT} -xv
+	df -i ${MOUNT_POINT}
+	umount ${MOUNT_POINT}
+	vnconfig -u ${VND_DEV} $@.new
+	mv -f $@.new $@
+
+hurd-image.tar: hurd-image hurd-image.stamp
+	tar cof $@ $<
+
+%.gz: %
+	gzip -9v -c $< > $@.new
+	mv -f $@.new $@
+
+%:: %.gz
+	gunzip -c $< > $@.new
+	mv -f $@.new $@
+
+
+instdirs := $(patsubst ../hurdinst/%,%,\
+		       $(filter-out ../hurdinst,\
+				    $(shell find ../hurdinst -type d -print \
+					    | sort -r)))
+
+hurd-image/%/.stamp: ../hurdinst/%
+	@./install-stripped -N $@ $< $(@D)
+	@echo $< `date` > $@
+	@echo updated $(@D)/
+hurd-image.stamp: $(instdirs:%=hurd-image/%/.stamp); touch $@
+hurd-image: hurd-image.stamp
+
+
+	
