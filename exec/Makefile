@@ -16,45 +16,19 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := exec
+makemode := server
+
+SRCS = exec.c hostarch.c
+OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
+LCLHDRS = a.out.h a.out.gnu.h
+target = exec
+DIST_FILES = core.c gcore.c hashexec.c
 
 include ../Makeconf
 
-VPATH=.:../machine
+CFLAGS := $(CFLAGS) -DA_OUT_H=\"./a.out.h\"
 
-CFLAGS := $(CFLAGS) -Dinline= -DA_OUT_H=\"./a.out.h\"
-
-DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c \
-	     a.out.h a.out.gnu.h ChangeLog
-OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
-
-SRCS = hostarch.c exec.c
-TAGSHDRS = a.out.h a.out.gnu.h
-
-all: exec
-
-exec: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-exec.o: exec_server.h fsys_S.h notify_S.h 
+exec.o: fsys_S.h notify_S.h exec_S.h
 
 exec.o hostarch.o: a.out.h a.out.gnu.h
 
-install:
-
-clean: 
-	rm -f *.o exec exec_server.h *_S.h *Server.c
-relink:
-	rm -f exec
-
-exec_server.h execServer.c: ../hurd/exec.defs ../hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_ ../hurd/exec.defs \
-	| $(MIGCOM) -sheader exec_server.h -header /dev/null -user /dev/null
-
-
-fsys_S.h fsysServer.c: ../hurd/fsys.defs ../hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -DSERVERPREFIX=S_  ../hurd/fsys.defs \
-	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
-
-notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS)  $(includedir)/mach/notify.defs \
-	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
