@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -22,7 +22,7 @@
 #include <sys/file.h>
 
 struct peropen *
-netfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport)
+netfs_make_peropen (struct node *np, int flags, struct peropen *context)
 {
   struct peropen *po = malloc (sizeof (struct peropen));
   
@@ -31,11 +31,26 @@ netfs_make_peropen (struct node *np, int flags, mach_port_t dotdotport)
   po->refcnt = 0;
   po->openstat = flags;
   po->np = np;
-  po->dotdotport = dotdotport;
-  if (dotdotport != MACH_PORT_NULL)
-    mach_port_mod_refs (mach_task_self (), dotdotport, 
-			MACH_PORT_RIGHT_SEND, 1);
+
+  if (context)
+    {
+      po->root_parent = context->root_parent;
+      if (po->root_parent != MACH_PORT_NULL)
+	mach_port_mod_refs (mach_task_self (), po->root_parent,
+			    MACH_PORT_RIGHT_SEND, 1);
+
+      po->shadow_root = context->shadow_root;
+      if (po->shadow_root)
+	netfs_nref (po->shadow_root);
+
+      po->shadow_root_parent = context->shadow_root_parent;
+      if (po->shadow_root_parent != MACH_PORT_NULL)
+	mach_port_mod_refs (mach_task_self (), po->shadow_root_parent,
+			    MACH_PORT_RIGHT_SEND, 1);
+    }
+
   netfs_nref (np);
+
   return po;
 }
 
