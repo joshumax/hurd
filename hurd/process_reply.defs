@@ -45,7 +45,8 @@ simpleroutine proc_setmsgport_reply (
 skip; /* reassign */
 skip; /* setowner */
 skip; /* getpids */
-skip; /* setprocargs */
+skip; /* set_arg_locations */
+skip; /* get_arg_locations */
 
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
