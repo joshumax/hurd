@@ -124,10 +124,8 @@ main (int argc, char **argv)
 	  long num_bfree = sblock->fs_cstotal.cs_nbfree;
 	  long tot_ffree = num_ffree + sblock->fs_frag * num_bfree;
 	  warning (0,
-		   "%ld files, %ld used, %ld free"
-		   " (%ld frags, %ld blocks, %ld.%ld%% fragmentation)",
+		   "%ld files, %ld used, %ld free (%ld.%ld%% fragmentation)",
 		   num_files, sblock->fs_dsize - tot_ffree, tot_ffree,
-		   num_ffree, num_bfree,
 		   (num_ffree * 100) / sblock->fs_dsize,
 		   (((num_ffree * 1000 + sblock->fs_dsize / 2)
 		     / sblock->fs_dsize)
