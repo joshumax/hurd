@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <assert.h>
 #include <wire.h>
 #include <argp.h>
+#include <error.h>
 #include <version.h>
 
 #include "proc.h"
