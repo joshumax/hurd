@@ -1,3 +1,9 @@
+Tue Jul 14 16:27:00 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Don't require the node to be
+	a directory in the null pathname case.  (Thus reverting one of the
+	changes of June 15, 1994.)  
+
 Mon Jun 29 18:54:23 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* lookup.c (diskfs_lookup): If NAME is empty, return an error.
