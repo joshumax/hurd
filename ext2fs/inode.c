@@ -261,6 +261,7 @@ read_node (struct node *np)
       st->st_uid = di->i_uid;
       st->st_gid = di->i_gid;
       st->st_author = st->st_uid;
+      np->author_tracks_uid = 1;
     }
 
   /* Setup the ext2fs auxiliary inode info.  */
@@ -363,7 +364,7 @@ diskfs_validate_author_change (struct node *np, uid_t author)
   if (sblock->s_creator_os == EXT2_OS_HURD)
     return 0;
   else
-    /* For non-hurd filesystems, the auther & owner are the same.  */
+    /* For non-hurd filesystems, the author & owner are the same.  */
     return (author == np->dn_stat.st_uid) ? 0 : EINVAL;
 }
 
@@ -428,7 +429,7 @@ write_node (struct node *np)
 	  assert ((st->st_uid & ~0xFFFF) == 0);
 	  assert ((st->st_gid & ~0xFFFF) == 0);
 	  assert ((st->st_mode & ~0xFFFF) == 0);
-	  assert (st->st_author == st->st_uid);
+	  assert (np->author_tracks_uid && st->st_author == st->st_uid);
 	}
 
       di->i_links_count = st->st_nlink;
