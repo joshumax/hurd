@@ -29,7 +29,7 @@
 
 /* ---------------------------------------------------------------- */
 
-int diskfs_link_max = LINK_MAX;
+int diskfs_link_max = EXT2_LINK_MAX;
 int diskfs_maxsymlinks = 8;
 int diskfs_shortcut_symlink = 1;
 int diskfs_shortcut_chrdev = 1;
@@ -161,11 +161,10 @@ int check_string = 1;
 void
 main (int argc, char **argv)
 {
-  char *device_name;
-  mach_port_t bootstrap;
   error_t err;
+  mach_port_t bootstrap;
   int sizes[DEV_GET_SIZE_COUNT];
-  u_int sizescnt = 2;
+  unsigned sizescnt = 2;
 
   mutex_init (&printf_lock);	/* XXX */
 
@@ -188,7 +187,7 @@ main (int argc, char **argv)
 	  case 's':
 	    diskfs_synchronous = 1; break;
 	  case 'V':
-	    printf("%s %s.%d.%d", diskfs_server_name, diskfs_major_version,
+	    printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
 		   diskfs_minor_version, diskfs_edit_version);
 	    exit(0);
 	  case '?':
@@ -196,6 +195,7 @@ main (int argc, char **argv)
 	  default:
 	    usage(1);
 	  }
+
       if (argc - optind != 1)
 	{
 	  fprintf (stderr, USAGE, program_invocation_name);
@@ -261,9 +261,14 @@ main (int argc, char **argv)
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
 		VM_INHERIT_NONE);
-  assert (!err);
+  if (err)
+    error (2, err, "vm_map");
 
-  get_hypermetadata();
+  diskfs_register_memory_fault_area (disk_pager->p, 0, disk_image, device_size);
+
+  err = get_hypermetadata();
+  if (err)
+    error (3, err, "get_hypermetadata");
 
   if (device_size < sblock->s_blocks_count * block_size)
     ext2_panic("main",
@@ -271,6 +276,7 @@ main (int argc, char **argv)
 	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
 	       sblock->s_blocks_count * block_size);
 
+  /* A handy source of page-aligned zeros.  */
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
 
   inode_init ();
@@ -283,9 +289,11 @@ main (int argc, char **argv)
      outside world.  */
   (void) diskfs_startup_diskfs (bootstrap);
 
+#if 0
   if (bootstrap == MACH_PORT_NULL)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap (argv);
+#endif
   
   /* Now become a generic request thread.  */
   diskfs_main_request_loop ();
@@ -299,7 +307,7 @@ diskfs_init_completed ()
   mach_port_t proc, startup;
   error_t err;
 
-  sprintf(version, "%s %s.%d.%d",
+  sprintf(version, "%s %d.%d.%d",
 	  diskfs_server_name, diskfs_major_version,
 	  diskfs_minor_version, diskfs_edit_version);
 
@@ -314,4 +322,40 @@ diskfs_init_completed ()
       mach_port_deallocate (mach_task_self (), startup);
     }
   mach_port_deallocate (mach_task_self (), proc);
+}
+
+/* ---------------------------------------------------------------- */
+
+static spin_lock_t free_page_bufs_lock = SPIN_LOCK_INITIALIZER;
+static vm_address_t free_page_bufs = 0;
+
+/* Returns a single page page-aligned buffer.  */
+vm_address_t get_page_buf ()
+{
+  vm_address_t buf;
+
+  spin_lock (&free_page_bufs_lock);
+
+  buf = free_page_bufs;
+  if (buf == 0)
+    {
+      spin_unlock (&free_page_bufs_lock);
+      vm_allocate (mach_task_self (), &buf, vm_page_size, 1);
+    }
+  else
+    {
+      free_page_bufs = *(vm_address_t *)buf;
+      spin_unlock (&free_page_bufs_lock);
+    }
+
+  return buf;
+}
+
+/* Frees a block returned by get_page_buf.  */
+void free_page_buf (vm_address_t buf)
+{
+  spin_lock (&free_page_bufs_lock);
+  *(vm_address_t *)buf = free_page_bufs;
+  free_page_bufs = buf;
+  spin_unlock (&free_page_bufs_lock);
 }
