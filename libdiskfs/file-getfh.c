@@ -9,7 +9,7 @@
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -29,30 +29,30 @@ error_t
 diskfs_S_file_getfh (struct protid *cred, char **fh, unsigned *fh_len)
 {
   struct node *node;
-  struct diskfs_fhandle *f;
+  union diskfs_fhandle *f;
 
   if (! cred)
     return EOPNOTSUPP;
 
   if (! idvec_contains (cred->user->uids, 0))
     return EPERM;
-  
+
+  assert (sizeof *f == sizeof f->bytes);
+
   node = cred->po->np;
 
   mutex_lock (&node->lock);
 
   if (*fh_len < sizeof (struct diskfs_fhandle))
-    *fh = mmap (0, sizeof (struct diskfs_fhandle), PROT_READ|PROT_WRITE, 
+    *fh = mmap (0, sizeof (struct diskfs_fhandle), PROT_READ|PROT_WRITE,
 		MAP_ANON, 0, 0);
-  *fh_len = sizeof (struct diskfs_fhandle);
-  
-  f = (struct diskfs_fhandle *)*fh;
+  *fh_len = sizeof *f;
 
-  f->cache_id = node->cache_id;
-  f->gen = node->dn_stat.st_gen;
+  f = (union diskfs_fhandle *) *fh;
 
-  f->filler1 = 0;
-  bzero (f->filler2, sizeof f->filler2);
+  bzero (f, sizeof *f);
+  f->data.cache_id = node->cache_id;
+  f->data.gen = node->dn_stat.st_gen;
 
   mutex_unlock (&node->lock);
 

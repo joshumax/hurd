@@ -1,6 +1,6 @@
 /* Return the file for a given handle (for nfs server support)
 
-   Copyright (C) 1997 Free Software Foundation
+   Copyright (C) 1997,99 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -37,45 +37,45 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   int flags;
   error_t err;
   struct node *node;
-  struct diskfs_fhandle *f;
+  const union diskfs_fhandle *f;
   struct protid *new_cred;
   struct idvec *uvec, *gvec;
   struct iouser *user;
   struct port_info *pt =
     ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
-  
+
   if (!pt)
     return EOPNOTSUPP;
 
-  if (handle_len != sizeof (struct diskfs_fhandle))
+  if (handle_len != sizeof *f)
     {
       ports_port_deref (pt);
       return EINVAL;
     }
 
-  f = (struct diskfs_fhandle *) handle;
+  f = (const union diskfs_fhandle *) handle;
 
-  err = diskfs_cached_lookup (f->cache_id, &node);
+  err = diskfs_cached_lookup (f->data.cache_id, &node);
   if (err)
     {
       ports_port_deref (pt);
       return err;
     }
 
-  if (node->dn_stat.st_gen != f->gen)
+  if (node->dn_stat.st_gen != f->data.gen)
     {
       diskfs_nput (node);
       ports_port_deref (pt);
       return ESTALE;
     }
-  
+
   uvec = make_idvec ();
   gvec = make_idvec ();
 
   idvec_set_ids (uvec, uids, nuids);
   idvec_set_ids (gvec, gids, ngids);
   user = iohelp_create_iouser (uvec, gvec);
-  
+
   flags = 0;
   if (! fshelp_access (&node->dn_stat, S_IREAD, user))
     flags |= O_READ;
@@ -88,12 +88,12 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
 
   err = diskfs_create_protid (diskfs_make_peropen (node, flags, 0),
 			      user, &new_cred);
-  
+
   iohelp_free_iouser (user);
-  
+
   diskfs_nput (node);
   ports_port_deref (pt);
-  
+
   if (! err)
     {
       *file = ports_get_right (new_cred);

@@ -1,6 +1,6 @@
 /* File handle type (for nfs server support)
 
-   Copyright (C) 1997 Free Software Foundation
+   Copyright (C) 1997,99 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -22,12 +22,15 @@
 #define __FHANDLE_H__
 
 /* Must be exactly 28 bytes long */
-struct diskfs_fhandle
+union diskfs_fhandle
 {
-  int filler1;
-  int cache_id;
-  long gen;
-  int filler2[28 - sizeof (int) + sizeof (int) + sizeof (long)];
+  unsigned char bytes[28];
+  struct
+  {
+    int pad1;
+    int cache_id;
+    unsigned int gen;
+  } data;
 };
 
 #endif /* __FHANDLE_H__ */
