@@ -89,8 +89,10 @@ struct transbox
    node for the file itself in *UNDERLYING, and point *ARGZ at
    the entire passive translator spec for the file (setting
    *ARGZ_LEN to the length.)   If there is no passive 
-   translator, then return ENOENT.  */
-typedef error_t (*fshelp_callback_t) (void *cookie,
+   translator, then return ENOENT.   COOKIE1 is the cookie passed
+   in fshelp_transbox_init.  COOKIE2 is the cookie passed in the
+   call to fshelp_fetch_root.  */
+typedef error_t (*fshelp_callback_t) (void *cookie1, void *cookie2,
 				      mach_port_t *underlying,
 				      uid_t *uid, gid_t *gid, 
 				      char **argz, int *argz_len);
@@ -105,7 +107,8 @@ typedef error_t (*fshelp_callback_t) (void *cookie,
    be held upon return, but may be released during the operation of
    the call.  */
 error_t
-fshelp_fetch_root (struct transbox *transbox, file_t dotdot, 
+fshelp_fetch_root (struct transbox *transbox, void *cookie,
+		   file_t dotdot, 
 		   uid_t *uids, int uids_len,
 		   uid_t *gids, int gids_len,
 		   int flags, fshelp_callback_t callback,
