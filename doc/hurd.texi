@@ -98,7 +98,7 @@
 @end direntry
 
 @ifinfo
-Copyright @copyright{} 1994-1999 Free Software Foundation, Inc.
+Copyright @copyright{} 1994-2000 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -131,7 +131,7 @@ into another language, under the above conditions for modified versions.
 @page
 
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1994--1998 Free Software Foundation, Inc.
+Copyright @copyright{} 1994--2000 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -429,7 +429,7 @@ intents and purposes, the Hurd is a modern Unix-like kernel.  The Hurd
 uses the GNU C Library, whose development closely tracks standards such
 as ANSI/ISO, BSD, POSIX, Single Unix, SVID, and X/Open.
 
-@item it is built to survive
+@item it's built to survive
 Unlike other popular kernel software, the Hurd has an object-oriented
 structure that allows it to evolve without compromising its design.
 This structure will help the Hurd undergo major redesign and
@@ -464,7 +464,20 @@ start using and developing it.
 @node Overview
 @section Overview
 
-FIXME: overview of basic Hurd architecture, FAQish in nature
+An operating system kernel provides a framework for programs to share a
+computer's hardware resources securely and efficiently.  This framework
+includes mechanisms for programs to communicate safely, even if they do
+not trust one another (@pxref{Ports Library}).
+
+The GNU Hurd divides up the work of the traditional kernel, and
+implements it in separate programs, or @dfn{kernel servers}.  The Hurd
+formally defines the communication protocols that each of the servers
+understands, so that it is possible for different servers to implement
+the same interface.
+
+The GNU C Library provides a POSIX environment on the Hurd, by
+translating standard POSIX system calls into interactions with the
+appropriate Hurd server.
 
 
 @node History
