@@ -1,5 +1,5 @@
 /* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -396,6 +396,8 @@ copy_sblock ()
 void
 diskfs_readonly_changed (int readonly)
 {
+  (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
+
   vm_protect (mach_task_self (),
 	      (vm_address_t)disk_image, store->size,
 	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));

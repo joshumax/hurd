@@ -1,5 +1,7 @@
 1999-06-29  Thomas Bushnell, BSG  <tb@mit.edu>
 
+	* dev-globals.c, dev-io.c, dev-open.c: Files removed.
+
 	* lookup.c (diskfs_lookup): If we get an error from
 	fshelp_checkdirmod, clear *NP as well as returning the error.
 	Use diskfs_nrele instead of diskfs_nput in case *NP and DP are

@@ -1,3 +1,8 @@
+1999-06-29  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* hyper.c (diskfs_readonly_changed): Adjust whether the store
+	should permit writes too.
+
 1999-05-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Remove bogus uninitialized variable ERR.

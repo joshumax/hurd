@@ -1,6 +1,6 @@
 /* Fetching and storing the hypermetadata (superblock and bg summary info)
 
-   Copyright (C) 1994,95,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,99, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -191,6 +191,8 @@ void
 diskfs_readonly_changed (int readonly)
 {
   allocate_mod_map ();
+
+  (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
 
   vm_protect (mach_task_self (), (vm_address_t)disk_image,
 	      store->size, 0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
