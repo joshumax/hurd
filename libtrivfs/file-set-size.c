@@ -23,5 +23,5 @@ kern_return_t
 trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
 {
   assert (!trivfs_support_write);
-  return cred ? EBADF : EOPNOTSUPP;
+  return EOPNOTSUPP;
 }
