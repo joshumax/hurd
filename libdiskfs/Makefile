@@ -50,7 +50,8 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	boot-parse.c boot-start.c ports-clean.c				    \
 	ports-consts.c pager-consts.c ports-demuxer.c exc.c node-times.c    \
 	trans-sync.c shutdown.c ports-noports.c ports-soft.c ports-idle.c   \
-	sync-interval.c sync-default.c
+	sync-interval.c sync-default.c					    \
+	opts-set.c opts-std-startup.c opts-runtime-def.c
 
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
@@ -58,14 +59,18 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
 	interruptServer.o fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 notify-MIGSFLAGS = -DSEQNOS
 
-OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
+OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS)) argz.o options.o
 
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
-REMHDRS = ../hurd/ports.h ../hurd/pager.h ../hurd/fshelp.h ../hurd/ioserver.h
+REMHDRS = ../hurd/ports.h ../hurd/pager.h ../hurd/fshelp.h ../hurd/ioserver.h ../lib/argz.h ../lib/options.h
 MIGSFLAGS = -imacros fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 libname = libdiskfs
 installhdrs = diskfs.h
+
+CPPFLAGS += -I../lib
+CPPFLAGS += $(CPPFLAGS-$(notdir $<))
+vpath %.c ../lib
 
 include ../Makeconf
 
