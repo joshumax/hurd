@@ -115,10 +115,12 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	  int sign = 1;
 	  int explicit_width = 0, explicit_precision = 0;
 	  int quoted_name = 0;	/* True if the name is quoted with { ... }. */
-	  char *spec_start = src++;
 	  /* Modifications to the spec's flags -- the bits in CLR_FLAGS are
 	     cleared from it, and then the bits in INV_FLAGS are inverted.  */
 	  int clr_flags = global_clr_flags, inv_flags = global_inv_flags;
+
+	  if (! posix)
+	    src++;		/* skip the '%' */
 
 	  /* Set modifiers.   */
 	  while (*src == '@' || *src == ':'
@@ -194,6 +196,7 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 		  while (*src != '\0' && *src != stop)
 		    src++;
 		}
+	      *src++ = '\0';	/* NUL terminhate NAME. */
 	    }
 	  else
 	    /* A gnu-style field spec: `NAME' or `NAME:TITLE'.  */
@@ -210,19 +213,19 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 		  while (*src != '\0' && *src != '}')
 		    src++;
 		}
+
+	      /* Move the name down one byte (we know there's room, at least
+		 the leading `%') so that we have room to NUL-terminate the
+		 name for which we're searching.  We also adjust any pointers
+		 into this spec-string accordingly.  */
+	      bcopy (name, name - 1, src - name);
+	      name--;
+	      if (field->title)
+		field->title--;
+
+	      /* Now that we've made room, do the termination of NAME.  */
+	      src[-1] = '\0';
 	    }
-
-	  /* Now that we've parsed everything in this spec, move the whole
-	     thing down one byte (trashing the leading `%') so that we have
-	     room to NUL-terminate the name for which we're searching.  We
-	     also adjust any pointers into this spec-string accordingly.  */
-	  bcopy (spec_start + 1, spec_start, src - spec_start - 1);
-	  name--;
-	  if (field->title)
-	    field->title--;
-
-	  /* Now that we've made room, do the termination of NAME.  */
-	  src[-1] = '\0';
 
 	  field->spec = ps_fmt_specs_find (fmt_specs, name);
 	  if (! field->spec)
@@ -259,9 +262,13 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	    /* Skip optional trailing `}' after the spec name.  */
 	    src++;
 	  if (posix)
-	    /* Inter-field whitespace isn't significant for posix formats. */
-	    while (isspace (*src))
-	      src++;
+	    /* Skip interfield noise.  */
+	    {
+	      if (*src == ',')
+		src++;
+	      while (isspace (*src))
+		src++;
+	    }
 
 	  /* Remember the width's sign (we put it here after possibly using a
 	     default width so that the user may include a `-' with no width
