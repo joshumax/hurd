@@ -33,14 +33,14 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)pass1.c	8.1 (Berkeley) 6/5/93";*/
-static char *rcsid = "$Id: pass1.c,v 1.1 1994/08/23 19:29:23 mib Exp $";
+static char *rcsid = "$Id: pass1.c,v 1.2 1994/08/23 20:15:16 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 #include <stdlib.h>
 #include <string.h>
 #include "fsck.h"
@@ -99,13 +99,13 @@ checkinode(inumber, idesc)
 	char *symbuf;
 
 	dp = getnextinode(inumber);
-	mode = dp->di_mode & IFMT;
+	mode = DI_MODE(dp) & IFMT;
 	if (mode == 0) {
 		if (bcmp((char *)dp->di_db, (char *)zino.di_db,
 			NDADDR * sizeof(daddr_t)) ||
 		    bcmp((char *)dp->di_ib, (char *)zino.di_ib,
 			NIADDR * sizeof(daddr_t)) ||
-		    dp->di_mode || dp->di_size) {
+		    DI_MODE(dp) || dp->di_size) {
 			pfatal("PARTIALLY ALLOCATED INODE I=%lu", inumber);
 			if (reply("CLEAR") == 1) {
 				dp = ginode(inumber);
@@ -126,7 +126,12 @@ checkinode(inumber, idesc)
 	if (!preen && mode == IFMT && reply("HOLD BAD BLOCK") == 1) {
 		dp = ginode(inumber);
 		dp->di_size = sblock.fs_fsize;
+#if 0
 		dp->di_mode = IFREG|0600;
+#else
+		dp->di_modeh = 0;
+		dp->di_model = IFREG|0600;
+#endif		
 		inodirty();
 	}
 	ndb = howmany(dp->di_size, sblock.fs_bsize);
