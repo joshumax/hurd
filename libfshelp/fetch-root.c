@@ -78,7 +78,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 			       &gid, &argz, &argz_len);
 	    if (err)
 	      return err;
-      
+	          
 	    mutex_lock (&box->innerlock); /* cancellation point XXX */
 	    mutex_unlock (box->lock);
 
@@ -144,7 +144,6 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
     }
   while (err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED);
   
-  mach_port_deallocate (mach_task_self (), dotdot);
   return err;
 }
 
