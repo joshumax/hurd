@@ -16,10 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-error_t
-trivfs_S_dir_readdir (struct protid *cred,
-		      char *data,
+kern_return_t
+trivfs_S_dir_readdir (struct trivfs_protid *cred,
+		      char **data,
 		      u_int *datalen,
 		      off_t offset,
 		      off_t *nextoff,
