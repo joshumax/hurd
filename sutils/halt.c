@@ -24,15 +24,7 @@
 
 main ()
 {
-  host_priv_t host_priv;
-  device_t dev;
-  process_t proc;
-  mach_port_t msg;
-
-  get_privileged_ports (&host_priv, &dev);
-  proc = getproc ();
-  proc_getmsgport (proc, 1, &msg);
-  startup_reboot (msg, host_priv, RB_HALT);
+  reboot (RB_HALT);
 }
 
   
