@@ -15,11 +15,10 @@ mighost := ernst.gnu.ai.mit.edu
 # can be found in /usr/local/lib/lib-gcc).
 CCTARGET=i386-gnu
 hostname := $(shell hostname)
-CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.6.2)
+CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.7.1)
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
 CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
-CCVERSION-duality.gnu.ai.mit.edu = 2.6.4
 
 ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 crossdir := /usr/local/$(CCTARGET)
