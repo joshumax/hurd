@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,7 +20,7 @@ makemode := library
 
 # In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
 # all done in libc.
-SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c malloc.c \
+SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c \
 	cancel-cond.c rwlock.c
 I386SRCS := i386/csw.S i386/thread.c
 
