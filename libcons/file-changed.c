@@ -124,19 +124,28 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 			scrolling = UINT32_MAX - vcons->state.screen.cur_line
 			  + 1 + new_cur_line;
 
-		      /* If we are scrollbacking, defer scrolling
+		      /* If we are scrolling back, defer scrolling
 			 until absolutely necessary.  */
 		      if (vcons->scrolling)
 			{
-			  if (vcons->scrolling + scrolling <= vcons->state.screen.scr_lines)
-			    {
-			      vcons->scrolling += scrolling;
-			      scrolling = 0;
-			    }
+			  if (_cons_jump_down_at_output)
+			    _cons_vcons_scrollback
+			      (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 			  else
 			    {
-			      scrolling -= vcons->state.screen.scr_lines - vcons->scrolling;
-			      vcons->scrolling = vcons->state.screen.scr_lines;
+			      if (vcons->scrolling + scrolling
+				  <= vcons->state.screen.scr_lines)
+				{
+				  vcons->scrolling += scrolling;
+				  scrolling = 0;
+				}
+			      else
+				{
+				  scrolling -= vcons->state.screen.scr_lines
+				    - vcons->scrolling;
+				  vcons->scrolling
+				    = vcons->state.screen.scr_lines;
+				}
 			    }
 			}
 
@@ -224,6 +233,9 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	      off_t start_rel = 0;    /* start relative to visible start.  */
 	      off_t start = change.matrix.start;
 	      off_t end = change.matrix.end;
+
+	      if (vcons->scrolling && _cons_jump_down_at_output)
+		_cons_vcons_scrollback (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 
 	      if (vcons->state.screen.cur_line >= vcons->scrolling)
 		rotate = vcons->state.screen.cur_line - vcons->scrolling;

@@ -25,8 +25,19 @@
    server.  */
 extern int _cons_slack;
 
+/* If we jump down at input.  */
+extern int _cons_jump_down_at_input;
+
+/* If we jump down at output.  */
+extern int _cons_jump_down_at_output;
+
 /* The filename of the console server.  */
 extern char *_cons_file;
+
+
+/* Non-locking version of cons_vcons_scrollback.  Does also not update
+   the display.  */
+int _cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value);
 
 
 /* Called by MiG to translate ports into cons_notify_t.  mutations.h

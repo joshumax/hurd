@@ -24,29 +24,43 @@
 
 #include "cons.h"
 
-/* Scroll back into the history of VCONS by DELTA lines.  */
+/* Non-locking version of cons_vcons_scrollback.  Does also not update
+   the display.  */
 int
-cons_vcons_scrollback (vcons_t vcons, int delta)
+_cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
 {
   int scrolling;
   uint32_t new_scr;
 
-  mutex_lock (&vcons->lock);
-  if (delta > 0 || vcons->scrolling > (uint32_t) (-delta))
+  switch (type)
     {
-      new_scr = vcons->scrolling + delta;
-      if (new_scr > vcons->state.screen.scr_lines)
-	new_scr = vcons->state.screen.scr_lines;
-    }
-  else
-    new_scr = 0;
-
-  if (new_scr == vcons->scrolling)
-    {
-      mutex_unlock (&vcons->lock);
+    case CONS_SCROLL_DELTA_LINES:
+      scrolling = vcons->scrolling + ((uint32_t) value);
+      break;
+    case CONS_SCROLL_DELTA_SCREENS:
+      scrolling = vcons->scrolling
+	+ ((uint32_t) (value * vcons->state.screen.height));
+      break;
+    case CONS_SCROLL_ABSOLUTE_LINE:
+      scrolling = (uint32_t) value;
+      break;
+    case CONS_SCROLL_ABSOLUTE_PERCENTAGE:
+      scrolling = (uint32_t) (value * vcons->state.screen.scr_lines);
+      break;
+    default:
       return 0;
     }
-  
+
+  if (scrolling < 0)
+    new_scr = 0;
+  else if (scrolling > vcons->state.screen.scr_lines)
+    new_scr = vcons->state.screen.scr_lines;
+  else
+    new_scr = scrolling;
+
+  if (new_scr == vcons->scrolling)
+    return 0;
+
   scrolling = vcons->scrolling - new_scr;
   {
     uint32_t new_cur_line;
@@ -114,9 +128,30 @@ cons_vcons_scrollback (vcons_t vcons, int delta)
       cons_vcons_set_cursor_status (vcons, CONS_CURSOR_INVISIBLE);
   }
 
-  cons_vcons_update (vcons);
   vcons->scrolling -= scrolling;
-  mutex_unlock (&vcons->lock);
 
   return -scrolling;
 }
+
+/* Scroll back into the history of VCONS.  If TYPE is
+   CONS_SCROLL_DELTA_LINES, scroll up or down by VALUE lines.  If TYPE
+   is CONS_SCROLL_DELTA_SCREENS, scroll up or down by VALUE multiples
+   of a screen height.  If TYPE is CONS_SCROLL_ABSOLUTE_LINE, scroll to
+   line VALUE (where 0 is the lowest line).  If TYPE is
+   CONS_SCROLL_ABSOLUTE_PERCENTAGE, scroll to the position determined
+   by VALUE, where 0 is the bottom and 1 is the top.
+
+   The function returns the number of lines actually scrolled up or
+   down.  */
+int
+cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
+{
+  int ret;
+
+  mutex_lock (&vcons->lock);
+  ret = _cons_vcons_scrollback (vcons, type, value);
+  cons_vcons_update (vcons);
+  mutex_unlock (&vcons->lock);
+  return ret;
+}
+

@@ -189,7 +189,7 @@ void cons_vcons_scroll (vcons_t vcons, int delta);
 void cons_vcons_update (vcons_t vcons);
 
 /* The user must define this function.  Make the virtual console
-   VCONS, which is locked, beep audible.  */
+   VCONS, which is locked, beep audibly.  */
 void cons_vcons_beep (vcons_t vcons);
 
 /* The user must define this function.  Make the virtual console
@@ -218,8 +218,27 @@ void cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry);
    be locked.  */
 error_t cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons);
 
-/* Scroll back into the history of VCONS by DELTA lines.  */
-int cons_vcons_scrollback (vcons_t vcons, int delta);
+/* Enter SIZE bytes from the buffer BUF into the virtual console
+   VCONS.  */
+error_t cons_vcons_input (vcons_t vcons, char *buf, size_t size);
+
+typedef enum
+  {
+    CONS_SCROLL_DELTA_LINES, CONS_SCROLL_DELTA_SCREENS,
+    CONS_SCROLL_ABSOLUTE_LINE, CONS_SCROLL_ABSOLUTE_PERCENTAGE
+  } cons_scroll_t;
+
+/* Scroll back into the history of VCONS.  If TYPE is
+   CONS_SCROLL_DELTA_LINES, scroll up or down by VALUE lines.  If TYPE
+   is CONS_SCROLL_DELTA_SCREENS, scroll up or down by VALUE multiples
+   of a screen height.  If TYPE is CONS_SCROLL_ABSOLUTE_LINE, scroll to
+   line VALUE (where 0 is the lowest line).  If TYPE is
+   CONS_SCROLL_ABSOLUTE_PERCENTAGE, scroll to the position determined
+   by VALUE, where 0 is the bottom and 1 is the top.
+
+   The function returns the number of lines actually scrolled up or
+   down.  */
+int cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value);
 
 
 extern const struct argp cons_startup_argp;
