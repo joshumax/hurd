@@ -1,3 +1,10 @@
+2004-10-22  Roland McGrath  <roland@frob.com>
+
+	* exec.c (check_elf_phdr): Return early on setting ENOEXEC.
+	Only touch E->info.elf.phdr_addr once, on the PT_LOAD segment that
+	actually contains the e_phoff location in the file.
+	(do_exec): If E.info.elf.phdr_addr is zero, don't set BOOT->phdr_size.
+
 2004-09-26  Roland McGrath  <roland@frob.com>
 
 	* priv.h (struct execdata.info.elf): New field `phdr_addr'.
