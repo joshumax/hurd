@@ -1000,30 +1000,82 @@ argp_hol (const struct argp *argp, struct hol_cluster *cluster)
       }
   return hol;
 }
+
+/* Calculate how many different levels with alternative args strings exist in
+   ARGP.  */
+static size_t
+argp_args_levels (const struct argp *argp)
+{
+  size_t levels = 0;
+  const struct argp_child *child = argp->children;
+
+  if (argp->args_doc && strchr (argp->args_doc, '\n'))
+    levels++;
+
+  if (child)
+    while (child->argp)
+      levels += argp_args_levels ((child++)->argp);
+
+  return levels;
+}
 
 /* Print all the non-option args documented in ARGP to STREAM.  Any output is
-   preceded by a space.  */
-static void
-argp_args_usage (const struct argp *argp, argp_fmtstream_t stream)
+   preceded by a space.  LEVELS is a pointer to a byte vector the length
+   returned by argp_args_levels; it should be initialized to zero, and
+   updated by this routine for the next call if ADVANCE is true.  True is
+   returned as long as there are more patterns to output.  */
+static int
+argp_args_usage (const struct argp *argp, char *levels, int advance,
+		 argp_fmtstream_t stream)
 {
+  int level = 0;
   const struct argp_child *child = argp->children;
-  const char *doc = argp->args_doc;
+  const char *doc = argp->args_doc, *nl = 0;
+
   if (doc)
     {
+      nl = strchr (doc, '\n');
+      if (nl)
+	/* This is a `multi-level' args doc; advance to the correct position
+	   as determined by our state in LEVELS, and update LEVELS.  */
+	{
+	  for (level = 0; level < *levels; level++)
+	    doc = nl + 1, nl = strchr (doc, '\n');
+	  levels++;
+	}
+      if (! nl)
+	nl = doc + strlen (doc);
+
       /* Manually do line wrapping so that it (probably) won't get wrapped at
 	 any embedded spaces.  */
-      if (__argp_fmtstream_point (stream) + 1 + strlen (doc)
+      if (__argp_fmtstream_point (stream) + 1 + nl - doc
 	  >= __argp_fmtstream_rmargin (stream))
 	__argp_fmtstream_putc (stream, '\n');
       else
 	__argp_fmtstream_putc (stream, ' ');
-      __argp_fmtstream_puts (stream, doc);
+
+      __argp_fmtstream_write (stream, doc, nl - doc);
     }
+
   if (child)
     while (child->argp)
-      argp_args_usage ((child++)->argp, stream);
-}
+      advance = !argp_args_usage ((child++)->argp, levels++, advance, stream);
 
+  if (advance)
+    /* Need to increment our level.  */
+    if (nl && *nl)
+      /* There's more we can do here.  */
+      {
+	levels[-1]++;
+	advance = 0;		/* Our parent shouldn't advance also. */
+      }
+    else if (level > 0)
+      /* We had multiple levels, but used them up; reset to zero.  */
+      levels[-1] = 0;
+
+  return !advance;
+}
+
 /* Print the documentation for ARGP to STREAM; if POST is false, then
    everything preceeding a `\v' character in the documentation strings (or
    the whole string, for those with none) is printed, otherwise, everything
@@ -1098,31 +1150,48 @@ void __argp_help (const struct argp *argp, FILE *stream,
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE))
     /* Print a short `Usage:' message.  */
     {
-      int old_lm;
-      int old_wm = __argp_fmtstream_set_wmargin (fs, USAGE_INDENT);
+      int first_pattern = 1, more_patterns;
+      size_t num_pattern_levels = argp_args_levels (argp);
+      char *pattern_levels = alloca (num_pattern_levels);
 
-      __argp_fmtstream_printf (fs, "Usage: %s", name);
+      memset (pattern_levels, 0, num_pattern_levels);
 
-      /* We set the lmargin as well as the wmargin, because hol_usage
-	 manually wraps options with newline to avoid annoying breaks.  */
-      old_lm = __argp_fmtstream_set_lmargin (fs, USAGE_INDENT);
-
-      if (flags & ARGP_HELP_SHORT_USAGE)
-	/* Just show where the options go.  */
+      do
 	{
-	  if (hol->num_entries > 0)
-	    __argp_fmtstream_puts (fs, " [OPTION...]");
+	  int old_lm;
+	  int old_wm = __argp_fmtstream_set_wmargin (fs, USAGE_INDENT);
+
+	  __argp_fmtstream_printf (fs, "%s %s",
+				   first_pattern ? "Usage:" : "  or: ", name);
+
+	  /* We set the lmargin as well as the wmargin, because hol_usage
+	     manually wraps options with newline to avoid annoying breaks.  */
+	  old_lm = __argp_fmtstream_set_lmargin (fs, USAGE_INDENT);
+
+	  if (flags & ARGP_HELP_SHORT_USAGE)
+	    /* Just show where the options go.  */
+	    {
+	      if (hol->num_entries > 0)
+		__argp_fmtstream_puts (fs, " [OPTION...]");
+	    }
+	  else
+	    /* Actually print the options.  */
+	    {
+	      hol_usage (hol, fs);
+	      flags |= ARGP_HELP_SHORT_USAGE; /* But only do so once.  */
+	    }
+
+	  more_patterns = argp_args_usage (argp, pattern_levels, 1, fs);
+
+	  __argp_fmtstream_set_wmargin (fs, old_wm);
+	  __argp_fmtstream_set_lmargin (fs, old_lm);
+
+	  __argp_fmtstream_putc (fs, '\n');
+	  anything = 1;
+
+	  first_pattern = 0;
 	}
-      else
-	/* Actually print the options.  */
-	hol_usage (hol, fs);
-      argp_args_usage (argp, fs);
-
-      __argp_fmtstream_set_wmargin (fs, old_wm);
-      __argp_fmtstream_set_lmargin (fs, old_lm);
-
-      __argp_fmtstream_putc (fs, '\n');
-      anything = 1;
+      while (more_patterns);
     }
 
   if (flags & ARGP_HELP_PRE_DOC)
