@@ -256,7 +256,7 @@ include $(subst Server.o,.migsh_d,$(filter %Server.o,$(OBJS))) /dev/null
 include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
 # For each .o file we need a .d file.
-include $(OBJS:.o=.d) /dev/null
+include $(subst .o,.d,$(filter %.o $(OBJS))) /dev/null
 
 endif
 
