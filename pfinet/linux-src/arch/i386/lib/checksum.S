@@ -334,15 +334,15 @@ DST(	movb %cl, (%edi)	)
 7:
 5000:
 
-# Exception handler:
+/* Exception handler: */
 .section .fixup, "ax"							
 
 6001:
 	movl ARGBASE+20(%esp), %ebx	# src_err_ptr
 	movl $-EFAULT, (%ebx)
 
-	# zero the complete destination - computing the rest
-	# is too much work 
+	/* zero the complete destination - computing the rest
+	   is too much work  */
 	movl ARGBASE+8(%esp), %edi	# dst
 	movl ARGBASE+12(%esp), %ecx	# len
 	xorl %eax,%eax
