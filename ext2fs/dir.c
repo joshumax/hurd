@@ -1,5 +1,6 @@
 /* Directory management routines
-   Copyright (C) 1994 Free Software Foundation
+
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,14 +16,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ufs.h"
-#include "dir.h"
+#include "ext2fs.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <dirent.h>
 
-#undef d_ino
+/* This is bogus, but oh well...  XXX  */
+#define DIRBLKSZ block_size
 
 enum slot_status
 {
@@ -68,11 +69,11 @@ struct dirstat
   /* For stat COMPRESS, this is the address (inside mapbuf) 
      of the first direct in the directory block to be compressed. */
   /* For stat HERE_TIS, SHRINK, and TAKE, this is the entry referenced. */
-  struct directory_entry *entry;
+  struct ext2_dir_entry *entry;
 
   /* For stat HERE_TIS, type REMOVE, this is the address of the immediately
      previous direct in this directory block, or zero if this is the first. */
-  struct directory_entry *preventry;
+  struct ext2_dir_entry *preventry;
 };
 
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
@@ -108,7 +109,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   
   namelen = strlen (name);
 
-  if (namelen > MAXNAMLEN)
+  if (namelen > EXT2_NAME_LEN)
     return ENAMETOOLONG;
   
   if (!S_ISDIR (dp->dn_stat.st_mode))
@@ -307,28 +308,28 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
   int needed = 0;
   int countup = 0;
   vm_address_t currentoff, prevoff;
-  struct directory_entry *entry;
+  struct ext2_dir_entry *entry;
   int nentries = 0;
 
   if (ds && ds->stat == LOOKING)
     {
       countup = 1;
-      needed = DIRSIZ (namelen);
+      needed = EXT2_DIR_REC_LEN (namelen);
     }
   
   for (currentoff = blockaddr, prevoff = 0;
        currentoff < blockaddr + DIRBLKSIZ;
-       prevoff = currentoff, currentoff += entry->d_reclen)
+       prevoff = currentoff, currentoff += entry->rec_len)
     {
-      entry = (struct directory_entry *)currentoff;
+      entry = (struct ext2_dir_entry *)currentoff;
       
-      if (!entry->d_reclen
-	  || entry->d_reclen % 4
-	  || DIRECT_NAMLEN (entry) > MAXNAMLEN
-	  || currentoff + entry->d_reclen > blockaddr + DIRBLKSIZ
-	  || entry->d_name[DIRECT_NAMLEN (entry)]
-	  || DIRSIZ (DIRECT_NAMLEN (entry)) > entry->d_reclen
-	  || memchr (entry->d_name, '\0', DIRECT_NAMLEN (entry)))
+      if (!entry->rec_len
+	  || entry->rec_len % 4
+	  || entry->name_len > EXT2_NAME_LEN
+	  || currentoff + entry->rec_len > blockaddr + DIRBLKSIZ
+	  || entry->d_name[entry->name_len]
+	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
+	  || memchr (entry->d_name, '\0', entry->name_len))
 	{
 	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
 		  dp->dn->number, currentoff - blockaddr + idx * DIRBLKSIZ);
@@ -339,15 +340,15 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	{
 	  int thisfree;
 	  
-	  if (entry->d_ino == 0)
-	    thisfree = entry->d_reclen;
+	  if (entry->inode == 0)
+	    thisfree = entry->rec_len;
 	  else
-	    thisfree = entry->d_reclen - DIRSIZ (DIRECT_NAMLEN (entry));
+	    thisfree = entry->rec_len - EXT2_DIR_REC_LEN (entry->name_len);
 	  
 	  if (thisfree >= needed)
 	    {
 	      ds->type = CREATE;
-	      ds->stat = entry->d_ino == 0 ? TAKE : SHRINK;
+	      ds->stat = entry->inode == 0 ? TAKE : SHRINK;
 	      ds->entry = entry;
 	      ds->idx = idx;
 	      countup = 0;
@@ -359,19 +360,19 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 		{
 		  ds->type = CREATE;
 		  ds->stat = COMPRESS;
-		  ds->entry = (struct directory_entry *) blockaddr;
+		  ds->entry = (struct ext2_dir_entry *) blockaddr;
 		  ds->idx = idx;
 		  countup = 0;
 		}
 	    }
 	}
       
-      if (entry->d_ino)
+      if (entry->inode)
 	nentries++;
 
-      if (DIRECT_NAMLEN (entry) == namelen
+      if (entry->name_len == namelen
 	  && entry->d_name[0] == name[0]
-	  && entry->d_ino
+	  && entry->inode
 	  && !bcmp (entry->d_name, name, namelen))
 	break;
     }
@@ -408,10 +409,10 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       ds->stat = HERE_TIS;
       ds->entry = entry;
       ds->idx = idx;
-      ds->preventry = (struct directory_entry *) prevoff;
+      ds->preventry = (struct ext2_dir_entry *) prevoff;
     }
 
-  *inum = entry->d_ino;
+  *inum = entry->inode;
   return 0;
 }
 
@@ -428,9 +429,9 @@ diskfs_direnter(struct node *dp,
 		struct dirstat *ds,
 		struct protid *cred)
 {
-  struct directory_entry *new;
+  struct ext2_dir_entry *new;
   int namelen = strlen (name);
-  int needed = DIRSIZ (namelen);
+  int needed = EXT2_DIR_REC_LEN (namelen);
   int oldneeded;
   vm_address_t fromoff, tooff;
   int totfreed;  
@@ -443,12 +444,10 @@ diskfs_direnter(struct node *dp,
     {
     case TAKE:
       /* We are supposed to consume this slot. */
-      assert (ds->entry->d_ino == 0 && ds->entry->d_reclen >= needed);
+      assert (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
       
-      ds->entry->d_ino = np->dn->number;
-      DIRECT_NAMLEN (ds->entry) = namelen;
-      if (direct_symlink_extension)
-	ds->entry->d_type = IFTODT (np->dn_stat.st_mode);
+      ds->entry->inode = np->dn->number;
+      ds->entry->name_len = namelen;
       bcopy (name, ds->entry->d_name, namelen + 1);
 
       break;
@@ -456,19 +455,17 @@ diskfs_direnter(struct node *dp,
     case SHRINK:
       /* We are supposed to take the extra space at the end
 	 of this slot. */
-      oldneeded = DIRSIZ (DIRECT_NAMLEN (ds->entry));
-      assert (ds->entry->d_reclen - oldneeded >= needed);
+      oldneeded = EXT2_DIR_REC_LEN (ds->entry->name_len);
+      assert (ds->entry->rec_len - oldneeded >= needed);
       
-      new = (struct directory_entry *) ((vm_address_t) ds->entry + oldneeded);
+      new = (struct ext2_dir_entry *) ((vm_address_t) ds->entry + oldneeded);
 
-      new->d_ino = np->dn->number;
-      new->d_reclen = ds->entry->d_reclen - oldneeded;
-      DIRECT_NAMLEN (new) = namelen;
-      if (direct_symlink_extension)
-	new->d_type = IFTODT (np->dn_stat.st_mode);
+      new->inode = np->dn->number;
+      new->rec_len = ds->entry->rec_len - oldneeded;
+      new->name_len = namelen;
       bcopy (name, new->d_name, namelen + 1);
       
-      ds->entry->d_reclen = oldneeded;
+      ds->entry->rec_len = oldneeded;
       
       break;
       
@@ -481,18 +478,18 @@ diskfs_direnter(struct node *dp,
 
       while (fromoff < (vm_address_t) ds->entry + DIRBLKSIZ)
 	{
-	  struct directory_entry *from = (struct directory_entry *)fromoff;
-	  struct directory_entry *to = (struct directory_entry *) tooff;
-	  int fromreclen = from->d_reclen;
+	  struct ext2_dir_entry *from = (struct ext2_dir_entry *)fromoff;
+	  struct ext2_dir_entry *to = (struct ext2_dir_entry *) tooff;
+	  int fromreclen = from->rec_len;
 
-	  if (from->d_ino != 0)
+	  if (from->inode != 0)
 	    {
 	      assert (fromoff >= tooff);
 
 	      bcopy (from, to, fromreclen);
-	      to->d_reclen = DIRSIZ (DIRECT_NAMLEN (to));
+	      to->rec_len = EXT2_DIR_REC_LEN (to->name_len);
 
-	      tooff += to->d_reclen;
+	      tooff += to->rec_len;
 	    }
 	  fromoff += fromreclen;
 	}
@@ -500,12 +497,10 @@ diskfs_direnter(struct node *dp,
       totfreed = (vm_address_t) ds->entry + DIRBLKSIZ - tooff;
       assert (totfreed >= needed);
       
-      new = (struct directory_entry *) tooff;
-      new->d_ino = np->dn->number;
-      new->d_reclen = totfreed;
-      DIRECT_NAMLEN (new) = namelen;
-      if (direct_symlink_extension)
-	new->d_type = IFTODT (np->dn_stat.st_mode);
+      new = (struct ext2_dir_entry *) tooff;
+      new->inode = np->dn->number;
+      new->rec_len = totfreed;
+      new->name_len = namelen;
       bcopy (name, new->d_name, namelen + 1);
       break;
 
@@ -521,16 +516,14 @@ diskfs_direnter(struct node *dp,
 	    return err;
 	  }
 
-      new = (struct directory_entry *) (ds->mapbuf + oldsize);
+      new = (struct ext2_dir_entry *) (ds->mapbuf + oldsize);
 
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
 
-      new->d_ino = np->dn->number;
-      new->d_reclen = DIRBLKSIZ;
-      DIRECT_NAMLEN (new) = namelen;
-      if (direct_symlink_extension)
-	new->d_type = IFTODT (np->dn_stat.st_mode);
+      new->inode = np->dn->number;
+      new->rec_len = DIRBLKSIZ;
+      new->name_len = namelen;
       bcopy (name, new->d_name, namelen + 1);
       break;
       
@@ -588,12 +581,12 @@ diskfs_dirremove(struct node *dp,
   assert (ds->stat == HERE_TIS);
   
   if (ds->preventry == 0)
-    ds->entry->d_ino = 0;
+    ds->entry->inode = 0;
   else
     {
       assert ((vm_address_t) ds->entry - (vm_address_t) ds->preventry
-	      == ds->preventry->d_reclen);
-      ds->preventry->d_reclen += ds->entry->d_reclen;
+	      == ds->preventry->rec_len);
+      ds->preventry->rec_len += ds->entry->rec_len;
     }
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
@@ -626,9 +619,7 @@ diskfs_dirrewrite(struct node *dp,
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
   
-  ds->entry->d_ino = np->dn->number;
-  if (direct_symlink_extension)
-    ds->entry->d_type = IFTODT (np->dn_stat.st_mode);
+  ds->entry->inode = np->dn->number;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
@@ -646,7 +637,7 @@ int
 diskfs_dirempty(struct node *dp,
 		struct protid *cred)
 {
-  struct directory_entry *entry;
+  struct ext2_dir_entry *entry;
   int curoff;
   vm_address_t buf;
   memory_object_t memobj;
@@ -662,12 +653,12 @@ diskfs_dirempty(struct node *dp,
 
   for (curoff = buf; 
        curoff < buf + dp->dn_stat.st_size;
-       curoff += entry->d_reclen)
+       curoff += entry->rec_len)
     {
-      entry = (struct directory_entry *) curoff;
+      entry = (struct ext2_dir_entry *) curoff;
 
-      if (entry->d_ino != 0
-	  && (DIRECT_NAMLEN (entry) > 2
+      if (entry->inode != 0
+	  && (entry->name_len > 2
 	      || entry->d_name[0] != '.'
 	      || (entry->d_name[1] != '.'
 		  && entry->d_name[1] != '\0')))
@@ -702,7 +693,7 @@ count_dirents (struct node *dp, int nb, char *buf)
 {
   int amt;
   char *offinblk;
-  struct directory_entry *entry;
+  struct ext2_dir_entry *entry;
   int count = 0;
   error_t err;
 
@@ -716,10 +707,10 @@ count_dirents (struct node *dp, int nb, char *buf)
   
   for (offinblk = buf;
        offinblk < buf + DIRBLKSIZ;
-       offinblk += entry->d_reclen)
+       offinblk += entry->rec_len)
     {
-      entry = (struct directory_entry *) offinblk;
-      if (entry->d_ino)
+      entry = (struct ext2_dir_entry *) offinblk;
+      if (entry->inode)
 	count++;
     }
   
@@ -748,7 +739,7 @@ diskfs_get_directs (struct node *dp,
   error_t err;
   int i;
   char *datap;
-  struct directory_entry *entryp;
+  struct ext2_dir_entry *entryp;
   int allocsize;
   int checklen;
   struct dirent *userp;
@@ -819,7 +810,7 @@ diskfs_get_directs (struct node *dp,
 	}
       for (i = 0, bufp = buf; 
 	   i < entry - curentry && bufp - buf < DIRBLKSIZ; 
-	   bufp += ((struct directory_entry *)bufp)->d_reclen, i++)
+	   bufp += ((struct ext2_dir_entry *)bufp)->rec_len, i++)
 	;
       /* Make sure we didn't run off the end. */
       assert (bufp - buf < DIRBLKSIZ);
@@ -844,22 +835,21 @@ diskfs_get_directs (struct node *dp,
 	  bufp = buf;
 	}
 
-      entryp = (struct directory_entry *)bufp;
+      entryp = (struct ext2_dir_entry *)bufp;
 
-      if (entryp->d_ino)
+      if (entryp->inode)
 	{
 	  userp = (struct dirent *) datap;
 
-	  userp->d_fileno = entryp->d_ino;
-	  userp->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
-	  userp->d_namlen = DIRECT_NAMLEN (entryp);
-	  bcopy (entryp->d_name, userp->d_name, DIRECT_NAMLEN (entryp) + 1);
-	  userp->d_type = DT_UNKNOWN; /* until fixed */
+	  userp->d_fileno = entryp->inode;
+	  userp->rec_len = EXT2_DIR_REC_LEN (entryp->name_len);
+	  userp->name_len = entryp->name_len;
+	  bcopy (entryp->d_name, userp->d_name, entryp->name_len + 1);
 	  i++;
-	  datap += DIRSIZ (DIRECT_NAMLEN (entryp));
+	  datap += EXT2_DIR_REC_LEN (entryp->name_len);
 	}
 
-      bufp += entryp->d_reclen;
+      bufp += entryp->rec_len;
       if (bufp - buf == DIRBLKSIZ)
 	{
 	  blkno++;
