@@ -126,7 +126,7 @@ pq_queue (struct pq *pq, unsigned type, void *source)
       packet->buf = 0;
       packet->buf_len = 0;
       packet->ports = 0;
-      packet->num_ports = 0;
+      packet->num_ports = packet->ports_alloced = 0;
       packet->buf_start = packet->buf_end = packet->buf;
     }
   else
@@ -388,13 +388,17 @@ packet_read (struct packet *packet,
 	  if (start > end)
 	    /* Make sure BUF_START is never beyond BUF_END (page-aligning the
 	       new BUF_START may have move it past).  */
-	    packet->buf_end = start;
+	    {
+	      packet->buf_end = start;
+	      packet->buf_len = 0; /* Pin at 0, despite moving past the end. */
+	    }
+	  else
+	    /* Adjust BUF_LEN to reflect what the read has consumed.  */
+	    packet->buf_len -= start - buf;
 
-	  /* We've actually consumed the memory at the start of BUF, so
-	     adjust it and BUF_LEN to reflect this.  */
+	  /* We've actually consumed the memory at the start of BUF.  */
 	  packet->buf = start;
 	  packet->buf_start = start;
-	  packet->buf_len -= start - buf;
 	}
       else
 	/* Just copy the data the old fashioned way....  */
