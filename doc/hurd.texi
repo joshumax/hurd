@@ -1097,7 +1097,7 @@ The rest of the @code{libports} functions are dedicated to controlling
 RPC operations.  These functions help you do all the locking and thread
 cancellations that are required in order to build robust servers.
 
-@deftypefn {Typedef} {typedef int (*} ports_demuxer_type ) (@w{mach_msg_header_t *@var{inp}}, @w{mach_msg_header_t *@var{outp}})
+@deftypefn {Typedef} typedef int (*ports_demuxer_type) (@w{mach_msg_header_t *@var{inp}}, @w{mach_msg_header_t *@var{outp}})
 Type of MiG demuxer routines.
 @end deftypefn
 
@@ -2368,7 +2368,7 @@ for passing to RPCs, in addition to those passed to or created by
 automatically be recognized.
 @end deftypevar
 
-@deftypefn {Variable} {error_t (*} trivfs_check_open_hook ) (@w{struct trivfs_control *@var{cntl}}, @w{struct iouser *@var{user}}, @w{int @var{flags}})
+@deftypefn {Variable} error_t {(*trivfs_check_open_hook)} (@w{struct trivfs_control *@var{cntl}}, @w{struct iouser *@var{user}}, @w{int @var{flags}})
 If this variable is non-zero, it will be called every time an open happens.
 @var{user} and @var{flags} are from the open; @var{cntl} identifies the
 node being opened.  This call need not check permissions on the
@@ -2378,19 +2378,19 @@ returned, which will be reflected to the user and will prevent the open from
 succeeding.
 @end deftypefn
 
-@deftypefn {Variable} {error_t (*} trivfs_protid_create_hook ) (@w{struct trivfs_protid *@var{prot}})
-@deftypefnx {Variable} {error_t (*} trivfs_peropen_create_hook ) (@w{struct trivfs_peropen *@var{perop}})
+@deftypefn {Variable} error_t (*trivfs_protid_create_hook) (@w{struct trivfs_protid *@var{prot}})
+@deftypefnx {Variable} error_t (*trivfs_peropen_create_hook) (@w{struct trivfs_peropen *@var{perop}})
 If these variables are non-zero, they will be called every time a new protid or
 peropen structure is created and initialized.
 @end deftypefn
 
-@deftypefn {Variable} {void (*} trivfs_protid_destroy_hook ) (@w{struct trivfs_protid *@var{prot}})
-@deftypefnx {Variable} {void (*} trivfs_peropen_destroy_hook ) (@w{struct trivfs_peropen *@var{perop}})
+@deftypefn {Variable} void (*trivfs_protid_destroy_hook) (@w{struct trivfs_protid *@var{prot}})
+@deftypefnx {Variable} void (*trivfs_peropen_destroy_hook) (@w{struct trivfs_peropen *@var{perop}})
 If these variables is non-zero, they will be called every time a protid or
 peropen structure is about to be destroyed.
 @end deftypefn
 
-@deftypefn {Variable} {error_t (*} trivfs_getroot_hook ) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
+@deftypefn {Variable} error_t (*trivfs_getroot_hook) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
 If this variable is set, it will be called by @code{trivfs_S_fsys_getroot}
 before any other processing takes place.  If the return value is
 @code{EAGAIN}, normal trivfs getroot processing continues, otherwise the
@@ -2473,7 +2473,7 @@ These routines are self-contained and start passive translators,
 returning the control port.  They do not require multithreading or the
 ports library.
 
-@deftypefn {Typedef} {typedef error_t (*} fshelp_open_fn_t ) (@w{int @var{flags}}, @w{file_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
+@deftypefn {Typedef} typedef error_t (*fshelp_open_fn_t) (@w{int @var{flags}}, @w{file_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
 A callback used by the translator starting functions.
 Given some open flags, opens the appropriate file, and
 returns the node port.
@@ -2520,7 +2520,7 @@ Initialize a transbox, which contains state information for active
 translators.
 @end deftypefun
 
-@deftypefn {Typedef} {typedef error_t (*} fshelp_fetch_root_callback1_t ) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{gid}}, @w{char **@var{argz}}, @w{size_t *@var{argz_len}})
+@deftypefn {Typedef} typedef error_t (*fshelp_fetch_root_callback1_t) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{gid}}, @w{char **@var{argz}}, @w{size_t *@var{argz_len}})
 This routine is called by @code{fshelp_fetch_root} to fetch more
 information.  Return the owner and group of the underlying translated
 file in @code{*@var{uid}} and @code{*@var{gid}}; point
@@ -2531,7 +2531,7 @@ cookie passed in @code{fshelp_transbox_init}.  @var{cookie2} is the
 cookie passed in the call to @code{fshelp_fetch_root}.
 @end deftypefn
 
-@deftypefn {Typedef} {typedef error_t (*} fshelp_fetch_root_callback2_t ) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{int @var{flags}}, @w{mach_port_t *@var{underlying}}, @w{mach_msg_type_name_t *@var{underlying_type}})
+@deftypefn {Typedef} typedef error_t (*fshelp_fetch_root_callback2_t) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{int @var{flags}}, @w{mach_port_t *@var{underlying}}, @w{mach_msg_type_name_t *@var{underlying_type}})
 This routine is called by @code{fshelp_fetch_root} to fetch more
 information.  Return an unauthenticated node for the file itself in
 @code{*@var{underlying}} and @code{*@var{underlying_type}} (opened with
@@ -3567,7 +3567,7 @@ Standard encoding used for most data-providing (as opposed to filtering)
 store classes.
 @end deftypefun
 
-@deftypefn {Typedef} {typedef error_t (*} store_std_leaf_create_t )(@w{mach_port_t @var{port}}, @w{int @var{flags}}, @w{size_t @var{block_size}}, @w{const struct store_run *@var{runs}}, @w{size_t @var{num_runs}}, @w{struct store **@var{store}})
+@deftypefn {Typedef} typedef error_t (*store_std_leaf_create_t) (@w{mach_port_t @var{port}}, @w{int @var{flags}}, @w{size_t @var{block_size}}, @w{const struct store_run *@var{runs}}, @w{size_t @var{num_runs}}, @w{struct store **@var{store}})
 Creation function used by @code{store_std_leaf_decode}.
 @end deftypefn
 
@@ -4413,7 +4413,7 @@ is also reflected in @var{diskfs_readonly}).  This function is also
 called during initial startup if the filesystem is to be writable.
 @end deftypefun
 
-@deftypefn {Variable} {error_t (*} diskfs_create_symlink_hook ) (@w{struct node *@var{np}}, @w{char *@var{target}})
+@deftypefn {Variable} error_t (*diskfs_create_symlink_hook) (@w{struct node *@var{np}}, @w{char *@var{target}})
 If this function pointer is nonzero (and @code{diskfs_shortcut_symlink}
 is set) it is called to set a symlink.  If it returns @code{EINVAL} or
 isn't set, then the normal method (writing the contents into the file
@@ -4421,7 +4421,7 @@ data) is used.  If it returns any other error, it is returned to the
 user.
 @end deftypefn
 
-@deftypefn {Variable} {error_t (*} diskfs_read_symlink_hook ) (@w{struct node *@var{np}}, @w{char *@var{target}})
+@deftypefn {Variable} error_t (*diskfs_read_symlink_hook) (@w{struct node *@var{np}}, @w{char *@var{target}})
 If this function pointer is nonzero (and @code{diskfs_shortcut_symlink}
 is set) it is called to read the contents of a symlink.  If it returns
 @code{EINVAL} or isn't set, then the normal method (reading from the
