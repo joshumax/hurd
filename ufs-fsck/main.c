@@ -98,7 +98,7 @@ main (int argc, char **argv)
     printf ("** Phase 5 -- Check Cyl Groups\n");
   pass5 ();
   
-  if (fsmodified)
+  if (fsmodified && !preen)
     printf ("\n***** FILE SYSTEM WAS MODIFIED *****\n");
 
   exit (fsmodified ? 2 : 0);
