@@ -74,10 +74,10 @@ diskfs_lookup (struct node *dp,
 	       struct protid *cred)
 {
   error_t err;
-  struct node *ournp, **npp;
   
-  npp = np ? : &ournp;
-  
+  if (type == REMOVE || type == RENAME)
+    assert (np);
+
   if (!S_ISDIR (dp->dn_stat.st_mode))
     {
       diskfs_null_dirstat (ds);
@@ -106,18 +106,25 @@ diskfs_lookup (struct node *dp,
 	}
     }
   
-  err = diskfs_lookup_hard (dp, name, type, npp, ds, cred);
+  err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
   if (err && err != ENOENT)
     return err;
   
   if (type == RENAME
       || (type == CREATE && err == ENOENT)
       || (type == REMOVE && err != ENOENT))
-    err = diskfs_checkdirmod (dp, *npp, cred);
-
-  if (*npp && !np)
-    diskfs_nput (*npp);
+    err = diskfs_checkdirmod (dp, np, cred);
 
   return err;
 }
 
+  /* If we will be modifying the directory, make sure it's allowed. */
+  if (type == RENAME
+      || (type == REMOVE && inum)
+      || (type == CREATE && !inum))
+    {
+      err = diskfs_checkdirmod (dp, np, cred);
+      if (err)
+	goto out;
+    }
+  
