@@ -21,7 +21,7 @@ makemode := misc
 hdrs = $(wildcard $(srcdir)/*.defs $(srcdir)/*.h)
 DIST_FILES = subsystems $(notdir $(hdrs)) ioctl-tmpl.sym ioctl.awk gensym.awk
 
-INSTHDRS = hurd_types.h ioctl_types.h paths.h shared.h \
+INSTHDRS = hurd_types.h version.h ioctl_types.h paths.h shared.h \
 	$(notdir $(wildcard $(srcdir)/*.defs))
 
 include ../Makeconf
