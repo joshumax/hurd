@@ -29,6 +29,6 @@ OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
-pflocal: $(OBJS) ../libpipe/libpipe.a ../libtrivfs/libtrivfs.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+pflocal: $(OBJS) ../libpipe/libpipe.a ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
