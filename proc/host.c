@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include <mach/notify.h>
 #include <string.h>
+#include <stdio.h>
 #include <hurd/exec.h>
 
 #define HURD_VERSION_DEFINE
@@ -45,11 +46,11 @@ static char *machversion;
 
 struct server_version
 {
-  char *name,
-  char *version,
-  char *release,
+  char *name;
+  char *version;
+  char *release;
 } *server_versions;
-int nserver_versions, server_version_nalloc;
+int nserver_versions, server_versions_nalloc;
 
 
 
@@ -247,57 +248,6 @@ S_proc_execdata_notify (struct proc *p,
    The version for the Hurd itself comes from <hurd/hurd_types.h> and
    is compiled into proc. */
 
-kern_return_t
-S_proc_register_version (startup_t server,
-			 mach_port_t credential,
-			 const char *name,
-			 const char *release, 
-			 const char *version)
-{
-  int i, j;
-
-  if (credential != host_priv)
-    /* Must be privileged to register for uname. */
-    return EPERM;
-  
-  for (i = 0; i < nserver_versions; i++)
-    if (!strcmp (name, server_versions[i].name))
-      {
-	/* Change this entry */
-	free (server_versions[i].version);
-	free (server_versions[i].release);
-	server_versions[i].version = malloc (strlen (version) + 1);
-	server_versions[i].release = malloc (strlen (version) + 1);
-	strcpy (server_versions[i].version, version);
-	strcpy (server_versions[i].release, release);
-	break;
-      }
-  if (i == nserver_versions)
-    {
-      /* Didn't find it; extend. */
-      if (nserver_versions == versalloc)
-	{
-	  server_version_nalloc *= 2;
-	  server_versions 
-	    = realloc (server_versions, 
-		       sizeof (struct server_version) * server_version_nalloc);
-	}
-      server_versions[nserver_versions].name = malloc (strlen (name) + 1);
-      server_versions[nserver_versions].version = malloc (strlen (version) 
-							  + 1);
-      server_versions[nserver_versions].release = malloc (strlen (release)
-							  + 1);
-      strcpy (server_versions[nserver_versions].name, name);
-      strcpy (server_versions[nserver_versions].version, version);
-      strcpy (server_versions[nserver_versions].release, release);
-      nserver_versions++;
-    }
-  
-  rebuild_uname ();
-  mach_port_deallocate (mach_task_self (), credential);
-  return 0;
-}
-
 /* Rebuild the uname version string. */
 static void
 rebuild_uname ()
@@ -316,7 +266,7 @@ rebuild_uname ()
       int i;
       if (strcmp (server->release, hurd->hurdrelease))
 	return 0;
-      for (i = 0; i < hurd->nservers, i++)
+      for (i = 0; i < hurd->nservers; i++)
 	if (!strcmp (server->name, hurd->vers[i].name)
 	    && !strcmp (server->version, hurd->vers[i].version))
 	  return 1;
@@ -413,15 +363,17 @@ rebuild_uname ()
 void
 initialize_version_info (void)
 {
+  extern const char *const mach_cpu_types[];
+  extern const char *const mach_cpu_subtypes[][32];
   kernel_version_t kernel_version;
   char *p;
   struct host_basic_info info;
-  size_t n = sizeof info;
+  unsigned int n = sizeof info;
   
   /* Fill in fixed slots sysname and machine. */
   strcpy (uname_info.sysname, "GNU");
 
-  host_info (mach_host_self (), HOST_BASIC_INFO, &info, &n);
+  host_info (mach_host_self (), HOST_BASIC_INFO, (int *) &info, &n);
   sprintf (uname_info.machine, "%s %s",
 	   mach_cpu_types[info.cpu_type],
 	   mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
@@ -431,7 +383,7 @@ initialize_version_info (void)
   p = index (kernel_version, ':');
   if (p)
     *p = '\0';
-  strcpy (machversion, kernel_version);
+  machversion = strdup (kernel_version);
   
   /* Notice our own version and initialize server version varables. */
   server_versions = malloc (sizeof (struct server_version) * 10);
@@ -450,9 +402,60 @@ initialize_version_info (void)
 }
 
 kern_return_t
-S_proc_uname (process_t process,
-	      struct utsanme *uname)
+S_proc_uname (pstruct_t process,
+	      struct utsname *uname)
 {
   *uname = uname_info;
+  return 0;
+}
+
+kern_return_t
+S_proc_register_version (pstruct_t server,
+			 mach_port_t credential,
+			 char *name,
+			 char *release, 
+			 char *version)
+{
+  int i;
+
+  if (credential != master_host_port)
+    /* Must be privileged to register for uname. */
+    return EPERM;
+  
+  for (i = 0; i < nserver_versions; i++)
+    if (!strcmp (name, server_versions[i].name))
+      {
+	/* Change this entry */
+	free (server_versions[i].version);
+	free (server_versions[i].release);
+	server_versions[i].version = malloc (strlen (version) + 1);
+	server_versions[i].release = malloc (strlen (version) + 1);
+	strcpy (server_versions[i].version, version);
+	strcpy (server_versions[i].release, release);
+	break;
+      }
+  if (i == nserver_versions)
+    {
+      /* Didn't find it; extend. */
+      if (nserver_versions == server_versions_nalloc)
+	{
+	  server_versions_nalloc *= 2;
+	  server_versions = realloc (server_versions,
+				     sizeof (struct server_version) *
+				     server_versions_nalloc);
+	}
+      server_versions[nserver_versions].name = malloc (strlen (name) + 1);
+      server_versions[nserver_versions].version = malloc (strlen (version) 
+							  + 1);
+      server_versions[nserver_versions].release = malloc (strlen (release)
+							  + 1);
+      strcpy (server_versions[nserver_versions].name, name);
+      strcpy (server_versions[nserver_versions].version, version);
+      strcpy (server_versions[nserver_versions].release, release);
+      nserver_versions++;
+    }
+  
+  rebuild_uname ();
+  mach_port_deallocate (mach_task_self (), credential);
   return 0;
 }
