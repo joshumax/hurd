@@ -1,3 +1,7 @@
+1998-08-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (SRCS): Add return-buffer.c.
+
 1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* return-buffer.c (iohelp_return_malloced_buffer): Moved here from

@@ -1,3 +1,7 @@
+1998-08-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (SRCS): Remove return-buffer.c.
+
 1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fshelp.h: Moved fshelp_return_malloced_buffer to libiohelp.
