@@ -22,12 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "ps.h"
 #include "common.h"
 
-/* ---------------------------------------------------------------- */
-
 /* Creates a new proc_stat_list_t for processes from CONTEXT, which is
    returned in PP, and returns 0, or else returns ENOMEM if there wasn't
    enough memory.  */
@@ -54,9 +53,34 @@ proc_stat_list_free (struct proc_stat_list *pp)
   FREE (pp->proc_stats);
   FREE (pp);
 }
-
-/* ---------------------------------------------------------------- */
 
+/* Returns a copy of PP in COPY, or an error.  */
+error_t
+proc_stat_list_clone (struct proc_stat_list *pp, struct proc_stat_list **copy)
+{
+  struct proc_stat_list *new = NEW (struct proc_stat_list);
+  struct proc_stat **procs = NEWVEC (struct proc_stat *, pp->num_procs);
+
+  if (!new || !procs)
+    {
+      if (new)
+	free (new);
+      if (procs)
+	free (procs);
+      return ENOMEM;
+    }
+
+  bcopy (pp->proc_stats, procs, pp->num_procs);
+
+  new->proc_stats = procs;
+  new->num_procs = pp->num_procs;
+  new->alloced = pp->num_procs;
+  new->context = pp->context;
+  *copy = new;
+
+  return 0;
+}
+
 /* Make sure there are at least AMOUNT new locations allocated in PP's
    proc_stat array (but without changing NUM_PROCS).  Returns ENOMEM if a
    memory allocation error occurred, 0 otherwise.  */
