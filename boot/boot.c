@@ -27,6 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <a.out.h>
 #include <fcntlbits.h>
 #include <mach/message.h>
+#include <mach/mig_errors.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -91,6 +92,69 @@ _exit (int code)
   return syscall (1, code);
 }
 
+int
+getpid ()
+{
+  return syscall (20);
+}
+
+int
+ioctl (int fd, int code, char *buf)
+{
+  return syscall (54, fd, code, buf);
+}
+#define IOCPARM_MASK 0x7f
+#define IOC_OUT 0x40000000
+#define IOC_IN 0x80000000
+#define _IOR(x,y,t) (IOC_OUT|((sizeof(t)&IOCPARM_MASK)<<16)|(x<<8)|y)
+#define _IOW(x,y,t) (IOC_IN|((sizeof(t)&IOCPARM_MASK)<<16)|(x<<8)|y)
+#define FIONREAD _IOR('f', 127, int)
+#define FIOASYNC _IOW('f', 125, int)
+
+#define SIGIO 23
+#define SIGEMSG 30
+#define SIGMSG 31
+struct sigvec
+{
+  int (*sv_handler)();
+  int sv_mask;
+  int sv_flags;
+};
+
+int
+sigpause (mask)
+{
+  return syscall (111, mask);
+}
+
+
+#if 0
+void
+sigreturn ()
+{
+  asm volatile ("movl $0x67,%eax\n"
+		"lcall $0x7, $0x0\n"
+		"ret");
+}
+
+void
+_sigreturn ()
+{
+  asm volatile ("addl $0xc, %%esp\n"
+		"call %0\n"
+		"ret"::"m" (sigreturn));
+}
+
+int
+sigvec (int sig, struct sigvec *vec, struct sigvec *ovec)
+{
+  asm volatile ("movl $0x6c,%%eax\n"
+		"movl %0, %%edx\n"
+		"orl $0x80000000, %%edx\n"
+		"lcall $0x7,$0x0\n"
+		"ret"::"g" (_sigreturn));
+}
+#endif
 
 int
 request_server (mach_msg_header_t *inp,
@@ -141,6 +205,8 @@ load_image (task_t t,
 }
 
 
+void read_reply ();
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -150,6 +216,8 @@ main (int argc, char **argv, char **envp)
   vm_address_t startpc;
   char msg[] = "Boot is here.\n";
   char c;
+  struct sigvec vec = {read_reply, 0, 0};
+  mach_msg_timeout_t timeout;
 
   write (1, msg, sizeof msg);
 
@@ -200,6 +268,12 @@ main (int argc, char **argv, char **envp)
 			  MACH_MSG_TYPE_COPY_SEND);
   mach_port_insert_right (newtask, psmdp_child_name, pseudo_master_device_port,
 			  MACH_MSG_TYPE_MAKE_SEND);
+
+  foo = 1;
+  ioctl (0, FIOASYNC, &foo);
+  sigvec (SIGIO, &vec, 0);
+  sigvec (SIGMSG, &vec, 0);
+  sigvec (SIGEMSG, &vec, 0);
   
   thread_create (newtask, &newthread);
   __mach_setup_thread (newtask, newthread, startpc);
@@ -208,10 +282,112 @@ main (int argc, char **argv, char **envp)
   read (0, &c, 1);
   thread_resume (newthread);
   
-  mach_msg_server (request_server, __vm_page_size * 2, receive_set);
+  while (1)
+    {
+      mach_msg_server_timeout (request_server, 0, receive_set,
+			       MACH_RCV_TIMEOUT, 0);
+      getpid ();
+    }
+  
+/*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
 }
 
 
+enum read_type
+{
+  DEV_READ,
+  DEV_READI,
+  IO_READ,
+};
+struct qr
+{
+  enum read_type type;
+  mach_port_t reply_port;
+  mach_msg_type_name_t reply_type;
+  int amount;
+  struct qr *next;
+};
+struct qr *qrhead, *qrtail;
+
+/* Queue a read for later reply. */
+void
+queue_read (enum read_type type,
+	    mach_port_t reply_port,
+	    mach_msg_type_name_t reply_type,
+	    int amount)
+{
+  struct qr *qr;
+  
+  qr = malloc (sizeof (struct qr));
+  qr->type = type;
+  qr->reply_port = reply_port;
+  qr->reply_type = reply_type;
+  qr->amount = amount;
+  qr->next = 0;
+  if (qrtail)
+    qrtail->next = qr;
+  else
+    qrhead = qrtail = qr;
+}
+
+/* Reply to a queued read. */
+void
+read_reply ()
+{
+  int avail;
+  struct qr *qr;
+  char * buf;
+  int amtread;
+
+  if (!qrhead)
+    return;
+  qr = qrhead;
+  qrhead = qr->next;
+  if (qr == qrtail)
+    qrtail = 0;
+  
+  ioctl (0, FIONREAD, &avail);
+  if (!avail)
+    return;
+  
+  if (qr->type == DEV_READ)
+    vm_allocate (mach_task_self (), (vm_address_t *)&buf, qr->amount, 1);
+  else
+    buf = alloca (qr->amount);
+  amtread = read (0, buf, qr->amount);
+
+  switch (qr->type)
+    {
+    case DEV_READ:
+      if (amtread >= 0)
+	ds_device_read_reply (qr->reply_port, qr->reply_type, 0,
+			      (vm_address_t)buf, amtread);
+      else
+	ds_device_read_reply (qr->reply_port, qr->reply_type, errno, 0, 0);
+      break;
+      
+    case DEV_READI:
+      if (amtread >= 0)
+	ds_device_read_reply_inband (qr->reply_port, qr->reply_type, 0,
+				     buf, amtread);
+      else
+	ds_device_read_reply_inband (qr->reply_port, qr->reply_type, errno,
+				     0, 0);
+      break;
+      
+    case IO_READ:
+      if (amtread >= 0)
+	io_read_reply (qr->reply_port, qr->reply_type, 0,
+		       buf, amtread);
+      else
+	io_read_reply (qr->reply_port, qr->reply_type, errno, 0, 0);
+      break;
+    }
+
+  free (qr);
+}
+
+
 /* Implementation of exec interface */
 
 
@@ -419,6 +595,7 @@ ds_device_read (device_t device,
 		io_buf_ptr_t *data,
 		unsigned int *datalen)
 {
+  int avail;
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
@@ -431,10 +608,18 @@ ds_device_read (device_t device,
     }
 #endif
 
-  vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
-  *datalen = read (0, *data, bytes_wanted);
-
-  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+  ioctl (0, FIONREAD, &avail);
+  if (avail)
+    {
+      vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
+      *datalen = read (0, *data, bytes_wanted);
+      return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+    }
+  else
+    {
+      queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
+      return MIG_NO_REPLY;
+    }
 }
 
 ds_device_read_inband (device_t device,
@@ -446,6 +631,7 @@ ds_device_read_inband (device_t device,
 		       io_buf_ptr_inband_t data,
 		       unsigned int *datalen)
 {
+  int avail;
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
@@ -458,9 +644,17 @@ ds_device_read_inband (device_t device,
     }
 #endif
 
-  *datalen = read (0, data, bytes_wanted);
-  
-  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+  ioctl (0, FIONREAD, &avail);
+  if (avail)
+    {
+      *datalen = read (0, data, bytes_wanted);
+      return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
+    }
+  else
+    {
+      queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
+      return MIG_NO_REPLY;
+    }
 }
 
 ds_xxx_device_set_status (device_t device,
@@ -623,11 +817,14 @@ S_io_write (mach_port_t object,
 
 error_t
 S_io_read (mach_port_t object,
+	   mach_port_t reply_port,
+	   mach_msg_type_name_t reply_type,
 	   char **data,
 	   u_int *datalen,
 	   off_t offset,
 	   int amount)
 {
+  int avail;
   if (object != pseudo_console)
     return EOPNOTSUPP;
   
@@ -640,10 +837,19 @@ S_io_read (mach_port_t object,
     }
 #endif
 
-  if (amount > *datalen)
-    vm_allocate (mach_task_self (), amount, data, 1);
-  *datalen = read (0, *data, amount);
-  return *datalen < 0 ? errno : 0;
+  ioctl (0, FIONREAD, &avail);
+  if (avail)
+    {
+      if (amount > *datalen)
+	vm_allocate (mach_task_self (), amount, data, 1);
+      *datalen = read (0, *data, amount);
+      return *datalen < 0 ? errno : 0;
+    }
+  else
+    {
+      queue_read (IO_READ, reply_port, reply_type, amount);
+      return MIG_NO_REPLY;
+    }
 }
 
 error_t 
