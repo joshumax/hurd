@@ -176,7 +176,7 @@ diskfs_S_exec_startup (mach_port_t port,
   mach_port_t rootport;
   device_t con;
   struct ufsport *upt;
-  char exec_argv[] = "[BOOT EXECSERVER]\0";
+  char exec_argv[] = "[BOOT EXECSERVER]";
 
   if (!(upt = ports_check_port_type (port, PT_EXECBOOT)))
     return EOPNOTSUPP;
@@ -186,8 +186,11 @@ diskfs_S_exec_startup (mach_port_t port,
 
   *flags = 0;
   
-  *argvP = exec_argv;
-  *argvlen = sizeof (exec_argv) + 1;
+  if (*argvlen < sizeof (exec_argv))
+    vm_allocate (mach_task_self (),
+		 (vm_address_t *) argvP, sizeof (exec_argv), 1);
+  bcopy (exec_argv, *argvP, sizeof (exec_argv));
+  *argvlen = sizeof (exec_argv);
   
   *envplen = 0;
 
