@@ -92,7 +92,7 @@ routine socket_fabricate_address (
 routine socket_whatis_address(
 	addr: addr_port_t;
 	out sockaddr_type: int;
-	out sockaddr: data_t);
+	out sockaddr: data_t, dealloc);
 
 /* Shutdown a socket for reading or writing.  */
 routine socket_shutdown (
@@ -105,7 +105,7 @@ routine socket_getopt (
 	sock: socket_t;
 	level: int;
 	option: int;
-	out optval: data_t);
+	out optval: data_t, dealloc);
 
 /* XXX to become ioctl hack */
 /* Set a socket option.  */
