@@ -191,7 +191,8 @@ See `tasks', the exported task list.
 * Utilities
 ** Write a real mount program. !!
 ** Make id, et. al. work with no/multiple uids. !!!
-** Make things work with the `nobody' mode bits: chmod, ls, ... !!!
+** Make things work with the `nobody' mode bits: chmod, ls, ... !
+** Make things work with filesystem extensions (author, etc.): ls, write chauthor !!!
 ** Make things work better with translators, e.g., tar, ls... !!!
 ** Fix bash to turn on interrupts around syscalls more generally,
     especially chdir. !!
