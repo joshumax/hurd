@@ -28,13 +28,8 @@ trivfs_S_fsys_goaway (struct trivfs_control *cred,
 		      mach_msg_type_name_t replytype,
 		      int flags)
 {
-  error_t err;
-
   if (!cred)
     return EOPNOTSUPP;
 
-  err = trivfs_goaway (flags, cred->underlying, cred->pi.class,
-		       cred->protid_class);
-
-  return err;
+  return trivfs_goaway (cred, flags);
 }
