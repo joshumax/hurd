@@ -6,6 +6,9 @@
 #define get_fs_long(addr) get_user_long((int *)(addr))
 unsigned long get_user_long (const int *addr);
 
+#define get_fs_byte(addr) get_user_byte((char *)(addr))
+char get_user_byte (const char *addr);
+
 #define put_fs_long(x,addr) put_user_long((x),(int *)(addr))
 void put_user_long (unsigned long, int *);
 
