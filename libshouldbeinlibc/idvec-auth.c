@@ -1,8 +1,8 @@
 /* Idvec functions that interact with an auth server
 
-   Copyright (C) 1995, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998, 1999, 2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -59,10 +59,14 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
     /* Now that we've ensured there's enough space, none of these should
        return an error.  */
     {
-      idvec_merge_ids (eff_uids, _eff_uids, num_eff_uids);
-      idvec_merge_ids (avail_uids, _avail_uids, num_avail_uids);
-      idvec_merge_ids (eff_gids, _eff_gids, num_eff_gids);
-      idvec_merge_ids (avail_gids, _avail_gids, num_avail_gids);
+      if (eff_uids)
+	idvec_merge_ids (eff_uids, _eff_uids, num_eff_uids);
+      if (avail_uids)
+	idvec_merge_ids (avail_uids, _avail_uids, num_avail_uids);
+      if (eff_gids)
+	idvec_merge_ids (eff_gids, _eff_gids, num_eff_gids);
+      if (avail_gids)
+	idvec_merge_ids (avail_gids, _avail_gids, num_avail_gids);
     }
 
   /* Deallocate any out-of-line memory we got back.  */
