@@ -297,6 +297,7 @@ run_for_real (char *filename, char *args, int arglen)
   task_t task;
   char *progname;
 
+#if 0
   do
     {
       printf ("File name [%s]: ", filename);
@@ -307,7 +308,15 @@ run_for_real (char *filename, char *args, int arglen)
 	perror (filename);
     }
   while (!file);
-
+#else
+  file = path_lookup (filename, O_EXEC, 0);
+  if (!file)
+    {
+      perror (filename);
+      return;
+    }
+#endif
+  
   task_create (mach_task_self (), 0, &task);
   proc_child (procserver, task);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
@@ -411,7 +420,7 @@ launch_system (void)
   mach_port_t old;
   mach_port_t authproc, fsproc;
   char shell[] = "/bin/sh";
-  char pipes[] = "/bin/pipes\0/servers/sockets/1";
+  char pipes[] = "/hurd/pipes\0/servers/sockets/1";
   
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0, 
