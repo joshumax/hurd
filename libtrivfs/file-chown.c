@@ -18,7 +18,7 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_chown (struct trivfs_protid *cred,
 		     uid_t uid,
 		     gid_t gid)

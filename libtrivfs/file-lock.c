@@ -18,13 +18,13 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_lock (struct trivfs_protid *cred, int flags)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 trivfs_S_file_lock_stat (struct trivfs_protid *cred,
 			 int *mystatus, int *otherstat)
 {

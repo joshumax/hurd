@@ -18,7 +18,7 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_getlinknode (struct trivfs_protid *cred,
 			   mach_port_t *linknode,
 			   mach_msg_type_name_t *linknodetype)
