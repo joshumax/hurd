@@ -28,6 +28,7 @@ COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
 OBJS = $(COBJS) memory_objectServer.o
 
 SRCS = $(subst .o,.c,$(COBJS))
+TAGSHDRS = pager.h priv.h
 
 DIST_FILES = $(SRCS) Makefile pager.h priv.h ChangeLog
 
