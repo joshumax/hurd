@@ -1,5 +1,5 @@
 /* Definitions for terminal ioctls
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    <ioctls.h>. */
 subsystem tioctl 156000; /* XXX */
 
-import "../hurd/ioctl_types.h"; /* XXX */
+import <hurd/ioctl_types.h>; /* XXX */
 
 /* These are the pieces of a struct termios as specified by the
    definition of _IOT_termios in <termbits.h>. */
@@ -41,7 +41,7 @@ skip; skip; skip; /* 0 1 2 unused */
 /* 3 TIOCMODG */
 routine tioctl_tiocmodg (
 	reqport: io_t;
-	out state: int);   
+	out state: int);
 
 /* 4 TIOCMODS */
 routine tioctl_tiocmods (
@@ -74,7 +74,7 @@ routine tioctl_tiocgeta (
 	out modes: modes_t;
 	out ccs: ccs_t;
 	out speeds: speeds_t);
-   
+
 /* 20 TIOCSETA */
 routine tioctl_tiocseta (
 	port: io_t;
@@ -99,7 +99,7 @@ routine tioctl_tiocsetaf (
 	speeds: speeds_t);
 
 skip; skip; skip; /* 23 24 25 unused */
-   
+
 /* 26 TIOCGETD */
 routine tioctl_tiocgetd (
 	port: io_t;
@@ -135,22 +135,22 @@ routine tioctl_tiocext (
 
 skip; /* 97 TIOCSCTTY -- implemented in C library */
 skip; /* 98 TIOCCONS -- implemented in C library */
-   
+
 skip; /* 99 unused */
 
 /* Because MiG defines reply ports as 100 more than request ports, we
    have to leave one hundred empty RPC's here. */
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
-skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip;
 
 
 skip; skip; /* 100 101 unused */
@@ -168,7 +168,7 @@ routine tioctl_tiocswinsz (
 /* 104 TIOCGWINSZ */
 routine tioctl_tiocgwinsz (
 	port: io_t;
-	out sizes: winsize_t);		
+	out sizes: winsize_t);
 
 /* 105 TIOCREMOTE */
 routine tioctl_tiocremote (
