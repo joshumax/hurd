@@ -159,6 +159,29 @@ idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
     return idvec_insert (idvec, pos, id);
 }
 
+/* Set the ids in IDVEC to IDS (NUM elements long); delete whatever
+   the previous ids were. */
+error_t
+idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num)
+{
+  error_t err;
+
+  err = idvec_ensure (idvec, num);
+  if (!err)
+    {
+      bcopy (ids, idvec->ids);
+      ids->num = num;
+    }
+  return err;
+}  
+
+/* Like idvec_set_ids, but get the new ids from new. */
+error_t
+idvec_set (struct idvec *idvec, struct idvec *new)
+{
+  return idvec_set_ids (idvec, new->ids, new->num);
+}
+
 /* Adds each id in the vector IDS (NUM elements long) to IDVEC, as long as it
    wasn't previously in IDVEC.  */
 error_t

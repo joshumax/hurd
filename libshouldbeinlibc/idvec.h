@@ -86,6 +86,13 @@ error_t idvec_add_new (struct idvec *idvec, uid_t id);
    returning ENOMEM if there's not enough memory; otherwise, do nothing.  */
 error_t idvec_insert_new (struct idvec *idvec, unsigned pos, uid_t id);
 
+/* Set the ids in IDVEC to IDS (NUM elements long); delete whatever
+   the previous ids were. */
+error_t idvec_set_ids (struct idvec *idvec, id_t *ids, unsigned num);
+
+/* Like idvec_set_ids, but get the new ids from new. */
+error_t idvec_set (struct idvec *idvec, struct idvec *new);
+
 /* Adds each id in the vector IDS (NUM elements long) to IDVEC, as if with
    idvec_add_new().  */
 error_t idvec_merge_ids (struct idvec *idvec, uid_t *ids, unsigned num);
@@ -105,7 +112,7 @@ void idvec_delete (struct idvec *idvec, unsigned pos);
    otherwise 0.  */
 error_t idvec_insert_only (struct idvec *idvec, unsigned pos, uid_t id);
 
-/* EFF and AVAIL should be idvec's corresponding to a processes effective and
+/* EFF and AVAIL should be idvec's corresponding to a process's effective and
    available ids.  ID replaces the first id in EFF, and what it replaces is
    preserved by adding it to AVAIL (if not already present).  If SECURE is
    non-NULL, and ID was not previously present in either EFF or AVAIL, then
