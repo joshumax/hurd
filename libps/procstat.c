@@ -182,8 +182,15 @@ merge_procinfo (process_t server, pid_t pid,
 
   *pi = new_pi;
   *pi_size = new_pi_size;
-  *waits = new_waits;
-  *waits_len = new_waits_len;
+
+  if (waits && waits_len)
+    {
+      *waits = new_waits;
+      *waits_len = new_waits_len;
+    }
+  else if (new_waits_len)
+    /* Caller doesn't want wait info, so free it. */
+    vm_deallocate (mach_task_self (), (vm_address_t)new_waits, new_waits_len);
 
   return 0;
 }
@@ -420,20 +427,28 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
     if (! pi->threadinfos[i].died)
       if (next_wait > waits + waits_len)
 	break;
-      else if (strncmp (next_wait, "msgport", waits + waits_len - next_wait)
-	       == 0)
-	next_wait++;		/* signal thread.  */
-      else if (*wait)
-	/* There are multiple user threads.  Punt.  */
-	{
-	  *wait = "*";
-	  *rpc = 0;
-	  break;
-	}
       else
 	{
-	  *wait = next_wait;
-	  *rpc = pi->threadinfos[i].rpc_block;
+	  int left = waits + waits_len - next_wait;
+
+	  if (strncmp (next_wait, "msgport", left) == 0
+	      || strncmp (next_wait, "itimer", left) == 0)
+	    ;		/* libc internal threads; ignore.  */
+	  else if (*wait)
+	    /* There are multiple user threads.  Punt.  */
+	    {
+	      *wait = "*";
+	      *rpc = 0;
+	      break;
+	    }
+	  else
+	    {
+	      *wait = next_wait;
+	      *rpc = pi->threadinfos[i].rpc_block;
+	    }
+
+	  /* Advance NEXT_WAIT to the next wait string.  */
+	  next_wait += strnlen (next_wait, left);
 	}
 }
 
@@ -599,8 +614,9 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 		if (! err)
 		  need &= ~PSTAT_NUM_THREADS;
 	      }
-	    if ((have & PSTAT_NUM_THREADS) && ps->num_threads == 2)
-	      /* Only one user thread -- thread-wait info is meaningful!  */
+	    if ((have & PSTAT_NUM_THREADS) && ps->num_threads <= 3)
+	      /* Perhaps only 1 user thread -- thread-wait info may be
+		 meaningful!  */
 	      need |= PSTAT_THREAD_WAITS;
 	  }
 
