@@ -22,8 +22,10 @@ subsystem fsys 22000;
 #include <hurd/hurd_types.defs>
 
 /* When modifying this file in any way, please remember to keep
-fsys_reply.defs up to date.  */
+   fsys_reply.defs up to date.  */
 
+/* Note that libdiskfs/start-translator-long.c depends silently on the 
+   definition of fsys_startup below. */
 
 #ifdef FSYS_IMPORTS
 FSYS_IMPORTS
