@@ -38,14 +38,13 @@ static const char *doc = "Test for the existance of mach device DEVNAME..."
 int
 main (int argc, char **argv)
 {
-  error_t err;
-  mach_port_t device_master = MACH_PORT_NULL;
   /* Print devices found?  (otherwise only exit status matters)  */
   int print = 1;
   /* If printing, print all devices on the command line that are found. 
      Otherwise, just the first one found is printed.  */
   int all = 1;
   int found_one = 0;
+  mach_port_t device_master = MACH_PORT_NULL;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
