@@ -1,5 +1,5 @@
-/* NFS credential manipulation
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/* Credential manipulation for NFS client
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,8 +23,13 @@
 
 #include "nfs.h"
 
+/* This lock must always be held when manipulating the reference count
+   on credential structures. */
 static spin_lock_t cred_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
+/* Interpret CRED, returning newly malloced storage describing the
+   user identification references in UIDS, NUIDS, GIDS, and NGIDS.
+   See <hurd/libnetfs.h> for details. */
 void
 netfs_interpret_credential (struct netcred *cred, uid_t **uids,
 			    int *nuids, uid_t **gids, int *ngids)
@@ -36,6 +41,7 @@ netfs_interpret_credential (struct netcred *cred, uid_t **uids,
 	 cred->ngids * sizeof (uid_t));
 }
 
+/* Return a new reference to CRED.  See <hurd/libnetfs.h> for details. */
 struct netcred *
 netfs_copy_credential (struct netcred *cred)
 {
@@ -45,6 +51,7 @@ netfs_copy_credential (struct netcred *cred)
   return cred;
 }
 
+/* Drop a reference to CRED.  See <hurd/libnetfs.h> for details. */
 void
 netfs_drop_credential (struct netcred *cred)
 {
@@ -60,6 +67,9 @@ netfs_drop_credential (struct netcred *cred)
     spin_unlock (&cred_refcnt_lock);
 }
 
+/* Make and return a new credential referring to the user identified
+   by UIDS, NUIDS, GIDS, and NGIDS.  See <hurd/libnetfs.h> for
+   details. */
 struct netcred *
 netfs_make_credential (uid_t *uids, 
 		       int nuids, 
@@ -83,6 +93,7 @@ netfs_make_credential (uid_t *uids,
   return cred;
 }
 
+/* Return nonzero iff CRED contains user id UID. */
 int
 cred_has_uid (struct netcred *cred, uid_t uid)
 {
@@ -93,6 +104,7 @@ cred_has_uid (struct netcred *cred, uid_t uid)
   return 0;
 }
 
+/* Return nonzero iff CRED contains group id GID. */
 int
 cred_has_gid (struct netcred *cred, gid_t gid)
 {
