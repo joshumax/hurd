@@ -190,6 +190,10 @@ check_open_hook (struct trivfs_control *trivfs_control,
 	/* If we're not opening for read or write, then just ignore the
 	   error, as this allows stat to word correctly.  XXX  */
 	err = 0;
+      if (err == D_NO_SUCH_DEVICE)
+	/* Give the canonical POSIX error code for an absent device,
+	   rather than letting the Mach code propagate up.  */
+	err = ENXIO;
     }
   mutex_unlock (&device_lock);
 
@@ -243,7 +247,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 
       st->st_size = size;
       st->st_blocks = size / 512;
-      
+
       st->st_mode |= ((inhibit_cache || store->block_size == 1)
 		      ? S_IFCHR : S_IFBLK);
     }
@@ -253,7 +257,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
       st->st_blksize = 0;
       st->st_size = 0;
       st->st_blocks = 0;
-      
+
       st->st_mode |= inhibit_cache ? S_IFCHR : S_IFBLK;
     }
 
