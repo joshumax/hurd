@@ -141,8 +141,8 @@ ugids_verify_make_auth (const struct ugids *ugids,
   else
     {
       /* Must initialize list to empty so svma_state_add_auths works.  */
-      svma_state.auth = NULL;
-      svma_state.nauth = 0;
+      svma_state.auths = NULL;
+      svma_state.num_auths = 0;
     }
 
   /* Check passwords.  */
