@@ -183,12 +183,8 @@ unsigned device_block_size;
 
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
-/* What to lock if changing the super block.  */
-spin_lock_t global_lock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
-
-struct pokel global_pokel;
 
 #define SBLOCK_BLOCK 1
 #define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
@@ -206,7 +202,6 @@ unsigned int log2_dev_blocks_per_fs_block;
 vm_address_t zeroblock;
 
 /* Copy the sblock into the disk.  */
-void copy_sblock ();
 void get_hypermetadata ();
 
 /* ---------------------------------------------------------------- */
@@ -232,6 +227,10 @@ unsigned long nextgennumber;
 
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_image */
+
+#define trunc_block(offs) (((offs) >> log2_block_size) << log2_block_size)
+#define round_block(offs) \
+  ((((offs) + block_size - 1) >> log2_block_size) << log2_block_size)
 
 /* block num --> byte offset on disk */
 #define boffs(block) ((block) << log2_block_size)
@@ -286,7 +285,12 @@ void inode_init (void);
 
 /* ---------------------------------------------------------------- */
 
-#define trunc_block(offs) (((offs) >> log2_block_size) << log2_block_size)
+/* What to lock if changing global data data (e.g., the superblock or block
+   group descriptors or bitmaps).  */
+spin_lock_t global_lock;
+
+/* Where to record such changes.  */
+struct pokel global_pokel;
 
 /* If the block size is less than the page size, then this bitmap is used to
    record which disk blocks are actually modified, so we don't stomp on parts
