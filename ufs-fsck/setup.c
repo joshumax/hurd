@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,96,99,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -42,7 +42,7 @@ int fix_denied = 0;
 
 int fsmodified = 0;
 
-int lfdir;
+ino_t lfdir;
 
 /* Get ready to run on device with pathname DEV. */
 int
