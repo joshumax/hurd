@@ -15,6 +15,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
+
 /* This is called by a kernel to initialize the memory object;
    this routine is a dual of seqnos_memory_object_terminate.  */
 kern_return_t
@@ -46,8 +50,6 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 
   p->memobjcntl = control;
   p->memobjname = name;
-  if (p->pagemap || p->pagemapsize)
-    panic ("pagemap failure");
 
   /* Tell the kernel we're ready */
   /* XXX Don't cache for now. */
