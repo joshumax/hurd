@@ -72,7 +72,7 @@ struct store
   /* Random flags.  */
   int flags;
 
-  void *misc;
+  void *misc;			/* malloced */
   size_t misc_len;
 
   struct store_meths *meths;
@@ -89,6 +89,8 @@ typedef error_t (*store_read_meth_t)(struct store *store,
 				     mach_msg_type_number_t amount,
 				     char **buf, mach_msg_type_number_t *len);
 
+struct store_enc;		/* fwd decl */
+
 struct store_meths
 {
   /* Read up to AMOUNT bytes at the underlying address ADDR from the storage
@@ -103,9 +105,15 @@ struct store_meths
 
   /* To the lengths of each for the four arrays in ENC, add how much STORE
      would need to be encoded.  */
-  error_t (*allocate_encoding)(struct store *store, struct store_enc *enc);
+  error_t (*allocate_encoding)(const struct store *store,
+			       struct store_enc *enc);
   /* Append the encoding for STORE to ENC.  */
-  error_t (*encode) (struct store *store, struct store_enc *enc);
+  error_t (*encode) (const struct store *store, struct store_enc *enc);
+
+  /* Copy any format-dependent fields in FROM to TO; if there's some reason
+     why the copy can't be made, an error should be returned.  This call is
+     made after all format-indendependent fields have been cloned.  */
+  error_t (*clone) (const struct store *from, struct store *to);
 };
 
 /* Return a new store in STORE, which refers to the storage underlying
@@ -119,7 +127,7 @@ error_t store_device_create (device_t device, struct store **store);
 
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t _store_device_create (device_t device, size_t block_size,
-			      off_t *runs, size_t runs_len,
+			      const off_t *runs, size_t runs_len,
 			      struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
@@ -130,24 +138,23 @@ error_t store_file_create (file_t file, struct store **store);
 
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t _store_file_create (file_t file, size_t block_size,
-			    off_t *runs, size_t runs_len,
+			    const off_t *runs, size_t runs_len,
 			    struct store **store);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
-   integer multiple of each stripe's block size.  If DEALLOC is true, then
-   the striped stores are freed when this store is (in any case, the array
-   STRIPES is copied, and so should be freed by the caller).  */
-error_t store_ileave_create (struct store **stripes, size_t num_stripes,
-			     int dealloc,
+   integer multiple of each stripe's block size.  The stores in STRIPES are
+   consumed -- that is, will be freed when this store is (however, the
+   *array* STRIPES is copied, and so should be freed by the caller).  */
+error_t store_ileave_create (struct store * const *stripes, size_t num_stripes,
 			     off_t interleave, struct store **store);
 
 /* Return a new store in STORE that concatenates all the stores in STORES
-   (NUM_STORES of them).  If DEALLOC is true, then the sub-stores are freed
-   when this store is (in any case, the array STORES is copied, and so should
-   be freed by the caller).  */
-error_t store_concat_create (struct store **stores, size_t num_stores,
-			     int dealloc, struct store **store);
+   (NUM_STORES of them).  The stores in STRIPES are consumed -- that is, will
+   be freed when this store is (however, the *array* STRIPES is copied, and
+   so should be freed by the caller).  */
+error_t store_concat_create (struct store * const *stores, size_t num_stores,
+			     struct store **store);
 
 void store_free (struct store *store);
 
@@ -156,10 +163,10 @@ void store_free (struct store *store);
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths,
 	     mach_port_t port, size_t block_size,
-	     off_t *runs, size_t runs_len, off_t end);
+	     const off_t *runs, size_t runs_len, off_t end);
 
 /* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
-error_t store_set_runs (struct store *store, off_t *runs, size_t runs_len);
+error_t store_set_runs (struct store *store, const off_t *runs, size_t runs_len);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t store_set_name (struct store *store, const char *name);
@@ -167,6 +174,9 @@ error_t store_set_name (struct store *store, const char *name);
 /* Fills in the values of the various fields in STORE that are derivable from
    the set of runs & the block size.  */
 void _store_derive (struct store *store);
+
+/* Return in TO a copy of FROM.  */
+error_t store_clone (struct store *from, struct store **to);
 
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written in
    AMOUNT (in bytes).  ADDR is in BLOCKS (as defined by STORE->block_size).  */
@@ -233,7 +243,7 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
        IL = interleave (bytes),
        LEN = run length (blocks), OFFS = run offset (blocks),
  */
-
+
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  */
 struct store_enc
@@ -259,6 +269,19 @@ struct store_enc
   char *init_data;
 };
 
+/* Initialize ENC.  The given vector and sizes will be used for the encoding
+   if they are big enough (otherwise new ones will be automatically
+   allocated).  */
+void store_enc_init (struct store_enc *enc,
+		     mach_port_t *ports, mach_msg_type_number_t ports_len,
+		     int *ints, mach_msg_type_number_t ints_len,
+		     off_t *offsets, mach_msg_type_number_t offsets_len,
+		     char *data, mach_msg_type_number_t data_len);
+
+/* Deallocate storage used by the fields in ENC (but nothing is done with ENC
+   itself).  */
+void store_enc_dealloc (struct store_enc *enc);
+
 /* Encode STORE into ENC, which should have been prepared with
    store_enc_init, or return an error.  The contents of ENC may then be
    return as the value of file_get_storage_info; if for some reason this
@@ -269,24 +292,21 @@ error_t store_encode (const struct store *store, struct store_enc *enc);
 /* Decode ENC, either returning a new store in STORE, or an error.  If
    nothing else is to be done with ENC, its contents may then be freed using
    store_enc_dealloc.  */
-error_t store_decode (struct store_enc *enc, struct store *store);
-
-/* Initialize ENC.  The given vector and sizes will be used for the encoding
-   if they are big enough (otherwise new ones will be automatically
-   allocated).  */
-error_t store_enc_init (struct store_enc *enc,
-			mach_port_t *ports, mach_msg_type_number_t ports_len,
-			int *ints, mach_msg_type_number_t ints_len,
-			off_t *offsets, mach_msg_type_number_t offsets_len,
-			char *data, mach_msg_type_number_t data_len);
-
-/* Deallocate storage used by the fields in ENC (but nothing is done with ENC
-   itself).  */
-void store_enc_dealloc (struct store_enc *enc);
+error_t store_decode (struct store_enc *enc, struct store **store);
 
 /* Default encoding used for most leaf store types.  */
 error_t store_default_leaf_allocate_encoding (struct store *store,
 					      struct store_enc *enc);
 error_t store_default_leaf_encode (struct store *store, struct store_enc *enc);
+
+/* Decodes the standard leaf encoding that's common to various builtin
+   formats, and calls CREATE to actually create the store.  */
+error_t store_default_leaf_decode (struct store_enc *enc,
+				   error_t (*create)(mach_port_t port,
+						     size_t block_size,
+						     const off_t *runs,
+						     size_t runs_len,
+						     struct store **store),
+				   struct store **store);
 
 #endif /* __STORE_H__ */
