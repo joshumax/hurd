@@ -32,6 +32,7 @@
 #include <time.h>
 #include <assert.h>
 #include <version.h>
+#include <sys/mman.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>

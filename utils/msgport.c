@@ -31,6 +31,7 @@
 #include <error.h>
 #include <version.h>
 #include "pids.h"
+#include <sys/mman.h>
 
 /* From libc (not in hurd.h) */
 char *
@@ -428,7 +429,7 @@ cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
       umask = strtol(argv[0], 0, 8);
       err = msg_set_init_int (msgport, task, INIT_UMASK, umask);
     }
-  else 
+  else
     {
       err = msg_get_init_int (msgport, task, INIT_UMASK, &umask);
       if (!err)
@@ -492,7 +493,7 @@ static const struct argp_option cmd_options[] =
    command line (probably the first argument for this command).  STATE
    is the argp parser state as used in parse_cmd_opt. */
 static error_t
-add_cmd (cmd_func_t func, size_t minargs, size_t maxargs, 
+add_cmd (cmd_func_t func, size_t minargs, size_t maxargs,
 	 char *arg, struct argp_state *state)
 {
   cmd_t *cmd;

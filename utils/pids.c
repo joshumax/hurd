@@ -25,6 +25,7 @@
 #include <hurd.h>
 #include <hurd/process.h>
 #include <mach.h>
+#include <sys/mman.h>
 
 #include "parse.h"
 #include "pids.h"

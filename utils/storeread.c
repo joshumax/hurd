@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <hurd.h>
 #include <sys/fcntl.h>
+#include <sys/mman.h>
 
 #include <hurd/store.h>
 

@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <version.h>
+#include <sys/mman.h>
 
 #include <error.h>
 #include <argz.h>
