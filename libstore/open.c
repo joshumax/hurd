@@ -1,6 +1,6 @@
 /* Store creation from a file name
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 97, 98 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -36,6 +36,13 @@ store_open (const char *name, int flags,
   error_t err;
   int open_flags = (flags & STORE_HARD_READONLY) ? O_RDONLY : O_RDWR;
   file_t node = file_name_lookup (name, open_flags, 0);
+
+  if (node == MACH_PORT_NULL && !(flags & STORE_HARD_READONLY)
+      && (errno == EACCES || errno == EROFS))
+    {
+      flags |= STORE_HARD_READONLY;
+      node = file_name_lookup (name, O_RDONLY, 0);
+    }
 
   if (node == MACH_PORT_NULL)
     return errno;
