@@ -32,9 +32,13 @@ int pager_demuxer (mach_msg_header_t *inp,
 /* Create a new pager.  The pager will have a port created for it
    (using libports) and will be immediately ready to receive requests.
    U_PAGER will be provided to later calls to pager_find_address.  
-   The pager will have one user reference created.  */
+   The pager will have one user reference created.  MAY_CACHE and
+   COPY_STRATEGY are the original values of those attributes as 
+   for memory_object_ready.  */
 struct pager *
-pager_create (struct user_pager_info *u_pager);
+pager_create (struct user_pager_info *u_pager, 
+	      boolean_t may_cache,
+	      memory_object_copy_strategy_t copy_strategy);
 
 /* Sync data from pager PAGER to backing store; wait for
    all the writes to complete iff WAIT is set. */
@@ -121,13 +125,6 @@ pager_unreference (struct pager *p);
 /* The user must set this variable.  This will be the type used in calls
    to allocate_port by the pager system.  */
 extern int pager_port_type;
-
-/* The user must define this function.  Describe for pager PAGER 
-   the may_cache and copy_strategy attributes for memory_object_ready. */
-void
-pager_report_attributes (struct user_pager_info *pager,
-			 boolean_t *may_cache,
-			 memory_object_copy_strategy_t *copy_strategy);
 
 /* The user must define this function.  For pager PAGER, read one
    page from offset PAGE.  Set *BUF to be the address of the page,
