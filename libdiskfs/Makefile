@@ -32,7 +32,7 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
 	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c 	    \
 	io-prenotify.c io-read.c io-readable.c io-reauthenticate.c	    \
 	io-rel-conch.c io-restrict-auth.c io-seek.c io-select.c io-stat.c   \
-	io-stubs.c io-write.c io-version.c
+	io-stubs.c io-write.c io-version.c io-sigio.c
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c
 
@@ -48,7 +48,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	rdwr-internal.c trans-destroy.c trans-start.c init-init.c           \
 	init-first.c init-loop.c boot-parse.c boot-start.c ports-clean.c    \
 	ports-consts.c pager-consts.c ports-demuxer.c exc.c node-times.c    \
-	trans-sync.c shutdown.c
+	trans-sync.c shutdown.c ports-noports.c ports-soft.c
 
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
