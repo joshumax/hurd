@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,8 +27,6 @@
 
 #include "pfinet.h"
 
-static char *ethername;
-
 device_t ether_port;
 
 struct port_class *etherreadclass;
@@ -48,7 +46,7 @@ ethernet_get_stats (struct device *dev)
   return &retbuf;
 }
 
-int 
+int
 ethernet_stop (struct device *dev)
 {
   return 0;
@@ -60,7 +58,7 @@ ethernet_set_multi (struct device *dev, int numaddrs, void *addrs)
   assert (numaddrs == 0);
 }
 
-static short ether_filter[] = 
+static short ether_filter[] =
 {
   NETF_PUSHLIT | NETF_NOP,
   1,
@@ -95,15 +93,15 @@ ethernet_demuxer (mach_msg_header_t *inp,
 
   if (inp->msgh_id != NET_RCV_MSG_ID)
     return 0;
-  
+
   if (inp->msgh_local_port != readptname)
     {
       if (inp->msgh_remote_port != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
       return 1;
     }
-  
-  datalen = ETH_HLEN 
+
+  datalen = ETH_HLEN
     + msg->packet_type.msgt_number - sizeof (struct packet_header);
 
   mutex_lock (&global_lock);
@@ -113,7 +111,7 @@ ethernet_demuxer (mach_msg_header_t *inp,
 
   /* Copy the two parts of the frame into the buffer. */
   bcopy (msg->header, skb->data, ETH_HLEN);
-  bcopy (msg->packet + sizeof (struct packet_header), 
+  bcopy (msg->packet + sizeof (struct packet_header),
 	 skb->data + ETH_HLEN,
 	 datalen - ETH_HLEN);
 
@@ -138,9 +136,11 @@ input_work_thread (any_t arg)
 int
 ethernet_open (struct device *dev)
 {
+  error_t err;
+
   if (ether_port != MACH_PORT_NULL)
     return 0;
-  
+
   etherreadclass = ports_create_class (0, 0);
   errno = ports_create_port (etherreadclass, etherport_bucket,
 			     sizeof (struct port_info), &readpt);
@@ -151,11 +151,15 @@ ethernet_open (struct device *dev)
 
   mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
 
-  device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
+  err = device_open (master_device, D_WRITE | D_READ, dev->name, &ether_port);
+  if (err)
+    error (2, err, "%s", dev->name);
 
-  device_set_filter (ether_port, ports_get_right (readpt), 
-		     MACH_MSG_TYPE_MAKE_SEND, 0,
-		     ether_filter, ether_filter_len);
+  err = device_set_filter (ether_port, ports_get_right (readpt),
+			   MACH_MSG_TYPE_MAKE_SEND, 0,
+			   ether_filter, ether_filter_len);
+  if (err)
+    error (2, err, "%s", dev->name);
   cthread_detach (cthread_fork (ethernet_thread, 0));
   cthread_detach (cthread_fork (input_work_thread, 0));
   return 0;
@@ -168,7 +172,7 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 {
   u_int count;
   int err;
-  
+
   err = device_write (ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
   assert (err == 0);
   assert (count == skb->len);
@@ -183,13 +187,11 @@ setup_ethernet_device (char *name)
   u_int count;
   int net_address[2];
   int i;
-  
+
   etherport_bucket = ports_create_bucket ();
 
-  ethername = name;
-
   /* Interface buffers. */
-  ether_dev.name = ethername;
+  ether_dev.name = name;
   for (i = 0; i < DEV_NUMBUFFS; i++)
     skb_queue_head_init (&ether_dev.buffs[i]);
 
@@ -202,7 +204,7 @@ setup_ethernet_device (char *name)
   ether_dev.type_trans = eth_type_trans;
   ether_dev.get_stats = ethernet_get_stats;
   ether_dev.set_multicast_list = ethernet_set_multi;
-  
+
   /* Some more fields */
   ether_dev.type = ARPHRD_ETHER;
   ether_dev.hard_header_len = sizeof (struct ethhdr);
@@ -218,7 +220,10 @@ setup_ethernet_device (char *name)
 
   /* Fetch hardware information */
   count = NET_STATUS_COUNT;
-  device_get_status (ether_port, NET_STATUS, (dev_status_t) &netstat, &count);
+  err = device_get_status (ether_port, NET_STATUS,
+			   (dev_status_t) &netstat, &count);
+  if (err)
+    error (2, err, "%s: Cannot get device status", name)
   ether_dev.mtu = netstat.max_packet_size - ether_dev.hard_header_len;
   assert (netstat.header_format == HDR_ETHERNET);
   assert (netstat.header_size == ETH_HLEN);
@@ -226,7 +231,9 @@ setup_ethernet_device (char *name)
 
   count = 2;
   assert (count * sizeof (int) >= ETH_ALEN);
-  device_get_status (ether_port, NET_ADDRESS, net_address, &count);
+  err = device_get_status (ether_port, NET_ADDRESS, net_address, &count);
+  if (err)
+    error (2, err, "%s: Cannot get hardware Ethernet address", name)
   net_address[0] = ntohl (net_address[0]);
   net_address[1] = ntohl (net_address[1]);
   bcopy (net_address, ether_dev.dev_addr, ETH_ALEN);
@@ -236,6 +243,3 @@ setup_ethernet_device (char *name)
   ether_dev.next = dev_base;
   dev_base = &ether_dev;
 }
-
-
-
