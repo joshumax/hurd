@@ -34,6 +34,7 @@ STARTUP_IMPORTS
    a message on the console and do the crash. */
 routine startup_essential_task (
 	server: startup_t;
+	sreplyport reply_port: sreply_port_t;
 	task: task_t;
         excpt: mach_port_move_receive_t;
 	name: string_t;
