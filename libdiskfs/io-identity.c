@@ -39,12 +39,15 @@ diskfs_S_io_identity (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   
-  *id = fshelp_get_identity (diskfs_port_bucket, np->dn_stat.st_ino);
-  *idtype = MACH_MSG_TYPE_MAKE_SEND;
-  *fsys = diskfs_fsys_identity;
-  *fsystype = MACH_MSG_TYPE_MAKE_SEND;
-  *fileno = np->dn_stat.st_ino;
+  err = fshelp_get_identity (diskfs_port_bucket, np->dn_stat.st_ino, id);
+  if (!err)
+    {
+      *idtype = MACH_MSG_TYPE_MAKE_SEND;
+      *fsys = diskfs_fsys_identity;
+      *fsystype = MACH_MSG_TYPE_MAKE_SEND;
+      *fileno = np->dn_stat.st_ino;
+    }
   
   mutex_unlock (&np->lock);
-  return 0;
+  return err;
 }
