@@ -1,3 +1,8 @@
+1999-11-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeio.c (trivfs_modify_stat): Clear writable bits if open store is
+	readonly, not just if we got the --readonly switch.
+
 1999-11-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dev.c (dev_read, dev_write): In DEV->inhibit_cache case,
