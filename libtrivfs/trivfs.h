@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -72,7 +72,7 @@ void trivfs_end_using_control (struct trivfs_control *);
 extern int trivfs_fstype;
 extern int trivfs_fsid;
 
-/* Set these if trivfs should allow read, write, 
+/* Set these if trivfs should allow read, write,
    or execute of file.    */
 extern int trivfs_support_read;
 extern int trivfs_support_write;
@@ -94,7 +94,7 @@ extern int trivfs_protid_nportclasses;
 extern struct port_class *trivfs_cntl_portclasses[];
 extern int trivfs_cntl_nportclasses;
 
-/* The user must define this function.  This should modify a struct 
+/* The user must define this function.  This should modify a struct
    stat (as returned from the underlying node) for presentation to
    callers of io_stat.  It is permissable for this function to do
    nothing.  */
@@ -117,6 +117,14 @@ error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
    to the user and prevent the open from succeeding.  */
 error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
 				   struct iouser *user, int flags);
+
+/* If this variable is set, it is called in place of `trivfs_open' (below).  */
+error_t (*trivfs_open_hook) (struct trivfs_control *fsys,
+			     struct iouser *user,
+			     mach_port_t dotdot,
+			     int flags,
+			     mach_port_t realnode,
+			     struct trivfs_protid **cred);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */

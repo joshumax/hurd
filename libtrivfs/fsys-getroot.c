@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1997 Free Software Foundation
+   Copyright (C) 1993,94,95,97,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -63,7 +63,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
     return EOPNOTSUPP;
 
   /* O_CREAT and O_EXCL are not meaningful here; O_NOLINK and O_NOTRANS
-     will only be useful when trivfs supports translators (which it doesn't 
+     will only be useful when trivfs supports translators (which it doesn't
      now). */
   flags &= O_HURD;
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
@@ -91,7 +91,17 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (!err && trivfs_check_open_hook)
     err = (*trivfs_check_open_hook) (cntl, user, flags);
   if (!err)
-    err = trivfs_open (cntl, user, flags, new_realnode, &cred);
+    {
+      if (! trivfs_open_hook)
+	{
+	  err = trivfs_open (cntl, user, flags, new_realnode, &cred);
+	  if (!err)
+	    mach_port_deallocate (mach_task_self (), dotdot);
+	}
+      else
+	err = (*trivfs_open_hook) (cntl, user, dotdot, flags, new_realnode,
+				   &cred);
+    }
 
   if (err)
     {
@@ -105,7 +115,6 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       *newpt = ports_get_right (cred);
       *newpttype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (cred);
-      mach_port_deallocate (mach_task_self (), dotdot);
     }
 
   return err;
