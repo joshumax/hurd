@@ -25,6 +25,8 @@
 /* Implement fsys_syncfs as described in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_syncfs (fsys_t controlport,
+		      mach_port_t reply,
+		      mach_msg_type_name_t replytype,
 		      int wait,
 		      int children)
 {
