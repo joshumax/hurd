@@ -44,8 +44,9 @@ install-dist: dist-links
 	cp $(srcdir)/COPYING.LIB $(dist-root)/share/misc/COPYING.LIB
 
 dist-links:
-	mkdir -p $(dist-root)/boot
+	mkdir -p $(dist-root)/boot/grub
 	mkdir -p $(dist-root)/servers/socket
+	mkdir -p $(dist-root)/share/misc
 	touch $(dist-root)/servers/socket/1
 	touch $(dist-root)/servers/socket/2
 	ln -f $(dist-root)/servers/socket/1 $(dist-root)/servers/socket/local

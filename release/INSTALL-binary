@@ -67,6 +67,12 @@ Start with a system already running a GNU/Linux system:
   swap too.  Extract the binary image onto the new partition using
   tar; make sure you sue the `p' option to tar.   
 
+  You need to set the "owning OS" field for this filesystem to "hurd";
+  otherwise you will not be able to use Hurd-related extensions on
+  it.  (And using those extensions is required on the root
+  filesystem.)  Run the command `e2os DEVICE hurd' after the
+  filesystem is unmounted in order to accomplish this.
+
 If you do not have a system running BSD or a GNU/Linux system, you can
 install using the NetBSD boot floppies.  To do this, you do NOT need
 to install NetBSD; you will just be using their boot floppies

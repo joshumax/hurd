@@ -1,8 +1,19 @@
+Mon Jun 23 11:47:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* INSTALL-binary (STEP I): Tell to use e2os if the filesystem was
+	made with Linux.
+
 1997-06-17  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mksmallso, mkemptyso: New files.
 	* Makefile (tool-files): add mksmallso & mkemptyso.
 
+Mon Jun 16 11:56:33 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (dist-links): Make $(dist-root)/boot/grub and
+	$(dist-root)/share/misc.  Reported by Marcus G. Daniels
+	(marcus@cathcart.sysc.pdx.edu). 
+	
 Wed Jun 11 12:05:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (dist-links): Create /servers/exec node.
