@@ -59,3 +59,17 @@ pager_no_senders (struct pager *p,
 }
 
 
+/* Called by port management routines when the last send-right
+   to a pager has gone away.  This is a dual of pager_create.  */
+void
+pager_clean (void *arg)
+{
+  struct pager *p = arg;
+  
+  if (p->pager_state != NOTINIT)
+    panic ("pager not terminated"); /* XXX */
+  
+  pager_clean_user_data (p->upi);
+  
+  /* Should remove from list. XXX */
+}
