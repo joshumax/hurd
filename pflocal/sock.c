@@ -26,8 +26,6 @@
 
 #include "sock.h"
 #include "sserver.h"
-
-#include "debug.h"
 
 /* ---------------------------------------------------------------- */
 
@@ -39,9 +37,7 @@ error_t
 sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
- debug (sock, "in");
 
- debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   *pipe = sock->read_pipe;
@@ -57,18 +53,12 @@ sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
     /* Reading on a socket with the read-half shutdown always acts as if the
        pipe were at eof, even if the socket isn't connected yet [at least in
        netbsd].  */
- {debug (sock, "epipe");
     err = EPIPE;
- }
   else
- {debug (sock, "enotconn");
     err = ENOTCONN;
- }
 
- debug (sock, "unlock");
   mutex_unlock (&sock->lock);
 
- debug (sock, "out");
   return err;
 }
 
@@ -79,33 +69,24 @@ error_t
 sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
-debug (sock, "in");
 
-debug (sock, "lock");
   mutex_lock (&sock->lock);
   *pipe = sock->write_pipe;
   if (*pipe != NULL)
-    pipe_acquire_writer (*pipe);	/* Do this before unlocking the sock!  */
+    pipe_acquire_writer (*pipe); /* Do this before unlocking the sock!  */
   else if (sock->flags & SOCK_SHUTDOWN_WRITE)
     /* Writing on a socket with the write-half shutdown always acts as if the
        pipe were broken, even if the socket isn't connected yet [at least in
        netbsd].  */
-{debug (sock, "epipe");
     err = EPIPE;
-}
   else if (sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
     /* Connectionless protocols give a different error when unconnected.  */
-{debug (sock, "edestaddrreq");
     err = EDESTADDRREQ;
-}
   else
-{debug (sock, "enotconn");
     err = ENOTCONN;
-}
-debug (sock, "unlock");
+
   mutex_unlock (&sock->lock);
 
-debug (sock, "out");
   return err;
 }
 
@@ -152,9 +133,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
 void
 sock_free (struct sock *sock)
 {
-debug (sock, "in");
   sock_shutdown (sock, SOCK_SHUTDOWN_READ | SOCK_SHUTDOWN_WRITE);
-debug (sock, "bye");
   free (sock);
 }
 
@@ -195,7 +174,6 @@ static void
 sock_user_clean (void *vuser)
 {
   struct sock_user *user = vuser;
-debug (user, "bye");
   sock_deref (user->sock);
 }
 
@@ -212,17 +190,14 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 
   ensure_sock_server ();
 
-debug (sock, "lock, refs++");
   mutex_lock (&sock->lock);
   sock->refs++;
-debug (sock, "unlock");
   mutex_unlock (&sock->lock);
 
   user->sock = sock;
 
   *port = ports_get_right (user);
   ports_port_deref (user);	/* We only want one ref, for the send right. */
-debug (sock, "user: %p, refs: %d", user, user->pi.refcnt);
 
   return 0;
 }
@@ -247,24 +222,18 @@ addr_unbind (void *vaddr)
   struct sock *sock;
   struct addr *addr = vaddr;
 
-debug (addr, "in");
-debug (addr, "lock");
   mutex_lock (&addr->lock);
   sock = addr->sock;
   if (sock)
     {
-debug (sock, "(sock) lock");
       mutex_lock (&sock->lock);
       sock->addr = NULL;
       addr->sock = NULL;
       ports_port_deref_weak (addr);
-debug (sock, "(sock) unlock");
       mutex_unlock (&sock->lock);
       sock_deref (sock);
     }
-debug (addr, "unlock");
   mutex_unlock (&addr->lock);
-debug (addr, "out");
 }
 
 /* Cleanup after the address ADDR, which is going away... */
@@ -275,7 +244,6 @@ addr_clean (void *vaddr)
   /* ADDR should never have a socket bound to it at this point, as it should
      have been removed by addr_unbind dropping the socket's weak reference
      it.  */
-debug (addr, "bye");
   assert (addr->sock == NULL);
 }
 
@@ -304,9 +272,7 @@ sock_bind (struct sock *sock, struct addr *addr)
   error_t err = 0;
   struct addr *old_addr;
 
-debug (addr, "(addr) lock");
   mutex_lock (&addr->lock);
-debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   old_addr = sock->addr;
@@ -323,21 +289,16 @@ debug (sock, "lock");
     sock->addr = addr;
 
   if (addr)
-{debug (sock, "refs++");
     sock->refs++;
-}
   if (old_addr)
     {
       /* Note that we don't have to worry about SOCK's ref count going to zero
 	 because whoever's calling us should be holding a ref somehow.  */
-debug (sock, "refs--");
       sock->refs--;
       assert (sock->refs > 0);	/* But make sure... */
     }
 
-debug (sock, "unlock");
   mutex_unlock (&sock->lock);
-debug (addr, "(addr) unlock");
   mutex_unlock (&addr->lock);
 
   return err;
@@ -374,12 +335,10 @@ ensure_addr (struct sock *sock, struct addr **addr)
 error_t
 addr_get_sock (struct addr *addr, struct sock **sock)
 {
-debug (addr, "lock");
   mutex_lock (&addr->lock);
   *sock = addr->sock;
   if (*sock)
     (*sock)->refs++;
-debug (addr, "unlock");
   mutex_unlock (&addr->lock);
   return *sock ? 0 : EADDRNOTAVAIL;
 }
@@ -391,10 +350,8 @@ sock_get_addr (struct sock *sock, struct addr **addr)
 {
   error_t err;
 
-debug (sock, "lock");
   mutex_lock (&sock->lock);
   err = ensure_addr (sock, addr);
-debug (sock, "unlock");
   mutex_unlock (&sock->lock);
 
   return err;			/* XXX */
@@ -424,34 +381,24 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	{
 	  struct pipe *pipe = rd->read_pipe;
 	  assert (pipe);	/* Since SOCK_SHUTDOWN_READ isn't set.  */
-debug (wr, "connect: %p, pipe: %p", rd, pipe);
 	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
 	}
     }
 
-debug (sock1, "in: %p", sock2);
   if (sock1->pipe_class != sock2->pipe_class)
     /* Incompatible socket types.  */
-{debug (sock1, "eopnotsupp");
     return EOPNOTSUPP;		/* XXX?? */
-}
 
-debug (sock1, "socket pair lock");
   mutex_lock (&socket_pair_lock);
-debug (sock1, "lock");
   mutex_lock (&sock1->lock);
   if (sock1 != sock2)
     /* If SOCK1 == SOCK2, then we get a fifo!  */
-{debug (sock2, "lock");
     mutex_lock (&sock2->lock);
-}
 
   if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
     /* An already-connected socket.  */
-{debug (sock1, "eisconn");
     err = EISCONN;
-}
   else
     {
       old_sock1_write_pipe = sock1->write_pipe;
@@ -473,12 +420,8 @@ debug (sock1, "lock");
     }
 
   if (sock1 != sock2)
-{debug (sock2, "unlock");
     mutex_unlock (&sock2->lock);
-}
-debug (sock1, "unlock");
   mutex_unlock (&sock1->lock);
-debug (sock1, "socket pair unlock");
   mutex_unlock (&socket_pair_lock);
 
   if (old_sock1_write_pipe)
@@ -487,7 +430,6 @@ debug (sock1, "socket pair unlock");
       ports_port_deref (old_sock1_write_addr);
     }
 
-debug (sock1, "out");
   return err;
 }
 
@@ -500,8 +442,6 @@ sock_shutdown (struct sock *sock, unsigned flags)
 {
   unsigned old_flags;
 
-debug (sock, "in");
-debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   old_flags = sock->flags;
