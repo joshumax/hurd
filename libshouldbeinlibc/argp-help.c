@@ -758,7 +758,7 @@ argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 void argp_help (const struct argp *argp, FILE *stream,
 		unsigned flags, char *name)
 {
-  int first = 1;
+  int anything = 0;		/* Whether we've output anything.  */
   struct hol *hol = 0;
 
   if (! stream)
@@ -805,17 +805,18 @@ void argp_help (const struct argp *argp, FILE *stream,
       line_wrap_set_lmargin (stream, old_lm);
 
       putc ('\n', stream);
-      first = 0;
-
-      argp_doc (argp, 0, 0, 1, stream);
+      anything = 1;
     }
+
+  if (flags & ARGP_HELP_PRE_DOC)
+    anything |= argp_doc (argp, 0, 0, 1, stream);
 
   if (flags & ARGP_HELP_SEE)
     {
       fprintf (stream,
 	       "Try `%s --help' or `%s --usage' for more information.\n",
 	       name, name);
-      first = 0;
+      anything = 1;
     }
 
   if (flags & ARGP_HELP_LONG)
@@ -824,14 +825,23 @@ void argp_help (const struct argp *argp, FILE *stream,
       /* Print info about all the options.  */
       if (hol->num_entries > 0)
 	{
-	  if (! first)
+	  if (anything)
 	    putc ('\n', stream);
 	  hol_help (hol, stream);
-	  first = 0;
+	  anything = 1;
 	}
+    }
 
-      /* Finally, print any documentation strings at the end.  */
-      argp_doc (argp, 1, 1, 0, stream);
+  if (flags & ARGP_HELP_POST_DOC)
+    /* Print any documentation strings at the end.  */
+    anything |= argp_doc (argp, 1, anything, 0, stream);
+
+  if ((flags & ARGP_HELP_BUG_ADDR) && argp_program_bug_address)
+    {
+      if (anything)
+	putc ('\n', stream);
+      fprintf (stream, "Report bugs to %s.\n", argp_program_bug_address);
+      anything = 1;
     }
 
   if (hol)
