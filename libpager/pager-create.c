@@ -30,6 +30,7 @@ pager_create (struct user_pager_info *upi)
   mutex_init (&p->interlock);
   condition_init (&p->wakeup);
   p->lock_requests = 0;
+  p->attribute_requests = 0;
   p->memobjcntl = MACH_PORT_NULL;
   p->memobjname = MACH_PORT_NULL;
   p->seqno = -1;
