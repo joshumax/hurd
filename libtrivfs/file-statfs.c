@@ -19,7 +19,7 @@
 #include "fs_S.h"
 #include <string.h>
 
-error_t
+kern_return_t
 diskfs_S_file_statfs (struct trivfs_protid *cred,
 		      struct fsys_statfsbuf *stb)
 {
