@@ -1,3 +1,23 @@
+1999-06-01  Marcus Brinkmann <brinkmd@debian.org>
+
+	* TODO: Remove entry about shared library dependencies (see below).
+	Remove entry about suid-manager. We don't need to register binaries
+	which must be suid to operate.
+
+	* shlibs: New file. This makes Debian packages which use Hurd
+	libraries dependant on the Hurd package.
+	* rules: Add shlibs to the Hurd package.
+
+	* changelog: Update to reflect the Debian releases done.
+
+	* servers.boot: Remove obsolete $(default-pager) tag.
+
+	* control: Add Replaces, Conflicts login, as done with makedev.
+
+	* shlibs.local: New file. This is a work around needed for cross
+	compilation, so dpkg-shlibdeps does not make the Hurd package
+	dependant on itself.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rules (binary-arch): Don't remove root and etc dirs.
