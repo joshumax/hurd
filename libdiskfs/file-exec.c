@@ -27,27 +27,26 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 kern_return_t 
 diskfs_S_file_exec (struct protid *cred,
-	     task_t task,
-	     int flags,
-	     char *argv,
-	     u_int argvlen,
-	     char *envp,
-	     u_int envplen,
-	     mach_port_t *fds,
-	     u_int fdslen,
-	     mach_port_t *portarray,
-	     u_int portarraylen,
-	     int *intarray,
-	     u_int intarraylen,
-	     mach_port_t *deallocnames,
-	     u_int deallocnameslen,
-	     mach_port_t *destroynames,
-	     u_int destroynameslen)
+		    task_t task,
+		    int flags,
+		    char *argv,
+		    u_int argvlen,
+		    char *envp,
+		    u_int envplen,
+		    mach_port_t *fds,
+		    u_int fdslen,
+		    mach_port_t *portarray,
+		    u_int portarraylen,
+		    int *intarray,
+		    u_int intarraylen,
+		    mach_port_t *deallocnames,
+		    u_int deallocnameslen,
+		    mach_port_t *destroynames,
+		    u_int destroynameslen)
 {
   struct node *np;
   error_t err;
-  mach_port_t newauth;
-  
+
   if (!cred)
     return EOPNOTSUPP;
   
@@ -58,15 +57,142 @@ diskfs_S_file_exec (struct protid *cred,
 	|| ((np->dn_stat.st_mode & S_IUSEUNK)
 	    && (np->dn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
     return EACCES;
-  
-  /* Handle S_ISUID and S_ISGID uid substitution. */
-  /* XXX We should change the auth handle here too. */
+
+  /* Handle S_ISUID and S_ISGID uid substitution.  */
   if ((((np->dn_stat.st_mode & S_ISUID)
 	&& !diskfs_isuid (np->dn_stat.st_uid, cred))
        || ((np->dn_stat.st_mode & S_ISGID)
 	   && !diskfs_groupmember (np->dn_stat.st_gid, cred)))
       && !diskfs_isuid (0, cred))
-    flags |= EXEC_SECURE|EXEC_NEWTASK;
+    {
+      /* XXX Perhaps if there are errors in reauthenticating,
+	 we should just run non-setuid? */
+
+      mach_port_t newauth, intermediate;
+      void reauth (mach_port_t *port, int procp)
+	{
+	  mach_port_t newport, ref;
+	  if (*port == MACH_PORT_NULL)
+	    return;
+	  ref = mach_reply_port ();
+	  err = (procp ? proc_reauthenticate : io_reauthenticate)
+	    (*port, ref, MACH_MSG_TYPE_MAKE_SEND);
+	  if (! err)
+	    err = auth_user_authenticate (newauth, *port,
+					  ref, MACH_MSG_TYPE_MAKE_SEND,
+					  &newport);
+	  if (err)
+	    {
+	      /* Could not reauthenticate.  Do not give away the old port.  */
+	      mach_port_deallocate (mach_task_self (), *port);
+	      *port = MACH_PORT_NULL; /* XXX ? */
+	    }
+	  else if (newport != MACH_PORT_NULL)
+	    {
+	      mach_port_deallocate (mach_task_self (), *port);
+	      *port = newport;
+	    }
+	}
+
+      uid_t auxuidbuf[2], genuidbuf[10];
+      uid_t *old_aux_uids = auxuidbuf, *old_gen_uids = genuidbuf;
+      int nold_aux_uids = 2, nold_gen_uids = 10;
+      gid_t auxgidbuf[2], gengidbuf[10];
+      gid_t *old_aux_gids = auxgidbuf, *old_gen_gids = gengidbuf;
+      int nold_aux_gids = 2, nold_gen_gids = 10;
+      int ngen_uids = nold_gen_uids ?: 1;
+      int naux_uids = nold_aux_uids < 2 ? nold_aux_uids : 2;
+      uid_t gen_uids[ngen_uids], aux_uids[naux_uids];
+      int ngen_gids = nold_gen_gids ?: 1;
+      int naux_gids = nold_aux_gids < 2 ? nold_aux_gids : 2;
+      gid_t gen_gids[ngen_gids], aux_gids[naux_gids];
+      
+      int i;
+
+      /* Tell the exec server to use secure ports and a new task.  */
+      flags |= EXEC_SECURE|EXEC_NEWTASK;
+
+      /* Find the IDs of the old auth handle.  */
+      err = auth_getids (portarray[INIT_PORT_AUTH],
+			 &old_gen_uids, &nold_aux_uids,
+			 &old_aux_uids, &nold_aux_uids,
+			 &old_gen_gids, &nold_gen_gids,
+			 &old_aux_gids, &nold_aux_gids);
+      if (err == MACH_SEND_INVALID_DEST)
+	nold_gen_uids = nold_aux_uids = nold_gen_gids = nold_aux_gids = 0;
+      else if (err)
+	return err;
+
+      /* Set up the UIDs for the new auth handle.  */
+      if (nold_aux_uids == 0)
+	/* No real UID; we must invent one.  */
+	aux_uids[0] = nold_gen_uids ? old_gen_uids[0] : -2; /* XXX */
+      else
+	{
+	  aux_uids[0] = old_aux_uids[0];
+	  if (nold_aux_uids > 2)
+	    memcpy (&aux_uids[2], &old_aux_uids[2],
+		    nold_aux_uids * sizeof (uid_t));
+	}
+      aux_uids[1] = old_gen_uids[0]; /* Set saved set-UID to effective UID.  */
+      gen_uids[0] = np->dn_stat.st_uid;	/* Change effective to file owner.  */
+      memcpy (&gen_uids[1], &old_gen_uids[1],
+	      ((nold_gen_uids ?: 1) - 1) * sizeof (uid_t));
+
+      /* Set up the GIDs for the new auth handle.  */
+      if (nold_aux_gids == 0)
+	/* No real GID; we must invent one.  */
+	old_aux_gids[0] = nold_gen_gids ? old_gen_gids[0] : -2; /* XXX */
+      else
+	{
+	  aux_gids[0] = old_aux_gids[0];
+	  if (nold_aux_gids > 2)
+	    memcpy (&aux_gids[2], &old_aux_gids[2],
+		    nold_aux_gids * sizeof (gid_t));
+	}
+      aux_gids[1] = old_gen_gids[0]; /* Set saved set-GID to effective GID.  */
+      gen_gids[0] = np->dn_stat.st_gid;	/* Change effective to file owner.  */
+      memcpy (&gen_gids[1], &old_gen_gids[1],
+	      ((nold_gen_gids ?: 1) - 1) * sizeof (gid_t));
+
+      /* Create the new auth handle.  First we must make a handle that
+	 combines our IDs with those in the original user handle in
+	 portarray[INIT_PORT_AUTH].  Only using that handle will we be
+	 allowed to create the final handle, which contains secondary IDs
+	 from the original user handle that we don't necessarily have.  */
+      {
+	mach_port_t handles[2] =
+	  { diskfs_auth_server_port, portarray[INIT_PORT_AUTH] };
+	err = auth_makeauth (diskfs_auth_server_port,
+			     handles, MACH_MSG_TYPE_COPY_SEND, 2,
+			     NULL, 0, NULL, 0, NULL, 0, NULL, 0,
+			     &intermediate);
+      }
+      if (err)
+	return err;
+      err = auth_makeauth (intermediate,
+			   NULL, MACH_MSG_TYPE_COPY_SEND, 0,
+			   gen_uids, ngen_uids,
+			   aux_uids, naux_uids,
+			   gen_gids, ngen_gids,
+			   aux_gids, naux_gids,
+			   &newauth);
+      mach_port_deallocate (mach_task_self (), intermediate);
+      if (err)
+	return err;
+
+      /* Now we must reauthenticate all the ports to other
+	 servers we pass along to it.  */
+      
+      for (i = 0; i < fdslen; ++i)
+	reauth (&fds[i], 0);
+      reauth (&portarray[INIT_PORT_PROC], 1);
+      reauth (&portarray[INIT_PORT_CRDIR], 0);
+      reauth (&portarray[INIT_PORT_CWDIR], 0);
+
+      mach_port_deallocate (mach_task_self (), portarray[INIT_PORT_AUTH]);
+      portarray[INIT_PORT_AUTH] = newauth;
+    }
 
   /* If the user can't read the file, then we should use a new task,
      which would be inaccessible to the user.  Actually, this doesn't
@@ -82,7 +208,8 @@ diskfs_S_file_exec (struct protid *cred,
 		   (ports_get_right 
 		    (diskfs_make_protid
 		     (diskfs_make_peropen (np, O_READ, cred->po->dotdotport),
-		      cred->uids, cred->nuids, cred->gids, cred->ngids))),
+		      cred->uids, cred->nuids,
+		      cred->gids, cred->ngids))),
 		   MACH_MSG_TYPE_MAKE_SEND,
 		   task, flags, argv, argvlen, envp, envplen, 
 		   fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
