@@ -20,7 +20,7 @@ dir := libshouldbeinlibc
 makemode := library
 
 libname = libshouldbeinlibc
-SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c  \
+SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c argp-ba.c \
 	termsize.c idvec.c idvec-auth.c timefmt.c exec-reauth.c \
 	canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
 	xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c
