@@ -1,4 +1,4 @@
-2001-04-26  Marcus Brinkmann  <marcus@ulysses.dhis.net>
+2001-04-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	* set.c: Use explicit comparison to MACH_PORT_NULL.
 
