@@ -30,6 +30,9 @@
  *	catch is reserved word in c++.
  *
  * $Log: cthreads.c,v $
+ * Revision 1.15  2002/07/31 02:35:14  marcus
+ * Add comment to last change, for the benefit of the next merge :)
+ *
  * Revision 1.14  2002/07/31 02:20:44  marcus
  * 2002-07-29  Marcus Brinkmann  <marcus@gnu.org>
  *
@@ -147,6 +150,10 @@
 #include <cthreads.h>
 #include <mach/mig_support.h>
 #include "cthread_internals.h"
+
+#ifdef HAVE_USELOCALE
+# include <locale.h>
+#endif
 
 /*
  * Thread status bits.
@@ -285,6 +292,11 @@ cthread_body(cproc_t self)
 				/*
 				 * Execute the fork request.
 				 */
+#ifdef HAVE_USELOCALE
+			        /* A fresh thread needs to be bound to the
+				   global locale.  */
+			  	uselocale (LC_GLOBAL_LOCALE);
+#endif
 				t->result = (*(t->func))(t->arg);
 			}
 			/*
