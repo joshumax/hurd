@@ -1,3 +1,8 @@
+1999-05-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* null.c (trivfs_S_io_read): Fix return value.
+	Reported by Steinar Hamre <steinarh@fim.ntnu.no>.
+
 1999-05-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fwd.c (main): Add missing newline in usage msg.
