@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,13 +18,14 @@
 #include "priv.h"
 #include "fs_S.h"
 
-kern_return_t
+error_t
 trivfs_S_file_check_access (struct trivfs_protid *cred,
 			    mach_port_t reply, mach_msg_type_name_t reply_type,
 			    int *allowed)
 {
-  if (!cred)
+  if (! cred)
     return EOPNOTSUPP;
-  *allowed = 0;
+  else
+    return file_check_access (cred->realnode, allowed);
   return 0;
 }
