@@ -13,9 +13,7 @@
 # left suspended; the fs will resume the exec task once it is ready.
 /lib/ld.so.1 /hurd/exec $(exec-task=task-create)
 
-# Have serverboot act as our default pager.
-$(default-pager)
+# To swap to a Linux swap partition, use something like the following.
+# You can also add swap partitions to /etc/fstab.
+#/dev/hd0s2 $(add-linux-paging-file)
 
-# To swap to a Linux swap partition, use something like the following
-# instead of the above $(default-pager) line:
-#/dev/hd0s2 $(add-linux-paging-file) $(default-pager)
