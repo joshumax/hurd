@@ -777,12 +777,20 @@ extern inline error_t
 diskfs_checkdirmod (struct node *dp, struct node *np,
 		    struct protid *cred)
 {
+  error_t err;
+  
   /* The user must be able to write the directory, but if the directory
      is sticky, then the user must also be either the owner of the directory
      or the file.  */
-  return (diskfs_access (dp, S_IWRITE, cred)
-	  && (!(dp->dn_stat.st_mode & S_ISVTX) || !np || diskfs_isuid (0,cred)
-	      || diskfs_isowner (dp, cred) || diskfs_isowner (np, cred)));
+  err = diskfs_access (dp, S_IWRITE, cred);
+  if (err)
+    return err;
+  
+  if ((dp->dn_stat.st_mode & S_ISVTX) && np && !diskfs_isuid (0, cred)
+      && !diskfs_isowner (dp, cred) && !diskfs_isowner (np, cred))
+    return EACCES;
+  
+  return 0;
 }
 
 /* Reading and writing of files. this is called by other filesystem
