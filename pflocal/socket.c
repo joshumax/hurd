@@ -40,9 +40,11 @@ static error_t
 ensure_connq (struct sock *sock)
 {
   error_t err = 0;
+debug (sock, "lock");
   mutex_lock (&sock->lock);
   if (!sock->connq)
     err = connq_create (&sock->connq);
+debug (sock, "unlock");
   mutex_unlock (&sock->lock);
   return err;
 }
