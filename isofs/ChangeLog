@@ -1,3 +1,8 @@
+2003-08-31  Marcus Brinkmann  <marcus@gnu.org>
+
+	* main.c (diskfs_readonly, diskfs_hard_readonly): Removed.
+	(main): Set diskfs_readonly and diskfs_hard_readonly to one.
+
 2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (target): Change to iso9660fs.

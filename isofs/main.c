@@ -39,8 +39,6 @@ int diskfs_link_max = INT_MAX;
 int diskfs_name_max = 255;	/* see iso9660.h: struct dirrect::namelen */
 int diskfs_maxsymlinks = 8;
 
-/* This filesystem is never capable of writing.  */
-int diskfs_readonly = 1, diskfs_hard_readonly = 1;
 
 /* Fetch the root node */
 static void
@@ -129,6 +127,10 @@ int
 main (int argc, char **argv)
 {
   mach_port_t bootstrap;
+
+  /* This filesystem is never capable of writing.  */
+  diskfs_readonly = 1;
+  diskfs_hard_readonly = 1;
 
   /* Initialize the diskfs library, parse arguments, and open the store.
      This starts the first diskfs thread for us.  */
