@@ -48,7 +48,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "file_io.h"
+#include <file_io.h>
 
 #define debug 0
 
@@ -206,9 +206,10 @@ new_partition (const char *name, struct file_direct *fdp,
 
 	if (check_linux_signature < 0)
 	  {
-	    printf("(default pager): "
-		   "Paging to raw partition %s (%uk paging space)\n",
-		   name, part->total_size * (vm_page_size / 1024));
+	    if (check_linux_signature != -3)
+	      printf("(default pager): "
+		     "Paging to raw partition %s (%uk paging space)\n",
+		     name, part->total_size * (vm_page_size / 1024));
 	    return part;
 	  }
 
