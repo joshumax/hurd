@@ -66,6 +66,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
 		cred->uids, cred->nuids, 
 		cred->gids, cred->ngids)));
   *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
+  diskfs_nput (np);
   return 0;
 }
 
