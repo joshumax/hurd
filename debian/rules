@@ -131,7 +131,7 @@ binary-arch: build
 	# Create development library links.
 	for file in `cd debian/tmp/lib && ls *.so.*`; do \
 	  linkname=`echo "$$file" | sed 's/\..*$$/.so/'`; \
-	  ln -sf /lib/$$file debian/$(package)-dev/usr/lib/$$linkname; \
+	  ln -sf $$file debian/$(package)-dev/usr/lib/$$linkname; \
 	done
 	rm -f debian/tmp/lib/*.so
 
