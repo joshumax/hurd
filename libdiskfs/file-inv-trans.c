@@ -29,6 +29,8 @@ diskfs_S_file_invoke_translator (struct protid *cred,
 				 mach_msg_type_name_t *retrypttype)
 {
 #if 0
+  /* XXX */
+  static mach_port_t _diskfs_dotdot_file = MACH_PORT_NULL;
   error_t error = 0;
   mode_t type;
   struct node *np;
