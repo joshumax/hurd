@@ -25,9 +25,8 @@ target = console
 
 SRCS = console.c display.c input.c
 LCLHDRS = console.h display.h input.h
-DIST_FILES = ourfs_notify.defs
 
-MIGSTUBS = ourfs_notifyUser.o
+MIGSTUBS = notifyServer.o
 
 HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))

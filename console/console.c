@@ -39,6 +39,8 @@
 
 #include "display.h"
 #include "input.h"
+/* We include console.h for the color numbers.  */
+#include "console.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (console);
 
@@ -50,6 +52,12 @@ int netfs_maxsymlinks = 16;	/* Arbitrary.  */
 volatile struct mapped_time_value *console_maptime;
 
 #define DEFAULT_ENCODING "ISO-8859-1"
+#define DEFAULT_FOREGROUND CONS_COLOR_WHITE
+/* For the help output.  */
+#define DEFAULT_FOREGROUND_NAME "white"
+#define DEFAULT_BACKGROUND CONS_COLOR_BLACK
+/* For the help output.  */
+#define DEFAULT_BACKGROUND_NAME "black"
 
 
 /* A handle for a console device.  */
@@ -91,6 +99,9 @@ struct cons
   vcons_t vcons_list;
   /* The encoding.  */
   char *encoding;
+  /* Default foreground and background colors.  */
+  int foreground;
+  int background;
 
   struct node *node;
   mach_port_t underlying;
@@ -163,7 +174,8 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   /* XXX Error checking.  */
 
   mutex_init (&vcons->lock);
-  err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING);
+  err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING,
+			cons->foreground, cons->background);
   if (err)
     {
       free (vcons->name);
@@ -302,7 +314,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       (*np)->nn_stat.st_mode |= S_IFREG;
       (*np)->nn_stat.st_mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
       (*np)->nn_stat.st_size = 80*50 * (sizeof (wchar_t) + 4)
-	+ 11 * 4; /* XXX */
+	+ 14 * 4 + 512 * 8; /* XXX */
       break;
     case VCONS_NODE_INPUT:
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 3;
@@ -1190,12 +1202,57 @@ netfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
 }
 
 
+static const char *color_names[CONS_COLOR_MAX + 1] =
+  {
+    [CONS_COLOR_BLACK] = "black",
+    [CONS_COLOR_RED] = "red",
+    [CONS_COLOR_GREEN] = "green",
+    [CONS_COLOR_YELLOW] = "yellow",
+    [CONS_COLOR_BLUE] = "blue",
+    [CONS_COLOR_MAGENTA] = "magenta",
+    [CONS_COLOR_CYAN] = "cyan",
+    [CONS_COLOR_WHITE] = "white"
+  };
+
 static const struct argp_option options[] =
 {
-  {"encoding",	'e', "NAME", 0, "Set encoding of virtual consoles to"
-   " NAME (default `" DEFAULT_ENCODING "')" },
+  { "foreground",'f', "COLOR", 0, "Set foreground color to"
+    " COLOR (default `" DEFAULT_FOREGROUND_NAME "')" },
+  { "background",'b', "COLOR", 0, "Set background color to"
+    " COLOR (default `" DEFAULT_BACKGROUND_NAME "')" },
+  { "encoding",	'e', "NAME", 0, "Set encoding of virtual consoles to"
+    " NAME (default `" DEFAULT_ENCODING "')" },
   {0}
 };
+
+static error_t
+parse_color (const char *name, int *number)
+{
+  if (isdigit (*name))
+    {
+      long int nr;
+      char *tail;
+
+      errno = 0;
+
+      nr = strtol (name, &tail, 0);
+      if (errno || &tail || nr < 0 || nr > CONS_COLOR_MAX)
+	return EINVAL;
+      *number = nr;
+      return 0;
+    }
+  else
+    {
+      int i;
+      for (i = 0; i <= CONS_COLOR_MAX; i++)
+	if (!strcmp (color_names[i], name))
+	  {
+	    *number = i;
+	    return 0;
+	  }
+      return EINVAL;
+    }
+}
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -1217,6 +1274,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_FINI:
       mutex_unlock (&cons->lock);
       break;
+
+    case 'f':
+      return parse_color (arg, &cons->foreground);
+    case 'b':
+      return parse_color (arg, &cons->background);
 
     case 'e':
       /* XXX Check validity of encoding.  Can we perform all necessary
@@ -1252,6 +1314,24 @@ netfs_append_args (char **argz, size_t *argz_len)
       else
 	err = errno;
     }
+  if (cons->foreground != DEFAULT_FOREGROUND)
+    {
+      char *buf;
+      asprintf (&buf, "--foreground=%s", color_names[cons->foreground]);
+      if (buf)
+	err = argz_add (argz, argz_len, buf);
+      else
+	err = errno;
+    }      
+  if (cons->background != DEFAULT_BACKGROUND)
+    {
+      char *buf;
+      asprintf (&buf, "--background=%s", color_names[cons->background]);
+      if (buf)
+	err = argz_add (argz, argz_len, buf);
+      else
+	err = errno;
+    }      
   return err;
 }
 
@@ -1272,6 +1352,8 @@ main (int argc, char **argv)
     error (1, ENOMEM, "Cannot create console structure");
   mutex_init (&cons->lock);
   cons->encoding = NULL;
+  cons->foreground = DEFAULT_FOREGROUND;
+  cons->background = DEFAULT_BACKGROUND;
   cons->vcons_list = NULL;
   root_nn.cons = cons;
 

@@ -1,3 +1,59 @@
+2002-06-24  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.h (cons_color_t): New enum type replacing color macros.
+	(CONS_COLOR_MAX): New macro.
+	(cons_change_t): New type.
+	(struct cons_display): New member CHANGES.
+	* console.c: Include "console.h".
+	(DEFAULT_FOREGROUND, DEFAULT_FOREGROUND_NAME, DEFAULT_BACKGROUND,
+	DEFAULT_BACKGROUND_NAME): New macros.
+	(struct cons): New members foreground and background.
+	(vcons_lookup): Pass colors to display_create invocation.
+	(new_node): Fix st_size for display node.
+	(color_names): New array.
+	(options): Add options to set default foreground and background
+	color.
+	(parse_color): New function.
+	(parse_opt): Implement new options.
+	(netfs_append_args): Add new options to output.
+	(main): Set default colors.
+
+	* Makefile (DIST_FILES): Remove target.
+	(MIGSTUBS): Remove ourfs_notifyUser.o and add notifyServer.o.
+	* display.c: Do not include "ourfs_notify_U.h".
+	(struct modreq): New member PENDING.
+	(struct notify): New structure.
+	(struct display): New members FILEMOD_REQS_PENDING and
+	NOTIFY_PORT.
+	(pager_read_page): Hand out previously returned pages.
+	(pager_unlock_page): Assert that this is not called.
+	(notify_class, notify_bucket): New port class and bucket global
+	variables.
+	(nowait_file_changed): New function, modified from mig output.
+	(do_mach_notify_port_deleted): New stub function.
+	(do_mach_notify_port_destroyed): New stub function.
+	(do_mach_notify_no_senders): New stub function.
+	(do_mach_notify_dead_name): New stub function.
+	(do_mach_notify_send_once): New stub function.
+	(do_mach_notify_msg_accepted): New function.
+	(service_notifications): New function.
+	(display_notice_changes): Call nowait_file_changed with new
+	argument.  Initialize REQ->pending.
+	(display_notice_filechange): Remove arguments except DISPLAY.  Set
+	PENDING flags in pending filemod requests.  Call
+	nowait_file_changed with new notify argument.  If notification
+	will be sent, move modreq structure to pending list.
+	(display_flush_filechange): Rewritten to use ring buffer to store
+	changes.
+	(user_create): Initialize new members of struct cons_display.
+	(display_init): Initialize notify_class and notify_bucket.
+	(display_create): Accept new arguments for default colors.
+	Initialize new members of struct display.
+	(display_destroy): Remove pending filemod requests and destroy the
+	notification port.  Do not free the display structure memory.
+	(display_destroy_complete): New function.
+	* display.h: Add new arguments to prototype of display_create.
+	
 2002-06-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.h: Update all CONS_KEY_* macros to match other terminfo

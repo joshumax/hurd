@@ -37,8 +37,6 @@
 #include <hurd.h>
 #include <hurd/pager.h>
 
-#include "ourfs_notify_U.h"
-
 #ifndef __STDC_ISO_10646__
 #error It is required that wchar_t is UCS-4.
 #endif
@@ -141,6 +139,17 @@ struct modreq
 {
   mach_port_t port;
   struct modreq *next;
+  /* If the port should have been notified, but it was blocking, we
+     set this.  */
+  int pending;
+};
+
+/* For each display, a notification port is created to which the
+   kernel sends message accepted notifications.  */
+struct notify
+{
+  struct port_info pi;
+  struct display *display;
 };
 
 struct display
@@ -166,6 +175,10 @@ struct display
 
   /* A list of ports to send file change notifications to.  */
   struct modreq *filemod_reqs;
+  /* Those ports which currently have a pending notification.  */
+  struct modreq *filemod_reqs_pending;
+  /* The notify port.  */
+  struct notify *notify_port;
 };
 
 
@@ -201,13 +214,17 @@ error_t
 pager_read_page (struct user_pager_info *upi, vm_offset_t page,
                  vm_address_t *buf, int *writelock)
 {
-  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
+  /* XXX clients should get a read only object.  */
+  *writelock = 0;
 
-  /* This is a read-only medium */
-  *writelock = 1;
-  
-  *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
-			      MAP_ANON, 0, 0);
+  if (upi->memobj_pages[page / vm_page_size] != (vm_address_t) NULL)
+    {
+      *buf = upi->memobj_pages[page / vm_page_size];
+      upi->memobj_pages[page / vm_page_size] = (vm_address_t) NULL;
+    }
+  else
+    *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+				MAP_ANON, 0, 0);
   return 0;
 }
 
@@ -224,6 +241,7 @@ error_t
 pager_unlock_page (struct user_pager_info *pager,
                    vm_offset_t address)
 {
+  assert (!"unlocking requested on unlocked page");
   return 0;
 }
 
@@ -258,6 +276,88 @@ service_paging_requests (any_t arg)
 }    
 
 
+/* The bucket and class for notification messages.  */
+static struct port_bucket *notify_bucket;
+static struct port_class *notify_class;
+
+#define msgh_request_port	msgh_remote_port
+#define msgh_reply_port		msgh_local_port
+
+/* SimpleRoutine file_changed */
+kern_return_t
+nowait_file_changed (mach_port_t notify_port, file_changed_type_t change,
+		     off_t start, off_t end, mach_port_t notify)
+{
+  typedef struct
+  {
+    mach_msg_header_t Head;
+    mach_msg_type_t changeType;
+    file_changed_type_t change;
+    mach_msg_type_t startType;
+    off_t start;
+    mach_msg_type_t endType;
+    off_t end;
+  } Request;
+  union
+  {
+    Request In;
+  } Mess;
+  register Request *InP = &Mess.In;
+  
+  static const mach_msg_type_t changeType = {
+    /* msgt_name = */		2,
+    /* msgt_size = */		32,
+    /* msgt_number = */		1,
+    /* msgt_inline = */		TRUE,
+    /* msgt_longform = */	FALSE,
+    /* msgt_deallocate = */	FALSE,
+    /* msgt_unused = */		0
+  };
+
+  static const mach_msg_type_t startType = {
+    /* msgt_name = */		2,
+    /* msgt_size = */		32,
+    /* msgt_number = */		1,
+    /* msgt_inline = */		TRUE,
+    /* msgt_longform = */	FALSE,
+    /* msgt_deallocate = */	FALSE,
+    /* msgt_unused = */		0
+  };
+
+  static const mach_msg_type_t endType = {
+    /* msgt_name = */		2,
+    /* msgt_size = */		32,
+    /* msgt_number = */		1,
+    /* msgt_inline = */		TRUE,
+    /* msgt_longform = */	FALSE,
+    /* msgt_deallocate = */	FALSE,
+    /* msgt_unused = */		0
+  };
+
+  InP->changeType = changeType;
+  InP->change = change;
+  InP->startType = startType;
+  InP->start = start;
+  InP->endType = endType;
+  InP->end = end;
+
+  InP->Head.msgh_bits = MACH_MSGH_BITS(19, 0);
+  /* msgh_size passed as argument.  */
+  InP->Head.msgh_request_port = notify_port;
+  InP->Head.msgh_reply_port = MACH_PORT_NULL;
+  InP->Head.msgh_seqno = 0;
+  InP->Head.msgh_id = 20501;
+
+  if (notify == MACH_PORT_NULL)
+    return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_MSG_OPTION_NONE,
+		     48, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     MACH_PORT_NULL);
+  else
+    return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_SEND_NOTIFY,
+		     48, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     notify);
+}
+
 /* Free the list of modification requests MR */
 static void
 free_modreqs (struct modreq *mr)
@@ -271,6 +371,106 @@ free_modreqs (struct modreq *mr)
     }
 }
 
+void do_mach_notify_port_deleted (void) { assert (0); }
+void do_mach_notify_port_destroyed (void) { assert (0); }
+void do_mach_notify_no_senders (void) { assert (0); }
+void do_mach_notify_dead_name (void) { assert (0); }
+
+kern_return_t
+do_mach_notify_send_once (mach_port_t notify)
+{
+  /* XXX Not sure when this is called.  */
+  assert (0);
+}
+
+kern_return_t
+do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
+{
+  struct notify *notify_port = ports_lookup_port (notify_bucket,
+						  notify, notify_class);
+  struct display *display;
+  struct modreq **preq;
+  struct modreq *req;
+
+  if (!notify_port)
+    return EOPNOTSUPP;
+
+  /* If we deallocated the send right in display_destroy before the
+     notification was created.  We have nothing to do in this
+     case.  */
+  if (!send)
+    {
+      assert(0);
+      ports_port_deref (notify_port);
+      return 0;
+    }
+
+  display = notify_port->display;
+  mutex_lock (&display->lock);
+  /* Find request in pending queue.  */
+  preq = &display->filemod_reqs_pending;
+  while (*preq && (*preq)->port != send)
+    preq = &(*preq)->next;
+  /* If we don't find the request, it was destroyed in
+     display_destroy.  In this case, there is nothing left to do
+     here.  */
+  if (! *preq)
+    {
+      assert(0);
+      mutex_unlock (&display->lock);
+      ports_port_deref (notify_port);
+      return 0;
+    }
+  req = *preq;
+
+  if (req->pending)
+    {
+      error_t err;
+      /* A request was desired while we were blocking.  Send it now
+	 and stay in pending queue.  */
+      req->pending = 0;
+      err = nowait_file_changed (req->port, FILE_CHANGED_WRITE, -1, -1,
+				 notify);
+      if (err && err != MACH_SEND_WILL_NOTIFY)
+	{
+	  *preq = req->next;
+	  mutex_unlock (&display->lock);
+	  mach_port_deallocate (mach_task_self (), req->port);
+	  free (req);
+	  ports_port_deref (notify_port);
+	  return err;
+	}
+      if (err == MACH_SEND_WILL_NOTIFY)
+	{
+	  mutex_unlock (&display->lock);
+	  return 0;
+	}
+      /* The message was succesfully queued, fall through.  */
+    }
+  /* Remove request from pending queue.  */
+  *preq = req->next;
+  /* Insert request into active queue.  */
+  req->next = display->filemod_reqs;
+  display->filemod_reqs = req;
+  mutex_unlock (&display->lock);
+  ports_port_deref (notify_port);
+  return 0;
+}
+
+/* A top-level function for the notification thread that just services
+   notification messages.  */
+static void
+service_notifications (any_t arg)
+{
+  struct port_bucket *notify_bucket = arg;
+  extern int notify_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
+
+  for (;;)
+    ports_manage_port_operations_one_thread (notify_bucket,
+					     notify_server,
+					     1000 * 60 * 10);
+}
+
 error_t
 display_notice_changes (display_t display, mach_port_t notify)
 {
@@ -278,7 +478,7 @@ display_notice_changes (display_t display, mach_port_t notify)
   struct modreq *req;
 
   mutex_lock (&display->lock);
-  err = nowait_file_changed (notify, FILE_CHANGED_NULL, 0, 0);
+  err = nowait_file_changed (notify, FILE_CHANGED_NULL, 0, 0, MACH_PORT_NULL);
   if (err)
     {
       mutex_unlock (&display->lock);
@@ -291,6 +491,7 @@ display_notice_changes (display_t display, mach_port_t notify)
       return errno;
     }
   req->port = notify;
+  req->pending = 0;
   req->next = display->filemod_reqs;
   display->filemod_reqs = req;
   mutex_unlock (&display->lock);
@@ -299,24 +500,41 @@ display_notice_changes (display_t display, mach_port_t notify)
 
 /* Requires DISPLAY to be locked.  */
 static void
-display_notice_filechange (display_t display, enum file_changed_type type,
-			   off_t start, off_t end)
+display_notice_filechange (display_t display)
 {
   error_t err;
-  struct modreq **preq;
+  struct modreq *req = display->filemod_reqs_pending;
+  struct modreq **preq = &display->filemod_reqs;
+  mach_port_t notify_port = ports_get_right (display->notify_port);
 
-  preq = &display->filemod_reqs;
+  while (req)
+    {
+      req->pending = 1;
+      req = req->next;
+    }
+
   while (*preq)
     {
-      struct modreq *req = *preq;
-      err = nowait_file_changed (req->port, type, start, end);
+      req = *preq;
+
+      err = nowait_file_changed (req->port, FILE_CHANGED_WRITE, -1, -1,
+				 notify_port);
       if (err)
         {
 	  /* Remove notify port.  */
-          *preq = req->next;
-          mach_port_deallocate (mach_task_self (), req->port);
-          free (req);
-        }
+	  *preq = req->next;
+
+	  if (err == MACH_SEND_WILL_NOTIFY)
+	    {
+	      req->next = display->filemod_reqs_pending;
+	      display->filemod_reqs_pending = req;
+	    }
+	  else
+	    {
+	      mach_port_deallocate (mach_task_self (), req->port);
+	      free (req);
+	    }
+	}
       else
         preq = &req->next;
     }
@@ -326,71 +544,71 @@ static void
 display_flush_filechange (display_t display, unsigned int type)
 {
   struct cons_display *user = display->user;
+  cons_change_t *next = &user->changes._buffer[(user->changes.written + 1)
+					       % _CONS_CHANGES_LENGTH];
+  int notify = 0;
+  int bump_written = 0;
 
   if (type & DISPLAY_CHANGE_MATRIX
       && display->changes.which & DISPLAY_CHANGE_MATRIX)
     {
-      display_notice_filechange (display, FILE_CHANGED_WRITE,
-				 sizeof (struct cons_display)
-				 + display->changes.start * sizeof (conchar_t),
-				 sizeof (struct cons_display)
-				 + (display->changes.end + 1)
-				 * sizeof (conchar_t) - 1);
-      type &= ~DISPLAY_CHANGE_MATRIX;
+      notify = 1;
+      next->matrix.start = display->changes.start;
+      next->matrix.end = display->changes.end;
+      user->changes.written++;
+      next = &user->changes._buffer[(user->changes.written + 1)
+				    % _CONS_CHANGES_LENGTH];
+      display->changes.which &= ~DISPLAY_CHANGE_MATRIX;
     }
 
-  if (type & DISPLAY_CHANGE_CURSOR_POS
-      || type & DISPLAY_CHANGE_CURSOR_STATUS)
-    {
-      off_t start;
-      off_t len = 0;
+  memset (next, 0, sizeof (cons_change_t));
+  next->what.not_matrix = 1;
 
-      if (type & DISPLAY_CHANGE_CURSOR_POS
-	  && display->changes.which & DISPLAY_CHANGE_CURSOR_POS
-	  && (display->changes.cursor.col != user->cursor.col
-	      || display->changes.cursor.row != user->cursor.row))
-	{
-	  start = offsetof (struct cons_display, cursor.col);
-	  len += 2;
-	}
-      if (type & DISPLAY_CHANGE_CURSOR_STATUS
-	  && display->changes.which & DISPLAY_CHANGE_CURSOR_STATUS
-	  && display->changes.cursor.status != user->cursor.status)
-	{
-	  if (!len)
-	    start = offsetof (struct cons_display, cursor.status);
-	  len += 1;
-	}
-      if (len)
-	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
-				   start + len * sizeof (uint32_t) - 1);
+  if (type & DISPLAY_CHANGE_CURSOR_POS
+      && display->changes.which & DISPLAY_CHANGE_CURSOR_POS
+      && (display->changes.cursor.col != user->cursor.col
+	  || display->changes.cursor.row != user->cursor.row))
+    {
+      notify = 1;
+      next->what.cursor_pos = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_CURSOR_POS;
+    }
+
+  if (type & DISPLAY_CHANGE_CURSOR_STATUS
+      && display->changes.which & DISPLAY_CHANGE_CURSOR_STATUS
+      && display->changes.cursor.status != user->cursor.status)
+    {
+      notify = 1;
+      next->what.cursor_status = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_CURSOR_STATUS;
     }
 
   if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
-      || type & DISPLAY_CHANGE_SCREEN_SCR_LINES)
+      && display->changes.which & DISPLAY_CHANGE_SCREEN_CUR_LINE
+      && display->changes.screen.cur_line != user->screen.cur_line)
     {
-      off_t start;
-      off_t len = 0;
-
-      if (type & DISPLAY_CHANGE_SCREEN_CUR_LINE
-	  && display->changes.which & DISPLAY_CHANGE_SCREEN_CUR_LINE
-	  && display->changes.screen.cur_line != user->screen.cur_line)
-	{
-	  start = offsetof (struct cons_display, screen.cur_line);
-	  len += 2;
-	}
-      if (type & DISPLAY_CHANGE_SCREEN_SCR_LINES
-	  && display->changes.which & DISPLAY_CHANGE_SCREEN_SCR_LINES
-	  && display->changes.screen.scr_lines != user->screen.scr_lines)
-	{
-	  if (!len)
-	    start = offsetof (struct cons_display, screen.scr_lines);
-	  len += 1;
-	}
-      if (len)
-	display_notice_filechange (display, FILE_CHANGED_WRITE, start,
-				   start + len * sizeof (uint32_t) - 1);
+      notify = 1;
+      next->what.screen_cur_line = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_SCREEN_CUR_LINE;
     }
+
+  if (type & DISPLAY_CHANGE_SCREEN_SCR_LINES
+      && display->changes.which & DISPLAY_CHANGE_SCREEN_SCR_LINES
+      && display->changes.screen.scr_lines != user->screen.scr_lines)
+    {
+      notify = 1;
+      next->what.screen_scr_lines = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_SCREEN_SCR_LINES;
+    }
+
+  if (bump_written)
+    user->changes.written++;
+  if (notify)
+    display_notice_filechange (display);
 }
 
 /* Record a change in the matrix ringbuffer.  */
@@ -536,6 +754,9 @@ user_create (display_t display, uint32_t width, uint32_t height,
     
   user->magic = CONS_MAGIC;
   user->version = CONS_VERSION_MAJ << 16 | CONS_VERSION_AGE;
+  user->changes.buffer = offsetof (struct cons_display, changes._buffer)
+    / sizeof (uint32_t);
+  user->changes.length = _CONS_CHANGES_LENGTH;
   user->screen.width = width;
   user->screen.height = height;
   user->screen.lines = lines;
@@ -619,19 +840,6 @@ screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
 	}
 
       display_record_filechange (display, start, end);
-#if 0
-      display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
-      display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
-				 sizeof (struct cons_display)
-				 + start * sizeof (conchar_t),
-				 sizeof (struct cons_display)
-				 + (start + shift) * sizeof (conchar_t) - 1);
-      display_notice_filechange (display, FILE_CHANGED_EXTEND,
-				 sizeof (struct cons_display)
-				 + (end - shift + 1) * sizeof (conchar_t),
-				 sizeof (struct cons_display)
-				 + (end + 1) * sizeof (conchar_t) - 1);
-#endif
     }
   else
     screen_fill (display, col1, row1, col2, row2, chr, attr);
@@ -669,19 +877,6 @@ screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
 	}
 
       display_record_filechange (display, start, end);
-#if 0
-      display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
-      display_notice_filechange (display, FILE_CHANGED_EXTEND,
-				 sizeof (struct cons_display)
-				 + start * sizeof (conchar_t),
-				 sizeof (struct cons_display)
-				 + (start + shift) * sizeof (conchar_t) - 1);
-      display_notice_filechange (display, FILE_CHANGED_TRUNCATE,
-				 sizeof (struct cons_display)
-				 + (end - shift + 1) * sizeof (conchar_t),
-				 sizeof (struct cons_display)
-				 + (end + 1) * sizeof (conchar_t) - 1);
-#endif
     }
   else
     screen_fill (display, col1, row1, col2, row2, chr, attr);
@@ -1395,6 +1590,9 @@ display_output_some (display_t display, char **buffer, size_t *length)
 }
 
 
+/* Forward declaration.  */
+void display_destroy_complete (void *pi);
+
 void
 display_init (void)
 {
@@ -1405,14 +1603,26 @@ display_init (void)
 
   /* Make a thread to service paging requests.  */
   cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
-                                (any_t)pager_bucket));
+                                (any_t) pager_bucket));
+
+  /* Create the notify bucket, and start to serve notifications.  */
+  notify_bucket = ports_create_bucket ();
+  if (! notify_bucket)
+    error (5, errno, "Cannot create notify bucket");
+  notify_class = ports_create_class (display_destroy_complete, NULL);
+  if (! notify_class)
+    error (5, errno, "Cannot create notify class");
+
+  cthread_detach (cthread_fork ((cthread_fn_t) service_notifications,
+                                (any_t) notify_bucket));
 }
 
 
 /* Create a new virtual console display, with the system encoding
    being ENCODING.  */
 error_t
-display_create (display_t *r_display, const char *encoding)
+display_create (display_t *r_display, const char *encoding,
+		int foreground, int background)
 {
   error_t err = 0;
   display_t display;
@@ -1425,15 +1635,25 @@ display_create (display_t *r_display, const char *encoding)
   if (!display)
     return ENOMEM;
 
+  err = ports_create_port (notify_class, notify_bucket, sizeof (struct notify),
+			   &display->notify_port);
+  if (err)
+    {
+      free (display);
+      return err;
+    }
+  display->notify_port->display = display;
+
   mutex_init (&display->lock);
-  display->attr.bgcol_def = CONS_COLOR_BLACK;
-  display->attr.fgcol_def = CONS_COLOR_WHITE;
+  display->attr.bgcol_def = background;
+  display->attr.fgcol_def = foreground;
   display->attr.current.bgcol = display->attr.bgcol_def;
   display->attr.current.fgcol = display->attr.fgcol_def;
   err = user_create (display, width, height, lines, L' ',
 		     display->attr.current);
   if (err)
     {
+      ports_destroy_right (display->notify_port);
       free (display);
       return err;
     }
@@ -1442,6 +1662,7 @@ display_create (display_t *r_display, const char *encoding)
   if (err)
     {
       user_destroy (display);
+      ports_destroy_right (display->notify_port);
       free (display);
     }
   *r_display = display;
@@ -1453,10 +1674,27 @@ display_create (display_t *r_display, const char *encoding)
 void
 display_destroy (display_t display)
 {
+  if (display->filemod_reqs_pending)
+    free_modreqs (display->filemod_reqs_pending);
   if (display->filemod_reqs)
     free_modreqs (display->filemod_reqs);
+  ports_destroy_right (display->notify_port);
   output_deinit (&display->output);
   user_destroy (display);
+  /* We can not free the display structure here, because it might
+     still be needed by pending modification requests when msg
+     accepted notifications are handled.  So we have to wait until all
+     notifications have arrived and the notify port is completely
+     deallocated, which will invoke display_destroy_complete
+     below.  */
+}
+
+
+/* Complete destruction of the display DISPLAY.  */
+void
+display_destroy_complete (void *pi)
+{
+  struct display *display = ((struct notify *) pi)->display;
   free (display);
 }
 

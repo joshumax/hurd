@@ -21,14 +21,12 @@
 
 #include <stdint.h>
 
-#define CONS_COLOR_BLACK	0
-#define CONS_COLOR_RED		1
-#define CONS_COLOR_GREEN	2
-#define CONS_COLOR_YELLOW	3
-#define CONS_COLOR_BLUE		4
-#define CONS_COLOR_MAGENTA	5
-#define CONS_COLOR_CYAN		6
-#define CONS_COLOR_WHITE	7
+typedef enum
+  {
+    CONS_COLOR_BLACK = 0, CONS_COLOR_RED, CONS_COLOR_GREEN, CONS_COLOR_YELLOW,
+    CONS_COLOR_BLUE, CONS_COLOR_MAGENTA, CONS_COLOR_CYAN, CONS_COLOR_WHITE
+  } cons_color_t;
+#define CONS_COLOR_MAX (CONS_COLOR_WHITE)
 
 typedef struct
 {
@@ -50,6 +48,25 @@ typedef struct
   conchar_attr_t attr;
 } conchar_t;
 
+typedef union
+{
+  struct
+  {
+    /* Only the first 31 bits are available (see WHAT.not_matrix).  */
+    uint32_t start;
+    uint32_t end;
+  } matrix;
+  struct
+  {
+    uint32_t cursor_pos : 1;
+    uint32_t cursor_status : 1;
+    uint32_t screen_cur_line : 1;
+    uint32_t screen_scr_lines : 1;
+    uint32_t _unused : 27;
+    uint32_t not_matrix : 1;
+  } what;
+} cons_change_t;
+
 struct cons_display
 {
 #define CONS_MAGIC 0x48555244	/* Hex for "HURD".  */
@@ -68,7 +85,7 @@ struct cons_display
     uint32_t cur_line;	/* Beginning of visible area.  This is only
 			   ever increased by the server, so clients
 			   can optimize scrolling.  */
-    uint32_t scr_lines;/* Number of lines in scrollback buffer
+    uint32_t scr_lines;	/* Number of lines in scrollback buffer
 			   preceeding CUR_LINE.  */
     uint32_t height;	/* Number of lines in visible area following
 			   (and including) CUR_LINE.  */
@@ -86,6 +103,17 @@ struct cons_display
 #define CONS_CURSOR_VERY_VISIBLE 2
     uint32_t status;	/* Visibility status of cursor.  */
   } cursor;
+
+  struct
+  {
+    uint32_t buffer;	/* Index (in uint32_t) of the beginning of the
+			   changes buffer in this structure.  */
+    uint32_t length;	/* Length of buffer.  */
+    uint32_t written;	/* Number of records written by server.  */
+
+#define _CONS_CHANGES_LENGTH 512
+    cons_change_t _buffer[_CONS_CHANGES_LENGTH];
+  } changes;
 
   /* Don't use this, use ((wchar_t *) cons_display +
      cons_display.screen.matrix) instead.  This will make your client
