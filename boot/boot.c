@@ -72,6 +72,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <termios.h>
 #include <error.h>
 #include <hurd.h>
+#include <assert.h>
 
 static struct termios orig_tty_state;
 static int isig;
@@ -1681,9 +1682,10 @@ S_io_reauthenticate (mach_port_t object,
   unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
   error_t err;
 
-  mach_port_insert_right (mach_task_self (), object, object, 
-			  MACH_MSG_TYPE_MAKE_SEND); 
-   
+  err = mach_port_insert_right (mach_task_self (), object, object,
+				MACH_MSG_TYPE_MAKE_SEND);
+  assert_perror (err);
+
   if (! auth_server_authenticate (authserver,
 				  rend, MACH_MSG_TYPE_COPY_SEND,
 				  object, MACH_MSG_TYPE_COPY_SEND,
