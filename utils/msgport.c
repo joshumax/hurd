@@ -48,12 +48,12 @@ static const struct argp_option options[] =
 static const char doc[] =
 "Send messages to selected processes";
 
-static const char args_doc[] = 
+static const char args_doc[] =
 "";
 
 
 
-typedef error_t (*cmd_func_t) (pid_t pid, mach_port_t msgport, 
+typedef error_t (*cmd_func_t) (pid_t pid, mach_port_t msgport,
 			       int argc, char *argv[]);
 
 typedef struct cmd {
@@ -71,7 +71,7 @@ struct cmds_argp_params
 
 
 
-static error_t 
+static error_t
 cmd_getenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -95,32 +95,32 @@ cmd_getenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
     vm_deallocate (mach_task_self (), (vm_address_t)data, len);
   return err;
 }
-  
-static error_t 
+
+static error_t
 cmd_setenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
   task_t task;
   process_t proc = getproc ();
 
-  err = proc_pid2task (proc, pid, &task);
-  if (err)
+  if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   err = msg_set_env_variable (msgport, task, argv[0], argv[1], 1);
+  mach_port_deallocate (mach_task_self (), task);
   return err;
 }
 
-static error_t 
+static error_t
 cmd_clearenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
   task_t task;
   process_t proc = getproc ();
 
-  err = proc_pid2task (proc, pid, &task);
-  if (err)
+  if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   err = msg_set_environment (msgport, task, 0, 0);
+  mach_port_deallocate (mach_task_self (), task);
   return err;
 }
 
@@ -143,77 +143,89 @@ str2flags (char *str)
   return flags;
 }
 
-static error_t 
+static error_t
 do_setfd (pid_t pid, mach_port_t msgport, size_t fd, file_t file)
 {
   error_t err;
   task_t task;
   process_t proc = getproc ();
 
-  err = proc_pid2task (proc, pid, &task);
-  if (err)
+  if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   err = msg_set_fd (msgport, task, fd, file, MACH_MSG_TYPE_MOVE_SEND);
+  mach_port_deallocate (mach_task_self (), task);
   return err;
 }
 
-static error_t 
+static error_t
 cmd_setfd (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
+  error_t err;
   int flags = O_RDONLY;
   file_t file;
 
   if (argc > 2)
     flags = str2flags(argv[2]);
-  if ((file = file_name_lookup (argv[1], flags, 0666)) == 
+  if ((file = file_name_lookup (argv[1], flags, 0666)) ==
       MACH_PORT_NULL)
     return errno;
-  return do_setfd (pid, msgport, atoi (argv[0]), file);
+  if ((err = do_setfd (pid, msgport, atoi (argv[0]), file)))
+    mach_port_deallocate (mach_task_self (), file);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_stdin (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
+  error_t err;
   int flags = O_RDONLY;
   file_t file;
 
   if (argc > 1)
     flags = str2flags(argv[1]);
-  if ((file = file_name_lookup (argv[0], flags, 0666)) == 
+  if ((file = file_name_lookup (argv[0], flags, 0666)) ==
       MACH_PORT_NULL)
     return errno;
-  return do_setfd (pid, msgport, 0, file);
+  if ((err = do_setfd (pid, msgport, 0, file)))
+    mach_port_deallocate (mach_task_self (), file);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_stdout (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
+  error_t err;
   int flags = O_WRONLY;
   file_t file;
 
   if (argc > 1)
     flags = str2flags(argv[1]);
-  if ((file = file_name_lookup (argv[0], flags, 0666)) == 
+  if ((file = file_name_lookup (argv[0], flags, 0666)) ==
       MACH_PORT_NULL)
     return errno;
-  return do_setfd (pid, msgport, 1, file);
+  if ((err = do_setfd (pid, msgport, 1, file)))
+    mach_port_deallocate (mach_task_self (), file);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_stderr (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
+  error_t err;
   int flags = O_WRONLY;
   file_t file;
 
   if (argc > 1)
     flags = str2flags(argv[1]);
-  if ((file = file_name_lookup (argv[0], flags, 0666)) == 
+  if ((file = file_name_lookup (argv[0], flags, 0666)) ==
       MACH_PORT_NULL)
     return errno;
-  return do_setfd (pid, msgport, 2, file);
+  if ((err = do_setfd (pid, msgport, 2, file)))
+    mach_port_deallocate (mach_task_self (), file);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_chcwdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -224,14 +236,18 @@ cmd_chcwdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if ((dir = file_name_lookup (argv[0], 0, 0)) == MACH_PORT_NULL)
     return errno;
   if ((err = proc_pid2task (proc, pid, &task)))
-    return err;
-  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir, 
+    {
+      mach_port_deallocate (mach_task_self (), dir);
+      return err;
+    }
+  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir,
 				MACH_MSG_TYPE_MOVE_SEND)))
-    return err;
-  return 0;
+    mach_port_deallocate (mach_task_self (), dir);
+  mach_port_deallocate (mach_task_self (), task);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_cdroot (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -242,14 +258,18 @@ cmd_cdroot (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   if ((err = msg_get_init_port (msgport, task, INIT_PORT_CRDIR, &dir)))
-    return err;
-  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir, 
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      return err;
+    }
+  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir,
 				MACH_MSG_TYPE_MOVE_SEND)))
-    return err;
-  return 0;
+    mach_port_deallocate (mach_task_self (), dir);
+  mach_port_deallocate (mach_task_self (), task);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_chcrdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -260,14 +280,18 @@ cmd_chcrdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if ((dir = file_name_lookup (argv[0], 0, 0)) == MACH_PORT_NULL)
     return errno;
   if ((err = proc_pid2task (proc, pid, &task)))
-    return err;
-  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CRDIR, dir, 
+    {
+      mach_port_deallocate (mach_task_self (), dir);
+      return err;
+    }
+  if ((err = msg_set_init_port (msgport, task, INIT_PORT_CRDIR, dir,
 				MACH_MSG_TYPE_MOVE_SEND)))
-    return err;
-  return 0;
+    mach_port_deallocate (mach_task_self (), dir);
+  mach_port_deallocate (mach_task_self (), task);
+  return err;
 }
 
-static error_t 
+static error_t
 cmd_pwd (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -278,13 +302,18 @@ cmd_pwd (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   if ((err = msg_get_init_port (msgport, task, INIT_PORT_CWDIR, &dir)))
-    return err;
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      return err;
+    }
   printf ("%d: %s\n", pid,
 	  _hurd_canonicalize_directory_name_internal(dir, NULL, 0));
+  mach_port_deallocate (mach_task_self (), dir);
+  mach_port_deallocate (mach_task_self (), task);
   return 0;
 }
 
-static error_t 
+static error_t
 cmd_getroot (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -295,13 +324,18 @@ cmd_getroot (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if ((err = proc_pid2task (proc, pid, &task)))
     return err;
   if ((err = msg_get_init_port (msgport, task, INIT_PORT_CRDIR, &dir)))
-    return err;
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      return err;
+    }
   printf ("%d: %s\n", pid,
 	  _hurd_canonicalize_directory_name_internal(dir, NULL, 0));
+  mach_port_deallocate (mach_task_self (), dir);
+  mach_port_deallocate (mach_task_self (), task);
   return 0;
 }
 
-static error_t 
+static error_t
 cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
@@ -314,16 +348,12 @@ cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   if (argc)
     {
       umask = strtol(argv[0], 0, 8);
-      if ((err = msg_set_init_int (msgport, task, INIT_UMASK, umask)))
-	return err;
+      err = msg_set_init_int (msgport, task, INIT_UMASK, umask);
     }
-  else
-    {
-      if ((err = msg_get_init_int (msgport, task, INIT_UMASK, &umask)))
-	return err;
-      printf ("%d: %03o\n", pid, umask);
-    }
-  return 0;
+  else if (!(err = msg_get_init_int (msgport, task, INIT_UMASK, &umask)))
+    printf ("%d: %03o\n", pid, umask);
+  mach_port_deallocate (mach_task_self (), task);
+  return err;
 }
 
 
@@ -364,8 +394,8 @@ static const struct argp_option cmd_options[] =
   {0, 0}
 };
 
-static error_t 
-cmd_add (cmd_func_t func, size_t minargs, size_t maxargs, 
+static error_t
+cmd_add (cmd_func_t func, size_t minargs, size_t maxargs,
 	 char *arg, struct argp_state *state)
 {
   cmd_t *cmd;
@@ -386,18 +416,18 @@ cmd_add (cmd_func_t func, size_t minargs, size_t maxargs,
       cmd->args = malloc (maxargs * sizeof (char *));
       if (arg)
 	cmd->args[i++] = arg;
-      while (i < maxargs && 
-	     state->argv[state->next] && 
+      while (i < maxargs &&
+	     state->argv[state->next] &&
 	     state->argv[state->next][0] != '-')
 	  cmd->args[i++] = state->argv[state->next++];
-      if (i < minargs || i > maxargs)
-	argp_usage(state);
     }
+  if (i < minargs || i > maxargs)
+    argp_usage(state);
   cmd->num_args = i;
   return 0;
 }
 
-static error_t 
+static error_t
 cmd_parse_opt (int key, char *arg, struct argp_state *state)
 {
   /* A buffer used for rewriting command line arguments without dashes
@@ -493,14 +523,14 @@ do_cmd (pid_t pid, cmd_t cmd)
   err = (*cmd.f) (pid, msgport, cmd.num_args, cmd.args);
   if (err)
     error (2, err, "%d: Cannot execute command", pid);
-	  
+
   mach_port_deallocate (mach_task_self (), msgport);
   return 0;
 }
 
 
 
-int 
+int
 main(int argc, char *argv[])
 {
   cmd_t *cmds = 0;
@@ -540,6 +570,7 @@ main(int argc, char *argv[])
 
   struct argp argp = { options, parse_opt, args_doc, doc, argp_kids };
 
+  error_t err;
   pid_t cur_pid = getpid ();
   pid_t pid;
   cmd_t cmd;
@@ -548,17 +579,17 @@ main(int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  for (i = 0, pid = pids[i]; i < num_pids; pid = pids[++i]) 
-    if (pid != cur_pid)
-      {
-	for (j = 0, cmd = cmds[j]; j < num_cmds; cmd = cmds[++j])
+  for (i = 0; i < num_pids; ++i)
+    {
+      pid = pids[i];
+      if (pid != cur_pid)
+	for (j = 0; j < num_cmds; ++j)
 	  {
-	    error_t err = do_cmd(pid, cmd);
-	    if (err)
+	    cmd = cmds[j];
+	    if ((err = do_cmd(pid, cmd)))
 	      error (2, err, "%d: Cannot execute command", pid);
 	  }
-      }
+    }
 
   exit (0);
 }
-
