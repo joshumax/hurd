@@ -1,3 +1,8 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ftpfs.c (netfs_server_name, netfs_server_version): New
+	variables.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* conn.c (ftpfs_get_ftp_conn): Cast to uintptr_t before void *.

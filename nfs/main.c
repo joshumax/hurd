@@ -30,6 +30,10 @@
 #include <argp.h>
 #include <argz.h>
 #include <error.h>
+#include <version.h>
+
+char *netfs_server_name = "nfs";
+char *netfs_server_version = HURD_VERSION;
 
 extern char *localhost ();
 
@@ -109,6 +113,8 @@ int write_size = DEFAULT_WRITE_SIZE;
 #define __D(what) ___D(what)
 #define _D(what) __D(DEFAULT_ ## what)
 
+const char *argp_program_version = STANDARD_HURD_VERSION (nfs);
+
 /* Options usable both at startup and at runtime.  */
 static const struct argp_option common_options[] =
 {

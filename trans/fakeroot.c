@@ -32,6 +32,8 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (fakeroot);
 
+char *netfs_server_name = "fakeroot";
+char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 16;	/* arbitrary */
 
 struct netnode

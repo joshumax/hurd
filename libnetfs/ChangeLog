@@ -1,3 +1,11 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* io-version.c: New file.
+	* Makefile (IOSRCS): Add io-version.c.
+	* fsstubs.c (netfs_S_io_server_version): Function removed.
+	* netfs.h (netfs_server_name, netfs_server_version): New external
+	variables to be defined by the user.
+
 2002-05-11  Roland McGrath  <roland@frob.com>
 
 	* trans-callback.c (_netfs_translator_callback1_fn): Add an assert

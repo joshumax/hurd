@@ -32,6 +32,9 @@
 
 #include "ftpfs.h"
 
+char *netfs_server_name = "ftpfs";
+char *netfs_server_version = HURD_VERSION;
+
 const char *argp_program_version = STANDARD_HURD_VERSION (ftpfs);
 
 static char *args_doc = "REMOTE_FS [SERVER]";

@@ -1,3 +1,8 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* usermux.c (netfs_server_name, netfs_server_version): New
+	variables.
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* usermux.c (options): Include <version.h>.  Add global variable

@@ -93,6 +93,14 @@ struct node
   struct dirmod *dirmod_reqs;
 };
 
+/* The user must define this variable.  Set this to the name of the
+   filesystem server. */
+extern char *netfs_server_name;
+
+/* The user must define this variables.  Set this to be the server
+   version number.  */
+extern char *netfs_server_version;
+
 /* The user must define this function.  Make sure that NP->nn_stat is
    filled with the most current information.  CRED identifies the user
    responsible for the operation. NP is locked.  */

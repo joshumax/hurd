@@ -1,6 +1,6 @@
 /* Multiplexing filesystems by host
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -30,6 +30,8 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (hostmux);
 
+char *netfs_server_name = "hostmux";
+char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 25;
 
 volatile struct mapped_time_value *hostmux_mapped_time;

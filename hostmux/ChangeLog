@@ -1,3 +1,8 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hostmux.c (netfs_server_name, netfs_server_version): New
+	variables.
+
 2002-03-10  Neal H Walfield  <neal@cs.uml.edu>
 
 	* mux.c (lookup_addrinfo): Renamed from lookup_hostent.  Change HE

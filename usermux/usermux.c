@@ -1,6 +1,6 @@
 /* Multiplexing filesystems by user
 
-   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2000, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -31,6 +31,8 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (usermux);
 
+char *netfs_server_name = "usermux";
+char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 25;
 
 volatile struct mapped_time_value *usermux_mapped_time;
