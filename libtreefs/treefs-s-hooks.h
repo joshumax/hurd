@@ -1,6 +1,6 @@
 /* RPC server hooks in libtreefs (also see "treefs-hooks.h")
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -133,9 +133,9 @@ DHH(s_io_duplicate, error_t, mach_port_t *, mach_msg_type_name_t *)
 DHH(s_io_server_version, error_t, char *, int *, int *, int *)
 #define treefs_s_io_server_version(h, args...)			      \
   _TREEFS_CHH(h, S_IO_SERVER_VERSION, s_io_server_version , ##args)
-DHH(s_io_map, error_t, mach_port_t *, mach_msg_type_name_t *, mach_port_t *, mach_msg_type_name_t *)
-#define treefs_s_io_map(h, args...)					      \
-  _TREEFS_CHH(h, S_IO_MAP, s_io_map , ##args)
+DHH(s_io_map_segment, error_t, int, mach_port_t *, mach_msg_type_name_t *, mach_port_t *, mach_msg_type_name_t *)
+#define treefs_s_io_map_segment(h, args...)				      \
+  _TREEFS_CHH(h, S_IO_MAP_SEGMENT, s_io_map_segment , ##args)
 DHH(s_io_map_cntl, error_t, mach_port_t *, mach_msg_type_name_t *)
 #define treefs_s_io_map_cntl(h, args...)				      \
   _TREEFS_CHH(h, S_IO_MAP_CNTL, s_io_map_cntl , ##args)
