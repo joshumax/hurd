@@ -151,8 +151,6 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
   if (!err)
     register_fresh_stat (np, p);
 
-  np->istranslated = 0;
-
   free (rpcbuf);
   return err;
 }
