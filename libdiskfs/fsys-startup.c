@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -29,13 +29,14 @@ diskfs_S_fsys_startup (mach_port_t port,
 		       mach_port_t *real,
 		       mach_msg_type_name_t *realpoly)
 {
-  struct port_info *pi = ports_check_port_type (port, PT_TRANSBOOT);
+  struct port_info *pi = ports_lookup_port (diskfs_port_bucket, port,
+					    diskfs_transboot_class);
   error_t err;
   
   if (pi)
     {
       err = fshelp_handle_fsys_startup (pi, ctl, real, realpoly);
-      ports_done_with_port (pi);
+      ports_port_deref (pi);
       return err;
     }
   else
