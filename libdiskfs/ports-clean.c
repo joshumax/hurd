@@ -15,10 +15,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include <hurd/pager.h>
+
 static void
 protid_clean (void *arg)
 {
-  release_peropen (((struct protid *)arg)->po);
+  diskfs_release_peropen (((struct protid *)arg)->po);
 }
 
 /* Indexed by port type (PT_*); called when the last reference goes
