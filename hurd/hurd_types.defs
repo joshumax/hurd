@@ -133,6 +133,8 @@ destructor: STARTUP_DESCTRUCTOR
 #endif
 ;
 
+type proccoll_t = mach_port_copy_send_t;
+
 #ifdef USERPREFIX
 userprefix USERPREFIX;
 #endif
