@@ -1710,7 +1710,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_select (cred, type, idtag);
+    return pty_io_select (cred, reply, type, idtag);
 
   /* We don't deal with SELECT_URG here.  */
   if (*type & ~(SELECT_READ | SELECT_WRITE))
@@ -1736,6 +1736,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 	  return 0;
 	}
 
+      ports_interrupt_self_on_port_death (cred, reply);
       if (hurd_condition_wait (&select_alert, &global_lock))
 	{
 	  *type = 0;
