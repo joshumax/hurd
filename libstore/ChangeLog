@@ -1,3 +1,18 @@
+1997-07-17  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (store_map): New declaration.
+	(struct store_class): Add map field.
+	* device.c (dev_map): New function.
+	(store_device_class): Use dev_map.
+	* zero.c (zero_map): New function.
+	(store_zero_class): Use zero_map.
+	* file.c (file_map): New function.
+	(store_file_class): Use file_map.
+	* map.c: New file.
+	* Makefile (SRCS): Add map.c.
+
+	* device.c (dev_read, dev_write): Remove debugging grot.
+
 1997-07-07  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* kids.c (store_open_children): Support factored type notation.

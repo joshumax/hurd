@@ -1,3 +1,9 @@
+1997-07-17  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_io_map): Pass PROT argument to dev_get_memory_object.
+	* pager.c (dev_get_memory_object): Add PROT arg.  Use store_map.
+	* dev.h (dev_get_memory_object): Add PROT arg.
+
 1997-07-16  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pager.c (pager_read_page): Initialize READ to 0.
