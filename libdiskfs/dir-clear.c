@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,6 +35,8 @@ diskfs_clear_directory (struct node *dp,
     err = diskfs_dirremove (dp, ds);
   else
     diskfs_drop_dirstat (dp, ds);
+  if (diskfs_synchronous)
+    diskfs_file_update (dp, 1);
   if (err)
     return err;
   
@@ -49,6 +51,8 @@ diskfs_clear_directory (struct node *dp,
     err = diskfs_dirremove (dp, ds);
   else
     diskfs_drop_dirstat (dp, ds);
+  if (diskfs_synchronous)
+    diskfs_file_update (dp, 1);
   if (err)
     return err;
 
@@ -56,7 +60,12 @@ diskfs_clear_directory (struct node *dp,
   pdp->dn_stat.st_nlink--;
   pdp->dn_set_ctime = 1;
 
+  if (diskfs_synchronous)
+    diskfs_node_update (pdp, 1);
+
   diskfs_truncate (dp, 0);
+  if (diskfs_synchronous)
+    diskfs_file_update (dp, 1);
 
   return err;
 }
