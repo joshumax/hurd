@@ -29,9 +29,9 @@ struct shared_io
   enum
     {
       USER_HAS_CONCH,		/* User is it */
-      USER_COULD_HAVE_CONCH,,	/* User can become it */
+      USER_COULD_HAVE_CONCH,	/* User can become it */
       USER_RELEASE_CONCH,	/* User is it, should release it promptly */
-      USER_HAS_NOT_CONCH,,	/* User is not it */
+      USER_HAS_NOT_CONCH,	/* User is not it */
     } conch_status;
 
 
