@@ -1,5 +1,9 @@
 2000-12-20  Roland McGrath  <roland@frob.com>
 
+	* zero.c (zero_open): Check for END being null after strtoul call.
+	If character following number (*END) is b, multiply size by 512;
+	k or K, by 1024; m or M by 1024*1024; g or G by 1024*1024*1024.
+
 	* store.h (struct store_class): Fix typo in comment.
 
 	* copy.c (copy_read): When reading whole aligned pages, use vm_read.
