@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: thread.c,v $
+ * Revision 1.4  2001/02/26 04:15:27  roland
+ * 2001-02-25  Roland McGrath  <roland@frob.com>
+ *
+ * 	* i386/thread.c: Remove superfluous bzero decl,
+ * 	just include <strings.h> instead.
+ *
  * Revision 1.3  1997/02/18 22:53:31  miles
  * (cproc_setup):
  *   Correctly leave space at top of stack for account for GNU per-thread
@@ -60,8 +66,8 @@
  */
 
 #ifndef	lint
-static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.4 2001/02/26 04:15:27 roland Exp $";
-#endif	not lint
+static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.5 2001/03/31 23:03:03 roland Exp $";
+#endif	/* not lint */
 
 
 #include "../cthreads.h"
