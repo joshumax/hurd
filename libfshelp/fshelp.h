@@ -182,6 +182,7 @@ void fshelp_lock_init (struct lock_box *box);
 
 
 
+struct port_bucket;		/* shut up C compiler */
 /* Return an identity port in *PT for the node numbered FILENO,
    suitable for returning from io_identity; exactly one send right
    must be created from the returned value.  FILENO should be the same
