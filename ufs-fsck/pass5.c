@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
 
 pass5 ()
 {
@@ -44,7 +45,7 @@ pass5 ()
   writecsum = 0;
 
   readblock (fsbtodb (&sblock, sblock.fs_csaddr), csumbuf, 
-	     fsbtodb (&sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
+	     fragroundup (sizeof (struct csum) * sblock.fs_ncg));
 
   /* Construct a CG structure; initialize everything that's the same
      in each cylinder group. */
@@ -100,8 +101,7 @@ pass5 ()
       int dbase, dmax;
       
       /* Read the cylinder group structure */
-      readblock (fsbtodb (cgtod (&sblock, c)), cg, 
-		 sblock.fs_cgsize / DEV_BSIZE);
+      readblock (fsbtodb (cgtod (&sblock, c)), cg, sblock.fs_cgsize);
       writecg = 0;
       
       if (!cg_chkmagic (cg))
@@ -187,7 +187,7 @@ pass5 ()
 	  case DIR | DIR_REF:
 	    newcg->cg_cs.cs_ndir++;
 	    /* Fall through... */
-	  case FILE:
+	  case REG:
 	    newcg->cg_cs.cs_nifree--;
 	    setbit (cg_inosused (newcg), i);
 	  }
@@ -295,8 +295,7 @@ pass5 ()
 	}
 
       if (writecg)
-	writeblock (fsbtodb (cgtod (&sblock, c)), cg,
-		    sblock.fs_cgsize / DEV_BSIZE);
+	writeblock (fsbtodb (cgtod (&sblock, c)), cg, sblock.fs_cgsize);
     }
   
   /* Restore nrpos */
@@ -318,9 +317,8 @@ pass5 ()
     }
 
   if (writesb)
-    writeblock (SBLOCK, &sblock, btodb (SBSIZE));
+    writeblock (SBLOCK, &sblock, SBSIZE);
   if (writecsum)
     writeblock (fsbtodb (&sblock, sblock.fs_csaddr), csumbuf, 
-		fsbtodb (&sblock, howmany (sblock->fs_cssize,
-					   sblock->fs_fsize)));
+		fragroundup (sizeof (struct csum) * sblock.fs_ncg));
 }
