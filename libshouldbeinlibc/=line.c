@@ -1,6 +1,6 @@
 /* Simple output formatting functions
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -66,11 +66,11 @@ line_free (struct line *line)
    wrap-points.  Newlines in STR are honoured by adding a newline and
    indenting to LMARGIN; any following whitespace is kept.  */
 void
-line_fill (struct line *line, char *str, unsigned lmargin)
+line_fill (struct line *line, const char *str, unsigned lmargin)
 {
   while (*str)
     {
-      char *word_end = str;
+      const char *word_end = str;
 
       while (*word_end == ' ')
 	word_end++;
@@ -83,7 +83,7 @@ line_fill (struct line *line, char *str, unsigned lmargin)
 	}
       else if (*word_end)
 	{
-	  char *word_start = word_end;
+	  const char *word_start = word_end;
 	  while (*word_end && !isspace (*word_end))
 	    word_end++;
 	  if (line_left (line, word_end - str) >= 0)
@@ -126,9 +126,9 @@ _line_cleanup_printf (struct line *line, unsigned added)
 
 /* Add STR, of length LEN, to LINE.  */
 void
-line_write (struct line *line, char *str, unsigned len)
+line_write (struct line *line, const char *str, unsigned len)
 {
-  char *end = memchr (str, '\n', len) ?: str + len;
+  const char *end = memchr (str, '\n', len) ?: str + len;
   unsigned line_len = end - str;
   char *p = line->point, *max = line->max;
   if (line_len > max - p)
