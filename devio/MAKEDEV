@@ -24,8 +24,8 @@ for I; do
     std)
       $0 console tty null zero fd time
       ;;
-    console|tty[0-9]?|tty[0-9a-f])
-      st $I root 666 /hurd/term $_CWD/$I device $I;;
+    console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
+      st $I root 600 /hurd/term $_CWD/$I device $I;;
     null)
       st $I root 666 /hurd/null;;
     zero)
