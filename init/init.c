@@ -33,6 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/notify.h>
 #include <stdlib.h>
 #include <hurd/msg.h>
+#include <hurd/term.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -250,7 +251,7 @@ run (char *server, mach_port_t *ports, task_t *task)
     {
       file_t file;
 
-      file = path_lookup (prog, O_EXEC, 0);
+      file = file_name_lookup (prog, O_EXEC, 0);
       if (file == MACH_PORT_NULL)
 	perror (prog);
       else
@@ -312,13 +313,13 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
       printf ("File name [%s]: ", filename);
       if (getstring (buf, sizeof (buf)) && *buf)
 	filename = buf;
-      file = path_lookup (filename, O_EXEC, 0);
+      file = file_name_lookup (filename, O_EXEC, 0);
       if (!file)
 	perror (filename);
     }
   while (!file);
 #else
-  file = path_lookup (filename, O_EXEC, 0);
+  file = file_name_lookup (filename, O_EXEC, 0);
   if (!file)
     {
       perror (filename);
@@ -543,7 +544,7 @@ init_stdarrays ()
 {
   auth_t nullauth;
   mach_port_t pt;
-  int pid = getpid ();
+  mach_port_t ref;
   mach_port_t *std_port_array;
   int *std_int_array;
   
@@ -557,13 +558,19 @@ init_stdarrays ()
 				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
   
   pt = getcwdir ();
-  io_reauthenticate (pt, pid);
-  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CWDIR]);
+  ref = mach_reply_port ();
+  io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
+  auth_user_authenticate (nullauth, pt, ref, MACH_MSG_TYPE_MAKE_SEND,
+			  &std_port_array[INIT_PORT_CWDIR]);
+  mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
   
   pt = getcrdir ();
-  io_reauthenticate (pt, pid);
-  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CRDIR]);
+  ref = mach_reply_port ();
+  io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
+  auth_user_authenticate (nullauth, pt, ref, MACH_MSG_TYPE_MAKE_SEND,
+			  &std_port_array[INIT_PORT_CRDIR]);
+  mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
   
   std_port_array[INIT_PORT_AUTH] = nullauth;
@@ -627,7 +634,7 @@ launch_single_user ()
       struct stat st;
       for (;;)
 	{
-	  term = path_lookup ("/dev/console", O_READ|O_WRITE, 0);
+	  term = file_name_lookup ("/dev/console", O_READ|O_WRITE, 0);
 	  if (term)
 	    io_stat (term, &st);
 	  if (term && st.st_fstype == FSTYPE_TERM)
