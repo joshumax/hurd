@@ -119,4 +119,4 @@ routine fsys_forward (
    filesystem (sutiable for fsys_set_options).  */
 routine fsys_get_options (
 	server: fsys_t;
-	options: data_t);
+	out options: data_t);
