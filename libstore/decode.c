@@ -23,11 +23,35 @@
 #include <string.h>
 
 #include "store.h"
-
+
 /* Decode ENC, either returning a new store in STORE, or an error.  If
    nothing else is to be done with ENC, its contents may then be freed using
    store_enc_dealloc.  */
 error_t
-store_decode (struct store_enc *enc, struct store *store)
+store_decode (struct store_enc *enc, struct store **store)
 {
+  if (enc->cur_ints >= enc->ints_len)
+    /* The first int should always be the type.  */
+    return EINVAL;
+
+  switch (enc->ints[enc->cur_ints])
+    {
+    case STORAGE_HURD_FILE:
+    case STORAGE_DEVICE:
+    case STORAGE_TASK:
+    case STORAGE_MEMORY:
+      return store_default_leaf_decode (enc, store);
+
+    case STORAGE_ILEAVE:
+      return store_ileave_decode (enc, store);
+    case STORAGE_CONCAT:
+      return store_concat_decode (enc, store);
+    case STORAGE_LAYER:
+      return store_layer_decode (enc, store);
+    case STORAGE_NULL:
+      return store_null_decode (enc, store);
+
+    default:
+      return EINVAL;
+    }
 }
