@@ -122,6 +122,24 @@ ioctl (int fd, int code, void *buf)
 #define _IOW(x,y,t) (IOC_IN|((sizeof(t)&IOCPARM_MASK)<<16)|(x<<8)|y)
 #define FIONREAD _IOR('f', 127, int)
 #define FIOASYNC _IOW('f', 125, int)
+#define TIOCGETP _IOR('t', 8, struct sgttyb)
+#define TIOCLGET _IOR('t', 124, int)
+#define TIOCLSET _IOW('t', 125, int)
+#define TIOCSETN _IOW('t', 10, struct sgttyb)
+#define LDECCTQ 0x4000
+#define LLITOUT 0x0020
+#define LPASS8  0x0800
+#define LNOFLSH 0x8000
+#define RAW 0x0020
+#define ANYP 0x00c0
+
+
+struct sgttyb
+{
+  char unused[4];
+  short flags;
+};
+  
 
 #define SIGIO 23
 #define SIGEMSG 30
@@ -176,11 +194,13 @@ request_server (mach_msg_header_t *inp,
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (exec_server (inp, outp)
 	  || io_server (inp, outp)
 	  || device_server (inp, outp)
-	  || notify_server (inp, outp));
+	  || notify_server (inp, outp)
+	  || tioctl_server (inp, outp));
 }
 
 vm_address_t
@@ -287,6 +307,7 @@ main (int argc, char **argv, char **envp)
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   foo = 1;
+  init_termstate ();
   ioctl (0, FIOASYNC, &foo);
   sigvec (SIGIO, &vec, 0);
   sigvec (SIGMSG, &vec, 0);
@@ -519,6 +540,111 @@ S_exec_startup (mach_port_t port,
 
 
 
+/* Imlementiation of tioctl interface */
+/* This is bletcherously kludged to work with emacs in a fragile
+   way. */
+int term_modes[4];
+char term_ccs[20];
+int term_speeds[2];
+struct sgttyb term_sgb;
+int localbits;
+
+#define ICANON (1 << 8)
+
+void
+init_termstate ()
+{
+  term_modes[3] |= ICANON;
+  ioctl (0, TIOCGETP, &term_sgb);
+  ioctl (0, TIOCLGET, &localbits);
+}
+
+kern_return_t 
+S_tioctl_tiocgeta (mach_port_t port,
+		 int modes[],
+		 char ccs[],
+		 int speeds[])
+{
+  /* Emacs reads the terminal state in one of two cases:
+     1) Checking whether or not a preceding tiocseta succeeded;
+     2) Finding out what the state of the terminal was on startup. 
+     In case (1) in only cares that we return exactly what it set;
+     in case (2) it only uses it for a later seta on exit.  So we
+     can just tell it what's lying around. */
+  modes[0] = term_modes[0];
+  modes[1] = term_modes[1];
+  modes[2] = term_modes[2];
+  modes[3] = term_modes[3];
+  
+  bcopy (term_ccs, ccs, 20);
+  
+  speeds[0] = term_speeds[0];
+  speeds[1] = term_speeds[1];
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocseta (mach_port_t port,
+		 int modes[],
+		 char ccs[],
+		 int speeds[])
+{
+  /* Emacs sets the termanal stet in one of two cases:
+     1) Putting the terminal into raw mode for running;
+     2) Restoring the terminal to its original state. 
+     Because ICANON is set in the original state, and because
+     emacs always clears ICANON when running, this tells us which
+     is going on. */
+  if ((modes[3] & ICANON) == 0)
+    {
+      struct sgttyb sgb;
+      int bits;
+      /* Enter raw made.  Rather than try and interpret these bits,
+	 we just do what emacs does in .../emacs/src/sysdep.c for
+	 an old style terminal driver. */
+      bits = localbits | LDECCTQ | LLITOUT | LPASS8 | LNOFLSH;
+      ioctl (0, TIOCLSET, &bits);
+      sgb = term_sgb;
+      sgb.flags |= RAW | ANYP;
+      ioctl (0, TIOCSETN, &sgb);
+    }
+  else
+    {
+      /* Leave raw mode */
+      ioctl (0, TIOCLSET, &localbits);
+      ioctl (0, TIOCSETN, &term_sgb);
+    }
+
+  term_modes[0] = modes[0];
+  term_modes[1] = modes[1];
+  term_modes[2] = modes[2];
+  term_modes[3] = modes[3];
+  bcopy (ccs, term_ccs, 20);
+  term_speeds[0] = speeds[0];
+  term_speeds[1] = speeds[1];
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocsetaw (mach_port_t port,
+		  int modes[4],
+		  char ccs[20],
+		  int speeds[2])
+{
+  return S_tioctl_tiocseta (port, modes, ccs, speeds);
+}
+
+kern_return_t
+S_tioctl_tiocsetaf (mach_port_t port,
+		  int modes[4],
+		  char ccs[20],
+		  int speeds[2])
+{
+  return S_tioctl_tiocseta (port, modes, ccs, speeds);
+}
+
+
+
 /* Implementation of device interface */
 
 kern_return_t
