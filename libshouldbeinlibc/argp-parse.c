@@ -231,6 +231,9 @@ struct group
   /* This group's parsing function.  */
   argp_parser_t parser;
 
+  /* Which argp this group is from.  */
+  const struct argp *argp;
+
   /* Points to the point in SHORT_OPTS corresponding to the end of the short
      options for this group.  We use it to determine from which group a
      particular short options is from.  */
@@ -380,6 +383,7 @@ convert_options (const struct argp *argp,
 	    }
 
       group->parser = argp->parser;
+      group->argp = argp;
       group->short_end = cvt->short_end;
       group->args_processed = 0;
       group->parent = parent;
@@ -526,6 +530,7 @@ parser_init (struct parser *parser, const struct argp *argp,
   parser->state.err_stream = stderr;
   parser->state.out_stream = stdout;
   parser->state.next = 0;	/* Tell getopt to initialize.  */
+  parser->state.pstate = parser;
 
   /* Call each parser for the first time, giving it a chance to propagate
      values to child parsers.  */
@@ -847,4 +852,25 @@ __argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 }
 #ifdef weak_alias
 weak_alias (__argp_parse, argp_parse)
+#endif
+
+/* Return the input field for ARGP in the parser corresponding to STATE; used
+   by the help routines.  */
+void *
+__argp_input (const struct argp *argp, const struct argp_state *state)
+{
+  if (state)
+    {
+      struct group *group;
+      struct parser *parser = state->pstate;
+
+      for (group = parser->groups; group < parser->egroup; group++)
+	if (group->argp == argp)
+	  return group->input;
+    }
+
+  return 0;
+}
+#ifdef weak_alias
+weak_alias (__argp_input, _argp_input)
 #endif
