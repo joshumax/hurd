@@ -83,11 +83,6 @@ iget (ino_t inum, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np);
-
-  if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
-    np->allocsize = fragroundup (sblock, np->dn_stat.st_size);
-  else
-    np->allocsize = blkroundup (sblock, np->dn_stat.st_size);
   
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
@@ -271,6 +266,24 @@ read_disknode (struct node *np)
   diskfs_end_catch_exception ();
   if (!S_ISBLK (st->st_mode) && !S_ISCHR (st->st_mode))
     st->st_rdev = 0;
+
+  if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
+    np->allocsize = fragroundup (sblock, np->dn_stat.st_size);
+  else
+    np->allocsize = blkroundup (sblock, np->dn_stat.st_size);
+
+  return 0;
+}
+
+error_t diskfs_node_reload (struct node *node)
+{
+  if (node->dn->dirents)
+    {
+      free (node->dn->dirents);
+      node->dn->dirents = 0;
+    }
+  flush_node_pager (node);
+  read_disknode (node);
   return 0;
 }
 
