@@ -1,9 +1,7 @@
 /* Store cloning
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
 #include <stdlib.h>
@@ -29,13 +27,13 @@
 error_t
 store_clone (struct store *from, struct store **to)
 {
-  error_t err = 0;
-  struct store *c =
-    _make_store (from->class, from->port, from->flags, from->block_size,
-		 from->runs, from->num_runs, from->end);
+  struct store *c;
+  error_t err =
+    _store_create (from->class, from->port, from->flags, from->block_size,
+		   from->runs, from->num_runs, from->end, &c);
 
-  if (! c)
-    return ENOMEM;
+  if (err)
+    return err;
 
   if (from->name)
     {
