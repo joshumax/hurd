@@ -44,7 +44,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       int amt;
       assert (diskfs_shortcut_symlink);
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
 
       if (diskfs_read_symlink_hook)
@@ -84,7 +84,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       buflen++;			/* terminating nul */
 
       if (buflen > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
+	*trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (buf, *trans, buflen);
       free (buf);
       *translen = buflen;
@@ -96,7 +96,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
       len = sizeof _HURD_FIFO;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
       *translen = len;
       error = 0;
@@ -107,7 +107,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
+	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);    
       bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
       *translen = len;
       error = 0;
@@ -124,8 +124,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  if (!error)
 	    {
 	      if (len > *translen)
-		vm_allocate (mach_task_self (), (vm_address_t *) trans,
-			     len, 1);
+		*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	      bcopy (string, *trans, len);
 	      *translen = len;
 	      free (string);

@@ -2,6 +2,15 @@
 
 	* priv.h: Add #include <sys/mman.h> for munmap decl.
 
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* boot-start.c (diskfs_S_exec_startup_get_info): Use mmap instead
+	of vm_allocate.
+	(diskfs_S_fsys_init): Likewise.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+	* file-getfh.c (diskfs_S_file_getfh): Likewise.
+	* io-read.c (diskfs_S_io_read): Likewise.
+
 Mon Jul  5 20:03:18 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* node-nputl.c (diskfs_nput_light): Fix typo in function

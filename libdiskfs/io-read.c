@@ -60,7 +60,7 @@ diskfs_S_io_read (struct protid *cred,
   if (maxread > *datalen)
     {
       ourbuf = 1;
-      vm_allocate (mach_task_self (), (u_int *) &buf, maxread, 1);
+      buf = mmap (0, maxread, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);     
       *data = buf;
     }
   else

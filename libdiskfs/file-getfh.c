@@ -1,6 +1,6 @@
 /* Return a file handle (for nfs server support)
 
-   Copyright (C) 1997 Free Software Foundation
+   Copyright (C) 1997, 1999 Free Software Foundation
 
    This file is part of the GNU Hurd.
 
@@ -42,8 +42,8 @@ diskfs_S_file_getfh (struct protid *cred, char **fh, unsigned *fh_len)
   mutex_lock (&node->lock);
 
   if (*fh_len < sizeof (struct diskfs_fhandle))
-    vm_allocate (mach_task_self (), (vm_address_t *) fh, 
-		 sizeof (struct diskfs_fhandle), 1);
+    *fh = mmap (0, sizeof (struct diskfs_fhandle), PROT_READ|PROT_WRITE, 
+		MAP_ANON, 0, 0);
   *fh_len = sizeof (struct diskfs_fhandle);
   
   f = (struct diskfs_fhandle *)*fh;
