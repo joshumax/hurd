@@ -1,4 +1,13 @@
-Thu Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+Tue Oct  8 14:44:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (print_store): Correctly print unknown flags.
+	Don't ever print STORE_INACTIVE flag.
+
+Mon Oct  7 15:48:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (main): Use STORE_INACTIVE flag to store_create.
+
+THU Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (name_to_option): Correct test for malloc failure.
 	(get_memobj_hit_ratio): Renamed from get_cache_hit_ratio.
