@@ -1,8 +1,7 @@
 /* A translator for `firmlinks'
 
-   Copyright (C) 1997, 1998, 1999, 2001 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,99,2001,02 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,6 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -214,8 +214,8 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     err = EBADF;
   else
     {
-      off_t max = strlen (target);
-      off_t start = offs >= 0 ? offs : (off_t)cred->po->hook;
+      size_t max = strlen (target);
+      intptr_t start = offs >= 0 ? offs : (intptr_t)cred->po->hook;
       if (start < 0)
 	return EINVAL;
       if (start + amount > max)
@@ -248,10 +248,10 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
-  else if ((off_t)cred->po->hook < 0)
+  else if ((intptr_t)cred->po->hook < 0)
     return EINVAL;
   else
-    *amount = strlen (target) - (off_t)cred->po->hook;
+    *amount = strlen (target) - (intptr_t)cred->po->hook;
   return 0;
 }
 
