@@ -133,6 +133,20 @@ destructor: STARTUP_DESCTRUCTOR
 
 type proccoll_t = mach_port_copy_send_t;
 
+type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
+	ctype: mach_port_t;
+
+/* These macros are used in some .defs files so that every routine has a
+   server reply port argument #ifdef REPLY_PORTS.  */
+#ifdef REPLY_PORTS
+#define RPTDECL	sreplyport reply: sreply_port_t
+#define RPT	RPTDECL;
+#define RPTLAST	; RPTDECL
+#else
+#define RPTLAST
+#define RPT
+#endif
+
 #ifdef USERPREFIX
 userprefix USERPREFIX;
 #endif
