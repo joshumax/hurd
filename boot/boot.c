@@ -1311,7 +1311,7 @@ kern_return_t
 S_io_reauthenticate (mach_port_t object,
 		     mach_port_t reply_port,
 		     mach_msg_type_name_t reply_type,
-		     int rendint)
+		     mach_port_t rend)
 {
   uid_t *gu, *au;
   gid_t *gg, *ag;
@@ -1319,7 +1319,7 @@ S_io_reauthenticate (mach_port_t object,
     
   if (! auth_server_authenticate (authserver, 
 				  object, MACH_MSG_TYPE_MAKE_SEND,
-				  rendint,
+				  rend, MACH_MSG_TYPE_MOVE_SEND,
 				  object, MACH_MSG_TYPE_MAKE_SEND,
 				  &gu, &gulen,
 				  &au, &aulen,
