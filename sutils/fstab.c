@@ -842,7 +842,7 @@ fstab_argp_create (struct fstab_argp_params *params,
 	  fstab_add_fs (check, fs, 0);
 	}
 
-      fstab_free (fstab);
+      /*      fstab_free (fstab); XXX */
     }
   else
     {
@@ -869,7 +869,7 @@ fstab_argp_create (struct fstab_argp_params *params,
 	      if (!strncasecmp (tn, "no", 2))
 		{
 		  struct fstype *type;
-		  err = fstypes_get (types, tn, &type);
+		  err = fstypes_get (types, &tn[2], &type);
 		  if (err)
 		    error (106, err, "fstypes_get");
 		  free (type->program);
@@ -948,7 +948,7 @@ fstab_argp_create (struct fstab_argp_params *params,
 		error (107, err, "fstab_add_fs");
 	    }
 
-	  fstab_free (fstab);
+	  /*	  fstab_free (fstab); XXX */
 	}
     }
 
