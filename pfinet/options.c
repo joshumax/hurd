@@ -77,7 +77,9 @@ struct parse_hook
 static error_t
 parse_hook_add_interface (struct parse_hook *h)
 {
-  struct parse_interface *new = realloc (h->interfaces, h->num_interfaces + 1);
+  struct parse_interface *new =
+    realloc (h->interfaces,
+	     (h->num_interfaces + 1) * sizeof (struct parse_interface));
   if (! new)
     return ENOMEM;
   h->interfaces = new;
@@ -95,14 +97,22 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   error_t err = 0;
   struct parse_hook *h = state->hook;
 
+  /* Return _ERR from this routine, and in the special case of OPT being
+     ARGP_KEY_SUCCESS, remember to free H first.  */
+#define RETURN(_err)								\
+  do { if (opt == ARGP_KEY_SUCCESS)						\
+	 { err = (_err); goto free_hook; }					\
+       else									\
+	 return _err; } while (0)
+
   /* Print a parsing error message and (if exiting is turned off) return the
      error code ERR.  */
-#define PERR(err, fmt, args...) \
-  do { argp_error (state, fmt , ##args); return err; } while (0)
+#define PERR(err, fmt, args...)							\
+  do { argp_error (state, fmt , ##args); RETURN (err); } while (0)
 
   /* Like PERR but for non-parsing errors.  */
 #define FAIL(rerr, status, perr, fmt, args...) \
-  do{ argp_failure (state, status, perr, fmt , ##args); return rerr; } while(0)
+  do{ argp_failure (state, status, perr, fmt , ##args); RETURN (rerr); } while(0)
 
   /* Parse STR and return the corresponding  internet address.  If STR is not
      a valid internet address, signal an error mentioned TYPE.  */
@@ -178,14 +188,20 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_SUCCESS:
-      /* Check for problems.  */
-      if (! h->curint->device)
-	/* No interface specified; see if there's a single extant one.  */
-	{
-	  err = find_device (0, &h->curint->device);
-	  if (err)
-	    FAIL (err, 13, 0, "No default interface");
-	}
+      in = h->curint;
+      if (! in->device)
+	/* No specific interface specified; is that ok?  */
+	if (in->address != INADDR_NONE || in->netmask != INADDR_NONE
+	    || in->gateway != INADDR_NONE)
+	  /* Some options were specified, so we need an interface.  See if
+             there's a single extant interface to use as a default.  */
+	  {
+	    err = find_device (0, &in->device);
+	    if (err)
+	      FAIL (err, 13, 0, "No default interface");
+	  }
+
+      /* Check for bogus option combinations.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	if (in->address == INADDR_NONE && in->netmask != INADDR_NONE
 	    && in->device->pa_addr != 0)
@@ -235,6 +251,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case ARGP_KEY_ERROR:
       /* Parsing error occured, free everything. */
+    free_hook:
       free (h->interfaces);
       free (h);
       break;
@@ -243,7 +260,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       return ARGP_ERR_UNKNOWN;
     }
 
-  return 0;
+  return err;
 }
 
 struct argp
