@@ -1,5 +1,5 @@
 /* lockfile - Handle locking and unlocking of streams.  Hurd cthreads version.
-   Copyright (C) 2000,01 Free Software Foundation, Inc.
+   Copyright (C) 2000,01,02 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -41,20 +41,25 @@ _cthreads_ftrylockfile (_IO_FILE *fp)
   return __libc_lock_trylock_recursive (*fp->_lock);
 }
 
-
 # undef 	_IO_flockfile
 # undef 	_IO_funlockfile
 # undef 	_IO_ftrylockfile
-# pragma weak	_IO_flockfile	= _cthreads_flockfile
-# pragma weak	_IO_funlockfile	= _cthreads_funlockfile
-# pragma weak	_IO_ftrylockfile= _cthreads_ftrylockfile
-
 # undef		flockfile
 # undef		funlockfile
 # undef		ftrylockfile
-# pragma weak	flockfile	= _cthreads_flockfile
-# pragma weak	funlockfile	= _cthreads_funlockfile
-# pragma weak	ftrylockfile	= _cthreads_ftrylockfile
 
+void _IO_flockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_flockfile")));
+void _IO_funlockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_funlockfile")));
+int _IO_ftrylockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_ftrylockfile")));
+
+void flockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_flockfile")));
+void funlockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_funlockfile")));
+int ftrylockfile (_IO_FILE *)
+     __attribute__ ((alias ("_cthreads_ftrylockfile")));
 
 #endif /* _STDIO_USES_IOSTREAM */
