@@ -64,4 +64,10 @@ error_t open_write(struct open *open, vm_address_t buf, vm_size_t len,
 error_t open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
 		  vm_size_t amount, off_t offs);
 
+/* Set OPEN's location to OFFS, interpreted according to WHENCE as by seek.
+   The new absolute location is returned in NEW_OFFS (and may not be the same
+   as OFFS).  If no error occurs, zero is returned, otherwise the error code
+   is returned.  */
+error_t open_seek (struct open *open, off_t offs, int whence, off_t *new_offs);
+
 #endif /* !__OPEN_H__ */
