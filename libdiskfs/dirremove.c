@@ -38,8 +38,6 @@ diskfs_dirremove (struct node *dp,
   diskfs_purge_lookup_cache (dp, np);
   
   err = diskfs_dirremove_hard (dp, ds);
-  if (!err)
-    dn->dn_set_mtime = 1;
   
   if (!err && dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, name);
