@@ -18,6 +18,7 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <hurd/fshelp.h>
 
 #include "priv.h"
 #include "fsys_S.h"
@@ -28,5 +29,8 @@ trivfs_S_fsys_set_options (struct trivfs_control *cntl,
 			   char *data, mach_msg_type_number_t len,
 			   int do_children)
 {
-  return EOPNOTSUPP;
+  if (trivfs_runtime_argp)
+    return fshelp_set_options (trivfs_runtime_argp, 0, data, len);
+  else
+    return EOPNOTSUPP;
 }
