@@ -1,3 +1,8 @@
+2004-11-15  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pc-kbd.c (input_loop): Make the left shift key behave the same
+	as right shift key with regards to page up/down.
+
 2004-10-22  Marcus Brinkmann  <marcus@gnu.org>
 
 	* driver.c (driver_start): Don't underflow I.

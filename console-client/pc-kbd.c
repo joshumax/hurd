@@ -1061,9 +1061,11 @@ input_loop (any_t unused)
 	    console_scrollback (CONS_SCROLL_DELTA_LINES, 1);
 	  else if (state.left_alt && down && sc == SC_X1_DOWN) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_LINES, -1);
-	  else if (state.right_shift && down && sc == SC_X1_PGUP) /* XXX */
+	  else if ((state.right_shift || state.left_shift)
+		   && down && sc == SC_X1_PGUP) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_SCREENS, 0.5);
-	  else if (state.right_shift && down && sc == SC_X1_PGDN) /* XXX */
+	  else if ((state.right_shift || state.left_shift)
+		   && down && sc == SC_X1_PGDN) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_SCREENS, -0.5);
 	  else if (down && sc < sizeof (sc_x1_to_kc)/sizeof (sc_x1_to_kc[0]))
 	    {
