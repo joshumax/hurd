@@ -40,12 +40,14 @@ installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
 
 DIST_FILES=$(SYSCONFFILES) $(LOGINDOTS) $(ROOTDOTS)
 
-ifeq ($(override_conf),t)
 foo=$(shell touch /dev/null)
-override_spec = /dev/null
-else
-override_spec = 
+
+ifeq ($(override_conf),t)
+$(installed_rootdots): /dev/null
+$(installed_conf): /dev/null
 endif
+
+$(installed_logins): /dev/null
 
 include ../Makeconf
 
