@@ -1,7 +1,6 @@
 libshouldbeinlibc 0.2 hurd
 libftpconn 0.2 hurd
 libports 0.2 hurd
-libmom 0.2 hurd
 libthreads 0.2 hurd
 libhurdbugaddr 0.2 hurd
 libstore 0.2 hurd

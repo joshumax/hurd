@@ -1,8 +1,48 @@
-hurd (19990601) unstable; urgency=low
+hurd (19991004) unstable; urgency=high
+
+  * New snapshot from CVS.
+    term: Realize bogus devices.
+    ext2fs: Important bug fixes!
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun,  3 Oct 1999 18:01:17 +0200
+
+hurd (19990923) unstable; urgency=low
+
+  * New snapshot from CVS.
+    MAKEDEV: pty created with mode 0666.
+    Implements pathconf for libdiskfs and libnetfs.
+    Various bug fixes.
+  * Development package now includes pic libraries.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 19 Sep 1999 19:29:00 +0200
+
+hurd (19990907) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * gzip /boot/serverboot to /boot/serverboot.gz
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon, 23 Aug 1999 15:12:10 +0200
+
+hurd (19990725) unstable; urgency=low
 
   * New snapshot from CVS.
 
- -- Marcus Brinkmann <brinkmd@debian.org>  Tue,  1 Jun 1999 19:25:37 +0200
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu, 25 Jul 1999 16:16:03 +0200
+
+hurd (19990714) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * debian/rules: etc/motd is in base-files, do not include it.
+  * Activate split-init.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Wed, 14 Jul 1999 16:38:00 +0200
+
+hurd (19990616) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Now contains info and ps documentation.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu, 17 Jun 1999 17:35:54 +0200
 
 hurd (19990524) unstable; urgency=low
 
