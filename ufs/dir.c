@@ -153,6 +153,9 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   inum = 0;
   
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+  
   for (blockaddr = buf, idx = 0;
        blockaddr - buf < dp->dn_stat.st_size;
        blockaddr += DIRBLKSIZ, idx++)
@@ -166,6 +169,11 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  return err;
 	}
     }
+
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+  if (diskfs_synchronous)
+    diskfs_node_update (dp, 1);
 
   /* If err is set here, it's ENOENT, and we don't want to
      think about that as an error yet. */
@@ -466,6 +474,8 @@ diskfs_direnter_hard(struct node *dp,
 
   assert (ds->type == CREATE);
   
+  dp->dn_set_mtime = 1;
+
   switch (ds->stat)
     {
     case TAKE:
@@ -568,6 +578,8 @@ diskfs_direnter_hard(struct node *dp,
       assert (0);
     }
 
+  dp->dn_set_mtime = 1;
+
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
         
   if (ds->stat != EXTEND)
@@ -614,6 +626,8 @@ diskfs_dirremove_hard(struct node *dp,
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
   
+  dp->dn_set_mtime = 1;
+
   if (ds->preventry == 0)
     ds->entry->d_ino = 0;
   else
@@ -622,6 +636,8 @@ diskfs_dirremove_hard(struct node *dp,
 	      == ds->preventry->d_reclen);
       ds->preventry->d_reclen += ds->entry->d_reclen;
     }
+
+  dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
 
@@ -650,9 +666,11 @@ diskfs_dirrewrite_hard(struct node *dp,
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
   
+  dp->dn_set_mtime = 1;
   ds->entry->d_ino = np->dn->number;
   if (direct_symlink_extension)
     ds->entry->d_type = IFTODT (np->dn_stat.st_mode);
+  dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
@@ -681,6 +699,9 @@ diskfs_dirempty(struct node *dp,
   mach_port_deallocate (mach_task_self (), memobj);
   assert (!err);
 
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+
   for (curoff = buf; 
        curoff < buf + dp->dn_stat.st_size;
        curoff += entry->d_reclen)
@@ -694,9 +715,17 @@ diskfs_dirempty(struct node *dp,
 		  && entry->d_name[1] != '\0')))
 	{
 	  vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
+	  if (!diskfs_readonly)
+	    dp->dn_set_atime = 1;
+	  if (diskfs_synchronous)
+	    node_update (dp, 1);
 	  return 0;
 	}
     }
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+  if (diskfs_synchronous)
+    node_update (dp, 1);
   vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
   return 1;
 }
