@@ -136,10 +136,10 @@ struct ext2_acl_header	/* Header of Access Control Lists */
 struct ext2_acl_entry	/* Access Control List Entry */
 {
 	u32	acle_size;
-	__u16	acle_perms;	/* Access permissions */
-	__u16	acle_type;	/* Type of entry */
-	__u16	acle_tag;	/* User or group identity */
-	__u16	acle_pad1;
+	u16	acle_perms;	/* Access permissions */
+	u16	acle_type;	/* Type of entry */
+	u16	acle_tag;	/* User or group identity */
+	u16	acle_pad1;
 	u32	acle_next;	/* Pointer on next entry for the */
 					/* same inode or on next free entry */
 };
@@ -152,8 +152,8 @@ struct ext2_old_group_desc
 	u32	bg_block_bitmap;		/* Blocks bitmap block */
 	u32	bg_inode_bitmap;		/* Inodes bitmap block */
 	u32	bg_inode_table;		/* Inodes table block */
-	__u16	bg_free_blocks_count;	/* Free blocks count */
-	__u16	bg_free_inodes_count;	/* Free inodes count */
+	u16	bg_free_blocks_count;	/* Free blocks count */
+	u16	bg_free_inodes_count;	/* Free inodes count */
 };
 
 struct ext2_group_desc
@@ -161,10 +161,10 @@ struct ext2_group_desc
 	u32	bg_block_bitmap;		/* Blocks bitmap block */
 	u32	bg_inode_bitmap;		/* Inodes bitmap block */
 	u32	bg_inode_table;		/* Inodes table block */
-	__u16	bg_free_blocks_count;	/* Free blocks count */
-	__u16	bg_free_inodes_count;	/* Free inodes count */
-	__u16	bg_used_dirs_count;	/* Directories count */
-	__u16	bg_pad;
+	u16	bg_free_blocks_count;	/* Free blocks count */
+	u16	bg_free_inodes_count;	/* Free inodes count */
+	u16	bg_used_dirs_count;	/* Directories count */
+	u16	bg_pad;
 	u32	bg_reserved[3];
 };
 
@@ -213,15 +213,15 @@ struct ext2_group_desc
  * Structure of an inode on the disk
  */
 struct ext2_inode {
-	__u16 i_mode;		/* File mode */
-	__u16 i_uid;		/* Owner Uid */
+	u16 i_mode;		/* File mode */
+	u16 i_uid;		/* Owner Uid */
 	u32  i_size;		/* Size in bytes */
 	u32  i_atime;		/* Access time */
 	u32  i_ctime;		/* Creation time */
 	u32  i_mtime;		/* Modification time */
 	u32  i_dtime;		/* Deletion Time */
-	__u16 i_gid;		/* Group Id */
-	__u16 i_links_count;	/* Links count */
+	u16 i_gid;		/* Group Id */
+	u16 i_links_count;	/* Links count */
 	u32  i_blocks;	/* Blocks count */
 	u32  i_flags;		/* File flags */
 	union {
@@ -244,21 +244,21 @@ struct ext2_inode {
 		struct {
 			__u8	l_i_frag;	/* Fragment number */
 			__u8	l_i_fsize;	/* Fragment size */
-			__u16	i_pad1;
+			u16	i_pad1;
 			u32	l_i_reserved2[2];
 		} linux2;
 		struct {
 			__u8	h_i_frag;	/* Fragment number */
 			__u8	h_i_fsize;	/* Fragment size */
-			__u16	h_i_mode_high;
-			__u16	h_i_uid_high;
-			__u16	h_i_gid_high;
+			u16	h_i_mode_high;
+			u16	h_i_uid_high;
+			u16	h_i_gid_high;
 			u32	h_i_author;
 		} hurd2;
 		struct {
 			__u8	m_i_frag;	/* Fragment number */
 			__u8	m_i_fsize;	/* Fragment size */
-			__u16	m_pad1;
+			u16	m_pad1;
 			u32	m_i_reserved2[2];
 		} masix2;
 	} osd2;				/* OS dependent 2 */
@@ -343,18 +343,18 @@ struct ext2_super_block {
 	u32	s_inodes_per_group;	/* # Inodes per group */
 	u32	s_mtime;		/* Mount time */
 	u32	s_wtime;		/* Write time */
-	__u16	s_mnt_count;		/* Mount count */
+	u16	s_mnt_count;		/* Mount count */
 	__s16	s_max_mnt_count;	/* Maximal mount count */
-	__u16	s_magic;		/* Magic signature */
-	__u16	s_state;		/* File system state */
-	__u16	s_errors;		/* Behaviour when detecting errors */
-	__u16	s_pad;
+	u16	s_magic;		/* Magic signature */
+	u16	s_state;		/* File system state */
+	u16	s_errors;		/* Behaviour when detecting errors */
+	u16	s_pad;
 	u32	s_lastcheck;		/* time of last check */
 	u32	s_checkinterval;	/* max. time between checks */
 	u32	s_creator_os;		/* OS */
 	u32	s_rev_level;		/* Revision level */
-	__u16	s_def_resuid;		/* Default uid for reserved blocks */
-	__u16	s_def_resgid;		/* Default gid for reserved blocks */
+	u16	s_def_resuid;		/* Default uid for reserved blocks */
+	u16	s_def_resgid;		/* Default gid for reserved blocks */
 	u32	s_reserved[235];	/* Padding to the end of the block */
 };
 
@@ -374,8 +374,8 @@ struct ext2_super_block {
 
 struct ext2_dir_entry {
 	u32	inode;			/* Inode number */
-	__u16	rec_len;		/* Directory entry length */
-	__u16	name_len;		/* Name length */
+	u16	rec_len;		/* Directory entry length */
+	u16	name_len;		/* Name length */
 	char	name[EXT2_NAME_LEN];	/* File name */
 };
 
