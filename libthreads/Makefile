@@ -21,10 +21,10 @@ dir := libthreads
 
 include ../Makeconf
 
-# In GNU mig_support.c and machine/lock.s are omitted; that work is all
-# done in libc.
+# In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
+# all done in libc.
 generic-sources = call.c cprocs.c cthread_data.c cthreads.c \
-		  malloc.c stack.c sync.c
+		  malloc.c stack.c 
 machine-sources = csw.S thread.c
 sources = $(generic-sources) $(addprefix $(machine)/,$(machine-sources))
 objects = $(addsuffix .o,$(basename $(notdir $(sources))))
