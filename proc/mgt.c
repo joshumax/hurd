@@ -606,15 +606,20 @@ add_tasks (task_t task)
 	  processor_set_tasks (psetpriv, &tasks, &ntasks);
 	  for (j = 0; j < ntasks; j++)
 	    {
+	      int set = 0;
 	      if (!foundp)
 		{
 		  struct proc *p = task_find_nocreate (tasks[j]);
 		  if (!p)
-		    p = new_proc (tasks[j]);
+		    {
+		      p = new_proc (tasks[j]);
+		      set = 1;
+		    }
 		  if (!foundp && tasks[j] == task)
 		    foundp = p;
 		}
-	      mach_port_deallocate (mach_task_self (), tasks[j]);
+	      if (!set)
+		mach_port_deallocate (mach_task_self (), tasks[j]);
 	    }
 	  vm_deallocate (mach_task_self (), (vm_address_t) tasks,
 			 ntasks * sizeof (task_t));
