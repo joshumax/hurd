@@ -1,3 +1,14 @@
+1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fsck.c (main): Add braces to silence gcc warning.
+
+	* fstab.c: Rename fsys_remount -> fsys_update in extern decl.
+
+1998-11-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* clookup.c (file_name_lookup_carefully): Change __getuids to geteuids.
+	Use hurd_file_name_lookup instead of __hurd_file_name_lookup.
+
 1998-10-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* clookup.c (file_name_lookup_carefully): Use getdport instead of
