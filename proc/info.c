@@ -475,7 +475,8 @@ S_proc_getloginpids (struct proc *callerp,
 	    if (new - parray > parraysize)
 	      {
 		struct proc **newparray;
-		newparray = realloc (parray, parraysize *= 2);
+		newparray = realloc (parray, ((parraysize *= 2) 
+					      * sizeof (struct proc *)));
 		tail = newparray + (tail - parray);
 		new = newparray + (new - parray);
 		parray = newparray;
