@@ -55,9 +55,6 @@ if test -d /var/run; then
 fi
 echo done
 
-# This file records when the system was booted.
-date > /var/run/uptime
-
 # This file must exist for e2fsck to work. XXX
 touch /var/run/mtab
 
