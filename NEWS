@@ -1,575 +1,70 @@
 -*- Text -*-
 
-April 15, 1995
+5 September 1996
+Version 0.1.
 
-It's hard to summarize, so much has happened.
+Summary of important externally visible changes since version 0.0:
 
-We have NFS, a network, and jillions of stuff.  Basically things just
-work.  Except for a jillion little nits, this is very nearly an alpha
-release.  Not quite, but nearly.
+Many miscellaneous bugs have been fixed.
 
+Missing source files in 0.0 have been correctly added to the
+distribution. 
 
+Configuration now knows that various 386 equivalents use the same
+assembly files.
 
-
-The `boot' program now accepts an option ``-D DIR'' which specifies a
-directory prefix for the file names given in the boot script (hurd.boot).
-So the way to boot is now:
-	$ boot.a -D .../hurd-image hurd.boot sd0a
+There is now an nfsd; it has not be well-tested.  It would be nice if
+some people would run it and try things out.  It does not yet support
+Hurd-specific features.
 
-
-October 5, 1995
+Exec now compiles correctly even when you don't have BFD installed.
 
-The Hurd distribution now uses a `configure' script in the standard GNU
-style.  As with other GNU packages, you can configure in the source
-directory or in a separate build directory (though not both with the same
-source directory); all you should need to do is `configure i386-gnu'.  The
-Hurd does not compile in any file names using $(prefix), so you can specify
-the prefix where you will install things with the `--prefix' option; e.g.,
-`configure --prefix=/gd4/hurdinst i386-gnu'.  You should no longer need to
-edit any makefiles.  You can choose the tool names by setting variables in
-the environment when running configure (CC, LD, AR, RANLIB, OBJCOPY, MIG);
-the default is to search your $PATH for HOST-TOOL (e.g. i386-gnu-gcc), and
-failing that just TOOL (e.g. gcc), so you will win automagically if you
-simply use the same host alias in the `configure' command line as you used
-for the target alias to configure gcc and binutils (i.e. i386-gnu).
+Ext2fs format interpretation problems have been fixed.  This means it
+can be suitably used to boot with.
 
-The file_truncate RPC (in fs.defs) has been renamed file_set_size and
-now is expected to extend files as well as truncate them, in the
-manner of recent BSD releases' ftruncate.  file_pathconf has been
-moved from fs.defs to io.defs and renamed io_pathconf.  The `core'
-interface has been renamed `crash'.
+init now properly understands SIGHUP and SIGTERM, and does the right
+thing correctly.
 
-We are now using a new terminal driver that is multi-threaded.  It is
-also much more simple internally than the older version, but otherwise
-supports no new features.
+Much code has been written in nfs towards supporting version 3 of the
+protocol, but it's not done yet.  Don't try and turn it on.
 
-Everything is now dynamically linked except the bootstrap filesystem.  Any
-old statically linked binaries should be replaced.  WARNING: In the next
-snapshot changes in the exec server may prevent older statically linked
-binaries from running.
+Version information in uname is now calculated differently.
 
-The exec server by default now only supports ELF; if you have older
-a.out binaries you want to run, you need to reenable BFD support in
-the exec Makefile.  (Old a.out binaries should be replaced anyhow,
-with dynamically linked ELF binaries, for the reasons in described in
-the warning above.)
+Some improvements have been made in the SETUP script.
 
-The bootstrap hack in the directory boot now understands boot scripts;
-this kind of boot script will also be used by an upcoming release of
-Mach4.  Also, because the exec server is now dynamically linked, it is
-necessary to install the exec server itself on the Hurd partition (in
-/hurd/exec); that was not necessary before, so it is possible that old
-working Hurd partitions might not have it.
+sync, reboot and halt now do argument parsing and understand --help and
+--version. 
 
-Some problems and trivial bugs in fsck are fixed.
+The new `e2os' program has been added to change the "creator OS" field
+on an ext2fs filesystem.
 
-A few bugs in libdiskfs, libpipe, pflocal, and trans were fixed of no
-particular consequence.
+Bugs in term and libtrivfs have been fixed, allowing emacs shell mode
+to work cleanly.  Other minor bugs have also been fixed.
 
-Shutdown of filesystems now works reliably and safely.
+ufs and ext2fs now do directory search rotoring to speed repeated and
+sequential directory lookups.  
 
-Libports now provides stubs to do the normal thing for the interrupt and
-notify interfaces.  Because of the interruption semantic, cthreads
-multiplexing of multiple cthreads onto fewer kernel threads can no longer
-be used; this means that ports_manage_port_operations_multithread no longer
-pays attention to the WIRE_CTHREADS flag.
+ufs now notes correctly if a disk cannot be written to and turns on
+the readonly flag automatically in this case.  (Useful for floppies.) 
 
-Cthreads now supports an implication semantic for conditions; this
-enables a condition variable to be created which is the disjunction of
-other condition variables.
+ufs statfs information (printed by df) should now be correct.
 
-Trivfs now supports errors and blocking on open much better.
+A serious bug in ufs fsck when dealing with large directories has been
+fixed.
 
-A rare but serious bug in the pager has been fixed; along with this,
-another minor deficiency in the kernel has become apparent.
+A new program `vminfo' prints the virtual memory map of task.
 
-The Makefiles are more generic and deal with shared libraries better. 
+All disk filesystems (ufs and ext2fs) now do directory name caching of
+`..' which was not previously done.  In addition, you can now set the
+cache size to be large, and then do experiments and see what the cache
+hit rate would have been for various smaller sizes.  This should help
+in optimizing the size of the cache.
 
-A serious bug has been fixed in ext2fs.  
+A port leak in the pager library has been fixed; previously ufs leaked
+two ports per file used until the kernel's limit (about 30,000) was
+reached. 
 
 
-
-July 23, 1995
-
-Shared libraries now work; use -static to link programs and avoid the
-shared libraries.  The Hurd programs are normally built static; this
-will probably change soon.
-
-The ext2fs server now works, as do the tools to manipulate ext2fs
-filesystems.  A snapshot of the tools will be made soon under separate
-cover.  Many thanks to Ted Ts'o for his valuable work on the tools.
-
-Readers of the Makefiles will notice that we now generate dependencies
-automatically.
-
-The old netserv library is gone.
-
-The `boot' hack has been modified slightly to avoid the normalq libc startup
-files, because they no longer work with UX.
-
-Some small bugs have been fixed in the devio server.
-
-The ports library has been totally rewritten; new features permit
-servers to have greater control over thread RPC's and port creation.
-
-The fshelp library now does most of the work for translator
-interaction; it's simpler now too.  Filesystems have much less work to
-do; the relevant code in libdiskfs is now understanble instead of
-unparseable chaos.
-
-The ports library provides for timeouts; the diskfs library almost
-uses it, but because of a bug, it's disabled for now.
-
-Filesystems are now expected to sync themselves if necessary; the new
-fsys_set_options RPC provides for changeing (or cancelling) the sync
-intervale.  The diskfs library does this for you.  The update program
-is no longer necessary.
-
-A small bug in the proc server has been hacked around; the real fix
-will come later.
-
-Many important bugs in the C library have been fixed since the last
-snapshot; perhaps all of them.  ;-)
-
-
-
-June 6, 1995
-
-The Hurd has switched to using the ELF object file format instead of a.out.
-You will need a very recent snapshot of GCC and binutils (we are using the
-950606 versions); the `i386-gnu' configuration now uses ELF, we are dumping
-a.out entirely.
-
-The exec server now understands the ELF format directly (not through BFD),
-because BFD has some deficiencies in its treatment of ELF.  The direct
-support for a.out has been ripped out completely.  The exec server can
-still support BFD as an optional addition, if compiled with -DBFD; this is
-now the only way to run a.out executables.  But if you only want to run new
-ELF binaries, then you can omit -DBFD and needn't bother building the BFD
-library to build the Hurd.  The support for gzip'd executables is now
-conditional on -DGZIP; it adds a pretty small amount of code.  Our
-makefiles use both -DGZIP and -DBFD by default; edit exec/Makefile if you
-wnat to omit BFD or gzip support.  (Probably soon we will omit -DBFD by
-default because it will make the exec server much smaller, but we just
-switched and still have run a.out binaries lying around we'd like to
-continue being able to run.)
-
-Because everything is now in ELF, the procedure to create an executable of
-the `boot' program that can run on UX is rather hairy.  Do `make boot.a' in
-the boot directory and run `boot/boot.a', which is an a.out executable.
-`boot/boot' is a weirdo ELF executable that UX cannot understand.
-
-The startup sequence has changed; the exec server image is no longer
-embedded in the filesystem image.  The `boot' program loads both the
-filesystem and the exec server into separate tasks and runs the filesystem,
-passing it the task port of the exec server, which it starts running when
-it's ready for it.  This closey approximates the eventual plan for booting
-the system, wherein the boot loader will load the multiple program files as
-well as the kernel, and the kernel will set up the two tasks.  However,
-changes are needed in the Mach bootstrap process to read ELF binaries and
-to start multiple servers, so for the moment native booting is broken.
-
-April 12, 1995
-
-Many bugfixes and changes.  Now includes a fancy ps, settrans, and
-showtrans; separate translators for all the programs in /dev (and a
-MAKEDEV script).  Also the provisional source for network servers and
-some other snippets of code are now being distributed.  The trivfs
-library is now multithreaded.
-
-The old dev.trim is still being distributed, but you shouldn't use it.
-
-A serious bug that broke the filesystem's state after enough exec
-failures (of the bad format sort) happen.  A deadlock or two was also
-found and fixed.
-
-December 13, 1994
-
-The exec server now recognizes gzip'd binaries and uncompresses them into
-memory to execute them.  (This has allowed a useful number of binaries to
-fit on a 1.44MB floppy.)
-
-November 24, 1994:
-
-Program changes:
-
-term could hang in delivery of terminal signals; fixed.
-
-pipes now handles io_select.
-
-These fixes allow GNU Emacs to work under the Hurd, with subprocesses.
-
-November 11, 1994:
-
-Structural changes:
-
-Our sources are now under RCS.  That shouldn't affect you at all,
-except that the file in the distribution will now be mostly mode 0444
-by default.
-
-
-Interface changes:
-
-`dealloc' flags have been added to many MiG interfaces broadly to fix
-a class of bugs.
-
-
-Library changes:
-
-Synchronous locks were hanging in some cases; to avoid it for now,
-they are never done at all.  (Of course, this is really a bug that
-needs fixed; the current change is purely for the sake of running the
-system.)
-
-Some bugs in translator startup in libfshelp have been fixed.
-
-Bootstrapping in libdiskfs is cleared up.  A bug in io_read that cause
-a crash if you gave an offset past the file size has been fixed.
-Non-root filesystems can now contact the execserver.
-
-
-Program changes:
-
-The `boot' hack can now start the first task in one of three ways: the
-way it was before, which is pretty Hurd-ish; just like the kernel
-starts the first task; and just like CMU's `boostrap' user program
-starts the CMU multiserver.  Also, `boot' always passes a -f flag so
-that other programs can no we aren't really running native.
-
-The execserver now registers itself properly on /servers/exec and can
-thus be used by non-bootstrap filesystems.
-
-Init uses symbolic names for /bin/sh and /dev/console rather than
-hardcoded strings.  The STANDALONE macro is gone; the behavior is the
-same but depends on the presence or absence of -f in the boot flags.
-
-Some minor bugs in proc have been fixed.
-
-The terminal driver now sends SIGWINCH properly.  Changing to and from
-ICANON now moves the terminal input queues around properly.
-
-The filesystem now uses one pager to map the disk and little pagers to
-map files.  Some hair is new to keep data from showing up in both
-pagers; generally the code is much simpler and cleaner now.  (Faster,
-too.)  The DT_* type information is currently unused due to an
-implementation difficulty.  Some workarounds have been installed to
-avoid some kernel bugs.
-
-Large writes to the pipes server used to crash it; they don't any
-longer.
-
-The /dev server now has hardcoded into it more disks and it's easier
-to add more yourself.  Also work around a kernel bug.
-
-New utilities: clri, sync, halt, reboot.  The output of ps has been
-cleaned up a little.
-
-Fsck has been rewritten; there are still bugs in creating directories.
-(That code is only used if /lost+found is absent, so it's still
-useful.)  The old version is renamed to bsdfsck.
-
-
-
-
-September 8, 1994:
-
-Structural changes:
-
-No significant structural changes have been made.
-
-
-Interface changes:
-
-term.defs has a new RPC `termctty_open_terminal', necessary for
-implementing /dev/tty.
-
-The filesystem lookup retry mechanism has been altered slightly.
-FS_RETRY_NONE is gone.  If the retry pathname is empty, then no retry
-is necessary, and the returned port should be used, after
-reauthenticating it if FS_RETRY_REAUTH was set.  Uniformly Hurd
-servers attach no special meaning to leading / in filenames, the
-result is that leading / (to Hurd servers) is a NOP.  
-
-The authentication protocol now passes a second port for rendezvous
-rather than an int; this cleans up a slight security hole.  The I/O
-and proc protocols have been changed accordingly.
-
-The args to file_set_translator have been cleaned up.
-
-All routines that used to say `path' no longer do; in GNU we always
-call these filenames.
-
-
-Library changes:
-
-libdiskfs and libfshelp now do passive translator startup properly.
-
-Setuid execution is now done by libdiskfs.
-
-A little work has been done in libpager towards implementing a default
-pager, bit it's not complete yet. 
-
-
-Program changes:
-
-A braino in the auth server was fixed, and it uses the new auth
-protocol.
-
-The boot program no longer spins; it uses multiple threads.  It also
-takes nice command line args.  ufs and init only pause for debugger
-attach if you give boot the -d flag.  Init now expects passive
-translators to be set for /dev and it looks prettier.
-
-The kludgy dev server now also works for (1) disk.
-
-Some exec server bugs in EXEC_NEWTASK were fixed.
-
-There is now a port of fsck, and two new programs: settrans and
-opendisk.
-
-The proc server now has a better prime number generator, and some
-small bugs have been fixed.
-
-The terminal driver now does job control and other signals correctly.
-
-Some minor improvements have been made in ufs.
-
-
-
-
-August 8, 1994:
-
-Structural changes:
-
-Makefiles have been vastly improved and are simpler.  The programs
-`su', `ps', and `sh' have been moved from separate dirs into `utils';
-the programs `symlink' and `ifsock' have been moved into `trans'.
-
-Several changes were made to GCC use.  You should definitely get GCC
-version 2.6.0 now.  Version 2.6.1 will have distributed the proper
-`specs' file for the i386-gnu target, but it isn't quite ready yet, so
-you still have to copy hurd/gcc-specs into
-gcc-lib/i386-gnu/2.6.0/specs.
-
-
-Interface changes:
-
-The tioctl.defs suite is complete now.
-
-INTR RPC's have been changed; individual RPC's are no longer marked
-INTR.  Rather, entire interfaces are marked `INTR_INTERFACE' if they
-conform to the library's signalling/interruption expectations.
-
-There is a new magical retry type (for dir_pathtrans and fsys_getroot)
-called `machtype' and a new one `/'; the former is for @sys tweaks and
-the latter cleans up the retry of root-based symlinks a bit.
-
-There is a new interface `login.defs'.
-
-The "dotdot node" is no longer passed at fsys_startup time; instead,
-it is passed by fsys_getroot.
-
-
-Library changes:
-
-The ports library now does death-timeouts for multi-threaded servers;
-it doesn't actually work right yet, however.  Also the ports library
-has new features (soft vs. hard ports; no outstanding ports
-notifications) that enable server-death to be done cleanly.  (I hope;
-libdiskfs and ufs haven't yet been changed to use it, so libports
-might not actually have the right facilities yet.)
-
-The translator startup routines in libfshelp have been vastly improved
-(so that they can actually be used).
-
-Numerous bugfixes in libdiskfs, particularly relating to translator
-usage.  Use new magical retry type `/' when appropriate.  Use new
-dotdot node protocol.  O_FSYNC and O_NOATIME are now honored properly.
-Alternative methods of storing symlinks are now supported through new
-hooks.  
-
-The new dotdot protocol is now used by libtrivfs.  Also, users of the
-library are now able to set the atime and mtime when necessary.
-
-The special threads version of malloc has been placed back in
-libthreads now that the C library uses a Mach-safe version on its own.
-
-
-Program changes:
-
-The `boot' program no longer implements the tioctl interface now that
-the terminal driver works.
-
-A bug was fixed in the handling of pgrps in `proc'.
-
-Many bugfixes in term.  The tioctl interface is now implemented.  EOF
-processing is fixed; break characters now work right.  Signals and
-interruption are now done correctly.  VDISCARD works.  
-
-Ufs has Some bigs fixed in dir.c.  Filesystem upgraded to BSD 4.4.
-There are now some compatibility flags.  
-
-New program dev.trim does a very minimal /dev (but doesn't work yet).
-New program dev is an initial (but poor) attempt at a real /dev.
-
-
-
-
-
-July 5, 1994:
-
-The Hurd now runs all the programs in the GNU fileutils, textutils,
-and shellutils distributions, with the exception of who.  Most
-importantly it runs GNU Hello.  Also, emacs works (with the kludgy
-`boot' terminal driver) and bash works.
-
-The simple pipes server works; it will be replaced eventually by the
-pflocal server (which isn't done yet).  The terminal driver is limping
-but working.  It doesn't support terminal ioctls yet.  A minor bug in
-auth has been fixed.  boot interprets more Hurd protocols; this was
-done to get emacs functioning.  Some more-or-less serious bugs in exec
-were fixed; they were found by running emacs (a quite large executable
-indeed).  At bootstrap time, init starts pipes and term itself;
-eventually these will be passive translators, but we don't want to
-write the new disk format until we're self-hosting or fsck and UX will
-get confused.  The file proc/primes.c has been documented; thanks go
-to Jim Blandy.  Some bugs in proc dealing with pgrp and wait were
-fixed; a nasty hash table bug was also fixed.  The simple shell can do
-pipes.  Several serious bugs in ufs were fixed dealing with extension
-of large files and writes of data not aligned on block boundaries.
-The ufs pager was over-serialized; that's been fixed.  Directory
-lookups and modifications now use mapped I/O directly; this is an
-important speed-up.  The structure of the pager lockes has been
-changed significantly.  UFS now supports Mach copying mode
-MEMORY_OBJECT_COPY_DELAY; this significantly improves process startup
-time.  
-
-Some minor changes have been made to several interfaces.  The
-interface for fs.defs:dir_readdir has been totally changed.  There are
-some new fs.defs interfaces: file_check_access, file_notice_changes,
-dir_notice_changes.  The fsys.defs:fsys_getroot interface was changed
-to work correctly.  process.defs:proc_setprocargs is renamed, and a
-fetch function proc_get_arg_locations is added.  The ifsock.defs
-interface was simplified.  
-
-Several bugs were fixed in libdiskfs.  The new dir_readdir interface
-requires new support from format-specific code.  Some race conditions
-have been fixed.  dir-pathtrans.c now deals correctly with multiple
-slashes in a row.  A new concept called "light references" allows
-pagers to remain active without preventing truncate-on-nolinks from
-working right.  New interfaces in fs.defs are implemented (except
-file_notice_changes).  Active translator usage has been fixed to work
-correctly, but passive translators are still untested.  libdiskfs now
-thinks it supports S_IFSOCK nodes, but that's untested (of course)
-because pflocal isn't done yet.
-
-The passive translator startup interface in libfshelp has been
-radically simplified.  The pager library now lets other code set and
-changee the attributes on objects, synchronously if desired.  An
-init/terminate race condition was fixed.   The ports library now
-allows single-threaded users to work right (they didn't before).  The
-trivfs library works; see the ifsock server for a simple example of
-its use.  See term or pipes for more complex examples.  
-
-There is a task list in the file `tasks'; let me know if you are
-interested in working on one of these.
-
-
-May 17, 1994:
-
-The Hurd now runs all the programs in the GNU fileutils and textutils
-distributions.  All the programs in shellutils run normally except
-who, false, groups, nohup, true, and nice.  We can't tell if tty is
-working right because the necessary support isn't set up (so it just
-prints `not a tty'.  Some minor filesystem bugs have been fixed,
-including several brainos in disk allocation and total lossage in
-symlink interpretation.  No bugs are now known.
-
-The library now supports signals; the program `timertest' is one test
-program we've used.  
-
-All the core servers register their version with proc and register
-themselves as essential tasks with init.  This enables proc to compute
-proper uname version strings and enables init to crash the system if
-one of the core servers dies.
-
-Boot is set up with a special hack to detect the RPC's that emacs uses
-to go into and out of raw mode; this will hopefully enable us to run
-emacs soon.
-
-There is a kludgy server called `pipes' (not yet completed) which
-implements just those parts of the local-domain socket server that the
-library uses in implementing the `pipe' function.  This will enable us
-to have a real shell somewhat before needing the local domain socket
-server.  
-
-More work on trivfs has happened; this will be needed by pipes.
-
-Cthreads is now in the Hurd distribution; this will make it much
-easier to install.  The GNU C library depends on some changes we have
-made to this version of C threads and will not work with other
-versions you might have.  (Several files in other versions of CMU
-Cthreads are not in this distibution [notably spin locks]; those are
-now in the GNU C library.)
-
-The installation hints in README have changed considerably; read them
-again.
-
-I'm now keeping ChangeLogs; you can examine them for more detailed
-information.
-  
-
-
-April 5, 1994:
-
-The Hurd now bootstraps.  Auth and proc start successfully; init
-prints "Init has completed" where it would run the shell.
-
-There are the beginnings of some documentation in the new doc
-directory.
-
-
-
-March 25, 1994:
-
-The Makefiles now are set up for cross-compilation; see README and the
-comments in Makeconf and Maketools for more information.
-
-The new diskfs library is complete.  The filesystem using it runs as
-well as the previous version.  Interested folk: please examine the
-diskfs interface, and see if it can be used for your favorite
-filesystem; I'd like it to be as general as possible.
-
-The proc server and auth servers link completely but have not been
-tested.  The init.trim directory holds a lightweight version of init
-suitable for use before the C library support for file descriptors,
-exec, and so forth works; this version of init compiles and links.
-The primary effort right now is booting init, proc, and auth.
-
-Work has been suspended on tmpfs for the time being, it not being
-necessary for a running system.  Some new FS calls have been added,
-notably dir_mkfile.  
-
-
-Feb 1, 1994:
-
-Much filesystem code has been split out into new libraries, most
-notably, libpager, which now contains the implementation of the
-complex multi-threaded pager previously in the filesystem.
-
-libdiskfs will continue this process, with everything related to
-filesystems based on disks (or other real substrates), but format
-independent.  libfshelp will have routines for starting translators,
-keeping track of flock, and so forth; it will be useful for any
-implementor of the fs protocol.  ufs currently does not use either of
-these, but will when they are done.
-
-tmpfs and init.trim are in progress.  tmpfs will be memory-only for
-things like /tmp, and is currently waiting for the fshelp library to
-be finished.  init.trim will be a scaled down init, useful for testing
-bootstrapping before there is enough library support to run the real
-init.  Currently this is waiting on fixing some crucial ld bugs.
-(When those are fixed, work will begin in earnest on bootstrapping
-auth, proc, and init.)
-
-
+6 August 1996
+Version 0.0
+Initial release

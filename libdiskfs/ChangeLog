@@ -10,8 +10,8 @@ Thu Sep  5 11:13:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	diskfs_server_version; pass empty string as release.
 	* extra-version.c: New file.
 	* Makefile (OTHERSRCS): Add extra-version.c.
-	* opts-version.c (diskfs_extra_version): Delete special
-	declaration. 
+	* opts-version.c: Include <version.h>.
+ 	(diskfs_extra_version): Delete special declaration. 
 	(_print_version): Use the user's provided version number, and also
 	give it our (libdiskfs) version number.
 

@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <version.h>
 
 static void
 _print_version (FILE *stream, struct argp_state *state)

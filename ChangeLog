@@ -1,5 +1,5 @@
 Thu Sep  5 11:04:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
-
+	
 	* version.h: New file.
 	* sh-version.sed: New file.
 	* Makefile (DIST_FILES): Add version.h and sh-version.sed.
