@@ -22,9 +22,9 @@ include ../Makeconf
 VPATH = ../machine
 
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
-       io_replUser.o device_replyUser.o sigvec.o tioctlServer.o \
+       io_replUser.o device_replyUser.o sigvec.o \
        termServer.o tcattr.o
-
+# tioctlServer.o
 SRCS = boot.c tcattr.c sigvec.S
 
 DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S tcattr.c
@@ -44,7 +44,7 @@ relink:
 
 boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h \
 	tioctl_S.h term_S.h
-tioctlServer.o: ../hurd/ioctl_types.h
+# tioctlServer.o: ../hurd/ioctl_types.h
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $< | \
@@ -76,10 +76,10 @@ io_repl.h io_replUser.c: io_repl.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -server /dev/null
 
-tioctlServer.c tioctl_S.h: ../hurd/tioctl.defs
-	$(CPP) $(CPPFLAGS) $< | \
-	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
-	-sheader tioctl_S.h
+#tioctlServer.c tioctl_S.h: ../hurd/tioctl.defs
+#	$(CPP) $(CPPFLAGS) $< | \
+#	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
+#	-sheader tioctl_S.h
 
 termServer.c term_S.h: ../hurd/term.defs
 	$(CPP) $(CPPFLAGS) $< | \
