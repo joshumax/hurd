@@ -1,4 +1,4 @@
->/* Unimplemented rpcs from <hurd/fs.defs>
+/* Unimplemented rpcs from <hurd/fs.defs>
 
    Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
