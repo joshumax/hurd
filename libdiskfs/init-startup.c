@@ -75,7 +75,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 	 if _diskfs_chroot_directory is non-null.  */
       old = diskfs_root_node;
       diskfs_root_node = np;
-      ports_port_deref (old);
+      diskfs_nput (old);
     }
 
   if (bootstrap != MACH_PORT_NULL)
