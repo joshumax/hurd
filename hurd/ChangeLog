@@ -1,3 +1,7 @@
+2004-10-31  Alfred M. Szmidt  <ams@gnu.org>
+
+	* io.defs (io_read, io_write, io_select): Comment fixes.
+
 2004-03-30  Marco Gerards  <metgerards@student.han.nl>
 
 	* console.h (CONS_MOUSE_OFFSET_BASE): Redefined to 0x20.
