@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
 
 #include "iohelp.h"
 #include <hurd/auth.h>
+#include <sys/mman.h>
 
 /* Conduct a reauthentication transaction, returning a new iouser.
    AUTHSERVER is the I/O servers auth port.  The rendezvous port
