@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 /* Implement io_select as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_select (struct protid *cred,
 		    int type, 
 		    mach_port_t port,
