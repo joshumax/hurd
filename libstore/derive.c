@@ -28,18 +28,18 @@ void
 _store_derive (struct store *store)
 {
   unsigned i;
-  off_t *runs = store->runs;
+  struct store_run *runs = store->runs;
   unsigned num_runs = store->num_runs;
   size_t bsize = store->block_size;
 
   /* BLOCK & SIZE */
   store->blocks = 0;
 
-  for (i = 0; i < num_runs; i += 2)
+  for (i = 0; i < num_runs; i++)
     {
-      store->wrap_src += runs[i + 1];
-      if (runs[i] >= 0)
-	store->blocks += runs[i + 1];
+      store->wrap_src += runs[i].length;
+      if (runs[i].start >= 0)	/* Not a hole */
+	store->blocks += runs[i].length;
     }
 
   if (store->end == 0)
@@ -54,14 +54,14 @@ _store_derive (struct store *store)
 
       store->blocks *= num_iters;
 
-      for (i = 0; i < num_runs; i += 2)
-	if (last_part_base + runs[i + 1] < store->end)
+      for (i = 0; i < num_runs; i++)
+	if (last_part_base + runs[i].length < store->end)
 	  {
-	    store->blocks += store->end - (last_part_base + runs[i + 1]);
+	    store->blocks += store->end - (last_part_base + runs[i].length);
 	    break;
 	  }
-	else if (runs[i] >= 0)
-	  store->blocks += runs[i + 1];
+	else if (runs[i].start >= 0)
+	  store->blocks += runs[i].length;
 
       /* WRAP_DST must be set by the caller.  */
     }
