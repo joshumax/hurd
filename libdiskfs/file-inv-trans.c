@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -136,20 +136,24 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
   
 
   flags &= ~OPENONLY_STATE_MODES;
-
-  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags,
-						   _diskfs_dotdot_file),
-			      cred->uids, cred->nuids, 
-			      cred->gids, cred->ngids);
-  *retry = FS_RETRY_NONE;
-  retry_name[0] = '\0';
-  *retrypt = ports_get_right (newpi);
-  *retrypttype = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newpi);
+  
+  error = diskfs_create_protid (diskfs_make_peropen (np, flags,
+						     _diskfs_dotdot_file),
+				cred->uids, cred->nuids, 
+				cred->gids, cred->ngids,
+				&newpi);
+  if (! error)
+    {
+      *retry = FS_RETRY_NONE;
+      retry_name[0] = '\0';
+      *retrypt = ports_get_right (newpi);
+      *retrypttype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
+    }
 
   mutex_unlock (&np->lock);
 
-  return 0;
+  return error;
 #else
   return EOPNOTSUPP;
 #endif
