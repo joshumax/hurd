@@ -23,7 +23,7 @@ OBJS = boot.o notifyServer.o execServer.o ourdeviceServer.o ioServer.o \
        io_replyUser.o device_replyUser.o sigvec.o \
        termServer.o tcattr.o
 target = boot
-ioMIGSFLAGS=-DREPLY_PORTS
+io-MIGSFLAGS=-DREPLY_PORTS
 
 include ../Makeconf
 
