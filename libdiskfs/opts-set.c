@@ -28,7 +28,7 @@ error_t
 diskfs_set_options (char *argz, size_t argz_len)
 {
   if (diskfs_runtime_argp)
-    return fshelp_set_options (diskfs_runtime_argp, 0, argz, argz_len);
+    return fshelp_set_options (diskfs_runtime_argp, 0, argz, argz_len, 0);
   else
     return EOPNOTSUPP;
 }
