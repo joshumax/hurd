@@ -1,3 +1,8 @@
+1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rpctrace.c: Mostly rewritten.  Now mostly working with skeletal
+	functionality.
+
 1999-07-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rpctrace.c: New file, from josem and gord.  Not yet functional.
