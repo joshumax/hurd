@@ -306,6 +306,7 @@ main (int argc, char **argv, char **envp)
   char *bootfile;
   char c;
   struct sigvec vec = { read_reply, 0, 0};
+  char *newargs;
 
   privileged_host_port = task_by_pid (-1);
   master_device_port = task_by_pid (-2);
@@ -333,6 +334,11 @@ main (int argc, char **argv, char **envp)
       if (argc == 4)
 	bootdevice = argv[3];
     }
+
+  newargs = malloc (strlen (bootstrap_args) + 2);
+  strcpy (newargs, bootstrap_args);
+  strcat (newargs, "f");
+  bootstrap_args = newargs;
 
   if (index (bootstrap_args, 'k'))
     boot_like_kernel = 1;
