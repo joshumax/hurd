@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -56,7 +56,7 @@ mount_root (char *name, char *host)
   struct node *np;
 
   /* Lookup the portmapper port number */
-  s = getservbyname ("portmap", "udp");
+  s = getservbyname ("sunrpc", "udp");
   if (!s)
     {
       fprintf (stderr, "portmap/udp: unknown service\n");
@@ -73,7 +73,7 @@ mount_root (char *name, char *host)
   
   addr.sin_family = h->h_addrtype;
   bcopy (h->h_addr_list[0], &addr.sin_addr, h->h_length);
-  addr.sin_port = htons (s->s_port);
+  addr.sin_port = s->s_port;
   
   connect (main_udp_socket,
 	   (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
