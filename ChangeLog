@@ -1,11 +1,8 @@
 Tue Jul  7 11:39:08 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
-	* Makeconf (%.o): New rules (from %.c and %.S) so that we can
-	specify file-specific CPPFLAGS (already in use by utils/Makefile
-	for utils/ping.c).
-	(%_pic.o, $_p.o, make-deps): Also grok file-specific CPPFLAGS.
-	Reported by Gordon Matzigkeit (gord@gnu.org).
-
+	* Makeconf (CPPFLAGS): Include $($*-CPPFLAGS).  Reported by Gordon
+	Matzigkeit (gord@gnu.org).
+	
 	* INSTALL-cross: Updated by Gordon Matzigkeit (gord@gnu.org).
 
 1998-04-02  Gordon Matzigkeit  <gord@profitpress.com>
