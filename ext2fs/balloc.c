@@ -93,7 +93,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
     {
       if (!clear_bit (bit + i, bh))
 	ext2_warning ("ext2_free_blocks",
-		      "bit already cleared for block %lu", block);
+		      "bit already cleared for block %lu", block + i);
       else
 	{
 	  gdp->bg_free_blocks_count++;
