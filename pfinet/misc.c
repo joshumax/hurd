@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "pfinet.h"
+#include <string.h>
 
 /* Create a sock_user structure, initialized from SOCK and ISROOT. */
 struct sock_user *
@@ -56,7 +57,7 @@ make_sockaddr_port (struct socket *sock,
   
   addrstruct = ports_allocate_port (pfinet_bucket,
 				    sizeof (struct sock_addr) + buflen,
-				    addrport_clas);
+				    addrport_class);
   addrstruct->len = buflen;
   bcopy (buf, addrstruct->address, buflen);
   *addr = ports_get_right (addr);
@@ -94,9 +95,10 @@ sock_alloc (void)
   struct socket *sock;
   
   sock = malloc (sizeof (struct socket));
-  bzero (sock, sizoef (struct socket));
+  bzero (sock, sizeof (struct socket));
   
   sock->state = SS_UNCONNECTED;
+  return sock;
 }
 
 static inline void sock_release_peer(struct socket *peer)
