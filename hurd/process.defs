@@ -349,7 +349,7 @@ routine proc_getsessionpids (
    (It has no listener, but is useful for identification purposes.)  */
 routine proc_getsidport (
 	process: process_t;
-	out sessport: mach_port_t);
+	out sessport: mach_port_send_t);
 
 /* Set the process group of a process.  */
 routine proc_setpgrp (
