@@ -1,3 +1,10 @@
+2001-04-10  Neal H Walfield  <neal@cs.uml.edu>
+
+        * tmpfs.c (diskfs_shortcurt_chrdev): Rename to diskfs_shortcut_chrdev.
+        (diskfs_shortcurt_blkdev): Rename to diskfs_shortcut_blkdev.
+        (diskfs_shortcurt_fifo): Rename to diskfs_shortcut_fifo.
+        (diskfs_shortcurt_ifsock): Rename to diskfs_shortcut_ifsock.
+
 2001-02-26  Roland McGrath  <roland@frob.com>
 
 	* node.c (diskfs_free_node): Reset hnext's hprevp.
