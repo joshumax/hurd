@@ -86,7 +86,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
 
   err = read_disknode (np);
   
-  if (!diskfs_readonly && !np->dn_stat.st_gen)
+  if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
       spin_lock (&gennumberlock);
       if (++nextgennumber < diskfs_mtime->seconds)
@@ -415,7 +415,7 @@ read_symlink_hook (struct node *np,
   
   bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
 
-  if (! diskfs_readonly)
+  if (! diskfs_check_readonly ())
     np->dn_set_atime = 1;
 
   diskfs_end_catch_exception ();
