@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 #define diskfs_readonly 0
 
@@ -29,7 +30,8 @@ diskfs_S_io_seek (struct protid *cred,
   
   CHANGE_IP_FIELD (cred,
 		   ({
-		     if (!(err = ioserver_get_conch (&ip->i_conch)))
+		     err = ioserver_get_conch (&np->i_conch);
+		     if (!err)
 		       switch (whence)
 			 {
 			 case SEEK_SET:
@@ -39,7 +41,8 @@ diskfs_S_io_seek (struct protid *cred,
 			   cred->po->filepointer += offset;
 			   break;
 			 case SEEK_END:
-			   cred->po->filepointer = ip->di->di_size + offset;
+			   cred->po->filepointer = (np->dn_stat.st_size
+						    + offset);
 			   break;
 			 default:
 			   err = EINVAL;
