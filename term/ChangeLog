@@ -1,3 +1,8 @@
+Thu Feb 20 02:25:29 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (main): Initialize TTY_CLASS & PTY_CLASS too instead of
+	doing TTY_CNTL_CLASS & PTY_CNTL_CLASS twice.
+
 Wed Feb 19 13:10:47 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (trivfs_protid_portclasses, trivfs_protid_nportclasses,

@@ -1,3 +1,10 @@
+Thu Feb 20 13:13:13 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* protid-classes.c (trivfs_protid_portclasses,
+ 	trivfs_protid_nportclasses): Make common.
+	* cntl-classes.c (trivfs_cntl_portclasses,
+	trivfs_cntl_nportclasses): Likewise.
+
 Tue Feb 18 19:47:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* cntl-create.c (trivfs_create_control): Put the actual port
