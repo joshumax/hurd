@@ -28,3 +28,6 @@ LCLHDRS = pipe.h pq.h
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
+
+libpipe.so: $(foreach lib,threads ports,\
+			../lib$(lib)/lib$(lib).so)

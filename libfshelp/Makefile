@@ -30,3 +30,6 @@ installhdrs = fshelp.h
 OBJS = $(subst .c,.o,$(SRCS))
 
 include ../Makeconf
+
+libfshelp.so: $(foreach lib,shouldbeinlibc threads,\
+			../lib$(lib)/lib$(lib).so)

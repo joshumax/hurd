@@ -28,3 +28,4 @@ installhdrs = ioserver.h
 
 include ../Makeconf
 
+libfshelp.so: ../libthreads/libthreads.so

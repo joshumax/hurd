@@ -43,3 +43,6 @@ OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
 MIGCOMSFLAGS = -prefix ports_
 
 include ../Makeconf
+
+libports.so: $(foreach lib,threads ihash,\
+			../lib$(lib)/lib$(lib).so)

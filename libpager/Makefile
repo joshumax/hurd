@@ -34,3 +34,6 @@ MIGSFLAGS = -DSEQNOS
 MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf
+
+libpager.so: $(foreach lib,threads ports,\
+			../lib$(lib)/lib$(lib).so)

@@ -35,3 +35,5 @@ msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;'
 term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;'
 
 include ../Makeconf
+
+libps.so: ../libihash/libihash.so
