@@ -113,6 +113,15 @@ int remote_input_mode;
 /* External processing mode */
 int external_processing;
 
+/* Terminal owner */
+uid_t term_owner;
+
+/* Terminal group */
+uid_t term_group;
+
+/* Terminal mode */
+mode_t term_mode;
+
 
 /* Functions a bottom half defines */
 struct bottomhalf
