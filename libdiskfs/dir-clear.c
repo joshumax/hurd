@@ -17,6 +17,9 @@
 
 #include "priv.h"
 
+/* Clear the `.' and `..' entries from directory DP.  Its parent is PDP,
+   and the user responsible for this is identified by CRED.  Both 
+   directories must be locked.  */
 error_t
 diskfs_clear_directory (struct node *dp,
 			struct node *pdp,
@@ -31,7 +34,7 @@ diskfs_clear_directory (struct node *dp,
   if (!err)
     err = diskfs_dirremove (dp, ds);
   else
-    diskfs_drop_dirstat (ds);
+    diskfs_drop_dirstat (dp, ds);
   if (err)
     return err;
   
@@ -40,14 +43,14 @@ diskfs_clear_directory (struct node *dp,
   dp->dn_set_ctime = 1;
 
   /* Find and remove the `..' entry. */
-  err = ufs_checkdirmod (dp, dp->dn_stat.st_mode, pdp, cred);
+  err = diskfs_checkdirmod (dp, pdp, cred);
   if (!err)
     err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, 0, ds, cred);
   assert (err != ENOENT);
   if (!err)
     err = diskfs_dirremove (dp, ds);
   else
-    diskfs_drop_dirstat (ds);
+    diskfs_drop_dirstat (dp, ds);
   if (err)
     return err;
 
