@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include <hurd.h>
 #include <cthreads.h>
 
 void
@@ -31,7 +32,7 @@ ports_inhibit_class_rpcs (struct port_class *class)
   
   for (pi = class->ports; pi; pi = pi->next)
     for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-      thread_cancel (rpc->thread);
+      hurd_thread_cancel (rpc->thread);
 
   while (class->rpcs)
     {
