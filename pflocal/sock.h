@@ -1,6 +1,6 @@
 /* Internal sockets
 
-   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <cthreads.h>		/* For mutexes */
 #include <sys/mman.h>
+#include <sys/types.h>
 
 #include <hurd/ports.h>
 
@@ -59,6 +60,10 @@ struct sock
 
   /* Last time the socket got frobbed.  */
   time_value_t change_time;
+
+  /* File mode as reported by stat.  Usually this is S_ISOCK, but it
+     should be S_IFIFO for sockets (ab)used in a pipe.  */
+  mode_t mode;
 
   /* This socket's local address.  Note that we don't hold any references on
      ADDR, and depend on the addr zeroing our pointer if it goes away (which
@@ -100,7 +105,8 @@ error_t sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe);
 error_t sock_connect (struct sock *sock1, struct sock *sock2);
 
 /* Return a new socket with the given pipe class in SOCK.  */
-error_t sock_create (struct pipe_class *pipe_class, struct sock **sock);
+error_t sock_create (struct pipe_class *pipe_class, mode_t mode,
+		     struct sock **sock);
 
 /* Free SOCK, assuming there are no more handle on it.  */
 void sock_free (struct sock *sock);

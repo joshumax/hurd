@@ -1,6 +1,6 @@
 /* Sock functions
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -94,7 +94,7 @@ sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
 
 /* Return a new socket with the given pipe class in SOCK.  */
 error_t
-sock_create (struct pipe_class *pipe_class, struct sock **sock)
+sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
 {
   error_t err;
   struct sock *new = malloc (sizeof (struct sock));
@@ -116,6 +116,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   new->refs = 0;
   new->flags = 0;
   new->write_pipe = NULL;
+  new->mode = mode;
   new->id = MACH_PORT_NULL;
   new->listen_queue = NULL;
   new->connect_queue = NULL;
@@ -155,7 +156,7 @@ _sock_norefs (struct sock *sock)
 error_t
 sock_clone (struct sock *template, struct sock **sock)
 {
-  error_t err = sock_create (template->pipe_class, sock);
+  error_t err = sock_create (template->pipe_class, template->mode, sock);
 
   if (err)
     return err;

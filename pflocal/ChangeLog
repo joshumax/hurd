@@ -1,3 +1,17 @@
+2000-08-02  Mark Kettenis  <kettenis@gnu.org>
+
+	Add `magic' protocols to specify the file type of a sockets.  This
+	allows implementation of POSIX pipes by using a S_IFSOCK protocol.
+	* sock.h: Include <sys/types.h>.
+	(struct sock): Add new member `mode'.
+	(sock_create): Add new parameter `mode'.
+	* sock.c (sock_create): Initialize `mode' member of struct sock,
+	with new parameter.
+	* pf.c (S_socket_create): Pass file type/mode to sock_create based
+	on PROTOCOL.
+	* io.c (S_io_stat): Use new member of `struct sock' to set
+	ST->st_mode.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib

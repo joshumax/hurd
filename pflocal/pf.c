@@ -1,6 +1,6 @@
 /* Protocol family operations
 
-   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -36,8 +36,17 @@ S_socket_create (mach_port_t pf,
   error_t err;
   struct sock *sock;
   struct pipe_class *pipe_class;
-  
-  if (protocol != 0)
+  mode_t mode;
+
+  /* We have a set of `magic' protocols that allow the user to choose
+     the file type of the socket.  The primary application is to make
+     sockets that pretend to be a FIFO, for the implementations of
+     pipes.  */
+  if (protocol == 0)
+    mode = S_IFSOCK;
+  else if ((protocol & ~S_IFMT) == 0)
+    mode = protocol & S_IFMT;
+  else
     return EPROTONOSUPPORT;
 
   switch (sock_type)
@@ -52,7 +61,7 @@ S_socket_create (mach_port_t pf,
       return ESOCKTNOSUPPORT;
     }
 
-  err = sock_create (pipe_class, &sock);
+  err = sock_create (pipe_class, mode, &sock);
   if (!err)
     {
       err = sock_create_port (sock, port);

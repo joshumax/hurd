@@ -1,6 +1,6 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -287,7 +287,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
   bzero (st, sizeof (struct stat));
 
   st->st_fstype = FSTYPE_SOCKET;
-  st->st_mode = S_IFSOCK;
+  st->st_mode = sock->mode;
   st->st_fsid = getpid ();
   st->st_ino = sock->id;
   /* As we try to be clever with large transfers, ask for them. */
