@@ -3,7 +3,7 @@
 
 struct timer_list
 {
-  struct timer_list *next, *prev;
+  cthread_t thread;
   u_long expires;
   u_long data;
   void (*function)(unsigned long);
