@@ -1,8 +1,8 @@
 /* The ps_context type, for per-procserver and somewhat global state.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -76,7 +76,9 @@ void
 ps_context_free (struct ps_context *pc)
 {
   ihash_free (pc->procs);
-  ihash_free (pc->procs);
+  ihash_free (pc->ttys);
+  ihash_free (pc->ttys_by_cttyid);
+  ihash_free (pc->users);
   free (pc);
 }
 
