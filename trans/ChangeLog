@@ -1,3 +1,8 @@
+2001-02-28  Roland McGrath  <roland@frob.com>
+
+	* streamio.c (trivfs_modify_stat): Fix inverted sense of tests
+	for O_READ, O_WRITE bits.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* symlink.c: Include <string.h> for decls of built-ins.
