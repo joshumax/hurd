@@ -92,8 +92,7 @@ pass2 ()
 	  /* Check INO */
 	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
-	      printf ("REF TO UNALLOCATED NODE; DIR");
-	      pinode (dnp->i_number);
+	      pinode (dnp->i_number, "REF TO UNALLOCATED NODE IN");
 	      if (reply ("REMOVE"))
 		{
 		  dp->d_ino = 0;
@@ -183,8 +182,7 @@ pass2 ()
 		      pwarn ("FOUND IN DIR I=%d", dnp->i_number);
 		      if (preen || reply ("REMOVE"))
 			{
-			  if (preen)
-			    printf (" (REMOVED)");
+			  pfix ("REMOVED");
 			  dp->d_ino = 0;
 			  mod = 1;
 			}
@@ -276,11 +274,10 @@ pass2 ()
 		 dnp->i_number, dnp->i_isize, DIRBLKSIZ);
 	  if (preen || reply ("ADJUST"))
 	    {
-	      if (preen)
-		printf (" (ADJUSTED)");
 	      getinode (dnp->i_number, &dino);
 	      dino.di_size = roundup (dnp->i_isize, DIRBLKSIZ);
 	      write_inode (dnp->i_number, &dino);
+	      pfix ("ADJUSTED");
 	    }
 	}
       bzero (&dino, sizeof (struct dinode));
@@ -311,20 +308,30 @@ pass2 ()
       if (dnp->i_parent && dnp->i_dotdot == 0)
 	{
 	  dnp->i_dotdot = dnp->i_parent;
-	  
-	  printf ("MISSING `..' IN DIR");
-	  pinode (dnp->i_number);
+	  pinode (dnp->i_number, "MISSING `..' IN");
 	  if (reply ("FIX"))
-	    makeentry (dnp->i_number, dnp->i_parent, "..");
+	    if (makeentry (dnp->i_number, dnp->i_parent, ".."))
+	      linkfound[dnp->i_parent]++;
+	    else
+	      pfatal ("COULDN'T ADD `..'\n");
 	}
       else if (dnp->i_parent && dnp->i_dotdot != dnp->i_parent)
 	{
-	  printf ("BAD INODE NUMBER FOR `..' IN DIR");
-	  pinode (dnp->i_number);
+	  pinode (dnp->i_number, "BAD INODE NUMBER FOR `..' IN");
 	  if (reply ("FIX"))
 	    {
-	      dnp->i_dotdot = dnp->i_parent;
-	      changeino (dnp->i_number, "..", dnp->i_parent);
+	      ino_t parent = dnp->i_parent, old_dotdot = dnp->i_dotdot;
+	      dnp->i_dotdot = parent;
+	      if (changeino (dnp->i_number, "..", parent))
+		/* Adjust what the parent's link count should be; the actual
+		   count will be corrected in an later pass.  */
+		{
+		  linkfound[parent]++;
+		  if (inodestate[old_dotdot] != UNALLOC)
+		    linkfound[old_dotdot]--;
+		}
+	      else
+		pfatal ("COULDN'T CHANGE `..'\n");
 	    }
 	}
       
@@ -332,19 +339,28 @@ pass2 ()
       if (dnp->i_dot == 0)
 	{
 	  dnp->i_dot = dnp->i_number;
-	  printf ("MISSING `.' IN DIR");
-	  pinode (dnp->i_number);
+	  pinode (dnp->i_number, "MISSING `.' IN");
 	  if (reply ("FIX"))
-	    makeentry (dnp->i_number, dnp->i_number, ".");
+	    if (makeentry (dnp->i_number, dnp->i_number, "."))
+	      linkfound[dnp->i_number]++;
+	    else
+	      pfatal ("COULDN'T ADD `.'\n");
 	}
       else if (dnp->i_dot != dnp->i_number)
 	{
-	  printf ("BAD INODE NUMBER FOR `.' IN DIR");
-	  pinode (dnp->i_number);
+	  pinode (dnp->i_number, "BAD INODE NUMBER FOR `.' IN");
 	  if (reply ("FIX"))
 	    {
+	      ino_t old_dot = dnp->i_dot;
 	      dnp->i_dot = dnp->i_number;
-	      changeino (dnp->i_number, ".", dnp->i_number);
+	      if (changeino (dnp->i_number, ".", dnp->i_number))
+		{
+		  linkfound[dnp->i_number]++;
+		  if (inodestate[old_dot] != UNALLOC)
+		    linkfound[old_dot]--;
+		}
+	      else
+		pfatal ("COULDN'T CHANGE `.'\n");
 	    }
 	}
     }
