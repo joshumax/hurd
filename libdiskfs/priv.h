@@ -31,6 +31,8 @@ extern mach_port_t fs_control_port;	/* receive right */
 
 volatile struct mapped_time_value *_diskfs_mtime;
 
+extern struct argp_option diskfs_common_options[];
+
 /* Needed for MiG. */
 typedef struct protid *protid_t;
 
