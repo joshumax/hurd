@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,15 +20,24 @@
 
 #include <assert.h>
 
+/* Identifies a given user; these are chained for the implementation
+   of the layering semantics of io_restrict_auth. */
+struct userid
+{
+  int refcnt;
+  uid_t *uids, *gids;
+  int nuids, ngids;
+  struct userid *next;
+};
+
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library. */
 struct protid 
 {
   struct port_info pi;		/* libports info block */
   
-  /* User identification */
-  uid_t *uids, *gids;
-  int nuids, ngids;
+  /* Identifies chain of user ids. */
+  struct userid *id;
   
   /* Object this refers to */
   struct peropen *po;
@@ -615,80 +624,142 @@ diskfs_nrele_light (struct node *np)
     spin_unlock (&diskfs_node_refcnt_lock);
 }
 
-/* Return nonzero iff the user identified by CRED has uid UID. */
+/* Return nonzero iff the user identified by ID has uid UID. */
 extern inline int
-diskfs_isuid (uid_t uid, struct protid *cred)
+diskfs_idhasuid (uid_t uid, struct userid *id)
 {
   int i;
-  for (i = 0; i < cred->nuids; i++)
-    if (cred->uids[i] == uid)
+  
+  for (i = 0; i < id->nuids; i++)
+    if (id->uids[i] == uid)
       return 1;
   return 0;
 }
 
-/* Return nonzero iff the user identified by CRED has group GRP. */
+/* Return nonzero iff the user identified by ID has gid GRP. */
 extern inline int
-diskfs_groupmember (uid_t grp, struct protid *cred)
+diskfs_idhasgid (uid_t grp, struct userid *id)
 {
   int i;
+
   for (i = 0; i < cred->ngids; i++)
     if (cred->gids[i] == grp)
       return 1;
   return 0;
 }
 
-/* Check to see if the user identified by CRED is permitted to do
+/* Check to see if the user identified by ID is permitted to do
    owner-only operations on node NP; if so, return 0; if not, return
    EPERM. */
 extern inline error_t
-diskfs_isowner (struct node *np, struct protid *cred)
+_diskfs_idisowner (struct node *np, struct userid *id)
 {
   /* Permitted if the user is the owner, superuser, or if the user
      is in the group of the file and has the group ID as their user
      ID.  (This last is colloquially known as `group leader'.) */
-  if (diskfs_isuid (np->dn_stat.st_uid, cred) || diskfs_isuid (0, cred)
-      || (diskfs_groupmember (np->dn_stat.st_gid, cred)
-	  && diskfs_isuid (np->dn_stat.st_gid, cred)))
+  if (diskfs_idhasuid (np->dn_stat.st_uid, id) || diskfs_idhasuid (0, id)
+      || (diskfs_idhasgid (np->dn_stat.st_gid, id)
+	  && diskfs_idhasuid (np->dn_stat.st_gid, id)))
     return 0;
   else
     return EPERM;
 }
 
-/* Check to see is the user identified by CRED is permitted to do 
+/* Check to see is the user identified by ID is permitted to do 
    operation OP on node NP.  Op is one of S_IREAD, S_IWRITE, or S_IEXEC.
    Return 0 if the operation is permitted and EACCES if not. */
 extern inline error_t 
-diskfs_access (struct node *np, int op, struct protid *cred)
+_diskfs_idaccess (struct node *np, int op, struct userid *id)
 {
   int gotit;
-  if (diskfs_isuid (0, cred))
+
+  if (diskfs_idhasuid (0, id))
     gotit = 1;
-  else if (cred->nuids == 0 && (np->dn_stat.st_mode & S_IUSEUNK))
+  else if (id->nuids == 0 && (np->dn_stat.st_mode & S_IUSEUNK))
     gotit = np->dn_stat.st_mode & (op << S_IUNKSHIFT);
-  else if (!diskfs_isowner (np, cred))
+  else if (!_diskfs_idisowner (np, id))
     gotit = np->dn_stat.st_mode & op;
-  else if (diskfs_groupmember (np->dn_stat.st_gid, cred))
+  else if (diskfs_idhasgid (np->dn_stat.st_gid, id))
     gotit = np->dn_stat.st_mode & (op >> 3);
   else 
     gotit = np->dn_stat.st_mode & (op >> 6);
-  return gotit ? 0 : EACCES;
+
+  /* I learned this kind of thing from APL.  Cool, huh? */
+  return (!gotit) * EACCES;
 }
 
-/* Check to see if the user identified by CRED is allowed to modify
+/* Check to see if the user identified by ID is allowed to modify
    directory DP with respect to existing file NP.  This is the same
    as diskfs_access (dp, S_IWRITE, cred), except when the directory
    has the sticky bit set.  (If there is no existing file NP, then
    0 can be passed.)  */
 extern inline error_t 
-diskfs_checkdirmod (struct node *dp, struct node *np,
-		    struct protid *cred)
+_diskfs_idcheckdirmod (struct node *dp, struct node *np,
+		       struct userid *id)
 {
   /* The user must be able to write the directory, but if the directory
      is sticky, then the user must also be either the owner of the directory
      or the file.  */
-  return (diskfs_access (dp, S_IWRITE, cred)
-	  && (!(dp->dn_stat.st_mode & S_ISVTX) || !np || diskfs_isuid (0,cred)
-	      || diskfs_isowner (dp, cred) || diskfs_isowner (np, cred)));
+  return (_diskfs_idaccess (dp, S_IWRITE, id)
+	  && (!(dp->dn_stat.st_mode & S_ISVTX) || !np
+	      || diskfs_hasuid (0, id) || _diskfs_idisowner (dp, id)
+	      || _diskfs_idisowner (np, cred)));
+}
+
+/* Return if the calling user CRED should be permitted to do an owner
+   only operation on NP.  If so, return 0; if not, return EPERM. */
+extern inline error_t
+diskfs_isowner (struct node *np, struct protid *cred)
+{
+  struct userid *id;
+  error_t err;
+  
+  assert (cred->id);
+  for (id = cred->id; id; id = id->next)
+    {
+      err = _diskfs_idisowner (np, id);
+      if (err)
+	return err;
+    }
+  return 0;
+}
+
+/* Check to see if the calling user identified by CRED is permitted to
+   do operation OP on node NP.  OP is one of S_IREAD, S_IWRITE, or S_IEXEC.
+   Return 0 if the operation is permitted and EACCES if not. */
+extern inline error_t
+diskfs_access (struct node *np, int op, struct protid *cred)
+{
+  struct userid *id;
+  error_t err;
+  
+  assert (cred->id);
+  for (id = cred->id; id; id = id->next)
+    {
+      err = _diskfs_idaccess (np, op, id);
+      if (err)
+	return err;
+    }
+  return 0;
+}
+
+/* Check to see if the calling user identified by CRED is allowed to
+   modify directory DY with respect to existing file NP.  Return zero
+   if permitted and an appropriate error if not.  */
+extern inline error_t
+diskfs_checkdirmod (struct node *dp, struct node *np, struct protid *cred)
+{
+  struct userid *id;
+  error_t err;
+  
+  assert (cred->id);
+  for (id = cred->id; id; id = id->next)
+    {
+      err = _diskfs_idcheckdirmod (dp, np, id);
+      if (err)
+	return err;
+    }
+  return 0;
 }
 
 /* Reading and writing of files. this is called by other filesystem
