@@ -29,6 +29,8 @@ HURDLIBS=shouldbeinlibc
 OBJS = $(SRCS:.c=.o)
 getty-LDLIBS = -lutil
 
+INSTALL-mail.local-ops = -o root -m 4755
+
 include ../Makeconf
 
 rc: rc.sh
