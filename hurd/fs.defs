@@ -175,7 +175,7 @@ routine file_syncfs (
 routine file_get_storage_info (
 	file: file_t;
 	RPT
-	out ports: port_array_t;
+	out ports: portarray_t;
 	out ints: intarray_t;
 	out offsets: off_array_t;
 	out data: data_t);
