@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -77,6 +77,8 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 	  (*tp->function) (tp->data);
 	}
     }
+
+  return 0;
 }
 
 
