@@ -1,3 +1,11 @@
+1998-11-30  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* ugids-verify-auth.c (svma_state_add_auths): Allocate correct
+	number of bytes for new auth port array.
+	(server_verify_make_auth): Set check to password_check_group if
+	is_group is true and to password_check_user if not.  Not the other
+	way around.
+
 1998-09-26  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* cacheq.c (cacheq_set_length): Fix the limit of the destination

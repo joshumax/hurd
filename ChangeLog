@@ -1,3 +1,8 @@
+1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf ($(libdir) installation rules): Use automatic variables.
+	Use a static pattern rule for foo.a and foo_p.a, treated the same.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (TAGS): Create a TAGS file that specifies the subdir TAGS
