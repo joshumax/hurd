@@ -96,9 +96,16 @@ get_hypermetadata (void)
     ext2_panic ("block size %d isn't a power-of-two multiple of 512!",
 		block_size);
 
-  if (store->size < (sblock->s_blocks_count << log2_block_size))
-    ext2_panic ("disk size (%ld bytes) too small; superblock says we need %d",
-		store->size, sblock->s_blocks_count << log2_block_size);
+  if ((store->size >> log2_block_size) < sblock->s_blocks_count)
+    ext2_panic ("disk size (%qd bytes) too small; superblock says we need %qd",
+		(long long int) store->size,
+		(long long int) sblock->s_blocks_count << log2_block_size);
+  if (log2_dev_blocks_per_fs_block != 0
+      && (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)) != 0)
+    ext2_warning ("%ld (%d byte) device blocks "
+		  " unused after last filesystem (%d byte) block",
+		  (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)),
+		  store->block_size, block_size);
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / EXT2_INODE_SIZE (sblock);
