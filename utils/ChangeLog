@@ -1,3 +1,10 @@
+2001-06-15  Neal H Walfield  <neal@cs.uml.edu>
+
+	* settrans.c (options): New option `--orphan'.
+	Fix other comments to aviod confusion.
+	(main): Add FS_TRANS_ORPHAN to ACTIVE_FLAGS if `--orphan' is
+	specified.
+
 2001-06-06  Roland McGrath  <roland@frob.com>
 
 	* rpctrace.c (trace_and_forward): Assert that INFO has the same port

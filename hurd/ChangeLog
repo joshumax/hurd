@@ -1,3 +1,7 @@
+2001-06-15  Neal H Walfield  <neal@cs.uml.edu>
+
+	* hurd_types.h: New macro, FS_TRANS_ORPHAN.
+
 2001-05-01  Neal H Walfield  <neal@cs.uml.edu>
 
         * hurd_types.defs (startup_t): Fix typo.
