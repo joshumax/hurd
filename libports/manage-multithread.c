@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -37,7 +37,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 
   auto int thread_function (int);
 
-  int 
+  int
   internal_demuxer (mach_msg_header_t *inp,
 		    mach_msg_header_t *outp)
     {
@@ -52,7 +52,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       if (nreqthreads == 0)
 	spawn = 1;
       spin_unlock (&lock);
-	  
+
       if (spawn)
 	{
 	  spin_lock (&lock);
@@ -80,7 +80,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       spin_lock (&lock);
       nreqthreads++;
       spin_unlock (&lock);
-	  
+
       return status;
     }
 
@@ -89,7 +89,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
     {
       int timeout;
       error_t err;
-      
+
       if (wire_threads)
 	thread_wire (wire_threads, hurd_thread_self (), 1);
       if (wire_cthreads)
@@ -107,7 +107,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 				       timeout ? MACH_RCV_TIMEOUT : 0,
 				       timeout);
       while (err != MACH_RCV_TIMED_OUT);
-      
+
       if (master)
 	{
 	  spin_lock (&lock);
@@ -131,14 +131,12 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
      cleanly with cthreads cleverness yet. */
   wire_cthreads = 1;
 
-  global_timeout = thread_timeout = 0; /* XXX */
-  
   nreqthreads = 1;
   totalthreads = 1;
   thread_function (1);
 }
 
 
-	
-      
-	
+
+
+
