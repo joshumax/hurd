@@ -1,5 +1,5 @@
 /* Data structures and global variables for NFS client
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -157,7 +157,7 @@ int *xdr_encode_sattr_ids (int *, u_int, u_int);
 int *xdr_encode_sattr_size (int *, off_t);
 int *xdr_encode_sattr_times (int *, struct timespec *, struct timespec *);
 int *xdr_encode_sattr_stat (int *, struct stat *);
-int *xdr_encode_create_state (int *, mode_t);
+int *xdr_encode_create_state (int *, mode_t, uid_t);
 int *xdr_decode_fattr (int *, struct stat *);
 int *xdr_decode_string (int *, char *);
 int *nfs_initialize_rpc (int, struct iouser *, size_t, void **, 

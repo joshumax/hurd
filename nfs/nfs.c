@@ -1,5 +1,5 @@
 /* XDR frobbing and lower level routines for NFS client
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -290,15 +290,17 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
   return p;
 }
 
-/* Encode MODE and a size of 0 into an otherwise empty sattr. */
+/* Encode MODE, a size of zero, and the specified owner into an otherwise
+   empty sattr.  */
 int *
 xdr_encode_create_state (int *p, 
-			 mode_t mode)
+			 mode_t mode,
+			 uid_t owner)
 {
   if (protocol_version == 2)
     {
       *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = -1;		/* uid */
+      *p++ = htonl (owner);	/* uid */
       *p++ = -1;		/* gid */
       *p++ = 0;			/* size */
       *p++ = -1;		/* atime sec */
@@ -310,7 +312,8 @@ xdr_encode_create_state (int *p,
     {
       *p++ = htonl (1);		/* mode */
       *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = 0;			/* no uid */
+      *p++ = htonl (1);		/* set uid */
+      *p++ = htonl (owner);
       *p++ = 0;			/* no gid */
       *p++ = htonl (1);		/* set size */
       p = xdr_encode_64bit (p, 0);

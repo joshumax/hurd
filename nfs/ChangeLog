@@ -1,3 +1,12 @@
+Tue May 20 15:35:39 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfs.c (xdr_encode_create_state): New arg OWNER.  Set the owner
+	of the new file to it.  All callers changed.
+	* nfs.h (xdr_encode_create_state): Update prototype.
+	* ops.c (netfs_attempt_mkdir): If owner didn't get set correctly
+	(some servers ignore it) then try a chown.
+	(netfs_attempt_create_file): Likewise.
+
 Thu Apr 10 13:25:12 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_set_size): Short circuit EACCES to cover

@@ -618,20 +618,38 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-  
+  uid_t owner;
+  struct node *newnp;
+
+  if (cred->uids->num)
+    owner = cred->uids->ids[0];
+  else
+    {
+      err = netfs_validate_stat (np, cred);
+      owner = err ? 0 : np->nn_stat.st_uid;
+      mode &= ~S_ISUID;
+    }
+
   p = nfs_initialize_rpc (NFSPROC_MKDIR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
-  p = xdr_encode_create_state (p, mode);
+  p = xdr_encode_create_state (p, mode, owner);
   
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
   
-  /* Ignore returned information */
-  /* XXX should probably cache it */
+  p = lookup_fhandle (p, &newnp);
+  p = process_returned_stat (newnp, p, 1);
 
+  /* Did we set the owner correctly?  If not, try, but ignore failures. */
+  if (!netfs_validate_stat (newnp, cred) && newnp.nn_stat.st_uid != owner)
+    netfs_attempt_chown (cred, newnp, owner, newnp.nn_stat.st_gid);
+
+  /* We don't actually return this. */
+  netfs_nput (newnp);
+  
   free (rpcbuf);
   return err;
 }
@@ -958,6 +976,16 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
+  uid_t owner;
+
+  if (cred->uids->num)
+    owner = cred->uids->ids[0];
+  else
+    {
+      err = netfs_validate_stat (np, cred);
+      owner = err ? 0 : np->nn_stat.st_uid;
+      mode &= ~S_ISUID;
+    }
 
   /* RFC 1094 says that create is always exclusive.  But Sun doesn't
      actually *implement* the spec.  No, of course not.  So we have to do
@@ -987,7 +1015,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
       p++;
     }
   else
-    p = xdr_encode_create_state (p, mode);
+    p = xdr_encode_create_state (p, mode, owner);
   
   err = conduct_rpc (&rpcbuf, &p);
 
@@ -1013,6 +1041,9 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 	  if (*newnp)
 	    mutex_lock (&(*newnp)->lock);
 	}
+
+      if (!netfs_validate_stat (*newnp, cred) && newnp.nn_stat.st_uid != owner)
+	netfs_attempt_chown (cred, newnp, owner, newnp.nn_stat.st_gid);
     }
   else
     *newnp = 0;
