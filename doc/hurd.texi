@@ -266,8 +266,9 @@ The server should send one SIGIO signal to each registered async user
 everytime I/O becomes possible.  I/O is possible if at least one byte
 can be read or written immediately.  (The definition of ``immediately''
 must be the same as for the implementation of the O_NONBLOCK flag.)
-Everytime io_read or io_write is called, another signal should be sent
-to each user if I/O is still possible.
+Everytime io_read or io_write is called on a non-seekable object, or at
+the default file pointer on a seekable object, another signal should be
+sent to each user if I/O is still possible.
 
 Some objects may also define "urgent" conditions.  Such servers should
 send the SIGURG signal to each registered async user anytime an urgent
@@ -455,7 +456,7 @@ necessarily be preserved for any length of time if so written.  If the
 server wishes to deny such access, it should fault with EIO.  Servers
 may also issue faults on modifications of the write object for reasons
 such as EDQUOT and ENOSPC, as well as reporting hardware errors with
-EIO.  Serveys may only fault valid addresses in the read object with EIO
+EIO.  Servers may only fault valid addresses in the read object with EIO
 to indicate hardware failure.
 
 The foo field should be ignored if the value use_foo is clear in the
@@ -497,14 +498,6 @@ the file_size or clear user_file_size.  (However, if it is impossible
 for io_eofnotify to ever do anything, then the server should not set
 eof_notify.)
 
-@node Behavior modification
-@subsection Behavior modification
-
-The server flag append_mode is a copy of the O_APPEND open mode bit; if
-it is set, then the user should do writes at file_size and set the file
-pointer appropriately (this applies only if the user would be writing at
-the file pointer in the first place).
-
 @node Status notification
 @subsection Status notification
 
@@ -523,6 +516,20 @@ fields will not thereby defeat the mtime/atime mechanism.)
 
 If the flag use_eof is set, then users should call io_eofnotify after
 reading up to the file_size and noticing it.
+
+@node Behavior modification
+@subsection Behavior modification
+
+The server flag append_mode is a copy of the O_APPEND open mode bit; if
+it is set, then the user should do writes at file_size and set the file
+pointer appropriately (this applies only if the user would be writing at
+the file pointer in the first place).
+
+The flag O_FSYNC is implemented in servers by using the postnotify_size
+field.  
+
+The io_async and O_ASYNC notifications are supported through the
+do_sigio field.
 
 @node Violations
 @subsection Violations
@@ -552,3 +559,4 @@ another) while holding the conch except for those specified in this
 chapter.  Such calls may block or fail silently.
 
 
+@bye
