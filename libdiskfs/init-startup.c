@@ -132,7 +132,8 @@ _diskfs_init_completed ()
   ports_port_deref (pi);
   asprintf (&name, "%s %s", program_invocation_short_name, 
 	    diskfs_device_arg);
-  err = startup_request_notification (init, notify, MACH_PORT_MAKE_SEND, name);
+  err = startup_request_notification (init, notify, 
+				      MACH_MSG_TYPE_MAKE_SEND, name);
   free (name);
   if (err)
     goto errout;
