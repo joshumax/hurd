@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -25,5 +25,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 kern_return_t
 diskfs_S_interrupt_operation (mach_port_t handle)
 {
+  struct port_info *pi;
+  
+  pi = ports_lookup_port (diskfs_port_bucket, handle, 0);
+  if (!pi)
+    return EOPNOTSUPP;
+  
+  ports_interrupt_rpc (pi);
+  
+  ports_port_deref (pi);
+
   return 0;
 }
