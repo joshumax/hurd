@@ -88,8 +88,8 @@ diskfs_S_fsys_get_options (fsys_t fsys,
 			   mach_msg_type_name_t replytype,
 			   char **data, mach_msg_type_number_t *data_len)
 {
-  char *argz;
-  size_t argz_len;
+  char *argz = 0;
+  size_t argz_len = 0;
   error_t err;
   struct port_info *port =
     ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
@@ -97,13 +97,19 @@ diskfs_S_fsys_get_options (fsys_t fsys,
   if (!port)
     return EOPNOTSUPP;
 
+  err = argz_add (&argz, &argz_len, program_invocation_name);
+  if (err)
+    return err;
+
   rwlock_reader_lock (&diskfs_fsys_lock);
-  err = diskfs_get_options (&argz, &argz_len);
+  err = diskfs_append_args (&argz, &argz_len);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
     err = fshelp_return_malloced_buffer (argz, argz_len, data, data_len);
+  else
+    free (argz);
 
   ports_port_deref (port);
   return err;
