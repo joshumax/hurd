@@ -917,14 +917,6 @@ S_tioctl_tiocgwinsz (io_t port,
   return 0;
 }
 
-/* TIOCREMOTE -- PTY enter remote mode */
-kern_return_t
-S_tioctl_tiocremote (io_t port,
-		     int how)
-{
-  return EOPNOTSUPP;
-}
-
 /* TIOCMGET -- Fetch all modem bits */
 kern_return_t
 S_tioctl_tiocmget (io_t port,
