@@ -216,11 +216,15 @@ ftp_conn_open (struct ftp_conn *conn)
 
   if (! err)
     /* Make any machine-dependent customizations.  */
-    err = ftp_conn_sysify (conn);
+    ftp_conn_sysify (conn);
 
   if (! err)
     /* login */
     err = ftp_conn_login (conn);
+
+  if (!err && !conn->syshooks_valid)
+    /* Try again now. */
+    ftp_conn_sysify (conn);
 
   if (!err && conn->type)
     /* Set the connection type.  */

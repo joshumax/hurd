@@ -1,6 +1,9 @@
 1999-08-11  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* open.c (ftp_conn_sysify): Handle REPLY_NO_LOGIN from "syst".
+	(ftp_conn_open): Ignore error from ftp_conn_sysify; it's ok if we
+	can't successfully deal.  If we didn't sysify successfully before
+	login, then try again afterwards.
 
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
