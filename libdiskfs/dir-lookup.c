@@ -333,30 +333,39 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (diskfs_read_symlink_hook)
 	    error = (*diskfs_read_symlink_hook)(np, pathbuf);
 	  if (!diskfs_read_symlink_hook || error == EINVAL)
-	    error = diskfs_node_rdwr (np, pathbuf,
-				      0, np->dn_stat.st_size, 0,
-				      dircred, &amt);
+	    {
+	      error = diskfs_node_rdwr (np, pathbuf,
+					0, np->dn_stat.st_size, 0,
+					dircred, &amt);
+	      if (!error)
+		assert (amt == np->dn_stat.st_size);
+	    }
 	  if (error)
 	    goto out;
 
-	  if (nextname)
+	  if (np->dn_stat.st_size == 0)	/* symlink to "" */
+	    path = nextname;
+	  else
 	    {
-	      pathbuf[np->dn_stat.st_size] = '/';
-	      bcopy (nextname, pathbuf + np->dn_stat.st_size + 1,
-		     nextnamelen - 1);
-	    }
-	  pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
+	      if (nextname)
+		{
+		  pathbuf[np->dn_stat.st_size] = '/';
+		  bcopy (nextname, pathbuf + np->dn_stat.st_size + 1,
+			 nextnamelen - 1);
+		}
+	      pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
 
-	  if (pathbuf[0] == '/')
-	    {
-	      /* Punt to the caller.  */
-	      *retry = FS_RETRY_MAGICAL;
-	      *returned_port = MACH_PORT_NULL;
-	      strcpy (retryname, pathbuf);
-	      goto out;
+	      if (pathbuf[0] == '/')
+		{
+		  /* Punt to the caller.  */
+		  *retry = FS_RETRY_MAGICAL;
+		  *returned_port = MACH_PORT_NULL;
+		  strcpy (retryname, pathbuf);
+		  goto out;
+		}
+	      path = pathbuf;
 	    }
 
-	  path = pathbuf;
 	  if (lastcomp)
 	    {
 	      lastcomp = 0;
@@ -364,8 +373,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		 creation, so clear the flag here. */
 	      create = 0;
 	    }
+
 	  diskfs_nput (np);
 	  np = 0;
+
+	  if (path == 0)	/* symlink to "" was the last component */
+	    {
+	      np = dnp;
+	      dnp = 0;
+	      break;
+	    }
 	}
       else
 	{
