@@ -1,3 +1,8 @@
+1999-06-03  Mark Kettenis  <kettenis@gnu.org>
+
+	* default_pager.c (new_partition): Declare `waste' as `int'
+	instead of `unsigned int'.
+
 1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* load.c (boot_script_exec_cmd): Copy environment from our `environ'
