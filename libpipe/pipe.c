@@ -145,8 +145,8 @@ void _pipe_no_writers (struct pipe *pipe)
    waited for on RPIPE.  Neither RPIPE or WPIPE should be locked when calling
    this function (unlike most pipe functions).  */
 error_t
-pipe_pair_select_read_write (struct pipe *rpipe, struct pipe *wpipe,
-			     int *select_type, int data_only)
+pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
+		  int *select_type, int data_only) 
 {
   error_t err = 0;
 
@@ -155,13 +155,13 @@ pipe_pair_select_read_write (struct pipe *rpipe, struct pipe *wpipe,
   if (*select_type == SELECT_READ)
     {
       mutex_lock (&rpipe->lock);
-      err = pipe_select_read (rpipe, data_only);
+      err = pipe_select_readable (rpipe, data_only);
       mutex_unlock (&rpipe->lock);
     }
   else if (*select_type == SELECT_WRITE)
     {
       mutex_lock (&wpipe->lock);
-      err = pipe_select_write (wpipe);
+      err = pipe_select_writable (wpipe);
       mutex_unlock (&wpipe->lock);
     }
   else
