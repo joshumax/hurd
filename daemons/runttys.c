@@ -1,5 +1,5 @@
 /* /etc/ttys support for Hurd
-   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2001 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -92,15 +92,28 @@ setup_terminal (struct terminal *t, struct ttyent *tt)
 	  size_t len;
 	  argz_create_sep (line, ' ', &argz, &len);
 	  argc = argz_count (argz, len);
-	  argv = malloc (argc * sizeof (char *));
-	  argz_extract (argz, len, argv);
+	  argv = malloc ((argc + 1) * sizeof (char *));
+	  if (argv == 0)
+	    error (0, ENOMEM,
+		   "cannot allocate argument vector for %s", t->name);
+	  else
+	    argz_extract (argz, len, argv);
 	  return argv;
 	}
 
       char *line;
       asprintf (&line, "%s %s", tt->ty_getty, tt->ty_name);
-      t->getty_argv = make_args (line);
-      free (line);
+      if (line == 0)
+	{
+	  error (0, ENOMEM,
+		 "cannot allocate arguments for %s", t->name);
+	  t->getty_argv = 0;
+	}
+      else
+	{
+	  t->getty_argv = make_args (line);
+	  free (line);
+	}
       t->window_argv = tt->ty_window ? make_args (tt->ty_window) : 0;
     }
   else
@@ -116,16 +129,30 @@ add_terminal (struct ttyent *tt)
 
   if (nttys >= ttyslen)
     {
-      ttys = realloc (ttys, (ttyslen * 2) * sizeof (struct ttyent));
-      memset (&ttys[nttys], 0, ttyslen);
-      ttyslen *= 2;
+      struct terminal *newttys = realloc (ttys,
+					  (ttyslen * 2) * sizeof ttys[0]);
+      if (newttys == 0)
+	{
+	  error (0, ENOMEM, "cannot expand terminals table past %d", ttyslen);
+	  return 0;
+	}
+      else
+	{
+	  ttys = newttys;
+	  memset (&ttys[nttys], 0, ttyslen);
+	  ttyslen *= 2;
+	}
     }
 
   t = &ttys[nttys];
-  nttys++;
-
   t->name = strdup (tt->ty_name);
+  if (t->name == 0)
+    {
+      error (0, ENOMEM, "cannot allocate entry for %s", tt->ty_name);
+      return 0;
+    }
 
+  nttys++;
   setup_terminal (t, tt);
   if (t->getty_argv)
     t->on = 1;
@@ -142,7 +169,9 @@ init_ttys (void)
   ttyslen = 10;
   nttys = 0;
 
-  ttys = calloc (ttyslen, sizeof (struct ttyent));
+  ttys = calloc (ttyslen, sizeof ttys[0]);
+  if (ttys == 0)
+    error (2, ENOMEM, "cannot allocate table");
 
   if (!setttyent ())
     {
@@ -335,6 +364,8 @@ reread_ttys (void)
       else
 	{
 	  t = add_terminal (tt);
+	  if (t == 0)
+	    continue;
 	  if (on)
 	    startup_terminal (t);
 	}
