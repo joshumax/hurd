@@ -1,3 +1,11 @@
+1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* load.c (boot_script_exec_cmd): Copy environment from our `environ'
+	onto the new task's stack along with its arguments.
+
+	* bootstrap.c (main): If we have a MULTIBOOT_CMDLINE environment
+	variable, set its value as ${kernel-command-line} for boot scripts.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* bootstrap.c (main): Define $(serverboot) function for "serverboot
