@@ -27,7 +27,7 @@
 
 @c FIXME: Might we want to use some sort of highlighting when we
 @c refer to libraries by an abbreviated version of their name?  For
-@c example, we often refer to `fshelp', by 
+@c example, we often refer to `fshelp', by
 @c which we mean the library `libfshelp.a'.  On those few occasions when
 @c we bother to spell out its full name, we use `@code', as we should;
 @c but when we abbreviate the name to `fshelp', we use no highlighting
@@ -63,7 +63,7 @@
 @c   tb: then the user (the program linking against libdiskfs) is
 @c   tb: violating the interface, and the results are Undefined.  The
 @c   tb: resulting filesystem will experience difficult-to-trace and
-@c   tb: apparently random crashes and data corruption.   
+@c   tb: apparently random crashes and data corruption.
 @c   tb: We don't WANT such functions to have to check for and return
 @c   tb: error codes any more than we want scanf to try and diagnose
 @c   tb: stray pointers.  But this does not mean that all things are as
@@ -837,7 +837,7 @@ programs to return control to the parent Hurd.
 @c  tb: not if you know what you are doing.  But there is no clever
 @c  device mediation going on.  Two hurds, with two filesystems writing
 @c  the same partition, will wreak havoc.  Two hurds reading from the
-@c  same terminal device will not share nicely.  
+@c  same terminal device will not share nicely.
 
 If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
@@ -1766,7 +1766,7 @@ parameters to @code{io_read} and @code{io_write}, and should return
 @c  operations.  In the case of the Hurd interfaces (as opposed to
 @c  libraries) I like to be a little looser about this.  The rule is "do
 @c  what the interface says unless you really understand it and have a
-@c  good reason to do something different".  
+@c  good reason to do something different".
 
 @findex io_seek
 On seekable objects, @code{io_seek} changes the default file pointer for
@@ -2252,7 +2252,7 @@ type to have the stubs called with either the control or protid pointer.
 
 @c FIXME: `intran' needs to be explained, or else there needs to be
 @c a cross-reference there.
-@c  tb: `intran' is a keyword in MiG.  
+@c  tb: `intran' is a keyword in MiG.
 
 @deftypefun void trivfs_end_using_control (@w{struct trivfs_control *@var{port}})
 @deftypefunx void trivfs_end_using_protid (@w{struct trivfs_protid *@var{port}})
@@ -2464,7 +2464,7 @@ before responding, return @code{EDIED}.
 
 @deftypefun error_t fshelp_start_translator (@w{fshelp_open_fn_t @var{underlying_open_fn}}, @w{char *@var{name}}, @w{char *@var{argz}}, @w{int @var{argz_len}}, @w{int @var{timeout}}, @w{fsys_t *@var{control}})
 Same as @code{fshelp_start_translator_long}, except the initports and
-ints are copied from our own state, @var{fd[2]} is copied from our own
+ints are copied from our own state, @var{fd}[2] is copied from our own
 stderr, and the other fds are cleared.  For full-service filesystems, it
 is almost always wrong to use @code{fshelp_start_translator}, because
 the current working directory of the translator will not then be as
