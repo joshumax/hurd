@@ -1,3 +1,9 @@
+2005-02-24  Ben Asselstine <benasselstine@gmail.com>
+
+	* init.c (main): Only pass ARGP_NO_ERRS to argp_parse when invoked
+	by the bootstrap filesystem.
+	(flags): New variable.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* init.c (reboot_system): u_int -> size_t
