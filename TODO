@@ -239,6 +239,12 @@ See `tasks', the exported task list.
     it too risk to attempt to contact syslogd can use it too?
 ** Add a startup timestamp to tasks, and have some way of fetching it.
 
+* Bug: floppies bite
+   bash# dd if=/dev/rfd0 bs=2k > /dev/null
+   dd: /dev/rfd0: Input/output error
+   1+0 records in
+   1+0 records out
+   (for smaller bs there's a continuable kernel panic)
 
 ======
 
