@@ -20,18 +20,36 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
-   appropriately; do the analogous operation for atime and mtime as well.
-   Return nonzero iff any of the three was updated.  */
-int
+   appropriately; do the analogous operation for atime and mtime as well. */
+void
 diskfs_set_node_times (struct node *np)
 {
-  int secs, usecs;
+  int secs, usecs, ret;
   
   do 
     {
       secs = _diskfs_mtime->seconds;
-      usecs = _diskfs_mtime->seconds;
+      usecs = _diskfs_mtime->microseconds;
     }
-  while (secs != _diskfs_mtime->seconds);
+  while (secs != _diskfs_mtime->check_seconds);
   
-  if (np->dn_set_mtime
+  if (np->dn_set_mtime)
+    {
+      np->dn_stat.st_mtime = secs;
+      np->dn_stat.st_mtime_usec = usecs;
+    }
+  if (np->dn_set_atime)
+    {
+      np->dn_stat.st_atime = secs;
+      np->dn_stat.st_atime_usec = usecs;
+    }
+  if (np->dn_set_ctime)
+    {
+      np->dn_stat.st_ctime = secs;
+      np->dn_stat.st_ctime_usec = usecs;
+    }
+  
+  if (np->dn_set_mtime || np->dn_set_atime || np->dn_set_ctime)
+    np->dn_stat_dirty = 1;
+  np->dn_set_mtime = np->dn_set_atime = np->dn_set_ctime = 0;
+}
