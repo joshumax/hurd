@@ -1,5 +1,5 @@
 /* MiG protocol for core dumping.
-   Copyright (C) 1992 Free Software Foundation
+   Copyright (C) 1992, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -23,15 +23,15 @@ subsystem core 32000;
 
 #include <hurd/hurd_types.defs>
 
-/* Dump a core file for TASK in FILE.  SIGNO and SIGCODE indicate the
-   signal that caused the process to dump core.  For the standard core
-   server, TARGET specifies the flavor of object file to write,
-   and is normally taken from the `GNUTARGET' environment variable in the
-   caller.  */
+/* Dump a core file for TASK in FILE.  SIGNO, SIGCODE, and SIGERROR
+   indicate the signal that caused the process to dump core.  For the
+   standard core server, TARGET specifies the flavor of object file to
+   write, and is normally taken from the `GNUTARGET' environment variable
+   in the caller.  */
 
 routine core_dump_task (
 	coreserver: mach_port_t;
 	task: task_t;
 	file: file_t;
-	signo: int; sigcode: int;
-	target: string_t);
+	target: string_t;
+	signo: int; sigcode: int; sigerror: int);
