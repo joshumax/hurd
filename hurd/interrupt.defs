@@ -1,5 +1,5 @@
 /* Interrup [get the phone, will ya?] tion.			-*- C -*-
-   Copyright (C) 1993, 1994 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -35,5 +35,6 @@ waittime INTERRUPT_TIMEOUT;
    exact semantics are dependent on the specific object.  */
 
 routine
-interrupt_operation (object: mach_port_t);
+interrupt_operation (object: mach_port_t;
+		     msgseqno seqno: mach_port_seqno_t);
 
