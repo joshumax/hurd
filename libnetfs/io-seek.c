@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -56,6 +56,7 @@ netfs_S_io_seek (struct protid *user,
       err = EINVAL;
       break;
     }
+  *newoffset = user->po->filepointer;
   mutex_unlock (&user->po->np->lock);
   return err;
 }
