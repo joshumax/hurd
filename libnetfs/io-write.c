@@ -30,6 +30,7 @@ netfs_S_io_write (struct protid *user,
 		  mach_msg_type_number_t *amount)
 {
   error_t err;
+  off_t off = offset;
   
   if (!user)
     return EOPNOTSUPP;
@@ -42,9 +43,24 @@ netfs_S_io_write (struct protid *user,
     }
 
   *amount = datalen;
+
+  if (off == -1)
+    {
+      if (user->po->openstat & O_APPEND)
+	{
+	  err = netfs_validate_stat (np, user->po->np);
+	  if (err)
+	    {
+	      mutex_unlock (&user->po->np->lock);
+	      return err;
+	    }
+	  user->po->filepointer = np->nn_stat.st_size;
+	}
+      off = user->po->filepointer;
+    }
+
   err =  netfs_attempt_write (user->credential, user->po->np,
-			      offset == -1 ? user->po->filepointer : offset,
-			      amount, data);
+			      off, amount, data);
   if (offset == -1 && !err)
     user->po->filepointer += *amount;
   mutex_unlock (&user->po->np->lock);
