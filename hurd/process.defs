@@ -121,6 +121,7 @@ routine proc_child (
 /* Atomically change the message port of a process.  */
 routine proc_setmsgport (
 	process: process_t;
+	sreplyport reply_port: reply_port_t;
 	newmsgport: mach_port_t;
 	out oldmsgport: mach_port_move_send_t);
 
