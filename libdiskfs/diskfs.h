@@ -461,11 +461,16 @@ error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
    returned.  */
 char *diskfs_parse_bootargs (int argc, char **argv);
 
-/* Call this after arguments have been parsed to initialize the
-   library.  If BOOTSTRAP is set, the diskfs will call fsys_startup
-   on that port as appropriate and return the REALNODE returned
-   in that call; otherwise we return MACH_PORT_NULL.  */ 
-mach_port_t diskfs_init_diskfs (mach_port_t bootstrap);
+/* Call this after arguments have been parsed to initialize the library.
+   You must call this before calling any other diskfs functions except
+   for diskfs_parse_bootargs.  */
+void diskfs_init_diskfs (void);
+
+/* Call this once the filesystem is fully initialized, to advertise the new
+   filesystem control port to our parent filesystem.  If BOOTSTRAP is set,
+   the diskfs will call fsys_startup on that port as appropriate and return
+   the REALNODE returned in that call; otherwise we return MACH_PORT_NULL.  */
+mach_port_t diskfs_startup_diskfs (mach_port_t bootstrap);
 
 /* Call this after all format-specific initialization is done (except
    for setting diskfs_root_node); at this point the pagers should be
