@@ -1,3 +1,11 @@
+1997-08-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (debug_stream, debug_stream_name): New variables.
+	(cntl_debug): Print to DEBUG_STREAM.
+	(debug_lock): New variable (was local to cntl_debug).
+	(parse_common_opt): Accept a FILE argument to --debug.
+	(netfs_append_args): Print FILE argument to --debug.
+
 1997-08-15  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* netfs.c (netfs_attempt_mkfile): Unlock DIR.
@@ -11,6 +19,12 @@
 	* dir.c (ftpfs_dir_lookup): Set E's name timestamp for noent entries.
 	(ftpfs_refresh_node): Record ENOENT entries.
 	(refresh_dir): Add PRESERVE_ENTRY parameter; all callers changed.
+
+1997-08-14  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (ftpfs_ftp_hooks): Use ports_self_interrupted to check
+	for interrupts.
+	* ccache.c (ccache_read): Likewise.
 
 1997-08-12  Miles Bader  <miles@gnu.ai.mit.edu>
 
