@@ -446,7 +446,9 @@ get_thread_info (struct procinfo *pi, unsigned index)
 }
 
 /* Returns a pointer to the Nth entry in the '\0'-separated vector of strings
-   in ARGZ & ARGZ_LEN.  */
+   in ARGZ & ARGZ_LEN.  Note that we don't have to do the bit with only
+   counting non-dead threads like get_thread_info does, because the
+   thread_waits string vector only contains entries for live threads.  */
 char *
 get_thread_wait (char *waits, size_t waits_len, unsigned n)
 {
