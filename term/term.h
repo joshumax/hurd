@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <hurd/trivfs.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 #undef MDMBUF
 #undef ECHO
@@ -174,7 +175,7 @@ clear_queue (struct queue *q)
 }
 
 /* Should be below, but inlines need it. */
-void call_asyncs ();
+void call_asyncs (int dir);
 
 /* Return the next character off Q; leave the quoting bit on. */
 extern inline quoted_char
@@ -194,7 +195,7 @@ dequeue_quote (struct queue *q)
     {
       condition_broadcast (q->wait);
       if (q == outputq)
-	call_asyncs ();
+	call_asyncs (O_WRITE);
     }
   return *q->cs++;
 }
@@ -223,7 +224,7 @@ enqueue_internal (struct queue **qp, quoted_char c)
     {
       condition_broadcast (q->wait);
       if (q == inputq)
-	call_asyncs ();
+	call_asyncs (O_READ);
     }
 
   if (!q->susp && (qsize (q) > q->hiwat))
