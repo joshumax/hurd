@@ -100,6 +100,9 @@ char *pterm_name;
 
 /* The queues we use */
 struct queue *inputq, *rawq, *outputq;
+
+/* Plain pass-through input */
+int remote_input_mode;
 
 /* Functions a bottom half defines */
 struct bottomhalf
