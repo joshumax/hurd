@@ -104,6 +104,8 @@ buffer_writable (struct buffer *b)
 extern inline void
 clear_buffer (struct buffer *b)
 {
+  if (b == 0)
+    return;
   b->head = b->tail = b->buf;
   condition_broadcast (b->wait);
 }
