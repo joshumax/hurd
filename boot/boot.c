@@ -30,7 +30,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <stdio.h>
 #include <cthreads.h>
-#include <varargs.h>
 #include <fcntlbits.h>
 #include <elf.h>
 #include <mach/mig_support.h>
@@ -121,7 +120,7 @@ char *fsname;
 char *bootstrap_args;
 char *bootdevice = "sd0a";
 
-void set_mach_stack_args ();
+void set_mach_stack_args (task_t, thread_t, char *, ...);
 
 void safe_gets (char *buf, int buf_len)
 {
@@ -580,14 +579,9 @@ main (int argc, char **argv, char **envp)
 
 /* Set up stack args the Mach way */
 void
-set_mach_stack_args (user_task,
-		     user_thread,
-		     startpc,
-		     va_alist)
-     task_t user_task;
-     thread_t user_thread;
-     char *startpc;
-     va_dcl
+set_mach_stack_args (task_t user_task,
+		     thread_t user_thread,
+		     char *startpc, ...)
 {
   /* This code is lifted from .../mk/bootstrap/load.c. */
   va_list			argv_ptr;
@@ -601,7 +595,7 @@ set_mach_stack_args (user_task,
 	/*
 	 * Calculate the size of the argument list.
 	 */
-	va_start(argv_ptr);
+	va_start(argv_ptr, startpc);
 	arg_len = 0;
 	arg_count = 0;
 	for (;;) {
@@ -732,7 +726,7 @@ set_mach_stack_args (user_task,
 	    /*
 	     * Then the strings and string pointers for each argument
 	     */
-	    va_start(argv_ptr);
+	    va_start(argv_ptr, startpc);
 	    for (i = 0; i < arg_count; i++) {
 		arg_ptr = va_arg(argv_ptr, char *);
 		arg_item_len = strlen(arg_ptr) + 1; /* include trailing 0 */
