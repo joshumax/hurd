@@ -2208,9 +2208,9 @@ S_term_get_peername (io_t arg,
   
   peer = (cred->pi.class == tty_class) ? ptyctl : termctl;
 
-  if (bottom != ptyio_bottom || !peer->hook)
+  if (bottom != &ptyio_bottom || !peer->hook)
     {
-      port_port_deref (cred);
+      ports_port_deref (cred);
       return ENOENT;
     }
   

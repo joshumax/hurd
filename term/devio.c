@@ -54,8 +54,13 @@ static int output_pending;
 /* This flag is set if there is an outstanding device_read. */
 static int input_pending;
 
-/* This flag is set if there is an outstanding device_open. */
-static int open_pending;
+/* Tell the status of any pending open */
+static enum
+{
+  NOTPENDING,			/* no open is pending */
+  INITIAL,			/* initial open of device pending */
+  FAKE,				/* open pending to block on dtr */
+} open_pending;
 
 static char pending_output[IO_INBAND_MAX];
 static int npending_output;
@@ -83,8 +88,6 @@ static int char_size_mask_xxx = 0xff;
 
 /* Forward */
 static void devio_desert_dtr ();
-
-
 
 static void init_devio (void) __attribute__ ((constructor));
 static void
@@ -393,37 +396,21 @@ devio_pending_output_size ()
   return npending_output;
 }
 
-static void
-devio_desert_dtr ()
-{
-  /* This will work, because we set the TF_HUPCLS bit earlier. */
-  device_close (phys_device);
-  mach_port_deallocate (mach_task_self (), phys_device);
-  phys_device = MACH_PORT_NULL;
-
-  mach_port_deallocate (mach_task_self (), phys_reply);
-  mach_port_deallocate (mach_task_self (), phys_reply_writes);
-  phys_reply = phys_reply_writes = MACH_PORT_NULL;
-
-  ports_port_deref (phys_reply_pi);
-  ports_port_deref (phys_reply_writes_pi);
-  phys_reply_pi = phys_reply_writes_pi = 0;
-
-  report_carrier_off ();
-}
-
+/* Do this the first time the device is to be opened */
 static error_t
-devio_assert_dtr ()
+initial_open ()
 {
-  error_t err;
+  assert (open_pending != FAKE);
 
-  if (open_pending || (phys_device != MACH_PORT_NULL))
+  /* Nothing to do */
+  if (open_pending == INITIAL)
     return 0;
-
+  
+  assert (phys_device == MACH_PORT_NULL);
   assert (phys_reply == MACH_PORT_NULL);
   assert (phys_reply_pi == 0);
-
-  err = ports_create_port (phys_reply_class, term_bucket,
+  
+    err = ports_create_port (phys_reply_class, term_bucket,
 			   sizeof (struct port_info), &phys_reply_pi);
   if (err)
     return err;
@@ -442,9 +429,47 @@ devio_assert_dtr ()
       phys_reply_pi = 0;
     }
   else
-    open_pending = 1;
+    open_pending = INITIAL;
 
   return err;
+}
+
+static void
+devio_desert_dtr ()
+{
+  dev_status_t bits;
+  
+  /* Turn off DTR. */
+  bits = TM_HUP;
+  device_set_status (phys_device, TTY_MODEM, 
+		     (dev_status_t) &bits, TTY_MODEM_COUNT);
+  
+  report_carrier_off ();
+}
+
+static error_t
+devio_assert_dtr ()
+{
+  error_t err;
+
+  /* The first time is special. */
+  if (phys_device == MACH_PORT_NULL)
+    return initial_open ();
+  
+  /* Schedule a fake open to wait for DTR, unless one is already
+     happening. */
+  assert (open_pending != INITIAL);
+  if (open_pending == FAKE)
+    return 0;
+  
+  err = device_open_request (device_master, phys_reply, 
+			     D_READ|D_WRITE, pterm_name);
+
+  if (err)
+    return err;
+  
+  open_pending = FAKE;
+  return 0;
 }
 
 kern_return_t
@@ -454,45 +479,65 @@ device_open_reply (mach_port_t replyport,
 {
   struct tty_status ttystat;
   int count = TTY_STATUS_COUNT;
-  error_t err;
+  error_t err = 0;
 
   if (replyport != phys_reply)
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
 
-  open_pending = 0;
+  assert (open_pending != NOTPENDING);
 
-  if (returncode != 0)
+  if (open_pending == INITIAL)
     {
-      /* Bogus. */
-      report_carrier_on ();
-      report_carrier_off ();
+      /* Special handling for the first open */
 
-      mach_port_deallocate (mach_task_self (), phys_reply);
-      phys_reply = MACH_PORT_NULL;
-      ports_port_deref (phys_reply_pi);
-      phys_reply_pi = 0;
-      mutex_unlock (&global_lock);
-      return 0;
+      if (returncode != 0)
+	{
+	  /* Bogus. */
+	  report_carrier_on ();
+	  report_carrier_off ();
+
+	  mach_port_deallocate (mach_task_self (), phys_reply);
+	  phys_reply = MACH_PORT_NULL;
+	  ports_port_deref (phys_reply_pi);
+	  phys_reply_pi = 0;
+
+	  open_pending = NOTPENDING;
+	  mutex_unlock (&global_lock);
+	  return 0;
+	}
+
+      assert (phys_device == MACH_PORT_NULL);
+      assert (phys_reply_writes == MACH_PORT_NULL);
+      assert (phys_reply_writes_pi == 0);
+      phys_device = device;
+      err = ports_create_port (phys_reply_class, term_bucket,
+			       sizeof (struct port_info),
+			       &phys_reply_writes_pi);
+      if (err)
+	{
+	  open_pending = NOTPENDING;
+	  mutex_unlock (&global_lock);
+	  return err;
+	}
+      phys_reply_writes = ports_get_right (phys_reply_writes_pi);
+      mach_port_insert_right (mach_task_self (), phys_reply_writes,
+			      phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
+
+      /* Schedule our first read */
+      err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
+					0, vm_page_size);
+      
+      input_pending = 1;
     }
-
-  assert (phys_device == MACH_PORT_NULL);
-  assert (phys_reply_writes == MACH_PORT_NULL);
-  assert (phys_reply_writes_pi == 0);
-  phys_device = device;
-  errno = ports_create_port (phys_reply_class, term_bucket,
-			     sizeof (struct port_info),
-			     &phys_reply_writes_pi);
-  if (errno)
+  else
     {
-      mutex_unlock (&global_lock);
-      return errno;
+      /* This was a fake open, only for the sake of assert DTR. */
+      device_close (device);
+      mach_port_deallocate (mach_task_self (), device);
     }
-  phys_reply_writes = ports_get_right (phys_reply_writes_pi);
-  mach_port_insert_right (mach_task_self (), phys_reply_writes,
-			  phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
-
+  
   device_get_status (phys_device, TTY_STATUS,
 		     (dev_status_t)&ttystat, &count);
   ttystat.tt_breakc = 0;
@@ -500,14 +545,11 @@ device_open_reply (mach_port_t replyport,
   device_set_status (phys_device, TTY_STATUS,
 		     (dev_status_t)&ttystat, TTY_STATUS_COUNT);
 
-  err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
-				    0, vm_page_size);
-
-  input_pending = 1;
   report_carrier_on ();
   if (err)
     devio_desert_dtr ();
 
+  open_pending = NOTPENDING;
   mutex_unlock (&global_lock);
 
   return 0;
@@ -661,9 +703,9 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 	  else
 	    input_pending = 1;
 	}
-      else if (open_pending)
+      else if (open_pending != NOTPENDING)
 	{
-	  open_pending = 0;
+	  open_pending = NOTPENDiNG;
 
 	  report_carrier_on ();
 	  report_carrier_off ();

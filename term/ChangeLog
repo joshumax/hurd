@@ -1,3 +1,29 @@
+Wed Mar 17 16:32:05 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* users.c (S_term_get_peername): Compare BOTTOM against the
+	correct value.  Reported by Yamashita TAKAO (az207@epa.go.jp).
+
+	* devio.c (devio_desert_dtr): Cast &BITS correctly in call to
+	device_set_status. 
+	(device_open_reply): Alwas clean open_pending no matter what.  Use
+	ERR instead of ERRNO.  On fake opens, close the device before
+	deallocating the port.
+	Reported by Mark Kettenis (kettenis@gnu.org).
+	
+Tue Mar 16 01:04:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* devio.c (open_pending): Make an enum.
+	(devio_desert_dtr): Don't close the device, just set the TM_HUP
+ 	modem bit, which should cause a hangup to occur.
+	(devio_assert_dtr): Don't always open the device, instead use
+ 	initial_open the first time, and schedule a fake open the other
+ 	times.
+	(initial_open): New function, guts from old device_assert_dtr.
+	(device_open_reply): Distinguish replies from initial and fake
+ 	opens appropriately.
+	(ports_do_mach_notify_send_once): Test and set open_pending using
+ 	new enum values.
+
 Mon Mar 15 14:58:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* users.c (S_term_get_peername): Implement new RPC.
