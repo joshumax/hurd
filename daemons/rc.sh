@@ -42,7 +42,7 @@ then
 	esac
 fi
 
-date
+touch /var/run/uptime
 
 # Until new hostname functions are in place
 test -r /etc/hostname && hostname `cat /etc/hostname`
