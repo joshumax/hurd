@@ -29,6 +29,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <netdb.h>
+#include <time.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -69,6 +70,7 @@ char *default_args[] = {
   "MOTD=/etc/motd",
   "PATH=/bin",
   "NOBODY=login",
+  "NOAUTH_TIMEOUT=300",		/* seconds before unauthed sessions die. */
   0
 };
 /* Default values for the new environment.  */
@@ -100,7 +102,6 @@ static struct argp_option options[] =
   {"inherit-environ", 'p', 0, 0, "Inherit the parent's environment"},
   {"via",	'h', "HOST",  0, "This login is from HOST"},
   {"no-passwd", 'f', 0,       0, "Don't ask for passwords"},
-  {"no-utmp",   'z', 0,       0, "Don't put an entry in utmp"},
   {"paranoid",  'P', 0,       0, "Don't admit that a user doesn't exist"},
   {"keep",      'k', 0,       0, "Keep the old available ids, and save the old"
      "effective ids as available ids"},
@@ -259,6 +260,97 @@ add_entry (char **env, unsigned *env_len, char *entry)
     error (8, err, "Adding %s", entry);
 }
 
+/* Return in OWNED whether PID has an owner, or an error.  */
+static error_t
+check_owned (process_t proc_server, pid_t pid, int *owned)
+{
+  int flags = PI_FETCH_TASKINFO;
+  char *waits = 0;
+  mach_msg_type_number_t num_waits = 0;
+  struct procinfo _pi, *pi = &_pi;
+  mach_msg_type_number_t pi_size = sizeof pi;
+  error_t err =
+    proc_getprocinfo (proc_server, pid, &flags, (procinfo_t *)&pi, &pi_size,
+		      &waits, &num_waits);
+
+  if (! err)
+    {
+      *owned = pi->state & PI_NOTOWNED;
+      if (pi != &_pi)
+	vm_deallocate (mach_task_self (), (vm_address_t)pi, pi_size);
+    }
+
+  return err;
+}
+
+/* Kills the login session PID with signal SIG.  */
+static void
+kill_login (process_t proc_server, pid_t pid, int sig)
+{
+  error_t err;
+  size_t num_pids;
+  do
+    {
+      pid_t _pids[num_pids = 20], *pids = _pids;
+      err = proc_getloginpids (proc_server, pid, &pids, &num_pids);
+      if (! err)
+	{
+	  size_t i;
+	  for (i = 0; i < num_pids; i++)
+	    kill (pids[i], sig);
+	  if (pids != _pids)
+	    vm_deallocate (mach_task_self (), (vm_address_t)pids, num_pids);
+	}
+    }
+  while (!err && num_pids > 0);
+}
+
+/* Forks a process which will kill the login session headed by PID after
+   TIMEOUT seconds if PID still has no owner.  */
+static void
+dog (time_t timeout, pid_t pid)
+{
+  if (fork () == 0)
+    {
+      int owned;
+      error_t err;
+      process_t proc_server = getproc ();
+
+      sleep (timeout);
+
+      err = check_owned (proc_server, pid, &owned);
+      if (err == ESRCH)
+	/* The process has gone away.  Maybe someone is trying to play games;
+	   just see if *any* of the remaing processes in the login session
+	   are owned, and give up if so (this can be foiled by setuid
+	   processes, &c, but oh well; they can be set non-executable by
+	   nobody).  */
+	{
+	  size_t num_pids = 20, i;
+	  pid_t _pids[num_pids], *pids = _pids;
+	  err = proc_getloginpids (proc_server, pid, &pids, &num_pids);
+	  if (! err)
+	    for (i = 0; i < num_pids; i++)
+	      if (check_owned (proc_server, pids[i], &owned) == 0 && owned)
+		exit (0);	/* Give up, luser wins. */
+	  /* None are owned.  Kill session after emitting cryptic, yet
+	     stupid, message. */
+	  fprintf (stderr, "Beware of dog.\n");
+	}
+      else if (err)
+	exit (1);		/* Impossible error.... XXX  */
+      else
+	/* Give normal you-forgot-to-login message.  */
+	fprintf (stderr, "Login timed out after %ld seconds.\n", timeout);
+
+      /* Kill login session, trying to be nice about it.  */
+      kill_login (proc_server, pid, SIGHUP);
+      sleep (5);
+      kill_login (proc_server, pid, SIGKILL);
+      exit (0);
+    }
+}
+
 void
 main(int argc, char *argv[])
 {
@@ -283,7 +375,6 @@ main(int argc, char *argv[])
   int no_args = 0;		/* If false, put login params in the env. */
   int inherit_environ = 0;	/* True if we shouldn't clear our env.  */
   int no_passwd = 0;		/* Don't bother verifying what we're doing.  */
-  int no_utmp = 0;		/* Don't put an entry in utmp.  */
   int no_login = 0;		/* Don't prepend `-' to the shells argv[0].  */
   int paranoid = 0;		/* Admit no knowledge.  */
   int retry = 0;		/* For some failures, exec a login shell.  */
@@ -310,6 +401,7 @@ main(int argc, char *argv[])
   mach_port_t auth;		/* The new shell's authentication.  */
   mach_port_t proc_server = getproc ();
   mach_port_t parent_auth = getauth ();
+  pid_t pid = getpid (), sid;
 
   /* These three functions are to do child-authenticated lookups.  See
      <hurd/lookup.h> for an explanation.  */
@@ -337,6 +429,7 @@ main(int argc, char *argv[])
       int retry_argc;
       char **retry_argv;
       char *via = envz_get (args, args_len, "VIA");
+      extern void _argp_unlock_xxx (); /* Secret unknown function.  */
 
       error (retry ? 0 : code, err, fmt, str); /* May exit... */
 
@@ -443,7 +536,6 @@ main(int argc, char *argv[])
 	case 'a': add_entry (&args, &args_len, arg); break;
 	case 'A': add_entry (&args_defs, &args_defs_len, arg); break;
 	case '0': sh_arg0 = arg; break;
-	case 'z': no_utmp = 1; break;
 	case 'L': no_login = 1; break;
 	case 'f': no_passwd = 1; break;
 	case 'P': paranoid = 1; break;
@@ -670,7 +762,8 @@ main(int argc, char *argv[])
 
   if (eff_uids->num > 0)
     proc_setowner (proc_server, eff_uids->ids[0], 0);
-  /* XXX else clear the owner, once there's a proc call to do it.  */
+  else
+    proc_setowner (proc_server, 0, 1); /* Clear the owner.  */
 
   /* Now start constructing the exec arguments.  */
   bzero (ints, sizeof (*ints) * INIT_INT_MAX);
@@ -853,8 +946,22 @@ main(int argc, char *argv[])
 
   /* No more authentications to fail, so cross our fingers and add our utmp
      entry.  */
-  if (! no_utmp)
+  
+  err = proc_getsid (proc_server, pid, &sid);
+  if (!err && pid == sid)
+    /* Only add utmp entries for the session leader.  */
     add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
+
+  if (eff_uids->num + avail_uids->num == 0 && parent_uids->num != 0)
+    /* We're transiting from having some uids to having none, which means
+       this is probably a new login session.  Unless specified otherwise, set
+       a timer to kill this session if it hasn't aquired any ids by then.  */
+    {
+      char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
+      time_t timeout = to ? atoi (to) : 0;
+      if (timeout)
+	dog (timeout, pid);
+    }
 
   if ((eff_uids->num | eff_gids->num) && !no_login)
     {
