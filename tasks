@@ -99,9 +99,6 @@ Please discuss proposed microkernel work with thomas@gnu.org.
 
   * Implement TASK_EVENTS_INFO.
 
-  * Add a timestamp for task and thread creation to the relevant info
-  structures (and make sure it works for the kernel task and threads).
-
   * Add an anonymous swap allocation statistic to the task info structure.
 
 
