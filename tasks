@@ -1,7 +1,7 @@
-GNU Hurd Task List Version 1.15.  Last updated 13 July 1996.
+GNU Hurd Task List Version 1.16.  Last updated 8 August 1996.
 
 If you would like to work on one of these, please contact
-mib@gnu.ai.mit.edu.  It's important that you let me know what's being
+thomas@gnu.ai.mit.edu.  It's important that you let me know what's being
 worked on, because someone else might also be interested, and you
 should coordinate work.
 
@@ -119,6 +119,8 @@ microkernel work there as well as with mib@gnu.ai.mit.edu.
 
   * Add a timestamp for task and thread creation to the relevant info
   structures (and make sure it works for the kernel task and threads).
+
+  * Add an anonymous swap allocation statistic to the task info structure.
 
 
 Hurd work (these are brief descriptions; mib can give more information):
