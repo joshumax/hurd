@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -126,6 +126,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     }
   tdp->dn_stat.st_nlink++;
   tdp->dn_set_ctime = 1;
+  if (diskfs_synchronous)
+    diskfs_node_update (tdp, 1);
   
   tmpds = alloca (diskfs_dirstat_size);
   err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
@@ -139,11 +141,15 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     }
 
   err = diskfs_dirrewrite (fnp, tdp, tmpds);
+  if (diskfs_synchronous)
+    diskfs_file_update (fnp, 1);
   if (err)
     goto out;
   
   fdp->dn_stat.st_nlink--;
   fdp->dn_set_ctime = 1;
+  if (diskfs_synchronous)
+    diskfs_node_update (fdp, 1);
 
 
   /* 3: Increment the link count on the node being moved and rewrite
@@ -171,9 +177,15 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
 	  tnp->dn_set_ctime = 1;
 	}
       diskfs_clear_directory (tnp, tdp, tocred);
+      /* diskfs_clear_directory will sync both tnp and tdp for us
+	 if we are synchronous. */
     }
   else
-    err = diskfs_direnter (tdp, toname, fnp, ds, tocred);
+    {
+      err = diskfs_direnter (tdp, toname, fnp, ds, tocred);
+      if (diskfs_synchronous)
+	diskfs_file_update (tdp, 1);
+    }
 
   if (err)
     goto out;
@@ -191,7 +203,12 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   ds = 0;
   fnp->dn_stat.st_nlink--;
   fnp->dn_set_ctime = 1;
-  
+  if (diskfs_synchronous)
+    {
+      diskfs_file_update (fdp, 1);
+      diskfs_node_update (fnp, 1);
+    }
+
  out:
   if (tdp)
     mutex_unlock (&tdp->lock);
