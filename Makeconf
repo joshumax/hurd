@@ -146,7 +146,9 @@ endif
 ifeq ($(makemode),library)
 all: $(libname).a
 install: $(libname).a $(installhdrs)
+  ifdef installhdrs
 	$(INSTALL_DATA) $(installhdrs) $(includedir)/hurd/
+  endif
 	$(INSTALL_DATA) $(libname).a $(hurdinst)/lib/$(libname).a
 	ranlib $(hurdinst)/lib/$(libname).a
 endif
