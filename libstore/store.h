@@ -24,6 +24,7 @@
 #define __STORE_H__
 
 #include <sys/types.h>
+#include <fcntl.h>
 
 #include <mach.h>
 #include <device/device.h>
@@ -101,10 +102,13 @@ struct store
 #define STORE_GENERIC_FLAGS	(STORE_READONLY | STORE_NO_FILEIO)
 
 /* Flags implemented by each backend.  */
-#define STORE_HARD_READONLY	0x0400	/* Can't be made writable.  */
-#define STORE_ENFORCED		0x0800	/* Range is enforced by device.  */
-#define STORE_BACKEND_SPEC_BASE	0x1000 /* Here up are backend-specific */
+#define STORE_HARD_READONLY	0x1000 /* Can't be made writable.  */
+#define STORE_ENFORCED		0x2000 /* Range is enforced by device.  */
+#define STORE_INACTIVE		0x4000 /* Not in a usable state.  */
+#define STORE_INNOCUOUS		0x8000 /* Cannot modify anything dangerous. */
+#define STORE_BACKEND_SPEC_BASE	0x10000 /* Here up are backend-specific */
 #define STORE_BACKEND_FLAGS	(STORE_HARD_READONLY | STORE_ENFORCED \
+				 | STORE_INACTIVE \
 				 | ~(STORE_BACKEND_SPEC_BASE - 1))
 
 typedef error_t (*store_write_meth_t)(struct store *store,
@@ -184,11 +188,15 @@ struct store_class
 			    const struct store_class *const *classes);
 };
 
-/* Return a new store in STORE, which refers to the storage underlying
-   SOURCE.  CLASSES is used to select classes specified by the provider; if
-   it is 0, STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags.  A
-   reference to SOURCE is created (but may be destroyed with
-   store_close_source).  */
+
+/* Return a new store in STORE, which refers to the storage underlying SOURCE.
+   CLASSES is used to select classes specified by the provider; if it is 0,
+   STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags, with the
+   exception of STORE_INACTIVE, which merely indicates that no attempt should
+   be made to activate an inactive store; if STORE_INACTIVE is not specified,
+   and the store returned for SOURCE is inactive, an attempt is made to
+   activate it (failure of which causes an error to be returned).  A reference
+   to SOURCE is created (but may be destroyed with store_close_source).  */
 error_t store_create (file_t source, int flags,
 		      const struct store_class *const *classes,
 		      struct store **store);
@@ -228,6 +236,19 @@ error_t store_set_flags (struct store *store, int flags);
 
 /* Remove FLAGS from STORE's currently set flags.  */
 error_t store_clear_flags (struct store *store, int flags);
+
+/* Returns true if STORE can safely be returned to a user who has accessed it
+   via a node using OPEN_FLAGS, without compromising security.  */
+extern inline int
+store_is_securely_returnable (struct store *store, int open_flags)
+{
+  int flags = store->flags;
+  return
+    (flags & (STORE_INNOCUOUS | STORE_INACTIVE))
+    || ((flags & STORE_ENFORCED)
+	&& (((open_flags & O_ACCMODE) == O_RDWR)
+	    || (flags & STORE_HARD_READONLY)));
+}
 
 /* Fills in the values of the various fields in STORE that are derivable from
    the set of runs & the block size.  */
