@@ -49,10 +49,11 @@ diskfs_set_options (int argc, char **argv)
 	case 'n':
 	  sync_interval = 0; sync = 0; break;
 	case 's':
-	  if (optarg)
+	  if (arg)
 	    sync_interval = atoi (arg);
 	  else
 	    sync = 1;
+	  break;
 	default:
 	  return EINVAL;
 	}
