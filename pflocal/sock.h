@@ -26,6 +26,8 @@
 
 #include <hurd/ports.h>
 
+#include "debug.h"
+
 struct pipe;
 struct pipe_class;
 
@@ -97,20 +99,21 @@ error_t sock_create (struct pipe_class *pipe_class, struct sock **sock);
 /* Free SOCK, assuming there are no more handle on it.  */
 void sock_free (struct sock *sock);
 
+/* Free a sock derefed too far.  */
+void _sock_norefs (struct sock *sock);
+
 /* Remove a reference from SOCK, possibly freeing it.  */
 extern inline void
 sock_deref (struct sock *sock)
 {
+  debug (sock, "lock, refs--");
   mutex_lock (&sock->lock);
   if (--sock->refs == 0)
-    {
-      /* A sock should never have an address when it has 0 refs, as the
-	 address should hold a reference to the sock!  */
-      assert (sock->addr == NULL);
-      sock_free (sock);
-    }
+    _sock_norefs (sock);
   else
+{debug (sock, "unlock");
     mutex_unlock (&sock->lock);
+}
 }
 
 /* Return a new socket just like TEMPLATE in SOCK.  */
@@ -145,9 +148,10 @@ error_t addr_get_sock (struct addr *addr, struct sock **sock);
 error_t sock_global_init ();
 
 /* Try to shutdown any active sockets, returning EBUSY if we can't.  Assumes
-   RPCS's have been disabled.  */
-error_t sock_global_shutdown (int flags);
+   non-socket RPCS's have been disabled.  */
+error_t sock_global_shutdown ();
 
+/* Mostly here for use by mig-decls.h.  */
 extern struct port_class *sock_user_port_class;
 extern struct port_class *addr_port_class;
 
