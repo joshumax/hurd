@@ -1,5 +1,5 @@
 /* Miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -168,11 +168,7 @@ routine set_env_variable (
 	value: string_t;
 	replace: boolean_t);
 
-/* A select call has completed.  */
-routine io_select_done (
-	notify_port: mach_port_poly_t;
-	select_result: int;
-	id_tag: int);
+skip; /* Obsolete io_select_done.  */
 
 /* This is sent by the startup server when the system is going down.  */
 routine startup_dosync (
@@ -197,4 +193,10 @@ routine file_changed (
 	start: off_t;
 	end: off_t);
 
-   
+/* Just like sig_post, but the receiver should ignore his trace bit
+   and deliver the signal normally even if traced.  */
+routine sig_post_untraced (
+	process: mach_port_t;
+	sreplyport reply_port: sreply_port_t;
+	signal: int;
+	refport: mach_port_t);
