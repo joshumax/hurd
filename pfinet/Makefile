@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -32,16 +32,16 @@ OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
 
 pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 
-vpath %.c linux-inet
+vpath %.c $(srcdir)/linux-inet
 
 target = pfinet
 
 include ../Makeconf
 
-CPPFLAGS += -imacros config.h
+CPPFLAGS += -imacros $(srcdir)/config.h
 
-io-MIGSFLAGS = -imacros mutations.h
-socket-MIGSFLAGS = -imacros mutations.h
+io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
