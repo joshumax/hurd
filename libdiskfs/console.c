@@ -1,6 +1,6 @@
 /* Redirect stdio to the console if possible
 
-   Copyright (C) 1995, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 98, 99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,19 +33,26 @@
 
 #include "priv.h"
 
-/* Make errors go somewhere reasonable.  */
+/* Make sure errors go somewhere reasonable.  */
 void
 diskfs_console_stdio ()
 {
   if (getpid () > 0)
     {
-      int fd = open ("/dev/console", O_RDWR);
+      if (write (2, "", 0) == 0)
+	/* We have a working stderr from our parent (e.g. settrans -a).
+	   Just use it.  */
+	dup2 (2, 1);
+      else
+	{
+	  int fd = open ("/dev/console", O_RDWR);
 
-      dup2 (fd, 0);
-      dup2 (fd, 1);
-      dup2 (fd, 2);
-      if (fd > 2)
-	close (fd);
+	  dup2 (fd, 0);
+	  dup2 (fd, 1);
+	  dup2 (fd, 2);
+	  if (fd > 2)
+	    close (fd);
+	}
     }
   else
     {
