@@ -1,6 +1,6 @@
 # Makefile for daemons
-# 
-#   Copyright (C) 1996 Free Software Foundation
+#
+#   Copyright (C) 1996,99 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,9 +20,9 @@
 dir := daemons
 makemode := utilities
 
-targets = rc getty mail.local
-special-targets = rc
-SRCS = rc.sh getty.c lmail.c
+targets = rc getty mail.local console-run runttys runsystem
+special-targets = rc runsystem
+SRCS = rc.sh getty.c lmail.c console-run.c runttys.c
 installationdir = $(libexecdir)
 
 HURDLIBS=shouldbeinlibc
@@ -36,3 +36,9 @@ include ../Makeconf
 rc: rc.sh
 getty: getty.o ../libshouldbeinlibc/libshouldbeinlibc.a
 mail.local: lmail.o ../libshouldbeinlibc/libshouldbeinlibc.a
+console-run: console-run.o ../libfshelp/libfshelp.a ../libports/libports.a
+
+runttys: runttys.o
+runttys-LDLIBS = -lutil
+
+runsystem: runsystem.sh
