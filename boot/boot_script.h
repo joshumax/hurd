@@ -14,52 +14,39 @@
 #define BOOT_SCRIPT_BAD_TYPE		8
 
 /* Legal values for argument `type' to function
-   boot_script_set_variable().  */
+   boot_script_set_variable and boot_script_define_function.  */
+#define VAL_NONE	0	/* none -- function runs at exec time */
 #define VAL_STR		1	/* string */
 #define VAL_PORT	2	/* port */
 
-/* The user must define this variable.  The task port of the program.  */
-extern mach_port_t boot_script_task_port;
+/* This structure describes a command.  */
+struct cmd
+{
+  /* Path of executable.  */
+  char *path;
 
-/* The user must define this function.  Allocate SIZE bytes of memory
-   and return a pointer to it.  */
-void *boot_script_malloc (int size);
+  /* Task port.  */
+  mach_port_t task;
 
-/* The user must define this function.  Free SIZE bytes of memory
-   named by PTR that was previously allocated by boot_script_malloc().  */
-void boot_script_free (void *ptr, int size);
+  /* Argument list.  */
+  struct arg **args;
 
-/* The user must define this function.  Create a new task and
-   return a send right to it presumably using task_create().
-   Return 0 on error.  */
-mach_port_t boot_script_task_create (void);
+  /* Amount allocated for `args'.  */
+  int args_alloc;
 
-/* The user must define this function.  Terminate the task whose
-   send right is TASK presumably using task_terminate().  */
-void boot_script_task_terminate (mach_port_t task);
+  /* Next available slot in `args'.  */
+  int args_index;
 
-/* The user must define this function.  Suspend TASK presumably
-   using task_suspend().  */
-void boot_script_task_suspend (mach_port_t task);
+  /* List of functions that want to be run on command execution.  */
+  struct sym **exec_funcs;
 
-/* The user must define this function.  Resume TASK presumably
-   using task_resume().  Return 0 on success, non-zero otherwise.  */
-int boot_script_task_resume (mach_port_t task);
+  /* Amount allocated for `exec_funcs'.  */
+  int exec_funcs_alloc;
 
-/* The user must define this function.  Deallocate a send right to PORT
-   in the TASK presumably using mach_port_deallocate().  */
-void boot_script_port_deallocate (mach_port_t task, mach_port_t port);
+  /* Next available slot in `exec_funcs'.  */
+  int exec_funcs_index;
+};
 
-/* The user must define this function.  Insert the specified RIGHT to
-   the PORT in the current task into TASK with NAME, presumably using
-   mach_port_insert_right().  RIGHT can take any value allowed by
-   mach_port_insert_right().  Return 0 for success, non-zero otherwise.  */
-int boot_script_port_insert_right (mach_port_t task,
-				   mach_port_t name, mach_port_t port,
-				   mach_msg_type_name_t right);
-
-/* The user must define this function.  Set the bootstrap port for TASK.  */
-void boot_script_set_bootstrap_port (mach_port_t task, mach_port_t port);
 
 /* The user must define this function.  Load the image of the
    executable specified by PATH in TASK.  Create a thread
@@ -92,5 +79,12 @@ int boot_script_exec (void);
    non-zero otherwise.  */
 int boot_script_set_variable (const char *name, int type, int val);
 
+/* Define the function NAME, which will return type RET_TYPE.  */
+int boot_script_define_function (const char *name, int ret_type,
+				 int (*func) (const struct cmd *cmd, int *val));
+
 /* Returns a string describing the error ERR.  */
 char *boot_script_error_string (int err);
+
+
+void safe_gets (char *, size_t);
