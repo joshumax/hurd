@@ -1,6 +1,6 @@
 /* A variable holding the initial sync interval
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -18,4 +18,4 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-int diskfs_default_sync_interval = 30;
+int diskfs_default_sync_interval = 5;

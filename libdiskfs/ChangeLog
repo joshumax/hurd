@@ -1,3 +1,10 @@
+1999-06-27  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* sync-default.c (diskfs_default_sync_interval): Reduce to five
+	seconds.  Hardware is much different than when Unix originally
+	picked thirty, plus we manage VM differently than the Unix buffer
+	cache did, and tend to delay many more writes than Unix did.
+
 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-get-trans.c (diskfs_S_file_get_translator): Fix type cast in
