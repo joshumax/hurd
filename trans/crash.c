@@ -76,6 +76,35 @@ struct crasher
 
 struct port_class *crasher_portclass;
 
+/* If the process referred to by proc port USERPROC is not orphaned,
+   then send SIGSTOP to all the other members of its pgrp. */
+void
+stop_pgrp (process_t userproc)
+{
+  pid_t pid, pgrp;
+  int orphaned;
+  error_t err;
+  size_t numpids = 20;
+  pid_t pids_[numpids], *pids = pids_;
+  int i;
+
+  err = proc_getpids (userproc, &pid, &pgrp, &orphaned);
+  if (err)
+    return;
+
+  /* Use userproc so that if it's just died we get an error and don't
+     do anything. */
+  err = proc_getpgrppids (userproc, pgrp, &pids, &numpids);
+  if (err)
+    return;
+  
+  for (i = 0; i < numpids; i++)
+    if (pids[i] != pid)
+      kill (pids[i], SIGSTOP);
+  if (pids != pids_)
+    vm_deallocate (mach_task_self (), (vm_address_t) pids, numpids);
+}
+
 
 kern_return_t
 S_crash_dump_task (mach_port_t port,
@@ -108,6 +137,8 @@ S_crash_dump_task (mach_port_t port,
 				   sizeof *c, &c);
 	  if (! err)
 	    {
+	      stop_pgrp (user_proc);
+
 	      /* Install our port as the crasher's msgport.
 		 We will wait for signals to resume (crash) it.  */
 	      mach_port_t msgport = ports_get_right (c);
