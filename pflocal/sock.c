@@ -458,14 +458,14 @@ sock_shutdown (struct sock *sock, unsigned flags)
   sock->flags |= flags;
 
   if (flags & SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
-    /* Shutdown the read half.  */
     {
+      /* Shutdown the read half.  */
       read_pipe = sock->read_pipe;
       sock->read_pipe = NULL;
     }
   if (flags & SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
-    /* Shutdown the write half.  */
     {
+      /* Shutdown the write half.  */
       write_pipe = sock->write_pipe;
       sock->write_pipe = NULL;
     }
