@@ -70,6 +70,17 @@ struct protid_hook
   pid_t pid, pgrp;
 };
 
+void
+init_users ()
+{
+  cttyid = ports_allocate_port (term_bucket, sizeof (struct port_info),
+				cttyid_class);
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
+		      &async_icky_id);
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &async_id);
+}
+  
+
 static error_t
 open_hook (struct trivfs_control *cntl,
 	   uid_t *uids, u_int nuids,
@@ -94,6 +105,8 @@ open_hook (struct trivfs_control *cntl,
       termstate.c_cflag |= CREAD | CS8 | HUPCL;
   
       bcopy (ttydefchars, termstate.c_cc, NCCS);
+
+      termflags |= NO_OWNER;
     }
   else if (termflags & EXCL_USE)
     {
@@ -380,11 +393,14 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   for (i = 0; i < datalen; i++)
     {
       while (!qavail (outputq) && !cancel)
-	cancel = hurd_condition_wait (outputq->wait, &global_lock);
+	{
+	  start_output ();
+	  cancel = hurd_condition_wait (outputq->wait, &global_lock);
+	}
       if (cancel)
 	break;
 
-      output_character (data[i]);
+      write_character (data[i]);
     }
 
   *amt = i;
