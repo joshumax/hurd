@@ -1,3 +1,8 @@
+2001-03-26  Roland McGrath  <roland@frob.com>
+
+	* intern-external-port.c, allocate-port.c: Dead files removed
+	from cvs.  Reported by Neal H Walfield <neal@cs.uml.edu>.
+
 2000-07-25  Mark Kettenis  <kettenis@gnu.org>
 
 	* inhibit-all-rpcs.c (ports_inhibit_all_rpcs): Avoid calling
