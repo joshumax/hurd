@@ -219,42 +219,42 @@ poke_pages (memory_object_t obj, vm_offset_t start, vm_offset_t end)
 static void
 force_delayed_copies (struct node *node, off_t length)
 {
-  struct user_pager_info *upi;
+  struct pager *pager;
 
   spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    ports_port_ref (upi->p);
+  pager = node->dn->pager;
+  if (pager)
+    ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
  
-  if (upi)
+  if (pager)
     {
       mach_port_t obj;
       
-      pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
-      obj = diskfs_get_filemap (node);
+      pager_change_attributes (pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
+      obj = diskfs_get_filemap (node, VM_PROT_READ);
       poke_pages (obj, round_page (length), round_page (node->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (upi->p, round_page(length), node->allocsize - length, 1);
-      ports_port_deref (upi->p);
+      pager_flush_some (pager, round_page(length), node->allocsize - length, 1);
+      ports_port_deref (pager);
     }
 }
 
 static void
 enable_delayed_copies (struct node *node)
 {
-  struct user_pager_info *upi;
+  struct pager *pager;
 
   spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    ports_port_ref (upi->p);
+  pager = node->dn->pager;
+  if (pager)
+    ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
 
-  if (upi)
+  if (pager)
     {
-      pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
-      ports_port_deref (upi->p);
+      pager_change_attributes (pager, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
+      ports_port_deref (pager);
     }
 }
 
