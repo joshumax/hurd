@@ -19,8 +19,9 @@
 #include "fs_S.h"
 
 kern_return_t
-trivfs_S_file_utimes (struct trivfs_protid *cred, time_value_t atime,
-		      time_value_t mtime)
+trivfs_S_file_utimes (struct trivfs_protid *cred,
+		      mach_port_t reply, mach_msg_type_name_t reply_type,
+		      time_value_t atime, time_value_t mtime)
 {
   return cred ? file_utimes (cred->realnode, atime, mtime) : EOPNOTSUPP;
 }

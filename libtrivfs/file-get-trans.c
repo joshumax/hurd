@@ -20,8 +20,8 @@
 
 kern_return_t
 trivfs_S_file_get_translator (struct trivfs_protid *cred,
-			      char **trans,
-			      u_int *translen)
+			      mach_port_t reply, mach_msg_type_name_t reply_type,
+			      char **trans, u_int *translen)
 {
   return EOPNOTSUPP;
 }

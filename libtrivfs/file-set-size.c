@@ -20,7 +20,9 @@
 #include <assert.h>
 
 kern_return_t
-trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t reply_type,
+			off_t size)
 {
   assert (!trivfs_support_write);
   return EOPNOTSUPP;
