@@ -148,10 +148,10 @@ routine file_pathconf (
 	out value: int);
 
 /* Return the node for hard links to this potentially translated file.
-   This returns an unauthenticated node.  */
+   This returns a potentially unauthenticated node.  */
 routine file_getlinknode (
 	file: file_t;
-	out linknode: file_t);
+	out linknode: mach_port_send_t);
 
 /* Return a file handle for this file.  This can be used by NFS and such.
    It is not guaranteed that this call will work...if it doesn't, then this
@@ -180,7 +180,7 @@ routine dir_pathtrans (
 	mode: mode_t;
 	out do_retry: retry_type;
 	out retry_name: string_t;
-	out result: file_t);
+	out result: mach_port_send_t);
 
 /* Read dir entries from the directory.  Amount must be a multiple of
    the block size of the file as returned by stat.  Offset should
