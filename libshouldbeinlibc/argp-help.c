@@ -845,7 +845,7 @@ hol_entry_help (struct hol_entry *entry, argp_fmtstream_t stream,
       else
 	indent_to (stream, OPT_DOC_COL);
 
-      __argp_fmtstream_puts (stream, doc);
+      __argp_fmtstream_puts (stream, gettext (doc));
 
       /* Reset the left margin.  */
       __argp_fmtstream_set_lmargin (stream, 0);
@@ -1168,7 +1168,8 @@ void __argp_help (const struct argp *argp, FILE *stream,
 	  char *levels = pattern_levels;
 
 	  __argp_fmtstream_printf (fs, "%s %s",
-				   first_pattern ? "Usage:" : "  or: ", name);
+				   gettext (first_pattern
+					    ? "Usage:" : "  or: "), name);
 
 	  /* We set the lmargin as well as the wmargin, because hol_usage
 	     manually wraps options with newline to avoid annoying breaks.  */
@@ -1178,7 +1179,7 @@ void __argp_help (const struct argp *argp, FILE *stream,
 	    /* Just show where the options go.  */
 	    {
 	      if (hol->num_entries > 0)
-		__argp_fmtstream_puts (fs, " [OPTION...]");
+		__argp_fmtstream_puts (fs, gettext (" [OPTION...]"));
 	    }
 	  else
 	    /* Actually print the options.  */
@@ -1205,9 +1206,9 @@ void __argp_help (const struct argp *argp, FILE *stream,
 
   if (flags & ARGP_HELP_SEE)
     {
-      __argp_fmtstream_printf (fs,
-	       "Try `%s --help' or `%s --usage' for more information.\n",
-	       name, name);
+      __argp_fmtstream_printf (fs, gettext ("\
+Try `%s --help' or `%s --usage' for more information.\n"),
+					    name, name);
       anything = 1;
     }
 
@@ -1232,7 +1233,8 @@ void __argp_help (const struct argp *argp, FILE *stream,
     {
       if (anything)
 	__argp_fmtstream_putc (fs, '\n');
-      __argp_fmtstream_printf (fs, "Report bugs to %s.\n", argp_program_bug_address);
+      __argp_fmtstream_printf (fs, gettext ("Report bugs to %s.\n"),
+			       argp_program_bug_address);
       anything = 1;
     }
 
