@@ -21,7 +21,7 @@ makemode := server
 target = devio
 SRCS = dev.c iostate.c window.c devio.c open.c devpager.c io.c rdwr.c mem.c
 LCLHDRS = dev.h iostate.h window.h open.h ptypes.h mem.h
-HURDLIBS = libtrivfs libpager libports libfshelp libthreads
+HURDLIBS = libtrivfs libpager libports libfshelp libthreads libihash
 DIST_FILES = MAKEDEV
 
 OBJS = $(SRCS:.c=.o) error.o
@@ -40,10 +40,3 @@ install: $(prefix)/dev/MAKEDEV
 $(prefix)/dev/MAKEDEV: MAKEDEV
 	$(INSTALL_DATA) MAKEDEV $(prefix)/dev/MAKEDEV
 	chmod +x $(prefix)/dev/MAKEDEV
-
-open.o rdwr.o window.o: window.h
-dev.o devio.o devpager.o io.o iostate.o open.o rdwr.o window.o: dev.h
-devio.o io.o open.o rdwr.o: open.h
-dev.o io.o iostate.o: iostate.h
-dev.o devio.o devpager.o: ../hurd/pager.h
-devio.o io.o: ../hurd/ports.h ../hurd/trivfs.h
