@@ -23,42 +23,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include "ext2fs.h"
+#include "error.h"
 
 char *ext2fs_version = "0.0 pre-alpha";
-
-/* Parse the arguments for ext2fs when started as a translator. */
-char *
-trans_parse_args (int argc, char **argv)
-{
-  char *devname;
-  /* When started as a translator, we are called with
-     the device name and an optional argument -r, which
-     signifies read-only. */
-  if (argc < 2 || argc > 3)
-    exit (1);
-
-  if (argc == 2)
-    devname = argv[1];
-
-  else if (argc == 3)
-    {
-      if (argv[1][0] == '-' && argv[1][1] == 'r')
-	{
-	  diskfs_readonly = 1;
-	  devname = argv[2];
-	}
-      else if (argv[2][0] == '-' && argv[2][1] == 'r')
-	{
-	  diskfs_readonly = 1;
-	  devname = argv[1];
-	}
-      else
-	exit (1);
-    }
-
-  return devname;
-}
 
 /* ---------------------------------------------------------------- */
 
@@ -69,7 +38,7 @@ static void
 warp_root (void)
 {
   error_t err;
-  err = iget (2, &diskfs_root_node);
+  err = iget (EXT2_ROOT_INO, &diskfs_root_node);
   assert (!err);
   mutex_unlock (&diskfs_root_node->lock);
 }
@@ -96,59 +65,18 @@ void ext2_error (const char * function, const char * fmt, ...)
 {
   va_list args;
 
-#if 0
-  if (!(sb->s_flags & MS_RDONLY))
-    {
-      sb->u.ext2_sb.s_mount_state |= EXT2_ERROR_FS;
-      sb->u.ext2_sb.s_es->s_state |= EXT2_ERROR_FS;
-      mark_buffer_dirty(sb->u.ext2_sb.s_sbh, 1);
-      sb->s_dirt = 1;
-    }
-#endif
-
   va_start (args, fmt);
-  vfprintf (error_buf, fmt, args);
+  vsprintf (error_buf, fmt, args);
   va_end (args);
 
   mutex_lock(&printf_lock);
-
   fprintf (stderr, "ext2fs: %s: %s: %s\n", devname, function, error_buf);
-
-#if 0
-  if (test_opt (sb, ERRORS_PANIC) ||
-      (sb->u.ext2_sb.s_es->s_errors == EXT2_ERRORS_PANIC &&
-       !test_opt (sb, ERRORS_CONT) && !test_opt (sb, ERRORS_RO)))
-    /* panic */
-    {
-      fprintf(stderr, "ext2fs: %s: exiting\n", sb->s_devname);
-      exit(99);
-    }
-
-  if (test_opt (sb, ERRORS_RO) ||
-      (sb->u.ext2_sb.s_es->s_errors == EXT2_ERRORS_RO &&
-       !test_opt (sb, ERRORS_CONT) && !test_opt (sb, ERRORS_PANIC))) {
-    fprintf (stderr, "ext2fs: %s: Remounting filesystem read-only\n",
-	     sb->s_devname);
-    sb->s_flags |= MS_RDONLY;
-  }
-#endif
-
   mutex_unlock(&printf_lock);
 }
 
 void ext2_panic (const char * function, const char * fmt, ...)
 {
   va_list args;
-
-#if 0
-  if (!(sb->s_flags & MS_RDONLY))
-    {
-      sb->u.ext2_sb.s_mount_state |= EXT2_ERROR_FS;
-      sb->u.ext2_sb.s_es->s_state |= EXT2_ERROR_FS;
-      mark_buffer_dirty(sb->u.ext2_sb.s_sbh, 1);
-      sb->s_dirt = 1;
-    }
-#endif
 
   va_start (args, fmt);
   vsprintf (error_buf, fmt, args);
@@ -176,7 +104,45 @@ void ext2_warning (const char * function, const char * fmt, ...)
 
 /* ---------------------------------------------------------------- */
 
+#define USAGE "Usage: %s [OPTION...] DEVICE\n"
+
+static void
+usage(int status)
+{
+  if (status != 0)
+    fprintf(stderr, "Try `%s --help' for more information.\n",
+	    program_invocation_name);
+  else
+    {
+      printf(USAGE, program_invocation_name);
+      printf("\
+\n\
+  -r, --readonly             disable writing to DEVICE\n\
+  -s, --synchronous          write data out immediately\n\
+      --help                 display this help and exit\n\
+      --version              output version information and exit\n\
+");
+    }
+  exit (status);
+}
+
+#define SHORT_OPTIONS "rs?"
+
+static struct option options[] =
+{
+  {"readonly", no_argument, 0, 'r'},
+  {"synchronous", no_argument, 0, 's'},
+  {"help", no_argument, 0, '?'},
+  {"version", no_argument, 0, 'V'},
+  {0, 0, 0, 0}
+};
+
+
+/* ---------------------------------------------------------------- */
+
 int diskfs_readonly;
+
+int check_string = 1;
 
 void
 main (int argc, char **argv)
@@ -185,33 +151,46 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   error_t err;
   int sizes[DEV_GET_SIZE_COUNT];
-  struct super_block sb;
   u_int sizescnt = 2;
 
   mutex_init (&printf_lock);	/* XXX */
 
   if (getpid () > 0)
     {
-      /* We are in a normal Hurd universe, started as a translator.  */
+      int opt;
+      int fd = open ("/dev/console", O_RDWR);
 
-      devname = trans_parse_args (argc, argv);
+      /* Make errors go somewhere reasonable.  */
+      while (fd >= 0 && fd < 2)
+	fd = dup(fd);
+      if (fd > 2)
+	close (fd);
 
-      {
-	/* XXX let us see errors */
-	int fd = open ("/dev/console", O_RDWR);
-	assert (fd == 0);
-	fd = dup (0);
-	assert (fd == 1);
-	fd = dup (1);
-	assert (fd == 2);
-      }
+      while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
+	switch (opt)
+	  {
+	  case 'r':
+	    diskfs_readonly = 1; break;
+	  case 's':
+	    diskfs_synchronous = 1; break;
+	  case 'V':
+	    printf("ext2fs %s", ext2fs_version); exit(0);
+	  case '?':
+	    usage(0);
+	  default:
+	    usage(1);
+	  }
+      if (argc - optind != 1)
+	{
+	  fprintf (stderr, USAGE, program_invocation_name);
+	  usage (1);
+	}
+
+      devname = argv[optind];
     }
   else
-    {
-      /* We are the bootstrap filesystem.  */
-      devname = diskfs_parse_bootargs (argc, argv);
-      compat_mode = COMPAT_GNU;
-    }
+    /* We are the bootstrap filesystem.  */
+    devname = diskfs_parse_bootargs (argc, argv);
   
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
@@ -253,10 +232,12 @@ main (int argc, char **argv)
 	  sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
   
   diskpagersize = sizes[DEV_GET_SIZE_DEVICE_SIZE];
-  assert (diskpagersize >= SBSIZE + SBOFF);
+  assert (diskpagersize >= SBLOCK_OFFS + SBLOCK_SIZE);
 
   /* Map the entire disk. */
   create_disk_pager ();
+
+  pokel_init (&sblock_pokel, diskpager->p, disk_image);
 
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
@@ -271,7 +252,8 @@ main (int argc, char **argv)
   get_hypermetadata();
 
   if (diskpagersize < sblock->s_blocks_count * block_size)
-    ext2_panic("Disk size (%d) too small (superblock says we need %ld)",
+    ext2_panic("main",
+	       "Disk size (%d) too small (superblock says we need %ld)",
 	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
 	       sblock->s_blocks_count * block_size);
 
