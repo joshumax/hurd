@@ -164,8 +164,8 @@ pass1 ()
 	   direct/indirect blocks.  */
 	int dbwarn = 0, ibwarn = 0;
 
-	if (!preen && !(number % 10000))
-	  printf ("I=%d\n", number);
+/*	if (!preen && !(number % 10000))
+	  printf ("I=%d\n", number); */
 
 	if (number < ROOTINO)
 	  continue;
