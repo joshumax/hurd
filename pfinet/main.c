@@ -80,8 +80,8 @@ main (int argc,
 
   /* Generic initialization */ 
 
+  init_time ();
   init_devices ();
-  init_mapped_time ();
   setup_ethernet_device ();
   inet_proto_init (0);
 
