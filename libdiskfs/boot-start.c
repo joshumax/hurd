@@ -272,7 +272,7 @@ diskfs_S_exec_startup (mach_port_t port,
 /* Called by S_fsys_startup for execserver bootstrap.  The execserver
    is able to function without a real node, hence this fraud.  */
 error_t
-diskfs_execboot_fsys_startup (mach_port_t port,
+diskfs_execboot_fsys_startup (mach_port_t port, int flags,
 			      mach_port_t ctl,
 			      mach_port_t *real,
 			      mach_msg_type_name_t *realpoly)
@@ -288,8 +288,7 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
   
-  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						    O_READ | O_EXEC,
+  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node, flags,
 						    MACH_PORT_NULL),
 			       0,0,0,0);
   rootport = ports_get_right (rootpi);
@@ -297,8 +296,8 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 			  MACH_MSG_TYPE_MAKE_SEND);
   ports_port_deref (rootpi);
 
-  err = dir_lookup (rootport, _SERVERS_EXEC,
-		    O_READ|O_EXEC|O_NOTRANS, 0, &retry, pathbuf, real);
+  err = dir_lookup (rootport, _SERVERS_EXEC, flags|O_NOTRANS, 0,
+		    &retry, pathbuf, real);
   assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
