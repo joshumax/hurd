@@ -1,3 +1,22 @@
+1998-09-06  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
+
+	* bunzip2.c: New file.
+	* load.c (GZIP) (BZIP2): New cpp constants.
+	(boot_script_exec_cmd): If GZIP is defined, gunzip engine is enabled.
+	If BZIP2 is defined, bunzip2 engine is enabled.
+	* Makefile (SRCS): Add bunzip2.c.
+	(UNZIP_OBJS): Add do-bunzip2.o.
+	(CPPFLAGS): Add -DGZIP, -DBZIP2 and -DSMALL_BZIP2.
+	
+1998-09-03  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
+
+	* gunzip.c: New file. 
+	Copy libstore/gunzip.c and modify for use in serverboot.
+	* load.c (struct stuff): Add members, image_addr and image_size.
+	(mem_read) (mem_read_exec): New functions.
+	(boot_script_exec_cmd): Add gzexe feature.
+	* Makefile: Add unzip stuffs.
+	
 1999-03-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* def_pager_setup.c (default_pager_setup): #if 0 out unused function.

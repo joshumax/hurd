@@ -21,10 +21,7 @@ makemode := utility
 SRCS = bootstrap.c ffs_compat.c load.c wiring.c def_pager_setup.c \
 	ffs_file_io.c minix_ffs_compat.c default_pager.c file_io.c\
 	minix_file_io.c ext2_file_io.c kalloc.c strfcns.c exec.c \
-	panic.c elf-load.c
-OBJS = $(subst .c,.o,$(SRCS)) boot_script.o memory_objectServer.o \
-	default_pagerServer.o excServer.o bootstrapServer.o \
-	memory_object_defaultServer.o
+	panic.c elf-load.c gunzip.c bunzip2.c
 LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h ext2_fs.h \
 	 minix_ffs_compat.h wiring.h dir.h ffs_compat.h minix_fs.h \
 	disk_inode.h file_io.h minix_super.h mach-exec.h
@@ -32,7 +29,18 @@ target = serverboot
 HURDLIBS = threads
 installationdir = $(prefix)/boot
 
+UNZIP_OBJS = unzip.o inflate.o util.o do-bunzip2.o
+OBJS = $(subst .c,.o,$(SRCS)) boot_script.o memory_objectServer.o \
+	default_pagerServer.o excServer.o bootstrapServer.o \
+	memory_object_defaultServer.o $(UNZIP_OBJS)
+
 vpath boot_script.c $(srcdir)/../boot
+
+# Look for zip stuff
+VPATH += $(srcdir)/../exec
+# If SMALL_BZIP2 is defined, use relatively small memory.
+# It's crucial for serverboot, because swap is not enabled yet.
+CPPFLAGS += -I$(srcdir)/../exec -DGZIP -DBZIP2 -DSMALL_BZIP2
 
 MIGSFLAGS = -DSEQNOS
 

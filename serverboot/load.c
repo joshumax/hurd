@@ -41,6 +41,10 @@ struct stuff
 	struct file *fp;
 	task_t user_task;
 
+	/* uncompressed image */
+	vm_offset_t image_addr;
+	vm_size_t image_size;
+
 	vm_offset_t aout_symtab_ofs;
 	vm_size_t aout_symtab_size;
 	vm_offset_t aout_strtab_ofs;
@@ -149,6 +153,86 @@ static int prog_read_exec(void *handle, vm_offset_t file_ofs, vm_size_t file_siz
 	return 0;
 }
 
+/* Callback functions for reading the uncompressed image. */
+static int image_read(void *handle, vm_offset_t file_ofs, void *buf,
+	 	      vm_size_t size, vm_size_t *out_actual)
+{
+	struct stuff *st = handle;
+	bcopy(st->image_addr + file_ofs, buf, size);
+	*out_actual = size;
+	return 0;
+}
+
+static int image_read_exec(void *handle, vm_offset_t file_ofs,
+			   vm_size_t file_size, vm_offset_t mem_addr,
+			   vm_size_t mem_size, exec_sectype_t sec_type)
+{
+	struct stuff *st = handle;
+	vm_offset_t page_start = trunc_page(mem_addr);
+	vm_offset_t page_end = round_page(mem_addr + mem_size);
+	vm_prot_t mem_prot = sec_type & EXEC_SECTYPE_PROT_MASK;
+	vm_offset_t area_start;
+	int result;
+
+	if (sec_type & EXEC_SECTYPE_AOUT_SYMTAB)
+	{
+		st->aout_symtab_ofs = file_ofs;
+		st->aout_symtab_size = file_size;
+	}
+	if (sec_type & EXEC_SECTYPE_AOUT_STRTAB)
+	{
+		st->aout_strtab_ofs = file_ofs;
+		st->aout_strtab_size = file_size;
+	}
+
+	if (!(sec_type & EXEC_SECTYPE_ALLOC))
+		return 0;
+
+	assert(mem_size > 0);
+	assert(mem_size > file_size);
+
+	/*
+	printf("section %08x-%08x-%08x prot %08x (%08x-%08x)\n",
+		mem_addr, mem_addr+file_size, mem_addr+mem_size, mem_prot, page_start, page_end);
+	*/
+
+	result = vm_allocate(mach_task_self(), &area_start, page_end - page_start, TRUE);
+	if (result) return (result);
+
+	if (file_size > 0)
+	{
+		bcopy(st->image_addr + file_ofs, area_start + (mem_addr - page_start),
+		      file_size);
+	}
+
+	if (mem_size > file_size)
+	{
+		bzero((void*)area_start + (mem_addr + file_size - page_start),
+			mem_size - file_size);
+	}
+
+	result = vm_allocate(st->user_task, &page_start, page_end - page_start, FALSE);
+	if (result) return (result);
+	assert(page_start == trunc_page(mem_addr));
+
+	result = vm_write(st->user_task, page_start, area_start, page_end - page_start);
+	if (result) return (result);
+
+	result = vm_deallocate(mach_task_self(), area_start, page_end - page_start);
+	if (result) return (result);
+
+	/*
+	 * Protect the segment.
+	 */
+	if (load_protect_text && (mem_prot != VM_PROT_ALL)) {
+		result = vm_protect(st->user_task, page_start, page_end - page_start,
+				    FALSE, mem_prot);
+		if (result) return (result);
+	}
+
+	return 0;
+}
+
 mach_port_t boot_script_read_file (const char *file)
 { return MACH_PORT_NULL; }	/* XXX */
 
@@ -216,6 +300,56 @@ boot_script_exec_cmd (task_t user_task,
 	st.aout_symtab_size = 0;
 	st.aout_strtab_size = 0;
 	result = exec_load(prog_read, prog_read_exec, &st, &info);
+#ifdef GZIP
+	if (result)
+	{
+		/*
+		 * It might be gzip file.
+		 */
+		int err;
+		extern int 
+		serverboot_gunzip(struct file *, void **, size_t *);
+
+		err = serverboot_gunzip(st.fp,
+					&(st.image_addr),
+					&(st.image_size));
+		if (!err)
+		{
+			result = exec_load(image_read,
+					   image_read_exec,
+					   &st,
+					   &info);
+			vm_deallocate(mach_task_self(),
+				      st.image_addr,
+				      st.image_size);
+		}
+	}
+#endif GZIP
+#ifdef BZIP2
+	if (result)
+	{
+		/*
+		 * It might be bzip2 file.
+		 */
+		int err;
+		extern int 
+		serverboot_bunzip2(struct file *, void **, size_t *);
+
+		err = serverboot_bunzip2(st.fp,
+					 &(st.image_addr),
+					 &(st.image_size));
+		if (!err)
+		{
+			result = exec_load(image_read,
+					   image_read_exec,
+					   &st,
+					   &info);
+			vm_deallocate(mach_task_self(),
+				      st.image_addr,
+				      st.image_size);
+		}
+	}
+#endif BZIP2
 	if (result)
 		panic("(serverboot) exec_load %s: error %d", namebuf, result);
 #if 0
