@@ -3,14 +3,15 @@
 
 BOOT_DEV="$1"
 if [ ! "$BOOT_DEV" ]; then
-  echo "No boot device specified.  Here are some possible devices to use:"
+  echo "No device to install a boot loader on specified."
+  echo "Here are some possible devices to use:"
   /bin/devprobe sd0 hd0 sd1 hd1
-  echo -n "Boot device? "
+  echo -n "Boot device? [none] "
   read BOOT_DEV
 fi
 
 if [ "$BOOT_DEV" -a ! /bin/devprobe -s "$BOOT_DEV" ]; then
-  echo 2>&1 "$0: $BOOT_DEV: No such device known"
+  echo 2>&1 "$0: $BOOT_DEV: No such device known"; exit 1
 fi
 
 set -v
