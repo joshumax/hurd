@@ -325,6 +325,9 @@ launch_system (void)
   if (errno =  fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
 			  authserver))
     perror ("fsys_init");
+
+  /* Declare that the filesystem is our child. */
+  proc_child (procserver, fstask);
   
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
