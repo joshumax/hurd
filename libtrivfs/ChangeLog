@@ -1,3 +1,8 @@
+Thu Nov  7 17:05:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-restrict-auth.c (trivfs_S_io_restrict_auth): If CRED has
+	root, use the requested id sets verbatim.
+
 Thu Sep 26 14:25:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-access.c (trivfs_S_file_check_access): Return
