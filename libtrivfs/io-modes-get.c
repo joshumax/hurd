@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993,94,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -29,7 +29,6 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
 			   mach_msg_type_name_t replytype,
 			   int *bits)
 {
-  assert (!trivfs_support_read && !trivfs_support_write);
   if (!cred)
     return EOPNOTSUPP;
   else
@@ -38,5 +37,3 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
       return 0;
     }
 }
-
-      
