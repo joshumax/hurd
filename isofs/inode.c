@@ -1,4 +1,4 @@
-/*
+/* 
    Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
@@ -309,7 +309,6 @@ read_disknode (struct node *np, struct dirrect *dr,
 {
   error_t err;
   struct stat *st = &np->dn_stat;
-
   st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
   st->st_ino = np->dn->file_start;
