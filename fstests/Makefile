@@ -16,30 +16,10 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := fstests
+makemode := utilities
+
+SRCS = fstests.c fdtests.c timertest.c
+targets = timertest fstests # fdtests
 
 include ../Makeconf
 
-DIST_FILES = fstests.c Makefile fdtests.c ChangeLog timertest.c
-
-SRCS = fstests.c fdtests.c timertest.c
-
-all: timertest fstests # fdtests
-
-fstests: fstests.o $(libc)
-	$(CC) $(CFLAGS) -o $@ $^
-
-fdtests: fdtests.o $(libc)
-	$(CC) $(CFLAGS) -o $@ $^
-
-timertest: timertest.o $(libc)
-	$(CC) $(CFLAGS) -o $@ $^
-
-install:  $(hurdroot) timertest fstests # fdtests
-	$(INSTALL_BIN) fstests $(hurdroot)/bin/fstests
-	$(INSTALL_BIN) timertest $(hurdroot)/bin/timertest
-#	$(INSTALL_BIN) fdtests $(hurdroot)/bin/fdtests
-
-clean: 
-	rm -f fstests fdtests timertest *.o
-relink:
-	rm -f fstests fdtests timertest
