@@ -1,3 +1,8 @@
+Fri Jul 19 16:16:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* decode.c (store_std_leaf_decode): Decode name too.
+	Deal with NAME_LENGTH being 0.
+
 Sun Jun 16 22:49:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.c (parse_opt): Use argp_failure.
