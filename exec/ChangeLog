@@ -1,3 +1,10 @@
+Mon Oct  7 21:31:25 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* exec.c (fake_seek): New function.
+	(prepare): Initialize E->stream.__io_funcs.seek to fake_seek; this
+	is called now that stdio doesn't assume it always knows the file
+	position. 
+
 Thu Sep 12 16:30:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

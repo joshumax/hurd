@@ -523,6 +523,31 @@ close_exec_stream (void *cookie)
   return 0;
 }
 
+/* stdio seek function. */
+static int
+fake_seek (void *cookie, fpos_t *pos, int whence)
+{
+  struct execdata *e = cookie;
+  
+  /* Set __target to match the specifed seek location */
+  switch (whence)
+    {
+    case SEEK_END:
+      e->stream.__target = e->file_size + *pos;
+      break;
+      
+    case SEEK_CUR:
+      e->stream.__target += *pos;
+      break;
+      
+    case SEEK_SET:
+      e->stream.__target = *pos;
+      break;
+    }
+  *pos = e->stream.__target;
+  return 0;
+}
+
 
 /* Prepare to check and load FILE.  */
 static void
@@ -548,8 +573,7 @@ prepare (file_t file, struct execdata *e)
   e->stream.__mode.__read = 1;
   e->stream.__userbuf = 1;
   e->stream.__room_funcs.__input = input_room;
-  /* This never gets called, but fseek returns ESPIPE if it's null.  */
-  e->stream.__io_funcs.seek = __default_io_functions.seek;
+  e->stream.__io_funcs.seek = fake_seek;
   e->stream.__io_funcs.close = close_exec_stream;
   e->stream.__cookie = e;
   e->stream.__seen = 1;
