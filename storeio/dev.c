@@ -146,7 +146,7 @@ dev_open (struct dev *dev)
 	 We are to operate on our underlying node. */
       err = store_create (storeio_fsys->underlying,
 			  dev->readonly ? STORE_READONLY : 0,
-			  &dev->store);
+			  0, &dev->store);
 
     }
   else

@@ -24,6 +24,7 @@
 #include <device/device.h>
 #include <rwlock.h>
 #include <hurd/store.h>
+#include <hurd/trivfs.h>
 
 extern struct trivfs_control *storeio_fsys;
 

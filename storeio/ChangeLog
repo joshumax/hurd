@@ -1,3 +1,10 @@
+2001-01-16  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dev.c (dev_open): Add missing argument `classes' to invocation
+	of store_create.
+
+	* dev.h: Include <hurd/trivfs.h> for struct trivfs_control.
+
 2001-01-16  Roland McGrath  <roland@frob.com>
 
 	* storeio.c (parse_opt): Set PARAMS->store_params.store_optional.
