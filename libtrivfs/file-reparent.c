@@ -22,13 +22,10 @@
 #include "fs_S.h"
 
 error_t
-trivfs_S_dir_reparent (struct trivfs_protid *cred,
-		       mach_port_t reply, mach_msg_type_name_t reply_type,
-		       mach_port_t parent,
-		       mach_port_t *new_dir, mach_msg_type_name_t *new_dir_type)
+trivfs_S_file_reparent (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t reply_type,
+			mach_port_t parent,
+			mach_port_t *new, mach_msg_type_name_t *new_type)
 {
-  if (cred)
-    return ENOTDIR;		/* Should never be a directory */
-  else
-    return EOPNOTSUPP;
+  return EOPNOTSUPP;
 }
