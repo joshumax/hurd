@@ -1,6 +1,6 @@
 /* Root hostmux node
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -145,7 +145,9 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
       break;
 
   /* Allocate it.  */
-  err = vm_allocate (mach_task_self (), (vm_address_t *) data, size, 1);
+  *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  err = ((void *) *data == (void *) -1) ? errno : 0;
+
   if (! err)
     /* Copy out the result.  */
     {
