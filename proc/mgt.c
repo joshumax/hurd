@@ -185,7 +185,7 @@ S_proc_child (struct proc *parentp,
 /* Implement proc_reassign as described in <hurd/proc.defs>. */
 error_t
 S_proc_reassign (struct proc *p,
-	       task_t newt)
+		 task_t newt)
 {
   struct proc *stubp = task_find (newt);
   mach_port_t foo;
@@ -193,6 +193,9 @@ S_proc_reassign (struct proc *p,
   if (!stubp)
     return ESRCH;
   
+  if (stubp == p)
+    return EINVAL;
+
   remove_proc_from_hash (p);
 
   task_terminate (p->p_task);
@@ -324,9 +327,9 @@ S_proc_handle_exceptions (struct proc *p,
   return 0;
 }
 
-/* Called on provided exception ports.  Do the thread_set_state
-   requested by proc_handle_exceptions and then send an
-   exception_raise message as requested. */
+/* Called on exception ports provided to proc_handle_exceptions.  Do
+   the thread_set_state requested by proc_handle_exceptions and then
+   send an exception_raise message as requested. */
 error_t
 S_proc_exception_raise (mach_port_t excport,
 			mach_port_t reply,
@@ -341,8 +344,8 @@ S_proc_exception_raise (mach_port_t excport,
   if (!e)
     return EOPNOTSUPP;
   if (e->replyport != MACH_PORT_NULL)
-    return EBUSY;
-  thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
+    return EBUSY;  /* This is wrong, but too much trouble to fix now */
+  thread_set_state (thread, e->flavor, e->thread_state, e->statecnt); 
   proc_exception_raise (e->forwardport, e->excport, 
 			MACH_MSG_TYPE_MAKE_SEND_ONCE,
 			thread, task, exception, code, subcode);
@@ -352,8 +355,8 @@ S_proc_exception_raise (mach_port_t excport,
 }
 
 /* Called by proc_handle_exception clients after they have received
-   the exception_raise we send in S_exception_raise.  Reply to the
-   agent that generated the exception raise. */
+   the exception_raise we send in S_proc_exception_raise.  Reply to
+   the agent that generated the exception raise. */
 error_t
 S_proc_exception_raise_reply (mach_port_t excport,
 			      int replycode)
