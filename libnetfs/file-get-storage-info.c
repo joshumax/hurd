@@ -37,11 +37,14 @@ netfs_S_file_get_storage_info (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
   
+  /* Necessary to keep MiG happy. */
   *naddresses = 0;
-  *block_size = 
-
   *storage_data_len = 0;
   *storage_port = MACH_PORT_NULL;
   *storage_port_type = MACH_MSG_TYPE_COPY_SEND;
   
+  *class = STORAGE_NETWORK;
+  return 0;
+}
+
   
