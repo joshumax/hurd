@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <fcntl.h>
 
 /* Implement io_read as described in <hurd/io.defs>. */
 error_t
@@ -41,11 +42,9 @@ diskfs_S_io_read (struct protid *cred,
   if (maxread < 0)
     return EINVAL;
   
-  mutex_lock (&np->i_toplock);
+  mutex_lock (&np->lock);
 
-  err = ioserver_get_conch (&np->i_conch);
-  if (err)
-    goto out;
+  ioserver_get_conch (&np->conch);
   
   if (off == -1)
     off = cred->po->filepointer;
@@ -72,7 +71,6 @@ diskfs_S_io_read (struct protid *cred,
   if (err && ourbuf)
     vm_deallocate (mach_task_self (), (u_int) buf, maxread);
   
- out:
-  mutex_unlock (&np->i_toplock);
+  mutex_unlock (&np->lock);
   return err;
 }
