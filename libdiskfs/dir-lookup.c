@@ -57,13 +57,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int amt;
   int type;
   struct protid *newpi;
-  unsigned depth;		/* Depth of DNP below FS root.  */
 
   if (!dircred)
     return EOPNOTSUPP;
 
-  /* XXX - EXLOCK & SHLOCK are temporary until they get added to O_HURD. */
-  flags &= O_HURD | O_EXLOCK | O_SHLOCK;  
+  flags &= O_HURD;
 
   create = (flags & O_CREAT);
   excl = (flags & O_EXCL);
@@ -75,9 +73,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
   *retry = FS_RETRY_NORMAL;
   retryname[0] = '\0';
-
-  /* How far beneath root we are; this changes as we traverse the path.  */
-  depth = dircred->po->depth;
 
   if (path[0] == '\0')
     {
@@ -131,34 +126,47 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  assert (!ds);
 	  ds = alloca (diskfs_dirstat_size);
-	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred, depth, &depth);
+	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
 	}
       else
-	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred, depth, &depth);
+	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
 
       if (lastcomp && create && excl && (!error || error == EAGAIN))
 	error = EEXIST;
 
       /* If we get an error we're done */
       if (error == EAGAIN)
-	{
-	  if (dircred->po->dotdotport != MACH_PORT_NULL)
-	    {
-	      *retry = FS_RETRY_REAUTH;
-	      *returned_port = dircred->po->dotdotport;
-	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-	      if (!lastcomp)
-		strcpy (retryname, nextname);
-	      error = 0;
-	      goto out;
-	    }
-	  else
-	    {
-	      error = 0;
-	      np = dnp;
-	      diskfs_nref (np);
-	    }
-	}
+	if (dnp == dircred->po->shadow_root)
+	  /* We're at the root of a shadow tree.  */
+	  {
+	    *retry = FS_RETRY_REAUTH;
+	    *returned_port = dircred->po->shadow_root_parent;
+	    *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+	    if (! lastcomp)
+	      strcpy (retryname, nextname);
+	    error = 0;
+	    goto out;
+	  }
+	else if (dircred->po->root_parent != MACH_PORT_NULL)
+	  /* We're at a real translator root; even if DIRCRED->po has a
+	     shadow root, we can get here if its in a directory that was
+	     renamed out from under it...  */
+	  {
+	    *retry = FS_RETRY_REAUTH;
+	    *returned_port = dircred->po->root_parent;
+	    *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+	    if (!lastcomp)
+	      strcpy (retryname, nextname);
+	    error = 0;
+	    goto out;
+	  }
+	else
+	  /* We're at a REAL root, as in there's no way up from here.  */
+	  {
+	    error = 0;
+	    np = dnp;
+	    diskfs_nref (np);
+	  }
 
       /* Create the new node if necessary */
       if (lastcomp && create)
@@ -192,8 +200,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
-	  struct diskfs_trans_callback_cookie2 cookie2 =
-	    { dircred->po->dotdotport, depth };
 	  
 	  /* A callback function for short-circuited translators.
 	     Symlink & ifsock are handled elsewhere.  */
@@ -233,9 +239,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  error = 
-	    diskfs_create_protid (diskfs_make_peropen (dnp, 0,
-						       dircred->po->dotdotport,
-						       depth),
+	    diskfs_create_protid (diskfs_make_peropen (dnp, 0, dircred->po),
 				  iohelp_create_iouser (make_idvec (), 
 							make_idvec ()),
 				  &newpi);
@@ -249,7 +253,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 
-	  error = fshelp_fetch_root (&np->transbox, &cookie2,
+	  error = fshelp_fetch_root (&np->transbox, dircred->po,
 				     dirport, dircred->user,
 				     lastcomp ? flags : 0,
 				     ((np->dn_stat.st_mode & S_IPTRANS)
@@ -413,8 +417,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   error =
     diskfs_create_protid (diskfs_make_peropen (np, 
 					       (flags &~OPENONLY_STATE_MODES), 
-					       dircred->po->dotdotport,
-					       depth),
+					       dircred->po),
 			  dircred->user, &newpi);
 
   if (! error)
