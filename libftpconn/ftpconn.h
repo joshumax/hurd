@@ -35,6 +35,10 @@ typedef int error_t;
 #define __error_t_defined
 #endif
 
+#ifndef FTP_CONN_EI
+# define FTP_CONN_EI extern inline
+#endif
+
 struct ftp_conn;
 struct ftp_conn_params;
 struct ftp_conn_stat;
@@ -234,9 +238,10 @@ error_t ftp_conn_open (struct ftp_conn *conn);
 
 void ftp_conn_close (struct ftp_conn *conn);
 
+#ifdef __OPTIMIZE__
 /* Makes sure that CONN's syshooks are set according to the remote system
    type.  */
-static inline error_t
+FTP_CONN_EI error_t
 ftp_conn_validate_syshooks (struct ftp_conn *conn)
 {
   if (conn->syshooks_valid)
@@ -245,6 +250,7 @@ ftp_conn_validate_syshooks (struct ftp_conn *conn)
     /* Opening the connection should set the syshooks.  */
     return ftp_conn_open (conn);
 }
+#endif /* __OPTIMIZE__ */
 
 /* Create a new ftp connection as specified by PARAMS, and return it in CONN;
    HOOKS contains customization hooks used by the connection.  Neither PARAMS
