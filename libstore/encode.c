@@ -38,10 +38,10 @@ store_std_leaf_allocate_encoding (const struct store *store,
   return 0;
 }
 
-/* The RPC protocol uses 32-bit ints, but store_offset_t is now 64 bits.  */
+/* The RPC protocol uses 32-bit off_t's, but store_offset_t is now 64 bits.  */
 static inline int too_big (store_offset_t ofs)
 {
-  int o = (int) ofs;
+  off_t o = (off_t) ofs;
   return o < 0 || ((store_offset_t) o != ofs);
 }
 
