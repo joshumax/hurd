@@ -102,13 +102,16 @@ store_encode (const struct store *store, struct store_enc *enc)
 
   if (enc->num_ports > init_num_ports)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ports, enc->num_ports, 1);
+		       (vm_address_t *)&enc->ports,
+		       enc->num_ports * sizeof *enc->ports, 1);
   if (!err && enc->num_ints > init_num_ints)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ints, enc->num_ints, 1);
+		       (vm_address_t *)&enc->ints,
+		       enc->num_ints * sizeof *enc->ints, 1);
   if (!err && enc->num_offsets > init_num_offsets)
     err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->offsets, enc->num_offsets, 1);
+		       (vm_address_t *)&enc->offsets,
+		       enc->num_offsets * sizeof *enc->offsets, 1);
   if (!err && enc->data_len > init_data_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->data, enc->data_len, 1);
