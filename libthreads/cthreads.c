@@ -1,31 +1,38 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.9  1998/11/22 18:18:10  roland
+ * 1998-11-12  Mark Kettenis  <kettenis@phys.uva.nl>
+ *
+ * 	* cthreads.c (cthread_init): Move cthread_alloc call before
+ * 	cproc_init call, since cthread_alloc uses malloc, and malloc won't
+ * 	work between initializing the new stack and switching over to it.
+ *
  * Revision 1.8  1998/06/10 19:38:01  tb
  * Tue Jun  9 13:50:09 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
  *
@@ -57,50 +64,50 @@
  * Revision 2.11  92/07/20  13:33:37  cmaeda
  * 	In cthread_init, do machine dependent initialization if it's defined.
  * 	[92/05/11  14:41:08  cmaeda]
- * 
+ *
  * Revision 2.10  91/08/28  11:19:26  jsb
  * 	Fixed mig_init initialization in cthread_fork_child.
  * 	[91/08/23            rpd]
- * 
+ *
  * Revision 2.9  91/07/31  18:34:23  dbg
  * 	Fix bad self-pointer reference.
- * 
+ *
  * 	Don't declare _setjmp and _longjmp; they are included by
  * 	cthreads.h.
  * 	[91/07/30  17:33:50  dbg]
- * 
+ *
  * Revision 2.8  91/05/14  17:56:31  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.7  91/02/14  14:19:47  mrt
  * 	Added new Mach copyright
  * 	[91/02/13  12:41:07  mrt]
- * 
+ *
  * Revision 2.6  90/11/05  14:37:03  rpd
  * 	Added cthread_fork_{prepare,parent,child}.
  * 	[90/11/02            rwd]
- * 
+ *
  * 	Add spin_lock_t.
  * 	[90/10/31            rwd]
- * 
+ *
  * Revision 2.5  90/08/07  14:30:58  rpd
  * 	Removed RCS keyword nonsense.
- * 
+ *
  * Revision 2.4  90/06/02  15:13:49  rpd
  * 	Converted to new IPC.
  * 	[90/03/20  20:56:44  rpd]
- * 
+ *
  * Revision 2.3  90/01/19  14:37:12  rwd
  * 	Make cthread_init return pointer to new stack.
  * 	[89/12/18  19:17:45  rwd]
- * 
+ *
  * Revision 2.2  89/12/08  19:53:37  rwd
  * 	Change cproc and cthread counters to globals with better names.
  * 	[89/11/02            rwd]
- * 
+ *
  * Revision 2.1  89/08/03  17:09:34  rwd
  * Created.
- * 
+ *
  *
  * 31-Dec-87  Eric Cooper (ecc) at Carnegie Mellon University
  *	Changed cthread_exit() logic for the case of the main thread,
@@ -155,7 +162,7 @@ extern void mig_init();
 
 #ifdef	DEBUG
 int cthread_debug = FALSE;
-#endif	DEBUG
+#endif	 /* DEBUG */
 
 private struct cthread_queue cthreads = QUEUE_INITIALIZER;
 private struct mutex cthread_lock = MUTEX_INITIALIZER;

@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.12  2000/01/10 14:42:30  kettenis
+ * 2000-01-10  Mark Kettenis  <kettenis@gnu.org>
+ *
+ * 	* cprocs.c: Include <assert.h>
+ *
  * Revision 1.11  2000/01/09 23:00:18  roland
  * 2000-01-09  Roland McGrath  <roland@baalperazim.frob.com>
  *
@@ -306,7 +311,7 @@ int cthread_no_mutex = 0;		/* total number times woken to get
 					   mutex and couldn't */
 private spin_lock_t mutex_count_lock = SPIN_LOCK_INITIALIZER;
 					/* lock for above */
-#endif STATISTICS
+#endif  /* STATISTICS */
 
 cproc_t cproc_list = NO_CPROC;		/* list of all cprocs */
 private cproc_list_lock = SPIN_LOCK_INITIALIZER;
@@ -389,7 +394,7 @@ void cthread_unwire()
 		spin_lock(&wired_lock);
 		cthread_wired--;
 		spin_unlock(&wired_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 	}
 #endif
 }
@@ -498,7 +503,7 @@ private int cproc_ready(p, preq)
 			mach_error("mach_msg", r);
 			exit(1);
 		}
-#endif CHECK_STATUS
+#endif  /* CHECK_STATUS */
 		return TRUE;
 	}
 	spin_lock(&p->lock);		/* is it ready to be queued?  It
@@ -526,7 +531,7 @@ private int cproc_ready(p, preq)
 	}
 #ifdef STATISTICS
 	cthread_ready++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 	ready_count++;
 
 	if ((s->state & CPROC_CONDWAIT) && !(s->wired)) {
@@ -552,7 +557,7 @@ private int cproc_ready(p, preq)
 			mach_error("mach_msg", r);
 			exit(1);
 		}
-#endif CHECK_STATUS
+#endif  /* CHECK_STATUS */
 		return TRUE;
 	}
 	spin_unlock(&ready_lock);
@@ -577,7 +582,7 @@ cproc_waiting(p)
 	cthread_waiting++;
 	cthread_waiters++;
 	spin_unlock(&ready_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 	for (;;) {
 		MACH_CALL(mach_msg(&msg, MACH_RCV_MSG,
 				   0, sizeof msg, wait_port,
@@ -589,14 +594,14 @@ cproc_waiting(p)
 		ready_count++;
 #ifdef STATISTICS
 		cthread_none++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 		spin_unlock(&ready_lock);
 	}
 #ifdef STATISTICS
 	cthread_ready--;
 	cthread_running++;
 	cthread_waiting--;
-#endif STATISTICS
+#endif  /* STATISTICS */
 	spin_unlock(&ready_lock);
 	spin_lock(&new->lock);
 	new->state = CPROC_RUNNING;
@@ -628,7 +633,7 @@ cproc_waiter()
 		spin_lock(&waiters_lock);
 		cthread_wait_stacks++;
 		spin_unlock(&waiters_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 		waiter = cproc_alloc();
 		MACH_CALL(vm_allocate(mach_task_self(), &base,
 				      cthread_wait_stack_size, TRUE), r);
@@ -667,13 +672,13 @@ cproc_block()
 	spin_lock(&ready_lock);
 #ifdef STATISTICS
 	cthread_blocked++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 	cthread_queue_deq(&ready, cproc_t, new);
 	if (new) {
 #ifdef STATISTICS
 		cthread_ready--;
 		cthread_switches++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 		ready_count--;
 		spin_unlock(&ready_lock);
 		spin_lock(&p->lock);
@@ -684,7 +689,7 @@ cproc_block()
 			cthread_wakeup++;
 			cthread_switches--;
 			spin_unlock(&ready_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 			cproc_ready(new, 1);  /* requeue at head were it was */
 		} else {
 			p->state = CPROC_BLOCKED;
@@ -697,7 +702,7 @@ cproc_block()
 		wait_count++;
 #ifdef STATISTICS
 		cthread_running--;
-#endif STATISTICS
+#endif  /* STATISTICS */
 		spin_unlock(&ready_lock);
 		waiter = cproc_waiter();
 		spin_lock(&p->lock);
@@ -708,7 +713,7 @@ cproc_block()
 #ifdef STATISTICS
 			cthread_running++;
 			cthread_wakeup++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 			spin_unlock(&ready_lock);
 			spin_lock(&waiters_lock);
 			cthread_queue_preq(&waiters, waiter);
@@ -756,7 +761,7 @@ cproc_create()
 		spin_lock(&ready_lock);
 		cthread_running++;
 		spin_unlock(&ready_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 	} else {
 	  	vm_offset_t stack;
 		spin_unlock(&n_kern_lock);
@@ -797,7 +802,7 @@ condition_wait(c, m)
 	spin_unlock(&c->lock);
 #ifdef	WAIT_DEBUG
 	p->waiting_for = (char *)c;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 
 	mutex_unlock(m);
 
@@ -812,7 +817,7 @@ condition_wait(c, m)
 
 #ifdef	WAIT_DEBUG
 	p->waiting_for = (char *)0;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 
 	/*
 	 * Re-acquire the mutex and return.
@@ -921,7 +926,7 @@ cthread_yield()
 	spin_lock(&ready_lock);
 #ifdef STATISTICS
 	cthread_yields++;
-#endif STATISTICS
+#endif  /* STATISTICS */
 	cthread_queue_deq(&ready, cproc_t, new);
 	if (new) {
 		cthread_queue_enq(&ready, p);
@@ -952,7 +957,7 @@ __mutex_lock_solid(void *ptr)
 
 #ifdef	WAIT_DEBUG
 	p->waiting_for = (char *)m;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 	while (1) {
 		spin_lock(&m->lock);
 		if (cthread_queue_head(&m->queue, cproc_t) == NO_CPROC) {
@@ -966,7 +971,7 @@ __mutex_lock_solid(void *ptr)
 			spin_unlock(&m->lock);
 #ifdef	WAIT_DEBUG
 			p->waiting_for = (char *)0;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 			return;
 		} else {
 			if (!queued) cthread_queue_enq(&m->queue, p);
@@ -976,14 +981,14 @@ __mutex_lock_solid(void *ptr)
 			if (spin_try_lock(&m->held)) {
 #ifdef	WAIT_DEBUG
 			    p->waiting_for = (char *)0;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 			    return;
 			}
 #ifdef STATISTICS
 			spin_lock(&mutex_count_lock);
 			cthread_no_mutex++;
 			spin_unlock(&mutex_count_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 		}
 	}
 }
@@ -1065,7 +1070,7 @@ cthread_msg_busy(port, min, max)
 		    spin_lock(&port_lock);
 		    cthread_rnone++;
 		    spin_unlock(&port_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 		}
 	    } else {
 		port_entry->held--;
@@ -1134,7 +1139,7 @@ cthread_mach_msg(header, option,
 		    spin_unlock(&port_entry->lock);
 #ifdef	WAIT_DEBUG
 		    p->waiting_for = (char *)port_entry;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 		    cproc_block();
 		} else {
 		    port_entry->held++;
@@ -1149,7 +1154,7 @@ cthread_mach_msg(header, option,
 	}
 #ifdef	WAIT_DEBUG
 	p->waiting_for = (char *)0;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 	p->busy = (int)port_entry;
 	if ((option & MACH_SEND_MSG) && !sent) {
 	    r = mach_msg(header, option,
@@ -1209,7 +1214,7 @@ cproc_fork_child()
     cthread_switches = 0;
     cthread_no_mutex = 0;
     spin_lock_init(&mutex_count_lock);
-#endif STATISTICS
+#endif  /* STATISTICS */
 
     for(l=cproc_list;l!=NO_CPROC;l=m) {
 	m=l->next;

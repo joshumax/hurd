@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.15  1999/06/13 18:54:42  roland
+ * 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* cthreads.h (MACRO_BEGIN, MACRO_END): #undef before unconditionally
+ * 	redefining.  Use GCC extension for statement expression with value 0.
+ *
  * Revision 1.14  1999/05/30 01:39:48  roland
  * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
  *
@@ -487,7 +493,7 @@ typedef struct cthread {
 	char *name;
 #ifdef	CTHREAD_DATA
 	any_t data;
-#endif	CTHREAD_DATA
+#endif	 /* CTHREAD_DATA */
 	any_t private_data;
 	struct ur_cthread *ur;
 } *cthread_t;
@@ -527,11 +533,11 @@ extern int cthread_stack_mask;
 #ifdef	STACK_GROWTH_UP
 #define	ur_cthread_ptr(sp) \
 	(* (ur_cthread_t *) ((sp) & cthread_stack_mask))
-#else	STACK_GROWTH_UP
+#else	 /* STACK_GROWTH_UP */
 #define	ur_cthread_ptr(sp) \
 	(* (ur_cthread_t *) ( ((sp) | cthread_stack_mask) + 1 \
 			      - sizeof(ur_cthread_t *)) )
-#endif	STACK_GROWTH_UP
+#endif	 /* STACK_GROWTH_UP */
 
 #define	ur_cthread_self()	(ur_cthread_ptr(cthread_sp()))
 
@@ -569,7 +575,7 @@ cthread_set_data C_ARG_DECLS((cthread_t t, any_t x));
 
 extern any_t
 cthread_data C_ARG_DECLS((cthread_t t));
-#endif	CTHREAD_DATA
+#endif	 /* CTHREAD_DATA */
 
 /*
  * Support for POSIX thread specific data
@@ -622,18 +628,18 @@ cthread_setspecific C_ARG_DECLS((cthread_key_t key, any_t value));
 	} \
 	MACRO_END
 
-#endif	ASSERT
+#endif	 /* ASSERT */
 
 #define	SHOULDNT_HAPPEN	0
 
 extern int cthread_debug;
 
-#else	DEBUG
+#else	 /* DEBUG */
 
 #ifndef	ASSERT
 #define	ASSERT(p)
-#endif	ASSERT
+#endif	 /* ASSERT */
 
-#endif	DEBUG
+#endif	 /* DEBUG */
 
-#endif	_CTHREADS_
+#endif	 /* _CTHREADS_ */

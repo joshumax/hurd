@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: stack.c,v $
+ * Revision 1.6  1997/02/20 04:30:35  miles
+ * (__hurd_threadvar_stack_mask, __hurd_threadvar_stack_offset,
+ *   __hurd_threadvar_max):
+ *     Make extern.
+ *
  * Revision 1.5  1995/12/10 13:41:30  roland
  * (addr_range_check, probe_stack): Functions #if 0'd out.
  * (stack_init): Don't call probe_stack or frob old stack at all.
@@ -178,7 +183,7 @@ setup_stack(p, base)
 	 */
 #ifdef RED_ZONE
 	MACH_CALL(vm_protect(mach_task_self(), base + vm_page_size, vm_page_size, FALSE, VM_PROT_NONE), r);
-#endif RED_ZONE
+#endif  /* RED_ZONE */
 	/*
 	 * Store self pointer.
 	 */
@@ -324,9 +329,9 @@ stack_init(p)
 
 #ifdef	STACK_GROWTH_UP
 	cthread_stack_mask = ~(cthread_stack_size - 1);
-#else	STACK_GROWTH_UP
+#else	 /* STACK_GROWTH_UP */
 	cthread_stack_mask = cthread_stack_size - 1;
-#endif	STACK_GROWTH_UP
+#endif	 /* STACK_GROWTH_UP */
 
 	/* Set up the variables so GNU can find its per-thread variables.  */
 	__hurd_threadvar_stack_mask = ~(cthread_stack_size - 1);
@@ -358,11 +363,11 @@ stack_init(p)
 #ifdef	STACK_GROWTH_UP
 	start = (cthread_sp() | (vm_page_size - 1)) + 1 + vm_page_size;
 	size = stack_top - start;
-#else	STACK_GROWTH_UP
+#else	 /* STACK_GROWTH_UP */
 	start = stack_bottom;
 	size = (cthread_sp() & ~(vm_page_size - 1)) - stack_bottom -
 	       vm_page_size;
-#endif	STACK_GROWTH_UP
+#endif	 /* STACK_GROWTH_UP */
 	MACH_CALL(vm_deallocate(mach_task_self(),start,size),r);
 #endif
 
@@ -407,9 +412,9 @@ cproc_stack_base(cproc, offset)
 {
 #ifdef	STACK_GROWTH_UP
 	return (cproc->stack_base + offset);
-#else	STACK_GROWTH_UP
+#else	 /* STACK_GROWTH_UP */
 	return (cproc->stack_base + cproc->stack_size - offset);
-#endif	STACK_GROWTH_UP
+#endif	 /* STACK_GROWTH_UP */
 
 }
 

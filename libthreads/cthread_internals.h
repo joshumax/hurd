@@ -1,79 +1,82 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
  * $Log: cthread_internals.h,v $
+ * Revision 1.3  1995/08/29 14:49:20  mib
+ * (cproc_block): Provide decl.
+ *
  * Revision 1.2  1994/05/05 10:58:01  roland
  * entered into RCS
  *
  * Revision 2.14  92/08/03  18:03:56  jfriedl
  * 	Made state element of struct cproc volatile.
  * 	[92/08/02            jfriedl]
- * 
+ *
  * Revision 2.13  92/03/06  14:09:24  rpd
  * 	Added yield, defined using thread_switch.
  * 	[92/03/06            rpd]
- * 
+ *
  * Revision 2.12  92/03/01  00:40:23  rpd
  * 	Removed exit declaration.  It conflicted with the real thing.
  * 	[92/02/29            rpd]
- * 
+ *
  * Revision 2.11  91/08/28  11:19:23  jsb
  * 	Fixed MACH_CALL to allow multi-line expressions.
  * 	[91/08/23            rpd]
- * 
+ *
  * Revision 2.10  91/07/31  18:33:33  dbg
  * 	Protect against redefinition of ASSERT.
  * 	[91/07/30  17:33:21  dbg]
- * 
+ *
  * Revision 2.9  91/05/14  17:56:24  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.8  91/02/14  14:19:42  mrt
  * 	Added new Mach copyright
  * 	[91/02/13  12:41:02  mrt]
- * 
+ *
  * Revision 2.7  90/11/05  14:36:55  rpd
  * 	Added spin_lock_t.
  * 	[90/10/31            rwd]
- * 
+ *
  * Revision 2.6  90/09/09  14:34:51  rpd
  * 	Remove special field.
  * 	[90/08/24            rwd]
- * 
+ *
  * Revision 2.5  90/06/02  15:13:44  rpd
  * 	Converted to new IPC.
  * 	[90/03/20  20:52:47  rpd]
- * 
+ *
  * Revision 2.4  90/03/14  21:12:11  rwd
  * 	Added waiting_for field for debugging deadlocks.
  * 	[90/03/01            rwd]
  * 	Added list field to keep a master list of all cprocs.
  * 	[90/03/01            rwd]
- * 
+ *
  * Revision 2.3  90/01/19  14:37:08  rwd
  * 	Keep track of real thread for use in thread_* substitutes.
  * 	Add CPROC_ARUN for about to run and CPROC_HOLD to avoid holding
@@ -82,7 +85,7 @@
  * 	Add busy field to be used by cthread_msg calls to make sure we
  * 	have the right number of blocked kernel threads.
  * 	[89/12/21            rwd]
- * 
+ *
  * Revision 2.2  89/12/08  19:53:28  rwd
  * 	Added CPROC_CONDWAIT state
  * 	[89/11/28            rwd]
@@ -101,7 +104,7 @@
  * 	basically a merge of coroutine and thread.  Added
  * 	cthread_receivce call for use by servers.
  * 	[89/10/23            rwd]
- * 
+ *
  */
 /*
  * cthread_internals.h
@@ -139,7 +142,7 @@ typedef struct cproc {
 	struct cproc *list;		/* for master cproc list */
 #ifdef	WAIT_DEBUG
 	volatile char *waiting_for;	/* address of mutex/cond waiting for */
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 
 #if 0
 	/* This is not needed in GNU; libc handles it.  */
@@ -190,9 +193,9 @@ extern void mach_error();
 	quit(1, "error in %s at %d: %s\n", __FILE__, __LINE__, \
 	     mach_error_string(ret)); \
 	} else
-#else CHECK_STATUS
+#else  /* CHECK_STATUS */
 #define MACH_CALL(expr, ret) (ret) = (expr)
-#endif CHECK_STATUS
+#endif  /* CHECK_STATUS */
 
 #define private static
 #ifndef	ASSERT

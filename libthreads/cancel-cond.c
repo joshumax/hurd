@@ -77,7 +77,7 @@ hurd_condition_wait (condition_t c, mutex_t m)
 
 #ifdef	WAIT_DEBUG
       p->waiting_for = (char *)c;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
 
       mutex_unlock (m);
 
@@ -94,7 +94,7 @@ hurd_condition_wait (condition_t c, mutex_t m)
 
 #ifdef	WAIT_DEBUG
       p->waiting_for = (char *)0;
-#endif	WAIT_DEBUG
+#endif	 /* WAIT_DEBUG */
     }
 
   spin_lock (&ss->lock);
