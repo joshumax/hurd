@@ -53,30 +53,6 @@ static int pktnostop = 0;
 static int ptyopen = 0;
 
 static int nptyperopens = 0;
-
-
-enum rb
-{
-  RB_OPEN = 1,
-  RB_BUSY = 2,
-  RB_INC = 3,
-  RB_CREATE = 4,
-  RB_DESTROY = 5,
-  RB_DEC = 6,
-  RB_DROP_CARR = 7,
-};
-
-static enum rb record_buf[10000];
-static enum rb *rbc = record_buf;
-static spin_lock_t rblock = SPIN_LOCK_INITIALIZER;
-static void
-xxx_record (enum rb n)
-{
-  spin_lock (&rblock);
-  *rbc++ = n;
-  spin_unlock (&rblock);
-}
-
 
 
 void
@@ -99,12 +75,10 @@ pty_open_hook (struct trivfs_control *cntl,
 
   if (ptyopen)
     {
-      xxx_record (RB_BUSY);
       mutex_unlock (&global_lock);
       return EBUSY;
     }
     
-  xxx_record (RB_OPEN);
   ptyopen = 1;
   mutex_unlock (&global_lock);
   return 0;
@@ -113,11 +87,9 @@ pty_open_hook (struct trivfs_control *cntl,
 error_t
 pty_po_create_hook (struct trivfs_peropen *po)
 {
-  xxx_record (RB_CREATE);
   mutex_lock (&global_lock);
   if (po->openmodes & (O_READ | O_WRITE))
     {
-      xxx_record (RB_INC);
       nptyperopens++;
       report_carrier_on ();
     }
@@ -128,7 +100,6 @@ pty_po_create_hook (struct trivfs_peropen *po)
 error_t
 pty_po_destroy_hook (struct trivfs_peropen *po)
 {
-  xxx_record (RB_DESTROY);
   mutex_lock (&global_lock);
   if ((po->openmodes & (O_READ | O_WRITE)) == 0)
     {
@@ -136,10 +107,8 @@ pty_po_destroy_hook (struct trivfs_peropen *po)
       return 0;
     }
   nptyperopens--;
-  xxx_record (RB_DEC);
   if (!nptyperopens)
     {
-      xxx_record (RB_DROP_CARR);
       ptyopen = 0;
       report_carrier_off ();
     }
