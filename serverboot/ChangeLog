@@ -1,3 +1,9 @@
+1999-11-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ffs_file_io.c (ffs_open_file): Use memmove instead of ovbcopy.
+	* ext2_file_io.c (ext2_open_file): Likewise.
+	* strfcns.c (ovbcopy): Function removed.
+
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* bootstrap.c (main): Further spruce up prompting and error reporting
