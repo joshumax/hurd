@@ -18,7 +18,11 @@ ifndef HOST_CC
 export HOST_CC := $(CC)
 endif
 CC=gcc $(CCTYPE) -O2 -pipe # Ceci n'est pas une pipe.
+ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
+else
+MIGCOM=/usr/local/lib/migcom
+endif
 CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
 export CPP
 # I put a /usr/local/bin/mig on the hp300s that will run $CPP locally and
