@@ -400,6 +400,12 @@ void diskfs_write_disknode (struct node *np, int wait);
    then return only after the physical media has been completely updated.  */
 void diskfs_file_update (struct node *np, int wait);
 
+/* The user must define this function.  For each active node, call
+   FUN.  The node is to be locked around the call to FUN.  If FUN
+   returns non-zero for any node, then immediately stop, and return
+   that value. */
+error_t diskfs_node_iterate (error_t (*fun)(struct node *));
+
 /* The user must define this function.  Sync all the pagers and any
    data belonging on disk except for the hypermetadata.  If WAIT is true,
    then return only after the physicial media has been completely updated. */
