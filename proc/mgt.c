@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -495,7 +495,6 @@ struct proc *
 allocate_proc (task_t task)
 {
   struct proc *p;
-  mach_port_t foo;
 
   /* Pid 0 is us; pid 1 is init.  We handle those here specially;
      all other processes inherit from init here (though proc_child
@@ -504,13 +503,6 @@ allocate_proc (task_t task)
   ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
 
   p->p_task = task;
-
-  mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
-
   p->p_msgport = MACH_PORT_NULL;
 
   condition_init (&p->p_wakeup);
@@ -566,6 +558,25 @@ create_startup_proc (void)
   return p;
 }
 
+/* Request a dead-name notification for P's task port.  */
+
+void
+proc_death_notify (struct proc *p)
+{
+  error_t err;
+  mach_port_t old;
+
+  err = mach_port_request_notification (mach_task_self (), p->p_task,
+					MACH_NOTIFY_DEAD_NAME, 1,
+					p->p_pi.port_right,
+					MACH_MSG_TYPE_MAKE_SEND_ONCE,
+					&old);
+  assert_perror (err);
+
+  if (old != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), old);
+}
+
 /* Complete a new process that has been allocated but not entirely initialized.
    This gets called for every process except startup_proc (PID 1).  */
 void
@@ -607,6 +618,7 @@ complete_proc (struct proc *p, pid_t pid)
 
   p->p_pgrp = startup_proc->p_pgrp;
 
+  proc_death_notify (p);
   add_proc_to_hash (p);
   join_pgrp (p);
 }

@@ -192,6 +192,7 @@ int pidfree (pid_t);
 
 struct proc *create_startup_proc (void);
 struct proc *allocate_proc (task_t);
+void proc_death_notify (struct proc *);
 void complete_proc (struct proc *, pid_t);
 
 void leave_pgrp (struct proc *);

@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1993,94,95,96,97,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -99,6 +99,7 @@ main (int argc, char **argv, char **envp)
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
 
+  proc_death_notify (startup_proc);
   add_proc_to_hash (startup_proc); /* Now that we have the task port.  */
 
   /* Set our own argv and envp locations.  */
