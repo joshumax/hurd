@@ -25,9 +25,9 @@
 
 /* There is no such thing as an inode in this format, all such
    information being recorded in the directory entry.  So we report
-   inode numbers as absolute offsets from DISK_IMAGE. But we can't use
-   the file start because of symlinks (and zero length files?), so we
-   use the directory record itself.  */
+   inode numbers as absolute offsets from DISK_IMAGE. We use the directory
+   record for symlinks and zero length files, and file_start otherwise.
+   Only for hard links to zero length files we get extra inodes.  */
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -39,8 +39,9 @@
 struct node_cache
 {
   struct dirrect *dr;		/* somewhere in disk_image */
-
   off_t file_start;		/* start of file */
+
+  off_t id;			/* UNIQUE identifier.  */
 
   struct node *np;		/* if live */
 };
@@ -54,17 +55,17 @@ static error_t read_disknode (struct node *,
 			      struct dirrect *, struct rrip_lookup *);
 
 
-/* See if node with directory entry RECORD is in the cache.  If so,
-   return it, with one additional reference. diskfs_node_refcnt_lock
-   must be held on entry to the call, and will be released iff the
-   node was found in the cache. */
+/* See if node with identifier ID is in the cache.  If so, return it,
+   with one additional reference. diskfs_node_refcnt_lock must be held
+   on entry to the call, and will be released iff the node was found
+   in the cache. */
 void
-inode_cache_find (struct dirrect *record, struct node **npp)
+inode_cache_find (off_t id, struct node **npp)
 {
   int i;
 
   for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].dr == record
+    if (node_cache[i].id == id
 	&& node_cache[i].np)
       {
 	*npp = node_cache[i].np;
@@ -76,17 +77,24 @@ inode_cache_find (struct dirrect *record, struct node **npp)
   *npp = 0;
 }
 
-/* Enter NP into the cache.  The directory entry we used
-   DR. diskfs_node_refcnt_lock must be held. */
+/* Enter NP into the cache.  The directory entry we used is DR, the
+   cached Rock-Ridge info RR. diskfs_node_refcnt_lock must be held. */
 void
-cache_inode (struct dirrect *dr, struct node *np)
+cache_inode (struct node *np, struct dirrect *record,
+	    struct rrip_lookup *rr)
 {
   int i;
   struct node_cache *c = 0;
+  off_t id;
+
+  if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
+    id = (off_t) ((void *) record - (void *) disk_image);
+  else
+    id = np->dn->file_start;
 
   /* First see if there's already an entry. */
   for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].dr == np->dn->dr)
+    if (node_cache[i].id == id)
       break;
 
   if (i == node_cache_size)
@@ -112,7 +120,8 @@ cache_inode (struct dirrect *dr, struct node *np)
     }
 
   c = &node_cache[i];
-  c->dr = dr;
+  c->id = id;
+  c->dr = record;
   c->file_start = np->dn->file_start;
   c->np = np;
 
@@ -262,8 +271,8 @@ calculate_file_start (struct dirrect *record, off_t *file_start,
 }
 
 
-/* Load the inode with directory entry RECORD and cached Rock-Rodge info RR
-   into NP.  The directory entry is at OFFSET in BLOCK.  */
+/* Load the inode with directory entry RECORD and cached Rock-Ridge
+   info RR into NP.  The directory entry is at OFFSET in BLOCK.  */
 error_t
 load_inode (struct node **npp, struct dirrect *record,
 	    struct rrip_lookup *rr)
@@ -282,7 +291,11 @@ load_inode (struct node **npp, struct dirrect *record,
   spin_lock (&diskfs_node_refcnt_lock);
 
   /* First check the cache */
-  inode_cache_find (record, npp);
+  if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
+    inode_cache_find ((off_t) ((void *) record - (void *) disk_image), npp);
+  else
+    inode_cache_find (file_start, npp);
+
   if (*npp)
     return 0;
 
@@ -296,7 +309,7 @@ load_inode (struct node **npp, struct dirrect *record,
 
   mutex_lock (&np->lock);
 
-  cache_inode (record, np);
+  cache_inode (np, record, rr);
   spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np, record, rr);
@@ -315,7 +328,10 @@ read_disknode (struct node *np, struct dirrect *dr,
   struct stat *st = &np->dn_stat;
   st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
-  st->st_ino = (ino_t) ((void *) np->dn->dr - (void *) disk_image);
+  if (rl->valid & VALID_SL || isonum_733 (dr->size) == 0)
+    st->st_ino = (ino_t) ((void *) dr - (void *) disk_image);
+  else
+    st->st_ino = (ino_t) np->dn->file_start;
   st->st_gen = 0;
   st->st_rdev = 0;
 

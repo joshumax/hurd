@@ -179,7 +179,7 @@ dirscanblock (void *blkaddr, const char *name, size_t namelen,
       if (reclen < sizeof (struct dirrect) + entry_namelen)
 	break;
 
-      /* Check to see if the name maches the directory entry. */
+      /* Check to see if the name matches the directory entry. */
       if (isonamematch (entry->name, entry_namelen, name, namelen))
 	matchnormal = 1;
       else
@@ -353,7 +353,24 @@ diskfs_get_directs (struct node *dp,
 
       /* Fill in entry */
 
-      userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
+      if (rr.valid & VALID_SL || isonum_733 (ep->size) == 0)
+	userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
+      else
+	{
+	  off_t file_start;
+	
+	  err = calculate_file_start (ep, &file_start, &rr);
+	  if (err)
+	    {
+	      diskfs_end_catch_exception ();
+	      if (ouralloc)
+		munmap (*data, allocsize);
+	      return err;
+	    }
+
+	  userp->d_fileno = file_start;
+	}
+
       userp->d_type = DT_UNKNOWN;
       userp->d_reclen = reclen;
       userp->d_namlen = namlen;

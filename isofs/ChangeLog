@@ -1,5 +1,23 @@
 2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
 
+	Fix hard link handling for non-zero length files.
+	* inode.c: Fix comment about inode numbers.
+	(node_cache): New member ID to store unique identifier.
+	(inode_cache_find): Change RECORD arg into ID and compare it
+	with id member of node_cache.
+	(cache_inode): Swap order of args and add new arg RR (change dr
+	into record along the way). Use RR to find out cache ID.
+	Use id member of node_cache to look for ID. Cache ID.
+	(load_inode): Call inode_cache_find with correct ID, depending
+	on RR and file size. Frob arguments to cache_inode to comply with
+	the new definition.
+	(read_disknode): Set st_ino according depending on RR and file size.
+	* lookup.c: Doc spelling fix.
+	(diskfs_get_directs): Include code again that was removed by last change,
+	but use it only if not symlink or zero length file.
+
+2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
+
 	Closes Debian Bug #68417:
 	* rr.c (rrip_work): In helper function add_comp set targused to
 	zero after malloc, and loop over realloc in case doubling is not
