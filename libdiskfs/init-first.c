@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -21,10 +21,32 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 
+#define THREAD_TIMEOUT 1000 * 60 * 2  /* two minutes */
+#define SERVER_TIMEOUT 1000 * 60 * 10 /* ten minutes */
+
+static void
+master_thread_function (any_t foo __attribute__ ((unused)))
+{
+  error_t err;
+
+  do 
+    {
+      ports_manage_port_operations_multithread (diskfs_port_bucket,
+						diskfs_demuxer,
+						THREAD_TIMEOUT,
+						SERVER_TIMEOUT,
+						1, MACH_PORT_NULL);
+      err = diskfs_shutdown (0);
+    }
+  while (err);
+  
+  /* Successful diskfs_shutdown should never return. */
+  abort ();
+}
+
 void
 diskfs_spawn_first_thread (void)
 {
-  cthread_detach (cthread_fork ((cthread_fn_t) 
-				ports_manage_port_operations_multithread,
+  cthread_detach (cthread_fork ((cthread_fn_t) master_thread_function,
 				(any_t) 0));
 }
