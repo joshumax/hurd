@@ -20,14 +20,68 @@
 
 #include <string.h>		/* For bzero() */
 
-#include "pflocal.h"
+#include <cthreads.h>
+
 #include "sock.h"
 #include "pipe.h"
+
+/* ---------------------------------------------------------------- */
 
-/* We hold this lock before we lock two sockets at once, to prevent someone
-   else trying to lock the same two sockets in the reverse order, resulting
-   in a deadlock.  */
-static struct mutex socket_pair_lock;
+/* A port bucket to handle SOCK_USERs and ADDRs.  */
+static struct port_bucket *sock_port_bucket;
+
+/* True if there are threads servicing sock requests.  */
+static int sock_server_active = 0;
+static spin_lock_t sock_server_active_lock = SPIN_LOCK_INITIALIZER;
+
+/* A demuxer for socket operations.  */
+static int
+sock_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
+{
+  extern int socket_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
+  extern int io_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
+  return socket_server (inp, outp) || io_server (inp, outp);
+}
+
+/* Handle socket requests while there are sockets around.  */
+static void
+handle_sock_requests ()
+{
+  while (ports_count_bucket (sock_port_bucket) > 0)
+    {
+      ports_enable_bucket (sock_port_bucket);
+      ports_manage_port_operations_multithread (sock_port_bucket, sock_demuxer,
+						30*1000, 2*60*1000,
+						1, MACH_PORT_NULL);
+    }
+
+  /* The last service thread is about to exist; make this known.  */
+  spin_lock (&sock_server_active_lock);
+  sock_server_active = 0;
+  spin_unlock (&sock_server_active_lock);
+
+  /* Let the whole joke start once again.  */
+  ports_enable_bucket (sock_port_bucket);
+}
+
+/* Makes sure there are some request threads for sock operations, and starts
+   a server if necessary.  This routine should be called *after* creating the
+   port(s) which need server, as the server routine only operates while there
+   are any ports.  */
+static void
+ensure_sock_server ()
+{
+  spin_lock (&sock_server_active_lock);
+  if (sock_server_active)
+    spin_unlock (&sock_server_active_lock);
+  else
+    {
+      sock_server_active = 1;
+      spin_unlock (&sock_server_active_lock);
+      cthread_detach (cthread_fork ((cthread_fn_t)handle_sock_requests,
+				    (any_t)0));
+    }
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -109,6 +163,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   if (! (pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
     /* No data source yet.  */
     new->read_pipe->flags |= PIPE_BROKEN;
+  new->read_pipe->refs++;
 
   new->refs = 0;
   new->flags = 0;
@@ -155,7 +210,7 @@ sock_clone (struct sock *template, struct sock **sock)
 
 /* ---------------------------------------------------------------- */
 
-struct port_class *sock_user_port_class = NULL;
+struct port_class *sock_user_port_class;
 
 /* Get rid of a user reference to a socket.  */
 static void
@@ -169,17 +224,14 @@ clean_sock_user (void *vuser)
 error_t
 sock_create_port (struct sock *sock, mach_port_t *port)
 {
-  struct sock_user *user;
-
-  if (sock_user_port_class == NULL)
-    sock_user_port_class = ports_create_class (NULL, clean_sock_user);
-
-  user =      
-    ports_allocate_port (pflocal_port_bucket,
+  struct sock_user *user =
+    ports_allocate_port (sock_port_bucket,
 			 sizeof (struct sock_user), sock_user_port_class);
 
   if (!user)
     return ENOMEM;
+
+  ensure_sock_server ();
 
   mutex_lock (&sock->lock);
   sock->refs++;
@@ -202,7 +254,7 @@ struct addr
   struct mutex lock;
 };
 
-struct port_class *addr_port_class = NULL;
+struct port_class *addr_port_class;
 
 /* Get rid of ADDR's socket's reference to it, in preparation for ADDR going
    away.  */
@@ -242,14 +294,13 @@ clean_addr (void *vaddr)
 inline error_t
 addr_create (struct addr **addr)
 {
-  if (addr_port_class == NULL)
-    addr_port_class = ports_create_class (unbind_addr, clean_addr);
-
   *addr =
-    ports_allocate_port (pflocal_port_bucket,
+    ports_allocate_port (sock_port_bucket,
 			 sizeof (struct addr), addr_port_class);
   if (! *addr)
     return ENOMEM;
+
+  ensure_sock_server ();
 
   (*addr)->sock = NULL;
   return 0;
@@ -347,25 +398,13 @@ sock_get_addr (struct sock *sock, struct addr **addr)
 
   return err;			/* XXX */
 }
-
-/* If SOCK is a connected socket, returns a send right to SOCK's peer's
-   address in ADDR_PORT.  */
-error_t
-sock_get_write_addr_port (struct sock *sock, mach_port_t *addr_port)
-{
-  error_t err = 0;
-
-  mutex_lock (&sock->lock);
-  if (sock->write_addr)
-    *addr_port = ports_get_right (sock->write_addr);
-  else
-    err = ENOTCONN;
-  mutex_unlock (&sock->lock);
-
-  return err;
-}
 
 /* ---------------------------------------------------------------- */
+
+/* We hold this lock before we lock two sockets at once, to prevent someone
+   else trying to lock the same two sockets in the reverse order, resulting
+   in a deadlock.  */
+static struct mutex socket_pair_lock;
 
 /* Connect SOCK1 and SOCK2.  */
 error_t
@@ -382,15 +421,13 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 
   void connect (struct sock *wr, struct sock *rd)
     {
-      if ((wr->flags & SOCK_SHUTDOWN_WRITE)
-	  || (rd->flags & SOCK_SHUTDOWN_READ))
+      if (!(   (wr->flags & SOCK_SHUTDOWN_WRITE)
+	    || (rd->flags & SOCK_SHUTDOWN_READ)))
 	{
 	  struct pipe *pipe = rd->read_pipe;
 	  pipe_aquire (pipe);
 	  pipe->flags &= ~PIPE_BROKEN; /* Not yet...  */
 	  wr->write_pipe = pipe;
-	  ensure_addr (rd, &wr->write_addr); /* XXXXXXXXXXX */
-	  ports_port_ref (wr->write_addr);
 	  mutex_unlock (&pipe->lock);
 	}
     }
@@ -479,9 +516,18 @@ sock_shutdown (struct sock *sock, unsigned flags)
 
 /* ---------------------------------------------------------------- */
 
+error_t
+sock_global_init ()
+{
+  sock_port_bucket = ports_create_bucket ();
+  sock_user_port_class = ports_create_class (NULL, clean_sock_user);
+  addr_port_class = ports_create_class (unbind_addr, clean_addr);
+  return 0;
+}
+
 /* Try to shutdown any active sockets, returning EBUSY if we can't.  */
 error_t
-sock_goaway (int flags)
+sock_global_shutdown (int flags)
 {
   /* XXX */
   return 0;
