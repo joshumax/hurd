@@ -33,6 +33,8 @@ OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 libutil-libsubst = -lutil
 
 INSTALL-login-ops = -o root -m 4755
+INSTALL-ps-ops = -o root -m 4755
+INSTALL-w-ops = -o root -m 4755
 
 include ../Makeconf
 
