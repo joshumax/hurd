@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-subsystem startup_notify 29000;
+subsystem startup_notify 29500;
 
 #include <hurd/hurd_types.defs>
 
