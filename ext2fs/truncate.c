@@ -82,7 +82,7 @@ repeat:
 		inode->i_blocks -= blocks;
 		inode->i_dirt = 1;
 		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL) {
-			memset(bh->b_data, RANDOM_INT, inode->i_sb->s_blocksize);
+			memset(bh, RANDOM_INT, inode->i_sb->s_blocksize);
 			mark_buffer_dirty(bh, 1);
 		}
 		brelse (bh);
@@ -121,7 +121,7 @@ static int trunc_indirect (struct inode * inode, int offset, u32 * p)
 	if (!tmp)
 		return 0;
 	ind_bh = bread (inode->i_dev, tmp, inode->i_sb->s_blocksize);
-	if (tmp != *p) {
+if (tmp != *p) {
 		brelse (ind_bh);
 		return 1;
 	}
@@ -135,7 +135,7 @@ repeat:
 			i = 0;
 		if (i < indirect_block)
 			goto repeat;
-		ind = i + (u32 *) ind_bh->b_data;
+		ind = i + (u32 *) ind_bh;
 		tmp = *ind;
 		if (!tmp)
 			continue;
@@ -157,7 +157,7 @@ repeat:
 		*ind = 0;
 		mark_buffer_dirty(ind_bh, 1);
 		if (inode->u.ext2_i.i_flags & EXT2_SECRM_FL) {
-			memset(bh->b_data, RANDOM_INT, inode->i_sb->s_blocksize);
+			memset(bh, RANDOM_INT, inode->i_sb->s_blocksize);
 			mark_buffer_dirty(bh, 1);
 		}
 		brelse (bh);
@@ -177,7 +177,7 @@ repeat:
 	}
 	if (free_count > 0)
 		ext2_free_blocks (inode->i_sb, block_to_free, free_count);
-	ind = (u32 *) ind_bh->b_data;
+	ind = (u32 *) ind_bh;
 	for (i = 0; i < addr_per_block; i++)
 		if (*(ind++))
 			break;
@@ -229,7 +229,7 @@ repeat:
 			i = 0;
 		if (i < dindirect_block)
 			goto repeat;
-		dind = i + (u32 *) dind_bh->b_data;
+		dind = i + (u32 *) dind_bh;
 		tmp = *dind;
 		if (!tmp)
 			continue;
@@ -237,7 +237,7 @@ repeat:
 					  dind);
 		mark_buffer_dirty(dind_bh, 1);
 	}
-	dind = (u32 *) dind_bh->b_data;
+	dind = (u32 *) dind_bh;
 	for (i = 0; i < addr_per_block; i++)
 		if (*(dind++))
 			break;
@@ -290,13 +290,13 @@ repeat:
 			i = 0;
 		if (i < tindirect_block)
 			goto repeat;
-		tind = i + (u32 *) tind_bh->b_data;
+		tind = i + (u32 *) tind_bh;
 		retry |= trunc_dindirect(inode, EXT2_NDIR_BLOCKS +
 			addr_per_block + (i + 1) * addr_per_block * addr_per_block,
 			tind);
 		mark_buffer_dirty(tind_bh, 1);
 	}
-	tind = (u32 *) tind_bh->b_data;
+	tind = (u32 *) tind_bh;
 	for (i = 0; i < addr_per_block; i++)
 		if (*(tind++))
 			break;
@@ -359,7 +359,7 @@ void ext2_truncate (struct inode * inode)
 		bh = ext2_bread (inode, inode->i_size / inode->i_sb->s_blocksize,
 				 0, &err);
 		if (bh) {
-			memset (bh->b_data + offset, 0,
+			memset (bh + offset, 0,
 				inode->i_sb->s_blocksize - offset);
 			mark_buffer_dirty (bh, 0);
 			brelse (bh);
