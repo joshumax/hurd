@@ -201,7 +201,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	     S_ISLNK and S_IFSOCK are handled elsewhere. */
 	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
 					     uid_t *uid, gid_t *gid,
-					     char **argz, int *argz_len)
+					     char **argz, size_t *argz_len)
 	    {
 	      struct node *np = cookie1;
 	      error_t err;
