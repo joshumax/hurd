@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_return for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,7 +47,8 @@ _pager_do_write_request (mach_port_t object,
   int wakeup;
   int omitdata = 0;
   
-  if (!(p = ports_check_port_type (object, pager_port_type)))
+  p = ports_lookup_port (0, object, _pager_class);
+  if (!p)
     return EOPNOTSUPP;
   
   /* sanity checks -- we don't do multi-page requests yet.  */
@@ -190,7 +191,7 @@ _pager_do_write_request (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  ports_done_with_port (p);
+  ports_drop_ref (p);
   return 0;
 }
 
