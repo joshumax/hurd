@@ -145,7 +145,7 @@ malloc(size)
 	register free_list_t fl;
 	register header_t h;
 
-	if ((int) size <= 0)		/* sanity check */
+	if ((int) size < 0)		/* sanity check */
 		return 0;
 	size += sizeof(union header);
 	/*
