@@ -85,3 +85,12 @@ routine default_pager_paging_storage(
 		       array[] of recnum_t;
 		name			: default_pager_filename_t;
 		add			: boolean_t);
+
+/* This call is made on a memory object returned by default_pager_object_create
+   to fix the object's maximum size.  Any references to pages beyond the limit
+   will fail.  */
+routine default_pager_object_set_size(
+		memory_object		: mach_port_t;
+     sreplyport reply_port		: mach_port_send_once_t;
+       msgseqno seqno			: mach_port_seqno_t;
+		object_size_limit	: vm_size_t);

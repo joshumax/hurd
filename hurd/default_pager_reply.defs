@@ -1,0 +1,17 @@
+/* Reply half of default_pager.defs.  */
+
+subsystem default_pager_reply 2375; /* 2275 + 100 */
+
+#include <hurd/hurd_types.defs>
+
+skip;				/* default_pager_object_create */
+skip;				/* default_pager_info */
+skip;				/* default_pager_objects */
+skip;				/* default_pager_object_pages */
+skip;				/* default_pager_paging_file */
+skip;				/* default_pager_register_fileserver */
+skip;				/* default_pager_paging_storage */
+
+simpleroutine default_pager_object_set_size_reply(
+		reply_port: mach_port_send_once_t;
+		RETURN_CODE_ARG);
