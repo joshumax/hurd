@@ -1,3 +1,12 @@
+2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fakeroot.c (check_openmodes): Remove spurious if clause.
+	(netfs_attempt_mksymlink): Don't evaluate stat information to get
+	the length of the name, but use the string length of NAME and
+	store it in the new variable NAMELEN.
+	(netfs_S_dir_lookup): Don't always add O_NOLINK to FLAGS, but add
+	it to the mask instead.
+
 2002-05-18  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.c (netfs_S_file_exec): Call check_openmodes and extract a

@@ -179,7 +179,6 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
 	{
 	  enum retry_type bad_retry;
 	  char bad_retryname[1024];	/* XXX */
-	  if (file != MACH_PORT_NULL)
 	  err = dir_lookup (nn->file, "", nn->openmodes | newmodes, 0,
 			    &bad_retry, bad_retryname, &file);
 	  if (!err && (bad_retry != FS_RETRY_NORMAL
@@ -235,8 +234,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   dnp = diruser->po->np;
   err = dir_lookup (dnp->nn->file, filename,
-		    O_NOLINK | (flags
-				& (O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK)),
+		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    mode, do_retry, retry_name, &file);
   if (err)
     return err;
@@ -458,9 +456,10 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 error_t
 netfs_attempt_mksymlink (struct iouser *cred, struct node *np, char *name)
 {
-  char trans[sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1];
+  int namelen = strlen (name) + 1;
+  char trans[sizeof _HURD_SYMLINK + namelen];
   memcpy (trans, _HURD_SYMLINK, sizeof _HURD_SYMLINK);
-  memcpy (&trans[sizeof _HURD_SYMLINK], name, np->nn_stat.st_size + 1);
+  memcpy (&trans[sizeof _HURD_SYMLINK], name, namelen);
   return file_set_translator (np->nn->file,
 			      FS_TRANS_EXCL|FS_TRANS_SET,
 			      FS_TRANS_EXCL|FS_TRANS_SET, 0,
