@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -92,10 +92,11 @@ diskfs_start_bootstrap ()
   assert (diskfs_exec_ctl);
 
   /* Create the port for current and root directory.  */
-  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						    O_READ | O_EXEC,
-						    MACH_PORT_NULL),
-			       0,0,0,0);
+  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
+						   O_READ | O_EXEC,
+						   MACH_PORT_NULL),
+			       0,0,0,0, &rootpi);
+  assert_perror (err);
   root_pt = ports_get_right (rootpi);
 
   /* Get us a send right to copy around.  */
@@ -150,9 +151,9 @@ diskfs_start_bootstrap ()
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
-  bootinfo = ports_allocate_port (diskfs_port_bucket,
-				  sizeof (struct port_info),
-				  diskfs_initboot_class);
+  err = ports_create_port (diskfs_initboot_class, diskfs_port_bucket,
+			   sizeof (struct port_info), &bootinfo);
+  assert_perror (err);
   bootpt = ports_get_right (bootinfo);
   mach_port_insert_right (mach_task_self (), bootpt, bootpt,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -219,6 +220,7 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
 				int **intarrayP,
 				mach_msg_type_number_t *intarraylen)
 {
+  error_t err;
   mach_port_t *portarray, *dtable;
   mach_port_t rootport;
   struct ufsport *upt;
@@ -253,10 +255,11 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
   *intarrayP = NULL;
   *intarraylen = 0;
 
-  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						    O_READ | O_EXEC,
-						    MACH_PORT_NULL),
-			       0,0,0,0);
+  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
+						   O_READ | O_EXEC,
+						   MACH_PORT_NULL),
+			      0,0,0,0, &rootpi);
+  assert_perror (err);
   rootport = ports_get_right (rootpi);
   ports_port_deref (rootpi);
   portarray[INIT_PORT_CWDIR] = rootport;
@@ -293,9 +296,10 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
 
-  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node, flags,
-						    MACH_PORT_NULL),
-			       0,0,0,0);
+  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags,
+						   MACH_PORT_NULL),
+			      0,0,0,0, &rootpi);
+  assert_perror (err);
   rootport = ports_get_right (rootpi);
   mach_port_insert_right (mach_task_self (), rootport, rootport,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -405,10 +409,11 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
-  rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						    O_READ|O_EXEC,
-						    MACH_PORT_NULL),
-			       0,0,0,0);
+  err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
+						   O_READ|O_EXEC,
+						   MACH_PORT_NULL),
+			      0,0,0,0, &rootpi);
+  assert_perror (err);
   root_pt = ports_get_right (rootpi);
   ports_port_deref (rootpi);
 
@@ -480,15 +485,16 @@ diskfs_S_fsys_init (mach_port_t port,
 static void
 start_execserver (void)
 {
+  error_t err;
   mach_port_t right;
   extern task_t diskfs_exec_server_task; /* Set in opts-std-startup.c.  */
   struct port_info *execboot_info;
 
   assert (diskfs_exec_server_task != MACH_PORT_NULL);
 
-  execboot_info = ports_allocate_port (diskfs_port_bucket,
-				       sizeof (struct port_info),
-				       diskfs_execboot_class);
+  err = ports_create_port (diskfs_execboot_class, diskfs_port_bucket,
+			   sizeof (struct port_info), &execboot_info);
+  assert_perror (err);
   right = ports_get_right (execboot_info);
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
