@@ -35,7 +35,7 @@ diskfs_clear_directory (struct node *dp,
   if (!err)
     {
       assert (np == dp);
-      err = diskfs_dirremove (dp, ds);
+      err = diskfs_dirremove (dp, np, ".", ds);
       diskfs_nrele (np);
     }
   else
@@ -53,7 +53,7 @@ diskfs_clear_directory (struct node *dp,
   if (!err)
     {
       assert (np == pdp);
-      err = diskfs_dirremove (dp, ds);
+      err = diskfs_dirremove (dp, np, "..", ds);
     }
   else
     diskfs_drop_dirstat (dp, ds);
