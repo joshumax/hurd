@@ -1,5 +1,5 @@
 /* Session and process group manipulation 
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -297,21 +297,11 @@ S_proc_setpgrp (struct proc *callerp,
     pgid = p->p_pid;
   pg = pgrp_find (pgid);
 
-  /* Temporary hack...XXX */
-  if (pg || !zombie_check_pid (pgid))
-    /* Look to see if this pgid is in use by a zombie; if so,
-       then don't do the permission check below.  This is incorrect;
-       actually, zombies should be more real than they are now. 
-       But the effect is right to avoid confusing bash in the case I 
-       care about right now.  */
-    {    
-      
-      if (p->p_pgrp->pg_session->s_sid == p->p_pid
-	  || p->p_pgrp->pg_session != callerp->p_pgrp->pg_session
-	  || ((pgid != p->p_pid
-	       && (!pg || pg->pg_session != callerp->p_pgrp->pg_session))))
-	return EPERM;
-    }
+  if (p->p_pgrp->pg_session->s_sid == p->p_pid
+      || p->p_pgrp->pg_session != callerp->p_pgrp->pg_session
+      || ((pgid != p->p_pid
+	   && (!pg || pg->pg_session != callerp->p_pgrp->pg_session))))
+    return EPERM;
   
   if (p->p_pgrp != pg)
     {
