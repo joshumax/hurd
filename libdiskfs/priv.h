@@ -102,7 +102,7 @@ extern spin_lock_t _diskfs_control_lock;
   mutex_lock (&np->lock);						    \
   (OPERATION);								    \
   if (diskfs_synchronous)						    \
-    diskfs_node_update (np, 1);						    \ 
+    diskfs_node_update (np, 1);						    \
   mutex_unlock (&np->lock);						    \
   return err;								    \
 })
