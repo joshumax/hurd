@@ -77,8 +77,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   if (ant)
     {
       memory_object_data_supply (p->memobjcntl, offset, ant->address,
-				 length, 0, VM_PROT_NONE, 0, MACH_PORT_NULL);
-      
+				 length, 0, VM_PROT_NONE, 1, MACH_PORT_NULL);
       free (ant);
       goto allow_term_out;
     }
