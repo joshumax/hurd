@@ -31,8 +31,7 @@ netfs_S_io_revoke (struct protid *cred)
     {
       struct protid *user = port;
 
-      if ((user->pi.class == netfs_protid_class)
-	  && (user != cred)
+      if ((user != cred)
 	  && (user->po->np == np))
 	ports_destroy_right (user);
       return 0;
@@ -55,7 +54,7 @@ netfs_S_io_revoke (struct protid *cred)
     return err;
 
   ports_inhibit_bucket_rpcs (netfs_port_bucket);
-  ports_bucket_iterate (netfs_port_bucket, iterator_function);
+  ports_class_iterate (netfs_protid_class, iterator_function);
   ports_resume_bucket_rpcs (netfs_port_bucket);
 
   return 0;
