@@ -16,6 +16,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+int page_errors[] = {KERN_SUCCESS, ENOSPC, EIO, EDQUOT};
+
 /* Some error has happened indicating that the page cannot be written. 
    (Usually this is ENOSPC or EDQOUT.)  On the next pagein which
    requests write access, return the error to the kernel.  (This is 
@@ -105,25 +107,8 @@ pager_get_error (struct pager *p,
   mutex_lock (&p->p_interlock);
   pagemap_resize (p, addr);
   
-  switch (PM_ERROR (addr / __vm_page_size))
-    {
-    case PAGE_NOERR:
-      err = 0;
-      break;
-      
-    case PAGE_ENOSPC:
-      err = ENOSPC;
-      break;
-      
-    default:
-    case PAGE_EIO:
-      err = EIO;
-      break;
-      
-    case PAGE_EDQUOT:
-      err = EDQUOT;
-      break;
-    }
+  err = page_errors[PM_ERROR(addr/__vm_page_size)];
+
   mutex_unlock (&p->p_interlock);
   return err;
 }
