@@ -21,6 +21,7 @@
 #include <argp.h>
 #include <assert.h>
 #include <unistd.h>
+#include <rwlock.h>
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/ioserver.h>
@@ -132,7 +133,10 @@ extern char **diskfs_argv;
    distinguish between the two cases.  */
 extern char *diskfs_boot_flags;
 
-extern struct mutex diskfs_shutdown_lock;
+/* Hold this lock while do fsys level operations.  Innocuous users can just
+   hold a reader lock, and anyone who's going to do nasty things that would
+   screw anyone else should hold a writer lock.  */
+extern struct rwlock diskfs_fsys_lock;
 
 extern volatile struct mapped_time_value *diskfs_mtime;
 
@@ -428,12 +432,18 @@ void diskfs_sync_everything (int wait);
 void diskfs_shutdown_pager ();
 
 /* The user must define this function.  Return a memory object port (send
-   right) for the file contents of NP.  */
-mach_port_t diskfs_get_filemap (struct node *np);
+   right) for the file contents of NP.  PROT is the maximum allowable
+   access.  */
+mach_port_t diskfs_get_filemap (struct node *np, vm_prot_t prot);
 
 /* The user must define this function.  Return true if there are pager
-   ports exported that might be in use by users.  */
+   ports exported that might be in use by users.  If this returns false, then
+   further pager creation is also blocked.  */
 int diskfs_pager_users ();
+
+/* Return the bitwise or of the maximum prot parameter (the second arg to
+   diskfs_get_filemap) for all active user pagers. */
+vm_prot_t diskfs_max_user_pager_prot ();
 
 /* The user must define this function.  Return a `struct pager *' suitable
    for use as an argument to diskfs_register_memory_fault_area that
@@ -445,6 +455,24 @@ struct pager *diskfs_get_filemap_pager_struct (struct node *np);
    It is called by the library after the filesystem has a normal 
    environment (complete with auth and proc ports). */
 void diskfs_init_completed ();
+
+/* The user may define this function.  It is called when the disk has been
+   changed from read-only to read-write mode or vice-versa.  READONLY is the
+   new state (which is also reflected in DISKFS_READONLY).  This function is
+   also called during initial startup if the filesystem is to be writable.  */
+void diskfs_readonly_changed (int readonly);
+
+/* The user must define this function.  It must invalidate all cached global
+   state, and re-read it as necessary from disk, without writing anything.
+   It is always called with DISKFS_READONLY true.  diskfs_node_reload is
+   subsequently called on all active nodes, so this call needn't re-read any
+   node-specific data.  */
+error_t diskfs_reload_global_state ();
+
+/* The user must define this function.  It must re-read all data specific to
+   NODE from disk, without writing anything.  It is always called with
+   DISKFS_READONLY true.  */
+error_t diskfs_node_reload (struct node *node);
 
 /* The user may define this function, in which case it is called when the the
    filesystem receives a set-options request.  ARGC and ARGV are the
@@ -518,9 +546,6 @@ void diskfs_spawn_first_thread (void);
    filesystem.  If you call this, then the library will call
    diskfs_init_completed once it has a valid proc and auth port. */
 void diskfs_start_bootstrap ();
-
-/* Last step of init is to call this, which never returns.  */
-void diskfs_main_request_loop (void);
 
 /* Node NP now has no more references; clean all state.  The
    _diskfs_node_refcnt_lock must be held, and will be released
@@ -902,6 +927,17 @@ void diskfs_set_node_times (struct node *np);
 
 /* Shutdown the filesystem; flags are as for fsys_shutdown. */
 error_t diskfs_shutdown (int flags);
+
+/* Change an active filesystem between read-only and writable modes, setting
+   the global variable DISKFS_READONLY to reflect the current mode.  If an
+   error is returned, nothing will have changed.  DISKFS_FSYS_LOCK should be
+   held while calling this routine.  */
+error_t diskfs_set_readonly (int readonly);
+
+/* Re-read all incore data structures from disk.  This will only work if
+   DISKFS_READONLY is true.  DISKFS_FSYS_LOCK should be held while calling
+   this routine.  */
+error_t diskfs_remount ();
 
 /* Called by S_fsys_startup for execserver bootstrap.  The execserver
    is able to function without a real node, hence this fraud.  Arguments
