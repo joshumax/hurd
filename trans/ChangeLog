@@ -1,3 +1,9 @@
+1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hello.c: New file.  From Gord with some cleanups and hacks from me.
+	* Makefile (targets, SRCS): Add hello, hello.c.
+	(hello): Add appropriate deps.
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* magic.c: Rewritten using libtrivfs.
