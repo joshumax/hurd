@@ -1,7 +1,8 @@
 /* Managing sub-stores
 
-   Copyright (C) 1995, 1996, 1997, 2001 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,2001,02 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -28,7 +29,7 @@
 /* Set STORE's current children list to (a copy of) CHILDREN and NUM_CHILDREN.  */
 error_t
 store_set_children (struct store *store,
-		    struct store *const *children, unsigned num_children)
+		    struct store *const *children, size_t num_children)
 {
   unsigned size = num_children * sizeof (struct store_run);
   struct store **copy = malloc (size);
@@ -174,7 +175,7 @@ store_open_children (const char *name, int flags,
     {
       const char *pfx_end = name;
 
-      while (isalnum (pfx_end))
+      while (isalnum (*pfx_end))
 	pfx_end++;
 
       if (*pfx_end++ != ':')
