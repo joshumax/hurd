@@ -7,6 +7,14 @@ Thu Aug  1 16:18:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2_fs.h (ext2_debug_flag): New decl.
 	(ext2_debug): Pay attention to EXT2_DEBUG_FLAG.
+	* ext2fs.c [EXT2FS_DEBUG] (options, ext2_debug_flag): New variables.
+	[EXT2FS_DEBUG] (parse_opt, diskfs_get_options): New functions.
+	[EXT2FS_DEBUG] (startup_parents, startup_argp, runtime_parents,
+	diskfs_runtime_argp): New variables.
+	[!EXT2FS_DEBUG] (startup_argp): New macro.
+	(main): Use STARTUP_ARGP instead of DISKFS_STD_DEVICE_STARTUP_ARGP.
+	* pager.c (diskfs_grow): Fix ext2_debug format strings.
+	* truncate.c (trunc_direct): Fix ext2_debug call.
 
 Sat Jul 20 00:58:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
