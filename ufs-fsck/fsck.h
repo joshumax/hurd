@@ -1,3 +1,4 @@
+
 /* 
    Copyright (C) 1994 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
@@ -57,7 +58,8 @@ char *blockmap;
 
 
 /* Command line flags */ 
-int nowrite;
+int nowrite;			/* all questions fail */
+int noquery;			/* all questions succeed */
 
 
 enum contret
@@ -164,8 +166,8 @@ void allblock_iterate (struct dinode *, int (*)(daddr_t, int));
 void record_directory (struct dinode *, ino_t);
 
 int reply (char *);
-void pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
+int pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
 void errexit (char *, ...) __attribute__ ((format (printf, 1, 2),
 					   noreturn));
-void pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
+int pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
 
