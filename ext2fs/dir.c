@@ -161,6 +161,9 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   inum = 0;
   
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+  
   for (blockaddr = buf, idx = 0;
        blockaddr - buf < dp->dn_stat.st_size;
        blockaddr += DIRBLKSIZ, idx++)
@@ -174,6 +177,11 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  return err;
 	}
     }
+
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
+  if (diskfs_synchronous)
+    diskfs_node_update (dp, 1);
 
   /* If err is set here, it's ENOENT, and we don't want to
      think about that as an error yet. */
@@ -473,6 +481,8 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
   
   assert (!diskfs_readonly);
 
+  dp->dn_set_mtime = 1;
+
   switch (ds->stat)
     {
     case TAKE:
@@ -567,6 +577,8 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
       assert (0);
     }
 
+  dp->dn_set_mtime = 1;
+
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
         
   if (ds->stat != EXTEND)
@@ -614,6 +626,8 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
   
   assert (!diskfs_readonly);
 
+  dp->dn_set_mtime = 1;
+
   if (ds->preventry == 0)
     ds->entry->inode = 0;
   else
@@ -622,6 +636,8 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 	      == ds->preventry->rec_len);
       ds->preventry->rec_len += ds->entry->rec_len;
     }
+
+  dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
 
@@ -651,6 +667,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   assert (!diskfs_readonly);
 
   ds->entry->inode = np->cache_id;
+  dp->dn_set_mtime = 1;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
@@ -659,27 +676,27 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   return 0;
 }
 
-/* Tell if DP is an empty directory (has only "." and ".." entries). */
-/* This routine must be called from inside a catch_exception ().  */
+/* Tell if DP is an empty directory (has only "." and ".." entries).
+   This routine must be called from inside a catch_exception ().  */
 int
 diskfs_dirempty (struct node *dp, struct protid *cred)
 {
-  struct ext2_dir_entry *entry;
-  int curoff;
-  vm_address_t buf;
-  memory_object_t memobj;
   error_t err;
-
-  memobj = diskfs_get_filemap (dp, VM_PROT_READ);
-  buf = 0;
+  vm_address_t buf = 0, curoff;
+  struct ext2_dir_entry *entry;
+  int hit = 0;			/* Found something in the directory.  */
+  memory_object_t memobj = diskfs_get_filemap (dp, VM_PROT_READ);
   
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
 		1, memobj, 0, 0, VM_PROT_READ, VM_PROT_READ, 0);
   mach_port_deallocate (mach_task_self (), memobj);
   assert (!err);
 
+  if (! diskfs_readonly)
+    dp->dn_set_atime = 1;
+
   for (curoff = buf; 
-       curoff < buf + dp->dn_stat.st_size;
+       !hit && curoff < buf + dp->dn_stat.st_size;
        curoff += entry->rec_len)
     {
       entry = (struct ext2_dir_entry *) curoff;
@@ -689,13 +706,17 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 	      || entry->name[0] != '.'
 	      || (entry->name[1] != '.'
 		  && entry->name[1] != '\0')))
-	{
-	  vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
-	  return 0;
-	}
+	hit = 1;
     }
+
+  if (! diskfs_readonly)
+    dp->dn_set_atime = 1;
+  if (diskfs_synchronous)
+    diskfs_node_update (dp, 1);
+
   vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
-  return 1;
+
+  return !hit;
 }
 
 /* Make DS an invalid dirstat. */
