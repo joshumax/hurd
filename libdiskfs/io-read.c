@@ -23,9 +23,9 @@
 kern_return_t
 diskfs_S_io_read (struct protid *cred,
 		  char **data,
-		  unsigned int *datalen,
+		  mach_msg_type_number_t *datalen,
 		  off_t offset,
-		  int maxread)
+		  mach_msg_type_number_t maxread)
 {
   struct node *np;
   int err;
