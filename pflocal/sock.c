@@ -117,7 +117,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   new->refs = 0;
   new->flags = 0;
   new->write_pipe = NULL;
-  new->id = next_sock_id++;
+  new->id = MACH_PORT_NULL;
   new->listen_queue = NULL;
   new->connect_queue = NULL;
   new->pipe_class = pipe_class;
