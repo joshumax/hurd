@@ -40,7 +40,7 @@ diskfs_make_node (struct disknode *dn)
 
   np->dirmod_reqs = 0;
   
-  fshelp_init_transbox (&np->transbox, &np->lock, np);
+  fshelp_transbox_init (&np->transbox, &np->lock, np);
   ioserver_initialize_conch (&np->conch, &np->lock);
   fshelp_lock_init (&np->userlock);
   
