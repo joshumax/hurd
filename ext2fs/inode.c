@@ -182,7 +182,6 @@ static error_t
 read_disknode (struct node *np)
 {
   error_t err;
-  unsigned offset;
   static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
   struct disknode *dn = np->dn;
@@ -255,6 +254,9 @@ read_disknode (struct node *np)
   info->i_next_alloc_goal = 0;
   info->i_prealloc_count = 0;
 
+  /* Set to a conservative value.  */
+  dn->last_page_partially_writable = 0;
+
   if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
     st->st_rdev = di->i_block[0];
   else
@@ -266,14 +268,26 @@ read_disknode (struct node *np)
     }
 
   diskfs_end_catch_exception ();
-
-  /* Set these to conservative values.  */
-  dn->last_page_partially_writable = 0;
   
-  np->allocsize = np->dn_stat.st_size;
-  offset = np->allocsize & ((1 << log2_block_size) - 1);
-  if (offset > 0)
-    np->allocsize += block_size - offset;
+  if (S_ISREG (st->st_mode) || S_ISDIR (st->st_mode)
+      || (S_ISLNK (st->st_mode) && st->st_blocks))
+    {
+      unsigned offset;
+
+      np->allocsize = np->dn_stat.st_size;
+
+      /* Round up to a block multiple.  */
+      offset = np->allocsize & ((1 << log2_block_size) - 1);
+      if (offset > 0)
+	np->allocsize += block_size - offset;
+    }
+  else
+    /* Allocsize should be zero for anything except directories, files, and
+       long symlinks.  */
+    {
+      np->allocsize = 0;
+      assert (st->st_size == 0 || S_ISLNK (st->st_mode));
+    }
 
   return 0;
 }
@@ -540,7 +554,7 @@ diskfs_set_statfs (struct statfs *st)
   st->f_namelen = 0;
   return 0;
 }
-
+
 /* Implement the diskfs_set_translator callback from the diskfs
    library; see <hurd/diskfs.h> for the interface description. */
 error_t
@@ -646,7 +660,57 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   *namelen = datalen;
   return 0;
 }
+
+/* The maximum size of a symlink store in the inode (including '\0').  */
+#define MAX_INODE_SYMLINK \
+  (EXT2_N_BLOCKS * sizeof (((struct ext2_inode *)0)->i_block[0]))
 
+/* Write an in-inode symlink, or return EINVAL if we can't.  */
+static error_t
+write_symlink (struct node *node, char *target)
+{
+  size_t len = strlen (target) + 1;
+
+  if (len > MAX_INODE_SYMLINK)
+    return EINVAL;
+
+  assert (node->dn_stat.st_blocks == 0);
+
+  bcopy (target, node->dn->info.i_data, len);
+  node->dn_stat.st_size = len - 1;
+  node->dn_set_ctime = 1;
+  node->dn_set_mtime = 1;
+
+  return 0;
+}
+
+/* Read an in-inode symlink, or return EINVAL if we can't.  */
+static error_t
+read_symlink (struct node *node, char *target)
+{
+  if (node->dn_stat.st_blocks)
+    return EINVAL;
+
+  assert (node->dn_stat.st_size < MAX_INODE_SYMLINK);
+
+  bcopy (node->dn->info.i_data, target, node->dn_stat.st_size);
+  return 0;
+}
+
+/* If this function is nonzero (and diskfs_shortcut_symlink is set) it
+   is called to set a symlink.  If it returns EINVAL or isn't set,
+   then the normal method (writing the contents into the file data) is
+   used.  If it returns any other error, it is returned to the user.  */
+error_t (*diskfs_create_symlink_hook)(struct node *np, char *target) =
+  write_symlink;
+
+/* If this function is nonzero (and diskfs_shortcut_symlink is set) it
+   is called to read the contents of a symlink.  If it returns EINVAL or
+   isn't set, then the normal method (reading from the file data) is
+   used.  If it returns any other error, it is returned to the user. */
+error_t (*diskfs_read_symlink_hook)(struct node *np, char *target) =
+  read_symlink;
+
 /* Called when all hard ports have gone away. */
 void
 diskfs_shutdown_soft_ports ()
