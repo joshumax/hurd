@@ -128,6 +128,7 @@ sock_alloc (void)
   waitp = (void *)wait + sizeof (struct wait_queue);
   
   bzero (sock, sizeof (struct socket));
+  sock->identity = MACH_PORT_NULL;
   sock->state = SS_UNCONNECTED;
   sock->wait = waitp;
 
@@ -174,6 +175,9 @@ sock_release (struct socket *sock)
 		(*sock->ops->release) (sock, peersock);
 	if (peersock)
 		sock_release_peer(peersock);
+
+	if (sock->identity != MACH_PORT_NULL)
+	  mach_port_destroy (mach_task_self (), sock->identity);
 	free (sock);
 }
 
