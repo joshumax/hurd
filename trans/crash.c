@@ -516,7 +516,6 @@ main (int argc, char **argv)
 void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
-  st->st_fstype = FSTYPE_MISC;
 }
 
 error_t
