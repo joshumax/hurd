@@ -112,6 +112,9 @@ enum compat_mode
       of the dinode. */
 int direct_symlink_extension;
 
+/* If this is set, then the disk is byteswapped from native order. */
+int swab_disk;
+
 
 /* Handy macros */
 #define DEV_BSIZE 512
@@ -165,6 +168,26 @@ sync_dinode (int inum, int wait)
 {
   sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
 }
+
+
+/* Functions for byte swapping */
+extern inline short
+swab_short (short arg)
+{
+  return (((arg & 0xff) << 8)
+	  | ((arg & 0xff00) >> 8));
+}
+
+extern inline long
+swab_long (long arg)
+{
+  return (((arg & 0xff) << 24)
+	  | ((arg & 0xff00) << 8)
+	  | ((arg & 0xff0000) >> 8)
+	  | ((arg & 0xff000000) >> 24));
+}
+
+
 
 /* From alloc.c: */
 error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *,
