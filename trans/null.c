@@ -95,7 +95,7 @@ int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ | O_WRITE;
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
   st->st_blksize = vm_page_size * 256; /* Make transfers LARRRRRGE */
 
@@ -107,9 +107,7 @@ trivfs_modify_stat (struct stat *st)
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, 
-	       struct port_class *control_class, 
-	       struct port_class *protid_class)
+trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   exit(0);
 }

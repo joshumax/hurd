@@ -99,14 +99,13 @@ main (int argc, char **argv)
 }
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
   st->st_mode = (st->st_mode & ~S_IFMT) | S_IFSOCK;
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, struct port_class *cntl_class,
-	       struct port_class *protid_class)
+trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
   exit (0);
 }
