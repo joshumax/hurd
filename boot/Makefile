@@ -21,9 +21,12 @@ include ../Makeconf
 
 VPATH=.:../machine
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o boot_machdep.o
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o boot_machdep.o \
+	ioServer.o
 
 DIST_FILES = boot.c Makefile
+
+all: boot
 
 boot: $(OBJS)
 	$(link)
@@ -34,7 +37,7 @@ install: boot
 clean: 
 	rm -f boot $(OBJS) *_S.h *Server.c
 
-boot.o: notify_S.h exec_S.h device_S.h
+boot.o: notify_S.h exec_S.h device_S.h io_S.h
 
 notify_S.h notifyServer.c: $(headers)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $< | \
@@ -50,3 +53,7 @@ device_S.h deviceServer.c: $(headers)/device/device.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
+
+io_S.h ioServer.c: $(headers)/hurd/io.defs
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -user /dev/null -header /dev/null -sheader io_S.h
