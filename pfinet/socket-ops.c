@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <hurd/trivfs.h>
+#include <string.h>
 
 #include "pfinet.h"
 #include "socket_S.h"
@@ -52,8 +53,8 @@ S_socket_create (struct trivfs_protid *master,
 
   sock = sock_alloc ();
   
-  sock->type = type;
-  sock->ops = inet_proto_ops;
+  sock->type = sock_type;
+  sock->ops = proto_ops;
   
   err = - (*sock->ops->create) (sock, protocol);
   if (err)
@@ -72,7 +73,7 @@ S_socket_create (struct trivfs_protid *master,
 
 /* Listen on a socket. */
 error_t
-S_socket_listen (struct user_sock *user, int queue_limit)
+S_socket_listen (struct sock_user *user, int queue_limit)
 {
   if (!user)
     return EOPNOTSUPP;
@@ -105,7 +106,6 @@ S_socket_accept (struct sock_user *user,
 {
   struct socket *sock, *newsock;
   error_t err;
-  int i;
 
   if (!user)
     return EOPNOTSUPP;
@@ -122,7 +122,7 @@ S_socket_accept (struct sock_user *user,
       || (!(sock->flags & SO_ACCEPTCON)))
     err = EINVAL;
   else if (!(newsock = sock_alloc ()))
-    err = ENOSR;
+    err = ENOMEM;
   
   if (err)
     goto out;
@@ -138,9 +138,11 @@ S_socket_accept (struct sock_user *user,
   if (err)
     goto out;
   
-  make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
+  err = make_sockaddr_port (newsock, 1, addr_port, addr_port_type);
+  if (err)
+    goto out;
 
-  *new_port = ports_get_right (make_sock_user (newsock, sock->isroot));
+  *new_port = ports_get_right (make_sock_user (newsock, user->isroot));
   *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
 
  out:
@@ -186,12 +188,12 @@ S_socket_connect (struct sock_user *user,
 }
 
 error_t
-S_socket_bind (struct user_sock *user,
+S_socket_bind (struct sock_user *user,
 	       struct sock_addr *addr)
 {
   error_t err;
   
-  if (!sock)
+  if (!user)
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
@@ -205,7 +207,7 @@ S_socket_bind (struct user_sock *user,
 error_t
 S_socket_name (struct sock_user *user,
 	       mach_port_t *addr_port,
-	       mach_port_name_t *addr_port_name)
+	       mach_msg_type_name_t *addr_port_name)
 {
   if (!user)
     return EOPNOTSUPP;
@@ -220,7 +222,7 @@ S_socket_name (struct sock_user *user,
 error_t
 S_socket_peername (struct sock_user *user,
 		   mach_port_t *addr_port,
-		   mach_port_name_t *addr_port_name)
+		   mach_msg_type_name_t *addr_port_name)
 {
   error_t err;
 
@@ -272,15 +274,14 @@ error_t
 S_socket_create_address (mach_port_t server,
 			 int sockaddr_type,
 			 char *data,
-			 mach_msg_number_t *data_len,
+			 mach_msg_type_number_t data_len,
 			 mach_port_t *addr_port,
-			 mach_msg_type_name_t *addr_port_type,
-			 int binding)
+			 mach_msg_type_name_t *addr_port_type)
 {
   struct sock_addr *addr;
   
   if (sockaddr_type != AF_INET)
-    return EAFNOTSUPP;
+    return EAFNOSUPPORT;
   
   addr = ports_allocate_port (pfinet_bucket, 
 			      sizeof (struct sock_addr) + data_len,
@@ -306,7 +307,7 @@ error_t
 S_socket_whatis_address (struct sock_addr *addr,
 			 int *type,
 			 char **data,
-			 mach_msg_number_t *datalen)
+			 mach_msg_type_number_t *datalen)
 {
   if (!addr)
     return EOPNOTSUPP;
@@ -403,6 +404,7 @@ S_socket_recv (struct sock_user *user,
 	       char **data,
 	       u_int *datalen,
 	       mach_port_t **ports,
+	       mach_msg_type_name_t *portstype,
 	       u_int *nports,
 	       char **control,
 	       u_int *controllen,
@@ -433,8 +435,8 @@ S_socket_recv (struct sock_user *user,
   mutex_lock (&global_lock);
   become_task (user);
 
-  err = (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0,
-				      flags, addr, &addrlen);
+  err = (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
+				      (struct sockaddr *)addr, &addrlen);
   
   mutex_unlock (&global_lock);
 
@@ -443,13 +445,14 @@ S_socket_recv (struct sock_user *user,
 
   *datalen = err;
 
-  if (didalloc && page_round (*datalen) < page_round (amount))
-    vm_deallocate (mach_task_self (), *data + page_round (*datalen),
-		   page_round (amount) - page_round (*datalen));
+  if (didalloc && round_page (*datalen) < round_page (amount))
+    vm_deallocate (mach_task_self (), 
+		   (vm_address_t) (*data + round_page (*datalen)),
+		   round_page (amount) - round_page (*datalen));
 
   
   S_socket_create_address (0, AF_INET, addr, addrlen, addrport, 
-			   addrporttype, 0);
+			   addrporttype);
   
   return 0;
 }
