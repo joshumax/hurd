@@ -1182,7 +1182,7 @@ do_exec (file_t file,
 	    if (! e.error)
 	      e.error = auth_user_authenticate
 		(boot->portarray[INIT_PORT_AUTH],
-		 new, ref, MACH_MSG_TYPE_MAKE_SEND, &authed);
+		 ref, MACH_MSG_TYPE_MAKE_SEND, &authed);
 	    mach_port_destroy (mach_task_self (), ref);
 	    if (e.error)
 	      return;
