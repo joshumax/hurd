@@ -1,3 +1,8 @@
+2000-07-18  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-seek.c (diskfs_S_io_seek): Don't use CHANGE_NODE_FIELD
+	anymore; it was causing problems and was a gross hack anyway.
+
 2000-05-14  Marcus Brinkmann  <Marcus.Brinkmann@ruhr-uni-bochum.de>
 
 	* priv.h (DEFAULT_SYNC_INTERVAL): New macro.

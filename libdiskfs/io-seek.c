@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 2000 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,9 +19,6 @@
 #include "io_S.h"
 #include <unistd.h>
 
-#define diskfs_readonly 0
-#define diskfs_synchronous 0
-
 /* Implement io_seek as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_seek (struct protid *cred,
@@ -29,29 +26,34 @@ diskfs_S_io_seek (struct protid *cred,
 		  int whence,
 		  off_t *newoffset)
 {
+  error_t err = 0;
+  struct node *np;
   
-  CHANGE_NODE_FIELD (cred,
-		   ({
-		     iohelp_get_conch (&np->conch);
-		     switch (whence)
-		       {
-		       case SEEK_SET:
-			 err = 0;
-			 cred->po->filepointer = offset;
-			 break;
-		       case SEEK_CUR:
-			 err = 0;
-			 cred->po->filepointer += offset;
-			 break;
-		       case SEEK_END:
-			 err = 0;
-			 cred->po->filepointer = (np->dn_stat.st_size
-						  + offset);
-			 break;
-		       default:
-			 err = EINVAL;
-			 break;
-		       }
-		     *newoffset = cred->po->filepointer;
-		   }));
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  np = cred->po->np;
+  
+  mutex_lock (&np->lock);
+  
+  iohelp_get_conch (&np->conch);
+  switch (whence)
+    {
+    case SEEK_SET:
+      cred->po->filepointer = offset;
+      break;
+    case SEEK_CUR:
+      cred->po->filepointer += offset;
+      break;
+    case SEEK_END:
+      cred->po->filepointer = (np->dn_stat.st_size + offset);
+      break;
+    default:
+      err = EINVAL;
+      break;
+    }
+  *newoffset = cred->po->filepointer;
+
+  mutex_unlock (&np->lock);
+  return err;
 }
