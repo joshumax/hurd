@@ -1,3 +1,9 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* init.c (reboot_system): u_int -> size_t
+	(reboot_system): Likewise.
+	(S_msg_report_wait): int -> mach_msg_id_t
+
 2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
 
 	* init.c (reboot_mach): Use ERR, not errno.

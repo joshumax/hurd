@@ -1,3 +1,8 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* xfer.c (ftp_conn_start_open_actv_data): size_t -> socklen_t
+	(ftp_conn_finish_open_actv_data): Likewise.
+
 2002-04-13  Moritz Schulte  <moritz@chaosdorf.de>
 
 	* unix.c: Include <libgen.h>.

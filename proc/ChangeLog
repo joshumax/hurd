@@ -1,3 +1,23 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* host.c (S_proc_setexecdata, S_proc_getexecdata): u_int -> size_t
+	(initialize_version_info): Likewise.  Fix cast in host_info arg.
+	(get_string_array): Likewise.
+	* info.c (get_string, S_proc_getprocargs, S_proc_getprocenv): Likewise.
+	(S_proc_getprocinfo, S_proc_getloginpids): Likewise.
+	(S_proc_getprocinfo): int -> size_t; fix casts in *_info argument.
+
+	* mgt.c (S_proc_reauthenticate, S_proc_getallpids): Likewise.
+	(add_tasks, S_proc_dostop): Likewise.
+	(S_proc_exception_raise): int -> integer_t
+	* pgrp.c (S_proc_getsessionpids, S_proc_getsessionpgids): Likewise.
+	(S_proc_getpgrppids): Likewise.
+
+2002-02-17  Roland McGrath  <roland@frob.com>
+
+	* info.c (S_proc_getprocinfo) [TASK_SCHED_TIMESHARE_INFO]: Do a second
+	task_info call to fill in PI->timeshare_base_info.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* proc.h (check_owner): Move this extern inline function ...

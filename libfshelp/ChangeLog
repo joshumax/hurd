@@ -1,3 +1,8 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* fetch-root.c (fshelp_fetch_root): int -> size_t
+	* delegate.c (fshelp_delegate_translation): Likewise.
+
 2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fshelp.h: Refer to dir_lookup, not dir_pathtrans, in comment.

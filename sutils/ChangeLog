@@ -1,3 +1,7 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* swapon.c (check_signature): Use %zu for size_t arg.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* reboot.c: Include <error.h>.

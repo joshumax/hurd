@@ -1,3 +1,11 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* fsys-getroot.c (netfs_S_fsys_getroot): Fix arg type in decl.
+	* append-std-options.c (netfs_append_std_options): Likewise.
+
+	* file-exec.c (netfs_S_file_exec): u_int -> size_t in decl.
+	* netfs.h (netfs_append_args): unsigned -> size_t in decl.
+
 2002-05-04  Roland McGrath  <roland@frob.com>
 
 	* io-restrict-auth.c (netfs_S_io_restrict_auth): Use

@@ -1,3 +1,12 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* module.c (open_class): Add cast to int for %* arg.
+
+	* kids.c (store_open_children): Dereference pointer in isalnum call.
+
+	* set.c (store_set_runs): Fix argument type.
+	* kids.c (store_set_children): Likewise.
+
 2002-03-15  Roland McGrath  <roland@frob.com>
 
 	* Makefile (OBJS): Remove hack for part.o.

@@ -1,3 +1,9 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* auth.c (S_auth_getids): u_int -> size_t
+	(S_auth_makeauth, S_auth_server_authenticate): Likewise.
+	(idvec_copyout): Fix argument type; make static.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* auth.c (S_auth_server_authenticate): Take reply port args.

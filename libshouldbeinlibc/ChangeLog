@@ -1,3 +1,16 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* portinfo.c (print_port_info): Use %z formats for port names.
+
+	* idvec-verify.c (verify_passwd): Cast to intptr_t before int.
+
+	* idvec-auth.c (idvec_merge_auth): int -> size_t.
+
+	* portxlate.c (port_name_xlator_xlate): Use mach_msg_type_name_t
+	instead of mach_port_type_t, to match RPC prototype.
+
+	* wire.c: Use ElfW(TYPE) in place of Elf32_TYPE throughout.
+
 2002-02-06  Roland McGrath  <roland@frob.com>
 
 	* Makefile (CFLAGS): Don't add -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H.

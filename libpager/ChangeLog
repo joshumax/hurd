@@ -1,3 +1,10 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* data-request.c (_pager_seqnos_memory_object_data_request): Use %z
+	format modifier for vm_size_t argument.
+	* data-return.c (_pager_do_write_request): Likewise.
+	* data-unlock.c (_pager_seqnos_memory_object_data_unlock): Likewise.
+
 2002-04-10  Neal H Walfield  <neal@cs.uml.edu>
 
        * pager-memcpy.c (pager_memcpy): Pass not the block but the byte

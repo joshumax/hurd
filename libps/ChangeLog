@@ -1,3 +1,19 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* context.c (ps_context_find_tty_by_cttyid): int -> mach_port_t
+	* proclist.c (proc_stat_list_add_all): unsigned -> size_t
+	(proc_stat_list_add_login_coll): Likewise.
+	(proc_stat_list_add_session): Likewise.
+	(proc_stat_list_add_fn_pids): Likewise.
+	(proc_stat_list_add_id_fn_pids): Likewise.
+
+	* host.c (ps_host_basic_info): int -> size_t
+	(ps_host_basic_info, ps_host_load_info): Likewise.
+	* ps.h: Update decls.
+	(struct proc_stat): unsigned -> size_t for task_events_info_size,
+	args_len, env_len.
+	* procstat.c (summarize_thread_waits): Fix argument type.
+
 2001-12-31  Roland McGrath  <roland@frob.com>
 
 	* host.c (ps_get_host): Use mach_port_t instead of host_t.

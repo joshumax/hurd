@@ -1,3 +1,9 @@
+2002-05-07  Roland McGrath  <roland@frob.com>
+
+	* msg.defs (msg_report_wait): int -> mach_msg_id_t
+	* hurd_types.h: Include <mach/message.h>.
+	(struct procinfo): int -> mach_msg_id_t for rpc_block.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* auth.defs (auth_user_authenticate): Add sreplyport argument.
