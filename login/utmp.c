@@ -1,6 +1,6 @@
 /* Login record (utmp) server.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -271,9 +271,9 @@ return_data(char *data, int data_len, char **buf, int *buf_len)
 {
   if (data_len > *buf_len)
     {
-      error_t err = vm_allocate(mach_task_self(), buf, data_len, 1);
-      if (err)
-	return err;
+      *buf = mmap (0, data_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*buf == (char *) -1))
+	return errno;
     }
 
   *buf_len = data_len;
