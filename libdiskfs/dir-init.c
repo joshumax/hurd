@@ -29,8 +29,9 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
   struct node *foo;
   error_t err;
   static uid_t zero = 0;
-  static struct protid lookupcred = {uids: &zero, gids: &zero,
-				     nuids: 1, ngids: 1};
+  static struct protid lookupcred = {{0, 0, 0, 0},
+				     &zero, &zero, 1, 1,
+				       0, 0};
 
   /* New links */
   if (pdp->dn_stat.st_nlink == diskfs_link_max - 1)
