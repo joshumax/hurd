@@ -75,6 +75,8 @@ struct sock_user *begin_using_socket_port (socket_t);
 struct sock_addr *begin_using_sockaddr_port (socket_t);
 void end_using_socket_port (struct sock_user *);
 void end_using_sockaddr_port (struct sock_addr *);
+void clean_addrport (void *);
+void clean_socketport (void *);
 
 /* MiG bogosity */
 typedef struct sock_user *sock_user_t;
