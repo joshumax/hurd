@@ -1,5 +1,5 @@
 /* Miscellaneous callbacks from Hurd fs servers to their clients.
-   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1991,92,93,94,95,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -26,7 +26,7 @@ FS_NOTIFY_IMPORTS
 #endif
 
 
-/* This is sent by a filesystem (after being requested with 
+/* This is sent by a filesystem (after being requested with
    dir_notice_changes) every time a directory is changed.
    CHANGE identifies the sort of change that has occurred (see hurd_types.h);
    NAME is the name that was changed.  */
@@ -42,5 +42,5 @@ routine dir_changed (
 routine file_changed (
 	notify_port: mach_port_t;
 	change: file_changed_type_t;
-	start: off_t;
-	end: off_t);
+	start: loff_t;
+	end: loff_t);
