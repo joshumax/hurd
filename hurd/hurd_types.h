@@ -163,6 +163,8 @@ enum term_bottom_type
    STORAGE_LAYER is a set of storage types, representing the same address
      range; all will be written too, and will be read in turn until one
      succeeds
+   STORAGE_REMAP is a layer on top of another store that remaps its blocks
+   STORAGE_COPY is a memory snapshot of another store
    STORAGE_NETWORK means that the file is stored elsewhere on the
      network; all the remaining fields contan type-specific information.
    STORAGE_OTHER means none of these apply; and should be used when no
@@ -187,6 +189,11 @@ enum term_bottom_type
       (BS is the LCM of its children; SIZE is the sum of theirs)
     layer   - 	     TY, FL, NC      	     -		       -	 NC
       (BS is the LCM of its children; SIZE is the minimum of theirs)
+    remap  - 	     TY, FL, NR      	     NR * (OFFS, LEN)  -	 1
+      (BS and SIZE are that of the child)
+    copy   -         TY, FL, SIZE	     -		       DATA	 -
+      (DATA is preceeded by padding to the next page boundary, and is
+       SIZE bytes long itself)
 
   For ileave, concat, and layer, the children are encoded following the parent.
   The first int must always be TY.
@@ -220,10 +227,12 @@ enum file_storage_class
   STORAGE_NETWORK,
   STORAGE_MEMORY,
   STORAGE_TASK,
-  STORAGE_NULL,
+  STORAGE_ZERO,
   STORAGE_CONCAT,
   STORAGE_INTERLEAVE,
   STORAGE_LAYER,
+  STORAGE_REMAP,
+  STORAGE_COPY,
 };
 
 /* Flags for the flags word returned by some types . */
