@@ -1,5 +1,5 @@
 /* Reply-only side of auth interface
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-subsystem auth_reply 25100;	/* must mach auth.defs + 100 */
+subsystem auth_reply 25100;	/* must match auth.defs + 100 */
 
 #include <hurd/hurd_types.defs>
 
