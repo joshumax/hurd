@@ -23,7 +23,7 @@
 void
 ports_dead_name (void *notify, mach_port_t dead_name)
 {
-  struct protid *pi = ports_lookup_port (diskfs_port_bucket, port,
+  struct protid *pi = ports_lookup_port (diskfs_port_bucket, dead_name,
 					 diskfs_protid_class);
   struct node *np;
   
