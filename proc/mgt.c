@@ -100,7 +100,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 
 
   err = auth_server_authenticate (authserver, 
-				  rendport, MACH_MSG_TYPE_MOVE_SEND,
+				  rendport, MACH_MSG_TYPE_COPY_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 				  &gen_uids, &ngen_uids,
 				  &aux_uids, &naux_uids,
@@ -108,6 +108,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 				  &aux_gids, &naux_gids);
   if (err)
     return err;
+  mach_port_deallocate (mach_task_self (), rendport);
 
   if (!--p->p_id->i_refcnt)
     free_ids (p->p_id);
