@@ -26,6 +26,7 @@ See `tasks', the exported task list.
 ** general:
 *** Enable compilation without -O
 *** figure out why uname -v string has `/ELF' appended.
+*** expunge special cthreads malloc finally.
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
@@ -142,6 +143,7 @@ See `tasks', the exported task list.
 *** Diagnose why shutdown doesn't close TCP channels properly or reliably.
 *** select for read on a UDP socket seems never to return.
 *** Undefined functions at the end of pfinet/io-ops.c.
+*** TCP connections to self return ENETUNREACH.
 
 ** nfs
 *** Implement async I/O
@@ -255,6 +257,7 @@ See `tasks', the exported task list.
 
 List for version 0.2 binary release
 
+* Install patch from hag for disk device in mach
 * Try and get new mach4 from Shantanu.
 * pfinet needs to support no-network operation
 * Have term do scancodes, at least kludgily.

@@ -240,10 +240,14 @@ $(libname).so: $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 endif
 
 # Providing directory dependencies
+ifneq ($(makemode),library)
+hurd-bug-addr-dir-dep = libhurdbugaddr
+endif
+
 directory-depend: $(..)$(dir).d
 $(..)$(dir).d: $(srcdir)/Makefile
 	rm -f $@
-	echo $(dir): $(addprefix lib,$(HURDLIBS)) > $@
+	echo $(dir): $(hurd-bug-addr-dir-dep) $(addprefix lib,$(HURDLIBS)) > $@
 
 # Making a snapshot
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)

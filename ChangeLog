@@ -1,3 +1,8 @@
+Fri Oct  4 17:52:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf ($(..)$(dir).d): Always include libhurdbugaddr in the
+	list for non-libraries.
+
 Thu Sep 26 15:43:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makeconf (%: %.sh): New rule.
