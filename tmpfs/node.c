@@ -433,6 +433,8 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
 mach_port_t
 diskfs_get_filemap (struct node *np, vm_prot_t prot)
 {
+  error_t err;
+
   if (np->dn->type != DT_REG)
     {
       errno = EOPNOTSUPP;	/* ? */
@@ -440,7 +442,10 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
     }
 
   if (default_pager == MACH_PORT_NULL)
-    return EIO;
+    {
+      errno = EIO;
+      return MACH_PORT_NULL;
+    }
 
   /* We don't bother to create the memory object until the first time we
      need it (i.e. first mapping or i/o).  This way we might have a clue
@@ -465,6 +470,12 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
     }
 
   /* XXX always writable */
+
+  /* Add a reference for each call, the caller will deallocate it.  */
+  err = mach_port_mod_refs (mach_task_self (), np->dn->u.reg.memobj,
+			    MACH_PORT_RIGHT_SEND, +1);
+  assert_perror (err);
+
   return np->dn->u.reg.memobj;
 }
 
@@ -475,7 +486,6 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *np)
 {
-  assert (!"fault on default pager object?");
   return 0;
 }
 
