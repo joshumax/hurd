@@ -20,9 +20,9 @@
 
 #include "fsck.h"
 
-
 /* Pretty primitive, I'm afraid. */
 
+int
 main (int argc, char **argv)
 {
   if (argc != 2)
@@ -59,4 +59,5 @@ main (int argc, char **argv)
   
   if (fsmodified)
     printf ("\n***** FILE SYSTEM WAS MODIFIED *****\n");
+  return 0;
 }  
