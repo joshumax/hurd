@@ -170,8 +170,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && (np->istranslated
-	      || fshelp_translated (&diskfs_root_node->transbox)))
+	  && (np->istranslated || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
 	  
