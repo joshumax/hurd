@@ -1,6 +1,6 @@
 /* Careful filename lookup
 
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -93,8 +93,7 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 
 	      if (ptrans != _ptrans)
 		/* Deallocate out-of-line memory from file_get_translator.  */
-		vm_deallocate (mach_task_self (),
-			       (vm_address_t)ptrans, ptrans_len);
+		munmap (ptrans, ptrans_len);
 
 	      err = file_get_translator_cntl (*node, &fsys);
 	      if (! err)
