@@ -196,7 +196,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	  goto out;
 	}
 	  
-      /* We can't just do iget, because we would then deadlock.
+      /* We can't just do diskfs_cached_lookup, because we would then deadlock.
 	 So we do this.  Ick.  */
       else if (retry_dotdot)
 	{
@@ -207,7 +207,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 		 try *again*. */
 	      diskfs_nput (np);
 	      mutex_unlock (&dp->lock);
-	      err = iget (inum, &np);
+	      err = diskfs_cached_lookup (inum, &np);
 	      mutex_lock (&dp->lock);
 	      if (err)
 		goto out;
@@ -222,7 +222,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	     repeat the directory scan to see if this is still
 	     right.  */
 	  mutex_unlock (&dp->lock);
-	  err = iget (inum, &np);
+	  err = diskfs_cached_lookup (inum, &np);
 	  mutex_lock (&dp->lock);
 	  if (err)
 	    goto out;
@@ -237,7 +237,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       else if (type == LOOKUP)
 	{
 	  diskfs_nput (dp);
-	  err = iget (inum, &np);
+	  err = diskfs_cached_lookup (inum, &np);
 	  if (err)
 	    goto out;
 	}
@@ -289,7 +289,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	       no new references, so we don't have anything to do */
 	    ;
 	  else if (type == LOOKUP)
-	    /* We did iget */
+	    /* We did diskfs_cached_lookup */
 	    diskfs_nput (np);
 	}
       else
