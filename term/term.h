@@ -97,6 +97,9 @@ struct port_class *pty_cntl_class;
 /* Trivfs control structure for the tty */
 struct trivfs_control *termctl;
 
+/* Trivfs control structure for the pty */
+struct trivfs_control *ptyctl;
+
 /* Filename for this terminal */
 char *nodename;
 
