@@ -4,6 +4,9 @@
 	__hurd_threadvar_stack_mask and __hurd_threadvar_stack_offset
 	variables (which got lost in the merge).
 
+	* cthreads.c (cthread_init): Move cthread_alloc call before
+	cproc_init call (lost in merge).
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* cthreads.h: Do not define WAIT_DEBUG to affect inlines.

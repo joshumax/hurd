@@ -30,6 +30,12 @@
  *	catch is reserved word in c++.
  *
  * $Log: cthreads.c,v $
+ * Revision 1.13  2002/05/28 23:55:55  roland
+ * 2002-05-28  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.c (cthread_fork_prepare, cthread_fork_parent,
+ * 	cthread_fork_child): Don't call malloc_fork_* (lost in merge).
+ *
  * Revision 1.12  2002/05/27 02:50:10  roland
  * 2002-05-26  Roland McGrath  <roland@frob.com>
  *
@@ -211,9 +217,9 @@ cthread_init(void)
 
 	if (cthreads_started)
 		return 0;
+	t = cthread_alloc((cthread_fn_t) 0, (any_t) 0);
 	stack = cproc_init();
 	cthread_cprocs = 1;
-	t = cthread_alloc((cthread_fn_t) 0, (void *) 0);
 
 #ifdef cthread_md_init
 	cthread_md_init();
