@@ -48,7 +48,31 @@ echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
 if test -d /tmp; then
-  (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -rf {} \; )
+
+  # Forcibly remove all translators in the directory.
+  # It is then safe to attempt to remove files and descend directories.
+  function remove_translators() {
+    local f
+    for f; do
+      f="./$f"
+      settrans -pagfS "$f"
+      if [ -L "$f" ] || [ ! -d "$f" ]; then
+	rm "$f"
+      else
+	remove_translators "$f"
+	rmdir "$f"
+      fi
+    done
+  }
+
+  (cd /tmp
+   for f in * .[!.] .??*; do
+     case "$f" in
+     'lost+found'|'quotas') ;;
+     *) remove_translators "$f"
+     esac
+   done)
+
 fi
 if test -d /var/run; then
   (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
