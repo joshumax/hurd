@@ -1,3 +1,7 @@
+2001-12-20  Marcus Brinkmann  <marcus@gnu.org>
+
+	* runsystem.sh: For now, this requires bash.
+
 2001-11-21  Roland McGrath  <roland@frob.com>
 
 	* runttys.c (setup_terminal, add_terminal, init_ttys): Check for

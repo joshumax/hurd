@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This program is run by /hurd/init at boot time after the essential
 # servers are up, and is responsible for running the "userland" parts of a
