@@ -67,13 +67,13 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	      mach_port_insert_right (mach_task_self (), port, port,port_type);
 
 	    rend = mach_reply_port ();
+
 	    err = io_reauthenticate (port, rend, 
 				     MACH_MSG_TYPE_MAKE_SEND);
-	    assert_perror (err);
-
-	    err = auth_user_authenticate (newauth, port, rend,
-					  MACH_MSG_TYPE_MAKE_SEND,
-					  &ret);
+	    if (! err)
+	      err = auth_user_authenticate (newauth, port, rend,
+					    MACH_MSG_TYPE_MAKE_SEND,
+					    &ret);
 	    if (err)
 	      ret = MACH_PORT_NULL;
 	  
