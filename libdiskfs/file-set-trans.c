@@ -120,8 +120,8 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		  minor = strtol (arg, 0, 0);
 	      
-		  np->dn_stat.st_rdev = (((major & 0x377) << 8)
-					 | (minor & 0x377));
+		  np->dn_stat.st_rdev = (((major & 0377) << 8)
+					 | (minor & 0377));
 		}
 
 	      diskfs_truncate (np, 0);
