@@ -21,10 +21,22 @@
 
 static int oldformat = 0;
 
+vm_address_t zeroblock = 0;
+
+struct fs *sblock = 0;
+struct csum *csum = 0;
+
 void
 get_hypermetadata (void)
 {
-  sblock = malloc (SBSIZE);
+  if (!sblock)
+    sblock = malloc (SBSIZE);
+
+  /* Free previous values.  */
+  if (zeroblock)
+    vm_deallocate (mach_task_self (), zeroblock, sblock->fs_bsize);
+  if (csum)
+    free (csum);
 
   assert (!diskfs_catch_exception ());
   bcopy (disk_image + SBOFF, sblock, SBSIZE);
@@ -95,7 +107,7 @@ get_hypermetadata (void)
   else
     direct_symlink_extension = 0;
 
-  csum = malloc (fsaddr (sblock, howmany (sblock->fs_cssize, 
+  csum = malloc (fsaddr (sblock, howmany (sblock->fs_cssize,
 					  sblock->fs_fsize)));
   
   assert (!diskfs_catch_exception ());
@@ -103,6 +115,27 @@ get_hypermetadata (void)
 	 csum,
 	 fsaddr (sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
   diskfs_end_catch_exception ();
+
+  if ((diskfs_device_size << diskfs_log2_device_block_size)
+      < sblock->fs_size * sblock->fs_fsize)
+    {
+      fprintf (stderr, 
+	       "Disk size (%ld) less than necessary "
+	       "(superblock says we need %ld)\n",
+	       diskfs_device_size << diskfs_log2_device_block_size,
+	       sblock->fs_size * sblock->fs_fsize);
+      exit (1);
+    }
+
+  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
+
+  /* If the filesystem has new features in it, don't pay attention to
+     the user's request not to use them. */
+  if ((sblock->fs_inodefmt == FS_44INODEFMT
+       || direct_symlink_extension)
+      && compat_mode == COMPAT_BSD42)
+    /* XXX should syslog to this effect */
+    compat_mode = COMPAT_BSD44;
 }
 
 /* Write the csum data.  This isn't backed by a pager because it is
@@ -192,4 +225,20 @@ copy_sblock ()
   diskfs_end_catch_exception ();
 }
 
+void diskfs_readonly_changed (int readonly)
+{
+  vm_protect (mach_task_self (),
+	      (vm_address_t)disk_image,
+	      diskfs_device_size << diskfs_log2_device_block_size,
+	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
+  if (readonly)
+    sblock_dirty = 0;
+  else
+    {
+      sblock->fs_clean = 0;
+      strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
+      sblock_dirty = 1;
+      diskfs_set_hypermetadata (1, 0);
+    }
+}
