@@ -36,6 +36,8 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c
 
+IFSOCKSRCS=ifsock.c
+
 NOTIFYSRCS=notify-nosenders.c notify-stubs.c
 
 INTSRCS=interrupt.c
@@ -48,10 +50,11 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 	ports-consts.c pager-consts.c ports-demuxer.c exc.c node-times.c    \
 	trans-sync.c shutdown.c
 
-SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS)
+SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
+	$(IFSOCKSRCS)
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
-	interruptServer.o fsys_replyUser.o msgUser.o
+	interruptServer.o fsys_replyUser.o msgUser.o ifsockServer.o
 
 OBJS = $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
@@ -89,6 +92,7 @@ $(subst .c,.o,$(FSYSSRCS)) boot-start.o: fsys_S.h
 boot-start.o: fsys_reply.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
+$(subst .c,.o,$(IFSOCKSRCS)): ifsock_S.h
 dir-chg.o: msg.h
 
 notify-nosenders.o ports-clean.o: $(includedir)/hurd/pager.h
@@ -111,6 +115,11 @@ fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
 		$(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fsys.defs \
 	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
+
+ifsock_S.h ifsockServer.c: $(includedir)/hurd/ifsock.defs \
+		$(includedir)/hurd/hurd_types.defs fsmutations.h
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/ifsock.defs \
+	| $(MIGCOM) -sheader ifsock_S.h -header /dev/hull -user /dev/null
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/notify.defs \
