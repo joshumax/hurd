@@ -22,7 +22,7 @@ target = proc
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
        cpu-types.c stubs.c
 LCLHDRS = proc.h
-DIST_FILES = proc_exc.defs proc_excrepl.defs
+DIST_FILES = proc_exc.defs proc_excrepl.defs ourmsg.defs
 
 MIGSTUBS = processServer.o notifyServer.o process_replyUser.o \
 	ourmsgUser.o interruptServer.o proc_excUser.o proc_excServer.o \
@@ -35,14 +35,3 @@ MIGSFLAGS ="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 proc: $(OBJS) ../libthreads/libthreads.a ../libihash/libihash.a
 
 include ../Makeconf
-
-# The reason for -Dout= is to prevent errors for get_init_port,
-# get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
-# We don't use those, so we're safe in breaking them.
-ourmsg_U.h ourmsgUser.c: ourmsg.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= ourmsg.defs \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourmsgUser.c -header ourmsg_U.h
-
-ourmsg.defs: $(includedir)/hurd/msg.defs
-	rm -f $@
-	ln -s $< $@
