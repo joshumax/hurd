@@ -1,3 +1,7 @@
+Wed Nov 20 17:13:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add iohelp.
+
 Mon Nov 18 17:01:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (guess_mode_use): Delete function.

@@ -1,3 +1,8 @@
+Wed Nov 20 17:13:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys-syncfs.c (netfs_S_fsys_syncfs): Use iohelp_create_iouser, not
+	iohelp_make_iouser.
+
 Mon Nov 18 17:06:39 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* netfs.h (netfs_report_access): Return error_t.
