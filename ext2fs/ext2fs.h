@@ -385,8 +385,8 @@ extern inline void
 record_global_poke (void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
-  if (global_block_modified (boffs_block (boffs)))
-    pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
+  global_block_modified (boffs_block (boffs));
+  pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
 }
 
 /* This syncs a modification to a non-file block.  */
@@ -403,8 +403,8 @@ extern inline void
 record_indir_poke (struct node *node, void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
-  if (global_block_modified (boffs_block (boffs)))
-    pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
+  global_block_modified (boffs_block (boffs));
+  pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
 }
 
 /* ---------------------------------------------------------------- */
