@@ -1,8 +1,7 @@
 /* Get standard netfs run-time options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -25,7 +24,7 @@
 /* Appends to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
    netfs option state.  */
 error_t
-netfs_append_std_options (char **argz, unsigned *argz_len)
+netfs_append_std_options (char **argz, size_t *argz_len)
 {
   return 0;
 }

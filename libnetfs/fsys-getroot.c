@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996, 1997, 2001 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1996,97,2001,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -35,7 +35,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 		      retry_type *do_retry,
 		      char *retry_name,
 		      mach_port_t *retry_port,
-		      mach_port_t *retry_port_type)
+		      mach_msg_type_name_t *retry_port_type)
 {
   struct port_info *pt = ports_lookup_port (netfs_port_bucket, cntl,
 					    netfs_control_class);
@@ -52,14 +52,14 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   err = iohelp_create_complex_iouser (&cred, uids, nuids, gids, ngids);
   if (err)
     return err;
-  
+
   flags &= O_HURD;
-  
+
   mutex_lock (&netfs_root_node->lock);
   err = netfs_validate_stat (netfs_root_node, cred);
   if (err)
     goto out;
-  
+
   type = netfs_root_node->nn_stat.st_mode & S_IFMT;
 
   if (((netfs_root_node->nn_stat.st_mode & S_IPTRANS)
@@ -82,16 +82,16 @@ netfs_S_fsys_getroot (mach_port_t cntl,
       /* ENOENT means translator has vanished inside fshelp_fetch_root. */
       err = 0;
     }
-  
+
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))
     {
       char pathbuf[netfs_root_node->nn_stat.st_size + 1];
-      
+
       err = netfs_attempt_readlink (cred, netfs_root_node, pathbuf);
 
       if (err)
 	goto out;
-      
+
       mutex_unlock (&netfs_root_node->lock);
       iohelp_free_iouser (cred);
 
@@ -113,20 +113,20 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 	  return 0;
 	}
     }
-  
-  if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR 
+
+  if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR
       || type == S_IFIFO) && (flags & (O_READ|O_WRITE|O_EXEC)))
     {
       err = EOPNOTSUPP;
       goto out;
     }
-  
+
   err = netfs_check_open_permissions (cred, netfs_root_node, flags, 0);
   if (err)
     goto out;
-  
+
   flags &= ~OPENONLY_STATE_MODES;
-  
+
   newpi = netfs_make_protid (netfs_make_peropen (netfs_root_node, flags,
 						 &peropen_context),
 			     cred);
@@ -137,13 +137,10 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
   retry_name[0] = '\0';
   ports_port_deref (newpi);
-  
+
  out:
   if (err)
     iohelp_free_iouser (cred);
   mutex_unlock (&netfs_root_node->lock);
   return err;
 }
-
-  
-      
