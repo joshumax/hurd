@@ -1,9 +1,7 @@
 /* Block address translation
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <malloc.h>
 #include <hurd/fs.h>
@@ -105,16 +103,16 @@ store_remap_create (struct store *source,
 		    const struct store_run *runs, size_t num_runs,
 		    int flags, struct store **store)
 {
-  error_t err;
+  error_t err =
+    _store_create (&store_remap_class, MACH_PORT_NULL, flags | source->flags,
+		   source->block_size, runs, num_runs, 0, store);
 
-  *store = _make_store (&store_remap_class, MACH_PORT_NULL, flags | source->flags,
-			source->block_size, runs, num_runs, 0);
-  if (! *store)
-    return ENOMEM;
-
-  err = store_set_children (*store, &source, 1);
-  if (err)
-    store_free (*store);
+  if (! err)
+    {
+      err = store_set_children (*store, &source, 1);
+      if (err)
+	store_free (*store);
+    }
 
   return err;
 }
