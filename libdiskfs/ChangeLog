@@ -1,3 +1,88 @@
+Thu Sep 19 17:59:37 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add store.
+
+Wed Sep 18 15:02:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-version.c (_print_version): Change to use new version
+	format from the coding standards.
+
+	* opts-std-runtime.c (std_runtime_options): Change --remount to
+	--update (keep --remount as a deprecated alias).
+	<argp.h>: New include.
+	* opts-append-std.c <stdio.h>: New include.
+	* dir-lookup.c <stdio.h>: New include.
+	
+Fri Sep 13 19:15:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Free ARGZ if
+	diskfs_append_args returns an error.
+	* fsys-options.c (diskfs_S_fsys_get_options): Likewise.
+
+1996-09-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_disk_name): New declaration.
+	* readonly.c (diskfs_check_readonly): Use DISKFS_DISK_NAME
+	instead of DISKFS_DEVICE_ARG.
+	* init-startup.c (_diskfs_init_completed): Likewise.
+
+Wed Sep 11 17:25:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* disk-pager.c (diskfs_start_disk_pager): Renamed from
+	setup_disk_pager.
+	Add PAGER_BUCKET, IMAGE, and SIZE arguments.
+	Pass in PAGER_BUCKET to thread routine, and don't create it.
+	(diskfs_disk_pager): Renamed from disk_pager.
+	(disk_image): Variable removed.
+	(pager_bucket): Declaration removed.
+	(service_paging_requests): Get PAGER_BUCKET from argument.
+	* diskfs-pager.h (diskfs_start_disk_pager): Renamed from
+	disk_pager_setup.
+	Add PAGER_BUCKET, IMAGE, and SIZE arguments.
+	(diskfs_disk_pager): Renamed from disk_pager.
+	(disk_image, pager_bucket): Declarations removed.
+
+Mon Sep  9 10:54:58 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys-options.c (diskfs_S_fsys_get_options): Initialize ARGZ &
+	ARGZ_LEN to the program name, and call diskfs_append_args instead
+	of diskfs_get_options.
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Likewise.
+	<argz.h>: New include.
+	* diskfs.h (diskfs_append_args): Renamed from diskfs_get_options.
+	* opts-get.c (diskfs_append_args): Likewise.
+	* opts-std-startup.c <hurd/store.h>: New include.
+	(store_argp_parents): Use diskfs_startup_argp, not
+	diskfs_std_startup_argp.
+	* Makefile (libdiskfs.so): Depend on libstore.so.
+
+	* opts-version.c <argp.h>, <stdio.h>: New includes.
+	(_print_version): Test diskfs_extra_version against 0 too.
+	* io-version.c <stdio.h>: New include.
+	(diskfs_S_io_server_version): Use snprintf instead of sprintf.
+
+Sun Sep  8 18:19:50 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h <argp.h>: Include removed.
+	(struct argp): New (incomplete) declaration.
+	(diskfs_get_file_device, diskfs_get_mach_device): Declarations removed.
+	(diskfs_startup_argp): Renamed from diskfs_std_startup_argp.
+	(diskfs_store_startup_argp): Renamed from
+	diskfs_std_device_startup_argp.
+	(diskfs_device_arg, diskfs_use_mach_device, diskfs_device_open,
+ 	diskfs_device, diskfs_device_name, diskfs_device_start,
+ 	diskfs_device_size, diskfs_device_block_size,
+ 	diskfs_log2_device_block_size, diskfs_log2_device_blocks_per_page,
+ 	diskfs_device_write_sync, diskfs_device_read_sync): Declarations
+ 	removed.
+	* opts-std-startup.c (diskfs_use_mach_device, diskfs_device_arg,
+	dev_startup_options, dev_startup_argp_parents,
+	diskfs_std_device_startup_argp): Variables removed.
+	(parse_dev_startup_opt): Function removed.
+	(diskfs_startup_argp): Renamed from diskfs_std_startup_argp.
+	* Makefile (OTHERSRCS): Remove filedev.c, machdev.c, dev-open.c,
+ 	dev-io.c, & dev-globals.c.
+	
 Thu Sep 12 16:22:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile: New variable.
