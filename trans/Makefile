@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,8 +18,8 @@
 dir := trans
 makemode := servers
 
-targets = symlink ifsock magic null fifo new-fifo fwd
-SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c
+targets = symlink ifsock magic null fifo new-fifo fwd devport
+SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c devport.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
 
 all: $(targets)
@@ -28,8 +28,8 @@ symlink magic: fsysServer.o
 ifsock: ifsockServer.o
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a
-null ifsock fifo new-fifo: ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a
+null ifsock fifo new-fifo devport: ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-fwd null ifsock fifo new-fifo: ../libthreads/libthreads.a
+fwd null ifsock fifo new-fifo devport: ../libthreads/libthreads.a
 
 include ../Makeconf
