@@ -30,7 +30,6 @@ netfs_S_file_check_access (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  *types = user->po->openstat & (O_WRITE|O_READ|O_EXEC);
   netfs_report_access (user->credential, user->po->np, types);
   mutex_unlock (&user->po->np->lock);
   return 0;
