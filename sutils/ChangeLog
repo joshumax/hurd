@@ -1,3 +1,12 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fstab.c, fstab.h: Add numerous `const' qualifiers.
+
+	* fstab.c (fstab_find_mount): Don't count "none" or "-" as matching
+	any other entry.
+
+	* fsck.c (struct fsck): Don't use bitfield.
+
 1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* swapon.c: Support -a (reading fstab).
