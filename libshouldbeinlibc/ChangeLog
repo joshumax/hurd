@@ -1,3 +1,7 @@
+Tue May 27 14:16:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_args_usage): Supply correct argp to filter_doc.
+
 Sun May 25 21:57:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-parse.c (parser_init): For the special case where no
