@@ -57,6 +57,10 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   struct ext2_group_desc *gdp;
   ino_t inum = np->dn->number;
 
+  if (diskfs_readonly)
+    ext2_panic ("diskfs_free_node",
+		"Freeing inode %d on a readonly filesystem", inum);
+
   ext2_debug ("freeing inode %lu\n", inum);
 
   spin_lock (&global_lock);
@@ -273,7 +277,12 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   error_t err;
   int sex;
   struct node *np;
-  ino_t inum = ext2_alloc_inode (dir->dn->number, mode);
+  ino_t inum;
+
+  if (diskfs_readonly)
+    return EROFS;
+
+  inum = ext2_alloc_inode (dir->dn->number, mode);
 
   if (inum == 0)
     return ENOSPC;
