@@ -377,10 +377,12 @@ deliver (int msg, char *msg_name, char *rcpt, int flags, struct params *params)
 	    ex = SYSERR ("%s", msg_name);
 	}
       if (! ex)
-	if (flags & D_PROCESS)
-	  ex = process (msg, msg_name, fd, mbox, params);
-	else
-	  ex = copy (msg, msg_name, fd, mbox);
+	{
+	  if (flags & D_PROCESS)
+	    ex = process (msg, msg_name, fd, mbox, params);
+	  else
+	    ex = copy (msg, msg_name, fd, mbox);
+	}
     }
 
   if (fd >= 0)
@@ -517,10 +519,12 @@ main (int argc, char **argv)
 	       messages) is preferable to not delivering the temporary
 	       failures.  */
 	    if (ex != EX_TEMPFAIL)
-	      if (rex == EX_TEMPFAIL)
-		ex = EX_TEMPFAIL;
-	      else if (! ex)
-		ex = rex;
+	      {
+		if (rex == EX_TEMPFAIL)
+		  ex = EX_TEMPFAIL;
+		else if (! ex)
+		  ex = rex;
+	      }
 	  }
     }
 
