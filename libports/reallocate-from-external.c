@@ -49,7 +49,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
       dropref = 1;
       pi->flags &= ~PORT_HAS_SENDRIGHTS;
     }
-  else if ((pi->flags & PORT_HAS_SENDRIGHTS == 0) && stat.mps_srights)
+  else if (((pi->flags & PORT_HAS_SENDRIGHTS) == 0) && stat.mps_srights)
     {
       pi->flags |= PORT_HAS_SENDRIGHTS;
       pi->refcnt++;
