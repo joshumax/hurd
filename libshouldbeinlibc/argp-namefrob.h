@@ -74,8 +74,6 @@
 #define __strcasecmp strcasecmp
 #undef __vsnprintf
 #define __vsnprintf vsnprintf
-#undef __progname_full
-#define __progname_full __progname
 
 #endif /* !_LIBC */
 
