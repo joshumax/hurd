@@ -435,6 +435,22 @@ configure_device (struct device *dev,
   return - inet_set_ifa (dev, ifa);
 }
 
+void
+inquire_device (struct device *dev,
+		uint32_t *addr, uint32_t *netmask)
+{
+  struct in_device *in_dev = dev->ip_ptr;
+  struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
+
+  if (ifa)
+    {
+      *addr = ifa->ifa_local;
+      *netmask = ifa->ifa_mask;
+    }
+  else
+    *addr = *netmask = INADDR_NONE;
+}
+
 #else
 
 int devinet_ioctl(unsigned int cmd, void *arg)
