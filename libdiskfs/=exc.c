@@ -93,7 +93,7 @@ diskfs_register_memory_fault_area (struct pager *p,
 
   hurd_preempt_signals (&rec->preempter1, SIGSEGV, addr, addr + len,
 			segv_preempter);
-  hurd_preempt_signals (&rec->preempter1, SIGBUS, addr, addr + len,
+  hurd_preempt_signals (&rec->preempter2, SIGBUS, addr, addr + len,
 			segv_preempter);
   rec->p = p;
   rec->off = off;
