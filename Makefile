@@ -45,6 +45,9 @@ all: $(addsuffix -all,$(prog-subdirs))
 %-install:
 	$(MAKE) -C $* install
 
+%-TAGS:
+	$(MAKE) -C $* TAGS
+
 hurd-snap:
 	mkdir hurd-snap
 
@@ -57,3 +60,5 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(prog-subdirs))
 relink: $(addsuffix -relink,$(prog-subdirs))
 
 install: $(addsuffix -install,$(prog-subdirs))
+
+TAGS: $(addsuffix -install,$(prog-subdirs) $(lib-subdirs))
