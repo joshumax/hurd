@@ -52,6 +52,7 @@ struct trivfs_control
   struct port_class *protid_class;
   struct port_bucket *protid_bucket;
   mach_port_t underlying;
+  void *hook;			/* for user use */
 };
 
 /* The user must define these variables. */
@@ -79,7 +80,7 @@ extern int trivfs_cntl_nportclasses;
    stat (as returned from the underlying node) for presentation to
    callers of io_stat.  It is permissable for this function to do
    nothing.  */
-void trivfs_modify_stat (struct stat *);
+void trivfs_modify_stat (struct trivfs_protid *cred, struct stat *);
 
 /* If this variable is set, it is called every time an open happens.
    UIDS, GIDS, and FLAGS are from the open; CNTL identifies the
@@ -157,12 +158,8 @@ error_t trivfs_protid_dup (struct trivfs_protid *cred,
 			   struct trivfs_protid **dup);
 
 /* The user must define this function.  Someone wants the filesystem
-   to go away.  FLAGS are from the set FSYS_GOAWAY_*; REALNODE,
-   CNTLTYPE, and PROTIDTYPE are as from the trivfs_handle_port
-   call which creade this filesystem. */
-error_t trivfs_goaway (int flags, mach_port_t realnode, 
-		       struct port_class *control_class,
-		       struct port_class *protid_class);
+   CNTL to go away.  FLAGS are from the set FSYS_GOAWAY_*. */
+error_t trivfs_goaway (struct trivfs_control *cntl, int flags);
 
 /* Call this to set atime for the node to the current time.  */
 error_t trivfs_set_atime (struct trivfs_control *cntl);
