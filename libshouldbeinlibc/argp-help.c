@@ -754,10 +754,15 @@ void argp_help (const struct argp *argp, FILE *stream,
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE))
     /* Print a short `Usage:' message.  */
     {
+      int old_lm;
       int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
-      int old_lm = line_wrap_set_lmargin (stream, USAGE_INDENT);
 
       fprintf (stream, "Usage: %s", name);
+
+      /* We set the lmargin as well as the wmargin, because hol_usage
+	 manually wraps options with newline to avoid annoying breaks.  */
+      old_lm = line_wrap_set_lmargin (stream, USAGE_INDENT);
+
       if (flags & ARGP_HELP_SHORT_USAGE)
 	/* Just show where the options go.  */
 	{
