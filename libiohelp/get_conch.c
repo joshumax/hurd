@@ -20,7 +20,7 @@
 /* The conch must be locked when calling this routine. */
 /* Remove any current holder of the conch. */
 error_t
-_libioserver_internal_get_conch (struct conch *c)
+get_conch (struct conch *c)
 {
   struct shared_io *user_sh;
   int error = 0;
