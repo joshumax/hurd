@@ -121,9 +121,6 @@ binary-arch: build
 
 # now the shared libs and other stuff
 	$(make_directory)	debian/tmp/{DEBIAN,usr/doc/$(package)}
-# kill some nonsense
-	rm -fr			debian/tmp/root
-	-rm -f			debian/tmp/etc/*
 # Only found in CVS, not the distribution.
 #	$(install_file)		BUGS debian/tmp$(DOCDIR)
 #	$(install_file)		TODO debian/tmp$(DOCDIR)
