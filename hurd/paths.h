@@ -1,11 +1,11 @@
 /* Standard Hurd pathnames.
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1992 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#pragma once
-
+#ifndef	_HURD_PATHS_H
+#define	_HURD_PATHS_H
 
 /* Port rendezvous points are specified by symbols _SERVERS_FOO,
    the canonical pathname being /servers/foo.  */
@@ -36,14 +36,19 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define	_SERVERS_SOCKET		_SERVERS "socket"
 
 /* Hurd servers are specified by symbols _HURD_FOO,
-   the canonical pathname being /libexec/foo.  */
+   the canonical pathname being /hurd/foo.  */
+
+#define	_HURD		"/hurd/"
+#define	_HURD_INIT	_HURD "init"
 
 /* Standard translators for special node types.
    These pathnames are used by the C library.
    UFS and perhaps other filesystems short-circuit these translators.  */
-#define	_HURD		"/libexec/"
 #define	_HURD_SYMLINK	_HURD "symlink" /* S_IFLNK */
 #define	_HURD_CHRDEV	_HURD "chrdev" /* S_IFCHR */
 #define	_HURD_BLKDEV	_HURD "blkdev" /* S_IFBLK */
 #define	_HURD_FIFO	_HURD "fifo" /* S_IFIFO */
 #define	_HURD_IFSOCK	_HURD "ifsock" /* S_IFSOCK */
+
+
+#endif	/* hurd/paths.h */
