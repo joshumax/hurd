@@ -60,9 +60,9 @@ pager_no_senders (struct pager *p,
   mutex_unlock (&p->interlock);
 
   if (dealloc)
-    done_with_port (p);
+    ports_done_with_port (p);
 
-  done_with_port (p);		/* for previous check_port_type */
+  ports_done_with_port (p);		/* for previous check_port_type */
 }
 
 
