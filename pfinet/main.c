@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,6 +27,7 @@
 #include <hurd/startup.h>
 #include <string.h>
 #include <fcntl.h>
+#include <version.h>
 
 #include <linux/netdevice.h>
 #include <linux/inet.h>
@@ -48,6 +49,8 @@ struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_cntl_nportclasses = 1;
 
 struct port_class *shutdown_notify_class;
+
+const char *argp_program_version = STANDARD_HURD_VERSION (pfinet);
 
 /* Option parser.  */
 extern struct argp pfinet_argp;

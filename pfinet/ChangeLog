@@ -1,3 +1,8 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* main.c: Include <version.h>.
+	(argp_program_version): New variable.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* timer-emul.c (timer_function): Add a return stmt.
