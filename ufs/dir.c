@@ -238,16 +238,6 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	assert (0);
     }
   
-  /* If we will be modifying the directory, make sure it's allowed. */
-  if (type == RENAME
-      || (type == REMOVE && inum)
-      || (type == CREATE && !inum))
-    {
-      err = diskfs_checkdirmod (dp, np, cred);
-      if (err)
-	goto out;
-    }
-  
   if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
     {
       /* We didn't find any room, so mark ds to extend the dir */
