@@ -1,3 +1,14 @@
+1998-08-12  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* aclocal.m4 (AC_PROG_CC_LOCAL): Renamed to hurd_PROG_CC.
+	(AC_PROG_CC_WORKS_LOCAL): Renamed to hurd_PROG_CC_WORKS.
+	* configure.in: Use hurd_PROG_CC instead of AC_PROG_CC_LOCAL.
+	(AC_PREREQ): Require 2.12.
+	(AC_CANONICAL_HOST): Give helpful error messages for likely cases of
+	bogus host specs.
+	(crypt check): Don't do AC_CHECK_FUNCS to get HAVE_CRYPT,
+	just check for -lcrypt to set $LIBCRYPT.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* configure.in: Grok --{en,dis}able-profile, default enable.
