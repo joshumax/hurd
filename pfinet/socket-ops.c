@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -180,9 +180,9 @@ S_socket_connect (struct sock_user *user,
       && sock->type != SOCK_DGRAM)
     err = EISCONN;
   else if (sock->state != SS_UNCONNECTED
-	   && sock->state != SS_CONNECTING)
+	   && sock->state != SS_CONNECTING
+	   && sock->state != SS_CONNECTED)
     err = EINVAL;
-  
   
   if (!err)
     err = - (*sock->ops->connect) (sock, addr->address, addr->len, 
