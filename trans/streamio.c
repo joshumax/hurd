@@ -423,12 +423,12 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_blksize = vm_page_size;
   st->st_size = 0;
 
+  st->st_rdev = rdev;
   st->st_mode &= ~S_IFMT;
   st->st_mode |= S_IFCHR;
-  st->st_rdev = rdev;
-  if (trivfs_allow_open & O_READ)
+  if ((trivfs_allow_open & O_READ) == 0)
     st->st_mode &= ~(S_IRUSR | S_IRGRP | S_IROTH);
-  if (trivfs_allow_open & O_WRITE)
+  if ((trivfs_allow_open & O_WRITE) == 0)
     st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 }
 
