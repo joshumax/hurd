@@ -26,11 +26,10 @@
 #include <hurd/hurd_types.h>
 #include <hurd/trivfs.h>
 
-#include "pflocal.h"
 #include "sock.h"
 
-/* Where our ports are... */
-struct port_bucket *pflocal_port_bucket;
+/* Where to put the file-system ports. */
+static struct port_bucket *pf_port_bucket;
 
 /* Trivfs hooks */
 int trivfs_fstype = FSTYPE_MISC;
@@ -74,6 +73,14 @@ static struct option options[] =
 
 /* ---------------------------------------------------------------- */
 
+/* A demuxer to separate out pf-level operations on our node.  */
+static int
+pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
+{
+  extern int socket_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
+  return socket_server (inp, outp) || trivfs_demuxer (inp, outp);
+}
+
 void main(int argc, char *argv[])
 {
   int opt;
@@ -97,23 +104,28 @@ void main(int argc, char *argv[])
   if (bootstrap == MACH_PORT_NULL)
     error(2, 0, "Must be started as a translator");
   
-  pflocal_port_bucket = ports_create_bucket ();
+  pf_port_bucket = ports_create_bucket ();
 
   trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
   trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
 
+  /* Prepare to create sockets.  */
+  err = sock_global_init ();
+  if (err)
+    error(3, err, "Initializing");
+
   /* Reply to our parent */
   err =
     trivfs_startup(bootstrap,
-		   trivfs_cntl_portclasses[0], pflocal_port_bucket,
-		   trivfs_protid_portclasses[0], pflocal_port_bucket,
+		   trivfs_cntl_portclasses[0], pf_port_bucket,
+		   trivfs_protid_portclasses[0], pf_port_bucket,
 		   NULL);
   if (err)
     error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_multithread (pflocal_port_bucket,
-					    trivfs_demuxer,
+  ports_manage_port_operations_multithread (pf_port_bucket,
+					    pf_demuxer,
 					    30*1000, 5*60*1000, 0, 0);
 
   exit(0);
@@ -133,17 +145,17 @@ trivfs_goaway (int flags, mach_port_t realnode,
   error_t err;
 
   /* Stop all I/O.  */
-  ports_inhibit_bucket_rpcs (pflocal_port_bucket);
+  ports_inhibit_bucket_rpcs (pf_port_bucket);
 
   /* Now see if there are any old sockets lying around.  */
-  err = sock_goaway (flags);
+  err = sock_global_shutdown (flags);
 
   /* Exit if not, or if we must. */
   if (err == 0 || flags & FSYS_GOAWAY_FORCE)
     exit (0);
 
   /* We won't go away, so start things going again...  */
-  ports_resume_bucket_rpcs (pflocal_port_bucket);
+  ports_resume_bucket_rpcs (pf_port_bucket);
 
   return err;
 }
