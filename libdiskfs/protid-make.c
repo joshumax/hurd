@@ -76,16 +76,4 @@ diskfs_create_protid (struct peropen *po, uid_t *uids, int nuids,
   return err;
 }
 
-/* Backward compatibility.  Use diskfs_create_protid. */
-struct protid *
-diskfs_make_protid (struct peropen *po, uid_t *uids, int nuids,
-		    uid_t *gids, int ngids)
-{
-  struct protid *cred;
-  if (diskfs_create_protid (po, uids, nuids, gids, ngids, &cred))
-    cred = 0;
-  return cred;
-}
 
-#include "linkwarn.h"
-obsolete (diskfs_make_protid, diskfs_create_protid)
