@@ -17,6 +17,7 @@
 
 #include "ufs.h"
 #include "fs.h"
+#include "dinode.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -49,7 +50,7 @@ get_hypermetadata (void)
 
   if (sblock->fs_maxsymlinklen > MAXSYMLINKLEN)
     {
-      fprintf (stderr, "Max shortcut symlinklen %d is too big (max is %d)\n",
+      fprintf (stderr, "Max shortcut symlinklen %ld is too big (max is %ld)\n",
 	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
       exit (1);
     }
@@ -70,7 +71,8 @@ get_hypermetadata (void)
   else
     direct_symlink_extension = 0;
 
-  err = dev_read_sync (fsbtodb (sblock->fs_csaddr), (vm_address_t *) &csum,
+  err = dev_read_sync (fsbtodb (sblock, sblock->fs_csaddr), 
+		       (vm_address_t *) &csum,
 		       sblock->fs_fsize * howmany (sblock->fs_cssize, 
 						   sblock->fs_fsize));
   assert (!err);
@@ -88,7 +90,7 @@ diskfs_set_hypermetadata (int wait, int clean)
   spin_lock (&alloclock);
   if (csum_dirty)
     {
-      (*writefn)(fsbtodb (sblock->fs_csaddr), (vm_address_t) csum,
+      (*writefn)(fsbtodb (sblock, sblock->fs_csaddr), (vm_address_t) csum,
 		 sblock->fs_fsize * howmany (sblock->fs_cssize,
 					     sblock->fs_fsize));
       csum_dirty = 0;
