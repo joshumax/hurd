@@ -176,9 +176,7 @@ struct ftp_conn
 
   int use_passive : 1;		/* If true, first try passive data conns.  */
 
-  /* These are only used if active data connections are in use.  */
   struct sockaddr *actv_data_addr;/* Address of port for active data conns.  */
-  int actv_data_conn_queue;	/* A socket to accept data connections on.  */
 };
 
 /* Parameters for an ftp connection; doesn't include any actual connection
