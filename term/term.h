@@ -173,6 +173,8 @@ clear_queue (struct queue *q)
   condition_broadcast (q->wait);
 }
 
+/* Should be below, but inlines need it. */
+void call_asyncs (void);
 
 /* Return the next character off Q; leave the quoting bit on. */
 extern inline quoted_char
@@ -294,7 +296,6 @@ void copy_rawq (void);
 void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
-void call_asyncs (void);
 
 /* Call this before using ptyio_bottom.  */
 void ptyio_init (void);
