@@ -754,8 +754,10 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 /* Start the translator on node NP.  NP is locked.  The node referenced
    by DIR must not be locked.  NP will be unlocked during the execution
    of this function, and then relocked before return.  The authentication
-   of DIR is ignored, so it may be anything convenient.  */
-error_t diskfs_start_translator (struct node *np, file_t dir);
+   of DIR is ignored, so it may be anything convenient.  DIRCRED identifies
+   the directory in which this node was found, or 0 if it is root.  */
+error_t diskfs_start_translator (struct node *np, file_t dir,
+				 struct protid *dircred);
 
 /* Create and return a protid for an existing peropen.  The uid set is
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
