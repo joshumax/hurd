@@ -21,10 +21,10 @@
    requests write access, return the error to the kernel.  (This is 
    screwy because of the rules associated with m_o_lock_request.) */
 void
-mark_next_request_error(struct pager *p,
-			int offset,
-			int length,
-			error_t error)
+_pager_mark_next_request_error(struct pager *p,
+			       vm_address_t offset,
+			       vm_size_t length,
+			       error_t error)
 {
   int page_error;
   char *p;
@@ -60,10 +60,10 @@ mark_next_request_error(struct pager *p,
    routines can find out.  (This is only necessary because the
    XP interface is not completely implemented in the kernel.) */
 void
-mark_object_error(struct pager *p,
-		  int offset,
-		  int length,
-		  error_t error)
+_pager_mark_object_error(struct pager *p,
+			 vm_address_t offset,
+			 vm_size_t length,
+			 error_t error)
 {
   int page_error = 0;
   char *p;
@@ -92,5 +92,39 @@ mark_object_error(struct pager *p,
   
   for (p = p->pagemap; p < p->pagemap + length; p++)
     *p = SET_PM_ERROR (*p, page_error);
+}
+
+/* Tell us what the error (set with mark_object_error) for 
+   pager P is on page ADDR. */
+error_t
+pager_get_error (struct pager *p,
+		 vm_address_t addr)
+{
+  error_t err;
+  
+  mutex_lock (&p->p_interlock);
+  pagemap_resize (p, addr);
+  
+  switch (PM_ERROR (addr / __vm_page_size))
+    {
+    case PAGE_NOERR:
+      err = 0;
+      break;
+      
+    case PAGE_ENOSPC:
+      err = ENOSPC;
+      break;
+      
+    default:
+    case PAGE_EIO:
+      err = EIO;
+      break;
+      
+    case PAGE_EDQUOT:
+      err = EDQUOT;
+      break;
+    }
+  mutex_unlock (&p->p_interlock);
+  return err;
 }
 
