@@ -17,8 +17,11 @@
 
 #include "ioserver.h"
 
+/* Called by an I/O server upon receipt of an io_release_conch message;
+   The user identified by USER is done with conch C; release it and 
+   allow a waiting user to obtain the conch.  */
 error_t
-handle_io_release_conch (struct conch *c, void *user)
+ioserver_handle_io_release_conch (struct conch *c, void *user)
 {
   error_t error = 0;
   
