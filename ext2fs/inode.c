@@ -71,7 +71,7 @@ iget (ino_t inum, struct node **npp)
   dn->dirents = 0;
 
   rwlock_init (&dn->alloc_lock);
-  pokel_init (&dn->pokel, diskpager->p, disk_image);
+  pokel_init (&dn->pokel, disk_pager->p, disk_image);
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
