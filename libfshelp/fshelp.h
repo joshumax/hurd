@@ -63,14 +63,16 @@ void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
    want to have the translator started so you can talk to it.  LINK is
    the trans_link structure for this node; NAME is the file to execute
    as the translator (*NAME may be modified).  DIR and NODE should be
-   send rights; both of them will be reauthenticated before being
-   given to the translator.  DIR should refer to the directory holding
-   the node being translater, and will be provided as the cwdir of the
-   process.  NODE should refer to the node being translated, and will
-   be provided as the realnode return value from fsys_startup.  UID
-   and GID are the uid and gid of the process to be started.  LOCK
-   must be a mutex which you hold; it is assumed that the trans_link
-   structure will not be changed unless this is held. */
+   send rights; DIR will be reauthenticated before being given to the
+   translator and NODE should already be authenticated properly.  Both
+   send-rights will be consumed by this call, whatever its exit value.  DIR
+   should refer to the directory holding the node being translater,
+   and will be provided as the cwdir of the process.  NODE should
+   refer to the node being translated, and will be provided as the
+   realnode return value from fsys_startup.  UID and GID are the uid
+   and gid of the process to be started.  LOCK must be a mutex which
+   you hold; it is assumed that the trans_link structure will not be
+   changed unless this is held. */
 error_t fshelp_start_translator (struct trans_link *link, char *name, 
 				 int namelen, file_t dir, file_t node, 
 				 uid_t uid, gid_t gid, struct mutex *lock);
