@@ -1,3 +1,7 @@
+1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* MAKEDEV.sh (fd): Pass --directory to /hurd/magic translator.
+
 1999-09-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fstab.c (fstab_read): Ignore filesystems with types of ignore,
@@ -7,7 +11,7 @@
 
 	* MAKEDEV.sh (mkdev): pty master and slave nodes should have mode
 	666, not 640.  Reported by Marcus Brinkmann
-	<Marcus.Brinkmann@ruhr-uni-bochum.de>. 
+	<Marcus.Brinkmann@ruhr-uni-bochum.de>.
 
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 

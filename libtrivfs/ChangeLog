@@ -1,5 +1,7 @@
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* dir-readdir.c (trivfs_S_dir_readdir): Take DATA_DEALLOC parameter.
+
 	* dir-lookup.c (trivfs_S_dir_lookup): Duplicate CRED->user to pass it
 	to trivfs_open.  Add ref to CRED->realnode when used by trivfs_open.
 

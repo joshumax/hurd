@@ -1,3 +1,7 @@
+1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-readdir.c (diskfs_S_dir_readdir): Take new DATA_DEALLOC param.
+
 1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* lookup.c (diskfs_lookup): Rewrite code from last change, which had

@@ -1,3 +1,11 @@
+1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* magic.c: Rewritten using libtrivfs.
+	With new flag --directory/-d, present an empty directory that
+	has . and .. as normal and lists no other contents, but
+	looking up anything else within it does the magical retry.
+	* Makefile (magic): Update library deps accordingly.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fifo.c, null.c, new-fifo.c: Reverted changes related to
