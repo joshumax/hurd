@@ -31,7 +31,6 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 {
   struct pager *p;
   struct lock_request *lr;
-  int wakeup;
 
   if (!(p = ports_check_port_type (object, pager_port_type)))
     {
@@ -50,12 +49,13 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
 
-  wakeup = 0;
   for (lr = p->lock_requests; lr; lr = lr->next)
     if (lr->start == offset && lr->end == offset + length
 	&& !--lr->locks_pending && !lr->pending_writes)
-      wakeup = 1;
-  condition_broadcast (&p->wakeup);
+      break;
+
+  if (lr)
+    condition_broadcast (&p->wakeup);
 
   _pager_release_seqno (p);
   mutex_unlock (&p->interlock);
