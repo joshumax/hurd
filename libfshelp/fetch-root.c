@@ -169,8 +169,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
   
   /* Cancellation point XXX */
   err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
-		      user->uids->ids, user->uids->len, 
-		      user->gids->ids, user->gids->len,
+		      user->uids->ids, user->uids->num, 
+		      user->gids->ids, user->gids->num,
 		      flags, retry, retryname, root);
   
   mutex_lock (box->lock);

@@ -27,7 +27,8 @@
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <cthreads.h>
-#include <iohelp.h>
+#include <hurd/iohelp.h>
+#include <sys/stat.h>
 
 #ifndef FSHELP_EI
 #define FSHELP_EI extern inline
@@ -269,10 +270,11 @@ fshelp_isowner (struct stat *st, struct iouser *user)
 FSHELP_EI error_t
 fshelp_access (struct stat *st, int op, struct iouser *user)
 {
+  int gotit;
   if (idvec_contains (user->uids, 0))
     gotit = 1;
   else if (user->uids->num == 0 && (st->st_mode & S_IUSEUNK))
-    gotit = st->st_mode & (op << S_IUSEUNKSHIFT);
+    gotit = st->st_mode & (op << S_IUNKSHIFT);
   else if (!fshelp_isowner (st, user))
     gotit = st->st_mode & op;
   else if (idvec_contains (user->gids, st->st_gid))
