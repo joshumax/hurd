@@ -31,9 +31,14 @@ struct rwlock
   int readers_waiting;
 };
 
+#ifdef _RWLOCK_DEFINE_FUNCTIONS
+#undef _EXTERN_INLINE
+#define _EXTERN_INLINE
+#else /* ! _RWLOCK_DEFINE_FUNCTIONS */
 #ifndef _EXTERN_INLINE
 #define _EXTERN_INLINE extern __inline
 #endif
+#endif /* _RWLOCK_DEFINE_FUNCTIONS */
 
 /* Get a reader lock on reader-writer lock LOCK for disknode DN */
 _EXTERN_INLINE void
