@@ -1,3 +1,8 @@
+1998-10-26  Gordon Matzigkeit  <gord@trick.fig.org>
+
+	* init-startup.c (diskfs_startup_diskfs): Use diskfs_nput to free
+	the old diskfs_root_node when switching to a virtual root.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Add braces to silence gcc
