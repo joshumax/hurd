@@ -47,9 +47,17 @@ struct trivfs_control
 extern int trivfs_fstype;
 extern int trivfs_fsid;
 
+/* Set these if trivfs should allow read, write, 
+   or execute of file.    */
 extern int trivfs_support_read;
 extern int trivfs_support_write;
 extern int trivfs_support_exec;
+
+/* Set this some combination of O_READ, O_WRITE, and O_EXEC;
+   trivfs will only allow opens of the specified modes.
+   (trivfs_support_* is not used to validate opens, only actual
+   operations.)  */
+extern int trivfs_allow_open;
 
 extern int trivfs_protid_porttypes[];
 extern int trivfs_protid_nporttypes;
@@ -78,8 +86,10 @@ error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
 /* Call this after *trivfs_check_open_hook returns EWOULDBLOCK when
    FLAGS did not include O_NONBLOCK.  CNTL identifies the node now
    openable.  If MULTI is nonzero, then return all pending opens,
-   otherwise, return only one. */
-void trivfs_complete_open (struct trivfs_control *cntl, int multi);
+   otherwise, return only one.  ERR is whether this open should
+   return an error, and what error to return. */
+void trivfs_complete_open (struct trivfs_control *cntl, 
+			   int multi, error_t err);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
