@@ -22,8 +22,6 @@
 
 #include "window.h"
 #include "mem.h"
-
-#include "dev.h" /* for MSG & debug */
 
 /* ---------------------------------------------------------------- */
 
@@ -77,15 +75,6 @@ position(struct window *win, vm_offset_t pos, vm_size_t len)
   vm_offset_t win_beg = win->pos;
   vm_offset_t win_end = win_beg + win->size;
 
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "position: need window on 0x%x[%d]\n", pos, len);
-      mutex_unlock(&debug_lock);
-    }
-#endif
-
   if (pos >= win_beg && end <= win_end)
     /* The request is totally satisfied by our current position.  */
     return 0;
@@ -99,18 +88,7 @@ position(struct window *win, vm_offset_t pos, vm_size_t len)
       int prot = VM_PROT_READ | (win->read_only ? 0 : VM_PROT_WRITE);
 
       if (win->size > 0)
-	{
-#ifdef MSG
-	  if (debug)
-	    {
-	      mutex_lock(&debug_lock);
-	      fprintf(debug, "position: deallocating window 0x%x[%d]\n",
-		      win_beg, win->size);
-	      mutex_unlock(&debug_lock);
-	    }
-#endif
-	  vm_deallocate(mach_task_self(), win->buffer, win->size);
-	}
+	vm_deallocate(mach_task_self(), win->buffer, win->size);
 
       win->pos = trunc_page(pos);
       win->size = round_page(len + (pos - win->pos));
@@ -121,16 +99,6 @@ position(struct window *win, vm_offset_t pos, vm_size_t len)
 
       if (win->pos + win->size > win->max_pos)
 	win->size = win->max_pos - win->pos;
-
-#ifdef MSG
-	  if (debug)
-	    {
-	      mutex_lock(&debug_lock);
-	      fprintf(debug, "position: mapping window 0x%x[%d]\n",
-		      win->pos, win->size);
-	      mutex_unlock(&debug_lock);
-	    }
-#endif
 
       return
 	vm_map(mach_task_self(), &win->buffer, win->size, 0, 1,
