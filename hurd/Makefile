@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,20 +19,8 @@ dir := hurd
 makemode := misc
 
 DIST_FILES = *.defs subsystems ioserver.h ports.h pager.h fshelp.h \
-	diskfs.h trivfs.h cthreads.h
+	diskfs.h trivfs.h cthreads.h netfs.h
 LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 
 include ../Makeconf
 
-# XXX This should be done by the individual libraries' install targets XXX
-REMHDRS = ../libioserver/ioserver.h \
-	../libports/ports.h \
-	../libpager/pager.h \
-	../libfshelp/fshelp.h \
-	../libdiskfs/diskfs.h \
-	../libtrivfs/trivfs.h \
-	../libthreads/cthreads.h \
-	../libps/ps.h
-
-dohdrs:
-	ln -s $(REMHDRS) .
