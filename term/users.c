@@ -514,6 +514,21 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 }
 
 
+error_t
+trivfs_S_file_access (struct trivfs_protid *cred,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
+		      int *allowed)
+{
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  /* XXX Do the right thing eventually. */
+  *allowed = O_READ | O_WRITE;
+  return 0;
+}
+
+
 /* Called for user writes to the terminal as described
    in <hurd/io.defs>. */
 error_t
