@@ -34,6 +34,13 @@
  * 	macros. They take one argument: a name string.
  *
  * $Log: cthreads.h,v $
+ * Revision 1.19  2002/05/28 23:55:58  roland
+ * 2002-05-28  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h (hurd_condition_wait, condition_implies,
+ * 	condition_unimplies): Restore decls lost in merge.
+ * 	(mutex_clear): Define as mutex_init instead of bogon (lost in merge).
+ *
  * Revision 1.18  2002/05/27 02:50:10  roland
  * 2002-05-26  Roland McGrath  <roland@frob.com>
  *
@@ -229,8 +236,6 @@
 
 #ifndef	_CTHREADS_
 #define	_CTHREADS_ 1
-
-#define WAIT_DEBUG		/* XXX should be defined somewhere else */
 
 #if 0
 /* This is CMU's machine-dependent file.  In GNU all of the machine
