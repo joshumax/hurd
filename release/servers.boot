@@ -10,7 +10,7 @@
 # loads and runs /hurd/exec.  This task is created, and its task port saved
 # in ${exec-task} to be passed to the fs above, but it is left suspended; 
 # the fs will resume the exec task once it is ready.
-/lib/ld.so /hurd/exec $(exec-task=task-create)
+/lib/ld.so.1 /hurd/exec $(exec-task=task-create)
 
 # default pager
 /dev/sd0b $(add-paging-file) $(default-pager)

@@ -15,13 +15,13 @@ default= 0
 # Entry 0:
 title= hurd (sd0a multi-user)
 root=   (hd0,a)
-kernel= /boot/kernel root=sd0a
+kernel= /boot/gnumach root=sd0a
 module= /boot/serverboot
 
 # Entry 1:
 title= hurd (sd0a single-user)
 root=   (hd0,a)
-kernel= /boot/kernel root=sd0a -s
+kernel= /boot/gnumach root=sd0a -s
 module= /boot/serverboot
 
 
@@ -29,13 +29,13 @@ module= /boot/serverboot
 # Entry 2:
 title=  hurd (hd0a multi-user)
 root=   (hd0,a)
-kernel= /boot/kernel root=hd0a
+kernel= /boot/gnumach root=hd0a
 module= /boot/serverboot
 
 # Entry 3:
 title=	hurd (hd0a single-user)
 root=	(hd0,a)
-kernel=	/boot/kernel root=hd0a -s
+kernel=	/boot/gnumach root=hd0a -s
 module=	/boot/serverboot
 
 

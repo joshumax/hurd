@@ -18,6 +18,9 @@ Checklist for binary image filesystems
 *   Symlinks in /bin; esp. sh, awk, more, cc.
 *   Symlink /lib/libtermcap.a -> /lib/libncurses.a, termcap_g.a, 
 	curses_g.a, curses.a.
+*   Symlink /lib/ld.so -> /lib/ld.so.1.
+*   Make sure directories exist: /tmp, /var/run.
+*   Touch /var/log/wtmp.
 *   Check all symlinks to make sure they don't reference /gd4.
 *   Don't use absolute symlinks--make them all relative.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
@@ -46,3 +49,12 @@ Checklist for binary image filesystems
 *   Make sure everything listed in SOURCES is on prep.
 *   Install release
 *   Post announcement
+
+
+FSF Hurd machines need in addition to the INSTALL-binary installation:
+
+*   our NFS translators
+*   our kernel
+*   sendmail.cf, /etc/aliases
+*   /home/* symlinks
+*   /etc/syslog.conf

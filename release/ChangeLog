@@ -1,3 +1,11 @@
+Wed Jun 11 12:05:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (dist-links): Create /servers/exec node.
+
+	* servers.boot: Dynamic linker is now `ld.so.1', not `ld.so'.
+
+	* menu.lst: Kernel is now `gnumach', not `kernel'.
+
 Tue Jun 10 18:48:10 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* INSTALL-binary (Subroutine): Update location of NetBSD install

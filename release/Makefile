@@ -50,6 +50,7 @@ dist-links:
 	touch $(dist-root)/servers/socket/2
 	ln -f $(dist-root)/servers/socket/1 $(dist-root)/servers/socket/local
 	ln -f $(dist-root)/servers/socket/2 $(dist-root)/servers/socket/inet
+	touch $(dist-root)/servers/exec
 endif
 
 ifneq ($(tool-root),)
