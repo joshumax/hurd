@@ -640,23 +640,42 @@ ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
   return ps_write_field(name, width, stream, count);
 }
 
+struct state_shadow
+{
+  /* If any states in STATES are set, the states in shadow are suppressed.  */
+  int states;
+  int shadow;
+};
+
+struct state_shadow state_shadows[] = {
+  /* Don't show sleeping thread if one is running, or the process is stopped.*/
+  { PSTAT_STATE_T_RUN | PSTAT_STATE_P_STOP,
+    PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_IDLE | PSTAT_STATE_T_WAIT },
+  /* Only show the longest sleep.  */
+  { PSTAT_STATE_T_IDLE,		PSTAT_STATE_T_SLEEP | PSTAT_STATE_T_WAIT },
+  { PSTAT_STATE_T_SLEEP,	PSTAT_STATE_T_WAIT },
+  /* Turn off the per-thread stop bits when the process is stopped, as
+     they're expected.  */
+  { PSTAT_STATE_P_STOP,		PSTAT_STATE_T_HALT | PSTAT_STATE_T_UNCLEAN },
+  { 0 }
+};
+
 error_t
 ps_emit_state(proc_stat_t ps, ps_getter_t getter,
 	      int width, FILE *stream, unsigned *count)
 {
   char *tags;
-  int state = G(getter, int)(ps);
+  int raw_state = G(getter, int)(ps);
+  int state = raw_state;
   char buf[20], *p = buf;
+  struct state_shadow *shadow = state_shadows;
 
-  /* turn off seemingly bogus or annoying flags */
-  state &= ~PSTAT_STATE_SWAPPED;
-
-  /* If any thread is running, don't mention sleeping or idle threads --
-     presumably *some* work is getting done... */
-  if (state & (PSTAT_STATE_RUNNING | PSTAT_STATE_STOPPED))
-    state &= ~(PSTAT_STATE_SLEEPING | PSTAT_STATE_IDLE);
-  if (state & PSTAT_STATE_IDLE)
-    state &= ~PSTAT_STATE_SLEEPING;
+  while (shadow->states)
+    {
+      if (raw_state & shadow->states)
+	state &= ~shadow->shadow;
+      shadow++;
+    }
 
   for (tags = proc_stat_state_tags
        ; state != 0 && *tags != '\0'
