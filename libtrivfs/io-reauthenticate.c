@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -76,9 +76,13 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   newcred->ngids = gengidlen;
   newcred->hook = cred->hook;
   
+  mutex_lock (&cred->po->cntl->lock);
+
   newcred->po = cred->po;
   newcred->po->refcnt++;
   
+  mutex_unlock (&cred->po->cntl->lock);
+
   err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
 			  gen_uids, genuidlen, gen_gids, gengidlen);
   if (err)
