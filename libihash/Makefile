@@ -1,6 +1,5 @@
-# 
-#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-#   Written by Michael I. Bushnell.
+#
+#   Copyright (C) 1995,96,2001 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -17,16 +16,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 dir := libihash
 makemode := library
 
-SRCS=ihash.c primes.c
-LCLHDRS=ihash.h priv.h
-OBJS=ihash.o primes.o
 libname := libihash
+SRCS = ihash.c sizes.c
 installhdrs = ihash.h
+LCLHDRS = $(installhdrs) priv.h
+
+OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
-
-

@@ -1,21 +1,21 @@
 /* Integer-keyed hash table functions.
 
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
-   
+   Copyright (C) 1993,94,95,96,97,2001 Free Software Foundation, Inc.
+
    This file is part of the GNU Hurd.
 
-   Written by Michael I. Bushnell; revised by Miles Bader <miles@gnu>.
-   
+   Written by Michael I. Bushnell; revised by Miles Bader <miles@gnu.org>.
+
    The GNU Hurd is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
-   
-   The GNU Hurd is distributed in the hope that it will be useful, 
+
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
@@ -65,7 +65,7 @@ find_index(ihash_t ht, int id)
 {
   int h, firsth = -1;
 
-  for (h = HASH(ht, id); 
+  for (h = HASH(ht, id);
        ht->tab[h] != HASH_EMPTY && ht->ids[h] != id && h != firsth;
        h = REHASH(ht, id, h))
     if (firsth == -1)
@@ -91,7 +91,7 @@ ihash_create(ihash_t *ht)
 }
 
 /* Free HT and all resources it consumes.  */
-void 
+void
 ihash_free(ihash_t ht)
 {
   void (*cleanup)(void *value, void *arg) = ht->cleanup;
@@ -145,7 +145,7 @@ ihash_add(ihash_t ht, int id, void *item, void ***locp)
       int h, firsth = -1;
 
       /* Search for for an empty or deleted space.  */
-      for (h = HASH(ht, id); 
+      for (h = HASH(ht, id);
 	   ht->tab[h] != HASH_EMPTY && ht->tab[h] != HASH_DEL && h != firsth;
 	   h = REHASH(ht, id, h))
 	if (firsth == -1)
@@ -175,11 +175,16 @@ ihash_add(ihash_t ht, int id, void *item, void ***locp)
     void ****old_locps = ht->locps;
     int *old_ids = ht->ids;
 
-    ht->size = _ihash_nextprime (2 * old_size);
+    i = 0;
+    while (_ihash_sizes[i] <= old_size)
+      if (++i == _ihash_nsizes)
+	return ENOMEM;		/* Surely will be true momentarily.  */
+
+    ht->size = _ihash_sizes[i];
     ht->tab = malloc(ht->size * sizeof (void *));
     ht->locps = malloc (ht->size * sizeof (void ***));
     ht->ids = malloc (ht->size * sizeof (int));
-      
+
     if (ht->tab == NULL || ht->locps == NULL || ht->ids == NULL)
       /* Memory allocation error; back out our changes and fail...  */
       {
@@ -206,7 +211,7 @@ ihash_add(ihash_t ht, int id, void *item, void ***locp)
 
     /* Finally add the new element!  */
     ihash_add(ht, id, item, locp);
-  
+
     if (old_size > 0)
       {
 	free(old_tab);
