@@ -30,9 +30,12 @@ netfs_S_io_revoke (struct protid *cred)
     iterator_function (void *port)
     {
       struct protid *user = port;
-      
-      if ((user != cred) && (user->po->np == np))
+
+      if ((user.pi.class == netfs_protid_class)
+	  && (user != cred) 
+	  && (user->po->np == np))
 	ports_destroy_right (user);
+      return 0;
     }
 
   if (!cred)
@@ -51,7 +54,7 @@ netfs_S_io_revoke (struct protid *cred)
       return err;
     }
   
-  ports_bucket_iterate (diskfs_port_bucket, iterator_function);
+  ports_bucket_iterate (netfs_port_bucket, iterator_function);
 
   mutex_unlock (&np->lock);
 
