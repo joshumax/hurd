@@ -51,7 +51,7 @@ nextprime (int n)
       m = alloca (sizeof (int) * p);
       bzero (m, sizeof (int) * p);
       
-      /* Seive */
+      /* Sieve */
       for (i = 0; i < l; i++)
 	for (j = q[i] * 2; j < p; j += q[i])
 	  m[j] = 1;
