@@ -1,3 +1,7 @@
+2001-01-30  Neal H Walfield   <neal@cs.uml.edu>
+
+	* netfs.h: Fix comment for netfs_nref (finally).
+
 2001-01-14  Neal H Walfield   <neal@cs.uml.edu>
 
 	* netfs.h: Documentation fixes.

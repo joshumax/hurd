@@ -357,7 +357,8 @@ struct protid *netfs_make_protid (struct peropen *po, struct iouser *user);
 struct peropen *netfs_make_peropen (struct node *, int,
 				    struct peropen *context);
 
-/* Add a reference to node NP, which must be locked by the caller.  */
+/* Add a reference to node NP. Unless you already hold a reference,
+   NP must be locked.  */
 void netfs_nref (struct node *np);
 
 /* Releases a node.  Drops a reference to node NP, which must not be
