@@ -131,14 +131,14 @@ ifeq ($(doinst),one)
 all: $(target)
 install: $(installationdir)/$(target) $(installationdir)
 $(installationdir)/$(target): $(target)
-	$(INSTALL_PROGRAM) $(INSTALL-$@-ops) $< $@
+	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 endif
 
 ifeq ($(doinst),many)
 all: $(targets)
 install: $(addprefix $(installationdir)/,$(targets)) $(installationdir)
 $(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
-	$(INSTALL_PROGRAM) $(INSTALL-$@-ops) $< $@
+	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 endif
 
 ifeq ($(makemode),library)
