@@ -54,7 +54,7 @@ extern void *disk_image;	/* Region mapping entire disk from it.  */
    Any unexpected fault hereafter will crash the program.  */
 #define diskfs_end_catch_exception()					      \
 ({									      \
-    assert (cthread_data () != 0);					      \
+    assert (cthread_data (cthread_self ()) != 0);			      \
     cthread_set_data (cthread_self (), 0);				      \
 })
 
