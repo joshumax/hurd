@@ -230,6 +230,19 @@ error_t argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
    ARGP_HELP_*.  */
 void argp_help (struct argp *argp, FILE *stream, unsigned flags);
 
+/* Output the standard usage message for ARGP to stderr and exit (1).  */
+void argp_usage (struct argp *argp) __attribute__ ((noreturn));
+extern inline void argp_usage (struct argp *argp)
+{
+  argp_help (argp, stderr, ARGP_HELP_STD_USAGE);
+}
+
+/* Print the printf string FMT and following args, preceded by the program
+   name and `:', to stderr, and followed by a `Try ... --help' message.  Then
+   exit (1).  */
+extern void argp_error (struct argp *argp, char *fmt, ...)
+     __attribute__ ((noreturn, format (printf, 2, 3)));
+
 /* Returns true if the option OPT is a valid short option.  */
 extern inline int
 _option_is_short (struct argp_option *opt)
