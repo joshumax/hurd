@@ -31,7 +31,7 @@ record_directory (struct dinode *dp, ino_t number)
   
   blks = howmany (dp->di_size, sblock->fs_bsize);
   if (blks > NDADDR)
-    blks = NDADDR * NIADDR;
+    blks = NDADDR + NIADDR;
   blks *= sizeof (daddr_t);
   dnp = malloc (sizeof (struct dirinfo) + blks);
   

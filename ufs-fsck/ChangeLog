@@ -1,3 +1,11 @@
+Fri Aug 16 10:25:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir.c (record_directory): Maximum number of block pointers to
+	record is NDADDR + NIADDR, not NDADDR * NIADDR.
+	* pass2.c: Include <assert.h>.
+ 	(pass2): Before copying block addresses to DINO in basic
+	integrity check, assert that DNP->i_numblks isn't too big.
+
 Mon Aug 12 11:39:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (dir): Now ufs-fsck.

@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "fsck.h"
+#include <assert.h>
 
 /* Verify root inode's allocation and check all directories for
    viability.  Set DIRSORTED array fully and check to make sure
@@ -307,6 +308,7 @@ pass2 ()
 	}
       bzero (&dino, sizeof (struct dinode));
       dino.di_size = dnp->i_isize;
+      assert (dnp->i_numblks <= (NDADDR + NIADDR) * sizeof (daddr_t));
       bcopy (dnp->i_blks, dino.di_db, dnp->i_numblks);
       
       datablocks_iterate (&dino, checkdirblock);
