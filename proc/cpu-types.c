@@ -21,6 +21,10 @@ const char *const mach_cpu_types[] =
     [CPU_TYPE_SPARC] = "sparc",
     [CPU_TYPE_I860] = "i860",
     [CPU_TYPE_ALPHA] = "alpha",
+    [CPU_TYPE_I486] = "i486",
+    [CPU_TYPE_PENTIUM] = "i586",
+    [CPU_TYPE_PENTIUMPRO] = "i686",
+    [CPU_TYPE_POWERPC] = "powerpc",
   };
 
 const char *const mach_cpu_subtypes[][32] =
@@ -67,14 +71,18 @@ const char *const mach_cpu_subtypes[][32] =
 	[CPU_SUBTYPE_MMAX_XPC] = "MMAX_XPC",
 	[CPU_SUBTYPE_PC532] = "PC532",
       },
-    [CPU_TYPE_I386] =
-      {
-	[CPU_SUBTYPE_AT386] = "AT386",
-	[CPU_SUBTYPE_EXL] = "EXL",
-	[CPU_SUBTYPE_iPSC386] = "iPSC386",
-	[CPU_SUBTYPE_SYMMETRY] = "SYMMETRY",
-	[CPU_SUBTYPE_PS2] = "PS2",
-      },
+#define Ix86_SUBTYPES							    \
+      {									    \
+	[CPU_SUBTYPE_AT386] = "AT386",					    \
+	[CPU_SUBTYPE_EXL] = "EXL",					    \
+	[CPU_SUBTYPE_iPSC386] = "iPSC386",				    \
+	[CPU_SUBTYPE_SYMMETRY] = "SYMMETRY",				    \
+	[CPU_SUBTYPE_PS2] = "PS2",					    \
+      }
+    [CPU_TYPE_I386] = Ix86_SUBTYPES,
+    [CPU_TYPE_I486] = Ix86_SUBTYPES,
+    [CPU_TYPE_PENTIUM] = Ix86_SUBTYPES,
+    [CPU_TYPE_PENTIUMPRO] = Ix86_SUBTYPES,
     [CPU_TYPE_MIPS] =
       {
 	[CPU_SUBTYPE_MIPS_R2300] = "R2300",

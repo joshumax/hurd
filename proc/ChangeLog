@@ -4,6 +4,13 @@
 	(argp_program_version): New variable.
 	Include <argp.h> and <version.h>.
 
+Thu Jun 26 14:03:16 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* cpu-types.c (mach_cpu_types): Add entries for 486, 586, 686,
+	and powerpc. 
+	(mach_cpu_subtypes): Add subtypes for new x86 subtypes.  (None
+	added for powerpc yet.)
+
 Mon Feb  3 16:52:14 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* hash.c (pid_find, task_find, task_find_nocreate, reqport_find):
