@@ -1,5 +1,5 @@
 /* Definitions for inclusion in MiG files
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -19,6 +19,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-struct apt *convert_auth_to_idblock (auth_t);
+struct apt *convert_auth_to_apt (auth_t);
 typedef struct apt *aptptr_t;
 
