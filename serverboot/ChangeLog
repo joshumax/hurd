@@ -1,3 +1,7 @@
+1999-10-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bootstrap.c (DEFAULT_ROOT): Change to "hd0s1".
+
 1999-08-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* bootstrap.c (parse_script): Add one to the buffer size so we can
