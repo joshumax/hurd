@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,2002 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -100,7 +100,7 @@ use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
       }
   if ((rr->valid & VALID_MD) && (rr->allmode & S_IFDIR))
       return 0;
-      
+
   /* If it is a symlink or a zero length file, don't use file_start.  */
   if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
     return 0;
@@ -163,7 +163,7 @@ cache_inode (struct node *np, struct dirrect *record,
 /* Fetch inode with cache id ID; set *NPP to the node structure;
    gain one user reference and lock the node. */
 error_t
-diskfs_cached_lookup (int id, struct node **npp)
+diskfs_cached_lookup (ino_t id, struct node **npp)
 {
   struct node *np;
   error_t err;

@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994,95,96,97,98,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,2000,01,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,7 +47,7 @@ inode_init ()
 /* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
 error_t
-diskfs_cached_lookup (int inum, struct node **npp)
+diskfs_cached_lookup (ino_t inum, struct node **npp)
 {
   struct disknode *dn;
   struct node *np;
