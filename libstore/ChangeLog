@@ -1,3 +1,9 @@
+2003-08-04  Roland McGrath  <roland@frob.com>
+
+	* typed.c (store_find_class): Use dlopen/dlclose on the names found by
+	looking through the list instead of passing list elements directly to
+	dlsym, which is not kosher.
+
 2003-08-02  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* module.c (store_module_open): NAME that doesn't contain ':' is
