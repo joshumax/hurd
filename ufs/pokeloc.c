@@ -32,9 +32,12 @@ spin_lock_t pokelistlock = SPIN_LOCK_INITIAILIZER;
 
 /* Remember that data here on the disk has been modified. */
 void
-record_poke (vm_offset_t offset, vm_size_t length)
+record_poke (void *loc, vm_size_t length)
 {
   struct pokeloc *pl = malloc (sizeof (struct pokeloc));
+  vm_offset_t offset;
+  
+  offset = loc - disk_image;
   pl->offset = trunc_page (offset);
   pl->length = round_page (offset + length) - pl->offset;
 
