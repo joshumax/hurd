@@ -1,3 +1,8 @@
+1999-05-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* idvec-verify.c (verify_passwd): Avoid nonreentrant getpwuid.
+	If pw_passwd is "x", use getspnam_r and use its sp_pwdp if it succeeds.
+
 1998-12-21  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* ugids-verify-auth.c: Include <hurd/password.h> again and remove
@@ -10,7 +15,7 @@
 	in the passwd DB is empty.
 	(verify_id): Also call verify_fn when the password in the password
 	DB is empty.
-	
+
 1999-02-12  Gordon Matzigkeit  <gord@trick.fig.org>
 
 	* Makefile (LCLHDRS): Purge argp-fmtstream.h and argp-namefrob.h.
