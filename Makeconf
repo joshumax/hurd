@@ -207,7 +207,7 @@ endif
 # Cleaning
 ifeq ($(clean),yes)
 clean:
-	rm -f *.o *Server.c *User.c *_S.h *_U.h $(cleantarg)
+	rm -f *.d *.*_d *.o *Server.c *User.c *_S.h *_U.h $(cleantarg)
 ifneq ($(makemode),library)
 relink:
 	rm -f $(cleantarg)
