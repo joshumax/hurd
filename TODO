@@ -49,6 +49,7 @@ See `tasks', the exported task list.
 *** Change servers to be mom-ish
 
 ** libc:
+*** (once vm_remap exists) implement mremap
 *** when a session leader _exits, it should SIGHUP, TIOCDRAIN, and revoke. !!!
     [it is still under discussion exactly where to address this,
      so don't do it in libc yet]
@@ -299,6 +300,7 @@ See `tasks', the exported task list.
 ** Have the at-close actions on devices be more directly controllable
    by users by deleting the current at-close actions and replacing
    them with suitable device_set_status calls.
+** Specify and implement vm_remap.
 
 ======
 
