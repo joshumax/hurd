@@ -100,3 +100,13 @@ routine fsys_init (
 	proc_server: mach_port_send_t;
 	auth_handle: auth_t);
 
+/* Ask SERVER to provide fsys translation service for us.  REQUESTOR is
+   the bootstrap port supplied to the original translator, and ARGV are
+   the command line arguments.  If the recipient accepts the request, he
+   (or some delegate) should send fsys_startup to REQUESTOR to start the
+   filesystem up.  */
+routine fsys_forward (
+	server: mach_port_t;
+	RPT
+	requestor: mach_port_send_t;
+	argv: data_t);
