@@ -211,7 +211,8 @@ ffs_realloccg(register struct node *np,
 	
 	if (!diskfs_isuid (0, cred) && freespace(fs, fs->fs_minfree) <= 0)
 		goto nospace;
-	if (error = diskfs_catch_exception ())
+	error = diskfs_catch_exception ();
+	if (error)
 	  return error;
 	bprev = (dino (np->dn->number))->di_db[lbprev];
 	diskfs_end_catch_exception ();
@@ -237,7 +238,8 @@ ffs_realloccg(register struct node *np,
 	 * Check for extension in the existing location.
 	 */
 	cg = dtog(fs, bprev);
-	if (bno = ffs_fragextend(np, cg, (long)bprev, osize, nsize)) {
+	bno = ffs_fragextend(np, cg, (long)bprev, osize, nsize);
+	if (bno)
 		assert (bno == bprev);
 		spin_unlock (&alloclock);
 		np->dn_stat.st_blocks += btodb(nsize - osize);
