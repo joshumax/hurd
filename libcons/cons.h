@@ -76,6 +76,7 @@ struct vcons
 
   struct
   {
+    uint32_t flags;
     struct
     {
       uint32_t col;
@@ -194,6 +195,10 @@ void cons_vcons_beep (vcons_t vcons);
 /* The user must define this function.  Make the virtual console
    VCONS, which is locked, flash visibly.  */
 void cons_vcons_flash (vcons_t vcons);
+
+/* The user must define this function.  Notice the current status of
+   the scroll lock flag.  */
+void cons_vcons_set_scroll_lock (vcons_t vcons, int onoff);
 
 /* The user must define this function.  It is called whenever a
    virtual console is selected to be the active one.  It is the user's

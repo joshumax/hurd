@@ -1,3 +1,8 @@
+2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.h (struct cons_display): New member FLAGS.
+	(union cons_change_t): Likewise for WHAT->flags.
+
 2002-09-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.h: Include <wchar.h>.

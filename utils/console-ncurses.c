@@ -601,6 +601,11 @@ cons_vcons_flash (vcons_t vcons)
   mutex_unlock (&global_lock);
 }
 
+void
+cons_vcons_set_scroll_lock (vcons_t vcons, int onoff)
+{
+}
+
 
 int
 main (int argc, char *argv[])

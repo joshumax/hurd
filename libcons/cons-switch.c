@@ -56,6 +56,7 @@ cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
   else
     {
       assert (delta < 0);
+      vcons_entry = vcons->vcons_entry;
       while (delta++ < 0)
         {
           vcons_entry = vcons_entry->prev;

@@ -1,5 +1,12 @@
 2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
 
+	* display.c (DISPLAY_CHANGE_FLAGS): New macro.
+	(struct changes): New member FLAGS.
+	(display_flush_filechange): Handle change of flags.
+	(display_output_some): Initialize DISPLAY->changes.flags.
+	(display_start_output): Clear CONS_FLAGS_SCROLL_LOCK in DISPLAY.
+	(display_stop_output): Set CONS_FLAGS_SCROLL_LOCK in DISPLAY.
+
 	* display.c (display_output_some): If iconv fails with EILSEQ,
 	skip the next byte in the buffer and print a replacement
 	character.

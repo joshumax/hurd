@@ -65,7 +65,8 @@ typedef union
     uint32_t screen_scr_lines : 1;
     uint32_t bell_audible : 1;
     uint32_t bell_visible : 1;
-    uint32_t _unused : 25;
+    uint32_t flags : 1;
+    uint32_t _unused : 24;
     uint32_t not_matrix : 1;
     /* Here are 32 more unused bits.  */
   } what;
@@ -82,6 +83,11 @@ struct cons_display
   uint32_t version;		/* Version of interface.  Lower 16
 				   bits define the age, upper 16 bits
 				   the major version.  */
+
+  /* Various one bit flags that don't deserve their own field.  */
+#define CONS_FLAGS_SCROLL_LOCK 0x00000001
+  uint32_t flags;
+
   struct
   {
     uint32_t width;	/* Width of screen matrix.  */

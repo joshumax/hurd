@@ -1,3 +1,14 @@
+2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
+
+	* cons.h: New prototype for cons_vcons_set_scroll_lock.
+	 (struct vcons): Add member FLAGS to state.
+	* file-changed.c (cons_S_file_changed): Handle change of flags.
+	* vcons-refresh.c (cons_vcons_refresh): Copy FLAGS field.
+	Call cons_vcons_set_scroll_lock.
+
+	* cons-switch.c (cons_switch): Initialize VCONS_ENTRY even if
+	DELTA is negative.
+
 2002-09-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (SRCS): Add vcons-scrollback.c.

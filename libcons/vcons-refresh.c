@@ -34,6 +34,7 @@ cons_vcons_refresh (vcons_t vcons)
   vcons->state.cursor.status = vcons->display->cursor.status;
   vcons->state.bell.audible = vcons->display->bell.audible;
   vcons->state.bell.visible = vcons->display->bell.visible;
+  vcons->state.flags = vcons->display->flags;
   vcons->state.changes.written = vcons->display->changes.written;
 
   cons_vcons_write (vcons, vcons->state.screen.matrix
@@ -60,5 +61,6 @@ cons_vcons_refresh (vcons_t vcons)
   cons_vcons_set_cursor_pos (vcons, vcons->state.cursor.col,
 			     vcons->state.cursor.row);
   cons_vcons_set_cursor_status (vcons, vcons->state.cursor.status);
+  cons_vcons_set_scroll_lock (vcons, vcons->state.flags & CONS_FLAGS_SCROLL_LOCK);
   cons_vcons_update (vcons);
 }

@@ -48,6 +48,7 @@
 
 struct changes
 {
+  uint32_t flags;
   struct
   {
     uint32_t col;
@@ -66,13 +67,14 @@ struct changes
   off_t start;
   off_t end;
 
-#define DISPLAY_CHANGE_CURSOR_POS 1
-#define DISPLAY_CHANGE_CURSOR_STATUS 2
-#define DISPLAY_CHANGE_SCREEN_CUR_LINE 4
-#define DISPLAY_CHANGE_SCREEN_SCR_LINES 8
-#define DISPLAY_CHANGE_BELL_AUDIBLE 16
-#define DISPLAY_CHANGE_BELL_VISIBLE 32
-#define DISPLAY_CHANGE_MATRIX 64
+#define DISPLAY_CHANGE_CURSOR_POS	0x0001
+#define DISPLAY_CHANGE_CURSOR_STATUS	0x0002
+#define DISPLAY_CHANGE_SCREEN_CUR_LINE	0x0004
+#define DISPLAY_CHANGE_SCREEN_SCR_LINES	0x0008
+#define DISPLAY_CHANGE_BELL_AUDIBLE	0x0010
+#define DISPLAY_CHANGE_BELL_VISIBLE	0x0020
+#define DISPLAY_CHANGE_FLAGS		0x0030
+#define DISPLAY_CHANGE_MATRIX		0x0040
   unsigned int which;
 };
 
@@ -644,6 +646,16 @@ display_flush_filechange (display_t display, unsigned int type)
       next->what.bell_visible = 1;
       bump_written = 1;
       display->changes.which &= ~DISPLAY_CHANGE_BELL_VISIBLE;
+    }
+
+  if (type & DISPLAY_CHANGE_FLAGS
+      && display->changes.which & DISPLAY_CHANGE_FLAGS
+      && display->changes.flags != user->flags)
+    {
+      notify = 1;
+      next->what.flags = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_FLAGS;
     }
 
   if (bump_written)
@@ -1609,6 +1621,7 @@ display_output_some (display_t display, char **buffer, size_t *length)
   display->changes.screen.scr_lines = display->user->screen.scr_lines;
   display->changes.bell_audible = display->user->bell.audible;
   display->changes.bell_visible = display->user->bell.visible;
+  display->changes.flags = display->user->flags;
   display->changes.which = ~DISPLAY_CHANGE_MATRIX;
 
   while (!err && *length > 0)
@@ -1913,6 +1926,7 @@ display_output (display_t display, int nonblock, char *data, size_t datalen)
   return amount;
 }
 
+
 ssize_t
 display_read (display_t display, int nonblock, off_t off,
 	      char *data, size_t len)
@@ -1922,6 +1936,7 @@ display_read (display_t display, int nonblock, off_t off,
   mutex_unlock (&display->lock);
   return len;
 }
+
 
 /* Resume the output on the display DISPLAY.  */
 void
@@ -1933,6 +1948,10 @@ display_start_output (display_t display)
       display->output.stopped = 0;
       condition_broadcast (&display->output.resumed);
     }
+  display->changes.flags = display->user->flags;
+  display->changes.which = DISPLAY_CHANGE_FLAGS;
+  display->user->flags &= ~CONS_FLAGS_SCROLL_LOCK;
+  display_flush_filechange (display, DISPLAY_CHANGE_FLAGS);
   mutex_unlock (&display->lock);
 }
 
@@ -1943,6 +1962,10 @@ display_stop_output (display_t display)
 {
   mutex_lock (&display->lock);
   display->output.stopped = 1;
+  display->changes.flags = display->user->flags;
+  display->changes.which = DISPLAY_CHANGE_FLAGS;
+  display->user->flags |= CONS_FLAGS_SCROLL_LOCK;
+  display_flush_filechange (display, DISPLAY_CHANGE_FLAGS);
   mutex_unlock (&display->lock);
 }
 
