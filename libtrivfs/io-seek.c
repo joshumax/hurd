@@ -23,5 +23,6 @@ trivfs_S_io_seek (struct protid *cred,
 		  int whence,
 		  off_t *newp)
 {
+  assert (!trivfs_support_read && !trivfs_support_write);
   return EOPNOTSUPP;
 }
