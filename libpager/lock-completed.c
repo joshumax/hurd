@@ -33,9 +33,11 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   struct lock_request *lr;
 
   p = ports_lookup_port (0, object, _pager_class);
-  if (!p);
+  if (!p)
     {
-      barf ("Bad lock completed: object = %d, control = %d\n", object, control);
+      barf ("Bad lock completed: "
+	    "object = %d, control = %d; offset %#x; length %#x\n",
+	    object, control, offset, length);
       return EOPNOTSUPP;
     }
 
