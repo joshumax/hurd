@@ -22,8 +22,8 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_file_chauthor (struct protid *user,
-		       uid_t author)
+netfs_S_file_chmod (struct protid *user,
+		    mode_t mode)
 {
   error_t err;
   
@@ -31,8 +31,7 @@ netfs_S_file_chauthor (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_chauthor (user->credential, user->po->np, author);
+  err = netfs_attempt_chmod (user->credential, user->po->np, mode);
   mutex_unlock (&user->po->np->lock);
   return err;
 }
-

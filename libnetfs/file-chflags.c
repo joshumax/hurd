@@ -22,4 +22,16 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_file_chflags (struct protid 
+netfs_S_file_chflags (struct protid *user,
+		      int flags)
+{
+  error_t err;
+  
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&user->po->np->lock);
+  err = netfs_attempt_chflags (user->credential, user->po->np, flags);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
