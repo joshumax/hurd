@@ -1,3 +1,25 @@
+2002-03-25  Neal H Walfield  <neal@cs.uml.edu>
+
+	* peropen-make.c (diskfs_make_peropen): Instead of returning the
+	peropen, return as error_t and return the peropen in the new
+	parameter *PPO.
+	* diskfs.h (diskfs_make_peropen): Change declaration to reflect
+	new semantics.
+
+	* boot-start.c (diskfs_start_bootstrap): Check the return value of
+	diskfs_make_peropen using the new semantics.
+	(diskfs_S_exec_startup_get_info): Likewise.
+	(diskfs_execboot_fsys_startup): Likewise.
+	(diskfs_S_fsys_init): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* file-exec.c (diskfs_S_file_exec):  Likewise.
+	* file-reparent.c (diskfs_S_file_reparent): Likewise.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* trans-callback.c (_diskfs_translator_callback2_fn): Likewise.
+	* init-startup.c (diskfs_startup_diskfs): Likewise.
+
 2002-03-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* opts-append-std.c (diskfs_append_std_options): Only add --sync=N
