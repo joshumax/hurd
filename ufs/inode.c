@@ -495,7 +495,7 @@ diskfs_set_statfs (struct statfs *st)
   st->f_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
 		 + sblock->fs_cstotal.cs_nffree);
   st->f_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)
-		  - (sblock->fs_dsize - st->fsys_stb_bfree));
+		  - (sblock->fs_dsize - st->f_bfree));
   st->f_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
   st->f_ffree = sblock->fs_cstotal.cs_nifree;
   st->f_fsid = getpid ();
