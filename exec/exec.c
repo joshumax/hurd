@@ -77,6 +77,7 @@ struct execdata
     file_t file;
 #ifdef	BFD
     bfd *bfd;
+    asection *interp_section;	/* Interpreter section giving name of file.  */
 #else
     struct exec *header, headbuf;
 #endif
@@ -150,9 +151,18 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 {
   struct execdata *u = userdata;
   vm_address_t addr;
+  static const union
+    {
+      char string[8];
+      unsigned int quadword __attribute__ ((mode (DI)));
+    } interp = { string: ".interp" };
 
   if (u->error)
     return;
+
+  /* Fast strcmp for this 8-byte constant string.  */
+  if (*(const __typeof (interp.quadword) *) sec->name == interp.quadword)
+    u->interp_section = sec;
 
   if (!(sec->flags & (SEC_ALLOC|SEC_LOAD)) ||
       (sec->flags & SEC_NEVER_LOAD))
@@ -225,6 +235,10 @@ load_section (enum section section, struct execdata *u)
       break;
     }
 #endif
+
+  if (secsize == 0)
+    /* This section is empty; ignore it.  */
+    return;
 
   if (
 #ifdef	BFD
@@ -360,6 +374,8 @@ load_section (enum section section, struct execdata *u)
 
 	  readaddr = (void *) (ourpage + (addr - overlap_page));
 	  readsize = size - (addr - overlap_page);
+	  if (readsize > secsize)
+	    readsize = secsize;
 
 	  if (SECTION_IN_MEMORY_P)
 	    bcopy (SECTION_CONTENTS, readaddr, readsize);
@@ -692,6 +708,7 @@ prepare (file_t file, struct execdata *e)
       e->error = b2he (ENOEXEC);
       return;
     }
+  e->interp_section = NULL;
 #endif
 }
 
@@ -1064,32 +1081,40 @@ do_exec (mach_port_t execserver,
 	 mach_port_t *deallocnames, u_int ndeallocnames,
 	 mach_port_t *destroynames, u_int ndestroynames)
 {
-  struct execdata e;
+  struct execdata e, interp;
   int finished = 0;
   task_t newtask = MACH_PORT_NULL;
   thread_t thread = MACH_PORT_NULL;
   struct bootinfo *boot = 0;
   int secure, defaults;
 
+  void check_maybe_gzip (struct execdata *e)
+    {
+      check (e);
+      if (e->error == ENOEXEC)
+	{
+	  /* See if it is a compressed image.  */
+	  check_gzip (e);
+	  if (e->error == 0)
+	    /* The file was uncompressed into memory, and now E describes the
+	       uncompressed image rather than the actual file.  Check it again
+	       for a valid magic number.  */
+	    check (e);
+	}
+    }
+
   /* Catch this error now, rather than later.  */
   if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
     return EIEIO;
+
+  interp.file = MACH_PORT_NULL;
 
   /* Prepare E to read the file.  */
   prepare (file, &e);
 
   /* Check the file for validity first.  */
-  check (&e);
-  if (e.error == ENOEXEC)
-    {
-      /* See if it is a compressed image.  */
-      check_gzip (&e);
-      if (e.error == 0)
-	/* The file was uncompressed into memory, and now E describes the
-	   uncompressed image rather than the actual file.  Check it again
-	   for a valid magic number.  */
-	check (&e);
-    }
+
+  check_maybe_gzip (&e);
 #if 0
   if (e.error == ENOEXEC)
     /* Check for a #! executable file.  */
@@ -1109,9 +1134,48 @@ do_exec (mach_port_t execserver,
       e.locations = alloca (e.bfd->section_count * sizeof (vm_offset_t));
       bfd_map_over_sections (e.bfd, check_section, &e);
     }
+  if (! e.error && e.interp_section)
+    {
+      /* There is an interpreter section specifying another file to load
+	 along with this executable.  */
+      char name[e.interp_section->_raw_size];
+      if (! bfd_get_section_contents (e.bfd, e.interp_section,
+				      name, 0, e.interp_section->_raw_size))
+	{
+	  e.error = b2he (errno);
+	  e.interp_section = NULL;
+	}
+      else
+	{
+	  inline mach_port_t user_port (unsigned int idx)
+	    {
+	      return (((flags & (EXEC_SECURE|EXEC_DEFAULTS)) || idx >= nports)
+		      ? std_ports : portarray)
+		[idx];
+	    }
+
+	  e.error = hurd_file_name_lookup (user_port (INIT_PORT_CRDIR),
+					   user_port (INIT_PORT_CWDIR),
+					   name, O_READ, 0, &interp.file);
+	}
+    }
+  if (interp.file != MACH_PORT_NULL)
+    {
+      prepare (interp.file, &interp);
+      check_maybe_gzip (&interp);
+      if (! interp.error)
+	{
+	  interp.locations = alloca (interp.bfd->section_count *
+				     sizeof (vm_offset_t));
+	  bfd_map_over_sections (interp.bfd, check_section, &interp);
+	}
+      e.error = interp.error;
+    }
 #endif
   if (e.error)
     {
+      if (interp.file != MACH_PORT_NULL)
+	finish (&interp);
       finish (&e);
       return e.error;
     }
@@ -1180,6 +1244,23 @@ do_exec (mach_port_t execserver,
   if (e.error)
     goto out;
 
+  if (interp.file != MACH_PORT_NULL)
+    {
+      /* Load the interpreter file.  */
+      load (newtask, &interp);
+      if (! interp.error)
+	{
+	  finish_mapping (&interp);
+	  postload (&interp);
+	}
+      if (interp.error)
+	{
+	  e.error = interp.error;
+	  goto out;
+	}
+      finish (&interp);
+    }
+
   /* Clean up.  */
   finish (&e);
   finished = 1;
@@ -1220,46 +1301,56 @@ do_exec (mach_port_t execserver,
     goto out;
   mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
 
+#ifdef XXX
+  boot->user_entry = e.entry;
+#endif
+
   if (e.error = servercopy ((void **) &argv, argvlen, argv_copy))
-    goto bootout;
+    goto bootallocout;
   boot->argv = argv;
   boot->argvlen = argvlen;
   if (e.error = servercopy ((void **) &envp, envplen, envp_copy))
-    goto bootout;
+    goto argvout;
   boot->envp = envp;
   boot->envplen = envplen;
   if (e.error = servercopy ((void **) &dtable,
 			    dtablesize * sizeof (mach_port_t),
 			    dtable_copy))
-    goto bootout;
+    goto envpout;
   boot->dtable = dtable;
   boot->dtablesize = dtablesize;
   if (e.error = servercopy ((void **) &portarray,
 			    nports * sizeof (mach_port_t),
 			    portarray_copy))
-    goto bootout;
+    goto portsout;
   boot->portarray = portarray;
   boot->nports = nports;
   if (e.error = servercopy ((void **) &intarray,
-			    nints * sizeof (mach_port_t),
+			    nints * sizeof (int),
 			    intarray_copy))
-    goto bootout;
+    {
+    bootout:
+      vm_deallocate (mach_task_self (),
+		     (vm_address_t) intarray, nints * sizeof (int));
+    portsout:
+      vm_deallocate (mach_task_self (),
+		     (vm_address_t) portarray, nports * sizeof (mach_port_t));
+    envpout:
+      vm_deallocate (mach_task_self (), (vm_address_t) envp, envplen);
+    argvout:
+      vm_deallocate (mach_task_self (), (vm_address_t) argv, argvlen);
+    bootallocout:
+      free (boot);
+      mach_port_destroy (mach_task_self (), (mach_port_t) boot);
+    }
+
   boot->intarray = intarray;
   boot->nints = nints;
   boot->flags = flags;
 
-  {
-    mach_port_t unused;
-    mach_port_request_notification (mach_task_self (),
-				    (mach_port_t) boot,
-				    MACH_NOTIFY_NO_SENDERS, 0,
-				    (mach_port_t) boot,
-				    MACH_MSG_TYPE_MAKE_SEND_ONCE,
-				    &unused);
-  }
+  /* Adjust the information in BOOT for the secure and/or defaults flags.  */
 
   secure = (flags & EXEC_SECURE);
-  
   defaults = (flags & EXEC_DEFAULTS);
   
   if ((secure || defaults) && nports < INIT_PORT_MAX)
@@ -1276,8 +1367,8 @@ do_exec (mach_port_t execserver,
       nports = INIT_PORT_MAX;
     }
 
-  /* Note that the paretheses on this first test are different from the others
-     below it. */
+  /* Note that the parentheses on this first test are different from the
+     others below it. */
   if ((secure || defaults)
       && boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
     /* Q: Doesn't this let anyone run a program and make it
@@ -1341,7 +1432,11 @@ do_exec (mach_port_t execserver,
 
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
-  if (e.error = mach_setup_thread (newtask, thread, (void *) e.entry,
+  if (e.error = mach_setup_thread (newtask, thread, 
+#ifdef BFD
+				   e.interp_section ? (void *) interp.entry :
+#endif
+				   (void *) e.entry,
 				   &boot->stack_base, &boot->stack_size))
     goto bootout;
 
@@ -1373,16 +1468,22 @@ do_exec (mach_port_t execserver,
 
   newtask = MACH_PORT_NULL;
 
- bootout:
-  if (e.error)
-    {
-      mach_port_deallocate (mach_task_self (), (vm_address_t) boot);
-      if (boot->portarray != portarray)
-	vm_deallocate (mach_task_self (),
-		       (vm_address_t) boot->portarray,
-		       boot->nports * sizeof (mach_port_t));
-      free (boot);
-    }
+  /* Request no-senders notification on BOOT, so we can release
+     its resources if the task dies before calling exec_startup.  */
+  {
+    mach_port_t unused;
+    mach_port_request_notification (mach_task_self (),
+				    (mach_port_t) boot,
+				    MACH_NOTIFY_NO_SENDERS, 0,
+				    (mach_port_t) boot,
+				    MACH_MSG_TYPE_MAKE_SEND_ONCE,
+				    &unused);
+  }
+
+  /* Add BOOT to the server port-set so we will respond to RPCs there.  */
+  mach_port_move_member (mach_task_self (),
+			 (mach_port_t) boot, request_portset);
+
 
  out:
   if (newtask != MACH_PORT_NULL)
@@ -1391,18 +1492,25 @@ do_exec (mach_port_t execserver,
       mach_port_deallocate (mach_task_self (), newtask);
     }
   if (!finished)
-    finish (&e);
-  
-  task_resume (oldtask);
-  thread_resume (thread);
+    {
+      if (interp.file != MACH_PORT_NULL)
+	finish (&interp);
+      if (e.error)
+	/* Don't deallocate this port; mig will do it for us.  */
+	e.file = MACH_PORT_NULL;
+      finish (&e);
+    }
 
+  if (oldtask != newtask)
+    task_resume (oldtask);
   if (thread != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), thread);
+    {
+      thread_resume (thread);
+      mach_port_deallocate (mach_task_self (), thread);
+    }
 
-  mach_port_deallocate (mach_task_self (), oldtask);
-  
-  mach_port_move_member (mach_task_self (),
-			 (mach_port_t) boot, request_portset);
+  if (! e.error)
+    mach_port_deallocate (mach_task_self (), oldtask);
 
   return e.error;
 }
@@ -1685,6 +1793,32 @@ S_exec_startup (mach_port_t port,
   return 0;
 }
 
+/* Clean up the storage in BOOT, which was never used.  */
+void
+deadboot (struct bootinfo *boot)
+{
+  size_t i;
+
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t) boot->argv, boot->argvlen);
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t) boot->envp, boot->envplen);
+
+  for (i = 0; i < boot->dtablesize; ++i)
+    mach_port_deallocate (mach_task_self (), boot->dtable[i]);
+  for (i = 0; i < boot->nports; ++i)
+    mach_port_deallocate (mach_task_self (), boot->portarray[i]);
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t) boot->portarray,
+		 boot->nports * sizeof (mach_port_t));
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t) boot->intarray,
+		 boot->nints * sizeof (int));
+
+  free (boot);
+}
+
+
 /* Notice when a receive right has no senders.  Either this is the
    bootstrap port of a stillborn task, or it is the execserver port itself. */
 
@@ -1697,30 +1831,13 @@ do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
 	 which can no longer ask for them.  */
 
       struct bootinfo *boot = (struct bootinfo *) port;
-      size_t i;
-
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) boot->argv, boot->argvlen);
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) boot->envp, boot->envplen);
-
-      for (i = 0; i < boot->dtablesize; ++i)
-	mach_port_deallocate (mach_task_self (), boot->dtable[i]);
-      for (i = 0; i < boot->nports; ++i)
-	mach_port_deallocate (mach_task_self (), boot->portarray[i]);
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) boot->portarray,
-		     boot->nports * sizeof (mach_port_t));
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) boot->intarray,
-		     boot->nints * sizeof (int));
-
-      free (boot);
+      deadboot (boot);
     }
 
   /* Deallocate the request port.  */
   mach_port_mod_refs (mach_task_self (), port, MACH_PORT_TYPE_RECEIVE, -1);
 
+  /* XXX what is this for??? */
   mach_port_mod_refs (mach_task_self (), request_portset,
 		      MACH_PORT_TYPE_RECEIVE, -1);
 
