@@ -1,3 +1,11 @@
+2001-08-16  Roland McGrath  <roland@frob.com>
+
+	* inode.c (write_node): Leave i_size, i_blocks, i_translator unchanged
+	when the inode has been deleted.  Suggested by Marcus Brinkmann.
+
+	* dir.c (diskfs_dirremove_hard): Remove redundant DP->dn_set_mtime set.
+	Noticed by Marcus Brinkmann.
+
 2001-08-09  Roland McGrath  <roland@frob.com>
 
 	* inode.c (diskfs_get_translator): Fail with EFTYPE if the length
