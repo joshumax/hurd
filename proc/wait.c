@@ -32,6 +32,8 @@
 #include "process_S.h"
 #include <mach/mig_errors.h>
 
+#define EWOULDBLOCK EAGAIN /* XXX */
+
 /* Return nonzero if a `waitpid' on WAIT_PID by a process
    in MYPGRP cares about the death of PID/PGRP.  */
 static inline int

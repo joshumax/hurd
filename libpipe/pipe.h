@@ -1,6 +1,6 @@
 /* Generic one-way pipes
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -20,6 +20,8 @@
 
 #ifndef __PIPE_H__
 #define __PIPE_H__
+
+#define EWOULDBLOCK EAGAIN /* XXX */
 
 #include <cthreads.h>		/* For conditions & mutexes */
 
