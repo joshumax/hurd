@@ -113,6 +113,7 @@ static const unsigned char ext2_file_type[EXT2_FT_MAX] =
   [EXT2_FT_SOCK]	= DT_SOCK,
   [EXT2_FT_SYMLINK]	= DT_LNK,
 };
+#if 0
 static const unsigned char file_type_ext2[] =
 {
   [DT_UNKNOWN]	= EXT2_FT_UNKNOWN,
@@ -124,6 +125,7 @@ static const unsigned char file_type_ext2[] =
   [DT_SOCK]	= EXT2_FT_SOCK,
   [DT_LNK]	= EXT2_FT_SYMLINK,
 };
+#endif
 
 /* Implement the diskfs_lookup from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification.  */
@@ -622,10 +624,19 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
      rec_len field is already filled in.  Now fill in the rest.  */
 
   new->inode = np->cache_id;
+#if 0
+  /* XXX We cannot enable this code because file types can change
+     (and conceivably quite often) with translator settings.
+     There is no way for the translator that determines the type of
+     the virtual node to cause all the directory entries linked to
+     its underlying inode to reflect the proper type.  */
   new->file_type = (EXT2_HAS_INCOMPAT_FEATURE (sblock,
 					       EXT2_FEATURE_INCOMPAT_FILETYPE)
 		    ? file_type_ext2[IFTODT (np->dn_stat.st_mode & S_IFMT)]
 		    : 0);
+#else
+  new->file_type = 0;
+#endif
   new->name_len = namelen;
   memcpy (new->name, name, namelen);
 
