@@ -33,8 +33,8 @@ volatile struct mapped_time_value *_diskfs_mtime;
 
 extern struct argp_option diskfs_common_options[];
 
-/* Diskfs thinks the disk is clean if this is set. */
-extern int _diskfs_diskclean;
+/* Diskfs thinks the disk is dirty if this is set. */
+extern int _diskfs_diskdirty;
 
 /* Needed for MiG. */
 typedef struct protid *protid_t;
