@@ -22,11 +22,14 @@
 /* This structure describes a command.  */
 struct cmd
 {
+  /* Cookie passed in to boot_script_parse_line.  */
+  void *hook;
+
   /* Path of executable.  */
   char *path;
 
   /* Task port.  */
-  mach_port_t task;
+  task_t task;
 
   /* Argument list.  */
   struct arg **args;
@@ -48,18 +51,34 @@ struct cmd
 };
 
 
+/* The user must define these functions, we work like malloc and free.  */
+void *boot_script_malloc (size_t);
+void boot_script_free (void *, size_t);
+
 /* The user must define this function.  Load the image of the
    executable specified by PATH in TASK.  Create a thread
    in TASK and point it at the executable's entry point.  Initialize
    TASK's stack with argument vector ARGV of length ARGC whose
    strings are STRINGS.  STRINGS has length STRINGLEN.
    Return 0 for success, non-zero otherwise.  */
-int boot_script_exec_cmd (mach_port_t task, char *path, int argc,
+int boot_script_exec_cmd (void *hook,
+			  mach_port_t task, char *path, int argc,
 			  char **argv, char *strings, int stringlen);
 
 /* The user must define this function.  Load the contents of FILE
    into a fresh anonymous memory object and return the memory object port.  */
 mach_port_t boot_script_read_file (const char *file);
+
+/* The user must define this functions to perform the corresponding
+   Mach task manipulations.  */
+int boot_script_task_create (struct cmd *); /* task_create + task_suspend */
+int boot_script_task_resume (struct cmd *);
+int boot_script_prompt_task_resume (struct cmd *);
+
+/* The user must define this function to clean up the `task_t'
+   returned by boot_script_task_create.  */
+void boot_script_free_task (task_t task, int aborting);
+
 
 /* Parse the command line LINE.  This causes the command line to be
    converted into an internal format.  Returns 0 for success, non-zero
@@ -68,7 +87,7 @@ mach_port_t boot_script_read_file (const char *file);
    NOTE: The parser writes into the line so it must not be a string constant.
    It is also the responsibility of the caller not to deallocate the line
    across calls to the parser.  */
-int boot_script_parse_line (char *cmdline);
+int boot_script_parse_line (void *hook, char *cmdline);
 
 /* Execute the command lines prevously parsed.
    Returns 0 for success, non-zero otherwise.  */

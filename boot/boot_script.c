@@ -3,10 +3,13 @@
 /* Written by Shantanu Goel (goel@cs.columbia.edu).  */
 
 #include <mach.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include "boot_script.h"
+
+/*
+#include <stdio.h>
+#include <stdlib.h>
+*/
 
 
 /* This structure describes a symbol.  */
@@ -67,60 +70,27 @@ static int symtab_alloc = 0;
 /* Next available slot in `symtab'.  */
 static int symtab_index = 0;
 
-/* Create a task.  */
+/* Create a task and suspend it.  */
 static int
 create_task (struct cmd *cmd, int *val)
 {
-  if (task_create (mach_task_self (), 0, (task_t *) &cmd->task) ||
-      task_suspend (cmd->task))
-    {
-      printf ("(bootstrap): %s: Cannot create task\n", cmd->path);
-      return BOOT_SCRIPT_MACH_ERROR;
-    }
+  int err = boot_script_task_create (cmd);
   *val = (int) cmd->task;
-  return 0;
+  return err;
 }
 
 /* Resume a task.  */
 static int
 resume_task (struct cmd *cmd, int *val)
 {
-  if (task_resume (cmd->task))
-    {
-      printf ("(bootstrap): %s: Cannot resume task\n", cmd->path);
-      return BOOT_SCRIPT_MACH_ERROR;
-    }
-  return 0;
+  return boot_script_task_resume (cmd);
 }
 
 /* Resume a task when the user hits return.  */
 static int
 prompt_resume_task (struct cmd *cmd, int *val)
 {
-  char xx[5];
-
-  printf ("Hit return to resume %s...", cmd->path);
-  safe_gets (xx, sizeof xx);
-
-  if (task_resume (cmd->task))
-    {
-      printf ("(bootstrap): %s: Cannot resume task\n", cmd->path);
-      return BOOT_SCRIPT_MACH_ERROR;
-    }
-
-  return 0;
-}
-
-static int
-read_file (struct cmd *cmd, int *val)
-{
-  *val = boot_script_read_file (cmd->path);
-  if (*val == 0)
-    {
-      printf ("(bootstrap): %s: Cannot read boot script\n", cmd->path);
-      return BOOT_SCRIPT_MACH_ERROR;
-    }
-  return 0;
+  return boot_script_prompt_task_resume (cmd);
 }
 
 /* List of builtin symbols.  */
@@ -129,7 +99,6 @@ static struct sym builtin_symbols[] =
   { "task-create", VAL_FUNC, (int) create_task, VAL_PORT, 0 },
   { "task-resume", VAL_FUNC, (int) resume_task, VAL_NONE, 1 },
   { "prompt-task-resume", VAL_FUNC, (int) prompt_resume_task, VAL_NONE, 1 },
-  { "read-file", VAL_FUNC, (int) read_file, VAL_PORT, 0 },
 };
 #define NUM_BUILTIN (sizeof (builtin_symbols) / sizeof (builtin_symbols[0]))
 
@@ -140,23 +109,18 @@ static void
 free_cmd (struct cmd *cmd, int aborting)
 {
   if (cmd->task)
-    {
-      if (aborting)
-	task_terminate (cmd->task);
-      else
-	mach_port_deallocate (mach_task_self (), cmd->task);
-    }
+    boot_script_free_task (cmd->task, aborting);
   if (cmd->args)
     {
       int i;
-
       for (i = 0; i < cmd->args_index; i++)
-	free (cmd->args[i]);
-      free (cmd->args);
+	boot_script_free (cmd->args[i], sizeof *cmd->args[i]);
+      boot_script_free (cmd->args, sizeof cmd->args[0] * cmd->args_alloc);
     }
   if (cmd->exec_funcs)
-    free (cmd->exec_funcs);
-  free (cmd);
+    boot_script_free (cmd->exec_funcs,
+		      sizeof cmd->exec_funcs[0] * cmd->exec_funcs_alloc);
+  boot_script_free (cmd, sizeof *cmd);
 }
 
 /* Free all storage allocated by the parser.
@@ -168,13 +132,13 @@ cleanup (int aborting)
 
   for (i = 0; i < cmds_index; i++)
     free_cmd (cmds[i], aborting);
-  free (cmds);
+  boot_script_free (cmds, sizeof cmds[0] * cmds_alloc);
   cmds = 0;
   cmds_index = cmds_alloc = 0;
 
   for (i = 0; i < symtab_index; i++)
-    free (symtab[i]);
-  free (symtab);
+    boot_script_free (symtab[i], sizeof *symtab[i]);
+  boot_script_free (symtab, sizeof symtab[0] * symtab_alloc);
   symtab = 0;
   symtab_index = symtab_alloc = 0;
 }
@@ -192,7 +156,7 @@ add_list (void *ptr, void ***ptr_list, int *alloc, int *index, int incr)
       void **p;
 
       *alloc += incr;
-      p = malloc (*alloc * sizeof (void *));
+      p = boot_script_malloc (*alloc * sizeof (void *));
       if (! p)
 	{
 	  *alloc -= incr;
@@ -201,7 +165,7 @@ add_list (void *ptr, void ***ptr_list, int *alloc, int *index, int incr)
       if (*ptr_list)
 	{
 	  memcpy (p, *ptr_list, *index * sizeof (void *));
-	  free (*ptr_list);
+	  boot_script_free (*ptr_list, (*alloc - incr) * sizeof (void *));
 	}
       *ptr_list = p;
     }
@@ -217,7 +181,7 @@ add_arg (struct cmd *cmd, char *text, int type, int val)
 {
   struct arg *arg;
 
-  arg = malloc (sizeof (struct arg));
+  arg = boot_script_malloc (sizeof (struct arg));
   if (arg)
     {
       arg->text = text;
@@ -226,7 +190,7 @@ add_arg (struct cmd *cmd, char *text, int type, int val)
       if (add_list (arg, (void ***) &cmd->args,
 		    &cmd->args_alloc, &cmd->args_index, 5))
 	{
-	  free (arg);
+	  boot_script_free (arg, sizeof *arg);
 	  return 0;
 	}
     }
@@ -251,14 +215,14 @@ sym_enter (const char *name)
 {
   struct sym *sym;
 
-  sym = malloc (sizeof (struct sym));
+  sym = boot_script_malloc (sizeof (struct sym));
   if (sym)
     {
       memset (sym, 0, sizeof (struct sym));
       sym->name = name;
       if (add_list (sym, (void ***) &symtab, &symtab_alloc, &symtab_index, 20))
 	{
-	  free (sym);
+	  boot_script_free (sym, sizeof *sym);
 	  return 0;
 	}
     }
@@ -267,7 +231,7 @@ sym_enter (const char *name)
 
 /* Parse the command line CMDLINE.  */
 int
-boot_script_parse_line (char *cmdline)
+boot_script_parse_line (void *hook, char *cmdline)
 {
   char *p, *q;
   int error;
@@ -296,10 +260,11 @@ boot_script_parse_line (char *cmdline)
   *q = '\0';
 
   /* Allocate a command structure.  */
-  cmd = malloc (sizeof (struct cmd));
+  cmd = boot_script_malloc (sizeof (struct cmd));
   if (! cmd)
     return BOOT_SCRIPT_NOMEM;
   memset (cmd, 0, sizeof (struct cmd));
+  cmd->hook = hook;
   cmd->path = p;
   p = q + 1;
 
@@ -507,7 +472,7 @@ boot_script_parse_line (char *cmdline)
       char *ptr; \
       int alloc, i; \
       alloc = cmdline_alloc + len - (cmdline_alloc - cmdline_index) + 100; \
-      ptr = malloc (alloc); \
+      ptr = boot_script_malloc (alloc); \
       if (! ptr) \
 	{ \
 	  error = BOOT_SCRIPT_NOMEM; \
@@ -516,7 +481,7 @@ boot_script_parse_line (char *cmdline)
       memcpy (ptr, cmdline, cmdline_index); \
       for (i = 0; i < argc; ++i) \
 	argv[i] = ptr + (argv[i] - cmdline); \
-      free (cmdline); \
+      boot_script_free (cmdline, cmdline_alloc); \
       cmdline = ptr; \
       cmdline_alloc = alloc; \
     } \
@@ -542,7 +507,7 @@ boot_script_exec ()
       /* Allocate a command line and copy command name.  */
       cmdline_index = strlen (cmd->path) + 1;
       cmdline_alloc = cmdline_index + 100;
-      cmdline = malloc (cmdline_alloc);
+      cmdline = boot_script_malloc (cmdline_alloc);
       if (! cmdline)
 	{
 	  cleanup (1);
@@ -551,10 +516,10 @@ boot_script_exec ()
       memcpy (cmdline, cmd->path, cmdline_index);
 
       /* Allocate argument vector.  */
-      argv = malloc (sizeof (char *) * (cmd->args_index + 2));
+      argv = boot_script_malloc (sizeof (char *) * (cmd->args_index + 2));
       if (! argv)
 	{
-	  free (cmdline);
+	  boot_script_free (cmdline, cmdline_alloc);
 	  cleanup (1);
 	  return BOOT_SCRIPT_NOMEM;
 	}
@@ -650,7 +615,7 @@ boot_script_exec ()
       argv[argc] = 0;
 
       /* Execute the command.  */
-      if (boot_script_exec_cmd (cmd->task, cmd->path,
+      if (boot_script_exec_cmd (cmd->hook, cmd->task, cmd->path,
 				argc, argv, cmdline, cmdline_index))
 	{
 	  error = BOOT_SCRIPT_EXEC_ERROR;
@@ -660,8 +625,8 @@ boot_script_exec ()
       error = 0;
 
     done:
-      free (cmdline);
-      free (argv);
+      boot_script_free (cmdline, cmdline_alloc);
+      boot_script_free (argv, sizeof (char *) * (cmd->args_index + 2));
       if (error)
 	{
 	  cleanup (1);
@@ -763,7 +728,8 @@ boot_script_error_string (int err)
 #include <stdio.h>
 
 int
-boot_script_exec_cmd (mach_port_t task, char *path, int argc,
+boot_script_exec_cmd (void *hook,
+		      mach_port_t task, char *path, int argc,
 		      char **argv, char *strings, int stringlen)
 {
   int i;
@@ -807,7 +773,7 @@ main (int argc, char **argv)
       int i, err;
 
       i = strlen (p) + 1;
-      err = boot_script_parse_line (p);
+      err = boot_script_parse_line (0, p);
       if (err)
 	{
 	  fprintf (stderr, "error %s\n", boot_script_error_string (err));
