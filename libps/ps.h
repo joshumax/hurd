@@ -1,6 +1,6 @@
 /* Routines to gather and print process information.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -41,7 +41,7 @@ struct ps_user
 
   /* The status */
      enum ps_user_passwd_state passwd_state;
-     
+
   /* The user's password file entry.  Only valid if PASSWD_STATE ==
      PS_USER_PASSWD_OK.  */
   struct passwd passwd;
@@ -85,7 +85,7 @@ enum ps_tty_name_state
 struct ps_tty {
   /* Which tty this refers to.  */
   file_t port;
-  
+
   /* The name of the tty, if we could figure it out.  */
   const char *name;
   /* What state the name is in.  */
@@ -269,6 +269,7 @@ struct proc_stat
   unsigned proc_info_vm_alloced : 1;
   unsigned thread_waits_vm_alloced : 1;
   unsigned args_vm_alloced : 1;
+  unsigned env_vm_alloced : 1;
 
   /* Various libc ports:  */
 
@@ -294,6 +295,12 @@ struct proc_stat
 
   /* A hook for the user to use.  */
   void *hook;
+
+  /* XXX these members added at the end for binary compatibility */
+  /* The process's envp, as a string with each element separated by '\0'.  */
+  char *env;
+  /* The length of ENV.  */
+  unsigned env_len;
 };
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
@@ -319,6 +326,7 @@ struct proc_stat
 #define PSTAT_THREAD_WAIT      0x00800 /* The rpc the thread is waiting on. */
 #define PSTAT_THREAD_WAITS     0x01000 /* Thread waits for this PS's threads */
 #define PSTAT_ARGS	       0x02000 /* The process's args */
+#define PSTAT_ENV	     0x2000000 /* The process's environment */
 #define PSTAT_STATE	       0x04000 /* A bitmask describing the process's
 					  state (see below) */
 #define PSTAT_SUSPEND_COUNT    0x08000 /* Task/thread suspend count */
@@ -335,7 +343,7 @@ struct proc_stat
 #define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
 
 /* Bits from PSTAT_USER_BASE on up are available for user-use.  */
-#define PSTAT_USER_BASE      0x2000000
+#define PSTAT_USER_BASE      0x10000000
 #define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
 
 /* If the PSTAT_STATE flag is set, then the proc_stats state field holds a
@@ -422,6 +430,8 @@ char *proc_stat_state_tags;
 #define proc_stat_suspend_count(ps) ((ps)->suspend_count)
 #define proc_stat_args(ps) ((ps)->args)
 #define proc_stat_args_len(ps) ((ps)->args_len)
+#define proc_stat_env(ps) ((ps)->env)
+#define proc_stat_env_len(ps) ((ps)->env_len)
 #define proc_stat_state(ps) ((ps)->state)
 #define proc_stat_cttyid(ps) ((ps)->cttyid)
 #define proc_stat_cwdir(ps) ((ps)->cwdir)
@@ -506,7 +516,7 @@ struct ps_getter
     ps_flags_t needs;
 
     /* A function that will get the value; the protocol between this function
-       and its caller is type-dependent.  */ 
+       and its caller is type-dependent.  */
     void (*fn) ();
   };
 
@@ -610,7 +620,7 @@ error_t ps_stream_write_int_field (struct ps_stream *stream,
 				   int value, int width);
 
 /* A PS_FMT_SPEC describes how to output something from a PROC_STAT; it
-   is a combination of a getter (describing how to get the value), an output 
+   is a combination of a getter (describing how to get the value), an output
    function (which outputs the result of the getter), and a compare function
    (which can be used to sort proc_stats according to how they are
    output).  It also specifies the default width of the field in which the
@@ -622,7 +632,7 @@ struct ps_fmt_spec
   {
     /* The name of the spec (and it's title, if TITLE is NULL).  */
     const char *name;
-    
+
     /* The title to be printed in the headers.  */
     const char *title;
 
@@ -675,7 +685,7 @@ struct ps_fmt_specs
   struct ps_fmt_spec_block *expansions; /* Storage for expanded aliases.  */
 };
 
-/* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find, 
+/* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find,
    containing specs for most values in a proc_stat.  */
 extern struct ps_fmt_specs ps_std_fmt_specs;
 
@@ -739,7 +749,7 @@ struct ps_fmt
   /* The (valid) length of the fields array.  */
   unsigned num_fields;
 
-  /* A set of proc_stat flags describing what a proc_stat needs to hold in 
+  /* A set of proc_stat flags describing what a proc_stat needs to hold in
      order to print out every field in the fmt.  */
   ps_flags_t needs;
 

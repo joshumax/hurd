@@ -122,6 +122,15 @@ ps_get_args (struct proc_stat *ps, char **args_p, int *args_len_p)
 const struct ps_getter ps_args_getter =
 {"args", PSTAT_ARGS, ps_get_args};
 
+static void
+ps_get_env (struct proc_stat *ps, char **env_p, int *env_len_p)
+{
+  *env_p = proc_stat_env (ps);
+  *env_len_p = proc_stat_env_len (ps);
+}
+const struct ps_getter ps_env_getter =
+{"env", PSTAT_ENV, ps_get_env};
+
 static int
 ps_get_state (struct proc_stat *ps)
 {
@@ -1087,6 +1096,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Arg0",	0,	0, -1, 0,
    &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
+  {"Env",	0,	 0, -1, 0,
+   &ps_env_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Start",	0,	-7, 1, 0,
    &ps_start_time_getter,  ps_emit_past_time, ps_cmp_times,0},
   {"Time",	0,	-8, 2, 0,

@@ -1,6 +1,6 @@
 /* The proc_stat type, which holds information about a hurd process.
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -938,6 +938,26 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	}
     }
 
+  /* The process's exec environment */
+  if (NEED (PSTAT_ENV, PSTAT_PID))
+    {
+      char *buf = malloc (100);
+      ps->env_len = 100;
+      ps->env = buf;
+      if (ps->env)
+	{
+	  if (proc_getprocenv (server, ps->pid, &ps->env, &ps->env_len))
+	    free (buf);
+	  else
+	    {
+	      have |= PSTAT_ENV;
+	      ps->env_vm_alloced = (ps->env != buf);
+	      if (ps->env_vm_alloced)
+		free (buf);
+	    }
+	}
+    }
+
   /* The ctty id port; note that this is just a magic cookie;
      we use it to fetch a port to the actual terminal -- it's not useful for
      much else.  */
@@ -1049,6 +1069,7 @@ _proc_stat_free (ps)
   MFREEMEM (PSTAT_THREAD_BASIC, thread_basic_info, 0, 0, 0, 0);
   MFREEMEM (PSTAT_THREAD_SCHED, thread_sched_info, 0, 0, 0, 0);
   MFREEMEM (PSTAT_ARGS, args, ps->args_len, ps->args_vm_alloced, 0, char);
+  MFREEMEM (PSTAT_ENV, env, ps->env_len, ps->env_vm_alloced, 0, char);
   MFREEMEM (PSTAT_TASK_EVENTS, task_events_info, ps->task_events_info_size,
 	    0, &ps->task_events_info_buf, char);
 
