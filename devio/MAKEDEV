@@ -8,34 +8,44 @@ PATH=/bin
 for I; do
   case "$I" in
     std)
-      settrans -cf console /hurd/term console
-
-      settrans -cf tty /hurd/magic tty
-
-      settrans -cf null /hurd/null
-      settrans -cf zero /hurd/null -z
-
-      #settrans -cf stdin /hurd/magic fd/0
-      #settrans -cf stdout /hurd/magic fd/1
-      #settrans -cf stderr /hurd/magic fd/2
+      $0 console tty null zero # fd
+      ;;
+    console)
+      settrans -cf console /hurd/term console ;;
+    tty)
+      settrans -cf tty /hurd/magic tty ;;
+    null)
+      settrans -cf null /hurd/null ;;
+    zero)
+      settrans -cf zero /hurd/null -z ;;
+    fd)
+      settrans -cf stdin /hurd/magic fd
+      ln -f -s fd/0 stdin
+      ln -f -s fd/1 stdout
+      ln -f -s fd/2 stderr
       ;;
 
-   fd*|mt*)
+    fd*|mt*)
       settrans -cf r$I /hurd/devio $I
       settrans -cf $I /hurd/devio -b $I
       ;;
 
-   rd*|sd*|hd*)
-      if expr $I : '[a-z]*[0-9][0-9]*\([a-z]*\)' > /dev/null; then
+    rd*|sd*|hd*)
+      case "$I" in
+      [a-z]*[0-9][0-9]*[a-z]*)
         settrans -cf r$I /hurd/devio $I
         settrans -cf $I /hurd/devio -b $I
-      else
+	;;
+      *)
 	echo 1>&2 $0: $I: Must supply a device number and partition
 	exit 1
-      fi
+	;;
+      esac
       ;;
 
     *)
-      echo $0: $I: Unknown device
- esac
+      echo >&2 $0: $I: Unknown device
+      exit 1
+      ;;
+  esac
 done
