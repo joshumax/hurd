@@ -77,9 +77,19 @@ if test -d /tmp; then
   unset -f remove_translators  # because it relies on nullglob
 
 fi
+
 if test -d /var/run; then
-  (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
+  (cd /var/run && {
+    find . ! -type d ! -name utmp ! -name innd.pid ! -name random-seed \
+      -exec rm -f -- {} \;
+    cp /dev/null utmp
+    if grep -q ^utmp: /etc/group
+    then
+	chmod 664 utmp
+	chgrp utmp utmp
+    fi; })
 fi
+
 echo done
 
 # This file must exist for e2fsck to work. XXX

@@ -1,3 +1,8 @@
+2001-06-15  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rc: Apply patch from Moritz Schulte <moritz@chaosdorf.de> to
+	be more selective with what to clean from /var/run.
+
 2001-04-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update to reflect Debian upgrades.
