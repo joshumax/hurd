@@ -89,7 +89,7 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       diskfs_argv = state->argv; break;
 
     default:
-      return EINVAL;
+      return ARGP_ERR_UNKNOWN;
     }
 
   return 0;
@@ -140,7 +140,8 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
       fprintf (stderr, "%s: No device specified\n", program_invocation_name);
       argp_help (state->argp, stderr, ARGP_HELP_STD_ERR); /* exits */
 
-    default: return EINVAL;
+    default:
+      return ARGP_ERR_UNKNOWN;
     }
 
   return 0;
