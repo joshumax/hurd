@@ -1,7 +1,7 @@
 /* Mach device store backend
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -26,12 +26,33 @@
 
 #include "store.h"
 
+static inline error_t
+dev_error (error_t err)
+{
+  /* Give the canonical POSIX error codes,
+     rather than letting the Mach code propagate up.  */
+  switch (err)
+    {
+    case D_IO_ERROR:		return EIO;
+    case D_WOULD_BLOCK:		return EAGAIN;
+    case D_NO_SUCH_DEVICE:	return ENXIO;
+    case D_ALREADY_OPEN:	return EBUSY;
+    case D_DEVICE_DOWN: 	return ENXIO; /* ? */
+    case D_INVALID_OPERATION:	return EBADF; /* ? */
+    case D_NO_MEMORY:		return ENOMEM;
+    default:
+    }
+  /* Anything unexpected propagates up where weirdness will get noticed.  */
+  return err;
+}
+
 static error_t
 dev_read (struct store *store,
 	  off_t addr, size_t index, mach_msg_type_number_t amount,
 	  void **buf, mach_msg_type_number_t *len)
 {
-  return device_read (store->port, 0, addr, amount, (io_buf_ptr_t *)buf, len);
+  return dev_error (device_read (store->port, 0, addr, amount,
+				 (io_buf_ptr_t *)buf, len));
 }
 
 static error_t
@@ -39,7 +60,8 @@ dev_write (struct store *store,
 	   off_t addr, size_t index, void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
-  return device_write (store->port, 0, addr, (io_buf_ptr_t)buf, len, amount);
+  return dev_error (device_write (store->port, 0, addr,
+				  (io_buf_ptr_t)buf, len, amount));
 }
 
 static error_t
@@ -54,7 +76,7 @@ dev_open (const char *name, int flags,
 	  const struct store_class *const *classes,
 	  struct store **store)
 {
-  return store_device_open (name, flags, store);
+  return dev_error (store_device_open (name, flags, store));
 }
 
 static error_t
@@ -203,7 +225,7 @@ store_device_create (device_t device, int flags, struct store **store)
   if (! err && sizes_len == DEV_GET_SIZE_COUNT)
     {
       block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
-	  
+
       if (block_size)
 	{
 	  run.start = 0;
