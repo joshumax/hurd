@@ -1,6 +1,6 @@
 # Makefile for sutils
 #
-#   Copyright (C) 1996,97,99 Free Software Foundation, Inc.
+#   Copyright (C) 1996,97,99,2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -34,7 +34,7 @@ HURDLIBS = store shouldbeinlibc
 include ../Makeconf
 
 fsck: fstab.o clookup.o
-swapon swapoff: ../libstore/libstore.a
+swapon swapoff: ../libstore/libstore.a default_pagerUser.o
 $(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
 install: $(prefix)/dev $(prefix)/dev/MAKEDEV
