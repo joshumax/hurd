@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <argp.h>
+#include <error.h>
 #include <hurd.h>
 #include <version.h>
 
