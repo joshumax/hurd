@@ -23,6 +23,8 @@
 #include <mach.h>
 #include <hurd.h>
 
+#pragma weak _DYNAMIC
+
 /* Find the list of shared objects */
 static struct link_map *
 loaded (void)
