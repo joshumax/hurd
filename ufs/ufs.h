@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,7 @@
 
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
 
-struct disknode 
+struct disknode
 {
   ino_t number;
 
@@ -48,7 +48,7 @@ struct disknode
   struct dirty_indir *dirty;
 
   struct user_pager_info *fileinfo;
-};  
+};
 
 /* Identifies a particular block and where it's found
    when interpreting indirect block structure.  */
@@ -69,10 +69,10 @@ struct dirty_indir
   struct dirty_indir *next;
 };
 
-struct user_pager_info 
+struct user_pager_info
 {
   struct node *np;
-  enum pager_type 
+  enum pager_type
     {
       DISK,
       FILE_DATA,
@@ -81,8 +81,7 @@ struct user_pager_info
   vm_prot_t max_prot;
 };
 
-struct user_pager_info *diskpager;
-mach_port_t diskpagerport;
+#include <hurd/diskfs-pager.h>
 
 extern vm_address_t zeroblock;
 
@@ -90,8 +89,6 @@ extern struct fs *sblock;
 extern struct csum *csum;
 int sblock_dirty;
 int csum_dirty;
-
-void *disk_image;
 
 spin_lock_t node2pagelock;
 
@@ -111,7 +108,7 @@ enum compat_mode
 
 /* If this is set, then this filesystem has two extensions:
    1) directory entries include the type field.
-   2) symlink targets might be written directly in the di_db field 
+   2) symlink targets might be written directly in the di_db field
       of the dinode. */
 int direct_symlink_extension;
 
@@ -136,7 +133,7 @@ extern inline struct dinode *
 dino (ino_t inum)
 {
   return (struct dinode *)
-    (disk_image 
+    (disk_image
      + fsaddr (sblock, ino_to_fsba (sblock, inum))
      + ino_to_fsbo (sblock, inum) * sizeof (struct dinode));
 }
@@ -159,7 +156,7 @@ cg_locate (int ncg)
 extern inline void
 sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
 {
-  pager_sync_some (diskpager->p, fsaddr (sblock, blkno), nbytes, wait);
+  pager_sync_some (disk_pager, fsaddr (sblock, blkno), nbytes, wait);
 }
 
 /* Sync an disk inode */
@@ -170,7 +167,7 @@ sync_dinode (int inum, int wait)
 }
 
 /* From alloc.c: */
-error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *, 
+error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *,
 		   struct protid *);
 void ffs_blkfree(struct node *, daddr_t bno, long size);
 daddr_t ffs_blkpref (struct node *, daddr_t, int, daddr_t *);
