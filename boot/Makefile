@@ -38,7 +38,10 @@ include ../Makeconf
 
 all: boot # uxboot
 
-ourdevice.defs: $(install_includedir)/device/device.defs
+device.defs:
+	echo '#include <device/device.defs>' | $(CC) -E - > $@
+
+ourdevice.defs: device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
 boot: ../libthreads/libthreads.so
