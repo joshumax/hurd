@@ -367,7 +367,9 @@ sync_global_ptr (void *bptr, int wait)
 {
   int boffs = trunc_block (bptr_offs (bptr));
   global_block_modified (boffs_block (boffs));
-  pager_sync_some (disk_pager->p, boffs_ptr (boffs), block_size, wait);
+  pager_sync_some (disk_pager->p,
+		   (vm_address_t)boffs_ptr (boffs), block_size,
+		   wait);
 }
 
 /* ---------------------------------------------------------------- */
