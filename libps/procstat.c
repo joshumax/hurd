@@ -820,7 +820,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
       ps->task_events_info = &ps->task_events_info_buf;
       ps->task_events_info_size = TASK_EVENTS_INFO_COUNT;
       if (task_info (ps->task, TASK_EVENTS_INFO,
-		    (task_info_t)&ps->task_events_info,
+		    (task_info_t)ps->task_events_info,
 		    &ps->task_events_info_size)
 	  == 0)
 	have |= PSTAT_TASK_EVENTS;
