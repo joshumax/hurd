@@ -1,10 +1,10 @@
 2005-01-21  Alfred M. Szmidt  <ams@gnu.org>
 
-	* doc/hurd.texi: Doc fixes.
+	* hurd.texi: Doc fixes.
 
 2004-02-01  Alfred M. Szmidt  <ams@kemisten.nu>
 
-        * hurd.texi (Installing): Chapter removed.
+	* hurd.texi (Installing): Chapter removed.
 
 2003-08-09  Alfred M. Szmidt  <ams@kemisten.nu>
 
