@@ -1,5 +1,5 @@
 /* Changing pager attributes synchronously
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -84,9 +84,12 @@ pager_change_attributes (struct pager *p,
     {
       while (ar->attrs_pending)
 	condition_wait (&p->wakeup, &p->interlock);
-      if (!--ar->threads_waiting)
+
+      if (! --ar->threads_waiting)
 	{
 	  *ar->prevp = ar->next;
+	  if (ar->next)
+	    ar->next->prevp = ar->prevp;
 	  free (ar);
 	}
     }
