@@ -1,3 +1,8 @@
+2002-10-19  Roland McGrath  <roland@frob.com>
+
+	* unix.c (ftp_conn_unix_start_get_stats): Pass dirname a copy of NAME
+	instead of the original pointer.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* ftpconn.h (ftp_conn_add_stat_fun_t) [_FILE_OFFSET_BITS != 64]:
