@@ -23,10 +23,13 @@ makemode := utility
 
 SRCS = dir.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
 	pass5.c setup.c utilities.c inode.c
-OBJS = $(subst .c,.o,$(SRCS))
+OBJS = $(subst .c,.o,$(SRCS)) tables.o
 LCLHDRS = fsck.h
 target = newfsck
 
 include ../Makeconf
 
 $(OBJS): fsck.h
+
+tables.o: ../ufs/tables.c
+	$(CC) $(CFLAGS) -c -o $@ $<
