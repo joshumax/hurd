@@ -17,7 +17,7 @@
 
 
 void
-pager_shutdown_pager (struct pager *p)
+pager_shutdown (struct pager *p)
 {
   mach_port_t port;
   
