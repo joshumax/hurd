@@ -19,16 +19,16 @@ dir := .
 
 include Makeconf
 
-LIB_SUBDIRS = libioserver libports
-PROG_SUBDIRS = auth boot exec fstests hello ifsock init mkbootfs proc term \
-	ufs init.trim
+LIB_SUBDIRS = libioserver libports libpager
+PROG_SUBDIRS = auth boot exec fstests hello ifsock init init.trim mkbootfs \
+	 proc term tmpfs ufs 
 OTHER_SUBDIRS = hurd i386
 SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
 
 DIST_FILES = COPYING Makeconf Makefile README NEWS
 
 all:
-	@echo 'Can't make all yet.'
+	@echo Can\'t make all yet.
 
 %-lndist: hurd-snap
 	make -C $* lndist
