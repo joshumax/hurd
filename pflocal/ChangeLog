@@ -1,3 +1,9 @@
+Wed Aug 20 14:06:11 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* pflocal.c (main): New args for
+	ports_manage_port_operations_multithread. 
+ 	* sserver.c (handle_sock_requests): Likewise.
+
 Mon Oct  7 12:53:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* connq.c (connq_listen): Unlock CQ->lock when returning EWOULDBLOCK.

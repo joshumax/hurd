@@ -1,6 +1,6 @@
 /* Server for socket ops
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -52,8 +52,7 @@ handle_sock_requests ()
     {
       ports_enable_bucket (sock_port_bucket);
       ports_manage_port_operations_multithread (sock_port_bucket, sock_demuxer,
-						30*1000, 2*60*1000,
-						1, MACH_PORT_NULL);
+						30*1000, 2*60*1000, 0);
     }
 
   /* The last service thread is about to exist; make this known.  */

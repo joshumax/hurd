@@ -1,6 +1,6 @@
 /* A server for local sockets, of type PF_LOCAL
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -93,7 +93,7 @@ void main(int argc, char *argv[])
   do
     ports_manage_port_operations_multithread (pf_port_bucket,
 					      pf_demuxer,
-					      30*1000, 5*60*1000, 0, 0);
+					      30*1000, 5*60*1000, 0);
   while (sock_global_shutdown () != 0);
 
   exit(0);
