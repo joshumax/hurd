@@ -98,13 +98,11 @@ diskfs_parse_bootargs (int argc, char **argv)
 	}
       mig_put_reply_port (msg.Head.msgh_local_port);
 
-#if 0
       assert (msg.Head.msgh_id == 999999 + 100);
       assert (msg.Head.msgh_size == sizeof msg);
       assert (msg.Head.msgh_bits & MACH_MSGH_BITS_COMPLEX);
       assert (*(int *) &msg.priv_hostType == *(int *) &portCheck);
       assert (*(int *) &msg.priv_deviceType == *(int *) &portCheck);
-#endif
       diskfs_host_priv = msg.priv_host;
       diskfs_master_device = msg.priv_device;
 
