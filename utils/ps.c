@@ -153,7 +153,7 @@ char *fmts[] =
   /* user (-u) */
   "%^%user %pid %th %cpu %mem %sz %rss %tt %sc %stat %command",
   /* vmem (-v) */
-  "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %size %rss %cpu %mem %command",
+  "%^%pid %th %stat %sl %pgins %pgflts %cowflts %zfills %sz %rss %cpu %mem %command",
   /* long (-l) */
   "%^%uid %pid %th %ppid %pri %ni %th %msgi %msgo %sz %rss %sc %wait %stat %tt %time %command",
   /* jobc (-j) */
