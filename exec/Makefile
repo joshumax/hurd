@@ -18,7 +18,7 @@
 dir := exec
 makemode := server
 
-SRCS = exec.c hostarch.c
+SRCS = exec.c hostarch.c unzip.c util.c inflate.c
 OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o \
        $(gzip-objects)
 gzip-objects = unzip.o util.o inflate.o
