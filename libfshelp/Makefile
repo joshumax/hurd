@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,13 +18,11 @@
 dir := libfshelp
 makemode := library
 
-SRCS = handle-startup.c init-trans.c start-trans.c transboot-clean.c \
-	kill-trans.c trans-iter.c lock-acquire.c lock-init.c trans-cntl.c \
-	trans-drop.c
+SRCS =	lock-acquire.c lock-init.c \
+	start-translator-long.c start-translator.c \
+	fetch-root.c transbox-init.c translated.c set-active.c fetch-control.c drop-transbox.c
 
-OBJS = handle-startup.o init-trans.o start-trans.o transboot-clean.o \
-	kill-trans.o trans-iter.o lock-acquire.o lock-init.o trans-cntl.o \
-	trans-drop.o
+OBJS = $(subst .c,.o,$(SRCS))
 
 LCLHDRS = trans.h fshelp.h locks.h
 REMHDRS = ../hurd/ports.h
