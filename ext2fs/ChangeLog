@@ -1,3 +1,8 @@
+2000-11-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dir.c (diskfs_lookup_hard): If name is too long, clear
+	DS before returning ENAMETOOLONG.
+
 2000-10-01  Roland McGrath  <roland@frob.com>
 
 	* inode.c (write_node): Use memcpy instead of a loop.

@@ -126,7 +126,11 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   namelen = strlen (name);
 
   if (namelen > MAXNAMLEN)
-    return ENAMETOOLONG;
+    {
+      if (ds)
+	diskfs_null_dirstat (ds);
+      return ENAMETOOLONG;
+    }
 
  try_again:
   if (ds)

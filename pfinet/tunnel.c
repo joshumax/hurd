@@ -573,6 +573,7 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
   return 0;
 }
 
+error_t
 trivfs_S_io_get_owner (struct trivfs_protid *cred,
                        mach_port_t reply,
                        mach_msg_type_name_t reply_type,
