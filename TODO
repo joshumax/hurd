@@ -237,17 +237,21 @@ See `tasks', the exported task list.
 ======
 
 ???
+  [I'm not sure of the preconditions for this; it usually seems to happen to
+   new login shells (but not often enough to really get a handle on it).
+   If the command is repeated, then it usually works correctly.]
   login> ps aux|head
   bash: /bin/head: (ipc/send) invalid msg-header
   Broken pipe
 ???
+  [On caffeine; /local/bin/cracked is from duality:/usr/local/bin]
+  bash# id
+  uid=0(root) gid=0(wheel) groups=0(wheel)
   bash# /local/bin/cracked
      Your account has been cracked, probably due to your choice of
      ...
   bash# sush guest /local/bin/cracked
   /dev/fd/3: 134859936: Permission denied
-  bash# id
-  uid=0(root) gid=0(wheel) groups=0(wheel)
 ???
 
 List for version 0.2 binary release
