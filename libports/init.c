@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -23,6 +23,6 @@
 
 struct mutex _ports_lock = MUTEX_INITIALIZER;
 struct condition _ports_block = CONDITION_INITIALIZER;
-struct port_bucket *_ports_all_buckets = 0;
-int _ports_total_rpcs = 0;
-int _ports_flags = 0;
+struct port_bucket *_ports_all_buckets;
+int _ports_total_rpcs;
+int _ports_flags;

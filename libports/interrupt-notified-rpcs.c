@@ -1,8 +1,8 @@
 /* Handle interruping rpcs because of notification
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,11 +21,11 @@
 #include "ports.h"
 
 /* A linked list of ports for which notification has been requested.  */
-struct ports_notify *_ports_notifications = 0;
+struct ports_notify *_ports_notifications;
 
 /* Free lists for notify structures.  */
-struct ports_notify *_ports_free_ports_notifies = 0;
-struct rpc_notify *_ports_free_rpc_notifies = 0;
+struct ports_notify *_ports_free_ports_notifies;
+struct rpc_notify *_ports_free_rpc_notifies;
 
 /* Interrupt any rpcs on OBJECT that have requested such.  */
 void
