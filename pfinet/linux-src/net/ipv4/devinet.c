@@ -419,6 +419,11 @@ configure_device (struct device *dev,
       if (!ifa)
 	return ENOBUFS;
       memcpy (ifa->ifa_label, dev->name, IFNAMSIZ);
+
+      ifa->ifa_address = INADDR_NONE;
+      ifa->ifa_mask = INADDR_NONE;
+      ifa->ifa_broadcast = INADDR_NONE;
+      ifa->ifa_local = INADDR_NONE;
     }
 
   if (addr != INADDR_NONE)
@@ -435,10 +440,7 @@ configure_device (struct device *dev,
   if (peer != INADDR_NONE && (dev->flags & IFF_POINTOPOINT))
     {
       ifa->ifa_prefixlen = 32;
-      if (netmask != INADDR_NONE)
-	ifa->ifa_mask = netmask;
-      else
-	ifa->ifa_mask = inet_make_mask(32);
+      ifa->ifa_mask = inet_make_mask(32);
       ifa->ifa_address = peer;
     }
 
