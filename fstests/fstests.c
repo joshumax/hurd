@@ -39,7 +39,6 @@ main ()
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
   root = _hurd_ports[INIT_PORT_CRDIR].port;
-  task_get_bootstrap_port (mach_task_self (), &root);
   dir_pathtrans (root, "README", FS_LOOKUP_READ, 0, &retry, pathbuf,
 		 &filetoprint);
   
