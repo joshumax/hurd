@@ -25,7 +25,10 @@
  */
 /*
  * HISTORY
- * $Log:	csw.s,v $
+ * $Log: csw.S,v $
+# Revision 1.2  1994/05/04  19:01:50  mib
+# entered into RCS
+#
  * Revision 2.7  91/07/31  18:36:32  dbg
  * 	Fix for ANSI C preprocessor.
  * 	[91/07/30  17:35:16  dbg]
@@ -103,7 +106,7 @@ ENTRY(cproc_start_wait)
 	movl	$0,%ebp		/* (clear frame pointer) */
 	xorl	%eax,%eax	/* unlock */
 	xchgl	%eax,(%edx)	/* the lock - now old thread can run */
-	call	_cproc_waiting	/* call cproc_waiting */
+	call	EXT(cproc_waiting)/* call cproc_waiting */
 	/*NOTREACHED*/
 
 /*
@@ -127,7 +130,7 @@ ENTRY(cproc_prepare)
 				/* 20  return PC from cthread_body */
 				/* 24  argument to cthread_body */
 	movl	$0,12(%edx)	/* clear frame pointer */
-	movl	$_cthread_body,16(%edx)
+	movl	$EXT(cthread_body),16(%edx)
 				/* resume at cthread_body */
 	movl	$0,20(%edx)	/* fake return address from cthread_body */
 	movl	B_ARG0,%ecx	/* get child thread pointer */
