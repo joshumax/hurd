@@ -25,11 +25,11 @@ gzip-objects = unzip.o util.o inflate.o
 LCLHDRS = gzip.h crypt.h tailor.h
 target = exec
 DIST_FILES = core.c gcore.c hashexec.c
-OTHERLIBS = -lbfd -liberty
+#OTHERLIBS = -lbfd -liberty
 
 include ../Makeconf
 
 vpath lib%.a $(crossdir)/lib
 
-CPPFLAGS += -DGZIP -DBFD
+CPPFLAGS += -DGZIP # -DBFD
 
