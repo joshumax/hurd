@@ -1,3 +1,9 @@
+2002-04-27  Roland McGrath  <roland@frob.com>
+
+	* priv.h: Include <link.h> to get ElfW macro.
+	* priv.h, exec.c, main.c, hostarch.c: Use `ElfW(TYPE)' in place
+	of `Elf32_TYPE' throughout.
+
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* core.c: File removed.
