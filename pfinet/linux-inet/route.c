@@ -68,7 +68,7 @@ static struct rtable *rt_loopback = NULL;
  *	Remove a routing table entry.
  */
 
-void rt_del(unsigned long dst, char *devname)
+void ip_rt_del(unsigned long dst, char *devname)
 {
 	struct rtable *r, **rp;
 	unsigned long flags;
@@ -482,7 +482,7 @@ static int rt_kill(struct rtentry *r)
 		if (err)
 			return err;
 	}
-	rt_del(trg->sin_addr.s_addr, devname);
+	ip_rt_del(trg->sin_addr.s_addr, devname);
 	if ( devname != NULL )
 		putname(devname);
 	return 0;
