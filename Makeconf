@@ -332,7 +332,7 @@ vpath libutil.% $(libdir)/
 
 
 # Where to find .defs files.
-vpath %.defs $(top_srcdir)/hurd $(includedir)/mach $(includedir)/device
+vpath %.defs $(top_srcdir)/hurd $(install_includedir)/mach $(install_includedir)/device
 
 FORCE:
 

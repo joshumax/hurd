@@ -1,3 +1,10 @@
+Thu Aug  8 13:14:44 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* configure.in: Add AC_SUBST for `install_prefix'.
+	* config.make.in (install_prefix, install_includedir): New
+	variables.	
+	* Makeconf (vpath %.defs): Look for these in install_includedir.
+	
 Wed Aug  7 14:57:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (prog-subdirs): Add `nfsd'.
