@@ -696,7 +696,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   max = (amount < avail) ? amount : avail;
 
   if (max > *datalen)
-    vm_allocate (mach_task_self (), (vm_address_t *)data, max, 1);
+    *data = mmap (0, max, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
   cancel = 0;
   cp = *data;

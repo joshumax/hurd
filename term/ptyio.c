@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -333,7 +333,7 @@ pty_io_read (struct trivfs_protid *cred,
   if (size > amount)
     size = amount;
   if (size > *datalen)
-    vm_allocate (mach_task_self (), (vm_address_t *) data, size, 1);
+    *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   *datalen = size;
 
   if (control_byte)

@@ -1,3 +1,8 @@
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* ptyio.c (pty_io_read): Use mmap instead of vm_allocate.
+	* users.c (trivfs_S_io_read): Likewise.
+
 1999-05-24  Mark Kettenis  <kettenis@gnu.org>
 
 	* devio.c: Include <assert.h>, <errno.h> and <error.h>.  Do
