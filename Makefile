@@ -18,11 +18,7 @@
 dir := .
 makemode := misc
 
-ifndef srcdir
-srcdir = .
-endif
-
-include $(srcdir)/Makeconf
+include ./Makeconf
 
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 	     hurd.boot build.mk.in build.mkcf.in aclocal.m4 \

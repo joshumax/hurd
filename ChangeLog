@@ -1,3 +1,13 @@
+1998-04-02  Gordon Matzigkeit  <gord@profitpress.com>
+
+	* Makefile (srcdir): Don't set srcdir, since this is either done
+	in the generated Makefile or in Makeconf.  Just include ./Makeconf
+	directly.
+
+	* configure.in (makefiles): Check for $ac_unique_file, rather than
+	doing string comparisons to determine if we are configured in the
+	source directory.  This works for silly things like `srcdir=./.'.
+
 1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (prog-subdirs): Add ftpfs.
