@@ -228,7 +228,8 @@ new_partition (const char *name, struct file_direct *fdp,
 	    /* The partition's first page has a Linux swap signature.
 	       This means the beginning of the page contains a bitmap
 	       of good pages, and all others are bad.  */
-	    unsigned int i, j, bad, waste, max;
+	    unsigned int i, j, bad, max;
+	    int waste;
 
 	    printf("(default pager): Found Linux 2.0 swap signature in %s\n",
 		   name);
