@@ -1,3 +1,8 @@
+1999-08-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* wire.c (map_extent): Use p_memsz instead of p_filesz.
+	(loaded): Return zero if _DYNAMIC has address zero (i.e., static link).
+
 1999-08-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mktime.c: File removed.  Current libc code is good.
