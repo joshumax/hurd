@@ -27,6 +27,8 @@ TRY="Try "\`"$0 --help' for more information"
 MAX_SIZE=1440	# size of floppy
 MIN_SIZE=500    # avoid lossage for compressed filesystems
 
+OWNER="`id -un`.`id -gn`"
+
 unset IMAGE SRCS COMPRESS SCRIPTS QUIET
 declare -a SRCS SCRIPTS
 
@@ -42,6 +44,8 @@ while :; do
     --mkfs)         MKFS="$2"; shift 2;;
     --fstrans=*)    FSTRANS="`echo "$1" | sed 's/^--fstrans=//'`"; shift 1;;
     --fstrans)      FSTRANS="$2"; shift 2;;
+    --owner=*)      OWNER="`echo "$1" | sed 's/^--owner=//'`"; shift 1;;
+    --owner)        OWNER="$2"; shift 2;;
     --max-size=*)   MAX_SIZE="`echo "$1" | sed 's/^--max-size=//'`"; shift 1;;
     --max-size)     MAX_SIZE="$2"; shift 2;;
     --quiet|-q|-s)  QUIET=yes; shift 1;;
@@ -58,6 +62,7 @@ while :; do
       --copy-rules=FILE      Copy files in a manner described by FILE
 
       --compress             Compress the final image
+      --owner=USER[.GROUP]   Make files owned by USER & GROUP (default "\`"$OWNER')
       --max-size=KBYTES      Maximum size of final image (default $MAX_SIZE)
 
       --fstype=TYPE          Type of filesystem (TYPE may be "\`"ext2' or "\`"ufs')
@@ -82,10 +87,12 @@ following:
 
   copy	   -- A plain copy, preserving symlinks
   objcopy  -- Copy using objcopy to strip any unneeded symbols
-  settrans -- Copy a translator
+  copytrans -- Copy a translator
+
   touch    -- Create an empty file in the destination, ignoring the source
   mkdir    -- Create an empty directory in the destination, ignoring the source
   makedev  -- Create the given device in the destination, ignoring the source
+  settrans -- Set a translator with the given arguments
 
 If both --mkfs and --fstrans are specified, no filesystem type need be given.
 If --fstype is not specified, an attempt is made to guess it based on the
@@ -198,18 +205,31 @@ else
 	    *)      unset dst;;
 	  esac
 
-	  op="${args[0]}"; unset args[0]; args=(${args[@]})
+	  op="${args[0]}"
+	  src="${args[1]}"
 
-	  if echo "${args[0]}" | grep -q "[?*[]"; then
-	    # If $src contains a wildcard, use the most recent file matching that pattern
-	    args[0]="`ls -t1 ${PFX}$args | head -1`"
+	  if echo "$src" | grep -q "[?*[]"; then
+	    # For wildcards, use the most recent file matching that pattern
+	    src="`(cd $SRC; ls -t1 $src | head  -1)`"
 	  fi
 
-	  src="${args[0]}"
 	  case ${dst+set} in
-	    set) ;;
-	    *)   dst="$src";;
+	    set)
+	      # Destination patterns match files in the source tree (What
+	      # else could we use?  This may be useful for files that exist
+	      # in the source, but which we want to use a different version
+	      # of for this filesystem).
+	      if echo "$dst" | grep -q "[?*[]"; then
+	        dst="`(cd $SRC; ls -t1 $dst | head  -1)`"
+	      fi;;
+	    *)
+	      dst="$src";;
 	  esac
+
+echo "1: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
+	  # Pop op & src off of args
+	  set -- "${args[@]}"; shift 2; unset args; args=("$@")
+echo "2: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
 
 	  case $op in
 	    copy)
@@ -220,20 +240,29 @@ else
 	      eval $ECHO "'objcopy --strip-unneeded ${PFX}$src $STAGE/$dst'"
 	      objcopy --strip-unneeded "${PFX}$src" "$STAGE/$dst"
 	      ;;
+	    symlink)
+	      if echo "$args" | grep -q "[?*[]"; then
+	        # symlink expansion is in the source tree, in the same
+		# directory as the file itself.
+	        args="`(cd $PFX`dirname $dst`; ls -t1 $args | head  -1)`"
+	      fi	      
+	      eval $ECHO "'ln -s $args $STAGE/$dst'"
+	      ln -s $args $STAGE/$dst
+	      ;;
 	    mkdir)
 	      eval $ECHO "'mkdir $STAGE/$dst'"
 	      mkdir "$STAGE/$dst"
 	      ;;
-	    touch) 
+	    touch)
 	      eval $ECHO "'touch $STAGE/$dst'"
 	      touch "$STAGE/$dst"
 	      ;;
-	    makedev|settrans)
+	    makedev|settrans|copytrans)
 	      # delay translators until later.
 	      touch "$STAGE/$dst"
 	      TRANS_BLOCKS=$(($TRANS_BLOCKS + 1))
-	      shift
-	      echo "$op $src $dst" >> $TRANS_LIST
+echo "3: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
+	      echo "$op $dst $src ${args[*]}" >> $TRANS_LIST
 	      ;;
 	    ''|'#')
 	      ;;
@@ -255,6 +284,9 @@ else
   done
   TREE="$STAGE"
 fi
+
+eval $ECHO "'# Changing file owners to $OWNER'"
+chown -R "$OWNER" $TREE
 
 # Size of source tree, plus 5% for overhead
 TREE_SIZE=$((($TRANS_BLOCKS + `du -s "$TREE" | sed 's/^\([0-9]*\).*/\1/'`) * 105 / 100))
@@ -291,12 +323,23 @@ if [ -r "$TRANS_LIST" ]; then
   # create any delayed translators
   eval $ECHO "'# Creating translators...'"
   cat "$TRANS_LIST" |
-    while read op src dst; do
+    while read -a args; do
+echo "4: OP=<$op>, DST=<$dst>, ARGS=<${args[*]}>"
+      op="${args[0]}"
+      dst="${args[1]}"
+      src="${args[2]}"
+      set -- "${args[@]}"; shift 3; unset args; args=("$@")
+echo "5: OP=<$op>, DST=<$dst>, ARGS=<${args[*]}>"
+      
       case $op in
-	settrans)
+	copytrans)
 	  tr="`showtrans "${PFX}$src"`"
 	  eval $ECHO "'settrans $MNT/$dst $tr'"
 	  settrans "$MNT/$dst" $tr
+	  ;;
+	settrans)
+	  eval $ECHO "'settrans $MNT/$dst ${args[*]}'"
+	  settrans "$MNT/$dst" "${args[@]}"
 	  ;;
 	makedev)
 	  dd="/`dirname $dst`"
