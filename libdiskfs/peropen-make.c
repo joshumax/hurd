@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "priv.h"
+#include "protid.h"
 #include <sys/file.h>
 
 /* Create and return a new peropen structure on node NP with open
@@ -24,7 +24,6 @@ struct peropen *
 diskfs_make_peropen (struct node *np, int flags)
 {
   struct peropen *po = malloc (sizeof (struct peropen));
-  diskfs_nref (np);
   po->filepointer = 0;
   po->lock_status = LOCK_UN;
   po->refcnt = 0;
