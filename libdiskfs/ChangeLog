@@ -1,3 +1,14 @@
+Sat Jul 27 20:05:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lookup.c (diskfs_lookup): Don't nput *NP if we didn't find a file.
+
+	* init-startup.c (diskfs_S_startup_dosync): Clean up after ourselves.
+	Don't sync if DISKFS_READONLY.
+	* file-syncfs.c (diskfs_S_file_syncfs): Don't sync if DISKFS_READONLY.
+	* fsys-syncfs.c (diskfs_S_fsys_syncfs): Likewise.
+	* sync-interval.c (periodic_sync): Likewise.
+	* shutdown.c (diskfs_shutdown): Likewise.
+
 Fri Jul 26 14:52:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-exec.c (diskfs_S_file_exec): Unlock NP before we attempt to
