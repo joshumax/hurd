@@ -297,9 +297,11 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 			  MACH_MSG_TYPE_MAKE_SEND);
   ports_port_deref (rootpi);
 
-  err = hurd_file_name_lookup (rootport, rootport, _SERVERS_EXEC,
-			       O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, real);
+  err = dir_lookup (rootport, _SERVERS_EXEC,
+		    O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, real);
   assert_perror (err);
+  assert (retry == FS_RETRY_NORMAL);
+  assert (pathbuf[0] == '\0');
   *realpoly = MACH_MSG_TYPE_MOVE_SEND;
 
   mach_port_deallocate (mach_task_self (), rootport);
