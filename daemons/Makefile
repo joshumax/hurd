@@ -26,8 +26,11 @@ installationdir = $(libexecdir)
 
 OBJS = $(SRCS:.c=.o)
 
+libutil-libsubst = -lutil
+
 include ../Makeconf
 
 %: %.sh
 	cp $< $@
 
+getty: -lutil
