@@ -1,3 +1,7 @@
+1997-09-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (diskfs_append_args): New function.
+
 1997-09-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rr.h (GNUEXT_ID): Make value a string.

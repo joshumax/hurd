@@ -1,3 +1,22 @@
+1997-09-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* encode.c (store_encode): Allocate the correct amount of memory
+	for the encoding vectors.
+
+	* make.c (_store_create): Initialize NEW->misc_len.
+
+	* mvol.c (store_mvol_class): Set correct members.
+	(store_mvol_create): Declare PHYS correctly.
+	<stdio.h>: New include.
+	* store.h (store_mvol_create): Declare PHYS correctly.
+	* Makefile (SRCS): Add mvol.c.
+
+1997-08-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (store_mvol_create): New declaration.
+	(store_mvol_class): New declaration.
+	* mvol.c: New file.
+
 1997-07-24  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* device.c (store_device_create): Treat devices that can't do
