@@ -1,3 +1,7 @@
+2000-02-06  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile: Move include ../Makeconf earlier, since it sets srcdir.
+
 1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile, main.c: New files for new this directory `mach-defpager'.
