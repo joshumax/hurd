@@ -42,7 +42,7 @@ INTR_INTERFACE
 routine io_write (
 	io_object: io_t;
 	RPT
-	data: data_t;
+	data: data_t SCP;
 	offset: off_t;
 	out amount: mach_msg_type_number_t);
 
@@ -183,8 +183,8 @@ routine io_restrict_auth (
 	io_object: io_t;
 	RPT
 	out new_object: mach_port_send_t;
-	uids: idarray_t;
-	gids: idarray_t);
+	uids: idarray_t SCP;
+	gids: idarray_t SCP);
 
 /* Return a new port with the same semantics as the existing port. */
 routine io_duplicate (
