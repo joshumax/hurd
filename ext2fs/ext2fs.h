@@ -68,6 +68,9 @@ void pokel_add (struct pokel *pokel, void *loc, vm_size_t length);
 
 /* Sync all the modified pieces of disk */
 void pokel_sync (struct pokel *pokel, int wait);
+
+/* Flush (that is, drop on the ground) all pending pokes in POKEL.  */
+void pokel_flush (struct pokel *pokel);
 
 /* ---------------------------------------------------------------- */
 /* Bitmap routines.  */
@@ -152,8 +155,8 @@ struct disknode
   /* Random extra info used by the ext2 routines.  */
   struct ext2_inode_info info;
 
-  /* The upi structure for this file's file pager.  */
-  struct user_pager_info *fileinfo;
+  /* This file's pager.  */
+  struct pager *pager;
 
   /* True if the last page of the file has been made writable, but is only
      partially allocated.  */
@@ -168,19 +171,19 @@ struct disknode
 
 struct user_pager_info 
 {
-  struct node *node;
   enum pager_type 
     {
       DISK,
       FILE_DATA,
     } type;
-  struct pager *p;
+  struct node *node;
+  vm_prot_t max_prot;
 };
 
 /* ---------------------------------------------------------------- */
 /* pager.c */
 
-struct user_pager_info *disk_pager;
+struct pager *disk_pager;
 mach_port_t disk_pager_port;
 void *disk_image;
 
@@ -194,32 +197,11 @@ void drop_pager_softrefs (struct node *node);
 /* Call this when we should turn on caching because it's no longer
    important for unused memory object ports to get freed.  */
 void allow_pager_softrefs (struct node *node);
+
+/* Invalidate any pager data associated with NODE.  */
+void flush_node_pager (struct node *node);
 
 /* ---------------------------------------------------------------- */
-
-/*
- * These are the fs-independent mount-flags: up to 16 flags are supported
- */
-#define MS_RDONLY	 1 /* mount read-only */
-#define MS_NOSUID	 2 /* ignore suid and sgid bits */
-#define MS_NODEV	 4 /* disallow access to device special files */
-#define MS_NOEXEC	 8 /* disallow program execution */
-#define MS_SYNCHRONOUS	16 /* writes are synced at once */
-#define MS_REMOUNT	32 /* alter flags of a mounted FS */
-
-/* Inode flags.  */
-#define S_APPEND    256 /* append-only file */
-#define S_IMMUTABLE 512 /* immutable file */
-
-#define IS_APPEND(node) ((node)->dn->info.i_flags & S_APPEND)
-#define IS_IMMUTABLE(node) ((node)->dn->info.i_flags & S_IMMUTABLE)
-
-/* ---------------------------------------------------------------- */
-
-char *device_name;
-mach_port_t device_port;
-off_t device_size;
-unsigned device_block_size;
 
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
@@ -236,8 +218,8 @@ unsigned long block_size;
 /* The log base 2 of BLOCK_SIZE.  */
 unsigned log2_block_size;
 
-/* log2 of the number of device blocks (DEVICE_BLOCK_SIZE) in a filesystem
-   block (BLOCK_SIZE).  */
+/* log2 of the number of device blocks (DISKFS_DEVICE_BLOCK_SIZE) in a
+   filesystem block (BLOCK_SIZE).  */
 unsigned log2_dev_blocks_per_fs_block;
 
 /* log2 of the number of stat blocks (512 bytes) in a filesystem block.  */
@@ -393,7 +375,7 @@ sync_global_ptr (void *bptr, int wait)
 {
   vm_offset_t boffs = trunc_block (bptr_offs (bptr));
   global_block_modified (boffs_block (boffs));
-  pager_sync_some (disk_pager->p, trunc_page (boffs), vm_page_size, wait);
+  pager_sync_some (disk_pager, trunc_page (boffs), vm_page_size, wait);
 }
 
 /* This records a modification to one of a file's indirect blocks.  */
