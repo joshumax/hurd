@@ -1,8 +1,7 @@
 /* Show files' passive translators.
 
-   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -80,9 +79,9 @@ main (int argc, char *argv[])
 	      if (!silent)
 		{
 		  if (print_prefix)
-		    printf ("%s: %s\n", name, trans);
+		    printf ("%s: %.*s\n", name, trans_len, trans);
 		  else
-		    puts (trans);
+		    printf ("%.*s\n", trans_len, trans);
 		}
 
 	      if (trans != buf)
