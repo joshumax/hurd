@@ -42,8 +42,8 @@ addr_adj (off_t addr, struct store *store, struct store *stripe)
 
 static error_t
 stripe_read (struct store *store,
-	     off_t addr, size_t index, mach_msg_type_number_t amount,
-	     char **buf, mach_msg_type_number_t *len)
+	     off_t addr, size_t index, size_t amount,
+	     void **buf, size_t *len)
 {
   struct store *stripe = store->children[index];
   return store_read (stripe, addr_adj (addr, store, stripe), amount, buf, len);
@@ -51,12 +51,20 @@ stripe_read (struct store *store,
 
 static error_t
 stripe_write (struct store *store,
-	      off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
-	      mach_msg_type_number_t *amount)
+	      off_t addr, size_t index, void *buf, size_t len,
+	      size_t *amount)
 {
   struct store *stripe = store->children[index];
   return
     store_write (stripe, addr_adj (addr, store, stripe), buf, len, amount);
+}
+
+error_t
+stripe_remap (struct store *source,
+	      const struct store_run *runs, size_t num_runs,
+	      struct store **store)
+{
+  return store_remap_create (source, runs, num_runs, 0, store);
 }
 
 error_t
@@ -101,6 +109,7 @@ ileave_class =
 {
   STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write,
   ileave_allocate_encoding, ileave_encode, ileave_decode,
+  0, 0, 0, 0, stripe_remap
 };
 _STORE_STD_CLASS (ileave_class);
 
@@ -143,7 +152,8 @@ static struct store_class
 concat_class =
 {
   STORAGE_CONCAT, "concat", stripe_read, stripe_write,
-  concat_allocate_encoding, concat_encode, concat_decode
+  concat_allocate_encoding, concat_encode, concat_decode,
+  0, 0, 0, 0, stripe_remap
 };
 _STORE_STD_CLASS (concat_class);
 
