@@ -36,6 +36,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/default_pager.h>
 #include <argp.h>
 #include <hurd/store.h>
+#include <sys/mman.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
