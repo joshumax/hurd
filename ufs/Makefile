@@ -20,15 +20,16 @@ dir := ufs
 include ../Makeconf
 
 SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
-	subr.c tables.c 
+	sizes.c subr.c tables.c 
 
-DISTFILES=$(SRCS) ufs.h Makefile
+DISTFILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
+PRELIBS = $(libdiskfs) $(libports)
 LIBS= $(libdiskfs) $(libpager) $(libioserver) $(libports) $(libfshelp) \
 	$(libthreads)
-EXTRALIBS=$(libdiskfs)
+POSTLIBS=$(libdiskfs)
 
 all: ufs
 
@@ -48,6 +49,7 @@ hyper.o: fs.h
 inode.o: dinode.h fs.h
 main.o: fs.h
 pager.o: fs.h dinode.h
+sizes.o: fs.h dinode.h
 subr.o: fs.h
 tables.o: fs.h
 
