@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.14  1999/05/30 01:39:48  roland
+ * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* cthreads.h (mutex_clear): Change again, to call mutex_init.
+ *
  * Revision 1.13  1999/05/29 18:59:10  roland
  * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
  *
@@ -241,12 +246,12 @@ typedef char *any_t;
 #define	FALSE	0
 #endif	/* TRUE */
 
-#ifndef MACRO_BEGIN
 
-#define	MACRO_BEGIN	do {
-#define	MACRO_END	} while (0)
+#undef	MACRO_BEGIN
+#undef	MACRO_END
+#define	MACRO_BEGIN	__extension__ ({
+#define	MACRO_END	0; })
 
-#endif	MACRO_BEGIN
 
 /*
  * C Threads package initialization.
