@@ -108,38 +108,11 @@ main (int argc, char **argv)
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
 		disk_size, 0, 1, diskpagerport, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
-		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
+		VM_PROT_READ | VM_PROT_WRITE,
 		VM_INHERIT_NONE);
   assert (!err);
 
   get_hypermetadata ();
-
-  if (disk_size < sblock->fs_size * sblock->fs_fsize)
-    {
-      fprintf (stderr, 
-	       "Disk size (%ld) less than necessary "
-	       "(superblock says we need %ld)\n",
-	       disk_size, sblock->fs_size * sblock->fs_fsize);
-      exit (1);
-    }
-
-  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
-
-  /* If the filesystem has new features in it, don't pay attention to
-     the user's request not to use them. */
-  if ((sblock->fs_inodefmt == FS_44INODEFMT
-       || direct_symlink_extension)
-      && compat_mode == COMPAT_BSD42)
-    /* XXX should syslog to this effect */
-    compat_mode = COMPAT_BSD44;
-
-  if (!diskfs_readonly)
-    {
-      sblock->fs_clean = 0;
-      strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
-      sblock_dirty = 1;
-      diskfs_set_hypermetadata (1, 0);
-    }
 
   inode_init ();
 
@@ -154,5 +127,14 @@ main (int argc, char **argv)
   /* And this thread is done with its work. */
   cthread_exit (0);
 
+  return 0;
+}
+
+error_t 
+diskfs_reload_global_state ()
+{
+  flush_pokes ();
+  pager_flush (diskpager->p, 1);
+  get_hypermetadata ();
   return 0;
 }
