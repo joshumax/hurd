@@ -28,7 +28,7 @@ LCLHDRS := $(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/*.h $(srcdir)/*/*.h))
 
 include ../Makeconf
 
-install-headers: $(installhdrs:%=$(includedir)/%)
+install-headers install: $(installhdrs:%=$(includedir)/%)
 $(includedir)/%: $(srcdir)/%
 	@$(MKINSTALLDIRS) $(@D)
 	$(INSTALL_DATA) $< $@
