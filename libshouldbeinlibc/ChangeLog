@@ -1,3 +1,11 @@
+1997-07-28  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ugids-posix.c (ugids_set_posix_user): Ignore errors from
+	idvec_merge_implied_gids.
+	* ugids.c (ugids_add_user): Likewise.
+	* idvec-impgids.c (idvec_merge_implied_gids): Do all ids in UIDS
+	even if one returns an error.
+
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* maptime.c (maptime_map): Allow MTIME to be mapped anywhere.
