@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -41,7 +41,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
 						     diruser->po->dotdotport),
 				 netfs_copy_credential (diruser->credential));
       *newfile = ports_get_right (newpi);
-      *newfiletype = MACH_MSG_TYPE_COPY_SEND;
+      *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (newpi);
       netfs_nput (np);
       return 0;
