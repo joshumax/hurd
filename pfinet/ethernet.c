@@ -219,7 +219,7 @@ setup_ethernet_device (char *name)
   /* Fetch hardware information */
   count = NET_STATUS_COUNT;
   device_get_status (ether_port, NET_STATUS, (dev_status_t) &netstat, &count);
-  ether_dev.mtu = netstat.max_packet_size;
+  ether_dev.mtu = netstat.max_packet_size - ether_dev.hard_header_len;
   assert (netstat.header_format == HDR_ETHERNET);
   assert (netstat.header_size == ETH_HLEN);
   assert (netstat.address_size == ETH_ALEN);
