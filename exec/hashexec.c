@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -166,6 +166,8 @@ check_hashbang (struct execdata *e,
   else
     ++len;			/* Include the terminating null.  */
 
+  interp_len = strlen (interp) + 1;
+
   user_crdir = user_cwdir = MACH_PORT_NULL;
 
   rwlock_reader_lock (&std_lock);
@@ -298,12 +300,15 @@ check_hashbang (struct execdata *e,
 
 	  /* Prepare the arguments to pass to the interpreter from the original
 	     arguments and the name of the script file.  The args will look
-	     like `ARGV[0] {ARG} FILE_NAME ARGV[1..n]' (ARG might have been
+	     like `INTERP {ARG} FILE_NAME ARGV[1..n]' (ARG might have been
 	     omitted). */
 
 	  namelen = strlen (file_name) + 1;
 
-	  new_argvlen = argvlen + len + namelen;
+	  new_argvlen
+	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */ 
+	    + interplen + len + namelen; /* New args */
+
 	  e->error = vm_allocate (mach_task_self (),
 				  (vm_address_t *) &new_argv,
 				  new_argvlen, 1);
@@ -313,18 +318,28 @@ check_hashbang (struct execdata *e,
 	  if (! setjmp (args_faulted))
 	    {
 	      char *other_args;
-	      other_args = memccpy (new_argv, argv, '\0', argvlen);
-	      p = &new_argv[other_args ? other_args - new_argv : argvlen];
+	      
+	      p = new_argv;
+
+	      /* INTERP */
+	      memcpy (p, interp, interp_len);
+	      p += interp_len;
+
+	      /* Maybe ARG */
 	      if (arg)
 		{
 		  memcpy (p, arg, len);
 		  p += len;
 		}
+
+	      /* FILE_NAME */
 	      memcpy (p, file_name, namelen);
 	      p += namelen;
-	      if (other_args)
-		memcpy (p, other_args - new_argv + argv,
-			argvlen - (other_args - new_argv));
+
+	      /* Maybe remaining args */
+	      other_args = argv + strlen (argv) + 1;
+	      if (other_args - argv < argvlen)
+		memcpy (p, other_args, argvlen - (other_args - argv));
 	    }
 	  else
 	    {
