@@ -49,6 +49,12 @@ loopback_xmit (struct sk_buff *skb, struct device *dev)
   return 0;
 }
    
+int
+loopback_type_trans (struct sk_buff *skb, struct device *dev)
+{
+  return htons (ETH_P_IP);
+}
+
 
 void
 setup_loopback_device (char *name)
@@ -64,7 +70,7 @@ setup_loopback_device (char *name)
   loopback_dev.hard_start_xmit = loopback_xmit;
   loopback_dev.hard_header = 0;
   loopback_dev.rebuild_header = 0;
-  loopback_dev.type_trans = 0;
+  loopback_dev.type_trans = loopback_type_trans;
   loopback_dev.get_stats = 0;
   loopback_dev.set_multicast_list = 0;
   

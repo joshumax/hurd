@@ -1,7 +1,8 @@
 Fri Oct 25 20:02:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* loopback.c (setup_loopback_device): Bother to mark interface up
-	too. 
+	* loopback.c (loopback_type_trans): New function.
+	(setup_loopback_device): Bother to mark interface up
+	too.  Set LOOPBACK_DEV.type_trans.
 
 Thu Oct 24 22:38:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
