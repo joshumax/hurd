@@ -742,7 +742,7 @@ diskfs_shutdown_pager ()
   error_t shutdown_one (void *arg)
     {
       struct pager *p = arg;
-      /* Make sure the disk pager is done last. */
+      /* Don't ever shut down the disk pager. */
       if (p != disk_pager)
 	pager_shutdown (p);
       return 0;
@@ -751,7 +751,7 @@ diskfs_shutdown_pager ()
   copy_sblock ();
   write_all_disknodes ();
   ports_bucket_iterate (pager_bucket, shutdown_one);
-  pager_shutdown (disk_pager);
+  sync_disk (1);
 }
 
 /* Sync all the pagers. */
