@@ -1,7 +1,10 @@
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* Makeconf (objs): Don't build PIC objects unless $(makemode) library.
+
 	* Makeconf (objs): New target, just compile w/o ar or ld.
 	(OBJS): Remove bogus `%.o' default defn.
+
 	* Makefile (objs, %-objs): New subdir target.
 
 1998-08-12  Roland McGrath  <roland@baalperazim.frob.com>
