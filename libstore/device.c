@@ -117,12 +117,13 @@ store_device_open (const char *name, int flags, struct store **store)
     return err;
 
   err = device_open (dev_master, open_flags, (char *)name, &device);
-
   mach_port_deallocate (mach_task_self (), dev_master);
-
-  err = store_device_create (device, flags, store);
-  if (err)
-    mach_port_deallocate (mach_task_self (), device);
+  if (! err)
+    {
+      err = store_device_create (device, flags, store);
+      if (err)
+	mach_port_deallocate (mach_task_self (), device);
+    }
 
   return err;
 }
