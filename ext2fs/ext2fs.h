@@ -71,7 +71,7 @@ test_bit (unsigned num, char *bitmap)
   return bitmap[num >> 3] & (1 << (num & 0x7));
 }
 
-/* Sets bit NUM in BITMAP, and returns TRUE if it was already set.  */
+/* Sets bit NUM in BITMAP, and returns the previous state of the bit.  */
 extern inline int
 set_bit (unsigned num, char *bitmap)
 {
@@ -88,7 +88,7 @@ set_bit (unsigned num, char *bitmap)
     }
 }
 
-/* Clears bit NUM in BITMAP, and returns TRUE if it was already clear.  */
+/* Clears bit NUM in BITMAP, and returns the previous state of the bit.  */
 extern inline int
 clear_bit (unsigned num, char *bitmap)
 {
@@ -99,10 +99,10 @@ clear_bit (unsigned num, char *bitmap)
   if (byte & mask)
     {
       *p = byte & ~mask;
-      return 0;
+      return 1;
     }
   else
-    return 1;
+    return 0;
 }
 
 /* Counts the number of bits unset in MAP, a bitmap NUMCHARS long. */
@@ -212,7 +212,10 @@ unsigned log2_block_size;
 
 /* log2 of the number of device blocks (DEVICE_BLOCK_SIZE) in a filesystem
    block (BLOCK_SIZE).  */
-unsigned int log2_dev_blocks_per_fs_block;
+unsigned log2_dev_blocks_per_fs_block;
+
+/* log2 of the number of stat blocks (512 bytes) in a filesystem block.  */
+unsigned log2_stat_blocks_per_fs_block;
 
 /* A handy page of page-aligned zeros.  */
 vm_address_t zeroblock;
@@ -329,13 +332,17 @@ struct pokel global_pokel;
    of the disk which are backed by file pagers.  */
 char *modified_global_blocks;
 
+/* Records the global block BLOCK as being modified, and returns true if we
+   think it may have been clean before (but we may not be sure).  */
+#define global_block_modified(block) \
+   (!modified_global_blocks || !set_bit((block), modified_global_blocks))
+
 /* This records a modification to a non-file block.  */
 extern inline void
 record_global_poke (void *bptr)
 {
   int boffs = trunc_block(bptr_offs(bptr));
-  if (!modified_global_blocks
-      || !set_bit (boffs_block (boffs), modified_global_blocks))
+  if (global_block_modified (boffs_block (boffs)))
     pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
 }
 
@@ -349,14 +356,17 @@ sync_disk_image (void *place, size_t nbytes, int wait)
 }
 
 extern inline void
+sync_super_block ()
+{
+  sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
+  (void)global_block_modified(boffs_block(trunc_block(SBLOCK_OFFS)));
+  sync_disk_image (sblock, SBLOCK_SIZE, 1);
+}
+
+extern inline void
 sync_global_data ()
 {
   pokel_sync (&global_pokel, 1);
-  if (sblock_dirty)
-    {
-      sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
-      sync_disk_image (sblock, SBLOCK_SIZE, 1);
-    }
   diskfs_set_hypermetadata (1, 0);
 }
 
