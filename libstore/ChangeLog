@@ -1,3 +1,13 @@
+1998-09-06  OKUJI Yoshinori  <okuji@kuicr.kyoto-u.ac.jp>
+
+	* bunzip2.c: New file.
+	* store.h (store_bunzip2_create): New declarations.
+	(store_bunzip2_open): Likewise.
+	(store_bunzip2_class): Likewise.
+	* std.c (store_std_classes): Add store_bunzip2_class.
+	* Makefile (SRCS): Add bunzip2.c.
+	(UNZIP_OBJS): Add do-bunzip2.o.
+	
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* store.h: Remove defns of STORAGE_*, now in <hurd/hurd_types.h>.

@@ -444,6 +444,20 @@ error_t store_gunzip_open (const char *name, int flags,
 			   const struct store_class *const *classes,
 			   struct store **store);
 
+/* Return a new store in STORE which contains a snapshot of the uncompressed
+   contents of the store FROM; FROM is consumed.  BLOCK_SIZE is the desired
+   block size of the result.  */
+error_t store_bunzip2_create (struct store *from, int flags,
+			      struct store **store);
+
+/* Open the bunzip2 NAME -- which consists of another store-class name, a ':',
+   and a name for that store class to open -- and return the corresponding
+   store in STORE.  CLASSES is used to select classes specified by the type
+   name; if it is 0, STORE_STD_CLASSES is used.  */
+error_t store_bunzip2_open (const char *name, int flags,
+			    const struct store_class *const *classes,
+			    struct store **store);
+
 /* Return a new store in STORE that multiplexes multiple physical volumes
    from PHYS as one larger virtual volume.  SWAP_VOLS is a function that will
    be called whenever the volume currently active isn't correct.  PHYS is
@@ -467,6 +481,7 @@ extern const struct store_class store_remap_class;
 extern const struct store_class store_query_class;
 extern const struct store_class store_copy_class;
 extern const struct store_class store_gunzip_class;
+extern const struct store_class store_bunzip2_class;
 extern const struct store_class store_typed_open_class;
 
 /* The following are not included in STORE_STD_CLASSES.  */
