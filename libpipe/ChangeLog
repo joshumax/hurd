@@ -1,3 +1,13 @@
+2002-04-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pq.c (packet_set_ports): Correctly replace old ports buffer with
+	new one.  Take size of mach_port_t rather than pointer to it.
+	(packet_read_ports): Take size of mach_port_t rather than pointer
+	to it.
+	(pq_queue): Update PACKET->num_ports, PACKET->buf_start and
+	PACKET->buf_end for reused packets as well.
+	Submitted by Ognyan Kulev <ogi@fmi.uni-sofia.bg>.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* pq.c: Add #include <sys/mman.h> for munmap decl.

@@ -127,12 +127,14 @@ pq_queue (struct pq *pq, unsigned type, void *source)
       packet->buf = 0;
       packet->buf_len = 0;
       packet->ports = 0;
-      packet->num_ports = packet->ports_alloced = 0;
-      packet->buf_start = packet->buf_end = packet->buf;
+      packet->ports_alloced = 0;
       packet->buf_vm_alloced = 0;
     }
   else
     pq->free = packet->next;
+
+  packet->num_ports = 0;
+  packet->buf_start = packet->buf_end = packet->buf;
 
   packet->type = type;
   packet->source = source;
@@ -295,13 +297,14 @@ packet_set_ports (struct packet *packet,
     packet_dealloc_ports (packet);
   if (num_ports > packet->ports_alloced)
     {
-      mach_port_t *new_ports = malloc (sizeof (mach_port_t *) * num_ports);
+      mach_port_t *new_ports = malloc (sizeof (mach_port_t) * num_ports);
       if (! new_ports)
 	return ENOMEM;
       free (packet->ports);
+      packet->ports = new_ports;
       packet->ports_alloced = num_ports;
     }
-  bcopy (ports, packet->ports, sizeof (mach_port_t *) * num_ports);
+  bcopy (ports, packet->ports, sizeof (mach_port_t) * num_ports);
   packet->num_ports = num_ports;
   return 0;
 }
@@ -312,7 +315,7 @@ error_t
 packet_read_ports (struct packet *packet,
 		   mach_port_t **ports, size_t *num_ports)
 {
-  int length = packet->num_ports * sizeof (mach_port_t *);
+  int length = packet->num_ports * sizeof (mach_port_t);
   if (*num_ports < packet->num_ports)
     {
       *ports = mmap (0, length, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
