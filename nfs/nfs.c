@@ -18,23 +18,21 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-
-/* Count how many four-byte chunks it takss to hold LEN bytes. */
-#define INTSIZE(len) (((len)+3)>>2)
+#include "nfs.h"
 
 /* Each of these functions copies its second arg to *P, converting it
    to XDR representation along the way.  They then return the address after
    the copied value. */
 
-inline int *
+int *
 xdr_encode_fhandle (int *p, void *fhandle)
 {
-  bcopy (fhandle, p, NFSV2_FHSIZE);
-  return p + INTSIZE (NFSV2_FHSIZE);
+  bcopy (fhandle, p, NFS_FHSIZE);
+  return p + INTSIZE (NFS_FHSIZE);
 }
 
-inline void *
-xdr_encode_data (void *p, char *data, size_t len)
+int *
+xdr_encode_data (int *p, char *data, size_t len)
 {
   int nints = INTLEN (len);
   
@@ -44,16 +42,16 @@ xdr_encode_data (void *p, char *data, size_t len)
   return p + nints;
 }
 
-inline void *
-xdr_encode_string (void *p, char *string)
+int *
+xdr_encode_string (int *p, char *string)
 {
   return xdr_encode_data (p, string, strlen (string));
 }
   
 /* The SATTR calls are different; they each only fill in one 
    or two attributes; the rest get -1. */
-inline int *
-xdr_encode_sattr_mode (int *p, u_int mode)
+int *
+xdr_encode_sattr_mode (int *p, mode_t mode)
 {
   *p++ = htonl (sattr->mode);
   *p++ = -1;			/* uid */
@@ -66,7 +64,7 @@ xdr_encode_sattr_mode (int *p, u_int mode)
   return p;
 }
 
-inline int *
+int *
 xdr_encode_sattr_ids (int *p, u_int uid, u_int gid)
 {
   *p++ = -1;			/* mode */
@@ -80,7 +78,7 @@ xdr_encode_sattr_ids (int *p, u_int uid, u_int gid)
   return p;
 }
 
-inline int *
+int *
 xdr_encode_sattr_size (int *p, off_t size)
 {
   *p++ = -1;			/* mode */
@@ -94,7 +92,7 @@ xdr_encode_sattr_size (int *p, off_t size)
   return p;
 }
 
-inline int *
+int *
 xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
 {
   *p++ = -1;			/* mode */
@@ -108,7 +106,7 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
   return p;
 }
 
-inline int *
+int *
 xdr_encode_create_state (int *p, 
 			 mode_t mode)
 {
@@ -158,6 +156,29 @@ xdr_decode_fattr (int *p, struct stat *st)
   return p;
 
 }
+
+/* Decode *P into an fhandle, stored at HANDLE; return the address
+   of the following data. */
+int *
+xdr_decode_fhandle (int *p, void *handle)
+{
+  bcopy (p, handle, NFS_FHSIZE);
+  return p + (NFS_FHSIZE / sizeof (int));
+}
+
+/* Decode *P into a string, stored at BUF; return the address
+   of the following data. */
+int *
+xdr_decode_string (int *p, char *buf)
+{
+  int len;
+  
+  len = ntohl (*p++);
+  bcopy (p, buf, len);
+  buf[len] = '\0';
+  return p + INTLEN (len);
+}
+
 
 int *
 nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
@@ -227,58 +248,58 @@ nfs_error_trans (int error)
 {
   switch (error)
     {
-    case NFSV2_OK:
+    case NFS_OK:
       return 0;
       
-    case NFSV2_ERR_PERM:
+    case NFSERR_PERM:
       return EPERM;
 
-    case NFSV2_ERR_NOENT:
+    case NFSERR_NOENT:
       return ENOENT;
 		  
-    case NFS_ERR_IO:
+    case NFSERR_IO:
       return EIO;
 		  
-    case NFS_ERR_NXIO:
+    case NFSERR_NXIO:
       return ENXIO;
 		  
-    case NFS_ERR_ACCES:
+    case NFSERR_ACCES:
       return EACCESS;
 		  
-    case NFS_ERR_EXIST:
+    case NFSERR_EXIST:
       return EEXIST;
 		  
-    case NFS_ERR_NODEV:
+    case NFSERR_NODEV:
       return ENODEV;
 		  
-    case NFS_ERR_NOTDIR:
+    case NFSERR_NOTDIR:
       return ENOTDIR;
 		  
-    case NFS_ERR_ISDIR:
+    case NFSERR_ISDIR:
       return EISDIR;
 		  
-    case NFS_ERR_FBIG:
+    case NFSERR_FBIG:
       return E2BIG;
       
-    case NFS_ERR_NOSPC:
+    case NFSERR_NOSPC:
       return ENOSPC;
 
-    case NFS_ERR_ROFS:
+    case NFSERR_ROFS:
       return EROFS;
 		  
-    case NFS_ERR_NAMETOOLONG:
+    case NFSERR_NAMETOOLONG:
       return ENAMETOOLONG;
 		  
-    case NFS_ERR_NOTEMPTY:
+    case NFSERR_NOTEMPTY:
       return ENOTEMPTY;
 		  
-    case NFS_ERR_DQUOT:
+    case NFSERR_DQUOT:
       return EDQUOT;
 		  
-    case NFS_ERR_STALE:
+    case NFSERR_STALE:
       return ESTALE;
 		  
-    case NFS_ERR_WFLUSH:
+    case NFSERR_WFLUSH:
     default:
       return EINVAL;
     }
