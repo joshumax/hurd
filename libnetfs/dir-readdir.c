@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,6 +27,7 @@ error_t
 netfs_S_dir_readdir (struct protid *user,
 		     char **data,
 		     mach_msg_type_number_t *datacnt,
+		     boolean_t *data_dealloc,
 		     int entry,
 		     int nentries,
 		     vm_size_t bufsiz,
@@ -34,13 +35,13 @@ netfs_S_dir_readdir (struct protid *user,
 {
   error_t err;
   struct node *np;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   np = user->po->np;
   mutex_lock (&np->lock);
-  
+
   err = 0;
   if ((user->po->openstat & O_READ) == 0)
     err = EBADF;
@@ -51,6 +52,7 @@ netfs_S_dir_readdir (struct protid *user,
   if (!err)
     err = netfs_get_dirents (user->user, np, entry, nentries, data,
 			     datacnt, bufsiz, amt);
+  *data_dealloc = 1;		/* XXX */
   mutex_unlock (&np->lock);
   return err;
 }
