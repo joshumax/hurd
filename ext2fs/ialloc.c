@@ -56,7 +56,7 @@ static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 			    "block_group = %d, group_desc = %lu, desc = %lu",
 			     block_group, group_desc, desc);
 	gdp = (struct ext2_group_desc *) 
-		sb->u.ext2_sb.s_group_desc[group_desc]->b_data;
+		sb->u.ext2_sb.s_group_desc[group_desc];
 	if (bh)
 		*bh = sb->u.ext2_sb.s_group_desc[group_desc];
 	return gdp + desc;
@@ -172,7 +172,7 @@ static void set_inode_dtime (struct inode * inode,
 			    "Cannot load inode table block - "
 			    "inode=%lu, inode_block=%lu",
 			    inode->i_ino, inode_block);
-	raw_inode = ((struct ext2_inode *) bh->b_data) +
+	raw_inode = ((struct ext2_inode *) bh) +
 			(((inode->i_ino - 1) %
 			EXT2_INODES_PER_GROUP(inode->i_sb)) %
 			EXT2_INODES_PER_BLOCK(inode->i_sb));
@@ -234,7 +234,7 @@ void ext2_free_inode (struct inode * inode)
 	bit = (inode->i_ino - 1) % EXT2_INODES_PER_GROUP(sb);
 	bitmap_nr = load_inode_bitmap (sb, block_group);
 	bh = sb->u.ext2_sb.s_inode_bitmap[bitmap_nr];
-	if (!clear_bit (bit, bh->b_data))
+	if (!clear_bit (bit, bh))
 		ext2_warning (sb, "ext2_free_inode",
 			      "bit already cleared for inode %lu", inode->i_ino);
 	else {
@@ -283,7 +283,7 @@ static void inc_inode_version (struct inode * inode,
 		inode->u.ext2_i.i_version = 1;
 		return;
 	}
-	raw_inode = ((struct ext2_inode *) bh->b_data) +
+	raw_inode = ((struct ext2_inode *) bh) +
 			(((inode->i_ino - 1) %
 			EXT2_INODES_PER_GROUP(inode->i_sb)) %
 			EXT2_INODES_PER_BLOCK(inode->i_sb));
@@ -406,10 +406,10 @@ repeat:
 	}
 	bitmap_nr = load_inode_bitmap (sb, i);
 	bh = sb->u.ext2_sb.s_inode_bitmap[bitmap_nr];
-	if ((j = find_first_zero_bit ((unsigned long *) bh->b_data,
+	if ((j = find_first_zero_bit ((unsigned long *) bh,
 				      EXT2_INODES_PER_GROUP(sb))) <
 	    EXT2_INODES_PER_GROUP(sb)) {
-		if (set_bit (j, bh->b_data)) {
+		if (set_bit (j, bh)) {
 			ext2_warning (sb, "ext2_new_inode",
 				      "bit already set for inode %d", j);
 			goto repeat;
