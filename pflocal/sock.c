@@ -285,17 +285,18 @@ sock_bind (struct sock *sock, struct addr *addr)
   else
     old_addr->sock = NULL;	/* Unbinding SOCK.  */
 
-  if (!err)
-    sock->addr = addr;
-
-  if (addr)
-    sock->refs++;
-  if (old_addr)
+  if (! err)
     {
-      /* Note that we don't have to worry about SOCK's ref count going to zero
-	 because whoever's calling us should be holding a ref somehow.  */
-      sock->refs--;
-      assert (sock->refs > 0);	/* But make sure... */
+      sock->addr = addr;
+      if (addr)
+	sock->refs++;
+      if (old_addr)
+	{
+	  /* Note that we don't have to worry about SOCK's ref count going to
+	     zero because whoever's calling us should be holding a ref.  */
+	  sock->refs--;
+	  assert (sock->refs > 0);	/* But make sure... */
+	}
     }
 
   mutex_unlock (&sock->lock);
