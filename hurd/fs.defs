@@ -299,3 +299,8 @@ routine file_get_translator_cntl (
 	file: file_t;
 	out translator_cntl: mach_port_send_t);
 
+/* Return the options describing the way the receiving filesystem is
+   running.  (Suitable as an arg for fsys_set_options). */
+routine file_get_fs_options (
+	file: file_t;
+	out options: data_t);
