@@ -55,6 +55,7 @@ static int ptyopen;
 static int nptyperopens;
 
 
+static void ptyio_init (void) __attribute__ ((constructor));
 static void
 ptyio_init ()
 {
