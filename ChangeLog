@@ -1,6 +1,7 @@
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
-	* config.make.in (build-profiled): New variable, subst @profile@.
+	* configure.in: Grok --{en,dis}able-profile, default enable.
+	* config.make.in (build-profiled): New variable, from @enable_profile@.
 	* Makeconf (no_prof): Set to t if $(build-profiled) is not no.
 
 	* Makeconf: Inhibit $(target).prof_d include if no_prof=t.
