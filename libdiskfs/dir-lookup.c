@@ -383,7 +383,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  if (type == S_IFDIR)
 	    error = EISDIR;
-	  else if (diskfs_readonly)
+	  else if (diskfs_check_readonly ())
 	    error = EROFS;
 	  else
 	    error = diskfs_access (np, S_IWRITE, dircred);
