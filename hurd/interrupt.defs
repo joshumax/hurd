@@ -1,11 +1,11 @@
 /* Interrup [get the phone, will ya?] tion.  
-   Copyright (C) 1991, 1992 Free Software Foundation
+   Copyright (C) 1993 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -27,6 +27,5 @@ subsystem interrupt 33000;
    exact semantics are dependent on the specific object.  */
 
 routine
-interrupt_operation (
-	object: mach_port_t);
+interrupt_operation (object: mach_port_t);
 
