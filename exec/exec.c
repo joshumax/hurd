@@ -1845,27 +1845,3 @@ S_exec_startup_get_info (mach_port_t port,
 
   return 0;
 }
-
-/* XXX compat */
-kern_return_t
-S_exec_startup (mach_port_t port,
-		vm_address_t *stack_base, vm_size_t *stack_size,
-		int *flags,
-		char **argvp, mach_msg_type_number_t *argvlen,
-		char **envpp, mach_msg_type_number_t *envplen,
-		mach_port_t **dtable, mach_msg_type_name_t *dtablepoly,
-		mach_msg_type_number_t *dtablesize,
-		mach_port_t **portarray, mach_msg_type_name_t *portpoly,
-		mach_msg_type_number_t *nports,
-		int **intarray, mach_msg_type_number_t *nints)
-{
-  vm_address_t user_entry, phdr_addr;
-  vm_size_t phdr_size;
-
-  return S_exec_startup_get_info (port, &user_entry, &phdr_addr, &phdr_size,
-				  stack_base, stack_size, flags,
-				  argvp, argvlen, envpp, envplen,
-				  dtable, dtablepoly, dtablesize,
-				  portarray, portpoly, nports,
-				  intarray, nints);
-}
