@@ -185,8 +185,7 @@ pass5 ()
 	  pwarn ("ILLEGAL ROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      newcg->cg_rotor = 0;
 	      cg->cg_rotor = 0;
 	      writecg = 1;
@@ -197,8 +196,7 @@ pass5 ()
 	  pwarn ("ILLEGAL FROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      newcg->cg_frotor = 0;
 	      cg->cg_frotor = 0;
 	      writecg = 1;
@@ -209,8 +207,7 @@ pass5 ()
 	  pwarn ("ILLEGAL IROTOR VALUE IN CG %d", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      newcg->cg_irotor = 0;
 	      cg->cg_irotor = 0;
 	      writecg = 1;
@@ -308,8 +305,7 @@ pass5 ()
 	  pwarn ("FREE BLK COUNTS FOR CG %d WRONG IN SUPERBLOCK", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      bcopy (&newcg->cg_cs, &sbcsums[c], sizeof (struct csum));
 	      writecsum = 1;
 	    }
@@ -321,8 +317,7 @@ pass5 ()
 	  pwarn ("BLKS OR INOS MISSING IN CG %d BIT MAPS", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      bcopy (cg_inosused (newcg), cg_inosused (cg), mapsize);
 	      writecg = 1;
 	    }
@@ -333,8 +328,7 @@ pass5 ()
 	  pwarn ("SUMMARY INFORMATION FOR CG %d BAD", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      bcopy (&cg_blktot(newcg)[0], &cg_blktot(cg)[0], sumsize);
 	      writecg = 1;
 	    }
@@ -345,8 +339,7 @@ pass5 ()
 	  pwarn ("CYLINDER GROUP %d BAD", c);
 	  if (preen || reply ("FIX"))
 	    {
-	      if (preen)
-		printf (" (FIXED)");
+	      pfix ("FIXED");
 	      bcopy (newcg, cg, basesize);
 	      writecg = 1;
 	    }
@@ -366,8 +359,7 @@ pass5 ()
       pwarn ("TOTAL FREE BLK COUNTS WRONG IN SUPERBLOCK");
       if (preen || reply ("FIX"))
 	{
-	  if (preen)
-	    printf (" (FIXED)");
+	  pfix ("FIXED");
 	  bcopy (&cstotal, &sblock->fs_cstotal, sizeof (struct csum));
 	  sblock->fs_ronly = 0;
 	  sblock->fs_fmod = 0;
