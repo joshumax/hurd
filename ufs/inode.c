@@ -95,9 +95,6 @@ iget (ino_t inum, struct node **npp)
   else
     np->allocsize = blkroundup (sblock, np->dn_stat.st_size);
   
-  /* XXX */
-  assert (np->allocsize || !dinodes[np->dn->number].di_db[0]);
-  
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
       spin_lock (&gennumberlock);
