@@ -1,6 +1,6 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -678,7 +678,7 @@ void
 shutdown_terminal (struct terminal *t)
 {
   kill (t->pid, SIGHUP);
-  /* revoke?? */;
+  revoke (t->name);
 }
 
 /* Re-read /etc/ttys.  If a line has turned off, kill what's there.

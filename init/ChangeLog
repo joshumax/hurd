@@ -1,3 +1,8 @@
+Tue Feb 16 18:54:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* init.c (shutdown_terminal): Revoke access to the terminal from
+	existing programs.
+
 1998-10-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (main): Don't bogusly clear bootstrap_args.
