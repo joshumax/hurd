@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -37,7 +37,7 @@ diskfs_S_io_get_conch (struct protid *cred)
       return EINVAL;
     }
 
-  ioserver_handle_io_get_conch (&np->conch, cred, cred->mapped);
+  iohelp_handle_io_get_conch (&np->conch, cred, cred->mapped);
 
   mutex_unlock (&np->lock);
   return 0;
