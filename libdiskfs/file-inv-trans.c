@@ -28,6 +28,7 @@ diskfs_S_file_invoke_translator (struct protid *cred,
 				 mach_port_t *retrypt,
 				 mach_msg_type_name_t *retrypttype)
 {
+#if 0
   error_t error = 0;
   mode_t type;
   struct node *np;
@@ -143,4 +144,7 @@ diskfs_S_file_invoke_translator (struct protid *cred,
   mutex_unlock (&np->lock);
 
   return 0;
+#else
+  return EOPNOTSUPP;
+#endif
 }
