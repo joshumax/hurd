@@ -33,6 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <varargs.h>
 #include <fcntlbits.h>
 #include <elf.h>
+#include <mach/mig_support.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -285,7 +286,7 @@ load_image (task_t t,
 	    vm_allocate (mach_task_self (), &buf, bufsz, 1);
 
 	    lseek (fd, ph->p_offset, SEEK_SET);
-	    read (fd, buf + offs, ph->p_filesz);
+	    read (fd, (void *)(buf + offs), ph->p_filesz);
 
 	    ph->p_memsz = ((ph->p_vaddr + ph->p_memsz + ph->p_align - 1)
 			   & ~(ph->p_align - 1));
