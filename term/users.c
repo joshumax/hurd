@@ -284,7 +284,7 @@ po_destroy_hook (struct trivfs_peropen *po)
     termflags &= ~ICKY_ASYNC;
 
   nperopens--;
-  if (!nperopens)
+  if (!nperopens && (termflags & TTY_OPEN))
     {
       /* Empty queues */
       clear_queue (inputq);

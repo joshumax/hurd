@@ -1,3 +1,8 @@
+1999-03-13  Mark Kettenis  <kettenis@gnu.org>
+
+	* users.c (po_destroy_hook): Only reset state and hardware if
+	TTY_OPEN bit is set in TERMFLAGS.
+
 Mon Mar  1 09:11:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* munge.c (output_width): If C is a tab, then the width is the
