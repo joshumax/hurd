@@ -1,0 +1,605 @@
+/* Routines to gather and print process information.
+
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
+#ifndef __PS_H__
+#define __PS_H__
+
+#include <hurd/hurd_types.h>
+#include <mach/mach.h>
+
+#ifndef bool
+#define bool int
+#endif
+
+/* ---------------------------------------------------------------- */
+/*
+   A PROC_STAT_T holds lots of info about the process PID at SERVER; exactly
+   which info is dependent on its FLAGS field.
+ */
+
+typedef struct proc_stat *proc_stat_t;
+
+struct proc_stat
+  {
+    /* Which process server this is from.  */
+    process_t server;
+
+    /* The proc's process id; if <0 then this is a thread, not a process.  */
+    int pid;
+
+    /* Flags describing which fields in this structure are valid.  */
+    int flags;
+
+    /* Thread fields -- these are valid if PID < 0.  */
+    proc_stat_t thread_origin;	/* A proc_stat_t for the task we're in.  */
+    int thread_index;		/* Which thread in our proc we are.  */
+
+    /* A process_t port for the process.  */
+    process_t process;
+
+    /* The mach task port for the process.  */
+    task_t task;
+
+    /* A libc msgport for the process.  This port is responded to by the
+       process itself (usually by the c library); see <hurd/msg.defs> for the
+       standard set of rpcs you can send to this port.  Accordingly, you
+       cannot depend on a timely (or any) reply to messages sent here --
+       program carefully!  */
+    mach_port_t msgport;
+
+    /* A pointer to the process's procinfo structure (as returned by
+       proc_getinfo; see <hurd/hurd_types.h>).  */
+    struct procinfo *info;
+    /* The size of the info structure for deallocation purposes.  */
+    int info_size;
+
+    /* Summaries of the proc's thread_{basic,sched}_info_t structures: sizes
+       and cumulative times are summed, prioritys and delta time are
+       averaged.  The run_states are added by having running thread take
+       precedence over waiting ones, and if there are any other incompatible
+       states, simply using a bogus value of -1 */
+    thread_basic_info_data_t thread_basic_info;
+    thread_sched_info_data_t thread_sched_info;
+
+    /* A bitmask summarizing the scheduling state of this process and all its
+       threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
+    int state;
+
+    /* The process's argv, as a string with each element separated by '\0'.  */
+    char *args;
+    /* The length of ARGS.  */
+    int args_len;
+
+    /* Virtual memory statistics for the process, as returned by task_info;
+       see <mach/task_info.h> for a description of task_events_info_t.  */
+    task_events_info_t task_events_info;
+    task_events_info_data_t task_events_info_buf;
+    int task_events_info_size;
+
+    /* Various libc ports:  */
+
+    /* The process's ctty id port, or MACH_PORT_NULL if the process has no
+       controlling terminal.  Note that this is just a magic cookie; we use
+       it to fetch a port to the actual terminal -- it's not useful for much
+       else.  */
+    mach_port_t cttyid;
+
+    /* A port to the process's current working directory.  */
+    mach_port_t cwdir;
+
+    /* The process's auth port, which we can use to determine who the process
+       is authenticated as.  */
+    mach_port_t auth;
+
+    /* The process's umask, which controls which protection bits won't be set
+       when creating a file.  */
+    int umask;
+
+    /* A file_t port for the process's controlling terminal, or
+       MACH_PORT_NULL if the process has no controlling terminal.  */
+    mach_port_t tty;
+    /* A filename pointing to TTY, or NULL if the process has no controlling
+       terminal, or "?" if we cannot determine the name.  */
+    char *tty_name;
+  };
+
+
+/* Proc_stat flag bits; each bit is set in the FLAGS field if that
+   information is currently valid.  */
+#define PSTAT_PID		0x0001 /* Process ID.  */
+#define PSTAT_THREAD		0x0002 /* thread_index & thread_origin */
+#define PSTAT_PROCESS		0x0004 /* The process_t for the process.  */
+#define PSTAT_TASK		0x0008 /* The task port for the process.  */
+#define PSTAT_MSGPORT		0x0010 /* The process's msgport.  */
+#define PSTAT_INFO		0x0020 /* A struct procinfo for the process. */
+#define PSTAT_THREAD_INFO	0x0040 /* Thread summary info.  */
+#define PSTAT_ARGS		0x0080 /* The process's args.  */
+#define PSTAT_TASK_EVENTS_INFO	0x0100 /* A task_events_info_t for the proc. */
+#define PSTAT_STATE		0x0200 /* A bitmask describing the process's
+				0x0400    state (see below).  */
+#define PSTAT_CTTYID		0x0800 /* The process's CTTYID port.  */
+#define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD.  */
+#define PSTAT_AUTH		0x2000 /* The proc's auth port.  */
+#define PSTAT_TTY		0x4000 /* A file_t for the proc's terminal.  */
+#define PSTAT_TTY_NAME		0x8000 /* The name of the proc's terminal.  */
+#define PSTAT_UMASK		0x10000 /* The proc's current umask.  */
+
+#define PSTAT_NUM_THREADS PSTAT_INFO
+
+/* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
+   bitmask of the following bits, describing the process's run state.  */
+#define PSTAT_STATE_RUNNING  0x0001	/* R */
+#define PSTAT_STATE_STOPPED  0x0002	/* T stopped (e.g., by ^Z) */
+#define PSTAT_STATE_HALTED   0x0004	/* H */
+#define PSTAT_STATE_WAIT     0x0008	/* D short term (uninterruptable) wait */
+#define PSTAT_STATE_SLEEPING 0x0010	/* S sleeping */
+#define PSTAT_STATE_IDLE     0x0020	/* I idle (sleeping > 20 seconds) */
+#define PSTAT_STATE_SWAPPED  0x0040	/* W */
+#define PSTAT_STATE_NICED    0X0080	/* N lowered priority */
+#define PSTAT_STATE_PRIORITY 0x0100	/* < raised priority */
+#define PSTAT_STATE_ZOMBIE   0x0200	/* Z process exited but not yet reaped */
+#define PSTAT_STATE_FG	     0x0400	/* + in foreground process group */
+#define PSTAT_STATE_SESSLDR  0x0800	/* s session leader */
+#define PSTAT_STATE_EXECED   0x1000	/* e has execed */
+#define PSTAT_STATE_NOMSG    0x2000	/* m no msg port */
+#define PSTAT_STATE_NOPARENT 0x4000	/* p no parent */
+#define PSTAT_STATE_ORPHANED 0x8000	/* o orphaned */
+
+
+/* This is a constant string holding a single character for each possible bit
+   in a proc_stat's STATE field, in order from bit zero.  These are intended
+   for printint a user-readable summary of a process's state. */
+char *proc_stat_state_tags;
+
+
+/*
+   Process info accessor functions.
+
+   You must be sure that the associated flag bit is set before accessing a
+   field in a proc_stat_t!  A field FOO (with accessor macro proc_foo()), has
+   a flag named PSTAT_FOO.  If the flag is'nt set, you may attempt to set it
+   with proc_stat_set_flags (but note that this may not succeed).
+ */
+
+/* FLAGS doesn't have a flag bit; it's always valid */
+#define proc_stat_flags(ps) ((ps)->flags)
+
+/* These both use the flag PSTAT_THREAD.  */
+#define proc_stat_thread_origin(ps) ((ps)->thread_origin)
+#define proc_stat_thread_index(ps) ((ps)->thread_index)
+
+#define proc_stat_pid(ps) ((ps)->pid)
+#define proc_stat_process(ps) ((ps)->process)
+#define proc_stat_task(ps) ((ps)->task)
+#define proc_stat_msgport(ps) ((ps)->msgport)
+#define proc_stat_info(ps) ((ps)->info)
+#define proc_stat_num_threads(ps) ((ps)->info->nthreads)
+#define proc_stat_thread_basic_info(ps) (&(ps)->thread_basic_info)
+#define proc_stat_thread_sched_info(ps) (&(ps)->thread_sched_info)
+#define proc_stat_args(ps) ((ps)->args)
+#define proc_stat_args_len(ps) ((ps)->args_len)
+#define proc_stat_state(ps) ((ps)->state)
+#define proc_stat_cttyid(ps) ((ps)->cttyid)
+#define proc_stat_cwdir(ps) ((ps)->cwdir)
+#define proc_stat_auth(ps) ((ps)->auth)
+#define proc_stat_umask(ps) ((ps)->umask)
+#define proc_stat_tty(ps) ((ps)->tty)
+#define proc_stat_tty_name(ps) ((ps)->tty_name)
+#define proc_stat_task_events_info(ps) ((ps)->task_events_info)
+#define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
+
+/* True if PS refers to a thread and not a process.  */
+#define proc_stat_is_thread(ps) ((ps)->pid < 0)
+
+/* Returns in PS a new proc_stat_t for the process PID at the process server
+   SERVER.  If a memory allocation error occurs, ENOMEM is returned,
+   otherwise 0.  */
+error_t proc_stat_create(int pid, process_t server, proc_stat_t *ps);
+
+/* Frees PS and any memory/ports it references */
+void proc_stat_free(proc_stat_t ps);
+
+/* Adds FLAGS to PS's flags, fetching information as necessary to validate
+   the corresponding fields in PS.  Afterwards you must still check the flags
+   field before using new fields, as something might have failed.  Returns
+   a system error code if a fatal error occurred, and 0 otherwise.  */
+error_t proc_stat_set_flags(proc_stat_t ps, int flags);
+
+/* Returns in THREAD_PS a proc_stat_t for the Nth thread in the proc_stat_t
+   PS (N should be between 0 and the number of threads in the process).  The
+   resulting proc_stat_t isn't fully functional -- most flags can't be set in
+   it.  If N was out of range, EINVAL is returned.  If a memory allocation
+   error occured, ENOMEM is returned.  Otherwise, 0 is returned.  */
+error_t proc_stat_thread_create(proc_stat_t ps, int n, proc_stat_t *thread_ps);
+
+/* ---------------------------------------------------------------- */
+/*
+   A PS_GETTER_T describes how to get a particular value from a PROC_STAT_T.
+
+   To get a value from a proc_stat_t PS with a getter, you must make sure all
+   the pstat_flags returned by ps_getter_needs(GETTER) are set in PS, and
+   then call the function returned ps_getter_function(GETTER) with PS as the
+   first argument.
+
+   The way the actual value is returned from this funciton is dependent on
+   the type of the value:
+      For int's and float's, the value is the return value.
+      For strings, you must pass in two extra arguments, a char **, which is
+        filled in with a pointer to the string, or NULL if the string is
+	NULL, and an int *, which is filled in with the length of the string.
+*/
+
+typedef struct ps_getter *ps_getter_t;
+
+struct ps_getter
+  {
+    /* The getter's name */
+    char *name;
+
+    /* What proc_stat flags need to be set as a precondition to calling this
+       getter's function.  */
+    int needs;
+
+    /* A function that will get the value; the protocol between this function
+       and its caller is type-dependent.  */ 
+    void (*fn) ();
+  };
+
+/* Access macros: */
+#define ps_getter_name(g) ((g)->name)
+#define ps_getter_needs(g) ((g)->needs)
+#define ps_getter_function(g) ((g)->fn)
+
+/* ---------------------------------------------------------------- */
+/* A PS_FILTER_T describes how to select some subset of a PROC_STAT_LIST_T */
+
+typedef struct ps_filter *ps_filter_t;
+
+struct ps_filter
+  {
+    /* Name of this filter.  */
+    char *name;
+
+    /* The flags that need to be set in each proc_stat_t in the list to
+       call the filter's predicate function; if these flags can't be set in a
+       particular proc_stat_t, the function is not called, and it isn't deleted
+       from the list.  */
+    int needs;
+
+    /* A function that returns true if called on a proc_stat_t that the
+       filter accepts, or false if the filter rejects it.  */
+    bool(*fn) (proc_stat_t ps);
+  };
+
+/* Access macros: */
+#define ps_filter_name(f) ((f)->name)
+#define ps_filter_needs(f) ((f)->needs)
+#define ps_filter_predicate(f) ((f)->fn)
+
+/* Some predefined filters.  These are structures; you must use the &
+   operator to get a ps_filter_t from them */
+
+/* A filter that retains only process's owned by getuid() */
+struct ps_filter ps_own_filter;
+/* A filter that retains only process's that aren't session leaders */
+struct ps_filter ps_not_sess_leader_filter;
+/* A filter that retains only process's with a controlling terminal */
+struct ps_filter ps_ctty_filter;
+/* A filter that retains only `unorphaned' process.  A process is unorphaned
+   if it's a session leader, or the process's process group is not orphaned */
+struct ps_filter ps_unorphaned_filter;
+/* A filter that retains only `parented' process.  Typically only hurd
+   processes have parents.  */
+struct ps_filter ps_parent_filter;
+
+/* ---------------------------------------------------------------- */
+/*
+   A PS_FMT_SPEC_T describes how to output something from a PROC_STAT_T; it
+   is a combination of a getter (describing how to get the value), an output 
+   function (which outputs the result of the getter), and a compare function
+   (which can be used to sort proc_stat_t's according to how they are
+   output).  It also specifies the default width of the field in which the
+   output should be printed.
+   */
+
+typedef struct ps_fmt_spec *ps_fmt_spec_t;
+
+struct ps_fmt_spec
+  {
+    /* The name of the spec (and it's default title) */
+    char *name;
+    
+    ps_getter_t getter;
+
+    /* A function that, given a ps, a getter, a field width, and a stream,
+       will output what the getter gets in some format */
+    error_t
+      (*output_fn)(proc_stat_t ps, ps_getter_t getter,
+		   int width, FILE *str, int *count);
+
+    /* A function that, given two pses and a getter, will compare what
+       the getter gets for each ps, and return an integer ala qsort */
+    int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter);
+
+    /* The default width of the field that this spec will be printed in if not
+       overridden.  */
+    int default_width;
+  };
+
+/* Accessor macros:  */
+#define ps_fmt_spec_name(spec) ((spec)->name)
+#define ps_fmt_spec_output_fn(spec) ((spec)->output_fn)
+#define ps_fmt_spec_compare_fn(spec) ((spec)->cmp_fn)
+#define ps_fmt_spec_getter(spec) ((spec)->getter)
+#define ps_fmt_spec_default_width(spec) ((spec)->default_width)
+
+/* Returns true if a pointer into an array of struct ps_fmt_specs is at  the
+   end.  */
+#define ps_fmt_spec_is_end(spec) ((spec)->name == NULL)
+
+/* An array of struct ps_fmt_spec, suitable for use with find_ps_fmt_spec, 
+   containing specs for most values in a proc_stat_t.  */
+struct ps_fmt_spec ps_std_fmt_specs[];
+
+/* Searches for a spec called NAME in SPECS (an array of struct ps_fmt_spec)
+   and returns it if found, otherwise NULL.  */
+ps_fmt_spec_t find_ps_fmt_spec(char *name, ps_fmt_spec_t specs);
+
+/* ---------------------------------------------------------------- */
+/* A PS_FMT_T describes how to output user-readable  version of a proc_stat_t.
+   It consists of a series of PS_FMT_FIELD_Ts, each describing how to output
+   one value.  */
+
+/* PS_FMT_FIELD_T */
+typedef struct ps_fmt_field *ps_fmt_field_t;
+struct ps_fmt_field
+  {
+    /* A ps_fmt_spec_t describing how to output this field's value, or NULL
+       if there is no value (in which case this is the last field, and exists
+       just to output its prefix string).  */
+    ps_fmt_spec_t spec;
+
+    /* A non-zero-terminated string of characters that should be output
+       between the previous field and this one.  */
+    char *pfx;
+    /* The number of characters from PFX that should be output.  */
+    int pfx_len;
+
+    /* Returns the number of characters that the value portion of this field
+       should consume.  If this field is negative, then the absolute value is
+       used, and the field should be right-aligned, otherwise, it is
+       left-aligned.  */
+    int width;
+
+    /* Returns the title used when printing a header line for this field.  */
+    char *title;
+  };
+
+/* Accessor macros: */
+#define ps_fmt_field_fmt_spec(field) ((field)->spec)
+#define ps_fmt_field_prefix(field) ((field)->pfx)
+#define ps_fmt_field_prefix_length(field) ((field)->pfx_len)
+#define ps_fmt_field_width(field) ((field)->width)
+#define ps_fmt_field_title(field) ((field)->title)
+
+/* PS_FMT_T */
+typedef struct ps_fmt *ps_fmt_t;
+struct ps_fmt
+  {
+    /* A pointer to an array of struct ps_fmt_field's holding the individual
+       fields to be formatted.  */
+    ps_fmt_field_t fields;
+    /* The (valid) length of the fields array.  */
+    int num_fields;
+
+    /* A set of proc_stat flags describing what a proc_stat_t needs to hold in 
+       order to print out every field in the fmt.  */
+    int needs;
+
+    /* Storage for various strings pointed to by the fields.  */
+    char *src;
+  };
+
+/* Accessor macros: */
+#define ps_fmt_fields(fmt) ((fmt)->fields)
+#define ps_fmt_num_fields(fmt) ((fmt)->num_fields)
+#define ps_fmt_needs(fmt) ((fmt)->needs)
+
+/*
+   Make a PS_FMT_T by parsing the string SRC, searching for any named
+   field specs in FMT_SPECS, and returning the result in FMT.  If a memory
+   allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
+   field name, EINVAL is returned.  Otherwise 0 is returned.
+
+   The syntax of SRC is:
+   SRC:  FIELD* [ SUFFIX ]
+   FIELD: [ PREFIX ] SPEC
+   SPEC: `~' [ `-' ] [ WIDTH ] [ `/' ] NAME [ `/' ]
+   WIDTH: `[0-9]+'
+   NAME: `[^/]*'
+
+   PREFIXes and SUFFIXes are printed verbatim, and specs are replaced by the
+   output of the named spec with that name (each spec specifies what
+   proc_stat_t field to print, and how to print it, as well as a default
+   field width into which put the output).  WIDTH is used to override the
+   spec's default width.  If a `-' is included, the output is right-aligned
+   within this width, otherwise it is left-aligned.
+ */
+error_t ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt);
+
+/* Free FMT, and any resources it consumes.  */
+void ps_fmt_free(ps_fmt_t fmt);
+
+/* Write an appropiate header line for FMT, containing the titles of all its
+   fields appropiately aligned with where the values would be printed, to
+   STREAM (without a trailing newline).  If count is non-NULL, the total
+   number number of characters output is added to the integer it points to.
+   If any fatal error occurs, the error code is returned, otherwise 0.  */
+error_t ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, int *count);
+
+/* Format a description as instructed by FMT, of the process described by PS
+   to STREAM (without a trailing newline).  If count is non-NULL, the total
+   number number of characters output is added to the integer it points to.
+   If any fatal error occurs, the error code is returned, otherwise 0.  */
+error_t ps_fmt_write_proc_stat(ps_fmt_t fmt,
+			       proc_stat_t ps, FILE *stream, int *count);
+
+/* Remove those fields from FMT which would need the proc_stat flags FLAGS.
+   Appropiate inter-field characters are also removed: those *following*
+   deleted fields at the beginning of the fmt, and those *preceeding* deleted
+   fields *not* at the beginning.  */
+void ps_fmt_squash(ps_fmt_t fmt, int flags);
+
+/* ---------------------------------------------------------------- */
+/* A PROC_STAT_LIST_T represents a list of proc_stat_t's */
+
+typedef struct proc_stat_list *proc_stat_list_t;
+
+struct proc_stat_list
+  {
+    /* An array of proc_stat_t's for the processes in this list.  */
+    proc_stat_t *proc_stats;
+
+    /* The number of processes in the list.  */
+    int num_procs;
+
+    /* The actual allocated length of PROC_STATS (in case we want to add more
+       processes).  */
+    int alloced;
+
+    /* Returns the proc server that these processes are from.  */
+    process_t server;
+  };
+
+/* Accessor macros: */
+#define proc_stat_list_num_procs(pp) ((pp)->num_procs)
+#define proc_stat_list_server(pp) ((pp)->server)
+
+/* Creates a new proc_stat_list_t for processes from SERVER, which is
+   returned in PP, and returns 0, or else returns ENOMEM if there wasn't
+   enough memory.  */
+error_t proc_stat_list_create(process_t server, proc_stat_list_t *pp);
+
+/* Free PP, and any resources it consumes.  */
+void proc_stat_list_free(proc_stat_list_t pp);
+
+/* Returns the proc_stat_t in PP with a process-id of PID, if there's one,
+   otherwise, NULL.  */
+proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, int pid);
+
+/* Add proc_stat_t entries to PP for each process with a process id in the
+   array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
+   added for processes not already in PP.  ENOMEM is returned if a memory
+   allocation error occurs, otherwise 0.  PIDs is not referenced by the
+   resulting proc_stat_list_t, and so may be subsequently freed.  */
+error_t proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs);
+
+/* Add a proc_stat_t for the process designated by PID at PP's proc server to
+   PP.  If PID already has an entry in PP, nothing is done.  If a memory
+   allocation error occurs, ENOMEM is returned, otherwise 0.  */
+error_t proc_stat_list_add_pid(proc_stat_list_t pp, int pid);
+
+/* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
+   already in PP; the resulting order of proc_stat_t's in PP is undefined.
+   If MERGEE and PP point to different proc servers, EINVAL is returned.  If a
+   memory allocation error occurs, ENOMEM is returned.  Otherwise 0 is
+   returned, and MERGEE is freed.  */
+error_t proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee);
+
+/* Add to PP entries for all processes at its server.  If an error occurs,
+   the system error code is returned, otherwise 0.  */
+error_t proc_stat_list_add_all(proc_stat_list_t pp);
+
+/* Add to PP entries for all processes in the login collection LOGIN_ID at
+   its server.  If an error occurs, the system error code is returned,
+   otherwise 0.  */
+error_t proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id);
+
+/* Add to PP entries for all processes in the session SESSION_ID at its
+   server.  If an error occurs, the system error code is returned, otherwise
+   0.  */
+error_t proc_stat_list_add_session(proc_stat_list_t pp, int session_id);
+
+/* Try to set FLAGS in each proc_stat_t in PP (but they may still not be set
+   -- you have to check).  If a fatal error occurs, the error code is
+   returned, otherwise 0.  */
+error_t proc_stat_list_set_flags(proc_stat_list_t pp, int flags);
+
+/* Destructively modify PP to only include proc_stat_t's for which the
+   function PREDICATE returns true; if INVERT is true, only proc_stat_t's for
+   which PREDICATE returns false are kept.  FLAGS is the set of pstat_flags
+   that PREDICATE requires be set as precondition.  Regardless of the value
+   of INVERT, all proc_stat_t's for which the predicate's preconditions can't
+   be satisfied are kept.  If a fatal error occurs, the error code is
+   returned, it returns 0.  */
+error_t proc_stat_list_filter1(proc_stat_list_t pp,
+			       int (*predicate)(proc_stat_t ps), int flags,
+			       bool invert);
+
+/* Destructively modify PP to only include proc_stat_t's for which the
+   predicate function in FILTER returns true; if INVERT is true, only
+   proc_stat_t's for which the predicate returns false are kept.  Regardless
+   of the value of INVERT, all proc_stat_t's for which the predicate's
+   preconditions can't be satisfied are kept.  If a fatal error occurs,
+   the error code is returned, it returns 0.  */
+error_t proc_stat_list_filter(proc_stat_list_t pp,
+			      ps_filter_t filter, bool invert);
+
+/* Destructively sort proc_stats in PP by ascending value of the field
+   returned by GETTER, and compared by CMP_FN; If REVERSE is true, use the
+   opposite order.  If a fatal error occurs, the error code is returned, it
+   returns 0.  */
+error_t proc_stat_list_sort1(proc_stat_list_t pp,
+			     ps_getter_t getter,
+			     int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2,
+					   ps_getter_t getter),
+			     bool reverse);
+
+/* Destructively sort proc_stats in PP by ascending value of the field KEY;
+   if REVERSE is true, use the opposite order.  If KEY isn't a valid sort
+   key, EINVAL is returned.  If a fatal error occurs the error code is
+   returned.  Otherwise, 0 is returned.  */
+error_t proc_stat_list_sort(proc_stat_list_t pp,
+			    ps_fmt_spec_t key, bool reverse);
+
+/* Format a description as instructed by FMT, of the processes in PP to
+   STREAM, separated by newlines (and with a terminating newline).  If COUNT
+   is non-NULL, it points to an integer which is incremented by the number of
+   characters output.  If a fatal error occurs, the error code is returned,
+   otherwise 0.  */
+error_t proc_stat_list_fmt(proc_stat_list_t pp,
+			   ps_fmt_t fmt, FILE *stream, int *count);
+
+/* Modifies FLAGS to be the subset which can't be set in any proc_stat_t in
+   PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat_t
+   as possible).  If a fatal error occurs, the error code is returned,
+   otherwise 0.  */
+error_t proc_stat_list_find_bogus_flags(proc_stat_list_t pp, int *flags);
+
+/* Add thread entries for for every process in PP, located immediately after
+   the containing process in sequence.  Subsequent sorting of PP will leave
+   the thread entries located after the containing process, although the
+   order of the thread entries themselves may change.  If a fatal error
+   occurs, the error code is returned, otherwise 0.  */
+error_t proc_stat_list_add_threads(proc_stat_list_t pp);
+
+/* ---------------------------------------------------------------- */
+
+#endif /* __PS_H__ */
