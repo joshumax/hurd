@@ -209,6 +209,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
+	  struct iouser *user;
 
 	  /* A callback function for short-circuited translators.
 	     Symlink & ifsock are handled elsewhere.  */
@@ -247,11 +248,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
+	  user = iohelp_create_iouser (make_idvec (), make_idvec ());
 	  error =
 	    diskfs_create_protid (diskfs_make_peropen (dnp, 0, dircred->po),
-				  iohelp_create_iouser (make_idvec (),
-							make_idvec ()),
-				  &newpi);
+				  user, &newpi);
+	  iohelp_free_iouser (user);
+
 	  if (error)
 	    goto out;
 

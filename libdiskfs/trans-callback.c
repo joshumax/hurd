@@ -56,15 +56,19 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
   struct protid *cred;
   error_t err;
   struct idvec *uids, *gids;
+  struct iouser *user;
 
   uids = make_idvec ();
   gids = make_idvec ();
   idvec_set_ids (uids, &np->dn_stat.st_uid, 1);
   idvec_set_ids (gids, &np->dn_stat.st_gid, 1);
+  user = iohelp_create_iouser (uids, gids);
 
   err =
     diskfs_create_protid (diskfs_make_peropen (np, flags, cookie2),
-			  iohelp_create_iouser (uids, gids), &cred);
+			  user, &cred);
+
+  iohelp_free_iouser (user);
   if (! err)
     {
       *underlying = ports_get_right (cred);

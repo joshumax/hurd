@@ -26,6 +26,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   struct protid *newcred;
   error_t err;
   mach_port_t newright;
+  struct iouser *user;
 
   if (cred == 0)
     return EOPNOTSUPP;
@@ -46,8 +47,10 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   newright = ports_get_send_right (newcred);
   assert (newright != MACH_PORT_NULL);
 
-  diskfs_finish_protid (newcred, iohelp_reauth (diskfs_auth_server_port,
-						rend_port, newright, 1));
+  user = iohelp_reauth (diskfs_auth_server_port, rend_port, newright, 1);
+  diskfs_finish_protid (newcred, user);
+
+  iohelp_free_iouser (user);
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
 

@@ -41,6 +41,7 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 {
   error_t err;
   struct idvec *uvec, *gvec;
+  struct iouser *user;
   struct protid *newpi;
   int i;
   
@@ -66,10 +67,10 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 	if (listmember (gids, cred->user->gids->ids[i], ngids))
 	  idvec_add (gvec, cred->user->gids->ids[i]);
     }
+  user = iohelp_create_iouser (uvec, gvec);
 
   mutex_lock (&cred->po->np->lock);
-  err = diskfs_create_protid (cred->po, iohelp_create_iouser (uvec, gvec),
-			      &newpi);
+  err = diskfs_create_protid (cred->po, user, &newpi);
   if (! err)
     {
       *newport = ports_get_right (newpi);
@@ -78,5 +79,6 @@ diskfs_S_io_restrict_auth (struct protid *cred,
     }
   mutex_unlock (&cred->po->np->lock);
 
+  iohelp_free_iouser (user);
   return err;
 }
