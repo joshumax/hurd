@@ -24,6 +24,8 @@
 #include <arpa/inet.h>
 #include <error.h>
 #include <argp.h>
+#include <hurd/startup.h>
+#include <string.h>
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -35,6 +37,8 @@ struct port_class *trivfs_protid_portclasses[1];
 int trivfs_protid_nportclasses = 1;
 struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_cntl_nportclasses = 1;
+
+struct port_class *shutdown_notify_class;
 
 /* Option parser.  */
 extern struct argp pfinet_argp;
@@ -58,7 +62,7 @@ pfinet_demuxer (mach_msg_header_t *inp,
 error_t
 S_startup_dosync (mach_port_t handle)
 {
-  struct port_info *inpi = ports_lookup_port (pfinet_bucket, 
+  struct port_info *inpi = ports_lookup_port (pfinet_bucket, handle,
 					      shutdown_notify_class);
   error_t
     do1 (void *port)
@@ -67,6 +71,7 @@ S_startup_dosync (mach_port_t handle)
 	
 	if (pi->class == socketport_class)
 	  ports_destroy_right (pi);
+	return 0;
       }
 
   if (!inpi)
@@ -84,10 +89,12 @@ arrange_shutdown_notification ()
   process_t procserver;
   struct port_info *pi;
   
+  shutdown_notify_class = ports_create_class (0, 0);
+
   /* Arrange to get notified when the system goes down,
      but if we fail for some reason, just silently give up.  No big deal. */
 
-  err = ports_crease_port (shutdown_notify_class, pfinet_bucket, 
+  err = ports_create_port (shutdown_notify_class, pfinet_bucket, 
 			   sizeof (struct port_info), &pi);
   if (err)
     return;
@@ -118,7 +125,7 @@ error_t
 find_device (char *name, struct device **device)
 {
   if (already_open)
-    if (!name || strcmp (already_open, device) == 0)
+    if (!name || strcmp (already_open, (*device)->name) == 0)
       {
 	*device = &ether_dev;
 	return 0;
@@ -126,7 +133,7 @@ find_device (char *name, struct device **device)
     else
       return EBUSY;		/* XXXACK */
   else if (! name)
-    return EXIO;		/* XXX */
+    return ENXIO;		/* XXX */
 
   name = already_open = strdup (name);
 
