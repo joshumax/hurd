@@ -183,7 +183,7 @@ S_proc_wait (struct proc *p,
       *status = child->p_status;
       *sigcode = child->p_sigcode;
       *ru = child->p_rusage; /* all zeros if !p_dead */
-      *pid_status = pid;
+      *pid_status = child->p_pid;
       if (child->p_dead)
 	complete_exit (child);
       return 1;
