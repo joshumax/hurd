@@ -116,7 +116,7 @@ static const struct argp argp_default_argp =
 
 static const struct argp_option argp_version_options[] =
 {
-  {"version",	  'v',    	0, 0,  "Print program version", -1},
+  {"version",	  'V',    	0, 0,  "Print program version", -1},
   {0, 0}
 };
 
@@ -125,7 +125,7 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
 {
   switch (key)
     {
-    case 'v':
+    case 'V':
       if (argp_program_version_hook)
 	(*argp_program_version_hook) (state->out_stream, state);
       else if (argp_program_version)
