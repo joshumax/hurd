@@ -279,7 +279,7 @@ routine file_set_translator (
 	flags: int;
 	oldtrans_flags: int;
 	translator: data_t;
-	existing: mach_port_make_send_t);
+	existing: mach_port_send_t);
 
 /* Return the stored permanent translator for this file.  */
 /* INTR */
