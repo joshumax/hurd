@@ -54,7 +54,8 @@ main (int argc, char **argv)
   struct port_class *peerclass, *peercntlclass;
   struct trivfs_control **ourcntl, **peercntl;
   mach_port_t bootstrap;
-  enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type; 
+  enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type;
+  struct stat st;
 
   term_bucket = ports_create_bucket ();
   
@@ -168,8 +169,22 @@ main (int argc, char **argv)
   termflags = NO_CARRIER | NO_OWNER;
   mutex_init (&global_lock);
 
-  term_owner = term_group = 0;
-  term_mode = (bottom == &ptyio_bottom ? 0666 : 0600) | S_IFCHR | S_IROOT;
+  /* Initialize status from underlying node.  */
+  errno = io_stat ((*ourcntl)->underlying, &st);
+  if (errno)
+    {
+      /* We cannot stat the underlying node.  Fallback to the defaults.  */
+      term_owner = term_group = 0;
+      term_mode = (bottom == &ptyio_bottom ? DEFFILEMODE : S_IRUSR | S_IWUSR);
+      errno = 0;
+    }
+  else
+    {
+      term_owner = st.st_uid;
+      term_group = st.st_gid;
+      term_mode = (st.st_mode & ACCESSPERMS);
+    }
+  term_mode |= S_IFCHR | S_IROOT;
 
   inputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   
@@ -190,4 +205,3 @@ main (int argc, char **argv)
 
   return 0;
 }  
-

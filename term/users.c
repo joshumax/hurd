@@ -105,6 +105,33 @@ init_users ()
 
 
 static error_t
+check_access_hook (struct trivfs_control *cntl,
+		   struct iouser *user,
+		   mach_port_t realnode,
+		   int *allowed)
+{
+  struct stat st;
+  
+  mutex_lock (&global_lock);
+
+  st.st_uid = term_owner;
+  st.st_gid = term_group;
+  st.st_mode = term_mode;
+
+  *allowed = 0;
+  if (fshelp_access (&st, S_IREAD, user) == 0)
+    *allowed |= O_READ;
+  if (fshelp_access (&st, S_IWRITE, user) == 0)
+    *allowed |= O_WRITE;
+
+  mutex_unlock (&global_lock);
+  return 0;
+}
+error_t (*trivfs_check_access_hook) (struct trivfs_control *, struct iouser *,
+				     mach_port_t, int *)
+     = check_access_hook;
+
+static error_t
 open_hook (struct trivfs_control *cntl,
 	   struct iouser *user,
 	   int flags)
@@ -506,19 +533,6 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 out:
   mutex_unlock (&global_lock);
   return err;
-}
-
-error_t
-trivfs_S_file_check_access (struct trivfs_protid *cred,
-			    mach_port_t reply, mach_msg_type_name_t reply_type,
-			    int *allowed)
-{
-  if (!cred)
-    return EOPNOTSUPP;
-
-  /* XXX Do the right thing eventually. */
-  *allowed = O_READ | O_WRITE;
-  return 0;
 }
 
 
