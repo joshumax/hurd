@@ -25,7 +25,10 @@
  */
 /*
  * HISTORY
- * $Log:	thread.c,v $
+ * $Log: thread.c,v $
+ * Revision 1.2  1994/05/04 19:05:26  mib
+ * entered into RCS
+ *
  * Revision 2.6  91/07/31  18:37:07  dbg
  * 	Undefine cthread_sp macro around function definition.
  * 	[91/07/30  17:36:23  dbg]
@@ -52,7 +55,7 @@
  */
 
 #ifndef	lint
-static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.2 1994/05/04 19:05:26 mib Exp $";
+static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.3 1997/02/18 22:53:31 miles Exp $";
 #endif	not lint
 
 
@@ -78,7 +81,13 @@ cproc_setup(child, thread, routine)
 	int thread;
 	int routine;
 {
-	register int *top = (int *) (child->stack_base + child->stack_size);
+	extern unsigned int __hurd_threadvar_max; /* GNU */
+	register int *top = (int *)
+	  cproc_stack_base (child,
+			    sizeof(ur_cthread_t *) +
+			    /* Account for GNU per-thread variables.  */
+			    __hurd_threadvar_max *
+			    sizeof (long int));
 	struct i386_thread_state state;
 	register struct i386_thread_state *ts = &state;
 	kern_return_t r;
