@@ -26,7 +26,7 @@ SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
 
 DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
-OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o boot_machdep.o
+OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
 #LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
 LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
