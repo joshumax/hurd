@@ -25,7 +25,6 @@
 
 char *ufs_version = "0.0 pre-alpha";
 
-mach_port_t diskfs_dotdot_file;
 static char **save_argv;
 
 /* Parse the arguments for ufs when started as a translator. */
@@ -71,8 +70,7 @@ trans_parse_args (int argc, char **arg)
 
   mach_port_insert_right (mach_task_self (), ufs_control_port,
 			  ufs_control_port, MACH_MSG_TYPE_MAKE_SEND);
-  fsys_startup (bootstrap, ufs_control_port, &ufs_realnode, 
-		&diskfs_dotdot_file);
+  fsys_startup (bootstrap, ufs_control_port, &ufs_realnode);
   mach_port_deallocate (mach_task_self (), ufs_control_port);
 #else
   task_terminate (mach_task_self ());
