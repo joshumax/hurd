@@ -63,17 +63,12 @@ main (int argc, char **argv)
   fail = bind (main_udp_socket, (struct sockaddr *)&main_address,
 	       sizeof (struct sockaddr_in));
   if (fail)
-    {
-      perror ("Binding NFS socket");
-      exit (1);
-    }
+    error (1, errno, "Binding NFS socket");
+    
   fail = bind (pmap_udp_socket, (struct sockaddr *)&pmap_address,
 	       sizeof (struct sockaddr_in));
   if (fail)
-    {
-      perror ("Binding PMAP socket");
-      exit (1);
-    }
+    error (1, errno, "Binding PMAP socket");
 
   init_filesystems ();
 

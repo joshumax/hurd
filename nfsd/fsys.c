@@ -1,5 +1,5 @@
 /* Filesystem management for NFS server
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -65,8 +65,7 @@ init_filesystems (void)
   index_file = fopen (index_file_name, "r");
   if (!index_file)
     {
-      fprintf (stderr, "%s: Cannot open `%s': %s\n",
-	       program_invocation_name, index_file_name, strerror (errno));
+      error (0, errno, "Cannot open `%s'", index_file_name);
       return;
     }
 
@@ -81,17 +80,15 @@ init_filesystems (void)
       
       if (nitems != 2)
 	{
-	  fprintf (stderr, "%s:%s:%d Bad syntax\n",
-		   program_invocation_name, index_file_name, line);
+	  error (0, 0, "%s:%d Bad syntax", index_file_name, line);
 	  continue;
 	}
 
       root = file_name_lookup (name, 0, 0);
-      if (!root)
+      if (root == MACH_PORT_NULL)
 	{
-	  fprintf (stderr, "%s:%s:%d Filesystem `%s': %s\n",
-		   program_invocation_name, index_file_name, line,
-		   name, strerror (errno));
+	  error (0, errno, "%s:%d Filesystem `%s'", 
+		 index_file_name, line, name);
 	  free (name);
 	  continue;
 	}
@@ -123,6 +120,7 @@ write_filesystems (void)
 {
   file_t newindex;
   FILE *f;
+  error_t err;
   int i;
 
   if (!index_file_name)
@@ -133,19 +131,17 @@ write_filesystems (void)
       index_file_dir = file_name_split (index_file_name, &index_file_compname);
       if (index_file_dir == MACH_PORT_NULL)
 	{
-	  fprintf (stderr, "%s: `%s': %s\n",
-		   program_invocation_name, index_file_name, strerror (errno));
+	  error (0, errno, "`%s'", index_file_name);
 	  index_file_name = 0;
 	  return;
 	}
     }
 
   /* Create an anonymous file in the same directory */
-  errno = dir_mkfile (index_file_dir, O_WRONLY, 0666, &newindex);
-  if (errno)
+  err = dir_mkfile (index_file_dir, O_WRONLY, 0666, &newindex);
+  if (err)
     {
-      fprintf (stderr, "%s: `%s': %s\n",
-	       program_invocation_name, index_file_name, strerror (errno));
+      error (0, err, "`%s'", index_file_name);
       index_file_name = 0;
       mach_port_deallocate (mach_task_self (), index_file_dir);
       index_file_dir = MACH_PORT_NULL;
@@ -159,10 +155,9 @@ write_filesystems (void)
       fprintf (f, "%d %s\n", i, fsystable[i].name);
 
   /* Link it in */
-  errno = dir_link (index_file_dir, newindex, index_file_compname, 0);
-  if (errno)
-    fprintf (stderr, "%s: `%s': %s\n",
-	     program_invocation_name, index_file_name, strerror (errno));
+  err = dir_link (index_file_dir, newindex, index_file_compname, 0);
+  if (err)
+    error (0, err, "`%s'", index_file_name);
   fflush (f);
   file_sync (newindex, 1, 0);
   fclose (f);
