@@ -1,5 +1,5 @@
 /* Definitions for socket interface
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991,93,94,95,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -122,7 +122,7 @@ routine socket_send (
 	data: data_t SCP;
 	ports: portarray_t SCP;
 	control: data_t SCP;
-	out amount: mach_msg_type_number_t);
+	out amount: size_t);
 
 /* Receive data from a socket, possibly including Mach ports.  */
 routine socket_recv (
@@ -133,4 +133,4 @@ routine socket_recv (
 	out ports: portarray_t, dealloc;
 	out control: data_t, dealloc;
 	out outflags: int;
-	amount: mach_msg_type_number_t);
+	amount: size_t);

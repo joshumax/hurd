@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,95,96,99,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -44,7 +44,7 @@ routine io_write (
 	RPT
 	data: data_t SCP;
 	offset: off_t;
-	out amount: mach_msg_type_number_t);
+	out amount: size_t);
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
@@ -54,7 +54,7 @@ routine io_read (
 	RPT
 	out data: data_t, dealloc;
 	offset: off_t;
-	amount: mach_msg_type_number_t);
+	amount: size_t);
 
 /* Change current read/write offset */
 routine io_seek (
@@ -70,7 +70,7 @@ routine io_seek (
 routine io_readable (
 	io_object: io_t;
 	RPT
-	out amount: mach_msg_type_number_t);
+	out amount: size_t);
 
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
@@ -322,4 +322,3 @@ routine io_identity (
    on the specified object.  */
 routine io_revoke (
 	io_object: io_t RPTLAST);
-
