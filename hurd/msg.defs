@@ -1,5 +1,5 @@
 /* Miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -73,13 +73,13 @@ routine get_init_port (
 	process: mach_port_t;
 	task: task_t;
 	which: int;
-	out port: mach_port_t);
+	out port: mach_port_send_t);
 
 routine set_init_port (
 	process: mach_port_t;
 	task: task_t;
 	which: int;
-	port: mach_port_t);
+	port: mach_port_send_t);
 
 routine get_init_ports (
 	process: mach_port_t;
@@ -127,11 +127,37 @@ routine set_dtable (
 
 routine get_fd (
 	process: mach_port_t;
-	out fd: mach_port_t);
+	out fd: mach_port_send_t);
 
 routine set_fd (
 	process: mach_port_t;
-	fd: mach_port_t);
+	fd: mach_port_send_t);
+
+/* These two calls fetch and store the whole environment,
+   in "a=b\0c=d\0" form.  */
+
+routine get_environment (
+	process: mach_port_t;
+	out value: data_t);
+
+routine set_environment (
+	process: mach_port_t;
+	auth: mach_port_t;
+	value: data_t);
+
+/* These two calls fetch and store a single environment variable.  */
+
+routine get_env_variable (
+	process: mach_port_t;
+	variable: string_t;
+	out value: data_t);
+
+routine set_env_variable (
+	process: mach_port_t;
+	auth: mach_port_t;
+	variable: string_t;
+	value: string_t;
+	replace: boolean_t);
 
 /* A select call has completed.  */
 routine io_select_done (
