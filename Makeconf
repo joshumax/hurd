@@ -160,6 +160,10 @@ ifeq ($(doinst),many)
  target = $(filter-out $(special-targets),$(targets))
 endif
 
+ifeq ($(doinst),one)
+$(target): $(OBJS) $(OTHERLIBS)
+endif
+
 # Determine which sort of library we should link against from whether -static
 # is used in LDFLAGS.
 __libext=.so
@@ -174,7 +178,7 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 # dependencies of other shared objects it encounters.
 rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 
-$(target): %$(target-suffix): $(OBJS) $(OTHERLIBS)
+$(target): %$(target-suffix):
 	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
 		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) \
