@@ -26,6 +26,17 @@
 /*
  * HISTORY
  * $Log: cthread_internals.h,v $
+ * Revision 1.4  2001/03/31 23:01:01  roland
+ * 2001-03-31  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h: Fix obsolescent #endif syntax.
+ * 	* cthread_internals.h: Likewise.
+ * 	* cancel-cond.c: Likewise.
+ * 	* stack.c: Likewise.
+ * 	* cthreads.c: Likewise.
+ * 	* cprocs.c: Likewise.
+ * 	* call.c: Likewise.
+ *
  * Revision 1.3  1995/08/29 14:49:20  mib
  * (cproc_block): Provide decl.
  *
@@ -158,7 +169,7 @@ typedef struct cproc {
 #define CPROC_CONDWAIT	4
 
 	mach_port_t wired;		/* is cthread wired to kernel thread */
-	int busy;			/* used with cthread_msg calls */
+	void *busy;			/* used with cthread_msg calls */
 
 	mach_msg_header_t msg;
 

@@ -26,6 +26,11 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.14  2002/05/08 09:32:11  roland
+ * 2002-05-07  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cprocs.c (cproc_list_lock): Declare type as spin_lock_t.
+ *
  * Revision 1.13  2001/03/31 23:01:01  roland
  * 2001-03-31  Roland McGrath  <roland@frob.com>
  *
@@ -1103,7 +1108,7 @@ mach_port_t port;
 	    spin_lock(&port_entry->lock);
 	    if (port_entry->held < port_entry->max) {
 		port_entry->held++;
-		p->busy = (int)port_entry;
+		p->busy = port_entry;
 	    }
 	    spin_unlock(&port_entry->lock);
 	}
@@ -1166,7 +1171,7 @@ cthread_mach_msg(header, option,
 #ifdef	WAIT_DEBUG
 	p->waiting_for = (char *)0;
 #endif	 /* WAIT_DEBUG */
-	p->busy = (int)port_entry;
+	p->busy = port_entry;
 	if ((option & MACH_SEND_MSG) && !sent) {
 	    r = mach_msg(header, option,
 			 send_size, rcv_size, rcv_name,
