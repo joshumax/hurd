@@ -25,7 +25,8 @@ OBJS = $(SRCS:.c=.o) error.o
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
-HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
+HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads \
+	libihash
 target = ext2fs
 
 CPPFLAGS += -I../lib
