@@ -1,6 +1,6 @@
 /* A translator for fifos
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -77,7 +77,7 @@ static const struct argp argp = {
   options, parse_opt, 0, "Translator for fifos"
 };
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -101,13 +101,13 @@ main (int argc, char **argv)
   do
     {
       ports_enable_class (fsys->protid_class);
-      ports_manage_port_operations_multithread (fsys->pi.bucket, 
+      ports_manage_port_operations_multithread (fsys->pi.bucket,
 						trivfs_demuxer,
 						30*1000, 5*60*1000, 0);
     }
   while (ports_count_class (fsys->protid_class) > 0);
 
-  exit(0);
+  return 0;
 }
 
 /* ---------------------------------------------------------------- */
@@ -499,7 +499,7 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
-   be used for.  The O_ASYNC bit affects icky async I/O; good async 
+   be used for.  The O_ASYNC bit affects icky async I/O; good async
    I/O is done through io_async which is orthogonal to these calls. */
 
 error_t

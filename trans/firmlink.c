@@ -1,6 +1,6 @@
 /* A translator for `firmlinks'
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -65,7 +65,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -88,7 +88,7 @@ main (int argc, char **argv)
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
 					    2 * 60 * 1000, 0, 0);
 
-  exit (0);
+  return 0;
 }
 
 /* Return in LINK the node that TARGET_NAME resolves to, with its parent

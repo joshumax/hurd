@@ -1,6 +1,6 @@
 /* A translator for returning FS_RETRY_MAGIC strings.
 
-   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
    This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
 /* The magic string we return for lookups.  */
 static char *magic = NULL;
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -63,7 +63,7 @@ main (int argc, char **argv)
       err = mach_msg_server_timeout (fsys_server, 0, control,
 				       MACH_RCV_TIMEOUT, 1000 * 60 * 10);
       if (err == MACH_RCV_TIMED_OUT)
-	exit (0);
+	return 0;
     }
 }
 

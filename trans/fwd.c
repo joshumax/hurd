@@ -4,7 +4,7 @@
    and forward the request to the server if they find one, otherwise doing
    the translation themselves.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <hurd/fshelp.h>
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -47,5 +47,5 @@ main (int argc, char **argv)
   if (err)
     error (3, err, "%s", argv[1]);
 
-  exit (0);
+  return 0;
 }

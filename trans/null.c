@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -34,7 +34,7 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (null);
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -57,7 +57,7 @@ main (int argc, char **argv)
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
 					    2 * 60 * 1000, 0, 0);
 
-  exit(0);
+  return 0;
 }
 
 /* Trivfs hooks  */
@@ -210,7 +210,7 @@ trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
-   be used for.  The O_ASYNC bit affects icky async I/O; good async 
+   be used for.  The O_ASYNC bit affects icky async I/O; good async
    I/O is done through io_async which is orthogonal to these calls. */
 
 kern_return_t
