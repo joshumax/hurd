@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,2001 Free Software Foundation
+   Copyright (C) 1993,94,95,96,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -40,18 +40,18 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   mach_msg_type_name_t replytype,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newporttype,
-			   uid_t *uids, u_int nuids,
-			   uid_t *gids, u_int ngids)
+			   uid_t *uids, size_t nuids,
+			   uid_t *gids, size_t ngids)
 {
   int i;
   error_t err;
   struct trivfs_protid *newcred;
   struct idvec *uvec, *gvec;
   struct iouser *user;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (cred->isroot)
     /* CRED has root access, and so may use any ids.  */
     {
@@ -101,7 +101,7 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 
   err = ports_create_port (cred->po->cntl->protid_class,
 			   cred->po->cntl->protid_bucket,
-			   sizeof (struct trivfs_protid), 
+			   sizeof (struct trivfs_protid),
 			   &newcred);
   if (err)
     {
@@ -119,8 +119,8 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   newcred->user = user;
   newcred->hook = cred->hook;
 
-  err = io_restrict_auth (cred->realnode, &newcred->realnode, 
-			  user->uids->ids, user->uids->num, 
+  err = io_restrict_auth (cred->realnode, &newcred->realnode,
+			  user->uids->ids, user->uids->num,
 			  user->gids->ids, user->gids->num);
   if (!err && trivfs_protid_create_hook)
     {

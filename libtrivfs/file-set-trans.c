@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994, 2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,7 +25,7 @@ trivfs_S_file_set_translator (struct trivfs_protid *cred,
 			      int passflags,
 			      int oldtransflags,
 			      char *trans,
-			      u_int translen,
+			      size_t translen,
 			      mach_port_t existing)
 {
   return EOPNOTSUPP;

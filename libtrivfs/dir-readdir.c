@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,99, 2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@ kern_return_t
 trivfs_S_dir_readdir (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      char **data,
-		      u_int *datalen,
+		      size_t *datalen,
 		      boolean_t *data_dealloc,
 		      int entry,
 		      int nentries,

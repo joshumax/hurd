@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,97,99,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -31,8 +31,8 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 		       mach_port_t reply_port,
 		       mach_msg_type_name_t reply_port_type,
 		       mach_port_t dotdot,
-		       uid_t *uids, u_int nuids,
-		       uid_t *gids, u_int ngids,
+		       uid_t *uids, size_t nuids,
+		       uid_t *gids, size_t ngids,
 		       int flags,
 		       retry_type *do_retry,
 		       char *retry_name,

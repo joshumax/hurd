@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -29,7 +29,7 @@ trivfs_S_fsys_startup (mach_port_t bootport,
 		       int flags,
 		       mach_port_t cntl,
 		       mach_port_t *realnode,
-		       mach_port_t *realnodetype)
+		       mach_msg_type_name_t *realnodetype)
 {
   return EOPNOTSUPP;
 }
@@ -60,11 +60,11 @@ trivfs_S_fsys_getfile (struct trivfs_control *cntl,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       uid_t *genuids,
-		       u_int ngenuids,
+		       size_t ngenuids,
 		       uid_t *gengids,
-		       u_int ngengids,
+		       size_t ngengids,
 		       char *handle,
-		       u_int handlesize,
+		       size_t handlesize,
 		       mach_port_t *file,
 		       mach_msg_type_name_t *filetype)
 {
