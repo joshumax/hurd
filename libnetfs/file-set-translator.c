@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -22,8 +22,6 @@
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
-#define makedev(maj,min) ((((maj)&0xFF)<<8)+((min)&0xFF))
-
 error_t
 netfs_S_file_set_translator (struct protid *user,
 			     int passive_flags, int active_flags,
@@ -37,16 +35,16 @@ netfs_S_file_set_translator (struct protid *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   if (!(passive_flags & FS_TRANS_SET) && !(active_flags & FS_TRANS_SET))
     return 0;
-  
+
   if (passive && passive[passivelen - 1])
     return EINVAL;
-  
+
   np = user->po->np;
   mutex_lock (&np->lock);
-  
+
   if (active_flags & FS_TRANS_SET)
     {
       /* Validate--user must be owner */
@@ -57,12 +55,12 @@ netfs_S_file_set_translator (struct protid *user,
       err = fshelp_isowner (&np->nn_stat, user->user);
       if (err)
 	goto out;
-      
+
       err = fshelp_fetch_control (&np->transbox, &control);
       if (err)
 	goto out;
-      
-      if (control != MACH_PORT_NULL 
+
+      if (control != MACH_PORT_NULL
 	  && (active_flags & FS_TRANS_EXCL) == 0)
 	{
 	  mutex_unlock (&np->lock);
@@ -83,7 +81,7 @@ netfs_S_file_set_translator (struct protid *user,
       if (err)
 	goto out;
     }
-  
+
   if (active_flags & FS_TRANS_SET)
     {
       err = fshelp_set_active (&np->transbox, active,
@@ -91,7 +89,7 @@ netfs_S_file_set_translator (struct protid *user,
       if (err)
 	goto out;
     }
-  
+
   if (passive_flags & FS_TRANS_SET)
     {
       mode_t newmode = 0;
@@ -110,12 +108,12 @@ netfs_S_file_set_translator (struct protid *user,
 	  else if (!strcmp (passive, _HURD_IFSOCK))
 	    newmode = S_IFSOCK;
 	}
-      
+
       switch (newmode)
 	{
 	  int major, minor;
 	  char *arg;
-	  
+
 	case S_IFBLK:
 	case S_IFCHR:
 	  /* Find the device number from the arguments
@@ -128,7 +126,7 @@ netfs_S_file_set_translator (struct protid *user,
 	      return EINVAL;
 	    }
 	  major = strtol (arg, 0, 0);
-	  
+
 	  arg = arg + strlen (arg) + 1;
 	  assert (arg < passive + passivelen);
 	  if (arg == passive + passivelen)
@@ -137,13 +135,13 @@ netfs_S_file_set_translator (struct protid *user,
 	      return EINVAL;
 	    }
 	  minor = strtol (arg, 0, 0);
-	  
+
 	  err = netfs_attempt_mkdev (user->user, np,
 				     newmode, makedev (major, minor));
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
 	  break;
-	  
+
 	case S_IFLNK:
 	  arg = passive + strlen (passive) + 1;
 	  assert (arg <= passive + passivelen);
@@ -152,7 +150,7 @@ netfs_S_file_set_translator (struct protid *user,
 	      mutex_unlock (&np->lock);
 	      return EINVAL;
 	    }
-	  
+
 	  err = netfs_attempt_mksymlink (user->user, np, arg);
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
@@ -167,15 +165,15 @@ netfs_S_file_set_translator (struct protid *user,
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
 	  break;
-	  
+
 	case 0:
 	fallback:
-	  err = netfs_set_translator (user->user, np, 
+	  err = netfs_set_translator (user->user, np,
 				      passive, passivelen);
 	  break;
 	}
     }
-  
+
  out:
   mutex_unlock (&np->lock);
   return err;
