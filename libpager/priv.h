@@ -41,8 +41,6 @@ struct pager
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
   
-  int mscount;
-  
   int seqno;
 
   int noterm;			/* number of threads blocking termination */
