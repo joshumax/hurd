@@ -73,12 +73,12 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
 
   switch (type)
     {
-    case FTP_CONN_CNTL_DEBUG_CMD:   type_str = "."; break;
+    case FTP_CONN_CNTL_DEBUG_CMD:   type_str = ">"; break;
     case FTP_CONN_CNTL_DEBUG_REPLY: type_str = "="; break;
     default: type_str = "?"; break;
     }
 
-  fprintf (stderr, "%s%s\n", type_str, txt);
+  fprintf (stderr, "%s%s%s\n", (char *)conn->hook ?: "", type_str, txt);
 }
 
 /* Return an ftp connection for the host NAME using PARAMS.  If an error
@@ -150,7 +150,7 @@ struct epoint
 };
 
 static void
-econnect (struct epoint *e, struct ftp_conn_params *def_params)
+econnect (struct epoint *e, struct ftp_conn_params *def_params, char *name)
 {
   char *rmt;
 
@@ -175,6 +175,8 @@ econnect (struct epoint *e, struct ftp_conn_params *def_params)
       e->name = realloc (e->name, strlen (e->name) + 1 + strlen (rmt) + 1);
       if (! e->name)
 	error (22, ENOMEM, "Cannot allocate name storage");
+
+      e->conn->hook = name;
 
       err = ftp_conn_set_type (e->conn, "I");
       if (err)
@@ -236,6 +238,50 @@ efinish (struct epoint *e)
 	error (31, err, "%s", e->name);
     }	      
 }
+
+/* Give a name which refers to a directory file, and a name in that
+   directory, this should return in COMPOSITE the composite name refering to
+   that name in that directory, in malloced storage.  */
+error_t
+eappend (struct epoint *e,
+	 const char *dir, const char *name,
+	 char **composite)
+{
+  if (e->conn)
+    return ftp_conn_append_name (e->conn, dir, name, composite);
+  else
+    {
+      char *rval = malloc (strlen (dir) + 1 + strlen (name) + 1);
+
+      if (! rval)
+	return ENOMEM;
+
+      if (dir[0] == '/' && dir[1] == '\0')
+	stpcpy (stpcpy (rval, dir), name);
+      else
+	stpcpy (stpcpy (stpcpy (rval, dir), "/"), name);
+
+      *composite = rval;
+
+      return 0;
+    }
+}
+
+/* If the name of a file COMPOSITE is a composite name (containing both a
+   filename and a directory name), this function will return the name
+   component only in BASE, in malloced storage, otherwise it simply returns a
+   newly malloced copy of COMPOSITE in BASE.  */
+error_t
+ebasename (struct epoint *e, const char *composite, char **base)
+{
+  if (e->conn)
+    return ftp_conn_basename (e->conn, composite, base);
+  else
+    {
+      *base = strdup (basename (composite));
+      return 0;
+    }
+}
 
 int 
 main (int argc, char **argv)
@@ -283,8 +329,8 @@ main (int argc, char **argv)
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  econnect (&rd, &def_params);
-  econnect (&wr, &def_params);
+  econnect (&rd, &def_params, "SRC");
+  econnect (&wr, &def_params, "DST");
 
   if (rd.conn && wr.conn)
     {
@@ -305,19 +351,18 @@ main (int argc, char **argv)
 	/* The destination name is a directory; try again with the source
 	   basename appended.  */
 	{
-	  char *bname = basename (rd.file);
-	  size_t bname_len = strlen (bname);
-	  char *dir = wr.file;
-	  char *file = malloc (strlen (dir) + 1 + bname_len + 1);
-	  char *name = malloc (strlen (wr.name) + 1 + bname_len + 1);
+	  char *bname;
 
-	  if (!file || !name)
-	    error (99, ENOMEM, "%s", dir);
+	  err = ebasename (&rd, rd.file, &bname);
+	  if (err)
+	    error (33, err, "%s: Cannot find basename", rd.name);
 
-	  stpcpy (stpcpy (stpcpy (file, dir), "/"), bname);
-	  wr.file = file;
-	  stpcpy (stpcpy (stpcpy (name, wr.name), "/"), bname);
-	  wr.name = name;
+	  err = eappend (&wr, wr.file, bname, &wr.file);
+	  if (err)
+	    error (34, err, "%s: Cannot append name component", wr.name);
+	  err = eappend (&wr, wr.name, bname, &wr.name);
+	  if (err)
+	    error (35, err, "%s: Cannot append name component", wr.name);
 
 	  err = eopen_wr (&wr, &wr_fd);
 	}
