@@ -1,0 +1,48 @@
+/* Macro definitions for defining and using ioctl-based RPC interfaces.
+   Copyright (C) 1999 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#ifndef _HURD_IOCTLS_DEFS
+#define _HURD_IOCTLS_DEFS 1
+
+#ifndef _SYS_IOCTL_H
+#define _SYS_IOCTL_H		/* Suppress #error in <bits/ioctl.h>.  */
+#endif
+#include <bits/ioctls.h>
+
+
+/* Calculate the MiG subsystem (i.e. first message ID)
+   for the RPCs produced by ioctl requests in the given group.  */
+#define IOC_GROUP_SUBSYSTEM(group)	(100000 + ((group) - 'f') * 4000)
+
+/* Because of MiG's poorly chosen algorithm of adding 100 to a request
+   msgid to produce the reply msgid, we cannot just add the command part of
+   the ioctl request to the subsystem base msgid.  For ioctl requests past
+   99, we must skip blocks of 100 msgids to allow for the reply msgids
+   corresponding to the earlier requests.  Since our ioctl request format
+   allows only 7 bits for the command portion, we know that it cannot
+   exceed 127 and thus we can handle just 100+ as a special case.  */
+#define IOC_COMMAND_SUBID(cmd)		((cmd) + ((cmd) < 100 ? 0 : 100))
+
+#define IOC_CONSTRUCT_MSGID(group, cmd)		\
+  (IOC_GROUP_SUBSYSTEM (group) + IOC_COMMAND_SUBID (cmd))
+#define IOC_MSGID(request)	\
+  IOC_CONSTRUCT_MSGID (_IOC_GROUP (request), _IOC_COMMAND (request))
+
+
+#endif /* !_HURD_IOCTLS_DEFS */
