@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <device/device.h>
 #include <a.out.h>
 #include <fcntlbits.h>
+#include <mach/message.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -42,7 +43,7 @@ mach_port_t php_child_name, psmdp_child_name;
 task_t child_task;
 mach_port_t bootport;
 
-int console_send_rights;
+int console_mscount;
 
 /* These will prevent the Hurd-ish versions from being used */
 
@@ -171,8 +172,10 @@ main (int argc, char **argv, char **envp)
 		      &pseudo_console);
   mach_port_move_member (mach_task_self (), pseudo_console, receive_set);
   mach_port_request_notification (mach_task_self (), pseudo_console,
-				  MACH_NOTIFY_NO_SENDERS, 0, pseudo_console,
+				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_console, 
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &bootport);
   mach_port_move_member (mach_task_self (), bootport, receive_set);
@@ -325,20 +328,26 @@ ds_device_open (mach_port_t master_port,
 		mach_msg_type_name_t reply_type,
 		dev_mode_t mode,
 		dev_name_t name,
-		device_t *device)
+		mach_port_t *device,
+		mach_msg_type_name_t *devicetype)
 {
   if (master_port != pseudo_master_device_port)
     return D_INVALID_OPERATION;
   
   if (!strcmp (name, "console"))
     {
+#if 0
       mach_port_insert_right (mach_task_self (), pseudo_console,
 			      pseudo_console, MACH_MSG_TYPE_MAKE_SEND);
       console_send_rights++;
+#endif
+      console_mscount++;
       *device = pseudo_console;
+      *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
     }
   
+  *devicetype = MACH_MSG_TYPE_MOVE_SEND;
   return device_open (master_device_port, mode, name, device);
 }
 
@@ -361,12 +370,14 @@ ds_device_write (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
+#if 0
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
+#endif
 
   *bytes_written = write (1, (void *)*data, datalen);
   
@@ -385,12 +396,14 @@ ds_device_write_inband (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
+#if 0
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
+#endif
 
   *bytes_written = write (1, data, datalen);
   
@@ -408,13 +421,15 @@ ds_device_read (device_t device,
 {
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
-  
+
+#if 0  
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
+#endif
 
   vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
   *datalen = read (0, *data, bytes_wanted);
@@ -433,13 +448,15 @@ ds_device_read_inband (device_t device,
 {
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
-  
+
+#if 0  
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
+#endif
 
   *datalen = read (0, data, bytes_wanted);
   
@@ -543,8 +560,22 @@ do_mach_notify_port_destroyed (mach_port_t notify,
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
+  mach_port_t foo;
   if (notify == pseudo_console)
-    _exit (0);
+    {
+      if (mscount == console_mscount)
+	_exit (0);
+      else
+	{
+	  mach_port_request_notification (mach_task_self (), pseudo_console,
+					  MACH_NOTIFY_NO_SENDERS, 
+					  console_mscount, pseudo_console,
+					  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+	  if (foo != MACH_PORT_NULL)
+	    mach_port_deallocate (mach_task_self (), foo);
+	}
+    }
+
   return EOPNOTSUPP;
 }
 
@@ -577,13 +608,15 @@ S_io_write (mach_port_t object,
   if (object != pseudo_console)
     return EOPNOTSUPP;
 
+#if 0
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
-  
+#endif
+
   *amtwritten = write (1, data, datalen);
   return *amtwritten == -1 ? errno : 0;
 }
@@ -598,12 +631,14 @@ S_io_read (mach_port_t object,
   if (object != pseudo_console)
     return EOPNOTSUPP;
   
+#if 0
   if (console_send_rights)
     {
       mach_port_mod_refs (mach_task_self (), pseudo_console, 
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
+#endif
 
   if (amount > *datalen)
     vm_allocate (mach_task_self (), amount, data, 1);
@@ -727,6 +762,7 @@ S_io_restrict_auth (mach_port_t object,
     return EOPNOTSUPP;
   *newobject = pseudo_console;
   *newobjtype = MACH_MSG_TYPE_MAKE_SEND;
+  console_mscount++;
   return 0;
 }
 
@@ -739,6 +775,7 @@ S_io_duplicate (mach_port_t object,
     return EOPNOTSUPP;
   *newobj = pseudo_console;
   *newobjtype = MACH_MSG_TYPE_MAKE_SEND;
+  console_mscount++;
   return 0;
 }
 
