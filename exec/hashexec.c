@@ -45,7 +45,7 @@ check_hashbang (struct execdata *e,
 {
   char *p;
   char *interp, *arg;		/* Interpreter file name, and first argument */
-  size_t interp_len, len;
+  size_t interp_len, arg_len;
   file_t interp_file;		/* Port open on the interpreter file.  */
   char *new_argv;
   size_t new_argvlen;
@@ -150,7 +150,7 @@ check_hashbang (struct execdata *e,
     {
       /* The first line went on for more than sizeof INTERP_BUF!  */
       interp_len = sizeof interp_buf;
-      interp_buf[interp_len] = '\0';
+      interp_buf[interp_len - 1] = '\0';
     }
   else
     {
@@ -172,25 +172,25 @@ check_hashbang (struct execdata *e,
       /* Skip remaining blanks, and the rest of the line is the argument.  */
 
       arg = p + strspn (p, " \t");
-      len = interp_len - (arg - interp_buf);
+      arg_len = interp_len - 1 - (arg - interp_buf); /* without null */
       interp_len = p - interp;
 
-      if (len == 0)
+      if (arg_len == 0)
 	arg = NULL;
       else
 	{
 	  /* Trim trailing blanks after the argument.  */
-	  size_t i = len - 1;
+	  size_t i = arg_len - 1;
 	  while (arg[i] == ' ' || arg[i] == '\t')
 	    arg[i--] = '\0';
-	  len = i + 2;		/* Include the terminating null.  */
+	  arg_len = i + 2;	/* Include the terminating null.  */
 	}
     }
   else
     {
       /* There is no argument.  */
       arg = NULL;
-      len = 0;
+      arg_len = 0;
     }
 
   user_crdir = user_cwdir = MACH_PORT_NULL;
@@ -332,7 +332,7 @@ check_hashbang (struct execdata *e,
 
 	  new_argvlen
 	    = (argvlen - strlen (argv) - 1) /* existing args - old argv[0] */
-	    + interp_len + len + namelen; /* New args */
+	    + interp_len + arg_len + namelen; /* New args */
 
 	  new_argv = mmap (0, new_argvlen, PROT_READ|PROT_WRITE,
 			   MAP_ANON, 0, 0);
@@ -357,8 +357,8 @@ check_hashbang (struct execdata *e,
 	      /* Maybe ARG */
 	      if (arg)
 		{
-		  memcpy (p, arg, len);
-		  p += len;
+		  memcpy (p, arg, arg_len);
+		  p += arg_len;
 		}
 
 	      /* FILE_NAME */
@@ -376,7 +376,7 @@ check_hashbang (struct execdata *e,
 	      char *n = stpncpy (new_argv,
 				 "**fault in exec server reading argv[0]**",
 				 argvlen);
-	      memcpy (memcpy (n, arg, len) + len, file_name, namelen);
+	      memcpy (memcpy (n, arg, arg_len) + arg_len, file_name, namelen);
 	    }
 
 	  if (free_file_name)
