@@ -409,7 +409,6 @@ write_node (struct node *np)
   if (np->dn->info.i_prealloc_count)
     ext2_discard_prealloc (np);
 
-  assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
       struct ext2_inode_info *info = &np->dn->info;
@@ -576,11 +575,11 @@ write_all_disknodes ()
     {
       struct ext2_inode *di;
 
-      diskfs_set_node_times (node);
-
       /* Sync the indirect blocks here; they'll all be done before any
 	 inodes.  Waiting for them shouldn't be too bad.  */
       pokel_sync (&node->dn->indir_pokel, 1);
+
+      diskfs_set_node_times (node);
 
       /* Update the inode image.  */
       di = write_node (node);
