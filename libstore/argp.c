@@ -1,7 +1,7 @@
 /* Store argument parsing
 
-   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -361,11 +361,13 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  && (!parsed->type->validate_name
 	      || (*parsed->type->validate_name) (0, parsed->classes) != 0))
 	{
+	  struct store_argp_params *params = state->input;
 	  store_parsed_free (parsed);
-	  PERR (EINVAL, "No store specified");
+	  if (!params->store_optional)
+	    PERR (EINVAL, "No store specified");
+	  parsed = 0;
 	}
-      else
-	((struct store_argp_params *)state->input)->result = parsed;
+      ((struct store_argp_params *)state->input)->result = parsed;
       break;
 
     default:

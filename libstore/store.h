@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -625,6 +625,11 @@ struct store_argp_params
 
   /* The set of classes used to validate store-types and argument syntax. */
   const struct store_class *const *classes;
+
+  /* This controls the behavior when no store arguments are specified.
+     If zero, the parser fails with the error message "No store specified".
+     If nonzero, the parser succeeds and sets `result' to null.  */
+  int store_optional;
 };
 
 /* The result of parsing a store, which should be enough information to open
