@@ -25,8 +25,8 @@
 static char sblockbuf[SBSIZE];
 struct fs *sblock = (struct fs *)sblockbuf;
 
-char lfname[] = "lost+found";
-mode_t lfmode = IFDIR | 0755;
+/* A string identifying what we're trying to check.  */
+char *device_name = 0;
 
 /* Get ready to run on device with pathname DEV. */
 int
@@ -36,6 +36,8 @@ setup (char *dev)
   int changedsb;
   size_t bmapsize;
   
+  device_name = dev;
+
   if (stat (dev, &st) == -1)
     {
       perror (dev);
