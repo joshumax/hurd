@@ -49,6 +49,9 @@ static char control_byte = 0;
 static int output_stopped;
 
 static int pktnostop;
+
+static int ptyopen;
+
 
 
 static void
@@ -58,6 +61,23 @@ ptyio_init ()
   condition_implies (&pty_read_wakeup, &pty_select_wakeup);
 }
     
+error_t
+pty_open_hook (struct trivfs_control *cntl,
+	       uid_t *uids, u_int nuids,
+	       uid_t *gids, u_int ngids,
+	       int flags)
+{
+  if ((flags & (O_READ|O_WRITE)) == 0)
+    return 0;
+  
+  if (ptyopen)
+    return EBUSY;
+  
+  pty_open = 1;
+  report_carrier_on ();
+  return 0;
+}
+
 
 static inline void
 wake_reader ()
