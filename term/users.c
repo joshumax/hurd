@@ -490,7 +490,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       char c = dequeue (inputq);
       
       if (remote_input_mode)
-	*cp++;
+	*cp++ = c;
       else
 	{
 	  /* Unless this is EOF, add it to the response. */
@@ -546,7 +546,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
     return EBADF;
   *amt = qsize (inputq);
   if (remote_input_mode && *amt)
-    *amt--;
+    --*amt;
   mutex_unlock (&global_lock);
 
   return 0;
