@@ -53,9 +53,13 @@ dist-links:
 	touch $(dist-root)/servers/exec
 endif
 
+# Where to get files for the floppies from.
+bfloppy-src=$(firstword $(dist-root) /)
+
 bfloppy.ext2: mkfsimage bfloppy.copy
-	 ./mkfsimage bfloppy.ext2					\
-	   /         --copy-rules=$(srcdir)/bfloppy.copy		\
-	   $(srcdir) --copy-rules=$(srcdir)/bfloppy-special.copy
+	./mkfsimage $@ --owner=root.wheel				\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy.copy		\
+	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy-special.copy
 rfloppy.ext2.gz: mkfsimage rfloppy.copy
-	 ./mkfsimage --compress rfloppy.ext2.gz / --copy-rules=$(srcdir)/rfloppy.copy
+	./mkfsimage $@ --compress --owner=root.wheel			\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/rfloppy.copy
