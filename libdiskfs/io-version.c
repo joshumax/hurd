@@ -19,6 +19,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "priv.h"
+#include "io_S.h"
+
 diskfs_S_io_server_version (struct protid *cred,
 			    char *server_name,
 			    int *major,
@@ -26,7 +29,13 @@ diskfs_S_io_server_version (struct protid *cred,
 			    int *edit)
 {
   if (cred)
-    return diskfs_server_version (server_name, major, minor, edit);
+    {
+      strcpy (server_name, diskfs_server_name);
+      *major = diskfs_major_version;
+      *minor = diskfs_minor_version;
+      *edit = diskfs_edit_version;
+      return 0;
+    }
   else
     return EOPNOTSUPP;
 }
