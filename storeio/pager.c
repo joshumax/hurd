@@ -175,7 +175,8 @@ pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
 int
 dev_stop_paging (struct dev *dev, int nosync)
 {
-  size_t num_pagers = ports_count_bucket (pager_port_bucket);
+  size_t num_pagers = (pager_port_bucket ?
+		       ports_count_bucket (pager_port_bucket) : 0);
 
   if (num_pagers > 0 && !nosync)
     {
