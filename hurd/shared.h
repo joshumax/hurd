@@ -63,7 +63,7 @@ struct shared_io
   int use_file_size;		/* file_size is meaningful */
 
   int use_read_size;		/* read_size is meaningful */
-  int read_size;
+  off_t read_size;
 
   enum
     { 
