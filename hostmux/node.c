@@ -78,7 +78,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
       node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
       node->nn_stat.st_atime = atime->tv_sec;
       node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
-      touch (node, TOUCH_CTIME);
+      fshelp_touch (&node->nn_stat, TOUCH_CTIME, hostmux_maptime);
     }
   return err;
 }
