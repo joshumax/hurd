@@ -1,3 +1,10 @@
+1999-09-27  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* idvec.c (idvec_setid): Implement Posix saved set-user id
+	correctly.
+	(idvec_insert_only): Doc fix.
+	Reported by Mark Kettenis <kettenis@wins.uva.nl>.
+	
 1999-08-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* wire.c (map_extent): Use p_memsz instead of p_filesz.

@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -282,7 +282,7 @@ idvec_delete (struct idvec *idvec, unsigned pos)
     }
 }
 
-/* Insert ID at position POS in IDVEC, remoint any instances of ID previously
+/* Insert ID at position POS in IDVEC, remove any instances of ID previously
    present at POS or after.  ENOMEM is returned if there's not enough memory,
    otherwise 0.  */
 error_t
@@ -297,12 +297,14 @@ idvec_insert_only (struct idvec *idvec, unsigned pos, uid_t id)
     }
 }
 
-/* EFF and AVAIL should be idvec's corresponding to a processes effective and
-   available ids.  ID replaces the first id in EFF, and what it replaces is
-   preserved by adding it to AVAIL (if not already present).  If SECURE is
-   non-NULL, and ID was not previously present in either EFF or AVAIL, then
-   *SECURE is set to true.  ENOMEM is returned if a malloc fails, otherwise
-   0.  The return parameters are only touched if this call succeeds.  */
+/* EFF and AVAIL should be idvec's corresponding to a processes
+   effective and available ids.  ID replaces the first id in EFF, and,
+   if there are any IDs in AVAIL, replaces the second ID in AVAIL;
+   what it replaces in any case is preserved by adding it to AVAIL if
+   not already present.  In addition, the If SECURE is non-NULL, and
+   ID was not previously present in either EFF or AVAIL, then *SECURE
+   is set to true.  ENOMEM is returned if a malloc fails, otherwise 0.
+   The return parameters are only touched if this call succeeds.  */
 error_t
 idvec_setid (struct idvec *eff, struct idvec *avail, uid_t id, int *secure)
 {
@@ -311,25 +313,21 @@ idvec_setid (struct idvec *eff, struct idvec *avail, uid_t id, int *secure)
   int _secure = !idvec_contains (eff, id) &&  !idvec_contains (avail, id);
 
   if (eff->num > 0)
-    /* If there are any old effective ids, we replace eff[0] with ID, and try
-       to preserve the old eff[0] by putting it in AVAIL list if necessary.  */
     {
-      if (avail->num == 0)
-	/* The old eff[0] becomes avail[0] (the posix real id).  */
-	err = idvec_add (avail, eff->ids[0]);
-      else
-	/* We preserve the old real id, and add eff[0] to the list of saved
-	   ids (if necessary).  Inserting it means that the latest id saved
-	   will correspond to the (single) posix saved id.  */
-	err = idvec_insert_only (avail, 1, eff->ids[0]);
-
-      /* Replace eff[0] with the new id.  */
-      eff->ids[0] = id;
+      /* If there are any old effective ids, we replace eff[0] with
+	 ID, and try to preserve the old eff[0] by putting it in AVAIL
+	 list if necessary.  */
+      err = idvec_add_new (avail, eff->ids[0]);
+      if (!err)
+	eff->ids[0] = id;
     }
   else
     /* No previous effective ids, just make ID the first one.  */
     err = idvec_add (eff, id);
 
+  if (avail->num > 0 && !err)
+    err = idvec_insert_only (avail, id, 1);
+  
   if (err)
     return err;
 
