@@ -106,8 +106,8 @@ typedef error_t (*fshelp_callback_t) (void *cookie,
    the call.  */
 error_t
 fshelp_fetch_root (struct transbox *transbox, file_t dotdot, 
-		   uid_t uids, int uids_len,
-		   uid_t gids, int gids_len,
+		   uid_t *uids, int uids_len,
+		   uid_t *gids, int gids_len,
 		   int flags, fshelp_callback_t callback,
 		   retry_type *retry, char *retryname,
 		   mach_port_t *root, mach_msg_type_name_t *root_type);
