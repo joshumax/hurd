@@ -1,3 +1,7 @@
+1999-06-28  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Reorganized to make clearer.
+
 1999-06-27  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* sync-default.c (diskfs_default_sync_interval): Reduce to five

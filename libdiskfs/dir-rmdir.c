@@ -1,5 +1,5 @@
 /* libdsikfs implementation of fs.defs: dir_rmdir
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -42,27 +42,6 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (error == EAGAIN)
     error = ENOTEMPTY;
 
-  if (np)
-    {
-      if ((np->dn_stat.st_mode & S_IPTRANS)
-	  || fshelp_translated (&np->transbox))
-	{
-	  diskfs_nput (np);
-	  error = EBUSY;
-	}
-      if (!S_ISDIR (np->dn_stat.st_mode))
-	{
-	  diskfs_nput (np);
-	  error = ENOTDIR;
-	}
-    }
-  if (error)
-    {
-      mutex_unlock (&dnp->lock);
-      diskfs_drop_dirstat (dnp, ds);
-      return error;
-    }
-
   /* Attempt to rmdir(".") */
   if (dnp == np)
     {
@@ -72,18 +51,28 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       return EINVAL;
     }
 
-  /* Verify the directory is empty (and valid).  (Rmdir ".." won't be
-     valid since ".." will contain a reference to the current directory and
-     thus be non-empty). */
-  if (!diskfs_dirempty (np, dircred))
+  if ((np->dn_stat.st_mode & S_IPTRANS)
+      || fshelp_translated (&np->transbox))
     {
-      diskfs_nput (np);
-      diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
-      return ENOTEMPTY;
+      error = EBUSY;
+      goto out;
     }
 
+  if (!S_ISDIR (np->dn_stat.st_mode))
+    {
+      error = ENOTDIR;
+      goto out;
+    }
+
+  if (!diskfs_dirempty (np, dircred))
+    {
+      error = ENOTEMPTY;
+      goto out;
+    }
+  
   error = diskfs_dirremove (dnp, np, name, ds);
+  ds = 0;
+
   if (!error)
     {
       np->dn_stat.st_nlink--;
@@ -95,6 +84,9 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (diskfs_synchronous)
     diskfs_file_update (dnp, 1);
 
+ out:
+  if (ds)
+    diskfs_drop_dirstat (dnp, ds);
   diskfs_nput (np);
   mutex_unlock (&dnp->lock);
   return 0;
