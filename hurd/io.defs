@@ -130,7 +130,7 @@ routine io_get_owner (
    provided only for backward compatibility with 4.3 BSD.  This
    implements a per-object (not per-open) flag controlling old-style
    async mode (O_ASYNC).  If the flag is set, then the IO object will
-   send SIGIO ande SIGURG signals (in precisely the same circumstances
+   send SIGIO and SIGURG signals (in precisely the same circumstances
    as io_async) to the current owner (pid or pgrp) as set by
    io_set_own.  The reference port for the signal sends is the
    icky_async_id_port returned by this call; it is up to the caller to
