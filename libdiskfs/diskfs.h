@@ -902,7 +902,8 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
    call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  This
    function is a wrapper for diskfs_dirremove_hard.  The entry being
    removed has name NAME and refers to NP.  */
-error_t diskfs_dirremove (struct node *dp, char *np, char *name, struct dirstat *ds);
+error_t diskfs_dirremove (struct node *dp, struct node *np,
+			  char *name, struct dirstat *ds);
 
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
