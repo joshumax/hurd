@@ -119,7 +119,7 @@ resume_task (struct cmd *cmd, int *val)
 static int
 read_file (struct cmd *cmd, int *val)
 {
-  *val = boot_script_read_file (cmd->args[0]);
+  *val = boot_script_read_file (cmd->path);
   if (*val == 0)
     return BOOT_SCRIPT_MACH_ERROR;
   return 0;
@@ -502,7 +502,7 @@ boot_script_parse_line (char *cmdline)
   if (cmdline_alloc - cmdline_index < len) \
     { \
       char *ptr; \
-      int alloc; \
+      int alloc, i; \
       alloc = cmdline_alloc + len - (cmdline_alloc - cmdline_index) + 100; \
       ptr = boot_script_malloc (alloc); \
       if (! ptr) \
@@ -511,6 +511,8 @@ boot_script_parse_line (char *cmdline)
 	  goto done; \
 	} \
       memcpy (ptr, cmdline, cmdline_index); \
+      for (i = 0; i < argc; ++i) \
+	argv[i] = ptr + (argv[i] - cmdline); \
       boot_script_free (cmdline, cmdline_alloc); \
       cmdline = ptr; \
       cmdline_alloc = alloc; \
