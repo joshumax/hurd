@@ -20,6 +20,7 @@
 
 #include "netfs.h"
 #include "io_S.h"
+#include <string.h>
 
 error_t
 netfs_S_io_stat (struct protid *fileuser,

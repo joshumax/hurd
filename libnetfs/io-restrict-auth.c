@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include "priv.h"
+#include "netfs.h"
 #include "io_S.h"
 
 static inline int
@@ -47,7 +47,8 @@ netfs_S_io_restrict_auth (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
   
-  netfs_interpret_credential (user->credenital, &olduids, &oldnuids,
+  mutex_lock (&user->po->np->lock);
+  netfs_interpret_credential (user->credential, &olduids, &oldnuids,
 			      &oldgids, &oldngids);
   newuids = alloca (sizeof (uid_t) * oldnuids);
   newgids = alloca (sizeof (gid_t) * oldngids);
@@ -58,12 +59,11 @@ netfs_S_io_restrict_auth (struct protid *user,
     if (listmember (gids, oldgids[i], ngids))
       newgids[newngids++] = oldgids[i];
   
-  mutex_lock (&cred->po->np->lock);
   newpi = netfs_make_protid (user->po, 
 			     netfs_make_credential (newuids, newnuids,
 						    newgids, newngids));
   *newport = ports_get_right (newpi);
-  mutex_unlock (&cred->po->np->lock);
+  mutex_unlock (&user->po->np->lock);
   
   *newporttype = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newpi);
