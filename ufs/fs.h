@@ -281,6 +281,7 @@ struct fs {
     /* cluster sum */	(fs)->fs_contigsumsize * sizeof(long) + \
     /* cluster map */	howmany((fs)->fs_cpg * (fs)->fs_spc / NSPB(fs), NBBY)))
 
+#if 0 /* Wrong for GNU Hurd ufs; we don't use fs_csp at all. */
 /*
  * Convert cylinder group to base address of its global summary info.
  *
@@ -288,6 +289,11 @@ struct fs {
  */
 #define fs_cs(fs, indx) \
 	fs_csp[(indx) >> (fs)->fs_csshift][(indx) & ~(fs)->fs_csmask]
+#else
+/* Global variable csum is declared in ufs.h; use it instead
+ of fs_cs stuff.  */
+#define fs_cs(fs, indx) this will generate a syntax error.
+#endif
 
 /*
  * Cylinder group block for a file system.
