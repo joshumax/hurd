@@ -1,5 +1,5 @@
 /* Special protocol for terminal driver
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation, Inc.
+   Copyright (C) 1991, 1993, 1994, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -26,6 +26,8 @@ subsystem term 28000;
 #ifdef TERM_IMPORTS
 TERM_IMPORTS
 #endif
+
+INTR_INTERFACE
 
 /* Find out what the controlling terminal ID port is.  */
 routine term_getctty (

@@ -1,5 +1,5 @@
 /* Definitions for terminal ioctls
-   Copyright (C) 1991, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1991, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -19,6 +19,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
 #include <hurd/hurd_types.defs>
+
+INTR_INTERFACE
 
 /* Ioctl class `t'; the subsystem is derived from calculations in
    <ioctls.h>. */
