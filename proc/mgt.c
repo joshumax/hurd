@@ -712,6 +712,7 @@ genpid ()
 	      wrapped = 1;
 	    }
 	}
+    }
 
   return nextpid++;
 }
