@@ -1,3 +1,7 @@
+Sat Jul 20 01:06:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* getty.c (main): Get the tty name from the right element in ARGV.
+
 Mon Jul 15 17:27:27 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* rc.sh: Create /var/run/uptime *after* clearing /var/run.  Always
