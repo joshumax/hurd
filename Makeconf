@@ -138,6 +138,14 @@ all: libs
 libs: $(targets)
 install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
+# Arrange to have the headers installed locally anytime we build the library.
+# Not quite perfect, but at least it does end up getting done; and once done
+# it never needs to be repeated for a particular header.
+INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/$(installhdrsubdir)/,$(installhdrs))
+libs: $(INSTALLED_LOCAL_HEADERS)
+$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
+	ln -s ../$(dir)/$* $@
+
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
 	$(RANLIB) $(libdir)/$(libname).a
