@@ -50,9 +50,6 @@ pager_create (struct user_pager_info *upi,
   return p;
 }
 
-#include "linkwarn.h"
-link_warning (pager_create, "lousy interface can't return errno")
-
 
 /* This causes the function to be run at startup by compiler magic. */
 static void create_class (void) __attribute__ ((constructor));
