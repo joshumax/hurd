@@ -39,8 +39,8 @@ static struct argp_option options[] =
   {"size",        's', 0, 0, "print the size, in bytes, of FILE"},
   {"runs",        'r', 0, 0, "print the runs of blocks in FILE"},
   {"dereference", 'L', 0, 0, "if FILE is a symbolic link, follow it"},
-  {"prefix",      'p', 0, 0, "never print `FILE: ' before info"},
-  {"no-prefix",   'P', 0, 0, "always print `FILE: ' before info"},
+  {"prefix",      'p', 0, 0, "always print `FILE: ' before info"},
+  {"no-prefix",   'P', 0, 0, "never print `FILE: ' before info"},
   {0, 0}
 };
 static char *args_doc = "FILE...";
@@ -178,7 +178,7 @@ main(int argc, char *argv[])
 	  if (print_prefix < 0)
 	    /* By default, only print a filename prefix if there are multiple
 	       files. */
-	    print_prefix = (state->argc != state->index + 1);
+	    print_prefix = state->argc != state->index;
 	  if (what == 0)
 	    what = W_ALL;
 	  if (file == MACH_PORT_NULL)
