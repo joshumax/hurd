@@ -21,7 +21,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 subsystem kernel_boot 999999;
 
+#include <mach/mach_types.defs>
+
 routine kernel_boot_get_priv_ports (
 	bootstrap: mach_port_t;	/* Bootstrap port of the startup task.  */
-	out host_priv: host_priv_t;
-	out device_master: device_t);
+	out host_priv: mach_port_t;
+	out device_master: mach_port_t);
