@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000, 2001 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -46,10 +46,11 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	sync-interval.c sync-default.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-std-runtime.c \
         opts-append-std.c opts-common.c opts-runtime.c opts-version.c \
-	trans-callback.c readonly.c remount.c console.c disk-pager.c \
+	trans-callback.c readonly.c readonly-changed.c \
+	remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
-	validate-rdev.c validate-owner.c extra-version.c 
+	validate-rdev.c validate-owner.c extra-version.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h diskfs-pager.h fhandle.h
 installhdrs = diskfs.h diskfs-pager.h
