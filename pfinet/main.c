@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -34,13 +34,13 @@ int trivfs_protid_nportclasses = 1;
 struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_cntl_nportclasses = 1;
 
-int 
+int
 pfinet_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
-  
+
   return (io_server (inp, outp)
 	  || socket_server (inp, outp)
 	  || trivfs_demuxer (inp, outp));
@@ -53,9 +53,11 @@ main (int argc,
   mach_port_t bootstrap;
   error_t err;
 
-  if (argc != 3)
+  if (argc < 3 || argc > 4)
     {
-      fprintf (stderr, "Usage: %s host-addr ether-device-name\n", argv[0]);
+      fprintf (stderr,
+	       "Usage: %s host-addr ether-device-name [gateway-addr]\n",
+	       argv[0]);
       exit (1);
     }
 
@@ -84,7 +86,7 @@ main (int argc,
       exit (1);
     }
 
-  /* Generic initialization */ 
+  /* Generic initialization */
 
   init_devices ();
   init_time ();
@@ -98,22 +100,24 @@ main (int argc,
     char addr[4];
 
     ether_dev.pa_addr = inet_addr (argv[1]);
-    
+
     /* Mask is 255.255.255.0. */
     addr[0] = addr[1] = addr[2] = 255;
     addr[3] = 0;
     ether_dev.pa_mask = *(u_long *)addr;
-    
+
     ether_dev.family = AF_INET;
     ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
   }
-  
+
   /* Simulate SIOCADDRT call */
   {
     ip_rt_add (0, ether_dev.pa_addr & ether_dev.pa_mask, ether_dev.pa_mask,
 	       0, &ether_dev, 0, 0);
   }
 
+  if (argv[3])
+    ip_rt_add (RTF_GATEWAY, 0, 0, inet_addr (argv[3]), &ether_dev, 0, 0);
 
   /* Turn on device. */
   dev_open (&ether_dev);
