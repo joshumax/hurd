@@ -177,9 +177,9 @@ unsigned long nextgennumber;
 /* Functions for looking inside disk_image */
 
 /* block num --> byte offset on disk */
-#define boffs(block) ((block) * block_size)
+#define boffs(block) ((block) << log2_block_size)
 /* byte offset on disk --> block num */
-#define boffs_block(offs) ((block) / block_size)
+#define boffs_block(offs) ((block) >> log2_block_size)
 
 /* byte offset on disk --> pointer to in-memory block */
 #define boffs_ptr(offs) (((char *)disk_image) + (offs))
@@ -191,13 +191,14 @@ unsigned long nextgennumber;
 /* pointer to in-memory block --> block num */
 #define bptr_block(ptr) boffs_block(bptr_offs(ptr))
 
-/* Get the descriptor for the block group inode INUM is in.  */
+/* Get the descriptor for block group NUM.  The block group descriptors are
+   stored starting in the block following the super block.  */
 extern inline struct ext2_group_desc *
-group_desc(unsigned long bg_num)
+group_desc(unsigned long num)
 {
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
-  unsigned long group_desc = bg_num / desc_per_block;
-  unsigned long desc = bg_num % desc_per_block;
+  unsigned long group_desc = num / desc_per_block;
+  unsigned long desc = num % desc_per_block;
   return ((struct ext2_group_desc *)bptr(1 + group_desc)) + desc;
 }
 
@@ -246,7 +247,6 @@ alloc_sync (struct node *np)
 	  diskfs_node_update (np, 1);
 	  pokel_sync (&np->dn->pokel, 1);
 	}
-      copy_sblock ();
       diskfs_set_hypermetadata (1, 0);
       pokel_sync (&sblock_pokel, 1);
     }
