@@ -206,7 +206,6 @@ read_disknode (struct node *np)
   st->st_ino = np->cache_id;
   st->st_blksize = vm_page_size * 2;
 
-  st->st_mode = di->i_mode | (di->i_mode_high << 16);
   st->st_nlink = di->i_links_count;
   st->st_size = di->i_size;
   st->st_gen = di->i_version;
@@ -224,11 +223,22 @@ read_disknode (struct node *np)
   st->st_blocks = di->i_blocks;
   st->st_flags = di->i_flags;
   
-  st->st_uid = di->i_uid | (di->i_uid_high << 16);
-  st->st_gid = di->i_gid | (di->i_gid_high << 16);
-  st->st_author = di->i_author;
-  if (st->st_author == -1)
-    st->st_author = st->st_uid;
+  if (sblock->s_creator_os == EXT2_OS_HURD)
+    {
+      st->st_mode = di->i_mode | (di->i_mode_high << 16);
+      st->st_uid = di->i_uid | (di->i_uid_high << 16);
+      st->st_gid = di->i_gid | (di->i_gid_high << 16);
+      st->st_author = di->i_author;
+      if (st->st_author == -1)
+	st->st_author = st->st_uid;
+    }
+  else
+    {
+      st->st_mode = di->i_mode;
+      st->st_uid = di->i_uid;
+      st->st_gid = di->i_gid;
+      st->st_author = st->st_uid;
+    }
 
   /* Setup the ext2fs auxiliary inode info.  */
   info->i_dtime = di->i_dtime;
@@ -297,15 +307,21 @@ write_node (struct node *np)
 	 as the ext2fs mode bits. */
       /* XXX? */
 
-      di->i_mode = st->st_mode & 0xffff;
-      di->i_mode_high = (st->st_mode >> 16) & 0xffff;
-      
+      /* Only the low 16 bits of these fields are standard across all ext2
+	 implementations.  */
+      di->i_mode = st->st_mode & 0xFFFF;
       di->i_uid = st->st_uid & 0xFFFF;
       di->i_gid = st->st_gid & 0xFFFF;
-      di->i_uid_high = st->st_uid >> 16;
-      di->i_gid_high = st->st_gid >> 16;
 
-      di->i_author = st->st_author;
+      if (sblock->s_creator_os == EXT2_OS_HURD)
+	/* If this is a hurd-compatible filesystem, write the high bits too.
+	   XXX what should we do if we can't and they're not 0?  */
+	{
+	  di->i_mode_high = (st->st_mode >> 16) & 0xffff;
+	  di->i_uid_high = st->st_uid >> 16;
+	  di->i_gid_high = st->st_gid >> 16;
+	  di->i_author = st->st_author;
+	}
 
       di->i_links_count = st->st_nlink;
       di->i_size = st->st_size;
@@ -321,7 +337,8 @@ write_node (struct node *np)
 
       di->i_blocks = st->st_blocks;
       di->i_flags = st->st_flags;
-      if (! np->istranslated)
+
+      if (!np->istranslated && sblock->s_creator_os == EXT2_OS_HURD)
 	di->i_translator = 0;
 
       /* Set dtime non-zero to indicate a deleted file.  */
