@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,15 +35,15 @@ diskfs_S_io_read (struct protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
   if (!(cred->po->openstat & O_READ))
     return EBADF;
-  
+
   mutex_lock (&np->lock);
 
   ioserver_get_conch (&np->conch);
-  
+
   if (off == -1)
     off = cred->po->filepointer;
 
@@ -51,7 +51,7 @@ diskfs_S_io_read (struct protid *cred,
     maxread = 0;
   else if (off + (off_t) maxread > np->dn_stat.st_size)
     maxread = np->dn_stat.st_size - off;
-  
+
   if (maxread > *datalen)
     {
       ourbuf = 1;
@@ -63,8 +63,14 @@ diskfs_S_io_read (struct protid *cred,
 
   *datalen = maxread;
   if (maxread)
-    err = _diskfs_rdwr_internal (np, buf, off, maxread, 0, 
-				 cred->po->openstat & O_NOATIME);
+    {
+      err = _diskfs_rdwr_internal (np, buf, off, datalen, 0,
+				   cred->po->openstat & O_NOATIME);
+      if (*datalen)
+	/* If we read any, we can just return a short read count
+	   with no error; the next read will hit the error again.  */
+	err = 0;
+    }
   else
     err = 0;
   if (diskfs_synchronous)
@@ -73,7 +79,7 @@ diskfs_S_io_read (struct protid *cred,
     cred->po->filepointer += *datalen;
   if (err && ourbuf)
     vm_deallocate (mach_task_self (), (u_int) buf, maxread);
-  
+
   mutex_unlock (&np->lock);
   return err;
 }
