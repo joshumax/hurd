@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+# Copyright (C) 1993,94,95,96,97,2001 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -40,7 +40,7 @@ include ../Makeconf
 all: boot # uxboot
 
 ourdevice.defs: device.defs
-	$(CPP) $(CPPFLAGS) -x c $< | sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' > $@
+	$(CPP) $(CPPFLAGS) -x c $< | sed -e '/out[ 	]*device[ 	]*:[ 	]*device_t/s/device_t/mach_port_send_t/' > $@
 
 
 uxboot.o: boot.c
