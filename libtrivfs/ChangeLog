@@ -1,3 +1,8 @@
+Thu Sep 12 16:23:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libtrivfs.so): Delete special depedency.
+
 Fri Aug 16 19:24:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* migsupport.c (trivfs_end_using_protid): Only call

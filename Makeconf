@@ -12,10 +12,14 @@
 # SRCS (all actual source code)
 # LCLHDRS (all source headers in this directory [NOT MiG created])
 # OBJS (all .o files used to produce some target).
+# HURDLIBS (all Hurd libraries used; with no directory name or `lib' attached)
+#   For types `server' and `utility' an automatic dependency will be
+#   written for these, and type `library' will include a .so dependency.
+#   Types `servers' and `utilities'; you have to do it yourself.
 
 # Types `server' and `utility' should define
-# OTHERLIBS (all other libraries used)
 # target (the name of the program built)
+# OTHERLIBS (all libraries used)
 
 # Types `servers' and `utilities' should define
 # targets (the names of all the programs built)
@@ -67,6 +71,9 @@ top_srcdirinc=-I$(top_srcdir)
 endif
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE
 CFLAGS += -Wall -g -O3
+
+# More useful version of HURDLIBS
+library_deps=$(foreach lib,$(HURDLIBS),$(..)lib$(lib)/lib$(lib).so)
 
 # Local programs:
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
@@ -200,7 +207,7 @@ ifeq ($(doinst),many)
 endif
 
 ifeq ($(doinst),one)
-$(target): $(OBJS) $(OTHERLIBS)
+$(target): $(OBJS) $(OTHERLIBS) $(library_deps)
 endif
 
 # Determine which sort of library we should link against from whether -static
@@ -230,10 +237,16 @@ $(libname).a: $(OBJS)
 	$(AR) r $@ $^
 	$(RANLIB) $@
 
-$(libname).so: $(patsubst %.o,%_pic.o,$(OBJS))
+$(libname).so: $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 	$(CC) -shared -Wl,-soname=$(libname).so -o $(libname).so \
 	      $(rpath) $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $^
 endif
+
+# Providing directory dependencies
+directory-depend: $(..)$(dir).d
+$(..)$(dir).d: Makefile
+	rm -f $@
+	echo $(dir): $(addprefix lib,$(HURDLIBS)) > $@
 
 # Making a snapshot
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)

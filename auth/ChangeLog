@@ -1,3 +1,8 @@
+Thu Sep 12 16:27:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(auth): Delete special depedencies.
+
 Thu Sep  5 11:05:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* auth.c (AUTH_VERSION): Delete macro.

@@ -1,3 +1,8 @@
+Thu Sep 12 16:30:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(exec): Delete special dependencies.
+
 Thu Sep  5 11:11:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c: Include <version.h>.

@@ -26,6 +26,7 @@ SRCS = devio.c munge.c users.c main.c ptyio.c
 LCLHDRS = term.h
 DIST_FILES = ourmsg.defs
 
-OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a ../libthreads/libthreads.a
+HURDLIBS=trivfs fshelp ports ihash threads
+OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o 
 
 include ../Makeconf

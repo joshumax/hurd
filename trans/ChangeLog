@@ -1,3 +1,7 @@
+Thu Sep 12 16:39:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+
 Fri Jul 12 23:02:36 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* crash.c (stop_pgrp): Fetch pgrp using correct call.

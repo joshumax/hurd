@@ -1,3 +1,8 @@
+Thu Sep 12 16:23:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libps.so): Delete special depedency.
+
 Fri Aug  2 15:12:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* procstat.c (set_procinfo_flags): Pass HAVE to count_threads.

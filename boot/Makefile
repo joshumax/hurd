@@ -28,6 +28,7 @@ LCLHDRS = boot_script.h ux.h
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
 DIST_FILES=frank1.ld frankemul.ld
+HURDLIBS=threads
 
 include ../Makeconf
 
@@ -41,7 +42,6 @@ all: boot # uxboot
 ourdevice.defs: device.defs
 	$(CPP) $(CPPFLAGS) -x c $< | sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' > $@
 
-boot: ../libthreads/libthreads.so
 
 uxboot.o: boot.c
 	$(COMPILE.c) -DUX $< -o $@

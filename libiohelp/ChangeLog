@@ -1,3 +1,8 @@
+Thu Sep 12 16:18:46 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libfshelp.so): Delete special dependency.
+
 Thu May  9 12:42:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile: All occurrences of `ioserver' replaced with `iohelp'.

@@ -1,3 +1,8 @@
+Tue Sep 10 13:53:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile ($(installed_conf)): Depend on $(sysconfdir).
+	($(installed_links)): Likewise.
+
 Mon Aug  5 13:43:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (SYSCONFFILES): Add `resolv.conf'.

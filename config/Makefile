@@ -59,6 +59,7 @@ install: $(installed_conf) $(installed_links) $(installed_logins) \
 
 $(installed_rootdots): $(prefix)/root
 $(installed_logins): $(sysconfdir)/login
+$(installed_links) $(installed_conf): $(sysconfdir)
 
 $(prefix)/root $(sysconfdir)/login: %:
 	mkdir -p $@

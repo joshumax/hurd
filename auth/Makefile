@@ -22,10 +22,9 @@ SRCS = auth.c
 OBJS = auth.o authServer.o auth_replyUser.o
 LCLHDRS = authmutations.h auth_mig.h
 target = auth
+HURDLIBS=ports threads ihash shouldbeinlibc
 
 MIGSFLAGS = -imacros $(srcdir)/authmutations.h
 
 include ../Makeconf
 
-auth: ../libports/libports.so ../libthreads/libthreads.so \
-      ../libihash/libihash.so ../libshouldbeinlibc/libshouldbeinlibc.so

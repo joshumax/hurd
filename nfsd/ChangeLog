@@ -1,3 +1,8 @@
+Thu Sep 12 16:52:13 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(nfsd): Delete special depedency.
+
 Tue Sep  3 14:15:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* loop.c: Include "../nfs/mount.h" instead of

@@ -1,3 +1,12 @@
+Tue Sep 17 12:36:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile ($(prefix)/dev/MAKEDEV): Depend on $(prefix)/dev.
+	($(prefix)/dev): New target.
+
+Thu Sep 12 16:38:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+
 Sun Sep  8 13:57:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh: New file.

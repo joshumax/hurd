@@ -1,3 +1,8 @@
+Thu Sep 12 16:21:51 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libfshelp.so): Delete special dependency.
+
 Tue Jul 16 11:30:42 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* lock-acquire.c (EWOULDBLOCK): Define, to work around new libc

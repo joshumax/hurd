@@ -26,9 +26,9 @@ OBJS = $(subst .c,.o,$(SRCS))
 LCLHDRS = nfsd.h
 target = nfsd
 installationdir = $(sbindir)
+HURDLIBS=threads shouldbeinlibc
 
 include ../Makeconf
 
 CPPFLAGS += -DLOCALSTATEDIR=\"$(localstatedir)\"
 
-nfsd: ../libthreads/libthreads.a ../libshouldbeinlibc/libshouldbeinlibc.a

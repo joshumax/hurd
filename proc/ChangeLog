@@ -1,3 +1,8 @@
+Thu Sep 12 16:33:49 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(proc): Delete special dependency.
+
 Thu Sep  5 10:43:39 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* host.c (struct server_version): Delete member `release'.

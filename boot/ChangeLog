@@ -1,3 +1,8 @@
+Thu Sep 12 16:28:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(boot): Delete special depedencies.
+
 Tue Aug 13 16:57:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (device.defs): Rule removed.

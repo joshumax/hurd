@@ -44,6 +44,7 @@ SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 
 MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 
+HURDLIBS=ports
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
 MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
@@ -53,4 +54,3 @@ installhdrs = trivfs.h
 
 include ../Makeconf
 
-libtrivfs.so: ../libports/libports.so

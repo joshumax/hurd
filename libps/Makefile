@@ -29,6 +29,7 @@ LCLHDRS=ps.h common.h
 installhdrs=$(LCLHDRS)
 installhdrsubdir = .
 
+HURDLIBS=ihash
 OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
 
 msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
@@ -39,4 +40,4 @@ ps_%.h: %_U.h
 
 include ../Makeconf
 
-libps.so: ../libihash/libihash.so
+

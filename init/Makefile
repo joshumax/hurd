@@ -22,13 +22,12 @@ SRCS = init.c
 OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
 	startup_notifyUser.o
 target = init
+HURDLIBS=ports fshelp shouldbeinlibc
 
 LDLIBS=-lutil
 
-init: $(OBJS) ../libports/libports.a ../libfshelp/libfshelp.a ../libshouldbeinlibc/libshouldbeinlibc.a
+include ../Makeconf
 
 mung_msg_S.h: msg_S.h
 	sed 's/msg_server/mung_msg_server/' < $< > $@
-
-include ../Makeconf
 

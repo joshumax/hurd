@@ -27,9 +27,9 @@ OBJS = $(subst .c,.o,$(SRCS)) tables.o
 LCLHDRS = fsck.h
 target = fsck.ufs
 installationdir = $(sbindir)
+HURDLIBS=shouldbeinlibc
+
+include ../Makeconf
 
 vpath tables.c $(top_srcdir)/ufs
 
-$(target): ../libshouldbeinlibc/libshouldbeinlibc.a
-
-include ../Makeconf

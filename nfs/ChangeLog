@@ -1,3 +1,8 @@
+Thu Sep 12 16:46:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(nfs): Omit special dependency.
+
 Tue Sep  3 14:00:25 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* nfs-spec.h: Renamed from rpcsvc/nfs_prot.h.

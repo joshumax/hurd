@@ -1,3 +1,18 @@
+Thu Sep 12 15:45:34 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (include $(addsuffix .d,$(subdirs))): New directive to
+	get dependencies for directories included.
+	($(addsuffix .d,$(subdirs))) New target.
+	* Makeconf (library_deps): New variable.
+	(directory-depend): New target.
+	($(..)/$(dir).d): New target.
+	($(target)) [doinst == one]: Depend on libraries from library_deps.
+	($(libname).so) [makemode == library]: Likewise.
+	
+	* Makefile ($(prog-subdirs) $(lib-subdirs)): New rule.
+	(%-all): Delete rule.
+	(all): Depend on directory names without appended -all.
+
 Sun Sep  8 14:21:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (prog-subdirs): Add storeio.

@@ -25,6 +25,7 @@ special-targets = rc
 SRCS = rc.sh getty.c
 installationdir = $(libexecdir)
 
+HURDLIBS=shouldbeinlibc
 OBJS = $(SRCS:.c=.o)
 getty-LDLIBS = -lutil
 

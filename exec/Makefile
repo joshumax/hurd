@@ -27,6 +27,7 @@ LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
 DIST_FILES = core.c gcore.c elfcore.c exectrans.c
 #OTHERLIBS = -lbfd -liberty
+HURDLIBS=trivfs threads shouldbeinlibc fshelp
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
@@ -34,5 +35,3 @@ include ../Makeconf
 
 CPPFLAGS += -DGZIP # -DBFD
 
-exec: ../libtrivfs/libtrivfs.so ../libthreads/libthreads.so \
-      ../libshouldbeinlibc/libshouldbeinlibc.so ../libfshelp/libfshelp.so

@@ -40,15 +40,13 @@ FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
 ASMHEADERS=bitops.h segment.h system.h
 
-pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a \
-	../libthreads/libthreads.a ../libports/libports.a \
-	../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
-
-vpath %.c $(srcdir)/linux-inet
+HURDLIBS=trivfs fshelp threads ports ihash shouldbeinlibc
 
 target = pfinet
 
 include ../Makeconf
+
+vpath %.c $(srcdir)/linux-inet
 
 CPPFLAGS += -imacros $(srcdir)/config.h
 

@@ -19,6 +19,7 @@ See `tasks', the exported task list.
 * Write coding standards suggestions for Hurd
 * Implement file_fetch_dir
 * --help strings need to mention bug reporting address
+* Conform to coding standards (esp. CFLAGS setting)
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap
 
@@ -203,13 +204,16 @@ See `tasks', the exported task list.
     script by other than root (it doesn't now if the script specifies
     --retry="$0" because the exec server will use /dev/fd/N for name,
     and child_lookup() doesn't supply more than fds 0-2).
-** fsck should use (not-yet-added) fsys_get_options returned device instead 
-   of /etc/fstab.
 ** Write/port the various helpful mach info programs in UX (vminfo, etc).
 ** Serverboot doesn't deal with symlinks properly.
 ** Grub doesn't deal with symlinks properly.
 ** `sush --help' gets a bus error.  
 ** `uptime --help' and `uptime --version' fail.
+
+** fsck:
+*** fsck should use (not-yet-added) fsys_get_options returned device instead 
+   of /etc/fstab.
+*** If fstab mentions a bad type, fsck gets as assert failure.
 
 ** settrans:
 *** needs an option to make the active go away without using goaway.

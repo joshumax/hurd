@@ -27,6 +27,7 @@ SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c \
 	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c vminfo.c
 LCLHDRS = psout.h
 
+HURDLIBS=ps ihash store fshelp ports threads shouldbeinlibc
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
 login-LDLIBS = -lutil
 

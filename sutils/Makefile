@@ -28,6 +28,7 @@ SRCS = reboot.c halt.c fsck.c fstab.c clookup.c $(SCRIPTS)
 LCLHDRS = fstab.h
 DIST_FILES = MAKEDEV.sh
 
+HURDLIBS=shouldbeinlibc
 OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
 
 include ../Makeconf
@@ -40,8 +41,11 @@ reboot halt fsck: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-$(prefix)/dev/MAKEDEV: MAKEDEV
+$(prefix)/dev/MAKEDEV: MAKEDEV $(prefix)/dev
 	$(INSTALL_PROGRAM) MAKEDEV $(prefix)/dev/MAKEDEV
 
 %: %.sh $(top_srcdir)/sh-version.sed
 	sed -f $(top_srcdir)/sh-version.sed < $< > $@
+
+$(prefix)/dev:
+	$(MKINSTALLDIRS) $@

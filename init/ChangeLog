@@ -1,3 +1,10 @@
+Thu Sep 12 16:32:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(init): Delete special target.
+
+	* Makefile (mung_msg_S.h): Put rule *after* inclusion of Makeconf.
+
 Thu Sep  5 11:12:32 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* init.c: Include <version.h>.

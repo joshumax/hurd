@@ -1,3 +1,8 @@
+Thu Sep 12 16:19:35 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libports.so): Delete special depedency.
+
 Wed Aug  7 15:28:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ports.h (_ports_create_port_internal,

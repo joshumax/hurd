@@ -23,9 +23,8 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
 LCLHDRS = iohelp.h 
+HURDLIBS = threads
 libname = libiohelp
 installhdrs = iohelp.h
 
 include ../Makeconf
-
-libfshelp.so: ../libthreads/libthreads.so

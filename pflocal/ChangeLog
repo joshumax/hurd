@@ -1,3 +1,8 @@
+Thu Sep 12 16:43:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(pflocal): Omit special dependency.
+
 Tue Jul 23 19:44:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* sock.c (sock_create): Remove NEXT_SOCK_ID.

@@ -1,3 +1,7 @@
+Tue Sep 10 11:11:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (INSTHDRS): Omit `version.h'.
+
 Thu Sep  5 10:39:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* version.h: File removed.

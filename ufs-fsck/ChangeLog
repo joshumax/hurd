@@ -1,3 +1,11 @@
+Thu Sep 12 16:40:10 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	($(target)): Delete special depedency.
+
+	* Makefile (vpath tables.c): Put after Makeconf inclusion to catch
+	setting of $(top_srcdir).
+
 Fri Sep  6 16:44:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (argp_program_version): Fix typo.

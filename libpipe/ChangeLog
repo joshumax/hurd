@@ -1,3 +1,8 @@
+Thu Sep 12 16:24:41 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(libpipe.so): Delete special dependency.
+
 Tue Jul 16 11:33:34 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* pipe.h (EWOULDBLOCK): Define to work around new libc bug.

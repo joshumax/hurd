@@ -26,9 +26,8 @@ LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h sserver.h
 
 MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
+HURDLIBS = pipe trivfs fshelp ports threads ihash shouldbeinlibc
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-
-pflocal: $(OBJS) ../libpipe/libpipe.a ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf

@@ -24,28 +24,78 @@ endif
 
 include $(srcdir)/Makeconf
 
-lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
-	      libpager libfshelp libdiskfs libtrivfs libps \
-	      libnetfs libpipe libstore libmom libhurdbugaddr
-prog-subdirs = auth boot exec fstests init \
-	       proc term ufs utils sutils trans ufs-fsck \
-	       devio storeio ufs-utils ext2fs benchmarks pflocal defpager \
-	       login nfs pfinet daemons nfsd
-other-subdirs = hurd doc config release include
-subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
-subdirs-nodist =
-working-prog-subdirs := $(filter-out \
-			  $(patsubst %/,%,\
-				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
-			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 	     hurd.boot build.mk.in build.mkcf.in SETUP \
 	     README NEWS tasks INSTALL INSTALL-cross version.h sh-version.sed
 
-all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
+
+## Subdirectories of this directory should all be mentioned here
 
-%-all:
-	$(MAKE) -C $* all
+# Hurd libraries
+lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
+	      libpager libfshelp libdiskfs libtrivfs libps \
+	      libnetfs libpipe libstore libmom libhurdbugaddr
+
+# Hurd programs
+prog-subdirs = auth boot exec fstests init \
+	       proc term ufs utils sutils trans ufs-fsck \
+	       devio storeio ufs-utils ext2fs benchmarks pflocal defpager \
+	       login nfs pfinet daemons nfsd
+
+# Other directories
+other-subdirs = hurd doc config release include
+
+# All the subdirectories together
+subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
+
+# Any subdirectories here that we don't want to distribute to the world
+subdirs-nodist =
+
+# This allows the creation of a file BROKEN in any of the prog-subdirs;
+# that will prevent this top level Makefile from attempting to make it.
+working-prog-subdirs := $(filter-out \
+			  $(patsubst %/,%,\
+				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
+			  $(prog-subdirs))
+
+
+
+## GNU Coding Standards targets (not all are here yet), and some other
+## similar sorts of things
+
+all: $(lib-subdirs) $(working-prog-subdirs)
+
+# Create a distribution tar file.  Set make variable `version' on the
+# command line; otherwise the tar file will be a dated snapshot.
+ifeq ($(version),)
+version:=$(shell date +%y%m%d)
+dirname:=hurd-snap
+else
+dirname:=hurd
+endif
+dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
+	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
+	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
+	rm -rf $(srcdir)/$(dirname)-$(version)
+
+clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
+
+relink: $(addsuffix -relink,$(prog-subdirs))
+
+install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
+	   $(other-subdirs))
+
+install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
+		$(working-prog-subdirs)\
+		$(other-subdirs))
+
+TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
+
+
+## Targets used by the main targets above.
+$(prog-subdirs) $(lib-subdirs): FORCE
+	$(MAKE) -C $@ all
+FORCE:
 
 %-lndist: $(top_srcdir)/hurd-snap
 	$(MAKE) -C $* lndist no_deps=t
@@ -68,29 +118,6 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 $(srcdir)/hurd-snap:
 	mkdir $(srcdir)/hurd-snap
 
-ifeq ($(version),)
-version:=$(shell date +%y%m%d)
-dirname:=hurd-snap
-else
-dirname:=hurd
-endif
-
-dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
-	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
-	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
-	rm -rf $(srcdir)/$(dirname)-$(version)
-
-clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
-
-relink: $(addsuffix -relink,$(prog-subdirs))
-
-install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
-	   $(other-subdirs))
-
-install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
-		$(working-prog-subdirs)\
-		$(other-subdirs))
-
 lndist: cp-linked-files
 
 linked-files = install-sh config.guess config.sub mkinstalldirs
@@ -98,8 +125,6 @@ lf-inst = $(addprefix $(srcdir)/hurd-snap/,$(linked-files))
 cp-linked-files: $(lf-inst)
 $(lf-inst): $(srcdir)/hurd-snap/%: $(srcdir)/%
 	cp $< $@
-
-TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 
 .PHONY: clean-misc distclean
 clean-misc:
@@ -109,3 +134,15 @@ distclean: clean
 ifneq (.,${srcdir})
 	rm -f Makefile
 endif
+
+
+## Directory dependencies
+#
+# Some directories depend on others, so we need to find out exactly
+# what they are.  This does that for us.
+
+-include $(addsuffix .d,$(subdirs))
+
+# How to build them
+$(addsuffix .d,$(subdirs)): %.d: %/Makefile
+	$(MAKE) -C $* directory-depend no_deps=t

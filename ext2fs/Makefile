@@ -24,10 +24,12 @@ SRCS = balloc.c bitmap.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c
 OBJS = $(SRCS:.c=.o)
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
+HURDLIBS=diskfs pager iohelp fshelp ports threads ihash shouldbeinlibc
 
 ext2fs.static-LDFLAGS += -static
 
 include ../Makeconf
 
-ext2fs ext2fs.static: $(OBJS) ../libdiskfs/libdiskfs.a ../libpager/libpager.a ../libiohelp/libiohelp.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+ext2fs ext2fs.static: $(OBJS) $(library_deps)
+
 

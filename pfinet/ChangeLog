@@ -1,3 +1,11 @@
+Thu Sep 12 16:47:24 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(pfinet): Omit special dependency.
+
+	* Makefile (vpath %.c): Put this after Makeconf inclusion so it
+	catches setting of $(srcdir) there.
+
 Fri Sep  6 16:46:43 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* socket-ops.c (S_socket_recv): Bother to pass

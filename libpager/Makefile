@@ -29,6 +29,7 @@ SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
 LCLHDRS = pager.h priv.h
 installhdrs = pager.h
 
+HURDLIBS= threads ports
 OBJS = $(SRCS:.c=.o) memory_objectServer.o notifyServer.o
 
 MIGSFLAGS = -DSEQNOS
@@ -36,5 +37,3 @@ MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf
 
-libpager.so: $(foreach lib,threads ports,\
-			../lib$(lib)/lib$(lib).so)

@@ -40,11 +40,10 @@ SRCS = create-bucket.c create-class.c \
 LCLHDRS = ports.h
 installhdrs = ports.h
 
+HURDLIBS= ihash
 OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
  
 MIGCOMSFLAGS = -prefix ports_
 
 include ../Makeconf
 
-libports.so: $(foreach lib,ihash,\
-			../lib$(lib)/lib$(lib).so)

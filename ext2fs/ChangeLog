@@ -1,3 +1,9 @@
+Thu Sep 12 16:41:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(ext2fs ext2fs.static): Depend on $(library_deps) instead of
+	explicit list.
+
 Fri Sep  6 16:03:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ext2fs.c: Include <version.h>.

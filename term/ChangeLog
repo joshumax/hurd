@@ -1,3 +1,8 @@
+Thu Sep 12 16:34:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): New variable.
+	(OBJS): Don't list libraries here.
+
 Thu Aug 29 17:26:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* devio.c (device_open_reply): After error from ports_create_port,

@@ -30,9 +30,8 @@ SRCS =	lock-acquire.c lock-init.c \
 LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
 
+HURDLIBS=shouldbeinlibc threads
 OBJS = $(subst .c,.o,$(SRCS))
 
 include ../Makeconf
 
-libfshelp.so: $(foreach lib,shouldbeinlibc threads,\
-			../lib$(lib)/lib$(lib).so)

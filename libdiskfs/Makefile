@@ -59,6 +59,8 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
+HURDLIBS= threads ports fshelp shouldbeinlibc iohelp
+
 fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 io-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
@@ -66,6 +68,3 @@ ifsock-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
-
-libdiskfs.so: $(foreach lib,threads ports fshelp shouldbeinlibc iohelp,\
-			../lib$(lib)/lib$(lib).so)
