@@ -1,3 +1,9 @@
+Wed Oct  9 14:20:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* spec.c (ps_nominal_string): New function.
+	(ps_emit_args, ps_emit_string): Use `-' for empty values.
+	(specs): Use ps_nominal_string for `Args' and `Arg0' fields.
+
 Tue Oct  8 13:21:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* procstat.c (proc_stat_set_flags): Get rid of INAPP macro.

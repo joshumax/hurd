@@ -1,4 +1,13 @@
+Wed Oct  9 14:24:54 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* w.c (_w_specs): Use ps_cmp_unames for `Name'.
+	Use ps_nominal_string for `Name' and `From'.
+	(ps_cmp_unames, ps_nominal_string): New declarations.
+	(DEFAULT_FMT_STRING): Add %pid.
+
 Tue Oct  8 14:44:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (print_store): Properly ignore STORE_INACTIVE.
 
 	* w.c (w_fetch): Set HAVE bits even if the values are `nominal'.
 	Correctly propagate PS->inapp bits.
