@@ -206,8 +206,6 @@ read_node (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = sblock->s_creator_os == EXT2_OS_HURD && di->i_translator;
-
   if (!fsidset)
     {
       fsid = getpid ();
@@ -246,15 +244,20 @@ read_node (struct node *np)
   if (sblock->s_creator_os == EXT2_OS_HURD)
     {
       st->st_mode = di->i_mode | (di->i_mode_high << 16);
+      st->st_mode &= ~S_ITRANS;
+      if (di->i_translator)
+	st->st_mode |= S_IPTRANS;
+
       st->st_uid = di->i_uid | (di->i_uid_high << 16);
       st->st_gid = di->i_gid | (di->i_gid_high << 16);
+
       st->st_author = di->i_author;
       if (st->st_author == -1)
 	st->st_author = st->st_uid;
     }
   else
     {
-      st->st_mode = di->i_mode;
+      st->st_mode = di->i_mode & ~S_ITRANS;
       st->st_uid = di->i_uid;
       st->st_gid = di->i_gid;
       st->st_author = st->st_uid;
@@ -407,14 +410,14 @@ write_node (struct node *np)
 
       /* Only the low 16 bits of these fields are standard across all ext2
 	 implementations.  */
-      di->i_mode = st->st_mode & 0xFFFF;
+      di->i_mode = st->st_mode & 0xFFFF & ~S_ITRANS;
       di->i_uid = st->st_uid & 0xFFFF;
       di->i_gid = st->st_gid & 0xFFFF;
 
       if (sblock->s_creator_os == EXT2_OS_HURD)
 	/* If this is a hurd-compatible filesystem, write the high bits too. */
 	{
-	  di->i_mode_high = (st->st_mode >> 16) & 0xffff;
+	  di->i_mode_high = (st->st_mode >> 16) & 0xffff & ~S_ITRANS;
 	  di->i_uid_high = st->st_uid >> 16;
 	  di->i_gid_high = st->st_gid >> 16;
 	  di->i_author = st->st_author;
@@ -452,7 +455,7 @@ write_node (struct node *np)
       if (st->st_flags & UF_IMMUTABLE)
 	di->i_flags |= EXT2_IMMUTABLE_FL;
 
-      if (!np->istranslated && sblock->s_creator_os == EXT2_OS_HURD)
+      if (!(st->st_mode & S_IPTRANS) && sblock->s_creator_os == EXT2_OS_HURD)
 	di->i_translator = 0;
 
       /* Set dtime non-zero to indicate a deleted file.  */
@@ -654,7 +657,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
       ext2_free_blocks (blkno, 1);
 
       np->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      np->istranslated = 0;
+      np->dn_stat.st_mode &= ~S_IPTRANS;
       np->dn_set_ctime = 1;
     }
   
@@ -667,7 +670,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
       bcopy (buf, bptr (blkno), block_size);
       record_global_poke (bptr (blkno));
 
-      np->istranslated = 1;
+      np->dn_stat.st_mode |= S_IPTRANS;
       np->dn_set_ctime = 1;
     }
   
