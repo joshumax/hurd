@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.4 1994/08/24 15:11:08 mib Exp $
+ *	$Id: fsck.h,v 1.5 1994/08/25 15:17:16 mib Exp $
  */
 
 /* Begin GNU Hurd */
@@ -90,6 +90,14 @@ struct odirtemplate {
 #define DI_MODE(dp) (((dp)->di_modeh << 16) & (dp)->di_model)
 
 #define NBBY 8
+
+#define MAXPHYS (64 * 1024)
+
+/* The fsck code in setup.c sets the fs_csp table which ufs doesn't want.
+   So here is the fs_cs macro from ufs for use when that table is real. */
+#undef fs_cs
+#define fs_cs(fs, indx) \
+	fs_csp[(indx) >> (fs)->fs_csshift][(indx) & ~(fs)->fs_csmask]
 
 /* End GNU Hurd additions */	
 
