@@ -26,6 +26,15 @@
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.8  1998/06/10 19:38:01  tb
+ * Tue Jun  9 13:50:09 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+ *
+ * 	* cthreads.c (cthread_fork_prepare): Don't call
+ * 	malloc_fork_prepare since we are no longer providing our own
+ * 	malloc in this library.
+ * 	(cthread_fork_parent): Likewise, for malloc_fork_parent.
+ * 	(cthread_fork_child): Likewize, for malloc_fork_child.
+ *
  * Revision 1.7  1997/08/20 19:41:20  thomas
  * Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  *
@@ -215,9 +224,9 @@ cthread_init()
 
 	if (cthreads_started)
 		return 0;
+	t = cthread_alloc((cthread_fn_t) 0, (any_t) 0);
 	stack = cproc_init();
 	cthread_cprocs = 1;
-	t = cthread_alloc((cthread_fn_t) 0, (any_t) 0);
 
 #ifdef cthread_md_init
 	cthread_md_init();
