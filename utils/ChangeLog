@@ -1,3 +1,9 @@
+1999-03-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* portinfo.c (main): Grok -E and inhibit error msg for
+	print_xlated_port_info if set.
+	(options): #if 0 -q option until we implement it.
+
 1999-02-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mount.sh: Use `awk' instead of `gawk'.
