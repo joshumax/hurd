@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -130,6 +130,8 @@ int direct_symlink_extension;
 /* If this is set, then the disk is byteswapped from native order. */
 int swab_disk;
 
+/* Number of device blocks per DEV_BSIZE block.  */
+unsigned log2_dev_blocks_per_dev_bsize;
 
 /* Handy macros */
 #define DEV_BSIZE 512
