@@ -118,7 +118,8 @@ ports_interrupt_rpc_on_notification (void *object,
 
       req->next_req = pn->reqs;
       req->prev_req_p = &pn->reqs;
-      pn->reqs->prev_req_p = &req->next_req;
+      if (pn->reqs)
+	pn->reqs->prev_req_p = &req->next_req;
       pn->reqs = req;
 
       req->next = rpc->notifies;
