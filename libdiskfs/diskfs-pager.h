@@ -1,5 +1,5 @@
 /* Map the disk image and handle faults accessing it.
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@
 #include <stdlib.h>
 
 /* Start a pager for the whole disk, and store it in DISKFS_DISK_PAGER,
-   preparing a signal preempter so that the `diskfs_catch_exception' macro
+   preparing a signal preemptor so that the `diskfs_catch_exception' macro
    below works.  SIZE should be the size of the image to map, and the address
    mapped is returned in IMAGE.  INFO, PAGER_BUCKET, & MAY_CACHE are passed
    to `pager_create'.  */
