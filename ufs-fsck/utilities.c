@@ -38,4 +38,39 @@ writeblock (daddr_t addr, void *buf, size_t size)
     errexit ("CANNOT SEEK TO BLOCK %d", addr);
   if (write (writefd, buf, size) != size)
     errexit ("CANNOT READ BLOCK %d", addr);
+  fsmodified = 1
 }
+
+/* Read inode number INO into DINODE. */
+void
+getinode (ino_t ino, struct dinode *di)
+{
+  daddr_t iblk;
+  char buf[sblock->fs_fsize];
+
+  iblk = ino_to_fsba (sblock, ino);
+  readblock (fsbtodb (iblk), buf, sblock->fs_fsize);
+  bcopy (buf + ino_to_fsbo (sblock, ino), di, sizeof (struct dinode));
+}
+
+/* Write inode number INO from DINODE. */
+void
+write_inode (ino_t ino, struct dinode *di)
+{
+  daddr_t iblk;
+  char buf[sblock->fs_fsize];
+  
+  iblk = ino_to_fsba (sblock, ino);
+  readblock (fsbtodb (iblk), buf, sblock->fs_fsize);
+  bcopy (di, buf + ino_to_fsbo (sblock, ino), sizeof (struct dinode));
+  writeblock (fsbtodb (iblk, buf, sblock->fs_fsize));
+}
+
+/* Clear inode number INO and zero DI. */
+void
+clear_inode (ino_t ino, struct dinode *di)
+{
+  bzero (di, sizeof (struct dinode));
+  write_inote (ino, di);
+}
+
