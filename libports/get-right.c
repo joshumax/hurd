@@ -46,7 +46,7 @@ ports_get_right (void *port)
       pi->refcnt++;
       gdb_loses =
 	mach_port_request_notification (mach_task_self (), pi->port_right,
-					MACH_NOTIFY_NO_SENDERS, 1,
+					MACH_NOTIFY_NO_SENDERS, pi->mscount,
 					pi->port_right,
 					MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
       assert_perror (gdb_loses);
