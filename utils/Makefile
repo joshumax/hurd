@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@ dir := utils
 makemode := utilities
 
 SRCS = sh.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c
-targets = sh ps settrans update clri sync reboot halt # su
+targets = sh settrans update clri sync reboot halt # su
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
 include ../Makeconf
