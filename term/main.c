@@ -291,6 +291,7 @@ main (int argc, char **argv)
   mach_port_t bootstrap, right;
   struct stat st;
   error_t err;
+  int openmode;
 
   term_bucket = ports_create_bucket ();
 
@@ -315,6 +316,7 @@ main (int argc, char **argv)
       peerclass = 0;
       peercntlclass = 0;
       peercntl = 0;
+      openmode = 0;
       break;
 
     case T_HURDIO:
@@ -325,6 +327,12 @@ main (int argc, char **argv)
       peerclass = 0;
       peercntlclass = 0;
       peercntl = 0;
+
+      /* We don't want to have a writable peropen on the underlying node
+	 when we'll never use it.  Ideally, we shouldn't open one until we
+	 do need it, in case it has an affect on the underlying node (like
+	 keeping DTR high and such).  */
+      openmode = O_RDWR;
       break;
 
     case T_PTYMASTER:
@@ -335,6 +343,7 @@ main (int argc, char **argv)
       peerclass = tty_class;
       peercntlclass = tty_cntl_class;
       peercntl = &termctl;
+      openmode = 0;
       break;
 
     case T_PTYSLAVE:
@@ -345,6 +354,7 @@ main (int argc, char **argv)
       peerclass = pty_class;
       peercntlclass = pty_cntl_class;
       peercntl = &ptyctl;
+      openmode = 0;
       break;
 
     default:
@@ -360,7 +370,7 @@ main (int argc, char **argv)
     error (1, 0, "Must be started as a translator");
 
   /* Set our node.  */
-  err = trivfs_startup (bootstrap, O_RDWR,
+  err = trivfs_startup (bootstrap, openmode,
 			ourcntlclass, term_bucket, ourclass, term_bucket,
 			ourcntl);
   if (err)
