@@ -23,11 +23,9 @@
 void
 get_hypermetadata (void)
 {
-  sblock = malloc (SBLOCK_SIZE);
-
   assert (!diskfs_catch_exception ());
-  bcopy (disk_image + SBLOCK_OFFS, sblock, SBLOCK_SIZE);
-  diskfs_end_catch_exception ();
+
+  sblock = boffs_ptr(SBLOCK_OFFS);
   
   if (sblock->s_magic != EXT2_SUPER_MAGIC
 #ifdef EXT2FS_PRE_02B_COMPAT
@@ -82,74 +80,22 @@ get_hypermetadata (void)
   desc_per_block = block_size / sizeof (struct ext2_group_desc);
   addr_per_block = block_size / sizeof (u32);
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
+
+  diskfs_end_catch_exception ();
 }
 
-/* Write the csum data.  This isn't backed by a pager because it is
-   taken from ordinary data blocks and might not be an even number
-   of pages; in that case writing it through the pager would nuke whatever
-   pages came after it on the disk and were backed by file pagers. */
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
-#if 0
-  vm_address_t buf;
-  vm_size_t bufsize;
-  error_t err;
-
-  spin_lock (&alloclock);
-
-  if (!csum_dirty)
+  if (clean && !(sblock->s_state & EXT2_VALID_FS))
+    /* The filesystem is clean, so we need to set the clean flag.  We
+       just write the superblock directly, without using the paged copy.  */
     {
-      spin_unlock (&alloclock);
-      return;
+      struct ext2_super_block clean_sblock;
+
+      bcopy (sblock, clean_sblock, SBLOCK_SIZE);
+      clean_sblock->s_state |= EXT2_VALID_FS;
+      dev_write_sync (SBLOCK_OFFS / device_block_size,
+		      (vm_address_t)clean_sblock, SBLOCK_SIZE);
     }
-
-  /* Copy into a page-aligned buffer to avoid bugs in kernel device code. */
-  
-  bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
-
-  err = dev_read_sync (fsbtodb (sblock, sblock->fs_csaddr), &buf, bufsize);
-  if (!err)
-    {  
-      bcopy (csum, (void *) buf, sblock->fs_cssize);
-      dev_write_sync (fsbtodb (sblock, sblock->fs_csaddr), buf, bufsize);
-      csum_dirty = 0;
-      vm_deallocate (mach_task_self (), buf, bufsize);
-    }
-  
-  spin_unlock (&alloclock);
-#endif
-}
-
-/* Copy the sblock into the disk */
-void
-copy_sblock ()
-{
-  int clean = 1;		/* XXX wrong... */
-  
-  assert (!diskfs_catch_exception ());
-
-  spin_lock (&sblock_lock);
-
-  if (clean && !diskfs_readonly)
-    {
-      sblock->s_state |= EXT2_VALID_FS;
-      sblock_dirty = 1;
-    }
-
-  if (sblock_dirty)
-    {
-      bcopy (sblock, disk_image + SBLOCK_OFFS, SBLOCK_SIZE);
-      pokel_add (&sblock_pokel, disk_image + SBLOCK_OFFS, SBLOCK_SIZE);
-      sblock_dirty = 0;
-    }
-
-  if (clean && !diskfs_readonly)
-    {
-      sblock->s_state &= ~EXT2_VALID_FS;
-      sblock_dirty = 1;
-    }
-
-  spin_unlock (&sblock_lock);
-  diskfs_end_catch_exception ();
 }
