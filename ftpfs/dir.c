@@ -170,7 +170,10 @@ delete (struct ftpfs_dir_entry *e, struct ftpfs_dir *dir)
   /* Take out of the directory ordered list.  */
   ordered_unlink (e);
 
-  /* Now stick in the deleted list.  */
+  /* If there's a node attached, we'll delete the entry whenever it goes
+     away, otherwise, just delete it now.  */
+  if (! e->node)
+    free_entry (e);
 }
 
 /* Clear the valid bit in all DIR's htable.  */
