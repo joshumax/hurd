@@ -623,7 +623,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   if (err)
     {
       /* Maybe print an error message.  */
-      argp_state_help (&state, stderr, ARGP_HELP_STD_ERR);
+      if (err == EBADKEY)
+	argp_state_help (&state, stderr, ARGP_HELP_STD_ERR);
 
       /* Since we didn't exit, give each parser an error indication.  */
       for (group = groups; group < egroup; group++)
