@@ -1,6 +1,6 @@
 /* 
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -56,8 +56,16 @@ struct peropen
   int lock_status;
   int refcnt;
   int openstat;
-  mach_port_t dotdotport;
+
   struct node *np;
+
+  /* The parent of the translator's root node.  */
+  mach_port_t root_parent;
+
+  /* If this node is in a shadow tree, the parent of its root.  */
+  mach_port_t shadow_root_parent;
+  /* If in a shadow tree, its root node in this translator.  */
+  struct node *shadow_root;
 };
 
 /* A unique one of these exists for each node currently in use. */
@@ -302,7 +310,14 @@ extern int netfs_maxsymlinks;
 void netfs_init (void);
 void netfs_server_loop (void);
 struct protid *netfs_make_protid (struct peropen *, struct iouser *);
-struct peropen *netfs_make_peropen (struct node *, int, mach_port_t);
+
+/* Create and return a new peropen structure on node NP with open
+   flags FLAGS.  The initial values for the root_parent, shadow_root, and
+   shadow_root_parent fields are copied from CONTEXT if it's non-zero,
+   otherwise zerod.  */
+struct peropen *netfs_make_peropen (struct node *, int,
+				    struct peropen *context);
+
 void netfs_drop_node (struct node *);
 void netfs_release_protid (void *);
 void netfs_release_peropen (struct peropen *);
