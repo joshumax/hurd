@@ -181,15 +181,15 @@ bool fmt_sortrev[] =
 char *fmts[] =
 {
   /* default */
-  "~PID ~TH# ~TT=tty ~STAT=state ~TIME ~COMMAND=args",
+  "~PID ~TH# ~TT=tty ~SC=susp ~STAT=state ~TIME ~COMMAND=args",
   /* user (-u) */
-  "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ=vsize ~RSS=rsize ~TT=tty ~STAT=state ~COMMAND=args",
+  "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ=vsize ~RSS=rsize ~TT=tty ~SC=susp ~STAT=state ~COMMAND=args",
   /* vmem (-v) */
   "~PID ~TH# ~STAT=state ~SL=sleep ~PAGEIN=pgins ~FAULTS=pgflts ~COWFLT=cowflts ~ZFILLS ~SIZE=vsize ~RSS=rsize ~%CPU ~%MEM ~COMMAND=args",
   /* long (-l) */
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGIN ~MSGOUT ~SZ=vsize ~RSS=rsize ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGI=msgin ~MSGO=msgout ~SZ=vsize ~RSS=rsize ~SC=susp ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
   /* jobc (-j) */
-  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC=susp ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
   /* full (-f) (from sysv) */
   "~-USER ~PID ~PPID ~TTY ~TIME ~COMMAND=args",
   /* hurd */
