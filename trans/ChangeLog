@@ -1,3 +1,16 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fakeroot.c (NETFS_S_SIMPLE): New macro.
+	(netfs_S_io_get_conch): New function.
+	(netfs_S_io_release_conch): New function.
+	(netfs_S_io_eofnotify): New function.
+	(netfs_S_io_prenotify): New function.
+	(netfs_S_io_postnotify): New function.
+	(netfs_S_io_readnotify): New function.
+	(netfs_S_io_readsleep): New function.
+	(netfs_S_io_sigio): New function.
+	(netfs_S_io_map_cntl): New function.
+
 2002-05-12  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.c (netfs_attempt_lookup): Treat EOPNOTSUPP like EACCES.

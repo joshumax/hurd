@@ -589,6 +589,75 @@ netfs_S_io_map (struct protid *user,
   return err;
 }
 
+error_t
+netfs_S_io_map_cntl (struct protid *user,
+                     mach_port_t *obj,
+                     mach_msg_type_name_t *objtype)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+  *objtype = MACH_MSG_TYPE_MOVE_SEND;
+
+  mutex_lock (&user->po->np->lock);
+  err = io_map_cntl (user->po->np->nn->file, obj);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
+#define NETFS_S_SIMPLE(name)			\
+error_t						\
+netfs_S_##name (struct protid *user)		\
+{						\
+  error_t err;					\
+						\
+  if (!user)					\
+    return EOPNOTSUPP;				\
+						\
+  mutex_lock (&user->po->np->lock);		\
+  err = name (user->po->np->nn->file);		\
+  mutex_unlock (&user->po->np->lock);		\
+  return err;					\
+}
+
+NETFS_S_SIMPLE (io_get_conch)
+NETFS_S_SIMPLE (io_release_conch)
+NETFS_S_SIMPLE (io_eofnotify)
+NETFS_S_SIMPLE (io_readnotify)
+NETFS_S_SIMPLE (io_readsleep)
+NETFS_S_SIMPLE (io_sigio)
+
+error_t
+netfs_S_io_prenotify (struct protid *user,
+                      vm_offset_t start, vm_offset_t stop)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&user->po->np->lock);
+  err = io_get_prenotify (user->po->np->nn->file, start, stop);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
+error_t
+netfs_S_io_postnotify (struct protid *user,
+                       vm_offset_t start, vm_offset_t stop)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&user->po->np->lock);
+  err = io_get_postnotify (user->po->np->nn->file, start, stop);
+  mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
 /* This overrides the library's definition.  */
 int
 netfs_demuxer (mach_msg_header_t *inp,
