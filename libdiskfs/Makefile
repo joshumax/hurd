@@ -38,10 +38,11 @@ IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
-	rdwr-internal.c init-init.c init-startup.c init-first.c \
-	boot-start.c demuxer.c exc.c node-times.c shutdown.c \
+	init-init.c init-startup.c init-first.c init-completed.c \
+	rdwr-internal.c boot-start.c demuxer.c exc.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c opts-set.c opts-std-startup.c \
-	opts-runtime-def.c trans-callback.c filedev.c machdev.c
+	opts-runtime-def.c opts-common.c trans-callback.c readonly.c remount.c \
+	filedev.c machdev.c dev-open.c dev-io.c dev-globals.c console.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h
@@ -59,5 +60,5 @@ MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
 
-libdiskfs.so: ../libpager/libpager.so ../libioserver/libioserver.so \
-	      ../libfshelp/libfshelp.so ../libthreads/libthreads.so
+libdiskfs.so: $(foreach lib,threads ports fshelp shouldbeinlibc ioserver,\
+			../lib$(lib)/lib$(lib).so)
