@@ -28,7 +28,7 @@
 #include <ugids.h>
 #include <version.h>
 
-const char *argp_program_version = STANDARD_HURD_VERSION (hurdids);
+const char *argp_program_version = STANDARD_HURD_VERSION (ids);
 
 static struct argp_option options[] =
 {
