@@ -55,7 +55,17 @@ include $(..)config.make
 # It is important to have this inclusion first; that picks up our 
 # library header files locally rather than from installed copies.
 # Append to any value set by the specific Makefile or by configure.
-CPPFLAGS += -I. -I$(srcdir) -I.. -I$(top_srcdir)
+ifeq ($(srcdir),.)
+srcdirinc=
+else
+srcdirinc=-I$(srcdir)
+endif
+ifeq ($(top_srcdir),..)
+top_srcdirinc=
+else
+top_srcdirinc=-I$(top_srcdir)
+endif
+CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc)
 CFLAGS += -Wall
 
 # Decode makemode:
