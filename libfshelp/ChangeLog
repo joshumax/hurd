@@ -1,3 +1,8 @@
+Thu Oct 10 17:12:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* lock-acquire.c (fshelp_acquire_lock): Use hurd_condition_wait so
+	we are properly interruptible.
+
 Thu Sep 12 16:21:51 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

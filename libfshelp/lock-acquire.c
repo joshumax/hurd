@@ -80,7 +80,8 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	  if (flags & LOCK_NB)
 	    return EWOULDBLOCK;
 	  box->waiting = 1;
-	  condition_wait (&box->wait, mut);
+	  if (hurd_condition_wait (&box->wait, mut))
+	    return EINTR;
 	}
 
       /* If we have a shared lock, release it. */
@@ -116,7 +117,8 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	      else
 		{
 		  box->waiting = 1;
-		  condition_wait (&box->wait, mut);
+		  if (hurd_condition_wait (&box->wait, mut))
+		    return EINTR;
 		}
 	    }
 	  box->type = LOCK_EX;

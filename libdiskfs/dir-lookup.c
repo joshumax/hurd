@@ -397,15 +397,26 @@ diskfs_S_dir_lookup (struct protid *dircred,
     
   if ((flags & O_NOATIME) && (diskfs_isowner (np, dircred) == EPERM))
     flags &= ~O_NOATIME;
-
-  flags &= ~OPENONLY_STATE_MODES;
       
-  error = diskfs_create_protid (diskfs_make_peropen (np, flags, 
+  error = diskfs_create_protid (diskfs_make_peropen (np, 
+						     (flags
+						      & OPENONLY_STATE_MODES), 
 						     dircred->po->dotdotport),
 				dircred->uids, dircred->nuids,
 				dircred->gids, dircred->ngids,
 				&newpi);
+
   if (! error)
+    {
+      if (flags & O_EXLOCK)
+	error = fshelp_acquire_lock (&np->userlock, &po->lock_status,
+				     &np->lock, LOCK_EX);
+      else if (flags & O_SHLOCK)
+	error = fshelp_acquire_lock (&np->userlock, &po->lock_status,
+				     &np->lock, LOCK_SH);
+    }
+  
+  if (!error)
     {
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);

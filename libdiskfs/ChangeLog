@@ -1,3 +1,8 @@
+Thu Oct 10 17:11:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Implement O_SHLOCK and
+	O_EXLOCK directly here.
+
 Thu Oct 10 10:53:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* peropen-rele.c (diskfs_release_peropen): Before freeing PO,
