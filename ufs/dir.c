@@ -494,7 +494,7 @@ diskfs_direnter_hard(struct node *dp,
   vm_address_t fromoff, tooff;
   int totfreed;  
   error_t err;
-  off_t oldsize;
+  off_t oldsize = 0;
 
   assert (ds->type == CREATE);
   
