@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "store.h"
 
@@ -28,6 +29,7 @@
 error_t
 store_clone (struct store *from, struct store **to)
 {
+  error_t err = 0;
   struct store *c =
     _make_store (from->class, from->meths, from->port, from->block_size,
 		 from->runs, from->runs_len, from->end);
@@ -56,7 +58,7 @@ store_clone (struct store *from, struct store **to)
       err = mach_port_mod_refs (mach_task_self (),
 				from->source, MACH_PORT_RIGHT_SEND, 1);
       if (! err)
-	to->source = from->source;
+	c->source = from->source;
     }
 
   if (!err && from->meths->clone)
