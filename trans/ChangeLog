@@ -2,7 +2,7 @@
 
 	* fakeroot.c (netfs_attempt_lookup): Really check for EROFS or
 	EISDIR error from O_RDWR lookup (the last change checked for
-	O_RDWR | O_EXEC looks up, which is also necessary).
+	O_RDWR | O_EXEC look ups, which is also necessary).
 	(netfs_attempt_mkfile): Unlock DIR.
 	(netfs_attempt_create_file): Likewise.
 	(netfs_S_io_map): New function.
