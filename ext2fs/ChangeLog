@@ -1,3 +1,12 @@
+2000-03-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* balloc.c (ext2_free_blocks, ext2_new_block): Fix formats to avoid
+	-Wformat warnings.
+	* getblk.c (ext2_alloc_block, inode_getblk, ext2_getblk): Likewise.
+	* ialloc.c (ext2_count_free_inodes): Likewise.
+	* truncate.c (trunc_direct): Likewise.
+	* pager.c (pending_blocks_write, diskfs_grow): Likewise.
+
 2000-03-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c (diskfs_get_directs): Don't allocate buffer for *DATA until
