@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <string.h>
+#include <unistd.h>
 #include <argp.h>
 #include <error.h>
 #include <argz.h>
@@ -304,7 +305,8 @@ main (int argc, char **argv)
   if (err)
     error (3, err, "mapping time");
 
-  err = ftpfs_create (ftpfs_remote_root, ftpfs_ftp_params, &ftpfs_ftp_hooks,
+  err = ftpfs_create (ftpfs_remote_root, getpid (),
+		      ftpfs_ftp_params, &ftpfs_ftp_hooks,
 		      &ftpfs_params, &ftpfs);
   if (err)
     error (4, err, "%s", ftpfs_remote_fs);
