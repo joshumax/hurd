@@ -16,8 +16,9 @@
 #ifndef _LINUX_EXT2_FS_H
 #define _LINUX_EXT2_FS_H
 
-typedef long u32;
-typedef short u16;
+typedef unsigned long u32;
+typedef unsigned short u16;
+typedef unsigned char u8;
 
 /*
  * The second extended filesystem constants/structures
