@@ -23,6 +23,7 @@
 #include <string.h>
 #include <hurd/ports.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "term.h"
 
 /* Set if we need a wakeup when tty output has been done */
