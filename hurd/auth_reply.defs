@@ -33,7 +33,7 @@ skip; /* auth_combine */
 simpleroutine auth_user_authenticate_reply (
 	reply_port: reply_port_t;
 	in return_code: kern_return_t;
-	in newhandle: mach_port_make_send_t);
+	in newhandle: mach_port_send_t);
 
 simpleroutine auth_server_authenticate_reply (
 	reply_port: reply_port_t;
