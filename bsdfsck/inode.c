@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)inode.c	8.4 (Berkeley) 4/18/94";*/
-static char *rcsid = "$Id: inode.c,v 1.2 1994/08/23 20:12:34 mib Exp $";
+static char *rcsid = "$Id: inode.c,v 1.3 1994/08/26 16:35:02 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -100,6 +100,13 @@ ckinode(dp, idesc)
 		sizepb *= NINDIR(&sblock);
 		remsize -= sizepb;
 	}
+	/* GNU Hurd extension. */
+	if (dino.di_trans)
+	  {
+	    idesc->id_blkno = dino.di_trans;
+	    idesc->id_numfrags = sblock.fs_frag;
+	    return (*idesc->id_func)(idesc);
+	  }
 	return (KEEPON);
 }
 
