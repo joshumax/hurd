@@ -173,7 +173,7 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 # dependencies of other shared objects it encounters.
 rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 
-$(target): %: $(_objs) $(OTHERLIBS)
+$(target): %$(target-suffix): $(_objs) $(OTHERLIBS)
 	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
 		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) \
