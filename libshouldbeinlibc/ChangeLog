@@ -1,3 +1,73 @@
+Tue Feb 11 19:16:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c: Largely rewritten to clean up the code, avoid
+ 	using nested functions, and adapt namespace and locking in
+ 	preparation for moving into libc.
+
+	* argp-help.c (make_hol): Make static.
+	Increment default group for option headers.
+	(until_short): Return correct key.
+	(group_cmp): Put group 0 before other groups, not in the middle.
+	(hol_entry_cmp): Use __strcasecmp instead of strcasecmp.
+	(hol_entry_cmp, usage_argful_short_opt, usage_long_opt):
+	Don't use ?: operator.
+	(__argp_help): Renamed from argp_help.
+	(__argp_state_help): Renamed from argp_state_help.
+	(__argp_error): Renamed from argp_error.
+	(__argp_failure): Renamed from argp_failure.
+	[weak_alias] (argp_help, argp_state_help, argp_error, argp_failure):
+	New weak aliases.
+	(__progname, __progname_full): New declarations.
+	(__argp_state_help, __argp_error, __argp_failure): Use
+	__PROGNAME_FULL instead of PROGRAM_INVOCATION_NAME.
+	"argp-namefrob.h": New include.
+	
+	* argp.h [HAVE_CONFIG_H] <config.h>: New include.
+	[__GNU_LIBRARY__] <sys/cdefs.h>: New include.
+	[!__const] (__const): New macro.
+	(struct argp_option, struct argp, struct argp_child, struct
+	argp_state): Use __const instead of const.
+	(__argp_parse, __argp_help, __argp_state_help, __argp_error,
+	__argp_usage, __argp_failure, __option_is_short, __option_is_end):
+	New declarations.
+	(argp_parse, argp_help, argp_state_help, argp_error,
+	argp_usage, argp_failure, _option_is_short, _option_is_end):
+	Use __P macro for function declarations.
+	(argp_usage, _option_is_end, _option_is_short): Inline definitions
+	replaced by __-prefixed versions, and protected by __OPTIMIZE__.
+	[__OPTIMIZE__ && !_LIBC] (__argp_usage, __argp_state_help,
+ 	__option_is_short, __option_is_end): Add redefs (& later undefs)
+ 	of __ versions of inline definitions so they define the correct
+ 	name for the environment (libc vs. non-libc).
+
+	* argp-fmtstream.c, argp-fmtstream.h, argp-fs-xinl.c, argp-xinl.c,
+	argp-namefrob.h, argp-test.c: New files.
+	* argp.c: File removed.
+	* Makefile (SRCS): Add argp-fmtstream.c, argp-fs-xinl.c, and argp-xinl.c.
+	Remove argp.c.
+	(installhdrs): Define explicitly.
+	(LCLHDRS): Define in terms of $(installhdrs) + others.
+	(CFLAGs): Add -DHAVE_LINEWRAP_H & -DHAVE_CTHREADS_H.
+	
+Mon Feb 10 22:19:46 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (indent_to, arg, struct pentry_state, print_header,
+ 	comma, hol_entry_help, hol_help, usage_argful_short_opt,
+ 	usage_long_opt, hol_usage, argp_args_usage, argp_doc, argp_help):
+ 	Use argp_fmtstream_t & associated functions instead of stdio
+ 	streams.
+	"argp-fmtstream.h": New include.
+	<linewrap.h>: Include removd.
+
+	* argp-help.c (hol_append): Use memcpy instead of bcopy.
+	(argp_doc): Use strchr instead of index.
+	(make_hol): Make static.
+	* argp-parse.c (argp_default_parser): Use strrchr instead of rindex.
+	(argp_parse): Use strchr instead of index, memset instead of bzero.
+	* argp-parse2.c (parser_init, argp_parse): Use memset instead of bzero.
+	(argp_default_parser): Use strrchr instead of rindex.
+	(parser_parse_opt): Use strchr instead of index.
+
 Sun Feb  9 10:53:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.h (ARGP_LONG_ONLY, ARGP_HELP_LONG_ONLY): New macros.
