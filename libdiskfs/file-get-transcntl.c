@@ -31,13 +31,13 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   
   np = cred->po->np;
 
-  if (!np->translator)
+  if (np->translator.control == MACH_PORT_NULL)
     error = ENXIO;
   else
-    error = isowner (np, cred);
+    error = diskfs_isowner (np, cred);
 
   if (!error)
-    *ctl = np->translator;
+    *ctl = np->translator.control;
 
   diskfs_nput (np);
   return error;
