@@ -1,8 +1,7 @@
 /* A translator for fifos
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -171,9 +170,9 @@ fifo_trans_parse_args (struct fifo_trans *trans, int argc, char **argv,
 
 /* ---------------------------------------------------------------- */
 
-struct port_class *trivfs_protid_portclasses[1];
+struct port_class *trivfs_protid_portclasses[2];
 struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
+int trivfs_protid_nportclasses = 2;
 int trivfs_cntl_nportclasses = 1;
 
 int
