@@ -299,8 +299,6 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 	st->st_blksize = store->block_size;
 
       st->st_size = size;
-      st->st_blocks = size / 512;
-
       st->st_mode |= ((dev->inhibit_cache || store->block_size == 1)
 		      ? S_IFCHR : S_IFBLK);
     }
@@ -309,7 +307,6 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
     {
       st->st_blksize = 0;
       st->st_size = 0;
-      st->st_blocks = 0;
 
       st->st_mode |= dev->inhibit_cache ? S_IFCHR : S_IFBLK;
     }
