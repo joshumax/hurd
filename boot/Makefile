@@ -47,7 +47,7 @@ uxboot.o: boot.c
 	$(COMPILE.c) -DUX $< -o $@
 
 uxboot.0: $(UX-OBJS) ../libthreads/libthreads.a
-	$(LINK.o) -o $@ -static -nostartfiles -Wl,-T -Wl,frank1.ld $^
+	$(LINK.o) -o $@ -static -nostartfiles -Wl,-T -Wl,$(srcdir)/frank1.ld $^
 uxboot.1: frankemul.ld uxboot.0
 	$(LD) -o $@ -T $^
 uxboot: uxboot.1
