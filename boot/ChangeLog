@@ -1,3 +1,8 @@
+1999-03-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c (main): Add newline to error msg.
+	Patch by Marcus Brinkmann <Marcus.Brinkmann@ruhr-uni-bochum.de>.
+
 1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (S_io_revoke): Add reply, replyPoly args.
