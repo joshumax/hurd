@@ -51,7 +51,7 @@ panic (const char *s, ...)
 
 #ifdef PC532
 	{ int l; for (l=0;l < 1000000;l++) ; }
-#endif PC532
+#endif /* PC532 */
 #define RB_DEBUGGER	0x1000	/* enter debugger NOW */
 	(void) host_reboot(master_host_port, RB_DEBUGGER);
 	for (;;);
