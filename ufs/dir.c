@@ -312,7 +312,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
       needed = DIRSIZ (namelen);
     }
   
-  for (currentoff = blockaddr, prevoff = blockaddr;
+  for (currentoff = blockaddr, prevoff = 0;
        currentoff < blockaddr + DIRBLKSIZ;
        prevoff = currentoff, currentoff += entry->d_reclen)
     {
@@ -575,7 +575,7 @@ diskfs_dirremove(struct node *dp,
     ds->entry->d_ino = 0;
   else
     {
-      assert ((vm_address_t )ds->entry - (vm_address_t)ds->preventry
+      assert ((vm_address_t) ds->entry - (vm_address_t) ds->preventry
 	      == ds->preventry->d_reclen);
       ds->preventry->d_reclen += ds->entry->d_reclen;
     }
