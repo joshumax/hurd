@@ -29,6 +29,7 @@
 #include <maptime.h>
 #include <argp.h>
 #include <argz.h>
+#include <error.h>
 
 extern char *localhost ();
 
@@ -358,7 +359,7 @@ main (int argc, char **argv)
 
   errno = maptime_map (0, 0, &mapped_time);
   if (errno)
-    perror ("mapping time");
+    error (2, errno, "mapping time");
 
   cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
   cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));
