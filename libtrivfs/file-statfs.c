@@ -28,7 +28,7 @@ trivfs_S_file_statfs (struct trivfs_protid *cred,
   if (!trivfs_fsid)
     trivfs_fsid = getpid();
 
-  bzero (stb, sizeof (struct fsys_statfsbuf));
+  bzero (stb, sizeof (struct statfs));
   stb->f_type = trivfs_fstype;
   stb->f_fsid = trivfs_fsid;
 
