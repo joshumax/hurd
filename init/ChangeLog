@@ -1,3 +1,11 @@
+1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* init.c (bootstrap_args): Initialize to 0.
+	(parse_opt): New function.
+	(options, doc): New variables.
+	(main): Parse args using argp.
+	Include <argp.h>.
+
 Thu Sep 12 16:32:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
