@@ -37,21 +37,25 @@ cons_vcons_refresh (vcons_t vcons)
   vcons->state.changes.written = vcons->display->changes.written;
 
   cons_vcons_write (vcons, vcons->state.screen.matrix
-		    + vcons->state.screen.cur_line * vcons->state.screen.width,
-		    ((vcons->state.screen.lines - vcons->state.screen.cur_line
+		    + (vcons->state.screen.cur_line % vcons->state.screen.lines)
+		    * vcons->state.screen.width,
+		    ((vcons->state.screen.lines
+		      - (vcons->state.screen.cur_line % vcons->state.screen.lines)
 		      < vcons->state.screen.height)
-		     ? vcons->state.screen.lines - vcons->state.screen.cur_line
+		     ? vcons->state.screen.lines
+		     - (vcons->state.screen.cur_line % vcons->state.screen.lines)
 		     : vcons->state.screen.height)
 		    * vcons->state.screen.width, 0, 0);
-  if (vcons->state.screen.lines - vcons->state.screen.cur_line
+  if (vcons->state.screen.lines
+      - (vcons->state.screen.cur_line % vcons->state.screen.lines)
       < vcons->state.screen.height)
     cons_vcons_write (vcons, vcons->state.screen.matrix,
 		      vcons->state.screen.height * vcons->state.screen.width
 		      - (vcons->state.screen.lines
-			 - vcons->state.screen.cur_line)
+			 - (vcons->state.screen.cur_line % vcons->state.screen.lines))
 		      * vcons->state.screen.width, 0,
 		      vcons->state.screen.lines
-		      - vcons->state.screen.cur_line);
+		      - (vcons->state.screen.cur_line % vcons->state.screen.lines));
 
   cons_vcons_set_cursor_pos (vcons, vcons->state.cursor.col,
 			     vcons->state.cursor.row);

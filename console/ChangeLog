@@ -1,5 +1,12 @@
 2002-08-28  Marcus Brinkmann  <marcus@gnu.org>
 
+	* display.c (screen_fill): Take CUR_LINES modulo LINES.
+	(screen_shift_left): Likewise.
+	(screen_shift_right): Likewise.
+	(linefeed): Don't take CUR_LINES modulo LINES here.
+
+2002-08-28  Marcus Brinkmann  <marcus@gnu.org>
+
 	* display.c (display_output_one): Also set USER->cursor.status to
 	normal for ECMA-48 <RIS> (hard reset).
 

@@ -829,8 +829,10 @@ screen_fill (display_t display, size_t col1, size_t row1, size_t col2,
 	     size_t row2, wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
-  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
-  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t start = ((user->screen.cur_line % user->screen.lines) + row1)
+    * user->screen.width + col1;
+  off_t end = ((user->screen.cur_line % user->screen.lines) + row2)
+    * user->screen.width + col2;
   off_t size = user->screen.width * user->screen.lines;
 
   if (start >= size && end >= size)
@@ -857,8 +859,10 @@ screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
 		   size_t row2, size_t shift, wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
-  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
-  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t start = ((user->screen.cur_line % user->screen.lines) + row1)
+    * user->screen.width + col1;
+  off_t end = ((user->screen.cur_line % user->screen.lines) + row2)
+    * user->screen.width + col2;
   off_t size = user->screen.width * user->screen.lines;
 
   if (start >= size && end >= size)
@@ -894,8 +898,10 @@ screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
 		    wchar_t chr, conchar_attr_t attr)
 {
   struct cons_display *user = display->user;
-  off_t start = (user->screen.cur_line + row1) * user->screen.width + col1;
-  off_t end = (user->screen.cur_line + row2) * user->screen.width + col2;
+  off_t start = ((user->screen.cur_line % user->screen.lines) + row1)
+    * user->screen.width + col1;
+  off_t end = ((user->screen.cur_line % user->screen.lines) + row2)
+    * user->screen.width + col2;
   off_t size = user->screen.width * user->screen.lines;
 
   if (start >= size && end >= size)
@@ -1080,7 +1086,6 @@ linefeed (display_t display)
   else
     {
       user->screen.cur_line++;
-      user->screen.cur_line %= user->screen.lines;
 
       screen_fill (display, 0, user->screen.height - 1,
 		   user->screen.width - 1, user->screen.height - 1,
@@ -1463,7 +1468,7 @@ display_output_one (display_t display, wchar_t chr)
 	      else
 		{
 		  /* XXX This implements the <bw> functionality.
-		     The alternative is to cut off and set x to 0.  */
+		     The alternative is to cut off and set col to 0.  */
 		  user->cursor.col = user->screen.width - 1;
 		  user->cursor.row--;
 		}

@@ -85,7 +85,9 @@ struct cons_display
   {
     uint32_t width;	/* Width of screen matrix.  */
     uint32_t lines;	/* Length of whole matrix.  */
-    uint32_t cur_line;	/* Beginning of visible area.  This is only
+    uint32_t cur_line;	/* Virtual start of visible area.  Needs to be
+			   taken module LINES to get the real start of
+			   visible area in the matrix.  This is only
 			   ever increased by the server, so clients
 			   can optimize scrolling.  */
     uint32_t scr_lines;	/* Number of lines in scrollback buffer

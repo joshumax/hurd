@@ -87,41 +87,50 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		}
 	      if (change.what.screen_cur_line)
 		{
-		  off_t size = vcons->state.screen.width
-		    * vcons->state.screen.lines;
-		  off_t vis_start;
 		  uint32_t new_cur_line;
-		  int scrolling;
-		  off_t start;
-		  off_t end;
 		  
 		  new_cur_line = vcons->display->screen.cur_line;
-		  scrolling = new_cur_line - vcons->state.screen.cur_line;
-		  if (scrolling < 0)
-		    scrolling += vcons->state.screen.lines;
-		  cons_vcons_scroll (vcons, scrolling);
-		  vis_start = vcons->state.screen.width * new_cur_line;
-		  start = ((new_cur_line + vcons->state.screen.height
-			    - scrolling) * vcons->state.screen.width) % size;
-		  end = start + scrolling * vcons->state.screen.width - 1;
-		  cons_vcons_write (vcons, vcons->state.screen.matrix + start,
-				    end < size
-				    ? end - start + 1 
-				    : size - start,
-				    (start - vis_start)
-				    % vcons->state.screen.width,
-				    (start - vis_start)
-				    / vcons->state.screen.width);
-		  if (end >= size)
-		    cons_vcons_write (vcons,
-				      vcons->state.screen.matrix,
-				      end - size + 1,
-				      (size - vis_start)
-				      % vcons->state.screen.width,
-				      (size - vis_start)
-				      / vcons->state.screen.width);
-		  cons_vcons_update (vcons);
-		  vcons->state.screen.cur_line = new_cur_line;
+		  if (new_cur_line != vcons->state.screen.cur_line)
+		    {
+		      off_t size = vcons->state.screen.width
+			* vcons->state.screen.lines;
+		      off_t vis_start;
+		      uint32_t scrolling;
+		      off_t start;
+		      off_t end;
+		      
+		      if (new_cur_line > vcons->state.screen.cur_line)
+			scrolling = new_cur_line
+			  - vcons->state.screen.cur_line;
+		      else
+			scrolling = UINT32_MAX - vcons->state.screen.cur_line
+			  + 1 + new_cur_line;
+		      if (scrolling > vcons->state.screen.height)
+			scrolling = vcons->state.screen.height;
+		      if (scrolling < vcons->state.screen.height)
+			cons_vcons_scroll (vcons, scrolling);
+		      vis_start = vcons->state.screen.width
+			* (new_cur_line % vcons->state.screen.lines);
+		      start = (((new_cur_line % vcons->state.screen.lines)
+				+ vcons->state.screen.height - scrolling)
+			       * vcons->state.screen.width) % size;
+		      end = start + scrolling * vcons->state.screen.width - 1;
+		      cons_vcons_write (vcons,
+					vcons->state.screen.matrix + start,
+					end < size
+					? end - start + 1 
+					: size - start,
+					0, vcons->state.screen.height
+					- scrolling);
+		      if (end >= size)
+			cons_vcons_write (vcons,
+					  vcons->state.screen.matrix,
+					  end - size + 1,
+					  0, (size - vis_start)
+					  / vcons->state.screen.width);
+		      cons_vcons_update (vcons);
+		      vcons->state.screen.cur_line = new_cur_line;
+		    }
 		}
 	      if (change.what.screen_scr_lines)
 		{
@@ -152,7 +161,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	      /* For clipping.  */
 	      off_t size = vcons->state.screen.width*vcons->state.screen.lines;
 	      off_t rotate = vcons->state.screen.width
-		* vcons->state.screen.cur_line;
+		* (vcons->state.screen.cur_line % vcons->state.screen.lines);
 	      off_t vis_end = vcons->state.screen.height
 		* vcons->state.screen.width - 1;
 	      off_t end2 = -1;
