@@ -45,7 +45,7 @@ struct store_parsed
   char *names;
   size_t names_len;
   off_t interleave;		/* --interleave value */
-  int machdev : 1;		/* --machdev specified */
+  int device : 1;		/* --device specified */
   int layer : 1;		/* --layer specified */
 };
 
@@ -64,8 +64,8 @@ store_parsed_append_args (const struct store_parsed *parsed,
   error_t err = 0;
   size_t num_names = argz_count (parsed->names, parsed->names_len);
 
-  if (parsed->machdev)
-    err = argz_add (args, args_len, "--machdev");
+  if (parsed->device)
+    err = argz_add (args, args_len, "--device");
 
   if (!err && num_names > 1 && (parsed->interleave || parsed->layer))
     {
@@ -83,6 +83,45 @@ store_parsed_append_args (const struct store_parsed *parsed,
   return err;
 }
 
+error_t
+store_parsed_name (const struct store_parsed *parsed, char **name)
+{
+  char buf[40];
+  char *pfx = 0;
+
+  if (argz_count (parsed->names, parsed->names_len) > 1)
+    if (parsed->interleave)
+      {
+	snprintf (buf, sizeof buf, "interleave(%ld,", parsed->interleave);
+	pfx = buf;
+      }
+    else if (parsed->layer)
+      pfx = "layer(";
+
+  if (pfx)
+    *name = malloc (strlen (pfx) + parsed->names_len + 1);
+  else
+    *name = malloc (parsed->names_len);
+
+  if (! *name)
+    return ENOMEM;
+
+  if (pfx)
+    {
+      char *end = stpcpy (*name, pfx);
+      bcopy (parsed->names, end, parsed->names_len);
+      argz_stringify (end, parsed->names_len, ',');
+      strcpy (end + parsed->names_len, ")");
+    }
+  else
+    {
+      bcopy (parsed->names, *name, parsed->names_len);
+      argz_stringify (*name, parsed->names_len, ',');
+    }
+
+  return 0;
+}
+
 /* Open PARSED, and return the corresponding store in STORE.  */
 error_t
 store_parsed_open (const struct store_parsed *parsed, int flags,
@@ -92,7 +131,7 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
   size_t num = argz_count (parsed->names, parsed->names_len);
   error_t open (char *name, struct store **store)
     {
-      if (parsed->machdev)
+      if (parsed->device)
 	return store_device_open (name, flags, store);
       else
 	return store_open (name, flags, classes, store);
@@ -150,7 +189,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   switch (opt)
     {
     case 'd':
-      parsed->machdev = 1; break;
+      parsed->device = 1; break;
 
     case 'I':
       if (parsed->layer)
