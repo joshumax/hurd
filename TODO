@@ -255,6 +255,10 @@ See `tasks', the exported task list.
   /dev/fd/3: 134859936: Permission denied
 ???
 
+Find out why ^G in emacs, esp at prompts, often results in a long (~2s)
+  pause; if you hit it several times, the abort-and-dump-core ^G catcher
+  usually gets activated.
+
 List for version 0.2 binary release
 
 * Install patch from hag for disk device in mach
