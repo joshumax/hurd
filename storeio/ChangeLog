@@ -1,3 +1,12 @@
+1997-07-16  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (dev_get_memory_object): Implement correctly.
+	(dev_stop_paging): Work entirely by flushing user pagers; don't kill pager.
+	(pager_clear_user_data): Zero our pointer to the pager.
+
+	* io.c (trivfs_S_io_map): Make sure there are enough references to
+	MEMOBJ for both read & write ports.
+
 Wed Feb 19 21:42:45 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeio.c (fsys_port_class, root_port_class, port_bucket,
