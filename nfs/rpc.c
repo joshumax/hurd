@@ -1,5 +1,5 @@
 /* SunRPC management for NFS client
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -33,6 +33,7 @@
 #include <netinet/in.h>
 #include <assert.h>
 #include <errno.h>
+#include <error.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -370,7 +371,7 @@ rpc_receive_thread ()
       int cc = read (main_udp_socket, buf, 1024 + read_size);
       if (cc == -1)
         {
-          perror ("nfs read");
+          error (0, errno, "nfs read");
           continue;
         }
       else

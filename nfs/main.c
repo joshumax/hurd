@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -345,6 +345,7 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 int
 main (int argc, char **argv)
 {
+  error_t err;
   struct argp common_argp = { common_options, parse_common_opt };
   const struct argp_child argp_children[] =
     { {&common_argp}, {&netfs_std_startup_argp}, {0} };
@@ -378,14 +379,11 @@ main (int argc, char **argv)
     }
   while ((ret == -1) && (errno == EADDRINUSE));
   if (ret == -1)
-    {
-      perror ("binding main udp socket");
-      exit (1);
-    }
+    error (1, errno, "binding main udp socket");
 
-  errno = maptime_map (0, 0, &mapped_time);
-  if (errno)
-    error (2, errno, "mapping time");
+  err = maptime_map (0, 0, &mapped_time);
+  if (err)
+    error (2, err, "mapping time");
 
   cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
   cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));

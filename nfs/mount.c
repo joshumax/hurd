@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -101,6 +101,7 @@ mount_root (char *name, char *host)
   int *p;
   void *rpcbuf;
   int port;
+  error_t err;
   struct node *np;
   short pmapport;
 
@@ -145,14 +146,14 @@ mount_root (char *name, char *host)
       if (connect (main_udp_socket, (struct sockaddr *)&addr,
 	           sizeof (struct sockaddr_in)) == -1)
 	{
-	  perror ("server mount program");
+	  error (0, errno, "server mount program");
 	  return 0;
 	}
 
       p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
       if (! p)
 	{
-	  perror ("creating rpc packet");
+	  error (0, errno, "creating rpc packet");
 	  return 0;
 	}
 
@@ -160,8 +161,8 @@ mount_root (char *name, char *host)
       *p++ = htonl (MOUNTVERS);
       *p++ = htonl (IPPROTO_UDP);
       *p++ = htonl (0);
-      errno = conduct_rpc (&rpcbuf, &p);
-      if (!errno)
+      err = conduct_rpc (&rpcbuf, &p);
+      if (!err)
 	{
 	  port = ntohl (*p++);
 	  addr.sin_port = htons (port);
@@ -170,7 +171,7 @@ mount_root (char *name, char *host)
 	addr.sin_port = htons (mount_port);
       else
 	{
-	  perror ("portmap of mount");
+	  error (0, err, "portmap of mount");
 	  goto error_with_rpcbuf;
 	}
       free (rpcbuf);
@@ -181,31 +182,31 @@ mount_root (char *name, char *host)
   if (connect (main_udp_socket, (struct sockaddr *) &addr,
 	       sizeof (struct sockaddr_in)) == -1)
     {
-      perror ("connect");
+      error (0, errno, "connect");
       goto error_with_rpcbuf;
     }
 
   p = mount_initialize_rpc (MOUNTPROC_MNT, &rpcbuf);
   if (! p)
     {
-      perror ("rpc");
+      error (0, errno, "rpc");
       goto error_with_rpcbuf;
     }
 
   p = xdr_encode_string (p, name);
-  errno = conduct_rpc (&rpcbuf, &p);
-  if (errno)
+  err = conduct_rpc (&rpcbuf, &p);
+  if (err)
     {
-      perror (name);
+      error (0, err, name);
       goto error_with_rpcbuf;
     }
   /* XXX Protocol spec says this should be a "unix error code"; we'll
      pretend that an NFS error code is what's meant; the numbers match
      anyhow.  */
-  errno = nfs_error_trans (htonl (*p++));
-  if (errno)
+  err = nfs_error_trans (htonl (*p++));
+  if (err)
     {
-      perror (name);
+      error (0, err, name);
       goto error_with_rpcbuf;
     }
 
@@ -223,28 +224,28 @@ mount_root (char *name, char *host)
       if (connect (main_udp_socket, (struct sockaddr *) &addr,
 	           sizeof (struct sockaddr_in)) == -1)
 	{
-	  perror ("connect");
+	  error (0, errno, "connect");
 	  return 0;
 	}
 
       p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
       if (! p)
 	{
-	  perror ("rpc");
+	  error (0, errno, "rpc");
 	  goto error_with_rpcbuf;
 	}
       *p++ = htonl (NFS_PROGRAM);
       *p++ = htonl (NFS_VERSION);
       *p++ = htonl (IPPROTO_UDP);
       *p++ = htonl (0);
-      errno = conduct_rpc (&rpcbuf, &p);
-      if (!errno)
+      err = conduct_rpc (&rpcbuf, &p);
+      if (!err)
 	port = ntohl (*p++);
       else if (nfs_port)
 	port = nfs_port;
       else
 	{
-	  perror ("portmap of nfs server");
+	  error (0, err, "portmap of nfs server");
 	  goto error_with_rpcbuf;
 	}
       free (rpcbuf);
@@ -254,7 +255,7 @@ mount_root (char *name, char *host)
   if (connect (main_udp_socket, (struct sockaddr *) &addr,
 	       sizeof (struct sockaddr_in)) == -1)
     {
-      perror ("connect");
+      error (0, errno, "connect");
       return 0;
     }
 
