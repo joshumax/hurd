@@ -1,3 +1,10 @@
+1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (makemode): servers -> server.
+	(targets): Replaced with target; remove ufs.static.
+	(ufs.static-LDFLAGS): Variable removed.
+	(ufs.static, ufs): Remove deps.
+
 1999-09-08  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_get_directs): Initialize `err' to shut gcc up.
@@ -5,7 +12,7 @@
 1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Pass additional parameter to
-	diskfs_get_filemap. 
+	diskfs_get_filemap.
 	(diskfs_dirempty): Likewise.
 	* sizes.c (diskfs_truncate): Likewise.
 	(block_extended): Likewise.
@@ -34,7 +41,7 @@
 1999-07-06  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* hyper.c (diskfs_readonly_changed): Use mprotect instead of
-	vm_protect. 
+	vm_protect.
 
 Mon Jul  5 20:04:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 

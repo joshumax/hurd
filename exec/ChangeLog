@@ -1,3 +1,7 @@
+1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (exec.static-LDFLAGS): Variable removed.
+
 1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* exec.c (servercopy): Removed unused variable.
