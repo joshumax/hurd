@@ -18,9 +18,42 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
+
+int
 main ()
 {
-  daemon (0, 0);
+  int fd;
+  
+  switch (fork ())
+    {
+    case -1:
+      perror ("Cannot fork");
+      exit (1);
+    case 0:
+      break;
+    default:
+      _exit (0);
+    }
+  
+  if (setsid () == -1)
+    {
+      perror ("Cannot setsid");
+      exit (1);
+    }
+  chdir ("/");
+  
+  fd = open ("/dev/null", O_RDWR, 0);
+  if (fd != -1)
+    {
+      dup2 (fd, STDIN_FILENO);
+      dup2 (fd, STDOUT_FILENO);
+      dup2 (fd, STDERR_FILENO);
+      if (fd < STDERR_FILENO)
+	close (fd);
+    }
   
   for (;;)
     {
