@@ -18,19 +18,19 @@
 dir := libtrivfs
 makemode := library
 
-FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c \
-	dir-readdir.c dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
+FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
+	dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
-	file-get-transcntl.c file-getcontrol.c file-getfh.c file-getlinknode.c\
-	file-lock.c file-pathconf.c file-set-trans.c file-statfs.c \
+	file-get-transcntl.c file-getcontrol.c file-getfh.c \
+	file-getlinknode.c file-lock.c file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-truncate.c file-utimes.c file-exec.c \
 	file-access.c dir-chg.c file-chg.c file-inv.c
 
-IOSRCS=io-async-icky.c \
-	io-async.c io-duplicate.c io-map.c io-modes-get.c io-modes-off.c \
-	io-modes-on.c io-modes-set.c io-owner-get.c io-owner-mod.c io-read.c \
-	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
-	io-select.c io-stat.c io-stubs.c io-write.c io-version.c
+IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
+	io-modes-off.c io-modes-on.c io-modes-set.c io-owner-get.c \
+	io-owner-mod.c io-pathconf.c io-read.c io-readable.c \
+	io-reauthenticate.c io-restrict-auth.c io-seek.c io-select.c \
+	io-stat.c io-stubs.c io-write.c io-version.c
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c fsys-forward.c
 
