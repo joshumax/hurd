@@ -191,8 +191,8 @@ bogus_speed_to_real_speed (int bspeed)
 
 /* If there are characters on the output queue and no
    pending output requests, then send them. */
-void
-start_output ()
+static void
+devio_start_output ()
 {
   char *cp;
   int size;
@@ -310,20 +310,20 @@ device_read_reply_inband (mach_port_t replypt,
   return 0;
 }
 
-void
-set_break ()
+static void
+devio_set_break ()
 {
   device_set_status (phys_device, TTY_SET_BREAK, 0, 0);
 }
 
-void
-clear_break ()
+static void
+devio_clear_break ()
 {
   device_set_status (phys_device, TTY_CLEAR_BREAK, 0, 0);
 }
 
-void
-abandon_physical_output ()
+static void
+devio_abandon_physical_output ()
 {
   int val = D_WRITE;
   
@@ -338,16 +338,16 @@ abandon_physical_output ()
   output_pending = 0;
 }
 
-int
-pending_output_size ()
+static int
+devio_pending_output_size ()
 {
   /* Unfortunately, there's no way to get the amount back from Mach
      that has actually been written from this... */
   return npending_output;
 }
 
-void
-desert_dtr ()
+static void
+devio_desert_dtr ()
 {
   /* This will work, because we set the TF_HUPCLS bit earlier. */
   device_close (phys_device);
@@ -365,8 +365,8 @@ desert_dtr ()
   report_carrier_off ();
 }
 
-error_t
-assert_dtr ()
+static error_t
+devio_assert_dtr ()
 {
   error_t err;
   
@@ -392,7 +392,6 @@ assert_dtr ()
     }
   return err;
 }
-
 
 kern_return_t
 device_open_reply (mach_port_t replyport,
@@ -458,8 +457,8 @@ device_open_reply (mach_port_t replyport,
 /* Adjust physical state on the basis of the terminal state. 
    Where it isn't possible, mutate terminal state to match
    reality. */
-void
-set_bits ()
+static void
+devio_set_bits ()
 {
   struct tty_status ttystat;
   int cnt = TTY_STATUS_COUNT;
@@ -498,8 +497,8 @@ set_bits ()
 		       | ((termstate.c_cflag & PARENB) ? CS7 : CS8));
 }
   
-void
-mdmctl (int how, int bits)
+static void
+devio_mdmctl (int how, int bits)
 {
   int oldbits, newbits;
   int cnt;
@@ -523,8 +522,8 @@ mdmctl (int how, int bits)
 		     (dev_status_t) &newbits, TTY_MODEM_COUNT);
 }
 
-int
-mdmstate ()
+static int
+devio_mdmstate ()
 {
   int bits, cnt;
   
@@ -606,6 +605,20 @@ ports_do_mach_notify_send_once (mach_port_t notify)
   return err;
 }
 
+
+struct bottomhalf devio_bottom =
+{
+  devio_start_output,
+  devio_set_break,
+  devio_clear_break,
+  devio_abandon_physical_output,
+  devio_pending_output_size,
+  devio_assert_dtr,
+  devio_desert_dtr,
+  devio_set_bits,
+  devio_mdmctl,
+  devio_mdmstate,
+};
 
       
       
