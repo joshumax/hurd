@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -20,6 +20,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 subsystem fsys 22000;
 
 #include <hurd/hurd_types.defs>
+
+/* When modifying this file in any way, please remember to keep
+fsys_reply.defs up to date.  */
+
 
 #ifdef FSYS_IMPORTS
 FSYS_IMPORTS
