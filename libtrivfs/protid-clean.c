@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,6 +26,7 @@ trivfs_clean_protid (void *arg)
   
   if (trivfs_protid_destroy_hook)
     (*trivfs_protid_destroy_hook) (cred);
+  mutex_lock (&cred->po->cntl->lock);
   if (!cred->po->refcnt--)
     {
       if (trivfs_peropen_destroy_hook)
@@ -33,6 +34,7 @@ trivfs_clean_protid (void *arg)
       ports_done_with_port (cred->po->cntl);
       free (cred->po);
     }
+  mutex_unlock (&cred->po->cntl->lock);
   free (cred->uids);
   free (cred->gids);
   mach_port_deallocate (mach_task_self (), cred->realnode);
