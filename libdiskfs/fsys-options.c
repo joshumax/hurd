@@ -32,8 +32,24 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 {
   int argc = argz_count (data, len);
   char **argv = alloca (sizeof (char *) * (argc + 1));
+  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, fsys,
+					    diskfs_control_class);
+  int ret;
+  void dochild (struct trans_link *trans, void *arg)
+    {
+      fsys_set_options (trans->control, data, len, do_children);
+    }
+  
+  if (!pt)
+    return EOPNOTSUPP;
+
+  if (do_children)
+    fshelp_translator_iterate (dochild, 0);
 
   argz_extract (data, len, argv);
 
-  return diskfs_set_options (argc, argv);
+  ret = diskfs_set_options (argc, argv);
+
+  ports_port_deref (pt);
+  return ret;
 }
