@@ -57,56 +57,28 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   type = diskfs_root_node->dn_stat.st_mode & S_IFMT;
 
- repeat_transcheck:
   if ((diskfs_root_node->istranslated
-       || diskfs_root_node->translator.control != MACH_PORT_NULL)
+       || fshelp_translated (&diskfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
-      /* If this is translated, start the translator (if necessary) 
-	 and use it. */
-      mach_port_t childcontrol = diskfs_root_node->translator.control;
-
-      if (childcontrol == MACH_PORT_NULL)
+      error = fshelp_fetch_root (&diskfs_root_node->transbox,
+				 &dotdot, dotdot, uids, nuids,
+				 gids, ngids, flags, 
+				 _diskfs_translator_callback,
+				 retry, retryname, returned_port);
+      if (error && error != ENOENT)
 	{
-	  mach_port_mod_refs (mach_task_self (), dotdot, 
-			      MACH_PORT_RIGHT_SEND, 1);
-	  if (error = diskfs_start_translator (diskfs_root_node, dotdot, 0))
-	    {
-	      mutex_unlock (&diskfs_root_node->lock);
-	      return error;
-	    }
-	  childcontrol = diskfs_root_node->translator.control;
+	  mutex_unlocx (&diskfs_root_node->lock);
+	  return error;
 	}
-
-      mach_port_mod_refs (mach_task_self (), childcontrol,
-			  MACH_PORT_RIGHT_SEND, 1);
-
-      mutex_unlock (&diskfs_root_node->lock);
-      
-      error = fsys_getroot (childcontrol, dotdot, MACH_MSG_TYPE_COPY_SEND,
-			    uids, nuids, gids, ngids,
-			    flags, retry, retryname, returned_port);
-      if (error == MACH_SEND_INVALID_DEST || error == MIG_SERVER_DIED)
-	{
-	  /* The server has died; unrecord the translator port
-	     and repeat the check. */
-	  mutex_lock (&diskfs_root_node->lock);
-	  if (diskfs_root_node->translator.control == childcontrol)
-	    fshelp_translator_drop (&diskfs_root_node->translator);
-	  mach_port_deallocate (mach_task_self (), childcontrol);
-	  error = 0;
-	  goto repeat_transcheck;
-	}
-
-      if (!error && *returned_port != MACH_PORT_NULL)
-	*returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-      else
-	*returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-
       if (!error)
-	mach_port_deallocate (mach_task_self (), dotdot);
+	{
+	  *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
+	  return 0;
+	}
       
-      return error;
+      /* ENOENT means the translator was removed in the interim. */
+      error = 0;
     }
   
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))
