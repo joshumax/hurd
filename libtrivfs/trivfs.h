@@ -97,6 +97,15 @@ void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
    is about to be destroyed. */
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
 
+/* Creates a control port for this filesystem and sends it to BOOTSTRAP with
+   fsys_startup.  CONTROL_TYPE is the ports library type for the control
+   port, and PROTID_TYPE is the type for ports representing opens of this
+   node.  If CONTROL isn't NULL, the trivfs control port is return in it.  If
+   any error occurs sending fsys_startup, it is returned, otherwise 0.  */
+error_t trivfs_startup(mach_port_t bootstrap,
+		       int control_type, int protid_type,
+		       struct trivfs_control **control);
+
 /* Call this to create a new control port and return a receive right
    for it; exactly one send right must be created from the returned
    receive right.  UNDERLYING is the underlying port, such as fsys_startup
