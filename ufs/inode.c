@@ -479,7 +479,8 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   write_node (np);
-  sync_dinode (np->dn->number, wait);
+  if (wait)
+    sync_dinode (np->dn->number, 1);
 }
 
 /* Implement the diskfs_set_statfs callback from the diskfs library;
