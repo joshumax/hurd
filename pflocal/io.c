@@ -422,7 +422,7 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   /* Throw away the ids we went through all that trouble to get... */
 #define TRASH_IDS(ids, buf, num) \
   if (buf != ids) \
-    vm_deallocate (mach_task_self (), (vm_address_t)ids, num * sizeof (uid_t));
+    munmap (ids, num * sizeof (uid_t));
 
   TRASH_IDS (uids, uids_buf, num_uids);
   TRASH_IDS (gids, gids_buf, num_gids);
