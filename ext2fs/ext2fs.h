@@ -446,12 +446,11 @@ error_t dev_read_sync (block_t addr, vm_address_t *data, long len);
 
 #define ext2_error(fmt, args...) _ext2_error (__FUNCTION__, fmt , ##args)
 extern void _ext2_error (const char *, const char *, ...)
-	__attribute__ ((format (printf, 2, 3)));
+     __attribute__ ((format (printf, 2, 3)));
 
 #define ext2_panic(fmt, args...) _ext2_panic (__FUNCTION__, fmt , ##args)
 extern void _ext2_panic (const char *, const char *, ...)
-	__attribute__ ((format (printf, 2, 3)));
+     __attribute__ ((format (printf, 2, 3)));
 
-#define ext2_warning(fmt, args...) _ext2_warning (__FUNCTION__, fmt , ##args)
-extern void _ext2_warning (const char *, const char *, ...)
-	__attribute__ ((format (printf, 2, 3)));
+extern void ext2_warning (const char *, ...)
+     __attribute__ ((format (printf, 1, 2)));
