@@ -1,3 +1,9 @@
+Wed Aug  7 13:53:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* node-create.c (diskfs_create_node): New files always copy GID
+	from their parent; that's NetBSD's behavior, and it's good enough
+	for me. 
+
 Thu Aug  1 17:24:08 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl): Don't

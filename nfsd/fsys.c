@@ -49,10 +49,16 @@ init_filesystems (void)
   int line;
   file_t root;
   static FILE *index_file;
+  int i;
 
   fsystable = (struct fsys_spec *) malloc ((fsystablesize = 10)
 					   * sizeof (struct fsys_spec));
-
+  for (i = 0; i < fsystablesize; i++)
+    {
+      fsystable[i].fsys = MACH_PORT_NULL;
+      fsystable[i].name = 0;
+    }
+  
   if (!index_file_name)
     return;
   
@@ -91,14 +97,22 @@ init_filesystems (void)
 	}
 
       if (index >= fsystablesize)
-	fsystable = (struct fsys_spec *) realloc (fsystable,
-						  (fsystablesize = index * 2)
-						  * sizeof (struct fsys_spec));
-      if (index > nfsys)
-	nfsys = index;
+	{
+	  fsystable = (struct fsys_spec *) 
+	    realloc (fsystable, index * 2 * sizeof (struct fsys_spec));
+	  for (i = fsystablesize; i < index * 2; i++)
+	    {
+	      fsystable[i].fsys = MACH_PORT_NULL;
+	      fsystable[i].name = 0;
+	    }
+	  fsystablesize = index * 2;
+	}
+
+      if (index + 1 > nfsys)
+	nfsys = index + 1;
       
       fsystable[index].name = name;
-      file_getcontrol (root, &fsystable[nfsys].fsys);
+      file_getcontrol (root, &fsystable[index].fsys);
       mach_port_deallocate (mach_task_self (), root);
     }
 }
@@ -176,9 +190,17 @@ enter_filesystem (char *name, file_t root)
       return i;
   
   if (nfsys == fsystablesize)
-    fsystable = (struct fsys_spec *) realloc (fsystable,
-					      (fsystablesize *= 2)
-					      * sizeof (struct fsys_spec));
+    {
+      fsystable = (struct fsys_spec *) realloc (fsystable,
+						(fsystablesize * 2)
+						* sizeof (struct fsys_spec));
+      for (i = fsystablesize; i < fsystablesize * 2; i++)
+	{
+	  fsystable[i].fsys = MACH_PORT_NULL;
+	  fsystable[i].name = 0;
+	}
+      fsystablesize *= 2;
+    }
 
   fsystable[nfsys].name = malloc (strlen (name) + 1);
   strcpy (fsystable[nfsys].name, name);

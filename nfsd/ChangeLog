@@ -1,0 +1,73 @@
+Wed Aug  7 11:39:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (op_null, op_getattr, op_setattr, op_lookup, op_readlink,
+	count_read_buffersize, op_read, op_write, op_create, op_remove,
+	op_rename, op_link, op_symlink, op_mkdir, op_rmdir,
+	count_readdir_buffersize, op_statfs, op_mnt, op_getport): Add new
+	parm `version'.
+	* loop.c (server_loop): Supply VERSION to PROC->alloc_reply and
+	PROC->func. 
+	* nfsd.h (struct procedure): Add new parm to `func' and
+	`alloc_reply' members to specify protocol version.
+
+	* ops.c (mounttable): Use op_null for MOUNTPROC_UMNT and
+	MOUNTPROC_UMNTALL. 
+	
+	* ops.c (op_create): Ignore most of setattr structure given.
+	(op_mkdir): Likewise.
+	(complete_setattr): Clean up and be less active when possible.
+
+	* ops.c (op_readdir): Correctly end list of directory entries.
+	
+	* nfsd.h (authserver): New variable.
+n	* main.c: Include <hurd.h>.
+ 	(main): Initialize AUTHSERVER.
+	* cache.c: Include <hurd/io.h> and <hurd/auth.h>.
+ 	(create_cached_handle): Reauthenticate port before calling
+	file_getfh. 
+	
+	* fsys.c (init_filesystems): When setting NFSYS, it needs to be at
+	least as big as INDEX + 1, and install the control port into the
+	correct slot.
+	(init_filesystems): When allocating or reallocating FSYSTABLE,
+	make sure the new entries are zeroed.
+	(enter_filesystem): Likewise.
+
+Tue Aug  6 13:18:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* cache.c (create_cached_handle): Always call fsys_getfile when
+	creating a new cached handle instead of relying upon the passed in
+	port. 
+
+	* xdr.c (hurd_mode_to_nfs_mode): Specify octal number in octal
+	notation. 
+	(encode_fattr): Bother filling in all the fields.
+
+	* loop.c (server_loop): Don't attempt to call cache_handle_rele if
+	C is null.
+
+	* cache.c (fh_hash): Mod-ulize HASH before returning it.
+		
+	* cache.c (process_cred): Arrange to skip VERF field for
+	non-AUTH_UNIX creds too.
+
+	* loop.c (server_loop): Don't call skip_cred for the VERF here;
+	process_cred does it for us.
+	* xdr.c (skip_cred): Delete function.
+	* nfsd.h (skip_cred): Delete decl.
+
+	* cache.c (process_cred): After processing gid list, set P after
+	it. Start gid processing loop at 0.
+
+	* main.c (main): Detach one thread for pmap_udp_socket,
+	and NTHREADS threads for main_udp_socket.
+	* loop.c (server_loop): New parm `fd'; don't do select.
+	Ignore errors that we get from recvfrom instead of processing the
+	last message again.
+
+	* nfsd.h (server_loop): New parm.
+
+	* main.c (main): Stringify LOCALSTATEDIR; but for now just pound
+	in /var.  Call asprintf correctly.
+
+

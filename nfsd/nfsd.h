@@ -67,8 +67,8 @@ struct cached_reply
 
 struct procedure
 {
-  error_t (*func) (struct cache_handle *, int *, int **);
-  size_t (*alloc_reply) (int *);
+  error_t (*func) (struct cache_handle *, int *, int **, int);
+  size_t (*alloc_reply) (int *, int);
   int need_handle;
   int process_error;
 };
@@ -92,6 +92,9 @@ extern struct sockaddr_in main_address, pmap_address;
 /* Name of the file on disk containing the filesystem index table */
 extern char *index_file_name;
 
+/* Our auth server */
+auth_t authserver;
+
 
 /* cache.c */
 int *process_cred (int *, struct idspec **);
@@ -107,13 +110,12 @@ void release_cached_reply (struct cached_reply *cr);
 void scan_replies (void);
 
 /* loop.c */
-void server_loop (void);
+void server_loop (int);
 
 /* ops.c */
 extern struct proctable nfstable, mounttable, pmaptable;
 
 /* xdr.c */
-int *skip_cred (int *);
 int nfs_error_trans (error_t);
 int *encode_fattr (int *, struct stat *);
 int *decode_name (int *, char **);

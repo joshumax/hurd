@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <netinet/in.h>
+#include <fcntl.h>
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -721,6 +722,127 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   mutex_unlock (&np->lock);
   
   return 0;
+}
+
+/* Must be exactly 28 bytes long */
+struct ufs_fhandle
+{
+  int filler1;
+  ino_t inum;
+  long gen;
+  int filler2[4];
+};
+
+/* Return an NFS file handle */
+
+error_t
+diskfs_S_file_getfh (struct protid *cred,
+		     char **fh,
+		     u_int *fh_len)
+{
+  struct node *np;
+  error_t err;
+  struct ufs_fhandle *f;
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  if (!diskfs_isuid (0, cred))
+    return EPERM;
+  
+  np = cred->po->np;
+
+  mutex_lock (&np->lock);
+
+  if (*fh_len < sizeof (struct ufs_fhandle))
+    vm_allocate (mach_task_self (), (vm_address_t *) fh, 
+		 sizeof (struct ufs_fhandle), 1);
+  *fh_len = sizeof (struct ufs_fhandle);
+  
+  f = (struct ufs_fhandle *) *fh;
+  f->inum = np->dn->number;
+  f->gen = np->dn_stat.st_gen;
+  f->filler1 = 0;
+  f->filler2[0] = f->filler2[1] = f->filler2[2] = f->filler2[3] = 0;
+  mutex_unlock (&np->lock);
+  return 0;
+}
+
+/* Lookup an NFS file handle */
+error_t
+diskfs_S_fsys_getfile (mach_port_t fsys,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
+		       uid_t *uids,
+		       u_int nuids,
+		       uid_t *gids,
+		       u_int ngids,
+		       char *handle,
+		       u_int handlelen,
+		       mach_port_t *file,
+		       mach_msg_type_name_t *filetype)
+{
+  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, fsys,
+					    diskfs_control_class);
+  struct node *np;
+  struct ufs_fhandle *f;
+  error_t err;
+  int flags;
+  struct protid fakecred, *newpi;
+  
+  if (!pt)
+    return EOPNOTSUPP;
+
+  if (handlelen != sizeof (struct ufs_fhandle))
+    {
+      ports_port_deref (pt);
+      return EINVAL;
+    }
+
+  f = (struct ufs_fhandle *) handle;
+
+  err = diskfs_cached_lookup (f->inum, &np);
+  if (err)
+    {
+      ports_port_deref (pt);
+      return err;
+    }
+
+  if (np->dn_stat.st_gen != f->gen)
+    {
+      diskfs_nput (np);
+      ports_port_deref (pt);
+      return ESTALE;
+    }
+  
+  /* This call should have a flags arg, but until then... */
+  fakecred.uids = uids;
+  fakecred.gids = gids;
+  fakecred.nuids = nuids;
+  fakecred.ngids = ngids;
+
+  flags = 0;
+  if (!diskfs_access (np, S_IREAD, &fakecred))
+    flags |= O_READ;
+  if (!diskfs_access (np, S_IEXEC, &fakecred))
+    flags |= O_EXEC;
+  if (!diskfs_access (np, S_IWRITE, &fakecred)
+      && !S_ISDIR (np->dn_stat.st_mode)
+      && !diskfs_check_readonly ())
+    flags |= O_WRITE;
+  
+  err = diskfs_create_protid (diskfs_make_peropen (np, flags, MACH_PORT_NULL),
+			      uids, nuids, gids, ngids, &newpi);
+  
+  diskfs_nput (np);
+  ports_port_deref (pt);
+  
+  if (!err)
+    {
+      *file = ports_get_right (newpi);
+      *filetype = MACH_MSG_TYPE_MAKE_SEND;
+    }
+  return err;
 }
 
   

@@ -1,3 +1,7 @@
+Wed Aug  7 14:57:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (prog-subdirs): Add `nfsd'.
+
 Tue Aug  6 12:20:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Released source version 0.0.

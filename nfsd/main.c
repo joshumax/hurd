@@ -23,16 +23,24 @@
 #include <unistd.h>
 #include <rpc/pmap_prot.h>
 #include <maptime.h>
+#include <hurd.h>
 
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
 char *index_file_name;
 
+#ifdef makefiles_not_broken
+#define STATEDIR # LOCALSTATEDIR
+#else
+#define STATEDIR "/var"
+#endif
+
 int
 main (int argc, char **argv)
 {
   int nthreads;
-  
+  int fail;
+
   if (argc > 2)
     {
       fprintf (stderr, "%s [num-threads]\n", argv[0]);
@@ -45,8 +53,9 @@ main (int argc, char **argv)
   if (!nthreads)
     nthreads = 4;
   
-  index_file_name = asprintf ("%s/state/misc/nfsd.index", LOCALSTATEDIR);
+  asprintf (&index_file_name, "%s/state/misc/nfsd.index", STATEDIR);
 
+  authserver = getauth ();
   maptime_map (0, 0, &mapped_time);
 
   main_address.sin_family = AF_INET;
@@ -58,15 +67,29 @@ main (int argc, char **argv)
 
   main_udp_socket = socket (PF_INET, SOCK_DGRAM, 0);
   pmap_udp_socket = socket (PF_INET, SOCK_DGRAM, 0);
-  bind (main_udp_socket, (struct sockaddr *)&main_address,
-	sizeof (struct sockaddr_in));
-  bind (pmap_udp_socket, (struct sockaddr *)&pmap_address,
-	sizeof (struct sockaddr_in));
+  fail = bind (main_udp_socket, (struct sockaddr *)&main_address,
+	       sizeof (struct sockaddr_in));
+  if (fail)
+    {
+      perror ("Binding NFS socket");
+      exit (1);
+    }
+  fail = bind (pmap_udp_socket, (struct sockaddr *)&pmap_address,
+	       sizeof (struct sockaddr_in));
+  if (fail)
+    {
+      perror ("Binding PMAP socket");
+      exit (1);
+    }
 
   init_filesystems ();
 
+  cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
+				pmap_udp_socket));
+  
   while (nthreads--)
-    cthread_detach (cthread_fork ((cthread_fn_t) server_loop, 0));
+    cthread_detach (cthread_fork ((cthread_fn_t) server_loop, 
+				  main_udp_socket));
   
   for (;;)
     {

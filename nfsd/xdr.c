@@ -23,22 +23,11 @@
 #include <string.h>
 #include "nfsd.h"
 
-/* Return the address of the next thing after the credential at P. */
-int *
-skip_cred (int *p)
-{
-  int size;
-  
-  p++;				/* TYPE */
-  size = ntohl (*p++);
-  return p + INTSIZE (size);
-}
-
 /* Any better ideas? */
 static int
 hurd_mode_to_nfs_mode (mode_t m)
 {
-  return m & 0x177777;
+  return m & 0177777;
 }
 
 static int
@@ -85,6 +74,14 @@ encode_fattr (int *p, struct stat *st)
   *p++ = htonl (st->st_blksize);
   *p++ = htonl (st->st_rdev);
   *p++ = htonl (st->st_blocks);
+  *p++ = htonl (st->st_fsid);
+  *p++ = htonl (st->st_ino);
+  *p++ = htonl (st->st_atime);
+  *p++ = htonl (st->st_atime_usec);
+  *p++ = htonl (st->st_mtime);
+  *p++ = htonl (st->st_mtime_usec);
+  *p++ = htonl (st->st_ctime);
+  *p++ = htonl (st->st_ctime_usec);
   return p;
 }
 

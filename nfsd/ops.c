@@ -32,7 +32,8 @@
 static error_t
 op_null (struct cache_handle *c,
 	 int *p,
-	 int **reply)
+	 int **reply,
+	 int version)
 {
   return 0;
 }
@@ -40,7 +41,8 @@ op_null (struct cache_handle *c,
 static error_t
 op_getattr (struct cache_handle *c,
 	    int *p,
-	    int **reply)
+	    int **reply,
+	    int version)
 {
   struct stat st;
   error_t err;
@@ -67,17 +69,14 @@ complete_setattr (mach_port_t port,
 
   uid = ntohl (*p++);
   gid = ntohl (*p++);
-  if ((uid != -1 && uid != st.st_uid) 
-      || (gid != -1 && gid != st.st_gid))
-    {
-      if (uid == -1)
-	uid = st.st_uid;
-      if (gid == -1)
-	gid = st.st_gid;
-      err = file_chown (port, uid, gid);
-      if (err)
-	return err;
-    }
+  if (uid == -1)
+    uid = st.st_uid;
+  if (gid == -1)
+    gid = st.st_gid;
+  if (uid != st.st_uid || gid != st.st_gid)
+    err = file_chown (port, uid, gid);
+  if (err)
+    return err;
   
   size = ntohl (*p++);
   if (size != -1 && size != st.st_size)
@@ -89,33 +88,35 @@ complete_setattr (mach_port_t port,
   atime.microseconds = ntohl (*p++);
   mtime.seconds = ntohl (*p++);
   mtime.microseconds = ntohl (*p++);
+
   if (atime.seconds != -1 && atime.microseconds == -1)
     atime.microseconds = 0;
   if (mtime.seconds != -1 && mtime.microseconds == -1)
     mtime.microseconds = 0;
-  if (atime.seconds != -1 || mtime.seconds != -1
-      || atime.microseconds != -1 || mtime.microseconds != -1)
-    {
-      if (atime.seconds == -1)
-	atime.seconds = st.st_atime;
-      if (atime.microseconds == -1)
-	atime.microseconds = st.st_atime_usec;
-      if (mtime.seconds == -1)
-	mtime.seconds = st.st_mtime;
-      if (mtime.microseconds == -1)
-	mtime.microseconds = st.st_mtime_usec;
-      err = file_utimes (port, atime, mtime);
-      if (err)
-	return err;
-    }
-  
-  return 0;
+
+  if (atime.seconds == -1)
+    atime.seconds = st.st_atime;
+  if (atime.microseconds == -1)
+    atime.microseconds = st.st_atime_usec;
+  if (mtime.seconds == -1)
+    mtime.seconds = st.st_mtime;
+  if (mtime.microseconds == -1)
+    mtime.microseconds = st.st_mtime_usec;
+
+  if (atime.seconds != st.st_atime
+      || atime.microseconds != st.st_atime_usec
+      || mtime.seconds != st.st_mtime
+      || mtime.microseconds != st.st_mtime_usec)
+    err = file_utimes (port, atime, mtime);
+
+  return err;
 }
 
 static error_t
 op_setattr (struct cache_handle *c,
 	    int *p,
-	    int **reply)
+	    int **reply,
+	    int version)
 {
   error_t err = 0;
   mode_t mode;
@@ -132,7 +133,8 @@ op_setattr (struct cache_handle *c,
 static error_t
 op_lookup (struct cache_handle *c,
 	   int *p,
-	   int **reply)
+	   int **reply,
+	   int version)
 {
   error_t err;
   char *name;
@@ -171,7 +173,8 @@ op_lookup (struct cache_handle *c,
 static error_t
 op_readlink (struct cache_handle *c,
 	     int *p,
-	     int **reply)
+	     int **reply, 
+	     int version)
 {
   char buf[2048], *transp = buf;
   mach_msg_type_number_t len = sizeof (buf);
@@ -193,7 +196,7 @@ op_readlink (struct cache_handle *c,
 }
 
 static size_t
-count_read_buffersize (int *p)
+count_read_buffersize (int *p, int version)
 {
   return ntohl (*++p);		/* skip OFFSET, return COUNT */
 }
@@ -201,7 +204,8 @@ count_read_buffersize (int *p)
 static error_t
 op_read (struct cache_handle *c,
 	 int *p,
-	 int **reply)
+	 int **reply,
+	 int version)
 {
   off_t offset;
   size_t count;
@@ -229,7 +233,8 @@ op_read (struct cache_handle *c,
 static error_t
 op_write (struct cache_handle *c,
 	  int *p,
-	  int **reply)
+	  int **reply,
+	  int version)
 {
   off_t offset;
   size_t count;
@@ -268,7 +273,8 @@ op_write (struct cache_handle *c,
 static error_t
 op_create (struct cache_handle *c,
 	   int *p,
-	   int **reply)
+	   int **reply,
+	   int version)
 {
   error_t err;
   char *name;
@@ -278,6 +284,8 @@ op_create (struct cache_handle *c,
   struct cache_handle *newc;
   struct stat st;
   mode_t mode;
+  int statchanged = 0;
+  off_t size;
 
   p = decode_name (p, &name);
   mode = ntohl (*p++);
@@ -292,12 +300,33 @@ op_create (struct cache_handle *c,
   if (err)
     return err;
 
-  err = complete_setattr (newport, p);
   if (!err)
+    err = io_stat (newport, &st);
+  if (err)
+    goto errout;
+  
+  /* NetBSD ignores most of the setattr fields given; that's good enough
+     for me too. */
+
+  p++, p++;			/* skip uid and gid */
+
+  size = ntohl (*p++);
+  if (size != -1 && size != st.st_size)
+    {
+      err = file_set_size (newport, size);
+      statchanged = 1;
+    }
+  if (err)
+    goto errout;
+  
+  /* ignore times */
+
+  if (statchanged)
     err = io_stat (newport, &st);
 
   if (err)
     {
+    errout:
       dir_unlink (c->port, name);
       free (name);
       return err;
@@ -316,7 +345,8 @@ op_create (struct cache_handle *c,
 static error_t
 op_remove (struct cache_handle *c,
 	   int *p,
-	   int **reply)
+	   int **reply,
+	   int version)
 {
   error_t err;
   char *name;
@@ -332,7 +362,8 @@ op_remove (struct cache_handle *c,
 static error_t
 op_rename (struct cache_handle *fromc,
 	   int *p,
-	   int **reply)
+	   int **reply,
+	   int version)
 {
   struct cache_handle *toc;
   char *fromname, *toname;
@@ -354,7 +385,8 @@ op_rename (struct cache_handle *fromc,
 static error_t
 op_link (struct cache_handle *filec,
 	 int *p,
-	 int **reply)
+	 int **reply,
+	 int version)
 {
   struct cache_handle *dirc;
   char *name;
@@ -375,7 +407,8 @@ op_link (struct cache_handle *filec,
 static error_t
 op_symlink (struct cache_handle *c,
 	    int *p,
-	    int **reply)
+	    int **reply,
+	    int version)
 {
   char *name, *target;
   error_t err;
@@ -416,7 +449,8 @@ op_symlink (struct cache_handle *c,
 static error_t
 op_mkdir (struct cache_handle *c,
 	  int *p,
-	  int **reply)
+	  int **reply,
+	  int version)
 {
   char *name;
   mode_t mode;
@@ -448,7 +482,8 @@ op_mkdir (struct cache_handle *c,
   if (err)
     return err;
   
-  err = complete_setattr (newport, p);
+  /* Ignore the rest of the sattr structure */
+
   if (!err)
     err = io_stat (newport, &st);
   if (err)
@@ -465,7 +500,8 @@ op_mkdir (struct cache_handle *c,
 static error_t
 op_rmdir (struct cache_handle *c,
 	  int *p,
-	  int **reply)
+	  int **reply,
+	  int version)
 {
   char *name;
   error_t err;
@@ -480,7 +516,8 @@ op_rmdir (struct cache_handle *c,
 static error_t
 op_readdir (struct cache_handle *c,
 	    int *p,
-	    int **reply)
+	    int **reply,
+	    int version)
 {
   int cookie;
   unsigned count;
@@ -491,6 +528,7 @@ op_readdir (struct cache_handle *c,
   int nentries;
   int i;
   int *replystart;
+  int *r;
 
   cookie = ntohl (*p++);
   count = ntohl (*p++);
@@ -501,10 +539,12 @@ op_readdir (struct cache_handle *c,
   if (err)
     return err;
 
+  r = *reply;
+
   if (nentries == 0)
     {
-      *(*reply)++ = htonl (0);	/* no entry */
-      *(*reply)++ = htonl (1);	/* EOF */
+      *r++ = htonl (0);	/* no entry */
+      *r++ = htonl (1);	/* EOF */
     }
   else
     {
@@ -514,19 +554,22 @@ op_readdir (struct cache_handle *c,
 	    && (char *)reply < (char *)replystart + count);
 	   i++, dp = (struct dirent *) ((char *)dp + dp->d_reclen))
 	{
-	  *(*reply)++ = htonl (1); /* entry present */
-	  *(*reply)++ = htonl (dp->d_ino);
-	  *reply = encode_string (*reply, dp->d_name);
-	  *(*reply)++ = htonl (i + cookie + 1); /* next entry */
+	  *r++ = htonl (1); /* entry present */
+	  *r++ = htonl (dp->d_ino);
+	  r = encode_string (r, dp->d_name);
+	  *r++ = htonl (i + cookie + 1); /* next entry */
 	}
-      *(*reply)++ = htonl (0);	/* not EOF */
+      *r++ = htonl (0);		/* no more entries */
+      *r++ = htonl (0);		/* not EOF */
     }
   
+  *reply = r;
+
   return 0;
 }
 
 static size_t 
-count_readdir_buffersize (int *p)
+count_readdir_buffersize (int *p, int version)
 {
   return ntohl (*++p);		/* skip COOKIE; return COUNT  */
 }
@@ -534,7 +577,8 @@ count_readdir_buffersize (int *p)
 static error_t
 op_statfs (struct cache_handle *c,
 	   int *p,
-	   int **reply)
+	   int **reply,
+	   int version)
 {
   struct statfs st;
   error_t err;
@@ -548,7 +592,8 @@ op_statfs (struct cache_handle *c,
 static error_t
 op_mnt (struct cache_handle *c,
 	int *p,
-	int **reply)
+	int **reply,
+	int version)
 {
   file_t root;
   struct cache_handle *newc;
@@ -574,7 +619,8 @@ op_mnt (struct cache_handle *c,
 static error_t
 op_getport (struct cache_handle *c,
 	    int *p,
-	    int **reply)
+	    int **reply,
+	    int version)
 {
   int prog, vers, prot;
   
@@ -631,8 +677,8 @@ struct proctable mounttable =
     { op_null, 0, 0, 0},
     { op_mnt, 0, 0, 1},
     { 0, 0, 0, 0},		/* MOUNTPROC_DUMP */
-    { 0, 0, 0, 0},		/* MOUNTPROC_UMNT */
-    { 0, 0, 0, 0},		/* MOUNTPROC_UMNTALL */
+    { op_null, 0, 0, 0},	/* MOUNTPROC_UMNT */
+    { op_null, 0, 0, 0},	/* MOUNTPROC_UMNTALL */
     { 0, 0, 0, 0},		/* MOUNTPROC_EXPORT */
   }
 };

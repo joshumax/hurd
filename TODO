@@ -139,11 +139,16 @@ See `tasks', the exported task list.
 *** Allow multiple pfinets to arp on the same ethernet interface for different
     IP addresses.
 *** Register a shutdown notification to close TCP channels.
+*** select for read on a UDP socket seems never to return.
 
 ** nfs
 *** Implement async I/O
 *** Finish work to turn on paging.
 *** Finish excl arg work in link and rename.
+*** Implement TCP nfs.
+*** Implement V3 nfs.
+*** Implement nqnfs.
+*** Add Hurd-specific calls.
 
 ** devio:
 *** Make a server (/servers/devio?) to share multiple devio nodes?
@@ -172,6 +177,7 @@ See `tasks', the exported task list.
 *** Try to write directories with 512-byte record boundaries.
 *** Maybe file_pager_write_page should be able to accurately reproduce holes...
 *** Add byte-swapping.
+*** Implement file_getfh and fsys_getfile.
 
 ** crash
 *** Write core files.
@@ -211,13 +217,14 @@ See `tasks', the exported task list.
      internal thread list.
 *** read core files
 
-** nfsd -- fix remaining bugs
-*** Add necessary support to filesystems
+** nfsd
+*** Implement TCP nfs.
+*** Implement V3 nfs.
+*** Implement nqnfs.
+*** Add Hurd-specific calls.
 
 ** fsck.ufs -- zero-length directories and attachment into lost+found still 
    don't work. 
-
-
 
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from

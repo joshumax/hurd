@@ -64,15 +64,9 @@ diskfs_create_node (struct node *dir,
     goto change_err;
   np->dn_stat.st_uid = newuid;
 
-  if (diskfs_groupmember (dir->dn_stat.st_gid, cred))
-    newgid = dir->dn_stat.st_gid;
-  else if (cred->ngids)
-    newgid = cred->gids[0];
-  else
-    {
-      newgid = dir->dn_stat.st_gid;
-      mode &= ~S_ISGID;
-    }
+  newgid = dir->dn_stat.st_gid;
+  if (!diskfs_groupmember (newgid, cred))
+    mode &= ~S_ISGID;
   err = diskfs_validate_group_change (np, newgid);
   if (err)
     goto change_err;

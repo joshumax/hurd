@@ -23,6 +23,8 @@
 #include <hurd/fsys.h>
 #include <assert.h>
 #include <string.h>
+#include <hurd/io.h>
+#include <hurd/auth.h>
 #include "nfsd.h"
 
 
@@ -136,35 +138,40 @@ process_cred (int *p, struct idspec **credp)
     {
       int size = ntohl (*p++);
       *credp = idspec_lookup (0, 0, 0, 0);
-      return p + INTSIZE (size);
+      p += INTSIZE (size);
     }
-  
-  p++;				/* skip size */
-  p++;				/* skip seconds */
-  len = ntohl (*p++);
-  p += INTSIZE (len);		/* skip hostname */
-  
-  uid = p++;			/* remember loc of uid */
-  *uid = ntohl (*uid);
-  
-  firstgid = *p++;		/* remember first gid */
-  gids = p;			/* here's where the array will start */
-  ngids = ntohl (*p++);
-  
-  /* Now swap the first gid to be the first element of the array */
-  *gids = firstgid;
-  ngids++;			/* and count it */
+  else
+    {
+      p++;			/* skip size */
+      p++;			/* skip seconds */
+      len = ntohl (*p++);
+      p += INTSIZE (len);	/* skip hostname */
+      
+      uid = p++;		/* remember loc of uid */
+      *uid = ntohl (*uid);
+      
+      firstgid = *p++;		/* remember first gid */
+      gids = p;			/* here's where the array will start */
+      ngids = ntohl (*p++);
+      
+      /* Now swap the first gid to be the first element of the array */
+      *gids = firstgid;
+      ngids++;			/* and count it */
+      
+      /* And byteswap the gids */
+      for (i = 0; i < ngids; i++)
+	gids[i] = ntohl (gids[i]);
+      
+      p += ngids - 1;
 
-  /* And byteswap the gids */
-  for (i = 1; i < ngids; i++)
-    gids[i] = ntohl (gids[i]);
+      *credp = idspec_lookup (1, ngids, uid, gids);
+    }
   
   /* Next is the verf field; skip it entirely */
   p++;				/* skip id */
   len = htonl (*p++);
   p += INTSIZE (len);
   
-  *credp = idspec_lookup (1, ngids, uid, gids);
   return p;
 }
 
@@ -239,7 +246,7 @@ fh_hash (char *fhandle, struct idspec *i)
   for (n = 0; n < NFS_FHSIZE; n++)
     hash += fhandle[n];
   hash += (int) i >> 6;
-  return hash;
+  return hash % FHHASH_TABLE_SIZE;
 }
 
 int *
@@ -342,7 +349,7 @@ scan_fhs ()
 }
 
 struct cache_handle *
-create_cached_handle (int fs, struct cache_handle *credc, file_t newport)
+create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 {
   char fhandle[NFS_FHSIZE];
   error_t err;
@@ -350,20 +357,35 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t newport)
   int hash;
   char *bp = fhandle + sizeof (int);
   size_t handlelen = NFS_FHSIZE - sizeof (int);
+  mach_port_t newport, ref;
 
+  /* Authenticate USERPORT so that we can call file_getfh on it. */
+  ref = mach_reply_port ();
+  if (io_reauthenticate (userport, ref, MACH_MSG_TYPE_MAKE_SEND)
+      || auth_user_authenticate (authserver, ref, MACH_MSG_TYPE_MAKE_SEND,
+				 &newport))
+    {
+      /* Reauthentication has failed, but maybe the filesystem will let
+	 us call file_getfh anyway. */
+      newport = userport;
+    }
+  else
+    mach_port_deallocate (mach_task_self (), userport);
+  mach_port_destroy (mach_task_self (), ref);
+    
+  /* Fetch the file handle */
   *(int *)fhandle = fs;
   err = file_getfh (newport, &bp, &handlelen);
+  mach_port_deallocate (mach_task_self (), newport);
   if (err || handlelen != NFS_FHSIZE - sizeof (int))
-    {
-      mach_port_deallocate (mach_task_self (), newport);
-      return 0;
-    }
+    return 0;
   if (bp != fhandle + sizeof (int))
     {
       bcopy (bp, fhandle + sizeof (int), NFS_FHSIZE - sizeof (int));
       vm_deallocate (mach_task_self (), (vm_address_t) bp, handlelen);
     }
   
+  /* Cache it */
   hash = fh_hash (fhandle, credc->ids);
   mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
@@ -374,9 +396,22 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t newport)
 	  nfreefh--;
 	c->references++;
 	mutex_unlock (&fhhashlock);
-	mach_port_deallocate (mach_task_self (), newport);
 	return c;
       }
+
+  /* Always call fsys_getfile so that we don't depend on the
+     particular open modes of the port passed in. */
+
+  err = fsys_getfile (lookup_filesystem (fs), 
+		      credc->ids->uids, credc->ids->nuids, 
+		      credc->ids->gids, credc->ids->ngids,
+		      fhandle + sizeof (int), NFS_FHSIZE - sizeof (int),
+		      &newport);
+  if (err)
+    {
+      mutex_unlock (&fhhashlock);
+      return 0;
+    }
   
   /* Create it anew */
   c = malloc (sizeof (struct cache_handle));

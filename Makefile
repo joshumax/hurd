@@ -30,7 +30,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
-	       login nfs pfinet daemons
+	       login nfs pfinet daemons nfsd
 other-subdirs = hurd doc config release include
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist =

@@ -6,17 +6,23 @@ anonymous FTP from prep.ai.mit.edu [18.159.0.42] in the file
 
 This file contains complete source code for the following:
 
-Hurd servers: auth, crash, devio, devport, exec, ext2fs, fifo, fwd,
-ifsock, init, magic, new-fifo, nfs, null, pfinet, pflocal, proc,
-symlink, term, ufs.
+Hurd servers: 
+ 
+ auth, crash, devio, devport, exec, ext2fs, fifo, fwd, ifsock, init,
+ magic, new-fifo, nfs, null, pfinet, pflocal, proc, symlink, term,
+ ufs.
 
-Hurd libraries: diskfs, fshelp, ihash, iohelp, netfs, pager, pipe,
-ports, ps, shouldbeinlibc, store, threads, trivfs.
+Hurd libraries: 
+ 
+ diskfs, fshelp, ihash, iohelp, netfs, pager, pipe, ports, ps,
+ shouldbeinlibc, store, threads, trivfs.
 
-Hurd utilities, etc: boot, shd, ps, settrans, showtrans, sync, su,
-mount, fsysopts, storeinfo, login, w, uptime, hurdids, loginpr, sush,
-vmstat, portinfo, devprobe, reboot, halt, fsck, fsck.ufs, mkfs.ufs,
-clri.ufs, stati.ufs, getty, rc.
+Hurd utilities and other programs: 
+
+ boot, shd, ps, settrans, showtrans, sync, su, mount, fsysopts,
+ storeinfo, login, w, uptime, hurdids, loginpr, sush, vmstat,
+ portinfo, devprobe, reboot, halt, fsck, fsck.ufs, mkfs.ufs, clri.ufs,
+ stati.ufs, getty, rc.
 
 
 ------
@@ -46,12 +52,12 @@ This release may be fetched by anonymous FTP from prep.ai.mit.edu
 
 In that directory, you should find the following files:
 
-README
-SOURCES
-INSTALL-binary
-grub-boot.image		(about 1.4 MB, not compressed)
-gnu-0.0.tar.gz		(about 56.9 MB compressed)
-gnu-0.0-stripped.tar.gz	(about 26.2 MB compressed)
+ README
+ SOURCES
+ INSTALL-binary
+ grub-boot.image		(about 1.4 MB, not compressed)
+ gnu-0.0.tar.gz			(about 56.9 MB compressed)
+ gnu-0.0-stripped.tar.gz	(about 26.2 MB compressed)
 
 SOURCES contains a complete list describing the sources for the
 binaries found in the image.  INSTALL-binary contains complete
@@ -78,13 +84,13 @@ in order to complete part of the installation instructions.
 
 The following free software packages are found in this release:
 
-autoconf, automake, bash, bc, binutils, bison, cpio, cvs, diffutils,
-doschk, e2fsprogs, ed, emacs, fileutils, findutils, flex, from, gawk,
-gcal, gcc, gdb, gdbm, gettext, glibc, gmp, gperf, grep, grub, gzip,
-hello, hurd, indent, inetutils, less, mach, make, m4, miscfiles,
-ncurses, nethack, nvi, patch, ptx, rcs, readline, recode, sed,
-serverboot, sharutils, shellutils, tar, termcap, termutils, texinfo,
-textutils, time, wdiff.
+ autoconf, automake, bash, bc, binutils, bison, cpio, cvs, diffutils,
+ doschk, e2fsprogs, ed, emacs, fileutils, findutils, flex, from, gawk,
+ gcal, gcc, gdb, gdbm, gettext, glibc, gmp, gperf, grep, grub, gzip,
+ hello, hurd, indent, inetutils, less, mach, make, m4, miscfiles,
+ ncurses, nethack, nvi, patch, ptx, rcs, readline, recode, sed,
+ serverboot, sharutils, shellutils, tar, termcap, termutils, texinfo,
+ textutils, time, wdiff.
 
 
 ------
@@ -95,11 +101,10 @@ Here are md5sum checksums for the files mentioned in this message:
 b5f888bab3eb193fe97a00a141324c9d  INSTALL-binary
 345dcd826747d7b11fc78f4db162d75b  README
 1a5744bb4ed3448045fa6d24153d65fe  SOURCES
-
-
-
+f7b1bc428bc4ee29977a5b28f5762092  gnu-0.0-stripped.tar.gz
+24554c58e5c89f295176e17d21dbae8e  gnu-0.0.tar.gz
 8338c619d860b71bc4128c9c0fd39d63  grub-boot.image
-
+1fd18ccc4c81d051b83d28b13dc07ee2  hurd-0.0.tar.gz
 
 -----
 
