@@ -49,7 +49,7 @@ routine fsys_getroot (
 	flags: int;
 	uids: idarray_t;
 	gids: idarray_t;
-	out file: mach_port_move_send_t);
+	out file: mach_port_send_t);
 
 /* Get a file given a file handle (see file_getfh).  */
 routine fsys_getfile (
