@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -26,7 +26,8 @@ error_t
 diskfs_S_fsys_goaway (fsys_t controlport,
 		      int flags)
 {
-  struct port_info *pt = ports_check_port_type (controlport, PT_CTL);
+  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
+					    diskfs_control_class);
   error_t ret;
   
   if (!pt)
@@ -35,7 +36,7 @@ diskfs_S_fsys_goaway (fsys_t controlport,
   /* XXX FSYS_GOAWAY_NOWAIT not implemented. */
   
   ret = diskfs_shutdown (flags);
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   return ret;
 }
 
