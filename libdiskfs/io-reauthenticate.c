@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_reathenticate as described in <hurd/io.defs>. */
 error_t
@@ -39,7 +40,7 @@ S_io_reauthenticate (struct protid *cred,
   aubuf = aux_uids; agbuf = aux_gids;
 
   mutex_lock (&cred->po->np->lock);
-  newcred = start_making_protid (cred->po);
+  newcred = diskfs_start_protid (cred->po);
   err = auth_server_authenticate (auth_server_port, 
 				  cred->fspt.pi.port,
 				  MACH_MSG_TYPE_MAKE_SEND,
@@ -52,7 +53,7 @@ S_io_reauthenticate (struct protid *cred,
 				  &aux_gids, &auxgidlen);
   assert (!err);		/* XXX */
 
-  finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
+  diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
 
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
