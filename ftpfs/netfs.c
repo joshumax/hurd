@@ -180,7 +180,9 @@ get_dirents (struct ftpfs_dir *dir,
 	 ? DIRENTS_CHUNK_SIZE
 	 : max_data_len);
 
-      err = vm_allocate (mach_task_self (), (vm_address_t *) data, size, 1);
+      *data = mmap (0, size, PROT_READ|PROT_WRITE, 
+				   MAP_ANON, 0, 0);
+      err = ((void *) *data == (void *) -1) ? errno : 0;
 
       if (! err)
 	{

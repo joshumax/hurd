@@ -105,8 +105,10 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 		      if (cc->alloced == 0)
 			{
 			  vm_address_t addr = 0;
-			  err = vm_allocate (mach_task_self (),
-					     &addr, alloc_end, 1);
+			  addr = (vm_address_t) mmap (0, alloc_end, 
+						      PROT_READ|PROT_WRITE,
+						      MAP_ANON, 0, 0);
+			  err = (addr == -1) ? errno : 0;
 			  if (! err)
 			    cc->image = (char *)addr;
 			}
@@ -114,6 +116,8 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 			{
 			  vm_address_t addr =
 			    (vm_address_t)cc->image + cc->alloced;
+			  /* XXX.  This can't be replaced with mmap until we
+			     have MAP_EXCL.  -tb  */
 			  err = vm_allocate (mach_task_self (),
 					     &addr, alloc_end - cc->alloced,
 					     0);
@@ -121,8 +125,10 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 			    /* Gack.  We've goota move the whole splooge.  */
 			    {
 			      addr = 0;
-			      err = vm_allocate (mach_task_self (),
-						 &addr, alloc_end, 1);
+			      addr = (vm_address_t) mmap (0, alloc_end, 
+							  PROT_READ|PROT_WRITE,
+							  MAP_ANON, 0, 0);
+			      err = (addr == -1) ? errno : 0;
 			      if (! err)
 				/* That worked; copy what's already-fetched. */
 				{
