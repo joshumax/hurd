@@ -159,11 +159,12 @@ ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(OBJS) \
 	      $(HURDLIBS-files) $(OTHERLIBS)
-#	      -Wl,$(subst $(empty) ,$(comma),$(OBJS) -\( $(HURDLIBS-libs) -\))\
+#	      -Wl,$(subst $(empty) ,$(comma),-\( $(OBJS) $(HURDLIBS-files) -\))\
 #	       -lg
 empty =
 comma = ,
 endif
+
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
