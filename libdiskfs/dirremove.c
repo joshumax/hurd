@@ -35,7 +35,7 @@ diskfs_dirremove (struct node *dp,
 {
   error_t err;
   
-  diskfs_purge_cache (dp, np);
+  diskfs_purge_lookup_cache (dp, np);
   
   err = diskfs_dirremove_hard (dp, ds);
   if (!err && dp->dirmod_reqs)
