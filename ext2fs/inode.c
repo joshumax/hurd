@@ -70,7 +70,7 @@ iget (ino_t inum, struct node **npp)
   dn->number = inum;
   dn->dirents = 0;
 
-  rwlock_init (&dn->allocptrlock);
+  rwlock_init (&dn->alloc_lock);
   pokel_init (&dn->pokel, diskpager->p, disk_image);
   dn->fileinfo = 0;
 
