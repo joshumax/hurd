@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/fsys.h>
 
 mach_port_t
-diskfs_startup_diskfs (mach_port_t bootstrap)
+diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 {
   mach_port_t realnode;
   struct port_info *newpi;
@@ -39,7 +39,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap)
       newpi = ports_allocate_port (diskfs_port_bucket,
 				   sizeof (struct port_info),
 				   diskfs_control_class);
-      errno = fsys_startup (bootstrap, ports_get_right (newpi),
+      errno = fsys_startup (bootstrap, flags, ports_get_right (newpi),
 			    MACH_MSG_TYPE_MAKE_SEND, &realnode);
       ports_port_deref (newpi);
       if (errno)
