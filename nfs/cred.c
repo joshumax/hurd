@@ -82,3 +82,23 @@ netfs_make_credential (uid_t *uids,
 
   return cred;
 }
+
+int
+cred_has_uid (struct netcred *cred, uid_t uid)
+{
+  int i;
+  for (i = 0; i < cred->nuids; i++)
+    if (cred->uids[i] == uid)
+      return 1;
+  return 0;
+}
+
+int
+cred_has_gid (struct netcred *cred, gid_t gid)
+{
+  int i;
+  for (i = 0; i < cred->ngids; i++)
+    if (cred->gids[i] == gid)
+      return 1;
+  return 0;
+}
