@@ -1,6 +1,6 @@
 /* Decompressing store backend
 
-   Copyright (C) 1998 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999 Free Software Foundation, Inc.
    Written by okuji@kuicr.kyoto-u.ac.jp <okuji@kuicr.kyoto-u.ac.jp>
    This file is part of the GNU Hurd.
 
@@ -24,6 +24,8 @@
 #include <cthreads.h>
 
 #include "store.h"
+
+extern void do_bunzip2 (void);	/* Entry point to bunzip2 engine.  */
 
 
 #define IN_BUFFERING  (256*1024)
