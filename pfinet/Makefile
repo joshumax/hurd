@@ -38,6 +38,7 @@ FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	ip.h ip_fw.h ipx.h kernel.h major.h malloc.h mm.h net.h netdevice.h \
 	notifier.h param.h route.h sched.h skbuff.h socket.h sockios.h stat.h \
 	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
+ASMHEADERS=bitops.h segment.h system.h
 
 pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a \
 	../libthreads/libthreads.a ../libports/libports.a \
@@ -58,7 +59,7 @@ socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
 $(OBJS): config.h
 
-lndist: lndist-linux-inet-files lndist-linux-files
+lndist: lndist-linux-inet-files lndist-linux-files lndist-asm-files
 
 lndist-linux-inet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-inet
 	ln $(addprefix linux-inet/,$(LINUXSRCS) $(UNUSEDSRC) $(LINUXHDRS)) $<
@@ -66,9 +67,12 @@ lndist-linux-inet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-inet
 lndist-linux-files: $(top_srcdir)/hurd-snap/$(dir)/linux
 	ln $(addprefix linux/,$(FROBBEDLINUXHEADERS)) $<
 
+lndist-asm-files: $(top_srcdir)/hurd-snap/$(dir)/asm
+	ln $(addprefix asm/,$(ASMHEADERS)) $<
+
 $(top_srcdir)/hurd-snap/$(dir)/linux-inet:
 	mkdir $@
-
 $(top_srcdir)/hurd-snap/$(dir)/linux:
 	mkdir $@
-
+$(top_srcdir)/hurd-snap/$(dir)/asm:
+	mkdir $@
