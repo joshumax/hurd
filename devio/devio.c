@@ -233,11 +233,12 @@ int trivfs_allow_open = O_READ | O_WRITE;
 void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
-  struct dev *dev = cred->po->hook;
+  struct open *open = cred->po->hook;
 
-  if (dev)
+  if (open)
     /* An open device.  */
     {
+      struct dev *dev = open->dev;
       vm_size_t size = dev->size;
 
       if (dev->block_size > 1)
