@@ -649,6 +649,8 @@ finished:
 
   if (err && rd > 0)
     ftp_conn_abort (conn);
+  else
+    err = ftp_conn_finish_transfer (conn);
 
   return err;
 }
