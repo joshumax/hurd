@@ -432,6 +432,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   int cancel;
   int i, max;
   char *cp;
+  int avail;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -473,7 +474,11 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	}
     }
 
-  max = (amount < qsize (inputq)) ? amount : qsize (inputq);
+  avail = qsize (inputq);
+  if (remote_input_mode)
+    avail--;
+
+  max = (amount < avail) ? amount : avail;
 
   if (max > *datalen)
     vm_allocate (mach_task_self (), (vm_address_t *)data, max, 1);
@@ -484,31 +489,39 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     {
       char c = dequeue (inputq);
       
-      /* Unless this is EOF, add it to the response. */
-      if (!(termstate.c_lflag & ICANON)
-	  || !CCEQ (termstate.c_cc[VEOF], c))
-	*cp++ = c;
-      
-      /* If this is a break character, then finish now. */
-      if ((termstate.c_lflag & ICANON)
-	  && (c == '\n'
-	      || CCEQ (termstate.c_cc[VEOF], c)
-	      || CCEQ (termstate.c_cc[VEOL], c)
-	      || CCEQ (termstate.c_cc[VEOL2], c)))
-	break;
-      
-      /* If this is the delayed suspend character, then signal now. */
-      if ((termstate.c_lflag & ISIG)
-	  && CCEQ (termstate.c_cc[VDSUSP], c))
+      if (remote_input_mode)
+	*cp++;
+      else
 	{
-	  /* The CANCEL flag is being used here to tell the return
-	     below to make sure we don't signal EOF on a VDUSP that
-	     happens at the front of a line. */
-	  send_signal (SIGTSTP);
-	  cancel = 1;
-	  break;
+	  /* Unless this is EOF, add it to the response. */
+	  if (!(termstate.c_lflag & ICANON)
+	      || !CCEQ (termstate.c_cc[VEOF], c))
+	    *cp++ = c;
+      
+	  /* If this is a break character, then finish now. */
+	  if ((termstate.c_lflag & ICANON)
+	      && (c == '\n'
+		  || CCEQ (termstate.c_cc[VEOF], c)
+		  || CCEQ (termstate.c_cc[VEOL], c)
+		  || CCEQ (termstate.c_cc[VEOL2], c)))
+	    break;
+	  
+	  /* If this is the delayed suspend character, then signal now. */
+	  if ((termstate.c_lflag & ISIG)
+	      && CCEQ (termstate.c_cc[VDSUSP], c))
+	    {
+	      /* The CANCEL flag is being used here to tell the return
+		 below to make sure we don't signal EOF on a VDUSP that
+		 happens at the front of a line. */
+	      send_signal (SIGTSTP);
+	      cancel = 1;
+	      break;
+	    }
 	}
     }
+
+  if (remote_input_mode && qsize (inputq) == 1)
+    dequeue (inputq);
 
   *datalen = cp - *data;
 
