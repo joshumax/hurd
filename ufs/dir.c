@@ -20,6 +20,9 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
+
+#undef d_ino
 
 enum slot_status
 {
@@ -69,7 +72,7 @@ struct dirstat
 
   /* For stat HERE_TIS, type REMOVE, this is the address of the immediately
      previous direct in this directory block, or zero if this is the first. */
-  struct director_entry *preventry;
+  struct directory_entry *preventry;
 };
 
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
@@ -434,7 +437,7 @@ diskfs_direnter(struct node *dp,
   vm_address_t fromoff, tooff;
   int totfreed;  
   error_t err;
-  off_t newsize;
+  off_t oldsize;
 
   assert (ds->type == CREATE);
   
@@ -512,17 +515,17 @@ diskfs_direnter(struct node *dp,
       /* Extend the file. */
       assert (needed <= DIRBLKSIZ);
       
-      newsize = dp->dn_stat.st_size + DIRBLKSIZ;
-      while (newsize > dp->allocsize)
-	if (err = diskfs_grow (dp, newsize, cred))
+      oldsize = dp->dn_stat.st_size;
+      while (oldsize + DIRBLKSIZ > dp->allocsize)
+	if (err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred))
 	  {
 	    vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
 	    return err;
 	  }
 
-      new = (struct directory_entry *) (ds->mapbuf + dp->dn_stat.st_size);
+      new = (struct directory_entry *) (ds->mapbuf + oldsize);
 
-      dp->dn_stat.st_size += DIRBLKSIZ;
+      dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
 
       new->d_ino = np->dn->number;
@@ -851,7 +854,7 @@ diskfs_get_directs (struct node *dp,
 	{
 	  userp = (struct dirent *) datap;
 
-	  userp->d_fileno = entryp->d_fileno;
+	  userp->d_fileno = entryp->d_ino;
 	  userp->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
 	  userp->d_namlen = DIRECT_NAMLEN (entryp);
 	  bcopy (entryp->d_name, userp->d_name, DIRECT_NAMLEN (entryp) + 1);
