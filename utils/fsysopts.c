@@ -78,6 +78,10 @@ main(int argc, char *argv[])
 	case 'R': recursive = 1; break;
 	case 'L': deref = 1; break;
 
+	case ARGP_KEY_NO_ARGS:
+	  argp_usage (state);
+	  return EINVAL;
+
 	default:
 	  return ARGP_ERR_UNKNOWN;
 	}
