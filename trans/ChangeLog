@@ -1,3 +1,10 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* proxy-defpager.c: New file.
+	* Makefile (targets, SRCS): Add it.
+	(proxy-defpager): New target.
+	(OBJS): Add default_pagerServer.o here.
+
 2002-06-21  Roland McGrath  <roland@frob.com>
 
 	* streamio.c (parse_opt): Fix fencepost error in -n arg parsing.

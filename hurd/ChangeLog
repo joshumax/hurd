@@ -1,3 +1,7 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* paths.h (_SERVERS_DEFPAGER): New macro.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* fs.defs (dir_readdir): Revert AMOUNT type to int, since it's a count

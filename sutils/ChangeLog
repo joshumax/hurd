@@ -1,3 +1,8 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* swapon.c (swaponoff): If get_privileged_ports fails with EPERM, try
+	to open /servers/default-pager instead.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* swapon.c (check_signature): Use %zu for size_t arg.

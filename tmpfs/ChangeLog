@@ -1,3 +1,8 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* tmpfs.c (main): If get_privileged_ports fails with EPERM, try to
+	open /servers/default-pager instead.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* dir.c (diskfs_lookup_hard): Cast int to intptr_t before ino_t.

@@ -1,3 +1,11 @@
+2002-06-14  Roland McGrath  <roland@frob.com>
+
+	* Makefile (INSTALL-vminfo-ops): Variable removed (no setuid).
+
+	* vmstat.c (ensure_def_pager_info): If get_privileged_ports fails with
+	EPERM, try to open /servers/default-pager instead.
+	* Makefile (INSTALL-vmstat-ops): Variable removed (no setuid).
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* vminfo.c: Use `z' modifier format modifier for address/size values.
