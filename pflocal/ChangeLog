@@ -1,3 +1,7 @@
+Mon Oct  7 12:53:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* connq.c (connq_listen): Unlock CQ->lock when returning EWOULDBLOCK.
+
 Thu Sep 12 16:43:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
