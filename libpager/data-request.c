@@ -35,7 +35,6 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   error_t err;
   vm_address_t page;
   int write_lock;
-  struct anticipation *ant;
 
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
@@ -70,15 +69,6 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
       printf ("pager in wrong state for read\n");
       _pager_release_seqno (p, seqno);
       mutex_unlock (&p->interlock);
-      goto allow_term_out;
-    }
-
-  ant = _pager_check_anticipations (p, length, offset);
-  if (ant)
-    {
-      memory_object_data_supply (p->memobjcntl, offset, ant->address,
-				 length, 0, VM_PROT_NONE, 1, MACH_PORT_NULL);
-      free (ant);
       goto allow_term_out;
     }
 
