@@ -189,7 +189,7 @@ file_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
   return err;
 }
 
-struct store_class
+const struct store_class
 store_file_class =
 {
   STORAGE_HURD_FILE, "file", file_read, file_write,

@@ -160,7 +160,7 @@ copy_clone (const struct store *from, struct store *to)
   return errno;
 }
 
-struct store_class
+const struct store_class
 store_copy_class =
 {
   STORAGE_COPY, "copy", copy_read, copy_write,

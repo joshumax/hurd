@@ -78,7 +78,7 @@ mvol_remap (struct store *source,
   return store_remap_create (source, runs, num_runs, 0, store);
 }
 
-struct store_class
+const struct store_class
 store_mvol_class =
 {
   -1, "mvol", mvol_read, mvol_write,

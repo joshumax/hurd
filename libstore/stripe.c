@@ -102,7 +102,7 @@ ileave_decode (struct store_enc *enc, const struct store_class *const *classes,
     }
 }
 
-struct store_class
+const struct store_class
 store_ileave_class =
 {
   STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write,
@@ -145,7 +145,7 @@ concat_decode (struct store_enc *enc, const struct store_class *const *classes,
     }
 }
 
-struct store_class
+const struct store_class
 store_concat_class =
 {
   STORAGE_CONCAT, "concat", stripe_read, stripe_write,

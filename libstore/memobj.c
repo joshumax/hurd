@@ -176,7 +176,8 @@ memobj_decode (struct store_enc *enc, const struct store_class *const *classes,
   return store_std_leaf_decode (enc, store_memobj_create, store);
 }
 
-struct store_class store_memobj_class =
+const struct store_class
+store_memobj_class =
 {
   STORAGE_MEMORY, "memobj",
   map: memobj_map,

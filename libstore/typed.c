@@ -81,5 +81,5 @@ store_typed_open (const char *name, int flags,
   return (*(*cl)->open) (clname_end, flags, classes, store);
 }
 
-struct store_class
+const struct store_class
 store_typed_open_class = { -1, "typed", open: store_typed_open };

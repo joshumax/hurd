@@ -357,7 +357,8 @@ nbd_clear_flags (struct store *store, int flags)
   return err;
 }
 
-struct store_class store_nbd_class =
+const struct store_class
+store_nbd_class =
 {
   STORAGE_NETWORK, "nbd",
   open: nbd_open,

@@ -124,7 +124,7 @@ task_clear_flags (struct store *store, int flags)
   return err;
 }
 
-struct store_class
+const struct store_class
 store_task_class =
 {
   STORAGE_TASK, "task", task_read, task_write,

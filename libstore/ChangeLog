@@ -1,3 +1,23 @@
+2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
+
+	* device.c (dev_error): Add a break to silence gcc warning.
+	(store_device_class): Add const to type.
+	* typed.c (store_typed_open_class): Likewise.
+	* file.c (store_file_class): Likewise.
+	* stripe.c (store_concat_class): Likewise.
+	(store_ileave_class): Likewise.
+	* zero.c (store_zero_class): Likewise.
+	* open.c (store_open_class): Likewise.
+	* remap.c (store_remap_class): Likewise.
+	* task.c (store_task_class): Likewise.
+	* copy.c (store_copy_class): Likewise.
+	* gunzip.c (store_gunzip_class): Likewise.
+	* bunzip2.c (store_bunzip2_class): Likewise.
+	* mvol.c (store_mvol_class): Likewise.
+	* memobj.c (store_memobj_class): Likewise.
+	* nbd.c (store_nbd_class): Likewise.
+	Submitted by Maurizio Boriani <baux@debian.org>.
+
 2001-09-30  Roland McGrath  <roland@frob.com>
 
 	* memobj.c: New file.

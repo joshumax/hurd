@@ -41,6 +41,7 @@ dev_error (error_t err)
     case D_INVALID_OPERATION:	return EBADF; /* ? */
     case D_NO_MEMORY:		return ENOMEM;
     default:
+      break;
     }
   /* Anything unexpected propagates up where weirdness will get noticed.  */
   return err;
@@ -223,7 +224,7 @@ dev_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
     }
 }
 
-struct store_class
+const struct store_class
 store_device_class =
 {
   STORAGE_DEVICE, "device", dev_read, dev_write,

@@ -170,7 +170,7 @@ zero_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
   return 0;
 }
 
-struct store_class
+const struct store_class
 store_zero_class =
 {
   STORAGE_ZERO, "zero", zero_read, zero_write,

@@ -271,5 +271,5 @@ store_gunzip_open (const char *name, int flags,
   return err;
 }
 
-struct store_class
+const struct store_class
 store_gunzip_class = { -1, "gunzip", open: store_gunzip_open };

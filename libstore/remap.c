@@ -197,7 +197,7 @@ remap_validate_name (const char *name,
 }
 
 
-struct store_class
+const struct store_class
 store_remap_class =
 {
   STORAGE_REMAP, "remap", remap_read, remap_write,

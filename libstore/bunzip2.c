@@ -255,5 +255,5 @@ store_bunzip2_open (const char *name, int flags,
   return err;
 }
 
-struct store_class
+const struct store_class
 store_bunzip2_class = { -1, "bunzip2", open: store_bunzip2_open };

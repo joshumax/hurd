@@ -60,5 +60,5 @@ store_open (const char *name, int flags,
   return err;
 }
 
-struct store_class
+const struct store_class
 store_query_class = { -1, "query", open: store_open };
