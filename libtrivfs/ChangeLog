@@ -1,3 +1,9 @@
+1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-get-fs-options.c (trivfs_S_file_get_fs_options):
+	fshelp_return_malloced_buffer renamed to iohelp_*.
+	* fsys-get-options.c (trivfs_S_fsys_get_options): Likewise.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-lookup.c (trivfs_S_dir_lookup): Fix brainos in last change.

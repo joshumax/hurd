@@ -1,8 +1,14 @@
+1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fsys-options.c (diskfs_S_fsys_get_options):
+	fshelp_return_malloced_buffer renamed to iohelp_*.
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Likewise.
+
 Tue Aug 11 16:17:49 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
-	* file-chflags.c (diskfs_S_file_chflags): Set NP->dn_set_ctime. 
+	* file-chflags.c (diskfs_S_file_chflags): Set NP->dn_set_ctime.
 
-	* file-utimes.c (diskfs_S_file_utimes): Add file notifications. 
+	* file-utimes.c (diskfs_S_file_utimes): Add file notifications.
 
 Sun Aug  9 21:09:24 1998  Jose M. Moya  <josem@gnu.org>
 
@@ -28,7 +34,7 @@ Sun Aug  9 21:09:24 1998  Jose M. Moya  <josem@gnu.org>
 	* io-prenotify.c (diskfs_S_io_prenotify): Likewise.
 	* io-write.c (diskfs_S_io_write): Likewise.
 	* node-rdwr.c (diskfs_node_rdwr): Likewise.
-	
+
 Sat Aug  8 17:01:58 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* boot-start.c (diskfs_S_fsys_init): __vm_allocate -> vm_allocate

@@ -1,3 +1,9 @@
+1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-get-fs-options.c (netfs_S_file_get_fs_options):
+	fshelp_return_malloced_buffer renamed to iohelp_*.
+	* fsys-get-options.c (netfs_S_fsys_get_options): Likewise.
+
 Tue Jul 14 16:30:48 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* dir-lookup.c (netfs_S_dir_lookup): Don't require the node to be
@@ -26,7 +32,7 @@ Tue Jul 14 16:30:48 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 Wed Aug 20 14:05:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* init-loop.c (netfs_server_loop): New args for
-	ports_manage_port_operations_multithread. 
+	ports_manage_port_operations_multithread.
 
 Mon Jul  7 16:25:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -67,13 +73,13 @@ Sun Feb 23 16:27:34 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	netfs_make_peropen instead of parent node.
 	* file-exec.c (netfs_S_file_exec): Likewise.
 	* dir-lookup.c (netfs_S_dir_lookup): Implement shadow root
-	.. traversal. 
+	.. traversal.
 	Use context po argument to netfs_make_peropen & as cookie to
 	fshelp_fetch_root, instead of parent node.
 	* fsys-getroot.c (netfs_S_fsys_getroot): Add PEROPEN_CONTEXT
 	variable, and pass it to netfs_make_peropen & fshelp_fetch_root.
 	* netfs.h (struct peropen): Add shadow_root_parent & shadow_root
-	fields. 
+	fields.
 	Removed depth field.  Rename dotdotnode field to root_parent.
 	(netfs_make_peropen): Add and use CONTEXT parameter.
 	* make-peropen.c (netfs_make_peropen): Add and use CONTEXT parameter.
@@ -140,9 +146,9 @@ Fri Nov 15 13:39:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* file-set-translator.c (netfs_S_file_set_translator): Likewise;
 	using fshelp_isowner for permission check.
 	* io-restrict-auth.c (netfs_S_io_restrict_auth): Likewise; guts
-	rewritten. 
+	rewritten.
 	* dir-lookup.c (netfs_S_dir_lookup): netfs_make_credential ->
-	iohelp_make_iouser. 
+	iohelp_make_iouser.
 	* fsys-getroot.c (netfs_S_fsys_getroot): Likewise.
 	* fsys-syncfs.c (netfs_S_fsys_syncfs): Likewise.
 	* io-reauthenticate.c (netfs_S_io_reauthenticate): Use
@@ -237,7 +243,7 @@ Wed Jun 26 15:57:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* netfs.h: Change options parsing interface to match libdiskfs's:
 	(netfs_set_options, netfs_get_options): Updated to inew interface.
-	(netfs_runtime_argp, netfs_std_runtime_argp, netfs_std_startup_arg): 
+	(netfs_runtime_argp, netfs_std_runtime_argp, netfs_std_startup_arg):
 	New variables.
 	(netfs_append_std_options): New declaration.
 	(netfs_parse_runtime_options, netfs_unparse_runtime_options):
@@ -286,9 +292,9 @@ Thu May  9 11:53:49 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* make-protid.c (netfs_make_protid): Use new ports interface; if
 	it fails return zero.
-	
+
 	* io-select.c (netfs_S_io_select): No longer has TAG arg.
-	
+
 	* io-reauthenticate.c (netfs_S_io_reauthenticate): Don't pass
  	right for USER to auth_server_authenticate.
 
@@ -428,4 +434,3 @@ Mon Mar  4 13:36:36 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Tue Apr 11 11:15:30 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
 
 	* Makefile: New file.
-

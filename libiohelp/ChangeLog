@@ -1,3 +1,9 @@
+1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* return-buffer.c (iohelp_return_malloced_buffer): Moved here from
+	../libfshelp/return-buffer.c and renamed from fshelp to iohelp.
+	* iohelp.h (iohelp_return_malloced_buffer): Declare it.
+
 Mon Nov 18 16:37:59 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* iouser-reauth.c: Include <hurd/auth.h>.
@@ -21,7 +27,7 @@ Wed Nov  6 19:26:14 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* Makefile (SRCS): Add iouser-create.c, iouser-dup.c
 	iouser-reauth.c, and iouser-free.c.
 	(OBJS): Compute automatically.
-	
+
 	* iohelp.h (iohelp_create_user): New function.
 	* iouser-create.c: New file.
 
@@ -29,7 +35,7 @@ Tue Nov  5 21:51:24 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* iohelp.h (struct iouser): New type.
 	(iohelp_dup_iouser, iohelp_free_iouser, iohelp_reauth): New
-	functions. 
+	functions.
 	* iouser-dup.c, iouser-reauth.c, iouser-free.c: New files.
 
 Thu Sep 12 16:18:46 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
@@ -52,7 +58,7 @@ Mon May  6 16:27:20 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* initialize_conch.c: Likewise.
 	* verify_user_conch.c: Likewise.
 	* iohelp.h: Likewise.
-	
+
 Mon Oct  9 14:57:48 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
 
         * Makefile: Specify shared library dependencies.
@@ -73,4 +79,3 @@ Tue Jul  5 14:13:09 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
 Thu May  5 07:48:45 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
 
 	* Makefile: Change uses of $(headers) to $(includedir).
-
