@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -26,9 +26,20 @@ fshelp_set_active (struct transbox *box,
 		   mach_port_t active,
 		   int excl)
 {
-  if (excl && box->active != MACH_PORT_NULL)
+  int cancel;
+  
+  if (excl 
+      && ((box->active != MACH_PORT_NULL) || (box->flags & TRANSBOX_STARTING)))
     return EBUSY;
   
+  while (box->flags & TRANSBOX_STARTING)
+    {
+      box->flags |= TRANSBOX_WANTED;
+      cancel = hurd_condition_wait (&box->wakeup, box->lock);
+      if (cancel)
+	return EINTR;
+    }
+
   if (box->active != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), box->active);
 
