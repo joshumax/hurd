@@ -91,6 +91,8 @@ See `tasks', the exported task list.
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
     routines. 
 *** fsys_get_options should return the disk name.
+*** Add `author_tracks_uid' flag to struct node, and use it in places that modify
+    author/uid.  Initialized to 0.
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications?
