@@ -1,4 +1,4 @@
-/* libdiskfs implementation of fs.defs: file_truncate
+/* libdiskfs implementation of fs.defs: file_set_size
    Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -19,16 +19,27 @@
 #include "fs_S.h"
 #include <fcntl.h>
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
+/* Implement file_set_size as described in <hurd/fs.defs>. */
 kern_return_t
-diskfs_S_file_truncate (struct protid *cred,
+diskfs_S_file_set_size (struct protid *cred,
 			off_t size)
 {
   CHANGE_NODE_FIELD (cred,
-		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       err = diskfs_truncate (np, size);
-		   }));
+		     ({
+		       if (!(cred->po->openstat & O_WRITE))
+			 err = EINVAL;
+		       else if (size < np->dn_stat.st_size)
+			 err = diskfs_truncate (np, size);
+		       else if (size > np->dn_stat.st_size)
+			 {
+			   err = diskfs_grow (np, size, cred);
+			   if (! err)
+			     {
+			       np->dn_stat.st_size = size;
+			       np->dn_set_ctime = np->dn_set_mtime = 1;
+			     }
+			 }
+		       else
+			 err = 0; /* Setting to same size.  */
+		     }));
 }
