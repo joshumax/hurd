@@ -1,3 +1,7 @@
+2002-06-05  Roland McGrath  <roland@frob.com>
+
+	* login-.bash_login: Prepend ~/ to file names.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ttys (console): Change type column ($TERM setting) to `mach'.
