@@ -1050,6 +1050,7 @@ do_exec (file_t file,
   vm_size_t phdr_size = 0;
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
+  int oldtask_trashed = 0;	/* Have we trashed the old task?  */
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1197,7 +1198,7 @@ do_exec (file_t file,
 	ports_replaced[idx] = 1;
       }
 
-    e.error = ports_create_port (execboot_portclass, port_bucket, 
+    e.error = ports_create_port (execboot_portclass, port_bucket,
 				 sizeof *boot, &boot);
     if (boot == NULL)
       {
@@ -1460,6 +1461,10 @@ do_exec (file_t file,
       vm_deallocate (oldtask,
 		     VM_MIN_ADDRESS, VM_MAX_ADDRESS - VM_MIN_ADDRESS);
 
+      /* Nothing is supposed to go wrong any more.  If anything does, the
+	 old task is now in a hopeless state and must be killed.  */
+      oldtask_trashed = 1;
+
       /* Deallocate and destroy the ports requested by the caller.
 	 These are ports the task wants not to lose if the exec call
 	 fails, but wants removed from the new program task.  */
@@ -1586,8 +1591,13 @@ do_exec (file_t file,
 	  task_terminate (newtask);
 	  mach_port_deallocate (mach_task_self (), newtask);
 	}
-      /* Resume the old task, which we suspended earlier.  */
-      task_resume (oldtask);
+      if (oldtask_trashed)
+	/* The old task is hopelessly trashed; there is no way it
+	   can resume execution.  Coup de grace.  */
+	task_terminate (oldtask);
+      else
+	/* Resume the old task, which we suspended earlier.  */
+	task_resume (oldtask);
     }
   else
     {
