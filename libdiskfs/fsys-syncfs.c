@@ -29,12 +29,25 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 {
   struct port_info *pi = ports_lookup_port (diskfs_port_bucket, controlport,
 					    diskfs_control_class);
+  error_t 
+    helper (struct node *np)
+      {
+	error_t error;
+	
+	error = fshelp_fetch_control (np, &control);
+	if (!error && control != MACH_PORT_NULL)
+	  {
+	    fsys_syncfs (control, wait, 1);
+	    mach_port_deallocate (mach_task_self (), control);
+	  }
+	return 0;
+      }
   
   if (!pi)
     return EOPNOTSUPP;
   
   if (children)
-    diskfs_sync_translators (wait);
+    diskfs_node_iterate (helper);
 
   if (diskfs_synchronous)
     wait = 1;
