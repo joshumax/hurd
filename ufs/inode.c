@@ -422,7 +422,7 @@ write_all_disknodes ()
     for (np = nodehash[n]; np; np = np->dn->hnext)
       {
 	np->references++;
-	i = alloc (sizeof (struct item));
+	i = alloca (sizeof (struct item));
 	i->next = list;
 	i->np = np;
 	list = i;
