@@ -37,7 +37,7 @@ diskfs_node_rdwr (struct node *np,
 {
   error_t err;
 
-  ioserver_get_conch (&np->conch);
+  iohelp_get_conch (&np->conch);
 
   if (dir)
     while (off + amt > np->allocsize)
