@@ -21,13 +21,17 @@
 #ifndef __PARSE_H__
 #define __PARSE_H__
 
+#include <errno.h>
+#include <argp.h>
+
 /* For each string in the comma-separated list in ARG, call ADD_FN; if ARG is
    empty and DEFAULT_FN isn't NULL, then call ADD_FN on the resutl of calling
    DEFAULT_FN instead, otherwise signal an error.  */
-extern void parse_strlist (char *arg,
-			   void (*add_fn)(const char *str),
-			   const char *(*default_fn)(),
-			   const char *type_name);
+extern error_t
+parse_strlist (char *arg,
+	       error_t (*add_fn)(const char *str, struct argp_state *state),
+	       const char *(*default_fn)(struct argp_state *state),
+	       const char *type_name, struct argp_state *state);
 
 /* For each numeric string in the comma-separated list in ARG, call ADD_FN;
    if ARG is empty and DEFAULT_FN isn't NULL, then call DEF_FN to get a number,
@@ -35,11 +39,12 @@ extern void parse_strlist (char *arg,
    list isn't a number, and LOOKUP_FN isn't NULL, then it is called to return
    an integer for the string.  LOOKUP_FN should signal an error itself it
    there's some problem parsing the string.  */
-extern void parse_numlist (char *arg,
-			   void (*add_fn)(unsigned num),
-			   int (*default_fn)(),
-			   int (*lookup_fn)(const char *str),
-			   const char *type_name);
+extern error_t
+parse_numlist (char *arg,
+	       error_t (*add_fn)(unsigned num, struct argp_state *state),
+	       int (*default_fn)(struct argp_state *state),
+	       int (*lookup_fn)(const char *str, struct argp_state *state),
+	       const char *type_name, struct argp_state *state);
 
 /* Return the index of which of a set of strings ARG matches, including
    non-ambiguous partial matches.  CHOICE_FN should be a function that
@@ -49,7 +54,10 @@ extern void parse_numlist (char *arg,
    that ARG matches no entry , otherwise, an error message is printed and the
    program exits in this event.  If ARG is an ambiguous match, an error
    message is printed and the program exits.  */
-extern int parse_enum (char *arg, const char *(*choice_fn)(unsigned n),
-		       char *kind, int allow_mismatches);
+extern int
+parse_enum (const char *arg,
+	    const char *(*choice_fn)(unsigned n),
+	    const char *kind, int allow_mismatches,
+	    struct argp_state *state);
 
 #endif /* __PARSE_H__ */
