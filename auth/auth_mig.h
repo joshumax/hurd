@@ -20,4 +20,5 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 struct apt *convert_auth_to_idblock (auth_t);
+typedef struct apt *aptptr_t;
 
