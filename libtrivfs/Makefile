@@ -50,7 +50,7 @@ MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o \
 
 OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
-DIST_FILES= $(SRCS) Makefile ChangeLog trivfs.h fsmutations.h
+DIST_FILES= $(SRCS) Makefile ChangeLog trivfs.h fsmutations.h priv.h
 
 MIGSFLAGS=-imacros fsmutations.h
 
