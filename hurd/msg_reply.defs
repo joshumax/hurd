@@ -51,6 +51,6 @@ skip; /* startup_dosync */
 skip; /* dir_changed */
 skip; /* file_changed */
 
-simpleroutine sig_post_reply (
+simpleroutine sig_post_untraced_reply (
 	reply_port: reply_port_t;
 	in return_code: kern_return_t);
