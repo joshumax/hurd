@@ -16,8 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := libdiskfs
-
-include ../Makeconf
+makemode := library
 
 FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c dir-rename.c    \
 	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
@@ -52,99 +51,37 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c  \
 
 SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
-
-TAGSHDRS = diskfs.h priv.h lithp.h fsmutations.h
-
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
-	interruptServer.o fsys_replyUser.o msgUser.o ifsockServer.o
+	interruptServer.o fsys_replyUser.o ourmsgUser.o ifsockServer.o
 
-OBJS = $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
+OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 
-DIST_FILES = $(SRCS) Makefile diskfs.h priv.h lithp.h fsmutations.h ChangeLog
+LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
+REMHDRS = ../hurd/ports.h ../hurd/pager.h ../hurd/fshelp.h ../hurd/ioserver.h
+MIGSFLAGS = -imacros fsmutations.h
+MIGCOMSFLAGS = -prefix diskfs_
+libname = libdiskfs
+installhdrs = diskfs.h
 
-
-MIGSFLAGS=-imacros fsmutations.h
-CPPFLAGS+=-DMAKING_DISKFS
-
-all: libdiskfs.a
-
-libdiskfs.a: $(sort $(OBJS)) 
-	rm -f libdiskfs.a
-	$(AR) r $@ $^
-
-$(hurdinst)/lib/libdiskfs.a: libdiskfs.a
-	cp libdiskfs.a $@
-	$(RANLIB) $@
-
-$(includedir)/hurd/diskfs.h: diskfs.h $(includedir)/hurd/machine/diskfs_machdep.h
-	cp $< $@
-
-$(includedir)/hurd/machine/diskfs_machdep.h: ../machine/diskfs_machdep.h
-	cp ../machine/diskfs_machdep.h $@
-
-install: $(hurdinst)/lib/libdiskfs.a $(includedir)/hurd/diskfs.h
-
-clean:
-	rm -f *.o libdiskfs.a *_S.h *Server.h *Server.c fsys_reply.h *User.c
-
+include ../Makeconf
 
 $(subst .c,.o,$(FSSRCS)): fs_S.h
 dir-readdir.o $(subst .c,.o,$(IOSRCS)): io_S.h
 $(subst .c,.o,$(FSYSSRCS)) boot-start.o: fsys_S.h
-boot-start.o: fsys_reply.h
+boot-start.o: fsys_reply_U.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
 $(subst .c,.o,$(IFSOCKSRCS)): ifsock_S.h
-dir-chg.o: msg.h
+dir-chg.o: ourmsg_U.h
 
-notify-nosenders.o ports-clean.o: $(includedir)/hurd/pager.h
+notify-nosenders.o ports-clean.o: ../hurd/pager.h
 
-$(OBJS): priv.h diskfs.h $(includedir)/hurd/ioserver.h $(includedir)/hurd/ports.h \
-			 $(includedir)/hurd/fshelp.h
+$(OBJS): priv.h diskfs.h ../hurd/ioserver.h ../hurd/ports.h ../hurd/fshelp.h
 file-chauthor.o: lithp.h
-
-fs_S.h fsServer.c: $(includedir)/hurd/fs.defs $(includedir)/hurd/hurd_types.defs \
-		fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fs.defs \
-	| $(MIGCOM) -sheader fs_S.h -header /dev/null -user /dev/null
-
-io_S.h ioServer.c: $(includedir)/hurd/io.defs $(includedir)/hurd/hurd_types.defs \
-		fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/io.defs \
-	| $(MIGCOM) -sheader io_S.h -header /dev/null -user /dev/null
-
-fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fsys.defs \
-	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
-
-ifsock_S.h ifsockServer.c: $(includedir)/hurd/ifsock.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/ifsock.defs \
-	| $(MIGCOM) -sheader ifsock_S.h -header /dev/null -user /dev/null
-
-notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/notify.defs \
-	| $(MIGCOM) -prefix diskfs_ \
-		 -sheader notify_S.h -header /dev/null -user /dev/null
-
-exec_S.h execServer.c: $(includedir)/hurd/exec.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/exec.defs \
-	| $(MIGCOM) -sheader exec_S.h -header /dev/null -user /dev/null
-
-interrupt_S.h interruptServer.c: $(includedir)/hurd/interrupt.defs \
-		$(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/interrupt.defs \
-	| $(MIGCOM) -sheader interrupt_S.h -header /dev/null -user /dev/null
-
-fsys_reply.h fsys_replyUser.c: $(includedir)/hurd/fsys_reply.defs $(hurd/hurd_types.defs)
-	$(CPP) $(CPPFLAGS) $(includedir)/hurd/fsys_reply.defs \
-	| $(MIGCOM) -server /dev/null
 
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.
-msg.h msgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
+ourmsg_U.h ourmsgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(includedir)/hurd/msg.defs \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null
+	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourmsgUser.c -header ourmsg_U.h
