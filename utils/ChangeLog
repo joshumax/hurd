@@ -1,3 +1,7 @@
+Mon Jun  9 12:45:24 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Add setauth.c, pids.c, unsu.c, and nonsugid.c.
+
 Wed Jun  4 14:26:53 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpcp.c, ftpdir.c: Files moved from ../libftpconn.

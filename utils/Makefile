@@ -25,7 +25,8 @@ special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c addauth.c rmauth.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
-	parse.c frobauth.c frobauth-mod.c ftpcp.c ftpdir.c
+	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
+	unsu.c ftpcp.c ftpdir.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
