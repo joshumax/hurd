@@ -822,35 +822,6 @@ diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
    The new node will have one hard reference and no light references.  */
 struct node *diskfs_make_node (struct disknode *dn);
 
-/* The following two calls are actually macros.  */
-/* Begin executing code which might fault.  This contains a call
-   to setjmp and so callers must be careful with register variables.
-   The first time through, this returns 0.  If the code faults
-   accessing a region of memory registered with
-   diskfs_register_memory_fault_area, then this routine will return
-   again with the error number as reported by the pager.  */
-/* int diskfs_catch_exception (void); */
-
-/* After calling diskfs_catch_exception, this routine must be called
-   before exiting the function which called diskfs_catch_exception.
-   It will cancel the fault protection installed by diskfs_catch_exception. */
-/* void diskfs_end_catch_exception (void); */
-
-/* Register a region of memory for protected fault status as described
-   above for diskfs_catch_exception.  This should generally be done
-   for any vm_map of the filesystem's own data.  This will mark memory
-   at ADDR continuing for LEN bytes to be mapped from pager P at offset
-   OFF.  Any memory exceptions in this region will be looked up with
-   pager_get_error (until the XP interface is fixed); this is the only
-   use made of arguments P and OFF.  */
-void diskfs_register_memory_fault_area (struct pager *p, vm_address_t off,
-					void *addr, long len);
-
-/* Remove the registration of a region registered with
-   diskfs_register_memory_fault_area; the region is that at ADDR
-   continuing for LEN bytes. */
-void diskfs_unregister_memory_fault_area (void *addr, long len);
-
 
 /* The library also exports the following functions; they are not generally
    useful unless you are redefining other functions the library provides. */
@@ -1044,31 +1015,7 @@ error_t diskfs_device_read_sync (off_t addr, vm_address_t *data, size_t len);
 
 /* Make errors go somewhere reasonable.  */
 void diskfs_console_stdio ();
-
-/* Exception handling */
 
-#include <cthreads.h>
-#include <setjmp.h>
-struct thread_stuff
-{
-  jmp_buf buf;
-  struct thread_stuff *link;
-};
 
-#define diskfs_catch_exception() \
-  ({									    \
-    struct thread_stuff *tmp;						    \
-    tmp = __builtin_alloca (sizeof (struct thread_stuff));		    \
-    tmp->link = (struct thread_stuff *)cthread_data (cthread_self ());	    \
-    cthread_set_data (cthread_self (), (any_t)tmp);			    \
-    setjmp (tmp->buf);							    \
-  })
+#endif	/* hurd/diskfs.h */
 
-#define diskfs_end_catch_exception() \
-  (void) ({								    \
-    struct thread_stuff *tmp;						    \
-    tmp = (struct thread_stuff *)cthread_data (cthread_self ());	    \
-    (void) cthread_set_data (cthread_self (), (any_t)tmp->link);	    \
-  })
-
-#endif
