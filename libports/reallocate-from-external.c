@@ -56,6 +56,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
     }
   
   pi->port_right = receive;
+  pi->cancel_threshhold = 0;
   pi->mscount = stat.mps_mscount;
   
   ihash_add (pi->bucket->htable, receive, pi, &pi->hentry);
