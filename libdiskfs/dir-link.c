@@ -83,5 +83,8 @@ diskfs_S_dir_link (struct protid *filecred,
  out:
   mutex_unlock (&dnp->lock);
   mutex_unlock (&np->lock);
+  if (!error)
+    /* MiG won't do this for us, which it ought to. */
+    mach_port_deallocate (mach_task_self (), dircred->pi.port);
   return error;
 }
