@@ -1,6 +1,6 @@
 /* The ps_context type, for per-procserver and somewhat global state.
 
-   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -142,7 +142,7 @@ ps_context_find_tty_by_cttyid (struct ps_context *pc, mach_port_t cttyid_port,
 	}
       else
 	{
-	  int tty_port;
+	  mach_port_t tty_port;
 	  error_t err = termctty_open_terminal (cttyid_port, 0, &tty_port);
 	  if (err)
 	    return err;

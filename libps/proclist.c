@@ -1,6 +1,6 @@
 /* The type proc_stat_list_t, which holds lists of proc_stats.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -46,7 +46,7 @@ proc_stat_list_create (struct ps_context *context, struct proc_stat_list **pp)
 }
 
 /* Free PP, and any resources it consumes.  */
-void 
+void
 proc_stat_list_free (struct proc_stat_list *pp)
 {
   proc_stat_list_remove_threads (pp);
@@ -267,12 +267,12 @@ static error_t
 proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
 			    kern_return_t (*fetch_fn)(process_t proc,
 						      pid_t **pids,
-						      unsigned *num_pids),
-			    struct proc_stat ***proc_stats, unsigned *num_procs)
+						      size_t *num_pids),
+			    struct proc_stat ***proc_stats, size_t *num_procs)
 {
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array;
-  unsigned num_pids = STATICPIDS;
+  size_t num_pids = STATICPIDS;
 
   err = (*fetch_fn)(ps_context_server (pp->context), &pids, &num_pids);
   if (err)
@@ -298,10 +298,11 @@ proc_stat_list_add_id_fn_pids (struct proc_stat_list *pp, unsigned id,
 			       kern_return_t (*fetch_fn)(process_t proc,
 							 pid_t id,
 							 pid_t **pids,
-							 unsigned *num_pids),
-			       struct proc_stat ***proc_stats, unsigned *num_procs)
+							 size_t *num_pids),
+			       struct proc_stat ***proc_stats,
+			       size_t *num_procs)
 {
-  error_t id_fetch_fn (process_t proc, pid_t **pids, unsigned *num_pids)
+  error_t id_fetch_fn (process_t proc, pid_t **pids, size_t *num_pids)
     {
       return (*fetch_fn)(proc, id, pids, num_pids);
     }
@@ -316,7 +317,7 @@ proc_stat_list_add_id_fn_pids (struct proc_stat_list *pp, unsigned id,
    returned in them.  */
 error_t
 proc_stat_list_add_all (struct proc_stat_list *pp,
-			struct proc_stat ***proc_stats, unsigned *num_procs)
+			struct proc_stat ***proc_stats, size_t *num_procs)
 {
   return
     proc_stat_list_add_fn_pids (pp, proc_getallpids, proc_stats, num_procs);
@@ -328,7 +329,8 @@ proc_stat_list_add_all (struct proc_stat_list *pp,
    of the resulting entries is returned in them.  */
 error_t
 proc_stat_list_add_login_coll (struct proc_stat_list *pp, pid_t login_id,
-			       struct proc_stat ***proc_stats, unsigned *num_procs)
+			       struct proc_stat ***proc_stats,
+			       size_t *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, login_id, proc_getloginpids,
@@ -341,7 +343,8 @@ proc_stat_list_add_login_coll (struct proc_stat_list *pp, pid_t login_id,
    resulting entries is returned in them.  */
 error_t
 proc_stat_list_add_session (struct proc_stat_list *pp, pid_t session_id,
-			    struct proc_stat ***proc_stats, unsigned *num_procs)
+			    struct proc_stat ***proc_stats,
+			    size_t *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, session_id, proc_getsessionpids,
@@ -354,7 +357,7 @@ proc_stat_list_add_session (struct proc_stat_list *pp, pid_t session_id,
    resulting entries is returned in them.  */
 error_t
 proc_stat_list_add_pgrp (struct proc_stat_list *pp, pid_t pgrp,
-			 struct proc_stat ***proc_stats, unsigned *num_procs)
+			 struct proc_stat ***proc_stats, size_t *num_procs)
 {
   return
     proc_stat_list_add_id_fn_pids (pp, pgrp, proc_getpgrppids,
