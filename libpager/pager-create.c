@@ -56,7 +56,7 @@ static void
 create_class ()
 {
   _pager_class = ports_create_class (_pager_clean, _pager_real_dropweak);
-  create_class;			/* Avoid warning */
+  (void) &create_class;		/* Avoid warning */
 }
 
 				     
