@@ -144,7 +144,6 @@ serverprefix SERVERPREFIX;
 type data_t = array[] of char;
 type string_t = c_string[1024]; /* XXX */
 type io_statbuf_t = struct[28] of int;
-type fsid_t = struct[2] of int;
 type uid_t = int;
 type gid_t = int;
 type mode_t = int;
@@ -162,8 +161,9 @@ type fsys_statfsbuf_t=struct[19] of int;
 
 type idarray_t = array[] of uid_t;
 
-type rusage_t = struct[18] of int;
+type rusage_t = struct[18] of int; /* XXX */
 
 import <sys/types.h>;
 import <sys/stat.h>;
+import <sys/resource.h>;
 import <hurd/hurd_types.h>;
