@@ -1,3 +1,7 @@
+1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ihash.c (ihash_create): Initialize CLEANUP & CLEANUP_ARG fields.
+
 Thu Apr 11 15:26:18 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* ihash.c: Include "priv.h".

@@ -1,3 +1,8 @@
+1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (disk_pager_read_page): Initialize READ to 0 to force
+	store_read to allocate a buffer.
+
 1997-06-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.c (main): Get rid of device-block-size-is-power-of-2 check.
