@@ -23,7 +23,7 @@ pager_create (struct user_pager_info *upi)
 {
   struct pager *p;
   
-  p = allocate_port (sizeof (struct pager), pager_port_type);
+  p = ports_allocate_port (sizeof (struct pager), pager_port_type);
   
   p->upi = upi;
   p->pager_state = NOTINIT;
