@@ -53,7 +53,8 @@ installhdrs = diskfs.h diskfs-pager.h
 DIST_FILES = ourfs_notify.defs
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
-	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
+	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o \
+	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
 fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
