@@ -91,6 +91,7 @@ _pager_do_write_request (mach_port_t object,
   pm_entries = &p->pagemap[offset / __vm_page_size];
 
   /* Mark these pages as being paged out.  */
+#if 0
   if (initializing)
     {
       assert (npages <= 32);
@@ -105,6 +106,10 @@ _pager_do_write_request (mach_port_t object,
   else
     for (i = 0; i < npages; i++)
       pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
+#else
+  for (i = 0; i < npages; i++)
+    pm_entries[i] += PM_PAGINGOUT;
+#endif
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
