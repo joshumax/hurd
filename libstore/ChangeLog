@@ -1,6 +1,7 @@
 Sun Sep  8 14:14:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* device.c (dev_read, dev_write): Don't print debugging messages.
+	* argp.c (options, parse_opt): Change short option names around.
 
 Wed Sep  4 13:01:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 

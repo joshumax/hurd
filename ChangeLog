@@ -1,3 +1,7 @@
+Sun Sep  8 14:21:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (prog-subdirs): Add storeio.
+
 Fri Sep  6 17:00:23 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* INSTALL: Update to version 0.1.
