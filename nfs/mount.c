@@ -29,6 +29,16 @@
 #include <netinet/in.h>
 #include <stdio.h>
 
+char *pmap_service_name = "sunrpc";
+short pmap_service_number = PMAPPORT; 
+int mount_program = MOUNTPROG;
+int mount_version = MOUNTVERS;
+short mount_port = 0;
+int mount_port_override = 0;
+int nfs_program = NFS_PROGRAM;
+int nfs_version = NFS_VERSION;
+short nfs_port = NFS_PORT;
+int nfs_port_override = 0;
 
 int *
 pmap_initialize_rpc (int procnum, void **buf)
@@ -54,14 +64,19 @@ mount_root (char *name, char *host)
   void *rpcbuf;
   int port;
   struct node *np;
+  short pmapport;
 
   /* Lookup the portmapper port number */
-  s = getservbyname ("sunrpc", "udp");
-  if (!s)
+  if (pmap_service_name)
     {
-      fprintf (stderr, "portmap/udp: unknown service\n");
-      return 0;
+      s = getservbyname ("sunrpc", pmap_service_name);
+      if (s)
+	pmapport = s->s_port;
+      else
+	pmapport = htons (pmap_service_number);
     }
+  else
+    pmapport = htons (pmap_service_number);
 
   /* Lookup the host */
   h = gethostbyname (host);
@@ -73,29 +88,39 @@ mount_root (char *name, char *host)
   
   addr.sin_family = h->h_addrtype;
   bcopy (h->h_addr_list[0], &addr.sin_addr, h->h_length);
-  addr.sin_port = s->s_port;
+  addr.sin_port = pmapport;
   
   connect (main_udp_socket,
 	   (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
 
-  /* Formulate and send a PMAPPROC_GETPORT request
-     to lookup the mount program on the server.  */
-  p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
-  *p++ = htonl (MOUNTPROG);
-  *p++ = htonl (MOUNTVERS);
-  *p++ = htonl (IPPROTO_UDP);
-  *p++ = htonl (0);
-  errno = conduct_rpc (&rpcbuf, &p);
-  if (errno)
+  if (!mount_port_override)
     {
-      perror ("portmap of mount");
-      return 0;
+      /* Formulate and send a PMAPPROC_GETPORT request
+	 to lookup the mount program on the server.  */
+      p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
+      *p++ = htonl (MOUNTPROG);
+      *p++ = htonl (MOUNTVERS);
+      *p++ = htonl (IPPROTO_UDP);
+      *p++ = htonl (0);
+      errno = conduct_rpc (&rpcbuf, &p);
+      if (!errno)
+	{
+	  port = ntohl (*p++);
+	  addr.sin_port = htons (port);
+	}
+      else if (mount_port)
+	addr.sin_port = htons (mount_port);
+      else
+	{
+	  free (rpcbuf);
+	  perror ("portmap of mount");
+	  return 0;
+	}
+      free (rpcbuf);
     }
+  else
+    addr.sin_port = htons (mount_port);
   
-  /* Fetch the reply port and clean the RPC  */
-  port = ntohl (*p++);
-  addr.sin_port = htons (port); /* note: htons and ntohl aren't inverses  */
-  free (rpcbuf);
 
   /* Now talking to the mount program, fetch the file handle
      for the root. */
@@ -127,21 +152,32 @@ mount_root (char *name, char *host)
   free (rpcbuf);
   mutex_unlock (&np->lock);
 
-  /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
-  addr.sin_port = s->s_port;
-  connect (main_udp_socket, 
-	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
-  p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
-  *p++ = htonl (NFS_PROGRAM);
-  *p++ = htonl (NFS_VERSION);
-  *p++ = htonl (IPPROTO_UDP);
-  *p++ = htonl (0);
-  errno = conduct_rpc (&rpcbuf, &p);
-  if (errno)
-    port = NFS_PORT;
+  if (!nfs_port_override)
+    {
+      /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
+      addr.sin_port = pmapport;
+      connect (main_udp_socket, 
+	       (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
+      p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
+      *p++ = htonl (NFS_PROGRAM);
+      *p++ = htonl (NFS_VERSION);
+      *p++ = htonl (IPPROTO_UDP);
+      *p++ = htonl (0);
+      errno = conduct_rpc (&rpcbuf, &p);
+      if (!errno)
+	port = ntohl (*p++);
+      else if (nfs_port)
+	port = nfs_port;
+      else
+	{
+	  free (rpcbuf);
+	  perror ("pmap of nfs server");
+	  return 0;
+	}
+      free (rpcbuf);
+    }
   else
-    port = ntohl (*p++);
-  free (rpcbuf);
+    port = nfs_port;
   
   addr.sin_port = htons (port);
   connect (main_udp_socket, 
