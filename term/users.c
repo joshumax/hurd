@@ -61,8 +61,6 @@ int foreground_id;
 
 struct winsize window_size;
 
-static void call_asyncs (void);
-
 static int sigs_in_progress;
 static struct condition input_sig_wait = CONDITION_INITIALIZER;
 static int input_sig_wakeup;
@@ -1784,7 +1782,7 @@ report_sig_end ()
 }
 
 /* Call all the scheduled async I/O handlers */
-static void
+void
 call_asyncs ()
 {
   struct async_req *ar, *nxt, **prevp;
