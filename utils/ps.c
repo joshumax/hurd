@@ -347,6 +347,7 @@ main(int argc, char *argv[])
   int squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
   int show_threads = FALSE, no_msg_port = FALSE;
   int output_width = -1;	/* Desired max output size.  */
+  int show_non_hurd_procs = 1;	/* Show non-hurd processes.  */
 
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
@@ -570,11 +571,20 @@ main(int argc, char *argv[])
       }
   }
 
-  if (proc_stat_list_num_procs(procset) == 0)
+  if (proc_stat_list_num_procs (procset) == 0)
     {
       err = proc_stat_list_add_all (procset, 0, 0);
       if (err)
 	error(2, err, "Can't get process list");
+
+      /* Try to avoid showing non-hurd processes if this isn't a native-booted
+	 hurd system (because there would be lots of them).  Here we use a
+	 simple heuristic: Is the 5th process a hurd process (1-4 are
+	 typically: proc server, init, kernel, boot default pager (maybe); the
+	 last two are know not to be hurd processes)?  */
+      show_non_hurd_procs =
+	(procset->num_procs > 4
+	 && !(procset->proc_stats[4]->flags & PSTAT_STATE_P_NOPARENT));
     }
 
   if (no_msg_port)
@@ -595,7 +605,7 @@ main(int argc, char *argv[])
     proc_stat_list_filter (procset, &ps_not_leader_filter, FALSE);
   if (filter_mask & FILTER_UNORPHANED)
     proc_stat_list_filter (procset, &ps_unorphaned_filter, FALSE);
-  if (filter_mask & FILTER_PARENTED)
+  if (!show_non_hurd_procs && (filter_mask & FILTER_PARENTED))
     proc_stat_list_filter (procset, &ps_parent_filter, FALSE);
 
   if (show_threads)
