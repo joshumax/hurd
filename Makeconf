@@ -41,7 +41,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 
 define link
 $(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
-$^ $(EXTRALIBS) $(libthreads) $(libc) -lgcc
+$(PRELIBS) $^ $(POSTLIBS) $(libthreads) $(libc) -lgcc
 endef
 
 # Making a snapshot
