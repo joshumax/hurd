@@ -325,9 +325,8 @@ diskfs_truncate (struct node *node, off_t length)
 
       node->allocsize = round_block (length);
 
-      /* Set our end-of-file variables to a pessimistic state -- it won't
-	 hurt if they are wrong.  */
-      node->dn->last_block_allocated = 0;
+      /* Set our last_page_partially_writable to a pessimistic state -- it
+	 won't hurt if is wrong.  */
       node->dn->last_page_partially_writable =
 	trunc_page (node->allocsize) != node->allocsize;
     }
