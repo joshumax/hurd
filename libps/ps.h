@@ -554,6 +554,8 @@ extern const struct ps_filter ps_unorphaned_filter;
 /* A filter that retains only `parented' process.  Typically only hurd
    processes have parents.  */
 extern const struct ps_filter ps_parent_filter;
+/* A filter that retains only processes/threads that aren't totally dead.  */
+extern const struct ps_filter ps_alive_filter;
 
 /* ---------------------------------------------------------------- */
 /* A PS_STREAM_T describes an output stream for libps to use.  */
@@ -834,13 +836,19 @@ proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid);
    array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
    added for processes not already in PP.  ENOMEM is returned if a memory
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
-   resulting proc_stat_list_t, and so may be subsequently freed.  */
-error_t proc_stat_list_add_pids(proc_stat_list_t pp, pid_t *pids, unsigned num_procs);
+   resulting proc_stat_list_t, and so may be subsequently freed.  If
+   PROC_STATS is non-NULL, a malloced array NUM_PROCS entries long of the
+   resulting proc_stats is returned in it.  */
+error_t proc_stat_list_add_pids (proc_stat_list_t pp,
+				 pid_t *pids, unsigned num_procs,
+				 proc_stat_t **proc_stats);
 
-/* Add a proc_stat_t for the process designated by PID at PP's proc context to
-   PP.  If PID already has an entry in PP, nothing is done.  If a memory
-   allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid);
+/* Add a proc_stat_t for the process designated by PID at PP's proc context
+   to PP.  If PID already has an entry in PP, nothing is done.  If a memory
+   allocation error occurs, ENOMEM is returned, otherwise 0.  If PS is
+   non-NULL, the resulting entry is returned in it.  */
+error_t proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid,
+				proc_stat_t *ps);
 
 /* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
    already in PP; the resulting order of proc_stat_t's in PP is undefined.
@@ -850,23 +858,35 @@ error_t proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid);
 error_t proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee);
 
 /* Add to PP entries for all processes at its context.  If an error occurs,
-   the system error code is returned, otherwise 0.  */
-error_t proc_stat_list_add_all(proc_stat_list_t pp);
+   the system error code is returned, otherwise 0.  If PROC_STATS and
+   NUM_PROCS are non-NULL, a malloced vector of the resulting entries is
+   returned in them.  */
+error_t proc_stat_list_add_all (proc_stat_list_t pp,
+				proc_stat_t **proc_stats, unsigned *num_procs);
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
-   otherwise 0.  */
-error_t proc_stat_list_add_login_coll(proc_stat_list_t pp, pid_t login_id);
+   otherwise 0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector
+   of the resulting entries is returned in them.  */
+error_t proc_stat_list_add_login_coll (proc_stat_list_t pp, pid_t login_id,
+				       proc_stat_t **proc_stats,
+				       unsigned *num_procs);
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
-   0.  */
-error_t proc_stat_list_add_session(proc_stat_list_t pp, pid_t session_id);
+   0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
+   resulting entries is returned in them.  */
+error_t proc_stat_list_add_session (proc_stat_list_t pp, pid_t session_id,
+				    proc_stat_t **proc_stats,
+				    unsigned *num_procs);
 
-/* Add to PP entries for all processes in the process group PGRP at
-   its context.  If an error occurs, the system error code is returned,
-   otherwise 0.  */
-error_t proc_stat_list_add_pgrp(proc_stat_list_t pp, pid_t pgrp);
+/* Add to PP entries for all processes in the process group PGRP at its
+   context.  If an error occurs, the system error code is returned, otherwise
+   0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
+   resulting entries is returned in them.  */
+error_t proc_stat_list_add_pgrp (proc_stat_list_t pp, pid_t pgrp,
+				 proc_stat_t **proc_stats,
+				 unsigned *num_procs);
 
 /* Try to set FLAGS in each proc_stat_t in PP (but they may still not be set
    -- you have to check).  If a fatal error occurs, the error code is
@@ -942,7 +962,7 @@ int proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps));
 bool proc_stat_list_spec_nominal (proc_stat_list_t pp, ps_fmt_spec_t spec);
 
 /* ---------------------------------------------------------------- */
-/*
+ /*
    The Basic & Sched info types are pretty static, so we cache them, but load
    info is dynamic so we don't cache that.
 
