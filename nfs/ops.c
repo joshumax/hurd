@@ -760,7 +760,7 @@ netfs_attempt_unlink (struct netcred *cred, struct node *dir,
       do
 	{
 	  sprintf (newname, ".nfs%xgnu.%d", (int) np, n++);
-	  err = netfs_attempt_link (cred, dir, np, newname);
+	  err = netfs_attempt_link (cred, dir, np, newname, 1);
 	}
       while (err == EEXIST);
 
