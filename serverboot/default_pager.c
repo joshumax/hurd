@@ -171,6 +171,24 @@ new_partition (const char *name, struct file_direct *fdp,
 	vm_offset_t raddr;
 	mach_msg_type_number_t rsize;
 	int rc;
+	unsigned int id = part_id(name);
+
+	mutex_lock(&all_partitions.lock);
+	{
+	  unsigned int i;
+	  for (i = 0; i < all_partitions.n_partitions; i++)
+	    {
+	      part = partition_of(i);
+	      if (part && part->id == id)
+		{
+		  printf ("(default pager): Already paging to partition %s!\n",
+			  name);
+		  mutex_unlock(&all_partitions.lock);
+		  return 0;
+		}
+	    }
+	}
+	mutex_unlock(&all_partitions.lock);
 
 	size = atop(fdp->fd_size * fdp->fd_bsize);
 	bmsize = howmany(size, NB_BM) * sizeof(bm_entry_t);
@@ -179,7 +197,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	mutex_init(&part->p_lock);
 	part->total_size = size;
 	part->free	= size;
-	part->id	= part_id(name);
+	part->id	= id;
 	part->bitmap	= (bm_entry_t *)kalloc(bmsize);
 	part->going_away= FALSE;
 	part->file = fdp;
