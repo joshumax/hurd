@@ -80,6 +80,7 @@ static const struct argp_option options[] =
   {"sort",       's',	  "FIELD",0, "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
   {"threads",    'T',     0,      0,  "Show the threads for each process"},
+  {"top",	 'h',     "ENTRIES", OA, "Show the top ENTRIES processes (default 10)"},
   {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
                                       " terminal TTY"},
   {0,            'u',     0,      0,  "Use the `user' output-format"},
@@ -331,6 +332,7 @@ main(int argc, char *argv[])
   int output_width = -1;	/* Desired max output size.  */
   int show_non_hurd_procs = 1;	/* Show non-hurd processes.  */
   int posix_fmt = 0;		/* Use a posix_fmt-style format string.  */
+  int top = 0;			/* Number of entries to output.  */
 
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
@@ -488,6 +490,7 @@ main(int argc, char *argv[])
 	case 'T': show_threads = TRUE; break;
 	case 's': sort_key_name = arg; break;
 	case 'r': sort_reverse = TRUE; break;
+	case 'h': top = arg ? atoi (arg) : 10; break;
 	case 'F': fmt_string = arg; posix_fmt = 0; break;
 	case 'o': fmt_string = arg; posix_fmt = 1; break;
 
@@ -608,7 +611,7 @@ main(int argc, char *argv[])
   psout (procset, fmt_string, posix_fmt, &ps_specs,
 	 sort_key_name, sort_reverse,
 	 output_width, print_heading,
-	 squash_bogus_fields, squash_nominal_fields);
+	 squash_bogus_fields, squash_nominal_fields, top);
 
   exit (0);
 }
