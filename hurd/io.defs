@@ -27,8 +27,12 @@ IO_IMPORTS
 
 /* Write data to an IO object.  If offset is -1, write at the object
    maintained file pointer.  If the object is not seekable, offset is
-   ignored.  The amount successfully written is returned in amount.  */
-/* INTR */
+   ignored.  The amount successfully written is returned in amount.  A
+   given user should not have more than one outstanding io_write on an
+   object at a time; servers implement congestion control by delaying
+   responses to io_write.  Servers may drop data (returning ENOBUFS)
+   if they recevie more than one write when not prepared for it.  */
+/*INTR */ 
 routine io_write (
 	io_object: io_t;
 	data: data_t;
