@@ -143,8 +143,6 @@ typedef struct attr *attr_t;
 
 struct user_pager_info
 {
-  display_t display;
-  struct pager *p;
   size_t memobj_npages;
   vm_address_t memobj_pages[0];
 };
@@ -195,7 +193,7 @@ struct display
 
   struct cons_display *user;
 
-  struct user_pager_info *upi;  
+  struct pager *pager;  
   memory_object_t memobj;
 
   /* A list of ports to send file change notifications to.  */
@@ -276,9 +274,8 @@ pager_report_extent (struct user_pager_info *upi,
                      vm_address_t *offset,
                      vm_size_t *size)
 {
-  display_t display = upi->display;
   *offset = 0;
-  *size = display->upi->memobj_npages * vm_page_size;
+  *size =  upi->memobj_npages * vm_page_size;
   return 0;
 }
 
@@ -405,22 +402,87 @@ free_modreqs (struct modreq *mr)
   struct modreq *tmp;
   for (; mr; mr = tmp)
     {
+      mach_port_t old;
+      /* Cancel the dead-name notification.  */
+      mach_port_request_notification (mach_task_self (), mr->port,
+				      MACH_NOTIFY_DEAD_NAME, 0,
+				      MACH_PORT_NULL,
+				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+      mach_port_deallocate (mach_task_self (), old);
+
+      /* Deallocate the user's port.  */
       mach_port_deallocate (mach_task_self (), mr->port);
       tmp = mr->next;
       free (mr);
     }
 }
 
-void do_mach_notify_port_deleted (void) { assert (0); }
+/* A port deleted notification is generated when we deallocate the
+   user's notify port before it is dead.  */
+error_t
+do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name)
+{
+  /* As we cancel the dead-name notification before deallocating the
+     port, this should not happen.  */
+  assert (0);
+}
+
+/* We request dead name notifications for the user ports.  */
+error_t
+do_mach_notify_dead_name (mach_port_t notify, mach_port_t dead_name)
+{
+  struct notify *notify_port = ports_lookup_port (notify_bucket,
+						  notify, notify_class);
+  struct display *display;
+  struct modreq **preq;
+  struct modreq *req;
+
+  if (!notify_port)
+    return EOPNOTSUPP;
+
+  display = notify_port->display;
+  mutex_lock (&display->lock);
+  
+  /* Find request in pending queue.  */
+  preq = &display->filemod_reqs_pending;
+  while (*preq && (*preq)->port != dead_name)
+    preq = &(*preq)->next;
+  if (! *preq)
+    {
+      /* Find request in queue.  */
+      preq = &display->filemod_reqs;
+      while (*preq && (*preq)->port != dead_name)
+	preq = &(*preq)->next;
+    }
+
+  if (*preq)
+    {
+      req = *preq;
+      *preq = req->next;
+
+      mach_port_deallocate (mach_task_self (), req->port);
+      free (req);
+    }
+  mutex_unlock (&display->lock);
+  
+  /* Drop gratuitous extra reference that the notification creates. */
+  mach_port_deallocate (mach_task_self (), dead_name);
+  
+  return 0;
+}
+
 void do_mach_notify_port_destroyed (void) { assert (0); }
-void do_mach_notify_no_senders (void) { assert (0); }
-void do_mach_notify_dead_name (void) { assert (0); }
+
+error_t
+do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
+{
+  return ports_do_mach_notify_no_senders (port, count);
+}
 
 kern_return_t
 do_mach_notify_send_once (mach_port_t notify)
 {
-  /* XXX Not sure when this is called.  */
-  assert (0);
+  return 0;
 }
 
 kern_return_t
@@ -473,8 +535,17 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
 				 notify);
       if (err && err != MACH_SEND_WILL_NOTIFY)
 	{
+	  mach_port_t old;
 	  *preq = req->next;
 	  mutex_unlock (&display->lock);
+
+	  /* Cancel the dead-name notification.  */
+	  mach_port_request_notification (mach_task_self (), req->port,
+					  MACH_NOTIFY_DEAD_NAME, 0,
+					  MACH_PORT_NULL,
+					  MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+	  mach_port_deallocate (mach_task_self (), old);
+
 	  mach_port_deallocate (mach_task_self (), req->port);
 	  free (req);
 	  ports_port_deref (notify_port);
@@ -516,20 +587,40 @@ display_notice_changes (display_t display, mach_port_t notify)
 {
   error_t err;
   struct modreq *req;
+  mach_port_t notify_port;
+  mach_port_t old;
 
   mutex_lock (&display->lock);
-  err = nowait_file_changed (notify, 0, FILE_CHANGED_NULL, 0, 0, MACH_PORT_NULL);
+  err = nowait_file_changed (notify, 0, FILE_CHANGED_NULL, 0, 0,
+			     MACH_PORT_NULL);
   if (err)
     {
       mutex_unlock (&display->lock);
       return err;
     }
+
   req = malloc (sizeof (struct modreq));
   if (!req)
     {
       mutex_unlock (&display->lock);
       return errno;
     }
+
+  notify_port = ports_get_right (display->notify_port);
+
+  /* Request dead-name notification for the user's port.  */
+  err = mach_port_request_notification (mach_task_self (), notify,
+					MACH_NOTIFY_DEAD_NAME, 0,
+					notify_port,
+					MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+  if (err)
+    {
+      free (req);
+      mutex_unlock (&display->lock);
+      return err;
+    }
+  assert (old == MACH_PORT_NULL);
+
   req->port = notify;
   req->pending = 0;
   req->next = display->filemod_reqs;
@@ -571,6 +662,13 @@ display_notice_filechange (display_t display)
 	    }
 	  else
 	    {
+	      mach_port_t old;
+
+	      /* Cancel the dead-name notification.  */
+	      mach_port_request_notification (mach_task_self (), req->port,
+					      MACH_NOTIFY_DEAD_NAME, 0,
+					      MACH_PORT_NULL, 0, &old);
+	      mach_port_deallocate (mach_task_self (), old);
 	      mach_port_deallocate (mach_task_self (), req->port);
 	      free (req);
 	    }
@@ -782,33 +880,33 @@ user_create (display_t display, uint32_t width, uint32_t height,
 {
   error_t err;
   struct cons_display *user;
+  struct user_pager_info *upi;
 
   int npages = (round_page (sizeof (struct cons_display) +
 			   sizeof (conchar_t) * width * lines)) / vm_page_size;
 
-  display->upi = calloc (1, sizeof (struct user_pager_info)
-			 + sizeof (vm_address_t) * npages);
-  if (!display->upi)
+  upi = calloc (1, sizeof (struct user_pager_info)
+		+ sizeof (vm_address_t) * npages);
+  if (!upi)
     return MACH_PORT_NULL;
-  display->upi->display = display;
-  display->upi->memobj_npages = npages;
+  upi->memobj_npages = npages;
   /* 1 & MOCD correct? */
-  display->upi->p = pager_create (display->upi, pager_bucket,
-				  1, MEMORY_OBJECT_COPY_DELAY);
-  if (display->upi->p == 0)
+  display->pager = pager_create (upi, pager_bucket,
+				 1, MEMORY_OBJECT_COPY_DELAY);
+  if (display->pager == 0)
     {
-      free (display->upi);
+      free (upi);
       return errno;
     }
-  display->memobj = pager_get_port (display->upi->p);
-  ports_port_deref (display->upi->p);
+  display->memobj = pager_get_port (display->pager);
+  ports_port_deref (display->pager);
 
   mach_port_insert_right (mach_task_self (), display->memobj, display->memobj,
                           MACH_MSG_TYPE_MAKE_SEND);
 
   err = vm_map (mach_task_self (),
 		(vm_address_t *) &user,
-		(vm_size_t) display->upi->memobj_npages * vm_page_size,
+		(vm_size_t) npages * vm_page_size,
 		(vm_address_t) 0,
 		1 /* ! (flags & MAP_FIXED) */,
 		display->memobj, 0 /* (vm_offset_t) offset */,
@@ -816,6 +914,7 @@ user_create (display_t display, uint32_t width, uint32_t height,
                 VM_PROT_READ | VM_PROT_WRITE,
                 VM_PROT_READ | VM_PROT_WRITE,
                 VM_INHERIT_NONE);
+
   if (err)
     {
       /* UPI will be cleaned up by libpager.  */
@@ -848,6 +947,8 @@ static void
 user_destroy (display_t display)
 {
   /* The pager will be deallocated by libpager.  */
+  vm_deallocate (mach_task_self (), (vm_offset_t) display->user,
+		 pager_get_upi (display->pager)->memobj_npages * vm_page_size);
   mach_port_deallocate (mach_task_self (), display->memobj);
 }
 
@@ -1899,13 +2000,22 @@ display_create (display_t *r_display, const char *encoding,
 void
 display_destroy (display_t display)
 {
+  mutex_lock (&display->lock);
   if (display->filemod_reqs_pending)
-    free_modreqs (display->filemod_reqs_pending);
+    {
+      free_modreqs (display->filemod_reqs_pending);
+      display->filemod_reqs_pending = NULL;
+    }
   if (display->filemod_reqs)
-    free_modreqs (display->filemod_reqs);
+    {
+      free_modreqs (display->filemod_reqs);
+      display->filemod_reqs = NULL;
+    }
   ports_destroy_right (display->notify_port);
   output_deinit (&display->output);
   user_destroy (display);
+  mutex_unlock (&display->lock);
+
   /* We can not free the display structure here, because it might
      still be needed by pending modification requests when msg
      accepted notifications are handled.  So we have to wait until all

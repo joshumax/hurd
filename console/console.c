@@ -35,6 +35,7 @@
 
 #include <version.h>
 
+#include <mach.h>
 #include <hurd/netfs.h>
 #include <hurd/ioctl_types.h>
 /* We include console.h for the color numbers.  */
@@ -1239,6 +1240,7 @@ netfs_S_dir_notice_changes (struct protid *cred, mach_port_t notify)
 {
   error_t err;
   cons_t cons;
+  struct modreq **preq;
   struct modreq *req;
 
   if (!cred)
@@ -1249,6 +1251,31 @@ netfs_S_dir_notice_changes (struct protid *cred, mach_port_t notify)
     return EOPNOTSUPP;
 
   mutex_lock (&cons->lock);
+  /* We have to prevent that we accumulate dead-names in the
+     notification list.  They are cleaned up in cons_notice_dirchange,
+     but that is not called often enough, so we also clean them up
+     here.  This way, the maximum of dead-names will never exceed the
+     prior maximum of active clients.  The better way would be to
+     request dead-name notifications, XXX.  */
+  preq = &cons->dirmod_reqs;
+
+  while (*preq)
+    {
+      mach_port_type_t type;
+      req = *preq;
+
+      err = mach_port_type (mach_task_self (), req->port, &type);
+      if (!err && type == MACH_PORT_TYPE_DEAD_NAME)
+	{
+	  /* Remove notify port.  */
+	  *preq = req->next;
+	  mach_port_deallocate (mach_task_self (), req->port);
+	  free (req);
+	}
+      else
+        preq = &req->next;
+    }
+  
   err = dir_changed (notify, cons->dirmod_tick, DIR_CHANGED_NULL, "");
   if (err)
     {

@@ -1,3 +1,28 @@
+2002-09-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.c: Include <mach.h>.
+	(netfs_S_dir_notice_changes): New variable PREQ.  Clean out the
+	dead wood, eh, dead name notifications from the CONS->dirmod_req
+	list.
+	* display.c (struct user_pager_info): Drop members DISPLAY and P.
+	(struct display): Remove member UPI and add member PAGER.
+	(pager_report_extent): Remove local variable DISPLAY, use UPI
+	directly.
+	(user_create): New variable UPI to hold the user pager info.
+	Modify the code to match new struct organization.
+	(user_destroy): Unmap the user data.
+	(display_notice_changes): Request dead-name notifications.
+	(free_modreqs): Cancel dead-name notification request before
+	deallocation send right.
+	(display_notice_filechange): Likewise.
+	(do_mach_notify_msg_accepted): Likewise.
+	(display_destroy): Take DISPLAY->lock while operating.  Reset the
+	filemod_reqs and filemod_reqs_pending members of DISPLAY to NULL.
+	(do_mach_notify_port_deleted): Add comment.
+	(do_mach_notify_dead_name): Implement.
+	(do_mach_notify_no_senders): Implement by delegating to libports.
+	(do_mach_notify_send_once): Don't fail.
+
 2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.ti: Enable <kb2> and <kmouse>, fix the comments.
