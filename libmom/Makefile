@@ -23,8 +23,8 @@ makemode := library
 
 libname = libmom
 
-SRCS = add-ref.c allocate-address.c allocate-memory.c copy-ref.c \
-	deallocate-memory.c drop-ref.c fetch-mach-port.c hash-ref.c \
+SRCS = allocate-address.c allocate-memory.c copy-ref.c \
+	deallocate-memory.c fetch-mach-port.c hash-ref.c \
 	mach-port-set.c make-memory-readonly.c make-memory-readwrite.c \
 	memory-init.c ref-destroy.c refs-identical.c reserve-memory.c \
 	reserve-memory-anywhere.c unreserve-memory.c unuse-memory.c \
