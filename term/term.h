@@ -86,6 +86,9 @@ struct port_class *tty_class;
 /* Port class for ctty ID ports */
 struct port_class *cttyid_class;
 
+/* Port class for pty master ports */
+struct port_class *pty_class;
+
 /* Trivfs control structure for the tty */
 struct trivfs_control *termctl;
 
@@ -116,7 +119,7 @@ struct bottomhalf
 };
 
 struct bottomhalf *bottom;
-extern struct bottomhalf devio_bottom;
+extern struct bottomhalf devio_bottom, ptyio_bottom;
 
 
 /* Character queues */
