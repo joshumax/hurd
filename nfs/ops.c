@@ -330,7 +330,7 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
      writing.  RCS, for example, uses this to create lock files.  So permit
      cases where the O_TRUNC isn't doing anything to succeed if the user
      does have the file open for writing.  */
-  if (err == EACCES && (cred->po->openstat & O_WRITE))
+  if (err == EACCES)
     {
       err = netfs_validate_stat (np, cred);
       if (!err && np->nn_stat.st_size == size)
