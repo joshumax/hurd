@@ -96,6 +96,12 @@ int sigsetmask (int mask);
 int sigpause (int mask);
 int sigvec (int sig, struct sigvec *vec, struct sigvec *ovec);
 
+#undef O_RDONLY
+#undef O_WRONLY
+#undef O_RDWR
+#define O_RDONLY 0
+#define O_WRONLY 1
+#define O_RDWR 2
 
 #define host_exit(c) uxexit(c)
 
