@@ -265,14 +265,25 @@ S_proc_getpids (struct proc *p,
   return 0;
 }
 
-/* Implement proc_setprocargs as described in <hurd/proc.defs>. */
+/* Implement proc_set_arg_locations as described in <hurd/proc.defs>. */
 kern_return_t
-S_proc_setprocargs (struct proc *p,
-		  int argv,
-		  int envp)
+S_proc_set_arg_locations (struct proc *p,
+			  vm_address_t argv,
+			  vm_address_t envp)
 {
   p->p_argv = argv;
   p->p_envp = envp;
+  return 0;
+}
+
+/* Implement proc_get_arg_locations as described in <hurd/proc.defs>. */
+kern_return_t
+S_proc_get_arg_locations (struct proc *p,
+			  vm_address_t *argv,
+			  vm_address_t *envp)
+{
+  *argv = p->p_argv;
+  *envp = p->p_envp;
   return 0;
 }
 
