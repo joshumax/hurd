@@ -221,7 +221,7 @@ reboot_system (int flags)
   if (fakeboot)
     {
       pid_t *pp;
-      u_int npids = 0;
+      size_t npids = 0;
       error_t err;
       int ind;
 
@@ -251,9 +251,9 @@ reboot_system (int flags)
 	  if (task != mach_task_self () && task != proctask)
 	    {
 	      struct procinfo *pi = 0;
-	      u_int pisize = 0;
+	      size_t pisize = 0;
 	      char *noise;
-	      unsigned noise_len;
+	      size_t noise_len;
 	      int flags;
 	      err = proc_getprocinfo (procserver, pp[ind], &flags,
 				      (int **)&pi, &pisize,
@@ -1285,7 +1285,8 @@ do_mach_notify_dead_name (mach_port_t notify,
 		   boots[i].name);
 	    crash_mach ();
 	  }
-      error (0, 0, "BUG!  Unexpected dead-name notification (name %#x)", name);
+      error (0, 0, "BUG!  Unexpected dead-name notification (name %#zx)",
+	     name);
       crash_mach ();
     }
 
@@ -1547,7 +1548,7 @@ S_msg_describe_ports (mach_port_t process,
 
 error_t
 S_msg_report_wait (mach_port_t process, thread_t thread,
-		   string_t desc, int *rpc)
+		   string_t desc, mach_msg_id_t *rpc)
 {
   *desc = 0;
   *rpc = 0;
