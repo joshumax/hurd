@@ -214,13 +214,13 @@ S_proc_reassign (struct proc *p,
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
 
-  /* For security, we need to get a new request port */
+  /* For security, we need use the request port from STUBP, and 
+     not inherit this state. */
   mach_port_mod_refs (mach_task_self (), p->p_reqport,
 		      MACH_PORT_RIGHT_RECEIVE, -1);
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-		      &p->p_reqport);
-  mach_port_move_member (mach_task_self (), p->p_reqport, 
-			 request_portset);
+  p->p_reqport = stubp->p_reqport;
+  mach_port_mod_refs (mach_task_self (), p->p_reqport,
+		      MACH_PORT_RIGHT_RECEIVE, 1);
 
   /* Enqueued messages might refer to the old task port, so
      destroy them. */
