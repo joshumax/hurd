@@ -35,9 +35,10 @@ extern void *kalloc();
 extern void	create_paging_partition();
 
 kern_return_t
-add_paging_file(master_device_port, file_name)
+add_paging_file(master_device_port, file_name, linux_signature)
 	mach_port_t		master_device_port;
 	char			*file_name;
+	int			linux_signature;
 {
 	register struct file_direct *fdp;
 	register kern_return_t	result;
@@ -68,7 +69,7 @@ add_paging_file(master_device_port, file_name)
 	/*
 	 * Set up the default paging partition
 	 */
-	create_paging_partition(file_name, fdp, isa_file);
+	create_paging_partition(file_name, fdp, isa_file, linux_signature);
 
 	return result;
 }

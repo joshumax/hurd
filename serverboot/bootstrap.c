@@ -146,12 +146,25 @@ main(argc, argv)
 {
   int doing_default_pager = 0;
   int had_a_partition = 0;
-  int script_paging_file (const struct cmd *cmd, int *val)
+  int script_paging_file (const struct cmd *cmd, int linux_signature)
     {
       if (add_paging_file (bootstrap_master_device_port, cmd->path))
 	printf ("(serverboot): %s: Cannot add paging file\n", cmd->path);
       else
 	had_a_partition = 1;
+      return 0;
+    }
+  int script_add_paging_file (const struct cmd *cmd, int *val)
+    {
+      return script_paging_file (cmd, 0);
+    }
+  int script_add_raw_paging_file (const struct cmd *cmd, int *val)
+    {
+      return script_paging_file (cmd, -1);
+    }
+  int script_add_linux_paging_file (const struct cmd *cmd, int *val)
+    {
+      return script_paging_file (cmd, 1);
     }
   int script_default_pager (const struct cmd *cmd, int *val)
     {
@@ -178,9 +191,9 @@ main(argc, argv)
 	 */
 	if (argv[1][0] != '-')
 	  panic("bootstrap: no flags");
-	
+
 	flag_string = argv[1];
-	    
+
 	/*
 	 * Parse the arguments.
 	 */
@@ -208,13 +221,13 @@ main(argc, argv)
 	else if (argc == 3)
 	  {
 	    root_name = argv[2];
-	    
+
 	    get_privileged_ports (&bootstrap_master_host_port,
 				  &bootstrap_master_device_port);
 	  }
-	
-	    
-	
+
+
+
 
 	printf_init(bootstrap_master_device_port);
 #ifdef pleasenoXXX
@@ -275,7 +288,7 @@ main(argc, argv)
 	    }
 	    break;
 	}
-	
+
 	/*
 	 * If the server boot script name was changed,
 	 * then use the new device name as the root device.
@@ -309,7 +322,12 @@ main(argc, argv)
 	      || boot_script_set_variable ("boot-args", VAL_STR,
 					   (int) flag_string)
 	      || boot_script_define_function ("add-paging-file", VAL_NONE,
-					      &script_paging_file)
+					      &script_add_paging_file)
+	      || boot_script_define_function ("add-raw-paging-file", VAL_NONE,
+					      &script_add_raw_paging_file)
+	      || boot_script_define_function ("add-linux-paging-file",
+					      VAL_NONE,
+					      &script_add_linux_paging_file)
 	      || boot_script_define_function ("default-pager", VAL_NONE,
 					      &script_default_pager)
 	      )
