@@ -1,3 +1,7 @@
+Tue Sep  3 14:48:26 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* bugaddr.c: Specify correct bug-reporting address.
+
 Sun Sep  1 21:42:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile, bugaddr.c: New files.
