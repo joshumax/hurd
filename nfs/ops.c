@@ -959,7 +959,7 @@ netfs_report_access (struct netcred *cred,
      here we err on the side of denying access, and that we always
      have to check everything.  */
   
-
+  len = 1;
   err = netfs_attempt_read (cred, np, 0, &len, &byte);
   if (err)
     {
