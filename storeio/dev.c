@@ -65,7 +65,7 @@ dev_buf_fill (struct dev *dev, off_t offs)
 {
   error_t err;
   unsigned block_mask = dev->block_mask;
-  char *buf = dev->buf;
+  void *buf = dev->buf;
   struct store *store = dev->store;
   size_t buf_len = store->block_size;
 
@@ -144,7 +144,7 @@ dev_open (struct store_parsed *name, int flags, struct dev **dev)
   if (! new)
     return ENOMEM;
 
-  err = store_parsed_open (name, flags, 0, &new->store);
+  err = store_parsed_open (name, flags, &new->store);
   if (err)
     {
       free (new);
@@ -311,7 +311,7 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
    AMOUNT.  If successful, 0 is returned, otherwise an error code is
    returned.  */
 error_t
-dev_write (struct dev *dev, off_t offs, char *buf, size_t len,
+dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
 	   size_t *amount)
 {
   error_t buf_write (size_t buf_offs, size_t io_offs, size_t len)
@@ -336,7 +336,7 @@ dev_write (struct dev *dev, off_t offs, char *buf, size_t len,
    returned, otherwise an error code is returned.  */
 error_t
 dev_read (struct dev *dev, off_t offs, size_t whole_amount,
-	  char **buf, size_t *len)
+	  void **buf, size_t *len)
 {
   error_t err;
   int allocated_buf = 0;
@@ -376,7 +376,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 	  error_t err = ensure_buf ();
 	  if (! err)
 	    {
-	      char *_req_buf = *buf + io_offs, *req_buf = _req_buf;
+	      void *_req_buf = *buf + io_offs, *req_buf = _req_buf;
 	      size_t req_len = len;
 	      err = store_read (store, addr, len, &req_buf, &req_len);
 	      if (! err)
