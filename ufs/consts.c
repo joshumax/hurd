@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
-#include "dinode.h"
 
 int diskfs_link_max = LINK_MAX;
 int diskfs_maxsymlinks = 8;
