@@ -80,6 +80,8 @@ struct node
   int references;		/* hard references */
   int light_references;		/* light references */
 
+  mach_port_t identity;		/* io_identity port */
+
   mach_port_t sockaddr;		/* address for S_IFSOCK shortcut */
 
   int owner;
@@ -124,6 +126,9 @@ extern mach_port_t diskfs_default_pager; /* send right */
 extern mach_port_t diskfs_exec_ctl;	/* send right */
 extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
+
+/* The io_identity identity port for the filesystem. */
+extern mach_port_t diskfs_fsys_identity;
 
 /* The command line diskfs was started, set by the default argument parser.
    If you don't use it, set this yourself.  This is only used for bootstrap
