@@ -31,7 +31,7 @@
 
 /* These directly correspond to the bits in a state, starting from 0.  See
    ps.h for an explanation of what each of these means.  */
-char *proc_stat_state_tags = "RTHDSIWN<Z+sempox";
+char *proc_stat_state_tags = "RTHDSIWN<Z+sfmpox";
 
 /* ---------------------------------------------------------------- */
 
@@ -76,25 +76,11 @@ thread_state(thread_basic_info_t bi)
 
 /* ---------------------------------------------------------------- */
 
-/* Add FLAGS to PS's flags, fetching information as necessary to validate
-   the corresponding fields in PS.  Afterwards you must still check the flags
-   field before using new fields, as something might have failed.  Returns
-   a system error code if a fatal error occurred, or 0 if none.  */
-error_t
-proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
+/* Returns FLAGS augmented with any other flags that are necessary
+   preconditions to setting them.  */
+static ps_flags_t 
+add_preconditions (ps_flags_t flags)
 {
-  error_t err;
-  ps_flags_t have = ps->flags;	/* flags set in ps */
-  ps_flags_t need;		/* flags not set in ps, but desired to be */
-  process_t server = ps_context_server(ps->context);
-
-  if (flags & PSTAT_NO_MSGPORT)
-    /* Ensure that we don't try to use the process's msg port.  */
-    {
-      have |= PSTAT_NO_MSGPORT;
-      have &= ~PSTAT_MSGPORT;
-    }
-
   /* Implement any inter-flag dependencies: if the new flags in FLAGS depend
      on some other set of flags to be set, make sure those are also in
      FLAGS. */
@@ -104,7 +90,7 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
     flags |= PSTAT_EXEC_FLAGS;	/* For the traced bit.  */
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK
 	       | PSTAT_EXEC_FLAGS)
-      && !(have & PSTAT_NO_MSGPORT))
+      && !(flags & PSTAT_NO_MSGPORT))
     {
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
@@ -113,6 +99,69 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
     flags |= PSTAT_INFO;
   if (flags & PSTAT_TASK_EVENTS_INFO)
     flags |= PSTAT_TASK;
+
+  return flags;
+}
+
+/* Those flags that should be set before calling should_suppress_msgport.  */
+#define SHOULD_SUPPRESS_MSGPORT_FLAGS (PSTAT_INFO | PSTAT_THREAD_INFO)
+
+/* Return true when there's some condition indicating that we shouldn't use
+   PS's msg port.  For this routine to work correctly, PS's flags should
+   contain as many flags in SHOULD_SUPPRESS_MSGPORT_FLAGS as possible.  */
+static int
+should_suppress_msgport (proc_stat_t ps)
+{
+  ps_flags_t have = ps->flags;
+
+  if ((have & PSTAT_INFO) && ps->info->taskinfo.suspend_count != 0)
+    /* Task is suspended.  */
+    return TRUE;
+
+  if ((have & PSTAT_THREAD_INFO) && ps->thread_basic_info.suspend_count != 0)
+    /* All threads are suspended.  */
+    return TRUE;
+
+  if ((have & PSTAT_INFO) && ps->info->nthreads == 0)
+    /* No threads (some bug could cause the procserver still to think there's
+       a msgport).  */
+    return TRUE;
+
+  return FALSE;
+}
+
+/* Returns FLAGS with PSTAT_MSGPORT turned off and PSTAT_NO_MSGPORT on.  */
+#define SUPPRESS_MSGPORT(flags) (((flags) & ~PSTAT_MSGPORT) | PSTAT_NO_MSGPORT)
+
+/* ---------------------------------------------------------------- */
+
+/* Add FLAGS to PS's flags, fetching information as necessary to validate
+   the corresponding fields in PS.  Afterwards you must still check the flags
+   field before using new fields, as something might have failed.  Returns
+   a system error code if a fatal error occurred, or 0 if none.  */
+error_t
+proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
+{
+  error_t err;
+  ps_flags_t have = ps->flags;	/* flags set in ps */
+  ps_flags_t need;		/* flags not set in ps, but desired to be */
+  ps_flags_t no_msgport_flags;	/* a version of FLAGS for use when we can't
+				   use the msg port.  */
+  process_t server = ps_context_server(ps->context);
+
+  /* Propagate PSTAT_NO_MSGPORT.  */
+  if (flags & PSTAT_NO_MSGPORT)
+    have = SUPPRESS_MSGPORT (have);
+  if (have & PSTAT_NO_MSGPORT)
+    flags = SUPPRESS_MSGPORT (flags);
+
+  no_msgport_flags = add_preconditions (SUPPRESS_MSGPORT (flags));
+  flags = add_preconditions (flags);
+
+  if (flags & PSTAT_MSGPORT)
+    /* Add in some values that we can use to determine whether the msgport
+       shouldn't be used.  */
+    flags |= add_preconditions (SHOULD_SUPPRESS_MSGPORT_FLAGS);
 
   need = flags & ~have;
 
@@ -127,13 +176,6 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
        ? (have |= (flag)) \
        : 0), \
       err))
-
-  /* The process's process port.  */
-  MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc(server, ps->pid, &ps->process));
-  /* The process's task port.  */
-  MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
-  /* The process's libc msg port (see <hurd/msg.defs>).  */
-  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
 
   /* the process's struct procinfo as returned by proc_getprocinfo.  */
   if ((need & PSTAT_INFO) && (have & PSTAT_PID))
@@ -187,6 +229,10 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
 	  tbi->cpu_usage += bi->cpu_usage;
 	  tbi->sleep_time += bi->sleep_time;
 
+	  /* The aggregate suspend count is the minimum of all threads.  */
+	  if (i == 0 || tbi->suspend_count > bi->suspend_count)
+	    tbi->suspend_count = bi->suspend_count;
+
 	  tbi->user_time.seconds += bi->user_time.seconds;
 	  tbi->user_time.microseconds += bi->user_time.microseconds;
 	  tbi->system_time.seconds += bi->system_time.seconds;
@@ -207,6 +253,22 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
 
       have |= PSTAT_THREAD_INFO;
     }
+
+  ps->flags = have;		/* should_suppress_msgport looks at them.  */
+  if (should_suppress_msgport (ps))
+    /* Something is likely to have hosed the msg port, so don't use it.  */
+    {
+      /* Turn off those things that were only good given the msg port.  */
+      need &= ~(flags & ~no_msgport_flags);
+      have &= ~PSTAT_MSGPORT;
+    }
+
+  /* The process's process port.  */
+  MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc(server, ps->pid, &ps->process));
+  /* The process's task port.  */
+  MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
+  /* The process's libc msg port (see <hurd/msg.defs>).  */
+  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
 
   /* VM statistics for the task.  See <mach/task_info.h>.  */
   if ((need & PSTAT_TASK_EVENTS_INFO) && (have & PSTAT_TASK))
@@ -241,8 +303,8 @@ proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
 	state |= PSTAT_STATE_ZOMBIE;
       if (pi_flags & PI_SESSLD)
 	state |= PSTAT_STATE_SESSLDR;
-      if (pi_flags & PI_EXECED)
-	state |= PSTAT_STATE_EXECED;
+      if (!(pi_flags & PI_EXECED))
+	state |= PSTAT_STATE_FORKED;
       if (pi_flags & PI_NOMSG)
 	state |= PSTAT_STATE_NOMSG;
       if (pi_flags & PI_NOPARENT)
