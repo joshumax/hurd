@@ -27,6 +27,8 @@
 
 #include "ps.h"
 #include "common.h"
+
+#include "ps_term.h"
 
 /* ---------------------------------------------------------------- */
 
@@ -69,7 +71,7 @@ ps_tty_name (struct ps_tty *tty)
     {
       string_t buf;
 
-      if (term_get_nodename (tty->port, buf) != 0)
+      if (ps_term_get_nodename (tty->port, buf) != 0)
 	/* There is a terminal there, but we can't figure out its name.  */
 	tty->name_state = PS_TTY_NAME_ERROR;
       else
