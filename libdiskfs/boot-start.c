@@ -299,6 +299,8 @@ diskfs_execboot_fsys_startup (mach_port_t port,
    in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_getpriv (mach_port_t port,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
 		       mach_port_t *hostpriv,
 		       mach_port_t *device_master,
 		       mach_port_t *fstask)
