@@ -5,12 +5,12 @@
 /* We only use this file when we build against a libio-using libc,
    which we presume will be 2.2 that is expecting our lockfile.c
    hooks.  Therefore the flockfile functions are added to the
-   GLIBC_2.2 version node.  The rest of the library's symbols will use
+   GLIBC_2.2.6 version node.  The rest of the library's symbols will use
    HURD_CTHREADS_0.3.  */
 
 VERSION
 {
-  GLIBC_2.2
+  GLIBC_2.2.6
     {
     global:
       _IO_flockfile; _IO_funlockfile; _IO_ftrylockfile;
