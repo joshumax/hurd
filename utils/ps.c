@@ -34,23 +34,16 @@
 
 char *argp_program_version = "ps 1.0 (GNU " HURD_RELEASE ")";
 
-/* Long options without corresponding short ones.  -1 is EOF.  */
-#define OPT_LOGIN	-2
-#define OPT_SESS	-3
-#define OPT_SORT	-4
-#define OPT_FMT		-5
-#define OPT_PGRP	-7
-
 #define OA OPTION_ARG_OPTIONAL
 
 static const struct argp_option options[] =
 {
   {"all-users",  'a',     0,      0,  "List other users' processes"},
-  {"fmt",        OPT_FMT, "FMT",  0,  "Use the output-format FMT FMT may be"
+  {"format",     'F',     "FMT",  0,  "Use the output-format FMT; FMT may be"
                                       " `default', `user', `vmem', `long',"
 				      " `jobc', `full', `hurd', `hurd-long',"
 				      " or a custom format-string"},
-  {"posix-fmt",  'o',     "FMT",  0,  "Use the posix-style output-format FMT"},
+  {"posix-format",'o',    "FMT",  0,  "Use the posix-style output-format FMT"},
   {0,            'd',     0,      0,  "List all processes except process group"
                                       " leaders"},
   {"all",        'e',     0,      0,  "List all processes"},
@@ -60,7 +53,7 @@ static const struct argp_option options[] =
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
   {0,            'j',     0,      0,  "Use the `jobc' output-format"},
   {0,            'l',     0,      0,  "Use the `long' output-format"},
-  {"login",      OPT_LOGIN,"LID", OA, "Add the processes from the login"
+  {"login",      'L',     "LID", OA, "Add the processes from the login"
                                       " collection LID (which defaults that of"
                                       " the current process)"},
   {"lid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
@@ -71,20 +64,20 @@ static const struct argp_option options[] =
   {"owner",      'U',     "USER", 0,  "Show only processes owned by USER"},
   {"not-owner",  'O',     "USER", 0,  "Show only processes not owned by USER"},
   {"pid",        'p',     "PID",  0,  "List the process PID"},
-  {"pgrp",       OPT_PGRP,"PGRP", 0,  "List processes in process group PGRP"},
+  {"pgrp",       'G',     "PGRP", 0,  "List processes in process group PGRP"},
   {"no-parent",  'P',     0,      0,  "Include processes without parents"},
   {"all-fields", 'Q',     0,      0,  "Don't elide unusable fields (normally"
                                       " if there's some reason ps can't print"
                                       " a field for any process, it's removed"
                                       " from the output entirely)"},
   {"reverse",    'r',     0,      0,  "Reverse the order of any sort"},
-  {"session",    OPT_SESS,"SID",  OA, "Add the processes from the session SID"
+  {"session",    'S',     "SID",  OA, "Add the processes from the session SID"
                                       " (which defaults to the sid of the"
                                       " current process)"},
   {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
-  {"sort",       OPT_SORT,"FIELD", 0, "Sort the output with respect to FIELD,"
+  {"sort",       'S',	  "FIELD",0, "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
-  {"threads",    's',     0,      0,  "Show the threads for each process"},
+  {"threads",    'T',     0,      0,  "Show the threads for each process"},
   {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
                                       " terminal TTY"},
   {0,            'u',     0,      0,  "Use the `user' output-format"},
@@ -490,10 +483,10 @@ main(int argc, char *argv[])
 	case 'H': print_heading = FALSE; break;
 	case 'Q': squash_bogus_fields = squash_nominal_fields = FALSE; break;
 	case 'n': squash_nominal_fields = FALSE; break;
-	case 's': show_threads = TRUE; break;
-	case OPT_SORT: sort_key_name = arg; break;
+	case 'T': show_threads = TRUE; break;
+	case 's': sort_key_name = arg; break;
 	case 'r': sort_reverse = TRUE; break;
-	case OPT_FMT: fmt_string = arg; posix_fmt = 0; break;
+	case 'F': fmt_string = arg; posix_fmt = 0; break;
 	case 'o': fmt_string = arg; posix_fmt = 1; break;
 
 	case 'w':
@@ -509,13 +502,13 @@ main(int argc, char *argv[])
 	case 'O':
 	  parse_numlist (arg, add_not_uid, NULL, lookup_user, "user");
 	  break;
-	case OPT_SESS:
+	case 'S':
 	  parse_numlist(arg, add_sid, current_sid, NULL, "session id");
 	  break;
-	case OPT_LOGIN:
+	case 'L':
 	  parse_numlist(arg, add_lid, current_lid, NULL, "login collection");
 	  break;
-	case OPT_PGRP:
+	case 'G':
 	  parse_numlist(arg, add_pgrp, NULL, NULL, "process group");
 	  break;
 
