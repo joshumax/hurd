@@ -33,3 +33,8 @@ CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_
 vpath %.c ../lib
 
 include ../Makeconf
+
+open.c rdwr.c window.c: window.h
+dev.c devio.c devpager.c io.c iostate.c open.c rdwr.c window.c: dev.h
+devio.c io.c open.c rdwr.c: open.h
+dev.c io.c iostate.c: iostate.h
