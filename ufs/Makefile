@@ -30,6 +30,10 @@ HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
 LDFLAGS = -Wl,--no-keep-memory
 target = ufs
 
+CPPFLAGS += -I../lib
+CPPFLAGS += $(CPPFLAGS-$(notdir $<))
+vpath %.c ../lib
+
 include ../Makeconf
 
 $(OBJS): ufs.h 
