@@ -25,6 +25,7 @@ static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
 
+static any_t
 master_thread_function (any_t foo __attribute__ ((unused)))
 {
   error_t err;
