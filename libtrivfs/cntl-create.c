@@ -1,6 +1,6 @@
 /* Create a new trivfs control port
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,9 +33,34 @@ trivfs_create_control (mach_port_t underlying,
 		       struct port_bucket *protid_bucket,
 		       struct trivfs_control **control)
 {
-  error_t err =
-    ports_create_port (control_class, control_bucket, 
-		       sizeof (struct trivfs_control), control);
+  error_t err;
+
+  /* Perhaps allocate, and perhaps add the specified port classes the ones
+     recognized by trivfs.  */
+  err = trivfs_add_control_port_class (&control_class);
+  if (! err)
+    err = trivfs_add_protid_port_class (&protid_class);
+  else
+    protid_class = 0;
+
+  /* Perhaps allocate new port buckets.  */
+  if (! err)
+    err = trivfs_add_port_bucket (&control_bucket);
+  else
+    control_bucket = 0;
+  if (! err)
+    {
+      if (! protid_bucket)
+	/* By default, use the same port bucket for both.  */
+	protid_bucket = control_bucket;
+      err = trivfs_add_port_bucket (&protid_bucket);
+    }
+  else
+    protid_bucket = 0;
+
+  if (! err)
+    err = ports_create_port (control_class, control_bucket, 
+			     sizeof (struct trivfs_control), control);
 
   if (! err)
     {
@@ -47,7 +72,7 @@ trivfs_create_control (mach_port_t underlying,
       if (err)
 	{
 	  ports_port_deref (*control);
-	  return err;
+	  goto out;
 	}
       
       err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
@@ -56,11 +81,20 @@ trivfs_create_control (mach_port_t underlying,
 	{
 	  mach_port_destroy (mach_task_self (), (*control)->filesys_id);
 	  ports_port_deref (*control);
-	  return err;
+	  goto out;
 	}
 
       (*control)->hook = 0;
       mutex_init (&(*control)->lock);
+    }
+
+out:
+  if (err)
+    {
+      trivfs_remove_control_port_class (control_class);
+      trivfs_remove_protid_port_class (protid_class);
+      trivfs_remove_port_bucket (control_bucket);
+      trivfs_remove_port_bucket (protid_bucket);
     }
 
   return err;
