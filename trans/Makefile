@@ -22,7 +22,7 @@ targets = symlink ifsock magic null fifo new-fifo fwd devport
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c devport.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
 
-all: $(targets)
+include ../Makeconf
 
 symlink magic: fsysServer.o
 ifsock: ifsockServer.o
@@ -32,4 +32,4 @@ null ifsock fifo new-fifo devport: ../libtrivfs/libtrivfs.a ../libports/libports
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 fwd null ifsock fifo new-fifo devport: ../libthreads/libthreads.a
 
-include ../Makeconf
+$(targets): %: %.o
