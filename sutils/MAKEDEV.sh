@@ -97,7 +97,7 @@ function mkdev {
       tty)
 	st $I root 666 /hurd/magic tty;;
       fd)
-	st $I root 666 /hurd/magic fd
+	st $I root 666 /hurd/magic --directory fd
 	cmd ln -f -s fd/0 stdin
 	cmd ln -f -s fd/1 stdout
 	cmd ln -f -s fd/2 stderr
@@ -161,6 +161,12 @@ function mkdev {
 	st $I root 640 /hurd/storeio $I
 	;;
 
+      # Linux compatibility
+      loop*)
+        # In Linux an inactive "/dev/loopN" device acts like /dev/null.
+	# The `losetup' script changes the translator to "activate" the device.
+        st $I root 640 /hurd/null
+	;;
       *)
 	lose "$I: Unknown device name"
 	;;
