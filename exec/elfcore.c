@@ -74,6 +74,34 @@ fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
     }
 }
 
+#elif defined ALPHA_THREAD_STATE
+# define ELF_MACHINE		EM_ALPHA
+
+/* The gregset_t format (compatible with Linux/Alpha) almost fits
+   the Mach alpha_thread_state.  */
+static inline void
+fetch_thread_regset (thread_t thread, prgregset_t *gregs)
+{
+  mach_msg_type_number_t count = ALPHA_THREAD_STATE_COUNT;
+  assert (sizeof (struct alpha_thread_state) <= sizeof (prgregset_t));
+  (void) thread_get_state (thread, ALPHA_THREAD_STATE,
+			   (thread_state_t) gregs, &count);
+  /* XXX
+     gregs[32] is process-status word: Mach doesn't return it!
+     It's already zero'd.
+  */
+}
+
+/* The FPU state matches exactly.  */
+static inline void
+fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
+{
+  mach_msg_type_number_t count = ALPHA_FLOAT_STATE_COUNT;
+  assert (sizeof (struct alpha_float_state) == sizeof *fpregs);
+  (void) thread_get_state (thread, ALPHA_FLOAT_STATE,
+			   (thread_state_t) fpregs, &count);
+}
+
 #else
 # warning "do not understand this machine flavor, no registers in dumps"
 # define ELF_MACHINE		EM_NONE
