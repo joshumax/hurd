@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "notify_S.h"
 
 /* Called by the kernel when a port has no more senders.  We arrange
    to have this sent to the port which is out of senders (NOTIFY).  MSCOUNT
@@ -31,6 +32,8 @@ trivfs_do_mach_notify_no_senders (mach_port_t notify,
   struct port_info *pt;
 
   pt = ports_get_port (notify);
+  if (!pt)
+    return EOPNOTSUPP;
 
   ports_no_senders (pt, mscount);
 
