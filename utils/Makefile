@@ -30,6 +30,6 @@ vpath %.c ../lib
 
 include ../Makeconf
 
-ps: ps.o ihash.o primes.o $(HURDLIBS-files) $(libc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o ps ps.o ihash.o primes.o $(HURDLIBS-files)
+ps: ps.o ihash.o primes.o error.o $(HURDLIBS-files) $(libc)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ps ps.o ihash.o primes.o error.o $(HURDLIBS-files)
 
