@@ -3,6 +3,7 @@
 	* glue-include/linux/sched.h (process_schedule_timeout): New
 	function used as timer callback for schedule_timeout.
 	(schedule_timeout): Implement it.
+	Suggested by "kurian kattukaren" <kjk_bugs@rediffmail.com>.
 
 2001-07-25  Mark Kettenis  <kettenis@gnu.org>
 
