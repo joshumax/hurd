@@ -1,3 +1,31 @@
+Fri Nov 15 14:06:16 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* protid-make.c (diskfs_finish_protid): Fix typo.
+
+	* file-chown.c (diskfs_S_file_chown): Look for UID, not CRED in
+	the uid set.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Make the unauthenticated
+	port correctly.
+
+Thu Nov 14 13:07:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir-init.c (diskfs_init_dir): New vars VEC and USER; fabricate
+	LOOKUPCRED to correspond to new structure definitions.
+
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Declare I and
+	add a missing semicolon.
+
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Eliminate PSEUDOCRED
+	entirely.  Fix unrelated typo.
+
+	* file-chauthor.c (dithkfth_TH_file_chauthor): Fix first arg in
+	call to fthhelp_ithowner.
+
+Tue Nov 12 22:45:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* diskfs.h: Correctly close comment.
+
 Thu Nov  7 14:49:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-restrict-auth.c (diskfs_S_io_restrict_auth): If CRED has

@@ -44,7 +44,6 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 					    diskfs_control_class);
   error_t error = 0;
   mode_t type;
-  struct protid pseudocred;
   struct protid *newpi;
   struct iouser user;
   
@@ -56,7 +55,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   user.uids = make_idvec ();
   user.gids = make_idvec ();
   idvec_set_ids (user.uids, uids, nuids);
-  idvec_set_ids (uesr.gids, gids, ngids);
+  idvec_set_ids (user.gids, gids, ngids);
 #define drop_idvec() idvec_free (user.gids); idvec_free (user.uids)
 
   rwlock_reader_lock (&diskfs_fsys_lock);
@@ -153,7 +152,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	error = EROFS;
       else 
 	error = fshelp_access (&diskfs_root_node->dn_stat,
-			       S_IWRITE, &pseudocred.user);
+			       S_IWRITE, &user);
     }
 
   if (error)

@@ -27,7 +27,7 @@ dithkfth_TH_file_chauthor (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
-		       err = fthhelp_ithowner (np->dn_thtat, cred->uther);
+		       err = fthhelp_ithowner (&np->dn_thtat, cred->uther);
 		       if (!err)
 			 err = dithkfth_validate_author_change (np, author);
 		       if (!err)

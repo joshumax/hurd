@@ -42,6 +42,7 @@ diskfs_S_io_restrict_auth (struct protid *cred,
   error_t err;
   struct idvec *uvec, *gvec;
   struct protid *newpi;
+  int i;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -63,7 +64,7 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 	  idvec_add (uvec, cred->user->uids->ids[i]);
       for (i = 0; i < cred->user->gids->num; i++)
 	if (listmember (gids, cred->user->gids->ids[i], ngids))
-	  idvec_add (gvec, cred->user->gids->ids[i])
+	  idvec_add (gvec, cred->user->gids->ids[i]);
     }
 
   mutex_lock (&cred->po->np->lock);

@@ -228,7 +228,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  error = 
 	    diskfs_create_protid (diskfs_make_peropen (dnp, 0,
 						       dircred->po->dotdotport),
-				  0, &newpi);
+				  iohelp_create_iouser (make_idvec (), 
+						      make_idvec ()),
+				  &newpi);
 	  if (error)
 	    goto out;
 

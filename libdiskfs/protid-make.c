@@ -51,7 +51,7 @@ diskfs_finish_protid (struct protid *cred, struct iouser *user)
       cred->user = user;
     }
   else
-    cred->user = iohelp_dup_user (user);
+    cred->user = iohelp_dup_iouser (user);
 
   mach_port_move_member (mach_task_self (), cred->pi.port_right, 
 			 diskfs_port_bucket->portset);

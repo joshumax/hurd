@@ -849,7 +849,7 @@ error_t diskfs_create_protid (struct peropen *po, struct iouser *user,
 error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 
 /* Finish building protid CRED started with diskfs_start_protid;
-   the user to install is USER.  *q
+   the user to install is USER.  */
 void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 /* Create and return a new peropen structure on node NP with open

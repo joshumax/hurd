@@ -28,7 +28,7 @@ diskfs_S_file_chown (struct protid *cred,
 		   ({
 		     err = fshelp_isowner (&np->dn_stat, cred->user);
 		     if (err
-			 || ((!idvec_contains (cred->user->uids, cred)
+			 || ((!idvec_contains (cred->user->uids, uid)
 			      || !idvec_contains (cred->user->gids, gid))
 			     && !idvec_contains (cred->user->uids, 0)))
 		       err = EPERM;
