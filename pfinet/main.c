@@ -81,6 +81,24 @@ S_startup_dosync (mach_port_t handle)
   return 0;
 }
 
+int
+sighup_handle (int signo)
+{
+  error_t
+    do1 (void *port)
+      {
+	struct port_info *pi = port;
+	if (pi->class == socketport_class)
+	  ports_destroy_right (pi);
+	return 0;
+      }
+  ports_bucket_iterate (pfinet_bucket, do1);
+  sleep (10);
+  signal (SIGHUP, SIG_DFL);
+  raise (SIGHUP);
+  return 0;
+}
+
 void
 arrange_shutdown_notification ()
 {
@@ -90,6 +108,8 @@ arrange_shutdown_notification ()
   struct port_info *pi;
   
   shutdown_notify_class = ports_create_class (0, 0);
+
+  signal (SIGHUP, sighup_handler);
 
   /* Arrange to get notified when the system goes down,
      but if we fail for some reason, just silently give up.  No big deal. */
