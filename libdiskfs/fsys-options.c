@@ -89,6 +89,8 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 /* Implement fsys_get_options as described in <hurd/fsys.defs>. */
 error_t
 diskfs_S_fsys_get_options (fsys_t fsys,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype,
 			   char **data, mach_msg_type_number_t *data_len)
 {
   char *argz;
