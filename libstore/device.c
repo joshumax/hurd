@@ -116,6 +116,7 @@ dclose (struct store *store)
 static error_t
 enforced (struct store *store)
 {
+  error_t err;
   size_t sizes[DEV_STATUS_MAX];
   size_t sizes_len = DEV_STATUS_MAX;
 
@@ -125,7 +126,8 @@ enforced (struct store *store)
   else
     /* See if the the current (one) range is that the kernel is enforcing. */
     {
-      error_t err =
+#ifdef DEV_GET_RECORDS
+      err =
 	device_get_status (store->port, DEV_GET_RECORDS, sizes, &sizes_len);
 
       if (err && err != D_INVALID_OPERATION)
@@ -143,9 +145,10 @@ enforced (struct store *store)
 	  return 0;
 	}
       else
+#endif
 	{
-	  sizes_len = DEV_GET_SIZE_COUNT;
-	  error_t err =
+	  sizes_len = DEV_STATUS_MAX;
+	  err =
 	    device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
 
 	  if (err)
@@ -238,6 +241,7 @@ store_device_create (device_t device, int flags, struct store **store)
   size_t sizes_len = DEV_STATUS_MAX;
   error_t err;
 
+#ifdef DEV_GET_RECORDS
   err = device_get_status (device, DEV_GET_RECORDS, sizes, &sizes_len);
   if (! err && sizes_len == DEV_GET_RECORDS_COUNT)
     {
@@ -250,12 +254,14 @@ store_device_create (device_t device, int flags, struct store **store)
 	}
     }
   else
+#endif
     {
       /* Some Mach devices do not implement device_get_status, but do not
 	 return an error.  To detect these devices we set the size of the
 	 input buffer to something larger than DEV_GET_SIZE_COUNT.  If the
 	 size of the returned device status is not equal to
 	 DEV_GET_SIZE_COUNT, we know that something is wrong.  */
+      sizes_len = DEV_STATUS_MAX;
       err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
       if (! err && sizes_len == DEV_GET_SIZE_COUNT)
 	{
