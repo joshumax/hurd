@@ -86,7 +86,7 @@ function mkdev {
 	;;
 
       std)
-	mkdev console tty null zero full fd time mem klog
+	mkdev console tty null zero full fd time mem klog shm
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -169,12 +169,18 @@ function mkdev {
 	st $I root 640 /hurd/storeio $I
 	;;
 
+      # /dev/shm is used by the POSIX.1 shm_open call in libc.
+      shm)
+        st $I root 1777 /hurd/tmpfs
+        ;;
+
       # Linux compatibility
       loop*)
         # In Linux an inactive "/dev/loopN" device acts like /dev/null.
 	# The `losetup' script changes the translator to "activate" the device.
         st $I root 640 /hurd/null
 	;;
+
       *)
 	lose "$I: Unknown device name"
 	;;
