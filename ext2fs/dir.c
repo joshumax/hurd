@@ -107,7 +107,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   int blockaddr;
   int idx;
   
-  if (type == REMOVE)
+  if ((type == REMOVE) || (type == RENAME))
     assert (npp);
 
   if (npp)
