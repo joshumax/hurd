@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include <mom-errors.h>
+
 /* This header file defines structure layouts for the use of functions
    below; it is specific to the particular microkernel in use. */
 #include <mom-kerndep.h>
