@@ -880,12 +880,11 @@ arg (const struct argp_option *real, const char *req_fmt, const char *opt_fmt,
 /* State used during the execution of hol_help.  */
 struct hol_help_state 
 {
-  /* PREV_ENTRY should contain the last entry printed before this, or null if
-     it's the first, and if an ENTRY is in a different group, and SEP_GROUPS
-     is true, then a blank line will be printed before any output.
-     SEP_GROUPS is also set to true if a user-specified group header is
-     printed.  */
+  /* PREV_ENTRY should contain the previous entry printed, or 0.  */
   struct hol_entry *prev_entry;
+
+  /* If an entry is in a different group from the previous one, and SEP_GROUPS
+     is true, then a blank line will be printed before any output. */
   int sep_groups;
 
   /* True if a duplicate option argument was suppressed (only ever set if
