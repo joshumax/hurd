@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -69,7 +69,8 @@ diskfs_S_dir_mkfile (struct protid *cred,
   
   flags &= (O_READ | O_WRITE | O_EXEC);
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, 
-						   cred->po->dotdotport),
+						   cred->po->dotdotport,
+						   cred->po->depth),
 			      cred->user, &newpi);
   if (! err)
     {
