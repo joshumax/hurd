@@ -1,6 +1,6 @@
 /* Main entry point for the ext2 file system translator
 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -132,7 +132,7 @@ static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_children};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
-void
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -202,6 +202,8 @@ main (int argc, char **argv)
 
   /* and so we die, leaving others to do the real work.  */
   cthread_exit (0);
+  /* NOTREACHED */
+  return 0;
 }
 
 error_t
