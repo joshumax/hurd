@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -26,6 +26,8 @@
 
 error_t
 netfs_S_fsys_getroot (mach_port_t cntl,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      mach_port_t dotdot,
 		      uid_t *uids, mach_msg_type_number_t nuids,
 		      uid_t *gids, mach_msg_type_number_t ngids,

@@ -1,6 +1,6 @@
 /* Parse run-time options
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -32,6 +32,8 @@
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 error_t
 netfs_S_fsys_set_options (fsys_t fsys,
+			  mach_port_t reply,
+			  mach_msg_type_name_t reply_type,
 			  char *data, mach_msg_type_number_t data_len,
 			  int do_children)
 {

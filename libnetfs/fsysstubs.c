@@ -1,6 +1,6 @@
 /* Unimplemented rpcs from <hurd/fsys.defs>
  
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,6 +24,8 @@
 
 error_t
 netfs_S_fsys_getfile (fsys_t cntl,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      uid_t *uids, mach_msg_type_number_t nuids,
 		      gid_t *gids, mach_msg_type_number_t ngids,
 		      char *handle, mach_msg_type_number_t handlelen,
@@ -34,6 +36,8 @@ netfs_S_fsys_getfile (fsys_t cntl,
 
 error_t
 netfs_S_fsys_getpriv (fsys_t cntl,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      mach_port_t *host, mach_msg_type_name_t *hosttp,
 		      mach_port_t *dev, mach_msg_type_name_t *devtp,
 		      mach_port_t *fs, mach_msg_type_name_t *fstp)
@@ -43,7 +47,8 @@ netfs_S_fsys_getpriv (fsys_t cntl,
 
 error_t
 netfs_S_fsys_init (fsys_t cntl,
-		   mach_port_t reply, mach_msg_type_name_t replytp,
+		   mach_port_t reply,
+		   mach_msg_type_name_t reply_type,
 		   mach_port_t proc, auth_t auth)
 {
   return EOPNOTSUPP;
@@ -51,6 +56,8 @@ netfs_S_fsys_init (fsys_t cntl,
 
 error_t
 netfs_S_fsys_forward (fsys_t cntl,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      mach_port_t request,
 		      char *argv, mach_msg_type_number_t argvlen)
 {
@@ -59,17 +66,12 @@ netfs_S_fsys_forward (fsys_t cntl,
 
 error_t
 netfs_S_fsys_startup (mach_port_t bootstrap,
+		      mach_port_t reply,
+		      mach_msg_type_name_t reply_type,
 		      int flags,
 		      mach_port_t contrl,
 		      mach_port_t *realnod,
 		      mach_msg_type_name_t *realnodetype)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-netfs_S_fsys_goaway (mach_port_t cntl,
-		     int flags)
 {
   return EOPNOTSUPP;
 }

@@ -1,6 +1,6 @@
 /* Unparse run-time options
 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -32,6 +32,8 @@
 /* Implement fsys_get_options as described in <hurd/fsys.defs>. */
 error_t
 netfs_S_fsys_get_options (fsys_t fsys,
+			  mach_port_t reply,
+			  mach_msg_type_name_t reply_type,
 			  char **data, mach_msg_type_number_t *data_len)
 {
   error_t err;
