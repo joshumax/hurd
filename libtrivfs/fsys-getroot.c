@@ -78,8 +78,9 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 	}
     }
   
-  cred = ports_allocate_port (sizeof (struct trivfs_protid),
-			      cntl->protidtypes);
+  cred = ports_allocate_port (cntl->protid_bucket,
+			      sizeof (struct trivfs_protid),
+			      cntl->protid_class);
   cred->isroot = 0;
   for (i = 0; i < nuids; i++)
     if (uids[i] == 0)
