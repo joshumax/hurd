@@ -464,6 +464,9 @@ S_proc_getprocinfo (struct proc *callerp,
 	    break;
 	}
 
+      /* Note that there are thread wait entries only for threads not marked
+         dead.  */
+
       if (*flags & PI_FETCH_THREAD_WAITS)
 	{
 	  /* See what thread I is waiting on.  */
