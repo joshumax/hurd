@@ -462,10 +462,7 @@ diskfs_S_fsys_init (mach_port_t port,
   if (err)
     return err;
 
-  sprintf (version, "%s %d.%d.%d",
-	   diskfs_server_name, diskfs_major_version,
-	   diskfs_minor_version, diskfs_edit_version);
-
+  sprintf (version, "%d.%d", diskfs_major_version, diskfs_minor_version);
   proc_register_version (procserver, host,
 			 diskfs_server_name, HURD_RELEASE, version);
 
