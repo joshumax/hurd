@@ -26,15 +26,24 @@ mach_port_t
 ports_claim_right (void *portstruct)
 {
   struct port_info *pi = portstruct;
-  
-  mutex_lock (&_ports_lock);
-  ihash_locp_remove (pi->bucket->htable, pi->hentry);
-  mutex_unlock (&_ports_lock);
-  pi->port_right = MACH_PORT_NULL;
-  if (pi->flags & PORT_HAS_SENDRIGHTS)
+  mach_port_t ret;
+
+  if (pi->port_right != MACH_PORT_NULL)
     {
-      pi->flags &= ~PORT_HAS_SENDRIGHTS;
-      ports_port_deref (pi);
+      ret = pi->port_right;
+      
+      mutex_lock (&_ports_lock);
+      ihash_locp_remove (pi->bucket->htable, pi->hentry);
+      mutex_unlock (&_ports_lock);
+      pi->port_right = MACH_PORT_NULL;
+      if (pi->flags & PORT_HAS_SENDRIGHTS)
+	{
+	  pi->flags &= ~PORT_HAS_SENDRIGHTS;
+	  ports_port_deref (pi);
+	}
     }
+  else
+    ret = MACH_PORT_NULL;
+  return ret;
 }
 
