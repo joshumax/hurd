@@ -184,6 +184,8 @@ setup_ethernet_device (void)
   ether_dev.pa_addr = ether_dev.pa_brdaddr = ether_dev.pa_mask = 0;
   ether_dev.pa_alen = sizeof (unsigned long);
 
+  ethernet_open (&ether_dev);
+
   /* Fetch hardware information */
   count = NET_STATUS_COUNT;
   device_get_status (ether_port, NET_STATUS, (dev_status_t) &netstat, &count);
@@ -193,7 +195,7 @@ setup_ethernet_device (void)
   assert (netstat.address_size == ETH_ALEN);
 
   count = 2;
-  assert (count * sizeof (int) <= ETH_ALEN);
+  assert (count * sizeof (int) >= ETH_ALEN);
   device_get_status (ether_port, NET_ADDRESS, net_address, &count);
   net_address[0] = ntohl (net_address[0]);
   net_address[1] = ntohl (net_address[1]);
