@@ -70,7 +70,11 @@ nextprime (unsigned n)
 
       bzero (sieve, (end - start) * sizeof (*sieve));
 
-      /* ANSI C doesn't define what this means.  Fuck you.  */
+      /* Make the sieve indexed by prime number, rather than
+	 distance-from-start-to-the-prime-number.  When we're done,
+	 sieve[P] will be zero iff P is prime.
+
+	 ANSI C doesn't define what this means.  Fuck them.  */
       sieve -= start;
 
       /* Set sieve[i] for all composites i, start <= i < end.
