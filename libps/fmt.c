@@ -1,7 +1,7 @@
 /* Implements the ps_fmt type, which describes how to output a user-readable
    version of a proc_stat.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -526,7 +526,8 @@ ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(struct ps_fmt_field *field))
     else
       /* don't squash this field, just move to the next one */
       {
-	need |= ps_getter_needs (ps_fmt_spec_getter (field->spec));
+	if (field->spec)
+	  need |= ps_getter_needs (field->spec->getter);
 	field++;
       }
 
