@@ -226,10 +226,8 @@ else
 	      dst="$src";;
 	  esac
 
-echo "1: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
 	  # Pop op & src off of args
 	  set -- "${args[@]}"; shift 2; unset args; args=("$@")
-echo "2: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
 
 	  case $op in
 	    copy)
@@ -257,13 +255,27 @@ echo "2: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
 	      eval $ECHO "'touch $STAGE/$dst'"
 	      touch "$STAGE/$dst"
 	      ;;
+
 	    makedev|settrans|copytrans)
-	      # delay translators until later.
-	      touch "$STAGE/$dst"
+	      # delay translators until later, as tar can't copy them.
+
+	      case $op in
+	        settrans|copytrans)
+		  # We create the node on which translators will be put so
+		  # that the owner gets set correctly; this isn't necessary for
+		  # device because MAKEDEV does all the work needed, and doing so
+		  # would cause problems with device names that are really
+		  # categories.
+	          touch "$STAGE/$dst";;
+	      esac
+
+	      # Accunt for space used by the translator block
 	      TRANS_BLOCKS=$(($TRANS_BLOCKS + 1))
-echo "3: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
+
+	      # Record the desired operation for a later pass
 	      echo "$op $dst $src ${args[*]}" >> $TRANS_LIST
 	      ;;
+
 	    ''|'#')
 	      ;;
 	    *)
@@ -279,7 +291,7 @@ echo "3: OP=<$op>, SRC=<$src>, DST=<$dst>, ARGS=<${args[*]}>"
       ) || exit $?
     else
       eval $ECHO "'# Copying all files using tar'"
-      (cd $SRC; tar cf - .) | (cd $STAGE; tar xf -)
+      (cd $SRC; tar cf - .) | (cd $STAGE; tar -x --same-owner -p -f -)
     fi
   done
   TREE="$STAGE"
@@ -317,19 +329,17 @@ eval "$MKFS $MKFS_Q '$IMAGE_TMP'" || exit 12
 settrans -ac $MNT $FSTRANS $IMAGE_TMP || exit 13
 
 eval $ECHO "'# Copying $TREE into filesystem...'"
-(cd $TREE; tar cf - .) | (cd $MNT; tar xf -)
+(cd $TREE; tar cf - .) | (cd $MNT; tar -x --same-owner -p -f -)
 
 if [ -r "$TRANS_LIST" ]; then
   # create any delayed translators
   eval $ECHO "'# Creating translators...'"
   cat "$TRANS_LIST" |
     while read -a args; do
-echo "4: OP=<$op>, DST=<$dst>, ARGS=<${args[*]}>"
       op="${args[0]}"
       dst="${args[1]}"
       src="${args[2]}"
       set -- "${args[@]}"; shift 3; unset args; args=("$@")
-echo "5: OP=<$op>, DST=<$dst>, ARGS=<${args[*]}>"
       
       case $op in
 	copytrans)
