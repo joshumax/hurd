@@ -32,6 +32,8 @@ _pager_lock_object (struct pager *p,
 {
   struct lock_request *lr = 0;
   struct anticipation *ant;
+  char *pm_entries;
+  int i;
 
   mutex_lock (&p->interlock);
   if (p->pager_state != NORMAL)
@@ -80,6 +82,16 @@ _pager_lock_object (struct pager *p,
 	  if (lr->next)
 	    lr->next->prevp = lr->prevp;
 	  free (lr);
+	}
+
+      if (should_flush)
+	{
+	  mutex_lock (&p->interlock);
+	  _pager_pagemap_resize (p, offset + size);
+	  pm_entry = &p->pagemap[offset / __vm_page_size];
+	  for (i = 0; i < size / vm_page_size; i++)
+	    pm_entries[i] &= ~PM_INCORE;
+	  mutex_unlock (&p->interlock);
 	}
     }
 
