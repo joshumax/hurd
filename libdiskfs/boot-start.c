@@ -298,7 +298,7 @@ diskfs_execboot_fsys_startup (mach_port_t port,
   ports_port_deref (rootpi);
 
   err = dir_lookup (rootport, _SERVERS_EXEC,
-		    O_READ|O_WRITE|O_EXEC|O_NOTRANS, 0, &retry, pathbuf, real);
+		    O_READ|O_EXEC|O_NOTRANS, 0, &retry, pathbuf, real);
   assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
@@ -401,7 +401,7 @@ diskfs_S_fsys_init (mach_port_t port,
   /* Get a port to the root directory to put in the library's
      data structures.  */
   rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						    O_READ|O_WRITE|O_EXEC,
+						    O_READ|O_EXEC,
 						    MACH_PORT_NULL),
 			       0,0,0,0);
   root_pt = ports_get_right (rootpi);
