@@ -1,5 +1,5 @@
 /* Pass 4 of GNU fsck -- Check reference counts
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -33,7 +33,8 @@ pass4()
 	{
 	  if (linkcount[number] != linkfound[number])
 	    {
-	      pinode (number, "LINK COUNT %d SHOULD BE %d IN",
+	      pinode (0, number,
+		      "LINK COUNT %d SHOULD BE %d IN",
 		      linkcount[number], linkfound[number]);
 	      if (preen || reply ("ADJUST"))
 		{
@@ -43,6 +44,8 @@ pass4()
 		  write_inode (number, &dino);
 		  pfix ("ADJUSTED");
 		}
+	      else
+		pfail (0);
 	    }
 	}
       else if (linkfound[number] && inodestate[number] == UNALLOC)
@@ -58,7 +61,7 @@ pass4()
 	     want to reattach in. */
 	  struct dinode dino;
 
-	  pinode (number, "UNREF");
+	  pinode (0, number, "UNREF");
 	  
 	  getinode (number, &dino);
 	  if (dino.di_size && !reconn_failed)
@@ -72,6 +75,8 @@ pass4()
 		reconn_failed = !linkup (number, -1);
 	      if (!reconn_failed)
 		pfix ("RECONNECTED");
+	      else
+		pfail ("FAILED");
 	    }
 	  if (dino.di_size == 0 || reconn_failed)
 	    {
@@ -79,8 +84,10 @@ pass4()
 		{
 		  inodestate[number] = UNALLOC;
 		  clear_inode (number, &dino);
+		  pfix ("CLEARED");
 		}
-	      pfix ("CLEARED");
+	      else
+		pfail (0);
 	    }
 	}
     }
