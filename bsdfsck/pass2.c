@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)pass2.c	8.2 (Berkeley) 2/27/94";*/
-static char *rcsid = "$Id: pass2.c,v 1.2 1994/08/23 20:17:45 mib Exp $";
+static char *rcsid = "$Id: pass2.c,v 1.3 1994/08/24 15:11:56 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -96,8 +96,8 @@ pass2()
 		dp->di_mode &= ~IFMT;
 		dp->di_mode |= IFDIR;
 #else
-		dp->dp_model &= ~IFMT;
-		dp->dp_model |= IFDIR;
+		dp->di_model &= ~IFMT;
+		dp->di_model |= IFDIR;
 #endif		
 		inodirty();
 		break;
