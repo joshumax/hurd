@@ -60,14 +60,14 @@ typedef struct screen *screen_t;
 struct cursor
 {
   /* The visibility of the cursor.  */
-  int status;
+  u_int32_t status;
 #define CURSOR_INVISIBLE 1
 #define CURSOR_STANDOUT 2
 
-  size_t x;
-  size_t y;
-  size_t saved_x;
-  size_t saved_y;
+  u_int32_t x;
+  u_int32_t y;
+  u_int32_t saved_x;
+  u_int32_t saved_y;
 };
 typedef struct cursor *cursor_t;
 
@@ -151,7 +151,7 @@ screen_init (screen_t screen)
 {
   screen->width = 80;
   screen->height = 25;
-  screen->lines = 200;	/* XXX For now.  */
+  screen->lines = 25;	/* XXX For now.  */
   screen->current_line = 0;
   screen->matrix = calloc (screen->lines * screen->width, sizeof (wchar_t));
   if (!screen->matrix)
@@ -172,7 +172,8 @@ static void
 screen_fill (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 	     wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix + y * screen->width + x;
+  wchar_t *matrixp = screen->matrix
+    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   while (h--)
     {
@@ -188,7 +189,8 @@ static void
 screen_scroll_up (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		  int amt, wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix + y * screen->width + x;
+  wchar_t *matrixp = screen->matrix
+    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   if (amt < 0)
     return;
@@ -205,7 +207,9 @@ static void
 screen_scroll_down (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		    int amt, wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix + (y + h - 1) * screen->width + x;
+  wchar_t *matrixp = screen->matrix
+    + ((screen->current_line + y + h - 1) % screen->height)
+    * screen->width + x;
 
   if (amt < 0)
     return;
@@ -223,7 +227,8 @@ screen_scroll_left (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		    int amt, wchar_t chr, char attr)
 {
   int i;
-  wchar_t *matrixp = screen->matrix + y * screen->width + x;
+  wchar_t *matrixp = screen->matrix
+    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   if (amt < 0)
     return;
@@ -243,7 +248,8 @@ screen_scroll_right (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		     int amt, wchar_t chr, char attr)
 {
   int i;
-  wchar_t *matrixp = screen->matrix + y * screen->width + x;
+  wchar_t *matrixp = screen->matrix
+    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   if (amt < 0)
     return;
@@ -631,10 +637,9 @@ display_output_one (display_t display, wchar_t chr)
 	}
       else
 	{
-	  if (display->screen.current_line == display->screen.lines - 1)
-	    display->screen.current_line = 0;
-	  else
-	    display->screen.current_line++;
+	  display->screen.current_line++;
+	  display->screen.current_line %= display->screen.lines;
+
 	  /* XXX Set attribute flags.  */
 	  screen_fill (&display->screen, 0, display->screen.height - 1,
 		       display->screen.width, 1, L' ', display->screen.width);
@@ -1001,12 +1006,40 @@ display_output (display_t display, int nonblock, char *data, size_t datalen)
 ssize_t display_read (display_t display, int nonblock, off_t off,
 		      char *data, size_t len)
 {
+  u_int32_t metadata[8];
+  size_t metadatalen = sizeof (metadata);
+  ssize_t written = 0;
+
   mutex_lock (&display->lock);
+  metadata[0] = display->screen.width;
+  metadata[1] = display->screen.height;
+  metadata[2] = display->screen.lines;
+  metadata[3] = display->screen.current_line;
+  metadata[4] = display->screen.scrolling_max;
+  metadata[5] = display->cursor.x;
+  metadata[6] = display->cursor.y;
+  metadata[7] = display->cursor.status;
+  
+  if (off >= 0 && off < metadatalen)
+    {
+      int part_len = len;
+
+      if (part_len > metadatalen)
+	part_len = metadatalen;
+      memcpy (data, (char *) metadata + off, part_len);
+      data += part_len;
+      len -= part_len;
+      written += part_len;
+    }
+  off -= metadatalen;
+  if (off < 0)
+    off = 0;
+  
   if (off + len > 2000 * sizeof(wchar_t))
     len = 2000 * sizeof(wchar_t) - off;
   memcpy (data, (char *) display->screen.matrix + off, len);
   mutex_unlock (&display->lock);
-  return len;
+  return written + len;
 }
 
 /* Resume the output on the display DISPLAY.  */

@@ -288,7 +288,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 2;
       (*np)->nn_stat.st_mode |= S_IFREG;
       (*np)->nn_stat.st_mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
-      (*np)->nn_stat.st_size = 2000 * sizeof (wchar_t); /* XXX */
+      (*np)->nn_stat.st_size = 2008 * sizeof (wchar_t); /* XXX */
       break;
     case VCONS_NODE_INPUT:
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 3;

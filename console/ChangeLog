@@ -1,3 +1,20 @@
+2002-06-09  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (struct cursor): Change type of all members from int
+	to u_int32_t.
+	(screen_init): Initialize SCREEN->lines with 25 instead 200 for
+	now.
+	(screen_fill): Bring SCREEN->current_line into the calculation of
+	MATRIXP.
+	(screen_scroll_up): Likewise.
+	(screen_scroll_down): Likewise.
+	(screen_scroll_left): Likewise.
+	(screen_scroll_right): Likewise.
+	(display_output_one): Beautify code a bit.
+	(display_read): Add metadata to beginning of file.
+	* console.c (new_node): Increase size of display node to include
+	metadata.
+
 2002-06-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* input.h: New file.
