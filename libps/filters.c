@@ -36,10 +36,10 @@ ps_own_p(proc_stat_t ps)
   static int own_uid = -1;
   if (own_uid < 0)
     own_uid = getuid();
-  return own_uid == proc_stat_info(ps)->owner;
+  return own_uid == proc_stat_proc_info(ps)->owner;
 }
 struct ps_filter ps_own_filter =
-{"own", PSTAT_INFO, ps_own_p};
+{"own", PSTAT_PROC_INFO, ps_own_p};
 
 static bool 
 ps_not_sess_leader_p(proc_stat_t ps)
