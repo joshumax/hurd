@@ -135,7 +135,7 @@ output_width (int c, int loc)
       int n = loc + 1;
       while (n % 8)
 	n++;
-      return n - loc; 
+      return n - loc;
     }
   if ((c >= ' ') && (c < '\177'))
     return 1;
@@ -405,8 +405,10 @@ input_character (int c)
 	  else
 	    {
 	      drop_output ();
+	      poutput (cc[VDISCARD]);
 	      termflags |= FLUSH_OUTPUT;
 	    }
+	  goto alldone;
 	}
     }
 
@@ -714,7 +716,7 @@ create_queue (int size, int lowat, int hiwat)
 
   q = malloc (sizeof (struct queue) + size * sizeof (quoted_char));
   assert (q);
-  
+
   q->susp = 0;
   q->lowat = lowat;
   q->hiwat = hiwat;
@@ -722,7 +724,7 @@ create_queue (int size, int lowat, int hiwat)
   q->arraylen = size;
   q->wait = malloc (sizeof (struct condition));
   assert (q->wait);
-  
+
   condition_init (q->wait);
   return q;
 }
