@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)dir.c	8.1 (Berkeley) 6/5/93";*/
-static char *rcsid = "$Id: dir.c,v 1.4 1994/10/07 23:37:52 mib Exp $";
+static char *rcsid = "$Id: dir.c,v 1.5 1994/11/04 21:54:56 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -586,7 +586,7 @@ allocdir(parent, request, mode)
 {
 	ino_t ino;
 	char *cp;
-
+	struct dinode *dp;
 	register struct bufarea *bp;
 	struct dirtemplate *dirp;
 
