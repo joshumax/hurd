@@ -1,7 +1,7 @@
 /* Store wire decoding
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,98,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -64,21 +64,28 @@ store_std_leaf_decode (struct store_enc *enc,
   if (name_len > 0 && enc->data[enc->cur_data + name_len - 1] != '\0')
     return EINVAL;		/* Name not terminated.  */
 
-  misc = malloc (misc_len);
-  if (! misc)
-    return ENOMEM;
-
   if (name_len > 0)
     {
       name = strdup (enc->data + enc->cur_data);
       if (! name)
-	{
-	  free (misc);
-	  return ENOMEM;
-	}
+	return ENOMEM;
     }
   else
     name = 0;
+
+  if (misc_len > 0)
+    {
+      misc = malloc (misc_len);
+      if (! misc)
+	{
+	  if (name)
+	    free (name);
+	  return ENOMEM;
+	}
+      memcpy (misc, enc->data + enc->cur_data + name_len, misc_len);
+    }
+  else
+    misc = 0;
 
   /* Read encoded ports (be careful to deallocate this if we barf).  */
   port = enc->ports[enc->cur_port++];
@@ -87,7 +94,8 @@ store_std_leaf_decode (struct store_enc *enc,
   if (err)
     {
       mach_port_deallocate (mach_task_self (), port);
-      free (misc);
+      if (misc)
+	free (misc);
       if (name)
 	free (name);
     }
