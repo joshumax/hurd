@@ -21,6 +21,7 @@
 
 #include <fshelp.h>
 #include <hurd/ports.h>
+#include <assert.h>
 
 static struct port_class *idclass = 0;
 static struct mutex idlock = MUTEX_INITIALIZER;
