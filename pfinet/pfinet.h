@@ -53,3 +53,8 @@ struct sock_addr
 
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (void);
+
+/* MiG bogosity */
+typedef struct sock_user *sock_user_t;
+typedef struct sock_addr *sock_addr_t;
+
