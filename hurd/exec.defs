@@ -1,0 +1,52 @@
+/* Interface definitions for the exec servers
+   Copyright (C) 1991, 1992 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 1, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* Written by Michael I. Bushnell and Roland McGrath.  */
+
+subsystem exec 30000;
+
+#include <hurd/hurd_types.defs>
+
+routine exec_exec ( /* Better name, Roland?? */
+	execserver: mach_port_t;
+	file: mach_port_make_send_t;
+	oldtask: task_t;
+	flags: int;
+	argv: data_t, servercopy;
+	envp: data_t, servercopy;
+	dtable: portarray_t;
+	portarray: portarray_t;
+	intarray: intarray_t);
+
+/* This call is made by a new task to its bootstrap port to get its
+   startup ports and information.  */
+routine exec_startup (
+	execserver: mach_port_t;
+	out flags: int;
+	out argv: data_t;
+	out envp: data_t;
+	out dtable: portarray_t;
+	out portarray: portarray_t;
+	out intarray: intarray_t);
+
+/* This call is made by the bootstrap filesystem to
+   give the exec server the standard ports.  */
+routine exec_boot_setup (
+	execserver: mach_port_t;
+	portarray: portarray_t);
