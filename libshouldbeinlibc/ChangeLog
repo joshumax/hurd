@@ -1,3 +1,10 @@
+Tue May 20 14:01:00 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (_help): Supply STATE to argp_args_usage.
+	(argp_args_usage): Add filtering of the args doc string.
+	(comma): Print cluster headers for the first entry too.
+	* argp.h (ARGP_KEY_HELP_ARGS_DOC): New macro.
+
 1997-04-09 01:24  Ulrich Drepper  <drepper@cygnus.com>
 
 	* argp-fmtstream.c: Add casts to prevent warnings.
