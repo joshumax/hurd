@@ -139,7 +139,7 @@ swab_cg (struct cg *cg)
   else
     {
       /* Old format cylinder group... */
-      struct ocg *ocg = cg;
+      struct ocg *ocg = (struct ocg *) cg;
       
       if (swab_long (ocg->cg_magic) != CG_MAGIC
 	  && ocg->cg_magic != CG_MAGIC)
@@ -194,7 +194,7 @@ read_cg (int cg, struct cg **cgpp)
 /* Caller of read_cg is done with cg; write it back to disk (swapping it
    along the way) and free the memory allocated in read_cg. */
 void
-release_cgp (struct cg *cgp)
+release_cg (struct cg *cgp)
 {
   int cgx = cgp->cg_cgx;
   swab_cg (cgp);
@@ -902,7 +902,7 @@ ffs_fragextend(struct node *np,
 	       int nsize)
 {
 	register struct fs *fs;
-	register struct cg *cgp;
+	struct cg *cgp;
 	long bno;
 	int frags, bbase;
 	int i;
@@ -984,7 +984,7 @@ ffs_alloccg(struct node *np,
 	    int size)
 {
 	register struct fs *fs;
-	register struct cg *cgp;
+	struct cg *cgp;
 	register int i;
 	int bno, frags, allocsiz;
 	int releasecg;
@@ -1050,7 +1050,7 @@ ffs_alloccg(struct node *np,
 		cgp->cg_frsum[i]++;
 		
 		if (releasecg)
-			release_cg (cgp)
+			release_cg (cgp);
 		record_poke (cgp, sblock->fs_cgsize);
 		csum_dirty = 1;
 		sblock_dirty = 1;
@@ -1302,7 +1302,7 @@ ffs_nodealloccg(struct node *np,
 		int mode)
 {
 	register struct fs *fs;
-	register struct cg *cgp;
+	struct cg *cgp;
 	int start, len, loc, map, i;
 	int releasecg;
 
@@ -1323,7 +1323,7 @@ ffs_nodealloccg(struct node *np,
 	if (!cg_chkmagic(cgp) || cgp->cg_cs.cs_nifree == 0) {
 /*		brelse(bp); */
 		if (releasecg)
-			release_cg (cg);
+			release_cg (cgp);
 		return 0;
 	}
 	cgp->cg_time = diskfs_mtime->seconds;
@@ -1385,7 +1385,7 @@ ffs_blkfree(register struct node *np,
 	    long size)
 {
 	register struct fs *fs;
-	register struct cg *cgp;
+	struct cg *cgp;
 	daddr_t blkno;
 	int i, cg, blk, frags, bbase;
 	int releasecg;
@@ -1407,7 +1407,7 @@ ffs_blkfree(register struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	releasecg = cg_read (cg, &cgp);
+	releasecg = read_cg (cg, &cgp);
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
@@ -1489,7 +1489,7 @@ void
 diskfs_free_node (struct node *np, mode_t mode)
 {
 	register struct fs *fs;
-	register struct cg *cgp;
+	struct cg *cgp;
 	ino_t ino = np->dn->number;
 	int cg;
 	int releasecg;
