@@ -27,7 +27,8 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 		      int wait,
 		      int children)
 {
-  struct port_info *pi = ports_check_port_type (controlport, PT_CTL);
+  struct port_info *pi = ports_lookup_port (diskfs_port_bucket, controlport,
+					    diskfs_control_class);
   
   if (!pi)
     return EOPNOTSUPP;
@@ -40,6 +41,7 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
   
   diskfs_sync_everything (wait);
   diskfs_set_hypermetadata (wait, 0);
+  ports_port_deref (pi);
   return 0;
 }
 
