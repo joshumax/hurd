@@ -42,7 +42,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	error_t error;
 	mach_port_t control;
 	
-	error = fshelp_fetch_control (np, &control);
+	error = fshelp_fetch_control (&np->transbox, &control);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_set_options (control, data, len, do_children);
