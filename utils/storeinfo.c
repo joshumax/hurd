@@ -176,9 +176,8 @@ main(int argc, char *argv[])
       void info (mach_port_t file, char *source, error_t err)
 	{
 	  if (print_prefix < 0)
-	    /* By default, only print a filename prefix if there are multiple
-	       files. */
-	    print_prefix = state->argc != state->index;
+	    /* By default, only print filename prefixes for multiple files. */
+	    print_prefix = state->next < state->argc;
 	  if (what == 0)
 	    what = W_ALL;
 	  if (file == MACH_PORT_NULL)
