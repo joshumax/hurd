@@ -1,5 +1,9 @@
 -*- Text -*-
 
+XXX this needs much work, trolling through ChangeLogs.
+
+* sync -> syncfs, takes args
+
 9 June 1997
 Version 0.2
 
@@ -43,7 +47,7 @@ Several oddities in NFS client behavior have been fixed to produce
 more sensible results.
 
 The "loopback" device is now supported (automatically) inside pfinet.
-It should now be possible to use pfinet with no ethernet at all. 
+It should now be possible to use pfinet with no ethernet at all.
 
 Filesystems now use `store' library; the contents of the filesystem
 can be nearly anywhere (including another file somewhere).
@@ -52,7 +56,7 @@ Some annoying bugs in tty behavior have been fixed.  Some still
 remain, unfortunately.
 
 New translator `firmlink' is like a cross between a symlink and a hard
-link.  
+link.
 
 
 Programmer visible changes:
@@ -84,7 +88,7 @@ Summary of important externally visible changes since version 0.0:
 Many miscellaneous bugs have been fixed.
 
 Missing source files in 0.0 have been correctly added to the
-distribution. 
+distribution.
 
 Configuration now knows that various 386 equivalents use the same
 assembly files.
@@ -118,10 +122,10 @@ Bugs in term and libtrivfs have been fixed, allowing emacs shell mode
 to work cleanly.  Other minor bugs have also been fixed.
 
 ufs and ext2fs now do directory search rotoring to speed repeated and
-sequential directory lookups.  
+sequential directory lookups.
 
 ufs now notes correctly if a disk cannot be written to and turns on
-the readonly flag automatically in this case.  (Useful for floppies.) 
+the readonly flag automatically in this case.  (Useful for floppies.)
 
 ufs statfs information (printed by df) should now be correct.
 
@@ -138,7 +142,7 @@ in optimizing the size of the cache.
 
 A port leak in the pager library has been fixed; previously ufs leaked
 two ports per file used until the kernel's limit (about 30,000) was
-reached. 
+reached.
 
 
 6 August 1996
