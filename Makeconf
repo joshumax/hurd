@@ -3,6 +3,9 @@
 # This is the directory into which Hurd cross-building tools are placed
 hurdinst := /home/hm1/hurdinst
 
+# This is the directory which serves as root for the Hurd.
+hurdroot := /home/hm1/hurdroot
+
 # Where to find various things for compilation:
 headers := $(hurdinst)/include
 startup := $(hurdinst)/lib/crt0.o
