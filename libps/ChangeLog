@@ -1,3 +1,14 @@
+1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ps.h (PSTAT_ENV): New macro.
+	(struct proc_stat): New members `env', `env_len', `env_vm_alloced'.
+	(proc_stat_env, proc_stat_env_len): New accessor macros.
+	(PSTAT_USER_BASE): Increase value to leave more room for additions.
+	* procstat.c (proc_stat_set_flags): Handle environment.
+	(_proc_stat_free): Likewise.
+	* spec.c (ps_get_env, ps_env_getter): New function and constant.
+	(specs): New spec "Env" using ps_env_getter and ps_emit_args.
+
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* spec.c (ps_emit_past_time, ps_emit_minutes): Fix return type of
