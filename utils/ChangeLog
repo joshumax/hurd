@@ -1,3 +1,8 @@
+1997-07-29  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpcp.c (main): When mungeing the destination to copy into a
+	directory, do the name used to print error messages too.
+
 1997-07-15  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (ensure_def_pager_info): Don't report any errors if
