@@ -27,6 +27,9 @@ DIST_FILES = Makefile exec.c hostarch.c core.c gcore.c hashexec.c \
 	     a.out.h a.out.gnu.h ChangeLog
 OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
 
+SRCS = hostarch.c exec.c
+TAGSHDRS = a.out.h a.out.gnu.h
+
 all: exec
 
 exec: $(OBJS)
