@@ -101,10 +101,10 @@ resume_task (struct cmd *cmd, int *val)
 static int
 prompt_resume_task (struct cmd *cmd, int *val)
 {
-  char c;
+  char xx[5];
 
   printf ("Hit return to resume %s...", cmd->path);
-  safe_gets (&c, 1);
+  safe_gets (xx, sizeof xx);
 
   if (task_resume (cmd->task))
     {
