@@ -95,16 +95,16 @@ xdr_encode_sattr_size (int *p, off_t size)
 }
 
 inline int *
-xdr_encode_sattr_times (int *p, struct timeval *atime, struct timeval *mtime)
+xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
 {
   *p++ = -1;			/* mode */
   *p++ = -1;			/* uid */
   *p++ = -1;			/* gid */
   *p++ = -1;			/* size */
-  *p++ = htonl (atime->secs);
-  *p++ = htonl (atime->usecs);
-  *p++ = htonl (mtime->secs);
-  *p++ = htonl (mtime->usecs);
+  *p++ = htonl (atime->ts_sec);
+  *p++ = htonl (atime->ts_nsec * 1000);
+  *p++ = htonl (mtime->ts_sec);
+  *p++ = htonl (mtime->ts_nsec * 1000);
   return p;
 }
 
@@ -142,6 +142,16 @@ xdr_decode_fattr (int *p, struct stat *st)
   return p;
 
 }
+
+/* Decode *P into an fsys_statfsbuf structure; return the address of
+   the following data. */
+int *
+xdr_decode_statfs (int *p, struct fsys_statfsbuf *st)
+{
+  st->fsys_stb_
+
+
+  st->fsys_stb_type = FSTYPE_NFS;
 
 
 /* Create, initialize, and return a buffer suitable for sending an RPC
