@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <libioserver.h>
+#include <errno.h>
+
 error_t
 verify_user_conch (struct conch *c, void *user)
 {
@@ -24,10 +27,12 @@ verify_user_conch (struct conch *c, void *user)
     return EPERM;
   user_sh = c->holder_shared_page;
   spin_lock (&user_sh->lock);
-  if (user_sh != USER_HAS_CONCH && user_sh != USER_RELEASE_CONCH)
+  if (user_sh->conch_status != USER_HAS_CONCH
+      && user_sh->conch_status != USER_RELEASE_CONCH)
     {
       spin_unlock (&user_sh->lock);
       return EPERM;
     }
   spin_unlock (&user_sh->lock);
+  return 0;
 }
