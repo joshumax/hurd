@@ -1,3 +1,8 @@
+1999-12-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mkbootfs: Removed directory and all files.
+	They have long been obsolete.
+
 1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mach-defpager: New directory.  See its ChangeLog.
