@@ -791,7 +791,7 @@ set_state (io_t port,
       if (cred->pi.class == pty_class)
 	{
 	  clear_queue (outputq);
-	  (*bottom->abandon_pending_output) ();
+	  (*bottom->abandon_physical_output) ();
 	}
 
       if (draino)
