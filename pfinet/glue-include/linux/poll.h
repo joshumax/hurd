@@ -9,8 +9,8 @@
 #define POLLWRNORM	SELECT_WRITE
 #define POLLWRBAND	SELECT_WRITE
 #define	POLLPRI		SELECT_URG
-#define	POLLERR		0
-#define	POLLHUP		0
+#define	POLLERR		SELECT_READ | SELECT_WRITE
+#define	POLLHUP		SELECT_READ
 
 typedef struct poll_table_struct { } poll_table;
 

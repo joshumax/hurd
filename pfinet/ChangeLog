@@ -1,5 +1,9 @@
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
+	* glue-include/linux/poll.h (POLLERR): Define as SELECT_READ |
+	SELECT_WRITE.
+	(POLLHUP): Define as SELECT_READ.
+
 	* linux-src/net/core/dev.c (net_bh) [_HURD_]: Leave out the code
 	that gives other bottom halves a chance to run; the network bottom
 	half is the only one present in pfinet.
