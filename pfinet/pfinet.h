@@ -33,3 +33,6 @@ struct mutex global_lock;
 struct port_bucket *pfinet_bucket;
 
 extern struct device ether_dev;
+
+int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+void setup_ethernet_device (void);
