@@ -27,17 +27,17 @@ mach_port_t
 diskfs_startup_diskfs (mach_port_t bootstrap)
 {
   mach_port_t realnode;
-
+  struct port_info *newpi;
+  
   if (bootstrap != MACH_PORT_NULL)
     {
       _diskfs_ncontrol_ports++;
-      errno = fsys_startup (bootstrap, 
-			    ports_get_right (ports_allocate_port 
-					     (diskfs_port_bucket,
-					      sizeof (struct port_info),
-					      diskfs_control_class)),
-			    MACH_MSG_TYPE_MAKE_SEND,
-			    &realnode);
+      newpi = ports_allocate_port (diskfs_port_bucket,
+				   sizeof (struct port_info),
+				   diskfs_control_class);
+      errno = fsys_startup (bootstrap, ports_get_right (newpi),
+			    MACH_MSG_TYPE_MAKE_SEND, &realnode);
+      ports_port_deref (newpi);
       if (errno)
 	{
 	  perror ("Translator startup failure: fsys_startup");
