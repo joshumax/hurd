@@ -20,8 +20,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "fsys_S.h"
+#include <assert.h>
+#include <fcntl.h>
 
-error_t
+kern_return_t
 trivfs_S_fsys_getroot (mach_port_t fsys,
 		       int flags,
 		       uid_t *uids, u_int nuids,
@@ -29,7 +32,7 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 		       mach_port_t *newpt,
 		       mach_msg_type_name_t *newpttype)
 {
-  struct protid *cred;
+  struct trivfs_protid *cred;
   int i;
   struct control *cntl;
 
@@ -46,7 +49,8 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
       return EACCES;
     }
   
-  cred = ports_allocate_port (sizeof (struct protid), trivfs_protid_porttype);
+  cred = ports_allocate_port (sizeof (struct trivfs_protid),
+			      trivfs_protid_porttype);
   cred->isroot = 0;
   for (i = 0; i < nuids; i++)
     if (uids[i] == 0)
