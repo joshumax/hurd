@@ -1,3 +1,11 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* io-version.c (trivfs_S_io_server_version): Fix receiver arg type.
+
+	* file-exec.c (trivfs_S_file_exec): Add reply port args.
+
+	* dir-readdir.c (trivfs_S_dir_readdir): Revert last change.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* io-identity.c (trivfs_S_io_identity): Use ino_t for FILENO.

@@ -1,3 +1,8 @@
+2002-06-13  Roland McGrath  <roland@frob.com>
+
+	* fs.defs (dir_readdir): Revert AMOUNT type to int, since it's a count
+	of entries and not a byte count.
+
 2002-06-09  Roland McGrath  <roland@frob.com>
 
 	* version.h: New file.
