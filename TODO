@@ -156,7 +156,6 @@ See `tasks', the exported task list.
 ** nfs
 *** Implement async I/O !!
 *** Finish work to turn on paging. !!
-*** Finish excl arg work in link and rename. !!
 *** Implement TCP nfs. !
 *** Implement V3 nfs. 
 *** Implement nqnfs. !
@@ -219,6 +218,7 @@ See `tasks', the exported task list.
 *** ps should timeout quickly (one second?) on non-responsive message ports. !
 *** help displays for: stat letters, format specs.
 *** --match option?
+*** fetch and print task (and thread?) startup times.
 
 ** gdb:
 *** Add various mach convenience features (vminfo, &c). !!
@@ -243,7 +243,6 @@ See `tasks', the exported task list.
     (maybe there is already?); the boot file system, and other people
 deeming
     it too risk to attempt to contact syslogd can use it too? !
-** Add a startup timestamp to tasks, and have some way of fetching it. !!
 
 ======
 

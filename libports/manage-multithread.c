@@ -157,10 +157,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       return 0;
     }
 
-  /* Wire this because hurd_thread_cancel will not interoperate
-     cleanly with cthreads cleverness yet. */
-  wire_cthreads = 1;
-
   thread_timeout = global_timeout = 0; /* XXX */
 
   nreqthreads = 1;
