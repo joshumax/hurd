@@ -60,9 +60,9 @@ int exec_load(exec_read_func_t *read, exec_read_exec_func_t *read_exec,
 #error Not ported to this architecture!
 #endif
 
-	if ((x.h.e_ident[EI_CLASS] != ELFCLASS64) ||
-	    (x.h.e_ident[EI_DATA] != ELFDATA2LSB) ||
-	    (x.h.e_machine != EM_ALPHA))
+	if ((x.h.e_ident[EI_CLASS] != MY_CLASS) ||
+	    (x.h.e_ident[EI_DATA] != MY_DATA) ||
+	    (x.h.e_machine != MY_MACHINE))
 		return EX_WRONG_ARCH;
 
 	if (MY_CLASS == ELFCLASS64)
