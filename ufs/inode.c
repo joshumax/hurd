@@ -72,14 +72,7 @@ iget (ino_t inum, struct node **npp)
   dn->number = inum;
   dn->dirents = 0;
 
-  rwlock_init (&dn->dinlock);
-  rwlock_init (&dn->sinlock);
-  rwlock_init (&dn->datalock);
-  dn->dinloc = 0;
-  dn->sinloc = 0;
-  dn->dinloclen = 0;
-  dn->sinloclen = 0;
-  dn->sininfo = 0;
+  rwlock_init (&dn->allocptrlock);
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
@@ -92,6 +85,7 @@ iget (ino_t inum, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np);
+
   if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
     np->allocsize = fragroundup (sblock, np->dn_stat.st_size);
   else
@@ -146,29 +140,61 @@ diskfs_node_norefs (struct node *np)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
   if (np->dn->dirents)
     free (np->dn->dirents);
-  if (np->dn->sininfo || np->dn->fileinfo || np->dn->dinloc
-      || np->dn->sinloc || np->dn->dinloclen || np->dn->sinloclen)
-    {
-      printf ("I=%d\n", np->dn->number);
-      printf ("Hard %d\tSoft %d\n", np->references, np->light_references);
-      fflush (stdout);
-    }
-  assert (!np->dn->sininfo);
   assert (!np->dn->fileinfo);
-  assert (!np->dn->dinloc);
-  assert (!np->dn->sinloc);
-  assert (!np->dn->dinloclen);
-  assert (!np->dn->sinloclen);
   free (np->dn);
   free (np);
 }
 
-/* The last hard referencs to a node has gone away; arrange to have
+/* The last hard reference to a node has gone away; arrange to have
    all the weak references dropped that can be. */
+void
+diskfs_try_dropping_softrefs (struct node *np)
+{
+  drop_pager_softrefs (np);
+}
+
+/* The last hard reference to a node has gone away. */
 void
 diskfs_lost_hardrefs (struct node *np)
 {
-  drop_pager_softrefs (np);
+  /* Check and see if there is a pager which has only
+     one reference (ours).  If so, then drop that reference,
+     breaking the cycle.  The complexity in this routine
+     is all due to this cycle.  */
+
+  if (np->dn->fileinfo)
+    {
+      spin_lock (&_libports_portrefcntlock);
+      if (np->fileinfo->p->pi.refcnt == 1)
+	{
+	  struct pager *p;
+	  
+	  /* The only way to get a new reference to the pager
+	     in this state is to call diskfs_get_filemap; this
+	     can't happen as long as we hold NP locked.  So
+	     we can safely unlock _libports_portrefcntlock for
+	     the following call. */
+	  spin_unlock (&_libports_portrefcntlock);
+	  
+	  /* Right now the node is locked with no hard refs;
+	     this is an anomolous situation.  Before messing with
+	     the reference count on the file pager, we have to 
+	     give ourselves a reference back so that we are really
+	     allowed to hold the lock.  Then we can do the
+	     unreference. */
+	  p = np->fileinfo->p;
+	  np->fileinfo = 0;
+	  diskfs_nref (np);
+	  pager_unreference (p);
+
+	  assert (np->references == 1 && np->light_references == 0);
+
+	  /* This will do the real deallocate.  Whew. */
+	  diskfs_nput (np);
+	}
+      else
+	spin_unlock (&_libports_portrefcntlock);
+    }
 }
 
 /* A new hard reference to a node has been created; it's now OK to
@@ -184,13 +210,15 @@ static error_t
 read_disknode (struct node *np)
 {
   struct stat *st = &np->dn_stat;
-  struct dinode *di = &dinodes[np->dn->number];
+  struct dinode *di = dino (np->dn->number);
   error_t err;
   volatile long long pid = getpid ();
   
   err = diskfs_catch_exception ();
   if (err)
     return err;
+
+  np->istranslated = !! di->translator;
 
   st->st_fstype = FSTYPE_UFS;
   st->st_fsid = pid;
@@ -241,7 +269,7 @@ static void
 write_node (struct node *np)
 {
   struct stat *st = &np->dn_stat;
-  struct dinode *di = &dinodes[np->dn->number];
+  struct dinode *di = dino (np->dn->number);
   error_t err;
   
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
@@ -329,7 +357,7 @@ create_symlink_hook (struct node *np, char *target)
   if (err)
     return err;
   
-  bcopy (target, dinodes[np->dn->number].di_shortlink, len);
+  bcopy (target, (dino (np->dn->number))->di_shortlink, len);
   np->dn_stat.st_size = len;
   np->dn_set_ctime = 1;
   np->dn_set_mtime = 1;
@@ -356,7 +384,7 @@ read_symlink_hook (struct node *np,
   if (err)
     return err;
   
-  bcopy (dinodes[np->dn->number].di_shortlink, buf, np->dn_stat.st_size);
+  bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
   np->dn_set_atime = 1;
 
   diskfs_end_catch_exception ();
@@ -387,9 +415,8 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   write_node (np);
-  sync_dinode (np, wait);
+  sync_dinode (np->dn->number, wait);
 }
-
 
 /* Implement the diskfs_set_statfs callback from the diskfs library;
    see <hurd/diskfs.h> for the interface description.  */
@@ -430,7 +457,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   if (err)
     return err;
   
-  blkno = dinodes[np->dn->number].di_trans;
+  blkno = (dino (np->dn->number))->di_trans;
   
   if (namelen && !blkno)
     {
@@ -441,27 +468,31 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  diskfs_end_catch_exception ();
 	  return err;
 	}
-      dinodes[np->dn->number].di_trans = blkno;
+      (dino (np->dn->number))->di_trans = blkno;
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
     {
       /* Clear block for translator going away. */
       ffs_blkfree (np, blkno, sblock->fs_bsize);
-      dinodes[np->dn->number].di_trans = 0;
+      (dino (np->dn->number))->di_trans = 0;
+      np->istranslated = 0;
       np->dn_set_ctime = 1;
     }
-  
-  diskfs_end_catch_exception ();
   
   if (namelen)
     {
       bcopy (&namelen, buf, sizeof (u_int));
       bcopy (name, buf + sizeof (u_int), namelen);
-      err = dev_write_sync (fsbtodb (sblock, blkno), 
-			    (vm_address_t)buf, sblock->fs_bsize);
+
+      bcopy (buf, fsaddr (sblock, blkno), sblock->fs_bsize);
+      sync_disk_blocks (blkno, sblock->fs_bsize, 1);
+
+      np->istranslated = 1;
       np->dn_set_ctime = 1;
     }
+  
+  diskfs_end_catch_exception ();
   return err;
 }
 
@@ -478,15 +509,11 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   err = diskfs_catch_exception ();
   if (err)
     return err;
-  blkno = dinodes[np->dn->number].di_trans;
-  diskfs_end_catch_exception ();
+  blkno = (dino (np->dn->number))->di_trans;
   
   assert (blkno);
-  
-  err = dev_read_sync (fsbtodb (sblock, blkno), (vm_address_t *)&buf,
-		       sblock->fs_bsize);
-  if (err)
-    return err;
+  bcopy (fsaddr (sblock, blkno), buf, sblock->fs_bsize);
+  diskfs_end_catch_exception ();
   
   datalen = *(u_int *)buf;
   if (datalen > *namelen)
@@ -494,21 +521,6 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   bcopy (buf + sizeof (u_int), *namep, datalen);
   *namelen = datalen;
   return 0;
-}
-
-/* Implement the diskfs_node_translated callback from the diskfs library.
-   See <hurd/diskfs.h> for the interface description. */
-int
-diskfs_node_translated (struct node *np)
-{
-  int ret;
-  
-  if (diskfs_catch_exception ())
-    return 0;
-  
-  ret = !! dinodes[np->dn->number].di_trans;
-  diskfs_end_catch_exception ();
-  return ret;
 }
 
 /* Called when all hard ports have gone away. */
