@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -25,8 +25,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/startup.h>
 #include <assert.h>
 #include <wire.h>
+#include <argp.h>
+#include <version.h>
 
 #include "proc.h"
+
+const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 
 int
 message_demuxer (mach_msg_header_t *inp,
@@ -56,10 +60,9 @@ main (int argc, char **argv, char **envp)
   mach_port_t pset, psetcntl;
   void *genport;
   process_t startup_port;
-  volatile int hold = 0;
-  
-  while (hold);
-  
+  struct argp argp = { 0, 0, 0, "Hurd process server" };
+
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   initialize_version_info ();
 
