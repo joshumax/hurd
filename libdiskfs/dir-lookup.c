@@ -248,11 +248,15 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  user = iohelp_create_iouser (make_idvec (), make_idvec ());
-	  error =
-	    diskfs_create_protid (diskfs_make_peropen (dnp, 0, dircred->po),
-				  user, &newpi);
-	  iohelp_free_iouser (user);
+	  error = iohelp_create_empty_iouser (&user);
+	  if (! error)
+	    {
+	      error =
+		diskfs_create_protid (diskfs_make_peropen (dnp, 0,
+							   dircred->po),
+				      user, &newpi);
+	      iohelp_free_iouser (user);
+	    }
 
 	  if (error)
 	    goto out;

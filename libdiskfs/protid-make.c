@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include <string.h>
+#include <assert.h>
 
 /* Build and return in CRED a protid which has no user identification, for
    peropen PO.  The node PO->np must be locked.  */
@@ -41,20 +42,17 @@ diskfs_start_protid (struct peropen *po, struct protid **cred)
 void
 diskfs_finish_protid (struct protid *cred, struct iouser *user)
 {
-  if (!user)
-    {
-      uid_t zero = 0;
-      /* Create one for root */
-      user = iohelp_create_iouser (make_idvec (), make_idvec ());
-      idvec_set_ids (user->uids, &zero, 1);
-      idvec_set_ids (user->gids, &zero, 1);
-      cred->user = user;
-    }
-  else
-    cred->user = iohelp_dup_iouser (user);
+  error_t err;
 
-  mach_port_move_member (mach_task_self (), cred->pi.port_right, 
-			 diskfs_port_bucket->portset);
+  if (!user)
+    err = iohelp_create_simple_iouser (&cred->user, 0, 0);
+  else
+    err = iohelp_dup_iouser (&cred->user, user);
+  assert_perror (err);
+
+  err = mach_port_move_member (mach_task_self (), cred->pi.port_right, 
+			       diskfs_port_bucket->portset);
+  assert_perror (err);
 }
 
 /* Create and return a protid for an existing peropen PO in CRED for USER.

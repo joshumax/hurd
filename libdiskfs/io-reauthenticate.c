@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,2000,01 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,10 +47,14 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   newright = ports_get_send_right (newcred);
   assert (newright != MACH_PORT_NULL);
 
-  user = iohelp_reauth (diskfs_auth_server_port, rend_port, newright, 1);
-  diskfs_finish_protid (newcred, user);
+  err = iohelp_reauth (&user, diskfs_auth_server_port, rend_port,
+		       newright, 1);
+  if (! err)
+    {
+      diskfs_finish_protid (newcred, user);
+      iohelp_free_iouser (user);
+    }
 
-  iohelp_free_iouser (user);
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
 
@@ -58,5 +62,5 @@ diskfs_S_io_reauthenticate (struct protid *cred,
 
   ports_port_deref (newcred);
 
-  return 0;
+  return err;
 }

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -39,7 +39,7 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 			   gid_t *gids,
 			   u_int ngids)
 {
-  error_t err;
+  error_t err = 0;
   struct idvec *uvec, *gvec;
   struct iouser *user;
   struct protid *newpi;
@@ -48,26 +48,52 @@ diskfs_S_io_restrict_auth (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  uvec = make_idvec ();
-  gvec = make_idvec ();
-  
   if (idvec_contains (cred->user->uids, 0))
+    /* CRED has root access, and so may use any ids.  */
     {
-      /* CRED has root access, and so may use any ids.  */
-      idvec_set_ids (uvec, uids, nuids);
-      idvec_set_ids (gvec, gids, ngids);
+      err = iohelp_create_complex_iouser (&user, uids, nuids, gids, ngids);
+      if (err)
+        return err;
     }
   else
     {
+      uvec = make_idvec ();
+      if (! uvec)
+        return ENOMEM;
+
+      gvec = make_idvec ();
+      if (! gvec)
+        {
+	  idvec_free (uvec);
+	  return ENOMEM;
+	}
+  
       /* Otherwise, use any of the requested ids that CRED already has.  */
       for (i = 0; i < cred->user->uids->num; i++)
 	if (listmember (uids, cred->user->uids->ids[i], nuids))
-	  idvec_add (uvec, cred->user->uids->ids[i]);
+	  {
+	    err = idvec_add (uvec, cred->user->uids->ids[i]);
+	    if (err)
+	      goto out;
+	  }
       for (i = 0; i < cred->user->gids->num; i++)
 	if (listmember (gids, cred->user->gids->ids[i], ngids))
-	  idvec_add (gvec, cred->user->gids->ids[i]);
+	  {
+	    idvec_add (gvec, cred->user->gids->ids[i]);
+	    if (err)
+	      goto out;
+	  }
+
+      err = iohelp_create_iouser (&user, uvec, gvec);
+
+      if (err)
+        {
+        out:
+	  idvec_free (uvec);
+	  idvec_free (gvec);
+	  return err;
+	}
     }
-  user = iohelp_create_iouser (uvec, gvec);
 
   mutex_lock (&cred->po->np->lock);
   err = diskfs_create_protid (cred->po, user, &newpi);

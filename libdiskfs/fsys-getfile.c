@@ -1,6 +1,6 @@
 /* Return the file for a given handle (for nfs server support)
 
-   Copyright (C) 1997,99 Free Software Foundation, Inc.
+   Copyright (C) 1997,99,2001 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -39,7 +39,6 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   struct node *node;
   const union diskfs_fhandle *f;
   struct protid *new_cred;
-  struct idvec *uvec, *gvec;
   struct iouser *user;
   struct port_info *pt =
     ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
@@ -69,12 +68,13 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
       return ESTALE;
     }
 
-  uvec = make_idvec ();
-  gvec = make_idvec ();
-
-  idvec_set_ids (uvec, uids, nuids);
-  idvec_set_ids (gvec, gids, ngids);
-  user = iohelp_create_iouser (uvec, gvec);
+  err = iohelp_create_complex_iouser (&user, uids, nuids, gids, ngids);
+  if (err)
+    {
+      diskfs_nput (node);
+      ports_port_deref (pt);
+      return err;
+    }
 
   flags = 0;
   if (! fshelp_access (&node->dn_stat, S_IREAD, user))
