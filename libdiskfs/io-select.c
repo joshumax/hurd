@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,25 +22,22 @@
 /* Implement io_select as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_select (struct protid *cred,
-		    int type, 
-		    mach_port_t port,
-		    mach_msg_type_name_t porttype,
-		    int tag,
-		    int *possible)
+		    int *type, 
+		    int *tag)
 {
   if (!cred)
     return EOPNOTSUPP;
   
   mutex_lock (&cred->po->np->lock);
-  if (((type & SELECT_READ) && !(cred->po->openstat & O_READ))
-      || ((type & SELECT_WRITE) && !(cred->po->openstat & O_WRITE)))
+  if (((*type & SELECT_READ) && !(cred->po->openstat & O_READ))
+      || ((*type & SELECT_WRITE) && !(cred->po->openstat & O_WRITE)))
     {
       mutex_unlock (&cred->po->np->lock);
       return EBADF;
     }
   mutex_unlock (&cred->po->np->lock);
-  /* Select is always possible */
+  /* Select is always possible.  */
   mach_port_deallocate (mach_task_self (), port);
-  *possible = type & ~SELECT_URG;
+  *type &= ~SELECT_URG;
   return 0;
 }
