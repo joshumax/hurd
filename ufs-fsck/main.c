@@ -20,8 +20,11 @@
 
 #include <errno.h>
 #include <argp.h>
+#include <hurd.h>
 
 #include "fsck.h"
+
+char *argp_program_version = "fsck.ufs 1.0 (GNU " HURD_RELEASE ")";
 
 char *lfname = "lost+found";
 mode_t lfmode = 0755;
