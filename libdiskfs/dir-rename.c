@@ -37,7 +37,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (!fromcred)
     return EOPNOTSUPP;
 
-  /* Verify that tocred really is a port to us XXX */
+  /* Verify that tocred really is a port to us. */
   if (!tocred)
     return EXDEV;
 
@@ -70,6 +70,9 @@ diskfs_S_dir_rename (struct protid *fromcred,
 			       tocred);
       diskfs_nrele (fnp);
       mutex_unlock (&renamedirlock);
+      if (!err)
+	/* MiG won't do this for us, which it ought to. */
+	mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return err;
     }
 
@@ -97,6 +100,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
       mutex_unlock (&tdp->lock);
+      mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return 0;
     }
 
@@ -166,6 +170,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nput (tmpnp);
       diskfs_nrele (fnp);
       mutex_unlock (&fdp->lock);
+      mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return 0;
     }
   
@@ -177,5 +182,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
   fnp->dn_set_ctime = 1;
   diskfs_nput (fnp);
   mutex_unlock (&fdp->lock);
+  if (!err)
+    mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
+
   return err;
 }
