@@ -244,6 +244,9 @@ boot_script_exec_cmd (task_t user_task,
 {
   extern mach_port_t bootstrap_master_device_port, bootstrap_master_host_port;
   extern char *root_name;
+  extern char **environ;
+  int envc, env_len;
+
 	int			arg_len = argslen;
 	char *arg_pos;
 
@@ -273,15 +276,21 @@ boot_script_exec_cmd (task_t user_task,
 	    panic("openi %d", result);
 	}
 
+	env_len = 0;
+	for (envc = 0; environ[envc]; ++envc)
+	  env_len += strlen (environ[envc]) + 1;
+
 	/*
 	 * Add space for:
 	 *    arg_count
 	 *    pointers to arguments
 	 *    trailing 0 pointer
-	 *    dummy 0 pointer to environment variables
+	 *    environment variables
+	 *    trailing 0 pointer
 	 *    and align to integer boundary
 	 */
-	arg_len += sizeof(integer_t) + (2 + arg_count) * sizeof(char *);
+	arg_len += sizeof(integer_t) + (envc + 2 + arg_count) * sizeof(char *);
+	arg_len += env_len;
 	arg_len = (arg_len + (sizeof(integer_t) - 1)) & ~(sizeof(integer_t)-1);
 
 	/*
@@ -307,7 +316,7 @@ boot_script_exec_cmd (task_t user_task,
 		 * It might be gzip file.
 		 */
 		int err;
-		extern int 
+		extern int
 		serverboot_gunzip(struct file *, void **, size_t *);
 
 		err = serverboot_gunzip(st.fp,
@@ -332,7 +341,7 @@ boot_script_exec_cmd (task_t user_task,
 		 * It might be bzip2 file.
 		 */
 		int err;
-		extern int 
+		extern int
 		serverboot_bunzip2(struct file *, void **, size_t *);
 
 		err = serverboot_bunzip2(st.fp,
@@ -426,9 +435,11 @@ boot_script_exec_cmd (task_t user_task,
 	     * Start the strings after the arg-count and pointers
 	     */
 	    u_cp = (char *)u_arg_start + arg_count * sizeof(char *)
+					+ envc * sizeof(char *)
 					+ 2 * sizeof(char *)
 					+ sizeof(integer_t);
 	    k_cp = (char *)k_arg_start + arg_count * sizeof(char *)
+					+ envc * sizeof(char *)
 					+ 2 * sizeof(char *)
 					+ sizeof(integer_t);
 
@@ -442,13 +453,15 @@ boot_script_exec_cmd (task_t user_task,
 	     */
 	    for (i = 0; i < arg_count; i++)
 	      *k_ap++ = argv[i] - argstrings + u_cp;
-	    bcopy (argstrings, k_cp, argslen);
-
-	    /*
-	     * last, the trailing 0 argument and a null environment pointer.
-	     */
 	    *k_ap++ = (char *)0;
+	    bcopy (argstrings, k_cp, argslen);
+	    k_cp += argslen;
+	    u_cp += argslen;
+
+	    for (i = 0; i < envc; i++)
+	      *k_ap++ = environ[i] - environ[0] + u_cp;
 	    *k_ap   = (char *)0;
+	    bcopy (environ[0], k_cp, env_len);
 
 	    /*
 	     * Now write all of this to user space.
