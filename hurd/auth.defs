@@ -39,6 +39,11 @@ routine auth_makeauth (
 	id: idblock_t;
 	out newhandle: mach_port_make_send_t);
 
+routine auth_combine (
+	handle1: auth_t;
+	handle2: auth_t;
+	out newhandle: mach_port_make_send_t);
+
 /* Called by a user in a reauthentication transaction.  The rendezvous
    port is used to match the request up with the server's
    auth_server_authenticate call.  The newport is a port provided by
