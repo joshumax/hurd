@@ -21,10 +21,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 
-#define THREAD_TIMEOUT 1000 * 60 * 2  /* two minutes */
-#define SERVER_TIMEOUT 1000 * 60 * 10 /* ten minutes */
+static int thread_timeout = 1000 * 60 * 2; /* two minutes */
+static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
-static void
+
 master_thread_function (any_t foo __attribute__ ((unused)))
 {
   error_t err;
@@ -33,8 +33,8 @@ master_thread_function (any_t foo __attribute__ ((unused)))
     {
       ports_manage_port_operations_multithread (diskfs_port_bucket,
 						diskfs_demuxer,
-						THREAD_TIMEOUT,
-						SERVER_TIMEOUT,
+						thread_timeout,
+						server_timeout,
 						1, MACH_PORT_NULL);
       err = diskfs_shutdown (0);
     }
