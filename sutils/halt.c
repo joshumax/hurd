@@ -1,5 +1,5 @@
 /* Halt the system
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -22,10 +22,16 @@
 #include <sys/reboot.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <argp.h>
+#include <hurd.h>
+
+char *argp_program_version = "halt 1.1 (GNU " HURD_RELEASE ")";
 
 int
-main (void)
+main (int argc, char *argv[])
 {
+  struct argp argp = {0, 0, 0, "Halt the system"};
+  argp_parse (&argp, argc, argv, 0, 0, 0);
   reboot (RB_HALT);
   perror ("reboot");
   return 1;
