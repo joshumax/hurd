@@ -318,10 +318,13 @@ diskfs_S_fsys_init (mach_port_t port,
   assert (exectask);
   err = proc_task2proc (procserver, exectask, &execprocess);
   assert (!err);
-  exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
 
   /* Declare that the exec server is our child. */
   proc_child (procserver, exectask);
+
+  /* Don't start this until now so that exec is fully authenticated 
+     with proc. */
+  exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
 
   /* We don't need this anymore. */
   mach_port_deallocate (mach_task_self (), exectask);
