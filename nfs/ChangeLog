@@ -1,3 +1,8 @@
+1999-01-22  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ops.c (netfs_attempt_link): Remove major, minor macro definitions.
+	* nfs.c (xdr_decode_fattr): Remove makedev macro definition.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* mount.c (mount_root): Make perror explanation strings consistent.

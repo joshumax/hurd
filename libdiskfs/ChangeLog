@@ -1,3 +1,11 @@
+1999-01-22  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init-main.c: New file, defining new function diskfs_init_main.
+	* diskfs.h: Declare diskfs_init_main.
+
+	* file-set-trans.c: Remove makedev, major, minor macro definitions.
+	* dir-lookup.c: Likewise.
+
 1999-01-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* sync-interval.c (diskfs_set_sync_interval): Use ENOMEM, not EIEIO.
