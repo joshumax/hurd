@@ -38,3 +38,5 @@ hurd-snap:
 dist: hurd-snap $(addsuffix -lndist,$(SUBDIRS)) lndist
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
+
+	
