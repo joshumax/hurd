@@ -62,7 +62,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
       return EISDIR;
     }
   
-  error = diskfs_dirremove (dnp, ds);
+  error = diskfs_dirremove (dnp, np, name, ds);
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
   if (error)
