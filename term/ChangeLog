@@ -1,3 +1,7 @@
+Fri Feb 21 13:17:48 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* users.c (open_hook): Add OPEN_COUNT hack to try and detect lossage.
+
 Thu Feb 20 02:25:29 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (main): Initialize TTY_CLASS & PTY_CLASS too instead of

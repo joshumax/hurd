@@ -1,3 +1,9 @@
+Mon Feb 24 17:22:05 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-identity.c (diskfs_S_io_identity): Pass CRED's shadow root
+	inode number to fshelp_get_identity when creating a shadow root
+	fsid, not INUM.
+
 Sat Feb 22 00:00:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-stat.c (diskfs_S_io_stat): Mark shadow roots with S_IROOT.
