@@ -280,9 +280,9 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
 */
-error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
-			 struct node **np, struct dirstat *ds,
-		       struct protid *cred);
+error_t diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+			    struct node **np, struct dirstat *ds,
+			    struct protid *cred);
 
 /* The user must define this function.  Add NP to directory DP
    under the name NAME.  This will only be called after an
@@ -292,9 +292,9 @@ error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
    for the call (to be used only to validate directory growth).
    The routine should call diskfs_notice_dirchange if DP->dirmod_reqs
    is nonzero.  */
-error_t diskfs_direnter (struct node *dp, char *name,
-			 struct node *np, struct dirstat *ds,
-			 struct protid *cred);
+error_t diskfs_direnter_hard (struct node *dp, char *name,
+			      struct node *np, struct dirstat *ds,
+			      struct protid *cred);
 
 /* The user must define this function.  This will only be called after
    a successful call to diskfs_lookup of type RENAME; this call should change
@@ -302,15 +302,15 @@ error_t diskfs_direnter (struct node *dp, char *name,
    referent.  DP has been locked continuously since the call to diskfs_lookup
    and DS is as that call set it; NP is locked.  This routine should call
    diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
-error_t diskfs_dirrewrite (struct node *dp, struct node *np,
-			     struct dirstat *ds);
+error_t diskfs_dirrewrite_hard (struct node *dp, struct node *np,
+				struct dirstat *ds);
 
 /* The user must define this function.  This will only be called after a
    successful call to diskfs_lookup of type REMOVE; this call should remove
    the name found from the directory DS.  DP has been locked continuously since
    the call to diskfs_lookup and DS is as that call set it.  This routine
    should call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
-error_t diskfs_dirremove (struct node *dp, struct dirstat *ds);
+error_t diskfs_dirremove_hard (struct node *dp, struct dirstat *ds);
 
 /* The user must define this function.  DS has been set by a previous
    call to diskfs_lookup on directory DP; this function is
@@ -828,6 +828,85 @@ struct node *diskfs_make_node (struct disknode *dn);
 
 /* The library also exports the following functions; they are not generally
    useful unless you are redefining other functions the library provides. */
+
+/* Lookup in directory DP (which is locked) the name NAME.  TYPE will
+   either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
+   user making the call.
+
+   If the name is found, return zero, and (if NP is nonzero) set *NP
+   to point to the node for it, locked.  If the name is not found,
+   return ENOENT, and (if NP is nonzero) set *NP to zero.  If NP is
+   zero, then the node found must not be locked, even transitorily.
+   Lookups for REMOVE and RENAME (which must often check permissions
+   on the node being found) will always set NP.
+
+   If DS is nonzero then:
+     For LOOKUP: set *DS to be ignored by diskfs_drop_dirstat.
+     For CREATE: on success, set *DS to be ignored by diskfs_drop_dirstat.
+                 on failure, set *DS for a future call to diskfs_direnter.
+     For RENAME: on success, set *DS for a future call to diskfs_dirrewrite.
+                 on failure, set *DS for a future call to diskfs_direnter.
+     For REMOVE: on success, set *DS for a future call to diskfs_dirremove.
+                 on failure, set *DS to be ignored by diskfs_drop_dirstat.
+   The caller of this function guarantees that if DS is nonzero, then
+   either the appropriate call listed above or diskfs_drop_dirstat will
+   be called with DS before the directory DP is unlocked, and guarantees
+   that no lookup calls will be made on this directory between this
+   lookup and the use (or descruction) of *DS.
+
+   If you use the library's versions of diskfs_rename_dir,
+   diskfs_clear_directory, and diskfs_init_dir, then lookups for `..'
+   might have the flag SPEC_DOTDOT or'd in.  This has the following special
+   meaning:
+   For LOOKUP: DP should be unlocked and its reference dropped before
+               returning.
+   For RENAME and REMOVE: The node being found (*NP) is already held
+               locked, so don't lock it or add a reference to it.
+   (SPEC_DOTDOT will not be given with CREATE.)
+
+   Return ENOTDIR if DP is not a directory.
+   Return EACCES if CRED isn't allowed to search DP.
+   Return EACCES if completing the operation will require writing
+   the directory and diskfs_checkdirmod won't allow the modification.
+   Return ENOENT if NAME isn't in the directory.
+   Return EAGAIN if NAME refers to the `..' of this filesystem's root.
+   Return EIO if appropriate.
+   
+   This function is a wrapper for diskfs_lookup_hard. 
+*/
+error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
+		       struct node **np, struct dirstat *ds,
+		       struct protid *cred);
+
+/* Add NP to directory DP under the name NAME.  This will only be
+   called after an unsuccessful call to diskfs_lookup of type CREATE
+   or RENAME; DP has been locked continuously since that call and DS
+   is as that call set it, NP is locked.  CRED identifies the user
+   responsible for the call (to be used only to validate directory
+   growth).  This function is a wrapper for diskfs_direnter_hard.  */
+error_t
+diskfs_direnter (struct node *dp, char *name, struct node *np, 
+		 struct dirstat *ds, struct protid *cred);
+
+/* This will only be called after a successful call to diskfs_lookup
+   of type RENAME; this call should change the name found in directory
+   DP to point to node NP instead of its previous referent, OLDNP.  DP
+   has been locked continuously since the call to diskfs_lookup and DS
+   is as that call set it; NP is locked.  This routine should call
+   diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  NAME is the
+   name of OLDNP inside DP; it is this reference which is being
+   rewritten. This function is a wrapper for diskfs_dirrewrite_hard.  */
+error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
+			   struct node *np, char *name, struct dirstat *ds);
+
+/* This will only be called after a successful call to diskfs_lookup
+   of type REMOVE; this call should remove the name found from the
+   directory DS.  DP has been locked continuously since the call to
+   diskfs_lookup and DS is as that call set it.  This routine should
+   call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  This
+   function is a wrapper for diskfs_dirremove_hard.  The entry being
+   removed has name NAME and refers to NP.  */
+error_t diskfs_dirremove (struct node *dp, char *np, char *name, struct dirstat *ds);
 
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
