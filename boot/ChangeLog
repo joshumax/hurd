@@ -1,3 +1,7 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* boot.c (S_io_identity): Use ino_t for FILENO.
+
 2002-05-31  Roland McGrath  <roland@frob.com>
 
 	* boot.c: Don't include "exec_S.h".

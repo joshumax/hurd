@@ -1,5 +1,8 @@
 2002-06-07  Roland McGrath  <roland@frob.com>
 
+	* store.h (struct store_enc): Use loff_t instead of off_t.
+	(store_enc_init, store_enc_return, store_return): Likewise.
+
 	* encode.c (store_std_leaf_encode): Do a sizeof comparison to get
 	`too_big' optimized out when store_enc starts using 64 bit offsets.
 

@@ -1,3 +1,16 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* io-identity.c (diskfs_S_io_identity): Use ino_t for FILENO.
+
+	* dir-readdir.c (diskfs_S_dir_readdir): Use vm_size_t for AMT.
+
+	* diskfs.h (struct node): Use io_statbuf_t instead of struct stat.
+	(struct node): Use ino64_t for cache_id.
+	(struct node): Use loff_t instead of off_t.
+	(diskfs_grow, diskfs_truncate, diskfs_node_rdwr): Likewise.
+	(diskfs_notice_filechange): Likewise.
+	(diskfs_cached_lookup): Use ino64_t for CACHE_ID argument.
+
 2002-05-26  Roland McGrath  <roland@frob.com>
 
 	* dir-unlink.c (diskfs_S_dir_unlink): Return EPERM instead of EISDIR,

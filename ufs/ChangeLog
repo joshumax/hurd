@@ -1,3 +1,13 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* inode.c (diskfs_cached_lookup): Use ino_t for argument.
+
+	* dir.c (diskfs_direnter_hard): Use size_t for OLDSIZE.
+	Fail with EOVERFLOW when it would exceed that width.
+
+	* alloc.c, dir.c: Use %Ld format for ino_t values.
+	* alloc.c (diskfs_alloc_node): Use %Ld format for blkcnt_t values.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* main.c (diskfs_append_args): Fix argument type.

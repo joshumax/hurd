@@ -1,3 +1,14 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* io-identity.c (trivfs_S_io_identity): Use ino_t for FILENO.
+
+	* dir-readdir.c (trivfs_S_dir_readdir): Use vm_size_t for AMOUNT.
+
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* trivfs.h (trivfs_modify_stat):
+	Use io_statbuf_t instead of struct stat.
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* dir-readdir.c (trivfs_S_dir_readdir): u_int -> size_t

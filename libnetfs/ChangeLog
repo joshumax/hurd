@@ -1,3 +1,17 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* io-identity.c (netfs_S_io_identity): Use ino_t for FILENO.
+
+	* dir-readdir.c (netfs_S_dir_readdir): Use vm_size_t for AMT.
+
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* netfs.h (struct node): Use io_statbuf_t instead of struct stat.
+	(netfs_attempt_statfs): Use fsys_statfsbuf_t instead of struct statfs.
+	(struct peropen): Use loff_t instead of off_t.
+	(netfs_attempt_read, netfs_attempt_write): Likewise.
+	(netfs_attempt_set_size, netfs_file_get_storage_info): Likewise.
+
 2002-05-23  Marcus Brinkmann  <marcus@gnu.org>
 
 	* io-read.c (netfs_S_io_read): If desired amount is larger than

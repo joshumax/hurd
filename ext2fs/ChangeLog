@@ -1,3 +1,15 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* inode.c (diskfs_cached_lookup): Use ino_t for argument.
+
+	* ialloc.c (diskfs_free_node): Use %Ld format for ino_t/off_t values.
+	* pager.c (diskfs_grow, pager_unlock_page): Likewise.
+	* inode.c (read_node): Likewise.
+	* dir.c (diskfs_get_directs): Likewise.
+
+	* dir.c (diskfs_direnter_hard): Use size_t for OLDSIZE.
+	Fail with EOVERFLOW when it would exceed that width.
+
 2002-04-05  Neal H Walfield  <neal@cs.uml.edu>
 
 	* pager.c (diskfs_grow): Correctly recalculate NEW_SIZE.

@@ -1,3 +1,8 @@
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* fshelp.h: Use io_statbuf_t in place of struct stat throughout.
+	(fshelp_get_identity): ino_t -> ino64_t
+
 2002-05-10  Roland McGrath  <roland@frob.com>
 
 	* exec-reauth.c (fshelp_exec_reauth): Always set *SECURE if nonnull,

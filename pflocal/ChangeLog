@@ -1,3 +1,7 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* io.c (S_io_identity): Use ino_t for FILENO.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* io.c (S_io_reauthenticate): unsigned -> size_t

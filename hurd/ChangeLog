@@ -1,3 +1,31 @@
+2002-06-09  Roland McGrath  <roland@frob.com>
+
+	* version.h: New file.
+	* Makefile (INSTHDRS): Add it.
+
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* hurd_types.defs (loff_t, ino64_t): New types, 64 bits.
+	(off_t): Type removed.
+	(off_array_t): Use loff_t instead of off_t as base type.
+	* hurd_types.h (off_array_t): Likewise.
+	[_FILE_OFFSET_BITS != 64] (io_statbuf_t, fsys_statfsbuf_t): Define
+	using struct stat64/statfs64 instead of struct stat/statfs.
+	* io.defs (io_identity): Use ino64_t for FILENO.
+	* fs.defs (file_set_size): off_t -> loff_t
+	* fs_notify.defs (file_changed): Likewise.
+	* io.defs (io_write, io_read, io_seek): Likewise.
+	* io_request.defs: Likewise for those RPCs' *_request variants.
+	* io_reply.defs: Likewise for those RPCs' *_reply variants.
+
+	* hurd_types.defs (size_t): Remove type.
+	* fs.defs (dir_readdir): Use vm_size_t for AMOUNT.
+	* socket.defs (socket_send, socket_recv): Likewise.
+	* pfinet.defs (pfinet_siocgifconf): Likewise.
+	* io.defs (io_write, io_read, io_readable): Likewise.
+	* io_request.defs: Likewise for those RPCs' *_request variants.
+	* io_reply.defs: Likewise for those RPCs' *_reply variants.
+
 2002-06-07  Roland McGrath  <roland@frob.com>
 
 	* hurd_types.defs (dev_t, ssize_t): Remove unused types.

@@ -1,3 +1,8 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* ftpconn.h (ftp_conn_add_stat_fun_t) [_FILE_OFFSET_BITS != 64]:
+	Use struct stat64 in place of struct stat.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* xfer.c (ftp_conn_start_open_actv_data): size_t -> socklen_t

@@ -1,3 +1,13 @@
+2002-06-08  Roland McGrath  <roland@frob.com>
+
+	* dir.c, pass1.c, pass1b.c, pass2.c: Use %Ld for ino_t values.
+	* utilities.c: Likewise.
+
+	* fsck.h: Use ino_t for lfdir.
+	* setup.c: Likewise.
+
+	* fsck.h (struct dirinfo): Use size_t for i_isize.
+
 2001-09-30  Roland McGrath  <roland@frob.com>
 
 	* pass5.c (pass5): A little manual CSE makes buggy gcc not to crash.
