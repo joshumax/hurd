@@ -1,3 +1,16 @@
+Wed Feb 19 21:42:45 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (fsys_port_class, root_port_class, port_bucket,
+	trivfs_protid_portclasses, trivfs_protid_nportclasses,
+	trivfs_cntl_portclasses, trivfs_cntl_nportclasses): Variables removed.
+	(main): Don't set or use port class/bucket variables, let
+	trivfs_startup do it.
+	Add FSYS variable.
+	(doc): Make an initialized array.
+	(parse_opt): New function (was nested in main).
+	(argp, argp_kids): New variables (were nested in main).
+	(trivfs_goaway): Get ROOT_PORT_CLASS from FSYS.
+
 Fri Nov 15 17:54:10 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* storeio.c (trivfs_check_open_hook): New arg syntax.
