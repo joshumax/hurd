@@ -25,7 +25,7 @@ dikfs_S_file_chflags (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!(err = isowner (np, cred)))
+		     if (!(err = diskfs_isowner (np, cred)))
 			 np->dn_stat.st_flags = flags;
 		   }));
 }
