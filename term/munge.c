@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -52,20 +52,20 @@ poutput (int c)
     output_psize += (output_psize + 8) % 8;
   else if (c == '\b')
     output_psize--;
-  
+
   enqueue (&outputq, c);
 }
 
-/* Place C on output queue, doing normal output processing. 
+/* Place C on output queue, doing normal output processing.
    Only echo routines should directly call this function.  Others
    should call write_character below. */
 void
 output_character (int c)
 {
   int oflag = termstate.c_oflag;
-  
+
   /* One might think we should turn of INHDERASE here, but, no
-     in U*x it is only turned off by echoed characters.  
+     in U*x it is only turned off by echoed characters.
      See echo_char in input.c.  */
   if (oflag & OPOST)
     {
@@ -118,7 +118,7 @@ int
 output_width (int c, int loc)
 {
   int oflag = termstate.c_oflag;
-  
+
   if (oflag & OPOST)
     {
       if ((oflag & OTILDE) && c == '~')
@@ -145,7 +145,7 @@ struct queue *rawq;
 
 /* For each character in this table, if the element is set, then
    the character is EVEN */
-char const char_parity[] = 
+char const char_parity[] =
 {
   1, 0, 0, 1, 0, 1, 1, 0,	/* nul - bel */
   0, 1, 1, 0, 1, 0, 0, 1,	/* bs - si */
@@ -174,11 +174,11 @@ char const char_parity[] =
 
 
 /* These functions are used by both echo and erase code */
-   
+
 /* Tell if we should echo a character at all */
 static inline int
 echo_p (char c, int quoted)
-{  
+{
   if (external_processing)
     return 0;
   return ((termstate.c_lflag & ECHO)
@@ -206,7 +206,7 @@ write_erase_sequence ()
 /* If this is an echo of a character which is being hard-erased,
    set hderase.  If this is a newline or tab which should not receive
    their normal special processing, set quoted. */
-static void  
+static void
 echo_char (char c, int hderase, int quoted)
 {
   echo_qsize++;
@@ -242,7 +242,7 @@ static inline void
 reprint_line ()
 {
   short *cp;
-  
+
   if (termstate.c_cc[VREPRINT] != _POSIX_VDISABLE)
     echo_char (termstate.c_cc[VREPRINT], 0, 0);
   else
@@ -265,14 +265,14 @@ erase_1 (char erase_char)
   int quoted;
   char c;
   quoted_char cq;
-  
+
   if (qsize (rawq) == 0)
     return;
-  
+
   cq = queue_erase (rawq);
   c = unquote_char (cq);
   quoted = char_quoted_p (cq);
-  
+
   if (!echo_p (c, quoted))
     return;
 
@@ -288,14 +288,14 @@ erase_1 (char erase_char)
       else
 	{
 	  int nerase;
-	  
+
 	  if (echo_double (c, quoted))
 	    nerase = 2;
 	  else if (c == '\t')
 	    {
 	      quoted_char *cp;
 	      int loc = echo_pstart;
-	  
+
 	      for (cp = rawq->ce - echo_qsize; cp != rawq->ce; cp++)
 		loc += (echo_double (unquote_char (*cp), char_quoted_p (*cp))
 			? 2
@@ -304,7 +304,7 @@ erase_1 (char erase_char)
 	    }
 	  else
 	    nerase = output_width (c, output_psize);
-	
+
 	  while (nerase--)
 	    write_erase_sequence ();
 	}
@@ -330,7 +330,7 @@ input_character (int c)
   int flush = 0;
 
   /* Handle parity errors */
-  if ((iflag & INPCK)      
+  if ((iflag & INPCK)
       && ((cflag & PARODD) ? checkoddpar (c) : checkevenpar (c)))
     {
       if (iflag & IGNPAR)
@@ -368,8 +368,9 @@ input_character (int c)
       enqueue_quote (qp, c);
       echo_char (c, 0, 1);
       termflags &= ~LAST_LNEXT;
+      goto alldone;
     }
-  
+
   /* Mutate ILCASE */
   if (!external_processing && (iflag & ILCASE) && isalpha(c))
     {
@@ -378,7 +379,7 @@ input_character (int c)
       else
 	c = isupper(c) ? tolower (c) : c;
     }
-      
+
   /* IEXTEN control chars */
   if (!external_processing && (lflag & IEXTEN))
     {
@@ -392,7 +393,7 @@ input_character (int c)
 	  termflags |= LAST_LNEXT;
 	  goto alldone;
 	}
-      
+
       if (CCEQ (cc[VDISCARD], c))
 	{
 	  if (termflags & FLUSH_OUTPUT)
@@ -404,7 +405,7 @@ input_character (int c)
 	    }
 	}
     }
-  
+
   /* Signals */
   if (!external_processing && (lflag & ISIG))
     {
@@ -439,7 +440,7 @@ input_character (int c)
 	  goto alldone;
 	}
     }
-  
+
   /* IXON */
   if (!external_processing && (iflag & IXON))
     {
@@ -457,7 +458,7 @@ input_character (int c)
       if (CCEQ (cc[VSTART], c))
 	goto alldone;
     }
-  
+
   if (!external_processing)
     {
       /* Newline and carriage-return frobbing */
@@ -470,9 +471,9 @@ input_character (int c)
 	}
       else if ((c == '\n') && (iflag & INLCR))
 	c = '\r';
-  
+
     }
-  
+
   /* Canonical mode processing */
   if (!external_processing && (lflag & ICANON))
     {
@@ -484,7 +485,7 @@ input_character (int c)
 	      || !(lflag & IEXTEN))
 	    goto alldone;
 	}
-      
+
       if (CCEQ (cc[VKILL], c))
 	{
 	  if (!(termflags & LAST_SLASH)
@@ -511,7 +512,7 @@ input_character (int c)
 	  else
 	    erase_1 (0);	/* remove \ */
 	}
-  
+
       if (CCEQ (cc[VWERASE], c))
 	{
 	  /* If we are not going to echo the erase, then
@@ -524,7 +525,7 @@ input_character (int c)
 	  /* Erase whitespace */
 	  while (qsize (rawq) && isblank (unquote_char (rawq->ce[-1])))
 	    erase_1 (0);
-	  
+
 	  /* Erase word. */
 	  if (lflag & ALTWERASE)
 	    /* For ALTWERASE, we erase back to the first blank */
@@ -545,14 +546,14 @@ input_character (int c)
 	  reprint_line ();
 	  goto alldone;
 	}
-      
+
       if (CCEQ (cc[VSTATUS], c) && (lflag & ISIG) && (lflag & IEXTEN))
 	{
 	  send_signal (SIGINFO);
 	  goto alldone;
 	}
     }
-  
+
   /* Now we have a character intended as input.  See if it will fit. */
   if (!qavail (*qp))
     {
@@ -570,7 +571,7 @@ input_character (int c)
 	}
       goto alldone;
     }
-  
+
   /* Echo */
   echo_char (c, 0, 0);
   if (CCEQ (cc[VEOF], c) && (lflag & ECHO))
@@ -588,8 +589,8 @@ input_character (int c)
   /* Check for break characters in canonical input processing */
   if (lflag & ICANON)
     {
-      if (CCEQ (cc[VEOL], c) 
-	  || CCEQ (cc[VEOL2], c) 
+      if (CCEQ (cc[VEOL], c)
+	  || CCEQ (cc[VEOL2], c)
 	  || CCEQ (cc[VEOF], c)
 	  || c == '\n')
 	/* Make input available */
@@ -612,7 +613,7 @@ void
 input_break ()
 {
   struct queue **qp = termstate.c_lflag & ICANON ? &rawq : &inputq;
-  
+
   /* Don't do anything if IGNBRK is set. */
   if (termstate.c_iflag & IGNBRK)
     return;
@@ -640,11 +641,11 @@ void
 input_framing_error (int c)
 {
   struct queue **qp = termstate.c_lflag & ICANON ? &rawq : &inputq;
-   
+
   /* Ignore it if IGNPAR is set. */
   if (termstate.c_iflag & IGNPAR)
     return;
-  
+
   /* If PARMRK is set, pass it specially marked. */
   if (termstate.c_iflag & PARMRK)
     {
@@ -664,19 +665,19 @@ copy_rawq ()
   while (qsize (rawq))
     enqueue (&inputq, dequeue (rawq));
 }
-   
+
 /* Process all the characters in INPUTQ as if they had just been read. */
 void
 rescan_inputq ()
 {
   short *buf;
   int i, n;
-  
+
   n = qsize (inputq);
   buf = alloca (n * sizeof (quoted_char));
   bcopy (inputq->cs, buf, n * sizeof (quoted_char));
   clear_queue (inputq);
-  
+
   for (i = 0; i < n; i++)
     input_character (unquote_char (buf[i]));
 }
@@ -692,12 +693,12 @@ error_t
 drain_output ()
 {
   int cancel = 0;
-  
+
   while ((qsize (outputq) || (*bottom->pending_output_size) ())
 	 && (!(termflags & NO_CARRIER) || (termstate.c_cflag & CLOCAL))
 	 && !cancel)
     cancel = hurd_condition_wait (outputq->wait, &global_lock);
-  
+
   return cancel ? EINTR : 0;
 }
 
@@ -706,7 +707,7 @@ struct queue *
 create_queue (int size, int lowat, int hiwat)
 {
   struct queue *q;
-  
+
   q = malloc (sizeof (struct queue) + size * sizeof (quoted_char));
   q->susp = 0;
   q->lowat = lowat;
@@ -724,12 +725,12 @@ reallocate_queue (struct queue *q)
 {
   int len;
   struct queue *newq;
-  
+
   len = qsize (q);
 
   if (len < q->arraylen / 2)
     {
-      /* Shift the characters to the front of 
+      /* Shift the characters to the front of
 	 the queue. */
       memmove (q->array, q->cs, len * sizeof (quoted_char));
       q->cs = q->array;
@@ -738,7 +739,7 @@ reallocate_queue (struct queue *q)
   else
     {
       /* Make the queue twice as large. */
-      newq = malloc (sizeof (struct queue) 
+      newq = malloc (sizeof (struct queue)
 		     + q->arraylen * 2 * sizeof (quoted_char));
       newq->susp = q->susp;
       newq->lowat = q->lowat;
