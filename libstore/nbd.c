@@ -191,24 +191,17 @@ nbd_open (const char *name, int flags,
   return store_nbd_open (name, flags, store);
 }
 
-static const char url_prefix[] = "nbd://";
-
-/* Valid name syntax is [nbd://]HOSTNAME:PORT[/BLOCKSIZE].
+/* Valid name syntax is HOSTNAME:PORT[/BLOCKSIZE].
    If "/BLOCKSIZE" is omitted, the block size is 1.  */
 static error_t
 nbd_validate_name (const char *name,
 		   const struct store_class *const *classes)
 {
-  char *p, *endp;
-
-  if (!strncmp (name, url_prefix, sizeof url_prefix - 1))
-    name += sizeof url_prefix - 1;
-
-  p = strchr (name, ':');
+  char *p = strchr (name, ':'), *endp;
   if (p == 0)
     return EINVAL;
   endp = 0;
-  strtoul (p, &endp, 0);
+  strtoul (++p, &endp, 0);
   if (endp == 0 || endp == p)
     return EINVAL;
   switch (*endp)
@@ -238,17 +231,13 @@ nbdopen (const char *name, int *mod_flags,
   char **ap;
   struct nbd_startup ns;
   ssize_t cc;
-  unsigned long int port;
-  char *hostname, *p, *endp;
-
-  if (!strncmp (name, url_prefix, sizeof url_prefix - 1))
-    name += sizeof url_prefix - 1;
 
   /* First we have to parse the store name to get the host name and TCP
      port number to connect to and the block size to use.  */
 
-  hostname = strdupa (name);
-  p = strchr (hostname, ':');
+  unsigned long int port;
+  char *hostname = strdupa (name);
+  char *p = strchr (hostname, ':'), *endp;
 
   if (p == 0)
     return EINVAL;
@@ -368,7 +357,8 @@ nbd_clear_flags (struct store *store, int flags)
   return err;
 }
 
-const struct store_class store_nbd_class =
+const struct store_class
+store_nbd_class =
 {
   STORAGE_NETWORK, "nbd",
   open: nbd_open,
