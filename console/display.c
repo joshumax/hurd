@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <wchar.h>
 #include <iconv.h>
@@ -30,13 +29,10 @@
 #include <assert.h>
 #include <error.h>
 
-#include <sys/io.h>
-#include <sys/fcntl.h>
-#include <sys/mman.h>
 #include <cthreads.h>
 
 #include <hurd.h>
-#include <hurd/pager.h>
+#include <hurd/ports.h>
 #include <hurd/console.h>
 
 #ifndef __STDC_ISO_10646__
@@ -44,6 +40,7 @@
 #endif
 
 #include "display.h"
+#include "pager.h"
 
 
 struct changes
@@ -141,12 +138,6 @@ struct attr
 };
 typedef struct attr *attr_t;
 
-struct user_pager_info
-{
-  size_t memobj_npages;
-  vm_address_t memobj_pages[0];
-};
-
 /* Pending directory and file modification requests.  */
 struct modreq
 {
@@ -193,8 +184,8 @@ struct display
 
   struct cons_display *user;
 
-  struct pager *pager;  
-  memory_object_t memobj;
+  /* The pager for the USER member.  */
+  struct user_pager user_pager;
 
   /* A list of ports to send file change notifications to.  */
   struct modreq *filemod_reqs;
@@ -203,99 +194,6 @@ struct display
   /* The notify port.  */
   struct notify *notify_port;
 };
-
-
-/* We need a separate bucket for the pager ports.  */
-struct port_bucket *pager_bucket;
-
-mach_port_t
-display_get_filemap (display_t display, vm_prot_t prot)
-{
-  error_t err;
-
-  /* Add a reference for each call, the caller will deallocate it.  */
-  err = mach_port_mod_refs (mach_task_self (), display->memobj,
-                            MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
-
-  return display->memobj;
-}
-
-/* Implement the pager_clear_user_data callback from the pager library. */
-void
-pager_clear_user_data (struct user_pager_info *upi)
-{
-  int idx;
-
-  for (idx = 0; idx < upi->memobj_npages; idx++)
-    if (upi->memobj_pages[idx])
-      vm_deallocate (mach_task_self (), upi->memobj_pages[idx], vm_page_size);
-  free (upi);
-}
-
-error_t
-pager_read_page (struct user_pager_info *upi, vm_offset_t page,
-                 vm_address_t *buf, int *writelock)
-{
-  /* XXX clients should get a read only object.  */
-  *writelock = 0;
-
-  if (upi->memobj_pages[page / vm_page_size] != (vm_address_t) NULL)
-    {
-      *buf = upi->memobj_pages[page / vm_page_size];
-      upi->memobj_pages[page / vm_page_size] = (vm_address_t) NULL;
-    }
-  else
-    *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
-				MAP_ANON, 0, 0);
-  return 0;
-}
-
-error_t
-pager_write_page (struct user_pager_info *upi, vm_offset_t page,
-                  vm_address_t buf)
-{
-  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
-  upi->memobj_pages[page / vm_page_size] = buf;
-  return 0;
-}
-
-error_t
-pager_unlock_page (struct user_pager_info *pager,
-                   vm_offset_t address)
-{
-  assert (!"unlocking requested on unlocked page");
-  return 0;
-}
-
-/* Tell how big the file is. */
-error_t
-pager_report_extent (struct user_pager_info *upi,
-                     vm_address_t *offset,
-                     vm_size_t *size)
-{
-  *offset = 0;
-  *size =  upi->memobj_npages * vm_page_size;
-  return 0;
-}
-
-void
-pager_dropweak (struct user_pager_info *upi)
-{
-}
-
-/* A top-level function for the paging thread that just services paging
-   requests.  */
-static void
-service_paging_requests (any_t arg)
-{
-  struct port_bucket *pager_bucket = arg;
-  for (;;)
-    ports_manage_port_operations_multithread (pager_bucket,
-                                              pager_demuxer,
-                                              1000 * 60 * 2,
-                                              1000 * 60 * 10, 0);
-}    
 
 
 /* The bucket and class for notification messages.  */
@@ -874,54 +772,21 @@ conchar_memset (conchar_t *conchar, wchar_t chr, conchar_attr_t attr,
     }
 }
 
+
 static error_t
 user_create (display_t display, uint32_t width, uint32_t height,
 	     uint32_t lines, wchar_t chr, conchar_attr_t attr)
 {
   error_t err;
   struct cons_display *user;
-  struct user_pager_info *upi;
+  int npages = (round_page (sizeof (struct cons_display) + sizeof (conchar_t)
+			    * width * lines)) / vm_page_size;
 
-  int npages = (round_page (sizeof (struct cons_display) +
-			   sizeof (conchar_t) * width * lines)) / vm_page_size;
-
-  upi = calloc (1, sizeof (struct user_pager_info)
-		+ sizeof (vm_address_t) * npages);
-  if (!upi)
-    return MACH_PORT_NULL;
-  upi->memobj_npages = npages;
-  /* 1 & MOCD correct? */
-  display->pager = pager_create (upi, pager_bucket,
-				 1, MEMORY_OBJECT_COPY_DELAY);
-  if (display->pager == 0)
-    {
-      free (upi);
-      return errno;
-    }
-  display->memobj = pager_get_port (display->pager);
-  ports_port_deref (display->pager);
-
-  mach_port_insert_right (mach_task_self (), display->memobj, display->memobj,
-                          MACH_MSG_TYPE_MAKE_SEND);
-
-  err = vm_map (mach_task_self (),
-		(vm_address_t *) &user,
-		(vm_size_t) npages * vm_page_size,
-		(vm_address_t) 0,
-		1 /* ! (flags & MAP_FIXED) */,
-		display->memobj, 0 /* (vm_offset_t) offset */,
-		0 /* ! (flags & MAP_SHARED) */,
-                VM_PROT_READ | VM_PROT_WRITE,
-                VM_PROT_READ | VM_PROT_WRITE,
-                VM_INHERIT_NONE);
-
+  err = user_pager_create (&display->user_pager, npages, &display->user);
   if (err)
-    {
-      /* UPI will be cleaned up by libpager.  */
-      mach_port_deallocate (mach_task_self (), display->memobj);
-      return err;
-    }
-    
+    return err;
+
+  user = display->user;
   user->magic = CONS_MAGIC;
   user->version = CONS_VERSION_MAJ << 16 | CONS_VERSION_AGE;
   user->changes.buffer = offsetof (struct cons_display, changes._buffer)
@@ -938,18 +803,13 @@ user_create (display_t display, uint32_t width, uint32_t height,
   user->cursor.status = CONS_CURSOR_NORMAL;
   conchar_memset (user->_matrix, chr, attr,
 		  user->screen.width * user->screen.lines);
-
-  display->user = user;
   return 0;
 }
 
 static void
 user_destroy (display_t display)
 {
-  /* The pager will be deallocated by libpager.  */
-  vm_deallocate (mach_task_self (), (vm_offset_t) display->user,
-		 pager_get_upi (display->pager)->memobj_npages * vm_page_size);
-  mach_port_deallocate (mach_task_self (), display->memobj);
+  user_pager_destroy (&display->user_pager, display->user);
 }
 
 
@@ -1922,14 +1782,7 @@ void display_destroy_complete (void *pi);
 void
 display_init (void)
 {
-  /* Create the pager bucket, and start to serve paging requests.  */
-  pager_bucket = ports_create_bucket ();
-  if (! pager_bucket)
-    error (5, errno, "Cannot create pager bucket");
-
-  /* Make a thread to service paging requests.  */
-  cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
-                                (any_t) pager_bucket));
+  user_pager_init ();
 
   /* Create the notify bucket, and start to serve notifications.  */
   notify_bucket = ports_create_bucket ();
@@ -2249,4 +2102,15 @@ display_discard_output (display_t display)
   mutex_lock (&display->lock);
   display->output.size = 0;
   mutex_unlock (&display->lock);
+}
+
+
+mach_port_t
+display_get_filemap (display_t display, vm_prot_t prot)
+{
+  mach_port_t memobj;
+  mutex_lock (&display->lock);
+  memobj = user_pager_get_filemap (&display->user_pager, prot);
+  mutex_unlock (&display->lock);
+  return memobj;
 }

@@ -1,5 +1,22 @@
 2002-09-22  Marcus Brinkmann  <marcus@gnu.org>
 
+	* pager.c, pager.h: New file.
+	* Makefile (SRCS): Add pager.c.
+	(LCLHDRS): Add pager.h.
+	* display.c: Do not include <hurd/pager.h>, <sys/mman.h>,
+	<sys/io.h>, <fcntl.h> and <sys/fcntl.h>.  Include <hurd/ports.h>
+	and "pager.h".
+	(struct display): Replace member PAGER and MEMOBJ with USER_PAGER.
+	(display_get_filemap): Implement with user_pager_get_filemap.
+	(user_destroy): Implement with user_pager_destroy.
+	(user_create): Implement partially with user_create.
+	(display_init): Call user_pager_init.
+	(struct user_pager_info, pager_bucket, pager_clear_user_data,
+	pager_read_page, pager_write_page, pager_unlock_page,
+	pager_report_extent, pager_dropweak, service_paging_requests):
+	Move to ...
+	* pager.c: ... here.
+
 	* console.c: Include <mach.h>.
 	(netfs_S_dir_notice_changes): New variable PREQ.  Clean out the
 	dead wood, eh, dead name notifications from the CONS->dirmod_req
