@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -403,8 +403,12 @@ devio_assert_dtr ()
   
   assert (phys_reply == MACH_PORT_NULL);
   assert (phys_reply_pi == 0);
-  phys_reply_pi = ports_allocate_port (term_bucket, sizeof (struct port_info),
-				       phys_reply_class);
+
+  err = ports_create_port (phys_reply_class, term_bucket,
+			   sizeof (struct port_info), &phys_reply_pi);
+  if (err)
+    return err;
+
   phys_reply = ports_get_right (phys_reply_pi);
   mach_port_insert_right (mach_task_self (), phys_reply, phys_reply,
 			  MACH_MSG_TYPE_MAKE_SEND);
