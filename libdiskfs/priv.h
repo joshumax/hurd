@@ -15,13 +15,37 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef DISKFS_PRIV_H
+#define DISKFS_PRIV_H
+
 #include <mach.h>
 #include <hurd.h>
+#include <hurd/ports.h>
+#include <hurd/fshelp.h>
+#include <hurd/ioserver.h>
+#include <assert.h>
+
 #include "diskfs.h"
 
 extern mach_port_t fs_control_port;	/* receive right */
 
+enum porttype
+{
+  PT_NONE,
+  PT_PROTID,
+  PT_PAGER,
+  PT_CTL,
+  PT_EXECBOOT,
+  PT_INITBOOT,
+  PT_TRANSBOOT,
+};
+
 spin_lock_t _diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
+
+#define MAXSYMLINKS 8
+
+/* Needed for MiG. */
+typedef struct protid *protid_t;
 
 /* Called by MiG to translate ports into struct protid *.  
    fsmutations.h arranges for this to happen for the io and
@@ -106,3 +130,5 @@ diskfs_nrele (struct node *np)
 })
 
 #define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK)
+
+#endif
