@@ -63,7 +63,7 @@ vga_init (void)
 void
 vga_deinit (void)
 {
-  io_perm (VGA_MIN_REG, VGA_MAX_REG, 0);
+  ioperm (VGA_MIN_REG, VGA_MAX_REG, 0);
   munmap (vga_videomem, VGA_VIDEO_MEM_LENGTH);
 }
 
