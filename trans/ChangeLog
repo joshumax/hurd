@@ -1,3 +1,19 @@
+2001-01-20  Roland McGrath  <roland@frob.com>
+
+	* streamio.c (options): Add aliases --rdonly, --ro for -r.
+	Add aliases --rdwr, -rw for -w.
+	Add new option --writeonly/--wronly/-W.
+	(readonly): Variable removed.
+	(parse_opt): Set trivfs_allow_open for -r/-w/-W.
+	(main): Don't set trivfs_allow_open here.  Instead, use it to decide
+	whether to set up input_buffer/output_buffer or not.
+	(open_hook): Use trivfs_allow_open instead of readonly.
+	Check whether read is allowed too.
+	(trivfs_modify_stat): Likewise.
+
+	* streamio.c (stream_name, readonly, rdev, nperopens): Remove
+	superfluous zero initializers.
+
 2001-01-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (SRCS): Add streamio.c
