@@ -1,3 +1,8 @@
+Thu Jul 18 19:39:32 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Hold
+	GLOBAL_LOCK while we're setting up the new port.
+
 Sat Jul 13 20:15:56 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Repeat
