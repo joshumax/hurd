@@ -81,7 +81,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       buflen++;			/* terminating nul */
       
       if (buflen > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t) trans, buflen, 1);
+	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
       bcopy (buf, *trans, buflen);
       *translen = buflen;
       error = 0;
