@@ -44,11 +44,14 @@ diskfs_S_io_pathconf (struct protid *cred,
 
     case _PC_NAME_MAX:
       /* <hurd/hurd_types.defs> string_t constrains the upper bound.  */
-      *value = diskfs_name_max > 1024 ? 1024 : diskfs_name_max;
+      *value = diskfs_name_max > 1023 ? 1023 : diskfs_name_max;
+      break;
+
+    case _PC_NO_TRUNC:		/* enforced in diskfs_lookup */
+      *value = diskfs_name_max >= 0;
       break;
 
     case _PC_CHOWN_RESTRICTED:
-    case _PC_NO_TRUNC:		/* look at string_t trunc behavior in MiG */
     case _PC_SYNC_IO:
     case _PC_ASYNC_IO:
       *value = 1;

@@ -204,9 +204,12 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	{
 	  error_t err2;
 
-	  err2 = fshelp_checkdirmod (&dp->dn_stat,
-				     (err || !np) ? 0 : &(*np)->dn_stat,
-				     cred->user);
+	  if (diskfs_name_max > 0 && strlen (name) > diskfs_name_max)
+	    err2 = ENAMETOOLONG;
+	  else
+	    err2 = fshelp_checkdirmod (&dp->dn_stat,
+				       (err || !np) ? 0 : &(*np)->dn_stat,
+				       cred->user);
 	  if (err2)
 	    {
 	      if (np && !err)
