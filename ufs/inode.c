@@ -548,8 +548,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   transloc = disk_image + fsaddr (sblock, blkno);
   
   datalen = *(u_int *)transloc;
-  if (datalen > *namelen)
-    vm_allocate (mach_task_self (), (vm_address_t *) namep, datalen, 1);
+  *namep = malloc (datalen);
   bcopy (transloc + sizeof (u_int), *namep, datalen);
 
   diskfs_end_catch_exception ();

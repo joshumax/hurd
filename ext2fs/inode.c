@@ -543,8 +543,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
-  if (datalen > *namelen)
-    vm_allocate (mach_task_self (), (vm_address_t *) namep, datalen, 1);
+  *namep = malloc (datalen);
   bcopy (transloc + 2, *namep, datalen);
 
   diskfs_end_catch_exception ();
