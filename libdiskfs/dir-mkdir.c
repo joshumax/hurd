@@ -59,8 +59,8 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   if (diskfs_synchronous)
     {
-      diskfs_update_file (dnp, 1);
-      diskfs_update_file (np, 1);
+      diskfs_file_update (dnp, 1);
+      diskfs_file_update (np, 1);
     }
 
   if (!error)
