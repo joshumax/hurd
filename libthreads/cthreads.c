@@ -30,6 +30,12 @@
  *	catch is reserved word in c++.
  *
  * $Log: cthreads.c,v $
+ * Revision 1.14  2002/07/31 02:20:44  marcus
+ * 2002-07-29  Marcus Brinkmann  <marcus@gnu.org>
+ *
+ * 	* cthreads.c (cthread_init): Move cthread_alloc call before
+ * 	cproc_init call (lost in merge).
+ *
  * Revision 1.13  2002/05/28 23:55:55  roland
  * 2002-05-28  Roland McGrath  <roland@frob.com>
  *
@@ -217,6 +223,10 @@ cthread_init(void)
 
 	if (cthreads_started)
 		return 0;
+
+	/* cthread_alloc must be called before cproc_init, because
+	   malloc is not usable between initializing the new stack and
+	   switching to it.  */
 	t = cthread_alloc((cthread_fn_t) 0, (any_t) 0);
 	stack = cproc_init();
 	cthread_cprocs = 1;
