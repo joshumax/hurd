@@ -1,3 +1,8 @@
+2002-05-04  Roland McGrath  <roland@frob.com>
+
+	* io-restrict-auth.c (netfs_S_io_restrict_auth): Use
+	iohelp_restrict_iouser.
+
 2002-03-9  James A. Morrison <ja2morri@uwaterloo.ca>
 
  	* init-startup (netfs_startup): Use err, not errno.

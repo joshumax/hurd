@@ -1,3 +1,12 @@
+2002-05-04  Roland McGrath  <roland@frob.com>
+
+	* iouser-create.c (iohelp_create_complex_iouser): Add const to args.
+	* iohelp.h: Update decl.
+
+	* iouser-restrict.c: New file.
+	* Makefile (SRCS): Add it.
+	* iohelp.h: Declare iohelp_restrict_iouser.
+
 2001-04-21  Neal H Walfield  <neal@cs.uml.edu>
 
 	* iohelp.h (iohelp_create_iouser): Change declaration

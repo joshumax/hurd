@@ -1,3 +1,7 @@
+2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* timer-emul.c (timer_function): Add a return stmt.
+
 2002-01-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* tunnel.c (trivfs_S_io_select): Remove IDTAG argument.
@@ -23,7 +27,7 @@
 	correctly.  If we are setting the peer on an IFF_POINTOPOINT link,
 	force the netmask to 255.255.255.255.
 	By Neal H Walfield <neal@cs.uml.edu>.
-	
+
 2001-07-13  Neal H Walfield  <neal@cs.uml.edu>
 
 	* options.c (parse_opt): In the cases where we hold global_lock

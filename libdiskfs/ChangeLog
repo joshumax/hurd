@@ -1,3 +1,12 @@
+2002-05-04  Roland McGrath  <roland@frob.com>
+
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Use
+	iohelp_restrict_iouser.
+
+2002-04-02  Roland McGrath  <roland@frob.com>
+
+	* node-make.c (diskfs_make_node): Return early if malloc fails.
+
 2002-04-30  Marcus Brinkmann  <marcus@gnu.org>
 
        * priv.h: Add OPT_NO_INHERIT_DIR_GROUP and OPT_INHERIT_DIR_GROUP.
