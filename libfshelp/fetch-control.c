@@ -25,6 +25,7 @@ fshelp_fetch_control (struct transbox *box,
 		      mach_port_t *control)
 {
   *control = box->active;
-  mach_port_mod_refs (mach_task_self (), *control, MACH_PORT_RIGHT_SEND, 1);
+  if (*control != MACH_PORT_NULL)
+    mach_port_mod_refs (mach_task_self (), *control, MACH_PORT_RIGHT_SEND, 1);
   return 0;
 }
