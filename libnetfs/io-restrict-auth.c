@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -40,39 +40,77 @@ netfs_S_io_restrict_auth (struct protid *user,
 			  gid_t *gids,
 			  mach_msg_type_number_t ngids)
 {
+  error_t err;
   struct idvec *uvec, *gvec;
   int i;
   struct protid *newpi;
+  struct iouser *new_user;
   
   if (!user)
     return EOPNOTSUPP;
   
-  uvec = make_idvec ();
-  gvec = make_idvec ();
-
   if (idvec_contains (user->user->uids, 0))
     {
-      idvec_set_ids (uvec, uids, nuids);
-      idvec_set_ids (gvec, gids, ngids);
+      err = iohelp_create_complex_iouser (&new_user, uids, nuids, gids, ngids);
+      if (err)
+        return err;
     }
   else
     {
+      uvec = make_idvec ();
+      if (! uvec)
+        return ENOMEM;
+
+      gvec = make_idvec ();
+      if (! gvec)
+        {
+	  idvec_free (uvec);
+	  return ENOMEM;
+	}
+
       for (i = 0; i < user->user->uids->num; i++)
 	if (listmember (uids, user->user->uids->ids[i], nuids))
-	  idvec_add (uvec, user->user->uids->ids[i]);
+	  {
+	    err = idvec_add (uvec, user->user->uids->ids[i]);
+	    if (err)
+	      goto out;
+	  }
       
       for (i = 0; i < user->user->gids->num; i++)
 	if (listmember (gids, user->user->gids->ids[i], ngids))
-	  idvec_add (gvec, user->user->gids->ids[i]);
+	  {
+	    err = idvec_add (gvec, user->user->gids->ids[i]);
+	    if (err)
+	      goto out;
+	  }
+
+      err = iohelp_create_iouser (&new_user, uvec, gvec);
+
+      if (err)
+        {
+        out:
+	  idvec_free (uvec);
+	  idvec_free (gvec);
+	  return err;
+	}
     }
   
   mutex_lock (&user->po->np->lock);
-  newpi = netfs_make_protid (user->po, iohelp_create_iouser (uvec, gvec));
-  *newport = ports_get_right (newpi);
-  mutex_unlock (&user->po->np->lock);
+  newpi = netfs_make_protid (user->po, new_user);
+  if (newpi)
+    {
+      *newport = ports_get_right (newpi);
+      mutex_unlock (&user->po->np->lock);
+      *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+    }
+  else
+    {
+      mutex_unlock (&user->po->np->lock);
+      iohelp_free_iouser (new_user);
+      err = ENOMEM;
+    }
   
-  *newporttype = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newpi);
-  return 0;
+  return err;
 }
 
