@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "ifsock_S.h"
 #include <hurd/paths.h>
 #include <sys/socket.h>
 
