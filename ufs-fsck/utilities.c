@@ -265,12 +265,22 @@ retch (char *reason)
   error (99, 0, "(internal error) %s!", reason);
 }
 
+/* Prints all unresolved problems and exits, printing MSG as well.  */
 static void
-punt ()
+punt (char *msg)
 {
-  problem (0, "PLEASE RUN fsck MANUALLY");
+  problem (0, msg);
   flush_problems ();
   exit (1);
+}
+
+/* If SEVERE is true, and we're in preen mode, then things are too hair to
+   fix automatically, so tell the user to do it himself and punt.  */
+static void 
+no_preen (int severe)
+{
+  if (severe && preen)
+    punt ("PLEASE RUN fsck MANUALLY");
 }
 
 /* Store away the given message about a problem found.  A call to problem must
@@ -286,8 +296,7 @@ problem (int severe, char *fmt, ...)
   push_problem (fmt, args);
   va_end (args);
   
-  if (severe && preen)
-    punt ();
+  no_preen (severe);
 }
 
 /* Following a call to problem (with perhaps intervening calls to
@@ -325,10 +334,9 @@ warning (int severe, char *fmt, ...)
   push_problem (fmt, args);
   va_end (args);
 
-  flush_problems ();
+  no_preen (severe);
 
-  if (severe && preen)
-    punt ();
+  resolve_problem (0);
 }
 
 /* Like problem, but appends a helpful description of the given inode number to
@@ -345,7 +353,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
     }
 
   if (ino < ROOTINO || ino > maxino)
-    pextend ("(BOGUS INODE) I=%d", ino);
+    pextend (" (BOGUS INODE) I=%d", ino);
   else
     {
       char *p;
@@ -369,8 +377,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
       pextend (" MT=%12.12s %4.4s", &p[4], &p[20]);
     }
 
-  if (severe && preen)
-    punt ();
+  no_preen (severe);
 }
 
 /* Print a successful resolution to a pending problem.  Must follow a call to
