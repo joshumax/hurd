@@ -41,7 +41,7 @@ setup (char *dev)
       perror (dev);
       return 0;
     }
-  if (!S_ISDIR (st.st_mode))
+  if (!S_ISCHR (st.st_mode))
     {
       pfatal ("%s is not a character device", dev);
       if (!reply ("CONTINUE"))
