@@ -1,5 +1,5 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -73,7 +73,6 @@ typedef struct stat io_statbuf_t;
 #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
 /* These two are passed through by the exec server but not examined by it.  */
-#define	EXEC_TRACED	0x00000008 /* Process is traced.  */
 #define	EXEC_STACK_ARGS	0x00000010 /* Use arguments from stack, not RPC.  */
 #define	EXEC_INHERITED	(EXEC_TRACED) /* Flags inherited by later execs.  */
 
@@ -93,7 +92,7 @@ enum retry_type
      "fd/%u" means file descriptor N;
 
      "machtype/..." means replace `machtype' with the numbers in decimal
-		    returned by the user's kernel as the cpu_type (N) and 
+		    returned by the user's kernel as the cpu_type (N) and
 		    cpu_subtype (M) (producing N/M/...) and then retry
 		    as for FS_RETRY_NORMAL.
 
@@ -163,13 +162,13 @@ enum file_storage_class
 };
 
 /* STORAGE_DEVICE implies that:
-    
+
    STORAGE_PORT, if non-null, is a device_t holding the data.
-   
+
    STORAGE_NAME, if non-null, is the name (as for device_open) of the
    device holding the data.  (Caveat: use storage_port in preference
    to storage_name for actual I/O)
-   
+
    The even members of ADDRESSES specify the physical addresses of the
    data of the file, in order (in units appropriate as a RECNUM to
    device_read/write) .  The odd members specify the lengths (in
@@ -193,7 +192,7 @@ enum file_storage_class
    length of the segment.  -1 addresses are holes; zero lengths
    should be ignored.
 
-   STORAGE_MISC may contain additional type-specific information. 
+   STORAGE_MISC may contain additional type-specific information.
 */
 
 /* STORAGE_TASK is like STORAGE_HURD_FILE, except that the data is found
@@ -248,7 +247,7 @@ struct procinfo
   pid_t logincollection;
 
   int nthreads;			/* size of pi_threadinfos */
-  
+
   struct task_basic_info taskinfo;
   struct
     {
@@ -325,6 +324,7 @@ enum
     INIT_SIGMASK,
     INIT_SIGIGN,
     INIT_SIGPENDING,
+    INIT_TRACEMASK,
     INIT_INT_MAX,
   };
 
