@@ -222,7 +222,7 @@ S_proc_wait (struct proc *p,
   if (options & WNOHANG)
     return EWOULDBLOCK;
 
-  if (p->p_waiting || p->msgportwait)
+  if (p->p_waiting || p->p_msgportwait)
     return EBUSY;
   
   p->p_waiting = 1;
