@@ -1,0 +1,861 @@
+/* Script parser for Mach.  */
+
+#include <mach/mach_types.h>
+#include <mach/message.h>
+#include "boot_script.h"
+
+/* This structure describes a command.  */
+struct cmd
+{
+  /* Path of executable.  */
+  char *path;
+
+  /* Task port.  */
+  mach_port_t task;
+
+  /* Argument list.  */
+  struct arg **args;
+
+  /* Amount allocated for `args'.  */
+  int args_alloc;
+
+  /* Next available slot in `args'.  */
+  int args_index;
+
+  /* List of functions that want to be run on command execution.  */
+  struct sym **exec_funcs;
+
+  /* Amount allocated for `exec_funcs'.  */
+  int exec_funcs_alloc;
+
+  /* Next available slot in `exec_funcs'.  */
+  int exec_funcs_index;
+};
+
+/* This structure describes a symbol.  */
+struct sym
+{
+  /* Symbol name.  */
+  char *name;
+
+  /* Pointer to function that returns symbol value.
+     The function should return 0 on success, non-zero otherwise.  */
+  int (*func) (struct cmd *cmd, int *val);
+
+  /* Type of value returned by function.  */
+  int type;
+
+  /* Symbol value.  */
+  int val;
+
+  /* If set, don't create an argument if the symbol
+     appears by itself in an expression.  */
+  int no_arg;
+
+  /* If set, execute function at the time of command execution,
+     not during parsing.  A function with this field set must
+     also have `no_arg' set.  Also, the function's `val' argument
+     will always be NULL.  */
+  int run_on_exec;
+};
+
+/* Type of values symbols can have.  */
+#define VAL_NONE	0	/* none */
+#define VAL_STR		1	/* string */
+#define VAL_PORT	2	/* port */
+#define VAL_SYM		3	/* symbol table entry */
+
+/* This structure describes an argument.  */
+struct arg
+{
+  /* Argument text copied verbatim.  0 if none.  */
+  char *text;
+
+  /* Type of value assigned.  0 if none.  */
+  int type;
+
+  /* Argument value.  */
+  int val;
+};
+
+/* List of commands.  */
+static struct cmd **cmds = 0;
+
+/* Amount allocated for `cmds'.  */
+static int cmds_alloc = 0;
+
+/* Next available slot in `cmds'.  */
+static int cmds_index = 0;
+
+/* Symbol table.  */
+static struct sym **symtab = 0;
+
+/* Amount allocated for `symtab'.  */
+static int symtab_alloc = 0;
+
+/* Next available slot in `symtab'.  */
+static int symtab_index = 0;
+
+void memset (void *str, char c, int size);
+
+/* Create a task.  */
+static int
+create_task (struct cmd *cmd, int *val)
+{
+  cmd->task = boot_script_task_create ();
+  if (cmd->task == 0)
+    return BOOT_SCRIPT_MACH_ERROR;
+  boot_script_task_suspend (cmd->task);
+  *val = (int) cmd->task;
+  return 0;
+}
+
+/* Resume a task.  */
+static int
+resume_task (struct cmd *cmd, int *val)
+{
+  if (boot_script_task_resume (cmd->task))
+    return BOOT_SCRIPT_MACH_ERROR;
+  return 0;
+}
+
+/* Return a send right to the host port.  */
+static int
+get_host_port (struct cmd *cmd, int *val)
+{
+  *val = (int) boot_script_host_port;
+  return 0;
+}
+
+/* Return a send right to the master device port.  */
+static int
+get_device_port (struct cmd *cmd, int *val)
+{
+  *val = (int) boot_script_device_port;
+  return 0;
+}
+
+/* Return the root device name.  */
+static int
+get_root_device (struct cmd *cmd, int *val)
+{
+  *val = (int) boot_script_root_device;
+  return 0;
+}
+
+/* Set the bootstrap port for a task.  */
+static int
+set_bootstrap_port (struct cmd *cmd, int *val)
+{
+  boot_script_set_bootstrap_port (cmd->task, boot_script_bootstrap_port);
+  return 0;
+}
+
+/* List of builtin symbols.  */
+static struct sym builtin_symbols[] =
+{
+  { "task-create", create_task, VAL_PORT, 0, 1, 0 },
+  { "task-resume", resume_task, VAL_NONE, 0, 1, 1 },
+  { "host-port", get_host_port, VAL_PORT, 0, 0, 0 },
+  { "device-port", get_device_port, VAL_PORT, 0, 0, 0 },
+  { "bootstrap-port", set_bootstrap_port, VAL_NONE, 0, 1, 0 },
+  { "root-device", get_root_device, VAL_STR, 0, 0, 0 }
+};
+#define NUM_BUILTIN (sizeof (builtin_symbols) / sizeof (builtin_symbols[0]))
+
+/* Free CMD and all storage associated with it.
+   If ABORTING is set, terminate the task associated with CMD,
+   otherwise just deallocate the send right.  */
+static void
+free_cmd (struct cmd *cmd, int aborting)
+{
+  if (cmd->task)
+    {
+      if (aborting)
+	boot_script_task_terminate (cmd->task);
+      else
+	boot_script_port_deallocate (boot_script_task_port, cmd->task);
+    }
+  if (cmd->args)
+    {
+      int i;
+
+      for (i = 0; i < cmd->args_index; i++)
+	boot_script_free (cmd->args[i], sizeof (struct arg));
+      boot_script_free (cmd->args, cmd->args_alloc * sizeof (struct arg *));
+    }
+  if (cmd->exec_funcs)
+    boot_script_free (cmd->exec_funcs,
+		      cmd->exec_funcs_alloc * sizeof (struct sym *));
+  boot_script_free (cmd, sizeof (struct cmd));
+}
+
+/* Free all storage allocated by the parser.
+   If ABORTING is set, terminate all tasks.  */
+static void
+cleanup (int aborting)
+{
+  int i;
+
+  for (i = 0; i < cmds_index; i++)
+    free_cmd (cmds[i], aborting);
+  boot_script_free (cmds, cmds_alloc * sizeof (struct cmd *));
+  cmds = 0;
+  cmds_index = cmds_alloc = 0;
+
+  for (i = 0; i < symtab_index; i++)
+    boot_script_free (symtab[i], sizeof (struct sym));
+  boot_script_free (symtab, symtab_alloc * sizeof (struct sym *));
+  symtab = 0;
+  symtab_index = symtab_alloc = 0;
+}
+
+/* Add PTR to the list of pointers PTR_LIST, which
+   currently has ALLOC amount of space allocated to it, and
+   whose next available slot is INDEX.  If more space
+   needs to to allocated, INCR is the amount by which
+   to increase it.  Return 0 on success, non-zero otherwise.  */
+static int
+add_list (void *ptr, void ***ptr_list, int *alloc, int *index, int incr)
+{
+  if (*index == *alloc)
+    {
+      void **p;
+
+      *alloc += incr;
+      p = boot_script_malloc (*alloc * sizeof (void *));
+      if (! p)
+	{
+	  *alloc -= incr;
+	  return 1;
+	}
+      if (*ptr_list)
+	{
+	  memcpy (p, *ptr_list, *index * sizeof (void *));
+	  boot_script_free (*ptr_list, *index * sizeof (void *));
+	}
+      *ptr_list = p;
+    }
+  *(*ptr_list + *index) = ptr;
+  *index += 1;
+  return 0;
+}
+
+/* Create an argument with TEXT, value type TYPE, and value VAL.
+   Add the argument to the argument list of CMD.  */
+static struct arg *
+add_arg (struct cmd *cmd, char *text, int type, int val)
+{
+  struct arg *arg;
+
+  arg = boot_script_malloc (sizeof (struct arg));
+  if (arg)
+    {
+      arg->text = text;
+      arg->type = type;
+      arg->val = val;
+      if (add_list (arg, (void ***) &cmd->args,
+		    &cmd->args_alloc, &cmd->args_index, 5))
+	{
+	  boot_script_free (arg, sizeof (struct arg));
+	  return 0;
+	}
+    }
+  return arg;
+}
+
+/* Search for the symbol NAME in the symbol table.  */
+static struct sym *
+sym_lookup (char *name)
+{
+  int i;
+
+  for (i = 0; i < symtab_index; i++)
+    if (! strcmp (name, symtab[i]->name))
+      return symtab[i];
+  return 0;
+}
+
+/* Create an entry for symbol NAME in the symbol table.  */
+static struct sym *
+sym_enter (char *name)
+{
+  struct sym *sym;
+
+  sym = boot_script_malloc (sizeof (struct sym));
+  if (sym)
+    {
+      memset (sym, 0, sizeof (struct sym));
+      sym->name = name;
+      if (add_list (sym, (void ***) &symtab, &symtab_alloc, &symtab_index, 20))
+	{
+	  boot_script_free (sym, sizeof (struct sym));
+	  return 0;
+	}
+    }
+  return sym;
+}
+
+/* Parse the command line CMDLINE.  */
+int
+boot_script_parse_line (char *cmdline)
+{
+  char *p, *q;
+  int error;
+  struct cmd *cmd;
+  struct arg *arg;
+
+  /* Extract command name.  Ignore line if it lacks a command.  */
+  for (p = cmdline; *p == ' ' || *p == '\t'; p++)
+    ;
+  for (q = p; *q && *q != ' ' && *q != '\t' && *q != '\n'; q++)
+    ;
+  if (p == q)
+    return 0;
+  *q = '\0';
+
+  /* Allocate a command structure.  */
+  cmd = boot_script_malloc (sizeof (struct cmd));
+  if (! cmd)
+    return BOOT_SCRIPT_NOMEM;
+  memset (cmd, 0, sizeof (struct cmd));
+  cmd->path = p;
+  p = q + 1;
+
+  for (arg = 0;;)
+    {
+      if (! arg)
+	{
+	  /* Skip whitespace.  */
+	  while (*p == ' ' || *p == '\t')
+	    p++;
+
+	  /* End of command line.  */
+	  if (! *p || *p == '\n')
+	    {
+	      /* Add command to list.  */
+	      if (add_list (cmd, (void ***) &cmds,
+			    &cmds_alloc, &cmds_index, 10))
+		{
+		  error = BOOT_SCRIPT_NOMEM;
+		  goto bad;
+		}
+	      return 0;
+	    }
+	}
+
+      /* Look for a symbol.  */
+      if (arg || (*p == '$' && *(p + 1) == '{'))
+	{
+	  int saw_assignment = 0;
+	  struct sym *sym = 0;
+
+	  for (p += 2;;)
+	    {
+	      char c;
+	      int i, val, type, is_builtin = 0;
+	      struct sym *s;
+
+	      /* Parse symbol name.  */
+	      for (q = p; *q && *q != '\n' && *q != '}' && *q != '='; q++)
+		;
+	      if (p == q || ! *q || *q == '\n')
+		{
+		  error = BOOT_SCRIPT_SYNTAX_ERROR;
+		  goto bad;
+		}
+	      c = *q;
+	      *q = '\0';
+
+	      /* See if this is a builtin symbol.  */
+	      for (i = 0; i < NUM_BUILTIN; i++)
+		if (! strcmp (p, builtin_symbols[i].name))
+		  break;
+
+	      if (i < NUM_BUILTIN)
+		{
+		  is_builtin = 1;
+		  s = &builtin_symbols[i];
+
+		  /* Check that assignment is valid.  */
+		  if (c != '}' || ((arg || sym) && s->type == VAL_NONE))
+		    {
+		      error = BOOT_SCRIPT_INVALID_ASG;
+		      goto bad;
+		    }
+
+		  if (! s->run_on_exec)
+		    {
+		      error = (*s->func) (cmd, &val);
+		      if (error)
+			goto bad;
+		      type = s->type;
+		    }
+		  else
+		    {
+		      if (add_list (s, (void ***) &cmd->exec_funcs,
+				    &cmd->exec_funcs_alloc,
+				    &cmd->exec_funcs_index, 5))
+			{
+			  error = BOOT_SCRIPT_NOMEM;
+			  goto bad;
+			}
+		      type = VAL_NONE;
+		      goto out;
+		    }
+		}
+	      else
+		{
+		  /* Look up symbol in symbol table.
+		     If no entry exists, create one.  */
+		  s = sym_lookup (p);
+		  if (! s)
+		    {
+		      s = sym_enter (p);
+		      if (! s)
+			{
+			  error = BOOT_SCRIPT_NOMEM;
+			  goto bad;
+			}
+		    }
+		  type = VAL_SYM;
+		  val = (int) s;
+		}
+
+	      if (sym)
+		{
+		  sym->type = type;
+		  sym->val = val;
+		}
+	      else if (arg)
+		{
+		  arg->type = type;
+		  arg->val = val;
+		}
+
+	    out:
+	      p = q + 1;
+	      if (c == '}')
+		{
+		  /* Create an argument if necessary.
+		     We create an argument if the symbol appears
+		     in the expression by itself, and it's `no_arg'
+		     field is 0.
+
+		     NOTE: This is temporary till the boot filesystem
+		     servers support arguments.  When that happens,
+		     symbol values will only be printed if they're
+		     associated with an argument.  */
+		  if (! arg && ! saw_assignment && ! s->no_arg)
+		    {
+		      struct arg *a;
+
+		      if (is_builtin)
+			a = add_arg (cmd, 0, type, val);
+		      else
+			a = add_arg (cmd, 0, VAL_SYM, (int) s);
+		      if (! a)
+			{
+			  error = BOOT_SCRIPT_NOMEM;
+			  goto bad;
+			}
+		    }
+		  arg = 0;
+		  break;
+		}
+	      else
+		saw_assignment = 1;
+	      if (! is_builtin)
+		sym = s;
+	    }
+	}
+      else
+	{
+	  char c;
+
+	  /* Command argument.  Just copy the text.  */
+	  for (q = p;; q++)
+	    {
+	      if (! *q || *q == ' ' || *q == '\t' || *q == '\n')
+		break;
+	      if (*q == '$' && *(q + 1) == '{')
+		break;
+	    }
+	  c = *q;
+	  *q = '\0';
+
+	  /* Add argument to list.  */
+	  arg = add_arg (cmd, p, VAL_NONE, 0);
+	  if (! arg)
+	    {
+	      error = BOOT_SCRIPT_NOMEM;
+	      goto bad;
+	    }
+	  if (c == '$')
+	    p = q;
+	  else
+	    {
+	      if (c)
+		p = q + 1;
+	      else
+		p = q;
+	      arg = 0;
+	    }
+	}
+    }
+
+ bad:
+  free_cmd (cmd, 1);
+  cleanup (1);
+  return error;
+}
+
+/* Ensure that the command line buffer can accommodate LEN bytes of space.  */
+#define CHECK_CMDLINE_LEN(len) \
+{ \
+  if (cmdline_alloc - cmdline_index < len) \
+    { \
+      char *ptr; \
+      int alloc; \
+      alloc = cmdline_alloc + len - (cmdline_alloc - cmdline_index) + 100; \
+      ptr = boot_script_malloc (alloc); \
+      if (! ptr) \
+	{ \
+	  error = BOOT_SCRIPT_NOMEM; \
+	  goto done; \
+	} \
+      memcpy (ptr, cmdline, cmdline_index); \
+      boot_script_free (cmdline, cmdline_alloc); \
+      cmdline = ptr; \
+      cmdline_alloc = alloc; \
+    } \
+}
+
+/* Execute commands previously parsed.  */
+int
+boot_script_exec ()
+{
+  int cmd_index;
+
+  for (cmd_index = 0; cmd_index < cmds_index; cmd_index++)
+    {
+      char **argv, *cmdline;
+      int i, argc, cmdline_alloc;
+      int cmdline_index, error, arg_index;
+      struct cmd *cmd = cmds[cmd_index];
+
+      /* Skip command if it doesn't have an associated task.  */
+      if (cmd->task == 0)
+	continue;
+
+      /* Allocate a command line and copy command name.  */
+      cmdline_index = strlen (cmd->path) + 1;
+      cmdline_alloc = cmdline_index + 100;
+      cmdline = boot_script_malloc (cmdline_alloc);
+      if (! cmdline)
+	{
+	  cleanup (1);
+	  return BOOT_SCRIPT_NOMEM;
+	}
+      memcpy (cmdline, cmd->path, cmdline_index);
+
+      /* Allocate argument vector.  */
+      argv = boot_script_malloc (sizeof (char *) * (cmd->args_index + 1));
+      if (! argv)
+	{
+	  boot_script_free (cmdline, cmdline_alloc);
+	  cleanup (1);
+	  return BOOT_SCRIPT_NOMEM;
+	}
+      argv[0] = cmdline;
+      argc = 1;
+
+      /* Build arguments.  */
+      for (arg_index = 0; arg_index < cmd->args_index; arg_index++)
+	{
+	  struct arg *arg = cmd->args[arg_index];
+
+	  /* Copy argument text.  */
+	  if (arg->text)
+	    {
+	      int len = strlen (arg->text);
+
+	      if (arg->type == VAL_NONE)
+		len++;
+	      CHECK_CMDLINE_LEN (len);
+	      memcpy (cmdline + cmdline_index, arg->text, len);
+	      argv[argc++] = &cmdline[cmdline_index];
+	      cmdline_index += len;
+	    }
+
+	  /* Add value of any symbol associated with this argument.  */
+	  if (arg->type != VAL_NONE)
+	    {
+	      char *p = 0, buf[50];
+	      int len = 0;
+
+	      if (arg->type == VAL_SYM)
+		{
+		  struct sym *sym = (struct sym *) arg->val;
+
+		  /* Resolve symbol value.  */
+		  while (sym->type == VAL_SYM)
+		    sym = (struct sym *) sym->val;
+		  if (sym->type == VAL_NONE)
+		    {
+		      error = BOOT_SCRIPT_UNDEF_SYM;
+		      goto done;
+		    }
+		  arg->type = sym->type;
+		  arg->val = sym->val;
+		}
+
+	      /* Print argument value.  */
+	      switch (arg->type)
+		{
+		case VAL_STR:
+		  p = (char *) arg->val;
+		  len = strlen (p);
+		  break;
+
+		case VAL_PORT:
+		  /* Insert send right.  */
+		  if ((boot_script_port_insert_right
+		       (cmd->task, (mach_port_t) arg->val,
+			(mach_port_t) arg->val, MACH_MSG_TYPE_COPY_SEND)))
+		    {
+		      error = BOOT_SCRIPT_MACH_ERROR;
+		      goto done;
+		    }
+
+		  i = arg->val;
+		  p = buf + sizeof (buf);
+		  len = 0;
+		  do
+		    {
+		      *--p = i % 10 + '0';
+		      len++;
+		    }
+		  while (i /= 10);
+		  break;
+		}
+	      len++;
+	      CHECK_CMDLINE_LEN (len);
+	      memcpy (cmdline + cmdline_index, p, len - 1);
+	      *(cmdline + cmdline_index + len - 1) = '\0';
+	      if (! arg->text)
+		  argv[argc++] = &cmdline[cmdline_index];
+	      cmdline_index += len;	      
+	    }
+	}
+
+      /* Terminate argument vector.  */
+      argv[argc] = 0;
+
+      /* Execute the command.  */
+      if (boot_script_exec_cmd (cmd->task, cmd->path,
+				argc, argv, cmdline, cmdline_index))
+	{
+	  error = BOOT_SCRIPT_EXEC_ERROR;
+	  goto done;
+	}
+
+      error = 0;
+
+    done:
+      boot_script_free (cmdline, cmdline_alloc);
+      boot_script_free (argv, (cmd->args_index + 1) * sizeof (char *));
+      if (error)
+	{
+	  cleanup (1);
+	  return error;
+	}
+    }
+
+  for (cmd_index = 0; cmd_index < cmds_index; cmd_index++)
+    {
+      int i;
+      struct cmd *cmd = cmds[cmd_index];
+
+      if (cmd->task)
+	/* Execute functions that want to be run on exec.  */
+	for (i = 0; i < cmd->exec_funcs_index; i++)
+	  {
+	    struct sym *sym = cmd->exec_funcs[i];
+	    int error = (*sym->func) (cmd, 0);
+	    if (error)
+	      {
+		cleanup (1);
+		return error;
+	      }
+	  }
+    }
+
+  cleanup (0);
+  return 0;
+}
+
+/* Return a string describing ERR.  */
+char *
+boot_script_error_string (int err)
+{
+  switch (err)
+    {
+    case BOOT_SCRIPT_NOMEM:
+      return "no memory";
+
+    case BOOT_SCRIPT_SYNTAX_ERROR:
+      return "syntax error";
+
+    case BOOT_SCRIPT_INVALID_ASG:
+      return "invalid variable in assignment";
+
+    case BOOT_SCRIPT_MACH_ERROR:
+      return "mach error";
+
+    case BOOT_SCRIPT_UNDEF_SYM:
+      return "undefined symbol";
+
+    case BOOT_SCRIPT_EXEC_ERROR:
+      return "exec error";
+    }
+  return 0;
+}
+
+#ifdef BOOT_SCRIPT_TEST
+#include <mach.h>
+#include <stdio.h>
+
+extern void *malloc (int size);
+extern void free (void *ptr);
+
+char *boot_script_root_device = "hd0a";
+mach_port_t boot_script_task_port;
+mach_port_t boot_script_host_port;
+mach_port_t boot_script_device_port;
+mach_port_t boot_script_bootstrap_port = MACH_PORT_NULL;
+
+void *
+boot_script_malloc (int size)
+{
+  return malloc (size);
+}
+
+void
+boot_script_free (void *ptr, int size)
+{
+  free (ptr);
+}
+
+mach_port_t
+boot_script_task_create ()
+{
+  mach_port_t task;
+
+  if (task_create (mach_task_self (), FALSE, &task))
+    return 0;
+  return task;
+}
+
+void
+boot_script_task_terminate (mach_port_t task)
+{
+  task_terminate (task);
+}
+
+void
+boot_script_task_suspend (mach_port_t task)
+{
+  task_suspend (task);
+}
+
+int
+boot_script_task_resume (mach_port_t task)
+{
+  mach_port_t bootport;
+
+  task_get_bootstrap_port (task, &bootport);
+  printf ("bootstrap port %d\n", bootport);
+  printf ("boot_script_task_resume()\n");
+  return 0;
+}
+
+void
+boot_script_port_deallocate (mach_port_t task, mach_port_t port)
+{
+  mach_port_deallocate (task, port);
+}
+
+int
+boot_script_port_insert_right (mach_port_t task, mach_port_t name,
+			       mach_port_t port, mach_msg_type_name_t right)
+{
+  if (mach_port_insert_right (task, name, port, right))
+    return 1;
+  return 0;
+}
+
+void
+boot_script_set_bootstrap_port (mach_port_t task, mach_port_t port)
+{
+  task_set_bootstrap_port (task, port);
+}
+
+int
+boot_script_exec_cmd (mach_port_t task, char *path, int argc,
+		      char **argv, char *strings, int stringlen)
+{
+  int i;
+
+  for (i = 0; i < argc; i++)
+    printf ("%s ", argv[i]);
+  printf ("\n");
+  return 0;
+}
+
+void
+main (int argc, char **argv)
+{
+  char buf[500], *p;
+  int len;
+  FILE *fp;
+
+  if (argc < 2)
+    {
+      fprintf (stderr, "Usage: %s <script>\n", argv[0]);
+      exit (1);
+    }
+  fp = fopen (argv[1], "r");
+  if (! fp)
+    {
+      fprintf (stderr, "Can't open %s\n", argv[1]);
+      exit (1);
+    }
+  boot_script_task_port = mach_task_self ();
+  boot_script_host_port = task_by_pid (-1);
+  boot_script_device_port = task_by_pid (-2);
+  if (! boot_script_host_port || ! boot_script_device_port)
+    {
+      fprintf (stderr, "Unable to get privileged ports\n");
+      exit (1);
+    }
+  p = buf;
+  len = sizeof (buf);
+  while (fgets (p, len, fp))
+    {
+      int i, err;
+
+      i = strlen (p) + 1;
+      err = boot_script_parse_line (p);
+      if (err)
+	{
+	  fprintf (stderr, "error %s\n", boot_script_error_string (err));
+	  exit (1);
+	}
+      p += i;
+      len -= i;
+    }
+  boot_script_exec ();
+  exit (0);
+}
+#endif /* BOOT_SCRIPT_TEST */
