@@ -102,11 +102,11 @@ error_t
 pager_get_error (struct pager *p, vm_address_t addr);
 
 /* Allocate a user reference to pager structure P */
-error_t
+void
 pager_reference (struct pager *p);
 
 /* Deallocate a user reference to pager structure P */
-error_t
+void
 pager_unreference (struct pager *p);
 
 /* The user must set this variable.  This will be the type used in calls
