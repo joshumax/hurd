@@ -36,7 +36,7 @@
    field name, EINVAL is returned.  Otherwise 0 is returned.  See ps.h for an
    explanation of how FMT is derived from SRC.  */
 error_t
-ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
+ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt)
 {
   ps_fmt_t new_fmt;
   int needs = 0;
@@ -144,14 +144,11 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
 	  name--;
 	  if (field->title)
 	    field->title--;
-	  else
-	    /* If there wasn't a title, give it the same one as the name.  */
-	    field->title = name;
 
 	  /* Now that we've made room, do the termination of NAME.  */
 	  src[-1] = '\0';
 
-	  field->spec = find_ps_fmt_spec(name, fmt_specs);
+	  field->spec = ps_fmt_specs_find (fmt_specs, name);
 	  if (!field->spec)
 	    /* Failed to find any named spec called NAME.  */
 	    {
@@ -161,11 +158,18 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
 	      return EINVAL;
 	    }
 
+	  if (! field->title)
+	    /* No explicit title specified in the fmt string.  */
+	    if (field->spec->title)
+	      field->title = field->spec->title; /* But the spec has one.  */
+	    else
+	      field->title = name; /* Just use the field name.  */
+
 	  /* Add FIELD's required pstat_flags to FMT's set */
 	  needs |= ps_getter_needs(ps_fmt_spec_getter(field->spec));
 
 	  if (!explicit_width)
-	    field->width = ps_fmt_spec_default_width(field->spec);
+	    field->width = ps_fmt_spec_width(field->spec);
 
 	  /* Skip optional trailing `/' after the spec name.  */
 	  if (*src == '/')
@@ -191,6 +195,7 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
   new_fmt->fields = fields;
   new_fmt->num_fields = field - fields;
   new_fmt->needs = needs;
+  new_fmt->inval = 0;
 
   *fmt = new_fmt;
 
@@ -280,8 +285,8 @@ ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps, ps_stream_t stream)
 	      err = output_fn(ps, getter, width, stream);
 	    }
 	  else
-	    /* Nope, just print spaces.  */
-	    err = ps_stream_space (stream, ABS(width));
+	    /* Something to display in invalid fields.  */
+	    err = ps_stream_write_field (stream, fmt->inval ?: "", width);
 	}
 
       field++;
@@ -389,4 +394,26 @@ ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags)
     }
 
   ps_fmt_squash (fmt, squashable_spec);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Try and restrict the number of output columns in FMT to WIDTH.  */
+void
+ps_fmt_set_output_width (ps_fmt_t fmt, int width)
+{
+  struct ps_fmt_field *field = ps_fmt_fields (fmt);
+  int nfields = ps_fmt_num_fields (fmt);
+
+  /* We're not very clever about this -- just add up the width of all the
+     fields but the last, and if the last has no existing width (as is
+     the case in most output formats), give it whatever is left over.  */
+  while (--nfields > 0)
+    {
+      int fw = field->width;
+      width -= field->pfx_len + (fw < 0 ? -fw : fw);
+      field++;
+    }
+  if (nfields == 0 && field->width == 0 && width > 0)
+    field->width = width - field->pfx_len - 1; /* 1 for the CR. */
 }
