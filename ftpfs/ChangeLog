@@ -1,3 +1,29 @@
+1997-08-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (struct new_entry_state): DIR_PFX & DIR_PFX_LEN fields removed.
+	(update_new_entry): Don't futz with NAME anymore.
+
+	* ftpfs.c (ftpfs_hooks): Initialize INTERRUPT_CHECK Field.
+	* ccache.c (ccache_read): Check for thread cancelation.
+
+1997-08-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (update_ordered_entry): Correctly handle a non-empty list.
+	Only insert E in the ordered entry list if it's not already there.
+	(refresh_dir): Don't clear the ordered entry list.
+	Only reset bulk stat detection state if actually doing a bulk stat.
+	Initialize DFS.prev_entry_next_p instead of DFS.prev_entry.
+	(struct dir_fetch_state): Replace PREV_ENTRY by PREV_ENTRY_NEXT_P.
+	(lookup): Grow the hash table when it gets large.
+	(rehash): Zero the new hash table.
+
+	* dir.c (path_append): Macro removed.
+	(ftpfs_dir_lookup, ftpfs_refresh_node): Use ftp_conn_append_name
+	instead of path_append.
+	Don't set dir_pfx fields in RES anymore.
+	(update_old_entry): Don't futz with NAME anymore.
+	(struct refresh_entry_state): DIR_PFX & DIR_PFX_LEN fields removed.
+
 1997-08-07  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (DEFAULT_NAME_TIMEOUT): New macro.
