@@ -92,7 +92,9 @@ void fshelp_done_with_node (void *);
    fshelp_start_translator time with the NODE argument to that call);
    *DOTDOT will be set similarly, but from the DIR argument to
    fshelp_start_translator. *REALPOLY and *DOTDOTPOLY will be set to
-   the Mach message transmission types for those two ports.  */
+   the Mach message transmission types for those two ports. 
+   If this routine returns an error, then the CTL port must be deallocated
+   by the caller. */
 error_t fshelp_handle_fsys_startup (void *portstruct, mach_port_t ctl,
 				    mach_port_t *real, 
 				    mach_msg_type_name_t *realpoly,
