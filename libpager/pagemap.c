@@ -31,7 +31,8 @@ _pager_pagemap_resize (struct pager *p, vm_address_t off)
       void *newaddr;
       int newsize = round_page (off);
 
-      err = vm_allocate (mach_task_self (), (u_int *)&newaddr, newsize, 1);
+      newaddr = mmap (0, newsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = (newaddr == (void *) -1) ? errno : 0;
       if (! err)
 	{
 	  bcopy (p->pagemap, newaddr, p->pagemapsize);
