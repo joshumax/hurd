@@ -83,7 +83,7 @@ pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 }
 
 int debug_flag = 0;
-struct mutex debug_lock;
+spin_lock_t debug_lock = SPIN_LOCK_INITIALIZER;
 
 void main(int argc, char *argv[])
 {
@@ -118,8 +118,6 @@ void main(int argc, char *argv[])
   err = sock_global_init ();
   if (err)
     error(3, err, "Initializing");
-
-mutex_init (&debug_lock);
 
   /* Reply to our parent */
   err =
