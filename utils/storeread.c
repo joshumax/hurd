@@ -1,6 +1,6 @@
 /* Write portions of a store to stdout
 
-   Copyright (C) 1996,97,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001,02,03 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -35,8 +35,10 @@ struct argp_option options[] = {
   {"block-size", 'b', "BYTES", 0, "Set the file block size"},
   {0, 0}
 };
-char *arg_doc = "FILE [ADDR [LENGTH]]...";
-char *doc = "\vADDR is in blocks, and defaults to 0; LENGTH is in bytes, and defaults to the remainder of FILE.";
+const char arg_doc[] = "FILE [ADDR [LENGTH]]...";
+const char doc[] = "Write portions of the contents of a store to stdout"
+"\vADDR is in blocks, and defaults to 0;"
+" LENGTH is in bytes, and defaults to the remainder of FILE.";
 
 int
 main (int argc, char **argv)
