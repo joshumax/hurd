@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,93 +23,111 @@
    presumes that you are using the iohelp library as well.  It
    is divided into separate facilities which may be used independently.  */
 
+
+/* Passive translator linkage */
+/* These routines are self-contained and start passive translators,
+   returning the control port.  They do not require multi threading
+   or the ports library. */
 
-/* Translator linkage.  These routines only work for multi-threaded
-   servers, and assume you are using the ports library.  */
+/* Start a passive translator NAME with arguments ARGZ (length
+   ARGZ_LEN).  Initialize the initports to PORTS (length PORTS_LEN),
+   the initints to INTS (length INTS_LEN), and the file descriptor
+   table to FDS (length FDS_LEN).  Return the control port in
+   *CONTROL.  If the translator doesn't respond or die in TIMEOUT
+   milliseconds (if TIMEOUT > 0), return an appropriate error.  If the
+   translator dies before responding, return EDIED.  */
+error_t
+fshelp_start_translator_long (mach_port_t underlying,
+			      mach_msg_type_name_t underlying_type,
+			      char *name, char *argz, int argz_len,
+			      mach_port_t *ports, int ports_len,
+			      mach_msg_type_name_t ports_type,
+			      int *ints, int ints_len,
+			      mach_port_t *fds, int fds_len,
+			      mach_msg_type_name_t fds_type,
+			      int timeout, fsys_t *control);
 
-/* Define one of these structures as part of every disk node.  */
-struct trans_link
+
+/* Same as fshelp_start_translator_long, except the initports and ints
+   are copied from our own state, fd[2] is copied from our own stderr,
+   and the other fds are cleared.  */
+error_t
+fshelp_start_translator (mach_port_t underlying,
+			 char *name, char *argz, int argz_len,
+			 int timeout, fsys_t *control);
+
+
+/* Active translator linkage */
+
+/* These routines implement the linkage to active translators needed
+   by any filesystem which supports them.  They require cthreads and
+   use the passive translator routines above, but they don't require
+   the ports library at all.  */
+
+struct transbox 
 {
-  /* control port for the child filesystem */
-  fsys_t control;
-
-  /* this is woken up when fsys_startup is receieved 
-     from the child filesystem. */
-  struct condition initwait;
-
-  /* Lock of this structure's contents */
-  struct mutex lock;
-
-  /* This indicates that someone has already started up the translator */
-  int starting;
-
-  /* Error to return to user */
-  error_t error;
-
-  /* Linked list of all translators */
-  struct trans_link *next, **prevp;
+  fsys_t active;
+  struct mutex *lock;
+  struct mutex innerlock;
+  void *cookie;
 };
 
-/* The user must define this variable.  This is the libports type for
-   bootstrap ports given to newly started translators. */
-extern int fshelp_transboot_port_type;
+/* This interface is complex, because creating the ports and state
+   necessary for start_translator_long is expensive.  The caller to
+   fshelp_fetch_root should not need to create them on every call, since
+   usually there will be an existing active translator. */
 
-/* Call this before calling any of the other translator linkage routines,
-   normally from your main node initialization routine. */
-void fshelp_init_trans_link (struct trans_link *LINK);
+/* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
+   for the directory in which we are looking; UIDS (length UIDS_LEN)
+   and GIDS (length GIDS_LEN) are the ids of the user responsible for
+   the call.  FLAGS are as for dir_pathtrans (but O_CREAT and O_EXCL
+   are not meaningful and are ignored).  The trasnbox lock (as
+   set by fshelp_transbox_init) must be held before the call, and will
+   be held upon return, but may be released during the operation of
+   the call.  */
+error_t
+fshelp_fetch_root (struct transbox *transbox, file_t dotdot, 
+		   uid_t uids, int uids_len,
+		   uid_t gids, int gids_len,
+		   int flags, fshelp_callback_t callback,
+		   mach_port_t *root);
 
-/* Call to set the control field of translator LINK to CTL
-   directly. */
-void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
+void
+fshelp_transbox_init (struct transbox *transbox,
+		      struct mutex *lock,
+		      void *cookie);
 
-/* Call this when the control field of a translator is null and you
-   want to have the translator started so you can talk to it.  LINK is
-   the trans_link structure for this node; NAME is the file to execute
-   as the translator (*NAME may be modified).  DIR and NODE should be
-   send rights; DIR will be reauthenticated before being given to the
-   translator and NODE should already be authenticated properly.  Both
-   send-rights will be consumed by this call, whatever its exit value.  DIR
-   should refer to the directory holding the node being translater,
-   and will be provided as the cwdir of the process.  NODE should
-   refer to the node being translated, and will be provided as the
-   realnode return value from fsys_startup.  UID and GID are the uid
-   and gid of the process to be started.  */
-error_t fshelp_start_translator (struct trans_link *link, char *name, 
-				 int namelen, file_t dir, file_t node, 
-				 uid_t uid, gid_t gid);
+/* This routine is called by fshelp_fetch_root to fetch more
+   information.  Return the owner and group of the underlying
+   translated file in *UID and *GID; return an unauthenticated
+   node for the file itself in *UNDERLYING, and point *ARGZ at
+   the entire passive translator spec for the file (setting
+   *ARGZ_LEN to the length.)   If there is no passive 
+   translator, then return ENOENT.  */
+typedef void (*fshelp_callback_t) (void *cookie,
+				   mach_port_t *underlying,
+				   uid_t *uid, gid_t *gid, 
+				   char **argz, int *argz_len);
 
-/* Call this when you receive a fsys_startup message on a port of type
-   fshelp_transboot_port_type.  PORTSTRUCT is the result of
-   ports_check_port_type/ports_get_port; this routine does not call
-   ports_done_with_port so the caller normally should.  CTL, REAL, and
-   REALPOLY, are copied from the fsys_startup message; CTL will be
-   installed as the control field of the translator making this call,
-   *REAL will be set to be the underlying port (by calling the
-   MAKE_PORT function set at fshelp_start_translator time with the
-   NODE argument to that call).  *REALPOLY will be set to the Mach
-   message transmission types for that.  If this routine returns an
-   error, then the CTL port must be deallocated by the caller. */
-error_t fshelp_handle_fsys_startup (void *portstruct, mach_port_t ctl,
-				    mach_port_t *real, 
-				    mach_msg_type_name_t *realpoly);
+/* Return true iff there is an active translator on this box */
+extern inline int
+fshelp_translated (struct transbox *box)
+{
+  return (box->active != MACH_PORT_NULL);
+}
 
-/* Install this routine as the ports library type-specific clean routine
-   for ports of type fshelp_transboot_port_type. */
-void fshelp_transboot_clean (void *arg);
+/* Atomically replace the existing active translator port for this box 
+   with NEWACTIVE. */
+error_t fshelp_set_active (struct transbox *box,
+			   fsys_t newactive);
 
-/* Call function FUNC for each translator that has completed its
-   startup.  The arguments to FUNC are the translator and ARG 
-   respectively.  */
-void fshelp_translator_iterate (void (*func)(struct trans_link *, void *),
-				void *arg);
+/* Fetch the control port to make a request on it.  It's a bad idea
+   to do fsys_getroot with the result; use fetch_root instead. */
+error_t fshelp_fetch_control (struct transbox *box,
+			      mach_port_t *control);
 
-/* Set the active translator port to null and clear state.  Deallocate
-   our send right on the translator control port. */
-void fshelp_translator_drop (struct trans_link *link);
-
-/* A trans_link structure is being deallocated; clean up any state
-   we need to. */
-void fshelp_kill_translator (struct trans_link *link);
+/* A transbox is being deallocated, clean associated state. */
+void fshelp_drop_transbox (struct transbox *box);
 
 
 
