@@ -411,7 +411,7 @@ diskfs_grow (struct node *np,
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 	  
-	  dev_write_sync (fsbtodb (sblock, bno) + btodb (osize),
+	  diskfs_device_write_sync (fsbtodb (sblock, bno) + btodb (osize),
 			  zeroblock, sblock->fs_bsize - osize);
 
 	  if (bno != old_pbn)
@@ -446,7 +446,7 @@ diskfs_grow (struct node *np,
 	  record_poke (di, sizeof (struct dinode)); 
 	  np->dn_set_ctime = 1;
 	  
-	  dev_write_sync (fsbtodb (sblock, bno) + btodb (osize),
+	  diskfs_device_write_sync (fsbtodb (sblock, bno) + btodb (osize),
 			  zeroblock, size - osize);
 
 	  if (bno != old_pbn)
@@ -472,7 +472,7 @@ diskfs_grow (struct node *np,
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
 
-	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, size);
+	  diskfs_device_write_sync (fsbtodb (sblock, bno), zeroblock, size);
 	}
     }
   else
@@ -562,7 +562,8 @@ diskfs_grow (struct node *np,
 	goto out;
       indirs[0].bno = siblock[indirs[0].offset] = bno;
       record_poke (siblock, sblock->fs_bsize);
-      dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
+      diskfs_device_write_sync (fsbtodb (sblock, bno),
+				zeroblock, sblock->fs_bsize);
     }
   
  out:
