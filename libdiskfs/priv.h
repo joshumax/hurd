@@ -89,7 +89,7 @@ diskfs_nrele (struct node *np)
   if (!(PROTID))							    \
     return EOPNOTSUPP;							    \
   									    \
-  if (readonly)								    \
+  if (diskfs_readonly)							    \
     return EROFS;							    \
   									    \
   np = (PROTID)->po->np;						    \
@@ -100,3 +100,5 @@ diskfs_nrele (struct node *np)
   mutex_unlock (&np->lock);						    \
   return err;								    \
 })
+
+#define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK)
