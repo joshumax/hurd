@@ -23,12 +23,37 @@ subsystem term 28000;
 
 #include <hurd/hurd_types.defs>
 
+/* Find out what the controlling terminal ID port is.  */
 term_getctty (
 	terminal: io_t;
 	out ctty: mach_port_make_send_t);
 
+/* 
+Return a controlling terminal port for this terminal.  This has the
+following effects:
+
+Certain input characters in certain modes will cause signals to be
+sent to foreground processes which have made this call, on the sigpt
+port they specified.  The ctty ID will be used as the reference port.
+
+Certain conditions will cause SIGHUP to be sent using the same
+mechanism as above.
+
+When background processes do certain operations on a port returned by
+term_become_ctty, the EBACKGROUND error may be returned.  This occurs
+for io_read always, io_write if the appropriate bit is set in the
+status, and various control operations always.  The vanilla port to
+the terminal can still be used to do these operations.
+
+A "foreground process" is one making a request over a port returned by
+term_become_ctty whose pid (as provided in the term_become_ctty call)
+matches the current owner (as set by io_mod_owner) or whose pgrp
+matches the owner in the same fashion.  A "background process" is one
+making a request over a port returned by term_become_ctty which is not
+a foreground process.  */ 
 term_become_ctty (
 	terminal: io_t;
 	pid: pid_t;
 	pgrp: pid_t;
+	sigpt: mach_port_t;
 	out newtty: io_t);
