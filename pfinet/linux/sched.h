@@ -4,7 +4,11 @@
 #include <linux/wait.h>
 #include <sys/signal.h>
 #include <hurd/hurd_types.h>
+#include <linux/kernel.h>
+#include <linux/net.h>
 
+
+extern unsigned long intr_count;
 extern unsigned long volatile jiffies;
 #define HZ 100
 extern struct task_struct *current;
