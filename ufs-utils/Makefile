@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1996 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -18,13 +18,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := newfs
-makemode := utility
+dir := ufs-utils
+makemode := utilities
 
-SRCS = mkfs.c # newfs.c
-OBJS = mkfs.o # newfs.o
-target = mkfs.ufs
+targets = mkfs.ufs clri.ufs stati.ufs
+target-suffix = .ufs
+SRCS = mkfs.c clri.c stati.c
 installationdir = $(sbindir)
+
+OBJS = $(SRCS:.c=.o)
+
+all: $(targets)
 
 include ../Makeconf
 
