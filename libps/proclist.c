@@ -85,7 +85,7 @@ proc_stat_list_grow(proc_stat_list_t pp, int amount)
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
    resulting proc_stat_list_t, and so may be subsequently freed.  */
 error_t
-proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs)
+proc_stat_list_add_pids(proc_stat_list_t pp, pid_t *pids, unsigned num_procs)
 {
   error_t err = proc_stat_list_grow(pp, num_procs);
 
@@ -119,7 +119,7 @@ proc_stat_list_add_pids(proc_stat_list_t pp, int *pids, int num_procs)
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
-proc_stat_list_add_pid(proc_stat_list_t pp, int pid)
+proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid)
 {
   if (proc_stat_list_pid_proc_stat(pp, pid) == NULL)
     {
@@ -149,9 +149,9 @@ proc_stat_list_add_pid(proc_stat_list_t pp, int pid)
 /* Returns the proc_stat_t in PP with a process-id of PID, if there's one,
    otherwise, NULL.  */
 proc_stat_t
-proc_stat_list_pid_proc_stat(proc_stat_list_t pp, int pid)
+proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid)
 {
-  int nprocs = pp->num_procs;
+  unsigned nprocs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
 
   while (nprocs-- > 0)
@@ -214,68 +214,82 @@ proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
    which mig will vm_allocate space for them) */
 #define STATICPIDS 200
 
+/* Add to PP entries for all processes in the collection fetched from the
+   proc server by the function FETCH_FN.  If an error occurs, the system
+   error code is returned, otherwise 0.  */
+static error_t
+proc_stat_list_add_fn_pids(proc_stat_list_t pp,
+			   kern_return_t (*fetch_fn)(process_t proc,
+						     pid_t **pids,
+						     unsigned *num_pids))
+{
+  error_t err;
+  pid_t pid_array[STATICPIDS], *pids = pid_array;
+  unsigned num_pids = STATICPIDS;
+
+  err = (*fetch_fn)(ps_context_server(pp->context), &pids, &num_pids);
+  if (err)
+    return err;
+
+  err = proc_stat_list_add_pids(pp, pids, num_pids);
+
+  if (pids != pid_array)
+    VMFREE(pids, sizeof(pid_t) * num_pids);
+
+  return err;
+}
+
+/* Add to PP entries for all processes in the collection fetched from the
+   proc server by the function FETCH_FN and ID.  If an error occurs, the system error code is returned,
+   otherwise 0.  */
+static error_t
+proc_stat_list_add_id_fn_pids(proc_stat_list_t pp, unsigned id,
+			      kern_return_t (*fetch_fn)(process_t proc, pid_t id,
+							pid_t **pids,
+							unsigned *num_pids))
+{
+  kern_return_t id_fetch_fn(process_t proc, pid_t **pids, unsigned *num_pids)
+    {
+      return (*fetch_fn)(proc, id, pids, num_pids);
+    }
+  return proc_stat_list_add_fn_pids(pp, id_fetch_fn);
+}
+
+/* ---------------------------------------------------------------- */
+
 /* Add to PP entries for all processes at its context.  If an error occurs,
    the system error code is returned, otherwise 0.  */
 error_t
 proc_stat_list_add_all(proc_stat_list_t pp)
 {
-  error_t err;
-  pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
-
-  err = proc_getallpids(ps_context_server(pp->context), &pids, &num_procs);
-  if (err)
-    return err;
-
-  err = proc_stat_list_add_pids(pp, pids, num_procs);
-
-  if (pids != pid_array)
-    VMFREE(pids, sizeof(pid_t) * num_procs);
-
-  return err;
+  return proc_stat_list_add_fn_pids(pp, proc_getallpids);
 }
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
    otherwise 0.  */
 error_t
-proc_stat_list_add_login_coll(proc_stat_list_t pp, int login_id)
+proc_stat_list_add_login_coll(proc_stat_list_t pp, pid_t login_id)
 {
-  error_t err;
-  pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
-
-  err = proc_getloginpids(ps_context_server(pp->context), login_id,
-			  &pids, &num_procs);
-  if (err)
-    return err;
-
-  err = proc_stat_list_add_pids(pp, pids, num_procs);
-
-  if (pids != pid_array)
-    VMFREE(pids, sizeof(pid_t) * num_procs);
-
-  return err;
+  return proc_stat_list_add_id_fn_pids(pp, login_id, proc_getloginpids);
 }
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
    0.  */
 error_t
-proc_stat_list_add_session(proc_stat_list_t pp, int session_id)
+proc_stat_list_add_session(proc_stat_list_t pp, pid_t session_id)
 {
-  error_t err;
-  pid_t pid_array[STATICPIDS], *pids = pid_array, num_procs = STATICPIDS;
+  return proc_stat_list_add_id_fn_pids(pp, session_id, proc_getsessionpids);
+}
 
-  err = proc_getsessionpids(ps_context_server(pp->context), session_id,
-			    &pids, &num_procs);
-  if (err)
-    return err;
-
-  err = proc_stat_list_add_pids(pp, pids, num_procs);
-
-  if (pids != pid_array)
-    VMFREE(pids, sizeof(pid_t) * num_procs);
-
-  return err;
+/* Add to PP entries for all processes in the process group PGRP at its
+   context.  If an error occurs, the system error code is returned, otherwise
+   0.  */
+error_t
+proc_stat_list_add_pgrp(proc_stat_list_t pp, pid_t pgrp)
+{
+  return proc_stat_list_add_id_fn_pids(pp, pgrp, proc_getpgrppids);
 }
 
 /* ---------------------------------------------------------------- */
@@ -284,9 +298,9 @@ proc_stat_list_add_session(proc_stat_list_t pp, int session_id)
    -- you have to check).  If a fatal error occurs, the error code is
    returned, otherwise 0.  */
 error_t
-proc_stat_list_set_flags(proc_stat_list_t pp, int flags)
+proc_stat_list_set_flags(proc_stat_list_t pp, ps_flags_t flags)
 {
-  int nprocs = pp->num_procs;
+  unsigned nprocs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
 
   while (nprocs-- > 0)
@@ -315,11 +329,11 @@ proc_stat_list_set_flags(proc_stat_list_t pp, int flags)
    returned, it returns 0.  */
 error_t
 proc_stat_list_filter1(proc_stat_list_t pp,
-		       int (*predicate)(proc_stat_t ps), int flags,
+		       bool (*predicate)(proc_stat_t ps), ps_flags_t flags,
 		       bool invert)
 {
-  int which = 0;
-  int num_procs = pp->num_procs;
+  unsigned which = 0;
+  unsigned num_procs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
   /* We compact the proc array as we filter, and KEPT points to end of the
      compacted part that we've already processed.  */
@@ -407,10 +421,11 @@ proc_stat_list_sort1(proc_stat_list_t pp,
 	  ps2 = proc_stat_thread_origin(ps2);
       }
 
-    if (!proc_stat_has(ps1, needs) || !proc_stat_has(ps2, needs))
-      /* If we can't call CMP_FN on either proc_stat_t due to lack of the
-	 necessary preconditions, then compare their original positions, to
-	 retain the same order.  */
+    if (ps1 == ps2 || !proc_stat_has(ps1, needs) || !proc_stat_has(ps2, needs))
+      /* If we're comparing a thread with it's process (and so the thread's
+	 been replaced by the process), or we can't call CMP_FN on either
+	 proc_stat_t due to lack of the necessary preconditions, then compare
+	 their original positions, to retain the same order.  */
       return p1 - p2;
     else if (reverse)
       return cmp_fn(ps2, ps1, getter);
@@ -449,9 +464,10 @@ proc_stat_list_sort(proc_stat_list_t pp, ps_fmt_spec_t key, bool reverse)
    characters output.  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
 error_t
-proc_stat_list_fmt(proc_stat_list_t pp, ps_fmt_t fmt, FILE * stream, int *count)
+proc_stat_list_fmt(proc_stat_list_t pp,
+		   ps_fmt_t fmt, FILE *stream, unsigned *count)
 {
-  int nprocs = pp->num_procs;
+  unsigned nprocs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
   error_t err = proc_stat_list_set_flags(pp, ps_fmt_needs(fmt));
 
@@ -479,9 +495,9 @@ proc_stat_list_fmt(proc_stat_list_t pp, ps_fmt_t fmt, FILE * stream, int *count)
    as possible).  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
 error_t
-proc_stat_list_find_bogus_flags(proc_stat_list_t pp, int *flags)
+proc_stat_list_find_bogus_flags(proc_stat_list_t pp, ps_flags_t *flags)
 {
-  int nprocs = pp->num_procs;
+  unsigned nprocs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
   error_t err = proc_stat_list_set_flags(pp, *flags);
 
