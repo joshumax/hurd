@@ -1,3 +1,21 @@
+1997-09-29  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* unsu.c (argp_program_version): Use correct program name.
+
+1997-09-26  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* frobauth-mod.c (frobauth_modify): Add AUTHS & NUM_AUTHS parameters.
+	* frobauth.h (frobauth_modify): Add AUTHS & NUM_AUTHS parameters.
+	* rmauth.c (main): Supply new args to frobauth_modify.
+	* unsu.c (main): Likewise.
+	* setauth.c (main): Likewise.
+	* login.c (main): Use ugids_verify_make_auth instead of
+	ugids_verify and ugids_make_auth.
+	* addauth.c (main): Likewise.
+	* setauth.c (main): Likewise.
+
+	* w.c (main): Remove DEFAULT_OUTPUT variable.
+
 1997-08-08  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpcp.c (eappend, ebasename): New functions.
