@@ -2,14 +2,9 @@
 
 /* Written by Shantanu Goel (goel@cs.columbia.edu).  */
 
-#include <mach.h>
+#include <mach/mach_types.h>
 #include <string.h>
 #include "boot_script.h"
-
-/*
-#include <stdio.h>
-#include <stdlib.h>
-*/
 
 
 /* This structure describes a symbol.  */
@@ -576,15 +571,10 @@ boot_script_exec ()
 
 		case VAL_PORT:
 		  /* Insert send right.  */
-		  if ((mach_port_insert_right
-		       (cmd->task, (mach_port_t) arg->val,
-			(mach_port_t) arg->val, MACH_MSG_TYPE_COPY_SEND)))
-		    {
-		      printf ("(bootstrap): %s: Cannot insert port right %d\n",
-			      cmd->path, arg->val);
-		      error = BOOT_SCRIPT_MACH_ERROR;
-		      goto done;
-		    }
+		  error = boot_script_insert_right (cmd,
+						    (mach_port_t) arg->val);
+		  if (error)
+		    goto done;
 
 		  i = arg->val;
 		  p = buf + sizeof (buf);
