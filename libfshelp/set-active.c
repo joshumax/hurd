@@ -28,9 +28,23 @@ fshelp_set_active (struct transbox *box,
 {
   int cancel;
   
-  if (excl 
-      && ((box->active != MACH_PORT_NULL) || (box->flags & TRANSBOX_STARTING)))
-    return EBUSY;
+  if (excl)
+    {
+      if (box->flags & TRANSBOX_STARTING)
+	return EBUSY;
+      if (box->active != MACH_PORT_NULL)
+	/* It looks like there's an existing translator, but make sure.  */
+	{
+	  mach_port_urefs_t dead_refs;
+	  error_t err =
+	    mach_port_get_refs (mach_task_self (),
+				box->active, MACH_PORT_RIGHT_DEAD_NAME,
+				&dead_refs);
+	  if (!err && dead_refs == 0)
+	    /* Still active, we lose.  */
+	    return EBUSY;
+	}
+    }
   
   while (box->flags & TRANSBOX_STARTING)
     {
