@@ -59,7 +59,8 @@ static int npending_output;
 static struct port_class *phys_reply_class;
 
 /* The Mach device_t representing the terminal. */
-static device_t phys_device = MACH_PORT_NULL;
+/* XXX static */
+device_t phys_device = MACH_PORT_NULL;
 
 /* The ports we get replies on for device calls. */
 static mach_port_t phys_reply_writes = MACH_PORT_NULL;
@@ -553,3 +554,58 @@ device_write_reply (mach_port_t replyport,
 {
   return EOPNOTSUPP;
 }
+
+error_t
+ports_do_mach_notify_send_once (mach_port_t notify)
+{
+  error_t err;
+  
+  mutex_lock (&global_lock);
+  
+  if (notify == phys_reply_writes)
+    {
+      err = 0;
+      start_output ();
+    }
+  else if (notify == phys_reply)
+    {
+      if (input_pending)
+	{
+	  /* xxx */
+	  char msg[] = "Term input check happened\r\n";
+	  device_write_inband (phys_device, 0, 0, msg, sizeof msg);
+	  /* end xxx */
+
+	  input_pending = 0;
+	  
+	  err = device_read_request_inband (phys_device, phys_reply,
+					    D_NOWAIT, 0, vm_page_size);
+	  if (err)
+	    desert_dtr ();
+	  else
+	    input_pending = 1;
+	}
+      else if (open_pending)
+	{
+	  open_pending = 0;
+
+	  report_carrier_on ();
+	  report_carrier_off ();
+	  
+	  mach_port_deallocate (mach_task_self (), phys_reply);
+	  phys_reply = MACH_PORT_NULL;
+	  ports_port_deref (phys_reply_pi);
+	  phys_reply_pi = 0;
+	}
+      err = 0;
+    }
+  else
+    err = EOPNOTSUPP;
+  
+  mutex_unlock (&global_lock);
+  return err;
+}
+
+
+      
+      
