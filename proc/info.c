@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -27,6 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <sys/resource.h>
 #include <assert.h>
+#include <hurd/msg.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -316,7 +317,7 @@ S_proc_getprocinfo (struct proc *callerp,
 		    int flags,
 		    int **piarray,
 		    u_int *piarraylen,
-		    char **noise, unsigned *noise_len)
+		    char **waits, mach_msg_type_number_t *waits_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
@@ -325,7 +326,9 @@ S_proc_getprocinfo (struct proc *callerp,
   error_t err = 0;
   size_t structsize;
   int i;
-  int didalloc = 0;
+  int pi_alloced = 0, waits_alloced = 0;
+  /* The amount of WAITS we've filled in so far.  */
+  mach_msg_type_number_t waits_used = 0;
   u_int tkcount, thcount;
   struct proc *tp;
 
@@ -352,8 +355,8 @@ S_proc_getprocinfo (struct proc *callerp,
 
   if (structsize / sizeof (int) > *piarraylen)
     {
-      vm_allocate (mach_task_self (), (u_int *)piarray, structsize, 1);
-      didalloc = 1;
+      vm_allocate (mach_task_self (), (vm_address_t *)piarray, structsize, 1);
+      pi_alloced = 1;
     }
   *piarraylen = structsize / sizeof (int);
   pi = (struct procinfo *) *piarray;
@@ -404,7 +407,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	      pi->threadinfos[i].died = 1;
 	      continue;
 	    }
-	  if (err && err != MACH_SEND_INVALID_DEST)
+	  else if (err)
 	    break;
 	}
 
@@ -427,27 +430,76 @@ S_proc_getprocinfo (struct proc *callerp,
       if ((flags & PI_FETCH_THREAD_WAITS)
 	  && p->p_msgport != MACH_PORT_NULL
 	  && !p->p_deadmsg)
-#ifdef notyet
-	/* Errors are not significant here. */
-	msg_report_wait (p->p_msgport, thds[i],
-			 &pi->threadinfos[i].rpc_block);
+	{
+	  string_t desc;
+	  size_t desc_len;
+
+	  /* See what thread I is waiting on.  */
+	  if (p->p_msgport == MACH_PORT_NULL)
+	    flags &= ~PI_FETCH_THREAD_WAITS; /* Can't return much... */
+#if 0
+	  else if (nowait_msg_report_wait (p->p_msgport, thds[i]))
 #else
-        pi->threadinfos[i].rpc_block = 0;
+	  else
 #endif
+	    strcpy (desc, "failed"); /* Don't know.  */
+#if 0
+
+	  /* See how long DESC is, being sure not to barf if it's
+	     unterminated (string_t's are fixed length).  */
+	  desc_len =
+	    ((char *)memchr (desc, '\0', sizeof desc) ?: desc + sizeof desc)
+	      - desc;
+
+	  if (waits_used + desc_len + 1 > *waits_len)
+	    /* Not enough room in WAITS, we must allocate more.  */
+	    {
+	      char *new_waits = 0;
+	      mach_msg_type_number_t new_len =
+		round_page (waits_used + desc_len + 1);
+
+	      err = vm_allocate (mach_task_self (),
+				 (vm_address_t *)&new_waits, new_len,1);
+	      if (err)
+		/* Just don't return any more waits information.  */
+		flags &= ~PI_FETCH_THREAD_WAITS;
+	      else
+		{
+		  if (waits_used > 0)
+		    bcopy (*waits, new_waits, waits_used);
+		  if (*waits_len > 0 && waits_alloced)
+		    vm_deallocate (mach_task_self (),
+				   (vm_address_t)*waits, *waits_len);
+		  *waits = new_waits;
+		  *waits_len = new_len;
+		  waits_alloced = 1;
+		}
+	    }
+
+	  if (waits_used + desc_len + 1 > *waits_len)
+	    /* Append DESC to WAITS.  */
+	    {
+	      bcopy (desc, *waits + waits_used, desc_len);
+	      waits_used += desc_len;
+	      (*waits)[waits_used++] = '\0';
+	    }
+#endif
+	}
+
       mach_port_deallocate (mach_task_self (), thds[i]);
     }
 
   if (flags & PI_FETCH_THREADS)
     {
-      vm_deallocate (mach_task_self (), (u_int )thds,
-		     nthreads * sizeof (thread_t));
+      vm_deallocate (mach_task_self (),
+		     (vm_address_t)thds, nthreads * sizeof (thread_t));
     }
-  if (err && didalloc)
+  if (err && pi_alloced)
     vm_deallocate (mach_task_self (), (u_int) *piarray, structsize);
-
-  if (!err)
-    /* Don't return anything for now.  */
-    *noise_len = 0;
+  if (err && waits_alloced)
+    vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
+  else
+    *waits_len = waits_used;
 
   return err;
 }
