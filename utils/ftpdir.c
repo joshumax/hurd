@@ -1,8 +1,7 @@
 /* Get a directory listing using the ftp protocol
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -37,7 +36,7 @@ static struct argp_option options[] =
 {
   {"user",     'u', "USER",0, "User to login as on ftp server"},
   {"password", 'p', "PWD", 0, "USER's password"},
-  {"account",  'a', "ACCT",0, "Account to login as"}, 
+  {"account",  'a', "ACCT",0, "Account to login as"},
   {"separator",'S', "SEP", 0, "String to separate multiple listings"},
   {"prefix",   'P', "PFX", 0, "String to proceed listings; the first and second"
                               " occurances of %s are replace by HOST and DIR"},
@@ -203,7 +202,7 @@ pdirent (const char *name, const struct stat *st, const char *symlink_target,
 {
   char timebuf[20];
   strftime (timebuf, sizeof timebuf, "%Y-%m-%d %H:%M", localtime (&st->st_mtime));
-  printf ("%6o %2d %5d %5d %6ld  %s  %s\n",
+  printf ("%6o %2d %5d %5d %6lld  %s  %s\n",
 	  st->st_mode, st->st_nlink, st->st_uid, st->st_gid, st->st_size,
 	  timebuf, name);
   if (symlink_target)
@@ -223,7 +222,7 @@ ftpdir2 (char *dir, struct ftpdir_host *host)
   return err;
 }
 
-int 
+int
 main (int argc, char **argv)
 {
   struct ftpdir_host *hosts = 0;
