@@ -1,3 +1,13 @@
+Mon Jan 20 16:18:00 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-reparent.c (diskfs_S_dir_reparent): New file.
+	* Makefile (FSSRCS): Add dir-reparent.c.
+
+	* disk-pager.c (preemptor): Renamed from `preempter'; type & init
+	changed as well.
+	(diskfs_start_disk_pager): `preempter' -> `preemptor'.
+	* diskfs-pager.h: Doc fix.
+
 Tue Nov 19 18:21:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* diskfs.h (struct node): Add author_tracks_uid field.

@@ -1,3 +1,8 @@
+Mon Jan 20 16:40:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-reparent.c (netfs_S_dir_reparent): New file.
+	* Makefile (FSSRCS): Add dir-reparent.c.
+
 Sat Nov 23 16:24:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-set-translator.c (netfs_S_file_set_translator): Delete var
