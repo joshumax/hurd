@@ -1,5 +1,7 @@
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* ttys (console): Change type column ($TERM setting) to `mach'.
+
 	* login-.bashrc: Alias su to login.
 
 1999-05-24  Roland McGrath  <roland@baalperazim.frob.com>

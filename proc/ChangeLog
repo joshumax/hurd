@@ -1,5 +1,8 @@
 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* mgt.c (add_tasks): Skip invalid (null) rights in tasks array.
+	* info.c (S_proc_pid2task): Add assert for p_task right validity.
+
 	* main.c: Include <device/device.h>.
 
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
