@@ -1,3 +1,10 @@
+1998-12-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* loop.c (server_loop): Cosmetic.
+
+	* nfsd.h: Include <rpc/types.h>.
+	(bool_t, enum_t): Remove typedefs.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* cache.c (scan_creds): Add braces to silence gcc warning.

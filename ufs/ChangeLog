@@ -1,3 +1,8 @@
+1998-12-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* alloc.c (diskfs_alloc_node): Fix printf format to silence warning.
+	* hyper.c (get_hypermetadata): Likewise.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c (diskfs_lookup_hard): Fix defn with `const'.
