@@ -1,5 +1,11 @@
 1999-06-01  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* init.c (CRASH_FLAGS): Macro removed.
+	(crash_flags): New variable replaces it.
+	(crash_mach, crash_system): Use crash_flags instead of CRASH_FLAGS.
+	(options, parse_opt): Add --crash-debug/-H, to set crash_flags to
+	RB_DEBUGGER.
+
 	* init.c (kernel_command_line): New variable.
 	(frob_kernel_process): New function.
 	(S_startup_essential_task): Call it after init_stdarrays.
