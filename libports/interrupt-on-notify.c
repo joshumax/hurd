@@ -35,8 +35,17 @@ ports_interrupt_rpc_on_notification (void *object,
 
   mutex_lock (&_ports_lock);
 
+  if (! MACH_PORT_VALID (port))
+    /* PORT is already dead or bogus, so interrupt the rpc immediately.  */
+    {
+      hurd_thread_cancel (rpc->thread);
+      mutex_unlock (&_ports_lock);
+      return 0;
+    }
+
   new_req = _ports_free_rpc_notifies;
   if (new_req)
+    /* We got a req off the free list.  */
     _ports_free_rpc_notifies = new_req->next;
   else
     /* No free notify structs, allocate one; it's expected that 99% of the
@@ -92,11 +101,13 @@ ports_interrupt_rpc_on_notification (void *object,
       break;
 
   if (req)
+    /* REQ is already pending for PORT/WHAT on RPC, so free NEW_REQ.  */
     {
       new_req->next = _ports_free_rpc_notifies;
       _ports_free_rpc_notifies = new_req;
     }
   else
+    /* Add a new request for PORT/WHAT on RPC.  */
     {
       req = new_req;
 
