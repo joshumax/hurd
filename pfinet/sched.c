@@ -27,23 +27,6 @@ struct mutex global_lock = MUTEX_INITIALIZER;
 struct task_struct current_contents;
 struct task_struct *current = &current_contents;
 
-/* Call this before doing kernel-level calls; this enforces the
-   non-preemptibility of the kernel. */
-void
-start_kernel (struct task_struct *task)
-{
-  mutex_lock (&global_lock);
-  current = task;
-}
-
-/* Call this when done doing a kernel-level call. */
-void
-end_kernel (void)
-{
-  current = 0;
-  mutex_unlock (&global_lock);
-}
-
 void
 interruptible_sleep_on (struct wait_queue **p)
 {
