@@ -658,7 +658,7 @@ ext2_open_file(master_device_port, path, fp)
 		    bcopy(fp->i_ic.i_block, namebuf, (unsigned) link_len);
 		}
 		else
-#endif	IC_FASTLINK
+#endif	/* IC_FASTLINK */
 		{
 		    /*
 		     * Read file for symbolic link

@@ -632,7 +632,7 @@ ffs_open_file(master_device_port, path, fp)
 		    bcopy(fp->i_symlink, namebuf, (unsigned) link_len);
 		}
 		else
-#endif	IC_FASTLINK
+#endif	/* IC_FASTLINK */
 #if !defined(DISABLE_BSD44_FASTLINKS)
 		/*
 		 * There is no bit for fastlinks in 4.4 but instead
