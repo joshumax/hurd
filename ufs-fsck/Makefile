@@ -28,7 +28,7 @@ LCLHDRS = fsck.h
 target = fsck.ufs
 installationdir = $(sbindir)
 
-vpath tables.c $(srcdir)/ufs
+vpath tables.c $(srcdir)/../ufs
 
 $(target): ../libshouldbeinlibc/libshouldbeinlibc.a
 
