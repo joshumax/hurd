@@ -297,6 +297,8 @@ diskfs_truncate (struct node *node, off_t length)
 
   rwlock_writer_lock (&node->dn->alloc_lock);
 
+  RECORD_LAST (node->dn, LAST_TRUNCATE, length);
+
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
   node->dn_stat.st_size = length;
