@@ -26,6 +26,14 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.11  2000/01/09 23:00:18  roland
+ * 2000-01-09  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* cprocs.c (cproc_alloc): Initialize P->wired and P->msg here (code
+ * 	from cthread_wire).
+ * 	(cthread_wire): Reduce to just an assert, cthreads always wired.
+ * 	(chtread_unwire): Abort if called.
+ *
  * Revision 1.10  1998/07/20 06:59:14  roland
  * 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
  *
@@ -238,6 +246,7 @@
 #include "cthread_internals.h"
 #include <mach/message.h>
 #include <hurd/threadvar.h>	/* GNU */
+#include <assert.h>
 
 /*
  * C Threads imports:
