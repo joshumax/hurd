@@ -29,6 +29,18 @@
 #include <malloc.h>
 #include <ctype.h>
 
+#ifndef _
+/* This is for other GNU distributions with internationalized messages.
+   When compiling libc, the _ macro is predefined.  */
+#ifdef HAVE_LIBINTL_H
+# include <libintl.h>
+# define _(msgid)       gettext (msgid)
+#else
+# define _(msgid)       (msgid)
+# define gettext(msgid) (msgid)
+#endif
+#endif
+
 #include "argp.h"
 #include "argp-fmtstream.h"
 #include "argp-namefrob.h"
@@ -686,9 +698,9 @@ arg (const struct argp_option *real, const char *req_fmt, const char *opt_fmt,
 {
   if (real->arg)
     if (real->flags & OPTION_ARG_OPTIONAL)
-      __argp_fmtstream_printf (stream, opt_fmt, real->arg);
+      __argp_fmtstream_printf (stream, opt_fmt, gettext (real->arg));
     else
-      __argp_fmtstream_printf (stream, req_fmt, real->arg);
+      __argp_fmtstream_printf (stream, req_fmt, gettext (real->arg));
 }
 
 /* Helper functions for hol_entry_help.  */
@@ -804,7 +816,10 @@ hol_entry_help (struct hol_entry *entry, argp_fmtstream_t stream,
 	if (opt->name && ovisible (opt))
 	  {
 	    comma (DOC_OPT_COL, &pest);
-	    __argp_fmtstream_puts (stream, opt->name);
+	    /* Calling gettext here isn't quite right, since sorting will
+	       have been done on the original; but documentation options
+	       should be pretty rare anyway...  */
+	    __argp_fmtstream_puts (stream, gettext (opt->name));
 	  }
     }
   else
@@ -903,19 +918,23 @@ usage_argful_short_opt (const struct argp_option *opt,
     arg = real->arg;
 
   if (arg)
-    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-      __argp_fmtstream_printf (stream, " [-%c[%s]]", opt->key, arg);
-    else
-      {
-	/* Manually do line wrapping so that it (probably) won't
-	   get wrapped at the embedded space.  */
-	if (__argp_fmtstream_point (stream) + 6 + strlen (arg)
-	    >= __argp_fmtstream_rmargin (stream))
-	  __argp_fmtstream_putc (stream, '\n');
-	else
-	  __argp_fmtstream_putc (stream, ' ');
-	__argp_fmtstream_printf (stream, "[-%c %s]", opt->key, arg);
-      }
+    {
+      arg = gettext (arg);
+
+      if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+	__argp_fmtstream_printf (stream, " [-%c[%s]]", opt->key, arg);
+      else
+	{
+	  /* Manually do line wrapping so that it (probably) won't
+	     get wrapped at the embedded space.  */
+	  if (__argp_fmtstream_point (stream) + 6 + strlen (arg)
+	      >= __argp_fmtstream_rmargin (stream))
+	    __argp_fmtstream_putc (stream, '\n');
+	  else
+	    __argp_fmtstream_putc (stream, ' ');
+	  __argp_fmtstream_printf (stream, "[-%c %s]", opt->key, arg);
+	}
+    }
 
   return 0;
 }
@@ -934,10 +953,13 @@ usage_long_opt (const struct argp_option *opt,
     arg = real->arg;
 
   if (arg)
-    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-      __argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);
-    else
-      __argp_fmtstream_printf (stream, " [--%s=%s]", opt->name, arg);
+    {
+      arg = gettext (arg);
+      if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+	__argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);
+      else
+	__argp_fmtstream_printf (stream, " [--%s=%s]", opt->name, arg);
+    }
   else
     __argp_fmtstream_printf (stream, " [--%s]", opt->name);
 
@@ -1033,7 +1055,7 @@ argp_args_usage (const struct argp *argp, char **levels, int advance,
   char *our_level = *levels;
   int multiple = 0;
   const struct argp_child *child = argp->children;
-  const char *doc = argp->args_doc, *nl = 0;
+  const char *doc = gettext (argp->args_doc), *nl = 0;
 
   if (doc)
     {
@@ -1093,7 +1115,7 @@ argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 	  argp_fmtstream_t stream)
 {
   const struct argp_child *child = argp->children;
-  const char *doc = argp->doc;
+  const char *doc = gettext (argp->doc);
   int anything = 0;
 
   if (doc)
