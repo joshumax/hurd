@@ -42,9 +42,15 @@ S_io_write (struct sock_user *user,
 
   mutex_lock (&global_lock);
   become_task (user);
-  err = - (*user->sock->ops->write) (user->sock, data, datalen,
-				     user->sock->userflags);
+  err = (*user->sock->ops->write) (user->sock, data, datalen,
+				   user->sock->userflags);
   mutex_unlock (&global_lock);
+
+  if (err >= 0)
+    {
+      *amount = err;
+      err = 0;
+    }
   
   return err;
 }
@@ -245,9 +251,6 @@ S_io_select (struct sock_user *user,
      That's a lose, so prevent it from happening.  */
   assert (user->sock->ops->select);
 
-  condition_init (&table.master_condition);
-  table.head = 0;
-      
   /* The select function returns one if the specified I/O type is
      immediately possible.  If it returns zero, then it is not
      immediately possible, and it has called select_wait.  Eventually
@@ -256,6 +259,9 @@ S_io_select (struct sock_user *user,
 
   for (;;)
     {
+      condition_init (&table.master_condition);
+      table.head = 0;
+      
       if (*select_type & SELECT_READ)
 	avail |= ((*user->sock->ops->select) (user->sock, SEL_IN, &table) 
 		  ? SELECT_READ : 0);
@@ -302,6 +308,14 @@ select_wait (struct wait_queue **wait_address, select_table *p)
 {
   struct select_table_elt *elt;
   
+  /* tcp.c happens to use an uninitalized wait queue;
+     so this special hack is for that. */
+  if (*wait_address == 0)
+    {
+      *wait_address = malloc (sizeof (struct wait_queue));
+      condition_init (&(*wait_address)->c);
+    }
+
   elt = malloc (sizeof (struct select_table_elt));
   elt->dependent_condition = &(*wait_address)->c;
   elt->next = p->head;
