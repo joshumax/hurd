@@ -1,6 +1,6 @@
 /* Integer-keyed hash table functions.
 
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
    
    This file is part of the GNU Hurd.
 
@@ -172,7 +172,7 @@ ihash_add(ihash_t ht, int id, void *item, void ***locp)
     void ****old_locps = ht->locps;
     int *old_ids = ht->ids;
 
-    ht->size = nextprime (2 * old_size);
+    ht->size = _ihash_nextprime (2 * old_size);
     ht->tab = malloc(ht->size * sizeof (void *));
     ht->locps = malloc (ht->size * sizeof (void ***));
     ht->ids = malloc (ht->size * sizeof (int));
