@@ -1,3 +1,7 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* password.defs: Fix subsystem decl and random mig syntax errors.
+
 Wed Jul 15 10:37:44 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* fs.defs (dir_lookup): Update interface specification in the
@@ -886,5 +890,3 @@ Mon Nov 22 22:58:59 1993  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 
 	* auth.defs: Changed auth_user_authenticate arg newport to be
 	mach_port_send_t.
-
-
