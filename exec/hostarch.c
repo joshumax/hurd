@@ -32,7 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 error_t
 #ifdef	BFD
 bfd_mach_host_arch_mach (host_t host,
-			 bfd_architecture *arch,
+			 enum bfd_architecture *arch,
 			 long int *machine)
 #else
 aout_mach_host_machine (host_t host, int *host_machine)
