@@ -62,6 +62,63 @@ void pokel_add (struct pokel *pokel, void *loc, vm_size_t length);
 void pokel_sync (struct pokel *pokel, int wait);
 
 /* ---------------------------------------------------------------- */
+/* Bitmap routines.  */
+
+/* Returns TRUE if bit NUM is set in BITMAP.  */
+inline int
+test_bit (unsigned num, char *bitmap)
+{
+  return bitmap[num >> 3] & (1 << (num & 0x7));
+}
+
+/* Sets bit NUM in BITMAP, and returns TRUE if it was already set.  */
+inline int
+set_bit (unsigned num, char *bitmap)
+{
+  char *p = bitmap + (num >> 3);
+  char byte = *p;
+  char mask = (1 << (num & 0x7));
+
+  if (byte & mask)
+    return 1;
+  else
+    {
+      *p = byte | mask;
+      return 0;
+    }
+}
+
+/* Clears bit NUM in BITMAP, and returns TRUE if it was already clear.  */
+inline int
+clear_bit (unsigned num, char *bitmap)
+{
+  char *p = bitmap + (num >> 3);
+  char byte = *p;
+  char mask = (1 << (num & 0x7));
+
+  if (byte & mask)
+    {
+      *p = byte & ~mask;
+      return 0;
+    }
+  else
+    return 1;
+}
+
+/* Counts the number of bits unset in MAP, a bitmap NUMCHARS long. */
+unsigned long count_free (char * map, unsigned int numchars);
+
+extern int find_first_zero_bit(void * addr, unsigned size);
+
+extern int find_next_zero_bit (void * addr, int size, int offset);
+
+extern unsigned long ffz(unsigned long word);
+
+/* Returns a pointer to the first occurence of CH in the buffer BUF of len
+   LEN, or BUF + LEN if CH doesn't occur.  */
+void *memscan(void *buf, unsigned char ch, unsigned len);
+
+/* ---------------------------------------------------------------- */
 
 struct disknode 
 {
@@ -214,13 +271,6 @@ dino (ino_t inum)
   unsigned long block = bg->bg_inode_table + (bg_num / inodes_per_block);
   return ((struct ext2_inode *)bptr(block)) + inum % inodes_per_block;
 }
-
-/* Sync part of the disk */
-extern inline void
-sync_disk_image (void *place, size_t nbytes, int wait)
-{
-  pager_sync_some (disk_pager->p, bptr_offs (place), nbytes, wait);
-}
 
 /* ---------------------------------------------------------------- */
 
@@ -236,6 +286,44 @@ void inode_init (void);
 
 /* ---------------------------------------------------------------- */
 
+#define trunc_block(offs) (((offs) >> log2_block_size) << log2_block_size)
+
+/* If the block size is less than the page size, then this bitmap is used to
+   record which disk blocks are actually modified, so we don't stomp on parts
+   of the disk which are backed by file pagers.  */
+char *modified_global_blocks;
+
+/* This records a modification to a non-file block.  */
+inline void
+record_global_poke (char *image)
+{
+  int boffs = trunc_block(bptr_offs(image));
+  if (!modified_global_blocks
+      || !set_bit (boffs_block (boffs), modified_global_blocks))
+    pokel_add (&sblock_pokel, boffs_ptr(boffs), block_size);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Sync part of the disk */
+extern inline void
+sync_disk_image (void *place, size_t nbytes, int wait)
+{
+  pager_sync_some (disk_pager->p, bptr_offs (place), nbytes, wait);
+}
+
+extern inline void
+sync_global_data ()
+{
+  pokel_sync (&sblock_pokel, 1);
+  if (sblock_dirty)
+    {
+      sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
+      sync_disk_image (sblock, SBLOCK_SIZE, 1);
+    }
+  diskfs_set_hypermetadata (1, 0);
+}
+
 /* Sync all allocation information and node NP if diskfs_synchronous. */
 inline void
 alloc_sync (struct node *np)
@@ -247,8 +335,7 @@ alloc_sync (struct node *np)
 	  diskfs_node_update (np, 1);
 	  pokel_sync (&np->dn->pokel, 1);
 	}
-      diskfs_set_hypermetadata (1, 0);
-      pokel_sync (&sblock_pokel, 1);
+      sync_global_data ();
     }
 }
 
@@ -260,60 +347,6 @@ int ext2_new_block (unsigned long goal,
 		    u32 * prealloc_count, u32 * prealloc_block);
 
 void ext2_free_blocks (unsigned long block, unsigned long count);
-
-/* ---------------------------------------------------------------- */
-/* Bitmap routines.  */
-
-/* Returns TRUE if bit NUM is set in BITMAP.  */
-inline int test_bit (unsigned num, char *bitmap)
-{
-  return bitmap[num >> 3] & (1 << (num & 0x7));
-}
-
-/* Sets bit NUM in BITMAP, and returns TRUE if it was already set.  */
-inline int set_bit (unsigned num, char *bitmap)
-{
-  char *p = bitmap + (num >> 3);
-  char byte = *p;
-  char mask = (1 << (num & 0x7));
-
-  if (byte & mask)
-    return 1;
-  else
-    {
-      *p = byte | mask;
-      return 0;
-    }
-}
-
-/* Clears bit NUM in BITMAP, and returns TRUE if it was already clear.  */
-inline int clear_bit (unsigned num, char *bitmap)
-{
-  char *p = bitmap + (num >> 3);
-  char byte = *p;
-  char mask = (1 << (num & 0x7));
-
-  if (byte & mask)
-    {
-      *p = byte & ~mask;
-      return 0;
-    }
-  else
-    return 1;
-}
-
-/* Counts the number of bits unset in MAP, a bitmap NUMCHARS long. */
-unsigned long count_free (char * map, unsigned int numchars);
-
-extern int find_first_zero_bit(void * addr, unsigned size);
-
-extern int find_next_zero_bit (void * addr, int size, int offset);
-
-extern unsigned long ffz(unsigned long word);
-
-/* Returns a pointer to the first occurence of CH in the buffer BUF of len
-   LEN, or BUF + LEN if CH doesn't occur.  */
-void *memscan(void *buf, unsigned char ch, unsigned len);
 
 /* ---------------------------------------------------------------- */
 
