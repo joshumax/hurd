@@ -1,3 +1,10 @@
+1999-10-22  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* socket-ops.c (S_socket_getopt): Implement the call.
+	All options supported by the code in linux-inet are in
+	fact of type int, so we can support just that one size.
+	(This is still a bogus untyped interface!)
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-ops.c: Reverted changes related to io_map_segment.
