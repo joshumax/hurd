@@ -24,10 +24,12 @@ subsystem core 32000;
 #include <hurd/hurd_types.defs>
 
 /* Dump a core file for TASK in FILE.  SIGNO and SIGCODE indicate the
-   signal that caused the process to dump core.  */
+   signal that caused the process to dump core.  For the standard core
+   server, TARGET specifies the flavor of object file to write.  */
 
 routine core_dump_task (
 	coreserver: mach_port_t;
 	task: task_t;
 	file: file_t;
-	signo: int; sigcode: int);
+	signo: int; sigcode: int;
+	target: string_t);
