@@ -54,7 +54,8 @@ main (int argc, char **argv)
     error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_one_thread (fsys->pi.bucket, trivfs_demuxer, 0);
+  ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
+					    2 * 60 * 1000, 0, 0, 0);
 
   exit(0);
 }

@@ -1,3 +1,14 @@
+Fri Feb 28 20:00:14 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (fwd null ifsock fifo new-fifo devport firmlink):
+	Add firmlink to targets depending on libthreads.
+
+	* null.c (main): Make multithreaded.
+
+Tue Feb 25 15:42:40 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* firmlink.c (main): Make multithreaded.
+
 Sun Feb 23 00:23:49 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* firmlink.c (argp): Use OPTIONS.
