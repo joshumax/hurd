@@ -34,3 +34,27 @@ diskfs_end_using_protid_port (struct protid *cred)
 {
   ports_done_with_port (cred);
 }
+
+/* This macro locks the node associated with PROTID, and then
+   evaluates the expression OPERATION; then it syncs the inode
+   (without waiting) and unlocks everything, and then returns
+   the value `err' (which can be set by OPERATION if desired). */
+#define CHANGE_NODE_FIELD(PROTID, OPERATION)				    \
+({									    \
+  error_t err = 0;							    \
+  struct node *np;							    \
+  									    \
+  if (!(PROTID))							    \
+    return EOPNOTSUPP;							    \
+  									    \
+  if (readonly)								    \
+    return EROFS;							    \
+  									    \
+  np = (PROTID)->po->np;						    \
+  									    \
+  mutex_lock (&np->lock);						    \
+  (OPERATION);								    \
+  diskfs_node_update (np, 0);						    \
+  mutex_unlock (&np->lock);						    \
+  return err;								    \
+})
