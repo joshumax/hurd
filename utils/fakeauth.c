@@ -329,7 +329,20 @@ main (int argc, char **argv)
   int status;
   int argi;
 
-  struct argp argp = { 0, 0, "COMMAND...", "\
+  /* Parse our options.  */
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
+    {
+      switch (key)
+        {
+        case ARGP_KEY_NO_ARGS:
+          argp_usage (state);
+          return EINVAL;
+        default:
+          return ARGP_ERR_UNKNOWN;
+        }
+      return 0;
+    }
+  struct argp argp = { 0, parse_opt, "COMMAND...", "\
 Run COMMAND with a fake authentication handle that claims to be root or \
 any arbitrary identity derived from that handle, but in fact is always just \
 a proxy for your real authentication handle.  This means that all processes \
@@ -337,7 +350,7 @@ created by the COMMAND will have your privileges, even though it may \
 believe it has restricted them to different identities or no identity at all.\
 " };
 
-  argp_parse (&argp, argc, argv, 0, &argi, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, &argi, 0);
 
   auth_bucket = ports_create_bucket ();
   authhandle_portclass = ports_create_class (&destroy_authhandle, 0);
