@@ -2,6 +2,7 @@ Fri Mar  7 11:53:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* addu.c: New file.
 	* Makefile: Add addu to dependents of libshouldbeinlibc & libps.
+	(INSTALL-hurdids-ops, INSTALL-addu-ops): New variables.
 	(SRCS): Add addu.c.
 	(targets): Add addu.
 
