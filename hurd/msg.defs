@@ -1,6 +1,5 @@
 /* RPCs which a friendly Hurd process will understand on its message port.
-   Copyright (C) 1991, 1992, 1993, 1994, 1995, 1996 Free Software 
-   Foundation, Inc. 
+   Copyright (C) 1991,92,93,94,95,96,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -191,7 +190,7 @@ routine msg_report_wait (
 	process: mach_port_t;
 	thread: thread_t;
 	out wait_desc: string_t;
-	out wait_rpc: int);
+	out wait_rpc: mach_msg_id_t);
 
 /* Given a list of port names in NAMES, return a description of the
    corresponding port from libc's point of view, in a '\0'-separated vector.
@@ -201,4 +200,3 @@ routine msg_describe_ports (
 	refport: mach_port_t;
 	names: mach_port_name_array_t;
 	out descriptions: data_t);
-

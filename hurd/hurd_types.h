@@ -1,5 +1,5 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993,94,95,96,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,99,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define _HURD_TYPES_H
 
 #include <mach/std_types.h>	/* For mach_port_t et al. */
+#include <mach/message.h>	/* For mach_msg_id_t et al. */
 #include <sys/types.h>		/* For pid_t and uid_t.  */
 
 /* A string identifying this release of the GNU Hurd.  Our
@@ -244,6 +245,9 @@ enum file_storage_class
 
 #include <mach/task_info.h>
 #include <mach/thread_info.h>
+#ifndef THREAD_SCHED_INFO
+#include <mach/policy.h>
+#endif
 
 /* Flags sent in proc_getprocinfo request. */
 #define PI_FETCH_TASKINFO  0x00000001
@@ -266,12 +270,19 @@ struct procinfo
   int nthreads;			/* size of pi_threadinfos */
 
   struct task_basic_info taskinfo;
+#ifdef TASK_SCHED_TIMESHARE_INFO
+  struct policy_timeshare_base timeshare_base_info;
+#endif
   struct
     {
       int died;			/* this thread died in the middle of call */
-      int rpc_block;		/* thred is blocked on this RPC */
+      mach_msg_id_t rpc_block;	/* thread is blocked on this RPC */
       struct thread_basic_info pis_bi;
+#ifdef THREAD_SCHED_INFO
       struct thread_sched_info pis_si;
+#else
+      struct policy_infos pis_pi;
+#endif
     } threadinfos[0];
 };
 typedef int *procinfo_t;
