@@ -326,7 +326,9 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Allocate our reference here; _hurd_port_set will consume a reference
      for the library itself. */
-  mach_port_mod_refs (mach_task_self (), authhandle, MACH_PORT_RIGHT_SEND, 1);
+  err = mach_port_mod_refs (mach_task_self (),
+			    authhandle, MACH_PORT_RIGHT_SEND, +1);
+  assert (!err);
 
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle);
@@ -335,7 +337,7 @@ diskfs_S_fsys_init (mach_port_t port,
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
   diskfs_auth_server_port = authhandle;
 
-  assert (exectask);
+  assert (exectask != MACH_PORT_NULL);
   err = proc_task2proc (procserver, exectask, &execprocess);
   assert (!err);
 
