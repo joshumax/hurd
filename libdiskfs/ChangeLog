@@ -1,3 +1,10 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* file-get-trans.c (diskfs_S_file_get_translator): Use munmap
+	instead of vm_deallocate.
+	* io-read.c (diskfs_S_io_read): Likewise.
+	* protid-rele.c (diskfs_protid_rele): Likewise.
+
 1999-07-01  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* node-nref.c: New file; guts from diskfs.h.

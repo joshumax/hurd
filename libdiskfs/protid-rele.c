@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,8 +30,7 @@ diskfs_protid_rele (void *arg)
   if (cred->shared_object)
     mach_port_deallocate (mach_task_self (), cred->shared_object);
   if (cred->mapped)
-    vm_deallocate (mach_task_self (), (vm_address_t) cred->mapped,
-		   vm_page_size);
+    munmap (cred->mapped, vm_page_size);
   diskfs_release_peropen (cred->po);
 }
 

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -100,7 +100,7 @@ diskfs_S_io_read (struct protid *cred,
     cred->po->filepointer += *datalen;
 
   if (err && ourbuf)
-    vm_deallocate (mach_task_self (), (u_int) buf, maxread);
+    munmap (buf, maxread);
 
   mutex_unlock (&np->lock);
   return err;
