@@ -18,6 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "sock.h"
+
+/* temp XXX */
+#include <mach/mach.h>
+typedef mach_port_t pf_t;
+
+#include "socket_S.h"
+
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
 S_socket_create (mach_port_t pf,
@@ -78,6 +86,7 @@ S_socket_fabricate_address (mach_port_t pf,
 
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+
   return 0;
 }
 
