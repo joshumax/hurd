@@ -41,26 +41,36 @@ error_t
 pager_read_page(struct user_pager_info *upi,
 		vm_offset_t page, vm_address_t *buf, int *writelock)
 {
+  error_t err;
   int read;			/* bytes actually read */
+  int want = vm_page_size;	/* bytes we want to read */
   struct dev *dev = (struct dev *)upi;
-  error_t err =
-    device_read(dev->port,
-		0, page / dev->dev_block_size, vm_page_size,
-		(io_buf_ptr_t *)buf, &read);
+
+  if (page + want > dev->size)
+    /* Read a partial page if necessary to avoid reading off the end.  */
+    want = dev->size - page;
+
+  err = device_read(dev->port, 0, page / dev->dev_block_size, want,
+		    (io_buf_ptr_t *)buf, &read);
 #ifdef MSG
   if (debug)
     {
       mutex_lock(&debug_lock);
       fprintf(debug, "device_read(%d, %d) [pager] => %s, %s, %d\n",
-	      page / dev->dev_block_size, vm_page_size,
+	      page / dev->dev_block_size, want,
 	      strerror(err), err ? "-" : brep(*buf, read), read);
       mutex_unlock(&debug_lock);
     }
 #endif
 
+  if (!err && want < vm_page_size)
+    /* Zero anything we didn't read.  Allocation only happens in page-size
+       multiples, so we know we can write there.  */
+    bzero((char *)*buf + want, vm_page_size - want);
+
   *writelock = (dev->flags & DEV_READONLY);
 
-  if (err || read < vm_page_size)
+  if (err || read < want)
     return EIO;
   else
     return 0;
@@ -79,12 +89,16 @@ pager_write_page(struct user_pager_info *upi,
     return EROFS;
   else
     {
+      error_t err;
       int written;
-      error_t err =
-	device_write(dev->port,
-		     0, page / dev->dev_block_size,
-		     (io_buf_ptr_t)buf, vm_page_size,
-		     &written);
+      int want = vm_page_size;
+
+      if (page + want > dev->size)
+	/* Write a partial page if necessary to avoid reading off the end.  */
+	want = dev->size - page;
+
+      err = device_write(dev->port, 0, page / dev->dev_block_size,
+			 (io_buf_ptr_t)buf, want, &written);
 #ifdef MSG
       if (debug)
 	{
@@ -99,7 +113,7 @@ pager_write_page(struct user_pager_info *upi,
 
       vm_deallocate(mach_task_self(), buf, vm_page_size);
 
-      if (err || written < vm_page_size)
+      if (err || written < want)
 	return EIO;
       else
 	return 0;
