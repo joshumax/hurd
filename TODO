@@ -60,6 +60,29 @@ See `tasks', the exported task list.
 *** many functions that are syscalls in unix can potentially leak send rights
     if a signal handler longjmp's out past them.  They should probably all
     be using HURD_CRITICAL_SECTION to avoid this. !!
+** items relocated from libc/hurd/STATUS:
+*** We are not sure about possible races between setpgrp (A, pgrp) from
+    process B vs process A receiving proc_newids.
+*** does sigaltstack/sigstack really work?
+*** hurdmalloc kludge
+*** think more about environment variable use viz security
+*** SIGINFO handler?
+*** itimers could be implemented better
+*** mmap cannot do MAP_NOEXTEND.
+*** unimplemented calls(?)
+    acct
+    getfh
+    getfsstat
+    madvise
+    mincore
+    mount
+    msync
+    recvmsg
+    sendmsg
+    sstk
+    swapon
+    unmount
+
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
