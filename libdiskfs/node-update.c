@@ -27,5 +27,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 void diskfs_node_update (struct node *np, int wait)
 {
   diskfs_set_node_times (np);
-  diskfs_write_disknode (np, wait);
+  if (np->dn_stat_dirty)
+    diskfs_write_disknode (np, wait);
 }
