@@ -220,9 +220,25 @@ new_partition (const char *name, struct file_direct *fdp,
 	if (rc)
 	  panic("(default pager): cannot read first page of %s! rc=%#x\n",
 		name, rc);
-	if (rsize != LINUX_PAGE_SIZE)
-	  panic("(default pager): bad read on first page of %s! size=%u\n",
-		name, rsize);
+	while (rsize < LINUX_PAGE_SIZE)
+	  {
+	    /* Filesystem block size is smaller than page size,
+	       so we must do several reads to get the whole page.  */
+	    vm_address_t baddr, bsize;
+	    rc = page_read_file_direct(part->file,
+				       rsize, LINUX_PAGE_SIZE-rsize,
+				       &baddr,
+				       &bsize);
+	    if (rc)
+	      panic("(default pager): "
+		    "cannot read first page of %s! rc=%#x at %#x\n",
+		    name, rc, rsize);
+
+	    memcpy ((char *) raddr + rsize, (void *) baddr, bsize);
+	    rsize += bsize;
+	    vm_deallocate (mach_task_self (), baddr, bsize);
+	  }
+
 	if (!memcmp("SWAP-SPACE", (char *) raddr + LINUX_PAGE_SIZE-10, 10))
 	  {
 	    /* The partition's first page has a Linux swap signature.
