@@ -190,7 +190,7 @@ diskfs_S_exec_startup (mach_port_t port,
 		       int *flags,
 		       char **argvP,
 		       u_int *argvlen,
-		       char **envpP,
+		       char **envpP __attribute__ ((unused)),
 		       u_int *envplen,
 		       mach_port_t **dtableP,
 		       mach_msg_type_name_t *dtablepoly,
@@ -418,48 +418,53 @@ diskfs_S_fsys_init (mach_port_t port,
 
 /* Unused */
 error_t
-diskfs_S_exec_init (mach_port_t a,
-		    auth_t b,
-		    process_t c)
+diskfs_S_exec_init (mach_port_t a __attribute__ ((unused)),
+		    auth_t b __attribute__ ((unused)),
+		    process_t c __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
 
 /* Unused */
 error_t
-diskfs_S_exec_setexecdata (mach_port_t a,
-			   mach_port_t *b,
-			   u_int c, int bcopy,
-			   int *d, u_int e, int ecopy)
+diskfs_S_exec_setexecdata (mach_port_t a __attribute__ ((unused)),
+			   mach_port_t *b __attribute__ ((unused)),
+			   u_int c __attribute__ ((unused)),
+			   int bcopy __attribute__ ((unused)),
+			   int *d __attribute__ ((unused)),
+			   u_int e __attribute__ ((unused)),
+			   int ecopy __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
 
 /* Unused. */
 error_t
-diskfs_S_exec_exec (mach_port_t execserver,
-		    mach_port_t file,
-		    mach_port_t oldtask,
-		    int flags,
-		    data_t argv,
-		    mach_msg_type_number_t argvCnt,
-		    boolean_t argvSCopy,
-		    data_t envp,
-		    mach_msg_type_number_t envpCnt,
-		    boolean_t envpSCopy,
-		    portarray_t dtable,
-		    mach_msg_type_number_t dtableCnt,
-		    boolean_t dtableSCopy,
-		    portarray_t portarray,
-		    mach_msg_type_number_t portarrayCnt,
-		    boolean_t portarraySCopy,
-		    intarray_t intarray,
-		    mach_msg_type_number_t intarrayCnt,
-		    boolean_t intarraySCopy,
-		    mach_port_t *deallocnames,
-		    u_int deallocnamescnt,
-		    mach_port_t *destroynames,
-		    u_int destroynamescnt
+diskfs_S_exec_exec (mach_port_t execserver __attribute__ ((unused)),
+		    mach_port_t file __attribute__ ((unused)),
+		    mach_port_t oldtask __attribute__ ((unused)),
+		    int flags __attribute__ ((unused)),
+		    data_t argv __attribute__ ((unused)),
+		    mach_msg_type_number_t argvCnt __attribute__ ((unused)),
+		    boolean_t argvSCopy __attribute__ ((unused)),
+		    data_t envp __attribute__ ((unused)),
+		    mach_msg_type_number_t envpCnt __attribute__ ((unused)),
+		    boolean_t envpSCopy __attribute__ ((unused)),
+		    portarray_t dtable __attribute__ ((unused)),
+		    mach_msg_type_number_t dtableCnt __attribute__ ((unused)),
+		    boolean_t dtableSCopy __attribute__ ((unused)),
+		    portarray_t portarray __attribute__ ((unused)),
+		    mach_msg_type_number_t portarrayCnt 
+		      __attribute__ ((unused)),
+		    boolean_t portarraySCopy __attribute__ ((unused)),
+		    intarray_t intarray __attribute__ ((unused)),
+		    mach_msg_type_number_t intarrayCnt 
+		      __attribute__ ((unused)),
+		    boolean_t intarraySCopy __attribute__ ((unused)),
+		    mach_port_t *deallocnames __attribute__ ((unused)),
+		    u_int deallocnamescnt __attribute__ ((unused)),
+		    mach_port_t *destroynames __attribute__ ((unused)),
+		    u_int destroynamescnt __attribute__ ((unused))
 		    )
 {
   return EOPNOTSUPP;
@@ -467,8 +472,8 @@ diskfs_S_exec_exec (mach_port_t execserver,
 
 /* Unused. */
 error_t
-diskfs_S_exec_boot_init (mach_port_t execserver,
-			 startup_t init)
+diskfs_S_exec_boot_init (mach_port_t execserver __attribute__ ((unused)),
+			 startup_t init __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
