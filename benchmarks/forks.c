@@ -40,7 +40,7 @@ main(argc, argv)
 
 	time (&starttime);
 	cp = (char *)sbrk(brksize);
-	if ((int)cp == -1) {
+	if (cp == (void *)-1) {
 		perror("sbrk");
 		exit(4);
 	}
