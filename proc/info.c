@@ -503,12 +503,9 @@ S_proc_getprocinfo (struct proc *callerp,
 				   desc, &pi->threadinfos[i].rpc_block))
 		desc[0] = '\0'; /* Don't know.  */
 
-/* Temporary XXX */
-#define strnlen(a,b) (strlen (a))
 	      /* See how long DESC is, being sure not to barf if it's
 		 unterminated (string_t's are fixed length).  */
 	      desc_len = strnlen (desc, sizeof desc);
-#undef strnlen
 
 	      if (waits_used + desc_len + 1 > *waits_len)
 		/* Not enough room in WAITS, we must allocate more.  */
