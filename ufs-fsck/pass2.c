@@ -60,6 +60,30 @@ pass2 ()
 	  if (dp->d_reclen == 0
 	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
 	    {
+	      /* Perhaps the entire dir block is zero.  UFS does that
+		 when extending directories.  So allow preening
+		 to safely patch up all-null dir blocks. */
+	      if (dp == buf)
+		{
+		  char *bp;
+		  for (bp = (char *)buf; bp < (char *)buf + DIRBLKSIZ; bp++)
+		    if (*bp)
+		      goto reclen_problem;
+		  
+		  problem (0, "NULL BLOCK IN DIRECTORY");
+		  if (preen || reply ("PATCH"))
+		    {
+		      /* Mark this entry free, and return. */
+		      dp->d_ino = 0;
+		      dp->d_reclen = DIRBLKSIZ;
+		      pfix ("PATCHED");
+		      return 1;
+		    }
+		  else
+		    return mod;
+		}
+	      
+	    reclen_problem:
 	      problem (1, "BAD RECLEN IN DIRECTORY");
 	      if (reply ("SALVAGE"))
 		{

@@ -1,3 +1,8 @@
+Thu Jul 18 14:55:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* pass2.c (pass2): If an entire directory block is null, allow
+	preen to patch it into a normal empty directory entry.
+
 Sat Jul  6 19:59:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (argp_program_version): New variable.
