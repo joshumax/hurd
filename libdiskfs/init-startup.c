@@ -20,6 +20,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Roland McGrath.  */
 
 #include "priv.h"
+#include <stdio.h>
+#include <hurd/fsys.h>
 
 mach_port_t
 diskfs_startup_diskfs (mach_port_t bootstrap)
