@@ -30,9 +30,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdio.h>
 #include <hurd/exec.h>
 #include <unistd.h>
-
-#define HURD_VERSION_DEFINE
-#include <hurd/version.h>
+#include <assert.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -44,7 +42,6 @@ static mach_port_t *std_port_array;
 static int *std_int_array;
 static int n_std_ports, n_std_ints;
 static struct utsname uname_info;
-static char *machversion;
 
 struct server_version
 {
@@ -85,8 +82,8 @@ S_proc_gethostid (struct proc *p,
 /* Implement proc_sethostname as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_sethostname (struct proc *p,
-		  char *newhostname,
-		  u_int newhostnamelen)
+		    char *newhostname,
+		    u_int newhostnamelen)
 {
   int len;
   if (! check_uid (p, 0))
@@ -105,7 +102,7 @@ S_proc_sethostname (struct proc *p,
   if (len > sizeof uname_info.nodename)
     len = sizeof uname_info.nodename;
   bcopy (hostname, uname_info.nodename, len);
-  uname_info.nodename[sizeof uname_info.nodename] = '\0';
+  uname_info.nodename[sizeof uname_info.nodename - 1] = '\0';
 
   return 0;
 }
@@ -113,8 +110,8 @@ S_proc_sethostname (struct proc *p,
 /* Implement proc_gethostname as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_gethostname (struct proc *p,
-		  char **outhostname,
-		  u_int *outhostnamelen)
+		    char **outhostname,
+		    u_int *outhostnamelen)
 {
   if (*outhostnamelen < hostnamelen + 1)
     vm_allocate (mach_task_self (), (vm_address_t *)outhostname,
@@ -252,136 +249,116 @@ check_dead_execdata_notify (mach_port_t port)
 	prevp = &en->next;
     }
 }
-
+
 /* Version information handling.
 
-   A server registers its name, and version with
-   startup_register_version.  Each release of the Hurd is defined by
-   some set of versions for the programs making up the Hurd (found in
-   <hurd/version.h>).  If the server being being registered matches its
-   entry in that file, then the register request is ignored.
+   A server registers its name, release, and version with
+   startup_register_version.  The uname version string is composed of all
+   the server names and versions.  The uname release is composed of the
+   differing server releases in order of decreasing popularity (just one if
+   they all agree).
 
-   These are then element of `struct utsname', returned by uname.  The
-   release is compared against `hurd_release', as compiled into init.
-   If it matches, it is omitted.  A typical version string for the
-   system might be:  
-  
-   "GNU Hurd Version 0.0 [Mach 3.0 VERSION(MK75)] auth 2.6" 
-   Which indicates that the Hurd servers are all from Hurd 0.0 except
-   for auth, which is auth version 2.6. 
+   The Hurd release comes from <hurd/hurd_types.h> and
+   is compiled into proc as well as the other servers. */
 
-   The version for the Hurd itself comes from <hurd/hurd_types.h> and
-   is compiled into proc. */
-
-/* Rebuild the uname version string. */
+/* Rebuild the uname version string.  */
 static void
-rebuild_uname ()
+rebuild_uname (void)
 {
-  int i, j;
-  int nmatches, greatestmatch;
-  char *hurdrelease;
-  struct hurd_version *runninghurd;
-  char *p = uname_info.version;
-  char *end = &uname_info.version[sizeof uname_info.version];
+  unsigned int i, j;
+  char *p, *end;
 
-  /* Tell if the SERVER was distributed in HURD. */
-  inline int version_matches (struct server_version *server,
-			      struct hurd_version *hurd)
+  /* Set up for addstr to write into STRING.  */
+  inline void initstr (char *string)
     {
-      int i;
-      if (strcmp (server->release, hurd->hurdrelease))
-	return 0;
-      for (i = 0; i < hurd->nservers; i++)
-	if (!strcmp (server->name, hurd->vers[i].name)
-	    && !strcmp (server->version, hurd->vers[i].version))
-	  return 1;
-      return 0;
+      p = string;
+      end = p + _UTSNAME_LENGTH;
     }
-
-  /* Add STR to uname_info.version. */
-  inline void addstr (char *string)
+  /* If NAME is not null, write "name-version/", else "version/".  */
+  inline void addstr (const char *name, const char *version)
     {
-      if (p < end)
+      size_t len;
+      if (name)
 	{
-	  size_t len = strlen (string);
-	  if (end - 1 - p < len)
-	    memcpy (p, string, len);
+	  len = strlen (name);
+	  if (p + len + 1 < end)
+	    memcpy (p, name, len);
 	  p += len;
+	  if (p < end)
+	    *p++ = '-';
+	}
+      len = strlen (version);
+      if (p + len + 1 < end)
+	memcpy (p, version, len);
+      p += len;
+      if (p < end)
+	*p++ = '/';
+    }
+
+  /* Collect all the differing release strings and count how many
+     servers use each.  */
+  struct release
+    {
+      const char *release;
+      unsigned int count;
+    } releases[nserver_versions];
+  int compare_releases (const void *a, const void *b)
+    {
+      return (((const struct release *) b)->count -
+	      ((const struct release *) a)->count);
+    }
+  unsigned int nreleases = 0;
+
+  for (i = 0; i < nserver_versions; ++i)
+    {
+      for (j = 0; j < nreleases; ++j)
+	if (! strcmp (releases[j].release, server_versions[i].release))
+	  {
+	    ++releases[j].count;
+	    break;
+	  }
+      if (j == nreleases)
+	{
+	  releases[nreleases].release = server_versions[i].release;
+	  releases[nreleases].count = 1;
+	  ++nreleases;
 	}
     }
 
-  /* Look through the hurd_versions array and find the spec which matches
-     the most releases of our versions; this will define the release. */
-  greatestmatch = 0;
-  for (i = 0; i < nhurd_versions; i++)
-    {
-      nmatches = 0;
-      for (j = 0; j < nserver_versions; j++)
-	if (!strcmp (hurd_versions[i].hurdrelease, server_versions[j].release))
-	  nmatches++;
-      if (nmatches >= greatestmatch)
-	{
-	  greatestmatch = nmatches;
-	  hurdrelease = hurd_versions[i].hurdrelease;
-	}
-    }
-  
-  /* Now try and figure out which of the hurd versions that is this release
-     we should deem the version; again, base it on which has the greatest
-     number of matches among running servers. */
-  greatestmatch = 0;
-  for (i = 0; i < nhurd_versions; i++)
-    {
-      if (strcmp (hurd_versions[i].hurdrelease, hurdrelease))
-	continue;
-      nmatches = 0;
-      for (j = 0; j < nserver_versions; j++)
-	if (version_matches (&server_versions[j], &hurd_versions[i]))
-	  nmatches++;
-      if (nmatches >= greatestmatch)
-	{
-	  greatestmatch = nmatches;
-	  runninghurd = &hurd_versions[i];
-	}
-    }
-  
-  /* Now build the uname strings.  The uname "release" looks like this:
-     GNU Hurd Release N.NN (kernel-version) 
-     */
-  sprintf (uname_info.release, "GNU Hurd Release %s (%s)",
-	   runninghurd->hurdrelease, machversion);
-  
-  /* The uname "version" looks like this:
-     GNU Hurd Release N.NN, Version N.NN (kernel-version)
-     followed by a spec for each server that does not match the one
-     in runninghurd in the form "(ufs N.NN)" or the form 
-     "(ufs N.NN [M.MM])"; N.NN is the version of the server and M.MM
-     is the Hurd release it expects. */
-  addstr ("GNU Hurd Release ");
-  addstr (runninghurd->hurdrelease);
-  addstr (", Version ");
-  addstr (runninghurd->hurdversion);
-  addstr (" (");
-  addstr (machversion);
-  addstr (")");
-  
+  /* Sort the releases in order of decreasing popularity.  */
+  qsort (releases, nreleases, sizeof (struct release), compare_releases);
+
+  /* Now build the uname strings.  */
+
+  initstr (uname_info.release);
+  for (i = 0; i < nreleases; ++i)
+    addstr (NULL, releases[i].release);
+
+  if (p > end)
+#ifdef notyet
+    syslog (LOG_EMERG,
+	    "_UTSNAME_LENGTH %u too short; inform bug-glibc@prep.ai.mit.edu\n",
+	    p - end)
+#endif
+      ;
+  else
+    p[-1] = '\0';
+  end[-1] = '\0';
+
+  initstr (uname_info.version);
   for (i = 0; i < nserver_versions; i++)
-    if (!version_matches (&server_versions[i], runninghurd))
-      {
-	addstr ("; (");
-	addstr (server_versions[i].name);
-	addstr (" ");
-	addstr (server_versions[i].version);
-	if (!strcmp (server_versions[i].release, runninghurd->hurdrelease))
-	  {
-	    addstr (" [");
-	    addstr (server_versions[i].release);
-	    addstr ("]");
-	  }
-	addstr (")");
-      }
-  
-  *p = '\0';			/* Null terminate uname_info.version */
+    addstr (server_versions[i].name, server_versions[i].version);
+
+  if (p > end)
+#ifdef notyet
+    syslog (LOG_EMERG,
+	    "_UTSNAME_LENGTH %u too short; inform bug-glibc@prep.ai.mit.edu\n",
+	    p - end)
+#endif
+      ;
+  else
+    p[-1] = '\0';
+  end[-1] = '\0';
 }
 
       
@@ -394,33 +371,40 @@ initialize_version_info (void)
   char *p;
   struct host_basic_info info;
   unsigned int n = sizeof info;
-  
-  /* Fill in fixed slots sysname and machine. */
+  error_t err;
+
+  /* Fill in fixed slots sysname and machine.  */
   strcpy (uname_info.sysname, "GNU");
 
-  host_info (mach_host_self (), HOST_BASIC_INFO, (int *) &info, &n);
-  sprintf (uname_info.machine, "%s %s",
-	   mach_cpu_types[info.cpu_type],
-	   mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
-  
-  /* Construct machversion for use in release and version strings. */
-  host_kernel_version (mach_host_self (), kernel_version);
+  err = host_info (mach_host_self (), HOST_BASIC_INFO, (int *) &info, &n);
+  assert (! err);
+  snprintf (uname_info.machine, sizeof uname_info.machine, "%s/%s",
+	    mach_cpu_types[info.cpu_type],
+	    mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
+
+  /* Notice Mach's and our own version and initialize server version
+     varables. */
+  server_versions = malloc (sizeof (struct server_version) * 10);
+  server_versions_nalloc = 10;
+
+  err = host_kernel_version (mach_host_self (), kernel_version);
+  assert (! err);
   p = index (kernel_version, ':');
   if (p)
     *p = '\0';
-  machversion = strdup (kernel_version);
-  
-  /* Notice our own version and initialize server version varables. */
-  server_versions = malloc (sizeof (struct server_version) * 10);
-  server_versions_nalloc = 10;
-  nserver_versions = 1;
-  server_versions->name = malloc (sizeof OUR_SERVER_NAME);
-  server_versions->release = malloc (sizeof HURD_RELEASE);
-  server_versions->version = malloc (sizeof OUR_VERSION);
-  strcpy (server_versions->name, OUR_SERVER_NAME);
-  strcpy (server_versions->release, HURD_RELEASE);
-  strcpy (server_versions->version, OUR_VERSION);
-  
+  p = index (kernel_version, ' ');
+  if (p)
+    *p = '\0';
+  server_versions[0].name = strdup (p ? kernel_version : "mach");
+  server_versions[0].release = strdup (HURD_RELEASE);
+  server_versions[0].version = strdup (p ? p + 1 : kernel_version);
+
+  server_versions[1].name = strdup (OUR_SERVER_NAME);
+  server_versions[1].release = strdup (HURD_RELEASE);
+  server_versions[1].version = strdup (OUR_VERSION);
+
+  nserver_versions = 2;
+
   rebuild_uname ();
   
   uname_info.nodename[0] = '\0';
@@ -450,7 +434,7 @@ S_proc_register_version (pstruct_t server,
   for (i = 0; i < nserver_versions; i++)
     if (!strcmp (name, server_versions[i].name))
       {
-	/* Change this entry */
+	/* Change this entry.  */
 	free (server_versions[i].version);
 	free (server_versions[i].release);
 	server_versions[i].version = malloc (strlen (version) + 1);
@@ -461,7 +445,7 @@ S_proc_register_version (pstruct_t server,
       }
   if (i == nserver_versions)
     {
-      /* Didn't find it; extend. */
+      /* Didn't find it; extend.  */
       if (nserver_versions == server_versions_nalloc)
 	{
 	  server_versions_nalloc *= 2;
