@@ -20,10 +20,10 @@ dir := ext2fs
 makemode := server
 
 target = ext2fs
-SRCS = balloc.c bitmap.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
+SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c
 OBJS = $(SRCS:.c=.o)
-LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
+LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h bitmap.h
 HURDLIBS=diskfs pager iohelp fshelp store ports threads ihash shouldbeinlibc
 
 include ../Makeconf

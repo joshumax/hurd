@@ -42,7 +42,7 @@
 
 #include <string.h>
 #include "ext2fs.h"
-
+#include "bitmap.c"
 
 /* Returns a pointer to the first occurence of CH in the buffer BUF of len
    LEN, or BUF + LEN if CH doesn't occur.  */
@@ -51,7 +51,6 @@ memscan (void *buf, unsigned char ch, size_t len)
 {
   return memchr (buf, ch, len) ?: buf + len;
 }
-
 
 #define in_range(b, first, len) ((b) >= (first) && (b) <= (first) + (len) - 1)
 

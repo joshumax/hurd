@@ -147,15 +147,6 @@ clear_bit (unsigned num, char *bitmap)
   else
     return 0;
 }
-
-/* Counts the number of bits unset in MAP, a bitmap NUMCHARS long. */
-unsigned long count_free (char * map, unsigned int numchars);
-
-extern int find_first_zero_bit(void * addr, unsigned size);
-
-extern int find_next_zero_bit (void * addr, int size, int offset);
-
-extern unsigned long ffz(unsigned long word);
 
 /* ---------------------------------------------------------------- */
 

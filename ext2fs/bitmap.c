@@ -1,6 +1,6 @@
 /* Bitmap perusing routines
 
-   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -18,6 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#define ffz(word)	(ffs (~(word)) - 1)
+
 /*
  *  linux/fs/ext2/bitmap.c (&c)
  *
@@ -29,6 +31,7 @@
 
 static int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
 
+static inline
 unsigned long count_free (char * map, unsigned int numchars)
 {
 	unsigned int i;
@@ -44,31 +47,6 @@ unsigned long count_free (char * map, unsigned int numchars)
 
 /* ---------------------------------------------------------------- */
 
-static int ffz_nibble_map[] = {0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4};
-
-inline unsigned long ffz(unsigned long word)
-{
-  int offset = 0;
-  if ((word & 0xFFFF) == 0xFFFF)
-    {
-      word >>= 16;
-      offset += 16;
-    }
-  if ((word & 0xFF) == 0xFF)
-    {
-      word >>= 8;
-      offset += 8;
-    }
-  if ((word & 0xF) == 0xF)
-    {
-      word >>= 4;
-      offset += 4;
-    }
-  return ffz_nibble_map[word & 0xF] + offset;
-}
-
-/* ---------------------------------------------------------------- */
-
 /*
  * Copyright 1994, David S. Miller (davem@caip.rutgers.edu).
  */
@@ -78,7 +56,7 @@ inline unsigned long ffz(unsigned long word)
  * on Linus's ALPHA routines, which are pretty portable BTW.
  */
 
-inline unsigned long
+static inline unsigned long
 find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
 {
   unsigned long *p = ((unsigned long *) addr) + (offset >> 5);
@@ -121,7 +99,7 @@ found_middle:
  * holds on the Sparc as it does for the ALPHA.
  */
 
-inline int
+static inline int
 find_first_zero_bit(void *buf, unsigned len)
 {
   return find_next_zero_bit(buf, len, 0);
