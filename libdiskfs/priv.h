@@ -85,14 +85,6 @@ extern spin_lock_t _diskfs_control_lock;
 extern fshelp_fetch_root_callback1_t _diskfs_translator_callback1;
 extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
 
-/* The form of the value pointed to by COOKIE2 expected by
-   _diskfs_translator_callback2_fn.  */
-struct diskfs_trans_callback_cookie2
-{
-  mach_port_t dotdot;		/* The dot dot node.  */
-  unsigned depth;		/* How high DOTDOT is.  */
-};
-
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
    (without waiting) and unlocks everything, and then returns
