@@ -170,7 +170,6 @@ See `tasks', the exported task list.
 ** Test new-fifo & make it fifo. !
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
-** magic: `ls -ld /dev/fd' and `test -d /dev/fd' should work.
 ** implement io_revoke for things in trans/ that need it. !
 
 ** pflocal
