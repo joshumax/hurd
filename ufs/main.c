@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <argz.h>
-
-char *ufs_version = "0.0";
 
 struct node *diskfs_root_node;
 
