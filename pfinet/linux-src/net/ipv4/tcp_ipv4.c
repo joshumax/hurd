@@ -228,6 +228,7 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 					goto next;
 			break;
 		next:
+			; /* Do nothing.  */
 		} while (--remaining > 0);
 		tcp_port_rover = rover;
 
@@ -592,7 +593,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 		if (usin->sin_family)
 			return(-EAFNOSUPPORT);
 		if (!complained++)
-			printk(KERN_DEBUG "%s forgot to set AF_INET in " __FUNCTION__ "\n", current->comm);
+			printk(KERN_DEBUG "%s forgot to set AF_INET in %s\n", current->comm, __FUNCTION__);
 	}
 
 	nexthop = daddr = usin->sin_addr.s_addr;
@@ -1728,7 +1729,7 @@ int tcp_v4_rcv(struct sk_buff *skb, unsigned short len)
 			goto discard_it;
 		}
 	default:
-		/* CHECKSUM_UNNECESSARY */
+	  	; /* CHECKSUM_UNNECESSARY */
 	}
 
 	if((th->doff * 4) < sizeof(struct tcphdr) ||

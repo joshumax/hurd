@@ -721,6 +721,8 @@ reject_redirect:
 		       "Path = %X -> %X, tos %02x\n",
 		       ntohl(old_gw), dev->name, ntohl(new_gw),
 		       ntohl(saddr), ntohl(daddr), tos);
+#else
+	; /* Do nothing.  */
 #endif
 }
 
