@@ -301,12 +301,12 @@ include $(subst .o,.d,$(OBJS)) /dev/null
 # Here is how to make .d files from .c files
 %.d: %.c
 	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-	sed -e 's/\.o/& $@/' > $@)
+	sed -e 's/$*\.o:/$*.o $@:/' > $@)
 
 # Here is how to make .d files from .S files
 %.d: %.S
 	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $< | \
-	sed -e 's/\.o/& $@/' > $@)
+	sed -e 's/*\.o:/$*.o $@:/' > $@)
 	
 # .s files don't go through the preprocessor, so we do this
 # This rule must come *after* the genuine ones above, so that
