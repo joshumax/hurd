@@ -239,7 +239,7 @@ read_disknode (struct node *np)
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = fsid;
   st->st_ino = np->dn->number;
-  st->st_blksize = block_size;
+  st->st_blksize = vm_page_size * 2;
 
   st->st_mode = di->i_mode | (di->i_mode_high << 16);
   st->st_nlink = di->i_links_count;
