@@ -1312,10 +1312,7 @@ do_exec (file_t file,
       {
 	/* Ask the proc server for the proc port for this task.  */
 	mach_port_t new;
-	uid_t euidbuf[10], egidbuf[10], auidbuf[10], agidbuf[10];
-	uid_t *euids, *egids, *auids, *agids;
-	size_t neuids, negids, nauids, nagids;
-	
+
 	e.error = proc_task2proc (procserver, newtask, &new);
 	if (e.error)
 	  goto stdout;
@@ -1548,6 +1545,10 @@ do_exec (file_t file,
   /* Make sure the proc server has the right idea of our identity. */
   if (secure)
     {
+      uid_t euidbuf[10], egidbuf[10], auidbuf[10], agidbuf[10];
+      uid_t *euids, *egids, *auids, *agids;
+      size_t neuids, negids, nauids, nagids;
+
       /* Find out what our UID is from the auth server. */
       neuids = negids = nauids = nagids = 10;
       euids = euidbuf, egids = egidbuf;
