@@ -74,10 +74,10 @@ error_t fstypes_create (const char *search_fmts, size_t search_fmts_len,
 			struct fstypes **types);
 
 /* Return an fstype entry in TYPES called NAME, in FSTYPE.  If there is no
-   existing entry, an attempt to find a fsck program with the given type,
-   using the alternatives in the FSCK_SEARCH_FMTS field in TYPES.  If
-   one is found, it is added to TYPES, otherwise an new entry is created
-   with a NULL PROGRAM field.  */
+   existing entry, an attempt to find a program with the given type,
+   using the alternatives in the PROGRAM_SEARCH_FMTS field in TYPES.  If
+   one is found, it is added to TYPES, otherwise a new entry is created
+   with a null PROGRAM field.  */
 error_t fstypes_get (struct fstypes *types,
 		     const char *name, struct fstype **fstype);
 
@@ -107,7 +107,7 @@ error_t fs_readonly (struct fs *fs, int *readonly);
    is not mounted at all, then nothing is done.   */
 error_t fs_set_readonly (struct fs *fs, int readonly);
 
-/* If FS is currently mounted tell lit to remount the device.  XXX If FS is
+/* If FS is currently mounted tell it to remount the device.  XXX If FS is
    not mounted at all, then nothing is done.  */
 error_t fs_remount (struct fs *fs);
 
@@ -150,5 +150,29 @@ error_t fstab_read (struct fstab *fstab, const char *name);
 /* Return the next pass number that applies to any filesystem in FSTAB that
    is greater than PASS, or -1 if there isn't any.  */
 int fstab_next_pass (const struct fstab *fstab, int pass);
+
+
+struct argp;
+extern const struct argp fstab_argp;
+struct fstab_argp_params
+{
+  char *fstab_path;
+  char *program_search_fmts;
+  size_t program_search_fmts_len;
+
+  int do_all;
+  char *types;
+  size_t types_len;
+  char *exclude;
+  size_t exclude_len;
+
+  char *names;
+  size_t names_len;
+};
+
+struct fstab *fstab_argp_create (struct fstab_argp_params *params,
+				 const char *default_search_fmts,
+				 size_t default_search_fmts_len);
+
 
 #endif /* __FSTAB_H__ */
