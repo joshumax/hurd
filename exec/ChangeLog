@@ -1,3 +1,8 @@
+2002-01-02  Roland McGrath  <roland@frob.com>
+
+	* exec.c (do_exec) [KERN_INVALID_LEDGER]:
+	Pass extra arguments to task_create for OSF variant.
+
 2002-01-01  Roland McGrath  <roland@frob.com>
 
 	* execmutations.h (SERVERCOPY): New macro.

@@ -1,3 +1,9 @@
+2002-01-02  Roland McGrath  <roland@frob.com>
+
+	* rpctrace.c (traced_spawn) [KERN_INVALID_LEDGER]:
+	Pass extra arguments to task_create for OSF variant.
+	* shd.c (run): Likewise.
+
 2001-12-30  Roland McGrath  <roland@frob.com>
 
 	* storeread.c (main): Fix argument order in `error' call.

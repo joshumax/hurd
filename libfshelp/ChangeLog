@@ -1,3 +1,8 @@
+2002-01-02  Roland McGrath  <roland@frob.com>
+
+	* start-translator-long.c (fshelp_start_translator_long)
+	[KERN_INVALID_LEDGER]: Pass extra args to task_create for OSF variant.
+
 2001-06-21  Neal H Walfield  <neal@cs.uml.edu>
 
 	* fshelp.h (fshelp_iscontroller): Declare new function.

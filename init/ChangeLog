@@ -1,3 +1,8 @@
+2002-01-02  Roland McGrath  <roland@frob.com>
+
+	* init.c [KERN_INVALID_LEDGER]:
+	Pass extra arguments to task_create for OSF variant.
+
 2001-08-23  Roland McGrath  <roland@frob.com>
 
 	* init.c (main): Pass ARGP_NO_ERRS|ARGP_IN_ORDER to argp_parse.
