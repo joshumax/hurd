@@ -155,6 +155,27 @@ userprefix USERPREFIX;
 serverprefix SERVERPREFIX;
 #endif
 
+/* All RPCs which can be interrupted by `interrupt_operation'
+   should be defined with this macro:
+   	INTR_ROUTINE (protocol_operation, (object: protocol_t; ...))
+ */
+#define INTR_ROUTINE(name, args) \
+  BEFORE_INTR_RPC \
+  routine INTR_RPC_PREFIX##name##INTR_RPC_SUFFIX args; \
+  AFTER_INTR_RPC
+#ifndef BEFORE_INTR_RPC
+#define BEFORE_INTR_RPC /* Usually empty.  */
+#endif
+#ifndef AFTER_INTR_RPC
+#define AFTER_INTR_RPC /* Usually empty.  */
+#endif
+#ifndef INTR_RPC_PREFIX
+#define INTR_RPC_PREFIX /* Usually empty.  */
+#endif
+#ifndef INTR_RPC_SUFFIX
+#define INTR_RPC_SUFFIX /* Usually empty.  */
+#endif
+
 type data_t = array[] of char;
 type string_t = c_string[1024]; /* XXX */
 type io_statbuf_t = struct[32] of int;
