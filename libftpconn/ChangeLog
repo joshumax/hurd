@@ -1,3 +1,52 @@
+Mon May 12 10:57:54 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* unix.c (ftp_conn_unix_cont_get_stats): Only abort when
+	necessary.
+	(ftp_conn_unix_start_get_stats): Allocate enough memory for REQ.
+
+	* cmd.c (ftp_conn_abort): Use ftp_conn_get_raw_reply instead of
+	ftp_conn_get_reply.  Accept REPLY_ABORT_OK as a final reply.
+	* reply.c (ftp_conn_get_raw_reply): Renamed from ftp_conn_get_reply.
+	(ftp_conn_get_reply): New function.
+	* ftpconn.h (ftp_conn_get_raw_reply): New declaration.
+
+Fri May  9 17:55:25 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* priv.h (REPLY_ABORT_OK): New macro.
+
+	* ftpdir.c (ftpdir2): Deal with new semantics of CONTENTS argument
+	to ftp_conn_get_stats.
+	* unix.c (struct get_stats_state): Add ADDED_SLASH field.
+	(ftp_conn_unix_start_get_stats): Don't use asprintf.
+	Set ADDED_SLASH field.
+	(ftp_conn_unix_cont_get_stats): Remove any initial `./' we added.
+	Abort CONN if we return an error.
+
+Thu May  8 14:22:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* open.c (ftp_conn_open): Cast 2nd arg in connect call to `struct
+	sockaddr *'.
+	* cmd.c: Include <string.h>.
+
+	* stats.c (ftp_conn_start_get_stats, ftp_conn_get_stats):
+	Rename FORCE_DIR argument to CONTENTS.
+	* ftpconn.h (ftp_conn_get_stats, ftp_conn_start_get_stats,
+	ftp_conn_unix_start_get_stats): Rename FORCE_DIR argument to CONTENTS.
+	(struct ftp_conn_syshooks): Rename FORCE_DIR argument of
+	START_GET_STATS field type to CONTENTS.
+	* unix.c (struct get_stats_state): Add CONTENTS field.
+	(ftp_conn_unix_start_get_stats): Initialize it.
+	Change FORCE_DIR argument to CONTENTS.
+	Pass -A flag.
+	Prepend ./ to NAME if it doesn't contain a slash.
+	Reject names containg possible meta-characters.
+
+	* unix.c: Only include <hurd/hurd_types.h> if
+	HAVE_HURD_HURD_TYPES_H is defined.
+	(parse_dir_entry): Only set stat->st_fstype if FSTYPE_FTP is defined.
+	Only set stat->st_author if HAVE_STAT_ST_AUTHOR is defined.
+	* Makefile (CPPFLAGS): Add -DHAVE_HURD_HURD_TYPES_H.
+
 Wed May  7 12:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (SRCS): ftpconn.c replaced by resulting split files.
