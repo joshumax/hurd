@@ -1,5 +1,10 @@
 1999-06-05  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* mgt.c (create_startup_proc): Don't call add_proc_to_hash here.
+	* main.c (main): Do it here instead, after we have the task port.
+
+1999-06-04  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* proc.h (struct proc): Use unsigned int for flag bitfields.
 
 	* mgt.c (allocate_proc, complete_proc): New functions, broken
