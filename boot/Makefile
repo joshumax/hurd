@@ -15,9 +15,9 @@
 # along with the GNU Hurd; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#include ../Makeconf
+include ../Makeconf
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o syscall.o
 
 boot: $(OBJS)
 	$(link)
@@ -25,13 +25,16 @@ boot: $(OBJS)
 boot.o: notify_S.h exec_S.h device_S.h
 
 notify_S.h notifyServer.c: $(headers)/mach/notify.defs
-	$(MIG) $< -user /dev/null -header /dev/null \
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader notify_S.h
 
 exec_S.h execServer.c: $(headers)/hurd/exec.defs
-	$(MIG) $< -user /dev/null -header /dev/null \
+	$(CPP) $(CPPFLAGS) $< -DSERVERPREFIX=S_ | \
+	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader exec_S.h
 
 device_S.h deviceServer.c: $(headers)/device/device.defs
-	$(MIG) $< -user /dev/null -header /dev/null \
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
