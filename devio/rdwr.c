@@ -366,15 +366,14 @@ open_write(struct open *open, vm_address_t buf, vm_size_t len,
   error_t err;
   struct rdwr_state state;
   struct dev *dev = open->dev;
-#ifdef MSG
-  off_t start_offs;
-#endif
 
   rdwr_state_init(&state, open, offs);
 
-#ifdef MSG
-  start_offs = *state.offs_p;
-#endif
+  offs = *state.offs_p;
+  if (offs < 0)
+    return EINVAL;
+  if (offs + len > dev->size)
+    return EIO;
 
   if (!dev_is(dev, DEV_BUFFERED))
     err = raw_write(dev, buf, len, amount, state.offs_p);
@@ -398,12 +397,12 @@ open_write(struct open *open, vm_address_t buf, vm_size_t len,
 
       mutex_lock(&debug_lock);
       fprintf(debug, "open_rdwr:\n  using %s offset\n",
-	      (offs == -1 || !dev_is(dev, DEV_BUFFERED))
+	      (state.user_offs == -1 || !dev_is(dev, DEV_BUFFERED))
 	      ? (state.offs_p == &dev->io_state.location
 		 ? "device" : "open")
 	      : "msg");
       fprintf(debug, "  %s write(%s, %d, %d) => %s, %d\n",
-	      mode, bstr, len, (int)start_offs, estr, *amount);
+	      mode, bstr, len, (int)offs, estr, *amount);
       fprintf(debug, "  offset = %d\n", (int)*state.offs_p);
       mutex_unlock(&debug_lock);
     }
@@ -424,15 +423,14 @@ open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
   error_t err;
   struct rdwr_state state;
   struct dev *dev = open->dev;
-#ifdef MSG
-  off_t start_offs;
-#endif
 
   rdwr_state_init(&state, open, offs);
 
-#ifdef MSG
-  start_offs = *state.offs_p;
-#endif
+  offs = *state.offs_p;
+  if (offs < 0)
+    return EINVAL;
+  if (offs + amount > dev->size)
+    return EIO;
 
   if (!dev_is(dev, DEV_BUFFERED))
     err = raw_read(dev, buf, buf_len, amount, state.offs_p);
@@ -456,12 +454,12 @@ open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
 
       mutex_lock(&debug_lock);
       fprintf(debug, "open_rdwr:\n  using %s offset\n",
-	      (offs == -1 || !dev_is(dev, DEV_BUFFERED))
+	      (state.user_offs == -1 || !dev_is(dev, DEV_BUFFERED))
 	      ? (state.offs_p == &dev->io_state.location
 		 ? "device" : "open")
 	      : "msg");
       fprintf(debug, "  %s read(%d, %d) => %s, %s, %d\n",
-	      mode, amount, (int)start_offs, estr, bstr, *buf_len);
+	      mode, amount, (int)offs, estr, bstr, *buf_len);
       fprintf(debug, "  offset = %d\n", (int)*state.offs_p);
       mutex_unlock(&debug_lock);
     }
