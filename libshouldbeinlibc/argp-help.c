@@ -871,15 +871,19 @@ argp_failure (struct argp_state *state, int status, int errnum,
 
       if (stream)
 	{
-	  va_list ap;
-
 	  fputs (state ? state->name : program_invocation_name, stream);
-	  putc (':', stream);
-	  putc (' ', stream);
 
-	  va_start (ap, fmt);
-	  vfprintf (stream, fmt, ap);
-	  va_end (ap);
+	  if (fmt)
+	    {
+	      va_list ap;
+
+	      putc (':', stream);
+	      putc (' ', stream);
+
+	      va_start (ap, fmt);
+	      vfprintf (stream, fmt, ap);
+	      va_end (ap);
+	    }
 
 	  if (errnum)
 	    {
