@@ -354,8 +354,11 @@ devio_abandon_physical_output ()
 static void
 devio_suspend_physical_output ()
 {
-  device_set_status (phys_device, TTY_STOP, 0, 0);
-  output_stopped = 1;
+  if (!output_stopped)
+    {
+      device_set_status (phys_device, TTY_STOP, 0, 0);
+      output_stopped = 1;
+    }
 }
 
 
