@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,12 +22,11 @@
 /* Implement io_select as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_select (struct protid *cred,
-		    int *type, 
-		    int *tag __attribute__ ((unused)))
+		    int *type)
 {
   if (!cred)
     return EOPNOTSUPP;
-  
+
   *type &= ~SELECT_URG;
   return 0;
 }
