@@ -1437,7 +1437,7 @@ do_exec (file_t file,
 		}
 	      return boot->dtable[fd];
 	    }
-	  e.error = hurd_file_name_lookup (&user_port, &user_fd,
+	  e.error = hurd_file_name_lookup (&user_port, &user_fd, 0,
 					   name, O_READ, 0, &interp.file);
 	}
     }
@@ -1722,7 +1722,7 @@ S_exec_exec (struct trivfs_protid *protid,
 		  return dtable[fd];
 		}
 	      file_t server;
-	      if (!hurd_file_name_lookup (user_port, user_fd, p, 0,0, &server))
+	      if (!hurd_file_name_lookup (user_port, user_fd, 0, p, 0,0, &server))
 		{
 		  error_t err;
 		  struct trivfs_protid *protid
