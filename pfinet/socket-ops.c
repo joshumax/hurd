@@ -22,6 +22,51 @@
 #include "socket_S.h"
 
 
+error_t
+S_socket_create (struct trivfs_protid *master,
+		 int sock_type,
+		 int protocol,
+		 mach_port_t *port,
+		 mach_msg_type_name_t *porttype)
+{
+  struct socket *sock;
+  error_t err;
+  
+  if (!master)
+    return EOPNOTSUPP;
+
+  /* Don't allow bogus SOCK_PACKET here. */
+
+  if ((sock_type != SOCK_STREAM
+       && sock_type != SOCK_DGRAM
+       && sock_type != SOCK_SEQPACKET
+       && sock_type != SOCK_RAW)
+      || protocol < 0)
+    return EINVAL;
+  
+  mutex_lock (&global_lock);
+
+  become_task_protid (master);
+
+  sock = sock_alloc ();
+  
+  sock->type = type;
+  sock->ops = inet_proto_ops;
+  
+  err = - (*sock->ops->create) (sock, protocol);
+  if (err)
+    sock_release (sock);
+  else
+    {
+      *port = ports_get_right (make_sock_user (sock, master->isroot));
+      *porttype = MACH_MSG_TYPE_MAKE_SEND;
+    }
+  
+  mutex_unlock (&global_lock);
+
+  return err;
+}
+
 
 /* Listen on a socket. */
 error_t
@@ -31,6 +76,8 @@ S_socket_listen (struct user_sock *user, int queue_limit)
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+
+  become_task (user);
   
   if (user->sock->state == SS_UNCONNECTED)
     {
@@ -62,6 +109,8 @@ S_socket_accept (struct sock_user *user,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+
+  become_task (user);
   
   sock = user->sock;
   newsock = 0;
@@ -115,6 +164,8 @@ S_socket_connect (struct sock_user *user,
   
   mutex_lock (&global_lock);
 
+  become_task (user);
+
   err = 0;
   
   if (sock->state == SS_CONNECTED
@@ -144,6 +195,7 @@ S_socket_bind (struct user_sock *user,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+  become_task (user);
   err = (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
   mutex_unlock (&global_lock);
   
@@ -159,6 +211,7 @@ S_socket_name (struct sock_user *user,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+  become_task (user);
   make_sockaddr_port (user->sock, 0, addr_port, addr_port_name);
   mutex_unlock (&global_lock);
   return 0;
@@ -175,6 +228,7 @@ S_socket_peername (struct sock_user *user,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+  become_task (user);
   err = make_sockaddr_port (user->sock, 1, addr_port, addr_port_name);
   mutex_unlock (&global_lock);
   
@@ -191,6 +245,8 @@ S_socket_connect2 (struct sock_user *user1,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
+
+  become_task (user1);
 
   if (user1->sock->type != user2->sock->type)
     err = EINVAL;
@@ -234,6 +290,167 @@ S_socket_create_address (mach_port_t server,
   
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  return 0;
+}
+
+error_t
+S_socket_fabricate_address (mach_port_t server,
+			    int sockaddr_type,
+			    mach_port_t *addr_port,
+			    mach_msg_type_name_t *addr_port_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_whatis_address (struct sock_addr *addr,
+			 int *type,
+			 char **data,
+			 mach_msg_number_t *datalen)
+{
+  if (!addr)
+    return EOPNOTSUPP;
+  
+  *type = AF_INET;
+  if (*datalen < addr->len)
+    vm_allocate (mach_task_self (), (vm_address_t *) data, addr->len, 1);
+  bcopy (addr->address, *data, addr->len);
+  *datalen = addr->len;
+
+  return 0;
+}
+
+error_t
+S_socket_shutdown (struct sock_user *user,
+		   int direction)
+{
+  error_t err;
+  
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  become_task (user);
+  err = - (*user->sock->ops->shutdown) (user->sock, direction);
+  mutex_unlock (&global_lock);
+  
+  return err;
+}
+
+error_t
+S_socket_getopt (struct sock_user *user,
+		 int level,
+		 int option,
+		 char **data,
+		 u_int *datalen)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_setopt (struct sock_user *user,
+		 int level,
+		 int option,
+		 char *data,
+		 u_int datalen)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_send (struct sock_user *user,
+	       struct sock_addr *addr,
+	       int flags,
+	       char *data,
+	       u_int datalen,
+	       mach_port_t *ports,
+	       u_int nports,
+	       char *control,
+	       u_int controllen,
+	       mach_msg_type_number_t *amount)
+{
+  error_t err;
+  
+  if (!user)
+    return EOPNOTSUPP;
+  
+  /* Don't do this yet, it's too bizarre to think about right now. */
+  if (nports != 0 || controllen != 0)
+    return EINVAL;
+  
+  mutex_lock (&global_lock);
+
+  become_task (user);
+  
+  if (addr)
+    /* O_NONBLOCK in fourth arg? XXX */
+    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 0,
+					flags,  addr->address, addr->len);
+  else
+    /* O_NONBLOCK in fourth arg? XXX */
+    err = - (*user->sock->ops->send) (user->sock, data, datalen, 0, flags);
+  
+  mutex_unlock (&global_lock);
+  
+  return err;
+}
+
+error_t
+S_socket_recv (struct sock_user *user,
+	       mach_port_t *addrport,
+	       mach_msg_type_name_t *addrporttype,
+	       int flags,
+	       char **data,
+	       u_int *datalen,
+	       mach_port_t **ports,
+	       u_int *nports,
+	       char **control,
+	       u_int *controllen,
+	       int *outflags,
+	       mach_msg_type_number_t amount)
+{
+  error_t err;
+  char addr[128];
+  size_t addrlen = sizeof addr;
+  int didalloc = 0;
+
+  if (!user)
+    return EOPNOTSUPP;
+  
+  /* For unused recvmsg interface */
+  *nports = 0;
+  *controllen = 0;
+  *outflags = 0;
+
+  /* Instead of this, we should peek at the socket and only allocate
+     as much as necessary. */
+  if (*datalen < amount)
+    {
+      vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
+      didalloc = 1;
+    }
+  
+  mutex_lock (&global_lock);
+  become_task (user);
+
+  err = (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0,
+				      flags, addr, &addrlen);
+  
+  mutex_unlock (&global_lock);
+
+  if (err < 0)
+    return -err;
+
+  *datalen = err;
+
+  if (didalloc && page_round (*datalen) < page_round (amount))
+    vm_deallocate (mach_task_self (), *data + page_round (*datalen),
+		   page_round (amount) - page_round (*datalen));
+
+  
+  S_socket_create_address (0, AF_INET, addr, addrlen, addrport, 
+			   addrporttype, 0);
+  
   return 0;
 }
 
