@@ -97,4 +97,19 @@ error_t sock_create (struct sock *template, struct sock **sock);
 /* Return a new user port on SOCK in PORT.  */
 error_t sock_create_port (struct sock *sock, mach_port_t *port);
 
+/* Bind SOCK to ADDR.  */
+error_t sock_bind (struct sock *sock, struct addr *addr);
+
+/* Returns SOCK's address in ADDR, with an additional reference added.  If
+   SOCK doesn't currently have an address, one is fabricated first.  */
+error_t sock_get_addr (struct sock *sock, struct addr *addr);
+
+/* Returns a send right to SOCK's address in ADDR_PORT.  If SOCK doesn't
+   currently have an address, one is fabricated first.  */
+error_t sock_get_addr_port (struct sock *sock, mach_port_t *addr_port);
+
+/* If SOCK is a connected socket, returns a send right to SOCK's peer's
+   address in ADDR_PORT.  */
+error_t sock_get_write_addr_port (struct sock *sock, mach_port_t *addr_port);
+
 #endif /* __SOCK_H__ */
