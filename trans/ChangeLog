@@ -1,5 +1,8 @@
 2002-05-13  Roland McGrath  <roland@frob.com>
 
+	* fakeroot.c (netfs_S_file_exec): Don't lock the node (no need).
+	Don't use MACH_MSG_TYPE_MOVE_SEND.
+
 	* fakeroot.c (netfs_attempt_chmod): Handle a MODE argument with no
 	S_IFMT bits set.
 
