@@ -80,8 +80,6 @@ struct node
   int references;		/* hard references */
   int light_references;		/* light references */
 
-  mach_port_t identity;		/* io_identity port */
-
   mach_port_t sockaddr;		/* address for S_IFSOCK shortcut */
 
   int owner;
