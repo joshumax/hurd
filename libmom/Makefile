@@ -32,6 +32,7 @@ SRCS = add-ref.c allocate-address.c allocate-memory.c copy-ref.c \
 
 LCLHDRS = mom.h mom-kernep.h priv.h
 installhdrs = mom.h mom-kerndep.h
+installhdrsubdir = .
 
 OBJS = $(SRCS:.c=.o)
 
