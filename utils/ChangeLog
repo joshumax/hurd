@@ -1,3 +1,13 @@
+1999-11-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mount.c: New file.
+	* mount.sh: File removed.
+	* Makefile (special-targets): Remove mount.
+	(SRCS): mount.sh -> mount.c
+	(mount): Add deps on ../sutils/fstab.o, ../sutils/clookup.o,
+	libfshelp and libports.
+	(../sutils/fstab.o ../sutils/clookup.o): Rule to build in ../sutils.
+
 1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* vmstat.c (BADVAL): New macro.

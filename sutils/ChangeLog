@@ -1,3 +1,10 @@
+1999-11-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (progs, scripts): New variables.
+	(targets, special-targets, SRCS, OBJS): Define in terms of those.
+	(libshouldbeinlibc dep rule): Replaced with static pattern rule
+	with $(progs) as target list, giving %.o dep as well.
+
 1999-11-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* swapon.c (swaponoff): Check for a null default pager port.
