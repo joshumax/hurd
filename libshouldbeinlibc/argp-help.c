@@ -127,10 +127,10 @@ struct hol_entry
      probably been shadowed by some other entry).  */
   char *short_options;
 
-  /* Entries are sorted by their sort_class first, in the order:
+  /* Entries are sorted by their group first, in the order:
        1, 2, ..., n, 0, -m, ..., -2, -1
-     and then alphabetically within each class.  The default is 0.  */
-  int sort_class;
+     and then alphabetically within each group.  The default is 0.  */
+  int group;
 };
 
 /* A list of options for help.  */
@@ -161,7 +161,7 @@ struct hol *make_hol (struct argp_option *opt)
 
   if (opt)
     {
-      int cur_sort_class = 0;
+      int cur_group = 0;
 
       /* The first option must not be an alias.  */
       assert (! oalias (opt));
@@ -187,7 +187,7 @@ struct hol *make_hol (struct argp_option *opt)
 	  entry->opt = o;
 	  entry->num = 0;
 	  entry->short_options = so;
-	  entry->sort_class = cur_sort_class = o->group ?: cur_sort_class;
+	  entry->group = cur_group = o->group ?: cur_group;
 
 	  do
 	    {
@@ -309,27 +309,27 @@ static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
 }
 
 /* If an entry with the long option NAME occurs in HOL, set it's special
-   sort position to CLASS.  */
+   sort position to GROUP.  */
 static void
-hol_set_sort_class (struct hol *hol, char *name, int class)
+hol_set_group (struct hol *hol, char *name, int group)
 {
   struct hol_entry *entry = hol_find_entry (hol, name);
   if (entry)
-    entry->sort_class = class;
+    entry->group = group;
 }
 
-/* Sort HOL by sort class and alphabetically by option name (with short
-   options taking precedence over long).  Since the sorting is for display
-   purposes only, the shadowing of options isn't effected.  */
+/* Sort HOL by group and alphabetically by option name (with short options
+   taking precedence over long).  Since the sorting is for display purposes
+   only, the shadowing of options isn't effected.  */
 static void
 hol_sort (struct hol *hol)
 {
   int entry_cmp (const void *entry1_v, const void *entry2_v)
     {
       const struct hol_entry *entry1 = entry1_v, *entry2 = entry2_v;
-      int class1 = entry1->sort_class, class2 = entry2->sort_class;
+      int group1 = entry1->group, group2 = entry2->group;
 
-      if (class1 == class2)
+      if (group1 == group2)
 	/* Normal comparison.  */
 	{
 	  int short1 = hol_entry_first_short (entry1);
@@ -355,11 +355,11 @@ hol_sort (struct hol *hol)
 	    }
 	}
       else
-	/* Order by class:  1, 2, ..., n, 0, -m, ..., -2, -1  */
-	if ((class1 < 0 && class2 < 0) || (class1 > 0 && class2 > 0))
-	  return class1 - class2;
+	/* Order by group:  1, 2, ..., n, 0, -m, ..., -2, -1  */
+	if ((group1 < 0 && group2 < 0) || (group1 > 0 && group2 > 0))
+	  return group1 - group2;
 	else
-	  return class2 - class1;
+	  return group2 - group1;
     }
 
   if (hol->num_entries > 0)
@@ -446,8 +446,14 @@ hol_append (struct hol *hol, struct hol *more)
     }
 }
 
+/* Print help for ENTRY to LINE.  *LAST_ENTRY should contain the last entry
+   printed before this, or null if it's the first, and if ENTRY is in a
+   different group, and *SEP_GROUPS is true, then a blank line will be
+   printed before any output.  *SEP_GROUPS is also set to true if a
+   user-specified group header is printed.  */
 static void
-hol_entry_help (struct hol_entry *entry, struct line *line)
+hol_entry_help (struct hol_entry *entry, struct line *line,
+		struct hol_entry **prev_entry, int *sep_groups)
 {
   unsigned num;
   int first = 1;		/* True if nothing's been printed so far.  */
@@ -459,7 +465,13 @@ hol_entry_help (struct hol_entry *entry, struct line *line)
   void comma (unsigned col)
     {
       if (first)
-	first = 0;
+	{
+	  if (sep_groups && *sep_groups
+	      && prev_entry && *prev_entry
+	      && entry->group != (*prev_entry)->group)
+	    line_newline (line, 0);
+	  first = 0;
+	}
       else
 	{
 	  line_putc (line, ',');
@@ -506,11 +518,17 @@ hol_entry_help (struct hol_entry *entry, struct line *line)
 
   if (first)
     /* Didn't print any switches, what's up?  */
-    if (oshort (real) && ! real->name)
+    if (! oshort (real) && ! real->name)
       /* This is a group header, print it nicely.  */
       {
-	line_indent_to (line, HEADER_COL);
-	line_fill (line, real->doc, HEADER_COL);
+	if (real->doc)
+	  {
+	    line_newline (line, 0); /* Precede with a blank line.  */
+	    line_indent_to (line, HEADER_COL);
+	    line_fill (line, real->doc, HEADER_COL);
+	  }
+	if (sep_groups)
+	  *sep_groups = 1;	/* Separate subsequent groups. */
       }
     else
       /* Just a totally shadowed option, don't print anything.  */
@@ -532,6 +550,9 @@ hol_entry_help (struct hol_entry *entry, struct line *line)
     }
 
   line_newline (line, 0);
+
+  if (prev_entry)
+    *prev_entry = entry;
 }
 
 /* Output a long help message about the options in HOL to LINE.  */
@@ -540,8 +561,11 @@ hol_help (struct hol *hol, struct line *line)
 {
   unsigned num;
   struct hol_entry *entry;
+  struct hol_entry *last_entry = 0;
+  int sep_groups = 0;		/* True if we should separate different
+				   sections with blank lines.   */
   for (entry = hol->entries, num = hol->num_entries; num > 0; entry++, num--)
-    hol_entry_help (entry, line);
+    hol_entry_help (entry, line, &last_entry, &sep_groups);
 }
 
 /* Add the formatted output from FMT &c to LINE, preceded by a space if it
@@ -702,8 +726,8 @@ void argp_help (struct argp *argp, FILE *stream, unsigned flags)
       hol = argp_hol (argp);
 
       /* If present, these options always come last.  */
-      hol_set_sort_class (hol, "help", -1);
-      hol_set_sort_class (hol, "version", -1);
+      hol_set_group (hol, "help", -1);
+      hol_set_group (hol, "version", -1);
 
       hol_sort (hol);
     }
