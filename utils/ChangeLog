@@ -1,5 +1,9 @@
 1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* rpctrace.c (rewrite_right): If we see our own wrapper right,
+	unwrap and replace it with the original send right.
+	(trace_and_forward): Remove vm_map special case.
+
 	* rpctrace.c: Mostly rewritten.  Now mostly working with skeletal
 	functionality.
 
