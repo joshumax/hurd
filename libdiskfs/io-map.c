@@ -29,8 +29,10 @@ diskfs_S_io_map (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&cred->po->np->lock);
   *rdobj = diskfs_get_filemap (cred->po->np);
-  *rdtype = *wrtype = MACH_MSG_TYPE_COPY_SEND;
+  mutex_unlock (&cred->po->np->lock);
+  *rdtype = *wrtype = MACH_MSG_TYPE_MOVE_SEND;
   *wrobj = *rdobj;
   return 0;
 }
