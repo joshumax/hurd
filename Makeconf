@@ -65,7 +65,7 @@ top_srcdirinc=
 else
 top_srcdirinc=-I$(top_srcdir)
 endif
-CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -D_GNU_SOURCE
+CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include -D_GNU_SOURCE
 CFLAGS += -Wall -g -O3
 
 # Decode makemode:
@@ -143,15 +143,16 @@ install: $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installh
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
 # it never needs to be repeated for a particular header.
-INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/$(installhdrsubdir)/,$(installhdrs))
-libs: $(INSTALLED_LOCAL_HEADERS)
 ifeq ($(installhdrsubdir),.)
-$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
-	ln -s $(dir)/$* $@
+INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/include/,$(installhdrs))
+$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/include/%:
+	ln -s ../$(dir)/$* $@
 else
+INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/$(installhdrsubdir)/,$(installhdrs))
 $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 	ln -s ../$(dir)/$* $@
 endif
+libs: $(INSTALLED_LOCAL_HEADERS)
 
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
