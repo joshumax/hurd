@@ -144,15 +144,11 @@ main(argc, argv)
 	int	argc;
 	char	**argv;
 {
-  int doing_default_pager = 0;
-  int had_a_partition = 0;
   int script_paging_file (const struct cmd *cmd, int linux_signature)
     {
       if (add_paging_file (bootstrap_master_device_port, cmd->path,
 			   linux_signature))
 	printf ("(serverboot): %s: Cannot add paging file\n", cmd->path);
-      else
-	had_a_partition = 1;
       return 0;
     }
   int script_add_paging_file (const struct cmd *cmd, int *val)
@@ -166,11 +162,6 @@ main(argc, argv)
   int script_add_linux_paging_file (const struct cmd *cmd, int *val)
     {
       return script_paging_file (cmd, 1);
-    }
-  int script_default_pager (const struct cmd *cmd, int *val)
-    {
-      doing_default_pager = 1;
-      return 0;
     }
 
   register kern_return_t	result;
@@ -329,8 +320,6 @@ main(argc, argv)
 	      || boot_script_define_function ("add-linux-paging-file",
 					      VAL_NONE,
 					      &script_add_linux_paging_file)
-	      || boot_script_define_function ("default-pager", VAL_NONE,
-					      &script_default_pager)
 	      )
 	    panic ("bootstrap: error setting boot script variables");
 
@@ -401,16 +390,6 @@ main(argc, argv)
 					(VM_PROT_READ|VM_PROT_WRITE)))
 		(void) vm_deallocate(my_task, r_addr, r_size);
 	}
-#endif
-
-      if (had_a_partition)
-	doing_default_pager = 1;
-      else
-	printf ("(serverboot): Running without any paging\n");
-
-#if 0				/* Always stick around to handle swapon requests */
-      if (! doing_default_pager)
-	task_terminate (mach_task_self ());
 #endif
 
       default_pager_initialize (bootstrap_master_host_port);
