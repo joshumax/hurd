@@ -70,40 +70,51 @@ store_default_leaf_encode (struct store *store, struct store_enc *enc)
   return 0;
 }
 
-/* Encode STORE into ENC, or return an error.   The contents of ENC may
-   then be return as the value of file_get_storage_info; if for some reason
-   this can't be done, store_enc_dealloc may be used to deallocate the
-   mmemory used by the unsent vectors.  */
+/* Encode STORE into ENC, which should have been prepared with
+   store_enc_init, or return an error.  The contents of ENC may then be
+   return as the value of file_get_storage_info; if for some reason this
+   can't be done, store_enc_dealloc may be used to deallocate the mmemory
+   used by the unsent vectors.  */
 error_t
 store_encode (const struct store *store, struct store_enc *enc)
 {
   error_t err;
   struct store_meths *meths = store->meths;
+  /* We zero each vector length for the allocate_encoding method to work, so
+     save the old values.  */
+  mach_msg_type_number_t init_ports_len = enc->ports_len;
+  mach_msg_type_number_t init_ints_len = enc->ints_len;
+  mach_msg_type_number_t init_offsets_len = enc->offsets_len;
+  mach_msg_type_number_t init_data_len = enc->data_len;
 
   if (!meths->allocate_encoding || !meths->encoding)
     return EOPNOTSUPP;
 
-  bzero (enc, sizeof (*enc));
-
+  enc->ports_len = 0;
+  enc->ints_len = 0;
+  enc->offsets_len = 0;
+  enc->data_len = 0;
   err = (*meths->allocate_encoding) (store, enc);
   if (err)
     return err;
 
-  if (enc->ports_len > 0)
+  if (enc->ports_len > init_ports_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->ports, enc->ports_len, 1);
-  if (!err && enc->ints_len > 0)
+  if (!err && enc->ints_len > init_ints_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->ints, enc->ints_len, 1);
-  if (!err && enc->offsets_len > 0)
+  if (!err && enc->offsets_len > init_offsets_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->offsets, enc->offsets_len, 1);
-  if (!err && enc->data_len > 0)
+  if (!err && enc->data_len > init_data_len)
     err = vm_allocate (mach_task_self (),
 		       (vm_address_t *)&enc->data, enc->data_len, 1);
 
   if (! err)
     err = (*meths->encode) (store, enc);
+
+  enc->cur_port = enc->cur_int = enc->cur_offset = enc->cur_data = 0;
 
   if (err)
     store_enc_dealloc (enc);
