@@ -23,9 +23,9 @@
 #include "netfs.h"
 
 error_t
-netfs_get_options (char **argz, unsigned *argz_len)
+netfs_get_options (char **argz, size_t *argz_len)
 {
   *argz = 0;
   *argz_len = 0;
-  return netfs_unparse_runtime_options (argz, argz_len);
+  return netfs_append_std_options (argz, argz_len);
 }
