@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -23,7 +23,7 @@
 #include <cthreads.h>
 
 void
-ports_interrupt_rpc (void *portstruct)
+ports_interrupt_rpcs (void *portstruct)
 {
   struct port_info *pi = portstruct;
   struct rpc_info *rpc;
