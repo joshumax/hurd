@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef _HURD_FSHELP_
+#define _HURD_FSHELP_
+
 /* This library implements various things that are generic to
    all or most implementors of the filesystem protocol.  It 
    presumes that you are using the iohelp library as well.  It
@@ -116,3 +119,4 @@ void fshelp_translator_iterate (void (*func)(struct trans_link *, void *),
 void fshelp_kill_translator (struct trans_link *link);
 
 					     
+#endif
