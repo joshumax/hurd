@@ -29,5 +29,5 @@ ext2fs.static-LDFLAGS += -static
 
 include ../Makeconf
 
-ext2fs ext2fs.static: $(OBJS) ../libdiskfs/libdiskfs.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
+ext2fs ext2fs.static: $(OBJS) ../libdiskfs/libdiskfs.a ../libpager/libpager.a ../libiohelp/libiohelp.a ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
