@@ -1,3 +1,8 @@
+2002-08-26  Roland McGrath  <roland@frob.com>
+
+	* cthreads.c (cthread_body) [HAVE_USELOCALE]: Call uselocale to
+	initialize the thread to the global locale.
+
 2002-07-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* stack.c (stack_init): Put back in setting of the
