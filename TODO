@@ -247,6 +247,8 @@ See `tasks', the exported task list.
   login> ps aux|head
   bash: /bin/head: (ipc/send) invalid msg-header
   Broken pipe
+  [bash only seems to print error messages in this particular format if an
+   execve fails]
 ???
 
 Find out why ^G in emacs, esp at prompts, often results in a long (~2s)
