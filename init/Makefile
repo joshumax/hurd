@@ -18,7 +18,11 @@
 dir := init
 makemode := server
 
-##split-init=yes
+# Set this to something other than `yes' to get the old Hurd init
+# that has BSD-style rc and ttys functionality rolled in.
+# The option for this old style may go away at some point in the future;
+# if you want BSD style, best to use runttys (in daemons) instead.
+split-init = yes
 
 SRCS = init.c
 OBJS = $(SRCS:.c=.o) \
