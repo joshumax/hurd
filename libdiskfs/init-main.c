@@ -54,7 +54,7 @@ diskfs_init_main (struct argp *startup_argp,
   else
     {
       task_get_bootstrap_port (mach_task_self (), bootstrap);
-      if (bootstrap == MACH_PORT_NULL)
+      if (*bootstrap == MACH_PORT_NULL)
 	error (2, 0, "Must be started as a translator");
     }
 

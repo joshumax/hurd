@@ -1,3 +1,8 @@
+2000-04-29  Marcus Brinkmann  <Marcus.Brinkmann@ruhr-uni-bochum.de>
+
+	* init-main.c (diskfs_init_main): Dereference BOOTSTRAP before
+	checking for MACH_PORT_NULL.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-exec.c (diskfs_S_file_exec): Fix typo and braino in last change.
