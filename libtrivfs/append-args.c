@@ -24,7 +24,7 @@
    list of the arguments to this translator.  */
 error_t
 trivfs_append_args (struct trivfs_control *fsys,
-		    char **argz, unsigned *argz_len)
+		    char **argz, size_t *argz_len)
 {
   return EOPNOTSUPP;
 }

@@ -198,6 +198,6 @@ error_t trivfs_set_options (struct trivfs_control *fsys,
    list of the arguments to this translator.  The default definition of this
    routine simply calls diskfs_append_std_options.  */
 error_t trivfs_append_args (struct trivfs_control *fsys,
-			    char **argz, unsigned *argz_len);
+			    char **argz, size_t *argz_len);
 
 #endif /* __TRIVFS_H__ */
