@@ -65,8 +65,7 @@ ptyio_init ()
     
 error_t
 pty_open_hook (struct trivfs_control *cntl,
-	       uid_t *uids, u_int nuids,
-	       uid_t *gids, u_int ngids,
+	       struct iouser *user,
 	       int flags)
 {
   if ((flags & (O_READ|O_WRITE)) == 0)

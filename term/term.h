@@ -323,7 +323,6 @@ error_t pty_io_read (struct trivfs_protid *, char **,
 		     mach_msg_type_number_t *, mach_msg_type_number_t);
 error_t pty_io_readable (int *);
 error_t pty_io_select (struct trivfs_protid *, mach_port_t, int *, int *);
-error_t pty_open_hook (struct trivfs_control *, uid_t *, u_int, uid_t *, 
-		       u_int, int);
+error_t pty_open_hook (struct trivfs_control *, struct iouser *, int);
 error_t pty_po_create_hook (struct trivfs_peropen *);
 error_t pty_po_destroy_hook (struct trivfs_peropen *);

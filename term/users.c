@@ -104,15 +104,14 @@ init_users ()
 
 static error_t
 open_hook (struct trivfs_control *cntl,
-	   uid_t *uids, u_int nuids,
-	   uid_t *gids, u_int ngids,
+	   struct iouser *user,
 	   int flags)
 {
   int cancel = 0;
   error_t err;
   
   if (cntl == ptyctl)
-    return pty_open_hook (cntl, uids, nuids, gids, ngids, flags);
+    return pty_open_hook (cntl, user, flags);
 
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
@@ -172,8 +171,8 @@ open_hook (struct trivfs_control *cntl,
   mutex_unlock (&global_lock);
   return 0;
 }
-error_t (*trivfs_check_open_hook) (struct trivfs_control *, uid_t *,
-				   u_int, uid_t *, u_int, int)
+error_t (*trivfs_check_open_hook) (struct trivfs_control *, 
+				   struct iouser *, int)
      = open_hook;
 
 static error_t
@@ -289,7 +288,6 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_fstype = FSTYPE_TERM;
   st->st_fsid = getpid ();
   st->st_ino = 0;
-  st->st_mode &= ~S_IFMT;
   st->st_mode = term_mode;
   st->st_uid = term_owner;
   st->st_gid = term_group;
@@ -344,7 +342,9 @@ S_termctty_open_terminal (mach_port_t arg,
 
   if (!err)
     {
-      err = trivfs_open (termctl, 0, 0, 0, 0, flags, new_realnode, &newcred);
+      err = trivfs_open (termctl, 
+			 iohelp_create_iouser (make_idvec (), make_idvec ()),
+			 flags, new_realnode, &newcred);
       if (!err)
 	{
 	  *result = ports_get_right (newcred);
@@ -418,56 +418,40 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
 		     uid_t uid,
 		     gid_t gid)
 {
-  int i;
-  int noticed_uid;
-
-  /* This routine is flawed in several ways; it needs to
-     be rewritted once the idvec handling stuff can do
-     permission checks. */
-
+  struct stat st;
+  error_t err;
+  
   if (!cred)
     return EOPNOTSUPP;
 
-  noticed_uid = 0;
   mutex_lock (&global_lock);
-  for (i = 0; i < cred->nuids; i++)
-    {
-      if (cred->uids[i] == uid)
-	noticed_uid = 1;
-      if (cred->uids[i] == 0 || cred->uids[i] == term_owner)
-	{
-	  /* Make sure UID is legitimate */
-	  if (!cred->isroot && !noticed_uid && term_owner != uid)
-	    {
-	      /* Continue scanning UIDS */
-	      for (i++; i < cred->nuids; i++)
-		if (cred->uids[i] == uid)
-		  noticed_uid = 1;
-	      if (!noticed_uid)
-		{
-		  mutex_unlock (&global_lock);
-		  return EPERM;
-		}
-	    }
-	  
-	  /* Make sure GID is legitimate */
-	  for (i = 0; i < cred->ngids || cred->isroot; i++)
-	    if (cred->isroot || cred->gids[i] == gid)
-	      {
-		/* Make the change */
-		term_owner = uid;
-		term_group = gid;
-		mutex_unlock (&global_lock);
-		return 0;
-	      }
 
-	  /* Not legitimate */
-	  break;
+  /* XXX */
+  st.st_uid = term_owner;
+  st.st_gid = term_group;
+  
+  if (!cred->isroot)
+    {
+      err = fshelp_isowner (&st, cred->user);
+      if (err)
+	goto out;
+
+      if (!idvec_contains (cred->user->uids, uid)
+	  || !idvec_contains (cred->user->gids, gid))
+	{
+	  err = EPERM;
+	  goto out;
 	}
     }
 
+  /* Make the change */
+  term_owner = uid;
+  term_group = gid;
+  err = 0;
+  
+out:
   mutex_unlock (&global_lock);
-  return EPERM;
+  return err;
 }
 
 /* Implement chmod locally */
@@ -477,40 +461,39 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 		     mach_msg_type_name_t reply_type,
 		     mode_t mode)
 {
-  int i;
+  error_t err;
+  struct stat st;
   
   if (!cred)
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
-  for (i = 0; i < cred->nuids; i++)
-    if (cred->isroot || cred->uids[i] == term_owner)
-      {
-	if (!cred->isroot)
-	  {
-	    mode &= S_ISVTX;
+  if (!cred->isroot)
+    {
+      /* XXX */
+      st.st_uid;
+      st.st_gid;
+      
+      err = fshelp_isowner (&st, cred->user);
+      if (err)
+	goto out;
 
-	    for (i = 0; i < cred->nuids; i++)
-	      if (cred->uids[i] == term_owner)
-		break;
-	    if (i == cred->nuids)
-	      mode &= ~S_ISUID;
-	    
-	    for (i = 0; i < cred->ngids; i++)
-	      if (cred->gids[i] == term_group)
-		break;
-	    if (i == cred->nuids)
-	      mode &= ~S_ISGID;
-	  }
-	
-	term_mode = (mode | S_IFCHR);
-	mutex_unlock (&global_lock);
-	return 0;
-      }
+      mode &= S_ISVTX;
+      
+      if (!idvec_contains (cred->user->uids, term_owner))
+	mode &= ~S_ISUID;
+      
+      if (!idvec_contains (cred->user->gids, term_group))
+	mode &= ~S_ISUID;
+    }
+
+  term_mode = ((mode & ~S_IFMT) | S_IFCHR);
+  err = 0;
+  
+out:
   mutex_unlock (&global_lock);
-  return EPERM;
+  return err;
 }
-
 
 error_t
 trivfs_S_file_check_access (struct trivfs_protid *cred,
