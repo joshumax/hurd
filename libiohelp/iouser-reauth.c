@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "iohelp.h"
+#include <hurd/auth.h>
 
 /* Conduct a reauthentication transaction, returning a new iouser.
    AUTHSERVER is the I/O servers auth port.  The rendezvous port

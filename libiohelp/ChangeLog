@@ -1,3 +1,21 @@
+Mon Nov 18 16:37:59 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* iouser-reauth.c: Include <hurd/auth.h>.
+
+Sat Nov 16 17:54:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Add shared.c.
+	* shared.c: New file.
+
+Fri Nov 15 13:39:46 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* iouser-create.c (iohelp_create_iouser): Set NEW->hook to zero.
+	* iouser-dup.c (iohelp_dup_iouser): Likewise.
+
+Tue Nov 12 21:51:29 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* iohelp.h: Include <idvec.h>.
+
 Wed Nov  6 19:26:14 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (SRCS): Add iouser-create.c, iouser-dup.c

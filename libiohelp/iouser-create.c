@@ -27,6 +27,7 @@ iohelp_create_iouser (struct idvec *uids, struct idvec *gids)
 
   new->uids = uids;
   new->gids = gids;
+  new->hook = 0;
   return new;
 }
   

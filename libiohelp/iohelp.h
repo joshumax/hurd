@@ -67,6 +67,8 @@ void iohelp_put_shared_data (void *);
 
 /* User identification */
 
+#include <idvec.h>
+
 struct iouser
 {
   struct idvec *uids, *gids;
@@ -80,7 +82,7 @@ struct iouser *iohelp_dup_iouser (struct iouser *iouser);
 void iohelp_free_iouser (struct iouser *iouser);
 
 /* Create a new IOUSER for the specified idvecs */
-struc iouser *iohelp_create_iouser (struct idvec *uids, struct idvec *gids);
+struct iouser *iohelp_create_iouser (struct idvec *uids, struct idvec *gids);
 
 /* Conduct a reauthentication transaction, returning a new iouser.
    AUTHSERVER is the I/O servers auth port.  The rendezvous port

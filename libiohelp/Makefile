@@ -20,7 +20,7 @@ makemode := library
 
 SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	initialize_conch.c verify_user_conch.c iouser-create.c \
-	iouser-dup.c iouser-reauth.c iouser-free.c
+	iouser-dup.c iouser-reauth.c iouser-free.c shared.c
 OBJS = $(SRCS:.c=.o)
 LCLHDRS = iohelp.h 
 HURDLIBS = threads

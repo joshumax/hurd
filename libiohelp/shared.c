@@ -1,4 +1,4 @@
-/* 
+/* Default functions
    Copyright (C) 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -15,37 +15,27 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+
 #include "iohelp.h"
 
-struct iouser *
-iohelp_dup_iouser (struct iouser *iouser)
+/* These definitions exist to satisfy the linker. */
+
+
+void
+iohelp_fetch_shared_data (void *foo)
 {
-  struct iouser *new;
-  error_t err = 0;
-
-  new = malloc (sizeof (struct iouser));
-  if (!new)
-    return 0;
-
-  new->uids = make_idvec ();
-  new->gids = make_idvec ();
-  new->hook = 0;
-  if (!new->uids || !new->gids)
-    goto lose;
-
-  err = idvec_set (new->uids, iouser->uids);
-  if (!err)
-    err = idvec_set (new->gids, iouser->gids);
-
-  if (err)
-    {
-    lose:
-      if (new->uids)
-	idvec_free (new->uids);
-      if (new->gids)
-	idvec_free (new->gids);
-      free (new);
-      return 0;
-    }
-  return new;
+  abort ();
 }
+
+void
+iohelp_put_shared_data (void *foo)
+{
+  abort ();
+}
+
+
+void
+iohelp_fetch_shared_data (void *foo) __attribute__ ((weak));
+void
+iohelp_put_shared_data (void *foo) __attribute__ ((weak));
+
