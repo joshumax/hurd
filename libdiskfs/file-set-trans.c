@@ -162,8 +162,8 @@ diskfs_S_file_set_translator (struct protid *cred,
   /* Set active translator */
   if (active_flags & FS_TRANS_SET)
     {
-      if (existing != MACH_PORT_NULL)
-	fshelp_set_control (&np->translator, existing);
+      if (active != MACH_PORT_NULL)
+	fshelp_set_control (&np->translator, active);
       else
 	/* Should have been cleared above. */
 	assert (np->translator.control == MACH_PORT_NULL);
