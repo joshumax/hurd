@@ -18,5 +18,5 @@
 
 #include "trivfs.h"
 
-struct port_class *trivfs_protid_portclasses[1] = { 0 };
-int trivfs_protid_nportclasses = 0;
+struct port_class *trivfs_protid_portclasses[1];
+int trivfs_protid_nportclasses;
