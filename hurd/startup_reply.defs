@@ -1,0 +1,45 @@
+/* Server-reply definitions for startup server interface
+   NOTE: All changes here must be reflected in startup.defs.
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* Written by Michael I. Bushnell and Roland McGrath.  */
+
+subsystem startup 29100;	/* Must 100 more than startup subsystem.  */
+
+#include <hurd/hurd_types.defs>
+
+#ifdef STARTUP_IMPORTS
+STARTUP_IMPORTS
+#endif
+
+skip;	/* startup_essential_task_reply */
+skip;	/* startup_request_notification_reply */
+skip;	/* startup_reboot */
+
+simpleroutine startup_procinit (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	auth: auth_t;
+	host_priv: mach_port_move_send_t;
+	device_master: mach_port_move_send_t);
+
+simpleroutine startup_authinit (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	proc: mach_port_move_send_t);
