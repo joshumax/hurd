@@ -5088,7 +5088,11 @@ struct proto tcp_prot = {
 	tcp_read_wakeup,
 	tcp_rcv,
 	tcp_select,
+#ifdef _HURD_
+	NULL,
+#else
 	tcp_ioctl,
+#endif
 	NULL,
 	tcp_shutdown,
 	tcp_setsockopt,
