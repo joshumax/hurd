@@ -1,16 +1,22 @@
 # Generic configuration for Hurd compilation
 
+all:
+
 # This is the directory into which Hurd cross-building tools are placed
 hurdinst := /home/hm1/hurdinst
 
 # This is the directory which serves as root for the Hurd.
 hurdroot := /home/hm1/hurdroot
 
+# This is the directory containing the top-level Hurd source (and this file).
+hurdsource := /home/hm1/gnu/hurd
+
 # Where to find various things for compilation:
 headers := $(hurdinst)/include
 startup := $(hurdinst)/lib/crt0.o
 libc := $(hurdinst)/lib/libc.a
 libthreads := $(hurdinst)/lib/libthreads.a
+libports := $(hurdinst)/lib/libports.a
 gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/include
 
 # Flags for compilation
@@ -34,7 +40,12 @@ $(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $^ $(libthreads) $(libc) -lgcc
 endef
 
-define link-with-threads
-$(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
-$^ $(libthreads) $(libc) -lgcc
-endef
+# Some very useful dependencies
+
+ifneq ($(strip $(dir)),libports)
+$(libports): FORCE
+	$(MAKE) -C $(hurdsource)/libports $(libports)
+$(headers)/libports.h: FORCE
+	$(MAKE) -C $(hurdsource)/libports $(headers)/libports.h
+FORCE:
+endif
