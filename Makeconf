@@ -148,23 +148,25 @@ ifeq ($(makemode),library)
 
 else
 
- progtarg := $(filter-out $(special-targets),$(targets))
- linktarg := $(progtarg) $(progtarg:=.static)
+ ifeq ($(makemode),misc)
+   ifndef doinst
+     doinst := many
+   endif
+   ifeq ($(doinst),one)
+     targets = $(target)
+   endif
+   ifeq (,$(installationdir))
+     ifneq (,$(targets))
+     ?Error subdir Makefile must define installationdir
+     else
+      makemode-instdir := NOINSTALL
+     endif
+   endif
+ else # server/utility modes
+  progtarg := $(filter-out $(special-targets),$(targets))
+  linktarg := $(progtarg) $(progtarg:=.static)
+ endif
 
-endif
-
-ifeq ($(makemode),misc)
-  ifndef doinst
-    doinst := many
-  endif
-  ifeq ($(doinst),one)
-    targets = $(target)
-  endif
-  ifndef installationdir
-    ifneq (,$(targets))
-    ?Error subdir Makefile must define installationdir
-    endif
-  endif
 endif
 
 ifndef installationdir
