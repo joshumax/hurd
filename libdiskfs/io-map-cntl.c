@@ -21,8 +21,8 @@
 
 /* Implement io_map_cntl as described in <hurd/io.defs>. */
 error_t
-S_io_map_cntl (struct protid *cred,
-	       memory_object_t *ctlobj)
+diskfs_S_io_map_cntl (struct protid *cred,
+		      memory_object_t *ctlobj)
 {
   if (!cred)
     return EOPNOTSUPP;
