@@ -31,7 +31,8 @@
    store_set_flags.  A reference to the open file is created (but may be
    destroyed with store_close_source).  */
 error_t
-store_open (char *name, int flags, struct store_class *classes,
+store_open (const char *name, int flags,
+	    const struct store_class *const *classes,
 	    struct store **store)
 {
   error_t err;
@@ -54,3 +55,5 @@ store_open (char *name, int flags, struct store_class *classes,
   return err;
 }
 
+struct store_class
+store_query_class = { -1, "query", open: store_open };
