@@ -127,7 +127,6 @@ main (int argc, char **argv)
   else
     {
       devname = diskfs_parse_bootargs (argc, argv);
-      diskfs_dotdot_file = MACH_PORT_NULL;
       compat_mode = COMPAT_GNU;
     }
   
