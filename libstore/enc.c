@@ -61,15 +61,15 @@ store_enc_dealloc (struct store_enc *enc)
 	}
 
       if (enc->ports != enc->init_ports)
-	munmap (enc->ports, enc->num_ports * sizeof (*enc->ports));
+	munmap ((caddr_t) enc->ports, enc->num_ports * sizeof (*enc->ports));
     }
 
   if (enc->ints && enc->num_ints > 0 && enc->ints != enc->init_ints)
-    munmap (enc->ints, enc->num_ints * sizeof (*enc->ints));
+    munmap ((caddr_t) enc->ints, enc->num_ints * sizeof (*enc->ints));
 
   if (enc->offsets && enc->num_offsets > 0
       && enc->offsets != enc->init_offsets)
-    munmap (enc->offsets, enc->num_offsets * sizeof (*enc->offsets));
+    munmap ((caddr_t) enc->offsets, enc->num_offsets * sizeof (*enc->offsets));
 
   if (enc->data && enc->data_len > 0 && enc->data != enc->init_data)
     munmap (enc->data, enc->data_len);

@@ -1,6 +1,6 @@
 /* Store argument parsing
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -171,18 +171,20 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
     {
       const struct store_class *type = parsed->type;
       if (type->open)
-	if (parsed->name_prefix)
-	  /* If there's a name prefix, we prefix any names we open with that
-	     and a colon.  */
-	  {
-	    char pfxed_name[pfx_len + 1 + strlen (name) + 1];
-	    stpcpy (stpcpy (stpcpy (pfxed_name, parsed->name_prefix),
-			    ":"),
-		    name);
-	    return (*type->open) (pfxed_name, flags, parsed->classes, store);
-	  }
-	else
-	  return (*type->open) (name, flags, parsed->classes, store);
+	{
+	  if (parsed->name_prefix)
+	    /* If there's a name prefix, we prefix any names we open with that
+	       and a colon.  */
+	    {
+	      char pfxed_name[pfx_len + 1 + strlen (name) + 1];
+	      stpcpy (stpcpy (stpcpy (pfxed_name, parsed->name_prefix),
+			      ":"),
+		      name);
+	      return (*type->open) (pfxed_name, flags, parsed->classes, store);
+	    }
+	  else
+	    return (*type->open) (name, flags, parsed->classes, store);
+	}
       else
 	return EOPNOTSUPP;
     }

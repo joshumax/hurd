@@ -1,3 +1,16 @@
+1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* argp.c (store_parsed_open): Add more braces to clarify if-else
+	structure. 
+
+	* encode.c: Include <sys/mman.h>
+	* zero.c: Likewise.
+
+	* encode.c (store_encode): Repair syntax.
+	* copy.c (copy_read): Likewise.
+
+	* enc.c (store_enc_dealloc): Cast first arg of munmap correctly.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rdwr.c: Add #include <sys/mman.h> for munmap decl.

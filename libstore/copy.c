@@ -35,7 +35,7 @@ copy_read (struct store *store,
     /* Have to allocate memory for the return value.  */
     {
       *buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (*buf == (void *)-1))
+      if (*buf == (void *)-1)
 	return errno;
     }
 

@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
+#include <sys/mman.h>
 
 #include "store.h"
 
@@ -130,7 +131,7 @@ store_encode (const struct store *store, struct store_enc *enc)
       if (buf != (void *) -1)
 	enc->data = buf;
     }
-  err = errno
+  err = errno;
   if (! err)
     err = (*class->encode) (store, enc);
 
