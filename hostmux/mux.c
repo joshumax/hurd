@@ -1,7 +1,7 @@
 /* Root hostmux node
 
-   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -273,8 +273,8 @@ lookup_cached (struct hostmux *mux, const char *host, int purge,
    if HOST refers to the official name of the host, or a symlink node to the
    official name, if it doesn't.  */
 static error_t
-lookup_hostent (struct hostmux *mux, const char *host, struct hostent *he,
-		struct node **node)
+lookup_addrinfo (struct hostmux *mux, const char *host, struct addrinfo *he,
+		 struct node **node)
 {
   error_t err;
   struct hostmux_name *nm = malloc (sizeof (struct hostmux_name));
@@ -283,10 +283,10 @@ lookup_hostent (struct hostmux *mux, const char *host, struct hostent *he,
     return ENOMEM;
 
   nm->name = strdup (host);
-  if (strcmp (host, he->h_name) == 0)
+  if (strcmp (host, he->ai_canonname) == 0)
     nm->canon = nm->name;
   else
-    nm->canon = strdup (he->h_name);
+    nm->canon = strdup (he->ai_canonname);
 
   err = create_host_node (mux, nm, node);
   if (err)
@@ -325,9 +325,13 @@ lookup_host (struct hostmux *mux, const char *host, struct node **node)
 {
   int was_cached;
   int h_err;
-  struct hostent _he, *he;
-  struct in_addr inet_addr;
-  char hostent_data[2048];	/* XXX what size should this be???? */
+  struct addrinfo *ai;
+  struct addrinfo hints;
+
+  hints.ai_flags = AI_CANONNAME;
+  hints.ai_family = PF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_protocol  = IPPROTO_IP;
 
   rwlock_reader_lock (&mux->names_lock);
   was_cached = lookup_cached (mux, host, 0, node);
@@ -335,20 +339,15 @@ lookup_host (struct hostmux *mux, const char *host, struct node **node)
 
   if (was_cached)
     return 0;
-  else if (inet_aton (host, &inet_addr))
+  
+  h_err = getaddrinfo (host, NULL, &hints, &ai);
+  if (! h_err) 
     {
-      if (gethostbyaddr_r ((char *)&inet_addr, sizeof inet_addr, AF_INET,
-			   &_he, hostent_data, sizeof hostent_data,
-			   &he, &h_err) == 0)
-	return lookup_hostent (mux, host, he, node);
-      else
-	return ENOENT;
+      h_err = lookup_addrinfo (mux, host, ai, node);
+      freeaddrinfo (ai);
     }
-  else if (gethostbyname_r (host, &_he, hostent_data, sizeof hostent_data,
-			    &he, &h_err) == 0)
-    return lookup_hostent (mux, host, he, node);
-  else
-    return ENOENT;
+
+  return h_err;
 }
 
 /* This should sync the entire remote filesystem.  If WAIT is set, return
