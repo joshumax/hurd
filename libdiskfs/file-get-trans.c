@@ -51,6 +51,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	{
 	  assert (amt == np->dn_stat.st_size);
 	  (*trans)[sizeof _HURD_SYMLINK + np->dn_stat.st_size] = '\0';
+	  *translen = len;
 	}
     }
   /* XXX should also do IFCHR, IFBLK, IFIFO, and IFSOCK here. */
