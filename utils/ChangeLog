@@ -1,3 +1,7 @@
+1999-07-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (targets): Remove freeauth, added accidentally.
+
 1999-07-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rpctrace.c (rewrite_right): If we see our own wrapper right,
