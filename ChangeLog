@@ -1,6 +1,6 @@
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
-	* INSTALL: Change install-hdrs to install-headers.  Reprted by
+	* INSTALL: Change install-hdrs to install-headers.  Reported by
 	Vicente Hernando Ara <bizenton@terra.es>.
 
 2002-01-05  Roland McGrath  <roland@frob.com>
