@@ -171,7 +171,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 	perror (prog);
       else
 	{
-	  task_create (mach_task_self (), task);
+	  task_create (mach_task_self (), 0, task);
 	  err = file_exec (file, *task, 0,
 			   NULL, 0, /* No args.  */
 			   NULL, 0, /* No env.  */
@@ -310,7 +310,10 @@ S_startup_procinit (startup_t server,
 		    process_t proc, 
 		    mach_port_t *startuptask,
 		    auth_t *auth,
-		    mach_port_t *priv, mach_port_t *dev)
+		    mach_port_t *priv,
+		    mach_msg_type_name_t *hostprivtype,
+		    mach_port_t *dev,
+		    mach_msg_type_name_t *devtype)
 {
   if (procserver)
     /* Only one proc server.  */
@@ -335,7 +338,8 @@ S_startup_authinit (startup_t server,
 		    mach_port_t reply,
 		    mach_msg_type_name_t reply_porttype,
 		    mach_port_t auth,
-		    mach_port_t *proc)
+		    mach_port_t *proc,
+		    mach_msg_type_name_t *proctype)
 {
   if (authserver)
     /* Only one auth server.  */
