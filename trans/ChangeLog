@@ -1,3 +1,17 @@
+2002-05-18  Roland McGrath  <roland@frob.com>
+
+	* fakeroot.c (new_node): Get a reference on NP to return to the caller.
+	(netfs_attempt_mkfile): Unlock before new_node call.
+	(new_node): Take new arg LOCKED, says idport_ihash_lock already held.
+	(netfs_S_dir_lookup, netfs_attempt_mkfile, main): Update callers.
+
+	* fakeroot.c (fakeroot_auth_port): New variable.
+	(main): Initialize it.
+	(check_openmodes): New static function.
+	(netfs_check_open_permissions): Rewritten using it.
+	(netfs_S_dir_lookup): New function.
+	(netfs_attempt_lookup, netfs_attempt_create_file): Replaced with stubs.
+
 2002-05-13  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.c (netfs_validate_stat): Set NP->nn_translated.
