@@ -59,14 +59,22 @@ diskfs_S_file_exec (struct protid *cred,
     return EACCES;
 
   /* Handle S_ISUID and S_ISGID uid substitution.  */
+  /* XXX All this complexity should be moved to libfshelp.  -mib */
   if ((((np->dn_stat.st_mode & S_ISUID)
 	&& !diskfs_isuid (np->dn_stat.st_uid, cred))
        || ((np->dn_stat.st_mode & S_ISGID)
 	   && !diskfs_groupmember (np->dn_stat.st_gid, cred)))
       && !diskfs_isuid (0, cred))
     {
+      /* XXX The test above was correct for the code before Roland
+	 changed it; but now it's wrong.  This test decides when
+	 permission is increasing, and therefore we need to 
+	 protect the exec with NEWTASK and SECURE.  If permission
+	 isn't increasing, then we still substitute id's, but we
+	 don't to the SECURE or NEWTASK protection.  -mib */
+
       /* XXX Perhaps if there are errors in reauthenticating,
-	 we should just run non-setuid? */
+	 we should just run non-setuid?   */
 
       mach_port_t newauth, intermediate;
       void reauth (mach_port_t *port, int procp)
@@ -92,6 +100,7 @@ diskfs_S_file_exec (struct protid *cred,
 	      mach_port_deallocate (mach_task_self (), *port);
 	      *port = newport;
 	    }
+	  mach_port_destroy (mach_task_self (), ref);
 	}
 
       uid_t auxuidbuf[2], genuidbuf[10];
@@ -122,6 +131,11 @@ diskfs_S_file_exec (struct protid *cred,
 	nold_gen_uids = nold_aux_uids = nold_gen_gids = nold_aux_gids = 0;
       else if (err)
 	return err;
+
+      /* XXX This is broken; there is no magical "nonexistent ID"
+	 number.  The Posix numbering only matters for the exec of a
+	 Posix process; this case can't be a problem, therefore.  Just
+	 stuff the ID in slot 0 and nothing in slot 1.  */
 
       /* Set up the UIDs for the new auth handle.  */
       if (nold_aux_uids == 0)
@@ -155,6 +169,18 @@ diskfs_S_file_exec (struct protid *cred,
       memcpy (&gen_gids[1], &old_gen_gids[1],
 	      ((nold_gen_gids ?: 1) - 1) * sizeof (gid_t));
 
+      /* XXX This is totally wrong.  Just do one call to auth_makeauth
+	 with both handles.  INTERMEDIATE here has no id's at all, and
+	 so the second auth_makeauth call is guaranteed to fail.
+
+	 It should give the user as close to the correct privilege as
+	 possible as well; this requires looking inside the uid sets
+	 and doing the "right thing".  If we are entirely unable to
+	 increase the task's privilege, then abandon the setuid part,
+	 but don't return an error.
+
+	 -mib */
+
       /* Create the new auth handle.  First we must make a handle that
 	 combines our IDs with those in the original user handle in
 	 portarray[INIT_PORT_AUTH].  Only using that handle will we be
@@ -186,6 +212,9 @@ diskfs_S_file_exec (struct protid *cred,
       
       for (i = 0; i < fdslen; ++i)
 	reauth (&fds[i], 0);
+
+      /* XXX The first two are unimportant; EXEC_SECURE is going to
+	 blow them away anyhow.  -mib */
       reauth (&portarray[INIT_PORT_PROC], 1);
       reauth (&portarray[INIT_PORT_CRDIR], 0);
       reauth (&portarray[INIT_PORT_CWDIR], 0);
