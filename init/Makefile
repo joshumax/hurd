@@ -21,5 +21,20 @@ include ../Makeconf
 
 DIST_FILES = Makefile init.c
 
+OBJS = init.o startupServer.o startup_replyUser.o
+	$(link)
+
+install:
+	cp init $(hurdroot)/hurd/init
+
+
+startup_S.h startupServer.c: $(headers)/hurd/startup.defs $(headers)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(headers)/hurd/startup.defs \
+	| $(MIGCOM) -sheader startup_S.h -header /dev/null -user /dev/null
+
+startup_reply.h startup_replyUser.c: $(headers)/hurd/startup_reply.defs $(headers)/hurd/hurd_types.defs
+	$(CPP) $(CPPFLAGS) $(headers)/hurd/startup_reply.defs \
+	| $(MIGCOM) -server /dev/null
+
 clean:
 	rm -f init *.o
