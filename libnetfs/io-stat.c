@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,19 +23,32 @@
 #include <string.h>
 
 error_t
-netfs_S_io_stat (struct protid *fileuser,
-		 io_statbuf_t *statbuf)
+netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
 {
   error_t err;
+  struct node *node;
   
-  if (!fileuser)
+  if (! user)
     return EOPNOTSUPP;
 
-  mutex_lock (&fileuser->po->np->lock);
-  err = netfs_validate_stat (fileuser->po->np, fileuser->user);
-  if (!err)
-    bcopy (&fileuser->po->np->nn_stat, statbuf, sizeof (struct stat));
-  mutex_unlock (&fileuser->po->np->lock);
+  node = user->po->np;
+  mutex_lock (&node->lock);
+
+  err = netfs_validate_stat (node, user->user);
+  if (! err)
+    {
+      bcopy (&node->nn_stat, statbuf, sizeof (struct stat));
+
+      /* Set S_IATRANS and S_IROOT bits as appropriate.  */
+      statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
+      if (fshelp_translated (&node->transbox))
+	statbuf->st_mode |= S_IATRANS; /* Has an active translator.  */
+      if (user->po->shadow_root == node || node == netfs_root_node)
+	statbuf->st_mode |= S_IROOT; /* Is a root node.  */
+    }
+
+  mutex_unlock (&node->lock);
+
   return err;
 }
 
