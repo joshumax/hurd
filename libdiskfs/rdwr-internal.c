@@ -23,12 +23,12 @@
    not permitted here); AMT is the size of the read/write to perform;
    DIR is set for writing and clear for reading.  The inode must
    be locked.  */
-static error_t
-io_rdwr (struct inode *np,
-	 char *data,
-	 int offset, 
-	 int amt, 
-	 int dir)
+error_t
+_diskfs_rdwr_internal (struct inode *np,
+		       char *data,
+		       int offset, 
+		       int amt, 
+		       int dir)
 {
   char *window;
   int winoff;
@@ -37,25 +37,17 @@ io_rdwr (struct inode *np,
   int err;
 
   if (dir)
-    assert (!readonly);
+    assert (!diskfs_readonly);
 
-  if (!readonly)
+  if (!diskfs_readonly)
     {
-      if (!(err = catch_exception ()))
-	{
-	  if (dir)
-	    np->di->di_mtime = wallclock->seconds;
-	  else
-	    np->di->di_atime = wallclock->seconds;
-	  end_catch_exception ();
-	}
+      if (dir)
+	np->dn_set_mtime = 1;
       else
-	return err;
+	np->dn_set_atime = 1;
     }
-  else
-    err = 0;
   
-  memobj = get_filemap (np);
+  memobj = diskfs_get_filemap (np);
   mach_port_insert_right (mach_task_self (), memobj, memobj,
 			  MACH_MSG_TYPE_MAKE_SEND);
   
