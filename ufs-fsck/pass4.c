@@ -71,7 +71,7 @@ pass4()
 	      if (preen)
 		printf (" (RECONNECTED)");
 	      if (preen || reply ("RECONNECT"))
-		linkup (number, 0);
+		linkup (number, -1);
 	    }
 	  else
 	    {
