@@ -22,7 +22,7 @@ SRCS = shd.c ps.c su.c settrans.c clri.c sync.c reboot.c halt.c showtrans.c moun
 OBJS = $(filter-out mount.sh,$(subst .c,.o,$(SRCS))) argz.o error.o
 targets = shd ps settrans showtrans clri sync reboot halt su mount fsysopts
 special-targets = mount
-DIST_FILES = sh.ChangeLog
+DIST_FILES = shd.ChangeLog
 
 ps-HURDLIBS=libps libihash
 REMHDRS=../hurd/ps.h ../lib/argz.h ../lib/error.h ../lib/start-trans.h
