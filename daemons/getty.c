@@ -95,9 +95,6 @@ main (int argc, char **argv)
     }
   while (tty == -1);
 
-  if (ioctl (tty, TIOCSCTTY) < 0)
-    syslog (LOG_ERR, "cannot set controlling terminal to %s: %m", ttyname);
-
   print_banner (tty, ttyname);
 
   login_tty (tty);
