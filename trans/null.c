@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -118,16 +118,15 @@ trivfs_S_io_read(struct trivfs_protid *cred,
 		 off_t offs,
 		 mach_msg_type_number_t amt)
 {
-  error_t err = 0;
-
   if (!cred)
-    err = EOPNOTSUPP;
+    return EOPNOTSUPP;
   else if (!(cred->po->openmodes & O_READ))
-    err = EBADF;
+    return EBADF;
   else
-    *datalen = 0;
-
-  return 0;
+    {
+      *datalen = 0;
+      return 0;
+    }
 }
 
 /* Tell how much data can be read from the object without blocking for
