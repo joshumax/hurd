@@ -1,6 +1,6 @@
 /* linux/net/inet/arp.c
  *
- * Version:	$Id: arp.c,v 1.77.2.1 1999/06/28 10:39:23 davem Exp $
+ * Version:	$Id: arp.c,v 1.77.2.4 1999/09/23 19:03:36 davem Exp $
  *
  * Copyright (C) 1994 by Florian  La Roche
  *
@@ -65,6 +65,8 @@
  *					clean up the APFDDI & gen. FDDI bits.
  *		Alexey Kuznetsov:	new arp state machine;
  *					now it is in net/core/neighbour.c.
+ *		Julian Anastasov:	"hidden" flag: hide the
+ *					interface and don't reply for it
  */
 
 /* RFC1122 Status:
@@ -308,10 +310,15 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
 	u32 saddr;
 	u8  *dst_ha = NULL;
 	struct device *dev = neigh->dev;
+	struct device *dev2;
+	struct in_device *in_dev2;
 	u32 target = *(u32*)neigh->primary_key;
 	int probes = neigh->probes;
 
-	if (skb && inet_addr_type(skb->nh.iph->saddr) == RTN_LOCAL)
+	if (skb &&
+	    (dev2 = ip_dev_find(skb->nh.iph->saddr)) != NULL &&
+	    (in_dev2 = dev2->ip_ptr) != NULL &&
+	    !IN_DEV_HIDDEN(in_dev2))
 		saddr = skb->nh.iph->saddr;
 	else
 		saddr = inet_select_addr(dev, target, RT_SCOPE_LINK);
@@ -653,8 +660,14 @@ int arp_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 
 	/* Special case: IPv4 duplicate address detection packet (RFC2131) */
 	if (sip == 0) {
+		struct device *dev2;
+		struct in_device *in_dev2;
+
 		if (arp->ar_op == __constant_htons(ARPOP_REQUEST) &&
-		    inet_addr_type(tip) == RTN_LOCAL)
+		    (dev2 = ip_dev_find(tip)) != NULL &&
+		    (dev2 == dev ||
+		     ((in_dev2 = dev2->ip_ptr) != NULL &&
+		      !IN_DEV_HIDDEN(in_dev2))))
 			arp_send(ARPOP_REPLY,ETH_P_ARP,tip,dev,tip,sha,dev->dev_addr,dev->dev_addr);
 		goto out;
 	}
@@ -668,6 +681,20 @@ int arp_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 		if (addr_type == RTN_LOCAL) {
 			n = neigh_event_ns(&arp_tbl, sha, &sip, dev);
 			if (n) {
+				if (ipv4_devconf.hidden &&
+				    skb->pkt_type != PACKET_HOST) {
+					struct device *dev2;
+					struct in_device *in_dev2;
+
+					if ((dev2 = ip_dev_find(tip)) != NULL &&
+					    dev2 != dev &&
+					    (in_dev2 = dev2->ip_ptr) != NULL &&
+					    IN_DEV_HIDDEN(in_dev2)) {
+						neigh_release(n);
+						goto out;
+					}
+				}
+
 				arp_send(ARPOP_REPLY,ETH_P_ARP,sip,dev,tip,sha,dev->dev_addr,sha);
 				neigh_release(n);
 			}

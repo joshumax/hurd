@@ -57,6 +57,8 @@
  *					A network device unload needs to purge
  *					the backlog queue.
  *	Paul Rusty Russel	:	SIOCSIFNAME
+ *	Andrea Arcangeli	:	dev_clear_backlog() needs the
+ *					skb_queue_lock held.
  */
 
 #include <asm/uaccess.h>
@@ -711,7 +713,8 @@ static void netdev_wakeup(void)
 
 static void dev_clear_backlog(struct device *dev)
 {
-	struct sk_buff *prev, *curr;
+	struct sk_buff *curr;
+	unsigned long flags;
 
 	/*
 	 *
@@ -719,27 +722,24 @@ static void dev_clear_backlog(struct device *dev)
 	 *
 	 *  We are competing here both with netif_rx() and net_bh().
 	 *  We don't want either of those to mess with skb ptrs
-	 *  while we work on them, thus cli()/sti().
-	 *
-	 *  It looks better to use net_bh trick, at least
-	 *  to be sure, that we keep interrupt latency really low. --ANK (980727)
+	 *  while we work on them, thus we must grab the
+	 *  skb_queue_lock.
 	 */
 
 	if (backlog.qlen) {
-		start_bh_atomic();
-		curr = backlog.next;
-		while ( curr != (struct sk_buff *)(&backlog) ) {
-			unsigned long flags;
-			curr=curr->next;
-			if ( curr->prev->dev == dev ) {
-				prev = curr->prev;
-				spin_lock_irqsave(&skb_queue_lock, flags);
-				__skb_unlink(prev, &backlog);
+	repeat:
+		spin_lock_irqsave(&skb_queue_lock, flags);
+		for (curr = backlog.next;
+		     curr != (struct sk_buff *)(&backlog);
+		     curr = curr->next)
+			if (curr->dev == dev)
+			{
+				__skb_unlink(curr, &backlog);
 				spin_unlock_irqrestore(&skb_queue_lock, flags);
-				kfree_skb(prev);
+				kfree_skb(curr);
+				goto repeat;
 			}
-		}
-		end_bh_atomic();
+		spin_unlock_irqrestore(&skb_queue_lock, flags);
 #ifdef CONFIG_NET_HW_FLOWCONTROL
 		if (netdev_dropping)
 			netdev_wakeup();
@@ -796,7 +796,11 @@ void netif_rx(struct sk_buff *skb)
 #ifdef CONFIG_BRIDGE
 static inline void handle_bridge(struct sk_buff *skb, unsigned short type)
 {
-	if (br_stats.flags & BR_UP && br_protocol_ok(ntohs(type)))
+	/*
+	 * The br_stats.flags is checked here to save the expense of a
+	 * function call.
+	 */
+	if ((br_stats.flags & BR_UP) && br_call_bridge(skb, type))
 	{
 		/*
 		 *	We pass the bridge a complete frame. This means
@@ -819,7 +823,6 @@ static inline void handle_bridge(struct sk_buff *skb, unsigned short type)
 	return;
 }
 #endif
-
 
 /*
  *	When we are called the queue is ready to grab, the interrupts are
@@ -1275,8 +1278,9 @@ static int sprintf_wireless_stats(char *buffer, struct device *dev)
 	int size;
 
 	if(stats != (struct iw_statistics *) NULL)
+	{
 		size = sprintf(buffer,
-			       "%6s: %02x  %3d%c %3d%c  %3d%c %5d %5d %5d\n",
+			       "%6s: %04x  %3d%c  %3d%c  %3d%c  %6d %6d %6d\n",
 			       dev->name,
 			       stats->status,
 			       stats->qual.qual,
@@ -1288,6 +1292,8 @@ static int sprintf_wireless_stats(char *buffer, struct device *dev)
 			       stats->discard.nwid,
 			       stats->discard.code,
 			       stats->discard.misc);
+		stats->qual.updated = 0;
+	}
 	else
 		size = 0;
 
@@ -1309,8 +1315,9 @@ int dev_get_wireless_info(char * buffer, char **start, off_t offset,
 	struct device *	dev;
 
 	size = sprintf(buffer,
-		       "Inter-|sta|  Quality       |  Discarded packets\n"
-		       " face |tus|link level noise| nwid crypt  misc\n");
+		       "Inter-| sta-|   Quality        |   Discarded packets\n"
+		       " face | tus | link level noise |  nwid  crypt   misc\n"
+			);
 
 	pos+=size;
 	len+=size;
@@ -1854,6 +1861,7 @@ extern int lance_init(void);
 extern int bpq_init(void);
 extern int scc_init(void);
 extern void sdla_setup(void);
+extern void sdla_c_setup(void);
 extern void dlci_setup(void);
 extern int dmascc_init(void);
 extern int sm_init(void);
@@ -1863,6 +1871,7 @@ extern int baycom_ser_hdx_init(void);
 extern int baycom_par_init(void);
 
 extern int lapbeth_init(void);
+extern int comx_init(void);
 extern void arcnet_init(void);
 extern void ip_auto_config(void);
 #ifdef CONFIG_8xx
@@ -1930,7 +1939,7 @@ __initfunc(int net_dev_init(void))
 	dlci_setup();
 #endif
 #if defined(CONFIG_SDLA)
-	sdla_setup();
+	sdla_c_setup();
 #endif
 #if defined(CONFIG_BAYCOM_PAR)
 	baycom_par_init();
@@ -1955,6 +1964,9 @@ __initfunc(int net_dev_init(void))
 #endif
 #if defined(CONFIG_8xx)
         cpm_enet_init();
+#endif
+#if defined(CONFIG_COMX)
+	comx_init();
 #endif
 	/*
 	 *	SLHC if present needs attaching so other people see it
@@ -2025,6 +2037,13 @@ __initfunc(int net_dev_init(void))
 	dev_boot_phase = 0;
 
 	dev_mcast_init();
+
+#ifdef CONFIG_BRIDGE
+	/*
+	 * Register any statically linked ethernet devices with the bridge
+	 */
+	br_spacedevice_register();
+#endif
 
 #ifdef CONFIG_IP_PNP
 	ip_auto_config();
