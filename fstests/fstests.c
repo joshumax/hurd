@@ -27,8 +27,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-/* mach_port_t _hurd_msgport = MACH_PORT_NULL; */
+#include <unistd.h>
 
 int check_refs (mach_port_t port) /* To call from gdb */
 {
@@ -42,15 +41,17 @@ int check_refs (mach_port_t port) /* To call from gdb */
 void
 main ()
 {
+  mach_port_t root;
+  extern file_t *_hurd_init_dtable;
+  char string[] = "Did this get into the file?\n";
+#if 0
   file_t filetowrite;
   retry_type retry;
   char pathbuf[1024];
-  extern file_t *_hurd_init_dtable;
-  char string[] = "Did this get into the file?\n";
   int written;
   int err;
-  mach_port_t root;
-  
+#endif
+
   root = getcrdir ();
 
   printf ("fstests running...\n");
