@@ -1180,8 +1180,8 @@ __argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
       if (state && (state->flags & ARGP_LONG_ONLY))
 	flags |= ARGP_HELP_LONG_ONLY;
 
-      argp_help (state ? state->argp : 0, stream, flags,
-		 state ? state->name : __progname_full);
+      __argp_help (state ? state->argp : 0, stream, flags,
+		   state ? state->name : __progname_full);
 
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
