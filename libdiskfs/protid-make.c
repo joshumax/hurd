@@ -16,14 +16,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <string.h>
 
 /* Build and return a protid which has no user identification for 
    peropen PO.  The node PO->np must be locked.  */
 struct protid *
 diskfs_start_protid (struct peropen *po)
 {
-  struct protid *cred = allocate_port (sizeof (struct protid), PT_PROTID);
-  
+  struct protid *cred;
+
+  cred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
   po->refcnt++;
   cred->po = po;
   cred->shared_object = MACH_PORT_NULL;
@@ -35,7 +37,7 @@ diskfs_start_protid (struct peropen *po)
    the uid set is UID (length NUIDS); the gid set is GID (length NGIDS). */
 void
 diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
-		      gid_t *gids, int nguds)
+		      gid_t *gids, int ngids)
 {
   if (!uids)
     nuids = 1;
@@ -62,10 +64,10 @@ diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
    PO->np must be locked. */
 struct protid *
-diskfs_make_protid (struct peropen *cred, uid_t *uids, int nuids,
+diskfs_make_protid (struct peropen *po, uid_t *uids, int nuids,
 		    uid_t *gids, int ngids)
 {
-  struct protid *cred = diskfs_start_protid (cred);
+  struct protid *cred = diskfs_start_protid (po);
   diskfs_finish_protid (cred, uids, nuids, gids, ngids);
   return cred;
 }
