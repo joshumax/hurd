@@ -26,7 +26,7 @@ dist-files = INSTALL-binary dist-README SETUP servers.boot \
 	menu.lst COPYING.LIB SOURCES.0.2
 
 # Tools for making images
-tool-files = tool-Makefile install-stripped
+tool-files = tool-Makefile install-stripped mksmallso mkemptyso
 
 DIST_FILES = README $(dist-files) $(tool-files)
 
