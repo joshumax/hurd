@@ -37,9 +37,8 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
   switch (opt)
     {
     default:
-      return EINVAL;
+      return ARGP_ERR_UNKNOWN;
     }
-
   return 0;
 }
 
