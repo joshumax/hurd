@@ -850,12 +850,16 @@ main(int argc, char *argv[])
 
   if (eff_uids->num | eff_gids->num)
     {
-      /* Change the terminal to be owned by the user.  */
-      err = chown (tty,
-		   eff_uids->num ? eff_uids->ids[0] : -1,
-		   eff_gids->num ? eff_gids->ids[0] : -1);
-      if (err)
-	error (0, err, "chown: %s", tty);
+      char *tty = ttyname (0);
+      if (tty)
+	{
+	  /* Change the terminal to be owned by the user.  */
+	  err = chown (tty,
+		       eff_uids->num ? eff_uids->ids[0] : -1,
+		       eff_gids->num ? eff_gids->ids[0] : -1);
+	  if (err)
+	    error (0, err, "chown: %s", tty);
+	}
     }
 
   err = file_exec (exec, mach_task_self (),
