@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.19 2001/02/26 04:16:18 roland Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.20 2001/12/02 22:06:54 roland Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -1158,6 +1158,14 @@ fsinit(utime)
 	node.di_model = IFDIR | UMASK;
 	node.di_modeh = 0;
 	node.di_nlink = PREDEFDIR;
+
+	/* Set the uid/gid to non-root if run by a non-root user.  This
+	   is what mke2fs does in e2fsprogs-1.18 (actually it uses the
+	   real IDs iff geteuid()!=0, but that is just wrong).  */
+	node.di_uid = geteuid();
+	if (node.di_uid != 0)
+	  node.di_gid = getegid();
+
 	if (Oflag)
 		node.di_size = makedir((struct directory_entry *)oroot_dir, PREDEFDIR);
 	else
