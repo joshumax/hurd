@@ -1,9 +1,8 @@
-GNU Hurd Task List Version 1.18.  Last updated 21 August 1997.
+GNU Hurd Task List Version 1.19.  Last updated 15 April 1998.
 
-If you would like to work on one of these, please contact
-thomas@gnu.ai.mit.edu.  It's important that you let me know what's being
-worked on, because someone else might also be interested, and you
-should coordinate work.
+If you would like to work on one of these, please contact tb@mit.edu.
+It's important that you let me know what's being worked on, because
+someone else might also be interested, and you should coordinate work.
 
 Items that we want done with more priority are marked with !!!.
 
@@ -14,8 +13,6 @@ General system work
   * Compile all the free programs you can find to help us fix bugs in
   the system, and to submit necessary ports to the maintainers of
   those programs.
-
-  * See how much of X compiles.
 
   * Do whatever magic is necessary for Perl to take advantage of all
   the nifty Hurd features that Unix doesn't have.
@@ -115,7 +112,8 @@ Hurd work (these are brief descriptions; thomas can give more information):
 
 !!!
   * We need some existing shell programs changed to do Hurd things:
-  like id, su, ls, tar, cpio, etc.
+  like id, su, ls, tar, cpio, etc.  Some of this work has already been
+  done, but more is still needed.
 
   * Handy shell programs to send msgport msgs, and change default init
     ports and ints.
@@ -125,15 +123,11 @@ Hurd work (these are brief descriptions; thomas can give more information):
   * A system for write, send, talkd and so forth to bleep users;
   this should be integrated with the utmp replacement above.
 
-  * X.  (Porting XFree86 should not be hard.)
-
   * A filesystem for /tmp that uses virtual memory instead of disk.
   (Roland has some ideas about this.)
 
   * Filesystem implementations (using libdiskfs) for other popular
   formats.  Importantly, MSDOS FAT format.
-  
-  * Transparent FTP translator.
 
   * A fancy terminal driver that uses readline and supports detach/attach.
 
