@@ -1,5 +1,5 @@
 /* Hash table functions
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -29,19 +29,21 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc.h"
 #include <hurd/ihash.h>
 
-static struct ihash pghash, pidhash, taskhash, porthash, sidhash;
-static struct ihash exchash;
-
-/* Find the exception structure corresponding to a given exc port. */
-struct exc *
-exc_find (mach_port_t port)
-{
-  return ihash_find (&exchash, port);
-}
+static struct ihash pghash, pidhash, taskhash, sidhash;
 
 /* Find the process corresponding to a given pid. */
 struct proc *
 pid_find (pid_t pid)
+{
+  struct proc *p;
+  p = ihash_find (&pidhash, pid);
+  return p->p_dead ? 0 : p;
+}
+
+/* Find the process corresponding to a given pid.  Return it even if
+   it's dead. */
+struct proc *
+pid_find_allow_zombie (pid_t pid)
 {
   return ihash_find (&pidhash, pid);
 }
@@ -50,7 +52,9 @@ pid_find (pid_t pid)
 struct proc *
 task_find (task_t task)
 {
-  return ihash_find (&taskhash, task) ? : add_tasks (task);
+  struct proc *p;
+  p = ihash_find (&taskhash, task) ? : add_tasks (task);
+  return p->p_dead ? 0 : p;
 }
 
 /* Find the process corresponding to a given task, but
@@ -58,14 +62,20 @@ task_find (task_t task)
 struct proc *
 task_find_nocreate (task_t task)
 {
-  return ihash_find (&taskhash, task);
+  struct proc *p;
+  p = ihash_find (&taskhash, task);
+  return p->p_dead ? 0 : p;
 }
 
 /* Find the process corresponding to a given request port. */
 struct proc *
 reqport_find (mach_port_t reqport)
 {
-  return ihash_find (&porthash, reqport);
+  struct proc *p;
+  p = ports_lookup_port (proc_bucket, reqport, proc_class);
+  if (p && p->p_dead)
+    ports_port_deref (p);
+  return p->p_dead ? 0 : p;
 }
 
 /* Find the process group corresponding to a given pgid. */
@@ -82,20 +92,12 @@ session_find (pid_t sid)
   return ihash_find (&sidhash, sid);
 }
 
-/* Add a new exc to the various hash tables.  */
-void
-add_exc_to_hash (struct exc *e)
-{
-  ihash_add (&exchash, e->excport, e, &e->hashloc);
-}
-
 /* Add a new process to the various hash tables. */
 void
 add_proc_to_hash (struct proc *p)
 {
   ihash_add (&pidhash, p->p_pid, p, &p->p_pidhashloc);
   ihash_add (&taskhash, p->p_task, p, &p->p_taskhashloc);
-  ihash_add (&porthash, p->p_reqport, p, &p->p_porthashloc);
 }
 
 /* Add a new process group to the various hash tables. */
@@ -112,13 +114,6 @@ add_session_to_hash (struct session *s)
   ihash_add (&sidhash, s->s_sid, s, &s->s_hashloc);
 }
 
-/* Remove an exc from the hash tables */
-void
-remove_exc_from_hash (struct exc *e)
-{
-  ihash_locp_remove(0, e->hashloc);
-}
-
 /* Remove a process group from the various hash tables. */
 void
 remove_pgrp_from_hash (struct pgrp *pg)
@@ -132,7 +127,6 @@ remove_proc_from_hash (struct proc *p)
 {
   ihash_locp_remove(0, p->p_pidhashloc);
   ihash_locp_remove(0, p->p_taskhashloc);
-  ihash_locp_remove(0, p->p_porthashloc);
 }
 
 /* Remove a session from the various hash tables. */
@@ -149,7 +143,9 @@ prociterate (void (*fun) (struct proc *, void *), void *arg)
 {
   error_t thunk(void *value)
     {
-      (*fun)(value, arg);
+      struct proc *p = value;
+      if (!p->p_dead)
+	(*fun)(p, arg);
       return 0;
     }
   ihash_iterate(&pidhash, thunk);
@@ -159,6 +155,6 @@ prociterate (void (*fun) (struct proc *, void *), void *arg)
 int
 pidfree (pid_t pid)
 {
-  return (!pid_find (pid) && !pgrp_find (pid)
-	  && !session_find (pid) && !zombie_check_pid (pid));
+  return (!pid_find_allow_zombie (pid)
+	  && !pgrp_find (pid) && !session_find (pid));
 }
