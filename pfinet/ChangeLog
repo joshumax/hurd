@@ -1,3 +1,8 @@
+Tue Feb  4 16:53:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* socket-ops.c (S_socket_send): Don't deref ADDR if it's 0.
+	(S_socket_bind): Return EADDRNOTAVAIL if ADDR is 0.
+
 Fri Oct 25 20:02:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* loopback.c (loopback_type_trans): New function.
