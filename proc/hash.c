@@ -35,6 +35,7 @@ struct htable
 {
   void **tab;
   int *ids;
+  void ****locps;
   int size;
 };
 #define HASH_DEL ((void *) -1)
@@ -53,6 +54,7 @@ addhash (struct htable *ht,
 {
   int h, firsth = -1;
   void **oldlist;
+  void ****oldlocps;
   int *oldids;
   int oldsize;
   int i;
@@ -69,6 +71,7 @@ addhash (struct htable *ht,
 	{
 	  ht->tab[h] = item;
 	  ht->ids[h] = id;
+	  ht->locps[h] = locp;
 	  *locp = &ht->tab[h];
 	  return;
 	}
@@ -78,9 +81,11 @@ addhash (struct htable *ht,
   oldlist = ht->tab;
   oldsize = ht->size;
   oldids = ht->ids;
-  
+  oldlocps = ht->locps;
+
   ht->size = nextprime (2 * ht->size);
   ht->tab = malloc (ht->size * sizeof (void *));
+  ht->locps = malloc (ht->size * sizeof (void ***));
   ht->ids = malloc (ht->size * sizeof (int));
   bzero (ht->tab, (ht->size * sizeof (void *)));
   
@@ -88,13 +93,14 @@ addhash (struct htable *ht,
     for (i = 0; i < oldsize; i++)
       if (oldlist[i] != 0
 	  && oldlist[i] != HASH_DEL)
-	addhash (ht, oldlist[i], locp, oldids[i]);
+	addhash (ht, oldlist[i], oldlocps[i], oldids[i]);
   addhash (ht, item, locp, id);
   
   if (oldlist)
     {
       free (oldlist);
       free (oldids);
+      free (oldlocps);
     }
 }
 
