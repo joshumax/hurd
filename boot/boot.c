@@ -28,11 +28,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntlbits.h>
 #include <mach/message.h>
 #include <mach/mig_errors.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
 #include "device_S.h"
 #include "io_S.h"
+#include "device_reply.h"
+#include "io_repl.h"
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
@@ -48,6 +53,10 @@ int console_mscount;
 
 vm_address_t fs_stack_base;
 vm_size_t fs_stack_size;
+
+/* We can't include <unistd.h> for this, because that will fight with
+   our definitions of syscalls below. */
+int syscall (int, ...);
 
 /* These will prevent the Hurd-ish versions from being used */
 
@@ -102,7 +111,7 @@ getpid ()
 }
 
 int
-ioctl (int fd, int code, char *buf)
+ioctl (int fd, int code, void *buf)
 {
   return syscall (54, fd, code, buf);
 }
@@ -125,7 +134,7 @@ struct sigvec
 };
 
 int
-sigpause (mask)
+sigpause (int mask)
 {
   return syscall (111, mask);
 }
@@ -163,6 +172,11 @@ int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
+  extern int exec_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  
   return (exec_server (inp, outp)
 	  || io_server (inp, outp)
 	  || device_server (inp, outp)
@@ -179,7 +193,7 @@ load_image (task_t t,
   int headercruft;
   vm_address_t base = 0x10000;
   int rndamount, amount;
-  vm_address_t bsspagestart, bssstart, stackaddr;
+  vm_address_t bsspagestart, bssstart;
   int magic;
 
   fd = open (file, 0, 0);
@@ -220,8 +234,7 @@ main (int argc, char **argv, char **envp)
   vm_address_t startpc;
   char msg[] = "Boot is here.\n";
   char c;
-  struct sigvec vec = {read_reply, 0, 0};
-  mach_msg_timeout_t timeout;
+/*   struct sigvec vec = {read_reply, 0, 0}; */
 
   write (1, msg, sizeof msg);
 
@@ -275,12 +288,12 @@ main (int argc, char **argv, char **envp)
 
   foo = 1;
   ioctl (0, FIOASYNC, &foo);
-  sigvec (SIGIO, &vec, 0);
+/*  sigvec (SIGIO, &vec, 0);
   sigvec (SIGMSG, &vec, 0);
-  sigvec (SIGEMSG, &vec, 0);
+  sigvec (SIGEMSG, &vec, 0); */
   
   thread_create (newtask, &newthread);
-  __mach_setup_thread (newtask, newthread, startpc, &fs_stack_base,
+  __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
 		       &fs_stack_size);
 
   write (1, "pausing\n", 8);
@@ -366,7 +379,7 @@ read_reply ()
     case DEV_READ:
       if (amtread >= 0)
 	ds_device_read_reply (qr->reply_port, qr->reply_type, 0,
-			      (vm_address_t)buf, amtread);
+			      (io_buf_ptr_t) buf, amtread);
       else
 	ds_device_read_reply (qr->reply_port, qr->reply_type, errno, 0, 0);
       break;
@@ -396,6 +409,7 @@ read_reply ()
 /* Implementation of exec interface */
 
 
+kern_return_t
 S_exec_exec (
 	mach_port_t execserver,
 	mach_port_t file,
@@ -421,6 +435,7 @@ S_exec_exec (
   return EOPNOTSUPP;
 }
 
+kern_return_t
 S_exec_init (
 	mach_port_t execserver,
 	auth_t auth_handle,
@@ -429,6 +444,7 @@ S_exec_init (
   return EOPNOTSUPP;
 }
 
+kern_return_t
 S_exec_setexecdata (
 	mach_port_t execserver,
 	portarray_t ports,
@@ -458,7 +474,7 @@ S_exec_startup (mach_port_t port,
 		int **intarrayP,
 		u_int *intarraylen)
 {
-  mach_port_t *portarray, *dtable;
+  mach_port_t *portarray;
   int *intarray, nc;
   char argv[100];
 
@@ -505,6 +521,7 @@ S_exec_startup (mach_port_t port,
 
 /* Implementation of device interface */
 
+kern_return_t
 ds_device_open (mach_port_t master_port,
 		mach_port_t reply_port,
 		mach_msg_type_name_t reply_type,
@@ -533,6 +550,7 @@ ds_device_open (mach_port_t master_port,
   return device_open (master_device_port, mode, name, device);
 }
 
+kern_return_t
 ds_device_close (device_t device)
 {
   if (device != pseudo_console)
@@ -540,6 +558,7 @@ ds_device_close (device_t device)
   return 0;
 }
 
+kern_return_t
 ds_device_write (device_t device,
 		 mach_port_t reply_port,
 		 mach_msg_type_name_t reply_type,
@@ -561,11 +580,12 @@ ds_device_write (device_t device,
     }
 #endif
 
-  *bytes_written = write (1, (void *)*data, datalen);
+  *bytes_written = write (1, (void *)(vm_address_t)*data, datalen);
   
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
 
+kern_return_t
 ds_device_write_inband (device_t device,
 			mach_port_t reply_port,
 			mach_msg_type_name_t reply_type,
@@ -592,6 +612,7 @@ ds_device_write_inband (device_t device,
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
 
+kern_return_t
 ds_device_read (device_t device,
 		mach_port_t reply_port,
 		mach_msg_type_name_t reply_type,
@@ -628,6 +649,7 @@ ds_device_read (device_t device,
     }
 }
 
+kern_return_t
 ds_device_read_inband (device_t device,
 		       mach_port_t reply_port,
 		       mach_msg_type_name_t reply_type,
@@ -663,6 +685,7 @@ ds_device_read_inband (device_t device,
     }
 }
 
+kern_return_t
 ds_xxx_device_set_status (device_t device,
 			  dev_flavor_t flavor,
 			  dev_status_t status,
@@ -673,6 +696,7 @@ ds_xxx_device_set_status (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_xxx_device_get_status (device_t device,
 			  dev_flavor_t flavor,
 			  dev_status_t status,
@@ -683,6 +707,7 @@ ds_xxx_device_get_status (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_xxx_device_set_filter (device_t device,
 			  mach_port_t rec,
 			  int pri,
@@ -694,6 +719,7 @@ ds_xxx_device_set_filter (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_device_map (device_t device,
 	       vm_prot_t prot,
 	       vm_offset_t offset,
@@ -706,6 +732,7 @@ ds_device_map (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_device_set_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
@@ -716,6 +743,7 @@ ds_device_set_status (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_device_get_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
@@ -726,6 +754,7 @@ ds_device_get_status (device_t device,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
 ds_device_set_filter (device_t device,
 		      mach_port_t receive_port,
 		      int priority,
@@ -739,24 +768,28 @@ ds_device_set_filter (device_t device,
 
 
 /* Implementation of notify interface */
+kern_return_t
 do_mach_notify_port_deleted (mach_port_t notify,
 			     mach_port_t name)
 {
   return EOPNOTSUPP;
 }
 
+kern_return_t
 do_mach_notify_msg_accepted (mach_port_t notify,
 			     mach_port_t name)
 {
   return EOPNOTSUPP;
 }
 
+kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
 			       mach_port_t port)
 {
   return EOPNOTSUPP;
 }
 
+kern_return_t
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
@@ -779,11 +812,13 @@ do_mach_notify_no_senders (mach_port_t notify,
   return EOPNOTSUPP;
 }
 
+kern_return_t
 do_mach_notify_send_once (mach_port_t notify)
 {
   return EOPNOTSUPP;
 }
 
+kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
 {
@@ -849,9 +884,9 @@ S_io_read (mach_port_t object,
   if (avail)
     {
       if (amount > *datalen)
-	vm_allocate (mach_task_self (), amount, data, 1);
+	vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
       *datalen = read (0, *data, amount);
-      return *datalen < 0 ? errno : 0;
+      return *datalen == -1 ? errno : 0;
     }
   else
     {
