@@ -18,6 +18,7 @@ CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.6.2)
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
 CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
+CCVERSION-duality.gnu.ai.mit.edu = 2.6.4
 
 ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 
