@@ -1,5 +1,5 @@
 /* Data structures and global variables for NFS client
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,6 +20,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdint.h>
 #include <sys/mman.h>
 #include "nfs-spec.h"
 #include <hurd/netfs.h>
@@ -177,6 +178,8 @@ error_t nfs_error_trans (int);
 
 /* mount.c */
 struct node *mount_root (char *, char *);
+extern const char *mounted_hostname;
+extern uint16_t mounted_nfs_port; /* host order */
 
 /* ops.c */
 int *register_fresh_stat (struct node *, int *);

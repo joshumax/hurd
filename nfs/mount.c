@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -63,6 +63,10 @@ short nfs_port = NFS_PORT;
 
 /* True iff NFS_PORT should be used even if portmapper present. */
 int nfs_port_override = 0;
+
+/* Host name and port number we actually decided to use.  */
+const char *mounted_hostname;
+uint16_t mounted_nfs_port;	/* host order */
 
 int protocol_version = 2;
 
@@ -253,6 +257,9 @@ mount_root (char *name, char *host)
       perror ("connect");
       return 0;
     }
+
+  mounted_hostname = host;
+  mounted_nfs_port = port;
 
   return np;
 
