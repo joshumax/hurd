@@ -326,6 +326,35 @@ request_dead_name (mach_port_t name)
     mach_port_deallocate (mach_task_self (), prev);
 }
 
+/* Record an essential task in the list.  */
+static error_t
+record_essential_task (const char *name, task_t task)
+{
+  struct ess_task *et;
+  /* Record this task as essential.  */
+  et = malloc (sizeof (struct ess_task));
+  if (et == NULL)
+    return ENOMEM;
+  et->task_port = task;
+  et->name = strdup (name);
+  if (et->name == NULL)
+    {
+      free (et);
+      return ENOMEM;
+    }
+  et->next = ess_tasks;
+  ess_tasks = et;
+
+  /* Dead-name notification on the task port will tell us when it dies.  */
+  request_dead_name (task);
+
+#if 0
+  /* Taking over the exception port will give us a better chance
+     if the task tries to get wedged on a fault.  */
+  task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
+#endif
+}
+
 
 /** Starting programs **/
 
@@ -914,6 +943,11 @@ frob_kernel_process (void)
       return;
     }
 
+  /* Mark the kernel task as an essential task so that we never
+     want to task_terminate it.  */
+  err = record_essential_task ("kernel", task);
+  assert_perror (err);
+
   err = task_get_bootstrap_port (task, &kbs);
   assert_perror (err);
   if (kbs == MACH_PORT_NULL)
@@ -1130,7 +1164,6 @@ kill_everyone (int signo)
 	  for (i = 0; i < npids; i++)
 	    {
 	      if (pids[i] == 1 /* us */
-		  || pids[i] == 2 /* kernel */
 		  || pids[i] == 3 /* default pager for now XXX */)
 		continue;
 
@@ -1196,7 +1229,7 @@ kill_multi_user ()
   notify_shutdown ("transition to single-user");
 
   if (stage == 3)
-    error (0, 0, "warning: some processes wouldn't die; `ps -axlM' advised");
+    error (0, 0, "warning: some processes wouldn't die; `ps -AlM' advised");
 }
 
 /* SIGNO has arrived and has been validated.  Do whatever work it
@@ -1354,6 +1387,7 @@ S_startup_authinit (startup_t server,
   return MIG_NO_REPLY;
 }
 
+
 kern_return_t
 S_startup_essential_task (mach_port_t server,
 			  mach_port_t reply,
@@ -1363,34 +1397,15 @@ S_startup_essential_task (mach_port_t server,
 			  char *name,
 			  mach_port_t credential)
 {
-  struct ess_task *et;
   static int authinit, procinit, execinit;
   int fail;
 
   if (credential != host_priv)
     return EPERM;
-  /* Record this task as essential.  */
-  et = malloc (sizeof (struct ess_task));
-  if (et == NULL)
-    return ENOMEM;
-  et->task_port = task;
-  et->name = strdup (name);
-  if (et->name == NULL)
-    {
-      free (et);
-      return ENOMEM;
-    }
-  et->next = ess_tasks;
-  ess_tasks = et;
 
-  /* Dead-name notification on the task port will tell us when it dies.  */
-  request_dead_name (task);
-
-#if 0
-  /* Taking over the exception port will give us a better chance
-     if the task tries to get wedged on a fault.  */
-  task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
-#endif
+  fail = record_essential_task (name, task);
+  if (fail)
+    return fail;
 
   mach_port_deallocate (mach_task_self (), credential);
 
