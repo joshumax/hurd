@@ -294,11 +294,11 @@ run_for_real (char *filename, char *args, int arglen)
 {
   file_t file;
   error_t err;
-  char buf[512];
   task_t task;
   char *progname;
 
 #if 0
+  char buf[512];
   do
     {
       printf ("File name [%s]: ", filename);
@@ -453,8 +453,8 @@ launch_system (void)
   /* Do NOT run _hurd_proc_init!  That will start signals, which we do not
      want.  We listen to our own message port.  Tell the proc server where
      our args and environment are.  */
-  proc_setprocargs (procserver,
-		    (vm_address_t) global_argv, (vm_address_t) environ);
+  proc_set_arg_locations (procserver,
+			  (vm_address_t) global_argv, (vm_address_t) environ);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
