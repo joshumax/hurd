@@ -34,6 +34,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntlbits.h>
 #include <elf.h>
 #include <mach/mig_support.h>
+#include <mach/default_pager.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -52,7 +53,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #undef errno
 int errno;
 
-mach_port_t privileged_host_port, master_device_port;
+mach_port_t privileged_host_port, master_device_port, defpager;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
 mach_port_t pseudo_console;
@@ -154,7 +155,7 @@ task_by_pid (int pid)
 
 int
 write (int fd,
-       void *buf,
+       const void *buf,
        int buflen)
 {
   return syscall (4, fd, buf, buflen);
@@ -169,11 +170,17 @@ read (int fd,
 }
 
 int
-open (char *name,
+open (const char *name,
       int flags,
       int mode)
 {
   return syscall (5, name, flags, mode);
+}
+
+int
+close (int fd)
+{
+  return syscall (6, fd);
 }
 
 int
@@ -286,7 +293,31 @@ sigvec (int sig, struct sigvec *vec, struct sigvec *ovec)
 #else
 int sigvec ();
 #endif
+
+char *useropen_dir;
 
+int
+useropen (const char *name, int flags, int mode)
+{
+  if (useropen_dir)
+    {
+      static int dlen;
+      if (!dlen) dlen = strlen (useropen_dir);
+      {
+	int len = strlen (name);
+	char try[dlen + 1 + len + 1];
+	int fd;
+	memcpy (try, useropen_dir, dlen);
+	try[dlen] = '/';
+	memcpy (&try[dlen + 1], name, len + 1);
+	fd = open (try, flags, mode);
+	if (fd >= 0)
+	  return fd;
+      }
+    }
+  return open (name, flags, mode);
+}
+
 int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
@@ -334,7 +365,7 @@ load_image (task_t t,
   char msg[] = "cannot open bootstrap file";
 
 
-  fd = open (file, 0, 0);
+  fd = useropen (file, 0, 0);
 
   if (fd == -1)
     {
@@ -475,6 +506,46 @@ boot_script_port_insert_right (mach_port_t task, mach_port_t name,
 }
 
 int
+boot_script_read_file (const char *filename)
+{
+  static const char msg[] = ": cannot open\n";
+  int fd = useropen (filename, 0, 0);
+  struct stat st;
+  error_t err;
+  mach_port_t memobj;
+  vm_address_t region;
+
+  write (2, filename, strlen (filename));
+  if (fd < 0)
+    {
+      write (2, msg, sizeof msg - 1);
+      uxexit (1);
+    }
+  else
+    write (2, msg + sizeof msg - 2, 1);
+
+  fstat (fd, &st);
+
+  err = default_pager_object_create (defpager, &memobj,
+				     round_page (st.st_size));
+  if (err)
+    {
+      static const char msg[] = "cannot create default-pager object\n";
+      write (2, msg, sizeof msg - 1);
+      uxexit (1);
+    }
+
+  region = 0;
+  vm_map (mach_task_self (), &region, round_page (st.st_size),
+	  0, 1, memobj, 0, 0, VM_PROT_ALL, VM_PROT_ALL, VM_INHERIT_NONE);
+  read (fd, (char *) region, st.st_size);
+  vm_deallocate (mach_task_self (), region, round_page (st.st_size));
+
+  close (fd);
+  return 0;
+}
+
+int
 boot_script_exec_cmd (mach_port_t task, char *path, int argc,
 		      char **argv, char *strings, int stringlen)
 {
@@ -530,7 +601,8 @@ int
 main (int argc, char **argv, char **envp)
 {
   mach_port_t foo;
-  static const char usagemsg[] = "Usage: boot [SWITCHES] SCRIPT ROOT-DEVICE\n";
+  static const char usagemsg[]
+    = "Usage: boot [-D dir] [SWITCHES] SCRIPT ROOT-DEVICE\n";
   char *buf = 0;
   char *bootscript;
   int i, len;
@@ -540,12 +612,24 @@ main (int argc, char **argv, char **envp)
   privileged_host_port = task_by_pid (-1);
   master_device_port = task_by_pid (-2);
 
+  defpager = MACH_PORT_NULL;
+  vm_set_default_memory_manager (privileged_host_port, &defpager);
+
   boot_script_task_port = mach_task_self ();
 
   if (argc < 2 || (argv[1][0] == '-' && argc < 3))
     {
+    usage:
       write (2, usagemsg, sizeof usagemsg);
       uxexit (1);
+    }
+
+  if (!strcmp (argv[1], "-D"))
+    {
+      if (argc < 4)
+	goto usage;
+      useropen_dir = argv[2];
+      argv += 2;
     }
 
   if (argv[1][0] != '-')
