@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -107,12 +107,9 @@ diskfs_start_bootstrap ()
 						   O_READ | O_EXEC, 0),
 			      0, &rootpi);
   assert_perror (err);
-  root_pt = ports_get_right (rootpi);
 
   /* Get us a send right to copy around.  */
-  mach_port_insert_right (mach_task_self (), root_pt, root_pt,
-			  MACH_MSG_TYPE_MAKE_SEND);
-
+  root_pt = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
 
   if (diskfs_exec_server_task == MACH_PORT_NULL)
@@ -260,9 +257,7 @@ diskfs_start_bootstrap ()
   err = ports_create_port (diskfs_initboot_class, diskfs_port_bucket,
 			   sizeof (struct port_info), &bootinfo);
   assert_perror (err);
-  bootpt = ports_get_right (bootinfo);
-  mach_port_insert_right (mach_task_self (), bootpt, bootpt,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  bootpt = ports_get_send_right (bootinfo);
   ports_port_deref (bootinfo);
 
   portarray[INIT_PORT_CRDIR] = root_pt;
@@ -406,9 +401,7 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags, 0),
 			      0, &rootpi);
   assert_perror (err);
-  rootport = ports_get_right (rootpi);
-  mach_port_insert_right (mach_task_self (), rootport, rootport,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  rootport = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
 
   err = dir_lookup (rootport, _SERVERS_EXEC, flags|O_NOTRANS, 0,
@@ -565,12 +558,10 @@ diskfs_S_fsys_init (mach_port_t port,
 						   O_READ|O_EXEC, 0),
 			      0, &rootpi);
   assert_perror (err);
-  root_pt = ports_get_right (rootpi);
+  root_pt = ports_get_send_right (rootpi);
   ports_port_deref (rootpi);
 
   /* We need two send rights, for the crdir and cwdir slots.  */
-  mach_port_insert_right (mach_task_self (), root_pt, root_pt,
-			  MACH_MSG_TYPE_MAKE_SEND);
   mach_port_mod_refs (mach_task_self (), root_pt,
 		      MACH_PORT_RIGHT_SEND, +1);
 
@@ -643,9 +634,7 @@ start_execserver (void)
   err = ports_create_port (diskfs_execboot_class, diskfs_port_bucket,
 			   sizeof (struct port_info), &execboot_info);
   assert_perror (err);
-  right = ports_get_right (execboot_info);
-  mach_port_insert_right (mach_task_self (), right,
-			  right, MACH_MSG_TYPE_MAKE_SEND);
+  right = ports_get_send_right (execboot_info);
   ports_port_deref (execboot_info);
   task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
   mach_port_deallocate (mach_task_self (), right);
