@@ -54,11 +54,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifdef	BFD
 #include <bfd.h>
 
-/* Uses the following nonexistent functions: */
-bfd *bfd_openstream (FILE *);
-
 extern error_t bfd_mach_host_arch_mach (host_t host,
-					bfd_architecture *arch,
+					enum bfd_architecture *arch,
 					long int *machine);
 #else
 #include A_OUT_H
@@ -77,10 +74,10 @@ struct execdata
     /* Set by check.  */
     vm_address_t entry;
     FILE stream;
+    file_t file;
 #ifdef	BFD
     bfd *bfd;
 #else
-    file_t file;
     struct exec *header, headbuf;
 #endif
     memory_object_t filemap, cntlmap;
@@ -103,7 +100,7 @@ struct execdata
 #ifdef	BFD
 /* A BFD whose architecture and machine type are those of the host system.  */
 static bfd_arch_info_type host_bfd_arch_info;
-static bfd host_bfd { arch_info: &host_bfd_arch_info };
+static bfd host_bfd = { arch_info: &host_bfd_arch_info };
 #else
 static enum machine_type host_machine; /* a.out machine_type of the host.  */
 #endif
@@ -127,12 +124,12 @@ static size_t std_nports, std_nints;
 static error_t
 b2he (error_t deflt)
 {
-  switch (bfd_error)
+  switch (bfd_get_error ())
     {
-    case system_call_error:
-      return a2he (errno);
+    case bfd_error_system_call:
+      return errno;
 
-    case no_memory:
+    case bfd_error_no_memory:
       return ENOMEM;
 
     default:
@@ -168,14 +165,12 @@ check_section (bfd *bfd, asection *sec, void *userdata)
       return;
     }
 
-  addr = (vm_address_t) sec->bfd_vma;
+  addr = (vm_address_t) sec->vma;
 
   if (sec->flags & SEC_LOAD)
     {
-      file_ptr section_offset;
-
       u->locations[sec->index] = sec->filepos;
-      if ((off_t) sec->filepos < 0 || (off_t) sec->filepos > e->file_size)
+      if ((off_t) sec->filepos < 0 || (off_t) sec->filepos > u->file_size)
 	u->error = EINVAL;
     }
 }
@@ -211,9 +206,9 @@ load_section (enum section section, struct execdata *u)
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
 #ifdef	BFD
-  addr = (vm_address_t) sec->bfd_vma;
+  addr = (vm_address_t) sec->vma;
   filepos = u->locations[sec->index];
-  secsize = sec->size;
+  secsize = sec->_raw_size;
   if (sec->flags & (SEC_READONLY|SEC_ROM))
     vm_prot &= ~VM_PROT_WRITE;
 #else
@@ -351,9 +346,22 @@ load_section (enum section section, struct execdata *u)
 	  if (u->error = vm_read (u->task, overlap_page, vm_page_size,
 				  &ourpage, &size))
 	    {
-	    maplose:
-	      vm_deallocate (u->task, mapstart, secsize);
-	      return;
+	      if (u->error == KERN_INVALID_ADDRESS)
+		{
+		  /* The space is unallocated.  */
+		  u->error = vm_allocate (u->task,
+					  &overlap_page, vm_page_size, 0);
+		  size = vm_page_size;
+		  if (!u->error)
+		    u->error = vm_allocate (mach_task_self (),
+					    &ourpage, vm_page_size, 1);
+		}
+	      if (u->error)
+		{
+		maplose:
+		  vm_deallocate (u->task, mapstart, secsize);
+		  return;
+		}
 	    }
 
 	  readaddr = (void *) (ourpage + (addr - overlap_page));
@@ -452,8 +460,8 @@ postload_section (enum section section, struct execdata *u)
   vm_size_t secsize = 0;
 
 #ifdef	BFD
-  addr = (vm_address_t) sec->bfd_vma;
-  secsize = sec->size;
+  addr = (vm_address_t) sec->vma;
+  secsize = sec->_raw_size;
 #else
   switch (section)
     {
@@ -676,7 +684,7 @@ prepare (file_t file, struct execdata *e)
   e->stream.__seen = 1;
 
 #ifdef BFD
-  e->bfd = bfd_openstream (&e->stream);
+  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
   if (e->bfd == NULL)
     {
       e->error = b2he (ENOEXEC);
@@ -693,14 +701,15 @@ static void
 check (struct execdata *e)
 {
 #ifdef	BFD
-  bfd_error = no_error;
+  bfd_set_error (bfd_error_no_error);
   if (!bfd_check_format (e->bfd, bfd_object))
     {
       e->error = b2he (ENOEXEC);
       return;
     }
-  else if (!(e->bfd->flags & EXEC_P) ||
-	   bfd_arch_get_compatible (&host_bfd, e->bfd) != host_bfd.arch_info)
+  else if (/* !(e->bfd->flags & EXEC_P) || XXX */
+	   (host_bfd.arch_info->compatible = e->bfd->arch_info->compatible,
+	    bfd_arch_get_compatible (&host_bfd, e->bfd)) != host_bfd.arch_info)
     {
       /* This file is of a recognized binary file format, but it is not
 	 executable on this machine.  */
@@ -708,7 +717,7 @@ check (struct execdata *e)
       return;
     }
 
-  e->entry = bfd->start_address;
+  e->entry = e->bfd->start_address;
 #else
   /* Map in the a.out header.  */
   if (e->file_size < sizeof (*e->header))
@@ -823,11 +832,13 @@ static void
 finish (struct execdata *e)
 {
   finish_mapping (e);
-  fclose (&e->stream);
 #ifdef	BFD
   if (e->bfd != NULL)
-    (void) bfd_close (e->bfd);
+    bfd_close (e->bfd);
+  else
+    fclose (&e->stream);
 #else
+  fclose (&e->stream);
   if (e->header != NULL && e->header != &e->headbuf &&
       e->header != (void *) e->file_data)
     vm_deallocate (mach_task_self (),
@@ -1094,7 +1105,7 @@ do_exec (mach_port_t execserver,
   if (! e.error)
     {
       e.locations = alloca (e.bfd->section_count * sizeof (vm_offset_t));
-      bfd_map_over_sections (e.bfd, check_section, e);
+      bfd_map_over_sections (e.bfd, check_section, &e);
     }
 #endif
   if (e.error)
