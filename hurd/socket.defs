@@ -1,0 +1,155 @@
+/* Definitions for socket interface
+   Copyright (C) 1991 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 1, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+
+/* Sockets also support the generic IO facilities.  */
+
+subsystem socket 20000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef SOCKET_IMPORTS
+SOCKET_IMPORTS
+#endif
+
+/* Create a new socket.  Sock type is, for example, SOCK_STREAM,
+   SOCK_DGRAM, or some such.  */
+routine socket_create (
+	server: socket_t;
+	sock_type: int;
+	protocol: int;
+	out sock: socket_t);
+
+/* Prepare a socket of appropriate type for future accept operations.  */
+routine socket_listen (
+	sock: socket_t;
+	queue_limit: int);
+
+/* Return a new connection from a socket previously listened.  */
+/* INTR */
+routine socket_accept (
+	sock: socket_t;
+	out conn_sock: socket_t;
+	out peer_addr: addr_port_t);
+
+/* Connect to an address.  */
+/* INTR */
+routine socket_connect (
+	sock: socket_t;
+	addr: addr_port_t);
+
+/* Bind a socket to an address.  */
+routine socket_bind (
+	sock: socket_t;
+	addr: addr_port_t);
+
+/* Find out the name of a socket.  */
+routine socket_name (
+	sock: socket_t;
+	out addr: addr_port_t);
+
+/* Find out the name of the socket's peer.  */
+routine socket_peername (
+	sock: socket_t;
+	out addr: addr_port_t);
+
+/* Connect two sockets */
+routine socket_connect2 (
+	sock1: socket_t;
+	sock2: socket_t);
+
+/* Create an address from a sockaddr.  */
+routine socket_create_address (
+	sock: socket_t;
+	sockaddr: sockaddr_t;
+	out addr: addr_port_t;
+	binding: int);
+
+/* Create an address without any sockaddr.  */
+routine socket_fabricate_address (
+	sock: socket_t;
+	out addr: addr_port_t);
+
+/* Find the sockaddr name of an address. */
+routine socket_whatis_address(
+	addr: addr_port_t;
+	out sockaddr: sockaddr_t);
+
+/* Shutdown a socket for reading or writing.  */
+routine socket_shutdown (
+	sock: socket_t;
+	direction: int);
+
+/* Get a socket option.  */
+routine socket_getopt (
+	sock: socket_t;
+	level: int;
+	option: int;
+	out optval: ioctl_data_t);
+
+/* Set a socket option.  */
+routine socket_setopt (
+	sock: socket_t;
+	level: int;
+	option: int;
+	optval: ioctl_data_t);
+
+/* Send data in band over a socket, possibly including Mach ports.  */
+/* INTR */
+routine socket_send_inband (
+	sock: socket_t;
+	addr: addr_port_t;
+	flags: int;
+	data: inband_data_t;
+	ports: fd_array_t;
+	control: inband_data_t;
+	out amount: int);
+
+/* INTR */
+routine socket_send_outofband (
+	sock: socket_t;
+	addr: addr_port_t;
+	flags: int;
+	data: outofband_data_t;
+	ports: fd_array_t;
+	control: inband_data_t;
+	out amount: int);
+
+/* Receive data from a socket, possibly including Mach ports.  */
+/* INTR */
+routine socket_recv_inband (
+	sock: socket_t;
+	out addr: addr_port_t;
+	flags: int;
+	out data: inband_data_t;
+	out ports: fd_array_t;
+	out control: inband_data_t;
+	out outflags: int;
+	amount: int);
+
+/* INTR */
+routine socket_recv_outofband (
+	sock: socket_t;
+	out addr: addr_port_t;
+	inout flags: int;
+	out data: outofband_data_t;
+	out ports: fd_array_t;
+	out control: inband_data_t;
+	out outflags: int;
+	amount: int);
