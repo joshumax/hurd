@@ -30,7 +30,7 @@ int
 main ()
 {
   mach_port_t bootstrap;
-  static volatile int hold = 1;
+  static volatile int hold = 0;
   struct sockaddr_in addr;
   int ret;
 
