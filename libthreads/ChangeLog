@@ -1,3 +1,12 @@
+2000-03-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	Locking support for stdio streams with glibc-2.2 libio.  EXPERIMENTAL!
+	* lockfile.c: New file.
+	* libthreads.map: New file.
+	* Makefile (SRCS): Add lockfile.c.
+	[$(VERSIONING) = yes] ($(libname).so.$(hurd-version)): Depend
+	on $(srcdir)/$(libname).map to get version script into the link.
+
 2000-02-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* i386/csw.S: #undef __ELF__ before defining it, since
