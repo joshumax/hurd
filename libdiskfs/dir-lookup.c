@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+   Copyright (C) 1992, 93, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -134,37 +134,52 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
       /* If we get an error we're done */
       if (error == EAGAIN)
-	if (dnp == dircred->po->shadow_root)
-	  /* We're at the root of a shadow tree.  */
-	  {
-	    *retry = FS_RETRY_REAUTH;
-	    *returned_port = dircred->po->shadow_root_parent;
-	    *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-	    if (! lastcomp)
-	      strcpy (retryname, nextname);
-	    error = 0;
-	    goto out;
-	  }
-	else if (dircred->po->root_parent != MACH_PORT_NULL)
-	  /* We're at a real translator root; even if DIRCRED->po has a
-	     shadow root, we can get here if its in a directory that was
-	     renamed out from under it...  */
-	  {
-	    *retry = FS_RETRY_REAUTH;
-	    *returned_port = dircred->po->root_parent;
-	    *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-	    if (!lastcomp)
-	      strcpy (retryname, nextname);
-	    error = 0;
-	    goto out;
-	  }
-	else
-	  /* We're at a REAL root, as in there's no way up from here.  */
-	  {
-	    error = 0;
-	    np = dnp;
-	    diskfs_nref (np);
-	  }
+	{
+	  if (dnp == dircred->po->shadow_root)
+	    /* We're at the root of a shadow tree.  */
+	    {
+	      if (dircred->po->shadow_root_parent == MACH_PORT_NULL)
+		{
+		  /* This is a shadow root with no parent, meaning
+		     we should treat it as a virtual root disconnected
+		  from its real .. directory.  */
+		  error = 0;
+		  np = dnp;
+		  diskfs_nref (np);
+		}
+	      else
+		{
+		  /* Punt the client up to the shadow root parent.  */
+		  *retry = FS_RETRY_REAUTH;
+		  *returned_port = dircred->po->shadow_root_parent;
+		  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+		  if (! lastcomp)
+		    strcpy (retryname, nextname);
+		  error = 0;
+		  goto out;
+		}
+	    }
+	  else if (dircred->po->root_parent != MACH_PORT_NULL)
+	    /* We're at a real translator root; even if DIRCRED->po has a
+	       shadow root, we can get here if its in a directory that was
+	    renamed out from under it...  */
+	    {
+	      *retry = FS_RETRY_REAUTH;
+	      *returned_port = dircred->po->root_parent;
+	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+	      if (!lastcomp)
+		strcpy (retryname, nextname);
+	      error = 0;
+	      goto out;
+	    }
+	  else
+	    /* We're at a REAL root, as in there's no way up from here.  */
+	    {
+	      error = 0;
+	      np = dnp;
+	      diskfs_nref (np);
+	    }
+	}
 
       /* Create the new node if necessary */
       if (lastcomp && create)
@@ -439,10 +454,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
  out:
   if (np)
-    if (dnp == np)
-      diskfs_nrele (np);
-    else
-      diskfs_nput (np);
+    {
+      if (dnp == np)
+	diskfs_nrele (np);
+      else
+	diskfs_nput (np);
+    }
   if (dnp)
     diskfs_nput (dnp);
 
