@@ -409,6 +409,30 @@ netfs_attempt_write (struct netcred *cred, struct node *np,
   return 0;
 }
 
+/* See if NAME exists in DIR for CRED.  If so, return EEXIST.  */
+error_t
+verify_nonexistent (struct netcred *cred, struct node *dir,
+		    char *name)
+{
+  int *p;
+  void *rpcbuf;
+  error_t err;
+  
+  p = nfs_initialize_rpc (NFSPROC_LOOKUP, cred, 0, &rpcbuf, dir, -1);
+  p = xdr_encode_fhandle (p, &dir->nn->handle);
+  p = xdr_encode_string (p, name);
+
+  mutex_lock (&dir->lock);
+  err = conduct_rpc (&rpcbuf, &p);
+  if (!err)
+    err = nfs_error_trans (ntohl (*p++));
+  
+  if (!err)
+    return EEXIST;
+  else
+    return 0;
+}
+
 /* Implement the netfs_attempt_lookup callback as described in
    <hurd/netfs.h>. */
 error_t
@@ -594,6 +618,11 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
     case BLKDEV:
     case FIFO:
     case SOCK:
+
+      err = verify_nonexistent (cred, dir, name);
+      if (err)
+	return err;
+
       mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_CREATE, cred, 0, &rpcbuf, dir, -1);
       p = xdr_encode_fhandle (p, &dir->nn->handle);
@@ -703,6 +732,10 @@ netfs_attempt_create_file (struct netcred *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
+
+  err = verify_nonexistent (cred, np, name);
+  if (err)
+    return err;
 
   p = nfs_initialize_rpc (NFSPROC_CREATE, cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);

@@ -17,6 +17,7 @@ See `tasks', the exported task list.
 * Profile things
 * Make for easier installation
 * Write coding standards suggestions for Hurd
+* Implement file_fetch_dir
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap
 
@@ -93,6 +94,7 @@ See `tasks', the exported task list.
 *** fsys_get_options should return the disk name.
 *** Add `author_tracks_uid' flag to struct node, and use it in places 
     that modify author/uid.  Initialized to 0.
+*** Use idvecs.
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications?

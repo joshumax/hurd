@@ -1,3 +1,11 @@
+Tue Aug 13 14:38:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+	
+	* ops.c (op_create): Sun's NFS client implementation actually
+ 	bombs if do do what RFC 1094 says to do in section 2.2.10.  So
+ 	don't pass O_EXCL, but do pass O_TRUNC.  That's what NetBSD does.
+
+	* ops.c (op_setattr): Fill in an fattr in reply.
+	
 Mon Aug 12 11:15:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (installationdir): Include quotes in variable expansion

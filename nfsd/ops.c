@@ -120,14 +120,21 @@ op_setattr (struct cache_handle *c,
 {
   error_t err = 0;
   mode_t mode;
+  struct stat st;
 
   mode = ntohl (*p++);
   if (mode != -1)
     err = file_chmod (c->port, mode);
+
+  if (!err)
+    err = complete_setattr (c->port, p);
+  if (!err)
+    err = io_stat (c->port, &st);
   if (err)
     return err;
   
-  return complete_setattr (c->port, p);
+  *reply = encode_fattr (*reply, &st);
+  return 0;
 }
 
 static error_t
@@ -290,7 +297,7 @@ op_create (struct cache_handle *c,
   p = decode_name (p, &name);
   mode = ntohl (*p++);
   
-  err = dir_lookup (c->port, name, O_NOTRANS | O_CREAT | O_EXCL, mode,
+  err = dir_lookup (c->port, name, O_NOTRANS | O_CREAT | O_TRUNC, mode,
 		    &do_retry, retry_name, &newport);
   if (!err
       && (do_retry != FS_RETRY_NORMAL

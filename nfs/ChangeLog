@@ -1,3 +1,14 @@
+Tue Aug 13 14:57:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_create_file): Sun's NFS client does not
+ 	expect NFSPROC_CREATE to be exclusive.  Accordingly, on most
+ 	servers (including ours) it isn't exclusive.  (Which, of course,
+ 	contradicts Sun's own RGC 1094, section 2.2.10.)  Which means we
+ 	have to insert our own test here to make sure the file doesn't
+	exist before attempting NFSPROC_CREATE.
+	(netfs_attempt_link): Likewise.
+	(verify_nonexistent): New function.
+
 Mon Aug 12 11:13:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* nfs.c (nfs_error_trans): Repair syntax.
