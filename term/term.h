@@ -32,7 +32,9 @@
 
 #define CHAR_SOH '\001'		/* C-a */
 #define CHAR_EOT '\004'		/* C-d */
-#define CHAR_DC3 '\022'		/* C-r */
+#define CHAR_DC1 '\021'		/* C-q */
+#define CHAR_DC2 '\022'		/* C-r */
+#define CHAR_DC3 '\023'		/* C-s */
 #define CHAR_USER_QUOTE '\377'	/* break quoting, etc. */
 
 /* XXX These belong in <termios.h> */
