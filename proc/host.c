@@ -33,7 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/version.h>
 
 #include "proc.h"
-#include "proc_S.h"
+#include "process_S.h"
 
 static long hostid;
 static char *hostname;
