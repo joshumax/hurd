@@ -1,3 +1,9 @@
+1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (HURDLIBS): Add ports and fshelp only if $(split-init)!=yes.
+
+	* init.c (open_console): Put this function inside [! SPLIT_INIT].
+
 1999-06-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c [SPLIT_INIT] (child_pid, child_task): New variables.
