@@ -1,3 +1,8 @@
+1997-06-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (version): Use a four-digit year.
+	(dist): Always generate distributes of the form `hurd-${version}.tar.gz'.
+
 Thu Jun 12 18:58:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Released version 0.2.
