@@ -16,20 +16,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-
-/* Implement io_write as described in <hurd/io.defs>. */
+#include "io_S.h"
 
 /* Implement io_write as described in <hurd/io.defs>. */
 error_t
-S_io_write(struct protid *cred,
-	   char *data,
-	   unsigned int datalen,
-	   off_t offset, 
-	   int *amt)
+diskfs_S_io_write(struct protid *cred,
+		  char *data,
+		  unsigned int datalen,
+		  off_t offset, 
+		  int *amt)
 {
   struct node *np;
   error_t err;
-  volatile int off = offset;
+  int off = offset;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -44,9 +43,7 @@ S_io_write(struct protid *cred,
 
   assert (!S_ISDIR(np->dn_stat.st_mode));
 
-  err = ioserver_get_conch (&np->conch);
-  if (err)
-    goto out;
+  ioserver_get_conch (&np->conch);
   
   if (off == -1)
     {
@@ -63,7 +60,10 @@ S_io_write(struct protid *cred,
     }
       
   if (off + datalen > np->dn_stat.st_size)
-    np->dn_stat.st_size = off + datalen;
+    {
+      np->dn_stat.st_size = off + datalen;
+      np->dn_set_ctime = 1;
+    }
 
   if (!err)
     {
