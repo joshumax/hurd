@@ -62,8 +62,11 @@ typedef union
     uint32_t cursor_status : 1;
     uint32_t screen_cur_line : 1;
     uint32_t screen_scr_lines : 1;
-    uint32_t _unused : 27;
+    uint32_t bell_audible : 1;
+    uint32_t bell_visible : 1;
+    uint32_t _unused : 25;
     uint32_t not_matrix : 1;
+    /* Here are 32 more unused bits.  */
   } what;
 } cons_change_t;
 
@@ -103,6 +106,12 @@ struct cons_display
 #define CONS_CURSOR_VERY_VISIBLE 2
     uint32_t status;	/* Visibility status of cursor.  */
   } cursor;
+
+  struct
+  {
+    uint32_t audible;	/* Audible bell.  */
+    uint32_t visible;	/* Visible bell.  */
+  } bell;
 
   struct
   {

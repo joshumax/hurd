@@ -20,8 +20,8 @@
 
 /* Only CPP macro definitions should go in this file. */
 
-#define IO_INTRAN trivfs_protid_t trivfs_begin_using_protid (io_t)
-#define IO_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
+#define IO_INTRAN protid_t begin_using_protid_port (io_t)
+#define IO_DESTRUCTOR end_using_protid_port (protid_t)
 
-#define IO_IMPORTS import "priv.h";
-#define TIOCTL_IMPORTS IO_IMPORTS
+#define TIOCTL_IMPORTS import "priv.h";
+

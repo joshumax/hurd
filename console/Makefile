@@ -24,9 +24,9 @@ makemode := server
 target = console
 
 SRCS = console.c display.c input.c
-LCLHDRS = console.h display.h input.h
+LCLHDRS = console.h display.h input.h priv.h mutations.h
 
-MIGSTUBS = notifyServer.o
+MIGSTUBS = notifyServer.o tioctlServer.o
 
 HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))

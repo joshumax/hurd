@@ -36,6 +36,7 @@
 #include <version.h>
 
 #include <hurd/netfs.h>
+#include <hurd/ioctl_types.h>
 
 #include "display.h"
 #include "input.h"
@@ -314,7 +315,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       (*np)->nn_stat.st_mode |= S_IFREG;
       (*np)->nn_stat.st_mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
       (*np)->nn_stat.st_size = 80*50 * (sizeof (wchar_t) + 4)
-	+ 14 * 4 + 512 * 8; /* XXX */
+	+ 16 * 4 + 512 * 8; /* XXX */
       break;
     case VCONS_NODE_INPUT:
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 3;
@@ -1336,6 +1337,326 @@ netfs_append_args (char **argz, size_t *argz_len)
 }
 
 
+kern_return_t
+S_tioctl_tiocflush (struct protid *cred, int queue_selector)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  if (!queue_selector)
+    queue_selector = O_READ | O_WRITE;
+
+  if (queue_selector & O_READ)
+    input_flush (vcons->input);
+  if (queue_selector & O_WRITE)
+    display_discard_output (vcons->display);
+
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocgwinsz (struct protid *cred, struct winsize *size)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  display_getsize (vcons->display, size);
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocstart (struct protid *cred)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  display_start_output (vcons->display);
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocstop (struct protid *cred)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  display_stop_output (vcons->display);
+  return 0;
+}
+
+
+kern_return_t
+S_tioctl_tiocoutq (struct protid *cred, int *queue_size)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  *queue_size = display_pending_output (vcons->display);
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocspgrp (struct protid *cred, int pgrp)
+{
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  display_set_owner (vcons->display, -pgrp);
+  return 0;
+}
+
+kern_return_t
+S_tioctl_tiocgpgrp (struct protid *cred, int *pgrp)
+{
+  error_t err;
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  if (!(cred->po->openstat & (O_READ | O_WRITE)))
+    return EBADF;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->cons_node)
+    return EOPNOTSUPP;
+
+  err = display_get_owner (vcons->display, pgrp);
+  if (!err)
+    *pgrp = -*pgrp;
+
+  return err;
+}
+
+kern_return_t
+S_tioctl_tiocmodg (io_t port, int *state)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocmods (io_t port, int state)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocexcl (io_t port)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocnxcl (io_t port)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocgeta (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocseta (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsetaw (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsetaf (io_t port, tcflag_t *modes, cc_t *ccs,
+				  speed_t *speeds)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocgetd (io_t port, int *disc)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsetd (io_t port, int disc)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocdrain (io_t port)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocmget (io_t port, int *bits)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocmset (io_t port, int bits)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsig (io_t port, int sig)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocext (io_t port, int mode)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocucntl (io_t port, int mode)
+
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocswinsz (struct protid *cred, struct winsize size)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocremote (struct protid *cred, int how)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocmbic (struct protid *cred, int bits)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocmbis (struct protid *cred, int bits)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocpkt (struct protid *cred, int mode)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsti (struct protid *cred, char c)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tioccdtr (struct protid *cred)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsdtr (struct protid *cred)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tioccbrk (struct protid *cred)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_tioctl_tiocsbrk (struct protid *cred)
+{
+  return EOPNOTSUPP;
+}
+
+
+int
+console_demuxer (mach_msg_header_t *inp,
+		 mach_msg_header_t *outp)
+{
+  extern int netfs_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp);
+  extern int tioctl_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
+
+  return (netfs_demuxer (inp, outp)
+	  || tioctl_server (inp, outp));
+}
+  
 int
 main (int argc, char **argv)
 {
@@ -1414,9 +1735,17 @@ main (int argc, char **argv)
       
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		console_maptime);
-
-  netfs_server_loop ();
-                                
-  /*NOTREACHED*/
-  return 0;
+  
+  do 
+    {
+      ports_manage_port_operations_multithread (netfs_port_bucket,
+						console_demuxer,
+						1000 * 60 * 2,
+						1000 * 60 * 10,
+						0);
+      err = netfs_shutdown (0);
+    }
+  while (err);
+  
+  exit (err);
 }

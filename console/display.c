@@ -58,6 +58,10 @@ struct changes
     uint32_t cur_line;
     uint32_t scr_lines;
   } screen;
+
+  uint32_t bell_audible;
+  uint32_t bell_visible;
+
   off_t start;
   off_t end;
 
@@ -65,7 +69,9 @@ struct changes
 #define DISPLAY_CHANGE_CURSOR_STATUS 2
 #define DISPLAY_CHANGE_SCREEN_CUR_LINE 4
 #define DISPLAY_CHANGE_SCREEN_SCR_LINES 8
-#define DISPLAY_CHANGE_MATRIX 16
+#define DISPLAY_CHANGE_BELL_AUDIBLE 16
+#define DISPLAY_CHANGE_BELL_VISIBLE 32
+#define DISPLAY_CHANGE_MATRIX 64
   unsigned int which;
 };
 
@@ -544,7 +550,7 @@ static void
 display_flush_filechange (display_t display, unsigned int type)
 {
   struct cons_display *user = display->user;
-  cons_change_t *next = &user->changes._buffer[(user->changes.written + 1)
+  cons_change_t *next = &user->changes._buffer[user->changes.written
 					       % _CONS_CHANGES_LENGTH];
   int notify = 0;
   int bump_written = 0;
@@ -556,7 +562,7 @@ display_flush_filechange (display_t display, unsigned int type)
       next->matrix.start = display->changes.start;
       next->matrix.end = display->changes.end;
       user->changes.written++;
-      next = &user->changes._buffer[(user->changes.written + 1)
+      next = &user->changes._buffer[user->changes.written
 				    % _CONS_CHANGES_LENGTH];
       display->changes.which &= ~DISPLAY_CHANGE_MATRIX;
     }
@@ -603,6 +609,26 @@ display_flush_filechange (display_t display, unsigned int type)
       next->what.screen_scr_lines = 1;
       bump_written = 1;
       display->changes.which &= ~DISPLAY_CHANGE_SCREEN_SCR_LINES;
+    }
+
+  if (type & DISPLAY_CHANGE_BELL_AUDIBLE
+      && display->changes.which & DISPLAY_CHANGE_BELL_AUDIBLE
+      && display->changes.bell_audible != user->bell.audible)
+    {
+      notify = 1;
+      next->what.bell_audible = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_BELL_AUDIBLE;
+    }
+
+  if (type & DISPLAY_CHANGE_BELL_VISIBLE
+      && display->changes.which & DISPLAY_CHANGE_BELL_VISIBLE
+      && display->changes.bell_visible != user->bell.visible)
+    {
+      notify = 1;
+      next->what.bell_visible = 1;
+      bump_written = 1;
+      display->changes.which &= ~DISPLAY_CHANGE_BELL_VISIBLE;
     }
 
   if (bump_written)
@@ -682,8 +708,9 @@ display_record_filechange (display_t display, off_t start, off_t end)
       if (disjunct)
 	{
 	  /* The regions are disjunct, so we have to flush the old
-	   changes.  */
+	     changes.  */
 	  display_flush_filechange (display, DISPLAY_CHANGE_MATRIX);
+	  display->changes.which |= DISPLAY_CHANGE_MATRIX;
 	}
       display->changes.start = start;
       display->changes.end = end;
@@ -1437,6 +1464,10 @@ display_output_one (display_t display, wchar_t chr)
 	case L'\0':
 	  /* Padding character: <pad>.  */
 	  break;
+	case L'\a':
+	  /* Audible bell.  */
+	  user->bell.audible++;
+	  break;
 	default:
 	  {
 	    int line = (user->screen.cur_line + user->cursor.row)
@@ -1498,6 +1529,10 @@ display_output_one (display_t display, wchar_t chr)
 	  /* In case the screen was larger before:  */
 	  limit_cursor (display);
 	  break;
+	case L'g':
+	  /* Visible bell.  */
+	  user->bell.visible++;
+	  break;
 	default:
 	  /* Unsupported escape sequence.  */
 	  parse->state = STATE_NORMAL;
@@ -1555,6 +1590,8 @@ display_output_some (display_t display, char **buffer, size_t *length)
   display->changes.cursor.status = display->user->cursor.status;
   display->changes.screen.cur_line = display->user->screen.cur_line;
   display->changes.screen.scr_lines = display->user->screen.scr_lines;
+  display->changes.bell_audible = display->user->bell.audible;
+  display->changes.bell_visible = display->user->bell.visible;
   display->changes.which = ~DISPLAY_CHANGE_MATRIX;
 
   while (!err && *length > 0)

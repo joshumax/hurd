@@ -1,3 +1,41 @@
+2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (LCLHDRS): Add priv.h and mutations.h.
+	(MIGSTUBS): Add tioctlServer.o
+	* console.c: Include <hurd/ioctl-types.h>.
+	(new_node): Bump up st_size for display node.
+	(S_tioctl_tiocflush, S_tioctl_tiocgwinsz, S_tioctl_tiocstart,
+	S_tioctl_tiocstop, S_tioctl_tiocoutq, S_tioctl_tiocspgrp,
+	S_tioctl_tiocgpgrp): New functions.
+	(S_tioctl_tiocmodg, S_tioctl_tiocmods, S_tioctl_tiocexcl,
+	S_tioctl_tiocnxcl, S_tioctl_tiocgeta, S_tioctl_tiocseta,
+	S_tioctl_tiocsetaw, S_tioctl_tiocsetaf, S_tioctl_tiocgetd,
+	S_tioctl_tiocsetd, S_tioctl_tiocdrain, S_tioctl_tiocmget,
+	S_tioctl_tiocmset, S_tioctl_tiocsig, S_tioctl_tiocext,
+	S_tioctl_tiocswinsz, S_tioctl_tiocremote, S_tioctl_tiocmbic,
+	S_tioctl_tiocmbis, S_tioctl_tiocpkt, S_tioctl_tiocsti,
+	S_tioctl_tioccdtr, S_tioctl_tiocsdtr, S_tioctl_tioccbrk,
+	S_tioctl_tiocsbrk): New stubs.
+	(console_demuxer): New function.
+	(main): Don't call netfs_server_loop, but call
+	ports_manage_port_operations_multithread, so we can use our own
+	demuxer.
+	* mutations.h: Use intran and outtran for netfs.
+	* priv.h: Likewise.
+
+	* console.h (cons_change_t): Add bits for bell_audible and
+	bell_visible.
+	(struct cons_display): Add member BELL.
+	* display.c (struct changes): Add new members bell_audible and
+	bell_visible.  Add bit flag macro names for those.
+	(display_flush_filechange): Start with first index in buffer.
+	Signal bell events.
+	(display_record_filechange): Set DISPLAY_CHANGE_MATRIX bit in the
+	disjoint case after flushing the update.
+	(display_output_one): Recognize '\a' as audible bell and '\Eg' as
+	visible bell.
+	(display_output_some): Handle bell updates.
+
 2002-06-24  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.h (cons_color_t): New enum type replacing color macros.
