@@ -92,8 +92,12 @@ diskfs_S_startup_dosync (mach_port_t handle)
   if (err)
     return err;
   
-  diskfs_shutdown_pager ();
+  diskfs_sync_everything (1);
   diskfs_set_hypermetadata (1, 1);
+  _diskfs_diskdirty = 0;
+
+  ports_resume_class_rpcs (diskfs_protid_class);
+  rwlock_writer_unlock (&diskfs_fsys_lock);
   
   return 0;
 }
