@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -42,7 +42,7 @@ static task_t parent_task = MACH_PORT_NULL;
 static struct mutex execstartlock;
 static struct condition execstarted;
 
-static char *default_init = "hurd/init";
+const char *diskfs_boot_init_program = _HURD_INIT;
 
 static void start_execserver ();
 
@@ -68,7 +68,7 @@ get_console ()
 void
 _diskfs_boot_privports (void)
 {
-  assert (diskfs_boot_flags);
+  assert (diskfs_boot_filesystem ());
   if (_hurd_host_priv == MACH_PORT_NULL)
     {
       /* We are the boot command run by the real bootstrap filesystem.
@@ -96,7 +96,8 @@ diskfs_start_bootstrap ()
   mach_port_t fdarray[3];	/* XXX */
   task_t newt;
   error_t err;
-  char *exec_argv, *exec_env, *initname;
+  char *exec_argv, *exec_env;
+  const char *initname;
   size_t exec_argvlen, exec_envlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
@@ -201,44 +202,16 @@ diskfs_start_bootstrap ()
   else
     {
       /* Choose the name of the startup server to execute.  */
-      char *initnamebuf;
-      if (index (diskfs_boot_flags, 'i'))
-	{
-	  size_t bufsz;
-	  ssize_t len;
-	  initname = default_init;
-	prompt:
-	  initnamebuf = NULL;
-	  printf ("\nInit name [%s]: ", initname);
-	  fflush (stdout);
-	  bufsz = 0;
-	  switch (len = getline (&initnamebuf, &bufsz, stdin))
-	    {
-	    case -1:
-	      perror ("getline");
-	      printf ("Using default of `%s'.\n", initname);
-	    case 0:			/* Hmm.  */
-	    case 1:			/* Empty line, just a newline.  */
-	      /* Use default.  */
-	      break;
-	    default:
-	      initnamebuf[len - 1] = '\0'; /* Remove the newline.  */
-	      initname = initnamebuf;
-	      while (*initname == '/')
-		initname++;
-	      break;
-	    }
-	}
-      else
-	{
-	  initname = default_init;
-	  initnamebuf = NULL;
-	}
+      initname = diskfs_boot_init_program;
+      while (*initname == '/')
+	initname++;
 
-      exec_argvlen = asprintf (&exec_argv, "/%s%c%s%c",
-			       initname, '\0', diskfs_boot_flags, '\0');
-      if (initname != default_init)
-	free (initnamebuf);
+      exec_argvlen = asprintf (&exec_argv, "/%s%c", initname, '\0');
+      assert (exec_argvlen != -1);
+      err = argz_add_sep (&exec_argv, &exec_argvlen,
+			  diskfs_boot_command_line, ' ');
+      assert_perror (err);
+
       initname = exec_argv + 1;
     }
 
@@ -250,7 +223,7 @@ diskfs_start_bootstrap ()
 	      initname, strerror (err));
       fflush (stdout);
       free (exec_argv);
-      goto prompt;
+      assert_perror (err);	/* XXX this won't reboot properly */
     }
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
@@ -275,7 +248,7 @@ diskfs_start_bootstrap ()
 
   err = task_create (mach_task_self (), 0, &newt);
   assert_perror (err);
-  if (index (diskfs_boot_flags, 'd'))
+  if (_diskfs_boot_pause)
     {
       printf ("pausing for %s...\n", exec_argv);
       getc (stdin);
@@ -641,7 +614,7 @@ start_execserver (void)
   task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
   mach_port_deallocate (mach_task_self (), right);
 
-  if (index (diskfs_boot_flags, 'd'))
+  if (_diskfs_boot_pause)
     {
       printf ("pausing for exec\n");
       getc (stdin);

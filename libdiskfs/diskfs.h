@@ -149,10 +149,18 @@ extern mach_port_t diskfs_fsys_identity;
    file systems, to give the procserver.  */
 extern char **diskfs_argv;
 
-/* When this is a bootstrap filesystem, the command line options passed from
-   the kernel.  If not a bootstrap filesystem, it is 0, so it can be used to
-   distinguish between the two cases.  */
-extern char *diskfs_boot_flags;
+/* When this is a bootstrap filesystem, the multiboot kernel command line
+   passed from the kernel.  If not a bootstrap filesystem, it is 0, so it
+   can be used to distinguish between the two cases.  */
+extern const char *diskfs_boot_command_line;
+#define diskfs_boot_filesystem()	(diskfs_boot_command_line != 0)
+
+/* When this is a bootstrap filesystem, nonzero if starting each bootstrap
+   program should pause for a keystroke, for debugging purposes.  */
+extern int _diskfs_boot_pause;
+
+/* Name of the init program run when this is a bootstrap filesystem.  */
+extern const char *diskfs_boot_init_program;
 
 /* Hold this lock while do fsys level operations.  Innocuous users can just
    hold a reader lock, and anyone who's going to do nasty things that would
