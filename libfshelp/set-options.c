@@ -1,6 +1,6 @@
 /* Standard filesystem runtime option parsing
 
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -37,7 +37,7 @@ fshelp_set_options (struct argp *argp, int flags,
   int argc = argz_count (argz, argz_len);
   char **argv = alloca (sizeof (char *) * (argc + 1));
 
-  argz_extract (argz, argz_len, argv);
+  argz_extract ((char *) argz, argz_len, argv);
 
   return
     argp_parse (argp, argc, argv,
