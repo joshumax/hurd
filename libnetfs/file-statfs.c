@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,7 +23,7 @@
 
 error_t
 netfs_S_file_statfs (struct protid *user,
-		     struct fsys_statfsbuf *st)
+		     struct statfs *st)
 {
   error_t err;
   
