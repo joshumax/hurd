@@ -62,6 +62,11 @@ thread_state(thread_basic_info_t bi)
       break;
     }
 
+  if (bi->base_priority < 12)
+    state |= PSTAT_STATE_PRIORITY;
+  else if (bi->base_priority > 12)
+    state |= PSTAT_STATE_NICED;
+
   if (bi->flags & TH_FLAGS_SWAPPED)
     state |= PSTAT_STATE_SWAPPED;
 
