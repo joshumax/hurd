@@ -17,9 +17,11 @@
 
 /* Only CPP macro definitions should go in this file. */
 
-#define FILE_INTRAN trivfs_protid_t convert_port_to_protid (file_t)
+#define FILE_INTRAN trivfs_protid_t _trivfs_begin_using_protid (file_t)
+#define FILE_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
 
-#define IO_INTRAN trivfs_protid_t convert_port_to_protid (io_t)
+#define IO_INTRAN trivfs_protid_t _trivfs_begin_using_protid (io_t)
+#define IO_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
 
 #define SERVERPREFIX trivfs_S_
 
