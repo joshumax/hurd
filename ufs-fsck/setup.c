@@ -89,9 +89,10 @@ setup (char *dev)
       pfatal ("CPG OUT OF RANGE");
       return 0;
     }
-  if (sblock->fs_ncg * sblock->fs_cpg > sblock->fs_ncyl)
+  if (sblock->fs_ncg * sblock->fs_cpg < sblock->fs_ncyl
+      || (sblock->fs_ncg - 1) * sblock->fs_cpg >= sblock->fs_ncyl)
     {
-      pfatal ("NCYL LESS THAN NCG*CPG");
+      pfatal ("NCYL INCONSISTENT WITH NCG AND CPG");
       return 0;
     }
   if (sblock->fs_sbsize > SBSIZE)
@@ -153,6 +154,11 @@ setup (char *dev)
   if (changedsb)
     writeblock (SBLOCK, sblock, SBSIZE);
       
+  /* Constants */
+  maxfsblock = sblock->fs_size;
+  maxino = sblock->fs_ncg * sblock->fs_ipg;
+  direct_symlink_extension = sblock->fs_maxsymlinklen > 0;
+
   /* Allocate and initialize maps */
   bmapsize = roundup (howmany (maxfsblock, NBBY), sizeof (short));
   blockmap = calloc (bmapsize, sizeof (char));
