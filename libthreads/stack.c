@@ -1,102 +1,105 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
- * $Log:	stack.c,v $
+ * $Log: stack.c,v $
+ * Revision 1.4  1994/05/05 16:00:09  roland
+ * entered into RCS
+ *
  * Revision 2.13  92/01/14  16:48:54  rpd
  * 	Fixed addr_range_check to deallocate the object port from vm_region.
  * 	[92/01/14            rpd]
- * 
+ *
  * Revision 2.12  92/01/03  20:37:10  dbg
  * 	Export cthread_stack_size, and use it if non-zero instead of
  * 	probing the stack.  Fix error in deallocating unused initial
  * 	stack (STACK_GROWTH_UP case).
  * 	[91/08/28            dbg]
- * 
+ *
  * Revision 2.11  91/07/31  18:39:34  dbg
  * 	Fix some bad stack references (stack direction).
  * 	[91/07/30  17:36:50  dbg]
- * 
+ *
  * Revision 2.10  91/05/14  17:58:49  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.9  91/02/14  14:21:08  mrt
  * 	Added new Mach copyright
  * 	[91/02/13  12:41:35  mrt]
- * 
+ *
  * Revision 2.8  90/11/05  18:10:46  rpd
  * 	Added cproc_stack_base.  Add stack_fork_child().
  * 	[90/11/01            rwd]
- * 
+ *
  * Revision 2.7  90/11/05  14:37:51  rpd
  * 	Fixed addr_range_check for new vm_region semantics.
  * 	[90/11/02            rpd]
- * 
+ *
  * Revision 2.6  90/10/12  13:07:34  rpd
  * 	Deal with positively growing stacks.
  * 	[90/10/10            rwd]
  * 	Deal with initial user stacks that are not perfectly aligned.
  * 	[90/09/26  11:51:46  rwd]
- * 
+ *
  * 	Leave extra stack page around in case it is needed before we
  *	switch stacks.
  * 	[90/09/25            rwd]
- * 
+ *
  * Revision 2.5  90/08/07  14:31:46  rpd
  * 	Removed RCS keyword nonsense.
- * 
+ *
  * Revision 2.4  90/06/02  15:14:18  rpd
  * 	Moved cthread_sp to machine-dependent files.
  * 	[90/04/24            rpd]
  * 	Converted to new IPC.
  * 	[90/03/20  20:56:35  rpd]
- * 
+ *
  * Revision 2.3  90/01/19  14:37:34  rwd
  * 	Move self pointer to top of stack
  * 	[89/12/12            rwd]
- * 
+ *
  * Revision 2.2  89/12/08  19:49:52  rwd
  * 	Back out change from af.
  * 	[89/12/08            rwd]
- * 
+ *
  * Revision 2.1.1.3  89/12/06  12:54:17  rwd
  * 	Gap fix from af
  * 	[89/12/06            rwd]
- * 
+ *
  * Revision 2.1.1.2  89/11/21  15:01:40  rwd
  * 	Add RED_ZONE ifdef.
  * 	[89/11/20            rwd]
- * 
+ *
  * Revision 2.1.1.1  89/10/24  13:00:44  rwd
  * 	Remove conditionals.
  * 	[89/10/23            rwd]
- * 
+ *
  * Revision 2.1  89/08/03  17:10:05  rwd
  * Created.
- * 
+ *
  * 18-Jan-89  David Golub (dbg) at Carnegie-Mellon University
  *	Altered for stand-alone use:
  *	use vm_region to probe for the bottom of the initial thread's
@@ -177,6 +180,7 @@ setup_stack(p, base)
 	*(cproc_t *)&ur_cthread_ptr(base) = p;
 }
 
+#if 0 /* roland@gnu */
 vm_offset_t
 addr_range_check(start_addr, end_addr, desired_protection)
 	vm_offset_t	start_addr, end_addr;
@@ -275,6 +279,7 @@ probe_stack(stack_bottom, stack_top)
 	*stack_bottom = last_start_addr;
 	*stack_top = last_end_addr;
 }
+#endif
 
 /* For GNU: */
 unsigned long int __hurd_threadvar_stack_mask;
@@ -285,14 +290,17 @@ vm_offset_t
 stack_init(p)
 	cproc_t p;
 {
+#if 0
 	vm_offset_t	stack_bottom,
 			stack_top,
 			start;
 	vm_size_t	size;
 	kern_return_t	r;
+#endif
 
 	void alloc_stack();
 
+#if 0
 	/*
 	 * Probe for bottom and top of stack, as a power-of-2 size.
 	 */
@@ -304,6 +312,11 @@ stack_init(p)
 	 */
 	if (cthread_stack_size == 0)
 	    cthread_stack_size = stack_top - stack_bottom;
+#else  /* roland@gnu */
+	if (cthread_stack_size == 0)
+	  cthread_stack_size = vm_page_size * 16; /* Reasonable default.  */
+#endif
+
 #ifdef	STACK_GROWTH_UP
 	cthread_stack_mask = ~(cthread_stack_size - 1);
 #else	STACK_GROWTH_UP
@@ -332,6 +345,7 @@ stack_init(p)
 	 */
 	alloc_stack(p);
 
+#if 0
 	/*
 	 * Delete rest of old stack.
 	 */
@@ -341,10 +355,11 @@ stack_init(p)
 	size = stack_top - start;
 #else	STACK_GROWTH_UP
 	start = stack_bottom;
-	size = (cthread_sp() & ~(vm_page_size - 1)) - stack_bottom - 
+	size = (cthread_sp() & ~(vm_page_size - 1)) - stack_bottom -
 	       vm_page_size;
 #endif	STACK_GROWTH_UP
 	MACH_CALL(vm_deallocate(mach_task_self(),start,size),r);
+#endif
 
 	/*
 	 * Return new stack; it gets passed back to the caller
