@@ -53,6 +53,7 @@ typedef pid_t *pidarray_t;
 typedef uid_t *idarray_t;
 typedef struct rusage rusage_t;
 typedef struct flock flock_t;
+typedef struct utsname utsname_t;
 
 typedef struct stat io_statbuf_t;
 
