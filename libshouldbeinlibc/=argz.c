@@ -105,3 +105,75 @@ argz_stringify(char *argz, int len, int sep)
 	*argz++ = sep;
     }
 }
+
+/* Add BUF, of length BUF_LEN to the argz vector in ARGZ & ARGZ_LEN.  */
+error_t
+argz_append (char **argz, unsigned *argz_len, char *buf, unsigned buf_len)
+{
+  unsigned new_argz_len = *argz_len + buf_len;
+  char *new_argz = realloc (*argz, new_argz_len);
+  if (new_argz)
+    {
+      bcopy (buf, new_argz + *argz_len, buf_len);
+      *argz = new_argz;
+      *argz_len = new_argz_len;
+      return 0;
+    }
+  else
+    return ENOMEM;
+}
+
+/* Add STR to the argz vector in ARGZ & ARGZ_LEN.  This should be moved into
+   argz.c in libshouldbelibc.  */
+error_t
+argz_add (char **argz, unsigned *argz_len, char *str)
+{
+  return argz_append (argz, argz_len, str, strlen (str) + 1);
+}
+
+/* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
+void
+argz_remove (char **argz, unsigned *argz_len, char *entry)
+{
+  if (entry)
+    /* Get rid of the old value for NAME.  */
+    {
+      unsigned entry_len = strlen (entry) + 1;
+      *argz_len -= entry_len;
+      bcopy (entry + entry_len, entry, *argz_len - (entry - *argz));
+    }
+}
+
+/* Insert ENTRY into ARGZ & ARGZ_LEN at position N.  */
+error_t
+argz_insert (char **argz, unsigned *argz_len, unsigned n, char *entry)
+{
+  char *place = *argz;
+  unsigned left = *argz_len;
+  while (n > 0 && left > 0)
+    {
+      int len = strlen (place) + 1;
+      place += len;
+      left -= len;
+      n--;
+    }
+  if (left < 0 || n > 0)
+    return EINVAL;
+  else
+    {
+      unsigned entry_len = strlen  (entry) + 1;
+      unsigned new_argz_len = *argz_len + entry_len;
+      char *new_argz = realloc (*argz, new_argz_len);
+      if (new_argz)
+	{
+	  place = new_argz + (place - *argz);
+	  bcopy (place, place + entry_len, left);
+	  bcopy (entry, place, entry_len);
+	  *argz = new_argz;
+	  *argz_len = new_argz_len;
+	  return 0;
+	}
+      else
+	return ENOMEM;
+    }
+}
