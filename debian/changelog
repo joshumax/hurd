@@ -1,4 +1,11 @@
-hurd (20010816-1) unstable; urgency=low
+hurd (20010817-2) unstable; urgency=low
+
+  * Include a copy of update-rc.d, moved from dpkg to init providing
+    package.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun,  2 Sep 2001 19:40:00 +0200
+
+hurd (20010817-1) unstable; urgency=low
 
   * New snapshot from CVS, closes: #105476, #39894.
   * Additional patches:
@@ -6,7 +13,7 @@ hurd (20010816-1) unstable; urgency=low
     Change terminal type to mach-color.
     Compiled with -O2 rather than -O3.
   
- -- Marcus Brinkmann <Marcus.Brinkmann@ruhr-uni-bochum.de>  Fri, 17 Aug 2001 22:16:01 +0200
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri, 17 Aug 2001 22:16:01 +0200
 
 hurd (20010718-1) unstable; urgency=low
 

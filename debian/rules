@@ -176,6 +176,7 @@ binary-arch: build
 
 # We have our own rc, slightly modified.
 	cp			debian/rc debian/tmp/libexec/rc
+	$(install_script)	debian/update-rc.d debian/tmp/sbin
 
 	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
 	$(install_file)		debian/shlibs debian/tmp/DEBIAN/shlibs
