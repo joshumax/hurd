@@ -135,6 +135,22 @@ S_fsys_goaway (mach_port_t control,
 }
 
 error_t
+S_fsys_syncfs (mach_port_t control,
+	       int wait,
+	       int recurse)
+{
+  return 0;
+}
+
+error_t
+S_fsys_mod_readonly (mach_port_t control,
+		     int val,
+		     int force)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
 S_fsys_getfile (mach_port_t control,
 		uid_t *uids,
 		u_int nuids,
