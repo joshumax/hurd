@@ -403,7 +403,7 @@ S_socket_send (struct sock_user *user,
 	       u_int controllen,
 	       mach_msg_type_number_t *amount)
 {
-  error_t err;
+  int sent;
   
   if (!user)
     return EOPNOTSUPP;
@@ -417,26 +417,26 @@ S_socket_send (struct sock_user *user,
   become_task (user);
   
   if (addr)
-    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 
-				      user->sock->userflags, flags,
-				      addr->address, addr->len);
+    sent = (*user->sock->ops->sendto) (user->sock, data, datalen, 
+				       user->sock->userflags, flags,
+				       addr->address, addr->len);
   else
-    err = - (*user->sock->ops->send) (user->sock, data, datalen, 
-				    user->sock->userflags, flags);
+    sent = (*user->sock->ops->send) (user->sock, data, datalen, 
+				     user->sock->userflags, flags);
   
   mutex_unlock (&global_lock);
   
   /* MiG should do this for us, but it doesn't. */
-  if (!err)
+  if (sent >= 0)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
 
-  if (err >= 0)
+  if (sent >= 0)
     {
-      *amount = err;
-      err = 0;
+      *amount = sent;
+      return 0;
     }
-
-  return err;
+  else
+    return (error_t)-sent;
 }
 
 error_t
@@ -454,7 +454,7 @@ S_socket_recv (struct sock_user *user,
 	       int *outflags,
 	       mach_msg_type_number_t amount)
 {
-  error_t err;
+  int recvd;
   char addr[128];
   size_t addrlen = sizeof addr;
   int didalloc = 0;
@@ -479,15 +479,15 @@ S_socket_recv (struct sock_user *user,
   mutex_lock (&global_lock);
   become_task (user);
 
-  err = - (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
-				      (struct sockaddr *)addr, &addrlen);
+  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
+					 (struct sockaddr *)addr, &addrlen);
   
   mutex_unlock (&global_lock);
 
-  if (err < 0)
-    return -err;
+  if (recvd < 0)
+    return (error_t)-recvd;
 
-  *datalen = err;
+  *datalen = recvd;
 
   if (didalloc && round_page (*datalen) < round_page (amount))
     vm_deallocate (mach_task_self (), 
