@@ -74,8 +74,6 @@ print_store (struct store *store, int level, unsigned what)
 {
   int i;
   int first = 1;
-  char *kind_name;
-  char unknown_kind_name[20];
 
   void psep ()
     {
@@ -104,31 +102,52 @@ print_store (struct store *store, int level, unsigned what)
 	}
     }
 
-  switch (store->class)
-    {
-    case STORAGE_OTHER: kind_name = "other"; break;
-    case STORAGE_DEVICE: kind_name = "device"; break;
-    case STORAGE_HURD_FILE: kind_name = "file"; break;
-    case STORAGE_NETWORK: kind_name = "network"; break;
-    case STORAGE_MEMORY: kind_name = "memory"; break;
-    case STORAGE_TASK: kind_name = "task"; break;
-    case STORAGE_NULL: kind_name = "null"; break;
-    case STORAGE_CONCAT: kind_name = "concat"; break;
-    case STORAGE_LAYER: kind_name = "layer"; break;
-    case STORAGE_INTERLEAVE: kind_name = "interleave"; break;
-    default:
-      sprintf (unknown_kind_name, "%d", store->class);
-      kind_name = unknown_kind_name;
-    }
-
+  /* Indent */
   for (i = 0; i < level; i++)
     {
       putchar (' ');
       putchar (' ');
     }
-  pstr (kind_name,  W_KIND);
-  if ((store->flags & STORAGE_MUTATED) && (what & W_KIND))
-    fputs ("/mutated", stdout);
+
+  pstr (store->class->name,W_KIND);
+
+  if (store->flags && (what & W_KIND))
+    {
+      int t = 0;		/* flags tested */
+      int f = 1;
+      void pf (int mask, char *name)
+	{
+	  if (store->flags & mask)
+	    {
+	      if (f)
+		f = 0;
+	      else
+		putchar (',');
+	      fputs (name, stdout);
+	    }
+	  t |= mask;
+	}
+
+      if (! first)
+	putchar (' ');
+      first = 0;
+      putchar ('(');
+
+      pf (STORE_READONLY, "ro");
+      pf (STORE_HARD_READONLY, "h_ro");
+      pf (STORE_ENFORCED, "enf");
+      pf (STORAGE_MUTATED, "mut");
+
+      if (store->flags & ~t)
+	/* Leftover flags. */
+	{
+	  if (! f)
+	    putchar (';');
+	  printf ("0x%x", store->flags);
+	}
+      putchar ('(');
+    }
+
   pstr (store->name,       W_NAME);
   pint (store->block_size, W_BLOCK_SIZE);
   pint (store->blocks,     W_BLOCKS);
@@ -179,7 +198,7 @@ main(int argc, char *argv[])
 	  if (what == 0)
 	    what = W_ALL;
 
-	  err = store_create (file, &store);
+	  err = store_create (file, 0, 0, &store);
 	  if (err)
 	    error (4, err, source);
 
