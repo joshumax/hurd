@@ -22,7 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <hurd/fsys.h>
 
-struct mutex diskfs_shutdown_lock = MUTEX_INITIALIZER;
+struct rwlock diskfs_fsys_lock = RWLOCK_INITIALIZER;
 
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t 
@@ -65,20 +65,11 @@ diskfs_shutdown (int flags)
 	return err;
     }
 
-  mutex_lock (&diskfs_shutdown_lock);
+  rwlock_writer_lock (&diskfs_fsys_lock);
   
   /* Permit all the current RPC's to finish, and then
      suspend new ones.  */
   ports_inhibit_class_rpcs (diskfs_protid_class);
-
-  /* Unfortunately, we can't inhibit control ports, because
-     we are running inside a control port RPC.  What to do?
-     ports_count_class will prevent new protid's from being created;
-     that will happily block getroot and getfile.  diskfs_shutdown_lock
-     will block simultaneous attempts at goaway and set_options.  Only 
-     syncfs remains; perhaps a special flag could be used, or it could
-     also hold diskfs_shutdown_lock (which should probably then be
-     renamed...).  */
 
   /* First, see if there are outstanding user ports. */
   nports = ports_count_class (diskfs_protid_class);
@@ -87,7 +78,7 @@ diskfs_shutdown (int flags)
     {
       ports_enable_class (diskfs_protid_class);
       ports_resume_class_rpcs (diskfs_protid_class);
-      mutex_unlock (&diskfs_shutdown_lock);
+      rwlock_writer_unlock (&diskfs_fsys_lock);
       return EBUSY;
     }
 
