@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <argp.h>
+#include <hurd/store.h>
 #include "priv.h"
 
 char *diskfs_boot_flags = 0;
@@ -98,44 +99,20 @@ static const struct argp startup_common_argp =
 static const struct argp *startup_argp_parents[] = { &startup_common_argp, 0 };
 
 const struct argp
-diskfs_std_startup_argp =
+diskfs_startup_argp =
 {
   startup_options, parse_startup_opt, 0, 0, startup_argp_parents
 };
 
-/* ---------------------------------------------------------------- */
-
-int diskfs_use_mach_device = 0;
-char *diskfs_device_arg = 0;
-
-static const struct argp_option
-dev_startup_options[] =
-{
-  {"machdev", 'm', 0, 0, "DEVICE is a mach device, not a file"},
-  {0, 0}
-};
-
 static error_t
-parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
+parse_store_startup_opt (int opt, char *arg, struct argp_state *state)
 {
   switch (opt)
     {
-    case 'm':
-      diskfs_use_mach_device = 1;
-      break;
-    case ARGP_KEY_ARG:
-      diskfs_device_arg = arg;
-      break;
-
-    case ARGP_KEY_END:
-      if (diskfs_boot_flags)
-	diskfs_use_mach_device = 1; /* Can't do much else... */
-      break;
-
-    case ARGP_KEY_NO_ARGS:
-      argp_error (state, "No device specified");
-      return EINVAL;
-
+    case ARGP_KEY_INIT:
+      /* Propagate our input to our STORE_ARGP child , which it will use to
+	 return what it parses.  */
+      state->child_inputs[1] = state->input; break;
     default:
       return ARGP_ERR_UNKNOWN;
     }
@@ -143,9 +120,16 @@ parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
   return 0;
 }
 
-static const struct argp *dev_startup_argp_parents[] =
-  { &diskfs_std_startup_argp, 0 };
+static const struct argp *store_argp_parents[] =
+  { &diskfs_startup_argp, &store_argp, 0 };
 
-const struct argp diskfs_std_device_startup_argp = 
-  { dev_startup_options, parse_dev_startup_opt, "DEVICE", 0,
-      dev_startup_argp_parents };
+/* An argp structure for the standard diskfs command line arguments plus a
+   store specification.  The address of a location in which to return the
+   resulting struct store_parsed structure should be passed as the input
+   argument to argp_parse; see the declaration for STORE_ARGP in
+   <hurd/store.h> for more information.  */
+const struct argp
+diskfs_store_startup_argp =
+{
+  0, parse_store_startup_opt, 0, 0, store_argp_parents
+};
