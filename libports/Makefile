@@ -29,7 +29,7 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  inhibit-all-rpcs.c resume-port-rpcs.c resume-class-rpcs.c \
  resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpc.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
- enable-class.c enable-bucket.c bucket-iterate.c 
+ enable-class.c enable-bucket.c bucket-iterate.c stubs.c
 
 OBJS = $(subst .c,.o,$(SRCS))
 LCLHDRS = ports.h
