@@ -1,6 +1,6 @@
 /* Parse run-time options
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -20,7 +20,7 @@
 
 #include "priv.h"
 
-static struct argp_option
+static const struct argp_option
 std_runtime_options[] =
 {
   {"remount", 'u',  0, 0, "Flush any meta-data cached in core"},
@@ -59,9 +59,9 @@ diskfs_set_options (int argc, char **argv)
 	}
       return 0;
     }
-  struct argp common_argp = { diskfs_common_options, parse_opt };
-  struct argp *parents[] = { &common_argp, 0 };
-  struct argp argp = { std_runtime_options, parse_opt, 0, 0, parents };
+  const struct argp common_argp = { diskfs_common_options, parse_opt };
+  const struct argp *parents[] = { &common_argp, 0 };
+  const struct argp argp = { std_runtime_options, parse_opt, 0, 0, parents };
 
   /* Call the user option parsing routine, giving it our set of options to do
      with as it pleases.  */
