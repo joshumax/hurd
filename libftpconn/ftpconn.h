@@ -143,6 +143,11 @@ struct ftp_conn_hooks
   /* Called when CONN is about to be destroyed.  No hook calls are ever made
      after this one.  */
   void (*fini) (struct ftp_conn *conn);
+
+  /* This hook should return true if the current thread has been interrupted
+     in some way, and EINTR (or a short count in some cases) should be
+     returned from a blocking function.  */
+  int (*interrupt_check) (struct ftp_conn *conn);
 };
 
 /* A single ftp connection.  */
