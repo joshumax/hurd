@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,7 @@
 #include <cthreads.h>
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
+#include <maptime.h>
 
 #ifndef FSHELP_EI
 #define FSHELP_EI extern inline
@@ -105,7 +106,7 @@ struct transbox
    COOKIE2 is the cookie passed in the call to fshelp_fetch_root.  */
 typedef error_t (*fshelp_fetch_root_callback1_t) (void *cookie1, void *cookie2,
 						  uid_t *uid, gid_t *gid, 
-						  char **argz, int *argz_len);
+						  char **argz, size_t *argz_len);
 
 /* This routine is called by fshelp_fetch_root to fetch more information.
    Return an unauthenticated node for the file itself in *UNDERLYING and
@@ -304,6 +305,38 @@ fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)
     return EACCES;
 
   return 0;
+}
+
+/* Timestamps to change.  */
+#define TOUCH_ATIME 0x1
+#define TOUCH_MTIME 0x2
+#define TOUCH_CTIME 0x4
+
+/* Change the stat times of NODE as indicated by WHAT (from the set TOUCH_*)
+   to the current time.  */
+FSHELP_EI void
+fshelp_touch (struct stat *st, unsigned what,
+	      volatile struct mapped_time_value *maptime)
+{
+  struct timeval tv;
+
+  maptime_read (maptime, &tv);
+
+  if (what & TOUCH_ATIME)
+    {
+      st->st_atime = tv.tv_sec;
+      st->st_atime_usec = tv.tv_usec;
+    }
+  if (what & TOUCH_CTIME)
+    {
+      st->st_ctime = tv.tv_sec;
+      st->st_ctime_usec = tv.tv_usec;
+    }
+  if (what & TOUCH_MTIME)
+    {
+      st->st_mtime = tv.tv_sec;
+      st->st_mtime_usec = tv.tv_usec;
+    }
 }
 
 #endif
