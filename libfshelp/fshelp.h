@@ -50,7 +50,9 @@ typedef error_t (*fshelp_open_fn_t) (int flags,
    table to FDS (length FDS_LEN).  Return the control port in
    *CONTROL.  If the translator doesn't respond or die in TIMEOUT
    milliseconds (if TIMEOUT > 0), return an appropriate error.  If the
-   translator dies before responding, return EDIED.  */
+   translator dies before responding, return EDIED.  Set the new
+   task's owner to OWNER_UID (or, if OWNER_UID is -1, then clear the
+   new task's owner. */
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
@@ -59,7 +61,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
-			      uid_t owner_uid,
+			      uid_t owner_uid, 
 			      int timeout, fsys_t *control);
 
 

@@ -1,3 +1,8 @@
+1999-10-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* start-translator-long.c (fshelp_start_translator_long): Doc fix.
+	* fshelp.h (fshelp_start_translator_long): Document OWNER_UID.
+
 1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* start-translator-long.c (fshelp_start_translator_long): Take new

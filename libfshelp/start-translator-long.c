@@ -172,7 +172,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
-			      mach_port_t *fds,
+			      mach_port_t *fds, 
 			      mach_msg_type_name_t fds_type, int fds_len,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
@@ -204,7 +204,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose;
 
-  /* Designate TASK as our child.  */
+  /* Designate TASK as our child and set it's owner accordingly. */
   proc = getproc ();
   proc_child (proc, task);
   err = proc_task2proc (proc, task, &childproc);
