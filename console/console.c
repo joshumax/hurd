@@ -248,10 +248,11 @@ vcons_release (vcons_t vcons)
 
       if (vcons->prev)
 	vcons->prev->next = vcons->next;
+      else
+	vcons->cons->vcons_list = vcons->next;
       if (vcons->next)
 	vcons->next->prev = vcons->prev;
-      if (!vcons->prev && !vcons->next)
-	vcons->cons->vcons_list = NULL;
+
       vcons->cons->vcons_length--;
       vcons->cons->refcnt--;
       free (vcons);
