@@ -194,10 +194,10 @@ extern struct argp *trivfs_runtime_argp;
 error_t trivfs_set_options (struct trivfs_control *fsys,
 			    char *argz, size_t argz_len);
 
-/* Return runtime options for FSYS in ARGZ & ARGZ_LEN.  ARGZ should be
-   allocated with malloc.  The default definition for this routine returns
-   EOPNOTSUPP.  */
-error_t trivfs_get_options (struct trivfs_control *fsys,
-			    char **argz, size_t *argz_len);
+/* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
+   list of the arguments to this translator.  The default definition of this
+   routine simply calls diskfs_append_std_options.  */
+error_t trivfs_append_args (struct trivfs_control *fsys,
+			    char **argz, unsigned *argz_len);
 
 #endif /* __TRIVFS_H__ */
