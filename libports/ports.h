@@ -171,8 +171,8 @@ void ports_enable_class (struct port_class *class);
 void port_enable_bucket (struct port_bucket *bucket);
 
 /* Call FUN once for each port in BUCKET. */
-error_t port_bucket_iterate (struct port_bucket *bucket,
-			     error_t (*fun)(void *port));
+error_t ports_bucket_iterate (struct port_bucket *bucket,
+			      error_t (*fun)(void *port));
 
 
 
