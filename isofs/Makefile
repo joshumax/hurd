@@ -1,5 +1,5 @@
 
-#   Copyright (C) 1997, 2000 Free Software Foundation
+#   Copyright (C) 1997, 2000, 2005 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,3 +27,5 @@ OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
 
 include ../Makeconf
+
+iso9660fs.static: $(boot-store-types:%=../libstore/libstore_%.a)

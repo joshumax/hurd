@@ -1,3 +1,7 @@
+2005-02-23  Alfred M. Szmidt  <ams@gnu.org>
+
+	* Makefile (iso9660fs.static): New target.
+
 2003-08-31  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c (diskfs_readonly, diskfs_hard_readonly): Removed.
