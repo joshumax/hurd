@@ -800,7 +800,7 @@ void tcp_err(int err, unsigned char *header, unsigned long daddr,
 			tcp_set_state(sk,TCP_CLOSE);
 			sk->error_report(sk);		/* Wake people up to see the error (see connect in sock.c) */
 		}
-		sk->err = icmp_err_convert[err & 0xff].errno;		
+		sk->err = icmp_err_convert[err & 0xff].error;		
 	}
 	return;
 }
