@@ -5,7 +5,7 @@ This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -92,3 +92,13 @@ routine set_init_int (
 	task: task_t;
 	which: int;
 	value: int);
+
+/* These two calls fetch and store the file descriptor table.  */
+
+routine get_dtable (
+	process: mach_port_t;
+	out dtable: portarray_t);
+
+routine set_dtable (
+	process: mach_port_t;
+	dtable: portarray_t);
