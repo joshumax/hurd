@@ -1,3 +1,7 @@
+2003-08-09  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* Makefile (targets): Add hurd.info-* to list.
+
 2002-12-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd.texi (Store I/O): Add store_set_size.

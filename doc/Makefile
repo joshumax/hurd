@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1998, 1999 Free Software Foundation
+#   Copyright (C) 1994, 1998, 1999, 2003 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,7 +20,7 @@ makemode := misc
 
 DIST_FILES := navigating gpl.texinfo hurd.texi version.texi \
 	      hurd.info $(wildcard hurd.info-*)
-targets = hurd.info
+targets = hurd.info $(wildcard hurd.info-*)
 installationdir = $(infodir)
 
 DVIPS = dvips
