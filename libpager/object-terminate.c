@@ -29,7 +29,8 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
 {
   struct pager *p;
   
-  if (!(p = ports_check_port_type (object, pager_port_type)))
+  p = ports_lookup_port (0, object, _ports_class);
+  if (!p)
     return EOPNOTSUPP;
   
   if (control != p->memobjcntl)
@@ -74,7 +75,7 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  ports_done_with_port (p);
+  ports_drop_ref (p);
   return 0;
 }
 
