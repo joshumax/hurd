@@ -1,5 +1,5 @@
 /* Miscellaneous functions for fsck
-   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1999, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <pwd.h>
 #include <error.h>
+#include <time.h>
 
 static void retch (char *reason);
 
@@ -61,12 +62,12 @@ getinode (ino_t ino, struct dinode *di)
 
   if (!lastifrag)
     lastifrag = malloc (sblock->fs_bsize);
-  
+
   iblk = ino_to_fsba (sblock, ino);
   if (iblk != lastifragaddr)
     readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_bsize);
   lastifragaddr = iblk;
-  bcopy (lastifrag + ino_to_fsbo (sblock, ino) * sizeof (struct dinode), 
+  bcopy (lastifrag + ino_to_fsbo (sblock, ino) * sizeof (struct dinode),
 	 di, sizeof (struct dinode));
 }
 
@@ -75,7 +76,7 @@ void
 write_inode (ino_t ino, struct dinode *di)
 {
   daddr_t iblk;
-  
+
   iblk = ino_to_fsba (sblock, ino);
   if (iblk != lastifragaddr)
     readblock (fsbtodb (sblock, iblk), lastifrag, sblock->fs_bsize);
@@ -101,10 +102,10 @@ allocblk (int nfrags)
 {
   daddr_t i;
   int j, k;
-  
+
   if (nfrags <= 0 || nfrags > sblock->fs_frag)
     return 0;
-  
+
   /* Examine each block of the filesystem.  */
   for (i = 0; i < maxfsblock - sblock->fs_frag; i += sblock->fs_frag)
     {
@@ -115,7 +116,7 @@ allocblk (int nfrags)
 	  for (k = 0; k < nfrags; k++)
 	    if (testbmap (i + j + k))
 	      break;
-	  
+
 	  /* If one of the frags was allocated... */
 	  if (k < nfrags)
 	    {
@@ -123,7 +124,7 @@ allocblk (int nfrags)
 	      j += k;
 	      continue;
 	    }
-	  
+
 	  /* It's free (at address i + j) */
 
 	  /* Mark the frags allocated in our map */
@@ -136,16 +137,16 @@ allocblk (int nfrags)
   return 0;
 }
 
-/* Check if a block starting at BLK and extending for CNT 
+/* Check if a block starting at BLK and extending for CNT
    fragments is out of range; if it is, then return 1; otherwise return 0. */
 int
 check_range (daddr_t blk, int cnt)
 {
   int c;
-  
+
   if ((unsigned)(blk + cnt) > maxfsblock)
     return 1;
-  
+
   c = dtog (sblock, blk);
   if (blk < cgdmin (sblock, c))
     {
@@ -157,9 +158,9 @@ check_range (daddr_t blk, int cnt)
       if (blk + cnt > cgbase (sblock, c + 1))
 	return 1;
     }
-  
+
   return 0;
-}  
+}
 
 struct problem {
   char *desc;
@@ -236,7 +237,7 @@ flush_problems ()
     {
       fail (problems)->prev = free_problems;
       free_problems = problems;
-    }      
+    }
 }
 
 /* Like printf, but exit after printing. */
@@ -276,7 +277,7 @@ punt (char *msg)
 
 /* If SEVERE is true, and we're in preen mode, then things are too hair to
    fix automatically, so tell the user to do it himself and punt.  */
-static void 
+static void
 no_preen (int severe)
 {
   if (severe && preen)
@@ -295,7 +296,7 @@ problem (int severe, char *fmt, ...)
   va_start (args, fmt);
   push_problem (fmt, args);
   va_end (args);
-  
+
   no_preen (severe);
 }
 
@@ -371,7 +372,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
 	pextend (" O=%s", pw->pw_name);
       else
 	pextend (" O=%lu", dino.di_uid);
-  
+
       pextend (" M=0%o", DI_MODE (&dino));
       pextend (" SZ=%llu", dino.di_size);
       p = ctime (&dino.di_mtime.tv_sec);
@@ -407,7 +408,7 @@ reply (char *question)
 {
   int persevere;
   char c;
-  
+
   if (preen)
     retch ("Got to reply() in preen mode");
 
@@ -449,6 +450,6 @@ reply (char *question)
 	{
 	  fix_denied = 1;
 	  return 0;
-	} 
+	}
     }
 }
