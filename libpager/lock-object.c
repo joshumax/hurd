@@ -39,6 +39,8 @@ _pager_lock_object (struct pager *p,
       return;
     }
   
+  sync = 0;			/* XXX */
+
   if (sync)
     {
       for (lr = p->lock_requests; lr; lr = lr->next)
