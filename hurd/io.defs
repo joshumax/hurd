@@ -308,9 +308,12 @@ routine io_pathconf (
 
 /* Return the identity port for the object underlying IO_OBJECT.
    Different I/O ports for the same object all have the same identity
-   port.  */
+   port.  FILENO is the file serial number that appears in the `d_fileno'
+   field of containing directory entries in the containing filesystem, the
+   same as the `st_ino' value returned by io_stat for this object.  */
 routine io_identity (
 	io_object: io_t;
 	RPT
-	out idport: mach_port_send_t);
+	out idport: mach_port_send_t;
+	out fileno: int);
 
