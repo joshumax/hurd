@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -153,6 +153,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	      mode |= S_IFREG;
 	      error = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
+	      if (diskfs_synchronous)
+		{
+		  diskfs_update_file (dnp, 1);
+		  diskfs_update_file (np, 1);
+		}
 	      newnode = 1;
 	    }
 	  else
