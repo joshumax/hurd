@@ -1,6 +1,6 @@
 /* Pfinet option parsing
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -270,7 +270,7 @@ pfinet_argp = { options, parse_opt, 0, doc };
 struct argp *trivfs_runtime_argp = &pfinet_argp;
 
 error_t
-trivfs_get_options (struct trivfs_control *fsys, char **argz, size_t *argz_len)
+trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 {
   error_t add_dev_opts (struct device *dev)
     {
@@ -297,9 +297,6 @@ trivfs_get_options (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 
       return err;
     }
-
-  *argz = 0;
-  *argz_len = 0;
 
   return enumerate_devices (add_dev_opts);
 }
