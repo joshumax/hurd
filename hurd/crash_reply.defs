@@ -27,4 +27,4 @@ subsystem crash_reply 32100;	/* must match crash + 100 */
 
 simpleroutine crash_dump_task_reply (
 	ureply_port: mach_port_poly_t;
-	result: int, RETCODE);
+	RETURN_CODE_ARG);

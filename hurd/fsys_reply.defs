@@ -28,23 +28,23 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 
 simpleroutine fsys_startup_reply (
 	reply_port: reply_port_t;
-!	errorcode: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	realnode: mach_port_send_t);
 
 simpleroutine fsys_goaway_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine fsys_getroot_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	do_retry: retry_type;
 	retry_name: string_t;
 	file: mach_port_send_t);
 
 simpleroutine fsys_getfile_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	file: mach_port_send_t);
 
 simpleroutine fsys_syncfs_reply (
@@ -53,24 +53,24 @@ simpleroutine fsys_syncfs_reply (
 
 simpleroutine fsys_set_options_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine fsys_getpriv_reply (
 	reply_port_: reply_port_t;
-	errorcode: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	host_priv: mach_port_send_t;
 	device_master: mach_port_send_t;
 	fstask: mach_port_send_t);
 
 simpleroutine fsys_init_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine fsys_forward_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine fsys_get_options_reply (
 	reply_port: reply_port_t;
-	errorcode: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	options: data_t);

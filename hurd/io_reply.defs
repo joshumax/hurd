@@ -33,121 +33,121 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_MAKE_SEND_ONCE
 
 simpleroutine io_write_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	amount: int);
 
 simpleroutine io_read_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	data: data_t);
 
 simpleroutine io_seek_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	newp: off_t);
 
 simpleroutine io_readable_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	amount: int);
 
 simpleroutine io_set_all_openmodes_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_get_openmodes_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	bits: int);
 
 simpleroutine io_set_some_openmodes_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_clear_some_openmodes_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_async_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	async_id_port: mach_port_send_t);
 
 simpleroutine io_mod_owner_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_get_owner_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	owner: pid_t);
 
 simpleroutine io_get_icky_async_id_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	id_port: mach_port_send_t);
 
 simpleroutine io_select_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	select_result: int);
 
 simpleroutine io_stat_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	stat_info: io_statbuf_t);
 
 skip;  /* io_reauthenticate has no reply */
 
 simpleroutine io_restrict_auth_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	new_object: mach_port_send_t);
 
 simpleroutine io_duplicate_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	newport: mach_port_send_t);
 
 simpleroutine io_map_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	rdobject: mach_port_send_t;
 	wrobject: mach_port_send_t);
 
 simpleroutine io_map_cntl_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE;
+	RETURN_CODE_ARG;
 	memobj: mach_port_send_t);
 
 simpleroutine io_get_conch_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_release_conch_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_eofnotify_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_prenotify_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_postnotify_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_readnotify_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_readsleep_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
 
 simpleroutine io_sigio_reply (
 	reply: reply_port_t;
-	return_code: kern_return_t, RETCODE);
+	RETURN_CODE_ARG);
