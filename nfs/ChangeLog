@@ -1,3 +1,9 @@
+Mon Nov  4 21:23:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* rpc.c	(rpc_list_lock): Delete variable.  Omit all mention of it
+	throughout this file.  Expand the use of outstanding_lock to cover
+	what rpc_list_lock used to handle.
+
 Fri Nov  1 18:12:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rpc.c (conduct_rpc): Unlock OUTSTANDING_LOCK if write fails.

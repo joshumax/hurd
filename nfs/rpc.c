@@ -46,16 +46,11 @@ struct rpc_list
 /* A list of all the pending RPCs. */
 static struct rpc_list *outstanding_rpcs;
 
-/* This lock must be held around any modifications to the list
-   structure of outstanding_rpcs. */
-static spin_lock_t rpc_list_lock = SPIN_LOCK_INITIALIZER;
-
 /* Wake up this condition when an outstanding RPC has received a reply
    or we should check for timeouts. */
 static struct condition rpc_wakeup = CONDITION_INITIALIZER;
 
-/* This lock must be held around modifications of the REPLY members of 
-   records on outstanding_rpcs and around uses of rpc_wakeup. */
+/* Lock the global data and the REPLY fields of outstanding RPC's. */
 static struct mutex outstanding_lock = MUTEX_INITIALIZER;
 
 
@@ -135,15 +130,14 @@ initialize_rpc (int program, int version, int rpc_proc,
   return p;
 }
 
-/* Remove HDR from the list of pending RPC's. */
+/* Remove HDR from the list of pending RPC's.  rpc_list_lock must be
+   held */
 static void
 unlink_rpc (struct rpc_list *hdr)
 {
-  spin_lock (&rpc_list_lock);
   *hdr->prevp = hdr->next;
   if (hdr->next)
     hdr->next->prevp = hdr->prevp;
-  spin_unlock (&rpc_list_lock);
 }
 
 /* Send the specified RPC message.  *RPCBUF is the initialized buffer
@@ -166,14 +160,14 @@ conduct_rpc (void **rpcbuf, int **pp)
   int n;
   int cancel;
   
+  mutex_lock (&outstanding_lock);
+
   /* Link it in */
-  spin_lock (&rpc_list_lock);
   hdr->next = outstanding_rpcs;
   if (hdr->next)
     hdr->next->prevp = &hdr->next;
   hdr->prevp = &outstanding_rpcs;
   outstanding_rpcs = hdr;
-  spin_unlock (&rpc_list_lock);
 
   xid = * (int *) (*rpcbuf + sizeof (struct rpc_list));
 
@@ -183,19 +177,19 @@ conduct_rpc (void **rpcbuf, int **pp)
       if (mounted_soft && ntransmit == soft_retries)
 	{
 	  unlink_rpc (hdr);
+	  mutex_unlock (&outstanding_lock);
 	  return ETIMEDOUT;
 	}
 
       /* Issue the RPC */
-      mutex_lock (&outstanding_lock);
       lasttrans = mapped_time->seconds;
       ntransmit++;
       nc = (void *) *pp - *rpcbuf - sizeof (struct rpc_list);
       cc = write (main_udp_socket, *rpcbuf + sizeof (struct rpc_list), nc);
       if (cc == -1)
 	{
-	  mutex_unlock (&outstanding_lock);
 	  unlink_rpc (hdr);
+	  mutex_unlock (&outstanding_lock);
 	  return errno;
 	}
       else 
@@ -207,11 +201,11 @@ conduct_rpc (void **rpcbuf, int **pp)
 	     && (mapped_time->seconds - lasttrans < timeout)
 	     && !cancel)
 	cancel = hurd_condition_wait (&rpc_wakeup, &outstanding_lock);
-      mutex_unlock (&outstanding_lock);
   
       if (cancel)
 	{
 	  unlink_rpc (hdr);
+	  mutex_unlock (&outstanding_lock);
 	  return EINTR;
 	}
 
@@ -223,6 +217,8 @@ conduct_rpc (void **rpcbuf, int **pp)
 	}
     }
   while (!hdr->reply);
+
+  mutex_unlock (&outstanding_lock);
 
   /* Switch to the reply buffer. */
   *rpcbuf = hdr->reply;
@@ -357,7 +353,7 @@ rpc_receive_thread ()
 	  else
 	    {
 	      xid = *(int *)buf;
-	      spin_lock (&rpc_list_lock);
+	      mutex_lock (&outstanding_lock);
 	      for (r = outstanding_rpcs; r; r = r->next)
 		{
 		  if (* (int *) &r[1] == xid)
@@ -366,20 +362,15 @@ rpc_receive_thread ()
 		      *r->prevp = r->next;
 		      if (r->next)
 			r->next->prevp = r->prevp;
-		      spin_unlock (&rpc_list_lock);
 
-		      mutex_lock (&outstanding_lock);
 		      r->reply = buf;
 		      condition_broadcast (&rpc_wakeup);
-		      mutex_unlock (&outstanding_lock);
 		      break;
 		    }
 		}
 	      if (!r)
-		{
-		  spin_unlock (&rpc_list_lock);
-		  fprintf (stderr, "NFS dropping reply xid %d\n", xid);
-		}
+		fprintf (stderr, "NFS dropping reply xid %d\n", xid);
+	      mutex_unlock (&outstanding_lock);
 	    }
 	}
       while (!r);
