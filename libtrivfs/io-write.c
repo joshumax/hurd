@@ -24,9 +24,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
 		   char *data,
-		   u_int datalen,
+		   mach_msg_type_number_t datalen,
 		   off_t off,
-		   int *amt)
+		   mach_msg_type_number_t *amt)
 {
   assert (!trivfs_support_write);
   return EOPNOTSUPP;
