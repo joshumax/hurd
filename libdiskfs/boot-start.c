@@ -62,6 +62,7 @@ diskfs_start_bootstrap (char **argv)
   char *initname, *initnamebuf;
   char *exec_argv;
   int exec_argvlen;
+  struct port_info *bootinfo;
 
   saved_argv = argv;
 
@@ -130,12 +131,13 @@ diskfs_start_bootstrap (char **argv)
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
-  bootpt = ports_get_right (ports_allocate_port (diskfs_port_bucket,
-						 sizeof (struct port_info), 
-						 diskfs_initboot_class));
+  bootinfo = ports_allocate_port (diskfs_port_bucket,
+				  sizeof (struct port_info),
+				  diskfs_initboot_class);  
+  bootpt = ports_get_right (bootinfo);
   mach_port_insert_right (mach_task_self (), bootpt, bootpt,
 			  MACH_MSG_TYPE_MAKE_SEND);
-
+  ports_port_deref (bootinfo);
   
   portarray[INIT_PORT_CRDIR] = root_pt;
   portarray[INIT_PORT_CWDIR] = root_pt;
