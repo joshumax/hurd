@@ -58,7 +58,7 @@ int diskfs_readonly;
 
 /* Ufs-specific options.  XXX this should be moved so it can be done at
    runtime as well as startup.  */
-static struct argp_option
+static const struct argp_option
 options[] =
 {
   {"compat", 'C', "FMT", 0,
