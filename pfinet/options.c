@@ -32,11 +32,22 @@
 #include "pfinet.h"
 
 #include <linux/netdevice.h>
+#include <linux/inetdevice.h>
+#include <linux/ip.h>
 #include <linux/route.h>
+#include <linux/rtnetlink.h>
+#include <net/route.h>
+#include <net/ip_fib.h>
 
 /* Our interface to the set of devices.  */
 extern error_t find_device (char *name, struct device **device);
 extern error_t enumerate_devices (error_t (*fun) (struct device *dev));
+
+/* devinet.c */
+extern error_t configure_device (struct device *dev,
+				 uint32_t addr, uint32_t netmask);
+extern void inquire_device (struct device *dev,
+			    uint32_t *addr, uint32_t *netmask);
 
 /* Pfinet options.  Used for both startup and runtime.  */
 static const struct argp_option options[] =
@@ -61,7 +72,7 @@ struct parse_interface
   struct device *device;
 
   /* New values to apply to it.  */
-  unsigned long address, netmask, gateway;
+  uint32_t address, netmask, gateway;
 };
 
 /* Used to hold data during argument parsing.  */
@@ -130,6 +141,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   switch (opt)
     {
       struct parse_interface *in;
+      uint32_t gateway;
 
     case 'i':
       /* An interface.  */
@@ -206,7 +218,6 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    if (err)
 	      FAIL (err, 13, 0, "No default interface");
 	  }
-
 #if 0				/* XXX what does this mean??? */
       /* Check for bogus option combinations.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
@@ -216,17 +227,80 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  FAIL (EDESTADDRREQ, 14, 0, "Cannot set netmask");
 #endif
 
+      gateway = INADDR_NONE;
+      for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
+	if (in->gateway != INADDR_NONE)
+	  {
+	    if (gateway != INADDR_NONE)
+	      FAIL (err, 15, 0, "Cannot have multiple default gateways");
+	    gateway = in->gateway;
+	    in->gateway = INADDR_NONE;
+	  }
+
       /* Successfully finished parsing, return a result.  */
+
+      __mutex_lock (&global_lock);
+
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
 	  {
-	    extern error_t configure_device (struct device *dev,
-					     uint32_t addr,
-					     uint32_t netmask);	/* devinet.c */
 	    err = configure_device (in->device, in->address, in->netmask);
 	    if (err)
-	      error (2, err, "cannot configure interface"); /* XXX */
+	      FAIL (err, 16, 0, "cannot configure interface");
 	  }
+
+      /* Set the default gateway.  This code is cobbled together from what
+	 the SIOCADDRT ioctl code does, and from the apparent functionality
+	 of the "netlink" layer from perusing a little.  */
+      {
+	struct kern_rta rta;
+	struct
+	{
+	  struct nlmsghdr nlh;
+	  struct rtmsg rtm;
+	} req;
+	struct fib_table *tb;
+
+	req.nlh.nlmsg_pid = 0;
+	req.nlh.nlmsg_seq = 0;
+	req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
+
+	bzero (&req.rtm, sizeof req.rtm);
+	bzero (&rta, sizeof rta);
+	req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+	req.rtm.rtm_type = RTN_UNICAST;
+	req.rtm.rtm_protocol = RTPROT_STATIC;
+	rta.rta_gw = &gateway;
+
+	if (gateway == INADDR_NONE)
+	  {
+	    /* Delete any existing default route.  */
+	    req.nlh.nlmsg_type = RTM_DELROUTE;
+	    req.nlh.nlmsg_flags = 0;
+	    tb = fib_get_table (req.rtm.rtm_table);
+	    if (tb)
+	      {
+		err = - (*tb->tb_delete) (tb, &req.rtm, &rta, &req.nlh, 0);
+		if (err && err != ESRCH)
+		  FAIL (err, 17, 0, "cannot remove old default gateway");
+	      }
+	  }
+	else
+	  {
+	    /* Add a default route, replacing any existing one.  */
+	    req.nlh.nlmsg_type = RTM_NEWROUTE;
+	    req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_REPLACE;
+	    tb = fib_new_table (req.rtm.rtm_table);
+	    err = (!tb ? ENOBUFS
+		   : - (*tb->tb_insert) (tb, &req.rtm, &rta, &req.nlh, 0));
+	    if (err)
+	      FAIL (err, 17, 0, "cannot set default gateway");
+	  }
+      }
+
+      __mutex_unlock (&global_lock);
+
+
       /* Fall through to free hook.  */
 
     case ARGP_KEY_ERROR:
@@ -254,6 +328,9 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
   error_t add_dev_opts (struct device *dev)
     {
       error_t err = 0;
+      uint32_t addr, mask;
+
+      inquire_device (dev, &addr, &mask);
 
 #define ADD_OPT(fmt, args...)						\
   do { char buf[100];							\
@@ -266,14 +343,14 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
        ADD_OPT ("--%s=%s", name, inet_ntoa (i)); } while (0)
 
       ADD_OPT ("--interface=%s", dev->name);
-#if 0				/* XXX */
-      if (dev->pa_addr != 0)
-        ADD_ADDR_OPT ("address", dev->pa_addr);
-      if (dev->pa_mask != 0)
-        ADD_ADDR_OPT ("netmask", dev->pa_mask);
-#endif
+      if (addr != INADDR_NONE)
+        ADD_ADDR_OPT ("address", addr);
+      if (mask != INADDR_NONE)
+        ADD_ADDR_OPT ("netmask", mask);
 
       /* XXX how do we figure out the default gateway?  */
+
+#undef ADD_ADDR_OPT
 #undef ADD_OPT
 
       return err;
