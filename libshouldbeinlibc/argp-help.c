@@ -734,6 +734,9 @@ void argp_help (const struct argp *argp, FILE *stream,
   int first = 1;
   struct hol *hol = 0;
 
+  if (! stream)
+    return;
+
   stream = line_wrap_stream (stream, 0, RMARGIN, 0);
   assert (stream);
 
@@ -806,7 +809,7 @@ void argp_help (const struct argp *argp, FILE *stream,
 void
 argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 {
-  if (!state || ! (state->flags & ARGP_NO_ERRS))
+  if ((!state || ! (state->flags & ARGP_NO_ERRS)) && stream)
     {
       argp_help (state ? state->argp : 0, stream, flags,
 		 state ? state->name : program_invocation_name);
@@ -827,22 +830,26 @@ argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 void
 argp_error (struct argp_state *state, const char *fmt, ...)
 {
-  if (!state || ! (state->flags & ARGP_NO_ERRS))
+  if (!state || !(state->flags & ARGP_NO_ERRS))
     {
-      va_list ap;
       FILE *stream = state ? state->err_stream : stderr;
 
-      fputs (program_invocation_name, stream);
-      putc (':', stream);
-      putc (' ', stream);
+      if (stream)
+	{
+	  va_list ap;
 
-      va_start (ap, fmt);
-      vfprintf (stream, fmt, ap);
-      va_end (ap);
+	  fputs (program_invocation_name, stream);
+	  putc (':', stream);
+	  putc (' ', stream);
 
-      putc ('\n', stream);
+	  va_start (ap, fmt);
+	  vfprintf (stream, fmt, ap);
+	  va_end (ap);
 
-      argp_state_help (state, stream, ARGP_HELP_STD_ERR);
+	  putc ('\n', stream);
+
+	  argp_state_help (state, stream, ARGP_HELP_STD_ERR);
+	}
     }
 }
 
@@ -860,27 +867,31 @@ argp_failure (struct argp_state *state, int status, int errnum,
 {
   if (!state || !(state->flags & ARGP_NO_ERRS))
     {
-      va_list ap;
       FILE *stream = state ? state->err_stream : stderr;
 
-      fputs (state ? state->name : program_invocation_name, stream);
-      putc (':', stream);
-      putc (' ', stream);
-
-      va_start (ap, fmt);
-      vfprintf (stream, fmt, ap);
-      va_end (ap);
-
-      if (errnum)
+      if (stream)
 	{
+	  va_list ap;
+
+	  fputs (state ? state->name : program_invocation_name, stream);
 	  putc (':', stream);
 	  putc (' ', stream);
-	  fputs (strerror (errnum), stream);
+
+	  va_start (ap, fmt);
+	  vfprintf (stream, fmt, ap);
+	  va_end (ap);
+
+	  if (errnum)
+	    {
+	      putc (':', stream);
+	      putc (' ', stream);
+	      fputs (strerror (errnum), stream);
+	    }
+
+	  putc ('\n', stream);
+
+	  if (status)
+	    exit (status);
 	}
-
-      putc ('\n', stream);
-
-      if (status)
-	exit (status);
     }
 }
