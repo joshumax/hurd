@@ -58,7 +58,7 @@ inline unsigned long ffz(unsigned long word)
  * on Linus's ALPHA routines, which are pretty portable BTW.
  */
 
-extern inline unsigned long
+inline unsigned long
 find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
 {
   unsigned long *p = ((unsigned long *) addr) + (offset >> 6);
