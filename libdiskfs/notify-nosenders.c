@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include <hurd/pager.h>
+
 /* Called by the kernel when a port has no more senders.  We arrange
    to have this sent to the port which is out of senders (NOTIFY).  MSCOUNT
    is the make-send count of the port when the notification was generated;
@@ -24,12 +27,12 @@ diskfs_do_seqnos_mach_notify_no_senders (mach_port_t notify,
 					 mach_port_seqno_t seqno,
 					 mach_port_mscount_t mscount)
 {
-  struct port_inf *pt;
+  struct port_info *pt;
 
   pt = ports_get_port (notify);
 
   if (pt->type == PT_PAGER)
-    pager_no_senders ((struct pager *)upt, seqno, mscount);
+    pager_no_senders ((struct pager *)pt, seqno, mscount);
   else
     {
       ports_done_with_port (pt);
