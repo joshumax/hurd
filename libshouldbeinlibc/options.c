@@ -190,7 +190,7 @@ options_parse (struct options *options,
       if (opt == 1)
 	/* A non-option argument; try each parser in turn.  */
 	for (o = options; o != NULL && err == EINVAL; o = o->parent)
-	  err = (*o->parser)(opt, optarg);
+	  err = (*o->parser)(0, optarg);
       else if (group == 0)
 	/* A short option.  */
 	{
