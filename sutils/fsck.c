@@ -380,17 +380,17 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 static const struct argp_option
 options[] =
 {
-  {"preen",      'p', 0,      0,  "Terse automatic mode", 1},
-  {"yes",        'y', 0,      0,  "Automatically answer yes to all questions"},
-  {"no",         'n', 0,      0,  "Automatically answer no to all questions"},
-  {"fstab",	 't', "FILE", 0,  "File to use instead of " _PATH_MNTTAB},
-  {"max-parallel", 'l', "NUM", 0, "Limit the number of parallel checks to NUM"},
-  {"verbose",	 'v', 0,      0,  "Print informational messages"},
+  {"preen",      'p', 0,      0, "Terse automatic mode", 1},
+  {"yes",        'y', 0,      0, "Automatically answer yes to all questions"},
+  {"no",         'n', 0,      0, "Automatically answer no to all questions"},
+  {"fstab",	 't', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
+  {"parallel",   'l', "NUM",  0, "Limit the number of parallel checks to NUM"},
+  {"verbose",	 'v', 0,      0, "Print informational messages"},
   {"search-fmts",'S', "FMTS", 0,
      "`:' separated list of formats to use for finding fsck programs"},
   {0, 0, 0, 0, "In --preen mode, the following also apply:", 2},
-  {"force",	 'f', 0,      0,  "Check even if clean"},
-  {"silent",     's', 0,      0,  "Only print diagostic messages"},
+  {"force",	 'f', 0,      0, "Check even if clean"},
+  {"silent",     's', 0,      0, "Only print diagostic messages"},
   {0, 0}
 };
 static const char *args_doc = "DEVICE";
