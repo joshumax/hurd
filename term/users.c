@@ -217,7 +217,7 @@ po_create_hook (struct trivfs_peropen *po)
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs ();
+      call_asyncs (O_READ | O_WRITE);
     }
   mutex_unlock (&global_lock);
   return 0;
@@ -466,7 +466,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   trivfs_set_mtime (termctl);
 
-  call_asyncs ();
+  call_asyncs (O_WRITE);
 
   mutex_unlock (&global_lock);
 
@@ -604,7 +604,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
-  call_asyncs ();
+  call_asyncs (O_READ);
 
   mutex_unlock (&global_lock);
 
@@ -1619,7 +1619,7 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs ();
+      call_asyncs (O_READ | O_WRITE);
     }
 
   mutex_unlock (&global_lock);
@@ -1645,7 +1645,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs ();
+      call_asyncs (O_READ | O_WRITE);
     }
   mutex_unlock (&global_lock);
   return 0;
@@ -1828,17 +1828,22 @@ report_sig_end ()
     }
 }
 
-/* Call all the scheduled async I/O handlers.  */
+/* Call all the scheduled async I/O handlers.  DIR is a mask of O_READ &
+   O_WRITE; the asyncs will only be called if output is possible in one of
+   the directions given in DIR.  */
 void
-call_asyncs ()
+call_asyncs (int dir)
 {
   struct async_req *ar, *nxt, **prevp;
   mach_port_t err;
 
-  /* If no I/O is possible or nobody wants async
-     messages, don't bother further. */
-  if ((!(termflags & ICKY_ASYNC) && !async_requests)
-      || (!qsize (inputq) && !qavail (outputq)))
+  /* If nobody wants async messages, don't bother further. */
+  if (!(termflags & ICKY_ASYNC) && !async_requests)
+    return;
+
+  if ((!(dir & O_READ) || qsize (inputq) == 0)
+      && (!(dir & O_WRITE) && qavail (outputq) == 0))
+    /* Output isn't possible in the desired directions.  */
     return;
   
   if ((termflags & ICKY_ASYNC) && !(termflags & NO_OWNER))
