@@ -115,7 +115,8 @@ diskfs_lookup (struct node *dp,
       || (type == REMOVE && err != ENOENT))
     {
       err2 = diskfs_checkdirmod (dp, *np, cred);
-      return err2;
+      if (err2)
+	return err2;
     }
 
   if ((type == LOOKUP || type == CREATE) && !err && np)
