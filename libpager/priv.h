@@ -17,8 +17,8 @@
 
 #include <mach.h>
 #include <hurd.h>
-#include <libpager.h>
-#include <libports.h>
+#include "pager.h"
+#include <hurd/ports.h>
 
 struct pager
 {
