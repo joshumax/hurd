@@ -70,9 +70,6 @@ long termflags;
 /* Global lock */
 struct mutex global_lock;
 
-/* Special lock for the input queue path */
-struct mutex input_path_lock;
-
 /* Wakeup when NO_CARRIER turns off */
 struct condition carrier_alert;
 
