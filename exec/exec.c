@@ -102,7 +102,7 @@ check_section (bfd *bfd, asection *sec, void *userdata)
     {
       u->info.bfd_locations[sec->index] = sec->filepos;
       if ((off_t) sec->filepos < 0 || (off_t) sec->filepos > u->file_size)
-	u->error = EINVAL;
+	u->error = ENOEXEC;
     }
 }
 #endif
@@ -649,7 +649,7 @@ check_bfd (struct execdata *e)
     {
       /* This file is of a recognized binary file format, but it is not
 	 executable on this machine.  */
-      e->error = b2he (EINVAL);
+      e->error = b2he (ENOEXEC);
       return;
     }
 
@@ -694,7 +694,7 @@ check_elf (struct execdata *e)
       ehdr->e_ehsize < sizeof *ehdr ||
       ehdr->e_phentsize != sizeof (Elf32_Phdr))
     {
-      e->error = EINVAL;
+      e->error = ENOEXEC;
       return;
     }
 
@@ -710,7 +710,7 @@ check_elf (struct execdata *e)
   if (! phdr)
     {
       if (! ferror (&e->stream))
-	e->error = EINVAL;
+	e->error = ENOEXEC;
       return;
     }
   e->info.elf.phdr = phdr;
@@ -743,7 +743,7 @@ check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
 	/* Sanity check.  */
 	if (e->file_size <= (off_t) (phdr->p_offset +
 				     phdr->p_filesz))
-	  e->error = EINVAL;
+	  e->error = ENOEXEC;
 	break;
       }
 }
@@ -937,6 +937,7 @@ check_gzip (struct execdata *earg)
     }
   void ziprderr (void)
     {
+      errno = ENOEXEC;
       longjmp (ziperr, 2);
     }
   void ziperror (const char *msg)
@@ -1196,8 +1197,8 @@ do_exec (file_t file,
 	ports_replaced[idx] = 1;
       }
 
-    e.error = ports_create_port (port_bucket, sizeof *boot,
-				 execboot_portclass, &boot);
+    e.error = ports_create_port (execboot_portclass, port_bucket, 
+				 sizeof *boot, &boot);
     if (boot == NULL)
       {
       stdout:
@@ -1374,7 +1375,7 @@ do_exec (file_t file,
 			   & ~(e.interp.phdr->p_align - 1)),
 		      e.interp.phdr->p_filesz);
 	  if (! name && ! ferror (&e.stream))
-	    e.error = EINVAL;
+	    e.error = ENOEXEC;
 	}
 
       if (! name)
@@ -1743,7 +1744,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
     return EPERM;
 
   if (nports < INIT_PORT_MAX || nints < INIT_INT_MAX)
-    return EINVAL;
+    return EINVAL;		/*  */
 
   err = servercopy ((void **) &ports, nports * sizeof (mach_port_t),
 		    ports_copy);
