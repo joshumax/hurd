@@ -18,12 +18,12 @@
 dir := utils
 makemode := utilities
 
-targets = shd ps settrans showtrans clri sync reboot halt su mount fsysopts \
-	storeinfo login w uptime hurdids loginpr sush vmstat
+targets = shd ps settrans showtrans sync reboot halt su mount fsysopts \
+	storeinfo login w uptime hurdids loginpr sush vmstat portinfo
 special-targets = mount loginpr sush uptime
-SRCS = shd.c ps.c su.c settrans.c clri.c sync.c reboot.c halt.c showtrans.c \
+SRCS = shd.c ps.c su.c settrans.c sync.c reboot.c halt.c showtrans.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
-	uptime.sh psout.c hurdids.c vmstat.c
+	uptime.sh psout.c hurdids.c vmstat.c portinfo.c
 DIST_FILES = shd.ChangeLog
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
@@ -38,7 +38,8 @@ ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libthreads/libthreads.a
-ps w hurdids settrans showtrans fsysopts storeinfo login vmstat: ../libshouldbeinlibc/libshouldbeinlibc.a
+ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo: \
+  ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
