@@ -460,6 +460,41 @@ S_io_duplicate (struct sock_user *user,
   return 0;
 }
 
+error_t
+S_io_identity (struct sock_user *user,
+	       mach_port_t *id,
+	       mach_msg_type_name_t *idtype,
+	       mach_port_t *fsys,
+	       mach_msg_type_name_t *fsystype,
+	       int *fileno)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  if (user->sock->identity == MACH_PORT_NULL)
+    {
+      err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+				&user->sock->identity);
+      if (err)
+	{
+	  mutex_unlock (&global_lock);
+	  return err;
+	}
+    }
+
+  *id = user->sock->identity;
+  *idtype = MACH_MSG_TYPE_MAKE_SEND;
+  *fsys = fsys_identity;
+  *fsystype = MACH_MSG_TYPE_MAKE_SEND;
+  *fileno = (ino_t) user->sock;	/* matches S_io_stat above */
+  
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
 
 
 error_t
