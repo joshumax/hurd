@@ -1,6 +1,6 @@
 /* Determine the BFD and ELF architecture and machine flavor
    from a Mach host port.  Used by the exec and core servers.
-   Copyright (C) 1992, 1993, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,95,96,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -67,11 +67,10 @@ elf_machine_matches_host (Elf32_Half e_machine)
       CACHE (e_machine == EM_SPARC);
 
     case CPU_TYPE_I386:
-      CACHE (e_machine == EM_386);
     case CPU_TYPE_I486:
     case CPU_TYPE_PENTIUM:
     case CPU_TYPE_PENTIUMPRO:
-      CACHE (e_machine == EM_386 || e_machine == EM_486);
+      CACHE (e_machine == EM_386);
 
     case CPU_TYPE_POWERPC:
       CACHE (e_machine == EM_PPC);
