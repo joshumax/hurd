@@ -71,8 +71,8 @@ echo done
 
 echo -n updating /etc/motd...
 echo GNU\'s Not Unix Version `uname --release` > /tmp/newmotd
-egrep -v 'GNU|Version' /etc/motd >> /tmp/t1
-mv /tmp/t1 /etc/motd
+egrep -v 'GNU|Version' /etc/motd >> /tmp/newmotd
+mv /tmp/newmotd /etc/motd
 chmod 664 /etc/motd
 echo done
 
