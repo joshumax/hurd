@@ -29,8 +29,6 @@
 #include <error.h>
 #include <argz.h>
 #include <hurd/fshelp.h>
-
-/* ---------------------------------------------------------------- */
 
 static struct argp_option options[] =
 {
@@ -43,6 +41,7 @@ static struct argp_option options[] =
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
   {0, 0}
 };
+static char *args_doc = "NODE [TRANSLATOR ARG...]";
 
 /* ---------------------------------------------------------------- */
 
@@ -70,40 +69,37 @@ main(int argc, char *argv[])
   int passive = 0, active = 0;
   int create = 0, force = 0, deref = 0, keep_active = 0;
 
-  int trans_argv_index;
-
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
       switch (key)
 	{
 	case ARGP_KEY_ARG:
-	  if (node_name)
-	    /* We've already read the node name, this must be the translator.*/
-	    return EINVAL;	/* stop parsing */
-	  else
-	    node_name = arg;
+	  node_name = arg;
+	  err = argz_create (state->argv + state->index, &argz, &argz_len);
+	  if (err)
+	    error(3, err, "Can't create options vector");
+	  state->index = state->argc; /* stop parsing */
 	  break;
+
+	case ARGP_KEY_NO_ARGS:
+	  argp_usage (state->argp); /* exits */
+
 	case 'a': active = 1; break;
 	case 'p': passive = 1; break;
 	case 'f': force = 1; break;
 	case 'k': keep_active = 1; break;
 	case 'c': create = 1; break;
 	case 'L': deref = 1; break;
+
 	default:
 	  return EINVAL;
 	}
       return 0;
     }
-  struct argp argp = {options, parse_opt, "NODE [TRANSLATOR ARGS...]"};
+  struct argp argp = {options, parse_opt, args_doc};
 
-  err = argp_parse (&argp, argc, argv, 0, &trans_argv_index);
-  if (err || !node_name)
-    argp_help (&argp, stderr, ARGP_HELP_STD_USAGE);
-
-  err = argz_create(argv + trans_argv_index - 1, &argz, &argz_len);
-  if (err)
-    error(3, err, "Can't create argz vector");
+  argp_parse (&argp, argc, argv, 0, 0);
 
   if (!active && !passive)
     passive = 1;
