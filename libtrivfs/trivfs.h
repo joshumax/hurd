@@ -30,6 +30,7 @@ struct trivfs_protid
 struct trivfs_peropen
 {
   void *hook;			/* for user use */
+  int openmodes;
   int refcnt;
   struct trivfs_control *cntl;
 };
