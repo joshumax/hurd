@@ -332,10 +332,10 @@ request_dead_name (mach_port_t name)
 /* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.
    Set TASK to be the task port of the new image. */
 void
-run (char *server, mach_port_t *ports, task_t *task)
+run (const char *server, mach_port_t *ports, task_t *task)
 {
   char buf[BUFSIZ];
-  char *prog = server;
+  const char *prog = server;
 
   if (bootstrap_args & RB_INITNAME)
     {
@@ -353,20 +353,14 @@ run (char *server, mach_port_t *ports, task_t *task)
 	error (0, errno, "%s", prog);
       else
 	{
-	  char *progname;
 	  task_create (mach_task_self (), 0, task);
 	  if (bootstrap_args & RB_KDB)
 	    {
 	      printf ("Pausing for %s\n", prog);
 	      getchar ();
 	    }
-	  progname = strrchr (prog, '/');
-	  if (progname)
-	    ++progname;
-	  else
-	    progname = prog;
 	  errno = file_exec (file, *task, 0,
-			     progname, strlen (progname) + 1, /* Args.  */
+			     (char *)prog, strlen (prog) + 1, /* Args.  */
 			     "", 1, /* No env.  */
 			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
