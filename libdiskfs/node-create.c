@@ -57,6 +57,7 @@ diskfs_create_node (struct node *dir,
       if (err)
 	goto change_err;
       np->dn_stat.st_uid = cred->uids[0];
+    }
   else
     {
       err = diskfs_validate_owner_change (np, dir->dn_stat.st_uid);
@@ -75,9 +76,12 @@ diskfs_create_node (struct node *dir,
       np->dn_stat.st_gid = dir->dn_stat.st_gid;
       mode &= ~S_ISGID;
     }
-  
+      
   np->dn_stat.st_rdev = 0;
   np->dn_stat.st_nlink = !!name;
+  err = diskfs_validate_mode_change (np, mode);
+  if (err)
+    goto change_err;
   np->dn_stat.st_mode = mode;
 
   np->dn_stat.st_blocks = 0;
