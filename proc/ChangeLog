@@ -1,3 +1,8 @@
+2001-08-05  Roland McGrath  <roland@frob.com>
+
+	* wait.c (sample_rusage): New function.
+	(S_proc_mark_exit): Call it.
+
 2001-08-04  Roland McGrath  <roland@frob.com>
 
 	* proc.h (struct proc): New members p_rusage, p_child_rusage.
