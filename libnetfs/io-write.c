@@ -31,14 +31,17 @@ netfs_S_io_write (struct protid *user,
 {
   error_t err;
   off_t off = offset;
+  struct node *np;
   
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
+  np = user->po->np;
+
+  mutex_lock (&np->lock);
   if ((user->po->openstat & O_WRITE) == 0)
     {
-      mutex_unlock (&user->po->np->lock);
+      mutex_unlock (&np->lock);
       return EBADF;
     }
 
@@ -48,22 +51,21 @@ netfs_S_io_write (struct protid *user,
     {
       if (user->po->openstat & O_APPEND)
 	{
-	  err = netfs_validate_stat (np, user->po->np);
+	  err = netfs_validate_stat (np, user->credential);
 	  if (err)
 	    {
-	      mutex_unlock (&user->po->np->lock);
+	      mutex_unlock (&np->lock);
 	      return err;
 	    }
-	  user->po->filepointer = user->po->np->nn_stat.st_size;
+	  user->po->filepointer = np->nn_stat.st_size;
 	}
       off = user->po->filepointer;
     }
 
-  err =  netfs_attempt_write (user->credential, user->po->np,
-			      off, amount, data);
+  err =  netfs_attempt_write (user->credential, np, off, amount, data);
   if (offset == -1 && !err)
     user->po->filepointer += *amount;
-  mutex_unlock (&user->po->np->lock);
+  mutex_unlock (&np->lock);
   
   return err;
 }
