@@ -340,10 +340,10 @@ routine file_get_fs_options (
 	RPT
 	out options: data_t);
 
-/* Return a new directory port, NEW_DIR, with the same semantics as DIR, but
-   with lookups of `..' redirected to PARENT.  */
-routine dir_reparent (
-	dir: file_t;
+/* Return a new file, NEW_FILE, with the same semantics as FILE, but
+   with lookups of `..' (if FILE is a directory) redirected to PARENT.  */
+routine file_reparent (
+	file: file_t;
 	RPT
 	parent: mach_port_t;
-	out new_dir: mach_port_send_t);
+	out new_file: mach_port_send_t);
