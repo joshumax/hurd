@@ -1,6 +1,6 @@
 /* Write portions of a store to stdout
 
-   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -26,6 +26,9 @@
 #include <sys/mman.h>
 
 #include <hurd/store.h>
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (storeread);
 
 struct argp_option options[] = {
   {"file", 'f', 0, 0, "Use file IO instead of the raw device"},

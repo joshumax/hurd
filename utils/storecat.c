@@ -1,6 +1,6 @@
 /* Write a store to stdout
 
-   Copyright (C) 1996, 1997, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -24,6 +24,9 @@
 #include <error.h>
 
 #include <hurd/store.h>
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (storecat);
 
 int
 main (int argc, char **argv)

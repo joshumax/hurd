@@ -1,5 +1,5 @@
 /* `gcore' program for GNU Hurd: write a core dump from a running process.
-   Copyright (C) 1992,2001 Free Software Foundation, Inc.
+   Copyright (C) 1992,2001,2002 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -26,6 +26,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <argp.h>
 #include <error.h>
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (gcore);
 
 static const struct argp argp =
 {

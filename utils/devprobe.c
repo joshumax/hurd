@@ -1,6 +1,6 @@
 /* Check the existence of mach devices
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -24,6 +24,9 @@
 #include <hurd.h>
 #include <mach.h>
 #include <device/device.h>
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (devprobe);
 
 static const struct argp_option options[] = {
   {"silent", 's', 0, 0, "Don't print devices found"},

@@ -1,3 +1,14 @@
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* devprobe.c: Include <version.h>.
+	(argp_program_version): New variable.
+	* storecat.c: Include <version.h>.
+	(argp_program_version): New variable.
+	* storeread.c: Include <version.h>.
+	(argp_program_version): New variable.
+	* gcore.c: Include <version.h>.
+	(argp_program_version): New variable.
+
 2002-05-12  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.sh: Inside the chroot'd fakeauth environment,
