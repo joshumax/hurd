@@ -23,10 +23,19 @@
 #include <stdio.h>
 #include <options.h>
 #include "priv.h"
+
+char *diskfs_boot_flags = 0;
+
+mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 
 /* ---------------------------------------------------------------- */
 
 #define STD_SHORT_OPTS "rwsnV"
+
+#define OPT_HOST_PRIV_PORT	(-1)
+#define OPT_DEVICE_MASTER_PORT	(-2)
+#define OPT_EXEC_SERVER_TASK	(-3)
+#define OPT_BOOTFLAGS		(-4)
 
 static struct option
 std_long_opts[] =
@@ -36,6 +45,12 @@ std_long_opts[] =
   {"sync", optional_argument, 0, 's'},
   {"nosync", no_argument, 0, 'n'},
   {"version", no_argument, 0, 'V'},
+
+  {"host-priv-port", required_argument, 0, OPT_HOST_PRIV_PORT},
+  {"device-master-port", required_argument, 0, OPT_DEVICE_MASTER_PORT},
+  {"exec-server-task", required_argument, 0, OPT_EXEC_SERVER_TASK},
+  {"bootflags", required_argument, 0, OPT_BOOTFLAGS},
+
   {0, 0, 0, 0}
 };
 
@@ -62,6 +77,17 @@ parse_std_startup_opt (int opt, char *arg)
       printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
 	     diskfs_minor_version, diskfs_edit_version);
       exit(0);
+
+      /* Boot options */
+    case OPT_DEVICE_MASTER_PORT:
+      _hurd_device_master = atoi (arg); break;
+    case OPT_HOST_PRIV_PORT:
+      _hurd_host_priv = atoi (arg); break;
+    case OPT_EXEC_SERVER_TASK:
+      diskfs_exec_server_task = atoi (arg); break;
+    case OPT_BOOTFLAGS:
+      diskfs_boot_flags = arg; break;
+
     default:
       return EINVAL;
     }
