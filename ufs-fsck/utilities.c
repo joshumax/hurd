@@ -42,7 +42,7 @@ writeblock (daddr_t addr, void *buf, size_t size)
   if (lseek (writefd, addr * DEV_BSIZE, L_SET) == -1)
     errexit ("CANNOT SEEK TO BLOCK %ld", addr);
   if (write (writefd, buf, size) != size)
-    errexit ("CANNOT READ BLOCK %ld", addr);
+    errexit ("CANNOT WRITE BLOCK %ld", addr);
   fsmodified = 1;
 }
 
