@@ -41,10 +41,9 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
    error code otherwise is returned.  */
 static error_t
 find_block (struct node *node, vm_offset_t offset,
-	    daddr_t *block, struct rwlock **lock)
+	    block_t *block, struct rwlock **lock)
 {
   error_t err;
-  char *bptr;
 
   if (!*lock)
     {
@@ -55,15 +54,13 @@ find_block (struct node *node, vm_offset_t offset,
   if (offset + block_size > node->allocsize)
     return EIO;
 
-  err = ext2_getblk (node, offset >> log2_block_size, 0, &bptr);
+  err = ext2_getblk (node, offset >> log2_block_size, 0, block);
   if (err == EINVAL)
     /* Don't barf yet if the node is unallocated.  */
     {
       *block = 0;
       err = 0;
     }
-  else if (err == 0)
-    *block = bptr_block (bptr);
 
   return err;
 }
@@ -81,7 +78,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
   int offs = 0;
   struct rwlock *lock = NULL;
   int left = vm_page_size;
-  daddr_t pending_blocks = 0;
+  block_t pending_blocks = 0;
   int num_pending_blocks = 0;
 
   /* Read the NUM_PENDING_BLOCKS blocks in PENDING_BLOCKS, into the buffer
@@ -92,7 +89,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
     {
       if (num_pending_blocks > 0)
 	{
-	  daddr_t dev_block = pending_blocks << log2_dev_blocks_per_fs_block;
+	  block_t dev_block = pending_blocks << log2_dev_blocks_per_fs_block;
 	  int length = num_pending_blocks << log2_block_size;
 	  vm_address_t new_buf;
 
@@ -119,7 +116,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 
   while (left > 0)
     {
-      daddr_t block;
+      block_t block;
 
       err = find_block (node, page, &block, &lock);
       if (err)
@@ -168,7 +165,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 struct pending_blocks
 {
   /* The block number of the first of the blocks.  */
-  daddr_t block;
+  block_t block;
   /* How many blocks we have.  */
   int num;
   /* A (page-aligned) buffer pointing to the data we're dealing with.  */
@@ -184,7 +181,7 @@ pending_blocks_write (struct pending_blocks *pb)
   if (pb->num > 0)
     {
       error_t err;
-      daddr_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
+      block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       int length = pb->num << log2_block_size;
 
       ext2_debug ("Writing block %lu[%d]", pb->block, pb->num);
@@ -231,7 +228,7 @@ pending_blocks_skip (struct pending_blocks *pb)
 /* Add the disk block BLOCK to the list of destination disk blocks pending in
    PB.  */
 static error_t
-pending_blocks_add (struct pending_blocks *pb, daddr_t block)
+pending_blocks_add (struct pending_blocks *pb, block_t block)
 {
   if (block != pb->block + pb->num)
     {
@@ -263,8 +260,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
-  ext2_debug ("Writing file_pager (inode %d) page %d[%d]",
-	      node->dn->number, offset, left);
+  ext2_debug ("Writing inode %d page %d[%d]", node->dn->number, offset, left);
 
   while (left > 0)
     {
@@ -315,7 +311,7 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
   if (page + vm_page_size > device_size)
     length = device_size - page;
 
-  ext2_debug ("Writing disk_pager page %d[%d]", page, length);
+  ext2_debug ("Writing disk page %d[%d]", page, length);
 
   if (modified_global_blocks)
     /* Be picky about which blocks in a page that we write.  */
@@ -328,7 +324,7 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
       while (length > 0 && !err)
 	{
 	  int modified;
-	  daddr_t block = boffs_block (offs);
+	  block_t block = boffs_block (offs);
 
 	  spin_lock (&modified_global_blocks_lock);
 	  modified = clear_bit (block, modified_global_blocks);
@@ -394,7 +390,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
   else
     {
       error_t err;
-      daddr_t block = page >> log2_block_size;
+      block_t block = page >> log2_block_size;
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
 
@@ -415,8 +411,8 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
 	  while (left > 0)
 	    {
-	      char *buf;
-	      err = ext2_getblk(node, block++, 1, &buf);
+	      block_t disk_block;
+	      err = ext2_getblk(node, block++, 1, &disk_block);
 	      if (err)
 		break;
 	      left -= block_size;
@@ -444,10 +440,10 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
 /* ---------------------------------------------------------------- */
 
-/* The user must define this function.  Grow the disk allocated to locked node
-   NODE to be at least SIZE bytes, and set NODE->allocsize to the actual
-   allocated size.  (If the allocated size is already SIZE bytes, do
-   nothing.)  CRED identifies the user responsible for the call.  */
+/* Grow the disk allocated to locked node NODE to be at least SIZE bytes, and
+   set NODE->allocsize to the actual allocated size.  (If the allocated size
+   is already SIZE bytes, do nothing.)  CRED identifies the user responsible
+   for the call.  */
 error_t
 diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
@@ -475,7 +471,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	       rest of the page to preserve the fact that blocks are only
 	       created by explicitly making them writable.  */
 	    {
-	      daddr_t block = old_size >> log2_block_size;
+	      block_t block = old_size >> log2_block_size;
 	      int count = trunc_page (old_size) + vm_page_size - old_size;
 
 	      if (old_size + count < new_size)
@@ -497,8 +493,8 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
 	      while (count > 0)
 		{
-		  char *buf;
-		  err = ext2_getblk(node, block++, 1, &buf);
+		  block_t disk_block;
+		  err = ext2_getblk(node, block++, 1, &disk_block);
 		  if (err)
 		    break;
 		  count -= block_size;
@@ -538,10 +534,10 @@ diskfs_file_update (struct node *node, int wait)
       rwlock_writer_lock (&node->dn->alloc_lock);
       if (!node->dn->last_block_allocated) /* check again with the lock */
 	{
-	  char *buf;
-	  daddr_t block = (node->allocsize >> log2_block_size) - 1;
+	  block_t disk_block;
+	  block_t block = (node->allocsize >> log2_block_size) - 1;
 	  ext2_debug ("allocating final block %lu", block);
-	  if (ext2_getblk (node,  block, 1, &buf) == 0)
+	  if (ext2_getblk (node,  block, 1, &disk_block) == 0)
 	    node->dn->last_block_allocated = 1;
 	}
       rwlock_writer_unlock (&node->dn->alloc_lock);
@@ -566,12 +562,11 @@ diskfs_file_update (struct node *node, int wait)
 
 /* ---------------------------------------------------------------- */
 
-/* Implement the pager_report_extent callback from the pager library.  See 
-   <hurd/pager.h> for the interface description. */
+/* Return in *OFFSET and *SIZE the minimum valid address the pager will
+   accept and the size of the object.  */
 inline error_t
 pager_report_extent (struct user_pager_info *pager,
-		     vm_address_t *offset,
-		     vm_size_t *size)
+		     vm_address_t *offset, vm_size_t *size)
 {
   assert (pager->type == DISK || pager->type == FILE_DATA);
 
@@ -585,20 +580,25 @@ pager_report_extent (struct user_pager_info *pager,
   return 0;
 }
 
-/* Implement the pager_clear_user_data callback from the pager library.
-   See <hurd/pager.h> for the interface description. */
+/* This is called when a pager is being deallocated after all extant send
+   rights have been destroyed.  */
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  assert (upi->type == FILE_DATA);
-  spin_lock (&node_to_page_lock);
-  upi->node->dn->fileinfo = 0;
-  spin_unlock (&node_to_page_lock);
-  diskfs_nrele_light (upi->node);
-  *upi->prevp = upi->next;
-  if (upi->next)
-    upi->next->prevp = upi->prevp;
-  free (upi);
+  if (upi->type == FILE_DATA)
+    {
+      spin_lock (&node_to_page_lock);
+      upi->node->dn->fileinfo = 0;
+      spin_unlock (&node_to_page_lock);
+
+      diskfs_nrele_light (upi->node);
+
+      *upi->prevp = upi->next;
+      if (upi->next)
+	upi->next->prevp = upi->prevp;
+
+      free (upi);
+    }
 }
 
 /* ---------------------------------------------------------------- */
