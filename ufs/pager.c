@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
-#include "dinode.h"
 #include <strings.h>
 #include <stdio.h>
 
@@ -80,7 +79,7 @@ find_address (struct user_pager_info *upi,
 	{
 	  if (indirs[0].bno)
 	    *addr = (fsbtodb (sblock, indirs[0].bno)
-		     + blkoff (sblkoc, offset) / DEV_BSIZE);
+		     + blkoff (sblock, offset) / DEV_BSIZE);
 	  else
 	    *addr = 0;
 	}
@@ -172,6 +171,7 @@ pager_unlock_page (struct user_pager_info *pager,
   struct iblock_spec indirs[NIADDR + 1];
   daddr_t bno;
   struct disknode *dn;
+  struct dinode *di;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
      synchronously.  We do this on newly allocated indirect
@@ -193,6 +193,7 @@ pager_unlock_page (struct user_pager_info *pager,
   
   np = pager->np;
   dn = np->dn;
+  di = dino (dn->number);
 
   rwlock_writer_lock (&dn->allocptrlock);
   
@@ -276,7 +277,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		    }
 
 		  diblock = indir_block (indirs[2].bno);
-		  mark_indir_dirty (indirs[2].bno);
+		  mark_indir_dirty (np, indirs[2].bno);
 		  
 		  /* Now we can allocate the single indirect block */
 		  
@@ -303,7 +304,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	  if (err)
 	    goto out;
 
-	  dev_write_sync (fsbtodb (bno), zeroblock, sblock->fs_bsize);
+	  dev_write_sync (fsbtodb (sblock, bno), zeroblock, sblock->fs_bsize);
 
 	  indirs[0].bno = siblock[indirs[0].offset] = bno;
 	}
@@ -311,7 +312,7 @@ pager_unlock_page (struct user_pager_info *pager,
   
  out:
   diskfs_end_catch_exception ();
-  rwlock_writer_unlock (&np->dn->datalock, np->dn);
+  rwlock_writer_unlock (&dn->allocptrlock);
   return err;
 }
 
@@ -356,8 +357,8 @@ create_disk_pager ()
   diskpager = malloc (sizeof (struct user_pager_info));
   diskpager->type = DISK;
   diskpager->np = 0;
-  diskpager->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  diskpagerport = pager_get_port (upi->p);
+  diskpager->p = pager_create (diskpager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+  diskpagerport = pager_get_port (diskpager->p);
   mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
 			  MACH_MSG_TYPE_MAKE_SEND);
 }  
@@ -368,7 +369,7 @@ void
 diskfs_file_update (struct node *np,
 		    int wait)
 {
-  struct indir_dirty *d, *tmp;
+  struct dirty_indir *d, *tmp;
   
   if (np->dn->fileinfo)
     pager_sync (np->dn->fileinfo->p, wait);
@@ -406,7 +407,7 @@ diskfs_get_filemap (struct node *np)
       diskfs_nref_light (np);
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
-      ports_port_ref (p);
+      ports_port_ref (upi->p);
 
       spin_lock (&pagerlistlock);
       upi->next = filepagerlist;
@@ -417,7 +418,6 @@ diskfs_get_filemap (struct node *np)
       spin_unlock (&pagerlistlock);
     }
   right = pager_get_port (np->dn->fileinfo->p);
-  mutex_unlock (&pagernplock);
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
@@ -465,7 +465,7 @@ pager_traverse (void (*func)(struct user_pager_info *))
   struct item *i;
   
   spin_lock (&pagerlistlock);
-  for (p = filepagerlit; p; p = p->next)
+  for (p = filepagerlist; p; p = p->next)
     {
       i = alloca (sizeof (struct item));
       i->next = list;
