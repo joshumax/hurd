@@ -159,7 +159,7 @@ LDFLAGS += -static
 # Building the target
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) '-Wl,-(' $+ '-Wl,-)'
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(OBJS) '-Wl,-(' $(HURDLIBS-files $(OTHERLIBS) $(libc) '-Wl,-)'
 endif
 
 
