@@ -26,6 +26,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <error.h>
+#include <sys/utsname.h>
+#include <stdlib.h>
 
 /* XXX */
 extern int login_tty (int);
@@ -53,7 +55,7 @@ print_banner (int fd, char *ttyname)
   while (cc >= len)
     {
       hostname = realloc (hostname, len *= 2);
-      cc = hostname (hostname, len);
+      cc = gethostname (hostname, len);
       if (cc == -1)
 	{
 	  hostname[0] = '\0';
@@ -122,4 +124,5 @@ main (int argc, char **argv)
     execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", 0);
 
   error (99, errno, "execl");
+  return 1;
 }
