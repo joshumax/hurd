@@ -1,9 +1,20 @@
+1999-10-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file_io.h: Include <errno.h>.
+	(FS_* macros): Define these to equivalent errno codes.
+	* def_pager_setup.c (add_paging_file): Put strerror of result code in
+	error messages.
+	* bootstrap.c (parse_script): Likewise.
+	* load.c (boot_script_exec_cmd): Include NAMEBUF in error messages,
+	and use strerror to format result code.
+	* panic.c (panic): Use program_invocation_name in message.
+
 1999-10-08  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* bootstrap.c: (DEFAULT_ROOT): Remove macro.
 	(main): If no root device was specified, then prompt as if the
 	user had specified -a.  Don't use strcpy to move NEW_ROOT into
-	ROOT_NAME; that's unsafe.  
+	ROOT_NAME; that's unsafe.
 
 1999-10-06  Roland McGrath  <roland@baalperazim.frob.com>
 
