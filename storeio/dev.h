@@ -40,6 +40,7 @@ struct dev
 
   int readonly;			/* Nonzero if user gave --readonly flag.  */
   int enforced;			/* Nonzero if user gave --enforced flag.  */
+  int no_fileio;		/* Nonzero if user gave --no-fileio flag.  */
   dev_t rdev;			/* A unixy device number for st_rdev.  */
 
   /* The current owner of the open device.  For terminals, this affects
@@ -62,7 +63,6 @@ struct dev
      If this is set, the remaining members are not used at all
      and don't need to be initialized or cleaned up.  */
   int inhibit_cache;
-
 
   /* A bitmask corresponding to the part of an offset that lies within a
      device block.  */

@@ -37,6 +37,8 @@ static struct argp_option options[] =
   {"readonly", 'r', 0,	  0,"Disallow writing"},
   {"writable", 'w', 0,	  0,"Allow writing"},
   {"no-cache", 'c', 0,	  0,"Never cache data--user io does direct device io"},
+  {"no-file-io", 'F', 0,  0,"Never perform io via plain file io RPCs"},
+  {"no-fileio",  0,   0, OPTION_ALIAS | OPTION_HIDDEN},
   {"enforced",  'e', 0,	  0,"Never reveal underlying devices, even to root"},
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
@@ -68,6 +70,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'c': params->dev->inhibit_cache = 1; break;
     case 'e': params->dev->enforced = 1; break;
+    case 'F': params->dev->no_fileio = 1; break;
 
     case 'n':
       {
@@ -169,6 +172,9 @@ trivfs_append_args (struct trivfs_control *trivfs_control,
 
   if (!err && dev->enforced)
     err = argz_add (argz, argz_len, "--enforced");
+
+  if (!err && dev->no_fileio)
+    err = argz_add (argz, argz_len, "--no-file-io");
 
   if (! err)
     err = argz_add (argz, argz_len,

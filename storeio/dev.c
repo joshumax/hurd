@@ -137,6 +137,8 @@ error_t
 dev_open (struct dev *dev)
 {
   error_t err;
+  const int flags = ((dev->readonly ? STORE_READONLY : 0)
+		     | (dev->no_fileio ? STORE_NO_FILEIO : 0));
 
   assert (dev->store == 0);
 
@@ -144,20 +146,16 @@ dev_open (struct dev *dev)
     {
       /* This means we had no store arguments.
 	 We are to operate on our underlying node. */
-      err = store_create (storeio_fsys->underlying,
-			  dev->readonly ? STORE_READONLY : 0,
-			  0, &dev->store);
+      err = store_create (storeio_fsys->underlying, flags, 0, &dev->store);
     }
   else
     /* Open based on the previously parsed store arguments.  */
-    err = store_parsed_open (dev->store_name,
-			     dev->readonly ? STORE_READONLY : 0,
-			     &dev->store);
+    err = store_parsed_open (dev->store_name, flags, &dev->store);
   if (err)
     return err;
 
   /* Inactivate the store, it will be activated at first access.
-     We ignore possible EINVAL here.  XXX Pass STORE_INACTIVE to
+     We ignore possible EINVAL here   .  XXX Pass STORE_INACTIVE to
      store_create/store_parsed_open instead when libstore is fixed
      to support this.  */
   store_set_flags (dev->store, STORE_INACTIVE);
