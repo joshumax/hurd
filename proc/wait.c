@@ -131,7 +131,7 @@ abort_wait (struct proc *p)
 }
 
 /* Implement proc_wait as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_wait (struct proc *p,
 	   mach_port_t reply_port,
 	   mach_msg_type_name_t reply_port_type,
@@ -217,7 +217,7 @@ S_proc_wait (struct proc *p,
 }
 
 /* Implement proc_mark_stop as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mark_stop (struct proc *p,
 	       int signo)
 {
@@ -251,7 +251,7 @@ S_proc_mark_stop (struct proc *p,
 }
 
 /* Implement proc_mark_exit as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mark_exit (struct proc *p,
 		int status)
 {
@@ -264,7 +264,7 @@ S_proc_mark_exit (struct proc *p,
 }
 
 /* Implement proc_mark_cont as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mark_cont (struct proc *p)
 {
   p->p_stopped = 0;
@@ -272,7 +272,7 @@ S_proc_mark_cont (struct proc *p)
 }
 
 /* Implement proc_mark_traced as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mark_traced (struct proc *p)
 {
   p->p_traced = 1;
@@ -280,7 +280,7 @@ S_proc_mark_traced (struct proc *p)
 }
 
 /* Implement proc_mark_nostopchild as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mod_stopchild (struct proc *p,
 		      int value)
 {
@@ -300,7 +300,7 @@ zombie_check_pid (pid_t pid)
 }
 
 /* Implement interrupt_operation as described in <hurd/interrupt.defs>. */
-error_t
+kern_return_t
 S_interrupt_operation (mach_port_t object)
 {
   struct proc *p = reqport_find (object);
