@@ -176,7 +176,7 @@ diskfs_new_hardrefs (struct node *np)
 {
   allow_pager_softrefs (np);
 }
-
+
 /* Read stat information out of the ext2_inode. */
 static error_t
 read_disknode (struct node *np)
@@ -277,6 +277,54 @@ read_disknode (struct node *np)
 
   return 0;
 }
+
+/* Return EINVAL if this is not a hurd filesystem and any bits are set in L
+   except the low 16 bits, else 0.  */
+static inline error_t
+check_high_bits (struct node *np, long l)
+{
+  if (sblock->s_creator_os == EXT2_OS_HURD)
+    return 0;
+  else
+    return ((l & ~0xFFFF) == 0) ? 0 : EINVAL;
+}
+
+/* Return 0 if NP's owner can be changed to UID; otherwise return an error
+   code. */
+error_t
+diskfs_validate_owner_change (struct node *np, uid_t uid)
+{
+  return check_high_bits (np, uid);
+}
+
+/* Return 0 if NP's group can be changed to GID; otherwise return an error
+   code. */
+error_t
+diskfs_validate_group_change (struct node *np, gid_t gid)
+{
+  return check_high_bits (np, gid);
+}
+
+/* Return 0 if NP's mode can be changed to MODE; otherwise return an error
+   code.  It must always be possible to clear the mode; diskfs will not ask
+   for permission before doing so.  */
+error_t
+diskfs_validate_mode_change (struct node *np, mode_t mode)
+{
+  return check_high_bits (np, mode);
+}
+
+/* Return 0 if NP's author can be changed to AUTHOR; otherwise return an
+   error code. */
+error_t
+diskfs_validate_author_change (struct node *np, uid_t author)
+{
+  if (sblock->s_creator_os == EXT2_OS_HURD)
+    return 0;
+  else
+    /* For non-hurd filesystems, the auther & owner are the same.  */
+    return (author == np->dn_stat.st_uid) ? 0 : EINVAL;
+}
 
 /* Writes everything from NP's inode to the disk image, and returns a pointer
    to it, or NULL if nothing need be done.  */
@@ -314,13 +362,20 @@ write_node (struct node *np)
       di->i_gid = st->st_gid & 0xFFFF;
 
       if (sblock->s_creator_os == EXT2_OS_HURD)
-	/* If this is a hurd-compatible filesystem, write the high bits too.
-	   XXX what should we do if we can't and they're not 0?  */
+	/* If this is a hurd-compatible filesystem, write the high bits too. */
 	{
 	  di->i_mode_high = (st->st_mode >> 16) & 0xffff;
 	  di->i_uid_high = st->st_uid >> 16;
 	  di->i_gid_high = st->st_gid >> 16;
 	  di->i_author = st->st_author;
+	}
+      else
+	/* No hurd extensions should be turned on.  */
+	{
+	  assert ((st->st_uid & ~0xFFFF) == 0);
+	  assert ((st->st_gid & ~0xFFFF) == 0);
+	  assert ((st->st_mode & ~0xFFFF) == 0);
+	  assert (st->st_author == st->st_uid);
 	}
 
       di->i_links_count = st->st_nlink;
@@ -361,7 +416,7 @@ write_node (struct node *np)
   else
     return NULL;
 }
-
+
 /* Reload all data specific to NODE from disk, without writing anything.
    Always called with DISKFS_READONLY true.  */
 error_t
