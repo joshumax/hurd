@@ -156,7 +156,6 @@ documentation was last updated for version @value{VERSION} of the Hurd.
 
 @menu
 * Introduction::                How to use this manual.
-* Installing::                  Setting up Hurd software on your computer.
 * Bootstrap::                   Turning a computer into a Hurd machine.
 * Foundations::                 Basic features used throughout the Hurd.
 * Input and Output::            Reading and writing I/O channels.
@@ -182,11 +181,6 @@ Introduction
 * Overview::                    Basic architecture of the Hurd.
 * History::                     How the Hurd was born.
 * Copying::                     The Hurd is free software.
-
-Installing
-
-* Binary Distributions::        Obtaining ready-to-run GNU distributions.
-* Cross-Compiling::             Building GNU from its source code.
 
 Bootstrap
 
@@ -534,109 +528,6 @@ kernel.
 @include gpl.texinfo
 
 
-@node Installing
-@chapter Installing
-
-Before you can use the Hurd on your favorite machine, you'll need to
-install all of its software components.  Currently, the Hurd only runs
-on Intel i386-compatible architectures (such as the Pentium), using the
-GNU Mach microkernel.
-
-If you have unsupported hardware or a different microkernel, you will
-not be able to run the Hurd until all the required software has been
-@dfn{ported} to your architecture.  Porting is an involved process which
-requires considerable programming skills, and is not recommended for the
-faint-of-heart.  If you have the talent and desire to do a port, contact
-@email{bug-hurd@@gnu.org} in order to coordinate the effort.
-
-@menu
-* Binary Distributions::        Obtaining ready-to-run GNU distributions.
-* Cross-Compiling::             Building GNU from its source code.
-@end menu
-
-
-@node Binary Distributions
-@section Binary Distributions
-
-By far the easiest and best way to install the Hurd is to obtain a GNU
-binary distribution.  Even if you plan on recompiling the Hurd itself,
-it is best to start off with an already-working GNU system so that you
-can avoid having to reboot every time you want to test a program.
-
-@ignore @c FIXME: update when binary CD-ROMS are available
-You can order GNU on a CD-ROM from the Free Software Foundation.  Orders
-such as these help fund GNU software development.
-@end ignore
-
-You can get GNU from a friend under the conditions allowed by the GNU
-GPL (@pxref{Copying}).  Please consider sending a donation to the Free
-Software Foundation so that we can continue to improve GNU software.
-
-You can also FTP the complete GNU system from your closest GNU mirror,
-or @uref{ftp://ftp.gnu.org/pub/gnu/}.  The GNU binary distribution is
-available in a subdirectory called @file{gnu-@var{n.m}}, where @var{n.m}
-is the version of the Hurd that this GNU release corresponds to
-(@value{VERSION} at the time of this writing).  Again, please consider
-donating to the Free Software Foundation.
-
-The format of the binary distribution is prone to change, so this manual
-does not describe the details of how to install GNU.  The @file{README}
-file distributed with the binary distribution gives you complete
-instructions.
-
-After you follow all the appropriate instructions, you will have a
-working GNU/Hurd system.  If you have used
-@uref{http://www.gnu.org/gnu/linux-and-gnu.html, GNU/Linux} systems or
-other Unix-like systems before, the Hurd will look quite familiar.  You
-should play with it for a while, referring to this manual only when you
-want to learn more about the Hurd.  Have fun!
-
-If the Hurd is your first introduction to the GNU operating system, then
-you will need to learn more about GNU in order to be able to use it.
-You should talk to friends who are familiar with GNU, in order to find
-out about classes, online tutorials, or books which can help you learn
-more about GNU.
-
-If you have no friends who are already using GNU, you can find some
-useful starting points at the GNU web site, @uref{http://www.gnu.org/}.
-You can also send e-mail to @email{help-hurd@@gnu.org}, to contact
-fellow Hurd users.  You can join this mailing list by sending a request
-to @email{help-hurd-request@@gnu.org}.
-
-
-@node Cross-Compiling
-@section Cross-Compiling
-
-Another way to install the Hurd is to use an existing operating system
-in order to compile all the required Hurd components from source code.
-This is called @dfn{cross-compiling}, because it is done between two
-different platforms.
-
-@emph{This process is not recommended unless you are porting the Hurd to
-a new platform.}  Cross-compiling the Hurd to a platform which already
-has a binary distribution is a tremendous waste of time@dots{} it is
-frequently necessary to repeat steps over and over again, and you are
-not even guaranteed to get a working system.  Please, obtain a GNU
-binary distribution (@pxref{Binary Distributions}), and use your time to
-do more useful things.  If you are capable of cross-compiling, then you
-are definitely skilled enough to make more useful (and creative)
-modifications to the GNU system.
-
-To emphasize this point: downloading the entire GNU system over a 9600
-baud modem takes @emph{much less time} than cross-compilation, and
-provides better results, too.
-
-If you are still sure that you would like to cross-compile the Hurd, you
-should send e-mail to the @email{bug-hurd@@gnu.org} mailing list in
-order to coordinate your efforts.  People on that list will give you
-advice on what to look out for, as well as helping you figure out a way
-that your cross-compilation can benefit Hurd development.  After that,
-don your bug-resistant suit, and read the @file{INSTALL-cross} file,
-which comes with the latest Hurd source code distribution.  The
-instructions in @file{INSTALL-cross} are usually out-of-date, but they contain
-some useful hints buried amongst the errors.
-
-
 @node Bootstrap
 @chapter Bootstrap
 
@@ -690,7 +581,7 @@ the rest of the Hurd servers.  Rather than containing specific
 instructions for starting the Hurd, it follows general steps given in a
 user-supplied boot script.
 
-To boot the Hurd using @code{serverboot}, the microkernel must start 
+To boot the Hurd using @code{serverboot}, the microkernel must start
 @code{serverboot} as its
 first task, and pass it appropriate arguments.  @code{serverboot} has a
 counterpart, called @code{boot}, which can be invoked while the Hurd is
@@ -868,8 +759,8 @@ safe place to overwrite your old Hurd with the new one, and reboot back
 to your old configuration (with the new Hurd servers).
 
 
-@node Invoking boot 
-@subsection Invoking boot 
+@node Invoking boot
+@subsection Invoking boot
 
 Usage: boot [@var{option}@dots{}] @var{boot-script} @var{device}@dots{}
 
@@ -887,7 +778,7 @@ Pause for user confirmation at various times during booting.
 Root of a directory tree in which to find the files specified in
 @var{boot-script}.
 
-@item --interleave=@var{blocks}    
+@item --interleave=@var{blocks}
 Interleave in runs of length @var{blocks}.
 
 @item --isig
@@ -897,11 +788,11 @@ boot program itself, rather than the programs running in the booted
 system.
 
 @item --layer
-@itemx -L                
+@itemx -L
 Layer multiple devices for redundancy.
 
 @item --single-user
-@itemx -s          
+@itemx -s
 Boot into single user mode.
 
 @item --store-type=@var{type}
@@ -912,7 +803,7 @@ Each @var{device} names a store of type @var{type}.
 Mandatory or optional arguments to long options are also mandatory or optional
 for any corresponding short options.
 
-If neither @option{--interleave} or @option{--layer} is specified, multiple 
+If neither @option{--interleave} or @option{--layer} is specified, multiple
 @var{device}s are concatenated.
 
 
