@@ -38,50 +38,42 @@ initprimes ()
   primes[1] = 3;
 }
 
-/* Make the array of primes larger than it is right now.  */
-void
-growprimes ()
-{
-  int *iscomp;
-  int nints;
-  int lastprime = primes[nprimes - 1];
-  int i, j;
-  
-  nints = lastprime * lastprime;
-  iscomp = alloca (sizeof (int) * nints);
-  bzero (iscomp, sizeof (int) * nints);
-
-  
-
-  for (i = 0; i < nprimes; i++)
-    for (j = primes[i] * 2; j < nints; j += primes[i])
-      iscomp[j] = 1;
-
-  for (i = lastprime; i < nints; i++)
-    {
-      if (nprimes == primessize)
-	{
-	  primes = realloc (primes, primessize * sizeof (int) * 2);
-	  primessize *= 2;
-	}
-      if (!iscomp[i])
-	primes[nprimes++] = i;
-    }
-}  
-
 /* Return the next prime greater than or equal to n. */
 int 
 nextprime (int n)
 {
   int p;
   int low, high;
+  int *iscomp;
+  int nints;
+  int lastprime = primes[nprimes - 1];
+  int i, j;
   
   if (n < primes[0])
     return primes[0];
 
   while (n > primes[nprimes - 1])
-    growprimes ();
+    {
+      nints = lastprime * lastprime;
+      iscomp = alloca (sizeof (int) * nints);
+      bzero (iscomp, sizeof (int) * nints);
+      
+      for (i = 0; i < nprimes; i++)
+	for (j = primes[i] * 2; j < nints; j += primes[i])
+	  iscomp[j] = 1;
 
+      for (i = lastprime; i < nints; i++)
+	{
+	  if (nprimes == primessize)
+	    {
+	      primes = realloc (primes, primessize * sizeof (int) * 2);
+	      primessize *= 2;
+	    }
+	  if (!iscomp[i])
+	    primes[nprimes++] = i;
+	}
+    }
+  
   /* Binary search */
   low = 0;
   high = nprimes - 1;
@@ -100,9 +92,13 @@ nextprime (int n)
   return primes[p];
 }
 
-  
 
+main ()
+{
+  int i;
 
+  initprimes();
   
-    
-  
+  for (i = 0; i < 100; i++)
+    printf ("%d\t%d\n", i, nextprime(i));
+}
