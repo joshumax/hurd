@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+#
+#   Copyright (C) 1994, 95, 96, 98 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -26,7 +26,7 @@ SRCS =	lock-acquire.c lock-init.c \
 	delegate.c \
 	exec-reauth.c \
 	set-options.c \
-	return-buffer.c get-identity.c \
+	get-identity.c \
 	fshelp.c
 LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
@@ -35,4 +35,3 @@ HURDLIBS=shouldbeinlibc threads
 OBJS = $(subst .c,.o,$(SRCS))
 
 include ../Makeconf
-
