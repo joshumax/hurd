@@ -108,6 +108,37 @@ check_section (bfd *bfd, asection *sec, void *userdata)
 #endif
 
 
+/* Zero the specified region but don't crash the server if it faults.  */
+
+static error_t
+safe_bzero (void *ptr, size_t size)
+{
+  jmp_buf env;
+  void fault (int signo) { longjmp (env, 1); }
+  thread_t thisthread = hurd_thread_self ();
+  volatile error_t error;
+  sighandler_t preempt (thread_t thread, int signo,
+			long int sigcode, int sigerror)
+    {
+      if (thread == thisthread)
+	{
+	  error = sigerror ?: EIO;
+	  return &fault;
+	}
+      return SIG_DFL;
+    }
+  struct hurd_signal_preempt preempter;
+  hurd_preempt_signals (&preempter, SIGSEGV,
+			(long int) ptr, (long int) (ptr + size),
+			&preempt);
+  error = 0;
+  if (! setjmp (env))
+    bzero (ptr, size);
+  hurd_unpreempt_signals (&preempter, SIGSEGV);
+  return error;
+}
+
+
 /* Load or allocate a section.  */
 static void
 load_section (void *section, struct execdata *u)
@@ -392,33 +423,8 @@ load_section (void *section, struct execdata *u)
 	      vm_deallocate (u->task, mapstart, memsz);
 	      return;
 	    }
-	  {
-	    /* Zero the appropriate portion of our copy of the page.  All
-	       this rigamorole is in case the memory backing this page is
-	       bogus and we fault in bzero; we want to return the fault's
-	       error code to the user, rather than crash the server.  */
-	    jmp_buf env;
-	    void fault (int signo) { longjmp (env, 1); }
-	    thread_t thisthread = hurd_thread_self ();
-	    sighandler_t preempt (thread_t thread, int signo,
-				  long int sigcode, int sigerror)
-	      {
-		if (thread == thisthread)
-		  {
-		    u->error = sigerror ?: EIO;
-		    return &fault;
-		  }
-		return SIG_DFL;
-	      }
-	    struct hurd_signal_preempt preempter;
-	    hurd_preempt_signals (&preempter, SIGSEGV,
-				  ourpage, ourpage + vm_page_size,
-				  &preempt);
-	    if (! setjmp (env))
-	      bzero ((void *) (ourpage + (addr - overlap_page)),
-		     size - (addr - overlap_page));
-	    hurd_unpreempt_signals (&preempter, SIGSEGV);
-	  }
+	  u->error = safe_bzero ((void *) (ourpage + (addr - overlap_page)),
+				 size - (addr - overlap_page));
 	  if (! u->error && !(vm_prot & VM_PROT_WRITE))
 	    u->error = vm_protect (u->task, overlap_page, size,
 				   0, VM_PROT_WRITE);
