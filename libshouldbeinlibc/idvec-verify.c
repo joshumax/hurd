@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <idvec.h>
 #include <grp.h>
 #include <pwd.h>
@@ -31,18 +32,104 @@ extern char *crypt (const char *string, const char salt[2]);
 
 static error_t verify_id (); /* FWD */
 
+/* Get a password from the user, returning it in malloced storage.  */
+static char *
+get_passwd (const char *prompt,
+	    uid_t id, int is_group,
+	    void *pwd_or_grp, void *hook)
+{
+  char *st = getpass (prompt);
+  if (st)
+    st = strdup (st);
+  return st;
+}
+
+/* Verify PASSWORD using /etc/passwd.  */
+static error_t
+verify_passwd (const char *password,
+	       uid_t id, int is_group,
+	       void *pwd_or_grp, void *hook)
+{
+  const char *encrypted;
+  int wheel_uid = (int)hook;
+  const char *sys_encrypted;
+
+  if (! pwd_or_grp)
+    /* No password db entry for ID; if ID is root, the system is probably
+       really fucked up, so grant it (heh).  */
+    return (id == 0 ? 0 : EACCES);
+
+  /* The encrypted password in the passwd db.  */
+  sys_encrypted =
+    (is_group
+     ? ((struct passwd *)pwd_or_grp)->pw_passwd
+     : ((struct group *)pwd_or_grp)->gr_passwd);
+
+  if (crypt)
+    /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
+    encrypted = crypt (password, sys_encrypted);
+  else
+    /* No crypt on this system!  Use plain-text passwords.  */
+    encrypted = password;
+
+  if (! encrypted)
+    /* Crypt failed.  */
+    return errno;
+
+  /* See whether the user's password matches the system one.  */
+  if (strcmp (encrypted, sys_encrypted) == 0)
+    /* Password check succeeded.  */
+    return 0;
+  else if (id == 0 && !is_group && wheel_uid)
+    /* Special hack: a user attempting to gain root access can use
+       their own password (instead of root's) if they're in group 0. */
+    {
+      struct passwd *pw = getpwuid (wheel_uid);
+
+      if (! pw)
+	return errno ?: EINVAL;
+
+      encrypted = crypt (password, pw->pw_passwd);
+      if (! encrypted)
+	/* Crypt failed.  */
+	return errno;
+
+      if (strcmp (encrypted, pw->pw_passwd) == 0)
+	/* *this* password is correct!  */
+	return 0;
+    }
+
+  return EACCES;
+}
+
 /* Make sure the user has the right to the ids in UIDS and GIDS, given that
    we know he already has HAVE_UIDS and HAVE_GIDS, asking for passwords (with
-   GETPASS, which defaults to the standard libc function getpass) where
-   necessary; any of the arguments may be 0, which is treated the same as if
-   they were empty.  0 is returned if access should be allowed, otherwise
-   EINVAL if an incorrect password was entered, or an error relating to
-   resource failure.  Any uid/gid < 0 will be guaranteed to fail regardless
-   of what the user types.  */
+   GETPASS_FN) where necessary; any of the arguments may be 0, which is
+   treated the same as if they were empty.  0 is returned if access should be
+   allowed, otherwise EINVAL if an incorrect password was entered, or an
+   error relating to resource failure.  Any uid/gid < 0 will be guaranteed to
+   fail regardless of what the user types.  GETPASS_FN should ask for a
+   password from the user, and return it in malloced storage; it defaults to
+   using the standard libc function getpass.  If VERIFY_FN is 0, then the
+   users password will be encrypted with crypt and compared with the
+   password/group entry's encrypted password, otherwise, VERIFY_FN will be
+   called to check the entered password's validity; it should return 0 if the
+   given password is correct, or an error code.  The common arguments to
+   GETPASS_FN and VERIFY_FN are: ID, the user/group id; IS_GROUP, true if its
+   a group, or false if a user; PWD_OR_GRP, a pointer to either the passwd or
+   group entry for ID, and HOOK, containing the appropriate hook passed into
+   idvec_verify.  */
 error_t
 idvec_verify (const struct idvec *uids, const struct idvec *gids,
 	      const struct idvec *have_uids, const struct idvec *have_gids,
-	      char *(*getpass_fn)(const char *prompt))
+	      char *(*getpass_fn) (const char *prompt,
+				   uid_t id, int is_group,
+				   void *pwd_or_grp, void *hook),
+	      void *getpass_hook,
+	      error_t (*verify_fn) (const char *password,
+				    uid_t id, int is_group,
+				    void *pwd_or_grp, void *hook),
+	      void *verify_hook)
 {
   if (have_uids && idvec_contains (have_uids, 0))
     /* Root can do anything.  */
@@ -60,6 +147,12 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
 	  && (idvec_contains (have_gids, 0) && have_uids->num > 0))
 	 ? have_uids->ids[0]
 	 : 0);
+
+      if (! verify_fn)
+	{
+	  verify_fn = verify_passwd;
+	  verify_hook = (void *)wheel_uid;
+	}
 
       /* See if there are multiple ids in contention, in which case we should
 	 name each user/group as we ask for its password.  */
@@ -87,7 +180,8 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
       if (uids && idvec_contains (uids, 0))
 	/* root is being asked for, which, once granted will provide access for
 	   all the others.  */
-	err = verify_id (0, 0, multiple, wheel_uid, getpass_fn);
+	err = verify_id (0, 0, multiple,
+			 getpass_fn, getpass_hook, verify_fn, verify_hook);
       else
 	{
 	  if (uids)
@@ -96,7 +190,8 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
 	      {
 		uid_t uid = uids->ids[i];
 		if (!have_uids || !idvec_contains (have_uids, uid))
-		  err = verify_id (uid, 0, multiple, wheel_uid, getpass_fn);
+		  err = verify_id (uid, 0, multiple,
+				   getpass_fn, getpass_hook, verify_fn, verify_hook);
 	      }
 
 	  if (gids)
@@ -106,7 +201,8 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
 		gid_t gid = gids->ids[i];
 		if ((!have_gids || !idvec_contains (have_gids, gid))
 		    && !idvec_contains (&implied_gids, gid))
-		  err = verify_id (gid, 1, multiple, wheel_uid, getpass_fn);
+		  err = verify_id (gid, 1, multiple,
+				   getpass_fn, getpass_hook, verify_fn, verify_hook);
 	      }
 	}
 
@@ -120,12 +216,20 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
    user/group ID (depending on whether IS_GROUP is false/true).  If MULTIPLE
    is true, then this is one of multiple ids being verified, so  */
 static error_t
-verify_id (uid_t id, int is_group, int multiple, int wheel_uid,
-	   char *(*getpass_fn)(const char *prompt))
+verify_id (uid_t id, int is_group, int multiple,
+	   char *(*getpass_fn) (const char *prompt,
+				uid_t id, int is_group,
+				void *pwd_or_grp, void *hook),
+	   void *getpass_hook,
+	   error_t (*verify_fn) (const char *password,
+				 uid_t id, int is_group,
+				 void *pwd_or_grp, void *hook),
+	   void *verify_hook)
 {
   int err;
-  char *name = 0, *password = 0;
-  char *prompt = 0, *unencrypted, *encrypted;
+  void *pwd_or_grp = 0;
+  char *name = 0;
+  char *prompt = 0, *password;
   char id_lookup_buf[1024];
 
   if (id >= 0)
@@ -137,8 +241,10 @@ verify_id (uid_t id, int is_group, int multiple, int wheel_uid,
 	    if (getgrgid_r (id, &_gr, id_lookup_buf, sizeof id_lookup_buf, &gr)
 		== 0)
 	      {
-		password = gr->gr_passwd;
+		if (!gr->gr_passwd || !*gr->gr_passwd)
+		  return 0;	/* No password.  */
 		name = gr->gr_name;
+		pwd_or_grp = gr;
 	      }
 	  }
 	else
@@ -147,8 +253,10 @@ verify_id (uid_t id, int is_group, int multiple, int wheel_uid,
 	    if (getpwuid_r (id, &_pw, id_lookup_buf, sizeof id_lookup_buf, &pw)
 		== 0)
 	      {
-		password = pw->pw_passwd;
+		if (!pw->pw_passwd || !*pw->pw_passwd)
+		  return 0;	/* No password.  */
 		name = pw->pw_name;
+		pwd_or_grp = pw;
 	      }
 	  }
 	if (! name)
@@ -163,21 +271,17 @@ verify_id (uid_t id, int is_group, int multiple, int wheel_uid,
 	      multiple = 1;	/* Explicitly ask for root's password.  */
 	    }
 	  else
-	    /* If ID == 0 && !IS_GROUP, then this means that the system is
-	       really fucked up (there's no root password entry), so instead
-	       just don't ask for a password at all (if an intruder has
-	       succeeded in preventing the lookup somehow, he probably could
-	       have just provided his own result anyway).  */
-	    name = "uh-oh";
+	    /* No password entry for root.  */
+	    name = "root";
       }
     while (! name);
 
-  if (!password || !*password)
-    /* No password!  */
-    return 0;
-
   if (! getpass_fn)
-    getpass_fn = getpass;
+    /* Default GETPASS_FN to using getpass.  */
+    getpass_fn = get_passwd;
+
+  /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
+  assert (verify_fn);
 
   if (multiple)
     if (name)
@@ -186,40 +290,30 @@ verify_id (uid_t id, int is_group, int multiple, int wheel_uid,
     else
       asprintf (&prompt, "Password for %s %d:",
 		is_group ? "group" : "user", id);
+
+  /* Prompt the user for the password.  */
   if (prompt)
     {
-      unencrypted = (*getpass_fn) (prompt);
+      password =
+	(*getpass_fn) (prompt, id, is_group, pwd_or_grp, getpass_hook);
       free (prompt);
     }
   else 
-    unencrypted = (*getpass_fn) ("Password:");
+    password =
+      (*getpass_fn) ("Password:", id, is_group, pwd_or_grp, getpass_hook);
 
-  if (crypt)
+  /* Check the user's answer.  */
+  if (password)
     {
-      encrypted = crypt (unencrypted, password);
-      if (! encrypted)
-	/* Something went wrong.  */
-	return errno;
+      err = (*verify_fn) (password, id, is_group, pwd_or_grp, verify_hook);
+
+      /* Paranoia may destroya.  */
+      memset (password, 0, strlen (password));
+
+      free (password);
     }
   else
-    encrypted = unencrypted;
-
-  err = EINVAL;			/* Assume an invalid password.  */
-
-  if (encrypted && strcmp (encrypted, password) == 0)
-    err = 0;			/* Password correct!  */
-  else if (id == 0 && !is_group && wheel_uid)
-    /* Special hack: a user attempting to gain root access can use
-       their own password (instead of root's) if they're in group 0. */
-    {
-      struct passwd *pw = getpwuid (wheel_uid);
-      encrypted = crypt (unencrypted, pw->pw_passwd);
-      if (pw && encrypted && strcmp (encrypted, pw->pw_passwd) == 0)
-	err = 0;		/* *this* password is correct!  */
-    }
-
-  /* Paranoia may destroya.  */
-  memset (unencrypted, 0, strlen (unencrypted));
+    err = EACCES;
 
   return err;
 }
