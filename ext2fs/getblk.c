@@ -60,14 +60,13 @@ ext2_discard_prealloc (struct node *node)
 #endif
 }
 
-static int 
-ext2_alloc_block (struct node *node, unsigned long goal)
+static block_t
+ext2_alloc_block (struct node *node, block_t goal, int zero)
 {
 #ifdef EXT2FS_DEBUG
   static unsigned long alloc_hits = 0, alloc_attempts = 0;
 #endif
-  unsigned long result;
-  char *bh;
+  block_t result;
 
 #ifdef EXT2_PREALLOCATE
   if (node->dn->info.i_prealloc_count &&
@@ -76,11 +75,8 @@ ext2_alloc_block (struct node *node, unsigned long goal)
     {
       result = node->dn->info.i_prealloc_block++;
       node->dn->info.i_prealloc_count--;
-      ext2_debug ("preallocation hit (%lu/%lu)",
-		  ++alloc_hits, ++alloc_attempts);
-
-      bh = bptr (result);
-      memset (bh, 0, block_size);
+      ext2_debug ("preallocation hit (%lu/%lu) => %lu",
+		  ++alloc_hits, ++alloc_attempts, result);
     }
   else
     {
@@ -88,10 +84,10 @@ ext2_alloc_block (struct node *node, unsigned long goal)
 		  alloc_hits, ++alloc_attempts);
       ext2_discard_prealloc (node);
       if (S_ISREG (node->dn_stat.st_mode))
-	result = ext2_new_block
-	  (goal,
-	   &node->dn->info.i_prealloc_count,
-	   &node->dn->info.i_prealloc_block);
+	result =
+	  ext2_new_block (goal,
+			  &node->dn->info.i_prealloc_count,
+			  &node->dn->info.i_prealloc_block);
       else
 	result = ext2_new_block (goal, 0, 0);
     }
@@ -99,25 +95,29 @@ ext2_alloc_block (struct node *node, unsigned long goal)
   result = ext2_new_block (goal, 0, 0);
 #endif
 
+  if (result && zero)
+    {
+      char *bh = bptr (result);
+      bzero (bh, block_size);
+      record_global_poke (bh);
+    }
+
   return result;
 }
 
 static error_t
-inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
+inode_getblk (struct node *node, int nr, int create, int zero,
+	      block_t new_block, block_t *result)
 {
-  u32 block;
-  int goal = 0, i;
-  int blocks = block_size / 512;
+  int i;
+  block_t goal = 0;
 #ifdef EXT2FS_DEBUG
-  int hint;
+  block_t hint;
 #endif
 
-  block = node->dn->info.i_data[nr];
-  if (block)
-    {
-      *buf = bptr (block);
-      return 0;
-    }
+  *result = node->dn->info.i_data[nr];
+  if (*result)
+    return 0;
 
   if (!create)
     return EINVAL;
@@ -145,20 +145,20 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
 	  + sblock->s_first_data_block;
     }
 
-  ext2_debug ("%screate, hint = %d, goal = %d",
-	      create ? "" : "no", hint, goal);
+  *result = ext2_alloc_block (node, goal, zero);
 
-  block = ext2_alloc_block (node, goal);
-  if (!block)
+  ext2_debug ("%screate, hint = %lu, goal = %lu => %lu",
+	      create ? "" : "no", hint, goal, *result);
+
+  if (!*result)
     return EIO;
 
-  *buf = bptr (block);
-  node->dn->info.i_data[nr] = block;
+  node->dn->info.i_data[nr] = *result;
 
   node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = block;
+  node->dn->info.i_next_alloc_goal = *result;
   node->dn_set_ctime = 1;
-  node->dn_stat.st_blocks += blocks << log2_stat_blocks_per_fs_block;
+  node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
@@ -168,21 +168,16 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
 }
 
 error_t
-block_getblk (struct node *node,
-	      char *bh, int nr,
-	      int create, int blocksize, int new_block,
-	      char **buf)
+block_getblk (struct node *node, block_t block, int nr, int create, int zero,
+	      block_t new_block, block_t *result)
 {
-  int i, goal = 0;
-  u32 block;
-  int blocks = block_size / 512;
+  int i;
+  block_t goal = 0;
+  char *bh = bptr (block);
 
-  block = ((u32 *)bh)[nr];
-  if (block)
-    {
-      *buf = bptr (block);
-      return 0;
-    }
+  *result = ((u32 *)bh)[nr];
+  if (*result)
+    return 0;
 
   if (!create)
     return EINVAL;
@@ -200,15 +195,14 @@ block_getblk (struct node *node,
 	    }
 	}
       if (!goal)
-	goal = bptr_block (bh);
+	goal = block;
     }
 
-  block = ext2_alloc_block (node, goal);
-  if (!block)
+  *result = ext2_alloc_block (node, goal, zero);
+  if (!*result)
     return EIO;			/* XXX? */
 
-  *buf = bptr (block);
-  ((u32 *)bh)[nr] = block;
+  ((u32 *)bh)[nr] = *result;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
     sync_global_ptr (bh, 1);
@@ -217,29 +211,24 @@ block_getblk (struct node *node,
 
   node->dn_set_ctime = 1;
   node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = block;
-  node->dn_stat.st_blocks += blocks << log2_stat_blocks_per_fs_block;
+  node->dn->info.i_next_alloc_goal = *result;
+  node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
   return 0;
 }
 
-/* Returns in BUF a pointer to the file block BLOCK in NODE.  If there is no
-   such block yet, but CREATE is true, then it is created, otherwise EINVAL
-   is returned.  */
+/* Returns in DISK_BLOCK the disk block correspding to BLOCK in NODE.  If
+   there is no such block yet, but CREATE is true, then it is created,
+   otherwise EINVAL is returned.  */
 error_t
-ext2_getblk (struct node *node, long block, int create, char **buf)
+ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
 {
   error_t err;
-  char *bh;
-  unsigned long b;
+  u32 indir;
+  block_t b;
   unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
 
-  if (block < 0)
-    {
-      ext2_warning ("ext2_getblk", "block < 0");
-      return EIO;
-    }
   if (block > EXT2_NDIR_BLOCKS + addr_per_block +
       addr_per_block * addr_per_block +
       addr_per_block * addr_per_block * addr_per_block)
@@ -266,42 +255,43 @@ ext2_getblk (struct node *node, long block, int create, char **buf)
   b = block;
 
   if (block < EXT2_NDIR_BLOCKS)
-    return inode_getblk (node, block, create, b, buf);
+    return inode_getblk (node, block, create, 0, b, disk_block);
 
   block -= EXT2_NDIR_BLOCKS;
   if (block < addr_per_block)
     {
-      err = inode_getblk (node, EXT2_IND_BLOCK, create, b, &bh);
+      err = inode_getblk (node, EXT2_IND_BLOCK, create, 1, b, &indir);
       if (!err)
-	err= block_getblk (node, bh, block, create, block_size, b, buf);
+	err = block_getblk (node, indir, block, create, 0, b, disk_block);
       return err;
     }
 
   block -= addr_per_block;
   if (block < addr_per_block * addr_per_block)
     {
-      err = inode_getblk (node, EXT2_DIND_BLOCK, create, b, &bh);
+      err = inode_getblk (node, EXT2_DIND_BLOCK, create, 1, b, &indir);
       if (!err)
-	err = block_getblk (node, bh, block / addr_per_block, create,
-			    block_size, b, &bh);
+	err = block_getblk (node, indir, block / addr_per_block, create, 1,
+			    b, &indir);
       if (!err)
-	err = block_getblk (node, bh, block & (addr_per_block - 1),
-			    create, block_size, b, buf);
+	err = block_getblk (node, indir, block & (addr_per_block - 1),
+			    create, 0, b, disk_block);
       return err;
     }
 
   block -= addr_per_block * addr_per_block;
-  err = inode_getblk (node, EXT2_TIND_BLOCK, create, b, &bh);
+  err = inode_getblk (node, EXT2_TIND_BLOCK, create, 1, b, &indir);
   if (!err)
-    err = block_getblk (node, bh, block / (addr_per_block * addr_per_block),
-			create, block_size, b, &bh);
+    err = block_getblk (node, indir, block / (addr_per_block * addr_per_block),
+			create, 1, b, &indir);
   if (!err)
     err =
-      block_getblk (node, bh, (block / addr_per_block) & (addr_per_block - 1),
-		    create, block_size, b, &bh);
+      block_getblk (node, indir,
+		    (block / addr_per_block) & (addr_per_block - 1),
+		    create, 1, b, &indir);
   if (!err)
-    err = block_getblk (node, bh, block & (addr_per_block - 1), create,
-			block_size, b, buf);
+    err = block_getblk (node, indir, block & (addr_per_block - 1), create, 0,
+			b, disk_block);
 
   return err;
 }
