@@ -1,6 +1,6 @@
 /* Options common to both startup and runtime
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -22,7 +22,7 @@
 
 #include <argp.h>
 
-struct argp_option diskfs_common_options[] =
+const struct argp_option diskfs_common_options[] =
 {
   {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
   {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
