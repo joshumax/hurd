@@ -121,6 +121,19 @@ aout_mach_host_machine (host_t host, int *host_machine)
 #endif
       break;
 
+#ifdef CPU_TYPE_ALPHA
+    case CPU_TYPE_ALPHA:
+#ifdef	 BFD
+      *arch = bfd_arch_alpha;
+#else
+#ifndef M_ALPHA
+#define M_ALPHA 999		/* XXX */
+#endif
+      *host_machine = M_ALPHA;
+#endif
+      break;
+#endif
+
     default:
 #ifdef	BFD
       return ENOEXEC;
