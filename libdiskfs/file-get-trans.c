@@ -63,7 +63,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  *translen = len;
 	}
       else if (len > *translen)
-	vm_deallocate (mach_task_self (), (vm_address_t *)trans, len);
+	vm_deallocate (mach_task_self (), (vm_address_t) trans, len);
     }
   else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
     {
