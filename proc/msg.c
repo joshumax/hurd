@@ -50,6 +50,10 @@ S_proc_setmsgport (struct proc *p,
   if (p->p_checkmsghangs)
     prociterate (check_message_return, p);
   p->p_checkmsghangs = 0;
+
+  if (p == startup_proc)
+    startup_essential_task (msgport, mach_task_self (), MACH_PORT_NULL,
+			    "proc", master_host_port);
       
   return 0;
 }
