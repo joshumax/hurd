@@ -197,7 +197,7 @@ ffs_clrblock(fs, cp, h)
 		cp[h >> 3] &= ~(0x01 << (h & 0x7));
 		return;
 	default:
-		panic("ffs_clrblock");
+		assert (0);
 	}
 }
 
