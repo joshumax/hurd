@@ -30,11 +30,11 @@ all: libioserver.a
 
 libioserver.a: $(OBJS)
 	rm -f libioserver.a
-	ar r $@ $^
+	$(AR) r $@ $^
 
 $(hurdinst)/lib/libioserver.a: libioserver.a
 	cp libioserver.a $@
-	ranlib $@
+	$(RANLIB) $@
 
 $(headers)/hurd/ioserver.h: ioserver.h
 	cp $< $@
