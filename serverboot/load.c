@@ -333,7 +333,7 @@ boot_script_exec_cmd (task_t user_task,
 				      st.image_size);
 		}
 	}
-#endif GZIP
+#endif  /* GZIP */
 #ifdef BZIP2
 	if (result)
 	{
@@ -358,7 +358,7 @@ boot_script_exec_cmd (task_t user_task,
 				      st.image_size);
 		}
 	}
-#endif BZIP2
+#endif  /* BZIP2 */
 	if (result)
 	  panic ("cannot load %s: %s", namebuf, strerror (result));
 #if 0

@@ -655,7 +655,7 @@ struct dpager {
 #ifdef	CHECKSUM
 	vm_offset_t	*checksum;	/* checksum - parallel to block map */
 #define	NO_CHECKSUM	((vm_offset_t)-1)
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 };
 typedef struct dpager	*dpager_t;
 
@@ -752,7 +752,7 @@ pager_alloc(pager, part, size)
 			mapptr[i] = NO_CHECKSUM;
 	}
 	pager->checksum = mapptr;
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 }
 
 /*
@@ -908,7 +908,7 @@ pager_extend(pager, new_size)
 		new_mapptr[i] = 0;
 	    kfree((char *)old_mapptr, INDIRECT_PAGEMAP_SIZE(old_size));
 	    pager->checksum = new_mapptr;
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 #if	DEBUG_READER_CONFLICTS
 	    pager->writer = FALSE;
 #endif
@@ -979,7 +979,7 @@ pager_extend(pager, new_size)
 	    for (i = 1; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i] = 0;
 	    pager->checksum = new_mapptr;
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 #if	DEBUG_READER_CONFLICTS
 	    pager->writer = FALSE;
 #endif
@@ -1008,7 +1008,7 @@ pager_extend(pager, new_size)
 	    new_mapptr[i] = NO_CHECKSUM;
 	kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
 	pager->checksum = new_mapptr;
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 #if	DEBUG_READER_CONFLICTS
 	pager->writer = FALSE;
 #endif
@@ -1254,7 +1254,7 @@ compute_checksum(addr, size)
 
 	return (checksum);
 }
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 
 /*
  * Given an offset within a paging object, find the
@@ -1364,7 +1364,7 @@ pager_write_offset(pager, offset)
 		    for (j = 0; j < PAGEMAP_ENTRIES; j++)
 			cksumptr[j] = NO_CHECKSUM;
 		}
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	    }
 	    f_page %= PAGEMAP_ENTRIES;
 	}
@@ -1465,7 +1465,7 @@ pager_dealloc(pager)
 	    }
 	    kfree((char *)pager->checksum,
 		  INDIRECT_PAGEMAP_SIZE(pager->size));
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	}
 	else {
 	    mapptr = pager->map;
@@ -1478,7 +1478,7 @@ pager_dealloc(pager)
 	    kfree((char *)pager->map, PAGEMAP_SIZE(pager->size));
 #ifdef	CHECKSUM
 	    kfree((char *)pager->checksum, PAGEMAP_SIZE(pager->size));
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	}
 }
 
@@ -1573,7 +1573,7 @@ default_read(ds, addr, size, offset, out_addr, deallocate)
 	register partition_t	part;
 #ifdef	CHECKSUM
 	vm_size_t	original_size = size;
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	vm_offset_t	original_offset = offset;
 
 	/*
@@ -1638,7 +1638,7 @@ ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 		    original_offset, write_checksum, read_checksum);
 	    }
 	}
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	return (PAGER_SUCCESS);
 }
 
@@ -1673,7 +1673,7 @@ default_write(ds, addr, size, offset)
 	    checksum = compute_checksum(addr, size);
 	    pager_put_checksum(ds, offset, checksum);
 	}
-#endif	CHECKSUM
+#endif	 /* CHECKSUM */
 	offset = ptoa(block.block.p_offset);
 ddprintf ("default_write(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
@@ -2606,7 +2606,7 @@ seqnos_memory_object_data_initialize(pager, seqno, pager_request,
 
 #ifdef	lint
 	pager_request++;
-#endif	lint
+#endif	 /* lint */
 
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
@@ -2670,7 +2670,7 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 
 #ifdef	lint
 	pager_request++;
-#endif	lint
+#endif	 /* lint */
 
 ddprintf ("seqnos_memory_object_data_write <%p>: 1\n", &err);
 	if ((data_cnt % vm_page_size) != 0)
@@ -2773,7 +2773,7 @@ seqnos_memory_object_lock_completed(pager, seqno, pager_request,
 {
 #ifdef	lint
 	pager++; seqno++; pager_request++; offset++; length++;
-#endif	lint
+#endif	 /* lint */
 
 	panic("%slock_completed",my_name);
 	return(KERN_FAILURE);
