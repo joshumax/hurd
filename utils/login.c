@@ -146,8 +146,7 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 {
   struct utmp utmp;
   char const *host = 0;
-  int tty_fd = 0;
-  char *tty = 0;
+  long addr = 0;
 
   bzero (&utmp, sizeof (utmp));
 
@@ -155,30 +154,43 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
 
-  utmp.ut_type = USER_PROCESS;
-
-  /* Search for a file descriptor naming a tty.  */
-  while (!tty && tty_fd < 3)
-    tty = ttyname (tty_fd++);
-  if (tty)
-    strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
-
   if (! inherit_host)
     {
+      char *via_addr = envz_get (args, args_len, "VIA_ADDR");
       host = envz_get (args, args_len, "VIA");
       if (host && strlen (host) > sizeof (utmp.ut_host))
-	host = envz_get (args, args_len, "VIA_ADDR") ?: host;
+	host = via_addr ?: host;
+      if (via_addr)
+	addr = inet_addr (via_addr);
     }
 
-  if (!host && tty)
+  if (!host || !addr)
     /* Get the host from the `existing utmp entry'.  This is a crock.  */
     {
-      struct utmp *old_utmp = getutline (&utmp);
-      if (old_utmp)
-	    host = old_utmp->ut_host;
+      int tty_fd = 0;
+      char *tty = 0;
+
+      /* Search for a file descriptor naming a tty.  */
+      while (!tty && tty_fd < 3)
+	tty = ttyname (tty_fd++);
+      if (tty)
+	/* Find the old utmp entry for TTY, and grab its host parameters.  */
+	{
+	  struct utmp *old_utmp;
+	  strncpy (utmp.ut_line, basename (tty), sizeof (utmp.ut_line));
+	  old_utmp = getutline (&utmp);
+	  if (old_utmp)
+	    {
+	      if (! host)
+		host = old_utmp->ut_host;
+	      if (! addr)
+		addr = old_utmp->ut_addr;
+	    }
+	}
     }
 
   strncpy (utmp.ut_host, host ?: "", sizeof (utmp.ut_host));
+  utmp.ut_addr = addr;
 
   login (&utmp);
 }
