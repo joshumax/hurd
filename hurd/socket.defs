@@ -22,7 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 subsystem socket 20000;
 
-#include <hurd/hurd_types.defs>
+#include <hurd/hurd.defs>
 
 #ifdef SOCKET_IMPORTS
 SOCKET_IMPORTS
