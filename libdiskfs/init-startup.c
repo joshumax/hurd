@@ -139,7 +139,6 @@ _diskfs_init_completed ()
     goto errout;
   
   mach_port_deallocate (mach_task_self (), init);
-  mach_port_deallocate (mach_task_self (), notify);
   return;
 
  errout:
