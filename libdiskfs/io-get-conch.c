@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "io_S.h"
 
 /* Implement io_get_conch as described in <hurd/io.defs>. */
 error_t
@@ -37,8 +38,8 @@ S_io_get_conch (struct protid *cred)
       return EINVAL;
     }
 
-  error = ioserver_handle_io_get_conch (&np->conch, cred, cred->mapped);
+  ioserver_handle_io_get_conch (&np->conch, cred, cred->mapped);
 
   mutex_unlock (&np->lock);
-  return error;
+  return 0;
 }
