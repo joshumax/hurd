@@ -1,5 +1,5 @@
 /* Implementation of memory_object_terminate for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,7 +29,7 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
 {
   struct pager *p;
   
-  p = ports_lookup_port (0, object, _ports_class);
+  p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
   
@@ -75,7 +75,7 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   mutex_unlock (&p->interlock);
 
  out:
-  ports_drop_ref (p);
+  ports_port_deref (p);
   return 0;
 }
 
