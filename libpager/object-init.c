@@ -45,7 +45,21 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 
   if (p->pager_state != NOTINIT)
     {
+#ifdef KERNEL_INIT_RACE
+      struct pending_init *i = malloc (sizeof (struct pending_init));
+      printf ("pager out-of-sequence init\n");
+      i->control = control;
+      i->name = name;
+
+      i->next = 0;
+      if (p->init_tail)
+	p->init_tail->next = i;
+      else
+	p->init_head = i;
+      p->init_tail = i;
+#else
       printf ("pager dup init\n");
+#endif      
       goto out;
     }
 
@@ -56,7 +70,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 
   p->pager_state = NORMAL;
 
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
 
  out:
