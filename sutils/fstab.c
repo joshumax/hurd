@@ -584,6 +584,10 @@ fstab_read (struct fstab *fstab, const char *name)
 
 	  if (! mntent)
 	    err = errno;
+	  else if (!strcmp (mntent->mnt_type, MNTTYPE_IGNORE)
+		   || !strcmp (mntent->mnt_type, MNTTYPE_NFS)
+		   || !strcmp (mntent->mnt_type, MNTTYPE_SWAP))
+	    continue;
 	  else if (fstab_find_device (fstab, mntent->mnt_fsname))
 	    error (0, 0, "%s: Warning: duplicate entry for device %s (%s)",
 		   name, mntent->mnt_fsname, mntent->mnt_dir);
