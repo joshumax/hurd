@@ -193,12 +193,12 @@ routine msg_report_wait (
 	out wait_desc: string_t;
 	out wait_rpc: int);
 
-/* Given a set of PORTS, return a description of them from libc's point of
-   view, in a '\0'-separated vector.  Ports that libc doesn't know about
-   should result in a zero-length entry.  */
+/* Given a list of port names in NAMES, return a description of the
+   corresponding port from libc's point of view, in a '\0'-separated vector.
+   Ports that libc doesn't know about should result in a zero-length entry. */
 routine msg_describe_ports (
 	process: mach_port_t;
 	refport: mach_port_t;
-	ports: portarray_t;
+	names: mach_port_name_array_t;
 	out descriptions: data_t);
 
