@@ -100,9 +100,6 @@ struct trivfs_control *termctl;
 /* Trivfs control structure for the pty */
 struct trivfs_control *ptyctl;
 
-/* Filename for this terminal */
-char *nodename;
-
 /* Mach device name for this terminal */
 char *pterm_name;
 
