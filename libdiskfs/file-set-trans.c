@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 /* XXX need to reimplement transnamelen parameter, and implement Roland's
    suggestion:
