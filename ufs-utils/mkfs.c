@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.1 1994/08/23 19:30:42 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.2 1994/09/08 19:51:43 mib Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -41,10 +41,10 @@ static char *rcsid = "$Id: mkfs.c,v 1.1 1994/08/23 19:30:42 mib Exp $";
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
-#include <sys/disklabel.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
+/* #include <sys/disklabel.h> */
 
 #ifndef STANDALONE
 #include <a.out.h>
