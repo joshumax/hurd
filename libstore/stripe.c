@@ -1,9 +1,7 @@
 /* Striped store backend
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -199,17 +197,17 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
       common_flags &= stripes[i]->flags;
     }
 
-  *store = _make_store (&store_ileave_class, MACH_PORT_NULL,
-			common_flags | flags, block_size,
-			runs, num_stripes, min_end);
-  if (! *store)
-    return ENOMEM;
+  err = _store_create (&store_ileave_class, MACH_PORT_NULL,
+		       common_flags | flags, block_size,
+		       runs, num_stripes, min_end, store);
+  if (! err)
+    {
+      (*store)->wrap_dst = interleave;
 
-  (*store)->wrap_dst = interleave;
-
-  err = store_set_children (*store, stripes, num_stripes);
-  if (err)
-    store_free (*store);
+      err = store_set_children (*store, stripes, num_stripes);
+      if (err)
+	store_free (*store);
+    }
 
   return err;
 }
@@ -239,15 +237,46 @@ store_concat_create (struct store * const *stores, size_t num_stores,
       common_flags &= stores[i]->flags;
     }
 
-  *store = _make_store (&store_concat_class, MACH_PORT_NULL,
-			flags | common_flags, block_size,
-			runs, num_stores * 2, 0);
-  if (! *store)
-    return ENOMEM;
+  err = _store_create (&store_concat_class, MACH_PORT_NULL,
+		       flags | common_flags, block_size,
+		       runs, num_stores * 2, 0, store);
+  if (! err)
+    {
+      err = store_set_children (*store, stores, num_stores);
+      if (! err)
+	{
+	  err = store_children_name (*store, &(*store)->name);
+	  if (err == EINVAL)
+	    err = 0;		/* Can't find a name; deal. */
+	}
+      if (err)
+	store_free (*store);
+    }
 
-  err = store_set_children (*store, stores, num_stores);
-  if (err)
-    store_free (*store);
+  return err;
+}
 
+/* Return a new store that concatenates the stores created by opening all the
+   individual stores described in NAME; for the syntax of NAME, see
+   store_open_children.  */
+error_t
+store_concat_open (const char *name, int flags,
+		   const struct store_class *const *classes,
+		   struct store **store)
+{
+  struct store **stores;
+  size_t num_stores;
+  error_t err =
+    store_open_children (name, flags, classes, &stores, &num_stores);
+  if (! err)
+    {
+      err = store_concat_create (stores, num_stores, flags, store);
+      if (err)
+	{
+	  size_t k;
+	  for (k = 0; k < (*store)->num_children; k++)
+	    store_free ((*store)->children[k]);
+	}
+    }
   return err;
 }
