@@ -247,7 +247,7 @@ ffs_alloc(register struct node *np,
 	spin_lock (&alloclock);
 	if (size == fs->fs_bsize && fs->fs_cstotal.cs_nbfree == 0)
 		goto nospace;
-	if (cred && !diskfs_isuid (0, cred)
+	if (cred && !idvec_contains (cred->user->uids, 0)
 	    && freespace(fs, fs->fs_minfree) <= 0)
 		goto nospace;
 #ifdef QUOTA
@@ -323,7 +323,8 @@ ffs_realloccg(register struct node *np,
 
 	spin_lock (&alloclock);
 	
-	if (!diskfs_isuid (0, cred) && freespace(fs, fs->fs_minfree) <= 0)
+	if (!idvec_contains (cred->user->uids, 0) 
+	    && freespace(fs, fs->fs_minfree) <= 0)
 		goto nospace;
 	error = diskfs_catch_exception ();
 	if (error)

@@ -716,7 +716,7 @@ diskfs_S_file_getfh (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (!diskfs_isuid (0, cred))
+  if (!idvec_contains (cred->user->uids, 0))
     return EPERM;
   
   np = cred->po->np;
@@ -757,7 +757,9 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   struct ufs_fhandle *f;
   error_t err;
   int flags;
-  struct protid fakecred, *newpi;
+  struct protid *newpi;
+  struct idvec *uvec, *gvec;
+  struct iouser *user;
   
   if (!pt)
     return EOPNOTSUPP;
@@ -784,24 +786,27 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
       return ESTALE;
     }
   
-  /* This call should have a flags arg, but until then... */
-  fakecred.uids = uids;
-  fakecred.gids = gids;
-  fakecred.nuids = nuids;
-  fakecred.ngids = ngids;
+  uvec = make_idvec ();
+  gvec = make_idvec ();
 
+  idvec_set_ids (uvec, uids, nuids);
+  idvec_set_ids (gvec, gids, ngids);
+  user = iohelp_create_iouser (uvec, gvec);
+  
   flags = 0;
-  if (!diskfs_access (np, S_IREAD, &fakecred))
+  if (!fshelp_access (&np->dn_stat, S_IREAD, user))
     flags |= O_READ;
-  if (!diskfs_access (np, S_IEXEC, &fakecred))
+  if (!fshelp_access (&np->dn_stat, S_IEXEC, user))
     flags |= O_EXEC;
-  if (!diskfs_access (np, S_IWRITE, &fakecred)
+  if (!fshelp_access (&np->dn_stat, S_IWRITE, user)
       && !S_ISDIR (np->dn_stat.st_mode)
       && !diskfs_check_readonly ())
     flags |= O_WRITE;
   
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, MACH_PORT_NULL),
-			      uids, nuids, gids, ngids, &newpi);
+			      user, &newpi);
+  
+  iohelp_free_iouser (user);
   
   diskfs_nput (np);
   ports_port_deref (pt);

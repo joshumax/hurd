@@ -1,3 +1,15 @@
+Sat Nov 16 17:21:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_S_fsys_getfile): Delete var `fakecred'.  
+	diskfs_access -> fshelp_access.
+	* alloc.c (ffs_alloc): diskfs_isuid -> idvec_contains.
+	(ffs_realloccg): Likewise.
+
+Thu Nov 14 16:43:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_S_file_getfh): diskfs_isuid -> idvec_contains. 
+	(diskfs_S_fsys_getfile): Use idvecs and iousers.
+
 Thu Oct 24 16:07:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (startup_children, runtime_children): New variables.
