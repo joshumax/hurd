@@ -112,3 +112,12 @@ routine termctty_open_terminal (
 	ctty: mach_port_t;
 	flags: int;
 	out terminal: mach_port_send_t);
+
+/* This call is only supported for PTY-based terminals.  For a slave,
+   it returns a filename which, when opened, would yield the master for
+   this terminal.  For a master, it returns a filename which, when
+   opened, would yield the slave for this terminal.  */
+routine term_get_peername (
+	terminal: io_t;
+	out name: string_t);
+

@@ -1,3 +1,8 @@
+Mon Mar 15 14:48:24 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* term.defs (term_get_peername): New RPC, suggested by Mark
+	Kettenis (kettenis@wins.uva.nl).
+
 Thu Feb 18 00:29:43 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* tioctl.defs, term.defs: Mark with INTR_INTERFACE.
