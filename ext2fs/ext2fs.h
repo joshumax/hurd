@@ -121,7 +121,7 @@ off_t disk_pager_size;
 
 void *disk_image;
 char *device_name;
-mach_port_t ext2fs_device;
+mach_port_t device_port;
 
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
