@@ -53,6 +53,7 @@ endif
 
 ifneq ($(tool-root),)
 install-tools:
-	cp install-stripped $(tool-root)/
-	cp tool-Makefile $(tool-root)/Makefile
+	cp $(srcdir)/install-stripped $(tool-root)/
+	chmod +x $(tool-root)/install-stripped
+	cp $(srcdir)/tool-Makefile $(tool-root)/Makefile
 endif
