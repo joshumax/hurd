@@ -4,6 +4,36 @@ Sun Sep  1 14:03:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	$(BUGADDR), and $(BUGADDR_REF) to the flags.
 	(BUGADDR, BUGADDR_REF): New variables.
 	* Makefile (lib-subdirs): Add libhurdbugaddr.
+	* libhurdbugaddr: New directory.
+	
+Thu Aug 29 14:14:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf [doinst == one] (install): Don't depend on
+ 	$(installationdir).
+	[doinst==one] ($(installationdir)/$(target)): Do depend on
+ 	$(installationdir).
+	[doinst == many] (install): Don't depend on $(installationdir).
+  	$(addprefix $(installationdir)/,$(targets)): Depend on
+ 	$(installationdir).
+	[makemode == library] (install): Don't depend on $(libdir),
+ 	$(includedir), or $(includedir)/$(installhdrsubdir).
+	[makemode == library] ($(libdir)/$(libname.a)): Depend on
+ 	$(libdir).
+	[makemode == library] ($(libdir)/$(libname).so): Likewise.
+	[makemode == library] $(addprefix
+ 	$(includedir)/$(installhdrsubdir)/,$(installhdrs)): Depend on
+ 	$(includdir)/$(installhdrsubdir)
+	[makemode == library] $(includedir)/$(installhdrsubdir): Depend on
+	$(includedir).
+	[makemode == library] (install-headers): Don't depend on
+	$(includedir)/$(installhdrsubdir) or $(includedir).
+
+	* INSTALL: Tell people to delete Mach's mach_init.h if it got
+	installed. 
+
+Wed Aug 28 11:22:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* INSTALL: Say to use `no_deps=t' when installing headers.
 
 Tue Aug 13 17:54:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
