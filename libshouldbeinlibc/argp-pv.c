@@ -20,8 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/* If set by the user to a non-zero value, then a default option --version is
-   added (unless the ARGP_NO_HELP flag is used), which will print this string
-   and exit (unless the ARGP_NO_EXIT flag is used).  Overridden by
-   ARGP_PROGRAM_VERSION_HOOK.  */
+/* If set by the user program to a non-zero value, then a default option
+   --version is added (unless the ARGP_NO_HELP flag is used), which will
+   print this this string followed by a newline and exit (unless the
+   ARGP_NO_EXIT flag is used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
 char *argp_program_version = 0;
