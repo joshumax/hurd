@@ -37,7 +37,7 @@ checkpath(struct node *source,
        /* nothing */;
        /* This special lookup does a diskfs_nput on its first argument
 	  when it succeeds. */
-       err = diskfs_lookup (np, "..", LOOKUP | SPEC_DOTDOT, &np, 0, cred, 1, 0))
+       err = diskfs_lookup (np, "..", LOOKUP | SPEC_DOTDOT, &np, 0, cred))
     {
       if (err)
 	{
@@ -93,7 +93,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   
   /* 1: Lookup target; if it exists, make sure it's an empty directory. */
   ds = buf;
-  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred, 0, 0);
+  err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   assert (err != EAGAIN);	/* <-> assert (TONAME != "..") */
 
   if (tnp == fnp)
@@ -135,7 +135,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   
       tmpds = alloca (diskfs_dirstat_size);
       err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
-			   &tmpnp, tmpds, fromcred, 1, 0);
+			   &tmpnp, tmpds, fromcred);
       assert (err != ENOENT);
       assert (tmpnp == fdp);
       if (err)
@@ -198,7 +198,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   /* 4: Remove the entry in fdp. */
   ds = buf;
   mutex_unlock (&fnp->lock);
-  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred, 1, 0);
+  err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   assert (tmpnp == fnp);
   diskfs_nrele (tmpnp);
   if (err)
