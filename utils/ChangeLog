@@ -1,3 +1,7 @@
+1999-09-23  Mark Kettenis  <kettenis@gnu.org>
+
+	* login.c (main): Pass controlling terminal ID port to the child.
+
 1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* w.c (add_utmp_procs): Ignore entries whose ut_type is not
