@@ -296,3 +296,11 @@ routine io_readsleep (
    sent for async users.  */
 routine io_sigio (
 	io_object: io_t RPTLAST);
+
+
+/* Return Posix.1 pathconf information.  */
+routine io_pathconf (
+	io_object: io_t;
+	RPT
+	name: int;
+	out value: int);
