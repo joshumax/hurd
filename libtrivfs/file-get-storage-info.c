@@ -1,5 +1,5 @@
 /* Stub for the file_get_storage_info RPC as described in <hurd/fs.defs>.
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,13 +21,12 @@
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 				mach_port_t reply, mach_msg_type_name_t reply_type,
-				int *class,
-				off_t **runs, mach_msg_type_number_t *runs_len,
-				size_t *block_size,
-				char *dev_name, mach_port_t *dev_port,
-				mach_msg_type_name_t *dev_port_type,
-				char **misc, mach_msg_type_number_t *misc_len,
-				int *flags)
+				mach_port_t **ports,
+				mach_msg_type_number_t num_ports,
+				mach_msg_type_name_t *ports_type,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets, mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
 {
   return EOPNOTSUPP;
 }

@@ -1,6 +1,6 @@
 /* Implements the hurd io interface to devio.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -317,19 +317,15 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 }
 
-/* ---------------------------------------------------------------- */
-
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
-				mach_port_t reply,
-				mach_msg_type_name_t reply_type,
-				int *class,
-				off_t **runs, unsigned *runs_len,
-				size_t *block_size,
-				char *dev_name, mach_port_t *dev_port,
-				mach_msg_type_name_t *dev_port_type,
-				char **misc, unsigned *misc_len,
-				int *flags)
+				mach_port_t reply, mach_msg_type_name_t reply_type,
+				mach_port_t **ports,
+				mach_msg_type_number_t num_ports,
+				mach_msg_type_name_t *ports_type,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets, mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
 {
   error_t err = 0;
 
@@ -337,36 +333,58 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
     err = EOPNOTSUPP;
   else
     {
-      struct dev *dev = ((struct open *)cred->po->hook)->dev;
+      /* True when we've allocated memory for the corresponding vector.  */
+      int al_ports = 0, al_ints = 0, al_offsets = 0, al_data = 0;
 
-      if (*runs_len < 2 * sizeof (off_t))
-	{
-	  *runs_len = 2 * sizeof (off_t);
-	  err =
-	    vm_allocate (mach_task_self (),
-			 (vm_address_t *)runs, *runs_len, 1);
+#define ENSURE_MEM(v, vl, alp, num) 					    \
+      if (!err && *vl < num)						    \
+	{								    \
+	  err = vm_allocate (mach_task_self (),				    \
+			     (vm_address_t *)v, num * sizeof (**v), 1);	    \
+	  if (! err)							    \
+	    {								    \
+	      *vl = num;						    \
+	      alp = 1;							    \
+	    }								    \
 	}
-
-      if (!err)
+		
+      ENSURE_MEM (ports, num_ports, al_ports, 1);
+      ENSURE_MEM (ints, num_ints, al_ints, 6);
+      ENSURE_MEM (offsets, num_offsets, al_offsets, 2);
+      ENSURE_MEM (data, data_len, al_data, 1);
+      
+      if (! err)
 	{
-	  *class = STORAGE_DEVICE;
-	  *flags = 0;
+	  struct dev *dev = ((struct open *)cred->po->hook)->dev;
+	  (*ints)[0] = STORAGE_DEVICE;	      /* type */
+	  (*ints)[1] = 0;		      /* flags */
+	  (*ints)[2] = dev->dev_block_size;   /* block_size */
+	  (*ints)[3] = 2;		      /* num_runs */
+	  (*ints)[4] = strlen (dev->name) + 1; /* name_len */
+	  (*ints)[5] = 0;		      /* misc_len */
 
-	  (*runs)[0] = 0;
-	  (*runs)[1] = dev->size / dev->dev_block_size;
-	  *runs_len = 2;
+	  (*offsets)[0] = 0;
+	  (*offsets)[1] = dev->size / dev->dev_block_size;
 
-	  *block_size = dev->dev_block_size;
-
-	  strcpy (dev_name, dev->name);
+	  strcpy (*data, dev->name);
 
 	  if (cred->isroot)
-	    *dev_port = dev->port;
+	    (*ports)[0] = dev->port;
 	  else
-	    *dev_port = MACH_PORT_NULL;
-	  *dev_port_type = MACH_MSG_TYPE_COPY_SEND;
+	    (*ports)[0] = MACH_PORT_NULL;
+	  *ports_type = MACH_MSG_TYPE_COPY_SEND;
+	}
+      else
+	/* Some memory allocation failed (not bloody likely).  */
+	{
+#define DISCARD_MEM(v, vl, alp)						    \
+	  if (alp)							    \
+	    vm_deallocate (mach_task_self (), (vm_address_t)*v, *vl * sizeof (**v));
 
-	  *misc_len = 0;
+	  DISCARD_MEM (ports, num_ports, al_ports);
+	  DISCARD_MEM (ints, num_ints, al_ints);
+	  DISCARD_MEM (offsets, num_offsets, al_offsets);
+	  DISCARD_MEM (data, data_len, al_data);
 	}
     }
 
