@@ -30,7 +30,7 @@ OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
 
-mkfs.ufs: mkfs.o dlabel.o ../libshouldbeinlibc/libshouldbeinlibc.a
+mkfs.ufs: mkfs.o dlabel.o ../libstore/libstore.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(targets): %.ufs: %.o
 
