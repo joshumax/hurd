@@ -1,5 +1,5 @@
 /* Implementation of memory_object_terminate for pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -124,7 +124,7 @@ _pager_free_structure (struct pager *p)
   /* Free the pagemap */
   if (p->pagemapsize)
     {
-      vm_deallocate (mach_task_self (), (u_int)p->pagemap, p->pagemapsize);
+      munmap (p->pagemap, p->pagemapsize);
       p->pagemapsize = 0;
       p->pagemap = 0;
     }

@@ -1,5 +1,5 @@
 /* Pagemap manipulation for pager library
-   Copyright (C) 1994, 1997 Free Software Foundation
+   Copyright (C) 1994, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,7 +35,7 @@ _pager_pagemap_resize (struct pager *p, vm_address_t off)
       if (! err)
 	{
 	  bcopy (p->pagemap, newaddr, p->pagemapsize);
-	  vm_deallocate (mach_task_self (), (u_int)p->pagemap, p->pagemapsize);
+	  munmap (p->pagemap, p->pagemapsize);
 	  p->pagemap = newaddr;
 	  p->pagemapsize = newsize;
 	}

@@ -1,5 +1,5 @@
 /* Definitions for multi-threaded pager library
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -159,7 +159,7 @@ pager_read_page (struct user_pager_info *pager,
 		 int *write_lock);
 
 /* The user must define this function.  For pager PAGER, synchronously
-   write one page from BUF to offset PAGE.  In addition, vm_deallocate
+   write one page from BUF to offset PAGE.  In addition, mfree
    (or equivalent) BUF.  The only permissable error returns are EIO,
    EDQUOT, and ENOSPC. */
 error_t

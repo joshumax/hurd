@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_return for pager library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -171,9 +171,8 @@ _pager_do_write_request (mach_port_t object,
 				   vm_page_size, 1,
 				   VM_PROT_NONE, 0, MACH_PORT_NULL);
       else
-	vm_deallocate (mach_task_self (), 
-		       data + (vm_page_size * i), 
-		       vm_page_size);
+	munmap ((caddr_t) (data + (vm_page_size * i)), 
+		vm_page_size);
 
       pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT);
     }

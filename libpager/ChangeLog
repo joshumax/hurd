@@ -1,3 +1,13 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* data-return.c (_pager_do_write_request): Use munmap instead of
+	vm_deallocate.
+	* object-terminate.c (_pager_free_structure): Likewise.
+	* pagemap.c (_pager_pagemap_resize): Likewise.
+	* pager-memcpy.c (pager_memcpy): Likewise.
+
+	* pager.h (pager_write_page): Doc adjustment.
+
 Wed Aug 20 14:47:38 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* pager.h: Doc fix.

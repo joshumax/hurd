@@ -1,5 +1,5 @@
 /* Fault-safe copy into or out of pager-backed memory.
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -46,7 +46,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 
 	  if (window)
 	    /* Deallocate the old window.  */
-	    vm_deallocate (mach_task_self (), window, windowsize);
+	    munmap ((caddr_t) window, windowsize);
 
 	  /* Map in and copy a standard-sized window, unless that is
 	     more than the total left to be copied.  */
@@ -93,7 +93,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 		       &copy, (sighandler_t) &fault);
 
   if (window)
-    vm_deallocate (mach_task_self (), window, windowsize);
+    munmap ((caddr_t) window, windowsize);
 
   *size -= to_copy;
 
