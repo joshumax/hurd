@@ -1,6 +1,6 @@
 /* Show process information.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -34,7 +34,7 @@
 
 #include "psout.h"
 
-char *argp_program_version = STANDARD_HURD_VERSION (ps);
+const char *argp_program_version = STANDARD_HURD_VERSION (ps);
 
 #define OA OPTION_ARG_OPTIONAL
 

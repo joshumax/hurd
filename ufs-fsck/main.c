@@ -1,5 +1,5 @@
 /* Main program for GNU fsck
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -25,7 +25,7 @@
 
 #include "fsck.h"
 
-char *argp_program_version = STANDARD_HURD_VERSION (fsck.ufs);
+const char *argp_program_version = STANDARD_HURD_VERSION (fsck.ufs);
 
 char *lfname = "lost+found";
 mode_t lfmode = 0755;

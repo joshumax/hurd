@@ -31,7 +31,7 @@
 #include <hurd/fshelp.h>
 #include <version.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (settrans);
+const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 
 #define DEFAULT_TIMEOUT 60
 

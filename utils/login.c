@@ -51,7 +51,7 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 	     mach_port_t *ports, unsigned num_ports,
 	     mach_port_t *fds, unsigned num_fds);
 
-char *argp_program_version = STANDARD_HURD_VERSION (login);
+const char *argp_program_version = STANDARD_HURD_VERSION (login);
      
 
 /* Defaults for various login parameters.  */

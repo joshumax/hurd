@@ -1,6 +1,6 @@
 /* Show files' passive translators.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -30,7 +30,7 @@
 #include <error.h>
 #include <argz.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (showtrans);
+const char *argp_program_version = STANDARD_HURD_VERSION (showtrans);
 
 static struct argp_option options[] =
 {

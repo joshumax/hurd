@@ -1,6 +1,6 @@
 /* Set options in a running filesystem
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,7 +32,7 @@
 
 #include <hurd/fsys.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (fsysopts);
+const char *argp_program_version = STANDARD_HURD_VERSION (fsysopts);
 
 static struct argp_option options[] =
 {

@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <argp.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (null);
+const char *argp_program_version = STANDARD_HURD_VERSION (null);
 
 void
 main (int argc, char **argv)

@@ -1,6 +1,6 @@
 /* Show where a file exists
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,7 +32,7 @@
 #include <hurd/fs.h>
 #include <hurd/store.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (storeinfo);
+const char *argp_program_version = STANDARD_HURD_VERSION (storeinfo);
 
 static struct argp_option options[] =
 {

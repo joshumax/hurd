@@ -1,5 +1,7 @@
 Wed Feb 19 21:34:01 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* null.c (argp_program_version): Make const.
+
 	* fifo.c (argp_program_version, argp): New variables.
 	(parse_opt): New function.
 	(options): Use argp structures instead of getopt ones.

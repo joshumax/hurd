@@ -1,6 +1,6 @@
 /* Print task vm information
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,7 +32,7 @@
 #include <mach/default_pager.h>
 #include <hurd.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (vminfo);
+const char *argp_program_version = STANDARD_HURD_VERSION (vminfo);
 
 static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},

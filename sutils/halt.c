@@ -1,5 +1,5 @@
 /* Halt the system
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -26,7 +26,7 @@
 #include <hurd.h>
 #include <version.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (halt);
+const char *argp_program_version = STANDARD_HURD_VERSION (halt);
 
 int
 main (int argc, char *argv[])

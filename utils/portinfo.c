@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -35,7 +35,7 @@
 #include <portinfo.h>
 #include <portxlate.h>
 
-char *argp_program_version = STANDARD_HURD_VERSION (portinfo);
+const char *argp_program_version = STANDARD_HURD_VERSION (portinfo);
 
 static const struct argp_option options[] = {
   {0,0,0,0,0, 1},

@@ -50,7 +50,7 @@ struct mutex active_fifo_lock;
 /* Signal this when ACTIVE_FIFO may have changed.  */
 struct condition active_fifo_changed;
 
-char *argp_program_version = STANDARD_HURD_VERSION (null);
+const char *argp_program_version = STANDARD_HURD_VERSION (null);
 
 static struct argp_option options[] =
 {

@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.15 1996/09/05 16:59:14 thomas Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.16 1997/02/20 04:15:02 miles Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -164,7 +164,7 @@ struct dinode zino[MAXBSIZE / sizeof(struct dinode)];
 int	fsi, fso;
 daddr_t	alloc();
 
-char *argp_program_version = STANDARD_HURD_VERSION (mkfs.ufs);
+const char *argp_program_version = STANDARD_HURD_VERSION (mkfs.ufs);
 
 #define _STRINGIFY(arg) #arg
 #define STRINGIFY(arg) _STRINGIFY (arg)

@@ -55,7 +55,7 @@
 
 #include "fstab.h"
 
-char *argp_program_version = STANDARD_HURD_VERSION (fsck);
+const char *argp_program_version = STANDARD_HURD_VERSION (fsck);
 
 
 /* for debugging  */
