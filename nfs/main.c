@@ -168,7 +168,7 @@ netfs_parse_runtime_options (int argc, char **argv,
   return
     argp_parse (&argp, argc, argv,
 		ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
-		0);
+		0, 0);
 }
 
 /* Called when the the filesystem receives a get-options request.  ARGZ &
@@ -306,7 +306,7 @@ main (int argc, char **argv)
   struct sockaddr_in addr;
   int ret;
 
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   while (hold);
     
