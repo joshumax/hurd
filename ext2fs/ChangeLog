@@ -1,13 +1,48 @@
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* bitmap.c (ffz): Subtract one from (1-origin) result of ffs to get
+	our (0-origin) result.
+
+	* Makefile (LCLHDRS): bitmap.h -> bitmap.c
+
+	* ext2fs.h (test_bit, set_bit, clear_bit): Rewritten to operate on
+	32-bit words instead of bytes.
+
+	* truncate.c (diskfs_truncate): Add missing call to
+	diskfs_end_catch_exception.
+
+	* ext2fs.h (group_desc): Inline function replaced with macro.
+	(group_desc_image): New variable.
+	* hyper.c (get_hypermetadata): Initialize it.
+
+	* ext2fs.h (sblock_block): Declare new variable.
+	(SBLOCK_LBLOCK): Macro removed.
+	(SBLOCK_OFFS): Define in terms of sblock_block.
+	* ext2fs.c (options): Add --sblock/-S.
+	(parse_opt): Parse it to set sblock_block.
+	* hyper.c (sblock_block): New variable.
+	(get_hypermetadata): Use sblock_block instead of constant SBLOCK_BLOCK.
+
+	* ext2fs.c (options): List --debug/-D unconditionally, adding to help
+	text #ifndef EXT2FS_DEBUG
+	(parse_opt): Always grok -D.  #ifndef EXT2FS_DEBUG, reject it with
+	message saying debugging support not compiled in.
+
+	* hyper.c (get_hypermetadata): Use EXT2_MAX_BLOCK_SIZE instead of
+	hard-wired 8192.  Don't use ffs to compute log2_block_size, and don't
+	check for the impossible case of non-power-of-two block size (the
+	block size specification we start with is given as a power of two!).
+	* ext2fs.h (block_size): Change type to unsigned int.
+	(BLOCKSIZE_SCALE): Just use SBLOCK->s_log_block_size directly.
+	* hyper.c (get_hypermetadata): Fix printf formats to silence warning.
+	* dir.c (dirscanblock): Likewise.
+
 	* dir.c (file_type_ext2): New const variable, map DT_* -> EXT2_FT_*.
 	(diskfs_direnter_hard): Move initialization of directory entry content
 	fields out of switch; use memcpy or memmove as appropriate, instead of
 	bcopy.  Set file_type field in new directory entry to appropriate
 	type for the node, or to zero if the filesystem doesn't have the
 	EXT2_FEATURE_INCOMPAT_FILETYPE flag set.
-
-	* bitmap.c (ffz): Don't subtract one (duh).
 
 1999-10-02  Roland McGrath  <roland@baalperazim.frob.com>
 

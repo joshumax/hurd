@@ -1,3 +1,8 @@
+1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr.c (store_read, store_write): Fix calculations broken in last
+	change, so they again properly account for starting intrarun offset.
+
 1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rdwr.c (store_write, store_read): Carefully avoid scaling run
