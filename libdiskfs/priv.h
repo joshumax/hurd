@@ -36,7 +36,7 @@ extern struct argp_option diskfs_common_options[];
 /* Needed for MiG. */
 typedef struct protid *protid_t;
 
-/* Called by MiG to translate ports into struct protid *.  
+/* Called by MiG to translate ports into struct protid *.
    fsmutations.h arranges for this to happen for the io and
    fs interfaces. */
 extern inline struct protid *
@@ -51,7 +51,8 @@ begin_using_protid_port (file_t port)
 extern inline void
 end_using_protid_port (struct protid *cred)
 {
-  ports_port_deref (cred);
+  if (cred)
+    ports_port_deref (cred);
 }
 
 /* Actually read or write a file.  The file size must already permit
@@ -61,7 +62,7 @@ end_using_protid_port (struct protid *cred)
    DIR is set for writing and clear for reading.  The inode must
    be locked.   If NOTIME is set, then don't update the access or
    modify times on the file.  */
-error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset, 
+error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset,
 			       int amt, int dir, int notime);
 
 /* Clean routine for control port. */
