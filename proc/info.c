@@ -334,7 +334,7 @@ S_proc_getprocinfo (struct proc *callerp,
 
   if (structsize / sizeof (int) > *piarraylen)
     {
-      vm_allocate (mach_task_self (), (u_int *)&piarray, structsize, 1);
+      vm_allocate (mach_task_self (), (u_int *)piarray, structsize, 1);
       didalloc = 1;
     }
   *piarraylen = structsize / sizeof (int);
@@ -414,7 +414,7 @@ S_proc_getprocinfo (struct proc *callerp,
   vm_deallocate (mach_task_self (), (u_int )thds,
 		 nthreads * sizeof (thread_t));
   if (err && didalloc)
-    vm_deallocate (mach_task_self (), (u_int) piarray, structsize);
+    vm_deallocate (mach_task_self (), (u_int) *piarray, structsize);
 
   return err;
 }

@@ -418,7 +418,7 @@ S_proc_getallpids (struct proc *p,
   prociterate (count_up, &nprocs);
 
   if (nprocs > *pidslen)
-    vm_allocate (mach_task_self (), (vm_address_t *) *pids,
+    vm_allocate (mach_task_self (), (vm_address_t *) pids,
 		 nprocs * sizeof (pid_t), 1);
 
   loc = *pids;
