@@ -85,7 +85,7 @@ ileave_encode (const struct store *store, struct store_enc *enc)
 }
 
 error_t
-ileave_decode (struct store_enc *enc, struct store_class *classes,
+ileave_decode (struct store_enc *enc, const struct store_class *const *classes,
 	       struct store **store)
 {
   if (enc->cur_int + 4 > enc->num_ints)
@@ -104,14 +104,13 @@ ileave_decode (struct store_enc *enc, struct store_class *classes,
     }
 }
 
-static struct store_class
-ileave_class =
+struct store_class
+store_ileave_class =
 {
   STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write,
   ileave_allocate_encoding, ileave_encode, ileave_decode,
   0, 0, 0, 0, stripe_remap
 };
-_STORE_STD_CLASS (ileave_class);
 
 error_t
 concat_allocate_encoding (const struct store *store, struct store_enc *enc)
@@ -130,7 +129,7 @@ concat_encode (const struct store *store, struct store_enc *enc)
 }
 
 error_t
-concat_decode (struct store_enc *enc, struct store_class *classes,
+concat_decode (struct store_enc *enc, const struct store_class *const *classes,
 	       struct store **store)
 {
   if (enc->cur_int + 3 > enc->num_ints)
@@ -148,14 +147,13 @@ concat_decode (struct store_enc *enc, struct store_class *classes,
     }
 }
 
-static struct store_class
-concat_class =
+struct store_class
+store_concat_class =
 {
   STORAGE_CONCAT, "concat", stripe_read, stripe_write,
   concat_allocate_encoding, concat_encode, concat_decode,
   0, 0, 0, 0, stripe_remap
 };
-_STORE_STD_CLASS (concat_class);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
@@ -198,7 +196,7 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
 	min_end = end;
     }
 
-  *store = _make_store (&ileave_class, MACH_PORT_NULL, flags, block_size,
+  *store = _make_store (&store_ileave_class, MACH_PORT_NULL, flags, block_size,
 			runs, num_stripes, min_end);
   if (! *store)
     return ENOMEM;
@@ -235,7 +233,7 @@ store_concat_create (struct store * const *stores, size_t num_stores,
       runs[i].length = stores[i]->end;
     }
 
-  *store = _make_store (&concat_class, MACH_PORT_NULL, flags, block_size,
+  *store = _make_store (&store_concat_class, MACH_PORT_NULL, flags, block_size,
 			runs, num_stores * 2, 0);
   if (! *store)
     return ENOMEM;
