@@ -1,6 +1,6 @@
 /* Mark an rpc to be interrupted when a port dies
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -92,7 +92,8 @@ ports_interrupt_rpc_on_notification (void *object,
 
       pn->next = _ports_notifications;
       pn->prevp = &_ports_notifications;
-      _ports_notifications->prevp = &pn->next;
+      if (_ports_notifications)
+	_ports_notifications->prevp = &pn->next;
       _ports_notifications = pn;
     }
 
