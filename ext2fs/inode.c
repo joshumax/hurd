@@ -93,9 +93,9 @@ iget (ino_t inum, struct node **npp)
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
       spin_lock (&generation_lock);
-      if (++nextgennumber < diskfs_mtime->seconds)
-	nextgennumber = diskfs_mtime->seconds;
-      np->dn_stat.st_gen = nextgennumber;
+      if (++next_generation < diskfs_mtime->seconds)
+	next_generation = diskfs_mtime->seconds;
+      np->dn_stat.st_gen = next_generation;
       spin_unlock (&generation_lock);
       np->dn_set_ctime = 1;
     }
