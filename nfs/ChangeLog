@@ -1,3 +1,12 @@
+Thu Oct 24 23:01:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* main.c (runtime_argp_children): New variable.
+	(runtime_argp_parents): Variable removed.
+	(runtime_argp): Use RUNTIME_ARGP_CHILDREN, not RUNTIME_ARGP_PARENTS.
+	(main): Rename ARGP_PARENTS to ARGP_CHILDREN, and change the
+ 	element type to `struct argp_child'; change the reference in ARGP
+ 	accordingly.
+	
 Fri Oct  4 00:00:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mount.c: Add hacks to avoid idiotic sun definitions of TRUE,
