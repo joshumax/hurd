@@ -35,7 +35,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* We ask for dead name notifications to detect when tasks and
    message ports die.  Both notifications get sent to the process
    port.  */
-error_t
+kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t deadport)
 {
@@ -60,7 +60,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 
 /* We get no-senders notifications on exception ports that we 
    handle through proc_handle_exceptions. */
-error_t
+kern_return_t
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
@@ -78,28 +78,28 @@ do_mach_notify_no_senders (mach_port_t notify,
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_port_deleted (mach_port_t notify,
 			     mach_port_t name)
 {
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_msg_accepted (mach_port_t notify,
 			     mach_port_t name)
 {
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
 			       mach_port_t name)
 {
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_send_once (mach_port_t notify)
 {
   return 0;
