@@ -74,6 +74,16 @@ static struct mutex vga_display_lock;
 /* Forward declaration.  */
 static struct display_ops vga_display_ops;
 
+/* The current width and height the ncursesw driver is using.  */
+static int current_width;
+static int current_height;
+
+/* The cursor state to restore the state to.  */
+static int cursor_state;
+
+/* Is set to 1 if the cursor moved out of the physical screen and the
+   cursor state should be hidden.  */
+static int cursor_hidden;
 
 struct refchr
 {
@@ -318,6 +328,28 @@ vga_display_fini (void *handle, int force)
 }
 
 
+/* Set the cursor's state to STATE on display HANDLE.  */
+static error_t
+vga_display_set_cursor_status (void *handle, uint32_t state)
+{
+  struct vga_display *disp = handle;
+
+  /* Don't display the cursor if its location is not within the
+     physical screen.  */
+  if (!cursor_hidden)
+    {
+      if (state != CONS_CURSOR_INVISIBLE)
+	dynafont_set_cursor (disp->df, state == CONS_CURSOR_VERY_VISIBLE ? 1 : 0);
+      
+      vga_display_cursor (state == CONS_CURSOR_INVISIBLE ? 0 : 1);
+    }
+
+  cursor_state = state;
+
+  return 0;
+}
+
+
 /* Set the cursor's position on display HANDLE to column COL and row
    ROW.  */
 static error_t
@@ -326,21 +358,24 @@ vga_display_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
   struct vga_display *disp = handle;
   unsigned int pos = row * disp->width + col;
 
-  vga_set_cursor_pos (pos);
-
-  return 0;
-}
-
-
-/* Set the cursor's state to STATE on display HANDLE.  */
-static error_t
-vga_display_set_cursor_status (void *handle, uint32_t state)
-{
-  struct vga_display *disp = handle;
-
-  if (state != CONS_CURSOR_INVISIBLE)
-    dynafont_set_cursor (disp->df, state == CONS_CURSOR_VERY_VISIBLE ? 1 : 0);
-  vga_display_cursor (state == CONS_CURSOR_INVISIBLE ? 0 : 1);
+  /* Make sure the cursor can only be moved to a position on te
+     physical screen.  */
+  if (col < disp->width && row < disp->height)
+    {
+      vga_set_cursor_pos (pos);
+      if (cursor_hidden)
+	{
+	  /* Restore the cursor.  */
+	  cursor_hidden = 0;
+	  vga_display_set_cursor_status (handle, cursor_state);
+	}
+    }
+  else if (!cursor_hidden)
+    {
+      /* Hide the cursor.  */
+      cursor_hidden = 1;
+      vga_display_cursor (CONS_CURSOR_INVISIBLE);
+    }
 
   return 0;
 }
@@ -355,7 +390,12 @@ vga_display_scroll (void *handle, int delta)
   int count = abs(delta) * disp->width;
   int i;
   struct refchr *refpos;
-      
+
+  /* XXX: If the virtual console is bigger than the physical console it is
+     impossible to scroll because the data to scroll is not in memory.  */
+  if (current_height > disp->height)
+    return ENOTSUP;
+
   if (delta > 0)
     {
       memmove (vga_videomem, vga_videomem + 2 * count,
@@ -485,8 +525,31 @@ static error_t
 vga_display_clear (void *handle, size_t length, uint32_t col, uint32_t row)
 {
   struct vga_display *disp = handle;
-  struct refchr *refpos = &disp->refmatrix[row][col];
+  struct refchr *refpos = &disp->refmatrix[row][0];
+  int cols;
 
+  /* The column can be outside the physical screen, in that case
+     adjust the position.  */
+  if (col >= disp->width)
+    {
+      col = disp->width - col;
+      row++;
+    }
+  refpos += col;
+  
+  /* The first row is not in the physical screen, nothing has to be
+     done.  */
+  if (row >= disp->height)
+    return 0;
+  
+  /* The length cannot be used. Recalculate it to wrap the lines.  */
+  cols = length / current_width;
+  length = (length % current_width) + cols * disp->width ;
+  
+  /* Make sure the end of length is still in the physical screen.  */
+  if (length > (disp->width * disp->height - (row * disp->width + col)) - col)
+    length = disp->width * disp->height - (row * disp->width + col) - col;
+  
   while (length > 0)
     {
       if (refpos->used)
@@ -511,8 +574,20 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
 		   uint32_t col, uint32_t row)
 {
   struct vga_display *disp = handle;
-  char *pos = vga_videomem + 2 * (row * disp->width + col);
+  char *pos;
   struct refchr *refpos = &disp->refmatrix[row][col];
+
+  /* The starting column is outside the physical screen.  */
+  if (disp->width < current_width && col >= disp->width)
+    {
+      size_t skip = current_width - disp->width;
+      str += skip;
+      length -= skip;
+      col = 0;
+      row++;
+    }
+
+  pos  = vga_videomem + 2 * (row * disp->width + col);
 
   /* Although all references to the current fgcol or bgcol could have
      been released here, for example due to a scroll operation, we
@@ -524,6 +599,31 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
   while (length--)
     {
       int charval = dynafont_lookup (disp->df, str);
+      col++;
+
+      /* The virtual console is smaller than the physical screen.  */
+      if (col > current_width)
+	{
+	  size_t skip = disp->width - current_width;
+	  pos += skip * 2;
+	  refpos += skip;
+	  col = 1;
+	  row++;
+	}
+      /* The virtual console is bigger than the physical console.  */
+      else if (disp->width < current_width && col == disp->width)
+	{
+	  size_t skip = current_width - disp->width;
+	  str += skip;
+	  length -= skip;
+	  col = 1;
+	  row++;
+	}
+      
+      /* The screen is filled until the bottom of the screen.  */
+      if (row >= disp->height)
+	return 0;
+
       if (!disp->cur_conchar_attr_init
 	  || *(uint32_t *) &disp->cur_conchar_attr != *(uint32_t *) &str->attr)
 	{
@@ -566,6 +666,21 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
   return 0;
 }
 
+static error_t
+vga_set_dimension (void *handle, int width, int height)
+{
+  if (current_width && current_height)
+    vga_display_clear (handle, current_width * current_height, 0, 0);
+
+  current_width = width;
+  current_height = height;
+
+  /* FIXME: Should support greater dimensions by changing the video
+     mode.  */
+
+  return 0;
+}
+
 
 struct driver_ops driver_vga_ops =
   {
@@ -583,5 +698,6 @@ static struct display_ops vga_display_ops =
     vga_display_write,
     NULL,
     vga_display_flash,
-    NULL
+    NULL,
+    vga_set_dimension
   };

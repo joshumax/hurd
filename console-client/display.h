@@ -1,5 +1,5 @@
 /* display.h - The interface to and for a display driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -133,6 +133,13 @@ struct display_ops
 
   /* Do not use, do not remove.  */
   void (*deprecated) (void *handle, int key);
+
+  /* Change the dimension of the physical screen to one that can
+     display the vcons with the size of WIDTH * HEIGHT and clear the
+     old screen.  If the physical screen already has the right
+     resolution do nothing.  This function is always followed by a
+     write that covers the whole new screen.  */
+  error_t (*set_dimension) (void *handle, int width, int height);
 };
 
 #endif	/* _DISPLAY_H_ */

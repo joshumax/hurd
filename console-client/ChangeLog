@@ -1,3 +1,54 @@
+2003-08-11  Marco Gerards  <metgerards@student.han.nl>
+
+	* console.c (cons_vcons_set_dimension): New function.
+	* display.h (display_ops): New interface set_dimension.
+	* ncursesw.c (ncursesw_set_dimension): New function.
+	(ncursesw_displ): Add ncursesw_set_dimension.
+	(ncurses_lock): Make variable static.
+	(current_width): New variable.
+	(current_height): Likewise.
+	(cursor_state): Likewise.
+	(cursor_hidden): Likewise.
+	(driver_ncursesw_ops): Added ncursesw_set_dimension.
+	* vga.c (current_width): New variable.
+	(current_height): Likewise.
+	(vga_display_set_cursor_status): If the cursor is outside the
+	screen, don't change the visibility.
+	(vga_display_set_cursor_pos): Don't set the cursor outside the
+	physical screen.  Update cursor_hidden and hide/unhide
+	to match cursor_hidden.  Function moved to above
+	vga_display_set_cursor_status.
+	(vga_display_scroll): Report an error when scrolling is not
+	possible.
+	(vga_display_clear): Recalculate cols, rows and length.
+	(vga_display_write): Make it wrap around the edge.
+	(vga_set_dimension): New function.
+	(vga_disp_ops): Added vga_set_dimension.
+	
+	* ncursesw.c (conspad): New variable.
+	(padx): Likewise.
+	(pady): Likewise.
+	(autoscroll): Likewise.
+	(refresh_screen): new function.
+	(input_loop): Use conspad instead of (the default) stdscr.
+	Call console_exit instead of exiting here.  Add keybindings
+	'j, 'k', 'l' and 'i' to scroll the console, add keybinding 'a'
+	to switch autoscroll.
+	(mvwputsn): Use conspad instead of (the default) stdscr.
+	(ncursesw_scroll): Likewise.
+	(ncursesw_write): Likewise.
+	(ncursesw_driver_start): Likewise. Initialize conspad.
+	(ncursesw_update): Call refresh_screen to refresh the console.
+	(ncursesw_set_cursor_pos): Use conspad instead of (the default)
+	stdscr.  Make the console autoscroll.
+		
+	* ncursesw.c (ncursesw_driver_start): Remove endwin call at
+	the end of the function.
+
+	* ncursesw.c (ncursesw_set_cursor_status): If the status can
+	not be set, use another status that can sanely be used instead
+	of the unavailable status.
+
 2003-07-14  Marco Gerards  <metgerards@student.han.nl>
 
 	* vga.c: New global variable vga_display_max_glyphs.

@@ -1,5 +1,5 @@
 /* console.c -- A pluggable console client.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -352,6 +352,23 @@ cons_vcons_set_scroll_lock (vcons_t vcons, int onoff)
       if (input->ops->set_scroll_lock_status)
 	input->ops->set_scroll_lock_status (input->handle, onoff);
   mutex_unlock (&global_lock);
+}
+
+
+/* The user must define this function.  Clear the existing screen
+   matrix and set the size of the screen matrix to the dimension COL x
+   ROW.  This call will be immediately followed by a call to
+   cons_vcons_write that covers the whole new screen matrix.  */
+error_t
+cons_vcons_set_dimension (vcons_t vcons, uint32_t col, uint32_t row)
+{
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    display_iterate
+      if (display->ops->set_dimension)
+	display->ops->set_dimension (display->handle, col, row);
+  mutex_unlock (&global_lock);
+  return 0;
 }
 
 

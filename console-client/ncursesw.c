@@ -1,5 +1,5 @@
 /* ncursesw.c - The ncursesw console driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -34,7 +34,22 @@
 
 /* ncurses is not thread-safe.  This lock protects all calls into the
    ncurses library.  */
-struct mutex ncurses_lock;
+static struct mutex ncurses_lock;
+
+/* The current width and height the ncursesw driver is using.  */
+static int current_width;
+static int current_height;
+
+/* The window on which the console is shown.  */
+static WINDOW *conspad;
+
+/* The upper left corner shown in the pad.  */
+static int padx;
+static int pady;
+
+/* Autoscroll is on or off.  Autoscroll makes scrolling dependant on
+   the cursor position.  */
+static int autoscroll;
 
 /* Forward declaration.  */
 static struct display_ops ncursesw_display_ops;
@@ -258,6 +273,17 @@ ucs4_to_altchar (wchar_t chr, chtype *achr)
   return 1;
 }
 
+static error_t
+refresh_screen (void)
+{
+  /* It is possible */
+  if (!current_width && !current_height)
+    return 0;
+  return prefresh (conspad, pady, padx, 0, 0, 
+		   (current_height <= LINES ? current_height : LINES) - 1,
+		   (current_width <= COLS ? current_width : COLS) - 1); 
+}
+
 static any_t
 input_loop (any_t unused)
 {
@@ -282,7 +308,7 @@ input_loop (any_t unused)
 	  size_t size = 0;
 
 	  mutex_lock (&ncurses_lock);
-	  while ((ret = getch ()) != ERR)
+	  while ((ret = wgetch (conspad)) != ERR)
 	    {
 	      int i;
 	      int found;
@@ -292,8 +318,8 @@ input_loop (any_t unused)
 		  switch (ret)
 		    {
 		    case 'x':
-		      endwin ();
-		      exit (0);
+		      mutex_unlock (&ncurses_lock);
+		      console_exit ();
 		      break;
 		    case 23:	/* ^W */
 		      assert (size < 100);
@@ -313,6 +339,42 @@ input_loop (any_t unused)
 		      console_switch (1 + (ret - '1'), 0);
 		      mutex_lock (&ncurses_lock);
 		      break;
+		    case 'j':
+		      /* Scroll pad to left.  */
+		      if (padx > 0)
+			{
+			  padx--;
+			  refresh_screen ();
+			}
+		      break;
+		    case 'k':
+		      /* Scroll pad down.  */
+		      if (pady < current_height - LINES)
+			{
+			  pady++;
+			  refresh_screen ();
+			}
+		      break;
+		    case 'l':
+		      /* Scroll pad to right.  */
+		      if (padx < current_width - COLS)
+			{
+			  padx++;
+			  ncurses_refresh ();
+			}  
+		      break;
+		    case 'i':
+		      /* Scroll pad up.  */
+		      if (pady > 0)
+			{
+			  pady--;
+			  refresh_screen ();
+			}
+		      break;
+		    case 'a':
+		      /* Switch autoscroll on/off.  */
+		      autoscroll = !autoscroll;
+		      break;
 		    default:
 		      break;
 		    }
@@ -326,13 +388,15 @@ input_loop (any_t unused)
 		    break;
 		  default:
 		    found = 0;
-		    for (i =0; i < sizeof(keycodes) / sizeof(keycodes[0]); i++)
+		    for (i = 0; i < sizeof (keycodes) / sizeof (keycodes[0]);
+			 i++)
 		      {
 			if (keycodes[i].curses == ret)
 			  {	
 			    if (keycodes[i].cons)
 			      {
-				assert (size < 101 - strlen(keycodes[i].cons));
+				assert (size 
+					< 101 - strlen (keycodes[i].cons));
 				strcpy (&buf[size], keycodes[i].cons);
 				size += strlen (keycodes[i].cons);
 			      }
@@ -382,7 +446,7 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
   attr_t attr = conchar_attr_to_attr (str->attr);
   short color_pair = conchar_attr_to_color_pair (str->attr);
 
-  move (y, x);
+  wmove (conspad, y, x);
   while (len)
     {
       int ret;
@@ -396,7 +460,7 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 	}
 
       if (ucs4_to_altchar (str->chr, &ac))
-	addch (ac | attr | color_pair);
+	waddch (conspad, ac | attr | color_pair);
       else
 	{      
 	  wch[0] = str->chr;
@@ -409,7 +473,7 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 	      assert (!"Do something if setcchar fails.");
 	    }
 #endif
-	  ret = add_wch (&chr);
+	  ret = wadd_wch (conspad, &chr);
 #if 0
 	  if (ret == ERR)
 	    {
@@ -429,7 +493,7 @@ static error_t
 ncursesw_update (void *handle)
 {
   mutex_lock (&ncurses_lock);
-  refresh ();
+  refresh_screen ();
   mutex_unlock (&ncurses_lock);
   return 0;
 }
@@ -439,7 +503,45 @@ static error_t
 ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 {
   mutex_lock (&ncurses_lock);
-  move (row, col);
+  assert (current_width && current_height);
+  if (autoscroll)
+    {
+      /* Autoscroll to the right.  */
+      if (col > COLS + padx)
+	{
+	  padx += COLS / 2;
+	  if (padx > COLS + current_width)
+	    padx = current_width - COLS;
+	  ncurses_refresh ();
+	}
+      /* Autoscroll to the left.  */
+      else if (col < padx)
+	{
+	  padx -= COLS / 2;
+	  if (padx < 0)
+	    padx = 0;
+	  ncurses_refresh ();
+	}
+      /* Autoscroll down.  */
+      if (row > LINES + pady)
+	{
+	  pady += LINES / 2;
+	  if (pady > LINES + current_height)
+	    pady = current_height - LINES;
+	  ncurses_refresh ();
+	}
+      /* Autoscroll up.  */
+      else if (row < pady)
+	{
+	  pady -= LINES / 2;
+	  if (pady < 0)
+	    pady = 0;
+	  ncurses_refresh ();
+	}
+    }
+
+  wmove (conspad, row, col);
+
   mutex_unlock (&ncurses_lock);
   return 0;
 }
@@ -449,7 +551,13 @@ static error_t
 ncursesw_set_cursor_status (void *handle, uint32_t status)
 {
   mutex_lock (&ncurses_lock);
-  curs_set (status ? (status == 1 ? 1 : 2) : 0);
+
+  /* If the cursor is invisible and switching to one visible state is
+     impossible, switch to the other visible state or else the cursor
+     will not be shown at all.  */
+  if (curs_set (status) == -1 && status)
+    curs_set (status == 1 ? 2 : 1);
+
   mutex_unlock (&ncurses_lock);
   return 0;
 }
@@ -462,11 +570,11 @@ ncursesw_scroll (void *handle, int delta)
   assert (delta >= 0);
 
   mutex_lock (&ncurses_lock);
-  idlok (stdscr, TRUE);
-  scrollok (stdscr, TRUE);
-  scrl (delta);
-  idlok (stdscr, FALSE);
-  scrollok (stdscr, FALSE);
+  idlok (conspad, TRUE);
+  scrollok (conspad, TRUE);
+  wscrl (conspad, delta);
+  idlok (conspad, FALSE);
+  scrollok (conspad, FALSE);
   mutex_unlock (&ncurses_lock);
   return 0;
 }
@@ -480,9 +588,9 @@ ncursesw_write (void *handle, conchar_t *str, size_t length,
   int y;
 
   mutex_lock (&ncurses_lock);
-  getyx (stdscr, y, x);
+  getyx (conspad, y, x);
   mvwputsn (str, length, col, row);
-  wmove (stdscr, y, x);
+  wmove (conspad, y, x);
   mutex_unlock (&ncurses_lock);
   return 0;
 }
@@ -531,10 +639,17 @@ ncursesw_driver_start (void *handle)
   raw ();
   noecho ();
   nonl ();
-  intrflush (stdscr, FALSE);
-  nodelay (stdscr, TRUE);
-  timeout (1);
-  keypad (stdscr, TRUE);
+
+  /* Create a new pad with the size minimal size.  This pad will be
+     resized by ncursesw_set_dimension.  */
+  conspad = newpad (1, 1);
+  if (!conspad)
+    return errno;
+
+  intrflush (conspad, FALSE);
+  nodelay (conspad, TRUE);
+  wtimeout (conspad, 1);
+  keypad (conspad, TRUE);
 
   err = driver_add_display (&ncursesw_display_ops, NULL);
   if (err)
@@ -559,9 +674,8 @@ ncursesw_driver_start (void *handle)
     }
 
   cthread_detach (cthread_fork (input_loop, NULL));
-  endwin ();
 
-  return err;
+  return 0;
 }
 
 /* Destroy the display HANDLE.  */
@@ -576,6 +690,22 @@ ncursesw_driver_fini (void *handle, int force)
   mutex_unlock (&ncurses_lock);
 
   endwin ();
+  return 0;
+}
+
+static error_t
+ncursesw_set_dimension (void *handle, int width, int height)
+{
+  mutex_lock (&ncurses_lock);
+  if (width != current_width || height != current_height)
+    {
+      wresize (conspad, height, width);
+      padx = 0;
+      pady = 0;
+    }
+  current_width = width;
+  current_height = height;
+  mutex_unlock(&ncurses_lock);
   return 0;
 }
 
@@ -596,7 +726,8 @@ static struct display_ops ncursesw_display_ops =
     ncursesw_write,
     ncursesw_update,
     ncursesw_flash,
-    NULL
+    NULL,
+    ncursesw_set_dimension
   };
 
 static struct input_ops ncursesw_input_ops =
