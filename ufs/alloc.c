@@ -55,6 +55,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "ufs.h"
 #include <stdio.h>
+#include <string.h>
+
 
 /* These don't work *at all* here; don't even try setting them. */
 #undef DIAGNOSTIC
@@ -91,7 +93,7 @@ alloc_sync (struct node *np)
 
 /* Byteswap everything in CGP. */
 void
-swab_cg (struct cg *cgp)
+swab_cg (struct cg *cg)
 {
   int i, j;
   
@@ -177,14 +179,14 @@ read_cg (int cg, struct cg **cgpp)
   
   if (swab_disk)
     {
-      *cgp = malloc (sblock->fs_cgsize);
-      bcopy (diskcg, *cgp, sblock->fs_cgsize);
-      swab_cg (*cgp);
+      *cgpp = malloc (sblock->fs_cgsize);
+      bcopy (diskcg, *cgpp, sblock->fs_cgsize);
+      swab_cg (*cgpp);
       return 1;
     }
   else
     {
-      *cgp = diskcg;
+      *cgpp = diskcg;
       return 0;
     }
 }
@@ -194,8 +196,9 @@ read_cg (int cg, struct cg **cgpp)
 void
 release_cgp (struct cg *cgp)
 {
+  int cgx = cgp->cg_cgx;
   swab_cg (cgp);
-  bcopy (cgp, cg_locate (cg), sblock->fs_cgsize);
+  bcopy (cgp, cg_locate (cgx), sblock->fs_cgsize);
   free (cgp);
 }
 
