@@ -337,10 +337,8 @@ S_io_reauthenticate (struct sock_user *user,
   newuser = make_sock_user (user->sock, 0, 1, 0);
 
   auth = getauth ();
-  newright = ports_get_right (newuser);
-  err = mach_port_insert_right (mach_task_self (), newright, newright,
-				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  newright = ports_get_send_right (newuser);
+  assert (newright != MACH_PORT_NULL);
   do
     err = auth_server_authenticate (auth,
 				    rend,
