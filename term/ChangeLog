@@ -1,5 +1,13 @@
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
+	* term.h: Declare rdev.
+	* main.c (options): New variable.
+	(parse_opt): Handle case `n' to set rdev number.
+	Also return EINVAL if terminal type is invalid.
+	* users.c (trivfs_modify_stat): Set ST->st_rdev to global rdev.
+
+2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
+
 	* hurdio.c: New file.
 	* Makefile (SRCS): Add hurdio.c.
 	* term.h: Add hurdio_bottom declaration.

@@ -341,6 +341,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
   st->st_fstype = FSTYPE_TERM;
   st->st_fsid = getpid ();
   st->st_ino = 0;
+  st->st_rdev = rdev;
   st->st_mode = term_mode;
   st->st_uid = term_owner;
   st->st_gid = term_group;

@@ -43,6 +43,7 @@ int trivfs_allow_open = O_READ|O_WRITE;
 char *tty_name;
 enum { T_NONE = 0, T_DEVICE, T_HURDIO, T_PTYMASTER, T_PTYSLAVE } tty_type;
 char *tty_arg;
+int rdev;
 
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -57,6 +58,13 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  || device_reply_server (inp, outp));
 }
 
+static struct argp_option options[] =
+{
+  {"rdev",     'n', "ID", 0,
+   "The stat rdev number for this node; may be either a"
+   " single integer, or of the form MAJOR,MINOR"},
+  {0}
+};
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -68,6 +76,26 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_INIT:
     case ARGP_KEY_SUCCESS:
     case ARGP_KEY_ERROR:
+      break;
+    case 'n':
+      {
+        char *start = arg;
+        char *end;
+	
+        rdev = strtoul (start, &end, 0);
+        if (*end == ',')
+          /* MAJOR,MINOR form */
+          {
+            start = end;
+            rdev = (rdev << 8) + strtoul (start, &end, 0);
+          }
+
+        if (end == start || *end != '\0')
+          {
+            argp_error (state, "%s: Invalid argument to --rdev", arg);
+            return EINVAL;
+          }
+      }
       break;
     case ARGP_KEY_ARG:
       if (!tty_name)
@@ -83,7 +111,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  else if (!strcmp (arg, "pty-slave"))
 	    tty_type = T_PTYSLAVE;
 	  else
-	    argp_error (state, "Invalid terminal type");
+	    {
+	      argp_error (state, "Invalid terminal type");
+	      return EINVAL;
+	    }
 	}
       else if (!tty_arg)
 	tty_arg = arg;
@@ -99,7 +130,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 }
 
 static struct argp term_argp =
-  { 0, parse_opt, "NAME TYPE ARG", "A translator that emulates a terminal.\v"\
+  { options, parse_opt, "NAME TYPE ARG", "A translator that emulates a terminal.\v"\
     "Possible values for TYPE:\n"\
     "  device      Use Mach device ARG as bottom handler.\n"\
     "  hurdio      Use file port ARG as bottom handler.\n"\
