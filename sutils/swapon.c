@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <hurd/store.h>
+#include <hurd/paths.h>
 #include <version.h>
 #include <mntent.h>
 #include "default_pager_U.h"
@@ -372,8 +373,18 @@ swaponoff (const char *file, int add)
       mach_port_t host;
 
       err = get_privileged_ports (&host, &dev_master);
+      if (err == EPERM)
+	{
+	  /* We are not root, so try opening the /servers node.  */
+	  def_pager = file_name_lookup (_SERVERS_DEFPAGER, O_WRITE, 0);
+	  if (def_pager == MACH_PORT_NULL)
+	    {
+	      error (11, errno, _SERVERS_DEFPAGER);
+	      return 0;
+	    }
+	}
       if (err)
-	error (12, err, "Cannot get host port");
+	error (12, err, "Cannot get privileged ports");
 
       err = vm_set_default_memory_manager (host, &def_pager);
       mach_port_deallocate (mach_task_self (), host);
