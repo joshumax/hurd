@@ -150,6 +150,9 @@ mach_port_t master_device_port;
 
 mach_port_t generic_port;	/* messages not related to a specific proc */
 
+/* Our name for version system */
+#define OUR_SERVER_NAME "proc"
+#define OUR_VERSION "0.0 pre-alpha"
 
 /* Forward declarations */
 void complete_wait (struct proc *, int);
@@ -196,4 +199,7 @@ void boot_setsid (struct proc *);
 void process_has_exited (struct proc *);
 void alert_parent (struct proc *);
 void reparent_zombies (struct proc *);
+
+void initialize_version_info (void);
+
 #endif
