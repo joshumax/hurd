@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 19941996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -49,7 +49,7 @@ int trivfs_cntl_nportclasses = 1;
 
 struct trivfs_control *fsys;
 
-char *exec_version = "0.0 pre-alpha";
+char *exec_version = "0.0";
 char **save_argv;
 
 
