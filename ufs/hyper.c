@@ -47,6 +47,13 @@ get_hypermetadata (void)
       exit (1);
     }
 
+  if (sblock->fs_maxsymlinklen > MAXSYMLINKLEN)
+    {
+      fprintf (stderr, "Max shortcut symlinklen %d is too big (max is %d)\n",
+	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
+      exit (1);
+    }
+
   /* If this is an old filesystem, then we have some more
      work to do; some crucial constants might not be set; we
      are therefore forced to set them here.  */
@@ -56,6 +63,12 @@ get_hypermetadata (void)
     sblock->fs_interleave = 1;
   if (sblock->fs_postblformat == FS_42POSTBLFMT)
     sblock->fs_nrpos = 8;
+
+  /* Find out if we support the 4.4 symlink/dirtype extension */
+  if (sblock->fs_maxsymlinklen > 0)
+    direct_symlink_extension = 1;
+  else
+    direct_symlink_extension = 0;
 
   err = dev_read_sync (fsbtodb (sblock->fs_csaddr), (vm_address_t *) &csum,
 		       sblock->fs_fsize * howmany (sblock->fs_cssize, 
