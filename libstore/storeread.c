@@ -90,7 +90,7 @@ main (int argc, char **argv)
 
 	case ARGP_KEY_NO_ARGS:
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

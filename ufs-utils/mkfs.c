@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.10 1996/04/03 21:34:56 miles Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.11 1996/05/11 05:21:06 miles Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -309,11 +309,12 @@ main (int argc, char **argv)
 
 	case ARGP_KEY_ARG:
 	  if (state->arg_num > 0)
-	    return EINVAL;
+	    return ARGP_ERR_UNKNOWN;
 	  device = arg;
+	  break;
 
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }

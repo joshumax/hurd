@@ -160,7 +160,8 @@ fifo_trans_parse_args (struct fifo_trans *trans, int argc, char **argv,
 	case 's': trans->server = 1; break;
 	case 'U': trans->use_server = arg; break;
 	case 'S': trans->use_server = 0; break;
-	default:  return EINVAL;
+	default:
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }
