@@ -1,3 +1,14 @@
+2002-01-19  Roland McGrath  <roland@frob.com>
+
+	Support explicit open of unknown store (with no name), i.e. -Tunknown.
+	* unknown.c (unknown_allocate_encoding): Return EOPNOTSUPP
+	if STORE->hook is null.
+	(unknown_encode): Likewise.
+	(unknown_cleanup): Do nothing if STORE->hook if is null.
+	(unknown_clone): Likewise.
+	(unknown_validate_name, unknown_open): New functions.
+	(store_unknown_class): Use them.
+
 2002-01-01  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (htonll): Make this a macro using bswap_64 from <byteswap.h>.
