@@ -1,5 +1,5 @@
 /* Test filesystem behavior
-   Copyright (C) 1993,94,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -84,8 +84,7 @@ main ()
     perror ("2nd mkdir");
   if (rename ("/newdir2", "/foo"))
     perror ("2nd rename");
-  if (sync ())
-    perror ("sync");
+  sync ();
 #endif
 
   printf ("All done.\n");
