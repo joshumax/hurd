@@ -22,14 +22,20 @@
 
 #define SHORT_OPTIONS "rwsnm"
 
-static struct option long_options[] =
+static struct argp_option
+std_runtime_options[] =
 {
-  {"readonly", no_argument, 0, 'r'},
-  {"writable", no_argument, 0, 'w'},
-  {"sync", optional_argument, 0, 's'},
-  {"nosync", no_argument, 0, 'n'},
-  {"remount", no_argument, 0, 'm'},
-  {0, 0, 0, 0}
+  {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
+  {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"writable", 'w', 0, 0, "Use normal read/write behavior"},
+  {"rdwr",     0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"sync",     's', "INTERVAL", OPTION_ARG_OPTIONAL,
+     "If INTERVAL is supplied, sync all data not actually written to disk"
+     " every INTERVAL seconds, otherwise operate in synchronous mode (the"
+     " default is to sync every 30 seconds)"},
+  {"nosync",  'n',  0, 0, "Don't automatically sync data to disk"},
+  {"remount", 'u',  0, 0, "Flush any meta-data cached in core"},
+  {0, 0}
 };
 
 error_t
@@ -38,7 +44,7 @@ diskfs_set_options (int argc, char **argv)
   int readonly = diskfs_readonly;
   int sync = diskfs_synchronous;
   int sync_interval = -1;
-  error_t parse_opt (int opt, char *arg)
+  error_t parse_opt (int opt, char *arg, struct argp_state *argp)
     {
       switch (opt)
 	{
@@ -59,11 +65,11 @@ diskfs_set_options (int argc, char **argv)
 	}
       return 0;
     }
-  struct options options = { SHORT_OPTIONS, long_options, parse_opt, 0 };
+  struct argp argp = { std_runtime_options, parse_opt };
 
   /* Call the user option parsing routine, giving it our set of options to do
      with as it pleases.  */
-  error_t err = diskfs_parse_runtime_options (argc, argv, &options);
+  error_t err = diskfs_parse_runtime_options (argc, argv, &argp);
 
   if (err)
     return err;
