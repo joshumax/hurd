@@ -60,7 +60,7 @@ routine term_become_ctty (
 	pid: pid_t;
 	pgrp: pid_t;
 	sigpt: mach_port_t;
-	out newtty: io_t);
+	out newtty: mach_port_send_t);
 
 /* This sets the name returned by future get_nodename calls.  This is
    conventionally the name of a file which can be opened, resulting in
