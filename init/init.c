@@ -367,6 +367,9 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_WRITE, "console", &consdev))
     crash_mach ();
 
+  /* Clear our bootstrap port so our children don't inherit it.  */
+  task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
+
   stderr = stdout = mach_open_devstream (consdev, "w");
   stdin = mach_open_devstream (consdev, "r");
   if (stdout == NULL || stdin == NULL)
@@ -391,9 +394,6 @@ main (int argc, char **argv, char **envp)
       case INIT_PORT_CWDIR:
 	default_ports[i] = getcwdir ();
 	break;
-      case INIT_PORT_BOOTSTRAP:
-	default_ports[i] = startup;
-	break;
       default:
 	default_ports[i] = MACH_PORT_NULL;
 	break;
@@ -403,8 +403,10 @@ main (int argc, char **argv, char **envp)
   default_dtable[1] = getdport (1);
   default_dtable[2] = getdport (2);
 
+  default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask);
   run ("/hurd/auth", default_ports, &authtask);
+  default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
   
   /* Wait for messages.  When both auth and proc have started, we
      run launch_system which does the rest of the boot.  */
@@ -495,14 +497,15 @@ launch_single_user ()
   task_t termtask;
   task_t foo;
   int fd;
+  volatile int run_dev=1;	/* So you can set this from gdb.  */
 
-#if 1
-  /* Run the device server */
-  termtask = run_for_real (devname, devname, sizeof (devname));
-#else  
-  /* Run the terminal driver and open it for the shell. */
-  termtask = run_for_real (terminal, terminal, sizeof (terminal));
-#endif
+  if (run_dev)
+    /* Run the device server */
+    termtask = run_for_real (devname, devname, sizeof (devname));
+  else  
+    /* Run the terminal driver and open it for the shell. */
+    termtask = run_for_real (terminal, terminal, sizeof (terminal));
+
   if (termtask)
     {
       /* Open the console.  We are racing here against the
