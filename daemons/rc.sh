@@ -7,8 +7,7 @@ then
 	echo Fast boot ... skipping disk checks
 elif [ $1x = autobootx ]
 then
-	echo Automatic reboot in progress...
-	date
+	echo Automatic boot in progress...
 
 	# Find the filesystem by a kludge, and extract the root device name.
 	fsargs=`ps -MaxHww --fmt=%command | grep exec-server-task | head -1`
@@ -19,39 +18,37 @@ then
 	fsck.$type -p /dev/r$dev
 
 	case $? in
-	
-# Successful completion
+	# Successful completion
 	0)
-		date
 		;;
-
-# Filesystem modified
+	# Filesystem modified
 	1 | 2)
 		fsysopts / -uw
-		date
 		;;
-
-# Fsck couldn't fix it. 
+	# Fsck couldn't fix it. 
 	4 | 8)
-		echo "Automatic reboot failed... help!"
+		echo "Automatic boot failed... help!"
 		exit 1
 		;;
-
-# SIGINT
-	130)  
-		echo "Reboot interrupted"
+	# Signal that really interrupted something
+	20 | 130 | 131)
+		echo "Boot interrupted"
 		exit 1
 		;;
-
-# Oh dear.
+	# Special `let fsck finish' interruption (SIGQUIT)
+	12)
+		echo "Boot interrupted (filesystem checks complete)"
+		exit 1
+		;;
+	# Oh dear.
 	*)	
-		echo "Unknown error in reboot"
+		echo "Unknown error during fsck"
 		exit 1
 		;;
 	esac
-else
-	date
 fi
+
+date
 
 # Until new hostname functions are in place
 test -r /etc/hostname && hostname `cat /etc/hostname`
