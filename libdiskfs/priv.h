@@ -1,5 +1,5 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -84,6 +84,14 @@ extern spin_lock_t _diskfs_control_lock;
 /* Callback routines for active translator startup */
 extern fshelp_fetch_root_callback1_t _diskfs_translator_callback1;
 extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
+
+/* The form of the value pointed to by COOKIE2 expected by
+   _diskfs_translator_callback2_fn.  */
+struct diskfs_trans_callback_cookie2
+{
+  mach_port_t dotdot;		/* The dot dot node.  */
+  unsigned depth;		/* How high DOTDOT is.  */
+};
 
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
