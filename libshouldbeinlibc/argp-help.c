@@ -1,6 +1,6 @@
 /* Hierarchial argument parsing help output
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -115,7 +115,7 @@ find_char (char ch, char *beg, char *end)
 struct hol_entry
 {
   /* First option.  */
-  struct argp_option *opt;
+  const struct argp_option *opt;
   /* Number of options (including aliases).  */
   unsigned num;
 
@@ -147,10 +147,10 @@ struct hol
 };
 
 /* Create a struct hol from an array of struct argp_option.  */
-struct hol *make_hol (struct argp_option *opt)
+struct hol *make_hol (const struct argp_option *opt)
 {
   char *so;
-  struct argp_option *o;
+  const struct argp_option *o;
   struct hol_entry *entry;
   unsigned num_short_options = 0;
   struct hol *hol = malloc (sizeof (struct hol));
@@ -219,12 +219,12 @@ hol_free (struct hol *hol)
 
 static inline int
 hol_entry_short_iterate (const struct hol_entry *entry,
-			 int (*func)(struct argp_option *opt,
-				     struct argp_option *real))
+			 int (*func)(const struct argp_option *opt,
+				     const struct argp_option *real))
 {
   unsigned nopts;
   int val = 0;
-  struct argp_option *opt, *real = entry->opt;
+  const struct argp_option *opt, *real = entry->opt;
   char *so = entry->short_options;
 
   for (opt = real, nopts = entry->num; nopts > 0 && !val; opt++, nopts--)
@@ -242,12 +242,12 @@ hol_entry_short_iterate (const struct hol_entry *entry,
 
 static inline int
 hol_entry_long_iterate (const struct hol_entry *entry,
-			int (*func)(struct argp_option *opt,
-				    struct argp_option *real))
+			int (*func)(const struct argp_option *opt,
+				    const struct argp_option *real))
 {
   unsigned nopts;
   int val = 0;
-  struct argp_option *opt, *real = entry->opt;
+  const struct argp_option *opt, *real = entry->opt;
 
   for (opt = real, nopts = entry->num; nopts > 0 && !val; opt++, nopts--)
     if (opt->name)
@@ -265,7 +265,8 @@ hol_entry_long_iterate (const struct hol_entry *entry,
 static char
 hol_entry_first_short (const struct hol_entry *entry)
 {
-  inline int func1 (struct argp_option *opt, struct argp_option *real)
+  inline int func1 (const struct argp_option *opt,
+		    const struct argp_option *real)
     {
       return opt->key;
     }
@@ -273,10 +274,10 @@ hol_entry_first_short (const struct hol_entry *entry)
 }
 
 /* Returns the first valid long option in ENTRY, or 0 if there is none.  */
-static char *
+static const char *
 hol_entry_first_long (const struct hol_entry *entry)
 {
-  struct argp_option *opt;
+  const struct argp_option *opt;
   unsigned num;
   for (opt = entry->opt, num = entry->num; num > 0; opt++, num--)
     if (opt->name && ovisible (opt))
@@ -293,7 +294,7 @@ static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
 
   while (num_entries-- > 0)
     {
-      struct argp_option *opt = entry->opt;
+      const struct argp_option *opt = entry->opt;
       unsigned num_opts = entry->num;
 
       while (num_opts-- > 0)
@@ -334,8 +335,8 @@ hol_sort (struct hol *hol)
 	{
 	  int short1 = hol_entry_first_short (entry1);
 	  int short2 = hol_entry_first_short (entry2);
-	  char *long1 = hol_entry_first_long (entry1);
-	  char *long2 = hol_entry_first_long (entry2);
+	  const char *long1 = hol_entry_first_long (entry1);
+	  const char *long2 = hol_entry_first_long (entry2);
 
 	  if (!short1 && !short2 && long1 && long2)
 	    /* Only long options.  */
@@ -413,7 +414,7 @@ hol_append (struct hol *hol, struct hol *more)
       for (left = more->num_entries; left > 0; e++, left--)
 	{
 	  int opts_left;
-	  struct argp_option *opt;
+	  const struct argp_option *opt;
 
 	  e->short_options = so;
 
@@ -457,7 +458,7 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
 {
   unsigned num;
   int first = 1;		/* True if nothing's been printed so far.  */
-  struct argp_option *real = entry->opt, *opt;
+  const struct argp_option *real = entry->opt, *opt;
   char *so = entry->short_options;
 
   /* Inserts a comma if this isn't the first item on the line, and then makes
@@ -537,7 +538,7 @@ hol_entry_help (struct hol_entry *entry, struct line *line,
     /* Now the option documentation.  */
     {
       unsigned col = line_column (line);
-      char *doc = real->doc;
+      const char *doc = real->doc;
 
       if (col > OPT_DOC_COL + 3)
 	line_newline (line, OPT_DOC_COL);
@@ -606,7 +607,8 @@ hol_usage (struct hol *hol, struct line *line)
 	   ; nentries > 0
 	   ; entry++, nentries--)
 	{
-	  inline int func2 (struct argp_option *opt, struct argp_option *real)
+	  inline int func2 (const struct argp_option *opt,
+			    const struct argp_option *real)
 	    {
 	      if (! (opt->arg || real->arg))
 		*snao_end++ = opt->key;
@@ -625,7 +627,8 @@ hol_usage (struct hol *hol, struct line *line)
 	   ; nentries > 0
 	   ; entry++, nentries--)
 	{
-	  inline int func3 (struct argp_option *opt, struct argp_option *real)
+	  inline int func3 (const struct argp_option *opt,
+			    const struct argp_option *real)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
@@ -644,7 +647,8 @@ hol_usage (struct hol *hol, struct line *line)
 	   ; nentries > 0
 	   ; entry++, nentries--)
 	{
-	  int func4 (struct argp_option *opt, struct argp_option *real)
+	  int func4 (const struct argp_option *opt,
+		     const struct argp_option *real)
 	    {
 	      if (opt->arg || real->arg)
 		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
@@ -664,9 +668,9 @@ hol_usage (struct hol *hol, struct line *line)
 
 /* Make a HOL containing all levels of options in ARGP.  */
 static struct hol *
-argp_hol (struct argp *argp)
+argp_hol (const struct argp *argp)
 {
-  struct argp **parents = argp->parents;
+  const struct argp **parents = argp->parents;
   struct hol *hol = make_hol (argp->options);
   if (parents)
     while (*parents)
@@ -677,10 +681,10 @@ argp_hol (struct argp *argp)
 /* Print all the non-option args documented in ARGP to LINE.  Any output is
    preceded by a space.  */
 static void
-argp_args_usage (struct argp *argp, struct line *line)
+argp_args_usage (const struct argp *argp, struct line *line)
 {
-  struct argp **parents = argp->parents;
-  char *doc = argp->args_doc;
+  const struct argp **parents = argp->parents;
+  const char *doc = argp->args_doc;
   if (doc)
     add_usage_item (line, "%s", doc);
   if (parents)
@@ -691,10 +695,10 @@ argp_args_usage (struct argp *argp, struct line *line)
 /* Print the documentation for ARGP to LINE.  Each separate bit of
    documentation is preceded by a blank line.  */
 static void
-argp_doc (struct argp *argp, struct line *line)
+argp_doc (const struct argp *argp, struct line *line)
 {
-  struct argp **parents = argp->parents;
-  char *doc = argp->doc;
+  const struct argp **parents = argp->parents;
+  const char *doc = argp->doc;
   if (doc)
     {
       line_newline (line, 0);
@@ -708,7 +712,7 @@ argp_doc (struct argp *argp, struct line *line)
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
-void argp_help (struct argp *argp, FILE *stream, unsigned flags)
+void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
 {
   int first = 1;
   struct hol *hol = 0;
@@ -786,10 +790,11 @@ void argp_help (struct argp *argp, FILE *stream, unsigned flags)
 /* Print the printf string FMT and following args, preceded by the program
    name and `:', to stderr, and followed by a `Try ... --help' message.  Then
    exit (1).  */
-void argp_error (struct argp *argp, char *fmt, ...)
+void argp_error (const struct argp *argp, const char *fmt, ...)
 {
   /* Assert that argp_help doesn't return, which it doesn't, as we use it.  */
-  void argp_help (struct argp *, FILE *, unsigned) __attribute__ ((noreturn));
+  void argp_help (const struct argp *, FILE *, unsigned)
+    __attribute__ ((noreturn));
   va_list ap;
 
   fputs (program_invocation_name, stderr);
