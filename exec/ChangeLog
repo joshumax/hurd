@@ -1,5 +1,9 @@
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* main.c (S_exec_init): Deallocate PROCSERVER port when finished.
+
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* main.c (S_exec_init): Remove variable DEV_MASTER; pass null instead
 	since we don't need it.  Use assert_perror on getting the host-priv
 	port and on startup_essential_task, since init will hang until we've

@@ -1,5 +1,21 @@
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
+	Use a struct hurd_port for the cached exec server port,
+	so it is properly reference-counted and locked.
+	* boot-start.c (diskfs_exec): Variable removed.
+	(diskfs_start_bootstrap): Make it a local here.
+	Install that port in _diskfs_exec_portcell.
+	(diskfs_S_fsys_init): Use _diskfs_exec_portcell instead
+	of diskfs_exec.
+	* init-init.c (_diskfs_exec_portcell): New variable.
+	(diskfs_init_diskfs): Initialize it.
+	* priv.h: Declare it.
+	* diskfs.h (diskfs_exec, diskfs_exec_ctl): Remove decls.
+	* file-exec.c (diskfs_S_file_exec): Use _diskfs_exec_portcell instead
+	of diskfs_exec.
+
+	* init-completed.c: File removed (obsolete since 1996).
+
 	* boot-start.c (diskfs_start_bootstrap): Twiddle boot-time messages.
 
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
