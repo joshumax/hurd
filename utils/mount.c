@@ -1,6 +1,6 @@
 /* Roughly Unix/Linux-compatible `mount' frontend for Hurd translators.
 
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2004 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -48,6 +48,12 @@ static const struct argp_option argp_opts[] =
   {"timeout",	'T',	"MILLISECONDS",	0, "Timeout for translator startup"},
   {"format",	'p',	"mount|fstab|translator", OPTION_ARG_OPTIONAL,
    "Output format for query (no filesystem arguments)"},
+  {"options", 'o', "OPTIONS", 0, "A `,' seperated list of options"},
+  {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
+  {"writable", 'w', 0, 0, "Use normal read/write behavior"},
+  {"update", 'u', 0, 0, "Flush any meta-data cached in core"},
+  {"remount", 0, 0, OPTION_ALIAS},
+  {"verbose", 'v', 0, 0, "Give more detailed information"},
   {0, 0}
 };
 
@@ -69,7 +75,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break
     case 'r': ARGZ (add (&options, &options_len, "ro"));
     case 'w': ARGZ (add (&options, &options_len, "rw"));
-    case 'u': ARGZ (add (&options, &options_len, "remount"));
+    case 'u': ARGZ (add (&options, &options_len, "update"));
     case 'o': ARGZ (add_sep (&options, &options_len, arg, ','));
     case 'v': ++verbose; break;
 #undef ARGZ
