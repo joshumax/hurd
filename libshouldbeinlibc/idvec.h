@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,19 +25,22 @@
 #include <errno.h>
 #include <hurd/hurd_types.h>
 
-struct idvec 
+struct idvec
 {
   uid_t *ids;
   unsigned num, alloced;
 };
 
 /* Return a new, empty, idvec, or NULL if there wasn't enough memory.  */
-struct idvec * make_idvec ();
+struct idvec *make_idvec (void);
 
-/* Free's IDVEC, but not the storage pointed to by the IDS field.  */
+/* Free the storage pointed to by IDVEC->ids.  */
+void idvec_free_contents (struct idvec *idvec);
+
+/* Free IDVEC, but not the storage pointed to by the IDS field.  */
 void idvec_free_wrapper (struct idvec *idvec);
 
-/* Frees IDVEC and any storage associated with it.  */
+/* Free IDVEC and any storage associated with it.  */
 void idvec_free (struct idvec *idvec);
 
 /* Mark IDVEC as not containing any ids.  */
