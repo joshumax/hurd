@@ -1,3 +1,8 @@
+Fri Jul 19 18:22:46 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* msg.c (S_proc_setmsgport): Bother to request DEAD_NAME
+	notification on new message port being installed.
+
 Thu Jul 18 13:23:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* msg.c (S_proc_setmsgport): Use MOVE_SEND, not COPY_SEND, to

@@ -50,6 +50,7 @@ S_proc_setmsgport (struct proc *p,
 		   mach_port_t *oldmsgport,
 		   mach_msg_type_name_t *oldmsgport_type)
 {
+  mach_port_t foo;
   if (!p)
     return EOPNOTSUPP;
 
@@ -62,6 +63,12 @@ S_proc_setmsgport (struct proc *p,
     prociterate (check_message_return, p);
   p->p_checkmsghangs = 0;
 
+  mach_port_request_notification (mach_task_self (), msgport, 
+				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo)
+    mach_port_deallocate (mach_task_self (), foo);
+  
   if (p == startup_proc)
     /* Init is single threaded, so we can't delay our reply for
        the essential task RPC; spawn a thread to do it. */
