@@ -121,7 +121,7 @@ routine file_lock (
 /* Return control port for this filesystem */
 routine file_getcontrol (
 	file: file_t;
-	out control: mach_port_make_send_t);
+	out control: mach_port_send_t);
 
 /* Return filesystem status */
 /* INTR */
