@@ -145,18 +145,22 @@ dev_open (struct dev *dev)
       /* This means we had no store arguments.
 	 We are to operate on our underlying node. */
       err = store_create (storeio_fsys->underlying,
-			  STORE_INACTIVE | (dev->readonly ? STORE_READONLY : 0),
+			  dev->readonly ? STORE_READONLY : 0,
 			  0, &dev->store);
-
     }
   else
     /* Open based on the previously parsed store arguments.  */
     err = store_parsed_open (dev->store_name,
-			     STORE_INACTIVE
-			     | (dev->readonly ? STORE_READONLY : 0),
+			     dev->readonly ? STORE_READONLY : 0,
 			     &dev->store);
   if (err)
     return err;
+
+  /* Inactivate the store, it will be activated at first access.
+     We ignore possible EINVAL here.  XXX Pass STORE_INACTIVE to
+     store_create/store_parsed_open instead when libstore is fixed
+     to support this.  */
+  store_set_flags (dev->store, STORE_INACTIVE);
 
   dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
 		   MAP_ANON, 0, 0);

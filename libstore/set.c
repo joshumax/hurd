@@ -69,7 +69,7 @@ store_set_name (struct store *store, const char *name)
    source from which it was created.  */
 void store_close_source (struct store *store)
 {
-  if (store->source)
+  if (store->source != MACH_PORT_NULL)
     {
       mach_port_deallocate (mach_task_self (), store->source);
       store->source = MACH_PORT_NULL;

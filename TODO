@@ -89,6 +89,8 @@ See `tasks', the exported task list.
 
 ** libstore:
 *** Add lock protocol for mutable stores.
+*** Creating/opening stores with STORE_INACTIVE should work (and then the hack
+    in storeio/dev.c should be removed).
 
 ** libfsserver/libnetfs:
 *** convert libnetfs to libfsserver

@@ -1,3 +1,9 @@
+2001-05-06  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dev.c (dev_open): Do not create/open the store with
+	STORE_INACTIVE, as this doesn't work correctly.  Inactivate the
+	store afterwards instead.
+
 2001-02-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dev.h (struct dev): New member nperopens.
