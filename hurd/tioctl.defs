@@ -21,6 +21,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* This subsystem is derived from calculations in <ioctls.h>. */
 subsystem tioctl NNN;
 
+/* MiG versions of TIOCSETA and TIOCGETA ioctls.  The format is that
+   specified by the definition of _IOT_termios as described in <termbits.h>. */
 type modes_t int[4];
 type ccs_t char[20];
 type speeds_t int[2];
