@@ -38,7 +38,7 @@ diskfs_S_file_chmod (struct protid *cred,
 			     if (!diskfs_isuid (np->dn_stat.st_uid, cred))
 			       mode &= ~S_ISUID;
 			   }
-			 mode |= ((np->dn_stat.st_mode & (S_IFMT | S_ISPARE)));
+			 mode |= (np->dn_stat.st_mode & (S_IFMT | S_ISPARE));
 			 np->dn_stat.st_mode = mode;
 			 np->dn_set_ctime = 1;
 		       }
