@@ -86,6 +86,7 @@ clean:
 $(subst .c,.o,$(FSSRCS)): fs_S.h
 dir-readdir.o $(subst .c,.o,$(IOSRCS)): io_S.h
 $(subst .c,.o,$(FSYSSRCS)) boot-start.o: fsys_S.h
+boot-start.o: fsys_reply.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
 dir-chg.o: msg.h
