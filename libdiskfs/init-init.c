@@ -38,6 +38,7 @@ struct port_class *diskfs_protid_class;
 struct port_class *diskfs_control_class;
 struct port_class *diskfs_initboot_class;
 struct port_class *diskfs_execboot_class;
+struct port_class *diskfs_shutdown_notification_class;
 
 struct port_bucket *diskfs_port_bucket;
 
@@ -75,6 +76,8 @@ diskfs_init_diskfs (void)
   diskfs_control_class = ports_create_class (_diskfs_control_clean, 0);
   diskfs_initboot_class = ports_create_class (0, 0);
   diskfs_execboot_class = ports_create_class (0, 0);
+  diskfs_shutdown_notification_class = ports_create_class (0, 0);
+
   diskfs_port_bucket = ports_create_bucket ();
 
   return 0;
