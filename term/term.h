@@ -268,15 +268,3 @@ void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
 
-
-/* exported by the devio interface */
-void start_output (void);
-void set_break (void);
-void clear_break (void);
-void abandon_physical_output (void);
-int pending_output_size (void);
-error_t assert_dtr (void);
-void desert_dtr (void);
-void set_bits (void);
-void mdmctl (int, int);
-int mdmstate (void);
