@@ -1,6 +1,6 @@
 /* Inode allocation routines.
 
-   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
@@ -66,7 +66,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   if (inum < EXT2_FIRST_INO (sblock) || inum > sblock->s_inodes_count)
     {
-      ext2_error ("reserved inode or nonexistent inode: %u", inum);
+      ext2_error ("reserved inode or nonexistent inode: %Ld", inum);
       spin_unlock (&global_lock);
       return;
     }
@@ -78,7 +78,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bh = bptr (gdp->bg_inode_bitmap);
 
   if (!clear_bit (bit, bh))
-    ext2_warning ("bit already cleared for inode %u", inum);
+    ext2_warning ("bit already cleared for inode %Ld", inum);
   else
     {
       record_global_poke (bh);
