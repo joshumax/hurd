@@ -222,7 +222,7 @@ type off_array_t = array[] of loff_t;
 
 type pidarray_t = array[] of pid_t;
 type procinfo_t = array[] of int;
-type fsys_statfsbuf_t=struct[16] of int;
+type fsys_statfsbuf_t=struct[22] of int;
 
 type idarray_t = array[] of uid_t;
 

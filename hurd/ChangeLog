@@ -1,3 +1,7 @@
+2002-08-03  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd_types.defs (fsys_statfsbuf_t): Bump size up to 22.
+
 2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fs_notify.defs: Add MsgOption for send timeout.
