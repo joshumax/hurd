@@ -243,7 +243,7 @@ main (int argc, char **argv)
   diskfs_spawn_first_thread ();
 
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		disk_pager_size, 0, 1, disk_pagerport, 0, 0, 
+		disk_pager_size, 0, 1, disk_pager_port, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
 		VM_INHERIT_NONE);
