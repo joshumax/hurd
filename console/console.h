@@ -96,7 +96,7 @@ struct cons_display
 
 /* The console server will use the following UCS-4 characters for the
    specified terminal graphic characters.  If the display driver is
-   UCS-4 capabable, it can print them without interpretation.  */
+   UCS-4 capable, it can print them without interpretation.  */
 
 /* ACS_BLOCK maps to FULL BLOCK.  */
 #define CONS_CHAR_BLOCK		((wchar_t) 0x2588)
