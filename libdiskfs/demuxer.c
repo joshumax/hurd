@@ -37,7 +37,7 @@ ports_demuxer (mach_msg_header_t *inp,
 	  || fsys_server (inp, outp)
 	  || exec_server (inp, outp)
 	  || interrupt_server (inp, outp)
-	  || ifsock_server (inp, outp));
+	  || (diskfs_shortcut_ifsock ? ifsock_server (inp, outp) : 0));
 }
 
   
