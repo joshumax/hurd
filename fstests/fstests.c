@@ -61,15 +61,13 @@ main ()
 #else
 
   unlink ("/newdir");
-  dir_unlink (root, "newdir");	/* unlink ("/newdir") */
-  dir_rmdir (root, "newdir");	/* rmdir */
-  dir_mkdir (root, "newdir", 0777);
-  dir_rename (root, "newdir", root, "newdir2");
-  dir_rmdir (root, "foo");
-  dir_mkdir (root, "foo", 0777);
-  dir_rename (root, "newdir2", root, "foo");
-  file_syncfs (root, 1, 0);
-
+  rmdir ("/newdir");
+  mkdir ("/newdir", 0777);
+  rename ("/newdir", "/newdir2");
+  rmdir ("/foo");
+  mkdir ("/foo", 0777);
+  rename ("/newdir2", "/foo");
+  sync ();
 #endif
 
   printf ("All done.\n");
