@@ -2387,7 +2387,13 @@ before responding, return @code{EDIED}.
 @deftypefun error_t fshelp_start_translator (@w{fshelp_open_fn_t @var{underlying_open_fn}}, @w{char *@var{name}}, @w{char *@var{argz}}, @w{int @var{argz_len}}, @w{int @var{timeout}}, @w{fsys_t *@var{control}})
 Same as @code{fshelp_start_translator_long}, except the initports and
 ints are copied from our own state, @var{fd[2]} is copied from our own
-stderr, and the other fds are cleared.
+stderr, and the other fds are cleared.  For full-service filesystems, it
+is almost always wrong to use @code{fshelp_start_translator}, because
+the current working directory of the translator will not then be as
+normally expected.  (Current working directories of passive translators
+should be the directory they were found in.)  In fact, full-service
+filesystems should usually start passive translators as a side-effect of
+calling @code{fshelp_fetch_root} (@pxref{Active Translator Linkage}).
 @end deftypefun
 
 @node Active Translator Linkage

@@ -1,3 +1,7 @@
+Tue Apr 20 21:50:19 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* hurd.texi: More detail on fshelp_start_translator.
+
 Tue Apr 13 16:47:41 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* hurd.texi: Doc updates from Eric Hanchrow, filtered through
