@@ -49,3 +49,13 @@ pager_create (struct user_pager_info *upi,
 }
 
   
+/* This causes the function to be run at startup by compiler magic. */
+static void create_class (void) __attribute__ ((constructor));
+
+static void
+create_class ()
+{
+  _pager_class = ports_create_class (_pager_clean, _pager_real_dropweak);
+}
+
+				     
