@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+#
+#   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,9 +20,10 @@ makemode := library
 
 SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	initialize_conch.c verify_user_conch.c iouser-create.c \
-	iouser-dup.c iouser-reauth.c iouser-free.c shared.c
+	iouser-dup.c iouser-reauth.c iouser-free.c shared.c \
+	return-buffer.c
 OBJS = $(SRCS:.c=.o)
-LCLHDRS = iohelp.h 
+LCLHDRS = iohelp.h
 HURDLIBS = threads
 libname = libiohelp
 installhdrs = iohelp.h
