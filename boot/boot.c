@@ -1390,13 +1390,13 @@ S_term_getctty (mach_port_t object,
 }
 
 
-kern_return_t S_term_become_ctty
+kern_return_t S_term_open_ctty
 (
 	io_t terminal,
 	pid_t pid,
 	pid_t pgrp,
-	mach_port_t sigpt,
-	io_t *newtty
+	mach_port_t *newtty,
+	mach_msg_type_name_t *newttytype
 )
 { return EOPNOTSUPP; }
 
