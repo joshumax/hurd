@@ -79,6 +79,7 @@ pty_open_hook (struct trivfs_control *cntl,
     }
     
   ptyopen = 1;
+  nptyperopens++;
   report_carrier_on ();
   mutex_unlock (&global_lock);
   return 0;
@@ -87,9 +88,6 @@ pty_open_hook (struct trivfs_control *cntl,
 error_t
 pty_po_create_hook (struct trivfs_peropen *po)
 {
-  mutex_lock (&global_lock);
-  nptyperopens++;
-  mutex_unlock (&global_lock);
   return 0;
 }
 
