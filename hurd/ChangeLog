@@ -1,3 +1,9 @@
+2002-01-01  Roland McGrath  <roland@frob.com>
+
+	* fsys_reply.defs: retcode -> RetCode
+	* process_reply.defs: Likewise.
+	* startup_reply.defs: Likewise.
+
 2001-12-31  Roland McGrath  <roland@frob.com>
 
 	* auth_reply.defs: Change return code parameters to use `RetCode'

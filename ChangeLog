@@ -1,3 +1,7 @@
+2002-01-01  Roland McGrath  <roland@frob.com>
+
+	* configure.in: Fix last change to use IsNotLong instead of NoLong.
+
 2001-12-31  Roland McGrath  <roland@frob.com>
 
 	* configure.in: Check mig for `retcode' keyword support.
