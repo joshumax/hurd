@@ -28,7 +28,7 @@ static spin_lock_t table_lock = SPIN_LOCK_INITIALIZER;
 
 /* Return the next prime greater than or equal to N. */
 int 
-nextprime (unsigned n)
+_ihash_nextprime (unsigned n)
 {
   /* Among other things, We guarantee that, for all i (0 <= i < primes_len), 
      primes[i] is a prime,
