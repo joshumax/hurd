@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -39,7 +39,7 @@ trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t *host, mach_msg_type_name_t *host_privPoly,
 		       mach_port_t *dev, mach_msg_type_name_t *devPoly,
-		       mach_port_t *fstask)
+		       mach_port_t *fstask, mach_msg_type_name_t *fstPoly)
 {
   return EOPNOTSUPP;
 }
