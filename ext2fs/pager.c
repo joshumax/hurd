@@ -76,6 +76,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 {
   error_t err;
   int offs = 0;
+  int partial = 0;		/* A page truncated by the EOF.  */
   struct rwlock *lock = NULL;
   int left = vm_page_size;
   block_t pending_blocks = 0;
@@ -122,7 +123,10 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       left = 0;
     }
   else if (page + left > node->allocsize)
-    left = node->allocsize - page;
+    {
+      left = node->allocsize - page;
+      partial = 1;
+    }
 
   while (left > 0)
     {
@@ -164,7 +168,10 @@ file_pager_read_page (struct node *node, vm_offset_t page,
     }
 
   if (!err && num_pending_blocks > 0)
-    do_pending_reads();
+    err = do_pending_reads();
+
+  if (!err && partial && !*writelock)
+    node->dn->last_page_partially_writable = 1;
 
   if (lock)
     rwlock_reader_unlock (lock);
@@ -494,7 +501,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
       error_t err = 0;
       off_t old_size;
       volatile off_t new_size;
-      volatile block_t old_end_block;
+      volatile block_t end_block;
       block_t new_end_block;
       struct disknode *dn = node->dn;
 
@@ -507,14 +514,14 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
       /* The first unallocated blocks after the old and new ends of the
 	 file, respectively.  */
-      old_end_block = old_size >> log2_block_size;
+      end_block = old_size >> log2_block_size;
       new_end_block = new_size >> log2_block_size;
 
-      if (new_end_block > old_end_block)
+      if (new_end_block > end_block)
 	{
 	  /* The first block of the first unallocate page after the old end
 	     of the file.  If LAST_PAGE_PARTIALLY_WRITABLE is true, any
-	     blocks between this and OLD_END_BLOCK were unallocated, but are
+	     blocks between this and END_BLOCK were unallocated, but are
 	     considered `unlocked' -- that is pager_unlock_page has been
 	     called on the page they're in.  Since after this grow the pager
 	     will expect them to be writable, we'd better allocate them.  */
@@ -525,7 +532,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		      new_size, old_size);
 
 	  if (dn->last_page_partially_writable
-	      && old_page_end_block > old_end_block)
+	      && old_page_end_block > end_block)
 	    {
 	      volatile block_t writable_end =
 		(old_page_end_block > new_end_block
@@ -535,24 +542,24 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	      ext2_debug ("extending writable page %u by %d blocks"
 			  "; first new block = %lu",
 			  trunc_page (old_size),
-			  writable_end - old_end_block,
-			  old_end_block);
+			  writable_end - end_block,
+			  end_block);
 
 	      err = diskfs_catch_exception ();
-	      while (!err && old_end_block < writable_end)
+	      while (!err && end_block < writable_end)
 		{
 		  block_t disk_block;
-		  err = ext2_getblk (node, old_end_block++, 1, &disk_block);
+		  err = ext2_getblk (node, end_block++, 1, &disk_block);
 		}
 	      diskfs_end_catch_exception ();
 
 	      if (err)
-		/* Reflect how much we successfully did.  */
-		new_size = (old_end_block - 1) << log2_block_size;
+		/* Reflect how much we allocated successfully.  */
+		new_size = (end_block - 1) << log2_block_size;
 	      else
 		/* See if it's still valid to say this.  */
 		dn->last_page_partially_writable =
-		  (old_page_end_block >= new_size);
+		  (old_page_end_block > end_block);
 	    }
 	}
 
