@@ -611,6 +611,14 @@ any user to open nodes regardless of permissions as is done for root." };
   if (err)
     error (5, err, "Cannot create root node");
 
+  err = netfs_validate_stat (netfs_root_node, 0);
+  if (err)
+    error (6, err, "Cannot stat underlying node");
+
+  netfs_root_node->nn_stat.st_mode &= ~(S_IPTRANS | S_IATRANS);
+  netfs_root_node->nn_stat.st_mode |= S_IROOT;
+  netfs_root_node->nn->faked |= FAKE_MODE;
+
   netfs_server_loop ();		/* Never returns.  */
 
   /*NOTREACHED*/
