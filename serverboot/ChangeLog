@@ -1,5 +1,7 @@
 2002-07-03  Roland McGrath  <roland@frob.com>
 
+	* elf-load.c (exec_load): Fix e_machine checking.
+
 	* elf-load.c (exec_load): Fix typos in last change.
 
 2002-06-22  Roland McGrath  <roland@frob.com>
