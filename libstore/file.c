@@ -22,6 +22,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <hurd.h>
 
 #include <hurd/io.h>
 
@@ -63,9 +65,21 @@ file_write (struct store *store,
   return io_write (store->port, buf, len, addr * bsize, amount);
 }
 
-static struct store_meths
-file_meths = {file_read, file_write};
+static error_t
+file_decode (struct store_enc *enc, struct store_class *classes,
+	     struct store **store)
+{
+  return store_std_leaf_decode (enc, _store_file_create, store);
+}
 
+static struct store_class
+file_class =
+{
+  STORAGE_HURD_FILE, "file", file_read, file_write,
+  store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode
+};
+_STORE_STD_CLASS (file_class);
+
 static error_t
 file_byte_read (struct store *store,
 		off_t addr, size_t index, mach_msg_type_number_t amount,
@@ -101,13 +115,13 @@ file_byte_write (struct store *store,
   return io_write (store->port, buf, len, addr, amount);
 }
 
-static struct store_meths
-file_byte_meths = {file_byte_read, file_byte_write};
+static struct store_class
+file_byte_class = {STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write};
 
 /* Return a new store in STORE referring to the mach file FILE.  Consumes
    the send right FILE.  */
 error_t
-store_file_create (file_t file, struct store **store)
+store_file_create (file_t file, int flags, struct store **store)
 {
   struct store_run run;
   struct stat stat;
@@ -119,22 +133,41 @@ store_file_create (file_t file, struct store **store)
   run.start = 0;
   run.length = stat.st_size;
 
-  return _store_file_create (file, 1, &run, 1, store);
+  flags |= STORE_ENFORCED;	/* 'cause it's the whole file.  */
+
+  return _store_file_create (file, flags, 1, &run, 1, store);
 }
 
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t
-_store_file_create (file_t file, size_t block_size,
+_store_file_create (file_t file, int flags, size_t block_size,
 		    const struct store_run *runs, size_t num_runs,
 		    struct store **store)
 {
   if (block_size == 1)
-    *store = _make_store (STORAGE_HURD_FILE, &file_byte_meths, file, 1,
-			  runs, num_runs, 0);
+    *store = _make_store (&file_byte_class, file, flags, 1, runs, num_runs, 0);
   else if ((block_size & (block_size - 1)) == 0)
-    *store = _make_store (STORAGE_HURD_FILE, &file_meths, file, block_size,
-			  runs, num_runs, 0);
+    *store =
+      _make_store (&file_class, file, flags, block_size, runs, num_runs, 0);
   else
     return EINVAL;		/* block size not a power of two */
   return *store ? 0 : ENOMEM;
+}
+
+/* Open the file NAME, and return the corresponding store in STORE.  */
+error_t
+store_file_open (const char *name, int flags, struct store **store)
+{
+  error_t err;
+  int open_flags = (flags & STORE_HARD_READONLY) ? O_RDONLY : O_RDWR;
+  file_t node = file_name_lookup (name, open_flags, 0);
+
+  if (node == MACH_PORT_NULL)
+    return errno;
+
+  err = store_file_create (node, flags, store);
+  if (err)
+    mach_port_deallocate (mach_task_self (), node);
+
+  return err;
 }
