@@ -29,7 +29,6 @@ _pager_clean (void *arg)
 #ifdef KERNEL_INIT_RACE
   struct pending_init *i, *tmp;
 #endif  
-  struct anticipation *ant, *nxt;
 
   if (p->pager_state != NOTINIT)
     {
@@ -44,13 +43,6 @@ _pager_clean (void *arg)
 	  free (i);
 	}
 #endif
-      for (ant = p->anticipations; ant; ant = nxt)
-	{
-	  vm_deallocate (mach_task_self (), ant->address, ant->len);
-	  nxt = ant->next;
-	  free (ant);
-	}
-
       mutex_unlock (&p->interlock);
     }
 
