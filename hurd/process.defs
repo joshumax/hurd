@@ -154,10 +154,18 @@ routine proc_getpids (
 	out ppid: pid_t;
 	out orphaned: int);
 
-routine proc_setprocargs (
+/* Set the locations of ARGV and ENVP which will be examined
+   by proc_getprocargs and proc_getprocenv.  */
+routine proc_set_arg_locations (
 	process: process_t;
-	argv: int;
-	envp: int);
+	argv: vm_address_t;
+	envp: vm_address_t);
+
+/* Fetch the locations set by proc_set_arg_locations.  */
+routine proc_get_arg_locations (
+	process: process_t;
+	out argv: vm_address_t;
+	out envp: vm_address_t);
 
 /* Fetch the message ports of a set of processes */
 /* INTR */
