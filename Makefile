@@ -24,7 +24,7 @@ lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
 	      libthreads libps libdirmgt libnetfs libihash libpipe
 prog-subdirs = auth boot exec fstests init.trim \
 	       proc term ufs utils trans fsck bsdfsck \
-	       devio newfs ext2fs benchmarks pflocal pfinet tmpfs defpager \
+	       devio newfs ext2fs benchmarks pflocal tmpfs defpager \
 	       login nfs
 other-subdirs = hurd doc init tmpfs dev lib
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
