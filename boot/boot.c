@@ -80,6 +80,9 @@ char *bootdevice = "sd0a";
 extern void __mach_init ();
 void	(*mach_init_routine)() = __mach_init;
 
+#define sigmask(m) (1 << ((m)-1))
+
+
 /* We can't include <unistd.h> for this, because that will fight witho
    our definitions of syscalls below. */
 int syscall (int, ...);
@@ -133,8 +136,8 @@ void mig_put_reply_port (mach_port_t port)
 }
 void __mig_dealloc_reply_port (mach_port_t port)
 {
-  __mach_port_mod_refs (__mach_task_self (), port,
-			MACH_PORT_RIGHT_RECEIVE, -1);
+  mach_port_mod_refs (__mach_task_self (), port,
+		      MACH_PORT_RIGHT_RECEIVE, -1);
 }
 void mig_dealloc_reply_port (mach_port_t port)
 {
@@ -653,9 +656,9 @@ main (int argc, char **argv, char **envp)
       }
   }
 
-  if (index (boot_args, 'd'))
+  if (index (bootstrap_args, 'd'))
     {
-      const char msg[] = "Pausing. . .";
+      char msg[] = "Pausing. . .";
       char c;
       write (2, msg, sizeof (msg) - 1);
       read (0, &c, 1);
