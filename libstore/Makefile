@@ -19,7 +19,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := libps
+dir := libstore
 makemode := library
 
 libname = libstore
@@ -28,5 +28,7 @@ LCLHDRS=store.h
 installhdrs=store.h
 
 OBJS = $(SRCS:.c=.o)
+
+storeread: storeread.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
 
 include ../Makeconf
