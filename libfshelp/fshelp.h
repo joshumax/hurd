@@ -205,6 +205,8 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 		    mach_port_t *ports, mach_msg_type_number_t num_ports,
 		    mach_port_t *fds, mach_msg_type_number_t num_fds,
 		    int *secure);
+
+struct argp;			/* Include <argp.h> to get the real thing.  */
 
 /* Invoke ARGP with data from DATA & LEN, in the standard way.  */
 error_t fshelp_set_options (struct argp *argp, int flags,
