@@ -22,23 +22,29 @@ S_socket_create (struct trivfs_protid *cred,
 		 int sock_type, int protocol,
 		 mach_port_t *port, mach_msg_type_name_t *port_type)
 {
-  struct socket_user *user;
+  error_t err;
+  struct pipe_ops *pipe_ops;
+  struct sock *sock;
+  struct sock_user *user;
 
   if (!cred)
     return EOPNOTSUPP;
   
-  if (sock_type != SOCK_DGRAM && sock_type != SOCK_STREAM)
-    return ESOCKTNOSUPPORT;
   if (protocol != 0)
     return EPROTONOSUPPORT;
+  switch (sock_type)
+    {
+    case SOCK_STREAM:
+      pipe_ops = stream_pipe_ops; break;
+    case SOCK_DGRAM:
+      pipe_ops = dgram_pipe_ops; break;
+    default:
+      return ESOCKTNOSUPPORT;
+    }
   
-  user =
-    port_allocate_port (socket_user_bucket,
-			sizeof (struct socket_user),
-			socket_user_class);
-  user->socket = socket;
+  err = sock_create (pipe_ops, &sock);
+  if (!err)
+    err = sock_create_port (sock, port, port_type);
 
-  *port = ports_get_right (user);
-  *port_type = MACH_MSG_TYPE_MAKE_SEND;
-  return 0;
+  return err;
 }
