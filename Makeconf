@@ -428,3 +428,7 @@ endef
 %.d: %.s
 	echo '$*.o: $<' > $@
 
+# Rule to make executable shell scripts from .sh files.
+%: %.sh $(top_srcdir)/sh-version.sed
+	sed -f $(top_srcdir)/sh-version.sed < $< > $@
+	chmod +x $@
