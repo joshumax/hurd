@@ -17,10 +17,11 @@
 
 dir := mkbootfs
 include ../Makeconf
+
 DIST_FILES = mkbootfs.c Makefile ChangeLog
 all: mkbootfs
 mkbootfs: mkbootfs.c
-	rsh -n $(mighost) cd `pwd` \; $(CC) mkbootfs.c -o mkbootfs
+	rsh -n $(mighost) cd `pwd` \; $(MIGHOSTCC) mkbootfs.c -o mkbootfs
 
 clean:
 	rm -f mkbootfs *.o
