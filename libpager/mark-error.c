@@ -23,7 +23,8 @@ int _pager_page_errors[] = {KERN_SUCCESS, ENOSPC, EIO, EDQUOT};
 /* Some error has happened indicating that the page cannot be written. 
    (Usually this is ENOSPC or EDQOUT.)  On the next pagein which
    requests write access, return the error to the kernel.  (This is 
-   screwy because of the rules associated with m_o_lock_request.) */
+   screwy because of the rules associated with m_o_lock_request.)
+   Currently the only errors permitted are ENOSPC, EIO, and EDQUOT.  */
 void
 _pager_mark_next_request_error(struct pager *pager,
 			       vm_address_t offset,
@@ -60,7 +61,8 @@ _pager_mark_next_request_error(struct pager *pager,
 /* We are returning a pager error to the kernel.  Write down
    in the pager what that error was so that the exception handling
    routines can find out.  (This is only necessary because the
-   XP interface is not completely implemented in the kernel.) */
+   XP interface is not completely implemented in the kernel.)
+   Again, only ENOSPC, EIO, and EDQUOT are permitted.  */
 void
 _pager_mark_object_error(struct pager *pager,
 			 vm_address_t offset,

@@ -18,7 +18,7 @@
 #include "priv.h"
 #include <string.h>
   
-/* Grow the pagemap as necessary to deal with address OFF */
+/* Grow the pagemap of pager P as necessary to deal with address OFF */
 void
 _pager_pagemap_resize (struct pager *p,
 		       vm_address_t off)

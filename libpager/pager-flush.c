@@ -32,8 +32,9 @@ pager_flush (struct pager *p, int wait)
 }
 
 
-/* Have the kernel write back some pages of a pager; if WAIT is set,
-   then wait for them to be finally written before returning. */
+/* Have the kernel write back some pages of a pager from OFFSET to
+   OFFSET+SIZE; if WAIT is set, then wait for them to be finally
+   written before returning. */
 void
 pager_flush_some (struct pager *p, vm_address_t offset,
 		 vm_size_t size, int wait)
