@@ -1,3 +1,8 @@
+1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf [$(makemode) = misc]: If no installationdir and no targets,
+	set makemode-instdir so it's not empty, to avoid expanding `$(dir)'.
+
 1999-10-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf [Decode makemode page]: Clean up variable usage in each
