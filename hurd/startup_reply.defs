@@ -38,6 +38,7 @@ skip;	/* startup_reboot */
 simpleroutine startup_procinit_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
+	startup_task: task_t;
 	auth: auth_t;
 	host_priv: mach_port_send_t;
 	device_master: mach_port_send_t);
