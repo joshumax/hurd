@@ -21,7 +21,7 @@
 #include "fs_S.h"
 
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_get_translator (struct protid *cred,
 			      char **trans,
 			      u_int *translen)
