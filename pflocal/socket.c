@@ -114,7 +114,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 
   if (! user)
     return EOPNOTSUPP;
-  if (!addr)
+  if (! addr)
     return EADDRNOTAVAIL;
 
   err = addr_get_sock (addr, &peer);
@@ -129,7 +129,7 @@ S_socket_bind (struct sock_user *user, struct addr *addr)
 {
   if (! user)
     return EOPNOTSUPP;
-  if (!addr)
+  if (! addr)
     return EADDRNOTAVAIL;
 
   return sock_bind (user->sock, addr);
@@ -144,6 +144,27 @@ S_socket_shutdown (struct sock_user *user, int what)
 		   (what != 1 ? SOCK_SHUTDOWN_READ : 0)
 		 | (what != 0 ? SOCK_SHUTDOWN_WRITE : 0));
   return 0;
+}
+
+error_t
+S_socket_name (struct sock_user *user,
+	       mach_port_t *addr_port, mach_msg_type_name_t *addr_port_type)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  *addr_port_type = MACH_MSG_MAKE_SEND;
+  return sock_get_addr_port (user->sock, &addr_port);
+}
+
+error_t
+S_socket_peername (struct sock_user *user,
+		   mach_port_t *addr_port,
+		   mach_msg_type_name_t *addr_port_type)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  *addr_port_type = MACH_MSG_MAKE_SEND;
+  return sock_get_peer_addr_port (user->sock, &addr_port);
 }
 
 /* Stubs for currently unsupported rpcs.  */
