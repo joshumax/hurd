@@ -279,7 +279,11 @@ pty_io_read (struct trivfs_protid *cred,
 	 && (!qsize (outputq) || (termflags & USER_OUTPUT_SUSP)))
     {
       pty_read_blocked = 1;
-      condition_wait (&pty_read_wakeup, &global_lock);
+      if (hurd_condition_wait (&pty_read_wakeup, &global_lock))
+	{
+	  mutex_unlock (&global_lock);
+	  return EINTR;
+	}
     }
   
   if (control_byte)
