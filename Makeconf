@@ -11,6 +11,22 @@ hurdroot := /home/hm1/hurdroot
 # This is the directory containing the top-level Hurd source (and this file).
 hurdsource := /home/hm1/gnu/hurd
 
+# This is the directory holding ar and ranlib
+bindir := /usr/local/i386-mach/bin
+
+# This is a machine on which to run MiG.  (MiG writes CPU dependent code,
+# so MiG has to be run on a machine that's the same as the one that will 
+# run the eventual code.)  If you are not doing cross-compilation, then
+# you need to set MIGCOM and MIG below to the plain pathnames of those
+# two programs respectively.
+mighost := ernst
+
+# Set these options to the GCC compiler spec (the correct value
+# can be found in /usr/local/lib/lib-gcc).
+CCTARGET=i386-mach
+CCVERSION=current
+CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
+
 # Where to find various things for compilation:
 headers := $(hurdinst)/include
 startup := $(hurdinst)/lib/crt0.o
@@ -21,17 +37,19 @@ libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
 libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
-gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/include
+gccheaders := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
 CFLAGS := -Wall -Wno-parentheses -O -g -pipe
 
 # Finding binaries
-CC=gcc
-MIGCOM=/usr/local/lib/migcom
-CPP=/usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/cpp
-MIG=mig
+CC=gcc $(CCTYPE)
+MIGCOM=rsh $(mighost) cd $(hurdsource)/$(dir) \; /usr/local/lib/migcom 
+CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
+MIG=rsh $(mighost) cd $(hurdsource)/$(dir) \; mig
+AR=$(bindir)/ar
+RANLIB=$(bindir)/ranlib
 
 # How to do some things:
 
