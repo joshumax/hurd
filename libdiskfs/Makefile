@@ -45,6 +45,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h
+DIST_FILES = ourfs_notify.defs
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o execServer.o \
 	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
@@ -55,12 +56,3 @@ MIGSFLAGS = -imacros fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
-
-# We don't use those, so we're safe in breaking them.
-ourfs_notify_U.h ourfs_notifyUser.c: ourfs_notify.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine ourfs_notify.defs \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null -user ourfs_notifyUser.c -header ourfs_notify_U.h
-
-ourfs_notify.defs: $(includedir)/hurd/fs_notify.defs
-	rm -f $@
-	ln -s $< $@
