@@ -1,3 +1,30 @@
+1997-08-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rmt.c (ftp_conn_rmt_transfer): If we get an error, close SRC_CONN
+	instead of aborting it, to avoid problems with some ftp servers.
+
+	* create.c (ftp_conn_create): Don't open the connection here.
+
+	* names.c (ftp_conn_cont_get_names): Use BASENAME hook instead of
+	FIX_NLIST_NAME.
+	(ftp_conn_start_get_names): Don't set DIR field.
+	(struct get_names_state): Remove DIR field.
+	(ftp_conn_cont_get_names): Don't free DIR field.
+
+	* ftpconn.h (struct ftp_conn_syshooks): Add APPEND_NAME and
+	BASENAME fields; remove FIX_NLIST_NAME field.
+	(ftp_conn_unix_append_name, ftp_conn_unix_basename): New declarations.
+	(ftp_conn_unix_fix_nlist_name): Declaration removed.
+	(ftp_conn_append_name, ftp_conn_basename): New declarations.
+	* unix.c (ftp_conn_unix_cont_get_stats): Pass only directory-
+	relative names to the callback function.
+	(ftp_conn_unix_append_name, ftp_conn_unix_basename): New functions.
+	(ftp_conn_unix_fix_nlist_name): Function removed.
+	(struct ftp_conn_unix_syshooks): Initialize APPEND_NAME and
+	BASENAME fields; remove FIX_NLIST_NAME initialization.
+	* fname.c: New file.
+	* Makefile (SRCS): Add fname.c
+
 1997-08-07  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpconn.h (struct ftp_conn_syshooks): Add FIX_NLIST_NAME field.
