@@ -1,3 +1,7 @@
+Tue Jul 23 19:44:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sock.c (sock_create): Remove NEXT_SOCK_ID.
+
 Sat Jul 13 20:20:55 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* io.c (S_io_reauthenticate): Repeat sock_create_port and
