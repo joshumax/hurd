@@ -18,7 +18,8 @@
 dir := hurd
 makemode := misc
 
-DIST_FILES = *.defs subsystems
+DIST_FILES = *.defs subsystems ioserver.h ports.h pager.h fshelp.h \
+	diskfs.h trivfs.h cthreads.h
 LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 
 include ../Makeconf
