@@ -1,3 +1,16 @@
+1999-10-06  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* lookup.c (diskfs_lookup): NAME is no longer const.  Update
+	documentation Strip leading and trailing slashes from NAME before
+	using it.
+	* diskfs.h (diskfs_lookup): NAME is no longer const.
+	Update documentation.
+	
+1999-10-05  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* priv.h (CHANGE_NODE_FIELD): Use diskfs_check_readonly instead of
+	directly reading diskfs_readonly.
+
 1999-09-20  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* node-times.c (diskfs_set_node_times): Don't implement

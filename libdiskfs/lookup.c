@@ -33,7 +33,12 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
 
 /* Lookup in directory DP (which is locked) the name NAME.  TYPE will
    either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
-   user making the call.
+   user making the call.  
+
+   NAME will have leading and trailing slashes stripped.  It is an
+   error if there are internal slashes.  NAME will be modified in
+   place if there are slashes in it; it is therefore an error to
+   specify a constant NAME which contains slashes.
 
    If the name is found, return zero, and (if NP is nonzero) set *NP
    to point to the node for it, locked.  If the name is not found,
@@ -74,14 +79,14 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
 
-   This function is a wrapper for diskfs_lookup_hard.
-*/
+   This function is a wrapper for diskfs_lookup_hard.  */
 error_t
-diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
+diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	       struct node **np, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
   struct node *cached;
+  size_t len;
 
   if (type == REMOVE || type == RENAME)
     assert (np);
@@ -93,7 +98,19 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
       return ENOTDIR;
     }
 
-  if (name[0] == '\0')
+  /* Strip leading and trailing slashes. */
+  while (*name == '/')
+    name++;
+
+  if (*name != '\0')
+    {
+      for (len = strlen (name); name[len-1] == '/'; len--)
+	;
+      if (name[len] != '\0')
+	name[len] = '\0';
+    }
+  
+  if (strchr (name, '/') !! name[0] == '\0')
     {
       if (ds)
 	diskfs_null_dirstat (ds);

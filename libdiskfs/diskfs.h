@@ -643,6 +643,11 @@ struct node *diskfs_make_node (struct disknode *dn);
    either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
    user making the call.
 
+   NAME will have leading and trailing slashes stripped.  It is an
+   error if there are internal slashes.  NAME will be modified in
+   place if there are slashes in it; it is therefore an error to
+   specify a constant NAME which contains slashes.
+
    If the name is found, return zero, and (if NP is nonzero) set *NP
    to point to the node for it, locked.  If the name is not found,
    return ENOENT, and (if NP is nonzero) set *NP to zero.  If NP is
@@ -685,7 +690,7 @@ struct node *diskfs_make_node (struct disknode *dn);
    This function is a wrapper for diskfs_lookup_hard.
 */
 error_t diskfs_lookup (struct node *dp,
-		       const char *name, enum lookup_type type,
+		       char *name, enum lookup_type type,
 		       struct node **np, struct dirstat *ds,
 		       struct protid *cred);
 

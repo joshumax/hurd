@@ -120,7 +120,7 @@ extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
   if (!(PROTID))							    \
     return EOPNOTSUPP;							    \
   									    \
-  if (diskfs_readonly)							    \
+  if (diskfs_check_readonly ())						    \
     return EROFS;							    \
   									    \
   np = (PROTID)->po->np;						    \
