@@ -87,9 +87,7 @@ main (int argc, char **argv, char **envp)
   self_proc = allocate_proc (mach_task_self ());
   complete_proc (self_proc, 0);
 
-  startup_port = ports_get_right (startup_proc);
-  mach_port_insert_right (mach_task_self (), startup_port,
-			  startup_port, MACH_MSG_TYPE_MAKE_SEND);
+  startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
 			  &authserver, &master_host_port, &master_device_port);
   assert_perror (err);
