@@ -182,7 +182,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	    }
 	  else
 	    {
-	      err = iget (inum, &np);
+	      err = diskfs_cached_lookup (inum, &np);
 	      if (err)
 		goto out;
 	    }
