@@ -20,4 +20,4 @@ include ../Makeconf
 fstests: fstests.o; $(link)
 
 install:
-	cp fstests.c $(hurdroot)/hurd/init
+	cp fstests $(hurdroot)/hurd/init
