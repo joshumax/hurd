@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,98,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -196,7 +196,7 @@ void
 setup_ethernet_device (char *name, struct device **device)
 {
   struct net_status netstat;
-  u_int count;
+  size_t count;
   int net_address[2];
   error_t err;
   struct ether_device *edev;
