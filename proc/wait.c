@@ -54,7 +54,6 @@ void
 alert_parent (struct proc *p)
 {
   struct zombie *z;
-  error_t err;
 
   send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
