@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.16 1999/09/13 04:34:38 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.17 1999/09/19 18:53:26 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -38,9 +38,9 @@ changequote(',')[default_static]changequote([,]))
 case "$enable_static_progs" in
 'no')	enable_static_progs= ;;		# we got --disable-static
 '')	enable_static_progs=default_static ;;
-*)	enable_static_progs=`echo "$enable_static_progs" |
-			     sed 's/[[, ]][[, ]]*/ /g'` ;;
 esac
+# Convert comma/space-separated list into space-separated list.
+enable_static_progs=`echo "$enable_static_progs" | sed 's/[[, ]][[, ]]*/ /g'`
 AC_SUBST(enable_static_progs)
 
 AC_PROG_INSTALL
