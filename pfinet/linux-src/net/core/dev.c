@@ -837,6 +837,7 @@ void net_bh(void)
 	struct packet_type *ptype;
 	struct packet_type *pt_prev;
 	unsigned short type;
+#ifndef _HURD_
 	unsigned long start_time = jiffies;
 #ifdef CONFIG_CPU_IS_SLOW
 	static unsigned long start_busy = 0;
@@ -845,6 +846,7 @@ void net_bh(void)
 	if (start_busy == 0)
 		start_busy = start_time;
 	net_cpu_congestion = ave_busy>>8;
+#endif
 #endif
 
 	NET_PROFILE_ENTER(net_bh);
@@ -876,15 +878,18 @@ void net_bh(void)
 	{
 		struct sk_buff * skb;
 
+#ifndef _HURD_
 		/* Give chance to other bottom halves to run */
 		if (jiffies - start_time > 1)
 			goto net_bh_break;
+#endif
 
 		/*
 		 *	We have a packet. Therefore the queue has shrunk
 		 */
 		skb = skb_dequeue(&backlog);
 
+#ifndef _HURD_
 #ifdef CONFIG_CPU_IS_SLOW
 		if (ave_busy > 128*16) {
 			kfree_skb(skb);
@@ -892,6 +897,7 @@ void net_bh(void)
 				kfree_skb(skb);
 			break;
 		}
+#endif
 #endif
 
 
@@ -1009,12 +1015,14 @@ void net_bh(void)
 	if (qdisc_head.forw != &qdisc_head)
 		qdisc_run_queues();
 
+#ifndef _HURD_
 #ifdef  CONFIG_CPU_IS_SLOW
         if (1) {
 		unsigned long start_idle = jiffies;
 		ave_busy += ((start_idle - start_busy)<<3) - (ave_busy>>4);
 		start_busy = 0;
 	}
+#endif
 #endif
 #ifdef CONFIG_NET_HW_FLOWCONTROL
 	if (netdev_dropping)
@@ -1025,10 +1033,12 @@ void net_bh(void)
 	NET_PROFILE_LEAVE(net_bh);
 	return;
 
+#ifndef _HURD_
 net_bh_break:
 	mark_bh(NET_BH);
 	NET_PROFILE_LEAVE(net_bh);
 	return;
+#endif
 }
 
 /* Protocol dependent address dumping routines */

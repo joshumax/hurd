@@ -1,3 +1,9 @@
+2000-07-26  Mark Kettenis  <kettenis@gnu.org>
+
+	* linux-src/net/core/dev.c (net_bh) [_HURD_]: Leave out the code
+	that gives other bottom halves a chance to run; the network bottom
+	half is the only one present in pfinet.
+
 2000-04-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* glue-include/asm/byteorder.h: Include <hurd.h> early on,
