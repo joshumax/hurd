@@ -1,6 +1,6 @@
 /* Block address translation
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -18,7 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <hurd/fs.h>
 
 #include "store.h"
@@ -70,7 +72,7 @@ remap_decode (struct store_enc *enc, const struct store_class *const *classes,
     return EINVAL;
   else
     {
-      int type = enc->ints[enc->cur_int++];
+      int type __attribute__((unused)) = enc->ints[enc->cur_int++];
       int flags = enc->ints[enc->cur_int++];
       int num_runs = enc->ints[enc->cur_int++];
       error_t create_remap (const struct store_run *runs, size_t num_runs)
@@ -85,12 +87,109 @@ remap_decode (struct store_enc *enc, const struct store_class *const *classes,
     }
 }
 
+error_t
+remap_open (const char *name, int flags,
+	    const struct store_class *const *classes,
+	    struct store **store)
+{
+  error_t err;
+  struct store *from;
+  const char *end, *p;
+  struct store_run *runs;
+  size_t nruns;
+
+  end = strchr (name, ':');
+  if (!end)
+    return EINVAL;
+
+  runs = alloca ((end - name) * sizeof runs[0]);
+
+  nruns = 0;
+  p = name;
+  do
+    {
+      char *endp;
+      runs[nruns].start = strtoul (p, &endp, 0) * 512; /* ? */
+      if (*endp == '+')
+	{
+	  if (endp == p)	/* Syntax "+5,+7" means "0+5,0+7".  */
+	    runs[nruns].start = 0;
+	  p = endp + 1;
+	  runs[nruns].length = strtoul (p, &endp, 0) * 512;
+	  if (endp == p)
+	    return EINVAL;
+	}
+      else if (endp == p)	/* Must have a number unless starts with +. */
+	return EINVAL;
+      else
+	runs[nruns].length = 512;
+      ++nruns;
+      p = endp;
+      if (*p == ',')
+	++p;
+    } while (p < end);
+
+
+  err = store_typed_open (end + 1, flags, classes, &from);
+  if (!err)
+    {
+      err = store_remap (from, runs, nruns, store);
+      if (err)
+	store_free (from);
+    }
+  return err;
+}
+
+error_t
+remap_validate_name (const char *name,
+		     const struct store_class *const *classes)
+{
+  const char *end = strchr (name, ':');
+  const char *p;
+
+  if (!end)
+    return EINVAL;
+
+  p = name;
+  do
+    {
+      if (*p != '+')
+	{
+	  if (!isdigit (*p))
+	    return EINVAL;
+	  do
+	    ++p;
+	  while (isdigit (*p));
+	}
+
+      if (*p == '+')
+	{
+	  ++p;
+	  if (!isdigit (*p))
+	    return EINVAL;
+	  do
+	    ++p;
+	  while (isdigit (*p));
+	}
+
+      if (*p == ',')
+	++p;
+      else if (*p == ':')
+	return 0;
+    } while (*p != '\0');
+
+  return EINVAL;
+}
+
+
 struct store_class
 store_remap_class =
 {
   STORAGE_REMAP, "remap", remap_read, remap_write,
   remap_allocate_encoding, remap_encode, remap_decode,
-  store_set_child_flags, store_clear_child_flags
+  store_set_child_flags, store_clear_child_flags,
+  NULL, NULL, NULL,		/* cleanup, clone, remap */
+  remap_open, remap_validate_name
 };
 
 /* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
@@ -153,7 +252,7 @@ store_remap_runs (const struct store_run *runs, size_t num_runs,
   for (i = 0; i < num_runs; i++)
     {
       off_t addr = runs[i].start, left = runs[i].length;
-      
+
       if (addr >= 0)
 	for (j = 0; j < num_base_runs && left > 0; j++)
 	  {
