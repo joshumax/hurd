@@ -41,6 +41,17 @@ typedef int8_t    __s8;
 #include "ext2_fs.h"
 #include "ext2_fs_i.h"
 
+/* If ext2_fs.h defined a debug routine, undef it and use our own.  */
+#undef ext2_debug
+
+#ifdef EXT2FS_DEBUG
+extern int ext2_debug_flag;
+#define ext2_debug(f, a...) \
+ do { if (ext2_debug_flag) printf ("ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a); } while (0)
+#else
+#define ext2_debug(f, a...)	(void)0
+#endif
+
 #undef __hurd__
 
 /* Define this if memory objects should not be cached by the kernel.
@@ -309,7 +320,6 @@ dino (ino_t inum)
   unsigned long bg_num = (inum - 1) / inodes_per_group;
   unsigned long group_inum = (inum - 1) % inodes_per_group;
   struct ext2_group_desc *bg = group_desc(bg_num);
-  unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
   block_t block = bg->bg_inode_table + (group_inum / inodes_per_block);
   return ((struct ext2_inode *)bptr(block)) + group_inum % inodes_per_block;
 }
