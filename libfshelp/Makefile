@@ -50,6 +50,6 @@ lock-acquire.o lock-init.o: locks.h
 .PHONY: clean install
 
 clean:
-	rm libfshelp.a *.o
+	rm -f libfshelp.a *.o
 
 install: $(hurdinst)/lib/libfshelp.a $(headers)/hurd/fshelp.h

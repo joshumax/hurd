@@ -44,4 +44,4 @@ install: $(hurdinst)/lib/libioserver.a $(headers)/hurd/ioserver.h
 $(OBJS): ioserver.h
 
 clean:
-	rm libioserver.a *.o
+	rm -f libioserver.a *.o
