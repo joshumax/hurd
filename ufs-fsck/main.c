@@ -26,13 +26,22 @@
 char *lfname = "lost+found";
 mode_t lfmode = 0755;
 
+/* Terse automatic mode for noninteractive use; punts on severe problems.  */
+int preen = 0;
+
+/* Total number of files found on the partition.  */
+long num_files = 0;
+
 static struct argp_option options[] =
 {
-  {"preen",      'p', 0,      0,  "Terse automatic mode"},
+  {"preen",      'p', 0,      0,  "Terse automatic mode", 1},
   {"yes",        'y', 0,      0,  "Automatically answer yes to all questions"},
   {"no",         'n', 0,      0,  "Automatically answer no to all questions"},
   {"lost+found", 'l', "NAME", 0,  "The name of the lost+found directory in /"},
   {"lf-mode",    'm', "MODE", 0,  "The mode of the lost+found directory in /"},
+  {0, 0, 0, 0, "In --preen mode, the following also apply:", 2},
+  {"force",	 'f', 0,      0,  "Check even if clean"},
+  {"silent",     's', 0,      0,  "Only print diagostic messages"},
   {0, 0}
 };
 char *args_doc = "DEVICE";
@@ -40,6 +49,7 @@ char *args_doc = "DEVICE";
 int
 main (int argc, char **argv)
 {
+  int silent = 0, force = 0;
   char *device = 0;
   error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
@@ -50,6 +60,8 @@ main (int argc, char **argv)
 	case 'n': nowrite = 1; break;
 	case 'l': lfname = arg; break;
 	case 'm': lfmode = strtol (arg, 0, 8); break;
+	case 'f': force = 1; break;
+	case 's': silent = 1; break;
 	case ARGP_KEY_ARG:
 	  if (!device)
 	    {
@@ -71,33 +83,58 @@ main (int argc, char **argv)
   if (!setup (device))
     exit (1);
   
-  if (!preen)
-    printf ("** Phase 1 -- Check Blocks and Sizes\n");
-  pass1 ();
-  
-  if (duplist)
+  if (preen && sblock->fs_clean && !force)
+    {
+      if (! silent)
+	warning (0, "FILESYSTEM CLEAN");
+    }
+  else
     {
       if (!preen)
-	printf ("** Phase 1b -- Rescan for More Duplicates\n");
-      pass1b ();
+	printf ("** Phase 1 -- Check Blocks and Sizes\n");
+      pass1 ();
+  
+      if (duplist)
+	{
+	  if (!preen)
+	    printf ("** Phase 1b -- Rescan for More Duplicates\n");
+	  pass1b ();
+	}
+  
+      if (!preen)
+	printf ("** Phase 2 -- Check Pathnames\n");
+      pass2 ();
+  
+      if (!preen)
+	printf ("** Phase 3 -- Check Connectivity\n");
+      pass3 ();
+  
+      if (!preen)
+	printf ("** Phase 4 -- Check Reference Counts\n");
+      pass4 ();
+  
+      if (!preen)
+	printf ("** Phase 5 -- Check Cyl Groups\n");
+      pass5 ();
+      
+      if (! silent)
+	/* Print summary statistics.  */
+	{
+	  long num_ffree = sblock->fs_cstotal.cs_nffree;
+	  long num_bfree = sblock->fs_cstotal.cs_nbfree;
+	  long tot_ffree = num_ffree + sblock->fs_frag * num_bfree;
+	  warning (0,
+		   "%ld files, %ld used, %ld free"
+		   " (%ld frags, %ld blocks, %ld.%ld%% fragmentation)",
+		   num_files, sblock->fs_dsize - tot_ffree, tot_ffree,
+		   num_ffree, num_bfree,
+		   (num_ffree * 100) / sblock->fs_dsize,
+		   (((num_ffree * 1000 + sblock->fs_dsize / 2)
+		     / sblock->fs_dsize)
+		    % 10));
+	}
     }
-  
-  if (!preen)
-    printf ("** Phase 2 -- Check Pathnames\n");
-  pass2 ();
-  
-  if (!preen)
-    printf ("** Phase 3 -- Check Connectivity\n");
-  pass3 ();
-  
-  if (!preen)
-    printf ("** Phase 4 -- Check Reference Counts\n");
-  pass4 ();
-  
-  if (!preen)
-    printf ("** Phase 5 -- Check Cyl Groups\n");
-  pass5 ();
-  
+
   if (fsmodified && !preen)
     printf ("\n***** FILE SYSTEM WAS MODIFIED *****\n");
 
