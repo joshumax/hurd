@@ -1,0 +1,70 @@
+/* Definitions for startup server interface
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* Written by Michael I. Bushnell.  */
+
+subsystem startup 29000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef STARTUP_IMPORTS
+STARTUP_IMPORTS
+#endif
+
+/* This call registers a task as "essential", which means that if it
+   dies, the system should crash.  If the specified task dies or an
+   exception message is sent to the exception port, then we will print
+   a message on the console and do the crash. */
+routine startup_essential_task (
+	server: startup_t;
+	task: task_t;
+        excpt: mach_port_move_receive_t;
+	name: string_t);
+
+/* This call registers a task as "notified", which means that if the
+   system is going down, we should told about it and get a chance to
+   run.  A startup_dosync message (see msg.defs) will be sent to the
+   notify port. */
+routine startup_request_notification (
+	server: startup_t;
+	notify_port: mach_port_t);
+
+/* This call causes the system to die.  */
+routine startup_reboot (
+	server: startup_t;
+	refport: mach_port_t;
+	reboot_code: int);
+
+/* This call is made by the proc server for its initialization.
+   PROCESS is the proc server port for the startup program.
+   TASK and MSGPORT are set in the proc structure for the startup program.  */
+routine startup_procinit (
+	server: startup_t;
+	process: process_t;
+	out task: task_t;
+	out msgport: mach_port_make_send_t;
+	out auth: mach_port_t;
+	out host_priv: mach_port_t;
+	out device_master: mach_port_t);
+
+/* This call is made by the auth server for its initialization. */
+routine startup_authinit (
+	server: startup_t;
+	out auth: mach_port_move_receive_t;
+	out host_priv: mach_port_t);
