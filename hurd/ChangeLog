@@ -1,5 +1,12 @@
 2002-01-01  Roland McGrath  <roland@frob.com>
 
+	* exec.defs (exec_exec, exec_setexecdata): Use SCP macro
+	in place of `, servercopy'.
+
+	* io.defs (io_write, io_read, io_readable): Use size_t in place
+	of mach_msg_type_number_t.
+	* socket.defs (socket_send, socket_recv): Likewise.
+
 	* hurd_types.defs (RETURN_CODE_ARG): New macro, definition
 	depends on [HAVE_MIG_RETCODE].
 	* auth_reply.defs: Replace return code args with that.
