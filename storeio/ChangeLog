@@ -1,3 +1,8 @@
+Mon Sep 23 17:21:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (trivfs_append_args): Make ARGZ_LEN of type `size_t *'.
+	<argz.h>: New include.
+
 Thu Sep 19 18:12:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeio.c (trivfs_append_args): New function.
