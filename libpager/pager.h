@@ -139,4 +139,11 @@ pager_report_extent (struct user_pager_info *pager,
 void
 pager_clear_user_data (struct user_pager_info *pager);
 
+/* The use must define this function.  This will be called when the ports
+   library wants to drop weak references.  The pager library creates no
+   weak references itself.  If the user doesn't either, then it's OK for
+   this function to do nothing.  */
+void 
+pager_dropweak (struct user_pager_info *p);
+
 #endif
