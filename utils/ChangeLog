@@ -1,3 +1,13 @@
+1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* vmstat.c (BADVAL): New macro.
+	(SWAP_FIELD): New macro.  This properly takes care of exciting C
+	type promotion rules to properly indicate errors.
+	(get_swap_size, get_swap_free, get_swap_active): Replace definitions
+	with ones using SWAP_FIELD macro.
+	(ensure_def_pager_info): Give an error message for lack of a default
+	pager; check only once.
+
 1999-09-23  Mark Kettenis  <kettenis@gnu.org>
 
 	* login.c (main): Pass controlling terminal ID port to the child.
