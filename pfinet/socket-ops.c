@@ -404,18 +404,24 @@ S_socket_send (struct sock_user *user,
   become_task (user);
   
   if (addr)
-    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 
-					user->sock->userflags, flags,
-					addr->address, addr->len);
+    err = (*user->sock->ops->sendto) (user->sock, data, datalen, 
+				      user->sock->userflags, flags,
+				      addr->address, addr->len);
   else
-    err = - (*user->sock->ops->send) (user->sock, data, datalen, 
-				      user->sock->userflags, flags);
+    err = (*user->sock->ops->send) (user->sock, data, datalen, 
+				    user->sock->userflags, flags);
   
   mutex_unlock (&global_lock);
   
   /* MiG should do this for us, but it doesn't. */
   if (!err)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
+
+  if (err >= 0)
+    {
+      *amount = err;
+      err = 0;
+    }
 
   return err;
 }
@@ -445,6 +451,7 @@ S_socket_recv (struct sock_user *user,
   
   /* For unused recvmsg interface */
   *nports = 0;
+  *portstype = MACH_MSG_TYPE_COPY_SEND;
   *controllen = 0;
   *outflags = 0;
 
