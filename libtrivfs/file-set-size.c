@@ -20,5 +20,6 @@
 error_t
 diskfs_S_file_truncate (struct protid *cred, off_t size)
 {
-  return cred ? 0 : EOPNOTSUPP;
+  assert (!trivfs_support_write);
+  return cred ? EBADF : EOPNOTSUPP;
 }
