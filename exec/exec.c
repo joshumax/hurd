@@ -1221,7 +1221,7 @@ S_fsys_getroot (fsys_t fsys,
      associated access-restricted realnode port which file ops get
      forwarded to.  */
 
-  mach_port_deallocate (mach_task_self (), dotdot);
+
 
   *rootfile = execserver;
   *rootfilePoly = MACH_MSG_TYPE_MAKE_SEND;
