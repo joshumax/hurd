@@ -18,7 +18,7 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_getfs (struct trivfs_protid *cred, 
 		     char *data,
 		     u_int *datalen)
