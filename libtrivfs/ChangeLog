@@ -1,3 +1,29 @@
+Mon Nov 18 18:13:42 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* io-stat.c (trivfs_S_io_stat): Make the mode specify IFCHR by
+	default. 
+
+Sat Nov 16 17:20:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add `iohelp'.
+
+Thu Nov 14 13:13:10 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* io-restrict-auth.c (trivfs_S_io_restrict_auth): idvec_set ->
+ 	idvec_set_ids.  Fix unrelated typos.  
+
+	* protid-dup.c (trivfs_protid_dup): Use iouser_dup_iouser instead
+	of copying old arrays by hand.
+	* protid-clean.c (trivfs_clean_protid): Free CRED->user instead of
+	CRED->uids and CRED->gids.
+	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Args for
+	io_restrict_auth now come from the new structure definitions.
+	* open.c (trivfs_open): Pass correct first arg to idvec_contains.
+
+	* open.c (trivfs_open): Delete variable I.
+
+	* trivfs.h: Include <hurd/iohelp.h>
+
 Thu Nov  7 17:05:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-restrict-auth.c (trivfs_S_io_restrict_auth): If CRED has

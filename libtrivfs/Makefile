@@ -45,7 +45,7 @@ SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 
 libname = libtrivfs
-HURDLIBS = ports shouldbeinlibc
+HURDLIBS = iohelp ports shouldbeinlibc
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 LCLHDRS = trivfs.h fsmutations.h priv.h
 MIGSFLAGS=-imacros $(srcdir)/fsmutations.h

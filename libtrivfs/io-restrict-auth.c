@@ -60,14 +60,14 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   if (cred->isroot)
     {
       /* CRED has root access, and so may use any ids.  */
-      idvec_set (uvec, uids, nuids);
-      idvec_set (gvec, gids, ngids);
+      idvec_set_ids (uvec, uids, nuids);
+      idvec_set_ids (gvec, gids, ngids);
     }
   else
     {
       /* Otherwise, use any of the requested ids that CRED already has.  */
       for (i = 0; i < cred->user->uids->num; i++)
-	if (listmember (uids, cred->user->uids->id[i], nuids))
+	if (listmember (uids, cred->user->uids->ids[i], nuids))
 	  idvec_add (uvec, cred->user->uids->ids[i]);
       for (i = 0; i < cred->user->gids->num; i++)
 	if (listmember (gids, cred->user->gids->ids[i], ngids))
@@ -80,7 +80,7 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   &newcred);
   if (err)
     {
-      iouser_free_iouser (user);
+      iohelp_free_iouser (user);
       return err;
     }
 

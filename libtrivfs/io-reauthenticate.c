@@ -70,7 +70,10 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   
   do
     err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,
-			    gen_uids, genuidlen, gen_gids, gengidlen);
+			    newcred->user->uids->ids, 
+			    newcred->user->uids->num,
+			    newcred->user->gids->ids,
+			    newcred->user->gids->num);
   while (err == EINTR);
   if (!err && trivfs_protid_create_hook)
     {

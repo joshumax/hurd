@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -42,6 +42,7 @@ trivfs_S_io_stat (struct trivfs_protid *cred,
 
       st->st_fstype = trivfs_fstype;
       st->st_fsid = trivfs_fsid;
+      st->st_mode = (st->st_mode & ~S_IFMT) | S_IFCHR;
 
       trivfs_modify_stat (cred, st);
     }

@@ -23,6 +23,7 @@
 #include <sys/types.h>		/* for uid_t &c */
 #include <mach/mach.h>
 #include <hurd/ports.h>
+#include <hurd/iohelp.h>
 
 struct trivfs_protid
 {

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,8 +44,7 @@ trivfs_clean_protid (void *arg)
     }
   mutex_unlock (&cred->po->cntl->lock);
 
-  free (cred->uids);
-  free (cred->gids);
+  iohelp_free_iouser (cred->user);
 
   if (cred->realnode != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), cred->realnode);
