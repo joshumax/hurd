@@ -279,6 +279,7 @@ probe_stack(stack_bottom, stack_top)
 /* For GNU: */
 unsigned long int __hurd_threadvar_stack_mask;
 unsigned long int __hurd_threadvar_stack_offset;
+unsigned int __hurd_threadvar_max;
 
 vm_offset_t
 stack_init(p)
@@ -310,7 +311,16 @@ stack_init(p)
 #endif	STACK_GROWTH_UP
 
 	/* Set up the variables so GNU can find its per-thread variables.  */
-	__hurd_threadvar_stack_mask = cthread_stack_mask;
+	__hurd_threadvar_stack_mask = ~(cthread_stack_size - 1);
+	/* The GNU per-thread variables will be stored just after the
+	   cthread-self pointer at the base of the stack.  */
+#ifdef	STACK_GROWTH_UP
+	__hurd_threadvar_stack_offset = sizeof (ur_cthread_t *);
+#else
+	__hurd_threadvar_stack_offset = (cthread_stack_size -
+					 sizeof (ur_cthread_t *) -
+					 __hurd_threadvar_max * sizeof (long));
+#endif
 
 	/*
 	 * Guess at first available region for stack.
@@ -335,10 +345,6 @@ stack_init(p)
 	       vm_page_size;
 #endif	STACK_GROWTH_UP
 	MACH_CALL(vm_deallocate(mach_task_self(),start,size),r);
-
-	/* The GNU per-thread variables will be stored just after the
-	   cthread-self pointer at the base of the stack.  */
-	__hurd_threadvar_stack_offset = sizeof (ur_cthread_t *);
 
 	/*
 	 * Return new stack; it gets passed back to the caller
