@@ -152,7 +152,9 @@ int afinet_get_info(char *buffer, char **start, off_t offset, int length)
 {
 	/* From  net/socket.c  */
 	extern int socket_get_info(char *, char **, off_t, int);
+#ifndef _HURD_
 	extern struct proto packet_prot;
+#endif
 
 	int len  = socket_get_info(buffer,start,offset,length);
 
@@ -163,8 +165,10 @@ int afinet_get_info(char *buffer, char **start, off_t offset, int length)
 		       udp_prot.inuse, udp_prot.highestinuse);
 	len += sprintf(buffer+len,"RAW: inuse %d highest %d\n",
 		       raw_prot.inuse, raw_prot.highestinuse);
+#ifndef _HURD_
 	len += sprintf(buffer+len,"PAC: inuse %d highest %d\n",
 		       packet_prot.inuse, packet_prot.highestinuse);
+#endif
 	*start = buffer + offset;
 	len -= offset;
 	if (len > length)
