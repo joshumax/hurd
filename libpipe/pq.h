@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,6 +25,11 @@
 #include <stddef.h>		/* for size_t */
 #include <string.h>
 #include <mach/mach.h>
+
+#ifndef PQ_EI
+#define PQ_EI extern inline
+#endif
+
 
 struct packet
 {
@@ -66,7 +71,7 @@ error_t packet_set_ports (struct packet *packet,
 void packet_dealloc_ports (struct packet *packet);
 
 /* Returns the number of bytes of data in PACKET.  */
-extern inline size_t
+PQ_EI size_t
 packet_readable (struct packet *packet)
 {
   return packet->buf_end - packet->buf_start;
@@ -91,7 +96,7 @@ error_t packet_read_ports (struct packet *packet,
 
 /* Return the source addressd in PACKET in SOURCE, deallocating it from
    PACKET.  */
-extern inline void
+PQ_EI void
 packet_read_source (struct packet *packet, void **source)
 {
   *source = packet->source;
@@ -122,7 +127,7 @@ error_t packet_realloc (struct packet *packet, size_t new_len);
 
 /* Try to make space in PACKET for AMOUNT more bytes without growing the
    buffer, returning true if we could do it.  */
-extern inline int
+PQ_EI int
 packet_fit (struct packet *packet, size_t amount)
 {
   char *buf = packet->buf, *end = packet->buf_end;
@@ -154,7 +159,7 @@ packet_fit (struct packet *packet, size_t amount)
 
 /* Make sure that PACKET has room for at least AMOUNT more bytes, or return
    the reason why not.  */
-extern inline error_t
+PQ_EI error_t
 packet_ensure (struct packet *packet, size_t amount)
 {
   if (! packet_fit (packet, amount))
@@ -171,7 +176,7 @@ packet_ensure (struct packet *packet, size_t amount)
    it can be done efficiently, e.g., the packet can be grown in place, rather
    than moving the contents (or there is little enough data so that copying
    it is OK).  True is returned if room was made, false otherwise.  */
-extern inline int
+PQ_EI int
 packet_ensure_efficiently (struct packet *packet, size_t amount)
 {
   if (! packet_fit (packet, amount))
@@ -199,7 +204,7 @@ struct packet *pq_queue (struct pq *pq, unsigned type, void *source);
 /* Returns the tail of the packet queue PQ, which may mean pushing a new
    packet if TYPE and SOURCE do not match the current tail, or this is the
    first packet.  */
-extern inline struct packet *
+PQ_EI struct packet *
 pq_tail (struct pq *pq, unsigned type, void *source)
 {
   struct packet *tail = pq->tail;
@@ -218,7 +223,7 @@ int pq_dequeue (struct pq *pq);
    A packet is inappropiate if SOURCE is non-NULL its source field doesn't
    match it, or TYPE is non-NULL and the packet's type field doesn't match
    it.  */
-extern inline struct packet *
+PQ_EI struct packet *
 pq_head (struct pq *pq, unsigned type, void *source)
 {
   struct packet *head = pq->head;
@@ -232,7 +237,7 @@ pq_head (struct pq *pq, unsigned type, void *source)
 }
 
 /* The same as pq_head, but first discards the head of the queue.  */
-extern inline struct packet *
+PQ_EI struct packet *
 pq_next (struct pq *pq, unsigned type, void *source)
 {
   if (!pq->head)

@@ -26,6 +26,11 @@
 #include <cthreads.h>		/* For conditions & mutexes */
 
 #include "pq.h"
+
+#ifndef PIPE_EI
+#define PIPE_EI extern inline
+#endif
+
 
 /* A description of a class of pipes and how to operate on them.  */
 struct pipe_class
@@ -104,7 +109,7 @@ struct pipe
 
 /* Returns the number of characters quickly readable from PIPE.  If DATA_ONLY
    is true, then `control' packets are ignored.  */
-extern inline size_t
+PIPE_EI size_t
 pipe_readable (struct pipe *pipe, int data_only)
 {
   size_t readable = 0;
@@ -123,7 +128,7 @@ pipe_readable (struct pipe *pipe, int data_only)
    then `control' packets are ignored.  Note that this is different than
    (pipe_readable (PIPE) > 0) in the case where a control packet containing
    only ports is present.  */
-extern inline int
+PIPE_EI int
 pipe_is_readable (struct pipe *pipe, int data_only)
 {
   struct pq *pq = pipe->queue;
@@ -138,7 +143,7 @@ pipe_is_readable (struct pipe *pipe, int data_only)
    this operation will return EWOULDBLOCK instead of blocking when no data is
    immediately available.  If DATA_ONLY is true, then `control' packets are
    ignored.  */
-extern inline error_t
+PIPE_EI error_t
 pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
@@ -155,7 +160,7 @@ pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
    returns once threads waiting using pipe_wait_readable have been woken and
    given a chance to read, and if there is still data available thereafter.
    If DATA_ONLY is true, then `control' packets are ignored.  */
-extern inline error_t
+PIPE_EI error_t
 pipe_select_readable (struct pipe *pipe, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
@@ -167,7 +172,7 @@ pipe_select_readable (struct pipe *pipe, int data_only)
 /* Block until data can be written to PIPE.  If NOBLOCK is true, then
    EWOULDBLOCK is returned instead of blocking if this can't be done
    immediately.  */
-extern inline error_t
+PIPE_EI error_t
 pipe_wait_writable (struct pipe *pipe, int noblock)
 {
   size_t limit = pipe->write_limit;
@@ -188,7 +193,7 @@ pipe_wait_writable (struct pipe *pipe, int noblock)
 /* Block until some data can be written to PIPE.  This call only returns once
    threads waiting using pipe_wait_writable have been woken and given a
    chance to write, and if there is still space available thereafter.  */
-extern inline error_t
+PIPE_EI error_t
 pipe_select_writable (struct pipe *pipe)
 {
   size_t limit = pipe->write_limit;
@@ -219,7 +224,7 @@ void _pipe_no_readers (struct pipe *pipe);
 void _pipe_no_writers (struct pipe *pipe);
 
 /* Lock PIPE and increment its readers count.  */
-extern inline void
+PIPE_EI void
 pipe_acquire_reader (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
@@ -228,7 +233,7 @@ pipe_acquire_reader (struct pipe *pipe)
 }
 
 /* Lock PIPE and increment its writers count.  */
-extern inline void
+PIPE_EI void
 pipe_acquire_writer (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
@@ -238,7 +243,7 @@ pipe_acquire_writer (struct pipe *pipe)
 
 /* Decrement PIPE's (which should be locked) reader count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-extern inline void
+PIPE_EI void
 pipe_release_reader (struct pipe *pipe)
 {
   if (--pipe->readers == 0)
@@ -249,7 +254,7 @@ pipe_release_reader (struct pipe *pipe)
 
 /* Decrement PIPE's (which should be locked) writer count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-extern inline void
+PIPE_EI void
 pipe_release_writer (struct pipe *pipe)
 {
   if (--pipe->writers == 0)
@@ -259,7 +264,7 @@ pipe_release_writer (struct pipe *pipe)
 }
 
 /* Increment PIPE's reader count.  PIPE should be unlocked.  */
-extern inline void
+PIPE_EI void
 pipe_add_reader (struct pipe *pipe)
 {
   pipe_acquire_reader (pipe);
@@ -267,7 +272,7 @@ pipe_add_reader (struct pipe *pipe)
 }
 
 /* Increment PIPE's writer count.  PIPE should be unlocked.  */
-extern inline void
+PIPE_EI void
 pipe_add_writer (struct pipe *pipe)
 {
   pipe_acquire_writer (pipe);
@@ -276,7 +281,7 @@ pipe_add_writer (struct pipe *pipe)
 
 /* Decrement PIPE's (which should be unlocked) reader count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-extern inline void
+PIPE_EI void
 pipe_remove_reader (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
@@ -285,7 +290,7 @@ pipe_remove_reader (struct pipe *pipe)
 
 /* Decrement PIPE's (which should be unlocked) writer count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-extern inline void
+PIPE_EI void
 pipe_remove_writer (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
@@ -293,7 +298,7 @@ pipe_remove_writer (struct pipe *pipe)
 }
 
 /* Empty out PIPE of any data.  PIPE should be locked.  */
-extern inline void
+PIPE_EI void
 pipe_drain (struct pipe *pipe)
 {
   pq_drain (pipe->queue);

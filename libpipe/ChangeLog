@@ -1,3 +1,10 @@
+Mon Oct 21 21:58:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* pipe.h: Add extern inline protection.
+	* pq.h: Likewise.
+	* pipe-funcs.c, pq-funcs.c: New files.
+	* Makefile (SRCS): Add pipe-funcs.c and pq-funcs.c.
+
 Thu Sep 12 16:24:41 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

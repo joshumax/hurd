@@ -22,7 +22,7 @@ makemode := library
 libname = libpipe
 installhdrs = pipe.h pq.h
 
-SRCS = pq.c dgram.c pipe.c stream.c seqpack.c addr.c
+SRCS = pq.c dgram.c pipe.c stream.c seqpack.c addr.c pq-funcs.c pipe-funcs.c
 LCLHDRS = pipe.h pq.h
 
 OBJS = $(SRCS:.c=.o)
