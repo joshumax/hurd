@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -247,7 +247,10 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   ports[INIT_PORT_BOOTSTRAP] = saveport;
 
   if (err)
-    goto lose;
+    {
+      task_terminate (task);
+      goto lose;
+    }
 
   /* Ask to be told if TASK dies.  */
   err =
