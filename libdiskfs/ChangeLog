@@ -1,3 +1,8 @@
+2002-03-06  Roland McGrath  <roland@frob.com>
+
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Clear OPENONLY_STATE_MODES bits
+	from FLAGS, not all bits outside O_RDWR|O_EXEC.
+
 2002-03-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* diskfs.h: Refer to dir_lookup, not dir_pathtrans, in comment.
