@@ -37,12 +37,12 @@
 
 #include <hurd.h>
 #include <hurd/pager.h>
+#include <hurd/console.h>
 
 #ifndef __STDC_ISO_10646__
 #error It is required that wchar_t is UCS-4.
 #endif
 
-#include "console.h"
 #include "display.h"
 
 

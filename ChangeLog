@@ -1,3 +1,14 @@
+2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* aclocal.m4 (hurd_LIB_NCURSESW): New test, modified from GNU
+	inetutils 1.4.0.
+	* configure.in: Use hurd_LIB_NCURSESW.
+	* config.make.in (LIBNCURSESW): New variable, substituted by
+	configure.
+	(NCURSESW_INCLUDE): Likewise.
+	* Makefile (lib-subdirs): Add libcons.
+	(prog-subdirs): Add console.
+
 2002-06-14  Roland McGrath  <roland@frob.com>
 
 	* Makeconf (cleantarg): Add $(libname).so.$(hurd-version).

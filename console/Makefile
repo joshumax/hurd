@@ -24,7 +24,7 @@ makemode := server
 target = console
 
 SRCS = console.c display.c input.c
-LCLHDRS = console.h display.h input.h priv.h mutations.h
+LCLHDRS = display.h input.h priv.h mutations.h
 
 MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 

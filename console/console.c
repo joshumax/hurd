@@ -37,11 +37,11 @@
 
 #include <hurd/netfs.h>
 #include <hurd/ioctl_types.h>
+/* We include console.h for the color numbers.  */
+#include <hurd/console.h>
 
 #include "display.h"
 #include "input.h"
-/* We include console.h for the color numbers.  */
-#include "console.h"
 
 #include "fs_notify_U.h"
 

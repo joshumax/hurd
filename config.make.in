@@ -59,6 +59,10 @@ LIBCRYPT = @LIBCRYPT@
 # How to link against Parted libraries, if at all.
 PARTED_LIBS = @PARTED_LIBS@
 
+# How to compile and link against ncursesw.
+LIBNCURSESW = @LIBNCURSESW@
+NCURSESW_INCLUDE = @NCURSESW_INCLUDE@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@

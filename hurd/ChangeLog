@@ -1,3 +1,8 @@
+2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.h: Move here from ../console/.
+	* Makefile (INSTHDRS): Add console.h.
+
 2002-08-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hurd_types.defs (fsys_statfsbuf_t): Bump size up to 22.

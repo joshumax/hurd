@@ -1,3 +1,14 @@
+2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile: Include `../config.make' early on to get LIBNCURSESW
+	variable from configure before including Makeconf.
+	(targets) [LIBNCURSES]: Add console-ncurses.
+	(SRCS) [LIBNCURSES]: Add console-ncurses.c.
+	(HURDLIBS) [LIBNCURSES]: Add cons.
+	(console-ncurses): New target.
+	(console-ncurses-CPPFLAGS): New variable.
+	(console-ncurses-LDLIBS): Likewise.
+
 2002-08-18  Roland McGrath  <roland@frob.com>
 
 	* fakeroot.sh: Dont use "exec" command, since the original script

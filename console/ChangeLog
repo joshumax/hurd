@@ -1,5 +1,10 @@
 2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
 
+	* console.h: Move file to ../hurd/.
+	* Makefile (LCLHDRS): Remove console.h.
+	* display.c: Include <hurd/console.h> instead "console.h".
+	* console.c: Likewise.
+
 	* display.h: Add prototype for display_get_size.
 	* display.c (display_get_size): New function.
 	(nowait_file_changed): Update for new interfaces.

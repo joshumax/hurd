@@ -18,6 +18,8 @@
 dir := utils
 makemode := utilities
 
+include ../config.make
+
 targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
@@ -31,8 +33,16 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
+ifneq ($(LIBNCURSESW),)
+targets += console-ncurses
+SRCS += console-ncurses.c
+endif
+
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp threads ports ftpconn shouldbeinlibc
+ifneq ($(LIBNCURSESW),)
+HURDLIBS += cons
+endif
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
@@ -74,6 +84,11 @@ auth-MIGSFLAGS = -imacros $(srcdir)/../auth/authmutations.h
 fakeauth-CPPFLAGS = -I$(srcdir)/../auth
 authServer-CPPFLAGS = -I$(srcdir)/../auth
 auth_requestUser-CPPFLAGS = -I$(srcdir)/../auth
+
+console-ncurses: ../libcons/libcons.a ../libports/libports.a \
+	../libthreads/libthreads.a
+console-ncurses-CPPFLAGS = $(NCURSESW_INCLUDE)
+console-ncurses-LDLIBS = $(LIBNCURSESW)
 
 mount: ../sutils/fstab.o ../sutils/clookup.o \
        $(foreach L,fshelp ports,../lib$L/lib$L.a)

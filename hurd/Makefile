@@ -1,4 +1,3 @@
-#
 #   Copyright (C) 1993,94,95,96,99,2002 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -21,7 +20,7 @@ makemode := misc
 hdrs = $(wildcard $(srcdir)/*.defs $(srcdir)/*.h)
 DIST_FILES = subsystems $(notdir $(hdrs)) ioctl-tmpl.sym ioctl.awk gensym.awk
 
-INSTHDRS = hurd_types.h version.h ioctl_types.h paths.h shared.h \
+INSTHDRS = hurd_types.h version.h ioctl_types.h paths.h shared.h console.h \
 	$(notdir $(wildcard $(srcdir)/*.defs))
 
 include ../Makeconf

@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.32 2002/05/18 21:30:47 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.33 2002/08/22 21:25:03 marcus Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -177,6 +177,9 @@ fi
 AC_SUBST(boot_store_types)dnl
 AC_MSG_CHECKING(boot store types)
 AC_MSG_RESULT($boot_store_types)
+
+# Check for ncursesw, which is needed for the console-curses client.
+hurd_LIB_NCURSESW
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.

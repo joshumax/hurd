@@ -94,3 +94,58 @@ rm -f conftest*])
 if test $hurd_cv_mig_retcode = yes; then
   AC_DEFINE(HAVE_MIG_RETCODE)
 fi])
+
+dnl The following check is based on a similar check in GNU inetutils 1.4.0.
+dnl
+dnl hurd_LIB_NCURSESW -- check for, and configure, ncursesw
+dnl
+dnl If libncursesw is found to exist on this system and the --disable-ncursesw
+dnl flag wasn't specified, defines LIBNCURSESW with the appropriate linker
+dnl specification, and possibly defines NCURSESW_INCLUDE with the appropriate
+dnl -I flag to get access to ncursesw include files.
+dnl
+AC_DEFUN([hurd_LIB_NCURSESW], [
+  AC_ARG_ENABLE(ncursesw,   [  --disable-ncursesw      Do not use ncursesw],
+              , enable_ncursesw=yes)
+  if test "$enable_ncursesw" = yes; then
+    AC_CHECK_LIB(ncursesw, initscr, LIBNCURSESW="-lncursesw")
+    if test "$LIBNCURSESW"; then
+      AC_ARG_WITH(ncursesw-include-dir,
+[  --with-ncursesw-include-dir=DIR
+                          Set directory containing the include files for
+                          use with -lncursesw, when it isn't installed as
+                          the default curses library.  If DIR is "none",
+                          then no special ncursesw include files are used.
+  --without-ncursesw-include-dir
+                          Equivalent to --with-ncursesw-include-dir=none])dnl
+      if test "${with_ncursesw_include_dir+set}" = set; then
+        AC_MSG_CHECKING(for ncursesw include dir)
+        case "$with_ncursesw_include_dir" in
+          no|none)
+            hurd_cv_includedir_ncursesw=none;;
+          *)
+            hurd_cv_includedir_ncursesw="$with_ncursesw_include_dir";;
+        esac
+        AC_MSG_RESULT($hurd_cv_includedir_ncursesw)
+      else
+        AC_CACHE_CHECK(for ncursesw include dir,
+                       hurd_cv_includedir_ncursesw,
+          for D in $includedir $prefix/include /local/include /usr/local/include /include /usr/include; do
+            if test -d $D/ncursesw; then
+              hurd_cv_includedir_ncursesw="$D/ncursesw"
+              break
+            fi
+            test "$hurd_cv_includedir_ncursesw" \
+                  || hurd_cv_includedir_ncursesw=none
+          done)
+      fi
+      if test "$hurd_cv_includedir_ncursesw" = none; then
+        NCURSESW_INCLUDE=""
+      else
+        NCURSESW_INCLUDE="-I$hurd_cv_includedir_ncursesw"
+      fi
+    fi
+  fi
+  AC_SUBST(NCURSESW_INCLUDE)
+  AC_SUBST(LIBNCURSESW)])dnl
+
