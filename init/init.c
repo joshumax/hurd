@@ -619,10 +619,7 @@ launch_single_user ()
   char terminal[] = "/hurd/term\0/tmp/console\0device\0console";
   mach_port_t term, shelltask;
   char *termname;
-  task_t termtask;
   int fd;
-  int foobiebletch[TASK_BASIC_INFO_COUNT];
-  int foobiebletchcount = TASK_BASIC_INFO_COUNT;
   struct stat st;
   error_t err;
 
@@ -655,7 +652,7 @@ launch_single_user ()
 	  perror (termname);
 	  goto fail;
 	}
-      errno = file_set_translator (term, FS_TRANS_SET, 0,
+      errno = file_set_translator (term, FS_TRANS_SET, 0, 0,
 				   terminal, sizeof terminal, 
 				   MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
       if (errno)
