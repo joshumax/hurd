@@ -212,7 +212,6 @@ diskfs_new_hardrefs (struct node *np)
 static error_t
 read_disknode (struct node *np)
 {
-  static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
   struct dinode *di = dino (np->dn->number);
   error_t err;
@@ -221,14 +220,8 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  if (! fsidset)
-    {
-      fsid = getpid ();
-      fsidset = 1;
-    }
-
   st->st_fstype = FSTYPE_UFS;
-  st->st_fsid = fsid;
+  st->st_fsid = getpid ();	/* This call is very cheap.  */
   st->st_ino = np->dn->number;
   st->st_gen = read_disk_entry (di->di_gen);
   st->st_rdev = read_disk_entry(di->di_rdev);
