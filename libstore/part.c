@@ -19,11 +19,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
+#include "store.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
 #include <cthreads.h>
-#include <hurd/store.h>
 
 #include <parted/parted.h>
 #include <parted/device_gnu.h>
