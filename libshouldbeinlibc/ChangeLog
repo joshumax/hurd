@@ -1,3 +1,13 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* idvec-verify.c (SHADOW_PASSWORD_STRING): New macro.
+	(verify_id): Check for shadow password immediately after getpwuid_r
+	call, and replace PW->pw_passwd pointer with SP->sp_pwdp.
+	This is ok since the only use will be later in the function,
+	and we give the lookup buffer function scope.
+	(verify_passwd): Don't call CHECK_SHADOW for main passwd,
+	only when rechecking for wheel-group hack.
+
 1999-05-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* idvec-verify.c (verify_passwd): Avoid nonreentrant getpwuid.
