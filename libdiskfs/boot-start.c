@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -20,15 +20,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
-#include <hurd/fsys.h>
 #include <stdio.h>
+#include <hurd.h>
+#include <hurd/fsys.h>
 #include <hurd/exec.h>
+#include <hurd/startup.h>
 #include <hurd/paths.h>
 #include <fcntl.h>
 #include <device/device.h>
 #include <sys/reboot.h>
 #include <string.h>
-#include <hurd.h>
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 
@@ -102,10 +103,10 @@ diskfs_start_bootstrap ()
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   ports_port_deref (rootpi);
-  
+
   /* Contact the exec server.  */
   err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
-		      idlist, 3, idlist, 3, 0, 
+		      idlist, 3, idlist, 3, 0,
 		      &retry, retry_name, &diskfs_exec);
   assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
@@ -141,29 +142,29 @@ diskfs_start_bootstrap ()
     }
   else
     initname = default_init;
-  
+
   err = dir_lookup (root_pt, initname, O_READ, 0,
 		    &retry, pathbuf, &startup_pt);
-  
+
   assert_perror (err);
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
   bootinfo = ports_allocate_port (diskfs_port_bucket,
 				  sizeof (struct port_info),
-				  diskfs_initboot_class);  
+				  diskfs_initboot_class);
   bootpt = ports_get_right (bootinfo);
   mach_port_insert_right (mach_task_self (), bootpt, bootpt,
 			  MACH_MSG_TYPE_MAKE_SEND);
   ports_port_deref (bootinfo);
-  
+
   portarray[INIT_PORT_CRDIR] = root_pt;
   portarray[INIT_PORT_CWDIR] = root_pt;
   portarray[INIT_PORT_AUTH] = MACH_PORT_NULL;
   portarray[INIT_PORT_PROC] = MACH_PORT_NULL;
   portarray[INIT_PORT_CTTYID] = MACH_PORT_NULL;
   portarray[INIT_PORT_BOOTSTRAP] = bootpt;
-  
+
   fdarray[0] = fdarray[1] = fdarray[2] = get_console (); /* XXX */
 
   exec_argvlen =
@@ -179,9 +180,9 @@ diskfs_start_bootstrap ()
   printf (" init");
   fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
-		   newt, 0, exec_argv, exec_argvlen, 0, 0, 
+		   newt, 0, exec_argv, exec_argvlen, 0, 0,
 		   fdarray, MACH_MSG_TYPE_COPY_SEND, 3,
-		   portarray, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX, 
+		   portarray, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 		   /* Supply no intarray, since we have no info for it.
 		      With none supplied, it will use the defaults.  */
 		   NULL, 0, 0, 0, 0, 0);
@@ -198,34 +199,38 @@ diskfs_start_bootstrap ()
    call (as does any task) to get its state.  We can't give it all of
    its ports (we'll provide those with a later call to exec_init).  */
 kern_return_t
-diskfs_S_exec_startup (mach_port_t port,
-		       vm_address_t *base_addr,
-		       vm_size_t *stack_size,
-		       int *flags,
-		       char **argvP,
-		       u_int *argvlen,
-		       char **envpP __attribute__ ((unused)),
-		       u_int *envplen,
-		       mach_port_t **dtableP,
-		       mach_msg_type_name_t *dtablepoly,
-		       u_int *dtablelen,
-		       mach_port_t **portarrayP,
-		       mach_msg_type_name_t *portarraypoly,
-		       u_int *portarraylen,
-		       int **intarrayP,
-		       u_int *intarraylen)
+diskfs_S_exec_startup_get_info (mach_port_t port,
+				vm_address_t *user_entry,
+				vm_address_t *phdr_data,
+				vm_size_t *phdr_size,
+				vm_address_t *base_addr,
+				vm_size_t *stack_size,
+				int *flags,
+				char **argvP,
+				mach_msg_type_number_t *argvlen,
+				char **envpP __attribute__ ((unused)),
+				mach_msg_type_number_t *envplen,
+				mach_port_t **dtableP,
+				mach_msg_type_name_t *dtablepoly,
+				mach_msg_type_number_t *dtablelen,
+				mach_port_t **portarrayP,
+				mach_msg_type_name_t *portarraypoly,
+				mach_msg_type_number_t *portarraylen,
+				int **intarrayP,
+				mach_msg_type_number_t *intarraylen)
 {
   mach_port_t *portarray, *dtable;
   mach_port_t rootport;
   struct ufsport *upt;
   struct protid *rootpi;
-  
-  if (!(upt = ports_lookup_port (diskfs_port_bucket, port, 
+
+  if (!(upt = ports_lookup_port (diskfs_port_bucket, port,
 				 diskfs_execboot_class)))
     return EOPNOTSUPP;
 
-  *base_addr = 0;
-  *stack_size = 0;
+  *user_entry = 0;
+  *phdr_data = *base_addr = 0;
+  *phdr_size = *stack_size = 0;
 
   /* We have no args for it.  Tell it to look on its stack
      for the args placed there by the boot loader.  */
@@ -233,18 +238,18 @@ diskfs_S_exec_startup (mach_port_t port,
   *flags = EXEC_STACK_ARGS;
 
   if (*portarraylen < INIT_PORT_MAX)
-    vm_allocate (mach_task_self (), (u_int *)portarrayP,
+    vm_allocate (mach_task_self (), (vm_address_t *) portarrayP,
 		 (INIT_PORT_MAX * sizeof (mach_port_t)), 1);
   portarray = *portarrayP;
   *portarraylen = INIT_PORT_MAX;
 
   if (*dtablelen < 3)
-    vm_allocate (mach_task_self (), (u_int *)dtableP,
+    vm_allocate (mach_task_self (), (vm_address_t *) dtableP,
 		 (3 * sizeof (mach_port_t)), 1);
   dtable = *dtableP;
   *dtablelen = 3;
   dtable[0] = dtable[1] = dtable[2] = get_console (); /* XXX */
-  
+
   *intarrayP = NULL;
   *intarraylen = 0;
 
@@ -284,10 +289,10 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
   struct protid *rootpi;
   mach_port_t rootport;
 
-  if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
+  if (!(pt = ports_lookup_port (diskfs_port_bucket, port,
 				diskfs_execboot_class)))
     return EOPNOTSUPP;
-  
+
   rootpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node, flags,
 						    MACH_PORT_NULL),
 			       0,0,0,0);
@@ -313,7 +318,7 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
   ports_port_deref (pt);
   return 0;
 }
-  
+
 /* Called by init to get the privileged ports as described
    in <hurd/fsys.defs>. */
 kern_return_t
@@ -329,7 +334,7 @@ diskfs_S_fsys_getpriv (mach_port_t port,
 
   if (!init_bootstrap_port)
     return EOPNOTSUPP;
-  
+
   err = get_privileged_ports (host_priv, dev_master);
   if (!err)
     {
@@ -359,7 +364,7 @@ diskfs_S_fsys_init (mach_port_t port,
   error_t err;
   mach_port_t root_pt;
   struct protid *rootpi;
-  
+
   pt = ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
   if (!pt)
     return EOPNOTSUPP;
@@ -367,7 +372,7 @@ diskfs_S_fsys_init (mach_port_t port,
   if (initdone)
     return EOPNOTSUPP;
   initdone = 1;
-  
+
   /* init is single-threaded, so we must reply to its RPC before doing
      anything which might attempt to send an RPC to init.  */
   fsys_init_reply (reply, replytype, 0);
@@ -389,7 +394,7 @@ diskfs_S_fsys_init (mach_port_t port,
   /* Declare that the exec server is our child. */
   proc_child (procserver, diskfs_exec_server_task);
 
-  /* Don't start this until now so that exec is fully authenticated 
+  /* Don't start this until now so that exec is fully authenticated
      with proc. */
   exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
 
@@ -470,70 +475,8 @@ diskfs_S_fsys_init (mach_port_t port,
   return MIG_NO_REPLY;		/* Already replied above.  */
 }
 
-/* Unused */
-error_t
-diskfs_S_exec_init (mach_port_t a __attribute__ ((unused)),
-		    auth_t b __attribute__ ((unused)),
-		    process_t c __attribute__ ((unused)))
-{
-  return EOPNOTSUPP;
-}
-
-/* Unused */
-error_t
-diskfs_S_exec_setexecdata (mach_port_t a __attribute__ ((unused)),
-			   mach_port_t *b __attribute__ ((unused)),
-			   u_int c __attribute__ ((unused)),
-			   int bcopy __attribute__ ((unused)),
-			   int *d __attribute__ ((unused)),
-			   u_int e __attribute__ ((unused)),
-			   int ecopy __attribute__ ((unused)))
-{
-  return EOPNOTSUPP;
-}
-
-/* Unused. */
-error_t
-diskfs_S_exec_exec (mach_port_t execserver __attribute__ ((unused)),
-		    mach_port_t file __attribute__ ((unused)),
-		    mach_port_t oldtask __attribute__ ((unused)),
-		    int flags __attribute__ ((unused)),
-		    data_t argv __attribute__ ((unused)),
-		    mach_msg_type_number_t argvCnt __attribute__ ((unused)),
-		    boolean_t argvSCopy __attribute__ ((unused)),
-		    data_t envp __attribute__ ((unused)),
-		    mach_msg_type_number_t envpCnt __attribute__ ((unused)),
-		    boolean_t envpSCopy __attribute__ ((unused)),
-		    portarray_t dtable __attribute__ ((unused)),
-		    mach_msg_type_number_t dtableCnt __attribute__ ((unused)),
-		    boolean_t dtableSCopy __attribute__ ((unused)),
-		    portarray_t portarray __attribute__ ((unused)),
-		    mach_msg_type_number_t portarrayCnt 
-		      __attribute__ ((unused)),
-		    boolean_t portarraySCopy __attribute__ ((unused)),
-		    intarray_t intarray __attribute__ ((unused)),
-		    mach_msg_type_number_t intarrayCnt 
-		      __attribute__ ((unused)),
-		    boolean_t intarraySCopy __attribute__ ((unused)),
-		    mach_port_t *deallocnames __attribute__ ((unused)),
-		    u_int deallocnamescnt __attribute__ ((unused)),
-		    mach_port_t *destroynames __attribute__ ((unused)),
-		    u_int destroynamescnt __attribute__ ((unused))
-		    )
-{
-  return EOPNOTSUPP;
-}
-
-/* Unused. */
-error_t
-diskfs_S_exec_boot_init (mach_port_t execserver __attribute__ ((unused)),
-			 startup_t init __attribute__ ((unused)))
-{
-  return EOPNOTSUPP;
-}
-
 /* Start the execserver running (when we are a bootstrap filesystem).  */
-static void 
+static void
 start_execserver (void)
 {
   mach_port_t right;
