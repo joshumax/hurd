@@ -18,11 +18,11 @@
 /* This is called by a kernel to initialize the memory object;
    this routine is a dual of seqnos_memory_object_terminate.  */
 kern_return_t
-seqnos_memory_object_init (mach_port_t object, 
-			   mach_port_seqno_t seqno,
-			   mach_port_t control,
-			   mach_port_t name,
-			   vm_size_t pagesize)
+_pager_seqnos_memory_object_init (mach_port_t object, 
+				  mach_port_seqno_t seqno,
+				  mach_port_t control,
+				  mach_port_t name,
+				  vm_size_t pagesize)
 {
   struct pager *p;
 
