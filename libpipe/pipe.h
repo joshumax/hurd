@@ -62,7 +62,7 @@ struct pipe
      while a thread is waiting to read from a pipe and that pipe gets
      deallocated (say by socket_shutdown), it doesn't actually go away until
      the reader realizes what happened.  It is normally frobbed using
-     pipe_aquire & pipe_release, which do locking as well..  */
+     pipe_acquire & pipe_release, which do locking as well..  */
   unsigned readers, writers;
 
   /* Various flags, from PIPE_* below.  */
@@ -159,7 +159,7 @@ error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
 /* Free PIPE and any resources it holds.  */
 void pipe_free (struct pipe *pipe);
 
-/* Take any actions necessary when PIPE aquires its first writer.  */
+/* Take any actions necessary when PIPE acquires its first writer.  */
 void _pipe_first_writer (struct pipe *pipe);
 
 /* Take any actions necessary when PIPE's last reader has gone away.  PIPE
@@ -172,7 +172,7 @@ void _pipe_no_writers (struct pipe *pipe);
 
 /* Lock PIPE and increment its readers count.  */
 extern inline void
-pipe_aquire_reader (struct pipe *pipe)
+pipe_acquire_reader (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
   pipe->readers++;
@@ -180,7 +180,7 @@ pipe_aquire_reader (struct pipe *pipe)
 
 /* Lock PIPE and increment its writers count.  */
 extern inline void
-pipe_aquire_writer (struct pipe *pipe)
+pipe_acquire_writer (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
   if (pipe->writers++ == 0)
@@ -213,7 +213,7 @@ pipe_release_writer (struct pipe *pipe)
 extern inline void
 pipe_add_reader (struct pipe *pipe)
 {
-  pipe_aquire_reader (pipe);
+  pipe_acquire_reader (pipe);
   mutex_unlock (&pipe->lock);
 }
 
@@ -221,7 +221,7 @@ pipe_add_reader (struct pipe *pipe)
 extern inline void
 pipe_add_writer (struct pipe *pipe)
 {
-  pipe_aquire_writer (pipe);
+  pipe_acquire_writer (pipe);
   mutex_unlock (&pipe->lock);
 }
 
