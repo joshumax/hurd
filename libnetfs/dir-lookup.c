@@ -189,7 +189,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	goto out;
 
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && (np->istranslated
+	  && ((np->nn_stat.st_mode & S_IPTRANS)
 	      || S_ISFIFO (np->nn_stat.st_mode)
 	      || S_ISCHR (np->nn_stat.st_mode)
 	      || S_ISBLK (np->nn_stat.st_mode)
@@ -254,7 +254,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 				     dirport, 
 				     diruser->user,
 				     lastcomp ? flags : 0,
-				     (np->istranslated
+				     ((np->nn_stat.st_mode & S_IPTRANS)
 				      ? _netfs_translator_callback1
 				      : short_circuited_callback1),
 				     _netfs_translator_callback2,
