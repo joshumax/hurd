@@ -88,15 +88,23 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
   int need;			/* flags not set in ps, but desired to be */
   process_t server = ps_context_server(ps->context);
 
+  if (flags & PSTAT_NO_MSGPORT)
+    /* Ensure that we don't try to use the process's msg port.  */
+    {
+      have |= PSTAT_NO_MSGPORT;
+      have &= ~PSTAT_MSGPORT;
+    }
+
   /* Implement any inter-flag dependencies: if the new flags in FLAGS depend
      on some other set of flags to be set, make sure those are also in
      FLAGS. */
-
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
     flags |= PSTAT_EXEC_FLAGS;	/* For the traced bit.  */
-  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK | PSTAT_EXEC_FLAGS))
+  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK
+	       | PSTAT_EXEC_FLAGS)
+      && !(have & PSTAT_NO_MSGPORT))
     {
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
@@ -107,7 +115,6 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
     flags |= PSTAT_TASK;
 
   need = flags & ~have;
-
 
   /* MGET: If we're trying to set FLAG, and the preconditions PRECOND are set
      in the flags already, then eval CALL and set ERR to the result.
