@@ -753,6 +753,9 @@ process_has_exited (struct proc *p)
     condition_broadcast (&p->p_wakeup);
 
   p->p_dead = 1;
+
+  /* Cancel any outstanding RPCs done on behalf of the dying process.  */
+  ports_interrupt_rpcs (p);
 }
 
 void
