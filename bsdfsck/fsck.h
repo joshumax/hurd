@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.3 1994/08/23 20:07:33 mib Exp $
+ *	$Id: fsck.h,v 1.4 1994/08/24 15:11:08 mib Exp $
  */
 
 /* Begin GNU Hurd */
@@ -89,6 +89,7 @@ struct odirtemplate {
 /* Provide mode from struct dinode * */
 #define DI_MODE(dp) (((dp)->di_modeh << 16) & (dp)->di_model)
 
+#define NBBY 8
 
 /* End GNU Hurd additions */	
 
