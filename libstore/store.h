@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -41,7 +41,7 @@ struct store
   /* Address ranges in the underlying storage which make up our contiguous
      address space.  In units of BLOCK_SIZE, below.  */
   off_t *runs;			/* Malloced */
-  unsigned runs_len;
+  size_t runs_len;
 
   /* Handles for the underlying storage.  */
   char *name;			/* Malloced */
@@ -93,9 +93,8 @@ error_t store_create (file_t source, struct store **store);
 error_t store_device_create (device_t device, struct store **store);
 
 /* Like store_device_create, but doesn't query the device for information.   */
-error_t _store_device_create (device_t device,
-			      off_t *runs, unsigned runs_len,
-			      size_t block_size,
+error_t _store_device_create (device_t device, size_t block_size,
+			      off_t *runs, size_t runs_len,
 			      struct store **store);
 
 /* Return a new store in STORE referring to the file FILE.  Unlike
@@ -105,19 +104,21 @@ error_t _store_device_create (device_t device,
 error_t store_file_create (file_t file, struct store **store);
 
 /* Like store_file_create, but doesn't query the file for information.  */
-error_t _store_file_create (file_t file,
-			    off_t *runs, unsigned runs_len,
-			    size_t block_size,
+error_t _store_file_create (file_t file, size_t block_size,
+			    off_t *runs, size_t runs_len,
 			    struct store **store);
 
 void store_free (struct store *store);
 
-/* Allocate a new store structure of class CLASS, with meths METHS.  */
+/* Allocate a new store structure of class CLASS, with meths METHS, and the
+   various other fields initialized to the given parameters.  */
 struct store *
-_make_store (enum file_storage_class class, struct store_meths *meths);
+_make_store (enum file_storage_class class, struct store_meths *meths,
+	     mach_port_t port, size_t block_size,
+	     off_t *runs, size_t runs_len);
 
 /* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
-error_t store_set_runs (struct store *store, off_t *runs, unsigned runs_len);
+error_t store_set_runs (struct store *store, off_t *runs, size_t runs_len);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t store_set_name (struct store *store, char *name);
