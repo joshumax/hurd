@@ -71,15 +71,12 @@ ftpfs_create (char *rmt_path, int fsid,
   if (! err)
     err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
   if (! err)
-    err = ftpfs_dir_lookup (super_root_dir, "", &new->root);
+    err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
 
   if (err)
     free (new);
   else
-    {
-      mutex_unlock (&new->root->lock);
-      *fs = new;
-    }
+    *fs = new;
 
   return err;
 }
