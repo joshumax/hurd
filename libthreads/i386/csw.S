@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.3  1995/05/12 18:35:55  roland
+ * Use EXT macro instead of explicit underscores.
+ *
 # Revision 1.2  1994/05/04  19:01:50  mib
 # entered into RCS
 #
@@ -54,6 +57,11 @@
  * 
  */
 #include <i386/asm.h>
+
+#ifdef	PIC
+#undef	EXT
+#define	EXT(name)	name@PLT
+#endif
 
 /*
  * Suspend the current thread and resume the next one.
