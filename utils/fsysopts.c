@@ -47,7 +47,7 @@ usage(status)
       printf(USAGE, program_invocation_name);
       printf("\
 \n\
-  -L, --dereference          if a translator exists, put the new one on top\n\
+  -L, --dereference          if FILE is a symbolic link, follow it\n\
   -R, --recursive            pass these options to any child translators\n\
       --help                 give this help list\n\
       --version              print version number of program\n\
@@ -57,7 +57,7 @@ usage(status)
   exit(status);
 }
 
-#define SHORT_OPTIONS "L?V"
+#define SHORT_OPTIONS "LR?V"
 
 static struct option options[] =
 {
@@ -107,7 +107,7 @@ main(int argc, char *argv[])
       default:  usage(-1);
       }
 
-  node = file_name_lookup(node_name, (deref ? 0 : O_NOTRANS), 0666);
+  node = file_name_lookup(node_name, (deref ? 0 : O_NOLINK), 0666);
   if (node == MACH_PORT_NULL)
     error(1, errno, "%s", node_name);
 
