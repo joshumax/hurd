@@ -1,5 +1,12 @@
 2002-05-28  Roland McGrath  <roland@frob.com>
 
+	* cthreads.h (hurd_condition_wait, condition_implies,
+	condition_unimplies): Restore decls lost in merge.
+	(mutex_clear): Define as mutex_init instead of bogon (lost in merge).
+
+	* cthreads.c (cthread_fork_prepare, cthread_fork_parent,
+	cthread_fork_child): Don't call malloc_fork_* (lost in merge).
+
 	* lockfile.c: Use __attribute__ magic instead of #pragma magic
 	for alias definitions.  Don't bother to make them weak.
 

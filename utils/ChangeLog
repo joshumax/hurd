@@ -1,3 +1,26 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* fakeauth.c (idvec_copyout): Fix argument type.
+
+	* rpctrace.c (print_data): Use if instead of switch to handle FP type
+	sizes, in case double == long double.
+
+	* storeinfo.c (print_store): Use %z format.
+
+	* pids.c (add_fn_pids): unsigned -> size_t
+	* w.c (add_utmp_procs): Likewise.
+	* login.c (add_canonical_host): Likewise.
+	* ps.c (main): Likewise.
+	* login.c (add_entry, main): Likewise.
+	* settrans.c (main): int -> size_t
+	* showtrans.c (main): Likewise.
+	* fsysopts.c (main): Likewise.
+	* vmstat.c (main): Use int for FWIDTHS.
+	* ping.c (main): size_t -> socklen_t
+	* fakeauth.c (S_auth_getids, S_auth_makeauth,
+	S_auth_server_authenticate): u_int -> size_t
+	* showtrans.c (main): Cast field width/precision args to int.
+
 2002-05-20  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* rpctrace.c (parse_msgid_list): Fixed the check that tests if we

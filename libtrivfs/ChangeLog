@@ -1,3 +1,14 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* dir-readdir.c (trivfs_S_dir_readdir): u_int -> size_t
+	* file-get-trans.c (trivfs_S_file_get_translator): Likewise.
+	* file-set-trans.c (trivfs_S_file_set_translator): Likewise.
+	* file-getfh.c (trivfs_S_file_getfh): Likewise.
+	* fsys-getroot.c (trivfs_S_fsys_getroot): Likewise.
+	* io-restrict-auth.c (trivfs_S_io_restrict_auth): Likewise
+	* fsys-stubs.c (trivfs_S_fsys_getfile): Likewise.
+	(trivfs_S_fsys_startup): Fix argument type.
+
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* dir-lookup.c (trivfs_S_dir_lookup): Use iohelp_dup_iouser as

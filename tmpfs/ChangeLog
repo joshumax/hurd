@@ -1,3 +1,14 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* dir.c (diskfs_get_directs): u_int -> size_t
+	* tmpfs.c (diskfs_append_args): unsigned -> size_t
+
+2002-03-31  Roland McGrath  <roland@frob.com>
+
+	* dir.c (diskfs_lookup_hard): Pass new argument to
+	diskfs_cached_lookup.
+	* node.c (diskfs_alloc_node): Likewise.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* tmpfs.c (diskfs_extra_version): New variable.
