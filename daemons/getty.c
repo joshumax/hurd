@@ -33,6 +33,40 @@ extern int login_tty (int);
 #define _PATH_DEV "/dev"
 #define _PATH_LOGIN "/bin/login"
 
+/* Print a suitable welcome banner */
+void
+print_banner (int fd, char *ttyname)
+{
+  struct utsname u;
+  char *s;
+  int len, cc;
+  char *hostname;
+
+  if (uname (&u))
+    u.sysname[0] = u.release[0] = '\0';
+  
+  len = 50;
+  hostname = malloc (len);
+  cc = gethostname (hostname, len);
+  if (cc == -1)
+    hostname[0] = '\0';
+  while (cc >= len)
+    {
+      hostname = realloc (hostname, len *= 2);
+      cc = hostname (hostname, len);
+      if (cc == -1)
+	{
+	  hostname[0] = '\0';
+	  break;
+	}
+    }
+
+  cc = asprintf (&s, "\r\n\n%s %s (%s) (%s)\r\n\n",
+		 u.sysname, u.release, hostname, ttyname);
+  write (fd, s, cc);
+}
+
+
 int
 main (int argc, char **argv)
 {
@@ -73,6 +107,8 @@ main (int argc, char **argv)
 	}
     }
   while (tty == -1);
+
+  print_banner (tty, ttyname);
 
   login_tty (tty);
   
