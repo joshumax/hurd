@@ -1,6 +1,6 @@
 /* Internal sockets
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -23,13 +23,14 @@
 
 #include <assert.h>
 #include <cthreads.h>		/* For mutexes */
+#include <sys/mman.h>
 
 #include <hurd/ports.h>
 
 struct pipe;
 struct pipe_class;
 
-/* A port on SOCK.  Multiple sock_user's can point to the same socket.  */ 
+/* A port on SOCK.  Multiple sock_user's can point to the same socket.  */
 struct sock_user
 {
   struct port_info pi;
