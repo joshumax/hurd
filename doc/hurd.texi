@@ -199,6 +199,7 @@ Server Bootstrap
 * Invoking serverboot::         Starting a set of interdependent servers.
 * Boot Scripts::                Describing server bootstrap relationships.
 * Recursive Bootstrap::         Running a Hurd under another Hurd.
+* Invoking boot::               How to use the boot program.
 
 Foundations
 
@@ -666,12 +667,12 @@ disk, and directly start a more advanced bootloader.
 @cindex GRUB
 @cindex GRand Unified Bootloader
 Currently, @dfn{GRUB}@footnote{The GRand Unified Bootloader, available
-from @uref{http://www.uruk.org/grub/}.} is the preferred GNU bootloader.
-GRUB provides advanced functionality, and is capable of loading several
+from @uref{http://www.gnu.org/software/grub/}.} is the GNU bootloader.
+GNU GRUB provides advanced functionality, and is capable of loading several
 different kernels (such as Linux, DOS, and the *BSD family).
 
 From the standpoint of the Hurd, the bootloader is just a mechanism to
-get the microkernel running and transfer control to @code{serverboot}.
+get the microkernel running and transfer control to the Hurd servers.
 You will need to refer to your bootloader and microkernel documentation
 for more information about the details of this process.
 
@@ -680,12 +681,17 @@ for more information about the details of this process.
 @section Server Bootstrap
 @pindex serverboot
 
+The @code{serverboot} program has been deprecated.  Newer kernels
+support processing the bootscript parameters and boot the Hurd
+directly.
+
 The @code{serverboot} program is responsible for loading and executing
 the rest of the Hurd servers.  Rather than containing specific
 instructions for starting the Hurd, it follows general steps given in a
 user-supplied boot script.
 
-To boot the Hurd, the microkernel must start @code{serverboot} as its
+To boot the Hurd using @code{serverboot}, the microkernel must start 
+@code{serverboot} as its
 first task, and pass it appropriate arguments.  @code{serverboot} has a
 counterpart, called @code{boot}, which can be invoked while the Hurd is
 already running, and allows users to start their own complete sub-Hurds
@@ -695,6 +701,7 @@ already running, and allows users to start their own complete sub-Hurds
 * Invoking serverboot::         Starting a set of interdependent servers.
 * Boot Scripts::                Describing server bootstrap relationships.
 * Recursive Bootstrap::         Running a Hurd under another Hurd.
+* Invoking boot::               How to use the boot program.
 @end menu
 
 
@@ -743,6 +750,10 @@ to locate the boot script (described above), and to initialize the
 @subsection Boot Scripts
 @pindex /boot/servers.boot
 @pindex servers.boot
+
+Boot Scripts are used to boot further Hurd systems in parallel to the
+first, and are parsed by @code{serverboot} to boot the Hurd.  See
+@file{/boot/servers.boot} for an example of a Hurd boot script.
 
 FIXME: finish
 
@@ -810,7 +821,7 @@ $ @kbd{fsysopts ./my-root --writable}
 $ @kbd{cd my-root}
 $ @kbd{tar -zxpf /pub/debian/FIXME/gnu-20000929.tar.gz}
 $ @kbd{cd ..}
-$ @kbd{fsysopts ./my-root --read-only}
+$ @kbd{fsysopts ./my-root --readonly}
 $
 @end example
 
@@ -824,6 +835,18 @@ Run @code{boot}.
 $ @kbd{boot -D ./my-boot ./my-boot/boot/servers.boot ./my-partition}
 [...]
 @end example
+
+@item
+Here is an example using a hard drive that already has a GNU/Hurd
+system installed on an ext2 filesystem on @file{/dev/hd2s1}.
+
+@example
+$ @kbd{settrans /mnt /hurd/ex2fs --readonly /dev/hd2s1}
+$ @kbd{boot -d -D /mnt -I /mnt/boot/servers.boot /dev/hd2s1}
+@end example
+
+@item
+See @pxref{boot Options} for help with boot.
 @end enumerate
 
 Note that it is impossible to share microkernel devices between the two
@@ -843,6 +866,60 @@ If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
 safe place to overwrite your old Hurd with the new one, and reboot back
 to your old configuration (with the new Hurd servers).
+
+
+@node Invoking boot 
+@section Invoking boot 
+@menu
+* boot Options::                Boot program command line options
+@end menu
+
+@node Boot bptions
+@subsection boot Options
+
+Usage: boot [@var{option}@dots{}] @var{boot-script} @var{device}@dots{}
+
+@table @code
+@item --kernel-command-line=@var{command line}
+@itemx -c
+Simulated multiboot command line to supply.
+
+@item --pause
+@itemx -d
+Pause for user confirmation at various times during booting.
+
+@item --boot-root=@var{dir}
+@itemx -D
+Root of a directory tree in which to find the files specified in
+@var{boot-script}.
+
+@item --interleave=@var{blocks}    
+Interleave in runs of length @var{blocks}.
+
+@item --isig
+@itemx -I
+Do not disable terminal signals, so you can suspend and interrupt the
+boot program itself, rather than the programs running in the booted
+system.
+
+@item --layer
+@itemx -L                
+Layer multiple devices for redundancy.
+
+@item --single-user
+@itemx -s          
+Boot into single user mode.
+
+@item --store-type=@var{type}
+@itemx -T
+Each @var{device} names a store of type @var{type}.
+@end table
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+If neither @option{--interleave} or @option{--layer} is specified, multiple 
+@var{device}s are concatenated.
 
 
 @node Shutdown
@@ -2136,13 +2213,79 @@ Only set the translator if there is none already.
 @end table
 
 
-FIXME: finish
 @node Invoking showtrans
 @subsection Invoking @code{showtrans}
+
+The @code{showtrans} program allows you to show the passive translator
+setting on a file system node.
+
+The @code{showtrans} program has the following synopsis:
+
+@example
+showtrans [@var{option}]@dots{} @var{file}@dots{}
+@end example
+
+@code{showtrans} accepts the following options:
+
+@table @code
+@item -p
+@itemx --prefix
+Always display @var{filename}: before translators.
+
+@item -P
+@itemx --no-prefix
+Never display @var{filename}: before translators.
+@item -s
+@itemx --silent
+No output; useful when checking error status.
+@item -t
+@itemx --translated
+Only display files that have translators.
+@end table
+
+
 @node Invoking mount
 @subsection Invoking @code{mount}
+
+
 @node Invoking fsysopts
 @subsection Invoking @code{fsysopts}
+
+The @code{fsysopts} program allows you to retrieve or set command line
+options for running translator @var{filesys}.
+
+The @code{fsysopts} program has the following synopsis:
+
+@example
+fsysopts [@var{option}@dots{}] @var{filesys} [@var{fs_option}@dots{}]
+@end example
+
+@code{fsysopts} accepts the following options:
+
+@table @code
+
+@item -L
+@itemx --dereference
+If @var{filesys} is a symbolic link, follow it.
+
+@item -R
+@itemx --recursive
+Pass these options to any child translators.
+@end table
+
+The legal values for @var{fs_option} depends on @var{filesys}, but
+some common ones are:
+
+@table @code
+@item --readonly
+@item --writable
+@item --remount
+@item --sync[=@var{interval}]
+@item --nosync
+@end table
+
+If no options are supplied, @var{filesys}' current options are
+printed.
 
 
 @node Trivfs Library
@@ -2329,9 +2472,9 @@ The functions and variables described in this subsection already have
 default definitions in @code{libtrivfs}, so you are not forced to define
 them; rather, they may be redefined on a case-by-case basis.
 
-@deftypevar {extern struct port_class *} trivfs_protid_portclasses[]
+@deftypevar {extern struct port_class *} trivfs_protid_portclasses []
 @deftypevarx {extern int} trivfs_protid_nportclasses
-@deftypevarx {extern struct port_class *} trivfs_cntl_portclasses[]
+@deftypevarx {extern struct port_class *} trivfs_cntl_portclasses []
 @deftypevarx {extern int} trivfs_cntl_nportclasses
 If you define these, they should be vectors (and the associated sizes)
 of port classes that will be translated into control and protid pointers
@@ -2839,19 +2982,47 @@ FIXME: Looking up files in directories
 @node Modifying Directories
 @subsection Modifying Directories
 
-FIXME: Creating and deleting nodes
+@deftypefun kern_return_t dir_mkfile (@w{file_t @var{directory}}, @w{int @var{flags}}, @w{mode_t @var{mode}}, @w{mach_port_t *@var{newnode}})
+Create a new file in @var{directory} without linking it into the
+filesystem.  You still must have write permission on the specified
+directory, even though it will not actually be written.
 
-@code{dir_mkfile}
+The function returns a port to the new file in *@var{newnode}.  Flags
+are the same as for @code{dir_lookup}, but @code{O_CREAT} and
+@code{O_TRUNC} are assumed even if not specified.
+@end deftypefun
 
-@code{dir_mkdir}
+@deftypefun kern_return_t dir_mkdir (@w{file_t @var{directory}}, @w{char *@var{name}}, @w{mode_t @var{mode}})
+Create a new directory named @var{name} in @var{directory} with
+permission specified by @var{mode}.
+@end deftypefun
 
-@code{dir_rmdir}
+@deftypefun kern_return_t dir_rmdir (@w{file_t @var{directory}}, @w{char *@var{name}})
+Remove the directory named @var{name} from @var{directory}.
+@end deftypefun
 
-@code{dir_unlink}
+@deftypefun kern_return_t dir_unlink (@w{file_t @var{directory}}, @w{char *@var{name}})
+Remove the non-directory node @var{name} from @var{directory}.
+@end deftypefun
 
-@code{dir_link}
+@deftypefun kern_return_t dir_link (@w{file_t @var{directory}}, @w{file_t @var{file}}, @w{char *@var{name}}, @w{int @var{excl}})
+Create a hard link in @var{directory}.  If @var{excl} is set and
+@var{name} already exists in @var{directory}, then this function will
+fail.  If @var{excl} is not set and @var{name} already exists the old
+file named @var{name} will be unlinked.  If @var{directory} and
+@var{file} are not on the same filesystem, then @code{dir_link} might
+fail with @code{EXDEV}.
+@end deftypefun
 
-@code{dir_rename}
+@deftypefun kern_return_t dir_rename (@w{file_t @var{olddirectory}}, @w{char *@var{oldname}}, @w{file_t @var{newdirectory}}, @w{char *@var{newname}}, @w{int @var{excl}})
+Move the node @var{oldname} in @var{olddirectory} to the node
+@var{newname} in @var{newdirectory}.  If @var{excl} is set and
+@var{newname} already exists in @var{newdirectory}, then this function
+will fail.  If @var{excl} is not set and @var{newname} already exists,
+the old file named @var{newname} will be unlinked.  If
+@var{olddirectory} and @var{newdirectory} are not on the same
+filesystem, then @code{dir_rename} might fail with @code{EXDEV}.
+@end deftypefun
 
 @node Notifications
 @subsection Notifications
@@ -3137,7 +3308,7 @@ Returns the amount written in @var{amount} (in bytes).  @var{addr} is in
 The store library comes with a number of standard store class
 implementations:
 
-@deftypevar {extern const struct store_class *const} store_std_classes[]
+@deftypevar {extern const struct store_class *const} store_std_classes []
 This is a null-terminated vector of the standard store classes
 implemented by @code{libstore}.
 @end deftypevar
