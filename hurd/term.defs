@@ -82,7 +82,7 @@ routine term_set_filenode (
 /* Find out what the bottom half of this terminal is using.  */
 routine term_get_bottom_type (
 	terminal: io_t;
-	out type: int);
+	out ttype: int);
 
 /* Start running with the bottom half as a device port using the Mach
    kernel device interface.  The old bottom half (if any) is
