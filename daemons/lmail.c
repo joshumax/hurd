@@ -1,6 +1,6 @@
 /* Local mail delivery
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -37,6 +37,7 @@
 #include <sys/time.h>
 
 #define OPT_FILE -5
+#define OPT_REMOVE -6
 
 const char *argp_program_version = STANDARD_HURD_VERSION (mail.local);
 
@@ -45,8 +46,9 @@ options[] =
 {
   {"from",    'f',	"USER",	0, "Record sender as USER"},
   {0,         'd',	0,     	OPTION_ALIAS|OPTION_HIDDEN},
+  {0,         'r',	0,     	OPTION_ALIAS|OPTION_HIDDEN},
   {"file",    OPT_FILE, "FILE",	0, "Deliver FILE instead of standard input"},
-  {"remove",  'r',	0,     	0, "Remove FILE after successful delivery"},
+  {"remove",  OPT_REMOVE, 0,   	0, "Remove FILE after successful delivery"},
   {"mail-dir",'m',	"DIR", 	0, "Look for mailboxes in DIR"},
   {"use-lock-file",'l',	0,     	OPTION_HIDDEN,
    "Use a lock file instead of flock for mailboxes"},
@@ -445,11 +447,15 @@ main (int argc, char **argv)
     {
       switch (key)
 	{
-	case 'f': case 'd':
+	case 'd':
+	  /* do nothing; compatibility */
+	  break;
+	case 'f': 
+	case 'r':
 	  params.from = arg; break;
 	case OPT_FILE:
 	  file = arg; break;
-	case 'r':
+	case OPT_REMOVE:
 	  remove = 1; break;
 	case 'm':
 	  params.mail_dir = arg; break;
