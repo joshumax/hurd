@@ -38,7 +38,7 @@ pager_read_page (struct user_pager_info *upi,
 		 vm_offset_t page, vm_address_t *buf, int *writelock)
 {
   error_t err;
-  int read;			/* bytes actually read */
+  int read = 0;			/* bytes actually read */
   int want = vm_page_size;	/* bytes we want to read */
   struct dev *dev = (struct dev *)upi;
   struct store *store = dev->store;
