@@ -1,3 +1,17 @@
+1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hyper.c (diskfs_set_hypermetadata): Adjust device addresses for
+	possible differences between DEV_BSIZE & device block size.
+	* inode.c (diskfs_S_file_get_storage_info): Likewise.
+	* pager.c (pager_read_page, pager_write_page, pager_unlock_page):
+	Likewise.
+	* ufs.h (log2_dev_blocks_per_bsize): New declaration.
+	* main.c (main): Only require device-block-size to be <= DEV_BSIZE.
+	Get rid of device-block-size-is-power-of-2 check.
+	Set LOG2_DEV_BLOCKS_PER_BSIZE.
+	Exit with an error if the disk is too small rather than assert failing.
+	(log2_dev_blocks_per_bsize): New variable.
+
 Thu Feb  6 01:56:27 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	(diskfs_S_file_getfh, diskfs_S_fsys_getfile): Functions removed.
