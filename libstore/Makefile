@@ -1,7 +1,7 @@
 # Makefile for libstore
-# 
-#   Copyright (C) 1995, 1996, 1997 Free Software Foundation
-#   Written by Miles Bader <miles@gnu.ai.mit.edu>
+#
+#   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
+#   Written by Miles Bader <miles@gnu.org>
 #
 #   This file is part of the GNU Hurd.
 #
@@ -30,6 +30,7 @@ SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c	   \
 LCLHDRS=store.h
 installhdrs=store.h
 
+HURDLIBS = shouldbeinlibc
 UNZIP_OBJS = unzip.o inflate.o util.o do-bunzip2.o
 OBJS = $(SRCS:.c=.o) $(UNZIP_OBJS)
 
