@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "proc_S.h"
+#include "process_S.h"
 #include "process_reply_U.h"
 #include "ourmsg_U.h"
 #include "interrupt_S.h"
