@@ -512,7 +512,10 @@ store_nbd_open (const char *name, int flags, struct store **store)
       err = _store_nbd_create (sock, flags, blocksize, &run, 1, store);
       if (! err)
 	{
-	  err = store_set_name (*store, name);
+	  if (!strncmp (name, url_prefix, sizeof url_prefix - 1))
+	    err = store_set_name (*store, name);
+	  else
+	    asprintf (&(*store)->name, "%s%s", url_prefix, name);
 	  if (err)
 	    store_free (*store);
 	}
