@@ -85,7 +85,7 @@ diskfs_S_dir_link (struct protid *filecred,
 	diskfs_node_update (np, 1);
     }
 
-  if (diskfs_synchronou)
+  if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
 
  out:
