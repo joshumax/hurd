@@ -144,9 +144,18 @@ open_hook (struct trivfs_control *cntl,
     return pty_open_hook (cntl, user, flags);
 
   if ((flags & (O_READ|O_WRITE)) == 0)
+    /* Not asking for a port that can do i/o (just stat or chmod or whatnot),
+       so there is nothing else we need to think about.  */
     return 0;
 
   mutex_lock (&global_lock);
+
+  if (termflags & NO_DEVICE)
+    {
+      /* We previously discovered that the underlying device doesn't exist.  */
+      mutex_unlock (&global_lock);
+      return ENXIO;
+    }
 
   if (!(termflags & TTY_OPEN))
     {
@@ -194,10 +203,19 @@ open_hook (struct trivfs_control *cntl,
     }
 
   /* Wait for carrier to turn on. */
-  while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
+  while ((termflags & (NO_CARRIER|NO_DEVICE)) == NO_CARRIER
+	 && !(termstate.c_cflag & CLOCAL)
 	 && !(flags & O_NONBLOCK)
 	 && !cancel)
     cancel = hurd_condition_wait (&carrier_alert, &global_lock);
+
+  if (termflags & NO_DEVICE)
+    {
+      /* The open of the underlying device returned an error indicating
+	 that no such device exists.  */
+      mutex_unlock (&global_lock);
+      return ENXIO;
+    }
 
   if (cancel)
     {

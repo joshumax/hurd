@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+#
+#   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -27,6 +27,8 @@ LCLHDRS = term.h
 DIST_FILES = ourmsg.defs
 
 HURDLIBS=trivfs fshelp iohelp ports ihash shouldbeinlibc threads
-OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o 
+OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o
 
 include ../Makeconf
+
+device_replyServer-CPPFLAGS = -DTypeCheck=0 -Wno-unused # XXX

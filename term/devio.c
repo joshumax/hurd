@@ -506,6 +506,13 @@ device_open_reply (mach_port_t replyport,
 
       if (returncode != 0)
 	{
+	  /* Note that DEVICE is total garbage (not a real port name at all!)
+	     in this case.  */
+
+	  if (returncode == D_NO_SUCH_DEVICE)
+	    /* Record that the device does not exist.  */
+	    termflags |= NO_DEVICE;
+
 	  /* Bogus. */
 	  report_carrier_on ();
 	  report_carrier_off ();
