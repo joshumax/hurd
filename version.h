@@ -24,7 +24,9 @@
 #define HURD_VERSION "0.1"
 #endif
 
-/* The standard way to print versions for --version */
-#define STANDARD_HURD_VERSION(s) #s " - GNU Hurd-" HURD_VERSION
+/* The standard way to print versions for --version.  */
+#define _SHV_SEP "; "
+#define STANDARD_HURD_VERSION(s, extra...) \
+  #s " (GNU Hurd" _SHV_SEP ##extra ") " HURD_VERSION
 
    
