@@ -58,13 +58,30 @@ diskfs_S_file_exec (struct protid *cred,
     return EOPNOTSUPP;
   
   np = cred->po->np;
+
+  mutex_lock (&np->lock);
+
   if ((cred->po->openstat & O_EXEC) == 0)
-    return EBADF;
+    {
+      mutex_unlock (&np->lock);
+      return EBADF;
+    }
+  
   if (!((np->dn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((np->dn_stat.st_mode & S_IUSEUNK)
 	    && (np->dn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
-    return EACCES;
+    {
+      mutex_unlock (&np->lock);
+      return EACCES;
+    }
+  
+  if ((np->dn_stat.st_mode & S_IFMT) == S_IFDIR)
+    {
+      mutex_unlock (&np->lock);
+      return EACCES;
+    }
 
+#ifdef this_is_so_totally_wrong
   /* Handle S_ISUID and S_ISGID uid substitution.  */
   /* XXX All this complexity should be moved to libfshelp.  -mib */
   if ((((np->dn_stat.st_mode & S_ISUID)
@@ -229,6 +246,7 @@ diskfs_S_file_exec (struct protid *cred,
       mach_port_deallocate (mach_task_self (), portarray[INIT_PORT_AUTH]);
       portarray[INIT_PORT_AUTH] = newauth;
     }
+#endif 
 
   /* If the user can't read the file, then we should use a new task,
      which would be inaccessible to the user.  Actually, this doesn't
@@ -244,6 +262,8 @@ diskfs_S_file_exec (struct protid *cred,
 						   cred->po->dotdotport),
 			      cred->uids, cred->nuids,
 			      cred->gids, cred->ngids);
+  mutex_unlock (&np->lock);
+
   err = exec_exec (diskfs_exec, 
 		   ports_get_right (newpi),
 		   MACH_MSG_TYPE_MAKE_SEND,
@@ -252,6 +272,7 @@ diskfs_S_file_exec (struct protid *cred,
 		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		   intarray, intarraylen, deallocnames, deallocnameslen,
 		   destroynames, destroynameslen);
+
   ports_port_deref (newpi);
   if (!err)
     {
