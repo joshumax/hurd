@@ -6,7 +6,7 @@
 	represent a console matrix cell and the attribute of one such
 	cell, resp.  Add macros for keycodes.
 	(struct cons_display): Change type of _matrix member to conchar_t.
-	* display.c (struct attr): Rewrite, usiong cons_attr_t to hold the
+	* display.c (struct attr): Rewrite, using cons_attr_t to hold the
 	attributes.
 	(handle_escape_bracket_m): Use new members of ATTR.
 	(display_flush_filechange): Send notification for changed matrix
