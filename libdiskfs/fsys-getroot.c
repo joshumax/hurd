@@ -143,7 +143,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
     {
       if (type == S_IFDIR)
 	error = EISDIR;
-      else if (diskfs_readonly)
+      else if (diskfs_check_readonly ())
 	error = EROFS;
       else 
 	error = diskfs_access (diskfs_root_node, S_IWRITE, &pseudocred);
