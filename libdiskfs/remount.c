@@ -1,6 +1,6 @@
 /* Remount an active filesystem
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,7 +33,9 @@ diskfs_remount ()
   if (! diskfs_readonly)
     return EBUSY;
 
-  ports_inhibit_class_rpcs (diskfs_protid_class);
+  err = ports_inhibit_class_rpcs (diskfs_protid_class);
+  if (err)
+    return err;
 
   err = diskfs_reload_global_state ();
   if (!err)
