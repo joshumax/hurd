@@ -40,7 +40,6 @@
 #define OPT_SESS	-3
 #define OPT_SORT	-4
 #define OPT_FMT		-5
-#define OPT_HELP	-6
 #define OPT_PGRP	-7
 
 #define OA OPTION_ARG_OPTIONAL
@@ -55,6 +54,7 @@ static struct argp_option options[] =
   {0,            'd',     0,      0,  "List all processes except process group"
                                       " leaders"},
   {"all",        'e',     0,      0,  "List all processes"},
+  {0,		 'A',     0,      OA}, /* Posix option */
   {0,            'f',     0,      0,  "Use the `full' output-format"},
   {0,            'g',     0,      0,  "Include session and login leaders"},
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
@@ -68,7 +68,7 @@ static struct argp_option options[] =
                                       " msg port"},
   {"nominal-fields",'n',  0,      0,  "Don't elide fields containing"
                                       " `uninteresting' data"},
-  {"owner",      'o',     "USER", 0,  "Show only processes owned by USER"},
+  {"owner",      'U',     "USER", 0,  "Show only processes owned by USER"},
   {"not-owner",  'O',     "USER", 0,  "Show only processes not owned by USER"},
   {"pid",        'p',     "PID",  0,  "List the process PID"},
   {"pgrp",       OPT_PGRP,"PGRP", 0,  "List processes in process group PGRP"},
@@ -146,30 +146,37 @@ char *fmt_names[] =
   {"default",	"user",	"vmem",	"long",	"jobc",	"full",	"hurd",	"hurd-long",0};
 /* How each of those formats should be sorted; */
 char *fmt_sortkeys[] =
-  {"pid",	"%cpu",	"%mem",	"pid",	"pid",	"pid",	"pid",	"pid"};
-/* and whether the sort should be backwards or forwards; */ 
-bool fmt_sortrev[] =
-  {FALSE,	TRUE,	TRUE,	FALSE,	FALSE,	FALSE,	FALSE,	FALSE};
+  {"pid",	"-%cpu","-%mem","pid",	"pid",	"pid",	"pid",	"pid"};
 /* and the actual format strings.  */
 char *fmts[] =
 {
   /* default */
-  "~PID ~TH# ~TT=tty ~SC=susp ~STAT=state ~TIME ~COMMAND=args",
+  "~PID ~TH# ~TT ~SC ~STAT ~TIME ~COMMAND",
   /* user (-u) */
-  "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ=vsize ~RSS=rsize ~TT=tty ~SC=susp ~STAT=state ~COMMAND=args",
+  "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ ~RSS ~TT ~SC ~STAT ~COMMAND",
   /* vmem (-v) */
-  "~PID ~TH# ~STAT=state ~SL=sleep ~PAGEIN=pgins ~FAULTS=pgflts ~COWFLT=cowflts ~ZFILLS ~SIZE=vsize ~RSS=rsize ~%CPU ~%MEM ~COMMAND=args",
+  "~PID ~TH# ~STAT ~SL ~PAGEIN ~FAULTS ~COWFLT ~ZFILLS ~SIZE ~RSS ~%CPU ~%MEM ~COMMAND",
   /* long (-l) */
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGI=msgin ~MSGO=msgout ~SZ=vsize ~RSS=rsize ~SC=susp ~RPC ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI ~TH ~MSGI ~MSGO ~SZ ~RSS ~SC ~RPC ~STAT ~TT ~TIME ~COMMAND",
   /* jobc (-j) */
-  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC=susp ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC ~STAT ~TT ~TIME ~COMMAND",
   /* full (-f) (from sysv) */
-  "~-USER ~PID ~PPID ~TTY ~TIME ~COMMAND=args",
+  "~-USER ~PID ~PPID ~TTY ~TIME ~COMMAND",
   /* hurd */
-  "~PID ~Th# ~UID ~NTh ~VMem=vsize ~RSS=rsize ~User=utime ~System=stime ~Args",
+  "~PID ~Th# ~UID ~NTh ~VMem=vsize ~RSS ~User=utime ~System=stime ~Args",
   /* hurd-long */
-  "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS=rsize ~%CPU ~User=utime ~System=stime ~Args"
+  "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS ~%CPU ~User=utime ~System=stime ~Args"
 };
+
+/* Augment the standard specs with our own abbrevs.  */
+static struct ps_fmt_spec
+spec_abbrevs[] = {
+  {"TT=tty"}, {"SC=susp"}, {"STAT=state"}, {"COMMAND=args"}, {"SL=sleep"},
+  {"TH=nth"}, {"NI=bpri"}, {"SZ=vsize"}, {"RSS=rsize"},
+  {"MSGI=msgin"}, {"MSGO=msgout"},
+  {0}
+};
+static struct ps_fmt_specs ps_specs = { spec_abbrevs, &ps_std_fmt_specs };
 
 /* ---------------------------------------------------------------- */
 
@@ -323,8 +330,6 @@ main(int argc, char *argv[])
   unsigned num_tty_names = 0;
   proc_stat_list_t procset;
   ps_context_t context;
-  ps_stream_t output;
-  ps_fmt_t fmt;
   char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
     FILTER_OWNER | FILTER_NOT_LEADER | FILTER_UNORPHANED | FILTER_PARENTED;
@@ -463,7 +468,7 @@ main(int argc, char *argv[])
 
 	case 'a': filter_mask &= ~(FILTER_OWNER | FILTER_NOT_LEADER); break;
 	case 'd': filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
-	case 'e': filter_mask = 0; break;
+	case 'e': case 'A': filter_mask = 0; break;
 	case 'g': filter_mask &= ~FILTER_NOT_LEADER; break;
 	case 'x': filter_mask &= ~FILTER_UNORPHANED; break;
 	case 'P': filter_mask &= ~FILTER_PARENTED; break;
@@ -488,7 +493,7 @@ main(int argc, char *argv[])
 	case 't':
 	  parse_strlist(arg, add_tty_name, current_tty_name, "tty");
 	  break;
-	case 'o':
+	case 'U':
 	  parse_numlist(arg, add_uid, NULL, lookup_user, "user");
 	  break;
 	case 'O':
@@ -541,16 +546,7 @@ main(int argc, char *argv[])
       {
 	fmt_string = fmts[fmt_index];
 	if (sort_key_name == NULL)
-	  {
-	    sort_key_name = fmt_sortkeys[fmt_index];
-	    sort_reverse = fmt_sortrev[fmt_index];
-	  }
-	else if (*sort_key_name == '-')
-	  /* Sort in reverse.  */
-	  {
-	    sort_reverse = 1;
-	    sort_key_name++;
-	  }
+	  sort_key_name = fmt_sortkeys[fmt_index];
       }
   }
 
@@ -582,114 +578,12 @@ main(int argc, char *argv[])
   if (filter_mask & FILTER_PARENTED)
     proc_stat_list_filter(procset, &ps_parent_filter, FALSE);
 
-  err = ps_fmt_create(fmt_string, ps_std_fmt_specs, &fmt);
-  if (err)
-    error(4, err, "Can't create output format");
-
   if (show_threads)
     proc_stat_list_add_threads(procset);
 
-  if (sort_key_name)
-    /* Sort on the given field; we look in both the user-named fields and
-       the system named fields for the name given, as the user may only know
-       the printed title and not the official name. */
-    {
-      ps_fmt_spec_t sort_key = NULL;
-      unsigned nfields = ps_fmt_num_fields(fmt);
-      ps_fmt_field_t field = ps_fmt_fields(fmt);
-
-      /* first, look at the actual printed titles in the current format */
-      while (nfields-- > 0)
-	if (strcasecmp(sort_key_name, ps_fmt_field_title(field)) == 0)
-	  {
-	    sort_key = ps_fmt_field_fmt_spec(field);
-	    break;
-	  }
-	else
-	  field++;
-
-      /* Then, if not there, look at the actual ps_fmt_spec names (this way
-	 the user can sort on a key that's not actually displayed). */
-      if (sort_key == NULL)
-	{
-	  sort_key = find_ps_fmt_spec(sort_key_name, ps_std_fmt_specs);
-	  if (sort_key == NULL)
-	    error(3, 0, "%s: bad sort key", sort_key_name);
-	}
-
-      err = proc_stat_list_sort(procset, sort_key, sort_reverse);
-      if (err)
-	/* Give an error message, but don't exit.  */
-	error(0, err, "Couldn't sort processes");
-    }
-
-  if (squash_bogus_fields)
-    /* Remove any fields that we can't print anyway (because of system
-       bugs/protection violations?).  */
-    {
-      ps_flags_t bogus_flags = ps_fmt_needs(fmt);
-
-      err = proc_stat_list_find_bogus_flags(procset, &bogus_flags);
-      if (err)
-	error(0, err, "Couldn't remove bogus fields");
-      else
-	ps_fmt_squash_flags (fmt, bogus_flags);
-    }
-
-  if (squash_nominal_fields)
-    /* Remove any fields that contain only `uninteresting' information.  */
-    {
-      bool nominal (ps_fmt_spec_t spec)
-	{
-	  return proc_stat_list_spec_nominal (procset, spec);
-	}
-      ps_fmt_squash (fmt, nominal);
-    }
-
-  err = ps_stream_create (stdout, &output);
-  if (err)
-    error (5, err, "Can't make output stream");
-
-  if (print_heading)
-    if (proc_stat_list_num_procs(procset) > 0)
-      {
-	err = ps_fmt_write_titles (fmt, output);
-	if (err)
-	  error(0, err, "Can't print titles");
-	ps_stream_newline (output);
-      }
-    else
-      error(0, 0, "No applicable processes");
-
-  if (output_width)
-    /* Try and restrict the number of output columns.  */
-    {
-      int deduce_term_size (int fd, char *type, int *width, int *height);
-      struct ps_fmt_field *field = ps_fmt_fields (fmt);
-      int nfields = ps_fmt_num_fields (fmt);
-
-      if (output_width < 0)
-	/* Have to figure it out!  */
-	if (! deduce_term_size (1, getenv ("TERM"), &output_width, 0))
-	  output_width = 80;	/* common default */
-
-      /* We're not very clever about this -- just add up the width of all the
-	 fields but the last, and if the last has no existing width (as is
-	 the case in most output formats), give it whatever is left over.  */
-      while (--nfields > 0)
-	{
-	  int fw = field->width;
-	  output_width -= field->pfx_len + (fw < 0 ? -fw : fw);
-	  field++;
-	}
-      if (nfields == 0 && field->width == 0 && output_width > 0)
-	field->width = output_width - field->pfx_len - 1; /* 1 for the CR. */
-    }
-
-  /* Finally, output all the processes!  */
-  err = proc_stat_list_fmt (procset, fmt, output);
-  if (err)
-    error (5, err, "Couldn't output process status");
+  psout (procset, fmt_string, &ps_specs, sort_key_name, sort_reverse,
+	 output_width, print_heading,
+	 squash_bogus_fields, squash_nominal_fields);
 
   exit(0);
 }
