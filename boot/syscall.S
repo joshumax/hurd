@@ -1,5 +1,5 @@
 /* Temporary....
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -17,10 +17,7 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* Written by Michael I. Bushnell.  */
-
-/* This does not handle errors */
-
+	.globl _errno
 .text
 	.globl _syscall
 	.align 4
@@ -28,5 +25,10 @@ _syscall:
 	pop %ecx
 	pop %eax
 	push %ecx
-	.byte 0x9a, 0, 0, 0, 0, 7, 0
+	lcall $7, $0
+	jb error
+	ret
+error:
+	movl %eax,_errno
+	movl $-1,%eax
 	ret
