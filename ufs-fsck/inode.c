@@ -50,6 +50,9 @@ inode_iterate (struct dinode *dp,
       readblock (fsbtodb (sblock, iblock), ptrs, sblock->fs_bsize);
       for (i = 0; i < NINDIR (sblock); i++)
 	{
+	  if (!ptrs[i])
+	    continue;
+	  
 	  if (level == 0)
 	    {
 	      cont = (*fn)(ptrs[i], sblock->fs_frag, totaloffset);

@@ -49,9 +49,9 @@ setup (char *dev)
     }
   if (preen == 0)
     printf ("** %s", dev);
-  if (!nflag)
+  if (!nowrite)
     readfd = open (dev, O_RDWR);
-  if (nflag || readfd == -1)
+  if (nowrite || readfd == -1)
     {
       readfd = open (dev, O_RDONLY);
       if (readfd == -1)
@@ -60,7 +60,7 @@ setup (char *dev)
 	  return 0;
 	}
       writefd = -1;
-      nflag = 1;
+      nowrite = 1;
       if (preen)
 	pfatal ("NO WRITE ACCESS");
       printf (" (NO WRITE)");
