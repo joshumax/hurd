@@ -1,3 +1,9 @@
+Tue May 12 12:08:35 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* file-get-trans.c (diskfs_S_file_get_translator) [S_ISCHR ||
+ 	S_ISBLK]: Free BUF after using it.  Reported by Katusya Tanaka
+ 	(wyvern@pb3.so-net.ne.jp).
+
 Tue Sep 23 15:28:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-reparent.c (diskfs_S_file_reparent): Use diskfs_nrele

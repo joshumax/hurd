@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_get_translator
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -84,6 +84,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       if (buflen > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *) trans, buflen, 1);
       bcopy (buf, *trans, buflen);
+      free (buf);
       *translen = buflen;
       error = 0;
     }
