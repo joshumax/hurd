@@ -254,4 +254,4 @@ extern __inline__ void fib_combine_itag(u32 *itag, struct fib_result *res)
 #endif
 }
 
-#endif  _NET_FIB_H
+#endif  /* _NET_FIB_H */
