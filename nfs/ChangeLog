@@ -1,3 +1,21 @@
+Mon Nov 18 17:01:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (guess_mode_use): Delete function.
+	(netfs_report_access): Use fshelp_access instead of
+	guess_mode_use.  Change return type.
+
+Sat Nov 16 18:24:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (SRCS): Remove `cred.c'.
+	* cred.c: Delete file.
+	* nfs.h (struct netcred): Delete type.
+	(cred_has_uid, cred_has_gid): Delete functions.
+	(nfs_initialize_rpc): netcred arg now iouser.
+	* ops.c: Change struct netcred to struct iouser throughout.
+	* pager.c: Likewise.
+	* cache.c (netfs_node_norefs): Likewise.
+	* nfs.c (nfs_initialize_rpc): Convert use of netcred to iouser.
+
 Mon Nov  4 21:23:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* rpc.c	(rpc_list_lock): Delete variable.  Omit all mention of it

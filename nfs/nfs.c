@@ -446,7 +446,7 @@ xdr_decode_string (int *p, char *buf)
    in).  Allocate at least LEN bytes of space for bulk data in
    addition to the normal amount for an RPC. */
 int *
-nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
+nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
 		    size_t len, void **bufp, struct node *np,
 		    uid_t second_gid)
 {
@@ -457,15 +457,15 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
   /* Use heuristics to figure out what ids to present to the server.
      Don't lie, but adjust ids as necessary to secure the desired result. */ 
 
-  if (cred == (struct netcred *) -1)
+  if (cred == (struct iouser *) -1)
     {
       uid = gid = 0;
       second_gid = -1;
     }
   else if (cred
-	   && (cred->nuids || cred->ngids))
+	   && (cred->uids->num || cred->gids->num))
     {
-      if (cred_has_uid (cred, 0))
+      if (idvec_contains (cred->uids, 0))
 	{
 	  err = netfs_validate_stat (np, 0);
 	  uid = 0;
@@ -475,35 +475,35 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 	}
       else
 	{
-	  if (cred->nuids == 0)
+	  if (cred->uids->num == 0)
 	    uid = -2;
-	  else if (cred->nuids == 1)
-	    uid = cred->uids[0];
+	  else if (cred->uids->num == 1)
+	    uid = cred->uids->ids[0];
 	  else
 	    {
 	      err = netfs_validate_stat (np, 0);
 	      if (err)
 		{
-		  uid = cred->uids[0];
+		  uid = cred->uids->ids[0];
 		  printf ("NFS warning, internal stat failure\n");
 		}
 	      else
 		{
-		  if (cred_has_uid (cred, np->nn_stat.st_uid))
+		  if (idvec_contains (cred->uids, np->nn_stat.st_uid))
 		    uid = np->nn_stat.st_uid;
 		  else
-		    uid = cred->uids[0];
+		    uid = cred->uids->ids[0];
 		}
 	    }
 
-	  if (cred->ngids == 0)
+	  if (cred->gids->num == 0)
 	    {
 	      gid = -2;
 	      second_gid = -1;
 	    }
-	  else if (cred->ngids == 1)
+	  else if (cred->gids->num == 1)
 	    {
-	      gid = cred->gids[0];
+	      gid = cred->gids->ids[0];
 	      second_gid = -1;
 	    }
 	  else
@@ -511,18 +511,18 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 	      err = netfs_validate_stat (np, 0);
 	      if (err)
 		{
-		  gid = cred->gids[0];
+		  gid = cred->gids->ids[0];
 		  printf ("NFS warning, internal stat failure\n");
 		}
 	      else
 		{
-		  if (cred_has_gid (cred, np->nn_stat.st_gid))
+		  if (idvec_contains (cred->gids, np->nn_stat.st_gid))
 		    gid = np->nn_stat.st_gid;
 		  else
-		    gid = cred->gids[0];
+		    gid = cred->gids->ids[0];
 		}		  
 	      if (second_gid != -1
-		  && !cred_has_gid (cred, second_gid))
+		  && !idvec_contains (cred->gids, second_gid))
 		second_gid = -1;
 	    }
 	}

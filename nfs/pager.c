@@ -129,7 +129,7 @@ pager_read_page (struct user_pager_info *pager,
       if (thisamt > read_size)
 	thisamt = read_size;
 
-      p = nfs_initialize_rpc (NFSPROC_READ, (struct netcred *)-1, 0, 
+      p = nfs_initialize_rpc (NFSPROC_READ, (struct iouser *)-1, 0, 
 			      &rpcbuf, np, -1);
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = htonl (offset);
@@ -197,7 +197,7 @@ pager_write_page (struct user_pager_info *pager,
       if (amt > write_size)
 	amt = write_size;
       
-      p = nfs_initialize_rpc (NFSPROC_WRITE, (struct netcred *) -1, 
+      p = nfs_initialize_rpc (NFSPROC_WRITE, (struct iouser *) -1, 
 			      amt, &rpcbuf, np, -1);
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = 0;

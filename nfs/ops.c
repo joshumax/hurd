@@ -132,7 +132,7 @@ process_wcc_stat (struct node *np, int *p, int mod)
 /* Implement the netfs_validate_stat callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_validate_stat (struct node *np, struct netcred *cred)
+netfs_validate_stat (struct node *np, struct iouser *cred)
 {
   int *p;
   void *rpcbuf;
@@ -142,7 +142,7 @@ netfs_validate_stat (struct node *np, struct netcred *cred)
     return 0;
 
   p = nfs_initialize_rpc (NFSPROC_GETATTR (protocol_version),
-			  (struct netcred *) -1, 0, &rpcbuf, np, -1);
+			  (struct iouser *) -1, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   
   err = conduct_rpc (&rpcbuf, &p);
@@ -160,7 +160,7 @@ netfs_validate_stat (struct node *np, struct netcred *cred)
 /* Implement the netfs_attempt_chown callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_chown (struct netcred *cred, struct node *np,
+netfs_attempt_chown (struct iouser *cred, struct node *np,
 		     uid_t uid, gid_t gid)
 {
   int *p;
@@ -190,7 +190,7 @@ netfs_attempt_chown (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_chauthor callback as described in
    <hurd/netfs.h>.  */
 error_t
-netfs_attempt_chauthor (struct netcred *cred, struct node *rp,
+netfs_attempt_chauthor (struct iouser *cred, struct node *rp,
 			uid_t author)
 {
   return EOPNOTSUPP;
@@ -199,7 +199,7 @@ netfs_attempt_chauthor (struct netcred *cred, struct node *rp,
 /* Implement the netfs_attempt_chmod callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_chmod (struct netcred *cred, struct node *np,
+netfs_attempt_chmod (struct iouser *cred, struct node *np,
 		     mode_t mode)
 {
   int *p;
@@ -263,7 +263,7 @@ netfs_attempt_chmod (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_chflags callback as described in
    <hurd/netfs.h>. */
 error_t 
-netfs_attempt_chflags (struct netcred *cred, struct node *np,
+netfs_attempt_chflags (struct iouser *cred, struct node *np,
 		       int flags)
 {
   return EOPNOTSUPP;
@@ -272,7 +272,7 @@ netfs_attempt_chflags (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_utimes callback as described in
    <hurd/netfs.h>.  */
 error_t
-netfs_attempt_utimes (struct netcred *cred, struct node *np,
+netfs_attempt_utimes (struct iouser *cred, struct node *np,
 		      struct timespec *atime, struct timespec *mtime)
 {
   int *p;
@@ -301,7 +301,7 @@ netfs_attempt_utimes (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_set_size callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_set_size (struct netcred *cred, struct node *np,
+netfs_attempt_set_size (struct iouser *cred, struct node *np,
 			off_t size)
 {
   int *p;
@@ -330,7 +330,7 @@ netfs_attempt_set_size (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_statfs callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_statfs (struct netcred *cred, struct node *np,
+netfs_attempt_statfs (struct iouser *cred, struct node *np,
 		      struct statfs *st)
 {
   int *p;
@@ -365,7 +365,7 @@ netfs_attempt_statfs (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_sync callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_sync (struct netcred *cred, struct node *np, int wait)
+netfs_attempt_sync (struct iouser *cred, struct node *np, int wait)
 {
   /* We are already completely synchronous. */
   return 0;
@@ -374,7 +374,7 @@ netfs_attempt_sync (struct netcred *cred, struct node *np, int wait)
 /* Implement the netfs_attempt_syncfs callback as described in
    <hurd/netfs.h>.  */
 error_t
-netfs_attempt_syncfs (struct netcred *cred, int wait)
+netfs_attempt_syncfs (struct iouser *cred, int wait)
 {
   return 0;
 }
@@ -382,7 +382,7 @@ netfs_attempt_syncfs (struct netcred *cred, int wait)
 /* Implement the netfs_attempt_read callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_read (struct netcred *cred, struct node *np,
+netfs_attempt_read (struct iouser *cred, struct node *np,
 		    off_t offset, size_t *len, void *data)
 {
   int *p;
@@ -449,7 +449,7 @@ netfs_attempt_read (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_write callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_write (struct netcred *cred, struct node *np,
+netfs_attempt_write (struct iouser *cred, struct node *np,
 		     off_t offset, size_t *len, void *data)
 {
   int *p;
@@ -521,7 +521,7 @@ netfs_attempt_write (struct netcred *cred, struct node *np,
 
 /* See if NAME exists in DIR for CRED.  If so, return EEXIST.  */
 error_t
-verify_nonexistent (struct netcred *cred, struct node *dir,
+verify_nonexistent (struct iouser *cred, struct node *dir,
 		    char *name)
 {
   int *p;
@@ -548,7 +548,7 @@ verify_nonexistent (struct netcred *cred, struct node *dir,
 /* Implement the netfs_attempt_lookup callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_lookup (struct netcred *cred, struct node *np,
+netfs_attempt_lookup (struct iouser *cred, struct node *np,
 		      char *name, struct node **newnp)
 {
   int *p;
@@ -595,7 +595,7 @@ netfs_attempt_lookup (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_mkdir callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_mkdir (struct netcred *cred, struct node *np,
+netfs_attempt_mkdir (struct iouser *cred, struct node *np,
 		     char *name, mode_t mode)
 {
   int *p;
@@ -622,7 +622,7 @@ netfs_attempt_mkdir (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_rmdir callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_rmdir (struct netcred *cred, struct node *np,
+netfs_attempt_rmdir (struct iouser *cred, struct node *np,
 		     char *name)
 {
   int *p;
@@ -651,7 +651,7 @@ netfs_attempt_rmdir (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_link callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_link (struct netcred *cred, struct node *dir,
+netfs_attempt_link (struct iouser *cred, struct node *dir,
 		    struct node *np, char *name, int excl)
 {
   int *p;
@@ -884,7 +884,7 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
       mutex_unlock (&np->lock);
       
       mutex_lock (&dir->lock);
-      netfs_attempt_unlink ((struct netcred *)-1, dir, name);
+      netfs_attempt_unlink ((struct iouser *)-1, dir, name);
       mutex_unlock (&dir->lock);
     }
   else
@@ -896,7 +896,7 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
 /* Implement the netfs_attempt_mkfile callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_mkfile (struct netcred *cred, struct node *dir,
+netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
 		      mode_t mode, struct node **newnp)
 {
   error_t err;
@@ -935,7 +935,7 @@ netfs_attempt_mkfile (struct netcred *cred, struct node *dir,
 /* Implement the netfs_attempt_create_file callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_create_file (struct netcred *cred, struct node *np,
+netfs_attempt_create_file (struct iouser *cred, struct node *np,
 			   char *name, mode_t mode, struct node **newnp)
 {
   int *p;
@@ -1007,7 +1007,7 @@ netfs_attempt_create_file (struct netcred *cred, struct node *np,
 /* Implement the netfs_attempt_unlink callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_unlink (struct netcred *cred, struct node *dir,
+netfs_attempt_unlink (struct iouser *cred, struct node *dir,
 		      char *name)
 {
   int *p;
@@ -1086,7 +1086,7 @@ netfs_attempt_unlink (struct netcred *cred, struct node *dir,
 /* Implement the netfs_attempt_rename callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_rename (struct netcred *cred, struct node *fromdir,
+netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
 		      char *fromname, struct node *todir, char *toname, 
 		      int excl)
 {
@@ -1128,7 +1128,7 @@ netfs_attempt_rename (struct netcred *cred, struct node *fromdir,
 /* Implement the netfs_attempt_readlink callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_readlink (struct netcred *cred, struct node *np,
+netfs_attempt_readlink (struct iouser *cred, struct node *np,
 			char *buf)
 {
   int *p;
@@ -1159,54 +1159,10 @@ netfs_attempt_readlink (struct netcred *cred, struct node *np,
   return err;
 }
 
-/* For an NFS node NODE, guess whether CRED is able to read or write
-   it by hoping the server uses permissions bits in the "expected
-   way".  Return the or of O_READ, O_WRITE, and O_EXEC accordingly as
-   each is possible. */
-static int
-guess_mode_use (struct node *np, 
-		struct netcred *cred)
-{
-  error_t err;
-
-  err = netfs_validate_stat (np, cred);
-  if (err)
-    return err;
-  
-  if (cred_has_uid (cred, 0))
-    return O_READ|O_WRITE|O_EXEC;
-  else if (cred->nuids == 0
-	   && (np->nn_stat.st_mode & S_IUSEUNK))
-    return 
-      (((np->nn_stat.st_mode & 04000000) ? O_READ : 0)
-       | ((np->nn_stat.st_mode & 02000000) ? O_WRITE : 0)
-       | ((np->nn_stat.st_mode & 01000000) ? O_EXEC : 0));
-  else if (cred_has_uid (cred, np->nn_stat.st_uid)
-	   || (cred_has_gid (cred, np->nn_stat.st_gid)
-	       && cred_has_uid (cred, np->nn_stat.st_gid)))
-    /* Owner */
-    return 
-      (((np->nn_stat.st_mode & 0400) ? O_READ : 0)
-       | ((np->nn_stat.st_mode & 0200) ? O_WRITE : 0)
-       | ((np->nn_stat.st_mode & 0100) ? O_EXEC : 0));
-  else if (cred_has_gid (cred, np->nn_stat.st_gid))
-    /* Group */
-    return 
-      (((np->nn_stat.st_mode & 040) ? O_READ : 0)
-       | ((np->nn_stat.st_mode & 020) ? O_WRITE : 0)
-       | ((np->nn_stat.st_mode & 010) ? O_EXEC : 0));
-  else
-    /* Other */
-    return 
-      (((np->nn_stat.st_mode & 4) ? O_READ : 0)
-       | ((np->nn_stat.st_mode & 2) ? O_WRITE : 0)
-       | ((np->nn_stat.st_mode & 1) ? O_EXEC : 0));
-}
-
 /* Implement the netfs_check_open_permissions callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_check_open_permissions (struct netcred *cred, struct node *np,
+netfs_check_open_permissions (struct iouser *cred, struct node *np,
 			      int flags, int newnode)
 {
   int modes;
@@ -1223,13 +1179,29 @@ netfs_check_open_permissions (struct netcred *cred, struct node *np,
 
 /* Implement the netfs_report_access callback as described in
    <hurd/netfs.h>. */
-void
-netfs_report_access (struct netcred *cred,
+error_t
+netfs_report_access (struct iouser *cred,
 		     struct node *np,
 		     int *types)
 {
+  error_t err;
+  
+  err = netfs_validate_stat (np, cred);
+  if (err)
+    return err;
+  
   if (protocol_version == 2)
-    *types = guess_mode_use (np, cred);
+    {
+      /* Hope the server means the same thing be the bits as we do. */
+      *types = 0;
+      if (fshelp_access (&np->nn_stat, S_IREAD, cred) == 0)
+	*types |= O_READ;
+      if (fshelp_access (&np->nn_stat, S_IWRITE, cred) == 0)
+	*types |= O_WRITE;
+      if (fshelp_access (&np->nn_stat, S_IEXEC, cred) == 0)
+	*types |= O_EXEC;
+      return 0;
+    }
   else
     {
       int *p;
@@ -1238,9 +1210,6 @@ netfs_report_access (struct netcred *cred,
       int ret;
       int write_check, execute_check;
 
-      err = netfs_validate_stat (np, cred);
-      if (err)
-	goto fallback;
       if (S_ISDIR (np->nn_stat.st_mode))
 	{
 	  write_check = ACCESS3_MODIFY | ACCESS3_DELETE | ACCESS3_EXTEND;
@@ -1268,11 +1237,8 @@ netfs_report_access (struct netcred *cred,
 			| (ret & write_check ? O_WRITE : 0)
 			| (ret & execute_check ? O_EXEC : 0));
 	    }
-	  else
-	    /* fall back, sigh. */
-          fallback:
-	    *types = guess_mode_use (np, cred);
 	}
+      return err;
     }
 }
 
@@ -1282,7 +1248,7 @@ netfs_report_access (struct netcred *cred,
 /* Implement the netfs_check_open_permissions callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_check_open_permissions (struct netcred *cred, struct node *np,
+netfs_check_open_permissions (struct iouser *cred, struct node *np,
 			      int flags, int newnode)
 {
   char byte;
@@ -1372,7 +1338,7 @@ netfs_check_open_permissions (struct netcred *cred, struct node *np,
 /* Implement the netfs_report_access callback as described in
    <hurd/netfs.h>. */
 void
-netfs_report_access (struct netcred *cred,
+netfs_report_access (struct iouser *cred,
 		     struct node *np,
 		     int *types)
 {
@@ -1422,7 +1388,7 @@ netfs_report_access (struct netcred *cred,
    the error code.  Set BUFSIZEP to the amount of data used inside
    *BUFP and TOTALENTRIES to the total number of entries copied. */
 static error_t
-fetch_directory (struct netcred *cred, struct node *dir,
+fetch_directory (struct iouser *cred, struct node *dir,
 		 void **bufp, size_t *bufsizep, int *totalentries)
 {
   void *buf;
@@ -1520,7 +1486,7 @@ fetch_directory (struct netcred *cred, struct node *dir,
 /* Implement the netfs_get_directs callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_get_dirents (struct netcred *cred, struct node *np,
+netfs_get_dirents (struct iouser *cred, struct node *np,
 		   int entry, int nentries, char **data,
 		   mach_msg_type_number_t *datacnt,
 		   vm_size_t bufsiz, int *amt)
@@ -1590,7 +1556,7 @@ netfs_get_dirents (struct netcred *cred, struct node *np,
 /* Implement the netfs_set_translator callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_set_translator (struct netcred *cred,
+netfs_set_translator (struct iouser *cred,
 		      struct node *np,
 		      char *argz,
 		      size_t argzlen)
@@ -1601,7 +1567,7 @@ netfs_set_translator (struct netcred *cred,
 /* Implement the netfs_attempt_mksymlink callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_mksymlink (struct netcred *cred,
+netfs_attempt_mksymlink (struct iouser *cred,
 			 struct node *np,
 			 char *arg)
 {
@@ -1621,7 +1587,7 @@ netfs_attempt_mksymlink (struct netcred *cred,
 /* Implement the netfs_attempt_mkdev callback as described in
    <hurd/netfs.h>. */
 error_t
-netfs_attempt_mkdev (struct netcred *cred,
+netfs_attempt_mkdev (struct iouser *cred,
 		     struct node *np,
 		     mode_t type,
 		     dev_t indexes)

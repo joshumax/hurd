@@ -23,7 +23,7 @@ makemode := server
 
 target = nfs
 LCLHDRS = nfs.h mount.h nfs-spec.h
-SRCS = ops.c rpc.c mount.c cred.c nfs.c cache.c consts.c main.c 
+SRCS = ops.c rpc.c mount.c nfs.c cache.c consts.c main.c 
 OBJS = $(subst .c,.o,$(SRCS))
 HURDLIBS=ports netfs fshelp threads
 

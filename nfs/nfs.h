@@ -71,14 +71,6 @@ struct netnode
   char *dead_name;
 };
 
-/* Credential structure to identify a particular user. */
-struct netcred
-{
-  uid_t *uids, *gids;
-  int nuids, ngids;
-  int refcnt;
-};
-
 /* Socket file descriptor for talking to RPC servers. */
 int main_udp_socket;
 
@@ -155,10 +147,6 @@ extern int protocol_version;
 #define INTSIZE(len) (((len)+3)>>2)
 
 
-/* cred.c */
-int cred_has_uid (struct netcred *, uid_t);
-int cred_has_gid (struct netcred *, gid_t);
-
 /* nfs.c */
 int hurd_mode_to_nfs_type (mode_t);
 int *xdr_encode_fhandle (int *, struct fhandle *);
@@ -172,7 +160,7 @@ int *xdr_encode_sattr_stat (int *, struct stat *);
 int *xdr_encode_create_state (int *, mode_t);
 int *xdr_decode_fattr (int *, struct stat *);
 int *xdr_decode_string (int *, char *);
-int *nfs_initialize_rpc (int, struct netcred *, size_t, void **, 
+int *nfs_initialize_rpc (int, struct iouser *, size_t, void **, 
 			 struct node *, uid_t);
 error_t nfs_error_trans (int);
 

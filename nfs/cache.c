@@ -117,7 +117,7 @@ netfs_node_norefs (struct node *np)
       netfs_nput (np);
 
       mutex_lock (&dir->lock);
-      netfs_attempt_unlink ((struct netcred *)-1, dir, name);
+      netfs_attempt_unlink ((struct iouser *)-1, dir, name);
 
       netfs_nput (dir);
       free (name);
