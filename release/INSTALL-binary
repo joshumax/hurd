@@ -19,6 +19,10 @@ in order to make the installation prettier.  You can rest assured,
 however: Making it prettier and easier is one of our more important
 priorities. 
 
+Bugs in this process should be sent to the mailing list
+bug-hurd@prep.ai.mit.edu.  Questions and requests for help should be
+sent to help-hurd@prep.ai.mit.edu.
+
 
 
 STEP I:
@@ -41,7 +45,8 @@ partition should start at cylinder 1.
 Make the A partition large enough to hold the entire Hurd binary
 image, and then some, and make a B partition for swap.  Use newfs to
 make a filesystem on the A partition, mount it, and extract the entire
-Hurd image into it.
+Hurd image into it.  Make sure you do this as root, and remember to
+give tar the `p' option.
 
 If you do not have a system running BSD, you can fetch the NetBSD
 install floppies and do this step using them.  (You do not need to
@@ -64,19 +69,20 @@ the line which looks like:
 `sd0b' is the paging device.  Replace this with the correct device
 name (this is a mach partition name), or comment out the line if you
 don't want paging.  Note that you don't have to do anything to
-initialize swap partitions, unlike Linux.
+initialize swap partitions, unlike Linux.  
 
 
 
 STEP III:
 
-You can now boot the Hurd.  Boot the grub boot floppy.  When the menu
-comes up, select one of the single user boot commands, depending on
-whether you have a SCSI disk (sd0) or an IDE type disk (hd0).  If you
-put the Hurd on something other than partition `a', then you will need
-to edit the boot commands appropriately before booting.  (Editing the
-commands using grub only affects what you boot that time, it does not
-affect what the floppy does the next time you boot it.)
+Now boot the Hurd the following way.  First, boot the grub boot
+floppy.  When the menu comes up, select one of the single user boot
+commands, depending on whether you have a SCSI disk (sd0) or an IDE
+type disk (hd0).  If you put the Hurd on something other than
+partition `a', then you will need to edit the boot commands
+appropriately before booting.  (Editing the commands using grub only
+affects what you boot that time, it does not affect what the floppy
+does the next time you boot it.)
 
 Mach should load, and then the Hurd should start, saying something like:
 
@@ -120,17 +126,24 @@ NOTE: Do NOT RUN BSD FSCK on a Hurd FFS!
 STEP V:
 
 If you want to be able to boot this disk without using the floppy each
-time, then run the script /INSTALL-GRUB-MBR; give it the arg the name
-of your disk without any partition.  Something like
+time, then run the script /INSTALL-GRUB-MBR; give it as an arg the
+name of your disk without any partition.  Something like
 
 /INSTALL-GRUB-MBR sd0
 
 is called for.
 
+Now halt the system, and boot from the floppy again.  This time,
+select the "grub install" option.  (If your disk isn't known as hd0 to
+grub, then you will need to edit the commands accordingly.)  Reset
+your PC.  The hard disk should now boot successfully.  Boot the system
+single-user, and proceed to STEP VI.
+
 The menu that grub provides is found in /boot/grub/menu.lst.  You can
-edit that file to change what options the menu provides.  (You can
-change the one on the floppy by mounting the filesystem it contains
-and editing the file there.)
+edit that file to change what options the menu provides, as well as
+which option is selected by default.  (You can change the one on the
+floppy by mounting the filesystem it contains and editing the file
+there.)
 
 
 
@@ -147,7 +160,8 @@ Say `MAKEDEV dev1 dev2 dev3 ...'.
 
 Supported devices are:
   o any hard disk device you have; you must specify both unit number *and*
-     partition.  Something like `sd0a' or `rd1f' is called for.
+    partition.  Something like `sd0a' or `rd1f' is called for.  Unit
+    number without any partition names the entire disk. 
   o floppy disk drives, give something like `fd0' or `fd1'.
 
 For hardwired terminals, MAKEDEV doesn't know how to do it yet.  To
@@ -162,19 +176,20 @@ settrans -c /dev/tty00 /hurd/term /dev/tty00 device tty00
 
 If you want to use the network, set it up thus:
     
-     settrans /servers/socket/2 \
+     settrans /servers/socket/inet \
 	/hurd/pfinet --interface=eth0 --address=NN.NN.NN.NN \
                      --gateway=GG.GG.GG.GG --netmask=MM.MM.MM.MM
 
 where NN.NN.NN.NN is your IP address (not hostname, IP address).  GG.GG.GG.GG
 is the address of an IP gateway, and MM.MM.MM.MM the netmask for the local
 subnet.  If your host is isolated, then you can omit the gateway, and the
-netmask argument is optional if you don't use subnetting.
+netmask argument is optional if you don't use subnetting.  The
+interface name to use was printed by Mach when it booted.
 
 Pfinet currently only supports a single active interface.  Parameters may be
 changed while pfinet is running by using fsysopts, e.g.:
 
-     fsysopts /servers/socket/2 --netmask=MM.MM.MM.MM
+     fsysopts /servers/socket/inet --netmask=MM.MM.MM.MM
 
 Make sure you edit /etc/resolv.conf and/or /etc/hosts for the
 nameserver to work properly. 
@@ -187,7 +202,8 @@ You can mount a partition (say hd0a) by saying:
 
      settrans /mnt /hurd/ufs /dev/rhd0a
 
-The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a'.
+The name `/dev/rhd0a' must have been created using `./MAKEDEV hd0a' in
+the /dev directory.
 
 (This is equivalent to Unixy `mount /dev/hd0a /mnt'.)
 
@@ -206,15 +222,28 @@ You can make it readonly thus:
 
 For more information on settrans, see the end of this file.
 
-
-*** mount nfs
-
 NFS mounts, not surprisingly, are done thus:
 
   settrans /mnt /hurd/nfs /remote/file/system remote.host.org
 
 (You may also use the host:fs and fs@host notations if you prefer.)
 NFS supports many options; use `/hurd/nfs --help' to see them all.
+
+The mounts created this way are not transient--they will last across
+reboots, being recorded directly on disk.  To get rid of one, say:
+`settrans /mnt' with no further args.  The command `showtrans /mnt'
+will show you where it's at right now.  However, note that to have them
+automatically fscked, you'll have to make entries in /etc/fstab (see
+`fscking', above).
+
+A temporary mount (which lasts only until the filesystem program is
+killed or the system is rebooted) can be accomplished by giving the -a
+option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
+(Note the placement of this option, as an arg to settrans, is
+different from the -r options you might give to the filesystem.)
+`showtrans' does not display these temporary mounts.
+
+
 
 
 *** edit configuration files
@@ -228,9 +257,11 @@ then be permanent until you change the file.
 
 Edit /etc/fstab according to the disk mounts you've installed; this
 will control which partitions `df' prints and which partitions get
-`fsck' run for them at boot time.
+`fsck' run for them at boot time.  It will not affect which partitions
+are mounted; use settrans for that as explained above.
 
-Edit /etc/hosts if you want to.
+Edit /etc/hosts if you want to.  The system works fine without it if a
+name server is available.
 
 Edit resolv.conf to provide for name service appropriate to your
 location. 
@@ -272,48 +303,33 @@ GDB:
 The version of gdb included in this release has various features not used by
 most systems, in particular, the `thread' and `info thread' commands.
 
-The Hurd gdb can also debug running programs without halting them, which is
-useful to debug crucial system servers that can't be stopped without wedging
-the system.  To do this, give the commands `set task pause off', `set
-exceptions off', and `set signals off', before attaching to the process.  Of
-course, gdb may get confused because data structures are changing underneath
-it, but this generally works pretty well.
+The Hurd gdb can also debug running programs without halting them,
+which is useful to debug crucial system servers that can't be stopped
+without wedging the system.  To do this, give the command `set
+noninvasive on'.  Of course, gdb may get confused because data
+structures are changing underneath it, but this generally works pretty
+well.  Doing a detach and then another attach usually causes gdb to
+clue in to changes it otherwise misses.
 
-The `portinfo' program is also very useful for debugging.
+The `portinfo' program is also useful for debugging problems related
+to Mach ports.
 
 
 SETTRANS:
 
-In all these cases, note that all the args after `/mnt' are a command
-line being sent to the filesystem program when it starts.  The syntax
-of settrans is:
+The syntax of settrans is:
 
   settrans [settrans-option-args] file command-line
 
-settrans itself also supports several args.  (Use settrans --help for a
-summary.)  To see the args supported by a ufs or ext2fs, say `/hurd/ufs
---help' or `/hurd/ext2fs --help'.  Once a filesystem is running, some options
-may be changed at runtime using the `fsysopts FSYS' command, where FSYS is
-the mount point (note that there is currently no easy way of finding out
-which ones).
+All the options after the file are part of the command given to the
+filesystem.  To see the args supported by ufs or ext2fs, say
+`/hurd/ufs --help' or `/hurd/ext2fs --help'.
 
-The mounts created this way are not transient--they will last across
-reboots, being recorded directly on disk.  To get rid of one, say:
-`settrans /mnt' with no further args.  The command `showtrans /mnt'
-will show you where it's at right now.  However, note that to have them
-automatically fscked, you'll have to make entries in /etc/fstab (see
-`fscking', above).
-
-You probably want to add all such mounts to fstab, so that the
-relevant disks are checked with fsck automatically on reboot, and so
-that programs like `df' know of them.
-
-A temporary mount (which lasts only until the filesystem program is
-killed or the system is rebooted) can be accomplished by giving the -a
-option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
-(Note the placement of this option, as an arg to settrans, is
-different from the -r options you might give to the filesystem.)
-`showtrans' does not display these temporary mounts.
+settrans itself supports several args.  (Use settrans --help for a
+summary.)  Once a filesystem is running, some options may be changed
+at runtime using the `fsysopts FSYS' command, where FSYS is the mount
+point (note that there is currently no easy way of finding out which
+ones).
 
 
 CRASH SERVER:
