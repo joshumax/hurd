@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.9 1996/03/29 17:24:11 miles Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.10 1996/04/03 21:34:56 miles Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -333,7 +333,9 @@ main (int argc, char **argv)
 		label = &label_buf;
 	    }
 	  if (label_err && param_name)
-	    error (9, label_err, "%s: Can't get disklabel", device);
+	    error (9, label_err,
+		   "%s: Can't get disklabel; please specify --%s",
+		   device, param_name);
 	}
       return label;
     }
@@ -874,7 +876,7 @@ next:
 	 * Now build the cylinders group blocks and
 	 * then print out indices of cylinder groups.
 	 */
-	printf("  super-block backups (for fsck -b #) at:");
+	printf("\tsuperblock backups at:");
 	for (cylno = 0; cylno < sblock.fs_ncg; cylno++) {
 		initcg(cylno, utime);
 		if (cylno % 8 == 0)
