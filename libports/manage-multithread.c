@@ -23,6 +23,16 @@
 #include <assert.h>
 #include <cthreads.h>
 
+/* Fill in a cancellation error for the incoming RPC in inp
+   so that it will be retried.  For now, just return junk. XXX */
+static void
+cancel_rpc (mach_msg_header_t *inp, 
+	    mach_msg_header_t *outp)
+{
+}
+
+
+
 void
 ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  ports_demuxer_type demuxer,
@@ -66,7 +76,13 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       if (pi)
 	{
 	  ports_begin_rpc (pi, &link);
-	  status = demuxer (inp, outp);
+	  if (inp->msgh_seqno < pi->cancel_threshhold)
+	    {
+	      cancel_rpc (inp, outp);
+	      status = 1;
+	    }
+	  else
+	    status = demuxer (inp, outp);
 	  ports_end_rpc (pi, &link);
 	  ports_port_deref (pi);
 	}
