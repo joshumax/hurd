@@ -1,6 +1,6 @@
 User visible:
 
-Add notification calls to process.defs (and create process_notify.defs). 
+Add notification calls to process.defs (and create process_notify.defs).
 (not yet)
 
 Add file_exchange_contents (not yet)
@@ -20,14 +20,9 @@ Add file_fetch_dir.
 
 Delete release arg from register version crap.
 
-Delete non-string args from io_server_version; separate name and version. 
-
-Add STORAGE_REMAP and STORAGE_COPY to enum storage_types in hurd_types.h, and
-  rename STORAGE_NULL to STORAGE_ZERO; also remove the hacks in
-  libstore/store.h that define them currently.
+Delete non-string args from io_server_version; separate name and version.
 
 Not user visible:
 
 Format of /var/login should be user:1 not user-1.
   [Or as subdirectories, if a server supplies directory ops anyway]
-
