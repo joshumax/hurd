@@ -163,7 +163,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
-      if (!lastcomp || !(flags & O_NOTRANS))
+      /* The check for `np != dnp' simplifies this code a great
+	 deal.  Such a translator should already have been started,
+	 so there's no lossage in doing it this way. */
+      if ((!lastcomp || !(flags & O_NOTRANS))
+	  && np != dnp)
 	{
 	  mach_port_t control;
 	  uid_t *uids = 0, *gids;
@@ -172,14 +176,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Be very careful not to hold an inode lock while fetching
 	     a translator lock and vice versa.  */
-
-	  /* Our code depends heavily on these being different.
-	     This case can't happen in real life, so we're fine. */
-	  if (np == dnp)
-	    {
-	      error = ED;
-	      goto out;
-	    }
 
 	  mutex_unlock (&np->lock);
 	  mutex_unlock (&dnp->lock);
@@ -254,6 +250,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  strcat (retryname, "/");
 		  strcat (retryname, nextname);
 		}
+	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	      diskfs_nrele (dnp);
 	      diskfs_nrele (np);
 	      mach_port_deallocate (mach_task_self (), dirfile);
@@ -261,7 +258,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    }
 	  else
 	    {
-	      /* If we get here, then we have no control port.
+	      /* If we get here, then we have no active control port.
 		 Check to see if there is a passive translator, and if so
 		 repeat the translator check. */
 	      mutex_unlock (&np->translator.lock);
@@ -298,8 +295,20 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  goto repeat_trans;
 		}
 	    }
+	  
+	  /* We're here if we tried the translator check, and it
+	     failed.   Lock everything back, and make sure we do it
+	     in the right order. */
+	  if (strcmp (path, ".."))
+	    {
+	      mutex_unlock (&np->lock);
+	      mutex_lock (&dnp->lock);
+	      mutex_lock (&np->lock);
+	    }
+	  else
+	    mutex_lock (&dnp->lock);
 	}
-
+      
       if (S_ISLNK (np->dn_stat.st_mode)
 	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
 	{
