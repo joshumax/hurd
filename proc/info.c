@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -55,6 +55,7 @@ S_proc_pid2task (struct proc *callerp,
   if (! check_owner (callerp, p))
     return EPERM;
 
+  assert (MACH_PORT_VALID (p->p_task));
   *t = p->p_task;
 
   return 0;
@@ -426,7 +427,7 @@ S_proc_getprocinfo (struct proc *callerp,
     assert (tp);
   pi->logincollection = tp->p_pid;
   if (p->p_dead || p->p_stopped)
-    {    
+    {
       pi->exitstatus = p->p_status;
       pi->sigcode = p->p_sigcode;
     }

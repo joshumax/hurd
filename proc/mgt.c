@@ -238,7 +238,7 @@ S_proc_reassign (struct proc *p,
   p->p_envp = stubp->p_envp;
 
   /* Destroy stubp */
-  stubp->p_task = 0;		/* block deallocation */
+  stubp->p_task = MACH_PORT_NULL;/* block deallocation */
   process_has_exited (stubp);
   stubp->p_waited = 1;		/* fake out complete_exit */
   complete_exit (stubp);
@@ -750,6 +750,12 @@ add_tasks (task_t task)
 	  for (j = 0; j < ntasks; j++)
 	    {
 	      int set = 0;
+
+	      /* The kernel can deliver us an array with null slots in the
+		 middle, e.g. if a task died during the call.  */
+	      if (! MACH_PORT_VALID (tasks[j]))
+		continue;
+
 	      if (!foundp)
 		{
 		  struct proc *p = task_find_nocreate (tasks[j]);
