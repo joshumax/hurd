@@ -392,6 +392,8 @@ error_t netfs_attempt_link (struct iouser *user, struct node *dir,
 error_t netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 			      mode_t mode, struct node **node)
 {
+  *node = 0;
+  mutex_unlock (&dir->lock);
   return EROFS;
 }
 
