@@ -78,12 +78,12 @@ diskfs_free_node (struct node *np, mode_t old_mode)
     ext2_warning ("ext2_free_inode", "bit already cleared for inode %u", inum);
   else
     {
-      pokel_add (&sblock_pokel, bh, block_size);
+      pokel_add (&global_pokel, bh, block_size);
 
       gdp->bg_free_inodes_count++;
       if (S_ISDIR (old_mode))
 	gdp->bg_used_dirs_count--;
-      pokel_add (&sblock_pokel, gdp, sizeof *gdp);
+      pokel_add (&global_pokel, gdp, sizeof *gdp);
 
       sblock->s_free_inodes_count++;
     }
@@ -221,7 +221,7 @@ repeat:
 			"bit already set for inode %d", inum);
 	  goto repeat;
 	}
-      pokel_add (&sblock_pokel, bh, block_size);
+      pokel_add (&global_pokel, bh, block_size);
     }
   else
     {
@@ -248,7 +248,7 @@ repeat:
   gdp->bg_free_inodes_count--;
   if (S_ISDIR (mode))
     gdp->bg_used_dirs_count++;
-  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
+  pokel_add (&global_pokel, gdp, sizeof *gdp);
 
   sblock->s_free_inodes_count--;
   sblock_dirty = 1;
