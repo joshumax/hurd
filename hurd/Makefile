@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1993, 94, 95, 96, 99 Free Software Foundation
+#   Copyright (C) 1993,94,95,96,99,2002 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -33,7 +33,12 @@ $(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
 
 $(includedir)/hurd:;mkdir -p $@
 
-
+%.msgids: $(srcdir)/%.defs
+	if grep -q '^subsystem' $<; \
+	then $(CPP) $(CPPFLAGS) $< | $(MIGCOM) -n -list $@; \
+	else > $@; fi
+hurd.msgids: $(patsubst %.defs,%.msgids,$(filter %.defs,$(INSTHDRS)))
+	cat $^ > $@
 
 #
 # The following rules assist in creating an `Xioctl.defs' file
