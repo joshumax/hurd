@@ -58,16 +58,12 @@ ftp_conn_create (const struct ftp_conn_params *params,
   else
     err = 0;
 
-  if (! err)
-    err = ftp_conn_open (new);
-
   if (err)
     ftp_conn_free (new);
   else
     *conn = new;
 
   return err;
-
 }
 
 /* Free the ftp connection CONN, closing it first, and freeing all resources
