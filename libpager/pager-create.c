@@ -17,6 +17,7 @@
 
 #include "priv.h"
 
+/* Create and return a new pager with user info UPI.  */
 struct pager *
 pager_create (struct user_pager_info *upi)
 {
