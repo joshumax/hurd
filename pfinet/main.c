@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -64,35 +64,18 @@ S_startup_dosync (mach_port_t handle)
 {
   struct port_info *inpi = ports_lookup_port (pfinet_bucket, handle,
 					      shutdown_notify_class);
-  error_t
-    do1 (void *port)
-      {
-	struct port_info *pi = port;
-	
-	if (pi->class == socketport_class)
-	  ports_destroy_right (pi);
-	return 0;
-      }
 
   if (!inpi)
     return EOPNOTSUPP;
 
-  ports_bucket_iterate (pfinet_bucket, do1);
+  ports_class_iterate (socketport_class, ports_destroy_right);
   return 0;
 }
 
 void
 sigterm_handler (int signo)
 {
-  error_t
-    do1 (void *port)
-      {
-	struct port_info *pi = port;
-	if (pi->class == socketport_class)
-	  ports_destroy_right (pi);
-	return 0;
-      }
-  ports_bucket_iterate (pfinet_bucket, do1);
+  ports_class_iterate (socketport_class, ports_destroy_right);
   sleep (10);
   signal (SIGTERM, SIG_DFL);
   raise (SIGTERM);
@@ -105,7 +88,7 @@ arrange_shutdown_notification ()
   mach_port_t initport, notify;
   process_t procserver;
   struct port_info *pi;
-  
+
   shutdown_notify_class = ports_create_class (0, 0);
 
   signal (SIGTERM, sigterm_handler);
@@ -113,24 +96,24 @@ arrange_shutdown_notification ()
   /* Arrange to get notified when the system goes down,
      but if we fail for some reason, just silently give up.  No big deal. */
 
-  err = ports_create_port (shutdown_notify_class, pfinet_bucket, 
+  err = ports_create_port (shutdown_notify_class, pfinet_bucket,
 			   sizeof (struct port_info), &pi);
   if (err)
     return;
-  
+
   procserver = getproc ();
   if (!procserver)
     return;
-  
+
   err = proc_getmsgport (procserver, 1, &initport);
   mach_port_deallocate (mach_task_self (), procserver);
   if (err)
     return;
-  
+
   notify = ports_get_right (pi);
   ports_port_deref (pi);
-  startup_request_notification (initport, notify, 
-				MACH_MSG_TYPE_MAKE_SEND, 
+  startup_request_notification (initport, notify,
+				MACH_MSG_TYPE_MAKE_SEND,
 				program_invocation_short_name);
   mach_port_deallocate (mach_task_self (), initport);
 }
