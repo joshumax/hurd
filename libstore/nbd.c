@@ -325,7 +325,7 @@ nbdopen (const char *name, int *mod_flags,
     ofs += cc;
   } while (cc > 0 && ofs < sizeof ns);
 
-  if (cc < sizeof ns
+  if (ofs != sizeof ns
       || memcmp (ns.magic, NBD_INIT_MAGIC, sizeof ns.magic) != 0)
     {
       close (sock);
