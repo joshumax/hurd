@@ -1,5 +1,5 @@
 /* Definitions for socket interface
-   Copyright (C) 1991, 1993 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -34,7 +34,7 @@ routine socket_create (
 	server: socket_t;
 	sock_type: int;
 	protocol: int;
-	out sock: socket_t);
+	out sock: mach_port_send_t);
 
 /* Prepare a socket of appropriate type for future accept operations.  */
 routine socket_listen (
@@ -45,8 +45,8 @@ routine socket_listen (
 /* INTR */
 routine socket_accept (
 	sock: socket_t;
-	out conn_sock: socket_t;
-	out peer_addr: addr_port_t);
+	out conn_sock: mach_port_send_t;
+	out peer_addr: mach_port_send_t);
 
 /* Connect to an address.  */
 /* INTR */
@@ -62,12 +62,12 @@ routine socket_bind (
 /* Find out the name of a socket.  */
 routine socket_name (
 	sock: socket_t;
-	out addr: addr_port_t);
+	out addr: mach_port_send_t);
 
 /* Find out the name of the socket's peer.  */
 routine socket_peername (
 	sock: socket_t;
-	out addr: addr_port_t);
+	out addr: mach_port_send_t);
 
 /* Connect two sockets */
 routine socket_connect2 (
@@ -79,13 +79,13 @@ routine socket_create_address (
 	sock: socket_t;
 	sockaddr_type: int;
 	sockaddr: data_t;
-	out addr: addr_port_t;
+	out addr: mach_port_send_t;
 	binding: int);
 
 /* Create an address without any sockaddr.  */
 routine socket_fabricate_address (
 	sock: socket_t;
-	out addr: addr_port_t);
+	out addr: mach_port_send_t);
 
 /* Find the sockaddr name of an address. */
 routine socket_whatis_address(
