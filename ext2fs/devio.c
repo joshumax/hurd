@@ -25,28 +25,13 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Write disk block ADDR with DATA of LEN bytes, waiting for completion.  */
 error_t
-dev_write_sync (daddr_t addr,
-		vm_address_t data,
-		long len)
+dev_write_sync (daddr_t addr, vm_address_t data, long len)
 {
-  int foo;
-  assert (!diskfs_readonly);
-  if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &foo)
-      || foo != len)
-    return EIO;
-  return 0;
-}
-
-/* Write diskblock ADDR with DATA of LEN bytes; don't bother waiting
-   for completion. */
-error_t
-dev_write (daddr_t addr,
-	   vm_address_t data,
-	   long len)
-{
-  assert (!diskfs_readonly);
-  if (device_write_request (device_port, MACH_PORT_NULL, 0, addr,
-			    (io_buf_ptr_t) data, len))
+  int written;
+  if (diskfs_readonly)
+    return EROFS;
+  if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &written)
+      || written != len)
     return EIO;
   return 0;
 }
@@ -56,14 +41,11 @@ static int deverr;
 /* Read disk block ADDR; put the address of the data in DATA; read LEN
    bytes.  Always *DATA should be a full page no matter what.   */
 error_t
-dev_read_sync (daddr_t addr,
-	       vm_address_t *data,
-	       long len)
+dev_read_sync (daddr_t addr, vm_address_t *data, long len)
 {
-  int foo;
-  deverr = device_read (device_port, 0, addr, len, (io_buf_ptr_t *)data,
-			(u_int *)&foo);
-  if (deverr || foo != len)
+  u_int read;
+  if (device_read (device_port, 0, addr, len, (io_buf_ptr_t *)data, &read)
+      || read != len)
     return EIO;
   return 0;
 }
