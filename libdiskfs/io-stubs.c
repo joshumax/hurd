@@ -60,14 +60,3 @@ diskfs_S_io_readnotify (struct protid *cred)
   return cred ? 0 : EOPNOTSUPP;
 }
      
-
-/* Implement io_sigio as described in <hurd/io.defs>. 
-   We do this (in theory) but async IO is implemented here yet. */
-kern_return_t
-diskfs_S_io_sigio (struct protid *cred)
-{
-  if (!cred)
-    return EOPNOTSUPP;
-  
-  return 0;
-}
