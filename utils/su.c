@@ -1,5 +1,5 @@
 /* `su' for GNU Hurd.
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -163,12 +163,15 @@ main (int argc, char **argv)
     auth[authidx++].ids = get_user ("root");
 
   if (pididx == 0 && loginidx == 0 && pgrpidx == 0)
-    /* No processes specified; default is current login collection.  */
-    if (errno = proc_getloginid (proc, getpid (), &loginids[loginidx++]))
-      {
-	perror ("proc_getloginid");
-	return 1;
-      }
+    {
+      /* No processes specified; default is current login collection.  */
+      errno = proc_getloginid (proc, getpid (), &loginids[loginidx++]);
+      if (errno)
+	{
+	  perror ("proc_getloginid");
+	  return 1;
+	}
+    }
 
   status = 0;
 
@@ -176,12 +179,11 @@ main (int argc, char **argv)
     for (i = 0; i < authidx; ++i)
       {
 	struct auth *a = &auth[i];
-	if (errno = auth_makeauth (getauth (),
-				   NULL, MACH_MSG_TYPE_COPY_SEND, 0,
-				   &a->ids[1], a->ids[0], NULL, 0,
-				   &a->ids[1 + a->ids[0] + 1],
-				   a->ids[1 + a->ids[0]], NULL, 0,
-				   &a->authport))
+	errno = auth_makeauth (getauth (), NULL, MACH_MSG_TYPE_COPY_SEND, 0,
+			       &a->ids[1], a->ids[0], NULL, 0,
+			       &a->ids[1 + a->ids[0] + 1],
+			       a->ids[1 + a->ids[0]], NULL, 0, &a->authport);
+	if (errno)
 	  {
 	    perror ("auth_makeauth");
 	    status = 1;
@@ -403,7 +405,8 @@ apply_auth_to_loginid (struct auth *auth, int loginid)
   int status;
   error_t err;
 
-  if (err = proc_getloginpids (proc, loginid, &pids, &npids))
+  err = proc_getloginpids (proc, loginid, &pids, &npids);
+  if (err)
     {
       fprintf (stderr, "%s: proc_getloginpids failed for loginid %d: %s\n",
 	       program_invocation_short_name, loginid, strerror (err));
@@ -427,7 +430,8 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
   int status;
   error_t err;
 
-  if (err = proc_getpgrppids (proc, pgrp, &pids, &npids))
+  err = proc_getpgrppids (proc, pgrp, &pids, &npids);
+  if (err)
     {
       fprintf (stderr, "%s: proc_getpgrppids failed for pgrp %d: %s\n",
 	       program_invocation_short_name, pgrp, strerror (err));
