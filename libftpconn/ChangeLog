@@ -1,3 +1,13 @@
+Thu May 29 17:24:40 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpcp.c (doc): Update.
+	(econnect, eopen_wr, eopen_rd, efinish): New functions.
+	(struct epoint): Remove FD field.
+	Rename RMT_FILE & RMT_HOST to FILE & HOST.
+	(main): Remove array of epoints & loops, & just use RD & WR,
+	calling the e* functions above.
+	Support DST being a directory.
+
 Wed May 14 15:22:17 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* open.c (ftp_conn_login): Correct defaulting of username.
