@@ -21,11 +21,12 @@ int
 ports_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
 {
-  int fs_server (mcch_msg_header_t *, mach_msg_header_t *);
-  int io_server (mcch_msg_header_t *, mach_msg_header_t *);
-  int fsys_server (mcch_msg_header_t *, mach_msg_header_t *);
-  int seqnos_notify_server (mcch_msg_header_t *, mach_msg_header_t *);
-  int exec_server (mcch_msg_header_t *, mach_msg_header_t *);
+  int fs_server (mach_msg_header_t *, mach_msg_header_t *);
+  int io_server (mach_msg_header_t *, mach_msg_header_t *);
+  int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  int seqnos_notify_server (mach_msg_header_t *, mach_msg_header_t *);
+  int exec_server (mach_msg_header_t *, mach_msg_header_t *);
+  int pager_demuxer (mach_msg_header_t *, mach_msg_header_t *);
   
   return (io_server (inp, outp)
 	  || pager_demuxer (inp, outp)
