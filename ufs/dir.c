@@ -722,6 +722,16 @@ count_dirents (struct node *dp, int nb, char *buf)
   return 0;
 }
 
+/* XXX */
+struct olddirect
+{
+  u_long d_ino;
+  u_short d_reclen;
+  u_short d_namlen;
+  char d_name[MAXNAMLEN + 1];
+};
+  
+
 /* Implement the disikfs_get_directs callback as described in
    <hurd/diskfs.h>. */
 error_t
@@ -841,8 +851,22 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->d_ino)
 	{
+#ifdef notyet
 	  bcopy (bufp, datap, DIRSIZ (DIRECT_NAMLEN (entryp)));
-	  ((struct direct *)bufp)->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
+	  if (!direct_symlink_extension)
+	    {
+	      /* Fix up fields into new format */
+	      ((struct direct *)datap)->d_namlen = DIRECT_NAMLEN (entryp);
+	      ((struct direct *)datap)->d_type = DT_UNKNOWN;
+	    }
+	  ((struct direct *)datap)->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
+#else
+	  struct olddirect *userd;
+	  userd = (struct olddirect *)datap;
+	  userd->d_ino = entryp->d_ino;
+	  userd->d_reclen = userd->d_namlen = DIRECT_NAMLEN (entryp);
+	  bcopy (entryp->d_name, userd->d_name, DIRECT_NAMLEN (entryp) + 1);
+#endif	  
 	  i++;
 	  datap += DIRSIZ (DIRECT_NAMLEN (entryp));
 	}
