@@ -23,16 +23,16 @@ struct shared_io
 {
   int shared_page_magic;
 
-  /* This lock protects against modification to it_status. */
+  /* This lock protects against modification to conch_status. */
   spin_lock_t lock;
 
   enum
     {
-      USER_IT,			/* User is it */
-      USER_POTENTIALLY_IT,	/* User can become it */
-      USER_RELEASE_IT,		/* User is it, should release it promptly */
-      USER_NOT_IT,		/* User is not it */
-    } it_status;
+      USER_HAS_CONCH,		/* User is it */
+      USER_COULD_HAVE_CONCH,,	/* User can become it */
+      USER_RELEASE_CONCH,	/* User is it, should release it promptly */
+      USER_HAS_NOT_CONCH,,	/* User is not it */
+    } conch_status;
 
 
   /* These values are set by the IO server only: */
