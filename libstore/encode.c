@@ -1,6 +1,6 @@
 /* Store wire encoding
 
-   Copyright (C) 1996, 1997, 1999,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -62,8 +62,9 @@ store_std_leaf_encode (const struct store *store, struct store_enc *enc)
 
   for (i = 0; i < store->num_runs; i++)
     {
-      if (too_big (store->runs[i].start)
-	  || too_big (store->runs[i].start + store->runs[i].length))
+      if (sizeof (*enc->offsets) != sizeof (store->runs[i].start)
+	  && (too_big (store->runs[i].start)
+	      || too_big (store->runs[i].start + store->runs[i].length)))
 	return EOVERFLOW;
       enc->offsets[enc->cur_offset++] = store->runs[i].start;
       enc->offsets[enc->cur_offset++] = store->runs[i].length;
