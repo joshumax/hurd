@@ -235,8 +235,7 @@ routine io_map_cntl (
    in a loop for safety.  */
 /* INTR */
 routine io_get_conch (
-	io_object: io_t;
-	cntl: memory_object_t);
+	io_object: io_t);
 
 /* When the user is done with the shared page, while holding the
    conch, the filesystem may have changed the conch status to
@@ -248,8 +247,7 @@ routine io_get_conch (
    the conch status might be either USER_COULD_HAVE_CONCH or
    USER_HAS_NOT_CONCH. */
 routine io_release_conch (
-	io_object: io_t;
-	cntl: memory_object_t);
+	io_object: io_t);
 
 /* This routine should be called while the user has the conch, after
    the user has encountered an eof condition (where the file pointer
@@ -258,8 +256,7 @@ routine io_release_conch (
    routine should be called while the user has the conch. The user
    will keep it upon return.  */
 routine io_eofnotify (
-	io_object: io_t;
-	cntl: memory_object_t);
+	io_object: io_t);
 
 /* If the user wants to write past the prenotify size, a call needs to
    be made to io_prenotify giving the paramters of the write.  Upon
@@ -269,7 +266,6 @@ routine io_eofnotify (
    will keep it upon return.  */
 routine io_prenotify (
 	io_object: io_t;
-	cntl: memory_object_t;
 	write_start: int;
 	write_end: int);
 
@@ -279,7 +275,6 @@ routine io_prenotify (
    */
 routine io_postnotify (
 	io_object: io_t;
-	cntl: memory_object_t;
 	write_start: int;
 	write_end: int);
 
@@ -288,11 +283,9 @@ routine io_postnotify (
    it upon return.  */
 /* INTR */
 routine io_readsleep (
-	io_object: io_t;
-	cntl: memory_object_t);
+	io_object: io_t);
    
 /* The shared user has just done some IO, and a signal needs to be
    sent for async users.  */
 routine io_sigio (
-	io_object: io_t;
-	cntl: memory_object_t);
+	io_object: io_t);
