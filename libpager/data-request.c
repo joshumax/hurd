@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_request for pager library
-   Copyright (C) 1994, 1995, 1996, 1997, 2000 Free Software Foundation
+   Copyright (C) 1994,95,96,97,2000,02 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -130,17 +130,13 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   ports_port_deref (p);
   return 0;
 
+ error_read:
+  memory_object_data_error (p->memobjcntl, offset, length, EIO);
+  _pager_mark_object_error (p, offset, length, EIO);
  allow_term_out:
   mutex_lock (&p->interlock);
   _pager_allow_termination (p);
   mutex_unlock (&p->interlock);
-  ports_port_deref (p);
-  return 0;
-  
- error_read:
-  memory_object_data_error (p->memobjcntl, offset, length, EIO);
-  _pager_mark_object_error (p, offset, length, EIO);
-  _pager_allow_termination (p);
   ports_port_deref (p);
   return 0;
 
