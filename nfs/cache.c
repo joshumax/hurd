@@ -1,5 +1,5 @@
-/* Node cache management for NFS client implementation
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+/* cache.c - Node cache management for NFS client implementation.
+   Copyright (C) 1995, 1996, 1997, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,14 +23,15 @@
 #include <string.h>
 #include <netinet/in.h>
 
-/* Hash table containing all the nodes currently active.
-   XXX Was 512, however, a prime is much nice for the hash
-   function. 509 is nice as not only is it prime, it keeps
-   the array within a page or two */
+/* Hash table containing all the nodes currently active.  XXX Was 512,
+   however, a prime is much nicer for the hash function.  509 is nice
+   as not only is it prime, it also keeps the array within a page or
+   two.  */
 #define CACHESIZE 509
 static struct node *nodehash [CACHESIZE];
 
-/* Compute and return a hash key for NFS file handle DATA of LEN bytes. */
+/* Compute and return a hash key for NFS file handle DATA of LEN
+   bytes.  */
 static inline int
 hash (int *data, size_t len)
 {
@@ -96,15 +97,15 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
   *npp = np;
 }
 
-/* Package holding args to forked_node_delete. */
+/* Package holding args to forked_node_delete.  */
 struct fnd
 {
   struct node *dir;
   char *name;
 };
 
-/* Worker function to delete nodes that don't have any more local references
-   or links.  */
+/* Worker function to delete nodes that don't have any more local
+   references or links.  */
 any_t
 forked_node_delete (any_t arg)
 {
@@ -121,7 +122,7 @@ forked_node_delete (any_t arg)
 /* Called by libnetfs when node NP has no more references.  (See
    <hurd/libnetfs.h> for details.  Just clear its local state and
    remove it from the hash table.  Called and expected to leave with
-   NETFS_NODE_REFCNT_LOCK held. */
+   NETFS_NODE_REFCNT_LOCK held.  */
 void
 netfs_node_norefs (struct node *np)
 {
@@ -141,8 +142,9 @@ netfs_node_norefs (struct node *np)
       np->nn->dead_name = 0;
       netfs_nput (np);
 
-      /* Do this in a separate thread so that we don't wait for it;
-	 it acquires a lock on the dir, which we are not allowed to do. */
+      /* Do this in a separate thread so that we don't wait for it; it
+	 acquires a lock on the dir, which we are not allowed to
+	 do.  */
       cthread_detach (cthread_fork (forked_node_delete, (any_t) args));
 
       /* Caller expects us to leave this locked... */
@@ -162,7 +164,7 @@ netfs_node_norefs (struct node *np)
 
 /* Change the file handle used for node NP to be the handle at P.
    Make sure the hash table stays up to date.  Return the address
-   after the handle.  The lock on the node should be held. */
+   after the handle.  The lock on the node should be held.  */
 int *
 recache_handle (int *p, struct node *np)
 {
@@ -172,7 +174,10 @@ recache_handle (int *p, struct node *np)
   if (protocol_version == 2)
     len = NFS2_FHSIZE;
   else
-    len = ntohl (*p++);
+    {
+      len = ntohl (*p);
+      p++;
+    }
   
   /* Unlink it */
   spin_lock (&netfs_node_refcnt_lock);

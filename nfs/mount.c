@@ -116,7 +116,7 @@ mount_root (char *name, char *host)
 	 argument is either "tcp" or "udp"  Thus, is this backwards
 	 (as service_name suggests)?  If so, should it read:
              s = getservbyname (pmap_service_name, "udp");
-         or is there something I am missing here? */
+         or is there something I am missing here?  */
       s = getservbyname ("sunrpc", pmap_service_name);
       if (s)
 	pmapport = s->s_port;
@@ -158,14 +158,15 @@ mount_root (char *name, char *host)
 	  return 0;
 	}
 
-      *p++ = htonl (MOUNTPROG);
-      *p++ = htonl (MOUNTVERS);
-      *p++ = htonl (IPPROTO_UDP);
-      *p++ = htonl (0);
+      *(p++) = htonl (MOUNTPROG);
+      *(p++) = htonl (MOUNTVERS);
+      *(p++) = htonl (IPPROTO_UDP);
+      *(p++) = htonl (0);
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	{
-	  port = ntohl (*p++);
+	  port = ntohl (*p);
+	  p++;
 	  addr.sin_port = htons (port);
 	}
       else if (mount_port)
@@ -204,7 +205,8 @@ mount_root (char *name, char *host)
   /* XXX Protocol spec says this should be a "unix error code"; we'll
      pretend that an NFS error code is what's meant; the numbers match
      anyhow.  */
-  err = nfs_error_trans (htonl (*p++));
+  err = nfs_error_trans (htonl (*p));
+  p++;
   if (err)
     {
       error (0, err, name);
@@ -235,13 +237,16 @@ mount_root (char *name, char *host)
 	  error (0, errno, "rpc");
 	  goto error_with_rpcbuf;
 	}
-      *p++ = htonl (NFS_PROGRAM);
-      *p++ = htonl (NFS_VERSION);
-      *p++ = htonl (IPPROTO_UDP);
-      *p++ = htonl (0);
+      *(p++) = htonl (NFS_PROGRAM);
+      *(p++) = htonl (NFS_VERSION);
+      *(p++) = htonl (IPPROTO_UDP);
+      *(p++) = htonl (0);
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
-	port = ntohl (*p++);
+	{
+	  port = ntohl (*p);
+	  p++;
+	}
       else if (nfs_port)
 	port = nfs_port;
       else

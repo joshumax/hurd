@@ -1,3 +1,28 @@
+2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* mount.c (mount_root): Add parenthesis for post-decrement (even
+	though it is only used as an lvalue here).  Increment P after
+	using it in the macro, not within.
+	* rpc.c (initialize_rpc, conduct_rpc): Likewise.
+	* ops.c (process_returned_stat, process_wcc_stat,
+	netfs_validate_stat, netfs_attempt_chown, netfs_attempt_chmod,
+	netfs_attempt_utimes, netfs_attempt_set_size,
+	netfs_attempt_statfs, netfs_attempt_read, netfs_attempt_write,
+	verify_nonexistent, netfs_attempt_lookup, netfs_attempt_mkdir,
+	netfs_attempt_rmdir, netfs_attempt_link,
+	netfs_attempt_create_file, netfs_attempt_unlink,
+	netfs_attempt_rename, netfs_attempt_readlink, netfs_report_access,
+	netfs_check_open_permissions): Likewise.
+	(fetch_directory): Likewise.  Also use memcpy instead bcopy.
+	* cache.c (recache_handle): Likewise.
+	* nfs.c (xdr_encode_data, xdr_encode_sattr_mode,
+	xdr_encode_sattr_ids, xdr_encode_sattr_size,
+	xdr_encode_sattr_times, xdr_encode_create_state,
+	xdr_encode_sattr_stat, xdr_decode_64bit, xdr_decode_fattr):
+	Likewise.
+	(xdr_decode_string): Likewise.  Also use memcpy instead bcopy.
+	(xdr_decode_fhandle): Likewise.  Also use memcpy instead bcopy.
+
 2002-05-13  Roland McGrath  <roland@frob.com>
 
 	* ops.c (register_fresh_stat): Set NP->nn_translated appropriately.

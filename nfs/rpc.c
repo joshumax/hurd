@@ -1,4 +1,4 @@
-/* SunRPC management for NFS client
+/* rpc.c - SunRPC management for NFS client.
    Copyright (C) 1994, 1995, 1996, 1997, 2002 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -17,10 +17,10 @@
 
 #include "nfs.h"
 
-/* Needed in order to get the RPC header files to include correctly */
+/* Needed in order to get the RPC header files to include correctly.  */
 #undef TRUE
 #undef FALSE
-#define malloc spoiufasdf	/* Avoid bogus definition in rpc/types.h */
+#define malloc spoiufasdf	/* Avoid bogus definition in rpc/types.h.  */
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
@@ -28,7 +28,7 @@
 #include <rpc/rpc_msg.h>
 #include <rpc/auth_unix.h>
 
-#undef malloc			/* Get rid of the sun block */
+#undef malloc			/* Get rid of the sun block.  */
 
 #include <netinet/in.h>
 #include <assert.h>
@@ -37,26 +37,26 @@
 #include <unistd.h>
 #include <stdio.h>
 
-/* One of these exists for each pending RPC. */
+/* One of these exists for each pending RPC.  */
 struct rpc_list
 {
   struct rpc_list *next, **prevp;
   void *reply;
 };
 
-/* A list of all pending RPCs. */
+/* A list of all pending RPCs.  */
 static struct rpc_list *outstanding_rpcs;
 
 /* Wake up this condition when an outstanding RPC has received a reply
-   or we should check for timeouts. */
+   or we should check for timeouts.  */
 static struct condition rpc_wakeup = CONDITION_INITIALIZER;
 
-/* Lock the global data and the REPLY fields of outstanding RPC's. */
+/* Lock the global data and the REPLY fields of outstanding RPC's.  */
 static struct mutex outstanding_lock = MUTEX_INITIALIZER;
 
 
 
-/* Generate and return a new transaction ID. */
+/* Generate and return a new transaction ID.  */
 static inline int
 generate_xid ()
 {
@@ -76,7 +76,7 @@ generate_xid ()
    may be -1 to indicate that it does not apply, however, exactly zero
    or two of UID and GID must be -1.  The returned address is a pointer
    to the start of the payload.  If NULL is returned, an error occured
-   and the code is set in errno. */
+   and the code is set in errno.  */
 int *
 initialize_rpc (int program, int version, int rpc_proc, 
 		size_t len, void **bufp, 
@@ -100,52 +100,52 @@ initialize_rpc (int program, int version, int rpc_proc,
   p = buf + sizeof (struct rpc_list);
 
   /* RPC header */
-  *p++ = htonl (generate_xid ());
-  *p++ = htonl (CALL);
-  *p++ = htonl (RPC_MSG_VERSION);
-  *p++ = htonl (program);
-  *p++ = htonl (version);
-  *p++ = htonl (rpc_proc);
+  *(p++) = htonl (generate_xid ());
+  *(p++) = htonl (CALL);
+  *(p++) = htonl (RPC_MSG_VERSION);
+  *(p++) = htonl (program);
+  *(p++) = htonl (version);
+  *(p++) = htonl (rpc_proc);
   
   assert ((uid == -1) == (gid == -1));
 
   if (uid == -1)
     {
       /* No authentication */
-      *p++ = htonl (AUTH_NONE);
-      *p++ = 0;
+      *(p++) = htonl (AUTH_NONE);
+      *(p++) = 0;
     }
   else
     {
       /* Unixy authentication */
-      *p++ = htonl (AUTH_UNIX);
+      *(p++) = htonl (AUTH_UNIX);
       /* The length of the message.  We do not yet know what this
          is, so, just remember where we should put it when we know */
       lenaddr = p++;
-      *p++ = htonl (mapped_time->seconds);
+      *(p++) = htonl (mapped_time->seconds);
       p = xdr_encode_string (p, hostname);
-      *p++ = htonl (uid);
-      *p++ = htonl (gid);
+      *(p++) = htonl (uid);
+      *(p++) = htonl (gid);
       if (second_gid == -1)
-	*p++ = 0;
+	*(p++) = 0;
       else
 	{
-	  *p++ = htonl (1);
-	  *p++ = htonl (second_gid);
+	  *(p++) = htonl (1);
+	  *(p++) = htonl (second_gid);
 	}
       *lenaddr = htonl ((p - (lenaddr + 1)) * sizeof (int));
     }
         
   /* VERF field */
-  *p++ = htonl (AUTH_NONE);
-  *p++ = 0;
+  *(p++) = htonl (AUTH_NONE);
+  *(p++) = 0;
   
   *bufp = buf;
   return p;
 }
 
 /* Remove HDR from the list of pending RPC's.  The rpc_list's lock
-   (OUTSTANDING_LOCK) must be held */
+   (OUTSTANDING_LOCK) must be held.  */
 static inline void
 unlink_rpc (struct rpc_list *hdr)
 {
@@ -155,7 +155,7 @@ unlink_rpc (struct rpc_list *hdr)
 }
 
 /* Insert HDR at the head of the LIST.  The rpc_list's lock
-   (OUTSTANDING_LOCK) must be held */
+   (OUTSTANDING_LOCK) must be held.  */
 static inline void
 link_rpc (struct rpc_list **list, struct rpc_list *hdr)
 {
@@ -171,7 +171,7 @@ link_rpc (struct rpc_list **list, struct rpc_list *hdr)
    the filledin args.  Set *PP to the address of the reply contents
    themselves.  The user will be expected to free *RPCBUF (which will
    have changed) when done with the reply contents.  The old value of
-   *RPCBUF will be freed by this routine. */
+   *RPCBUF will be freed by this routine.  */
 error_t
 conduct_rpc (void **rpcbuf, int **pp)
 {
@@ -194,7 +194,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 
   do
     {
-      /* If we've sent enough, give up */
+      /* If we've sent enough, give up.  */
       if (mounted_soft && ntransmit == soft_retries)
 	{
 	  unlink_rpc (hdr);
@@ -202,7 +202,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 	  return ETIMEDOUT;
 	}
 
-      /* Issue the RPC */
+      /* Issue the RPC.  */
       lasttrans = mapped_time->seconds;
       ntransmit++;
       nc = (void *) *pp - *rpcbuf - sizeof (struct rpc_list);
@@ -216,7 +216,7 @@ conduct_rpc (void **rpcbuf, int **pp)
       else 
 	assert (cc == nc);
       
-      /* Wait for reply */
+      /* Wait for reply.  */
       cancel = 0;
       while (!hdr->reply
 	     && (mapped_time->seconds - lasttrans < timeout)
@@ -232,7 +232,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 
       /* hdr->reply will have been filled in by rpc_receive_thread,
          if it has been filled in, then the rpc has been fulfilled,
-         otherwise, retransmit and continue to wait */
+         otherwise, retransmit and continue to wait.  */
       if (!hdr->reply)
 	{
 	  timeout *= 2;
@@ -244,34 +244,36 @@ conduct_rpc (void **rpcbuf, int **pp)
 
   mutex_unlock (&outstanding_lock);
 
-  /* Switch to the reply buffer. */
+  /* Switch to the reply buffer.  */
   *rpcbuf = hdr->reply;
   free (hdr);
 
   /* Process the reply, dissecting errors.  When we're done and if
-     there is no error, set *PP to the rpc return contents */ 
+     there is no error, set *PP to the rpc return contents.  */ 
   p = (int *) *rpcbuf;
   
   /* If the transmition id does not match that in the message,
-     something strange happened in rpc_receive_thread */
+     something strange happened in rpc_receive_thread.  */
   assert (*p == xid);
   p++;
   
-  switch (ntohl (*p++))
+  switch (ntohl (*p))
     {
     default:
       err = EBADRPC;
       break;
       
     case REPLY:
-      switch (ntohl (*p++))
+      p++;
+      switch (ntohl (*p))
 	{
 	default:
 	  err = EBADRPC;
 	  break;
 	  
 	case MSG_DENIED:
-	  switch (ntohl (*p++))
+	  p++;
+	  switch (ntohl (*p))
 	    {
 	    default:
 	      err = EBADRPC;
@@ -282,7 +284,8 @@ conduct_rpc (void **rpcbuf, int **pp)
 	      break;
 	      	      
 	    case AUTH_ERROR:
-	      switch (ntohl (*p++))
+	      p++;
+	      switch (ntohl (*p))
 		{
 		case AUTH_BADCRED:
 		case AUTH_REJECTEDCRED:
@@ -304,13 +307,15 @@ conduct_rpc (void **rpcbuf, int **pp)
 	  break;
 	  
 	case MSG_ACCEPTED:
+	  p++;
 
-	  /* Process VERF field. */
-	  p++;			/* skip verf type */
-	  n = ntohl (*p++);	/* size of verf */
-	  p += INTSIZE (n);	/* skip verf itself */
+	  /* Process VERF field.  */
+	  p++;			/* Skip verf type.  */
+	  n = ntohl (*p);	/* Size of verf.  */
+	  p++;
+	  p += INTSIZE (n);	/* Skip verf itself.  */
 
-	  switch (ntohl (*p++))
+	  switch (ntohl (*p))
 	    {
 	    default:
 	    case GARBAGE_ARGS:
@@ -330,6 +335,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 	      break;
 
 	    case SUCCESS:
+	      p++;
 	      *pp = p;
 	      err = 0;
 	      break;
@@ -342,7 +348,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 }
 
 /* Dedicated thread to signal those waiting on rpc_wakeup
-   once a second. */
+   once a second.  */
 void
 timeout_service_thread ()
 {
@@ -356,13 +362,13 @@ timeout_service_thread ()
 }
 
 /* Dedicate thread to receive RPC replies, register them on the queue
-   of pending wakeups, and deal appropriately. */
+   of pending wakeups, and deal appropriately.  */
 void
 rpc_receive_thread ()
 {
   void *buf;
 
-  /* Allocate a receive buffer */
+  /* Allocate a receive buffer.  */
   buf = malloc (1024 + read_size);
   assert (buf);
 
@@ -381,7 +387,7 @@ rpc_receive_thread ()
 
           mutex_lock (&outstanding_lock);
 
-          /* Find the rpc that we just fulfilled */
+          /* Find the rpc that we just fulfilled.  */
           for (r = outstanding_rpcs; r; r = r->next)
     	    {
     	      if (* (int *) &r[1] == xid)
@@ -399,8 +405,8 @@ rpc_receive_thread ()
 	  mutex_unlock (&outstanding_lock);
 
 	  /* If r is not null then we had a message from a pending
-	     (i.e. known) rpc.  Thus, it was fulfilled and if we
-	     want to get another request, a new buffer is needed */
+	     (i.e. known) rpc.  Thus, it was fulfilled and if we want
+	     to get another request, a new buffer is needed.  */
 	  if (r)
 	    {
               buf = malloc (1024 + read_size);

@@ -1,5 +1,5 @@
-/* XDR frobbing and lower level routines for NFS client
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
+/* nfs.c - XDR frobbing and lower level routines for NFS client.
+   Copyright (C) 1995, 1996, 1997, 1999, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,7 +24,8 @@
 #include <netinet/in.h>
 #include <stdio.h>
 
-/* Convert an NFS mode (TYPE and MODE) to a Hurd mode and return it. */
+/* Convert an NFS mode (TYPE and MODE) to a Hurd mode and return
+   it.  */
 mode_t
 nfs_mode_to_hurd_mode (int type, int mode)
 {
@@ -88,7 +89,7 @@ nfs_mode_to_hurd_mode (int type, int mode)
   return hurdmode;
 }
 
-/* Convert a Hurd mode to an NFS mode */
+/* Convert a Hurd mode to an NFS mode.  */
 int
 hurd_mode_to_nfs_mode (mode_t mode)
 {
@@ -97,7 +98,7 @@ hurd_mode_to_nfs_mode (mode_t mode)
   return mode & 07777;
 }
 
-/* Convert a Hurd mode to an NFS type */
+/* Convert a Hurd mode to an NFS type.  */
 int
 hurd_mode_to_nfs_type (mode_t mode)
 {
@@ -131,167 +132,167 @@ hurd_mode_to_nfs_type (mode_t mode)
 
 /* Each of the functions on this page copies its second arg to *P,
    converting it to XDR representation along the way.  They then
-   return the address after the copied value. */
+   return the address after the copied value.  */
 
-/* Encode an NFS file handle. */
+/* Encode an NFS file handle.  */
 int *
 xdr_encode_fhandle (int *p, struct fhandle *fhandle)
 {
   if (protocol_version == 2)
     {
-      bcopy (fhandle->data, p, NFS2_FHSIZE);
+      memcpy (p, fhandle->data, NFS2_FHSIZE);
       return p + INTSIZE (NFS2_FHSIZE);
     }
   else
     return xdr_encode_data (p, fhandle->data, fhandle->size);
 }
 
-/* Encode uninterpreted bytes. */
+/* Encode uninterpreted bytes.  */
 int *
 xdr_encode_data (int *p, char *data, size_t len)
 {
   int nints = INTSIZE (len);
 
   p[nints] = 0;
-  *p++ = htonl (len);
+  *(p++) = htonl (len);
   memcpy (p, data, len);
   return p + nints;
 }
 
-/* Encode a 64 bit integer */
+/* Encode a 64 bit integer.  */
 int *
 xdr_encode_64bit (int *p, long long n)
 {
-  *p++ = htonl (n & 0xffffffff00000000LL >> 32);
-  *p++ = htonl (n & 0xffffffff);
+  *(p++) = htonl (n & 0xffffffff00000000LL >> 32);
+  *(p++) = htonl (n & 0xffffffff);
   return p;
 }
 
-/* Encode a C string. */
+/* Encode a C string.  */
 int *
 xdr_encode_string (int *p, char *string)
 {
   return xdr_encode_data (p, string, strlen (string));
 }
 
-/* Encode a MODE into an otherwise empty sattr. */
+/* Encode a MODE into an otherwise empty sattr.  */
 int *
 xdr_encode_sattr_mode (int *p, mode_t mode)
 {
   if (protocol_version == 2)
     {
-      *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = -1;			/* uid */
-      *p++ = -1;			/* gid */
-      *p++ = -1;			/* size */
-      *p++ = -1;			/* atime secs */
-      *p++ = -1;			/* atime usecs */
-      *p++ = -1;			/* mtime secs */
-      *p++ = -1;			/* mtime usecs */
+      *(p++) = htonl (hurd_mode_to_nfs_mode (mode));
+      *(p++) = -1;			/* uid */
+      *(p++) = -1;			/* gid */
+      *(p++) = -1;			/* size */
+      *(p++) = -1;			/* atime secs */
+      *(p++) = -1;			/* atime usecs */
+      *(p++) = -1;			/* mtime secs */
+      *(p++) = -1;			/* mtime usecs */
     }
   else
     {
-      *p++ = htonl (1);		/* set mode */
-      *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = 0;			/* no uid */
-      *p++ = 0;			/* no gid */
-      *p++ = 0;			/* no size */
-      *p++ = DONT_CHANGE;	/* no atime */
-      *p++ = DONT_CHANGE;	/* no mtime */
+      *(p++) = htonl (1);		/* set mode */
+      *(p++) = htonl (hurd_mode_to_nfs_mode (mode));
+      *(p++) = 0;			/* no uid */
+      *(p++) = 0;			/* no gid */
+      *(p++) = 0;			/* no size */
+      *(p++) = DONT_CHANGE;	/* no atime */
+      *(p++) = DONT_CHANGE;	/* no mtime */
     }
   return p;
 }
 
-/* Encode UID and GID into an otherwise empty sattr. */
+/* Encode UID and GID into an otherwise empty sattr.  */
 int *
 xdr_encode_sattr_ids (int *p, u_int uid, u_int gid)
 {
   if (protocol_version == 2)
     {
-      *p++ = -1;			/* mode */
-      *p++ = htonl (uid);
-      *p++ = htonl (gid);
-      *p++ = -1;			/* size */
-      *p++ = -1;			/* atime secs */
-      *p++ = -1;			/* atime usecs */
-      *p++ = -1;			/* mtime secs */
-      *p++ = -1;			/* mtime usecs */
+      *(p++) = -1;			/* mode */
+      *(p++) = htonl (uid);
+      *(p++) = htonl (gid);
+      *(p++) = -1;			/* size */
+      *(p++) = -1;			/* atime secs */
+      *(p++) = -1;			/* atime usecs */
+      *(p++) = -1;			/* mtime secs */
+      *(p++) = -1;			/* mtime usecs */
     }
   else
     {
-      *p++ = 0;			/* no mode */
-      *p++ = htonl (1);		/* set uid */
-      *p++ = htonl (uid);
-      *p++ = htonl (1);		/* set gid */
-      *p++ = htonl (gid);
-      *p++ = 0;			/* no size */
-      *p++ = DONT_CHANGE;	/* no atime */
-      *p++ = DONT_CHANGE;	/* no mtime */
+      *(p++) = 0;			/* no mode */
+      *(p++) = htonl (1);		/* set uid */
+      *(p++) = htonl (uid);
+      *(p++) = htonl (1);		/* set gid */
+      *(p++) = htonl (gid);
+      *(p++) = 0;			/* no size */
+      *(p++) = DONT_CHANGE;	/* no atime */
+      *(p++) = DONT_CHANGE;	/* no mtime */
     }
   return p;
 }
 
-/* Encode a file size into an otherwise empty sattr. */
+/* Encode a file size into an otherwise empty sattr.  */
 int *
 xdr_encode_sattr_size (int *p, off_t size)
 {
   if (protocol_version == 2)
     {
-      *p++ = -1;			/* mode */
-      *p++ = -1;			/* uid */
-      *p++ = -1;			/* gid */
-      *p++ = htonl (size);
-      *p++ = -1;			/* atime secs */
-      *p++ = -1;			/* atime usecs */
-      *p++ = -1;			/* mtime secs */
-      *p++ = -1;			/* mtime secs */
+      *(p++) = -1;			/* mode */
+      *(p++) = -1;			/* uid */
+      *(p++) = -1;			/* gid */
+      *(p++) = htonl (size);
+      *(p++) = -1;			/* atime secs */
+      *(p++) = -1;			/* atime usecs */
+      *(p++) = -1;			/* mtime secs */
+      *(p++) = -1;			/* mtime secs */
     }
   else
     {
-      *p++ = 0;			/* no mode */
-      *p++ = 0;			/* no uid */
-      *p++ = 0;			/* no gid */
-      *p++ = htonl (1);		/* size */
+      *(p++) = 0;			/* no mode */
+      *(p++) = 0;			/* no uid */
+      *(p++) = 0;			/* no gid */
+      *(p++) = htonl (1);		/* size */
       p = xdr_encode_64bit (p, size);
-      *p++ = DONT_CHANGE;	/* no atime */
-      *p++ = DONT_CHANGE;	/* no mtime */
+      *(p++) = DONT_CHANGE;	/* no atime */
+      *(p++) = DONT_CHANGE;	/* no mtime */
     }
   return p;
 }
 
-/* Encode ATIME and MTIME into an otherwise empty sattr. */
+/* Encode ATIME and MTIME into an otherwise empty sattr.  */
 int *
 xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
 {
   if (protocol_version == 2)
     {
-      *p++ = -1;			/* mode */
-      *p++ = -1;			/* uid */
-      *p++ = -1;			/* gid */
-      *p++ = -1;			/* size */
-      *p++ = htonl (atime->tv_sec);
-      *p++ = htonl (atime->tv_nsec / 1000);
-      *p++ = htonl (mtime->tv_sec);
-      *p++ = htonl (mtime->tv_nsec / 1000);
+      *(p++) = -1;			/* mode */
+      *(p++) = -1;			/* uid */
+      *(p++) = -1;			/* gid */
+      *(p++) = -1;			/* size */
+      *(p++) = htonl (atime->tv_sec);
+      *(p++) = htonl (atime->tv_nsec / 1000);
+      *(p++) = htonl (mtime->tv_sec);
+      *(p++) = htonl (mtime->tv_nsec / 1000);
     }
   else
     {
-      *p++ = 0;			/* no mode */
-      *p++ = 0;			/* no uid */
-      *p++ = 0;			/* no gid */
-      *p++ = 0;			/* no size */
-      *p++ = htonl (SET_TO_CLIENT_TIME); /* atime */
-      *p++ = htonl (atime->tv_sec);
-      *p++ = htonl (atime->tv_nsec);
-      *p++ = htonl (SET_TO_CLIENT_TIME); /* mtime */
-      *p++ = htonl (mtime->tv_sec);
-      *p++ = htonl (mtime->tv_nsec);
+      *(p++) = 0;			/* no mode */
+      *(p++) = 0;			/* no uid */
+      *(p++) = 0;			/* no gid */
+      *(p++) = 0;			/* no size */
+      *(p++) = htonl (SET_TO_CLIENT_TIME); /* atime */
+      *(p++) = htonl (atime->tv_sec);
+      *(p++) = htonl (atime->tv_nsec);
+      *(p++) = htonl (SET_TO_CLIENT_TIME); /* mtime */
+      *(p++) = htonl (mtime->tv_sec);
+      *(p++) = htonl (mtime->tv_nsec);
     }
   return p;
 }
 
-/* Encode MODE, a size of zero, and the specified owner into an otherwise
-   empty sattr.  */
+/* Encode MODE, a size of zero, and the specified owner into an
+   otherwise empty sattr.  */
 int *
 xdr_encode_create_state (int *p,
 			 mode_t mode,
@@ -299,74 +300,77 @@ xdr_encode_create_state (int *p,
 {
   if (protocol_version == 2)
     {
-      *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = htonl (owner);	/* uid */
-      *p++ = -1;		/* gid */
-      *p++ = 0;			/* size */
-      *p++ = -1;		/* atime sec */
-      *p++ = -1;		/* atime usec */
-      *p++ = -1;		/* mtime sec */
-      *p++ = -1;		/* mtime usec */
+      *(p++) = htonl (hurd_mode_to_nfs_mode (mode));
+      *(p++) = htonl (owner);	/* uid */
+      *(p++) = -1;		/* gid */
+      *(p++) = 0;			/* size */
+      *(p++) = -1;		/* atime sec */
+      *(p++) = -1;		/* atime usec */
+      *(p++) = -1;		/* mtime sec */
+      *(p++) = -1;		/* mtime usec */
     }
   else
     {
-      *p++ = htonl (1);		/* mode */
-      *p++ = htonl (hurd_mode_to_nfs_mode (mode));
-      *p++ = htonl (1);		/* set uid */
-      *p++ = htonl (owner);
-      *p++ = 0;			/* no gid */
-      *p++ = htonl (1);		/* set size */
+      *(p++) = htonl (1);		/* mode */
+      *(p++) = htonl (hurd_mode_to_nfs_mode (mode));
+      *(p++) = htonl (1);		/* set uid */
+      *(p++) = htonl (owner);
+      *(p++) = 0;			/* no gid */
+      *(p++) = htonl (1);		/* set size */
       p = xdr_encode_64bit (p, 0);
-      *p++ = htonl (SET_TO_SERVER_TIME); /* atime */
-      *p++ = htonl (SET_TO_SERVER_TIME); /* mtime */
+      *(p++) = htonl (SET_TO_SERVER_TIME); /* atime */
+      *(p++) = htonl (SET_TO_SERVER_TIME); /* mtime */
     }
   return p;
 }
 
-/* Encode ST into an sattr. */
+/* Encode ST into an sattr.  */
 int *
 xdr_encode_sattr_stat (int *p,
 		       struct stat *st)
 {
   if (protocol_version == 2)
     {
-      *p++ = htonl (hurd_mode_to_nfs_mode (st->st_mode));
-      *p++ = htonl (st->st_uid);
-      *p++ = htonl (st->st_gid);
-      *p++ = htonl (st->st_size);
-      *p++ = htonl (st->st_atime);
-      *p++ = htonl (st->st_atime_usec);
-      *p++ = htonl (st->st_mtime);
-      *p++ = htonl (st->st_mtime_usec);
+      *(p++) = htonl (hurd_mode_to_nfs_mode (st->st_mode));
+      *(p++) = htonl (st->st_uid);
+      *(p++) = htonl (st->st_gid);
+      *(p++) = htonl (st->st_size);
+      *(p++) = htonl (st->st_atime);
+      *(p++) = htonl (st->st_atime_usec);
+      *(p++) = htonl (st->st_mtime);
+      *(p++) = htonl (st->st_mtime_usec);
     }
   else
     {
-      *p++ = htonl (1);		/* set mode */
-      *p++ = htonl (hurd_mode_to_nfs_mode (st->st_mode));
-      *p++ = htonl (1);		/* set uid */
-      *p++ = htonl (st->st_uid);
-      *p++ = htonl (1);		/* set gid */
-      *p++ = htonl (st->st_gid);
-      *p++ = htonl (1);		/* set size */
+      *(p++) = htonl (1);		/* set mode */
+      *(p++) = htonl (hurd_mode_to_nfs_mode (st->st_mode));
+      *(p++) = htonl (1);		/* set uid */
+      *(p++) = htonl (st->st_uid);
+      *(p++) = htonl (1);		/* set gid */
+      *(p++) = htonl (st->st_gid);
+      *(p++) = htonl (1);		/* set size */
       p = xdr_encode_64bit (p, st->st_size);
-      *p++ = htonl (SET_TO_CLIENT_TIME); /* set atime */
-      *p++ = htonl (st->st_atime);
-      *p++ = htonl (st->st_atime_usec * 1000);
-      *p++ = htonl (SET_TO_CLIENT_TIME); /* set mtime */
-      *p++ = htonl (st->st_mtime);
-      *p++ = htonl (st->st_mtime_usec * 1000);
+      *(p++) = htonl (SET_TO_CLIENT_TIME); /* set atime */
+      *(p++) = htonl (st->st_atime);
+      *(p++) = htonl (st->st_atime_usec * 1000);
+      *(p++) = htonl (SET_TO_CLIENT_TIME); /* set mtime */
+      *(p++) = htonl (st->st_mtime);
+      *(p++) = htonl (st->st_mtime_usec * 1000);
     }
   return p;
 }
 
 
-/* Decode *P into a long long; return the address of the following data. */
+/* Decode *P into a long long; return the address of the following
+   data.  */
 int *
 xdr_decode_64bit (int *p, long long *n)
 {
   long long high, low;
-  high = ntohl (*p++);
-  low = ntohl (*p++);
+  high = ntohl (*p);
+  p++;
+  low = ntohl (*p);
+  p++;
   *n = ((high & 0xffffffff) << 32) | (low & 0xffffffff);
   return p;
 }
@@ -378,31 +382,46 @@ xdr_decode_fhandle (int *p, struct node **npp)
 {
   size_t len;
 
-  len = protocol_version == 2 ? NFS2_FHSIZE : ntohl (*p++);
-  /* Enter into cache */
+  if (protocol_version == 2)
+    len = NFS2_FHSIZE;
+  else
+    {
+      len = ntohl (*p);
+      p++;
+    }
+  /* Enter into cache.  */
   lookup_fhandle (p, len, npp);
   return p + len / sizeof (int);
 }
 
 /* Decode *P into a stat structure; return the address of the
-   following data. */
+   following data.  */
 int *
 xdr_decode_fattr (int *p, struct stat *st)
 {
   int type, mode;
 
-  type = ntohl (*p++);
-  mode = ntohl (*p++);
+  type = ntohl (*p);
+  p++;
+  mode = ntohl (*p);
+  p++;
   st->st_mode = nfs_mode_to_hurd_mode (type, mode);
-  st->st_nlink = ntohl (*p++);
-  st->st_uid = ntohl (*p++);
-  st->st_gid = ntohl (*p++);
+  st->st_nlink = ntohl (*p);
+  p++;
+  st->st_uid = ntohl (*p);
+  p++;
+  st->st_gid = ntohl (*p);
+  p++;
   if (protocol_version == 2)
     {
-      st->st_size = ntohl (*p++);
-      st->st_blksize = ntohl (*p++);
-      st->st_rdev = ntohl (*p++);
-      st->st_blocks = ntohl (*p++);
+      st->st_size = ntohl (*p);
+      p++;
+      st->st_blksize = ntohl (*p);
+      p++;
+      st->st_rdev = ntohl (*p);
+      p++;
+      st->st_blocks = ntohl (*p);
+      p++;
     }
   else
     {
@@ -413,18 +432,28 @@ xdr_decode_fattr (int *p, struct stat *st)
       p = xdr_decode_64bit (p, &size);
       st->st_blocks = size / 512;
       st->st_blksize = read_size < write_size ? read_size : write_size;
-      major = ntohl (*p++);
-      minor = ntohl (*p++);
+      major = ntohl (*p);
+      p++;
+      minor = ntohl (*p);
+      p++;
       st->st_rdev = makedev (major, minor);
     }
-  st->st_fsid = ntohl (*p++);
-  st->st_ino = ntohl (*p++);
-  st->st_atime = ntohl (*p++);
-  st->st_atime_usec = ntohl (*p++);
-  st->st_mtime = ntohl (*p++);
-  st->st_mtime_usec = ntohl (*p++);
-  st->st_ctime = ntohl (*p++);
-  st->st_ctime_usec = ntohl (*p++);
+  st->st_fsid = ntohl (*p);
+  p++;
+  st->st_ino = ntohl (*p);
+  p++;
+  st->st_atime = ntohl (*p);
+  p++;
+  st->st_atime_usec = ntohl (*p);
+  p++;
+  st->st_mtime = ntohl (*p);
+  p++;
+  st->st_mtime_usec = ntohl (*p);
+  p++;
+  st->st_ctime = ntohl (*p);
+  p++;
+  st->st_ctime_usec = ntohl (*p);
+  p++;
 
   if (protocol_version == 3)
     {
@@ -438,14 +467,15 @@ xdr_decode_fattr (int *p, struct stat *st)
 }
 
 /* Decode *P into a string, stored at BUF; return the address
-   of the following data. */
+   of the following data.  */
 int *
 xdr_decode_string (int *p, char *buf)
 {
   int len;
 
-  len = ntohl (*p++);
-  bcopy (p, buf, len);
+  len = ntohl (*p);
+  p++;
+  memcpy (buf, p, len);
   buf[len] = '\0';
   return p + INTSIZE (len);
 }
@@ -458,7 +488,7 @@ xdr_decode_string (int *p, char *buf)
    means superuser), NP (identifying the node we are operating on), and
    SECOND_GID (specifying another GID the server might be interested
    in).  Allocate at least LEN bytes of space for bulk data in
-   addition to the normal amount for an RPC. */
+   addition to the normal amount for an RPC.  */
 int *
 nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
 		    size_t len, void **bufp, struct node *np,
@@ -469,7 +499,8 @@ nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
   error_t err;
 
   /* Use heuristics to figure out what ids to present to the server.
-     Don't lie, but adjust ids as necessary to secure the desired result. */
+     Don't lie, but adjust ids as necessary to secure the desired
+     result.  */
 
   if (cred == (struct iouser *) -1)
     {
@@ -548,7 +579,8 @@ nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
 			 uid, gid, second_gid);
 }
 
-/* ERROR is an NFS error code; return the correspending Hurd error. */
+/* ERROR is an NFS error code; return the correspending Hurd
+   error.  */
 error_t
 nfs_error_trans (int error)
 {
@@ -639,7 +671,7 @@ nfs_error_trans (int error)
 	  case NFSERR_BAD_COOKIE:
 	  case NFSERR_TOOSMALL:
 	  case NFSERR_JUKEBOX:	/* ??? */
-	    /* These indicate bugs in the client, so EGRATUITOUS is right. */
+	    /* These indicate bugs in the client, so EGRATUITOUS is right.  */
 	    return EGRATUITOUS;
 	  }
     }
