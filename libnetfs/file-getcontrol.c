@@ -46,9 +46,8 @@ netfs_S_file_getcontrol (struct protid *user,
       {
 	/* They've got root; give it to them. */
 	free (uids);
-	err = ports_create_port (netfs_port_bucket,
-				 sizeof (struct port_info),
-				 netfs_control_class, &pi);
+	err = ports_create_port (netfs_control_class, netfs_port_bucket,
+				 sizeof (struct port_info), &pi);
 	if (err)
 	  return err;
 	*control = ports_get_right (pi);
