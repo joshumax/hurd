@@ -7,7 +7,9 @@ set -v
 fsysopts / --writable 
 
 # Set up the PFLOCAL server so we can do pipes
-/bin/settrans -c /servers/socket/1 /hurd/pflocal
+touch /servers/socket/local
+ln /servers/socket/local /servers/socket/1
+/bin/settrans /servers/socket/1 /hurd/pflocal
 
 # Setup crucial devices
 cd /dev
