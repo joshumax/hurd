@@ -120,6 +120,7 @@ extern mach_port_t diskfs_exec_ctl;	/* send right */
 extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
 
+extern struct mutex diskfs_shutdown_lock;
 
 extern volatile struct mapped_time_value *diskfs_mtime;
 
@@ -138,6 +139,16 @@ extern int pager_port_type;
 
 
 struct pager;
+
+/* Port classes we manage */
+extern struct port_class *diskfs_protid_class;
+extern struct port_class *diskfs_transboot_class;
+extern struct port_class *diskfs_control_class;
+extern struct port_class *diskfs_execboot_class;
+extern struct port_class *diskfs_initboot_class;
+
+extern struct port_bucket *diskfs_port_bucket;
+
 
 
 /* Declarations of things the user must or may define.  */
@@ -403,6 +414,10 @@ void diskfs_shutdown_pager ();
 /* The user must define this function.  Return a memory object port (send
    right) for the file contents of NP.  */
 mach_port_t diskfs_get_filemap (struct node *np);
+
+/* The user must define this function.  Return true if there are pager
+   ports exported that might be in use by users.  */
+int diskfs_pager_users ();
 
 /* The user must define this function.  Return a `struct pager *' suitable
    for use as an argument to diskfs_register_memory_fault_area that
