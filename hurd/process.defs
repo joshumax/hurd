@@ -1,5 +1,5 @@
 /* Definitions for process server interface
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -22,7 +22,7 @@ subsystem process 24000;
 #include <hurd/hurd_types.defs>
 
 /* If any calls are added or deleted, modify process_reply.defs
-   to correspond. */
+   and process_request.defs accordingly. */
 
 #ifdef PROCESS_IMPORTS
 PROCESS_IMPORTS
@@ -123,7 +123,7 @@ routine proc_setmsgport (
 	process: process_t;
 	sreplyport reply_port: sreply_port_t;
 	newmsgport: mach_port_t;
-	out oldmsgport: mach_port_move_send_t);
+	out oldmsgport: mach_port_send_t);
 
 /* Cause a task to take over the pid and all other state from an
    existing task, and kill the old task with task_terminate.  The
@@ -141,10 +141,12 @@ routine proc_reassign (
 	newtask: task_t);
 
 /* Set the owner of the process.  The new owner must be within the
-   current authentication of the caller.  */
+   current authentication of the caller.  If CLEAR is set, then ignore
+   OWNER and restore the process to unowned status. */
 routine proc_setowner (
 	process: process_t;
-	owner: uid_t);
+	owner: uid_t;
+	clear: int);
 
 /* Get the process ID and the parent process ID, also find out if we
    are orphaned.  */
@@ -186,6 +188,7 @@ routine proc_wait (
 	pid: pid_t;
 	options: int;
 	out status: int;
+	out sigcode: int;
 	out rusage: rusage_t;
 	out pid_status: pid_t);
 
@@ -213,7 +216,8 @@ routine proc_handle_exceptions (
 /* Mark the process as stopped on a signal. */
 routine proc_mark_stop (
 	process: process_t;
-	signo: int);
+	signo: int;
+	sigcode: int);
 
 /* Mark the process as continued after a stop.  */
 routine proc_mark_cont (
@@ -224,7 +228,8 @@ routine proc_mark_cont (
    died with SIGKILL.  This call allows for a cleaner exit.  */
 routine proc_mark_exit (
 	process: process_t;
-	status: int);
+	status: int;
+	sigcode: int);
 
 /* Inform the process server that the process has completed an exec.  */
 routine proc_mark_exec (
@@ -273,7 +278,7 @@ routine proc_pid2proc (
 routine proc_getprocinfo (
 	process: process_t;
 	which: pid_t;
-	flags: int;
+	inout flags: int;
 	out procinfo: procinfo_t;
 	out threadwaits: data_t, dealloc);
 
@@ -370,3 +375,11 @@ routine proc_getpgrppids (
 	out pidset: pidarray_t, dealloc);
 
 
+/*** Another miscelleneous info query ***/
+
+/* Return the controlling TTY used by PID in TTY; opened without read or
+   write access. */
+routine proc_get_tty (
+	calling_process: process_t;
+	target_process: pid_t;
+	tty: mach_port_send_t);
