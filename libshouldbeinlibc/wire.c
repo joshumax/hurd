@@ -1,5 +1,5 @@
 /* Function to wire down text and data (including from shared libraries)
-   Copyright (C) 1996,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1996,99,2000,01,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -38,7 +38,7 @@
 static struct link_map *
 loaded (void)
 {
-  Elf32_Dyn *d;
+  ElfW(Dyn) *d;
 
   if (&_DYNAMIC == 0)		/* statically linked */
     return 0;
@@ -54,7 +54,7 @@ loaded (void)
 }
 
 /* Compute the extent of a particular shared object. */
-static Elf32_Addr
+static ElfW(Addr)
 map_extent (struct link_map *map)
 {
   /* In fact, LIB == MAP, but doing it this way makes it entirely kosher.  */
@@ -73,7 +73,7 @@ map_extent (struct link_map *map)
 	error (2, 0, "cannot wire library %s with no _end symbol: %s",
 	       map->l_name, dlerror ());
       dlclose (lib);
-      return (Elf32_Addr) end - map->l_addr;
+      return (ElfW(Addr)) end - map->l_addr;
     }
 }
 
