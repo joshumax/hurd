@@ -32,9 +32,12 @@ IO_IMPORTS
 #ifdef REPLY_PORTS
 type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 	ctype: mach_port_t;
-#define RPT sreplyport reply: reply_port_t
+#define RPTDECL	sreplyport reply: reply_port_t
+#define RPT	RPTDECL;
+#define RPTLAST	; RPTDECL
 #else
-#define RPT 
+#define RPTLAST
+#define RPT
 #endif
 
 
@@ -48,7 +51,7 @@ type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 /*INTR */ 
 routine io_write (
 	io_object: io_t;
-	RPT;
+	RPT
 	data: data_t;
 	offset: off_t;
 	out amount: int);
@@ -59,7 +62,7 @@ routine io_write (
 /* INTR */
 routine io_read (
 	io_object: io_t;
-	RPT;
+	RPT
 	out data: data_t;
 	offset: off_t;
 	amount: int);
@@ -68,7 +71,7 @@ routine io_read (
 /* INTR */
 routine io_seek (
 	io_object: io_t;
-	RPT;
+	RPT
 	offset: off_t;
 	whence: int;
 	out newp: off_t);
@@ -78,7 +81,7 @@ routine io_seek (
    by the nonblocking flag.  */
 routine io_readable (
 	io_object: io_t;
-	RPT;
+	RPT
 	out amount: int);
 
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
@@ -88,22 +91,22 @@ routine io_readable (
    I/O is done through io_async which is orthogonal to these calls. */
 routine io_set_all_openmodes (
 	io_object: io_t;
-	RPT;
+	RPT
 	newbits: int);
 
 routine io_get_openmodes (
 	io_object: io_t;
-	RPT;
+	RPT
 	out bits: int);
 
 routine io_set_some_openmodes (
 	io_object: io_t;
-	RPT;
+	RPT
 	bits_to_set: int);
 
 routine io_clear_some_openmodes (
 	io_object: io_t;
-	RPT;
+	RPT
 	bits_to_clear: int);
 
 /* This requests that the IO object send SIGIO and SIGURG signals,
@@ -115,7 +118,7 @@ routine io_clear_some_openmodes (
    */
 routine io_async (
 	io_object: io_t;
-	RPT;
+	RPT
 	notify_port: mach_port_send_t;
 	out async_id_port: mach_port_send_t);
 
@@ -127,12 +130,12 @@ routine io_async (
    filesystems).  An owner of 0 indicates that there is no owner.  */
 routine io_mod_owner (
 	io_object: io_t;
-	RPT;
+	RPT
 	owner: pid_t);
 
 routine io_get_owner (
 	io_object: io_t;
-	RPT;
+	RPT
 	out owner: pid_t);
 
 /* This provides "old style" async IO.  This is deprecated, and
@@ -150,7 +153,7 @@ routine io_get_owner (
 /* Fetch the current old-style async ID port.  */
 routine io_get_icky_async_id (
 	io_object: io_t;
-	RPT;
+	RPT
 	out icky_async_id_port: mach_port_send_t);
 
 /* Select_type is the or of SELECT_READ, SELECT_WRITE, and SELECT_URG.
@@ -162,7 +165,7 @@ routine io_get_icky_async_id (
    send-once right.  */
 routine io_select (
 	io_object: io_t;
-	RPT;
+	RPT
 	select_type: int;
 	return_port: mach_port_make_send_once_t;
 	id_tag: int;
@@ -175,7 +178,7 @@ routine io_select (
 /* INTR */
 routine io_stat (
 	stat_object: io_t;
-	RPT;
+	RPT
 	out stat_info: io_statbuf_t);
 
 /* Get a reauthenticated port to an io object.  The user should follow
@@ -184,7 +187,7 @@ routine io_stat (
    authentication.  */
 simpleroutine io_reauthenticate (
 	auth_object: io_t;
-	RPT;
+	RPT
 	rend_int: int);
 
 /* Return another port which has been restricted to do only those
@@ -192,7 +195,7 @@ simpleroutine io_reauthenticate (
    do.  */
 routine io_restrict_auth (
 	io_object: io_t;
-	RPT;
+	RPT
 	out new_object: mach_port_send_t;
 	uids: idarray_t;
 	gids: idarray_t);
@@ -200,13 +203,13 @@ routine io_restrict_auth (
 /* Return a new port with the same semantics as the existing port. */
 routine io_duplicate (
 	io_object: io_t;
-	RPT;
+	RPT
 	out newport: mach_port_send_t);
 
 /* Get version information about the server exporting the IO object.  */
 routine io_server_version (
 	vers_object: io_t;
-	RPT;
+	RPT
 	out server_name: string_t;
 	out server_major_version: int;
 	out server_minor_version: int;
@@ -224,7 +227,7 @@ routine io_server_version (
    objects can still be accessed by io_read and io_write.  */
 routine io_map (
 	io_object: io_t;
-	RPT;
+	RPT
 	out memobjrd: mach_port_send_t;
 	out memobjwt: mach_port_send_t);
 
@@ -238,7 +241,7 @@ routine io_map (
    */
 routine io_map_cntl (
 	io_object: io_t;
-	RPT;
+	RPT
 	out memobj: mach_port_send_t);
 
 /* Users of the shared page who don't have the conch and want it
@@ -247,8 +250,7 @@ routine io_map_cntl (
    in a loop for safety.  */
 /* INTR */
 routine io_get_conch (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
 
 /* When the user is done with the shared page, while holding the
    conch, the filesystem may have changed the conch status to
@@ -260,8 +262,7 @@ routine io_get_conch (
    the conch status might be either USER_COULD_HAVE_CONCH or
    USER_HAS_NOT_CONCH. */
 routine io_release_conch (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
 
 /* This routine should be called while the user has the conch, after
    the user has encountered an eof condition (where the file pointer
@@ -270,8 +271,7 @@ routine io_release_conch (
    routine should be called while the user has the conch. The user
    will keep it upon return.  */
 routine io_eofnotify (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
 
 /* If the user wants to write past the prenotify size, a call needs to
    be made to io_prenotify giving the paramters of the write.  Upon
@@ -281,7 +281,7 @@ routine io_eofnotify (
    will keep it upon return.  */
 routine io_prenotify (
 	io_object: io_t;
-	RPT;
+	RPT
 	write_start: vm_offset_t;
 	write_end: vm_offset_t);
 
@@ -291,7 +291,7 @@ routine io_prenotify (
    */
 routine io_postnotify (
 	io_object: io_t;
-	RPT;
+	RPT
 	write_start: vm_offset_t;
 	write_end: vm_offset_t);
 
@@ -299,19 +299,20 @@ routine io_postnotify (
    call this routine, while holding the conch.  The user will keep the
    conch upon return. */
 routine io_readnotify (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
 
 /* This routine sleeps until the read_size is increased.  The routine
    should be called while the user has the conch.  The user will keep
    it upon return.  */
 /* INTR */
 routine io_readsleep (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
    
 /* The shared user has just done some IO, and a signal needs to be
    sent for async users.  */
 routine io_sigio (
-	io_object: io_t;
-	RPT);
+	io_object: io_t RPTLAST);
+
+#undef RPT
+#undef RPTLAST
+#undef RPTDECL
