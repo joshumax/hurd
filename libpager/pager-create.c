@@ -26,7 +26,9 @@ pager_create (struct user_pager_info *upi,
 {
   struct pager *p;
 
-  p = ports_allocate_port (bucket, sizeof (struct pager), _pager_class);
+  errno = ports_create_port (_pager_class, bucket, sizeof (struct pager), &p);
+  if (errno)
+    return 0;
 
   p->upi = upi;
   p->pager_state = NOTINIT;
