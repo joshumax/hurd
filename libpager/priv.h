@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -124,6 +124,8 @@ int _pager_page_errors[];
    write access.  */
 #define PM_NEXTERROR(byte) ((byte) & 0x3)
 #define SET_PM_NEXTERROR(byte,err) (((byte) & ~0x3) | (err))
+
+struct port_class *_pager_class;
 
 
 void _pager_wait_for_seqno (struct pager *, int);
