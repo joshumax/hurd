@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <fcntl.h>
 
 /* Implement io_select as described in <hurd/io.defs>. */
 error_t
@@ -29,9 +30,16 @@ diskfs_S_io_select (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  mutex_lock (&cred->po->np->lock);
+  if (((type & SELECT_READ) && !(cred->po->openstat & O_READ))
+      || ((type & SELECT_WRITE) && !(cred-po->openstat & O_WRITE)))
+    {
+      mutex_unlock (&cred->po->np->lock);
+      return EBADF;
+    }
+  mutex_unlock (&cred->po->np->lock);
   /* Select is always possible */
-  /* XXX should check open modes. */
   mach_port_deallocate (mach_task_self (), port);
-  *possible = type;
+  *possible = type & ~SELECT_URG;
   return 0;
 }
