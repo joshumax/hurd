@@ -339,6 +339,9 @@ write_node (struct node *np)
       di->i_blocks = st->st_blocks >> log2_stat_blocks_per_fs_block;
       di->i_flags = st->st_flags;
 
+      /* Set dtime non-zero to indicate a deleted file.  */
+      di->i_dtime = (st->st_mode ? 0 : di->i_mtime);
+
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
 	di->i_block[0] = st->st_rdev;
       else
@@ -350,7 +353,7 @@ write_node (struct node *np)
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
-      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
+      record_global_poke (di);
     }
 }  
 
@@ -433,16 +436,18 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
 	}
       
       di->i_translator = blkno;
-      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
+      record_global_poke (di);
+
       np->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
     {
       /* Clear block for translator going away. */
-      ext2_free_blocks (blkno, 1);
       di->i_translator = 0;
-      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
+      record_global_poke (di);
+      ext2_free_blocks (blkno, 1);
+
       np->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
       np->istranslated = 0;
       np->dn_set_ctime = 1;
