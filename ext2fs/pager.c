@@ -519,7 +519,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	  block_t old_page_end_block =
 	    round_page (old_size) >> log2_block_size;
 
-	  ext2_debug ("growing inode %d to %u bytes (from %u)", node->cache_id,
+	  ext2_debug ("growing inode %d to %lu bytes (from %lu)", node->cache_id,
 		      new_size, old_size);
 
 	  if (dn->last_page_partially_writable
@@ -530,7 +530,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		 ? new_end_block
 		 : old_page_end_block);
 
-	      ext2_debug ("extending writable page %u by %d blocks"
+	      ext2_debug ("extending writable page %u by %ld blocks"
 			  "; first new block = %lu",
 			  trunc_page (old_size),
 			  writable_end - end_block,
