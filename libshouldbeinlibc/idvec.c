@@ -1,6 +1,6 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -108,12 +108,13 @@ idvec_insert (struct idvec *idvec, unsigned pos, id_t id)
 {
   error_t err = 0;
   unsigned num = idvec->num;
+  unsigned new_num = (pos < num ? num + 1 : pos + 1);
 
   if (idvec->alloced == num)
     /* If we seem to be growing by just one, actually prealloc some more. */
-    err = idvec_grow (idvec, num + 1);
+    err = idvec_ensure (idvec, new_num + num);
   else
-    err = idvec_grow (idvec, 1);
+    err = idvec_ensure (idvec, new_num);
 
   if (! err)
     {
@@ -123,7 +124,7 @@ idvec_insert (struct idvec *idvec, unsigned pos, id_t id)
       else if (pos > num)
 	bzero (ids + num, (pos - num) * sizeof (id_t));
       ids[pos] = id;
-      idvec->num = num + 1;
+      idvec->num = new_num;
     }
 
   return err;
@@ -209,27 +210,32 @@ idvec_merge (struct idvec *idvec, struct idvec *new)
   return idvec_merge_ids (idvec, new->ids, new->num);
 }
 
-/* Remove any occurances of ID in IDVEC after position POS>  Returns true if
-   anything was done.  */
+/* Remove any occurances of ID in IDVEC after position POS.
+   Returns true if anything was done.  */
 int
 idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
 {
-  int left = idvec->num - pos;
-  id_t *ids = idvec->ids + pos, *targ = ids;
-  while (left--)
+  if (pos < idvec->num)
     {
-      if (*ids != id)
+      int left = idvec->num - pos;
+      id_t *ids = idvec->ids + pos, *targ = ids;
+      while (left--)
 	{
-	  if (ids != targ)
-	    *targ = *ids;
-	  targ++;
+	  if (*ids != id)
+	    {
+	      if (ids != targ)
+		*targ = *ids;
+	      targ++;
+	    }
+	  ids++;
 	}
-      ids++;
+      if (ids == targ)
+	return 0;
+      idvec->num = targ - idvec->ids;
+      return 1;
     }
-  if (ids == targ)
+  else
     return 0;
-  idvec->num = targ - idvec->ids;
-  return 1;
 }
 
 /* Deleted the id at position POS in IDVEC.  */
@@ -252,7 +258,7 @@ idvec_delete (struct idvec *idvec, unsigned pos)
 error_t
 idvec_insert_only (struct idvec *idvec, unsigned pos, id_t id)
 {
-  if (idvec->ids[pos] == id)
+  if (idvec->num > pos && idvec->ids[pos] == id)
     return 0;
   else
     {
