@@ -28,11 +28,10 @@ OBJS = $(filter-out mount.sh,$(SRCS:.c=.o))
 all: $(targets)
 
 ps: ../libps/libps.a ../libihash/libihash.a
-settrans: start-trans.o
+# We must include libthreads because of a bug in the way shared libraries
+# work: all libraries that *any* routine in libfshelp uses must be defined.
+settrans: ../libfshelp/libfshelp.a ../libthreads/libthreads.a
 ps settrans showtrans fsysopts: ../libshouldbeinlibc/libshouldbeinlibc.a
-
-CPPFLAGS += -I../lib
-vpath %.c ../lib
 
 include ../Makeconf
 
