@@ -1,3 +1,14 @@
+Fri Feb 14 18:00:52 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c, argp-parse.c [!_] (_): New macro.
+	[!_ && HAVE_LIBINTL_H] <libintl.h>: New include.
+	* argp-help.c (hol_entry_help, __argp_help, argp_args_usage, argp_doc,
+ 	usage_long_opt, arg, hol_entry_help): Call gettext in appropriate
+ 	places.
+	* argp-parse.c (parser_finalize, argp_version_parser): Likewise.
+	
+	* argp-help.c: Incorporate gettext changes from drepper.
+
 Thu Feb 13 16:46:59 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-parse.c, argp-help.c, argp-fmtstream.c, argp-pvh.c,
