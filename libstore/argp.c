@@ -20,9 +20,8 @@
    with this program; if not, write to the Free Software Foundation, Inc.,
    675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
+#include <assert.h>
 #include <hurd.h>
 #include <argp.h>
 #include <argz.h>
@@ -30,9 +29,9 @@
 #include "store.h"
 
 static const struct argp_option options[] = {
-  {"machdev", 'm', 0, 0, "DEVICE is a mach device, not a file"},
-  {"interleave", 'i', "BLOCKS", 0, "Interleave in runs of length BLOCKS"},
-  {"layer",   'l', 0, 0, "Layer multiple devices for redundancy"},
+  {"device",	'D', 0,        0, "DEVICE is a mach device, not a file"},
+  {"interleave",'i', "BLOCKS", 0, "Interleave in runs of length BLOCKS"},
+  {"layer",   	'l', 0,        0, "Layer multiple devices for redundancy"},
   {0}
 };
 
@@ -41,68 +40,107 @@ static const char doc[] = "\vIf multiple DEVICEs are specified, they are"
 " concatenated unless either --interleave or --layer is specified (mutually"
 " exlusive).";
 
-/* Used to hold data during argument parsing.  */
-struct store_parse_hook
+struct store_parsed
 {
-  /* A malloced vector of stores specified on the command line, NUM_STORES
-     long.  */
-  struct store **stores;
-  size_t num_stores;
-
-  /* Pointer to params struct passed in by user.  */
-  struct store_argp_params *params;
-
+  char *names;
+  size_t names_len;
   off_t interleave;		/* --interleave value */
   int machdev : 1;		/* --machdev specified */
   int layer : 1;		/* --layer specified */
 };
 
-/* Free the parse hook H.  If ERR_RETURN is true, also free the stores in H's
-   store vector, and any other return values, otherwise just free the vector
-   itself.  */
-static void
-free_hook (struct store_parse_hook *h, int err_return)
+void
+store_parsed_free (struct store_parsed *parsed)
 {
-  int i;
-  if (err_return)
-    for (i = 0; i < h->num_stores; i++)
-      store_free (h->stores[i]);
-  if (h->stores)
-    free (h->stores);
-  if (err_return && h->params->return_args && h->params->args)
-    free (h->params->args);
-  free (h);
+  free (parsed->names);
+  free (parsed);
 }
-
-static error_t
-open_file (char *name, struct store_parse_hook *h, struct store **s)
+
+/* Add the arguments  PARSED, and return the corresponding store in STORE.  */
+error_t
+store_parsed_append_args (const struct store_parsed *parsed,
+			  char **args, size_t *args_len)
 {
-  error_t err;
-  int flags = h->params->flags;
-  int open_flags = (flags & STORE_HARD_READONLY) ? O_RDONLY : O_RDWR;
-  file_t node = file_name_lookup (name, open_flags, 0);
+  error_t err = 0;
+  size_t num_names = argz_count (parsed->names, parsed->names_len);
 
-  if (node == MACH_PORT_NULL)
-    return errno;
+  if (parsed->machdev)
+    err = argz_add (args, args_len, "--machdev");
 
-  err = store_create (node, flags, 0, s);
-  if (err)
+  if (!err && num_names > 1 && (parsed->interleave || parsed->layer))
     {
-      if (! h->params->no_file_io)
-	/* Try making a store that does file io to NODE.  */
-	err = store_file_create (node, flags, s);
-      if (err)
-	mach_port_deallocate (mach_task_self (), node);
+      char buf[40];
+      if (parsed->interleave)
+	snprintf (buf, sizeof buf, "--interleave=%ld", parsed->interleave);
+      else
+	snprintf (buf, sizeof buf, "--layer=%ld", parsed->layer);
+      err = argz_add (args, args_len, buf);
     }
 
+  if (! err)
+    err = argz_append (args, args_len, parsed->names, parsed->names_len);
+
   return err;
+}
+
+/* Open PARSED, and return the corresponding store in STORE.  */
+error_t
+store_parsed_open (const struct store_parsed *parsed, int flags,
+		   struct store_class *classes,
+		   struct store **store)
+{
+  size_t num = argz_count (parsed->names, parsed->names_len);
+  error_t open (char *name, struct store **store)
+    {
+      if (parsed->machdev)
+	return store_device_open (name, flags, store);
+      else
+	return store_open (name, flags, classes, store);
+    }
+
+  if (num == 1)
+    return open (parsed->names, store);
+  else
+    {
+      int i;
+      char *name;
+      error_t err = 0;
+      struct store **stores = malloc (sizeof (struct store *) * num);
+
+      if (! stores)
+	return ENOMEM;
+
+      for (i = 0, name = parsed->names;
+	   !err && i < num;
+	   i++, name = argz_next (parsed->names, parsed->names_len, name))
+	err = open (name, &stores[i]);
+
+      if (! err)
+	if (parsed->interleave)
+	  err =
+	    store_ileave_create (stores, num, parsed->interleave,
+				 flags, store);
+	else if (parsed->layer)
+	  assert (! parsed->layer);
+	else
+	  err = store_concat_create (stores, num, flags, store);
+
+      if (err)
+	{
+	  while (i > 0)
+	    store_free (stores[i--]);
+	  free (stores);
+	}
+
+      return err;
+    }
 }
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
-  error_t err = 0;
-  struct store_parse_hook *h = state->hook;
+  error_t err;
+  struct store_parsed *parsed = state->hook;
 
   /* Print a parsing error message and (if exiting is turned off) return the
      error code ERR.  */
@@ -111,127 +149,63 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
   switch (opt)
     {
-      struct store *s;
-
     case 'm':
-      h->machdev = 1; break;
+      parsed->machdev = 1; break;
 
     case 'i':
-      if (h->layer)
+      if (parsed->layer)
 	PERR (EINVAL, "--layer and --interleave are exclusive");
-      if (h->interleave)
+      if (parsed->interleave)
 	/* Actually no reason why we couldn't support this.... */
 	PERR (EINVAL, "--interleave specified multiple times");
 
-      h->interleave = atoi (arg);
-      if (! h->interleave)
+      parsed->interleave = atoi (arg);
+      if (! parsed->interleave)
 	PERR (EINVAL, "%s: Bad value for --interleave", arg);
       break;
 
     case 'l':
-      if (h->interleave)
+#if 1
+      argp_failure (state, 5, 0, "--layer not implemented");
+      return EINVAL;
+#else
+      if (parsed->interleave)
 	PERR (EINVAL, "--layer and --interleave are exclusive");
-      h->layer = 1;
+      parsed->layer = 1;
+#endif
       break;
 
     case ARGP_KEY_ARG:
       /* A store device to use!  */
-      if (h->machdev)
-	err = store_device_open (arg, h->params->flags, &s);
-      else
-	err = open_file (arg, h, &s);
-      if (! err)
-	{
-	  struct store **stores = realloc (h->stores, h->num_stores + 1);
-	  if (stores)
-	    {
-	      stores[h->num_stores++] = s;
-	      h->stores = stores;
-	      if (h->params->return_args)
-		err = argz_add (&h->params->args, &h->params->args_len, arg);
-	    }
-	  else
-	    err = ENOMEM;	/* Just fucking lovely */
-	}
+      err = argz_add (&parsed->names, &parsed->names_len, arg);
       if (err)
-	{
-	  argp_failure (state, 1, err, "%s", arg);
-	  return err;
-	}
+	argp_failure (state, 1, err, "%s", arg);
+      return err;
       break;
 
     case ARGP_KEY_INIT:
       /* Initialize our parsing state.  */
       if (! state->input)
 	return EINVAL;		/* Need at least a way to return a result.  */
-      h = malloc (sizeof (struct store_parse_hook));
-      if (! h)
+      state->hook = malloc (sizeof (struct store_parsed));
+      if (! state->hook)
 	return ENOMEM;
-      bzero (h, sizeof (struct store_parse_hook));
-      h->params = state->input;
-      if (h->params->return_args)
-	/* Initialiaze the returned argument vector.  */
-	{
-	  h->params->args = 0;
-	  h->params->args_len = 0;
-	}
-      state->hook = h;
+      bzero (state->hook, sizeof (struct store_parsed));
       break;
 
     case ARGP_KEY_ERROR:
       /* Parsing error occured, free everything. */
-      free_hook (h, 1); break;
+      store_parsed_free (parsed); break;
 
     case ARGP_KEY_SUCCESS:
       /* Successfully finished parsing, return a result.  */
-
-      if (h->num_stores == 0)
+      if (parsed->names == 0)
 	{
-	  free_hook (h, 1);
+	  store_parsed_free (parsed);
 	  PERR (EINVAL, "No store specified");
 	}
-
-      if (h->params->return_args)
-	{
-	  if (h->machdev)
-	    err = argz_insert (&h->params->args, &h->params->args_len,
-			       h->params->args, "--machdev");
-	  if (!err && h->num_stores > 1 && (h->interleave || h->layer))
-	    {
-	      char buf[40];
-	      if (h->interleave)
-		snprintf (buf, sizeof buf, "--interleave=%ld", h->interleave);
-	      else
-		snprintf (buf, sizeof buf, "--layer=%ld", h->layer);
-	      err = argz_insert (&h->params->args, &h->params->args_len,
-				 h->params->args, buf);
-	    }
-	}
-
-      if (err)
-	/* nothing */;
-      else if (state->input == 0)
-	/* No way to return a value!  */
-	err = EINVAL;
-      else if (h->num_stores == 1)
-	s = h->stores[0];	/* Just a single store.  */
-      else if (h->interleave)
-	err =
-	  store_ileave_create (h->stores, h->num_stores, h->interleave,
-			       h->params->flags, &s);
-      else if (h->layer)
-	{
-	  free_hook (h, 1);
-	  PERR (EINVAL, "--layer not implemented");
-	}
       else
-	err =
-	  store_concat_create (h->stores, h->num_stores, h->params->flags, &s);
-
-      free_hook (h, err);
-      if (! err)
-	h->params->result = s;
-
+	*(struct store_parsed **)state->input = parsed;
       break;
 
     default:
