@@ -38,7 +38,6 @@ struct device ether_dev;
 
 struct enet_statistics retbuf;
 
-static struct condition more_packets = CONDITION_INITIALIZER;
 
 /* Mach doesn't provide this.  DAMN. */
 struct enet_statistics *
@@ -68,11 +67,6 @@ static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
 
 static struct port_bucket *etherport_bucket;
 
-void
-mark_bh (int arg)
-{
-  condition_broadcast (&more_packets);
-}
 
 any_t
 ethernet_thread (any_t arg)
@@ -122,16 +116,6 @@ ethernet_demuxer (mach_msg_header_t *inp,
   return 1;
 }
 
-any_t
-input_work_thread (any_t arg)
-{
-  mutex_lock (&global_lock);
-  for (;;)
-    {
-      condition_wait (&more_packets, &global_lock);
-      net_bh (0);
-    }
-}
 
 int
 ethernet_open (struct device *dev)
@@ -161,7 +145,6 @@ ethernet_open (struct device *dev)
   if (err)
     error (2, err, "%s", dev->name);
   cthread_detach (cthread_fork (ethernet_thread, 0));
-  cthread_detach (cthread_fork (input_work_thread, 0));
   return 0;
 }
 

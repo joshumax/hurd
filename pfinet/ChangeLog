@@ -1,3 +1,17 @@
+1999-09-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* ethernet.c (ethernet_open): Don't start the input work thread
+	here. 
+	(more_packets, mark_bh, input_work_thread): Move
+	these to ...
+	* devices.c: ... here.
+	Also include "pfinet.h" instead of list of <> includes.
+	* main.c (main): Launch input work thread here.
+	* pfinet.h (input_work_thread): Declare function.
+
+	* devices.c (add_device): Remove unused function.
+	* pfinet.h (incoming_net_packet): Remove unused declaration.
+	
 1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-ops.c (S_io_map_segment): New function.

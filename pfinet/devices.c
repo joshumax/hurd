@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -18,14 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <linux/netdevice.h>
-#include <device/device.h>
-#include <hurd.h>
+#include "pfinet.h"
 
 struct device *dev_base;
 struct device loopback_dev;
 
 device_t master_device;
+
+static struct condition more_packets = CONDITION_INITIALIZER;
 
 void
 init_devices (void)
@@ -43,11 +43,18 @@ init_devices (void)
 }
 
 void
-add_device (struct device *dev)
+mark_bh (int arg)
 {
-  dev->next = dev_base;
-  dev_base = dev;
+  condition_broadcast (&more_packets);
 }
 
-
-  
+any_t
+input_work_thread (any_t arg)
+{
+  mutex_lock (&global_lock);
+  for (;;)
+    {
+      condition_wait (&more_packets, &global_lock);
+      net_bh (0);
+    }
+}

@@ -29,8 +29,6 @@
 
 extern device_t master_device;
 
-void incoming_net_packet (void);
-
 extern struct proto_ops *proto_ops;
 
 struct mutex global_lock;
@@ -71,6 +69,7 @@ struct sock_user *make_sock_user (struct socket *, int, int);
 error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);
 void init_devices (void);
+any_t input_work_thread (any_t);
 void init_time (void);
 void inet_proto_init (struct net_proto *);
 void ip_rt_add (short, u_long, u_long, u_long, struct device *,

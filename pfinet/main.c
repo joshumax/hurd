@@ -188,7 +188,7 @@ main (int argc,
 
   init_devices ();
   init_time ();
-
+  cthread_detach (cthread_fork (input_work_thread, 0));
   inet_proto_init (0);
 
   arrange_shutdown_notification ();
