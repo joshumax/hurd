@@ -29,10 +29,13 @@
    AUTH.  Each replaced port has a reference consumed; if an error is
    returned, then PORTS and FDS may contain a mixture of old and new ports,
    however AUTH will only be placed in PORTS upon success.  If SECURE is
-   true, then it is assumed the exec will use EXEC_SECURE, and any
-   modifications are made.  If MUST_REAUTH is true, then any failure to
-   re-authenticate a port will result in the function return the error,
-   otherwise, such failures are silently ignored.  */
+   true, then it is assumed the exec will use EXEC_SECURE, and certain ports
+   may be replaced by MACH_PORT_NULL, with the expectation that exec will
+   fill these in itself; if all ports should be re-authenticated, use 0 for
+   this argument, regardless of whether EXEC_SECURE will be used.  If
+   MUST_REAUTH is true, then any failure to re-authenticate a port will
+   result in the function return the error, otherwise, such failures are
+   silently ignored.  */
 error_t
 exec_reauth (auth_t auth, int secure, int must_reauth,
 	     mach_port_t *ports, unsigned num_ports,
