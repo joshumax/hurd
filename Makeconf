@@ -243,9 +243,6 @@ $(sort $(HURDLIBS-files)): FORCE
 #	foo-MIGCOMUFLAGS   same, but only for interface `foo'
 #	CPPFLAGS	   flags to CPP
 
-hurddefs := $(notdir $(basename $(wildcard $(srcdir)/hurd/*.defs)))
-ht := $(srcdir)/hurd/hurd_types.defs
-
 # Implicit rules for building server and user stubs from mig .defs files.
 %_S.h %Server.c: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ $< \
@@ -260,9 +257,6 @@ ht := $(srcdir)/hurd/hurd_types.defs
 
 # Where to find .defs files.
 vpath %.defs $(srcdir)/hurd:$(crossheaders)/mach:$(crossheaders)/device
-
-# Files generated from the Hurd .defs files depend on hurd_types.defs.
-$(foreach if,$(hurddefs),$(if)_S.h $(if)Server.c $(if)_U.h $(if)User.c): $(ht)
 
 FORCE:
 
