@@ -35,4 +35,4 @@ include ../Makeconf
 CPPFLAGS += -DGZIP # -DBFD
 
 exec: ../libtrivfs/libtrivfs.so ../libthreads/libthreads.so \
-      ../libshouldbeinlibc/libshouldbeinlibc.so
+      ../libshouldbeinlibc/libshouldbeinlibc.so ../libfshelp/libfshelp.so
