@@ -24,28 +24,30 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/hurd_types.h>
 #include <hurd/fs.h>
 #include <hurd/io.h>
+#include <hurd.h>
 
 void
 main ()
 {
-  file_t root, passwd;
+  file_t root, filetoprint;
   retry_type retry;
   char buf[1024], *bp;
   int buflen;
   char pathbuf[1024];
   extern file_t *_hurd_init_dtable;
-  
+
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
+  root = _hurd_ports[INIT_PORT_CRDIR].port;
   task_get_bootstrap_port (mach_task_self (), &root);
-  dir_pathtrans (root, "etc/passwd", FS_LOOKUP_READ, 0, &retry, pathbuf,
-		 &passwd);
+  dir_pathtrans (root, "README", FS_LOOKUP_READ, 0, &retry, pathbuf,
+		 &filetoprint);
   
   do
     {
       bp = buf;
       buflen = 10;
-      io_read (passwd, &bp, &buflen, -1, 10);
+      io_read (filetoprint, &bp, &buflen, -1, 10);
       bp[buflen] = '\0';
       printf ("%s", bp);
       if (bp != buf)
@@ -53,4 +55,5 @@ main ()
     }
   while (buflen);
   printf ("All done.\n");
+  malloc (0);
 }
