@@ -220,7 +220,11 @@ pty_io_read (struct trivfs_protid *cred,
   
   mutex_lock (&global_lock);
   
-  /* Validate CRED.  XXX */
+  if ((cred->po->openmodes & O_READ) == 0)
+    {
+      mutex_unlock (&global_lock);
+      return EBADF;
+    }
 
   while (!control_byte
 	 && (!qsize (outputq) || (termflags & USER_OUTPUT_SUSP)))
@@ -282,7 +286,11 @@ pty_io_write (struct trivfs_protid *cred,
 
   mutex_lock (&global_lock);
   
-  /* Validate CRED. XXX */
+  if ((cred->po->openmodes & O_WRITE) == 0)
+    {
+      mutex_unlock (&global_lock);
+      return EBADF;
+    }
 
   if (remote_input_mode)
     {
@@ -348,8 +356,6 @@ pty_io_select (struct trivfs_protid *cred,
     return 0;
 
   mutex_lock (&global_lock);
-
-  /* Validate CRED. XXX */
 
   while (1)
     {
