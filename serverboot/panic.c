@@ -25,7 +25,7 @@
  */
 
 #include <mach/port.h>
-#include <varargs.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -38,15 +38,13 @@ panic_init(port)
 }
 
 /*VARARGS1*/
-panic(s, va_alist)
-	char *s;
-	va_dcl
+panic (const char *s, ...)
 {
 	va_list listp;
 
 	clearerr (stdout);
 	printf("%s: panic: ", program_invocation_name);
-	va_start(listp);
+	va_start(listp, s);
 	vprintf(s, listp);
 	va_end(listp);
 	printf("\n");
