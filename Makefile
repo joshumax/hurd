@@ -19,7 +19,8 @@ dir := .
 
 include Makeconf
 
-LIB_SUBDIRS = libioserver libports libpager libfshelp libdiskfs libtrivfs
+LIB_SUBDIRS = libioserver libports libpager libfshelp libdiskfs libtrivfs \
+	libcthreads
 PROG_SUBDIRS = auth boot exec fstests hello ifsock init.trim mkbootfs \
 	 proc term tmpfs ufs pflocal sh.trim ps
 OTHER_SUBDIRS = hurd i386 doc init
