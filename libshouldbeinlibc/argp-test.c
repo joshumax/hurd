@@ -61,29 +61,29 @@ sub_parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
       
-static struct argp sub_argp = { sub_options, sub_parse_opt, sub_args_doc, sub_doc };
+static struct argp sub_argp = {
+  sub_options, sub_parse_opt, sub_args_doc, sub_doc
+};
 
-#define OPT_PGRP -1
-#define OPT_SESS -2
+#define OPT_PGRP 1
+#define OPT_SESS 2
 
 struct argp_option options[] =
 {
-  {"pid",       'p',      "PID",  0,
-     "List the process PID"},
-  {"pgrp",      OPT_PGRP, "PGRP", 0,
-     "List processes in the process group PGRP"},
-  {"no-parent", 'P',	      0,     0,
-     "Include processes without parents"},
-  {0,           'x',       0,     OPTION_ALIAS},
-  {"all-fields",'Q',       0,     0,
-     "Don't elide unusable fields (normally if there's some reason ps \
-can't print a field for any process, it's removed from the output entirely)"},
-  {"reverse",   'r',       0,     0,
-     "Reverse the order of any sort"},
+  {"pid",       'p',     "PID", 0, "List the process PID"},
+  {"pgrp",      OPT_PGRP,"PGRP",0, "List processes in the process group PGRP"},
+  {"no-parent", 'P',	 0,     0, "Include processes without parents"},
+  {0,           'x',     0,     OPTION_ALIAS},
+  {"all-fields",'Q',     0,     0, "Don't elide unusable fields (normally"
+				   " if there's some reason ps can't"
+				   " print a field for any process, it's"
+				   " removed from the output entirely)" },
+  {"reverse",   'r',    0,      0, "Reverse the order of any sort"},
   {"gratuitously-long-reverse-option", 0, 0, OPTION_ALIAS},
-  {"session",   OPT_SESS,  "SID", OPTION_ARG_OPTIONAL,
-     "Add the processes from the session SID (which defaults to the sid of \
-the current process)"},
+  {"session",  OPT_SESS,"SID",  OPTION_ARG_OPTIONAL,
+				   "Add the processes from the session"
+				   " SID (which defaults to the sid of"
+				   " the current process)" },
 
   {0,0,0,0, "Here are some more options:"},
   {"foonly", 'f', "ZOT", 0, "Glork a foonly"},
@@ -93,7 +93,9 @@ the current process)"},
 };
 
 static const char args_doc[] = "STRING";
-static const char doc[] = "Test program for argp.";
+static const char doc[] = "Test program for argp."
+ "\vThis doc string comes after the options."
+ "\nHey!  Some manual formatting!";
 
 static error_t 
 parse_opt (int key, char *arg, struct argp_state *state)
