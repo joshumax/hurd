@@ -24,7 +24,7 @@ SRCS =	lock-acquire.c lock-init.c \
 
 OBJS = $(subst .c,.o,$(SRCS))
 
-LCLHDRS = trans.h fshelp.h locks.h
+LCLHDRS = fshelp.h locks.h
 REMHDRS = ../hurd/ports.h
 libname = libfshelp
 installhdrs = fshelp.h
@@ -32,7 +32,5 @@ installhdrs = fshelp.h
 include ../Makeconf
 
 $(OBJS): fshelp.h ../hurd/ports.h
-handle-startup.o init-trans.o start-trans.o transboot-clean.o: trans.h
-trans-cntl.o kill-trans.o trans-iter.o: trans.h
 lock-acquire.o lock-init.o: locks.h
 
