@@ -1,5 +1,5 @@
 /* Stubby version of getty for Hurd
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,12 +29,11 @@
 #include <sys/utsname.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utmp.h>
 
 /* XXX */
-extern int login_tty (int);
 extern char *localhost ();
 
-#define _PATH_DEV "/dev"
 #define _PATH_LOGIN "/bin/login"
 
 /* Print a suitable welcome banner */
