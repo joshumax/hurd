@@ -72,7 +72,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bit = (inum - 1) % sblock->s_inodes_per_group;
 
   gdp = group_desc (block_group);
-  bh = bptr (gdp->bg_inode_bitmap);
+  bh = block_image (gdp->bg_inode_bitmap);
 
   if (!clear_bit (bit, bh))
     ext2_warning ("ext2_free_inode", "bit already cleared for inode %u", inum);
@@ -210,7 +210,7 @@ repeat:
       return 0;
     }
 
-  bh = bptr (gdp->bg_inode_bitmap);
+  bh = block_image (gdp->bg_inode_bitmap);
   if ((inum =
        find_first_zero_bit ((unsigned long *) bh, sblock->s_inodes_per_group))
       < sblock->s_inodes_per_group)
@@ -363,7 +363,7 @@ ext2_check_inodes_bitmap ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = count_free (bptr (gdp->bg_inode_bitmap),
+      x = count_free (block_image (gdp->bg_inode_bitmap),
 		      sblock->s_inodes_per_group / 8);
       if (gdp->bg_free_inodes_count != x)
 	ext2_error ("ext2_check_inodes_bitmap",
