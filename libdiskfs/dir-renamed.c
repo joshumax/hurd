@@ -184,6 +184,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   mutex_unlock (&fnp->lock);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   assert (tmpnp == fnp);
+  diskfs_nrele (tmpnp);
   if (err)
     goto out;
   
