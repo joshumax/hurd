@@ -147,15 +147,14 @@ routine io_get_icky_async_id (
 /* Select_type is the or of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    If any of the requested types of IO are immediately possible, the
    appropriate types are set in SELECT_RESULT, and RETURN_PORT is
-   destroyed.  If IO is not immediately possible, SELECT_RESULT is
-   zero, and a select_done call (see misc.defs) will be sent to
-   RETURN_PORT when IO becomes possible.  RETURN_PORT should be a
-   send-once right.  */
+   destroyed.  If IO is not immediately possible, SELECT_RESULT is zero,
+   and an io_select_done call (see msg.defs) will be sent to RETURN_PORT
+   when IO becomes possible.  RETURN_PORT should be a send-once right.  */
 routine io_select (
 	io_object: io_t;
 	RPT
 	select_type: int;
-	return_port: mach_port_make_send_once_t;
+	return_port: mach_port_poly_t;
 	id_tag: int;
 	out select_result: int);
 
