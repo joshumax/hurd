@@ -294,24 +294,21 @@ kill_login (process_t proc_server, pid_t pid, int sig)
   while (!err && num_pids > 0);
 }
 
-/* Looks at the login collection LID.  If the root process (with PID == LID)
-   is owned by someone, then exit (0).  Otherwise, return true if the root
-   process still exists, and 0 otherwise.  */
-static int
-watch_login (process_t proc_server, int lid)
+/* Looks at the login collection LID.  If the root process (PID == LID) is
+   owned by someone, then exit (0), otherwise, if it's exited, exit (42).  */
+static void
+check_login (process_t proc_server, int lid)
 {
   int owned;
   error_t err = check_owned (proc_server, lid, &owned);
 
   if (err == ESRCH)
-    return 0;
+    exit (42);			/* Nothing left to watch. */
   else
     assert_perror (err);
 
   if (owned)
     exit (0);			/* Our task is done.  */
-
-  return 1;
 }
 
 /* Forks a process which will kill the login session headed by PID after
@@ -324,12 +321,14 @@ dog (time_t timeout, pid_t pid, char **argv)
       char buf[25];		/* Be gratuitously pretty.  */
       char *name = basename (argv[0]);
       time_t left = timeout;
+      struct timeval tv = { 0, 0 };
       process_t proc_server = getproc ();
 
       while (left)
 	{
 	  time_t interval = left < 5 ? left : 5;
-	  struct timeval tv = { left, 0 };
+
+	  tv.tv_sec = left;
 
 	  /* Frob ARGV so that ps show something nice.  */
 	  fmt_named_interval (&tv, 0, buf, sizeof buf);
@@ -340,26 +339,17 @@ dog (time_t timeout, pid_t pid, char **argv)
 	  sleep (interval);
 	  left -= interval;
 
-	  if (watch_login (proc_server, pid))
-	    break;		/* Login collection root has gone away.  */
+	  check_login (proc_server, pid);
 	}
 
-      if (watch_login (proc_server, pid))
-	/* The root process has gone away.  */
-	{
-	  putc ('\n', stderr);
-	  error (0, 0, "Beware of dog.");
-	}
-      else
-	/* Give normal you-forgot-to-login message.  */
-	{
-	  struct timeval tv = { timeout, 0 };
+      check_login (proc_server, pid);
 
-	  fmt_named_interval (&tv, 0, buf, sizeof buf);
+      /* Give you-forgot-to-login message.  */
+      tv.tv_sec = timeout;
+      fmt_named_interval (&tv, 0, buf, sizeof buf);
 
-	  putc ('\n', stderr);	/* Make sure our message starts a line.  */
-	  error (0, 0, "Timed out after %s.", buf);
-	}
+      putc ('\n', stderr);	/* Make sure our message starts a line.  */
+      error (0, 0, "Timed out after %s.", buf);
 
       /* Kill login session, trying to be nice about it.  */
       kill_login (proc_server, pid, SIGHUP);
