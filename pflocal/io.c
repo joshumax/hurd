@@ -50,7 +50,7 @@ S_io_read (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  err = sock_aquire_read_pipe (user->sock, &pipe);
+  err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
     /* EOF */
     *data_len = 0;
@@ -83,7 +83,7 @@ S_io_write (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  err = sock_aquire_write_pipe (user->sock, &pipe);
+  err = sock_acquire_write_pipe (user->sock, &pipe);
   if (!err)
     {
       struct addr *source_addr;
@@ -135,7 +135,7 @@ S_interrupt_operation (mach_port_t port)
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
-  if (sock_aquire_read_pipe (sock, &pipe) == 0)
+  if (sock_acquire_read_pipe (sock, &pipe) == 0)
     {
       /* Indicate to currently waiting threads they've been interrupted.  */
       pipe->interrupt_seq_num++;
@@ -160,7 +160,7 @@ S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
   if (!user)
     return EOPNOTSUPP;
 
-  err = sock_aquire_read_pipe (user->sock, &pipe);
+  err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
     /* EOF */
     *amount = 0;
@@ -216,7 +216,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
   if (!user)
     return EOPNOTSUPP;
 
-  *select_type |= ~SELECT_URG;	/* We never return these.  */
+  *select_type &= ~SELECT_URG;	/* We never return these.  */
 
   sock = user->sock;
  debug (sock, "lock");
@@ -227,50 +227,37 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
        only select for reading, which will block until a connection request
        comes along.  */
     {
- debug (sock, "unlock");
+      debug (sock, "unlock");
       mutex_unlock (&sock->lock);
 
-      if (*select_type & SELECT_WRITE)
-	/* Meaningless for a non-i/o socket.  */
- debug (sock, "ebadf");
-	return EBADF;
+      *select_type &= SELECT_READ;
 
       if (*select_type & SELECT_READ)
 	/* Wait for a connect.  Passing in NULL for REQ means that the
 	   request won't be dequeued.  */
- {debug (sock, "waiting for connection");
-	return 
-	  connq_listen (sock->listen_queue,
-			sock->flags & SOCK_NONBLOCK, NULL, NULL);
- }
+	{debug (sock, "waiting for connection");
+	  return 
+	    connq_listen (sock->listen_queue,
+			  sock->flags & SOCK_NONBLOCK, NULL, NULL);
+	}
     }
   else
     /* Sock is a normal read/write socket.  */
     {
-      if ((*select_type & SELECT_WRITE) && !sock->write_pipe)
-	{
- debug (sock, "unlock");
-	  mutex_unlock (&sock->lock);
- debug (sock, "ebadf");
-	  return EBADF;
-	}
-      /* Otherwise, pipes are always writable... */
+      if (! sock->write_pipe)
+	/* Always writable unless never.  */
+	*select_type &= ~SELECT_WRITE;
 
-      if (*select_type & SELECT_READ)
+      if ((*select_type & SELECT_READ) && sock->read_pipe)
 	{
 	  struct pipe *pipe = sock->read_pipe;
 
-	  pipe_aquire_reader (pipe);
+	  pipe_acquire_reader (pipe);
 
 	  /* We unlock SOCK here, as it's not subsequently used, and we might
 	     go to sleep waiting for readable data.  */
  debug (sock, "unlock");
 	  mutex_unlock (&sock->lock);
-
-	  if (!pipe)
- {debug (sock, "ebadf");
-	    return EBADF;
- }
 
 	  if (! pipe_is_readable (pipe, 1))
 	    /* Nothing to read on PIPE yet...  */
@@ -285,9 +272,11 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 	  pipe_release_reader (pipe);
 	}
       else
- {debug (sock, "unlock");
-	mutex_unlock (&sock->lock);
- }
+	{
+	  *select_type &= ~SELECT_READ;
+	  debug (sock, "unlock");
+	  mutex_unlock (&sock->lock);
+	}
     }
 
 debug (sock, "out");
