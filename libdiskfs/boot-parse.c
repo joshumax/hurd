@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -94,7 +94,7 @@ diskfs_parse_bootargs (int argc, char **argv)
 	    mig_dealloc_reply_port (msg.Head.msgh_local_port);
 	  else
 	    mig_put_reply_port (msg.Head.msgh_local_port);
-	  assert (msg_result == MACH_MSG_SUCCESS);
+	  assert_perror (msg_result);
 	}
       mig_put_reply_port (msg.Head.msgh_local_port);
 
