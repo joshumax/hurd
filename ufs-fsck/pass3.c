@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
+
+void
 pass3 ()
 {
   struct dirinfo *dnp;
@@ -26,7 +29,7 @@ pass3 ()
   
   /* Mark all the directories that can be found from the root. */
 
-  statemap[ROOTINO] != DIR_REF;
+  inodestate[ROOTINO] |= DIR_REF;
 
   do
     {
@@ -35,8 +38,8 @@ pass3 ()
 	{
 	  dnp = dirsorted[nd];
 	  if (dnp->i_parent
-	      && inodestate[dnp->i_parent] == (DIR | DIR_REF)
-	      && inodestate[dnp->i_number] == DIR)
+	      && inodestate[dnp->i_parent] == (DIRECTORY | DIR_REF)
+	      && inodestate[dnp->i_number] == DIRECTORY)
 	    {
 	      inodestate[dnp->i_number] |= DIR_REF;
 	      change = 1;
@@ -52,9 +55,10 @@ pass3 ()
       
       if (dnp->i_parent == 0)
 	{
-	  assert (!(inodestate[dnp->i_number] & DIR_REF));
+	  if (inodestate[dnp->i_number] & DIR_REF)
+	    errexit ("ORPHANED DIR MARKED WITH CONNECT");
 	  pwarn ("UNREF DIR");
-	  pinode (number);
+	  pinode (dnp->i_number);
 	  if (preen)
 	    printf (" (RECONNECTED)");
 	  if (preen || reply ("RECONNECT"))
