@@ -272,10 +272,6 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
 
-   Return ENOTDIR if DP is not a directory.
-   Return EACCES if CRED isn't allowed to search DP.
-   Return EACCES if completing the operation will require writing
-   the directory and diskfs_checkdirmod won't allow the modification.
    Return ENOENT if NAME isn't in the directory.
    Return EAGAIN if NAME refers to the `..' of this filesystem's root.
    Return EIO if appropriate.
