@@ -63,10 +63,11 @@ usage(int status)
   exit(status);
 }
 
-#define SHORT_OPTIONS "&"
+#define SHORT_OPTIONS "D&"
 
 static struct option options[] =
 {
+  {"debug", no_argument, 0, 'D'},
   {"help", no_argument, 0, '&'},
   {0, 0, 0, 0}
 };
@@ -81,6 +82,9 @@ pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   return socket_server (inp, outp) || trivfs_demuxer (inp, outp);
 }
 
+int debug_flag = 0;
+struct mutex debug_lock;
+
 void main(int argc, char *argv[])
 {
   int opt;
@@ -90,6 +94,7 @@ void main(int argc, char *argv[])
   while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
     switch (opt)
       {
+      case 'D': debug_flag = 1; break;
       case '&': usage(0);
       default:  usage(1);
       }
@@ -114,6 +119,8 @@ void main(int argc, char *argv[])
   if (err)
     error(3, err, "Initializing");
 
+mutex_init (&debug_lock);
+
   /* Reply to our parent */
   err =
     trivfs_startup(bootstrap,
@@ -124,9 +131,11 @@ void main(int argc, char *argv[])
     error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_multithread (pf_port_bucket,
-					    pf_demuxer,
-					    30*1000, 5*60*1000, 0, 0);
+  do
+    ports_manage_port_operations_multithread (pf_port_bucket,
+					      pf_demuxer,
+					      30*1000, 5*60*1000, 0, 0);
+  while (sock_global_shutdown () != 0);
 
   exit(0);
 }
@@ -148,7 +157,7 @@ trivfs_goaway (int flags, mach_port_t realnode,
   ports_inhibit_bucket_rpcs (pf_port_bucket);
 
   /* Now see if there are any old sockets lying around.  */
-  err = sock_global_shutdown (flags);
+  err = sock_global_shutdown ();
 
   /* Exit if not, or if we must. */
   if (err == 0 || flags & FSYS_GOAWAY_FORCE)
