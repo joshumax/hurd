@@ -1,5 +1,45 @@
 Wed May  7 12:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* Makefile (SRCS): ftpconn.c replaced by resulting split files.
+	* errs.c: New file.
+	* ftpconn.c (ftp_conn_poss_file_errs): Moved to errs.c.
+	* open.c: New file.
+	* ftpconn.c (ftp_conn_login, ftp_conn_hello, ftp_conn_set_syshooks,
+	ftp_conn_choose_syshooks, ftp_conn_sysify, ftp_conn_open,
+	ftp_conn_close): Functions moved to open.c.
+	* ftpconn.c (ftp_conn_poss_file_errs): Renamed  from
+	poss_file_errs; all references changed.
+	Made not static.
+	* xfer.c: New file.
+	* ftpconn.c (ftp_conn_finish_transfer, ftp_conn_start_transfer,
+ 	ftp_conn_open_data, ftp_conn_start_retrieve, ftp_conn_start_list,
+ 	ftp_conn_start_dir, ftp_conn_start_store): Functions moved to xfer.c.
+	* addr.c: New file.
+	* ftpconn.c p(ftp_conn_get_pasv_addr, ftp_conn_send_actv_addr):
+	Functions moved to addr.c.
+	* create.c: New file.
+	* ftpconn.c (ftp_conn_create, ftp_conn_free): Functions moved to create.c.
+	* priv.h: New file.
+	* xinl.c: New file.
+	* ftpconn.c (unexpected_reply): Function moved to priv.h.
+	(REPLY_*): Macros moved to priv.h.
+	* rmt.c: New file.
+	* ftpconn.c (ftp_conn_rmt_copy, ftp_conn_rmt_transfer): Functions
+	moved to rmt.c.
+	* cwd.c: New file.
+	* ftpconn.c (ftp_conn_cdup, ftp_conn_cwd, ftp_conn_get_cwd,
+	_cache_cwd): Functions moved to cwd.c.
+	* set-type.c: New file.
+	* ftpconn.c (ftp_conn_set_type): Function moved to set-type.c.
+	* stats.c: New file.
+	* ftpconn.c (ftp_conn_start_get_stats, ftp_conn_cont_get_stats,
+	ftp_conn_get_stats): Functions moved to stats.c.
+
+	* names.c: New file.
+	* ftpconn.h (ftp_conn_add_name_fun_t): New type.
+	(ftp_conn_start_get_names, ftp_conn_cont_get_names,
+	ftp_conn_get_names): New functions.
+
 	* unix.c (struct get_stats_state): Add NAME_LEN & NAME_ALLOCED fields.
 	(ftp_conn_unix_cont_get_stats): Retain S's name buffer between
 	entries, only growing it when needed; leave any copying to the client.
