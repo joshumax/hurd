@@ -27,4 +27,8 @@ term_getctty (
 	terminal: io_t;
 	out ctty: mach_port_make_send_t);
 
-	
+term_become_ctty (
+	terminal: io_t;
+	pid: pid_t;
+	pgrp: pid_t;
+	out newtty: io_t);
