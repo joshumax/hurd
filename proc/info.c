@@ -350,10 +350,15 @@ S_proc_getprocinfo (struct proc *callerp,
   pi->state = 
     ((p->p_stopped ? PI_STOPPED : 0)
      | (p->p_exec ? PI_EXECED : 0)
+     | (p->p_waiting ? PI_WAITING : 0)
      | (!p->p_pgrp->pg_orphcnt ? PI_ORPHAN : 0)
+     | (p->p_msgport == MACH_PORT_NULL ? PI_NOMSG : 0)
      | (p->p_pgrp->pg_session->s_sid == p->p_pid ? PI_SESSLD : 0)
+     | (p->p_noonwer ? PI_NOTOWNED : 0)
      | (!p->p_parentset ? PI_NOPARENT : 0)
-     | (p->p_msgport == MACH_PORT_NULL ? PI_NOMSG : 0));
+     | (p->p_traced ? PI_TRACED : 0)
+     | (p->p_msgportwait ? PI_GETMSG : 0)
+     | (p->p_loginleader ? PI_LODINLD : 0));
   pi->owner = p->p_owner;
   pi->ppid = p->p_parent->p_pid;
   pi->pgrp = p->p_pgrp->pg_pgid;
