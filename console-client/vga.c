@@ -49,17 +49,17 @@
 #define VGA_DISP_HEIGHT 25
 
 /* The font file.  */
-#define DEFAULT_VGA_FONT "/lib/hurd/fonts/vga-system.bdf"
+#define DEFAULT_VGA_FONT DEFAULT_VGA_FONT_DIR "vga-system.bdf"
 static char *vga_display_font;
 
-#define DEFAULT_VGA_FONT_ITALIC "/lib/hurd/fonts/vga-system-italic.bdf"
+#define DEFAULT_VGA_FONT_ITALIC DEFAULT_VGA_FONT_DIR "vga-system-italic.bdf"
 static char *vga_display_font_italic;
 
-#define DEFAULT_VGA_FONT_BOLD "/lib/hurd/fonts/vga-system-bold.bdf"
+#define DEFAULT_VGA_FONT_BOLD DEFAULT_VGA_FONT_DIR "vga-system-bold.bdf"
 static char *vga_display_font_bold;
 
 #define DEFAULT_VGA_FONT_BOLD_ITALIC \
-	"/lib/hurd/fonts/vga-system-bold-italic.bdf"
+	DEFAULT_VGA_FONT_DIR "vga-system-bold-italic.bdf"
 static char *vga_display_font_bold_italic;
 
 /* If false use all colors, else use double font slots.  */

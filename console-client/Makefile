@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,04 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -43,6 +43,7 @@ console: ../libcons/libcons.a ../libports/libports.a \
 
 modules = vga pc_kbd generic_speaker
 
+vga-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
 vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,bdf.c vga-dynafont.c \
 	vga-dynacolor.c vga-support.c vga.c)
 pc_kbd.so.$(hurd-version): $(patsubst %.c,%_pic.o,pc-kbd.c)
