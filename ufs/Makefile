@@ -36,7 +36,7 @@ LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
 
 all: ufs
 
-LDFLAGS=--no-keep-memory
+LDFLAGS=--no-keep-memory -y_hurd_rlimits -y__hurd_rlimits
 
 ufs: $(OBJS) $(LIBS)
 	$(link)
