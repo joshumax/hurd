@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -42,8 +42,6 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, 0);
   err = auth_server_authenticate (netfs_auth_server_port,
-				  ports_get_right (user),
-				  MACH_MSG_TYPE_MAKE_SEND,
 				  rend_port,
 				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newpi),
@@ -68,7 +66,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   if (gen_gids != ggbuf)
     vm_deallocate (mach_task_self (), (vm_address_t) gen_gids,
 		   gengidlen * sizeof (uid_t));
-  if (aux_gids != aubuf)
+  if (aux_gids != agbuf)
     vm_deallocate (mach_task_self (), (vm_address_t) aux_gids,
 		   auxgidlen * sizeof (uid_t));
   return 0;
