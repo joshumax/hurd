@@ -98,7 +98,8 @@ S_io_write (struct sock_user *user,
 
       if (!err)
 	{
-	  err = pipe_write (pipe, source_addr, data, data_len, amount);
+	  err = pipe_write (pipe, user->sock->flags & SOCK_NONBLOCK,
+			    source_addr, data, data_len, amount);
 	  if (source_addr)
 	    ports_port_deref (source_addr);
 	}
@@ -190,7 +191,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
   if (!user)
     return EOPNOTSUPP;
 
-  *select_type &= ~SELECT_URG;	/* We never return these.  */
+  *select_type &= SELECT_READ | SELECT_WRITE;
 
   sock = user->sock;
  debug (sock, "lock");
@@ -218,39 +219,34 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
   else
     /* Sock is a normal read/write socket.  */
     {
-      if (! sock->write_pipe)
-	/* Always writable unless never.  */
-	*select_type &= ~SELECT_WRITE;
+      int valid;
+      int err_select = 0;
+      struct pipe *read_pipe = sock->read_pipe;
+      struct pipe *write_pipe = sock->write_pipe;
 
-      if ((*select_type & SELECT_READ) && sock->read_pipe)
-	{
-	  struct pipe *pipe = sock->read_pipe;
+      if (! write_pipe)
+	err_select |= SELECT_WRITE;
+      if (! read_pipe)
+	err_select |= SELECT_READ;
+      err_select &= *select_type; /* Only keep things requested.  */
+      *select_type &= ~err_select;
 
-	  pipe_acquire_reader (pipe);
+      valid = *select_type;
+      if (valid & SELECT_READ)
+	pipe_add_reader (read_pipe);
+      if (valid & SELECT_WRITE)
+	pipe_add_writer (write_pipe);
 
-	  /* We unlock SOCK here, as it's not subsequently used, and we might
-	     go to sleep waiting for readable data.  */
- debug (sock, "unlock");
-	  mutex_unlock (&sock->lock);
+      mutex_unlock (&sock->lock);
 
-	  if (! pipe_is_readable (pipe, 1))
-	    /* Nothing to read on PIPE yet...  */
-	    if (*select_type & ~SELECT_READ)
-	      /* But there's other stuff to report, so return that.  */
-	      *select_type &= ~SELECT_READ;
-	    else
-	      /* The user only cares about reading, so wait until something is
-		 readable.  */
-	      err = pipe_select (pipe, 1);
+      err = pipe_pair_select (read_pipe, write_pipe, select_type, 1);
 
-	  pipe_release_reader (pipe);
-	}
-      else
-	{
-	  *select_type &= ~SELECT_READ;
-	  debug (sock, "unlock");
-	  mutex_unlock (&sock->lock);
-	}
+      if (valid & SELECT_READ)
+	pipe_remove_reader (read_pipe);
+      if (valid & SELECT_WRITE)
+	pipe_remove_writer (write_pipe);
+
+      *select_type |= err_select;
     }
 
 debug (sock, "out");
