@@ -99,8 +99,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	{
 	  if (np)
 	    *np = 0;
-	  if (!diskfs_readonly)
-	    dp->dn_set_atime = 1;
 	  return ENOENT;
 	}
       else if (cached)
@@ -116,15 +114,11 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	      diskfs_nput (cached);
 	  if (ds)
 	    diskfs_null_dirstat (ds);
-	  if (!diskfs_readonly)
-	    dp->dn_set_atime = 1;
 	  return 0;
 	}
     }
   
   err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
-  if (!diskfs_readonly)
-    dp->dn_set_atime = 1;
   if (err && err != ENOENT)
     return err;
   
