@@ -57,13 +57,14 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   auth = getauth ();
   err = auth_server_authenticate (auth, 
 				  rendport,
-				  MACH_MSG_TYPE_MOVE_SEND,
+				  MACH_MSG_TYPE_COPY_SEND,
 				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 
 				  &aux_uids, &auxuidlen,
 				  &gen_gids, &gengidlen,
 				  &aux_gids, &auxgidlen);
+  mach_port_deallocate (mach_task_self (), rendport);
   assert (!err);		/* XXX */
   mach_port_deallocate (mach_task_self (), auth);
 
