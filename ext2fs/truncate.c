@@ -373,7 +373,7 @@ diskfs_truncate (struct node *np, off_t length)
 
   force_delayed_copies (np, length);
 
-  rwlock_writer_lock (&np->dn->allocptrlock);
+  rwlock_writer_lock (&np->dn->alloc_lock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
