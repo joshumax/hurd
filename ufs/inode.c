@@ -19,6 +19,7 @@
 #include "dinode.h"
 #include "fs.h"
 #include <string.h>
+#include <unistd.h>
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -173,13 +174,14 @@ read_disknode (struct node *np)
   struct stat *st = &np->dn_stat;
   struct dinode *di = &dinodes[np->dn->number];
   error_t err;
+  volatile long long pid = getpid ();
   
   err = diskfs_catch_exception ();
   if (err)
     return err;
 
   st->st_fstype = FSTYPE_UFS;
-  st->st_fsid = getpid ();
+  st->st_fsid = pid;
   st->st_ino = np->dn->number;
   st->st_gen = di->di_gen;
   st->st_rdev = di->di_rdev;
@@ -306,7 +308,7 @@ create_symlink_hook (struct node *np, char *target)
   if (!direct_symlink_extension)
     return EINVAL;
   
-  assert (!COMPAT_BSD42);
+  assert (compat_mode != COMPAT_BSD42);
 
   if (len >= sblock->fs_maxsymlinklen)
     return EINVAL;
