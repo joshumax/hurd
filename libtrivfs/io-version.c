@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
 
 kern_return_t 
 trivfs_S_trivfs_io_server_version (mach_port_t obj,
