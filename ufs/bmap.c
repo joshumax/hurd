@@ -21,10 +21,6 @@
 
 #include "ufs.h"
 #include "dinode.h"
-#include "fs.h"
-
-/* Number of block pointers that fit in a single disk block */
-#define NIPTR (sblock->fs_bsize / sizeof (daddr_t))
 
 /* For logical block number LBN of file NP, look it the block address,
    giving the "path" of indirect blocks to the file, starting 
@@ -52,21 +48,21 @@ fetch_indir_spec (struct node *np, daddr_t lbn, struct iblock_spec *indirs)
 
   lbn -= NDADDR;
 
-  indirs[0].offset = lbn % NIPTR;
+  indirs[0].offset = lbn % NINDIR (sblock)
   
-  if (lbn / NIPTR)
+  if (lbn / NINBIR (sblock))
     {
       /* We will use the double indirect block */
       int ibn;
       daddr_t *diblock;
 
-      ibn = lbn / NIPTR - 1;
+      ibn = lbn / NINDIR (sblock) - 1;
 
-      indirs[1].offset = ibn % NIPTR;
+      indirs[1].offset = ibn % NINDIR (sblock);
       
       /* We don't support triple indirect blocks, but this 
 	 is where we'd do it. */
-      assert (!(ibn / NIPTR));
+      assert (!(ibn / NINDIR (sblock)));
   
       indirs[2].offset = -1;
       indirs[2].bno = di->di_ib[INDIR_DOUBLE];
@@ -97,7 +93,21 @@ fetch_indir_spec (struct node *np, daddr_t lbn, struct iblock_spec *indirs)
   return 0;
 }
 
-  
-  
 
+/* Mark indirect block BNO as dirty on node NP's list.  NP must
+   be locked. */
+void
+mark_indir_dirty (struct node *np, daddr_t bno)
+{
+  struct dirty_indir *d;
+  
+  for (d = np->dn->dirty; d; d = d->next)
+    if (d->bno == bno)
+      return;
+  
+  d = malloc (sizeof (struct dirty_indir));
+  d->bno = bno;
+  d->next = np->dn->dirty;
+  np->dn->dirty = d;
+}
 
