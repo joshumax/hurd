@@ -25,6 +25,8 @@
 #include <linux-inet/sock.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
+
 
 error_t
 S_io_write (struct sock_user *user,
@@ -79,10 +81,10 @@ S_io_read (struct sock_user *user,
   else
     {
       *datalen = err;
-      if (alloced && page_round (*datalen) < page_round (amount))
+      if (alloced && round_page (*datalen) < round_page (amount))
 	vm_deallocate (mach_task_self (), 
-		       (vm_address_t) *data + page_round (*datalen),
-		       page_round (amount) - page_round (*datalen));
+		       (vm_address_t) *data + round_page (*datalen),
+		       round_page (amount) - round_page (*datalen));
       err = 0;
     }
   return err;
