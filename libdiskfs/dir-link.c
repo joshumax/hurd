@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_link
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -53,7 +53,8 @@ diskfs_S_dir_link (struct protid *dircred,
   mutex_lock (&dnp->lock);
 
   /* Lookup new location */
-  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
+  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred,
+			 dircred->po->depth, 0);
   if (!error && excl)
     {
       error = EEXIST;
@@ -61,6 +62,8 @@ diskfs_S_dir_link (struct protid *dircred,
     }
   if (error && error != ENOENT)
     {
+      if (error == EAGAIN)
+	error = EINVAL;
       diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return error;
