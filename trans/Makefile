@@ -28,7 +28,7 @@ symlink magic: fsysServer.o
 ifsock: ifsockServer.o
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a
-null ifsock fifo new-fifo devport: ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a
+null ifsock fifo new-fifo devport: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 fwd null ifsock fifo new-fifo devport: ../libthreads/libthreads.a
 
