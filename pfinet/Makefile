@@ -38,7 +38,7 @@ target = pfinet
 
 include ../Makeconf
 
-CPPFLAGS += -I. -imacros config.h
+CPPFLAGS += -imacros config.h
 
 io-MIGSFLAGS = -imacros mutations.h
 socket-MIGSFLAGS = -imacros mutations.h
