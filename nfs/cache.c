@@ -1,5 +1,5 @@
 /* Node cache management for NFS client implementation
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -41,23 +41,17 @@ hash (int *data, size_t len)
   return h % CACHESIZE;
 }
 
-/* Lookup the file handle in RPC result at P in the hash table.  If it
-   is not present, initialize a new node structure and insert it into
-   the hash table.  Whichever course, a new reference is generated and
-   the node is returned in *NPP.  Return the address in the RPC result
-   after the file handle.  */
-int *
-lookup_fhandle (int *p, struct node **npp)
+/* Lookup the file handle P (length LEN) in the hash table.  If it is
+   not present, initialize a new node structure and insert it into the
+   hash table.  Whichever course, a new reference is generated and the
+   node is returned in *NPP.  */
+void
+lookup_fhandle (void *p, size_t len, struct node **npp)
 {
   struct node *np;
   struct netnode *nn;
-  size_t len;
   int h;
 
-  if (protocol_version == 2)
-    len = NFS2_FHSIZE;
-  else
-    len = ntohl (*p++);
   h = hash (p, len);
 
   spin_lock (&netfs_node_refcnt_lock);
@@ -71,7 +65,7 @@ lookup_fhandle (int *p, struct node **npp)
       spin_unlock (&netfs_node_refcnt_lock);
       mutex_lock (&np->lock);
       *npp = np;
-      return p + len / sizeof (int);
+      return;
     }
   
   nn = malloc (sizeof (struct netnode));
@@ -93,7 +87,6 @@ lookup_fhandle (int *p, struct node **npp)
   spin_unlock (&netfs_node_refcnt_lock);
   
   *npp = np;
-  return p + len / sizeof (int);
 }
 
 /* Called by libnetfs when node NP has no more references.  (See

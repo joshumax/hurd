@@ -371,6 +371,18 @@ xdr_decode_64bit (int *p, long long *n)
   return p;
 }
 
+/* Decode *P into an fhandle and look up the associated node.  Return
+   the address of the following data.  */
+int *
+xdr_decode_fhandle (int *p, struct node **npp)
+{
+  size_t len;
+  
+  len = protocol_version == 2 ? NFS2_FHSIZE : ntohl (*p++);
+  lookup_fhandle (p, len, npp);
+  return p + len / sizeof (int);
+}
+
 /* Decode *P into a stat structure; return the address of the
    following data. */
 int *

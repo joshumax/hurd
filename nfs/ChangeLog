@@ -1,3 +1,60 @@
+Tue Jul 29 15:38:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (check_lookup_cache): Use name_cache_neg_timeout in
+	preference to name_cache_timeout for negative hits.
+	
+	* nfs.h (name_cache_neg_timeout): New variable.
+	* main.c (DEFAULT_NAME_CACHE_NEG_TIMEOUT): New macro.
+	(name_cache_neg_timeout): Initialize new variable.
+	(OPT_NCACHE_NEG_TO): New option key.
+	(common_options): Add --name-cache-neg-timeout switch.
+	(parse_common_opt): Process OPT_NCACHE_NEG_TO option key.
+
+	* ops.c (netfs_attempt_lookup): Do cast of -1 correctly to match
+	check_lookup_cache and ANSI C rules.
+
+	* name-cache.c (check_lookup_cache): Unlock DIR correctly before
+	returning a negative cache hit.
+
+	* rpc.c (rpc_receive_thread): Don't print "dropping reply"
+	messages any more.
+
+	* ops.c (netfs_attempt_lookup): Cash all lookups, both positive
+	and negative.
+	(netfs_attempt_mkdir): Purge cache before creating directory
+	entry. 
+	(netfs_attempt_link): Likewise.
+	(netfs_attempt_create_file): Likewise.
+
+	* ops.c (netfs_attempt_lookup): Pass correct node to
+	enter_lookup_cache as the child.
+
+Thu Jul 24 13:15:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c: New file.
+	* ops.c (netfs_attempt_lookup): Check lookup cache before trying
+	RPC.  After successful lookup, make cache entry.
+	(netfs_attempt_unlink): Purge cache before doing operation.
+	(netfs_attempt_rmdir): Likewise.
+	(netfs_attempt_rename): Purge cache for both names before operation.
+	* nfs.h (enter_lookup_cache, purge_lookup_cache,
+	check_lookup_cache): New prototypes.
+	* Makefile (SRCS): Add name-cache.c.
+
+	* nfs.h (name_cache_timeout): New variable.
+	* main.c (DEFAULT_NAME_CACHE_TIMEOUT): New macro.
+	(name_cache_timeout): Initialize new variable.
+	(OPT_NCACHE_TO): New option key.
+	(common_options): Add --name-cache-timeout switch.
+	(parse_common_opt): Process OPT_NCACHE_TO option key.
+
+	* cache.c (lookup_fhandle): Don't parse NFS XDR format, instead
+	take a length arg.  Return void.  All callers changed to use new
+	function xdr_decode_fhandle.
+	* nfs.c (xdr_decode_fhandle): New function.
+	* nfs.h (xdr_decode_fhandle): New prototype.  
+	(lookup_fhandle): Update prototype.
+
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c: Include <error.h>.

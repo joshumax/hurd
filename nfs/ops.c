@@ -543,6 +543,9 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
   void *rpcbuf;
   error_t err;
   
+  /* Don't use the lookup cache for this; we want a full sync to
+     get as close to real exclusive create behavior as possible. */
+
   assert (protocol_version == 2);
 
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
@@ -569,12 +572,32 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
+  char dirhandle[NFS3_FHSIZE];
+  size_t dirlen;
+  
+  /* Check the cache first. */
+  *newnp = check_lookup_cache (np, name);
+  if (*newnp)
+    {
+      if (*newnp == (struct node *) -1)
+	{
+	  *newnp = 0;
+	  return ENOENT;
+	}
+      else
+	return 0;
+    }
   
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
   
+  /* Remember the directory handle for later cache use. */
+
+  dirlen = np->nn->handle.size;
+  bcopy (np->nn->handle.data, dirhandle, dirlen);
+
   mutex_unlock (&np->lock);
 
   err = conduct_rpc (&rpcbuf, &p);
@@ -583,7 +606,7 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
       err = nfs_error_trans (ntohl (*p++));
       if (!err)
 	{
-	  p = lookup_fhandle (p, newnp);
+	  p = xdr_decode_fhandle (p, newnp);
 	  p = process_returned_stat (*newnp, p, 1);
 	}
       if (err)
@@ -602,6 +625,9 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
   else
     *newnp = 0;
       
+  /* Notify the cache of the hit or miss. */
+  enter_lookup_cache (dirhandle, dirlen, *newnp, name);
+
   free (rpcbuf);
   
   return err;
@@ -628,6 +654,8 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
       mode &= ~S_ISUID;
     }
 
+  purge_lookup_cache (np, name, strlen (name));
+
   p = nfs_initialize_rpc (NFSPROC_MKDIR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
@@ -638,7 +666,7 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
   
-  p = lookup_fhandle (p, &newnp);
+  p = xdr_decode_fhandle (p, &newnp);
   p = process_returned_stat (newnp, p, 1);
 
   /* Did we set the owner correctly?  If not, try, but ignore failures. */
@@ -663,6 +691,8 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
   error_t err;
   
   /* Should we do the same sort of thing here as with attempt_unlink? */
+
+  purge_lookup_cache (np, name, strlen (name));
 
   p = nfs_initialize_rpc (NFSPROC_RMDIR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
@@ -712,6 +742,8 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       mutex_unlock (&np->lock);
   
       mutex_lock (&dir->lock);
+      purge_lookup_cache (dir, name, strlen (name));
+
       p = xdr_encode_fhandle (p, &dir->nn->handle);
       p = xdr_encode_string (p, name);
   
@@ -755,6 +787,8 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       mutex_unlock (&np->lock);
 
       mutex_lock (&dir->lock);
+
+      purge_lookup_cache (dir, name, strlen (name));
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	{
@@ -840,6 +874,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  mutex_unlock (&np->lock);
 
 	  mutex_lock (&dir->lock);
+	  purge_lookup_cache (dir, name, strlen (name));
 	  err = conduct_rpc (&rpcbuf, &p);
 	  if (!err)
 	    err = nfs_error_trans (ntohl (*p++));
@@ -878,6 +913,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	    }
 	  mutex_unlock (&np->lock);
 	  
+	  purge_lookup_cache (dir, name, strlen (name));
 	  err = conduct_rpc (&rpcbuf, &p);
 	  if (!err)
 	    {
@@ -998,6 +1034,8 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 	}
     }
 
+  purge_lookup_cache (np, name, strlen (name));
+
   p = nfs_initialize_rpc (NFSPROC_CREATE (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
@@ -1024,7 +1062,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
       err = nfs_error_trans (ntohl (*p++));
       if (!err)
 	{
-	  p = lookup_fhandle (p, newnp);
+	  p = xdr_decode_fhandle (p, newnp);
 	  p = process_returned_stat (*newnp, p, 1);
 	}
       if (err)
@@ -1112,6 +1150,9 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
   netfs_nput (np);
 
   mutex_lock (&dir->lock);
+
+  purge_lookup_cache (dir, name, strlen (name));
+
   p = nfs_initialize_rpc (NFSPROC_REMOVE (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);
   p = xdr_encode_fhandle (p, &dir->nn->handle);
@@ -1145,6 +1186,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
     return EOPNOTSUPP;		/* XXX */
 
   mutex_lock (&fromdir->lock);
+  purge_lookup_cache (fromdir, fromname, strlen (fromname));
   p = nfs_initialize_rpc (NFSPROC_RENAME (protocol_version),
 			  cred, 0, &rpcbuf, fromdir, -1);
   p = xdr_encode_fhandle (p, &fromdir->nn->handle);
@@ -1152,6 +1194,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
   mutex_unlock (&fromdir->lock);
   
   mutex_lock (&todir->lock);
+  purge_lookup_cache (todir, toname, strlen (toname));
   p = xdr_encode_fhandle (p, &todir->nn->handle);
   p = xdr_encode_string (p, toname);
   mutex_unlock (&todir->lock);

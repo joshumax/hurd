@@ -42,6 +42,12 @@ extern char *localhost ();
 /* Default number of seconds to timeout cached file contents. */
 #define DEFAULT_CACHE_TIMEOUT 3	
 
+/* Default number of seconds to timeout cache positive dir hits. */
+#define DEFAULT_NAME_CACHE_TIMEOUT 3
+
+/* Default number of seconds to timeout cache negative dir hits. */
+#define DEFAULT_NAME_CACHE_NEG_TIMEOUT 3
+
 /* Default maximum number of bytes to read at once. */
 #define DEFAULT_READ_SIZE     8192 
 
@@ -54,6 +60,12 @@ int stat_timeout = DEFAULT_STAT_TIMEOUT;
 
 /* Number of seconds to timeout cached file contents. */
 int cache_timeout = DEFAULT_CACHE_TIMEOUT;
+
+/* Number of seconds to timeout cached positive dir hits. */
+int name_cache_timeout = DEFAULT_NAME_CACHE_TIMEOUT;
+
+/* Number of seconds to timeout cached negative dir hits. */
+int name_cache_neg_timeout = DEFAULT_NAME_CACHE_NEG_TIMEOUT;
 
 /* Number of seconds to wait for first retransmission of an RPC. */
 int initial_transmit_timeout = 1;
@@ -89,6 +101,8 @@ int write_size = DEFAULT_WRITE_SIZE;
 #define OPT_MNT_PROG    -11
 #define OPT_NFS_PROG    -12
 #define OPT_PMAP_PORT	-13
+#define OPT_NCACHE_TO	-14
+#define OPT_NCACHE_NEG_TO -15
 
 /* Return a string corresponding to the printed rep of DEFAULT_what */
 #define ___D(what) #what
@@ -118,6 +132,12 @@ static const struct argp_option common_options[] =
      "Timeout for cached stat information (default " _D(STAT_TIMEOUT) ")"},
   {"cache-timeout",	    OPT_CACHE_TO,  "SEC", 0,
      "Timeout for cached file data (default " _D(CACHE_TIMEOUT) ")"},
+  {"name-cache-timeout",    OPT_NCACHE_TO, "SEC", 0,
+     "Timeout for positive directory cache entries (default " 
+   _D(NAME_CACHE_TIMEOUT) ")"},
+  {"name-cache-neg-timeout", OPT_NCACHE_NEG_TO, "SEC", 0,
+     "Timeout for negative directory cache entires (default "
+   _D(NAME_CACHE_NEG_TIMEOUT) ")"},
   {"init-transmit-timeout", OPT_INIT_TR_TO,"SEC", 0}, 
   {"max-transmit-timeout",  OPT_MAX_TR_TO, "SEC", 0}, 
 
@@ -145,6 +165,8 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
     case OPT_CACHE_TO: cache_timeout = atoi (arg); break;
     case OPT_INIT_TR_TO: initial_transmit_timeout = atoi (arg); break;
     case OPT_MAX_TR_TO: max_transmit_timeout = atoi (arg); break;
+    case OPT_NCACHE_TO: name_cache_timeout = atoi (arg); break;
+    case OPT_NCACHE_NEG_TO: name_cache_neg_timeout = atoi (arg); break;
 
     default:
       return ARGP_ERR_UNKNOWN;

@@ -88,6 +88,12 @@ extern int stat_timeout;
 /* How long to keep around file contents caches */
 extern int cache_timeout;
 
+/* How long to keep around positive dir cache entries */
+extern int name_cache_timeout;
+
+/* How long to keep around negative dir cache entries */
+extern int name_cache_neg_timeout;
+
 /* How long to wait for replies before re-sending RPC's. */
 extern int initial_transmit_timeout;
 extern int max_transmit_timeout;
@@ -160,6 +166,7 @@ int *xdr_encode_sattr_stat (int *, struct stat *);
 int *xdr_encode_create_state (int *, mode_t, uid_t);
 int *xdr_decode_fattr (int *, struct stat *);
 int *xdr_decode_string (int *, char *);
+int *xdr_decode_fhandle (int *, struct node **);
 int *nfs_initialize_rpc (int, struct iouser *, size_t, void **, 
 			 struct node *, uid_t);
 error_t nfs_error_trans (int);
@@ -177,5 +184,10 @@ void timeout_service_thread (void);
 void rpc_receive_thread (void);
 
 /* cache.c */
-int *lookup_fhandle (int *, struct node **);
+void lookup_fhandle (void *, size_t, struct node **);
 int *recache_handle (int *, struct node *);
+
+/* name-cache.c */
+void enter_lookup_cache (char *, size_t, struct node *, char *);
+void purge_lookup_cache (struct node *, char *, size_t);
+struct node *check_lookup_cache (struct node *, char *);

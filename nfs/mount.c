@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -181,7 +181,7 @@ mount_root (char *name, char *host)
     }
   
   /* Create the node for root */
-  lookup_fhandle (p, &np);
+  xdr_decode_fhandle (p, &np);
   free (rpcbuf);
   mutex_unlock (&np->lock);
 

@@ -1,5 +1,5 @@
 /* SunRPC management for NFS client
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -368,8 +368,10 @@ rpc_receive_thread ()
 		      break;
 		    }
 		}
+#if notanymore
 	      if (!r)
 		fprintf (stderr, "NFS dropping reply xid %d\n", xid);
+#endif
 	      mutex_unlock (&outstanding_lock);
 	    }
 	}
