@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <mach.h>
+#include <sys/mman.h>
 
 #include <portxlate.h>
 

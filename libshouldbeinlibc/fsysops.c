@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <argz.h>
 #include <mach.h>
+#include <sys/mman.h>
 #include <hurd/fsys.h>
 
 /* Make FSYS readonly or writable.  */
@@ -57,7 +58,7 @@ fsys_get_readonly (fsys_t fsys, int *readonly)
 
       for (opt = opts
 	   ; !ok && opt && opt < opts + opts_len
-	   ; opt = argz_next (opts, opts_len, opt)) 
+	   ; opt = argz_next (opts, opts_len, opt))
 	if (strcasecmp (opt, "--readonly") == 0)
 	  {
 	    *readonly = 1;
