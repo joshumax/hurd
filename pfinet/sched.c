@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2000,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -66,4 +66,6 @@ net_bh_worker (any_t arg)
       net_bh ();
       __mutex_unlock (&net_bh_lock);
     }
+  /*NOTREACHED*/
+  return 0;
 }
