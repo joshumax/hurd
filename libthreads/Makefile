@@ -1,34 +1,53 @@
-CPPFLAGS = -nostdinc -I. -I/usr1/gnu/DIST/include -DCTHREAD_DATA -I/usr1/gnu/DIST/hurd/include
-CFLAGS = -g -O
-CPP = /usr1/gnu/DIST/lib/gcc-cpp
-AS = as
-AR = ar
-RANLIB = ranlib
-CC = gcc
+# 
+#   Copyright (C) 1994 Free Software Foundation
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License as
+#   published by the Free Software Foundation; either version 2, or (at
+#   your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#   General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-VPATH=.:i386
+dir := libthreads
 
-OBJS = cprocs.o cthreads.o malloc.o \
-	mig_support.o stack.o sync.o \
-	thread.o lock.o csw.o
+include ../Makeconf
+
+SRCS = call.c cprocs.c cthread_data.c cthreads.c malloc.c mig_support.c \
+	stack.c sync.c machine/csw.s machine/lock.s machine/thread.c
+OBJS = call.o cprocs.o cthread_data.o cthreads.o malloc.o mig_support.o \
+	stack.o sync.o csw.o lock.o thread.o
+
+DIST_FILES = $(SRCS) Makefile cthread_internal.h cthreads.h options.h \
+	machine/asm.h machine/cthreads.h 
 
 all: libthreads.a
 
-install: all
-	cp libthreads.a /usr1/gnu/DIST/lib/libthreads.a
-	ranlib /usr1/gnu/DIST/lib/libthreads.a
-
-clean:
-	rm -f lib*.a Makedep* a.out core errs \
-	 *.d *.s *.S *.o *.BAK *.CKP */*.BAK */*.CKP
-
 libthreads.a: $(OBJS)
-	rm -f $@
-	$(AR) crv $@ $(OBJS)
+	rm -f libthreads.a
+	$(AR) r $@ $^
+
+$(hurdinst)/lib/libthreads.a: libthreads.a
+	cp libthreads.a $@
 	$(RANLIB) $@
 
-%.o: %.s
-	$(CPP) $(CPPFLAGS) $< > $*.as
-	$(AS) -o $@ $*.as
-	rm -f $*.as
+$(headers)/cthreads.h: cthreads.h
+	cp $< $@
 
+$(headers)/machine/cthreads.h: machine/cthreads.h
+	cp $< $@
+
+install: $(hurdinst)/lib/libthreads.a \
+	$(headers)/cthreads.h $(headers)/machine/cthreads.h
+
+$(OBJS): cthreads.h cthread_internal.h options.h \
+	machine/asm.h machine/cthreads.h
+
+clean:
+	rm -f libthreads.a *.o
