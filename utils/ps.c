@@ -488,7 +488,7 @@ main(int argc, char *argv[])
 	  parse_numlist(arg, add_pid, NULL, NULL, "process id");
 	  break;
 
-	case 'a': filter_mask &= ~(FILTER_OWNER | FILTER_NOT_LEADER); break;
+	case 'a': filter_mask &= ~FILTER_OWNER; break;
 	case 'd': filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
 	case 'e': case 'A': filter_mask = 0; break;
 	case 'g': filter_mask &= ~FILTER_NOT_LEADER; break;
