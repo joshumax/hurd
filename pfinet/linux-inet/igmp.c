@@ -48,7 +48,7 @@ static void igmp_stop_timer(struct ip_mc_list *im)
 	im->tm_running=0;
 }
 
-static int random(void)
+static int igmp_random(void)
 {
 	static unsigned long seed=152L;
 	seed=seed*69069L+1;
@@ -61,7 +61,7 @@ static void igmp_start_timer(struct ip_mc_list *im)
 	int tv;
 	if(im->tm_running)
 		return;
-	tv=random()%(10*HZ);		/* Pick a number any number 8) */
+	tv=igmp_random()%(10*HZ); /* Pick a number any number 8) */
 	im->timer.expires=tv;
 	im->tm_running=1;
 	add_timer(&im->timer);
