@@ -1,3 +1,14 @@
+1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* open.c (ftp_conn_sysify): Handle REPLY_UNIMP_CMD for "syst".
+
+	* unix.c (parse_dir_entry): Re-enable mktime calls.
+
+1997-08-04  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* unix.c (ftp_conn_unix_cont_get_stats): If returning with an
+	error, ignore any return from ftp_conn_finish_transfer.
+
 Wed Jun  4 14:17:30 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (ftpcp, ftpdir): Rules removed.
