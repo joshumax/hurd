@@ -2,7 +2,7 @@
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
-   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,21 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/*
- *  linux/fs/ext2/truncate.c
- *
- * Copyright (C) 1992, 1993, 1994, 1995
- * Remy Card (card@masi.ibp.fr)
- * Laboratoire MASI - Institut Blaise Pascal
- * Universite Pierre et Marie Curie (Paris VI)
- *
- *  from
- *
- *  linux/fs/minix/truncate.c
- *
- *  Copyright (C) 1991, 1992  Linus Torvalds
- */
-
 #include "ext2fs.h"
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
@@ -43,274 +28,188 @@
 
 /* ---------------------------------------------------------------- */
 
+/* A sequence of blocks to be freed in NODE.  */
+struct free_block_run
+{
+  block_t first_block;
+  unsigned long num_blocks;
+  struct node *node;
+};
+
+/* Initialize FBR, pointing to NODE.  */
+static inline void
+free_block_run_init (struct free_block_run *fbr, struct node *node)
+{
+  fbr->num_blocks = 0;
+  fbr->node = node;
+}
+
+static inline void
+_free_block_run_flush (struct free_block_run *fbr, unsigned long count)
+{
+  fbr->node->dn_stat.st_blocks -= count << log2_stat_blocks_per_fs_block;
+  fbr->node->dn_stat_dirty = 1;
+  ext2_free_blocks (fbr->first_block, count);
+}
+
+/* Add BLOCK to the list of blocks to be freed in FBR.  */
+static inline void
+free_block_run_add (struct free_block_run *fbr, block_t block)
+{
+  unsigned long count = fbr->num_blocks;
+  if (count == 0)
+    {
+      fbr->first_block = block;
+      fbr->num_blocks++;
+    }
+  else if (count > 0 && fbr->first_block == block - count)
+    fbr->num_blocks++;
+  else
+    {
+      _free_block_run_flush (fbr, count);
+      fbr->first_block = block;
+      fbr->num_blocks = 1;
+    }
+}
+
+/* If *P is non-zero, set it to zero, and add the block it pointed to the
+   list of blocks to be freed in FBR.  */
+static inline void
+free_block_run_free_ptr (struct free_block_run *fbr, block_t *p)
+{
+  block_t block = *p;
+  if (block)
+    {
+      *p = 0;
+      free_block_run_add (fbr, block);
+    }
+}
+
+/* Free any blocks left in FBR, and cleanup any resources it's using.  */
+static inline void
+free_block_run_finish (struct free_block_run *fbr)
+{
+  unsigned long count = fbr->num_blocks;
+  if (count > 0)
+    _free_block_run_flush (fbr, count);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Free any direct blocks starting with block END.  */
+static void
+trunc_direct (struct node *node, block_t end, struct free_block_run *fbr)
+{
+  block_t *blocks = node->dn->info.i_data;
+
+  ext2_debug ("truncating direct blocks from %d", direct_block);
+
+  while (end < EXT2_NDIR_BLOCKS)
+    free_block_run_free_ptr (fbr, blocks + end++);
+}
+
+/* Free any blocks in NODE greater than or equal to END that are rooted in
+   the indirect block *P; OFFSET should be the block position that *P
+   corresponds to.  For each block pointer in *P that should be freed,
+   FREE_BLOCK is called with a pointer to the entry for that block, and the
+   index of the entry within *P.  If every block in *P is freed, then *P is
+   set to 0, otherwise it is left alone.  */
+static void
+trunc_indirect (struct node *node, block_t end,
+		block_t *p, block_t offset,
+		void (*free_block)(block_t *p, unsigned index),
+		struct free_block_run *fbr)
+{
+  if (*p)
+    {
+      unsigned index;
+      int modified = 0, all_freed = 1;
+      block_t *ind_bh = (block_t *)bptr (*p);
+      unsigned first = end < offset ? 0 : end - offset;
+
+      for (index = first; index < addr_per_block; index++)
+	if (ind_bh[index])
+	  {
+	    (*free_block)(ind_bh + index, index);
+	    if (ind_bh[index])
+	      all_freed = 0;	/* Some descendent hasn't been freed.  */
+	    modified = 1;
+	  }
+
+      if (first == 0 && all_freed)
+	free_block_run_free_ptr (fbr, p);
+      else if (modified)
+	record_indir_poke (node, ind_bh);
+    }
+}
+
+static void
+trunc_single_indirect (struct node *node, block_t end,
+		       block_t *p, block_t offset,
+		       struct free_block_run *fbr)
+{
+  void free_block (block_t *p, unsigned index)
+    {
+      free_block_run_free_ptr (fbr, p);
+    }
+  trunc_indirect (node, end, p, offset, free_block, fbr);
+}
+
+static void
+trunc_double_indirect (struct node *node, block_t end,
+		       block_t *p, block_t offset,
+		       struct free_block_run *fbr)
+{
+  void free_block (block_t *p, unsigned index)
+    {
+      block_t entry_offs = offset + (index * addr_per_block);
+      trunc_single_indirect (node, end, p, entry_offs, fbr);
+    }
+  trunc_indirect (node, end, p, offset, free_block, fbr);
+}
+
+static void
+trunc_triple_indirect (struct node *node, block_t end,
+		       block_t *p, block_t offset,
+		       struct free_block_run *fbr)
+{
+  void free_block (block_t *p, unsigned index)
+    {
+      block_t entry_offs = offset + (index * addr_per_block * addr_per_block);
+      trunc_double_indirect (node, end, p, entry_offs, fbr);
+    }
+  trunc_indirect (node, end, p, offset, free_block, fbr);
+}
+
+/* ---------------------------------------------------------------- */
+
 /* Write something to each page from START to END inclusive of memory
    object OBJ, but make sure the data doesns't actually change. */
 static void
-poke_pages (memory_object_t obj,
-	    vm_offset_t start,
-	    vm_offset_t end)
+poke_pages (memory_object_t obj, vm_offset_t start, vm_offset_t end)
 {
-  vm_address_t addr, poke;
-  vm_size_t len;
-  error_t err;
-  
   while (start < end)
     {
-      len = 8 * vm_page_size;
+      error_t err;
+      vm_size_t len = 8 * vm_page_size;
+      vm_address_t addr = 0;
+
       if (len > end - start)
 	len = end - start;
-      addr = 0;
+
       err = vm_map (mach_task_self (), &addr, len, 0, 1, obj, start, 0,
 		    VM_PROT_WRITE|VM_PROT_READ, VM_PROT_READ|VM_PROT_WRITE, 0);
       if (!err)
 	{
+	  vm_address_t poke;
 	  for (poke = addr; poke < addr + len; poke += vm_page_size)
 	    *(volatile int *)poke = *(volatile int *)poke;
 	  vm_deallocate (mach_task_self (), addr, len);
 	}
+
       start += len;
     }
 }
-
-/* ---------------------------------------------------------------- */
-
-#define DIRECT_BLOCK(length) \
-  ((length + block_size - 1) >> log2_block_size)
-#define INDIRECT_BLOCK(length, offset) ((int)DIRECT_BLOCK(length) - offset)
-#define DINDIRECT_BLOCK(length, offset) \
-  (((int)DIRECT_BLOCK(length) - offset) / addr_per_block)
-#define TINDIRECT_BLOCK(length) \
-  (((int)DIRECT_BLOCK(length) \
-    - (addr_per_block * addr_per_block + addr_per_block + EXT2_NDIR_BLOCKS)) \
-   / (addr_per_block * addr_per_block))
-
-static void
-trunc_direct (struct node * node, unsigned long length)
-{
-  u32 block;
-  int i;
-  unsigned long block_to_free = 0;
-  unsigned long free_count = 0;
-  int direct_block = DIRECT_BLOCK(length);
-
-  ext2_debug ("truncating direct blocks from %lu, block %d",
-	      length, direct_block);
-
-  for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++)
-    {
-      block = node->dn->info.i_data[i];
-      if (!block)
-	continue;
-
-      node->dn->info.i_data[i] = 0;
-
-      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      node->dn_stat_dirty = 1;
-
-      if (free_count == 0)
-	{
-	  block_to_free = block;
-	  free_count++;
-	}
-      else if (free_count > 0 && block_to_free == block - free_count)
-	free_count++;
-      else
-	{
-	  ext2_free_blocks (block_to_free, free_count);
-	  block_to_free = block;
-	  free_count = 1;
-	}
-    }
-
-  if (free_count > 0)
-    ext2_free_blocks (block_to_free, free_count);
-}
-
-/* ---------------------------------------------------------------- */
-
-static void
-trunc_indirect (struct node * node, unsigned long length, int offset, u32 * p)
-{
-  int i, block;
-  char * ind_bh;
-  u32 * ind;
-  int modified = 0;
-  unsigned long block_to_free = 0;
-  unsigned long free_count = 0;
-  int indirect_block = INDIRECT_BLOCK (length, offset);
-
-  if (indirect_block < 0)
-    indirect_block = 0;
-
-  ext2_debug ("truncating indirect (offs = %d) blocks from %lu, block %d",
-	      offset, length, indirect_block);
-
-  block = *p;
-  if (!block)
-    return;
-
-  ind_bh = bptr (block);
-
-  for (i = indirect_block ; i < addr_per_block ; i++)
-    {
-      ind = (u32 *)ind_bh + i;
-      block = *ind;
-
-      if (block)
-	{
-	  *ind = 0;
-
-	  if (free_count == 0)
-	    {
-	      block_to_free = block;
-	      free_count++;
-	    }
-	  else if (free_count > 0 && block_to_free == block - free_count)
-	    free_count++;
-	  else
-	    {
-	      ext2_free_blocks (block_to_free, free_count);
-	      block_to_free = block;
-	      free_count = 1;
-	    }
-
-	  node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-	  node->dn_stat_dirty = 1;
-
-	  modified = 1;
-	}
-    }
-
-  if (free_count > 0)
-    ext2_free_blocks (block_to_free, free_count);
-
-  ind = (u32 *) ind_bh;
-  for (i = 0; i < addr_per_block; i++)
-    if (*(ind++))
-      break;
-
-  if (i >= addr_per_block)
-    {
-      block = *p;
-      *p = 0;
-      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      node->dn_stat_dirty = 1;
-      ext2_free_blocks (block, 1);
-    }
-  else if (modified)
-    record_indir_poke (node, ind_bh);
-}
-
-/* ---------------------------------------------------------------- */
-
-static void
-trunc_dindirect (struct node * node, unsigned long length,
-		 int offset, u32 * p)
-{
-  int i, block;
-  char * dind_bh;
-  u32 * dind;
-  int modified = 0;
-  int dindirect_block = DINDIRECT_BLOCK (length, offset);
-
-  if (dindirect_block < 0)
-    dindirect_block = 0;
-
-  ext2_debug ("truncating dindirect (offs = %d) blocks from %lu, block %d",
-	      offset, length, dindirect_block);
-
-  block = *p;
-  if (!block)
-    return;
-
-  dind_bh = bptr (block);
-
-  for (i = dindirect_block ; i < addr_per_block ; i++)
-    {
-      dind = i + (u32 *) dind_bh;
-      block = *dind;
-
-      if (!block)
-	{
-	  trunc_indirect (node, length, offset + (i * addr_per_block), dind);
-	  modified = 1;
-	}
-    }
-
-  dind = (u32 *) dind_bh;
-  for (i = 0; i < addr_per_block; i++)
-    if (*(dind++))
-      break;
-
-  if (i >= addr_per_block)
-    {
-      block = *p;
-      *p = 0;
-      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      node->dn_stat_dirty = 1;
-      ext2_free_blocks (block, 1);
-    }
-  else if (modified)
-    record_indir_poke (node, dind_bh);
-}
-
-/* ---------------------------------------------------------------- */
-
-static void
-trunc_tindirect (struct node * node, unsigned long length)
-{
-  int i, block;
-  char * tind_bh;
-  u32 * tind, * p;
-  int modified = 0;
-  int tindirect_block = TINDIRECT_BLOCK (length);
-
-  if (tindirect_block < 0)
-    tindirect_block = 0;
-
-  ext2_debug ("truncating tindirect blocks from %lu, block %d",
-	      length, tindirect_block);
-
-  p = node->dn->info.i_data + EXT2_TIND_BLOCK;
-  if (!(block = *p))
-    return;
-
-  tind_bh = bptr (block);
-  if (!tind_bh)
-    {
-      *p = 0;
-      return;
-    }
-
-  for (i = tindirect_block ; i < addr_per_block ; i++)
-    {
-      tind = i + (u32 *) tind_bh;
-      trunc_dindirect(node, length,
-		      (EXT2_NDIR_BLOCKS
-		       + addr_per_block
-		       + (i + 1) * addr_per_block * addr_per_block),
-		      tind);
-      modified = 1;
-    }
-
-  tind = (u32 *) tind_bh;
-  for (i = 0; i < addr_per_block; i++)
-    if (*(tind++))
-      break;
-
-  if (i >= addr_per_block)
-    {
-      block = *p;
-      *p = 0;
-      node->dn_stat.st_blocks -= 1 << log2_stat_blocks_per_fs_block;
-      node->dn_stat_dirty = 1;
-      ext2_free_blocks (block, 1);
-    }
-  else if (modified)
-    record_indir_poke (node, tind_bh);
-}
-
-/* ---------------------------------------------------------------- */
 
 /* Flush all the data past the new size from the kernel.  Also force any
    delayed copies of this data to take place immediately.  (We are implicitly
@@ -349,8 +248,8 @@ enable_delayed_copies (struct node *node)
   upi = node->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-
   spin_unlock (&node_to_page_lock);
+
   if (upi)
     {
       pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
@@ -369,7 +268,7 @@ error_t
 diskfs_truncate (struct node *node, off_t length)
 {
   error_t err;
-  int offset;
+  off_t offset;
 
   assert (!diskfs_readonly);
 
@@ -406,13 +305,22 @@ diskfs_truncate (struct node *node, off_t length)
   err = diskfs_catch_exception();
   if (!err)
     {
-      trunc_direct(node, length);
-      trunc_indirect (node, length, EXT2_IND_BLOCK,
-		      (u32 *) &node->dn->info.i_data[EXT2_IND_BLOCK]);
-      trunc_dindirect (node, length, EXT2_IND_BLOCK +
-		       EXT2_ADDR_PER_BLOCK(sblock),
-		       (u32 *) &node->dn->info.i_data[EXT2_DIND_BLOCK]);
-      trunc_tindirect (node, length);
+      block_t end = boffs_block (round_block (length)), offs;
+      block_t *bptrs = node->dn->info.i_data;
+      struct free_block_run fbr;
+
+      free_block_run_init (&fbr, node);
+
+      trunc_direct (node, end, &fbr);
+
+      offs = EXT2_NDIR_BLOCKS;
+      trunc_single_indirect (node, end, bptrs + EXT2_IND_BLOCK, offs, &fbr);
+      offs += addr_per_block;
+      trunc_double_indirect (node, end, bptrs + EXT2_DIND_BLOCK, offs, &fbr);
+      offs += addr_per_block * addr_per_block;
+      trunc_triple_indirect (node, end, bptrs + EXT2_TIND_BLOCK, offs, &fbr);
+
+      free_block_run_finish (&fbr);
 
       node->allocsize = round_block (length);
 
