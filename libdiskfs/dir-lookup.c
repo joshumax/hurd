@@ -21,6 +21,10 @@
 #include <string.h>
 #include <hurd/fsys.h>
 
+/* XXX - Temporary hack; this belongs in a header file, probably types.h. */
+#define major(x) ((int)(((unsigned) (x) >> 8) & 0xff))
+#define minor(x) ((int)((x) & 0xff))
+
 /* Implement dir_lookup as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_dir_lookup (struct protid *dircred,
@@ -171,15 +175,76 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && (np->istranslated || fshelp_translated (&np->transbox)))
+	  && (node->istranslated
+	      || S_ISFIFO (np->dn_stat.st_mode)
+	      || S_ISCHR (np->dn_stat.st_mode)
+	      || S_ISBLK (np->dn_stat.st_mode)
+	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
+	  
+	  /* A call backup function for short-circuited translators.
+	     Symlink & ifsock are handled elsewhere.  */
+	  error_t short_circuited_callback (void *cookie1, void *cookie2,
+					    mach_port_t *underlying,
+					    uid_t *uid, gid_t *gid,
+					    char **argz, int *argz_len)
+	    {
+	      struct node *node = cookie1;
+	      mach_port_t *dotdot = cookie2;
+	      error_t err = 0;
+	      struct protid *newpi;
+
+	      switch (node->dn_stat.st_mode & S_IFMT)
+		{
+		case S_IFCHR:
+		case S_IFBLK:
+		  asprintf (argz, "%s%c%d%c%d",
+			    (S_ISCHR (node->dn_stat.st_mode)
+			     ? _HURD_CHRDEV : _HURD_BLKDEV),
+			    0, major (node->dn_stat.st_rdev),
+			    0, minor (node->dn_stat.st_rdev),);
+		  argz_len = strlen (argz) + 1;
+		  argz_len += strlen (argz + argz_len) + 1;
+		  argz_len += strlen (argz + argz_len) + 1;
+		  break;
+		case S_IFIFO:
+		  asprintf (argz, "%s", _HURD_FIFO);
+		  argz_len = strlen (argz) + 1;
+		  break;
+		default:
+		  return ENOENT;
+		}
+
+	      *uid = node->dn_stat.st_uid;
+	      *gid = node->dn_stat.st_gid;
+  
+	      newpi =
+		diskfs_make_protid (diskfs_make_peropen (node, 
+							 (O_READ|O_EXEC
+/* For now, don't give translators write access to their underlying node.
+  The fsys_startup interface will soon make this irrelevant anyway.  */
+#ifdef XXX
+							  | (!diskfs_readonly 
+							     ? O_WRITE : 0)
+#endif
+							  ),
+							 *dotdot),
+				    uid, 1, gid, 1);
+
+	      *underlying = ports_get_right (newpi);
+	      mach_port_insert_right (mach_task_self (), *underlying,
+				      *underlying, MACH_MSG_TYPE_MAKE_SEND);
+	      ports_port_deref (newpi);
+	      return 0;
+	    }
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  newpi = diskfs_make_protid (diskfs_make_peropen (dnp, 0,
-							   dircred->po->dotdotport),
-				      0, 0, 0, 0);
+	  newpi =
+	    diskfs_make_protid (diskfs_make_peropen (dnp, 0,
+						     dircred->po->dotdotport),
+				0, 0, 0, 0);
 	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
@@ -191,7 +256,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				     dirport, dircred->uids, dircred->nuids,
 				     dircred->gids, dircred->ngids, 
 				     lastcomp ? flags : 0,
-				     _diskfs_translator_callback,
+				     (node->istranslated
+				      ? _diskfs_translator_callback
+				      : short_circuited_callback),
 				     retry, retryname, returned_port);
 
 	  if (error != ENOENT)
