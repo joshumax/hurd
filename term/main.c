@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -130,7 +130,7 @@ main (int argc, char **argv)
       fprintf (stderr, "Must be started as a translator\n");
       exit (1);
     }
-  
+
   /* Set our node */
   errno = trivfs_startup (bootstrap, 0,
 			  ourcntlclass, term_bucket, ourclass, term_bucket,
@@ -180,6 +180,9 @@ main (int argc, char **argv)
   inputq = create_queue (256, 100, 300);
   rawq = create_queue (256, 100, 300);
   outputq = create_queue (256, 100, 300);
+  
+  if (bottom == &ptyio_bottom)
+    ptyio_init ();
 
   condition_init (&carrier_alert);
   condition_init (&select_alert);
