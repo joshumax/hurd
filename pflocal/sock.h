@@ -44,6 +44,9 @@ struct sock
   int refs;
   struct mutex lock;
 
+  /* What kind of socket this is.  */
+  struct pipe_class *pipe_class;
+
   /* Reads from this socket come from READ_PIPE, writes go to WRITE_PIPE.
      A sock always has a read pipe, and a write pipe when it's connected to
      another socket.  */
