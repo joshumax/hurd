@@ -22,37 +22,39 @@
 
 #include "ext2fs.h"
 
-void pokes_init (struct pokes *pokes)
+void pokel_init (struct pokel *pokel, struct pager *pager, void *image)
 {
-  pokes->lock = SPIN_LOCK_INITIALIZER;
-  pokes->pokes = NULL;
+  pokel->lock = SPIN_LOCK_INITIALIZER;
+  pokel->pokes = NULL;
+  pokel->pager = pager;
+  pokel->image = image;
 }
 
 /* Remember that data here on the disk has been modified. */
 void
-pokes_record (struct pokes, void *loc, vm_size_t length)
+pokel_add (struct pokel, void *loc, vm_size_t length)
 {
   struct poke *pl;
   vm_offset_t offset;
   
-  offset = loc - disk_image;
+  offset = loc - pokel->image;
   offset = trunc_page (offset);
   length = round_page (offset + length) - offset;
 
-  spin_lock (&pokes->lock);
+  spin_lock (&pokel->lock);
 
-  pl = pokes->pokes;
+  pl = pokel->pokes;
   if (pl == NULL || pl->offset != offset || pl->length == length)
     {
-      pl = pokes->free_pokes;
+      pl = pokel->free_pokes;
       if (pl == NULL)
 	pl = malloc (sizeof (struct poke));
       else
-	pokes->free_pokes = pl->next;
+	pokel->free_pokes = pl->next;
       pl->offset = offset;
       pl->length = length;
-      pl->next = pokes->pokes;
-      pokes->pokes = pl;
+      pl->next = pokel->pokes;
+      pokel->pokes = pl;
     }
 
   spin_lock (&pokelistlock);
@@ -60,21 +62,21 @@ pokes_record (struct pokes, void *loc, vm_size_t length)
 
 /* Sync all the modified pieces of disk */
 void
-pokes_sync (struct pokes *pokes, int wait)
+pokel_sync (struct pokel *pokes, int wait)
 {
   struct poke *pl, *next;
   
-  spin_lock (&pokes->lock);
+  spin_lock (&pokel->lock);
 
-  for (pl = pokes->pokes; pl; pl = next)
+  for (pl = pokel->pokes; pl; pl = next)
     {
-      pager_sync_some (diskpager->p, pl->offset, pl->length, wait);
+      pager_sync_some (pokel->pager->p, pl->offset, pl->length, wait);
       next = pl->next;
-      pl->next = pokes->free_pokes;
-      pokes->free_pokes = pl;
+      pl->next = pokel->free_pokes;
+      pokel->free_pokes = pl;
     }
-  pokes->pokes = NULL;
+  pokel->pokes = NULL;
 
-  spin_unlock (&pokes->lock);
+  spin_unlock (&pokel->lock);
 }
 
