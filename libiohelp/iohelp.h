@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1993, 1994, 1996 Free Software Foundation
+/* Library providing helper functions for io servers.
+   Copyright (C) 1993, 94, 96, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -93,6 +93,15 @@ struct iouser *iohelp_create_iouser (struct idvec *uids, struct idvec *gids);
    newright.  */
 struct iouser *iohelp_reauth (auth_t authserver, mach_port_t rend_port,
 			      mach_port_t newright, int permit_failure);
-   
+
+
+/* Puts data from the malloced buffer BUF, LEN bytes long, into RBUF & RLEN,
+   suitable for returning from a mach rpc.  If LEN > 0, BUF is freed,
+   regardless of whether an error is returned or not.  */
+error_t iohelp_return_malloced_buffer (char *buf, size_t len,
+				       char **rbuf,
+				       mach_msg_type_number_t *rlen);
+
+
 
 #endif
