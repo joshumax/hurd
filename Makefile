@@ -78,7 +78,7 @@ endif
 dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
 	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
 	tar cfz $(srcdir)/$(dirname)-$(version).tar.gz $(srcdir)/$(dirname)-$(version)
-	rm -rf $(srcdir)/$(dirname)-$(date)
+	rm -rf $(srcdir)/$(dirname)-$(version)
 
 clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
 
@@ -96,7 +96,7 @@ lndist: cp-linked-files
 linked-files = install-sh config.guess config.sub mkinstalldirs
 lf-inst = $(addprefix $(srcdir)/hurd-snap/,$(linked-files))
 cp-linked-files: $(lf-inst)
-$(lfinst): $(srcdir)/hurd-snap/%: $(srcdir)/%
+$(lf-inst): $(srcdir)/hurd-snap/%: $(srcdir)/%
 	cp $< $@
 
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))

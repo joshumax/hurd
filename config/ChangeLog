@@ -1,3 +1,8 @@
+Fri Aug  2 11:07:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (DIST_FILES): Put `root-' before ROOTDOTS and `login-'
+	before LOGINDOTS.
+
 Wed Jul 31 12:11:02 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* passwd (games): Have no password.

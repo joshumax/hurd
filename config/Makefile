@@ -38,7 +38,9 @@ installed_rootdots = $(addprefix $(prefix)/root/,$(ROOTDOTS))
 LINKEDCONFFILES = rc
 installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
 
-DIST_FILES=$(SYSCONFFILES) $(LOGINDOTS) $(ROOTDOTS)
+DIST_FILES=$(SYSCONFFILES) \
+	$(addprefix login-,$(LOGINDOTS)) \
+	$(addprefix root-,$(ROOTDOTS))
 
 foo=$(shell touch /dev/null)
 

@@ -1,3 +1,9 @@
+Thu Aug  1 17:24:08 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl): Don't
+	diskfs_nput NP; we've never created a reference.  Just unlock it.
+	(And bother to lock it in the first place.)
+
 Sat Jul 27 20:05:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* lookup.c (diskfs_lookup): Don't nput *NP if we didn't find a file.

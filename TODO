@@ -226,8 +226,7 @@ See `tasks', the exported task list.
 * TODO for version 0.0:
 
 ** Compile released libc.
-** Compile released utilities.  (See SOURCES-0.0)
+** Make the release version of SOURCES.
 ** ext2fs: shutdown doesn't sync properly?
     [Create a file, then (settrans -a) won't write it, but if you do sync
      first, everything's fine; the code doesn't look too different...]
-** Find fsck system hang

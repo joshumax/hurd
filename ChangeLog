@@ -1,3 +1,10 @@
+Fri Aug  2 11:02:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Released source version 0.0.
+
+	* Makefile (cp-linked-files): Add missing hyphen to rule.
+	(dist): Delete directory named for VERSION, not old var DATE.
+
 Tue Jul 30 13:54:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf (top_srcdirinc): Don't define EWOULDBLOCK anymore.
