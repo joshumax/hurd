@@ -187,7 +187,7 @@ ftp_conn_open (struct ftp_conn *conn)
   if (csock < 0)
     return errno;
 
-  ftp_addr.sin_len = conn->params->addr_len;
+  ftp_addr.sin_len = sizeof ftp_addr;
   ftp_addr.sin_family = conn->params->addr_type;
   ftp_addr.sin_addr = *(struct in_addr *)conn->params->addr;
   ftp_addr.sin_port = ftp_port;
@@ -235,6 +235,9 @@ ftp_conn_close (struct ftp_conn *conn)
   if (conn->control >= 0)
     close (conn->control);
   conn->control = -1;
+  if (conn->actv_data_conn_queue >= 0)
+    close (conn->actv_data_conn_queue);
+  conn->actv_data_conn_queue = -1;
   if (conn->hooks && conn->hooks->closed)
     (* conn->hooks->closed) (conn);
 }
