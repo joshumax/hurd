@@ -1,3 +1,10 @@
+2004-04-02  Marco Gerards  <metgerards@student.han.nl>
+
+	* ihash.c (hurd_ihash_remove): Don't look for the index when the
+	hashtable is empty.
+
+	* ihash.h (HURD_IHASH_ITERATE): Doc fix.
+
 2004-03-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ihash.h (HURD_IHASH_NO_LOCP): Change to INTPTR_MIN.

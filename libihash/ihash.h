@@ -1,5 +1,5 @@
 /* ihash.h - Integer keyed hash table interface.
-   Copyright (C) 1995, 2003 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2003, 2004 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>.
    Revised by Marcus Brinkmann <marcus@gnu.org>.
 
@@ -180,7 +180,7 @@ hurd_ihash_value_t hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key);
 
    Or even like this:
 
-     hurd_ihash_iterate (ht, value)
+     HURD_IHASH_ITERATE (ht, value)
        foo (value);
 
    The block will be run for every element in the hash table HT.  The

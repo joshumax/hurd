@@ -1,5 +1,5 @@
 /* ihash.c - Integer-keyed hash table functions.
-   Copyright (C) 1993-1997, 2001, 2003 Free Software Foundation, Inc.
+   Copyright (C) 1993-1997, 2001, 2003, 2004 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
    Revised by Miles Bader <miles@gnu.org>.
    Revised by Marcus Brinkmann <marcus@gnu.org>.
@@ -419,15 +419,18 @@ hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key)
 int
 hurd_ihash_remove (hurd_ihash_t ht, hurd_ihash_key_t key)
 {
-  int idx = find_index (ht, key);
-
-  if (index_valid (ht, idx, key))
+  if (ht->size != 0)
     {
-      locp_remove (ht, &ht->items[idx].value);
-      return 1;
+      int idx = find_index (ht, key);
+      
+      if (index_valid (ht, idx, key))
+	{
+	  locp_remove (ht, &ht->items[idx].value);
+	  return 1;
+	}
     }
-  else
-    return 0;
+
+  return 0;
 }
 
 
