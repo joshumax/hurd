@@ -1,5 +1,8 @@
 Thu Jul 18 18:33:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* io.c (trivfs_S_file_get_storage_info): Fill in the array-length
+	return values.
+
 	* MAKEDEV: Add "com[0-9]".
 
 Wed Jul 17 10:00:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
