@@ -1,8 +1,13 @@
+1999-09-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile: Revert last change; it is definitely wrong, and there is
+	no verified bug that needs to be fixed at all.
+
 1999-09-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* Makeconf [Installation section]: Last change (9 Sep 1999) broke
 	this.  Separate more clearly the library and non-library install
-	rules. 
+	rules.
 
 	* Makefile ($(prog-subdirs) $(lib-subdirs), %-lndist, %-clean,
 	%-relink, %-objs, %-install, %-install-headers, %-TAGS, %.d): Pass
