@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -97,7 +97,7 @@ diskfs_start_bootstrap ()
   /* Create the port for current and root directory.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
 						   O_READ | O_EXEC,
-						   MACH_PORT_NULL),
+						   MACH_PORT_NULL, 0),
 			      0, &rootpi);
   assert_perror (err);
   root_pt = ports_get_right (rootpi);
@@ -260,7 +260,7 @@ diskfs_S_exec_startup_get_info (mach_port_t port,
 
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
 						   O_READ | O_EXEC,
-						   MACH_PORT_NULL),
+						   MACH_PORT_NULL, 0),
 			      0, &rootpi);
   assert_perror (err);
   rootport = ports_get_right (rootpi);
@@ -300,7 +300,7 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
     return EOPNOTSUPP;
 
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node, flags,
-						   MACH_PORT_NULL),
+						   MACH_PORT_NULL, 0),
 			      0, &rootpi);
   assert_perror (err);
   rootport = ports_get_right (rootpi);
@@ -414,7 +414,7 @@ diskfs_S_fsys_init (mach_port_t port,
      data structures.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
 						   O_READ|O_EXEC,
-						   MACH_PORT_NULL),
+						   MACH_PORT_NULL, 0),
 			      0, &rootpi);
   assert_perror (err);
   root_pt = ports_get_right (rootpi);
