@@ -24,11 +24,11 @@
 
 #include "store.h"
 
-/* Allocate a new store structure of class CLASS, with meths METHS, and the
-   various other fields initialized to the given parameters.  */
+/* Allocate a new store structure with meths METHS, and the various other
+   fields initialized to the given parameters.  */
 struct store *
-_make_store (enum file_storage_class class, struct store_meths *meths,
-	     mach_port_t port, size_t block_size,
+_make_store (struct store_class *class,
+	     mach_port_t port, int flags, size_t block_size,
 	     const struct store_run *runs, size_t num_runs, off_t end)
 {
   if (block_size & (block_size - 1))
@@ -44,6 +44,7 @@ _make_store (enum file_storage_class class, struct store_meths *meths,
 	  store->num_runs = 0;
 	  store->wrap_src = 0;
 	  store->wrap_dst = 0;
+	  store->flags = flags;
 	  store->end = end;
 	  store->block_size = block_size;
 	  store->source = MACH_PORT_NULL;
@@ -57,7 +58,6 @@ _make_store (enum file_storage_class class, struct store_meths *meths,
 	  store->num_children = 0;
 
 	  store->class = class;
-	  store->meths = meths;
 
 	  store_set_runs (store, runs, num_runs); /* Calls _store_derive() */
 	}
@@ -70,8 +70,8 @@ store_free (struct store *store)
 {
   int k;
 
-  if (store->meths->cleanup)
-    (*store->meths->cleanup) (store);
+  if (store->class->cleanup)
+    (*store->class->cleanup) (store);
 
   for (k = 0; k < store->num_children; k++)
     store_free (store->children[k]);
