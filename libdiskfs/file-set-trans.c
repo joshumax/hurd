@@ -134,9 +134,19 @@ diskfs_S_file_set_translator (struct protid *cred,
 		      mutex_unlock (&np->lock);
 		      return EINVAL;
 		    }
-		  /* Store the argument in the file as the
-		     target of the link */
-		  diskfs_node_rdwr (np, arg, 0, strlen (arg), 1, cred, 0);
+
+		  if (diskfs_create_symlink_hook)
+		    error = (*diskfs_create_symlink_hook)(np, arg);
+		  if (!diskfs_create_symlink_hook || error == EINVAL)
+		    /* Store the argument in the file as the
+		       target of the link */
+		    error = diskfs_node_rdwr (np, arg, 0, strlen (arg),
+					      1, cred, 0);
+		  if (error)
+		    {
+		      mutex_unlock (&np->lock);
+		      return error;
+		    }
 		}
 	      np->dn_stat.st_mode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
 	      diskfs_node_update (np, 1);
