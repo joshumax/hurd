@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -37,6 +37,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 {
   error_t err;
   mach_port_t control;
+  int cancel;
   
  start_over:
 
@@ -94,7 +95,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       if (box->flags & TRANSBOX_STARTING)
 	{
 	  box->flags |= TRANSBOX_WANTED;
-	  condition_wait (&box->wakeup, box->lock);
+	  cancel = hurd_condition_wait (&box->wakeup, box->lock);
+	  if (cancel)
+	    return EINTR;
 	  goto start_over;
 	}
       box->flags |= TRANSBOX_STARTING;
