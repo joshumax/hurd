@@ -1,5 +1,5 @@
 /*
- *  linux/fs/ext2/ialloc.c
+ * Largely stolen from: linux/fs/ext2/ialloc.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -25,218 +25,38 @@
  * when a file system is mounted (see ext2_read_super).
  */
 
-#include <linux/fs.h>
-#include <linux/ext2_fs.h>
-#include <linux/sched.h>
-#include <linux/stat.h>
-#include <linux/string.h>
-#include <linux/locks.h>
-
-#include <asm/bitops.h>
-
-static struct ext2_group_desc * get_group_desc (struct super_block * sb,
-						unsigned int block_group,
-						char ** bh)
-{
-	unsigned long group_desc;
-	unsigned long desc;
-	struct ext2_group_desc * gdp;
-
-	if (block_group >= sb->u.ext2_sb.s_groups_count)
-		ext2_panic (sb, "get_group_desc",
-			    "block_group >= groups_count - "
-			    "block_group = %d, groups_count = %lu",
-			    block_group, sb->u.ext2_sb.s_groups_count);
-
-	group_desc = block_group / EXT2_DESC_PER_BLOCK(sb);
-	desc = block_group % EXT2_DESC_PER_BLOCK(sb);
-	if (!sb->u.ext2_sb.s_group_desc[group_desc])
-		ext2_panic (sb, "get_group_desc",
-			    "Group descriptor not loaded - "
-			    "block_group = %d, group_desc = %lu, desc = %lu",
-			     block_group, group_desc, desc);
-	gdp = (struct ext2_group_desc *) 
-		sb->u.ext2_sb.s_group_desc[group_desc];
-	if (bh)
-		*bh = sb->u.ext2_sb.s_group_desc[group_desc];
-	return gdp + desc;
-}
-
-static void read_inode_bitmap (struct super_block * sb,
-			       unsigned long block_group,
-			       unsigned int bitmap_nr)
-{
-	struct ext2_group_desc * gdp;
-	char * bh;
-
-	gdp = get_group_desc (sb, block_group, NULL);
-	bh = bread (sb->s_dev, gdp->bg_inode_bitmap, sb->s_blocksize);
-	if (!bh)
-		ext2_panic (sb, "read_inode_bitmap",
-			    "Cannot read inode bitmap - "
-			    "block_group = %lu, inode_bitmap = %lu",
-			    block_group, (unsigned long) gdp->bg_inode_bitmap);
-	sb->u.ext2_sb.s_inode_bitmap_number[bitmap_nr] = block_group;
-	sb->u.ext2_sb.s_inode_bitmap[bitmap_nr] = bh;
-}
-
-/*
- * load_inode_bitmap loads the inode bitmap for a blocks group
- *
- * It maintains a cache for the last bitmaps loaded.  This cache is managed
- * with a LRU algorithm.
- *
- * Notes:
- * 1/ There is one cache per mounted file system.
- * 2/ If the file system contains less than EXT2_MAX_GROUP_LOADED groups,
- *    this function reads the bitmap without maintaining a LRU cache.
- */
-static int load_inode_bitmap (struct super_block * sb,
-			      unsigned int block_group)
-{
-	int i, j;
-	unsigned long inode_bitmap_number;
-	char * inode_bitmap;
-
-	if (block_group >= sb->u.ext2_sb.s_groups_count)
-		ext2_panic (sb, "load_inode_bitmap",
-			    "block_group >= groups_count - "
-			    "block_group = %d, groups_count = %lu",
-			     block_group, sb->u.ext2_sb.s_groups_count);
-	if (sb->u.ext2_sb.s_loaded_inode_bitmaps > 0 &&
-	    sb->u.ext2_sb.s_inode_bitmap_number[0] == block_group)
-		return 0;
-	if (sb->u.ext2_sb.s_groups_count <= EXT2_MAX_GROUP_LOADED) {
-		if (sb->u.ext2_sb.s_inode_bitmap[block_group]) {
-			if (sb->u.ext2_sb.s_inode_bitmap_number[block_group] != block_group)
-				ext2_panic (sb, "load_inode_bitmap",
-					    "block_group != inode_bitmap_number");
-			else
-				return block_group;
-		} else {
-			read_inode_bitmap (sb, block_group, block_group);
-			return block_group;
-		}
-	}
-
-	for (i = 0; i < sb->u.ext2_sb.s_loaded_inode_bitmaps &&
-		    sb->u.ext2_sb.s_inode_bitmap_number[i] != block_group;
-	     i++)
-		;
-	if (i < sb->u.ext2_sb.s_loaded_inode_bitmaps &&
-  	    sb->u.ext2_sb.s_inode_bitmap_number[i] == block_group) {
-		inode_bitmap_number = sb->u.ext2_sb.s_inode_bitmap_number[i];
-		inode_bitmap = sb->u.ext2_sb.s_inode_bitmap[i];
-		for (j = i; j > 0; j--) {
-			sb->u.ext2_sb.s_inode_bitmap_number[j] =
-				sb->u.ext2_sb.s_inode_bitmap_number[j - 1];
-			sb->u.ext2_sb.s_inode_bitmap[j] =
-				sb->u.ext2_sb.s_inode_bitmap[j - 1];
-		}
-		sb->u.ext2_sb.s_inode_bitmap_number[0] = inode_bitmap_number;
-		sb->u.ext2_sb.s_inode_bitmap[0] = inode_bitmap;
-	} else {
-		if (sb->u.ext2_sb.s_loaded_inode_bitmaps < EXT2_MAX_GROUP_LOADED)
-			sb->u.ext2_sb.s_loaded_inode_bitmaps++;
-		else
-			brelse (sb->u.ext2_sb.s_inode_bitmap[EXT2_MAX_GROUP_LOADED - 1]);
-		for (j = sb->u.ext2_sb.s_loaded_inode_bitmaps - 1; j > 0; j--) {
-			sb->u.ext2_sb.s_inode_bitmap_number[j] =
-				sb->u.ext2_sb.s_inode_bitmap_number[j - 1];
-			sb->u.ext2_sb.s_inode_bitmap[j] =
-				sb->u.ext2_sb.s_inode_bitmap[j - 1];
-		}
-		read_inode_bitmap (sb, block_group, 0);
-	}
-	return 0;
-}
-
-/*
- * This function sets the deletion time for the inode
- *
- * This may be used one day by an 'undelete' program
- */
-static void set_inode_dtime (struct inode * inode,
-			     struct ext2_group_desc * gdp)
-{
-	unsigned long inode_block;
-	char * bh;
-	struct ext2_inode * raw_inode;
-
-	inode_block = gdp->bg_inode_table + (((inode->i_ino - 1) %
-			EXT2_INODES_PER_GROUP(inode->i_sb)) /
-			EXT2_INODES_PER_BLOCK(inode->i_sb));
-	bh = bread (inode->i_sb->s_dev, inode_block, inode->i_sb->s_blocksize);
-	if (!bh)
-		ext2_panic (inode->i_sb, "set_inode_dtime",
-			    "Cannot load inode table block - "
-			    "inode=%lu, inode_block=%lu",
-			    inode->i_ino, inode_block);
-	raw_inode = ((struct ext2_inode *) bh) +
-			(((inode->i_ino - 1) %
-			EXT2_INODES_PER_GROUP(inode->i_sb)) %
-			EXT2_INODES_PER_BLOCK(inode->i_sb));
-	raw_inode->i_links_count = 0;
-	raw_inode->i_dtime = CURRENT_TIME;
-	mark_buffer_dirty(bh, 1);
-	if (IS_SYNC(inode)) {
-		ll_rw_block (WRITE, 1, &bh);
-		wait_on_buffer (bh);
-	}
-	brelse (bh);
-}
+#include "ext2fs.h"
 
 void ext2_free_inode (struct inode * inode)
 {
-	struct super_block * sb;
 	char * bh;
 	char * bh2;
 	unsigned long block_group;
 	unsigned long bit;
-	int bitmap_nr;
 	struct ext2_group_desc * gdp;
-	struct ext2_super_block * es;
+	ino_t inum = node->dn->number;
 
 	if (!inode)
 		return;
-	if (!inode->i_dev) {
-		printk ("ext2_free_inode: inode has no device\n");
-		return;
-	}
-	if (inode->i_count > 1) {
-		printk ("ext2_free_inode: inode has count=%d\n",
-			inode->i_count);
-		return;
-	}
-	if (inode->i_nlink) {
-		printk ("ext2_free_inode: inode has nlink=%d\n",
-			inode->i_nlink);
-		return;
-	}
-	if (!inode->i_sb) {
-		printk("ext2_free_inode: inode on nonexistent device\n");
-		return;
-	}
 
 	ext2_debug ("freeing inode %lu\n", inode->i_ino);
 
-	sb = inode->i_sb;
 	lock_super (sb);
-	if (inode->i_ino < EXT2_FIRST_INO ||
-	    inode->i_ino > sb->u.ext2_sb.s_es->s_inodes_count) {
+	if (inum < EXT2_FIRST_INO ||
+	    inum > sb->u.ext2_sb.s_es->s_inodes_count) {
 		ext2_error (sb, "free_inode",
 			    "reserved inode or nonexistent inode");
 		unlock_super (sb);
 		return;
 	}
 	es = sb->u.ext2_sb.s_es;
-	block_group = (inode->i_ino - 1) / EXT2_INODES_PER_GROUP(sb);
-	bit = (inode->i_ino - 1) % EXT2_INODES_PER_GROUP(sb);
+	block_group = (inum - 1) / EXT2_INODES_PER_GROUP(sb);
+	bit = (inum - 1) % EXT2_INODES_PER_GROUP(sb);
 	bitmap_nr = load_inode_bitmap (sb, block_group);
 	bh = sb->u.ext2_sb.s_inode_bitmap[bitmap_nr];
 	if (!clear_bit (bit, bh))
 		ext2_warning (sb, "ext2_free_inode",
-			      "bit already cleared for inode %lu", inode->i_ino);
+			      "bit already cleared for inode %lu", inum);
 	else {
 		gdp = get_group_desc (sb, block_group, &bh2);
 		gdp->bg_free_inodes_count++;
@@ -245,7 +65,9 @@ void ext2_free_inode (struct inode * inode)
 		mark_buffer_dirty(bh2, 1);
 		es->s_free_inodes_count++;
 		mark_buffer_dirty(sb->u.ext2_sb.s_sbh, 1);
+#if 0
 		set_inode_dtime (inode, gdp);
+#endif
 	}
 	mark_buffer_dirty(bh, 1);
 	if (sb->s_flags & MS_SYNCHRONOUS) {
@@ -256,41 +78,6 @@ void ext2_free_inode (struct inode * inode)
 	sb->s_dirt = 1;
 	clear_inode (inode);
 	unlock_super (sb);
-}
-
-/*
- * This function increments the inode version number
- *
- * This may be used one day by the NFS server
- */
-static void inc_inode_version (struct inode * inode,
-			       struct ext2_group_desc *gdp,
-			       int mode)
-{
-	unsigned long inode_block;
-	char * bh;
-	struct ext2_inode * raw_inode;
-
-	inode_block = gdp->bg_inode_table + (((inode->i_ino - 1) %
-			EXT2_INODES_PER_GROUP(inode->i_sb)) /
-			EXT2_INODES_PER_BLOCK(inode->i_sb));
-	bh = bread (inode->i_sb->s_dev, inode_block, inode->i_sb->s_blocksize);
-	if (!bh) {
-		ext2_error (inode->i_sb, "inc_inode_version",
-			    "Cannot load inode table block - "
-			    "inode=%lu, inode_block=%lu\n",
-			    inode->i_ino, inode_block);
-		inode->u.ext2_i.i_version = 1;
-		return;
-	}
-	raw_inode = ((struct ext2_inode *) bh) +
-			(((inode->i_ino - 1) %
-			EXT2_INODES_PER_GROUP(inode->i_sb)) %
-			EXT2_INODES_PER_BLOCK(inode->i_sb));
-	raw_inode->i_version++;
-	inode->u.ext2_i.i_version = raw_inode->i_version;
-	mark_buffer_dirty(bh, 1);
-	brelse (bh);
 }
 
 /*
@@ -461,7 +248,7 @@ repeat:
 	} else
 		inode->i_gid = current->fsgid;
 	inode->i_dirt = 1;
-	inode->i_ino = j;
+	node->dn->number = j;
 	inode->i_blksize = sb->s_blocksize;
 	inode->i_blocks = 0;
 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
@@ -481,7 +268,7 @@ repeat:
 	insert_inode_hash(inode);
 	inc_inode_version (inode, gdp, mode);
 
-	ext2_debug ("allocating inode %lu\n", inode->i_ino);
+	ext2_debug ("allocating inode %lu\n", node->dn->number);
 
 	unlock_super (sb);
 	return inode;
