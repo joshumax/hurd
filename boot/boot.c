@@ -45,6 +45,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "bootstrap_S.h"
 /* #include "tioctl_S.h" */
 
+#include "boot_script.h"
+
 #include <hurd/auth.h>
 
 #undef errno
@@ -62,10 +64,6 @@ mach_port_t php_child_name, psmdp_child_name, taskname;
 
 task_t child_task;
 mach_port_t bootport;
-
-int boot_like_kernel;
-int boot_like_cmudef;
-int boot_like_hurd;
 
 int console_mscount;
 
@@ -286,7 +284,7 @@ request_server (mach_msg_header_t *inp,
 /*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
   extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
   extern void bootstrap_compat ();
-  
+
   if (inp->msgh_local_port == bootport && boot_like_cmudef)
     {
       if (inp->msgh_id == 999999)
@@ -397,23 +395,147 @@ load_image (task_t t,
 
 void read_reply ();
 void msg_thread ();
+
+/* Callbacks for boot_script.c; see boot_script.h.  */
 
+mach_port_t boot_script_task_port;
+mach_port_t boot_script_host_port;
+mach_port_t boot_script_device_port;
+mach_port_t boot_script_bootstrap_port;
+char *boot_script_root_device;
+
+void *
+boot_script_malloc (int size)
+{
+  return malloc (size);
+}
+
+void
+boot_script_free (void *ptr, int size)
+{
+  free (ptr);
+}
+
+mach_port_t
+boot_script_task_create ()
+{
+  mach_port_t task;
+
+  if (task_create (mach_task_self (), 0, &task))
+    return MACH_PORT_NULL;
+
+  /* We don't want it to inherit our UX bootstrap port.  */
+  task_set_bootstrap_port (task, MACH_PORT_NULL);
+
+  return task;
+}
+
+void
+boot_script_task_terminate (mach_port_t task)
+{
+  task_terminate (task);
+}
+
+void
+boot_script_task_suspend (mach_port_t task)
+{
+  task_suspend (task);
+}
+
+int
+boot_script_task_resume (mach_port_t task)
+{
+  return task_resume (task);
+}
+
+void
+boot_script_port_deallocate (mach_port_t task, mach_port_t port)
+{
+  mach_port_deallocate (task, port);
+}
+
+int
+boot_script_port_insert_right (mach_port_t task, mach_port_t name,
+			       mach_port_t port, mach_msg_type_name_t right)
+{
+  return mach_port_insert_right (task, name, port, right);
+}
+
+void
+boot_script_set_bootstrap_port (mach_port_t task, mach_port_t port)
+{
+  task_set_bootstrap_port (task, port);
+}
+
+int
+boot_script_exec_cmd (mach_port_t task, char *path, int argc,
+		      char **argv, char *strings, int stringlen)
+{
+  char *args, *p;
+  int arg_len, i;
+  unsigned reg_size;
+  void *arg_pos;
+  vm_offset_t stack_start, stack_end;
+  vm_address_t startpc, str_start;
+  thread_t thread;
+  struct i386_thread_state regs;
+
+  write (2, path, strlen (path));
+
+  startpc = load_image (task, path);
+  thread_create (task, &thread);
+
+  arg_len = stringlen + (argc + 2) * sizeof (char *) + sizeof (integer_t);
+  arg_len += 5 * sizeof (int);
+
+  stack_end = VM_MAX_ADDRESS;
+  stack_start = VM_MAX_ADDRESS - 16 * 1024 * 1024;
+  vm_allocate (task, &stack_start, stack_end - stack_start, FALSE);
+  reg_size = i386_THREAD_STATE_COUNT;
+  thread_get_state (thread, i386_THREAD_STATE,
+		    (thread_state_t) &regs, &reg_size);
+  regs.eip = (int) startpc;
+  regs.uesp = (int) ((stack_end - arg_len) & ~(sizeof (int) - 1));
+  thread_set_state (thread, i386_THREAD_STATE,
+		    (thread_state_t) &regs, reg_size);
+  arg_pos = (void *) regs.uesp;
+  vm_allocate (mach_task_self (), (vm_address_t *) &args,
+	       stack_end - trunc_page ((vm_offset_t) arg_pos), TRUE);
+  str_start = ((vm_address_t) arg_pos
+	       + (argc + 2) * sizeof (char *) + sizeof (integer_t));
+  p = args + ((vm_address_t) arg_pos & (vm_page_size - 1));
+  *((int *) p)++ = argc;
+  for (i = 0; i < argc; i++)
+    *((char **) p)++ = argv[i] - strings + (char *) str_start;
+  *((char **) p)++ = 0;
+  *((char **) p)++ = 0;
+  memcpy (p, strings, stringlen);
+  bzero (args, (vm_offset_t) arg_pos & (vm_page_size - 1));
+  vm_write (task, trunc_page ((vm_offset_t) arg_pos), (vm_address_t) args,
+	    stack_end - trunc_page ((vm_offset_t) arg_pos));
+  vm_deallocate (mach_task_self (), (vm_address_t) args,
+		 stack_end - trunc_page ((vm_offset_t) arg_pos));
+  thread_resume (thread);
+  mach_port_deallocate (mach_task_self (), thread);
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
-  thread_t newthread;
   mach_port_t foo;
-  vm_address_t startpc[argc];
-  char usagemsg[] = "Usage: boot [-qsdn] servers... disk";
-  char **bootfiles;
-  int nfiles, i;
-  task_t newtasks[argc];
-  char c;
+  char usagemsg[] = "Usage: boot [SWITCHES] SCRIPT ROOT-DEVICE\n";
+  char *buf = 0;
+  char *bootscript;
+  int i, len;
   struct sigvec vec = { read_reply, 0, 0};
   char *newargs;
 
   privileged_host_port = task_by_pid (-1);
+  boot_script_host_port = privileged_host_port;
   master_device_port = task_by_pid (-2);
+
+  boot_script_task_port = mach_task_self ();
 
   if (argc < 2 || (argv[1][0] == '-' && argc < 3))
     {
@@ -424,44 +546,33 @@ main (int argc, char **argv, char **envp)
   if (argv[1][0] != '-')
     {
       bootstrap_args = "-x";
-      bootfiles = &argv[1];
+      bootscript = argv[1];
+      bootdevice = argv[2];
     }
   else
     {
       bootstrap_args = argv[1];
-      bootfiles = &argv[2];
+      bootscript = argv[2];
+      bootdevice = argv[3];
     }
-  nfiles = 0;
-  while (bootfiles[nfiles])
-    ++nfiles;
-  bootdevice = bootfiles[nfiles-- - 1];
+
+  boot_script_root_device = bootdevice;
 
   newargs = malloc (strlen (bootstrap_args) + 2);
   strcpy (newargs, bootstrap_args);
   strcat (newargs, "f");
   bootstrap_args = newargs;
 
-  if (index (bootstrap_args, 'k'))
-    boot_like_kernel = 1;
-  else if (index (bootstrap_args, 'p'))
-    boot_like_cmudef = 1;
-  else
-    boot_like_hurd = 1;
-
-  for (i = 0; i < nfiles; ++i)
-    {
-      task_create (mach_task_self (), 0, &newtasks[i]);
-      task_suspend (newtasks[i]);
-      startpc[i] = load_image (newtasks[i], bootfiles[i]);
-    }
-  
-  fsname = bootfiles[0];
-  
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
   
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
 		      &pseudo_master_device_port);
+  boot_script_device_port = pseudo_master_device_port;
+  mach_port_insert_right (mach_task_self (),
+			  pseudo_master_device_port,
+			  pseudo_master_device_port,
+			  MACH_MSG_TYPE_MAKE_SEND);
   mach_port_move_member (mach_task_self (), pseudo_master_device_port,
 			 receive_set);
 
@@ -474,45 +585,62 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
-  if (boot_like_cmudef || boot_like_hurd)
-    {
-      mach_port_allocate (mach_task_self (), 
-			  MACH_PORT_RIGHT_RECEIVE, &bootport);
-      mach_port_move_member (mach_task_self (), bootport, receive_set);
+  boot_script_bootstrap_port = MACH_PORT_NULL;
 
-      mach_port_insert_right (mach_task_self (), bootport, bootport, 
-			      MACH_MSG_TYPE_MAKE_SEND);
-      task_set_bootstrap_port (newtasks[0], bootport);
-      mach_port_deallocate (mach_task_self (), bootport);
+  /* Parse the boot script.  */
+  {
+    char *p, *line;
+    char filemsg[] = "Can't open boot script";
+    int amt, fd, err;
 
-#if 0
-      mach_port_request_notification (mach_task_self (), newtask, 
-				      MACH_NOTIFY_DEAD_NAME, 1, bootport, 
-				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-      if (foo)
-	mach_port_deallocate (mach_task_self (), foo);
-#endif
-    }
-  else
-    /* Remove inherited port.  The kernel gives none.  */
-    task_set_bootstrap_port (newtasks[0], MACH_PORT_NULL);
+    fd = open (bootscript, 0, 0);
+    if (fd < 0)
+      {
+	write (2, filemsg, sizeof (filemsg));
+	uxexit (1);
+      }
+    p = buf = malloc (500);
+    len = 500;
+    amt = 0;
+    while (1)
+      {
+	i = read (fd, p, len - (p - buf));
+	if (i <= 0)
+	  break;
+	p += i;
+	amt += i;
+	if (p == buf + len)
+	  {
+	    char *newbuf;
 
-  child_task = newtasks[0];
+	    len += 500;
+	    newbuf = realloc (buf, len);
+	    p = newbuf + (p - buf);
+	    buf = newbuf;
+	  }
+      }
+    line = p = buf;
+    while (1)
+      {
+	while (p < buf + amt && *p != '\n')
+	  p++;
+	*p = '\0';
+	err = boot_script_parse_line (line);
+	if (err)
+	  {
+	    char *str;
+	    int i;
 
-  if (boot_like_kernel || boot_like_hurd)
-    {
-      php_child_name = 100;
-      psmdp_child_name = 101;
-      mach_port_insert_right (newtasks[0], php_child_name,
-			      privileged_host_port,
-			      MACH_MSG_TYPE_COPY_SEND);
-      mach_port_insert_right (newtasks[0], psmdp_child_name,
-			      pseudo_master_device_port,
-			      MACH_MSG_TYPE_MAKE_SEND);
-      taskname = 102;
-      mach_port_insert_right (newtasks[0], taskname, newtasks[1],
-			      MACH_MSG_TYPE_COPY_SEND);
-    }
+	    str = boot_script_error_string (err);
+	    i = strlen (str);
+	    write (2, str, i);
+	    uxexit (1);
+	  }
+	if (p == buf + amt)
+	  break;
+	line = ++p;
+      }
+  }
 
   foo = 1;
   init_termstate ();
@@ -520,38 +648,23 @@ main (int argc, char **argv, char **envp)
   sigvec (SIGIO, &vec, 0);
   sigvec (SIGMSG, &vec, 0);
   sigvec (SIGEMSG, &vec, 0);
-  
-  for (i = 0; i < nfiles; ++i)
-    {
-      thread_create (newtasks[i], &newthread);
 
-      if (boot_like_hurd)
-	__mach_setup_thread (newtasks[0], newthread, (char *)startpc[i],
-			     i?0:&fs_stack_base, i?0:&fs_stack_size);
-      else if (boot_like_kernel) 
-	{
-	  char hp[20], mdp[20], tn[20];
-	  sprintf (hp, "%d", (int) php_child_name);
-	  sprintf (mdp, "%d", (int) psmdp_child_name);
-	  sprintf (tn, "%d", (int) taskname);
-	  set_mach_stack_args (newtasks[i], newthread, (void *) startpc[i],
-			       "[BOOTSTRAP fs]", bootstrap_args,
-			       hp, mdp, tn, bootdevice, 0);
-	}
-      else
-	set_mach_stack_args (newtasks[i], newthread, (char *)startpc[i],
-			     "[BOOTSTRAP fs]", bootstrap_args,
-			     bootdevice, "/", 0);
+  /* The boot script has now been parsed into internal data structures.
+     Now execute its directives.  */
+  {
+    int err;
 
-      thread_resume (newthread);
-    }
+    err = boot_script_exec ();
+    if (err)
+      {
+	char *str = boot_script_error_string (err);
+	int i = strlen (str);
 
-  if (index (bootstrap_args, 'd'))
-    {
-      write (1, "pausing\n", 8);
-      read (0, &c, 1);
-    }
-  task_resume(newtasks[0]);
+	write (2, str, i);
+	uxexit (1);
+      }
+    free (buf);
+  }
 
   cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
 				(any_t) 0));
