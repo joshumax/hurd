@@ -1,3 +1,8 @@
+Wed Oct  2 10:49:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ptyio.c (S_tioctl_tiocsig, S_tioctl_tiocucntl, S_tioctl_tiocpkt):
+ 	Hold GLOBAL_LOCK while frobbing (especially around send_signal).
+
 Thu Sep 12 16:34:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
