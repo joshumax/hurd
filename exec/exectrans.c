@@ -15,9 +15,7 @@ static struct port_bucket *port_bucket;
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
 int trivfs_support_read = 1;
-int trivfs_support_write = 1;
-int trivfs_support_exec = 1;
-int trivfs_allow_open = O_READ|O_WRITE|O_EXEC;
+int trivfs_allow_open = O_READ;
 
 struct port_class *trivfs_protid_portclasses[1];
 struct port_class *trivfs_cntl_portclasses[1];
