@@ -766,7 +766,7 @@ set_state (io_t port,
       else
 	termstate.c_lflag &= ~EXTPROC;
 
-      if (!(termstate.c_cflag & CIGNORE))
+      if (external_processing || !(termstate.c_cflag & CIGNORE))
 	(*bottom->set_bits) ();
       if (oldlflag & ICANON)
 	{
