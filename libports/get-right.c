@@ -31,7 +31,7 @@ ports_get_right (void *port)
   mutex_lock (&_ports_lock);
   
   pi->mscount++;
-  if (pi->flags & PORT_HAS_SENDRIGHTS == 0)
+  if ((pi->flags & PORT_HAS_SENDRIGHTS) == 0)
     {
       pi->flags |= PORT_HAS_SENDRIGHTS;
       pi->refcnt++;
