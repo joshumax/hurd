@@ -1,3 +1,12 @@
+Fri Sep 27 01:07:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (options, main): Change --kind/-k to --type/-t.
+	Add --flags/-f option.
+	(W_TYPE): Renamed from W_KIND; all uses changed.
+	(W_FLAGS): New macro.
+	(print_store): Print flags separately from type.
+	(doc): Updated.
+
 Thu Sep 26 16:10:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (%: %.sh): Rule removed.
