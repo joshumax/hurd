@@ -24,8 +24,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <error.h>
 #include "ext2fs.h"
-#include "error.h"
 
 /* ---------------------------------------------------------------- */
 
