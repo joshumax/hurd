@@ -506,16 +506,6 @@ input_loop (any_t unused)
 		  else if (!down)
 		    state.caps_lock_pressed = 0;
 		}
-	      else if (sc == SC_NUMLOCK)
-		{
-		  if (down && !state.num_lock_pressed)
-		    {
-		      state.num_lock = !state.num_lock;
-		      state.num_lock_pressed = 1;
-		    }
-		  else if (!down)
-		    state.num_lock_pressed = 0;
-		}
 	      else if (sc == SC_LEFT_CTRL)
 		state.left_ctrl = down;
 	      else if (sc == SC_LEFT_ALT)
@@ -552,6 +542,16 @@ input_loop (any_t unused)
 		state.direct = (state.direct << 4) | 0xd;
 	      else if (state.right_alt && down && sc == SC_PAD_PLUS) /* XXX */
 		state.direct = (state.direct << 4) | 0xe;
+	      else if (sc == SC_NUMLOCK)
+		{
+		  if (down && !state.num_lock_pressed)
+		    {
+		      state.num_lock = !state.num_lock;
+		      state.num_lock_pressed = 1;
+		    }
+		  else if (!down)
+		    state.num_lock_pressed = 0;
+		}
 	      else if (down && sc < sizeof (sc_to_kc)/sizeof (sc_to_kc[0]))
 		{
 #if QUAERENDO_INVENIETIS
