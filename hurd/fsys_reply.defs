@@ -30,7 +30,7 @@ skip; /* startup */
 skip; /* goaway */
 
 simpleroutine fsys_getroot_reply (
-	reply_port reply_port_t;
+	reply_port: reply_port_t;
 	retcode: kern_return_t;
 	do_retry: retry_type;
 	retry_name: string_t;
