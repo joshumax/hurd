@@ -1,3 +1,8 @@
+1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bootstrap.c (main): Further spruce up prompting and error reporting
+	for root device and boot script.
+
 1999-10-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* load.c, bootstrap.c: Back out some debugging printfs accidentally

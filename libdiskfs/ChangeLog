@@ -1,3 +1,7 @@
+1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* disk-pager.c (fault_handler): Put more detail in assert failures.
+
 1999-10-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* node-nput.c (diskfs_nput): Call diskfs_set_node_times before
