@@ -1,5 +1,5 @@
 /* Definitions for startup server interface
-   Copyright (C) 1991, 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994, 1996, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -41,7 +41,7 @@ routine startup_essential_task (
 	credential: host_priv_t);
 
 /* This call registers a task as "notified", which means that if the
-   system is going down, we should told about it and get a chance to
+   system is going down, we should be told about it and get a chance to
    run.  A startup_dosync message (see startup_notify.defs) will be
    sent to the notify port.  NAME will be used to provide a helpful
    message to the user when the system is shutting down. */
@@ -56,7 +56,7 @@ routine startup_reboot (
 	refport: mach_port_t;
 	reboot_code: int);
 
-/* NOTE: All changes two these last two must be reflected in
+/* NOTE: All changes to these last two must be reflected in
    startup_reply.defs.  */
 
 /* This call is made by the proc server for its initialization, on its

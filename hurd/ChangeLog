@@ -1,3 +1,7 @@
+Tue May 11 13:38:50 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* startup.defs: Doc fixes.
+
 1999-04-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hurd_types.h (EXEC_SIGTRAP): New macro.
