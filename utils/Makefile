@@ -18,8 +18,8 @@
 dir := utils
 makemode := utilities
 
-SRCS = sh.c ps.c su.c
-targets = sh ps # su
+SRCS = sh.c ps.c su.c settrans.c
+targets = sh ps settrans # su
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
 include ../Makeconf
