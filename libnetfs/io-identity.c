@@ -1,5 +1,5 @@
 /* libnetfs implementation of io_identity RPC
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,17 +27,17 @@ netfs_S_io_identity (struct protid *cred,
 		     mach_msg_type_name_t *idtype,
 		     mach_port_t *fsys,
 		     mach_msg_type_name_t *fsystype,
-		     int *fileno)
+		     ino_t *fileno)
 {
   struct node *np;
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
   mutex_lock (&np->lock);
-  
+
   err = netfs_validate_stat (np, cred->user);
   if (err)
     {
@@ -55,7 +55,7 @@ netfs_S_io_identity (struct protid *cred,
   *fsys = netfs_fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
   *fileno = np->nn_stat.st_ino;
-  
+
   mutex_unlock (&np->lock);
   return 0;
 }
