@@ -73,21 +73,60 @@ parse_opt (int key, char *arg, struct argp_state *state)
 {
   switch (key)
     {
+      enum compat_mode mode;
+
     case 'C':
       if (strcasecmp (arg, "gnu") == 0)
-	compat_mode = COMPAT_GNU;
+	mode = COMPAT_GNU;
       else if (strcmp (arg, "4.4") == 0)
-	compat_mode = COMPAT_BSD44;
+	mode = COMPAT_BSD44;
       else if (strcmp (arg, "4.2") == 0)
-	compat_mode = COMPAT_BSD42;
+	{
+	  if (sblock
+	      && (sblock->fs_inodefmt == FS_44INODEFMT
+		  || direct_symlink_extension))
+	    {
+	      argp_failure (state, 0, 0,
+			    "4.2 compat mode requested on 4.4 fs");
+	      return EINVAL;
+	    }
+	  mode = COMPAT_BSD42;
+	}
       else
-	argp_error (state, "%s: Unknown compatibility mode", arg);
+	{
+	  argp_error (state, "%s: Unknown compatibility mode", arg);
+	  return EINVAL;
+	}
+
+      state->hook = (void *)mode; /* Save it for the end.  */
       break;
+
+    case ARGP_KEY_INIT:
+      state->hook = (void *)compat_mode; break;
+    case ARGP_KEY_SUCCESS:
+      compat_mode = (enum compat_mode)state->hook; break;
+
     default:
       return ARGP_ERR_UNKNOWN;
     }
   return 0;
 }
+
+static const struct argp *startup_parents[] = {
+  &diskfs_std_device_startup_argp, 0
+};
+static const struct argp startup_argp = {
+  options, parse_opt, 0, 0, startup_parents
+};
+
+static const struct argp *runtime_parents[] = {
+  &diskfs_std_runtime_argp, 0
+};
+static const struct argp runtime_argp = {
+  options, parse_opt, 0, 0, runtime_parents
+};
+
+struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
 int
 main (int argc, char **argv)
@@ -95,10 +134,8 @@ main (int argc, char **argv)
   error_t err;
   off_t disk_size;
   mach_port_t bootstrap;
-  const struct argp *argp_parents[] = { diskfs_device_startup_argp, 0 };
-  struct argp argp = {options, parse_opt, 0, 0, argp_parents};
 
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&startup_argp, argc, argv, 0, 0, 0);
 
   /* This must come after the args have been parsed, as this is where the
      host priv ports are set for booting.  */
