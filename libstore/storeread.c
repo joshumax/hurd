@@ -1,3 +1,5 @@
+/* Test program for libstore -- outputs a portion of a store  */ 
+
 #include <argp.h>
 #include <error.h>
 #include <unistd.h>
@@ -96,6 +98,6 @@ main (int argc, char **argv)
       return 0;
     }
   struct argp argp = {options, parse_opt, arg_doc, doc};
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
   exit (0);
 }

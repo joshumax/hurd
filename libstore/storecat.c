@@ -1,3 +1,5 @@
+/* Test program for libstore -- outputs the concatenation of stores  */ 
+
 #include <argp.h>
 #include <error.h>
 #include <unistd.h>
@@ -90,10 +92,10 @@ main (int argc, char **argv)
 	      error_t err;
 	      struct store *cat;
 	      if (interleave)
-		err = store_ileave_create (interleave, stores, num_stores, 1,
-					   &cat);
+		err =
+		  store_ileave_create (stores, num_stores, interleave, &cat);
 	      else
-		err = store_concat_create (stores, num_stores, 1, &cat);
+		err = store_concat_create (stores, num_stores, &cat);
 	      if (err)
 		error (99, err, "Can't concatenate");
 	      dump (cat, 0, -1);
@@ -106,6 +108,6 @@ main (int argc, char **argv)
       return 0;
     }
   struct argp argp = {options, parse_opt, arg_doc, doc};
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
   exit (0);
 }
