@@ -41,6 +41,19 @@ $(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $^ $(libthreads) $(libc) -lgcc
 endef
 
+# Making a snapshot
+
+lndist: $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir)
+	ln $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir)
+
+ifeq ($(dir),.)
+$(hurdsource)/hurd-snap/$(dir):
+else
+$(hurdsource)/hurd-snap/$(dir):
+	mkdir $(hurdsource)/hurd-snap/$(dir)
+endif
+
+
 # Some very useful dependencies
 
 ifneq ($(strip $(dir)),libports)
@@ -58,3 +71,5 @@ $(headers)/libioserver.h: FORCE
 endif
 
 FORCE:
+
+
