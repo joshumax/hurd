@@ -216,12 +216,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  ngids = dircred->ngids;
 		}
 	      
-	      /* We turn off O_NOLINK here if this is not the last
-		 component because fsys_getroot always thinks it's the
-		 last node. */
 	      error = fsys_getroot (control, dirfile, MACH_MSG_TYPE_COPY_SEND,
 				    uids, nuids, gids, ngids,
-				    lastcomp ? flags : flags & ~O_NOLINK,
+				    lastcomp ? flags : 0,
 				    retry, retryname, returned_port);
 	      
 	      /* If we got MACH_SEND_INVALID_DEST or MIG_SERVER_DIED, then
