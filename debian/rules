@@ -53,7 +53,6 @@ endef
 # Next is NOT a phony target.
 
 configure: configure.in
-	aclocal
 	autoconf
 
 # The next IS a phony target.

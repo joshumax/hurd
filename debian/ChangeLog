@@ -1,5 +1,10 @@
 2001-12-29  Marcus Brinkmann  <marcus@gnu.org>
 
+	* rules (configure): Don't call aclocal.
+	* control (Build-Depends): We don't need automake.
+
+2001-12-29  Marcus Brinkmann  <marcus@gnu.org>
+
 	* control (Build-Depends): Add automake and autoconf to build
 	dependencies.  Reported by Jordi Mallach.
 
