@@ -94,7 +94,7 @@ parse_msgid_list (const char *filename)
       if (buffer[0] == '#' || buffer[0] == '\0')
 	continue;
       if (sscanf (buffer, "%as %*u %as %*u %u %*u\n",
-		  &subsystem, &name, &msgid) != 2)
+		  &subsystem, &name, &msgid) != 3)
 	error (0, 0, "%s:%u: invalid format in RPC list file",
 	       filename, lineno);
       else

@@ -1,3 +1,8 @@
+2002-05-20  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* rpctrace.c (parse_msgid_list): Fixed the check that tests if we
+	read exactly 3 fields from each line.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeauth.c (main): Register NEWTASK as a child with the proc
