@@ -32,19 +32,44 @@
 
 extern char *localhost ();
 
-#define DEFAULT_SOFT_RETRIES  3	/* times */
-#define DEFAULT_STAT_TIMEOUT  3	/* seconds */
-#define DEFAULT_CACHE_TIMEOUT 3	/* seconds */
-#define DEFAULT_READ_SIZE     8192 /* bytes */
-#define DEFAULT_WRITE_SIZE    8192 /* bytes */
+/* Default number of times to retry RPCs when mounted soft. */
+#define DEFAULT_SOFT_RETRIES  3	
 
+/* Default number of seconds to timeout cached stat information. */
+#define DEFAULT_STAT_TIMEOUT  3
+
+/* Default number of seconds to timeout cached file contents. */
+#define DEFAULT_CACHE_TIMEOUT 3	
+
+/* Default maximum number of bytes to read at once. */
+#define DEFAULT_READ_SIZE     8192 
+
+/* Default maximum number of bytes to write at once. */
+#define DEFAULT_WRITE_SIZE    8192 
+
+
+/* Number of seconds to timeout cached stat information. */
 int stat_timeout = DEFAULT_STAT_TIMEOUT;
+
+/* Number of seconds to timeout cached file contents. */
 int cache_timeout = DEFAULT_CACHE_TIMEOUT;
+
+/* Number of seconds to wait for first retransmission of an RPC. */
 int initial_transmit_timeout = 1;
+
+/* Maximum number of seconds to wait between retransmission of RPCs. */
 int max_transmit_timeout = 30;
+
+/* Maximum number of retries to send when mounted soft. */
 int soft_retries = DEFAULT_SOFT_RETRIES;
+
+/* True iff we are mounted soft. */
 int mounted_soft = 1;
+
+/* Maximum number of bytes to read at once. */
 int read_size = DEFAULT_READ_SIZE;
+
+/* Maximum number of bytes to write at once. */
 int write_size = DEFAULT_WRITE_SIZE;
 
 #define OPT_SOFT	's'
@@ -283,11 +308,11 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 
     case ARGP_KEY_END:
       if (!host && !extract_nfs_args (remote_fs, &remote_fs, &host))
-	argp_error (state->argp, "No HOST specified");
+	argp_error (state, "No HOST specified");
       break;
 
     case ARGP_KEY_NO_ARGS:
-      argp_error (state->argp, "No REMOTE_FS specified");
+      argp_error (state, "No REMOTE_FS specified");
 
     default:
       return EINVAL;
@@ -295,6 +320,8 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
+
+/* NFS client main program */
 int
 main (int argc, char **argv)
 {
