@@ -88,6 +88,7 @@ get_hypermetadata (void)
 
   itb_per_group = sblock->inodes_per_group / inodes_per_block;
   desc_per_block = block_size / sizeof (struct ext2_group_desc);
+  addr_per_block = block_size / sizeof (u32);
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
 }
 
