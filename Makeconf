@@ -15,7 +15,7 @@ hurdroot := $(hurdroot-$(hostname))
 hurdrootdev := /dev/hd0f
 
 # This is the directory containing the top-level Hurd source (and this file).
-hurdsource := /home/hm1/gnu/hurd
+hurdsource := /home/gd3/gnu/hurd
 
 # Where to find various things for compilation:
 headers := $(hurdinst)/include
