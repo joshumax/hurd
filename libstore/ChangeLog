@@ -6,6 +6,8 @@
 
 2001-10-14  Roland McGrath  <roland@frob.com>
 
+	* Makefile (SRCS): Add url.c to the list.
+
 	* url.c: New file.
 	(store_url_open): New function.
 	(store_url_open_class): New const variable.
