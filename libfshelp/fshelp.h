@@ -166,6 +166,12 @@ error_t fshelp_acquire_lock (struct lock_box *box, int *user,
 /* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
    should be initialized with LOCK_UN.).  */
 void fshelp_lock_init (struct lock_box *box);
-
+
+/* Try to hand off responsibility from a translator to the server located on
+   the node SERVER_NAME.  REQUESTOR is the translator's bootstrap port, and
+   ARGV is the command line.  If SERVER_NAME is NULL, then a name is
+   concocted by appending ARGV[0] to _SERVERS.  */
+error_t fshelp_delegate_translation (char *server_name,
+				     mach_port_t requestor, char **argv);
 
 #endif
