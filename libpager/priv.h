@@ -73,7 +73,7 @@ enum page_errors
   PAGE_EDQUOT,
 };
 
-int page_errors[];
+int _pager_page_errors[];
 
 
 /* Pagemap format */
@@ -105,5 +105,7 @@ void _pager_mark_next_request_error (struct pager *, vm_address_t,
 				     vm_size_t, error_t);
 void _pager_mark_object_error (struct pager *, vm_address_t,
 			       vm_size_t, error_t);
-
+void _pager_lock_object (struct pager *, vm_offset_t, vm_size_t, int, int,
+			 vm_prot_t, int);
+void _pager_free_structure (struct pager *);
    
