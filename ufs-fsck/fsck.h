@@ -1,4 +1,3 @@
-
 /* 
    Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
@@ -52,6 +51,9 @@ char *typemap;
 
 /* Map of blocks allocated */
 char *blockmap;
+
+/* A string identifying what we're trying to check.  */
+extern char *device_name;
 
 
 /* Command line flags */ 
@@ -114,9 +116,9 @@ int readfd, writefd;
 int fsmodified;
 
 int lfdir;
-char lfname[];
-mode_t lfmode;
 
+mode_t lfmode;
+extern char *lfname;
 
 #define NBBY 8
 #define howmany(x,y) (((x)+((y)-1))/(y))
@@ -163,11 +165,10 @@ void allblock_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
 void record_directory (struct dinode *, ino_t);
 struct dirinfo *lookup_directory (ino_t);
 
-void pinode (ino_t);
-
 int reply (char *);
+void pfix (char *fix);
+void pinode (ino_t, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+int pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
 int pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
 void errexit (char *, ...) __attribute__ ((format (printf, 1, 2),
 					   noreturn));
-int pwarn (char *, ...) __attribute__ ((format (printf, 1, 2)));
-
