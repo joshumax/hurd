@@ -112,10 +112,8 @@ main (int argc, char **argv)
 error_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
-		uid_t *uids,
-		u_int nuids,
-		uid_t *gids,
-		u_int ngids,
+		uid_t *uids, size_t nuids,
+		uid_t *gids, size_t ngids,
 		int flags,
 		retry_type *do_retry,
 		char *retry_name,
@@ -189,12 +187,9 @@ S_fsys_get_options (mach_port_t control,
 
 error_t
 S_fsys_getfile (mach_port_t control,
-		uid_t *uids,
-		u_int nuids,
-		uid_t *gids,
-		u_int ngids,
-		char *handle,
-		u_int handllen,
+		uid_t *uids, size_t nuids,
+		uid_t *gids, size_t ngids,
+		char *handle, size_t handllen,
 		mach_port_t *pt,
 		mach_msg_type_name_t *pttype)
 {
