@@ -1,7 +1,6 @@
 /* Copy store backend
 
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
-
+   Copyright (C) 1995,96,97,99,2000,01 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This task is part of the GNU Hurd.
@@ -59,7 +58,8 @@ copy_read (struct store *store,
 
 static error_t
 copy_write (struct store *store,
-	    store_offset_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index,
+	    const void *buf, size_t len, size_t *amount)
 {
   char *data = store->hook + (addr * store->block_size);
 

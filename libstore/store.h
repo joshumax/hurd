@@ -125,7 +125,8 @@ struct store
 
 typedef error_t (*store_write_meth_t)(struct store *store,
 				      store_offset_t addr, size_t index,
-				      void *buf, mach_msg_type_number_t len,
+				      const void *buf,
+				      mach_msg_type_number_t len,
 				      mach_msg_type_number_t *amount);
 typedef error_t (*store_read_meth_t)(struct store *store,
 				     store_offset_t addr, size_t index,
@@ -296,7 +297,8 @@ error_t store_remap (struct store *source,
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written in
    AMOUNT (in bytes).  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t store_write (struct store *store,
-		     store_offset_t addr, void *buf, size_t len, size_t *amount);
+		     store_offset_t addr, const void *buf, size_t len,
+		     size_t *amount);
 
 /* Read AMOUNT bytes from STORE at ADDR into BUF & LEN (which following the
    usual mach buffer-return semantics) to STORE at ADDR.  ADDR is in BLOCKS

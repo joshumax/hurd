@@ -1,7 +1,7 @@
 /* Mach task store backend
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -64,7 +64,8 @@ task_read (struct store *store,
 
 static error_t
 task_write (struct store *store,
-	    store_offset_t addr, size_t index, void *buf, size_t len, size_t *amount)
+	    store_offset_t addr, size_t index,
+	    const void *buf, size_t len, size_t *amount)
 {
   size_t bsize = store->block_size;
   error_t err = vm_write (store->port, addr * bsize, (vm_address_t)buf, len);
@@ -159,7 +160,7 @@ _store_task_create (task_t task, int flags, size_t block_size,
 			 task, flags, block_size, runs, num_runs, 0, store);
   else
     err = EINVAL;		/* block size less than page size.  */
-  
+
   if (! err)
     {
       pid_t pid;

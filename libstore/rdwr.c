@@ -1,7 +1,7 @@
 /* Store I/O
 
-   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -95,7 +95,7 @@ store_next_run (struct store *store, struct store_run *runs_end,
    in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t
 store_write (struct store *store,
-	     store_offset_t addr, void *buf, size_t len, size_t *amount)
+	     store_offset_t addr, const void *buf, size_t len, size_t *amount)
 {
   error_t err;
   size_t index;

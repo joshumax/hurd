@@ -1,6 +1,6 @@
 /* Striped store backend
 
-   Copyright (C) 1996,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -49,8 +49,8 @@ stripe_read (struct store *store,
 
 static error_t
 stripe_write (struct store *store,
-	      store_offset_t addr, size_t index, void *buf, size_t len,
-	      size_t *amount)
+	      store_offset_t addr, size_t index,
+	      const void *buf, size_t len, size_t *amount)
 {
   struct store *stripe = store->children[index];
   return

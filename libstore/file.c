@@ -1,7 +1,7 @@
 /* File store backend
 
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@ file_read (struct store *store,
 
 static error_t
 file_write (struct store *store,
-	    store_offset_t addr, size_t index, void *buf, size_t len,
+	    store_offset_t addr, size_t index, const void *buf, size_t len,
 	    size_t *amount)
 {
   size_t bsize = store->block_size;
@@ -207,7 +207,8 @@ file_byte_read (struct store *store,
 
 static error_t
 file_byte_write (struct store *store,
-		 store_offset_t addr, size_t index, void *buf, size_t len,
+		 store_offset_t addr, size_t index,
+		 const void *buf, size_t len,
 		 size_t *amount)
 {
   return io_write (store->port, buf, len, addr, amount);

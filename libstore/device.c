@@ -1,6 +1,6 @@
 /* Mach device store backend
 
-   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -57,7 +57,8 @@ dev_read (struct store *store,
 
 static error_t
 dev_write (struct store *store,
-	   store_offset_t addr, size_t index, void *buf, mach_msg_type_number_t len,
+	   store_offset_t addr, size_t index,
+	   const void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
   return dev_error (device_write (store->port, 0, addr,
@@ -155,12 +156,12 @@ enforced (struct store *store)
 	    return EINVAL;
 
 	  assert (sizes_len == DEV_GET_SIZE_COUNT);
-	  
+
 	  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
 	      || (store->runs[0].length !=
 		  sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
 	    return EINVAL;
-	
+
 	  return 0;
 	}
     }
@@ -266,12 +267,12 @@ store_device_create (device_t device, int flags, struct store **store)
       if (! err && sizes_len == DEV_GET_SIZE_COUNT)
 	{
 	  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
-	  
+
 	  if (block_size)
 	    {
 	      run.start = 0;
 	      run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
-	      
+
 	      if (run.length * block_size != sizes[DEV_GET_SIZE_DEVICE_SIZE])
 		/* Bogus results (which some mach devices return).  */
 		block_size = 0;

@@ -1,6 +1,6 @@
 /* Zero store backend
 
-   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,01 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -49,7 +49,7 @@ zero_read (struct store *store,
 
 static error_t
 zero_write (struct store *store,
-	    store_offset_t addr, size_t index, void *buf, size_t len,
+	    store_offset_t addr, size_t index, const void *buf, size_t len,
 	    size_t *amount)
 {
   return 0;

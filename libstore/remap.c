@@ -1,7 +1,7 @@
 /* Block address translation
 
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ remap_read (struct store *store,
 
 static error_t
 remap_write (struct store *store,
-	      store_offset_t addr, size_t index, void *buf, size_t len,
+	      store_offset_t addr, size_t index, const void *buf, size_t len,
 	      size_t *amount)
 {
   return store_write (store->children[0], addr, buf, len, amount);
