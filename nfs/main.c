@@ -19,5 +19,16 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <hurd/netfs.h>
+#include "nfs.h"
 
-main
+int
+main ()
+{
+  netfs_init ();
+  
+  netfs_root_node = mount_root ("/home/gd4", "duality.gnu.ai.mit.edu");
+  
+  for (;;)
+    netfs_server_loop ();
+}
+
