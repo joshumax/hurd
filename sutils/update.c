@@ -20,44 +20,34 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <fcntl.h>
 
 int
-main ()
+main (int argc, char **argv)
 {
-  int fd;
-  
-  switch (fork ())
+  int interval;
+
+  switch (argc)
     {
-    case -1:
-      perror ("Cannot fork");
-      exit (1);
-    case 0:
+    case 1:
+      interval = 30;
+      break;
+    case 2:
+      interval = atoi (argv[1]);
       break;
     default:
-      _exit (0);
-    }
-  
-  if (setsid () == -1)
-    {
-      perror ("Cannot setsid");
+      fprintf (stderr, "Usage: %s [SECONDS]\n", argv[0]);
       exit (1);
     }
-  chdir ("/");
   
-  fd = open ("/dev/null", O_RDWR, 0);
-  if (fd != -1)
+  if (daemon (0, 0))
     {
-      dup2 (fd, STDIN_FILENO);
-      dup2 (fd, STDOUT_FILENO);
-      dup2 (fd, STDERR_FILENO);
-      if (fd < STDERR_FILENO)
-	close (fd);
+      perror ("daemon");
+      exit (1);
     }
-  
+
   for (;;)
     {
       sync ();
-      sleep (30);
+      sleep (interval);
     }
 }
