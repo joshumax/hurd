@@ -139,8 +139,13 @@ diskfs_start_bootstrap (void)
 		      '\0');
   
   task_create (mach_task_self (), 0, &newt);
-  printf ("pausing for init...\n");
-  getc (stdin);
+  if (diskfs_bootflags & RB_KDB)
+    {
+      printf ("pausing for init...\n");
+      getc (stdin);
+    }
+  printf (" init");
+  fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
 		   newt, 0, argv, argvlen, 0, 0, 
 		   fdarray, MACH_MSG_TYPE_COPY_SEND, 3,
@@ -447,8 +452,13 @@ start_execserver (void)
   err = thread_create (newt, &newthd);
   err = mach_setup_thread (newt, newthd, (void *) execserver_start,
 			   &exec_stack_base, &exec_stack_size);
-  printf ("pausing for exec\n");
-  getc (stdin);
+  if (diskfs_bootflags & RB_KDB)
+    {
+      printf ("pausing for exec\n");
+      getc (stdin);
+    }
   thread_resume (newthd);
+  printf (" exec");
+  fflush (stdout);
 }
 
