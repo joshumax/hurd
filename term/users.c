@@ -1492,7 +1492,12 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 	  return 0;
 	}
 
-      hurd_condition_wait (&select_alert, &global_lock);
+      if (hurd_condition_wait (&select_alert, &global_lock))
+	{
+	  *type = 0;
+	  mutex_unlock (&global_lock);
+	  return EINTR;
+	}
     }
 }
 
