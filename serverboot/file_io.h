@@ -162,13 +162,30 @@ extern int	page_write_file_direct();
  * Error codes for file system errors.
  */
 
+#include <errno.h>
+
+/* Just use the damn Hurd error numbers.  This is old CMU/Utah code from
+   the days of personality-independent Mach where it made sense for this to
+   be a standalone universe.  In the Hurd, we compile serverboot against
+   the regular C library anyway.  */
+
+#define	FS_NOT_DIRECTORY	ENOTDIR
+#define	FS_NO_ENTRY		ENOENT
+#define	FS_NAME_TOO_LONG	ENAMETOOLONG
+#define	FS_SYMLINK_LOOP		ELOOP
+#define	FS_INVALID_FS		EFTYPE /* ? */
+#define	FS_NOT_IN_FILE		EINVAL
+#define	FS_INVALID_PARAMETER	EINVAL
+
+#if 0
 #define	FS_NOT_DIRECTORY	5000		/* not a directory */
 #define	FS_NO_ENTRY		5001		/* name not found */
 #define	FS_NAME_TOO_LONG	5002		/* name too long */
 #define	FS_SYMLINK_LOOP		5003		/* symbolic link loop */
 #define	FS_INVALID_FS		5004		/* bad file system */
 #define	FS_NOT_IN_FILE		5005		/* offset not in file */
-#define	FS_INVALID_PARAMETER	5006		/* bad parameter to
-						   a routine */
+#define	FS_INVALID_PARAMETER	5006		/* bad parameter to routine */
+#endif
+
 
 #endif	/* _FILE_IO_H_ */

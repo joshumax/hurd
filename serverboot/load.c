@@ -273,7 +273,7 @@ boot_script_exec_cmd (task_t user_task,
 
 	result = open_file(bootstrap_master_device_port, namebuf, &file);
 	if (result != 0) {
-	    panic("openi %d", result);
+	  panic ("%s: %s", namebuf, strerror (result));
 	}
 
 	env_len = 0;
@@ -308,6 +308,7 @@ boot_script_exec_cmd (task_t user_task,
 	st.user_task = user_task;
 	st.aout_symtab_size = 0;
 	st.aout_strtab_size = 0;
+printf("serverboot loading %s\n", file_name);
 	result = exec_load(prog_read, prog_read_exec, &st, &info);
 #ifdef GZIP
 	if (result)
@@ -360,7 +361,7 @@ boot_script_exec_cmd (task_t user_task,
 	}
 #endif BZIP2
 	if (result)
-		panic("(serverboot) exec_load %s: error %d", namebuf, result);
+	  panic ("cannot load %s: %s", namebuf, strerror (result));
 #if 0
 	printf("(serverboot): loaded %s; entrypoint %08x\n", namebuf, info.entry);
 #endif
@@ -370,9 +371,11 @@ boot_script_exec_cmd (task_t user_task,
 	 */
 	result = thread_create (user_task, &user_thread);
 	if (result)
-	  panic ("can't create user thread for %s: %x", namebuf, result);
+	  panic ("can't create user thread for %s: %s", namebuf,
+		 strerror (result));
 	arg_pos = set_regs(user_task, user_thread, &info, arg_len);
 
+printf("set up user thread\n");
 	/*
 	 * Read symbols from the executable file.
 	 */
@@ -451,15 +454,19 @@ boot_script_exec_cmd (task_t user_task,
 	    /*
 	     * Then the strings and string pointers for each argument
 	     */
-	    for (i = 0; i < arg_count; i++)
+	    for (i = 0; i < arg_count; i++) {
+	      printf("\targv[%d] = %s\n", i, argv[i]);
 	      *k_ap++ = argv[i] - argstrings + u_cp;
+	    }
 	    *k_ap++ = (char *)0;
 	    bcopy (argstrings, k_cp, argslen);
 	    k_cp += argslen;
 	    u_cp += argslen;
 
-	    for (i = 0; i < envc; i++)
+	    for (i = 0; i < envc; i++) {
+	      printf("\tenviron[%d] = %s\n", i, environ[i]);
 	      *k_ap++ = environ[i] - environ[0] + u_cp;
+	    }
 	    *k_ap   = (char *)0;
 	    bcopy (environ[0], k_cp, env_len);
 
@@ -481,6 +488,7 @@ boot_script_exec_cmd (task_t user_task,
 	 */
 	close_file(&file);
 
+printf ("resume user thread...\n");
   	/* Resume the thread.  */
   	thread_resume (user_thread);
   	mach_port_deallocate (mach_task_self (), user_thread);

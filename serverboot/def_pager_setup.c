@@ -58,11 +58,12 @@ add_paging_file(master_device_port, file_name, linux_signature)
 
 	result = open_file_direct(pfile.f_dev, fdp, isa_file);
 	if (result)
-		panic("Can't open paging file %s\n", file_name);
+		panic("Can't open paging file %s: %s\n",
+		      file_name, strerror (result));
 
 	result = add_file_direct(fdp, &pfile);
 	if (result)
-		panic("Can't read disk addresses: %d\n", result);
+		panic("Can't read disk addresses: %s\n", strerror (result));
 
 	close_file(&pfile);
 

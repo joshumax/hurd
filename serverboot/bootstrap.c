@@ -29,6 +29,7 @@
 
 #include <mach.h>
 #include <mach/message.h>
+#include <sys/reboot.h>
 
 #include <file_io.h>
 
@@ -112,8 +113,12 @@ boot_panic (kern_return_t err)
 void
 safe_gets (char *str, int maxlen)
 {
-  char *c;
-  c = strchr (fgets (str, maxlen, stdin), '\n');
+  char *c = fgets (str, maxlen, stdin);
+  if (c == 0) {
+    perror ("fgets");
+    panic ("cannot read from console");
+  }
+  c = strchr (c, '\n');
   if (c)
     *c = '\0';
   printf ("\r\n");
@@ -122,7 +127,14 @@ safe_gets (char *str, int maxlen)
 printf_init (device_t master)
 {
   mach_port_t cons;
-  device_open (master, D_READ|D_WRITE, "console", &cons);
+  kern_return_t rc;
+  rc = device_open (master, D_READ|D_WRITE, "console", &cons);
+  if (rc)
+    while (1) {
+      volatile int x = 0;
+      (void) host_reboot(bootstrap_master_host_port, RB_DEBUGGER);
+      x = x / x;
+  }
   stdin = mach_open_devstream (cons, "r");
   stdout = stderr = mach_open_devstream (cons, "w");
   mach_port_deallocate (mach_task_self (), cons);
@@ -224,22 +236,22 @@ main(argc, argv)
 				  &bootstrap_master_device_port);
 	  }
 
-
-
-
 	printf_init(bootstrap_master_device_port);
 #ifdef pleasenoXXX
 	panic_init(bootstrap_master_host_port);
 #endif
 
+	printf ("serverboot flags %s root=%s\n", flag_string, root_name);
+
+
 	/*
-	 * If the '-a' (ask) switch was specified, or if no 
+	 * If the '-a' (ask) switch was specified, or if no
 	 * root device was specificed, ask for the root device.
 	 */
 
 	if (!root_name || root_name [0] == '\0' || index(flag_string, 'a')) {
-	    static char		new_root[16];
-	    
+	    static char		new_root[MAXPATHLEN/2];
+
 		printf("root device? [%s] ", root_name);
 		safe_gets(new_root, sizeof(new_root));
 
@@ -431,8 +443,9 @@ parse_script (struct file *f)
   int n = 0;
 
   buf = malloc (f->f_size + 1);	/* add one for null terminator we will write */
-  if (read_file (f, 0, buf, f->f_size, 0))
-    panic ("bootstrap: error reading boot script file");
+  err = read_file (f, 0, buf, f->f_size, 0);
+  if (err)
+    panic ("bootstrap: error reading boot script file: %s", strerror (err));
 
   line = p = buf;
   while (1)
