@@ -63,6 +63,19 @@ record_directory (struct dinode *dp, ino_t number)
   dirarrayused++;
 }
 
+/* Return the cached dirinfo structure for directory INO. */
+struct dirinfo *
+lookup_directory (ino_t ino)
+{
+  int i;
+  
+  for (i = 0; i < dirarrayused; i++)
+    if (dirarray[i]->i_number == ino)
+      return dirarray[i];
+  
+  errexit ("Cannot find chached directory I=%d\n", ino);
+}
+
 /* Check to see if DIR is really a readable directory; if it
    isn't, then bail with an appropriate message and return 0;
    else return 1.  MSG identifies the action contemplated */
@@ -386,6 +399,8 @@ ino_t
 allocdir (ino_t parent, ino_t request, mode_t mode)
 {
   ino_t ino;
+
+  mode |= IFDIR;
   
   ino = allocino (request, mode);
   if (!ino)
