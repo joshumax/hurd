@@ -33,17 +33,10 @@
  *	@(#)ffs_subr.c	8.2 (Berkeley) 9/21/93
  */
 
-#include <sys/param.h>
-#include <ufs/ffs/fs.h>
+#include "ufs.h"
+#include "fs.h"
 
-#ifdef KERNEL
-#include <sys/systm.h>
-#include <sys/vnode.h>
-#include <ufs/ffs/ffs_extern.h>
-#include <sys/buf.h>
-#include <ufs/ufs/quota.h>
-#include <ufs/ufs/inode.h>
-
+#if 0 /* Not needed in GNU Hurd ufs. */
 /*
  * Return buffer with the contents of block "offset" from the beginning of
  * directory "ip".  If "res" is non-zero, fill it in with a pointer to the
@@ -79,7 +72,7 @@ ffs_blkatoff(ap)
 	*ap->a_bpp = bp;
 	return (0);
 }
-#endif
+#endif /* 0 */
 
 /*
  * Update the frsum fields to reflect addition or deletion 
@@ -87,7 +80,7 @@ ffs_blkatoff(ap)
  */
 void
 ffs_fragacct(fs, fragmap, fraglist, cnt)
-	struct fs *fs;
+        struct fs *fs;
 	int fragmap;
 	long fraglist[];
 	int cnt;
@@ -116,7 +109,7 @@ ffs_fragacct(fs, fragmap, fraglist, cnt)
 	}
 }
 
-#if defined(KERNEL) && defined(DIAGNOSTIC)
+#if 0 /* Not needed in GNU Hurd ufs. */
 void
 ffs_checkoverlap(bp, ip)
 	struct buf *bp;
@@ -148,7 +141,7 @@ ffs_checkoverlap(bp, ip)
 		panic("Disk buffer overlap");
 	}
 }
-#endif /* DIAGNOSTIC */
+#endif /* 0 */
 
 /*
  * block operations
