@@ -3,6 +3,7 @@ Checklist for Hurd releases.
 *   Symlinks in /bin; esp. sh, awk, more, cc.
 *   Check all symlinks to make sure they don't reference /gd4/hurdinst.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
+*   Make sure there is no /include/i386.
 *   Make sure /i486-gnu contains hard links, not copies.
 *   Make sure we are using Hurd versions of su and uptime, not sh-utils.
 *   Make sure we are using Hurd fsck, not e2fs.

@@ -249,7 +249,8 @@ List for version 0.1 release
 * Have term do scancodes, at least kludgily.
 * Make sure nfs still works
 * nfsd?
-* libc 1.93
+* released libc
 * rename nfs/rpcsvc files to something better.
 * Arrange GCC not to install assert.h on GNU.
 * zero (/dev/null) doesn't do access right; probably many in trans/ too.
+* recompile libraries after libc release
