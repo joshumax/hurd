@@ -265,8 +265,7 @@ struct proc_stat
     /* A ps_tty_t object for the process's controlling terminal.  */
     ps_tty_t tty;
   };
-
-
+
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
    information is currently valid.  */
 #define PSTAT_PID		0x0001 /* Process ID */
@@ -293,33 +292,58 @@ struct proc_stat
 
 /* Flag bits that don't correspond precisely to any field.  */
 #define PSTAT_NO_MSGPORT      0x100000 /* Don't use the msgport at all */
-
+
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
-   bitmask of the following bits, describing the process's run state.  */
-#define PSTAT_STATE_RUNNING  0x0001	/* R */
-#define PSTAT_STATE_STOPPED  0x0002	/* T stopped (e.g., by ^Z) */
-#define PSTAT_STATE_HALTED   0x0004	/* H */
-#define PSTAT_STATE_WAIT     0x0008	/* D short term (uninterruptable) wait */
-#define PSTAT_STATE_SLEEPING 0x0010	/* S sleeping */
-#define PSTAT_STATE_IDLE     0x0020	/* I idle (sleeping > 20 seconds) */
-#define PSTAT_STATE_SWAPPED  0x0040	/* W */
-#define PSTAT_STATE_NICED    0X0080	/* N lowered priority */
-#define PSTAT_STATE_PRIORITY 0x0100	/* < raised priority */
-#define PSTAT_STATE_ZOMBIE   0x0200	/* Z process exited but not yet reaped */
-#define PSTAT_STATE_FG	     0x0400	/* + in foreground process group */
-#define PSTAT_STATE_SESSLDR  0x0800	/* s session leader */
-#define PSTAT_STATE_FORKED   0x1000	/* f has forked and not execed */
-#define PSTAT_STATE_NOMSG    0x2000	/* m no msg port */
-#define PSTAT_STATE_NOPARENT 0x4000	/* p no parent */
-#define PSTAT_STATE_ORPHANED 0x8000	/* o orphaned */
-#define PSTAT_STATE_TRACED   0x10000    /* x traced */
+   bitmask of the following bits, describing the process's run state.  If you
+   change the value of these, you must change proc_stat_state_tags as well!  */
 
+/* Process global state.  */
+
+/* Mutually exclusive bits, each of which is a possible process `state'.  */
+#define PSTAT_STATE_P_STOP	0x0001 /* T stopped (e.g., by ^Z) */
+#define PSTAT_STATE_P_ZOMBIE	0x0002 /* Z process exited but not reaped */
+
+#define PSTAT_STATE_P_STATES	(PSTAT_STATE_P_STOP | PSTAT_STATE_P_ZOMBIE)
+
+/* Independent bits describing additional attributes of the process.  */
+#define PSTAT_STATE_P_FG	0x0400 /* + in foreground process group */
+#define PSTAT_STATE_P_SESSLDR	0x0800 /* s session leader */
+#define PSTAT_STATE_P_FORKED	0x1000 /* f has forked and not execed */
+#define PSTAT_STATE_P_NOMSG	0x2000 /* m no msg port */
+#define PSTAT_STATE_P_NOPARENT	0x4000 /* p no parent */
+#define PSTAT_STATE_P_ORPHAN	0x8000 /* o orphaned */
+#define PSTAT_STATE_P_TRACE    0x10000 /* x traced */
+
+#define PSTAT_STATE_P_ATTRS	(PSTAT_STATE_P_NOPARENT | PSTAT_STATE_P_TRACE \
+				 | PSTAT_STATE_P_NOMSG | PSTAT_STATE_P_FG \
+				 | PSTAT_STATE_P_ORPHAN | PSTAT_STATE_P_FORKED)
+
+/* Per-thread state; in a process, these represent the union of its threads. */
+
+/* Mutually exclusive bits, each of which is a possible thread `state'.  */
+#define PSTAT_STATE_T_RUN	0x0004 /* R thread is running */
+#define PSTAT_STATE_T_HALT	0x0008 /* H thread is halted */
+#define PSTAT_STATE_T_WAIT	0x0010 /* D uninterruptable wait */
+#define PSTAT_STATE_T_SLEEP	0x0020 /* S sleeping */
+#define PSTAT_STATE_T_IDLE	0x0040 /* I idle (sleeping > 20 seconds) */
+
+#define PSTAT_STATE_T_STATES	(PSTAT_STATE_T_RUN | PSTAT_STATE_T_HALT \
+				 | PSTAT_STATE_T_WAIT | PSTAT_STATE_T_SLEEP \
+				 | PSTAT_STATE_T_IDLE)
+
+/* Independent bits describing additional attributes of the thread.  */
+#define PSTAT_STATE_T_NICE	0x0080 /* N lowered priority */
+#define PSTAT_STATE_T_NASTY     0x0100 /* < raised priority */
+#define PSTAT_STATE_T_UNCLEAN	0x0200 /* u thread is uncleanly halted */
+
+#define PSTAT_STATE_T_ATTRS	(PSTAT_STATE_T_UNCLEAN \
+				 | PSTAT_STATE_T_NICE | PSTAT_STATE_T_NASTY)
 
 /* This is a constant string holding a single character for each possible bit
    in a proc_stat's STATE field, in order from bit zero.  These are intended
-   for printint a user-readable summary of a process's state. */
+   for printing a user-readable summary of a process's state. */
 char *proc_stat_state_tags;
-
+
 /*
    Process info accessor functions.
 
