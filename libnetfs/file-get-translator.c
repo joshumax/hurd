@@ -18,10 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <string.h>
+#include <stdio.h>
+#include <hurd/paths.h>
 #include "netfs.h"
 #include "fs_S.h"
-#include <hurd/paths.h>
-#include <string.h>
 
 error_t
 netfs_S_file_get_translator (struct protid *user,
