@@ -19,9 +19,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-error_t
-trivfs_S_io_set_all_openmodes (struct protid *cred,
-			       int mode)
+#include "priv.h"
+
+trivfs_S_io_set_some_openmodes (struct protid *cred,
+				int bits)
 {
   assert (!trivfs_support_read && !trivfs_support_write);
   return EOPNOTSUPP;
