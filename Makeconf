@@ -296,7 +296,7 @@ relink:
 	$(MAKE) -C $(dir $@) libs
 
 # Tell make where to find other -l libraries that we use
-vpath -l% $(libdir)/
+vpath libutil.% $(libdir)/
 
 
 # Default rule to build PIC object files.
