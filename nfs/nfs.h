@@ -168,6 +168,9 @@ error_t nfs_error_trans (int);
 /* mount.c */
 struct node *mount_root (char *, char *);
 
+/* ops.c */
+int *register_fresh_stat (struct node *, int *);
+
 /* rpc.c */
 int *initialize_rpc (int, int, int, size_t, void **, uid_t, gid_t, gid_t);
 error_t conduct_rpc (void **, int **);
