@@ -1,3 +1,8 @@
+Thu Jul 18 04:15:49 1996  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mgt.c (add_tasks): Fix vm_deallocate call to use mach_task_self ()
+	instead of mach_host_self ().
+
 Tue Jul 16 11:34:34 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* wait.c (EWOULDBLOCK): Define to work around new libc bug.
@@ -65,7 +70,7 @@ Fri May 10 09:26:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 Thu May  9 19:13:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* mgt.c (S_proc_reauthenticate): Use new authentication
-	interface. 
+	interface.
 
 	* mgt.c (S_proc_setowner): Expect and interpret new CLEAR parm.
 
@@ -76,7 +81,7 @@ Thu May  9 19:13:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(S_proc_mark_stop): New parm SIGCODE; record it.
 	(S_proc_mark_exit): Likewise.
 	(alert_parent): Set P->p_sigcode if process is dying irregularly.
-	* mgt.c (S_proc_exception_raise): Set P->p_sigcode; use new 
+	* mgt.c (S_proc_exception_raise): Set P->p_sigcode; use new
 	_hurd_exception2signal args.
 
 Mon May  6 14:23:11 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
