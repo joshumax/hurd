@@ -52,7 +52,7 @@ the current process)"},
   {0}
 };
 
-static const char args_doc[] = "STRING...";
+static const char args_doc[] = "STRING...\n-";
 static const char doc[] = "Test program for argp.";
 
 static error_t 
@@ -61,9 +61,15 @@ parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case ARGP_KEY_NO_ARGS:
-      printf ("NO ARGS\n"); break;
+      printf ("NO ARGS\n");
+      break;
     case ARGP_KEY_ARG:
-      printf ("ARG: %s\n", arg); break;
+      if (state->arg_num == 0 && strcmp (arg, "-") == 0
+	  && state->next < state->argc)
+	argp_usage (state);
+      printf ("ARG: %s\n", arg);
+      break;
+
     case 'p': case 'P': case OPT_PGRP: case 'x': case 'Q':
     case 'r': case OPT_SESS:
       {
@@ -76,8 +82,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	  printf ("KEY %s: %s\n", buf, arg);
 	else
 	  printf ("KEY %s\n", buf);
-	break;
       }
+      break;
+
     default:
       return ARGP_ERR_UNKNOWN;
     }
