@@ -25,13 +25,13 @@ diskfs_drop_node (struct node *np)
   fshelp_kill_translator (&np->translator);
   if (np->dn_stat.st_nlink == 0)
     {
-      assert (!readonly);
-      diskfs_node_truncate (np, 0);
+      assert (!diskfs_readonly);
+      diskfs_truncate (np, 0);
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
       np->dn_set_ctime = np->dn_set_atime = 1;
-      node_update (np, 1);
-      diskfs_free_disknode (np);
+      diskfs_node_update (np, 1);
+      diskfs_free_node (np);
     }
 }
 
