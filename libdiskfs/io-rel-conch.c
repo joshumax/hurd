@@ -23,7 +23,6 @@ error_t
 S_io_release_conch (struct protid *cred)
 {
   struct node *np;
-  int error = 0;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -38,8 +37,8 @@ S_io_release_conch (struct protid *cred)
   
   np = cred->po->np;
   
-  ioserver_handle_io_release_conch (&ip->i_conch, cred);
+  ioserver_handle_io_release_conch (&np->conch, cred);
   
-  mutex_unlock (&ip->i_toplock);
+  mutex_unlock (&np->lock);
   return 0;
 }
