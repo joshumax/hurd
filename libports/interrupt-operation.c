@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include "interrupt_S.h"
 
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
