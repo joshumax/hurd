@@ -53,7 +53,6 @@ See `tasks', the exported task list.
     [it is still under discussion exactly where to address this,
      so don't do it in libc yet]
 *** Version of tmpfile that takes a directory
-*** Hurd versions of tmpfile that don't create transient files !
 *** flink
 *** make sure profiling works !!
 *** many functions that are syscalls in unix can potentially leak send rights
