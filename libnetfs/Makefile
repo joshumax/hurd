@@ -39,7 +39,7 @@ IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-duplicate.c iostubs.c io-identity.c io-revoke.c io-pathconf.c
 
 FSYSSRCS= fsys-syncfs.c fsys-getroot.c fsys-get-options.c fsys-set-options.c \
-	fsysstubs.c 
+	fsys-goaway.c fsysstubs.c
 
 IFSOCKSRCS=
 OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \

@@ -17,7 +17,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include "priv.h"
 #include "netfs.h"
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
