@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.4  1995/10/04 20:22:17  roland
+ * [PIC] (EXT): Redefine to use PLT.
+ *
  * Revision 1.3  1995/05/12 18:35:55  roland
  * Use EXT macro instead of explicit underscores.
  *
@@ -59,8 +62,9 @@
 #include <i386/asm.h>
 
 #ifdef	PIC
-#undef	EXT
-#define	EXT(name)	name@PLT
+#define	JUMPTARGET(name)	EXT(name##@PLT)
+#else
+#define	JUMPTARGET(name)	EXT(name)
 #endif
 
 /*
@@ -114,7 +118,7 @@ ENTRY(cproc_start_wait)
 	movl	$0,%ebp		/* (clear frame pointer) */
 	xorl	%eax,%eax	/* unlock */
 	xchgl	%eax,(%edx)	/* the lock - now old thread can run */
-	call	EXT(cproc_waiting)/* call cproc_waiting */
+	call	JUMPTARGET(cproc_waiting)/* call cproc_waiting */
 	/*NOTREACHED*/
 
 /*
@@ -138,7 +142,7 @@ ENTRY(cproc_prepare)
 				/* 20  return PC from cthread_body */
 				/* 24  argument to cthread_body */
 	movl	$0,12(%edx)	/* clear frame pointer */
-	movl	$EXT(cthread_body),16(%edx)
+	movl	$JUMPTARGET(cthread_body),16(%edx)
 				/* resume at cthread_body */
 	movl	$0,20(%edx)	/* fake return address from cthread_body */
 	movl	B_ARG0,%ecx	/* get child thread pointer */
