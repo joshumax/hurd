@@ -27,7 +27,9 @@
 #include <hurd/trivfs.h>
 #include <cthreads.h>
 #include <hurd.h>
+#include <stdio.h>
 #include "ourmsg_U.h"
+
 
 #undef ECHO
 #undef MDMBUF
