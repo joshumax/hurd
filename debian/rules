@@ -138,6 +138,7 @@ binary-arch: build
 	$(make_directory)	debian/tmp/servers
 
 	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
+	$(install_file)		debian/shlibs debian/tmp/DEBIAN/shlibs
 
 	dpkg-shlibdeps          -p$(package) debian/tmp/bin/* debian/tmp/libexec/* debian/tmp/hurd/* debian/tmp/sbin/*
 	dpkg-gencontrol         -p$(package) -Pdebian/tmp
