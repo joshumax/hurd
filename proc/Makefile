@@ -21,21 +21,17 @@ makemode := server
 MIGSFLAGS ="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 	"-DPROCESS_IMPORTS=import \"proc.h\";" 
 
-OBJS = wait.o hash.o ihash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
-	primes.o cpu-types.o stubs.o \
-	processServer.o notifyServer.o process_replyUser.o ourmsgUser.o \
-	interruptServer.o proc_excUser.o proc_excServer.o proc_excreplUser.o \
-	proc_excreplServer.o
+OBJS = wait.o hash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
+	cpu-types.o stubs.o processServer.o notifyServer.o \
+	process_replyUser.o ourmsgUser.o interruptServer.o proc_excUser.o \
+	proc_excServer.o proc_excreplUser.o proc_excreplServer.o
 
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
        cpu-types.c stubs.c
 
-CPPFLAGS += -I../lib
-vpath %.c ../lib
-
 LCLHDRS = proc.h
-REMHDRS = ../libthreads/cthreads.h
-HURDLIBS = libthreads
+REMHDRS = ../libthreads/cthreads.h ../libihash/ihash.h
+HURDLIBS = libthreads libihash
 DIST_FILES = proc_exc.defs proc_excrepl.defs
 target = proc
 
