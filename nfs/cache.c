@@ -79,18 +79,18 @@ netfs_node_norefs (struct node *np)
   if (np->nn->dead_dir)
     {
       np->references++;
-      spin_unlock (&diskfs_node_refcnt_lock);
+      spin_unlock (&netfs_node_refcnt_lock);
       
       netfs_attempt_unlink ((struct netcred *)-1, np->nn->dead_dir,
 			    np->nn->dead_name);
-      diskfs_nrele (np->nn->dead_dir);
+      netfs_nrele (np->nn->dead_dir);
       free (np->nn->dead_name);
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
-      diskfs_nput (np);
+      netfs_nput (np);
 
       /* Caller expects us to leave this locked... */
-      spin_lock (&diskfs_node_refcnt_lock);
+      spin_lock (&netfs_node_refcnt_lock);
     }
   else
     {
