@@ -1,5 +1,5 @@
 /* vcons-scrollback.c - Move forward and backward in the scrollback buffer.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -23,6 +23,7 @@
 #include <cthreads.h>
 
 #include "cons.h"
+#include "priv.h"
 
 /* Non-locking version of cons_vcons_scrollback.  Does also not update
    the display.  */
@@ -155,6 +156,7 @@ cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
 
   mutex_lock (&vcons->lock);
   ret = _cons_vcons_scrollback (vcons, type, value);
+  _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
   cons_vcons_update (vcons);
   mutex_unlock (&vcons->lock);
   return ret;

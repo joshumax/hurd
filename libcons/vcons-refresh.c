@@ -1,5 +1,5 @@
 /* vcons-refresh.c - Redraw a virtual console.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -22,6 +22,7 @@
 #include <assert.h>
 
 #include "cons.h"
+#include "priv.h"
 
 /* Redraw the virtual console VCONS, which is locked.  */
 void
@@ -70,5 +71,6 @@ cons_vcons_refresh (vcons_t vcons)
   cons_vcons_set_cursor_status (vcons, vcons->state.cursor.status);
   cons_vcons_set_scroll_lock (vcons, vcons->state.flags
 			      & CONS_FLAGS_SCROLL_LOCK);
+  _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
   cons_vcons_update (vcons);
 }

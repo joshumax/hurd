@@ -1,3 +1,40 @@
+2005-01-06  Marco Gerards  <metgerards@student.han.nl>
+
+	* Makefile (SRCS): Add `vcons-move-mouse.c' and `vcons-event.c'.
+	* cons.h (mouse_movement): New enum.
+	(mouse_button): Likewise.
+	(mouse_event): New struct.
+	(mouse_event_t): New type.
+	(cons_vcons_set_mousecursor_pos): New prototype.
+	(cons_vcons_set_mousecursor_status): Likewise.
+	(cons_vcons_move_mouse): Likewise.
+	* file-changed.c (cons_S_file_changed): Generate the
+	`CONS_EVT_OUTPUT' event, in case there was output.
+	* opts-std-startup.c (OPT_MOUSE_SHOW, OPT_MOUSE_HIDE)
+	(OPT_MOUSE_SENS, DEFAULT_MOUSE_SENS, DEFAULT_MOUSE_SENS_STRING):
+	New macros.
+	(_cons_show_mouse, _cons_hide_mouse, _cons_mouse_sens): New
+	variables.
+	(startup_options): Add the options `--mouse-show-on',
+	`--mouse-hide-on' and `--mouse-sensitivity'.
+	(parse_startup_opt): Parse the options that were added to
+	`startup_options' using the new local function `parse_events'.
+	* priv.h (CONS_EVT_MOUSE_MOVE, CONS_EVT_MOUSE_BUTTON)
+	(CONS_EVT_KEYPRESS, CONS_EVT_OUTPUT): New macros.
+	(_cons_show_mouse, _cons_hide_mouse, _cons_mouse_sens): New
+	declarations.
+	(_cons_vcons_input): New prototype.
+	(_cons_vcons_console_event): Likewise.
+	* vcons-event.c: New file.
+	* vcons-move-mouse.c: Likewise.
+	* vcons-input.c (_cons_vcons_input): New function.
+	(cons_vcons_input): Rewritten to use _cons_vcons_input and report
+	the `CONS_EVT_KEYPRESS' event.
+	* vcons-refresh.c: Include "priv.h".
+	(cons_vcons_refresh): Report the `CONS_EVT_OUTPUT' event.
+	* vcons-scrollback.c: Include "priv.h".
+	(cons_vcons_scrollback): Report the `CONS_EVT_OUTPUT' event.
+
 2003-08-16  Marco Gerards  <metgerards@student.han.nl>
 
 	* cons.h (cons_vcons_set_dimension): Fix typo.

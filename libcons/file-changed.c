@@ -1,5 +1,5 @@
 /* file-changed.c - Handling file changed notifications.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -93,6 +93,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		    /* The cursor was visible before.  */
 		    cons_vcons_set_cursor_status (vcons, CONS_CURSOR_INVISIBLE);
 
+		  _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
 		  cons_vcons_update (vcons);
 		}
 	      if (change.what.cursor_status)
@@ -185,6 +186,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 					      end - size + 1,
 					      0, (size - vis_start)
 					      / vcons->state.screen.width);
+			  _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
 			  cons_vcons_update (vcons);
 			}
 		      vcons->state.screen.cur_line = new_cur_line;
@@ -342,6 +344,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 					  (size - rotate)
 					  / vcons->state.screen.width);
 		    }
+		  _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
 		  cons_vcons_update (vcons);
 		}
 	    }

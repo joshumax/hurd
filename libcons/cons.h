@@ -1,5 +1,5 @@
 /* cons.h - Definitions for cons helper and callback functions.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -122,6 +122,34 @@ struct cons
   io_t dirport;
   int slack;
 };
+
+/* Determines if the mouse moves relatively, to an absolute location
+   or to an absolute location expressed by a percentage.  */
+enum mouse_movement
+  {
+    CONS_VCONS_MOUSE_MOVE_REL,
+    CONS_VCONS_MOUSE_MOVE_ABS,
+    CONS_VCONS_MOUSE_MOVE_ABS_PERCENT
+  };
+
+/* The status of a mouse button.  */
+enum mouse_button
+  {
+    CONS_VCONS_MOUSE_BUTTON_NO_OP,
+    CONS_VCONS_MOUSE_BUTTON_PRESSED,
+    CONS_VCONS_MOUSE_BUTTON_RELEASED
+  };
+
+/* An event produced by mouse movement an button presses.  */
+typedef struct mouse_event
+{ 
+  enum mouse_movement mouse_movement;
+  float x;
+  float y;
+  
+  enum mouse_button mouse_button;
+  int button;
+} *mouse_event_t;
 
 
 /* The user must define this variable.  Set this to the name of the
@@ -256,6 +284,14 @@ typedef enum
    down.  */
 int cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value);
 
+/* Set the mouse cursor position to X, Y.  VCONS is locked.  */
+error_t cons_vcons_set_mousecursor_pos (vcons_t vcons, float x, float y);
+
+/* If STATUS is set to 0, hide the mouse cursor, otherwise show
+   it.  VCONS is locked.  */
+error_t cons_vcons_set_mousecursor_status (vcons_t vcons, int status);
+
+
 
 extern const struct argp cons_startup_argp;
 
@@ -285,5 +321,8 @@ void cons_vcons_destroy (void *port);
 
 /* Redraw the virtual console VCONS, which is locked.  */
 void cons_vcons_refresh (vcons_t vcons);
+
+/* Handle the event EV on the virtual console VCONS.  */
+error_t cons_vcons_move_mouse (vcons_t vcons, mouse_event_t ev);
 
 #endif	/* hurd/cons.h */

@@ -1,5 +1,5 @@
 /* vcons-input.c - Add input to a virtual console.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -24,17 +24,11 @@
 #include "cons.h"
 #include "priv.h"
 
-/* Enter SIZE bytes from the buffer BUF into the virtual console
-   VCONS.  */
+/* Non-locking version of cons_vcons_input.  */
 error_t
-cons_vcons_input (vcons_t vcons, char *buf, size_t size)
+_cons_vcons_input (vcons_t vcons, char *buf, size_t size)
 {
   int ret;
-
-  mutex_lock (&vcons->lock);
-
-  if (vcons->scrolling && _cons_jump_down_on_input)
-    _cons_vcons_scrollback (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 
   do
     {
@@ -47,8 +41,24 @@ cons_vcons_input (vcons_t vcons, char *buf, size_t size)
     }
   while (size && (ret != -1 || errno == EINTR));
 
-  mutex_unlock (&vcons->lock);
   return 0;
 }
 
 
+/* Enter SIZE bytes from the buffer BUF into the virtual console
+   VCONS.  */
+error_t
+cons_vcons_input (vcons_t vcons, char *buf, size_t size)
+{
+  mutex_lock (&vcons->lock);
+
+  _cons_vcons_console_event (vcons, CONS_EVT_KEYPRESS);
+  
+  if (vcons->scrolling && _cons_jump_down_on_input)
+    _cons_vcons_scrollback (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
+
+  _cons_vcons_input (vcons, buf, size);
+
+  mutex_unlock (&vcons->lock);
+  return 0;
+}

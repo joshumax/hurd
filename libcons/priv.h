@@ -1,5 +1,5 @@
 /* Private declarations for cons library
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2005 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,11 @@ typedef enum
     BELL_AUDIBLE
   } bell_type_t;
 
+#define CONS_EVT_MOUSE_MOVE	(1 << 1)
+#define CONS_EVT_MOUSE_BUTTON	(1 << 2)
+#define CONS_EVT_KEYPRESS	(1 << 4)
+#define CONS_EVT_OUTPUT		(1 << 8)
+
 
 /* Number of records the client is allowed to lag behind the
    server.  */
@@ -49,10 +54,25 @@ extern bell_type_t _cons_visual_bell;
 /* The type of bell used for the audible bell.  */
 extern bell_type_t _cons_audible_bell;
 
+/* The type of events that will make the mouse cursor visible.  */
+extern int _cons_show_mouse;
+
+/* The type of events that will hide the mouse cursor.  */
+extern int _cons_hide_mouse;
+
+/* The mouse sensitivity.  */
+extern float _cons_mouse_sens;
+
 
 /* Non-locking version of cons_vcons_scrollback.  Does also not update
    the display.  */
 int _cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value);
+
+/* Non-locking version of cons_vcons_input.  */
+error_t _cons_vcons_input (vcons_t vcons, char *buf, size_t size);
+
+/* Generate the console event EVENT for console VCONS.  */
+void _cons_vcons_console_event (vcons_t vcons, int event);
 
 
 /* Called by MiG to translate ports into cons_notify_t.  mutations.h
