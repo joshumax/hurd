@@ -1,3 +1,8 @@
+2003-02-24  Marco Gerards <metgerards@student.han.nl>
+
+	* pc-kbd.c (sc_set1_to_set2): Map the set2 scancodes for F11 and
+	F12 properly on the set1 scancodes for F11 and F12.
+
 2002-11-25  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pc-kbd.c (IS_FUNC_KEY): Fix last change.

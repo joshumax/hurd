@@ -519,6 +519,8 @@ enum scancode sc_set1_to_set2[] =
     SC_PAD_0,
     SC_PAD_DECIMAL,
     0x00,	/* XXX SYSREQ */
+    0x00,
+    0x00,
     SC_F11,
     SC_F12,
   };
