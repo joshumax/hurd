@@ -448,7 +448,7 @@ S_io_identity (struct sock_user *user,
 	       mach_msg_type_name_t *idtype,
 	       mach_port_t *fsys,
 	       mach_msg_type_name_t *fsystype,
-	       int *fileno)
+	       ino_t *fileno)
 {
   error_t err;
 
