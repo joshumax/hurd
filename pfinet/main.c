@@ -24,8 +24,6 @@
 
 main ()
 {
-  char addr[4];
-
   pfinet_bucket = ports_create_bucket ();
   
   init_devices ();
@@ -37,22 +35,31 @@ main ()
   inet_proto_init ();
 
   /* Simulate SIOCSIFADDR call. */
+  {
+      char addr[4];
 
-  /* 128.52.46.37 is turing.gnu.ai.mit.edu. */
-  addr[0] = 128;
-  addr[1] = 52;
-  addr[2] = 46;
-  addr[3] = 37;
-  ether_dev.pa_addr = *(u_long *)addr;
+      /* 128.52.46.37 is turing.gnu.ai.mit.edu. */
+      addr[0] = 128;
+      addr[1] = 52;
+      addr[2] = 46;
+      addr[3] = 37;
+      ether_dev.pa_addr = *(u_long *)addr;
   
-  /* Mask is 255.255.255.0. */
-  addr[0] = addr[1] = addr[2] = 255;
-  addr[3] = 0;
-  ether_dev.pa_mask = *(u_long *)addr;
+      /* Mask is 255.255.255.0. */
+      addr[0] = addr[1] = addr[2] = 255;
+      addr[3] = 0;
+      ether_dev.pa_mask = *(u_long *)addr;
   
-  ether_dev.family = AF_INET;
-  ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
+      ether_dev.family = AF_INET;
+      ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
+    }
   
+  /* Simulate SIOCADDRT call */
+  {
+    ip_rt_add (0, ether_dev.pa_addr & ether_dev.pa_mask, ether_dev.pa_mask,
+	       0, &ether_dev, 0, 0);
+  }
+
   /* Turn on device. */
   dev_open (&ether_dev);
 
