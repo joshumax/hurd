@@ -1,3 +1,8 @@
+2002-03-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* opts-append-std.c (diskfs_append_std_options): Only add --sync=N
+	or --no-sync option if it is not the default.
+
 2002-03-06  Roland McGrath  <roland@frob.com>
 
 	* dir-mkfile.c (diskfs_S_dir_mkfile): Clear OPENONLY_STATE_MODES bits

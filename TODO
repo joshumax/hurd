@@ -126,9 +126,6 @@ See `tasks', the exported task list.
     (syslog, but takes special care when the root file system?). !!
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic
     routines. !
-*** diskfs_default_sync_interval should not be changed, keeping the option
-    setting elsewhere, so that diskfs_append_std_options can elide the
-    --sync=N option when it reflects the default setting.
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications !!!

@@ -47,13 +47,16 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
     {
       if (diskfs_synchronous)
 	err = argz_add (argz, argz_len, "--sync");
-      else if (diskfs_sync_interval == 0)
-	err = argz_add (argz, argz_len, "--no-sync");
-      else
+      else if (DEFAULT_SYNC_INTERVAL != diskfs_sync_interval)
 	{
-	  char buf[80];
-	  sprintf (buf, "--sync=%d", diskfs_sync_interval);
-	  err = argz_add (argz, argz_len, buf);
+	  if (diskfs_sync_interval == 0)
+	    err = argz_add (argz, argz_len, "--no-sync");
+	  else
+	    {
+	      char buf[80];
+	      sprintf (buf, "--sync=%d", diskfs_sync_interval);
+	      err = argz_add (argz, argz_len, buf);
+	    }
 	}
     }
 
