@@ -5,36 +5,52 @@
 
 PATH=/bin
 
+ST="settrans -cg"
+
+_CWD=${_CWD:-`pwd`}
+export _CWD
+
 for I; do
   case "$I" in
     std)
       $0 console tty null zero # fd
       ;;
-    console)
-      settrans -cf console /hurd/term console `pwd`/console ;;
-    tty)
-      settrans -cf tty /hurd/magic tty ;;
+    console|tty[0-9]?|tty[0-9a-f])
+      $ST $I /hurd/term $_CWD/$I device $I;;
     null)
-      settrans -cf null /hurd/null ;;
+      $ST $I /hurd/null ;;
     zero)
-      settrans -cf zero /hurd/null -z ;;
+      $ST $I /hurd/null -z ;;
     fd)
-      settrans -cf fd /hurd/magic fd
+      $ST $I /hurd/magic fd
       ln -f -s fd/0 stdin
       ln -f -s fd/1 stdout
       ln -f -s fd/2 stderr
       ;;
 
+    # ptys
+    [pt]ty[pqPQ]?)
+      # Make one pty, both the master and slave halves
+      ID="`expr substr $I 4 99`"
+      $ST pty$ID /hurd/term $_CWD/pty$ID pty-master $_CWD/tty$ID
+      $ST tty$ID /hurd/term $_CWD/tty$ID pty-slave $_CWD/pty$ID
+      ;;
+    [pt]ty[pqPQ])
+      # Make a bunch of ptys
+      $0 ${I}0 ${I}1 ${I}2 ${I}3 ${I}4 ${I}5 ${I}6 ${I}7
+      $0 ${I}8 ${I}9 ${I}a ${I}b ${I}c ${I}d ${I}e ${I}f
+      ;;
+
     fd*|mt*)
-      settrans -cf r$I /hurd/devio $I
-      settrans -cf $I /hurd/devio -b $I
+      $ST r$I /hurd/devio $I
+      $ST $I /hurd/devio -b $I
       ;;
 
     [hrs]d*)
       case "$I" in
       [a-z][a-z][0-9][a-z])
-        settrans -cf r$I /hurd/devio $I
-        settrans -cf $I /hurd/devio -b $I
+        $ST r$I /hurd/devio $I
+        $ST $I /hurd/devio -b $I
 	;;
       *)
 	echo 1>&2 $0: $I: Must supply a device number and partition
