@@ -299,7 +299,7 @@ dog (time_t timeout, pid_t pid, char **argv)
 
 	  /* Frob ARGV so that ps show something nice.  */
 	  fmt_named_interval (&tv, 0, buf, sizeof buf);
-	  asprintf (&argv[0], "watchdog for login %d: %s remaining", pid);
+	  asprintf (&argv[0], "(watchdog for login %d: %s remaining)", pid, buf);
 	  argv[1] = 0;
 
 	  sleep (interval);
