@@ -488,13 +488,17 @@ start_execserver (void)
 {
   mach_port_t right;
   extern task_t diskfs_execserver_task;	/* Set in boot-parse.c.  */
+  struct port_info *execboot_info;
 
   assert (diskfs_execserver_task != MACH_PORT_NULL);
-  right = ports_get_right (ports_allocate_port (diskfs_port_bucket,
-						sizeof (struct port_info),
-						diskfs_execboot_class));
+
+  execboot_info = ports_allocate_port (diskfs_port_bucket,
+				       sizeof (struct port_info),
+				       diskfs_execboot_class);
+  right = ports_get_right (execboot_info)
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
+  ports_port_deref (execboot_info);
   task_set_special_port (diskfs_execserver_task, TASK_BOOTSTRAP_PORT, right);
   mach_port_deallocate (mach_task_self (), right);
 
