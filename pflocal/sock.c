@@ -97,7 +97,6 @@ error_t
 sock_create (struct pipe_class *pipe_class, struct sock **sock)
 {
   error_t err;
-  static unsigned next_sock_id = 0;
   struct sock *new = malloc (sizeof (struct sock));
 
   if (new == NULL)
