@@ -118,5 +118,5 @@ main (int argc, char **argv, char **envp)
   while (1)
     ports_manage_port_operations_multithread (proc_bucket,
 					      message_demuxer,
-					      0, 0, 0, 0);
+					      0, 0, 0);
 }
