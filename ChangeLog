@@ -1,6 +1,7 @@
-2002-06-08  Roland McGrath  <roland@frob.com>
+2002-06-11  Roland McGrath  <roland@frob.com>
 
 	* Makeconf (CPPFLAGS): Add -D_FILE_OFFSET_BITS=64.
+	(hurd-version): Update to 0.3 so as to change sonames.
 
 2002-05-16  Roland McGrath  <roland@frob.com>
 
