@@ -287,8 +287,9 @@ run (char *server, mach_port_t *ports, task_t *task)
   fflush (stdout);
 }
 
-/* Run FILENAME as root with ARGS as its argv (length ARGLEN). */
-void
+/* Run FILENAME as root with ARGS as its argv (length ARGLEN).
+   Return the task that we started. */
+task_t
 run_for_real (char *filename, char *args, int arglen)
 {
   file_t file;
@@ -313,7 +314,7 @@ run_for_real (char *filename, char *args, int arglen)
   if (!file)
     {
       perror (filename);
-      return;
+      return MACH_PORT_NULL;
     }
 #endif
   
@@ -336,8 +337,8 @@ run_for_real (char *filename, char *args, int arglen)
 		   NULL, 0, /* No info in init ints.  */
 		   NULL, 0, NULL, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
-  mach_port_deallocate (mach_task_self (), task);
   mach_port_deallocate (mach_task_self (), file);
+  return err ? MACH_PORT_NULL : task;
 }
 
 static int
@@ -421,7 +422,12 @@ launch_system (void)
   mach_port_t authproc, fsproc;
   char shell[] = "/bin/sh";
   char pipes[] = "/hurd/pipes\0/servers/socket/1";
-  
+  char terminal[] = "/hurd/term\0console\0/dev/console";
+  mach_port_t term;
+  task_t termtask;
+  task_t foo;
+  int fd;
+
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0, 
 			  mach_task_self (), authserver, 
@@ -459,12 +465,65 @@ launch_system (void)
      We must do this before calling proc_setmsgport below.  */
   proc_task2proc (procserver, fstask, &fsproc);
 
+  /* Run the terminal driver and open it for the shell. */
+  termtask = run_for_real (terminal, terminal, sizeof (terminal));
+  if (termtask)
+    {
+      /* Open the console.  We are racing here against the
+	 terminal driver that we just started, so keep trying until
+	 we get it. */
+      struct stat st;
+      for (;;)
+	{
+	  term = path_lookup ("/dev/console", O_READ|O_WRITE, 0);
+	  if (term)
+	    io_stat (term, &st);
+	  if (term && st.st_fstype == FSTYPE_TERM)
+	    {
+	      /* Open the terminal for real */
+	      mach_port_deallocate (mach_task_self (), term);
+	      
+	      /* Open console for our use  */
+	      fd = open ("/dev/console", O_READ);
+	      assert (fd != -1);
+	      dup2 (fd, 0);
+	      close (fd);
+	      fd = open ("/dev/console", O_WRITE);
+	      assert (fd != -1);
+	      dup2 (fd, 1);
+	      dup2 (fd, 2);
+	      close (fd);
+
+	      /* Set ports in init_dtable for programs we start */
+	      mach_port_deallocate (mach_task_self (), default_dtable[0]);
+	      mach_port_deallocate (mach_task_self (), default_dtable[1]);
+	      mach_port_deallocate (mach_task_self (), default_dtable[2]);
+	      default_dtable[0] = getdport (0);
+	      default_dtable[1] = getdport (1);
+	      default_dtable[2] = getdport (2);
+	      break;
+	    }
+	  /* Perhaps the terminal driver died? */
+	  task_suspend (termtask);
+	  errno = task_resume (termtask);
+	  if (errno == MACH_SEND_INVALID_DEST
+	      || errno == KERN_INVALID_ARGUMENT)
+	    break;
+	}
+    }
+  if (termtask != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), termtask);
+
   /* Run the shell.  We must do this before calling proc_setmsgport below,
      because run_for_real does proc server operations.  */
-  run_for_real (shell, shell, sizeof (shell));
+  foo = run_for_real (shell, shell, sizeof (shell));
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
 
   /* Run pipes. */
-  run_for_real (pipes, pipes, sizeof (pipes));
+  foo = run_for_real (pipes, pipes, sizeof (pipes));
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
 
   printf ("Init has completed.\n");
   fflush (stdout);
