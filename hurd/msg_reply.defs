@@ -1,5 +1,5 @@
 /* Reply side of miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1991, 19921994 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
