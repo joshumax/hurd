@@ -125,24 +125,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
 	}
       else
-	{
-	  /* XXX should be done in wrapper */
-	  np = diskfs_check_cache (dnp, path);
-	  if (np)
-	    {
-	      /* Verify that we were allowed in.  XXX should be done
-		 in wrapper for diskfs_lookup */
-	      assert (S_ISDIR (dp->dn_stat.st_mode));
-	      error = diskfs_access (dp, S_IEXEC, cred);
-	      if (error)
-		{
-		  diskfs_nrele (np);
-		  np = 0;
-		}
-	    }
-	  else
-	    error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
-	}
+	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
 
       if (lastcomp && create && excl && (!error || error == EAGAIN))
 	error = EEXIST;
