@@ -212,7 +212,6 @@ diskfs_S_exec_startup (mach_port_t port,
   mach_port_t rootport;
   device_t con;
   struct ufsport *upt;
-  char exec_argv[] = "[BOOT EXECSERVER]";
   struct protid *rootpi;
   
   if (!(upt = ports_lookup_port (diskfs_port_bucket, port, 
@@ -222,15 +221,10 @@ diskfs_S_exec_startup (mach_port_t port,
   *base_addr = 0;
   *stack_size = 0;
 
-  *flags = 0;
-  
-  if (*argvlen < sizeof (exec_argv))
-    vm_allocate (mach_task_self (),
-		 (vm_address_t *) argvP, sizeof (exec_argv), 1);
-  bcopy (exec_argv, *argvP, sizeof (exec_argv));
-  *argvlen = sizeof (exec_argv);
-  
-  *envplen = 0;
+  /* We have no args for it.  Tell it to look on its stack
+     for the args placed there by the boot loader.  */
+  *argvlen = *envplen = 0;
+  *flags = EXEC_STACK_ARGS;
 
   if (*portarraylen < INIT_PORT_MAX)
     vm_allocate (mach_task_self (), (u_int *)portarrayP,
