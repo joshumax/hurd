@@ -34,7 +34,8 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
  notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \
  interrupt-operation.c interrupt-on-notify.c interrupt-notified-rpcs.c \
- dead-name.c create-port.c import-port.c default-uninhibitable-rpcs.c
+ dead-name.c create-port.c import-port.c default-uninhibitable-rpcs.c \
+ claim-right.c
 
 LCLHDRS = ports.h
 installhdrs = ports.h
