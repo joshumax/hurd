@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -64,6 +64,8 @@ struct pager
   struct pending_init *init_head, *init_tail;
 #endif
 
+  struct anticipation *anticipations;
+
   char *pagemap;
   int pagemapsize;
 };
@@ -84,6 +86,15 @@ struct attribute_request
   memory_object_copy_strategy_t copy_strategy;
   int threads_waiting;
   int attrs_pending;
+};
+
+struct anticipation
+{
+  struct anticipation *next;
+  vm_size_t len;
+  vm_offset_t offset;
+  vm_address_t address;
+  int dirty;
 };
 
 #ifdef KERNEL_INIT_RACE
@@ -142,5 +153,7 @@ void _pager_lock_object (struct pager *, vm_offset_t, vm_size_t, int, int,
 void _pager_free_structure (struct pager *);
 void _pager_clean (void *arg);
 void _pager_real_dropweak (void *arg);
+struct anticipation *_pager_check_anticipations (struct pager *, vm_size_t,
+						 vm_offset_t);
 
    
