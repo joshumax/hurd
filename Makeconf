@@ -152,11 +152,12 @@ endif
 install:
 
 # Building the target
+ifeq ($(OBJS),)
+OBJS=%.o
+endif
+
 ifeq ($(doinst),many)
  target = $(filter-out $(special-targets),$(targets))
- _objs = %.o
-else
- _objs = $(OBJS)
 endif
 
 # Determine which sort of library we should link against from whether -static
@@ -173,7 +174,7 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 # dependencies of other shared objects it encounters.
 rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 
-$(target): %$(target-suffix): $(_objs) $(OTHERLIBS)
+$(target): %$(target-suffix): $(OBJS) $(OTHERLIBS)
 	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
 		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) \
