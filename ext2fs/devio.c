@@ -29,6 +29,9 @@ dev_write_sync (block_t addr, vm_address_t data, long len)
 {
   int written;
   assert (!diskfs_readonly);
+ if (addr <= 8 && addr + (len >> 9) > 8)
+   printf ("dev_write_sync: Writing %ld bytes at disk block %d: 0x%08lx...\n",
+	   len, addr, *(unsigned long *)data);
   if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &written)
       || written != len)
     return EIO;
