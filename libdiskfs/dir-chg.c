@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
-#include "ourmsg_U.h"
+#include "ourfs_notify_U.h"
 
 kern_return_t
 diskfs_S_dir_notice_changes (struct protid *cred,
@@ -40,7 +40,7 @@ diskfs_S_dir_notice_changes (struct protid *cred,
   req->port = notify;
   req->next = np->dirmod_reqs;
   np->dirmod_reqs = req;
-  nowait_msg_dir_changed (notify, DIR_CHANGED_NULL, "");
+  nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
   mutex_unlock (&np->lock);
   return 0;
 }
