@@ -1,3 +1,19 @@
+Thu Aug 29 16:59:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	Changes from ufs/dir.c:
+	* dir.c (diskfs_lookup_hard): When setting ds->stat to EXTEND, set
+ 	ds->idx by looking at the size of the file.  After successful
+ 	dirscanblock, record index where we finished in DP->dn->dir_idx.
+  	Start searches at that index.
+	(dirscanblock): Size dirents correctly when mallocing it.
+	(diskfs_direnter_hard): Be more careful when sizing or resizing
+	dirents.  Correctly set to -1 all the new entries we create after
+	realloc call.   
+	* ext2fs.h (struct disknode): New member `dir_idx'.
+	* inode.c (diskfs_cached_lookup): Initialize DN->dir_idx.
+
+	* dir.c (diskfs_direnter_hard): Initialize OLDSIZE to quiet gcc.
+
 Sun Aug 18 01:45:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pager.c (file_pager_read_page): Use get_page_buf to get a free page.
