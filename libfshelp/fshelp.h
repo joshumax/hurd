@@ -182,16 +182,17 @@ void fshelp_lock_init (struct lock_box *box);
 
 
 
-/* Return an identity port for the node numbered FILENO, suitable for
-   returning from io_identity; exactly one send right must be created
-   from the returned value.  FILENO should be the same value returned
-   as the `fileno' out-parameter in io_identity, and in the enclosing
-   directory (except for mount points), and in the st_ino stat field.
-   BUCKET should be a ports port bucket; fshelp requires the caller to
-   make sure port operations (for no-senders notifications) are used.
+/* Return an identity port in *PT for the node numbered FILENO,
+   suitable for returning from io_identity; exactly one send right
+   must be created from the returned value.  FILENO should be the same
+   value returned as the `fileno' out-parameter in io_identity, and in
+   the enclosing directory (except for mount points), and in the
+   st_ino stat field.  BUCKET should be a ports port bucket; fshelp
+   requires the caller to make sure port operations (for no-senders
+   notifications) are used.
    */
-mach_port_t fshelp_get_identity (struct port_bucket *bucket,
-				 ino_t fileno);
+error_t fshelp_get_identity (struct port_bucket *bucket,
+			     ino_t fileno, mach_port_t *pt);
 
 
 
