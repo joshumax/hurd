@@ -1,6 +1,6 @@
 /* Verify user passwords
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -26,6 +26,7 @@
 #include <idvec.h>
 #include <grp.h>
 #include <pwd.h>
+#include <shadow.h>
 
 extern char *crypt (const char *string, const char salt[2]);
 #pragma weak crypt
@@ -44,7 +45,7 @@ get_passwd (const char *prompt,
   return st;
 }
 
-/* Verify PASSWORD using /etc/passwd.  */
+/* Verify PASSWORD using /etc/passwd (and maybe /etc/shadow).  */
 static error_t
 verify_passwd (const char *password,
 	       uid_t id, int is_group,
@@ -53,6 +54,20 @@ verify_passwd (const char *password,
   const char *encrypted;
   int wheel_uid = (int)hook;
   const char *sys_encrypted;
+
+  char sp_lookup_buf[1024];
+  const char *check_shadow (struct passwd *pw)
+    {
+      if (strcmp (pw->pw_passwd, "x") == 0)
+	{
+	  /* When encrypted password is "x", try shadow passwords. */
+	  struct spwd _sp, *sp;
+	  if (getspnam_r (pw->pw_name, &_sp, sp_lookup_buf,
+			  sizeof sp_lookup_buf, &sp) == 0)
+	    return sp->sp_pwdp;
+	}
+      return pw->pw_passwd;
+    }
 
   if (! pwd_or_grp)
     /* No password db entry for ID; if ID is root, the system is probably
@@ -65,9 +80,12 @@ verify_passwd (const char *password,
      ? ((struct passwd *)pwd_or_grp)->pw_passwd
      : ((struct group *)pwd_or_grp)->gr_passwd);
 
-  if (sys_encrypted && !*sys_encrypted)
+  if (!is_group)
+    sys_encrypted = check_shadow (pwd_or_grp);
+
+  if (sys_encrypted[0] == '\0')
     return 0;			/* No password.  */
-  
+
   if (crypt)
     /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
     encrypted = crypt (password, sys_encrypted);
@@ -87,17 +105,20 @@ verify_passwd (const char *password,
     /* Special hack: a user attempting to gain root access can use
        their own password (instead of root's) if they're in group 0. */
     {
-      struct passwd *pw = getpwuid (wheel_uid);
+      char lookup_buf[1024];
+      struct passwd _pw, *pw;
 
-      if (! pw)
+      if (getpwuid_r (wheel_uid, &_pw, lookup_buf, sizeof lookup_buf, &pw))
 	return errno ?: EINVAL;
 
-      encrypted = crypt (password, pw->pw_passwd);
+      sys_encrypted = check_shadow (pw);
+
+      encrypted = crypt (password, sys_encrypted);
       if (! encrypted)
 	/* Crypt failed.  */
 	return errno;
 
-      if (strcmp (encrypted, pw->pw_passwd) == 0)
+      if (strcmp (encrypted, sys_encrypted) == 0)
 	/* *this* password is correct!  */
 	return 0;
     }
