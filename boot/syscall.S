@@ -26,6 +26,7 @@ ENTRY(syscall)
 	pop %eax
 	push %ecx
 	lcall $7, $0
+	push %ecx		/* Restore stack position.  */
 	jb error
 	ret
 error:
