@@ -1,0 +1,54 @@
+Some ideas on navigating and understanding the Hurd source code.
+
+First you must understand Mach IPC and MiG.  Pay special attention to
+the way that various kinds of MiG calls manage memory; this is crucial
+to avoid leaks.  The "Mach server writers' guide" explains all this.
+
+Most programs that make up the Hurd are built out of libraries; a
+solid understanding of the libraries that make up the source is
+essential.  First start by reading the libports library specification
+(in libports/ports.h).  This library manages the Mach ports that
+servers handle.
+
+Then start looking at some Hurd interfaces.  A good place to start is
+to look at the proc server.  There is only one proc server in a
+running system, but examine the way the interface (hurd/process.defs)
+is written and the way the proc server implements it.
+
+Then look at the auth server; make sure you understand how an auth
+transaction works.  Again, by looking at the implementation, you can
+see a simple example.
+
+Filesystems are more complex; the interface specification is in
+hurd/io.defs and hurd/fs.defs.  These interfaces are implemented by
+three different libraries: trivfs, diskfs, and netfs.  trivfs
+implements single-node filesystems (that thus have no directories).
+Most trivfs filesystems don't even do any filesystem stuff at all.
+See, for example, the null translator (trans/null.c) for a simple
+example of using trivfs.  
+
+diskfs is used for disk-based filesystems, with two in existence now:
+ext2fs and ufs.  If you write another diskfs-based filesystem, you
+should DEFINITELY imitate the algorithms found in ext2fs and ufs; this
+is crucial to getting locking right.
+
+netfs is used for nfs and other such things: with directories, and all
+the actual filesystem operations being done by some other program (not
+necessarily over a network).  The nfs implementation is fairly easy to
+understand.
+
+Examine some translators in the trans directory to see various simple
+examples.  
+
+Also very important is to acquire familiarity with the Hurd and Mach
+calls provided in the GNU C library.  Look at the header files in libc
+to see what they are, and read through them.  Also examine parts of
+the libc implementation whenever you have any doubt about what an
+interface call should do: find where the C library uses that call, and
+that should help.  It's worth, in fact, spending some time just
+exploring the implementation of various things in the hurd C library.
+
+You should take a look at all the libraries in the Hurd; spend time
+reading the code.  Feel free to ask questions to help understand what
+you read.  
+
