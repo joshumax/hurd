@@ -262,22 +262,22 @@ diskfs_get_directs (struct node *dp,
 
       /* Ignore and skip RE entries */
       if (rr.valid & VALID_RE)
+	i--;
+      else
 	{
-	  bufp = bufp + ep->len;
-	  release_rrip (&rr);
-	  continue;
-	}
-
-      if (bufp - dirbuf >= dp->dn_stat.st_size)
-	{
-	  /* Not that many entries in the directory; return nothing. */
-	  if (allocsize > *datacnt)
-	    munmap (data, allocsize);
-	  *datacnt = 0;
-	  *amt = 0;
-	  return 0;
+	  if (bufp - dirbuf >= dp->dn_stat.st_size)
+	    {
+	      /* Not that many entries in the directory; return nothing. */
+	      release_rrip (&rr);
+	      if (allocsize > *datacnt)
+		munmap (data, allocsize);
+	      *datacnt = 0;
+	      *amt = 0;
+	      return 0;
+	    }
 	}
       bufp = bufp + ep->len;
+      release_rrip (&rr);
 
       /* If BUFP points at a null, then we have hit the last
 	 record in this logical sector.  In that case, skip up to
@@ -304,88 +304,86 @@ diskfs_get_directs (struct node *dp,
       rrip_lookup (ep, &rr, 0);
 
       /* Ignore and skip RE entries */
-      if (rr.valid & VALID_RE)
+      if (! (rr.valid & VALID_RE))
 	{
-	  bufp = bufp + ep->len;
-	  release_rrip (&rr);
-	  continue;
-	}
+	  /* See if there's room to hold this one */
+	  name = rr.valid & VALID_NM ? rr.name : (char *) ep->name;
+	  namlen = rr.valid & VALID_NM ? strlen (name) : ep->namelen;
 
-      /* See if there's room to hold this one */
-      name = rr.valid & VALID_NM ? rr.name : (char *) ep->name;
-      namlen = rr.valid & VALID_NM ? strlen (name) : ep->namelen;
-
-      /* Name frobnication */
-      if (!(rr.valid & VALID_NM))
-	{
-	  if (namlen == 1 && name[0] == '\0')
+	  /* Name frobnication */
+	  if (!(rr.valid & VALID_NM))
 	    {
-	      name = ".";
-	      namlen = 1;
+	      if (namlen == 1 && name[0] == '\0')
+		{
+		  name = ".";
+		  namlen = 1;
+		}
+	      else if (namlen == 1 && name[0] == '\1')
+		{
+		  name = "..";
+		  namlen = 2;
+		}
+	      /* Perhaps downcase it too? */
 	    }
-	  else if (namlen == 1 && name[0] == '\1')
+
+	  reclen = sizeof (struct dirent) + namlen;
+	  reclen = (reclen + 3) & ~3;
+
+	  /* Expand buffer if necessary */
+	  if (datap - *data + reclen > allocsize)
 	    {
-	      name = "..";
-	      namlen = 2;
-	    }
-	  /* Perhaps downcase it too? */
-	}
+	      vm_address_t newdata;
+	      
+	      vm_allocate (mach_task_self (), &newdata,
+			   (ouralloc
+			    ? (allocsize *= 2)
+			    : (allocsize = vm_page_size * 2)), 1);
+	      bcopy ((void *) *data, (void *)newdata, datap - *data);
 
-      reclen = sizeof (struct dirent) + namlen;
-      reclen = (reclen + 3) & ~3;
-
-      /* Expand buffer if necessary */
-      if (datap - *data + reclen > allocsize)
-	{
-	  vm_address_t newdata;
-
-	  vm_allocate (mach_task_self (), &newdata,
-		       (ouralloc
-			? (allocsize *= 2)
-			: (allocsize = vm_page_size * 2)), 1);
-	  bcopy ((void *) *data, (void *)newdata, datap - *data);
-
-	  if (ouralloc)
-	    munmap (*data, allocsize / 2);
-
- 	  datap = (char *) newdata + (datap - *data);
-	  *data = (char *) newdata;
-	  ouralloc = 1;
-	}
-
-      userp = (struct dirent *) datap;
-
-      /* Fill in entry */
-
-      if (use_file_start_id (ep, &rr))
-	{
-	  off_t file_start;
-
-	  err = calculate_file_start (ep, &file_start, &rr);
-	  if (err)
-	    {
-	      diskfs_end_catch_exception ();
 	      if (ouralloc)
-		munmap (*data, allocsize);
-	      return err;
+		munmap (*data, allocsize / 2);
+
+	      datap = (char *) newdata + (datap - *data);
+	      *data = (char *) newdata;
+	      ouralloc = 1;
 	    }
 
-	  userp->d_fileno = file_start << store->log2_block_size;
+	  userp = (struct dirent *) datap;
+
+	  /* Fill in entry */
+
+	  if (use_file_start_id (ep, &rr))
+	    {
+	      off_t file_start;
+
+	      err = calculate_file_start (ep, &file_start, &rr);
+	      if (err)
+		{
+		  release_rrip (&rr);
+		  diskfs_end_catch_exception ();
+		  if (ouralloc)
+		    munmap (*data, allocsize);
+		  return err;
+		}
+
+	      userp->d_fileno = file_start << store->log2_block_size;
+	    }
+	  else
+	    userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
+
+	  userp->d_type = DT_UNKNOWN;
+	  userp->d_reclen = reclen;
+	  userp->d_namlen = namlen;
+	  bcopy (name, userp->d_name, namlen);
+	  userp->d_name[namlen] = '\0';
+
+	  /* And move along */
+	  datap = datap + reclen;
+	  i++;
 	}
-      else
-	userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
 
-      userp->d_type = DT_UNKNOWN;
-      userp->d_reclen = reclen;
-      userp->d_namlen = namlen;
-      bcopy (name, userp->d_name, namlen);
-      userp->d_name[namlen] = '\0';
-
-      /* And move along */
       release_rrip (&rr);
-      datap = datap + reclen;
       bufp = bufp + ep->len;
-      i++;
 
       /* If BUFP points at a null, then we have hit the last
 	 record in this logical sector.  In that case, skip up to

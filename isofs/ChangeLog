@@ -1,3 +1,11 @@
+2001-04-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* lookup.c (diskfs_get_directs): If an RE entry is encountered,
+	just decrement I again. Rearrange the code to check for a new
+	logical sector in any case. Also make sure to always release RR
+	before returning. This fixes some memory leaks and Debian bug
+	report #63373.
+
 2001-02-25  Roland McGrath  <roland@frob.com>
 
 	* lookup.c: Include <stdlib.h> for abort decl.
