@@ -177,7 +177,8 @@ merge_procinfo (process_t server, pid_t pid,
      previously fetched thread-info is out-of-date now, so we have to make do
      with whatever we've fetched this time.  */
   *have =
-    (*have & ~PSTAT_PROCINFO_THREAD) | (really_have & PSTAT_PROCINFO_THREAD);
+    (*have & ~(PSTAT_PROCINFO_THREAD | PSTAT_PROC_INFO) )
+     | (really_have & (PSTAT_PROCINFO_THREAD | PSTAT_PROC_INFO));
 
   *pi = new_pi;
   *pi_size = new_pi_size;
