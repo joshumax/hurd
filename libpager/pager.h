@@ -72,9 +72,9 @@ pager_flush_some (struct pager *pager,
 mach_port_t
 pager_get_port (struct pager *pager);
 
-/* Call this (and do nothing else) whenever a no-senders notification
-   is called for a port of type pager_port_type.  The first argument
-   is the result of a check_port_type.  */
+/* Call this whenever a no-senders notification is called for a port
+   of type pager_port_type.  The first argument is the result of a
+   check_port_type.  */
 void
 pager_no_senders (struct pager *pager,
 		  mach_port_seqno_t seqno,
