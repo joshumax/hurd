@@ -1,3 +1,7 @@
+Sat Mar  6 15:46:17 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* group, passwd: Revert preceding change.
+
 Fri Mar  5 18:25:01 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* passwd (bin): New entry with ID 0, for compatibility with BSD.
