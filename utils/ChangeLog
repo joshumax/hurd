@@ -1,4 +1,14 @@
+2002-05-04  Roland McGrath  <roland@frob.com>
+
+	* settrans.c (options): Add --chroot/-C option.
+	(main_opt): Parse that option, take following args until "--"
+	as a command to exec chroot'd to the translated node.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
+
+	* msgport.c (str2flags): Add break after default: label.
+
+	* vmstat.c (print_val): Use %lld printf format for val_t.
 
 	* fakeauth.c: New file.
 	* Makefile (fakeauth): New target.
