@@ -29,6 +29,9 @@
 #pragma weak dlclose
 #pragma weak dlerror
 #pragma weak dlsym
+#ifndef RTLD_NOLOAD
+#define RTLD_NOLOAD 0
+#endif
 
 /* Find the list of shared objects */
 static struct link_map *
@@ -54,7 +57,7 @@ static Elf32_Addr
 map_extent (struct link_map *map)
 {
   /* In fact, LIB == MAP, but doing it this way makes it entirely kosher.  */
-  void *lib = dlopen (map->l_name);
+  void *lib = dlopen (map->l_name, RTLD_NOLOAD);
   if (lib == 0)
     error (2, 0, "cannot dlopen %s: %s", map->l_name, dlerror ());
   else
