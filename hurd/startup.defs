@@ -27,6 +27,9 @@ subsystem startup 29000;
 STARTUP_IMPORTS
 #endif
 
+type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
+	ctype: mach_port_t;
+
 /* This call registers a task as "essential", which means that if it
    dies, the system should crash.  If the specified task dies or an
    exception message is sent to the exception port, then we will print
