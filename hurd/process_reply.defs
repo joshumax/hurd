@@ -40,6 +40,7 @@ skip; /* reassign */
 skip; /* setowner */
 skip; /* getpids */
 skip; /* setprocargs */
+
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
@@ -52,4 +53,23 @@ simpleroutine proc_wait_reply (
 	in rusage: rusage_t;
 	in pid_status: pid_t);
 
+skip; /* dostop */
+skip; /* handle_exceptions */
+skip; skip; skip; skip; skip; /* mark_{stop,cont,exit,exec,traced} */
+skip; skip; /* pid2task; task2pid */
+skip; skip; /* task2proc; pid2proc */
+skip; skip; skip; /* getproc{info,args,env */
+skip; skip; /* {get,set}login */
+skip; skip; /* {set,get}sid */
+skip; skip; /* getsession{pids,port} */
+skip; skip; /* {set,get}pgrp */
+skip; /* getpgrppids */
+skip; skip; skip; skip; /* {make,add,remove,get}collection */
+skip; /* collection_members */
+skip; skip; /* {pgrp,session)_pcoll */
 
+simpleroutine proc_get_collports_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	in pids: pidarray_t;
+	in msgports: portarray_t);
