@@ -107,6 +107,10 @@ proposed microkernel work there as well as with thomas@gnu.ai.mit.edu.
 
 Hurd work (these are brief descriptions; thomas can give more information):
 
+  * Make the thread timeout in libports/manage-multithread.c work.
+
+  * Make thread death in C threads really free resources.
+
 !!!
   * An RPC trace program to aid debugging.  Ask roland for more info.
 
