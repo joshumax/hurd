@@ -110,19 +110,47 @@ error_t ugids_imply_all (struct ugids *ugids);
 error_t ugids_save (struct ugids *ugids);
 
 /* Verify that we have the right to the ids in UGIDS, given that we already
-   possess those in HAVE_UIDS and HAVE_GIDS, asking for passwords (with
-   GETPASS, which defaults to the standard libc function getpass) where
+   possess those in HAVE_UIDS and HAVE_GIDS, asking for passwords where
    necessary.  0 is returned if access should be allowed, otherwise
    EINVAL if an incorrect password was entered, or an error relating to
-   resource failure.  */
+   resource failure.  The GETPASS_FN, GETPASS_HOOK, VERIFY_FN, and
+   VERIFY_HOOK arguments are as for the idvec_verify function (in <idvec.h>).  */
 error_t ugids_verify (const struct ugids *ugids,
 		      const struct idvec *have_uids,
 		      const struct idvec *have_gids,
-		      char *(*getpass_fn)(const char *prompt));
+		      char *(*getpass_fn) (const char *prompt,
+					   uid_t id, int is_group,
+					   void *pwd_or_grp, void *hook),
+		      void *getpass_hook,
+		      error_t (*verify_fn) (const char *password,
+					    uid_t id, int is_group,
+					    void *pwd_or_grp, void *hook),
+		      void *verify_hook);
 
 /* Make an auth port from UGIDS and return it in AUTH, using authority in
    both the auth port FROM and the current auth port.  */
-error_t ugids_make_auth (const struct ugids *ugids, auth_t from, auth_t *auth);
+error_t ugids_make_auth (const struct ugids *ugids,
+			 const auth_t *from, size_t num_from,
+			 auth_t *auth);
+
+/* Verify that we have the right to the ids in UGIDS, given that we already
+   possess those in HAVE_UIDS and HAVE_GIDS (asking for passwords where
+   necessary), and return corresponding authentication in AUTH; the auth
+   ports in FROM, of length NUM_FROM, are used to supplement the auth port of
+   the current process if necessary.  0 is returned if access should be
+   allowed, otherwise EINVAL if an incorrect password was entered, or an
+   error relating to resource failure.  GETPASS_FN and GETPASS_HOOK are as
+   for the idvec_verify function in <idvec.h>.  */
+error_t ugids_verify_make_auth (const struct ugids *ugids,
+				const struct idvec *have_uids,
+				const struct idvec *have_gids,
+				char *(*getpass_fn) (const char *prompt,
+						     uid_t id, int is_group,
+						     void *pwd_or_grp,
+						     void *hook),
+				void *getpass_hook,
+				const auth_t *from, size_t num_from,
+				auth_t *auth);
 
 /* Merge the ids from the auth port  AUTH into UGIDS.  */
 error_t ugids_merge_auth (struct ugids *ugids, auth_t auth);
