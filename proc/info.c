@@ -409,7 +409,12 @@ S_proc_getprocinfo (struct proc *callerp,
     {
       *piarray = mmap (0, structsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*piarray == MAP_FAILED)
-        return errno;
+	{
+	  err = errno;
+	  if (*flags & PI_FETCH_THREADS)
+	    munmap (thds, nthreads * sizeof (thread_t));
+	  return err;
+	}
       pi_alloced = 1;
     }
   *piarraylen = structsize / sizeof (int);

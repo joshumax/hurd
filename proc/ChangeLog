@@ -1,3 +1,8 @@
+2001-06-27  Marcus Brinkmann  <marcus@gnu.org>
+
+	* info.c (S_proc_getprocinfo): If we return because mmap failed
+	for *PIARRAY, be sure to munmap THDS if necessary.
+
 2001-05-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* host.c (initialize_version_info): Clear last byte of KV to make
