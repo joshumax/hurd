@@ -22,6 +22,7 @@ target = devio
 SRCS = dev.c iostate.c window.c devio.c open.c devpager.c io.c rdwr.c mem.c
 LCLHDRS = dev.h iostate.h window.h open.h ptypes.h mem.h
 HURDLIBS = libtrivfs libpager libports libfshelp libthreads
+DIST_FILES = MAKEDEV
 
 OBJS = $(SRCS:.c=.o) error.o
 
@@ -33,6 +34,12 @@ CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_
 vpath %.c ../lib
 
 include ../Makeconf
+
+install: $(prefix)/dev/MAKEDEV
+
+$(prefix)/dev/MAKEDEV: MAKEDEV
+	$(INSTALL_DATA) MAKEDEV $(prefix)/dev/MAKEDEV
+	chmod +x $(prefix)/dev/MAKEDEV
 
 open.c rdwr.c window.c: window.h
 dev.c devio.c devpager.c io.c iostate.c open.c rdwr.c window.c: dev.h
