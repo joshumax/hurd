@@ -16,8 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := libtrivfs
-
-include ../Makeconf
+makemode := library
 
 FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c \
 	dir-readdir.c dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
@@ -44,78 +43,24 @@ OTHERSRCS=demuxer.c handle-port.c protid-clean.c cntl-clean.c migsupport.c \
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
 
-TAGSHDRS = trivfs.h fsmutations.h
-
 MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o notifyServer.o \
 	fsys_replyUser.o
 
-OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
-
-DIST_FILES= $(SRCS) Makefile ChangeLog trivfs.h fsmutations.h priv.h
-
+OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
+LCLHDRS = trivfs.h fsmutations.h priv.h
+REMHDRS = ../hurd/ports.h
 MIGSFLAGS=-imacros fsmutations.h
+MIGCOMSFLAGS = -prefix trivfs_
+libname = libtrivfs
+installhdrs = trivfs.h
 
-all: libtrivfs.a
-
-libtrivfs.a: $(sort $(OBJS))
-	rm -f libtrivfs.a
-	$(AR) r $@ $^
-
-$(hurdinst)/lib/libtrivfs.a: libtrivfs.a
-	cp libtrivfs.a $@
-	$(RANLIB) $@
-
-$(includedir)/hurd/trivfs.h: trivfs.h
-	cp $< $@
-
-install: $(hurdinst)/lib/libtrivfs.a $(includedir)/hurd/trivfs.h
-
-clean:
-	rm -f *.o libtrivfs.a *_S.h *Server.c fsys_reply.h *User.c
+include ../Makeconf
 
 $(subst .c,.o,$(FSSRCS)): fs_S.h
 $(subst .c,.o,$(IOSRCS)): io_S.h
 $(subst .c,.o,$(FSYSSRCS)): fsys_S.h
 $(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
 $(subst .c,.o,$(INTSRCS)): interrupt_S.h
-fsys-getroot.c: fsys_reply.h
+fsys-getroot.c: fsys_reply_U.h
+$(OBJS): trivfs.h ../hurd/ports.h
 
-$(OBJS): trivfs.h $(includedir)/hurd/ports.h
-
-fs_S.h fsServer.c: $(includedir)/hurd/fs.defs $(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fs.defs \
-	| $(MIGCOM) -sheader fs_S.h -header /dev/null -user /dev/null
-	sed -e 's/fs_server/trivfs_fs_server/' < fsServer.c > tmp.c
-	mv tmp.c fsServer.c
-
-io_S.h ioServer.c: $(includedir)/hurd/io.defs $(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/io.defs \
-	| $(MIGCOM) -sheader io_S.h -header /dev/null -user /dev/null
-	sed -e 's/io_server/trivfs_io_server/' < ioServer.c > tmp.c
-	mv tmp.c ioServer.c
-
-fsys_S.h fsysServer.c: $(includedir)/hurd/fsys.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/fsys.defs \
-	| $(MIGCOM) -sheader fsys_S.h -header /dev/null -user /dev/null
-	sed -e 's/fsys_server/trivfs_fsys_server/' < fsysServer.c > tmp.c
-	mv tmp.c fsysServer.c
-
-fsys_reply.h fsys_replyUser.c: $(includedir)/hurd/fsys_reply.defs \
-		$(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/hurd/fsys_reply.defs \
-	| $(MIGCOM) -server /dev/null
-
-notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/mach/notify.defs \
-	| $(MIGCOM) -prefix trivfs_ \
-		 -sheader notify_S.h -header /dev/null -user /dev/null
-	sed -e 's/notify_server/trivfs_notify_server/' < notifyServer.c > tmp.c
-	mv tmp.c notifyServer.c
-
-interrupt_S.h interruptServer.c: $(includedir)/hurd/interrupt.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/interrupt.defs \
-	| $(MIGCOM) -sheader interrupt_S.h -header /dev/null -user /dev/null
-	sed -e 's/interrupt_server/trivfs_interrupt_server/' < interruptServer.c > tmp.c
-	mv tmp.c interruptServer.c
