@@ -36,14 +36,6 @@ find_url_class (const char *name, const struct store_class *const *classes)
 	&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
       return *cl;
 
-# pragma weak store_module_open_class
-  if (classes == 0 && store_module_open_class)
-    {
-      const struct store_class *cl;
-      if (store_module_open_class (name, &cl) == 0)
-	return cl;
-    }
-
   return 0;
 }
 
