@@ -1,3 +1,9 @@
+1999-04-30  Mark Kettenis  <kettenis@gnu.org>
+
+	* storeio.c (trivfs_modify_stat): Do not assume that we have the
+	device open in the caculation of st_mode.  If the device is not
+	open, only return S_IFCHR if inhibit_cache is set.
+
 1999-01-31  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* storeio.c (trivfs_modify_stat): Return S_IFCHR if block size is 1.
