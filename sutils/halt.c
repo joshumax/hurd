@@ -18,15 +18,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <hurd.h>
-#include <sys/reboot.h>
-#include <hurd/startup.h>
 
-main ()
+#include <sys/reboot.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int
+main (void)
 {
   reboot (RB_HALT);
+  perror ("reboot");
+  return 1;
 }
-
-  
-  
-  

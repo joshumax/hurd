@@ -19,13 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-#include <hurd.h>
 #include <sys/reboot.h>
-#include <hurd/startup.h>
+#include <unistd.h>
+#include <stdio.h>
 
-main ()
+int
+main (void)
 {
   reboot (0);
+  perror ("reboot");
+  return 1;
 }
 
   
