@@ -81,6 +81,7 @@ struct argp_option
 
 struct argp;			/* fwd declare this type */
 struct argp_state;		/* " */
+struct argp_child;		/* " */
 
 /* The type of a pointer to an argp parsing function.  */
 typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
@@ -158,12 +159,38 @@ struct argp
      help message, if it is non-NULL.  */
   const char *doc;
 
-  /* A NULL terminated list of other argp structures that should be parsed
-     with this one.  Any conflicts are resolved in favor of this argp, or
-     early argps in the CHILDREN list.  This field is useful if you use
-     libraries that supply their own argp structure, which you want to use in
-     conjunction with your own.  */
-  const struct argp **children;
+  /* A vector of argp_children structures, terminated by a member with a 0
+     argp field, pointing to child argps should be parsed with this one.  Any
+     conflicts are resolved in favor of this argp, or early argps in the
+     CHILDREN list.  This field is useful if you use libraries that supply
+     their own argp structure, which you want to use in conjunction with your
+     own.  */
+  const struct argp_child *children;
+};
+
+/* When an argp has a non-zero CHILDREN field, it should point to a vector of
+   argp_child structures, each of which describes a subsidiary argp.  */
+struct argp_child
+{
+  /* The child parser.  */
+  const struct argp *argp;
+
+  /* Flags for this child.  */
+  int flags;
+
+  /* If non-zero, an optional header to be printed in help output before the
+     child options.  As a side-effect, a non-zero value forces the child
+     options to be grouped together; to achieve this effect without actually
+     printing a header string, use a value of "".  */
+  const char *header;
+
+  /* Where to group the child options relative to the other (`consolidated')
+     options in the parent argp; the values are the same as the GROUP field
+     in argp_option structs, but all child-groupings follow parent options at
+     a particular group level.  If both this field and HEADER are zero, then
+     they aren't grouped at all, but rather merged with the parent options
+     (merging the child's grouping levels with the parents).  */
+  int group;
 };
 
 /* Parsing state.  This is provided to parsing functions called by argp,
