@@ -98,25 +98,31 @@ check_hashbang (struct execdata *e,
 	  return err;
 	}
 
+      /* Find the specified port, using defaults if so specified.  */
       mach_port_t port = ((which < nports &&
 			   portarray[which] != MACH_PORT_NULL)
 			  ? portarray[which] :
 			  (flags & EXEC_DEFAULTS) ? std_ports[which]
 			  : MACH_PORT_NULL);
 
+      /* Reauthenticate dir ports if they are the defaults.  */
       switch (which)
 	{
 	case INIT_PORT_CRDIR:
-	  if ((flags & EXEC_SECURE) || port == std_ports[which])
-	    return (reauthenticate (port, &user_crdir) ?:
+	  /* If secure, always use the default root.  */
+	  if ((flags & EXEC_SECURE) ||
+	      port == std_ports[which])
+	    return (reauthenticate (std_ports[which], &user_crdir) ?:
 		    (*operate) (user_crdir));
 	  break;
 	case INIT_PORT_CWDIR:
+	  /* If secure, reauthenticate cwd whether default or given.  */
 	  if ((flags & EXEC_SECURE) || port == std_ports[which])
 	    return (reauthenticate (port, &user_cwdir) ?:
 		    (*operate) (user_cwdir));
 	  break;
 	}
+
       return (*operate) (port);
     }
   /* Look up NAME on behalf of the client.  */
