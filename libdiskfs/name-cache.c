@@ -114,6 +114,8 @@ diskfs_purge_cache (struct node *dp, struct node *np)
 	if (lc->next)
 	  lc->next->prev = lc->prev;
 	nxt = lc->next;
+	if (lookup_cache_tail == lc)
+	  lookup_cache_tail = lc->prev;
 	free (lc);
       }
     else
@@ -136,6 +138,8 @@ _diskfs_purge_cache_deletion (struct node *np)
 	if (lc->next)
 	  lc->next->prev = lc->prev;
 	nxt = lc->next;
+	if (lookup_cache_tail == lc)
+	  lookup_cache_tail = lc->prev;
 	free (lc);
       }
     else
