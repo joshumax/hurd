@@ -52,7 +52,7 @@ diskfs_S_io_write (struct protid *cred,
     }
   
   err = 0;
-  while (off + datalen > np->allocsize)
+  while (off + (off_t) datalen > np->allocsize)
     {
       err = diskfs_grow (np, off + datalen, cred);
       if (diskfs_synchronous)
@@ -61,7 +61,7 @@ diskfs_S_io_write (struct protid *cred,
 	goto out;
     }
       
-  if (off + datalen > np->dn_stat.st_size)
+  if (off + (off_t) datalen > np->dn_stat.st_size)
     {
       np->dn_stat.st_size = off + datalen;
       np->dn_set_ctime = 1;
