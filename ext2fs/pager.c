@@ -1,4 +1,4 @@
-/* Pager for ufs
+/* Pager for ext2fs
    Copyright (C) 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -15,12 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "ufs.h"
+#include "ext2fs.h"
 #include <strings.h>
 #include <stdio.h>
-
-spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
-struct user_pager_info *filepagerlist;
 
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
@@ -58,7 +55,7 @@ find_address (struct user_pager_info *upi,
       struct iblock_spec indirs[NIADDR + 1];
       struct node *np;
   
-      np = upi->np;
+      np = upi->u.np;
       
       rwlock_reader_lock (&np->dn->allocptrlock);
       *nplock = &np->dn->allocptrlock;
@@ -197,7 +194,7 @@ pager_unlock_page (struct user_pager_info *pager,
   if (pager->type == DISK)
     return 0;
   
-  np = pager->np;
+  np = pager->u.np;
   dn = np->dn;
   di = dino (dn->number);
 
@@ -348,7 +345,7 @@ pager_report_extent (struct user_pager_info *pager,
   if (pager->type == DISK)
     *size = diskpagersize;
   else
-    *size = pager->np->allocsize;
+    *size = pager->u.np->allocsize;
   
   return 0;
 }
@@ -360,9 +357,9 @@ pager_clear_user_data (struct user_pager_info *upi)
 {
   assert (upi->type == FILE_DATA);
   spin_lock (&node2pagelock);
-  upi->np->dn->fileinfo = 0;
+  upi->u.np->dn->fileinfo = 0;
   spin_unlock (&node2pagelock);
-  diskfs_nrele_light (upi->np);
+  diskfs_nrele_light (upi->u.np);
   *upi->prevp = upi->next;
   if (upi->next)
     upi->next->prevp = upi->prevp;
@@ -377,7 +374,7 @@ create_disk_pager ()
 {
   diskpager = malloc (sizeof (struct user_pager_info));
   diskpager->type = DISK;
-  diskpager->np = 0;
+  diskpager->u.np = 0;
   diskpager->p = pager_create (diskpager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
   diskpagerport = pager_get_port (diskpager->p);
   mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
@@ -435,7 +432,7 @@ diskfs_get_filemap (struct node *np)
     {
       upi = malloc (sizeof (struct user_pager_info));
       upi->type = FILE_DATA;
-      upi->np = np;
+      upi->u.np = np;
       diskfs_nref_light (np);
       upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
