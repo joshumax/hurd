@@ -1,5 +1,10 @@
 1999-10-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* lookup.c (diskfs_lookup): Enforce diskfs_name_max limit for CREATE
+	and RENAME, returning ENAMETOOLONG for violations.
+	* io-pathconf.c (diskfs_S_io_pathconf): _PC_NO_TRUNC controlled by
+	diskfs_name_max setting.
+
 	* diskfs.h (diskfs_name_max): Declare new variable.
 	* io-pathconf.c (diskfs_S_io_pathconf): Use it for _PC_NAME_MAX,
 	capping it to 1024.
