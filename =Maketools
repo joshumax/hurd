@@ -1,5 +1,5 @@
 # This is the directory holding ar and ranlib
-tooldir := /usr/local/i386-mach/bin
+tooldir := /usr/local/i386-gnu/bin
 
 # This is a machine on which to run MiG.  (MiG writes CPU dependent code,
 # so MiG has to be run on a machine that's the same as the one that will 
@@ -14,12 +14,10 @@ mighost := ernst.gnu.ai.mit.edu
 # Set these options to the GCC compiler spec (the correct value
 # can be found in /usr/local/lib/lib-gcc).
 CCTARGET=i386-gnu
-CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.5.8)
+CCVERSION=$(firstword $(CCVERSION-$(hostname)) 2.6.0)
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
 CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
-MIGHOSTCCVERSION=$(firstword $(CCVERSION-$(mighost)) $(CCVERSION))
-MIGHOSTCCTYPE= -b $(CCTARGET) -V $(MIGHOSTCCVERSION)
 
 ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 
@@ -27,7 +25,6 @@ ifndef HOST_CC
 export HOST_CC := $(CC)
 endif
 CC=gcc $(CCTYPE) -O2 
-MIGHOSTCC= gcc $(MIGHOSTCCTYPE) -O2 
 ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=rsh $(mighost) cd `pwd` \; umask `umask` \; /usr/local/lib/migcom 
 else
@@ -42,8 +39,7 @@ AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(ccdir)/ld -L$(ccdir)
 
-# objcopy zeroes the exec header, so we can't do this.
-#INSTALL_BIN=$(tooldir)/objcopy -S
-INSTALL_BIN=cp
+INSTALL_BIN=$(tooldir)/objcopy -S
+#INSTALL_BIN=cp
 
 machine := i386
