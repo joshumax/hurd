@@ -25,26 +25,33 @@
 /* Maximum number of names to cache at once */
 #define MAXCACHE 256
 
-/* Current number of names cached */
-static int cache_cur;
+/* Maximum length of file name we bother caching */
+#define CACHE_NAME_LEN 100
 
 /* Cache entry */
 struct lookup_cache
 {
-  struct lookup_cache *next, *prev;
-  
-  /* These do not hold references; special code exists to call
-     purge routines when the nodes lose refs. */
-  struct node *dp;		/* directory */
-  struct node *np;		/* node */
+  int dir_cache_id, node_cache_id;
 
-  /* strlen of name member */
-  size_t namelen;
-  char name[0];
+  size_t len;		/* strlen of name */
+
+  char name[CACHE_NAME_LEN];
 };
 
-/* Cache itself */
-static struct lookup_cache *lookup_cache_head, *lookup_cache_tail;
+/* The contents of the cache in no particular order */
+static struct lookup_cache lookup_cache[MAXCACHE];
+
+/* A rotating buffer of cache entries, maintaining an LRU
+   ordering of lookup_cache. */
+static int cache_indexes[MAXCACHE];
+
+/* The current live entries start at first_cache and run through to
+   last_cache.  When the cache is full, first_cache == last_cache,
+   and these point at the lru element; lower indexes in cache_indexes
+   are successively less recently used.  */
+static int first_cache, last_cache;
+
+static spin_lock_t cache_lock = SPIN_LOCK_INITIALIZER;
 
 /* Buffer to hold statistics */
 static struct
@@ -52,98 +59,51 @@ static struct
   long pos_hits;
   long neg_hits;
   long miss;
+  long fetch_errors;
 } statistics;
 
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
    means that this name has been confirmed as absent in the directory. */
 void
-diskfs_enter_cache (struct node *dir, struct node *np, char *name)
+diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name)
 {
-  struct lookup_cache *lc, *tmp = 0;
-  size_t len = strlen (name) + 1;
+  size_t len = strlen (name);
+  struct lookup_cache *lc;
   
-  
-  lc = malloc (sizeof (struct lookup_cache) + len);
-  lc->dp = dir;
-  lc->np = np;
-  lc->namelen = len - 1;
-  bcopy (name, lc->name, len);
+  if (len > CACHE_NAME_LEN - 1)
+    return;
 
-  spin_lock (&diskfs_node_refcnt_lock);
-  if (cache_cur == MAXCACHE)
-    {
-      /* Free the entry at the tail */
-      tmp = lookup_cache_tail;
-      lookup_cache_tail = lookup_cache_tail->prev;
-      if (lookup_cache_tail)
-	lookup_cache_tail->next = 0;
-      else
-	lookup_cache_head = 0;
-    }
-  else
-    cache_cur++;
+  spin_lock (&cache_lock);
+
+  /* Take first_cache + 1 and fill it with the new entry */
+  lc = &lookup_cache[cache_indexes[first_cache + 1]];
+  lc->dir_cache_id = dir->cache_id;
+  lc->node_cache_id = np->cache_id;
+  lc->len = len;
+  strcpy (lc->name, name);
   
-  /* Add the new entry at the front */
-  lc->next = lookup_cache_head;
-  lc->prev = 0;
-  if (lc->next)
-    lc->next->prev = lc;
-  lookup_cache_head = lc;
-  if (!lc->next)
-    lookup_cache_tail = lc;
+  /* Increment first_cache, and possibly last_cache too. */
+  if (last_cache == first_cache)
+    last_cache++;
+  first_cache++;
   
-  spin_unlock (&diskfs_node_refcnt_lock);
-  
-  if (tmp)
-    free (tmp);
+  spin_unlock (&cache_lock);
 }
 
 /* Purge all references in the cache to NP as a node inside 
    directory DP. */
 void
-diskfs_purge_cache (struct node *dp, struct node *np)
+diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 {
-  struct lookup_cache *lc, *nxt;
+  int i;
   
-  spin_lock (&diskfs_node_refcnt_lock);
-  for (lc = lookup_cache_head; lc; lc = nxt)
-    if (lc->np == np && lc->dp == dp)
-      {
-	if (lc->prev)
-	  lc->prev->next = lc->next;
-	if (lc->next)
-	  lc->next->prev = lc->prev;
-	nxt = lc->next;
-	if (lookup_cache_tail == lc)
-	  lookup_cache_tail = lc->prev;
-	free (lc);
-      }
-    else
-      nxt = lc->next;
-  spin_unlock (&diskfs_node_refcnt_lock);
-}
-
-/* Purge all references in the cache to NP, either as a node or as a
-   directory.  diskfs_node_refcnt_lock must be held around this call. */
-void 
-_diskfs_purge_cache_deletion (struct node *np)
-{
-  struct lookup_cache *lc, *nxt;
-  
-  for (lc = lookup_cache_head; lc; lc = nxt)
-    if (lc->np == np || lc->dp == np)
-      {
-	if (lc->prev)
-	  lc->prev->next = lc->next;
-	if (lc->next)
-	  lc->next->prev = lc->prev;
-	nxt = lc->next;
-	if (lookup_cache_tail == lc)
-	  lookup_cache_tail = lc->prev;
-	free (lc);
-      }
-    else
-      nxt = lc->next;
+  spin_lock (&cache_lock);
+  for (i = 0; i < MAXCACHE; i++)
+    if (lookup_cache[i].len 
+	&& lookup_cache[i].dir_cache_id == dp->cache_id
+	&& lookup_cache[i].node_cache_id == np->cache_id)
+      lookup_cache[i].len = 0;
+  spin_unlock (&cache_lock);
 }
 
 /* Scan the cache looking for NAME inside DIR.  If we don't know
@@ -151,34 +111,42 @@ _diskfs_purge_cache_deletion (struct node *np)
    not exist, then return -1.  Otherwise, return NP for the entry, with
    a newly allocated reference. */
 struct node *
-diskfs_check_cache (struct node *dir, char *name)
+diskfs_check_lookup_cache (struct node *dir, char *name)
 {
-  struct lookup_cache *lc;
+  int i;
   size_t len = strlen (name);
-  
-  spin_lock (&diskfs_node_refcnt_lock);
-  for (lc = lookup_cache_head; lc; lc = lc->next)
-    if (lc->dp == dir
-	&& lc->namelen == len
-	&& lc->name[0] == name[0]
-	&& !strcmp (lc->name, name))
+
+  spin_lock (&cache_lock);
+
+  /* Maybe we really ought to look up in lru order...who knows. */
+
+  for (i = 0; i < MAXCACHE; i++)
+    if (lookup_cache[i].len == len
+	&& lookup_cache[i].dir_cache_id == dir->cache_id
+	&& lookup_cache[i].name[0] == name[0]
+	&& !strcmp (lookup_cache[i].name, name))
       {
-	if (lc->np)
+	int id = lookup_cache[i].node_cache_id;
+
+	statistics.pos_hits++;
+	spin_unlock (&cache_lock);
+
+	if (id == dir->cache_id)
+	  /* The cached node is the same as DIR.  */
 	  {
-	    lc->np->references++;
-	    statistics.pos_hits++;
-	    spin_unlock (&diskfs_node_refcnt_lock);
-	    return lc->np;
+	    diskfs_nref (dir);
+	    return dir;
 	  }
 	else
 	  {
-	    statistics.neg_hits++;
-	    spin_unlock (&diskfs_node_refcnt_lock);
-	    return (struct node *) -1;
+	    struct node *np;
+	    error_t err = diskfs_cached_lookup (id, &np);
+	    return err ? 0 : np;
 	  }
       }
+  
   statistics.miss++;
-  spin_unlock (&diskfs_node_refcnt_lock);
+  spin_unlock (&cache_lock);
+
   return 0;
 }
-
