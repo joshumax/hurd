@@ -20,6 +20,7 @@
 
 
 #include "ports.h"
+#include <assert.h>
 #include <hurd/ihash.h>
 
 error_t
@@ -56,6 +57,7 @@ ports_transfer_right (void *tostruct,
       ihash_locp_remove (topi->bucket->htable, topi->hentry);
       err = mach_port_mod_refs (mach_task_self (), topi->port_right,
 				MACH_PORT_RIGHT_RECEIVE, -1);
+      assert_perror (err);
       if ((topi->flags & PORT_HAS_SENDRIGHTS) && !hassendrights)
 	{
 	  dereftopi = 1;
@@ -77,7 +79,11 @@ ports_transfer_right (void *tostruct,
     {
       ihash_add (topi->bucket->htable, port, topi, &topi->hentry);
       if (topi->bucket != frompi->bucket)
-	mach_port_move_member (mach_task_self (), port, topi->bucket->portset);
+        {
+	  err = mach_port_move_member (mach_task_self (), port,
+				       topi->bucket->portset);
+	  assert_perror (err);
+	}
     }
   
   mutex_unlock (&_ports_lock);

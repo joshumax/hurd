@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -52,8 +52,9 @@ ports_reallocate_port (void *portstruct)
   ihash_add (pi->bucket->htable, pi->port_right, pi, &pi->hentry);
   mutex_unlock (&_ports_lock);
 
-  mach_port_move_member (mach_task_self (), pi->port_right, 
-			 pi->bucket->portset);
+  err = mach_port_move_member (mach_task_self (), pi->port_right, 
+			       pi->bucket->portset);
+  assert_perror (err);
 
   if (dropref)
     ports_port_deref (pi);
