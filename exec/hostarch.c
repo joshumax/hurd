@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifdef	BFD
 #include <bfd.h>
 #else
-#include <a.out.h>
+#include A_OUT_H
 #endif
 
 error_t
