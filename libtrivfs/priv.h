@@ -24,9 +24,12 @@
 
 /* For the sake of MiG. */
 typedef struct trivfs_protid *trivfs_protid_t;
+typedef struct trivfs_control *trivfs_control_t;
 
 struct trivfs_protid *_trivfs_begin_using_protid (mach_port_t);
 void _trivfs_end_using_protid (struct trivfs_protid *);
+struct trivfs_control *_trivfs_begin_using_control (mach_port_t);
+void _trivfs_end_using_control (struct trivfs_control *);
 
 #define TRIVFS_PRIV_H_INCLUDED
 #endif
