@@ -362,7 +362,7 @@ fs_remount (struct fs *fs)
   fsys_t fsys;
   error_t err = fs_fsys (fs, &fsys);
   if (!err && fsys != MACH_PORT_NULL) /* XXX What to do if not mounted? */
-    err = fsys_remount (fsys);
+    err = fsys_update (fsys);
   return err;
 }
 
