@@ -63,6 +63,12 @@ const struct option longopts[] =
     { 0, }
   };
 
+struct auth
+  {
+    unsigned int *ids;
+    auth_t authport;
+  };
+
 /* These functions return a malloc'd array of ids that can be passed to
    make_auth_handle or used in del_auth messages.  They check authorization
    and return NULL on failure.  */
@@ -70,10 +76,10 @@ unsigned int *get_uid (const char *user); /* From a named user or UID.  */
 unsigned int *get_gid (const char *user); /* From a named group or GID.  */
 unsigned int *get_user (const char *user); /* All ids for a named user.  */
 
-int apply_ids (unsigned int *ids, pid_t, int);
-int apply_ids_to_pids (unsigned int *ids, unsigned int, pid_t *, int);
-int apply_ids_to_pgrp (unsigned int *ids, pid_t);
-int apply_ids_to_loginid (unsigned int *ids, int);
+int apply_auth (struct auth *auth, pid_t, int);
+int apply_auth_to_pids (struct auth *auth, unsigned int, pid_t *, int);
+int apply_auth_to_pgrp (struct auth *auth, pid_t);
+int apply_auth_to_loginid (struct auth *auth, int);
 
 int check_password (const char *name, const char *password);
 
@@ -84,8 +90,8 @@ main (int argc, char **argv)
   int c;
   int status;
   enum { user, group, loginuser, loginid, pid, pgrp } mode = loginuser;
-  unsigned int *idsets[argc]; 
-  unsigned int ididx = 0, loginidx = 0, pididx = 0, pgrpidx = 0;
+  struct auth auth[argc];
+  unsigned int authidx = 0, loginidx = 0, pididx = 0, pgrpidx = 0;
   int loginids[argc];
   pid_t pids[argc], pgrps[argc];
   unsigned int i, j;
@@ -122,13 +128,13 @@ main (int argc, char **argv)
 	switch (mode)
 	  {
 	  case user:
-	    idsets[ididx++] = get_uid (optarg);
+	    auth[authidx++].ids = get_uid (optarg);
 	    break;
 	  case group:
-	    idsets[ididx++] = get_gid (optarg);
+	    auth[authidx++].ids = get_gid (optarg);
 	    break;
 	  case loginuser:
-	    idsets[ididx++] = get_user (optarg);
+	    auth[authidx++].ids = get_user (optarg);
 	    break;
 
 	  case pid:
@@ -152,9 +158,9 @@ main (int argc, char **argv)
 	exit (1);
       }
 
-  if (ididx == 0)
+  if (authidx == 0)
     /* No ids specified; default is "su root".  */
-    idsets[ididx++] = get_user ("root");
+    auth[authidx++].ids = get_user ("root");
 
   if (pididx == 0 && loginidx == 0 && pgrpidx == 0)
     /* No processes specified; default is current login collection.  */
@@ -166,19 +172,35 @@ main (int argc, char **argv)
 
   status = 0;
 
-  for (j = 0; j < ididx; ++j)
-    status |= apply_ids_to_pids (idsets[j], pididx, pids, 0);
+  if (! remove_ids)
+    for (i = 0; i < authidx; ++i)
+      {
+	struct auth *a = &auth[i];
+	if (errno = auth_makeauth (getauth (),
+				   NULL, MACH_MSG_TYPE_COPY_SEND, 0,
+				   &a->ids[1], a->ids[0], NULL, 0,
+				   &a->ids[1 + a->ids[0] + 1],
+				   a->ids[1 + a->ids[0]], NULL, 0,
+				   &a->authport))
+	  {
+	    perror ("auth_makeauth");
+	    status = 1;
+	  }
+      }
+
+  for (j = 0; j < authidx; ++j)
+    status |= apply_auth_to_pids (&auth[j], pididx, pids, 0);
 
   for (i = 0; i < loginidx; ++i)
     {
-      for (j = 0; j < loginidx; ++j)
-	status |= apply_ids_to_loginid (idsets[j], loginids[i]);
+      for (j = 0; j < authidx; ++j)
+	status |= apply_auth_to_loginid (&auth[j], loginids[i]);
     }
 
   for (i = 0; i < pgrpidx; ++i)
     {
-      for (j = 0; j < pgrpidx; ++j)
-	status |= apply_ids_to_loginid (idsets[j], pgrps[i]);
+      for (j = 0; j < authidx; ++j)
+	status |= apply_auth_to_loginid (&auth[j], pgrps[i]);
     }
 		
 
@@ -328,37 +350,27 @@ get_gid (const char *group)
   return ids;
 }
 
-/* Add or delete (under -r) the ids indicated by IDS to/from PID.  If
+/* Add or delete (under -r) the ids indicated by AUTH to/from PID.  If
    IGNORE_BAD_PID is nonzero, return success if PID does not exist.
    Returns zero if successful, nonzero on error (after printing message).  */
 
 int
-apply_ids (unsigned int *ids, pid_t pid, int ignore_bad_pid)
+apply_auth (struct auth *auth, pid_t pid, int ignore_bad_pid)
 {
   error_t err;
   auth_t auth;
 
-  if (! ids)
+  if (! auth->ids)
     return 0;
-
-  if (! remove_ids)
-    if (errno = auth_makeauth (getauth (), NULL, MACH_MSG_TYPE_COPY_SEND, 0,
-			       &ids[1], ids[0], NULL, 0,
-			       &ids[1 + ids[0] + 1], ids[1 + ids[0]], NULL, 0,
-			       &auth))
-      {
-	perror ("auth_makeauth");
-	return 1;
-      }
 
   err = HURD_MSGPORT_RPC (proc_getmsgport (proc, pid, &msgport),
 			  proc_pid2task (proc, pid, &refport),
 			  remove_ids ?
 			  del_auth (msgport, refport,
-				    &ids[1], ids[0],
-				    &ids[1 + ids[0] + 1],
-				    ids[1 + ids[0]]) :
-			  add_auth (msgport, auth));
+				    &auth->ids[1], auth->ids[0],
+				    &idsauth->[1 + auth->ids[0] + 1],
+				    auth->ids[1 + auth->ids[0]]) :
+			  add_auth (msgport, auth->authport));
   if (err &&
       (!ignore_bad_pid || (err != ESRCH && err != MIG_SERVER_DIED)))
     {
@@ -372,20 +384,20 @@ apply_ids (unsigned int *ids, pid_t pid, int ignore_bad_pid)
 }
 
 int
-apply_ids_to_pids (unsigned int *ids, unsigned int npids, pid_t pids[],
+apply_auth_to_pids (struct auth *auth, unsigned int npids, pid_t pids[],
 		   int ignore_bad_pid)
 {
   int status = 0;
   unsigned int i;
 
   for (i = 0; i < npids; ++i)
-    status |= apply_ids (ids, pids[i], ignore_bad_pid);
+    status |= apply_auth (ids, pids[i], ignore_bad_pid);
 
   return status;
 }
 
 int
-apply_ids_to_loginid (unsigned int *ids, int loginid)
+apply_auth_to_loginid (struct auth *auth, int loginid)
 {
   unsigned int npids = 20;
   pid_t pidbuf[20], *pids = pidbuf;
@@ -399,7 +411,7 @@ apply_ids_to_loginid (unsigned int *ids, int loginid)
       return 1;
     }
 
-  status = apply_ids_to_pids (ids, npids, pids, 1);
+  status = apply_auth_to_pids (ids, npids, pids, 1);
 
   if (pids != pidbuf)
     vm_deallocate (mach_task_self (),
@@ -409,7 +421,7 @@ apply_ids_to_loginid (unsigned int *ids, int loginid)
 }
 
 int
-apply_ids_to_pgrp (unsigned int *ids, pid_t pgrp)
+apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
 {
   unsigned int npids = 20;
   pid_t pidbuf[20], *pids = pidbuf;
@@ -423,7 +435,7 @@ apply_ids_to_pgrp (unsigned int *ids, pid_t pgrp)
       return 1;
     }
 
-  status = apply_ids_to_pids (ids, npids, pids, 1);
+  status = apply_auth_to_pids (ids, npids, pids, 1);
 
   if (pids != pidbuf)
     vm_deallocate (mach_task_self (),
