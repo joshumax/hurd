@@ -173,6 +173,8 @@ int csum_dirty;
 
 void *disk_image;
 
+spin_lock_t node2pagelock;
+
 spin_lock_t alloclock;
 
 spin_lock_t gennumberlock;
