@@ -407,7 +407,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    goto next_field;
 
 	  /* Do the symlink translation */
-	  for (cp = slbuf; cp < slbuf + slbufsize; cp += comp->len)
+	  for (cp = slbuf; cp < slbuf + slbufsize; cp += comp->len + 2)
 	    {
 	      comp = (struct rr_sl_comp *)cp;
 	      nomoresl = 1;
