@@ -78,8 +78,6 @@ pass1 ()
 		  pfail ("SKIPPING");
 		  return RET_STOP;
 		}
-	      else
-		pfix ("CONTINUING");
 	    }
 	}
 
@@ -106,8 +104,6 @@ pass1 ()
 			  pfail ("SKIPPING");
 			  return RET_STOP;
 			}
-		      else
-			pfix ("CONTINUING");
 		    }
 		  new = malloc (sizeof (struct dups));
 		  new->dup = bno;
@@ -194,8 +190,6 @@ pass1 ()
 		    clear_inode (number, dp);
 		    pfix ("CLEARED");
 		  }
-		else
-		  pfail (0);
 	      }
 	    inodestate[number] = UNALLOC;
 	  }
@@ -346,8 +340,6 @@ pass1 ()
 				dbwarn = 2;
 				pfix ("DEALLOCATED");
 			      }
-			    else
-			      pfail (0);
 			  }
 			else if (dbwarn == 2)
 			  dp->di_db[lbn] = 0;
@@ -373,8 +365,6 @@ pass1 ()
 				ibwarn = 2;
 				pfix ("DEALLOCATED");
 			      }
-			    else
-			      pfail (0);
 			  }
 			else if (ibwarn == 2)
 			  dp->di_ib[lbn] = 0;
@@ -429,15 +419,13 @@ pass1 ()
 	    else if (dp->di_blocks != nblocks)
 	      {
 		problem (0, "INCORRECT BLOCK COUNT I=%d (%ld should be %d)",
-		       number, dp->di_blocks, nblocks);
+			 number, dp->di_blocks, nblocks);
 		if (preen || reply ("CORRECT"))
 		  {
 		    dp->di_blocks = nblocks;
 		    write_inode (number, dp);
 		    pfix ("CORRECTED");
 		  }
-		else
-		  pfail (0);
 	      }
 
 	    num_files++;

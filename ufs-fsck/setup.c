@@ -139,8 +139,6 @@ setup (char *dev)
 	  changedsb = 1;
 	  pfix ("SET TO DEFAULT");
 	}
-      else
-	pfail (0);
     }
   if (sblock->fs_interleave < 1
       || sblock->fs_interleave > sblock->fs_nsect)
@@ -153,8 +151,6 @@ setup (char *dev)
 	  changedsb = 1;
 	  pfix ("SET TO DEFAULT");
 	}
-      else
-	pfail (0);
     }
   if (sblock->fs_npsect < sblock->fs_nsect
       || sblock->fs_npsect > sblock->fs_nsect * 2)
@@ -166,8 +162,6 @@ setup (char *dev)
 	  changedsb = 1;
 	  pfix ("SET TO DEFAULT");
 	}
-      else
-	pfail (0);
     }
   if (sblock->fs_inodefmt >= FS_44INODEFMT)
     newinofmt = 1;

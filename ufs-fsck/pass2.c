@@ -186,8 +186,6 @@ pass2 ()
 			  mod = 1;
 			  pfix ("REMOVED");
 			}
-		      else
-			pfail (0);
 		    }
 		  else
 		    targetdir->i_parent = dnp->i_number;
@@ -281,8 +279,6 @@ pass2 ()
 	      write_inode (dnp->i_number, &dino);
 	      pfix ("ADJUSTED");
 	    }
-	  else
-	    pfail (0);
 	}
       bzero (&dino, sizeof (struct dinode));
       dino.di_size = dnp->i_isize;
@@ -341,8 +337,6 @@ pass2 ()
 	      else
 		pfail (0);
 	    }
-	  else
-	    pfail (0);
 	}
       
       /* Check `.' to make sure it exists and is correct */
@@ -376,8 +370,6 @@ pass2 ()
 	      else
 		pfail (0);
 	    }
-	  else
-	    pfail (0);
 	}
     }
 }  

@@ -207,8 +207,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       if (newcg->cg_frotor > newcg->cg_ndblk)
 	{
@@ -220,8 +218,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       if (newcg->cg_irotor > newcg->cg_niblk)
 	{
@@ -233,8 +229,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       
       /* Zero the block maps and summary areas */
@@ -368,8 +362,6 @@ pass5 ()
 	      writecsum = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       
       /* Check inode and block maps */
@@ -382,8 +374,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       
       if (bcmp (&cg_blktot(newcg)[0], &cg_blktot(cg)[0], sumsize))
@@ -395,8 +385,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
       
       if (bcmp (newcg, cg, basesize))
@@ -408,8 +396,6 @@ pass5 ()
 	      writecg = 1;
 	      pfix ("FIXED");
 	    }
-	  else
-	    pfail (0);
 	}
 
       if (writecg)
@@ -432,8 +418,6 @@ pass5 ()
 	  writesb = 1;
 	  pfix ("FIXED");
 	}
-      else
-	pfail (0);
     }
 
   if (sblock->fs_clean == 0 && !fix_denied)
@@ -445,8 +429,6 @@ pass5 ()
 	  writesb = 1;
 	  pfix ("MARKED CLEAN");
 	}
-      else
-	pfail ("LEFT UNCLEAN");
     }
   
   if (writesb)
