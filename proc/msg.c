@@ -25,12 +25,10 @@
 /* Check to see if process P is blocked trying to get the message
    port of process AVAILP; if so, return its call.  */
 void
-check_message_return (struct proc *p, struct proc *availp)
+check_message_return (struct proc *p, void *availpaddr)
 {
+  struct proc *availp = availpaddr;
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
-  struct proc *cp;
-  mach_port_t *msgports;
-  int i;
   
   if (p->p_msgportwait && c->msgp == availp)
     {
@@ -62,7 +60,6 @@ void
 check_message_dying (struct proc *p, struct proc *dyingp)
 {
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
-  int i;
   
   if (p->p_msgportwait && c->msgp == dyingp)
     {
