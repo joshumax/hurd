@@ -102,7 +102,7 @@ routine file_utimes (
 /* INTR */
 routine file_truncate (
 	trunc_file: file_t;
-	new_size: int);
+	new_size: off_t);
 
 /* Apply/manipulate advisory lock */
 /* INTR */
