@@ -1010,15 +1010,14 @@ frob_kernel_process (void)
   mine = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
 			      MAP_ANON, 0, 0);
   assert (mine != -1);
-  his = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
-			     MAP_ANON, 0, 0);
-  assert (his != -1);
+  err = vm_allocate (task, &his, windowsz, 1);
   if (err)
     {
       error (0, err, "cannot allocate %Zu bytes in kernel task", windowsz);
       free (argz);
       mach_port_deallocate (mach_task_self (), proc);
       mach_port_deallocate (mach_task_self (), task);
+      munmap ((caddr_t) mine, windowsz);
       return;
     }
 

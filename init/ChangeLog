@@ -1,3 +1,10 @@
+1999-09-28  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* init.c (frob_kernel_process): Allocate the kernel's page in the
+	actual kernel task, not in our own.  I wonder how this ever
+	worked.  Also if we fail in that allocation, free the page we
+	allocated in our own space.
+
 1999-08-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* init.c (notify_shutdown): Add const to argument type.
