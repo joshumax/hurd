@@ -1,3 +1,8 @@
+1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-chown.c (diskfs_S_file_chown): Fix last change: not just
+	permission check, actually don't make the change if value is -1.
+
 1999-05-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-chown.c (diskfs_S_file_chown): Either arg being -1 means don't
