@@ -22,7 +22,7 @@
 /* Implement io_pathconf as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_pathconf (struct protid *cred,
-		      int name, 
+		      int name,
 		      int *value)
 {
   if (!cred)
@@ -41,9 +41,10 @@ diskfs_S_io_pathconf (struct protid *cred,
     case _PC_SOCK_MAXBUF:
       *value = -1;
       break;
-      
+
     case _PC_NAME_MAX:
-      *value = 1024;		/* see <hurd/hurd_types.defs> string_t */
+      /* <hurd/hurd_types.defs> string_t constrains the upper bound.  */
+      *value = diskfs_name_max > 1024 ? 1024 : diskfs_name_max;
       break;
 
     case _PC_CHOWN_RESTRICTED:
@@ -52,7 +53,7 @@ diskfs_S_io_pathconf (struct protid *cred,
     case _PC_ASYNC_IO:
       *value = 1;
       break;
-      
+
     case _PC_PRIO_IO:
       *value = 0;
       break;
@@ -64,6 +65,6 @@ diskfs_S_io_pathconf (struct protid *cred,
     default:
       return EINVAL;
     }
-  
+
   return 0;
 }

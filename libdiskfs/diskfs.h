@@ -201,6 +201,12 @@ extern size_t diskfs_dirstat_size;
    reimplement dir_rename yourself.  */
 extern int diskfs_link_max;
 
+/* The user must define this variable; it is the maximum length of
+   a single pathname component (i.e. file name within directory).
+   The filesystem code does not use this for anything, but it is
+   returned to user queries for _PC_NAME_MAX.  */
+extern int diskfs_name_max;
+
 /* The user must define this variable; it is the maximum number of
    symlinks to be traversed within a single call to dir_pathtrans.
    If this is exceeded, dir_pathtrans will return ELOOP.  */
