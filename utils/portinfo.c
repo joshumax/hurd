@@ -467,7 +467,8 @@ main (int argc, char **argv)
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
-	  argp_error (state->argp, "No process specified");
+	  argp_error (state, "No process specified");
+	  return ED;		/* Some non-EINVAL error.  */
 
 	case ARGP_KEY_ARG:
 	  if (state->arg_num == 0)
@@ -523,7 +524,7 @@ main (int argc, char **argv)
   const struct argp argp = { options, parse_opt, args_doc, doc };
 
   /* Parse our arguments.  */
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   exit (0);
 }

@@ -57,8 +57,8 @@ static struct argp_option options[] =
   {0, 0}
 };
 static char *args_doc = "NODE [TRANSLATOR ARG...]";
-static char *doc = "By default, the passive translator is set, and any \
-active translator told to just go away.";
+static char *doc = "When setting a translator, the passive translator is set"
+" by defualt, and when clearing, the active.";
 
 /* ---------------------------------------------------------------- */
 
@@ -107,7 +107,8 @@ main(int argc, char *argv[])
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
-	  argp_usage (state->argp); /* exits */
+	  argp_usage (state);
+	  return EINVAL;
 
 	case 'a': active = 1; break;
 	case 'p': passive = 1; break;
@@ -133,10 +134,12 @@ main(int argc, char *argv[])
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
   if (!active && !passive)
-    passive = 1;
+    /* When not otherwise specified, defaults are: active when clearing,
+       passive when setting.  */
+    (argz_len == 0 ? active : passive) = 1;
 
   if (active && argz_len > 0)
     {
