@@ -3,6 +3,7 @@
 # existing MBR.
 
 DEV="$1"
+STAGE1=/boot/grub/stage1
 
 if [ ! "$DEV" -o ! -w "$DEV" ]; then
   echo 2>&1 "Usage: $0 DEVICE"
@@ -10,7 +11,7 @@ if [ ! "$DEV" -o ! -w "$DEV" ]; then
 fi
 
 case "$DEV" in
-  *r?d[0-9])
+  *d[0-9])
     ;;
   *)
     echo "The device $DEV doesn't seem to be a whole-disk raw device; continue? [n] "
@@ -28,13 +29,13 @@ esac
 
 cd /tmp
 
-dd if="$DEV" of=mbr bs=512 count=1					 \
-&& cp /boot/grub/stage1_ffs stage1					 \
-&& dd if=mbr of=stage1 conv=notrunc bs=1 seek=446 skip=446 count=64	 \
-&& dd if=stage1 of="$DEV" bs=512 count=1				 \
+dd if="$DEV" of=,mbr bs=512 count=1					 \
+&& /bin/cp $STAGE1 ,stage1						 \
+&& dd if=,mbr of=,stage1 conv=notrunc bs=1 seek=446 skip=446 count=64	 \
+&& dd if=,stage1 of="$DEV" bs=512 count=1				 \
 || { echo 2>&1 "$0: Install failed!" ; exit 5 ; }
 
-rm mbr stage1
+rm ,mbr ,stage1
 
-echo "$0: /boot/grub/stage1_ffs installed in MBR"
+echo "$0: $STAGE1 installed in MBR"
 echo "$0: Don't forget to use the grub \`install=' command to install stage2"
