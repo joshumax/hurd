@@ -90,9 +90,8 @@ S_io_read (struct sock_user *user,
     {
       *datalen = err;
       if (alloced && round_page (*datalen) < round_page (amount))
-	vm_deallocate (mach_task_self (), 
-		       (vm_address_t) *data + round_page (*datalen),
-		       round_page (amount) - round_page (*datalen));
+	munmap (*data + round_page (*datalen),
+		round_page (amount) - round_page (*datalen));
       err = 0;
     }
   return err;
@@ -413,17 +412,13 @@ S_io_reauthenticate (struct sock_user *user,
   ports_port_deref (newuser);
 
   if (gubuf != gen_uids)
-    vm_deallocate (mach_task_self (), (u_int) gen_uids,
-		   genuidlen * sizeof (uid_t));
+    munmap (gen_uids, genuidlen * sizeof (uid_t));
   if (ggbuf != gen_gids)
-    vm_deallocate (mach_task_self (), (u_int) gen_gids,
-		   gengidlen * sizeof (uid_t));
+    munmap (gen_gids, gengidlen * sizeof (uid_t));
   if (aubuf != aux_uids)
-    vm_deallocate (mach_task_self (), (u_int) aux_uids,
-		   auxuidlen * sizeof (uid_t));
+    munmap (aux_uids, auxuidlen * sizeof (uid_t));
   if (agbuf != aux_gids)
-    vm_deallocate (mach_task_self (), (u_int) aux_gids,
-		   auxgidlen * sizeof (uid_t));
+    munmap (aux_gids, auxgidlen * sizeof (uid_t));
 
   return 0;
 }
