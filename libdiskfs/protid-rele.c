@@ -17,7 +17,7 @@
 
 #include "priv.h"
 
-/* Called when a protid CRED has no more references.  (Because references\
+/* Called when a protid CRED has no more references.  (Because references
    to protids are maintained by the port management library, this is 
    installed in the clean routines list.)  The ports library will
    free the structure for us.  */
