@@ -23,8 +23,12 @@ subsystem term 28000;
 
 #include <hurd/hurd_types.defs>
 
+#ifdef TERM_IMPORTS
+TERM_IMPORTS
+#endif
+
 /* Find out what the controlling terminal ID port is.  */
-term_getctty (
+routine term_getctty (
 	terminal: io_t;
 	out ctty: mach_port_make_send_t);
 
@@ -51,7 +55,7 @@ matches the current owner (as set by io_mod_owner) or whose pgrp
 matches the owner in the same fashion.  A "background process" is one
 making a request over a port returned by term_become_ctty which is not
 a foreground process.  */ 
-term_become_ctty (
+routine term_become_ctty (
 	terminal: io_t;
 	pid: pid_t;
 	pgrp: pid_t;
@@ -61,35 +65,35 @@ term_become_ctty (
 /* This sets the name returned by future get_nodename calls.  This is
    conventionally the name of a file which can be opened, resulting in
    a clone of this port.  */
-term_set_nodename (
+routine term_set_nodename (
 	terminal: io_t;
 	name: string_t);
 
 /* Return the last value set with set_nodename.  */
-term_get_nodename (
+routine term_get_nodename (
 	terminal: io_t;
 	out name: string_t);
 
 /* Set the underlying file to be used for chown/chmod, etc. */
-term_set_filenode (
+routine term_set_filenode (
 	terminal: io_t;
 	filenode: file_t);
 
 /* Find out what the bottom half of this terminal is using.  */
-term_get_bottom_type (
+routine term_get_bottom_type (
 	terminal: io_t;
 	out type: int);
 
 /* Start running with the bottom half as a device port using the Mach
    kernel device interface.  The old bottom half (if any) is
    discarded.  */
-term_on_machdev (
+routine term_on_machdev (
 	terminal: io_t;
 	machdev: device_t);
 
 /* Start running with the bottom half as a hurd I/O port.  (It is
    assumed that io_t is being served by a Hurd I/O server).  */
-term_on_hurddev (
+routine term_on_hurddev (
 	terminal: io_t;
 	hurddev: io_t);
 
@@ -97,6 +101,6 @@ term_on_hurddev (
    This differs from term_on_hurddev in that with term_on_pty the
    terminal driver will serve the port.  The returned port is a pty,
    similar in operation to the entity of the same name in BSD.  */
-term_on_pty (
+routine term_on_pty (
 	terminal: io_t;
 	out ptymaster: io_t);
