@@ -1,6 +1,6 @@
 /* Ps stream output
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,24 +32,24 @@
    length of STRING, then write all of it; if MAX_LEN == -1, then write all
    of STRING regardless).  */
 error_t
-ps_stream_write (ps_stream_t stream, char *string, int max_len)
+ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
 {
-  int len = strlen(string);
+  size_t len = strlen(string);
 
-  if (max_len > 0 && len > max_len)
+  if (max_len >= 0 && len > max_len)
     len = max_len;
 
   if (len > 0)
     {
-      int output;
-      int spaces_needed = stream->spaces;
+      size_t output;
+      size_t spaces_needed = stream->spaces;
 
       stream->spaces = 0;
       while (spaces_needed > 0)
 	{
 	  static char spaces[] = "                                ";
 #define spaces_len (sizeof(spaces) - 1)
-	  int chunk = spaces_needed > spaces_len ? spaces_len : spaces_needed;
+	  size_t chunk = spaces_needed > spaces_len ? spaces_len : spaces_needed;
 	  error_t err =
 	    ps_stream_write (stream, spaces + spaces_len - chunk, chunk);
 	  if (err)
@@ -73,7 +73,7 @@ ps_stream_write (ps_stream_t stream, char *string, int max_len)
    consumed if possible.  If an error occurs, the error code is returned,
    otherwise 0.  */
 error_t
-ps_stream_space (ps_stream_t stream, int num)
+ps_stream_space (ps_stream_t stream, ssize_t num)
 {
   stream->spaces += num;
   return 0;
@@ -83,7 +83,7 @@ ps_stream_space (ps_stream_t stream, int num)
    be at least WIDTH characters wide (the absolute value of WIDTH is used).
    If an error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_stream_pad (ps_stream_t stream, int sofar, int width)
+ps_stream_pad (ps_stream_t stream, ssize_t sofar, ssize_t width)
 {
   return ps_stream_space (stream, ABS (width) - sofar);
 }
@@ -103,17 +103,21 @@ ps_stream_newline (ps_stream_t stream)
    side, otherwise on the right side.  If an error occurs, the error code is
    returned, otherwise 0.  */
 error_t
-ps_stream_write_field (ps_stream_t stream, char *buf, int width)
+_ps_stream_write_field (ps_stream_t stream, char *buf, size_t max_width,
+		       int width)
 {
-  int len;
+  size_t len;
   error_t err;
 
   while (isspace (*buf))
     buf++;
 
-  len = strlen(buf);
+  len = strlen (buf);
   while (isspace (buf[len - 1]))
     len--;
+
+  if (max_width >= 0 && len > max_width)
+    len = max_width;
 
   if (width > 0)
     {
@@ -133,6 +137,23 @@ ps_stream_write_field (ps_stream_t stream, char *buf, int width)
   return err;
 }
 
+/* Write the string BUF to STREAM, padded on one side with spaces to be at
+   least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
+   side, otherwise on the right side.  If an error occurs, the error code is
+   returned, otherwise 0.  */
+error_t
+ps_stream_write_field (ps_stream_t stream, char *buf, int width)
+{
+  return _ps_stream_write_field (stream, buf, -1, width);
+}
+
+/* Like ps_stream_write_field, but truncates BUF to make it fit into WIDTH.  */
+error_t
+ps_stream_write_trunc_field (ps_stream_t stream, char *buf, int width)
+{
+  return _ps_stream_write_field (stream, buf, width ? ABS (width) : -1, width);
+}
+
 /* Write the decimal representation of VALUE to STREAM, padded on one side
    with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
    0, then on the left side, otherwise on the right side.  If an error
