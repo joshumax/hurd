@@ -1,5 +1,14 @@
 Sat Jul 20 00:58:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* ext2fs.h (struct disknode): Remove debugging info.
+	(RECORD_LAST): Function removed.
+	(LAST_BUFSZ): Macro removed.
+	(enum last_act): Type removed.
+	* inode.c (diskfs_cached_lookup): Don't initialize debugging info.
+	* pager.c (file_pager_read_page, file_pager_write_page,
+	pager_unlock_page, diskfs_grow): Don't record debugging info.
+	* truncate.c (diskfs_truncate): Likewise.
+
 	* pager.c (file_pager_read_page): Set
 	NODE->dn->last_page_partially_writable if we return such a page.
 

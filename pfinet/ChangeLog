@@ -1,6 +1,6 @@
-Fri Jul 19 12:34:30 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+Fri Jul 19 09:39:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* pfinet.h (make_sock_user): Include new parm in declaration.
+	* pfinet.h (make_sock_user): Declaration updated.
 
 Thu Jul 18 23:19:07 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
