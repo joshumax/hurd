@@ -1,3 +1,8 @@
+1999-01-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* syncfs.c: Replace -a/--asynchronous with -s/--synchronous.
+	Default is now asynchronous.
+
 1998-12-31  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (SRCS, targets, targets rule): Rename sync to syncfs.
