@@ -970,9 +970,8 @@ load (task_t usertask, struct execdata *e)
 
 	  bfd_map_over_sections (e->bfd, postload_section, e);
 	}
-    }
 #endif
-
+    }
 }
 
 #ifdef GZIP
@@ -1123,6 +1122,7 @@ struct bootinfo
     size_t argvlen, envplen, dtablesize, nports, nints;
     mach_port_t *dtable, *portarray;
     int *intarray;
+    vm_address_t phdr_addr, phdr_size, user_entry;
   };
 
 static inline error_t
@@ -1143,35 +1143,6 @@ servercopy (void **arg, u_int argsize, boolean_t argcopy)
   return 0;
 }
 
-/* Put PORT into *SLOT.  If *SLOT isn't already null, then 
-   mach_port_deallocate it first.  If AUTHENTICATE is not null, then
-   do an io_reauthenticate transaction to determine the port to put in
-   *SLOT.  If CONSUME is set, then don't create a new send right;
-   otherwise do.  (It is an error for both CONSUME and AUTHENTICATE to be 
-   set.) */
-static void
-set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
-	       int consume)
-{
-  mach_port_t ref;
-
-  if (*slot != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), *slot);
-  if (authenticate != MACH_PORT_NULL && port != MACH_PORT_NULL)
-    {
-      ref = mach_reply_port ();
-      io_reauthenticate (port, ref, MACH_MSG_TYPE_MAKE_SEND);
-      auth_user_authenticate (authenticate, port, 
-			      ref, MACH_MSG_TYPE_MAKE_SEND, slot);
-      mach_port_destroy (mach_task_self (), ref);
-    }
-  else
-    {
-      *slot = port;
-      if (!consume && port != MACH_PORT_NULL)
-	mach_port_mod_refs (mach_task_self (), port, MACH_PORT_RIGHT_SEND, 1);
-    }
-}
 
 static error_t
 do_exec (mach_port_t execserver,
@@ -1190,10 +1161,12 @@ do_exec (mach_port_t execserver,
   task_t newtask = MACH_PORT_NULL;
   thread_t thread = MACH_PORT_NULL;
   struct bootinfo *boot = 0;
+  int *ports_replaced;
   int secure, defaults;
   vm_address_t phdr_addr = 0;
   vm_size_t phdr_size = 0;
-
+  u_int i;
+  
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
      for later use in `load'.  */
@@ -1242,6 +1215,9 @@ do_exec (mach_port_t execserver,
   if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
     return EIEIO;
 
+  /* Suspend the existing task before frobnicating it.  */
+  if (oldtask != MACH_PORT_NULL && (e.error = task_suspend (oldtask)))
+    return e.error;
 
   /* Prime E for executing FILE and check its validity.  */
   prepare_and_check (file, &e);
@@ -1263,8 +1239,217 @@ do_exec (mach_port_t execserver,
 	}
     }
 
-
   interp.file = MACH_PORT_NULL;
+
+  if (oldtask == MACH_PORT_NULL)
+    flags |= EXEC_NEWTASK;
+
+  if (flags & (EXEC_NEWTASK|EXEC_SECURE))
+    {
+      /* Create the new task.  If we are not being secure, then use OLDTASK
+	 for the task_create RPC, in case it is something magical.  */	 
+      e.error = task_create (((flags & EXEC_SECURE) ||
+			      oldtask == MACH_PORT_NULL) ?
+			     mach_task_self () : oldtask,
+			     0, &newtask);
+      if (e.error)
+	goto out;
+    }
+  else
+    newtask = oldtask;
+
+
+  {
+    /* Store the data that we will give in response
+       to the RPC on the new task's bootstrap port.  */
+
+    /* Set boot->portarray[IDX] to NEW.  If REAUTH is nonzero,
+       io_reauthenticate NEW and set it to the authenticated port.
+       If CONSUME is nonzero, a reference on NEW is consumed;
+       it is invalid to give nonzero values to both REAUTH and CONSUME.  */
+#define use(idx, new, reauth, consume) \
+  do { use1 (idx, new, reauth, consume); if (e.error) goto bootout; } while (0)
+    void use1 (unsigned int idx, mach_port_t new,
+	       int reauth, int consume)
+      {
+	if (new != MACH_PORT_NULL && reauth)
+	  {
+	    mach_port_t ref = mach_reply_port (), authed;
+	    e.error = io_reauthenticate (new, ref, MACH_MSG_TYPE_MAKE_SEND);
+	    if (! e.error)
+	      e.error = auth_user_authenticate
+		(boot->portarray[INIT_PORT_AUTH], 
+		 new, ref, MACH_MSG_TYPE_MAKE_SEND, &authed);
+	    mach_port_destroy (mach_task_self (), ref);
+	    if (e.error)
+	      return;
+	    new = authed;
+	  }
+	else
+	  {
+	    if (!consume && new != MACH_PORT_NULL)
+	      mach_port_mod_refs (mach_task_self (),
+				  new, MACH_PORT_RIGHT_SEND, 1);
+	  }
+	
+	boot->portarray[idx] = new;
+	ports_replaced[idx] = 1;
+      }
+
+    boot = alloc_recv (sizeof (*boot));
+    if (boot == NULL)
+      {
+	e.error = ENOMEM;
+	goto out;
+      }
+    e.error = mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
+				      (mach_port_t) boot,
+				      MACH_MSG_TYPE_MAKE_SEND);
+    if (e.error)
+      goto out;
+    e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
+    mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
+    if (e.error)
+      {
+	free (boot);
+	mach_port_destroy (mach_task_self (), (mach_port_t) boot);
+	goto out;
+      }
+    bzero (boot, sizeof *boot);
+
+    /* First record some information about the image itself.  */
+    boot->phdr_addr = phdr_addr;
+    boot->phdr_size = phdr_size;
+    boot->user_entry = e.entry;
+
+    /* These flags say the information we pass through to the new program
+       may need to be modified.  */
+    secure = (flags & EXEC_SECURE);
+    defaults = (flags & EXEC_DEFAULTS);
+
+    /* Now record the big blocks of data we shuffle around unchanged.
+       Whatever arrived inline, we must allocate space for so it can
+       survive after this RPC returns.  */
+
+    boot->flags = flags;
+
+    e.error = servercopy ((void **) &argv, argvlen, argv_copy);
+    if (e.error)
+      goto bootout;
+    boot->argv = argv;
+    boot->argvlen = argvlen;
+    e.error = servercopy ((void **) &envp, envplen, envp_copy);
+    if (e.error)
+      goto bootout;
+    boot->envp = envp;
+    boot->envplen = envplen;
+    e.error = servercopy ((void **) &dtable, dtablesize * sizeof (mach_port_t),
+			  dtable_copy);
+    if (e.error)
+      goto bootout;
+    boot->dtable = dtable;
+    boot->dtablesize = dtablesize;
+
+    if ((secure || defaults) && nints < INIT_INT_MAX)
+      {
+	/* Make sure the intarray is at least big enough.  */
+	if (intarray_copy || (round_page (nints * sizeof (int)) <
+			      round_page (INIT_INT_MAX * sizeof (int))))
+	  {
+	    /* Allocate a new vector that is big enough.  */
+	    vm_allocate (mach_task_self (),
+			 (vm_address_t *) &boot->intarray,
+			 INIT_INT_MAX * sizeof (int),
+			 1);
+	    memcpy (boot->intarray, intarray, nints * sizeof (int));
+	  }
+	boot->nints = INIT_INT_MAX;
+      }
+    else
+      {
+	e.error = servercopy ((void **) &intarray, nints * sizeof (int),
+			      intarray_copy);
+	if (e.error)
+	  goto bootout;
+	boot->intarray = intarray;
+	boot->nints = nints;
+      }
+
+    if (secure)
+      boot->intarray[INIT_UMASK] = std_ints ? std_ints[INIT_UMASK] : CMASK;
+
+    /* Now choose the ports to give the new program.  */
+
+    boot->nports = nports < INIT_PORT_MAX ? INIT_PORT_MAX : nports;
+    vm_allocate (mach_task_self (),
+		 (vm_address_t *) &boot->portarray,
+		 boot->nports * sizeof (mach_port_t), 1);
+    /* Start by copying the array as passed.  */
+    for (i = 0; i < nports; ++i)
+      boot->portarray[i] = portarray[i];
+    if (MACH_PORT_NULL != 0)
+      for (; i < boot->nports; ++i)
+	boot->portarray[i] = MACH_PORT_NULL;
+    /* Keep track of which ports in BOOT->portarray come from the original
+       PORTARRAY, and which we replace.  */
+    ports_replaced = alloca (boot->nports * sizeof *ports_replaced);
+    bzero (ports_replaced, boot->nports * sizeof *ports_replaced);
+
+    if (portarray[INIT_PORT_BOOTSTRAP] == MACH_PORT_NULL &&
+	oldtask != MACH_PORT_NULL)
+      {
+	if (! task_get_bootstrap_port (oldtask,
+				       &boot->portarray[INIT_PORT_BOOTSTRAP]))
+	  ports_replaced[INIT_PORT_BOOTSTRAP] = 1;
+      }
+
+    /* Note that the parentheses on this first test are different from the
+       others below it. */
+    if ((secure || defaults)
+	&& boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
+      /* Q: Doesn't this let anyone run a program and make it
+	 get a root auth port? 
+	 A: No; the standard port for INIT_PORT_AUTH has no UID's at all.
+	 See init.trim/init.c (init_stdarrays).  */
+      use (INIT_PORT_AUTH, std_ports[INIT_PORT_AUTH], 0, 0);
+    if (secure || (defaults 
+		   && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
+      {
+	/* Ask the proc server for the proc port for this task.  */
+	mach_port_t new;
+	e.error = proc_task2proc (procserver, newtask, &new);
+	if (e.error)
+	  goto bootout;
+
+	use (INIT_PORT_PROC, new, 0, 1);
+
+	/* XXX We should also call proc_setowner at this point. */
+      }
+    else if (oldtask != newtask && oldtask != MACH_PORT_NULL 
+	     && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
+      {
+	mach_port_t new;
+	/* This task port refers to the old task; use it to fetch a new
+	   one for the new task.  */
+	e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
+				  newtask, &new);
+	if (e.error)
+	  goto bootout;
+	use (INIT_PORT_PROC, new, 0, 1);
+      }
+    if (secure || (defaults
+		   && boot->portarray[INIT_PORT_CRDIR] == MACH_PORT_NULL))
+      use (INIT_PORT_CRDIR, std_ports[INIT_PORT_CRDIR], 1, 0);
+    if (secure || (defaults
+		   && boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL))
+      use (INIT_PORT_CWDIR, std_ports[INIT_PORT_CWDIR], 1, 0);
+  }  
+
+
+  /* We have now concocted in BOOT the complete Hurd context (ports and
+     ints) that the new program image will run under.  We will use these
+     ports for looking up the interpreter file if there is one.  */
+
   if (! e.error && e.interp.section)
     {
       /* There is an interpreter section specifying another file to load
@@ -1302,21 +1487,13 @@ do_exec (mach_port_t execserver,
       if (! name)
 	e.interp.section = NULL;
       else
-	{
-	  /* Open the named file using the appropriate directory ports for
-	     the user.  */
-	  inline mach_port_t user_port (unsigned int idx)
-	    {
-	      return (((flags & (EXEC_SECURE|EXEC_DEFAULTS)) || idx >= nports)
-		      ? std_ports : portarray)
-		[idx];
-	    }
-
-	  e.error = hurd_file_name_lookup (user_port (INIT_PORT_CRDIR),
-					   user_port (INIT_PORT_CWDIR),
-					   name, O_READ, 0, &interp.file);
-	}
+	/* Open the named file using the appropriate directory ports for
+	   the user.  */
+	e.error = hurd_file_name_lookup (boot->portarray[INIT_PORT_CRDIR],
+					 boot->portarray[INIT_PORT_CWDIR],
+					 name, O_READ, 0, &interp.file);
     }
+
   if (interp.file != MACH_PORT_NULL)
     {
       /* We opened an interpreter file.  Prepare it for loading too.  */
@@ -1343,31 +1520,13 @@ do_exec (mach_port_t execserver,
     }
 
   if (e.error)
-    {
-      if (e.interp.section)
-	finish (&interp, 1);
-      finish (&e, 0);
-      return e.error;
-    }
+    goto bootout;
 
-  /* Suspend the existing task before frobnicating it.  */
-  if (oldtask != MACH_PORT_NULL && (e.error = task_suspend (oldtask)))
-    return e.error;
 
-  if (oldtask == MACH_PORT_NULL)
-    flags |= EXEC_NEWTASK;
+  /* We are now committed to the exec.  It "should not fail".
+     If it does fail now, the task will be hopelessly munged.  */
 
-  if (flags & (EXEC_NEWTASK|EXEC_SECURE))
-    {
-      /* Create the new task.  If we are not being secure, then use OLDTASK
-	 for the task_create RPC, in case it is something magical.  */	 
-      e.error = task_create ((flags & EXEC_SECURE) || !oldtask ?
-			     mach_task_self () : oldtask,
-			     0, &newtask);
-      if (e.error)
-	goto out;
-    }
-  else
+  if (newtask == oldtask)
     {
       thread_array_t threads;
       mach_msg_type_number_t nthreads, i;
@@ -1376,7 +1535,7 @@ do_exec (mach_port_t execserver,
 
       e.error = task_threads (oldtask, &threads, &nthreads);
       if (e.error)
-	goto out;
+	goto bootout;
       for (i = 0; i < nthreads; ++i)
 	{
 	  thread_terminate (threads[i]);
@@ -1399,10 +1558,8 @@ do_exec (mach_port_t execserver,
 
       for (i = 0; i < ndestroynames; ++i)
 	mach_port_destroy (oldtask, destroynames[i]);
-
-      newtask = oldtask;
     }
-
+  
 /* XXX this should be below
    it is here to work around a vm_map kernel bug. */
   if (interp.file != MACH_PORT_NULL)
@@ -1412,7 +1569,7 @@ do_exec (mach_port_t execserver,
       if (interp.error)
 	{
 	  e.error = interp.error;
-	  goto out;
+	  goto bootout;
 	}
       finish (&interp, 1);
     }
@@ -1421,7 +1578,7 @@ do_exec (mach_port_t execserver,
   /* Load the file into the task.  */
   load (newtask, &e);
   if (e.error)
-    goto out;
+    goto bootout;
 
   /* XXX loading of interp belongs here */
 
@@ -1431,175 +1588,7 @@ do_exec (mach_port_t execserver,
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);
   if (e.error)
-    goto out;
-
-  /* Store the data that we will give in response
-     to the RPC on the new task's bootstrap port.  */
-
-  boot = alloc_recv (sizeof (*boot));
-  if (boot == NULL)
-    {
-      e.error = ENOMEM;
-      goto out;
-    }
-
-  if (nports <= INIT_PORT_BOOTSTRAP)
-    {
-      mach_port_t *new;
-      vm_allocate (mach_task_self (),
-		   (vm_address_t *) &new,
-		   INIT_PORT_MAX * sizeof (mach_port_t), 1);
-      memcpy (new, portarray, nports * sizeof (mach_port_t));
-      bzero (&new[nports], (INIT_PORT_MAX - nports) * sizeof (mach_port_t));
-    }
-  if (portarray[INIT_PORT_BOOTSTRAP] == MACH_PORT_NULL &&
-      oldtask != MACH_PORT_NULL)
-    task_get_bootstrap_port (oldtask, &portarray[INIT_PORT_BOOTSTRAP]);
-
-  e.error = mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
-				    (mach_port_t) boot,
-				    MACH_MSG_TYPE_MAKE_SEND);
-  if (e.error)
-    goto out;
-  e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
-  if (e.error)
-    goto out;
-  mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
-
-#ifdef XXX
-  boot->phdr_addr = phdr_addr;
-  boot->phdr_size = phdr_size;
-  boot->user_entry = e.entry;
-#endif
-
-  e.error = servercopy ((void **) &argv, argvlen, argv_copy);
-  if (e.error)
-    goto bootallocout;
-  boot->argv = argv;
-  boot->argvlen = argvlen;
-  e.error = servercopy ((void **) &envp, envplen, envp_copy);
-  if (e.error)
-    goto argvout;
-  boot->envp = envp;
-  boot->envplen = envplen;
-  e.error = servercopy ((void **) &dtable, dtablesize * sizeof (mach_port_t),
-			dtable_copy);
-  if (e.error)
-    goto envpout;
-  boot->dtable = dtable;
-  boot->dtablesize = dtablesize;
-  e.error = servercopy ((void **) &portarray, nports * sizeof (mach_port_t),
-			portarray_copy);
-  if (e.error)
-    goto portsout;
-  boot->portarray = portarray;
-  boot->nports = nports;
-  e.error = servercopy ((void **) &intarray, nints * sizeof (int),
-			intarray_copy);
-  if (e.error)
-    {
-    bootout:
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) intarray, nints * sizeof (int));
-    portsout:
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t) portarray, nports * sizeof (mach_port_t));
-    envpout:
-      vm_deallocate (mach_task_self (), (vm_address_t) envp, envplen);
-    argvout:
-      vm_deallocate (mach_task_self (), (vm_address_t) argv, argvlen);
-    bootallocout:
-      free (boot);
-      mach_port_destroy (mach_task_self (), (mach_port_t) boot);
-    }
-
-  boot->intarray = intarray;
-  boot->nints = nints;
-  boot->flags = flags;
-
-  /* Adjust the information in BOOT for the secure and/or defaults flags.  */
-
-  secure = (flags & EXEC_SECURE);
-  defaults = (flags & EXEC_DEFAULTS);
-  
-  if ((secure || defaults) && nports < INIT_PORT_MAX)
-    {
-      /* Allocate a new vector that is big enough.  */
-      vm_allocate (mach_task_self (),
-		   (vm_address_t *) &boot->portarray,
-		   INIT_PORT_MAX * sizeof (mach_port_t),
-		   1);
-      memcpy (boot->portarray, portarray,
-	      nports * sizeof (mach_port_t));
-      vm_deallocate (mach_task_self (), (vm_address_t) portarray,
-		     nports * sizeof (mach_port_t));
-      nports = INIT_PORT_MAX;
-    }
-
-  /* Note that the parentheses on this first test are different from the
-     others below it. */
-  if ((secure || defaults)
-      && boot->portarray[INIT_PORT_AUTH] == MACH_PORT_NULL)
-    /* Q: Doesn't this let anyone run a program and make it
-       get a root auth port? 
-       A: No; the standard port for INIT_PORT_AUTH has no UID's at all.
-       See init.trim/init.c (init_stdarrays).  */
-    set_init_port (std_ports[INIT_PORT_AUTH], 
-		   &boot->portarray[INIT_PORT_AUTH], 0, 0);
-  if (secure || (defaults 
-		 && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
-    {
-      mach_port_t new;
-      e.error = proc_task2proc (procserver, newtask, &new);
-      if (e.error)
-	goto bootout;
-
-      set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
-
-      /* XXX We should also call proc_setowner at this point. */
-    }
-  else if (oldtask != newtask && oldtask != MACH_PORT_NULL 
-	   && nports > INIT_PORT_PROC
-	   && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
-    {
-      mach_port_t new;
-      /* This task port refers to the old task; use it to fetch a new
-	 one for the new task.  */
-      e.error = proc_task2proc (boot->portarray[INIT_PORT_PROC], 
-				newtask, &new);
-      if (e.error)
-	goto bootout;
-      set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
-    }
-  if (secure || (defaults
-		 && boot->portarray[INIT_PORT_CRDIR] == MACH_PORT_NULL))
-    set_init_port (std_ports[INIT_PORT_CRDIR],
-		   &boot->portarray[INIT_PORT_CRDIR], 
-		   boot->portarray[INIT_PORT_AUTH], 0);
-  if (secure || (defaults && 
-		 boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL))
-    set_init_port (std_ports[INIT_PORT_CWDIR],
-		   &boot->portarray[INIT_PORT_CWDIR],
-		   boot->portarray[INIT_PORT_AUTH], 0);
-  
-  if ((secure || defaults) && nints < INIT_INT_MAX)
-    {
-      /* Allocate a new vector that is big enough.  */
-      vm_allocate (mach_task_self (),
-		   (vm_address_t *) &boot->intarray,
-		   INIT_INT_MAX * sizeof (int),
-		   1);
-      memcpy (boot->intarray, intarray, nints * sizeof (int));
-      vm_deallocate (mach_task_self (), (vm_address_t) intarray,
-		     nints * sizeof (int));
-      nints = INIT_INT_MAX;
-    }
-
-  if (secure)
-    boot->intarray[INIT_UMASK] = std_ints ? std_ints[INIT_UMASK] : CMASK;
-      
-  if (nports > INIT_PORT_PROC)
-    proc_mark_exec (boot->portarray[INIT_PORT_PROC]);
+    goto bootout;
 
   /* Start up the initial thread at the entry point.  */
   boot->stack_base = 0, boot->stack_size = 0; /* Don't care about values.  */
@@ -1620,8 +1609,8 @@ do_exec (mach_port_t execserver,
 	 When not secure, it is nice to let processes associate with
 	 whatever proc server turns them on, regardless of which exec
 	 itself is using.  */
-      if ((flags & EXEC_SECURE)
-	  || nports <= INIT_PORT_PROC
+      if (secure
+	  || boot->nports <= INIT_PORT_PROC
 	  || boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL)
 	psrv = procserver;
       else
@@ -1634,9 +1623,9 @@ do_exec (mach_port_t execserver,
 	  proc_reassign (proc, newtask);
 	  mach_port_deallocate (mach_task_self (), proc);
 	}
-    }
 
-  newtask = MACH_PORT_NULL;
+      mach_port_deallocate (mach_task_self (), oldtask);
+    }
 
   /* Request no-senders notification on BOOT, so we can release
      its resources if the task dies before calling exec_startup.  */
@@ -1654,27 +1643,102 @@ do_exec (mach_port_t execserver,
   mach_port_move_member (mach_task_self (),
 			 (mach_port_t) boot, request_portset);
 
+  if (e.error)
+    {
+      /* We barfed somewhere along the way.  Deallocate any local data
+         copies we just made.  */
+    bootout:
+      mach_port_destroy (mach_task_self (), (mach_port_t) boot);
+      if (intarray_copy)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) boot->intarray,
+		       boot->nints * sizeof (int));
+      if (dtable_copy)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) boot->dtable,
+		       boot->dtablesize * sizeof (mach_port_t));
+      if (envp_copy)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) boot->envp, boot->envplen);
+      if (argv_copy)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) boot->argv, boot->argvlen);
+      if (boot->portarray)
+	{
+	  for (i = 0; i < boot->nports; ++i)
+	    if (ports_replaced[i] && boot->portarray[i] != MACH_PORT_NULL)
+	      /* This port was replaced, so we created reference anew and
+		 we must deallocate it.  (The references that arrived in
+		 the original portarray will be deallocated by MiG on
+		 failure return.)  */
+	      mach_port_deallocate (mach_task_self (), boot->portarray[i]);
+	  vm_deallocate (mach_task_self (),
+			 (vm_address_t) boot->portarray,
+			 boot->nports * sizeof (mach_port_t));
+	}
+      free (boot);
+    }
 
  out:
-  if (newtask != MACH_PORT_NULL)
-    {
-      task_terminate (newtask);
-      mach_port_deallocate (mach_task_self (), newtask);
-    }
   if (e.interp.section)
     finish (&interp, 1);
   finish (&e, !e.error);
 
-  if (oldtask != newtask)
-    task_resume (oldtask);
   if (thread != MACH_PORT_NULL)
     {
       thread_resume (thread);
       mach_port_deallocate (mach_task_self (), thread);
     }
 
-  if (! e.error)
-    mach_port_deallocate (mach_task_self (), oldtask);
+  if (e.error)
+    {
+      if (oldtask != newtask)
+	{
+	  /* We created a new task but failed to set it up.  Kill it.  */
+	  task_terminate (newtask);
+	  mach_port_deallocate (mach_task_self (), newtask);
+	}
+      /* Resume the old task, which we suspended earlier.  */
+      task_resume (oldtask);
+    }
+  else
+    {
+      if (oldtask != newtask)
+	{
+	  /* We successfully set the new task up.
+	     Terminate the old task and deallocate our right to it.  */
+	  task_terminate (oldtask);
+	  mach_port_deallocate (mach_task_self (), oldtask);
+	}
+      else
+	/* Resume the task, it is ready to run the new program.  */
+	task_resume (oldtask);
+      /* Deallocate the right to the new task we created.  */
+      mach_port_deallocate (mach_task_self (), newtask);
+
+      if (boot->nports > INIT_PORT_PROC)
+	proc_mark_exec (boot->portarray[INIT_PORT_PROC]);
+
+      for (i = 0; i < nports; ++i)
+	if (ports_replaced[i] && portarray[i] != MACH_PORT_NULL)
+	  /* This port was replaced, so the reference that arrived in the
+	     original portarray is not being saved in BOOT for transfer to
+	     the user task.  Deallocate it; we don't want it, and MiG will
+	     leave it for us on successful return.  */
+	  mach_port_deallocate (mach_task_self (), portarray[i]);
+
+      /* If there is vm_allocate'd space for the original intarray and/or
+	 portarray, and we are not saving those pointers in BOOT for later
+	 transfer, deallocate the original space now.  */
+      if (!intarray_copy && boot->intarray != intarray)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) intarray,
+		       nints * sizeof intarray[0]);
+      if (!portarray_copy && boot->portarray != portarray)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t) portarray,
+		       nports * sizeof portarray[0]);
+    }
 
   return e.error;
 }
