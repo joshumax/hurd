@@ -102,7 +102,7 @@ main (int argc, char **argv)
   else if (!strcmp (argv[2], "pty-master"))
     {
       type = T_PTYMASTER;
-      bottom = &ptyio_botom;
+      bottom = &ptyio_bottom;
       ourclass = pty_class;
       ourcntlclass = pty_cntl_class;
       ourcntl = &ptyctl;
