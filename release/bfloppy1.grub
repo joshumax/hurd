@@ -16,8 +16,8 @@ default= 0
 title= fd0
 root=   (fd0)
 kernel= /boot/gnumach.gz root=fd0
-module= /boot/serverboot.gz
-pause=Insert boot-floppy #2 and hit RETURN...
+module= /boot/serverboot
+pause=  Insert boot-floppy #2 and hit RETURN...
 
 # Installation steps for GRUB hard disk boot blocks
 # Entry 4:
@@ -27,4 +27,3 @@ install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
 # Entry 5:
 title=  Reinstall grub from hard disk to itself
 install= (hd0)/boot/grub/stage1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
-
