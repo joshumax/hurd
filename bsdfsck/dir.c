@@ -33,14 +33,14 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)dir.c	8.1 (Berkeley) 6/5/93";*/
-static char *rcsid = "$Id: dir.c,v 1.1 1994/08/23 19:29:21 mib Exp $";
+static char *rcsid = "$Id: dir.c,v 1.2 1994/08/23 20:08:37 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/time.h>
-#include <ufs/ufs/dinode.h>
-#include <ufs/ufs/dir.h>
-#include <ufs/ffs/fs.h>
+#include "../ufs/dinode.h"
+#include "../ufs/dir.h"
+#include "../ufs/fs.h"
 #include <stdlib.h>
 #include <string.h>
 #include "fsck.h"
@@ -275,7 +275,7 @@ fileerror(cwd, ino, errmesg)
 	dp = ginode(ino);
 	if (ftypeok(dp))
 		pfatal("%s=%s\n",
-		    (dp->di_mode & IFMT) == IFDIR ? "DIR" : "FILE", pathbuf);
+		    (DI_MODE(dp) & IFMT) == IFDIR ? "DIR" : "FILE", pathbuf);
 	else
 		pfatal("NAME=%s\n", pathbuf);
 }
@@ -292,7 +292,7 @@ adjust(idesc, lcnt)
 			clri(idesc, "UNREF", 0);
 	} else {
 		pwarn("LINK COUNT %s", (lfdir == idesc->id_number) ? lfname :
-			((dp->di_mode & IFMT) == IFDIR ? "DIR" : "FILE"));
+			((DI_MODE(dp) & IFMT) == IFDIR ? "DIR" : "FILE"));
 		pinode(idesc->id_number);
 		printf(" COUNT %d SHOULD BE %d",
 			dp->di_nlink, dp->di_nlink - lcnt);
@@ -374,7 +374,7 @@ linkup(orphan, parentdir)
 
 	bzero((char *)&idesc, sizeof(struct inodesc));
 	dp = ginode(orphan);
-	lostdir = (dp->di_mode & IFMT) == IFDIR;
+	lostdir = (DI_MODE(dp) & IFMT) == IFDIR;
 	pwarn("UNREF %s ", lostdir ? "DIR" : "FILE");
 	pinode(orphan);
 	if (preen && dp->di_size == 0)
@@ -416,7 +416,7 @@ linkup(orphan, parentdir)
 		}
 	}
 	dp = ginode(lfdir);
-	if ((dp->di_mode & IFMT) != IFDIR) {
+	if ((DI_MODE(dp) & IFMT) != IFDIR) {
 		pfatal("lost+found IS NOT A DIRECTORY");
 		if (reply("REALLOCATE") == 0)
 			return (0);
