@@ -182,8 +182,8 @@ error_t netfs_attempt_syncfs (struct iouser *cred, int wait);
 /* The user must define this function.  Lookup NAME in DIR (which is
    locked) for USER; set *NP to the found name upon return.  If the
    name was not found, then return ENOENT.  On any error, clear *NP.
-   (*NP, if found, should be locked, this call should unlock DIR no
-   matter what.)  */
+   (*NP, if found, should be locked and a reference to it generated.
+   This call should unlock DIR no matter what.)  */
 error_t netfs_attempt_lookup (struct iouser *user, struct node *dir, 
 			      char *name, struct node **np);
 
@@ -252,7 +252,7 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
 
 /* The user must define this function.  Write to the locked file NP
    for user CRED starting at OFSET and continuing for up to *LEN bytes
-   from DATA.  Set *LEN to the amount seccessfully written upon
+   from DATA.  Set *LEN to the amount successfully written upon
    return.  */
 error_t netfs_attempt_write (struct iouser *cred, struct node *np,
 			     off_t offset, size_t *len, void *data);
@@ -329,8 +329,8 @@ extern int netfs_maxsymlinks;
    If an error occurs, NULL is returned.  */
 struct node *netfs_make_node (struct netnode *);
 
-/* When ever node->references is to be touched, this lock must be
-   held.  Cf. netfs_nrele, netfs_nput, netfs_ref and netfs_drop_node.  */
+/* Whenever node->references is to be touched, this lock must be
+   held.  Cf. netfs_nrele, netfs_nput, netfs_nref and netfs_drop_node.  */
 extern spin_lock_t netfs_node_refcnt_lock;
 
 /* Normally called in main.  This function sets up some of the netfs
@@ -353,7 +353,7 @@ struct protid *netfs_make_protid (struct peropen *po, struct iouser *user);
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  The initial values for the root_parent, shadow_root,
    and shadow_root_parent fields are copied from CONTEXT if it's
-   non-zero, otherwise zerod.  */
+   non-zero, otherwise zeroed.  */
 struct peropen *netfs_make_peropen (struct node *, int,
 				    struct peropen *context);
 
@@ -385,7 +385,7 @@ void netfs_release_peropen (struct peropen *);
 int netfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 
 /* Called to ask the filesystem to shutdown.  If it returns, an error
-   occured.  FLAGS are passed to fsys_goaway. */
+   occurred.  FLAGS are passed to fsys_goaway. */
 error_t netfs_shutdown (int flags);
 
 extern struct port_class *netfs_protid_class;

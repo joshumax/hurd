@@ -1,3 +1,7 @@
+2001-01-14  Neal H Walfield   <neal@cs.uml.edu>
+
+	* netfs.h: Documentation fixes.
+
 2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* netfs.h: Revert doc "fix" of netfs_attempt_chmod.
