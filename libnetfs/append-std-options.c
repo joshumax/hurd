@@ -22,9 +22,8 @@
 
 #include "netfs.h"
 
-/* *Appends* to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
-   netfs option state (note that unlike netfs_get_options, ARGZ & ARGZ_LEN
-   must already have a sane value).  */
+/* Appends to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
+   netfs option state.  */
 error_t
 netfs_append_std_options (char **argz, unsigned *argz_len)
 {
