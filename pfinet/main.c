@@ -228,5 +228,27 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
   if (flags & FSYS_GOAWAY_FORCE)
     exit (0);
   else
-    return EBUSY;
+    {
+      /* Stop new requests.  */
+      ports_inhibit_class_rpcs (trivfs_cntl_portclasses[0]);
+      ports_inhibit_class_rpcs (trivfs_protid_portclasses[0]);
+      ports_inhibit_class_rpcs (socketport_class);
+
+      if (ports_count_class (socketport_class) != 0)
+	{
+	  /* We won't go away, so start things going again...  */
+	  ports_enable_class (socketport_class);
+	  ports_resume_class_rpcs (trivfs_cntl_portclasses[0]);
+	  ports_resume_class_rpcs (trivfs_protid_portclasses[0]);
+
+	  return EBUSY;
+	}
+
+      /* There are no sockets, so we can die without breaking anybody
+	 too badly.  We don't let user ports on the /servers/socket/2
+	 file keep us alive because those get cached in every process
+	 that ever makes a PF_INET socket, libc copes with getting
+	 MACH_SEND_INVALID_DEST and looking up the new translator.  */
+      exit (0);
+    }
 }
