@@ -1,5 +1,5 @@
 /* Load a task using the single server, and then run it
-   as if we were the kernel. 
+   as if we were the kernel.
    Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -259,7 +259,7 @@ struct sgttyb
   char unused[4];
   short flags;
 };
-  
+
 
 #define SIGIO 23
 #define SIGEMSG 30
@@ -282,7 +282,7 @@ sigsetmask (int mask)
 {
   return syscall (110, mask);
 }
- 	      
+
 int
 sigpause (int mask)
 {
@@ -348,7 +348,6 @@ int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
-  extern int exec_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
@@ -370,8 +369,7 @@ request_server (mach_msg_header_t *inp,
     }
   else
 #endif
-    return (exec_server (inp, outp)
-	    || io_server (inp, outp)
+    return (io_server (inp, outp)
 	    || device_server (inp, outp)
 	    || notify_server (inp, outp)
 	    || term_server (inp, outp)
@@ -399,7 +397,7 @@ load_image (task_t t,
       task_terminate (t);
       uxexit (1);
     }
-  
+
   read (fd, &hdr, sizeof hdr);
   if (*(Elf32_Word *) hdr.e.e_ident == *(Elf32_Word *) "\177ELF")
     {
@@ -426,7 +424,7 @@ load_image (task_t t,
 	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
 	    vm_write (t, ph->p_vaddr, buf, bufsz);
 	    vm_deallocate (mach_task_self (), buf, bufsz);
-	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0, 
+	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0,
 			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
 			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
 			((ph->p_flags & PF_X) ? VM_PROT_EXECUTE : 0));
@@ -444,7 +442,7 @@ load_image (task_t t,
       char *buf;
 
       headercruft = sizeof (struct exec) * (magic == ZMAGIC);
-  
+
       amount = headercruft + hdr.a.a_text + hdr.a.a_data;
       rndamount = round_page (amount);
       vm_allocate (mach_task_self (), (u_int *)&buf, rndamount, 1);
@@ -472,8 +470,6 @@ void msg_thread ();
 
 /* Callbacks for boot_script.c; see boot_script.h.  */
 
-mach_port_t boot_script_task_port;
-
 void *
 boot_script_malloc (int size)
 {
@@ -484,51 +480,6 @@ void
 boot_script_free (void *ptr, int size)
 {
   free (ptr);
-}
-
-mach_port_t
-boot_script_task_create ()
-{
-  mach_port_t task;
-
-  if (task_create (mach_task_self (), 0, &task))
-    return MACH_PORT_NULL;
-
-  /* We don't want it to inherit our UX bootstrap port.  */
-  task_set_bootstrap_port (task, MACH_PORT_NULL);
-
-  return task;
-}
-
-void
-boot_script_task_terminate (mach_port_t task)
-{
-  task_terminate (task);
-}
-
-void
-boot_script_task_suspend (mach_port_t task)
-{
-  task_suspend (task);
-}
-
-int
-boot_script_task_resume (mach_port_t task)
-{
-  return task_resume (task);
-}
-
-void
-boot_script_port_deallocate (mach_port_t task, mach_port_t port)
-{
-  mach_port_deallocate (task, port);
-}
-
-int
-boot_script_port_insert_right (mach_port_t task, mach_port_t name,
-			       mach_port_t port, mach_msg_type_name_t right)
-{
-  return mach_port_insert_right (task, name, port, right);
 }
 
 mach_port_t
@@ -641,8 +592,6 @@ main (int argc, char **argv, char **envp)
   defpager = MACH_PORT_NULL;
   vm_set_default_memory_manager (privileged_host_port, &defpager);
 
-  boot_script_task_port = mach_task_self ();
-
   if (argc < 2 || (argv[1][0] == '-' && argc < 3))
     {
     usage:
@@ -678,8 +627,8 @@ main (int argc, char **argv, char **envp)
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
-  
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
+
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &pseudo_master_device_port);
   mach_port_insert_right (mach_task_self (),
 			  pseudo_master_device_port,
@@ -692,7 +641,7 @@ main (int argc, char **argv, char **envp)
 		      &pseudo_console);
   mach_port_move_member (mach_task_self (), pseudo_console, receive_set);
   mach_port_request_notification (mach_task_self (), pseudo_console,
-				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_console, 
+				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_console,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
@@ -803,12 +752,12 @@ main (int argc, char **argv, char **envp)
 
   cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
 				(any_t) 0));
-  
+
   while (1)
     {
       sigpause (0);
     }
-  
+
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
 }
 
@@ -826,7 +775,7 @@ set_mach_stack_args (user_task,
   /* This code is lifted from .../mk/bootstrap/load.c. */
   va_list			argv_ptr;
   char *			arg_ptr;
-  
+
   int			arg_len;
   int			arg_count;
   char *			arg_pos;
@@ -857,7 +806,7 @@ set_mach_stack_args (user_task,
 	arg_len += sizeof(integer_t) + (2 + arg_count) * sizeof(char *);
 	arg_len = (arg_len + (sizeof(integer_t) - 1)) & ~(sizeof(integer_t)-1);
 
-  
+
   /* This small piece is from .../mk/bootstrap/i386/exec.c. */
   {
 	vm_offset_t	stack_start;
@@ -898,7 +847,7 @@ set_mach_stack_args (user_task,
 				reg_size);
 
 	arg_pos = (void *) regs.uesp;
-      }    
+      }
 
 	/*
 	 * Copy out the arguments.
@@ -1036,7 +985,7 @@ queue_read (enum read_type type,
   struct qr *qr;
 
   spin_lock (&queuelock);
-  
+
   qr = malloc (sizeof (struct qr));
   qr->type = type;
   qr->reply_port = reply_port;
@@ -1061,24 +1010,24 @@ read_reply ()
   int amtread;
 
   spin_lock (&queuelock);
-  
+
   if (!qrhead)
     {
       spin_unlock (&queuelock);
       return;
     }
-  
+
   qr = qrhead;
   qrhead = qr->next;
   if (qr == qrtail)
     qrtail = 0;
 
   spin_unlock (&queuelock);
-  
+
   ioctl (0, FIONREAD, &avail);
   if (!avail)
     return;
-  
+
   if (qr->type == DEV_READ)
     vm_allocate (mach_task_self (), (vm_address_t *)&buf, qr->amount, 1);
   else
@@ -1094,7 +1043,7 @@ read_reply ()
       else
 	ds_device_read_reply (qr->reply_port, qr->reply_type, errno, 0, 0);
       break;
-      
+
     case DEV_READI:
       if (amtread >= 0)
 	ds_device_read_reply_inband (qr->reply_port, qr->reply_type, 0,
@@ -1103,7 +1052,7 @@ read_reply ()
 	ds_device_read_reply_inband (qr->reply_port, qr->reply_type, errno,
 				     0, 0);
       break;
-      
+
     case IO_READ:
       if (amtread >= 0)
 	io_read_reply (qr->reply_port, qr->reply_type, 0,
@@ -1193,132 +1142,6 @@ bootstrap_compat(in, out)
 	reply->RetCode = MIG_NO_REPLY;
 }
 
-
-/* Implementation of exec interface */
-
-
-kern_return_t
-S_exec_exec (mach_port_t execserver,
-	     mach_port_t file,
-	     mach_port_t oldtask,
-	     int flags,
-	     data_t argv,
-	     mach_msg_type_number_t argvCnt,
-	     boolean_t argvSCopy,
-	     data_t envp,
-	     mach_msg_type_number_t envpCnt,
-	     boolean_t envpSCopy,
-	     portarray_t dtable,
-	     mach_msg_type_number_t dtableCnt,
-	     boolean_t dtableSCopy,
-	     portarray_t portarray,
-	     mach_msg_type_number_t portarrayCnt,
-	     boolean_t portarraySCopy,
-	     intarray_t intarray,
-	     mach_msg_type_number_t intarrayCnt,
-	     boolean_t intarraySCopy,
-	     mach_port_array_t deallocnames,
-	     mach_msg_type_number_t deallocnamesCnt,
-	     mach_port_array_t destroynames,
-	     mach_msg_type_number_t destroynamesCnt)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_exec_init (
-	mach_port_t execserver,
-	auth_t auth_handle,
-	process_t proc_server)
-{
-  /* Kludgy way to get a port to the auth server.  */
-  authserver = auth_handle;
-  if (proc_server != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), proc_server);
-  return 0;
-}
-
-kern_return_t
-S_exec_setexecdata (mach_port_t execserver,
-		    portarray_t ports,
-		    mach_msg_type_number_t portsCnt,
-		    boolean_t portsSCopy,
-		    intarray_t ints,
-		    mach_msg_type_number_t intsCnt,
-		    boolean_t intsSCopy)
-{
-  return EOPNOTSUPP;
-}
-
-
-kern_return_t
-S_exec_startup (mach_port_t port,
-		u_int *base_addr,
-		vm_size_t *stack_size,
-		int *flags,
-		char **argvP,
-		u_int *argvlen,
-		char **envpP,
-		u_int *envplen,
-		mach_port_t **dtableP,
-		mach_msg_type_name_t *dtablepoly,
-		u_int *dtablelen,
-		mach_port_t **portarrayP,
-		mach_msg_type_name_t *portarraypoly,
-		u_int *portarraylen,
-		int **intarrayP,
-		u_int *intarraylen)
-{
-  mach_port_t *portarray;
-  int *intarray, nc;
-  char argv[100];
-
-#if 0
-  if (!boot_like_hurd)
-    return EOPNOTSUPP;
-#endif
-
-  /* The argv string has nulls in it; so we use %c for the nulls
-     and fill with constant zero. */
-  nc = sprintf (argv, "[BOOTSTRAP %s]%c%s%c%d%c%d%c%s", fsname, '\0', 
-		bootstrap_args, '\0', php_child_name, '\0', 
-		psmdp_child_name, '\0', bootdevice);
-
-  if (nc > *argvlen)
-    vm_allocate (mach_task_self (), (vm_address_t *)argvP, nc, 1);
-  bcopy (argv, *argvP, nc);
-  *argvlen = nc;
-  
-  *base_addr = fs_stack_base;
-  *stack_size = fs_stack_size;
-
-  *flags = 0;
-  
-  *envplen = 0;
-
-  if (*portarraylen < INIT_PORT_MAX)
-    vm_allocate (mach_task_self (), (u_int *)portarrayP,
-		 (INIT_PORT_MAX * sizeof (mach_port_t)), 1);
-  portarray = *portarrayP;
-  *portarraylen = INIT_PORT_MAX;
-  *portarraypoly = MACH_MSG_TYPE_COPY_SEND;
-
-  *dtablelen = 0;
-  *dtablepoly = MACH_MSG_TYPE_COPY_SEND;
-  
-  if (*intarraylen < INIT_INT_MAX)
-    vm_allocate (mach_task_self (), (u_int *)intarrayP,
-		 (INIT_INT_MAX * sizeof (mach_port_t)), 1);
-  intarray = *intarrayP;
-  *intarraylen = INIT_INT_MAX;
-  
-  bzero (portarray, INIT_PORT_MAX * sizeof (mach_port_t));
-  bzero (intarray, INIT_INT_MAX * sizeof (int));
-  
-  return 0;
-}
-
-
 
 /* Imlementiation of tioctl interface */
 /* This is bletcherously kludged to work with emacs in a fragile
@@ -1361,7 +1184,7 @@ restore_termstate ()
 #undef tcgetattr
 #undef tcsetattr
 
-kern_return_t 
+kern_return_t
 S_tioctl_tiocgeta (mach_port_t port,
 		   int modes[],
 		   char ccs[],
@@ -1379,7 +1202,7 @@ S_tioctl_tiocgeta (mach_port_t port,
 #else
   /* Emacs reads the terminal state in one of two cases:
      1) Checking whether or not a preceding tiocseta succeeded;
-     2) Finding out what the state of the terminal was on startup. 
+     2) Finding out what the state of the terminal was on startup.
      In case (1) in only cares that we return exactly what it set;
      in case (2) it only uses it for a later seta on exit.  So we
      can just tell it what's lying around. */
@@ -1387,9 +1210,9 @@ S_tioctl_tiocgeta (mach_port_t port,
   modes[1] = term_modes[1];
   modes[2] = term_modes[2];
   modes[3] = term_modes[3];
-  
+
   bcopy (term_ccs, ccs, 20);
-  
+
   speeds[0] = term_speeds[0];
   speeds[1] = term_speeds[1];
   return 0;
@@ -1412,7 +1235,7 @@ S_tioctl_tiocseta (mach_port_t port,
 #else
   /* Emacs sets the termanal stet in one of two cases:
      1) Putting the terminal into raw mode for running;
-     2) Restoring the terminal to its original state. 
+     2) Restoring the terminal to its original state.
      Because ICANON is set in the original state, and because
      emacs always clears ICANON when running, this tells us which
      is going on. */
@@ -1481,7 +1304,7 @@ ds_device_open (mach_port_t master_port,
 {
   if (master_port != pseudo_master_device_port)
     return D_INVALID_OPERATION;
-  
+
   if (!strcmp (name, "console"))
     {
 #if 0
@@ -1494,7 +1317,7 @@ ds_device_open (mach_port_t master_port,
       *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
     }
-  
+
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
   return device_open (master_device_port, mode, name, device);
 }
@@ -1523,14 +1346,14 @@ ds_device_write (device_t device,
 #if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
 #endif
 
   *bytes_written = write (1, data, datalen);
-  
+
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
 
@@ -1550,14 +1373,14 @@ ds_device_write_inband (device_t device,
 #if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
 #endif
 
   *bytes_written = write (1, data, datalen);
-  
+
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
 
@@ -1573,14 +1396,14 @@ ds_device_read (device_t device,
 {
   int avail;
   int mask;
-  
+
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
-#if 0  
+#if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
@@ -1619,10 +1442,10 @@ ds_device_read_inband (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
-#if 0  
+#if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
@@ -1763,7 +1586,7 @@ do_mach_notify_no_senders (mach_port_t notify,
       else
 	{
 	  mach_port_request_notification (mach_task_self (), pseudo_console,
-					  MACH_NOTIFY_NO_SENDERS, 
+					  MACH_NOTIFY_NO_SENDERS,
 					  console_mscount, pseudo_console,
 					  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
 	  if (foo != MACH_PORT_NULL)
@@ -1810,7 +1633,7 @@ S_io_write (mach_port_t object,
 #if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
@@ -1834,11 +1657,11 @@ S_io_read (mach_port_t object,
 
   if (object != pseudo_console)
     return EOPNOTSUPP;
-  
+
 #if 0
   if (console_send_rights)
     {
-      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+      mach_port_mod_refs (mach_task_self (), pseudo_console,
 			  MACH_PORT_TYPE_SEND, -console_send_rights);
       console_send_rights = 0;
     }
@@ -1862,7 +1685,7 @@ S_io_read (mach_port_t object,
     }
 }
 
-kern_return_t 
+kern_return_t
 S_io_seek (mach_port_t object,
 	   mach_port_t reply_port,
 	   mach_msg_type_name_t reply_type,
@@ -1885,7 +1708,7 @@ S_io_readable (mach_port_t object,
   return 0;
 }
 
-kern_return_t 
+kern_return_t
 S_io_set_all_openmodes (mach_port_t object,
 			mach_port_t reply_port,
 			mach_msg_type_name_t reply_type,
@@ -2007,7 +1830,7 @@ S_io_stat (mach_port_t object,
 {
   if (object != pseudo_console)
     return EOPNOTSUPP;
-  
+
   bzero (st, sizeof (struct stat));
   st->st_blksize = 1024;
   return 0;
@@ -2022,8 +1845,8 @@ S_io_reauthenticate (mach_port_t object,
   uid_t *gu, *au;
   gid_t *gg, *ag;
   unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
-    
-  if (! auth_server_authenticate (authserver, 
+
+  if (! auth_server_authenticate (authserver,
 				  object, MACH_MSG_TYPE_MAKE_SEND,
 				  rend, MACH_MSG_TYPE_MOVE_SEND,
 				  object, MACH_MSG_TYPE_MAKE_SEND,
@@ -2188,7 +2011,7 @@ S_io_pathconf (mach_port_t obj,
 {
   return EOPNOTSUPP;
 }
-    
+
 
 
 /* Implementation of the Hurd terminal driver interface, which we only
