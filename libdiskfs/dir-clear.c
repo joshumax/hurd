@@ -43,9 +43,7 @@ diskfs_clear_directory (struct node *dp,
   dp->dn_set_ctime = 1;
 
   /* Find and remove the `..' entry. */
-  err = diskfs_checkdirmod (dp, pdp, cred);
-  if (!err)
-    err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, 0, ds, cred);
+  err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, 0, ds, cred);
   assert (err != ENOENT);
   if (!err)
     err = diskfs_dirremove (dp, ds);
