@@ -33,6 +33,16 @@
 #include "open.h"
 #include "dev.h"
 #include "ptypes.h"
+
+#ifdef MSG
+#define DEBUG(what) \
+  ((debug) \
+   ? ({ mutex_lock(&debug_lock); what; mutex_unlock(&debug_lock);0;}) \
+   : 0)
+#else
+#define DEBUG(what) 0
+#endif
+
 
 /* ---------------------------------------------------------------- */
 
@@ -88,6 +98,8 @@ static struct option options[] =
 
 /* A struct dev for the open kernel device.  */
 static struct dev *device = NULL;
+/* And a lock to arbitrate changes to it.  */
+static struct mutex device_lock;
 
 /* Desired device parameters specified by the user.  */
 static char *device_name = NULL;
@@ -104,11 +116,9 @@ struct mutex debug_lock;
 
 void main(int argc, char *argv[])
 {
+  int opt;
   error_t err;
   mach_port_t bootstrap;
-  int opt;
-  struct trivfs_control *trivfs_control;
-  mach_port_t realnode, control;
 
   while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
     switch (opt)
@@ -138,25 +148,18 @@ void main(int argc, char *argv[])
 
   device_name = argv[optind];
 
-  _libports_initialize();
-
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error(2, 0, "Must be started as a translator");
   
   /* Reply to our parent */
-  control = trivfs_handle_port (MACH_PORT_NULL, PT_FSYS, PT_NODE);
-  err = fsys_startup (bootstrap, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
-  
-  /* Install the returned realnode for trivfs's use */
-  trivfs_control = ports_check_port_type (control, PT_FSYS);
-  assert (trivfs_control);
-  ports_change_hardsoft (trivfs_control, 1);
-  trivfs_control->underlying = realnode;
-  ports_done_with_port (trivfs_control);
+  err = trivfs_startup(bootstrap, PT_FSYS, PT_NODE, NULL);
+  if (err)
+    error(3, err, "Contacting parent");
 
   /* Open the device only when necessary.  */
   device = NULL;
+  mutex_init(&device_lock);
 
   /* Launch. */
   ports_manage_port_operations_multithread ();
@@ -175,6 +178,7 @@ check_open_hook (struct trivfs_control *trivfs_control,
 {
   error_t err = 0;
 
+  mutex_lock(&device_lock);
   if (device == NULL)
     /* Try and open the device.  */
     {
@@ -186,6 +190,7 @@ check_open_hook (struct trivfs_control *trivfs_control,
 	   error, as this allows stat to word correctly.  XXX  */
 	err = 0;
     }
+  mutex_unlock(&device_lock);
 
   return err;
 }
@@ -193,8 +198,9 @@ check_open_hook (struct trivfs_control *trivfs_control,
 static void
 open_hook(struct trivfs_peropen *peropen)
 {
-  if (device)
-    open_create(device, (struct open **)&peropen->hook);
+  struct dev *dev = device;
+  if (dev)
+    open_create(dev, (struct open **)&peropen->hook);
 }
 
 static void
@@ -205,38 +211,34 @@ close_hook(struct trivfs_peropen *peropen)
 }
 
 static void
-clean_exit(int status)
+close_device(int aquire_lock)
 {
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "cleaning up and exiting (status = %d)...\n", status);
-      mutex_unlock(&debug_lock);
-    }
-#endif
+  DEBUG(fprintf(debug, "Closing device\n"));
+  if (aquire_lock)
+    mutex_lock(&device_lock);
   if (device)
     {
       dev_close(device);
       device = NULL;
     }
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "Bye!\n");
-      fclose(debug);
-      debug = NULL;
-      mutex_unlock(&debug_lock);
-    }
-#endif
+  if (aquire_lock)
+    mutex_unlock(&device_lock);
+}
+
+static void
+clean_exit(int status, int aquire_lock)
+{
+  DEBUG(fprintf(debug, "Cleaning up and exiting (status = %d)...\n", status));
+  close_device(aquire_lock);
+  DEBUG({fprintf(debug, "Bye!\n"); fclose(debug); debug = NULL;});
+  exit(0);
 }
 
 /* ---------------------------------------------------------------- */
 /* Trivfs hooks  */
 
 int trivfs_fstype = FSTYPE_DEV;
-int trivfs_fsid = 0; /* ??? */
+int trivfs_fsid = 0;
 
 int trivfs_support_read = 1;
 int trivfs_support_write = 1;
@@ -252,21 +254,23 @@ int trivfs_cntl_nporttypes = 1;
 void
 trivfs_modify_stat (struct stat *st)
 {
-  if (device)
-    {
-      vm_size_t size = device->size;
+  struct dev *dev = device;
 
-      if (device->block_size > 1)
-	st->st_blksize = device->block_size;
+  if (dev)
+    {
+      vm_size_t size = dev->size;
+
+      if (dev->block_size > 1)
+	st->st_blksize = dev->block_size;
 
       st->st_size = size;
       st->st_blocks = size / 512;
 
-      if (dev_is(device, DEV_READONLY))
+      if (dev_is(dev, DEV_READONLY))
 	st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 
       st->st_mode &= ~S_IFMT;
-      st->st_mode |= dev_is(device, DEV_BUFFERED) ? S_IFBLK : S_IFCHR;
+      st->st_mode |= dev_is(dev, DEV_BUFFERED) ? S_IFBLK : S_IFCHR;
     }
   else
     /* Try and do things without an open device...  */
@@ -280,31 +284,27 @@ trivfs_modify_stat (struct stat *st)
 	st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
     }
 
-  st->st_fstype = FSTYPE_DEV;
   st->st_rdev = device_number;
 }
 
 error_t
 trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
 {
-  if (device != NULL && !(flags & FSYS_GOAWAY_FORCE))
-    /* By default, don't go away if there are still opens on this device.  */
-    return EBUSY;
+  DEBUG(fprintf(debug, "trivfs_goaway(0x%x, %d, %d, %d)\n",
+		flags, realnode, ctltype, pitype));
 
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "trivfs_goaway(0x%x, %d, %d, %d)\n",
-	      flags, realnode, ctltype, pitype);
-      mutex_unlock(&debug_lock);
-    }
-#endif
+  mutex_lock(&device_lock);
+  if (device == NULL || (flags & FSYS_GOAWAY_FORCE))
+    /* Go away immediately.  */
+    if (flags & FSYS_GOAWAY_NOSYNC)
+	/* Don't clean up.  */
+      exit(0);
+    else
+      clean_exit(0, FALSE);
+  mutex_lock(&device_lock);
 
-  if (flags & FSYS_GOAWAY_NOSYNC)
-    exit(0);
-  else
-    clean_exit(0);
+  /* Complain that there are still users.  */
+  return EBUSY;
 }
 
 /* If this variable is set, it is called every time an open happens.
@@ -335,16 +335,12 @@ trivfs_S_fsys_syncfs (struct trivfs_control *cntl,
 		      mach_port_t reply, mach_msg_type_name_t replytype,
 		      int wait, int dochildren)
 {
-#ifdef MSG
-  if (debug && device)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "syncing filesystem...\n");
-      mutex_unlock(&debug_lock);
-    }
-#endif
-  if (device)
-    return dev_sync(device, wait);
+  struct dev *dev = device;
+
+  DEBUG(fprintf(debug, "Syncing filesystem...\n"));
+
+  if (dev)
+    return dev_sync(dev, wait);
   else
     return 0;
 }
@@ -361,32 +357,20 @@ void (*ports_cleanroutines[])(void *) =
 int
 ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  error_t err;
+  int ok;
 #ifdef MSG
   static int next_msg_num = 0;
   int msg_num;
-
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      msg_num = next_msg_num++;
-      fprintf(debug, "port_demuxer(%d) [%d]\n", inp->msgh_id, msg_num);
-      mutex_unlock(&debug_lock);
-    }
 #endif
 
-  err = pager_demuxer(inp, outp) || trivfs_demuxer(inp, outp);
+  DEBUG(msg_num = next_msg_num++;
+	fprintf(debug, "port_demuxer(%d) [%d]\n", inp->msgh_id, msg_num););
 
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "port_demuxer(%d) [%d] done!\n", inp->msgh_id, msg_num);
-      mutex_unlock(&debug_lock);
-    }
-#endif
+  ok = pager_demuxer(inp, outp) || trivfs_demuxer(inp, outp);
 
-  return err;
+  DEBUG(fprintf(debug, "port_demuxer(%d) [%d] done!\n", inp->msgh_id,msg_num));
+
+  return ok;
 }
 
 /* This will be called whenever there have been no requests to the server for
@@ -397,17 +381,9 @@ ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 void
 ports_notice_idle (int nhard, int nsoft)
 {
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "ports_notice_idle(%d, %d)\n", nhard, nsoft);
-      mutex_unlock(&debug_lock);
-    }
-  else
-#endif
-    if (nhard == 0)
-      clean_exit(0);
+  DEBUG(fprintf(debug, "ports_notice_idle(%d, %d)\n", nhard, nsoft));
+  if (nhard == 0)
+    clean_exit(0, TRUE);
 }
 
 /* This will be called whenever there are no hard ports or soft ports
@@ -416,16 +392,8 @@ ports_notice_idle (int nhard, int nsoft)
 void
 ports_no_live_ports ()
 {
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "ports_no_live_ports()\n");
-      mutex_unlock(&debug_lock);
-    }
-  else
-#endif
-    clean_exit(0);
+  DEBUG(fprintf(debug, "ports_no_live_ports()\n"));
+  clean_exit(0, TRUE);
 }
 
 /* This will be called whenever there are no hard ports allocated but there
@@ -435,17 +403,6 @@ ports_no_live_ports ()
 void
 ports_no_hard_ports ()
 {
-#ifdef MSG
-  if (debug)
-    {
-      mutex_lock(&debug_lock);
-      fprintf(debug, "ports_no_hard_ports()\n");
-      mutex_unlock(&debug_lock);
-    }
-#endif
-  if (device != NULL)
-    {
-      dev_close(device);
-      device = NULL;
-    }
+  DEBUG(fprintf(debug, "ports_no_hard_ports()\n"));
+  close_device(TRUE);
 }
