@@ -1,5 +1,5 @@
 /* Libnetfs callbacks for node operations in NFS client
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,14 +24,14 @@
 #include <dirent.h>
 #include <unistd.h>
 
-/* We have fresh stat information for NP; the fattr structure is at 
+/* We have fresh stat information for NP; the fattr structure is at
    P.  Update our entry.  Return the address of the next int after
    the fattr structure.  */
 int *
 register_fresh_stat (struct node *np, int *p)
 {
   int *ret;
-  
+
   ret = xdr_decode_fattr (p, &np->nn_stat);
   np->nn->stat_updated = mapped_time->seconds;
 
@@ -40,12 +40,12 @@ register_fresh_stat (struct node *np, int *p)
     case NOT_POSSIBLE:
     case POSSIBLE:
       break;
-    
+
     case SYMLINK:
       np->nn_stat.st_size = strlen (np->nn->transarg.name);
       np->nn_stat.st_mode = ((np->nn_stat.st_mode & ~S_IFMT) | S_IFLNK);
       break;
-      
+
     case CHRDEV:
       np->nn_stat.st_rdev = np->nn->transarg.indexes;
       np->nn_stat.st_mode = ((np->nn_stat.st_mode & ~S_IFMT) | S_IFCHR);
@@ -70,7 +70,7 @@ register_fresh_stat (struct node *np, int *p)
   np->nn_stat.st_gen = 0;
   np->nn_stat.st_author = np->nn_stat.st_uid;
   np->nn_stat.st_flags = 0;
-       
+
   return ret;
 }
 
@@ -102,7 +102,7 @@ process_returned_stat (struct node *np, int *p, int mod)
 /* Handle returned wcc information for various calls.  In protocol
    version 2, this is just register_fresh_stat.  In version 3, it does
    the wcc_data interpretation too.  If this follows an operation that
-   we expect has modified the attributes, MOD should be set. 
+   we expect has modified the attributes, MOD should be set.
    (This unpacks the wcc_data XDR type.) */
 int *
 process_wcc_stat (struct node *np, int *p, int mod)
@@ -122,7 +122,7 @@ process_wcc_stat (struct node *np, int *p, int mod)
 	  p += 2 * sizeof (int); /* mtime */
 	  p += 2 * sizeof (int); /* atime */
 	}
-      
+
       /* Now the post_op_attr */
       return process_returned_stat (np, p, mod);
     }
@@ -137,14 +137,14 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
   int *p;
   void *rpcbuf;
   error_t err;
-  
+
   if (mapped_time->seconds - np->nn->stat_updated < stat_timeout)
     return 0;
 
   p = nfs_initialize_rpc (NFSPROC_GETATTR (protocol_version),
 			  (struct iouser *) -1, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
@@ -164,14 +164,14 @@ netfs_attempt_chown (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-    
+
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, gid);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_ids (p, uid, gid);
   if (protocol_version == 3)
     *p++ = 0;			/* guard_check == 0 */
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -181,7 +181,7 @@ netfs_attempt_chown (struct iouser *cred, struct node *np,
     }
 
   free (rpcbuf);
-  
+
   return err;
 }
 
@@ -212,23 +212,23 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
       if ((mode & S_IFMT) != (np->nn_stat.st_mode & S_IFMT))
 	{
 	  char *f = 0;
-	  
+
 	  if (np->nn->dtrans == NOT_POSSIBLE)
 	    return EOPNOTSUPP;
-	  
+
 	  if (np->nn->dtrans == SYMLINK)
 	    f = np->nn->transarg.name;
-	  
+
 	  switch (mode & S_IFMT)
 	    {
 	    default:
 	      return EOPNOTSUPP;
-	    
+
 	    case S_IFIFO:
 	      np->nn->dtrans = FIFO;
 	      np->nn->stat_updated = 0;
 	      break;
-	      
+
 	    case S_IFSOCK:
 	      np->nn->dtrans = SOCK;
 	      np->nn->stat_updated = 0;
@@ -245,7 +245,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
   p = xdr_encode_sattr_mode (p, mode);
   if (protocol_version == 3)
     *p++ = 0;			/* guard check == 0 */
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -253,14 +253,14 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
       if (!err || protocol_version == 3)
 	p = process_wcc_stat (np, p, !err);
     }
-  
+
   free (rpcbuf);
   return err;
 }
 
 /* Implement the netfs_attempt_chflags callback as described in
    <hurd/netfs.h>. */
-error_t 
+error_t
 netfs_attempt_chflags (struct iouser *cred, struct node *np,
 		       int flags)
 {
@@ -276,14 +276,14 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-    
+
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_times (p, atime, mtime);
   if (protocol_version == 3)
     *p++ = 0;			/* guard check == 0 */
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -305,14 +305,14 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-  
+
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_size (p, size);
   if (protocol_version == 3)
     *p++ = 0;			/* guard_check == 0 */
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -320,7 +320,7 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np,
       if (!err || protocol_version == 3)
 	p = process_wcc_stat (np, p, !err);
     }
-  
+
   /* If we got EACCES, but the user has the file open for writing,
      then the NFS protocol has screwed us.  There's nothing we can do,
      except in the important case of opens with
@@ -351,14 +351,14 @@ netfs_attempt_statfs (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-    
+
   p = nfs_initialize_rpc (NFS2PROC_STATFS, cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
-  
+
   if (!err)
     {
       p++;			/* skip IOSIZE field */
@@ -372,7 +372,7 @@ netfs_attempt_statfs (struct iouser *cred, struct node *np,
       st->f_fsid = getpid ();
       st->f_namelen = 0;
     }
-  
+
   free (rpcbuf);
   return err;
 }
@@ -406,7 +406,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
   error_t err;
   size_t amt, thisamt;
   int eof;
-  
+
   for (amt = *len; amt;)
     {
       thisamt = amt;
@@ -420,7 +420,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
       *p++ = htonl (thisamt);
       if (protocol_version == 2)
 	*p++ = 0;
-  
+
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	{
@@ -434,7 +434,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 	      free (rpcbuf);
 	      return err;
 	    }
-      
+
 	  trans_len = ntohl (*p++);
 	  if (trans_len > thisamt)
 	    trans_len = thisamt;	/* ??? */
@@ -443,14 +443,14 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 	    eof = ntohl (*p++);
 	  else
 	    eof = (trans_len < thisamt);
-	  
+
 	  bcopy (p, data, trans_len);
 	  free (rpcbuf);
 
 	  data += trans_len;
 	  offset += trans_len;
 	  amt -= trans_len;
-      
+
 	  if (eof)
 	    {
 	      *len -= amt;
@@ -460,7 +460,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
     }
   return 0;
 }
-	  
+
 /* Implement the netfs_attempt_write callback as described in
    <hurd/netfs.h>. */
 error_t
@@ -472,13 +472,13 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
   error_t err;
   size_t amt, thisamt;
   size_t count;
-  
+
   for (amt = *len; amt;)
     {
       thisamt = amt;
       if (thisamt > write_size)
 	thisamt = write_size;
-      
+
       p = nfs_initialize_rpc (NFSPROC_WRITE (protocol_version),
 			      cred, thisamt, &rpcbuf, np, -1);
       p = xdr_encode_fhandle (p, &np->nn->handle);
@@ -490,7 +490,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
       if (protocol_version == 3)
 	*p++ = htonl (FILE_SYNC);
       p = xdr_encode_data (p, data, thisamt);
-  
+
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	{
@@ -504,26 +504,26 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 		  count = ntohl (*p++);
 		  p++;		/* ignore COMMITTED */
 		  /* ignore verf for now */
-		  p += NFS3_WRITEVERFSIZE / sizeof (int);		  
+		  p += NFS3_WRITEVERFSIZE / sizeof (int);
 		}
 	      else
 		/* assume it wrote the whole thing */
 		count = thisamt;
-	      
+
 	      free (rpcbuf);
 	      amt -= count;
 	      data += count;
 	      offset += count;
 	    }
 	}
-      
+
       if (err == EINTR && amt != *len)
 	{
 	  *len -= amt;
 	  free (rpcbuf);
 	  return 0;
 	}
-      
+
       if (err)
 	{
 	  *len = 0;
@@ -542,7 +542,7 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
   int *p;
   void *rpcbuf;
   error_t err;
-  
+
   /* Don't use the lookup cache for this; we want a full sync to
      get as close to real exclusive create behavior as possible. */
 
@@ -556,7 +556,7 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
-  
+
   if (!err)
     return EEXIST;
   else
@@ -574,7 +574,7 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
   error_t err;
   char dirhandle[NFS3_FHSIZE];
   size_t dirlen;
-  
+
   /* Check the cache first. */
   *newnp = check_lookup_cache (np, name);
   if (*newnp)
@@ -587,12 +587,12 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
       else
 	return 0;
     }
-  
+
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
-  
+
   /* Remember the directory handle for later cache use. */
 
   dirlen = np->nn->handle.size;
@@ -624,12 +624,12 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
     }
   else
     *newnp = 0;
-      
+
   /* Notify the cache of the hit or miss. */
   enter_lookup_cache (dirhandle, dirlen, *newnp, name);
 
   free (rpcbuf);
-  
+
   return err;
 }
 
@@ -661,11 +661,11 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
   p = xdr_encode_create_state (p, mode, owner);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     err = nfs_error_trans (ntohl (*p++));
-  
+
   p = xdr_decode_fhandle (p, &newnp);
   p = process_returned_stat (newnp, p, 1);
 
@@ -675,7 +675,7 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
 
   /* We don't actually return this. */
   netfs_nput (newnp);
-  
+
   free (rpcbuf);
   return err;
 }
@@ -689,7 +689,7 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-  
+
   /* Should we do the same sort of thing here as with attempt_unlink? */
 
   purge_lookup_cache (np, name, strlen (name));
@@ -698,7 +698,7 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_string (p, name);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -706,7 +706,7 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
       if (protocol_version == 3)
 	p = process_wcc_stat (np, p, !err);
     }
-  
+
   free (rpcbuf);
   return err;
 }
@@ -720,7 +720,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
   int *p;
   void *rpcbuf;
   error_t err = 0;
-  
+
   if (!excl)
     {
       /* We have no RPC available that will do an atomic replacement,
@@ -743,22 +743,22 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       p = nfs_initialize_rpc (NFSPROC_LINK (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
       mutex_unlock (&dir->lock);
-      
+
       mutex_lock (&np->lock);
       p = xdr_encode_fhandle (p, &np->nn->handle);
       mutex_unlock (&np->lock);
-  
+
       mutex_lock (&dir->lock);
       purge_lookup_cache (dir, name, strlen (name));
 
       p = xdr_encode_fhandle (p, &dir->nn->handle);
       p = xdr_encode_string (p, name);
-  
+
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	err = nfs_error_trans (ntohl (*p++));
       mutex_unlock (&dir->lock);
-      
+
       free (rpcbuf);
 
       break;
@@ -769,7 +769,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 			      cred, 0, &rpcbuf, dir, -1);
       p = xdr_encode_fhandle (p, &dir->nn->handle);
       mutex_unlock (&dir->lock);
-      
+
       p = xdr_encode_string (p, name);
 
       mutex_lock (&np->lock);
@@ -780,7 +780,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  free (rpcbuf);
 	  return err;
 	}
-      
+
       if (protocol_version == 2)
 	{
 	  p = xdr_encode_string (p, np->nn->transarg.name);
@@ -790,7 +790,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	{
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  p = xdr_encode_string (p, np->nn->transarg.name);
-	}	  
+	}
       mutex_unlock (&np->lock);
 
       mutex_lock (&dir->lock);
@@ -800,7 +800,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       if (!err)
 	{
 	  err = nfs_error_trans (ntohl (*p++));
-      
+
 	  if (protocol_version == 2 && !err)
 	    {
 	      free (rpcbuf);
@@ -811,9 +811,9 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 				      cred, 0, &rpcbuf, dir, -1);
 	      p = xdr_encode_fhandle (p, &dir->nn->handle);
 	      p = xdr_encode_string (p, name);
-	  
+
 	      mutex_unlock (&dir->lock);
-	  
+
 	      err = conduct_rpc (&rpcbuf, &p);
 	      if (!err)
 		err = nfs_error_trans (ntohl (*p++));
@@ -849,7 +849,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
       free (rpcbuf);
       break;
-      
+
     case CHRDEV:
     case BLKDEV:
     case FIFO:
@@ -867,7 +867,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
 	  mutex_unlock (&dir->lock);
-	  
+
 	  mutex_lock (&np->lock);
 	  err = netfs_validate_stat (np, cred);
 	  if (err)
@@ -876,7 +876,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	      free (rpcbuf);
 	      return err;
 	    }
-	  
+
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  mutex_unlock (&np->lock);
 
@@ -886,7 +886,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  if (!err)
 	    err = nfs_error_trans (ntohl (*p++));
 	  mutex_unlock (&dir->lock);
-      
+
 	  mutex_lock (&np->lock);
 	  p = recache_handle (p, np);
 	  register_fresh_stat (np, p);
@@ -900,7 +900,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
 	  mutex_unlock (&dir->lock);
-	  
+
 	  mutex_lock (&np->lock);
 	  err = netfs_validate_stat (np, cred);
 	  if (err)
@@ -913,13 +913,11 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  if (np->nn->dtrans == BLKDEV || np->nn->dtrans == CHRDEV)
 	    {
-#define major(D) (((D)>>8) & 0xff)
-#define minor(D) ((D) & 0xff)
 	      *p++ = htonl (major (np->nn_stat.st_rdev));
 	      *p++ = htonl (minor (np->nn_stat.st_rdev));
 	    }
 	  mutex_unlock (&np->lock);
-	  
+
 	  purge_lookup_cache (dir, name, strlen (name));
 	  err = conduct_rpc (&rpcbuf, &p);
 	  if (!err)
@@ -943,7 +941,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
   if (err)
     return err;
-  
+
   mutex_lock (&np->lock);
 
   if (np->nn->dtrans == SYMLINK)
@@ -958,14 +956,14 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
       mutex_unlock (&np->lock);
-      
+
       mutex_lock (&dir->lock);
       netfs_attempt_unlink ((struct iouser *)-1, dir, name);
       mutex_unlock (&dir->lock);
     }
   else
     mutex_unlock (&np->lock);
-  
+
   return 0;
 }
 
@@ -991,7 +989,7 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
 	mutex_lock (&dir->lock);
     }
   while (err == EEXIST);
-  
+
   if (err)
     {
       free (name);
@@ -1051,7 +1049,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
     {
       /* We happen to know this is where the XID is. */
       int verf = *(int *)rpcbuf;
-      
+
       *p++ = ntohl (EXCLUSIVE);
       /* 8 byte verf */
       *p++ = ntohl (verf);
@@ -1059,7 +1057,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
     }
   else
     p = xdr_encode_create_state (p, mode, owner);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
 
   mutex_unlock (&np->lock);
@@ -1091,7 +1089,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
     }
   else
     *newnp = 0;
-  
+
   free (rpcbuf);
   return err;
 }
@@ -1123,7 +1121,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
      regard cache-held references as live. */
   purge_lookup_cache_node (np);
 
-  /* See if there are any other users of this node than the 
+  /* See if there are any other users of this node than the
      one we just got; if so, we must give this file another link
      so that when we delete the one we are asked for it doesn't go
      away entirely. */
@@ -1174,7 +1172,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
 			  cred, 0, &rpcbuf, dir, -1);
   p = xdr_encode_fhandle (p, &dir->nn->handle);
   p = xdr_encode_string (p, name);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -1182,7 +1180,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       if (protocol_version == 3)
 	p = process_wcc_stat (dir, p, !err);
     }
-  
+
   free (rpcbuf);
 
   return err;
@@ -1192,13 +1190,13 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
    <hurd/netfs.h>. */
 error_t
 netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
-		      char *fromname, struct node *todir, char *toname, 
+		      char *fromname, struct node *todir, char *toname,
 		      int excl)
 {
   int *p;
   void *rpcbuf;
   error_t err;
-  
+
   if (excl)
     {
       struct node *np;
@@ -1210,16 +1208,16 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
       mutex_unlock (&fromdir->lock);
       if (err)
 	return err;
-      
+
       err = netfs_attempt_link (cred, todir, np, toname, 1);
       netfs_nput (np);
       if (err)
 	return err;
-      
+
       mutex_lock (&fromdir->lock);
       err = netfs_attempt_unlink (cred, fromdir, fromname);
       mutex_unlock (&fromdir->lock);
-      
+
       /* If the unlink failed, then back out the link */
       if (err)
 	{
@@ -1228,7 +1226,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
 	  mutex_unlock (&todir->lock);
 	  return err;
 	}
-      
+
       return 0;
     }
 
@@ -1239,13 +1237,13 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
   p = xdr_encode_fhandle (p, &fromdir->nn->handle);
   p = xdr_encode_string (p, fromname);
   mutex_unlock (&fromdir->lock);
-  
+
   mutex_lock (&todir->lock);
   purge_lookup_cache (todir, toname, strlen (toname));
   p = xdr_encode_fhandle (p, &todir->nn->handle);
   p = xdr_encode_string (p, toname);
   mutex_unlock (&todir->lock);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -1257,7 +1255,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
 	  p = process_wcc_stat (todir, p, !err);
 	}
     }
-  
+
   free (rpcbuf);
   return err;
 }
@@ -1277,11 +1275,11 @@ netfs_attempt_readlink (struct iouser *cred, struct node *np,
       strcpy (buf, np->nn->transarg.name);
       return 0;
     }
-  
+
   p = nfs_initialize_rpc (NFSPROC_READLINK (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  
+
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
     {
@@ -1303,10 +1301,10 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
 			      int flags, int newnode)
 {
   int modes;
-  
+
   if (newnode || (flags & (O_READ|O_WRITE|O_EXEC)) == 0)
     return 0;
-  
+
   netfs_report_access (cred, np, &modes);
   if ((flags & (O_READ|O_WRITE|O_EXEC)) == (flags & modes))
     return 0;
@@ -1322,11 +1320,11 @@ netfs_report_access (struct iouser *cred,
 		     int *types)
 {
   error_t err;
-  
+
   err = netfs_validate_stat (np, cred);
   if (err)
     return err;
-  
+
   if (protocol_version == 2)
     {
       /* Hope the server means the same thing be the bits as we do. */
@@ -1361,7 +1359,7 @@ netfs_report_access (struct iouser *cred,
       p = nfs_initialize_rpc (NFS3PROC_ACCESS, cred, 0, &rpcbuf, np, -1);
       p = xdr_encode_fhandle (p, &np->nn->handle);
       *p++ = htonl (ACCESS3_READ | write_check | execute_check);
-      
+
       err = conduct_rpc (&rpcbuf, &p);
       if (!err)
 	{
@@ -1391,7 +1389,7 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
   char byte;
   error_t err;
   size_t len;
- 
+
   /* Sun derived nfs client implementations attempt to reproduce the
      server's permission restrictions by hoping they look like Unix,
      and using that to give errors at open time.  Sadly, that loses
@@ -1409,17 +1407,17 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
       && (flags & O_WRITE) == 0
       && (flags & O_EXEC) == 0)
     return 0;
-    
+
   err = netfs_validate_stat (np, cred);
   if (err)
     return err;
-  
+
   switch (np->nn_stat.st_mode & S_IFMT)
     {
       /* Don't know how to check, so return provisional success. */
     default:
       return 0;
-     
+
     case S_IFREG:
       len = 1;
       err = netfs_attempt_read (cred, np, 0, &len, &byte);
@@ -1428,16 +1426,16 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
 	  if ((flags & O_READ) || (flags & O_EXEC))
 	    return err;
 	  else
-	    /* If we couldn't read a byte, but the user wasn't actually asking 
+	    /* If we couldn't read a byte, but the user wasn't actually asking
 	       for read, then we shouldn't inhibit the open now.  */
 	    return 0;
 	}
-  
+
       if (len != 1)
 	/* The file is empty; reads are known to be OK, but writes can't be
 	   tested, so no matter what, return success.  */
 	return 0;
-  
+
       if (flags & O_WRITE)
 	{
 	  err = netfs_attempt_write (cred, np, 0, &len, &byte);
@@ -1464,14 +1462,14 @@ netfs_check_open_permissions (struct iouser *cred, struct node *np,
 	  if (!err)
 	    err = nfs_error_trans (ntohl (*p++));
 	  free (rpcbuf);
-	  
+
 	  if (err)
 	    return err;
 	}
       return 0;
     }
 }
-      
+
 /* Implement the netfs_report_access callback as described in
    <hurd/netfs.h>. */
 void
@@ -1482,11 +1480,11 @@ netfs_report_access (struct iouser *cred,
   char byte;
   error_t err;
   size_t len;
-  
+
   /* Much the same logic as netfs_check_open_permissions, except that
      here we err on the side of denying access, and that we always
      have to check everything.  */
-  
+
   *types = 0;
 
   len = 1;
@@ -1564,14 +1562,14 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	}
 
       isnext = ntohl (*p++);
-      
+
       /* Now copy them one at a time. */
       while (isnext)
 	{
 	  ino_t fileno;
 	  int namlen;
 	  int reclen;
-	  
+
 	  fileno = ntohl (*p++);
 	  namlen = ntohl (*p++);
 
@@ -1579,18 +1577,18 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	     has a size of one already in the sizeof.  */
 	  reclen = sizeof (struct dirent) + namlen;
 	  reclen = (reclen + 3) & ~3; /* make it a multiple of four */
-	  
+
 	  /* Expand buffer if necessary */
 	  if (bp + reclen > buf + bufmalloced)
 	    {
 	      char *newbuf;
-	      
+
 	      newbuf = realloc (buf, bufmalloced *= 2);
 	      if (newbuf != buf)
 		bp = newbuf + (bp - buf);
 	      buf = newbuf;
 	    }
-	  
+
 	  /* Fill in new entry */
 	  entry = (struct dirent *) bp;
 	  entry->d_fileno = fileno;
@@ -1604,7 +1602,7 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	  bp = bp + entry->d_reclen;
 
 	  ++*totalentries;
-	  
+
 	  cookie = *p++;
 	  isnext = ntohl (*p++);
 	}
@@ -1619,7 +1617,7 @@ fetch_directory (struct iouser *cred, struct node *dir,
   return 0;
 }
 
-	 
+
 /* Implement the netfs_get_directs callback as described in
    <hurd/netfs.h>. */
 error_t
@@ -1639,7 +1637,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
   err = fetch_directory (cred, np, &buf, &our_bufsiz, &totalentries);
   if (err)
     return err;
-  
+
   /* Allocate enough space to hold the maximum we might return. */
   if (!bufsiz || bufsiz > our_bufsiz)
     allocsize = round_page (our_bufsiz);
@@ -1647,7 +1645,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
     allocsize = round_page (bufsiz);
   if (allocsize > *datacnt)
     vm_allocate (mach_task_self (), (vm_address_t *)data, allocsize, 1);
- 
+
   /* Skip ahead to the correct entry. */
   bp = buf;
   for (thisentry = 0; thisentry < entry;)
@@ -1656,12 +1654,12 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
       bp += entry->d_reclen;
       thisentry++;
     }
-  
+
   /* Now copy them one at a time */
   {
     int entries_copied;
-    
-    for (entries_copied = 0, userdp = *data; 
+
+    for (entries_copied = 0, userdp = *data;
 	 (nentries == -1 || entries_copied < nentries)
 	 && (!bufsiz || userdp - *data < bufsiz)
 	 && thisentry < totalentries;)
@@ -1675,10 +1673,10 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
       }
     *amt = entries_copied;
   }
-  
+
   free (buf);
 
-  /* If we allocated the buffer ourselves, but didn't use 
+  /* If we allocated the buffer ourselves, but didn't use
      all the pages, free the extra. */
   if (allocsize > *datacnt
       && round_page (userdp - *data) < round_page (allocsize))
@@ -1689,7 +1687,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
   return 0;
 }
 
-  
+
 /* Implement the netfs_set_translator callback as described in
    <hurd/netfs.h>. */
 error_t
@@ -1710,10 +1708,10 @@ netfs_attempt_mksymlink (struct iouser *cred,
 {
   if (np->nn->dtrans == NOT_POSSIBLE)
     return EOPNOTSUPP;
-  
+
   if (np->nn->dtrans == SYMLINK)
     free (np->nn->transarg.name);
-  
+
   np->nn->transarg.name = malloc (strlen (arg) + 1);
   strcpy (np->nn->transarg.name, arg);
   np->nn->dtrans = SYMLINK;
@@ -1731,10 +1729,10 @@ netfs_attempt_mkdev (struct iouser *cred,
 {
   if (np->nn->dtrans == NOT_POSSIBLE)
     return EOPNOTSUPP;
-  
+
   if (np->nn->dtrans == SYMLINK)
     free (np->nn->transarg.name);
-  
+
   np->nn->transarg.indexes = indexes;
   if (type == S_IFBLK)
     np->nn->dtrans = BLKDEV;
@@ -1743,5 +1741,3 @@ netfs_attempt_mkdev (struct iouser *cred,
   np->nn->stat_updated = 0;
   return 0;
 }
-
-

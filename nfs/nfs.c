@@ -1,5 +1,5 @@
 /* XDR frobbing and lower level routines for NFS client
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,7 +29,7 @@ mode_t
 nfs_mode_to_hurd_mode (int type, int mode)
 {
   int hurdmode;
-  
+
   switch (type)
     {
     case NFDIR:
@@ -47,7 +47,7 @@ nfs_mode_to_hurd_mode (int type, int mode)
     case NFREG:
       hurdmode = S_IFREG;
       break;
-      
+
     case NFLNK:
       hurdmode = S_IFLNK;
       break;
@@ -65,7 +65,7 @@ nfs_mode_to_hurd_mode (int type, int mode)
 	  default:
 	    hurdmode = S_IFREG;
 	    break;
-	    
+
 	  case NF2FIFO:
 	    hurdmode = S_IFIFO;
 	    break;
@@ -76,14 +76,14 @@ nfs_mode_to_hurd_mode (int type, int mode)
 	  case NF3FIFO:
 	    hurdmode = S_IFIFO;
 	    break;
-	    
+
 	  default:
 	    hurdmode = S_IFREG;
 	    break;
 	  }
       break;
     }
-  
+
   hurdmode |= mode & ~NFSMODE_FMT;
   return hurdmode;
 }
@@ -98,30 +98,30 @@ hurd_mode_to_nfs_mode (mode_t mode)
 }
 
 /* Convert a Hurd mode to an NFS type */
-int 
+int
 hurd_mode_to_nfs_type (mode_t mode)
 {
   switch (mode & S_IFMT)
     {
     case S_IFDIR:
       return NFDIR;
-      
+
     case S_IFCHR:
     default:
       return NFCHR;
 
     case S_IFBLK:
       return NFBLK;
-      
+
     case S_IFREG:
       return NFREG;
 
     case S_IFLNK:
       return NFLNK;
-      
+
     case S_IFSOCK:
       return NFSOCK;
-      
+
     case S_IFIFO:
       return protocol_version == 2 ? NF2FIFO : NF3FIFO;
     }
@@ -151,7 +151,7 @@ int *
 xdr_encode_data (int *p, char *data, size_t len)
 {
   int nints = INTSIZE (len);
-  
+
   p[nints] = 0;
   *p++ = htonl (len);
   bcopy (data, p, len);
@@ -173,7 +173,7 @@ xdr_encode_string (int *p, char *string)
 {
   return xdr_encode_data (p, string, strlen (string));
 }
-  
+
 /* Encode a MODE into an otherwise empty sattr. */
 int *
 xdr_encode_sattr_mode (int *p, mode_t mode)
@@ -293,7 +293,7 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
 /* Encode MODE, a size of zero, and the specified owner into an otherwise
    empty sattr.  */
 int *
-xdr_encode_create_state (int *p, 
+xdr_encode_create_state (int *p,
 			 mode_t mode,
 			 uid_t owner)
 {
@@ -377,7 +377,7 @@ int *
 xdr_decode_fhandle (int *p, struct node **npp)
 {
   size_t len;
-  
+
   len = protocol_version == 2 ? NFS2_FHSIZE : ntohl (*p++);
   lookup_fhandle (p, len, npp);
   return p + len / sizeof (int);
@@ -389,7 +389,7 @@ int *
 xdr_decode_fattr (int *p, struct stat *st)
 {
   int type, mode;
-  
+
   type = ntohl (*p++);
   mode = ntohl (*p++);
   st->st_mode = nfs_mode_to_hurd_mode (type, mode);
@@ -414,8 +414,6 @@ xdr_decode_fattr (int *p, struct stat *st)
       st->st_blksize = read_size < write_size ? read_size : write_size;
       major = ntohl (*p++);
       minor = ntohl (*p++);
-/* XXX - Temporary */
-#define makedev(maj,min) ((((maj)&0xFF)<<8)+((min)&0xFF))
       st->st_rdev = makedev (major, minor);
     }
   st->st_fsid = ntohl (*p++);
@@ -444,7 +442,7 @@ int *
 xdr_decode_string (int *p, char *buf)
 {
   int len;
-  
+
   len = ntohl (*p++);
   bcopy (p, buf, len);
   buf[len] = '\0';
@@ -468,9 +466,9 @@ nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
   uid_t uid;
   uid_t gid;
   error_t err;
-  
+
   /* Use heuristics to figure out what ids to present to the server.
-     Don't lie, but adjust ids as necessary to secure the desired result. */ 
+     Don't lie, but adjust ids as necessary to secure the desired result. */
 
   if (cred == (struct iouser *) -1)
     {
@@ -535,7 +533,7 @@ nfs_initialize_rpc (int rpc_proc, struct iouser *cred,
 		    gid = np->nn_stat.st_gid;
 		  else
 		    gid = cred->gids->ids[0];
-		}		  
+		}
 	      if (second_gid != -1
 		  && !idvec_contains (cred->gids, second_gid))
 		second_gid = -1;
@@ -557,55 +555,55 @@ nfs_error_trans (int error)
     {
     case NFS_OK:
       return 0;
-      
+
     case NFSERR_PERM:
       return EPERM;
 
     case NFSERR_NOENT:
       return ENOENT;
-		  
+
     case NFSERR_IO:
       return EIO;
-		  
+
     case NFSERR_NXIO:
       return ENXIO;
-		  
+
     case NFSERR_ACCES:
       return EACCES;
-		  
+
     case NFSERR_EXIST:
       return EEXIST;
-		  
+
     case NFSERR_NODEV:
       return ENODEV;
-		  
+
     case NFSERR_NOTDIR:
       return ENOTDIR;
-		  
+
     case NFSERR_ISDIR:
       return EISDIR;
-		  
+
     case NFSERR_FBIG:
       return E2BIG;
-      
+
     case NFSERR_NOSPC:
       return ENOSPC;
 
     case NFSERR_ROFS:
       return EROFS;
-		  
+
     case NFSERR_NAMETOOLONG:
       return ENAMETOOLONG;
-		  
+
     case NFSERR_NOTEMPTY:
       return ENOTEMPTY;
-		  
+
     case NFSERR_DQUOT:
       return EDQUOT;
-		  
+
     case NFSERR_STALE:
       return ESTALE;
-		  
+
     case NFSERR_WFLUSH:
       /* Not known in v3, but we just give EINVAL for unknown errors
 	 so it's the same. */
@@ -619,15 +617,15 @@ nfs_error_trans (int error)
 	  {
 	  case NFSERR_XDEV:
 	    return EXDEV;
-	    
+
 	  case NFSERR_INVAL:
 	  case NFSERR_REMOTE:	/* not sure about this one */
 	  default:
 	    return EINVAL;
-	    
+
 	  case NFSERR_MLINK:
 	    return EMLINK;
-	    
+
 	  case NFSERR_NOTSUPP:
 	  case NFSERR_BADTYPE:
 	    return EOPNOTSUPP;
