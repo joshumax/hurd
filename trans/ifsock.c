@@ -1,5 +1,5 @@
 /* Server for S_IFSOCK nodes
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,9 +30,9 @@
 
 mach_port_t address_port;
 
-/* Port types */
-#define PT_CTL 0
-#define PT_NODE 1
+struct port_class *control_class;
+struct port_class *node_class;
+struct port_bucket *port_bucket;
 
 int trivfs_fstype = FSTYPE_IFSOCK;
 int trivfs_fsid = 0; /* ??? */
@@ -43,10 +43,17 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = 0;
 
-int trivfs_protid_porttypes[] = {PT_NODE};
-int trivfs_cntl_porttypes[] = {PT_CTL};
-int trivfs_protid_nporttypes = 1;
-int trivfs_cntl_nporttypes = 1;
+struct port_class *trivfs_protid_portclasses[1];
+struct port_class *trivfs_cntl_portclasses[1];
+int trivfs_protid_nportclasses = 1;
+int trivfs_cntl_nportclasses = 1;
+
+int
+demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
+{
+  extern int ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
+  return trivfs_demuxer (inp, outp) || ifsock_server (inp, outp);
+}
 
 int
 main (int argc, char **argv)
@@ -56,12 +63,19 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   char buf[512];
 
+  control_class = ports_create_class (trivfs_clean_cntl, 0);
+  node_class = ports_create_class (trivfs_clean_protid, 0);
+  port_bucket = ports_create_bucket ();
+  trivfs_protid_portclasses[0] = node_class;
+  trivfs_cntl_portclasses[0] = control_class;
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error(1, 0, "Must be started as a translator");
   
   /* Reply to our parent */
-  err = trivfs_startup (bootstrap, PT_CTL, PT_NODE, NULL);
+  err = trivfs_startup (bootstrap, control_class, port_bucket,
+			node_class, port_bucket, NULL);
   if (err)
     error(2, err, "Contacting parent");
 
@@ -80,39 +94,8 @@ main (int argc, char **argv)
     }
 
   /* Launch. */
-  ports_manage_port_operations_onethread ();
+  ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
   return 0;
-}
-
-void (*ports_cleanroutines[])(void *) =
-{
-  [PT_CTL] = trivfs_clean_cntl,
-  [PT_NODE] = trivfs_clean_protid,
-};
-
-int
-ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
-{
-  return trivfs_demuxer (inp, outp) || ifsock_server (inp, outp);
-}
-
-void
-ports_notice_idle (int nhard, int nsoft)
-{
-  if (!nhard && !nsoft)
-    exit (0);
-}
-
-void
-ports_no_live_ports ()
-{
-  exit (0);
-}
-
-void
-ports_no_hard_ports ()
-{
-  exit (0);
 }
 
 void
@@ -122,7 +105,8 @@ trivfs_modify_stat (struct stat *st)
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
+trivfs_goaway (int flags, mach_port_t realnode, struct port_class *cntl_class,
+	       struct port_class *protid_class)
 {
   exit (0);
 }
@@ -131,7 +115,8 @@ error_t
 S_ifsock_getsockaddr (file_t sockfile,
 		      mach_port_t *address)
 {
-  struct trivfs_protid *cred = ports_check_port_type (sockfile, PT_NODE);
+  struct trivfs_protid *cred = ports_lookup_port (port_bucket, sockfile, 
+						  node_class);
   int perms;
   error_t err;
   
@@ -144,5 +129,6 @@ S_ifsock_getsockaddr (file_t sockfile,
   
   if (!err)
     *address = address_port;
+  ports_port_deref (cred);
   return err;
 }
