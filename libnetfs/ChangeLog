@@ -1,3 +1,20 @@
+Wed Sep 18 12:56:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* std-runtime-argp.c <argp.h>: New include.
+	* std-startup-argp.c <argp.h>: New include.
+	* fsys-get-options.c (netfs_S_fsys_get_options): Initialize ARGZ
+	with the program name, and call netfs_append_args instead of
+	netfs_get_options.
+	* file-get-fs-options.c (netfs_S_file_get_fs_options): Likewise.
+	* append-std-options.c (netfs_append_std_options): Doc fix.
+	* netfs.h (netfs_append_args): New declaration.
+	(netfs_get_options): Declaration removed.
+	<argp.h>: Include removed.
+	* append-args.c (netfs_append_args): New file.
+	* Makefile (OTHERSRCS): Replace get-options.c with append-args.c
+
+	* file-get-translator.c <stdio.h>: New include.
+
 Fri Aug 16 19:20:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* priv.h (end_using_protid_port): Only call ports_port_deref if
