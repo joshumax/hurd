@@ -1,6 +1,6 @@
 /* A translator for fifos
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -313,11 +313,15 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
+  error_t err;
+  int force = (flags & FSYS_GOAWAY_FORCE);
   struct port_bucket *bucket = ((struct port_info *)cntl)->bucket;
 
-  ports_inhibit_bucket_rpcs (bucket);
-  if (ports_count_class (cntl->protid_class) > 0
-      && !(flags & FSYS_GOAWAY_FORCE))
+  err = ports_inhibit_bucket_rpcs (bucket);
+  if (err == EINTR || (err && !force))
+    return err;
+
+  if (ports_count_class (cntl->protid_class) > 0 && !force)
     /* Still some opens, and we're not being forced to go away, so don't.  */
     {
       ports_enable_class (cntl->protid_class);
@@ -325,7 +329,7 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
       return EBUSY;
     }
 
-  exit(0);
+  exit (0);
 }
 
 /* ---------------------------------------------------------------- */
