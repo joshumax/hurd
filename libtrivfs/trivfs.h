@@ -20,16 +20,34 @@ struct protid
 {
   struct port_info pi;
 
-
   /* User identification */
   uid_t *uids, *gids;
   int nuids, ngids;
   
+  mach_port_t realnode;
+
   /* Object this refers to */
   struct peropen *po;
 };
 
-/* One of these is created for each node opened */
+/* One of these is created for each open */
 struct peropen
 {
-  
+  off_t filepointer;
+  int refcnt;
+  int openstat;
+  int lock_status;
+};
+
+struct trans_link trivfs_translator;
+
+struct port_info *trivfs_control_port;
+
+
+/* The user must define these variables. */
+extern int trivfs_fstype;
+extern int trivfs_fsid;
+
+extern int trivfs_support_read;
+extern int trivfs_support_write;
+extern int trivfs_support_exec;
