@@ -20,6 +20,43 @@
 
 #include "fsck.h"
 
+/* From ../ufs/subr.c: */
+
+/*
+ * Update the frsum fields to reflect addition or deletion 
+ * of some frags.
+ */
+static void
+ffs_fragacct(fs, fragmap, fraglist, cnt)
+        struct fs *fs;
+	int fragmap;
+	long fraglist[];
+	int cnt;
+{
+	int inblk;
+	register int field, subfield;
+	register int siz, pos;
+
+	inblk = (int)(fragtbl[fs->fs_frag][fragmap]) << 1;
+	fragmap <<= 1;
+	for (siz = 1; siz < fs->fs_frag; siz++) {
+		if ((inblk & (1 << (siz + (fs->fs_frag % NBBY)))) == 0)
+			continue;
+		field = around[siz];
+		subfield = inside[siz];
+		for (pos = siz; pos <= fs->fs_frag; pos++) {
+			if ((fragmap & field) == subfield) {
+				fraglist[siz] += cnt;
+				pos += siz;
+				field <<= siz;
+				subfield <<= siz;
+			}
+			field <<= 1;
+			subfield <<= 1;
+		}
+	}
+}
+
 void
 pass5 ()
 {
