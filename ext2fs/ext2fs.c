@@ -122,12 +122,14 @@ diskfs_append_args (char **argz, unsigned *argz_len)
 }
 
 /* Add our startup arguments to the standard diskfs set.  */
-static const struct argp *startup_parents[] = { &diskfs_store_startup_argp, 0};
-static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
+static const struct argp_child startup_children[] =
+  {{&diskfs_store_startup_argp}, {0}};
+static struct argp startup_argp = {options, parse_opt, 0, 0, startup_children};
 
 /* Similarly at runtime.  */
-static const struct argp *runtime_parents[] = {&diskfs_std_runtime_argp, 0};
-static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_parents};
+static const struct argp_child runtime_children[] =
+  {{&diskfs_std_runtime_argp}, {0}};
+static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_children};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
