@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 98, 99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -76,10 +76,9 @@ diskfs_shutdown (int flags)
       return err;
     }
 
-  /* Write everything out and set "clean" state.
-     Even if we don't in fact shut down now, this has the nice
-     effect that a disk that has not been writtne for a long time
-     will not need checking after a crash.  */
+  /* Write everything out and set "clean" state.  Even if we don't in fact
+     shut down now, this has the nice effect that a disk that has not been
+     written for a long time will not need checking after a crash.  */
   diskfs_sync_everything (1);
   diskfs_set_hypermetadata (1, 1);
   _diskfs_diskdirty = 0;
