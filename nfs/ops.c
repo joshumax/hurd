@@ -538,6 +538,7 @@ netfs_attempt_link (struct netcred *cred, struct node *dir,
     case SYMLINK:
       mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_SYMLINK, cred, 0, &rpcbuf, dir, -1);
+      p = xdr_encode_fhandle (p, &dir->nn->handle);
       mutex_unlock (&dir->lock);
       
       p = xdr_encode_string (p, name);
