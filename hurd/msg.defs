@@ -182,31 +182,6 @@ routine msg_sig_post_untraced (
 	sigcode: natural_t;
 	refport: mach_port_t);
 
-/* Get the exec flags of the process.  */
-
-routine msg_get_exec_flags (
-	process: mach_port_t;
-	refport: mach_port_t;
-	out flags: int);
-
-/* Set the exec flags value, or set or clear some flag bits.
-   Setting or clearing certain flag bits may cause associated actions.  */
-
-routine msg_set_all_exec_flags (
-	process: mach_port_t;
-	refport: mach_port_t;
-	flags: int);
-
-routine msg_set_some_exec_flags (
-	process: mach_port_t;
-	refport: mach_port_t;
-	flags: int);
-
-routine msg_clear_some_exec_flags (
-	process: mach_port_t;
-	refport: mach_port_t;
-	flags: int);
-
 /* Return a description of why THREAD is waiting.  THREAD must
    be a thread in this task.  If the thread is not waiting, or the reason
    is unknown, return zero.  WAIT_RPC is the RPC code of the RPC the thread
