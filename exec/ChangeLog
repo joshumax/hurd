@@ -1,3 +1,8 @@
+2001-11-23  Roland McGrath  <roland@frob.com>
+
+	* gcore.c: File moved to ../utils.
+	* Makefile (DIST_FILES): Remove it.
+
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* main.c (S_exec_init): Use iohelp_create_empty_iouser.
