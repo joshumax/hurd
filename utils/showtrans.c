@@ -47,9 +47,10 @@ usage(status)
       printf(USAGE, program_invocation_name);
       printf("\
 \n\
-  -h, --no-header            Don't display `FILENAME: ' before translators\n\
-  -s, --silent               No output; useful when checking error status\n\
-      --help                 Give this help list\n\
+  -p, --prefix               always display `FILENAME: ' before translators\n\
+  -P, --no-prefix            never display `FILENAME: ' before translators\n\
+  -s, --silent               no output; useful when checking error status\n\
+      --help                 give this help list\n\
 ");
     }
 
@@ -58,10 +59,11 @@ usage(status)
 
 static struct option options[] =
 {
-  {"no-header", no_argument, 0, 'h'},
+  {"prefix", no_argument, 0, 'p'},
+  {"no-prefix", no_argument, 0, 'P'},
   {"silent", no_argument, 0, 's'},
   {"quiet", no_argument, 0, 's'},
-  {"help", no_argument, 0, '?'},
+  {"help", no_argument, 0, '&'},
   {0, 0, 0, 0}
 };
 
@@ -74,17 +76,22 @@ main(int argc, char *argv[])
   /* The default exits status -- changed to 0 if we find any translators.  */
   int status = 1;
   /* Some option flags.  */
-  int print_header = 1, silent = 0;
+  int print_prefix = -1, silent = 0;
 
   /* Parse our options...  */
   while ((opt = getopt_long(argc, argv, "+" SHORT_OPTIONS, options, 0)) != EOF)
     switch (opt)
       {
-      case 'h': print_header = 0; break;
+      case 'p': print_prefix = 1; break;
+      case 'P': print_prefix = 0; break;
       case 's': silent = 1; break;
-      case '?': usage(0); break;
+      case '&': usage(0); break;
       default:  usage(-1); break;
       }
+
+  if (print_prefix < 0)
+    /* By default, only print a filename prefix if there are multiple files. */
+    print_prefix = (argc > optind + 1);
 
   while (optind != argc)
     {
@@ -106,7 +113,7 @@ main(int argc, char *argv[])
 	      argz_stringify(trans, trans_len);
 
 	      if (!silent)
-		if (print_header)
+		if (print_prefix)
 		  printf("%s: %s\n", node_name, trans);
 		else
 		  puts(trans);
@@ -121,7 +128,7 @@ main(int argc, char *argv[])
 
 	    case EINVAL:
 	      /* NODE just doesn't have a translator.  */
-	      if (!silent && print_header)
+	      if (!silent && print_prefix)
 		puts(node_name);
 	      break;
 
