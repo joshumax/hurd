@@ -412,47 +412,49 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
   else
     {
       error_t err;
-      volatile block_t block = page >> log2_block_size;
+      volatile int partial_page;
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
 
       rwlock_writer_lock (&dn->alloc_lock);
 
+      partial_page = (page + vm_page_size > node->allocsize);
+
       err = diskfs_catch_exception ();
       if (!err)
 	{
-	  int left = vm_page_size;
-
-	  if (page + left > node->allocsize)
-	    /* Only actually create blocks up to allocsize; diskfs_grow will
-	       allocate the rest if called.  */
-	    {
-	      left = node->allocsize - page;
-	      dn->last_page_partially_writable = 1;
-	    }
+	  block_t block = page >> log2_block_size;
+	  int left = (partial_page ? node->allocsize - page : vm_page_size);
 
 	  while (left > 0)
 	    {
 	      block_t disk_block;
 	      err = ext2_getblk (node, block++, 1, &disk_block);
 	      if (err)
-		{
-		  dn->last_page_partially_writable = (left < vm_page_size);
-		  break;
-		}
+		break;
 	      left -= block_size;
 	    }
-
-#ifdef EXT2FS_DEBUG
-	  if (dn->last_page_partially_writable)
-	    ext2_debug ("made page %u[%lu] in inode %d partially writable",
-			page, node->allocsize - page, dn->number);
-	  else
-	    ext2_debug ("made page %u[%u] in inode %d writable",
-			page, vm_page_size, dn->number);
-#endif
 	}
       diskfs_end_catch_exception ();
+
+      if (partial_page)
+	/* If an error occurred, this page still isn't writable; otherwise,
+	   since it's at the end of the file, it's now partially writable.  */
+	dn->last_page_partially_writable = !err;
+      else if (page + vm_page_size == node->allocsize)
+	/* This makes the last page writable, which ends exactly at the end
+	   of the file.  If any error occurred, the page still isn't
+	   writable, and if not, then the whole thing is writable.  */
+	dn->last_page_partially_writable = 0;
+
+#ifdef EXT2FS_DEBUG
+      if (dn->last_page_partially_writable)
+	ext2_debug ("made page %u[%lu] in inode %d partially writable",
+		    page, node->allocsize - page, dn->number);
+      else
+	ext2_debug ("made page %u[%u] in inode %d writable",
+		    page, vm_page_size, dn->number);
+#endif
 
       rwlock_writer_unlock (&dn->alloc_lock);
 
@@ -479,66 +481,77 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
   if (size > node->allocsize)
     {
-      error_t err;
+      error_t err = 0;
+      off_t old_size;
+      volatile off_t new_size;
+      volatile block_t old_end_block;
+      block_t new_end_block;
       struct disknode *dn = node->dn;
-      off_t old_size = node->allocsize;
-      volatile off_t new_size = round_block (size);
-
-      ext2_debug ("growing inode %d to %u bytes (from %u)", dn->number,
-		  new_size, old_size);
 
       rwlock_writer_lock (&dn->alloc_lock);
 
-      err = diskfs_catch_exception ();
-      if (!err)
+      old_size = node->allocsize;
+      new_size = round_block (size);
+
+      /* The first unallocated blocks after the old and new ends of the
+	 file, respectively.  */
+      old_end_block = old_size >> log2_block_size;
+      new_end_block = new_size >> log2_block_size;
+
+      if (new_end_block > old_end_block)
 	{
-	  if (dn->last_page_partially_writable)
-	    /* pager_unlock_page has been called on the last page of the
-	       file, but only part of the page was created, as the rest went
-	       past the end of the file.  As a result, we have to create the
-	       rest of the page to preserve the fact that blocks are only
-	       created by explicitly making them writable.  */
+	  /* The first block of the first unallocate page after the old end
+	     of the file.  If LAST_PAGE_PARTIALLY_WRITABLE is true, any
+	     blocks between this and OLD_END_BLOCK were unallocated, but are
+	     considered `unlocked' -- that is pager_unlock_page has been
+	     called on the page they're in.  Since after this grow the pager
+	     will expect them to be writable, we'd better allocate them.  */
+	  block_t old_page_end_block =
+	    round_page (old_size) >> log2_block_size;
+
+	  ext2_debug ("growing inode %d to %u bytes (from %u)", dn->number,
+		      new_size, old_size);
+
+	  if (dn->last_page_partially_writable
+	      && old_page_end_block > old_end_block)
 	    {
-	      block_t block = old_size >> log2_block_size;
-	      int count = trunc_page (old_size) + vm_page_size - old_size;
+	      volatile block_t writable_end =
+		(old_page_end_block > new_end_block
+		 ? new_end_block
+		 : old_page_end_block);
 
-	      if (old_size + count > new_size)
-		/* This growth won't create the whole of the last page.  */
-		count = new_size - old_size;
-	      else
-		/* This will take care the whole page.  */
-		dn->last_page_partially_writable = 0;
-
-	      ext2_debug ("extending writable page %u by %d bytes"
+	      ext2_debug ("extending writable page %u by %d blocks"
 			  "; first new block = %lu",
-			  trunc_page (old_size), count, block);
+			  trunc_page (old_size),
+			  writable_end - old_end_block,
+			  old_end_block);
 
-	      while (count > 0)
+	      err = diskfs_catch_exception ();
+	      while (!err && old_end_block < writable_end)
 		{
 		  block_t disk_block;
-		  err = ext2_getblk(node, block++, 1, &disk_block);
-		  if (err)
-		    /* We've failed to make the whole last page writable. */
-		    {
-		      new_size -= count; /* Ensure we get re-called later. */
-		      dn->last_page_partially_writable = 1; /* still */
-		      break;
-		    }
-		  count -= block_size;
+		  err = ext2_getblk (node, old_end_block++, 1, &disk_block);
 		}
-
-	      ext2_debug ("new state: page %s",
-			  dn->last_page_partially_writable
-			    ? "still partial" : "completely allocated");
+	      diskfs_end_catch_exception ();
 
 	      if (err)
-		ext2_warning ("inode=%d, target=%ld: %s",
-			      dn->number, new_size + count, strerror (err));
+		/* Reflect how much we successfully did.  */
+		new_size = (old_end_block - 1) << log2_block_size;
+	      else
+		/* See if it's still valid to say this.  */
+		dn->last_page_partially_writable =
+		  (old_page_end_block >= new_size);
 	    }
-
-	  node->allocsize = new_size;
 	}
-      diskfs_end_catch_exception ();
+
+      ext2_debug ("new size: %ld%s.", new_size,
+		  dn->last_page_partially_writable
+		  ? " (last page writable)": "");
+      if (err)
+	ext2_warning ("inode=%d, target=%ld: %s",
+		      dn->number, new_size, strerror (err));
+
+      node->allocsize = new_size;
 
       rwlock_writer_unlock (&dn->alloc_lock);
 
