@@ -1,3 +1,7 @@
+Wed Feb 19 22:16:40 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devprobe.c (main): Parse arguments before getting device master port.
+
 Tue Feb 11 20:51:51 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* settrans.c (options): Update to reflect some minor changes in
