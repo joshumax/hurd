@@ -656,3 +656,10 @@ S_proc_getlogin (struct proc *p,
   return 0;
 }
 
+/* Implement proc_get_tty as described in <hurd/proc.defs>. */
+kern_return_t
+S_proc_get_tty (struct proc *p, pid_t pid,
+		mach_port_t *tty, mach_msg_type_name_t *tty_type)
+{
+  return EOPNOTSUPP;		/* XXX */
+}
