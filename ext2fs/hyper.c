@@ -20,12 +20,14 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <error.h>
 #include "ext2fs.h"
 
 vm_address_t zeroblock = 0;
 char *modified_global_blocks = 0;
 
-static void allocate_mod_map ()
+static void
+allocate_mod_map (void)
 {
   static vm_size_t mod_map_size = 0;
 
@@ -51,6 +53,8 @@ static void allocate_mod_map ()
   else
     modified_global_blocks = 0;
 }
+
+static int ext2fs_clean;	/* fs clean before we started writing? */
 
 void
 get_hypermetadata (void)
@@ -63,7 +67,7 @@ get_hypermetadata (void)
     vm_deallocate (mach_task_self (), zeroblock, block_size);
 
   sblock = (struct ext2_super_block *)boffs_ptr (SBLOCK_OFFS);
-  
+
   if (sblock->s_magic != EXT2_SUPER_MAGIC
 #ifdef EXT2FS_PRE_02B_COMPAT
       && sblock->s_magic != EXT2_PRE_02B_MAGIC
@@ -77,14 +81,12 @@ get_hypermetadata (void)
   if (block_size > 8192)
     ext2_panic ("block size %ld is too big (max is 8192 bytes)", block_size);
 
-  log2_block_size = 0;
-  while ((1 << log2_block_size) < block_size)
-    log2_block_size++;
+  log2_block_size = ffs (block_size) - 1;
   if ((1 << log2_block_size) != block_size)
     ext2_panic ("block size %ld isn't a power of two!", block_size);
 
-  log2_dev_blocks_per_fs_block =
-    log2_block_size - diskfs_log2_device_block_size;
+  log2_dev_blocks_per_fs_block
+    = log2_block_size - diskfs_log2_device_block_size;
   if (log2_dev_blocks_per_fs_block < 0)
     ext2_panic ("block size %ld isn't a power-of-two multiple of the device"
 		" block size (%d)!",
@@ -97,7 +99,12 @@ get_hypermetadata (void)
     ext2_panic ("block size %ld isn't a power-of-two multiple of 512!",
 		block_size);
 
-  allocate_mod_map ();
+  if (diskfs_device_size
+      < (sblock->s_blocks_count << log2_dev_blocks_per_fs_block))
+    ext2_panic ("disk size (%ld blocks) too small "
+		"(superblock says we need %ld)",
+		diskfs_device_size,
+		sblock->s_blocks_count << log2_dev_blocks_per_fs_block);
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / sizeof (struct ext2_inode);
@@ -118,13 +125,23 @@ get_hypermetadata (void)
   addr_per_block = block_size / sizeof (block_t);
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
 
-  diskfs_end_catch_exception ();
+  ext2fs_clean = sblock->s_state & EXT2_VALID_FS;
+  if (! ext2fs_clean)
+    {
+      /* XXX syslog */
+      error (0, 0, "%s: FILESYSTEM NOT UNMOUNTED CLEANLY; PLEASE fsck",
+	     diskfs_device_arg);
+      if (! diskfs_readonly)
+	{
+	  diskfs_readonly = 1;
+	  error (0, 0, "%s: MOUNTED READ-ONLY; MUST USE `fsysopts --writable'",
+		 diskfs_device_arg);
+	}
+    }
 
-  if (diskfs_device_size
-      < (sblock->s_blocks_count << log2_dev_blocks_per_fs_block))
-    ext2_panic ("disk size (%ld blocks) too small (superblock says we need %ld)",
-		diskfs_device_size,
-		sblock->s_blocks_count << log2_dev_blocks_per_fs_block);
+  allocate_mod_map ();
+
+  diskfs_end_catch_exception ();
 
   /* A handy source of page-aligned zeros.  */
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
@@ -133,7 +150,7 @@ get_hypermetadata (void)
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
-  if (clean && !(sblock->s_state & EXT2_VALID_FS))
+  if (clean && ext2fs_clean && !(sblock->s_state & EXT2_VALID_FS))
     /* The filesystem is clean, so we need to set the clean flag.  We
        just write the superblock directly, without using the paged copy.  */
     {
@@ -149,7 +166,7 @@ diskfs_set_hypermetadata (int wait, int clean)
     sync_super_block ();
 }
 
-void 
+void
 diskfs_readonly_changed (int readonly)
 {
   allocate_mod_map ();
@@ -157,11 +174,19 @@ diskfs_readonly_changed (int readonly)
   vm_protect (mach_task_self (),
 	      (vm_address_t)disk_image,
 	      diskfs_device_size << diskfs_log2_device_block_size,
-	      0, VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE));
+	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
-  if (!readonly && (sblock->s_state & EXT2_VALID_FS))
+  if (! readonly)
     {
-      sblock->s_state &= ~EXT2_VALID_FS;
-      sync_super_block ();
+      if (sblock->s_state & EXT2_VALID_FS)
+	{
+	  /* Going writable; clear the clean bit.  */
+	  sblock->s_state &= ~EXT2_VALID_FS;
+	  sync_super_block ();
+	}
+      else
+	/* XXX syslog */
+	error (0, 0, "%s: WARNING: UNCLEANED FILESYSTEM NOW WRITABLE",
+	       diskfs_device_arg);
     }
 }
