@@ -387,8 +387,6 @@ pager_report_extent (struct user_pager_info *pager,
 		     vm_address_t *offset,
 		     vm_size_t *size)
 {
-  int sizet;
-  
   *offset = 0;
   switch (pager->type)
     {
@@ -405,12 +403,24 @@ pager_report_extent (struct user_pager_info *pager,
       break;
 
     case SINDIR:
-      sizet = pager->np->allocsize;
-      sizet = (sizet + sblock->fs_bsize - 1) / sblock->fs_bsize;
-      sizet -= NDADDR;
-      sizet *= sizeof (daddr_t);
-      sizet = (sizet + sblock->fs_bsize - 1) / sblock->fs_bsize;
-      *size = sizet;
+      {
+	int sizet;
+
+	/* sizet = disk size of the file */
+	sizet = pager->np->allocsize;
+
+	/* sizet = number of fs blocks in file */
+	sizet = (sizet + sblock->fs_bsize - 1) / sblock->fs_bsize;
+
+	/* sizet = number of fs blocks not list in di_db */
+	sizet -= NDADDR;
+
+	/* sizet = space to hold that many pointers */
+	sizet *= sizeof (daddr_t);
+
+	/* And that's the size of the sindir area for the file. */
+	*size = sizet;
+      }
       break;
       
     case FILE_DATA:
@@ -543,7 +553,6 @@ sin_remap (struct node *np,
   newsize = (newsize + sblock->fs_bsize - 1) / sblock->fs_bsize;
   newsize -= NDADDR;
   newsize *= sizeof (daddr_t);
-  newsize = (newsize + sblock->fs_bsize - 1) / sblock->fs_bsize;
   newsize = round_page (newsize);
  
   assert (newsize >= size);
