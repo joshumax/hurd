@@ -36,6 +36,9 @@ error_t display_create (display_t *r_display, const char *encoding,
 /* Destroy the display DISPLAY.  */
 void display_destroy (display_t display);
 
+/* Return the dimension of the display in bytes.  */
+off_t display_get_size (display_t display);
+
 /* Return the dimensions of the display DISPLAY in *WINSIZE.  */
 void display_getsize (display_t display, struct winsize *winsize);
 

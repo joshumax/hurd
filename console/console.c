@@ -357,8 +357,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 2;
       (*np)->nn_stat.st_mode |= S_IFREG;
       (*np)->nn_stat.st_mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
-      (*np)->nn_stat.st_size = 80*50 * (sizeof (wchar_t) + 4)
-	+ 16 * 4 + 512 * 8; /* XXX */
+      (*np)->nn_stat.st_size = display_get_size (vcons->display);
       break;
     case VCONS_NODE_INPUT:
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 3;
@@ -728,7 +727,8 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   error_t err;
   int count = 0;
   size_t size = 0;		/* Total size of our return block.  */
-  struct vcons *first_vcons, *vcons;
+  struct vcons *first_vcons = NULL;
+  struct vcons *vcons;
 
   /* Add the length of a directory entry for NAME to SIZE and return true,
      unless it would overflow MAX_DATA_LEN or NUM_ENTRIES, in which case

@@ -304,9 +304,9 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
     mach_msg_type_t changeType;
     file_changed_type_t change;
     mach_msg_type_t startType;
-    off_t start;
+    loff_t start;
     mach_msg_type_t endType;
-    off_t end;
+    loff_t end;
   } Request;
   union
   {
@@ -335,8 +335,8 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
   };
 
   static const mach_msg_type_t startType = {
-    /* msgt_name = */		2,
-    /* msgt_size = */		32,
+    /* msgt_name = */		11,
+    /* msgt_size = */		64,
     /* msgt_number = */		1,
     /* msgt_inline = */		TRUE,
     /* msgt_longform = */	FALSE,
@@ -345,8 +345,8 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
   };
 
   static const mach_msg_type_t endType = {
-    /* msgt_name = */		2,
-    /* msgt_size = */		32,
+    /* msgt_name = */		11,
+    /* msgt_size = */		64,
     /* msgt_number = */		1,
     /* msgt_inline = */		TRUE,
     /* msgt_longform = */	FALSE,
@@ -372,11 +372,11 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
 
   if (notify == MACH_PORT_NULL)
     return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_MSG_OPTION_NONE,
-		     56, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     64, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
 		     MACH_PORT_NULL);
   else
     return mach_msg (&InP->Head, MACH_SEND_MSG | MACH_SEND_NOTIFY,
-		     56, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+		     64, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
 		     notify);
 }
 
@@ -1749,6 +1749,16 @@ display_destroy_complete (void *pi)
 {
   struct display *display = ((struct notify *) pi)->display;
   free (display);
+}
+
+
+/* Return the dimension of the display in bytes.  */
+off_t
+display_get_size (display_t display)
+{
+  return sizeof (struct cons_display)
+    + (sizeof (conchar_t) * display->user->screen.width
+       * display->user->screen.lines);
 }
 
 

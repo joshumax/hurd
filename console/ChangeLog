@@ -1,3 +1,12 @@
+2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.h: Add prototype for display_get_size.
+	* display.c (display_get_size): New function.
+	(nowait_file_changed): Update for new interfaces.
+	* console.c (new_node): Use display_get_size to retrieve size of
+	display node.
+	(netfs_get_dirents): Initialize FIRST_VCONS to silence gcc warning.
+
 2002-07-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c: Restore copyright notice until the papers by Kalle
