@@ -58,7 +58,8 @@ ps_host_basic_info(host_basic_info_t *info)
   if (!initialized)
     {
       int size = sizeof(buf);
-      error_t err = host_info(ps_get_host(), HOST_BASIC_INFO, &buf, &size);
+      error_t err = host_info(ps_get_host(), HOST_BASIC_INFO, 
+			      (host_info_t) &buf, &size);
       if (err)
 	return err;
       initialized = TRUE;
@@ -80,7 +81,8 @@ ps_host_sched_info(host_sched_info_t *info)
   if (!initialized)
     {
       int size = sizeof(buf);
-      error_t err = host_info(ps_get_host(), HOST_SCHED_INFO, &buf, &size);
+      error_t err = host_info(ps_get_host(), HOST_SCHED_INFO, 
+			      (host_info_t) &buf, &size);
       if (err)
 	return err;
       initialized = TRUE;
@@ -99,7 +101,8 @@ ps_host_load_info(host_load_info_t *info)
 {
   static host_load_info_data_t buf;
   int size = sizeof(buf);
-  error_t err = host_info(ps_get_host(), HOST_LOAD_INFO, &buf, &size);
+  error_t err = host_info(ps_get_host(), HOST_LOAD_INFO,
+			  (host_info_t) &buf, &size);
 
   if (err)
     return err;
