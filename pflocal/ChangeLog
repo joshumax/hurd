@@ -1,3 +1,10 @@
+2002-04-24  Ognyan Kulev <ogi@fmi.uni-sofia.bg>
+
+	* sock.c (sock_shutdown): When both SHUTDOWN_READ and
+	SHUTDOWN_WRITE are set in FLAGS unlock sock->lock after all
+	processing of `sock' is finished.
+	(sock_create): Replace bzero with memset.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* connq.c (connq_compress): #if 0 out unused function.

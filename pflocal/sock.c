@@ -1,6 +1,6 @@
 /* Sock functions
 
-   Copyright (C) 1995,96,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2000,01,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <string.h>		/* For bzero() */
+#include <string.h>		/* For memset() */
 
 #include <cthreads.h>
 
@@ -122,7 +122,7 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->connect_queue = NULL;
   new->pipe_class = pipe_class;
   new->addr = NULL;
-  bzero (&new->change_time, sizeof (new->change_time));
+  memset (&new->change_time, 0, sizeof (new->change_time));
   mutex_init (&new->lock);
 
   *sock = new;
@@ -449,6 +449,8 @@ void
 sock_shutdown (struct sock *sock, unsigned flags)
 {
   unsigned old_flags;
+  struct pipe *read_pipe = NULL;
+  struct pipe *write_pipe = NULL;
 
   mutex_lock (&sock->lock);
 
@@ -458,34 +460,23 @@ sock_shutdown (struct sock *sock, unsigned flags)
   if (flags & SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
     /* Shutdown the read half.  */
     {
-      struct pipe *pipe = sock->read_pipe;
-      if (pipe != NULL)
-	{
-	  sock->read_pipe = NULL;
-	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
-	  mutex_unlock (&sock->lock);
-	  pipe_remove_reader (pipe);
-	}
-      else
-	mutex_unlock (&sock->lock);
+      read_pipe = sock->read_pipe;
+      sock->read_pipe = NULL;
     }
-
   if (flags & SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
     /* Shutdown the write half.  */
     {
-      struct pipe *pipe = sock->write_pipe;
-      if (pipe != NULL)
-	{
-	  sock->write_pipe = NULL;
-	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
-	  mutex_unlock (&sock->lock);
-	  pipe_remove_writer (pipe);
-	}
-      else
-	mutex_unlock (&sock->lock);
+      write_pipe = sock->write_pipe;
+      sock->write_pipe = NULL;
     }
-  else
-    mutex_unlock (&sock->lock);
+
+  /* Unlock SOCK here, as we may subsequently wake up other threads. */
+  mutex_unlock (&sock->lock);
+  
+  if (read_pipe)
+    pipe_remove_reader (read_pipe);
+  if (write_pipe)
+    pipe_remove_writer (write_pipe);
 }
 
 /* ---------------------------------------------------------------- */
