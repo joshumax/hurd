@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -20,49 +20,45 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include <maptime.h>
 
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
    appropriately; do the analogous operation for atime and mtime as well. */
 void
 diskfs_set_node_times (struct node *np)
 {
-  int secs, usecs;
-  
-  do 
-    {
-      secs = diskfs_mtime->seconds;
-      usecs = diskfs_mtime->microseconds;
-    }
-  while (secs != diskfs_mtime->check_seconds);
-  
+  struct timeval t;
+
+  maptime_read (diskfs_mtime, &t);
+
   if (np->dn_set_mtime)
     {
 #ifdef notyet
-      np->dn_stat.st_mtimespec.ts_sec = secs;
-      np->dn_stat.st_mtimespec.ts_nsec = usecs * 1000;
+      np->dn_stat.st_mtimespec.ts_sec = t.tv_sec;
+      np->dn_stat.st_mtimespec.ts_nsec = t.tv_usec * 1000;
 #else
-      np->dn_stat.st_mtime = secs;
-      np->dn_stat.st_mtime_usec = usecs;
+      np->dn_stat.st_mtime = t.tv_sec;
+      np->dn_stat.st_mtime_usec = t.tv_usec;
 #endif      
     }
   if (np->dn_set_atime)
     {
 #ifdef notyet
-      np->dn_stat.st_atimespec.ts_sec = secs;
-      np->dn_stat.st_atimespec.ts_nsec = usecs * 1000;
+      np->dn_stat.st_atimespec.ts_sec = t.tv_sec;
+      np->dn_stat.st_atimespec.ts_nsec = t.tv_usec * 1000;
 #else
-      np->dn_stat.st_atime = secs;
-      np->dn_stat.st_atime_usec = usecs;
+      np->dn_stat.st_atime = t.tv_sec;
+      np->dn_stat.st_atime_usec = t.tv_usec;
 #endif      
     }
   if (np->dn_set_ctime)
     {
 #ifdef notyet      
-      np->dn_stat.st_ctimespec.ts_sec = secs;
-      np->dn_stat.st_ctimespec.ts_nsec = usecs * 1000;
+      np->dn_stat.st_ctimespec.ts_sec = t.tv_sec;
+      np->dn_stat.st_ctimespec.ts_nsec = t.tv_usec * 1000;
 #else
-      np->dn_stat.st_ctime = secs;
-      np->dn_stat.st_ctime_usec = usecs;
+      np->dn_stat.st_ctime = t.tv_sec;
+      np->dn_stat.st_ctime_usec = t.tv_usec;
 #endif      
     }
   
