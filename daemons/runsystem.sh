@@ -55,16 +55,10 @@ function singleuser ()
 
 # We expect to be started by console-run, which gives us no arguments and
 # puts FALLBACK_CONSOLE=file-name in the environment if our console is
-# other than a normal /dev/console.  The MULTIBOOT_CMDLINE environment
-# variable gives us the kernel command line from the boot loader, which is
-# where any interesting boot options will be found.
+# other than a normal /dev/console.
 
 if [ "${FALLBACK_CONSOLE+set}" = set ]; then
   singleuser "Running on fallback console ${FALLBACK_CONSOLE}"
-elif [ $# -ne 0 ]; then
-  singleuser "Unexpected arguments: $*"
-elif [ "${MULTIBOOT_CMDLINE+set}" != set ]; then
-  singleuser "No multiboot command line!"
 fi
 
 
@@ -73,7 +67,7 @@ fi
 ###
 
 # Parse the multiboot command line.  We only pay attention to -s and -f.
-set -- ${MULTIBOOT_CMDLINE}
+# The first argument is the kernel file name; skip that.
 shift
 flags=
 while [ $# -gt 0 ]; do
