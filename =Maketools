@@ -22,13 +22,14 @@ CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
 CCVERSION-duality.gnu.ai.mit.edu = 2.6.4
 
 ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
+crossdir := /usr/local/$(CCTARGET)
 
 ifndef BUILD_CC
 export BUILD_CC := $(CC)
 endif
 CC=$(CCTARGET)-gcc $(CCTYPE) -O2 -pipe
 ifeq (,$(wildcard /usr/local/lib/migcom))
-MIGCOM=/usr/local/i386-gnu/lib/migcom
+MIGCOM=$(crossdir)/lib/migcom
 MIG=$(tooldir)/mig
 else
 MIGCOM=/usr/local/lib/migcom
@@ -39,6 +40,10 @@ export CPP
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
+
+startup := $(crossdir)/lib/crt0.o
+libc := $(crossdir)/lib/libc.a
+crossheaders := $(crossdir)/include
 
 INSTALL = install -c
 INSTALL_DATA = $(INSTALL) -m 644
