@@ -22,3 +22,82 @@
 #include "ufs.h"
 #include "dinode.h"
 #include "fs.h"
+
+/* Number of block pointers that fit in a single disk block */
+#define NIPTR (sblock->fs_bsize / sizeof (daddr_t))
+
+/* For logical block number LBN of file NP, look it the block address,
+   giving the "path" of indirect blocks to the file, starting 
+   with the least indirect.  Fill *INDIRS with information for
+   the block.  */
+error_t
+fetch_indir_spec (struct node *np, daddr_t lbn, struct iblock_spec *indirs)
+{
+  struct dinode *di = dino (np->dn->number);
+  int boff;
+  error_t err;
+  daddr_t *siblock;
+  
+  if (err = diskfs_catch_exception ())
+    return err;
+  
+  if (lbn < NDADDR)
+    {
+      indirs[0].bno = di->di_db[lbn];
+      indirs[0].offset = -1;
+  
+      diskfs_end_catch_exception ();
+      return 0;
+    }
+
+  lbn -= NDADDR;
+
+  indirs[0].offset = lbn % NIPTR;
+  
+  if (lbn / NIPTR)
+    {
+      /* We will use the double indirect block */
+      int ibn;
+      daddr_t *diblock;
+
+      ibn = lbn / NIPTR - 1;
+
+      indirs[1].offset = ibn % NIPTR;
+      
+      /* We don't support triple indirect blocks, but this 
+	 is where we'd do it. */
+      assert (!(ibn / NIPTR));
+  
+      indirs[2].offset = -1;
+      indirs[2].bno = di->di_ib[INDIR_DOUBLE];
+
+      if (indirs[2].bno)
+	{
+	  diblock = indir_block (indirs[2].bno);
+	  indirs[1].bno = diblock[indirs[1].offset];
+	}
+      else
+	indirs[1].bno = 0;
+    }
+  else
+    {
+      indirs[1].offset = -1;
+      indirs[1].bno = di->di_ib[INDIR_DOUBLE];
+    }
+
+  if (indirs[1].bno)
+    {
+      siblock = indir_block (indirs[1].bno);
+      indirs[0].bno = siblock[indirs[0].offset];
+    }
+  else
+    indirs[0].bno = 0;
+
+  diskfs_end_catch_exception ();
+  return 0;
+}
+
+  
+  
+
+
