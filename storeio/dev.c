@@ -23,6 +23,7 @@
 #include <string.h>
 #include <hurd/pager.h>
 #include <hurd/store.h>
+#include <sys/mman.h>
 
 #include "dev.h"
 

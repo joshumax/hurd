@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <strings.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #include "dev.h"
 
