@@ -144,7 +144,7 @@ ethernet_open (struct device *dev)
   etherreadclass = ports_create_class (0, 0);
   errno = ports_create_port (etherreadclass, etherport_bucket,
 			     sizeof (struct port_info), &readpt);
-  assert_perror ("creating etherread port");
+  assert_perror (errno);
   readptname = ports_get_right (readpt);
   mach_port_insert_right (mach_task_self (), readptname, readptname,
 			  MACH_MSG_TYPE_MAKE_SEND);
