@@ -31,13 +31,9 @@
 /* Decodes the standard leaf encoding that's common to various builtin
    formats, and calls CREATE to actually create the store.  */
 error_t
-store_default_leaf_decode (struct store_enc *enc,
-			   error_t (*create)(mach_port_t port,
-					     size_t block_size,
-					     const struct store_run *runs,
-					     size_t num_runs,
-					     struct store **store),
-			   struct store **store)
+store_std_leaf_decode (struct store_enc *enc,
+		       store_std_leaf_create_t create,
+		       struct store **store)
 {
   char *misc;
   error_t err;
@@ -84,7 +80,7 @@ store_default_leaf_decode (struct store_enc *enc,
 	  runs[i].start = *e++;
 	  runs[i].length = *e++;
 	}
-      err = (*create)(port, block_size, runs, num_runs, store);
+      err = (*create)(port, flags, block_size, runs, num_runs, store);
     }
   else
     /* Ack.  Too many runs to allocate the temporary RUNS array on the stack.
@@ -99,7 +95,7 @@ store_default_leaf_decode (struct store_enc *enc,
 	      runs[i].start = *e++;
 	      runs[i].length = *e++;
 	    }
-	  err = (*create)(port, block_size, runs, num_runs, store);
+	  err = (*create)(port, flags, block_size, runs, num_runs, store);
 	  free (runs);
 	}
       else
@@ -121,37 +117,27 @@ store_default_leaf_decode (struct store_enc *enc,
   return err;
 }
 
-/* Decode ENC, either returning a new store in STORE, or an error.  If
-   nothing else is to be done with ENC, its contents may then be freed using
-   store_enc_dealloc.  */
+/* Decode ENC, either returning a new store in STORE, or an error.  CLASSES
+   defines the mapping from hurd storage class ids to store classes; if it is
+   0, STORE_STD_CLASSES is used.  If nothing else is to be done with ENC, its
+   contents may then be freed using store_enc_dealloc.  */
 error_t
-store_decode (struct store_enc *enc, struct store **store)
+store_decode (struct store_enc *enc, struct store_class *classes,
+	      struct store **store)
 {
   if (enc->cur_int >= enc->num_ints)
     /* The first int should always be the type.  */
     return EINVAL;
 
-  switch (enc->ints[enc->cur_int])
-    {
-    case STORAGE_HURD_FILE:
-      return store_default_leaf_decode (enc, _store_file_create, store);
-    case STORAGE_DEVICE:
-      return store_default_leaf_decode (enc, _store_device_create, store);
-#if 0
-    case STORAGE_TASK:
-    case STORAGE_MEMORY:
+  if (! classes)
+    classes = store_std_classes;
 
-    case STORAGE_ILEAVE:
-      return store_ileave_decode (enc, store);
-    case STORAGE_CONCAT:
-      return store_concat_decode (enc, store);
-    case STORAGE_LAYER:
-      return store_layer_decode (enc, store);
-    case STORAGE_NULL:
-      return store_null_decode (enc, store);
-#endif
+  while (classes)
+    if (classes->id == enc->ints[enc->cur_int])
+      if (classes->decode)
+	return (*classes->decode) (enc, classes, store);
+      else
+	return EOPNOTSUPP;
 
-    default:
-      return EINVAL;
-    }
+  return EINVAL;
 }
