@@ -115,9 +115,6 @@ static mach_port_t *std_ports;
 static int *std_ints;
 static size_t std_nports, std_nints;
 
-/* Communication between S_exec_init and S_exec_setexecdata */
-static mach_port_t essentialstartupport, essentialhostport;
-
 
 #ifdef	BFD
 /* Return a Hurd error code corresponding to the most recent BFD error.  */
@@ -1204,7 +1201,7 @@ S_exec_exec (mach_port_t execserver,
   /* There were no user-specified exec servers,
      or none of them could be found.  */
 
-  return do_exec (execserver, file, oldtask, 0,
+  return do_exec (execserver, file, oldtask, flags,
 		  argv, argvlen, argv_copy,
 		  envp, envplen, envp_copy,
 		  dtable, dtablesize, dtable_copy,
@@ -1245,17 +1242,6 @@ S_exec_setexecdata (mach_port_t me,
   std_ints = ints;
   std_nints = nints;
 
-  /* At this point, the exec server is fully intialized.  Send
-     a message to startup that will clue it in so that it knows. */
-  if (essentialstartupport)
-    {
-      startup_essential_task (essentialstartupport, mach_task_self (), 
-			      MACH_PORT_NULL, "exec", essentialhostport);
-      mach_port_deallocate (mach_task_self (), essentialstartupport);
-      mach_port_deallocate (mach_task_self (), essentialhostport);
-      essentialstartupport = essentialhostport = 0;
-    }
-  
   return 0;
 }
 
@@ -1471,14 +1457,14 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
 			     exec_version);
       mach_port_deallocate (mach_task_self (), dev_master);
       err = proc_getmsgport (proc, 1, &startup);
-      if (!err)
+      if (err)
 	{
-	  essentialstartupport = startup;
-	  essentialhostport = host_priv;
+	  mach_port_deallocate (mach_task_self (), host_priv);
+	  host_priv = MACH_PORT_NULL;
 	}
-      else
-	mach_port_deallocate (mach_task_self (), host_priv);
     }
+  else
+    host_priv = MACH_PORT_NULL;
       
   /* Have the proc server notify us when the canonical ints and ports change.
      The notification comes as a normal RPC on the message port, which
@@ -1486,11 +1472,16 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
   __USEPORT (PROC, proc_execdata_notify (port, execserver,
 					 MACH_MSG_TYPE_MAKE_SEND));
 
-  /* Don't call startup_essential_task here.  Init knows that once
-     we call that we are all set up; we actually aren't all set up
-     until we receive the execdata back from proc in response to
-     proc_execdata_notify.  So, the call to startup_essential_task
-     is done in S_exec_setexecdata. */
+  /* Call startup_essential task last; init assumes we are ready to
+     run once we call it. */
+  if (host_priv != MACH_PORT_NULL)
+    {
+      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
+			      "exec", host_priv);
+      mach_port_deallocate (mach_task_self (), startup);
+      mach_port_deallocate (mach_task_self (), host_priv);
+    }
+  
   return 0;
 }
 
