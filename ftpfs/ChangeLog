@@ -1,5 +1,9 @@
 1997-09-09  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* ftpfs.c (parse_runtime_opt): New function.
+	(runtime_argp): Use it.
+	(netfs_append_args): Fix printed name of --node-cache-size.
+
 	* dir.c (delete): Immediately free entries without nodes.
 
 1997-08-29  Miles Bader  <miles@gnu.ai.mit.edu>

@@ -1,3 +1,8 @@
+1997-09-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (netfs_S_dir_lookup): Fix type signature of
+	short_circuited_callback1.
+
 1997-09-05  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-lookup.c (netfs_S_dir_lookup): Re-aquire the lock on DNP when
