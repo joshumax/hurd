@@ -23,8 +23,8 @@
 static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
-static any_t
-master_thread_function (any_t foo __attribute__ ((unused)))
+void
+netfs_server_loop ()
 {
   error_t err;
 
@@ -42,10 +42,3 @@ master_thread_function (any_t foo __attribute__ ((unused)))
   exit (0);
 }
 
-void
-netfs_server_loop (void)
-{
-  cthread_detach (cthread_fork ((cthread_fn_t) master_thread_function,
-				(any_t) 0));
-}
-  
