@@ -92,7 +92,7 @@ diskfs_truncate (struct node *np,
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
   
   if (upi)
@@ -106,7 +106,7 @@ diskfs_truncate (struct node *np,
       mach_port_deallocate (mach_task_self (), obj);
       pager_flush_some (upi->p, round_page (length),
 			np->allocsize - length, 1);
-      pager_unreference (upi->p);
+      ports_port_deref (upi->p);
     }
 
   rwlock_writer_lock (&np->dn->allocptrlock);
@@ -263,13 +263,13 @@ diskfs_truncate (struct node *np,
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
   if (upi)
     {
       pager_change_attributes (upi->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_DELAY, 0);
-      pager_unreference (upi->p);
+      ports_port_deref (upi->p);
     }
   
   return err;
