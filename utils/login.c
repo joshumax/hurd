@@ -537,24 +537,45 @@ main(int argc, char *argv[])
 	prompt = "Password:";
 
       unencrypted = getpass (prompt);
+      if (name)
+	free (prompt);
+
       if (crypt)
 	{
 	  encrypted = crypt (unencrypted, password);
-	  /* Paranoia may destroya.  */
-	  memset (unencrypted, 0, strlen (unencrypted));
-
 	  if (! encrypted)
 	    /* Something went wrong.  */
-	    fail (51, errno, "Password encryption failed", 0);
+	    {
+	      /* Paranoia may destroya.  */
+	      memset (unencrypted, 0, strlen (unencrypted));
+	      fail (51, errno, "Password encryption failed", 0);
+	    }
 	}
       else
 	encrypted = unencrypted;
 
-      if (name)
-	free (prompt);
+      if (strcmp (encrypted, password) == 0)
+	{
+	  memset (unencrypted, 0, strlen (unencrypted));
+	  return;			/* password O.K. */
+	}
 
-      if (strcmp (encrypted, password) != 0)
-	fail (50, 0, "Incorrect password", 0);
+      if (id == 0 && !is_group && parent_has_gid (0)
+	  && (parent_uids->num == 0 || parent_uids->ids[0] != 0))
+	/* Special hack: a user attempting to gain root access can use
+	   their own password (instead of root's) if they're in group 0. */
+	{
+	  struct passwd *pw = getpwuid (parent_uids->ids[0]);
+
+	  encrypted = crypt (unencrypted, pw->pw_passwd);
+	  memset (unencrypted, 0, strlen (unencrypted));
+
+	  if (pw && strcmp (encrypted, pw->pw_passwd) == 0)
+	    return;
+	}
+
+      memset (unencrypted, 0, strlen (unencrypted));
+      fail (50, 0, "Incorrect password", 0);
     }
 
   /* Parse our options...  */
