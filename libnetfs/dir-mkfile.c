@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -37,8 +37,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
     {
       /* the dir is now unlocked and NP is locked */
       flags &= OPENONLY_STATE_MODES;
-      newpi = netfs_make_protid (netfs_make_peropen (np, flags,
-						     diruser->po->dotdotport),
+      newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
 				 iohelp_dup_iouser (diruser->user));
       *newfile = ports_get_right (newpi);
       *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
