@@ -158,8 +158,7 @@ HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(link-objects)
-# Don't use $^ to collect the args to the link because $^ gratuitously
-# omits duplicates.
+# Don't use $^ to collect the args to the link because $^ omits duplicates.
 link-objects = $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
 # -lg avoids "No input files" error.
 #link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),\
