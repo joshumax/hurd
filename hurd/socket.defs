@@ -28,6 +28,8 @@ subsystem socket 26000;
 SOCKET_IMPORTS
 #endif
 
+INTR_INTERFACE
+
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
 routine socket_create (
@@ -42,15 +44,15 @@ routine socket_listen (
 	queue_limit: int);
 
 /* Return a new connection from a socket previously listened.  */
-INTR_ROUTINE (socket_accept, (
+routine socket_accept (
 	sock: socket_t;
 	out conn_sock: mach_port_send_t;
-	out peer_addr: mach_port_send_t))
+	out peer_addr: mach_port_send_t);
 
 /* Connect to an address.  */
-INTR_ROUTINE (socket_connect, (
+routine socket_connect (
 	sock: socket_t;
-	addr: addr_port_t))
+	addr: addr_port_t);
 
 /* Bind a socket to an address.  */
 routine socket_bind (
@@ -114,17 +116,17 @@ routine socket_setopt (
 	optval: data_t);
 
 /* Send data over a socket, possibly including Mach ports.  */
-INTR_ROUTINE (socket_send, (
+routine socket_send (
 	sock: socket_t;
 	addr: addr_port_t;
 	flags: int;
 	data: data_t;
 	ports: portarray_t;
 	control: data_t;
-	out amount: int))
+	out amount: int);
 
 /* Receive data from a socket, possibly including Mach ports.  */
-INTR_ROUTINE (socket_recv, (
+routine socket_recv (
 	sock: socket_t;
 	out addr: addr_port_t;
 	flags: int;
@@ -132,4 +134,4 @@ INTR_ROUTINE (socket_recv, (
 	out ports: portarray_t;
 	out control: data_t;
 	out outflags: int;
-	amount: int))
+	amount: int);
