@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, private declarations.
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -26,7 +26,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/ports.h>
 #include <hurd/lookup.h>
 #include <rwlock.h>
+
+#ifdef BFD
 #include <bfd.h>
+#endif
+
 #include <elf.h>
 #include <fcntl.h>
 #include "exec_S.h"
@@ -35,11 +39,13 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifndef exec_priv_h
 #define exec_priv_h
 
+#ifdef BFD
 /* A BFD whose architecture and machine type are those of the host system.  */
 extern bfd_arch_info_type host_bfd_arch_info;
 extern bfd host_bfd;
-extern Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
+#endif
 
+extern Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
 
 /* Information kept around to be given to a new task
    in response to a message on the task's bootstrap port.  */
@@ -67,6 +73,9 @@ typedef struct trivfs_protid *trivfs_protid_t; /* For MiG.  */
 
 extern mach_port_t procserver;	/* Our proc port.  */
 
+#ifndef BFD
+typedef void asection;
+#endif
 
 /* Data shared between check, check_section,
    load, load_section, and finish.  */

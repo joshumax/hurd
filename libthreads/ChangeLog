@@ -1,3 +1,8 @@
+Thu Aug 29 12:50:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* i386/csw.S: Include <mach/i386/asm.h> instead of <i386/asm.h>.
+	Define ELF before inclusion.
+
 Sat Jul 20 15:47:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (lndist-i386-files): Look for I386SRCS and I386HDRS in

@@ -1,3 +1,16 @@
+Thu Aug 29 13:00:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* priv.h: Only include <bfd.h> if BFD.  Only declare
+	host_bfd_arc_info, and bfd_host_bfd if BFD.  If not BFD, give
+	typedef for asection. 
+	* main.c: Only define host_bfd_arch_info, host_bfd, and
+	bfd_mach_host_arch_mach if BFD.  
+	(main): Only call bfd_mach_most_arch_mach if BFD.
+	Call mach_host_elf_machine.
+	* hostarch.c (bfd_mach_host_arch_mach): Only define if BFD.
+	Delete arg E_MACHINE.  All callers changed.
+	(mach_host_elf_machine): New function.
+
 Sun Jul  7 21:13:22 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* exec.c (S_exec_exec): Don't use unsafe MOVE_SEND in call to

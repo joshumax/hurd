@@ -26,6 +26,10 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.5  1995/10/04 20:55:28  roland
+ * (JUMPTARGET): New macro, versions for [PIC] and not.
+ * Use it in place of EXT.
+ *
  * Revision 1.4  1995/10/04 20:22:17  roland
  * [PIC] (EXT): Redefine to use PLT.
  *
@@ -59,7 +63,8 @@
  * 	[90/02/05            dbg]
  * 
  */
-#include <i386/asm.h>
+#define ELF
+#include <mach/i386/asm.h>
 
 #ifdef	PIC
 #define	JUMPTARGET(name)	EXT(name##@PLT)

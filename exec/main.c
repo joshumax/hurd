@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
-   Copyright (C) 1992, 1993, 19941996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 19941996, 1996 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -23,16 +23,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 
-
+#ifdef BFD
 bfd_arch_info_type host_bfd_arch_info;
 bfd host_bfd = { arch_info: &host_bfd_arch_info };
-Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
-
 extern error_t bfd_mach_host_arch_mach (host_t host,
 					enum bfd_architecture *bfd_arch,
 					long int *bfd_machine,
 					Elf32_Half *elf_machine);
+#endif
 
+Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
 
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
@@ -116,12 +116,15 @@ main (int argc, char **argv)
 
   save_argv = argv;
 
+#ifdef BFD
   /* Put the Mach kernel's idea of what flavor of machine this is into the
      fake BFD against which architecture compatibility checks are made.  */
   err = bfd_mach_host_arch_mach (mach_host_self (),
 				 &host_bfd.arch_info->arch,
-				 &host_bfd.arch_info->mach,
-				 &elf_machine);
+				 &host_bfd.arch_info->mach);
+#endif
+  err = mach_host_elf_machine (mach_host_self (), &elf_machine);
+  
   if (err)
     error (1, err, "Getting host architecture from Mach");
 
