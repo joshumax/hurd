@@ -1,3 +1,103 @@
+2002-03-13  Roland McGrath  <roland@frob.com>
+
+	* Makefile ($(store-types:%=libstore_%.a)): Create object files with
+	the undefined symbol rather than linker scripts.
+
+2002-03-14  Marcus Brinkmann  <marcus@gnu.org>
+
+	* unzipstore.c (unzip_store): New variable IN_BUF_SIZE to hold
+	allocated space for IN_BUF.  Use that instead IN_BUF_LEN for that
+	purpose if appropriate.  Always update IN_BUF_LEN after a read.
+
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* unzipstore.c: New file, broken out of bunzip2.c.
+	* bunzip2.c: Most code moved to unzipstore.c, which we #include.
+	(DO_UNZIP, UNZIP): New function, macro.
+	* gunzip.c: Most code deleted, now in unzipstore.c, which we #include.
+	(DO_UNZIP, UNZIP): New function, macro.
+	* Makefile (DIST_FILES): New variable, list unzipstore.c here.
+
+	* Makefile (module-CPPFLAGS): New variable.
+	* module.c (STORE_SONAME_SUFFIX): Macro removed.
+
+	* Makefile (store-types): Add missing types here.
+	(SRCS): Remove all those from here and use $(store-types:=.c) instead.
+
+2002-02-08  Roland McGrath  <roland@frob.com>
+
+	* Makefile (store-types): New variable.
+	(all): Depend on $(store-types:%=libstore_%.a).
+	(libstore_%.so.$(hurd-version)): New pattern rule.
+	($(store-types:%=libstore_%.a): libstore_%.a): New static pattern rule
+	to create `-lstore_TYPE' pseudo-objects (linker scripts) for each type.
+	(libstore.so-LDLIBS): New variable, adds -ldl.
+	(GUNZIP_OBJS, BUNZIP2_OBJS): New variables.
+	(UNZIP_OBJS): Variable removed, replaced by those two.
+	(OBJS): Update use.
+	(libstore_gunzip.so.$(hurd-version)): Depend on PIC $(GUNZIP_OBJS).
+	(libstore_bunzip2.so.$(hurd-version)): Depend on PIC $(BUNZIP2_OBJS).
+	* unknown.c: Add STORE_STD_CLASS decl.
+	* bunzip2.c: Likewise.
+	* copy.c: Likewise.
+	* device.c: Likewise.
+	* file.c: Likewise.
+	* gunzip.c: Likewise.
+	* memobj.c: Likewise.
+	* module.c: Likewise.
+	* mvol.c: Likewise.
+	* nbd.c: Likewise.
+	* open.c: Likewise.
+	* part.c: Likewise.
+	* remap.c: Likewise.
+	* stripe.c: Likewise.
+	* stripe.c: Likewise.
+	* task.c: Likewise.
+	* typed.c: Likewise.
+	* typed.c: Likewise.
+	* unknown.c: Likewise.
+	* url.c: Likewise.
+	* zero.c: Likewise.
+
+	* argp.c (DEFAULT_STORE_TYPE): Macro removed.
+	(DEFAULT_STORE_CLASS): New macro replaces it.
+	(parse_opt): Update the use.
+
+2002-01-19  Roland McGrath  <roland@frob.com>
+
+	* url.c (find_url_class): Function removed.
+	(store_url_open): Use store_typed_open after validating syntax.
+	(store_url_decode): Use store_find_class and store_module_find_class.
+
+	* typed.c (store_find_class): New function.
+	(store_typed_open): Use it.
+
+	* url.c (url_decode): Renamed to store_url_decode, made public.
+	(store_url_open_class): Changed use.
+	* store.h: Declare store_url_decode.
+	* decode.c (store_decode): Call store_url_decode for STORAGE_NETWORK
+	as a special case.
+
+2001-12-28  Roland McGrath  <roland@frob.com>
+
+	* Makefile (SRCS): Remove std.c.
+
+	* module.c: New file.
+	* store.h (store_module_open, store_module_find_class,
+	store_module_decode): Declare them.
+	* argp.c (parse_opt): Leave PARSED->classes null here instead
+	of defaulting to store_std_classes.
+	(find_class): Default null class-list parameter to store_std_classes
+	here instead.  If no matches when defaulted, try calling
+	store_module_open_class	too.
+	* typed.c (store_typed_open): If no match when search list is
+	store_std_classes, try calling store_module_open_class too.
+	* url.c (find_url_class): Likewise.
+	* decode.c (store_decode): If no match when search list is
+	store_std_classes, try calling store_module_decode too.
+
+	* store.h (store_concat_class_vectors): Remove decl of nonexistent fn.
+
 2002-03-14  Marcus Brinkmann  <marcus@gnu.org>
 
 	* rdwr.c (store_read): Truncate amount to be read to size of
