@@ -175,7 +175,7 @@ check_hashbang (struct execdata *e,
       inline void prepare_args (void)
 	{
 
-	  char *file_name = NULL;
+	  volatile char *file_name = NULL;
 	  size_t namelen;
 
 	  if (! (flags & EXEC_SECURE))
@@ -185,8 +185,8 @@ check_hashbang (struct execdata *e,
 		 if it contains no slash, looking for files named by ARGV[0] in
 		 the `PATH' environment variable might find it.  */
 
-	      error_t error;
-	      char *name;
+	      volatile error_t error;
+	      volatile char *name;
 	      file_t name_file;
 	      struct stat st;
 	      int file_fstype;
