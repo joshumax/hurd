@@ -75,7 +75,7 @@ poke_pages (memory_object_t obj,
 /* ---------------------------------------------------------------- */
 
 #define DIRECT_BLOCK(length) \
-  ((length + block_size - 1) / block_size)
+  ((length + block_size - 1) >> log2_block_size)
 #define INDIRECT_BLOCK(length, offset) \
   ((int)DIRECT_BLOCK(length) - offset)
 #define DINDIRECT_BLOCK(length, offset) \
@@ -422,6 +422,7 @@ diskfs_truncate (struct node *node, off_t length)
 		       EXT2_ADDR_PER_BLOCK(sblock),
 		       (u32 *) &node->dn->info.i_data[EXT2_DIND_BLOCK]);
       trunc_tindirect (node, length);
+      node->allocsize = trunc_block (length + block_size - 1);
     }
 
   node->dn_set_mtime = 1;
@@ -431,18 +432,7 @@ diskfs_truncate (struct node *node, off_t length)
   /* Now we can permit delayed copies again. */
   enable_delayed_copies (node);
 
-  return 0;
-}
+  rwlock_writer_unlock (&node->dn->alloc_lock);
 
-/* The user must define this function.  Grow the disk allocated to locked node
-   NODE to be at least SIZE bytes, and set NODE->allocsize to the actual
-   allocated size.  (If the allocated size is already SIZE bytes, do
-   nothing.)  CRED identifies the user responsible for the call.  */
-error_t
-diskfs_grow (struct node *node, off_t size, struct protid *cred)
-{
-  assert (!diskfs_readonly);
-  if (size > node->allocsize)
-    node->allocsize = size;
-  return 0;
+  return err;
 }
