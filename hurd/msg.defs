@@ -171,3 +171,24 @@ routine io_select_done (
 /* This is sent by the startup server when the system is going down.  */
 routine startup_dosync (
 	process: mach_port_t);
+
+/* This is sent by a filesystem (after being requested with 
+   dir_notice_changes) every time a directory is changed.
+   CHANGE identifies the sort of change that has occurred (see hurd_types.h);
+   NAME is the name that was changed.  */
+routine dir_changed (
+	notify_port: mach_port_t;
+	change: dir_changed_type_t;
+	name: string_t);
+
+/* This is sent by a filesystem (after being requested with
+   file_notice_changes) every time a file or its stat info is changed.
+   CHANGE identifies the sort of change that has occurred (see hurd_types.h);
+   START and END identify the affected regions of the file's data.  */
+routine file_changed (
+	notify_port: mach_port_t;
+	change: file_changed_type_t;
+	start: off_t;
+	end: off_t);
+
+   
