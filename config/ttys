@@ -4,5 +4,5 @@
 
 # name	program				type	status	comments
 
-console	"/libexec/getty 9600"		pc3	on	secure trusted console
+console	"/libexec/getty 9600"		mach	on	secure trusted console
 #com0	"/libexec/getty 9600"		dialup	on	secure
