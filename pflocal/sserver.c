@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------- */
 
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
-static struct port_bucket *sock_port_bucket;
+struct port_bucket *sock_port_bucket;
 
 /* True if there are threads servicing sock requests.  */
 static int sock_server_active = 0;
@@ -47,7 +47,7 @@ handle_sock_requests ()
    a server if necessary.  This routine should be called *after* creating the
    port(s) which need server, as the server routine only operates while there
    are any ports.  */
-static void
+void
 ensure_sock_server ()
 {
   spin_lock (&sock_server_active_lock);
@@ -69,7 +69,8 @@ error_t
 do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
 {
   void *pi = ports_lookup_port (sock_port_bucket, port, 0);
-debug (pi, "count: %ul", count);
+debug (pi, "count: %ul, refs: %d",
+       count, (pi ? ((struct port_info *)pi->refcnt) : 0));
   if (!pi)
     return EOPNOTSUPP;
   ports_no_senders (pi, count);
