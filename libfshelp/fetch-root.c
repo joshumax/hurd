@@ -72,9 +72,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	    err = io_reauthenticate (port, rend, 
 				     MACH_MSG_TYPE_MAKE_SEND);
 	    if (! err)
-	      err = auth_user_authenticate (newauth, port, rend,
-					    MACH_MSG_TYPE_MAKE_SEND,
-					    &ret);
+	      err = auth_user_authenticate (newauth, rend,
+					    MACH_MSG_TYPE_MAKE_SEND, &ret);
 	    if (err)
 	      ret = MACH_PORT_NULL;
 	  
