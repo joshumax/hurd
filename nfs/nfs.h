@@ -57,6 +57,8 @@ struct netnode
   off_t extend_len;
 #endif
 
+  struct user_pager_info *fileinfo;
+
   /* If this node has been renamed by "deletion" then
      this is the directory and name in that directory which
      is holding the node */
