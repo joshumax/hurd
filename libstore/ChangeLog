@@ -1,3 +1,7 @@
+1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr.c (store_read, store_write): Fix asserts in last change.
+
 1999-10-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rdwr.c (store_read, store_write): Fix calculations broken in last

@@ -1,3 +1,13 @@
+1999-10-07  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* start-translator-long.c (fshelp_start_translator_long): Take new
+	argument OWNER_UID.  Get child's proc port and do proc_setowner on it.
+	* fshelp.h: Update decl.
+	* start-translator.c (fshelp_start_translator): Pass new arg to
+	fshelp_start_translator_long with value from geteuid ().
+	* fetch-root.c (fshelp_fetch_root): Pass UID as new arg to
+	fshelp_start_translator_long.
+
 1999-09-12  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* delegate.c (fshelp_delegate_translation): Free ARGZ after RPC.
