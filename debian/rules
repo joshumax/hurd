@@ -5,9 +5,9 @@
 ## Created On       : Sat,  1 Aug 1998 21:33:31 +0200
 ## Created On Node  : localhost
 ## Last Modified By : Marcus Brinkmann
-## Last Modified On : Mon,  4 Jan 1999 03:37:08 +0100
+## Last Modified On : Thu, 23 Sep 1999 01:41:38 +0200
 ## Last Machine Used: localhost
-## Update Count     : 1
+## Update Count     : 2
 ## Status           : Unknown, Use with caution!
 ## HISTORY          :
 ## Description      :
@@ -16,8 +16,9 @@
 
 # The name of the package (for example, `emacs').
 package   := hurd
-BUILDARCH := $(DEB_BUILD_GNU_TYPE)
-HOSTARCH := $(DEB_HOST_GNU_TYPE)
+
+DEB_BUILD_GNU_TYPE = $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_GNU_TYPE = $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 
 # Configuration variables (these should be pretty generic)
 CC = cc
@@ -26,6 +27,7 @@ LDFLAGS = -s
 PREFIX = /usr
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man
+INFODIR = $(PREFIX)/info
 DOCDIR = $(PREFIX)/doc/$(package)
 
 #  Package specific stuff.  The idea is to try to make the rules
@@ -33,7 +35,7 @@ DOCDIR = $(PREFIX)/doc/$(package)
 
 FILES_TO_CLEAN	= debian/files include/*.h
 DIRS_TO_CLEAN	= debian/tmp debian/$(package)-dev build
-STAMPS_TO_CLEAN	= stamp-build
+STAMPS_TO_CLEAN	= stamp-build stamp-config
 
 install_file	= install -o root -g root -m 644
 install_program	= install -s -o root -g root -m 755
@@ -47,25 +49,38 @@ define checkroot
 	@test 0 = "`id -u`" || (echo need root priviledges; exit 1)
 endef
 
-all build: stamp-build
+# Next is NOT a phony target.
 
-configure:
+configure: configure.in
 	aclocal
 	autoconf
 
-stamp-build: configure
+# The next IS a phony target.
+
+config: stamp-config
+stamp-config: configure
 	$(checkdir)
-	mkdir build
-	cd build && ../configure --build=$(BUILDARCH) --host=$(HOSTARCH) --prefix=
-# go and fetch a few beers now...
+	-mkdir build
+	cd build && ../configure --build=$(DEB_BUILD_GNU_TYPE) \
+	  --host=$(DEB_HOST_GNU_TYPE) --prefix=
+	touch stamp-config
+
+all build: config stamp-build 
+stamp-build:
+	$(checkdir)
 	cd build && $(MAKE) no_prof=t
+# XXX-doc
+	cd build && $(MAKE) -C doc hurd.info
+	cd build && $(MAKE) -C doc hurd.ps
 	touch stamp-build
 
 clean:
 	$(checkdir)
-	-cd build && make clean no_deps=t
+#	-cd build && make clean no_deps=t
 	-rm -f  $(FILES_TO_CLEAN) $(STAMPS_TO_CLEAN)
 	-rm -rf $(DIRS_TO_CLEAN)
+# XXX-doc
+	-rm -f doc/hurd.d doc/hurd.info* version.texi
 	for NAME in hurd/*.h; do \
 	  if [ -L $$NAME ] ; then \
 	    rm -f $$NAME ; \
@@ -77,7 +92,9 @@ clean:
 
 binary: binary-indep binary-arch
 
-# Build architecture-independent files here.
+binary-indep:
+# We have nothing to do here.
+
 binary-arch: build
 	$(checkdir)
 	$(checkroot)
@@ -88,6 +105,8 @@ binary-arch: build
 	cd build && $(MAKE)	install prefix=`pwd`/../debian/tmp no_prof=t
 # kill the profiling libs
 	-rm -f			debian/tmp/lib/*_p.a
+# /etc/motd is in base-files!
+	-rm -f			debian/tmp/etc/motd
 # probably we'll make debug packages later, for now, strip'em
 	-strip --strip-unneeded	debian/tmp/lib/lib*.so
 	-strip --strip-debug	debian/tmp/lib/lib*.a
@@ -120,7 +139,12 @@ binary-arch: build
 	dpkg --build		debian/$(package)-dev ..
 
 # now the shared libs and other stuff
-	$(make_directory)	debian/tmp/{DEBIAN,usr/doc/$(package)}
+	$(make_directory)	debian/tmp/DEBIAN
+	$(make_directory)	debian/tmp$(DOCDIR)
+	$(make_directory)	debian/tmp$(INFODIR)
+
+	gzip -9fq		debian/tmp/boot/serverboot
+
 # Only found in CVS, not the distribution.
 #	$(install_file)		BUGS debian/tmp$(DOCDIR)
 #	$(install_file)		TODO debian/tmp$(DOCDIR)
@@ -131,21 +155,29 @@ binary-arch: build
 	$(install_file)		ChangeLog debian/tmp$(DOCDIR)/changelog
 	$(install_file)		debian/README.Debian debian/tmp$(DOCDIR)
 	$(install_file)		debian/changelog debian/tmp$(DOCDIR)/changelog.Debian
+# XXX-doc
+	$(install_file)		build/doc/hurd.ps debian/tmp$(DOCDIR)
 	gzip -9frq		debian/tmp$(DOCDIR)/.
 	$(install_file)		debian/copyright debian/tmp$(DOCDIR)
+
+# XXX-doc
+	$(install_file)		build/doc/hurd.info* debian/tmp$(INFODIR)
+	-gzip -9frq		debian/tmp$(INFODIR)
 
 	$(install_file)		debian/servers.boot debian/tmp/boot/servers.boot
 	$(make_directory)	debian/tmp/servers
 
+# libexec/runsystem is managed by update-alternatives
+	mv			debian/tmp/libexec/runsystem debian/tmp/libexec/runsystem.gnu
+
 	$(install_file)		debian/conffiles debian/tmp/DEBIAN/conffiles
 	$(install_file)		debian/shlibs debian/tmp/DEBIAN/shlibs
+	$(install_program)	debian/postinst debian/tmp/DEBIAN/postinst
+	$(install_program)	debian/prerm debian/tmp/DEBIAN/prerm
 
 	dpkg-shlibdeps          -p$(package) debian/tmp/bin/* debian/tmp/libexec/* debian/tmp/hurd/* debian/tmp/sbin/*
 	dpkg-gencontrol         -p$(package) -Pdebian/tmp
 	chown -R root.root      debian/tmp
 	dpkg --build            debian/tmp ..
 
-binary-indep: build
-# We have nothing to do here.
-
-.PHONY: build clean binary-indep binary-arch binary
+.PHONY: build config clean binary-indep binary-arch binary
