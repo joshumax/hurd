@@ -1,8 +1,7 @@
 /* Common definitions for the ext2 filesystem translator
 
-   Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995, 1996, 1999, 2002, 2004 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -408,8 +407,8 @@ alloc_sync (struct node *np)
 
 void ext2_discard_prealloc (struct node *node);
 
-/* Returns in DISK_BLOCK the disk block correspding to BLOCK in NODE.  If
-   there is no such block yet, but CREATE is true, then it is created,
+/* Returns in DISK_BLOCK the disk block corresponding to BLOCK in NODE.
+   If there is no such block yet, but CREATE is true, then it is created,
    otherwise EINVAL is returned.  */
 error_t ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block);
 

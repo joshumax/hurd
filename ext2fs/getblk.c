@@ -1,6 +1,6 @@
 /* File block to disk block mapping routines
 
-   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,2004 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.org>
 
@@ -225,8 +225,8 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
   return 0;
 }
 
-/* Returns in DISK_BLOCK the disk block correspding to BLOCK in NODE.  If
-   there is no such block yet, but CREATE is true, then it is created,
+/* Returns in DISK_BLOCK the disk block corresponding to BLOCK in NODE.
+   If there is no such block yet, but CREATE is true, then it is created,
    otherwise EINVAL is returned.  */
 error_t
 ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)

@@ -857,7 +857,7 @@ count_dirents (struct node *dp, int nb, char *buf)
    Must be a power of two.  */
 #define DIRENT_ALIGN 4
 
-/* Implement the disikfs_get_directs callback as described in
+/* Implement the diskfs_get_directs callback as described in
    <hurd/diskfs.h>. */
 error_t
 diskfs_get_directs (struct node *dp,
