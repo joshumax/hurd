@@ -269,7 +269,9 @@ S_exec_init (struct trivfs_protid *protid,
        change.  */
 
     struct trivfs_protid *cred;
-    err = trivfs_open (fsys, 0, 0, 0, 0, 0, MACH_PORT_NULL, &cred);
+    err = trivfs_open (fsys,
+		       iohelp_create_iouser (make_idvec (), make_idvec ()),
+		       0, MACH_PORT_NULL, &cred);
     assert_perror (err);
 
     proc_execdata_notify (procserver, ports_get_right (cred),

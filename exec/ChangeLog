@@ -1,3 +1,15 @@
+Mon Nov 18 17:45:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* exec.c (load_section): If ANYWHERE, then make sure ADDR starts
+	out at least past the first page, so that we don't take it.  Then
+	the library can (if desired) make the page no-access.
+
+Fri Nov 15 17:34:23 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* exec.c: Don't include <hurd/shared.h> any more.
+
+	* main.c (S_exec_init): New arg syntax of trivfs_open.
+
 Mon Oct  7 21:31:25 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* exec.c (fake_seek): New function.

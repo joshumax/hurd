@@ -32,7 +32,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <hurd.h>
 #include <hurd/exec.h>
-#include <hurd/shared.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -187,6 +186,8 @@ load_section (void *section, struct execdata *u)
 	  default:
 	    break;
 	  }
+      if (anywhere && addr < vm_page_size)
+	addr = vm_page_size;
     }
 
   if (memsz == 0)
