@@ -116,9 +116,6 @@ struct trivfs_control *termctl;
 /* Trivfs control structure for the pty */
 struct trivfs_control *ptyctl;
 
-/* Mach device name for this terminal */
-char *pterm_name;
-
 /* The queues we use */
 struct queue *inputq, *rawq, *outputq;
 
@@ -324,6 +321,8 @@ void copy_rawq (void);
 void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
+
+extern char *tty_arg;
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */

@@ -1,5 +1,20 @@
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
+	* main.c: Include `argp.h' and `version.h'.
+	(argp_program_version): New global variable.
+	(tty_name, tty_type, tty_arg): Likewise.
+	(parse_opt): New function.
+	(term_argp): New global variable.
+	(main): Call argp_parse, use new global variables to parse the
+	options.  Remove TYPE variable.  Get the bootstrap port after
+	checking the argument line.
+	* term.h (pterm_name): Remove variable.
+	(tty_arg): Declare variable.
+	* devio.c (initial_open): Use tty_arg instead pterm_name.
+	(devio_assert_dtr): Likewise.
+
+2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
+
 	* term.h: Include `hurd/hurd_types.h'.
 	(struct bottomhalf): Change the return types of the following
 	members from void to error_t: abandon_physical_output,

@@ -452,7 +452,7 @@ initial_open ()
   phys_reply = ports_get_send_right (phys_reply_pi);
 
   err = device_open_request (device_master, phys_reply,
-			     D_READ|D_WRITE, pterm_name);
+			     D_READ|D_WRITE, tty_arg);
   if (err)
     {
       mach_port_deallocate (mach_task_self (), phys_reply);
@@ -496,7 +496,7 @@ devio_assert_dtr ()
     return 0;
 
   err = device_open_request (device_master, phys_reply,
-			     D_READ|D_WRITE, pterm_name);
+			     D_READ|D_WRITE, tty_arg);
 
   if (err)
     return err;

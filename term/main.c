@@ -23,16 +23,26 @@
 #include <fcntl.h>
 #include <hurd/trivfs.h>
 #include <stdio.h>
+#include <argp.h>
 #include <hurd/fsys.h>
 #include <string.h>
 
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (term);
+
 int trivfs_fstype = FSTYPE_TERM;
-int trivfs_fsid = 0;		/* pid?? */
+int trivfs_fsid = 0;
 int trivfs_support_read = 1;
 int trivfs_support_write = 1;
 int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ|O_WRITE;
+
+/* The argument line options.  */
+char *tty_name;
+enum { T_NONE = 0, T_DEVICE, T_PTYMASTER, T_PTYSLAVE } tty_type;
+char *tty_arg;
 
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -47,6 +57,55 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  || device_reply_server (inp, outp));
 }
 
+
+static error_t
+parse_opt (int opt, char *arg, struct argp_state *state)
+{
+  switch (opt)
+    {
+    default:
+      return ARGP_ERR_UNKNOWN;
+    case ARGP_KEY_INIT:
+    case ARGP_KEY_SUCCESS:
+    case ARGP_KEY_ERROR:
+      break;
+    case ARGP_KEY_ARG:
+      if (!tty_name)
+	tty_name = arg;
+      else if (!tty_type)
+	{
+	  if (!strcmp (arg, "device"))
+	    tty_type = T_DEVICE;
+	  else if (!strcmp (arg, "pty-master"))
+	    tty_type = T_PTYMASTER;
+	  else if (!strcmp (arg, "pty-slave"))
+	    tty_type = T_PTYSLAVE;
+	  else
+	    argp_error (state, "Invalid terminal type");
+	}
+      else if (!tty_arg)
+	tty_arg = arg;
+      else
+	argp_error (state, "Too many arguments");
+      break;
+    case ARGP_KEY_END:
+      if (!tty_name || !tty_type || !tty_arg)
+	argp_error (state, "Too few arguments");
+      break;
+    }
+  return 0;
+}
+
+static struct argp term_argp =
+  { 0, parse_opt, "NAME TYPE ARG", "A translator that emulates a terminal.\v"\
+    "Possible values for TYPE:\n"\
+    "  device      Use Mach device ARG as bottom handler.\n"\
+    "  pty-master  Master for slave at ARG.\n"\
+    "  pty-slave   Slave for master at ARG.\n"\
+    "\n"\
+    "The filename of the node that the translator is attached to should be\n"\
+    "supplied in NAME.\n" };
+
 int
 main (int argc, char **argv)
 {
@@ -54,7 +113,6 @@ main (int argc, char **argv)
   struct port_class *peerclass, *peercntlclass;
   struct trivfs_control **ourcntl, **peercntl;
   mach_port_t bootstrap, right;
-  enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type;
   struct stat st;
 
   term_bucket = ports_create_bucket ();
@@ -68,17 +126,11 @@ main (int argc, char **argv)
 
   init_users ();
 
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  
-  if (argc != 4)
-    {
-      fprintf (stderr, "Usage: term ttyname type arg\n");
-      exit (1);
-    }
+  argp_parse (&term_argp, argc, argv, 0, 0, 0);
 
-  if (!strcmp (argv[2], "device"))
+  switch (tty_type)
     {
-      type = T_DEVICE;
+    case T_DEVICE:
       bottom = &devio_bottom;
       ourclass = tty_class;
       ourcntlclass = tty_cntl_class;
@@ -86,11 +138,9 @@ main (int argc, char **argv)
       peerclass = 0;
       peercntlclass = 0;
       peercntl = 0;
-      pterm_name = argv[3];
-    }
-  else if (!strcmp (argv[2], "pty-master"))
-    {
-      type = T_PTYMASTER;
+      break;
+
+    case T_PTYMASTER:
       bottom = &ptyio_bottom;
       ourclass = pty_class;
       ourcntlclass = pty_cntl_class;
@@ -98,10 +148,9 @@ main (int argc, char **argv)
       peerclass = tty_class;
       peercntlclass = tty_cntl_class;
       peercntl = &termctl;
-    }
-  else if (!strcmp (argv[2], "pty-slave"))
-    {
-      type = T_PTYSLAVE;
+      break;
+
+    case T_PTYSLAVE:
       bottom = &ptyio_bottom;
       ourclass = tty_class;
       ourcntlclass = tty_cntl_class;
@@ -109,13 +158,15 @@ main (int argc, char **argv)
       peerclass = pty_class;
       peercntlclass = pty_cntl_class;
       peercntl = &ptyctl;
-    }
-  else
-    {
-      fprintf (stderr, 
-	       "Allowable types are device, pty-master, and pty-slave.\n");
+      break;
+
+    default:
+      /* Should not happen.  */
+      fprintf (stderr, "Unknown terminal type is unknown.\n");
       exit (1);
     }
+  
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   if (bootstrap == MACH_PORT_NULL)
     {
@@ -135,12 +186,12 @@ main (int argc, char **argv)
 
   /* For ptys, the nodename depends on which half is used.  For now just use
      the hook to store the nodename.  */
-  (*ourcntl)->hook = argv[1];
+  (*ourcntl)->hook = tty_name;
 
   /* Set peer */
   if (peerclass)
     {
-      char *peer_name = argv[3];
+      char *peer_name = tty_arg;
       file_t file = file_name_lookup (peer_name, O_CREAT|O_NOTRANS, 0666);
 
       if (file != MACH_PORT_NULL)
