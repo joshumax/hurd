@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000,02 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -41,7 +41,7 @@ extern int dev_ifconf(char *arg);
    negative, there is no limit.  */
 error_t
 S_pfinet_siocgifconf (io_t port,
-		      int amount,
+		      vm_size_t amount,
 		      char **ifr,
 		      mach_msg_type_number_t *len)
 {
