@@ -1,0 +1,11 @@
+1997-06-13  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* leaf.c (create_host_node): Set the times of the new node.
+	(str_append): Function removed.
+	(netfs_get_translator): Use argz_replace instead of doing it ourselves.
+	* mux.c (netfs_get_dirents): MAX_DATA_LEN == 0 means `no limit'.
+	* hostmux.h (touch): Function removed; all uses replaced by the
+	appropriate use of fshelp_touch instead.
+	(TOUCH_ATIME, TOUCH_MTIME, TOUCH_CTIME): Macro removed.
+	(hostmux_maptime): Renamed from HOSTMUX_MAPPED_TIME; all uses changed.
+	* hostmux.c (options): --host-pattern isn't optional.

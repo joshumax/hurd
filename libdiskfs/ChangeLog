@@ -1,3 +1,8 @@
+1997-06-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-stat.c (diskfs_S_io_stat): Use fshelp_translated rather than
+	fshelp_fetch_control.
+
 Fri Jun  6 11:42:14 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (LCLHDRS): Add fhandle.h.
