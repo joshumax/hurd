@@ -23,10 +23,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+
+#define __need_error_t
+#include <errno.h>
+
+#ifndef __error_t_defined
+typedef int error_t;
+#define __error_t_defined
+#endif
 
 struct ftp_conn;
 struct ftp_conn_params;
@@ -61,14 +68,11 @@ struct ftp_conn_syshooks
   /* Start an operation to get a list of file-stat structures for NAME (this
      is often similar to ftp_conn_start_dir, but with OS-specific flags), and
      return a file-descriptor for reading on, and a state structure in STATE
-     suitable for passing to cont_get_stats.  FORCE_DIR controls what happens
-     if NAME refers to a directory: if FORCE_DIR is false, STATS will contain
-     entries for all files *in* NAME, and if FORCE_DIR is true, it will
-     contain just a single entry for NAME itself (or an error will be
-     returned when this isn't possible).  */
+     suitable for passing to cont_get_stats.  If CONTENTS is true, NAME must
+     refer to a directory, and the contents will be returned, otherwise, the
+     (single) result will refer to NAME.  */
   error_t (*start_get_stats) (struct ftp_conn *conn, const char *name,
-			      int force_dir,
-			      int *fd, void **state);
+			      int contents, int *fd, void **state);
 
   /* Read stats information from FD, calling ADD_STAT for each new stat (HOOK
      is passed to ADD_STAT).  FD and STATE should be returned from
@@ -165,10 +169,10 @@ struct ftp_conn_params
 extern error_t ftp_conn_unix_pasv_addr (struct ftp_conn *conn, const char *txt,
 					struct sockaddr **addr);
 extern error_t ftp_conn_unix_interp_err (struct ftp_conn *conn, const char *txt,
-					 error_t *poss_errs);
+					 const error_t *poss_errs);
 extern error_t ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
 					      const char *name,
-					      int force_dir, int *fd,
+					      int contents, int *fd,
 					      void **state);
 extern error_t ftp_conn_unix_cont_get_stats (struct ftp_conn *conn,
 					     int fd, void *state,
@@ -177,6 +181,9 @@ extern error_t ftp_conn_unix_cont_get_stats (struct ftp_conn *conn,
 
 extern struct ftp_conn_syshooks ftp_conn_unix_syshooks;
 
+error_t
+ftp_conn_get_raw_reply (struct ftp_conn *conn,
+			int *reply, const char **reply_txt);
 error_t
 ftp_conn_get_reply (struct ftp_conn *conn, int *reply, const char **reply_txt);
 
@@ -217,7 +224,7 @@ void ftp_conn_free (struct ftp_conn *conn);
 error_t
 ftp_conn_start_transfer (struct ftp_conn *conn,
 			 const char *cmd, const char *arg,
-			 error_t *poss_errs,
+			 const error_t *poss_errs,
 			 int *data);
 
 /* Wait for the reply signalling the end of a data transfer.  */
@@ -268,13 +275,11 @@ error_t ftp_conn_set_type (struct ftp_conn *conn, const char *type);
 /* Start an operation to get a list of file-stat structures for NAME (this
    is often similar to ftp_conn_start_dir, but with OS-specific flags), and
    return a file-descriptor for reading on, and a state structure in STATE
-   suitable for passing to cont_get_stats.  FORCE_DIR controls what happens if
-   NAME refers to a directory: if FORCE_DIR is false, STATS will contain
-   entries for all files *in* NAME, and if FORCE_DIR is true, it will
-   contain just a single entry for NAME itself (or an error will be
-   returned when this isn't possible).  */
+   suitable for passing to cont_get_stats.  If CONTENTS is true, NAME must
+   refer to a directory, and the contents will be returned, otherwise, the
+   (single) result will refer to NAME.  */
 error_t ftp_conn_start_get_stats (struct ftp_conn *conn,
-				  const char *name, int force_dir,
+				  const char *name, int contents,
 				  int *fd, void **state);
 
 /* Read stats information from FD, calling ADD_STAT for each new stat (HOOK
@@ -286,14 +291,11 @@ error_t ftp_conn_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 				 ftp_conn_add_stat_fun_t add_stat, void *hook);
 
 /* Get a list of file-stat structures for NAME, calling ADD_STAT for each one
-   (HOOK is passed to ADD_STAT).  If NAME refers to an ordinary file, a
-   single entry for it is returned for it; if NAME refers to a directory,
-   then if FORCE_DIR is false, STATS will contain entries for all files *in*
-   NAME, and if FORCE_DIR is true, it will contain just a single entry for
-   NAME itself (or an error will be returned when this isn't possible).  This
-   function may block.  */
+   (HOOK is passed to ADD_STAT).  If CONTENTS is true, NAME must refer to a
+   directory, and the contents will be returned, otherwise, the (single)
+   result will refer to NAME.  This function may block.  */
 error_t ftp_conn_get_stats (struct ftp_conn *conn,
-			    const char *name, int force_dir,
+			    const char *name, int contents,
 			    ftp_conn_add_stat_fun_t add_stat, void *hook);
 
 /* The type of the function called by ...get_names to add each new name.
