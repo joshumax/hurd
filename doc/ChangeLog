@@ -1,9 +1,9 @@
-2002-02-11     James A. Morrison <ja2morri@student.math.uwaterloo.ca>
+2002-02-11  James A. Morrison <ja2morri@student.math.uwaterloo.ca>
 
 	* hurd.texi (Translators): Document the options for showtrans and
 	fsystops.
 
-2002-02-11     James A. Morrison  <ja2morri@student.math.uwaterloo.ca>
+2002-02-11  James A. Morrison  <ja2morri@student.math.uwaterloo.ca>
 
 	* hurd.texi: Add a space before []'s in vector definitions to remove
 	compile warnings.
