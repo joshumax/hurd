@@ -46,7 +46,9 @@ diskfs_S_io_identity (struct protid *cred,
   if (! err)
     if (cred->po->shadow_root && cred->po->shadow_root != diskfs_root_node)
       {
-	err = fshelp_get_identity (diskfs_port_bucket, inum, fsys);
+	err = fshelp_get_identity (diskfs_port_bucket,
+				   cred->po->shadow_root->dn_stat.st_ino,
+				   fsys);
 	if (err)
 	  mach_port_deallocate (mach_task_self (), *id);
       }
