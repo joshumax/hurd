@@ -203,8 +203,8 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  vm_address_t *data, mach_msg_type_number_t *data_len,
-		  off_t offs, mach_msg_type_number_t amount)
+		  char **data, mach_msg_type_number_t *data_len,
+		  loff_t offs, mach_msg_type_number_t amount)
 {
   error_t err = 0;
 
@@ -221,9 +221,8 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       if (start + amount > max)
 	amount = max - start;
       if (amount > *data_len)
-	*data = (vm_address_t) mmap (0, amount, PROT_READ|PROT_WRITE,
-				     MAP_ANON, 0, 0);
-      err = (*data == -1) ? errno : 0;
+	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = (*data == MAP_FAILED) ? errno : 0;
       if (!err && amount > 0)
 	{
 	  memcpy ((char *)(*data + start), target, amount);
@@ -272,7 +271,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int *type, int *tag)
+		    int *type)
 {
   return EOPNOTSUPP;
 }
