@@ -18,7 +18,7 @@
 dir := init
 makemode := server
 
-split-init=yes
+##split-init=yes
 
 SRCS = init.c
 OBJS = $(SRCS:.c=.o) \
