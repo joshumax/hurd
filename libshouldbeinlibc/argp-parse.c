@@ -28,6 +28,18 @@
 #include <limits.h>
 #include <getopt.h>
 
+#ifndef _
+/* This is for other GNU distributions with internationalized messages.
+   When compiling libc, the _ macro is predefined.  */
+#ifdef HAVE_LIBINTL_H
+# include <libintl.h>
+# define _(msgid)       gettext (msgid)
+#else
+# define _(msgid)       (msgid)
+# define gettext(msgid) (msgid)
+#endif
+#endif
+
 #if _LIBC - 0
 #include <libc-lock.h>
 #else
@@ -144,7 +156,7 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
       else if (argp_program_version)
 	fprintf (state->out_stream, "%s\n", argp_program_version);
       else
-	__argp_error (state, "No version known!?");
+	__argp_error (state, gettext ("No version known!?"));
       if (! (state->flags & ARGP_NO_EXIT))
 	exit (0);
       break;
@@ -596,7 +608,7 @@ parser_finalize (struct parser *parser,
       {
 	if (!(parser->state.flags & ARGP_NO_ERRS) && parser->state.err_stream)
 	  fprintf (parser->state.err_stream,
-		   "%s: Too many arguments\n", parser->state.name);
+		   gettext ("%s: Too many arguments\n"), parser->state.name);
 	err = EBADKEY;
       }
 
