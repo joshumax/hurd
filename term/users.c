@@ -54,6 +54,9 @@ struct async_req
 };
 struct async_req *async_requests;
 
+/* Number of peropens that have set the ICKY_ASYNC flags.  */
+static int num_icky_async_peropens = 0;
+
 mach_port_t async_icky_id;
 mach_port_t async_id;
 struct port_info *cttyid;
@@ -77,9 +80,18 @@ init_users ()
 {
   cttyid = ports_allocate_port (term_bucket, sizeof (struct port_info),
 				cttyid_class);
+
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
 		      &async_icky_id);
+  /* Add a send right, since hurd_sig_post needs one.  */
+  mach_port_insert_right (mach_task_self (),
+			  async_icky_id, async_icky_id,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &async_id);
+  /* Add a send right, since hurd_sig_post needs one.  */
+  mach_port_insert_right (mach_task_self (),
+			  async_id, async_id, MACH_MSG_TYPE_MAKE_SEND);
 }
   
 
@@ -202,7 +214,11 @@ po_create_hook (struct trivfs_peropen *po)
   mutex_lock (&global_lock);
   nperopens++;
   if (po->openmodes & O_ASYNC)
-    termflags |= ICKY_ASYNC;
+    {
+      termflags |= ICKY_ASYNC;
+      num_icky_async_peropens++;
+      call_asyncs (1);
+    }
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -219,6 +235,10 @@ po_destroy_hook (struct trivfs_peropen *po)
     }
 
   mutex_lock (&global_lock);
+
+  if ((po->openmodes & O_ASYNC) && --num_icky_async_peropens == 0)
+    termflags &= ~ICKY_ASYNC;
+
   nperopens--;
   if (!nperopens)
     {
@@ -235,6 +255,7 @@ po_destroy_hook (struct trivfs_peropen *po)
 
       termflags &= ~TTY_OPEN;
     }
+
   mutex_unlock (&global_lock);
 }
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *) 
@@ -445,7 +466,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   trivfs_set_mtime (termctl);
 
-  call_asyncs ();
+  call_asyncs (1);
 
   mutex_unlock (&global_lock);
 
@@ -583,7 +604,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
-  call_asyncs ();
+  call_asyncs (1);
 
   mutex_unlock (&global_lock);
 
@@ -1532,6 +1553,7 @@ S_tioctl_tiocsbrk (io_t port)
 
 error_t
 trivfs_S_file_set_size (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t reply_type,
 			off_t size)
 {
   if (!cred)
@@ -1548,6 +1570,7 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 
 error_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
+		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  off_t off,
 		  int whence,
 		  off_t *newp)
@@ -1578,16 +1601,29 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
 			       mach_msg_type_name_t replytype,
 			       int bits)
 {
+  int obits;
 
   if (!cred)
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
+
+  obits = cred->po->openmodes;
+  if ((obits & O_ASYNC) && --num_icky_async_peropens == 0)
+    termflags &= ~ICKY_ASYNC;
+
   cred->po->openmodes &= ~HONORED_STATE_MODES;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
-  if (bits & O_ASYNC)
-    termflags |= ICKY_ASYNC;
+
+  if ((bits & O_ASYNC) && !(obits & O_ASYNC))
+    {
+      termflags |= ICKY_ASYNC;
+      num_icky_async_peropens++;
+      call_asyncs (1);
+    }
+
   mutex_unlock (&global_lock);
+
   return 0;
 }
 
@@ -1597,13 +1633,20 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
 			     mach_msg_type_name_t reply_type,
 			     int bits)
 {
+  int obits;
+
   if (!cred)
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
+  obits = cred->po->openmodes;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
-  if (bits & O_ASYNC)
-    termflags |= ICKY_ASYNC;
+  if ((bits & O_ASYNC) && !(obits & O_ASYNC))
+    {
+      termflags |= ICKY_ASYNC;
+      num_icky_async_peropens++;
+      call_asyncs (1);
+    }
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -1618,8 +1661,11 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
+  if ((cred->po->openmodes & O_ASYNC) && --num_icky_async_peropens == 0)
+    termflags &= ~ICKY_ASYNC;
   cred->po->openmodes &= ~(bits & HONORED_STATE_MODES);
   mutex_unlock (&global_lock);
+
   return 0;
 }
 
@@ -1660,9 +1706,10 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
 }
 
 error_t
-trivfs_S_io_get_async_icky (struct trivfs_protid *cred,
-			    mach_port_t *id,
-			    mach_msg_type_name_t *idtype)
+trivfs_S_io_get_icky_async_id (struct trivfs_protid *cred,
+			       mach_port_t reply,
+			       mach_msg_type_name_t reply_type,
+			       mach_port_t *id, mach_msg_type_name_t *idtype)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -1681,9 +1728,9 @@ trivfs_S_io_get_async_icky (struct trivfs_protid *cred,
 
 error_t
 trivfs_S_io_async (struct trivfs_protid *cred,
+		   mach_port_t reply, mach_msg_type_name_t reply_type,
 		   mach_port_t notify,
-		   mach_port_t *id,
-		   mach_msg_type_name_t *idtype)
+		   mach_port_t *id, mach_msg_type_name_t *idtype)
 {
   struct async_req *ar;
   if (!cred)
@@ -1781,12 +1828,21 @@ report_sig_end ()
     }
 }
 
-/* Call all the scheduled async I/O handlers */
+/* Call all the scheduled async I/O handlers.  If FORCE is true then turn off
+   SUPPRESS_ASYNC first, otherwise use it to suppress subsequent calls with
+   FORCE == 0.  */
 void
-call_asyncs ()
+call_asyncs (int force)
 {
   struct async_req *ar, *nxt, **prevp;
   mach_port_t err;
+
+  if (force)
+    termflags &= ~SUPPRESS_ASYNC;
+  else if (termflags & SUPPRESS_ASYNC)
+    return;
+  else
+    termflags |= SUPPRESS_ASYNC;
 
   /* If no I/O is possible or nobody wants async
      messages, don't bother further. */
