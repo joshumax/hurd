@@ -1,5 +1,5 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -63,25 +63,6 @@ extern int _diskfs_diskdirty;
 
 /* Needed for MiG. */
 typedef struct protid *protid_t;
-
-/* Called by MiG to translate ports into struct protid *.
-   fsmutations.h arranges for this to happen for the io and
-   fs interfaces. */
-extern inline struct protid *
-begin_using_protid_port (file_t port)
-{
-  return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
-}
-
-/* Called by MiG after server routines have been run; this
-   balances begin_using_protid_port, and is arranged for the io
-   and fs interfaces by fsmutations.h. */
-extern inline void
-end_using_protid_port (struct protid *cred)
-{
-  if (cred)
-    ports_port_deref (cred);
-}
 
 /* Actually read or write a file.  The file size must already permit
    the requested access.  NP is the file to read/write.  DATA is a buffer

@@ -21,20 +21,21 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include <stdlib.h>
+#include <hurd/ports.h>
 
 static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
 
 static any_t
-master_thread_function (any_t foo __attribute__ ((unused)))
+master_thread_function (any_t demuxer)
 {
   error_t err;
 
   do
     {
       ports_manage_port_operations_multithread (diskfs_port_bucket,
-						diskfs_demuxer,
+						(ports_demuxer_type) demuxer,
 						thread_timeout,
 						server_timeout,
 						0);
@@ -48,8 +49,8 @@ master_thread_function (any_t foo __attribute__ ((unused)))
 }
 
 void
-diskfs_spawn_first_thread (void)
+diskfs_spawn_first_thread (ports_demuxer_type demuxer)
 {
   cthread_detach (cthread_fork ((cthread_fn_t) master_thread_function,
-				(any_t) 0));
+				(any_t) demuxer));
 }

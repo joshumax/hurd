@@ -1,5 +1,5 @@
 /* diskfs_init_main -- initialize diskfs world, parse arguments, and open store
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -72,7 +72,7 @@ diskfs_init_main (struct argp *startup_argp,
     diskfs_readonly = diskfs_hard_readonly = 1;
 
   /* Start the first request thread, to handle RPCs and page requests. */
-  diskfs_spawn_first_thread ();
+  diskfs_spawn_first_thread (diskfs_demuxer);
 
   return store;
 }

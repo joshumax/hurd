@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994,2001 Free Software Foundation
+/* Run time callable functions for extern inlines.
+   Copyright (C) 2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,15 +15,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/* Only CPP macro definitions should go in this file. */
+#define DISKFS_EXTERN_INLINE
 
-#define FILE_INTRAN protid_t diskfs_begin_using_protid_port (file_t)
-#define FILE_DESTRUCTOR diskfs_end_using_protid_port (protid_t)
-
-#define IO_INTRAN protid_t diskfs_begin_using_protid_port (io_t)
-#define IO_DESTRUCTOR diskfs_end_using_protid_port (protid_t)
-
-#define FILE_IMPORTS import "priv.h";
-#define IO_IMPORTS import "priv.h";
-#define FSYS_IMPORTS import "priv.h";
-#define IFSOCK_IMPORTS import "priv.h";
+#include "diskfs.h"

@@ -37,6 +37,7 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c
 IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
+	extern-inline.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	node-nref.c node-nput.c node-nrele.c node-nrefl.c node-nputl.c \
 	node-nrelel.c \

@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,6 +25,10 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <idvec.h>
+
+#ifndef DISKFS_EXTERN_INLINE
+#define DISKFS_EXTERN_INLINE extern inline
+#endif
 
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library).  */
@@ -560,8 +564,9 @@ mach_port_t diskfs_startup_diskfs (mach_port_t bootstrap, int flags);
 
 /* Call this after all format-specific initialization is done (except
    for setting diskfs_root_node); at this point the pagers should be
-   ready to go.  */
-void diskfs_spawn_first_thread (void);
+   ready to go.  DEMUXER is the demuxer to user.  Normally, this is
+   just diskfs_demuxer.  */
+void diskfs_spawn_first_thread (ports_demuxer_type demuxer);
 
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  If you call this, then the library will call
@@ -761,6 +766,25 @@ error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 /* Finish building protid CRED started with diskfs_start_protid;
    the user to install is USER.  */
 void diskfs_finish_protid (struct protid *cred, struct iouser *user);
+
+/* Called by MiG to translate ports into struct protid *.
+   fsmutations.h arranges for this to happen for the io and
+   fs interfaces. */
+DISKFS_EXTERN_INLINE struct protid *
+diskfs_begin_using_protid_port (file_t port)
+{
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
+}
+
+/* Called by MiG after server routines have been run; this
+   balances begin_using_protid_port, and is arranged for the io
+   and fs interfaces by fsmutations.h. */
+DISKFS_EXTERN_INLINE void
+diskfs_end_using_protid_port (struct protid *cred)
+{
+  if (cred)
+    ports_port_deref (cred);
+}
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  The initial values for the root_parent, shadow_root, and
