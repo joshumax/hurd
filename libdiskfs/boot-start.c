@@ -324,6 +324,10 @@ diskfs_S_fsys_init (mach_port_t port,
      anything which might attempt to send an RPC to init.  */
   fsys_init_reply (reply, replytype, 0);
 
+  /* Allocate our reference here; _hurd_port_set will consume a reference
+     for the library itself. */
+  mach_port_mod_refs (mach_task_self (), authhandle, MACH_PORT_RIGHT_SEND, 1);
+
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle);
 
