@@ -65,6 +65,7 @@ wire_segment_internal (vm_address_t start,
   mach_port_t object_name;
   vm_offset_t offset;
   error_t err;
+  volatile char *poke;
 
   do
     {
@@ -83,12 +84,19 @@ wire_segment_internal (vm_address_t start,
       /* Set protection to allow all access possible */
       vm_protect (mach_task_self (), addr, size, 0, max_protection);
       
+      /* Generate write faults */
+      for (poke = (char *) addr; 
+	   (vm_address_t) poke < addr + size; 
+	   poke += vm_page_size)
+	*poke = *poke;
+
       /* Wire pages */
       vm_wire (host_priv, mach_task_self (), addr, size, max_protection);
       
       /* Set protection back to what it was */
       vm_protect (mach_task_self (), addr, size, 0, protection);
-      
+
+
       mach_port_deallocate (mach_task_self (), object_name);
       
       len -= (addr - start) + size;
