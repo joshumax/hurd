@@ -1,3 +1,12 @@
+1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-map-segment.c: New file.  Guts from io-map.c.
+	* io-map.c (diskfs_S_io_map): Just call diskfs_S_io_map_segment.
+	* diskfs.h (diskfs_get_filemap): New parameter `index'.
+	* rdwr-internal.c (_diskfs_rdwr_internal): Pass additional
+	parameter to diskfs_get_filemap.
+	* Makefile (IOSRCS): Add io-map-segment.c.
+
 1999-07-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-rmdir.c (diskfs_S_dir_rmdir): Fix bugs in last change.

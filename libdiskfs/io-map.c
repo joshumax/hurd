@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1997 Free Software Foundation
+   Copyright (C) 1994, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,46 +28,6 @@ diskfs_S_io_map (struct protid *cred,
 		 memory_object_t *wrobj,
 		 mach_msg_type_name_t *wrtype)
 {
-  int flags;
-  struct node *node;
-
-  if (!cred)
-    return EOPNOTSUPP;
-
-  *wrobj = *rdobj = MACH_PORT_NULL;
-
-  node = cred->po->np;
-  flags = cred->po->openstat & (O_READ | O_WRITE);
-
-  mutex_lock (&node->lock);
-  switch (flags)
-    {
-    case O_READ | O_WRITE:
-      *wrobj = *rdobj = diskfs_get_filemap (node, VM_PROT_READ |VM_PROT_WRITE);
-      if (*wrobj == MACH_PORT_NULL)
-	goto error;
-      mach_port_mod_refs (mach_task_self (), *rdobj, MACH_PORT_RIGHT_SEND, 1);
-      break;
-    case O_READ:
-      *rdobj = diskfs_get_filemap (node, VM_PROT_READ);
-      if (*rdobj == MACH_PORT_NULL)
-	goto error;
-      break;
-    case O_WRITE:
-      *wrobj = diskfs_get_filemap (node, VM_PROT_WRITE);
-      if (*wrobj == MACH_PORT_NULL)
-	goto error;
-      break;
-    }
-  mutex_unlock (&node->lock);
-
-  *rdtype = MACH_MSG_TYPE_MOVE_SEND;
-  *wrtype = MACH_MSG_TYPE_MOVE_SEND;
-
-  return 0;
-  
-error:
-  mutex_unlock (&node->lock);
-  return errno;
+  return diskfs_S_io_map_segment (cred, 0, rdobj, rdtype, wrobj, wrtype);
 }
 

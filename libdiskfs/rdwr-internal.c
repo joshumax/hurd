@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -49,7 +49,7 @@ _diskfs_rdwr_internal (struct node *np,
 	np->dn_set_atime = 1;
     }
 
-  memobj = diskfs_get_filemap (np, prot);
+  memobj = diskfs_get_filemap (np, 0, prot);
 
   if (memobj == MACH_PORT_NULL)
     return errno;

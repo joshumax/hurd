@@ -32,7 +32,8 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
 	io-modes-on.c io-modes-set.c io-owner-mod.c io-owner-get.c \
 	io-pathconf.c io-prenotify.c io-read.c io-readable.c io-identity.c \
 	io-reauthenticate.c io-rel-conch.c io-restrict-auth.c io-seek.c \
-	io-select.c io-stat.c io-stubs.c io-write.c io-version.c io-sigio.c
+	io-select.c io-stat.c io-stubs.c io-write.c io-version.c io-sigio.c \
+	io-map-segment.c
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c
 IFSOCKSRCS=ifsock.c
