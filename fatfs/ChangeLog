@@ -1,3 +1,8 @@
+2003-07-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pager.c (find_cluster): Round to cluster size rather than adding
+	cluster size.
+
 2003-07-14  Marco Gerards  <metgerards@student.han.nl>
 
 	* fat.c (fat_read_sblock): Don't test if the root dir size is a

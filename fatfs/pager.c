@@ -106,7 +106,7 @@ find_cluster (struct node *node, vm_offset_t offset,
       rwlock_reader_lock (*lock);
     }
 
-  if (offset + bytes_per_cluster > node->allocsize)
+  if (round_cluster (offset) > node->allocsize)
     return EIO;
 
   err = fat_getcluster (node, offset >> log2_bytes_per_cluster, 0, cluster);
