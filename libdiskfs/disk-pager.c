@@ -1,5 +1,5 @@
 /* Map the disk image and handle faults accessing it.
-   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001,02 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -95,7 +95,7 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
     {
       error (0, 0,
 	     "BUG: unexpected fault on disk image (%d, %#lx) in [%#lx,%#lx)"
-	     " eip %#x err %#x",
+	     " eip %#zx err %#x",
 	     sig, sigcode,
 	     preemptor.first, preemptor.last,
 	     scp->sc_pc, scp->sc_error);
