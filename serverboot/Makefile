@@ -30,6 +30,7 @@ LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h ext2_fs.h \
 	disk_inode.h file_io.h minix_super.h translate_root.h
 target = serverboot
 HURDLIBS = threads
+installationdir := $(prefix)/boot
 
 vpath boot_script.c $(srcdir)/../boot
 

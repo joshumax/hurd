@@ -1,3 +1,19 @@
+Fri Apr 18 16:44:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* wiring.c (__vm_allocate): New function.
+
+Wed Apr 16 14:18:28 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* default_pager.c (debug): Turn off.
+
+Mon Apr 14 12:50:20 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* default_pager.c: Remove debugging printfs.
+
+Thu Apr 10 15:10:25 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (installationdir): Set variable.
+
 Wed Apr  9 13:57:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* default_pager.c (default_pager_default_thread): New function.

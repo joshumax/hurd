@@ -138,3 +138,15 @@ vm_allocate(task, address, size, anywhere)
 			VM_PROT_DEFAULT);
 	return KERN_SUCCESS;
 }
+
+/* Other versions of this function in libc... */
+kern_return_t
+__vm_allocate (task, address, size, anywhere)
+	task_t		task;
+	vm_address_t	*address;
+	vm_size_t	size;
+	boolean_t	anywhere;
+{
+  return vm_allcoate (task, address, size, anywhere);
+}
+

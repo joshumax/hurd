@@ -50,7 +50,7 @@
 
 #include "file_io.h"
 
-#define debug 1
+#define debug 0
 
 extern void *kalloc();
 
