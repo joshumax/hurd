@@ -28,13 +28,7 @@ protid_clean (void *arg)
    away on a port. */
 void (*ports_cleanroutines[])(void *)=
 {
-  0,
-  protid_clean,
-  pager_clean,
-  0,
-  0,
-  0,
-  fshelp_transboot_clean,
+  [PT_PROTID] = protid_clean,
+  [PT_PAGER] = pager_clean,
+  [PT_TRANSBOOT] = fshelp_transboot_clean,
 };
-
-     
