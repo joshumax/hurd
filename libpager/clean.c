@@ -23,7 +23,7 @@
 /* Called by port management routines when the last send-right
    to a pager has gone away.  This is a dual of pager_create.  */
 void
-pager_clean (void *arg)
+_pager_clean (void *arg)
 {
   struct pager *p = arg;
 #ifdef KERNEL_INIT_RACE
