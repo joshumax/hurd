@@ -208,8 +208,13 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type)
       info = ports_lookup_port (traced_bucket, *right, 0);
       if (info)
 	{
-	  /* This is a send right to an existing wrapper port,
-	     so just send it on through.  */
+	  /* This is a send right to one of our own wrapper ports.
+	     Instead, send along the original send right.  */
+	  mach_port_deallocate (mach_task_self (), *right); /* eat msg ref */
+	  *right = info->forward;
+	  err = mach_port_mod_refs (mach_task_self (), *right,
+				    MACH_PORT_RIGHT_SEND, +1);
+	  assert_perror (err);
 	  ports_port_deref (info);
 	  return 0;
 	}
@@ -478,28 +483,6 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 			   i, portnames[i], name);
 		  continue;
 		}
-	      else if (inp->msgh_id == 2089) /* vm_map */
-		{
-		  /* XXX
-		   */
-		  struct traced_info *p = ports_lookup_port (traced_bucket,
-							     portnames[i], 0);
-		  if (p == 0)
-		    fprintf (ostream,
-			     "\t\t[%d] = pass through port %d, type %d\n",
-			     i, portnames[i], name);
-		  else
-		    {
-		      fprintf (ostream,
-			       "\t\t[%d] = traced port %d, type %d -> original port %d\n",
-			       i, portnames[i], name, p->forward);
-		      mach_port_deallocate (mach_task_self (), portnames[i]);
-		      portnames[i] = p->forward;
-		      newtypes[i] = MACH_MSG_TYPE_COPY_SEND;
-		      ports_port_deref (p);
-		      continue;
-		    }
-		}
 
 	      err = rewrite_right (&portnames[i], &newtypes[i]);
 	      assert_perror (err);
@@ -543,7 +526,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 		      case MACH_MSG_TYPE_COPY_SEND:
 			err = mach_port_mod_refs (mach_task_self (),
 						  portnames[i],
-						  MACH_PORT_TYPE_SEND, +1);
+						  MACH_PORT_RIGHT_SEND, +1);
 			assert_perror (err);
 			break;
 		      case MACH_MSG_TYPE_MAKE_SEND:
