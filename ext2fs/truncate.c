@@ -133,7 +133,8 @@ trunc_indirect (struct node *node, block_t end,
 	    (*free_block)(ind_bh + index, index);
 	    if (ind_bh[index])
 	      all_freed = 0;	/* Some descendent hasn't been freed.  */
-	    modified = 1;
+	    else
+	      modified = 1;
 	  }
 
       if (first == 0 && all_freed)
