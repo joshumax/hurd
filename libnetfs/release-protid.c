@@ -23,7 +23,7 @@
 void
 netfs_release_protid (void *arg)
 {
-  struct protid *user;
+  struct protid *user = arg;
   
   netfs_drop_credential (user->credential);
   if (user->shared_object)

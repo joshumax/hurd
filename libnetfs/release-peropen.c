@@ -28,7 +28,7 @@ netfs_release_peropen (struct peropen *po)
     mutex_unlock (&po->np->lock);
   else
     {
-      mach_port_deallocate (mach_task_self (), dotdotport);
+      mach_port_deallocate (mach_task_self (), po->dotdotport);
       netfs_nput (po->np);
       free (po);
     }
