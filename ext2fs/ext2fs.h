@@ -48,6 +48,8 @@ struct disknode
 
   struct dirty_indir *dirty;
 
+  struct ext2_inode_info info;
+
   struct user_pager_info *fileinfo;
 };  
 
@@ -133,15 +135,29 @@ mach_port_t ext2fs_device;
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
 /* What to lock if changing the super block.  */
-spin_lock_t sb_lock;
+spin_lock_t sblock_lock;
 /* Where the super-block is on the disk.  */
 char *disk_sblock;
+/* True if sblock has been modified.  */
+int sblock_dirty;
 
 /* The filesystem block-size.  */
 unsigned long block_size;
 
 /* ---------------------------------------------------------------- */
+/* Random stuff calculated from the super block.  */
 
+unsigned long frag_size;	/* Size of a fragment in bytes */
+unsigned long frags_per_block;	/* Number of fragments per block */
+unsigned long inodes_per_block;	/* Number of inodes per block */
+
+unsigned long itb_per_group;	/* Number of inode table blocks per group */
+unsigned long db_per_group;	/* Number of descriptor blocks per group */
+unsigned long desc_per_block;	/* Number of group descriptors per block */
+
+unsigned long groups_count;	/* Number of groups in the fs */
+
+/* ---------------------------------------------------------------- */
 spin_lock_t node2pagelock;
 
 spin_lock_t alloclock;
@@ -161,11 +177,6 @@ u_long nextgennumber;
 #define isset(a, i) ((a)[(i)/NBBY] & (1<<((i)%NBBY)))
 #define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
 #define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
-
-#define bread(long block, long amount) \
-  ((char *)diskimage + block * DEV_BSIZE)
-#define brelse(char *bh) ((void)0)
-
 
 /* Functions for looking inside disk_image */
 
@@ -174,7 +185,7 @@ u_long nextgennumber;
 
 /* Get the descriptor for the block group inode INUM is in.  */
 extern inline struct ext2_group_desc *
-block_group(unsigned long block_group)
+group_desc(unsigned long bg_num)
 {
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
   unsigned long group_desc = bg_num / desc_per_block;
@@ -182,12 +193,14 @@ block_group(unsigned long block_group)
   return ((struct ext2_group_desc *)baddr(sb_block_num + group_desc)) + desc;
 }
 
+#define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
+
 /* Convert an inode number to the dinode on disk. */
 extern inline struct ext2_inode *
 dino (ino_t inum)
 {
-  unsigned long bg_num = (inum - 1) / sblock->s_inodes_per_group;
-  struct ext2_group_desc *bg = block_group(bg_num);
+  unsigned long bg_num = inode_group_num(inum);
+  struct ext2_group_desc *bg = group_desc(bg_num);
   unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
   unsigned long block = bg.bg_inode_table + (bg_num / inodes_per_block);
   return ((struct ext2_inode *)baddr(block)) + inum % inodes_per_block;
@@ -209,14 +222,30 @@ cg_locate (int ncg)
 
 /* Sync part of the disk */
 extern inline void
-sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
+sync_disk_image (char *place, size_t nbytes, int wait)
 {
-  pager_sync_some (diskpager->p, fsaddr (sblock, blkno), nbytes, wait);
+  pager_sync_some (diskpager->p, place - disk_image, nbytes, wait);
 }
 
 /* Sync an disk inode */
 extern inline void
 sync_dinode (int inum, int wait)
 {
-  sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
+  sync_disk_blocks (dino (inum), sizeof (struct ext2_inode), wait);
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Sync all allocation information and node NP if diskfs_synchronous. */
+inline void
+alloc_sync (struct node *np)
+{
+  if (diskfs_synchronous)
+    {
+      if (np)
+	diskfs_node_update (np, 1);
+      copy_sblock ();
+      diskfs_set_hypermetadata (1, 0);
+      sync_disk (1);
+    }
 }
