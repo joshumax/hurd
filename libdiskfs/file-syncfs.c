@@ -31,6 +31,6 @@ diskfs_S_file_syncfs (struct protid *cred,
     diskfs_sync_translators (wait);
 
   diskfs_sync_everything (wait);
-  diskfs_save_hypermetadata (wait, 0);
+  diskfs_set_hypermetadata (wait, 0);
   return 0;
 }
