@@ -1,0 +1,4 @@
+1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir.c (lookup): Initialize the NODE field.
+
