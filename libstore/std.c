@@ -1,9 +1,7 @@
 /* List of standard store classes
 
    Copyright (C) 1996, 1997 Free Software Foundation, Inc.
-
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include "store.h"
 
@@ -27,6 +25,8 @@ store_std_classes[] =
 {
   &store_device_class, &store_file_class, &store_zero_class, &store_task_class,
   &store_ileave_class, &store_concat_class, &store_remap_class,
-  &store_query_class, 0
+  &store_query_class, &store_copy_class, &store_gunzip_class,
+  &store_typed_open_class,
+  0
 };
 
