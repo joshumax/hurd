@@ -1,30 +1,38 @@
 # Makefile for hurd image frobnication.
 
-export GNUTARGET=elf32-i386
-export OBJCOPY=i386-gnu-objcopy
+export OBJCOPY=objcopy
 
-INSTALL=install
-IMAGE=image
+# Where we get programs from
+image-dir=/
+# Where we get libc 
+libc-obj-dir = /gd4/hurd-native/build/glibc
 
-BF=bfloppy-image
-RF=rfloppy-image
+smallso-LDFLAGS = -Wl,-rpath-link=/lib
 
-bfloppy-files = $(bfloppy-bootfs:%=hurd/%) $(bfloppy-bootprogs:%=boot/%) \
+BF=bfloppy
+RF=rfloppy
+
+bfloppy-files = $(bfloppy-bootfs:%=hurd/%) $(bfloppy-bootprogs:%=boot/%.gz) \
 	       lib/ld.so boot/servers.boot
 bfloppy-bootfs = ufs
-bfloppy-bootprogs = kernel bootstrap
+bfloppy-bootprogs = gnumach serverboot
 
-$(BF)/boot/servers.boot: $(IMAGE)/boot/floppy.boot
-	-rm -f $@
+$(BF)/boot/servers.boot: bfloppy.boot
+	@-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
 	cp $< $@
 
-$(BF)/%/: $(IMAGE)/%/
+$(BF)/%/: $(image-dir)/%/
 	test -d $@ || mkdir -p $@
-$(BF)/%: $(IMAGE)/%
-	-rm -f $@
+$(addsuffix .gz, $(addprefix $(BF)/boot/, $(bfloppy-bootprogs))): \
+  $(BF)/boot/%.gz: $(image-dir)/boot/%
+	@-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
-	ln $< $@ || cp $< $@
+	$(OBJCOPY) --strip-unneeded $< | gzip -9 > $@
+$(BF)/%: $(image-dir)/%
+	@-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	$(OBJCOPY) --strip-unneeded $< $@
 
 $(BF): $(bfloppy-files:%=$(BF)/%)
 $(BF).tar: $(bfloppy-files:%=$(BF)/%)
@@ -32,93 +40,54 @@ $(BF).tar: $(bfloppy-files:%=$(BF)/%)
 	cd $(BF); tar covf ../$@ $(^:$(BF)/%=%)
 
 rfloppy-files = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) \
+		$(rfloppy-sprogs:%=sbin/%) \
 	        $(rfloppy-solib:%=lib/%.so) hurd/exec \
 	        lib/libc.so lib/libhurduser.so lib/libmachuser.so \
 		servers/exec servers/socket/1 \
-	        README tmp/ dev/MAKEDEV
-rfloppy-hurd = auth devio null init proc term
-rfloppy-progs = sh ls cat settrans # mkfs
+	        README tmp/ mnt/ dev/MAKEDEV
+rfloppy-hurd = auth storeio null init proc term pfinet nfs ufs ext2fs
+rfloppy-progs = bash ls cat settrans
+rfloppy-sprogs = mkfs.ufs mkfs.ext2
 rfloppy-solib = libtrivfs libthreads libshouldbeinlibc libports	\
-	       libpager libioserver libihash libfshelp ld
+	       libpager libiohelp libstore libihash libfshelp libnetfs ld
 
-libc-satisfies = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) $(rfloppy-solib:%=lib/%.so)
+libc-satisfies = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) $(rfloppy-sprogs:%=sbin/%) $(rfloppy-solib:%=lib/%.so)
 
-libc-obj-dir = /gd4/gnu/libc/i386
-smallso-LDFLAGS = -Wl,-rpath-link=/lib
-
-libc-USERS =
-libc-DEPS =
-
-$(RF)/lib/libc.so: $(IMAGE)/lib/libc.so $(IMAGE)/lib/libhurduser.so $(IMAGE)/lib/libmachuser.so $(libc-satisfies:%=$(IMAGE)/%)
+$(RF)/lib/libc.so: $(image-dir)/lib/libc.so $(image-dir)/lib/libhurduser.so $(image-dir)/lib/libmachuser.so $(libc-satisfies:%=$(image-dir)/%)
 	mksmallso $(smallso-LDFLAGS) \
-	  $@ $(libc-obj-dir)/libc_pic.a '-L$(IMAGE)/lib -lhurduser -lmachuser' \
+	  $@ $(libc-obj-dir)/libc_pic.a '-L$(image-dir)/lib -lhurduser -lmachuser' \
 	  $(filter-out $(firstword $^),$^)
 
-$(RF)/lib/libhurduser.so: $(RF)/lib/libc.so $(libc-satisfies:%=$(IMAGE)/%)
-	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libhurduser_pic.a -L$(IMAGE)/lib -lmachuser $(filter-out $(firstword $^),$^)
+$(RF)/lib/libhurduser.so: $(RF)/lib/libc.so $(libc-satisfies:%=$(image-dir)/%)
+	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/hurd/libhurduser_pic.a -L$(image-dir)/lib -lmachuser $(filter-out $(firstword $^),$^)
 
-$(RF)/lib/libmachuser.so: $(RF)/lib/libc.so $(RF)/lib/libhurduser.so $(libc-satisfies:%=$(IMAGE)/%)
-	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libmachuser_pic.a '' $(filter-out $(firstword $^),$^)
+$(RF)/lib/libmachuser.so: $(RF)/lib/libc.so $(RF)/lib/libhurduser.so $(libc-satisfies:%=$(image-dir)/%)
+	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/mach/libmachuser_pic.a '' $(filter-out $(firstword $^),$^)
 
-$(addprefix $(RF)/,$(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%)): \
-  $(RF)/%: $(IMAGE)/%
+$(RF)/bin/%: $(image-dir)/bin/%
+	@-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
-	gzip -9v -c $< > $@.new
-	chmod 555 $@.new
-	mv -f $@.new $@
-
-$(RF)/%/: $(IMAGE)/%/
+	$(OBJCOPY) --strip-unneeded $< $@
+$(RF)/sbin/%: $(image-dir)/sbin/%
+	@-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	$(OBJCOPY) --strip-unneeded $< $@
+$(RF)/hurd/%: $(image-dir)/hurd/%
+	@-rm -f $@
+	@test -d $(@D) || mkdir -p $(@D)
+	$(OBJCOPY) --strip-unneeded $< $@
+$(RF)/servers/%:
+	@test -d $(@D) || mkdir -p $(@D)
+	touch $@
+$(RF)/%/: $(image-dir)/%/
 	test -d $@ || mkdir -p $@
-$(RF)/%: $(IMAGE)/%
-	-rm -f $@
-	@test -d $(@D) || mkdir -p $(@D)
-	ln $< $@ || cp $< $@
 
 $(RF): $(rfloppy-files:%=$(RF)/%)
 $(RF).tar: $(rfloppy-files:%=$(RF)/%)
 	rm -f $@
 	cd $(RF); tar covf ../$@ $(^:$(RF)/%=%)
 
-MOUNT_POINT = /mnt
-VND = vnd0
-VND_DEV = /dev/${VND}a
-VND_RDEV = /dev/r${VND}a
-MDEC = /usr/mdec
-
-floppy%-image.fs: /tmp/floppy%-image.fs; cp -f $< $@
-
-/tmp/floppy%-image.fs: floppy%-image.tar
-	dd if=/dev/zero of=$@.new bs=10k count=144
-	vnconfig -v -c ${VND_DEV} $@.new
-	disklabel -w -B -b ${MDEC}/fdboot -s ${MDEC}/bootfd ${VND} floppy3
-	newfs -O -m 0 -o space -i 5120 -c 80 ${VND_RDEV} floppy3
-	mount ${VND_DEV} ${MOUNT_POINT}
-	tar -f $< -C ${MOUNT_POINT} -xv
-	df -i ${MOUNT_POINT}
-	umount ${MOUNT_POINT}
-	vnconfig -u ${VND_DEV} $@.new
-	mv -f $@.new $@
-
-$(IMAGE).tar: $(IMAGE) $(IMAGE).stamp
-	tar cof $@ $<
-
-%.gz: %
-	gzip -9v -c $< > $@.new
-	mv -f $@.new $@
-
-%:: %.gz
-	gunzip -c $< > $@.new
-	mv -f $@.new $@
-
-
-instdirs := $(patsubst $(INSTALL)/%,%,\
-		       $(filter-out $(INSTALL),\
-				    $(shell find $(INSTALL) -type d -print \
-					    | sort -r)))
-
-$(IMAGE)/%/.stamp: $(INSTALL)/%
-	@./install-stripped -N $@ $< $(@D)
-	@echo $< `date` > $@
-	@echo updated $(@D)/
-$(IMAGE).stamp: $(instdirs:%=$(IMAGE)/%/.stamp); touch $@
-$(IMAGE): $(IMAGE).stamp
+bfloppy.%: $(bfloppy-files:%=$(BF)/%)
+	mkfsimage -q $@ $(BF)
+rfloppy.%.gz: $(rfloppy-files:%=$(RF)/%)
+	mkfsimage --compress -q $@ $(RF)
