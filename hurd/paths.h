@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #define	_SERVERS_CORE	"/servers/core"
 #define	_SERVERS_EXEC	"/servers/exec"
+#define _SERVERS_STARTUP	"/servers/startup"
 
 
 /* Hurd servers are specified by symbols _HURD_FOO,
