@@ -1,3 +1,12 @@
+Wed Aug 20 14:07:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* crash.c (main): New args for
+	ports_manage_port_operations_multithread. 
+	* fifo.c (main): Likewise.
+	* firmlink.c (main): Likewise.
+	* new-fifo.c (main): Likewise.
+	* null.c (main): Likewise.
+
 1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* devport.c: File removed.

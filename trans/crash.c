@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -402,7 +402,7 @@ main (int argc, char **argv)
     ports_manage_port_operations_multithread (port_bucket, crash_demuxer,
 					      10 * 1000, /* idle thread */
 					      10 * 60 * 1000, /* idle server */
-					      0, MACH_PORT_NULL);
+					      0);
   /* That returns when 10 minutes pass without an RPC.  Try shutting down
      as if sent fsys_goaway; if we have any users who need us to stay
      around, this returns EBUSY and we loop to service more RPCs.  */

@@ -101,8 +101,9 @@ main (int argc, char **argv)
   do
     {
       ports_enable_class (fsys->protid_class);
-      ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
-						30*1000, 5*60*1000, 0, 0);
+      ports_manage_port_operations_multithread (fsys->pi.bucket, 
+						trivfs_demuxer,
+						30*1000, 5*60*1000, 0);
     }
   while (ports_count_class (fsys->protid_class) > 0);
 

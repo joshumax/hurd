@@ -1,6 +1,6 @@
 /* A translator for fifos
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -226,7 +226,7 @@ main (int argc, char **argv)
       ports_enable_class (fifo_port_class);
       ports_manage_port_operations_multithread (port_bucket,
 						trivfs_demuxer,
-						30*1000, 5*60*1000, 0, 0);
+						30*1000, 5*60*1000, 0);
     }
   while (ports_count_class (fifo_port_class) > 0);
 
