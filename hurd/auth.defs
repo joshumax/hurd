@@ -59,8 +59,7 @@ routine auth_makeauth (
    the server.  */
 routine auth_user_authenticate (
 	handle: auth_t;
-	rendezvous: mach_port_t;
-	rendezvous2: mach_port_send_t;
+	rendezvous: mach_port_send_t;
 	out newport: mach_port_send_t);
 
 /* Called by a server in a reauthentication transaction.  The
@@ -72,7 +71,6 @@ routine auth_server_authenticate (
 	handle: auth_t;
 	sreplyport reply: mach_port_poly_t;
 	rendezvous: mach_port_send_t;
-	rendezvous2: mach_port_send_t;
 	newport: mach_port_poly_t;
 	out euids: idarray_t;
 	out auids: idarray_t;
