@@ -18,6 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include "pfinet.h"
+#include "io_S.h"
+#include <netinet/in.h>
+#include <linux/wait.h>
+#include <linux-inet/sock.h>
+#include <fcntl.h>
+#include <string.h>
+
 error_t
 S_io_write (struct sock_user *user,
 	    char *data,
@@ -32,8 +40,8 @@ S_io_write (struct sock_user *user,
 
   mutex_lock (&global_lock);
   become_task (user);
-  /* O_NONBLOCK for fourth arg? XXX */
-  err = - (*user->sock->ops->write) (user->sock, data, datalen, 0);
+  err = - (*user->sock->ops->write) (user->sock, data, datalen,
+				     user->sock->userflags);
   mutex_unlock (&global_lock);
   
   return err;
@@ -62,8 +70,8 @@ S_io_read (struct sock_user *user,
   
   mutex_lock (&global_lock);
   become_task (user);
-  /* O_NONBLOCK for fourth arg? XXX */
-  err = (*user->sock->ops->read) (user->sock, *data, amount, 0);
+  err = (*user->sock->ops->read) (user->sock, *data, amount, 
+				  user->sock->userflags);
   mutex_unlock (&global_lock);
   
   if (err < 0)
@@ -72,7 +80,8 @@ S_io_read (struct sock_user *user,
     {
       *datalen = err;
       if (alloced && page_round (*datalen) < page_round (amount))
-	vm_deallocate (mach_task_self (), *data + page_round (*datalen),
+	vm_deallocate (mach_task_self (), 
+		       (vm_address_t) *data + page_round (*datalen),
 		       page_round (amount) - page_round (*datalen));
       err = 0;
     }
@@ -111,7 +120,7 @@ S_io_readable (struct sock_user *user,
      ioctl routine; it's those routines that we need to simulate.  So
      this switch corresponds to the initialization of SK->prot in
      af_inet.c:inet_create. */
-  switch (sock->type)
+  switch (user->sock->type)
     {
     case SOCK_STREAM:
     case SOCK_SEQPACKET:
@@ -147,15 +156,81 @@ S_io_readable (struct sock_user *user,
 }
 
 error_t
+S_io_set_all_openmodes (struct sock_user *user,
+			int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  if (bits & O_NONBLOCK)
+    user->sock->userflags |= O_NONBLOCK;
+  else
+    user->sock->userflags &= ~O_NONBLOCK;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
+S_io_get_openmodes (struct sock_user *user,
+		    int *bits)
+{
+  struct sock *sk;
+  
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  sk = user->sock->data;
+  
+  *bits = 0;
+  if (!(sk->shutdown & SEND_SHUTDOWN))
+    *bits |= O_WRITE;
+  if (!(sk->shutdown & RCV_SHUTDOWN))
+    *bits |= O_READ;
+  if (user->sock->userflags & O_NONBLOCK)
+    *bits |= O_NONBLOCK;
+  
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
+S_io_set_some_openmodes (struct sock_user *user,
+			 int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  if (bits & O_NONBLOCK)
+    user->sock->userflags |= O_NONBLOCK;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
+S_io_clear_some_openmodes (struct sock_user *user,
+			   int bits)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  if (bits & O_NONBLOCK)
+    user->sock->userflags &= ~O_NONBLOCK;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
 S_io_select (struct sock_user *user,
 	     int *select_type,
 	     int *id_tag)
 {
-  struct sock *sk;
-  error_t err;
   int avail = 0;
   int cancel = 0;
-  struct select_table table;
+  select_table table;
   struct select_table_elt *elt, *nxt;
 
   if (!user)
@@ -226,9 +301,135 @@ select_wait (struct wait_queue **wait_address, select_table *p)
   struct select_table_elt *elt;
   
   elt = malloc (sizeof (struct select_table_elt));
-  elt->dependent_condition = (*wait_address)->c;
+  elt->dependent_condition = &(*wait_address)->c;
   elt->next = p->head;
   p->head = elt;
 
-  condition_implies (elt->dependent_condition, p->master_condition);
+  condition_implies (elt->dependent_condition, &p->master_condition);
 }
+
+error_t
+S_io_stat (struct sock_user *user,
+	   struct stat *st)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  
+  bzero (st, sizeof (struct stat));
+  
+  st->st_fstype = FSTYPE_SOCKET;
+  st->st_fsid = getpid ();
+  st->st_ino = (ino_t) user->sock; /* why not? */
+  
+  st->st_blksize = 512;		/* ???? */
+  return 0;
+}
+
+error_t
+S_io_reauthenticate (struct sock_user *user,
+		     mach_port_t rend)
+{
+  struct sock_user *newuser;
+  uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
+  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
+  u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
+  error_t err;
+  int i;
+  auth_t auth;
+
+  if (!user)
+    return EOPNOTSUPP;
+  
+  genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
+  gen_uids = gubuf;
+  gen_gids = ggbuf;
+  aux_uids = aubuf;
+  aux_gids = agbuf;
+
+  mutex_lock (&global_lock);
+  newuser = make_sock_user (user->sock, 0);
+  
+  auth = getauth ();
+  err = auth_server_authenticate (auth, 
+				  ports_get_right (user),
+				  MACH_MSG_TYPE_MAKE_SEND,
+				  rend,
+				  MACH_MSG_TYPE_MOVE_SEND,
+				  ports_get_right (newuser),
+				  MACH_MSG_TYPE_MAKE_SEND,
+				  &gen_uids, &genuidlen, 
+				  &aux_uids, &auxuidlen,
+				  &gen_gids, &gengidlen,
+				  &aux_gids, &auxgidlen);
+  assert (!err);		/* XXX */
+  mach_port_deallocate (mach_task_self (), auth);
+
+  for (i = 0; i < genuidlen; i++)
+    if (gen_uids[i] == 0)
+      newuser->isroot = 1;
+  mutex_unlock (&global_lock);
+
+  ports_port_deref (newuser);
+
+  if (gubuf != gen_uids)
+    vm_deallocate (mach_task_self (), (u_int) gen_uids,
+		   genuidlen * sizeof (uid_t));
+  if (ggbuf != gen_gids)
+    vm_deallocate (mach_task_self (), (u_int) gen_gids,
+		   gengidlen * sizeof (uid_t));
+  if (aubuf != aux_uids)
+    vm_deallocate (mach_task_self (), (u_int) aux_uids,
+		   auxuidlen * sizeof (uid_t));
+  if (agbuf != aux_gids)
+    vm_deallocate (mach_task_self (), (u_int) aux_gids,
+		   auxgidlen * sizeof (uid_t));
+
+  return 0;
+}
+
+error_t
+S_io_restrict_auth (struct sock_user *user,
+		    mach_port_t *newobject,
+		    mach_msg_type_name_t *newobject_type,
+		    uid_t *uids,
+		    u_int uidslen,
+		    uid_t *gids,
+		    u_int gidslen)
+{
+  int i = 0;
+  int isroot;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&global_lock);
+
+  isroot = 0;
+  if (user->isroot)
+    for (i = 0; i < uidslen && !isroot; i++)
+      if (uids[i] == 0)
+	isroot = 1;
+  
+  *newobject = ports_get_right (make_sock_user (user->sock, isroot));
+  *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+error_t
+S_io_duplicate (struct sock_user *user,
+		mach_port_t *newobject,
+		mach_msg_type_name_t *newobject_type)
+{
+  if (!user)
+    return EOPNOTSUPP;
+  
+  mutex_lock (&global_lock);
+  *newobject = ports_get_right (make_sock_user (user->sock, user->isroot));
+  *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+  
+  
