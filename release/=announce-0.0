@@ -1,6 +1,8 @@
+
+
 I am pleased to announce version 0.0 of the GNU Hurd, available via
 anonymous FTP from prep.ai.mit.edu [18.159.0.42] in the file
-/pub/gnu/hurd-0.0.tar.gz (about XXX MB compressed).
+/pub/gnu/hurd-0.0.tar.gz (about 1.2 MB compressed).
 
 This file contains complete source code for the following:
 
@@ -16,6 +18,8 @@ mount, fsysopts, storeinfo, login, w, uptime, hurdids, loginpr, sush,
 vmstat, portinfo, devprobe, reboot, halt, fsck, fsck.ufs, mkfs.ufs,
 clri.ufs, stati.ufs, getty, rc.
 
+
+------
 
 
 In addition, we have prepared a binary distribution of a complete
@@ -42,18 +46,21 @@ This release may be found by anonymous FTP from prep.ai.mit.edu
 
 In that directory, you should find the following files:
 
-grub-boot.image
+README
 SOURCES
 INSTALL-binary
-gnu-0.0.tar.gz
+grub-boot.image (1.4 MB, not compressed)
+gnu-0.0.tar.gz (about XXX MB compressed)
 
 SOURCES contains a complete list describing the sources for the
 binaries found in the image.  INSTALL-binary contains complete
-installation instructions for this release.  gnu-0.0.tar.gz hold the
-image of complete system.
+installation instructions for this release.  gnu-0.0.tar.gz holds the
+image of complete system.  (The files README, SOURCES, and
+INSTALL-binary are also found in the root directory of the gnu-0.0
+release.)
 
-grub-boot.image is an image of a floppy disk that you will need to
-complete part of the installation instructions.
+grub-boot.image is an image of a 3.5" floppy disk that you will need
+in order to complete part of the installation instructions.
 
 The following free software packages are found in this release:
 
@@ -65,3 +72,9 @@ ncurses, nvi, patch, ptx, rcs, readline, recode, sed, serverboot,
 sharutils, shellutils, tar, termcap, termutils, texinfo, textutils,
 time, wdiff.
 
+
+------
+
+Here are md5sum checksums for the files mentioned in this message:
+
+8338c619d860b71bc4128c9c0fd39d63  grub-boot.image

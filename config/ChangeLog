@@ -1,3 +1,8 @@
+Mon Aug  5 13:43:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (SYSCONFFILES): Add `resolv.conf'.
+	* resolv.conf: New file.
+
 Fri Aug  2 11:07:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (DIST_FILES): Put `root-' before ROOTDOTS and `login-'

@@ -25,7 +25,8 @@ makemode := misc
 # to overwrite an existing file.  Print a warning for such files.
 # If override_conf is set to `t' then install even on top of existing
 # files.
-SYSCONFFILES = protocols services shells motd ttys hostname fstab passwd group
+SYSCONFFILES = protocols services shells motd ttys hostname fstab passwd \
+	group resolv.conf
 installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README

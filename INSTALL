@@ -19,7 +19,19 @@ want to use is already installed, and you know both it and this
 version of the Hurd will interoperate together, then see the
 instructions "Bulding the Hurd by itself" below.
 
-The Hurd version 0.0 is known to work with version XXX of the library.
+The Hurd version 0.0 is known to work with version 1.93 of the GNU C
+Library.
+
+Bug reports for the GNU Hurd should be sent to the mailing list
+`bug-hurd@prep.ai.mit.edu'.  Please do not send requests for
+assistance in installing or using the software to that address.
+Instead, send requests for assistance to the mailing list
+`help-hurd@prep.ai.mit.edu'.  You can join these lists by sending a
+request to `bug-hurd-request@prep.ai.mit.edu' or
+`help-hurd-request@prep.ai.mit.edu' respectively.
+
+If any of these address should fail, send your message to
+`tower@gnu.ai.mit.edu' and ask him to forward it properly.
 
 
 Configuring the Hurd

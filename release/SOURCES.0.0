@@ -30,7 +30,6 @@ hurd (0.0)
 indent (1.9.1)
 inetutils (1.1)
 less (320)
-libc (1.93)
 m4 (1.4)
 miscfiles (1.0)
 nvi (1.71)
@@ -107,5 +106,6 @@ grub
 sh-utils (1.12m from alpha.gnu.ai.mit.edu)
   [ copy libc's time/strftime.c into lib/strftime.c to fix a date bug. ]
 make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
-gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
-mach4 (UK22, slighly hacked)
+gdb (Modified from Cygnus snapshot of 960526) 
+mach4 (UK22, slighly hacked) [already includes `serverboot' program.]
+libc (1.93, with modifications)
