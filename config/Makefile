@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 1997, 1999, 2004 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -38,9 +38,8 @@ FORCE:
 
 ifeq ($(override_conf),t)
 $(installed_conf): FORCE
-endif
-
 $(installed_logins): FORCE
+endif
 
 include ../Makeconf
 

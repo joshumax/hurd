@@ -1,3 +1,8 @@
+2004-12-16  Alfred M. Szmidt  <ams@gnu.org>
+
+	* Makefile ($(installed_logins)): Don't overwrite already existing
+	login files unless asked for.
+
 2002-09-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ttys (console): Change type column ($TERM setting) to `mach-color'.
