@@ -72,13 +72,8 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 
   if (!err)
     {
-      int argc = argz_count (data, len);
-      char **argv = alloca (sizeof (char *) * (argc + 1));
-
-      argz_extract (data, len, argv);
-
       rwlock_writer_lock (&diskfs_fsys_lock);
-      err = diskfs_set_options (argc, argv);
+      err = diskfs_set_options (data, len);
       rwlock_writer_unlock (&diskfs_fsys_lock);
     }
 
