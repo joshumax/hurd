@@ -1,3 +1,9 @@
+2002-05-11  Marcus Brinkmann  <marcus@gnu.org>
+
+	* handle_io_release_conch.c (iohelp_handle_io_release_conch):
+	New variable USER_SH.  Hold USER_SH->lock while checking conch
+	status.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* iouser-reauth.c (iohelp_reauth): u_int -> size_t
