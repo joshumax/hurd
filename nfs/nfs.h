@@ -1,5 +1,5 @@
 /* Data structures and global variables for NFS client
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include "nfs-spec.h"
 #include <hurd/netfs.h>
 
@@ -31,7 +32,7 @@ struct fhandle
 
 /* One of these exists for private data needed by the client for each
    node. */
-struct netnode 
+struct netnode
 {
   struct fhandle handle;
   time_t stat_updated;
@@ -54,9 +55,9 @@ struct netnode
       char *name;
       dev_t indexes;
     } transarg;
-  
+
 #ifdef notyet
-  /* This indicates that the length of the file must be at 
+  /* This indicates that the length of the file must be at
      least this big because we've written this much locally,
      even if the server thinks we haven't gone this far. */
   off_t extend_len;
@@ -77,7 +78,7 @@ int main_udp_socket;
 /* Our hostname */
 char *hostname;
 
-/* The current time */ 
+/* The current time */
 volatile struct mapped_time_value *mapped_time;
 
 /* Some tunable parameters */
@@ -123,7 +124,7 @@ extern int mount_program;
 /* RPC program version for the mount agent */
 extern int mount_version;
 
-/* If this is nonzero, it's the port to use for the mount agent if 
+/* If this is nonzero, it's the port to use for the mount agent if
    the portmapper fails or can't be found. */
 extern short mount_port;
 
@@ -137,7 +138,7 @@ extern int nfs_program;
 /* RPC program version for the NFS server */
 extern int nfs_version;
 
-/* If this is nonzero, it's the port to be used to find the nfs agent 
+/* If this is nonzero, it's the port to be used to find the nfs agent
    if the portmapper fails or can't be found */
 extern short nfs_port;
 
@@ -167,7 +168,7 @@ int *xdr_encode_create_state (int *, mode_t, uid_t);
 int *xdr_decode_fattr (int *, struct stat *);
 int *xdr_decode_string (int *, char *);
 int *xdr_decode_fhandle (int *, struct node **);
-int *nfs_initialize_rpc (int, struct iouser *, size_t, void **, 
+int *nfs_initialize_rpc (int, struct iouser *, size_t, void **,
 			 struct node *, uid_t);
 error_t nfs_error_trans (int);
 
