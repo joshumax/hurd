@@ -1,6 +1,6 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -506,6 +506,7 @@ setup_terminal (struct terminal *t, struct ttyent *tt)
     {
       asprintf (&line, "%s %s", tt->ty_getty, tt->ty_name);
       argz_create_sep (line, ' ', &t->getty_argz, &t->getty_argz_len);
+      free (line);
       if (tt->ty_window)
 	argz_create_sep (tt->ty_window, ' ', 
 			 &t->window_argz, &t->window_argz_len);
@@ -1199,6 +1200,7 @@ process_rc_script ()
   system_state = RUNCOM;
   
   rc_pid = run_for_real (rcargs, rcargs, rcargslen, term, 1);
+  free (rcargs);
   mach_port_deallocate (mach_task_self (), term);
   return ! rc_pid;
 }

@@ -1,3 +1,9 @@
+Tue May 12 12:03:38 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* init.c (setup_terminal): Free LINE after done using it.
+	(process_rc_script): Likewise free RCARGS.
+	Both reported by Katusya Tanaka (wyvern@pb3.so-net.ne.jp).
+
 1997-06-30  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* init.c (bootstrap_args): Initialize to 0.
