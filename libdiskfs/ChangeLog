@@ -1,5 +1,8 @@
 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* file-get-trans.c (diskfs_S_file_get_translator): Fix type cast in
+	last change.
+
 	* file-get-trans.c (diskfs_S_file_get_translator): If we return an
 	error, vm_deallocate any vm_allocated memory.
 	From Mark Kettenis <kettenis@gnu.org>.
