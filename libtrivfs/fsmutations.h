@@ -17,6 +17,8 @@
 
 /* Only CPP macro definitions should go in this file. */
 
+#define REPLY_PORTS
+
 #define FILE_INTRAN trivfs_protid_t _trivfs_begin_using_protid (file_t)
 #define FILE_DESTRUCTOR _trivfs_end_using_protid (trivfs_protid_t)
 
