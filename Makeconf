@@ -138,7 +138,7 @@ install: $(libname).a $(installhdrs)
 	$(INSTALL_DATA) $(installhdrs) $(includedir)/hurd/
   endif
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
-	ranlib $(libdir)/$(libname).a
+	$(RANLIB) $(libdir)/$(libname).a
 endif
 
 # Provide default.
