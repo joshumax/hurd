@@ -20,6 +20,7 @@
 
 #include <device/device.h>
 #include <hurd/ports.h>
+#include <linux/netdevice.h>
 
 extern device_t master_device;
 
@@ -30,3 +31,5 @@ extern struct proto_ops *proto_ops;
 struct mutex global_lock;
 
 struct port_bucket *pfinet_bucket;
+
+extern struct device ether_dev;
