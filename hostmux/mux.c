@@ -126,7 +126,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   rwlock_reader_lock (&dir->nn->mux->names_lock);
 
   /* Find the first entry.  */
-  for (first_name = dir->nn->mux->names, count = 0;
+  for (first_name = dir->nn->mux->names, count = 2;
        first_name && first_entry > count;
        first_name = first_name->next)
     if (first_name->node)
