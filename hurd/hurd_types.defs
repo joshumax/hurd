@@ -1,0 +1,174 @@
+
+
+/* MiG type declarations for Hurd interfaces
+   Copyright (C) 1992 Free Software Foundation
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+
+#include <mach/std_types.defs>
+#include <mach/mach_types.defs>
+#include <device/device_types.defs>
+
+type file_t = mach_port_copy_send_t
+#ifdef FILE_INTRAN
+intran: FILE_INTRAN
+#endif
+#ifdef FILE_OUTTRAN
+outtran: FILE_OUTTRAN
+#endif
+#ifdef FILE_DESTRUCTOR
+destructor: FILE_DESTRUCTOR
+#endif
+;
+
+type fsys_t = mach_port_copy_send_t
+#ifdef FSYS_INTRAN
+intran: FSYS_INTRAN
+#endif
+#ifdef FSYS_OUTTRAN
+outtran: FSYS_OUTTRAN
+#endif
+#ifdef FSYS_DESTRUCTOR
+destructor: FSYS_DESTRUCTOR
+#endif
+;
+
+
+type io_t = mach_port_copy_send_t
+#ifdef IO_INTRAN
+intran: IO_INTRAN
+#endif
+#ifdef IO_OUTTRAN
+outtran: IO_OUTTRAN
+#endif
+#ifdef IO_DESTRUCTOR
+destructor: IO_DESTRUCTOR
+#endif
+;
+
+type process_t = mach_port_copy_send_t
+#ifdef PROCESS_INTRAN
+intran: PROCESS_INTRAN
+#endif
+#ifdef PROCESS_OUTTRAN
+outtran: PROCESS_OUTTRAN
+#endif
+#ifdef PROCESS_DESTRUCTOR
+destructor: PROCESS_DESTRUCTOR
+#endif
+;
+
+type auth_t = mach_port_copy_send_t
+#ifdef AUTH_INTRAN
+intran: AUTH_INTRAN
+#endif
+#ifdef AUTH_OUTTRAN
+outtran: AUTH_OUTTRAN
+#endif
+#ifdef AUTH_DESTRUCTOR
+destructor: AUTH_DESTRUCTOR
+#endif
+;
+
+type socket_t = mach_port_copy_send_t
+#ifdef SOCKET_INTRAN
+intran: SOCKET_INTRAN
+#endif
+#ifdef SOCKET_OUTTRAN
+outtran: SOCKET_OUTTRAN
+#endif
+#ifdef SOCKET_DESTRUCTOR
+destructor: SOCKET_DESTRUCTOR
+#endif
+;
+
+type addr_port_t = mach_port_copy_send_t
+#ifdef ADDRPORT_INTRAN
+intran: ADDRPORT_INTRAN
+#endif
+#ifdef ADDRPORT_OUTTRAN
+outtran: ADDRPORT_OUTTRAN
+#endif
+#ifdef ADDRPORT_DESTRUCTOR
+destructor: ADDRPORT_DESTRUCTOR
+#endif
+;
+
+type term_t = mach_port_copy_send_t
+#ifdef TERM_INTRAN
+intran: TERM_INTRAN
+#endif
+#ifdef TERM_OUTTRAN
+outtran: TERM_OUTTRAN
+#endif
+#ifdef TERM_DESTRUCTOR
+destructor: TERM_DESTRUCTOR
+#endif
+;
+
+type startup_t = mach_port_copy_send_t
+#ifdef STARTUP_INTRAN
+intran: STARTUP_INTRAN
+#endif
+#ifdef STARTUP_OUTTRAN
+outtran: STARTUP_OUTTRAN
+#endif
+#ifdef STARTUP_DESTRUCTOR
+destructor: STARTUP_DESCTRUCTOR
+#endif
+;
+
+#ifdef USERPREFIX
+userprefix USERPREFIX;
+#endif
+
+#ifdef SERVERPREFIX
+serverprefix SERVERPREFIX;
+#endif
+
+type data_t = array[] of char;
+type string_t = c_string[1024]; /* XXX */
+type io_statbuf_t = struct[28] of int;
+type fsid_t = struct[2] of int;
+type uid_t = int;
+type gid_t = int;
+type mode_t = int;
+type dev_t = short;
+type retry_type = int;
+type pid_t = int;
+type wait_status_t = int;
+
+type portarray_t = array[] of mach_port_t;
+type intarray_t = array[] of int;
+
+type pidarray_t = array[] of pid_t;
+type procinfo_t = array[] of int;
+type fsys_statfsbuf_t=struct[19] of int;
+
+type idarray_t = array[] of uid_t;
+
+type pathconf_t = struct[9] of int;
+
+type idblock_t = struct[512] of uid_t;
+
+type term_io_data_t = struct[3] of int;
+
+type rusage_t = struct[18] of int;
+
+import <sys/types.h>;
+import <hurd/hurd_types.h>;
