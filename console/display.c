@@ -1518,6 +1518,7 @@ display_output_one (display_t display, wchar_t chr)
 	  display->attr.current.bgcol = display->attr.bgcol_def;
 	  display->attr.current.fgcol = display->attr.fgcol_def;
 	  display->attr.altchar = 0;
+	  user->cursor.status = CONS_CURSOR_NORMAL;
 	  /* Fall through.  */
 	case L'c':
 	  /* Clear screen and home cursor: <clear>.  */
