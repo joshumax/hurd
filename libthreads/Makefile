@@ -28,7 +28,8 @@ SRCS = $(GEN_SRCS) $(I386_SRCS)
 OBJS = call.o cprocs.o cthread_data.o cthreads.o malloc.o mig_support.o \
 	stack.o sync.o csw.o lock.o thread.o
 
-DIST_FILES = $(GEN_SRCS) Makefile cthread_internals.h cthreads.h options.h
+DIST_FILES = $(GEN_SRCS) Makefile cthread_internals.h cthreads.h options.h\
+		 ChangeLog
 I386_DIST_FILES = $(I386_SRCS) i386/asm.h i386/cthreads.h
 
 VPATH = .:i386
