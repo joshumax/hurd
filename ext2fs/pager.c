@@ -598,7 +598,8 @@ pager_clear_user_data (struct user_pager_info *upi)
   if (upi->type == FILE_DATA)
     {
       spin_lock (&node_to_page_lock);
-      upi->node->dn->fileinfo = 0;
+      if (upi->node->dn->fileinfo == upi)
+	upi->node->dn->fileinfo = 0;
       spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
@@ -662,21 +663,31 @@ diskfs_get_filemap (struct node *node)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
 
   spin_lock (&node_to_page_lock);
-  if (!node->dn->fileinfo)
-    {
-      upi = malloc (sizeof (struct user_pager_info));
-      upi->type = FILE_DATA;
-      upi->node = node;
-      diskfs_nref_light (node);
-      upi->p =
-	pager_create (upi, pager_bucket, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
-      node->dn->fileinfo = upi;
-      right = pager_get_port (node->dn->fileinfo->p);
-      ports_port_deref (node->dn->fileinfo->p);
-    }
-  else
-    /* XXX race; see ufs/pager.c here. */
-    right = pager_get_port (node->dn->fileinfo->p);
+  do
+    if (!node->dn->fileinfo)
+      {
+	upi = malloc (sizeof (struct user_pager_info));
+	upi->type = FILE_DATA;
+	upi->node = node;
+	diskfs_nref_light (node);
+	upi->p =
+	  pager_create (upi, pager_bucket, MAY_CACHE,
+			MEMORY_OBJECT_COPY_DELAY);
+	node->dn->fileinfo = upi;
+	right = pager_get_port (node->dn->fileinfo->p);
+	ports_port_deref (node->dn->fileinfo->p);
+      }
+    else
+      {
+	/* Because NP->dn->fileinfo->p is not a real reference,
+	   this might be nearly deallocated.  If that's so, then
+	   the port right will be null.  In that case, clear here
+	   and loop.  The deallocation will complete separately. */
+	right = pager_get_port (node->dn->fileinfo->p);
+	if (right == MACH_PORT_NULL)
+	  node->dn->fileinfo = 0;
+      }
+  while (right == MACH_PORT_NULL);
   spin_unlock (&node_to_page_lock);
   
   mach_port_insert_right (mach_task_self (), right, right,
