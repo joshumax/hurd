@@ -325,20 +325,21 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
     {
-      const struct argp **plist = alloca (4 * sizeof (struct argp *));
+      struct argp_child *kids = alloca (4 * sizeof (struct argp_child));
       struct argp *top_argp = alloca (sizeof (struct argp));
 
       /* TOP_ARGP has no options, it just serves to group the user & default
 	 argps.  */
       bzero (top_argp, sizeof (*top_argp));
-      top_argp->children = plist;
+      top_argp->children = kids;
 
+      bzero (kids, 4 * sizeof (struct argp_child));
       if (state.argp)
-	*plist++ = state.argp;
-      *plist++ = &argp_default_argp;
+	(kids++)->argp = state.argp;
+      (kids++)->argp = &argp_default_argp;
       if (argp_program_version || argp_program_version_hook)
-	*plist++ = &argp_version_argp;
-      *plist = 0;
+	(kids++)->argp = &argp_version_argp;
+      kids->argp = 0;
 
       state.argp = top_argp;
     }
@@ -358,7 +359,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
        array, respectively.  */
     void calc_lengths (const struct argp *argp)
       {
-	const struct argp **children = argp->children;
+	const struct argp_child *children = argp->children;
 	const struct argp_option *opt = argp->options;
 
 	if (opt || argp->parser)
@@ -375,9 +376,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  }
 
 	if (children)
-	  while (*children)
+	  while (children->argp)
 	    {
-	      calc_lengths (*children++);
+	      calc_lengths ((children++)->argp);
 	      num_child_inputs++;
 	    }
       }
@@ -392,7 +393,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       {
 	/* REAL is the most recent non-alias value of OPT.  */
 	const struct argp_option *real = argp->options;
-	const struct argp **children = argp->children;
+	const struct argp_child *children = argp->children;
 
 	if (real || argp->parser)
 	  {
@@ -457,7 +458,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	      /* Assign GROUP's CHILD_INPUTS field a slice from CHILD_INPUTS.*/
 	      {
 		unsigned num_children = 0;
-		while (children[num_children])
+		while (children[num_children].argp)
 		  num_children++;
 		group->child_inputs = child_inputs;
 		child_inputs += num_children;
@@ -471,8 +472,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	if (children)
 	  {
 	    unsigned index = 0;
-	    while (*children)
-	      group = convert_options (*children++, parent, index++, group);
+	    while (children->argp)
+	      group =
+		convert_options ((children++)->argp, parent, index++, group);
 	  }
 
 	return group;
