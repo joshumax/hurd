@@ -18,6 +18,7 @@
 
 #ifndef _HURD_DISKFS_PAGER_H
 #define _HURD_DISKFS_PAGER_H 1
+
 #include <hurd/pager.h>
 #include <hurd/ports.h>
 #include <setjmp.h>
@@ -26,15 +27,16 @@
 #include <assert.h>
 #include <stdlib.h>
 
+/* Start a pager for the whole disk, and store it in DISKFS_DISK_PAGER,
+   preparing a signal preempter so that the `diskfs_catch_exception' macro
+   below works.  SIZE should be the size of the image to map, and the address
+   mapped is returned in IMAGE.  INFO, PAGER_BUCKET, & MAY_CACHE are passed
+   to `pager_create'.  */
+extern void diskfs_start_disk_pager (struct user_pager_info *info,
+				     struct port_bucket *pager_bucket, int may_cache,
+				     size_t size, void **image);
 
-/* Set up the three variables below and prepare a signal preempter
-   so that the `diskfs_catch_exception' macro below works.
-   INFO and MAY_CACHE are passed to `pager_create'.  */
-extern void disk_pager_setup (struct user_pager_info *info, int may_cache);
-
-extern struct port_bucket *pager_bucket; /* Ports bucket used by pagers.  */
-extern struct pager *disk_pager; /* Pager backing to the disk.  */
-extern void *disk_image;	/* Region mapping entire disk from it.  */
+extern struct pager *diskfs_disk_pager;
 
 struct disk_image_user
   {
