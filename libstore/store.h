@@ -29,6 +29,11 @@
 #include <mach.h>
 #include <device/device.h>
 #include <hurd/hurd_types.h>
+
+#ifndef STORE_EI
+#define STORE_EI extern inline
+#endif
+
 
 /* A portion of a store.  If START == -1, it's a hole.  */
 struct store_run
@@ -247,7 +252,7 @@ error_t store_clear_child_flags (struct store *store, int flags);
 
 /* Returns true if STORE can safely be returned to a user who has accessed it
    via a node using OPEN_FLAGS, without compromising security.  */
-extern inline int
+STORE_EI int
 store_is_securely_returnable (struct store *store, int open_flags)
 {
   int flags = store->flags;

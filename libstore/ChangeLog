@@ -1,3 +1,9 @@
+Mon Oct 21 22:03:19 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* store.h: Add extern inline protection.
+	* store.c: New file.
+	* Makefile (SRCS): Add store.c.
+
 Tue Oct  8 14:31:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* kids.c (store_set_child_flags, store_clear_child_flags): New funcs.
