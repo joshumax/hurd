@@ -86,8 +86,7 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
       && ! diskfs_check_readonly ())
     flags |= O_WRITE;
 
-  err = diskfs_create_protid (diskfs_make_peropen (node, flags,
-						   MACH_PORT_NULL, 0),
+  err = diskfs_create_protid (diskfs_make_peropen (node, flags, 0),
 			      user, &new_cred);
   
   iohelp_free_iouser (user);
