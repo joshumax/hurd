@@ -416,7 +416,9 @@ S_proc_getprocinfo (struct proc *callerp,
 	    break;
 	}
       
-      if (flags & PI_FETCH_THREAD_WAITS)
+      if ((flags & PI_FETCH_THREAD_WAITS) 
+	  && p->p_msgport != MACH_PORT_NULL
+	  && !p->p_deadmsg)
 	/* Errors are not significant here. */
 	msg_report_wait (p->p_msgport, thds[i], 
 			 &pi->threadinfos[i].rpc_block);
