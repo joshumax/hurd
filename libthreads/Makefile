@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -33,6 +33,9 @@ OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 
 OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
+# We need this to find <cthreads.h> in the source directory.
+CPPFLAGS = -I. -I$(hurdsource)/libthreads
+
 libname = libthreads
 
 # Don't put cthreads.h in installhdrs or else it will get installed into
@@ -42,11 +45,11 @@ VPATH = $(machine)
 
 include ../Makeconf
 
-$(objects): cthreads.h cthread_internals.h options.h i386/asm.h
+$(OBJS): cthreads.h cthread_internals.h options.h i386/asm.h
 
 install: install-cthreads.h
 install-cthreads.h: cthreads.h
-	cp cthreads.h $(includedir)/cthreads.h
+	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h
 
 lndist: lndist-i386-files
 
@@ -55,4 +58,3 @@ lndist-i386-files: $(hurdsource)/hurd-snap/$(dir)/i386
 
 $(hurdsource)/hurd-snap/$(dir)/i386:
 	mkdir $(hurdsource)/hurd-snap/$(dir)/i386
-
