@@ -508,6 +508,7 @@ extern const struct store_class store_device_class;
 extern const struct store_class store_part_class;
 extern const struct store_class store_file_class;
 extern const struct store_class store_task_class;
+extern const struct store_class store_nbd_class;
 extern const struct store_class store_zero_class;
 extern const struct store_class store_ileave_class;
 extern const struct store_class store_concat_class;
