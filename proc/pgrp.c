@@ -307,6 +307,9 @@ S_proc_setpgrp (struct proc *callerp,
       p->p_pgrp = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
       join_pgrp (p);
     }
+  else
+    nowait_proc_newids (p->p_msgport, p->p_task, p->p_parent->p_pid,
+			pg->pg_pgid, !pg->pg_orphcnt);
   
   return 0;
 }
