@@ -1,3 +1,7 @@
+Thu Oct 10 16:12:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rc.sh: Startup up sendmail if possible.
+
 Thu Sep 12 16:50:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
