@@ -1,5 +1,5 @@
 /* Init that only bootstraps the hurd and runs sh.
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -402,7 +402,6 @@ main (int argc, char **argv, char **envp)
   volatile int err;
   int i;
   mach_port_t consdev;
-  extern char _edata, _etext, __data_start;
 
   global_argv = argv;
 
@@ -429,18 +428,7 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_WRITE, "console", &consdev))
     crash_mach ();
 
-  {
-    extern void _start ();
-    vm_address_t text_start = (vm_address_t) &_start;
-    err = vm_wire (host_priv, mach_task_self (),
-		   (vm_address_t) text_start,
-		   (vm_size_t) (&_etext - text_start),
-		   VM_PROT_READ|VM_PROT_EXECUTE);
-    err = vm_wire (host_priv, mach_task_self (),
-		   (vm_address_t) &__data_start,
-		   (vm_size_t) (&_edata - &__data_start),
-		   VM_PROT_READ|VM_PROT_WRITE);
-  }
+  wire_task_self ();
 
   /* Clear our bootstrap port so our children don't inherit it.  */
   task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
