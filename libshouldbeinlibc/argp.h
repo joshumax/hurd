@@ -50,8 +50,19 @@ struct argp_option
   /* OPTION_ flags.  */
   int flags;
 
-  /* The doc string for this option.  */
+  /* The doc string for this option.  If both NAME and KEY are 0, This string
+     will be printed outdented from the normal option column, making it
+     useful as a group header (it will be the first thing printed in its
+     group); in this usage, it's conventional to end the string with a `:'.  */
   char *doc;
+
+  /* The group this option is in.  In a long help message, options are sorted
+     alphabetically within each group, and the groups presented in the order
+     1, 2, ..., n, 0, -m, ..., -2, -1.  Every entry in an options array with
+     if this field 0 will inherit the group number of the previous entry, or
+     zero if it's the first one.  Automagic options such as --help are put
+     into group -1.  */
+  int group;
 };
 
 /* The argument associated with this option is optional.  */
@@ -201,7 +212,7 @@ struct argp_state
 error_t argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		    int *arg_index);
 
-/* Flags for argp_help:  */
+/* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
 #define ARGP_HELP_SHORT_USAGE	0x02 /*  " but don't actually print options. */
 #define ARGP_HELP_SEE		0x04 /* Print a `for more help...' message. */
@@ -256,7 +267,7 @@ _option_is_short (struct argp_option *opt)
 extern inline int
 _option_is_end (struct argp_option *opt)
 {
-  return !opt->key && !opt->name;
+  return !opt->key && !opt->name && !opt->doc && !opt->group;
 }
 
 #endif /* __ARGP_H__ */
