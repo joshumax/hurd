@@ -127,7 +127,7 @@ error_t
 diskfs_reload_global_state ()
 {
   flush_pokes ();
-  pager_flush (diskpager->p, 1);
+  pager_flush (disk_pager, 1);
   get_hypermetadata ();
   return 0;
 }
