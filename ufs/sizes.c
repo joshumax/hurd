@@ -505,5 +505,7 @@ diskfs_grow (struct node *np,
       mach_port_deallocate (mach_task_self (), obj);
     }
 
+  diskfs_file_update (np, 0);
+
   return err;
 }  
