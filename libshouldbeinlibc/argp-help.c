@@ -671,11 +671,11 @@ hol_usage (struct hol *hol, struct line *line)
 static struct hol *
 argp_hol (const struct argp *argp)
 {
-  const struct argp **parents = argp->parents;
+  const struct argp **children = argp->children;
   struct hol *hol = make_hol (argp->options);
-  if (parents)
-    while (*parents)
-      hol_append (hol, argp_hol (*parents++));
+  if (children)
+    while (*children)
+      hol_append (hol, argp_hol (*children++));
   return hol;
 }
 
@@ -684,13 +684,13 @@ argp_hol (const struct argp *argp)
 static void
 argp_args_usage (const struct argp *argp, struct line *line)
 {
-  const struct argp **parents = argp->parents;
+  const struct argp **children = argp->children;
   const char *doc = argp->args_doc;
   if (doc)
     add_usage_item (line, "%s", doc);
-  if (parents)
-    while (*parents)
-      argp_args_usage (*parents++, line);
+  if (children)
+    while (*children)
+      argp_args_usage (*children++, line);
 }
 
 /* Print the documentation for ARGP to LINE.  Each separate bit of
@@ -698,7 +698,7 @@ argp_args_usage (const struct argp *argp, struct line *line)
 static void
 argp_doc (const struct argp *argp, struct line *line)
 {
-  const struct argp **parents = argp->parents;
+  const struct argp **children = argp->children;
   const char *doc = argp->doc;
   if (doc)
     {
@@ -706,9 +706,9 @@ argp_doc (const struct argp *argp, struct line *line)
       line_fill (line, doc, 0);
       line_freshline (line, 0);
     }
-  if (parents)
-    while (*parents)
-      argp_doc (*parents++, line);
+  if (children)
+    while (*children)
+      argp_doc (*children++, line);
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
@@ -781,32 +781,47 @@ void argp_help (const struct argp *argp, FILE *stream, unsigned flags)
     hol_free (hol);
 
   line_free (line);
+}
 
-  if (flags & ARGP_HELP_EXIT_ERR)
-    exit (1);
-  if (flags & ARGP_HELP_EXIT_OK)
-    exit (0);
+/* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
+   from the set ARGP_HELP_*.  */
+void
+argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
+{
+  if (!state || ! (state->flags & ARGP_NO_ERRS))
+    {
+      argp_help (state ? state->argp : 0, stream, flags);
+
+      if (!state || ! (state->flags & ARGP_NO_EXIT))
+	{
+	  if (flags & ARGP_HELP_EXIT_ERR)
+	    exit (1);
+	  if (flags & ARGP_HELP_EXIT_OK)
+	    exit (0);
+	}
+  }
 }
 
-/* Print the printf string FMT and following args, preceded by the program
-   name and `:', to stderr, and followed by a `Try ... --help' message.  Then
-   exit (1).  */
-void argp_error (const struct argp *argp, const char *fmt, ...)
+/* If appropriate, print the printf string FMT and following args, preceded
+   by the program name and `:', to stderr, and followed by a `Try ... --help'
+   message, then exit (1).  */
+void
+argp_error (struct argp_state *state, const char *fmt, ...)
 {
-  /* Assert that argp_help doesn't return, which it doesn't, as we use it.  */
-  void argp_help (const struct argp *, FILE *, unsigned)
-    __attribute__ ((noreturn));
-  va_list ap;
+  if (!state || ! (state->flags & ARGP_NO_ERRS))
+    {
+      va_list ap;
 
-  fputs (program_invocation_name, stderr);
-  putc (':', stderr);
-  putc (' ', stderr);
+      fputs (program_invocation_name, stderr);
+      putc (':', stderr);
+      putc (' ', stderr);
 
-  va_start (ap, fmt);
-  vfprintf (stderr, fmt, ap);
-  va_end (ap);
+      va_start (ap, fmt);
+      vfprintf (stderr, fmt, ap);
+      va_end (ap);
 
-  putc ('\n', stderr);
+      putc ('\n', stderr);
 
-  argp_help (argp, stderr, ARGP_HELP_STD_ERR);
+      argp_state_help (state, stderr, ARGP_HELP_STD_ERR);
+    }
 }
