@@ -143,10 +143,8 @@ open_hook (struct trivfs_control *cntl,
       return EBUSY;
     }
 
-  /* Wait for carrier to turn on. */
-  while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
-	 && !(flags & O_NONBLOCK)
-	 && !cancel)
+  /* Assert DTR if necessary. */
+  if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
     {
       err = (*bottom->assert_dtr) ();
       if (err)
@@ -154,14 +152,14 @@ open_hook (struct trivfs_control *cntl,
 	  mutex_unlock (&global_lock);
 	  return err;
 	}
-      cancel = hurd_condition_wait (&carrier_alert, &global_lock);
     }
+  
+  /* Wait for carrier to turn on. */
+  while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
+	 && !(flags & O_NONBLOCK)
+	 && !cancel)
+    cancel = hurd_condition_wait (&carrier_alert, &global_lock);
       
-  if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
-    {
-      mutex_unlock (&global_lock);
-      return EWOULDBLOCK;
-    }
   if (cancel)
     {
       mutex_unlock (&global_lock);
