@@ -1,5 +1,9 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+/* Common definitions, declarations & inline routines for the ext2 filesystem
+   translator.
+
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -76,7 +80,8 @@ test_bit (unsigned num, char *bitmap)
   return bitmap[num >> 3] & (1 << (num & 0x7));
 }
 
-/* Sets bit NUM in BITMAP, and returns the previous state of the bit.  */
+/* Sets bit NUM in BITMAP, and returns the previous state of the bit.  Unlike
+   the linux version, this function is NOT atomic!  */
 extern inline int
 set_bit (unsigned num, char *bitmap)
 {
@@ -93,7 +98,8 @@ set_bit (unsigned num, char *bitmap)
     }
 }
 
-/* Clears bit NUM in BITMAP, and returns the previous state of the bit.  */
+/* Clears bit NUM in BITMAP, and returns the previous state of the bit.
+   Unlike the linux version, this function is NOT atomic!  */
 extern inline int
 clear_bit (unsigned num, char *bitmap)
 {
@@ -353,7 +359,7 @@ struct pokel global_pokel;
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
 char *modified_global_blocks;
-spin_lock_t modified_global_blocks_lock;
+struct mutex modified_global_blocks_lock;
 
 /* Marks the global block BLOCK as being modified, and returns true if we
    think it may have been clean before (but we may not be sure).  Note that
@@ -365,9 +371,9 @@ global_block_modified (block_t block)
   if (modified_global_blocks)
     {
       int was_clean;
-      spin_lock (&modified_global_blocks_lock);
+      mutex_lock (&modified_global_blocks_lock);
       was_clean = !set_bit(block, modified_global_blocks);
-      spin_unlock (&modified_global_blocks_lock);
+      mutex_unlock (&modified_global_blocks_lock);
       return was_clean;
     }
   else
