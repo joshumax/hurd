@@ -37,14 +37,14 @@ void ioserver_initialize_conch (struct conch *, struct mutex *);
    by locking the lock passed to initialize_conch. */
 
 /* Handle a user request to obtain the conch (io_get_conch) */
-error_t ioserver_handle_io_get_conch (struct conch *, void *,
+void ioserver_handle_io_get_conch (struct conch *, void *,
 				      struct shared_io *);
 
 /* Obtain the conch for the server */
-error_t ioserver_get_conch (struct conch *);
+void ioserver_get_conch (struct conch *);
 
 /* Handle a user request to release the conch (io_release_conch). */
-error_t ioserver_handle_io_release_conch (struct conch *, void *);
+void ioserver_handle_io_release_conch (struct conch *, void *);
 
 /* Check if the user is allowed to make a shared-data notification
    message. */
@@ -53,11 +53,11 @@ error_t ioserver_verify_user_conch (struct conch *, void *);
 /* This function must by defined by the server.  It should transfer
    information from the current conch holder's shared page to the server's
    data (the arg is the conch owner). */
-error_t ioserver_fetch_shared_data (void *);
+void ioserver_fetch_shared_data (void *);
 
 /* This function must be defined by the server.  It should transfer
    information from the server's data to the current conch holder's
    shared page (the arg is the conch owner). */
-error_t ioserver_put_shared_data (void *);
+void ioserver_put_shared_data (void *);
 
 
