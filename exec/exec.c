@@ -428,7 +428,7 @@ map (struct execdata *e, off_t posn, size_t len)
   size_t offset;
 
   if ((f->__target & ~(f->__bufsize - 1)) == (posn & ~(f->__bufsize - 1)) &&
-      f->__buffer + (posn + len - f->__target) <= f->__get_limit)
+      f->__buffer + (posn + len - f->__target) < f->__get_limit)
     /* The current mapping window covers it.  */
     offset = posn & (f->__bufsize - 1);
   else if (e->filemap == MACH_PORT_NULL)
@@ -436,7 +436,8 @@ map (struct execdata *e, off_t posn, size_t len)
       /* No mapping for the file.  Read the data by RPC.  */
       char *buffer = f->__buffer;
       mach_msg_type_number_t nread = f->__bufsize;
-      e->error = io_read (e->file, &buffer, &nread, posn, len);
+      /* Read as much as we can get into the buffer right now.  */
+      e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
       if (e->error)
 	{
 	  errno = e->error;
