@@ -534,7 +534,7 @@ main (int argc, char **argv, char **envp)
   /* Parse the boot script.  */
   {
     char *p, *line;
-    static const char filemsg[] = "Can't open boot script";
+    static const char filemsg[] = "Can't open boot script\n";
     int amt, fd, err;
 
     fd = open (bootscript, O_RDONLY, 0);
