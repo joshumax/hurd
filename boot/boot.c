@@ -81,6 +81,13 @@ lseek (int fd,
 }
 
 int
+_exit (int code)
+{
+  return syscall (1, code);
+}
+
+
+int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
