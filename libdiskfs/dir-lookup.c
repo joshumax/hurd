@@ -385,9 +385,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (!newnode)
     /* Check permissions on existing nodes, but not new ones. */
     {
-      if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFLNK
-	   || type == S_IFCHR || type == S_IFIFO)
-	  && (flags & (O_READ|O_WRITE|O_EXEC)))
+      if (((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
+	    type == S_IFIFO)
+	   && (flags & (O_READ|O_WRITE|O_EXEC)))
+	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
 	error = EOPNOTSUPP;
 
       if (!error && (flags & O_READ))
