@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -99,6 +99,19 @@ main (int argc, char **argv, char **envp)
 
   mach_port_deallocate (mach_task_self (), pset);
   mach_port_deallocate (mach_task_self (), psetcntl);
+
+  {
+    extern void _start ();
+    vm_address_t text_start = (vm_address_t) &_start;
+    err = vm_wire (master_host_port, mach_task_self (), 
+		   (vm_address_t) text_start,
+		   (vm_size_t) (&_etext - text_start),
+		   VM_PROT_READ|VM_PROT_EXECUTE);
+    err = vm_wire (master_host_port, mach_task_self (), 
+		   (vm_address_t) &__data_start,
+		   (vm_size_t) (&_edata - &__data_start), 
+		   VM_PROT_READ|VM_PROT_WRITE);
+  }
 
   while (1)
     mach_msg_server (message_demuxer, 0, request_portset);
