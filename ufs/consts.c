@@ -25,3 +25,7 @@ int diskfs_shortcut_chrdev = 1;
 int diskfs_shortcut_blkdev = 1;
 int diskfs_shortcut_fifo = 1;
 int diskfs_shortcut_ifsock = 1;
+char *diskfs_server_name = "ufs";
+int diskfs_major_version = 0;
+int diskfs_minor_version = 0;
+int diskfs_edit_version = 0;
