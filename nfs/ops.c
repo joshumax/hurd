@@ -959,6 +959,9 @@ netfs_report_access (struct netcred *cred,
      here we err on the side of denying access, and that we always
      have to check everything.  */
   
+  if (*types == 0)
+    return;
+  
   len = 1;
   err = netfs_attempt_read (cred, np, 0, &len, &byte);
   if (err)
@@ -967,28 +970,29 @@ netfs_report_access (struct netcred *cred,
       return;
     }
   
-  *types = O_READ | O_EXEC;
-  
   assert (len == 1 || len == 0);
 
-  if (len == 1)
+  if (*types & O_WRITE)
     {
-      err = netfs_attempt_write (cred, np, 0, &len, &byte);
-      if (!err)
-	*types |= O_WRITE;
-    }
-  else
-    {
-      /* Oh, ugh.  We have to try and write a byte and then truncate
-	 back.  God help us if the file becomes unwritable in-between.
-	 But because of the use of this function (by setuid programs
-	 wanting to see if they should write user's files) we must
-	 check this and not just return a presumptive error. */
-      byte = 0;
-      err = netfs_attempt_write (cred, np, 0, &len, &byte);
-      if (!err)
-	*types |= O_WRITE;
-      netfs_attempt_set_size (cred, np, 0);
+      if (len == 1)
+	{
+	  err = netfs_attempt_write (cred, np, 0, &len, &byte);
+	  if (err)
+	    *types &= ~O_WRITE;
+	}
+      else
+	{
+	  /* Oh, ugh.  We have to try and write a byte and then truncate
+	     back.  God help us if the file becomes unwritable in-between.
+	     But because of the use of this function (by setuid programs
+	     wanting to see if they should write user's files) we must
+	     check this and not just return a presumptive error. */
+	  byte = 0;
+	  err = netfs_attempt_write (cred, np, 0, &len, &byte);
+	  if (err)
+	    *types &= ~O_WRITE;
+	  netfs_attempt_set_size (cred, np, 0);
+	}
     }
 }
 
