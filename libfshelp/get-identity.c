@@ -79,6 +79,7 @@ fshelp_get_identity (struct port_bucket *bucket,
       mutex_unlock (&idlock);
       return err;
     }
+  i->fileno = fileno;
   
   *pt = ports_get_right (i);
   ports_port_deref (i);
