@@ -17,6 +17,7 @@
 
 #include "priv.h"
 
+/* Backwards compatibility.  Use trivfs_create_control.  */
 mach_port_t
 trivfs_handle_port (mach_port_t realnode, 
 		    struct port_class *control_class,
@@ -24,17 +25,19 @@ trivfs_handle_port (mach_port_t realnode,
 		    struct port_class *protid_class,
 		    struct port_bucket *protid_bucket)
 {
-  struct trivfs_control *cntl;
   mach_port_t right;
-  
-  cntl = ports_allocate_port (control_bucket, 
-			      sizeof (struct trivfs_control), control_class);
-  cntl->underlying = realnode;
-  cntl->protid_class = protid_class;
-  cntl->protid_bucket = protid_bucket;
-  cntl->hook = 0;
-  mutex_init (&cntl->lock);
-  right = ports_get_right (cntl);
-  ports_port_deref (cntl);
+  struct trivfs_control *control;
+  error_t err =
+    trivfs_create_control (realnode,
+			   control_class, control_bucket,
+			   protid_class, protid_bucket,
+			   &control);
+
+  if (err)
+    return MACH_PORT_NULL;
+
+  right = ports_get_right (control);
+  ports_port_deref (control);
+
   return right;
 }
