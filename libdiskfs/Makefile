@@ -64,5 +64,5 @@ MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf
 
-libdiskfs.so: $(foreach lib,threads ports fshelp shouldbeinlibc ioserver,\
+libdiskfs.so: $(foreach lib,threads ports fshelp shouldbeinlibc iohelp,\
 			../lib$(lib)/lib$(lib).so)
