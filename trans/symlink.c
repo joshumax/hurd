@@ -1,5 +1,5 @@
 /* Translator for S_IFLNK nodes
-   Copyright (C) 1994, 2000 Free Software Foundation
+   Copyright (C) 1994, 2000, 2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,8 @@
 
 #include <hurd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <hurd/fsys.h>
 #include <fcntl.h>
 #include "fsys_S.h"
@@ -37,14 +39,14 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   mach_port_t control;
   error_t error;
-  
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     {
       fprintf (stderr, "%s must be started as a translator\n", argv[0]);
       exit (1);
     }
-  
+
   if (argc != 2)
     {
       fprintf (stderr, "Usage: %s link-target\n", argv[0]);
@@ -130,8 +132,7 @@ S_fsys_startup (mach_port_t bootstrap, int flags, mach_port_t control,
 }
 
 error_t
-S_fsys_goaway (mach_port_t control,
-	     int flags)
+S_fsys_goaway (mach_port_t control, int flags)
 {
   exit (0);
 }

@@ -1,5 +1,5 @@
 /* Server for S_IFSOCK nodes
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,6 +23,7 @@
 #include <hurd/socket.h>
 #include <hurd/fsys.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <error.h>
 #include <fcntl.h>
 
@@ -72,7 +73,7 @@ main (int argc, char **argv)
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error(1, 0, "Must be started as a translator");
-  
+
   /* Reply to our parent */
   err = trivfs_startup (bootstrap, 0, control_class, port_bucket,
 			node_class, port_bucket, NULL);
@@ -115,18 +116,18 @@ error_t
 S_ifsock_getsockaddr (file_t sockfile,
 		      mach_port_t *address)
 {
-  struct trivfs_protid *cred = ports_lookup_port (port_bucket, sockfile, 
+  struct trivfs_protid *cred = ports_lookup_port (port_bucket, sockfile,
 						  node_class);
   int perms;
   error_t err;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   err = file_check_access (cred->realnode, &perms);
   if (!err && !(perms & O_READ))
     err = EACCES;
-  
+
   if (!err)
     *address = address_port;
   ports_port_deref (cred);

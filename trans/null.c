@@ -1,8 +1,7 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,6 +24,7 @@
 #include <version.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <error.h>
 #include <string.h>
