@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@ include ./Makeconf
 
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 	     hurd.boot build.mk.in build.mkcf.in aclocal.m4 \
-	     README NEWS tasks INSTALL INSTALL-cross version.h sh-version.sed
+	     README NEWS tasks INSTALL INSTALL-cross version.h.in
 
 
 ## Subdirectories of this directory should all be mentioned here
@@ -57,6 +57,11 @@ working-prog-subdirs := $(filter-out \
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
 			  $(prog-subdirs))
 
+
+$(subdirs): version.h
+
+version.h: version.h.in
+	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' < $< > $@
 
 
 ## GNU Coding Standards targets (not all are here yet), and some other

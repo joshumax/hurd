@@ -18,21 +18,25 @@
 #   Types `servers' and `utilities'; you have to do it yourself.
 
 # Types `server' and `utility' should define
-# target (the name of the program built)
-# OTHERLIBS (all libraries used)
+#   target (the name of the program built)
+#   OTHERLIBS (all libraries used)
 
 # Types `servers' and `utilities' should define
-# targets (the names of all the programs built)
-# special-targets (targets which should not be built the normal way
-# and have their own rules)
+#   targets (the names of all the programs built)
+#   special-targets (targets which should not be built the normal way
+#    and have their own rules)
 
 # Type `library' should define
-# libname (the name of the library, without .a.)
-# installhdrs (header files that should be installed in /include)
-# installhdrsubdir (the subdirectory they should go in, default `hurd')
+#   libname (the name of the library, without .a.)
+#   installhdrs (header files that should be installed in /include)
+#   installhdrsubdir (the subdirectory they should go in, default `hurd')
+# and must not define $(targets).
 
 # Put this first so it's the default
 all:
+
+# What version of the Hurd is this?
+hurd-version := 0.2
 
 # Figure out how to locate the parent directory from here.
 ifeq (.,$(dir))
@@ -128,12 +132,10 @@ ifeq ($(makemode),library)
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
- ifndef targets
-   ifeq ($(no_prof),t)
-    targets = $(libname).a $(libname).so
-   else
-    targets = $(libname).a $(libname).so $(libname)_p.a
-   endif
+ ifeq ($(no_prof),t)
+  targets := $(libname).a $(libname).so
+ else
+  targets := $(libname).a $(libname).so $(libname)_p.a
  endif
 endif
 
@@ -180,7 +182,7 @@ ifeq ($(makemode),library)
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(libdir) $(includedir)/$(installhdrsubdir) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install: $(libdir) $(includedir)/$(installhdrsubdir) $(libdir)/$(libname).so.$(hurd-version $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
 install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
@@ -204,8 +206,12 @@ libs: $(INSTALLED_LOCAL_HEADERS)
 $(addprefix $(libdir)/$(libname),_p.a .a): $(libdir)/%: %
 	$(INSTALL_DATA) $< $@
 	$(RANLIB) $@
-$(libdir)/$(libname).so: $(libname).so
+
+$(libdir)/$(libname).so.$(hurd-version): $(libname).so
 	$(INSTALL_DATA) $< $@
+
+$(libdir)/$(libname).so:
+	ln -f -s $(libname).so.$(hurd-version) $@
 
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
@@ -276,7 +282,7 @@ $(libname)_p.a: $(patsubst %.o,%_p.o,$(OBJS))
 	$(RANLIB) $@
 
 $(libname).so: $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
-	$(CC) -shared -Wl,-soname=$(libname).so -o $(libname).so \
+	$(CC) -shared -Wl,-soname=$(libname).so.$(hurd-version) -o $(libname).so \
 	      $(rpath) $(CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $^
 endif
 
@@ -508,5 +514,5 @@ endef
 
 # Rule to make executable shell scripts from .sh files.
 %: %.sh $(top_srcdir)/sh-version.sed
-	sed -f $(top_srcdir)/sh-version.sed < $< > $@
+	sed -e 's/STANDARD_HURD_VERSION_\\(.[^_]*\\)_/\\1 (GNU Hurd) $(hurd-version)/' < $< > $@
 	chmod +x $@
