@@ -1,13 +1,18 @@
+1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-revoke.c (diskfs_S_io_revoke): Use ports_class_iterate.
+	* readonly.c (diskfs_set_readonly): Likewise.
+
 Mon Feb 22 04:28:56 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-revoke.c (diskfs_S_io_revoke): Protect the actual revocation
-	by blocking all other rpcs.  
+	by blocking all other rpcs.
 
 Sat Feb 20 20:46:21 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-revoke.c (diskfs_S_io_revoke): Release NP->lock before
 	beginning iteration.
-	
+
 1999-02-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-revoke.c (diskfs_S_io_revoke): Fix typo in 1999-02-16 change.

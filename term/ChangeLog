@@ -1,3 +1,7 @@
+1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* users.c (trivfs_S_io_revoke): Use ports_class_iterate.
+
 Mon Feb 22 04:34:55 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* users.c (trivfs_S_io_revoke): Protect the revocation by blocking
@@ -7,7 +11,7 @@ Sat Feb 20 04:59:15 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* users.c (trivfs_S_io_revoke): Release global_lock before
 	beginning the iteration.
-	
+
 	* users.c (trivfs_S_io_revoke): Add reply, reply_type args.
 
 1999-02-06  Mark Kettenis  <kettenis@gnu.org>
@@ -17,7 +21,7 @@ Sat Feb 20 04:59:15 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 	access permission checking.
 	(trivfs_check_access_hook): Initialize with check_access_hook.
 	(trivfs_S_file_check_access): Removed.
-	
+
 Thu Feb 18 00:57:30 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* devio.c (devio_assert_dtr): Bother to set open_pending.

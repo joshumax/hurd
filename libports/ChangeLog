@@ -1,7 +1,20 @@
+1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* destroy-right.c (ports_destroy_right): Return error_t (always 0).
+	* ports.h: Update decl.
+
+	* bucket-iterate.c (_ports_bucket_class_iterate): New function,
+	transmorgified from ports_bucket_iterate.
+	(ports_bucket_iterate): Now just call that to do the work.
+	* class-iterate.c: New file.
+	(ports_class_iterate): New function.
+	* ports.h: Declare ports_class_iterate and _ports_bucket_class_iterate.
+	* Makefile (SRCS): Add class-iterate.c.
+
 Thu Feb 25 10:31:57 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* end-rpc.c (ports_end_rpc): Signal ports_block anytime an rpc
-	ends and someone is waiting on an inhibition.  
+	ends and someone is waiting on an inhibition.
 
 1999-01-01  Roland McGrath  <roland@baalperazim.frob.com>
 

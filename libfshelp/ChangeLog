@@ -1,3 +1,12 @@
+1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* get-identity.c (fshelp_get_identity): Use ports_class_iterate.
+
+1998-12-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fetch-root.c (fshelp_fetch_root): Cope when we have a null auth
+	server port (pass our own ports).
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fshelp.h (fshelp_set_options): Use `const' for `char *' parameter.
