@@ -24,7 +24,7 @@
 #include "execserver.h"
 #include "fs_S.h"
 #include <sys/stat.h>
-#include <fcntlbits.h>
+#include <fcntl.h>
 #include <hurd/exec.h>
 #include <hurd/paths.h>
 #include <string.h>
