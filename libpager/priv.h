@@ -38,6 +38,9 @@ struct pager
   struct lock_request *lock_requests; /* pending lock requests */
   struct attribute_request *attribute_requests; /* pending attr requests */
   
+  boolean_t may_cache;
+  memory_object_copy_strategy_t copy_strategy;
+
   /* Interface ports */
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
