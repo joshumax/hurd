@@ -1,3 +1,52 @@
+Thu Feb  6 02:17:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-mkfile.c (diskfs_S_dir_mkfile): New file's depth is one
+	greater than CRED's.
+
+	* file-getfh.c (diskfs_S_file_getfh): Implement (code from ufs).
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Likewise.
+	* fhandle.h: New file.
+
+Wed Feb  5 16:06:26 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-reparent.c (diskfs_S_dir_reparent): Implement.
+
+	* lookup.c (diskfs_lookup): Add DEPTH & NEW_DEPTH arguments.
+	Implement new fs-root detection using them.
+	* diskfs.h (diskfs_lookup): Add DEPTH & NEW_DEPTH arguments.
+	* dir-link.c (diskfs_S_dir_link): Supply DEPTH & NEW_DEPTH
+	arguments to diskfs_lookup.
+	* dir-clear.c (diskfs_clear_directory): Likewise.
+	* dir-init.c (diskfs_init_dir): Likewise.
+	* dir-renamed.c (checkpath, diskfs_rename_dir): Likewise.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-mkdir.c (diskfs_S_dir_mkdir): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-unlink.c (diskfs_S_dir_unlink): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	Add DEPTH variable.
+	* dir-link.c (diskfs_S_dir_link): Translate EAGAIN (meaning root's
+ 	parent) to EINVAL.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+
+	* diskfs.h (struct peropen): Add DEPTH field.
+	(diskfs_make_peropen): Add DEPTH argument.
+	* peropen-make.c (diskfs_make_peropen): Add & use DEPTH argument.
+	* boot-start.c (diskfs_start_bootstrap,
+	diskfs_S_exec_startup_get_info, diskfs_execboot_fsys_startup,
+	diskfs_S_fsys_init): Supply DEPTH argument to diskfs_make_peropen.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	* priv.h (struct diskfs_trans_callback_cookie2): New type.
+	* trans-callback.c (_diskfs_translator_callback2_fn): Expect
+	COOKIE2 to be a pointer to a struct diskfs_trans_callback_cookie2,
+	and use that to pass args to diskfs_make_peropen.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Pass new type of cookie2 to
+	fshelp_fetch_root, as expected by _diskfs_translator_callback2.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+
 Mon Jan 20 16:18:00 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-reparent.c (diskfs_S_dir_reparent): New file.
