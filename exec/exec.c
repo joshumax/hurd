@@ -107,6 +107,7 @@ static file_t realnode;
 static mach_port_t execserver;	/* Port doing exec protocol.  */
 static mach_port_t fsys;	/* Port doing fsys protocol.  */
 static mach_port_t request_portset; /* Portset we receive on.  */
+static mach_port_t procserver;	/* our proc port */
 char *exec_version = "0.0 pre-alpha";
 char **save_argv;
 
@@ -807,14 +808,17 @@ static void
 set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
 	       int consume)
 {
-  pid_t pid = getpid ();
-  
+  mach_port_t ref;
+
   if (*slot != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), *slot);
   if (authenticate != MACH_PORT_NULL && port != MACH_PORT_NULL)
     {
-      io_reauthenticate (port, pid);
-      auth_user_authenticate (authenticate, port, pid, slot);
+      ref = mach_reply_port ();
+      io_reauthenticate (port, ref, MACH_MSG_TYPE_MAKE_SEND);
+      auth_user_authenticate (authenticate, port, 
+			      ref, MACH_MSG_TYPE_MAKE_SEND, slot);
+      mach_port_destroy (mach_task_self (), ref);
     }
   else
     {
@@ -1027,7 +1031,7 @@ do_exec (mach_port_t execserver,
 		 && boot->portarray[INIT_PORT_PROC] == MACH_PORT_NULL))
     {
       mach_port_t new;
-      if (e.error = __USEPORT (PROC, proc_task2proc (port, newtask, &new)))
+      if (e.error = proc_task2proc (procserver, newtask, &new))
 	goto bootout;
 
       set_init_port (new, &boot->portarray[INIT_PORT_PROC], 0, 1);
@@ -1176,9 +1180,9 @@ S_exec_exec (mach_port_t execserver,
 	  while (p = strsep (&list, ":"))
 	    {
 	      file_t server;
-	      if (!hurd_path_lookup (portarray[INIT_PORT_CRDIR],
-				     portarray[INIT_PORT_CWDIR],
-				     p, 0, 0, &server))
+	      if (!hurd_file_name_lookup (portarray[INIT_PORT_CRDIR],
+					  portarray[INIT_PORT_CWDIR],
+					  p, 0, 0, &server))
 		{
 		  error_t err = (server == execserver ?
 				 do_exec (server, file, oldtask, 0,
@@ -1284,7 +1288,7 @@ S_fsys_getroot (fsys_t fsys,
   *rootfile = execserver;
   *rootfilePoly = MACH_MSG_TYPE_MAKE_SEND;
 
-  *retry = FS_RETRY_NONE;
+  *retry = FS_RETRY_NORMAL;
   *retry_name = '\0';
   return 0;
 }
@@ -1315,6 +1319,22 @@ S_fsys_startup (mach_port_t bootstrap,
 		fsys_t control,
 		mach_port_t *node,
 		mach_msg_type_name_t *realnodePoly)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_fsys_syncfs (fsys_t fsys,
+	       int wait,
+	       int dochildren)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_fsys_mod_readonly (fsys_t fsys,
+		     int readonly,
+		     int force)
 {
   return EOPNOTSUPP;
 }
@@ -1459,6 +1479,8 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
     /* Can only be done once.  */
     return EPERM;
 
+  mach_port_mod_refs (mach_task_self (), proc, MACH_PORT_RIGHT_SEND, 1);
+  procserver = proc;
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], auth);
 
@@ -1484,8 +1506,7 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
   /* Have the proc server notify us when the canonical ints and ports change.
      The notification comes as a normal RPC on the message port, which
      the C library's signal thread handles.  */
-  __USEPORT (PROC, proc_execdata_notify (port, execserver,
-					 MACH_MSG_TYPE_MAKE_SEND));
+  proc_execdata_notify (procserver, execserver, MACH_MSG_TYPE_MAKE_SEND);
 
   /* Call startup_essential task last; init assumes we are ready to
      run once we call it. */
