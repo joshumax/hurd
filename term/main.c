@@ -177,6 +177,9 @@ main (int argc, char **argv)
   termflags = NO_CARRIER | NO_OWNER;
   mutex_init (&global_lock);
 
+  term_owner = term_group = 0;
+  term_mode = bottom == &ptyio_bottom ? 0666 : 0600;
+
   inputq = create_queue (256, 100, 300);
   rawq = create_queue (256, 100, 300);
   outputq = create_queue (256, 100, 300);
