@@ -1,3 +1,11 @@
+Fri Feb 28 21:27:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (fsck_cleanup): Correctly remove from fscks chain.
+
+Sun Feb 23 02:57:46 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh (mkdev): Make I local.
+
 Wed Feb 19 23:08:04 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* halt.c, reboot.c, fsck.c (argp_program_version): Make const.
