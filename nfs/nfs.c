@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -234,20 +234,23 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 {
   uid_t uid;
   uid_t gid;
+  error_t err;
   
   if (cred == (struct netcred *) -1)
     {
       uid = gid = 0;
-      second_gid = -2;
+      second_gid = -1;
     }
   else if (cred
 	   && (cred->nuids || cred->ngids))
     {
       if (cred_has_uid (cred, 0))
 	{
-	  netfs_validate_stat (np, 0);
+	  err = netfs_validate_stat (np, 0);
 	  uid = 0;
-	  gid = np->nn_stat.st_gid;
+	  gid = err ? -2 : 0;
+	  if (err)
+	    printf ("NFS warning, internal stat failure\n");
 	}
       else
 	{
@@ -257,11 +260,19 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 	    uid = cred->uids[0];
 	  else
 	    {
-	      netfs_validate_stat (np, 0);
-	      if (cred_has_uid (cred, np->nn_stat.st_uid))
-		uid = np->nn_stat.st_uid;
+	      err = netfs_validate_stat (np, 0);
+	      if (err)
+		{
+		  uid = cred->uids[0];
+		  printf ("NFS warning, internal stat failure\n");
+		}
 	      else
-		uid = cred->uids[0];
+		{
+		  if (cred_has_uid (cred, np->nn_stat.st_uid))
+		    uid = np->nn_stat.st_uid;
+		  else
+		    uid = cred->uids[0];
+		}
 	    }
 
 	  if (cred->ngids == 0)
@@ -276,12 +287,19 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
 	    }
 	  else
 	    {
-	      netfs_validate_stat (np, 0);
-	      if (cred_has_gid (cred, np->nn_stat.st_gid))
-		gid = np->nn_stat.st_gid;
+	      err = netfs_validate_stat (np, 0);
+	      if (err)
+		{
+		  gid = cred->gids[0];
+		  printf ("NFS warning, internal stat failure\n");
+		}
 	      else
-		gid = cred->gids[0];
-	      
+		{
+		  if (cred_has_gid (cred, np->nn_stat.st_gid))
+		    gid = np->nn_stat.st_gid;
+		  else
+		    gid = cred->gids[0];
+		}		  
 	      if (second_gid != -1
 		  && !cred_has_gid (cred, second_gid))
 		second_gid = -1;
