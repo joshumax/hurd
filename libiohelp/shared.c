@@ -1,5 +1,5 @@
 /* Default functions
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,22 +20,14 @@
 
 /* These definitions exist to satisfy the linker. */
 
-
-void
+void __attribute__ ((weak))
 iohelp_fetch_shared_data (void *foo)
 {
   abort ();
 }
 
-void
+void __attribute__ ((weak))
 iohelp_put_shared_data (void *foo)
 {
   abort ();
 }
-
-
-void
-iohelp_fetch_shared_data (void *foo) __attribute__ ((weak));
-void
-iohelp_put_shared_data (void *foo) __attribute__ ((weak));
-
