@@ -65,6 +65,11 @@ struct shared_io
   int use_read_size;		/* read_size is meaningful */
   off_t read_size;
 
+  size_t optimal_transfer_size;	/* users should try to have the
+				   arguments to io_prenotify, etc. be
+				   multiples of this value if it is
+				   nonzero. */ 
+
   enum
     { 
       /* This means that there isn't any data to be read */
@@ -89,10 +94,12 @@ struct shared_io
 
   int use_prenotify_size;	/* prenotify_size is meaningful */
   int use_postnotify_size;	/* postnotify_size is meaningful */
-  
+  int use_readnotify_size;	/* readnotify_size is meaningful */
+
   off_t prenotify_size;
   off_t postnotify_size;
-
+  off_t readnotify_size;
+    
 
   /* These are set by both the IO server and the user: */
 
