@@ -54,6 +54,10 @@ int console_mscount;
 vm_address_t fs_stack_base;
 vm_size_t fs_stack_size;
 
+void init_termstate ();
+
+char *fsname;
+
 /* We can't include <unistd.h> for this, because that will fight with
    our definitions of syscalls below. */
 int syscall (int, ...);
@@ -146,7 +150,7 @@ struct sgttyb
 #define SIGMSG 31
 struct sigvec
 {
-  int (*sv_handler)();
+  void (*sv_handler)();
   int sv_mask;
   int sv_flags;
 };
@@ -184,6 +188,8 @@ sigvec (int sig, struct sigvec *vec, struct sigvec *ovec)
 		"lcall $0x7,$0x0\n"
 		"ret"::"g" (_sigreturn));
 }
+#else
+int sigvec ();
 #endif
 
 int
@@ -254,7 +260,7 @@ main (int argc, char **argv, char **envp)
   vm_address_t startpc;
   char msg[] = "Boot is here.\n";
   char c;
-  struct sigvec vec = {read_reply, 0, 0};
+  struct sigvec vec = { read_reply, 0, 0};
 
   write (1, msg, sizeof msg);
 
@@ -264,6 +270,8 @@ main (int argc, char **argv, char **envp)
   task_create (mach_task_self (), 0, &newtask);
   
   startpc = load_image (newtask, argv[1]);
+  
+  fsname = argv[1];
   
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
@@ -501,7 +509,7 @@ S_exec_startup (mach_port_t port,
 
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
-  nc = sprintf (argv, "[BOOTSTRAP]%c-x%c%d%c%d%c%s", '\0', '\0',
+  nc = sprintf (argv, "[BOOTSTRAP %s]%c-x%c%d%c%d%c%s", fsname, '\0', '\0',
 		php_child_name, '\0', psmdp_child_name, '\0', "hd0f");
 
   if (nc > *argvlen)
