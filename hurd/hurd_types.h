@@ -197,7 +197,7 @@ enum file_storage_class
 */
 
 /* STORAGE_TASK is like STORAGE_HURD_FILE, except that the data is found
-   in the virtual address space of the task identified by STORAGE_PORT. 
+   in the virtual address space of the task identified by STORAGE_PORT.  */
 
 /* STORAGE_MEMORY is similar, except the data is found in the memory
    object identified by STORAGE_PORT. */
