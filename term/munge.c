@@ -452,13 +452,13 @@ input_character (int c)
     {
       if (CCEQ (cc[VSTOP], c))
 	{
-	  termflags |= USER_OUTPUT_SUSP;
-	  (*bottom->suspend_physical_output) ();
-
-	  if (!(CCEQ(cc[VSTART], c))) /* toggle if VSTART == VSTOP */
-	    /* Alldone code always turns off USER_OUTPUT_SUSP. */
+	  if (CCEQ(cc[VSTART], c) && (termflags & USER_OUTPUT_SUSP))
+	    /* Toggle if VSTART == VSTOP.  Alldone code always turns
+	       off USER_OUTPUT_SUSP. */
 	    goto alldone;
 
+	  termflags |= USER_OUTPUT_SUSP;
+	  (*bottom->suspend_physical_output) ();
 	  return flush;
 	}
       if (CCEQ (cc[VSTART], c))

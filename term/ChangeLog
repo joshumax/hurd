@@ -1,5 +1,8 @@
 2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
 
+	* munge.c (input_character): Really toggle USER_OUTPUT_SUSP if
+	VSTART == VSTOP.
+
 	* hurdio.c (hurdio_writer_loop): Desert the DTR on all errors, not
 	only EIO.
 	(hurdio_reader_loop): Likewise.
