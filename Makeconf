@@ -149,12 +149,20 @@ install:
 # Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
 # a variable above with the complete file name to find it.
 HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
+#HURDLIBS-libs := $(foreach lib,$(HURDLIBS-files), \
+#			   -L$(dir $(lib)) \
+#			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
 
 # Building the target
 # Yippee!  A use for computed variable references!
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
-	$(CC) $(CFLAGS) -o $(target) $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(OBJS) \
+	      $(HURDLIBS-files) $(OTHERLIBS)
+#	      -Wl,$(subst $(empty) ,$(comma),$(OBJS) -\( $(HURDLIBS-libs) -\))\
+#	       -lg
+empty =
+comma = ,
 endif
 
 ifeq ($(makemode),library)
@@ -219,111 +227,42 @@ $(foreach lib,$(alllibs),$(hurdsource)/$(lib)/%.a): FORCE
 
 # How to build RPC stubs
 
-# MIGSFLAGS is provided to CPP when building server stubs and header files.
-# fooMIGSFLAGS is provided to CPP which building server stubs and header files
-#   for interface `foo'.
-# MIGCOMSFLAGS is provided to MiG when building server stubs and header files.
-# CPPFLAGS is provided to CPP always.
+# User settable variables:
+# 	MIGSFLAGS	   flags to CPP when building server stubs and headers
+#	foo-MIGSFLAGS	   same, but only for interface `foo'
+# 	MIGCOMSFLAGS	   flags to MiG when building server stubs and headers
+#	foo-MIGCOMSFLAGS   same, but only for interface `foo'
+# 	MIGUFLAGS	   flags to CPP when building user stubs and headers
+#	foo-MIGUFLAGS	   same, but only for interface `foo'
+# 	MIGCOMUFLAGS	   flags to MiG when building user stubs and headers
+#	foo-MIGCOMUFLAGS   same, but only for interface `foo'
+#	CPPFLAGS	   flags to CPP
 
-# Server stubs from Hurd interfaces
 hurddefs := $(notdir $(basename $(wildcard $(hurdsource)/hurd/*.defs)))
 ht := $(hurdsource)/hurd/hurd_types.defs
 
-$(addsuffix _S.h,$(hurddefs)): %_S.h: $(hurdsource)/hurd/%.defs $(ht)
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) -DSERVERPREFIX=S_ $(hurdsource)/hurd/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
-
-$(addsuffix Server.c,$(hurddefs)): %Server.c: $(hurdsource)/hurd/%.defs $(ht)
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) -DSERVERPREFIX=S_ $(hurdsource)/hurd/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -user /dev/null -header /dev/null -server $*Server.c
-	
-# User stubs from Hurd interfaces
-
-# Build a .c file to avoid confusion (due to the need to build
-# a header file in the following rule).
-$(addsuffix _U.h,$(hurddefs)): %_U.h: $(hurdsource)/hurd/%.defs $(ht)
-	$(CPP) $(CPPFLAGS) $(hurdsource)/hurd/$*.defs \
+# Implicit rules for building server and user stubs from mig .defs files.
+%_S.h %Server.c: %.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ $< \
+	| $(MIGCOM) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
+		    -sheader $*_S.h -server $*Server.c \
+		    -user /dev/null -header /dev/null
+%_U.h %User.c: %.defs
+	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) $< \
 	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
 
-# We have to build a header file because otherwise MiG ignores the imports
-$(addsuffix User.c,$(hurddefs)): %User.c: $(hurdsource)/hurd/%.defs $(ht)
-	$(CPP) $(CPPFLAGS) $(hurdsource)/hurd/$*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
 
-# Server stubs from Mach interfaces
+# Where to find .defs files.
+vpath %.defs $(hurdsource)/hurd:$(includedir)/mach
+
+# Files generated from the Hurd .defs files depend on hurd_types.defs.
+$(foreach if,$(hurddefs),$(if)_S.h $(if)Server.c $(if)_U.h $(if)User.c): $(ht)
+
+# Server stubs from Mach interfaces.
 machdefs := notify memory_object
 
-$(addsuffix _S.h,$(machdefs)): %_S.h: $(includedir)/mach/%.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) $(includedir)/mach/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
-
-$(addsuffix Server.c,$(machdefs)): %Server.c: $(includedir)/mach/%.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) $(includedir)/mach/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -user /dev/null -header /dev/null -server $*Server.c
-
-# User stubs from Mach interfaces
-
-# Build a .c file to avoid confusion (due to the need to build
-# a header file in the following rule).
-$(addsuffix _U.h,$(machdefs)): %_U.h: $(includedir)/mach/%.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/mach/$*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-# We have to build a header file because otherwise MiG ignores the imports
-$(addsuffix User.c,$(machdefs)): %User.c: $(includedir)/mach/%.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/mach/$*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-# Server stubs from Mach device interfaces
+# Server stubs from Mach device interfaces.
 devicedefs := device_reply device
-
-$(addsuffix _S.h,$(devicedefs)): %_S.h: $(includedir)/device/%.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) $(includedir)/device/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
-
-$(addsuffix Server.c,$(devicedefs)): %Server.c: $(includedir)/device/%.defs
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*MIGSFLAGS) $(includedir)/device/$*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -user /dev/null -header /dev/null -server $*Server.c
-
-
-# User stubs from Mach device interfaces
-
-# Build a .c file to avoid confusion (due to the need to build
-# a header file in the following rule).
-$(addsuffix _U.h,$(devicedefs)): %_U.h: $(includedir)/device/%.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/device/$*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-# We have to build a header file because otherwise MiG ignores the imports
-$(addsuffix User.c,$(devicedefs)): %User.c: $(includedir)/device/%.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/device/$*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-
-# Server stubs from local interfaces
-
-%_S.h: %.defs
-	$(CPP) $(CPPFLAGS) $($*MIGSFLAGS) $(MIGSFLAGS) $*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
-
-%Server.c: %.defs
-	$(CPP) $(CPPFLAGS) $($*MIGSFLAGS) $(MIGSFLAGS) $*.defs \
-	| $(MIGCOM) $(MIGCOMSFLAGS) -user /dev/null -header /dev/null -server $*Server.c
-
-# User  stubs from local interfaces
-
-# Build a .c file to avoid confusion (due to the need to build
-# a header file in the following rule).
-%_U.h: %.defs
-	$(CPP) $(CPPFLAGS) $*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-# We have to build a header file because otherwise MiG ignores the imports
-%User.c: %.defs
-	$(CPP) $(CPPFLAGS) $*.defs \
-	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
-
-
 
 FORCE:
 
