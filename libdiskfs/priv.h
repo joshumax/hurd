@@ -72,7 +72,7 @@ extern int _diskfs_ncontrol_ports;
 extern spin_lock_t _diskfs_control_lock;
 
 /* Callback routine for active translator startup */
-fshelp_callback_t _diskfs_translator_callback;
+extern fshelp_callback_t _diskfs_translator_callback;
 
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
