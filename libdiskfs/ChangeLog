@@ -1,3 +1,11 @@
+2001-04-14  Neal H Walfield  <neal@cs.uml.edu>
+
+	* node-create.c (diskfs_create_node):  If we fail, set *NEWNODE
+	to NULL; at least diskfs_S_dir_lookup depends on this behavior.
+
+	* init-startup.c (diskfs_startup_diskfs): Use ERR, not errno, so
+	we can actually read this variable in a debugger.
+
 2001-04-08  Neal H Walfield  <neal@cs.uml.edu>
 
         * io-write.c (diskfs_S_io_write): Make local variable OFF an
