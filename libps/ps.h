@@ -22,9 +22,10 @@
 #define __PS_H__
 
 #include <hurd/hurd_types.h>
+#include <hurd/ihash.h>
 #include <mach/mach.h>
+
 #include <pwd.h>
-#include <ihash.h>
 #include <errno.h>
 
 #ifndef bool
