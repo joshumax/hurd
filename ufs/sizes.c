@@ -373,8 +373,9 @@ offer_data (struct node *np,
 /* Logical block LBN of node NP has been extended with ffs_realloccg.
    It used to be allocated at OLD_PBN and is now at NEW_PBN.  The old
    size was OLD_SIZE; it is now NEW_SIZE bytes long.  Arrange for the data
-   on disk to be kept consistent, and free the old block if it has moved. */
-void
+   on disk to be kept consistent, and free the old block if it has moved.
+   Return one iff we've actually moved data around on disk.  */
+int
 block_extended (struct node *np, 
 		daddr_t lbn,
 		daddr_t old_pbn,
@@ -393,42 +394,54 @@ block_extended (struct node *np,
 
   if (old_pbn != new_pbn)
     {
-      /* Fetch the old data for the part that has moved and offer it
-	 to the kernel, to make sure it's paged in before
-	 we deallocate the old block.  */
-      for (off = 0; off < round_page (old_size); off += vm_page_size)
-	{
+      vm_object_t mapobj;
+      error_t err;
+      vm_address_t mapaddr;
+      volatile int *pokeaddr;
 
-	  /* There's *got* to be a better way to do this... */
-
-	  /* Force it out to disk */
-	  assert (np->dn->fileinfo);
-	  pager_sync_some (np->dn->fileinfo->p, lbn * sblock->fs_bsize + off,
-			   vm_page_size, 1);
-
-	  /* Read it back in */
-	  diskfs_device_read_sync (fsbtodb (sblock, old_pbn) + off / DEV_BSIZE,
-				   (void *) &buf, vm_page_size);
-	  /* If this page is the last one, then zero the excess first */
-	  if (off + vm_page_size > old_size)
-	    bzero ((void *)(buf + old_size - off),
-		   vm_page_size - (old_size - off));
-
-	  /* And make sure it's in core. */
-	  offer_data (np, lbn * sblock->fs_bsize + off, vm_page_size, buf);
-
-	  /* And now, make sure it's on disk.  (Why?  Because a previous
-	     write of this file, maybe even one from before we started
-	     running may have been fsynced.  We can't cause data already
-	     on disk to be lossy at any time in the future while we move it. */
-	  pager_sync_some (np->dn->fileinfo->p, lbn * sblock->fs_bsize + off,
-			   vm_page_size, 1);
-	}
+      /* Map in this part of the file */
+      mapobj = diskfs_get_filemap (np, VM_PROT_WRITE | VM_PROT_READ);
+      err = vm_map (mach_task_self (), &mapaddr, round_page (old_size), 0, 1,
+		    mapobj, lbn * sblock->fs_bsize, 0, 
+		    VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE, 0);
+      assert_perror (err);
       
-      /* And deallocate the old block */
+      /* Allow these pageins to occur even though we're holding the lock */
+      spin_lock (&unlocked_pagein_lock);
+      np->dn->fileinfo->allow_unlocked_pagein = lbn * sblock->fs_bsize;
+      np->dn->fileinfo->unlocked_pagein_length = round_page (old_size);
+      spin_unlock (&unlocked_pagein_lock);
+
+      /* Make sure all waiting pageins see this change. */
+      mutex_lock (&np->allocptrlock->master);
+      condition_broadcast (&np->allocptrlock->wakeup);
+      mutex_unlock (&np->allocptrlock->master);
+
+      /* Force the pages in core and make sure they are dirty */
+      for (pokeaddr = (char *)mapaddr; 
+	   pokeaddr < mapaddr + round_page (old_size);
+	   pokeaddr += vm_page_size / sizeof (*pokeaddr))
+	*pokeaddr = *pokeaddr;
+
+      /* Turn off the special pagein permission */
+      spin_lock (&unlocked_pagein_lock);
+      np->dn->fileinfo->allow_unlocked_pagein = 0;
+      np->dn->fileinfo->unlocked_pagein_length = 0;
+      spin_unlock (&unlocked_pagein_lock);
+
+      /* Undo mapping */
+      mach_port_deallocate (mach_task_self (), mapobj);
+      vm_deallocate (mach_task_self (), mapaddr, round_page (old_size);
+
+      /* Now it's OK to free the old block */
       ffs_blkfree (np, old_pbn, old_size);
+
+      /* Tell caller that we've moved data */
+      return 1;
     }
-}  
+  else
+    return 0;
+}
 
 
 /* Implement the diskfs_grow callback; see <hurd/diskfs.h> for the
@@ -443,6 +456,7 @@ diskfs_grow (struct node *np,
   error_t err;
   struct dinode *di = dino (np->dn->number);
   mach_port_t pagerpt;
+  int needsync = 0;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO,
      synchronously.  We do this on newly allocated indirect
@@ -496,7 +510,8 @@ diskfs_grow (struct node *np,
 
 	  old_pbn = read_disk_entry (di->di_db[olbn]);
 
-	  block_extended (np, olbn, old_pbn, bno, osize, sblock->fs_bsize);
+	  need_sync = block_extended (np, olbn, old_pbn, bno,
+				      osize, sblock->fs_bsize);
 
 	  write_disk_entry (di->di_db[olbn], bno);
 	  record_poke (di, sizeof (struct dinode));
@@ -522,7 +537,7 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
-	  block_extended (np, lbn, old_pbn, bno, osize, size);
+	  need_sync = block_extended (np, lbn, old_pbn, bno, osize, size);
 
 	  write_disk_entry (di->di_db[lbn], bno);
 	  record_poke (di, sizeof (struct dinode));
@@ -652,6 +667,9 @@ diskfs_grow (struct node *np,
     }
 
   rwlock_writer_unlock (&np->dn->allocptrlock);
+
+  if (need_sync)
+    diskfs_file_update (np, 1);
 
   return err;
 }
