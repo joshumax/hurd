@@ -479,7 +479,7 @@ diskfs_S_fsys_init (mach_port_t port,
 
   mach_port_deallocate (mach_task_self (), host);
 
-  diskfs_init_completed ();
+  _diskfs_init_completed ();
 
   return MIG_NO_REPLY;		/* Already replied above.  */
 }
