@@ -23,8 +23,7 @@ dir := libps
 makemode := library
 
 libname = libstore
-SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
-	tty.c user.c write.c
+SRCS = create.c derive.c device.c make.c rdwr.c set.c
 LCLHDRS=store.h
 installhdrs=store.h
 
