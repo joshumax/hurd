@@ -93,7 +93,7 @@ free_pgrp (struct pgrp *pg)
 }
  
 /* Implement proc_setsid as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setsid (struct proc *p)
 {
   struct session *sess;
@@ -123,7 +123,7 @@ boot_setsid (struct proc *p)
 }
 
 /* Implement proc_getsid as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getsid (struct proc *callerp,
 	     pid_t pid,
 	     pid_t *sid)
@@ -137,7 +137,7 @@ S_proc_getsid (struct proc *callerp,
 }
 
 /* Implement proc_getsessionpids as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getsessionpids (struct proc *callerp,
 		       pid_t sid,
 		       pid_t **pids,
@@ -179,7 +179,7 @@ S_proc_getsessionpids (struct proc *callerp,
 }
 
 /* Implement proc_getsessionpgids as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_getsessionpgids (struct proc *callerp,
 			pid_t sid,
 			pid_t **pgids,
@@ -215,7 +215,7 @@ S_proc_getsessionpgids (struct proc *callerp,
 }
 
 /* Implement proc_getpgrppids as described in <hurd/process.defs>. */
-error_t
+kern_return_t
 S_proc_getpgrppids (struct proc *callerp,
 		    pid_t pgid,
 		    pid_t **pids,
@@ -251,7 +251,7 @@ S_proc_getpgrppids (struct proc *callerp,
 }
 
 /* Implement proc_getsidport as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getsidport (struct proc *p,
 		 mach_port_t *sessport)
 {
@@ -268,7 +268,7 @@ S_proc_getsidport (struct proc *p,
 }
 
 /* Implement proc_setpgrp as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setpgrp (struct proc *callerp,
 	      pid_t pid,
 	      pid_t pgid)
@@ -296,7 +296,7 @@ S_proc_setpgrp (struct proc *callerp,
 }
 
 /* Implement proc_getpgrp as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getpgrp (struct proc *callerp,
 	      pid_t pid,
 	      pid_t *pgid)
@@ -313,7 +313,7 @@ S_proc_getpgrp (struct proc *callerp,
 }
 
 /* Implement proc_mark_exec as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_mark_exec (struct proc *p)
 {
   p->p_exec = 1;
