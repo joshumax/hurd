@@ -33,10 +33,7 @@ diskfs_S_file_getlinknode (struct protid *cred,
   if (np == diskfs_root_node)
     return EBUSY;
   
-  /* XXX -- this is wrong; port management code for protids
-     only allows a port to be given out once; we need to
-     send a new protid unfortunately. */
-  *port = cred->pi.port;
+  *port = ports_get_right (cred);
   *portpoly = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
