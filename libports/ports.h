@@ -92,6 +92,7 @@ struct rpc_info
   thread_t thread;
   struct rpc_info *next, **prevp;
   struct rpc_notify *notifies;
+  struct rpc_info *interrupted_next;
 };
 
 /* An rpc has requested interruption on a port notification.  */
@@ -332,6 +333,13 @@ void ports_resume_all_rpcs (void);
 
 /* Cancel (with thread_cancel) any RPC's in progress on PORT. */
 void ports_interrupt_rpcs (void *port);
+
+/* If the current thread's rpc has been interrupted with
+   ports_interrupt_rpcs, return true (and clear the interrupted flag).  */
+int ports_self_interrupted ();
+
+/* Add RPC to the list of rpcs that have been interrupted.  */
+void _ports_record_interruption (struct rpc_info *rpc);
 
 /* Arrange for hurd_cancel to be called on RPC's thread if OBJECT gets notified
    that any of the things in COND have happened to PORT.  RPC should be an
