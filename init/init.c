@@ -1318,6 +1318,8 @@ process_rc_script ()
   if (do_fastboot)
     {
       rcargs = malloc (rcargslen = sizeof _PATH_RUNCOM);
+      if (!rcargs)
+	return ENOMEM;
       strcpy (rcargs, _PATH_RUNCOM);
     }
   else
