@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "term.h"
+#include "tioctl_S.h"
 
 /* Set if we need a wakeup when tty output has been done */
 static int pty_read_blocked = 0;
