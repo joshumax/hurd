@@ -28,8 +28,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "proc.h"
 
-#define HASH(pg) (id % ht->size)
-#define REHASH(pg, h) ((id + (h * h)) % ht->size)
+#define HASH(id, ht) ((id) % (ht)->size)
+#define REHASH(id, ht, h) (((id) + (h)) % (ht)->size)
 
 struct htable
 {
@@ -39,8 +39,8 @@ struct htable
 };
 #define HASH_DEL ((void *) -1)
 
-static struct htable pghash, pidhash, taskhash, porthash, sidhash, collhash;
-static struct htable pgcollhash, sesscollhash;
+static struct htable pghash, pidhash, taskhash, porthash, sidhash;
+static struct htable exchash;
 
 /* Add ITEM to the hash table HT.  LOCP is the address of a pointer located
    in ITEM; *LOCP will be set to the address of ITEM's hash table pointer.
@@ -57,9 +57,9 @@ addhash (struct htable *ht,
   int oldsize;
   int i;
   
-  for (h = HASH (id); 
+  for (h = HASH (id, ht); 
        (ht->tab[h] != 0 && ht->tab[h] != HASH_DEL && h != firsth);
-       firsth = (firsth == -1) ? h : firsth, h = REHASH (id, firsth))
+       firsth = (firsth == -1) ? h : firsth, h = REHASH (id, ht, h))
     ;
 
   if (ht->tab[h] == 0
@@ -103,9 +103,9 @@ findhash (struct htable *ht,
   int h, firsth = -1;
   void *ret;
 
-  for (h = HASH (id);
+  for (h = HASH (id, ht);
        (ht->tab[h] != 0	&& ht->ids[h] != id && h != firsth);
-       firsth = (firsth == -1) ? h : firsth, h = REHASH (id, firsth))
+       firsth = (firsth == -1) ? h : firsth, h = REHASH (id, ht, h))
     ;
   
   if (ht->ids[h] == id)
@@ -113,6 +113,13 @@ findhash (struct htable *ht,
   else
     ret = 0;
   return ret;
+}
+
+/* Find the exception structure corresponding to a given exc port. */
+struct exc *
+exc_find (mach_port_t port)
+{
+  return findhash (&exchash, port);
 }
 
 /* Find the process corresponding to a given pid. */
@@ -158,11 +165,11 @@ session_find (pid_t sid)
   return findhash (&sidhash, sid);
 }
 
-/* Find the process collection corresponding to a gived refport. */
-struct coll *
-coll_find (mach_port_t refport)
+/* Add a new exc to the various hash tables.  */
+void
+add_exc_to_hash (struct exc *e)
 {
-  return findhash (&collhash, refport);
+  addhash (&exchash, e, &e->hashloc, e->excport);
 }
 
 /* Add a new process to the various hash tables. */
@@ -179,27 +186,6 @@ void
 add_pgrp_to_hash (struct pgrp *pg)
 {
   addhash (&pghash, pg, &pg->pg_hashloc, pg->pg_pgid);
-  if (pg->pg_fakecoll)
-    addhash (&pgcollhash, pg, &pg->pg_fakecollhashloc, pg->pg_fakecoll);
-  else
-    pg->pg_fakecollhashloc = 0;
-}
-
-/* A process group's fake collection port has changed; update
-   the hash tables apporpriately. */
-void
-add_pgrp_fakecoll_to_hash (struct pgrp *pg)
-{
-  if (pg->pg_fakecollhashloc)
-    *pg->pg_fakecollhashloc = HASH_DEL;
-  addhash (&pgcollhash, pg, &pg->pg_fakecollhashloc, pg->pg_fakecoll);
-}
-
-/* Add a new process collection to the various hash tables. */
-void
-add_coll_to_hash (struct coll *c)
-{
-  addhash (&collhash, c, &c->c_hashloc, c->c_refport);
 }
 
 /* Add a new session to the various hash tables. */
@@ -207,30 +193,20 @@ void
 add_session_to_hash (struct session *s)
 {
   addhash (&sidhash, s, &s->s_hashloc, s->s_sid);
-  if (s->s_fakecoll)
-    addhash (&sesscollhash, s, &s->s_fakecollhashloc, s->s_fakecoll);
-  else
-    s->s_fakecollhashloc = 0;
 }
 
-/* A session's fake collection port has changes; update the hash tables
-   appropriately. */
+/* Remove an exc from the hash tables */
 void
-add_session_fakecoll_to_hash (struct session *s)
+remove_exc_from_hash (struct exc *e)
 {
-  if (s->s_fakecollhashloc)
-    *s->s_fakecollhashloc = HASH_DEL;
-  addhash (&sesscollhash, s, &s->s_fakecollhashloc, s->s_fakecoll);
+  *e->hashloc = HASH_DEL;
 }
-				
 
 /* Remove a process group from the various hash tables. */
 void
 remove_pgrp_from_hash (struct pgrp *pg)
 {
   *pg->pg_hashloc = HASH_DEL;
-  if (pg->pg_fakecollhashloc)
-    *pg->pg_fakecollhashloc = HASH_DEL;
 }
 
 /* Remove a process from the various hash tables. */
@@ -242,20 +218,11 @@ remove_proc_from_hash (struct proc *p)
   *p->p_porthashloc = HASH_DEL;
 }
 
-/* Remove a process collection from the various hash tables. */
-void
-remove_coll_from_hash (struct coll *c)
-{
-  *c->c_hashloc = HASH_DEL;
-}
-
 /* Remove a session from the various hash tables. */
 void
 remove_session_from_hash (struct session *s)
 {
   *s->s_hashloc = HASH_DEL;
-  if (s->s_fakecollhashloc)
-    *s->s_fakecollhashloc = HASH_DEL;
 }
 
 /* Call function FUN of two args for each process.  FUN's first arg is
@@ -268,18 +235,6 @@ prociterate (void (*fun) (struct proc *, void *), void *arg)
   for (i = 0; i < pidhash.size; i++)
     if (pidhash.tab[i] && pidhash.tab[i] != HASH_DEL)
       (*fun)(pidhash.tab[i], arg);
-}
-
-/* Call function FUN of two args for each process collection.  FUN's first
-   arg is the collection, its second arg is ARG.  */
-void
-colliterate (void (*fun) (struct coll *, void *), void *arg)
-{
-  int i;
-
-  for (i = 0; i < collhash.size; i++)
-    if (collhash.tab[i] && collhash.tab[i] != HASH_DEL)
-      (*fun)(collhash.tab[i], arg);
 }
 
 /* Tell if a pid is available for use */
