@@ -44,7 +44,7 @@ skip; /* setprocargs */
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
-	in msgports: portarray_t);
+	in msgports: mach_port_t);
 
 simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
