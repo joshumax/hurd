@@ -61,7 +61,7 @@ struct options
 #define OPTIONS_PRINT_ERRS   0x2
 
 /* Parse non-option args as well, similarly to getopt, by calling the parse
-   function with a key of 1, and the actual arg as the value.  Since it's
+   function with a key of 0, and the actual arg as the value.  Since it's
    impossible to know which parse function wants to handle it, each one is
    called in turn, until one returns 0 or an error other than EINVAL.  */
 #define OPTIONS_PARSE_ARGS   0x4
