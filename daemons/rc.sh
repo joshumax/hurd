@@ -56,13 +56,11 @@ fi
 # Until new hostname functions are in place
 test -r /etc/hostname && hostname `cat /etc/hostname`
 
-echo -n cleaning lock files...
+echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
-echo done
-
-echo -n clearing /tmp...
 (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -r {} \; )
+(cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
 echo done
 
 echo -n restoring pty permissions...
