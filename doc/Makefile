@@ -16,5 +16,8 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := doc
+makemode := misc
+
+DIST_FILES = hurd.texi 
+
 include ../Makeconf
-DIST_FILES = hurd.texi Makefile ChangeLog
