@@ -21,10 +21,12 @@
 dir := pfinet
 makemode := server
 LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
-	icmp.c igmp.c ip.c ip_fw.c ipx.c p8022.c p8023.c packet.c pe2.c \
+	icmp.c igmp.c ip.c ip_fw.c ipx.c p8022.c p8023.c pe2.c \
 	proc.c protocol.c psnap.c rarp.c raw.c route.c skbuff.c sock.c \
 	tcp.c timer.c udp.c utils.c
-OBJS= $(subst .c,.o,$(LINUXSRCS))
+UNUSEDSRC = packet.c
+SRCS = sched.c timer.c
+OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
 
 vpath %.c linux-inet
 
@@ -32,6 +34,8 @@ target = pfinet
 
 include ../Makeconf
 
-CPPFLAGS += -I. -D__KERNEL__ -D_HURD_
+CPPFLAGS += -I. -imacros config.h
+
+
 
 
