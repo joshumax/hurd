@@ -21,11 +21,11 @@ makemode := misc
 include Makeconf
 
 lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
-	      libthreads libps
+	      libthreads libps libnetserv libdirmgt libnetfs
 prog-subdirs = auth boot exec fstests init.trim mkbootfs \
 	       proc term ufs pflocal pipes dev.trim utils trans fsck bsdfsck \
-	       devio newfs
-other-subdirs = hurd doc init tmpfs dev ext2fs lib
+	       devio newfs ext2fs benchmarks pfinet tmpfs defpager login nfs
+other-subdirs = hurd doc init tmpfs dev lib
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = 
 working-prog-subdirs := $(filter-out \
