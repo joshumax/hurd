@@ -26,6 +26,9 @@
 
 #include "priv.h"
 
+/* A user-readable variable reflecting the last set sync interval.  */
+int diskfs_sync_interval = 0;
+
 /* The thread that's doing the syncing.  */
 static cthread_t periodic_sync_thread;
 
@@ -33,9 +36,7 @@ static cthread_t periodic_sync_thread;
    an RPC.  We can use ports_inhibit_port_rpcs on this port to guarantee
    that the periodic_sync_thread is quiescent.  */
 static struct port_info *pi;
-
 
-
 static void periodic_sync ();
 
 /* Establish a thread to sync the filesystem every INTERVAL seconds, or
@@ -68,6 +69,9 @@ diskfs_set_sync_interval (int interval)
       else
 	err = EIEIO;
     }
+
+  if (!err)
+    diskfs_sync_interval = interval;
 
   ports_resume_port_rpcs (pi);
 
