@@ -28,13 +28,41 @@ enum inodetype
   BADDIR,			/* dir with bad block pointers */
 };
 
-/* State of each inode */
+/* Added to directories in pass 2 */
+#define DIR_REF 0x80000000	/* dir has been found in connectivity search */
+
+/* State of each inode (set by pass 1) */
 enum inodetype *inodestate;
 
-/* Number of links claimed by each inode */
+/* Number of links claimed by each inode (set by pass 1) */
 nlink_t *linkcount;
 
-/* DT_foo type of each inode */
+/* DT_foo type of each inode (set by pass 1) */
 char *typemap;
+
+
+
+/* One of these structures is set up for each directory by
+   pass 1 and used by passes 2 and 3. */
+struct dirinfo
+{
+  struct inoinfo *i_nexthash;	/* next entry in hash chain */
+  ino_t i_number;		/* inode entry of this dir */
+  ino_t i_parent;		/* inode entry of parent */
+  ino_t i_dotdot;		/* inode number of `..' */
+  ino_t i_isize;		/* size of inode */
+  u_int i_numblks;		/* size of block array in bytes */
+  daddr_t i_blks[0];		/* array of inode block addresses */
+};
+
+/* Array of all the dirinfo structures in inode number order */
+struct **dirarray;
+
+/* Array of all thi dirinfo structures sorted by their first
+   block address */
+struct **dirsorted;
+
+int dirarrayused;		/* number of directories */
+int dirarraysize;		/* alloced size of dirarray/dirsorted */
 
 
