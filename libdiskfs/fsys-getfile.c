@@ -20,9 +20,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "fsys_S.h"
 
 error_t
 diskfs_S_fsys_getfile (mach_port_t fsys __attribute__ ((unused)),
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
 		       uid_t *gen_uids __attribute__ ((unused)),
 		       u_int ngen_uids __attribute__ ((unused)),
 		       uid_t *gen_gids __attribute__ ((unused)),
