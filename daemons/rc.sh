@@ -11,9 +11,9 @@ then
 	date
 
 	# Find the filesystem by a kludge, and extract the root device name.
-	fsargs = `ps -MaxHww --fmt=%command | grep exec-server-task | head -1`
-	dev = `echo $fsargs | sed 's/^.* \([^ ]*\)$/\1/' `
-	type = `echo $fsargs | sed 's/^\/hurd\/\(.*\)\.static.*$/\1/' `
+	fsargs=`ps -MaxHww --fmt=%command | grep exec-server-task | head -1`
+	dev=`echo $fsargs | sed 's/^.* \([^ ]*\)$/\1/' `
+	type=`echo $fsargs | sed 's/^\/hurd\/\(.*\)\.static.*$/\1/' `
 
 	fsck.$type -p /dev/r$dev
 
@@ -25,15 +25,13 @@ then
 		;;
 
 # Filesystem modified
-	1)
-	2)
+	1 | 2)
 		fsysopts / -uw
 		date
 		;;
 
 # Fsck couldn't fix it. 
-	4)
-	8)
+	4 | 8)
 		echo "Automatic reboot failed... help!"
 		exit 1
 		;;
@@ -49,9 +47,10 @@ then
 		echo "Unknown error in reboot"
 		exit 1
 		;;
+	esac
 else
 	date
-endif
+fi
 
 # Until new hostname functions are in place
 test -r /etc/hostname && hostname `cat /etc/hostname`
