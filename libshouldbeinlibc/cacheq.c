@@ -1,6 +1,6 @@
 /* Helper functions for maintaining a fixed-size lru-ordered queue
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -82,7 +82,8 @@ cacheq_set_length (struct cacheq *cq, int length)
       /* Source  entries.  */
       struct cacheq_hdr *fh = cq->mru;
       /* Destination entries (and limit).  */
-      struct cacheq_hdr *th = new_entries, *end = new_entries + esz * length;
+      struct cacheq_hdr *th = new_entries;
+      struct cacheq_hdr *end = new_entries + esz * (length - 1);
       struct cacheq_hdr *prev_th = 0;
 
       if (! new_entries)
@@ -91,7 +92,7 @@ cacheq_set_length (struct cacheq *cq, int length)
       while (fh || th)
 	{
 	  struct cacheq_hdr *next_th =
-	    (!th || th > end) ? 0 : (void *)th + esz;
+	    (!th || th >= end) ? 0 : (void *)th + esz;
 
 	  if (fh && th)
 	    bcopy (fh, th, esz); /* Copy the bits in a moved entry.  */
