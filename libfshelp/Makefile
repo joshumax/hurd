@@ -19,6 +19,31 @@ dir := libfshelp
 
 include ../Makeconf
 
-SRCS = fsys-startup.c init-trans.c trans-start.c transboot-clean.c
+SRCS = fsys-startup.c init-trans.c trans-start.c transboot-clean.c \
+	kill-trans.c trans-iter.c 
+
+OBJS = fsys-startup.o init-trans.o trans-start.o transboot-clean.o \
+	kill-trans.o trans-iter.o
 
 DIST_FILES = $(SRCS) Makefile trans.h fshelp.h
+
+all: libfshelp.a(__.SYMDEF)
+
+libfshelp.a(__.SYMDEF): $(OBJS)
+	rm -f libfshelp.a
+	ar r $@ $^
+	ranlib $@
+
+$(hurdinst)/lib/libfshelp.a: libfshelp.a(__.SYMDEF)
+	cp libioserver.a $@
+	ranlib $@
+
+$(headers)/hurd/fshelp.h: fshelp.h
+	cp $< $@
+
+$(OBJS): fshelp.h
+fsys-startup.o init-trans.o trans-start.o transboot-clean.o: trans.h
+kill-trans.o trans-iter.o: trans.h
+
+clean:
+	rm libfshelp.a *.o
