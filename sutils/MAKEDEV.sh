@@ -111,7 +111,7 @@ function mkdev {
       klog)
         st $I root 660 /hurd/streamio kmsg;;
       # ptys
-      [pt]ty[pqrstuvwxyzPQRST]?)
+      [pt]ty[pqrstuvwxyzPQRS]?)
 	# Make one pty, both the master and slave halves.
 	local id="${I:3}"
 	st pty$id root 666 /hurd/term ${DEVDIR}/pty$id \
@@ -119,10 +119,13 @@ function mkdev {
 	st tty$id root 666 /hurd/term ${DEVDIR}/tty$id \
 				      pty-slave ${DEVDIR}/pty$id
 	;;
-      [pt]ty[pqrstuvwxyzPQRST])
+      [pt]ty[pqrstuvwxyzPQRS])
 	# Make a bunch of ptys.
-	mkdev ${I}0 ${I}1 ${I}2 ${I}3 ${I}4 ${I}5 ${I}6 ${I}7
-	mkdev ${I}8 ${I}9 ${I}a ${I}b ${I}c ${I}d ${I}e ${I}f
+	local n
+        for n in 0 1 2 3 4 5 6 7 8 9 \
+		 a b c d e f g h i j k l m n o p q r s t u v; do
+	  mkdev ${I}${n}
+	done
 	;;
 
       fd*|mt*)
