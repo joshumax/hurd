@@ -27,13 +27,15 @@ void
 ports_inhibit_all_rpcs ()
 {
   struct port_bucket *bucket;
+  int this_one = 0;
   error_t interruptor (void *portstruct)
     {
       struct port_info *pi = portstruct;
       struct rpc_info *rpc;
 
       for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-	hurd_thread_cancel (rpc->thread);
+	if (hurd_thread_cancel (rpc->thread) == EINTR)
+	  this_one = 1;
       return 0;
     }
 
@@ -42,7 +44,7 @@ ports_inhibit_all_rpcs ()
   for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
     ihash_iterate (bucket->htable, interruptor);
 
-  while (_ports_total_rpcs)
+  while (_ports_total_rpcs > this_one)
     {
       _ports_flags |= _PORTS_INHIBIT_WAIT;
       condition_wait (&_ports_block, &_ports_lock);

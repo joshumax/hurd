@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -26,19 +26,23 @@ void
 ports_inhibit_port_rpcs (void *portstruct)
 {
   struct port_info *pi = portstruct;
-  struct rpc_info *rpc;
-  
+  struct rpc_info *rpc, *this_rpc;
+
   mutex_lock (&_ports_lock);
 
+  this_rpc = 0;
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-    hurd_thread_cancel (rpc->thread);
-  
-  while (pi->current_rpcs)
+    if (hurd_thread_cancel (rpc->thread) == EINTR)
+      this_rpc = rpc;
+
+  while (pi->current_rpcs
+	 /* If this thread's RPC is the only one left, that doesn't count.  */
+	 && !(pi->current_rpcs == this_rpc && ! this_rpc->next))
     {
       pi->flags |= PORT_INHIBIT_WAIT;
       condition_wait (&_ports_block, &_ports_lock);
     }
-  
+
   pi->flags |= PORT_INHIBITED;
   pi->flags &= ~PORT_INHIBIT_WAIT;
 

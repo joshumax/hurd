@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -27,23 +27,26 @@ ports_inhibit_class_rpcs (struct port_class *class)
 {
   struct port_info *pi;
   struct rpc_info *rpc;
-  
+  int this_one;
+
   mutex_lock (&_ports_lock);
-  
+
+  this_one = 0;
   for (pi = class->ports; pi; pi = pi->next)
     for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-      hurd_thread_cancel (rpc->thread);
+      if (hurd_thread_cancel (rpc->thread) == EINTR)
+	this_one = 1;
 
-  while (class->rpcs)
+  while (class->rpcs > this_one)
     {
       class->flags |= PORT_CLASS_INHIBIT_WAIT;
       condition_wait (&_ports_block, &_ports_lock);
     }
-  
+
   class->flags |= PORT_CLASS_INHIBITED;
   class->flags &= ~PORT_CLASS_INHIBIT_WAIT;
 
   mutex_unlock (&_ports_lock);
 }
 
-			 
+
