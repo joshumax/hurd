@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -37,53 +37,53 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
   int wait = 0;
 
   recv = mach_reply_port ();
-  
+
   timer_thread = mach_thread_self ();
-  
+
   mutex_lock (&global_lock);
   while (1)
     {
       int jiff = jiffies;
-      
+
       if (!timers)
 	wait = -1;
       else if (timers->expires < jiff)
 	wait = 0;
       else
 	wait = ((timers->expires - jiff) * 1000) / HZ;
-	
+
       mutex_unlock (&global_lock);
-      
-      mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT 
+
+      mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT
 		       | (wait == -1 ? 0 : MACH_RCV_TIMEOUT)),
 		0, 0, recv, wait, MACH_PORT_NULL);
 
       mutex_lock (&global_lock);
-      
+
       while (timers->expires < jiffies)
 	{
 	  struct timer_list *tp;
-	  
+
 	  tp = timers;
 
 	  timers = timers->next;
 	  if (timers)
 	    timers->prevp = &timers;
-	  
+
 	  tp->next = 0;
 	  tp->prevp = 0;
-	  
+
 	  (*tp->function) (tp->data);
 	}
     }
-}  
+}
 
 
 void
 add_timer (struct timer_list *timer)
 {
   struct timer_list **tp;
-  
+
   timer->expires += jiffies;
 
   for (tp = &timers; *tp; tp = &(*tp)->next)
@@ -101,7 +101,7 @@ add_timer (struct timer_list *timer)
       timer->prevp = tp;
       *tp = timer;
     }
-  
+
   if (timers == timer)
     {
       /* We have change the first one, so tweak the timer thread
@@ -126,7 +126,7 @@ del_timer (struct timer_list *timer)
       *timer->prevp = timer->next;
       if (timer->next)
 	timer->next->prevp = timer->prevp;
-  
+
       timer->next = 0;
       timer->prevp = 0;
       return 1;
@@ -147,7 +147,7 @@ init_time ()
   device_t timedev;
   memory_object_t timeobj;
   struct timeval tp;
-  
+
   device_open (master_device, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t),
 	      &timeobj, 0);
@@ -158,9 +158,9 @@ init_time ()
   mach_port_deallocate (mach_task_self (), timeobj);
 
   fill_timeval (&tp);
-  
-  root_jiffies = (long long) tp.tv_sec * HZ 
-    + ((long long) tp.tv_usec * HZ) / 1000;
+
+  root_jiffies = (long long) tp.tv_sec * HZ
+    + ((long long) tp.tv_usec * HZ) / 1000000;
 
   cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
 }
