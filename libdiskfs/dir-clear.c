@@ -56,5 +56,7 @@ diskfs_clear_directory (struct node *dp,
   pdp->dn_stat.st_nlink--;
   pdp->dn_set_ctime = 1;
 
+  diskfs_truncate (dp, 0);
+
   return err;
 }
