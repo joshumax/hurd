@@ -56,6 +56,8 @@ struct trivfs_control
   struct mutex lock;
   struct port_class *protid_class;
   struct port_bucket *protid_bucket;
+  mach_port_t filesys_id;
+  mach_port_t file_id;
   mach_port_t underlying;
   void *hook;			/* for user use */
 };
