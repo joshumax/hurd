@@ -1,6 +1,6 @@
 /* Fstab filesystem frobbing
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -66,7 +66,7 @@ fstab_free (struct fstab *fstab)
 
 /* Return a new fstypes structure in TYPES.  SEARCH_FMTS is copied.  */
 error_t
-fstypes_create (char *search_fmts, size_t search_fmts_len,
+fstypes_create (const char *search_fmts, size_t search_fmts_len,
 		struct fstypes **types)
 {
   struct fstypes *new = malloc (sizeof (struct fstypes));
@@ -94,7 +94,7 @@ fstypes_create (char *search_fmts, size_t search_fmts_len,
    one is found, it is added to TYPES, otherwise an new entry is created
    with a NULL PROGRAM field.  */
 error_t
-fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
+fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
 {
   char *fmts, *fmt;
   size_t fmts_len;
@@ -169,7 +169,7 @@ fstypes_get (struct fstypes *types, char *name, struct fstype **fstype)
 
 /* Copy MNTENT into FS, copying component strings as well.  */
 error_t
-fs_set_mntent (struct fs *fs, struct mntent *mntent)
+fs_set_mntent (struct fs *fs, const struct mntent *mntent)
 {
   char *end;
   size_t needed = 0;
@@ -219,7 +219,7 @@ fs_set_mntent (struct fs *fs, struct mntent *mntent)
   return 0;
 }
 
-/* Returns an fstype for FS in TYPE, trying to fillin FS's type field if
+/* Returns an fstype for FS in TYPE, trying to fill in FS's type field if
    necessary.  */
 error_t
 fs_type (struct fs *fs, struct fstype **type)
@@ -368,7 +368,7 @@ fs_set_readonly (struct fs *fs, int readonly)
   return err;
 }
 
-/* If FS is currently mounted tell lit to remount the device.  XXX If FS is
+/* If FS is currently mounted tell it to remount the device.  XXX If FS is
    not mounted at all, then nothing is done.  */
 error_t
 fs_remount (struct fs *fs)
@@ -383,7 +383,7 @@ fs_remount (struct fs *fs)
 /* Returns the FS entry in FSTAB with the device field NAME (there can only
    be one such entry).  */
 inline struct fs *
-fstab_find_device (struct fstab *fstab, char *name)
+fstab_find_device (const struct fstab *fstab, const char *name)
 {
   struct fs *fs;
   for (fs = fstab->entries; fs; fs = fs->next)
@@ -395,9 +395,16 @@ fstab_find_device (struct fstab *fstab, char *name)
 /* Returns the FS entry in FSTAB with the mount point NAME (there can only
    be one such entry).  */
 inline struct fs *
-fstab_find_mount (struct fstab *fstab, char *name)
+fstab_find_mount (const struct fstab *fstab, const char *name)
 {
   struct fs *fs;
+
+  /* Don't count "none" or "-" as matching any other mount point.
+     It is canonical to use "none" for swap partitions, and multiple
+     such do not in fact conflict with each other.  */
+  if (!strcmp (name, "none") || !strcmp (name, "-"))
+    return 0;
+
   for (fs = fstab->entries; fs; fs = fs->next)
     if (strcmp (fs->mntent.mnt_dir, name) == 0)
       return fs;
@@ -407,7 +414,7 @@ fstab_find_mount (struct fstab *fstab, char *name)
 /* Returns the FS entry in FSTAB with the device or mount point NAME (there
    can only be one such entry).  */
 inline struct fs *
-fstab_find (struct fstab *fstab, char *name)
+fstab_find (const struct fstab *fstab, const char *name)
 {
   return fstab_find_device (fstab, name) ?: fstab_find_mount (fstab, name);
 }
@@ -440,7 +447,7 @@ fs_free (struct fs *fs)
    conflict (in either the device or mount point).  If RESULT is non-zero, the
    new entry is returne in it.  */
 error_t
-fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
+fstab_add_mntent (struct fstab *const fstab, const struct mntent *mntent,
 		  struct fs **result)
 {
   int new = 0;			/* True if we didn't overwrite an old entry.  */
@@ -497,7 +504,7 @@ fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
    DST.  If DST & SRC have different TYPES fields, EINVAL is returned.  If
    COPY is non-zero, the copy is returned in it.  */
 error_t
-fstab_add_fs (struct fstab *dst, struct fs *fs, struct fs **copy)
+fstab_add_fs (struct fstab *dst, const struct fs *fs, struct fs **copy)
 {
   error_t err;
   struct fs *new;
@@ -556,7 +563,7 @@ fstab_merge (struct fstab *dst, struct fstab *src)
 /* Reads fstab-format entries into FSTAB from the file NAME.  Any entries
    duplicating one already in FS_LIST supersede the existing entry.  */
 error_t
-fstab_read (struct fstab *fstab, char *name)
+fstab_read (struct fstab *fstab, const char *name)
 {
   error_t err;
   /* Used to hold entries from the file, before merging with FSTAB at the
@@ -599,7 +606,7 @@ fstab_read (struct fstab *fstab, char *name)
 
 /* Return the next pass number that applies to any filesystem in FSTAB that
    is greater than PASS, or -1 if there isn't any.  */
-int fstab_next_pass (struct fstab *fstab, int pass)
+int fstab_next_pass (const struct fstab *fstab, int pass)
 {
   int next_pass = -1;
   struct fs *fs;
