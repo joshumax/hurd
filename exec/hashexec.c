@@ -94,18 +94,21 @@ check_hashbang (struct execdata *e,
 			  (flags & EXEC_DEFAULTS) ? std_ports[which]
 			  : MACH_PORT_NULL);
 
-      if ((flags & EXEC_SECURE) || port == std_ports[which])
-	switch (which)
-	  {
-	  case INIT_PORT_CRDIR:
-	    return (reauthenticate (INIT_PORT_CRDIR, &user_crdir) ?:
+      switch (which)
+	{
+	case INIT_PORT_CRDIR:
+	  if ((flags & EXEC_SECURE) || port == std_ports[which])
+	    return (reauthenticate (port, &user_crdir) ?:
 		    (*operate) (user_crdir));
-	  case INIT_PORT_CWDIR:
-	    return (lookup_cwdir != MACH_PORT_NULL ?
-		    (*operate) (lookup_cwdir) :
-		    reauthenticate (INIT_PORT_CWDIR, &user_cwdir) ?:
+	  break;
+	case INIT_PORT_CWDIR:
+	  if (lookup_cwdir != MACH_PORT_NULL)
+	    return (*operate) (lookup_cwdir);
+	  if ((flags & EXEC_SECURE) || port == std_ports[which])
+	    return (reauthenticate (port, &user_cwdir) ?:
 		    (*operate) (user_cwdir));
-	  }
+	  break;
+	}
       return (*operate) (port);
     }
   /* Look up NAME on behalf of the client.  */
@@ -219,7 +222,7 @@ check_hashbang (struct execdata *e,
 		      !memcmp (&envar[1], envp, sizeof (envar) - 2))
 		    p = envp - 1;
 		  else
-		    p = memmem (envar, sizeof (envar) - 1, envp, envplen);
+		    p = memmem (envp, envplen, envar, sizeof (envar) - 1);
 		  if (p != NULL)
 		    {
 		      size_t len;
@@ -235,8 +238,12 @@ check_hashbang (struct execdata *e,
 		      confstr (_CS_PATH, path, len);
 		    }
 
-		  while ((p = strsep (&path, ":")) != NULL)
+		  p = path;
+		  do
 		    {
+		      path = strchr (p, ':');
+		      if (path)
+			*path++ = '\0';
 		      if (*p == '\0')
 			lookup_cwdir = MACH_PORT_NULL;
 		      else if (lookup (p, O_EXEC, &lookup_cwdir))
@@ -262,7 +269,7 @@ check_hashbang (struct execdata *e,
 			    }
 			  break;
 			}
-		    }
+		    } while ((p = path) != NULL);
 		}
 	      else
 		name_file = MACH_PORT_NULL;
