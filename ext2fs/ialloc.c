@@ -1,6 +1,6 @@
 /* Inode allocation routines.
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
 
    Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-/* 
+/*
  *  linux/fs/ext2/ialloc.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
@@ -26,7 +26,7 @@
  * Laboratoire MASI - Institut Blaise Pascal
  * Universite Pierre et Marie Curie (Paris VI)
  *
- *  BSD ufs-inspired inode and directory allocation by 
+ *  BSD ufs-inspired inode and directory allocation by
  *  Stephen Tweedie (sct@dcs.ed.ac.uk), 1993
  */
 
@@ -45,7 +45,7 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Free node NP; the on disk copy has already been synced with 
+/* Free node NP; the on disk copy has already been synced with
    diskfs_node_update (where NP->dn_stat.st_mode was 0).  It's
    mode used to be OLD_MODE.  */
 void
@@ -290,7 +290,8 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 
   if (st->st_blocks)
     {
-      ext2_warning("Free inode %d had %d blocks", inum, st->st_blocks);
+      if (sblock->s_creator_os == EXT2_OS_HURD)
+	ext2_warning ("Free inode %d had %d blocks", inum, st->st_blocks);
       st->st_blocks = 0;
       np->dn_set_ctime = 1;
     }
@@ -304,7 +305,8 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   st->st_mode &= ~S_IPTRANS;
   if (np->allocsize)
     {
-      ext2_warning ("Free inode %d had a size of %ld", inum, st->st_size);
+      if (sblock->s_creator_os == EXT2_OS_HURD)
+	ext2_warning ("Free inode %d had a size of %ld", inum, st->st_size);
       st->st_size = 0;
       np->allocsize = 0;
       np->dn_set_ctime = 1;
@@ -330,7 +332,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 
 /* ---------------------------------------------------------------- */
 
-unsigned long 
+unsigned long
 ext2_count_free_inodes ()
 {
 #ifdef EXT2FS_DEBUG
@@ -364,7 +366,7 @@ ext2_count_free_inodes ()
 
 /* ---------------------------------------------------------------- */
 
-void 
+void
 ext2_check_inodes_bitmap ()
 {
   int i;
