@@ -29,6 +29,10 @@ OBJS = $(filter-out mount.sh,$(SRCS:.c=.o))
 
 all: $(targets)
 
+# This hack to get around ickiness in Makeconf
+libutil-libsubst = -lutil
+
+login: -lutil
 ps: ../libps/libps.a ../libihash/libihash.a
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
