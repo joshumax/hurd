@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -22,10 +22,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <hurd/fsys.h>
 
+struct mutex diskfs_shutdown_lock = MUTEX_INITIALIZER;
+
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t 
 diskfs_shutdown (int flags)
 {
+  int nports = -1;
+  int err;
+
   void sync_trans (struct trans_link *trans, void *arg)
     {
       fsys_goaway (trans->control, (int) arg);
@@ -37,13 +42,37 @@ diskfs_shutdown (int flags)
 
   if (flags & FSYS_GOAWAY_RECURSE)
     fshelp_translator_iterate (sync_trans, (void *)flags);
-  
-  /* XXX doesn't handle GOAWAY_FORCE yet */
 
-  if (!(flags & FSYS_GOAWAY_NOSYNC))
+  mutex_lock (&diskfs_shutdown_lock);
+  
+  /* Permit all the current RPC's to finish, and then
+     suspend new ones.  */
+  ports_inhibit_class_rpcs (diskfs_protid_class);
+
+  /* Unfortunately, we can't inhibit control ports, because
+     we are running inside a control port RPC.  What to do?
+     ports_count_class will prevent new protid's from being created;
+     that will happily block getroot and getfile.  diskfs_shutdown_lock
+     will block simultaneous attempts at goaway and set_options.  Only 
+     syncfs remains; perhaps a special flag could be used, or it could
+     also hold diskfs_shutdown_lock (which should probably then be
+     renamed...).  */
+
+  /* First, see if there are outstanding user ports. */
+  nports = ports_count_class (diskfs_protid_class);
+  if ((flags & FSYS_GOAWAY_FORCE == 0) 
+      && (nports || diskfs_pager_users ()))
+    {
+      ports_enable_class (diskfs_protid_class);
+      mutex_unlock (&diskfs_shutdown_lock);
+      return EBUSY;
+    }
+
+  if (flags & FSYS_GOAWAY_NOSYNC == 0)
     {
       diskfs_shutdown_pager ();
       diskfs_set_hypermetadata (1, 1);
     }
-  return 0;
+
+  exit (0);
 }
