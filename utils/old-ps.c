@@ -60,7 +60,7 @@ time_str (time_value_t *t)
     }
   centiseconds = t->microseconds / (1000000 / 100);
   
-  sprintf (ret, "%d:%.2d.%.2d",
+  sprintf (ret, "%d:%02d.%02d",
 	   t->seconds / 60,	/* minutes */
 	   t->seconds % 60,	/* seconds */
 	   centiseconds);
