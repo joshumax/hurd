@@ -57,7 +57,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   /* Helper macros for writing notes.  */
 #define DEFINE_NOTE(typename) struct { struct note_header hdr; typename data; }
 #define WRITE_NOTE(type, var) ({ 					      \
-  (var).hdr = NOTE_HEADER ((type), sizeof (var));			      \
+  (var).hdr = NOTE_HEADER ((type), sizeof (var).data);			      \
   write_note (&(var).hdr);						      \
 })
   struct note_header
@@ -107,20 +107,19 @@ dump_core (task_t task, file_t file, off_t corelimit,
 
     vm_address_t region_address, last_region_address, last_region_end;
     vm_prot_t last_protection;
-    inline void record_last_region (void)
+#define RECORD_LAST_REGION do {						      \
+    if (last_region_end > last_region_address				      \
+	&& last_protection != VM_PROT_NONE)				      \
+      record_last_region (alloca (sizeof (struct vm_region_list))); } while (0)
+    inline void record_last_region (struct vm_region_list *region)
       {
-	if (last_region_end > last_region_address
-	    && last_protection != VM_PROT_NONE)
-	  {
-	    struct vm_region_list *region = alloca (sizeof *region);
-	    *tailp = region;
-	    tailp = &region->next;
-	    region->next = NULL;
-	    region->start = last_region_address;
-	    region->length = last_region_end - last_region_address;
-	    region->protection = last_protection;
-	    ++nregions;
-	  }
+	*tailp = region;
+	tailp = &region->next;
+	region->next = NULL;
+	region->start = last_region_address;
+	region->length = last_region_end - last_region_address;
+	region->protection = last_protection;
+	++nregions;
       }
 
     region_address = last_region_address = last_region_end = VM_MIN_ADDRESS;
@@ -157,14 +156,14 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	  {
 	    /* This region is distinct from the last one we saw,
 	       so record that previous one.  */
-	    record_last_region ();
+	    RECORD_LAST_REGION;
 	    last_region_address = region_address;
 	    last_region_end = region_address += region_length;
 	    last_protection = protection;
 	  }
       }
     /* Record the final region.  */
-    record_last_region ();
+    RECORD_LAST_REGION;
   }
 
   /* Now we start laying out the file.  */
@@ -276,7 +275,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
     }
 
   /* Now write the memory segment data.  */
-  for (ph = phdrs; ph < &phdrs[nregions]; ++ph)
+  for (ph = &phdrs[1]; ph < &phdrs[nregions + 1]; ++ph)
     if (ph->p_filesz > 0)
       {
 	vm_address_t va = ph->p_vaddr;
