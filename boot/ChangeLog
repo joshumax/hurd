@@ -1,3 +1,11 @@
+2001-08-23  Roland McGrath  <roland@frob.com>
+
+	* boot.c (kernel_command_line): New variable.
+	(options): Add --kernel-command-line/-K.
+	(parse_opt): Parse it, set kernel_command_line.
+	(main): If unset, default it to "argv[0] bootstrap_args bootdevice".
+	Set ${kernel-command-line} boot script variable to kernel_command_line.
+
 2001-08-17  Neal H Walfield  <neal@cs.uml.edu>
 
         * userland-boot.c (boot_script_task_create): Suspend the newly
