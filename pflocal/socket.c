@@ -44,6 +44,36 @@ ensure_connq (struct sock *sock)
   return err;
 }
 
+error_t
+S_socket_connect (struct sock_user *user, struct addr *addr)
+{
+  struct sock *peer;
+
+  if (! user)
+    return EOPNOTSUPP;
+  if (! addr)
+    return EADDRNOTAVAIL;
+
+  err = addr_get_sock (addr, &peer);
+  if (err)
+    return err;
+
+  return sock_connect (user->sock, peer);
+}
+
+/* Prepare a socket of appropriate type for future accept operations.  */
+error_t
+S_socket_listen (struct sock_user *user, unsigned queue_limit)
+{
+  error_t err;
+  if (!user)
+    return EOPNOTSUPP;
+  err = ensure_connq (sock);
+  if (!err)
+    err = connq_set_length (sock->connq, queue_limit);
+  return err;
+}
+
 /* Return a new connection from a socket previously listened.  */
 error_t
 S_socket_accept (struct sock_user *user,
@@ -94,37 +124,8 @@ S_socket_accept (struct sock_user *user,
 
   return err;
 }
-
-/* Prepare a socket of appropriate type for future accept operations.  */
-error_t
-S_socket_listen (struct sock_user *user, int queue_limit)
-{
-  error_t err;
-  if (!user)
-    return EOPNOTSUPP;
-  err = ensure_connq (sock);
-  if (!err)
-    err = connq_set_length (sock->connq, queue_limit);
-  return err;
-}
-
-error_t
-S_socket_connect (struct sock_user *user, struct addr *addr)
-{
-  struct sock *peer;
-
-  if (! user)
-    return EOPNOTSUPP;
-  if (! addr)
-    return EADDRNOTAVAIL;
-
-  err = addr_get_sock (addr, &peer);
-  if (err)
-    return err;
-
-  return sock_connect (user->sock, peer);
-}
-
+
+/* Bind a socket to an address.  */
 error_t
 S_socket_bind (struct sock_user *user, struct addr *addr)
 {
@@ -136,8 +137,9 @@ S_socket_bind (struct sock_user *user, struct addr *addr)
   return sock_bind (user->sock, addr);
 }
 
+/* Shutdown a socket for reading or writing.  */
 error_t
-S_socket_shutdown (struct sock_user *user, int what)
+S_socket_shutdown (struct sock_user *user, unsigned what)
 {
   if (! user)
     return EOPNOTSUPP;
@@ -147,6 +149,7 @@ S_socket_shutdown (struct sock_user *user, int what)
   return 0;
 }
 
+/* Find out the name of a socket.  */
 error_t
 S_socket_name (struct sock_user *user,
 	       mach_port_t *addr_port, mach_msg_type_name_t *addr_port_type)
@@ -157,6 +160,7 @@ S_socket_name (struct sock_user *user,
   return sock_get_addr_port (user->sock, &addr_port);
 }
 
+/* Find out the name of the socket's peer.  */
 error_t
 S_socket_peername (struct sock_user *user,
 		   mach_port_t *addr_port,
@@ -168,49 +172,114 @@ S_socket_peername (struct sock_user *user,
   return sock_get_peer_addr_port (user->sock, &addr_port);
 }
 
+/* Send data over a socket, possibly including Mach ports.  */
+error_t
+S_socket_send (struct sock_user *user, struct addr *dest_addr, unsigned flags,
+	       char *data, size_t data_len,
+	       mach_port_t *ports, size_t num_ports,
+	       char *control, size_t control_len,
+	       size_t *amount)
+{
+  struct pipe *pipe;
+  struct sock *dest_sock;
+  struct addr *dest_addr, *source_addr;
+
+  if (!user || !dest_addr)
+    return EOPNOTSUPP;
+
+  if (flags & MSG_OOB)
+    /* BSD local sockets don't support OOB data.  */
+    return EOPNOTSUPP;
+
+  err = addr_get_sock (dest_addr, &dest_sock);
+  if (err)
+    return err;
+
+  err = sock_get_addr (user->sock, &source_addr);
+  if (!err)
+    {
+      /* Grab the destination socket's read pipe directly, and stuff data
+	 into it.  */
+      err = sock_aquire_read_pipe (dest, &pipe);
+      if (!err)
+	{
+	  err = pipe_write (pipe, source_addr, data, data_len, amount);
+	  pipe_release (pipe);
+	}
+      ports_port_deref (source_addr);
+    }
+
+  return err;
+}
+
+/* Receive data from a socket, possibly including Mach ports.  */
+error_t
+S_socket_recv (struct sock_user *user,
+	       mach_port_t *addr, mach_msg_type_name_t *addr_type,
+	       unsigned in_flags,
+	       char **data, size_t *data_len,
+	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
+	       size_t *num_ports,
+	       char **control, size_t *control_len,
+	       unsigned *out_flags, size_t amount)
+{
+  error_t err;
+  unsigned flags;
+  struct pipe *pipe;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  if (flags & MSG_OOB)
+    /* BSD local sockets don't support OOB data.  */
+    return EOPNOTSUPP;
+
+  flags =
+    0;
+
+  err = sock_aquire_read_pipe (user->sock, &pipe);
+  if (!err)
+    {
+      err =
+	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
+		   source_addr, data, data_len, amount,
+		   control, control_len, ports, num_ports);
+      pipe_release (pipe);
+    }
+
+  if (!err)
+    /* Setup mach ports for return.  */
+    {
+      if (source_addr)
+	{
+	  *addr = ports_get_right (source_addr);
+	  *addr_type = MACH_MSG_MAKE_SEND;
+	  ports_port_deref (source_addr); /* since get_right gives us one.  */
+	}
+      if (ports && *ports_len > 0)
+	*ports_type = MACH_MSG_MAKE_SEND;
+    }
+
+  out_flags =
+    0;
+
+  return err;
+}
+
 /* Stubs for currently unsupported rpcs.  */
 
 error_t
 S_socket_getopt (struct sock_user *user,
-		 int level, int opt,
-		 char **value, unsigned *value_len)
+		 unsigned level, unsigned opt,
+		 char **value, size_t *value_len)
 {
   return EOPNOTSUPP;
 }
 
 error_t
 S_socket_setopt (struct sock_user *user,
-		 int level, int opt,
-		 char *value, unsigned value_len)
+		 unsigned level, unsigned opt,
+		 char *value, size_t value_len)
 {
-  return EOPNOTSUPP;
-}
-
-error_t
-S_socket_send (struct sock_user *user,
-	       mach_port_t addr, int flags,
-	       char *data, unsigned data_len,
-	       mach_port_t *ports, unsigned num_ports,
-	       char *control, unsigned control_len,
-	       int *amount)
-{
-  if (flags & MSG_OOB)
-    /* BSD local sockets don't support OOB data.  */
-    return EOPNOTSUPP;
-  return EOPNOTSUPP;
-}
-
-error_t
-S_socket_recv (struct sock_user *user,
-	       mach_port_t *addr, int flags,
-	       char **data, unsigned *data_len,
-	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
-	       unsigned *num_ports,
-	       char **control, unsigned *control_len,
-	       int *out_flags, int amount)
-{
-  if (flags & MSG_OOB)
-    /* BSD local sockets don't support OOB data.  */
-    return EOPNOTSUPP;
   return EOPNOTSUPP;
 }
