@@ -127,7 +127,7 @@ mount_root (char *name, char *host)
   free (rpcbuf);
 
   /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
-  addr.sin_port = htons (s->s_port);
+  addr.sin_port = s->s_port;
   connect (main_udp_socket, 
 	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
   p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
