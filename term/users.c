@@ -63,6 +63,10 @@ struct winsize window_size;
 
 static void call_asyncs (void);
 
+static int sigs_in_progress;
+static struct condition input_sig_wait = CONDITION_INITIALIZER;
+static int input_sig_wakeup;
+
 /* Attach this on the hook of any protid that is a ctty. */
 struct protid_hook
 {
@@ -499,6 +503,28 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	{
 	  mutex_unlock (&global_lock);
 	  return EINTR;
+	}
+
+      /* If a signal is being delivered, and we got woken up by
+	 arriving input, then there's a possible race; we have to not
+	 read from the queue as long as the signal is in progress.
+	 Now, you might think that we should not read from the queue
+	 when a signal is in progress even if we didn't block, but
+	 that's not so.  It's specifically that we have to get
+	 *interrupted* by signals in progress (when the signallee is
+	 this thread and wants to interrupt is) that is the race we
+	 are avoiding.  A reader who gets in after the signal begins,
+	 while the signal is in progress, is harmless, because this
+	 case is indiscernable from one where the reader gets in after
+	 the signal has completed.  */
+      if (sigs_in_progress)
+	{
+	  input_sig_wakeup++;
+	  if (hurd_condition_wait (&input_sig_wait, &global_lock))
+	    {
+	      mutex_unlock (&global_lock);
+	      return EINTR;
+	    }
 	}
     }
 
@@ -1729,6 +1755,23 @@ trivfs_S_io_map (struct trivfs_protid *cred,
   return EOPNOTSUPP;
 }
 
+static void
+report_sig_start ()
+{
+  sigs_in_progress++;
+}
+
+static void
+report_sig_end ()
+{
+  sigs_in_progress--;
+  if ((sigs_in_progress == 0) && input_sig_wakeup)
+    {
+      input_sig_wakeup = 0;
+      condition_broadcast (&input_sig_wait);
+    }
+}
+
 /* Call all the scheduled async I/O handlers */
 static void
 call_asyncs ()
@@ -1744,9 +1787,11 @@ call_asyncs ()
   
   if ((termflags & ICKY_ASYNC) && !(termflags & NO_OWNER))
     {
+      report_sig_start ();
       mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, SIGIO, async_icky_id);
       mutex_lock (&global_lock);
+      report_sig_end ();
     }
   
   for (ar = async_requests, prevp = &async_requests;
@@ -1778,9 +1823,11 @@ send_signal (int signo)
       right = ports_get_right (cttyid);
       mach_port_insert_right (mach_task_self (), right, right,
 			      MACH_MSG_TYPE_MAKE_SEND);
+      report_sig_start ();
       mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, signo, right);
       mutex_lock (&global_lock);
+      report_sig_end ();
       mach_port_deallocate (mach_task_self (), right);
     }
 }
