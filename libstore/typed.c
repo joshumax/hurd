@@ -1,6 +1,6 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -21,6 +21,81 @@
 
 #include "store.h"
 #include <string.h>
+#include <dlfcn.h>
+#include <link.h>
+
+
+const struct store_class *
+store_find_class (const char *name, const char *clname_end,
+		  const struct store_class *const *classes)
+{
+  const struct store_class *const *cl;
+
+  if (! clname_end)
+    clname_end = strchr (name, '\0');
+
+  if (classes != 0)
+    {
+      /* The caller gave a class list, so that's is all we'll use.  */
+      for (cl = classes; *cl != 0; ++cl)
+	if (strlen ((*cl)->name) == (clname_end - name)
+	    && !memcmp (name, (*cl)->name, (clname_end - name)))
+	  break;
+      return *cl;
+    }
+
+  /* Check the statically-linked set of classes found in the
+     "store_std_classes" section.  For static linking, this is the section
+     in the program executable itself and it has been populated by the set
+     of -lstore_TYPE pseudo-libraries included in the link.  For dynamic
+     linking with just -lstore, these symbols will be found in libstore.so
+     and have the set statically included when the shared object was built.
+     If a dynamically-linked program has its own "store_std_classes"
+     section, e.g. by -lstore_TYPE objects included in the link, this will
+     be just that section and libstore.so itself is covered below.  */
+# pragma weak __start_store_std_classes
+# pragma weak __stop_store_std_classes
+  for (cl = __start_store_std_classes; cl < __stop_store_std_classes; ++cl)
+    if (strlen ((*cl)->name) == (clname_end - name)
+	&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
+      return *cl;
+
+  /* Now we will iterate through all of the dynamic objects loaded
+     and examine each one's "store_std_classes" section.  */
+# pragma weak _r_debug
+# pragma weak dlsym
+# pragma weak dlerror
+  if (dlsym)
+    {
+      struct link_map *map;
+      for (map = _r_debug.r_map; map != 0; map = map->l_next)
+	{
+	  const struct store_class *const *start;
+	  const struct store_class *const *stop;
+	  start = dlsym (map, "__start_store_std_classes");
+	  if (start == 0)
+	    {
+	      (void) dlerror ();	/* Required to avoid a leak! */
+	      continue;
+	    }
+	  if (start == __start_store_std_classes)
+	    continue;
+	  stop = dlsym (map, "__stop_store_std_classes");
+	  if (stop == 0)
+	    {
+	      (void) dlerror ();	/* Required to avoid a leak! */
+	      continue;
+	    }
+	  for (cl = start; cl < stop; ++cl)
+	    if (strlen ((*cl)->name) == (clname_end - name)
+		&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
+	      return *cl;
+	}
+    }
+
+  return 0;
+}
+
 
 /* Open the store indicated by NAME, which should consist of a store type
    name followed by a ':' and any type-specific name, returning the new store
@@ -35,49 +110,58 @@ store_typed_open (const char *name, int flags,
 		  const struct store_class *const *classes,
 		  struct store **store)
 {
-  const struct store_class *const *cl;
-  const char *clname_end = strchr (name, ':');
+  const struct store_class *cl;
+  const char *clname_end = strchrnul (name, ':');
 
   if (clname_end == name)
     /* Open NAME with store_open.  */
     return store_open (name + 1, flags, classes, store);
 
-  if (! clname_end)
-    clname_end = name + strlen (name);
-
-  if (! classes)
-    classes = store_std_classes;
-  for (cl = classes; *cl; cl++)
-    if (strlen ((*cl)->name) == (clname_end - name)
-	&& strncmp (name, (*cl)->name, (clname_end - name)) == 0)
-      break;
-
-  if (! *cl)
+  /* Try to find an existing class by the given name.  */
+  cl = store_find_class (name, clname_end, classes);
+  if (cl != 0)
     {
-      /* No class with the given name found.  */
+      if (! cl->open)
+	/* CL cannot be opened.  */
+	return EOPNOTSUPP;
+
       if (*clname_end)
-	/* NAME really should be a class name, which doesn't exist.  */
-	return EINVAL;
-      else
-	/* Try opening NAME by querying it as a file instead.  */
-	return store_open (name, flags, classes, store);
+	/* Skip the ':' separating the class-name from the device name.  */
+	clname_end++;
+
+      if (! *clname_end)
+	/* The class-specific portion of the name is empty, so make it *really*
+	   empty.  */
+	clname_end = 0;
+
+      return (*cl->open) (clname_end, flags, classes, store);
     }
 
-  if (! (*cl)->open)
-    /* CL cannot be opened.  */
-    return EOPNOTSUPP;
+  /* Try to open a store by loading a module to define the class, if we
+     have the module-loading support linked in.  We don't just use
+     store_module_find_class, because store_module_open will unload the new
+     module if the open doesn't succeed and we have no other way to unload
+     it.  We always leave modules loaded once a store from the module has
+     been successfully opened and so can leave unbounded numbers of old
+     modules loaded after closing all the stores using them.  But at least
+     we can avoid having modules loaded for stores we never even opened.  */
+# pragma weak store_module_open
+  if (store_module_open)
+    {
+      error_t err = store_module_open (name, flags, classes, store);
+      if (err != ENOENT)
+	return err;
+    }
 
+  /* No class with the given name found.  */
   if (*clname_end)
-    /* Skip the ':' separating the class-name from the device name.  */
-    clname_end++;
-
-  if (! *clname_end)
-    /* The class-specific portion of the name is empty, so make it *really*
-       empty.  */
-    clname_end = 0;
-
-  return (*(*cl)->open) (clname_end, flags, classes, store);
+    /* NAME really should be a class name, which doesn't exist.  */
+    return EINVAL;
+  else
+    /* Try opening NAME by querying it as a file instead.  */
+    return store_open (name, flags, classes, store);
 }
 
 const struct store_class
 store_typed_open_class = { -1, "typed", open: store_typed_open };
+STORE_STD_CLASS (typed_open);
