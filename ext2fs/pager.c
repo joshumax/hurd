@@ -101,8 +101,11 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	    /* First read, make the returned page be our buffer.  */
 	    *buf = new_buf;
 	  else
-	    /* We've already got some buffer, so copy into it.  */
-	    bcopy ((char *)*buf + offs, (char *)new_buf, length);
+	    {
+	      /* We've already got some buffer, so copy into it.  */
+	      bcopy ((char *)new_buf, (char *)*buf + offs, length);
+	      vm_deallocate (mach_task_self (), new_buf, length);
+	    }
 
 	  offs += length;
 	  num_pending_blocks = 0;
