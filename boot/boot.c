@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <stdio.h>
 #include <cthreads.h>
+#include <varargs.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -40,6 +41,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "device_reply_U.h"
 #include "io_reply_U.h"
 #include "term_S.h"
+#include "bootstrap_S.h"
 /* #include "tioctl_S.h" */
 
 #include <hurd/auth.h>
@@ -76,6 +78,8 @@ char *bootdevice = DEFAULT_BOOTDEVICE;
 /* We can't include <unistd.h> for this, because that will fight witho
    our definitions of syscalls below. */
 int syscall (int, ...);
+
+void set_mach_stack_args ();
 
 /* These will prevent the Hurd-ish versions from being used */
 
@@ -219,10 +223,11 @@ request_server (mach_msg_header_t *inp,
   extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
 /*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
   extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern void bootstrap_compat ();
   
   if (inp->msgh_local_port == bootport && boot_like_cmudef)
     {
-      if (in->msgh_id == 999999)
+      if (inp->msgh_id == 999999)
 	{
 	  bootstrap_compat (inp, outp);
 	  return 1;
@@ -404,11 +409,11 @@ main (int argc, char **argv, char **envp)
 			 &fs_stack_size);
   else if (boot_like_kernel) 
     set_mach_stack_args (newtask, newthread, (char *)startpc,
-			 "[BOOTSTRAP fs]", bootstrap_flags, php_child_name,
+			 "[BOOTSTRAP fs]", bootstrap_args, php_child_name,
 			 psmdp_child_name, bootdevice, 0);
   else
     set_mach_stack_args (newtask, newthread, (char *)startpc,
-			 "[BOOTSTRAP fs]", bootstrap_flags,
+			 "[BOOTSTRAP fs]", bootstrap_args,
 			 bootdevice, "/", 0);
 
   thread_create (newtask, &newthread);
@@ -433,10 +438,14 @@ main (int argc, char **argv, char **envp)
 
 /* Set up stack args the Mach way */
 void
-set_mach_stack_args (task_t user_task,
-		     thread_t user_thread,
-		     char *startpc,
+set_mach_stack_args (user_task,
+		     user_thread,
+		     startpc,
 		     va_alist)
+     task_t user_task;
+     thread_t user_thread;
+     char *startpc;
+     va_dcl
 {
   /* This code is lifted from .../mk/bootstrap/load.c. */
   va_list			argv_ptr;
@@ -480,11 +489,13 @@ set_mach_stack_args (task_t user_task,
 	struct i386_thread_state	regs;
 	unsigned int		reg_size;
 
+#define STACK_SIZE (1024 * 1024 * 16)
+
 	/*
 	 * Add space for 5 ints to arguments, for
 	 * PS program. XXX
 	 */
-	arg_size += 5 * sizeof(int);
+	arg_len += 5 * sizeof(int);
 
 	/*
 	 * Allocate stack.
@@ -503,7 +514,7 @@ set_mach_stack_args (task_t user_task,
 				&reg_size);
 
 	regs.eip = startpc;
-	regs.uesp = (int)((stack_end - arg_size) & ~(sizeof(int)-1));
+	regs.uesp = (int)((stack_end - arg_len) & ~(sizeof(int)-1));
 
 	(void)thread_set_state(user_thread,
 				i386_THREAD_STATE,
@@ -548,12 +559,10 @@ set_mach_stack_args (task_t user_task,
 	    arg_page_size = (vm_size_t)(round_page(u_arg_start + arg_len)
 					- u_arg_page_start);
 
-	    result = vm_allocate(mach_task_self(),
+	    vm_allocate(mach_task_self(),
 				 &k_arg_page_start,
 				 (vm_size_t)arg_page_size,
 				 TRUE);
-	    if (result)
-		panic("boot_load_program: arg size");
 
 	    /*
 	     * Set up addresses corresponding to user pointers
@@ -797,7 +806,7 @@ bootstrap_compat(in, out)
 		      sizeof imsg, 0, MACH_PORT_NULL,
 		      MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
 	if (mr != MACH_MSG_SUCCESS)
-		(void) mach_port_deallocate(default_pager_self,
+		(void) mach_port_deallocate(mach_task_self (),
 					    imsg.hdr.msgh_remote_port);
 
 	/*
