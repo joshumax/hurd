@@ -20,6 +20,7 @@
 
 #include <asm/system.h>
 #include <linux/sched.h>
+#include "pfinet.h"
 
 struct mutex global_lock = MUTEX_INITIALIZER;
 
