@@ -26,10 +26,10 @@
 #include <grp.h>
 #include <pwd.h>
 #include <shadow.h>
+#include <crypt.h>
 
 #define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
 
-extern char *crypt (const char *string, const char salt[2]);
 #pragma weak crypt
 
 static error_t verify_id (); /* FWD */
