@@ -37,7 +37,8 @@ _diskfs_rdwr_internal (struct node *np,
   int winoff;
   volatile int cc;
   memory_object_t memobj;
-  vm_prot_t prot = dir ? (VM_PROT_READ | VM_PROT_WRITE) : VM_PROT_READ;
+  volatile vm_prot_t prot 
+    = dir ? (VM_PROT_READ | VM_PROT_WRITE) : VM_PROT_READ;
   error_t err = 0;
 
   if (dir)
