@@ -120,12 +120,6 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   if (namelen > MAXNAMLEN)
     return ENAMETOOLONG;
   
-  if (!S_ISDIR (dp->dn_stat.st_mode))
-    return ENOTDIR;
-  err = diskfs_access (dp, S_IEXEC, cred);
-  if (err)
-    return err;
-  
  try_again:
   if (ds)
     {
