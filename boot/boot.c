@@ -552,7 +552,8 @@ S_io_read (mach_port_t object,
   
   if (amount > *datalen)
     vm_allocate (mach_task_self (), amount, data, 1);
-  return read (0, *data, amount) == -1 ? errno : 0;
+  *datalen = read (0, *data, amount);
+  return *datalen < 0 ? errno : 0;
 }
 
 error_t 
