@@ -23,7 +23,7 @@ COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
 	 no-senders.o object-init.o object-terminate.o pagemap.o \
 	 pager-create.o pager-flush.o pager-shutdown.o pager-sync.o \
 	 stubs.o seqnos.o demuxer.o chg-compl.o pager-attr.o clean.o \
-	dropweak.o notify-stubs.o
+	dropweak.o notify-stubs.o get-upi.o
 OBJS = $(COBJS) memory_objectServer.o notifyServer.o
 SRCS = $(subst .o,.c,$(COBJS))
 LCLHDRS = pager.h priv.h
