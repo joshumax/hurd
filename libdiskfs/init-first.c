@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1997 Free Software Foundation
+   Copyright (C) 1994,95,97,2001 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include <stdlib.h>
 
 static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
@@ -30,7 +31,7 @@ master_thread_function (any_t foo __attribute__ ((unused)))
 {
   error_t err;
 
-  do 
+  do
     {
       ports_manage_port_operations_multithread (diskfs_port_bucket,
 						diskfs_demuxer,
@@ -40,8 +41,10 @@ master_thread_function (any_t foo __attribute__ ((unused)))
       err = diskfs_shutdown (0);
     }
   while (err);
-  
+
   exit (0);
+  /* NOTREACHED */
+  return (any_t) 0;
 }
 
 void
