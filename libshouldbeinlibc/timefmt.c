@@ -282,7 +282,7 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
 	       size_t width, char *buf, size_t buf_len)
 {
   static char *time_fmts[] = { "%-r", "%-l:%M%p", "%-l%p", 0 };
-  static char *week_fmts[] = { "%A,", "%a,", "%a", 0 };
+  static char *week_fmts[] = { "%A", "%a", 0 };
   static char *month_fmts[] = { "%A, %-d", "%a, %-d", "%a %-d", "%a%-d", 0 };
   static char *date_fmts[] =
     { "%A, %-d %B", "%a, %-d %b", "%-d %B", "%-d %b", "%-d%b", 0 };
@@ -313,7 +313,8 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
     }
   else
     {
-      char **fmt, **dfmt, **dfmts;
+      static char *seps[] = { ", ", " ", "" };
+      char **fmt, **dfmt, **dfmts, **sep;
 
       if (diff < WEEK)
 	dfmts = week_fmts;
@@ -324,20 +325,22 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
       else
 	dfmts = year_fmts;
 
+      /* This ordering (date varying most quickly, then the separator, then
+	 the time) preserves time detail as long as possible, and seems to
+	 produce a graceful degradation of the result with decreasing widths. */
       for (fmt = time_fmts; *fmt && !used; fmt++)
-	{
+	for (sep = seps; *sep && !used; sep++)
 	  for (dfmt = dfmts; *dfmt && !used; dfmt++)
 	    {
-	      char whole_fmt[strlen (*dfmt) + 1 + strlen (*fmt) + 1];
+	      char whole_fmt[strlen (*dfmt) + strlen (*sep) + strlen (*fmt) + 1];
 	      char *end = whole_fmt;
 
 	      end = stpcpy (end, *dfmt);
-	      *end++ = ' ';
+	      end = stpcpy (end, *sep);
 	      end = stpcpy (end, *fmt);
 	      
 	      used = strftime (buf, width, whole_fmt, &tm);
 	    }
-	}
 
       if (! used)
 	/* No concatenated formats worked, try just date formats.  */
