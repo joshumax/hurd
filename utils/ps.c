@@ -61,6 +61,7 @@ usage(status)
       --login[=LID]          Add the processes from the login collection LID\n\
                              (which defaults that of the current process)\n\
   -M, --no-msg-port          Don't show info that uses a process's msg port\n\
+  -n, --nominal-fields       Don't elide fields containing `uninteresting' data\n\
   -oUSER, --owner=USER       Show processes owned by USER\n\
   -pPID, --pid=PID           List the process PID\n\
       --pgrp=PGRP            List processes in the process group PGRP\n\
@@ -76,6 +77,7 @@ usage(status)
   -tTTY, --tty=TTY           Only show processes who's controlling tty is TTY\n\
   -u                         Use the `user' output-format\n\
   -v                         Use the `vmem' output-format\n\
+  -w			     (ignored)\n\
   -x                         Include orphaned processes\n\
 \n\
 The USER, LID, PID, PGRP, and SID arguments may also be comma separated lists.\n\
@@ -142,7 +144,7 @@ char *procset_names[] =
 #define OPT_HELP	-6
 #define OPT_PGRP	-7
 
-#define SHORT_OPTIONS "adefgHjlMo:p:PQrt::suvx"
+#define SHORT_OPTIONS "adefgHjlMno:p:PQrst::uvwx"
 
 static struct option options[] =
 {
@@ -157,6 +159,7 @@ static struct option options[] =
   {"no-msg-port", no_argument, 0, 'M'},
   {"no-squash", no_argument, 0, 'Q'},
   {"no-parent", no_argument, 0, 'P'},
+  {"nominal-fields", no_argument, 0, 'n'},
   {"owner", required_argument, 0, 'o'},
   {"pgrp", required_argument, 0, OPT_PGRP},
   {"session", optional_argument, 0, OPT_SESSION},
@@ -351,7 +354,8 @@ main(int argc, char *argv[])
   char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
     FILTER_OWNER | FILTER_NSESSLDR | FILTER_UNORPHANED | FILTER_PARENTED;
-  bool sort_reverse = FALSE, print_heading = TRUE, squash_bogus_fields = TRUE;
+  bool sort_reverse = FALSE, print_heading = TRUE;
+  bool squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
   bool show_threads = FALSE, no_msg_port = FALSE;
 
   /* Add a specific process to be printed out.  */
@@ -520,7 +524,9 @@ main(int argc, char *argv[])
       case 'H':
 	print_heading = FALSE; break;
       case 'Q':
-	squash_bogus_fields = FALSE; break;
+	squash_bogus_fields = squash_nominal_fields = FALSE; break;
+      case 'n':
+	squash_nominal_fields = FALSE; break;
       case 's':
 	show_threads = TRUE; break;
       case OPT_FMT:
@@ -544,6 +550,10 @@ main(int argc, char *argv[])
 	break;
       case OPT_PGRP:
 	parse_numlist(optarg, add_pgrp, NULL, NULL, "process group");
+	break;
+
+      case 'w':
+	/* Ignored; just here to make BSD users less unhappy.  */
 	break;
 
       case OPT_HELP:
@@ -649,7 +659,17 @@ main(int argc, char *argv[])
       if (err)
 	error(0, err, "Couldn't remove bogus fields");
       else
-	ps_fmt_squash(fmt, bogus_flags);
+	ps_fmt_squash_flags (fmt, bogus_flags);
+    }
+
+  if (squash_nominal_fields)
+    /* Remove any fields that contain only `uninteresting' information.  */
+    {
+      bool nominal (ps_fmt_spec_t spec)
+	{
+	  return proc_stat_list_spec_nominal (procset, spec);
+	}
+      ps_fmt_squash (fmt, nominal);
     }
 
   if (print_heading)
