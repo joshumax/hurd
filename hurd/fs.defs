@@ -118,6 +118,23 @@ routine file_lock_stat (
 	out mystatus: int;
 	out otherstatus: int);
 
+/* Find out what kind of access this file permits the current user
+   (regardless of the current open modes for this port).  ALLOWED is a
+   bitwise OR of O_READ, O_WRITE, and O_EXEC.  This is not necessarily the
+   same as what an open or exec would allow; O_EXEC is set for root even if
+   no executable bits are on (in which case file_exec should fail) and
+   O_WRITE is set a directory can be modified, even though it can't be
+   written directly.  */
+routine file_check_access (
+	file: file_t;
+	out allowed: int);
+
+/* Notice changes to file FILE.  Send notification messages (see
+   msg.defs) to PORT as they occur. */
+routine file_notice_changes (
+	file: file_t;
+	port: mach_port_send_t);
+
 /* Return control port for this filesystem */
 routine file_getcontrol (
 	file: file_t;
@@ -184,21 +201,21 @@ routine dir_pathtrans (
 	out retry_name: string_t;
 	out result: mach_port_send_t);
 
-/* Read dir entries from the directory.  Amount must be a multiple of
-   the block size of the file as returned by stat.  Offset should
-   either be zero or the value of nextoffset from a previous call to
-   dir_readdir for this file.  The retured data is an array of struct
-   direct's.  There is no necessary connection between the data
-   retured by dir_readdir and io_read on the same port.  However,
-   io_read generally returns information in some filesystem-specific
-   "raw format", possibly including more information than just
-   directory entries.  */
+/* Read entries from the directory.  Each entry is identified
+   by an index number starting at 0 and running through the file.  This
+   call fetches NENTRIES (or any convenient number if NENTRIES is -1)
+   entries starting at ENTRY, returning an array of struct directs in DATA.
+   The number of entries successfully read is returned in AMOUNT.  If ENTRY
+   is bigger than the index of the last entry, then 0 is returned in
+   AMOUNT.  If BUFSIZE is nonzero, never return more than BUFSIZE bytes of
+   data regardless.  */
 routine dir_readdir (
 	dir: file_t;
 	out data: data_t;
-	offset: off_t;
-	out nextoffset: off_t;
-	amount: int);
+	entry: int;
+	nentries: int;
+	bufsiz: vm_size_t;
+	out amount: int);
 
 /* Create directory */
 /* INTR */
@@ -252,6 +269,12 @@ routine dir_mkfile (
 	mode: mode_t;
 	out newnode: mach_port_send_t);
 
+/* Notice changes to directory DIR.  Send directory change notifications
+   (see msg.defs) to PORT as they occur.  */
+routine dir_notice_changes (
+	directory: file_t;
+	port: mach_port_send_t);
+
 /* To get or set the translator currently running on a file, use
    file_set_translator, file_get_translator, or
    file_get_translator_cntl on a port gotten with the
@@ -292,5 +315,5 @@ routine file_get_translator (
 /* INTR */
 routine file_get_translator_cntl (
 	file: file_t;
-	out translator_cntl: mach_port_send_t);
+	out translator_cntl: fsys_t);
 
