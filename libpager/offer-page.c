@@ -30,8 +30,8 @@ pager_offer_page (struct pager *p,
 {
   char *pm_entry;
   
-  /* The caller expects this to get written back, but if the page is 
-     currently resident then our request will get ignored, so flush it
+  /* The caller expects this to get written back, then our request
+     will get ignored and the precious bit won't get set, so flush it
      first */
   if (precious)
     {
