@@ -1,5 +1,5 @@
 /* Implementation of memory_object_terminate for pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,6 +32,9 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
+
+  mutex_lock (&p->interlock);
+  _pager_wait_for_seqno (p, seqno);
   
   if (control != p->memobjcntl)
     {
@@ -43,10 +46,6 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
       printf ("incg terminate: wrong name port");
       goto out;
     }
-
-  mutex_lock (&p->interlock);
-
-  _pager_wait_for_seqno (p, seqno);
 
   while (p->noterm)
     {
@@ -71,11 +70,11 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
     }
 #endif
 
+ out:
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
-
- out:
   ports_port_deref (p);
+
   return 0;
 }
 
