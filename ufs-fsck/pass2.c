@@ -146,7 +146,7 @@ pass2 ()
 
 	  /* Check TYPE */
 	  type = DIRECT_TYPE (dp);
-	  if (type != DT_UNKNOWN && type == typemap[dp->d_ino])
+	  if (type != DT_UNKNOWN && type != typemap[dp->d_ino])
 	    {
 	      problem (0, "INCORRECT NODE TYPE IN DIRECTORY");
 	      if (preen || reply ("CLEAR"))
