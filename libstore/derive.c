@@ -68,15 +68,17 @@ _store_derive (struct store *store)
 
   store->size = store->end * bsize;
 
-  /* LOG2_BLOCK_SIZE */
   store->log2_block_size = 0;
-  while ((1 << store->log2_block_size) < bsize)
-    store->log2_block_size++;
-  assert ((1 << store->log2_block_size) == bsize);
-
-  /* LOG2_BLOCKS_PER_PAGE */
   store->log2_blocks_per_page = 0;
-  while ((bsize << store->log2_blocks_per_page) < vm_page_size)
-    store->log2_blocks_per_page++;
-  assert ((bsize << store->log2_blocks_per_page) == vm_page_size);
+
+  if (bsize != 0)
+    {
+      while ((1 << store->log2_block_size) < bsize)
+	store->log2_block_size++;
+      assert ((1 << store->log2_block_size) == bsize);
+
+      while ((bsize << store->log2_blocks_per_page) < vm_page_size)
+	store->log2_blocks_per_page++;
+      assert ((bsize << store->log2_blocks_per_page) == vm_page_size);
+    }
 }
