@@ -111,6 +111,8 @@ find_char (char ch, char *beg, char *end)
   return 0;
 }
 
+struct hol_cluster;		/* fwd decl */
+
 struct hol_entry
 {
   /* First option.  */
@@ -130,23 +132,59 @@ struct hol_entry
        1, 2, ..., n, 0, -m, ..., -2, -1
      and then alphabetically within each group.  The default is 0.  */
   int group;
+
+  /* The cluster of options this entry belongs to, or 0 if none.  */
+  struct hol_cluster *cluster;
+};
+
+/* A cluster of entries to reflect the argp tree structure.  */
+struct hol_cluster
+{
+  /* A descriptive header printed before options in this cluster.  */
+  const char *header;
+
+  /* Used to order clusters within the same group with the same parent,
+     according to the order in which they occured in the parent argp's child
+     list.  */
+  int index;
+
+  /* How to sort this cluster with respect to options and other clusters at the
+     same depth (clusters always follow options in the same group).  */
+  int group;
+
+  /* The cluster to which this cluster belongs, or 0 if it's at the base
+     level.  */
+  struct hol_cluster *parent;
+
+  /* The distance this cluster is from the root.  */
+  int depth;
+
+  /* Clusters in a given hol are kept in a linked list, to make freeing them
+     possible.  */
+  struct hol_cluster *next;
 };
 
 /* A list of options for help.  */
 struct hol
 {
+  /* An array of hol_entry's.  */
+  struct hol_entry *entries;
   /* The number of entries in this hol.  If this field is zero, the others
      are undefined.  */
   unsigned num_entries;
-  /* An array of hol_entry's.  */
-  struct hol_entry *entries;
+
   /* A string containing all short options in this HOL.  Each entry contains
      pointers into this string, so the order can't be messed with blindly.  */
   char *short_options;
+
+  /* Clusters of entries in this hol.  */
+  struct hol_cluster *clusters;
 };
 
-/* Create a struct hol from an array of struct argp_option.  */
-struct hol *make_hol (const struct argp_option *opt)
+/* Create a struct hol from an array of struct argp_option.  CLUSTER is the
+   hol_cluster in which these entries occur, or 0, if at the root.  */
+struct hol *make_hol (const struct argp_option *opt,
+		      struct hol_cluster *cluster)
 {
   char *so;
   const struct argp_option *o;
@@ -187,6 +225,7 @@ struct hol *make_hol (const struct argp_option *opt)
 	  entry->num = 0;
 	  entry->short_options = so;
 	  entry->group = cur_group = o->group ?: cur_group;
+	  entry->cluster = cluster;
 
 	  do
 	    {
@@ -203,16 +242,48 @@ struct hol *make_hol (const struct argp_option *opt)
 
   return hol;
 }
+
+/* Add a new cluster to HOL, with the given GROUP and HEADER (taken from the
+   associated argp child list entry), INDEX, and PARENT, and return a pointer
+   to it.  */
+static struct hol_cluster *
+hol_add_cluster (struct hol *hol, int group, const char *header, int index,
+		 struct hol_cluster *parent)
+{
+  struct hol_cluster *cl = malloc (sizeof (struct hol_cluster));
+  if (cl)
+    {
+      cl->group = group;
+      cl->header = header;
 
+      cl->index = index;
+      cl->parent = parent;
+
+      cl->next = hol->clusters;
+      hol->clusters = cl;
+    }
+  return cl;
+}
+
 /* Free HOL and any resources it uses.  */
 static void
 hol_free (struct hol *hol)
 {
+  struct hol_cluster *cl = hol->clusters;
+
+  while (cl)
+    {
+      struct hol_cluster *next = cl->next;
+      free (cl);
+      cl = next;
+    }
+
   if (hol->num_entries > 0)
     {
       free (hol->entries);
       free (hol->short_options);
     }
+
   free (hol);
 }
 
@@ -317,6 +388,115 @@ hol_set_group (struct hol *hol, char *name, int group)
   if (entry)
     entry->group = group;
 }
+
+/* Order by group:  1, 2, ..., n, 0, -m, ..., -2, -1.
+   EQ is what to return if GROUP1 and GROUP2 are the same.  */
+static int
+group_cmp (int group1, int group2, int eq)
+{
+  if (group1 == group2)
+    return eq;
+  else if ((group1 < 0 && group2 < 0) || (group1 > 0 && group2 > 0))
+    return group1 - group2;
+  else
+    return group2 - group1;
+}
+
+/* Compare clusters CL1 & CL2 by the order that they should appear in
+   output.  */
+static int
+hol_cluster_cmp (const struct hol_cluster *cl1, const struct hol_cluster *cl2)
+{
+  /* If one cluster is deeper than the other, use its ancestor at the same
+     level, so that finding the common ancestor is straightforward.  */
+  while (cl1->depth < cl2->depth)
+    cl1 = cl1->parent;
+  while (cl2->depth < cl1->depth)
+    cl2 = cl2->parent;
+
+  /* Now reduce both clusters to their ancestors at the point where both have
+     a common parent; these can be directly compared.  */
+  while (cl1->parent != cl2->parent)
+    cl1 = cl1->parent, cl2 = cl2->parent;
+
+  return group_cmp (cl1->group, cl2->group, cl2->index - cl1->index);
+}
+
+/* Return the ancestor of CL that's just below the root (i.e., has a parent
+   of 0).  */
+static struct hol_cluster *
+hol_cluster_base (struct hol_cluster *cl)
+{
+  while (cl->parent)
+    cl = cl->parent;
+  return cl;
+}
+
+/* Return true if CL1 is a child of CL2.  */
+static int
+hol_cluster_is_child (const struct hol_cluster *cl1,
+		      const struct hol_cluster *cl2)
+{
+  while (cl1 && cl1 != cl2)
+    cl1 = cl1->parent;
+  return cl1 == cl2;
+}
+
+/* Order ENTRY1 & ENTRY2 by the order which they should appear in a help
+   listing.  */
+static int
+hol_entry_cmp (const struct hol_entry *entry1, const struct hol_entry *entry2)
+{
+  /* The group numbers by which the entries should be ordered; if either is
+     in a cluster, then this is just the group within the cluster.  */
+  int group1 = entry1->group, group2 = entry2->group;
+
+  if (entry1->cluster != entry2->cluster)
+    /* The entries are not within the same cluster, so we can't compare them
+       directly, we have to use the appropiate clustering level too.  */
+    if (! entry1->cluster)
+      /* ENTRY1 is at the `base level', not in a cluster, so we have to
+	 compare it's group number with that of the base cluster in which
+	 ENTRY2 resides.  Note that if they're in the same group, the
+	 clustered option always comes laster.  */
+      return group_cmp (group1, hol_cluster_base (entry2->cluster)->group, -1);
+    else if (! entry2->cluster)
+      /* Likewise, but ENTRY2's not in a cluster.  */
+      return group_cmp (hol_cluster_base (entry1->cluster)->group, group2, 1);
+    else
+      /* Both entries are in clusters, we can just compare the clusters.  */
+      return hol_cluster_cmp (entry1->cluster, entry2->cluster);
+  else if (group1 == group2)
+    /* The entries are both in the same cluster and group, so compare them
+       alphabetically.  */
+    {
+      int short1 = hol_entry_first_short (entry1);
+      int short2 = hol_entry_first_short (entry2);
+      const char *long1 = hol_entry_first_long (entry1);
+      const char *long2 = hol_entry_first_long (entry2);
+
+      if (!short1 && !short2 && long1 && long2)
+	/* Only long options.  */
+	return strcasecmp (long1, long2);
+      else
+	/* Compare short/short, long/short, short/long, using the first
+	   character of long options.  Entries without *any* valid
+	   options (such as options with OPTION_HIDDEN set) will be put
+	   first, but as they're not displayed, it doesn't matter where
+	   they are.  */
+	{
+	  char first1 = short1 ?: long1 ? *long1 : 0;
+	  char first2 = short2 ?: long2 ? *long2 : 0;
+	  /* Compare ignoring case, except when the options are both the
+	     same letter, in which case lower-case always comes first.  */
+	  return (tolower (first1) - tolower (first2)) ?: first2 - first1;
+	}
+    }
+  else
+    /* Within the same cluster, but not the same group, so just compare
+       groups.  */
+    return group_cmp (group1, group2, 0);
+}
 
 /* Sort HOL by group and alphabetically by option name (with short options
    taking precedence over long).  Since the sorting is for display purposes
@@ -324,47 +504,12 @@ hol_set_group (struct hol *hol, char *name, int group)
 static void
 hol_sort (struct hol *hol)
 {
-  int entry_cmp (const void *entry1_v, const void *entry2_v)
+  int cmp (const void *entry1_v, const void *entry2_v)
     {
-      const struct hol_entry *entry1 = entry1_v, *entry2 = entry2_v;
-      int group1 = entry1->group, group2 = entry2->group;
-
-      if (group1 == group2)
-	/* Normal comparison.  */
-	{
-	  int short1 = hol_entry_first_short (entry1);
-	  int short2 = hol_entry_first_short (entry2);
-	  const char *long1 = hol_entry_first_long (entry1);
-	  const char *long2 = hol_entry_first_long (entry2);
-
-	  if (!short1 && !short2 && long1 && long2)
-	    /* Only long options.  */
-	    return strcasecmp (long1, long2);
-	  else
-	    /* Compare short/short, long/short, short/long, using the first
-	       character of long options.  Entries without *any* valid
-	       options (such as options with OPTION_HIDDEN set) will be put
-	       first, but as they're not displayed, it doesn't matter where
-	       they are.  */
-	    {
-	      char first1 = short1 ?: long1 ? *long1 : 0;
-	      char first2 = short2 ?: long2 ? *long2 : 0;
-	      /* Compare ignoring case, except when the options are both the
-		 same letter, in which case lower-case always comes first.  */
-	      return (tolower (first1) - tolower (first2)) ?: first2 - first1;
-	    }
-	}
-      else
-	/* Order by group:  1, 2, ..., n, 0, -m, ..., -2, -1  */
-	if ((group1 < 0 && group2 < 0) || (group1 > 0 && group2 > 0))
-	  return group1 - group2;
-	else
-	  return group2 - group1;
+      return hol_entry_cmp (entry1_v, entry2_v);
     }
-
   if (hol->num_entries > 0)
-    qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry),
-	   entry_cmp);
+    qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry), cmp);
 }
 
 /* Append MORE to HOL, destroying MORE in the process.  Options in HOL shadow
@@ -372,78 +517,85 @@ hol_sort (struct hol *hol)
 static void
 hol_append (struct hol *hol, struct hol *more)
 {
-  if (more->num_entries == 0)
-    hol_free (more);
-  else if (hol->num_entries == 0)
-    {
-      hol->num_entries = more->num_entries;
-      hol->entries = more->entries;
-      hol->short_options = more->short_options;
-      /* We've stolen everything MORE from more.  Destroy the empty shell. */
-      free (more);		
-    }
-  else
-    /* append the entries in MORE to those in HOL, taking care to only add
-       non-shadowed SHORT_OPTIONS values.  */
-    {
-      unsigned left;
-      char *so, *more_so;
-      struct hol_entry *e;
-      unsigned num_entries = hol->num_entries + more->num_entries;
-      struct hol_entry *entries =
-	malloc (num_entries * sizeof (struct hol_entry));
-      unsigned hol_so_len = strlen (hol->short_options);
-      char *short_options =
-	malloc (hol_so_len + strlen (more->short_options) + 1);
+  struct hol_cluster **cl_end = &hol->clusters;
 
-      bcopy (hol->entries, entries,
-	     hol->num_entries * sizeof (struct hol_entry));
-      bcopy (more->entries, entries + hol->num_entries,
-	     more->num_entries * sizeof (struct hol_entry));
+  /* Steal MORE's cluster list, and add it to the end of HOL's.  */
+  while (*cl_end)
+    cl_end = &(*cl_end)->next;
+  *cl_end = more->clusters;
+  more->clusters = 0;
 
-      bcopy (hol->short_options, short_options, hol_so_len);
+  /* Merge entries.  */
+  if (more->num_entries > 0)
+    if (hol->num_entries == 0)
+      {
+	hol->num_entries = more->num_entries;
+	hol->entries = more->entries;
+	hol->short_options = more->short_options;
+	more->num_entries = 0;	/* Mark MORE's fields as invalid.  */
+      }
+    else
+      /* append the entries in MORE to those in HOL, taking care to only add
+	 non-shadowed SHORT_OPTIONS values.  */
+      {
+	unsigned left;
+	char *so, *more_so;
+	struct hol_entry *e;
+	unsigned num_entries = hol->num_entries + more->num_entries;
+	struct hol_entry *entries =
+	  malloc (num_entries * sizeof (struct hol_entry));
+	unsigned hol_so_len = strlen (hol->short_options);
+	char *short_options =
+	  malloc (hol_so_len + strlen (more->short_options) + 1);
 
-      /* Fix up the short options pointers from HOL.  */
-      for (e = entries, left = hol->num_entries; left > 0; e++, left--)
-	e->short_options += (short_options - hol->short_options);
+	bcopy (hol->entries, entries,
+	       hol->num_entries * sizeof (struct hol_entry));
+	bcopy (more->entries, entries + hol->num_entries,
+	       more->num_entries * sizeof (struct hol_entry));
 
-      /* Now add the short options from MORE, fixing up its entries too.  */
-      so = short_options + hol_so_len;
-      more_so = more->short_options;
-      for (left = more->num_entries; left > 0; e++, left--)
-	{
-	  int opts_left;
-	  const struct argp_option *opt;
+	bcopy (hol->short_options, short_options, hol_so_len);
 
-	  e->short_options = so;
+	/* Fix up the short options pointers from HOL.  */
+	for (e = entries, left = hol->num_entries; left > 0; e++, left--)
+	  e->short_options += (short_options - hol->short_options);
 
-	  for (opts_left = e->num, opt = e->opt; opts_left; opt++, opts_left--)
-	    {
-	      int ch = *more_so;
-	      if (oshort (opt) && ch == opt->key)
-		/* The next short option in MORE_SO, CH, is from OPT.  */
-		{
-		  if (! find_char (ch,
-				   short_options, short_options + hol_so_len))
-		    /* The short option CH isn't shadowed by HOL's options,
-		       so add it to the sum.  */
-		    *so++ = ch;
-		  more_so++;
-		}
-	    }
-	}
+	/* Now add the short options from MORE, fixing up its entries too.  */
+	so = short_options + hol_so_len;
+	more_so = more->short_options;
+	for (left = more->num_entries; left > 0; e++, left--)
+	  {
+	    int opts_left;
+	    const struct argp_option *opt;
 
-      *so = '\0';
+	    e->short_options = so;
 
-      free (hol->entries);
-      free (hol->short_options);
+	    for (opts_left = e->num, opt = e->opt; opts_left; opt++, opts_left--)
+	      {
+		int ch = *more_so;
+		if (oshort (opt) && ch == opt->key)
+		  /* The next short option in MORE_SO, CH, is from OPT.  */
+		  {
+		    if (! find_char (ch,
+				     short_options, short_options + hol_so_len))
+		      /* The short option CH isn't shadowed by HOL's options,
+			 so add it to the sum.  */
+		      *so++ = ch;
+		    more_so++;
+		  }
+	      }
+	  }
 
-      hol->entries = entries;
-      hol->num_entries = num_entries;
-      hol->short_options = short_options;
+	*so = '\0';
 
-      hol_free (more);
-    }
+	free (hol->entries);
+	free (hol->short_options);
+
+	hol->entries = entries;
+	hol->num_entries = num_entries;
+	hol->short_options = short_options;
+      }
+
+  hol_free (more);
 }
 
 /* Inserts enough spaces to make sure STREAM is at column COL.  */
@@ -455,7 +607,7 @@ indent_to (FILE *stream, unsigned col)
     putc (' ', stream);
 }
 
-/* Print help for ENTRY to STREAM.  *LAST_ENTRY should contain the last entry
+/* Print help for ENTRY to STREAM.  *PREV_ENTRY should contain the last entry
    printed before this, or null if it's the first, and if ENTRY is in a
    different group, and *SEP_GROUPS is true, then a blank line will be
    printed before any output.  *SEP_GROUPS is also set to true if a
@@ -467,9 +619,31 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
   unsigned num;
   int first = 1;		/* True if nothing's been printed so far.  */
   const struct argp_option *real = entry->opt, *opt;
+  const struct hol_entry *pe = prev_entry ? *prev_entry : 0;
+  const struct hol_cluster *cl = entry->cluster;
   char *so = entry->short_options;
   int old_lm = line_wrap_set_lmargin (stream, 0);
-  int old_wm = line_wrap_set_wmargin (stream, 0);
+  int old_wm = line_wrap_wmargin (stream);
+
+  /* Prints STR as a header line, with the margin lines set appropiately, and
+     notes the fact that groups should be separated with a blank line.  Note
+     that the previous wrap margin isn't restored, but the left margin is reset
+     to 0.  */
+  void print_header (const char *str)
+    {
+      if (*str)
+	{
+	  if (pe)
+	    putc ('\n', stream); /* Precede with a blank line.  */
+	  indent_to (stream, HEADER_COL);
+	  line_wrap_set_lmargin (stream, HEADER_COL);
+	  line_wrap_set_wmargin (stream, HEADER_COL);
+	  fputs (str, stream);
+	  line_wrap_set_lmargin (stream, 0);
+	}
+      if (sep_groups)
+	*sep_groups = 1;	/* Separate subsequent groups. */
+    }
 
   /* Inserts a comma if this isn't the first item on the line, and then makes
      sure we're at least to column COL.  Also clears FIRST.  */
@@ -477,10 +651,20 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
     {
       if (first)
 	{
-	  if (sep_groups && *sep_groups
-	      && prev_entry && *prev_entry
-	      && entry->group != (*prev_entry)->group)
+	  if (sep_groups && *sep_groups && pe && entry->group != pe->group)
 	    putc ('\n', stream);
+	  if (pe && cl && pe->cluster != cl && cl->header && *cl->header
+	      && !hol_cluster_is_child (pe->cluster, cl))
+	    /* If we're changing clusters, then this must be the start of the
+	       ENTRY's cluster unless that is an ancestor of the previous one
+	       (in which case we had just popped into a sub-cluster for a bit).
+	       If so, then print the cluster's header line.  */
+	    {
+	      int old_wm = line_wrap_wmargin (stream);
+	      print_header (cl->header);
+	      putc ('\n', stream);
+	      line_wrap_set_wmargin (stream, old_wm);
+	    }
 	  first = 0;
 	}
       else
@@ -531,19 +715,7 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
     /* Didn't print any switches, what's up?  */
     if (!oshort (real) && !real->name && real->doc)
       /* This is a group header, print it nicely.  */
-      {
-	if (*real->doc)
-	  {
-	    if (prev_entry && *prev_entry)
-	      putc ('\n', stream); /* Precede with a blank line.  */
-	    indent_to (stream, HEADER_COL);
-	    line_wrap_set_lmargin (stream, HEADER_COL);
-	    line_wrap_set_wmargin (stream, HEADER_COL);
-	    fputs (real->doc, stream);
-	  }
-	if (sep_groups)
-	  *sep_groups = 1;	/* Separate subsequent groups. */
-      }
+      print_header (real->doc);
     else
       /* Just a totally shadowed option or null header; print nothing.  */
       goto cleanup;		/* Just return, after cleaning up.  */
@@ -564,9 +736,11 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
 	indent_to (stream, OPT_DOC_COL);
 
       fputs (doc, stream);
+
+      /* Reset the left margin.  */
+      line_wrap_set_lmargin (stream, 0);
     }
 
-  line_wrap_set_lmargin (stream, 0); /* Don't follow the nl with spaces. */
   putc ('\n', stream);
 
   if (prev_entry)
@@ -674,15 +848,26 @@ hol_usage (struct hol *hol, FILE *stream)
     }
 }
 
-/* Make a HOL containing all levels of options in ARGP.  */
+/* Make a HOL containing all levels of options in ARGP.  CLUSTER is the
+   cluster in which ARGP's entries should be clustered, or 0.  */
 static struct hol *
-argp_hol (const struct argp *argp)
+argp_hol (const struct argp *argp, struct hol_cluster *cluster)
 {
-  const struct argp **children = argp->children;
-  struct hol *hol = make_hol (argp->options);
-  if (children)
-    while (*children)
-      hol_append (hol, argp_hol (*children++));
+  const struct argp_child *child = argp->children;
+  struct hol *hol = make_hol (argp->options, cluster);
+  if (child)
+    while (child->argp)
+      {
+	struct hol_cluster *child_cluster =
+	  ((child->group || child->header)
+	   /* Put CHILD->argp within its own cluster.  */
+	   ? hol_add_cluster (hol, child->group, child->header,
+			      child - argp->children, cluster)
+	   /* Just merge it into the parent's cluster.  */
+	   : cluster);
+	hol_append (hol, argp_hol (child->argp, child_cluster)) ;
+	child++;
+      }
   return hol;
 }
 
@@ -691,7 +876,7 @@ argp_hol (const struct argp *argp)
 static void
 argp_args_usage (const struct argp *argp, FILE *stream)
 {
-  const struct argp **children = argp->children;
+  const struct argp_child *child = argp->children;
   const char *doc = argp->args_doc;
   if (doc)
     {
@@ -704,9 +889,9 @@ argp_args_usage (const struct argp *argp, FILE *stream)
 	putc (' ', stream);
       fputs (doc, stream);
     }
-  if (children)
-    while (*children)
-      argp_args_usage (*children++, stream);
+  if (child)
+    while (child->argp)
+      argp_args_usage ((child++)->argp, stream);
 }
 
 /* Print the documentation for ARGP to STREAM; if POST is false, then
@@ -720,7 +905,7 @@ static int
 argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 	  FILE *stream)
 {
-  const struct argp **children = argp->children;
+  const struct argp_child *child = argp->children;
   const char *doc = argp->doc;
   int anything = 0;
 
@@ -744,10 +929,10 @@ argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 
       anything = 1;
     }
-  if (children)
-    while (*children && !(first_only && anything))
+  if (child)
+    while (child->argp && !(first_only && anything))
       anything |=
-	argp_doc (*children++, post, anything || pre_blank, first_only,
+	argp_doc ((child++)->argp, post, anything || pre_blank, first_only,
 		  stream);
 
   return anything;
@@ -769,7 +954,7 @@ void argp_help (const struct argp *argp, FILE *stream,
 
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG))
     {
-      hol = argp_hol (argp);
+      hol = argp_hol (argp, 0);
 
       /* If present, these options always come last.  */
       hol_set_group (hol, "help", -1);
