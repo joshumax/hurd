@@ -48,7 +48,7 @@ diskfs_shutdown (int flags)
 	  error = 0;
 	mutex_lock (&np->lock);
 	
-	if (error == MIG_SERVER_DIED || error == MACH_SEND_INVALID_DEST)
+	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
 	  error = 0;
 	
 	return error;
