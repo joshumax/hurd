@@ -21,8 +21,6 @@ libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
 libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
-gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
-libgcc := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/libgcc.a
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
@@ -30,6 +28,9 @@ CFLAGS := -Wall -Wno-parentheses -g
 
 # Finding binaries
 include ../Maketools
+
+gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
+libgcc := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/libgcc.a
 
 # How to do some things:
 
