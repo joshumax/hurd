@@ -206,8 +206,8 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		{
 		  uint32_t flags = vcons->display->flags;
 
-		  if (flags & CONS_FLAGS_SCROLL_LOCK
-		      != vcons->display->flags & CONS_FLAGS_SCROLL_LOCK)
+		  if ((flags & CONS_FLAGS_SCROLL_LOCK)
+		      != (vcons->state.flags & CONS_FLAGS_SCROLL_LOCK))
 		    cons_vcons_set_scroll_lock (vcons, flags
 						& CONS_FLAGS_SCROLL_LOCK);
 		  vcons->state.flags = flags;
