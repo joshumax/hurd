@@ -118,8 +118,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* diskfs_lookup the next pathname component */
       if (lastcomp && create)
 	{
-	  assert (!ds);
-	  ds = alloca (diskfs_dirstat_size);
+	  if (!ds)
+	    ds = alloca (diskfs_dirstat_size);
 	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
 	}
       else
@@ -367,12 +367,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    }
 
 	  if (lastcomp)
-	    {
-	      lastcomp = 0;
-	      /* Symlinks to nonexistent files aren't allowed to cause
-		 creation, so clear the flag here. */
-	      create = 0;
-	    }
+	    lastcomp = 0;
 
 	  diskfs_nput (np);
 	  np = 0;

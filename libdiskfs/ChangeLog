@@ -1,3 +1,10 @@
+2001-10-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): When looking up the next
+	pathname component, remove assertion for DS and allocate DS if 0.
+	Allow creation of files through symlink with non-existant target.
+	From Roland McGrath <roland@frob.com>.
+
 2001-10-11  Roland McGrath  <roland@frob.com>
 
 	* dir-renamed.c (diskfs_rename_dir): Fix bogus assert.
