@@ -67,7 +67,7 @@ routine auth_user_authenticate (
 	sreplyport reply_port: reply_port_t;
 	rendezvous: mach_port_t;
 	rend_int: int;
-	out newport: mach_port_t);
+	out newport: mach_port_send_t);
    
 /* Called by a server in a reauthentication transaction.  The
    rendezvous port is used to match the request up with the user's
