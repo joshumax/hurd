@@ -28,7 +28,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libpager \
 	      libfshelp libdiskfs libtrivfs libthreads libps \
 	      libnetfs libpipe libstore libmom
 prog-subdirs = auth boot exec fstests init.trim \
-	       proc term ufs utils trans fsck \
+	       proc term ufs utils sutils trans ufs-fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet
 other-subdirs = hurd doc init
