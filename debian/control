@@ -8,7 +8,7 @@ Package: hurd
 Priority: required
 Section: base
 Essential: yes
-Depends: ${shlibs:Depends}
+Depends: ${hurd:Depends}
 Provides: makedev, login
 Replaces: makedev
 Conflicts: makedev
