@@ -1,6 +1,6 @@
 /* Modify the current authentication selected processes
 
-   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999, 2000 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -126,7 +126,9 @@ frobauth_modify (struct frobauth *frobauth,
 				      msg_set_init_port (msgport, task,
 							 INIT_PORT_AUTH,
 							 new_auth,
-							 MACH_MSG_TYPE_MOVE_SEND);
+							 MACH_MSG_TYPE_COPY_SEND);
+				    mach_port_deallocate (mach_task_self (),
+							  new_auth);
 				    if (err)
 				      error (0, err, "%d", pid);
 				  }

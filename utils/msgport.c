@@ -1,6 +1,6 @@
 /* Send messages to selected processes
 
-   Copyright (C) 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
 
    Written by Jose M. Moya <josem@gnu.org>
 
@@ -197,7 +197,8 @@ do_setfd (pid_t pid, mach_port_t msgport, size_t fd, file_t file)
   err = proc_pid2task (proc, pid, &task);
   if (err)
     return err;
-  err = msg_set_fd (msgport, task, fd, file, MACH_MSG_TYPE_MOVE_SEND);
+  err = msg_set_fd (msgport, task, fd, file, MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), file);
   mach_port_deallocate (mach_task_self (), task);
   return err;
 }
@@ -302,9 +303,8 @@ cmd_chcwdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
       return err;
     }
   err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir,
-			   MACH_MSG_TYPE_MOVE_SEND);
-  if (err)
-    mach_port_deallocate (mach_task_self (), dir);
+			   MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), dir);
   mach_port_deallocate (mach_task_self (), task);
   return err;
 }
@@ -328,9 +328,8 @@ cmd_cdroot (pid_t pid, mach_port_t msgport, int argc, char *argv[])
       return err;
     }
   err = msg_set_init_port (msgport, task, INIT_PORT_CWDIR, dir,
-			   MACH_MSG_TYPE_MOVE_SEND);
-  if (err)
-    mach_port_deallocate (mach_task_self (), dir);
+			   MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), dir);
   mach_port_deallocate (mach_task_self (), task);
   return err;
 }
@@ -354,9 +353,8 @@ cmd_chcrdir (pid_t pid, mach_port_t msgport, int argc, char *argv[])
       return err;
     }
   err = msg_set_init_port (msgport, task, INIT_PORT_CRDIR, dir,
-			   MACH_MSG_TYPE_MOVE_SEND);
-  if (err)
-    mach_port_deallocate (mach_task_self (), dir);
+			   MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), dir);
   mach_port_deallocate (mach_task_self (), task);
   return err;
 }
