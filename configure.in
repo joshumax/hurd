@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.28 2002/01/19 23:44:37 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.29 2002/03/12 03:01:02 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -154,6 +154,16 @@ test $parted = no || {
 PARTED_LIBS=$LIBS
 LIBS=$save_LIBS
 AC_SUBST(PARTED_LIBS)
+
+AC_ARG_ENABLE(boot-store-types,
+[  --enable-boot-store-types=TYPES...
+			  list of store types included in statically
+			  linked filesystems used for booting])dnl
+if test -z "$enable_boot_store_types"; then
+  boot_store_types='device gunzip bunzip2'
+  test $parted = no || boot_store_types="$boot_store_types part"
+fi
+AC_SUBST(boot_store_types)dnl
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.

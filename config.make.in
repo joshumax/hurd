@@ -7,6 +7,7 @@ asm_syntax = @asm_syntax@
 # Build options.
 build-profiled = @enable_profile@
 build-static = @enable_static_progs@
+boot-store-types = @boot_store_types@
 
 # Prefix prepended to names of machine-independent installed files.
 prefix = @prefix@
