@@ -36,5 +36,5 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     assert (!trivfs_support_read);
   if (seltype & (SELECT_WRITE|SELECT_URG))
     assert (!trivfs_support_write);
-  return EBADF;
+  return EOPNOTSUPP;
 }
