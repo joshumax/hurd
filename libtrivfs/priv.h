@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1994, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -16,34 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #ifndef TRIVFS_PRIV_H_INCLUDED
+#define TRIVFS_PRIV_H_INCLUDED
 
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
 #include "trivfs.h"
 
-/* For the sake of MiG. */
-typedef struct trivfs_protid *trivfs_protid_t;
-typedef struct trivfs_control *trivfs_control_t;
-
-struct trivfs_protid *_trivfs_begin_using_protid (mach_port_t);
-void _trivfs_end_using_protid (struct trivfs_protid *);
-struct trivfs_control *_trivfs_begin_using_control (mach_port_t);
-void _trivfs_end_using_control (struct trivfs_control *);
-
-/* Vectors of dynamically allocated port classes/buckets.  */
-
-/* Protid port classes.  */
-extern struct port_class **trivfs_dynamic_protid_port_classes;
-extern size_t trivfs_num_dynamic_protid_port_classes;
-
-/* Control port classes.  */
-extern struct port_class **trivfs_dynamic_control_port_classes;
-extern size_t trivfs_num_dynamic_control_port_classes;
-
-/* Port buckets.  */
-extern struct port_bucket **trivfs_dynamic_port_buckets;
-extern size_t trivfs_num_dynamic_port_buckets;
-
-#define TRIVFS_PRIV_H_INCLUDED
 #endif

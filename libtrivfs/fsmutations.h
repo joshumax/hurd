@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994,95,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,6 +28,6 @@
 #define FSYS_INTRAN trivfs_control_t trivfs_begin_using_control (fsys_t)
 #define FSYS_DESTRUCTOR trivfs_end_using_control (trivfs_control_t)
 
-#define FILE_IMPORTS import "priv.h";
-#define IO_IMPORTS import "priv.h";
-#define FSYS_IMPORTS import "priv.h";
+#define FILE_IMPORTS import <hurd/trivfs.h>;
+#define IO_IMPORTS import <hurd/trivfs.h>;
+#define FSYS_IMPORTS import <hurd/trivfs.h>;
