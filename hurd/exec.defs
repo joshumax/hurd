@@ -23,7 +23,8 @@ subsystem exec 30000;
 
 #include <hurd/hurd_types.defs>
 
-routine exec_exec ( /* Better name, Roland?? */
+routine exec_exec ( /* Better name, Roland??
+		       No, it doesn't seem likely. */
 	execserver: mach_port_t;
 	file: mach_port_make_send_t;
 	oldtask: task_t;
@@ -38,7 +39,11 @@ routine exec_exec ( /* Better name, Roland?? */
    startup ports and information.  */
 routine exec_startup (
 	execserver: mach_port_t;
+	/* These are the base address and size of the initial stack
+	   allocated by the exec server.  The rest of the information
+	   is that passed by exec_exec.  */
 	out stack_base: vm_address_t;
+	out stack_size: vm_size_t;
 	out flags: int;
 	out argv: data_t;
 	out envp: data_t;
