@@ -59,8 +59,8 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 %-install:
 	$(MAKE) -C $* install
 
-%-install-hdrs:
-	$(MAKE) -C $* install-hdrs
+%-install-headers:
+	$(MAKE) -C $* install-headers
 
 %-TAGS:
 	$(MAKE) -C $* TAGS no_deps=t
@@ -81,7 +81,8 @@ relink: $(addsuffix -relink,$(prog-subdirs))
 install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
 	   $(other-subdirs))
 
-install-hdrs: $(addsuffix -install-hdrs,$(lib-subdirs) $(working-prog-subdirs)\
+install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
+		$(working-prog-subdirs)\
 		$(other-subdirs))
 
 lndist: cp-linked-files
