@@ -275,6 +275,10 @@ probe_stack(stack_bottom, stack_top)
 	*stack_top = last_end_addr;
 }
 
+/* For GNU: */
+unsigned long int __hurd_threadvar_stack_mask;
+unsigned long int __hurd_threadvar_stack_offset;
+
 vm_offset_t
 stack_init(p)
 	cproc_t p;
@@ -304,6 +308,9 @@ stack_init(p)
 	cthread_stack_mask = cthread_stack_size - 1;
 #endif	STACK_GROWTH_UP
 
+	/* Set up the variables so GNU can find its per-thread variables.  */
+	__hurd_threadvar_stack_mask = cthread_stack_mask;
+
 	/*
 	 * Guess at first available region for stack.
 	 */
@@ -328,11 +335,18 @@ stack_init(p)
 #endif	STACK_GROWTH_UP
 	MACH_CALL(vm_deallocate(mach_task_self(),start,size),r);
 
+	/* The GNU per-thread variables will be stored just after the
+	   cthread-self pointer at the base of the stack.  */
+	__hurd_threadvar_stack_offset = sizeof (ur_cthread_t *);
+
 	/*
 	 * Return new stack; it gets passed back to the caller
 	 * of cthread_init who must switch to it.
 	 */
-	return cproc_stack_base(p, sizeof(ur_cthread_t *));
+	return cproc_stack_base(p,
+				sizeof(ur_cthread_t *) +
+				/* Account for GNU per-thread variables.  */
+				__hurd_threadvar_max * sizeof (long int));
 }
 
 /*
