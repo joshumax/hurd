@@ -256,16 +256,18 @@ void ports_interrupt_rpc (void *port);
 int ports_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
 /* Notification server routines called by ports_notify_server.  */
-error_t ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t deadport);
-error_t ports_do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t name);
-error_t ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count);
-error_t ports_do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name);
-error_t ports_do_mach_notify_port_destroyed (mach_port_t notify, mach_port_t name);
-error_t ports_do_mach_notify_send_once (mach_port_t notify);
+extern error_t ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t deadport);
+extern error_t ports_do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t name);
+extern error_t ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count);
+extern error_t ports_do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name);
+extern error_t ports_do_mach_notify_port_destroyed (mach_port_t notify, mach_port_t name);
+extern error_t
+ ports_do_mach_notify_send_once (mach_port_t notify);
 
 /* A default interrupt server */
 int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-error_t ports_S_interrupt_operation (mach_port_t port, mach_msg_seqno_t);
+extern error_t ports_S_interrupt_operation (mach_port_t, 
+					    mach_port_seqno_t);
 
 /* Private data */
 extern struct mutex _ports_lock;
