@@ -1,5 +1,8 @@
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* remap.c (remap_open): Don't multiply by 512.  Offsets and sizes are
+	in blocks, not bytes.
+
 	* stripe.c (concat_decode): Add __attribute__((unused)) to suppress
 	warning.
 	(ileave_decode): Likewise.
