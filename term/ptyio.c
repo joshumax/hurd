@@ -197,29 +197,36 @@ ptyio_desert_dtr ()
 static void 
 ptyio_set_bits ()
 {
-  int stop;
-  
-  if (packet_mode && external_processing)
+  if (packet_mode)
     {
-      control_byte |= TIOCPKT_IOCTL;
+      int wakeup = 0;
+      int stop = ((termstate.c_iflag & IXON) 
+		  && CCEQ (termstate.c_cc[VSTOP], CHAR_DC3)
+		  && CCEQ (termstate.c_cc[VSTART], CHAR_DC1));
+  
+      if (external_processing)
+	{
+	  control_byte |= TIOCPKT_IOCTL;
+	  wakeup = 1;
+	}
 
-      stop = ((termstate.c_iflag & IXON) 
-	      && CCEQ (termstate.c_cc[VSTOP], CHAR_DC3)
-	      && CCEQ (termstate.c_cc[VSTART], CHAR_DC1));
       if (pktnostop && stop)
 	{
 	  pktnostop = 0;
 	  control_byte |= TIOCPKT_DOSTOP;
 	  control_byte &= ~TIOCPKT_NOSTOP;
+	  wakeup = 1;
 	}
       else if (!pktnostop && !stop)
 	{
 	  pktnostop = 1;
 	  control_byte |= TIOCPKT_NOSTOP;
 	  control_byte &= ~TIOCPKT_DOSTOP;
+	  wakeup = 1;
 	}
 
-      wake_reader ();
+      if (wakeup)
+	wake_reader ();
     }
 }
 
