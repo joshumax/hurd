@@ -1,5 +1,14 @@
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* hello-mt.c: New file, modified from hello.c to be multithreaded.
+	* Makefile (targets, SRCS): Add hello-mt, hello-mt.c.
+	(hello-mt): Add appropriate deps.
+
+	* Makefile (hello): Don't depend on libthreads.
+
+	* hello.c (trivfs_modify_stat): Set st_size from contents_len, not
+	sizeof (hello) - 1.
+
 	* hello.c: New file.  From Gord with some cleanups and hacks from me.
 	* Makefile (targets, SRCS): Add hello, hello.c.
 	(hello): Add appropriate deps.

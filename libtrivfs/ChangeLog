@@ -1,3 +1,17 @@
+1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io-owner-get.c (trivfs_S_io_get_owner): Remove asserts.
+	It is entirely reasonable to have EOPNOTSUPP be the default
+	implementation for these calls that files are not obligated to provide.
+	* io-owner-mod.c (trivfs_S_io_mod_owner): Likewise.
+	* io-map.c (trivfs_S_io_map): Likewise.
+	* io-async.c (trivfs_S_io_async): Likewise.
+	* io-async-icky.c (trivfs_S_io_get_icky_async_id): Likewise.
+
+	* fsys-getroot.c (trivfs_S_fsys_getroot): Return EROFS or EACCES for a
+	disallowed open attempt, instead of EOPNOTSUPP.  EOPNOTSUPP results in
+	the confusing result of ENOTDIR being delivered to the user.
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-readdir.c (trivfs_S_dir_readdir): Take DATA_DEALLOC parameter.
