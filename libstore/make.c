@@ -27,7 +27,7 @@
 /* Allocate a new store structure with meths METHS, and the various other
    fields initialized to the given parameters.  */
 struct store *
-_make_store (struct store_class *class,
+_make_store (const struct store_class *class,
 	     mach_port_t port, int flags, size_t block_size,
 	     const struct store_run *runs, size_t num_runs, off_t end)
 {
