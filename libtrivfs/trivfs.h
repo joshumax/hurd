@@ -19,30 +19,13 @@
 struct protid
 {
   struct port_info pi;
-
-  /* User identification */
-  uid_t *uids, *gids;
-  int nuids, ngids;
-  
+  int isroot;
   mach_port_t realnode;
-
-  /* Object this refers to */
-  struct peropen *po;
 };
 
-/* One of these is created for each open */
-struct peropen
-{
-  off_t filepointer;
-  int refcnt;
-  int openstat;
-  int lock_status;
-};
-
-struct trans_link trivfs_translator;
+mach_port_t trivfs_underlying_node;
 
 struct port_info *trivfs_control_port;
-
 
 /* The user must define these variables. */
 extern int trivfs_fstype;
@@ -51,3 +34,16 @@ extern int trivfs_fsid;
 extern int trivfs_support_read;
 extern int trivfs_support_write;
 extern int trivfs_support_exec;
+
+extern char *trivfs_server_name;
+extern int trivfs_major_version;
+extern int trivfs_minor_version;
+extern int trivfs_edit_version;
+
+/* The user must define this function.  This should modify a struct 
+   stat (as returned from the underlying node) for presentation to
+   callers of io_stat.  It is permissable for this function to do
+   nothing.  */
+void trivfs_modify_stat (struct stat *);
+
+error_t trivfs_goaway (int);
