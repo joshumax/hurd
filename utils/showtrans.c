@@ -31,17 +31,18 @@
 
 static struct argp_option options[] =
 {
-  {"prefix",    'p', 0, 0, "always display `FILENAME: ' before translators"},
-  {"no-prefix", 'P', 0, 0, "never display `FILENAME: ' before translators"},
-  {"silent",    's', 0, 0, "no output; useful when checking error status"},
+  {"prefix",    'p', 0, 0, "Always display `FILENAME: ' before translators"},
+  {"no-prefix", 'P', 0, 0, "Never display `FILENAME: ' before translators"},
+  {"silent",    's', 0, 0, "No output; useful when checking error status"},
   {"quiet",     'q', 0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"translated",'t', 0, 0, "Only display files that have translators"},
   {0, 0}
 };
 
 static char *args_doc = "FILE...";
 
-static char *doc = "If there are no args, the translator on the node attached \
-to standard input is printed.  A FILE argument of `-' also does this.";
+static char *doc = "A FILE argument of `-' prints the translator on the node \
+attached to standard input.";
 
 /* ---------------------------------------------------------------- */
 
@@ -51,7 +52,7 @@ main (int argc, char *argv[])
   /* The default exit status -- changed to 0 if we find any translators.  */
   int status = 1;
   /* Some option flags.  -1 for PRINT_PREFIX means use the default.  */
-  int print_prefix = -1, silent = 0;
+  int print_prefix = -1, silent = 0, show_untrans = 1;
 
   /* If NODE is MACH_PORT_NULL, prints an error message and exits, otherwise
      prints the translator on NODE, possibly prefixed by `NAME:', and
@@ -88,7 +89,7 @@ main (int argc, char *argv[])
 
 	    case EINVAL:
 	      /* NODE just doesn't have a translator.  */
-	      if (!silent && print_prefix)
+	      if (!silent && print_prefix && show_untrans)
 		puts (name);
 	      break;
 
@@ -105,13 +106,12 @@ main (int argc, char *argv[])
     {
       switch (key)
 	{
-	case ARGP_KEY_NO_ARGS:	/* The end of the argument list */
 	case ARGP_KEY_ARG:	/* A FILE argument */
 	  if (print_prefix < 0)
 	    /* By default, only print a prefix if there are multiple files. */
 	    print_prefix = state->next < state->argc;
 
-	  if (arg && strcmp (arg, "-") != 0)
+	  if (strcmp (arg, "-") != 0)
 	    print_node_trans (file_name_lookup (arg, O_NOTRANS, 0), arg);
 	  else
 	    print_node_trans (getdport (0), "-");
@@ -121,6 +121,10 @@ main (int argc, char *argv[])
 	case 'p': print_prefix = 1; break;
 	case 'P': print_prefix = 0; break;
 	case 's': case 'q': silent = 1; break;
+	case 't': show_untrans = 0; break;
+
+	case ARGP_KEY_NO_ARGS:
+	  argp_usage (state);	/* exits */
 
 	default:  return EINVAL;
 	}
