@@ -1,3 +1,8 @@
+2002-01-05  Roland McGrath  <roland@frob.com>
+
+	* aclocal.m4 (hurd_MIG_RETCODE): New macro.
+	* configure.in: Broken out of here, now use that.
+
 2002-01-01  Roland McGrath  <roland@frob.com>
 
 	* configure.in: If mig supports `retcode', define HAVE_MIG_RETCODE.

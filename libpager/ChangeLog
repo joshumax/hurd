@@ -1,3 +1,7 @@
+2002-01-19  Roland McGrath  <roland@frob.com>
+
+	* demuxer.c (pager_demuxer): Fix last change so it works.  Add comment.
+
 2001-01-16  Marcus Brinkmann <marcus@gnu.org>
 
 	* demuxer.c (pager_demuxer): If the message was not accepted by
