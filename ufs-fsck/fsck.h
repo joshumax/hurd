@@ -165,6 +165,8 @@ void allblock_iterate (struct dinode *, int (*)(daddr_t, int));
 
 void record_directory (struct dinode *, ino_t);
 
+void pinode (ino_t);
+
 int reply (char *);
 int pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
 void errexit (char *, ...) __attribute__ ((format (printf, 1, 2),
