@@ -6,4 +6,4 @@ privileges.  To login as a user with a userid of USER, use the command:
 other special commands:
 
   ql USER 	# quick login -- just start a shell in USER's home directory
-  su USER	# set-user -- start a new shell as USER, but don't cd to $HOME
+  sush USER	# set-user shell -- start a new shell as USER (don't cd)
