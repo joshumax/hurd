@@ -1,3 +1,8 @@
+2003-02-15  Roland McGrath  <roland@frob.com>
+
+	* configure.ac: New file.
+	* install-headers.in: New file.
+
 2002-10-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.h (struct cons_display): Doc fix.
