@@ -191,7 +191,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = diskpagersize;
+    *size = disk_pagersize;
   else
     *size = pager->np->allocsize;
   
@@ -220,12 +220,12 @@ pager_clear_user_data (struct user_pager_info *upi)
 void
 create_disk_pager ()
 {
-  diskpager = malloc (sizeof (struct user_pager_info));
-  diskpager->type = DISK;
-  diskpager->np = 0;
-  diskpager->p = pager_create (diskpager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  diskpagerport = pager_get_port (diskpager->p);
-  mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
+  disk_pager = malloc (sizeof (struct user_pager_info));
+  disk_pager->type = DISK;
+  disk_pager->np = 0;
+  disk_pager->p = pager_create (disk_pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+  disk_pagerport = pager_get_port (disk_pager->p);
+  mach_port_insert_right (mach_task_self (), disk_pagerport, disk_pagerport,
 			  MACH_MSG_TYPE_MAKE_SEND);
 }  
 
@@ -369,7 +369,7 @@ pager_traverse (void (*func)(struct user_pager_info *))
       pager_unreference (i->p->p);
     }
   
-  (*func)(diskpager);
+  (*func)(disk_pager);
 }
 
 /* Shutdown all the pagers. */
@@ -392,7 +392,7 @@ diskfs_sync_everything (int wait)
 {
   void sync_one (struct user_pager_info *p)
     {
-      if (p != diskpager)
+      if (p != disk_pager)
 	pager_sync (p->p, wait);
       else
 	pokel_sync (&sblock_pokel, wait);
