@@ -35,15 +35,12 @@ S_io_read (struct sock_user *user,
     return EOPNOTSUPP;
 
   err = sock_aquire_read_pipe (user->sock, &pipe);
-  if (!err && pipe)
+  if (!err)
     {
       err =
 	pipe_read (pipe, sock->flags & SOCK_NONBLOCK, data, data_len, amount);
       pipe_release (pipe);
     }
-  else
-    /* Return EOF [harmless if there's an error].  */
-    *data_len = 0;
 
   return err;
 }
@@ -86,7 +83,7 @@ S_interrupt_operation (struct sock_user *user)
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
-  if (sock_aquire_read_pipe (user->sock, &pipe) == 0 && pipe != NULL)
+  if (sock_aquire_read_pipe (user->sock, &pipe) == 0)
     {
       /* Indicate to currently waiting threads they've been interrupted.  */
       pipe->interrupt_seq_num++;
@@ -111,13 +108,10 @@ S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
 
   err = sock_aquire_read_pipe (user->sock, &pipe);
   if (!err)
-    if (pipe == NULL)
-      *amount = 0;
-    else
-      {
-	*amount = pipe_readable (user->sock->read_pipe);
-	pipe_release (pipe);
-      }
+    {
+      *amount = pipe_readable (user->sock->read_pipe);
+      pipe_release (pipe);
+    }
 
   return err;
 }
@@ -207,8 +201,8 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
       if (*select_type & SELECT_READ)
 	{
 	  struct pipe *pipe = sock->read_pipe;
-	  if (pipe)
-	    pipe_aquire (pipe);
+
+	  pipe_aquire (pipe);
 
 	  /* We unlock SOCK here, as it's not subsequently used, and we might
 	     go to sleep waiting for readable data.  */
