@@ -39,7 +39,8 @@
 
 struct ftp_conn_syshooks ftp_conn_unix_syshooks = {
   ftp_conn_unix_pasv_addr, ftp_conn_unix_interp_err,
-  ftp_conn_unix_start_get_stats, ftp_conn_unix_cont_get_stats
+  ftp_conn_unix_start_get_stats, ftp_conn_unix_cont_get_stats,
+  ftp_conn_unix_fix_nlist_name
 };
 
 /* Try to get an internet address out of the reply to a PASV command.
@@ -655,4 +656,21 @@ finished:
     err = ftp_conn_finish_transfer (conn);
 
   return err;
+}
+
+/* Some ftp servers return output from the nlist command that contains more
+   than just the simple names.  This functions looks at *NAME and rewrites it
+   to compensate, changing *NAME to point to the rewritten name.  DIR is the
+   name of the directory passed to the nlist command.  */
+error_t
+ftp_conn_unix_fix_nlist_name (struct ftp_conn *conn, char *dir, char **name)
+{
+  size_t dir_len = strlen (dir);
+  if (strncmp (*name, dir, dir_len) == 0)
+    {
+      *name += dir_len;
+      if (**name == '/')
+	*name += 1;
+    }
+  return 0;
 }
