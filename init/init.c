@@ -71,10 +71,8 @@ int crash_flags = RB_AUTOBOOT;
 
 
 /* Multiboot command line used to start the kernel,
-   a single string of space-separated words.
-   XXX should have an option passed from kernel/serverboot to set this
-   */
-char *kernel_command_line = "(kernel)";
+   a single string of space-separated words.  */
+char *kernel_command_line;
 
 const char *argp_program_version = STANDARD_HURD_VERSION (init);
 
@@ -1225,6 +1223,9 @@ frob_kernel_process (void)
 	    }
 	}
     }
+
+  if (!kernel_command_line)
+    kernel_command_line = getenv ("MULTIBOOT_CMDLINE") ?: "(kernel)";
 
 
   /* The variable `kernel_command_line' contains the multiboot command line
