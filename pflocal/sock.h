@@ -70,7 +70,10 @@ struct sock
   /* A connection queue to listen for incoming connections on.  Once a socket
      has one of these, it always does, and can never again be used for
      anything but accepting incoming connections.  */
-  struct connq *connq;
+  struct connq *listen_queue;
+  /* A connection queue we're attempting to connect through; a socket may
+     only be attempting one connection at a time.  */
+  struct connq *connect_queue;
 };
 
 /* Socket flags */
