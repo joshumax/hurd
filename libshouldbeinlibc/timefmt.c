@@ -235,7 +235,6 @@ fmt_seconds (struct timeval *tv, int leading_zeros, int frac_places,
       int frac = tv->tv_usec, i;
       for (i = 6; i > frac_places; i--)
 	frac /= 10;
-      *p++ = '.';
       return (p - buf) + sprintf (p, ".%0*d", frac_places, frac);
     }
   else
