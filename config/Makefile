@@ -38,12 +38,17 @@ installed_rootdots = $(addprefix $(prefix)/root,$(ROOTDOTS))
 LINKEDCONFFILES = rc
 installed_links = $(addprefix $(sysconfdir)/,$(LINKEDCONFFILES))
 
+DIST_FILES=$(SYSCONFFILES) $(LOGINDOTS) $(ROOTDOTS)
+
 ifeq ($(override_conf),t)
 foo=$(shell touch /dev/null)
 override_spec = /dev/null
 else
 override_spec = 
 endif
+
+include ../Makeconf
+
 
 install: $(installed_conf) $(installed_links) $(installed_logins) \
 	$(installed_rootdots)
@@ -61,6 +66,3 @@ $(installed_conf): $(sysconfdir)/%: %
 
 $(sysconfdir)/rc:
 	ln -s ../libexec/rc $(sysconfdir)/rc
-
-include ../Makeconf
-
