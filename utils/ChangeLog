@@ -1,3 +1,9 @@
+Fri Feb 19 02:43:11 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* login.c (main): When transitioning from no UID's to having UID's
+	create a new session like normal.  Reported by Mark M. Kettenis
+	<kettenis@wins.uva.nl>. 
+
 1999-02-06  Mark Kettenis  <kettenis@gnu.org>
 
 	* login.c (main): If no effective uid, really use first auxiliary

@@ -646,7 +646,9 @@ main(int argc, char *argv[])
   err = proc_getsid (proc_server, pid, &sid);
   assert_perror (err);		/* This should never fail.  */
 
-  if (!no_login && parent_uids.num != 0)
+  if (!no_login
+      && (parent_uids.num != 0
+	  || ugids.eff_uids.num + ugids.avail_uids.num > 0))
     /* Make a new login collection (but only for real users).  */
     {
       char *user = envz_get (args, args_len, "USER");
