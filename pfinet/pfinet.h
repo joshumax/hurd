@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -91,6 +91,5 @@ void clean_socketport (void *);
 /* MiG bogosity */
 typedef struct sock_user *sock_user_t;
 typedef struct sock_addr *sock_addr_t;
-typedef struct trivfs_protid *trivfs_protid_t;
 
 #endif
