@@ -1,5 +1,9 @@
 2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
 
+	* netfs.h: Revert doc "fix" of netfs_attempt_chmod.
+
+2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
+
 	* netfs.h: Merge Neals words into documentation of netfs_nput,
 	netfs_nrele, netfs_nref.
 

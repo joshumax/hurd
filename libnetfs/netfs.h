@@ -111,8 +111,11 @@ error_t netfs_attempt_chauthor (struct iouser *cred, struct node *np,
 				uid_t author);
 
 /* The user must define this function.  This should attempt a chmod
-   call for the user specified by CRED on locked node NP, thereby
-   changing the mode to MODE.  */
+   call for the user specified by CRED on locked node NODE, to change
+   the mode to MODE.  Unlike the normal Unix and Hurd meaning of
+   chmod, this function is also used to attempt to change files into
+   other types.  If such a transition is attempted which is
+   impossible, then return EOPNOTSUPP.  */
 error_t netfs_attempt_chmod (struct iouser *cred, struct node *np,
 			     mode_t mode);
 
