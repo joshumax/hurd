@@ -1302,19 +1302,6 @@ do_exec (mach_port_t execserver,
 	e.error = ENOMEM;
 	goto out;
       }
-    e.error = mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
-				      (mach_port_t) boot,
-				      MACH_MSG_TYPE_MAKE_SEND);
-    if (e.error)
-      goto out;
-    e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
-    mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
-    if (e.error)
-      {
-	free (boot);
-	mach_port_destroy (mach_task_self (), (mach_port_t) boot);
-	goto out;
-      }
     bzero (boot, sizeof *boot);
 
     /* First record some information about the image itself.  */
@@ -1627,6 +1614,12 @@ do_exec (mach_port_t execserver,
       mach_port_deallocate (mach_task_self (), oldtask);
     }
 
+  mach_port_insert_right (mach_task_self (), (mach_port_t) boot,
+			  (mach_port_t) boot,
+			  MACH_MSG_TYPE_MAKE_SEND);
+  e.error = task_set_bootstrap_port (newtask, (mach_port_t) boot);
+  mach_port_deallocate (mach_task_self (), (mach_port_t) boot);
+
   /* Request no-senders notification on BOOT, so we can release
      its resources if the task dies before calling exec_startup.  */
   {
@@ -1642,7 +1635,7 @@ do_exec (mach_port_t execserver,
   /* Add BOOT to the server port-set so we will respond to RPCs there.  */
   mach_port_move_member (mach_task_self (),
 			 (mach_port_t) boot, request_portset);
-
+  
   if (e.error)
     {
       /* We barfed somewhere along the way.  Deallocate any local data
@@ -2069,11 +2062,8 @@ do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
     }
 
   /* Deallocate the request port.  */
+  mach_port_move_member (mach_task_self (), port, MACH_PORT_NULL);
   mach_port_mod_refs (mach_task_self (), port, MACH_PORT_TYPE_RECEIVE, -1);
-
-  /* XXX what is this for??? */
-  mach_port_mod_refs (mach_task_self (), request_portset,
-		      MACH_PORT_TYPE_RECEIVE, -1);
 
   return KERN_SUCCESS;
 }
