@@ -58,6 +58,39 @@ argz_create(char **argv, char **argz, int *len)
 
 /* ---------------------------------------------------------------- */
 
+/* Returns the number of strings in ARGZ.  */
+int
+argz_count (char *argz, int len)
+{
+  int count = 0;
+  while (len > 0)
+    {
+      int part_len = strlen(argz);
+      argz += part_len + 1;
+      len -= part_len + 1;
+      count++;
+    }
+  return count;
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Puts pointers to each string in ARGZ into ARGV, which must be large enough
+   to hold them all.  */
+void
+argz_extract (char *argz, int len, char **argv)
+{
+  while (len > 0)
+    {
+      int part_len = strlen(argz);
+      *argv++ = argz;
+      argz += part_len + 1;
+      len -= part_len + 1;
+    }
+}
+
+/* ---------------------------------------------------------------- */
+
 /* Make '\0' separated arg vector ARGZ printable by converting all the '\0's
    except the last into spaces.  */
 void
