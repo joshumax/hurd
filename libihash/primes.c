@@ -20,6 +20,7 @@
 #include <string.h>
 #include <assert.h>
 #include <spin-lock.h>
+#include "priv.h"
 
 #define BITS_PER_UNSIGNED (8 * sizeof (unsigned))
 #define SQRT_INT_MAX (1 << (BITS_PER_UNSIGNED / 2))
