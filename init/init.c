@@ -38,10 +38,9 @@
 #include <hurd/term.h>
 #include <hurd/fshelp.h>
 #include <paths.h>
-#include <sys/wait.h>
+#include <sys/mman.h>
 #include <hurd/msg_server.h>
 #include <wire.h>
-#include <paths.h>
 #include <sys/wait.h>
 #include <error.h>
 #include <hurd/msg_reply.h>
