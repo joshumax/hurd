@@ -1,10 +1,16 @@
+Fri Jul 19 00:35:46 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* auth.c (S_auth_makeauth): Deallocate initial reference to
+	NEWAUTH after *NEWHANDLE has been set.
+
 Thu Jul 18 19:31:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* auth.c (S_auth_makeauth): It's fine if a passed in auth port is
 	not one we know about; just make the loops across AUTHS deal
 	properly with null values.  Only deallocate the AUTHPTS passed in
 	if we don't encounter any errors.  Always deallocate the
-	references in the AUTHS array.
+	references in the AUTHS array.  ISUID and GROUPMEMBER functions
+	should check both effective and auxiliary members of AUTH.
 	(struct pending): Delete member `passthrough_type'.
 	(S_auth_user_authenticate): Always use MOVE_SEND to send pass
 	through port back to user.

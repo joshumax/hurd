@@ -143,8 +143,12 @@ S_auth_makeauth (struct authhandle *auth,
   /* Verify that the union of the handles passed in either contains euid 0
      (root), or contains all the requested ids.  */
 
-#define isuid(uid, auth)	idvec_contains (&(auth)->euids, uid)
-#define groupmember(gid, auth)	idvec_contains (&(auth)->egids, gid)
+#define isuid(uid, auth) \
+  (idvec_contains (&(auth)->euids, uid) \
+   || idvec_contains (&(auth)->auids, uid))
+#define groupmember(gid, auth) \
+  (idvec_contains (&(auth)->egids, gid) \
+   || idvec_contains (&(auth)->agids, gid))
 #define isroot(auth)		isuid (0, auth)
 
   for (i = 0; i < nauths; i++)
@@ -225,8 +229,9 @@ S_auth_makeauth (struct authhandle *auth,
   if (! err)
     {
       for (j = 1; j < nauths; ++j)
-	mach_port_deallocate (mach_task_self (), authpts[j]);
+	mach_port_deallocate (mach_task_self (), authpts[j - 1]);
       *newhandle = ports_get_right (newauth);
+      ports_port_deref (newauth);
     }
 
   for (j = 1; j < nauths; j++)
