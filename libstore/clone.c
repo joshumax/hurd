@@ -31,13 +31,11 @@ store_clone (struct store *from, struct store **to)
 {
   error_t err = 0;
   struct store *c =
-    _make_store (from->class, from->meths, from->port, from->block_size,
+    _make_store (from->class, from->port, from->flags, from->block_size,
 		 from->runs, from->num_runs, from->end);
 
   if (! c)
     return ENOMEM;
-
-  c->flags = from->flags;
 
   if (from->misc_len)
     {
@@ -76,8 +74,8 @@ store_clone (struct store *from, struct store **to)
 	}
     }
 
-  if (!err && from->meths->clone)
-    err = (*from->meths->clone)(from, c);
+  if (!err && from->class->clone)
+    err = (*from->class->clone)(from, c);
 
   if (err)
     store_free (c);
