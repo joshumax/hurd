@@ -53,7 +53,13 @@ pass3 ()
       if (dnp->i_parent == 0)
 	{
 	  assert (!(inodestate[dnp->i_number] & DIR_REF));
-	  linkup (dnp->i_number, dnp->i_dotdot);
+	  pwarn ("UNREF DIR");
+	  pinode (number);
+	  if (preen)
+	    printf (" (RECONNECTED)");
+	  if (preen || reply ("RECONNECT"))
+	    if (linkup (dnp->i_number, dnp->i_dotdot))
+	      dnp->i_parent = dnp->i_dotdot = lfdir;
 	}
     }
 }
