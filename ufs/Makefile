@@ -26,7 +26,9 @@ DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
-LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
+#LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
+LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
+	 $(libfshelp) $(libdiskfs) $(libthreads) $(libports)
 
 LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
 
