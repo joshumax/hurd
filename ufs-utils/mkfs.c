@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.13 1996/07/23 23:37:21 miles Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.14 1996/08/27 18:24:31 miles Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -219,7 +219,7 @@ static const struct argp_option options[] = {
   {0, 0}
 };
 static char *args_doc = "DEVICE";
-static char *doc = 0;
+static char *doc = "Write a ufs filesystem image onto DEVICE.";
 
 struct amark { void *addr; struct amark *next; };
 

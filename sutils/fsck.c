@@ -454,7 +454,7 @@ options[] =
   {0, 0}
 };
 static const char *args_doc = "[ DEVICE|FSYS... ]";
-static const char *doc = 0;
+static const char *doc = "Filesystem consistency check and repair";
 
 int
 main (int argc, char **argv)
