@@ -1,0 +1,169 @@
+GNU Hurd Task List Version 1.15.  Last updated 13 July 1996.
+
+If you would like to work on one of these, please contact
+mib@gnu.ai.mit.edu.  It's important that you let me know what's being
+worked on, because someone else might also be interested, and you
+should coordinate work.
+
+Items that we want done with more priority are marked with !!!.
+
+
+
+General system work
+
+  * Compile all the free programs you can find to help us fix bugs in
+  the system, and to submit necessary ports to the maintainers of
+  those programs.  A good place to start is the list in SOURCES under
+  the heading `Give up'.
+
+  * See how much of X compiles.
+
+  * Do whatever magic is necessary for Perl to take advantage of all
+  the nifty Hurd features that Unix doesn't have.
+
+
+
+Mach 3.0 Work
+
+If you plan to work on the microkernel, you should be on the mailing list
+for the University of Utah's Mach4 distribution; that is the microkernel
+distribution that GNU will use.  To get on the mailing list, send mail to
+mach4-users-request@schirf.cs.utah.edu.  You should discuss proposed
+microkernel work there as well as with mib@gnu.ai.mit.edu.
+
+!!!
+  * Mach 3.0 needs many new device drivers for popular PC devices.
+  Shantanu Goel at Utah is doing work in this area; coordinate with him.
+
+!!!
+  * A replacement for MiG that understood C .h files.
+  Utah is working on a new IDL compiler; coordinate with them.
+
+  * Bootstrap tools and documentation to help people set up Mach 3.0
+  machines if they already have Linux; if they already have Net BSD;
+  if they don't have anything.  (See Utah Lites dist.)
+
+!!!
+  * Mach 3.0 needs to provide support for task virtual timers similar
+  in functionality to the Unix ITIMER_PROF and ITIMER_VIRTUAL timers.
+
+!!!
+  * Mach 3.0 needs to provide a way for users to do statistical PC
+  profiling similar to the Unix profil system call.
+
+!!!
+  * Mach 3.0 needs to make switches from MEMORY_OBJECT_COPY_DELAY to
+  MEMORY_OBJECT_COPY_NONE have the effect of immediately completing any
+  delayed copies.
+
+  * Mach 3.0 needs a facility to automatically send task and thread
+  status on task/thread exit to a port that can only be changed by
+  a privileged user; this would be used to implement process
+  accounting.
+
+  * Mach 3.0 needs a facility to find out what task is the parent of
+  a given task.
+
+  * Mach 3.0 needs a facility to find out which pages of a task's
+  address space are in core to implement Unix's mincore call.
+
+  * Mach 3.0 needs a facility to do msync.
+
+  * Utah Mach needs the OSF vm_remap call.
+
+  * Mach 3.0 needs a replacement for MEMORY_OBJECT_COPY_CALL that
+  works at least for the cases needed in ordinary files.  (Write mib if
+  you want to know what the problem is and some ideas about how to
+  solve it.)
+
+!!!
+  * Mach 3.0 needs proxy memory objects.  (mib can tell you what these
+  are and why they are important.)
+
+  * Mach 3.0 needs a way to do per-task resource counters that are
+  accessible to servers called by the task.
+
+  * Mach 3.0 should keep a timestamp of the creation of each task.
+
+  * Mach 3.0 needs facilities to implement resource limits of various sorts.
+
+  * Mach 3.0 needs a way to have a thread's CPU time statistics
+  include time spent by servers on its behalf.  [This has been done
+  for the migrating-threads version of Mach; talk to mib before starting
+  work on it.]
+
+  * Of course, free ports are always necessary to machines that don't
+  already have free ports.
+
+  * Much work can be done doing research in how to improve Mach VM
+  performance and timesharing scheduling policy.
+
+!!!
+  * We need a good malloc for multi-threaded programs that uses
+  vm_allocate.  It should probably be based on the current GNU malloc,
+  as well as merge the mmalloc interfaces used by some existing GNU
+  packages.
+
+  * Mach 3.0 needs facilities to get a list of all the devices which
+  can be device_open'd, as well as to get the type of a device.
+
+  * A way to have the kernel send a message on some designated port
+  everytime a new task is started.
+
+  * OSF has enhanced the exception_raise protocol to include thread_state
+    information.  This code should be merged into the kernel; OSF people
+    have said their could could be released to the public (but it has not
+    appeared).
+
+  * Implement TASK_EVENTS_INFO.
+
+  * Add a timestamp for task and thread creation to the relevant info
+  structures (and make sure it works for the kernel task and threads).
+
+
+Hurd work (these are brief descriptions; mib can give more information):
+
+!!!
+  * An RPC trace program to aid debugging.  Ask roland for more info.
+
+  * Programs that use utmp need to be changed to use /utmp and utmp.defs.
+
+  * We need some standard translators for /utmp nodes; most importantly
+  one for ordinary terminals (set up by login) and one for X displays
+  (set up by xdm).
+
+!!!
+  * We need some existing shell programs changed to do Hurd things:
+  like id, su, ls, tar, cpio, etc.
+
+  * Handy shell programs to send msgport msgs, and change default init
+    ports and ints.
+
+  * Shadow directory translators.
+
+  * A system for write, send, talkd and so forth to bleep users;
+  this should be integrated with the utmp replacement above.
+
+  * X.  (Porting XFree86 should not be hard.)
+
+  * A filesystem for /tmp that uses virtual memory instead of disk.
+  (Roland has some ideas about this.)
+
+  * Filesystem implementations (using libdiskfs) for other popular
+  formats.  Importantly, MSDOS FAT format.
+  
+
+  * Transparent FTP translator.
+
+  * A fancy terminal driver that uses readline and supports detach/attach.
+
+  * A notepad program to hold and keep track of ports for shell scripts.
+
+
+
+C library work.  See roland@gnu.ai.mit.edu if you are interested in working
+on anything in the C library.
+
+  * Useful response to SIGINFO.
+
+  * Better integration with cthreads.

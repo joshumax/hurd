@@ -1,0 +1,23 @@
+-*- Text -*-
+GNU Hurd version 0.0.
+
+
+This is the Hurd.  Welcome.
+
+For instructions on compiling and installing the GNU Hurd from an
+already running Hurd system, see the file `INSTALL'.
+
+It is possible to cross-build the Hurd; the file INSTALL-cross
+contains some past instructions for doing so, but it's too much
+trouble to maintain them and make them easier.  Your best bet is to
+start with a running Hurd system already.
+
+Please note that this directory also contains a fair amount of
+not-yet-working code.  The makefiles build only the working code by
+default. 
+
+The GNU Hurd is free software.  All of it, including the libraries in
+this distribution, is covered by the GNU General Public License, found
+in the file COPYING.
+
+

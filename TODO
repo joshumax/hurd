@@ -1,0 +1,227 @@
+-*- Mode: Outline -*-
+
+Things to be done on Hurd, that we should probably not punt to a volunteer.
+
+See `tasks', the exported task list.
+
+* RMS dictates:
+** O_RDONLY==0
+** "user-friendly" naming scheme for /dev
+
+* Emacs M-x shell seems to start all the ptys.
+* Settle termcap v. curses with rms et. al.
+* Contents of =pending-changes.
+* Make sure all the pieces of the Hurd have adequate version stuff.
+* syslogify everything
+* fix root dependencies in filesystem, network, etc.
+* Profile things
+* Make for easier installation
+
+* Libraries
+
+** libmom work:
+*** Hack interface definitions so that args are mom-ish
+*** Change libports and libpager to be mom-ish
+*** Change servers to be mom-ish
+
+** libc:
+*** Version of tmpfile that takes a directory
+*** Hurd versions of tmpfile that don't create transient files
+*** flink
+*** make sure profiling works
+*** implement revoke once io_revoke is added.
+
+** libports:
+*** Get rid of general `uninibited-rpcs' mechanism in libports, & just
+    special-case interrupt_operation.
+
+** libstore:
+*** test it and make diskfs use it.
+
+** libfsserver/libnetfs:
+*** convert libnetfs to libfsserver
+
+** libpager:
+*** Put user-defined fns into a callback struct passed to pager_create.
+*** Make libpager paging interface able to read/write multiple pages at once.
+*** Check all users of pager-create.c to make sure they DTRT when it returns
+    null.
+
+** libshouldbeinlibc:
+*** Merge contents of libshouldbeinlibc that belong there into libc.
+   Rename the rest to libhurdutil or somesuch.
+*** debug linewrap.c (in libshouldbeinlibc temporarily)
+*** argp: finde some way to flag certain long options as only matching
+   exactly (add this as OPT_EXACT); use this on the built in option
+   --program-name. 
+*** Rewrite argp to do its own parsing.  Preferably, split up libc's
+   getopt into more primitive functions, which both argp and getopt
+   can call.
+
+
+** libdiskfs
+*** detect write-protected media and turn on diskfs_readonly
+*** Add the short-circuited-but-not-builtin translator startup code from
+    dir-lookup to fsys_getroot.  Compare and match carefully these two
+    routines and then share common code.
+*** Handle dead name notifications on execserver ports.
+*** Deal correctly with setting the translators on /servers/exec.
+*** Implement file_notice_changes.
+*** Implement async I/O.
+*** Think of a way to have when-to-sync-nodes be more flexible so it can
+    be done right for each format.
+*** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation.
+*** Provide for MNT_SYNCHRONOUS, MNT_NOEXEC, MNT_NOSUID, MNT_NODEV, etc.
+*** Implement io_restrict_auth correctly.
+*** Use libstore.
+*** Use off_t correctly.
+*** Add a consistent message printing facility for filesystems to use
+    (syslog, but takes special care when the root file system?).
+*** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
+    routines. 
+
+** libfshelp
+*** Put functions here to deal with directory and file change notifications?
+*** Translator startup should provide a more useful stdin/stdout than nothing?
+*** Add functions to do permission checking and change libdiskfs et. al.
+    to use them.
+
+** libpager
+*** Change interface to be more efficient with multi-page data-return calls.
+*** Remove pagers from portset if there are too many incoming requests to
+    avoid forking too many threads.
+*** flush functions don't actually force pending delayed copies. (and in
+    fact, they seem to block if a delayed copy is wired down)
+
+** libtrivfs
+*** Allow for read/write/exec to be passed down.
+*** Implement file_exec when appropriate.
+*** Provide for the visible owner, etc., to be held in command-line args
+    instead of the underlying node, when it's important.
+
+** libps
+*** Wizzior columnation (autosizing?)
+*** Make getters more robust.
+
+
+* Servers
+** write default pager
+** Implement goaway in all the servers that don't already have it.
+** (init) sleep on spinning gettys
+** Add calls to various servers to return interesting statistical information.
+** Test new-fifo & make it fifo.
+** Login/utmp?
+** fifos are flaky.  ?? Details ??
+** pflocal: make peer addresses work?
+
+** proc:
+*** Add a version of proc_wait usable by non-parent processes, and use it in
+    gdb; maybe just a flag WNOREAP to proc_wait that doesn't reap and allows
+    anyone to use it.
+*** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
+    non-suid.
+*** Remove hostname/hostid functions
+
+** pfinet
+*** Allow multiple pfinets to arp on the same ethernet interface for different
+    IP addresses.
+*** Register a shutdown notification to close TCP channels.
+
+** nfs
+*** Implement async I/O
+*** Finish work to turn on paging.
+*** Finish excl arg work in link and rename.
+
+** devio:
+*** Make a server (/servers/devio?) to share multiple devio nodes?
+*** Use libstore.
+*** Make block devices work again.
+*** MAKEDEV should be able to make physical terminal devs.
+*** Get rid of global DEVICE variable and use the trivfs control hack.
+*** Serverify, ala new-fifo.
+
+** ufs:
+*** Implement clustering, a la 4.4-lite sys/kern/vfs_cluster.c.
+*** Make file_get_storage_info work for files with indirect blocks.
+*** Optimizations:
+    pager.c/inode.c/libdiskfs count pager refs separately and then save
+      mappings in _diskfs_rdwr_internal and dir.c
+*** Problems with DT_* hack:
+****   Fix multiple-links DT_* bug.
+****   Deal with change of type which should update directory.
+****   Type is also wrong for translated nodes...
+*** Roland sez: ENOSPC detection flaky in ufs.  Try write of >page, 
+    non-page-multiple, when free space allows write size but not 
+    round_page (write size).
+*** After using cp-dRuv to update lots of files to a ufs filesystem, sometimes
+    settrans -a says `Device Busy' if you subsequently attempt to shut it down.
+    (is this still true?)
+
+** ext2fs
+*** Support chflags/st_flags and convert to/from ext2 flags on disk.
+*** Try to write directories with 512-byte record boundaries.
+*** Maybe file_pager_write_page should be able to accurately reproduce holes...
+*** Add byte-swapping.
+
+** crash
+*** Write core files.
+
+** init
+*** SIGHUP and SIGQUIT don't seem to do the right thing.
+
+
+* Utilities
+** Write a real mount program.
+** settrans needs an option to make the active go away without using goaway.
+** Make id, et. al. work with no/multiple uids.
+** Make things work with the `nobody' mode bits: chmod, ls, ...
+** Make things work better with translators, e.g., tar...
+** Fix bash to turn on interrupts around syscalls more generally,
+    especially chdir.
+** Make su work.
+** Bug: `hostname' command with no /etc/hostname hangs the system with disk light going.
+** talk doesn't work
+** login: Make --retry work correctly when invoked via a suid shell
+    script by other than root (it doesn't now if the script specifies
+    --retry="$0" because the exec server will use /dev/fd/N for name,
+    and child_lookup() doesn't supply more than fds 0-2).
+
+
+** ps:
+*** ps should timeout quickly (one second?) on non-responsive message ports.
+*** --help output is wrong (probably line_wrap_point is not synced 
+    with stream).
+*** help displays for: stat letters, format specs.
+*** Add head/tail options
+
+** gdb:
+*** Add various mach convenience features (vminfo, &c).
+*** Be even more vigilant about noticing new threads.  In particular:
+**** For mach-indep thread commands, before validating against 
+     internal thread list.
+*** read core files
+
+** nfsd -- fix remaining bugs
+*** Add necessary support to filesystems
+
+** fsck -- zero-length directories and attachment into lost+found still 
+   don't work. 
+
+
+* Mach:
+** Have some analogue of /dev/klog that syslogd can get kernel messages from
+    (maybe there is already?); the boot file system, and other people deeming
+    it too risk to attempt to contact syslogd can use it too?
+** Add a startup timestamp to tasks, and have some way of fetching it.
+
+
+* TODO for version 0.0:
+
+** Bug: GDB as non-root
+** Compile released libc.
+** Compile released utilities.  (See SOURCES-0.0)
+** Make serverboot source tar and build instructions.
+** Deal with crypt
+** Relink everything after version numbered libc is installed
+** Debug ext2fs
+** Find fsck system hang

@@ -1,0 +1,14 @@
+Checklist for Hurd releases.
+
+o   Make sure /i486-gnu contains hard links, not copies.
+o   Make sure we are using Hurd versions of su and uptime, not sh-utils.
+o   Make install-dist from release dir.
+o   Source code for Hurd and libc must be released.
+o   Make sure everything listed in SOURCES is on prep.
+o   Remove .stamp files from binary tree.
+o   Make everything root.wheel, mode 755/644.
+o   Check permissions on setuid files in binary tree.
+       (login, ps, w)
+o   Check each directory for bogus cruft files.
+o   Especially delete .bash_history, .gnunfs*, and .stamp files.
+o   Verify installation on bare machine.

@@ -1,0 +1,109 @@
+/* A server for keeping track of filesystems
+
+   Copyright (C) 1996 Free Software Foundation, Inc.
+
+   Written by Miles Bader <miles@gnu.ai.mit.edu>
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
+#include <hurd/hurd_types.defs>
+
+subsystem mount 37000;
+
+import <hurd/mount_defs.h>;
+
+type mount_t = mach_port_t
+#ifdef MOUNT_INTRAN
+intran: MOUNT_INTRAN
+#endif
+#ifdef MOUNT_OUTTRAN
+outtran: MOUNT_OUTTRAN
+#endif
+#ifdef MOUNT_DESTRUCTOR
+destructor: MOUNT_DESTRUCTOR
+#endif
+;
+type mount_server_t = mach_port_t
+#ifdef MOUNT_SERVER_INTRAN
+intran: MOUNT_SERVER_INTRAN
+#endif
+#ifdef MOUNT_SERVER_OUTTRAN
+outtran: MOUNT_SERVER_OUTTRAN
+#endif
+#ifdef MOUNT_SERVER_DESTRUCTOR
+destructor: MOUNT_SERVER_DESTRUCTOR
+#endif
+;
+
+type mount_state_t = int ctype: mount_state_t;
+type mount_key_class_t = int ctype: mount_key_class_t;
+type mount_excl_t = int ctype: mount_excl_t;
+
+#ifdef MOUNT_IMPORTS
+MOUNT_IMPORTS
+#endif
+
+INTR_INTERFACE
+
+/* RPCs */
+
+/* Begin mounting the filesystem designated by KEY & KEY_CLASS; the mount is
+   initially assumed to have a mode of 0 (see mount_set_mode).  EXCL is the
+   mount exclusion mode which applies to KEY (only the first EXCL argument
+   for a particular KEY is used).  A mount reference is returned in MOUNT,
+   and the current state of that filesystem is returned in STATE (and may be
+   used to, e.g., cause the mount to be read-only if STATE is SUSPICIOUS).  */
+routine mount_begin (
+        server : mount_server_t;
+	key : string_t;
+	key_class : mount_key_class_t;
+	excl : mount_excl_t;
+	out mount : mount_t;
+	out state : mount_state_t);
+
+/* Assert that MOUNT is no longer active.  If CLEAN is true, then the state
+   of the filesystem should be changed to CLEAN; however if the state was
+   previously SUSPICIOUS, this is only done if CHECKED is true.  */
+routine mount_end (
+	mount : mount_t;
+	clean : boolean_t;
+        checked : boolean_t);
+
+/* Indicate that MOUNT is a real mount.  TRANSLATOR and MPOINT should be the
+   filesystem control port and the node which is being translated.  TIMESTAMP
+   is used to validate this mount if a reconnection to the mount server
+   becomes necessary.  */
+routine mount_set_translator (
+	mount : mount_t;
+	translator : fsys_t;
+	mpoint : file_t;
+	timestamp : time_spec_t);
+
+/* If CLEAN is true, then the state of the filesystem should be changed to
+   CLEAN; however if the state was previously SUSPICIOUS, this is only done
+   if CHECKED is true.  */
+routine mount_set_clean (
+	mount : mount_t			    
+        clean : boolean_t;
+        checked : boolean_t);
+
+/* Change the current writable state of MOUNT to MODE, which should be a
+   bitmask containg MOUNT_READ and/or MOUNT_WRITE.  If other current mounts
+   preclude this, then EBUSY is returned.  If MODE contains MOUNT_FORCE and
+   there are conflicting mounts, an attempt is made to use the --suspend
+   option on the other filesystems in order to force the issue.  */
+routine mount_set_mode (
+	mount : mount_t
+        mode : int);

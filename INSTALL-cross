@@ -1,0 +1,119 @@
+  === Hey, Emacs!  This is -*- Text -*- !!! ===
+Last update 11 Apr 1996 by Michael I. Bushnell, p/BSG (mib@gnu.ai.mit.edu).
+
+
+These are instructions for building the Hurd as in cross-development
+environment.  Unless you are building the Hurd on an already running
+Hurd system, you will need these directions to build the Hurd from any
+other kind of system.  Even if you are using a Mach system (Lites,
+say) you will *STILL* need to follow these directions; this is still
+cross-compilation.  
+
+
+
+I:
+
+First you must have GCC and binutils installed.  We use GCC 2.7.2 and
+recent Cygnus binutils snapshots.  You need to configure binutils and
+GCC for the i486-gnu target.  In order to build the GNU C library for
+the Hurd, you will need gawk installed.  You should install GCC and
+binutils as the instructions for these programs indicate.  The Hurd
+makefiles depend on having them installed correctly as
+cross-development tools.  Even if you are building the Hurd on a 486,
+even if it's running a different Mach-based OS, you are still cross
+compiling.  Don't attempt to use tools that have been configured for
+something other than i486-gnu.
+
+Install things in /usr/local, as the Makefiles do by default.  If you
+change $(prefix) when installing the cross-development tools, then
+random problems might happen.  I cannot stress to highly that you are
+much better off doing things in the ordinary default way.
+
+
+II:
+
+You need space to "install" the compiled Hurd, its libraries, include
+files, and binaries that will run on the Hurd.  In these instructions,
+we will refer to this as the "installation staging area".  This will,
+more or less, be a suitable image to use as a Hurd root image when you
+are finished.
+
+This space needs to be accessible to the machine doing the
+cross-compilation, because the libc and include files that go in the
+Hurd's root filesystem are also the ones that are needed during
+cross-compilation.
+
+We strongly advise that this directory not be put in /usr/local.  This
+will tend to cause confusion.
+
+If you followed the directions in (I) above, then in
+/usr/local/i486-gnu you already have a number of cross-development
+tools.  (ar, ranlib, ld, as and so forth.)  This is the place where
+the compiler looks for cross-development stuff.  So now make two
+symlinks, named /usr/local/i486-gnu/include and
+/usr/local/i486-gnu/lib, and point them at foo/include and foo/lib,
+where `foo' is the name of you Hurd installation staging area.  If you
+don't do this, you will lose.  Do it now.
+
+
+III:
+
+You should get MiG from the Utah mach4 distribution, and build it to
+cross compile.  Set MIG appropriately in Maketools (usually to
+"i486-gnu-mig").  Install it as /usr/local/i486-gnu/bin/mig, install
+migcom as /usr/local/i486-gnu/lib/migcom.  (Note that the last
+pathname, because of the symlink you made in step II, is actually
+somewhere in the Hurd installation staging area directory.  This is
+strictly wrong, because the running Hurd won't be able to use that
+migcom.  Don't worry, just remember when you boot the Hurd that this
+one program won't work quite right.  We intend to fix this later.)
+
+
+IV:
+
+MAKE VERY SURE that gcc, for all Hurd work, does not use a gcc include
+directory with fixincludes processed files.  Your special GCC include
+directory should have *only* GCC include files.  GCC should do this by
+default, but you might want to check in
+/usr/local/lib/gcc-lib/i486-gnu/CCVERSION/include to make sure.
+
+
+V:
+
+Now, make the GNU C library.  Please read its own installation
+instructions, but here is a brief summary.
+
+Configure the GNU library with a command like:
+
+configure i486-gnu --with-mach=FOO --with-hurd=BAR --prefix=BAZ
+
+FOO should be the top level source directory of your Mach source.
+BAR should be the top level Hurd source directory.
+BAZ should be the installation staging area you have chosen.
+
+Build and install the library with `make install'.
+
+
+VI:
+
+Configure the Hurd with a command like:
+
+"CC=gcc -b i486-gnu" configure i486-gnu --prefix=BAZ
+
+BAZ is, again, the name of your installation staging area.
+
+Build and install the Hurd with `make install'.
+
+
+VII:
+
+Now in your Hurd staging area are the complete binaries for the Hurd
+and its programs, and the C library and its associated programs.  You
+will want binaries for other programs too, of course--for example, you
+have no shell yet.  In general, you can build most GNU packages
+without too much hassle using your cross compilers.  In this way you
+can build up as much of a binary distribution as you like.
+
+See the file `INSTALL-binary' for instructions on running your new
+binaries.
+

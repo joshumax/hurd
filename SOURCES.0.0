@@ -1,0 +1,196 @@
+Sources for binaries in Hurd version 0.0.
+
+STILL TO CATEGORIZE: XXX  
+* fileutils (3.13) [rebuild for df after libc install]
+* gperf (cperf 2.1a) [hacked src/Makefile and src/stderr.c slightly]
+	[substitute with libg++ version?]
+libc
+mach
+
+
+
+The following packages were built from the sources of the indicated
+version in ftp://prep.gnu.ai.edu/pub.gnu according to the provided
+instructions without modification:
+
+* autoconf (2.10)
+* automake (1.0)
+* bc  (1.03)
+* binutils (2.7)
+* bison (1.25)
+* cpio (2.4.2)
+* cvs (1.8.1, in cvs-1.8.tar.gz)
+* diffutils (2.7)
+* doschk (1.1)
+* ed  (0.2)
+* emacs lisp manual (19-2.4)
+* flex  (2.5.3)
+* gawk  (3.0.0)
+* gcal (1.01)
+* gcc  (2.7.2)
+* gdbm (1.7.3)
+* gettext (0.10)
+* gmp (2.0.2)
+* grep (2.0)
+* hello (1.3)
+hurd (0.0)
+* indent (1.9.1)
+* inetutils (1.0)
+* less (320)
+* m4 (1.4)
+* miscfiles (1.0)
+* nvi (1.71)
+* ptx (0.4)
+* readline (2.0)
+* recode (3.4)
+* sed  (2.05)
+* sharutils (4.2)
+* termcap (1.3) [manual only]
+* termutils (2.0)
+* textutils (1.19)
+* time (1.7)
+* wdiff (0.5)
+
+
+
+The following packages were built from the sources of the indicated
+version in ftp://prep.gnu.ai.mit.edu/pub/gnu according to the provided
+instructions, after making the indicated minor modifications:
+
+* emacs (19.31)
+  [comment out definition of tparam in src/terminfo.c.]
+  [add to src/s/gnu.h the following five lines]
+   #ifdef HAVE_LIBNCURSES
+   #define TERMINFO
+   #define LIBS_TERMCAP -lncurses
+   #endif
+   #define setpgrp(a,b) setpgrp()
+* findutils (4.1)  
+  [Comment out decl of basename in defs.h and defn in util.c]
+* gzip (1.2.4) 
+  [commented out basename from gzip.h and util.c]
+* ncurses (1.9.9e) 
+  [In read_entry.c, change second arg of call to open from `0' to O_RDONLY]
+  [In lib_tparm.c:tparam, add the following before the call to tparam_internal]
+	if (!buffer)
+		buffer = malloc (256);
+* patch (2.1) 
+  [comment out basename in backupfile.c.]
+* rcs (5.7) 
+  [Put `#undef ED' before #define ED in conf.h.]
+  [Add `#define SYMLOOP_MAX 8' to conf.h.]
+* tar (1.11.8) 
+  [add `strerror' to AC_CHECK_FUNCS in configure.in]
+* texinfo (3.7) 
+  [info/terminal.c -- add `#define B9600 9600']
+
+
+
+
+The following were compiled from the sources found in
+ftp://prep.gnu.ai.mit.edu/pub/gnu/gnu-0.0/hurd-special-src:
+
+* bash (1.14.4 patchlevel 10, with some additional local bugfixes)
+e2fsprogs (e2fsprogs-0.5c-hurd1.tar.gz) [1.04 doesn't have hurd patches]
+serverboot
+* from
+(*) grub
+  [ Requires changes for ELF: avoid generating 16-bit relocations.
+    Requires other changes to deal with ELF; makefiles only work for
+    mach3-a.out object file format. ]
+* sh-utils (1.12m from alpha.gnu.ai.mit.edu; unmodified)
+* make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
+gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
+
+
+
+
+
+Give up:
+finger (1.37)
+mtools (3.0) [comment out decl of sys_errlist in sysincludes.h.]
+             [Uses of MAXPATHLEN]
+oleo (1.6) [utterly fails to build]
+gnuplot (3.5) [has old old version of readline]
+es (0.84 from ftp.white.toronto.edu)
+   (-DEVFD=1 -DGETGROUPS_USES_GID_T=1 -DREADLINE=1 
+    -DUSE_SIGACTION=1 -DUSE_SIG_ATOMIC_T=1)
+   [ Errors for longjmp in access.c and parse errors besides]
+regex (0.12) [Expects TeX to be present]
+screen (3.7.1) [Wants utmpx.h]??
+ispell (3.1.20) [hacked for bison; builds zero-length dictionary]
+rx (1.0)  [ wants `tsort' to configure ]
+perl (5.003) [configure script fails in shlib frobnication]
+
+
+Secondary:
+* from (from.tar.gz)
+X libraries
+X utilities
+TeX
+METAFONT
+libg++
+calc
+chess
+clisp
+csh
+dld
+gcl
+dejagnu
+elib
+elisp archive
+f2c
+ffcall
+g77
+fontutils
+ghostscript
+ghostview
+git
+gnugo
+graphics
+groff
+hp2xx
+hyperbole
+id-utils
+jacal
+lily
+mkisofs
+nethack (3.2.1)
+  [3.2.0 + nethack-3.2.0-3.2.1.patch
+   define BSD & linux, frob paths in config.h & unixconf.h & root Makefile
+   comment out declaration of random in system.h]
+nih classes
+oaklisp
+libobjects
+mm
+obst
+octave
+  [See ftp://ftp.che.wisc.edu/pub/octave/README-GCC-2.7.0]
+  [See ftp://ftp.che.wisc.edu/pub/octave/README-GCC-2.7.1]
+p2c
+pcl
+pine
+rc
+scheme
+shogi
+sipp
+smalltalk
+sneps
+superopt
+tile forth
+ucblogo
+uucp
+vh
+vm
+xboard
+xinfo
+xshogi
+
+
+Tertiary:
+X server
+ae
+cfengine
+enscript
+gnat
+mc

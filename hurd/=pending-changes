@@ -1,0 +1,26 @@
+User visible:
+
+Change fsys_set_options interface to allow returning data & err+data.
+  fsys: fsys_t; options: data_t; do_children: int; err: error_t; result: data_t
+Add error_t to hurd_types.defs.
+
+Add notification calls to process.defs (and create process_notify.defs). 
+(not yet)
+
+Add file_exchange_contents (not yet)
+
+Change file_getfh and fsys_getfile to use more convenient interface.
+
+Remove hostid/hostname calls from process.defs.
+
+Add serverport arg to auth_user_authenticate; change auth to use it to
+abort auth_user_authenticate when it's dead.
+
+Add io_revoke.
+
+
+Not user visible:
+
+Format of /var/login should be user:1 not user-1.
+  [Or as subdirectories, if a server supplies directory ops anyway]
+

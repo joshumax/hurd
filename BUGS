@@ -1,0 +1,33 @@
+This file is for bugs in Mach.  Bugs in the Hurd go into TODO.
+
+Do not ever delete a bug from this list; new Mach releases need to be
+checked to make sure fixed bugs stay fixed, and so this list must
+never get truncated.  -mib
+
+--Reported, verified fixed--
+
+--Reported, claimed fixed--
+MiG user stubs need to destroy reply port on any message transmission
+error, not just a limited set.
+
+--Reported--
+Bug in vm_fault: when vm_fault on a shadow page:
+First page from anonymous copy; returns unavaliable.  Then fault on
+the actual page and block.  This block is interruptible, but a lock is
+being held on the copy object (because it's FIRST_M).  If the sleep is
+interrupted, the lock gets released, but unfortunately, it could also
+be suspended, and that's a lose.
+
+pager flush of wired pages can block forever uninterruptibly.
+
+unwiring of pages should call PAGE_WAKEUP
+
+permission arg of vm_wire is not passed to vm_fault, so that vm_fault
+overeagerly wires the current protection, which might be more than the
+permission arg of vm_wire.
+
+When wiring, vm_fault uses current permission instead of max
+permission; this will cause a failure of vm_wire if the current
+permission is later promoted.
+
+Patch for MiG dealing when sreplyport and mach_port_poly_t are used together. 
