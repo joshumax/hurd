@@ -61,6 +61,7 @@ static char sccsid[] __attribute__ ((unused));
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
@@ -94,7 +95,7 @@ mode_rep (unsigned short mode)
     case S_IFIFO: *p++ = 'f'; break;
     default:      *p++ = '?';
     }
-  
+
   add_perms (0, S_ISUID);
   add_perms (3, S_ISGID);
   add_perms (6, 0);
