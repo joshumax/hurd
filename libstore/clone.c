@@ -60,6 +60,21 @@ store_clone (struct store *from, struct store **to)
       if (! err)
 	c->source = from->source;
     }
+  if (!err && from->num_children > 0)
+    {
+      int k;
+
+      c->children = malloc (from->num_children * sizeof (struct store *));
+      if (! c->children)
+	err = ENOMEM;
+
+      for (k = 0; !err && k < from->num_children; k++)
+	{
+	  err = store_clone (from->children[k], &c->children[k]);
+	  if (! err)
+	    c->num_children++;
+	}
+    }
 
   if (!err && from->meths->clone)
     err = (*from->meths->clone)(from, c);
