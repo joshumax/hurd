@@ -29,7 +29,7 @@ target = exec
 #targets = exec exec.static
 DIST_FILES = core.c gcore.c elfcore.c
 #OTHERLIBS = -lbfd -liberty
-HURDLIBS=trivfs fshelp iohelp ports ihash threads shouldbeinlibc
+HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
