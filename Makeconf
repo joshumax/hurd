@@ -45,7 +45,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 # $(link) uses threads to get malloc until the one in the library is fixed.
 
 define link
-$(CC) -v -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
 
