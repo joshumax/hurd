@@ -1,3 +1,9 @@
+2001-04-01  Roland McGrath  <roland@frob.com>
+
+	* io-interrupt.c: Obsolete file removed.
+	* Makefile (IOSRCS): Remove it from the list.
+	Reported by Neal H Walfield <neal@cs.uml.edu>.
+
 2001-03-28 Neal H Walfield  <neal@cs.uml.edu>
 
 	* protid-rele.c: Doc typo fix.
