@@ -68,10 +68,10 @@ instructions, after making the indicated minor modifications:
    #define LIBS_TERMCAP -lncurses
    #endif
    #define setpgrp(a,b) setpgrp()
-* findutils (4.1)  
+*+ findutils (4.1)  
   [Comment out decl of basename in defs.h and defn in util.c
    Add `#define ARG_MAX 20480' in xargs/xargs.c, right after the includes]
-* gzip (1.2.4) 
+*+ gzip (1.2.4) 
   [commented out basename from gzip.h and util.c]
 * ncurses (1.9.9e) 
   [In read_entry.c, change second arg of call to open from `0' to O_RDONLY]
