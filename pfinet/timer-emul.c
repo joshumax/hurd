@@ -18,49 +18,82 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <linux/timer.h>
+#include <asm/system.h>
+
+
 static void
-timer_function ((any_t) timerp)
+timer_function (any_t timerp)
 {
   struct timer_list *timer = timerp;
-  
-  msleep (timerp->expires);
-  
-  begin_interrupt ();
-  (*timer->function)(timer->data);
-  end_interrupt ();
-  timer->thread = 0;
+  mach_port_t recv;
+  error_t err;
+
+  recv = mach_reply_port ();
+
+  timer->thread = mach_thread_self ();
+
+  err = mach_msg (NULL, MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT, 
+		  0, 0, recv, timer->expires, MACH_PORT_NULL);
+
+  timer->thread = MACH_PORT_NULL;
+
+  mach_port_destroy (mach_task_self (), recv);
+
+  if (!err)
+    {
+      begin_interrupt ();
+      (*timer->function)(timer->data);
+      end_interrupt ();
+    }
 }
 
 
 void
 add_timer (struct timer_list *timer)
 {
-  cthread_t thread;
-  
-  timer->thread = 0;
-  thread = cthread_fork (timer_function, timer);
-  timer->thread = thread;
-  cthread_detach (thread);
+  timer->thread = -1;
+  cthread_detach (cthread_fork ((cthread_fn_t) timer_function, timer));
 }
 
-void
+int
 del_timer (struct timer_list *timer)
 {
-  if (timer->thread)
+  thread_t thread;
+
+  
+  if (timer->thread == -1)
     {
-      int flags;
-      
-      save_flags (flags);
-      cli ();
-      cthread_kill (timer->thread);
-      restore_flags (flags);
+      /* It hasn't had a chance to set its ID.  Wait a bit
+	 until it does. */
+      do
+	swtch_pri (0);
+      while (timer->thread == -1);
     }
+  
+  thread = timer->thread;
+  if (thread == MACH_PORT_NULL)
+    return 0;  /* ??? */
+
+  thread_suspend (thread);
+
+  /* Test again, because it might have run and completed the mach_msg after
+     we tested above and before we suspended, and we don't want to abort
+     the mach_port_destroy and certainly not anything inside the timer function\
+     which might have started running. */
+  if (timer->thread)
+    thread_abort (thread);
+
+  thread_resume (thread);
+
+  /* What to return? */
+  return 0; /* ???*/
 }
 
 void
 init_timer (struct timer_list *timer)
 {
-  timer->thread = 0;
+  timer->thread = MACH_PORT_NULL;
 }
 
   
