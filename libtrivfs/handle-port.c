@@ -25,6 +25,7 @@ trivfs_handle_port (mach_port_t realnode,
 		    struct port_bucket *protid_bucket)
 {
   struct trivfs_control *cntl;
+  mach_port_t right;
   
   cntl = ports_allocate_port (control_bucket, 
 			      sizeof (struct trivfs_control), control_class);
@@ -32,5 +33,7 @@ trivfs_handle_port (mach_port_t realnode,
   cntl->protid_class = protid_class;
   cntl->protid_bucket = protid_bucket;
   mutex_init (&cntl->lock);
-  return ports_get_right (cntl);
+  right = ports_get_right (cntl);
+  ports_port_deref (cntl);
+  return right;
 }
