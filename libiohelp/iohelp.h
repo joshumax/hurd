@@ -1,5 +1,5 @@
 /* Library providing helper functions for io servers.
-   Copyright (C) 1993,94,96,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,96,98,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -89,17 +89,25 @@ error_t iohelp_create_iouser (struct iouser **user, struct idvec *uids,
 /* Create a new IOUSER in USER for the specified arrays.  On error, *USER
    is set to NULL.  */
 error_t iohelp_create_complex_iouser (struct iouser **user,
-				      uid_t *uids, int nuids,
-				      gid_t *gids, int ngids);
+				      const uid_t *uids, int nuids,
+				      const gid_t *gids, int ngids);
 
 /* Create a new IOUSER in USER for the specified uid and gid.  On error,
    *USER is set to NULL.  */
-error_t iohelp_create_simple_iouser (struct iouser **user, uid_t uid,
-				     gid_t gid);
+error_t iohelp_create_simple_iouser (struct iouser **user,
+				     uid_t uid, gid_t gid);
 
 /* Create a new IOUSER in USER with no identity.  On error, *USER is set
    to NULL.  */
 error_t iohelp_create_empty_iouser (struct iouser **user);
+
+/* Create a new IOUSER in NEW_USER that restricts OLD_USER to the subset
+   specified by the two ID lists.  This is appropriate for implementing
+   io_restrict_auth.  */
+error_t iohelp_restrict_iouser (struct iouser **new_user,
+				const struct iouser *old_user,
+				const uid_t *uids, int nuids,
+				const gid_t *gids, int ngids);
 
 /* Conduct a reauthentication transaction, returning a new iouser in
    USER.  AUTHSERVER is the I/O servers auth port.  The rendezvous port
