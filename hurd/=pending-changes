@@ -7,8 +7,6 @@ Add file_exchange_contents (not yet)
 
 Change file_getfh and fsys_getfile to use more convenient interface.
 
-Remove hostid/hostname calls from process.defs.
-
 Add serverport arg to auth_user_authenticate; change auth to use it to
 abort auth_user_authenticate when it's dead.
 
