@@ -1,3 +1,7 @@
+2003-08-03  Marco Gerards  <metgerards@student.han.nl>
+
+	* inode.c (read_node): Fix typo.
+
 2003-08-01  Marco Gerards  <metgerards@student.han.nl>
 
 	* node-create.c: New file.
