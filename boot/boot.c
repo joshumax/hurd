@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -670,11 +670,8 @@ main (int argc, char **argv, char **envp)
       FD_SET (0, &rmask);
       if (select (1, &rmask, 0, 0, 0) == 1)
 	read_reply ();
-      else
-	{			/* We hosed */
-	  perror ("select");
-	  exit (5);
-	}
+      else /* We hosed */
+	error (5, errno, "select");
     }
 
 /*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
