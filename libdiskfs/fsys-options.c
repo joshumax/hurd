@@ -33,11 +33,10 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 			   char *data, mach_msg_type_number_t len,
 			   int do_children)
 {
-  int argc = argz_count (data, len);
-  char **argv = alloca (sizeof (char *) * (argc + 1));
-  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, fsys,
-					    diskfs_control_class);
-  int ret;
+  error_t err = 0;
+  struct port_info *pt =
+    ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
+
   error_t
     helper (struct node *np)
       {
@@ -65,15 +64,23 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 
   if (do_children)
     {
-      ret = diskfs_node_iterate (helper);
-      if (ret)
-	return ret;
+      rwlock_reader_lock (&diskfs_fsys_lock);
+      err = diskfs_node_iterate (helper);
+      rwlock_writer_unlock (&diskfs_fsys_lock);
     }
 
-  argz_extract (data, len, argv);
+  if (!err)
+    {
+      int argc = argz_count (data, len);
+      char **argv = alloca (sizeof (char *) * (argc + 1));
 
-  ret = diskfs_set_options (argc, argv);
+      argz_extract (data, len, argv);
+
+      rwlock_writer_lock (&diskfs_fsys_lock);
+      err = diskfs_set_options (argc, argv);
+      rwlock_writer_unlock (&diskfs_fsys_lock);
+    }
 
   ports_port_deref (pt);
-  return ret;
+  return err;
 }
