@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-trivfs_S_file_getcontrol (struct protid *cred,
+trivfs_S_file_getcontrol (struct trivfs_protid *cred,
 			  mach_port_t *cntl,
 			  mach_msg_type_name_t *cntltype)
 {
@@ -28,6 +29,6 @@ trivfs_S_file_getcontrol (struct protid *cred,
     return EPERM;
   
   *cntl = ports_get_right (cred->cntl);
-  *controltype = MACH_MSG_TYPE_MAKE_SEND;
+  *cntltype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
