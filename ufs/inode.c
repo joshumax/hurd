@@ -614,7 +614,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 				mach_port_t *storage_port,
 				mach_msg_type_name_t *storage_port_type,
 				char **storage_data,
-				u_int *storage_data_len)
+				u_int *storage_data_len,
+				int *flags)
 {
   error_t err;
   struct node *np;
@@ -691,6 +692,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   diskfs_end_catch_exception ();
   
   *class = STORAGE_DEVICE;
+  *flags = 0;
   *block_size = DEV_BSIZE;
 
   if (diskfs_device_name)
