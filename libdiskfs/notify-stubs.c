@@ -65,7 +65,7 @@ diskfs_do_seqnos_mach_notify_dead_name (mach_port_t notify
 					mach_port_seqno_t seqno
 					  __attribute__ ((unused)),
 					mach_port_t name
-					  __atribute__ ((unused)))
+					  __attribute__ ((unused)))
 {
   return 0;
 }
