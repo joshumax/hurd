@@ -1,5 +1,8 @@
 Thu Feb  6 01:40:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* login.c (main): Look for NOBODY in ARGS_DEFS too, and use a last
+	ditch default if we can't find it anywhere.
+
 	* w.c (w_get_host): Don't use strlen on it if *HOST is 0.
 
 Mon Dec 16 20:52:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
