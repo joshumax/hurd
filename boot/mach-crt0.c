@@ -84,10 +84,12 @@ int	(*_StrongBox_init_routine)();
 int	errno = 0;
 int	exit();
 
+extern int main();
+
 extern	unsigned char	etext;
-extern	unsigned char	_eprol;
-_start()
+int _start()
 {
+        __label__ eprol;
 	struct kframe {
 		int	kargc;
 		char	*kargv[1];	/* size depends on kargc */
@@ -97,7 +99,6 @@ _start()
 	/*
 	 *	ALL REGISTER VARIABLES!!!
 	 */
-	register int r11;		/* needed for init */
 	register struct kframe *kfp;	/* r10 */
 	register char **targv;
 	register char **argv;
@@ -121,9 +122,7 @@ _start()
 	if (mach_init_routine)
 		(void) mach_init_routine();
 
-asm(".globl __eprol");
-asm("__eprol:");
-
+ eprol:
 #ifdef paranoid
 	/*
 	 * The standard I/O library assumes that file descriptors 0, 1, and 2
@@ -150,12 +149,9 @@ asm("__eprol:");
 	if (_StrongBox_init_routine) (*_StrongBox_init_routine)();
 
 	if (_monstartup_routine)  {
-	    _monstartup_routine(&_eprol, &etext);
+	    _monstartup_routine(&&eprol, &etext);
 	}
 
 	(* (_cthread_exit_routine ? _cthread_exit_routine : exit))
 		(main(kfp->kargc, argv, targv));
 }
-
-    
-
