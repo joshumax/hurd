@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.11  1996/01/24 18:37:59  roland
+ * Use prototypes for functions of zero args.
+ *
  * Revision 1.10  1995/09/13 19:50:07  mib
  * (CONDITION_INITIALIZER): Provide initial zero for IMPLICATIONS member.
  * (condition_init): Bother initializing NAME and IMPLICATIONS members.
@@ -230,14 +233,8 @@ typedef char *any_t;
 
 #ifndef MACRO_BEGIN
 
-#ifdef	lint
-int	NEVER;
-#else	lint
-#define	NEVER 0
-#endif	lint
-
 #define	MACRO_BEGIN	do {
-#define	MACRO_END	} while (NEVER)
+#define	MACRO_END	} while (0)
 
 #endif	MACRO_BEGIN
 
