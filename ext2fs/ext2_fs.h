@@ -30,7 +30,7 @@ typedef signed char s8;
 /*
  * Define EXT2FS_DEBUG to produce debug messages
  */
-#undef EXT2FS_DEBUG
+#define EXT2FS_DEBUG
 
 /*
  * Define EXT2FS_DEBUG_CACHE to produce cache debug messages
@@ -63,9 +63,9 @@ typedef signed char s8;
  */
 #ifdef EXT2FS_DEBUG
 #	define ext2_debug(f, a...)	{ \
-					printk ("EXT2-fs DEBUG (%s, %d): %s:", \
+					printf ("EXT2-fs DEBUG (%s, %d): %s:", \
 						__FILE__, __LINE__, __FUNCTION__); \
-				  	printk (f, ## a); \
+				  	printf (f, ## a); \
 					}
 #else
 #	define ext2_debug(f, a...)	/**/
