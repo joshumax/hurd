@@ -206,18 +206,27 @@ struct proc_stat
     mach_port_t msgport;
 
     /* A pointer to the process's procinfo structure (as returned by
-       proc_getinfo; see <hurd/hurd_types.h>).  */
-    struct procinfo *info;
+       proc_getinfo; see <hurd/hurd_types.h>).  Vm_alloced.  */
+    struct procinfo *proc_info;
     /* The size of the info structure for deallocation purposes.  */
-    unsigned info_size;
+    unsigned proc_info_size;
 
-    /* Summaries of the proc's thread_{basic,sched}_info_t structures: sizes
-       and cumulative times are summed, prioritys and delta time are
-       averaged.  The run_states are added by having running thread take
-       precedence over waiting ones, and if there are any other incompatible
-       states, simply using a bogus value of -1 */
-    thread_basic_info_data_t thread_basic_info;
-    thread_sched_info_data_t thread_sched_info;
+    /* If present, these are just pointers into the proc_info structure.  */
+    unsigned num_threads;
+    task_basic_info_t task_basic_info;
+
+    /* For a thread, the obvious structures; for a process, summaries of the
+       proc's thread_{basic,sched}_info_t structures: sizes and cumulative
+       times are summed, prioritys and delta time are averaged.  The
+       run_states are added by having running thread take precedence over
+       waiting ones, and if there are any other incompatible states, simply
+       using a bogus value of -1.  Malloced. */
+    thread_basic_info_t thread_basic_info;
+    thread_sched_info_t thread_sched_info;
+
+    /* For a blocked thread, the rpc that it's blocked on.  For a process the
+       rpc blocking the first blocked thread (if any).  0 means no block. */
+    int thread_rpc;
 
     /* The task or thread suspend count (whatever this proc_stat refers to). */
     int suspend_count;
@@ -268,30 +277,32 @@ struct proc_stat
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
    information is currently valid.  */
-#define PSTAT_PID		0x0001 /* Process ID */
-#define PSTAT_THREAD		0x0002 /* thread_index & thread_origin */
-#define PSTAT_PROCESS		0x0004 /* The process_t for the process */
-#define PSTAT_TASK		0x0008 /* The task port for the process */
-#define PSTAT_MSGPORT		0x0010 /* The process's msgport */
-#define PSTAT_INFO		0x0020 /* A struct procinfo for the process. */
-#define PSTAT_THREAD_INFO	0x0040 /* Thread summary info */
-#define PSTAT_ARGS		0x0080 /* The process's args */
-#define PSTAT_TASK_EVENTS_INFO	0x0100 /* A task_events_info_t for the proc. */
-#define PSTAT_STATE		0x0200 /* A bitmask describing the process's
+#define PSTAT_PID	       0x00001 /* Process ID */
+#define PSTAT_THREAD	       0x00002 /* thread_index & thread_origin */
+#define PSTAT_PROCESS	       0x00004 /* The process_t for the process */
+#define PSTAT_TASK	       0x00008 /* The task port for the process */
+#define PSTAT_MSGPORT	       0x00010 /* The process's msgport */
+#define PSTAT_PROC_INFO	       0x00020 /* Basic process info. */
+#define PSTAT_TASK_BASIC       0x00040 /* The task's struct task_basic_info. */
+#define PSTAT_TASK_EVENTS      0x01000 /* A task_events_info_t for the proc. */
+#define PSTAT_NUM_THREADS      0x00080 /* The number of threads in the task. */
+#define PSTAT_THREAD_BASIC     0x00100 /* A struct thread_basic_info. */
+#define PSTAT_THREAD_SCHED     0x00200 /* A struct thread_sched_info. */
+#define PSTAT_THREAD_RPC       0x00400 /* The rpc the thread is waiting on. */
+#define PSTAT_ARGS	       0x00800 /* The process's args */
+#define PSTAT_STATE	       0x02000 /* A bitmask describing the process's
 					  state (see below) */
-#define PSTAT_SUSPEND_COUNT	0x0400 /* Task/thread suspend count */
-#define PSTAT_CTTYID		0x0800 /* The process's CTTYID port */
-#define PSTAT_CWDIR		0x1000 /* A file_t for the proc's CWD */
-#define PSTAT_AUTH		0x2000 /* The proc's auth port */
-#define PSTAT_TTY		0x4000 /* A ps_tty_t for the proc's terminal.*/
-#define PSTAT_OWNER		0x8000 /* A ps_user_t for the proc's owner */
-#define PSTAT_UMASK	       0x10000 /* The proc's current umask */
-#define PSTAT_EXEC_FLAGS       0x20000	/* The process's exec flags */
-
-#define PSTAT_NUM_THREADS PSTAT_INFO
+#define PSTAT_SUSPEND_COUNT    0x04000 /* Task/thread suspend count */
+#define PSTAT_CTTYID	       0x08000 /* The process's CTTYID port */
+#define PSTAT_CWDIR	       0x10000 /* A file_t for the proc's CWD */
+#define PSTAT_AUTH	       0x20000 /* The proc's auth port */
+#define PSTAT_TTY	       0x40000 /* A ps_tty_t for the proc's terminal.*/
+#define PSTAT_OWNER	       0x80000 /* A ps_user_t for the proc's owner */
+#define PSTAT_UMASK	      0x100000 /* The proc's current umask */
+#define PSTAT_EXEC_FLAGS      0x200000 /* The process's exec flags */
 
 /* Flag bits that don't correspond precisely to any field.  */
-#define PSTAT_NO_MSGPORT      0x100000 /* Don't use the msgport at all */
+#define PSTAT_NO_MSGPORT      0x400000 /* Don't use the msgport at all */
 
 /* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
    bitmask of the following bits, describing the process's run state.  If you
@@ -300,41 +311,46 @@ struct proc_stat
 /* Process global state.  */
 
 /* Mutually exclusive bits, each of which is a possible process `state'.  */
-#define PSTAT_STATE_P_STOP	0x0001 /* T stopped (e.g., by ^Z) */
-#define PSTAT_STATE_P_ZOMBIE	0x0002 /* Z process exited but not reaped */
+#define PSTAT_STATE_P_STOP	0x00001 /* T stopped (e.g., by ^Z) */
+#define PSTAT_STATE_P_ZOMBIE	0x00002 /* Z process exited but not reaped */
 
 #define PSTAT_STATE_P_STATES	(PSTAT_STATE_P_STOP | PSTAT_STATE_P_ZOMBIE)
 
 /* Independent bits describing additional attributes of the process.  */
-#define PSTAT_STATE_P_FG	0x0400 /* + in foreground process group */
-#define PSTAT_STATE_P_SESSLDR	0x0800 /* s session leader */
-#define PSTAT_STATE_P_FORKED	0x1000 /* f has forked and not execed */
-#define PSTAT_STATE_P_NOMSG	0x2000 /* m no msg port */
-#define PSTAT_STATE_P_NOPARENT	0x4000 /* p no parent */
-#define PSTAT_STATE_P_ORPHAN	0x8000 /* o orphaned */
-#define PSTAT_STATE_P_TRACE    0x10000 /* x traced */
+#define PSTAT_STATE_P_FG	0x00400 /* + in foreground process group */
+#define PSTAT_STATE_P_SESSLDR	0x00800 /* s session leader */
+#define PSTAT_STATE_P_LOGINLDR	0x01000 /* l login collection leader */
+#define PSTAT_STATE_P_FORKED	0x02000 /* f has forked and not execed */
+#define PSTAT_STATE_P_NOMSG	0x04000 /* m no msg port */
+#define PSTAT_STATE_P_NOPARENT	0x08000 /* p no parent */
+#define PSTAT_STATE_P_ORPHAN	0x10000 /* o orphaned */
+#define PSTAT_STATE_P_TRACE     0x20000 /* x traced */
+#define PSTAT_STATE_P_WAIT	0x40000 /* w process waiting for a child */
+#define PSTAT_STATE_P_GETMSG	0x80000 /* g waiting for a msgport */
 
-#define PSTAT_STATE_P_ATTRS	(PSTAT_STATE_P_NOPARENT | PSTAT_STATE_P_TRACE \
-				 | PSTAT_STATE_P_NOMSG | PSTAT_STATE_P_FG \
-				 | PSTAT_STATE_P_ORPHAN | PSTAT_STATE_P_FORKED)
+#define PSTAT_STATE_P_ATTRS	(PSTAT_STATE_P_FG | PSTAT_P_SESSLDR \
+				 | PSTAT_P_LOGINLDR | PSTAT_P_FORKED \
+				 | PSTAT_P_NOMSG | PSTAT_STATE_P_NOPARENT \
+				 | PSTAT_STATE_P_ORPHAN | PSTAT_STATE_P_TRACE \
+				 | PSTAT_STATE_P_WAIT | PSTAT_STATE_P_GETMSG)
 
 /* Per-thread state; in a process, these represent the union of its threads. */
 
 /* Mutually exclusive bits, each of which is a possible thread `state'.  */
-#define PSTAT_STATE_T_RUN	0x0004 /* R thread is running */
-#define PSTAT_STATE_T_HALT	0x0008 /* H thread is halted */
-#define PSTAT_STATE_T_WAIT	0x0010 /* D uninterruptable wait */
-#define PSTAT_STATE_T_SLEEP	0x0020 /* S sleeping */
-#define PSTAT_STATE_T_IDLE	0x0040 /* I idle (sleeping > 20 seconds) */
+#define PSTAT_STATE_T_RUN	0x00004 /* R thread is running */
+#define PSTAT_STATE_T_HALT	0x00008 /* H thread is halted */
+#define PSTAT_STATE_T_WAIT	0x00010 /* D uninterruptable wait */
+#define PSTAT_STATE_T_SLEEP	0x00020 /* S sleeping */
+#define PSTAT_STATE_T_IDLE	0x00040 /* I idle (sleeping > 20 seconds) */
 
 #define PSTAT_STATE_T_STATES	(PSTAT_STATE_T_RUN | PSTAT_STATE_T_HALT \
 				 | PSTAT_STATE_T_WAIT | PSTAT_STATE_T_SLEEP \
 				 | PSTAT_STATE_T_IDLE)
 
 /* Independent bits describing additional attributes of the thread.  */
-#define PSTAT_STATE_T_NICE	0x0080 /* N lowered priority */
-#define PSTAT_STATE_T_NASTY     0x0100 /* < raised priority */
-#define PSTAT_STATE_T_UNCLEAN	0x0200 /* u thread is uncleanly halted */
+#define PSTAT_STATE_T_NICE	0x00080 /* N lowered priority */
+#define PSTAT_STATE_T_NASTY     0x00100 /* < raised priority */
+#define PSTAT_STATE_T_UNCLEAN	0x00200 /* u thread is uncleanly halted */
 
 #define PSTAT_STATE_T_ATTRS	(PSTAT_STATE_T_UNCLEAN \
 				 | PSTAT_STATE_T_NICE | PSTAT_STATE_T_NASTY)
@@ -364,10 +380,12 @@ char *proc_stat_state_tags;
 #define proc_stat_process(ps) ((ps)->process)
 #define proc_stat_task(ps) ((ps)->task)
 #define proc_stat_msgport(ps) ((ps)->msgport)
-#define proc_stat_info(ps) ((ps)->info)
-#define proc_stat_num_threads(ps) ((ps)->info->nthreads)
-#define proc_stat_thread_basic_info(ps) (&(ps)->thread_basic_info)
-#define proc_stat_thread_sched_info(ps) (&(ps)->thread_sched_info)
+#define proc_stat_proc_info(ps) ((ps)->proc_info)
+#define proc_stat_num_threads(ps) ((ps)->num_threads)
+#define proc_stat_task_basic_info(ps) ((ps)->task_basic_info)
+#define proc_stat_thread_basic_info(ps) ((ps)->thread_basic_info)
+#define proc_stat_thread_sched_info(ps) ((ps)->thread_sched_info)
+#define proc_stat_thread_rpc(ps) ((ps)->thread_rpc)
 #define proc_stat_suspend_count(ps) ((ps)->suspend_count)
 #define proc_stat_args(ps) ((ps)->args)
 #define proc_stat_args_len(ps) ((ps)->args_len)
