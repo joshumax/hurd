@@ -471,8 +471,8 @@ error_t
 diskfs_set_statfs (struct fsys_statfsbuf *st)
 {
   st->fsys_stb_type = FSTYPE_UFS;
-  st->fsys_stb_bsize = sblock->fs_bsize;
-  st->fsys_stb_fsize = sblock->fs_fsize;
+  st->fsys_stb_iosize = sblock->fs_bsize;
+  st->fsys_stb_bsize = sblock->fs_fsize;
   st->fsys_stb_blocks = sblock->fs_dsize;
   st->fsys_stb_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
 		       + sblock->fs_cstotal.cs_nffree);
