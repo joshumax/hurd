@@ -106,7 +106,7 @@ enforced (struct store *store)
 	device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
 
       if (err)
-	return err;
+	return EINVAL;
 
       assert (sizes_len == DEV_GET_SIZE_COUNT);
 
@@ -159,14 +159,16 @@ dev_clear_flags (struct store *store, int flags)
 static error_t
 dev_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
 {
-  if (store->num_runs != 1)
+  size_t nruns = store->num_runs;
+
+  if (nruns > 1 || (nruns == 1 && store->runs[0].start != 0))
     return EOPNOTSUPP;
   else
     {
-      error_t err =
-	device_map (store->port, prot,
-		    store->runs[0].start, store->runs[0].length,
-		    memobj, 0);
+      /* We pass in 0 for the OFFSET and SIZE argument because in many cases
+	 we can't supply them (devices that can't otherwise do I/O are often
+	 still mappable) and mach ignores them entirely.  XXXX */
+      error_t err = device_map (store->port, prot, 0, 0, memobj, 0);
       if (err == ED_INVALID_OPERATION)
 	err = EOPNOTSUPP;	/* This device doesn't support paging.  */
       return err;
@@ -187,22 +189,34 @@ error_t
 store_device_create (device_t device, int flags, struct store **store)
 {
   struct store_run run;
-  size_t sizes[DEV_GET_SIZE_COUNT], block_size;
+  size_t sizes[DEV_GET_SIZE_COUNT], block_size = 0;
   size_t sizes_len = DEV_GET_SIZE_COUNT;
   error_t err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
 
-  if (err)
-    return err;
+  if (! err)
+    {
+      if (sizes_len != DEV_GET_SIZE_COUNT)
+	err = EINVAL;
+      else
+	{
+	  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
+	  run.start = 0;
+	  run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
 
-  assert (sizes_len == DEV_GET_SIZE_COUNT);
-
-  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
-  run.start = 0;
-  run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
+	  if (run.length * block_size != sizes[DEV_GET_SIZE_DEVICE_SIZE])
+	    /* Bogus results (which some mach devices return).  */
+	    err = EINVAL;
+	}
+    }
 
   flags |= STORE_ENFORCED;	/* 'cause it's the whole device.  */
 
-  return _store_device_create (device, flags, block_size, &run, 1, store);
+  if (err)
+    /* Treat devices that can't do device_get_status as zero-length.  */
+    return _store_device_create (device, flags, 0, &run, 0, store);
+  else
+    /* Make a store with one run covering the whole device.  */
+    return _store_device_create (device, flags, block_size, &run, 1, store);
 }
 
 /* Like store_device_create, but doesn't query the device for information.   */
