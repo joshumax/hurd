@@ -27,7 +27,7 @@
 
 /* Create a new ftp filesystem with the given parameters.  */
 error_t
-ftpfs_create (char *rmt_path,
+ftpfs_create (char *rmt_path, int fsid,
 	      struct ftp_conn_params *ftp_params,
 	      struct ftp_conn_hooks *ftp_hooks,
 	      struct ftpfs_params *params,
@@ -51,6 +51,9 @@ ftpfs_create (char *rmt_path,
   new->node_cache_mru = new->node_cache_lru = 0;
   new->node_cache_len = 0;
   mutex_init (&new->node_cache_lock);
+
+  new->fsid = fsid;
+  new->next_inode = 2;
 
   new->params = *params;
   new->ftp_params = ftp_params;
