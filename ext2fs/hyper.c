@@ -20,12 +20,15 @@
 #include <stdio.h>
 #include "ext2fs.h"
 
-void
+error_t
 get_hypermetadata (void)
 {
-  assert (!diskfs_catch_exception ());
+  error_t err = diskfs_catch_exception ();
 
-  sblock = boffs_ptr(SBLOCK_OFFS);
+  if (err)
+    return err;
+
+  sblock = (struct ext2_super_block *)boffs_ptr (SBLOCK_OFFS);
   
   if (sblock->s_magic != EXT2_SUPER_MAGIC
 #ifdef EXT2FS_PRE_02B_COMPAT
@@ -41,10 +44,6 @@ get_hypermetadata (void)
   if (block_size > 8192)
     ext2_panic("get_hypermetadata",
 	       "Block size %ld is too big (max is 8192 bytes)", block_size);
-  if (block_size < SBLOCK_SIZE)
-    ext2_panic ("get_hypermetadata",
-		"Block size %ld is too small (min is %ld bytes)",
-		block_size, SBLOCK_SIZE);
 
   log2_dev_blocks_per_fs_block = 0;
   while ((device_block_size << log2_dev_blocks_per_fs_block) < block_size)
@@ -61,6 +60,21 @@ get_hypermetadata (void)
   if ((1 << log2_block_size) != block_size)
     ext2_panic("get_hypermetadata",
 	       "Block size %ld isn't a power of two!", block_size);
+
+  if (!diskfs_readonly && block_size < vm_page_size)
+    /* If the block size is too small, we have to take extra care when
+       writing out pages from the global pager, to make sure we don't stomp
+       on any file pager blocks.  In this case use a bitmap to record which
+       global blocks are actually modified so the pager can write only them.
+       Since small block sizes are probably used on smaller media (to save
+       space), this shouldn't be too much of a problem.  */
+    {
+      /* One bit per filesystem block.  */
+      vm_allocate (mach_task_self (), (vm_address_t *)&modified_global_blocks,
+		   (sblock->s_blocks_count >> log2_block_size) >> 3, 1);
+    }
+  else
+    modified_global_blocks = 0;
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / sizeof (struct ext2_inode);
@@ -82,6 +96,8 @@ get_hypermetadata (void)
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
 
   diskfs_end_catch_exception ();
+
+  return 0;
 }
 
 void
@@ -91,11 +107,10 @@ diskfs_set_hypermetadata (int wait, int clean)
     /* The filesystem is clean, so we need to set the clean flag.  We
        just write the superblock directly, without using the paged copy.  */
     {
-      struct ext2_super_block clean_sblock;
-
-      bcopy (sblock, clean_sblock, SBLOCK_SIZE);
-      clean_sblock->s_state |= EXT2_VALID_FS;
-      dev_write_sync (SBLOCK_OFFS / device_block_size,
-		      (vm_address_t)clean_sblock, SBLOCK_SIZE);
+      vm_address_t page_buf = get_page_buf ();
+      bcopy (sblock, (void *)page_buf, SBLOCK_SIZE);
+      ((struct ext2_super_block *)page_buf)->s_state |= EXT2_VALID_FS;
+      dev_write_sync (SBLOCK_OFFS / device_block_size, page_buf, block_size);
+      free_page_buf (page_buf);
     }
 }
