@@ -80,7 +80,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for write\n");
-      _pager_release_seqno (p);
+      _pager_release_seqno (p, seqno);
       mutex_unlock (&p->interlock);
       goto out;
     }
@@ -114,7 +114,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
       }
 
   /* Let someone else in. */
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
 
   /* This is inefficient; we should send all the pages to the device at once
