@@ -24,33 +24,31 @@ subsystem msg_reply 23100;		/* must match msg.defs + 100 */
 type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 	ctype: mach_port_t;
 
-simpleroutine sig_post_reply (
+simpleroutine msg_sig_post_reply (
 	reply_port: reply_port_t;
 	in return_code: kern_return_t);
 
-skip; /* proc_newids */
-skip; /* add_auth */
-skip; /* del_auth */
-skip; /* get_init_port */
-skip; /* set_init_port */
-skip; /* get_init_ports */
-skip; /* set_init_ports */
-skip; /* get_init_int */
-skip; /* set_init_int */
-skip; /* get_init_ints */
-skip; /* set_init_ints */
-skip; /* get_dtable */
-skip; /* set_dtable */
-skip; /* get_fd */
-skip; /* set_fd */
-skip; /* get_environment */
-skip; /* set_environment */
-skip; /* get_env_variable */
-skip; /* set_env_variable */
-skip; /* startup_dosync */
-skip; /* dir_changed */
-skip; /* file_changed */
+skip; /* msg_proc_newids */
+skip; /* msg_add_auth */
+skip; /* msg_del_auth */
+skip; /* msg_get_init_port */
+skip; /* msg_set_init_port */
+skip; /* msg_get_init_ports */
+skip; /* msg_set_init_ports */
+skip; /* msg_get_init_int */
+skip; /* msg_set_init_int */
+skip; /* msg_get_init_ints */
+skip; /* msg_set_init_ints */
+skip; /* msg_get_dtable */
+skip; /* msg_set_dtable */
+skip; /* msg_get_fd */
+skip; /* msg_set_fd */
+skip; /* msg_get_environment */
+skip; /* msg_set_environment */
+skip; /* msg_get_env_variable */
+skip; /* msg_set_env_variable */
+skip; /* msg_startup_dosync */
 
-simpleroutine sig_post_untraced_reply (
+simpleroutine msg_sig_post_untraced_reply (
 	reply_port: reply_port_t;
 	in return_code: kern_return_t);
