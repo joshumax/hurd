@@ -20,24 +20,11 @@
 
 #include "netfs.h"
 
-static const struct argp_option
-std_runtime_options[] =
-{
-  {0, 0}
-};
-
-static error_t
-parse_runtime_opt (int key, char *arg, struct argp_state *state)
-{
-  return EINVAL;
-}
-
 error_t
-netfs_set_options (int argc, char **argv)
+netfs_set_options (char *argz, size_t argz_len)
 {
-  const struct argp argp = { std_runtime_options, parse_runtime_opt, 0, 0, 0 };
-
-  /* Call the user option parsing routine, giving it our set of options to do
-     with as it pleases.  */
-  return netfs_parse_runtime_options (argc, argv, &argp);
+  if (netfs_runtime_argp)
+    return fshelp_set_options (netfs_runtime_argp, 0, argz, argz_len, 0);
+  else
+    return EOPNOTSUPP;
 }
