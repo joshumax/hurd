@@ -146,7 +146,7 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 struct mutex global_lock;
 
-extern inline void
+static inline void __attribute__ ((unused))
 process_drop (struct proc *p)
 {
   if (p)
@@ -209,17 +209,6 @@ void complete_exit (struct proc *);
 void initialize_version_info (void);
 
 void send_signal (mach_port_t, int, mach_port_t);
-
-/* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get
-   its task port &c).  If PROC2 has an owner, then PROC1 must have that uid;
-   otherwise, both must be in the same login collection.  */
-extern inline int
-check_owner (struct proc *proc1, struct proc *proc2)
-{
-  return
-    proc2->p_noowner
-      ? check_uid (proc1, 0) || proc1->p_login == proc2->p_login
-      : check_uid (proc1, proc2->p_owner);
-}
+
 
 #endif

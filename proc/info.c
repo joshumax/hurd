@@ -33,6 +33,20 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc.h"
 #include "process_S.h"
 
+
+/* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get
+   its task port &c).  If PROC2 has an owner, then PROC1 must have that uid;
+   otherwise, both must be in the same login collection.  */
+static inline int
+check_owner (struct proc *proc1, struct proc *proc2)
+{
+  return
+    proc2->p_noowner
+      ? check_uid (proc1, 0) || proc1->p_login == proc2->p_login
+      : check_uid (proc1, proc2->p_owner);
+}
+
+
 /* Implement S_proc_pid2task as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_pid2task (struct proc *callerp,
@@ -40,7 +54,7 @@ S_proc_pid2task (struct proc *callerp,
 	         task_t *t)
 {
   struct proc *p;
-  
+
   if (!callerp)
     return EOPNOTSUPP;
 
