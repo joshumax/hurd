@@ -48,8 +48,9 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   if (ar)
     condition_broadcast (&p->wakeup);
   
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seq);
   mutex_unlock (&p->interlock);
+  ports_done_with_port (p);
   return 0;
 }
 
