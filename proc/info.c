@@ -177,7 +177,7 @@ get_string (task_t t,
 	       c - (char *)(data + (addr - readaddr)));
     }
 
-  vm_deallocate (mach_task_self (), data, readlen);
+  munmap ((caddr_t) data, readlen);
   return err;
 }
 
@@ -232,7 +232,7 @@ get_vector (task_t task,
       /* If we didn't find the null terminator, then we will loop
 	 to read an additional page.  */
       scanned = data + readlen;
-      vm_deallocate (mach_task_self (), data, readlen);
+      munmap ((caddr_t) data, readlen);
     } while (!err && *vec == NULL);
 
   return err;
@@ -266,7 +266,7 @@ get_string_array (task_t t,
 	{
 	  free (vector);
 	  if (*buf != origbuf)
-	    vm_deallocate (mach_task_self (), *buf, *buflen);
+	    munmap ((caddr_t) *buf, *buflen);
 	  return err;
 	}
 
@@ -286,14 +286,14 @@ get_string_array (task_t t,
 	      free (string);
 	      free (vector);
 	      if (*buf != origbuf)
-		vm_deallocate (mach_task_self (), *buf, *buflen);
+		munmap ((caddr_t) *buf, *buflen);
 	      return err;
 	    }
 
 	  bcopy (*(char **) buf, (char *) newbuf, prev_len);
 	  bp = (char *)newbuf + prev_len;
 	  if (*buf != origbuf)
-	    vm_deallocate (mach_task_self (), *buf, *buflen);
+	    munmap ((caddr_t) *buf, *buflen);
 
 	  *buf = newbuf;
 	  *buflen = newsize;
@@ -530,8 +530,7 @@ S_proc_getprocinfo (struct proc *callerp,
 		      if (waits_used > 0)
 			bcopy (*waits, new_waits, waits_used);
 		      if (*waits_len > 0 && waits_alloced)
-			vm_deallocate (mach_task_self (),
-				       (vm_address_t)*waits, *waits_len);
+			munmap (*waits, *waits_len);
 		      *waits = new_waits;
 		      *waits_len = new_len;
 		      waits_alloced = 1;
@@ -552,14 +551,11 @@ S_proc_getprocinfo (struct proc *callerp,
     }
 
   if (*flags & PI_FETCH_THREADS)
-    {
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t)thds, nthreads * sizeof (thread_t));
-    }
+    munmap (thds, nthreads * sizeof (thread_t));
   if (err && pi_alloced)
-    vm_deallocate (mach_task_self (), (u_int) *piarray, structsize);
+    munmap (*piarray, structsize);
   if (err && waits_alloced)
-    vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
+    munmap (*waits, *waits_len);
   else
     *waits_len = waits_used;
 

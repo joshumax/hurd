@@ -1,3 +1,13 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* info.c (get_string): Use munmap instead of vm_deallocate.
+	(get_vector): Likewise.
+	(get_string_array): Likewise.
+	(S_proc_getprocinfo): Likewise.
+	* mgt.c (S_proc_reauthenticate): Likewise.
+	(S_proc_dostop): Likewise.
+	(add_tasks): Likewise.
+
 1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Remove commented-out wire_task_self call, #include.

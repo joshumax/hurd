@@ -115,17 +115,13 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   p->p_id = make_ids (gen_uids, ngen_uids, gen_gids, ngen_gids);
 
   if (gen_uids != gubuf)
-    vm_deallocate (mach_task_self (), (u_int) gen_uids,
-		   ngen_uids * sizeof (uid_t));
+    munmap (gen_uids, ngen_uids * sizeof (uid_t));
   if (aux_uids != aubuf)
-    vm_deallocate (mach_task_self (), (u_int) aux_uids,
-		   naux_uids * sizeof (uid_t));
+    munmap (aux_uids, naux_uids * sizeof (uid_t));
   if (gen_gids != ggbuf)
-    vm_deallocate (mach_task_self (), (u_int) gen_gids,
-		   ngen_gids * sizeof (uid_t));
+    munmap (gen_gids, ngen_gids * sizeof (uid_t));
   if (aux_gids != agbuf)
-    vm_deallocate (mach_task_self (), (u_int) aux_gids,
-		   naux_gids * sizeof (uid_t));
+    munmap (aux_gids, naux_gids * sizeof (uid_t));
 
   return 0;
 }
@@ -335,8 +331,7 @@ S_proc_dostop (struct proc *p,
       mach_port_deallocate (mach_task_self (), threads[i]);
     }
   if (threads != threadbuf)
-    vm_deallocate (mach_task_self (), (vm_address_t) threads,
-		   nthreads * sizeof (thread_t));
+    munmap (threads, nthreads * sizeof (thread_t));
   err = task_resume (p->p_task);
   if (err)
     return err;
@@ -770,14 +765,12 @@ add_tasks (task_t task)
 	      if (!set)
 		mach_port_deallocate (mach_task_self (), tasks[j]);
 	    }
-	  vm_deallocate (mach_task_self (), (vm_address_t) tasks,
-			 ntasks * sizeof (task_t));
+	  munmap (tasks, ntasks * sizeof (task_t));
 	  mach_port_deallocate (mach_task_self (), psetpriv);
 	}
       mach_port_deallocate (mach_task_self (), psets[i]);
     }
-  vm_deallocate (mach_task_self (), (vm_address_t) psets,
-		 npsets * sizeof (mach_port_t));
+  munmap (psets, npsets * sizeof (mach_port_t));
   return foundp;
 }
 
