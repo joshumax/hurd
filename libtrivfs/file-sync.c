@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,7 +21,7 @@
 kern_return_t
 trivfs_S_file_sync (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int wait)
+		    int wait, int omitmeta)
 {
-  return cred ? file_sync (cred->realnode, wait) : EOPNOTSUPP;
+  return cred ? file_sync (cred->realnode, wait, omitmeta) : EOPNOTSUPP;
 }
