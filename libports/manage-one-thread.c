@@ -64,7 +64,8 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 	  if (err)
 	    {
 	      mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
-	      status = 0;
+	      outp->RetCode = err;
+	      status = 1;
 	    }
 	  else
 	    {
@@ -77,7 +78,10 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 	  ports_port_deref (pi);
 	}
       else
-	status = 0;
+	{
+	  outp->RetCode = EOPNOTSUPP;
+	  status = 1;
+	}
 
       return status;
     }
