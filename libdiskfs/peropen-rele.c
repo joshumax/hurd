@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,6 +27,7 @@ diskfs_release_peropen (struct peropen *po)
       mutex_unlock (&po->np->lock);
       return;
     }
+  mach_port_deallocate (mach_task_self (), po->dotdotport);
   diskfs_nput (po->np);
   free (po);
 }
