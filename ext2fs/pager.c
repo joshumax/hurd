@@ -56,12 +56,12 @@ find_address (struct user_pager_info *upi,
       error_t err;
       struct node *np = upi->np;
       
-      rwlock_reader_lock (&np->dn->allocptrlock);
-      *nplock = &np->dn->allocptrlock;
+      rwlock_reader_lock (&np->dn->alloc_lock);
+      *nplock = &np->dn->alloc_lock;
 
       if (offset >= np->allocsize)
 	{
-	  rwlock_reader_unlock (&np->dn->allocptrlock);
+	  rwlock_reader_unlock (&np->dn->alloc_lock);
 	  return EIO;
 	}
       
@@ -166,14 +166,14 @@ pager_unlock_page (struct user_pager_info *pager,
       struct node *np = pager->np;
       struct disknode *dn = np->dn;
 
-      rwlock_writer_lock (&dn->allocptrlock);
+      rwlock_writer_lock (&dn->alloc_lock);
 
       err = diskfs_catch_exception ();
       if (!err)
 	err = ext2_getblk(np, address / block_size, 1, &buf);
       diskfs_end_catch_exception ();
 
-      rwlock_writer_unlock (&dn->allocptrlock);
+      rwlock_writer_unlock (&dn->alloc_lock);
 
       return err;
     }
