@@ -53,6 +53,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   type = diskfs_root_node->dn_stat.st_mode & S_IFMT;
 
+ repeat_transcheck:
   if ((diskfs_node_translated (diskfs_root_node)
        || diskfs_root_node->translator.control != MACH_PORT_NULL)
       && !(flags & O_NOTRANS))
@@ -74,6 +75,16 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       
       error = fsys_getroot (childcontrol, uids, nuids, gids, ngids,
 			    flags, retry, retryname, returned_port);
+      if (error == MACH_SEND_INVALID_DEST)
+	{
+	  /* The server has died; unrecord the translator port
+	     and repeat the check. */
+	  mach_port_deallocate (mach_task_self (), childcontrol);
+	  mutex_lock (&diskfs_root_node->lock);
+	  diskfs_root_node->translator.control = MACH_PORT_NULL;
+	  goto repeat_transcheck;
+	}
+
       if (!error && returned_port != MACH_PORT_NULL)
 	*returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
       else
