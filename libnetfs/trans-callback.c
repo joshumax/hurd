@@ -1,6 +1,6 @@
 /* Callback functions for starting translators
 
-   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2001,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -36,7 +36,10 @@ _netfs_translator_callback1_fn (void *cookie1, void *cookie2,
 
   err = netfs_get_translator (np, argz, argz_len);
   if (err)
-    return err;
+    {
+      assert (err != EOPNOTSUPP);
+      return err;
+    }
 
   *uid = np->nn_stat.st_uid;
   *gid = np->nn_stat.st_gid;
