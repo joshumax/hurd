@@ -1,5 +1,10 @@
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* ialloc.c (diskfs_alloc_node): Frob printf format to suppress warning.
+	* getblk.c (ext2_getblk): Likewise.
+	* balloc.c (ext2_free_blocks): Likewise.
+	* hyper.c (get_hypermetadata): Likewise.
+
 	* ialloc.c (diskfs_alloc_node): If creator_os is not EXT2_OS_HURD,
 	suppress warnings about stale nonzero st_blocks or st_size.
 
