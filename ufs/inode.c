@@ -412,6 +412,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   struct item {struct item *next; struct node *np;} *list = 0;
   struct item *i;
   error_t err;
+  int n;
       
   /* Acquire a reference on all the nodes in the hash table
      and enter them into a list on the stack. */
@@ -438,6 +439,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 	}
       diskfs_nrele (i->np);
     }
+  return err;
 }
 
 /* Write all active disknodes into the dinode pager. */
@@ -449,6 +451,7 @@ write_all_disknodes ()
       {
 	diskfs_set_node_times (np);
 	write_node (np);
+	return 0;
       }
   
   diskfs_node_iterate (helper);
