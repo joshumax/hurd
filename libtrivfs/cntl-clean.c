@@ -15,12 +15,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+
 /* Clean pointers in a struct trivfs_control when its last reference
    vanishes before it's freed. */
 void
-trivfs_clean_control (void *arg)
+trivfs_clean_cntl (void *arg)
 {
-  struct trivfs_control *cntl;
+  struct trivfs_control *cntl = arg;
   
   mach_port_deallocate (mach_task_self (), cntl->underlying);
 }
