@@ -1,3 +1,13 @@
+hurd (20010816-1) unstable; urgency=low
+
+  * New snapshot from CVS, closes: #105476, #39894.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+    Compiled with -O2 rather than -O3.
+  
+ -- Marcus Brinkmann <Marcus.Brinkmann@ruhr-uni-bochum.de>  Fri, 17 Aug 2001 22:16:01 +0200
+
 hurd (20010718-1) unstable; urgency=low
 
   * New snapshot from CVS.
