@@ -37,19 +37,23 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
       error_t err;
 
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
-      err = ports_begin_rpc (pi, &link);
-      if (err)
+      if (pi)
 	{
-	  mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
-	  status = 0;
+	  err = ports_begin_rpc (pi, &link);
+	  if (err)
+	    {
+	      mach_port_deallocate (mach_task_self (), inp->msgh_remote_port);
+	      status = 0;
+	    }
+	  else
+	    {
+	      status = demuxer (inp, outp);
+	      ports_end_rpc (pi, &link);
+	    }
+	  ports_port_deref (pi);
 	}
       else
-	{
-	  status = demuxer (inp, outp);
-	  ports_end_rpc (pi, &link);
-	}
-      
-      ports_port_deref (pi);
+	status = 0;
 
       return status;
     }
