@@ -21,6 +21,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stddef.h>
+#include <sys/mman.h>
 
 #include "pq.h"
 
