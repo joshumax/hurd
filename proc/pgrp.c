@@ -1,5 +1,5 @@
 /* Session and process group manipulation 
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/errno.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -39,6 +40,9 @@ new_pgrp (pid_t pgid,
   struct pgrp *pg;
   
   pg = malloc (sizeof (struct pgrp));
+  if (! pg)
+    return NULL;
+
   pg->pg_plist = 0;
   pg->pg_pgid = pgid;
   pg->pg_orphcnt = 0;
@@ -61,6 +65,9 @@ new_session (struct proc *p)
   struct session *sess;
   
   sess = malloc (sizeof (struct session));
+  if (! sess)
+    return NULL;
+
   sess->s_sid = p->p_pid;
   sess->s_pgrps = 0;
   sess->s_sessionid = MACH_PORT_NULL;
@@ -94,7 +101,7 @@ free_pgrp (struct pgrp *pg)
   free (pg);
 }
  
-/* Implement proc_setsid as described in <hurd/proc.defs>. */
+/* Implement proc_setsid as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setsid (struct proc *p)
 {
@@ -123,11 +130,12 @@ boot_setsid (struct proc *p)
   
   sess = new_session (p);
   p->p_pgrp = new_pgrp (p->p_pid, sess);
+  assert (p->p_pgrp);
   join_pgrp (p);
   return;
 }
 
-/* Implement proc_getsid as described in <hurd/proc.defs>. */
+/* Implement proc_getsid as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getsid (struct proc *callerp,
 	     pid_t pid,
@@ -143,7 +151,7 @@ S_proc_getsid (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_getsessionpids as described in <hurd/proc.defs>. */
+/* Implement proc_getsessionpids as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getsessionpids (struct proc *callerp,
 		       pid_t sid,
@@ -176,6 +184,9 @@ S_proc_getsessionpids (struct proc *callerp,
     {
       *pids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
 		    MAP_ANON, 0, 0);
+      if (*pids == MAP_FAILED)
+	return errno;
+
       pp = *pids;
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	for (p = pg->pg_plist; p; p = p->p_gnext)
@@ -216,6 +227,9 @@ S_proc_getsessionpgids (struct proc *callerp,
     {
       *pgids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
 		     MAP_ANON, 0, 0);
+      if (*pgids == MAP_FAILED)
+	return errno;
+
       pp = *pgids;
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	*pp++ = pg->pg_pgid;
@@ -259,6 +273,9 @@ S_proc_getpgrppids (struct proc *callerp,
     {
       *pids = mmap (0, count * sizeof (pid_t), PROT_READ|PROT_WRITE,
 		    MAP_ANON, 0, 0);
+      if (*pids == MAP_FAILED)
+	return errno;
+
       pp = *pids;
       for (p = pg->pg_plist; p; p = p->p_gnext)
 	*pp++ = p->p_pid;
@@ -268,7 +285,7 @@ S_proc_getpgrppids (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_getsidport as described in <hurd/proc.defs>. */
+/* Implement proc_getsidport as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getsidport (struct proc *p,
 		   mach_port_t *sessport, mach_msg_type_name_t *sessport_type)
@@ -291,7 +308,7 @@ S_proc_getsidport (struct proc *p,
   return err;
 }
 
-/* Implement proc_setpgrp as described in <hurd/proc.defs>. */
+/* Implement proc_setpgrp as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setpgrp (struct proc *callerp,
 	      pid_t pid,
@@ -334,7 +351,7 @@ S_proc_setpgrp (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_getpgrp as described in <hurd/proc.defs>. */
+/* Implement proc_getpgrp as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getpgrp (struct proc *callerp,
 	      pid_t pid,
@@ -353,7 +370,7 @@ S_proc_getpgrp (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_mark_exec as described in <hurd/proc.defs>. */
+/* Implement proc_mark_exec as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_exec (struct proc *p)
 {

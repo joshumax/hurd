@@ -1,5 +1,5 @@
 /* Proc server host management calls
-   Copyright (C) 1992, 1993, 1994, 1996, 1997 Free Software Foundation
+   Copyright (C) 1992,93,94,96,97,2001 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <unistd.h>
 #include <assert.h>
 #include <version.h>
+#include <sys/mman.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -55,7 +56,7 @@ struct execdata_notify
 } *execdata_notifys;
 
 
-/* Implement proc_getprivports as described in <hurd/proc.defs>. */
+/* Implement proc_getprivports as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprivports (struct proc *p,
 		     mach_port_t *hostpriv,
@@ -73,7 +74,7 @@ S_proc_getprivports (struct proc *p,
 }
 
 
-/* Implement proc_setexecdata as described in <hurd/proc.defs>. */
+/* Implement proc_setexecdata as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setexecdata (struct proc *p,
 		    mach_port_t *ports,
@@ -83,12 +84,26 @@ S_proc_setexecdata (struct proc *p,
 {
   int i;
   struct execdata_notify *n;
-  
+  mach_port_t *std_port_array_new;
+  int *std_int_array_new;
+
   if (!p)
     return EOPNOTSUPP;
   
   if (!check_uid (p, 0))
     return EPERM;
+
+  /* Allocate memory up front.  */
+  std_port_array_new = malloc (sizeof (mach_port_t) * nports);
+  if (! std_port_array_new)
+    return ENOMEM;
+
+  std_int_array_new = malloc (sizeof (int) * nints);
+  if (! std_int_array_new)
+    {
+      free (std_port_array_new);
+      return ENOMEM;
+    }
   
   if (std_port_array)
     {
@@ -99,13 +114,13 @@ S_proc_setexecdata (struct proc *p,
   if (std_int_array)
     free (std_int_array);
   
-  std_port_array = malloc (sizeof (mach_port_t) * nports);
+  std_port_array = std_port_array_new;
   n_std_ports = nports;
-  bcopy (ports, std_port_array, sizeof (mach_port_t) * nports);
+  memcpy (std_port_array, ports, sizeof (mach_port_t) * nports);
   
-  std_int_array = malloc (sizeof (int) * nints);
+  std_int_array = std_int_array_new;
   n_std_ints = nints;
-  bcopy (ints, std_int_array, sizeof (int) * nints);
+  memcpy (std_int_array, ints, sizeof (int) * nints);
   
   for (n = execdata_notifys; n; n = n->next)
     exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND,
@@ -114,7 +129,7 @@ S_proc_setexecdata (struct proc *p,
   return 0;
 }
 
-/* Implement proc_getexecdata as described in <hurd/proc.defs>. */
+/* Implement proc_getexecdata as described in <hurd/process.defs>. */
 kern_return_t 
 S_proc_getexecdata (struct proc *p,
 		    mach_port_t **ports,
@@ -125,33 +140,45 @@ S_proc_getexecdata (struct proc *p,
 {
   /* No need to check P here; we don't use it. */
 
-  /* XXX memory leak here */
-
   if (!std_port_array)
     return ENOENT;
 
   if (*nports < n_std_ports)
-    *ports = malloc (n_std_ports * sizeof (mach_port_t));
-  bcopy (std_port_array, *ports, n_std_ports * sizeof (mach_port_t));
+    {
+      *ports = mmap (0, round_page (n_std_ports * sizeof (mach_port_t)),
+		     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*ports == MAP_FAILED)
+        return ENOMEM;
+    }
+  memcpy (*ports, std_port_array, n_std_ports * sizeof (mach_port_t));
   *nports = n_std_ports;
   
   if (*nints < n_std_ints)
-    *ints = malloc (n_std_ints * sizeof (mach_port_t));
-  bcopy (std_int_array, *ints, n_std_ints * sizeof (int));
+    {
+      *ints = mmap (0, round_page (n_std_ints * sizeof (int)),
+		    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*ints == MAP_FAILED)
+        return ENOMEM;
+    }
+  memcpy (*ints, std_int_array, n_std_ints * sizeof (int));
   *nints = n_std_ints;
 
   return 0;
 }
 
-/* Implement proc_execdata_notify as described in <hurd/proc.defs>. */
+/* Implement proc_execdata_notify as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_execdata_notify (struct proc *p,
 			mach_port_t notify)
 {
-  struct execdata_notify *n = malloc (sizeof (struct execdata_notify));
+  struct execdata_notify *n;
   mach_port_t foo;
 
   /* No need to check P here; we don't use it. */
+
+  n = malloc (sizeof (struct execdata_notify));
+  if (! n)
+    return ENOMEM;
 
   n->notify_port = notify;
   n->next = execdata_notifys;
@@ -327,6 +354,7 @@ initialize_version_info (void)
   /* Notice Mach's and our own version and initialize server version
      varables. */
   server_versions = malloc (sizeof (struct server_version) * 10);
+  assert (server_versions);
   server_versions_nalloc = 10;
 
   err = host_kernel_version (mach_host_self (), kv);
@@ -338,10 +366,14 @@ initialize_version_info (void)
   if (p)
     *p = '\0';
   kernel_name = strdup (p ? kv : "mach");
+  assert (kernel_name);
   kernel_version = strdup (p ? p + 1 : kv);
+  assert (kernel_version);
 
   server_versions[0].name = strdup ("proc");
+  assert (server_versions[0].name);
   server_versions[0].version = strdup (HURD_VERSION);
+  assert (server_versions[0].version);
 
   nserver_versions = 1;
 
@@ -366,6 +398,7 @@ S_proc_register_version (pstruct_t server,
 			 char *release, 
 			 char *version)
 {
+  error_t err = 0;
   int i;
 
   /* No need to check SERVER here; we don't use it. */
@@ -380,6 +413,11 @@ S_proc_register_version (pstruct_t server,
 	/* Change this entry.  */
 	free (server_versions[i].version);
 	server_versions[i].version = malloc (strlen (version) + 1);
+	if (! server_versions[i].version)
+	  {
+	    err = ENOMEM;
+	    goto out;
+	  }
 	strcpy (server_versions[i].version, version);
 	break;
       }
@@ -388,21 +426,40 @@ S_proc_register_version (pstruct_t server,
       /* Didn't find it; extend.  */
       if (nserver_versions == server_versions_nalloc)
 	{
+	  void *new = realloc (server_versions,
+			       sizeof (struct server_version) *
+			       server_versions_nalloc * 2);
+	  if (! new)
+	    {
+	      err = ENOMEM;
+	      goto out;
+	    }
+
 	  server_versions_nalloc *= 2;
-	  server_versions = realloc (server_versions,
-				     sizeof (struct server_version) *
-				     server_versions_nalloc);
+	  server_versions = new;
 	}
       server_versions[nserver_versions].name = malloc (strlen (name) + 1);
+      if (! server_versions[nserver_versions].name)
+	{
+	  err = ENOMEM;
+	  goto out;
+	}
       server_versions[nserver_versions].version = malloc (strlen (version) 
 							  + 1);
+      if (! server_versions[nserver_versions].version)
+        {
+	  free (server_versions[nserver_versions].name);
+	  err = ENOMEM;
+	  goto out;
+	}
       strcpy (server_versions[nserver_versions].name, name);
       strcpy (server_versions[nserver_versions].version, version);
       nserver_versions++;
     }
   
   rebuild_uname ();
+out:
   mach_port_deallocate (mach_task_self (), credential);
-  return 0;
+  return err;
 }
 

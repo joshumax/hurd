@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -33,17 +33,18 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "proc.h"
 #include "process_S.h"
 
-/* Implement S_proc_pid2task as described in <hurd/proc.defs>. */
+/* Implement S_proc_pid2task as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_pid2task (struct proc *callerp,
-	       pid_t pid,
-	       task_t *t)
+	         pid_t pid,
+	         task_t *t)
 {
-  struct proc *p = pid_find_allow_zombie (pid);
-
+  struct proc *p;
+  
   if (!callerp)
     return EOPNOTSUPP;
 
+  p = pid_find_allow_zombie (pid);
   if (!p)
     return ESRCH;
 
@@ -62,11 +63,11 @@ S_proc_pid2task (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_task2pid as described in <hurd/proc.defs>. */
+/* Implement proc_task2pid as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_task2pid (struct proc *callerp,
-	       task_t t,
-	       pid_t *pid)
+	         task_t t,
+	         pid_t *pid)
 {
   struct proc *p = task_find (t);
 
@@ -80,11 +81,11 @@ S_proc_task2pid (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_task2proc as described in <hurd/proc.defs>. */
+/* Implement proc_task2proc as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_task2proc (struct proc *callerp,
-		task_t t,
-		mach_port_t *outproc)
+		  task_t t,
+		  mach_port_t *outproc)
 {
   struct proc *p = task_find (t);
 
@@ -98,10 +99,10 @@ S_proc_task2proc (struct proc *callerp,
   return 0;
 }
 
-/* Implement proc_proc2task as described in <hurd/proc.defs>. */
+/* Implement proc_proc2task as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_proc2task (struct proc *p,
-		task_t *t)
+		  task_t *t)
 {
   if (!p)
     return EOPNOTSUPP;
@@ -109,17 +110,18 @@ S_proc_proc2task (struct proc *p,
   return 0;
 }
 
-/* Implement proc_pid2proc as described in <hurd/proc.defs>. */
+/* Implement proc_pid2proc as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_pid2proc (struct proc *callerp,
-	       pid_t pid,
-	       mach_port_t *outproc)
+	         pid_t pid,
+	         mach_port_t *outproc)
 {
-  struct proc *p = pid_find_allow_zombie (pid);
+  struct proc *p;
 
   if (!callerp)
     return EOPNOTSUPP;
 
+  p = pid_find_allow_zombie (pid);
   if (!p)
     return ESRCH;
 
@@ -225,7 +227,7 @@ get_vector (task_t task,
 	    if (*vec == NULL)
 	      err = ENOMEM;
 	    else
-	      bcopy ((char *)(data + (addr - readaddr)), *vec,
+	      memcpy (*vec, (char *)(data + (addr - readaddr)),
 		     (char *)t - (char *)(data + (addr - readaddr)));
 	    break;
 	  }
@@ -313,7 +315,7 @@ get_string_array (task_t t,
 }
 
 
-/* Implement proc_getprocargs as described in <hurd/proc.defs>. */
+/* Implement proc_getprocargs as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprocargs (struct proc *callerp,
 		  pid_t pid,
@@ -330,7 +332,7 @@ S_proc_getprocargs (struct proc *callerp,
   return get_string_array (p->p_task, p->p_argv, (vm_address_t *) buf, buflen);
 }
 
-/* Implement proc_getprocenv as described in <hurd/proc.defs>. */
+/* Implement proc_getprocenv as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprocenv (struct proc *callerp,
 		 pid_t pid,
@@ -351,7 +353,7 @@ S_proc_getprocenv (struct proc *callerp,
 #define PI_FETCH_THREAD_DETAILS  \
   (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC | PI_FETCH_THREAD_WAITS)
 
-/* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
+/* Implement proc_getprocinfo as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprocinfo (struct proc *callerp,
 		    pid_t pid,
@@ -406,6 +408,8 @@ S_proc_getprocinfo (struct proc *callerp,
   if (structsize / sizeof (int) > *piarraylen)
     {
       *piarray = mmap (0, structsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*piarray == MAP_FAILED)
+        return errno;
       pi_alloced = 1;
     }
   *piarraylen = structsize / sizeof (int);
@@ -489,15 +493,15 @@ S_proc_getprocinfo (struct proc *callerp,
 	      continue;
 	    }
 	  if (err)
-	    /* Something screwy, give up o nthis bit of info.  */
+	    /* Something screwy, give up on this bit of info.  */
 	    {
 	      *flags &= ~PI_FETCH_THREAD_SCHED;
 	      err = 0;
 	    }
 	}
 
-      /* Note that there are thread wait entries only for threads not marked
-	 dead.  */
+      /* Note that there are thread wait entries only for those threads
+         not marked dead.  */
 
       if (*flags & PI_FETCH_THREAD_WAITS)
 	{
@@ -526,14 +530,14 @@ S_proc_getprocinfo (struct proc *callerp,
 
 		  new_waits = mmap (0, new_len, PROT_READ|PROT_WRITE,
 				    MAP_ANON, 0, 0);
-		  err = (new_waits == (char *) -1) ? errno : 0;
+		  err = (new_waits == MAP_FAILED) ? errno : 0;
 		  if (err)
 		    /* Just don't return any more waits information.  */
 		    *flags &= ~PI_FETCH_THREAD_WAITS;
 		  else
 		    {
 		      if (waits_used > 0)
-			bcopy (*waits, new_waits, waits_used);
+			memcpy (new_waits, *waits, waits_used);
 		      if (*waits_len > 0 && waits_alloced)
 			munmap (*waits, *waits_len);
 		      *waits = new_waits;
@@ -545,7 +549,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	      if (waits_used + desc_len + 1 <= *waits_len)
 		/* Append DESC to WAITS.  */
 		{
-		  bcopy (desc, *waits + waits_used, desc_len);
+		  memcpy (*waits + waits_used, desc, desc_len);
 		  waits_used += desc_len;
 		  (*waits)[waits_used++] = '\0';
 		}
@@ -608,6 +612,7 @@ S_proc_getloginpids (struct proc *callerp,
 		     pid_t **pids,
 		     u_int *npids)
 {
+  error_t err = 0;
   struct proc *l = pid_find (id);
   struct proc *p;
   struct proc **tail, **new, **parray;
@@ -622,6 +627,9 @@ S_proc_getloginpids (struct proc *callerp,
   /* Simple breadth first search of the children of L. */
   parraysize = 50;
   parray = malloc (sizeof (struct proc *) * parraysize);
+  if (! parray)
+    return ENOMEM;
+
   parray[0] = l;
   for (tail = parray, new = &parray[1]; tail != new; tail++)
     {
@@ -634,6 +642,12 @@ S_proc_getloginpids (struct proc *callerp,
 		struct proc **newparray;
 		newparray = realloc (parray, ((parraysize *= 2)
 					      * sizeof (struct proc *)));
+		if (! newparray)
+		  {
+		    free (parray);
+		    return ENOMEM;
+		  }
+
 		tail = newparray + (tail - parray);
 		new = newparray + (new - parray);
 		parray = newparray;
@@ -643,19 +657,28 @@ S_proc_getloginpids (struct proc *callerp,
     }
 
   if (*npids < new - parray)
-    *pids = mmap (0, (new - parray) * sizeof (pid_t), PROT_READ|PROT_WRITE,
-		  MAP_ANON, 0, 0);
-  *npids = new - parray;
-  for (i = 0; i < *npids; i++)
-    (*pids)[i] = parray[i]->p_pid;
+    {
+      *pids = mmap (0, (new - parray) * sizeof (pid_t), PROT_READ|PROT_WRITE,
+		    MAP_ANON, 0, 0);
+      if (*pids == MAP_FAILED)
+        err = errno;
+    }
+
+  if (! err)
+    {
+      *npids = new - parray;
+      for (i = 0; i < *npids; i++)
+        (*pids)[i] = parray[i]->p_pid;
+    }
+
   free (parray);
-  return 0;
+  return err;
 }
 
-/* Implement proc_setlogin as described in <hurd/proc.defs>. */
+/* Implement proc_setlogin as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setlogin (struct proc *p,
-	       char *login)
+	         char *login)
 {
   struct login *l;
 
@@ -666,6 +689,9 @@ S_proc_setlogin (struct proc *p,
     return EPERM;
 
   l = malloc (sizeof (struct login) + strlen (login) + 1);
+  if (! l)
+    return ENOMEM;
+
   l->l_refcnt = 1;
   strcpy (l->l_name, login);
   if (!--p->p_login->l_refcnt)
@@ -674,10 +700,10 @@ S_proc_setlogin (struct proc *p,
   return 0;
 }
 
-/* Implement proc_getlogin as described in <hurd/proc.defs>. */
+/* Implement proc_getlogin as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getlogin (struct proc *p,
-	       char *login)
+	         char *login)
 {
   if (!p)
     return EOPNOTSUPP;
@@ -685,7 +711,7 @@ S_proc_getlogin (struct proc *p,
   return 0;
 }
 
-/* Implement proc_get_tty as described in <hurd/proc.defs>. */
+/* Implement proc_get_tty as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_get_tty (struct proc *p, pid_t pid,
 		mach_port_t *tty, mach_msg_type_name_t *tty_type)

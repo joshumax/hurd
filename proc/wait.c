@@ -1,5 +1,5 @@
 /* Implementation of wait
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -113,7 +113,7 @@ S_proc_wait (struct proc *p,
 	  *sigcode = child->p_sigcode;
 	  if (child->p_dead)
 	    complete_exit (child);
-	  bzero (ru, sizeof (struct rusage));
+	  memset (ru, 0, sizeof (struct rusage));
 	  *pid_status = pid;
 	  return 0;
 	}
@@ -136,7 +136,7 @@ S_proc_wait (struct proc *p,
 		*pid_status = child->p_pid;
 		if (child->p_dead)
 		  complete_exit (child);
-		bzero (ru, sizeof (struct rusage));
+		memset (ru, 0, sizeof (struct rusage));
 		return 0;
 	      }
 	  }
@@ -157,7 +157,7 @@ S_proc_wait (struct proc *p,
   goto start_over;
 }
 
-/* Implement proc_mark_stop as described in <hurd/proc.defs>. */
+/* Implement proc_mark_stop as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_stop (struct proc *p,
 		  int signo,
@@ -183,7 +183,7 @@ S_proc_mark_stop (struct proc *p,
   return 0;
 }
 
-/* Implement proc_mark_exit as described in <hurd/proc.defs>. */
+/* Implement proc_mark_exit as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_exit (struct proc *p,
 		  int status,
@@ -201,7 +201,7 @@ S_proc_mark_exit (struct proc *p,
   return 0;
 }
 
-/* Implement proc_mark_cont as described in <hurd/proc.defs>. */
+/* Implement proc_mark_cont as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_cont (struct proc *p)
 {
@@ -211,7 +211,7 @@ S_proc_mark_cont (struct proc *p)
   return 0;
 }
 
-/* Implement proc_mark_traced as described in <hurd/proc.defs>. */
+/* Implement proc_mark_traced as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_traced (struct proc *p)
 {
@@ -221,7 +221,7 @@ S_proc_mark_traced (struct proc *p)
   return 0;
 }
 
-/* Implement proc_mark_nostopchild as described in <hurd/proc.defs>. */
+/* Implement proc_mark_nostopchild as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mod_stopchild (struct proc *p,
 		      int value)
