@@ -36,7 +36,8 @@ trivfs_S_fsys_startup (mach_port_t fsys,
 kern_return_t
 trivfs_S_fsys_getpriv (mach_port_t fsys,
 		       mach_port_t *host,
-		       mach_port_t *dev)
+		       mach_port_t *dev,
+		       mach_port_t *fstask)
 {
   return EOPNOTSUPP;
 }
@@ -44,7 +45,23 @@ trivfs_S_fsys_getpriv (mach_port_t fsys,
 kern_return_t
 trivfs_S_fsys_init (mach_port_t fsys,
 		    mach_port_t proc,
-		    mach_port_t auth)
+		    mach_msg_type_name_t proctype,
+		    mach_port_t auth,
+		    mach_msg_type_name_t authtype)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+trivfs_S_fsys_getfile (mach_port_t fsys,
+		       uid_t *genuids,
+		       u_int ngenuids,
+		       uid_t *gengids,
+		       u_int ngengids,
+		       char *handle,
+		       u_int handlesize,
+		       mach_port_t *file,
+		       mach_msg_type_name_t *filetype)
 {
   return EOPNOTSUPP;
 }
