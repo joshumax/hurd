@@ -1,6 +1,6 @@
 # Makefile for libshouldbeinlibc
 #
-#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -21,15 +21,19 @@ makemode := library
 
 libname = libshouldbeinlibc
 SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c argp-ba.c \
+	argp-fmtstream.c argp-fs-xinl.c argp-xinl.c \
 	termsize.c idvec.c idvec-auth.c timefmt.c exec-reauth.c \
 	canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
-	xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c argp.c \
+	xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c \
 	idvec-funcs.c maptime-funcs.c
-LCLHDRS = argp.h idvec.h timefmt.h maptime.h \
+installhdrs = argp.h idvec.h timefmt.h maptime.h \
 	wire.h portinfo.h portxlate.h cacheq.h
-installhdrs = $(LCLHDRS)
+LCLHDRS = $(installhdrs) argp-fmtstream.h argp-namefrob.h
 installhdrsubdir = .
+
+CFLAGS += -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H
 
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
+
