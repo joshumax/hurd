@@ -1,3 +1,12 @@
+2002-03-14  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rdwr.c (store_read): Truncate amount to be read to size of
+	store.  Use memcpy rather than bcopy.
+	(store_write): Return EIO if caller tries to write over the end of
+	the store.
+	* copy.c (copy_read): Do not multiply LEN returned from vm_read
+	with vm_page_size.
+
 2002-03-11  Marcus Brinkmann  <marcus@gnu.org>
 
 	* stripe.c (store_concat_class): Add store_concat_open.

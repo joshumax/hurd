@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -107,6 +107,9 @@ store_write (struct store *store,
   if (store->flags & STORE_READONLY)
     return EROFS;		/* XXX */
 
+  if ((addr << block_shift) + len > store->size)
+    return EIO;
+
   if (store->block_size != 0)
     assert ((len & (store->block_size - 1)) == 0);
 
@@ -184,6 +187,9 @@ store_read (struct store *store,
   if (addr < 0 || run->start < 0)
     return EIO;			/* Reading from a hole.  */
 
+  if ((addr << block_shift) + amount > store->size)
+    amount = store->size - (addr << block_shift);
+
   if (store->block_size != 0)
     assert ((amount & (store->block_size - 1)) == 0);
 
@@ -215,11 +221,11 @@ store_read (struct store *store,
 	  if (!err)
 	    {
 	      /* If for some bizarre reason, the underlying storage chose not
-		 to use the buffer space we so kindly gave it, bcopy it to
+		 to use the buffer space we so kindly gave it, copy it to
 		 that space.  */
 	      if (seg_buf != buf_end)
 		{
-		  bcopy (seg_buf, buf_end, seg_buf_len);
+		  memcpy (buf_end, seg_buf, seg_buf_len);
 		  munmap (seg_buf, seg_buf_len);
 		}
 	      buf_end += seg_buf_len;

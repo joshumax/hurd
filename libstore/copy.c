@@ -1,6 +1,6 @@
 /* Copy store backend
 
-   Copyright (C) 1995,96,97,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,01,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -36,14 +36,10 @@ copy_read (struct store *store, store_offset_t addr, size_t index,
   char *data = store->hook + (addr * store->block_size);
 
   if (page_aligned (data) && page_aligned (amount))
-    {
-      /* When reading whole pages, we can avoid any real copying.  */
-      error_t err = vm_read (mach_task_self (),
-			     (vm_address_t) data, amount,
-			     (pointer_t *) buf, len);
-      *len *= vm_page_size;
-      return err;
-    }
+    /* When reading whole pages, we can avoid any real copying.  */
+    return vm_read (mach_task_self (),
+		    (vm_address_t) data, amount,
+		    (pointer_t *) buf, len);
 
   if (*len < amount)
     /* Have to allocate memory for the return value.  */
