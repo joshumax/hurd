@@ -29,25 +29,29 @@
 #include <error.h>
 
 #include <hurd/fs.h>
+#include <hurd/store.h>
 
 static struct argp_option options[] =
 {
-  {"kind",        'k', 0, 0, "print the type of store behind FILE"},
-  {"name",        'n', 0, 0, "print the name of the store behind FILE"},
-  {"blocks",      'b', 0, 0, "print the number of blocks in FILE"},
-  {"block-size",  'B', 0, 0, "print the block size of FILE's store"},
-  {"size",        's', 0, 0, "print the size, in bytes, of FILE"},
-  {"runs",        'r', 0, 0, "print the runs of blocks in FILE"},
-  {"dereference", 'L', 0, 0, "if FILE is a symbolic link, follow it"},
-  {"prefix",      'p', 0, 0, "always print `FILE: ' before info"},
-  {"no-prefix",   'P', 0, 0, "never print `FILE: ' before info"},
+  {"kind",        'k', 0, 0, "Print the type of store behind FILE"},
+  {"name",        'n', 0, 0, "Print the name of the store behind FILE"},
+  {"blocks",      'b', 0, 0, "Print the number of blocks in FILE"},
+  {"block-size",  'B', 0, 0, "Print the block size of FILE's store"},
+  {"size",        's', 0, 0, "Print the size, in bytes, of FILE"},
+  {"runs",        'r', 0, 0, "Print the runs of blocks in FILE"},
+  {"children",	  'c', 0, 0, "If the store has children, show them too"},
+  {"dereference", 'L', 0, 0, "If FILE is a symbolic link, follow it"},
+  {"prefix",      'p', 0, 0, "Always print `FILE: ' before info"},
+  {"no-prefix",   'P', 0, 0, "Never print `FILE: ' before info"},
   {0, 0}
 };
 static char *args_doc = "FILE...";
 static char *doc = "With no FILE arguments, the file attached to standard \
 input is used.  The fields to be printed are separated by colons, in this \
-order: PREFIX: KIND: NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS.  By default, all \
-fields are printed.";
+order: PREFIX: KIND: NAME: BLOCK-SIZE: BLOCKS: SIZE: RUNS.  If the store is a \
+composite one and --children is specified, children are printed on lines \
+following the main store, indented accordingly.  By default, all \
+fields, and children, are printed.";
 
 /* ---------------------------------------------------------------- */
 
@@ -59,26 +63,18 @@ fields are printed.";
 #define W_BLOCK_SIZE	0x10
 #define W_SIZE		0x20
 #define W_RUNS		0x40
+#define W_CHILDREN	0x80
 
 #define W_ALL		0xFF
 
-/* Print a line of storage information for NODE to stdout.  If PREFIX is
-   non-NULL, print it first, followed by a colon.  */
-static error_t
-print_info (mach_port_t node, char *source, unsigned what)
+/* Print a line of information (exactly what is determinted by WHAT)
+   about store to stdout.  LEVEL is the desired indentation level.  */
+static void
+print_store (struct store *store, int level, unsigned what)
 {
-  error_t err;
-  int flags;
+  int i;
   int first = 1;
-  int kind, i;
   char *kind_name;
-  char *misc;
-  off_t *runs;
-  unsigned misc_len, runs_len;
-  size_t block_size;
-  off_t blocks = 0, size = 0;
-  string_t name;
-  mach_port_t store_port;
   char unknown_kind_name[20];
 
   void psep ()
@@ -93,10 +89,10 @@ print_info (mach_port_t node, char *source, unsigned what)
     }
   void pstr (char *str, unsigned mask)
     {
-      if (str && (what & mask) == mask)
+      if ((what & mask) == mask)
 	{
 	  psep ();
-	  fputs (str, stdout);
+	  fputs (str ?: "-", stdout);
 	}
     }
   void pint (off_t val, unsigned mask)
@@ -108,14 +104,7 @@ print_info (mach_port_t node, char *source, unsigned what)
 	}
     }
 
-  err = file_get_storage_info (node, &kind, &runs, &runs_len, &block_size,
-			       name, &store_port, &misc, &misc_len, &flags);
-  if (err)
-    return err;
-  mach_port_deallocate (mach_task_self (), store_port);
-  vm_deallocate (mach_task_self (), (vm_address_t)misc, misc_len);
-
-  switch (kind)
+  switch (store->class)
     {
     case STORAGE_OTHER: kind_name = "other"; break;
     case STORAGE_DEVICE: kind_name = "device"; break;
@@ -123,45 +112,48 @@ print_info (mach_port_t node, char *source, unsigned what)
     case STORAGE_NETWORK: kind_name = "network"; break;
     case STORAGE_MEMORY: kind_name = "memory"; break;
     case STORAGE_TASK: kind_name = "task"; break;
+    case STORAGE_NULL: kind_name = "null"; break;
+    case STORAGE_CONCAT: kind_name = "concat"; break;
+    case STORAGE_LAYER: kind_name = "layer"; break;
+    case STORAGE_INTERLEAVE: kind_name = "interleave"; break;
     default:
-      sprintf (unknown_kind_name, "%d", kind);
+      sprintf (unknown_kind_name, "%d", store->class);
       kind_name = unknown_kind_name;
     }
 
-  for (i = 0; i < runs_len; i += 2)
+  for (i = 0; i < level; i++)
     {
-      if (runs[i] >= 0)
-	blocks += runs[i+1];
-      size += runs[i+1];
+      putchar (' ');
+      putchar (' ');
     }
-  size *= block_size;
-
-  pstr (source,	    0);
   pstr (kind_name,  W_KIND);
-  if ((flags & STORAGE_MUTATED) && (what & W_KIND))
+  if ((store->flags & STORAGE_MUTATED) && (what & W_KIND))
     fputs ("/mutated", stdout);
-  pstr (name,       W_NAME);
-  pint (block_size, W_BLOCK_SIZE);
-  pint (blocks,     W_BLOCKS);
-  pint (size,       W_SIZE);
+  pstr (store->name,       W_NAME);
+  pint (store->block_size, W_BLOCK_SIZE);
+  pint (store->blocks,     W_BLOCKS);
+  pint (store->size,       W_SIZE);
 
   if (what & W_RUNS)
     {
       psep ();
-      for (i = 0; i < runs_len; i += 2)
+      for (i = 0; i < store->num_runs; i++)
 	{
 	  if (i > 0)
 	    putchar (',');
-	  if (runs[i] < 0)
-	    printf ("[%ld]", runs[i+1]);
+	  if (store->runs[i].start < 0)
+	    printf ("[%ld]", store->runs[i].length);
 	  else
-	    printf ("%ld[%ld]", runs[i], runs[i+1]);
+	    printf ("%ld[%ld]", store->runs[i].start, store->runs[i].length);
 	}
     }
 
   putchar ('\n');
 
-  return 0;
+  if (what & W_CHILDREN)
+    /* Show info about stores that make up this one.  */
+    for (i = 0; i < store->num_children; i++)
+      print_store (store->children[i], level + 1, what);
 }
 
 void 
@@ -175,16 +167,24 @@ main(int argc, char *argv[])
     {
       void info (mach_port_t file, char *source, error_t err)
 	{
+	  struct store *store;
+
+	  if (file == MACH_PORT_NULL)
+	    error (3, err, source);
+
 	  if (print_prefix < 0)
 	    /* By default, only print filename prefixes for multiple files. */
 	    print_prefix = state->next < state->argc;
+
 	  if (what == 0)
 	    what = W_ALL;
-	  if (file == MACH_PORT_NULL)
-	    error (3, err, source);
-	  err = print_info (file, print_prefix ? source : 0, what);
+
+	  err = store_create (file, &store);
 	  if (err)
 	    error (4, err, source);
+
+	  print_store (store, 0, what);
+	  store_free (store);
 	}
 
       switch (key)
@@ -199,9 +199,11 @@ main(int argc, char *argv[])
 	case 'B': what |= W_BLOCK_SIZE; break;
 	case 's': what |= W_SIZE; break;
 	case 'r': what |= W_RUNS; break;
+	case 'c': what |= W_CHILDREN; break;
 
 	case ARGP_KEY_NO_ARGS:
-	  info (getdport (0), "-", 0); break;
+	  argp_usage (state);
+
 	case ARGP_KEY_ARG:
 	  if (strcmp (arg, "-") == 0)
 	    info (getdport (0), "-", 0);
