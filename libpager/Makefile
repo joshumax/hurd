@@ -20,8 +20,8 @@ dir := libpager
 include ../Makeconf
 
 COBJS = data-request.o data-return.o data-unlock.o get-port.o inhibit-term.o \
-	get-port.o inhibit-term.o lock-completed.o lock-object.o mark-error.o \
-	no-senders.o object-init.o object-terminate.o pagemap.o pager-create.o\
+	lock-completed.o lock-object.o mark-error.o no-senders.o \
+	object-init.o object-terminate.o pagemap.o pager-create.o \
 	pager-flush.o pager-shutdown.o pager-sync.o reference.o stubs.o \
 	seqnos.o demuxer.o
 
