@@ -54,7 +54,7 @@ netfs_S_io_write (struct protid *user,
 	      mutex_unlock (&user->po->np->lock);
 	      return err;
 	    }
-	  user->po->filepointer = np->nn_stat.st_size;
+	  user->po->filepointer = user->po->np->nn_stat.st_size;
 	}
       off = user->po->filepointer;
     }
