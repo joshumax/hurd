@@ -60,7 +60,7 @@ usage(status)
   exit(status);
 }
 
-#define SHORT_OPTIONS "apcfkLt?"
+#define SHORT_OPTIONS "apcfkLt"
 
 static struct option options[] =
 {
@@ -70,7 +70,7 @@ static struct option options[] =
   {"create", no_argument, 0, 'c'},
   {"force", no_argument, 0, 'f'},
   {"dereference", no_argument, 0, 'L'},
-  {"help", no_argument, 0, '?'},
+  {"help", no_argument, 0, '&'},
   {0, 0, 0, 0}
 };
 
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
       case 'k': keep_active = 1; break;
       case 'c': create = 1; break;
       case 'L': deref = 1; break;
-      case '?': usage(0);
+      case '&': usage(0);
       default:  usage(-1);
       }
 
