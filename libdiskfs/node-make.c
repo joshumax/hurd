@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <fcntl.h>
 
 
 /* Create a and return new node structure with DN as its physical disknode.
@@ -23,7 +24,7 @@
 struct node *
 diskfs_make_node (struct disknode *dn)
 {
-  struce node *np = malloc (sizeof (struct node));
+  struct node *np = malloc (sizeof (struct node));
   
   np->dn = dn;
   np->dn_set_ctime = 0;
@@ -41,7 +42,6 @@ diskfs_make_node (struct disknode *dn)
   condition_init (&np->flockwait);
   np->needflock = 0;
   np->shlock_count = 0;
-  
-  diskfs_set_stat (np->dn, &np->dn_stat);
+
   return np;
 }
