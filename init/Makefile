@@ -20,3 +20,6 @@ dir := init.trim
 include ../Makeconf
 
 DIST_FILES = Makefile init.c
+
+clean:
+	rm -f init *.o
