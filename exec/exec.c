@@ -1509,7 +1509,8 @@ set_active_trans ()
   
   file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0, fsys,
 		       MACH_MSG_TYPE_MAKE_SEND);
-  mach_port_deallocate (mach_task_self (), execnode);
+  /* Don't deallocate EXECNODE here.  If we drop the last reference,
+     a bug in ufs might throw away the active translator. XXX */
 }
 
 
