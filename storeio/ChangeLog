@@ -1,3 +1,19 @@
+1999-01-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeio.c (options): New option -c/--no-cache.
+	(inhibit_cache): New variable.
+	(parse_opt): Make -c set it.
+	(trivfs_append_args): Report --no-cache if set.
+	(check_open_hook): Pass inhibit_cache flag to dev_open.
+	* dev.h (struct dev): New member `inhibit_cache'.
+	(dev_open): Update decl.
+	* dev.c (dev_open): Take new arg inhibit_cache, store in new dev.
+	If set, don't initialize buf_offs, io_lock, pager, pager_lock.
+	(dev_read, dev_write): If DEV->inhibit_cache is set, allow only
+	whole-block i/o: EINVAL for non-whole-block attempts.
+	* pager.c (dev_get_memory_object): If DEV->inhibit_cache is set, don't
+	make our own pager; if store_map returns EOPNOTSUPP, so do we.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dev.c (dev_buf_fill): Add braces to silence gcc warning.
