@@ -364,6 +364,7 @@ pty_io_write (struct trivfs_protid *cred,
     for (i = 0; i < datalen; i++)
       {
 	flush = input_character (data[i]);
+
 	if (flush)
 	  {
 	    if (packet_mode)
@@ -374,7 +375,10 @@ pty_io_write (struct trivfs_protid *cred,
 	    break;
 	  }
       }
+
   mutex_unlock (&global_lock);
+
+  *amount = datalen;
   return 0;
 }
 
