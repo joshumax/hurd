@@ -82,9 +82,9 @@ diskfs_parse_bootargs (int argc, char **argv)
   if (diskfs_bootflags & RB_ASKNAME)
     {
       char *tmp;
-      printf ("Bootstap filesystem device name [%s]: ", devname);
+      printf ("Bootstrap filesystem device name [%s]: ", devname);
       fflush (stdout);
-      scanf ("%a\n", &tmp);
+      scanf ("%as\n", &tmp);
       if (*tmp)
 	devname = tmp;
     }
