@@ -677,7 +677,7 @@ static struct proc *
 new_proc (task_t task)
 {
   struct proc *p;
-  
+
   p = allocate_proc (task);
   if (p)
     complete_proc (p, genpid ());
@@ -846,30 +846,16 @@ genpid ()
   static int nextpid = 0;
   static int wrap = WRAP_AROUND;
 
-  int wrapped = 0;
-
-  if (nextpid > wrap)
+  while (nextpid < wrap && !pidfree (nextpid))
+    ++nextpid;
+  if (nextpid >= wrap)
     {
       nextpid = START_OVER;
-      wrapped = 1;
-    }
+      while (!pidfree (nextpid))
+	nextpid++;
 
-  while (!pidfree (nextpid))
-    {
-      ++nextpid;
-      if (nextpid > wrap)
-	{
-	  if (wrapped)
-	    {
-	      wrap *= 2;
-	      wrapped = 0;
-	    }
-	  else
-	    {
-	      nextpid = START_OVER;
-	      wrapped = 1;
-	    }
-	}
+      while (nextpid > wrap)
+	wrap *= 2;
     }
 
   return nextpid++;
