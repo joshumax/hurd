@@ -284,7 +284,6 @@ cancel_on_dead_name (struct authhandle *auth, mach_port_t rendezvous)
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_user_authenticate (struct authhandle *userauth,
-			  mach_port_t ignored,
 			  mach_port_t rendezvous,
 			  mach_port_t *newport,
 			  mach_msg_type_name_t *newporttype)
@@ -315,7 +314,6 @@ S_auth_user_authenticate (struct authhandle *userauth,
       condition_signal (&s->wakeup);
       mutex_unlock (&pending_lock);
 
-      mach_port_deallocate (mach_task_self (), ignored);
       mach_port_deallocate (mach_task_self (), rendezvous);
       return 0;
     }
@@ -359,7 +357,6 @@ kern_return_t
 S_auth_server_authenticate (struct authhandle *serverauth,
 			    mach_port_t reply,
 			    mach_msg_type_name_t reply_type,
-			    mach_port_t ignored,
 			    mach_port_t rendezvous,
 			    mach_port_t newport,
 			    mach_msg_type_name_t newport_type,
@@ -438,7 +435,6 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 				  user->egids.ids, user->egids.num,
 				  user->agids.ids, user->agids.num);
   ports_port_deref (user);
-  mach_port_deallocate (mach_task_self (), ignored);
   mach_port_deallocate (mach_task_self (), rendezvous);
   return MIG_NO_REPLY;
 }
