@@ -157,7 +157,7 @@ struct ftp_conn
   const struct ftp_conn_hooks *hooks; /* Customization hooks. */
 
   struct ftp_conn_syshooks syshooks; /* host-dependent hook functions */
-  int syshooks_valid;		/* True if the system type has been determined. */
+  int syshooks_valid : 1;	/* True if the system type has been determined. */
 
   int control;			/* fd for ftp control connection */
 
@@ -173,6 +173,12 @@ struct ftp_conn
   const char *type;		/* Connection type, or 0 if default.  */
 
   void *hook;			/* Random user data. */
+
+  int use_passive : 1;		/* If true, first try passive data conns.  */
+
+  /* These are only used if active data connections are in use.  */
+  struct sockaddr *actv_data_addr;/* Address of port for active data conns.  */
+  int actv_data_conn_queue;	/* A socket to accept data connections on.  */
 };
 
 /* Parameters for an ftp connection; doesn't include any actual connection
