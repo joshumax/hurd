@@ -101,8 +101,7 @@ ext2_alloc_block (struct node *node, unsigned long goal)
 }
 
 static error_t
-inode_getblk (struct node *node, int nr, int create, int new_block,
-	      u32 *disk_block)
+inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
 {
   u32 block;
   int goal = 0, i;
@@ -111,7 +110,7 @@ inode_getblk (struct node *node, int nr, int create, int new_block,
   block = node->dn->info.i_data[nr];
   if (block)
     {
-      *disk_block = block;
+      *buf = bptr (block);
       return 0;
     }
 
@@ -145,7 +144,7 @@ inode_getblk (struct node *node, int nr, int create, int new_block,
   if (!block)
     return EIO;
 
-  *disk_block = block;
+  *buf = bptr (block);
   node->dn->info.i_data[nr] = block;
 
   node->dn->info.i_next_alloc_block = new_block;
@@ -163,8 +162,8 @@ inode_getblk (struct node *node, int nr, int create, int new_block,
 error_t
 block_getblk (struct node *node,
 	      char *bh, int nr,
-	      int create, int blocksize,
-	      int new_block, u32 *disk_block)
+	      int create, int blocksize, int new_block,
+	      char **buf)
 {
   int i, goal = 0;
   u32 block;
@@ -173,7 +172,7 @@ block_getblk (struct node *node,
   block = ((u32 *)bh)[nr];
   if (block)
     {
-      *disk_block = block;
+      *buf = bptr (block);
       return 0;
     }
 
@@ -200,7 +199,7 @@ block_getblk (struct node *node,
   if (!block)
     return EIO;			/* XXX? */
 
-  *disk_block = block;
+  *buf = bptr (block);
   ((u32 *)bh)[nr] = block;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
@@ -215,11 +214,11 @@ block_getblk (struct node *node,
   return 0;
 }
 
-/* Returns the disk block index of the file block BLOCK in NODE in
-   DISK_BLOCK.  If there is no such block yet, but CREATE is true, then it is
-   created, otherwise EINVAL is returned.  */
+/* Returns in BUF a pointer to the file block BLOCK in NODE.  If there is no
+   such block yet, but CREATE is true, then it is created, otherwise EINVAL
+   is returned.  */
 error_t
-ext2_getblk (struct node *node, long block, int create, char **disk_block)
+ext2_getblk (struct node *node, long block, int create, char **buf)
 {
   error_t err;
   char *bh;
@@ -257,14 +256,14 @@ ext2_getblk (struct node *node, long block, int create, char **disk_block)
   b = block;
 
   if (block < EXT2_NDIR_BLOCKS)
-    return inode_getblk (node, block, create, b, disk_block);
+    return inode_getblk (node, block, create, b, buf);
 
   block -= EXT2_NDIR_BLOCKS;
   if (block < addr_per_block)
     {
       err = inode_getblk (node, EXT2_IND_BLOCK, create, b, &bh);
       if (!err)
-	err= block_getblk (node, bh, block, create, block_size, b, disk_block);
+	err= block_getblk (node, bh, block, create, block_size, b, buf);
       return err;
     }
 
@@ -277,7 +276,7 @@ ext2_getblk (struct node *node, long block, int create, char **disk_block)
 			    block_size, b, &bh);
       if (!err)
 	err = block_getblk (node, bh, block & (addr_per_block - 1),
-			    create, block_size, b, disk_block);
+			    create, block_size, b, buf);
       return err;
     }
 
@@ -292,7 +291,7 @@ ext2_getblk (struct node *node, long block, int create, char **disk_block)
 		    create, block_size, b, &bh);
   if (!err)
     err = block_getblk (node, bh, block & (addr_per_block - 1), create,
-			block_size, b, disk_block);
+			block_size, b, buf);
 
   return err;
 }
