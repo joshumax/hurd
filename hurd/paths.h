@@ -19,14 +19,21 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #pragma once
 
+
 /* Port rendezvous points are specified by symbols _SERVERS_FOO,
    the canonical pathname being /servers/foo.  */
 
 #define	_SERVERS_CORE	"/servers/core"
+#define	_SERVERS_EXEC	"/servers/exec"
 
 
 /* Hurd servers are specified by symbols _HURD_FOO,
    the canonical pathname being /hurd/foo.  */
 
-#define	_HURD_IFSOCK	"/hurd/ifsock"
-#define	_HURD_SYMLINK	"/hurd/symlink"
+/* Standard translators for special node types.
+   These pathnames are used by the C library.
+   UFS and perhaps other filesystems short-circuit these translators.  */
+#define	_HURD_SYMLINK	"/hurd/symlink"	/* S_IFLNK */
+#define	_HURD_CHRDEV	"/hurd/chrdev" /* S_IFCHR */
+#define	_HURD_BLKDEV	"/hurd/blkdev" /* S_IFBLK */
+#define	_HURD_IFSOCK	"/hurd/ifsock" /* S_IFSOCK */
