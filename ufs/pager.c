@@ -21,15 +21,11 @@
 #include <strings.h>
 #include <stdio.h>
 
-mach_port_t dinport;
-mach_port_t dinodeport;
-mach_port_t cgport;
-
 /* Filesystem blocks of inodes per cylinder group */
 static int infsb_pcg;
 
 spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
-struct user_pager_info *filelist, *sinlist;
+struct user_pager_info *filepagerlist;
 
 static void enqueue_pager (struct user_pager_info *);
 static void dequeue_pager (struct user_pager_info *);
@@ -43,8 +39,6 @@ struct mutex pagernplock = MUTEX_INITIALIZER;
 #define MAY_CACHE 1
 #endif
 
-char typechars[] = "ICSDF";
-
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
    return, then release that mutex after I/O on the data has
@@ -55,84 +49,34 @@ find_address (struct user_pager_info *upi,
 	      vm_address_t offset,
 	      daddr_t *addr,
 	      int *disksize,
-	      struct rwlock **nplock,
-	      struct disknode **dnp)
+	      struct rwlock **nplock)
 {
-  int vblkno = lblkno (sblock, offset);
-  int fsbaddr;
-  struct node *volatile np;
-  error_t err;
-  struct mutex *maplock = 0;
-  
-  if (upi->type != FILE_DATA)
-    *disksize = __vm_page_size;
+  assert (upi->type == DISK || upi->type == FILE_DATA);
 
-  switch (upi->type)
+  if (upi->type == DISK)
     {
-    default:
-      assert (0);
-      
-    case CG:
-      fsbaddr = cgtod (sblock, vblkno);
+      *disksize = __vm_page_size;
+      *addr = offset / DEV_BSIZE;
       *nplock = 0;
-      break;
-      
-    case DINODE:
-      fsbaddr = (cgimin (sblock, vblkno / infsb_pcg)
-		 + blkstofrags (sblock, vblkno % infsb_pcg));
-      *nplock = 0;
-      break;
-      
-    case DINDIR:
-      np = ifind (vblkno);
-
-      rwlock_reader_lock (&np->dn->dinlock, np->dn);
-      *nplock = &np->dn->dinlock;
-      *dnp = np->dn;
-      if (err = diskfs_catch_exception ())
-	goto error;
-      
-      fsbaddr = dinodes[np->dn->number].di_ib[INDIR_DOUBLE];
-      diskfs_end_catch_exception ();
-      break;
-      
-    case SINDIR:
+      return 0;
+    }
+  else 
+    {
+      int vblkno = lblkno (sblock, offset);
+      int fsbaddr;
+      struct node *volatile np;
+      error_t err;
+  
       np = upi->np;
       
-      rwlock_reader_lock (&np->dn->sinlock, np->dn);
-      *nplock = &np->dn->sinlock;
-      *dnp = np->dn;
-
-      if (err = diskfs_catch_exception ())
-	goto error;
-
-      if (vblkno == 0)
-	fsbaddr = dinodes[np->dn->number].di_ib[INDIR_SINGLE];
-      else
-	{
-	  mutex_lock (&dinmaplock);
-	  maplock = &dinmaplock;
-	  if (!np->dn->dinloc)
-	    din_map (np);
-	  assert (vblkno - 1 < np->dn->dinloclen);
-	  fsbaddr = np->dn->dinloc[vblkno - 1];
-	  mutex_unlock (&dinmaplock);
-	}
-      
-      diskfs_end_catch_exception ();
-      break;
-      
-    case FILE_DATA:
-      np = upi->np;
-      
-      rwlock_reader_lock (&np->dn->datalock, np->dn);
-      *nplock = &np->dn->datalock;
-      *dnp = np->dn;
+      rwlock_reader_lock (&np->dn->allocptrlock);
+      *nplock = &np->dn->allocptrlock;
 
       if (offset >= np->allocsize)
 	{
 	  err = EIO;
-	  goto error;
+	  rwlock_reader_unlock (&np->dn->allocptrlock);
+	  return err;
 	}
       
       if (offset + __vm_page_size > np->allocsize)
@@ -141,38 +85,49 @@ find_address (struct user_pager_info *upi,
 	*disksize = __vm_page_size;
       
       if (err = diskfs_catch_exception ())
-	goto error;
+	{
+	  rwlock_reader_unlock (&np->dn->allocptrlock);
+	  return err;
+	}
       
       if (vblkno < NDADDR)
 	fsbaddr = dinodes[np->dn->number].di_db[vblkno];
       else
 	{
-	  mutex_lock (&sinmaplock);
-	  maplock = &sinmaplock;
-	  if (!np->dn->sinloc)
-	    sin_map (np);
-	  assert (vblkno - NDADDR < np->dn->sinloclen);
-	  fsbaddr = np->dn->sinloc[vblkno - NDADDR];
-	  mutex_unlock (&sinmaplock);
+	  vblkno -= NDADDR;
+	  assert (vblkno < np->dn->sinloclen);
+	  int alloc = 1;
+	  
+	  /* It's in the INDIR_DOUBLE area */
+	  if (vblkno >= sblock->fs_bsize / sizeof (daddr_t))
+	    {
+	      /* Check if the double indirect block is allocated. */
+	      if (dinodes[np->dn->number].di_ib[INDIR_DOUBLE] == 0)
+		alloc = 0;
+
+	      /* Check if the appropriate single indirect block is
+		 allocated. */
+	      else if (np->dinloc[vblkno / sblock->fs_bsize - 1] == 0)
+		alloc = 0;
+	    }
+	  else
+	    if (dinodes[np->dn->number].di_ib[INDIR_SINGLE] == 0)
+	      alloc = 0;
+	      
+	  fsbaddr = alloc ? np->dn->sinloc[vblkno - NDADDR] : 0;
 	}
       diskfs_end_catch_exception ();
-      break;
-    }
 
-  if (fsbaddr)
-    *addr = fsbtodb (sblock, fsbaddr) + blkoff (sblock, offset) / DEV_BSIZE;
-  else
-    *addr = 0;
+      if (fsbaddr)
+	*addr = (fsbtodb (sblock, fsbaddr)
+		 + blkoff (sblock, offset) / DEV_BSIZE);
+      else
+	*addr = 0;
    
-  return 0;
-
- error:
-  if (*nplock)
-    rwlock_reader_unlock (*nplock, *dnp);
-  if (maplock)
-    mutex_unlock (maplock);
-  return err;
+      return 0;
+    }
 }
+
 
 /* Implement the pager_read_page callback from the pager library.  See 
    <hurd/pager.h> for the interface description. */
@@ -186,9 +141,8 @@ pager_read_page (struct user_pager_info *pager,
   struct rwlock *nplock;
   daddr_t addr;
   int disksize;
-  struct disknode *dn;
   
-  err = find_address (pager, page, &addr, &disksize, &nplock, &dn);
+  err = find_address (pager, page, &addr, &disksize, &nplock);
   if (err)
     return err;
   
@@ -208,7 +162,7 @@ pager_read_page (struct user_pager_info *pager,
     }
       
   if (nplock)
-    rwlock_reader_unlock (nplock, dn);
+    rwlock_reader_unlock (nplock);
   
   return err;
 }
@@ -224,14 +178,8 @@ pager_write_page (struct user_pager_info *pager,
   int disksize;
   struct rwlock *nplock;
   error_t err;
-  struct disknode *dn;
   
-#if 0
-  printf ("%c", typechars[pager->type]);
-  fflush (stdout);
-#endif
-
-  err = find_address (pager, page, &addr, &disksize, &nplock, &dn);
+  err = find_address (pager, page, &addr, &disksize, &nplock);
   if (err)
     return err;
   
@@ -247,7 +195,7 @@ pager_write_page (struct user_pager_info *pager,
     }
     
   if (nplock)
-    rwlock_reader_unlock (nplock, dn);
+    rwlock_reader_unlock (nplock);
   
   return err;
 }
@@ -258,120 +206,63 @@ error_t
 pager_unlock_page (struct user_pager_info *pager,
 		   vm_offset_t address)
 {
-  struct node *volatile np;
+  struct node *np;
   error_t err;
   daddr_t vblkno;
   daddr_t *slot, *table;
   daddr_t newblk;
+  struct disknode *dn;
 
   /* Problem--where to get cred values for allocation here? */
 
-  vblkno = address / sblock->fs_bsize;
+  vblkno = lblkno (address);
 
   printf ("Unlock page request, Object %#x\tOffset %#x...", pager, address);
   fflush (stdout);
 
-  switch (pager->type)
+  if (pager->type == DISK)
+    return 0;
+  
+  np = pager->np;
+  dn = np->dn;
+
+  rwlock_writer_lock (&dn->allocptrlock);
+  
+  /* If this is the last block, we don't let it get unlocked. */
+  if (address + __vm_page_size
+      > blkroundup (sblock, np->allocsize) - sblock->fs_bsize)
     {
-    case DINDIR:
-      np = ifind (vblkno);
-      
-      rwlock_writer_lock (&np->dn->dinlock, np->dn);
-      if (diskfs_catch_exception ())
-	err =  EIO;
-      else
-	{
-	  if (dinodes[np->dn->number].di_ib[INDIR_DOUBLE])
-	    err = 0;
-	  else
-	    {
-	      newblk = indir_alloc (np, INDIR_DOUBLE, 0);
-	      if (newblk)
-		{
-		  dinodes[np->dn->number].di_ib[INDIR_DOUBLE] = newblk;
-		  err = 0;
-		}
-	      else
-		err = ENOSPC;
-	    }
-	  diskfs_end_catch_exception ();
-	}
-      rwlock_writer_unlock (&np->dn->dinlock, np->dn);
-      break;
-      
-    case SINDIR:
-      np = pager->np;
-      rwlock_writer_lock (&np->dn->sinlock, np->dn);
-      
-      if (diskfs_catch_exception ())
-	err = EIO;
-      else
-	{
-	  mutex_lock (&dinmaplock);
-	  if (vblkno == 0)
-	    slot = &dinodes[np->dn->number].di_ib[INDIR_SINGLE];
-	  else
-	    {
-	      if (!np->dn->dinloc)
-		din_map (np);
-	      assert (vblkno - 1 < np->dn->dinloclen);
-	      slot = &np->dn->dinloc[vblkno - 1];
-	    }
+      printf ("attempt to unlock at last block denied\n");
+      fflush (stdout);
+      rwlock_writer_unlock (&np->dn->datalock, np->dn);
+      return EIO;
+    }
+    
+  if (diskfs_catch_exception ())
+    {
+      rwlock_writer_unlock (&dn->allocptrlock);
+      return EIO;
+    }
 
-	  if (*slot)
-	    err = 0;
-	  else
-	    {
-	      newblk = indir_alloc (np, INDIR_SINGLE, vblkno);
-	      if (newblk)
-		{
-		  *slot = newblk;
-		  err = 0;
-		}
-	      else
-		err = ENOSPC;
-	    }
-	  mutex_unlock (&dinmaplock);
-	  diskfs_end_catch_exception ();
-	}
-      rwlock_writer_unlock (&np->dn->sinlock, np->dn);
-      break;
-
-    case FILE_DATA:
-      np = pager->np;
-      rwlock_writer_lock (&np->dn->datalock, np->dn);
-
-      /* If this is the last block, we don't let it get unlocked. */
-      if (address + __vm_page_size
-	  > blkroundup (sblock, np->allocsize) - sblock->fs_bsize)
-	{
-	  printf ("attempt to unlock at last block denied\n");
-	  fflush (stdout);
-	  rwlock_writer_unlock (&np->dn->datalock, np->dn);
-	  return EIO;
-	}
-      
-      if (diskfs_catch_exception ())
-	err = EIO;
-      else
-	{
-	  mutex_lock (&sinmaplock);
-	  if (vblkno < NDADDR)
-	    {
-	      slot = &dinodes[np->dn->number].di_db[vblkno];
-	      table = dinodes[np->dn->number].di_db;
-	    }
-	  else
-	    {
-	      if (!np->dn->sinloc)
-		sin_map (np);
-	      assert (vblkno - NDADDR < np->dn->sinloclen);
-	      slot = &np->dn->sinloc[vblkno - NDADDR];
-	      table = np->dn->sinloc;
-	    }
+  if (vblkno < NDADDR)
+    {
+      slot = &dinodes[np->dn->number].di_db[vblkno];
+      table = dinodes[np->dn->number].di_db;
+    }
+  else
+    {
+      assert (vblkno - NDADDR < np->dn->sinloclen);
+      slot = &np->dn->sinloc[vblkno - NDADDR];
+      table = np->dn->sinloc;
+    }
 	  
-	  if (*slot)
-	    err = 0;
+  if (*slot)
+    {
+      diskfs_end_catch_exception ();
+      rwlock_write_unlock (&dn->allocptrlock);
+      return 0;
+    }
+
 	  else
 	    {
 	      ffs_alloc (np, vblkno, 
