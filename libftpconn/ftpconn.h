@@ -34,11 +34,12 @@ struct ftp_conn_stat;
 
 /* The type of the function called by ...get_stats to add each new stat.
    NAME is the file in question, STAT is stat info about it, and if NAME is a
-   symlink, SYMLINK_TARGET is what it is linked to, or 0 if it's not a symlink.
-   NAME is malloced and should be freed by the callee if it's not saved.
-   HOOK is as passed into ...get_stats.  */
-typedef error_t (*ftp_conn_add_stat_fun_t) (char *name, struct stat *stat,
-					    char *symlink_target,
+   symlink, SYMLINK_TARGET is what it is linked to, or 0 if it's not a
+   symlink.  NAME and SYMLINK_TARGET should be copied if they are used
+   outside of this function.  HOOK is as passed into ...get_stats.  */
+typedef error_t (*ftp_conn_add_stat_fun_t) (const char *name,
+					    const struct stat *stat,
+					    const char *symlink_target,
 					    void *hook);
 
 /* Hooks that customize behavior for particular types of remote system.  */
