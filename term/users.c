@@ -133,6 +133,8 @@ open_hook (struct trivfs_control *cntl,
   
       bcopy (ttydefchars, termstate.c_cc, NCCS);
 
+      bzero (&window_size, sizeof window_size);
+
       termflags |= NO_OWNER;
     }
   else if (termflags & EXCL_USE)
