@@ -142,8 +142,7 @@ void set_partition_of(x, p)
  * Saves space, filenames can be long.
  */
 unsigned int
-part_id(name)
-	unsigned char	*name;
+part_id(const unsigned char *name)
 {
 	register unsigned int len, id, xorid;
 
