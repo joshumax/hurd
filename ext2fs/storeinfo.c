@@ -105,6 +105,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
       if (! err)
 	err = store_return (file_store, ports, num_ports, ints, num_ints,
 			    offsets, num_offsets, data, data_len);
+      *ports_type = MACH_MSG_TYPE_MAKE_SEND;
       store_free (file_store);
     }
 
