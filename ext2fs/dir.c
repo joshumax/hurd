@@ -107,6 +107,9 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   int blockaddr;
   int idx;
   
+  if (type == REMOVE)
+    assert (npp);
+
   if (npp)
     *npp = 0;
 
@@ -173,7 +176,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
      think about that as an error yet. */
   err = 0;
 
-  if (inum)
+  if (inum && npp)
     {
       if (namelen != 2 || name[0] != '.' || name[1] != '.')
 	{
@@ -249,15 +252,15 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   
   /* If we will be modifying the directory, make sure it's allowed. */
   if (type == RENAME
-      || (type == REMOVE && np)
-      || (type == CREATE && !np))
+      || (type == REMOVE && inum)
+      || (type == CREATE && !inum))
     {
       err = diskfs_checkdirmod (dp, np, cred);
       if (err)
 	goto out;
     }
   
-  if ((type == CREATE || type == RENAME) && !np && ds && ds->stat == LOOKING)
+  if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
     {
       /* We didn't find any room, so mark ds to extend the dir */
       ds->type = CREATE;
@@ -281,7 +284,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   
   if (np)
     {
-      if (err || !npp)
+      assert (npp);
+      if (err)
 	{
 	  if (!spec_dotdot)
 	    {
@@ -299,11 +303,11 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	    /* We did iget */
 	    diskfs_nput (np);
 	}
-      else if (npp)
+      else
 	*npp = np;
     }
 
-  return err ? : np ? 0 : ENOENT;
+  return err ? : inum ? 0 : ENOENT;
 }
 
 /* Scan block at address BLKADDR (of node DP; block index IDX), for
