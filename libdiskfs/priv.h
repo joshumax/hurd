@@ -71,6 +71,10 @@ extern int _diskfs_ncontrol_ports;
 /* Lock for _diskfs_ncontrol_ports. */
 extern spin_lock_t _diskfs_control_lock;
 
+/* Callback routine for active translator startup */
+error_t _diskfs_translator_callback (void *, mach_port_t *, uid_t *,
+				     gid_t *, char **, int *);
+
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
    (without waiting) and unlocks everything, and then returns
