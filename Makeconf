@@ -349,8 +349,9 @@ $(libname)_pic.a: $(patsubst %.o,%_pic.o,$(OBJS))
 $(libname).so.$(hurd-version): $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
 	      $(rpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) \
-	      '-Wl,-(' $^ $($(libname).so-LDLIBS) $(LDLIBS) \
-	      '-Wl,-)'
+	      '-Wl,-(' $(filter-out %.map,$^) \
+		       $($(libname).so-LDLIBS) $(LDLIBS) \
+	      '-Wl,-)' $(filter %.map,$^)
 
 $(libname).so: $(libname).so.$(hurd-version)
 	ln -f -s $< $@
