@@ -28,7 +28,7 @@ SRCS = init.c
 all: init
 
 init: $(OBJS)
-	$(link)
+	$(CC) $(CFLAGS) -o $@ $^
 
 init.o: startup_S.h startup_reply.h notify_S.h
 
