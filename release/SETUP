@@ -12,7 +12,7 @@ fsysopts / --writable
 
 # Setup crucial devices
 cd /dev
-/bin/sh ./MAKEDEV std
+/bin/sh ./MAKEDEV std ptyp ptyq
 
 echo 'Hit ^C now for shell prompt or RET to reboot'
 read response
