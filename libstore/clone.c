@@ -37,6 +37,13 @@ store_clone (struct store *from, struct store **to)
   if (! c)
     return ENOMEM;
 
+  if (from->name)
+    {
+      c->name = strdup (from->name);
+      if (! c->name)
+	err = ENOMEM;
+    }
+
   if (from->misc_len)
     {
       c->misc = malloc (from->misc_len);
