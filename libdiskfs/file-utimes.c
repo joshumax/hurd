@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_utimes
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,6 +32,10 @@ diskfs_S_file_utimes (struct protid *cred,
 			 np->dn_stat.st_mtime = mtime.seconds;
 			 np->dn_set_atime = np->dn_set_mtime = 0;
 			 np->dn_set_ctime = 1;
+			 if (np->filemod_reqs)
+			   diskfs_notice_filechange (np,
+						     FILE_CHANGED_META,
+						     0, 0);
 		       }
 		   }));
 }
