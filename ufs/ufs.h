@@ -36,6 +36,8 @@ struct disknode
 {
   ino_t number;
 
+  int dir_idx;
+
   /* For a directory, this array holds the number of directory entries in
      each DIRBLKSIZE piece of the directory. */
   int *dirents;

@@ -69,6 +69,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
 
   dn->number = inum;
   dn->dirents = 0;
+  dn->dir_idx = 0;
 
   rwlock_init (&dn->allocptrlock);
   dn->dirty = 0;
