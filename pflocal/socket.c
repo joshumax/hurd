@@ -295,7 +295,8 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
       err = sock_acquire_read_pipe (dest_sock, &pipe);
       if (!err)
 	{
-	  err = pipe_send (pipe, source_addr, data, data_len,
+	  err = pipe_send (pipe, user->sock->flags & SOCK_NONBLOCK,
+			   source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
 	  pipe_release_writer (pipe);
