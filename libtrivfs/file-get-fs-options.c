@@ -18,6 +18,7 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <argz.h>
 #include <hurd/fshelp.h>
 
 #include "priv.h"
