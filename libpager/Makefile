@@ -45,10 +45,10 @@ $(hurdinst)/lib/libpager.a: libpager.a(__.SYMDEF)
 	cp libpager.a $@
 	ranlib $@
 
-$(headers)libpager.h: libpager.h
+$(headers)/libpager.h: libpager.h
 	cp libpager.h $@
 
-install: $(hurdinst)/lib/libpager.a $(headers)/libports.h
+install: $(hurdinst)/lib/libpager.a $(headers)/libpager.h
 
 $(OBJS): libpager.h priv.h $(headers)/libports.h
 
