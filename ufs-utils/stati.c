@@ -51,6 +51,7 @@ static char sccsid[] __attribute__ ((unused));
 
 #include <sys/param.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include "../ufs/dinode.h"
 #include "../ufs/fs.h"
@@ -67,11 +68,48 @@ static char sccsid[] __attribute__ ((unused));
 #define MAXPHYS (64 * 1024)
 #define DEV_BSIZE 512
 
+/* Returns a nice representation of a file mode in a static buffer.  */
+static char *
+mode_rep (unsigned short mode)
+{
+  static char buf[30];
+  char *p = buf;
+
+  void add_perms (int shift, unsigned sid_mask)
+    {
+      unsigned short smode = mode << shift;
+      *p++ = (smode & S_IREAD) ? 'r' : '-';
+      *p++ = (smode & S_IWRITE) ? 'w' : '-';
+      *p++ = (smode & S_IEXEC) ? ((mode & sid_mask) ? 's' : 'x') : '-';
+    }
+
+  switch (mode & S_IFMT)
+    {
+    case S_IFREG: *p++ = '-'; break;
+    case S_IFDIR: *p++ = 'd'; break;
+    case S_IFCHR: *p++ = 'c'; break;
+    case S_IFBLK: *p++ = 'b'; break;
+    case S_IFLNK: *p++ = 'l'; break;
+    case S_IFSOCK:*p++ = 'p'; break;
+    case S_IFIFO: *p++ = 'f'; break;
+    default:      *p++ = '?';
+    }
+  
+  add_perms (0, S_ISUID);
+  add_perms (3, S_ISGID);
+  add_perms (6, 0);
+
+  snprintf (p, buf + sizeof buf - p, " [%0o]", mode);
+
+  return buf;
+}
+
 /* Returns a nice representation of a struct timespec in a static buffer.  */
 static char *
 timespec_rep (struct timespec *ts)
 {
-  static char buf[200], *p = buf;
+  static char buf[200];
+  char *p = buf;
   if (ts->ts_sec || ts->ts_nsec)
     {
       time_t time = ts->ts_sec;
@@ -79,7 +117,6 @@ timespec_rep (struct timespec *ts)
       p += strlen (buf);
       if (p[-1] == '\n')
 	p--;
-      *p++ = ';';
       *p++ = ' ';
     }
   snprintf (p, buf + sizeof buf - p, "[%ld, %ld]", ts->ts_sec, ts->ts_nsec);
@@ -161,6 +198,8 @@ main(argc, argv)
 
 	/* remaining arguments are inode numbers. */
 	while (*++argv) {
+		int i;
+
 		/* get the inode number. */
 		if ((inonum = atoi(*argv)) <= 0) {
 			(void)fprintf(stderr,
@@ -191,6 +230,7 @@ main(argc, argv)
 		if (argc > 3)
 		  printf ("inode:  %d\n", inonum);
 
+		printf ("mode:   %s\n", mode_rep (ip->di_model));
 		printf ("nlink:  %d\n", ip->di_nlink);
 		printf ("size:   %qd\n", ip->di_size);
 		printf ("atime:  %s\n", timespec_rep (&ip->di_atime));
@@ -201,6 +241,14 @@ main(argc, argv)
 		printf ("gener:  %ld\n", ip->di_gen);
 		printf ("uid:    %s\n", uid_rep (ip->di_uid));
 		printf ("gid:    %s\n", gid_rep (ip->di_gid));
+		printf ("dblks:  ");
+		for (i = 0; i < NDADDR; i++)
+		  printf ("%s%ld", (i == 0 ? "" : ", "), ip->di_db[i]);
+		putchar ('\n');
+		printf ("iblks:  ");
+		for (i = 0; i < NIADDR; i++)
+		  printf ("%s%ld", (i == 0 ? "" : ", "), ip->di_ib[i]);
+		putchar ('\n');
 		printf ("trans:  %ld\n", ip->di_trans);
 
 		if (argv[1])
