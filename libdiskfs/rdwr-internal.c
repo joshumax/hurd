@@ -41,7 +41,7 @@ _diskfs_rdwr_internal (struct node *np,
   if (dir)
     assert (!diskfs_readonly);
 
-  if (!diskfs_readonly && !notime)
+  if (!diskfs_check_readonly () && !notime)
     {
       if (dir)
 	np->dn_set_mtime = 1;
@@ -54,7 +54,7 @@ _diskfs_rdwr_internal (struct node *np,
   err = pager_memcpy (diskfs_get_filemap_pager_struct (np), memobj,
 		      offset, data, amt, prot);
 
-  if (!diskfs_readonly && !notime)
+  if (!diskfs_check_readonly () && !notime)
     {
       if (dir)
 	np->dn_set_mtime = 1;
