@@ -862,7 +862,7 @@ screen_shift_left (display_t display, size_t col1, size_t row1, size_t col2,
 	user->_matrix[dst++ % size] = user->_matrix[src++ % size];
       while (dst <= end)
 	{
-	  user->_matrix[dst++ % size].chr = chr;
+	  user->_matrix[dst % size].chr = chr;
 	  user->_matrix[dst++ % size].attr = attr;
 	}
 
@@ -899,7 +899,7 @@ screen_shift_right (display_t display, size_t col1, size_t row1, size_t col2,
 	user->_matrix[dst-- % size] = user->_matrix[src-- % size];
       while (dst >= start)
 	{
-	  user->_matrix[dst-- % size].chr = chr;
+	  user->_matrix[dst % size].chr = chr;
 	  user->_matrix[dst-- % size].attr = attr;
 	}
 

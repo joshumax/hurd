@@ -2,6 +2,10 @@
 
 	* Makefile (HURDLIBS): Add pager, reported by Alfred M. Szmidt.
 
+	* display.c (screen_shift_left): Don't increase DST twice in one
+	iteration.
+	* display.c (screen_shift_right): Likewise.
+
 2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (LCLHDRS): Add priv.h and mutations.h.
