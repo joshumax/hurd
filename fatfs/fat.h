@@ -346,6 +346,7 @@ extern cluster_t nr_of_clusters;
         
 /* Numeric conversions for these fields.  */
 #include <endian.h>
+#include <byteswap.h>
 
 static inline unsigned int 
 read_dword (unsigned char *addr)

@@ -1,7 +1,7 @@
 2003-08-09  Marcus Brinkmann  <marcus@gnu.org>
 
-	* fat.h (read_dword) [BYTE_ORDER == BIG_ENDIAN]: Use bswap_32 to
-	swap bytes.
+	* fat.h: Include <byteswap.h>.
+	(read_dword) [BYTE_ORDER == BIG_ENDIAN]: Use bswap_32 to swap bytes.
 	(write_dword) [BYTE_ORDER == BIG_ENDIAN]: Likewise.
 	(read_word) [BYTE_ORDER == BIG_ENDIAN]: Use bswap_16 to swap bytes.
 	(write_word) [BYTE_ORDER == BIG_ENDIAN]: Likewise.
