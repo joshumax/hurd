@@ -26,7 +26,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
 {
   struct protid *newpi;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
-  uid_t *gen_uids, *gin_gids, *aux_uids, *aux_gids;
+  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   
