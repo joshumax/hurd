@@ -519,6 +519,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
      ports (traced_class).  */
   info = ports_lookup_port (traced_bucket, inp->msgh_local_port, 0);
   assert (info);
+  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == info->type);
 
   if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == MACH_MSG_TYPE_MOVE_SEND_ONCE)
     {
@@ -598,6 +599,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
      It is ready to be resent.  */
 
   if (inp->msgh_local_port == MACH_PORT_NULL
+      && info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE
       && inp->msgh_size >= sizeof (mig_reply_header_t)
       && (*(int *) &((mig_reply_header_t *) inp)->RetCodeType
 	  == *(int *)&RetCodeType))
