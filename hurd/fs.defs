@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface. 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -94,6 +94,8 @@ routine file_chflags (
 	new_flags: int);
 
 /* Change access and modify times */
+/* If the microseconds value is -1 (all bits on) then the time should be
+   set to the current time and the remainder of the time_value_t ignored. */
 routine file_utimes (
 	utimes_file: file_t;
 	RPT
