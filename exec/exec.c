@@ -39,6 +39,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 mach_port_t procserver;	/* Our proc port.  */
 
@@ -898,6 +899,7 @@ static void
 check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr)
 {
   const ElfW(Phdr) *phdr;
+  bool seen_phdr = false;
 
   memcpy (e->info.elf.phdr, mapped_phdr,
 	  e->info.elf.phnum * sizeof (ElfW(Phdr)));
@@ -917,17 +919,29 @@ check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr)
 	e->interp.phdr = phdr;
 	break;
       case PT_LOAD:
-	/* Sanity check.  */
-	if ((phdr->p_offset & -phdr->p_align) == 0)
-	  e->info.elf.phdr_addr += phdr->p_vaddr - phdr->p_offset;
 	if (e->file_size <= (off_t) (phdr->p_offset +
 				     phdr->p_filesz))
-	  e->error = ENOEXEC;
+	  {
+	    e->error = ENOEXEC;
+	    return;
+	  }
+	/* Check if this is the segment that contains the phdr image.  */
+	if (!seen_phdr
+	    && (phdr->p_offset & -phdr->p_align) == 0 /* Sanity check.  */
+	    && phdr->p_offset <= e->info.elf.phdr_addr
+	    && e->info.elf.phdr_addr - phdr->p_offset < phr->p_filesz)
+	  {
+	    e->info.elf.phdr_addr += phdr->p_vaddr - phdr->p_offset;
+	    seen_phdr = true;
+	  }
 	break;
       case PT_GNU_STACK:
 	e->info.elf.execstack = phdr->p_flags & PF_X;
 	break;
       }
+
+  if (!seen_phdr)
+    e->info.elf.phdr_addr = 0;
 }
 
 
@@ -1807,12 +1821,15 @@ do_exec (file_t file,
   /* Now record some essential addresses from the image itself that the
      program's startup code will need to know.  We do this after loading
      the image so that a load-anywhere image gets the adjusted addresses.  */
+    if (e.info.elf.phdr_addr != 0)
+      {
 #ifdef BFD
-  if (!e.bfd)
+	if (!e.bfd)
 #endif
-    e.info.elf.phdr_addr += e.info.elf.loadbase;
-  boot->phdr_addr = e.info.elf.phdr_addr;
-  boot->phdr_size = e.info.elf.phnum * sizeof (ElfW(Phdr));
+	  e.info.elf.phdr_addr += e.info.elf.loadbase;
+	boot->phdr_addr = e.info.elf.phdr_addr;
+	boot->phdr_size = e.info.elf.phnum * sizeof (ElfW(Phdr));
+      }
   boot->user_entry = e.entry;	/* already adjusted in `load' */
 
   /* Create the initial thread.  */
