@@ -40,8 +40,6 @@ diskfs_direnter (struct node *dp,
   if (err)
     return err;
 
-  dn->dn_set_mtime = 1;
-  
   if (dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_NEW, name);
 
