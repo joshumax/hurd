@@ -47,7 +47,8 @@ S_socket_create (mach_port_t pf,
   err = sock_create (pipe_class, &sock);
   if (!err)
     err = sock_create_port (sock, port);
-  *port_type = MACH_MSG_TYPE_MAKE_SEND;
+  if (!err)
+    *port_type = MACH_MSG_TYPE_MAKE_SEND;
   
   return err;
 }
