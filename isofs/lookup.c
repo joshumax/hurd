@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -241,7 +241,7 @@ diskfs_get_directs (struct node *dp,
   if (err)
     {
       if (ouralloc)
-	vm_deallocate (mach_task_self (), (vm_address_t)*data, allocsize);
+	munmap (*data, allocsize);
       return err;
     }
 
@@ -267,7 +267,7 @@ diskfs_get_directs (struct node *dp,
 	{
 	  /* Not that many entries in the directory; return nothing. */
 	  if (allocsize > *datacnt)
-	    vm_deallocate (mach_task_self (), (vm_address_t) data, allocsize);
+	    munmap (data, allocsize);
 	  *datacnt = 0;
 	  *amt = 0;
 	  return 0;
@@ -342,8 +342,7 @@ diskfs_get_directs (struct node *dp,
 	  bcopy ((void *) *data, (void *)newdata, datap - *data);
 
 	  if (ouralloc)
-	    vm_deallocate (mach_task_self (), (vm_address_t) *data,
-			   allocsize / 2);
+	    munmap (*data, allocsize / 2);
 
  	  datap = (char *) newdata + (datap - *data);
 	  *data = (char *) newdata;
@@ -359,7 +358,7 @@ diskfs_get_directs (struct node *dp,
 	{
 	  diskfs_end_catch_exception ();
 	  if (ouralloc)
-	    vm_deallocate (mach_task_self (), (vm_address_t) *data, allocsize);
+	    munmap (*data, allocsize);
 	  return err;
 	}
 
@@ -390,8 +389,8 @@ diskfs_get_directs (struct node *dp,
      the excess.  */
   if (ouralloc
       && round_page (datap - *data) < round_page (allocsize))
-    vm_deallocate (mach_task_self (), round_page (datap),
-		   round_page (allocsize) - round_page (datap - *data));
+    munmap ((caddr_t) round_page (datap),
+	    round_page (allocsize) - round_page (datap - *data));
 
   /* Return */
   *amt = i;
