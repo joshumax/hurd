@@ -953,11 +953,11 @@ open_console ()
   termname = _PATH_CONSOLE;
   term = file_name_lookup (termname, O_RDWR, 0);
   if (term != MACH_PORT_NULL)
-    {
-      err = io_stat (term, &st);
-      if (err)
-	error (0, err, "%s", termname);
-    }
+    err = io_stat (term, &st);
+  else
+    err = errno;
+  if (err)
+    error (0, err, "%s", termname);
   
   try = 1;
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
