@@ -19,7 +19,7 @@ dir := ufs
 makemode := server
 
 target = ufs
-SRCS = alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
+SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 
