@@ -318,6 +318,3 @@ See `tasks', the exported task list.
 
 * Next release:
 ** transparent FTP working
-** proc leaks dead names massively.
-** something is still soaking up wired pages on lengthy compiles
-** password server; eliminate other checkers of passwords
