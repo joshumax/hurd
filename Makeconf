@@ -155,7 +155,8 @@ HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).so)
 else
 HURDLIBS-files := $(foreach lib,$(HURDLIBS), ../$(lib)/$(lib).a)
 endif
-HURDLIBS-libs := $(foreach lib,$(HURDLIBS), -L../$(lib) -l$(lib))
+HURDLIBS-libs := $(foreach lib,$(HURDLIBS), -L../$(lib)  \
+			$(patsubst lib%,-l%,$(lib)))
 
 # Building the target
 ifeq ($(doinst),one)
