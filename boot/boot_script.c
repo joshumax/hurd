@@ -3,7 +3,6 @@
 /* Written by Shantanu Goel (goel@cs.columbia.edu).  */
 
 #include <mach/mach_types.h>
-#include <string.h>
 #include "boot_script.h"
 
 

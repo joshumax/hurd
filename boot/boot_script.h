@@ -55,8 +55,8 @@ struct cmd
 
 
 /* The user must define these functions, we work like malloc and free.  */
-void *boot_script_malloc (size_t);
-void boot_script_free (void *, size_t);
+void *boot_script_malloc (unsigned int);
+void boot_script_free (void *, unsigned int);
 
 /* The user must define this function.  Load the image of the
    executable specified by PATH in TASK.  Create a thread
