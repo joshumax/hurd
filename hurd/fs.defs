@@ -315,5 +315,5 @@ routine file_get_translator (
 /* INTR */
 routine file_get_translator_cntl (
 	file: file_t;
-	out translator_cntl: fsys_t);
+	out translator_cntl: mach_port_send_t);
 
