@@ -354,16 +354,19 @@ struct protid *netfs_make_protid (struct peropen *po, struct iouser *user);
 struct peropen *netfs_make_peropen (struct node *, int,
 				    struct peropen *context);
 
-/* Add a reference to locked node NP.  */
+/* Add a reference to node NP, which must be locked by the caller.  */
 void netfs_nref (struct node *np);
 
-/* Releases a node.  Drops a reference to unlocked node NP.  If this
-   was the last reference, drops the node.  */
+/* Releases a node.  Drops a reference to node NP, which must not be
+   locked by the caller.  If this was the last reference, drops the
+   node.  The node cannot be used again without first obtaining a
+   reference to it.  */
 void netfs_nrele (struct node *np);
 
-/* Puts a node back.  Drops a reference to the locked node NP (and
-   releases the lock, too).  If this was the last reference, drops the
-   node.  */
+/* Puts a node back.  Drops a reference to the node NP, which must be
+   locked by the caller (this lock will be released by netfs_nput).
+   If this was the last reference, drops the node.  The node cannot be
+   used again without first obtaining a reference to it.  */
 void netfs_nput (struct node *np);
 
 /* Called internally when no more references to node NP exist. */

@@ -1,5 +1,10 @@
 2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
 
+	* netfs.h: Merge Neals words into documentation of netfs_nput,
+	netfs_nrele, netfs_nref.
+
+2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
+
 	* netfs.h: Adjust comment fixes by last change to be more in line
 	with similar comments elsewhere.
 	* make-node.c (netfs_make_node): Return 0 if malloc does.
