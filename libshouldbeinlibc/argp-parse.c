@@ -92,6 +92,24 @@ find_long_option (struct option *long_options, const char *name)
 /* Used to regulate access to the getopt routines, which are non-reentrant.  */
 static struct mutex getopt_lock = MUTEX_INITIALIZER;
 
+/* The state of a `group' during parsing.  Each group corresponds to a
+   particular argp structure from the tree of such descending from the top
+   level argp passed to argp_parse.  */
+struct group
+{
+  /* This group's parsing function.  */
+  argp_parser_t parser;
+
+  /* Points to the point in SHORT_OPTS corresponding to the end of the short
+     options for this group.  We use it to determine from which group a
+     particular short options is from.  */
+  char *short_end;
+
+  /* True if this group has successfully processed a non-option argument;
+     used to determine who to call with ARGP_KEY_NO_ARGS.  */
+  int processed_arg;
+};
+
 /* Parse the options strings in ARGC & ARGV according to the argp in
    ARGP.  FLAGS is one of the ARGP_ flags above.  If OPTIND is
    non-NULL, the index in ARGV of the first unparsed option is returned in
@@ -102,25 +120,19 @@ error_t
 argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	    int *end_index)
 {
-  int opt;
-  /* The number of separate options groups (each from a different argp).  */
-  unsigned num_groups = 0;
+  error_t err = 0;
   /* SHORT_OPTS is the getopt short options string for the union of all the
      groups of options.  */
   char *short_opts;
-  /* GROUP_SHORT_ENDS is an array pointing to the point in SHORT_OPTS
-     corresponding to the end of the short options for each different group
-     of options.  We use it to determine from which group a particular short
-     options is from.  */
-  char **group_short_ends;
-  /* The parsing function for each group.  */
-  argp_parser_t *group_parsers;
   /* LONG_OPTS is the array of getop long option structures for the union of
      all the groups of options.  */
   struct option *long_opts;
+  /* States of the various parsing groups.  */
+  struct group *groups;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags, 0 };
-  error_t err = 0;
+  struct argp_state state = { argp, argc, argv, 0, flags };
+  int opt;
+  struct group *group;
 
   if (! (flags & ARGP_NO_HELP))
     /* Add our own options.  */
@@ -143,9 +155,10 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   /* Find the merged set of getopt options, with keys appropiately prefixed. */
   {
     char *short_end;
-    int short_len = (flags & ARGP_NO_ARGS) ? 0 : 1;
+    unsigned short_len = (flags & ARGP_NO_ARGS) ? 0 : 1;
     struct option *long_end;
-    int long_len = 0;
+    unsigned long_len = 0;
+    unsigned num_groups = 0;
 
     /* For ARGP, increments NUM_GROUPS by the total number of argp structures
        descended from it, and SHORT_LEN & LONG_LEN by the maximum lengths of
@@ -170,14 +183,11 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	    calc_lengths (*parents++);
       }
 
-    /* Converts all options in ARGP (which has group number GROUP) and
-       ancestors into getopt options stored in SHORT_OPTS and LONG_OPTS;
-       SHORT_END and LONG_END are the points at which new options are added.
-       Each group's entry in GROUP_PARSERS is set to point to it's parser,
-       and its entry in GROUP_SHORT_ENDS is set to the point in SHORT_OPTS at
-       which that groups short options start.  Returns the next unused group
-       number.  */
-    unsigned convert_options (struct argp *argp, unsigned group)
+    /* Converts all options in ARGP (which is put in GROUP) and ancestors
+       into getopt options stored in SHORT_OPTS and LONG_OPTS; SHORT_END and
+       LONG_END are the points at which new options are added.  Returns the
+       next unused group entry.  */
+    struct group *convert_options (struct argp *argp, struct group *group)
       {
 	/* REAL is the most recent non-alias value of OPT.  */
 	struct argp_option *opt, *real;
@@ -221,15 +231,17 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 		     the high 8 bits in all his values (the sign of the lower
 		     bits is preserved however)...  */
 		  long_end->val =
-		    (opt->key & USER_MASK) + ((group + 1) << USER_BITS);
+		    (opt->key & USER_MASK)
+		      + (((group - groups) + 1) << USER_BITS);
 
 		  /* Keep the LONG_OPTS list terminated.  */
 		  (++long_end)->name = NULL;
 		}
 	    }
 
-	group_parsers[group] = argp->parser;
-	group_short_ends[group] = short_end;
+	group->parser = argp->parser;
+	group->short_end = short_end;
+	group->processed_arg = 0;
 
 	group++;
 
@@ -252,10 +264,10 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
     long_opts = long_end = alloca ((long_len + 1) * sizeof (struct option));
     long_end->name = NULL;
 
-    group_parsers = alloca (num_groups * sizeof (argp_parser_t));
-    group_short_ends = alloca (num_groups * sizeof (char *));
+    groups = alloca ((num_groups + 1) * sizeof (struct group));
 
-    convert_options (argp, 0);
+    group = convert_options (argp, 0);
+    group->parser = 0;		/* Mark the end */
   }
 
   /* Getopt is (currently) non-reentrant.  */
@@ -278,7 +290,9 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   /* Now use getopt on our coalesced options lists.  */
   while ((opt = getopt_long (state.argc, state.argv, short_opts, long_opts, 0)) != EOF)
     {
-      int group = opt >> USER_BITS; /* GROUP here is actually + 1 */
+      /* The group key encoded in the high bits; 0 for short opts or
+	 group_number + 1 for long opts.  */
+      int group_key = opt >> USER_BITS;
 
       err = EINVAL;		/* until otherwise asserted */
 
@@ -288,8 +302,8 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
       if (opt == 1)
 	/* A non-option argument; try each parser in turn.  */
 	{
-	  for (group = 0; group < num_groups && err == EINVAL; group++)
-	    err = (*group_parsers[group])(ARGP_KEY_ARG, optarg, &state);
+	  for (group = groups; group->parser && err == EINVAL; group++)
+	    err = (*group->parser)(ARGP_KEY_ARG, optarg, &state);
 	  if (err == EINVAL)
 	    /* No parser understood this argument, return immediately.  */
 	    {
@@ -303,27 +317,28 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	    /* Remember that we successfully processed a non-option
 	       argument -- but only if the user hasn't gotten tricky and set
 	       the clock back.  */
-	    state.processed_arg = 1;
+	    (--group)->processed_arg = 1;
 	}
-      else if (group == 0)
+      else if (group_key == 0)
 	/* A short option.  */
 	{
 	  /* By comparing OPT's position in SHORT_OPTS to the various
-	     starting positions in GROUP_SHORT_ENDS, we can determine which
-	     group OPT came from.  */
+	     starting positions in each group's SHORT_END field, we can
+	     determine which group OPT came from.  */
 	  char *short_index = index (short_opts, opt);
 	  if (short_index)
-	    for (group = 0; group < num_groups; group++)
-	      if (group_short_ends[group] > short_index)
+	    for (group = groups; group->parser; group++)
+	      if (group->short_end > short_index)
 		{
-		  err = (*group_parsers[group])(opt, optarg, &state);
+		  err = (*group->parser)(opt, optarg, &state);
 		  break;
 		}
 	}
       else
 	/* A long option.  We use shifts instead of masking for extracting
 	   the user value in order to preserve the sign.  */
-	err = (*group_parsers[group - 1])(((opt << GROUP_BITS) >> GROUP_BITS),
+	err =
+	  (*groups[group_key - 1].parser)(((opt << GROUP_BITS) >> GROUP_BITS),
 					  optarg, &state);
 
       optind = state.index;	/* Put it back in OPTIND for getopt.  */
@@ -338,12 +353,11 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
     /* We successfully parsed all arguments!  Call all the parsers again,
        just a few more times... */
     {
-      int group;
-      if (!state.processed_arg)
-	for (group = 0; group < num_groups && (!err || err == EINVAL); group++)
-	  err = (*group_parsers[group])(ARGP_KEY_NO_ARGS, 0, &state);
-      for (group = 0; group < num_groups && (!err || err == EINVAL); group++)
-	err = (*group_parsers[group])(ARGP_KEY_END, 0, &state);
+      for (group = groups; group->parser && (!err || err == EINVAL); group++)
+	if (!group->processed_arg)
+	  err = (*group->parser)(ARGP_KEY_NO_ARGS, 0, &state);
+      for (group = groups; group->parser && (!err || err == EINVAL); group++)
+	err = (*group->parser)(ARGP_KEY_END, 0, &state);
       if (err == EINVAL)
 	/* EINVAL here just means that ARGP_KEY_END wasn't understood. */
 	err = 0;
