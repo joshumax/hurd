@@ -51,4 +51,4 @@ uxboot.0: $(UX-OBJS) ../libthreads/libthreads.a
 uxboot.1: frankemul.ld uxboot.0
 	$(LD) -o $@ -T $^
 uxboot: uxboot.1
-	$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 $< $@
+	-$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 $< $@
