@@ -39,7 +39,7 @@ iohelp_fetch_shared_data (void *arg)
     {
       /* The user can validly set the size, but block the attempt
 	 if we are readonly. */
-      if (diskfs_readonly)
+      if (diskfs_check_readonly ())
 	cred->mapped->file_size = cred->po->np->dn_stat.st_size;
       else
 	{
@@ -51,7 +51,7 @@ iohelp_fetch_shared_data (void *arg)
   
   cred->po->filepointer = cred->mapped->xx_file_pointer;
       
-  if (!diskfs_readonly)
+  if (!diskfs_check_readonly ())
     {
       if (cred->mapped->written)
 	{
