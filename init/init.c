@@ -30,9 +30,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/file.h>
 #include <unistd.h>
 #include <string.h>
+#include <mach/notify.h>
+#include <stdlib.h>
 
 #include "startup_reply.h"
 #include "startup_S.h"
+#include "notify_S.h"
+
+/* Define this if we should really reboot mach instead of
+   just simulating it. */
+#undef STANDALONE
 
 /* host_reboot flags for when we crash.  */
 #define CRASH_FLAGS	RB_AUTOBOOT
@@ -103,18 +110,25 @@ getstring (char *buf, size_t bufsize)
 void
 reboot_mach (int flags)
 {
+#ifdef STANDALONE
   printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
   while (errno = host_reboot (host_priv, flags))
     perror ("host_reboot");
   for (;;);
+#else
+  printf ("init: Would %s Mach with flags %#x\n", BOOT (flags), flags);
+  exit (1);
+#endif  
 }
 
+/* Reboot the microkernel, specifying that this is a crash. */
 void
 crash_mach (void)
 {
   reboot_mach (CRASH_FLAGS);
 }
 
+/* Reboot the Hurd. */
 void
 reboot_system (int flags)
 {
@@ -132,11 +146,72 @@ reboot_system (int flags)
 		strerror (err));
     }
 
+#ifdef STANDALONE  
   reboot_mach (flags);
+#else
+  {
+    pid_t *pp;
+    u_int npids;
+    error_t err;
+    int ind;
+
+    err = proc_getallpids (procserver, &pp, &npids);
+    if (err == MACH_SEND_INVALID_DEST)
+      {
+      procbad:	
+	/* The procserver must have died.  Give up. */
+	printf ("Init: can't simulate crash; proc has died\n");
+	reboot_mach (flags);
+      }
+    for (ind = 0; ind < npids; ind++)
+      {
+	task_t task;
+	err = proc_pid2task (procserver, pp[ind], &task);
+	if (err == MACH_SEND_INVALID_DEST)
+	  goto procbad;
+
+	else if (err)
+	  {
+	    printf ("init: getting task for pid %d: %s\n",
+		    pp[ind], strerror (err));
+	    continue;
+	  }
+	
+	/* Postpone self so we can finish; postpone proc
+	   so that we can finish; postpone fs so that the 
+	   external master (boot) doesn't exit prematurely. */
+	if (task != mach_task_self ()
+	    && task != proctask)
+	  {
+	    struct procinfo *pi = 0;
+	    u_int pisize = 0;
+	    err = proc_getprocinfo (procserver, pp[ind], (int **)&pi, &pisize);
+	    if (err == MACH_SEND_INVALID_DEST)
+	      goto procbad;
+	    if (err)
+	      {
+		printf ("init: getting procinfo for pid %d: %s\n",
+			pp[ind], strerror (err));
+		continue;
+	      }
+	    if (!(pi->state & PI_NOPARENT))
+	      {
+		printf ("Killing pid %d\n", pp[ind]);
+		task_terminate (task);
+	      }
+	  }
+      }
+    printf ("Killing proc server\n");
+    task_terminate (proctask);
+    printf ("Init exiting\n");
+    exit (1);
+  }
+#endif
 }
 
+/* Reboot the Hurd, specifying that this is a crash. */
 void
-crash (void)
+crash_system (void)
 {
   reboot_system (CRASH_FLAGS);
 }
@@ -188,7 +263,7 @@ run (char *server, mach_port_t *ports, task_t *task)
       if (getstring (buf, sizeof (buf)))
 	prog = buf;
       else
-	crash ();
+	crash_system ();
     }
 
   printf ("started %s\n", prog);
@@ -232,10 +307,19 @@ run_for_real (char *filename)
   mach_port_deallocate (mach_task_self (), file);
 }
 
+static int
+demuxer (mach_msg_header_t *inp,
+	 mach_msg_header_t *outp)
+{
+  extern int notify_server (), startup_server ();
+  
+  return (notify_server (inp, outp) ||
+	  startup_server (inp, outp));
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
-  extern int startup_server (); /* XXX */
   int err;
   int i;
   mach_port_t consdev;
@@ -292,7 +376,7 @@ main (int argc, char **argv, char **envp)
      run launch_system which does the rest of the boot. */
   while (1)
     {
-      err = mach_msg_server (startup_server, 0, startup);
+      err = mach_msg_server (demuxer, 0, startup);
       assert (!err);
     }
 }
@@ -307,8 +391,12 @@ launch_system (void)
   startup_procinit_reply (procreply, procreplytype, 0, 
 			  mach_task_self (), authserver, 
 			  host_priv, MACH_MSG_TYPE_COPY_SEND,
-			  device_master, MACH_MSG_TYPE_MOVE_SEND);
+			  device_master, MACH_MSG_TYPE_COPY_SEND);
+#ifdef STANDALONE
+  mach_port_deallocate (mach_task_self (), device_master);
   device_master = 0;
+#endif
+
   proc_task2proc (procserver, authtask, &authproc);
   startup_authinit_reply (authreply, authreplytype, 0, authproc, 
 			  MACH_MSG_TYPE_MOVE_SEND);
@@ -316,6 +404,7 @@ launch_system (void)
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
+  _hurd_proc_init ((char **) 0);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
@@ -395,21 +484,94 @@ S_startup_authinit (startup_t server,
   return MIG_NO_REPLY;
 }
     
-/* Unimplemented stubs */
 error_t
 S_startup_essential_task (mach_port_t server,
 			  task_t task,
 			  mach_port_t excpt,
 			  char *name)
 {
-  return EOPNOTSUPP;
+  struct ess_task *et;
+  mach_port_t prev;
+
+  /* When this interface is fixed to include the priv host port,
+     we should validate that.  XXX */
+
+  /* Record this task as essential.  */
+  et = malloc (sizeof (struct ess_task));
+  if (et == NULL)
+    return ENOMEM;
+  et->task_port = task;
+  et->name = strdup (name);
+  if (et->name == NULL)
+    {
+      free (et);
+      return ENOMEM;
+    }
+  et->next = ess_tasks;
+  ess_tasks = et;
+  
+  /* Dead-name notification on the task port will tell us when it dies.  */
+  mach_port_request_notification (mach_task_self (), task, 
+				  MACH_NOTIFY_DEAD_NAME, 1, startup, 
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
+  if (prev)
+    mach_port_deallocate (mach_task_self (), prev);
+  /* Taking over the exception port will give us a better chance
+     if the task tries to get wedged on a fault.  */
+  task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
+
+  return 0;
 }
 
 error_t
 S_startup_request_notification (mach_port_t server,
 				mach_port_t notify)
 {
-  return EOPNOTSUPP;
+  struct ntfy_task *nt;
+  mach_port_t prev;
+
+  mach_port_request_notification (mach_task_self (), notify, 
+				  MACH_NOTIFY_DEAD_NAME, 1, startup, 
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
+  if (prev)
+    mach_port_deallocate (mach_task_self (), prev);
+
+  nt = malloc (sizeof (struct ntfy_task));
+  nt->notify_port = notify;
+  nt->next = ntfy_tasks;
+  ntfy_tasks = nt;
+  return 0;
+}
+
+error_t
+do_mach_notify_dead_name (mach_port_t notify,
+			  mach_port_t name)
+{
+  struct ntfy_task *nt, *pnt;
+  struct ess_task *et;
+  
+  for (et = ess_tasks; et != NULL; et = et->next)
+    if (et->task_port == name)
+      /* An essential task has died.  */
+      {
+	printf ("Init crashing system; essential task %s died\n",
+		et->name);
+	crash_system ();
+      }
+
+  for (nt = ntfy_tasks, pnt = NULL; nt != NULL; pnt = nt, nt = nt->next)
+    if (nt->notify_port == name)
+      {
+	/* Someone who wanted to be notified is gone.  */
+	mach_port_deallocate (mach_task_self (), name);
+	if (pnt != NULL)
+	  pnt->next = nt->next;
+	else
+	  ntfy_tasks = nt->next;
+	free (nt);
+	return 0;
+      }
+  return 0;
 }
 
 error_t
@@ -417,6 +579,43 @@ S_startup_reboot (mach_port_t server,
 		  mach_port_t refpt,
 		  int code)
 {
+  if (refpt != host_priv)
+    return EPERM;
+  
+  reboot_system (code);
+  for (;;);
+}
+
+
+error_t
+do_mach_notify_port_destroyed (mach_port_t notify,
+			       mach_port_t rights)
+{
   return EOPNOTSUPP;
 }
 
+error_t
+do_mach_notify_send_once (mach_port_t notify)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
+{
+  return EOPNOTSUPP;
+}
+
+error_t 
+do_mach_notify_port_deleted (mach_port_t notify,
+			     mach_port_t name)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+do_mach_notify_msg_accepted (mach_port_t notify,
+			     mach_port_t name)
+{
+  return EOPNOTSUPP;
+}
