@@ -19,12 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <malloc.h>
+#include <sys/mman.h>
 
 #include "portxlate.h"
 
 /* Return a new port name translator translating names between FROM_TASK and
    TO_TASK, in XLATOR, or an error.  */
-error_t 
+error_t
 port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
 			 struct port_name_xlator **xlator)
 {
@@ -122,7 +123,7 @@ port_name_xlator_xlate (struct port_name_xlator *x,
     return EKERN_INVALID_RIGHT;
 
   /* Translate the name FROM, in FROM_TASK's namespace into our namespace. */
-  err = 
+  err =
     mach_port_extract_right (x->from_task, from,
 			     ((from_type & MACH_PORT_TYPE_RECEIVE)
 			      ? MACH_MSG_TYPE_MAKE_SEND
