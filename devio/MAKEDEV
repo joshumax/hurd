@@ -62,12 +62,12 @@ for I; do
 
     [hrs]d*)
       case "$I" in
-      [a-z][a-z][0-9][a-z])
+      [a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9])
         $ST r$I /hurd/devio $I
         $ST $I /hurd/devio -b $I
 	;;
       *)
-	echo 1>&2 $0: $I: Must supply a device number and partition
+	echo 1>&2 $0: $I: Must supply a device number and partition or slice
 	exit 1
 	;;
       esac
