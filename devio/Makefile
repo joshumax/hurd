@@ -41,7 +41,9 @@ $(prefix)/dev/MAKEDEV: MAKEDEV
 	$(INSTALL_DATA) MAKEDEV $(prefix)/dev/MAKEDEV
 	chmod +x $(prefix)/dev/MAKEDEV
 
-open.c rdwr.c window.c: window.h
-dev.c devio.c devpager.c io.c iostate.c open.c rdwr.c window.c: dev.h
-devio.c io.c open.c rdwr.c: open.h
-dev.c io.c iostate.c: iostate.h
+open.o rdwr.o window.o: window.h
+dev.o devio.o devpager.o io.o iostate.o open.o rdwr.o window.o: dev.h
+devio.o io.o open.o rdwr.o: open.h
+dev.o io.o iostate.o: iostate.h
+dev.o devio.o devpager.o: ../hurd/pager.h
+devio.o io.o: ../hurd/ports.h ../hurd/trivfs.h
