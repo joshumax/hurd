@@ -213,7 +213,10 @@ cthread_init()
 
 	p = *(cproc_t *)&ur_cthread_ptr(stack);
 	p->incarnation = t;
-	mig_init(p);		/* enable multi-threaded mig interfaces */
+	/* The original CMU code passes P to mig_init.  In GNU, mig_init
+	   does not know about cproc_t; instead it expects to be passed the
+	   stack pointer of the initial thread.  */
+	mig_init((void *) stack); /* enable multi-threaded mig interfaces */
 
 	cthreads_started = TRUE;
 	return stack;
@@ -447,5 +450,6 @@ cthread_fork_child()
 
     p = cproc_self();
     p->incarnation = t;
+    /* XXX needs hacking for GNU */
     mig_init(p);		/* enable multi-threaded mig interfaces */
 }
