@@ -1,3 +1,8 @@
+1999-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bootstrap.c (parse_script): Add one to the buffer size so we can
+	null-terminate after the end of the file.
+
 1999-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2_file_io.c, ffs_file_io.c, minix_file_io.c: Remove fs-specific
