@@ -352,13 +352,16 @@ initialize_version_info (void)
 	    mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
 
   /* Notice Mach's and our own version and initialize server version
-     varables. */
+     variables. */
   server_versions = malloc (sizeof (struct server_version) * 10);
   assert (server_versions);
   server_versions_nalloc = 10;
 
   err = host_kernel_version (mach_host_self (), kv);
   assert (! err);
+  /* Make sure the result is null-terminated, as the kernel doesn't
+     guarantee it.  */
+  kv[sizeof (kv) - 1] = '\0';
   p = index (kv, ':');
   if (p)
     *p = '\0';
