@@ -55,7 +55,6 @@ extern void	default_pager_setup();
 
 /* initialized in default_pager_initialize */
 extern mach_port_t default_pager_exception_port;
-extern mach_port_t default_pager_bootstrap_port;
 
 
 static void
@@ -143,9 +142,6 @@ main (int argc, char **argv)
    * task_set_exception_port and task_set_bootstrap_port
    * both require a send right.
    */
-  (void) mach_port_insert_right(my_task, default_pager_bootstrap_port,
-				default_pager_bootstrap_port,
-				MACH_MSG_TYPE_MAKE_SEND);
   (void) mach_port_insert_right(my_task, default_pager_exception_port,
 				default_pager_exception_port,
 				MACH_MSG_TYPE_MAKE_SEND);
