@@ -32,36 +32,43 @@
 /* ---------------------------------------------------------------- */
 
 /* Returns the pipe that SOCK is reading from in PIPE, locked and with an
-   additional reference, or an error saying why it's not possible.  SOCK
-   mustn't be locked.  */
+   additional reference, or an error saying why it's not possible.  In the
+   case where the read should signal EOF, EPIPE is returned.  SOCK mustn't be
+   locked.  */
 error_t
 sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
-debug (sock, "in");
+ debug (sock, "in");
 
-debug (sock, "lock");
+ debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   *pipe = sock->read_pipe;
-  assert (*pipe);		/* A socket always has a read pipe.  */
-
-  if (((*pipe)->flags & PIPE_BROKEN)
-      && ! (sock->flags & SOCK_CONNECTED)
-      && ! (sock->flags & SOCK_SHUTDOWN_READ))
-    /* A broken pipe with no peer is not connected (only connection-oriented
-       sockets can have broken pipes.  However this is not true if the
-       read-half has been explicitly shutdown [at least in netbsd].  */
-{debug (sock, "enotconn");
-    err = ENOTCONN;
-}
+  if (*pipe != NULL)
+    /* SOCK may have a read pipe even before it's connected, so make
+       sure it really is.  */
+    if (   !(sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
+	&& !(sock->flags & SOCK_CONNECTED))
+      err = ENOTCONN;
+    else
+      pipe_aquire_reader (*pipe);
+  else if (sock->flags & SOCK_SHUTDOWN_READ)
+    /* Reading on a socket with the read-half shutdown always acts as if the
+       pipe were at eof, even if the socket isn't connected yet [at least in
+       netbsd].  */
+ {debug (sock, "epipe");
+    err = EPIPE;
+ }
   else
-    pipe_aquire (*pipe);
+ {debug (sock, "enotconn");
+    err = ENOTCONN;
+ }
 
-debug (sock, "unlock");
+ debug (sock, "unlock");
   mutex_unlock (&sock->lock);
 
-debug (sock, "out");
+ debug (sock, "out");
   return err;
 }
 
@@ -78,7 +85,7 @@ debug (sock, "lock");
   mutex_lock (&sock->lock);
   *pipe = sock->write_pipe;
   if (*pipe != NULL)
-    pipe_aquire (*pipe);	/* Do this before unlocking the sock!  */
+    pipe_aquire_writer (*pipe);	/* Do this before unlocking the sock!  */
   else if (sock->flags & SOCK_SHUTDOWN_WRITE)
     /* Writing on a socket with the write-half shutdown always acts as if the
        pipe were broken, even if the socket isn't connected yet [at least in
@@ -86,7 +93,7 @@ debug (sock, "lock");
 {debug (sock, "epipe");
     err = EPIPE;
 }
-  else if (sock->read_pipe->class->flags & PIPE_CLASS_CONNECTIONLESS)
+  else if (sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
     /* Connectionless protocols give a different error when unconnected.  */
 {debug (sock, "edestaddrreq");
     err = EDESTADDRREQ;
@@ -115,17 +122,16 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   if (new == NULL)
     return ENOMEM;
 
-  /* A socket always has a read pipe, so create it here.  */
+  /* A socket always has a read pipe (this is just to avoid some annoyance in
+     sock_connect), so create it here.  */
   err = pipe_create (pipe_class, &new->read_pipe);
   if (err)
     {
       free (new);
       return err;
     }
-  if (! (pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
-    /* No data source yet.  */
-    new->read_pipe->flags |= PIPE_BROKEN;
-  new->read_pipe->refs++;
+
+  pipe_add_reader (new->read_pipe);
 
   new->refs = 0;
   new->flags = 0;
@@ -133,6 +139,7 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   new->id = next_sock_id++;
   new->listen_queue = NULL;
   new->connect_queue = NULL;
+  new->pipe_class = pipe_class;
   new->addr = NULL;
   bzero (&new->change_time, sizeof (new->change_time));
   mutex_init (&new->lock);
@@ -146,12 +153,7 @@ void
 sock_free (struct sock *sock)
 {
 debug (sock, "in");
-  /* sock_shutdown will get rid of the write pipe.  */
   sock_shutdown (sock, SOCK_SHUTDOWN_READ | SOCK_SHUTDOWN_WRITE);
-
-  /* But we must do the read pipe ourselves.  */
-  pipe_release (sock->read_pipe);
-
 debug (sock, "bye");
   free (sock);
 }
@@ -173,7 +175,7 @@ _sock_norefs (struct sock *sock)
 error_t
 sock_clone (struct sock *template, struct sock **sock)
 {
-  error_t err = sock_create (template->read_pipe->class, sock);
+  error_t err = sock_create (template->pipe_class, sock);
 
   if (err)
     return err;
@@ -414,9 +416,6 @@ sock_connect (struct sock *sock1, struct sock *sock2)
      be reconnected, so save the old destination for later disposal.  */
   struct pipe *old_sock1_write_pipe = NULL;
   struct addr *old_sock1_write_addr = NULL;
-  struct pipe_class *pipe_class = sock1->read_pipe->class;
-  /* True if this protocol is a connectionless one.  */
-  int connless = (pipe_class->flags & PIPE_CLASS_CONNECTIONLESS);
 
   void connect (struct sock *wr, struct sock *rd)
     {
@@ -424,17 +423,15 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	    || (rd->flags & SOCK_SHUTDOWN_READ)))
 	{
 	  struct pipe *pipe = rd->read_pipe;
+	  assert (pipe);	/* Since SOCK_SHUTDOWN_READ isn't set.  */
 debug (wr, "connect: %p, pipe: %p", rd, pipe);
-	  pipe_aquire (pipe);
-	  pipe->flags &= ~PIPE_BROKEN; /* Not yet...  */
+	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
-debug (pipe, "(pipe) unlock");
-	  mutex_unlock (&pipe->lock);
 	}
     }
 
 debug (sock1, "in: %p", sock2);
-  if (sock2->read_pipe->class != pipe_class)
+  if (sock1->pipe_class != sock2->pipe_class)
     /* Incompatible socket types.  */
 {debug (sock1, "eopnotsupp");
     return EOPNOTSUPP;		/* XXX?? */
@@ -464,7 +461,7 @@ debug (sock1, "lock");
       connect (sock1, sock2);
 
       /* Only make the reverse for connection-oriented protocols.  */
-      if (! connless)
+      if (! (sock1->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
 	{
 	  sock1->flags |= SOCK_CONNECTED;
 	  if (sock1 != sock2)
@@ -486,7 +483,7 @@ debug (sock1, "socket pair unlock");
 
   if (old_sock1_write_pipe)
     {
-      pipe_break (old_sock1_write_pipe);
+      pipe_remove_writer (old_sock1_write_pipe);
       ports_port_deref (old_sock1_write_addr);
     }
 
@@ -511,43 +508,36 @@ debug (sock, "lock");
   sock->flags |= flags;
 
   if (flags & SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
-    /* Shutdown the read half.  We keep the pipe around though.  */
+    /* Shutdown the read half.  */
     {
       struct pipe *pipe = sock->read_pipe;
-debug (sock, "read half");
-debug (pipe, "(pipe) lock");
-      mutex_lock (&pipe->lock);
-      /* This will prevent any further writes to PIPE.  */
-      pipe->flags |= PIPE_BROKEN;
-      /* Make sure subsequent reads return EOF.  */
-      pipe_drain (pipe);
-debug (pipe, "(pipe) unlock");
-      mutex_unlock (&pipe->lock);
+      if (pipe != NULL)
+	{
+	  sock->read_pipe = NULL;
+	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
+	  mutex_unlock (&sock->lock);
+	  pipe_remove_reader (pipe);
+	}
+      else
+	mutex_unlock (&sock->lock);
     }
 
   if (flags & SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
     /* Shutdown the write half.  */
     {
       struct pipe *pipe = sock->write_pipe;
-debug (sock, "write half");
       if (pipe != NULL)
 	{
 	  sock->write_pipe = NULL;
 	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
-debug (sock, "unlock");
 	  mutex_unlock (&sock->lock);
-	  pipe_break (pipe);
+	  pipe_remove_writer (pipe);
 	}
       else
-{debug (sock, "unlock");
 	mutex_unlock (&sock->lock);
-}
     }
   else
-{debug (sock, "unlock");
     mutex_unlock (&sock->lock);
-}
-debug (sock, "out");
 }
 
 /* ---------------------------------------------------------------- */
