@@ -1,3 +1,11 @@
+1999-03-17  Gordon Matzigkeit  <gord@trick.fig.org>
+	
+	* gpl.texinfo: New file, taken from /gd/gnu/doc/gpl.texi on the
+	GNU machines.
+
+	* Makefile (DIST_FILES): Fix up wildcard so that we don't
+	accidentally include hurd.info twice.
+	
 1998-06-02  Gordon Matzigkeit  <gord@profitpress.com>
 
 	* Makefile: Add rules for building info, dvi and ps files.
