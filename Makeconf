@@ -159,15 +159,7 @@ HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
 # Building the target
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(link-objects)
-# Don't use $^ to collect the args to the link because $^ omits duplicates.
-#link-objects = $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
-# -lg avoids "No input files" error.
-link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),$(strip \
-	       $(startup) $(OBJS) -\( $(HURDLIBS-files) $(OTHERLIBS) -\))) \
-	       $(libc) $(ccdir)/libgcc.a  -lg
-empty =
-comma = ,
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) '-Wl,-(' $+ '-Wl,-)'
 endif
 
 
