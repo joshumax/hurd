@@ -38,6 +38,7 @@ See `tasks', the exported task list.
 
 ** general:
 *** implement all the pathconf things from Posix.1 right.
+*** implement an soversion and symbol-versioning scheme similar to libc's.
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
