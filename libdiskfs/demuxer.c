@@ -21,23 +21,23 @@ int
 ports_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
 {
-  int fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
   int seqnos_notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  int exec_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_exec_server (mach_msg_header_t *, mach_msg_header_t *);
   int pager_demuxer (mach_msg_header_t *, mach_msg_header_t *);
-  int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-  int ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
   
-  return (io_server (inp, outp)
+  return (diskfs_io_server (inp, outp)
 	  || pager_demuxer (inp, outp)
-	  || fs_server (inp, outp)
+	  || diskfs_fs_server (inp, outp)
 	  || seqnos_notify_server (inp, outp)
-	  || fsys_server (inp, outp)
-	  || exec_server (inp, outp)
-	  || interrupt_server (inp, outp)
-	  || (diskfs_shortcut_ifsock ? ifsock_server (inp, outp) : 0));
+	  || diskfs_fsys_server (inp, outp)
+	  || diskfs_exec_server (inp, outp)
+	  || diskfs_interrupt_server (inp, outp)
+	  || (diskfs_shortcut_ifsock ? diskfs_ifsock_server (inp, outp) : 0));
 }
 
   
