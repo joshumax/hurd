@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "io_S.h"
+#include <string.h>
 
 kern_return_t
 trivfs_S_io_duplicate (struct trivfs_protid *cred,
