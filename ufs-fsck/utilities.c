@@ -24,6 +24,9 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <pwd.h>
+#include <error.h>
+
+static void retch (char *reason);
 
 /* Read disk block ADDR into BUF of SIZE bytes. */
 void
@@ -126,7 +129,7 @@ allocblk (int nfrags)
 	  /* Mark the frags allocated in our map */
 	  for (k = 0; k < nfrags; k++)
 	    setbmap (i + j + k);
-	  
+
 	  return (i + j);
 	}
     }
@@ -157,32 +160,92 @@ check_range (daddr_t blk, int cnt)
   
   return 0;
 }  
+
+struct problem {
+  char *desc;
+  struct problem *prev;
+};
 
-/* Like printf, but exit if we are preening. */
-int
-pfatal (char *fmt, ...)
+/* A queue of problems found by fsck that are waiting resolution.  The front
+   of the list is the most recent problem found (and presumably since
+   previous problems haven't been resolved yet, they depend on this one being
+   solved for their resolution).  */
+static struct problem *problems = 0;
+
+static struct problem *free_problems = 0;
+
+static void
+push_problem (char *fmt, va_list args)
 {
-  va_list args;
-  int ret;
+  struct problem *prob = free_problems;
 
-  if (preen && device_name)
-    printf ("%s: ", device_name);
-  
-  va_start (args, fmt);
-  ret = vprintf (fmt, args);
-  va_end (args);
-  putchar ('\n');
-  if (preen)
-    exit (1);
-  
-  return ret;
+  if (! prob)
+    prob = malloc (sizeof (struct problem));
+  else
+    problems = prob->prev;
+  if (! prob)
+    retch ("malloc failed");
+
+  if (vasprintf (&prob->desc, fmt, args) < 0)
+    retch ("vasprintf failed");
+
+  prob->prev = problems;
+  problems = prob;
 }
 
+/* Print the most recent problem, and perhaps how it was resolved.  */
+static void
+resolve_problem (char *fix)
+{
+  struct problem *prob = problems;
+
+  if (! prob)
+    retch ("no more problems");
+
+  problems = prob->prev;
+  prob->prev = free_problems;
+
+  if (preen && device_name)
+    printf ("%s: %s", device_name, prob->desc);
+  else
+    printf ("%s", prob->desc);
+  if (fix)
+    printf (" (%s)\n", fix);
+  else
+    putchar ('\n');
+  free (prob->desc);
+}
+
+/* Retire all problems as if they failed.  We print them in chronological
+   order rather than lifo order, as this is a bit clearer, and we can do it
+   when we know they're all going to fail.  */
+static void
+flush_problems ()
+{
+  struct problem *fail (struct problem *prob)
+    {
+      struct problem *last = prob->prev ? fail (prob->prev) : prob;
+      if (preen && device_name)
+	printf ("%s: %s\n", device_name, prob->desc);
+      else
+	puts (prob->desc);
+      free (prob->desc);
+      return last;
+    }
+  if (problems)
+    {
+      fail (problems)->prev = free_problems;
+      free_problems = problems;
+    }      
+}
+
 /* Like printf, but exit after printing. */
 void
 errexit (char *fmt, ...)
 {
   va_list args;
+
+  flush_problems ();
 
   if (preen && device_name)
     printf ("%s: ", device_name);
@@ -191,37 +254,146 @@ errexit (char *fmt, ...)
   vprintf (fmt, args);
   va_end (args);
   putchar ('\n');
+
   exit (1);
 }
 
-/* Like printf, but give more information (when we fully support it) 
-   when preening. */
-int
-pwarn (char *fmt, ...)
+static void
+retch (char *reason)
 {
-  va_list args;
-  int ret;
-
-  if (preen && device_name)
-    printf ("%s: ", device_name);
-
-  va_start (args, fmt);
-  ret = vprintf (fmt, args);
-  va_end (args);
-
-  return ret;
+  flush_problems ();
+  error (99, 0, "(internal error) %s!", reason);
 }
 
-/* Print how a problem was fixed in preen mode.  */
+static void
+punt ()
+{
+  problem (0, "PLEASE RUN fsck MANUALLY");
+  flush_problems ();
+  exit (1);
+}
+
+/* Store away the given message about a problem found.  A call to problem must
+   be matched later with a call to pfix, pfail, or reply; to print more
+   in the same message, intervening calls to pextend can be used.  If SEVERE is
+   true, and we're in preen mode, then the program is terminated.  */
+void
+problem (int severe, char *fmt, ...)
+{
+  va_list args;
+
+  va_start (args, fmt);
+  push_problem (fmt, args);
+  va_end (args);
+  
+  if (severe && preen)
+    punt ();
+}
+
+/* Following a call to problem (with perhaps intervening calls to
+   pmore), appends the given message to that message.  */
+void
+pextend (char *fmt, ...)
+{
+  va_list args;
+  char *more, *concat;
+  struct problem *prob = problems;
+
+  if (! prob)
+    retch ("No pending problem to add to");
+
+  va_start (args, fmt);
+  if (vasprintf (&more, fmt, args) < 0)
+    retch ("vasprintf failed");
+  va_end (args);
+
+  concat = realloc (prob->desc, strlen (prob->desc) + 1 + strlen (more) + 1);
+  if (! concat)
+    retch ("realloc failed");
+
+  strcpy (concat + strlen (concat), more);
+  prob->desc = concat;
+}
+
+/* Like problem, but as if immediately followed by pfail.  */
+void
+warning (int severe, char *fmt, ...)
+{
+  va_list args;
+
+  va_start (args, fmt);
+  push_problem (fmt, args);
+  va_end (args);
+
+  flush_problems ();
+
+  if (severe && preen)
+    punt ();
+}
+
+/* Like problem, but appends a helpful description of the given inode number to
+   the message.  */
+void
+pinode (int severe, ino_t ino, char *fmt, ...)
+{
+  if (fmt)
+    {
+      va_list args;
+      va_start (args, fmt);
+      push_problem (fmt, args);
+      va_end (args);
+    }
+
+  if (ino < ROOTINO || ino > maxino)
+    pextend ("(BOGUS INODE) I=%d", ino);
+  else
+    {
+      char *p;
+      struct dinode dino;
+      struct passwd *pw;
+
+      getinode (ino, &dino);
+
+      pextend (" %s I=%d", (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE",
+	     ino);
+
+      pw = getpwuid (dino.di_uid);
+      if (pw)
+	pextend (" O=%s", pw->pw_name);
+      else
+	pextend (" O=%lu", dino.di_uid);
+  
+      pextend (" M=0%o", DI_MODE (&dino));
+      pextend (" SZ=%llu", dino.di_size);
+      p = ctime (&dino.di_mtime.ts_sec);
+      pextend (" MT=%12.12s %4.4s", &p[4], &p[20]);
+    }
+
+  if (severe && preen)
+    punt ();
+}
+
+/* Print a successful resolution to a pending problem.  Must follow a call to
+   problem or pextend.  */
 void
 pfix (char *fix)
 {
   if (preen)
-    printf (" (%s)\n", fix);
+    resolve_problem (fix ?: "FIXED");
 }
 
+/* Print an unsuccessful resolution to a pending problem.  Must follow a call
+   to problem or pextend.  */
+void
+pfail (char *failure)
+{
+  if (preen)
+    resolve_problem (failure);
+}
+
 /* Ask the user a question; return 1 if the user says yes, and 0
-   if the user says no. */
+   if the user says no.  This call must follow a call to problem or pextend,
+   which it completes.  */
 int
 reply (char *question)
 {
@@ -229,10 +401,13 @@ reply (char *question)
   char c;
   
   if (preen)
-    pfatal ("INTERNAL ERROR: GOT TO reply ()");
+    retch ("Got to reply() in preen mode");
+
+  /* Emit the problem to which the question pertains.  */
+  resolve_problem (0);
 
   persevere = !strcmp (question, "CONTINUE");
-  putchar ('\n');
+
   if (!persevere && (nowrite || writefd < 0))
     {
       fix_denied = 1;
@@ -269,43 +444,3 @@ reply (char *question)
 	} 
     }
 }
-
-/* Print a helpful description of the given inode number. */
-void
-pinode (ino_t ino, char *fmt, ...)
-{
-  if (fmt)
-    {
-      va_list args;
-      va_start (args, fmt);
-      vprintf (fmt, args);
-      va_end (args);
-      putchar (' ');
-    }
-
-  if (ino < ROOTINO || ino > maxino)
-    printf (" NODE I=%d", ino);
-  else
-    {
-      char *p;
-      struct dinode dino;
-      struct passwd *pw;
-
-      getinode (ino, &dino);
-
-      printf ("%s I=%d", (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE",
-	      ino);
-
-      pw = getpwuid (dino.di_uid);
-      if (pw)
-	printf (" OWNER=%s", pw->pw_name);
-      else
-	printf (" OWNER=%lu", dino.di_uid);
-  
-      printf (" MODE=%o", DI_MODE (&dino));
-      printf (" SIZE=%llu ", dino.di_size);
-      p = ctime (&dino.di_mtime.ts_sec);
-      printf (" MTIME=%12.12s %4.4s", &p[4], &p[20]);
-    }
-}
-
