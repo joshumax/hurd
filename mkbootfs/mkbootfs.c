@@ -41,6 +41,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    its own weird format.  It expects the header files to be from such a
    Mach system as CMU sets them up. */
 
+#include <a.out.h>
+#include <stdio.h>
+#include <sys/file.h>
+
 /* Usage: mkbootfs execserver newdoto */
 
 main (int argc, char **argv)
@@ -50,7 +54,7 @@ main (int argc, char **argv)
   unsigned long foo;
   void *buf;
   struct nlist n;
-  
+
   if (argc != 3)
     {
       fprintf (stderr, "Usage: %s execserver newdoto\n", argv[0]);
@@ -97,7 +101,7 @@ main (int argc, char **argv)
   buf = malloc (a.a_data);
   read (execserver, buf, a.a_data);
   write (newdoto, buf, a.a_data);
-  free (bof);
+  free (buf);
   
   /* Finally, _execserver_start */
   write (newdoto, &a.a_entry, sizeof a.a_entry);
@@ -139,4 +143,39 @@ main (int argc, char **argv)
   n.n_value += sizeof (foo);
   
   /* Now, we have to write out the string table */
+#define DOSTRING(x) \
+  write (newdoto, x, strlen (x) + 1); \
+  lseek (newdoto, 50 - strlen (x) - 1, L_INCR);
+
+  foo = 350;			/* six strings and the beginning */
+  write (newdoto, &foo, sizeof foo);
+  lseek (newdoto, 50 - sizeof foo, L_INCR);
+
+  DOSTRING ("_execserver_text_size");
+  DOSTRING ("_execserver_data_size");
+  DOSTRING ("_execserver_bss_size");
+  DOSTRING ("_execserver_text");
+  DOSTRING ("_execserver_data");
+  DOSTRING ("_execserver_start");
+
+  lseek (newdoto, -1, L_INCR);
+  foo = 0;
+  write (newdoto, &foo, 1);
+
+  /* Now write out the header */
+  a.a_data = 
+    (4 * sizeof (int) + a.a_text + a.a_data + sizeof (struct exec));
+  a.a_text = 0;
+  a.a_bss = 0;
+  a.a_syms = 6 * sizeof n;
+  a.a_entry = 0;
+  a.a_trsize = 0;
+  a.a_drsize = 0;
+  lseek (newdoto, 0, L_SET);
+  write (newdoto, &a, sizeof a);
+  
+  exit (0);
+}
+
+  
   
