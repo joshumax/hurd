@@ -35,7 +35,7 @@ diskfs_check_readonly ()
     {
       if (!_diskfs_diskdirty)
 	{
-	  diskfs_set_hypermetadata (0, 0);
+	  diskfs_set_hypermetadata (1, 0);
 	  _diskfs_diskdirty = 1;
 	}
       return 0;
