@@ -61,6 +61,7 @@ typedef struct rusage rusage_t;
 typedef struct flock flock_t;
 typedef struct utsname utsname_t;
 typedef struct stat io_statbuf_t;
+typedef struct statfs fsys_statfsbuf_t;
 
 
 /*   Parameters and flags in RPC calls   */
@@ -210,22 +211,6 @@ enum file_storage_class
 
 /*   Data types   */
 
-/* This structure is known to be 19 ints long in hurd_types.defs.  */
-struct fsys_statfsbuf
-{
-  long fsys_stb_type;
-  long fsys_stb_bsize;		/* fundamental allocation unit */
-  long fsys_stb_iosize;		/* optimal I/O transfer size */
-  long fsys_stb_blocks;		/* number of blocks (fsys_stb_bsize) */
-  long fsys_stb_bfree;		/* likewise */
-  long fsys_stb_bavail;		/* likewise */
-  long fsys_stb_files;
-  long fsys_stb_ffree;
-  fsid_t fsys_stb_fsid;
-  long fsys_stb_spare[9];
-};
-typedef struct fsys_statfsbuf fsys_statfsbuf_t;
-
 #include <mach/task_info.h>
 #include <mach/thread_info.h>
 
@@ -244,6 +229,8 @@ struct procinfo
   pid_t pgrp;
   pid_t session;
   pid_t logincollection;
+  int exitstatus;
+  int sigcode;
 
   int nthreads;			/* size of pi_threadinfos */
 
