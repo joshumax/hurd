@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996,99,2001 Free Software Foundation
+   Copyright (C) 1996,99,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,7 @@ error_t iohelp_reauth (struct iouser **user,
 {
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
+  size_t genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   struct iouser *new;
 
