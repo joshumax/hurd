@@ -88,6 +88,8 @@ mach_port_t bootport;
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
 
+char *init_version = "0.0 pre-alpha";
+
 mach_port_t default_ports[INIT_PORT_MAX];
 mach_port_t default_dtable[3];
 
@@ -417,16 +419,16 @@ launch_system (void)
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
-  _hurd_proc_init ((char **) 0);
+  _hurd_proc_init (global_argv);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
-  /* Tell the proc server our msgport and where our args and
-     environment are.  */
+  /* Tell the proc server our msgport */
   proc_setmsgport (procserver, startup, &old);
   if (old)
     mach_port_deallocate (mach_task_self (), old);
-  proc_setprocargs (procserver, (int) global_argv, (int) environ);
+  proc_register_version (procserver, host_priv, "init", HURD_RELEASE,
+			 init_version);
 
   /* Give the bootstrap FS its proc and auth ports.  */
   proc_task2proc (procserver, fstask, &fsproc);
@@ -600,23 +602,6 @@ S_startup_reboot (mach_port_t server,
   
   reboot_system (code);
   for (;;);
-}
-
-kern_return_t 
-S_startup_register_version (mach_port_t server,
-			    mach_port_t credential,
-			    char *name,
-			    char *release,
-			    char *version)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-S_startup_uname (mach_port_t server,
-		 struct utsname *uname)
-{
-  return EOPNOTSUPP;
 }
 
 kern_return_t
