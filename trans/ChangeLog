@@ -1,3 +1,8 @@
+2002-05-11  Roland McGrath  <roland@frob.com>
+
+	* fakeroot.c (main): Stat the root node and fake its st_mode
+	immediately to remove translator bits.
+
 2002-05-06  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeroot.c (netfs_attempt_lookup): Really check for EROFS or
