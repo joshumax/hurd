@@ -101,7 +101,7 @@ diskfs_truncate (struct node *np,
       
       pager_change_attributes (upi->p, MAY_CACHE,
 			       MEMORY_OBJECT_COPY_NONE, 1);
-      obj = diskfs_get_filemap (np);
+      obj = diskfs_get_filemap (np, VM_PROT_READ | VM_PROT_WRITE);
       poke_pages (obj, round_page (length), round_page (np->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
       pager_flush_some (upi->p, round_page (length),
@@ -588,7 +588,7 @@ diskfs_grow (struct node *np,
     {
       mach_port_t obj;
       
-      obj = diskfs_get_filemap (np);
+      obj = diskfs_get_filemap (np, VM_PROT_READ | VM_PROT_WRITE);
       poke_pages (obj, trunc_page (poke_off),
 		  round_page (poke_off + poke_len));
       mach_port_deallocate (mach_task_self (), obj);

@@ -95,6 +95,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   struct node *np = 0;
   int retry_dotdot = 0;
   memory_object_t memobj;
+  vm_prot_t prot =
+    (type == LOOKUP) ? VM_PROT_READ : (VM_PROT_READ | VM_PROT_WRITE);
   vm_address_t buf = 0;
   vm_size_t buflen = 0;
   int blockaddr;
@@ -136,17 +138,12 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
     ds->stat = LOOKING;
 
   /* Map in the directory contents. */
-  memobj = diskfs_get_filemap (dp);
+  memobj = diskfs_get_filemap (dp, prot);
   buf = 0;
   /* We allow extra space in case we have to do an EXTEND. */
   buflen = round_page (dp->dn_stat.st_size + DIRBLKSIZ);
-  if (type == LOOKUP)
-    /* Map read-only; we won't be writing */
-    err = vm_map (mach_task_self (), &buf, buflen, 0, 1, memobj, 0, 0, 
-		  VM_PROT_READ, VM_PROT_READ, 0);
-  else
-    err = vm_map (mach_task_self (), &buf, buflen, 0, 1, memobj, 0, 0, 
-		  VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE, 0);
+  err = vm_map (mach_task_self (),
+		&buf, buflen, 0, 1, memobj, 0, 0, prot, prot, 0);
   mach_port_deallocate (mach_task_self (), memobj);
 
   inum = 0;
@@ -664,7 +661,7 @@ diskfs_dirempty(struct node *dp,
   memory_object_t memobj;
   error_t err;
 
-  memobj = diskfs_get_filemap (dp);
+  memobj = diskfs_get_filemap (dp, VM_PROT_READ);
   buf = 0;
   
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
