@@ -219,12 +219,14 @@ check_open_hook (struct trivfs_control *trivfs_control,
   return err;
 }
 
-static void
+static error_t
 open_hook(struct trivfs_peropen *peropen)
 {
   struct dev *dev = device;
   if (dev)
-    open_create(dev, (struct open **)&peropen->hook);
+    return open_create(dev, (struct open **)&peropen->hook);
+  else
+    return 0;
 }
 
 static void
@@ -350,7 +352,7 @@ error_t (*trivfs_check_open_hook)(struct trivfs_control *trivfs_control,
 
 /* If this variable is set, it is called every time a new peropen
    structure is created and initialized. */
-void (*trivfs_peropen_create_hook)(struct trivfs_peropen *) = open_hook;
+error_t (*trivfs_peropen_create_hook)(struct trivfs_peropen *) = open_hook;
 
 /* If this variable is set, it is called every time a peropen structure
    is about to be destroyed. */
