@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <fcntl.h>
 
 /* Implement io_write as described in <hurd/io.defs>. */
 error_t
@@ -52,7 +53,8 @@ diskfs_S_io_write(struct protid *cred,
       off = cred->po->filepointer;
     }
   
-  while (off + datalen > np->i_allocsize)
+  err = 0;
+  while (off + datalen > np->allocsize)
     {
       err = diskfs_grow (np, off + datalen, cred);
       if (err)
@@ -75,6 +77,6 @@ diskfs_S_io_write(struct protid *cred,
     }
 
  out:
-  mutex_unlock (&np->i_toplock);
+  mutex_unlock (&np->lock);
   return err;
 }
