@@ -1,5 +1,5 @@
 /* Hash table functions
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -37,7 +37,7 @@ pid_find (pid_t pid)
 {
   struct proc *p;
   p = ihash_find (&pidhash, pid);
-  return p->p_dead ? 0 : p;
+  return (!p || p->p_dead) ? 0 : p;
 }
 
 /* Find the process corresponding to a given pid.  Return it even if
@@ -54,7 +54,7 @@ task_find (task_t task)
 {
   struct proc *p;
   p = ihash_find (&taskhash, task) ? : add_tasks (task);
-  return p->p_dead ? 0 : p;
+  return (!p || p->p_dead) ? 0 : p;
 }
 
 /* Find the process corresponding to a given task, but
@@ -64,7 +64,7 @@ task_find_nocreate (task_t task)
 {
   struct proc *p;
   p = ihash_find (&taskhash, task);
-  return p->p_dead ? 0 : p;
+  return (!p || p->p_dead) ? 0 : p;
 }
 
 /* Find the process corresponding to a given request port. */
@@ -75,7 +75,7 @@ reqport_find (mach_port_t reqport)
   p = ports_lookup_port (proc_bucket, reqport, proc_class);
   if (p && p->p_dead)
     ports_port_deref (p);
-  return p->p_dead ? 0 : p;
+  return (!p || p->p_dead) ? 0 : p;
 }
 
 /* Find the process group corresponding to a given pgid. */
