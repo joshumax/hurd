@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -68,16 +68,21 @@ diskfs_S_dir_mkfile (struct protid *cred,
     return err;
   
   flags &= (O_READ | O_WRITE | O_EXEC);
-  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags, 
+  err = diskfs_create_protid (diskfs_make_peropen (np, flags, 
 						   cred->po->dotdotport),
 			      cred->uids, cred->nuids, 
-			      cred->gids, cred->ngids);
+			      cred->gids, cred->ngids,
+			      &newpi);
+  if (! err)
+    {
+      *newnode = ports_get_right (newpi);
+      *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
+    }
 
-  *newnode = ports_get_right (newpi);
-  *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newpi);
   diskfs_nput (np);
-  return 0;
+
+  return err;
 }
 
   
