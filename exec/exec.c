@@ -679,6 +679,8 @@ prepare (file_t file, struct execdata *e)
   e->stream.__mode.__read = 1;
   e->stream.__userbuf = 1;
   e->stream.__room_funcs.__input = input_room;
+  /* This never gets called, but fseek returns ESPIPE if it's null.  */
+  e->stream.__io_funcs.seek = __stdio_seek;
   e->stream.__io_funcs.close = close_exec_stream;
   e->stream.__cookie = e;
   e->stream.__seen = 1;
