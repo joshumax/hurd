@@ -2030,7 +2030,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 
       *type = available;
       mutex_unlock (&global_lock);
-      return available ? 0 EINTR;
+      return available ? 0 : EINTR;
     }
 }
 
