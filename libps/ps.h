@@ -665,8 +665,7 @@ struct ps_fmt_specs
 {
   const struct ps_fmt_spec *specs; /* An array of specs. */
   struct ps_fmt_specs *parent;	/* A link to more specs shadowed by us. */
-  struct ps_fmt_spec *expansions; /* Storage for expanded aliases.  */
-  size_t expansions_alloced;	/* Amount of space ino EXPANSIONS.  */
+  struct ps_fmt_spec_block *expansions; /* Storage for expanded aliases.  */
 };
 
 /* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find, 
