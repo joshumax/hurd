@@ -4,6 +4,12 @@ Wed Sep  4 16:25:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	($(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))):
 	`$(includdir)' --> `$(includedir)'
 
+Wed Sep  4 08:56:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* configure.in (asm_syntax): New variable, canonicalized from
+	host_cpu.  AC_SUBST it.
+	* config.make.in (asm_syntax): New variable, from @asm_syntax@.
+
 Sun Sep  1 14:03:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makeconf ($(target): %$(target-suffix)): Add dependency on

@@ -2,6 +2,7 @@
 
 # Machine architecture.
 machine = @host_cpu@
+asm_syntax = @asm_syntax@
 
 # Prefix prepended to names of machine-independent installed files.
 prefix = @prefix@

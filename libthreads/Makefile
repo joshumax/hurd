@@ -15,8 +15,6 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-# This is currently i386 specific. XXX
-
 dir := libthreads
 makemode := library
 
@@ -37,7 +35,7 @@ libname = libthreads
 installhdrs = cthreads.h rwlock.h
 installhdrsubdir = .
 
-VPATH += $(srcdir)/$(machine)
+VPATH += $(srcdir)/$(asm_syntax)
 
 include ../Makeconf
 

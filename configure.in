@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.7 1996/08/13 18:10:06 thomas Exp $])
+AC_REVISION([$Id: configure.in,v 1.8 1996/09/05 14:14:01 thomas Exp $])
 AC_PREREQ(2.4)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -10,6 +10,14 @@ case "$host_os" in
 gnu*) ;;
 *) AC_MSG_ERROR([sorry, this is the gnu os, not $host_os]) ;;
 esac
+
+case "$host_cpu" in
+i[[3456]]86)
+	asm_syntax=i386
+	;;
+*) AC_MSG_ERROR([unspported CPU type]) ;;
+esac
+AC_SUBST(asm_syntax)
 
 AC_PROG_INSTALL
 
