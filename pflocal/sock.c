@@ -134,26 +134,14 @@ sock_free (struct sock *sock)
 
 /* ---------------------------------------------------------------- */
 
-static struct port_class *sock_user_port_class = NULL;
+struct port_class *sock_user_port_class = NULL;
 
 /* Get rid of a user reference to a socket.  */
 static void
 clean_sock_user (void *vuser)
 {
   struct sock_user *user = vuser;
-  struct sock *sock = user->sock;
-
-  /* Remove a reference from SOCK, possibly freeing it.  */
-  mutex_lock (&sock->lock);
-  if (--sock->refs == 0)
-    {
-      /* A sock should never have an address when it has 0 refs, as the
-	 address should hold a reference to the sock!  */
-      assert (sock->addr == NULL);
-      sock_free (sock);
-    }
-  else
-    mutex_unlock (&sock->lock);
+  sock_deref (user->sock);
 }
 
 /* Return a new user port on SOCK in PORT.  */
@@ -188,22 +176,45 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 
 struct port_class *addr_port_class = NULL;
 
+/* Get rid of ADDR's socket's reference to it, in preparation for ADDR going
+   away.  */
+static void
+unbind_addr (void *vaddr)
+{
+  struct sock *sock;
+  struct addr *addr = vaddr;
+
+  mutex_lock (&addr->lock);
+  sock = addr->sock;
+  if (sock)
+    {
+      mutex_lock (&sock->lock);
+      sock->addr = NULL;
+      addr->sock = NULL;
+      ports_port_deref_weak (addr);
+      mutex_unlock (&sock->lock);
+      sock_deref (sock);
+    }
+  mutex_unlock (&addr->lock);
+}
+
 /* Cleanup after the address ADDR, which is going away... */
 static void
 clean_addr (void *vaddr)
 {
   struct addr *addr = vaddr;
-
-  
-  struct sock *sock = addr->sock;
-  /* ... */
+  /* ADDR should never have a socket bound to it at this point, as it should
+     have been removed by unbind_addr to drop the socket's weak reference to
+     it.  */
+  assert (addr->sock == NULL);
 }
 
+/* Return a new address, not connected to any socket yet, ADDR.  */
 inline error_t
 addr_create (struct addr **addr)
 {
   if (addr_port_class == NULL)
-    addr_port_class = ports_create_class (NULL, clean_addr);
+    addr_port_class = ports_create_class (unbind_addr, clean_addr);
 
   *addr =
     ports_allocate_port (pflocal_port_bucket,
@@ -254,41 +265,44 @@ sock_bind (struct sock *sock, struct addr *addr)
   return err;
 }
 
-/* Returns SOCK's addr, fabricating one if necessary.  SOCK should be
-   locked.  */
+/* Returns SOCK's addr, with an additional reference, fabricating one if
+   necessary.  SOCK should be locked.  */
 static inline error_t
 ensure_addr (struct sock *sock, struct addr **addr)
 {
   error_t err = 0;
 
-  if (! sock->addr || sock->addr->refcnt == 0)
+  if (! sock->addr)
     {
       err = addr_create (&sock->addr);
       if (!err)
 	{
 	  sock->addr->sock = sock;
 	  sock->refs++;
+	  ports_port_ref_weak (sock->addr);
 	}
     }
-  *addr = sock->addr;
+
+  if (!err)
+    {
+      *addr = sock->addr;
+      ports_port_ref (*addr);
+    }
+
   return err;
 }
 
-/* Returns a send right to SOCK's address in ADDR_PORT.  If SOCK doesn't
-   currently have an address, one is fabricated first.  */
+/* Returns the socket bound to ADDR in SOCK, or EADDRNOTAVAIL.  The returned
+   sock will have one reference added to it.  */
 error_t
-sock_get_addr_port (struct sock *sock, mach_port_t *addr_port)
+addr_get_sock (struct addr *addr, struct sock **sock)
 {
-  error_t err;
-  struct addr *addr;
-
-  mutex_lock (&sock->lock);
-  err = ensure_addr (sock, addr);
-  if (!err)
-    *addr_port = ports_get_right (addr);
-  mutex_unlock (&sock->lock);
-
-  return err;
+  mutex_lock (&addr->lock);
+  *sock = addr->sock;
+  if (*sock)
+    (*sock)->refs++;
+  mutex_unlock (&addr->lock);
+  return *sock ? 0 : EADDRNOTAVAIL;
 }
 
 /* Returns SOCK's address in ADDR, with an additional reference added.  If
@@ -300,8 +314,6 @@ sock_get_addr (struct sock *sock, struct addr *addr)
 
   mutex_lock (&sock->lock);
   err = ensure_addr (sock, addr);
-  if (!err)
-    ports_port_ref (*addr);
   mutex_unlock (&sock->lock);
 
   return err;			/* XXX */
@@ -397,6 +409,8 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 
 /* ---------------------------------------------------------------- */
 
+/* Shutdown either the read or write halves of SOCK, depending on whether the
+   SOCK_SHUTDOWN_READ or SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
 void
 sock_shutdown (struct sock *sock, unsigned flags)
 {
