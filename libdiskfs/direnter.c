@@ -43,7 +43,7 @@ diskfs_direnter (struct node *dp,
   if (dp->dirmod_reqs)
     diskfs_notice_dirchange (dp, DIR_CHANGED_NEW, name);
 
-  diskfs_enter_cache (dp, np, name);
+  diskfs_enter_lookup_cache (dp, np, name);
   return 0;
 }  
   
