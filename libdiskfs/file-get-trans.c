@@ -21,7 +21,8 @@
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
 error_t
 diskfs_S_file_get_translator (struct protid *cred,
-			      vm_address_t *trans)
+			      char **trans,
+			      u_int *translen)
 {
   struct node *np;
   error_t error;
@@ -35,7 +36,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   if (!diskfs_node_translated (np))
     error = EINVAL;
   else
-    error = diskfs_get_translator (np, (char **)trans);
+    error = diskfs_get_translator (np, trans, translen);
   mutex_unlock (&np->lock);
 
   return error;
