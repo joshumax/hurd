@@ -40,9 +40,6 @@ su-LDLIBS = $(LIBCRYPT)
 ping-CPPFLAGS = -I$(srcdir)/../pfinet/
 
 INSTALL-login-ops = -o root -m 4755
-INSTALL-addauth-ops = -o root -m 4755
-INSTALL-setauth-ops = -o root -m 4755
-INSTALL-su-ops = -o root -m 4755
 INSTALL-ids-ops = -o root -m 4755
 INSTALL-ps-ops = -o root -m 4755
 INSTALL-w-ops = -o root -m 4755

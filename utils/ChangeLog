@@ -1,3 +1,12 @@
+1999-07-01  Mark Kettenis  <kettenis@gnu.org>
+
+	* Makefile (INSTALL-addauth-ops, INSTALL-setauth-ops,
+	INSTALL-su-ops): Removed.  These programs don't have to be
+	installed suid-root anymore. 
+	* frobauth-mod.c (frobauth_modify): Do not try to set the owner of
+	the processes we're frobbing.  The process set their owner
+	themselves when we pass them their new authentication.
+
 1999-06-21  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* login.c (main): For no-uids shell, default SH_ARG0 to informative

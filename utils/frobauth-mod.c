@@ -1,6 +1,6 @@
 /* Modify the current authentication selected processes
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -114,7 +114,8 @@ frobauth_modify (struct frobauth *frobauth,
 				all_auths[num_all_auths - 1] = old_auth;
 
 				err = ugids_make_auth (&new,
-						       all_auths, num_all_auths,
+						       all_auths,
+						       num_all_auths,
 						       &new_auth);
 				if (err)
 				  error (0, err,
@@ -128,38 +129,6 @@ frobauth_modify (struct frobauth *frobauth,
 							 MACH_MSG_TYPE_MOVE_SEND);
 				    if (err)
 				      error (0, err, "%d", pid);
-				    else if (new.eff_uids.num == 0
-					     ? old.eff_uids.num > 0
-					     : (old.eff_uids.num == 0
-						|| (new.eff_uids.ids[0]
-						    != old.eff_uids.ids[0])))
-				      /* Now change the process's owner.  */
-				      {
-					process_t proc;
-					err = 
-					  proc_pid2proc (proc_server, pid,
-							 &proc);
-					if (err)
-					  error (0, err,
-						 "%d: Cannot get proc port",
-						 pid);
-					else
-					  {
-					    if (new.eff_uids.num == 0)
-					      err =
-						proc_setowner (proc, 0, 1);
-					    else
-					      err = proc_setowner
-						(proc, new.eff_uids.ids[0], 0);
-					    if (err)
-					      error
-						(0, err,
-						 "%d: Cannot set process owner",
-						 pid);
-					    mach_port_deallocate
-					      (mach_task_self (), proc);
-					  }
-				      }
 				  }
 
 			      }
