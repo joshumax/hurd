@@ -1,3 +1,7 @@
+Tue Oct  8 22:46:09 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* users.c (open_hook): Zero WINDOW_SIZE during initialization.
+
 Fri Oct  4 12:30:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* users.c (S_tioctl_tiocswinsz): Correct test for a changed winsize.
