@@ -308,7 +308,6 @@ boot_script_exec_cmd (task_t user_task,
 	st.user_task = user_task;
 	st.aout_symtab_size = 0;
 	st.aout_strtab_size = 0;
-printf("serverboot loading %s\n", file_name);
 	result = exec_load(prog_read, prog_read_exec, &st, &info);
 #ifdef GZIP
 	if (result)
@@ -375,7 +374,6 @@ printf("serverboot loading %s\n", file_name);
 		 strerror (result));
 	arg_pos = set_regs(user_task, user_thread, &info, arg_len);
 
-printf("set up user thread\n");
 	/*
 	 * Read symbols from the executable file.
 	 */
@@ -454,19 +452,15 @@ printf("set up user thread\n");
 	    /*
 	     * Then the strings and string pointers for each argument
 	     */
-	    for (i = 0; i < arg_count; i++) {
-	      printf("\targv[%d] = %s\n", i, argv[i]);
+	    for (i = 0; i < arg_count; i++)
 	      *k_ap++ = argv[i] - argstrings + u_cp;
-	    }
 	    *k_ap++ = (char *)0;
 	    bcopy (argstrings, k_cp, argslen);
 	    k_cp += argslen;
 	    u_cp += argslen;
 
-	    for (i = 0; i < envc; i++) {
-	      printf("\tenviron[%d] = %s\n", i, environ[i]);
+	    for (i = 0; i < envc; i++)
 	      *k_ap++ = environ[i] - environ[0] + u_cp;
-	    }
 	    *k_ap   = (char *)0;
 	    bcopy (environ[0], k_cp, env_len);
 
@@ -488,7 +482,6 @@ printf("set up user thread\n");
 	 */
 	close_file(&file);
 
-printf ("resume user thread...\n");
   	/* Resume the thread.  */
   	thread_resume (user_thread);
   	mach_port_deallocate (mach_task_self (), user_thread);

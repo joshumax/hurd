@@ -241,8 +241,6 @@ main(argc, argv)
 	panic_init(bootstrap_master_host_port);
 #endif
 
-	printf ("serverboot flags %s root=%s\n", flag_string, root_name);
-
 
 	/*
 	 * If the '-a' (ask) switch was specified, or if no
