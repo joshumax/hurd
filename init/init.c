@@ -887,6 +887,9 @@ S_startup_request_notification (mach_port_t server,
   if (prev != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), prev);
 
+  /* Note that the ntfy_tasks list is kept in inverse order of the 
+     calls; this is important.  We need later notification requests
+     to get executed first.  */
   nt = malloc (sizeof (struct ntfy_task));
   nt->notify_port = notify;
   nt->next = ntfy_tasks;
