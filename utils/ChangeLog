@@ -1,7 +1,9 @@
 1997-08-08  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpcp.c (eappend, ebasename): New functions.
-	(main): Use them.
+	(append_basename): New function.
+	(main): Move target directory handling to append_basename.
+	Use it also with remote transfers.
 
 	* ftpcp.c (cntl_debug): Print CONN->hook as a string before any output.
 	(main): Set the connection hooks to appropriate strings.
