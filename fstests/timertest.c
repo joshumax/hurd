@@ -15,18 +15,21 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <signal.h>
+#include <sys/time.h>
+#include <stdio.h>
 
-int
-alarm_handler ()
+void
+alarm_handler (int signo)
 {
   printf ("Received alarm\n");
   fflush (stdout);
 }
 
+int
 main()
 {
   struct itimerval real_timer;
-  error_t err;
 
   real_timer.it_interval.tv_usec = 0;
   real_timer.it_interval.tv_sec = 1;
@@ -35,8 +38,12 @@ main()
   
   signal (SIGALRM, alarm_handler);
   
-  err = setitimer (ITIMER_REAL, &real_timer, 0);
-  
+  if (setitimer (ITIMER_REAL, &real_timer, 0) < 0)
+    {
+      perror ("Setting timer");
+      exit (1);
+    }
+
   while (1)
     {
       printf ("Pausing\n");
