@@ -203,6 +203,9 @@ S_proc_wait (struct proc *p,
   
   if (options & WNOHANG)
     return EWOULDBLOCK;
+
+  if (p->p_waiting)
+    return EBUSY;
   
   p->p_waiting = 1;
   w = &p->p_continuation.wait_c;
@@ -278,8 +281,8 @@ S_proc_mark_traced (struct proc *p)
 
 /* Implement proc_mark_nostopchild as described in <hurd/proc.defs>. */
 error_t
-S_proc_mark_nostopchild (struct proc *p,
-		       int value)
+S_proc_mod_stopchild (struct proc *p,
+		      int value)
 {
   p->p_nostopcld = !! value;
   return 0;
@@ -298,7 +301,7 @@ zombie_check_pid (pid_t pid)
 
 /* Implement interrupt_operation as described in <hurd/interrupt.defs>. */
 error_t
-interrupt_operation (mach_port_t object)
+S_interrupt_operation (mach_port_t object)
 {
   struct proc *p = reqport_find (object);
   
@@ -307,7 +310,7 @@ interrupt_operation (mach_port_t object)
   
   if (p->p_waiting)
     abort_wait (p);
-  else if (p->p_msgportwait)
+  if (p->p_msgportwait)
     abort_getmsgport (p);
 
   return 0;
