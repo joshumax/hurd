@@ -27,7 +27,11 @@ extern struct port_bucket *pager_bucket;
 
 static void fault_handler (int sig, long int sigcode, struct sigcontext *scp);
 static struct hurd_signal_preempter preempter =
-  { preempter: NULL, handler: (sighandler_t) &fault_handler, };
+  {
+  signals: sigmask (SIGSEGV) | sigmask (SIGBUS),
+  preempter: NULL,
+  handler: (sighandler_t) &fault_handler,
+  };
 
 
 /* A top-level function for the paging thread that just services paging
@@ -91,6 +95,9 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
   error_t err;
 
   assert (env && "unexpected fault on disk image");
+
+  /* Clear the record, since the faulting thread will not.  */
+  cthread_set_data (cthread_self (), 0);
 
   /* Fetch the error code from the pager.  */
   assert (scp->sc_error == EKERN_MEMORY_ERROR);
