@@ -1,6 +1,6 @@
 /* Standard filesystem runtime option parsing
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,7 +32,7 @@
 /* Invoke ARGP with data from DATA & LEN, in the standard way.  */
 error_t
 fshelp_set_options (struct argp *argp, int flags,
-		    char *argz, size_t argz_len, void *input)
+		    const char *argz, size_t argz_len, void *input)
 {
   int argc = argz_count (argz, argz_len);
   char **argv = alloca (sizeof (char *) * (argc + 1));
