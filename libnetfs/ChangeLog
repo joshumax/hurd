@@ -1,3 +1,8 @@
+1997-09-05  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-lookup.c (netfs_S_dir_lookup): Re-aquire the lock on DNP when
+	looping to follow a symlink.
+
 1997-08-29  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-reparent.c (netfs_S_file_reparent): Use a copy of
