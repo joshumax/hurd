@@ -141,21 +141,21 @@ open_console (char **namep)
 	  termname = terminal + strlen (terminal) + 1; /* first arg is name */
 
 	  /* The callback to start_translator opens TERM as a side effect.  */
-	  errno =
+	  err =
 	    fshelp_start_translator (open_node, NULL, terminal, terminal,
 				     argz_len, 3000, &control);
-	  if (errno)
+	  if (err)
 	    {
-	      error (0, errno, "%s", terminal);
+	      error (0, err, "%s", terminal);
 	      continue;
 	    }
 
-	  errno = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
+	  err = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
 				       control, MACH_MSG_TYPE_COPY_SEND);
 	  mach_port_deallocate (mach_task_self (), control);
-	  if (errno)
+	  if (err)
 	    {
-	      error (0, errno, "%s", termname);
+	      error (0, err, "%s", termname);
 	      continue;
 	    }
 	  mach_port_deallocate (mach_task_self (), term);
@@ -167,10 +167,10 @@ open_console (char **namep)
 	      error (0, errno, "%s", termname);
 	      continue;
 	    }
-	  errno = io_stat (term, &st);
-	  if (errno)
+	  err = io_stat (term, &st);
+	  if (err)
 	    {
-	      error (0, errno, "%s", termname);
+	      error (0, err, "%s", termname);
 	      term = MACH_PORT_NULL;
 	      continue;
 	    }
