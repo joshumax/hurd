@@ -170,6 +170,9 @@ main (int argc, char **argv, char **envp)
   mach_port_move_member (mach_task_self (), pseudo_console, receive_set);
   mach_port_insert_right (mach_task_self (), pseudo_console, pseudo_console,
 			  MACH_MSG_TYPE_MAKE_SEND);
+  mach_port_request_notification (mach_task_self (), pseudo_console,
+				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_console,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &bootport);
   mach_port_move_member (mach_task_self (), bootport, receive_set);
@@ -179,11 +182,13 @@ main (int argc, char **argv, char **envp)
   task_set_bootstrap_port (newtask, bootport);
   mach_port_deallocate (mach_task_self (), bootport);
 
+#if 0
   mach_port_request_notification (mach_task_self (), newtask, 
 				  MACH_NOTIFY_DEAD_NAME, 1, bootport, 
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
+#endif
   child_task = newtask;
 
   php_child_name = 100;
@@ -353,6 +358,8 @@ ds_device_write (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
+  mach_port_deallocate (mach_task_self (), pseudo_console);
+
   *bytes_written = write (1, (void *)*data, datalen);
   
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -507,6 +514,8 @@ do_mach_notify_port_destroyed (mach_port_t notify,
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
+  if (notify == pseudo_console)
+    _exit (0);
   return EOPNOTSUPP;
 }
 
@@ -518,8 +527,11 @@ do_mach_notify_send_once (mach_port_t notify)
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
 {
+#if 0
   if (name == child_task && notify == bootport)
     _exit (0);
+#endif
+  return EOPNOTSUPP;
 }
 
 
