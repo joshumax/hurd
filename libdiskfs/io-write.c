@@ -21,11 +21,11 @@
 
 /* Implement io_write as described in <hurd/io.defs>. */
 kern_return_t
-diskfs_S_io_write(struct protid *cred,
-		  char *data,
-		  unsigned int datalen,
-		  off_t offset, 
-		  int *amt)
+diskfs_S_io_write (struct protid *cred,
+		   char *data,
+		   unsigned int datalen,
+		   off_t offset, 
+		   int *amt)
 {
   struct node *np;
   error_t err;
@@ -37,8 +37,6 @@ diskfs_S_io_write(struct protid *cred,
   np = cred->po->np;
   if (!(cred->po->openstat & O_WRITE))
     return EBADF;
-  if (*amt < 0)
-    return EINVAL;
 
   mutex_lock (&np->lock);
 
