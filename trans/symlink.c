@@ -19,10 +19,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <argp.h>
 #include <hurd/fsys.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <error.h>
+#include <version.h>
 #include "fsys_S.h"
 
 mach_port_t realnode;
@@ -35,6 +37,37 @@ char *linktarget;
 
 extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
 
+const char *argp_program_version = STANDARD_HURD_VERSION (symlink);
+
+static const struct argp_option options[] =
+  {
+    { 0 }
+  };
+
+static const char args_doc[] = "TARGET";
+static const char doc[] = "A translator for symlinks."
+"\vA symlink is an alias for another node in the filesystem."
+"\n"
+"\nA symbolic link refers to its target `by name', and contains no actual"
+" reference to the target.  The target referenced by the symlink is"
+" looked up in the namespace of the client.";
+
+/* Parse a single option/argument.  */
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  if (key == ARGP_KEY_ARG && state->arg_num == 0)
+    linktarget = arg;
+  else if (key == ARGP_KEY_ARG || key == ARGP_KEY_NO_ARGS)
+    argp_usage (state);
+  else
+    return ARGP_ERR_UNKNOWN;
+  return 0;
+}
+
+static struct argp argp = { options, parse_opt, args_doc, doc };
+
+
 int
 main (int argc, char **argv)
 {
@@ -42,11 +75,8 @@ main (int argc, char **argv)
   mach_port_t control;
   error_t err;
 
-  if (argc != 2)
-    {
-      fprintf (stderr, "Usage: %s link-target\n", argv[0]);
-      exit (1);
-    }
+  /* Parse our options...  */
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)

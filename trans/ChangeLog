@@ -1,5 +1,14 @@
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
+	* symlink.c: Include <argp.h> and <version.h>.
+	(argp_program_version, options, args_doc, doc, argp): New
+	variables.
+	(parse_opt): New function.
+	(main): Replace argument count check and usage output by
+	argp_parse invocation.
+
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
 	* fakeroot.c (netfs_S_file_exec): New function.
 	(netfs_S_io_prenotify): Fix last change.
 	(netfs_S_io_postnotify): Likewise.
