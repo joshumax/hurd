@@ -21,13 +21,13 @@ makemode := utility
 SRCS = bootstrap.c ffs_compat.c load.c wiring.c def_pager_setup.c \
 	ffs_file_io.c minix_ffs_compat.c default_pager.c file_io.c\
 	minix_file_io.c ext2_file_io.c kalloc.c strfcns.c exec.c \
-	translate_root.c panic.c elf-load.c
+	panic.c elf-load.c
 OBJS = $(subst .c,.o,$(SRCS)) boot_script.o memory_objectServer.o \
 	default_pagerServer.o excServer.o bootstrapServer.o \
 	memory_object_defaultServer.o
 LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h ext2_fs.h \
 	 minix_ffs_compat.h wiring.h dir.h ffs_compat.h minix_fs.h \
-	disk_inode.h file_io.h minix_super.h translate_root.h mach-exec.h
+	disk_inode.h file_io.h minix_super.h mach-exec.h
 target = serverboot
 HURDLIBS = threads
 installationdir = $(prefix)/boot
