@@ -22,7 +22,7 @@ include ../Makeconf
 VPATH=.:../machine
 
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
-	io_replUser.o device_replyUser.o sigvec.o
+	io_replUser.o device_replyUser.o sigvec.o tioctlServer.o
 
 DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S
 
@@ -35,11 +35,12 @@ install: boot
 	cp boot /usr/local/bin/boot
 
 clean: 
-	rm -f boot $(OBJS) *_S.h *Server.c
+	rm -f boot $(OBJS) *_S.h *Server.c *User.c
 relink:
 	rm -f boot
 
-boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h
+boot.o: notify_S.h exec_S.h device_S.h io_S.h device_reply.h io_repl.h \
+	tioctl_S.h
 
 notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $< | \
@@ -70,3 +71,8 @@ io_S.h ioServer.c: $(includedir)/hurd/io.defs
 io_repl.h io_replUser.c: io_repl.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -server /dev/null
+
+tioctlServer.c tioctl_S.h: ../hurd/tioctl.defs
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
+	-sheader tioctl_S.h
