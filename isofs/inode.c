@@ -310,7 +310,7 @@ read_disknode (struct node *np, struct dirrect *dr,
   error_t err;
   struct stat *st = &np->dn_stat;
 
-  st->st_fstype = 9660;	/* xxx */
+  st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
   st->st_ino = np->dn->file_start;
   st->st_gen = 0;
