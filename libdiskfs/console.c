@@ -1,8 +1,7 @@
 /* Redirect stdio to the console if possible
 
-   Copyright (C) 1995, 96, 98, 99 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -58,7 +57,7 @@ diskfs_console_stdio ()
     {
       mach_port_t dev, cons;
       error_t err;
-      if (diskfs_boot_flags)
+      if (diskfs_boot_filesystem ())
 	_diskfs_boot_privports ();
       err = get_privileged_ports (NULL, &dev);
       assert_perror (err);

@@ -48,7 +48,7 @@ diskfs_init_main (struct argp *startup_argp,
      host priv ports are set for booting.  */
   diskfs_console_stdio ();
 
-  if (diskfs_boot_flags)
+  if (diskfs_boot_filesystem ())
     /* We are the bootstrap filesystem.  */
     *bootstrap = MACH_PORT_NULL;
   else

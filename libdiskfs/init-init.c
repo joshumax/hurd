@@ -57,7 +57,7 @@ diskfs_init_diskfs (void)
 {
   error_t err;
 
-  if (diskfs_boot_flags)
+  if (diskfs_boot_filesystem ())
     /* This is a boot filesystem, we have to do some things specially.  */
     {
       mach_port_t host;
