@@ -28,6 +28,10 @@
 #include <hurd/hurd_types.h>
 #include <cthreads.h>
 
+#ifndef FSHELP_EI
+#define FSHELP_EI extern inline
+#endif
+
 
 /* Passive translator linkage */
 /* These routines are self-contained and start passive translators,
@@ -136,7 +140,7 @@ fshelp_transbox_init (struct transbox *transbox,
 		      void *cookie);
 
 /* Return true iff there is an active translator on this box */
-extern inline int
+FSHELP_EI int
 fshelp_translated (struct transbox *box)
 {
   return (box->active != MACH_PORT_NULL);

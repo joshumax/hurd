@@ -26,7 +26,8 @@ SRCS =	lock-acquire.c lock-init.c \
 	delegate.c \
 	exec-reauth.c \
 	set-options.c \
-	return-buffer.c get-identity.c
+	return-buffer.c get-identity.c \
+	fshelp.c
 LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
 

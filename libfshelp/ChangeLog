@@ -1,3 +1,9 @@
+Mon Oct 21 21:55:21 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* fshelp.h: Add extern inline protection.
+	* fshelp.c: New file.
+	* Makefile (SRCS): Add fshelp.c.
+
 Sun Oct 13 21:46:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* lock-acquire.c (fshelp_acquire_lock): Return success, not EBADF,
