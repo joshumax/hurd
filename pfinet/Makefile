@@ -25,8 +25,10 @@ LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
 	proc.c protocol.c raw.c route.c skbuff.c sock.c \
 	tcp.c timer.c udp.c utils.c
 UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
-SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c
-OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
+SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c \
+	io-ops.c socket-ops.c
+MIGSRCS = ioServer.c socketServer.c
+OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
 
 pfinet: $(OBJS) ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 
@@ -38,6 +40,6 @@ include ../Makeconf
 
 CPPFLAGS += -I. -imacros config.h
 
-
-
+io-MIGSFLAGS = -imacros mutations.h
+socket-MIGSFLAGS = -imacros mutations.h
 
