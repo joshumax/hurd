@@ -186,10 +186,12 @@ proc_stat_set_flags(proc_stat_t ps, int flags)
 	  tbi->system_time.microseconds += bi->system_time.microseconds;
 	}
 
-      tsi->base_priority /= pi->nthreads;
-      tsi->cur_priority /= pi->nthreads;
-
-      tbi->sleep_time /= pi->nthreads;
+      if (pi->nthreads > 0)
+	{
+	  tsi->base_priority /= pi->nthreads;
+	  tsi->cur_priority /= pi->nthreads;
+	  tbi->sleep_time /= pi->nthreads;
+	}
 
       tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
       tbi->user_time.microseconds %= 1000000;
