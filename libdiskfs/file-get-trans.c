@@ -45,11 +45,19 @@ diskfs_S_file_get_translator (struct protid *cred,
       if (len  > *translen)
 	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
       bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
-      error = diskfs_node_rdwr (np, *trans + sizeof _HURD_SYMLINK,
-				0, np->dn_stat.st_size, 0, cred, &amt);
+
+      if (diskfs_read_symlink_hook)
+	error = (*diskfs_read_symlink_hook) (np, 
+					     *trans + sizeof _HURD_SYMLINK);
+      if (!diskfs_read_symlink_hook || error == EINVAL)
+	{
+	  error = diskfs_node_rdwr (np, *trans + sizeof _HURD_SYMLINK,
+				    0, np->dn_stat.st_size, 0, cred, &amt);
+	  if (!error)
+	    assert (amt == np->dn_stat.st_size);
+	}
       if (!error)
 	{
-	  assert (amt == np->dn_stat.st_size);
 	  (*trans)[sizeof _HURD_SYMLINK + np->dn_stat.st_size] = '\0';
 	  *translen = len;
 	}
@@ -73,7 +81,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       buflen++;			/* terminating nul */
       
       if (buflen > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+	vm_allocate (mach_task_self (), (vm_address_t) trans, buflen, 1);
       bcopy (buf, *trans, buflen);
       *translen = buflen;
       error = 0;
@@ -84,7 +92,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       
       len = sizeof _HURD_FIFO;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
       bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
       *translen = len;
       error = 0;
@@ -95,7 +103,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
-	vm_allocate (mach_task_self (), (vm_address_t) trans, len, 1);
+	vm_allocate (mach_task_self (), (vm_address_t *) trans, len, 1);
       bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
       *translen = len;
       error = 0;
