@@ -42,17 +42,17 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
-      printf ("incg data request: wrong control port");
+      printf ("incg data request: wrong control port\n");
       goto out;
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data request: bad length size");
+      printf ("incg data request: bad length size %d\n", length);
       goto out;
     }
   if (offset % __vm_page_size)
     {
-      printf ("incg data request: misaligned request");
+      printf ("incg data request: misaligned request\n");
       goto out;
     }
 
