@@ -1,6 +1,6 @@
 /* A default diskfs_parse_runtime_options routine
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -22,7 +22,7 @@
 
 error_t
 diskfs_parse_runtime_options (int argc, char **argv,
-			      struct argp *standard_argp)
+			      const struct argp *standard_argp)
 {
   return argp_parse (standard_argp, argc, argv,
 		     ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
