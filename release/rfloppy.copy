@@ -43,7 +43,6 @@ objcopy hurd/nfs
 objcopy hurd/pfinet
 objcopy hurd/proc
 objcopy hurd/term
-objcopy hurd/devport
 objcopy hurd/ext2fs
 objcopy hurd/magic
 objcopy hurd/null
