@@ -32,7 +32,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
   struct pager *p;
   volatile int err;
   
-  p = ports_lookup_port (0, object, _ports_class);
+  p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
 
@@ -84,7 +84,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
-  ports_drop_ref (p);
+  ports_port_deref (p);
   return 0;
 }
 
