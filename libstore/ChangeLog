@@ -1,3 +1,8 @@
+2001-09-29  Roland McGrath  <roland@frob.com>
+
+	* nbd.c (struct nbd_startup): Replace sizehi, sizelo with just size.
+	(nbdopen): Changed use.
+
 2001-09-28  Roland McGrath  <roland@frob.com>
 
 	* decode.c (store_std_leaf_decode): Actually copy data into MISC.
