@@ -325,7 +325,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
     {
-      const struct argp **plist = alloca (3 * sizeof (struct argp *));
+      const struct argp **plist = alloca (4 * sizeof (struct argp *));
       struct argp *top_argp = alloca (sizeof (struct argp));
 
       /* TOP_ARGP has no options, it just serves to group the user & default
@@ -596,6 +596,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	err = process_arg (optarg, &arg_ebadkey);
       else
 	err = process_opt (opt, optarg, &arg_ebadkey);
+
+      if (err == EBADKEY && arg_ebadkey)
+	state.next--;		/* Put back the unused argument.  */
     }
 
   mutex_unlock (&getopt_lock);
