@@ -19,12 +19,15 @@
 #include "ifsock_S.h"
 #include <hurd/paths.h>
 #include <sys/socket.h>
+#include <stdio.h>
+#include <hurd/socket.h>
 
-spin_lock_t pflocalserverlock = SPIN_LOCK_INITIALIZER;
-mach_port_t pflocalserver = MACH_PORT_NULL;
+static spin_lock_t pflocalserverlock = SPIN_LOCK_INITIALIZER;
+static mach_port_t pflocalserver = MACH_PORT_NULL;
 
-S_ifsock_getsockaddr (struct protid *cred,
-		      mach_port_t *address)
+kern_return_t
+diskfs_S_ifsock_getsockaddr (struct protid *cred,
+			     mach_port_t *address)
 {
   error_t err;
   struct node *np;
@@ -51,24 +54,23 @@ S_ifsock_getsockaddr (struct protid *cred,
   if (np->sockaddr == MACH_PORT_NULL)
     {
       mach_port_t server;
+      mach_port_t sockaddr;
+
+      mutex_unlock (&np->lock);
 
       /* Fetch a port to the PF_LOCAL server, caching it. */
 
       spin_lock (&pflocalserverlock);
       if (pflocalserver == MACH_PORT_NULL)
 	{
-	  /* Find out who the PF_LOCAL server is.  Unfortunately,
-	     we have to release our lock on NP to do this lookup
-	     with maximal safety, so after we find out who the
-	     server is, we have to loop back. */
+	  /* Find out who the PF_LOCAL server is. */
 	  char buf[100];
 
 	  spin_unlock (&pflocalserverlock);
-	  mutex_unlock (&np->lock);
 
 	  /* Look it up */
 	  sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
-	  server = path_lookup (buf, 0);
+	  server = path_lookup (buf, 0, 0);
 	  if (server == MACH_PORT_NULL)
 	    return EIEIO;
 
@@ -86,12 +88,19 @@ S_ifsock_getsockaddr (struct protid *cred,
       spin_unlock (&pflocalserverlock);
       
       /* Create an address for the node */
-      err = socket_fabricate_address (server, &np->sockaddr);
+      err = socket_fabricate_address (server, &sockaddr);
       if (err)
 	{
 	  mutex_unlock (&np->lock);
 	  return EIEIO;
 	}
+
+      mutex_lock (&np->lock);
+      if (np->sockaddr != MACH_PORT_NULL)
+	/* Someone beat us */
+	mach_port_deallocate (mach_task_self (), sockaddr);
+      else
+	np->sockaddr = sockaddr;
     }      
   
   *address = np->sockaddr;
