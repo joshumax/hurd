@@ -74,6 +74,7 @@ typedef struct stat io_statbuf_t;
 /* Bits for flags in fs.defs:file_set_translator call: */
 #define FS_TRANS_FORCE     0x00000001 /* Must use translator(no sht circuit) */
 #define FS_TRANS_EXCL      0x00000002 /* Don't do it if already translated.  */
+#define FS_TRANS_SET	   0x00000004 /* Set or clear translator */
 
 /* Values for retry field in fs.defs:dir_pathtrans call: */
 enum retry_type
