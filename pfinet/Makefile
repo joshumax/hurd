@@ -21,11 +21,12 @@
 dir := pfinet
 makemode := server
 LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
-	icmp.c igmp.c ip.c ip_fw.c ipx.c p8022.c p8023.c pe2.c \
-	proc.c protocol.c psnap.c rarp.c raw.c route.c skbuff.c sock.c \
+	icmp.c igmp.c ip.c  \
+	proc.c protocol.c raw.c route.c skbuff.c sock.c \
 	tcp.c timer.c udp.c utils.c
-UNUSEDSRC = packet.c
-SRCS = sched.c timer-emul.c
+UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
+SRCS = sched.c timer-emul.c devices.c
+HURDLIBS=libthreads
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
 
 vpath %.c linux-inet
