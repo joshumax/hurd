@@ -1,5 +1,5 @@
 /* libdiskfs implementetation of fs.defs: file_chown
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,15 +24,20 @@ diskfs_S_file_chown (struct protid *cred,
 		     uid_t uid,
 		     gid_t gid)
 {
+  if (uid == (uid_t) -1 && gid == (gid_t) -1) /* No change requested.  */
+    return 0;
+
   CHANGE_NODE_FIELD (cred,
 		   ({
 		     err = fshelp_isowner (&np->dn_stat, cred->user);
 		     if (err
-			 || ((!idvec_contains (cred->user->uids, uid)
-			      || !idvec_contains (cred->user->gids, gid))
+			 || (((uid != (uid_t) -1
+			       && !idvec_contains (cred->user->uids, uid))
+			      || (gid != (gid_t) -1
+				  && !idvec_contains (cred->user->gids, gid)))
 			     && !idvec_contains (cred->user->uids, 0)))
 		       err = EPERM;
-		     else 
+		     else
 		       {
 			 err = diskfs_validate_owner_change (np, uid);
 			 if (!err)
@@ -45,8 +50,8 @@ diskfs_S_file_chown (struct protid *cred,
 			       np->dn_stat.st_author = uid;
 			     np->dn_set_ctime = 1;
 			     if (np->filemod_reqs)
-			       diskfs_notice_filechange(np, 
-							FILE_CHANGED_META, 
+			       diskfs_notice_filechange(np,
+							FILE_CHANGED_META,
 							0, 0);
 			   }
 		       }
