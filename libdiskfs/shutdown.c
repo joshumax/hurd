@@ -31,17 +31,29 @@ diskfs_shutdown (int flags)
   int nports = -1;
   int err;
 
-  void sync_trans (struct trans_link *trans, void *arg)
-    {
-      fsys_goaway (trans->control, (int) arg);
-    }
+  error_t
+    helper (struct node *np)
+      {
+	error_t error;
+	mach_port_t control;
+
+	error = fshelp_fetch_control (np, &control);
+	if (!error && (control != MACH_PORT_NULL))
+	  {
+	    error = fsys_goaway (control, flags);
+	    mach_port_deallocate (mach_task_self (), control);
+	  }
+	else
+	  error = 0;
+	return error;
+      }
   
   if ((flags & FSYS_GOAWAY_UNLINK)
        && S_ISDIR (diskfs_root_node->dn_stat.st_mode))
     return EBUSY;
 
   if (flags & FSYS_GOAWAY_RECURSE)
-    fshelp_translator_iterate (sync_trans, (void *)flags);
+    diskfs_node_iterate (helper);
 
   mutex_lock (&diskfs_shutdown_lock);
   
