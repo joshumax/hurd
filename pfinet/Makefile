@@ -30,7 +30,7 @@ SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c \
 MIGSRCS = ioServer.c socketServer.c
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
 
-pfinet: $(OBJS) ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+pfinet: $(OBJS) ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 
 vpath %.c linux-inet
 
@@ -42,4 +42,8 @@ CPPFLAGS += -I. -imacros config.h
 
 io-MIGSFLAGS = -imacros mutations.h
 socket-MIGSFLAGS = -imacros mutations.h
+
+# cpp doesn't automatically make dependencies for -imacros dependencies. argh.
+io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
+$(OBJS): config.h
 
