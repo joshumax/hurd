@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 98 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -529,18 +529,18 @@ static int
 fake_seek (void *cookie, fpos_t *pos, int whence)
 {
   struct execdata *e = cookie;
-  
+
   /* Set __target to match the specifed seek location */
   switch (whence)
     {
     case SEEK_END:
       e->stream.__target = e->file_size + *pos;
       break;
-      
+
     case SEEK_CUR:
       e->stream.__target += *pos;
       break;
-      
+
     case SEEK_SET:
       e->stream.__target = *pos;
       break;
@@ -1234,11 +1234,6 @@ do_exec (file_t file,
       }
     bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
 
-    /* First record some information about the image itself.  */
-    boot->phdr_addr = phdr_addr;
-    boot->phdr_size = phdr_size;
-    boot->user_entry = e.entry;
-
     /* These flags say the information we pass through to the new program
        may need to be modified.  */
     secure = (flags & EXEC_SECURE);
@@ -1525,6 +1520,17 @@ do_exec (file_t file,
   /* Clean up.  */
   finish (&e, 0);
 
+  /* Now record some essential addresses from the image itself that the
+     program's startup code will need to know.  We do this after loading
+     the image so that a load-anywhere image gets the adjusted addresses.  */
+#ifdef BFD
+  if (!e.bfd)
+    phdr_addr += e.info.elf.loadbase;
+#endif
+  boot->phdr_addr = phdr_addr;
+  boot->phdr_size = phdr_size;
+  boot->user_entry = e.entry;	/* already adjusted in `load' */
+
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);
   if (e.error)
@@ -1591,7 +1597,7 @@ do_exec (file_t file,
 	     authenticated anyhow. */
 	  proc_setowner (boot->portarray[INIT_PORT_PROC],
 			 neuids ? euids[0] : 0, !neuids);
-      
+
 	  /* Clean up */
 	  if (euids != euidbuf)
 	    vm_deallocate (mach_task_self (), (vm_address_t) euids,
