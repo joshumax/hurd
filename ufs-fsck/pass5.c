@@ -376,7 +376,8 @@ pass5 ()
     }
 
   if (writesb)
-    writeblock (SBLOCK, &sblock, SBSIZE);
+    writeblock (SBLOCK, sblock, SBSIZE);
+
   if (writecsum)
     {
       struct csum *test;
