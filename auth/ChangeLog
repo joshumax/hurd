@@ -1,3 +1,8 @@
+1999-05-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* auth.c (S_auth_server_authenticate, S_auth_user_authenticate): If
+	rendezvous port arrives as MACH_PORT_DEAD, fail with EINVAL.
+
 1999-05-02  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* auth.c: Include <error.h>.
