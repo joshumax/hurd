@@ -18,78 +18,63 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Array of prime numbers */
-int *primes;
-
-/* Allocated size of array `primes'. */
-int primessize;
-
-/* Number of primes recorded in array `primes'. */
-int nprimes;
-
-/* Initialize primes  */
-void
-initprimes ()
-{
-  primessize = 2;
-  nprimes = 2;
-  primes = malloc (sizeof (int) * 2);
-  primes[0] = 2;
-  primes[1] = 3;
-}
-
 /* Return the next prime greater than or equal to n. */
 int 
 nextprime (int n)
 {
+  static int *q;
+  static int k = 2;
+  static int l = 2;
   int p;
-  int low, high;
-  int *iscomp;
-  int nints;
-  int lastprime = primes[nprimes - 1];
+  int *m;
   int i, j;
   
-  if (n < primes[0])
-    return primes[0];
-
-  while (n > primes[nprimes - 1])
+  if (!q)
     {
-      nints = lastprime * lastprime;
-      iscomp = alloca (sizeof (int) * nints);
-      bzero (iscomp, sizeof (int) * nints);
-      
-      for (i = 0; i < nprimes; i++)
-	for (j = primes[i] * 2; j < nints; j += primes[i])
-	  iscomp[j] = 1;
+      q = malloc (sizeof (int) * 2);
+      q[0] = 2;
+      q[1] = 3;
+    }
 
-      for (i = lastprime; i < nints; i++)
+  if (n <= q[0])
+    return q[0];
+
+  while (n > q[l - 1])
+    {
+      p = q[l-1] * q[l-1];
+      m = alloca (sizeof (int) * p);
+      bzero (m, sizeof (int) * p);
+      
+      for (i = 0; i < l; i++)
+	for (j = q[i] * 2; j < p; j += q[i])
+	  m[j] = 1;
+
+      for (i = q[l-1] + 1; i < p; i++)
 	{
-	  if (nprimes == primessize)
+	  if (l == k)
 	    {
-	      primes = realloc (primes, primessize * sizeof (int) * 2);
-	      primessize *= 2;
+	      q = realloc (q, k * sizeof (int) * 2);
+	      k *= 2;
 	    }
-	  if (!iscomp[i])
-	    primes[nprimes++] = i;
+	  if (!m[i])
+	    q[l++] = i;
 	}
     }
   
-  /* Binary search */
-  low = 0;
-  high = nprimes - 1;
-  p = high / 2;
+  i = 0;
+  j = l - 1;
+  p = j / 2;
 
-  /* This works because nprimes is always at least 2. */
-  while (primes[p - 1] >= n || primes[p] < n)
+  while (q[p - 1] >= n || q[p] < n)
     {
-      if (n > primes[p])
-	low = p;
+      if (n > q[p])
+	i = p + 1;
       else
-	high = p;
-      p = ((high - low) / 2) + low;
+	j = p - 1;
+      p = ((j - i) / 2) + i;
     }
   
-  return primes[p];
+  return q[p];
 }
 
 
@@ -102,3 +87,4 @@ main ()
   for (i = 0; i < 100; i++)
     printf ("%d\t%d\n", i, nextprime(i));
 }
+
