@@ -395,7 +395,8 @@ trivfs_S_io_write (struct trivfs_protid *cred,
       while (!qavail (outputq) && !cancel)
 	{
 	  start_output ();
-	  cancel = hurd_condition_wait (outputq->wait, &global_lock);
+	  if (!qavail (outputq))
+	    cancel = hurd_condition_wait (outputq->wait, &global_lock);
 	}
       if (cancel)
 	break;
