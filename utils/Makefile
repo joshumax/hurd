@@ -19,7 +19,7 @@ dir := utils
 makemode := utilities
 
 SRCS = sh.c ps.c su.c
-targets = sh ps su
+targets = sh ps # su
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
 include ../Makeconf
