@@ -194,8 +194,7 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
     /* We just request the resources require for both the thread and task
        versions, as the extraneous info won't be possible to aquire anyway. */
     flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
-  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK
-	       | PSTAT_EXEC_FLAGS)
+  if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK)
       && !(flags & PSTAT_NO_MSGPORT))
     {
       flags |= PSTAT_MSGPORT;
@@ -676,10 +675,6 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	  == 0)
 	have |= PSTAT_TASK_EVENTS;
     }
-
-  /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
-  MP_MGET (PSTAT_EXEC_FLAGS, PSTAT_TASK,
-	   ps_msg_get_exec_flags (ps->msgport, ps->task, &ps->exec_flags));
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & (PSTAT_PROC_INFO | PSTAT_THREAD_BASIC)))
