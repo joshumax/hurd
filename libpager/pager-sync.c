@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
 
 /* Have the kernel write back all dirty pages in the pager; if
    WAIT is set, then wait for them to be finally written before
@@ -27,8 +28,8 @@ pager_sync (struct pager *p, int wait)
   
   pager_report_extent (p->upi, &offset, &len);
   
-  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
-	       VM_PROT_NO_CHANGE, wait);
+  _pager_lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0,
+		      VM_PROT_NO_CHANGE, wait);
 }
 
 
@@ -38,7 +39,7 @@ void
 pager_sync_some (struct pager *p, vm_address_t offset,
 		 vm_size_t size, int wait)
 {
-  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
-	       VM_PROT_NO_CHANGE, wait);
+  _pager_lock_object (p, offset, size, MEMORY_OBJECT_RETURN_DIRTY, 0,
+		      VM_PROT_NO_CHANGE, wait);
 }
   
