@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -119,6 +119,19 @@ void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
 /* If this variable is set, it is called every time a peropen structure
    is about to be destroyed. */
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
+
+/* If this variable is set, it is called by trivfs_S_fsys_getroot before any
+   other processing takes place; if the return value is EAGAIN, normal trivfs
+   getroot processing continues, otherwise the rpc returns with that return
+   value.  */
+error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
+				mach_port_t reply_port,
+				mach_msg_type_name_t reply_port_type,
+				mach_port_t dotdot,
+				uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				int flags,
+				retry_type *do_retry, char *retry_name,
+				mach_port_t *node, mach_msg_type_name_t *node_type);
 
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
    fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports
