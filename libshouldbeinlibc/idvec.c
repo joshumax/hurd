@@ -131,7 +131,7 @@ idvec_add (struct idvec *idvec, id_t id)
   return idvec_insert (idvec, idvec->num, id);
 }
 
-/* IF IDVEC doesn't contain ID, add it onto the end, returning ENOMEM if
+/* If IDVEC doesn't contain ID, add it onto the end, returning ENOMEM if
    there's not enough memory; otherwise, do nothing.  */
 error_t
 idvec_add_new (struct idvec *idvec, id_t id)
@@ -142,7 +142,7 @@ idvec_add_new (struct idvec *idvec, id_t id)
     return idvec_add (idvec, id);
 }
 
-/* IF IDVEC doesn't contain ID at position POS or after, insert it at POS,
+/* If IDVEC doesn't contain ID at position POS or after, insert it at POS,
    returning ENOMEM if there's not enough memory; otherwise, do nothing.  */
 error_t
 idvec_insert_new (struct idvec *idvec, unsigned pos, id_t id)
@@ -162,6 +162,44 @@ idvec_merge_ids (struct idvec *idvec, id_t *ids, unsigned num)
   while (num-- > 0 && !err)
     err = idvec_add_new (idvec, *ids++);
   return err;
+}
+
+/* Remove any occurances of ID in IDVEC after position POS>  Returns true if
+   anything was done.  */
+int
+idvec_remove (struct idvec *idvec, unsigned pos, id_t id)
+{
+  int left = idvec->num - pos;
+  id_t *ids = idvec->ids + pos, *targ = ids;
+  while (left--)
+    {
+      if (*ids != id)
+	{
+	  if (ids == targ)
+	    *targ = *ids;
+	  targ++;
+	}
+      ids++;
+    }
+  if (ids == targ)
+    return 0;
+  idvec->num = targ - idvec->ids;
+  return 1;
+}
+
+/* Insert ID at position POS in IDVEC, remoint any instances of ID previously
+   present at POS or after.  ENOMEM is returned if there's not enough memory,
+   otherwise 0.  */
+error_t
+idvec_insert_only (struct idvec *idvec, unsigned pos, id_t id)
+{
+  if (idvec->ids[pos] == id)
+    return 0;
+  else
+    {
+      idvec_remove (idvec, pos, id);
+      return idvec_insert (idvec, pos, id);
+    }
 }
 
 /* EFF and AVAIL should be idvec's corresponding to a processes effective and
@@ -188,7 +226,7 @@ idvec_setid (struct idvec *eff, struct idvec *avail, id_t id, int *secure)
 	/* We preserve the old real id, and add eff[0] to the list of saved
 	   ids (if necessary).  Inserting it means that the latest id saved
 	   will correspond to the (single) posix saved id.  */
-	err = idvec_insert_new (avail, 1, eff->ids[0]);
+	err = idvec_insert_only (avail, 1, eff->ids[0]);
 
       /* Replace eff[0] with the new id.  */
       eff->ids[0] = id;
