@@ -72,7 +72,7 @@ disk_pager_setup (struct user_pager_info *upi, int may_cache)
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
 		diskfs_device_size << diskfs_log2_device_block_size,
 		0, 1, disk_pager_port, 0, 0,
-		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
+		VM_PROT_READ | (diskfs_check_readonly () ? 0 : VM_PROT_WRITE),
 		VM_PROT_READ | VM_PROT_WRITE,
 		VM_INHERIT_NONE);
   if (err)
