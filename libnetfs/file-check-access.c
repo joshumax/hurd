@@ -20,6 +20,7 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <fcntl.h>
 
 error_t
 netfs_S_file_check_access (struct protid *user,
