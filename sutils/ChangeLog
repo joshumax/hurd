@@ -1,3 +1,29 @@
+1999-06-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fstab.c (fstypes_get): Don't free PROGRAM twice on ENOENT failure.
+
+	* fsck.c (options): Add -t/--fstype option.
+	(main): Parse that option, and use it to constrain fstab list.
+
+	* fsck.c (FSCK_F_DRYRUN): New macro.
+	(options, main): Add -N/--dry-run option to set it.
+	(fs_start_fsck): If FSCK_F_DRYRUN set, just print out and return zero.
+	* fsck.c (fscks_start_fsck): If FSCK_F_DRYRUN is set, don't try to
+	make read-only, just print a message that we would.
+
+	* fsck.c (options, main): Change --fstab from -t to -F.
+
+1999-06-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fsck.c (options): Add -A/--all and -R/--exclude-root options for
+	compatibility with Linux, and --exclude=PATTERN as general form.
+	(main): Parse them.  Constrain fstab list by exclude patterns.
+
+	* fsck.c (fsck): Don't check for "noauto" mntopt.  No other system
+	skips a filesystem because of it.
+	(fsck): Always start at pass 1, not 0.  In every other system,
+	"pass 0" always means to skip that filesystem entirely.
+
 1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* MAKEDEV.sh (ECHO, EXEC): Do not export.
