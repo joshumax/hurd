@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995,96,2001 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995,96,2001,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -21,16 +21,6 @@
 #include "netfs.h"
 #include "io_S.h"
 
-static inline int
-listmember (int *list, int query, int n)
-{
-  int i;
-  for (i = 0; i < n; i++)
-    if (list[i] == query)
-      return 1;
-  return 0;
-}
-
 error_t
 netfs_S_io_restrict_auth (struct protid *user,
 			  mach_port_t *newport,
@@ -41,60 +31,17 @@ netfs_S_io_restrict_auth (struct protid *user,
 			  mach_msg_type_number_t ngids)
 {
   error_t err;
-  struct idvec *uvec, *gvec;
-  int i;
   struct protid *newpi;
   struct iouser *new_user;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
-  if (idvec_contains (user->user->uids, 0))
-    {
-      err = iohelp_create_complex_iouser (&new_user, uids, nuids, gids, ngids);
-      if (err)
-        return err;
-    }
-  else
-    {
-      uvec = make_idvec ();
-      if (! uvec)
-        return ENOMEM;
 
-      gvec = make_idvec ();
-      if (! gvec)
-        {
-	  idvec_free (uvec);
-	  return ENOMEM;
-	}
+  err = iohelp_restrict_iouser (&new_user, user->user,
+				uids, nuids, gids, ngids);
+  if (err)
+    return err;
 
-      for (i = 0; i < user->user->uids->num; i++)
-	if (listmember (uids, user->user->uids->ids[i], nuids))
-	  {
-	    err = idvec_add (uvec, user->user->uids->ids[i]);
-	    if (err)
-	      goto out;
-	  }
-      
-      for (i = 0; i < user->user->gids->num; i++)
-	if (listmember (gids, user->user->gids->ids[i], ngids))
-	  {
-	    err = idvec_add (gvec, user->user->gids->ids[i]);
-	    if (err)
-	      goto out;
-	  }
-
-      err = iohelp_create_iouser (&new_user, uvec, gvec);
-
-      if (err)
-        {
-        out:
-	  idvec_free (uvec);
-	  idvec_free (gvec);
-	  return err;
-	}
-    }
-  
   mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, new_user);
   if (newpi)
@@ -109,8 +56,7 @@ netfs_S_io_restrict_auth (struct protid *user,
       iohelp_free_iouser (new_user);
       err = ENOMEM;
     }
-  
+
   ports_port_deref (newpi);
   return err;
 }
-
