@@ -154,6 +154,7 @@ unsigned long inodes_per_block;	/* Number of inodes per block */
 unsigned long itb_per_group;	/* Number of inode table blocks per group */
 unsigned long db_per_group;	/* Number of descriptor blocks per group */
 unsigned long desc_per_block;	/* Number of group descriptors per block */
+unsigned long addr_per_block;	/* Number of disk addresses per block */
 
 unsigned long groups_count;	/* Number of groups in the fs */
 
