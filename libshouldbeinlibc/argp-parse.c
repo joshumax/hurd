@@ -50,13 +50,13 @@ static struct argp_option argp_default_options[] =
 static error_t
 argp_default_parser (int key, char *arg, struct argp_state *state)
 {
-  unsigned usage_flags = ARGP_USAGE_STD_HELP;
+  unsigned usage_flags = ARGP_HELP_STD_HELP;
   switch (key)
     {
     case OPT_HELP:
       if (state->flags & ARGP_NO_EXIT)
-	usage_flags &= ~(ARGP_USAGE_EXIT_OK | ARGP_USAGE_EXIT_ERR);
-      argp_usage (state->argp, stdout, usage_flags);
+	usage_flags &= ~ARGP_HELP_EXIT;
+      argp_help (state->argp, stdout, usage_flags);
       return 0;
     default:
       return EINVAL;
@@ -120,6 +120,7 @@ error_t
 argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	    int *end_index)
 {
+  int opt;
   error_t err = 0;
   /* SHORT_OPTS is the getopt short options string for the union of all the
      groups of options.  */
@@ -129,12 +130,14 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   struct option *long_opts;
   /* States of the various parsing groups.  */
   struct group *groups;
+  /* The end of the GROUPS array.  */
+  struct group *egroup;
+  /* A pointer for people to use for iteration over GROUPS.  */
+  struct group *group;
   /* State block supplied to parsing routines.  */
   struct argp_state state = { argp, argc, argv, 0, flags };
-  int opt;
-  struct group *group;
 
-  if (! (flags & ARGP_NO_HELP))
+  if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
     {
       struct argp **plist = alloca (3 * sizeof (struct argp *));
@@ -145,17 +148,17 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
       bzero (top_argp, sizeof (*top_argp));
       top_argp->parents = plist;
 
-      plist[0] = argp;
+      plist[0] = state.argp;
       plist[1] = &argp_default_argp;
       plist[2] = 0;
 
-      argp = top_argp;
+      state.argp = top_argp;
     }
 
   /* Find the merged set of getopt options, with keys appropiately prefixed. */
   {
     char *short_end;
-    unsigned short_len = (flags & ARGP_NO_ARGS) ? 0 : 1;
+    unsigned short_len = (state.flags & ARGP_NO_ARGS) ? 0 : 1;
     struct option *long_end;
     unsigned long_len = 0;
     unsigned num_groups = 0;
@@ -166,17 +169,21 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
        array, respectively.  */
     void calc_lengths (struct argp *argp)
       {
-	int num_opts = 0;
 	struct argp **parents = argp->parents;
 	struct argp_option *opt = argp->options;
 
-	num_groups++;
-
-	while (!_option_is_end (opt++))
-	  num_opts++;
-
-	short_len += num_opts * 3; /* opt + up to 2 `:'s */
-	long_len += num_opts;
+	if (opt || argp->parser)
+	  {
+	    num_groups++;
+	    if (opt)
+	      {
+		int num_opts = 0;
+		while (!_option_is_end (opt++))
+		  num_opts++;
+		short_len += num_opts * 3; /* opt + up to 2 `:'s */
+		long_len += num_opts;
+	      }
+	  }
 
 	if (parents)
 	  while (*parents)
@@ -190,60 +197,65 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
     struct group *convert_options (struct argp *argp, struct group *group)
       {
 	/* REAL is the most recent non-alias value of OPT.  */
-	struct argp_option *opt, *real;
+	struct argp_option *real = argp->options;
 	struct argp **parents = argp->parents;
 
-	for (opt = argp->options, real = opt; ! _option_is_end (opt); opt++)
-	  /* Only add the long option OPT if it hasn't been already.  */
-	  if (find_long_option (long_opts, opt->name) < 0)
-	    {
-	      if (! (opt->flags & OPTION_ALIAS))
-		/* OPT isn't an alias, so we can use values from it.  */
-		real = opt;
+	if (real || argp->parser)
+	  {
+	    struct argp_option *opt;
 
-	      if (_option_is_short (opt))
-		/* OPT can be used as a short option.  */
+	    if (real)
+	      for (opt = real; !_option_is_end (opt); opt++)
 		{
-		  *short_end++ = opt->key;
-		  if (real->arg)
+		  if (! (opt->flags & OPTION_ALIAS))
+		    /* OPT isn't an alias, so we can use values from it.  */
+		    real = opt;
+
+		  if (_option_is_short (opt))
+		    /* OPT can be used as a short option.  */
 		    {
-		      *short_end++ = ':';
-		      if (! (real->flags & OPTION_ARG_OPTIONAL))
-			*short_end++ = ':';
+		      *short_end++ = opt->key;
+		      if (real->arg)
+			{
+			  *short_end++ = ':';
+			  if (! (real->flags & OPTION_ARG_OPTIONAL))
+			    *short_end++ = ':';
+			}
+		      *short_end = '\0'; /* keep 0 terminated */
 		    }
-		  *short_end = '\0'; /* keep 0 terminated */
-		}
 
-	      if (opt->name)
-		/* OPT can be used as a long option.  */
-		{
-		  long_end->name = opt->name;
-		  long_end->has_arg =
-		    (real->arg
-		     ? (real->flags & OPTION_ARG_OPTIONAL
-			? optional_argument
-			: required_argument)
-		     : no_argument);
-		  long_end->flag = 0;
-		  /* we add a disambiguating code to all the user's values
-		     (which is removed before we actually call the function to
-		     parse the value); this means that the user loses use of
-		     the high 8 bits in all his values (the sign of the lower
-		     bits is preserved however)...  */
-		  long_end->val =
-		    (opt->key & USER_MASK)
-		      + (((group - groups) + 1) << USER_BITS);
+		  if (opt->name && find_long_option (long_opts, opt->name) < 0)
+		    /* OPT can be used as a long option.  */
+		    {
+		      long_end->name = opt->name;
+		      long_end->has_arg =
+			(real->arg
+			 ? (real->flags & OPTION_ARG_OPTIONAL
+			    ? optional_argument
+			    : required_argument)
+			 : no_argument);
+		      long_end->flag = 0;
+		      /* we add a disambiguating code to all the user's
+			 values (which is removed before we actually call
+			 the function to parse the value); this means that
+			 the user loses use of the high 8 bits in all his
+			 values (the sign of the lower bits is preserved
+			 however)...  */
+		      long_end->val =
+			(opt->key & USER_MASK)
+			  + (((group - groups) + 1) << USER_BITS);
 
-		  /* Keep the LONG_OPTS list terminated.  */
-		  (++long_end)->name = NULL;
-		}
-	    }
+		      /* Keep the LONG_OPTS list terminated.  */
+		      (++long_end)->name = NULL;
+		    }
+		  }
 
-	group->parser = argp->parser;
-	group->short_end = short_end;
-	group->processed_arg = 0;
+	    group->parser = argp->parser;
+	    group->short_end = short_end;
+	    group->processed_arg = 0;
 
-	group++;
+	    group++;
+	  }
 
 	if (parents)
 	  while (*parents)
@@ -252,12 +264,12 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	return group;
       }
 
-    calc_lengths (argp);
+    calc_lengths (state.argp);
 
     short_opts = short_end = alloca (short_len + 1);
-    if (flags & ARGP_IN_ORDER)
+    if (state.flags & ARGP_IN_ORDER)
       *short_end++ = '-';
-    else if (! (flags & ARGP_NO_ARGS))
+    else if (! (state.flags & ARGP_NO_ARGS))
       *short_end++ = '-';
     *short_end = '\0';
 
@@ -266,8 +278,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 
     groups = alloca ((num_groups + 1) * sizeof (struct group));
 
-    group = convert_options (argp, 0);
-    group->parser = 0;		/* Mark the end */
+    egroup = convert_options (state.argp, groups);
   }
 
   /* Getopt is (currently) non-reentrant.  */
@@ -276,13 +287,13 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   /* Tell getopt to initialize.  */
   optind = state.index = 0;
 
-  if (flags & ARGP_NO_ERRS)
+  if (state.flags & ARGP_NO_ERRS)
     {
       opterr = 0;
-      if (flags & ARGP_PARSE_ARGV0)
+      if (state.flags & ARGP_PARSE_ARGV0)
 	/* getopt always skips ARGV[0], so we have to fake it out.  As long
 	   as opterr is 0, then it shouldn't actually try to access it.  */
-	argv--, argc++;
+	state.argv--, state.argc++;
     }
   else
     opterr = 1;			/* Print error messages.  */
@@ -302,8 +313,9 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
       if (opt == 1)
 	/* A non-option argument; try each parser in turn.  */
 	{
-	  for (group = groups; group->parser && err == EINVAL; group++)
-	    err = (*group->parser)(ARGP_KEY_ARG, optarg, &state);
+	  for (group = groups; group < egroup && err == EINVAL; group++)
+	    if (group->parser)
+	      err = (*group->parser)(ARGP_KEY_ARG, optarg, &state);
 	  if (err == EINVAL)
 	    /* No parser understood this argument, return immediately.  */
 	    {
@@ -327,8 +339,8 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	     determine which group OPT came from.  */
 	  char *short_index = index (short_opts, opt);
 	  if (short_index)
-	    for (group = groups; group->parser; group++)
-	      if (group->short_end > short_index)
+	    for (group = groups; group < egroup; group++)
+	      if (group->short_end > short_index && group->parser)
 		{
 		  err = (*group->parser)(opt, optarg, &state);
 		  break;
@@ -347,17 +359,21 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 	break;
     }
 
+  if (opt == EOF)
+    state.index = optind;	/* Only update INDEX if getopt just failed. */
+
   mutex_unlock (&getopt_lock);
 
   if (!err && !state.argv[state.index])
     /* We successfully parsed all arguments!  Call all the parsers again,
        just a few more times... */
     {
-      for (group = groups; group->parser && (!err || err == EINVAL); group++)
-	if (!group->processed_arg)
+      for (group = groups; group < egroup && (!err || err == EINVAL); group++)
+	if (!group->processed_arg && group->parser)
 	  err = (*group->parser)(ARGP_KEY_NO_ARGS, 0, &state);
-      for (group = groups; group->parser && (!err || err == EINVAL); group++)
-	err = (*group->parser)(ARGP_KEY_END, 0, &state);
+      for (group = groups; group < egroup && (!err || err == EINVAL); group++)
+	if (group->parser)
+	  err = (*group->parser)(ARGP_KEY_END, 0, &state);
       if (err == EINVAL)
 	/* EINVAL here just means that ARGP_KEY_END wasn't understood. */
 	err = 0;
@@ -368,10 +384,10 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 
   if (err && !(state.flags & ARGP_NO_HELP))
     {
-      unsigned usage_flags = ARGP_USAGE_STD;
+      unsigned usage_flags = ARGP_HELP_STD_ERR;
       if (state.flags & ARGP_NO_EXIT)
-	usage_flags &= ~(ARGP_USAGE_EXIT_OK | ARGP_USAGE_EXIT_ERR);
-      argp_usage (argp, stderr, usage_flags);
+	usage_flags &= ~ARGP_HELP_EXIT;
+      argp_help (state.argp, stderr, usage_flags);
     }
 
   return err;
