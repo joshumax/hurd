@@ -1,7 +1,7 @@
 /* Store wire encoding
 
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996, 1997, 1999,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -38,6 +38,13 @@ store_std_leaf_allocate_encoding (const struct store *store,
   return 0;
 }
 
+/* The RPC protocol uses 32-bit ints, but store_offset_t is now 64 bits.  */
+static inline int too_big (store_offset_t ofs)
+{
+  int o = (int) ofs;
+  return o < 0 || ((store_offset_t) o != ofs);
+}
+
 error_t
 store_std_leaf_encode (const struct store *store, struct store_enc *enc)
 {
@@ -55,6 +62,9 @@ store_std_leaf_encode (const struct store *store, struct store_enc *enc)
 
   for (i = 0; i < store->num_runs; i++)
     {
+      if (too_big (store->runs[i].start)
+	  || too_big (store->runs[i].start + store->runs[i].length))
+	return EOVERFLOW;
       enc->offsets[enc->cur_offset++] = store->runs[i].start;
       enc->offsets[enc->cur_offset++] = store->runs[i].length;
     }
@@ -105,25 +115,25 @@ store_encode (const struct store *store, struct store_enc *enc)
   errno = 0;
   if (enc->num_ports > init_num_ports)
     {
-      buf = mmap (0, enc->num_ports * sizeof *enc->ports, 
+      buf = mmap (0, enc->num_ports * sizeof *enc->ports,
 		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (buf != (void *) -1)
 	enc->ports = buf;
     }
   if (!errno && enc->num_ints > init_num_ints)
     {
-      buf = mmap (0, enc->num_ints * sizeof *enc->ints, 
+      buf = mmap (0, enc->num_ints * sizeof *enc->ints,
 		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (buf != (void *) -1)
 	enc->ints = buf;
     }
   if (!errno && enc->num_offsets > init_num_offsets)
     {
-      buf = mmap (0, enc->num_offsets * sizeof *enc->offsets, 
+      buf = mmap (0, enc->num_offsets * sizeof *enc->offsets,
 		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (buf != (void *) -1)
 	enc->offsets = buf;
-      
+
     }
   if (!errno && enc->data_len > init_data_len)
     {
