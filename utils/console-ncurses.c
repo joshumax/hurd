@@ -266,43 +266,39 @@ error_t
 console_switch (int id, int delta)
 {
   error_t err = 0;
-  int active_id;
-  cons_t cons;
   vcons_t vcons;
-
-  mutex_lock (&global_lock);
-  if (!active_vcons)
-    {
-      mutex_unlock (&global_lock);
-      return 0;
-    }
-  cons = active_vcons->cons;
-  active_id = active_vcons->id;
+  vcons_t new_vcons;
 
   /* We must give up our global lock before we can call back into
      libcons.  This is because cons_switch will lock CONS, and as
      other functions in libcons lock CONS while calling back into our
      functions which take the global lock (like cons_vcons_add), we
-     would deadlock.  Because of this, we can not refer to our active
-     console directly, but we must refer to it by name (ID).  XXX
-     Likewise, we can not really refer to CONS directly, but the
-     current implementation guarantees an eternal life span for
-     CONS.  */
+     would deadlock.  So we acquire a reference for VCONS to make sure
+     it isn't deallocated while we are outside of the global lock.  We
+     also know that */
+
+  mutex_lock (&global_lock);
+  vcons = active_vcons;
+  if (vcons)
+    ports_port_ref (vcons);
   mutex_unlock (&global_lock);
-  err = cons_switch (cons, active_id, id, delta, &vcons);
+
+  err = cons_switch (vcons, id, delta, &new_vcons);
   if (!err)
     {
       mutex_lock (&global_lock);
-      if (active_vcons != vcons)
+      if (active_vcons != new_vcons)
         {
           cons_vcons_close (active_vcons);
-          active_vcons = vcons;
+          active_vcons = new_vcons;
         }
-      mutex_unlock (&vcons->lock);
+      mutex_unlock (&new_vcons->lock);
+      ports_port_deref (vcons);
       mutex_unlock (&global_lock);
     }
   return err;
 }
+
 
 void
 cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)

@@ -18,8 +18,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <mach.h>
 #include <errno.h>
+#include <assert.h>
+
+#include <mach.h>
 
 #include "cons.h"
 #include "fs_notify_S.h"
@@ -70,10 +72,27 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	    {
 	      if (change.what.cursor_pos)
 		{
+		  uint32_t old_row = vcons->state.cursor.row;
+		  uint32_t height = vcons->state.screen.height;
+		  uint32_t row;
+
 		  vcons->state.cursor.col = vcons->display->cursor.col;
-		  vcons->state.cursor.row = vcons->display->cursor.row;
-		  cons_vcons_set_cursor_pos (vcons, vcons->state.cursor.col,
-					     vcons->state.cursor.row);
+		  row = vcons->state.cursor.row = vcons->display->cursor.row;
+
+		  if (row + vcons->scrolling < height)
+		    {
+		      cons_vcons_set_cursor_pos (vcons,
+						 vcons->state.cursor.col,
+						 row + vcons->scrolling);
+		      if (old_row + vcons->scrolling >= height)
+			/* The cursor was invisible before.  */
+			cons_vcons_set_cursor_status (vcons,
+						      vcons->state.cursor.status);
+		    }
+		  else if (old_row + vcons->scrolling < height)
+		    /* The cursor was visible before.  */
+		    cons_vcons_set_cursor_status (vcons, CONS_CURSOR_INVISIBLE);
+
 		  cons_vcons_update (vcons);
 		}
 	      if (change.what.cursor_status)
@@ -86,8 +105,9 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	      if (change.what.screen_cur_line)
 		{
 		  uint32_t new_cur_line;
-		  
+
 		  new_cur_line = vcons->display->screen.cur_line;
+
 		  if (new_cur_line != vcons->state.screen.cur_line)
 		    {
 		      off_t size = vcons->state.screen.width
@@ -103,30 +123,57 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		      else
 			scrolling = UINT32_MAX - vcons->state.screen.cur_line
 			  + 1 + new_cur_line;
-		      if (scrolling > vcons->state.screen.height)
-			scrolling = vcons->state.screen.height;
-		      if (scrolling < vcons->state.screen.height)
-			cons_vcons_scroll (vcons, scrolling);
-		      vis_start = vcons->state.screen.width
-			* (new_cur_line % vcons->state.screen.lines);
-		      start = (((new_cur_line % vcons->state.screen.lines)
-				+ vcons->state.screen.height - scrolling)
-			       * vcons->state.screen.width) % size;
-		      end = start + scrolling * vcons->state.screen.width - 1;
-		      cons_vcons_write (vcons,
-					vcons->state.screen.matrix + start,
-					end < size
-					? end - start + 1 
-					: size - start,
-					0, vcons->state.screen.height
-					- scrolling);
-		      if (end >= size)
-			cons_vcons_write (vcons,
-					  vcons->state.screen.matrix,
-					  end - size + 1,
-					  0, (size - vis_start)
-					  / vcons->state.screen.width);
-		      cons_vcons_update (vcons);
+
+		      /* If we are scrollbacking, defer scrolling
+			 until absolutely necessary.  */
+		      if (vcons->scrolling)
+			{
+			  if (vcons->scrolling + scrolling <= vcons->state.screen.scr_lines)
+			    {
+			      vcons->scrolling += scrolling;
+			      scrolling = 0;
+			    }
+			  else
+			    {
+			      scrolling -= vcons->state.screen.scr_lines - vcons->scrolling;
+			      vcons->scrolling = vcons->state.screen.scr_lines;
+			    }
+			}
+
+		      if (scrolling)
+			{
+			  uint32_t cur_disp_line;
+
+			  if (new_cur_line >= vcons->scrolling)
+			    cur_disp_line = new_cur_line - vcons->scrolling;
+			  else
+			    cur_disp_line = (UINT32_MAX - (vcons->scrolling - new_cur_line)) + 1;
+
+			  if (scrolling > vcons->state.screen.height)
+			    scrolling = vcons->state.screen.height;
+			  if (scrolling < vcons->state.screen.height)
+			    cons_vcons_scroll (vcons, scrolling);
+			  vis_start = vcons->state.screen.width
+			    * (cur_disp_line % vcons->state.screen.lines);
+			  start = (((cur_disp_line % vcons->state.screen.lines)
+				    + vcons->state.screen.height - scrolling)
+				   * vcons->state.screen.width) % size;
+			  end = start + scrolling * vcons->state.screen.width - 1;
+			  cons_vcons_write (vcons,
+					    vcons->state.screen.matrix + start,
+					    end < size
+					    ? end - start + 1 
+					    : size - start,
+					    0, vcons->state.screen.height
+					    - scrolling);
+			  if (end >= size)
+			    cons_vcons_write (vcons,
+					      vcons->state.screen.matrix,
+					      end - size + 1,
+					      0, (size - vis_start)
+					      / vcons->state.screen.width);
+			  cons_vcons_update (vcons);
+			}
 		      vcons->state.screen.cur_line = new_cur_line;
 		    }
 		}
@@ -134,6 +181,8 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		{
 		  vcons->state.screen.scr_lines
 		    = vcons->display->screen.scr_lines;
+		  if (vcons->state.screen.scr_lines < vcons->scrolling)
+		    assert (!"Implement shrinking scrollback buffer! XXX");
 		}
 	      if (change.what.bell_audible)
 		{
@@ -158,14 +207,19 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	    {
 	      /* For clipping.  */
 	      off_t size = vcons->state.screen.width*vcons->state.screen.lines;
-	      off_t rotate = vcons->state.screen.width
-		* (vcons->state.screen.cur_line % vcons->state.screen.lines);
+	      off_t rotate;
 	      off_t vis_end = vcons->state.screen.height
 		* vcons->state.screen.width - 1;
 	      off_t end2 = -1;
 	      off_t start_rel = 0;    /* start relative to visible start.  */
 	      off_t start = change.matrix.start;
 	      off_t end = change.matrix.end;
+
+	      if (vcons->state.screen.cur_line >= vcons->scrolling)
+		rotate = vcons->state.screen.cur_line - vcons->scrolling;
+	      else
+		rotate = (UINT32_MAX - (vcons->scrolling - vcons->state.screen.cur_line)) + 1;
+	      rotate = vcons->state.screen.width * (rotate % vcons->state.screen.lines);
 
 	      /* Rotate the buffer.  */
 	      start -= rotate;

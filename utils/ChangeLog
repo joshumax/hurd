@@ -1,5 +1,8 @@
 2002-09-09  Marcus Brinkmann  <marcus@gnu.org>
 
+	* console-ncurses.c (console_switch): Keep a reference to the port
+	instead refering to it by number.
+	
 	* console-ncurses.c: New global variable global_lock.
 	(main): Initialize global_lock.
 	(cons_vcons_activate): Removed.

@@ -23,44 +23,47 @@
 
 #include "cons.h"
 
-/* Open the virtual console ID or the ACTIVE_ID plus DELTA one in CONS
-   and return it in R_VCONS, which will be locked.  */
+/* Open the virtual console ID or the virtual console DELTA steps away
+   from VCONS in the linked list and return it in R_VCONS, which will
+   be locked.  */
 error_t
-cons_switch (cons_t cons, int active_id, int id, int delta, vcons_t *r_vcons)
+cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
 {
   error_t err = 0;
+  cons_t cons = vcons->cons;
   vcons_list_t vcons_entry = NULL;
 
   if (!id && !delta)
     return 0;
 
   mutex_lock (&cons->lock);
-  vcons_entry = cons->vcons_list;
-  while (vcons_entry && vcons_entry->id != (id ?: active_id))
-    vcons_entry = vcons_entry->next;
-
-  if (!id && vcons_entry)
+  if (id)
     {
-      if (delta > 0)
-	{
-	  while (delta-- > 0)
-	    {
-	      vcons_entry = vcons_entry->next;
-	      if (!vcons_entry)
-		vcons_entry = cons->vcons_list;
-	    }
-	}
-      else
-	{
-	  assert (delta < 0);
-	  while (delta++ < 0)
-	    {
-	      vcons_entry = vcons_entry->prev;
-	      if (!vcons_entry)
-		vcons_entry = cons->vcons_last;
-	    }
-	}
+      vcons_entry = cons->vcons_list;
+      while (vcons_entry && vcons_entry->id != id)
+        vcons_entry = vcons_entry->next;
     }
+  else if (delta > 0)
+    {
+      vcons_entry = vcons->vcons_entry;
+      while (delta-- > 0)
+        {
+          vcons_entry = vcons_entry->next;
+          if (!vcons_entry)
+            vcons_entry = cons->vcons_list;
+        }
+    }
+  else
+    {
+      assert (delta < 0);
+      while (delta++ < 0)
+        {
+          vcons_entry = vcons_entry->prev;
+          if (!vcons_entry)
+            vcons_entry = cons->vcons_last;
+        }
+    }
+
   if (!vcons_entry)
     {
       mutex_unlock (&cons->lock);
@@ -78,6 +81,7 @@ cons_switch (cons_t cons, int active_id, int id, int delta, vcons_t *r_vcons)
       if (!err)
         vcons_entry->vcons = *r_vcons;
     }
+
   mutex_unlock (&cons->lock);
   return err;
 }

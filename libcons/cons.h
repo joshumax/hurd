@@ -103,6 +103,8 @@ struct vcons
       cons_change_t *buffer;
     } changes;
   } state;
+
+  uint32_t scrolling;
 };
 
 struct cons
@@ -206,10 +208,13 @@ void cons_vcons_add (cons_t cons, vcons_list_t vcons_entry);
    virtual console entry is removed.  CONS is locked.  */
 void cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry);
 
-/* Open the virtual console ID or the ACTIVE_ID plus DELTA one in CONS
-   and return it in R_VCONS.  */
-error_t cons_switch (cons_t cons, int active_id, int id, int delta,
-		     vcons_t *r_vcons);
+/* Open the virtual console ID or the virtual console DELTA steps away
+   from VCONS in the linked list and return it in R_VCONS, which will
+   be locked.  */
+error_t cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons);
+
+/* Scroll back into the history of VCONS by DELTA lines.  */
+int cons_vcons_scrollback (vcons_t vcons, int delta);
 
 
 extern const struct argp cons_startup_argp;

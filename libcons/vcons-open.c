@@ -55,6 +55,10 @@ cons_vcons_open (cons_t cons, vcons_list_t vcons_entry, vcons_t *r_vcons)
   vcons->cons = cons;
   vcons->vcons_entry = vcons_entry;
   vcons->id = vcons_entry->id;
+  mutex_init (&vcons->lock);
+  vcons->input = -1;
+  vcons->display = MAP_FAILED;
+  vcons->scrolling = 0;
 
   /* Open the directory port of the virtual console.  */
   vconsp = file_name_lookup_under (cons->dirport, name,

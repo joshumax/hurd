@@ -1,5 +1,20 @@
 2002-09-09  Marcus Brinkmann  <marcus@gnu.org>
 
+	* Makefile (SRCS): Add vcons-scrollback.c.
+	* vcons-scrollback.c: New file.
+	* cons.h (struct vcons): Add SCROLLING member.
+	* file-changed.c: Include <assert.h>.
+	(cons_S_file_changed): Be careful to take VCONS->scrolling into
+	account when doing clipping and scrolling.
+
+	* cons-switch.c: Roll back to earlier version with vcons ->
+	vcons_entry adjustments.  The user is now expected to hold a
+	reference to the VCONS.
+	* cons.h: Fix prototype, too.
+	
+	* vcons-open.c (cons_vcons_open): Initialize VCONS->lock,
+	VCONS->input and VCONS->display.
+
 	* vcons-remove.c: New file.
 	* Makefile (SRCS): Add vcons-destroy.c.
 	* cons.h: New type vcons_list_t.
