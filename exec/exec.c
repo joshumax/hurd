@@ -1873,9 +1873,7 @@ do_exec (file_t file,
     }
 
   {
-    mach_port_t btport = ports_get_right (boot);
-    mach_port_insert_right (mach_task_self (), btport, btport,
-			    MACH_MSG_TYPE_MAKE_SEND);
+    mach_port_t btport = ports_get_send_right (boot);
     e.error = task_set_bootstrap_port (newtask, btport);
     mach_port_deallocate (mach_task_self (), btport);
   }
