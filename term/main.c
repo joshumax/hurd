@@ -114,7 +114,7 @@ main (int argc, char **argv)
 
       ctlport = trivfs_handle_port (MACH_PORT_NULL, tty_cntl_class, 
 				    term_bucket, tty_class, term_bucket);
-      errno = fsys_startup (bootstrap, ctlport, MACH_MSG_TYPE_MAKE_SEND,
+      errno = fsys_startup (bootstrap, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND,
 			    &file);
       if (errno)
 	{

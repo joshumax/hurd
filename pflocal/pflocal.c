@@ -121,10 +121,10 @@ void main(int argc, char *argv[])
 
   /* Reply to our parent */
   err =
-    trivfs_startup(bootstrap,
-		   trivfs_cntl_portclasses[0], pf_port_bucket,
-		   trivfs_protid_portclasses[0], pf_port_bucket,
-		   NULL);
+    trivfs_startup (bootstrap, 0,
+		    trivfs_cntl_portclasses[0], pf_port_bucket,
+		    trivfs_protid_portclasses[0], pf_port_bucket,
+		    NULL);
   if (err)
     error(3, err, "Contacting parent");
 

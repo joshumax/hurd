@@ -155,7 +155,7 @@ void main(int argc, char *argv[])
 
   /* Reply to our parent */
   err =
-    trivfs_startup(bootstrap,
+    trivfs_startup(bootstrap, 0,
 		   fsys_port_class, port_bucket,
 		   root_port_class, port_bucket,
 		   NULL);
