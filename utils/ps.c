@@ -66,7 +66,8 @@ static struct argp_option options[] =
                                       " msg port"},
   {"nominal-fields",'n',  0,      0,  "Don't elide fields containing"
                                       " `uninteresting' data"},
-  {"owner",      'o',     "USER", 0,  "Show processes owned by USER"},
+  {"owner",      'o',     "USER", 0,  "Show only processes owned by USER"},
+  {"not-owner",  'O',     "USER", 0,  "Show only processes not owned by USER"},
   {"pid",        'p',     "PID",  0,  "List the process PID"},
   {"pgrp",       OPT_PGRP,"PGRP", 0,  "List processes in process group PGRP"},
   {"no-parent",  'P',     0,      0,  "Include processes without parents"},
@@ -303,6 +304,51 @@ lookup_user(char *name)
 
 /* ---------------------------------------------------------------- */
 
+typedef unsigned id_t;
+
+struct ids 
+{
+  id_t *ids;
+  unsigned num, alloced;
+};
+
+struct
+ids *make_ids ()
+{
+  struct ids *ids = malloc (sizeof (struct ids));
+  if (!ids)
+    error(8, ENOMEM, "Can't allocate id list");
+  ids->ids = 0;
+  ids->num = ids->alloced = 0;
+  return ids;
+}
+
+void
+ids_add (struct ids *ids, id_t id)
+{
+  if (ids->alloced == ids->num)
+    {
+      ids->alloced *= 2;
+      ids->ids = realloc (ids->ids, ids->alloced * sizeof (id_t));
+      if (ids->ids == NULL)
+	error(8, ENOMEM, "Can't allocate id list");
+    }
+
+  ids->ids[ids->num++] = id;
+}
+
+int
+ids_contains (struct ids *ids, id_t id)
+{
+  unsigned i;
+  for (i = 0; i < ids->num; i++)
+    if (ids->ids[i] == id)
+      return 1;
+  return 0;
+}
+
+/* ---------------------------------------------------------------- */
+
 void 
 main(int argc, char *argv[])
 {
@@ -312,10 +358,9 @@ main(int argc, char *argv[])
      realloced for each successive arg that needs it, on the assumption that
      args don't get parsed multiple times.  */
   char *arg_hack_buf = 0;
-  unsigned num_uids = 0, uids_alloced = 1;
-  uid_t *uids = malloc(sizeof(uid_t) * num_uids);
-  unsigned num_tty_names = 0, tty_names_alloced = 1;
-  char **tty_names = malloc(sizeof(char *) * num_tty_names);
+  struct ids *only_uids = make_ids (), *not_uids = make_ids ();
+  char **tty_names = 0;
+  unsigned num_tty_names = 0, tty_names_alloced = 0;
   proc_stat_list_t procset;
   ps_context_t context;
   ps_fmt_t fmt;
@@ -360,28 +405,27 @@ main(int argc, char *argv[])
       if (err)
 	error(2, err, "Couldn't add process group");
     }
-
+    
   /* Add a user who's processes should be printed out.  */
-  void add_uid (unsigned uid)
+  void add_uid (id_t uid)
     {
-      if (uids_alloced == num_uids)
-	{
-	  uids_alloced *= 2;
-	  uids = realloc(uids, uids_alloced * sizeof(int));
-	  if (uids == NULL)
-	    error(8, ENOMEM, "Can't allocate uid list");
-	}
-      uids[num_uids++] = uid;
+      ids_add (only_uids, uid);
     }
-  /* Returns TRUE if PS is owned by any of the users in UIDS.  */
-  bool proc_stat_has_owner(struct proc_stat *ps)
+  /* Add a user who's processes should not be printed out.  */
+  void add_not_uid (id_t uid)
     {
-      unsigned i;
-      uid_t uid = proc_stat_info(ps)->owner;
-      for (i = 0; i < num_uids; i++)
-	if (uids[i] == uid)
-	  return TRUE;
-      return FALSE;
+      ids_add (not_uids, uid);
+    }
+  /* Returns TRUE if PS is owned by any of the users in ONLY_UIDS, and none
+     in NOT_UIDS.  */
+  bool proc_stat_owner_ok(struct proc_stat *ps)
+    {
+      id_t uid = proc_stat_proc_info (ps)->owner;
+      if (only_uids->num > 0 && !ids_contains (only_uids, uid))
+	return 0;
+      if (not_uids->num > 0 && ids_contains (not_uids, uid))
+	return 0;
+      return 1;
     }
 
   /* Add TTY_NAME to the list for which processes with those controlling
@@ -501,6 +545,9 @@ main(int argc, char *argv[])
 	case 'o':
 	  parse_numlist(arg, add_uid, NULL, lookup_user, "user");
 	  break;
+	case 'O':
+	  parse_numlist (arg, add_not_uid, NULL, lookup_user, "user");
+	  break;
 	case OPT_SESS:
 	  parse_numlist(arg, add_sid, current_sid, NULL, "session id");
 	  break;
@@ -536,8 +583,8 @@ main(int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0);
 
-  if (num_uids == 0 && (filter_mask & FILTER_OWNER))
-    add_uid(getuid());
+  if (only_uids->num == 0 && (filter_mask & FILTER_OWNER))
+    add_uid (getuid ());
 
   {
     int fmt_index = parse_enum(fmt_string, fmt_names, "format type", 1);
@@ -563,8 +610,9 @@ main(int argc, char *argv[])
     proc_stat_list_set_flags(procset, PSTAT_NO_MSGPORT);
 
   /* Filter out any processes that we don't want to show.  */
-  if (num_uids > 0)
-    proc_stat_list_filter1(procset, proc_stat_has_owner, PSTAT_INFO, FALSE);
+  if (only_uids->num || not_uids->num)
+    proc_stat_list_filter1 (procset, proc_stat_owner_ok,
+			    PSTAT_PROC_INFO, FALSE);
   if (num_tty_names > 0)
     {
       /* We set the PSTAT_TTY flag separately so that our filter function
