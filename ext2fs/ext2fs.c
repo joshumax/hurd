@@ -1,6 +1,6 @@
 /* Main entry point for the ext2 file system translator
 
-   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2002 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -132,7 +132,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
 /* Override the standard diskfs routine so we can add our own output.  */
 error_t
-diskfs_append_args (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err;
 
@@ -175,7 +175,7 @@ main (int argc, char **argv)
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
     ext2_panic ("device too small for superblock (%Ld bytes)", store->size);
   if (store->log2_blocks_per_page < 0)
-    ext2_panic ("device block size (%u) greater than page size (%d)",
+    ext2_panic ("device block size (%zu) greater than page size (%zd)",
 		store->block_size, vm_page_size);
 
   /* Map the entire disk. */

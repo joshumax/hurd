@@ -1,6 +1,6 @@
 /* Directory management routines
 
-   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -411,7 +411,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  ext2_warning ("bad directory entry: inode: %d offset: %d",
+	  ext2_warning ("bad directory entry: inode: %d offset: %zd",
 			dp->cache_id,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
@@ -819,7 +819,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 static error_t
 count_dirents (struct node *dp, int nb, char *buf)
 {
-  int amt;
+  size_t amt;
   char *offinblk;
   struct ext2_dir_entry_2 *entry;
   int count = 0;
@@ -858,7 +858,7 @@ diskfs_get_directs (struct node *dp,
 		    int entry,
 		    int nentries,
 		    char **data,
-		    u_int *datacnt,
+		    size_t *datacnt,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
@@ -873,7 +873,7 @@ diskfs_get_directs (struct node *dp,
   char *datap;
   struct ext2_dir_entry_2 *entryp;
   int allocsize;
-  int checklen;
+  size_t checklen;
   struct dirent *userp;
 
   nblks = dp->dn_stat.st_size/DIRBLKSIZ;
@@ -1049,7 +1049,7 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->rec_len == 0)
 	{
-	  ext2_warning ("zero length directory entry: inode: %d offset: %d",
+	  ext2_warning ("zero length directory entry: inode: %d offset: %zd",
 			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
@@ -1063,7 +1063,7 @@ diskfs_get_directs (struct node *dp,
 	}
       else if (bufp - buf > DIRBLKSIZ)
 	{
-	  ext2_warning ("directory entry too long: inode: %d offset: %d",
+	  ext2_warning ("directory entry too long: inode: %d offset: %zd",
 			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
 	  return EIO;
