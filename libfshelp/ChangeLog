@@ -1,3 +1,9 @@
+Tue Jul  1 16:45:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* exec-reauth.c (fshelp_exec_reauth): If the new set of eff_uids
+	is empty, then still do proc_setowner, but this time to set it to
+	"unowned" status. 
+
 1997-06-12  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fshelp.h (fshelp_touch): New function.
