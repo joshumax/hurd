@@ -1184,19 +1184,17 @@ S_msg_set_env_variable (mach_port_t process,
 	boolean_t replace)
 { return _S_msg_set_env_variable (process, refport, variable, value, replace); }
 
-kern_return_t
-S_msg_get_exec_flags (mach_port_t process, mach_port_t refport, int *flags)
-{ return _S_msg_get_exec_flags (process, refport, flags); }
-kern_return_t
-S_msg_set_all_exec_flags (mach_port_t process, mach_port_t refport, int flags)
-{ return _S_msg_set_all_exec_flags (process, refport, flags); }
-kern_return_t
-S_msg_set_some_exec_flags (mach_port_t process, mach_port_t refport, int flags)
-{ return _S_msg_set_some_exec_flags (process, refport, flags); }
-kern_return_t
-S_msg_clear_some_exec_flags (mach_port_t process, mach_port_t refport,
-			     int flags)
-{ return _S_msg_clear_some_exec_flags (process, refport, flags); }
+error_t
+S_msg_describe_ports (mach_port_t process,
+		      mach_port_t refport,
+		      mach_port_array_t names,
+		      mach_msg_type_number_t namesCnt,
+		      data_t *descriptions,
+		      mach_msg_type_number_t descriptionsCnt)
+{
+  return _S_msg_describe_ports (process, refport, names, namesCnt, 
+				descriptions, descriptionsCnt);
+}
 
 error_t
 S_msg_report_wait (mach_port_t process, thread_t thread,
