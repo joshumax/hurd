@@ -1,6 +1,6 @@
 /* The hurd io interface to storeio
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -35,6 +35,7 @@
    objects can still be accessed by io_read and io_write.  */
 error_t
 trivfs_S_io_map (struct trivfs_protid *cred,
+		 mach_port_t reply, mach_msg_type_name_t reply_type,
 		 memory_object_t *rd_obj, mach_msg_type_name_t *rd_type,
 		 memory_object_t *wr_obj, mach_msg_type_name_t *wr_type)
 {
@@ -43,27 +44,26 @@ trivfs_S_io_map (struct trivfs_protid *cred,
   else
     {
       mach_port_t memobj;
-      struct open *open = (struct open *)cred->po->hook;
-      error_t err = dev_get_memory_object (open->dev, &memobj);
+      error_t err =
+	dev_get_memory_object (((struct open *)cred->po->hook)->dev, &memobj);
 
       if (!err)
 	{
 	  if (cred->po->openmodes & O_READ)
-	    {
-	      *rd_obj = memobj;
-	      *rd_type = MACH_MSG_TYPE_MOVE_SEND;
-	    }
+	    *rd_obj = memobj;
 	  else
 	    *rd_obj = MACH_PORT_NULL;
-
 	  if (cred->po->openmodes & O_WRITE)
-	    {
-	      *wr_obj = memobj;
-	      *wr_type = MACH_MSG_TYPE_MOVE_SEND;
-	    }
+	    *wr_obj = memobj;
 	  else
 	    *wr_obj = MACH_PORT_NULL;
+
+	  if ((cred->po->openmodes & (O_READ|O_WRITE)) == (O_READ|O_WRITE))
+	    mach_port_mod_refs (mach_task_self (), memobj,
+				MACH_PORT_RIGHT_SEND, 1);
 	}
+
+      *rd_type = *wr_type = MACH_MSG_TYPE_MOVE_SEND;
 
       return err;
     }
