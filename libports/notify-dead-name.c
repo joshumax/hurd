@@ -1,6 +1,6 @@
 /* Dead name notification
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -29,5 +29,9 @@ ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t dead_name)
     return EOPNOTSUPP;
   ports_dead_name (pi, dead_name);
   ports_port_deref (pi);
+
+  /* Drop gratuitous extra reference that the notification creates. */
+  mach_port_deallocate (mach_task_self (), dead_name);
+  
   return 0;
 }
