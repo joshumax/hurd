@@ -57,7 +57,10 @@ interruptible_sleep_on (struct wait_queue **p)
 void
 wake_up_interruptible (struct wait_queue **p)
 {
-  condition_broadcast (&(*p)->c);
+  /* tcp.c uses an unitialized wait queue; don't bomb
+     if we see it. */
+  if (*p)
+    condition_broadcast (&(*p)->c);
 }
 
 
