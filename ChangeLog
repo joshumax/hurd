@@ -1,3 +1,7 @@
+1997-08-06  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (prog-subdirs): Add ftpfs.
+
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* usermux: New directory.
