@@ -22,10 +22,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <mach.h>
 #include <mach/notify.h>
-#include <errno.h>
 #include <device/device.h>
 #include <a.out.h>
-#include <fcntlbits.h>
 #include <mach/message.h>
 #include <mach/mig_errors.h>
 #include <stdlib.h>
@@ -33,6 +31,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdio.h>
 #include <cthreads.h>
 #include <varargs.h>
+#include <fcntlbits.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -45,6 +44,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* #include "tioctl_S.h" */
 
 #include <hurd/auth.h>
+
+#undef errno
+int errno;
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
