@@ -1,6 +1,6 @@
 /* display.c - The display component of a virtual console.
    Copyright (C) 1999 Kalle Olavi Niemitalo (emu.c from colortext 0.3).
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann and Kalle Olavi Niemitalo.
 
    This file is part of the GNU Hurd.
@@ -1801,13 +1801,11 @@ display_init (void)
    being ENCODING.  */
 error_t
 display_create (display_t *r_display, const char *encoding,
-		conchar_attr_t def_attr)
+		conchar_attr_t def_attr, unsigned int lines,
+		unsigned int width, unsigned int height)
 {
   error_t err = 0;
   display_t display;
-  int width = 80;
-  int height = 25;
-  int lines = 50; 	/* XXX For now.  */
 
   *r_display = NULL;
   display = calloc (1, sizeof *display);

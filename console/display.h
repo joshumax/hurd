@@ -1,5 +1,5 @@
 /* display.h - Interface to the display component of a virtual console.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -30,8 +30,11 @@ void display_init (void);
 
 /* Create a new virtual console display, with the system encoding
    being ENCODING and the default colors being FOREGROUND and BACKGROUND.  */
-error_t display_create (display_t *r_display, const char *encoding,
-			conchar_attr_t attr);
+error_t
+display_create (display_t *r_display, const char *encoding,
+		conchar_attr_t def_attr, unsigned int lines,
+		unsigned int width, unsigned int height);
+
 
 /* Destroy the display DISPLAY.  */
 void display_destroy (display_t display);

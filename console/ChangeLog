@@ -1,3 +1,21 @@
+2003-04-29  Marco Gerards   <metgerards@student.han.nl>
+
+	* display.c (display_create): Added arguments width, height and
+	lines, variables with the same name were removed.
+	* display.h (display_creat): Add missing arguments to prototype.
+	* console.c (DEFAULT_WIDTH): New macro.
+	(DEFAULT_HEIGHT): Likewise.
+	(DEFAULT_LINES): Likewise.
+	(STRX): Likewise.
+	(STR): Likewise.
+	(struct cons): New members lines, width and height.
+	(vcons_lookup): Add missing arguments to display_create.
+	(options): Add options width, height and lines.
+	(parse_opt): Parse width, height and lines.
+	(netfs_append_args): Append arguments width, height and lines.
+	(netfs_append_args): Fix asprintf error checking.
+	(main): Initialize cons with default width, height and lines.
+
 2002-12-10  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.c (main): Don't use err without setting it.

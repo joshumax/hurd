@@ -1,5 +1,5 @@
 /* console.c -- A console server.
-   Copyright (C) 1997, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999, 2002, 2003 Free Software Foundation, Inc.
    Written by Miles Bader and Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -61,6 +61,13 @@ volatile struct mapped_time_value *console_maptime;
 #define DEFAULT_BLINKING 0
 #define DEFAULT_REVERSED 0
 #define DEFAULT_CONCEALED 0
+#define DEFAULT_WIDTH 80
+#define DEFAULT_HEIGHT 25
+#define DEFAULT_LINES 50
+/* Stringification of a macro.  */
+#define STRX(s) #s
+#define STR(s)	STRX(s)
+
 /* For the help output.  */
 #define DEFAULT_ATTRIBUTE_NAME "normal"
 #define DEFAULT_FOREGROUND CONS_COLOR_WHITE
@@ -128,6 +135,11 @@ struct cons
   mach_port_t underlying;
   /* A template for the stat information of all nodes.  */
   struct stat stat_template;
+
+  /* The amount of lines, width and height.  */
+  unsigned int lines;
+  unsigned int width;
+  unsigned int height;
 };
 
 
@@ -222,7 +234,8 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
 
   mutex_init (&vcons->lock);
   err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING,
-			cons->attribute);
+			cons->attribute, cons->lines, cons->width,
+			cons->height);
   if (err)
     {
       free (vcons->name);
@@ -1335,6 +1348,12 @@ static const struct argp_option options[] =
     " (default `" DEFAULT_ATTRIBUTE_NAME "')" },
   { "encoding",	'e', "NAME", 0, "Set encoding of virtual consoles to"
     " NAME (default `" DEFAULT_ENCODING "')" },
+  { "width", 'w', "WIDTH", 0, "Set width to WIDTH (default `" 
+    STR(DEFAULT_WIDTH) "')" },
+  { "height", 'h', "HEIGHT", 0, "Set height to HEIGHT (default `"
+    STR(DEFAULT_HEIGHT) "')" },
+  { "lines", 'l', "LINES", 0, "Set amount of scrollback lines to LINES "
+    "(default `" STR(DEFAULT_LINES) "')" },
   {0}
 };
 
@@ -1443,7 +1462,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   cons_t cons = state->input ?: netfs_root_node->nn->cons;
   error_t err;
   int color = 0;
-
+  char *tail;
+  
   switch (opt)
     {
     default:
@@ -1479,6 +1499,33 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       if (err)
 	argp_error (state, "Invalid attribute specifier: %s", arg);
       break;
+      
+    case 'l':
+      errno = 0;
+      cons->lines = strtoul (arg, &tail, 0);
+      if (tail == NULL || tail == arg || *tail != '\0')
+	argp_error (state, "LINES is not a number: %s", arg);
+      if (errno)
+	argp_error (state, "Overflow in argument LINES %s", arg);
+      break;
+
+    case 'w':
+      errno = 0;
+      cons->width = strtoul (arg, &tail, 0);
+      if (tail == NULL || tail == arg || *tail != '\0')
+	argp_error (state, "WIDTH is not a number: %s", arg);
+      if (errno)
+	argp_error (state, "Overflow in argument WIDTH %s", arg);
+      break;
+
+    case 'h':
+      errno = 0;
+      cons->height = strtoul (arg, &tail, 0);
+      if (tail == NULL || tail == arg || *tail != '\0')
+	argp_error (state, "HEIGHT is not a number: %s", arg);
+      if (errno)
+	argp_error (state, "Overflow in argument HEIGHT %s", arg);
+      break;
 
     case 'e':
       /* XXX Check validity of encoding.  Can we perform all necessary
@@ -1513,29 +1560,54 @@ netfs_append_args (char **argz, size_t *argz_len)
   if (cons->encoding && strcmp (cons->encoding, DEFAULT_ENCODING))
     {
       char *buf;
-      asprintf (&buf, "--encoding=%s", cons->encoding);
-      if (buf)
-	err = argz_add (argz, argz_len, buf);
+      if (asprintf (&buf, "--encoding=%s", cons->encoding) < 0)
+	err = ENOMEM;
       else
-	err = errno;
+	err = argz_add (argz, argz_len, buf);
+      
     }
   if (!err && cons->attribute.fgcol != DEFAULT_FOREGROUND)
     {
       char *buf;
-      asprintf (&buf, "--foreground=%s", color_names[cons->attribute.fgcol]);
-      if (buf)
-	err = argz_add (argz, argz_len, buf);
+      if (asprintf (&buf, "--foreground=%s", 
+		    color_names[cons->attribute.fgcol]) < 0)
+	err = ENOMEM;
       else
-	err = errno;
+	err = argz_add (argz, argz_len, buf);
+      
     }      
   if (!err && cons->attribute.bgcol != DEFAULT_BACKGROUND)
     {
       char *buf;
-      asprintf (&buf, "--background=%s", color_names[cons->attribute.bgcol]);
-      if (buf)
-	err = argz_add (argz, argz_len, buf);
+      if (asprintf (&buf, "--background=%s",
+		    color_names[cons->attribute.bgcol]) < 0)
+	err = ENOMEM;
       else
-	err = errno;
+	err = argz_add (argz, argz_len, buf);
+    }
+  if (!err && cons->lines != DEFAULT_LINES)
+    {
+      char *buf;
+      if (asprintf (&buf, "--lines=%d", cons->lines) < 0)
+	err = ENOMEM;
+      else
+	err = argz_add (argz, argz_len, buf);
+    }
+  if (!err && cons->width != DEFAULT_WIDTH)
+    {
+      char *buf;
+      if (asprintf (&buf, "--width=%d", cons->lines) < 0)
+	err = ENOMEM;
+      else
+	err = argz_add (argz, argz_len, buf);
+    }
+  if (!err && cons->height != DEFAULT_HEIGHT)
+    {
+      char *buf;
+      if (asprintf (&buf, "--height=%d", cons->height) < 0)
+	err = ENOMEM;
+      else
+	err = argz_add (argz, argz_len, buf);
     }
   if (!err && cons->attribute.intensity != DEFAULT_INTENSITY)
     {
@@ -1588,6 +1660,7 @@ netfs_append_args (char **argz, size_t *argz_len)
     }
   if (!err && attrp != attr)
     err = argz_add (argz, argz_len, attr_str);
+
   return err;
 }
 
@@ -1930,6 +2003,9 @@ main (int argc, char **argv)
     error (1, ENOMEM, "Cannot create console structure");
   mutex_init (&cons->lock);
   cons->encoding = NULL;
+  cons->width = DEFAULT_WIDTH;
+  cons->height = DEFAULT_HEIGHT;
+  cons->lines = DEFAULT_LINES;
   cons->attribute.intensity = DEFAULT_INTENSITY;
   cons->attribute.underlined = DEFAULT_UNDERLINED;
   cons->attribute.blinking = DEFAULT_BLINKING;
