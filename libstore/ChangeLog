@@ -2,7 +2,7 @@
 
 	* encode.c (too_big): New static function.
 	(store_std_leaf_encode): Use it to return EOVERFLOW if a run
-	does not fit in an int.
+	does not fit in an off_t.
 
 2001-01-09  Marcus Brinkmann  <marcus@gnu.org>
 
