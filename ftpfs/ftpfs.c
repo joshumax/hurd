@@ -44,7 +44,7 @@ struct ftpfs *ftpfs;
 struct ftp_conn_params *ftpfs_ftp_params = 0;
 
 /* customization hooks.  */
-struct ftp_conn_hooks ftpfs_ftp_hooks = { interrupt_check: hurd_check_cancel };
+struct ftp_conn_hooks ftpfs_ftp_hooks = { interrupt_check: ports_self_interrupted };
 
 /* The (user-specified) name of the SERVER:FILESYSTEM we're connected too.  */
 char *ftpfs_remote_fs;
@@ -62,12 +62,15 @@ int netfs_maxsymlinks = 0;
 extern error_t lookup_server (const char *server,
 			      struct ftp_conn_params **params, int *h_err);
 
-/* Prints ftp connection log to stderr.  */
+static FILE *debug_stream = 0;
+static char *debug_stream_name = 0;
+static struct mutex debug_lock = MUTEX_INITIALIZER;
+
+/* Prints ftp connection log to DEBUG_STREAM.  */
 static void
 cntl_debug (struct ftp_conn *conn, int type, const char *txt)
 {
   char *type_str;
-  static struct mutex debug_lock = MUTEX_INITIALIZER;
 
   switch (type)
     {
@@ -77,7 +80,11 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
     }
 
   mutex_lock (&debug_lock);
-  fprintf (stderr, "%u.%s%s\n", (unsigned)conn->hook, type_str, txt);
+  if (debug_stream)
+    {
+      fprintf (debug_stream, "%u.%s%s\n", (unsigned)conn->hook, type_str, txt);
+      fflush (debug_stream);
+    }
   mutex_unlock (&debug_lock);
 }
 
@@ -108,7 +115,7 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
 /* Options usable both at startup and at runtime.  */
 static const struct argp_option common_options[] =
 {
-  {"debug",    'D', 0,     0, "Turn on debugging output for ftp connections"},
+  {"debug",    'D', "FILE",     OPTION_ARG_OPTIONAL, "Print debug output to FILE"},
   {"no-debug", OPT_NO_DEBUG, 0, OPTION_HIDDEN },
 
   {0,0,0,0, "Parameters:"},
@@ -137,9 +144,49 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case 'D':
-      ftpfs_ftp_hooks.cntl_debug = cntl_debug; break;
+      mutex_lock (&debug_lock);
+
+      if (debug_stream && debug_stream != stderr)
+	fclose (debug_stream);
+      if (debug_stream_name)
+	{
+	  free (debug_stream_name);
+	  debug_stream_name = 0;
+	}
+
+      if (arg)
+	{
+	  debug_stream_name = strdup (arg);
+	  if (! debug_stream_name)
+	    {
+	      argp_failure (state, 0, ENOMEM, "%s: Cannot open debugging file", arg);
+	      return ENOMEM;
+	    }
+
+	  debug_stream = fopen (arg, "w+");
+	  if (! debug_stream)
+	    {
+	      error_t err = errno;
+	      argp_failure (state, 0, err, "%s: Cannot open debugging file", arg);
+	      return err;
+	    }
+	}
+      else
+	debug_stream = stderr;
+
+      ftpfs_ftp_hooks.cntl_debug = cntl_debug;
+
+      mutex_unlock (&debug_lock);
+
+      break;
+
     case OPT_NO_DEBUG:
-      ftpfs_ftp_hooks.cntl_debug = 0; break;
+      mutex_lock (&debug_lock);
+      if (debug_stream && debug_stream != stderr)
+	fclose (debug_stream);
+      ftpfs_ftp_hooks.cntl_debug = 0; 
+      mutex_unlock (&debug_lock);
+      break;
 
     case OPT_NODE_CACHE_MAX:
       params->node_cache_max = atoi (arg); break;
@@ -261,8 +308,18 @@ netfs_append_args (char **argz, size_t *argz_len)
       } \
   } while (0)
 
-  if (ftpfs_ftp_hooks.cntl_debug)
-    err = argz_add (argz, argz_len, "--debug");
+  mutex_lock (&debug_lock);
+  if (ftpfs_ftp_hooks.cntl_debug && debug_stream)
+    if (debug_stream != stderr)
+      {
+	char *rep;
+	asprintf (&rep, "--debug=%s", debug_stream_name);
+	err = argz_add (argz, argz_len, rep);
+	free (rep);
+      }
+    else
+      err = argz_add (argz, argz_len, "--debug");
+  mutex_unlock (&debug_lock);
 
   if (ftpfs->params.name_timeout != DEFAULT_NAME_TIMEOUT)
     FOPT ("--name-timeout=%d", ftpfs->params.name_timeout);
