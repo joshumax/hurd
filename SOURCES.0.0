@@ -103,13 +103,13 @@ ftp://prep.gnu.ai.mit.edu/pub/gnu/gnu-0.0/hurd-special-src:
 * bash (1.14.4 patchlevel 10, with some additional local bugfixes)
 e2fsprogs (e2fsprogs-0.5c-hurd1.tar.gz) [1.04 doesn't have hurd patches]
 serverboot
-* from
+*+ from
 (*) grub
   [ Requires changes for ELF: avoid generating 16-bit relocations.
     Requires other changes to deal with ELF; makefiles only work for
     mach3-a.out object file format. ]
-* sh-utils (1.12m from alpha.gnu.ai.mit.edu; unmodified)
-* make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
+*+ sh-utils (1.12m from alpha.gnu.ai.mit.edu; unmodified)
+*+ make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
 *+ gdb (Modified from Cygnus snapshot of 960526) [wait for Mach to get migcom]
 * mach4 (UK22, slighly hacked)
 
