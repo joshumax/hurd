@@ -83,7 +83,15 @@ enum retry_type
   FS_RETRY_REAUTH,		/* Retry after reauthenticating retry port. */
   FS_RETRY_MAGICAL,		/* Retry string is magical.  */
   /* "tty" means controlling tty;
+
      "fd/%u" means file descriptor N;
+
+     "machtype/..." means replace `machtype' with the numbers in decimal
+		    returned by the user's kernel as the cpu_type (N) and 
+		    cpu_subtype (M) (producing N/M/...) and then retry
+		    as for FS_RETRY_NORMAL.
+
+     "/..." means retry "...", but starting from the users root directory.
      */
 };
 typedef enum retry_type retry_type;
