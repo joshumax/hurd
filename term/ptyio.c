@@ -115,7 +115,7 @@ pty_po_create_hook (struct trivfs_peropen *po)
 {
   xxx_record (RB_CREATE);
   mutex_lock (&global_lock);
-  if (po->flags & (O_READ | O_WRITE))
+  if (po->openmodes & (O_READ | O_WRITE))
     {
       xxx_record (RB_INC);
       nptyperopens++;
@@ -130,7 +130,7 @@ pty_po_destroy_hook (struct trivfs_peropen *po)
 {
   xxx_record (RB_DESTROY);
   mutex_lock (&global_lock);
-  if ((po->flags & (O_READ | O_WRITE)) == 0)
+  if ((po->openmodes & (O_READ | O_WRITE)) == 0)
     {
       mutex_unlock (&global_lock);
       return 0;
