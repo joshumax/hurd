@@ -51,7 +51,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int newnode = 0;
   struct dirstat *ds = 0;
   int mustbedir = 0;
-  int amt;
+  size_t amt;
   int type;
   struct protid *newpi;
   struct peropen *newpo;
@@ -260,7 +260,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  if (error)
 		    diskfs_release_peropen (newpo);
 		}
-		
+
 	      iohelp_free_iouser (user);
 	    }
 
@@ -458,8 +458,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   error = diskfs_make_peropen (np, (flags &~OPENONLY_STATE_MODES),
 			       dircred->po, &newpo);
-  
-  if (! error)  
+
+  if (! error)
     {
       error = diskfs_create_protid (newpo, dircred->user, &newpi);
       if (error)
