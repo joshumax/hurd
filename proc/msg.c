@@ -32,26 +32,12 @@ check_message_return (struct proc *p, struct proc *availp)
   mach_port_t *msgports;
   int i;
   
-  if (p->p_msgportwait && c->waiting == availp)
+  if (p->p_msgportwait && c->msgp == availp)
     {
-      msgports = alloca (sizeof (mach_port_t) * c->nprocs);
-      for (i = 0; i < c->nprocs; i++)
-	{
-	  cp = c->procs[i];
-	  if (cp->p_deadmsg)
-	    {
-	      assert (cp != availp);
-	      c->waiting = cp;
-	      cp->p_checkmsghangs = 1;
-	      return;
-	    }
-	  msgports[i] = cp->p_msgport;
-	}
+      proc_getmsgport_reply (c->reply_port, c->reply_port_type,
+			     0, availp->p_msgport);
+      c->msgp = 0;
       p->p_msgportwait = 0;
-      free (c->procs);
-      proc_getmsgport_reply (c->reply_port, c->reply_port_type, 0,
-			     msgports, MACH_MSG_TYPE_COPY_SEND,
-			     c->nprocs);
     }
 }
 
@@ -78,15 +64,13 @@ check_message_dying (struct proc *p, struct proc *dyingp)
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
   int i;
   
-  if (p->p_msgportwait)
-    for (i = 0; i < c->nprocs; i++)
-      if (c->procs[i] == dyingp)
-	{
-	  proc_getmsgport_reply (c->reply_port, c->reply_port_type, ESRCH,
-				 0, MACH_MSG_TYPE_COPY_SEND, 0);
-	  free (c->procs);
-	  p->p_msgportwait = 0;
-	}
+  if (p->p_msgportwait && c->msgp == dyingp)
+    {
+      proc_getmsgport_reply (c->reply_port, c->reply_port_type, ESRCH,
+			     MACH_PORT_NULL);
+      c->msgp = 0;
+      p->p_msgportwait = 0;
+    }
 }
 
 /* Cause a pending proc_getmsgport operation to immediately return */
@@ -96,8 +80,8 @@ abort_getmsgport (struct proc *p)
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
   
   proc_getmsgport_reply (c->reply_port, c->reply_port_type, EINTR,
-			 0, MACH_MSG_TYPE_COPY_SEND, 0);
-  free (c->procs);
+			 MACH_PORT_NULL);
+  c->msgp = 0;
   p->p_msgportwait = 0;
 }
 
@@ -105,58 +89,29 @@ error_t
 S_proc_getmsgport (struct proc *callerp,
 		   mach_port_t reply_port,
 		   mach_msg_type_name_t reply_port_type,
-		   int *pids,
-		   u_int pidslen,
-		   mach_port_t **msgports,
-		   mach_msg_type_name_t *msgportname,
-		   u_int *msgportlen)
+		   pid_t pid,
+		   mach_port_t *msgport)
 {
-  struct proc *p;
-  int i;
-  struct proc **procs = malloc (sizeof (struct proc *) * pidslen);
+  struct proc *p = pid_find (pid);
 
-  for (i = 0; i < pidslen; i++)
+  if (!p)
+    return ESRCH;
+  
+  if (p->p_deadmsg)
     {
-      p = pid_find (pids[i]);
-      if (!p)
-	{
-	  free (procs);
-	  return ESRCH;
-	}
-      procs[i] = p;
+      struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
+      if (callerp->p_msgportwait)
+	return EBUSY;
+      c->reply_port = reply_port;
+      c->reply_port_type = reply_port_type;
+      c->msgp = p;
+      p->p_checkmsghangs = 1;
+      callerp->p_msgportwait = 1;
+      return MIG_NO_REPLY;
     }
   
-  for (i = 0; i < pidslen; i++)
-    if (procs[i]->p_deadmsg)
-      {
-	struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
-	if (callerp->p_msgportwait)
-	  {
-	    free (procs);
-	    return EBUSY;
-	  }
-	c->reply_port = reply_port;
-	c->reply_port_type = reply_port_type;
-	c->waiting = procs[i];
-	c->procs = procs;
-	c->nprocs = pidslen;
-	procs[i]->p_checkmsghangs = 1;
-	callerp->p_msgportwait = 1;
-	break;
-      }
-  
-  if (callerp->p_msgportwait)
-    return MIG_NO_REPLY;
-  else
-    {
-      if (pidslen * sizeof (mach_port_t) > *msgportlen)
-	vm_allocate (mach_task_self (), (vm_address_t *) msgports,
-		     pidslen * sizeof (mach_port_t), 1);
-      for (i = 0; i < pidslen; i++)
-	(*msgports)[i] = procs[i]->p_msgport;
-      free (procs);
-      return 0;
-    }
+  *msgport = p->p_msgport;
+  return 0;
 }
 
 void
