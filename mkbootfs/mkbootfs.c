@@ -1,5 +1,5 @@
 /* Make a bootstrap filesystem from a filesystem and an exec server
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -163,6 +163,7 @@ main (int argc, char **argv)
   write (newdoto, &foo, 1);
 
   /* Now write out the header */
+  a.a_magic = OMAGIC;
   a.a_data = 
     (4 * sizeof (int) + a.a_text + a.a_data + sizeof (struct exec));
   a.a_text = 0;
