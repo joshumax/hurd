@@ -12,7 +12,7 @@
 
 static int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
 
-unsigned long ext2_count_free (struct buffer_head * map, unsigned int numchars)
+unsigned long ext2_count_free (char * map, unsigned int numchars)
 {
 	unsigned int i;
 	unsigned long sum = 0;
