@@ -490,13 +490,16 @@ debug (sock1, "out");
 void
 sock_shutdown (struct sock *sock, unsigned flags)
 {
+  unsigned old_flags;
+
 debug (sock, "in");
 debug (sock, "lock");
   mutex_lock (&sock->lock);
 
+  old_flags = sock->flags;
   sock->flags |= flags;
 
-  if (flags & SOCK_SHUTDOWN_READ)
+  if (flags & SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
     /* Shutdown the read half.  We keep the pipe around though.  */
     {
       struct pipe *pipe = sock->read_pipe;
@@ -511,7 +514,7 @@ debug (pipe, "(pipe) unlock");
       mutex_unlock (&pipe->lock);
     }
 
-  if (flags & SOCK_SHUTDOWN_WRITE)
+  if (flags & SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
     /* Shutdown the write half.  */
     {
       struct pipe *pipe = sock->write_pipe;
@@ -551,7 +554,7 @@ sock_global_init ()
 error_t
 sock_global_shutdown ()
 {
-  int num_ports = ports_count_bucket (sock_user_bucket);
-  ports_enable_bucket (sock_user_bucket);
+  int num_ports = ports_count_bucket (sock_port_bucket);
+  ports_enable_bucket (sock_port_bucket);
   return (num_ports == 0 ? 0 : EBUSY);
 }
