@@ -1,3 +1,10 @@
+Tue Sep 24 17:05:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* login.c (main: verify_passwd): Only declare reference to crypt
+	weak if HAVE_CRYPT isn't defined.
+
+	* sush.sh: Fix option parsing.
+
 Mon Sep 23 00:19:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* sush.sh, uptime.sh: Add option parsing, version number, &c.
