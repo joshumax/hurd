@@ -16,8 +16,10 @@ See `release-steps' for Hurd source release steps.
 Checklist for binary image filesystems
 
 *   Symlinks in /bin; esp. sh, awk, more, cc.
-*   Symlink /lib/libtermcap.a -> /lib/libncurses.a
+*   Symlink /lib/libtermcap.a -> /lib/libncurses.a, termcap_g.a, 
+	curses_g.a, curses.a.
 *   Check all symlinks to make sure they don't reference /gd4.
+*   Don't use absolute symlinks--make them all relative.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
 *   Make damn sure that we are only distributing the md5 libcrypt.
 *   Make sure /include/obstack.h is from libc and not binutils.
@@ -31,7 +33,6 @@ Checklist for binary image filesystems
 *   Make sure nethack is clean
 *   Make sure localtime is Factory
 *   Source code for Hurd and libc must be released.
-*   Make sure everything listed in SOURCES is on prep.
 *   Remove .stamp files from binary tree.
 *   Chown everything root.wheel, mode 755/644.
 *   /tmp is 1777.
@@ -40,5 +41,8 @@ Checklist for binary image filesystems
        (login, su, addauth, setauth, ids, ps, w, vmstat, vminfo, rsh, rlogin,
         games/lib/nethack/nethack)
 *   Check each directory for bogus cruft files.
-*   Especially delete .bash_history, .gnunfs*, and .stamp files.
+*   Especially delete .bash_history, .gnunfs*, and .stamp files, *~, *.rej
 *   Verify installation on bare machine.
+*   Make sure everything listed in SOURCES is on prep.
+*   Install release
+*   Post announcement

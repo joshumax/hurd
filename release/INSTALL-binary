@@ -46,10 +46,7 @@ file onto a fresh floppy with the command:
 This is your `grub boot floppy', referred to below.
 
 Unpack the binary distribution onto a fresh disk partition, which
-needs to be BSD FFS format.  We have not prepared instructions for
-setting up the system from an existing Linux-based system because of
-time pressures.  But all the tools and pieces should work for the more
-stalwart souls to try it.
+needs to be BSD FFS format or Linux ext2fs format.
 
 Start with a system already running BSD:
 
@@ -395,7 +392,7 @@ Subroutine: Installing from NetBSD boot floppies
 If you do not have a system running BSD, the NetBSD 2-floppy install
 set contains enough tools to make a new filesystem using newfs and
 copy to it from nfs.  You can fetch these floppies from ftp.netbsd.org
-in the directory /pub/NetBSD/arch/i386/floppies.  The NetBSD install
+in the directory /pub/NetBSD/NetBSD-1.1/floppies.  The NetBSD install
 script will start automatically when you boot from the floppies, and
 we suggest you use it in order to partition and set up your disk.
 
@@ -413,7 +410,7 @@ because your nfs server probably has more convenient editors than the
 NetBSD boot floppies.  The boot floppies have only ed.
 
 A.  Fetch the netbsd boot floppies from
-    ftp://ftp.netbsd.org/pub/NetBSD/arch/i386/floppies.  Put the
+    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.1/i386/floppies.  Put the
     images onto floppy disks using the instructions found on the FTP
     site. 
 
@@ -459,8 +456,8 @@ K.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
     if you want to see those messages again.  (Sometimes ifconfig
     says that something is "offline".  Ignore it.)
 
-L.  Mount the NFS server partition with the conveniente command
-    `mount SERVER-ADDR:SERVER-DIR /mnt2'.
+L.  Mount the NFS server partition with the convenient command
+    `mount -o -P SERVER-ADDR:SERVER-DIR /mnt2'.
 
 M.  Copy the Hurd onto your disk with the command 
     (cd /mnt2; tar cf - .) | (cd mnt; tar xfpv -)

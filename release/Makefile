@@ -23,7 +23,7 @@ makemode := misc
 
 # Files that go into the root of binary distributions
 dist-files = INSTALL-binary dist-README SETUP servers.boot \
-	menu.lst COPYING.LIB SOURCES.0.0
+	menu.lst COPYING.LIB SOURCES.0.2
 
 # Tools for making images
 tool-files = tool-Makefile install-stripped
@@ -37,7 +37,7 @@ install-dist: dist-links
 	cp $(srcdir)/INSTALL-binary $(dist-root)/
 	cp $(srcdir)/dist-README $(dist-root)/README
 	cp $(srcdir)/SETUP $(dist-root)/SETUP
-	cp $(srcdir)/SOURCES.0.0 $(dist-root)/SOURCES
+	cp $(srcdir)/SOURCES.0.2 $(dist-root)/SOURCES
 	cp $(srcdir)/servers.boot $(dist-root)/boot/servers.boot
 	cp $(srcdir)/menu.lst $(dist-root)/boot/grub/menu.lst
 	cp $(top_srcdir)/COPYING $(dist-root)/share/misc/COPYING

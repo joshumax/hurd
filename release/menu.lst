@@ -14,13 +14,13 @@ default= 0
 # These two entries are for SCSI disks
 # Entry 0:
 title= hurd (sd0a multi-user)
-root=   hd(0,a)
+root=   (hd0,a)
 kernel= /boot/kernel root=sd0a
 module= /boot/serverboot
 
 # Entry 1:
 title= hurd (sd0a single-user)
-root=   hd(0,a)
+root=   (hd0,a)
 kernel= /boot/kernel root=sd0a -s
 module= /boot/serverboot
 
@@ -28,13 +28,13 @@ module= /boot/serverboot
 # These two entries are for RLL/IDE/ST-506/etc. disks
 # Entry 2:
 title=  hurd (hd0a multi-user)
-root=   hd(0,a)
+root=   (hd0,a)
 kernel= /boot/kernel root=hd0a
 module= /boot/serverboot
 
 # Entry 3:
 title=	hurd (hd0a single-user)
-root=	hd(0,a)
+root=	(hd0,a)
 kernel=	/boot/kernel root=hd0a -s
 module=	/boot/serverboot
 
@@ -42,7 +42,7 @@ module=	/boot/serverboot
 # Installation steps for GRUB hard disk boot blocks
 # Entry 4:
 title=	Install grub from floppy onto hard disk
-install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0b8000 p
+install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
 
 # Entry 5:
 title=  Reinstall grub from hard disk to itself
