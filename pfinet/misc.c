@@ -27,9 +27,11 @@ make_sock_user (struct socket *sock, int isroot)
 {
   struct sock_user *user;
   
-  user = ports_allocate_port (pfinet_bucket,
-			      sizeof (struct sock_user),
-			      socketport_class);
+  errno = ports_create_port (pfinet_bucket,
+			     sizeof (struct sock_user),
+			     socketport_class, &user);
+  if (errno)
+    return 0;
   
   user->isroot = isroot;
   user->sock = sock;
