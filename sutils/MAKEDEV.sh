@@ -170,8 +170,14 @@ function mkdev {
 	;;
 
       # /dev/shm is used by the POSIX.1 shm_open call in libc.
+      # We don't want the underlying node to be written by randoms,
+      # but the filesystem presented should be writable by anyone
+      # and have the sticky bit set so others' files can't be removed.
+      # tmpfs requires an arbitrary size limitation here.
+      # To be like Linux, tmpfs could have an option to compute
+      # that max based on (half of) the physical RAM in the machine.
       shm)
-        st $I root 1777 /hurd/tmpfs
+        st $I root 644 /hurd/tmpfs -m 1777 512M
         ;;
 
       # Linux compatibility
