@@ -848,6 +848,12 @@ genpid ()
 
   int wrapped = 0;
 
+  if (nextpid > wrap)
+    {
+      nextpid = START_OVER;
+      wrapped = 1;
+    }
+
   while (!pidfree (nextpid))
     {
       ++nextpid;

@@ -1,3 +1,8 @@
+2001-08-02  Marcus Brinkmann  <marcus@gnu.org>
+
+	* mgt.c (genpid): Before checking if NEXTPID is free, check if it
+	is greater than WRAP, and if yes, start over.
+
 2001-07-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* host.c (S_proc_getexecdata): New variable PORTS_ALLOCATED.
