@@ -1,6 +1,6 @@
 /*
  * Mach Operating System
- * Copyright (c) 1991,1990 Carnegie Mellon University
+ * Copyright (c) 1992,1991,1990 Carnegie Mellon University
  * All Rights Reserved.
  *
  * Permission to use, copy, modify and distribute this software and its
@@ -25,19 +25,12 @@
  */
 /*
  * HISTORY
- * $Log: stack.c,v $
- * Revision 1.6  1997/02/20 04:30:35  miles
- * (__hurd_threadvar_stack_mask, __hurd_threadvar_stack_offset,
- *   __hurd_threadvar_max):
- *     Make extern.
- *
- * Revision 1.5  1995/12/10 13:41:30  roland
- * (addr_range_check, probe_stack): Functions #if 0'd out.
- * (stack_init): Don't call probe_stack or frob old stack at all.
- * Default cthread_stack_size to 16 pages if it is zero.
- *
- * Revision 1.4  1994/05/05 16:00:09  roland
- * entered into RCS
+ * $Log:	stack.c,v $
+ * Revision 2.14  93/01/14  18:05:58  danner
+ * 	Converted file to ANSI C.
+ * 	[92/12/18            pds]
+ * 	64bit cleanup.
+ * 	[92/12/02            af]
  *
  * Revision 2.13  92/01/14  16:48:54  rpd
  * 	Fixed addr_range_check to deallocate the object port from vm_region.
@@ -136,11 +129,9 @@
 
 #define	BYTES_TO_PAGES(b)	(((b) + vm_page_size - 1) / vm_page_size)
 
-int cthread_stack_mask;
+vm_offset_t cthread_stack_mask;
 vm_size_t cthread_stack_size;
 private vm_address_t next_stack_base;
-
-vm_offset_t cproc_stack_base();	/* forward */
 
 /*
  * Set up a stack segment for a thread.
@@ -171,7 +162,9 @@ setup_stack(p, base)
 	register cproc_t p;
 	register vm_address_t base;
 {
+#if	defined(RED_ZONE)
 	register kern_return_t r;
+#endif	/* defined(RED_ZONE) */
 
 	p->stack_base = base;
 	/*
@@ -181,20 +174,19 @@ setup_stack(p, base)
 	/*
 	 * Protect red zone.
 	 */
-#ifdef RED_ZONE
+#if	defined(RED_ZONE)
 	MACH_CALL(vm_protect(mach_task_self(), base + vm_page_size, vm_page_size, FALSE, VM_PROT_NONE), r);
-#endif  /* RED_ZONE */
+#endif	/* defined(RED_ZONE) */
 	/*
 	 * Store self pointer.
 	 */
 	*(cproc_t *)&ur_cthread_ptr(base) = p;
 }
 
-#if 0 /* roland@gnu */
-vm_offset_t
-addr_range_check(start_addr, end_addr, desired_protection)
-	vm_offset_t	start_addr, end_addr;
-	vm_prot_t	desired_protection;
+#if 0				/* GNU */
+private vm_offset_t
+addr_range_check(vm_offset_t start_addr, vm_offset_t end_addr,
+		 vm_prot_t desired_protection)
 {
 	register vm_offset_t	addr;
 
@@ -232,10 +224,8 @@ addr_range_check(start_addr, end_addr, desired_protection)
  * 1. stack grows DOWN
  * 2. There is an unallocated region below the stack.
  */
-void
-probe_stack(stack_bottom, stack_top)
-	vm_offset_t	*stack_bottom;
-	vm_offset_t	*stack_top;
+private void
+probe_stack(vm_offset_t *stack_bottom, vm_offset_t *stack_top)
 {
 	/*
 	 * Since vm_region returns the region starting at
@@ -280,9 +270,8 @@ probe_stack(stack_bottom, stack_top)
 	    /*
 	     * Check that the entire range exists and is writable
 	     */
-	} while (end_addr = (addr_range_check(start_addr,
-				  end_addr,
-				  VM_PROT_READ|VM_PROT_WRITE)));
+	} while ((end_addr = addr_range_check(start_addr, end_addr,
+					      VM_PROT_READ|VM_PROT_WRITE)));
 	/*
 	 * Back off to previous power of 2.
 	 */
@@ -297,8 +286,7 @@ extern unsigned long int __hurd_threadvar_stack_offset;
 extern unsigned int __hurd_threadvar_max;
 
 vm_offset_t
-stack_init(p)
-	cproc_t p;
+stack_init(cproc_t p)
 {
 #if 0
 	vm_offset_t	stack_bottom,
@@ -306,11 +294,7 @@ stack_init(p)
 			start;
 	vm_size_t	size;
 	kern_return_t	r;
-#endif
 
-	void alloc_stack();
-
-#if 0
 	/*
 	 * Probe for bottom and top of stack, as a power-of-2 size.
 	 */
@@ -322,28 +306,16 @@ stack_init(p)
 	 */
 	if (cthread_stack_size == 0)
 	    cthread_stack_size = stack_top - stack_bottom;
-#else  /* roland@gnu */
+#else  /* GNU */
 	if (cthread_stack_size == 0)
 	  cthread_stack_size = vm_page_size * 16; /* Reasonable default.  */
-#endif
+#endif /* GNU */
 
-#ifdef	STACK_GROWTH_UP
+#if	defined(STACK_GROWTH_UP)
 	cthread_stack_mask = ~(cthread_stack_size - 1);
-#else	 /* STACK_GROWTH_UP */
+#else	/* not defined(STACK_GROWTH_UP) */
 	cthread_stack_mask = cthread_stack_size - 1;
-#endif	 /* STACK_GROWTH_UP */
-
-	/* Set up the variables so GNU can find its per-thread variables.  */
-	__hurd_threadvar_stack_mask = ~(cthread_stack_size - 1);
-	/* The GNU per-thread variables will be stored just after the
-	   cthread-self pointer at the base of the stack.  */
-#ifdef	STACK_GROWTH_UP
-	__hurd_threadvar_stack_offset = sizeof (ur_cthread_t *);
-#else
-	__hurd_threadvar_stack_offset = (cthread_stack_size -
-					 sizeof (ur_cthread_t *) -
-					 __hurd_threadvar_max * sizeof (long));
-#endif
+#endif	/* defined(STACK_GROWTH_UP) */
 
 	/*
 	 * Guess at first available region for stack.
@@ -355,28 +327,27 @@ stack_init(p)
 	 */
 	alloc_stack(p);
 
-#if 0
+#if 0				/* GNU */
 	/*
 	 * Delete rest of old stack.
 	 */
 
-#ifdef	STACK_GROWTH_UP
+#if	defined(STACK_GROWTH_UP)
 	start = (cthread_sp() | (vm_page_size - 1)) + 1 + vm_page_size;
 	size = stack_top - start;
-#else	 /* STACK_GROWTH_UP */
+#else	/* not defined(STACK_GROWTH_UP) */
 	start = stack_bottom;
 	size = (cthread_sp() & ~(vm_page_size - 1)) - stack_bottom -
 	       vm_page_size;
-#endif	 /* STACK_GROWTH_UP */
+#endif	/* defined(STACK_GROWTH_UP) */
 	MACH_CALL(vm_deallocate(mach_task_self(),start,size),r);
-#endif
+#endif /* GNU */
 
 	/*
 	 * Return new stack; it gets passed back to the caller
 	 * of cthread_init who must switch to it.
 	 */
-	return cproc_stack_base(p,
-				sizeof(ur_cthread_t *) +
+	return cproc_stack_base(p, sizeof(ur_cthread_t *) +
 				/* Account for GNU per-thread variables.  */
 				__hurd_threadvar_max * sizeof (long int));
 }
@@ -392,8 +363,7 @@ stack_init(p)
  */
 
 void
-alloc_stack(p)
-	cproc_t p;
+alloc_stack(cproc_t p)
 {
 	vm_address_t base = next_stack_base;
 
@@ -410,11 +380,11 @@ cproc_stack_base(cproc, offset)
 	register cproc_t cproc;
 	register int offset;
 {
-#ifdef	STACK_GROWTH_UP
+#if	defined(STACK_GROWTH_UP)
 	return (cproc->stack_base + offset);
-#else	 /* STACK_GROWTH_UP */
+#else	/* not defined(STACK_GROWTH_UP) */
 	return (cproc->stack_base + cproc->stack_size - offset);
-#endif	 /* STACK_GROWTH_UP */
+#endif	/* defined(STACK_GROWTH_UP) */
 
 }
 
