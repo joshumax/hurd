@@ -1,3 +1,13 @@
+2004-03-07  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ihash.h (HURD_IHASH_NO_LOCP): Change to INTPTR_MIN.
+	(struct hurd_ihash): Change type of locp_offset from off_t to
+	intptr_t.
+	(hurd_ihash_init): Likewise in prototype.
+	(hurd_ihash_create): Likewise in prototype.
+	* ihash.c (hurd_ihash_init): Likewise in definition.
+	(hurd_ihash_create): Likewise in definition.
+
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ihash.c: Rewritten.

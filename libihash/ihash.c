@@ -166,7 +166,7 @@ locp_remove (hurd_ihash_t ht, hurd_ihash_locp_t locp)
 
 /* Initialize the hash table at address HT.  */
 void
-hurd_ihash_init (hurd_ihash_t ht, off_t locp_offs)
+hurd_ihash_init (hurd_ihash_t ht, intptr_t locp_offs)
 {
   ht->nr_items = 0;
   ht->size = 0;
@@ -199,7 +199,7 @@ hurd_ihash_destroy (hurd_ihash_t ht)
 /* Create a hash table, initialize it and return it in HT.  If a
    memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
-hurd_ihash_create (hurd_ihash_t *ht, off_t locp_offs)
+hurd_ihash_create (hurd_ihash_t *ht, intptr_t locp_offs)
 {
   *ht = malloc (sizeof (struct hurd_ihash));
   if (*ht == NULL)

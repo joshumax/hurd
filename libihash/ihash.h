@@ -77,7 +77,7 @@ struct hurd_ihash
   size_t size;
 
   /* The offset of the location pointer from the hash value.  */
-  off_t locp_offset;
+  intptr_t locp_offset;
 
   /* The maximum load factor in percent.  */
   int max_load;
@@ -97,7 +97,7 @@ typedef struct hurd_ihash *hurd_ihash_t;
 #define HURD_IHASH_MAX_LOAD_DEFAULT 80
 
 /* The LOCP_OFFS to use if no location pointer is available.  */
-#define HURD_IHASH_NO_LOCP	INT_MIN
+#define HURD_IHASH_NO_LOCP	INTPTR_MIN
 
 /* The static initializer for a struct hurd_ihash.  */
 #define HURD_IHASH_INITIALIZER(locp_offs)				\
@@ -110,7 +110,7 @@ typedef struct hurd_ihash *hurd_ihash_t;
    address of a hash value where a location pointer can be found.  The
    location pointer must be of type hurd_ihash_locp_t and can be used
    for fast removal with hurd_ihash_locp_remove().  */
-void hurd_ihash_init (hurd_ihash_t ht, off_t locp_offs);
+void hurd_ihash_init (hurd_ihash_t ht, intptr_t locp_offs);
 
 /* Destroy the hash table at address HT.  This first removes all
    elements which are still in the hash table, and calling the cleanup
@@ -124,7 +124,7 @@ void hurd_ihash_destroy (hurd_ihash_t ht);
    hurd_ihash_locp_t and can be used for fast removal with
    hurd_ihash_locp_remove().  If a memory allocation error occurs,
    ENOMEM is returned, otherwise 0.  */
-error_t hurd_ihash_create (hurd_ihash_t *ht, off_t locp_offs);
+error_t hurd_ihash_create (hurd_ihash_t *ht, intptr_t locp_offs);
 
 /* Destroy the hash table HT and release the memory allocated for it
    by hurd_ihash_create().  */
