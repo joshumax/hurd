@@ -130,7 +130,7 @@ struct sock {
  * we want to go back to a backoff formula that needs it
  */
   volatile unsigned short	backoff;
-  volatile short		err;
+  volatile error_t		err; /* Note change XXX HURD */
   unsigned char			protocol;
   volatile unsigned char	state;
   volatile unsigned char	ack_backlog;
