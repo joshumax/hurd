@@ -1,5 +1,5 @@
 /* Implementation of wait
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,6 +47,28 @@ struct zombie
 
 static struct zombie *zombie_list;
 
+
+/* Return nonzero if a `waitpid' on WAIT_PID by a process
+   in MYPGRP cares about the death of PID/PGRP.  */
+static inline int
+waiter_cares (pid_t wait_pid, pid_t mypgrp,
+	      pid_t pid, pid_t pgrp)
+{
+  return (wait_pid == pid ||
+	  wait_pid == -pgrp ||
+	  wait_pid == WAIT_ANY ||
+	  (wait_pid == WAIT_MYPGRP && pgrp == mypgrp));
+}
+
+/* Return nonzero iff PARENT is waiting for PID/PGRP.  */
+static inline int
+waiting_parent_cares (struct proc *parent, pid_t pid, pid_t pgrp)
+{
+  struct wait_c *w = &parent->p_continuation.wait_c;
+  return waiter_cares (w->pid, parent->p_pgrp->pg_pgid, pid, pgrp);
+}
+
+
 /* A process is dying.  Send SIGCHLD to the parent.  Check if the parent is
    waiting for us to exit; if so wake it up, otherwise, enter us as a
    zombie.  */
@@ -63,10 +85,7 @@ alert_parent (struct proc *p)
   if (p->p_parent->p_waiting)
     {
       struct wait_c *w = &p->p_parent->p_continuation.wait_c;
-      if ((w->pid == p->p_pid)
-	  || (w->pid == -p->p_pgrp->pg_pgid)
-	  || (w->pid == WAIT_ANY)
-	  || ((w->pid == WAIT_MYPGRP) && (p->p_pgrp == p->p_parent->p_pgrp)))
+      if (waiting_parent_cares (p->p_parent, p->p_pid, p->p_pgrp->pg_pgid))
 	{
 	  struct rusage ru;
       
@@ -108,11 +127,7 @@ reparent_zombies (struct proc *p)
       if (initwoken || !startup_proc->p_waiting)
 	continue;
 
-      if ((w->pid == z->pid)
-	  || (w->pid == -z->pgrp)
-	  || (w->pid == WAIT_ANY)
-	  || ((w->pid == WAIT_MYPGRP)
-	      && (z->pgrp == startup_proc->p_pgrp->pg_pgid)))
+      if (waiting_parent_cares (startup_proc, z->pid, z->pgrp))
 	{
 	  proc_wait_reply (w->reply_port, w->reply_port_type, 0,
 			   z->exit_status, z->ru, z->pid);
@@ -140,24 +155,20 @@ abort_wait (struct proc *p)
 /* Implement proc_wait as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_wait (struct proc *p,
-	   mach_port_t reply_port,
-	   mach_msg_type_name_t reply_port_type,
-	   pid_t pid,
-	   int options,
-	   int *status,
-	   struct rusage *ru,
-	   pid_t *pid_status)
+	     mach_port_t reply_port,
+	     mach_msg_type_name_t reply_port_type,
+	     pid_t pid,
+	     int options,
+	     int *status,
+	     struct rusage *ru,
+	     pid_t *pid_status)
 {
   struct wait_c *w;
   struct zombie *z, *prevz;
   
   for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
     {
-      if (z->parent == p
-	  && ((pid == z->pid)
-	      || (pid == -z->pgrp)
-	      || (pid == WAIT_ANY)
-	      || ((pid == WAIT_MYPGRP) && (p->p_pgrp->pg_pgid == z->pgrp))))
+      if (z->parent == p && waiting_parent_cares (p, z->pid, z->pgrp))
 	{
 	  *status = z->exit_status;
 	  bzero (ru, sizeof (struct rusage));
@@ -191,12 +202,11 @@ S_proc_wait (struct proc *p,
   else
     {
       struct proc *child;
-      int had_a_match = !pid;
+      int had_a_match = pid == 0;
 
       for (child = p->p_ochild; child; child = child->p_sib)
-	if ((pid == WAIT_ANY)
-	    || (child->p_pgrp->pg_pgid == -pid)
-	    || ((pid == WAIT_MYPGRP) && (child->p_pgrp == p->p_pgrp)))
+	if (waiter_cares (pid, p->p_pgrp->pg_pgid,
+			  child->p_pid, child->p_pgrp->pg_pgid))
 	  {
 	    had_a_match = 1;
 	    if (child->p_stopped && !child->p_waited
@@ -242,8 +252,7 @@ S_proc_mark_stop (struct proc *p,
     {
       struct wait_c *w = &p->p_parent->p_continuation.wait_c;
       if (((w->options & WUNTRACED) || p->p_traced)
-	  && (w->pid == p->p_pid || w->pid == p->p_pgrp->pg_pgid
-	      || w->pid == 0))
+	  && waiting_parent_cares (p->p_parent, p->p_pid, p->p_pgrp->pg_pgid))
 	{
 	  struct rusage ru;
 	  bzero (&ru, sizeof (struct rusage));
