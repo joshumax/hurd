@@ -24,6 +24,17 @@ trivfs_clean_protid (void *arg)
 {
   struct trivfs_protid *cred = arg;
   
+  if (trivfs_protid_destroy_hook)
+    (*trivfs_protid_destroy_hook) (cred);
+  if (!cred->po->refcnt--)
+    {
+      if (trivfs_peropen_destroy_hook)
+	(*trivfs_peropen_destroy_hook) (cred->po);
+      ports_done_with_port (cred->po->cntl);
+      free (cred->po);
+    }
+  free (cred->uids);
+  free (cred->gids);
   mach_port_deallocate (mach_task_self (), cred->realnode);
 }
 
