@@ -1,5 +1,5 @@
 /* Definitions for the authentication server
-   Copyright (C) 1991, 1992, 1993 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -24,9 +24,6 @@ subsystem auth 25000;
 #ifdef AUTH_IMPORTS
 AUTH_IMPORTS
 #endif
-
-type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
 
 /* Throughout, uid's and gid's are passed as arrays.  One of these
    arrays is called the "genuine" ids; these id's should be used to
@@ -60,7 +57,7 @@ routine auth_makeauth (
    the server.  */
 routine auth_user_authenticate (
 	handle: auth_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	rendezvous: mach_port_t;
 	rend_int: int;
 	out newport: mach_port_send_t);
@@ -72,7 +69,7 @@ routine auth_user_authenticate (
    is returned.  */
 routine auth_server_authenticate (
 	handle: auth_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	rendezvous: mach_port_send_t;
 	rend_int: int;
 	newport: mach_port_send_t;
