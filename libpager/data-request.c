@@ -15,6 +15,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
+#include <string.h>
+
 /* Called by the kernel when data is needed upon page fault */
 kern_return_t
 _pager_seqnos_memory_object_data_request (mach_port_t object, 
@@ -28,13 +33,12 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   char *pm_entry;
   int doread, doerror;
   error_t err;
-  void *page;
+  vm_address_t page;
   location_t loc;
   void *cookie;
   vm_size_t size, iosize;
   int write_lock;
   int extra_zeroes;
-  vm_address_t min, max;
 
   if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
@@ -115,15 +119,15 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
 			    &size, &iosize, &write_lock);
 
   if (!err)
-    error = pager_read_page (loc, cookie, &page, iosize, &extra_zeroes);
+    err = pager_read_page (loc, cookie, &page, iosize, &extra_zeroes);
 
   if (err)
     goto error_read;
   
   if (size != __vm_page_size && !extra_zeroes)
-    bzero (page + size, __vm_page_size - size);
+    bzero ((void *)page + size, __vm_page_size - size);
   
-  memory_object_data_supply (p->memobjcntl, offset, (u_int) page, length, 1,
+  memory_object_data_supply (p->memobjcntl, offset, page, length, 1,
 			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE, 0,
 			     MACH_PORT_NULL);
   mutex_lock (&p->interlock);
