@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-trivfs_S_file_getlinknode (struct protid *cred,
+trivfs_S_file_getlinknode (struct trivfs_protid *cred,
 			   mach_port_t *linknode,
 			   mach_msg_type_name_t *linknodetype)
 {
