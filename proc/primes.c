@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 /* Return the next prime greater than or equal to N. */
 int 
@@ -49,9 +50,9 @@ nextprime (int n)
 
       /* Alloc */
       p = q[l-1] * q[l-1];
-      m = alloca (sizeof (int) * p);
-      bzero (m, sizeof (int) * p);
-      
+      m = calloc (p, sizeof (int));
+      assert (m);
+
       /* Sieve */
       for (i = 0; i < l; i++)
 	for (j = q[i] * 2; j < p; j += q[i])
@@ -63,11 +64,14 @@ nextprime (int n)
 	  if (l == k)
 	    {
 	      q = realloc (q, k * sizeof (int) * 2);
+	      assert (q);
 	      k *= 2;
 	    }
 	  if (!m[i])
 	    q[l++] = i;
 	}
+
+      free (m);
     }
   
   /* Search */
