@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs:file_chflags
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,6 +30,7 @@ diskfs_S_file_chflags (struct protid *cred,
 		       err = diskfs_validate_flags_change (np, flags);
 		     if (!err)
 		       np->dn_stat.st_flags = flags;
+		     np->dn_set_ctime = 1;
 		     if (!err && np->filemod_reqs)
 		       diskfs_notice_filechange(np, FILE_CHANGED_META, 
 						0, 0);

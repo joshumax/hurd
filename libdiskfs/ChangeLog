@@ -1,5 +1,7 @@
 Tue Aug 11 16:17:49 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
+	* file-chflags.c (diskfs_S_file_chflags): Set NP->dn_set_ctime. 
+
 	* file-utimes.c (diskfs_S_file_utimes): Add file notifications. 
 
 Sun Aug  9 21:09:24 1998  Jose M. Moya  <josem@gnu.org>
