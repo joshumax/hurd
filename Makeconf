@@ -176,7 +176,7 @@ endif
 
 # TAGS files
 ifneq ($(dir),.)
-DEP_SRCS=sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -u
+DEP_SRCS=sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -ur
 TAGS: $(OBJS:.o=.d) $(OTHERTAGS)
 	cat $(OBJS:.o=.d) | $(DEP_SRCS) | etags -o $@ - $(OTHERTAGS)
 endif
