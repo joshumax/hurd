@@ -1,5 +1,5 @@
 /* Pass 5 of GNU fsck -- check allocation maps and summaries
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994,96,2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -23,7 +23,7 @@
 /* From ../ufs/subr.c: */
 
 /*
- * Update the frsum fields to reflect addition or deletion 
+ * Update the frsum fields to reflect addition or deletion
  * of some frags.
  */
 static void
@@ -87,7 +87,7 @@ pass5 ()
 
   sbcsums = alloca (fragroundup (sblock, sblock->fs_cssize));
 
-  readblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums, 
+  readblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums,
 	     fragroundup (sblock, sblock->fs_cssize));
 
   /* Construct a CG structure; initialize everything that's the same
@@ -105,37 +105,37 @@ pass5 ()
       savednrpos = sblock->fs_nrpos;
       sblock->fs_nrpos = 8;
       break;
-      
+
     case FS_DYNAMICPOSTBLFMT:
       /* Set fields unique to new cg structure */
       newcg->cg_btotoff = &newcg->cg_space[0] - (u_char *)(&newcg->cg_link);
       newcg->cg_boff = newcg->cg_btotoff + sblock->fs_cpg * sizeof (long);
       newcg->cg_iusedoff = newcg->cg_boff + (sblock->fs_cpg
-					     * sblock->fs_nrpos 
+					     * sblock->fs_nrpos
 					     * sizeof (short));
       newcg->cg_freeoff = newcg->cg_iusedoff + howmany (sblock->fs_ipg, NBBY);
 
       if (sblock->fs_contigsumsize <= 0)
 	{
-	  newcg->cg_nextfreeoff = 
+	  newcg->cg_nextfreeoff =
 	    (newcg->cg_freeoff
 	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPF (sblock),
 			NBBY));
 	}
       else
 	{
-	  newcg->cg_clustersumoff = 
+	  newcg->cg_clustersumoff =
 	    (newcg->cg_freeoff
 	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPF (sblock), NBBY)
 	     - sizeof (long));
-	  newcg->cg_clustersumoff = 
+	  newcg->cg_clustersumoff =
 	    roundup (newcg->cg_clustersumoff, sizeof (long));
-	  newcg->cg_clusteroff = 
-	    (newcg->cg_clustersumoff 
+	  newcg->cg_clusteroff =
+	    (newcg->cg_clustersumoff
 	     + (sblock->fs_contigsumsize + 1) * sizeof (long));
-	  newcg->cg_nextfreeoff = 
-	    (newcg->cg_clusteroff 
-	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPB (sblock), 
+	  newcg->cg_nextfreeoff =
+	    (newcg->cg_clusteroff
+	     + howmany (sblock->fs_cpg * sblock->fs_spc / NSPB (sblock),
 			NBBY));
 	}
 
@@ -150,32 +150,32 @@ pass5 ()
     default:
       errexit ("UNKNOWN POSTBL FORMAT");
     }
-  
+
   bzero (&cstotal, sizeof (struct csum));
 
   /* Mark fragments past the end of the filesystem as used. */
   j = blknum (sblock, sblock->fs_size + sblock->fs_frag - 1);
   for (i = sblock->fs_size; i < j; i++)
     setbmap (i);
-  
+
   /* Now walk through the cylinder groups, checking each one. */
   for (c = 0; c < sblock->fs_ncg; c++)
     {
       int dbase, dmax;
-      
+
       /* Read the cylinder group structure */
       readblock (fsbtodb (sblock, cgtod (sblock, c)), cg, sblock->fs_cgsize);
       writecg = 0;
-      
+
       if (!cg_chkmagic (cg))
 	warning (1, "CG %d: BAD MAGIC NUMBER", c);
-      
+
       /* Compute first and last data block addresses in this group */
       dbase = cgbase (sblock, c);
       dmax = dbase + sblock->fs_fpg;
       if (dmax > sblock->fs_size)
 	dmax = sblock->fs_size;
-      
+
       /* Initialize newcg fully; values from cg for those
 	 we can't check. */
       newcg->cg_time = cg->cg_time;
@@ -230,7 +230,7 @@ pass5 ()
 	      pfix ("FIXED");
 	    }
 	}
-      
+
       /* Zero the block maps and summary areas */
       bzero (&newcg->cg_frsum[0], sizeof newcg->cg_frsum);
       bzero (&cg_blktot (newcg)[0], sumsize + mapsize);
@@ -267,8 +267,8 @@ pass5 ()
 	    setbit (cg_inosused (newcg), i);
 	    newcg->cg_cs.cs_nifree--;
 	  }
-      
-      /* Walk through each data block, accounting for it in 
+
+      /* Walk through each data block, accounting for it in
 	 the block map and in newcg->cg_cs. */
       /* In this look, D is the block number and I is the
 	 block number relative to this CG. */
@@ -277,7 +277,7 @@ pass5 ()
 	   d += sblock->fs_frag, i += sblock->fs_frag)
 	{
 	  int frags = 0;
-	  
+
 	  /* Set each free frag of this block in the block map;
 	     count how many frags were free. */
 	  for (j = 0; j < sblock->fs_frag; j++)
@@ -287,8 +287,8 @@ pass5 ()
 	      setbit (cg_blksfree (newcg), i + j);
 	      frags++;
 	    }
-	  
-	  /* If all the frags were free, then count this as 
+
+	  /* If all the frags were free, then count this as
 	     a free block too. */
 	  if (frags == sblock->fs_frag)
 	    {
@@ -308,7 +308,7 @@ pass5 ()
 	      ffs_fragacct (sblock, blk, newcg->cg_frsum, 1);
 	    }
 	}
-      
+
       if (sblock->fs_contigsumsize > 0)
 	{
 	  long *sump = cg_clustersum (newcg);
@@ -316,7 +316,7 @@ pass5 ()
 	  int map = *mapp++;
 	  int bit = 1;
 	  int run = 0;
-	  
+
 	  for (i = 0; i < newcg->cg_nclusterblks; i++)
 	    {
 	      if ((map & bit) != 0)
@@ -363,7 +363,7 @@ pass5 ()
 	      pfix ("FIXED");
 	    }
 	}
-      
+
       /* Check inode and block maps */
       if (bcmp (cg_inosused (newcg), cg_inosused (cg), mapsize))
 	{
@@ -375,7 +375,7 @@ pass5 ()
 	      pfix ("FIXED");
 	    }
 	}
-      
+
       if (bcmp (&cg_blktot(newcg)[0], &cg_blktot(cg)[0], sumsize))
 	{
 	  problem (0, "SUMMARY INFORMATION FOR CG %d BAD", c);
@@ -386,7 +386,7 @@ pass5 ()
 	      pfix ("FIXED");
 	    }
 	}
-      
+
       if (bcmp (newcg, cg, basesize))
 	{
 	  problem (0, "CYLINDER GROUP %d BAD", c);
@@ -399,14 +399,14 @@ pass5 ()
 	}
 
       if (writecg)
-	writeblock (fsbtodb (sblock, cgtod (sblock, c)), 
+	writeblock (fsbtodb (sblock, cgtod (sblock, c)),
 		    cg, sblock->fs_cgsize);
     }
-  
+
   /* Restore nrpos */
   if (sblock->fs_postblformat == FS_42POSTBLFMT)
     sblock->fs_nrpos = savednrpos;
-  
+
   if (bcmp (&cstotal, &sblock->fs_cstotal, sizeof (struct csum)))
     {
       problem (0, "TOTAL FREE BLK COUNTS WRONG IN SUPERBLOCK");
@@ -430,21 +430,21 @@ pass5 ()
 	  pfix ("MARKED CLEAN");
 	}
     }
-  
+
   if (writesb)
     writeblock (SBLOCK, sblock, SBSIZE);
 
   if (writecsum)
     {
+      const int cssize = fragroundup (sblock, sblock->fs_cssize);
       struct csum *test;
-      
-      writeblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums, 
+
+      writeblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums,
 		  fragroundup (sblock, sblock->fs_cssize));
 
-      test = alloca (fragroundup (sblock, sblock->fs_cssize));
-      readblock (fsbtodb (sblock, sblock->fs_csaddr), test,
-		 fragroundup (sblock, sblock->fs_cssize));
-      if (bcmp (test, sbcsums, fragroundup (sblock, sblock->fs_cssize)))
+      test = alloca (cssize);
+      readblock (fsbtodb (sblock, sblock->fs_csaddr), test, cssize);
+      if (bcmp (test, sbcsums, cssize))
 	warning (0, "CSUM WRITE INCONSISTENT");
     }
 }
