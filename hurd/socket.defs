@@ -33,7 +33,7 @@ INTR_INTERFACE
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
 routine socket_create (
-	server: socket_t;
+	server: pf_t;
 	sock_type: int;
 	protocol: int;
 	out sock: mach_port_send_t);
@@ -76,7 +76,7 @@ routine socket_connect2 (
 
 /* Create an address from a sockaddr.  */
 routine socket_create_address (
-	sock: socket_t;
+	server: mach_port_t;	/* Can be either pf_t or socket_t.  */
 	sockaddr_type: int;
 	sockaddr: data_t;
 	out addr: mach_port_send_t;
@@ -84,7 +84,7 @@ routine socket_create_address (
 
 /* Create an address without any sockaddr.  */
 routine socket_fabricate_address (
-	sock: socket_t;
+	server: mach_port_t;	/* Can be either pf_t or socket_t.  */
 	sockaddr_type: int;
 	out addr: mach_port_send_t);
 
@@ -123,15 +123,15 @@ routine socket_send (
 	data: data_t;
 	ports: portarray_t;
 	control: data_t;
-	out amount: int);
+	out amount: mach_msg_type_number_t);
 
 /* Receive data from a socket, possibly including Mach ports.  */
 routine socket_recv (
 	sock: socket_t;
-	out addr: addr_port_t;
+	out addr: mach_port_send_t;
 	flags: int;
 	out data: data_t, dealloc;
 	out ports: portarray_t, dealloc;
 	out control: data_t, dealloc;
 	out outflags: int;
-	amount: int);
+	amount: mach_msg_type_number_t);
