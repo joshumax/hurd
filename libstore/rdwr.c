@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995-1999,2001,2002,2003 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -89,8 +89,6 @@ store_next_run (struct store *store, struct store_run *runs_end,
     return 1;
 }
 
-#include <assert.h>
-
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written
    in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t
@@ -110,8 +108,8 @@ store_write (struct store *store,
   if ((addr << block_shift) + len > store->size)
     return EIO;
 
-  if (store->block_size != 0)
-    assert ((len & (store->block_size - 1)) == 0);
+  if (store->block_size != 0 && (len & (store->block_size - 1)) != 0)
+    return EINVAL;
 
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
   if (addr < 0)
@@ -190,8 +188,8 @@ store_read (struct store *store,
   if ((addr << block_shift) + amount > store->size)
     amount = store->size - (addr << block_shift);
 
-  if (store->block_size != 0)
-    assert ((amount & (store->block_size - 1)) == 0);
+  if (store->block_size != 0 && (amount & (store->block_size - 1)) != 0)
+    return EINVAL;
 
   if ((amount >> block_shift) <= run->length - addr)
     /* The first run has it all... */

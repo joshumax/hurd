@@ -1,3 +1,9 @@
+2003-07-21  Ognyan Kulev  <ogi@mfmi.uni-sofia.bg>
+
+	* rdwr.c (store_write): Return EINVAL when LEN is not aligned to
+	STORE->block_size, instead of raising assertion failure.
+	(store_read): Likewise.
+
 2003-08-04  Roland McGrath  <roland@frob.com>
 
 	* typed.c (store_find_class): Use dlopen/dlclose on the names found by
