@@ -157,7 +157,7 @@ store_with_decoded_runs (struct store_enc *enc, size_t num_runs,
    0, STORE_STD_CLASSES is used.  If nothing else is to be done with ENC, its
    contents may then be freed using store_enc_dealloc.  */
 error_t
-store_decode (struct store_enc *enc, struct store_class *classes,
+store_decode (struct store_enc *enc, const struct store_class *const *classes,
 	      struct store **store)
 {
   if (enc->cur_int >= enc->num_ints)
@@ -167,12 +167,14 @@ store_decode (struct store_enc *enc, struct store_class *classes,
   if (! classes)
     classes = store_std_classes;
 
-  while (classes)
-    if (classes->id == enc->ints[enc->cur_int])
-      if (classes->decode)
-	return (*classes->decode) (enc, classes, store);
+  while (*classes)
+    if ((*classes)->id == enc->ints[enc->cur_int])
+      if ((*classes)->decode)
+	return (*(*classes)->decode) (enc, classes, store);
       else
 	return EOPNOTSUPP;
+    else
+      classes++;
 
   return EINVAL;
 }
