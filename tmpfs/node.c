@@ -559,7 +559,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   assert (*num_ports >= 1);	/* mig always gives us some */
   *num_ports = 1;
   *ports_type = MACH_MSG_TYPE_MOVE_SEND;
-  (*ports)[0] = memobj;
+  (*ports)[0]
+    = (cred->po->openstat & O_RDWR) == O_RDWR ? memobj : MACH_PORT_NULL;
 
   assert (*num_offsets >= 2);	/* mig always gives us some */
   *num_offsets = 2;
@@ -569,8 +570,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   assert (*num_ints >= 6);	/* mig always gives us some */
   *num_ints = 6;
   (*ints)[0] = STORAGE_MEMORY;
-  (*ints)[1] = (((cred->po->openstat & O_RDWR) == O_READ)
-		? STORE_READONLY : 0);
+  (*ints)[1] = (cred->po->openstat & O_WRITE) ? 0 : STORE_READONLY;
   (*ints)[2] = 1;		/* block size */
   (*ints)[3] = 1;		/* 1 run in offsets list */
   (*ints)[4] = 0;		/* name len */
