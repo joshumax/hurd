@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,7 +25,8 @@ diskfs_start_protid (struct peropen *po)
 {
   struct protid *cred;
 
-  cred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
+  cred = ports_allocate_port (diskfs_port_bucket, sizeof (struct protid), 
+			      diskfs_protid_class);
   po->refcnt++;
   cred->po = po;
   cred->shared_object = MACH_PORT_NULL;
