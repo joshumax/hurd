@@ -184,7 +184,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
 /* Truncate file.  */
 kern_return_t
-trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
+trivfs_S_file_set_size (struct trivfs_protid *cred,
+			mach_port_t reply, mach_msg_type_name_t reply_type,
+			off_t size)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -294,7 +296,9 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
    device.  */
 
 kern_return_t
-trivfs_S_file_sync (struct trivfs_protid *cred, int wait)
+trivfs_S_file_sync (struct trivfs_protid *cred,
+		    mach_port_t reply, mach_msg_type_name_t reply_type,
+		    int wait)
 {
   if (cred)
     return dev_sync (((struct open *)cred->po->hook)->dev, wait);
@@ -303,7 +307,9 @@ trivfs_S_file_sync (struct trivfs_protid *cred, int wait)
 }
 
 kern_return_t
-trivfs_S_file_syncfs (struct trivfs_protid *cred, int wait, int dochildren)
+trivfs_S_file_syncfs (struct trivfs_protid *cred,
+		      mach_port_t reply, mach_msg_type_name_t reply_type,
+		      int wait, int dochildren)
 {
   if (!cred)
     return dev_sync (((struct open *)cred->po->hook)->dev, wait);
@@ -314,7 +320,10 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred, int wait, int dochildren)
 /* ---------------------------------------------------------------- */
 
 error_t
-trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
+trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
+				mach_port_t reply,
+				mach_msg_type_name_t reply_type,
+				int *class,
 				off_t **runs, unsigned *runs_len,
 				size_t *block_size,
 				char *dev_name, mach_port_t *dev_port,
@@ -322,15 +331,22 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
 				char **misc, unsigned *misc_len,
 				int *flags)
 {
-  error_t err;
+  error_t err = 0;
+
   if (!cred)
     err = EOPNOTSUPP;
   else
     {
       struct dev *dev = ((struct open *)cred->po->hook)->dev;
 
-      err = vm_allocate (mach_task_self (),
-			 (vm_address_t *)runs, 2 * sizeof (off_t), 1);
+      if (*runs_len < 2 * sizeof (off_t))
+	{
+	  *runs_len = 2 * sizeof (off_t);
+	  err =
+	    vm_allocate (mach_task_self (),
+			 (vm_address_t *)runs, *runs_len, 1);
+	}
+
       if (!err)
 	{
 	  *class = STORAGE_DEVICE;
@@ -353,5 +369,6 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
 	  *misc_len = 0;
 	}
     }
+
   return err;
 }
