@@ -19,13 +19,15 @@
 #include "io_S.h"
 
 /* Implement io_async as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_async (struct protid *cred,
 		   mach_port_t notify,
-		   mach_port_t *idport)
+		   mach_port_t *idport,
+		   mach_msg_type_name_t *idport_type)
 {
   mach_port_deallocate (mach_task_self (), notify);
   *idport = MACH_PORT_NULL;
-  return EOPNOTSUPP;
+  *idport_type = MACH_MSG_TYPE_COPY_SEND;
+  return 0;
 }
 
