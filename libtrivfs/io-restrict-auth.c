@@ -74,6 +74,7 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   bcopy (newgids, newcred->gids, newngids * sizeof (uid_t));
   newcred->ngids = newngids;
   newcred->nuids = newnuids;
+  newcred->hook = cred->hook;
 
   io_restrict_auth (cred->realnode, &newcred->realnode, 
 		    newuids, newnuids, newgids, newngids);
