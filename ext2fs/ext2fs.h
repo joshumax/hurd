@@ -184,7 +184,7 @@ unsigned device_block_size;
 /* Our in-core copy of the super-block.  */
 struct ext2_super_block *sblock;
 /* What to lock if changing the super block.  */
-spin_lock_t sblock_lock;
+spin_lock_t global_lock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
 
