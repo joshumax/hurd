@@ -349,7 +349,7 @@ main (int argc, char **argv)
       addr.sin_port = htons (ntohs (addr.sin_port) - 1);
       ret = bind (main_udp_socket, (struct sockaddr *)&addr, 
 		  sizeof (struct sockaddr_in));
-      if (ret == -1 && errno == EPERM)
+      if (ret == -1 && errno == EACCES)
 	{
 	  /* We aren't allowed privileged ports; no matter;
 	     let the server deny us later if it wants. */
