@@ -56,12 +56,12 @@
 
 /* for debugging  */
 static int _debug = 0;
-#define debug(fmt, args...)							\
-  do { if (_debug) {								\
- 	 fprintf (stderr, "[%s: ", __FUNCTION__);				\
-	 fprintf (stderr, fmt , ##args);					\
+#define debug(fmt, args...)						      \
+  do { if (_debug) {							      \
+ 	 fprintf (stderr, "[%s: ", __FUNCTION__);			      \
+	 fprintf (stderr, fmt , ##args);				      \
 	 fprintf (stderr, "]\n"); } } while (0)
-#define fs_debug(fs, fmt, args...)						\
+#define fs_debug(fs, fmt, args...)					      \
   debug ("%s: " fmt, (fs)->mntent.mnt_dir , ##args)
 
 #define FSCK_SEARCH_FMTS "/sbin/fsck.%s"
@@ -86,8 +86,11 @@ static int _debug = 0;
 #define FSCK_F_NO	0x4
 #define FSCK_F_FORCE	0x8
 #define FSCK_F_SILENT	0x10
-#define FSCK_F_VERBOSE	0x20	/* Not passed down.  */
-#define FSCK_F_WRITABLE	0x40	/* Not passed down.  */
+
+/* The following are only used internally.  */
+#define FSCK_F_VERBOSE	0x100
+#define FSCK_F_WRITABLE	0x200	/* Make writable after fscking.  */
+#define FSCK_F_AUTO	0x400	/* Do all filesystems in fstab.  */
 
 static int got_sigquit = 0, got_sigint = 0;
 
@@ -134,7 +137,7 @@ fs_start_fsck (struct fs *fs, int flags)
 
   *argp++ = type->program;
 
-  if (flags & ~FSCK_F_VERBOSE)
+  if (flags & (FSCK_F_PREEN|FSCK_F_YES|FSCK_F_NO|FSCK_F_FORCE|FSCK_F_SILENT))
     {
       char *p = flags_buf;
       *argp++ = flags_buf;
@@ -372,8 +375,9 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 {
   int pass;
   struct fs *fs;
+  int autom = (flags & FSCK_F_AUTO);
   int summary_status = 0;
-  struct fscks *fscks = malloc (sizeof (struct fscks));
+  struct fscks fscks = { running: 0, flags: flags };
 
   void merge_status (int status)
     {
@@ -381,22 +385,20 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 	summary_status = status;
     }
 
-  if (! fscks)
-    error (FSCK_EX_ERROR, ENOMEM, "malloc");
-  fscks->running = 0;
-  fscks->flags = flags;
-  fscks->free_slots = max_parallel;
-
-  /* Do in pass order (pass 0 is skipped).  */
-  for (pass = 1; pass >= 0; pass = fstab_next_pass (fstab, pass))
+  /* Do in pass order; if in automatic mode, we skip pass 0.  */
+  for (pass = autom ? 1 : 0; pass >= 0; pass = fstab_next_pass (fstab, pass))
     /* Submit all filesystems in the given pass, up to MAX_PARALLEL at a
-       time. */
+       time.  There should currently be no fscks running.  */
     {
       debug ("Pass %d", pass);
 
+      /* Do pass 0 filesystems one at a time.  */
+      fscks.free_slots = (pass == 0 ? 1 : max_parallel);
+
       /* Try and fsck every filesystem in this pass.  */
       for (fs = fstab->entries; fs; fs = fs->next)
-	if (fs->mntent.mnt_passno == pass)
+	if (fs->mntent.mnt_passno == pass
+	    && !(autom && hasmntopt (&fs->mntent, "noauto")))
 	  /* FS is applicable for this pass.  */
 	  {
 	    struct fstype *type;
@@ -411,22 +413,20 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 	    else if (type->program)
 	      /* This is a fsckable filesystem.  */
 	      {
-		fs_debug (fs, "Fsckable; free_slots = %d", fscks->free_slots);
-		while (fscks->free_slots == 0)
+		fs_debug (fs, "Fsckable; free_slots = %d", fscks.free_slots);
+		while (fscks.free_slots == 0)
 		  /* No room; wait for another fsck to finish.  */
-		  merge_status (fscks_wait (fscks));
-		merge_status (fscks_start_fsck (fscks, fs));
+		  merge_status (fscks_wait (&fscks));
+		merge_status (fscks_start_fsck (&fscks, fs));
 	      }
 	    else
 	      fs_debug (fs, "Not fsckable");
 	  }
 
       /* Now wait for them all to finish.  */
-      while (fscks->running)
-	merge_status (fscks_wait (fscks));
+      while (fscks.running)
+	merge_status (fscks_wait (&fscks));
     }
-
-  free (fscks);
 
   return summary_status;
 }
@@ -542,7 +542,10 @@ main (int argc, char **argv)
     }
   else
     /* Fsck everything in /etc/fstab.  */
-    check = fstab;
+    {
+      check = fstab;
+      flags |= FSCK_F_AUTO;
+    }
 
   if (max_parallel <= 0)
     if (flags & FSCK_F_PREEN)
