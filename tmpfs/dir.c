@@ -62,7 +62,8 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 	  >= offsetof (struct dirent, d_name));
 
   if (bufsiz == 0)
-    bufsiz = dp->dn_stat.st_size + 2 * offsetof (struct dirent, d_name[4]);
+    bufsiz = dp->dn_stat.st_size
+	     + 2 * ((offsetof (struct dirent, d_name[3]) + 7) & ~7);
   if (bufsiz > *datacnt)
     {
       *data = mmap (0, bufsiz, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
@@ -108,19 +109,26 @@ diskfs_get_directs (struct node *dp, int entry, int n,
   for (d = dp->dn->u.dir.entries; i < entry && d != 0; d = d->next)
     ++i;
 
-  /* Now fill in the buffer with real entries.  */
-  for (; d != 0; d = d->next)
+  if (i < entry)
     {
-      if ((char *) entp - *data >= bufsiz || (n >= 0 && ++i > n))
+      assert (d == 0);
+      *datacnt = 0;
+      *amt = 0;
+      return 0;
+    }
+
+  /* Now fill in the buffer with real entries.  */
+  for (; d != 0; d = d->next, i++)
+    {
+      size_t rlen = (offsetof (struct dirent, d_name[1]) + d->namelen + 7) & ~7;
+      if (rlen + (char *) entp - *data > bufsiz || (n >= 0 && i > n))
 	break;
       entp->d_fileno = (ino_t) d->dn;
       entp->d_type = DT_UNKNOWN;
       entp->d_namlen = d->namelen;
       memcpy (entp->d_name, d->name, d->namelen + 1);
-      entp->d_reclen = ((&entp->d_name[d->namelen + 1] - (char *) entp + 7)
-			& ~7);
-      entp = (void *) entp + entp->d_reclen;
-      ++i;
+      entp->d_reclen = rlen;
+      entp = (void *) entp + rlen;
     }
 
   *datacnt = (char *) entp - *data;
@@ -158,6 +166,9 @@ diskfs_lookup_hard (struct node *dp,
   const size_t namelen = strlen (name);
   struct tmpfs_dirent *d, **prevp;
 
+  if (type == REMOVE || type == RENAME)
+    assert (np);
+
   if (namelen == 1 && name[0] == '.')
     {
       if (np != 0)
@@ -170,40 +181,54 @@ diskfs_lookup_hard (struct node *dp,
   if (namelen == 2 && name[0] == '.' && name[1] == '.')
     {
       struct disknode *dddn = dp->dn->u.dir.dotdot;
-      struct node *ddnp = 0;
       error_t err;
 
       assert (np != 0);
       if (dddn == 0)		/* root directory */
 	return EAGAIN;
 
-      err = diskfs_cached_lookup ((int) dddn, &ddnp);
-      switch (type)
-	{
-	case LOOKUP|SPEC_DOTDOT:
-	  diskfs_nput (dp);
-	default:
-	  if (!err)
-	    {
-	      diskfs_nref (ddnp);
-	      mutex_lock (&ddnp->lock);
-	    }
-	case REMOVE|SPEC_DOTDOT:
-	case RENAME|SPEC_DOTDOT:
-	  *np = ddnp;
+      if (type == (REMOVE|SPEC_DOTDOT) || type == (RENAME|SPEC_DOTDOT))
+        {
+	  *np = *dddn->hprevp;
+	  assert (*np);
+	  assert ((*np)->dn == dddn);
+	  assert (*dddn->hprevp == *np);
+	  return 0;
 	}
-      return err;
+      else
+        {
+	  mutex_unlock (&dp->lock);
+          err = diskfs_cached_lookup ((int) dddn, np);
+
+	  if (type == (LOOKUP|SPEC_DOTDOT))
+	    diskfs_nrele (dp);
+	  else
+	    mutex_lock (&dp->lock);
+
+	  if (err)
+	    *np = 0;
+
+          return err;
+	}
     }
 
   for (d = *(prevp = &dp->dn->u.dir.entries); d != 0;
        d = *(prevp = &d->next))
     if (d->namelen == namelen && !memcmp (d->name, name, namelen))
       {
-	ds->prevp = prevp;
-	return diskfs_cached_lookup ((ino_t) d->dn, np);
+	if (ds)
+	  ds->prevp = prevp;
+
+	if (np)
+	  return diskfs_cached_lookup ((ino_t) d->dn, np);
+	else
+	  return 0;
       }
 
-  ds->prevp = prevp;
+  if (ds)
+    ds->prevp = prevp;
+  if (np)
+    *np = 0;
   return ENOENT;
 }
 
@@ -214,10 +239,12 @@ diskfs_direnter_hard (struct node *dp, const char *name,
 		      struct protid *cred)
 {
   const size_t namelen = strlen (name);
-  const size_t entsize = offsetof (struct tmpfs_dirent, name) + namelen + 1;
+  const size_t entsize
+	  = (offsetof (struct dirent, d_name[1]) + namelen + 7) & ~7;
   struct tmpfs_dirent *new;
 
-  if (round_page (tmpfs_space_used + entsize) > tmpfs_page_limit)
+  if (round_page (tmpfs_space_used + entsize) / vm_page_size
+      > tmpfs_page_limit)
     return ENOSPC;
 
   new = malloc (entsize);
@@ -251,7 +278,8 @@ error_t
 diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
   struct tmpfs_dirent *d = *ds->prevp;
-  const size_t entsize = &d->name[d->namelen + 1] - (char *) d;
+  const size_t entsize
+	  = (offsetof (struct dirent, d_name[1]) + d->namelen + 7) & ~7;
 
   *ds->prevp = d->next;
 

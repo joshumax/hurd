@@ -74,10 +74,8 @@ diskfs_free_node (struct node *np, mode_t mode)
   free (np->dn);
   np->dn = 0;
 
-  spin_lock (&diskfs_node_refcnt_lock);
   --num_files;
   tmpfs_space_used -= sizeof *np->dn;
-  spin_unlock (&diskfs_node_refcnt_lock);
 }
 
 void
@@ -150,31 +148,36 @@ recompute_blocks (struct node *np)
   st->st_blocks = (st->st_blocks + 511) / 512;
 }
 
+/* Fetch inode INUM, set *NPP to the node structure;
+   gain one user reference and lock the node.  */
 error_t
 diskfs_cached_lookup (int inum, struct node **npp)
 {
   struct disknode *dn = (void *) inum;
   struct node *np;
 
+  assert (npp);
+
   if (dn->hprevp != 0)		/* There is already a node.  */
     {
       np = *dn->hprevp;
       assert (np->dn == dn);
       assert (*dn->hprevp == np);
-      spin_lock (&diskfs_node_refcnt_lock);
-      np->references++;
-      spin_unlock (&diskfs_node_refcnt_lock);
+
+      diskfs_nref (np);
     }
   else
+    /* Create the new node.  */
     {
       struct stat *st;
 
-      /* Create the new node.  */
       np = diskfs_make_node (dn);
       np->cache_id = (ino_t) dn;
 
       spin_lock (&diskfs_node_refcnt_lock);
       dn->hnext = all_nodes;
+      if (dn->hnext)
+	dn->hnext->dn->hprevp = &dn->hnext;
       dn->hprevp = &all_nodes;
       all_nodes = np;
       spin_unlock (&diskfs_node_refcnt_lock);
@@ -303,6 +306,7 @@ diskfs_set_translator (struct node *np,
     {
       free (np->dn->trans);
       new = 0;
+      np->dn_stat.st_mode &= ~S_IPTRANS;
     }
   else
     {
@@ -310,6 +314,7 @@ diskfs_set_translator (struct node *np,
       if (new == 0)
 	return ENOSPC;
       memcpy (new, name, namelen);
+      np->dn_stat.st_mode |= S_IPTRANS;
     }
   adjust_used (namelen - np->dn->translen);
   np->dn->trans = new;
@@ -400,6 +405,7 @@ diskfs_truncate (struct node *np, off_t size)
 
   adjust_used (size - np->allocsize);
   np->dn_stat.st_blocks += (size - np->allocsize) / 512;
+  np->dn_stat.st_size = size;
   np->allocsize = size;
 
   return 0;
@@ -412,10 +418,10 @@ diskfs_truncate (struct node *np, off_t size)
 error_t
 diskfs_grow (struct node *np, off_t size, struct protid *cred)
 {
+  assert (np->dn->type == DT_REG);
+
   if (np->allocsize >= size)
     return 0;
-
-  assert (np->dn->type == DT_REG);
 
   size = round_page (size);
   if (round_page (tmpfs_space_used + size) / vm_page_size > tmpfs_page_limit)
