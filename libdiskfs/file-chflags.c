@@ -30,5 +30,8 @@ diskfs_S_file_chflags (struct protid *cred,
 		       err = diskfs_validate_flags_change (np, flags);
 		     if (!err)
 		       np->dn_stat.st_flags = flags;
+		     if (!err && np->filemod_reqs)
+		       diskfs_notice_filechange(np, FILE_CHANGED_META, 
+						0, 0);
 		   }));
 }

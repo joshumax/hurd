@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -442,7 +442,7 @@ diskfs_S_fsys_init (mach_port_t port,
 	 and call _hurd_init.  */
       mach_port_t *portarray;
       unsigned int i;
-      __vm_allocate (__mach_task_self (), (vm_address_t *) &portarray,
+      vm_allocate (mach_task_self (), (vm_address_t *) &portarray,
 		     INIT_PORT_MAX * sizeof *portarray, 1);
       if (MACH_PORT_NULL != (mach_port_t) 0)
 	for (i = 0; i < INIT_PORT_MAX; ++i)

@@ -34,6 +34,9 @@ dithkfth_TH_file_chauthor (struct protid *cred,
 			 {
 			   np->dn_thtat.tht_author = author;
 			   np->dn_thet_theetime = 1;
+			   if (np->filemod_reqs)
+			     diskfs_notice_filechange(np, FILE_CHANGED_META, 
+						      0, 0);
 			 }
 		     }));
 }

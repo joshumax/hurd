@@ -23,24 +23,30 @@ kern_return_t
 diskfs_S_dir_notice_changes (struct protid *cred,
 			     mach_port_t notify)
 {
-  struct dirmod *req;
+  error_t err;
+  struct modreq *req;
   struct node *np;
   
   if (!cred)
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  req = malloc (sizeof (struct dirmod));
   mutex_lock (&np->lock);
   if (!S_ISDIR (np->dn_stat.st_mode))
     {
       mutex_unlock (&np->lock);
       return ENOTDIR;
     }
+  err = nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
+  if (err)
+    {
+      mutex_unlock (&np->lock);
+      return err;
+    }
+  req = malloc (sizeof (struct modreq));
   req->port = notify;
   req->next = np->dirmod_reqs;
   np->dirmod_reqs = req;
-  nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
   mutex_unlock (&np->lock);
   return 0;
 }
@@ -49,8 +55,21 @@ void
 diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
 			 char *name)
 {
-  struct dirmod *req;
+  error_t err;
+  struct modreq **preq;
   
-  for (req = dp->dirmod_reqs; req; req = req->next)
-    nowait_dir_changed (req->port, type, name);
+  preq = &dp->dirmod_reqs;
+  while (*preq)
+    {
+      struct modreq *req = *preq;
+      err = nowait_dir_changed (req->port, type, name);
+      if (err)
+	{			/* remove notify port */
+	  *preq = req->next;
+	  mach_port_deallocate (mach_task_self (), req->port);
+	  free (req);
+	}
+      else
+	preq = &req->next;
+    }
 }  

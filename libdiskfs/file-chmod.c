@@ -45,6 +45,10 @@ diskfs_S_file_chmod (struct protid *cred,
 			   {
 			     np->dn_stat.st_mode = mode;
 			     np->dn_set_ctime = 1;
+			     if (np->filemod_reqs)
+			       diskfs_notice_filechange(np, 
+							FILE_CHANGED_META, 
+							0, 0);
 			   }
 		       }
 		   }));

@@ -44,6 +44,10 @@ diskfs_S_file_chown (struct protid *cred,
 			     if (np->author_tracks_uid)
 			       np->dn_stat.st_author = uid;
 			     np->dn_set_ctime = 1;
+			     if (np->filemod_reqs)
+			       diskfs_notice_filechange(np, 
+							FILE_CHANGED_META, 
+							0, 0);
 			   }
 		       }
 		   }));

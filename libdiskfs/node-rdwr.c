@@ -45,6 +45,8 @@ diskfs_node_rdwr (struct node *np,
 	err = diskfs_grow (np, off + amt, cred);
 	if (err)
 	  return err;
+	if (np->filemod_reqs)
+	  diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, off + amt);
       }
 
   if (off + amt > np->dn_stat.st_size)

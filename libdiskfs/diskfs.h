@@ -100,7 +100,9 @@ struct node
 
   struct conch conch;
 
-  struct dirmod *dirmod_reqs;
+  struct modreq *dirmod_reqs;
+
+  struct modreq *filemod_reqs;
 
   off_t allocsize;
 
@@ -118,11 +120,11 @@ enum lookup_type
   RENAME,
 };
 
-/* Pending directory modification request */
-struct dirmod
+/* Pending directory and file modification request */
+struct modreq
 {
   mach_port_t port;
-  struct dirmod *next;
+  struct modreq *next;
 };
 
 
@@ -747,6 +749,14 @@ diskfs_node_rdwr (struct node *np, char *data, off_t off,
 void
 diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
 			 char *name);
+
+/* Send notifications to users who have requested them with
+   file_notice_changes for file NP.  The type of modification is TYPE.
+   START and END identify the affected region of the file's data.
+   This should be called after the change is fully completed.  */
+void
+diskfs_notice_filechange (struct node *np, enum file_changed_type type,
+			  off_t start, off_t end);
 
 /* Create a new node structure with DS as its physical disknode.
    The new node will have one hard reference and no light references.  */

@@ -64,6 +64,8 @@ diskfs_S_io_prenotify (struct protid *cred,
   err = diskfs_grow (np, end, cred);
   if (diskfs_synchronous)
     diskfs_node_update (np, 1);
+  if (!err && np->filemod_reqs)
+    diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, end);
  out:
   mutex_unlock (&np->lock);
   return err;

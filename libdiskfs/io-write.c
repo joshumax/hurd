@@ -64,6 +64,8 @@ diskfs_S_io_write (struct protid *cred,
 	diskfs_node_update (np, 1);
       if (err)
 	goto out;
+      if (np->filemod_reqs)
+	diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, off + datalen);
     }
 
   if (off + (off_t) datalen > np->dn_stat.st_size)
@@ -84,6 +86,8 @@ diskfs_S_io_write (struct protid *cred,
       && ((cred->po->openstat & O_FSYNC) || diskfs_synchronous))
     diskfs_file_update (np, 1);
 
+  if (!err && np->filemod_reqs)
+    diskfs_notice_filechange (np, FILE_CHANGED_WRITE, off, off + *amt);
  out:
   mutex_unlock (&np->lock);
   return err;

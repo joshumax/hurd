@@ -17,6 +17,20 @@
 
 #include "priv.h"
 
+/* Free the list of modification requests MR */
+static void
+free_modreqs (struct modreq *mr)
+{
+  struct modreq *tmp;
+  for (; mr; mr = tmp)
+    {
+      mach_port_deallocate (mach_task_self (), mr->port);
+      tmp = mr->next;
+      free (mr);
+    }
+}
+
+
 /* Node NP now has no more references; clean all state.  The
    diskfs_node_refcnt_lock must be held, and will be released
    upon return.  NP must be locked.  */
@@ -73,15 +87,9 @@ diskfs_drop_node (struct node *np)
   fshelp_drop_transbox (&np->transbox);
 
   if (np->dirmod_reqs)
-    {
-      struct dirmod *dm, *tmp;
-      for (dm = np->dirmod_reqs; dm; dm = tmp)
-	{
-	  mach_port_deallocate (mach_task_self (), dm->port);
-	  tmp = dm->next;
-	  free (dm);
-	}
-    }
+    free_modreqs (np->dirmod_reqs);
+  if (np->filemod_reqs)
+    free_modreqs (np->filemod_reqs);
 
   assert (!np->sockaddr);
 
