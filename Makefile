@@ -58,9 +58,11 @@ all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 hurd-snap:
 	mkdir hurd-snap
 
+date:=$(shell date +%y%m%d)
 dist: hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
-	tar cfz hurd-snap.tar.gz hurd-snap
-	rm -rf hurd-snap
+	mv hurd-snap hurd-snap-$(date)
+	tar cfz hurd-snap-$(date).tar.gz hurd-snap-$(date)
+	rm -rf hurd-snap-$(date)
 
 clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs))
 
