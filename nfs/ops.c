@@ -854,6 +854,80 @@ netfs_attempt_readlink (struct netcred *cred, struct node *np,
   return err;
 }
 
+/* For an NFS node NODE, guess whether CRED is able to read or write
+   it by hoping the server uses permissions bits in the "expected
+   way".  Return the or of O_READ, O_WRITE, and O_EXEC accordingly as
+   each is possible. */
+static int
+guess_mode_use (struct node *np, 
+		struct netcred *cred)
+{
+  error_t err;
+
+  err = netfs_validate_stat (np, cred);
+  if (err)
+    return err;
+  
+  if (cred_has_uid (cred, 0))
+    return O_READ|O_WRITE|O_EXEC;
+  else if (cred->nuids == 0
+	   && (np->nn_stat.st_mode & S_IUSEUNK))
+    return 
+      (((np->nn_stat.st_mode & 04000000) ? O_READ : 0)
+       | ((np->nn_stat.st_mode & 02000000) ? O_WRITE : 0)
+       | ((np->nn_stat.st_mode & 01000000) ? O_EXEC : 0));
+  else if (cred_has_uid (cred, np->nn_stat.st_uid)
+	   || (cred_has_gid (cred, np->nn_stat.st_gid)
+	       && cred_has_uid (cred, np->nn_stat.st_gid)))
+    /* Owner */
+    return 
+      (((np->nn_stat.st_mode & 0400) ? O_READ : 0)
+       | ((np->nn_stat.st_mode & 0200) ? O_WRITE : 0)
+       | ((np->nn_stat.st_mode & 0100) ? O_EXEC : 0));
+  else if (cred_has_gid (cred, np->nn_stat.st_gid))
+    /* Group */
+    return 
+      (((np->nn_stat.st_mode & 040) ? O_READ : 0)
+       | ((np->nn_stat.st_mode & 020) ? O_WRITE : 0)
+       | ((np->nn_stat.st_mode & 010) ? O_EXEC : 0));
+  else
+    /* Other */
+    return 
+      (((np->nn_stat.st_mode & 4) ? O_READ : 0)
+       | ((np->nn_stat.st_mode & 2) ? O_WRITE : 0)
+       | ((np->nn_stat.st_mode & 1) ? O_EXEC : 0));
+}
+
+/* Implement the netfs_check_open_permissions callback as described in
+   <hurd/netfs.h>. */
+error_t
+netfs_check_open_permissions (struct netcred *cred, struct node *np,
+			      int flags, int newnode)
+{
+  if ((flags & (O_READ|O_WRITE|O_EXEC)) == 0)
+    return 0;
+  
+  if ((flags & (O_READ|O_WRITE|O_EXEC))
+      == (flags & guess_mode_use (np, cred)))
+    return 0;
+  else
+    return EACCES;
+}
+
+/* Implement the netfs_report_access callback as described in
+   <hurd/netfs.h>. */
+void
+netfs_report_access (struct netcred *cred,
+		     struct node *np,
+		     int *types)
+{
+  *types = guess_mode_use (np, cred);
+}
+
+
+/* These definitions have unfortunate side effects, don't use them,
+   clever though they are. */
+#if 0
 /* Implement the netfs_check_open_permissions callback as described in
    <hurd/netfs.h>. */
 error_t
@@ -863,7 +937,7 @@ netfs_check_open_permissions (struct netcred *cred, struct node *np,
   char byte;
   error_t err;
   size_t len;
-
+ 
   /* Sun derived nfs client implementations attempt to reproduce the
      server's permission restrictions by hoping they look like Unix,
      and using that to give errors at open time.  Sadly, that loses
@@ -989,6 +1063,7 @@ netfs_report_access (struct netcred *cred,
       netfs_attempt_set_size (cred, np, 0);
     }
 }
+#endif
 
 /* Fetch the complete contents of DIR into a buffer of directs.  Set
    *BUFP to that buffer.  *BUFP must be freed by the caller when no
