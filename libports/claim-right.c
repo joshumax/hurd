@@ -1,5 +1,5 @@
 /* Take a receive right away from a port
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,33 +20,34 @@
 
 
 #include "ports.h"
+#include <assert.h>
+#include <errno.h>
 #include <hurd/ihash.h>
 
 mach_port_t
 ports_claim_right (void *portstruct)
 {
+  error_t err;
   struct port_info *pi = portstruct;
-  mach_port_t ret;
+  mach_port_t ret = pi->port_right;
 
-  if (pi->port_right != MACH_PORT_NULL)
+  if (ret == MACH_PORT_NULL)
+    return ret;
+
+  mutex_lock (&_ports_lock);
+  ihash_locp_remove (pi->bucket->htable, pi->hentry);
+  err = mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
+  assert_perror (err);
+  pi->port_right = MACH_PORT_NULL;
+  if (pi->flags & PORT_HAS_SENDRIGHTS)
     {
-      ret = pi->port_right;
-      
-      mutex_lock (&_ports_lock);
-      ihash_locp_remove (pi->bucket->htable, pi->hentry);
-      mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
-      pi->port_right = MACH_PORT_NULL;
-      if (pi->flags & PORT_HAS_SENDRIGHTS)
-	{
-	  pi->flags &= ~PORT_HAS_SENDRIGHTS;
-	  mutex_unlock (&_ports_lock);
-	  ports_port_deref (pi);
-	}
-      else
-	mutex_unlock (&_ports_lock);
+      pi->flags &= ~PORT_HAS_SENDRIGHTS;
+      mutex_unlock (&_ports_lock);
+      ports_port_deref (pi);
     }
   else
-    ret = MACH_PORT_NULL;
+    mutex_unlock (&_ports_lock);
+
   return ret;
 }
 
