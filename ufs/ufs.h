@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,11 +17,13 @@
 
 #include <mach.h>
 #include <hurd.h>
+#include <sys/mman.h>
 #include <hurd/ports.h>
 #include <hurd/pager.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <hurd/diskfs.h>
+#include <sys/mman.h>
 #include <assert.h>
 #include "fs.h"
 #include "dinode.h"
@@ -81,7 +83,7 @@ struct user_pager_info
     } type;
   struct pager *p;
   vm_prot_t max_prot;
-  
+
   vm_offset_t allow_unlocked_pagein;
   vm_size_t unlocked_pagein_length;
 };
@@ -223,7 +225,7 @@ swab_long_long (long long arg)
     abort ();								    \
   ret;									    \
 })
-    
+
 /* Execute A = B, but byteswap it along the way if necessary */
 #define write_disk_entry(a,b)						    \
 ({									    \
