@@ -78,7 +78,7 @@ diskfs_shutdown (int flags)
 
   /* First, see if there are outstanding user ports. */
   nports = ports_count_class (diskfs_protid_class);
-  if ((flags & FSYS_GOAWAY_FORCE == 0) 
+  if (((flags & FSYS_GOAWAY_FORCE) == 0) 
       && (nports || diskfs_pager_users ()))
     {
       ports_enable_class (diskfs_protid_class);
@@ -86,7 +86,7 @@ diskfs_shutdown (int flags)
       return EBUSY;
     }
 
-  if (flags & FSYS_GOAWAY_NOSYNC == 0)
+  if ((flags & FSYS_GOAWAY_NOSYNC) == 0)
     {
       diskfs_shutdown_pager ();
       diskfs_set_hypermetadata (1, 1);
