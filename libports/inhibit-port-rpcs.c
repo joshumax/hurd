@@ -23,7 +23,7 @@
 #include <cthreads.h>
 
 void
-inhibit_port_rpcs (void *portstruct)
+ports_inhibit_port_rpcs (void *portstruct)
 {
   struct port_info *pi = portstruct;
   struct rpc_info *rpc;
