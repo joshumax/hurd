@@ -176,7 +176,7 @@ ifeq ($(doinst),many)
 $(filter-out $(special-targets),$(targets)): %:
 	$(CC) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) \
 	-o $@ '-Wl,-(' $(filter-out $(HURDLIBS-files),$+) \
-	$(HURDLIBS-libs) $($@-OTHERLIBS) $(libc) '-Wl,-)'
+	$(HURDLIBS-libs) $($@-OTHERLIBS) $(OTHERLIBS) $(libc) '-Wl,-)'
 endif
 
 ifeq ($(makemode),library)
