@@ -42,7 +42,7 @@ psout (struct proc_stat_list *procs,
     {
       char *problem;
       ps_fmt_creation_error (fmt_string, posix_fmt, specs, &problem);
-      error (4, err, "%s", problem);
+      error (4, 0, "%s", problem);
     }
 
   if (squash_bogus_fields)
