@@ -231,6 +231,9 @@ See `tasks', the exported task list.
 **** For mach-indep thread commands, before validating against 
      internal thread list. !!!
 *** read core files !!
+*** Gdb doesn't work right if it doesn't have permission to frob the
+    inferior process (for instance, if it's a set[ug]id program), but
+    doesn't give a meaningful error message.  Try `break main' in /bin/login.
 
 ** nfsd
 *** Implement TCP nfs. !
@@ -242,7 +245,8 @@ See `tasks', the exported task list.
 
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from
-    (maybe there is already?); the boot file system, and other people deeming
+    (maybe there is already?); the boot file system, and other people
+deeming
     it too risk to attempt to contact syslogd can use it too? !
 ** Add a startup timestamp to tasks, and have some way of fetching it. !!
 
