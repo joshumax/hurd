@@ -3,7 +3,6 @@
 	* pc-kbd.c (KDSETLEDS): New macro.
 	(update_leds): Add support for setting the keyboard LED state on
 	GNUMach 1.x (> 1.3).
-
 	(input_loop): Use size_t for `nr' instead of int to silence a gcc
 	warning.
 
@@ -33,7 +32,7 @@
 	(vga_display_write): Make it wrap around the edge.
 	(vga_set_dimension): New function.
 	(vga_disp_ops): Added vga_set_dimension.
-	
+
 	* ncursesw.c (conspad): New variable.
 	(padx): Likewise.
 	(pady): Likewise.
@@ -50,7 +49,7 @@
 	(ncursesw_update): Call refresh_screen to refresh the console.
 	(ncursesw_set_cursor_pos): Use conspad instead of (the default)
 	stdscr.  Make the console autoscroll.
-		
+
 	* ncursesw.c (ncursesw_driver_start): Remove endwin call at
 	the end of the function.
 
@@ -124,8 +123,8 @@
 	settings.
 	(vga_write_font_buffer): Implement in terms of
 	vga_read_write_font_buffer.
-	(vga_read_font_buffer): Likewise.	
-	
+	(vga_read_font_buffer): Likewise.
+
 2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ncursesw.c: Add an entry for the clear function.
