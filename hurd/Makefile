@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -18,8 +18,12 @@
 dir := hurd
 makemode := misc
 
-DIST_FILES = *.defs subsystems *.h
+hdrs = $(wildcard $(srcdir)/*.defs $(srcdir)/*.h)
+DIST_FILES = subsystems $(hdrs)
 LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 
 include ../Makeconf
 
+# XXX not ideal
+install: $(patsubst $(srcdir)/%,$(includedir)/hurd/%,$(hdrs))
+$(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
