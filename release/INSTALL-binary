@@ -292,3 +292,22 @@ option to settrans thus: `settrans -a /mnt /hurd/ufs /dev/rsd0a'.
 (Note the placement of this option, as an arg to settrans, is
 different from the -r options you might give to the filesystem.)
 `showtrans' does not display these temporary mounts.
+
+
+CRASH SERVER:
+
+When programs get fatal signals in the Hurd, they call the "crash
+server".  Right now, the crash server suspends the program, and the
+rest of its process group.
+
+At that point, if you resume the program, it will exit.  But you can
+also attach a debugger to it, and all it's current dynamic state will
+still be there.
+
+If you would rather have crashing programs just exit, and not suspend,
+then disable the crash server by saying `settrans /servers/crash'.
+You can always reenable it later, if you like, by typing the command
+`settrans /servers/crash /hurd/crash'.  
+
+Core dumps are not yet supported.
+
