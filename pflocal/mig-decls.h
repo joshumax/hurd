@@ -30,7 +30,7 @@ typedef struct addr *addr_t;
 extern inline
 sock_user_t begin_using_sock_user_port(mach_port_t port)
 {
-  return (sock_user_t)ports_lookup_port (0, port, fsys_port_class);
+  return (sock_user_t)ports_lookup_port (0, port, sock_user_port_class);
 }
 
 extern inline void
@@ -43,7 +43,7 @@ end_using_sock_user_port (sock_user_t sock_user)
 extern inline
 addr_t begin_using_addr_port(mach_port_t port)
 {
-  return (addr_t)ports_lookup_port (0, port, fsys_port_class);
+  return (addr_t)ports_lookup_port (0, port, addr_port_class);
 }
 
 extern inline void
