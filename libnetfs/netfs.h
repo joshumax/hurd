@@ -73,7 +73,7 @@ struct node
   
   mach_port_t sockaddr;
 
-  mach_port_t identity;
+  struct identity *identity;
   
   int owner;
   
