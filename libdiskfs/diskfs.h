@@ -138,37 +138,6 @@ extern int pager_port_type;
 
 
 struct pager;
-
-
-/* The user must observe the following discipline in port creation
-   with the ports library.  Any port for which a send right is
-   given to any entity outside the filesystem itself must be
-   a hard port.  Other ports used only internally should be
-   soft ports.  
-
-   When there are neither hard ports nor soft ports, the diskfs
-   library will call diskfs_sync_everything with WAIT set.  This 
-   should sync everything; upon return diskfs will exit.  (There
-   should be no active pagers at all in this state, because such
-   would be either hard or soft ports.)
-
-   When there are only soft ports, diskfs will call
-   diskfs_shutdown_soft_ports.  This function should initiate (but
-   need not complete) the destruction of any outstanding soft ports.
-   When they are actually destroyed, diskfs_sync_everything will be
-   called as described above.
-
-   When the only outstanding hard port is the control port for
-   the filesystem and the filesystem has been idle for a considerable
-   time (as defined by the ports library), diskfs will detach from the
-   parent filesystem and call diskfs_shutdown_soft_ports.
-
-   When the filesystem is asked to exit with FSYS_GOAWAY_NOSYNC,
-   it will not bother calling diskfs_sync_everything.  When the
-   filesystem is asked to exit with FSYS_GOAWAY_FORCE, all existing
-   send rights for files are immediately destroyed.  Then 
-   diskfs_sync_everything is called and the filesystem will exit.
-*/
 
 
 /* Declarations of things the user must or may define.  */
@@ -403,11 +372,6 @@ void diskfs_lost_hardrefs (struct node *np);
    locked. */
 void diskfs_new_hardrefs (struct node *np);
 
-/* The user must define this function.  There are no hard ports outstanding;
-   the user should take steps so that any soft ports outstanding get
-   shut down. */
-void diskfs_shutdown_soft_ports ();
-
 /* The user must define this function.  Return non-zero if locked
    directory DP is empty.  If the user does not redefine
    diskfs_clear_directory and diskfs_init_directory, then `empty'
@@ -461,10 +425,6 @@ void diskfs_init_completed ();
    function.  EINVAL is returned if an unknown option is encountered.  */
 error_t diskfs_parse_runtime_options (int argc, char **argv,
 				      struct options *standard_options);
-
-/* It is assumed that the user will use the Hurd pager library; if not
-   you need to redefine ports_demuxer and 
-   diskfs_do_seqnos_mach_notify_no_senders.  */
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to set a symlink.  If it returns EINVAL or isn't set,
@@ -936,17 +896,13 @@ error_t diskfs_set_options (int argc, char **argv);
    completely.  */
 extern struct options *diskfs_standard_startup_options;
 
-/* The ports library requires the following to be defined; the diskfs
-   library provides a definition.  See <hurd/ports.h> for the
-   interface description.  The library assumes you use the pager
-   library (and calls pager_demuxer).  If you don't, then you need
-   to redefine this function as well as the no_senders notify stub.  */
-int ports_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+/* Demultiplex incoming messages on ports created by libdiskfs.  */
+int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 
-/* The diskfs library provides functions to demultiplex the fs, io, fsys,
-   memory_object, interrupt, and notify interfaces.  All the server
-   routines have the prefix `diskfs_S_'; `in' arguments of type
-   file_t or io_t appear as `struct protid *' to the stub.  */
+/* The diskfs library provides functions to demultiplex the fs, io,
+   fsys, interrupt, and notify interfaces.  All the server routines
+   have the prefix `diskfs_S_'; `in' arguments of type file_t or io_t
+   appear as `struct protid *' to the stub.  */
 
 
 /* Exception handling */
