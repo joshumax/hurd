@@ -423,7 +423,9 @@ ifneq ($(no_deps),t)
 -include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
 ifneq ($(makemode),library)
+ifneq ($(prof-depend),t)
 -include $(addsuffix .prof_d,$(target)) /dev/null
+endif
 endif
 
 # For each .o file we need a .d file.
@@ -453,7 +455,7 @@ endif
 	sed -e 's/User\.c/_U\.h/' -e 's/migu_d/miguh_d/' < $< > $@
 
 %.prof_d: Makefile
-	$(MAKE) $* prof-depend=t no_deps=t
+	$(MAKE) $* prof-depend=t
 
 ifeq ($(prof-depend),t)
 $(target): %: FORCE

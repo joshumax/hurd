@@ -1,3 +1,8 @@
+Fri Oct 25 20:17:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (%.prof_d): Don't set no-deps.
+	(.prof_d inclusion): Don't do it if prof-depend=t.
+
 Wed Oct 23 01:36:35 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf ($(target)): Repair rule for building of .prof_d

@@ -24,8 +24,6 @@ See `tasks', the exported task list.
 * Libraries
 
 ** general:
-*** Enable compilation without -O
-*** figure out why uname -v string has `/ELF' appended.
 *** expunge special cthreads malloc finally.
 
 ** libmom work:
@@ -115,7 +113,7 @@ See `tasks', the exported task list.
     instead of the underlying node, when it's important.
 
 ** libps
-*** Wizzior columnation (autosizing?)
+*** Whizzier columnation (autosizing?)
 *** Make getters more robust.
 
 * Servers
@@ -143,7 +141,6 @@ See `tasks', the exported task list.
 *** Diagnose why shutdown doesn't close TCP channels properly or reliably.
 *** select for read on a UDP socket seems never to return.
 *** Undefined functions at the end of pfinet/io-ops.c.
-*** TCP connections to self return ENETUNREACH.
 
 ** nfs
 *** Implement async I/O
@@ -153,6 +150,7 @@ See `tasks', the exported task list.
 *** Implement V3 nfs.
 *** Implement nqnfs.
 *** Add Hurd-specific calls.
+*** emacs M-x server doesn't work if ~ is on nfs.
 
 ** storeio:
 *** Make a server (/servers/storeio?) to share multiple storeio nodes?
@@ -263,11 +261,9 @@ List for version 0.2 binary release
 
 * Install patch from hag for disk device in mach
 * Try and get new mach4 from Shantanu.
-* pfinet needs to support no-network operation
 * Have term do scancodes, at least kludgily.
 * nfsd?
 * released libc
 * Arrange GCC not to install assert.h on GNU.
 * recompile libraries after libc release
-* complete `extern inline' proofing of header files.
 * Change all copyright notices to say "GNU Hurd" instead of "This program".
