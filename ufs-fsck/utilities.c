@@ -1,5 +1,5 @@
 /* Miscellaneous functions for fsck
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -256,7 +256,8 @@ pinode (ino_t ino)
   getinode (ino, &dino);
   
   printf (" OWNER=");
-  if (pw = getpwuid (dino.di_uid))
+  pw = getpwuid (dino.di_uid);
+  if (pw)
     printf ("%s ", pw->pw_name);
   else
     printf ("%lu ", dino.di_uid);
