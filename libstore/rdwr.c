@@ -34,12 +34,12 @@ store_find_first_run (struct store *store, off_t addr,
 		      off_t *base, size_t *index)
 {
   off_t *tail = store->runs, *tail_end = tail + store->runs_len;
-  off_t wrap = store->wrap;
+  off_t wrap_src = store->wrap_src;
 
-  if (addr >= wrap && addr < store->end)
+  if (addr >= wrap_src && addr < store->end)
     /* Locate the correct position within a repeating pattern of runs.  */
     {
-      *base = addr / wrap;
+      *base = addr / store->wrap_dst;
       addr %= wrap;
     }
   else
@@ -82,7 +82,7 @@ store_next_run (struct store *store, off_t *runs_end,
     /* Wrap around in a repeating RUNS.  */
     {
       *runs = store->runs;
-      *base += store->wrap;
+      *base += store->wrap_dst;
       *index = 0;
       return (*base < store->end);
     }
