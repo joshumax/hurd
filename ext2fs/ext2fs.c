@@ -18,15 +18,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <device/device.h>
-#include <hurd/startup.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <options.h>
 #include "ext2fs.h"
 #include "error.h"
 
@@ -63,198 +60,41 @@ warp_root (void)
 }
 
 /* ---------------------------------------------------------------- */
-
-/* XXX */
-struct mutex printf_lock;
-int printf (const char *fmt, ...)
-{
-  va_list arg;
-  int done;
-  va_start (arg, fmt);
-  mutex_lock (&printf_lock);
-  done = vprintf (fmt, arg);
-  mutex_unlock (&printf_lock);
-  va_end (arg);
-  return done;
-}
-
-static char error_buf[1024];
-
-void _ext2_error (const char * function, const char * fmt, ...)
-{
-  va_list args;
-
-  mutex_lock(&printf_lock);
-
-  va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
-  va_end (args);
-
-  fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
-
-  mutex_unlock(&printf_lock);
-}
-
-void _ext2_panic (const char * function, const char * fmt, ...)
-{
-  va_list args;
-
-  mutex_lock(&printf_lock);
-
-  va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
-  va_end (args);
-
-  fprintf(stderr, "ext2fs: %s: panic: %s: %s\n", device_name, function, error_buf);
-
-  mutex_unlock(&printf_lock);
-
-  exit (1);
-}
-
-void _ext2_warning (const char * function, const char * fmt, ...)
-{
-  va_list args;
-
-  mutex_lock(&printf_lock);
-
-  va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
-  va_end (args);
-
-  fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
-
-  mutex_unlock(&printf_lock);
-}
 
-/* ---------------------------------------------------------------- */
-
-#define USAGE "Usage: %s [OPTION...] DEVICE\n"
-
-static void
-usage(int status)
-{
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -r, --readonly             disable writing to DEVICE\n\
-  -w, --writable             enable writing to DEVICE\n\
-  -s, --sync[=INTERVAL]      with an argument, sync every INTERVAL seconds,\n\
-                             otherwise operate in synchronous mode\n\
-  -n, --nosync               never sync the filesystem\n\
-      --help                 display this help and exit\n\
-      --version              output version information and exit\n\
-");
-    }
-  exit (status);
-}
-
-#define SHORT_OPTS ""
-
-static struct option long_opts[] =
-{
-  {"help", no_argument, 0, '?'},
-  {0, 0, 0, 0}
-};
-
-static error_t
-parse_opt (int opt, char *arg)
-{
-  /* We currently only deal with one option... */
-  if (opt != '?')
-    return EINVAL;
-  usage (0);			/* never returns */
-  return 0;
-}
-
-/* ---------------------------------------------------------------- */
-
 void
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t bootstrap;
-  int sizes[DEV_GET_SIZE_COUNT];
-  unsigned sizescnt = 2;
+  mach_port_t bootstrap = MACH_PORT_NULL;
 
-  mutex_init (&printf_lock);	/* XXX */
+  argp_parse (diskfs_device_startup_argp, argc, argv, 0, 0);
 
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  diskfs_console_stdio ();
 
-  if (getpid () > 0)
+  if (! diskfs_boot_flags)
     {
-      int argind;		/* ARGV index of the first argument.  */
-      int fd = open ("/dev/console", O_RDWR);
-      struct options options =
-	{ SHORT_OPTS, long_opts, parse_opt, diskfs_standard_startup_options };
-
-      /* Make errors go somewhere reasonable.  */
-      while (fd >= 0 && fd < 2)
-	fd = dup(fd);
-      if (fd > 2)
-	close (fd);
-
-      /* Parse our command line.  */
-      if (options_parse (&options, argc, argv, OPTIONS_PRINT_ERRS, &argind))
-	usage (1);
-
-      if (argc - argind != 1)
-	{
-	  fprintf (stderr, USAGE, program_invocation_name);
-	  usage (1);
-	}
-
+      task_get_bootstrap_port (mach_task_self (), &bootstrap);
       if (bootstrap == MACH_PORT_NULL)
 	error (2, 0, "Must be started as a translator");
-
-      device_name = argv[argind];
     }
-  else
-    /* We are the bootstrap filesystem.  */
-    device_name = diskfs_parse_bootargs (argc, argv);
   
   /* Initialize the diskfs library.  This must come before
      any other diskfs call.  */
   diskfs_init_diskfs ();
-  
-  do
-    {
-      char *line = 0;
-      size_t linesz = 0;
-      ssize_t len;
-      
-      err = device_open (diskfs_master_device, 
-			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 device_name, &device_port);
-      if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
-	{
-	  /* Prompt the user to give us another name rather
-	     than just crashing */
-	  printf ("Cannot open device %s\n", device_name);
-	  printf ("Open instead: ");
-	  fflush (stdout);
-	  len = getline (&line, &linesz, stdin);
-	  if (len > 2)
-	    device_name = line;
-	}
-    }
-  while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
-	  
+
+  err = diskfs_device_open ();
   if (err)
-    error(1, errno, "%s", device_name);
+    error (3, err, "%s", diskfs_device_arg);
 
-  /* Check to make sure device sector size is reasonable. */
-  err = device_get_status (device_port, DEV_GET_SIZE, sizes, &sizescnt);
-  assert (sizescnt == DEV_GET_SIZE_COUNT);
-
-  device_block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
-  device_size = sizes[DEV_GET_SIZE_DEVICE_SIZE];
-  assert (device_size >= SBLOCK_OFFS + SBLOCK_SIZE);
+  if ((diskfs_device_size << diskfs_log2_device_block_size)
+      < SBLOCK_OFFS + SBLOCK_SIZE)
+    ext2_panic ("superblock won't fit on the device!");
+  if (diskfs_log2_device_block_size == 0)
+    ext2_panic ("device block size (%u) not a power of two",
+		diskfs_device_block_size);
+  if (diskfs_log2_device_blocks_per_page < 0)
+    ext2_panic ("device block size (%u) greater than page size (%d)",
+		diskfs_device_block_size, vm_page_size);
 
   /* Map the entire disk. */
   create_disk_pager ();
@@ -263,34 +103,23 @@ main (int argc, char **argv)
   diskfs_spawn_first_thread ();
 
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		device_size, 0, 1, disk_pager_port, 0, 0, 
+		diskfs_device_size << diskfs_log2_device_block_size,
+		0, 1, disk_pager_port, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
-		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
+		VM_PROT_READ | VM_PROT_WRITE,
 		VM_INHERIT_NONE);
   if (err)
     error (2, err, "vm_map");
 
-  diskfs_register_memory_fault_area (disk_pager->p, 0, disk_image, device_size);
+  diskfs_register_memory_fault_area (disk_pager, 0,
+				     disk_image,
+				     diskfs_device_size << diskfs_log2_device_block_size);
 
-  pokel_init (&global_pokel, disk_pager->p, disk_image);
+  pokel_init (&global_pokel, disk_pager, disk_image);
 
   err = get_hypermetadata();
   if (err)
     error (3, err, "get_hypermetadata");
-
-  if (device_size < sblock->s_blocks_count * block_size)
-    ext2_panic ("disk size (%d) too small (superblock says we need %ld)",
-		sizes[DEV_GET_SIZE_DEVICE_SIZE],
-		sblock->s_blocks_count * block_size);
-
-  /* A handy source of page-aligned zeros.  */
-  vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
-
-  if (!diskfs_readonly && (sblock->s_state & EXT2_VALID_FS))
-    {
-      sblock->s_state &= ~EXT2_VALID_FS;
-      sync_super_block ();
-    }
 
   inode_init ();
 
@@ -300,38 +129,19 @@ main (int argc, char **argv)
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
      outside world.  */
-  (void) diskfs_startup_diskfs (bootstrap);
-
-  if (bootstrap == MACH_PORT_NULL)
-    /* We are the bootstrap filesystem; do special boot-time setup.  */
-    diskfs_start_bootstrap (argv);
+  diskfs_startup_diskfs (bootstrap);
 
   /* and so we die, leaving others to do the real work.  */
   cthread_exit (0);
 }
 
-void
-diskfs_init_completed ()
+error_t 
+diskfs_reload_global_state ()
 {
-  string_t version;
-  mach_port_t proc, startup;
-  error_t err;
-
-  sprintf(version, "%s %d.%d.%d",
-	  diskfs_server_name, diskfs_major_version,
-	  diskfs_minor_version, diskfs_edit_version);
-
-  proc = getproc ();
-  proc_register_version (proc, diskfs_host_priv, diskfs_server_name,
-			 HURD_RELEASE, version);
-  err = proc_getmsgport (proc, 1, &startup);
-  if (!err)
-    {
-      startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
-			      diskfs_server_name, diskfs_host_priv);
-      mach_port_deallocate (mach_task_self (), startup);
-    }
-  mach_port_deallocate (mach_task_self (), proc);
+  pokel_flush (&global_pokel);
+  pager_flush (disk_pager, 1);
+  get_hypermetadata ();
+  return 0;
 }
 
 /* ---------------------------------------------------------------- */
