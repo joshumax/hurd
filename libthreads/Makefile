@@ -49,8 +49,8 @@ include ../Makeconf
 csw_pic.o: csw.o
 	cp $< $@
 
-install: install-cthreads.h
-install-cthreads.h: cthreads.h
+install: $(includedir)/cthreads.h
+$(includedir)/cthreads.h: cthreads.h
 	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h
 
 lndist: lndist-i386-files
