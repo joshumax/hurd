@@ -39,7 +39,3 @@ installhdrs = ports.h
 
 include ../Makeconf
 
-$(OBJS): ports.h
-allocate-port.o complete-deallocate.o create-bucket.o destroy-right.o \
-inhibit-all-rpcs.o inhibit-bucket-rpcs.o intern-external-port.o \
-lookup-port.o reallocate-from-external.o reallocate-port.o: ../libihash/ihash.h

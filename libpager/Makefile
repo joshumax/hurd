@@ -36,9 +36,5 @@ MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf
 
-$(OBJS): pager.h priv.h ../hurd/ports.h
-data-request.o data-return.o data-unlock.o lock-completed.o: memory_object_S.h
-demuxer.o stubs.o object-init.o object-terminate.o: memory_object_S.h
-demuxer.o: notify_S.h
 
 

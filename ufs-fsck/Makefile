@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -28,8 +28,6 @@ LCLHDRS = fsck.h
 target = fsck
 
 include ../Makeconf
-
-$(OBJS): fsck.h
 
 tables.o: ../ufs/tables.c
 	$(CC) $(CFLAGS) -c -o $@ $<

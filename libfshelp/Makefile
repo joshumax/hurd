@@ -31,6 +31,4 @@ installhdrs = fshelp.h
 
 include ../Makeconf
 
-$(OBJS): fshelp.h ../hurd/ports.h
-lock-acquire.o lock-init.o: locks.h
 

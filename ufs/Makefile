@@ -36,15 +36,3 @@ vpath %.c ../lib
 
 include ../Makeconf
 
-$(OBJS): ufs.h 
-$(OBJS): $(REMHDRS)
-alloc.o: fs.h dinode.h
-consts.o: dinode.h
-dir.o: dir.h
-hyper.o: fs.h
-inode.o: dinode.h fs.h
-main.o: fs.h
-pager.o: fs.h dinode.h
-sizes.o: fs.h dinode.h
-subr.o: fs.h
-tables.o: fs.h

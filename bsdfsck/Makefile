@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -26,8 +26,6 @@ LCLHDRS = fsck.h
 target = bsdfsck
 
 include ../Makeconf
-
-$(OBJS): fsck.h
 
 tables.o: ../ufs/tables.c
 	$(CC) $(CFLAGS) -c -o $@ $<

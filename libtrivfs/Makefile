@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -55,12 +55,4 @@ libname = libtrivfs
 installhdrs = trivfs.h
 
 include ../Makeconf
-
-$(subst .c,.o,$(FSSRCS)): fs_S.h
-$(subst .c,.o,$(IOSRCS)): io_S.h
-$(subst .c,.o,$(FSYSSRCS)): fsys_S.h
-$(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
-$(subst .c,.o,$(INTSRCS)): interrupt_S.h
-fsys-getroot.c: fsys_reply_U.h
-$(OBJS): trivfs.h ../hurd/ports.h
 

@@ -35,7 +35,4 @@ vpath %.c ../lib
 
 include ../Makeconf
 
-$(OBJS): ext2fs.h ext2_fs.h ext2_fs_i.h
-$(OBJS): $(REMHDRS)
-
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR

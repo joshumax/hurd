@@ -33,7 +33,3 @@ vpath lib%.a $(crossdir)/lib
 
 CPPFLAGS += -DGZIP -DBFD
 
-exec.o: exec.c fsys_S.h notify_S.h exec_S.h 
-exec.o hostarch.o: a.out.h a.out.gnu.h
-
-unzip.o util.o inflate.o: gzip.h crypt.h tailor.h

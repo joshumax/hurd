@@ -73,18 +73,6 @@ vpath %.c ../lib
 
 include ../Makeconf
 
-$(subst .c,.o,$(FSSRCS)): fs_S.h
-dir-readdir.o $(subst .c,.o,$(IOSRCS)): io_S.h
-$(subst .c,.o,$(FSYSSRCS)) boot-start.o: fsys_S.h
-boot-start.o: fsys_reply_U.h
-$(subst .c,.o,$(NOTIFYSRCS)): notify_S.h
-$(subst .c,.o,$(INTSRCS)): interrupt_S.h
-$(subst .c,.o,$(IFSOCKSRCS)): ifsock_S.h
-dir-chg.o: ourfs_notify_U.h
-
-$(OBJS): priv.h diskfs.h ../hurd/ioserver.h ../hurd/ports.h ../hurd/fshelp.h
-file-chauthor.o: lithp.h
-
 # We don't use those, so we're safe in breaking them.
 ourfs_notify_U.h ourfs_notifyUser.c: $(includedir)/hurd/fs_notify.defs $(includedir)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine $(includedir)/hurd/fs_notify.defs \

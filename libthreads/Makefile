@@ -49,8 +49,6 @@ include ../Makeconf
 csw_pic.o: csw.o
 	cp $< $@
 
-$(OBJS): cthreads.h cthread_internals.h options.h
-
 install: install-cthreads.h
 install-cthreads.h: cthreads.h
 	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h

@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993, 1994 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,6 +27,4 @@ libname = libioserver
 installhdrs = ioserver.h
 
 include ../Makeconf
-
-$(OBJS): ioserver.h
 

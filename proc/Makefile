@@ -37,14 +37,6 @@ target = proc
 
 include ../Makeconf
 
-$(OBJS): proc.h 
-wait.o host.o info.o mgt.o pgrp.o: process_S.h
-msg.o: process_reply_U.h
-notify.o: notify_S.h
-pgrp.o: ourmsg_U.h
-wait.o: process_reply_U.h ourmsg_U.h interrupt_S.h
-mgt.o: proc_exc_S.h proc_exc_U.h proc_excrepl_U.h proc_excrepl_S.h ourmsg_U.h
-
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.

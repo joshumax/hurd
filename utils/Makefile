@@ -32,15 +32,11 @@ vpath %.c ../lib
 include ../Makeconf
 
 settrans: settrans.o start-trans.o argz.o error.o
-settrans.o: ../lib/argz.h ../lib/error.h ../lib/start-trans.h
 
 showtrans: showtrans.o argz.o error.o
-showtrans.o: ../lib/argz.h ../lib/error.h
 
 fsysopts: fsysopts.o argz.o error.o
-fsysopts.o: ../lib/argz.h ../lib/error.h
 
 ps: ps.o error.o ../libps/libps.a ../libihash/libihash.a
-ps.o: ../hurd/ps.h ../lib/error.h
 
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
