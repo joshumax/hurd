@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include "io_S.h"
 
 error_t
 netfs_S_io_readable (struct protid *user,
@@ -31,7 +32,14 @@ netfs_S_io_readable (struct protid *user,
     return EINVAL;
   
   mutex_lock (&user->po->np->lock);
-  *amount = user->po->np->nn_stat.st_size - user->po->filepointer;
+  err = netfs_validate_stat (user->po->np, user);
+  if (!err)
+    {
+      if (user->po->np->nn_stat.st_size > user->po->filepointer)
+	*amount = user->po->np->nn_stat.st_size - user->po->filepointer;
+      else
+	*amount = 0;
+    }
   mutex_unlock (&user->po->np->lock);
-  return 0;
+  return err;
 }
