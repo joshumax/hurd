@@ -105,7 +105,7 @@ function mkdev {
 	cmd ln -f -s fd/1 $dir/stdout
 	cmd ln -f -s fd/2 $dir/stderr
 	;;
-      time)
+      'time')
 	st $I root 666 /hurd/storeio time ;;
 
       # ptys

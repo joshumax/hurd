@@ -1,3 +1,9 @@
+Thu Feb 18 02:13:47 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* MAKEDEV.sh (mkdev): put `time' in single-quotes; it's a reserved
+ 	word in bash 2.02 and this protects it.  Reported by OKUJI
+ 	Yoshinori <okuji@kuicr.kyoto-u.ac.jp>.
+
 Mon Feb  1 16:27:15 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* MAKEDEV.sh (PATH): Add /usr/bin out of deference to users
