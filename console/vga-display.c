@@ -32,7 +32,7 @@
 
 #include "vga.h"
 #include "dynafont.h"
-#include "display.h"
+#include "display-drv.h"
 
 
 struct vga_display_console

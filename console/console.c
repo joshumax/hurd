@@ -24,7 +24,7 @@
 #include <cthreads.h>
 
 #include "console.h"
-#include "display.h"
+#include "display-drv.h"
 #include "input.h"
 
 
