@@ -1,3 +1,10 @@
+Fri Feb 14 12:34:11 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-reparent.c (diskfs_S_file_reparent): New function, from
+	dir-reparent.c.
+	* dir-reparent.c: File removed.
+	* Makefile (FSSRCS): dir-reparent.c replaced by file-reparent.c.
+
 Mon Jan 20 16:40:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-reparent.c (netfs_S_dir_reparent): New file.
@@ -5,8 +12,7 @@ Mon Jan 20 16:40:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 Sat Nov 23 16:24:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* file-set-translator.c (netfs_S_file_set_translator): Delete var
-	I. 
+	* file-set-translator.c (netfs_S_file_set_translator): Delete var I.
 
 Wed Nov 20 17:13:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 

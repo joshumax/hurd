@@ -1,3 +1,13 @@
+Wed Feb 19 23:29:55 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* stack.c (__hurd_threadvar_stack_mask,
+	__hurd_threadvar_stack_offset, __hurd_threadvar_max): Make extern.
+
+Tue Feb 18 16:28:36 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* i386/thread.c (cproc_setup): Correctly leave space at top of
+	stack for GNU per-thread variables.
+
 Mon Nov 18 16:36:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* cprocs.c (cproc_create): Cast CHILD in assignment.
