@@ -570,7 +570,7 @@ S_tioctl_tiocmods (io_t port,
     err = EBADF;
   else
     {
-      mdmctl (MDMCTL_SET, state);
+      (*bottom->mdmctl) (MDMCTL_SET, state);
       err = 0;
     }
   
