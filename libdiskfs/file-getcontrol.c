@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S."
+#include "fs_S.h"
 
 /* Implement file_getcontrol as described in <hurd/fs.defs>. */
 error_t
@@ -29,12 +29,11 @@ diskfs_S_file_getcontrol (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  if (!isuid (0, cred))
+  if (!diskfs_isuid (0, cred))
     error = EPERM;
   else
     {
-      /* XXX nosenders race */
-      *control = fs_control_port;
+      *control = ports_get_right (diskfs_control_port);
       *controltype = MACH_MSG_TYPE_MAKE_SEND;
     }
 
