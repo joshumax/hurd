@@ -1,8 +1,8 @@
 /* Directory management routines
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
 
-   Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
+   Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -76,11 +76,11 @@ struct dirstat
   /* For stat COMPRESS, this is the address (inside mapbuf)
      of the first direct in the directory block to be compressed. */
   /* For stat HERE_TIS, SHRINK, and TAKE, this is the entry referenced. */
-  struct ext2_dir_entry *entry;
+  struct ext2_dir_entry_2 *entry;
 
   /* For stat HERE_TIS, type REMOVE, this is the address of the immediately
      previous direct in this directory block, or zero if this is the first. */
-  struct ext2_dir_entry *preventry;
+  struct ext2_dir_entry_2 *preventry;
 
   /* For stat COMPRESS, this is the number of bytes needed to be copied
      in order to undertake the compression. */
@@ -353,7 +353,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
   int nfree = 0;
   int needed = 0;
   vm_address_t currentoff, prevoff;
-  struct ext2_dir_entry *entry = 0;
+  struct ext2_dir_entry_2 *entry = 0;
   int nentries = 0;
   size_t nbytes = 0;
   int looking = 0;
@@ -372,7 +372,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
        currentoff < blockaddr + DIRBLKSIZ;
        prevoff = currentoff, currentoff += entry->rec_len)
     {
-      entry = (struct ext2_dir_entry *)currentoff;
+      entry = (struct ext2_dir_entry_2 *)currentoff;
 
       if (!entry->rec_len
 	  || entry->rec_len % EXT2_DIR_PAD
@@ -440,7 +440,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
     {
       ds->type = CREATE;
       ds->stat = COMPRESS;
-      ds->entry = (struct ext2_dir_entry *) blockaddr;
+      ds->entry = (struct ext2_dir_entry_2 *) blockaddr;
       ds->idx = idx;
       ds->nbytes = nbytes;
     }
@@ -477,7 +477,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
       ds->stat = HERE_TIS;
       ds->entry = entry;
       ds->idx = idx;
-      ds->preventry = (struct ext2_dir_entry *) prevoff;
+      ds->preventry = (struct ext2_dir_entry_2 *) prevoff;
     }
 
   *inum = entry->inode;
@@ -494,7 +494,7 @@ error_t
 diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 		      struct dirstat *ds, struct protid *cred)
 {
-  struct ext2_dir_entry *new;
+  struct ext2_dir_entry_2 *new;
   int namelen = strlen (name);
   int needed = EXT2_DIR_REC_LEN (namelen);
   int oldneeded;
@@ -527,7 +527,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       oldneeded = EXT2_DIR_REC_LEN (ds->entry->name_len);
       assert (ds->entry->rec_len - oldneeded >= needed);
 
-      new = (struct ext2_dir_entry *) ((vm_address_t) ds->entry + oldneeded);
+      new = (struct ext2_dir_entry_2 *) ((vm_address_t) ds->entry + oldneeded);
 
       new->inode = np->cache_id;
       new->rec_len = ds->entry->rec_len - oldneeded;
@@ -547,8 +547,8 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
       while (fromoff < (vm_address_t) ds->entry + DIRBLKSIZ)
 	{
-	  struct ext2_dir_entry *from = (struct ext2_dir_entry *)fromoff;
-	  struct ext2_dir_entry *to = (struct ext2_dir_entry *) tooff;
+	  struct ext2_dir_entry_2 *from = (struct ext2_dir_entry_2 *)fromoff;
+	  struct ext2_dir_entry_2 *to = (struct ext2_dir_entry_2 *) tooff;
 	  int fromreclen = from->rec_len;
 
 	  if (from->inode != 0)
@@ -566,7 +566,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       totfreed = (vm_address_t) ds->entry + DIRBLKSIZ - tooff;
       assert (totfreed >= needed);
 
-      new = (struct ext2_dir_entry *) tooff;
+      new = (struct ext2_dir_entry_2 *) tooff;
       new->inode = np->cache_id;
       new->rec_len = totfreed;
       new->name_len = namelen;
@@ -588,7 +588,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	    }
 	}
 
-      new = (struct ext2_dir_entry *) (ds->mapbuf + oldsize);
+      new = (struct ext2_dir_entry_2 *) (ds->mapbuf + oldsize);
 
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
@@ -604,6 +604,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     }
 
   dp->dn_set_mtime = 1;
+  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
@@ -671,6 +672,7 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
     }
 
   dp->dn_set_mtime = 1;
+  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
@@ -701,6 +703,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 
   ds->entry->inode = np->cache_id;
   dp->dn_set_mtime = 1;
+  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
@@ -716,7 +719,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 {
   error_t err;
   vm_address_t buf = 0, curoff;
-  struct ext2_dir_entry *entry;
+  struct ext2_dir_entry_2 *entry;
   int hit = 0;			/* Found something in the directory.  */
   memory_object_t memobj = diskfs_get_filemap (dp, VM_PROT_READ);
 
@@ -736,7 +739,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
        !hit && curoff < buf + dp->dn_stat.st_size;
        curoff += entry->rec_len)
     {
-      entry = (struct ext2_dir_entry *) curoff;
+      entry = (struct ext2_dir_entry_2 *) curoff;
 
       if (entry->inode != 0
 	  && (entry->name_len > 2
@@ -778,7 +781,7 @@ count_dirents (struct node *dp, int nb, char *buf)
 {
   int amt;
   char *offinblk;
-  struct ext2_dir_entry *entry;
+  struct ext2_dir_entry_2 *entry;
   int count = 0;
   error_t err;
 
@@ -794,7 +797,7 @@ count_dirents (struct node *dp, int nb, char *buf)
        offinblk < buf + DIRBLKSIZ;
        offinblk += entry->rec_len)
     {
-      entry = (struct ext2_dir_entry *) offinblk;
+      entry = (struct ext2_dir_entry_2 *) offinblk;
       if (entry->inode)
 	count++;
     }
@@ -807,6 +810,19 @@ count_dirents (struct node *dp, int nb, char *buf)
 /* Returned directory entries are aligned to blocks this many bytes long.
    Must be a power of two.  */
 #define DIRENT_ALIGN 4
+
+static const unsigned char ext2_file_type[EXT2_FT_MAX] =
+{
+  [EXT2_FT_UNKNOWN] = DT_UNKNOWN,
+  [EXT2_FT_REG_FILE] = DT_REG,
+  [EXT2_FT_DIR] = DT_DIR,
+  [EXT2_FT_CHRDEV] = DT_CHR,
+  [EXT2_FT_BLKDEV] = DT_BLK,
+  [EXT2_FT_FIFO] = DT_FIFO,
+  [EXT2_FT_SOCK] = DT_SOCK,
+  [EXT2_FT_SYMLINK] = DT_LNK,
+};
+
 
 /* Implement the disikfs_get_directs callback as described in
    <hurd/diskfs.h>. */
@@ -828,7 +844,7 @@ diskfs_get_directs (struct node *dp,
   error_t err;
   int i;
   char *datap;
-  struct ext2_dir_entry *entryp;
+  struct ext2_dir_entry_2 *entryp;
   int allocsize;
   int checklen;
   struct dirent *userp;
@@ -917,7 +933,7 @@ diskfs_get_directs (struct node *dp,
 	}
       for (i = 0, bufp = buf;
 	   i < entry - curentry && bufp - buf < DIRBLKSIZ;
-	   bufp += ((struct ext2_dir_entry *)bufp)->rec_len, i++)
+	   bufp += ((struct ext2_dir_entry_2 *)bufp)->rec_len, i++)
 	;
       /* Make sure we didn't run off the end. */
       assert (bufp - buf < DIRBLKSIZ);
@@ -942,7 +958,7 @@ diskfs_get_directs (struct node *dp,
 	  bufp = buf;
 	}
 
-      entryp = (struct ext2_dir_entry *)bufp;
+      entryp = (struct ext2_dir_entry_2 *)bufp;
 
       if (entryp->inode)
 	{
@@ -971,7 +987,23 @@ diskfs_get_directs (struct node *dp,
 	  userp->d_fileno = entryp->inode;
 	  userp->d_reclen = rec_len;
 	  userp->d_namlen = name_len;
-	  bcopy (entryp->name, userp->d_name, name_len);
+
+	  /* We don't bother to check the EXT2_FEATURE_INCOMPAT_FILETYPE
+	     flag in the superblock, because in old filesystems the
+	     file_type field is the high byte of the length field and is
+	     always zero because names cannot be that long.  */
+	  if (entryp->file_type < EXT2_FT_MAX)
+	    userp->d_type = ext2_file_type[entryp->file_type];
+	  else
+	    {
+	      ext2_warning ("bad type %d in directory entry: "
+			    "inode: %d offset: %d",
+			    entryp->file_type,
+			    dp->cache_id,
+			    blkno * DIRBLKSIZ + bufp - buf);
+	      userp->d_type = DT_UNKNOWN;
+	    }
+	  memcpy (userp->d_name, entryp->name, name_len);
 	  userp->d_name[name_len] = '\0';
 
 	  datap += rec_len;
