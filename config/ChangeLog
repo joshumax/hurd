@@ -1,3 +1,10 @@
+Thu Jul 18 17:24:55 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* root-.profile: Echo usual noisy message.
+
+	* fstab: Comment out example entry so it doesn't get incorrectly
+	used by accident.
+
 Wed Jul 17 17:09:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* root-.bashrc: Fixup test and source of user's .root_bashrc.

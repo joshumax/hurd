@@ -1,5 +1,6 @@
 Thu Jul 18 22:59:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
+	* Makefile (SRCS): Add create-port-noinstall.c and create-internal.c.
 	* create-port-noinstall.c: New file.
 	* create-port.c (ports_create_port): Guts deleted; call new work
 	function. 

@@ -373,7 +373,7 @@ S_io_reauthenticate (struct sock_user *user,
   aux_gids = agbuf;
 
   mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, 0);
+  newuser = make_sock_user (user->sock, 0, 1);
   
   auth = getauth ();
   newright = ports_get_right (newuser);
@@ -401,6 +401,10 @@ S_io_reauthenticate (struct sock_user *user,
     for (i = 0; i < genuidlen; i++)
       if (gen_uids[i] == 0)
 	newuser->isroot = 1;
+
+  mach_port_move_member (mach_task_self (), newuser->pi.port_right,
+			 pfinet_bucket->portset);
+
   mutex_unlock (&global_lock);
 
   ports_port_deref (newuser);
@@ -445,7 +449,7 @@ S_io_restrict_auth (struct sock_user *user,
       if (uids[i] == 0)
 	isroot = 1;
   
-  newuser = make_sock_user (user->sock, isroot);
+  newuser = make_sock_user (user->sock, isroot, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
@@ -463,7 +467,7 @@ S_io_duplicate (struct sock_user *user,
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, user->isroot);
+  newuser = make_sock_user (user->sock, user->isroot, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);

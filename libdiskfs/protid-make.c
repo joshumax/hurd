@@ -24,8 +24,8 @@ error_t
 diskfs_start_protid (struct peropen *po, struct protid **cred)
 {
   error_t err =
-    ports_create_port (diskfs_protid_class, diskfs_port_bucket,
-		       sizeof (struct protid), cred);
+    ports_create_port_noinstall (diskfs_protid_class, diskfs_port_bucket,
+				 sizeof (struct protid), cred);
   if (! err)
     {
       po->refcnt++;
@@ -61,6 +61,9 @@ diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
     bcopy (gids, cred->gids, ngids * sizeof (uid_t));
   else
     *cred->gids = 0;
+
+  mach_port_move_member (mach_task_self (), cred->pi.port_right, 
+			 diskfs_port_bucket->portset);
 }
 
 /* Create and return a protid for an existing peropen PO in CRED.  The uid

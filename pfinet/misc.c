@@ -21,14 +21,19 @@
 #include "pfinet.h"
 #include <string.h>
 
-/* Create a sock_user structure, initialized from SOCK and ISROOT. */
+/* Create a sock_user structure, initialized from SOCK and ISROOT.
+   If NOINSTALL is set, don't put it in the portset.  */
 struct sock_user *
-make_sock_user (struct socket *sock, int isroot)
+make_sock_user (struct socket *sock, int isroot, int noinstall)
 {
   struct sock_user *user;
   
-  errno = ports_create_port (socketport_class, pfinet_bucket,
-			     sizeof (struct sock_user), &user);
+  if (noinstall)
+    errno = ports_create_port_noinstall (socketport_class, pfinet_bucket,
+					 sizeof (struct sock_user), &user);
+  else
+    errno = ports_create_port (socketport_class, pfinet_bucket,
+			       sizeof (struct sock_user), &user);
   if (errno)
     return 0;
   

@@ -1,3 +1,9 @@
+Thu Jul 18 23:05:56 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* protid-make.c (diskfs_start_protid): Use noinstall version of
+	ports_create_port.
+	(diskfs_finish_protid): Install port right into port set here.
+
 Mon Jul 15 21:37:12 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* diskfs.h (diskfs_checkdirmod): diskfs_isowner returns error or

@@ -1,3 +1,11 @@
+Thu Jul 18 23:19:07 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* misc.c (make_sock_user): New parm `noinstall'; if it's set use
+	non-installing version of ports_create_port.  All callers
+	changed. 
+	* io-ops.c (S_io_reauthenticate): Install NEWUSER port right into
+	portset after it's fully initialized.
+
 Sat Jul 13 20:18:18 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* io-ops.c (S_io_reauthenticate): Repeat auth_server_authenticate

@@ -2,4 +2,4 @@
 #
 # Disk device	Mount point	Format	rw/ro	dump  fsckpassno
 #
-/dev/rsd0a	/		ufs	rw	1 1
+#/dev/rsd0a	/		ufs	rw	1 1

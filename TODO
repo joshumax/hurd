@@ -34,6 +34,9 @@ See `tasks', the exported task list.
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
     special-case interrupt_operation.
+*** Drop wire parms to manage-operations; instead have a new-thread hook
+    function.
+*** Add ports_create_port_noinstall to ports.h.
 
 ** libstore:
 *** test it and make diskfs use it.

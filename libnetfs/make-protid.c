@@ -25,8 +25,14 @@ netfs_make_protid (struct peropen *po, struct netcred *cred)
 {
   struct protid *pi;
 
-  errno = ports_create_port (netfs_protid_class, netfs_port_bucket, 
-			     sizeof (struct protid), &pi);
+  if (cred)
+    errno = ports_create_port (netfs_protid_class, netfs_port_bucket, 
+			       sizeof (struct protid), &pi);
+  else
+    errno = ports_create_port_noinstall (netfs_protid_class,
+					 netfs_port_bucket, 
+					 sizeof (struct protid), &pi);
+    
   if (errno)
     return 0;
 

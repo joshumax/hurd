@@ -1,3 +1,10 @@
+Thu Jul 18 23:09:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* io-reauthenticate.c (netfs_S_io_reauthenticate): After attaching
+	credential to NEWPI, install it in NETFS_PORT_BUCKET->portset.
+	* make-protid.c (netfs_make_protid): If CRED is null, use
+	noinstall version of ports_create_port.
+
 Sat Jul 13 20:10:02 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* io-reauthenticate.c (netfs_S_io_reauthenticate): Repeat

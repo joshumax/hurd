@@ -67,6 +67,9 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
     newpi->credential = netfs_make_credential (gen_uids, genuidlen,
 					       gen_gids, gengidlen);
 
+  mach_port_move_member (mach_task_self (), newpi->pi.port_right,
+			 netfs_port_bucket->portset);
+
   mutex_unlock (&user->po->np->lock);
   ports_port_deref (newpi);
 

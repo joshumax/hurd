@@ -12,4 +12,5 @@ if [ "$UHOME" -a -r "$UHOME/.root_profile" ]; then
 else
   PATH=/sbin:/bin:/local/bin
   export PATH
+  echo "Don\'t login as root; use su."
 fi
