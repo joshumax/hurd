@@ -66,9 +66,9 @@ static const struct argp_option options[] = {
   {"target-receive",  'R', 0, 0,
      "Only show ports that translate into receive rights"},
   {"target-send",     'S', 0, 0,
-     "Only show ports that translate into receive rights"},
+     "Only show ports that translate into send rights"},
   {"target-send-once",'O', 0, 0,
-     "Only show ports that translate into receive rights"},
+     "Only show ports that translate into send once rights"},
 #endif
 
   {0}
