@@ -111,7 +111,7 @@ void main (int argc, char *argv[])
 	}
       return 0;
     }
-  const struct argp *kids[] = { &store_argp, 0 };
+  const struct argp_child kids[] = { {&store_argp}, {0} };
   const struct argp argp = { options, parse_opt, args_doc, doc, kids };
   struct store_argp_params store_params = { default_type: "device" };
 
