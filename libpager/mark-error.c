@@ -1,5 +1,5 @@
 /* Recording errors for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -99,16 +99,24 @@ _pager_mark_object_error(struct pager *pager,
 /* Tell us what the error (set with mark_object_error) for 
    pager P is on page ADDR. */
 error_t
-pager_get_error (struct pager *p,
-		 vm_address_t addr)
+pager_get_error (struct pager *p, vm_address_t addr)
 {
   error_t err;
   
   mutex_lock (&p->interlock);
-  _pager_pagemap_resize (p, addr);
-  
-  err = _pager_page_errors[PM_ERROR(p->pagemap[addr/__vm_page_size])];
+
+  addr /= vm_page_size;
+
+  /* If there really is no error for ADDR, we should be able to exted the
+     pagemap table; otherwise, if some previous operation failed because it
+     couldn't extend the table, this attempt will *probably* (heh) fail for
+     the same reason.  */
+  err = _pager_pagemap_resize (p, addr);
+
+  if (! err)
+    err = _pager_page_errors[PM_ERROR(p->pagemap[addr])];
 
   mutex_unlock (&p->interlock);
+
   return err;
 }
