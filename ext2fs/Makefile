@@ -18,16 +18,18 @@
 dir := ext2fs
 makemode := server
 
-SRCS = balloc.c bitmap.c ext2fs.c getblk.c hyper.c ialloc.c inode.c pager.c
-OBJS = $(SRCS:.c=.o) exec_server_image.o
+SRCS = balloc.c bitmap.c dir.c ext2fs.c getblk.c hyper.c ialloc.c inode.c \
+       pager.c pokeloc.c truncate.c getopt.o error.o
+OBJS = $(SRCS:.c=.o) # exec_server_image.o
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
 DIST_FILES = BROKEN
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
-#HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
-#	libfshelp libdiskfs libthreads libports
 HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
 target = ext2fs
+
+CPPFLAGS += -I../lib
+vpath %.c ../lib
 
 include ../Makeconf
 
@@ -35,7 +37,7 @@ exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	rsh $(mighost) -n cd `pwd` \; \
 	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
 
-$(OBJS): ext2fs.h 
+$(OBJS): ext2fs.h ext2_fs.h ext2_fs_i.h
 $(OBJS): $(REMHDRS)
 
 $(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
