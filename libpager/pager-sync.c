@@ -29,9 +29,6 @@ pager_sync (struct pager *p, int wait)
   
   lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
 	       VM_PROT_NO_CHANGE, wait);
-
-  if (shutting_down)
-    p->pager_state = SHUTDOWN;
 }
 
 
