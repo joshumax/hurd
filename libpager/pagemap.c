@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include <string.h>
   
 /* Grow the pagemap as necessary to deal with address OFF */
 void
@@ -24,9 +26,6 @@ pagemap_resize (struct pager *p,
   void *newaddr;
   int newsize;
   
-  if (p->pagemapsize && !p->pagemap)
-    panic ("pagemap failure");
-
   off /= __vm_page_size;
   if (p->pagemapsize >= off)
     return;
