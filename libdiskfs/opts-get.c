@@ -23,9 +23,7 @@
 #include "priv.h"
 
 error_t
-diskfs_get_options (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, unsigned *argz_len)
 {
-  *argz = 0;
-  *argz_len = 0;
   return diskfs_append_std_options (argz, argz_len);
 }
