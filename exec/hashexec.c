@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <hurd/sigpreempt.h>
 #include <unistd.h>
+#include <envz.h>
 
 /* This is called to check E for a #! interpreter specification.  E has
    already been prepared (successfully) and checked (unsuccessfully).  If
@@ -164,6 +165,7 @@ check_hashbang (struct execdata *e,
 
   if (! e->error)
     {
+      int free_file_name = 0; /* True if we should free FILE_NAME.  */
       jmp_buf args_faulted;
       void fault_handler (int signo)
 	{ longjmp (args_faulted, 1); }
@@ -183,6 +185,7 @@ check_hashbang (struct execdata *e,
 
 	      error_t error;
 	      char *name;
+	      int free_name = 0; /* True if we should free NAME. */
 	      file_t name_file;
 	      struct stat st;
 	      int file_fstype;
@@ -195,20 +198,14 @@ check_hashbang (struct execdata *e,
 	      error_t search_path (struct hurd_signal_preempter *preempter)
 		{
 		  error_t error;
-		  const char envar[] = "\0PATH=";
-		  char *path, *p;
-		  if (envplen >= sizeof (envar) &&
-		      !memcmp (&envar[1], envp, sizeof (envar) - 2))
-		    p = envp - 1;
-		  else
-		    p = memmem (envp, envplen, envar, sizeof (envar) - 1);
-		  if (p != NULL)
+		  char *path;
+		  char *env_path = envz_get (envp, envplen, "PATH");
+
+		  if (env_path)
 		    {
-		      size_t len;
-		      p += sizeof (envar) - 1;
-		      len = strlen (p) + 1;
+		      size_t len = strlen (env_path) + 1;
 		      path = alloca (len);
-		      bcopy (p, path, len);
+		      bcopy (env_path, path, len);
 		    }
 		  else
 		    {
@@ -240,11 +237,13 @@ check_hashbang (struct execdata *e,
 			    {
 			      size_t dirlen = strlen (p);
 			      size_t namelen = strlen (name);
-			      char *new = alloca (dirlen + 1 + namelen + 1);
+			      char *new = malloc (dirlen + 1 + namelen + 1);
+
 			      memcpy (new, p, dirlen);
 			      new[dirlen] = '/';
 			      memcpy (&new[dirlen + 1], name, namelen + 1);
 			      name = new;
+			      free_name = 1;
 			    }
 			  break;
 			}
@@ -283,7 +282,12 @@ check_hashbang (struct execdata *e,
 		      st.st_fstype == file_fstype &&
 		      st.st_fsid == file_fsid &&
 		      st.st_ino == file_fileno)
-		    file_name = name;
+		    {
+		      file_name = name;
+		      free_file_name = free_name;
+		    }
+		  else if (free_name)
+		    free (name);
 		  mach_port_deallocate (mach_task_self (), name_file);
 		}
 	    }
@@ -353,6 +357,9 @@ check_hashbang (struct execdata *e,
 				 argvlen);
 	      memcpy (memcpy (n, arg, len) + len, file_name, namelen);
 	    }
+
+	  if (free_file_name)
+	    free (file_name);
 
 	  return 0;
 	}
