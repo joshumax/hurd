@@ -1,5 +1,10 @@
 Fri Mar  7 11:53:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* addu.c: New file.
+	* Makefile: Add addu to dependents of libshouldbeinlibc & libps.
+	(SRCS): Add addu.c.
+	(targets): Add addu.
+
 	* hurdids.c (args_doc): Initialize with "[PID]".
 	(main): Get the ids from the auth port instead of using libc grot.
 	Support getting ids from other processes.
