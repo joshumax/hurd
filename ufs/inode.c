@@ -78,6 +78,8 @@ iget (ino_t inum, struct node **npp)
   rwlock_init (&dn->datalock);
   dn->dinloc = 0;
   dn->sinloc = 0;
+  dn->dinloclen = 0;
+  dn->sinloclen = 0;
   dn->sininfo = 0;
   dn->fileinfo = 0;
 
@@ -147,6 +149,7 @@ diskfs_node_norefs (struct node *np)
     free (np->dn->dirents);
   assert (!np->dn->sininfo && !np->dn->fileinfo);
   assert (!np->dn->dinloc && !np->dn->sinloc);
+  assert (!np->dn->dinloclen && !np->dn->sinloclen);
   free (np->dn);
   free (np);
 }
