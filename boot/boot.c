@@ -46,6 +46,9 @@ mach_port_t bootport;
 
 int console_mscount;
 
+vm_address_t fs_stack_base;
+vm_size_t fs_stack_size;
+
 /* These will prevent the Hurd-ish versions from being used */
 
 int
@@ -87,7 +90,7 @@ lseek (int fd,
 }
 
 int
-_exit (int code)
+uxexit (int code)
 {
   return syscall (1, code);
 }
@@ -175,7 +178,7 @@ load_image (task_t t,
   char *buf;
   int headercruft;
   vm_address_t base = 0x10000;
-  int amount;
+  int rndamount, amount;
   vm_address_t bsspagestart, bssstart, stackaddr;
   int magic;
 
@@ -186,16 +189,17 @@ load_image (task_t t,
 
   headercruft = sizeof (struct exec) * (magic == ZMAGIC);
   
-  amount = round_page (headercruft + x.a_text + x.a_data);
-  vm_allocate (mach_task_self (), (u_int *)&buf, amount, 1);
+  amount = headercruft + x.a_text + x.a_data;
+  rndamount = round_page (amount);
+  vm_allocate (mach_task_self (), (u_int *)&buf, rndamount, 1);
   lseek (fd, -headercruft, 1);
   read (fd, buf, amount);
-  vm_allocate (t, &base, amount, 0);
-  vm_write (t, base, (u_int) buf, amount);
+  vm_allocate (t, &base, rndamount, 0);
+  vm_write (t, base, (u_int) buf, rndamount);
   if (magic != OMAGIC)
     vm_protect (t, base, trunc_page (headercruft + x.a_text),
 		0, VM_PROT_READ | VM_PROT_EXECUTE);
-  vm_deallocate (mach_task_self (), (u_int)buf, amount);
+  vm_deallocate (mach_task_self (), (u_int)buf, rndamount);
 
   bssstart = base + x.a_text + x.a_data + headercruft;
   bsspagestart = round_page (bssstart);
@@ -276,7 +280,8 @@ main (int argc, char **argv, char **envp)
   sigvec (SIGEMSG, &vec, 0);
   
   thread_create (newtask, &newthread);
-  __mach_setup_thread (newtask, newthread, startpc);
+  __mach_setup_thread (newtask, newthread, startpc, &fs_stack_base,
+		       &fs_stack_size);
 
   write (1, "pausing\n", 8);
   read (0, &c, 1);
@@ -435,7 +440,7 @@ S_exec_setexecdata (
 }
 
 
-error_t
+kern_return_t
 S_exec_startup (mach_port_t port,
 		u_int *base_addr,
 		vm_size_t *stack_size,
@@ -467,7 +472,8 @@ S_exec_startup (mach_port_t port,
   bcopy (argv, *argvP, nc);
   *argvlen = nc;
   
-  *base_addr = *stack_size = 0;
+  *base_addr = fs_stack_base;
+  *stack_size = fs_stack_size;
 
   *flags = 0;
   
@@ -758,7 +764,7 @@ do_mach_notify_no_senders (mach_port_t notify,
   if (notify == pseudo_console)
     {
       if (mscount == console_mscount)
-	_exit (0);
+	uxexit (0);
       else
 	{
 	  mach_port_request_notification (mach_task_self (), pseudo_console,
@@ -783,7 +789,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
 #if 0
   if (name == child_task && notify == bootport)
-    _exit (0);
+    uxexit (0);
 #endif
   return EOPNOTSUPP;
 }
@@ -792,8 +798,10 @@ do_mach_notify_dead_name (mach_port_t notify,
 /* Implementation of the Hurd I/O interface, which
    we support for the console port only. */
 
-error_t
+kern_return_t
 S_io_write (mach_port_t object,
+	    mach_port_t reply_port,
+	    mach_msg_type_name_t reply_type,
 	    char *data,
 	    u_int datalen,
 	    off_t offset,
@@ -815,7 +823,7 @@ S_io_write (mach_port_t object,
   return *amtwritten == -1 ? errno : 0;
 }
 
-error_t
+kern_return_t
 S_io_read (mach_port_t object,
 	   mach_port_t reply_port,
 	   mach_msg_type_name_t reply_type,
@@ -852,8 +860,10 @@ S_io_read (mach_port_t object,
     }
 }
 
-error_t 
+kern_return_t 
 S_io_seek (mach_port_t object,
+	   mach_port_t reply_port,
+	   mach_msg_type_name_t reply_type,
 	   off_t offset,
 	   int whence,
 	   off_t *newp)
@@ -861,8 +871,10 @@ S_io_seek (mach_port_t object,
   return object == pseudo_console ? ESPIPE : EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_readable (mach_port_t object,
+	       mach_port_t reply_port,
+	       mach_msg_type_name_t reply_type,
 	       int *amt)
 {
   if (object != pseudo_console)
@@ -871,66 +883,86 @@ S_io_readable (mach_port_t object,
   return 0;
 }
 
-error_t 
+kern_return_t 
 S_io_set_all_openmodes (mach_port_t object,
+			mach_port_t reply_port,
+			mach_msg_type_name_t reply_type,
 			int bits)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_get_openmodes (mach_port_t object,
+		    mach_port_t reply_port,
+		    mach_msg_type_name_t reply_type,
 		    int *modes)
 {
   *modes = O_READ | O_WRITE;
   return object == pseudo_console ? 0 : EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_set_some_openmodes (mach_port_t object,
+			 mach_port_t reply_port,
+			 mach_msg_type_name_t reply_type,
 			 int bits)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_clear_some_openmodes (mach_port_t object,
+			   mach_port_t reply_port,
+			   mach_msg_type_name_t reply_type,
 			   int bits)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_async (mach_port_t object,
+	    mach_port_t reply_port,
+	    mach_msg_type_name_t reply_type,
 	    mach_port_t notify,
-	    mach_port_t *id)
+	    mach_port_t *id,
+	    mach_msg_type_name_t *idtype)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_mod_owner (mach_port_t object,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
 		pid_t owner)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_get_owner (mach_port_t object,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
 		pid_t *owner)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_get_icky_async_id (mach_port_t object,
-			mach_port_t *id)
+			mach_port_t reply_port,
+			mach_msg_type_name_t reply_type,
+			mach_port_t *id,
+			mach_msg_type_name_t *idtype)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_select (mach_port_t object,
+	     mach_port_t reply_port,
+	     mach_msg_type_name_t reply_type,
 	     int type,
 	     mach_port_t ret,
 	     int tag,
@@ -939,8 +971,10 @@ S_io_select (mach_port_t object,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_stat (mach_port_t object,
+	   mach_port_t reply_port,
+	   mach_msg_type_name_t reply_type,
 	   struct stat *st)
 {
   if (object != pseudo_console)
@@ -951,15 +985,19 @@ S_io_stat (mach_port_t object,
   return 0;
 }
 
-error_t
+kern_return_t
 S_io_reauthenticate (mach_port_t object,
+		     mach_port_t reply_port,
+		     mach_msg_type_name_t reply_type,
 		     int rendint)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_restrict_auth (mach_port_t object,
+		    mach_port_t reply_port,
+		    mach_msg_type_name_t reply_type,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobjtype,
 		    uid_t *uids,
@@ -975,8 +1013,10 @@ S_io_restrict_auth (mach_port_t object,
   return 0;
 }
 
-error_t
+kern_return_t
 S_io_duplicate (mach_port_t object,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
 		mach_port_t *newobj,
 		mach_msg_type_name_t *newobjtype)
 {
@@ -988,8 +1028,10 @@ S_io_duplicate (mach_port_t object,
   return 0;
 }
 
-error_t
+kern_return_t
 S_io_server_version (mach_port_t object,
+		     mach_port_t reply_port,
+		     mach_msg_type_name_t reply_type,
 		     char *name,
 		     int *maj,
 		     int *min,
@@ -998,8 +1040,10 @@ S_io_server_version (mach_port_t object,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_map (mach_port_t obj,
+	  mach_port_t reply_port,
+	  mach_msg_type_name_t reply_type,
 	  mach_port_t *rd,
 	  mach_msg_type_name_t *rdtype,
 	  mach_port_t *wr,
@@ -1008,55 +1052,82 @@ S_io_map (mach_port_t obj,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_map_cntl (mach_port_t obj,
-	       mach_port_t *mem)
+	       mach_port_t reply_port,
+	       mach_msg_type_name_t reply_type,
+	       mach_port_t *mem,
+	       mach_msg_type_name_t *memtype)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-S_io_get_conch (mach_port_t obj)
+kern_return_t
+S_io_get_conch (mach_port_t obj,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-S_io_release_conch (mach_port_t obj)
+kern_return_t
+S_io_release_conch (mach_port_t obj,
+		    mach_port_t reply_port,
+		    mach_msg_type_name_t reply_type)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-S_io_eofnotify (mach_port_t obj)
+kern_return_t
+S_io_eofnotify (mach_port_t obj,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type)
+
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_prenotify (mach_port_t obj,
-		int start,
-		int end)
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type,
+		vm_offset_t start,
+		vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_io_postnotify (mach_port_t obj,
-		 int start,
-		 int end)
+		 mach_port_t reply_port,
+		 mach_msg_type_name_t reply_type,
+		 vm_offset_t start,
+		 vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-S_io_readsleep (mach_port_t obj)
+kern_return_t
+S_io_readsleep (mach_port_t obj,
+		mach_port_t reply_port,
+		mach_msg_type_name_t reply_type)
 {
   return EOPNOTSUPP;
 }
 
-error_t
-S_io_sigio (mach_port_t obj)
+kern_return_t
+S_io_readnotify (mach_port_t obj,
+		 mach_port_t reply_port,
+		 mach_msg_type_name_t reply_type)
+{
+  return EOPNOTSUPP;
+}
+
+
+kern_return_t
+S_io_sigio (mach_port_t obj,
+	    mach_port_t reply_port,
+	    mach_msg_type_name_t reply_type)
 {
   return EOPNOTSUPP;
 }
