@@ -1,8 +1,8 @@
 /* Hierarchial filesystem support
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2002 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -84,9 +84,9 @@ struct treefs_peropen
 };
 
 /* A filesystem node in the tree.  */
-struct treefs_node 
+struct treefs_node
 {
-  struct stat stat;
+  io_statbuf_t stat;
   struct treefs_fsys *fsys;
 
   struct trans_link active_trans;
@@ -124,7 +124,7 @@ struct treefs_fsys
   /* The port for the node which this filesystem is translating.  */
   mach_port_t underlying_port;
   /* And stat info for it.  */
-  struct stat underlying_stat;
+  io_statbuf_t underlying_stat;
 
   /* Flags from the TREEFS_FSYS_ set.  */
   int flags;
@@ -237,8 +237,8 @@ void treefs_hooks_set (treefs_hook_vector_t hooks,
 
 extern spin_lock_t treefs_node_refcnt_lock;
 
-/* Add a hard reference to a node.  If there were no hard 
-   references previously, then the node cannot be locked 
+/* Add a hard reference to a node.  If there were no hard
+   references previously, then the node cannot be locked
    (because you must hold a hard reference to hold the lock). */
 extern inline void
 treefs_node_ref (struct treefs_node *node)
@@ -263,7 +263,7 @@ extern inline void
 treefs_node_release (struct treefs_node *node)
 {
   int tried_drop_weak_refs = 0;
-  
+
  loop:
   spin_lock (&treefs_node_refcnt_lock);
   assert (node->refs);
@@ -310,7 +310,7 @@ extern inline void
 treefs_node_unref (struct treefs_node *node)
 {
   int tried_drop_weak_refs = 0;
-  
+
  loop:
   spin_lock (&treefs_node_refcnt_lock);
   assert (node->refs);
@@ -331,7 +331,7 @@ treefs_node_unref (struct treefs_node *node)
 	  spin_unlock (&treefs_node_refcnt_lock);
 	  node->refs++;
 	  spin_unlock (&treefs_node_refcnt_lock);
-	  
+
 	  treefs_node_try_dropping_weak_refs (node);
 	  tried_drop_weak_refs = 1;
 
@@ -372,7 +372,7 @@ treefs_node_release_weak (struct treefs_node *node)
 
 /* Release a weak reference on NODE.  If NODE is locked by anyone, then
    this cannot be the last reference (because you must hold a
-   hard reference in order to hold the lock).  */  
+   hard reference in order to hold the lock).  */
 extern inline void
 treefs_node_unref_weak (struct treefs_node *node)
 {
