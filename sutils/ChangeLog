@@ -1,3 +1,8 @@
+2002-03-23  Roland McGrath  <roland@frob.com>
+
+	* MAKEDEV.sh (mkdev: shm): New, uses /hurd/tmpfs filesystem.
+	(mkdev: std): Add shm to the standard list.
+
 2001-09-06  Roland McGrath  <roland@frob.com>
 
 	* MAKEDEV.sh (pty cases): Remove ptyT? from the set.  Add pty?[g-v].
