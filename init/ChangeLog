@@ -1,9 +1,13 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* stubs.c (send_signal): Don't use mach_msg_destroy, since it wants
+	the local/remote ports reversed.  Destroy the rights by hand instead.
+
 	* stubs.c (send_signal): Make MESSAGE auto instead of static.
 	Take new argument TIMEOUT, passed to mach_msg instead of zero.
 	(send_signal): For MACH_SEND_TIMED_OUT failure, destroy the
 	pseudo-received message to avoid leaking send rights.
+
 	* init.c (process_signal): Pass new argument, timeout of 500 ms.
 
 1999-09-28  Thomas Bushnell, BSG  <tb@mit.edu>
