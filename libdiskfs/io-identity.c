@@ -1,5 +1,5 @@
 /* libdiskfs implementation of io_identity RPC
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -60,7 +60,7 @@ diskfs_S_io_identity (struct protid *cred,
     {
       *idtype = MACH_MSG_TYPE_MAKE_SEND;
       *fsystype = MACH_MSG_TYPE_MAKE_SEND;
-      *fileno = np->dn_stat.st_ino;
+      *fileno = inum;
     }
 
   return err;
