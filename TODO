@@ -278,10 +278,6 @@ See `tasks', the exported task list.
 *** Report statfs correctly. !!
 
 * Mach:
-** Have some analogue of /dev/klog that syslogd can get kernel messages from
-    (maybe there is already?); the boot file system, and other people
-    deeming
-    it too risk to attempt to contact syslogd can use it too? !
 ** Have the at-close actions on devices be more directly controllable
    by users by deleting the current at-close actions and replacing
    them with suitable device_set_status calls.
