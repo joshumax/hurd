@@ -1,6 +1,6 @@
 /* General fs node functions
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -74,12 +74,26 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
 		      struct timespec *atime, struct timespec *mtime)
 {
   error_t err = fshelp_isowner (&node->nn_stat, cred);
+  int flags = TOUCH_CTIME;
+  
   if (! err)
     {
-      node->nn_stat.st_mtime = mtime->tv_sec;
-      node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
-      node->nn_stat.st_atime = atime->tv_sec;
-      node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
+      if (mtime)
+	{
+	  node->nn_stat.st_mtime = mtime->tv_sec;
+	  node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
+	}
+      else
+	flags |= TOUCH_MTIME;
+      
+      if (atime)
+	{
+	  node->nn_stat.st_atime = atime->tv_sec;
+	  node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
+	}
+      else
+	flags != TOUCH_ATIME;
+      
       fshelp_touch (&node->nn_stat, TOUCH_CTIME, usermux_maptime);
     }
   return err;
