@@ -43,9 +43,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       struct node *np, *old;
       struct protid *rootpi;
 
-      /* Skip leading slashes */
-      while (_diskfs_chroot_directory == '/')
-	_diskfs_chroot_directory++;
+      /* Skip leading slashes.  */
+      while (*_diskfs_chroot_directory == '/')
+	++_diskfs_chroot_directory;
 
       mutex_lock (&diskfs_root_node->lock);
 
