@@ -45,6 +45,7 @@ ports_reallocate_port (void *portstruct)
       pi->flags &= ~PORT_HAS_SENDRIGHTS;
       dropref = 1;
     }
+  pi->cancel_threshhold = 0;
   pi->mscount = 0;
   ihash_add (pi->bucket->htable, pi->port_right, pi, &pi->hentry);
   mutex_unlock (&_ports_lock);
