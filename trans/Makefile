@@ -19,6 +19,7 @@ dir := trans
 makemode := servers
 
 SRCS = ifsock.c symlink.c magic.c null.c
+OBJS = $(subst .c,.o,$(SRCS)) fsysServer.o error.o
 targets = symlink ifsock magic null
 
 CPPFLAGS += -I../lib

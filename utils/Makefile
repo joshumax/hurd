@@ -19,6 +19,7 @@ dir := utils
 makemode := utilities
 
 SRCS = shd.c ps.c su.c settrans.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh fsysopts.c
+OBJS = $(subst .c,.o,$(SRCS)) argz.o error.o
 targets = shd ps settrans showtrans clri sync reboot halt su mount fsysopts
 DIST_FILES = sh.ChangeLog
 
