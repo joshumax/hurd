@@ -1,6 +1,7 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
 
-   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01,02
+   	Free Software Foundation, Inc.
    Written by Roland McGrath.
    This file is part of the GNU Hurd.
 
@@ -33,7 +34,7 @@ bfd host_bfd = { arch_info: &host_bfd_arch_info };
 extern error_t bfd_mach_host_arch_mach (host_t host,
 					enum bfd_architecture *bfd_arch,
 					long int *bfd_machine,
-					Elf32_Half *elf_machine);
+					ElfW(Half) *elf_machine);
 #endif
 
 /* Trivfs hooks.  */

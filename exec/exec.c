@@ -140,7 +140,7 @@ load_section (void *section, struct execdata *u)
 #ifdef BFD
   asection *const sec = section;
 #endif
-  const Elf32_Phdr *const ph = section;
+  const ElfW(Phdr) *const ph = section;
 
   if (u->error)
     return;
@@ -843,8 +843,8 @@ check_bfd (struct execdata *e)
 static void
 check_elf (struct execdata *e)
 {
-  Elf32_Ehdr *ehdr = map (e, 0, sizeof (Elf32_Ehdr));
-  Elf32_Phdr *phdr;
+  ElfW(Ehdr) *ehdr = map (e, 0, sizeof (ElfW(Ehdr)));
+  ElfW(Phdr) *phdr;
 
   if (! ehdr)
     {
@@ -853,7 +853,7 @@ check_elf (struct execdata *e)
       return;
     }
 
-  if (*(Elf32_Word *) ehdr != ((union { Elf32_Word word;
+  if (*(ElfW(Word) *) ehdr != ((union { ElfW(Word) word;
 				        unsigned char string[SELFMAG]; })
 			       { string: ELFMAG }).word)
     {
@@ -866,7 +866,7 @@ check_elf (struct execdata *e)
       ehdr->e_ident[EI_VERSION] != EV_CURRENT ||
       ehdr->e_version != EV_CURRENT ||
       ehdr->e_ehsize < sizeof *ehdr ||
-      ehdr->e_phentsize != sizeof (Elf32_Phdr))
+      ehdr->e_phentsize != sizeof (ElfW(Phdr)))
     {
       e->error = ENOEXEC;
       return;
@@ -883,7 +883,7 @@ check_elf (struct execdata *e)
   e->info.elf.loadbase = 0;
   e->info.elf.phnum = ehdr->e_phnum;
 
-  phdr = map (e, ehdr->e_phoff, ehdr->e_phnum * sizeof (Elf32_Phdr));
+  phdr = map (e, ehdr->e_phoff, ehdr->e_phnum * sizeof (ElfW(Phdr)));
   if (! phdr)
     {
       if (!e->error)
@@ -896,13 +896,13 @@ check_elf (struct execdata *e)
 /* Copy MAPPED_PHDR into E->info.elf.phdr, filling in
    E->interp.phdr, *PHDR_ADDR, and *PHDR_SIZE in the process.  */
 static void
-check_elf_phdr (struct execdata *e, const Elf32_Phdr *mapped_phdr,
+check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr,
 		vm_address_t *phdr_addr, vm_size_t *phdr_size)
 {
-  const Elf32_Phdr *phdr;
+  const ElfW(Phdr) *phdr;
 
   memcpy (e->info.elf.phdr, mapped_phdr,
-	  e->info.elf.phnum * sizeof (Elf32_Phdr));
+	  e->info.elf.phnum * sizeof (ElfW(Phdr)));
 
   for (phdr = e->info.elf.phdr;
        phdr < &e->info.elf.phdr[e->info.elf.phnum];
@@ -1025,7 +1025,7 @@ load (task_t usertask, struct execdata *e)
       else
 #endif
 	{
-	  Elf32_Word i;
+	  ElfW(Word) i;
 	  for (i = 0; i < e->info.elf.phnum; ++i)
 	    if (e->info.elf.phdr[i].p_type == PT_LOAD)
 	      load_section (&e->info.elf.phdr[i], e);
@@ -1439,8 +1439,8 @@ do_exec (file_t file,
   else
 #endif
     {
-      const Elf32_Phdr *phdr = e.info.elf.phdr;
-      e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (Elf32_Phdr));
+      const ElfW(Phdr) *phdr = e.info.elf.phdr;
+      e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (ElfW(Phdr)));
       check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
     }
 
@@ -1722,9 +1722,9 @@ do_exec (file_t file,
 	  else
 #endif
 	    {
-	      const Elf32_Phdr *phdr = interp.info.elf.phdr;
+	      const ElfW(Phdr) *phdr = interp.info.elf.phdr;
 	      interp.info.elf.phdr = alloca (interp.info.elf.phnum *
-					     sizeof (Elf32_Phdr));
+					     sizeof (ElfW(Phdr)));
 	      check_elf_phdr (&interp, phdr, NULL, NULL);
 	    }
 	}

@@ -1,6 +1,6 @@
 /* Determine the BFD and ELF architecture and machine flavor
    from a Mach host port.  Used by the exec and core servers.
-   Copyright (C) 1992,93,95,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,95,96,99,2000,02 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <elf.h>
 
 error_t
-elf_machine_matches_host (Elf32_Half e_machine)
+elf_machine_matches_host (ElfW(Half) e_machine)
 {
   static void *host_type;	/* Cached entry into the switch below.  */
   struct host_basic_info hostinfo;

@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, private declarations.
-   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,02 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -33,6 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #endif
 
 #include <elf.h>
+#include <link.h>		/* This gives us the ElfW macro.  */
 #include <fcntl.h>
 #include "exec_S.h"
 
@@ -127,7 +128,7 @@ struct execdata
     union			/* Interpreter section giving name of file.  */
       {
 	asection *section;
-	const Elf32_Phdr *phdr;
+	const ElfW(Phdr) *phdr;
       } interp;
     memory_object_t filemap, cntlmap;
     struct shared_io *cntl;
@@ -149,15 +150,15 @@ struct execdata
 	    /* Program header table read from the executable.
 	       After `check' this is a pointer into the mapping window.
 	       By `load' it is local alloca'd storage.  */
-	    Elf32_Phdr *phdr;
-	    Elf32_Word phnum;	/* Number of program header table elements.  */
+	    ElfW(Phdr) *phdr;
+	    ElfW(Word) phnum;	/* Number of program header table elements.  */
 	    int anywhere;	/* Nonzero if image can go anywhere.  */
 	    vm_address_t loadbase; /* Actual mapping location.  */
 	  } elf;
       } info;
   };
 
-error_t elf_machine_matches_host (Elf32_Half e_machine);
+error_t elf_machine_matches_host (ElfW(Half) e_machine);
 
 void finish (struct execdata *, int dealloc_file_port);
 
