@@ -113,7 +113,7 @@ include $(srcdir)/Maketools
 # library header files locally rather than from installed copies.
 # Append to any value set by the specific Makefile.
 CPPFLAGS += -I$(srcdir)
-CFLAGS += -Wall -Wno-parentheses -g
+CFLAGS += -Wall -g
 
 
 # Standard targets
