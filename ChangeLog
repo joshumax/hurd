@@ -1,3 +1,16 @@
+Mon Sep 23 00:10:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* configure.in: Check for libcrypt.
+	* config.make.in (LIBCRYPT): New variable.
+
+Wed Sep 18 16:26:06 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* version.h (STANDARD_HURD_VERSION): Change to use new format.
+	Add EXTRA tail arg.
+	(_SHV_SEP): New macro.
+
+	* Makefile (prog-subdirs): Remove devio.
+
 Thu Sep 19 16:53:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile ($(addsuffix .d,$(subdirs))): Depend on the makefile in

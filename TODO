@@ -8,7 +8,6 @@ See `tasks', the exported task list.
 ** O_RDONLY==0
 ** "user-friendly" naming scheme for /dev
 
-* Emacs M-x shell seems to start all the ptys.
 * Settle termcap v. curses with rms et. al.
 * Contents of =pending-changes.
 * Make sure all the pieces of the Hurd have adequate version stuff.
@@ -18,7 +17,6 @@ See `tasks', the exported task list.
 * Make for easier installation
 * Write coding standards suggestions for Hurd
 * Implement file_fetch_dir
-* --help strings need to mention bug reporting address
 * Conform to coding standards (esp. CFLAGS setting)
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap
@@ -26,9 +24,8 @@ See `tasks', the exported task list.
 * Libraries
 
 ** general:
-*** fsys_get_options should return: prog name in argv[0]; non-option 
-    program args, e.g. the diskfs device, or nfs mount 
 *** Enable compilation without -O
+*** figure out why uname -v string has `/ELF' appended.
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
@@ -49,7 +46,6 @@ See `tasks', the exported task list.
     function.
 
 ** libstore:
-*** test it and make diskfs use it.
 
 ** libfsserver/libnetfs:
 *** convert libnetfs to libfsserver
@@ -87,7 +83,6 @@ See `tasks', the exported task list.
 *** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation.
 *** Provide for MNT_SYNCHRONOUS, MNT_NOEXEC, MNT_NOSUID, MNT_NODEV, etc.
 *** Implement io_restrict_auth correctly.
-*** Use libstore.
 *** Use off_t correctly.
 *** Add a consistent message printing facility for filesystems to use
     (syslog, but takes special care when the root file system?).
@@ -156,11 +151,8 @@ See `tasks', the exported task list.
 *** Implement nqnfs.
 *** Add Hurd-specific calls.
 
-** devio:
-*** Make a server (/servers/devio?) to share multiple devio nodes?
-*** Use libstore.
-*** Make block devices work again.
-*** MAKEDEV should be able to make physical terminal devs.
+** storeio:
+*** Make a server (/servers/storeio?) to share multiple storeio nodes?
 *** Get rid of global DEVICE variable and use the trivfs control hack.
 *** Serverify, ala new-fifo.
 
@@ -204,11 +196,11 @@ See `tasks', the exported task list.
     script by other than root (it doesn't now if the script specifies
     --retry="$0" because the exec server will use /dev/fd/N for name,
     and child_lookup() doesn't supply more than fds 0-2).
-** Write/port the various helpful mach info programs in UX (vminfo, etc).
 ** Serverboot doesn't deal with symlinks properly.
 ** Grub doesn't deal with symlinks properly.
 ** `sush --help' gets a bus error.  
 ** `uptime --help' and `uptime --version' fail.
+*** MAKEDEV should be able to make physical terminal devs.
 
 ** fsck:
 *** fsck should use (not-yet-added) fsys_get_options returned device instead 
@@ -243,13 +235,6 @@ See `tasks', the exported task list.
     (maybe there is already?); the boot file system, and other people deeming
     it too risk to attempt to contact syslogd can use it too?
 ** Add a startup timestamp to tasks, and have some way of fetching it.
-
-* Bug: floppies bite
-   bash# dd if=/dev/rfd0 bs=2k > /dev/null
-   dd: /dev/rfd0: Input/output error
-   1+0 records in
-   1+0 records out
-   (for smaller bs there's a continuable kernel panic)
 
 ======
 

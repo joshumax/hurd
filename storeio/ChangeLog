@@ -1,3 +1,21 @@
+Thu Sep 19 18:12:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeio.c (trivfs_append_args): New function.
+
+Wed Sep 18 15:16:27 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io.c (trivfs_S_io_read, trivfs_S_io_write): Use void * buffers.
+	* open.h (open_read, open_write): Likewise.
+	* open.c (open_read, open_write): Likewise.
+	* dev.h (struct dev, dev_read, dev_write): Likewise.
+	* dev.c (dev_buf_fill, dev_read, dev_write): Likewise.
+	* pager.c (pager_read_page): Cast BUF into void ** for dev_read.
+
+	* storeio.c (main): Use STORE_PARAMS variable to get result from
+	parsing STORE_ARGP.
+
+	* dev.c (dev_open): Remove CLASSES argument to store_parsed_open.
+
 Thu Sep 19 17:18:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
