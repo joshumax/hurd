@@ -1,3 +1,10 @@
+2000-12-28  Roland McGrath  <roland@frob.com>
+
+	* node.c (recompute_blocks): New function, broken out of ...
+	(diskfs_cached_lookup): here.  Now use call that.
+	(diskfs_set_translator): Likewise.
+	(create_symlink_hook): Likewise.  Do nothing for zero-length target.
+
 2000-12-26  Roland McGrath  <roland@frob.com>
 
 	* Makefile, tmpfs.c, tmpfs.h, node.c, dir.c: New files.
