@@ -99,29 +99,29 @@ TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 
 ## Targets used by the main targets above.
 $(prog-subdirs) $(lib-subdirs): FORCE
-	$(MAKE) -C $@ all
+	$(MAKE) -e -C $@ all
 FORCE:
 
 %-lndist: $(top_srcdir)/hurd-snap
-	$(MAKE) -C $* lndist no_deps=t
+	$(MAKE) -e -C $* lndist no_deps=t
 
 %-clean:
-	$(MAKE) -C $* clean no_deps=t
+	$(MAKE) -e -C $* clean no_deps=t
 
 %-relink:
-	$(MAKE) -C $* relink no_deps=t
+	$(MAKE) -e -C $* relink no_deps=t
 
 %-objs:
-	$(MAKE) -C $* objs
+	$(MAKE) -e -C $* objs
 
 %-install:
-	$(MAKE) -C $* install
+	$(MAKE) -e -C $* install
 
 %-install-headers:
-	$(MAKE) -C $* install-headers
+	$(MAKE) -e -C $* install-headers
 
 %-TAGS:
-	$(MAKE) -C $* TAGS no_deps=t
+	$(MAKE) -e -C $* TAGS no_deps=t
 
 $(srcdir)/hurd-snap:
 	mkdir $(srcdir)/hurd-snap
@@ -155,4 +155,4 @@ endif
 
 # How to build them
 $(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
-	$(MAKE) -C $* directory-depend no_deps=t
+	$(MAKE) -e -C $* directory-depend no_deps=t

@@ -1,3 +1,10 @@
+1999-09-17  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* Makefile ($(prog-subdirs) $(lib-subdirs), %-lndist, %-clean,
+	%-relink, %-objs, %-install, %-install-headers, %-TAGS, %.d): Pass
+	-e to sub-make, so that explicit prefix= args (etc.) get passed
+	down correctly.
+
 1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf (link-executable): New variable, partial linking
