@@ -564,6 +564,8 @@ diskfs_alloc_node (struct node *dir,
 		nextgennumber = sex;
 	np->dn_stat.st_gen = nextgennumber;
 	spin_unlock (&gennumberlock);
+	
+	*npp = np;
 	return (0);
 noinodes:
 	printf ("out of inodes");
