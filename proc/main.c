@@ -53,6 +53,8 @@ main ()
   mach_port_t authhandle;
   error_t err;
 
+  initialize_version_info ();
+
   task_get_bootstrap_port (mach_task_self (), &boot);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
