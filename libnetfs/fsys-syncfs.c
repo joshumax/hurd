@@ -30,7 +30,7 @@ netfs_S_fsys_syncfs (mach_port_t cntl,
   uid_t root = 0;
   error_t err;
 
-  cred = iohelp_make_iouser (make_idvec (), make_idvec ());
+  cred = iohelp_create_iouser (make_idvec (), make_idvec ());
   idvec_set_ids (cred->uids, &root, 1);
   idvec_set_ids (cred->gids, &root, 1);
   err = netfs_attempt_syncfs (cred, wait);
