@@ -345,9 +345,22 @@ rebuild_uname (void)
     p[-1] = '\0';
   end[-1] = '\0';
 
+  for (i = 2; i < nserver_versions; i++)
+    if (strcmp (server_versions[i].version, server_versions[1].version))
+      break;
+
   initstr (uname_info.version);
-  for (i = 0; i < nserver_versions; i++)
-    addstr (server_versions[i].name, server_versions[i].version);
+
+  if (i == nserver_versions)
+    {
+      /* All the servers after [0] (the microkernel version)
+	 are the same, so just write one "hurd" version.  */
+      addstr (server_versions[0].name, server_versions[0].version);
+      addstr ("Hurd", server_versions[1].version);
+    }
+  else
+    for (i = 0; i < nserver_versions; i++)
+      addstr (server_versions[i].name, server_versions[i].version);
 
   if (p > end)
 #ifdef notyet
