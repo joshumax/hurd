@@ -1,3 +1,7 @@
+Fri Jun  6 11:42:14 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (LCLHDRS): Add fhandle.h.
+
 Tue May 27 11:55:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-chmod.c (diskfs_S_file_chmod): Turn off S_ITRANS bits too.
