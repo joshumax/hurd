@@ -15,7 +15,7 @@ CCVERSION=2.5.8
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 
 HOST_CC := $(CC)
-CC=gcc $(CCTYPE) -O2 -pipe
+CC=gcc $(CCTYPE) -O2 -pipe # Ceci n'est pas une pipe.
 MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
 CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
 export CPP
