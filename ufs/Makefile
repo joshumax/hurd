@@ -1,6 +1,6 @@
 # Makefile for ufs
 #
-#   Copyright (C) 1994,95,96,99,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,99,2000,02 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -28,3 +28,5 @@ OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
 
 include ../Makeconf
+
+ufs.static: $(boot-store-types:%=../libstore/libstore_%.a)
