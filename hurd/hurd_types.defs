@@ -166,7 +166,11 @@ type rusage_t = struct[18] of int; /* XXX */
 
 type flock_t = struct[5] of int;
 
+#include <utsnamelen.h>
+type utsname_t = struct[5 * _UTSNAME_LENGTH] of char;
+
 import <sys/types.h>;
 import <sys/stat.h>;
 import <sys/resource.h>;
+import <sys/utsname.h>;
 import <hurd/hurd_types.h>;
