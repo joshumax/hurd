@@ -144,7 +144,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
 
   if (tnp)
     {
-      err = diskfs_dirrewrite (tdp, fnp, ds);
+      err = diskfs_dirrewrite (tdp, tnp, fnp, toname, ds);
       if (!err)
 	{
 	  tnp->dn_stat.st_nlink--;
@@ -196,7 +196,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   
   diskfs_nrele (tmpnp);
 
-  err = diskfs_dirremove (fdp, ds);
+  err = diskfs_dirremove (fdp, fnp, fromname, ds);
   if (diskfs_synchronous)
     diskfs_node_update (fdp, 1);
 
