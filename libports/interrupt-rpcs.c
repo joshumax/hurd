@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -31,7 +31,10 @@ ports_interrupt_rpcs (void *portstruct)
   mutex_lock (&_ports_lock);
   
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-    hurd_thread_cancel (rpc->thread);
+    {
+      hurd_thread_cancel (rpc->thread);
+      _ports_record_interruption (rpc);
+    }
 
   mutex_unlock (&_ports_lock);
 }
