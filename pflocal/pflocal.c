@@ -108,25 +108,21 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
-  error_t err;
+  int force = (flags & FSYS_GOAWAY_FORCE);
+  error_t err = ports_inhibit_bucket_rpcs (pf_port_bucket); /* Stop all I/O. */
 
-  /* Stop all I/O.  */
-  ports_inhibit_bucket_rpcs (pf_port_bucket);
+  if (err == 0 || (err != EINTR && force))
+    {
+      /* Now see if there are any old sockets lying around.  */
+      err = sock_global_shutdown ();
 
-  /* Now see if there are any old sockets lying around.  */
-  err = sock_global_shutdown ();
+      /* Exit if not, or if we must. */
+      if (err == 0 || force)
+	exit (0);
 
-  /* Exit if not, or if we must. */
-  if (err == 0 || flags & FSYS_GOAWAY_FORCE)
-    exit (0);
-
-  /* We won't go away, so start things going again...  */
-  ports_resume_bucket_rpcs (pf_port_bucket);
+      /* We won't go away, so start things going again...  */
+      ports_resume_bucket_rpcs (pf_port_bucket);
+    }
 
   return err;
-}
-
-void
-thread_cancel (thread_t foo __attribute__ ((unused)))
-{
 }
