@@ -177,13 +177,14 @@ S_proc_child (struct proc *parentp,
       leave_pgrp (childp);
       childp->p_pgrp = parentp->p_pgrp;
       join_pgrp (childp);
+      /* Not necessary to call newids ourself because join_pgrp does
+	 it for us. */
     }
-
-  childp->p_parentset = 1;
-  if (childp->p_msgport)
+  else if (childp->p_msgport != MACH_PORT_NULL)
     nowait_proc_newids (childp->p_msgport, childp->p_task, 
 			childp->p_parent->p_pid, childp->p_pgrp->pg_pgid,
 			!childp->p_pgrp->pg_orphcnt);
+  childp->p_parentset = 1;
   return 0;
 }
 
