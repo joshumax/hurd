@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.25 2002/01/02 01:47:59 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.26 2002/01/02 01:56:39 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -98,8 +98,7 @@ else
 fi
 rm -f conftest*])
 if test $hurd_cv_mig_retcode = no; then
-  dnl IsNoTLong is a harmless syntactically equivalent flag.
-  AC_DEFINE(RetCode, IsNotLong)
+  AC_DEFINE(RETCODE,)
 fi
 
 # See if --version-script is available.
