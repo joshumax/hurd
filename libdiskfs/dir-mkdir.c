@@ -26,14 +26,14 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 {
   struct node *dnp;
   struct node *np = 0;
-  struct dirstat ds = alloca (diskfs_dirstat_size);
+  struct dirstat *ds = alloca (diskfs_dirstat_size);
   int error;
 
   if (!dircred)
     return EOPNOTSUPP;
   
   dnp = dircred->po->np;
-  if (readonly)
+  if (diskfs_readonly)
     return EROFS;
 
   mutex_lock (&dnp->lock);
@@ -47,7 +47,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   if (error != ENOENT)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return error;
     }
