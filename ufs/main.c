@@ -26,40 +26,74 @@
 #include <stdlib.h>
 
 char *ufs_version = "0.0 pre-alpha";
+
+/* ---------------------------------------------------------------- */
 
+#define USAGE "Usage: %s [OPTION...] DEVICE\n"
+
+static void
+usage(int status)
+{
+  if (status != 0)
+    fprintf(stderr, "Try `%s --help' for more information.\n",
+	    program_invocation_name);
+  else
+    {
+      printf(USAGE, program_invocation_name);
+      printf("\
+\n\
+  -r, --readonly             disable writing to DEVICE\n\
+  -w, --writable             enable writing to DEVICE\n\
+  -s, --sync[=INTERVAL]      with an argument, sync every INTERVAL seconds,\n\
+                             otherwise operate in synchronous mode\n\
+  -n, --nosync               never sync the filesystem\n\
+      --help                 display this help and exit\n\
+      --version              output version information and exit\n\
+");
+    }
+  exit (status);
+}
+
+#define SHORT_OPTS ""
+
+static struct option long_opts[] =
+{
+  {"help", no_argument, 0, '?'},
+  {0, 0, 0, 0}
+};
+
+static error_t
+parse_opt (int opt, char *arg)
+{
+  /* We currently only deal with one option... */
+  if (opt != '?')
+    return EINVAL;
+  usage (0);			/* never returns */
+  return 0;
+}
 
 /* Parse the arguments for ufs when started as a translator. */
 char *
 trans_parse_args (int argc, char **argv)
 {
-  char *devname;
-  /* When started as a translator, we are called with
-     the device name and an optional argument -r, which
-     signifies read-only. */
-  if (argc < 2 || argc > 3)
-    exit (1);
+  int argind;			/* ARGV index of the first argument.  */
+  struct options options =
+    { SHORT_OPTS, long_opts, parse_opt, diskfs_standard_startup_options };
 
-  if (argc == 2)
-    devname = argv[1];
+  /* Parse our command line.  */
+  if (options_parse (&options, argc, argv, OPTIONS_PRINT_ERRS, &argind))
+    usage (1);
 
-  else if (argc == 3)
+  if (argc - argind != 1)
     {
-      if (argv[1][0] == '-' && argv[1][1] == 'r')
-	{
-	  diskfs_readonly = 1;
-	  devname = argv[2];
-	}
-      else if (argv[2][0] == '-' && argv[2][1] == 'r')
-	{
-	  diskfs_readonly = 1;
-	  devname = argv[1];
-	}
-      else
-	exit (1);
+      fprintf (stderr, USAGE, program_invocation_name);
+      usage (1);
     }
 
-  return devname;
+  return argv[argind];
 }
+
+/* ---------------------------------------------------------------- */
 
 struct node *diskfs_root_node;
 
