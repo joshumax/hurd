@@ -38,7 +38,7 @@ esac
 case $# in
   1)
     # Lookup the given single arg in /etc/fstab for the rest of the args
-    args=`gawk -f - $fstab <<END
+    args=`awk -f - $fstab <<END
 \\$1 == "$1" || \\$2 == "$1" {
   for (i = 4; i <= NF; i++)
     printf("%s ", \\$i);
