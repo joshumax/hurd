@@ -18,6 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <fcntl.h>
+
 #include "netfs.h"
 #include "fs_S.h"
 
@@ -39,14 +41,15 @@ netfs_S_dir_readdir (struct protid *user,
   np = user->po->np;
   mutex_lock (&np->lock);
   
+  err = 0;
   if ((user->po->openstat & O_READ) == 0)
     err = EBADF;
   if (!err)
-    err = netfs_validate_stat (user->credential, np);
-  if (!err && (np->dn_stat.st_mode & S_IFMT) != S_IFDIR)
+    err = netfs_validate_stat (np, user->credential);
+  if (!err && (np->nn_stat.st_mode & S_IFMT) != S_IFDIR)
     err = ENOTDIR;
   if (!err)
-    err = netfs_get_directs (user->credential, np, entry, nentries, data,
+    err = netfs_get_dirents (user->credential, np, entry, nentries, data,
 			     datacnt, bufsiz, amt);
   mutex_unlock (&np->lock);
   return err;
