@@ -583,8 +583,7 @@ diskfs_direnter(struct node *dp,
    directory has been locked continously since the call to lookup, and
    only if that call succeeded.  */
 error_t
-diskfs_dirremove(struct node *dp,
-		 struct dirstat *ds)
+diskfs_dirremove(struct node *dp, struct dirstat *ds)
 {
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
