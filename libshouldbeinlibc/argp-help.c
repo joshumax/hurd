@@ -1333,10 +1333,6 @@ argp_args_usage (const struct argp *argp, const struct argp_state *state,
       if (! nl)
 	nl = fdoc + strlen (fdoc);
 
-      if (nl > fdoc && nl[-1] == '\r')
-	/* `consumes-args' marker.  Removed the marker, and note that we
-	   shouldn't process any children.  */
-
       /* Manually do line wrapping so that it (probably) won't get wrapped at
 	 any embedded spaces.  */
       space (stream, 1 + nl - fdoc);
