@@ -1,3 +1,22 @@
+2001-08-12  Neal H Walfield  <neal@cs.uml.edu>
+
+	* copy.c (copy_read): The protocol dictates that *LEN is in
+	bytes, not pages.
+	(copy_write): Be sure that the buffer passed to vm_read is
+	page-aligned.  When determining how much to copy, use LEN, not the
+	uninitialized *AMOUNT.
+	(copy_clone): Use memcpy, not bcopy.
+	* derive.c: Include <sys/types.h> and <mach.h>.
+	(_store_derive): Initialize STORE->wrap_src.
+
+	* set.c: Do not include <malloc.h>.
+	Include <stdlib.h>, <errno.h> and <mach.h>.
+	(store_set_runs): Use memcpy, not bcopy.
+	(store_set_name): Use strdup, not a strlen, malloc and strcpy.
+	* zero.c (zero_read): When checking if mmap failed, compare
+	against MAP_FAILED, not -1.
+	Use memset, not bzero.
+
 2001-08-03  Roland McGrath  <roland@frob.com>
 
 	* Makefile (HURDLIBS): Define it so we link in libshouldbeinlibc.

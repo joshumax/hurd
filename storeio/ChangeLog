@@ -1,3 +1,11 @@
+2001-08-12  Neal H Walfield  <neal@cs.uml.edu>
+
+	* pager.c: Include <errno.h>.
+	(pager_read_page): Use memset, not bzero.
+	* storeio.c (check_open_hook): Typo fix in comment.
+	(trivfs_modify_stat): STORE->size is a store_offset_t.
+	It not a vm_size_t.
+
 2001-05-06  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dev.c (dev_open): Do not create/open the store with
