@@ -31,6 +31,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/exec.h>
 #include <unistd.h>
 #include <assert.h>
+#include <version.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -397,7 +398,7 @@ initialize_version_info (void)
 
   err = host_info (mach_host_self (), HOST_BASIC_INFO, (int *) &info, &n);
   assert (! err);
-  snprintf (uname_info.machine, sizeof uname_info.machine, "%s/%s",
+  snprintf (uname_info.machine, sizeof uname_info.machine, "%s-%s",
 	    mach_cpu_types[info.cpu_type],
 	    mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
 
@@ -417,8 +418,8 @@ initialize_version_info (void)
   kernel_name = strdup (p ? kv : "mach");
   kernel_version = strdup (p ? p + 1 : kv);
 
-  server_versions[1].name = strdup (OUR_SERVER_NAME);
-  server_versions[1].version = strdup (OUR_VERSION);
+  server_versions[0].name = strdup ("proc");
+  server_versions[0].version = strdup (HURD_VERSION);
 
   nserver_versions = 1;
 

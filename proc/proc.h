@@ -143,10 +143,6 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 struct mutex global_lock;
 
-/* Our name for version system */
-#define OUR_SERVER_NAME "proc"
-#define OUR_VERSION "0.0"
-
 extern inline void
 process_drop (struct proc *p)
 {

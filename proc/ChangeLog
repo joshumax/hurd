@@ -1,3 +1,18 @@
+Fri Oct 25 20:30:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* host.c: Include <version.h>.
+
+Thu Oct 24 16:13:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* host.c (initialize_version_info): Construct UNAME_INFO.machine
+	with a dash instead of a slash so that it can be used as a file
+	name component.
+
+	* host.c (initialize_version_info): Copy our version into element
+	0 of server_versions, not element 1.  Use HURD_VERSION instead of
+	OUR_VERSION.  Use literal "proc" instead of OUR_SERVER_NAME.
+	* proc.h (OUR_SERVER_NAME, OUR_VERSION): Delete macro.
+
 Thu Sep 12 16:33:49 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
