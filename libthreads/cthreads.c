@@ -26,6 +26,17 @@
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.10  2001/03/31 23:01:01  roland
+ * 2001-03-31  Roland McGrath  <roland@frob.com>
+ *
+ * 	* cthreads.h: Fix obsolescent #endif syntax.
+ * 	* cthread_internals.h: Likewise.
+ * 	* cancel-cond.c: Likewise.
+ * 	* stack.c: Likewise.
+ * 	* cthreads.c: Likewise.
+ * 	* cprocs.c: Likewise.
+ * 	* call.c: Likewise.
+ *
  * Revision 1.9  1998/11/22 18:18:10  roland
  * 1998-11-12  Mark Kettenis  <kettenis@phys.uva.nl>
  *
@@ -386,7 +397,7 @@ cthread_exit(result)
 		while (cthread_cthreads > 1)
 			condition_wait(&cthread_idle, &cthread_lock);
 		mutex_unlock(&cthread_lock);
-		exit((int) result);
+		exit((int)(long)result);
 	} else {
 		_longjmp(t->catch, TRUE);
 	}
