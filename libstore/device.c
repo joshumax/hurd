@@ -1,6 +1,6 @@
 /* Mach device store backend
 
-   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -239,6 +239,7 @@ store_device_class =
   store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode,
   dev_set_flags, dev_clear_flags, 0, 0, 0, dev_open, 0, dev_map
 };
+STORE_STD_CLASS (device);
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
    the send right DEVICE.  */

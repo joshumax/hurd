@@ -1,6 +1,6 @@
 /* Block address translation
 
-   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -206,6 +206,7 @@ store_remap_class =
   NULL, NULL, NULL,		/* cleanup, clone, remap */
   remap_open, remap_validate_name
 };
+STORE_STD_CLASS (remap);
 
 /* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
    from SOURCE; SOURCE is consumed, but RUNS is not.  Unlike the

@@ -1,6 +1,6 @@
 /* Zero store backend
 
-   Copyright (C) 1995,96,97,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,01, 02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -178,6 +178,7 @@ store_zero_class =
   0, 0, 0, 0, zero_remap, zero_open, zero_validate_name,
   zero_map
 };
+STORE_STD_CLASS (zero);
 
 /* Return a new zero store SIZE bytes long in STORE.  */
 error_t

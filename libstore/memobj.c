@@ -1,5 +1,5 @@
 /* Store backend using a Mach memory object
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -187,3 +187,4 @@ store_memobj_class =
   encode: store_std_leaf_encode,
   decode: memobj_decode,
 };
+STORE_STD_CLASS (memobj);

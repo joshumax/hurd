@@ -1,5 +1,5 @@
 /* "Network Block Device" store backend compatible with Linux `nbd' driver
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -478,6 +478,7 @@ const struct store_class store_nbd_class =
   decode: nbd_decode,
   set_flags: nbd_set_flags, clear_flags: nbd_clear_flags,
 };
+STORE_STD_CLASS (nbd);
 
 /* Create a store from an existing socket to an nbd server.
    The initial handshake has already been done.  */

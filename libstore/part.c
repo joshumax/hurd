@@ -1,5 +1,5 @@
 /* Partition store backend
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002 Free Software Foundation, Inc.
    Written by Neal H Walfield <neal@cs.uml.edu>
 
    This file is part of the GNU Hurd.
@@ -191,3 +191,4 @@ store_part_open (const char *name, int flags,
 
 const struct store_class
 store_part_class = { -1, "part", open: store_part_open };
+STORE_STD_CLASS (part);

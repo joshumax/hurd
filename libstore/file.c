@@ -1,6 +1,6 @@
 /* File store backend
 
-   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -196,6 +196,7 @@ store_file_class =
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
   file_set_flags, file_clear_flags, 0, 0, 0, file_open, 0, file_map
 };
+STORE_STD_CLASS (file);
 
 static error_t
 file_byte_read (struct store *store,

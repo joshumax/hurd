@@ -221,3 +221,4 @@ const struct store_class store_unknown_class =
   open:			unknown_open,
   validate_name:	unknown_validate_name,
 };
+STORE_STD_CLASS (unknown);

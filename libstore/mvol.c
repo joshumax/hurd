@@ -1,6 +1,6 @@
 /* Multiple-volume store backend
 
-   Copyright (C) 1996,97,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -85,6 +85,7 @@ store_mvol_class =
   0, 0, 0,
   store_set_child_flags, store_clear_child_flags, 0, 0, mvol_remap
 };
+STORE_STD_CLASS (mvol);
 
 /* Return a new store in STORE that multiplexes multiple physical volumes
    from PHYS as one larger virtual volume.  SWAP_VOLS is a function that will

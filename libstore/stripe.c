@@ -1,6 +1,6 @@
 /* Striped store backend
 
-   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -109,6 +109,7 @@ store_ileave_class =
   ileave_allocate_encoding, ileave_encode, ileave_decode,
   store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap
 };
+STORE_STD_CLASS (ileave);
 
 error_t
 concat_allocate_encoding (const struct store *store, struct store_enc *enc)
@@ -153,6 +154,7 @@ store_concat_class =
   store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap,
   store_concat_open
 };
+STORE_STD_CLASS (concat);
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an

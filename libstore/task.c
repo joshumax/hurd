@@ -1,6 +1,6 @@
 /* Mach task store backend
 
-   Copyright (C) 1995,96,97,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2001, 2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -131,6 +131,7 @@ store_task_class =
   store_std_leaf_allocate_encoding, store_std_leaf_encode, task_decode,
   task_set_flags, task_clear_flags, 0, 0, 0, task_open
 };
+STORE_STD_CLASS (task);
 
 /* Return a new store in STORE referring to the mach task TASK.  Consumes
    the send right TASK.  */

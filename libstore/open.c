@@ -1,7 +1,7 @@
 /* Store creation from a file name
 
-   Copyright (C) 1996, 97, 98 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,98,2001, 2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -62,3 +62,4 @@ store_open (const char *name, int flags,
 
 const struct store_class
 store_query_class = { -1, "query", open: store_open };
+STORE_STD_CLASS (query);

@@ -163,6 +163,7 @@ store_copy_class =
   copy_allocate_encoding, copy_encode, copy_decode,
   copy_set_flags, copy_clear_flags, copy_cleanup, copy_clone, 0, copy_open
 };
+STORE_STD_CLASS (copy);
 
 /* Return a new store in STORE which contains a snapshot of the contents of
    the store FROM; FROM is consumed.  */
