@@ -518,9 +518,9 @@ cons_vcons_write (vcons_t vcons, conchar_t *str, size_t length,
     return;
 
   mutex_lock (&ncurses_lock);
-  getsyx (y, x);
+  getyx (stdscr, y, x);
   mvwputsn (str, length, col, row);
-  setsyx (y, x);
+  wmove (stdscr, y, x);
   mutex_unlock (&ncurses_lock);
 }
 
@@ -574,7 +574,10 @@ main (int argc, char *argv[])
 
   err = cons_init ();
   if (err)
-    error (5, err, "Console library initialization failed");
+   {
+     endwin ();
+     error (5, err, "Console library initialization failed");
+   }
 
   cons_server_loop ();
 

@@ -1,3 +1,12 @@
+2002-08-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console-ncurses.c (main): Call endwin () before bailing out
+	because of an error.
+	(cons_vcons_write): Use getyx and wmove on stdscr instead getsyx
+	and setsyx (which operate on newscr, and mess up the cursor
+	anyway, probably because we don't commit the change immediately).
+	Submitted by David Walter <dwalter@syr.edu>.
+
 2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile: Include `../config.make' early on to get LIBNCURSESW
