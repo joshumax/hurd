@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface. 
-   Copyright (C) 1993 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -279,3 +279,10 @@ routine file_get_translator (
 routine file_get_translator_cntl (
 	file: file_t;
 	out translator_cntl: fsys_t);
+
+/* Return statfs information for the active translator for this file */
+/* INTR */
+routine file_stat_translator (
+	file: file_t;
+	out info: fsys_statfsbuf_t);
+
