@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -48,7 +48,7 @@ inode_init ()
 /* Fetch inode INUM, set *NPP to the node structure; 
    gain one user reference and lock the node.  */
 error_t 
-iget (ino_t inum, struct node **npp)
+diskfs_cached_lookup (int inum, struct node **npp)
 {
   error_t err;
   struct node *np;
@@ -56,7 +56,7 @@ iget (ino_t inum, struct node **npp)
 
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    if (np->dn->number == inum)
+    if (np->cache_id == inum)
       {
 	np->references++;
 	spin_unlock (&diskfs_node_refcnt_lock);
@@ -65,24 +65,34 @@ iget (ino_t inum, struct node **npp)
 	return 0;
       }
   
+  /* Format specific data for the new node.  */
   dn = malloc (sizeof (struct disknode));
-  
-  dn->number = inum;
+  if (! dn)
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      return ENOMEM;
+    }
   dn->dirents = 0;
-  
+  dn->pager = 0;
   rwlock_init (&dn->alloc_lock);
   pokel_init (&dn->indir_pokel, disk_pager, disk_image);
-  dn->pager = 0;
   
+  /* Create the new node.  */
   np = diskfs_make_node (dn);
+  np->cache_id = inum;
+
   mutex_lock (&np->lock);
+
+  /* Put NP in NODEHASH.  */
   dn->hnext = nodehash[INOHASH(inum)];
   if (dn->hnext)
     dn->hnext->dn->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
+
   spin_unlock (&diskfs_node_refcnt_lock);
   
+  /* Get the contents of NP off disk.  */
   err = read_disknode (np);
   
   if (!diskfs_readonly && !np->dn_stat.st_gen)
@@ -114,7 +124,7 @@ ifind (ino_t inum)
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
-      if (np->dn->number != inum)
+      if (np->cache_id != inum)
 	continue;
       
       assert (np->references);
@@ -176,7 +186,7 @@ read_disknode (struct node *np)
   static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
   struct disknode *dn = np->dn;
-  struct ext2_inode *di = dino (dn->number);
+  struct ext2_inode *di = dino (np->cache_id);
   struct ext2_inode_info *info = &dn->info;
   
   err = diskfs_catch_exception ();
@@ -193,7 +203,7 @@ read_disknode (struct node *np)
 
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = fsid;
-  st->st_ino = dn->number;
+  st->st_ino = np->cache_id;
   st->st_blksize = vm_page_size * 2;
 
   st->st_mode = di->i_mode | (di->i_mode_high << 16);
@@ -230,7 +240,7 @@ read_disknode (struct node *np)
   info->i_file_acl = di->i_file_acl;
   info->i_dir_acl = di->i_dir_acl;
   info->i_version = di->i_version;
-  info->i_block_group = inode_group_num(dn->number);
+  info->i_block_group = inode_group_num (np->cache_id);
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
   info->i_prealloc_count = 0;
@@ -265,7 +275,7 @@ write_node (struct node *np)
 {
   error_t err;
   struct stat *st = &np->dn_stat;
-  struct ext2_inode *di = dino (np->dn->number);
+  struct ext2_inode *di = dino (np->cache_id);
 
   if (np->dn->info.i_prealloc_count)
     ext2_discard_prealloc (np);
@@ -275,7 +285,7 @@ write_node (struct node *np)
     {
       assert (!diskfs_readonly);
 
-      ext2_debug ("writing inode %d to disk", np->dn->number);
+      ext2_debug ("writing inode %d to disk", np->cache_id);
 
       err = diskfs_catch_exception ();
       if (err)
@@ -479,7 +489,7 @@ diskfs_set_translator (struct node *np, char *name, unsigned namelen,
   if (err)
     return err;
   
-  di = dino (np->dn->number);
+  di = dino (np->cache_id);
   blkno = di->i_translator;
   
   if (namelen && !blkno)
@@ -547,7 +557,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   if (err)
     return err;
 
-  blkno = (dino (np->dn->number))->i_translator;
+  blkno = (dino (np->cache_id))->i_translator;
   assert (blkno);
   transloc = bptr (blkno);
   
