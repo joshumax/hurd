@@ -29,17 +29,6 @@
 
 extern mach_port_t fs_control_port;	/* receive right */
 
-enum porttype
-{
-  PT_NONE,
-  PT_PROTID,
-  PT_PAGER,
-  PT_CTL,
-  PT_EXECBOOT,
-  PT_INITBOOT,
-  PT_TRANSBOOT,
-};
-
 volatile struct mapped_time_value *_diskfs_mtime;
 
 /* Needed for MiG. */
@@ -51,7 +40,7 @@ typedef struct protid *protid_t;
 extern inline struct protid *
 begin_using_protid_port (file_t port)
 {
-  return ports_check_port_type (port, PT_PROTID);
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
 }
 
 /* Called by MiG after server routines have been run; this
@@ -60,7 +49,7 @@ begin_using_protid_port (file_t port)
 extern inline void
 end_using_protid_port (struct protid *cred)
 {
-  ports_done_with_port (cred);
+  ports_port_deref (cred);
 }
 
 /* Actually read or write a file.  The file size must already permit
