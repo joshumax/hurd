@@ -41,10 +41,14 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "term_S.h"
 #include "tioctl_S.h"
 
+#include <hurd/auth.h>
+
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
 mach_port_t pseudo_console;
+auth_t authserver;
+
 
 mach_port_t php_child_name, psmdp_child_name;
 
@@ -476,7 +480,11 @@ S_exec_init (
 	auth_t auth_handle,
 	process_t proc_server)
 {
-  return EOPNOTSUPP;
+  /* Kludgy way to get a port to the auth server.  */
+  authserver = auth_handle;
+  if (proc_server != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), proc_server);
+  return 0;
 }
 
 kern_return_t
@@ -1167,7 +1175,26 @@ S_io_reauthenticate (mach_port_t object,
 		     mach_msg_type_name_t reply_type,
 		     int rendint)
 {
-  return EOPNOTSUPP;
+  uid_t *gu, *au;
+  gid_t *gg, *ag;
+  unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
+    
+  if (! auth_server_authenticate (authserver, 
+				  object, MACH_MSG_TYPE_MAKE_SEND,
+				  rendint,
+				  object, MACH_MSG_TYPE_MAKE_SEND,
+				  &gu, &gulen,
+				  &au, &aulen,
+				  &gg, &gglen,
+				  &ag, &aglen))
+    {
+      mig_deallocate (gu, gulen * sizeof *gu);
+      mig_deallocate (au, aulen * sizeof *gu);
+      mig_deallocate (gg, gglen * sizeof *gu);
+      mig_deallocate (au, aulen * sizeof *gu);
+    }
+
+  return 0;
 }
 
 kern_return_t
