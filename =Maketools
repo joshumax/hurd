@@ -38,7 +38,7 @@ AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
 
-INSTALL_BIN=i386-gnu-objcopy -S
+INSTALL_BIN=objcopy -S
 #INSTALL_BIN=cp
 
 machine := i386
